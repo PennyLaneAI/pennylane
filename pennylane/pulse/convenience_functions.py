@@ -39,7 +39,7 @@ def constant(scalar, time):
 
     >>> H = qml.pulse.constant * qml.PauliX(0)
 
-    When calling the parametrized hamiltonian, ``constant`` will always return the input parameter
+    When calling the parametrized Hamiltonian, ``constant`` will always return the input parameter
 
     >>> params = [5]
     >>> H(params, t=8)
