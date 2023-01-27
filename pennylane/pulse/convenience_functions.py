@@ -13,6 +13,7 @@
 # limitations under the License.
 """This file contains convenience functions for pulse programming."""
 from typing import Callable, List, Tuple, Union
+
 import numpy as np
 
 has_jax = True
@@ -21,32 +22,45 @@ try:
 except ImportError:
     has_jax = False
 
-
-def constant(windows: List[Tuple[float]] = None):
-    """Returns a callable ``f(p, t)`` that returns ``p`` inside the time
-    windows defined in ``windows``.
+# pylint: disable=unused-argument
+def constant(scalar, time):
+    """Parametrized function that is constant in time and returns the given ``scalar``.
 
     Args:
-        windows (Tuple[float, Tuple[float]]): List of tuples containing time windows where
-        ``f(p, t)`` is evaluated. If ``None``, it is always evaluated. Defaults to ``None``.
+        scalar (float): the scalar to be returned
+        time (float): Time. This argument is not used.
+
+    This function is mainly used to build a parametrized Hamiltonian that can be differentiated
+    with respect to its time-independent term. It is an alias for `lambda scalar, t: scalar`.
 
     **Example**
 
-    The ``constant`` function can be used to create a parametrized hamiltonian
+    The ``constant`` function can be used to create a parametrized Hamiltonian
 
-    >>> windows = [(1, 7), (9, 14)]
-    >>> H = qml.pulse.constant(windows) * qml.PauliX(0)
+    >>> H = qml.pulse.constant * qml.PauliX(0)
 
-    When calling the parametrized hamiltonian, ``constant`` will return the input parameter only
-    when the time is inside the given time windows
+    When calling the parametrized Hamiltonian, ``constant`` will always return the input parameter
 
     >>> params = [5]
-    >>> H(params, t=8)  # t is outside the time windows
-    0.0*(PauliX(wires=[0]))
-    >>> H(params, t=5)  # t is inside the time windows
+    >>> H(params, t=8)
     5.0*(PauliX(wires=[0]))
+    >>> H(params, t=5)
+    5.0*(PauliX(wires=[0]))
+
+    We can differentiate the parametrized hamiltonian with respect to the constant parameter:
+
+    >>> dev = qml.device("default.qubit", wires=1)
+    >>> @qml.qnode(dev, interface="jax")
+    ... def circuit(params):
+    ...     qml.evolve(H)(params, t=2)
+    ...     return qml.expval(qml.PauliZ(0))
+    >>> params = jnp.array([5.0])
+    >>> circuit(params)
+    Array(0.40808904, dtype=float32)
+    >>> jax.grad(circuit)(params)
+    Array([-3.6517754], dtype=float32)
     """
-    return rect(x=lambda p, _: p, windows=windows)
+    return scalar
 
 
 def rect(x: Union[float, Callable], windows: List[Tuple[float]] = None):
