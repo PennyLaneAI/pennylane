@@ -296,7 +296,7 @@ class TestCompositeOperations:
 
     def test_sum_eigvals(self):
         """Test that a sum op returns the correct eigvals."""
-        sum_op = qml.op_sum(qml.s_prod(1j, qml.PauliZ(wires=0)), qml.Identity(wires=0))
+        sum_op = qml.sum(qml.s_prod(1j, qml.PauliZ(wires=0)), qml.Identity(wires=0))
         sum_eigvals = qml.eigvals(sum_op)
 
         mat_rep = np.array([[1 + 1j, 0], [0, 1 - 1j]])

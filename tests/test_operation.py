@@ -900,7 +900,7 @@ class TestOperatorIntegration:
     def test_sum_with_operator(self):
         """Test the __sum__ dunder method with two operators."""
         sum_op = qml.PauliX(0) + qml.RX(1, 0)
-        final_op = qml.op_sum(qml.PauliX(0), qml.RX(1, 0))
+        final_op = qml.sum(qml.PauliX(0), qml.RX(1, 0))
         #  TODO: Use qml.equal when fixed.
         assert isinstance(sum_op, Sum)
         for s1, s2 in zip(sum_op.operands, final_op.operands):
@@ -912,7 +912,7 @@ class TestOperatorIntegration:
     def test_sum_with_scalar(self):
         """Test the __sum__ dunder method with a scalar value."""
         sum_op = 5 + qml.PauliX(0) + 0
-        final_op = qml.op_sum(qml.PauliX(0), qml.s_prod(5, qml.Identity(0)))
+        final_op = qml.sum(qml.PauliX(0), qml.s_prod(5, qml.Identity(0)))
         # TODO: Use qml.equal when fixed.
         assert isinstance(sum_op, Sum)
         for s1, s2 in zip(sum_op.operands, final_op.operands):
@@ -960,7 +960,7 @@ class TestOperatorIntegration:
     def test_sum_multi_wire_operator_with_scalar(self):
         """Test the __sum__ dunder method with a multi-wire operator and a scalar value."""
         sum_op = 5 + qml.CNOT(wires=[0, 1])
-        final_op = qml.op_sum(
+        final_op = qml.sum(
             qml.CNOT(wires=[0, 1]),
             qml.s_prod(5, qml.Identity([0, 1])),
         )
