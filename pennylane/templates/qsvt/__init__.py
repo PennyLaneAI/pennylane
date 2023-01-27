@@ -15,5 +15,5 @@
 A module for performing QSVT with PennyLane.
 """
 
-from .qsvt_ops import BlockEncoding
+from .qsvt_ops import BlockEncoding, PiControlledPhase
 
