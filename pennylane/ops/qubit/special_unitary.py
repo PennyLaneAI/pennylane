@@ -206,7 +206,7 @@ class SpecialUnitary(Operation):
 
         U(\theta) &= e^{A(\theta)}\\
         A(\theta) &= \sum_{m=1}^d i \theta_m P_m\\
-        P_m &\in {I, X, Y, Z}^{\otimes n} \setminus \{I^{\otimes n}\}
+        P_m &\in \{I, X, Y, Z\}^{\otimes n} \setminus \{I^{\otimes n}\}
 
     This means, :math:`U(\theta)` is the exponential of operator :math:`A(\theta)`,
     which in turn is a linear combination of Pauli words with coefficients :math:`i\theta`
@@ -218,16 +218,16 @@ class SpecialUnitary(Operation):
     * Number of wires: Any
     * Number of parameters: 1
     * Number of dimensions per parameter: (1,)
-    * Gradient recipe
+    * Gradient recipe:
 
     .. math::
 
-        \frac{\partial}{\partial\theta_\ell} f(U(\theta)) &= -i \sum_{m=1}^d \omega_{\ell m}
+        \frac{\partial}{\partial\theta_\ell} f(U(\theta)) = -i \sum_{m=1}^d \omega_{\ell m}
         \frac{\mathrm{d}}{\mathrm{d} x} f(e^{ixP_m} U(\theta))
 
-      where :math:`f` is an expectation value depending on :math:`U(\theta)` and the derivative
-      of the Pauli rotation gates :math:`e^{ixP_m}` can be computed with the two-term
-      parameter-shift rule (also see: :class:`~.PauliRot`).
+    where :math:`f` is an expectation value depending on :math:`U(\theta)` and the derivative
+    of the Pauli rotation gates :math:`e^{ixP_m}` can be computed with the two-term
+    parameter-shift rule (also see: :class:`~.PauliRot`).
 
     Args:
         theta (tensor_like): Pauli coordinates of the exponent :math:`A(\theta)`.
@@ -239,7 +239,7 @@ class SpecialUnitary(Operation):
 
     Raises:
         ValueError: If the shape of the input parameter does not match the Lie algebra
-            dimension :math:`d=4*n-1` for :math:`n` wires.
+            dimension :math:`d=4^n-1` for :math:`n` wires.
 
     The parameter ``theta`` refers to all Pauli words (except for the identity) in
     lexicographical order, which looks like the following for one and two qubits:
