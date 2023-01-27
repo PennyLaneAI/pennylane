@@ -21,8 +21,10 @@ from pennylane.wires import Wires
 
 
 def ctrl_decomp_zyz(target_operation: Operator, control_wires: Wires):
-    """This function decomposes the controlled version of a single-qubit operation
-    given a target operation using the decomposition defined in section 5 of
+    """Decompose the controlled version of a target single-qubit operation
+
+    This function decomposes a controlled single-qubit target operation using the
+    decomposition defined in section 5 of
     `Barenco et al. (1995) <https://arxiv.org/abs/quant-ph/9503016>`_.
 
     .. note:: This method will add a global phase for target operations that do not
@@ -71,6 +73,7 @@ def ctrl_decomp_zyz(target_operation: Operator, control_wires: Wires):
     tensor([0.125, 0.125, 0.125, 0.125, 0.125, 0.125, 0.125, 0.125], requires_grad=True)
     >>> decomp_circuit()
     tensor([0.125, 0.125, 0.125, 0.125, 0.125, 0.125, 0.125, 0.125], requires_grad=True)
+
     """
     # TODO: Add support for general unitaries, not just SU(2) matrices
     if len(target_operation.wires) != 1:
