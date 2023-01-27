@@ -32,7 +32,7 @@ def ctrl_decomp_zyz(target_operation: Operator, control_wires: Wires):
 
     Args:
         target_operation (~.operation.Operator): the target operation to decompose
-        control_wires (~.wires.Wires): the control wire of the operation
+        control_wires (~.wires.Wires): the control wires of the operation
 
     Returns:
         list[Operation]: the decomposed operations
