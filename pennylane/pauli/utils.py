@@ -82,17 +82,14 @@ def is_pauli_word(observable):
     """
     pauli_word_names = ["Identity", "PauliX", "PauliY", "PauliZ"]
     if isinstance(observable, Tensor):
-        return set(observable.name).issubset(pauli_word_names) and len(observable.obs) == len(
-            observable.wires
-        )
+        return set(observable.name).issubset(pauli_word_names)
 
     if isinstance(observable, Hamiltonian):
         return False if len(observable.ops) > 1 else is_pauli_word(observable.ops[0])
 
     if isinstance(observable, Prod):
-        return all(is_pauli_word(op) for op in observable) and len(observable) == len(
-            observable.wires
-        )
+        return all(is_pauli_word(op) for op in observable)
+
     return observable.name in pauli_word_names
 
 

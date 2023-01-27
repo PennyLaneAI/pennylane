@@ -269,8 +269,8 @@ class TestGroupingUtils:
         (Hamiltonian([0.5], [PauliZ(1) @ PauliX(2)]), True),
         (Hamiltonian([0.5], [PauliZ(1) @ PauliX(1)]), True),
         (Hamiltonian([1.0], [Hadamard(0)]), False),
-        (Hamiltonian([1.0, 0.5], [PauliX(0), PauliZ(1) @ PauliX(2)]), True),
-        (qml.prod(qml.PauliX(0), qml.PauliY(0)), False),
+        (Hamiltonian([1.0, 0.5], [PauliX(0), PauliZ(1) @ PauliX(2)]), False),
+        (qml.prod(qml.PauliX(0), qml.PauliY(0)), True),
         (qml.prod(qml.PauliX(0), qml.PauliY(1)), True),
         (qml.prod(qml.PauliX(0), qml.Hadamard(1)), False),
     )
