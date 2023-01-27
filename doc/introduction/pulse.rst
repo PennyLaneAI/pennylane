@@ -229,10 +229,10 @@ along with the parameters, as keyword arguments:
 
 These options are:
 
-- `atol (float, optional)`: Absolute error tolerance
-- `rtol (float, optional)`: Relative error tolerance
-- `mxstep (int, optional)`: maximum number of steps to take for each time point
-- `hmax (float, optional)`: maximum step size allowed
+- ``atol (float, optional)``: Absolute error tolerance
+- ``rtol (float, optional)``: Relative error tolerance
+- ``mxstep (int, optional)``: maximum number of steps to take for each time point
+- ``hmax (float, optional)``: maximum step size
 
 If not specified, they will default to predetermined values. See :class:`.ParametrizedEvolution` for details.
 
