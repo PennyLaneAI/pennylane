@@ -21,9 +21,7 @@ from pennylane.wires import Wires
 
 
 def ctrl_decomp_zyz(target_operation: Operator, control_wires: Wires):
-    """Decompose a controlled single-qubit operation given the target operation
-
-    This function decomposes the controlled version of a single-qubit operation
+    """This function decomposes the controlled version of a single-qubit operation
     given a target operation using the decomposition defined in section 5 of
     `Barenco et al. (1995) <https://arxiv.org/abs/quant-ph/9503016>`_.
 
