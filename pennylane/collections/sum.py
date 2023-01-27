@@ -50,7 +50,10 @@ def sum(x):
     >>> cost(x)
     tensor(0.9177, dtype=torch.float64)
     """
-    warnings.warn("The sum function is deprecated and it will be removed soon.", UserWarning)
+    warnings.warn(
+        "The sum function of the collections module is deprecated and it will be removed soon.",
+        UserWarning,
+    )
 
     if hasattr(x, "interface") and x.interface is not None:
         if x.interface == "tf":

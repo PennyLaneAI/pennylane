@@ -124,7 +124,10 @@ def dot(x, y):
     >>> cost(x)
     tensor(-0.2183, dtype=torch.float64, grad_fn=<DotBackward>)
     """
-    warnings.warn("The dot function is deprecated and it will be removed soon.", UserWarning)
+    warnings.warn(
+        "The dot function of the collections module is deprecated and it will be removed soon.",
+        UserWarning,
+    )
 
     if hasattr(x, "interface") and hasattr(y, "interface"):
 
