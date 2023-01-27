@@ -30,8 +30,8 @@ def constant(scalar, time):
         scalar (float): the scalar to be returned
         time (float): Time. This argument is not used.
 
-    This function is mainly used to build a parametrized hamiltonian that can be differentiated
-    with respect to its constant term.
+    This function is mainly used to build a parametrized Hamiltonian that can be differentiated
+    with respect to its time-independent term. It is an alias for `lambda scalar, t: scalar`.
 
     **Example**
 
