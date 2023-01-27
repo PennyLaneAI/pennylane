@@ -550,7 +550,7 @@ class TestBatchTransformGradients:
         """Test that a batch transform is differentiable when using
         autograd"""
         dev = qml.device("default.qubit", wires=2)
-        qnode = qml.QNode(self.circuit, dev, interface="autograd", diff_method=diff_method)
+        qnode = qml.QNode(self.circuit, dev, diff_method=diff_method)
 
         def cost(x, weights):
             return self.my_transform(qnode, weights)(x)
@@ -572,7 +572,7 @@ class TestBatchTransformGradients:
         import tensorflow as tf
 
         dev = qml.device("default.qubit", wires=2)
-        qnode = qml.QNode(self.circuit, dev, interface="tf", diff_method=diff_method)
+        qnode = qml.QNode(self.circuit, dev, diff_method=diff_method)
 
         weights_np = np.array([0.1, 0.2], requires_grad=True)
         x_np = np.array(0.543, requires_grad=True)
@@ -596,7 +596,7 @@ class TestBatchTransformGradients:
         import torch
 
         dev = qml.device("default.qubit", wires=2)
-        qnode = qml.QNode(self.circuit, dev, interface="torch", diff_method=diff_method)
+        qnode = qml.QNode(self.circuit, dev, diff_method=diff_method)
 
         weights_np = np.array([0.1, 0.2], requires_grad=True)
         weights = torch.tensor(weights_np, requires_grad=True, dtype=torch.float64)
@@ -619,7 +619,7 @@ class TestBatchTransformGradients:
         import jax
 
         dev = qml.device("default.qubit", wires=2)
-        qnode = qml.QNode(self.circuit, dev, interface="jax", diff_method=diff_method)
+        qnode = qml.QNode(self.circuit, dev, diff_method=diff_method)
 
         def cost(x, weights):
             return self.my_transform(qnode, weights, max_diff=1)(x)

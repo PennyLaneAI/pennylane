@@ -183,7 +183,8 @@ def test_autograd(diff_method, tol):
 
 @pytest.mark.jax
 @pytest.mark.parametrize("diff_method", ["backprop", "adjoint", "parameter-shift"])
-def test_jax(diff_method, tol):
+@pytest.mark.parametrize("interface", ["auto", "jax"])
+def test_jax(diff_method, tol, interface):
     """Test derivatives when using JAX."""
     import jax
 
@@ -191,7 +192,7 @@ def test_jax(diff_method, tol):
     dev = qml.device("default.qubit", wires=2)
 
     @qml.batch_params
-    @qml.qnode(dev, interface="jax", diff_method=diff_method)
+    @qml.qnode(dev, interface=interface, diff_method=diff_method)
     def circuit(x):
         qml.RX(x, wires=0)
         qml.RY(0.1, wires=1)
@@ -211,7 +212,7 @@ def test_jax(diff_method, tol):
 
 @pytest.mark.jax
 @pytest.mark.parametrize("diff_method", ["adjoint", "parameter-shift"])
-@pytest.mark.parametrize("interface", ["jax", "jax-jit"])
+@pytest.mark.parametrize("interface", ["auto", "jax", "jax-jit"])
 def test_jax_jit(diff_method, interface, tol):
     """Test derivatives when using JAX and JIT."""
     import jax
@@ -241,14 +242,15 @@ def test_jax_jit(diff_method, interface, tol):
 
 @pytest.mark.torch
 @pytest.mark.parametrize("diff_method", ["backprop", "adjoint", "parameter-shift"])
-def test_torch(diff_method, tol):
+@pytest.mark.parametrize("interface", ["auto", "torch"])
+def test_torch(diff_method, tol, interface):
     """Test derivatives when using Torch"""
     import torch
 
     dev = qml.device("default.qubit", wires=2)
 
     @qml.batch_params
-    @qml.qnode(dev, interface="torch", diff_method=diff_method)
+    @qml.qnode(dev, interface=interface, diff_method=diff_method)
     def circuit(x):
         qml.RX(x, wires=0)
         qml.RY(0.1, wires=1)
@@ -271,14 +273,15 @@ def test_torch(diff_method, tol):
 
 @pytest.mark.tf
 @pytest.mark.parametrize("diff_method", ["backprop", "adjoint", "parameter-shift"])
-def test_tf(diff_method, tol):
+@pytest.mark.parametrize("interface", ["auto", "tf"])
+def test_tf(diff_method, tol, interface):
     """Test derivatives when using TF"""
     import tensorflow as tf
 
     dev = qml.device("default.qubit", wires=2)
 
     @qml.batch_params
-    @qml.qnode(dev, interface="tf", diff_method=diff_method)
+    @qml.qnode(dev, interface=interface, diff_method=diff_method)
     def circuit(x):
         qml.RX(x, wires=0)
         qml.RY(0.1, wires=1)
@@ -300,14 +303,15 @@ def test_tf(diff_method, tol):
 
 
 @pytest.mark.tf
-def test_tf_autograph(tol):
+@pytest.mark.parametrize("interface", ["auto", "tf"])
+def test_tf_autograph(tol, interface):
     """Test derivatives when using TF and autograph"""
     import tensorflow as tf
 
     dev = qml.device("default.qubit", wires=2)
 
     @qml.batch_params
-    @qml.qnode(dev, interface="tf", diff_method="backprop")
+    @qml.qnode(dev, interface=interface, diff_method="backprop")
     def circuit(x):
         qml.RX(x, wires=0)
         qml.RY(0.1, wires=1)
