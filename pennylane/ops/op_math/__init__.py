@@ -66,7 +66,8 @@ from .composite import CompositeOp
 from .controlled import Controlled, ControlledOp, ctrl
 from .controlled_ops import ControlledQubitUnitary
 from .dot import dot
-from .exp import Evolution, Exp, exp
+from .evolution import Evolution
+from .exp import Exp, exp
 from .pow import Pow, pow
 from .prod import Prod, prod
 from .sprod import SProd, s_prod
