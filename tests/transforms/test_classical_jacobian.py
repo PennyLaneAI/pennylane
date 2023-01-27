@@ -12,7 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Tests for the qml.transforms.classical_jacobian function."""
-import jax.numpy
 import pytest
 import numpy as np
 
@@ -152,7 +151,9 @@ interfaces = ["auto", "jax"]
 @pytest.mark.parametrize("interface", interfaces)
 def test_jax_without_argnum(circuit, args, expected_jac, diff_method, interface):
     r"""Test ``classical_jacobian`` with ``argnum=None`` and JAX."""
-    args = tuple((jax.numpy.array(arg) for arg in args))
+    import jax.numpy as jnp
+
+    args = tuple((jnp.array(arg) for arg in args))
     # JAX behaviour: argnum=None yields only the Jacobian with respect to the first arg.
     expected_jac = expected_jac[0]
     dev = qml.device("default.qubit", wires=2)
@@ -242,7 +243,9 @@ interfaces = ["auto", "jax"]
 @pytest.mark.parametrize("interface", interfaces)
 def test_jax_with_scalar_argnum(circuit, args, expected_jac, argnum, diff_method, interface):
     r"""Test ``classical_jacobian`` with ``argnum=<int>`` and JAX."""
-    args = tuple((jax.numpy.array(arg) for arg in args))
+    import jax.numpy as jnp
+
+    args = tuple((jnp.array(arg) for arg in args))
     dev = qml.device("default.qubit", wires=2)
     qnode = qml.QNode(circuit, dev, interface=interface, diff_method=diff_method)
     jac = classical_jacobian(qnode, argnum=argnum)(*args)
@@ -327,7 +330,9 @@ interfaces = ["auto", "jax"]
 @pytest.mark.parametrize("interface", interfaces)
 def test_jax_with_single_list_argnum(circuit, args, expected_jac, argnum, diff_method, interface):
     r"""Test ``classical_jacobian`` with ``argnum=Sequence[int]`` of length 1 and JAX."""
-    args = tuple((jax.numpy.array(arg) for arg in args))
+    import jax.numpy as jnp
+
+    args = tuple((jnp.array(arg) for arg in args))
     dev = qml.device("default.qubit", wires=2)
     qnode = qml.QNode(circuit, dev, interface=interface, diff_method=diff_method)
     jac = classical_jacobian(qnode, argnum=argnum)(*args)
@@ -413,7 +418,9 @@ interfaces = ["auto", "jax"]
 @pytest.mark.parametrize("interface", interfaces)
 def test_jax_with_sequence_argnum(circuit, args, expected_jac, argnum, diff_method, interface):
     r"""Test ``classical_jacobian`` with ``argnum=Sequence[int]`` and JAX."""
-    args = tuple((jax.numpy.array(arg) for arg in args))
+    import jax.numpy as jnp
+
+    args = tuple((jnp.array(arg) for arg in args))
     dev = qml.device("default.qubit", wires=2)
     qnode = qml.QNode(circuit, dev, interface=interface, diff_method=diff_method)
     jac = classical_jacobian(qnode, argnum=argnum)(*args)

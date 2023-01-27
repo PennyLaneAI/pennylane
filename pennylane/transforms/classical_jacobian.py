@@ -150,7 +150,7 @@ def classical_jacobian(qnode, argnum=None, expand_fn=None, trainable_only=True):
 
     wrapper_argnum = argnum if argnum is not None else None
 
-    def qnode_wrapper(*args, **kwargs):
+    def qnode_wrapper(*args, **kwargs):  # pylint: inconsistent-return-statements
 
         if qnode.interface == "auto":
             qnode.interface = qml.math.get_interface(*args, *list(kwargs.values()))
