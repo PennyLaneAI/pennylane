@@ -375,6 +375,7 @@
 
 * The `StatePrep` class has been added as an interface that state-prep operators must implement.
   [(#3654)](https://github.com/PennyLaneAI/pennylane/pull/3654)
+
 * Updated `pennylane/qnode.py` to support parameter-shift differentiation on qutrit devices.
   ([#2845](https://github.com/PennyLaneAI/pennylane/pull/2845))
 
