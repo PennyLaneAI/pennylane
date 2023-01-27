@@ -1458,8 +1458,8 @@ class TestSumComparisons:
 
     def test_sum_different_order_still_equal(self):
         """Test that changing the order of the terms doesn't affect comparison of sums"""
-        op1 = qml.op_sum(qml.PauliX(0), qml.PauliY(1))
-        op2 = qml.op_sum(qml.PauliY(1), qml.PauliX(0))
+        op1 = qml.sum(qml.PauliX(0), qml.PauliY(1))
+        op2 = qml.sum(qml.PauliY(1), qml.PauliX(0))
         assert qml.equal(op1, op2)
 
     @pytest.mark.all_interfaces
@@ -1471,8 +1471,8 @@ class TestSumComparisons:
         base_list1 = [qml.RX(torch.tensor(1.2), wires=0), qml.RX(torch.tensor(2.3), wires=1)]
         base_list2 = [qml.RX(jax.numpy.array(1.2), wires=0), qml.RX(jax.numpy.array(2.3), wires=1)]
 
-        op1 = qml.op_sum(*base_list1)
-        op2 = qml.op_sum(*base_list2)
+        op1 = qml.sum(*base_list1)
+        op2 = qml.sum(*base_list2)
 
         assert not qml.equal(op1, op2)
         assert qml.equal(op1, op2, check_interface=False, check_trainability=False)
@@ -1480,13 +1480,13 @@ class TestSumComparisons:
     @pytest.mark.parametrize(("base_list1", "base_list2", "res"), SINGLE_WIRE_BASES)
     def test_sum_comparisons_single_wire_bases(self, base_list1, base_list2, res):
         """Test comparison of sums of operators where all operators have a single wire"""
-        op1 = qml.op_sum(*base_list1)
-        op2 = qml.op_sum(*base_list2)
+        op1 = qml.sum(*base_list1)
+        op2 = qml.sum(*base_list2)
         assert qml.equal(op1, op2) == res
 
     @pytest.mark.parametrize(("base_list1", "base_list2", "res"), MULTI_WIRE_BASES)
     def test_sum_with_multi_wire_operations(self, base_list1, base_list2, res):
         """Test comparison of sums of operators where some operators act on multiple wires"""
-        op1 = qml.op_sum(*base_list1)
-        op2 = qml.op_sum(*base_list2)
+        op1 = qml.sum(*base_list1)
+        op2 = qml.sum(*base_list2)
         assert qml.equal(op1, op2) == res
