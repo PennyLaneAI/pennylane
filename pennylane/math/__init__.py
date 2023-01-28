@@ -88,9 +88,12 @@ sum = ar.numpy.sum
 toarray = ar.numpy.to_numpy
 T = ar.numpy.transpose
 
+
 class NumpyMimic(ar.autoray.NumpyMimic):
     """Subclass of the Autoray NumpyMimic class in order to support
     the NumPy fft submodule"""
+
+    # pylint: disable=too-few-public-methods
 
     def __getattribute__(self, fn):
         if fn == "fft":

@@ -259,6 +259,8 @@ def _ifft2_tf(a, s=None, axes=(-2, -1), norm=None):
 
     if norm is not None:
         raise ValueError("TensorFlow does not support the 'norm' keyword argument.")
+    if s is not None:
+        raise ValueError("TensorFlow does not support the 's' keyword argument.")
 
     # TensorFlow only supports FFT of complex tensors
     if a.dtype not in [_i("tf").complex64, _i("tf").complex128]:
@@ -271,6 +273,7 @@ def _ifft2_tf(a, s=None, axes=(-2, -1), norm=None):
 
 
 ar.register_function("tensorflow", "fft.ifft2", _ifft2_tf)
+
 
 def _round_tf(tensor, decimals=0):
     """Implement a TensorFlow version of np.round"""
