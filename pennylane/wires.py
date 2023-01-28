@@ -14,8 +14,10 @@
 """
 This module contains the :class:`Wires` class, which takes care of wire bookkeeping.
 """
-from collections.abc import Sequence, Iterable
 import functools
+from collections.abc import Iterable, Sequence
+import itertools
+
 import numpy as np
 
 
@@ -57,9 +59,7 @@ def _process(wires):
         except TypeError as e:
             # if object is not hashable, cannot identify unique wires
             if str(e).startswith("unhashable"):
-                raise WireError(
-                    "Wires must be hashable; got object of type {}.".format(type(wires))
-                ) from e
+                raise WireError(f"Wires must be hashable; got object of type {type(wires)}.") from e
         return (wires,)
 
     try:
@@ -68,10 +68,10 @@ def _process(wires):
         set_of_wires = set(wires)
     except TypeError as e:
         if str(e).startswith("unhashable"):
-            raise WireError("Wires must be hashable; got {}.".format(wires)) from e
+            raise WireError(f"Wires must be hashable; got {wires}.") from e
 
     if len(set_of_wires) != len(tuple_of_wires):
-        raise WireError("Wires must be unique; got {}.".format(wires))
+        raise WireError(f"Wires must be unique; got {wires}.")
 
     return tuple_of_wires
 
@@ -102,16 +102,21 @@ class Wires(Sequence):
         self._hash = None
 
     def __getitem__(self, idx):
-        """Method to support indexing. Returns a Wires object if index is a slice, or a label if index is an integer."""
+        """Method to support indexing. Returns a Wires object if index is a slice,
+        or a label if index is an integer."""
         if isinstance(idx, slice):
             return Wires(self._labels[idx])
         return self._labels[idx]
+
+    def __iter__(self):
+        return self._labels.__iter__()
 
     def __len__(self):
         """Method to support ``len()``."""
         return len(self._labels)
 
     def contains_wires(self, wires):
+        """Method to determine if Wires object contains wires in another Wires object."""
         if isinstance(wires, Wires):
             return set(wires.labels).issubset(set(self._labels))
         return False
@@ -122,10 +127,11 @@ class Wires(Sequence):
 
     def __repr__(self):
         """Method defining the string representation of this class."""
-        return "<Wires = {}>".format(list(self._labels))
+        return f"<Wires = {list(self._labels)}>"
 
     def __eq__(self, other):
-        """Method to support the '==' operator. This will also implicitly define the '!=' operator."""
+        """Method to support the '==' operator.
+        This will also implicitly define the '!=' operator."""
         # The order is respected in comparison, so that ``assert Wires([0, 1]) != Wires([1,0])``
         if isinstance(other, Wires):
             return self._labels == other.labels
@@ -215,6 +221,7 @@ class Wires(Sequence):
         Returns:
             int: index of the input
         """
+        # pylint: disable=arguments-differ
 
         if isinstance(wire, Wires):
             if len(wire) != 1:
@@ -225,7 +232,7 @@ class Wires(Sequence):
         try:
             return self._labels.index(wire)
         except ValueError as e:
-            raise WireError("Wire with label {} not found in {}.".format(wire, self)) from e
+            raise WireError(f"Wire with label {wire} not found in {self}.") from e
 
     def indices(self, wires):
         """
@@ -268,9 +275,7 @@ class Wires(Sequence):
 
         for w in self:
             if w not in wire_map:
-                raise WireError(
-                    "No mapping for wire label {} specified in wire map {}.".format(w, wire_map)
-                )
+                raise WireError(f"No mapping for wire label {w} specified in wire map {wire_map}.")
 
         new_wires = [wire_map[w] for w in self]
 
@@ -278,8 +283,8 @@ class Wires(Sequence):
             new_wires = Wires(new_wires)
         except WireError as e:
             raise WireError(
-                "Failed to implement wire map {}. Make sure that the new labels are unique and "
-                "valid wire labels.".format(wire_map)
+                f"Failed to implement wire map {wire_map}. Make sure that the new labels "
+                f"are unique and valid wire labels."
             ) from e
 
         return new_wires
@@ -323,9 +328,7 @@ class Wires(Sequence):
 
         for i in indices:
             if i > len(self._labels):
-                raise WireError(
-                    "Cannot subset wire at index {} from {} wires.".format(i, len(self._labels))
-                )
+                raise WireError(f"Cannot subset wire at index {i} from {len(self._labels)} wires.")
 
         subset = tuple(self._labels[i] for i in indices)
         return Wires(subset, _override=True)
@@ -343,14 +346,11 @@ class Wires(Sequence):
         """
 
         if n_samples > len(self._labels):
-            raise WireError(
-                "Cannot sample {} wires from {} wires.".format(n_samples, len(self._labels))
-            )
+            raise WireError(f"Cannot sample {n_samples} wires from {len(self._labels)} wires.")
 
-        if seed is not None:
-            np.random.seed(seed)
+        rng = np.random.default_rng(seed)
 
-        indices = np.random.choice(len(self._labels), size=n_samples, replace=False)
+        indices = rng.choice(len(self._labels), size=n_samples, replace=False)
         subset = tuple(self[i] for i in indices)
         return Wires(subset, _override=True)
 
@@ -379,11 +379,8 @@ class Wires(Sequence):
 
         for wires in list_of_wires:
             if not isinstance(wires, Wires):
-                raise WireError(
-                    "Expected a Wires object; got {} of type {}.".format(wires, type(wires))
-                )
+                raise WireError(f"Expected a Wires object; got {wires} of type {type(wires)}.")
 
-        first_wires_obj = list_of_wires[0]
         sets_of_wires = [wire.toset() for wire in list_of_wires]
         # find the intersection of the labels of all wires in O(n) time.
         intersecting_wires = functools.reduce(lambda a, b: a & b, sets_of_wires)
@@ -419,20 +416,14 @@ class Wires(Sequence):
         >>> Wires.all_wires(list_of_wires)
         <Wires = [4, 0, 1, 3, 5]>
         """
-        combined = []
-        seen_labels = set()
-        for wires in list_of_wires:
-            if not isinstance(wires, Wires):
-                raise WireError(
-                    "Expected a Wires object; got {} of type {}".format(wires, type(wires))
-                )
-
-            extension = [label for label in wires.labels if label not in seen_labels]
-            combined.extend(extension)
-            seen_labels.update(extension)
+        converted_wires = (
+            wires if isinstance(wires, Wires) else Wires(wires) for wires in list_of_wires
+        )
+        all_wires_list = itertools.chain(*(w.labels for w in converted_wires))
+        combined = list(dict.fromkeys(all_wires_list))
 
         if sort:
-            if all([isinstance(w, int) for w in combined]):
+            if all(isinstance(w, int) for w in combined):
                 combined = sorted(combined)
             else:
                 combined = sorted(combined, key=str)
@@ -460,9 +451,7 @@ class Wires(Sequence):
 
         for wires in list_of_wires:
             if not isinstance(wires, Wires):
-                raise WireError(
-                    "Expected a Wires object; got {} of type {}.".format(wires, type(wires))
-                )
+                raise WireError(f"Expected a Wires object; got {wires} of type {type(wires)}.")
 
         label_sets = [wire.toset() for wire in list_of_wires]
         seen_ever = set()

@@ -24,12 +24,12 @@ to verify and test quantum gradient computations.
 
     default_qubit
     default_qubit_jax
+    default_qubit_torch
     default_qubit_tf
     default_qubit_autograd
     default_gaussian
     default_mixed
-    tf_ops
-    autograd_ops
+    default_qutrit
     tests
 """
 # DefaultQubitTF and DefaultQubitAutograd not imported here since this
@@ -38,3 +38,5 @@ to verify and test quantum gradient computations.
 from .default_qubit import DefaultQubit
 from .default_gaussian import DefaultGaussian
 from .default_mixed import DefaultMixed
+from .null_qubit import NullQubit
+from .execution_config import ExecutionConfig

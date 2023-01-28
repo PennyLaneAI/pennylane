@@ -14,14 +14,14 @@
 r"""
 Contains the CVNeuralNetLayers template.
 """
-# pylint: disable-msg=too-many-branches,too-many-arguments,protected-access
+# pylint: disable-msg=too-many-branches,too-many-arguments,protected-access,arguments-differ
 import pennylane as qml
 from pennylane.operation import Operation, AnyWires
 
 
 class CVNeuralNetLayers(Operation):
     r"""A sequence of layers of a continuous-variable quantum neural network,
-    as specified in `arXiv:1806.06871 <https://arxiv.org/abs/1806.06871>`_.
+    as specified in `Killoran et al. (2019) <https://doi.org/10.1103/PhysRevResearch.1.033063>`_.
 
     The layer consists
     of interferometers, displacement and squeezing gates mimicking the linear transformation of
@@ -35,7 +35,7 @@ class CVNeuralNetLayers(Operation):
 
     This example shows a 4-mode CVNeuralNet layer with squeezing gates :math:`S`, displacement gates :math:`D` and
     Kerr gates :math:`K`. The two big blocks are interferometers of type
-    :mod:`pennylane.templates.layers.Interferometer`:
+    :mod:`pennylane.Interferometer`:
 
     .. figure:: ../../_static/layer_cvqnn.png
         :align: center
@@ -61,7 +61,8 @@ class CVNeuralNetLayers(Operation):
         k (tensor_like): shape :math:`(L, M)` tensor of kerr parameters for :class:`~pennylane.ops.Kerr` operations
         wires (Iterable): wires that the template acts on
 
-    .. UsageDetails:
+    .. details::
+        :title: Usage Details
 
         **Parameter shapes**
 
@@ -80,9 +81,8 @@ class CVNeuralNetLayers(Operation):
 
     """
 
-    num_params = 11
     num_wires = AnyWires
-    par_domain = "A"
+    grad_method = None
 
     def __init__(
         self,
@@ -99,9 +99,11 @@ class CVNeuralNetLayers(Operation):
         k,
         wires,
         do_queue=True,
+        id=None,
     ):
 
         n_wires = len(wires)
+        # n_if -> theta and phi shape for Interferometer
         n_if = n_wires * (n_wires - 1) // 2
 
         # check that first dimension is the same
@@ -135,42 +137,99 @@ class CVNeuralNetLayers(Operation):
             k,
             wires=wires,
             do_queue=do_queue,
+            id=id,
         )
 
-    def expand(self):
+    @property
+    def num_params(self):
+        return 11
 
-        with qml.tape.QuantumTape() as tape:
+    @staticmethod
+    def compute_decomposition(
+        theta_1, phi_1, varphi_1, r, phi_r, theta_2, phi_2, varphi_2, a, phi_a, k, wires
+    ):  # pylint: disable=arguments-differ
+        r"""Representation of the operator as a product of other operators.
 
-            for l in range(self.n_layers):
+        .. math:: O = O_1 O_2 \dots O_n.
 
-                qml.templates.Interferometer(
-                    theta=self.parameters[0][l],
-                    phi=self.parameters[1][l],
-                    varphi=self.parameters[2][l],
-                    wires=self.wires,
+
+
+        .. seealso:: :meth:`~.CVNeuralNetLayers.decomposition`.
+
+        Args:
+
+            theta_1 (tensor_like): shape :math:`(L, K)` tensor of transmittivity angles for first interferometer
+            phi_1 (tensor_like): shape :math:`(L, K)` tensor of phase angles for first interferometer
+            varphi_1 (tensor_like): shape :math:`(L, M)` tensor of rotation angles to apply after first interferometer
+            r (tensor_like): shape :math:`(L, M)` tensor of squeezing amounts for :class:`~pennylane.ops.Squeezing` operations
+            phi_r (tensor_like): shape :math:`(L, M)` tensor of squeezing angles for :class:`~pennylane.ops.Squeezing` operations
+            theta_2 (tensor_like): shape :math:`(L, K)` tensor of transmittivity angles for second interferometer
+            phi_2 (tensor_like): shape :math:`(L, K)` tensor of phase angles for second interferometer
+            varphi_2 (tensor_like): shape :math:`(L, M)` tensor of rotation angles to apply after second interferometer
+            a (tensor_like): shape :math:`(L, M)` tensor of displacement magnitudes for :class:`~pennylane.ops.Displacement` operations
+            phi_a (tensor_like): shape :math:`(L, M)` tensor of displacement angles for :class:`~pennylane.ops.Displacement` operations
+            k (tensor_like): shape :math:`(L, M)` tensor of kerr parameters for :class:`~pennylane.ops.Kerr` operations
+            wires (Any or Iterable[Any]): wires that the operator acts on
+
+        Returns:
+            list[.Operator]: decomposition of the operator
+
+        **Example**
+
+        >>> theta_1 = torch.tensor([[0.4]])
+        >>> phi_1 = torch.tensor([[-0.3]])
+        >>> varphi_1 = = torch.tensor([[1.7, 0.1]])
+        >>> r = torch.tensor([[-1., -0.2]])
+        >>> phi_r = torch.tensor([[0.2, -0.2]])
+        >>> theta_2 = torch.tensor([[1.4]])
+        >>> phi_2 = torch.tensor([[-0.4]])
+        >>> varphi_2 = torch.tensor([[0.1, 0.2]])
+        >>> a = torch.tensor([[0.1, 0.2]])
+        >>> phi_a = torch.tensor([[-1.1, 0.2]])
+        >>> k = torch.tensor([[0.1, 0.2]])
+        >>> qml.CVNeuralNetLayers.compute_decomposition(theta_1, phi_1, varphi_1, r, phi_r, theta_2,
+        ...                                             phi_2, varphi_2, a, phi_a, k, wires=["a", "b"])
+        [Interferometer(tensor([0.4000]), tensor([-0.3000]), tensor([1.7000, 0.1000]), wires=['a', 'b']),
+        Squeezing(tensor(-1.), tensor(0.2000), wires=['a']),
+        Squeezing(tensor(-0.2000), tensor(-0.2000), wires=['b']),
+        Interferometer(tensor([1.4000]), tensor([-0.4000]), tensor([0.1000, 0.2000]), wires=['a', 'b']),
+        Displacement(tensor(0.1000), tensor(-1.1000), wires=['a']),
+        Displacement(tensor(0.2000), tensor(0.2000), wires=['b']),
+        Kerr(tensor(0.1000), wires=['a']),
+        Kerr(tensor(0.2000), wires=['b'])]
+        """
+        op_list = []
+        n_layers = qml.math.shape(theta_1)[0]
+        for m in range(n_layers):
+
+            op_list.append(
+                qml.Interferometer(
+                    theta=theta_1[m],
+                    phi=phi_1[m],
+                    varphi=varphi_1[m],
+                    wires=wires,
                 )
+            )
 
-                for i in range(len(self.wires)):
-                    qml.Squeezing(
-                        self.parameters[3][l, i], self.parameters[4][l, i], wires=self.wires[i]
-                    )
+            for i in range(len(wires)):  # pylint:disable=consider-using-enumerate
+                op_list.append(qml.Squeezing(r[m, i], phi_r[m, i], wires=wires[i]))
 
-                qml.templates.Interferometer(
-                    theta=self.parameters[5][l],
-                    phi=self.parameters[6][l],
-                    varphi=self.parameters[7][l],
-                    wires=self.wires,
+            op_list.append(
+                qml.Interferometer(
+                    theta=theta_2[m],
+                    phi=phi_2[m],
+                    varphi=varphi_2[m],
+                    wires=wires,
                 )
+            )
 
-                for i in range(len(self.wires)):
-                    qml.Displacement(
-                        self.parameters[8][l, i], self.parameters[9][l, i], wires=self.wires[i]
-                    )
+            for i in range(len(wires)):  # pylint: disable=consider-using-enumerate
+                op_list.append(qml.Displacement(a[m, i], phi_a[m, i], wires=wires[i]))
 
-                for i in range(len(self.wires)):
-                    qml.Kerr(self.parameters[10][l, i], wires=self.wires[i])
+            for i in range(len(wires)):  # pylint:disable=consider-using-enumerate
+                op_list.append(qml.Kerr(k[m, i], wires=wires[i]))
 
-        return tape
+        return op_list
 
     @staticmethod
     def shape(n_layers, n_wires):
@@ -183,6 +242,7 @@ class CVNeuralNetLayers(Operation):
         Returns:
             list[tuple[int]]: list of shapes
         """
+        # n_if -> theta and phi shape for Interferometer
         n_if = n_wires * (n_wires - 1) // 2
 
         shapes = (

@@ -12,7 +12,7 @@ Please complete the following checklist when submitting a PR:
 
 - [ ] Ensure that the test suite passes, by running `make test`.
 
-- [ ] Add a new entry to the `.github/CHANGELOG.md` file, summarizing the
+- [ ] Add a new entry to the `doc/releases/changelog-dev.md` file, summarizing the
       change, and including a link back to the PR.
 
 - [ ] The PennyLane source code conforms to

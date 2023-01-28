@@ -22,12 +22,8 @@ import pytest
 import numpy as np
 
 import pennylane as qml
-import pennylane.queuing
 import pennylane.utils as pu
 import scipy.sparse
-
-from pennylane import Identity, PauliX, PauliY, PauliZ
-from pennylane.operation import Tensor
 
 
 flat_dummy_array = np.linspace(-1, 1, 64)
@@ -68,83 +64,16 @@ U_toffoli = np.diag([1 for i in range(8)])
 U_toffoli[6:8, 6:8] = np.array([[0, 1], [1, 0]])
 
 
-test_hamiltonians = [
-    np.array([[2.5, -0.5], [-0.5, 2.5]]),
-    np.array(np.diag([0, 0, 0, 1])),
-    np.array([[-2, -2 + 1j, -2, -2], [-2 - 1j, 0, 0, -1], [-2, 0, -2, -1], [-2, -1, -1, 0]]),
-]
-
-
-class TestDecomposition:
-    """Tests the decompose_hamiltonian function"""
-
-    @pytest.mark.parametrize("hamiltonian", [np.ones((3, 3)), np.ones((4, 2)), np.ones((2, 4))])
-    def test_wrong_shape(self, hamiltonian):
-        """Tests that an exception is raised if the Hamiltonian does not have
-        the correct shape"""
-        with pytest.raises(
-            ValueError,
-            match="The Hamiltonian should have shape",
-        ):
-            pu.decompose_hamiltonian(hamiltonian)
-
-    def test_not_hermitian(self):
-        """Tests that an exception is raised if the Hamiltonian is not Hermitian, i.e.
-        equal to its own conjugate transpose"""
-        with pytest.raises(ValueError, match="The Hamiltonian is not Hermitian"):
-            pu.decompose_hamiltonian(np.array([[1, 2], [3, 4]]))
-
-    def test_hide_identity_true(self):
-        """Tests that there are no Identity observables in the tensor products
-        when hide_identity=True"""
-        H = np.array(np.diag([0, 0, 0, 1]))
-        coeff, obs_list = pu.decompose_hamiltonian(H, hide_identity=True)
-        tensors = filter(lambda obs: isinstance(obs, Tensor), obs_list)
-
-        for tensor in tensors:
-            all_identities = all(isinstance(o, Identity) for o in tensor.obs)
-            no_identities = not any(isinstance(o, Identity) for o in tensor.obs)
-            assert all_identities or no_identities
-
-    @pytest.mark.parametrize("hide_identity", [True, False])
-    @pytest.mark.parametrize("hamiltonian", test_hamiltonians)
-    def test_observable_types(self, hamiltonian, hide_identity):
-        """Tests that the Hamiltonian decomposes into a linear combination of tensors,
-        the identity matrix, and Pauli matrices."""
-        allowed_obs = (Tensor, Identity, PauliX, PauliY, PauliZ)
-
-        decomposed_coeff, decomposed_obs = pu.decompose_hamiltonian(hamiltonian, hide_identity)
-        assert all([isinstance(o, allowed_obs) for o in decomposed_obs])
-
-    @pytest.mark.parametrize("hamiltonian", test_hamiltonians)
-    def test_result_length(self, hamiltonian):
-        """Tests that tensors are composed of a number of terms equal to the number
-        of qubits."""
-        decomposed_coeff, decomposed_obs = pu.decompose_hamiltonian(hamiltonian)
-        n = int(np.log2(len(hamiltonian)))
-
-        tensors = filter(lambda obs: isinstance(obs, Tensor), decomposed_obs)
-        assert all(len(tensor.obs) == n for tensor in tensors)
-
-    @pytest.mark.parametrize("hamiltonian", test_hamiltonians)
-    def test_decomposition(self, hamiltonian):
-        """Tests that decompose_hamiltonian successfully decomposes Hamiltonians into a
-        linear combination of Pauli matrices"""
-        decomposed_coeff, decomposed_obs = pu.decompose_hamiltonian(hamiltonian)
-
-        linear_comb = sum([decomposed_coeff[i] * o.matrix for i, o in enumerate(decomposed_obs)])
-        assert np.allclose(hamiltonian, linear_comb)
-
-
 class TestSparse:
     """Tests the sparse_hamiltonian function"""
 
     @pytest.mark.parametrize(
-        ("coeffs", "obs", "ref_matrix"),
+        ("coeffs", "obs", "wires", "ref_matrix"),
         [
             (
                 [1, -0.45],
                 [qml.PauliZ(0) @ qml.PauliZ(1), qml.PauliY(0) @ qml.PauliZ(1)],
+                None,
                 np.array(
                     [
                         [1.0 + 0.0j, 0.0 + 0.0j, 0.0 + 0.45j, 0.0 + 0.0j],
@@ -155,12 +84,102 @@ class TestSparse:
                 ),
             ),
             (
+                [0.1],
+                [qml.PauliZ("b") @ qml.PauliX("a")],
+                ["a", "c", "b"],
+                np.array(
+                    [
+                        [
+                            0.0 + 0.0j,
+                            0.0 + 0.0j,
+                            0.0 + 0.0j,
+                            0.0 + 0.0j,
+                            0.1 + 0.0j,
+                            0.0 + 0.0j,
+                            0.0 + 0.0j,
+                            0.0 + 0.0j,
+                        ],
+                        [
+                            0.0 + 0.0j,
+                            0.0 + 0.0j,
+                            0.0 + 0.0j,
+                            0.0 + 0.0j,
+                            0.0 + 0.0j,
+                            -0.1 + 0.0j,
+                            0.0 + 0.0j,
+                            0.0 + 0.0j,
+                        ],
+                        [
+                            0.0 + 0.0j,
+                            0.0 + 0.0j,
+                            0.0 + 0.0j,
+                            0.0 + 0.0j,
+                            0.0 + 0.0j,
+                            0.0 + 0.0j,
+                            0.1 + 0.0j,
+                            0.0 + 0.0j,
+                        ],
+                        [
+                            0.0 + 0.0j,
+                            0.0 + 0.0j,
+                            0.0 + 0.0j,
+                            0.0 + 0.0j,
+                            0.0 + 0.0j,
+                            0.0 + 0.0j,
+                            0.0 + 0.0j,
+                            -0.1 + 0.0j,
+                        ],
+                        [
+                            0.1 + 0.0j,
+                            0.0 + 0.0j,
+                            0.0 + 0.0j,
+                            0.0 + 0.0j,
+                            0.0 + 0.0j,
+                            0.0 + 0.0j,
+                            0.0 + 0.0j,
+                            0.0 + 0.0j,
+                        ],
+                        [
+                            0.0 + 0.0j,
+                            -0.1 + 0.0j,
+                            0.0 + 0.0j,
+                            0.0 + 0.0j,
+                            0.0 + 0.0j,
+                            0.0 + 0.0j,
+                            0.0 + 0.0j,
+                            0.0 + 0.0j,
+                        ],
+                        [
+                            0.0 + 0.0j,
+                            0.0 + 0.0j,
+                            0.1 + 0.0j,
+                            0.0 + 0.0j,
+                            0.0 + 0.0j,
+                            0.0 + 0.0j,
+                            0.0 + 0.0j,
+                            0.0 + 0.0j,
+                        ],
+                        [
+                            0.0 + 0.0j,
+                            0.0 + 0.0j,
+                            0.0 + 0.0j,
+                            -0.1 + 0.0j,
+                            0.0 + 0.0j,
+                            0.0 + 0.0j,
+                            0.0 + 0.0j,
+                            0.0 + 0.0j,
+                        ],
+                    ]
+                ),
+            ),
+            (
                 [0.21, -0.78, 0.52],
                 [
                     qml.PauliZ(0) @ qml.PauliZ(1),
                     qml.PauliX(0) @ qml.PauliZ(1),
                     qml.PauliY(0) @ qml.PauliZ(1),
                 ],
+                None,
                 np.array(
                     [
                         [0.21 + 0.0j, 0.0 + 0.0j, -0.78 - 0.52j, 0.0 + 0.0j],
@@ -172,16 +191,16 @@ class TestSparse:
             ),
         ],
     )
-    def test_sparse_matrix(self, coeffs, obs, ref_matrix):
+    def test_sparse_matrix(self, coeffs, obs, wires, ref_matrix):
         """Tests that sparse_hamiltonian returns a correct sparse matrix"""
         H = qml.Hamiltonian(coeffs, obs)
 
-        sparse_matrix = qml.utils.sparse_hamiltonian(H)
+        sparse_matrix = qml.utils.sparse_hamiltonian(H, wires)
 
         assert np.allclose(sparse_matrix.toarray(), ref_matrix)
 
     def test_sparse_format(self):
-        """Tests that sparse_hamiltonian returns a scipy.sparse.coo_matrix object"""
+        """Tests that sparse_hamiltonian returns a scipy.sparse.csr_matrix object"""
 
         coeffs = [-0.25, 0.75]
         obs = [
@@ -192,7 +211,7 @@ class TestSparse:
 
         sparse_matrix = qml.utils.sparse_hamiltonian(H)
 
-        assert isinstance(sparse_matrix, scipy.sparse.coo_matrix)
+        assert isinstance(sparse_matrix, scipy.sparse.csr_matrix)
 
     def test_sparse_typeerror(self):
         """Tests that sparse_hamiltonian raises an error if the given Hamiltonian is not of type
@@ -200,6 +219,15 @@ class TestSparse:
 
         with pytest.raises(TypeError, match="Passed Hamiltonian must be of type"):
             qml.utils.sparse_hamiltonian(np.eye(2))
+
+    def test_observable_error(self):
+        """Tests that an error is thrown if the observables are themselves constructed from multi-qubit
+        operations."""
+        with pytest.raises(ValueError, match="Can only sparsify Hamiltonians"):
+            H = qml.Hamiltonian(
+                [0.1], [qml.PauliZ("c") @ qml.Hermitian(np.eye(4), wires=["a", "b"])]
+            )
+            qml.utils.sparse_hamiltonian(H, wires=["a", "c", "b"])
 
 
 class TestFlatten:
@@ -241,6 +269,15 @@ class TestFlatten:
         with pytest.raises(ValueError, match="Flattened iterable has more elements than the model"):
             pu.unflatten(np.concatenate([flat_dummy_array, flat_dummy_array]), reshaped)
 
+    def test_flatten_wires(self):
+        """Tests flattening a Wires object."""
+        wires = qml.wires.Wires([3, 4])
+        wires_int = [3, 4]
+
+        wires = qml.utils._flatten(wires)
+        for i, wire in enumerate(wires):
+            assert wires_int[i] == wire
+
 
 class TestPauliEigs:
     """Tests for the auxiliary function to return the eigenvalues for Paulis"""
@@ -280,7 +317,7 @@ class TestPauliEigs:
         """Test that the right number of cachings have been executed after clearing the cache"""
         pu.pauli_eigs.cache_clear()
         pu.pauli_eigs(depth)
-        total_runs = sum([2 ** x for x in range(depth)])
+        total_runs = sum([2**x for x in range(depth)])
         assert functools._CacheInfo(depth - 1, depth, 128, depth) == pu.pauli_eigs.cache_info()
 
 
@@ -332,138 +369,8 @@ class TestArgumentHelpers:
             pu._inv_dict(test_data)
 
 
-class TestExpand:
-    """Tests multi-qubit operator expansion"""
-
-    def test_expand_one(self, tol):
-        """Test that a 1 qubit gate correctly expands to 3 qubits."""
-        # test applied to wire 0
-        res = pu.expand(U, [0], 3)
-        expected = np.kron(np.kron(U, I), I)
-        assert np.allclose(res, expected, atol=tol, rtol=0)
-
-        # test applied to wire 1
-        res = pu.expand(U, [1], 3)
-        expected = np.kron(np.kron(I, U), I)
-        assert np.allclose(res, expected, atol=tol, rtol=0)
-
-        # test applied to wire 2
-        res = pu.expand(U, [2], 3)
-        expected = np.kron(np.kron(I, I), U)
-        assert np.allclose(res, expected, atol=tol, rtol=0)
-
-    def test_expand_one_wires_list(self, tol):
-        """Test that a 1 qubit gate correctly expands to 3 qubits."""
-        # test applied to wire 0
-        res = pu.expand(U, [0], [0, 4, 9])
-        expected = np.kron(np.kron(U, I), I)
-        assert np.allclose(res, expected, atol=tol, rtol=0)
-
-        # test applied to wire 4
-        res = pu.expand(U, [4], [0, 4, 9])
-        expected = np.kron(np.kron(I, U), I)
-        assert np.allclose(res, expected, atol=tol, rtol=0)
-
-        # test applied to wire 9
-        res = pu.expand(U, [9], [0, 4, 9])
-        expected = np.kron(np.kron(I, I), U)
-        assert np.allclose(res, expected, atol=tol, rtol=0)
-
-    def test_expand_two_consecutive_wires(self, tol):
-        """Test that a 2 qubit gate on consecutive wires correctly
-        expands to 4 qubits."""
-
-        # test applied to wire 0+1
-        res = pu.expand(U2, [0, 1], 4)
-        expected = np.kron(np.kron(U2, I), I)
-        assert np.allclose(res, expected, atol=tol, rtol=0)
-
-        # test applied to wire 1+2
-        res = pu.expand(U2, [1, 2], 4)
-        expected = np.kron(np.kron(I, U2), I)
-        assert np.allclose(res, expected, atol=tol, rtol=0)
-
-        # test applied to wire 2+3
-        res = pu.expand(U2, [2, 3], 4)
-        expected = np.kron(np.kron(I, I), U2)
-        assert np.allclose(res, expected, atol=tol, rtol=0)
-
-    def test_expand_two_reversed_wires(self, tol):
-        """Test that a 2 qubit gate on reversed consecutive wires correctly
-        expands to 4 qubits."""
-
-        # CNOT with target on wire 1
-        res = pu.expand(CNOT, [1, 0], 4)
-        rows = np.array([0, 2, 1, 3])
-        expected = np.kron(np.kron(CNOT[:, rows][rows], I), I)
-        assert np.allclose(res, expected, atol=tol, rtol=0)
-
-    def test_expand_invalid_wires(self):
-        """test exception raised if unphysical subsystems provided."""
-        with pytest.raises(
-            ValueError,
-            match="Invalid target subsystems provided in 'original_wires' argument",
-        ):
-            pu.expand(U2, [-1, 5], 4)
-
-    def test_expand_invalid_matrix(self):
-        """test exception raised if incorrect sized matrix provided/"""
-        with pytest.raises(ValueError, match="Matrix parameter must be of size"):
-            pu.expand(U, [0, 1], 4)
-
-    def test_expand_three_consecutive_wires(self, tol):
-        """Test that a 3 qubit gate on consecutive
-        wires correctly expands to 4 qubits."""
-
-        # test applied to wire 0,1,2
-        res = pu.expand(U_toffoli, [0, 1, 2], 4)
-        expected = np.kron(U_toffoli, I)
-        assert np.allclose(res, expected, atol=tol, rtol=0)
-
-        # test applied to wire 1,2,3
-        res = pu.expand(U_toffoli, [1, 2, 3], 4)
-        expected = np.kron(I, U_toffoli)
-        assert np.allclose(res, expected, atol=tol, rtol=0)
-
-    def test_expand_three_nonconsecutive_ascending_wires(self, tol):
-        """Test that a 3 qubit gate on non-consecutive but ascending
-        wires correctly expands to 4 qubits."""
-
-        # test applied to wire 0,2,3
-        res = pu.expand(U_toffoli, [0, 2, 3], 4)
-        expected = (
-            np.kron(SWAP, np.kron(I, I)) @ np.kron(I, U_toffoli) @ np.kron(SWAP, np.kron(I, I))
-        )
-        assert np.allclose(res, expected, atol=tol, rtol=0)
-
-        # test applied to wire 0,1,3
-        res = pu.expand(U_toffoli, [0, 1, 3], 4)
-        expected = (
-            np.kron(np.kron(I, I), SWAP) @ np.kron(U_toffoli, I) @ np.kron(np.kron(I, I), SWAP)
-        )
-        assert np.allclose(res, expected, atol=tol, rtol=0)
-
-    def test_expand_three_nonconsecutive_nonascending_wires(self, tol):
-        """Test that a 3 qubit gate on non-consecutive non-ascending
-        wires correctly expands to 4 qubits"""
-
-        # test applied to wire 3, 1, 2
-        res = pu.expand(U_toffoli, [3, 1, 2], 4)
-        # change the control qubit on the Toffoli gate
-        rows = np.array([0, 4, 1, 5, 2, 6, 3, 7])
-        expected = np.kron(I, U_toffoli[:, rows][rows])
-        assert np.allclose(res, expected, atol=tol, rtol=0)
-
-        # test applied to wire 3, 0, 2
-        res = pu.expand(U_toffoli, [3, 0, 2], 4)
-        # change the control qubit on the Toffoli gate
-        rows = np.array([0, 4, 1, 5, 2, 6, 3, 7])
-        expected = (
-            np.kron(SWAP, np.kron(I, I))
-            @ np.kron(I, U_toffoli[:, rows][rows])
-            @ np.kron(SWAP, np.kron(I, I))
-        )
-        assert np.allclose(res, expected, atol=tol, rtol=0)
+class TestExpandVector:
+    """Tests vector expansion to more wires"""
 
     VECTOR1 = np.array([1, -1])
     ONES = np.array([1, 1])
@@ -485,7 +392,7 @@ class TestExpand:
     def test_expand_vector_single_wire(self, original_wires, expanded_wires, expected, tol):
         """Test that expand_vector works with a single-wire vector."""
 
-        res = pu.expand_vector(TestExpand.VECTOR1, original_wires, expanded_wires)
+        res = pu.expand_vector(TestExpandVector.VECTOR1, original_wires, expanded_wires)
 
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
@@ -502,12 +409,13 @@ class TestExpand:
             ([5, 9], [0, 5, 9], np.kron(ONES, VECTOR2)),
             ([0, 9], [0, 5, 9], np.array([1, 2, 1, 2, 3, 4, 3, 4])),
             ([9, 0], [0, 5, 9], np.array([1, 3, 1, 3, 2, 4, 2, 4])),
+            ([0, 1], [0, 1], VECTOR2),
         ],
     )
     def test_expand_vector_two_wires(self, original_wires, expanded_wires, expected, tol):
         """Test that expand_vector works with a single-wire vector."""
 
-        res = pu.expand_vector(TestExpand.VECTOR2, original_wires, expanded_wires)
+        res = pu.expand_vector(TestExpandVector.VECTOR2, original_wires, expanded_wires)
 
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
@@ -517,429 +425,9 @@ class TestExpand:
             ValueError,
             match="Invalid target subsystems provided in 'original_wires' argument",
         ):
-            pu.expand_vector(TestExpand.VECTOR2, [-1, 5], 4)
+            pu.expand_vector(TestExpandVector.VECTOR2, [-1, 5], 4)
 
     def test_expand_vector_invalid_vector(self):
         """Test exception raised if incorrect sized vector provided."""
         with pytest.raises(ValueError, match="Vector parameter must be of length"):
-            pu.expand_vector(TestExpand.VECTOR1, [0, 1], 4)
-
-
-@qml.template
-def dummy_template(wires):
-    """Dummy template for inv tests."""
-    for wire in wires:
-        qml.RX(1, wires=[wire])
-        qml.RY(-1, wires=[wire])
-
-
-def inverted_dummy_template_operations(wires):
-    """The expected inverted operations for the dummy template."""
-    ops = []
-
-    for wire in reversed(wires):
-        ops.append(qml.RY(1, wires=[wire]))
-        ops.append(qml.RX(-1, wires=[wire]))
-
-    return ops
-
-
-class TestInv:
-    """Test the template inversion function."""
-
-    def test_inversion_without_context(self):
-        """Test that a sequence of operations is properly inverted."""
-        op_queue = [qml.PauliX(0), qml.PauliY(0).inv(), qml.PauliZ(0)]
-        inv_queue = [qml.PauliZ(0), qml.PauliY(0), qml.PauliX(0)]
-
-        inv_ops = pu.inv(op_queue).operations
-
-        for inv_op, exp_op in zip(inv_ops, inv_queue):
-            assert inv_op.name == exp_op.name
-            assert inv_op.wires == exp_op.wires
-            assert inv_op.data == exp_op.data
-
-    def test_template_inversion_without_context(self):
-        """Test that a template is properly inverted."""
-        inv_queue = inverted_dummy_template_operations([0, 1, 2])
-
-        inv_ops = pu.inv(dummy_template([0, 1, 2])).operations
-
-        for inv_op, exp_op in zip(inv_ops, inv_queue):
-            assert inv_op.name == exp_op.name
-            assert inv_op.wires == exp_op.wires
-            assert inv_op.data == exp_op.data
-
-    def test_double_inversion(self):
-        """Test that inverting twice changes nothing."""
-        op_queue = [qml.PauliX(0), qml.PauliY(0), qml.PauliZ(0)]
-
-        inv_inv_ops = pu.inv(pu.inv(op_queue)).operations
-
-        for inv_inv_op, exp_op in zip(inv_inv_ops, op_queue):
-            assert inv_inv_op.name == exp_op.name
-            assert inv_inv_op.wires == exp_op.wires
-            assert inv_inv_op.data == exp_op.data
-
-    def test_template_double_inversion(self):
-        """Test that inverting twice changes nothing for a template."""
-        inv_inv_ops = pu.inv(pu.inv(dummy_template([0, 1, 2]))).operations
-
-        for inv_inv_op, exp_op in zip(inv_inv_ops, dummy_template([0, 1, 2])):
-            assert inv_inv_op.name == exp_op.name
-            assert inv_inv_op.wires == exp_op.wires
-            assert inv_inv_op.data == exp_op.data
-
-    def test_inversion_with_context(self):
-        """Test that a sequence of operations is properly inverted when a context is present."""
-        with pennylane.tape.OperationRecorder() as rec:
-            qml.Hadamard(wires=[0])
-            qml.CNOT(wires=[0, 1])
-            pu.inv([qml.RX(1, wires=[0]), qml.RY(2, wires=[0]), qml.RZ(3, wires=[0])])
-            qml.CNOT(wires=[0, 1])
-            qml.Hadamard(wires=[0])
-
-        inv_queue = [
-            qml.Hadamard(wires=[0]),
-            qml.CNOT(wires=[0, 1]),
-            qml.RZ(-3, wires=[0]),
-            qml.RY(-2, wires=[0]),
-            qml.RX(-1, wires=[0]),
-            qml.CNOT(wires=[0, 1]),
-            qml.Hadamard(wires=[0]),
-        ]
-
-        for inv_op, exp_op in zip(rec.queue, inv_queue):
-            assert inv_op.name == exp_op.name
-            assert inv_op.wires == exp_op.wires
-            assert inv_op.data == exp_op.data
-
-    def test_non_queued_inversion_with_context(self):
-        """Test that a sequence of operations is properly inverted when a context is present.
-        Test that this also works for operations that were not queued."""
-        inv_ops = [qml.RX(1, wires=[0]), qml.RY(2, wires=[0]), qml.RZ(3, wires=[0])]
-
-        with pennylane.tape.OperationRecorder() as rec:
-            qml.Hadamard(wires=[0])
-            qml.CNOT(wires=[0, 1])
-            pu.inv(inv_ops)
-            qml.CNOT(wires=[0, 1])
-            qml.Hadamard(wires=[0])
-
-        inv_queue = [
-            qml.Hadamard(wires=[0]),
-            qml.CNOT(wires=[0, 1]),
-            qml.RZ(-3, wires=[0]),
-            qml.RY(-2, wires=[0]),
-            qml.RX(-1, wires=[0]),
-            qml.CNOT(wires=[0, 1]),
-            qml.Hadamard(wires=[0]),
-        ]
-
-        for inv_op, exp_op in zip(rec.queue, inv_queue):
-            assert inv_op.name == exp_op.name
-            assert inv_op.wires == exp_op.wires
-            assert inv_op.data == exp_op.data
-
-    def test_mixed_inversion_with_context(self):
-        """Test that a sequence of operations is properly inverted when a context is present.
-        Test that this also works for operations that were not queued."""
-        X0 = qml.PauliX(0)
-        Z0 = qml.PauliZ(0)
-
-        with pennylane.tape.OperationRecorder() as rec:
-            qml.Hadamard(wires=[0])
-            qml.CNOT(wires=[0, 1])
-            pu.inv([X0, qml.RX(1, wires=[0]), Z0, qml.RY(2, wires=[0])])
-            qml.CNOT(wires=[0, 1])
-            qml.Hadamard(wires=[0])
-
-        inv_queue = [
-            qml.Hadamard(wires=[0]),
-            qml.CNOT(wires=[0, 1]),
-            qml.RY(-2, wires=[0]),
-            qml.PauliZ(0),
-            qml.RX(-1, wires=[0]),
-            qml.PauliX(0),
-            qml.CNOT(wires=[0, 1]),
-            qml.Hadamard(wires=[0]),
-        ]
-
-        for inv_op, exp_op in zip(rec.queue, inv_queue):
-            assert inv_op.name == exp_op.name
-            assert inv_op.wires == exp_op.wires
-            assert inv_op.data == exp_op.data
-
-    def test_mixed_inversion_with_nested_context(self):
-        """Test that a sequence of operations is properly inverted when a nested context is present.
-        Test that this also works for operations that were not queued."""
-        X0 = qml.PauliX(0)
-        Z0 = qml.PauliZ(0)
-
-        with pennylane.tape.OperationRecorder() as rec1:
-            with pennylane.tape.OperationRecorder() as rec2:
-                qml.Hadamard(wires=[0])
-                qml.CNOT(wires=[0, 1])
-                pu.inv([X0, qml.RX(1, wires=[0]), Z0, qml.RY(2, wires=[0])])
-                qml.CNOT(wires=[0, 1])
-                qml.Hadamard(wires=[0])
-
-        inv_queue = [
-            qml.Hadamard(wires=[0]),
-            qml.CNOT(wires=[0, 1]),
-            qml.RY(-2, wires=[0]),
-            qml.PauliZ(0),
-            qml.RX(-1, wires=[0]),
-            qml.PauliX(0),
-            qml.CNOT(wires=[0, 1]),
-            qml.Hadamard(wires=[0]),
-        ]
-
-        for inv_op, exp_op in zip(rec1.queue, inv_queue):
-            assert inv_op.name == exp_op.name
-            assert inv_op.wires == exp_op.wires
-            assert inv_op.data == exp_op.data
-
-        for inv_op, exp_op in zip(rec2.queue, inv_queue):
-            assert inv_op.name == exp_op.name
-            assert inv_op.wires == exp_op.wires
-            assert inv_op.data == exp_op.data
-
-    def test_template_inversion_with_context(self):
-        """Test that a template is properly inverted when a context is present."""
-        with pennylane.tape.OperationRecorder() as rec:
-            qml.Hadamard(wires=[0])
-            qml.CNOT(wires=[0, 1])
-            pu.inv(dummy_template([0, 1, 2]))
-            qml.CNOT(wires=[0, 1])
-            qml.Hadamard(wires=[0])
-
-        inv_queue = [
-            qml.Hadamard(wires=[0]),
-            qml.CNOT(wires=[0, 1]),
-            *inverted_dummy_template_operations([0, 1, 2]),
-            qml.CNOT(wires=[0, 1]),
-            qml.Hadamard(wires=[0]),
-        ]
-
-        for inv_op, exp_op in zip(rec.queue, inv_queue):
-            assert inv_op.name == exp_op.name
-            assert inv_op.wires == exp_op.wires
-            assert inv_op.data == exp_op.data
-
-    def test_inversion_with_qnode(self):
-        """Test that a sequence of operations is properly inverted when inside a QNode."""
-        dev = qml.device("default.qubit", wires=2)
-
-        @qml.qnode(dev)
-        def qfunc():
-            qml.Hadamard(wires=[0])
-            qml.CNOT(wires=[0, 1])
-            pu.inv([qml.RX(1, wires=[0]), qml.RY(2, wires=[0]), qml.RZ(3, wires=[0])])
-            qml.CNOT(wires=[0, 1])
-            qml.Hadamard(wires=[0])
-
-            return qml.expval(qml.PauliZ(0))
-
-        inv_queue = [
-            qml.Hadamard(wires=[0]),
-            qml.CNOT(wires=[0, 1]),
-            qml.RZ(-3, wires=[0]),
-            qml.RY(-2, wires=[0]),
-            qml.RX(-1, wires=[0]),
-            qml.CNOT(wires=[0, 1]),
-            qml.Hadamard(wires=[0]),
-        ]
-
-        qfunc()
-
-        for inv_op, exp_op in zip(qfunc.qtape.operations, inv_queue):
-            assert inv_op.name == exp_op.name
-            assert inv_op.wires == exp_op.wires
-            assert inv_op.data == exp_op.data
-
-    def test_non_queued_inversion_with_qnode(self):
-        """Test that a sequence of operations is properly inverted inside a QNode.
-        Test that this also works for operations that were not queued."""
-        inv_ops = [qml.RX(1, wires=[0]), qml.RY(2, wires=[0]), qml.RZ(3, wires=[0])]
-
-        dev = qml.device("default.qubit", wires=2)
-
-        @qml.qnode(dev)
-        def qfunc():
-            qml.Hadamard(wires=[0])
-            qml.CNOT(wires=[0, 1])
-            pu.inv(inv_ops)
-            qml.CNOT(wires=[0, 1])
-            qml.Hadamard(wires=[0])
-
-            return qml.expval(qml.PauliZ(0))
-
-        inv_queue = [
-            qml.Hadamard(wires=[0]),
-            qml.CNOT(wires=[0, 1]),
-            qml.RZ(-3, wires=[0]),
-            qml.RY(-2, wires=[0]),
-            qml.RX(-1, wires=[0]),
-            qml.CNOT(wires=[0, 1]),
-            qml.Hadamard(wires=[0]),
-        ]
-
-        qfunc()
-
-        for inv_op, exp_op in zip(qfunc.qtape.operations, inv_queue):
-            assert inv_op.name == exp_op.name
-            assert inv_op.wires == exp_op.wires
-            assert inv_op.data == exp_op.data
-
-    def test_mixed_inversion_with_qnode(self):
-        """Test that a sequence of operations is properly inverted inside a QNode.
-        Test that this also works for operations of queued and non-queued operations."""
-        X0 = qml.PauliX(0)
-        Z0 = qml.PauliZ(0)
-        dev = qml.device("default.qubit", wires=2)
-
-        @qml.qnode(dev)
-        def qfunc():
-            qml.Hadamard(wires=[0])
-            qml.CNOT(wires=[0, 1])
-            pu.inv([X0, qml.RX(1, wires=[0]), Z0, qml.RY(2, wires=[0])])
-            qml.CNOT(wires=[0, 1])
-            qml.Hadamard(wires=[0])
-
-            return qml.expval(qml.PauliZ(0))
-
-        inv_queue = [
-            qml.Hadamard(wires=[0]),
-            qml.CNOT(wires=[0, 1]),
-            qml.RY(-2, wires=[0]),
-            qml.PauliZ(0),
-            qml.RX(-1, wires=[0]),
-            qml.PauliX(0),
-            qml.CNOT(wires=[0, 1]),
-            qml.Hadamard(wires=[0]),
-        ]
-
-        qfunc()
-
-        for inv_op, exp_op in zip(qfunc.qtape.operations, inv_queue):
-            assert inv_op.name == exp_op.name
-            assert inv_op.wires == exp_op.wires
-            assert inv_op.data == exp_op.data
-
-    def test_template_inversion_with_qnode(self):
-        """Test that a template is properly inverted when inside a QNode."""
-        dev = qml.device("default.qubit", wires=2)
-
-        @qml.qnode(dev)
-        def qfunc():
-            qml.Hadamard(wires=[0])
-            qml.CNOT(wires=[0, 1])
-            pu.inv(dummy_template([0, 1]))
-            qml.CNOT(wires=[0, 1])
-            qml.Hadamard(wires=[0])
-
-            return qml.expval(qml.PauliZ(0))
-
-        inv_queue = [
-            qml.Hadamard(wires=[0]),
-            qml.CNOT(wires=[0, 1]),
-            *inverted_dummy_template_operations([0, 1]),
-            qml.CNOT(wires=[0, 1]),
-            qml.Hadamard(wires=[0]),
-        ]
-
-        qfunc()
-
-        for inv_op, exp_op in zip(qfunc.qtape.operations, inv_queue):
-            assert inv_op.name == exp_op.name
-            assert inv_op.wires == exp_op.wires
-            assert inv_op.data == exp_op.data
-
-    def test_argument_wrapping(self):
-        """Test that a single operation can be given to inv and is properly inverted."""
-        op = qml.RX(0.1, wires=0)
-        exp_op = qml.RX(-0.1, wires=0)
-
-        inv_ops = pu.inv(op).operations
-
-        assert inv_ops[0].name == exp_op.name
-        assert inv_ops[0].wires == exp_op.wires
-        assert inv_ops[0].data == exp_op.data
-
-    @pytest.mark.parametrize("arg", [2.3, object()])
-    def test_argument_type_error(self, arg):
-        """Test that the proper error is raised when the argument type is wrong."""
-        with pytest.raises(ValueError, match="The provided operation_list is not iterable"):
-            pu.inv(arg)
-
-    def test_argument_none_error(self):
-        """Test that the proper error is raised when the argument type is wrong."""
-        with pytest.raises(
-            ValueError,
-            match="None was passed as an argument to inv. "
-            + "This could happen if inversion of a template without the template decorator is attempted",
-        ):
-            pu.inv(None)
-
-    def test_callable_argument_error(self):
-        """Test that the proper error is raised when the argument is a function."""
-
-        def func(x):
-            return x
-
-        with pytest.raises(
-            ValueError,
-            match="A function was passed as an argument to inv. ",
-        ):
-            pu.inv(func)
-
-    @pytest.mark.parametrize(
-        "arg",
-        [
-            [1, 2, 3],
-            [qml.PauliX(0), qml.PauliY(1), "Test"],
-            "Test",
-        ],
-    )
-    def test_non_operations_in_list(self, arg):
-        """Test that the proper error is raised when the argument does not only contain operations."""
-        with pytest.raises(
-            ValueError,
-            match="The given operation_list does not only contain Operations",
-        ):
-            pu.inv(arg)
-
-    def test_warning(self):
-        """Test that the warning is generated."""
-
-        with pytest.warns(
-            UserWarning,
-            match=r"Use of qml\.inv\(\) is deprecated and should be replaced with qml\.adjoint\(\)\.",
-        ):
-            qml.inv(qml.Hadamard(wires=[0]))
-
-
-class TestFrobeniusInnerProduct:
-    @pytest.mark.parametrize(
-        "A,B,normalize,expected",
-        [
-            (np.eye(2), np.eye(2), False, 2.0),
-            (np.eye(2), np.zeros((2, 2)), False, 0.0),
-            (
-                np.array([[1.0, 2.3], [-1.3, 2.4]]),
-                np.array([[0.7, -7.3], [-1.0, -2.9]]),
-                False,
-                -21.75,
-            ),
-            (np.eye(2), np.eye(2), True, 1.0),
-            (
-                np.array([[1.0, 2.3], [-1.3, 2.4]]),
-                np.array([[0.7, -7.3], [-1.0, -2.9]]),
-                True,
-                -0.7381450594,
-            ),
-        ],
-    )
-    def test_frobenius_inner_product(self, A, B, normalize, expected):
-        assert expected == pytest.approx(pu.frobenius_inner_product(A, B, normalize=normalize))
+            pu.expand_vector(TestExpandVector.VECTOR1, [0, 1], 4)

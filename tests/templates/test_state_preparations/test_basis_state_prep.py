@@ -40,7 +40,7 @@ class TestDecomposition:
     def test_correct_pl_gates(self, basis_state, wires, target_wires):
         """Tests queue for simple cases."""
 
-        op = qml.templates.BasisStatePreparation(basis_state, wires)
+        op = qml.BasisStatePreparation(basis_state, wires)
         queue = op.expand().operations
 
         for id, gate in enumerate(queue):
@@ -66,13 +66,70 @@ class TestDecomposition:
 
         @qml.qnode(qubit_device_3_wires)
         def circuit():
-            qml.templates.BasisStatePreparation(basis_state, wires)
+            qml.BasisStatePreparation(basis_state, wires)
 
             # Pauli Z gates identify the basis state
             return qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliZ(1)), qml.expval(qml.PauliZ(2))
 
         # Convert from Pauli Z eigenvalues to basis state
         output_state = [0 if x == 1.0 else 1 for x in circuit()]
+
+        assert np.allclose(output_state, target_state, atol=tol, rtol=0)
+
+    @pytest.mark.jax
+    @pytest.mark.parametrize(
+        "basis_state,wires,target_state",
+        [
+            ([0, 1], [0, 1], [0, 1, 0]),
+            ([1, 1, 0], [0, 1, 2], [1, 1, 0]),
+            ([1, 0, 1], [2, 0, 1], [0, 1, 1]),
+        ],
+    )
+    def test_state_preparation_jax_jit(
+        self, tol, qubit_device_3_wires, basis_state, wires, target_state
+    ):
+        """Tests that the template produces the correct expectation values."""
+        import jax
+
+        @qml.qnode(qubit_device_3_wires, interface="jax")
+        def circuit(state):
+            qml.BasisStatePreparation(state, wires)
+
+            # Pauli Z gates identify the basis state
+            return qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliZ(1)), qml.expval(qml.PauliZ(2))
+
+        circuit = jax.jit(circuit)
+
+        # Convert from Pauli Z eigenvalues to basis state
+        output_state = [0 if x == 1.0 else 1 for x in circuit(basis_state)]
+
+        assert np.allclose(output_state, target_state, atol=tol, rtol=0)
+
+    @pytest.mark.tf
+    @pytest.mark.parametrize(
+        "basis_state,wires,target_state",
+        [
+            ([0, 1], [0, 1], [0, 1, 0]),
+            ([1, 1, 0], [0, 1, 2], [1, 1, 0]),
+            ([1, 0, 1], [2, 0, 1], [0, 1, 1]),
+        ],
+    )
+    def test_state_preparation_tf_autograph(
+        self, tol, qubit_device_3_wires, basis_state, wires, target_state
+    ):
+        """Tests that the template produces the correct expectation values."""
+        import tensorflow as tf
+
+        @tf.function
+        @qml.qnode(qubit_device_3_wires, interface="tf")
+        def circuit(state):
+            qml.BasisStatePreparation(state, wires)
+
+            # Pauli Z gates identify the basis state
+            return qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliZ(1)), qml.expval(qml.PauliZ(2))
+
+        # Convert from Pauli Z eigenvalues to basis state
+        output_state = [0 if x == 1.0 else 1 for x in circuit(basis_state)]
 
         assert np.allclose(output_state, target_state, atol=tol, rtol=0)
 
@@ -85,12 +142,12 @@ class TestDecomposition:
 
         @qml.qnode(dev)
         def circuit():
-            qml.templates.BasisStatePreparation(basis_state, wires=range(3))
+            qml.BasisStatePreparation(basis_state, wires=range(3))
             return qml.expval(qml.Identity(0))
 
         @qml.qnode(dev2)
         def circuit2():
-            qml.templates.BasisStatePreparation(basis_state, wires=["z", "a", "k"])
+            qml.BasisStatePreparation(basis_state, wires=["z", "a", "k"])
             return qml.expval(qml.Identity("z"))
 
         circuit()
@@ -112,8 +169,8 @@ class TestInputs:
         """Tests that the correct error message is raised when the number
         of qubits does not match the number of wires."""
 
-        with pytest.raises(ValueError, match="Basis state must be of (shape|length)"):
-            qml.templates.BasisStatePreparation(basis_state, wires)
+        with pytest.raises(ValueError, match="Basis states must be of (shape|length)"):
+            qml.BasisStatePreparation(basis_state, wires)
 
     # fmt: off
     @pytest.mark.parametrize("basis_state,wires", [
@@ -125,8 +182,8 @@ class TestInputs:
         """Tests that the correct error messages is raised when
         the basis state contains numbers different from 0 and 1."""
 
-        with pytest.raises(ValueError, match="Basis state must only (contain|consist)"):
-            qml.templates.BasisStatePreparation(basis_state, wires)
+        with pytest.raises(ValueError, match="Basis states must only (contain|consist)"):
+            qml.BasisStatePreparation(basis_state, wires)
 
     def test_exception_wrong_dim(self):
         """Verifies that exception is raised if the
@@ -135,17 +192,22 @@ class TestInputs:
 
         @qml.qnode(dev)
         def circuit(basis_state):
-            qml.templates.BasisStatePreparation(basis_state, wires=range(2))
+            qml.BasisStatePreparation(basis_state, wires=range(2))
             return qml.expval(qml.PauliZ(0))
 
-        with pytest.raises(ValueError, match="Basis state must be one-dimensional"):
-            basis_state = np.array([[0, 1]])
+        with pytest.raises(ValueError, match="Basis states must be one-dimensional"):
+            basis_state = np.array([[[0, 1]]])
             circuit(basis_state)
 
-        with pytest.raises(ValueError, match="Basis state must be of length"):
+        with pytest.raises(ValueError, match="Basis states must be of length"):
             basis_state = np.array([0, 1, 0])
             circuit(basis_state)
 
-        with pytest.raises(ValueError, match="Basis state must only consist of"):
+        with pytest.raises(ValueError, match="Basis states must only consist of"):
             basis_state = np.array([0, 2])
             circuit(basis_state)
+
+    def test_id(self):
+        """Tests that the id attribute can be set."""
+        template = qml.BasisStatePreparation(np.array([0, 1]), wires=[0, 1], id="a")
+        assert template.id == "a"

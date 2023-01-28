@@ -46,7 +46,7 @@ class TestDecomposition:
 
         weights = np.random.random(size=weight_shape)
 
-        op = qml.templates.StronglyEntanglingLayers(weights, wires=range(n_wires))
+        op = qml.StronglyEntanglingLayers(weights, wires=range(n_wires))
         tape = op.expand()
 
         for i, gate in enumerate(tape.operations):
@@ -59,9 +59,7 @@ class TestDecomposition:
 
         weights = np.random.randn(n_layers, n_wires, 3)
 
-        op = qml.templates.StronglyEntanglingLayers(
-            weights=weights, wires=range(n_wires), imprimitive=qml.CZ
-        )
+        op = qml.StronglyEntanglingLayers(weights=weights, wires=range(n_wires), imprimitive=qml.CZ)
         ops = op.expand().operations
 
         gate_names = [gate.name for gate in ops]
@@ -76,12 +74,12 @@ class TestDecomposition:
 
         @qml.qnode(dev)
         def circuit():
-            qml.templates.StronglyEntanglingLayers(weights, wires=range(3))
+            qml.StronglyEntanglingLayers(weights, wires=range(3))
             return qml.expval(qml.Identity(0))
 
         @qml.qnode(dev2)
         def circuit2():
-            qml.templates.StronglyEntanglingLayers(weights, wires=["z", "a", "k"])
+            qml.StronglyEntanglingLayers(weights, wires=["z", "a", "k"])
             return qml.expval(qml.Identity("z"))
 
         circuit()
@@ -97,9 +95,7 @@ class TestDecomposition:
 
         weights = np.random.randn(n_layers, n_wires, 3)
 
-        op = qml.templates.StronglyEntanglingLayers(
-            weights=weights, wires=range(n_wires), ranges=ranges
-        )
+        op = qml.StronglyEntanglingLayers(weights=weights, wires=range(n_wires), ranges=ranges)
         ops = op.expand().operations
 
         gate_wires = [gate.wires.labels for gate in ops]
@@ -126,7 +122,7 @@ class TestInputs:
 
         @qml.qnode(dev)
         def circuit(weights, ranges=None):
-            qml.templates.StronglyEntanglingLayers(weights, wires=range(2), ranges=ranges)
+            qml.StronglyEntanglingLayers(weights, wires=range(2), ranges=ranges)
             return qml.expval(qml.PauliZ(0))
 
         with pytest.raises(ValueError, match="Weights tensor must have second dimension"):
@@ -135,10 +131,6 @@ class TestInputs:
 
         with pytest.raises(ValueError, match="Weights tensor must have third dimension"):
             weights = np.random.randn(2, 2, 1)
-            circuit(weights)
-
-        with pytest.raises(ValueError, match="Weights tensor must be 3-dimensional"):
-            weights = np.random.randn(2, 2, 3, 1)
             circuit(weights)
 
         with pytest.raises(ValueError, match="Range sequence must be of length"):
@@ -153,12 +145,17 @@ class TestInputs:
 
         @qml.qnode(dev)
         def circuit(weights, ranges=None):
-            qml.templates.StronglyEntanglingLayers(weights, wires=range(2), ranges=ranges)
+            qml.StronglyEntanglingLayers(weights, wires=range(2), ranges=ranges)
             return qml.expval(qml.PauliZ(0))
 
         with pytest.raises(ValueError, match="Ranges must not be zero nor"):
             weights = np.random.randn(1, 2, 3)
             circuit(weights, ranges=[0])
+
+    def test_id(self):
+        """Tests that the id attribute can be set."""
+        template = qml.StronglyEntanglingLayers(np.array([[[1, 2, 3]]]), wires=[0], id="a")
+        assert template.id == "a"
 
 
 class TestAttributes:
@@ -175,12 +172,12 @@ class TestAttributes:
     def test_shape(self, n_layers, n_wires, expected_shape):
         """Test that the shape method returns the correct shape of the weights tensor"""
 
-        shape = qml.templates.StronglyEntanglingLayers.shape(n_layers, n_wires)
+        shape = qml.StronglyEntanglingLayers.shape(n_layers, n_wires)
         assert shape == expected_shape
 
 
 def circuit_template(weights):
-    qml.templates.StronglyEntanglingLayers(weights, range(3))
+    qml.StronglyEntanglingLayers(weights, range(3))
     return qml.expval(qml.PauliZ(0))
 
 
@@ -198,31 +195,7 @@ class TestInterfaces:
     """Tests that the template is compatible with all interfaces, including the computation
     of gradients."""
 
-    def test_list_and_tuples(self, tol):
-        """Tests common iterables as inputs."""
-
-        weights = [[[0.1, 0.2, 0.3], [0.1, 0.2, 0.3], [0.1, 0.2, 0.3]]]
-
-        dev = qml.device("default.qubit", wires=3)
-
-        circuit = qml.QNode(circuit_template, dev)
-        circuit2 = qml.QNode(circuit_decomposed, dev)
-
-        res = circuit(weights)
-        res2 = circuit2(weights)
-        assert qml.math.allclose(res, res2, atol=tol, rtol=0)
-
-        weights_tuple = [
-            [
-                tuple(weights[0][0]),
-                tuple(weights[0][1]),
-                tuple(weights[0][2]),
-            ]
-        ]
-        res = circuit(weights_tuple)
-        res2 = circuit2(tuple(weights_tuple))
-        assert qml.math.allclose(res, res2, atol=tol, rtol=0)
-
+    @pytest.mark.autograd
     def test_autograd(self, tol):
         """Tests the autograd interface."""
 
@@ -246,10 +219,11 @@ class TestInterfaces:
 
         assert np.allclose(grads[0], grads2[0], atol=tol, rtol=0)
 
+    @pytest.mark.jax
     def test_jax(self, tol):
         """Tests the jax interface."""
 
-        jax = pytest.importorskip("jax")
+        import jax
         import jax.numpy as jnp
 
         weights = jnp.array(np.random.random(size=(1, 3, 3)))
@@ -271,10 +245,11 @@ class TestInterfaces:
 
         assert np.allclose(grads[0], grads2[0], atol=tol, rtol=0)
 
+    @pytest.mark.tf
     def test_tf(self, tol):
         """Tests the tf interface."""
 
-        tf = pytest.importorskip("tensorflow")
+        import tensorflow as tf
 
         weights = tf.Variable(np.random.random(size=(1, 3, 3)))
 
@@ -297,10 +272,11 @@ class TestInterfaces:
 
         assert np.allclose(grads[0], grads2[0], atol=tol, rtol=0)
 
+    @pytest.mark.torch
     def test_torch(self, tol):
         """Tests the torch interface."""
 
-        torch = pytest.importorskip("torch")
+        import torch
 
         weights = torch.tensor(np.random.random(size=(1, 3, 3)), requires_grad=True)
 

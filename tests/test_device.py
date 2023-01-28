@@ -166,18 +166,60 @@ def mock_device(monkeypatch):
         yield get_device
 
 
-def test_shot_vector_property():
-    dev = qml.device("default.qubit", wires=1, shots=[1, 3, 3, 4, 4, 4, 3])
-    shot_vector = dev.shot_vector
-    assert len(shot_vector) == 4
-    assert shot_vector[0].shots == 1
-    assert shot_vector[0].copies == 1
-    assert shot_vector[1].shots == 3
-    assert shot_vector[1].copies == 2
-    assert shot_vector[2].shots == 4
-    assert shot_vector[2].copies == 3
-    assert shot_vector[3].shots == 3
-    assert shot_vector[3].copies == 1
+@pytest.fixture(scope="function")
+def mock_device_arbitrary_wires(monkeypatch, wires):
+    with monkeypatch.context() as m:
+        m.setattr(Device, "__abstractmethods__", frozenset())
+        m.setattr(Device, "_capabilities", mock_device_capabilities)
+        m.setattr(Device, "operations", ["PauliY", "RX", "Rot"])
+        m.setattr(Device, "observables", ["PauliZ"])
+        m.setattr(Device, "short_name", "MockDevice")
+        m.setattr(Device, "expval", lambda self, x, y, z: 0)
+        m.setattr(Device, "var", lambda self, x, y, z: 0)
+        m.setattr(Device, "sample", lambda self, x, y, z: 0)
+        m.setattr(Device, "apply", lambda self, x, y, z: None)
+
+        def get_device(wires):
+            return Device(wires=wires)
+
+        yield get_device
+
+
+class TestShotVectors:
+    """Tests passing shot vectors, their validation, and processing."""
+
+    def test_shot_vector_property(self):
+        dev = qml.device("default.qubit", wires=1, shots=[1, 3, 3, 4, 4, 4, 3])
+        shot_vector = dev.shot_vector
+        assert len(shot_vector) == 4
+        assert shot_vector[0].shots == 1
+        assert shot_vector[0].copies == 1
+        assert shot_vector[1].shots == 3
+        assert shot_vector[1].copies == 2
+        assert shot_vector[2].shots == 4
+        assert shot_vector[2].copies == 3
+        assert shot_vector[3].shots == 3
+        assert shot_vector[3].copies == 1
+
+        assert dev.shots == 22
+
+    def test_process_shot_sequence(self):
+        """Tests that the helper `_process_shot_sequence` works as expected."""
+        shot_list = [1, 1, 3]
+        total_shots, shot_vector = qml._device._process_shot_sequence(shot_list)
+
+        assert total_shots == 5
+        assert isinstance(total_shots, int)
+
+        assert len(shot_vector) == 2
+
+        for tup in shot_vector:
+            assert isinstance(tup, qml._device.ShotTuple)
+
+        assert shot_vector[0].shots == 1
+        assert shot_vector[0].copies == 2
+        assert shot_vector[1].shots == 3
+        assert shot_vector[1].copies == 1
 
 
 class TestDeviceSupportedLogic:
@@ -265,6 +307,23 @@ class TestDeviceSupportedLogic:
 class TestInternalFunctions:
     """Test the internal functions of the abstract Device class"""
 
+    def test_repr(self, mock_device_with_operations):
+        """Tests the __repr__ function"""
+        dev = mock_device_with_operations()
+        repr_string = dev.__repr__()
+        assert "<Device device (wires=1, shots=1000) at " in repr_string
+
+    def test_str(self, mock_device_with_operations):
+        """Tests the __str__ function"""
+        dev = mock_device_with_operations()
+        string = dev.__str__()
+        assert "Short name: MockDevice" in string
+        assert "Package: pennylane" in string
+        assert "Plugin version: None" in string
+        assert "Author: None" in string
+        assert "Wires: 1" in string
+        assert "Shots: 1000" in string
+
     def test_check_validity_on_valid_queue(self, mock_device_supporting_paulis):
         """Tests the function Device.check_validity with valid queue and observables"""
         dev = mock_device_supporting_paulis()
@@ -279,46 +338,6 @@ class TestInternalFunctions:
 
         # Raises an error if queue or observables are invalid
         dev.check_validity(queue, observables)
-
-    def test_check_validity_on_valid_queue_with_inverses(
-        self, mock_device_supporting_paulis_and_inverse
-    ):
-        """Tests the function Device.check_validity with valid queue
-        and the inverse of operations"""
-        dev = mock_device_supporting_paulis_and_inverse()
-
-        queue = [
-            qml.PauliX(wires=0).inv(),
-            qml.PauliY(wires=1).inv(),
-            qml.PauliZ(wires=2).inv(),
-            qml.PauliX(wires=0).inv().inv(),
-            qml.PauliY(wires=1).inv().inv(),
-            qml.PauliZ(wires=2).inv().inv(),
-        ]
-
-        observables = [qml.expval(qml.PauliZ(0))]
-
-        # Raises an error if queue or observables are invalid
-        dev.check_validity(queue, observables)
-
-    def test_check_validity_with_not_supported_operation_inverse(
-        self, mock_device_supporting_paulis_and_inverse
-    ):
-        """Tests the function Device.check_validity with an valid queue
-        and the inverse of not supported operations"""
-        dev = mock_device_supporting_paulis_and_inverse()
-
-        queue = [
-            qml.CNOT(wires=[0, 1]).inv(),
-        ]
-
-        observables = [qml.expval(qml.PauliZ(0))]
-
-        with pytest.raises(
-            DeviceError,
-            match="Gate {} not supported on device {}".format("CNOT", "MockDevice"),
-        ):
-            dev.check_validity(queue, observables)
 
     def test_check_validity_on_tensor_support(self, mock_device_supporting_paulis):
         """Tests the function Device.check_validity with tensor support capability"""
@@ -390,46 +409,6 @@ class TestInternalFunctions:
 
         with pytest.raises(DeviceError, match="Observable Hadamard not supported on device"):
             dev.check_validity(queue, observables)
-
-    def test_check_validity_on_invalid_queue_of_inverses(
-        self, mock_device_supporting_paulis_and_inverse
-    ):
-        """Tests the function Device.check_validity with invalid queue and valid inverses of operations"""
-        dev = mock_device_supporting_paulis_and_inverse()
-
-        queue = [
-            qml.PauliY(wires=1).inv(),
-            qml.PauliZ(wires=2).inv(),
-            qml.RX(1.0, wires=0).inv(),
-        ]
-
-        observables = [qml.expval(qml.PauliZ(0))]
-
-        with pytest.raises(DeviceError, match="Gate RX not supported on device"):
-            dev.check_validity(queue, observables)
-
-    def test_supports_inverse(self, mock_device_supporting_paulis_and_inverse):
-        """Tests the function Device.supports_inverse on device which supports inverses"""
-        dev = mock_device_supporting_paulis_and_inverse()
-
-        assert dev.check_validity([qml.PauliZ(0).inv()], []) is None
-        assert dev.check_validity([], [qml.PauliZ(0).inv()]) is None
-
-    def test_supports_inverse_device_does_not_support_inverses(self, mock_device_supporting_paulis):
-        """Tests the function Device.supports_inverse on device which does not support inverses"""
-        dev = mock_device_supporting_paulis()
-
-        with pytest.raises(
-            DeviceError,
-            match="The inverse of gates are not supported on device {}".format(dev.short_name),
-        ):
-            dev.check_validity([qml.PauliZ(0).inv()], [])
-
-        with pytest.raises(
-            DeviceError,
-            match="The inverse of gates are not supported on device {}".format(dev.short_name),
-        ):
-            dev.check_validity([], [qml.PauliZ(0).inv()])
 
     def test_args(self, mock_device):
         """Test that the device requires correct arguments"""
@@ -503,6 +482,66 @@ class TestInternalFunctions:
 
         # The number of hits increased
         assert dev.map_wires.cache_info().hits > original_hits
+
+    def test_mcm_unsupported_error(self, monkeypatch, mock_device_with_paulis_and_methods):
+        """Test that an error is raised if mid-circuit measurements are not
+        supported natively"""
+        dev = mock_device_with_paulis_and_methods(wires=2)
+
+        # mid-circuit measurements are part of the queue (for now)
+        with qml.queuing.AnnotatedQueue() as q:
+            qml.measure(1)
+            qml.PauliZ(0)
+
+        tape = qml.tape.QuantumScript.from_queue(q)
+        # Raises an error for device that doesn't support mid-circuit measurements natively
+        with pytest.raises(DeviceError, match="Mid-circuit measurements are not natively"):
+            dev.check_validity(tape.operations, tape.observables)
+
+    def test_conditional_ops_unsupported_error(
+        self, monkeypatch, mock_device_with_paulis_and_methods
+    ):
+        """Test that an error is raised for conditional operations if
+        mid-circuit measurements are not supported natively"""
+        dev = mock_device_with_paulis_and_methods(wires=2)
+
+        with qml.queuing.AnnotatedQueue() as q:
+            qml.cond(0, qml.RY)(0.3, wires=0)
+            qml.PauliZ(0)
+
+        tape = qml.tape.QuantumScript.from_queue(q)
+        # Raises an error for device that doesn't support conditional
+        # operations natively
+        with pytest.raises(DeviceError, match="Gate Conditional not supported on device"):
+            dev.check_validity(tape.operations, tape.observables)
+
+    @pytest.mark.parametrize(
+        "wires, subset, expected_subset",
+        [
+            (Wires(["a", "b", "c"]), Wires(["c", "b"]), Wires(["b", "c"])),
+            (Wires([0, 1, 2]), Wires([1, 0, 2]), Wires([0, 1, 2])),
+            (Wires([3, "beta", "a"]), Wires(["a", "beta", 3]), Wires([3, "beta", "a"])),
+            (Wires([0]), Wires([0]), Wires([0])),
+        ],
+    )
+    def test_order_wires(self, wires, subset, expected_subset, mock_device_arbitrary_wires):
+        dev = mock_device_arbitrary_wires(wires=wires)
+        ordered_subset = dev.order_wires(subset_wires=subset)
+        assert ordered_subset == expected_subset
+
+    @pytest.mark.parametrize(
+        "wires, subset",
+        [
+            (Wires(["a", "b", "c"]), Wires(["c", "d"])),
+            (Wires([0, 1, 2]), Wires([3, 4, 5])),
+            (Wires([3, "beta", "a"]), Wires(["alpha", "beta", "gamma"])),
+            (Wires([0]), Wires([2])),
+        ],
+    )
+    def test_order_wires_raises_value_error(self, wires, subset, mock_device_arbitrary_wires):
+        dev = mock_device_arbitrary_wires(wires=wires)
+        with pytest.raises(ValueError, match="Could not find some or all subset wires"):
+            _ = dev.order_wires(subset_wires=subset)
 
 
 class TestClassmethods:
@@ -631,6 +670,37 @@ class TestOperations:
 
         with pytest.raises(DeviceError, match="Gate Hadamard not supported on device"):
             dev.execute(queue, observables)
+
+    def test_execute_obs_probs(self, mock_device_with_observables):
+        """Tests that the execute function raises an error if probabilities are
+        not supported by the device"""
+        dev = mock_device_with_observables()
+        obs = qml.PauliZ(0)
+        obs.return_type = qml.measurements.ObservableReturnTypes.Probability
+        with pytest.raises(NotImplementedError):
+            dev.execute([], [obs])
+
+    def test_var(self, mock_device_with_observables):
+        """Tests that the variance method are not implemented by the device by
+        default"""
+        dev = mock_device_with_observables()
+        with pytest.raises(NotImplementedError):
+            dev.var(qml.PauliZ, 0, [])
+
+    def test_sample(self, mock_device_with_observables):
+        """Tests that the sample method are not implemented by the device by
+        default"""
+        dev = mock_device_with_observables()
+        with pytest.raises(NotImplementedError):
+            dev.sample(qml.PauliZ, 0, [])
+
+    @pytest.mark.parametrize("wires", [None, []])
+    def test_probability(self, mock_device_with_observables, wires):
+        """Tests that the probability method are not implemented by the device
+        by default"""
+        dev = mock_device_with_observables()
+        with pytest.raises(NotImplementedError):
+            dev.probability(wires=wires)
 
 
 class TestObservables:
@@ -861,13 +931,16 @@ class TestDeviceInit:
 class TestBatchExecution:
     """Tests for the batch_execute method."""
 
-    with qml.tape.QuantumTape() as tape1:
+    with qml.queuing.AnnotatedQueue() as q1:
         qml.PauliX(wires=0)
         qml.expval(qml.PauliZ(wires=0)), qml.expval(qml.PauliZ(wires=1))
 
-    with qml.tape.JacobianTape() as tape2:
+    tape1 = qml.tape.QuantumScript.from_queue(q1)
+    with qml.queuing.AnnotatedQueue() as q2:
         qml.PauliX(wires=0)
         qml.expval(qml.PauliZ(wires=0))
+
+    tape2 = qml.tape.QuantumScript.from_queue(q2)
 
     @pytest.mark.parametrize("n_tapes", [1, 2, 3])
     def test_calls_to_execute(self, n_tapes, mocker, mock_device_with_paulis_and_methods):
@@ -914,7 +987,7 @@ class TestBatchExecution:
 
         dev = mock_device_with_paulis_and_methods(wires=2)
 
-        empty_tape = qml.tape.QuantumTape()
+        empty_tape = qml.tape.QuantumScript()
         tapes = [empty_tape] * 3
         res = dev.batch_execute(tapes)
 
@@ -922,3 +995,40 @@ class TestBatchExecution:
         assert np.allclose(
             res[0], dev.execute(empty_tape.operations, empty_tape.observables), rtol=tol, atol=0
         )
+
+
+class TestGrouping:
+    """Tests for the use_grouping option for devices."""
+
+    @pytest.mark.parametrize("use_grouping", (True, False))
+    def test_batch_transform_checks_use_grouping_property(self, use_grouping):
+        """If the device specifies `use_grouping=False`, the batch transform
+        method won't expand the hamiltonian when the measured hamiltonian has
+        grouping indices.
+        """
+
+        class TestDevice(qml.Device):
+            name = ""
+            short_name = ""
+            pennylane_requires = ""
+            version = ""
+            author = ""
+            operations = ""
+            observables = ""
+            apply = lambda *args, **kwargs: 0
+            expval = lambda *args, **kwargs: 0
+            reset = lambda *args, **kwargs: 0
+            supports_observable = lambda *args, **kwargs: True
+
+        H = qml.Hamiltonian([1.0, 1.0], [qml.PauliX(0), qml.PauliY(0)], grouping_type="qwc")
+        qs = qml.tape.QuantumScript(measurements=[qml.expval(H)])
+
+        dev = TestDevice()
+        dev.shots = None
+        dev.use_grouping = use_grouping
+        new_qscripts, post_proc_fn = dev.batch_transform(qs)
+
+        if use_grouping:
+            assert len(new_qscripts) == 2
+        else:
+            assert len(new_qscripts) == 1

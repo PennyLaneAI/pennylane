@@ -15,9 +15,9 @@
 Contains the quantum_monte_carlo transform.
 """
 from functools import wraps
-from pennylane import PauliX, Hadamard, MultiControlledX, CZ, QFT
+from pennylane import PauliX, Hadamard, MultiControlledX, CZ, adjoint
 from pennylane.wires import Wires
-from pennylane.transforms import adjoint
+from pennylane.templates import QFT
 
 
 def _apply_controlled_z(wires, control_wire, work_wires):
@@ -45,8 +45,7 @@ def _apply_controlled_z(wires, control_wire, work_wires):
     control_values = "0" * (len(wires) - 1) + "1"
     control_wires = wires[1:] + control_wire
     MultiControlledX(
-        control_wires=control_wires,
-        wires=target_wire,
+        wires=[*control_wires, target_wire],
         control_values=control_values,
         work_wires=work_wires,
     )
@@ -160,7 +159,8 @@ def quantum_monte_carlo(fn, wires, target_wire, estimation_wires):
     Raises:
         ValueError: if ``wires`` and ``estimation_wires`` share a common wire
 
-    .. UsageDetails::
+    .. details::
+        :title: Usage Details
 
         Consider an input quantum circuit ``fn`` that performs the unitary
 
@@ -352,6 +352,6 @@ def quantum_monte_carlo(fn, wires, target_wire, estimation_wires):
             for _ in range(n_reps):
                 q(*args, **kwargs)
 
-        QFT(wires=estimation_wires).inv()
+        adjoint(QFT(wires=estimation_wires))
 
     return wrapper

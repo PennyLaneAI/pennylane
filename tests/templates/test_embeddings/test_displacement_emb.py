@@ -27,7 +27,7 @@ class TestDecomposition:
     def test_expansion(self, features):
         """Checks the queue for the default settings."""
 
-        op = qml.templates.DisplacementEmbedding(features=features, wires=range(3))
+        op = qml.DisplacementEmbedding(features=features, wires=range(3))
         tape = op.expand()
 
         assert len(tape.operations) == len(features)
@@ -44,9 +44,7 @@ class TestDecomposition:
 
         @qml.qnode(dev)
         def circuit(x=None):
-            qml.templates.DisplacementEmbedding(
-                features=x, wires=range(n_wires), method="amplitude", c=1.0
-            )
+            qml.DisplacementEmbedding(features=x, wires=range(n_wires), method="amplitude", c=1.0)
             return [
                 qml.expval(qml.NumberOperator(wires=0)),
                 qml.expval(qml.NumberOperator(wires=1)),
@@ -64,13 +62,9 @@ class TestDecomposition:
 
         @qml.qnode(dev)
         def circuit(x=None):
-            qml.templates.DisplacementEmbedding(
-                features=x, wires=range(n_wires), method="phase", c=1.0
-            )
+            qml.DisplacementEmbedding(features=x, wires=range(n_wires), method="phase", c=1.0)
             qml.Beamsplitter(np.pi / 2, 0, wires=[0, 1])
-            qml.templates.DisplacementEmbedding(
-                features=[0, 0], wires=range(n_wires), method="phase", c=1.0
-            )
+            qml.DisplacementEmbedding(features=[0, 0], wires=range(n_wires), method="phase", c=1.0)
             return [
                 qml.expval(qml.NumberOperator(wires=0)),
                 qml.expval(qml.NumberOperator(wires=1)),
@@ -88,12 +82,12 @@ class TestDecomposition:
 
         @qml.qnode(dev)
         def circuit():
-            qml.templates.DisplacementEmbedding(features, wires=range(3))
+            qml.DisplacementEmbedding(features, wires=range(3))
             return qml.expval(qml.Identity(0))
 
         @qml.qnode(dev2)
         def circuit2():
-            qml.templates.DisplacementEmbedding(features, wires=["z", "a", "k"])
+            qml.DisplacementEmbedding(features, wires=["z", "a", "k"])
             return qml.expval(qml.Identity("z"))
 
         circuit()
@@ -114,7 +108,7 @@ class TestInputs:
 
         @qml.qnode(dev)
         def circuit(x=None):
-            qml.templates.DisplacementEmbedding(features=x, wires=range(n_wires), method="phase")
+            qml.DisplacementEmbedding(features=x, wires=range(n_wires), method="phase")
             return [qml.expval(qml.X(i)) for i in range(n_wires)]
 
         with pytest.raises(ValueError, match="Features must be of"):
@@ -128,7 +122,7 @@ class TestInputs:
 
         @qml.qnode(dev)
         def circuit(x=None):
-            qml.templates.DisplacementEmbedding(features=x, wires=range(n_wires), method="A")
+            qml.DisplacementEmbedding(features=x, wires=range(n_wires), method="A")
             return [qml.expval(qml.X(i)) for i in range(n_wires)]
 
         with pytest.raises(ValueError, match="did not recognize"):
@@ -142,15 +136,20 @@ class TestInputs:
 
         @qml.qnode(dev)
         def circuit(x=None):
-            qml.templates.DisplacementEmbedding(features=x, wires=[0, 1])
+            qml.DisplacementEmbedding(features=x, wires=[0, 1])
             return qml.expval(qml.X(0))
 
         with pytest.raises(ValueError, match="Features must be a one-dimensional"):
             circuit(x=[[1], [0]])
 
+    def test_id(self):
+        """Tests that the id attribute can be set."""
+        template = qml.DisplacementEmbedding(np.array([1, 2]), wires=[0, 1], id="a")
+        assert template.id == "a"
+
 
 def circuit_template(features):
-    qml.templates.DisplacementEmbedding(features, range(3))
+    qml.DisplacementEmbedding(features, range(3))
     qml.Beamsplitter(0.5, 0, wires=[2, 1])
     qml.Beamsplitter(0.5, 0, wires=[1, 0])
     return qml.expval(qml.X(0))
@@ -187,6 +186,7 @@ class TestInterfaces:
         res2 = circuit2(tuple(features))
         assert qml.math.allclose(res, res2, atol=tol, rtol=0)
 
+    @pytest.mark.autograd
     def test_autograd(self, tol):
         """Tests that the autograd interface."""
 
@@ -209,10 +209,11 @@ class TestInterfaces:
 
         assert np.allclose(grads[0], grads2[0], atol=tol, rtol=0)
 
+    @pytest.mark.jax
     def test_jax(self, tol):
         """Tests the jax interface."""
 
-        jax = pytest.importorskip("jax")
+        import jax
         import jax.numpy as jnp
 
         features = jnp.array([1.0, 1.0, 1.0])
@@ -234,10 +235,11 @@ class TestInterfaces:
 
         assert np.allclose(grads[0], grads2[0], atol=tol, rtol=0)
 
+    @pytest.mark.tf
     def test_tf(self, tol):
         """Tests the tf interface."""
 
-        tf = pytest.importorskip("tensorflow")
+        import tensorflow as tf
 
         features = tf.Variable([1.0, 1.0, 1.0])
 
@@ -260,10 +262,11 @@ class TestInterfaces:
 
         assert np.allclose(grads[0], grads2[0], atol=tol, rtol=0)
 
+    @pytest.mark.torch
     def test_torch(self, tol):
         """Tests the torch interface."""
 
-        torch = pytest.importorskip("torch")
+        import torch
 
         features = torch.tensor([1.0, 1.0, 1.0], requires_grad=True)
 

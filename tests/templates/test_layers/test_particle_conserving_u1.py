@@ -78,13 +78,13 @@ class TestDecomposition:
         nm_wires = [wires[l : l + 2] for l in range(0, qubits - 1, 2)]
         nm_wires += [wires[l : l + 2] for l in range(1, qubits - 1, 2)]
 
-        op = qml.templates.ParticleConservingU1(weights, wires, init_state=np.array([1, 1, 0, 0]))
+        op = qml.ParticleConservingU1(weights, wires, init_state=np.array([1, 1, 0, 0]))
         queue = op.expand().operations
 
         assert gate_count == len(queue)
 
         # check initialization of the qubit register
-        assert isinstance(queue[0], qml.templates.BasisEmbedding)
+        assert isinstance(queue[0], qml.BasisEmbedding)
 
         # check all quantum operations
         idx_CRot = 8
@@ -139,14 +139,12 @@ class TestDecomposition:
 
         @qml.qnode(dev)
         def circuit():
-            qml.templates.ParticleConservingU1(weights, wires=range(3), init_state=init_state)
+            qml.ParticleConservingU1(weights, wires=range(3), init_state=init_state)
             return qml.expval(qml.Identity(0))
 
         @qml.qnode(dev2)
         def circuit2():
-            qml.templates.ParticleConservingU1(
-                weights, wires=["z", "a", "k"], init_state=init_state
-            )
+            qml.ParticleConservingU1(weights, wires=["z", "a", "k"], init_state=init_state)
             return qml.expval(qml.Identity("z"))
 
         circuit()
@@ -205,7 +203,7 @@ class TestDecomposition:
 
         @qml.qnode(dev)
         def circuit(weights):
-            qml.templates.ParticleConservingU1(weights, wires, init_state=init_state)
+            qml.ParticleConservingU1(weights, wires, init_state=init_state)
             return qml.expval(qml.PauliZ(0))
 
         circuit(weights)
@@ -239,11 +237,18 @@ class TestInputs:
 
         @qml.qnode(dev)
         def circuit():
-            qml.templates.ParticleConservingU1(weights=weights, wires=wires, init_state=init_state)
+            qml.ParticleConservingU1(weights=weights, wires=wires, init_state=init_state)
             return qml.expval(qml.PauliZ(0))
 
         with pytest.raises(ValueError, match=msg_match):
             circuit()
+
+    def test_id(self):
+        """Tests that the id attribute can be set."""
+        template = qml.ParticleConservingU1(
+            weights=np.array([[[0.2, -0.6]]]), wires=range(2), init_state=np.array([1, 1]), id="a"
+        )
+        assert template.id == "a"
 
 
 class TestAttributes:
@@ -259,18 +264,18 @@ class TestAttributes:
     def test_shape(self, n_layers, n_wires, expected_shape):
         """Test that the shape method returns the correct shape of the weights tensor"""
 
-        shape = qml.templates.ParticleConservingU1.shape(n_layers, n_wires)
+        shape = qml.ParticleConservingU1.shape(n_layers, n_wires)
         assert shape == expected_shape
 
     def test_shape_exception_not_enough_qubits(self):
         """Test that the shape function warns if there are not enough qubits."""
 
         with pytest.raises(ValueError, match="The number of qubits must be greater than one"):
-            qml.templates.ParticleConservingU1.shape(3, 1)
+            qml.ParticleConservingU1.shape(3, 1)
 
 
 def circuit_template(weights):
-    qml.templates.ParticleConservingU1(weights, range(2), init_state=np.array([1, 1]))
+    qml.ParticleConservingU1(weights, range(2), init_state=np.array([1, 1]))
     return qml.expval(qml.PauliZ(0))
 
 
@@ -300,25 +305,7 @@ class TestInterfaces:
     """Tests that the template is compatible with all interfaces, including the computation
     of gradients."""
 
-    def test_list_and_tuples(self, tol):
-        """Tests common iterables as inputs."""
-
-        weights = [[[0.1, -1.1]]]
-
-        dev = qml.device("default.qubit", wires=2)
-
-        circuit = qml.QNode(circuit_template, dev)
-        circuit2 = qml.QNode(circuit_decomposed, dev)
-
-        res = circuit(weights)
-        res2 = circuit2(weights)
-        assert qml.math.allclose(res, res2, atol=tol, rtol=0)
-
-        weights_tuple = [tuple(weights[0])]
-        res = circuit(weights_tuple)
-        res2 = circuit2(weights_tuple)
-        assert qml.math.allclose(res, res2, atol=tol, rtol=0)
-
+    @pytest.mark.autograd
     def test_autograd(self, tol):
         """Tests the autograd interface."""
 
@@ -342,10 +329,11 @@ class TestInterfaces:
 
         assert np.allclose(grads[0], grads2[0], atol=tol, rtol=0)
 
+    @pytest.mark.jax
     def test_jax(self, tol):
         """Tests the jax interface."""
 
-        jax = pytest.importorskip("jax")
+        import jax
         import jax.numpy as jnp
 
         weights = jnp.array(np.random.random(size=(1, 1, 2)))
@@ -367,10 +355,11 @@ class TestInterfaces:
 
         assert np.allclose(grads[0], grads2[0], atol=tol, rtol=0)
 
+    @pytest.mark.tf
     def test_tf(self, tol):
         """Tests the tf interface."""
 
-        tf = pytest.importorskip("tensorflow")
+        import tensorflow as tf
 
         weights = tf.Variable(np.random.random(size=(1, 1, 2)))
 
@@ -393,10 +382,11 @@ class TestInterfaces:
 
         assert np.allclose(grads[0], grads2[0], atol=tol, rtol=0)
 
+    @pytest.mark.torch
     def test_torch(self, tol):
         """Tests the torch interface."""
 
-        torch = pytest.importorskip("torch")
+        import torch
 
         weights = torch.tensor(np.random.random(size=(1, 1, 2)), requires_grad=True)
 

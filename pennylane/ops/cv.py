@@ -11,6 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+# pylint: disable=too-many-arguments
 r"""
 This module contains the available built-in continuous-variable
 quantum operations supported by PennyLane, as well as their conventions.
@@ -36,11 +37,17 @@ quantum operations supported by PennyLane, as well as their conventions.
 # abstract methods are not defined in the CV case, disabling the related check
 # pylint: disable=abstract-method
 import math
+
 import numpy as np
 from scipy.linalg import block_diag
 
-from pennylane.operation import AnyWires, CVOperation, CVObservable
 from pennylane import math as qml_math
+from pennylane.operation import AnyWires, CVObservable, CVOperation
+
+from .identity import Identity  # pylint: disable=unused-import
+from .snapshot import Snapshot  # pylint: disable=unused-import
+
+_two_term_shift_rule = [[0.5, 1, np.pi / 2], [-0.5, 1, -np.pi / 2]]
 
 
 def _rotation(phi, bare=False):
@@ -70,7 +77,7 @@ def _rotation(phi, bare=False):
 
 
 class Rotation(CVOperation):
-    r"""pennylane.Rotation(phi, wires)
+    r"""
     Phase space rotation.
 
     .. math::
@@ -93,22 +100,32 @@ class Rotation(CVOperation):
 
     Args:
         phi (float): the rotation angle
+        wires (Sequence[Any] or Any): the wire the operation acts on
+        do_queue (bool): Indicates whether the operator should be
+            immediately pushed into the Operator queue (optional)
+        id (str or None): String representing the operation (optional)
     """
-    num_wires = 1
     num_params = 1
-    par_domain = "R"
+    num_wires = 1
     grad_method = "A"
+    grad_recipe = (_two_term_shift_rule,)
+
+    def __init__(self, phi, wires, do_queue=True, id=None):
+        super().__init__(phi, wires=wires, do_queue=do_queue, id=id)
 
     @staticmethod
     def _heisenberg_rep(p):
         return _rotation(p[0])
 
-    def adjoint(self, do_queue=False):
-        return Rotation(-self.parameters[0], wires=self.wires, do_queue=do_queue)
+    def adjoint(self):
+        return Rotation(-self.parameters[0], wires=self.wires)
+
+    def label(self, decimals=None, base_label=None, cache=None):
+        return super().label(decimals=decimals, base_label=base_label or "R", cache=cache)
 
 
 class Squeezing(CVOperation):
-    r"""pennylane.Squeezing(r, phi, wires)
+    r"""
     Phase space squeezing.
 
     .. math::
@@ -134,31 +151,39 @@ class Squeezing(CVOperation):
     Args:
         r (float): squeezing amount
         phi (float): squeezing phase angle :math:`\phi`
-        wires (Sequence[int] or int): the wire the operation acts on
+        wires (Sequence[Any] or Any): the wire the operation acts on
+        do_queue (bool): Indicates whether the operator should be
+            immediately pushed into the Operator queue (optional)
+        id (str or None): String representing the operation (optional)
     """
-    num_wires = 1
     num_params = 2
-    par_domain = "R"
+    num_wires = 1
     grad_method = "A"
 
     shift = 0.1
     multiplier = 0.5 / math.sinh(shift)
     a = 1
-    grad_recipe = ([[multiplier, a, shift], [-multiplier, a, -shift]], None)
+    grad_recipe = ([[multiplier, a, shift], [-multiplier, a, -shift]], _two_term_shift_rule)
+
+    def __init__(self, r, phi, wires, do_queue=True, id=None):
+        super().__init__(r, phi, wires=wires, do_queue=do_queue, id=id)
 
     @staticmethod
     def _heisenberg_rep(p):
         R = _rotation(p[1] / 2)
         return R @ np.diag([1, math.exp(-p[0]), math.exp(p[0])]) @ R.T
 
-    def adjoint(self, do_queue=False):
+    def adjoint(self):
         r, phi = self.parameters
         new_phi = (phi + np.pi) % (2 * np.pi)
-        return Squeezing(r, new_phi, wires=self.wires, do_queue=do_queue)
+        return Squeezing(r, new_phi, wires=self.wires)
+
+    def label(self, decimals=None, base_label=None, cache=None):
+        return super().label(decimals=decimals, base_label=base_label or "S", cache=cache)
 
 
 class Displacement(CVOperation):
-    r"""pennylane.Displacement(a, phi, wires)
+    r"""
     Phase space displacement.
 
     .. math::
@@ -183,17 +208,22 @@ class Displacement(CVOperation):
     Args:
         a (float): displacement magnitude :math:`a=|\alpha|`
         phi (float): phase angle :math:`\phi`
-        wires (Sequence[int] or int): the wire the operation acts on
+        wires (Sequence[Any] or Any): the wire the operation acts on
+        do_queue (bool): Indicates whether the operator should be
+            immediately pushed into the Operator queue (optional)
+        id (str or None): String representing the operation (optional)
     """
-    num_wires = 1
     num_params = 2
-    par_domain = "R"
+    num_wires = 1
     grad_method = "A"
 
     shift = 0.1
     multiplier = 0.5 / shift
     a = 1
-    grad_recipe = ([[multiplier, a, shift], [-multiplier, a, -shift]], None)
+    grad_recipe = ([[multiplier, a, shift], [-multiplier, a, -shift]], _two_term_shift_rule)
+
+    def __init__(self, a, phi, wires, do_queue=True, id=None):
+        super().__init__(a, phi, wires=wires, do_queue=do_queue, id=id)
 
     @staticmethod
     def _heisenberg_rep(p):
@@ -202,14 +232,17 @@ class Displacement(CVOperation):
         scale = 2  # sqrt(2 * hbar)
         return np.array([[1, 0, 0], [scale * c * p[0], 1, 0], [scale * s * p[0], 0, 1]])
 
-    def adjoint(self, do_queue=False):
+    def adjoint(self):
         a, phi = self.parameters
         new_phi = (phi + np.pi) % (2 * np.pi)
-        return Displacement(a, new_phi, wires=self.wires, do_queue=do_queue)
+        return Displacement(a, new_phi, wires=self.wires)
+
+    def label(self, decimals=None, base_label=None, cache=None):
+        return super().label(decimals=decimals, base_label=base_label or "D", cache=cache)
 
 
 class Beamsplitter(CVOperation):
-    r"""pennylane.Beamsplitter(theta, phi, wires)
+    r"""
     Beamsplitter interaction.
 
     .. math::
@@ -238,12 +271,18 @@ class Beamsplitter(CVOperation):
         phi (float): Phase angle :math:`\phi`. The reflection amplitude of the
             beamsplitter is :math:`r = e^{i\phi}\sin(\theta)`.
             The value :math:`\phi = \pi/2` gives the symmetric beamsplitter.
-        wires (Sequence[int] or int): the wire the operation acts on
+        wires (Sequence[Any]): the wire the operation acts on
+        do_queue (bool): Indicates whether the operator should be
+            immediately pushed into the Operator queue (optional)
+        id (str or None): String representing the operation (optional)
     """
     num_params = 2
     num_wires = 2
-    par_domain = "R"
     grad_method = "A"
+    grad_recipe = (_two_term_shift_rule, _two_term_shift_rule)
+
+    def __init__(self, theta, phi, wires, do_queue=True, id=None):
+        super().__init__(theta, phi, wires=wires, do_queue=do_queue, id=id)
 
     # For the beamsplitter, both parameters are rotation-like
     @staticmethod
@@ -257,13 +296,16 @@ class Beamsplitter(CVOperation):
         U[3:5, 1:3] = s * R
         return U
 
-    def adjoint(self, do_queue=False):
+    def adjoint(self):
         theta, phi = self.parameters
-        return Beamsplitter(-theta, phi, wires=self.wires, do_queue=do_queue)
+        return Beamsplitter(-theta, phi, wires=self.wires)
+
+    def label(self, decimals=None, base_label=None, cache=None):
+        return super().label(decimals=decimals, base_label=base_label or "BS", cache=cache)
 
 
 class TwoModeSqueezing(CVOperation):
-    r"""pennylane.TwoModeSqueezing(r, phi, wires)
+    r"""
     Phase space two-mode squeezing.
 
     .. math::
@@ -293,18 +335,23 @@ class TwoModeSqueezing(CVOperation):
     Args:
         r (float): squeezing amount
         phi (float): squeezing phase angle :math:`\phi`
-        wires (Sequence[int] or int): the wire the operation acts on
+        wires (Sequence[Any]): the wire the operation acts on
+        do_queue (bool): Indicates whether the operator should be
+            immediately pushed into the Operator queue (optional)
+        id (str or None): String representing the operation (optional)
     """
     num_params = 2
     num_wires = 2
-    par_domain = "R"
 
     grad_method = "A"
 
     shift = 0.1
     multiplier = 0.5 / math.sinh(shift)
     a = 1
-    grad_recipe = ([[multiplier, a, shift], [-multiplier, a, -shift]], None)
+    grad_recipe = ([[multiplier, a, shift], [-multiplier, a, -shift]], _two_term_shift_rule)
+
+    def __init__(self, r, phi, wires, do_queue=True, id=None):
+        super().__init__(r, phi, wires=wires, do_queue=do_queue, id=id)
 
     @staticmethod
     def _heisenberg_rep(p):
@@ -318,14 +365,17 @@ class TwoModeSqueezing(CVOperation):
         U[3:5, 1:3] = S @ R.T
         return U
 
-    def adjoint(self, do_queue=False):
+    def adjoint(self):
         r, phi = self.parameters
         new_phi = (phi + np.pi) % (2 * np.pi)
-        return TwoModeSqueezing(r, new_phi, wires=self.wires, do_queue=do_queue)
+        return TwoModeSqueezing(r, new_phi, wires=self.wires)
+
+    def label(self, decimals=None, base_label=None, cache=None):
+        return super().label(decimals=decimals, base_label=base_label or "S", cache=cache)
 
 
 class QuadraticPhase(CVOperation):
-    r"""pennylane.QuadraticPhase(s, wires)
+    r"""
     Quadratic phase shift.
 
     .. math::
@@ -349,11 +399,13 @@ class QuadraticPhase(CVOperation):
 
     Args:
         s (float): parameter
-        wires (Sequence[int] or int): the wire the operation acts on
+        wires (Sequence[Any] or Any): the wire the operation acts on
+        do_queue (bool): Indicates whether the operator should be
+            immediately pushed into the Operator queue (optional)
+        id (str or None): String representing the operation (optional)
     """
     num_params = 1
     num_wires = 1
-    par_domain = "R"
 
     grad_method = "A"
 
@@ -362,15 +414,21 @@ class QuadraticPhase(CVOperation):
     a = 1
     grad_recipe = ([[multiplier, a, shift], [-multiplier, a, -shift]],)
 
+    def __init__(self, s, wires, do_queue=True, id=None):
+        super().__init__(s, wires=wires, do_queue=do_queue, id=id)
+
     @staticmethod
     def _heisenberg_rep(p):
         U = np.identity(3)
         U[2, 1] = p[0]
         return U
 
+    def label(self, decimals=None, base_label=None, cache=None):
+        return super().label(decimals=decimals, base_label=base_label or "P", cache=cache)
+
 
 class ControlledAddition(CVOperation):
-    r"""pennylane.ControlledAddition(s, wires)
+    r"""
     Controlled addition operation.
 
     .. math::
@@ -397,18 +455,22 @@ class ControlledAddition(CVOperation):
 
     Args:
         s (float): addition multiplier
-        wires (Sequence[int] or int): the wire the operation acts on
+        wires (Sequence[Any]): the wire the operation acts on
+        do_queue (bool): Indicates whether the operator should be
+            immediately pushed into the Operator queue (optional)
+        id (str or None): String representing the operation (optional)
     """
-    num_wires = 2
     num_params = 1
-    par_domain = "R"
-
+    num_wires = 2
     grad_method = "A"
 
     shift = 0.1
     multiplier = 0.5 / shift
     a = 1
     grad_recipe = ([[multiplier, a, shift], [-multiplier, a, -shift]],)
+
+    def __init__(self, s, wires, do_queue=True, id=None):
+        super().__init__(s, wires=wires, do_queue=do_queue, id=id)
 
     @staticmethod
     def _heisenberg_rep(p):
@@ -417,12 +479,15 @@ class ControlledAddition(CVOperation):
         U[3, 1] = p[0]
         return U
 
-    def adjoint(self, do_queue=False):
-        return ControlledAddition(-self.parameters[0], wires=self.wires, do_queue=do_queue)
+    def adjoint(self):
+        return ControlledAddition(-self.parameters[0], wires=self.wires)
+
+    def label(self, decimals=None, base_label=None, cache=None):
+        return super().label(decimals=decimals, base_label=base_label or "X", cache=cache)
 
 
 class ControlledPhase(CVOperation):
-    r"""pennylane.ControlledPhase(s, wires)
+    r"""
     Controlled phase operation.
 
     .. math::
@@ -449,18 +514,22 @@ class ControlledPhase(CVOperation):
 
     Args:
         s (float):  phase shift multiplier
-        wires (Sequence[int] or int): the wire the operation acts on
+        wires (Sequence[Any]): the wire the operation acts on
+        do_queue (bool): Indicates whether the operator should be
+            immediately pushed into the Operator queue (optional)
+        id (str or None): String representing the operation (optional)
     """
-    num_wires = 2
     num_params = 1
-    par_domain = "R"
-
+    num_wires = 2
     grad_method = "A"
 
     shift = 0.1
     multiplier = 0.5 / shift
     a = 1
     grad_recipe = ([[multiplier, a, shift], [-multiplier, a, -shift]],)
+
+    def __init__(self, s, wires, do_queue=True, id=None):
+        super().__init__(s, wires=wires, do_queue=do_queue, id=id)
 
     @staticmethod
     def _heisenberg_rep(p):
@@ -469,12 +538,15 @@ class ControlledPhase(CVOperation):
         U[4, 1] = p[0]
         return U
 
-    def adjoint(self, do_queue=False):
-        return ControlledPhase(-self.parameters[0], wires=self.wires, do_queue=do_queue)
+    def adjoint(self):
+        return ControlledPhase(-self.parameters[0], wires=self.wires)
+
+    def label(self, decimals=None, base_label=None, cache=None):
+        return super().label(decimals=decimals, base_label=base_label or "Z", cache=cache)
 
 
 class Kerr(CVOperation):
-    r"""pennylane.Kerr(kappa, wires)
+    r"""
     Kerr interaction.
 
     .. math::
@@ -488,19 +560,24 @@ class Kerr(CVOperation):
 
     Args:
         kappa (float): parameter
-        wires (Sequence[int] or int): the wire the operation acts on
+        wires (Sequence[Any] or Any): the wire the operation acts on
+        do_queue (bool): Indicates whether the operator should be
+            immediately pushed into the Operator queue (optional)
+        id (str or None): String representing the operation (optional)
     """
     num_params = 1
     num_wires = 1
-    par_domain = "R"
     grad_method = "F"
 
-    def adjoint(self, do_queue=False):
-        return Kerr(-self.parameters[0], wires=self.wires, do_queue=do_queue)
+    def __init__(self, kappa, wires, do_queue=True, id=None):
+        super().__init__(kappa, wires=wires, do_queue=do_queue, id=id)
+
+    def adjoint(self):
+        return Kerr(-self.parameters[0], wires=self.wires)
 
 
 class CrossKerr(CVOperation):
-    r"""pennylane.CrossKerr(kappa, wires)
+    r"""
     Cross-Kerr interaction.
 
     .. math::
@@ -514,19 +591,24 @@ class CrossKerr(CVOperation):
 
     Args:
         kappa (float): parameter
-        wires (Sequence[int] or int): the wire the operation acts on
+        wires (Sequence[Any]): the wire the operation acts on
+        do_queue (bool): Indicates whether the operator should be
+            immediately pushed into the Operator queue (optional)
+        id (str or None): String representing the operation (optional)
     """
     num_params = 1
     num_wires = 2
-    par_domain = "R"
     grad_method = "F"
 
-    def adjoint(self, do_queue=False):
-        return CrossKerr(-self.parameters[0], wires=self.wires, do_queue=do_queue)
+    def __init__(self, kappa, wires, do_queue=True, id=None):
+        super().__init__(kappa, wires=wires, do_queue=do_queue, id=id)
+
+    def adjoint(self):
+        return CrossKerr(-self.parameters[0], wires=self.wires)
 
 
 class CubicPhase(CVOperation):
-    r"""pennylane.CubicPhase(gamma, wires)
+    r"""
     Cubic phase shift.
 
     .. math::
@@ -540,19 +622,27 @@ class CubicPhase(CVOperation):
 
     Args:
         gamma (float): parameter
-        wires (Sequence[int] or int): the wire the operation acts on
+        wires (Sequence[Any] or Any): the wire the operation acts on
+        do_queue (bool): Indicates whether the operator should be
+            immediately pushed into the Operator queue (optional)
+        id (str or None): String representing the operation (optional)
     """
     num_params = 1
     num_wires = 1
-    par_domain = "R"
     grad_method = "F"
 
-    def adjoint(self, do_queue=False):
-        return CubicPhase(-self.parameters[0], wires=self.wires, do_queue=do_queue)
+    def __init__(self, gamma, wires, do_queue=True, id=None):
+        super().__init__(gamma, wires=wires, do_queue=do_queue, id=id)
+
+    def adjoint(self):
+        return CubicPhase(-self.parameters[0], wires=self.wires)
+
+    def label(self, decimals=None, base_label=None, cache=None):
+        return super().label(decimals=decimals, base_label=base_label or "V", cache=cache)
 
 
-class Interferometer(CVOperation):
-    r"""pennylane.Interferometer(U, wires)
+class InterferometerUnitary(CVOperation):
+    r"""
     A linear interferometer transforming the bosonic operators according to
     the unitary matrix :math:`U`.
 
@@ -583,13 +673,18 @@ class Interferometer(CVOperation):
 
     Args:
         U (array): A shape ``(len(wires), len(wires))`` complex unitary matrix
-        wires (Sequence[int] or int): the wires the operation acts on
+        wires (Sequence[Any] or Any): the wires the operation acts on
+        do_queue (bool): Indicates whether the operator should be
+            immediately pushed into the Operator queue (optional)
+        id (str or None): String representing the operation (optional)
     """
     num_params = 1
     num_wires = AnyWires
-    par_domain = "A"
     grad_method = None
     grad_recipe = None
+
+    def __init__(self, U, wires, do_queue=True, id=None):
+        super().__init__(U, wires=wires, do_queue=do_queue, id=id)
 
     @staticmethod
     def _heisenberg_rep(p):
@@ -604,9 +699,12 @@ class Interferometer(CVOperation):
         M[1 : 2 * N + 1, 1 : 2 * N + 1] = S
         return M
 
-    def adjoint(self, do_queue=False):
+    def adjoint(self):
         U = self.parameters[0]
-        return Interferometer(qml_math.T(qml_math.conj(U)), wires=self.wires, do_queue=do_queue)
+        return InterferometerUnitary(qml_math.T(qml_math.conj(U)), wires=self.wires)
+
+    def label(self, decimals=None, base_label=None, cache=None):
+        return super().label(decimals=decimals, base_label=base_label or "U", cache=cache)
 
 
 # =============================================================================
@@ -617,7 +715,7 @@ class Interferometer(CVOperation):
 
 
 class CoherentState(CVOperation):
-    r"""pennylane.CoherentState(a, phi, wires)
+    r"""
     Prepares a coherent state.
 
     **Details:**
@@ -629,16 +727,21 @@ class CoherentState(CVOperation):
     Args:
         a (float): displacement magnitude :math:`r=|\alpha|`
         phi (float): phase angle :math:`\phi`
-        wires (Sequence[int] or int): the wire the operation acts on
+        wires (Sequence[Any] or Any): the wire the operation acts on
+        do_queue (bool): Indicates whether the operator should be
+            immediately pushed into the Operator queue (optional)
+        id (str or None): String representing the operation (optional)
     """
-    num_wires = 1
     num_params = 2
-    par_domain = "R"
+    num_wires = 1
     grad_method = "F"
+
+    def __init__(self, a, phi, wires, do_queue=True, id=None):
+        super().__init__(a, phi, wires=wires, do_queue=do_queue, id=id)
 
 
 class SqueezedState(CVOperation):
-    r"""pennylane.SqueezedState(r, phi, wires)
+    r"""
     Prepares a squeezed vacuum state.
 
     **Details:**
@@ -650,16 +753,21 @@ class SqueezedState(CVOperation):
     Args:
         r (float): squeezing magnitude
         phi (float): squeezing angle :math:`\phi`
-        wires (Sequence[int] or int): the wire the operation acts on
+        wires (Sequence[Any] or Any): the wire the operation acts on
+        do_queue (bool): Indicates whether the operator should be
+            immediately pushed into the Operator queue (optional)
+        id (str or None): String representing the operation (optional)
     """
-    num_wires = 1
     num_params = 2
-    par_domain = "R"
+    num_wires = 1
     grad_method = "F"
+
+    def __init__(self, r, phi, wires, do_queue=True, id=None):
+        super().__init__(r, phi, wires=wires, do_queue=do_queue, id=id)
 
 
 class DisplacedSqueezedState(CVOperation):
-    r"""pennylane.DisplacedSqueezedState(a, phi_a, r, phi_r, wires)
+    r"""
     Prepares a displaced squeezed vacuum state.
 
     A displaced squeezed state is prepared by squeezing a vacuum state, and
@@ -681,16 +789,21 @@ class DisplacedSqueezedState(CVOperation):
         phi_a (float): displacement angle :math:`\phi_a`
         r (float): squeezing magnitude :math:`r=|z|`
         phi_r (float): squeezing angle :math:`\phi_r`
-        wires (Sequence[int] or int): the wire the operation acts on
+        wires (Sequence[Any] or Any): the wire the operation acts on
+        do_queue (bool): Indicates whether the operator should be
+            immediately pushed into the Operator queue (optional)
+        id (str or None): String representing the operation (optional)
     """
-    num_wires = 1
     num_params = 4
-    par_domain = "R"
+    num_wires = 1
     grad_method = "F"
+
+    def __init__(self, a, phi_a, r, phi_r, wires, do_queue=True, id=None):
+        super().__init__(a, phi_a, r, phi_r, wires=wires, do_queue=do_queue, id=id)
 
 
 class ThermalState(CVOperation):
-    r"""pennylane.ThermalState(nbar, wires)
+    r"""
     Prepares a thermal state.
 
     **Details:**
@@ -701,16 +814,24 @@ class ThermalState(CVOperation):
 
     Args:
         nbar (float): mean thermal population of the mode
-        wires (Sequence[int] or int): the wire the operation acts on
+        wires (Sequence[Any] or Any): the wire the operation acts on
+        do_queue (bool): Indicates whether the operator should be
+            immediately pushed into the Operator queue (optional)
+        id (str or None): String representing the operation (optional)
     """
-    num_wires = 1
     num_params = 1
-    par_domain = "R"
+    num_wires = 1
     grad_method = "F"
+
+    def __init__(self, nbar, wires, do_queue=True, id=None):
+        super().__init__(nbar, wires=wires, do_queue=do_queue, id=id)
+
+    def label(self, decimals=None, base_label=None, cache=None):
+        return super().label(decimals=decimals, base_label=base_label or "Thermal", cache=cache)
 
 
 class GaussianState(CVOperation):
-    r"""pennylane.GaussianState(V, r, wires)
+    r"""
     Prepare subsystems in a given Gaussian state.
 
     **Details:**
@@ -723,15 +844,24 @@ class GaussianState(CVOperation):
         V (array): the :math:`2N\times 2N` (real and positive definite) covariance matrix
         r (array): a length :math:`2N` vector of means, of the
             form :math:`(\x_0,\dots,\x_{N-1},\p_0,\dots,\p_{N-1})`
+        wires (Sequence[Any] or Any): the wire the operation acts on
+        do_queue (bool): Indicates whether the operator should be
+            immediately pushed into the Operator queue (optional)
+        id (str or None): String representing the operation (optional)
     """
-    num_wires = AnyWires
     num_params = 2
-    par_domain = "A"
+    num_wires = AnyWires
     grad_method = "F"
+
+    def __init__(self, V, r, wires, do_queue=True, id=None):
+        super().__init__(V, r, wires=wires, do_queue=do_queue, id=id)
+
+    def label(self, decimals=None, base_label=None, cache=None):
+        return super().label(decimals=decimals, base_label=base_label or "Gaussian", cache=cache)
 
 
 class FockState(CVOperation):
-    r"""pennylane.FockState(n, wires)
+    r"""
     Prepares a single Fock state.
 
     **Details:**
@@ -742,16 +872,47 @@ class FockState(CVOperation):
 
     Args:
         n (int): Fock state to prepare
-        wires (Sequence[int] or int): the wire the operation acts on
+        wires (Sequence[Any] or Any): the wire the operation acts on
+        do_queue (bool): Indicates whether the operator should be
+            immediately pushed into the Operator queue (optional)
+        id (str or None): String representing the operation (optional)
     """
-    num_wires = 1
     num_params = 1
-    par_domain = "N"
+    num_wires = 1
     grad_method = None
+
+    def __init__(self, n, wires, do_queue=True, id=None):
+        super().__init__(n, wires=wires, do_queue=do_queue, id=id)
+
+    def label(self, decimals=None, base_label=None, cache=None):
+        r"""A customizable string representation of the operator.
+
+        Args:
+            decimals=None (int): If ``None``, no parameters are included. Else,
+                specifies how to round the parameters.
+            base_label=None (str): overwrite the non-parameter component of the label
+            cache=None (dict): dictionary that caries information between label calls
+                in the same drawing
+
+        Returns:
+            str: label to use in drawings
+
+        **Example:**
+
+        >>> qml.FockState(7, wires=0).label()
+        '|7⟩'
+
+        """
+        if base_label is not None:
+            if decimals is None:
+                return base_label
+            p = format(qml_math.asarray(self.parameters[0]), ".0f")
+            return base_label + f"\n({p})"
+        return f"|{qml_math.asarray(self.parameters[0])}⟩"
 
 
 class FockStateVector(CVOperation):
-    r"""pennylane.FockStateVector(state, wires)
+    r"""
     Prepare subsystems using the given ket vector in the Fock basis.
 
     **Details:**
@@ -763,15 +924,86 @@ class FockStateVector(CVOperation):
     Args:
         state (array): a single ket vector, for single mode state preparation,
             or a multimode ket, with one array dimension per mode
+        wires (Sequence[Any] or Any): the wire the operation acts on
+        do_queue (bool): Indicates whether the operator should be
+            immediately pushed into the Operator queue (optional)
+        id (str or None): String representing the operation (optional)
+
+    .. details::
+        :title: Usage Details
+
+        For a single mode with cutoff dimension :math:`N`, the input is a
+        1-dimensional vector of length :math:`N`.
+
+        .. code-block::
+
+            dev_fock = qml.device("strawberryfields.fock", wires=4, cutoff_dim=4)
+
+            state = np.array([0, 0, 1, 0])
+
+            @qml.qnode(dev_fock)
+            def circuit():
+                qml.FockStateVector(state, wires=0)
+                return qml.expval(qml.NumberOperator(wires=0))
+
+        For multiple modes, the input is the tensor product of single mode
+        kets. For example, given a set of :math:`M` single mode vectors of
+        length :math:`N`, the input should have shape ``(N, ) * M``.
+
+        .. code-block::
+
+            used_wires = [0, 3]
+            cutoff_dim = 5
+
+            dev_fock = qml.device("strawberryfields.fock", wires=4, cutoff_dim=cutoff_dim)
+
+            state_1 = np.array([0, 1, 0, 0, 0])
+            state_2 = np.array([0, 0, 0, 1, 0])
+
+            combined_state = np.kron(state_1, state_2).reshape(
+                (cutoff_dim, ) * len(used_wires)
+            )
+
+            @qml.qnode(dev_fock)
+            def circuit():
+                qml.FockStateVector(combined_state, wires=used_wires)
+                return qml.expval(qml.NumberOperator(wires=0))
+
     """
-    num_wires = AnyWires
     num_params = 1
-    par_domain = "A"
+    num_wires = AnyWires
     grad_method = "F"
+
+    def __init__(self, state, wires, do_queue=True, id=None):
+        super().__init__(state, wires=wires, do_queue=do_queue, id=id)
+
+    def label(self, decimals=None, base_label=None, cache=None):
+        r"""A customizable string representation of the operator.
+
+        Args:
+            decimals=None (int): If ``None``, no parameters are included. Else,
+                specifies how to round the parameters.
+            base_label=None (str): overwrite the non-parameter component of the label
+            cache=None (dict): dictionary that caries information between label calls
+                in the same drawing
+
+        Returns:
+            str: label to use in drawings
+
+        **Example:**
+
+        >>> qml.FockStateVector([1,2,3], wires=(0,1,2)).label()
+        '|123⟩'
+
+        """
+        if base_label is not None:
+            return base_label
+        basis_string = "".join(str(int(i)) for i in self.parameters[0])
+        return f"|{basis_string}⟩"
 
 
 class FockDensityMatrix(CVOperation):
-    r"""pennylane.FockDensityMatrix(state, wires)
+    r"""
     Prepare subsystems using the given density matrix in the Fock basis.
 
     **Details:**
@@ -783,15 +1015,21 @@ class FockDensityMatrix(CVOperation):
     Args:
         state (array): a single mode matrix :math:`\rho_{ij}`, or
             a multimode tensor :math:`\rho_{ij,kl,\dots,mn}`, with two indices per mode
+        wires (Sequence[Any] or Any): the wire the operation acts on
+        do_queue (bool): Indicates whether the operator should be
+            immediately pushed into the Operator queue (optional)
+        id (str or None): String representing the operation (optional)
     """
-    num_wires = AnyWires
     num_params = 1
-    par_domain = "A"
+    num_wires = AnyWires
     grad_method = "F"
+
+    def __init__(self, state, wires, do_queue=True, id=None):
+        super().__init__(state, wires=wires, do_queue=do_queue, id=id)
 
 
 class CatState(CVOperation):
-    r"""pennylane.CatState(a, phi, p, wires)
+    r"""
     Prepares a cat state.
 
     A cat state is the coherent superposition of two coherent states,
@@ -814,12 +1052,17 @@ class CatState(CVOperation):
         phi (float): displacement angle :math:`\phi`
         p (float): parity, where :math:`p=0` corresponds to an even
             cat state, and :math:`p=1` an odd cat state.
-        wires (Sequence[int] or int): the wire the operation acts on
+        wires (Sequence[Any] or Any): the wire the operation acts on
+        do_queue (bool): Indicates whether the operator should be
+            immediately pushed into the Operator queue (optional)
+        id (str or None): String representing the operation (optional)
     """
-    num_wires = 1
     num_params = 3
-    par_domain = "R"
+    num_wires = 1
     grad_method = "F"
+
+    def __init__(self, a, phi, p, wires, do_queue=True, id=None):
+        super().__init__(a, phi, p, wires=wires, do_queue=do_queue, id=id)
 
 
 # =============================================================================
@@ -828,13 +1071,13 @@ class CatState(CVOperation):
 
 
 class NumberOperator(CVObservable):
-    r"""pennylane.ops.NumberOperator(wires)
+    r"""
     The photon number observable :math:`\langle \hat{n}\rangle`.
 
     The number operator is defined as
     :math:`\hat{n} = \a^\dagger \a = \frac{1}{2\hbar}(\x^2 +\p^2) -\I/2`.
 
-    When used with the :func:`~.expval` function, the mean
+    When used with the :func:`~pennylane.expval` function, the mean
     photon number :math:`\braket{\hat{n}}` is returned.
 
     **Details:**
@@ -851,27 +1094,32 @@ class NumberOperator(CVObservable):
         \end{bmatrix}
 
     Args:
-        wires (Sequence[int] or int): the wire the operation acts on
+        wires (Sequence[Any] or Any): the wire the operation acts on
     """
-    num_wires = 1
     num_params = 0
-    par_domain = None
+    num_wires = 1
 
     ev_order = 2
+
+    def __init__(self, wires):
+        super().__init__(wires=wires)
 
     @staticmethod
     def _heisenberg_rep(p):
         hbar = 2
         return np.diag([-0.5, 0.5 / hbar, 0.5 / hbar])
 
+    def label(self, decimals=None, base_label=None, cache=None):
+        return base_label or "n"
+
 
 class TensorN(CVObservable):
-    r"""pennylane.ops.TensorN(wires)
+    r"""
     The tensor product of the :class:`~.NumberOperator` acting on different wires.
 
     If a single wire is defined, returns a :class:`~.NumberOperator` instance for convenient gradient computations.
 
-    When used with the :func:`~.expval` function, the expectation value
+    When used with the :func:`~pennylane.expval` function, the expectation value
     :math:`\langle \hat{n}_{i_0} \hat{n}_{i_1}\dots \hat{n}_{i_{N-1}}\rangle`
     for a (sub)set of modes :math:`[i_0, i_1, \dots, i_{N-1}]` of the system is
     returned.
@@ -882,9 +1130,10 @@ class TensorN(CVObservable):
     * Number of parameters: 0
 
     Args:
-        wires (Sequence[int] or int): the wire the operation acts on
+        wires (Sequence[Any] or Any): the wire the operation acts on
 
-    .. UsageDetails::
+    .. details::
+        :title: Usage Details
 
         Example for multiple modes:
 
@@ -902,29 +1151,33 @@ class TensorN(CVObservable):
         >>> cv_obs.ev_order
         2
     """
-    num_wires = AnyWires
     num_params = 0
-    par_domain = None
+    num_wires = AnyWires
     ev_order = None
 
-    def __new__(cls, *params, wires=None, do_queue=True):
+    def __init__(self, wires):
+        super().__init__(wires=wires)
+
+    def __new__(cls, wires=None):
         # Custom definition for __new__ needed such that a NumberOperator can
         # be returned when a single mode is defined
 
-        if wires is None and len(params) != 0:
-            wires = params[-1]
-            params = params[:-1]
-
         if wires is not None and (isinstance(wires, int) or len(wires) == 1):
-            return NumberOperator(*params, wires=wires, do_queue=do_queue)
+            return NumberOperator(wires=wires)
+
         return super().__new__(cls)
+
+    def label(self, decimals=None, base_label=None, cache=None):
+        if base_label is not None:
+            return base_label
+        return "⊗".join("n" for _ in self.wires)
 
 
 class X(CVObservable):
-    r"""pennylane.ops.X(wires)
+    r"""
     The position quadrature observable :math:`\hat{x}`.
 
-    When used with the :func:`~.expval` function, the position expectation
+    When used with the :func:`~pennylane.expval` function, the position expectation
     value :math:`\braket{\hat{x}}` is returned. This corresponds to
     the mean displacement in the phase space along the :math:`x` axis.
 
@@ -938,13 +1191,15 @@ class X(CVObservable):
       .. math:: d = [0, 1, 0]
 
     Args:
-        wires (Sequence[int] or int): the wire the operation acts on
+        wires (Sequence[Any] or Any): the wire the operation acts on
     """
-    num_wires = 1
     num_params = 0
-    par_domain = None
+    num_wires = 1
 
     ev_order = 1
+
+    def __init__(self, wires):
+        super().__init__(wires=wires)
 
     @staticmethod
     def _heisenberg_rep(p):
@@ -952,10 +1207,10 @@ class X(CVObservable):
 
 
 class P(CVObservable):
-    r"""pennylane.ops.P(wires)
+    r"""
     The momentum quadrature observable :math:`\hat{p}`.
 
-    When used with the :func:`~.expval` function, the momentum expectation
+    When used with the :func:`~pennylane.expval` function, the momentum expectation
     value :math:`\braket{\hat{p}}` is returned. This corresponds to
     the mean displacement in the phase space along the :math:`p` axis.
 
@@ -969,13 +1224,15 @@ class P(CVObservable):
       .. math:: d = [0, 0, 1]
 
     Args:
-        wires (Sequence[int] or int): the wire the operation acts on
+        wires (Sequence[Any] or Any): the wire the operation acts on
     """
-    num_wires = 1
     num_params = 0
-    par_domain = None
+    num_wires = 1
 
     ev_order = 1
+
+    def __init__(self, wires):
+        super().__init__(wires=wires)
 
     @staticmethod
     def _heisenberg_rep(p):
@@ -983,10 +1240,10 @@ class P(CVObservable):
 
 
 class QuadOperator(CVObservable):
-    r"""pennylane.ops.QuadOperator(phi, wires)
+    r"""
     The generalized quadrature observable :math:`\x_\phi = \x cos\phi+\p\sin\phi`.
 
-    When used with the :func:`~.expval` function, the expectation
+    When used with the :func:`~pennylane.expval` function, the expectation
     value :math:`\braket{\hat{\x_\phi}}` is returned. This corresponds to
     the mean displacement in the phase space along axis at angle :math:`\phi`.
 
@@ -1002,23 +1259,62 @@ class QuadOperator(CVObservable):
     Args:
         phi (float): axis in the phase space at which to calculate
             the generalized quadrature observable
-        wires (Sequence[int] or int): the wire the operation acts on
+        wires (Sequence[Any] or Any): the wire the operation acts on
+        do_queue (bool): Indicates whether the operator should be
+            immediately pushed into the Operator queue (optional)
+        id (str or None): String representing the operation (optional)
     """
-    num_wires = 1
     num_params = 1
-    par_domain = "R"
+    num_wires = 1
 
     grad_method = "A"
     ev_order = 1
+
+    def __init__(self, phi, wires, do_queue=True, id=None):
+        super().__init__(phi, wires=wires, do_queue=do_queue, id=id)
 
     @staticmethod
     def _heisenberg_rep(p):
         phi = p[0]
         return np.array([0, math.cos(phi), math.sin(phi)])  # TODO check
 
+    def label(self, decimals=None, base_label=None, cache=None):
+        r"""A customizable string representation of the operator.
+
+        Args:
+            decimals=None (int): If ``None``, no parameters are included. Else,
+                specifies how to round the parameters.
+            base_label=None (str): overwrite the non-parameter component of the label
+            cache=None (dict): dictionary that caries information between label calls
+                in the same drawing
+
+        Returns:
+            str: label to use in drawings
+
+        **Example:**
+
+        >>> op = qml.QuadOperator(1.234, wires=0)
+        >>> op.label()
+        'cos(φ)x\n+sin(φ)p'
+        >>> op.label(decimals=2)
+        'cos(1.23)x\n+sin(1.23)p'
+        >>> op.label(base_label="Quad", decimals=2)
+        'Quad\n(1.23)'
+
+        """
+
+        if base_label is not None:
+            return super().label(decimals=decimals, base_label=base_label, cache=cache)
+
+        if decimals is None:
+            p = "φ"
+        else:
+            p = format(qml_math.array(self.parameters[0]), f".{decimals}f")
+        return f"cos({p})x\n+sin({p})p"
+
 
 class PolyXP(CVObservable):
-    r"""pennylane.ops.PolyXP(q, wires)
+    r"""
     An arbitrary second-order polynomial observable.
 
     Represents an arbitrary observable :math:`P(\x,\p)` that is a second order
@@ -1042,14 +1338,20 @@ class PolyXP(CVObservable):
 
     Args:
         q (array[float]): expansion coefficients
+        wires (Sequence[Any] or Any): the wire the operation acts on
+        do_queue (bool): Indicates whether the operator should be
+            immediately pushed into the Operator queue (optional)
+        id (str or None): String representing the operation (optional)
 
     """
-    num_wires = AnyWires
     num_params = 1
-    par_domain = "A"
+    num_wires = AnyWires
 
     grad_method = "F"
     ev_order = 2
+
+    def __init__(self, q, wires, do_queue=True, id=None):
+        super().__init__(q, wires=wires, do_queue=do_queue, id=id)
 
     @staticmethod
     def _heisenberg_rep(p):
@@ -1057,7 +1359,7 @@ class PolyXP(CVObservable):
 
 
 class FockStateProjector(CVObservable):
-    r"""pennylane.ops.FockStateProjector(n, wires)
+    r"""
     The number state observable :math:`\ket{n}\bra{n}`.
 
     Represents the non-Gaussian number state observable
@@ -1097,16 +1399,50 @@ class FockStateProjector(CVObservable):
 
             Note that ``len(n)==len(wires)``, and that ``len(n)`` cannot exceed the
             total number of wires in the QNode.
+        wires (Sequence[Any] or Any): the wire the operation acts on
+        do_queue (bool): Indicates whether the operator should be
+            immediately pushed into the Operator queue (optional)
+        id (str or None): String representing the operation (optional)
     """
-    num_wires = AnyWires
     num_params = 1
-    par_domain = "A"
+    num_wires = AnyWires
 
     grad_method = None
     ev_order = None
 
+    def __init__(self, n, wires, do_queue=True, id=None):
+        super().__init__(n, wires=wires, do_queue=do_queue, id=id)
+
+    def label(self, decimals=None, base_label=None, cache=None):
+        r"""A customizable string representation of the operator.
+
+        Args:
+            decimals=None (int): If ``None``, no parameters are included. Else,
+                specifies how to round the parameters.
+            base_label=None (str): overwrite the non-parameter component of the label
+            cache=None (dict): dictionary that caries information between label calls
+                in the same drawing
+
+        Returns:
+            str: label to use in drawings
+
+        **Example:**
+
+        >>> qml.FockStateProjector([1,2,3], wires=(0,1,2)).label()
+        '|123⟩⟨123|'
+
+        """
+
+        if base_label is not None:
+            return super().label(decimals=decimals, base_label=base_label, cache=cache)
+
+        basis_string = "".join(str(int(i)) for i in self.parameters[0])
+        return f"|{basis_string}⟩⟨{basis_string}|"
+
 
 ops = {
+    "Identity",
+    "Snapshot",
     "Beamsplitter",
     "ControlledAddition",
     "ControlledPhase",
@@ -1118,7 +1454,7 @@ ops = {
     "Squeezing",
     "TwoModeSqueezing",
     "CubicPhase",
-    "Interferometer",
+    "InterferometerUnitary",
     "CatState",
     "CoherentState",
     "FockDensityMatrix",
@@ -1131,15 +1467,7 @@ ops = {
 }
 
 
-obs = {
-    "QuadOperator",
-    "NumberOperator",
-    "TensorN",
-    "P",
-    "X",
-    "PolyXP",
-    "FockStateProjector",
-}
+obs = {"QuadOperator", "NumberOperator", "TensorN", "P", "X", "PolyXP", "FockStateProjector"}
 
 
 __all__ = list(ops | obs)

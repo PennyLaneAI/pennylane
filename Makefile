@@ -12,9 +12,13 @@ help:
 	@echo "  wheel              to build the PennyLane wheel"
 	@echo "  dist               to package the source distribution"
 	@echo "  clean              to delete all temporary, cache, and build files"
+	@echo "  docs               to build the PennyLane documentation"
 	@echo "  clean-docs         to delete all built documentation"
 	@echo "  test               to run the test suite"
 	@echo "  coverage           to generate a coverage report"
+	@echo "  format [check=1]   to apply black formatter; use with 'check=1' to check instead of modify (requires black)"
+	@echo "  lint               to run pylint on source files"
+	@echo "  lint-test          to run pylint on test files"
 
 .PHONY: install
 install:
@@ -45,7 +49,6 @@ clean:
 	rm -rf .coverage coverage_html_report/
 	rm -rf tmp
 	rm -rf *.dat
-	make -C qchem clean
 
 docs:
 	make -C doc html
@@ -63,3 +66,19 @@ coverage:
 	@echo "Generating coverage report..."
 	$(PYTHON) $(TESTRUNNER) $(COVERAGE)
 	$(PYTHON) $(PLUGIN_TESTRUNNER) --device=default.qubit.autograd $(COVERAGE) --cov-append
+
+.PHONY:format
+format:
+ifdef check
+	black -l 100 ./pennylane ./tests --check
+else
+	black -l 100 ./pennylane ./tests
+endif
+
+.PHONY: lint
+lint:
+	pylint pennylane --rcfile .pylintrc
+
+.PHONY: lint-test
+lint-test:
+	pylint tests pennylane/devices/tests --rcfile tests/.pylintrc

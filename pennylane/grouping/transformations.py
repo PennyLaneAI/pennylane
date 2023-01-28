@@ -15,20 +15,18 @@
 Functions for finding the unitary transformations required to diagonalize Pauli partitions in the
 measurement basis, and templates for the circuit implementations.
 """
-import pennylane as qml
-from pennylane.operation import Tensor
-from pennylane.wires import Wires
-from pennylane.templates import template
-from pennylane.grouping.utils import (
-    pauli_to_binary,
-    are_identical_pauli_words,
-    is_qwc,
-    is_pauli_word,
-)
 import numpy as np
 
+import pennylane as qml
+from pennylane.tape import OperationRecorder
+from pennylane.operation import Tensor
+from pennylane.grouping.utils import (
+    are_identical_pauli_words,
+    are_pauli_words_qwc,
+    is_pauli_word,
+)
 
-@template
+
 def qwc_rotation(pauli_operators):
     """Performs circuit implementation of diagonalizing unitary for a Pauli word.
 
@@ -48,16 +46,20 @@ def qwc_rotation(pauli_operators):
     paulis_with_identity = (qml.Identity, qml.PauliX, qml.PauliY, qml.PauliZ)
     if not all(isinstance(element, paulis_with_identity) for element in pauli_operators):
         raise TypeError(
-            "All values of input pauli_operators must be either Identity, PauliX, PauliY, or PauliZ instances,"
-            " instead got pauli_operators = {}.".format(pauli_operators)
+            f"All values of input pauli_operators must be either Identity, PauliX, PauliY, or PauliZ instances,"
+            f" instead got pauli_operators = {pauli_operators}."
         )
+    with OperationRecorder() as rec:
 
-    for pauli in pauli_operators:
-        if isinstance(pauli, qml.PauliX):
-            qml.RY(-np.pi / 2, wires=pauli.wires)
+        for pauli in pauli_operators:
+            if isinstance(pauli, qml.PauliX):
+                qml.RY(-np.pi / 2, wires=pauli.wires)
 
-        elif isinstance(pauli, qml.PauliY):
-            qml.RX(np.pi / 2, wires=pauli.wires)
+            elif isinstance(pauli, qml.PauliY):
+                qml.RX(np.pi / 2, wires=pauli.wires)
+
+    # known issue with pylint recognizing @property members
+    return rec.queue  # pylint:disable=no-member
 
 
 def diagonalize_pauli_word(pauli_word):
@@ -80,7 +82,7 @@ def diagonalize_pauli_word(pauli_word):
     """
 
     if not is_pauli_word(pauli_word):
-        raise TypeError("Input must be a Pauli word, instead got: {}.".format(pauli_word))
+        raise TypeError(f"Input must be a Pauli word, instead got: {pauli_word}.")
 
     paulis_with_identity = (qml.PauliX, qml.PauliY, qml.PauliZ, qml.Identity)
     diag_term = None
@@ -104,7 +106,7 @@ def diagonalize_pauli_word(pauli_word):
     return diag_term
 
 
-def diagonalize_qwc_pauli_words(qwc_grouping):
+def diagonalize_qwc_pauli_words(qwc_grouping):  # pylint: disable=too-many-branches
     """Diagonalizes a list of mutually qubit-wise commutative Pauli words.
 
     Args:
@@ -133,20 +135,9 @@ def diagonalize_qwc_pauli_words(qwc_grouping):
       PauliZ(wires=[0]) @ PauliZ(wires=[3]),
       PauliZ(wires=[1]) @ PauliZ(wires=[3])])
     """
-    m_paulis = len(qwc_grouping)
-    all_wires = Wires.all_wires([pauli_word.wires for pauli_word in qwc_grouping])
-    wire_map = {label: ind for ind, label in enumerate(all_wires)}
-    for i in range(m_paulis):
-        for j in range(i + 1, m_paulis):
-            if not is_qwc(
-                pauli_to_binary(qwc_grouping[i], wire_map=wire_map),
-                pauli_to_binary(qwc_grouping[j], wire_map=wire_map),
-            ):
-                raise ValueError(
-                    "{} and {} are not qubit-wise commuting.".format(
-                        qwc_grouping[i], qwc_grouping[j]
-                    )
-                )
+
+    if not are_pauli_words_qwc(qwc_grouping):
+        raise ValueError("The list of Pauli words are not qubit-wise commuting.")
 
     pauli_operators = []
     diag_terms = []
@@ -158,20 +149,16 @@ def diagonalize_qwc_pauli_words(qwc_grouping):
             for sigma in term.obs:
                 if sigma.name != "Identity":
                     if not any(
-                        [
-                            are_identical_pauli_words(sigma, existing_pauli)
-                            for existing_pauli in pauli_operators
-                        ]
+                        are_identical_pauli_words(sigma, existing_pauli)
+                        for existing_pauli in pauli_operators
                     ):
                         pauli_operators.append(sigma)
         elif isinstance(term, paulis_with_identity):
             sigma = term
             if sigma.name != "Identity":
                 if not any(
-                    [
-                        are_identical_pauli_words(sigma, existing_pauli)
-                        for existing_pauli in pauli_operators
-                    ]
+                    are_identical_pauli_words(sigma, existing_pauli)
+                    for existing_pauli in pauli_operators
                 ):
                     pauli_operators.append(sigma)
 

@@ -19,7 +19,9 @@ This module contains optimizers for the standard :mod:`QNode` class, which uses 
 # listed in alphabetical order to avoid circular imports
 from .adagrad import AdagradOptimizer
 from .adam import AdamOptimizer
+from .adaptive import AdaptiveOptimizer
 from .gradient_descent import GradientDescentOptimizer
+from .lie_algebra import LieAlgebraOptimizer
 from .momentum import MomentumOptimizer
 from .nesterov_momentum import NesterovMomentumOptimizer
 from .rms_prop import RMSPropOptimizer
@@ -27,13 +29,16 @@ from .qng import QNGOptimizer
 from .rotosolve import RotosolveOptimizer
 from .rotoselect import RotoselectOptimizer
 from .shot_adaptive import ShotAdaptiveOptimizer
-
+from .spsa import SPSAOptimizer
+from .qnspsa import QNSPSAOptimizer
 
 # Optimizers to display in the docs
 __all__ = [
     "AdagradOptimizer",
     "AdamOptimizer",
+    "AdaptiveOptimizer",
     "GradientDescentOptimizer",
+    "LieAlgebraOptimizer",
     "MomentumOptimizer",
     "NesterovMomentumOptimizer",
     "RMSPropOptimizer",
@@ -41,4 +46,6 @@ __all__ = [
     "RotosolveOptimizer",
     "RotoselectOptimizer",
     "ShotAdaptiveOptimizer",
+    "SPSAOptimizer",
+    "QNSPSAOptimizer",
 ]

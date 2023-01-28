@@ -13,9 +13,16 @@ PennyLane in combination with JAX, we have to generate JAX-compatible quantum no
 
 .. note::
 
-    When using ``diff_method="parameter-shift"`` with the JAX interface, only QNodes that
-    return a single expectation value or variance are supported. Returning more
-    than one expectation value, or other statistics such as probabilities, is not supported.
+    When using ``diff_method="parameter-shift"``, ``diff_method="finite-diff"``
+    or ``diff_method="adjoint"`` with the JAX interface some restrictions apply to
+    the measurements in the QNode:
+
+    * Sample and probability measurements cannot be mixed with other measurement
+      types in QNodes;
+    * Multiple probability measurements need to have the same number of wires
+      specified;
+    * Computing the jacobian of vector-valued QNodes is not supported
+      in ``mode="forward"``.
 
     However, when using ``diff_method="backprop"``, all QNode measurement statistics
     are supported.
@@ -30,6 +37,16 @@ PennyLane in combination with JAX, we have to generate JAX-compatible quantum no
         import pennylane as qml
         import jax
         import jax.numpy as jnp
+
+.. note::
+
+    JAX supports the single-precision numbers by default. To enable
+    double-precision, add the following code on startup:
+
+    .. code-block:: python
+
+        from jax.config import config
+        config.update("jax_enable_x64", True)
 
 
 Construction via the decorator
@@ -50,13 +67,13 @@ a JAX-capable QNode in PennyLane. Simply specify the ``interface='jax'`` keyword
         qml.PhaseShift(theta, wires=0)
         return qml.expval(qml.PauliZ(0)), qml.expval(qml.Hadamard(1))
 
-The QNode ``circuit1()`` is now a JAX-capable QNode, accepting ``jax.DeviceArray`` objects
-as input, and returning ``jax.DeviceArray`` objects. It can now be used like any other JAX function:
+The QNode ``circuit1()`` is now a JAX-capable QNode, accepting ``jax.Array`` objects
+as input, and returning ``jax.Array`` objects. It can now be used like any other JAX function:
 
 >>> phi = jnp.array([0.5, 0.1])
 >>> theta = jnp.array(0.2)
 >>> circuit1(phi, theta)
-DeviceArray([0.8776, 0.6880], dtype=float64)
+Array([0.8776, 0.6880], dtype=float64)
 
 Quantum gradients using JAX
 ---------------------------
@@ -86,19 +103,19 @@ For example:
 This has output:
 
 >>> phi_grad
-DeviceArray([-0.47942555,  0.        ], dtype=float32)
+Array([-0.47942555,  0.        ], dtype=float32)
 >>> theta_grad
-DeviceArray(-3.4332792e-10, dtype=float32)
+Array(-3.4332792e-10, dtype=float32)
 
 
-.. _jax_optimize:
+.. _jax_jit:
 
 Using jax.jit on QNodes
 -----------------------
 
 To fully utilize the power and speed of JAX, you'll need to just-in-time compile your functions - a
-process called "jitting". If only expectation values are returned, the ``@jax.jit`` decorator can be
-directly applied to the QNode.
+process called "jitting". If only expectation values or variances are returned,
+the ``@jax.jit`` decorator can be directly applied to the QNode.
 
 .. code-block:: python
 
@@ -113,6 +130,25 @@ directly applied to the QNode.
         qml.RX(theta, wires=0)
         return qml.expval(qml.PauliZ(0))
 
+.. note::
+
+    For differentiation methods other than ``backprop``, when
+    ``interface='jax'`` is specified, PennyLane will attempt to determine if
+    the computation was just-in-time compiled. This is done by checking if any
+    of the input parameters were subject to a JAX transformation. If so, a
+    variant of the interface that supports the just-in-time compilation of
+    QNodes will be used. This is equivalent to passing ``interface='jax-jit'``.
+
+    Computing the jacobian of vector-valued QNodes is not supported with the
+    JAX JIT interface. The output of vector-valued QNodes can, however, be used
+    in the definition of scalar-valued cost functions whose gradients can be
+    computed.
+
+    Specify ``interface='jax-python'`` to enforce support for computing the
+    backward pass of vector-valued QNodes (e.g., QNodes with probability, state
+    or multiple expectation value measurements). This option does not support
+    just-in-time compilation.
+
 
 Randomness: Shots and Samples
 -----------------------------
@@ -122,7 +158,7 @@ explicitly seeded. (See the `JAX random package documentation
 details).
 
 When simulations include randomness (i.e., if the device has a finite ``shots`` value, or the qnode
-returns ``qml.samples()``), the JAX device requires a ``jax.random.PRNGKey``. Usually, PennyLane
+returns ``qml.sample()``), the JAX device requires a ``jax.random.PRNGKey``. Usually, PennyLane
 automatically handles this for you. However, if you wish to use jitting with randomness, both the
 qnode and the device need to be created in the context of the ``jax.jit`` decorator. This can be
 achieved by wrapping device and qnode creation into a function decorated by ``@jax.jit``:
@@ -136,22 +172,22 @@ Example:
 
 
     @jax.jit
-    def sample_circuit(phi, theta, key)
+    def sample_circuit(phi, theta, key):
 
         # Device construction should happen inside a `jax.jit` decorated
         # method when using a PRNGKey.
-        dev = qml.device('default.qubit.jax', wires=2, prng_key=key)
+        dev = qml.device('default.qubit.jax', wires=2, prng_key=key, shots=100)
 
 
-        @qml.qnode(dev, interface='jax')
+        @qml.qnode(dev, interface='jax', diff_method=None)
         def circuit(phi, theta):
             qml.RX(phi[0], wires=0)
             qml.RZ(phi[1], wires=1)
             qml.CNOT(wires=[0, 1])
             qml.RX(theta, wires=0)
-            return qml.samples() # Here, we take samples instead.
+            return qml.sample() # Here, we take samples instead.
 
-        return circuit(phi, theta, key)
+        return circuit(phi, theta)
 
     # Get the samples from the jitted method.
     samples = sample_circuit([0.0, 1.0], 0.0, jax.random.PRNGKey(0))
@@ -160,3 +196,75 @@ Example:
 
     If you don't pass a PRNGKey when sampling with a ``jax.jit``, every call to the sample function
     will return the same result.
+
+.. _jax_optimize:
+
+Optimization using JAXopt and Optax
+-----------------------------------
+
+To optimize your hybrid classical-quantum model using the JAX interface, you
+**must** make use of a package meant for optimizing JAX code (such as `JAXopt
+<https://jaxopt.github.io/stable/>`_ or `Optax
+<https://optax.readthedocs.io/en/latest/>`_) or your own custom JAX optimizer.
+**The** :ref:`PennyLane optimizers <intro_ref_opt>` **cannot be used with the
+JAX interface**.
+
+As an example of using ``JAXopt``, the ``GradientDescent`` optimizer may be
+used to optimize a QNode that is transformed by ``jax.jit``:
+
+.. code-block:: python
+
+    import pennylane as qml
+    import jax
+    import jaxopt
+
+    jax.config.update("jax_enable_x64", True)
+
+    dev = qml.device("default.qubit", wires=1, shots=None)
+
+    @jax.jit
+    @qml.qnode(dev, interface="jax")
+    def energy(a):
+        qml.RX(a, wires=0)
+        return qml.expval(qml.PauliZ(0))
+
+    gd = jaxopt.GradientDescent(energy, maxiter=5)
+
+    res = gd.run(0.5)
+    optimized_params = res.params
+
+>>> optimized_params
+Array(3.1415861, dtype=float64, weak_type=True)
+
+Alternatively, optimizers from ``Optax`` may also be used to optimize the same
+QNode:
+
+.. code-block:: python
+
+    import pennylane as qml
+    from jax import numpy as jnp
+    import jax
+    import optax
+
+    learning_rate = 0.15
+
+    dev = qml.device("default.qubit", wires=1, shots=None)
+
+    @jax.jit
+    @qml.qnode(dev, interface="jax")
+    def energy(a):
+        qml.RX(a, wires=0)
+        return qml.expval(qml.PauliZ(0))
+
+    optimizer = optax.adam(learning_rate)
+
+    params = jnp.array(0.5)
+    opt_state = optimizer.init(params)
+
+    for _ in range(200):
+        grads = jax.grad(energy)(params)
+        updates, opt_state = optimizer.update(grads, opt_state)
+        params = optax.apply_updates(params, updates)
+
+>>> params
+Array(3.14159111, dtype=float64)

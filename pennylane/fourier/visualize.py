@@ -12,7 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Contains visualization functions for Fourier series and coefficients."""
-import warnings
 from itertools import product
 import numpy as np
 
@@ -22,7 +21,7 @@ import numpy as np
 # a hard requirement for everything in this module.
 try:
     from matplotlib.colors import to_rgb
-except (ModuleNotFoundError, ImportError) as e:
+except (ModuleNotFoundError, ImportError) as e:  # pragma: no cover
     raise ImportError(
         "Module matplotlib is required for visualization in the Fourier module. "
         "You can install matplolib via \n\n   pip install matplotlib"

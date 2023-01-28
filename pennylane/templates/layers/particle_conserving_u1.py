@@ -21,7 +21,7 @@ from pennylane.operation import Operation, AnyWires
 
 
 def decompose_ua(phi, wires=None):
-    r"""Implements the circuit decomposing the controlled application of the unitary
+    r"""Appends the circuit decomposing the controlled application of the unitary
     :math:`U_A(\phi)`
 
     .. math::
@@ -40,23 +40,28 @@ def decompose_ua(phi, wires=None):
     Args:
         phi (float): angle :math:`\phi` defining the unitary :math:`U_A(\phi)`
         wires (Iterable): the wires ``n`` and ``m`` the circuit acts on
-    """
 
+    Returns:
+          list[.Operator]: sequence of operators defined by this function
+    """
+    op_list = []
     n, m = wires
 
-    qml.CZ(wires=wires)
-    qml.CRot(-phi, np.pi, phi, wires=wires)
+    op_list.append(qml.CZ(wires=wires))
+    op_list.append(qml.CRot(-phi, np.pi, phi, wires=wires))
 
     # decomposition of C-PhaseShift(2*phi) gate
-    qml.PhaseShift(-phi, wires=m)
-    qml.CNOT(wires=wires)
-    qml.PhaseShift(phi, wires=m)
-    qml.CNOT(wires=wires)
-    qml.PhaseShift(-phi, wires=n)
+    op_list.append(qml.PhaseShift(-phi, wires=m))
+    op_list.append(qml.CNOT(wires=wires))
+    op_list.append(qml.PhaseShift(phi, wires=m))
+    op_list.append(qml.CNOT(wires=wires))
+    op_list.append(qml.PhaseShift(-phi, wires=n))
+
+    return op_list
 
 
 def u1_ex_gate(phi, theta, wires=None):
-    r"""Implements the two-qubit exchange gate :math:`U_{1,\mathrm{ex}}` proposed
+    r"""Appends the two-qubit exchange gate :math:`U_{1,\mathrm{ex}}` proposed
     in `arXiv:1805.04340 <https://arxiv.org/abs/1805.04340>`_ to build
     a hardware-efficient particle-conserving VQE ansatz for quantum chemistry
     simulations.
@@ -65,16 +70,22 @@ def u1_ex_gate(phi, theta, wires=None):
         phi (float): angle entering the unitary :math:`U_A(\phi)`
         theta (float): angle entering the rotation :math:`R(0, 2\theta, 0)`
         wires (list[Iterable]): the two wires ``n`` and ``m`` the circuit acts on
+
+    Returns:
+        list[.Operator]: sequence of operators defined by this function
     """
+    op_list = []
 
     # C-UA(phi)
-    decompose_ua(phi, wires=wires)
+    op_list.extend(decompose_ua(phi, wires=wires))
 
-    qml.CZ(wires=wires[::-1])
-    qml.CRot(0, 2 * theta, 0, wires=wires[::-1])
+    op_list.append(qml.CZ(wires=wires[::-1]))
+    op_list.append(qml.CRot(0, 2 * theta, 0, wires=wires[::-1]))
 
     # C-UA(-phi)
-    decompose_ua(-phi, wires=wires)
+    op_list.extend(decompose_ua(-phi, wires=wires))
+
+    return op_list
 
 
 class ParticleConservingU1(Operation):
@@ -176,7 +187,8 @@ class ParticleConservingU1(Operation):
         init_state (tensor_like): iterable or shape ``(len(wires),)`` tensor representing the Hartree-Fock state
             used to initialize the wires
 
-    .. UsageDetails::
+    .. details::
+        :title: Usage Details
 
         #. The number of wires :math:`N` has to be equal to the number of
            spin orbitals included in the active space.
@@ -189,11 +201,12 @@ class ParticleConservingU1(Operation):
         .. code-block:: python
 
             import pennylane as qml
-            from pennylane.templates import ParticleConservingU1
+            import numpy as np
             from functools import partial
 
-            # Build the electronic Hamiltonian from a local .xyz file
-            h, qubits = qml.qchem.molecular_hamiltonian("h2", "h2.xyz")
+            # Build the electronic Hamiltonian
+            symbols, coordinates = (['H', 'H'], np.array([0., 0., -0.66140414, 0., 0., 0.66140414]))
+            h, qubits = qml.qchem.molecular_hamiltonian(symbols, coordinates)
 
             # Define the Hartree-Fock state
             electrons = 2
@@ -203,38 +216,37 @@ class ParticleConservingU1(Operation):
             dev = qml.device('default.qubit', wires=qubits)
 
             # Define the ansatz
-            ansatz = partial(ParticleConservingU1, init_state=ref_state)
+            ansatz = partial(qml.ParticleConservingU1, init_state=ref_state)
 
             # Define the cost function
             cost_fn = qml.ExpvalCost(ansatz, h, dev)
 
             # Compute the expectation value of 'h'
             layers = 2
-            params = qml.init.particle_conserving_u1_normal(layers, qubits)
+            shape = qml.ParticleConservingU1.shape(layers, qubits)
+            params = np.random.random(shape)
             print(cost_fn(params))
 
         **Parameter shape**
 
-        The shape of the weights argument can be computed by the static method
+        The shape of the trainable weights tensor can be computed by the static method
         :meth:`~.ParticleConservingU1.shape` and used when creating randomly
         initialised weight tensors:
 
         .. code-block:: python
 
-            shape = ParticleConservingU1.shape(n_layers=2, n_wires=2)
-            weights = np.random.random(size=shape)
+            shape = qml.ParticleConservingU1.shape(n_layers=2, n_wires=2)
+            params = np.random.random(size=shape)
     """
 
-    num_params = 1
     num_wires = AnyWires
-    par_domain = "A"
+    grad_method = None
 
-    def __init__(self, weights, wires, init_state=None, do_queue=True):
+    def __init__(self, weights, wires, init_state=None, do_queue=True, id=None):
 
         if len(wires) < 2:
             raise ValueError(
-                "Expected the number of qubits to be greater than one; "
-                "got wires {}".format(wires)
+                f"Expected the number of qubits to be greater than one; " f"got wires {wires}"
             )
 
         shape = qml.math.shape(weights)
@@ -252,29 +264,64 @@ class ParticleConservingU1(Operation):
                 f"Weights tensor must have third dimension of length 2; got {shape[2]}"
             )
 
-        self.n_layers = shape[0]
-        # we can extract the numpy representation here
-        # since init_state can never be differentiable
-        self.init_state = qml.math.toarray(init_state)
+        self._hyperparameters = {"init_state": qml.math.toarray(init_state)}
 
-        super().__init__(weights, wires=wires, do_queue=do_queue)
+        super().__init__(weights, wires=wires, do_queue=do_queue, id=id)
 
-    def expand(self):
+    @property
+    def num_params(self):
+        return 1
 
-        nm_wires = [self.wires[l : l + 2] for l in range(0, len(self.wires) - 1, 2)]
-        nm_wires += [self.wires[l : l + 2] for l in range(1, len(self.wires) - 1, 2)]
+    @staticmethod
+    def compute_decomposition(weights, wires, init_state):  # pylint: disable=arguments-differ
+        r"""Representation of the ParticleConservingU1operator as a product of other operators.
 
-        with qml.tape.QuantumTape() as tape:
+        .. math:: O = O_1 O_2 \dots O_n.
 
-            qml.templates.BasisEmbedding(self.init_state, wires=self.wires)
 
-            for l in range(self.n_layers):
-                for i, wires_ in enumerate(nm_wires):
-                    u1_ex_gate(
-                        self.parameters[0][l, i, 0], self.parameters[0][l, i, 1], wires=wires_
-                    )
 
-        return tape
+        .. seealso:: :meth:`~.ParticleConservingU1.decomposition`.
+
+        Args:
+            weights (tensor_like): Array of weights of shape ``(D, M, 2)``.
+                ``D`` is the number of entangler block layers and :math:`M=N-1`
+                is the number of exchange gates :math:`U_{1,\mathrm{ex}}` per layer.
+            wires (Any or Iterable[Any]): wires that the operator acts on
+            init_state (tensor_like): iterable or shape ``(len(wires),)`` tensor representing the Hartree-Fock state
+                used to initialize the wires
+
+        Returns:
+            list[.Operator]: decomposition of the operator
+
+        **Example**
+
+        >>> weights = torch.tensor([[[0.3, 1.]]])
+        >>> qml.ParticleConservingU1.compute_decomposition(weights, wires=["a", "b"], init_state=[0, 1])
+        [BasisEmbedding(wires=['a', 'b']),
+         CZ(wires=['a', 'b']),
+         CRot(tensor(-0.3000), 3.141592653589793, tensor(0.3000), wires=['a', 'b']),
+         PhaseShift(tensor(-0.3000), wires=['b']), CNOT(wires=['a', 'b']),
+         PhaseShift(tensor(0.3000), wires=['b']), CNOT(wires=['a', 'b']),
+         PhaseShift(tensor(-0.3000), wires=['a']), CZ(wires=['b', 'a']),
+         CRot(0, tensor(2.), 0, wires=['b', 'a']), CZ(wires=['a', 'b']),
+         CRot(tensor(0.3000), 3.141592653589793, tensor(-0.3000), wires=['a', 'b']),
+         PhaseShift(tensor(0.3000), wires=['b']),
+         CNOT(wires=['a', 'b']),
+         PhaseShift(tensor(-0.3000), wires=['b']),
+         CNOT(wires=['a', 'b']),
+         PhaseShift(tensor(0.3000), wires=['a'])]
+        """
+
+        nm_wires = [wires[l : l + 2] for l in range(0, len(wires) - 1, 2)]
+        nm_wires += [wires[l : l + 2] for l in range(1, len(wires) - 1, 2)]
+        n_layers = qml.math.shape(weights)[0]
+        op_list = [qml.BasisEmbedding(init_state, wires=wires)]
+
+        for l in range(n_layers):
+            for i, wires_ in enumerate(nm_wires):
+                op_list.extend(u1_ex_gate(weights[l, i, 0], weights[l, i, 1], wires=wires_))
+
+        return op_list
 
     @staticmethod
     def shape(n_layers, n_wires):
@@ -290,6 +337,6 @@ class ParticleConservingU1(Operation):
 
         if n_wires < 2:
             raise ValueError(
-                "The number of qubits must be greater than one; got 'n_wires' = {}".format(n_wires)
+                f"The number of qubits must be greater than one; got 'n_wires' = {n_wires}"
             )
         return n_layers, n_wires - 1, 2

@@ -27,7 +27,7 @@ class TestDecomposition:
     def test_expansion(self, features):
         """Checks the queue."""
 
-        op = qml.templates.BasisEmbedding(features=features, wires=range(3))
+        op = qml.BasisEmbedding(features=features, wires=range(3))
         tape = op.expand()
 
         assert len(tape.operations) == features.count(1)
@@ -43,7 +43,7 @@ class TestDecomposition:
 
         @qml.qnode(dev)
         def circuit(x=None):
-            qml.templates.BasisEmbedding(features=x, wires=range(2))
+            qml.BasisEmbedding(features=x, wires=range(2))
             return [qml.expval(qml.PauliZ(i)) for i in range(n_qubits)]
 
         res = circuit(x=state)
@@ -59,12 +59,12 @@ class TestDecomposition:
 
         @qml.qnode(dev)
         def circuit():
-            qml.templates.BasisEmbedding(features, wires=range(3))
+            qml.BasisEmbedding(features, wires=range(3))
             return qml.expval(qml.Identity(0))
 
         @qml.qnode(dev2)
         def circuit2():
-            qml.templates.BasisEmbedding(features, wires=["z", "a", "k"])
+            qml.BasisEmbedding(features, wires=["z", "a", "k"])
             return qml.expval(qml.Identity("z"))
 
         circuit()
@@ -76,7 +76,20 @@ class TestDecomposition:
 class TestInputs:
     """Test inputs and pre-processing."""
 
-    @pytest.mark.parametrize("x", [[0], [0, 1, 1]])
+    @pytest.mark.parametrize(
+        ("feat", "wires", "expected"),
+        [(7, range(3), [1, 1, 1]), (2, range(4), [0, 0, 1, 0]), (8, range(5), [0, 1, 0, 0, 0])],
+    )
+    def test_features_as_int_conversion(self, feat, wires, expected):
+        """checks conversion from features as int to a list of binary digits
+        with length = len(wires)"""
+
+        assert (
+            qml.BasisEmbedding(features=feat, wires=wires).hyperparameters["basis_state"]
+            == expected
+        )
+
+    @pytest.mark.parametrize("x", [[0], [0, 1, 1], 4])
     def test_wrong_input_bits_exception(self, x):
         """Checks exception if number of features is not same as number of qubits."""
 
@@ -84,7 +97,7 @@ class TestInputs:
 
         @qml.qnode(dev)
         def circuit():
-            qml.templates.BasisEmbedding(features=x, wires=range(2))
+            qml.BasisEmbedding(features=x, wires=range(2))
             return qml.expval(qml.PauliZ(0))
 
         with pytest.raises(ValueError, match="Features must be of length"):
@@ -97,7 +110,7 @@ class TestInputs:
 
         @qml.qnode(dev)
         def circuit(x=None):
-            qml.templates.BasisEmbedding(features=x, wires=range(2))
+            qml.BasisEmbedding(features=x, wires=range(2))
             return qml.expval(qml.PauliZ(0))
 
         with pytest.raises(ValueError, match="Basis state must only consist of"):
@@ -110,15 +123,20 @@ class TestInputs:
 
         @qml.qnode(dev)
         def circuit(x=None):
-            qml.templates.BasisEmbedding(features=x, wires=2)
+            qml.BasisEmbedding(features=x, wires=2)
             return qml.expval(qml.PauliZ(0))
 
         with pytest.raises(ValueError, match="Features must be one-dimensional"):
             circuit(x=[[1], [0]])
 
+    def test_id(self):
+        """Tests that the id attribute can be set."""
+        template = qml.BasisEmbedding([0, 1], wires=[0, 1], id="a")
+        assert template.id == "a"
+
 
 def circuit_template(features):
-    qml.templates.BasisEmbedding(features, wires=range(3))
+    qml.BasisEmbedding(features, wires=range(3))
     return qml.state()
 
 
@@ -137,7 +155,6 @@ class TestInterfaces:
 
     def test_list_and_tuples(self, tol):
         """Tests common iterables as inputs."""
-
         features = [0, 1, 0]
 
         dev = qml.device("default.qubit", wires=3)
@@ -153,6 +170,10 @@ class TestInterfaces:
         res2 = circuit2(tuple(features))
         assert qml.math.allclose(res, res2, atol=tol, rtol=0)
 
+        res = circuit(2)
+        assert qml.math.allclose(res, res2, atol=tol, rtol=0)
+
+    @pytest.mark.autograd
     def test_autograd(self, tol):
         """Tests the autograd interface."""
 
@@ -165,13 +186,16 @@ class TestInterfaces:
 
         res = circuit(features)
         res2 = circuit2(features)
-
         assert qml.math.allclose(res, res2, atol=tol, rtol=0)
 
+        res = circuit(pnp.array(2))
+        assert qml.math.allclose(res, res2, atol=tol, rtol=0)
+
+    @pytest.mark.jax
     def test_jax(self, tol):
         """Tests the jax interface."""
 
-        jax = pytest.importorskip("jax")
+        import jax
         import jax.numpy as jnp
 
         features = jnp.array([0, 1, 0])
@@ -183,13 +207,39 @@ class TestInterfaces:
 
         res = circuit(features)
         res2 = circuit2(features)
-
         assert qml.math.allclose(res, res2, atol=tol, rtol=0)
 
+        res = circuit(jnp.array(2))
+        assert qml.math.allclose(res, res2, atol=tol, rtol=0)
+
+    @pytest.mark.jax
+    def test_jax_jit(self, tol):
+        """Tests the jax-jit interface."""
+
+        import jax
+        import jax.numpy as jnp
+
+        features = jnp.array([0, 1, 0])
+
+        dev = qml.device("default.qubit", wires=3)
+
+        circuit = qml.QNode(circuit_template, dev, interface="jax")
+        circuit2 = qml.QNode(circuit_decomposed, dev, interface="jax")
+
+        res = circuit(features)
+        res2 = circuit2(features)
+        assert qml.math.allclose(res, res2, atol=tol, rtol=0)
+
+        circuit = jax.jit(circuit)
+
+        res = circuit(jnp.array(2))
+        assert qml.math.allclose(res, res2, atol=tol, rtol=0)
+
+    @pytest.mark.tf
     def test_tf(self, tol):
         """Tests the tf interface."""
 
-        tf = pytest.importorskip("tensorflow")
+        import tensorflow as tf
 
         features = tf.Variable([0, 1, 0])
 
@@ -200,13 +250,36 @@ class TestInterfaces:
 
         res = circuit(features)
         res2 = circuit2(features)
-
         assert qml.math.allclose(res, res2, atol=tol, rtol=0)
 
+        res = circuit(tf.Variable(2))
+        assert qml.math.allclose(res, res2, atol=tol, rtol=0)
+
+    @pytest.mark.tf
+    def test_tf_autograph(self, tol):
+        """Tests the tf interface with autograph"""
+
+        import tensorflow as tf
+
+        features = tf.Variable([0, 1, 0])
+
+        dev = qml.device("default.qubit", wires=3)
+
+        circuit = qml.QNode(circuit_template, dev, interface="tf-autograph")
+        circuit2 = qml.QNode(circuit_decomposed, dev, interface="tf-autograph")
+
+        res = circuit(features)
+        res2 = circuit2(features)
+        assert qml.math.allclose(res, res2, atol=tol, rtol=0)
+
+        res = circuit(tf.Variable(2))
+        assert qml.math.allclose(res, res2, atol=tol, rtol=0)
+
+    @pytest.mark.torch
     def test_torch(self, tol):
         """Tests the torch interface."""
 
-        torch = pytest.importorskip("torch")
+        import torch
 
         features = torch.tensor([0, 1, 0])
 
@@ -217,5 +290,7 @@ class TestInterfaces:
 
         res = circuit(features)
         res2 = circuit2(features)
+        assert qml.math.allclose(res, res2, atol=tol, rtol=0)
 
+        res = circuit(torch.tensor(2))
         assert qml.math.allclose(res, res2, atol=tol, rtol=0)

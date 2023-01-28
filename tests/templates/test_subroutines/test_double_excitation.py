@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-Tests for the DoubleExcitationUnitary template.
+Tests for the FermionicDoubleExcitation template.
 """
 import pytest
 import numpy as np
@@ -185,14 +185,14 @@ class TestDecomposition:
         ],
     )
     def test_double_ex_unitary_operations(self, wires1, wires2, ref_gates):
-        """Test the correctness of the DoubleExcitationUnitary template including the gate count
+        """Test the correctness of the FermionicDoubleExcitation template including the gate count
         and order, the wires each operation acts on and the correct use of parameters
         in the circuit."""
 
         sqg = 72
         cnots = 16 * (len(wires1) - 1 + len(wires2) - 1 + 1)
         weight = np.pi / 3
-        op = qml.templates.DoubleExcitationUnitary(weight, wires1=wires1, wires2=wires2)
+        op = qml.FermionicDoubleExcitation(weight, wires1=wires1, wires2=wires2)
         queue = op.expand().operations
 
         assert len(queue) == sqg + cnots
@@ -220,12 +220,12 @@ class TestDecomposition:
 
         @qml.qnode(dev)
         def circuit():
-            qml.templates.DoubleExcitationUnitary(0.4, wires1=[0, 2], wires2=[1, 4, 3])
+            qml.FermionicDoubleExcitation(0.4, wires1=[0, 2], wires2=[1, 4, 3])
             return qml.expval(qml.Identity(0))
 
         @qml.qnode(dev2)
         def circuit2():
-            qml.templates.DoubleExcitationUnitary(0.4, wires1=["z", "k"], wires2=["a", "s", "t"])
+            qml.FermionicDoubleExcitation(0.4, wires1=["z", "k"], wires2=["a", "s", "t"])
             return qml.expval(qml.Identity("z"))
 
         circuit()
@@ -252,7 +252,7 @@ class TestInputs:
         dev = qml.device("default.qubit", wires=10)
 
         def circuit(weight):
-            qml.templates.DoubleExcitationUnitary(weight=weight, wires1=wires1, wires2=wires2)
+            qml.FermionicDoubleExcitation(weight=weight, wires1=wires1, wires2=wires2)
             return qml.expval(qml.PauliZ(0))
 
         qnode = qml.QNode(circuit, dev)
@@ -260,9 +260,14 @@ class TestInputs:
         with pytest.raises(ValueError, match=msg_match):
             qnode(weight)
 
+    def test_id(self):
+        """Tests that the id attribute can be set."""
+        template = qml.FermionicDoubleExcitation(0.4, wires1=[0, 2], wires2=[1, 4, 3], id="a")
+        assert template.id == "a"
+
 
 def circuit_template(weight):
-    qml.templates.DoubleExcitationUnitary(weight, wires1=[0, 1], wires2=[2, 3])
+    qml.FermionicDoubleExcitation(weight, wires1=[0, 1], wires2=[2, 3])
     return qml.expval(qml.PauliZ(0))
 
 
@@ -270,6 +275,7 @@ class TestInterfaces:
     """Tests that the template is compatible with all interfaces, including the computation
     of gradients."""
 
+    @pytest.mark.autograd
     def test_autograd(self):
         """Tests the autograd interface."""
 
@@ -287,10 +293,12 @@ class TestInterfaces:
         # without error
         grad_fn(weight)
 
+    @pytest.mark.jax
+    @pytest.mark.slow
     def test_jax(self):
         """Tests the jax interface."""
 
-        jax = pytest.importorskip("jax")
+        import jax
         import jax.numpy as jnp
 
         weight = jnp.array(0.5)
@@ -304,10 +312,11 @@ class TestInterfaces:
         # check that the gradient is computed without error
         grad_fn(weight)
 
+    @pytest.mark.tf
     def test_tf(self):
         """Tests the tf interface."""
 
-        tf = pytest.importorskip("tensorflow")
+        import tensorflow as tf
 
         weight = tf.Variable(0.5)
         dev = qml.device("default.qubit", wires=4)
@@ -322,10 +331,11 @@ class TestInterfaces:
         # check that the gradient is computed without error
         tape.gradient(res, [weight])
 
+    @pytest.mark.torch
     def test_torch(self):
         """Tests the torch interface."""
 
-        torch = pytest.importorskip("torch")
+        import torch
 
         weight = torch.tensor(0.5, requires_grad=True)
 

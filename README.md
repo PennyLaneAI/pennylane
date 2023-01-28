@@ -1,21 +1,15 @@
 <p align="center">
-  <a href="https://pennylane.ai">
-    <img width=80% src="https://raw.githubusercontent.com/PennyLaneAI/pennylane/master/doc/_static/pennylane_thin.png">
-  </a>
-</p>
-
-<p align="center">
   <!-- Tests (GitHub actions) -->
   <a href="https://github.com/PennyLaneAI/pennylane/actions?query=workflow%3ATests">
-    <img src="https://img.shields.io/github/workflow/status/PennyLaneAI/pennylane/Tests/master?logo=github&style=flat-square" />
+    <img src="https://img.shields.io/github/actions/workflow/status/PennyLaneAI/PennyLane/tests.yml?branch=master&style=flat-square" />
   </a>
   <!-- CodeCov -->
   <a href="https://codecov.io/gh/PennyLaneAI/pennylane">
     <img src="https://img.shields.io/codecov/c/github/PennyLaneAI/pennylane/master.svg?logo=codecov&style=flat-square" />
   </a>
   <!-- ReadTheDocs -->
-  <a href="https://pennylane.readthedocs.io">
-    <img src="https://img.shields.io/readthedocs/pennylane.svg?logo=read-the-docs&style=flat-square" />
+  <a href="https://docs.pennylane.ai/en/latest">
+    <img src="https://readthedocs.com/projects/xanaduai-pennylane/badge/?version=latest&style=flat-square" />
   </a>
   <!-- PyPI -->
   <a href="https://pypi.org/project/PennyLane">
@@ -39,7 +33,12 @@
 
 <p align="center">
   <strong>Train a quantum computer the same way as a neural network.</strong>
-  <img src="https://raw.githubusercontent.com/PennyLaneAI/pennylane/master/doc/_static/header.png" width="700px">
+  <img src="https://raw.githubusercontent.com/PennyLaneAI/pennylane/master/doc/_static/header.png#gh-light-mode-only" width="700px">
+    <!--
+    Use a relative import for the dark mode image. When loading on PyPI, this
+    will fail automatically and show nothing.
+    -->
+    <img src="./doc/_static/header-dark-mode.png#gh-dark-mode-only" width="700px" onerror="this.style.display='none'" alt=""/>
 </p>
 
 ## Key Features
@@ -48,7 +47,7 @@
 
 - *Machine learning on quantum hardware*. Connect to quantum hardware using **PyTorch**, **TensorFlow**, **JAX**, **Keras**, or **NumPy**. Build rich and flexible hybrid quantum-classical models.
 
-- *Device independent*. Run the same quantum circuit on different quantum backends. Install
+- *Device-independent*. Run the same quantum circuit on different quantum backends. Install
   [plugins](https://pennylane.ai/plugins.html) to access even more devices, including **Strawberry
   Fields**, **Amazon Braket**, **IBM Q**, **Google Cirq**, **Rigetti Forest**, **Qulacs**, **Pasqal**, **Honeywell**, and more.
 
@@ -60,12 +59,18 @@
 
 ## Installation
 
-PennyLane requires Python version 3.7 and above. Installation of PennyLane, as well as all
+PennyLane requires Python version 3.8 and above. Installation of PennyLane, as well as all
 dependencies, can be done using pip:
 
 ```console
 python -m pip install pennylane
 ```
+
+## Docker support
+
+**Docker** support exists for building using **CPU** and **GPU** (Nvidia CUDA
+11.1+) images. [See a more detailed description
+here](https://pennylane.readthedocs.io/en/stable/development/guide/installation.html#installation).
 
 ## Getting started
 
@@ -100,6 +105,15 @@ scripts.
 
 If you would like to contribute your own demo, see our [demo submission
 guide](https://pennylane.ai/qml/demos_submission.html).
+
+## Videos
+
+Seeing is believing! Check out [our videos](https://pennylane.ai/qml/videos.html) to learn about
+PennyLane, quantum computing concepts, and more. 
+
+<a href="https://pennylane.ai/qml/videos.html)">
+  <img src="https://raw.githubusercontent.com/PennyLaneAI/pennylane/master/doc/_static/readme/videos.png" width="900px">
+</a>
 
 ## Contributing to PennyLane
 
@@ -136,10 +150,8 @@ PennyLane is the work of [many contributors](https://github.com/PennyLaneAI/penn
 
 If you are doing research using PennyLane, please cite [our paper](https://arxiv.org/abs/1811.04968):
 
-> Ville Bergholm, Josh Izaac, Maria Schuld, Christian Gogolin, M. Sohaib Alam, Shahnawaz Ahmed,
-> Juan Miguel Arrazola, Carsten Blank, Alain Delgado, Soran Jahangiri, Keri McKiernan, Johannes Jakob Meyer,
-> Zeyue Niu, Antal Száva, and Nathan Killoran.
-> *PennyLane: Automatic differentiation of hybrid quantum-classical computations.* 2018. arXiv:1811.04968
+> Ville Bergholm et al. *PennyLane: Automatic differentiation of hybrid quantum-classical
+> computations.* 2018. arXiv:1811.04968
 
 ## License
 

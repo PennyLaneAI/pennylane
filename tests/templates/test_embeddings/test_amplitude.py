@@ -25,17 +25,23 @@ FEATURES = [
     np.array([complex(-np.sqrt(0.1), 0.0), np.sqrt(0.3), complex(0, -np.sqrt(0.1)), np.sqrt(0.5)]),
 ]
 
+BROADCASTED_FEATURES = [np.eye(4)[:3], np.ones((5, 4)) / 2]
+
 NOT_ENOUGH_FEATURES = [
     np.array([0, 1, 0]),
     1 / np.sqrt(3) * np.array([1, 1, 1]),
     np.array([complex(-np.sqrt(0.1), 0.0), np.sqrt(0.3), complex(0, -np.sqrt(0.6))]),
 ]
 
+NOT_ENOUGH_BROADCASTED_FEATURES = [np.eye(4)[:3, :3], np.ones((5, 2)) / np.sqrt(2)]
+
 TOO_MANY_FEATURES = [
     [0, 0, 0, 1, 0],
     1 / np.sqrt(8) * np.array([1] * 8),
     [complex(-np.sqrt(0.1), 0.0), np.sqrt(0.3), complex(0, -np.sqrt(0.6)), 0.0, 0.0],
 ]
+
+TOO_MANY_BROADCASTED_FEATURES = [np.eye(6)[:3, :5], np.ones((3, 8)) / np.sqrt(8)]
 
 
 class TestDecomposition:
@@ -44,14 +50,27 @@ class TestDecomposition:
     def test_expansion(self):
         """Checks the queue for the default settings."""
 
-        op = qml.templates.AmplitudeEmbedding(features=FEATURES[0], wires=range(2))
+        op = qml.AmplitudeEmbedding(features=FEATURES[0], wires=range(2))
         tape = op.expand()
 
         assert len(tape.operations) == 1
         assert tape.operations[0].name == "QubitStateVector"
+        assert tape.batch_size is None
 
+    def test_expansion_broadcasted(self):
+        """Checks the queue for the default settings."""
+
+        op = qml.AmplitudeEmbedding(features=BROADCASTED_FEATURES[0], wires=range(2))
+        assert op.batch_size == 3
+        tape = op.expand()
+
+        assert len(tape.operations) == 1
+        assert tape.operations[0].name == "QubitStateVector"
+        assert tape.batch_size == 3
+
+    @pytest.mark.parametrize("normalize", (True, False))
     @pytest.mark.parametrize("inpt", FEATURES)
-    def test_prepares_correct_state(self, inpt):
+    def test_prepares_correct_state(self, inpt, normalize):
         """Checks the state for real and complex inputs."""
 
         n_qubits = 2
@@ -59,11 +78,27 @@ class TestDecomposition:
 
         @qml.qnode(dev)
         def circuit(x=None):
-            qml.templates.AmplitudeEmbedding(features=x, wires=range(n_qubits), normalize=False)
+            qml.AmplitudeEmbedding(features=x, wires=range(n_qubits), normalize=normalize)
             return [qml.expval(qml.PauliZ(i)) for i in range(n_qubits)]
 
         circuit(x=inpt)
         state = circuit.device.state.ravel()
+        assert np.allclose(state, inpt)
+
+    @pytest.mark.parametrize("normalize", (True, False))
+    @pytest.mark.parametrize("inpt", BROADCASTED_FEATURES)
+    def test_prepares_correct_broadcasted_state(self, inpt, normalize):
+        """Checks the state for real and complex inputs."""
+
+        n_qubits = 2
+        dev = qml.device("default.qubit", wires=2)
+
+        @qml.qnode(dev)
+        def circuit(x=None):
+            qml.AmplitudeEmbedding(features=x, wires=range(n_qubits), normalize=normalize)
+            return qml.state()
+
+        state = circuit(x=inpt)
         assert np.allclose(state, inpt)
 
     @pytest.mark.parametrize("inpt", NOT_ENOUGH_FEATURES)
@@ -76,14 +111,32 @@ class TestDecomposition:
 
         @qml.qnode(dev)
         def circuit(x=None):
-            qml.templates.AmplitudeEmbedding(
-                features=x, wires=range(n_qubits), pad_with=pad, normalize=False
-            )
+            qml.AmplitudeEmbedding(features=x, wires=range(n_qubits), pad_with=pad, normalize=False)
             return [qml.expval(qml.PauliZ(i)) for i in range(n_qubits)]
 
         circuit(x=inpt)
         state = circuit.device.state.ravel()
+        # Make sure all padded values are the same constant
+        # by checking how many different values there are
         assert len(set(state[len(inpt) :])) == 1
+
+    @pytest.mark.parametrize("inpt", NOT_ENOUGH_BROADCASTED_FEATURES)
+    @pytest.mark.parametrize("pad", [complex(0.1, 0.1), 0.0, 1.0])
+    def test_prepares_padded_state_broadcasted(self, inpt, pad):
+        """Checks the state for real and complex padding constants."""
+
+        n_qubits = 2
+        dev = qml.device("default.qubit", wires=n_qubits)
+
+        @qml.qnode(dev)
+        def circuit(x=None):
+            qml.AmplitudeEmbedding(features=x, wires=range(n_qubits), pad_with=pad, normalize=False)
+            return qml.state()
+
+        state = circuit(x=inpt)
+        # Make sure all padded values are the same constant
+        # by checking how many different values there are
+        assert len(np.unique(state[:, inpt.shape[1] :])) == 1
 
     def test_custom_wire_labels(self, tol):
         """Test that template can deal with non-numeric, nonconsecutive wire labels."""
@@ -94,12 +147,12 @@ class TestDecomposition:
 
         @qml.qnode(dev)
         def circuit():
-            qml.templates.AmplitudeEmbedding(features, wires=range(3))
+            qml.AmplitudeEmbedding(features, wires=range(3))
             return qml.expval(qml.Identity(0))
 
         @qml.qnode(dev2)
         def circuit2():
-            qml.templates.AmplitudeEmbedding(features, wires=["z", "a", "k"])
+            qml.AmplitudeEmbedding(features, wires=["z", "a", "k"])
             return qml.expval(qml.Identity("z"))
 
         circuit()
@@ -111,7 +164,7 @@ class TestDecomposition:
 class TestInputs:
     """Test inputs and pre-processing."""
 
-    @pytest.mark.parametrize("inpt", FEATURES)
+    @pytest.mark.parametrize("inpt", FEATURES + BROADCASTED_FEATURES)
     def test_throws_exception_if_not_normalized(self, inpt):
         """Checks exception when state is not normalized and `normalize=False`."""
         not_nrmlzd = 2 * inpt
@@ -120,29 +173,35 @@ class TestInputs:
 
         @qml.qnode(dev)
         def circuit(x=None):
-            qml.templates.AmplitudeEmbedding(
+            qml.AmplitudeEmbedding(
                 features=x, wires=range(n_qubits), pad_with=None, normalize=False
             )
             return [qml.expval(qml.PauliZ(i)) for i in range(n_qubits)]
 
-        with pytest.raises(ValueError, match="Features must be a vector of length"):
+        with pytest.raises(ValueError, match="Features must be a vector of norm"):
             circuit(x=not_nrmlzd)
 
     def test_throws_exception_if_features_wrong_shape(self):
-        """Checks exception if features has more than one dimension."""
+        """Checks exception if features has more than two dimensions."""
 
         n_qubits = 2
         dev = qml.device("default.qubit", wires=n_qubits)
 
         @qml.qnode(dev)
         def circuit(x=None):
-            qml.templates.AmplitudeEmbedding(features=x, wires=range(n_qubits))
+            qml.AmplitudeEmbedding(features=x, wires=range(n_qubits))
             return qml.expval(qml.PauliZ(0))
 
         with pytest.raises(ValueError, match="Features must be a one-dimensional (tensor|vector)"):
-            circuit(x=[[1.0, 0.0], [0.0, 0.0]])
+            circuit(x=[[[1.0, 0.0], [0.0, 0.0]], [[1.0, 0.0], [0.0, 0.0]]])
 
-    @pytest.mark.parametrize("inpt", NOT_ENOUGH_FEATURES + TOO_MANY_FEATURES)
+    @pytest.mark.parametrize(
+        "inpt",
+        NOT_ENOUGH_FEATURES
+        + TOO_MANY_FEATURES
+        + NOT_ENOUGH_BROADCASTED_FEATURES
+        + TOO_MANY_BROADCASTED_FEATURES,
+    )
     def test_throws_exception_if_fewer_features_than_amplitudes(self, inpt):
         """Checks exception if the number of features is wrong and
         no automatic padding is chosen."""
@@ -152,7 +211,7 @@ class TestInputs:
 
         @qml.qnode(dev)
         def circuit(x=None):
-            qml.templates.AmplitudeEmbedding(
+            qml.AmplitudeEmbedding(
                 features=x, wires=range(n_qubits), pad_with=None, normalize=False
             )
             return qml.expval(qml.PauliZ(0))
@@ -160,7 +219,7 @@ class TestInputs:
         with pytest.raises(ValueError, match="Features must be of length"):
             circuit(x=inpt)
 
-    @pytest.mark.parametrize("inpt", TOO_MANY_FEATURES)
+    @pytest.mark.parametrize("inpt", TOO_MANY_FEATURES + TOO_MANY_BROADCASTED_FEATURES)
     def test_throws_exception_if_more_features_than_amplitudes_padding(self, inpt):
         """Checks exception if the number of features is larger than the number of amplitudes, and
         automatic padding is chosen."""
@@ -170,9 +229,7 @@ class TestInputs:
 
         @qml.qnode(dev)
         def circuit(x=None):
-            qml.templates.AmplitudeEmbedding(
-                features=x, wires=range(n_qubits), pad_with=0.0, normalize=False
-            )
+            qml.AmplitudeEmbedding(features=x, wires=range(n_qubits), pad_with=0.0, normalize=False)
             return qml.expval(qml.PauliZ(0))
 
         with pytest.raises(ValueError, match="Features must be of length"):
@@ -218,35 +275,20 @@ class TestInputs:
 
         @qml.qnode(dev)
         def circuit(x=None):
-            qml.templates.AmplitudeEmbedding(
-                x, list(range(num_qubits)), pad_with=0.0, normalize=True
-            )
+            qml.AmplitudeEmbedding(x, list(range(num_qubits)), pad_with=0.0, normalize=True)
             return qml.expval(qml.PauliZ(0))
 
         # No normalization error is raised
         circuit(x=inputs)
 
-    def test_deprecated_pad_arg(self):
-        """Test that the pad argument raises a deprecation warning"""
-
-        num_qubits = 2
-        dev = qml.device("default.qubit", wires=num_qubits)
-        inputs = np.array([1.0, 0.0, 0.0, 0.0])
-
-        @qml.qnode(dev)
-        def circuit(x=None):
-            qml.templates.AmplitudeEmbedding(x, list(range(num_qubits)), pad=0.0, normalize=True)
-            return qml.expval(qml.PauliZ(0))
-
-        with pytest.warns(
-            UserWarning,
-            match="will be replaced by the pad_with option in future versions",
-        ):
-            circuit(x=inputs)
+    def test_id(self):
+        """Tests that the id attribute can be set."""
+        template = qml.AmplitudeEmbedding(np.array([1, 0]), wires=[0], id="a")
+        assert template.id == "a"
 
 
 def circuit_template(features):
-    qml.templates.AmplitudeEmbedding(features, wires=range(3))
+    qml.AmplitudeEmbedding(features, wires=range(3))
     return qml.state()
 
 
@@ -256,13 +298,22 @@ def circuit_decomposed(features):
     return qml.state()
 
 
+all_features = [
+    [0.5, 0, 0.5, 0, 0.5, 0.5, 0, 0],
+    [
+        [0.5, 0, 0.5, 0, 0.5, 0.5, 0, 0],
+        [0.5, 0, 0.5, 0, 0.5, 0.5, 0, 0],
+        [0.5, 0, 0.5, 0, 0.5, 0.5, 0, 0],
+    ],
+]
+
+
 class TestInterfaces:
     """Tests that the template is compatible with all interfaces."""
 
-    def test_list_and_tuples(self, tol):
+    @pytest.mark.parametrize("features", all_features)
+    def test_list_and_tuples(self, tol, features):
         """Tests common iterables as inputs."""
-
-        features = [1 / 2, 0, 1 / 2, 0, 1 / 2, 1 / 2, 0, 0]
 
         dev = qml.device("default.qubit", wires=3)
 
@@ -277,10 +328,12 @@ class TestInterfaces:
         res2 = circuit2(tuple(features))
         assert qml.math.allclose(res, res2, atol=tol, rtol=0)
 
-    def test_autograd(self, tol):
+    @pytest.mark.autograd
+    @pytest.mark.parametrize("features", all_features)
+    def test_autograd(self, tol, features):
         """Tests autograd tensors."""
 
-        features = pnp.array([1 / 2, 0, 1 / 2, 0, 1 / 2, 1 / 2, 0, 0], requires_grad=True)
+        features = pnp.array(features, requires_grad=True)
 
         dev = qml.device("default.qubit", wires=3)
 
@@ -292,13 +345,43 @@ class TestInterfaces:
 
         assert qml.math.allclose(res, res2, atol=tol, rtol=0)
 
-    def test_jax(self, tol):
+    @pytest.mark.autograd
+    @pytest.mark.parametrize("features", all_features)
+    def test_autograd_pad_with(self, tol, features):
+        """Tests autograd tensors and pad_with."""
+
+        features = pnp.array(features)
+
+        dev = qml.device("default.qubit", wires=4)
+
+        @qml.qnode(dev, interface="autograd")
+        def circuit_decomposed(features):
+            # need to cast to complex tensor, which is implicitly done in the template
+            state = qml.math.cast(
+                qml.math.hstack([features, qml.math.zeros_like(features)]), np.complex128
+            )
+            qml.QubitStateVector(state, wires=range(4))
+            return qml.state()
+
+        @qml.qnode(dev, interface="autograd")
+        def circuit(x=None):
+            qml.AmplitudeEmbedding(x, list(range(4)), pad_with=0.0)
+            return qml.state()
+
+        res = circuit(features)
+        res2 = circuit_decomposed(features)
+
+        assert qml.math.allclose(res, res2, atol=tol, rtol=0)
+
+    @pytest.mark.jax
+    @pytest.mark.parametrize("features", all_features)
+    def test_jax(self, tol, features):
         """Tests jax tensors."""
 
-        jax = pytest.importorskip("jax")
+        import jax
         import jax.numpy as jnp
 
-        features = jnp.array([1 / 2, 0, 1 / 2, 0, 1 / 2, 1 / 2, 0, 0])
+        features = jnp.array(features)
 
         dev = qml.device("default.qubit", wires=3)
 
@@ -310,12 +393,66 @@ class TestInterfaces:
 
         assert qml.math.allclose(res, res2, atol=tol, rtol=0)
 
+    @pytest.mark.jax
+    @pytest.mark.parametrize("features", all_features)
+    def test_jax_jit(self, tol, features):
+        """Tests jax tensors when using JIT."""
+
+        import jax
+        import jax.numpy as jnp
+
+        features = jnp.array(features)
+
+        dev = qml.device("default.qubit", wires=3)
+
+        circuit = jax.jit(qml.QNode(circuit_template, dev, interface="jax"))
+        circuit2 = jax.jit(qml.QNode(circuit_decomposed, dev, interface="jax"))
+
+        res = circuit(features)
+        res2 = circuit2(features)
+
+        assert qml.math.allclose(res, res2, atol=tol, rtol=0)
+
+    @pytest.mark.jax
+    @pytest.mark.parametrize("features", all_features)
+    def test_jax_jit_pad_with(self, tol, features):
+        """Tests jax tensors when using JIT and pad_with."""
+
+        import jax
+        import jax.numpy as jnp
+
+        features = jnp.array(features)
+
+        dev = qml.device("default.qubit", wires=4)
+
+        @jax.jit
+        @qml.qnode(dev, interface="jax")
+        def circuit_decomposed(features):
+            # need to cast to complex tensor, which is implicitly done in the template
+            state = qml.math.cast(
+                qml.math.hstack([features, qml.math.zeros_like(features)]), np.complex128
+            )
+            qml.QubitStateVector(state, wires=range(4))
+            return qml.state()
+
+        @jax.jit
+        @qml.qnode(dev, interface="jax")
+        def circuit(x=None):
+            qml.AmplitudeEmbedding(x, list(range(4)), pad_with=0.0)
+            return qml.state()
+
+        res = circuit(features)
+        res2 = circuit_decomposed(features)
+
+        assert qml.math.allclose(res, res2, atol=tol, rtol=0)
+
+    @pytest.mark.tf
     def test_tf(self, tol):
         """Tests tf tensors."""
 
-        tf = pytest.importorskip("tensorflow")
+        import tensorflow as tf
 
-        features = tf.Variable([1 / 2, 0, 1 / 2, 0, 1 / 2, 1 / 2, 0, 0])
+        features = tf.Variable(all_features[0])
 
         dev = qml.device("default.qubit", wires=3)
 
@@ -327,12 +464,76 @@ class TestInterfaces:
 
         assert qml.math.allclose(res, res2, atol=tol, rtol=0)
 
-    def test_torch(self, tol):
+    @pytest.mark.tf
+    @pytest.mark.parametrize("features", all_features)
+    def test_tf_pad_with(self, tol, features):
+        """Tests tf tensors and pad_with."""
+        import tensorflow as tf
+
+        features = tf.Variable(all_features[0])
+
+        dev = qml.device("default.qubit", wires=4)
+
+        @qml.qnode(dev, interface="tf")
+        def circuit_decomposed(features):
+            # need to cast to complex tensor, which is implicitly done in the template
+            state = qml.math.cast(
+                qml.math.hstack([features, qml.math.zeros_like(features)]), tf.complex128
+            )
+            qml.QubitStateVector(state, wires=range(4))
+            return qml.state()
+
+        @qml.qnode(dev, interface="tf")
+        def circuit(x=None):
+            qml.AmplitudeEmbedding(x, list(range(4)), pad_with=0.0)
+            return qml.state()
+
+        res = circuit(features)
+        res2 = circuit_decomposed(features)
+
+        assert qml.math.allclose(res, res2, atol=tol, rtol=0)
+
+    @pytest.mark.tf
+    def test_tf_error_when_batching(self, tol):
+        """Tests batched tf tensors raising an error."""
+
+        import tensorflow as tf
+
+        features = tf.Variable(all_features[1])
+
+        dev = qml.device("default.qubit", wires=3)
+
+        circuit = qml.QNode(circuit_template, dev, interface="tf")
+
+        with pytest.raises(ValueError, match="does not support batched Tensorflow features"):
+            circuit(features)
+
+    @pytest.mark.tf
+    def test_tf_jit(self, tol):
+        """Tests tf tensors when using JIT."""
+
+        import tensorflow as tf
+
+        features = tf.Variable(all_features[0])
+
+        dev = qml.device("default.qubit", wires=3)
+
+        circuit = tf.function(jit_compile=True)(qml.QNode(circuit_template, dev, interface="tf"))
+        circuit2 = tf.function(jit_compile=True)(qml.QNode(circuit_decomposed, dev, interface="tf"))
+
+        res = circuit(features)
+        res2 = circuit2(features)
+
+        assert qml.math.allclose(res, res2, atol=tol, rtol=0)
+
+    @pytest.mark.torch
+    @pytest.mark.parametrize("features", all_features)
+    def test_torch(self, tol, features):
         """Tests torch tensors."""
 
-        torch = pytest.importorskip("torch")
+        import torch
 
-        features = torch.tensor([1 / 2, 0, 1 / 2, 0, 1 / 2, 1 / 2, 0, 0], requires_grad=True)
+        features = torch.tensor(features, requires_grad=True)
 
         dev = qml.device("default.qubit", wires=3)
 
@@ -341,5 +542,34 @@ class TestInterfaces:
 
         res = circuit(features)
         res2 = circuit2(features)
+
+        assert qml.math.allclose(res, res2, atol=tol, rtol=0)
+
+    @pytest.mark.torch
+    @pytest.mark.parametrize("features", all_features)
+    def test_torch_pad_with(self, tol, features):
+        """Tests torch tensors and pad_with."""
+        import torch
+
+        features = torch.tensor(features, requires_grad=True)
+
+        dev = qml.device("default.qubit", wires=4)
+
+        @qml.qnode(dev, interface="torch")
+        def circuit_decomposed(features):
+            # need to cast to complex tensor, which is implicitly done in the template
+            state = qml.math.cast(
+                qml.math.hstack([features, qml.math.zeros_like(features)]), torch.complex128
+            )
+            qml.QubitStateVector(state, wires=range(4))
+            return qml.state()
+
+        @qml.qnode(dev, interface="torch")
+        def circuit(x=None):
+            qml.AmplitudeEmbedding(x, list(range(4)), pad_with=0.0)
+            return qml.state()
+
+        res = circuit(features)
+        res2 = circuit_decomposed(features)
 
         assert qml.math.allclose(res, res2, atol=tol, rtol=0)

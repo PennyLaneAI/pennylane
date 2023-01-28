@@ -65,56 +65,56 @@ class TestDecomposition:
         """Test that the correct gates are applied on a single wire."""
         weights = np.array([0, 1], dtype=float)
 
-        op = qml.templates.ArbitraryStatePreparation(weights, wires=[0])
+        op = qml.ArbitraryStatePreparation(weights, wires=[0])
         queue = op.expand().operations
 
         assert queue[0].name == "PauliRot"
 
         assert queue[0].data[0] == weights[0]
-        assert queue[0].data[1] == "X"
+        assert queue[0].hyperparameters["pauli_word"] == "X"
         assert queue[0].wires.labels == (0,)
 
         assert queue[1].name == "PauliRot"
         assert queue[1].data[0] == weights[1]
-        assert queue[1].data[1] == "Y"
+        assert queue[1].hyperparameters["pauli_word"] == "Y"
         assert queue[1].wires.labels == (0,)
 
     def test_correct_gates_two_wires(self):
         """Test that the correct gates are applied on on two wires."""
         weights = np.array([0, 1, 2, 3, 4, 5], dtype=float)
 
-        op = qml.templates.ArbitraryStatePreparation(weights, wires=[0, 1])
+        op = qml.ArbitraryStatePreparation(weights, wires=[0, 1])
         queue = op.expand().operations
 
         assert queue[0].name == "PauliRot"
 
         assert queue[0].data[0] == weights[0]
-        assert queue[0].data[1] == "XI"
+        assert queue[0].hyperparameters["pauli_word"] == "XI"
         assert queue[0].wires.labels == (0, 1)
 
         assert queue[1].name == "PauliRot"
         assert queue[1].data[0] == weights[1]
-        assert queue[1].data[1] == "YI"
+        assert queue[1].hyperparameters["pauli_word"] == "YI"
         assert queue[1].wires.labels == (0, 1)
 
         assert queue[2].name == "PauliRot"
         assert queue[2].data[0] == weights[2]
-        assert queue[2].data[1] == "IX"
+        assert queue[2].hyperparameters["pauli_word"] == "IX"
         assert queue[2].wires.labels == (0, 1)
 
         assert queue[3].name == "PauliRot"
         assert queue[3].data[0] == weights[3]
-        assert queue[3].data[1] == "IY"
+        assert queue[3].hyperparameters["pauli_word"] == "IY"
         assert queue[3].wires.labels == (0, 1)
 
         assert queue[4].name == "PauliRot"
         assert queue[4].data[0] == weights[4]
-        assert queue[4].data[1] == "XX"
+        assert queue[4].hyperparameters["pauli_word"] == "XX"
         assert queue[4].wires.labels == (0, 1)
 
         assert queue[5].name == "PauliRot"
         assert queue[5].data[0] == weights[5]
-        assert queue[5].data[1] == "XY"
+        assert queue[5].hyperparameters["pauli_word"] == "XY"
         assert queue[5].wires.labels == (0, 1)
 
     def test_GHZ_generation(self, qubit_device_3_wires, tol):
@@ -126,7 +126,7 @@ class TestDecomposition:
 
         @qml.qnode(qubit_device_3_wires)
         def circuit(weights):
-            qml.templates.ArbitraryStatePreparation(weights, [0, 1, 2])
+            qml.ArbitraryStatePreparation(weights, [0, 1, 2])
             return qml.expval(qml.PauliZ(0))
 
         circuit(weights)
@@ -144,7 +144,7 @@ class TestDecomposition:
 
         @qml.qnode(qubit_device_3_wires)
         def circuit(weights):
-            qml.templates.ArbitraryStatePreparation(weights, [0, 1, 2])
+            qml.ArbitraryStatePreparation(weights, [0, 1, 2])
 
             return qml.expval(qml.PauliZ(0))
 
@@ -154,19 +154,19 @@ class TestDecomposition:
 
     def test_custom_wire_labels(self, tol):
         """Test that template can deal with non-numeric, nonconsecutive wire labels."""
-        weights = np.random.random(size=(2 ** 4 - 2))
+        weights = np.random.random(size=(2**4 - 2))
 
         dev = qml.device("default.qubit", wires=3)
         dev2 = qml.device("default.qubit", wires=["z", "a", "k"])
 
         @qml.qnode(dev)
         def circuit():
-            qml.templates.ArbitraryStatePreparation(weights, wires=range(3))
+            qml.ArbitraryStatePreparation(weights, wires=range(3))
             return qml.expval(qml.Identity(0))
 
         @qml.qnode(dev2)
         def circuit2():
-            qml.templates.ArbitraryStatePreparation(weights, wires=["z", "a", "k"])
+            qml.ArbitraryStatePreparation(weights, wires=["z", "a", "k"])
             return qml.expval(qml.Identity("z"))
 
         circuit()
@@ -185,12 +185,19 @@ class TestInputs:
 
         @qml.qnode(dev)
         def circuit(weights):
-            qml.templates.ArbitraryStatePreparation(weights, wires=range(3))
+            qml.ArbitraryStatePreparation(weights, wires=range(3))
             return qml.expval(qml.PauliZ(0))
 
         with pytest.raises(ValueError, match="Weights tensor must be of shape"):
             weights = np.zeros(12)
             circuit(weights)
+
+    def test_id(self):
+        """Tests that the id attribute can be set."""
+        template = qml.ArbitraryStatePreparation(
+            np.random.random(size=(2**4 - 2)), wires=[0, 1, 2], id="a"
+        )
+        assert template.id == "a"
 
 
 class TestAttributes:
@@ -207,12 +214,12 @@ class TestAttributes:
     def test_shape(self, n_wires, expected_shape):
         """Test that the shape method returns the correct shape of the weights tensor"""
 
-        shape = qml.templates.ArbitraryStatePreparation.shape(n_wires)
+        shape = qml.ArbitraryStatePreparation.shape(n_wires)
         assert shape == expected_shape
 
 
 def circuit_template(weights):
-    qml.templates.ArbitraryStatePreparation(weights, range(2))
+    qml.ArbitraryStatePreparation(weights, range(2))
     return qml.expval(qml.PauliZ(0))
 
 
@@ -250,6 +257,7 @@ class TestInterfaces:
         res2 = circuit2(weights_tuple)
         assert qml.math.allclose(res, res2, atol=tol, rtol=0)
 
+    @pytest.mark.autograd
     def test_autograd(self, tol):
         """Tests the autograd interface."""
 
@@ -273,11 +281,11 @@ class TestInterfaces:
 
         assert np.allclose(grads[0], grads2[0], atol=tol, rtol=0)
 
+    @pytest.mark.jax
     def test_jax(self, tol):
         """Tests the jax interface."""
 
-        jax = pytest.importorskip("jax")
-
+        import jax
         import jax.numpy as jnp
 
         weights = jnp.array(np.random.random(size=(6,)))
@@ -299,10 +307,11 @@ class TestInterfaces:
 
         assert np.allclose(grads[0], grads2[0], atol=tol, rtol=0)
 
+    @pytest.mark.tf
     def test_tf(self, tol):
         """Tests the tf interface."""
 
-        tf = pytest.importorskip("tensorflow")
+        import tensorflow as tf
 
         weights = tf.Variable(np.random.random(size=(6,)))
 
@@ -325,10 +334,11 @@ class TestInterfaces:
 
         assert np.allclose(grads[0], grads2[0], atol=tol, rtol=0)
 
+    @pytest.mark.torch
     def test_torch(self, tol):
         """Tests the torch interface."""
 
-        torch = pytest.importorskip("torch")
+        import torch
 
         weights = torch.tensor(np.random.random(size=(6,)), requires_grad=True)
 

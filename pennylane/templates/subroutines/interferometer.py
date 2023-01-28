@@ -14,49 +14,16 @@
 r"""
 Contains the ``Interferometer`` template.
 """
+from itertools import product
 import pennylane as qml
 
 # pylint: disable-msg=too-many-branches,too-many-arguments,protected-access
-from pennylane.templates.decorator import template
 from pennylane.ops import Beamsplitter, Rotation
 from pennylane.wires import Wires
+from pennylane.operation import CVOperation, AnyWires
 
 
-def _preprocess(theta, phi, varphi, wires):
-    """Validate and pre-process inputs as follows:
-
-    * Check the shape of the three weight tensors.
-
-    Args:
-        theta (tensor_like): trainable parameters of the template
-        phi (tensor_like): trainable parameters of the template
-        varphi (tensor_like): trainable parameters of the template
-        wires (Wires): wires that the template acts on
-
-    Returns:
-        tuple: shape of varphi tensor
-    """
-
-    n_wires = len(wires)
-    n_if = n_wires * (n_wires - 1) // 2
-
-    shape = qml.math.shape(theta)
-    if shape != (n_if,):
-        raise ValueError(f"Theta must be of shape {(n_if,)}; got {shape}.")
-
-    shape = qml.math.shape(phi)
-    if shape != (n_if,):
-        raise ValueError(f"Phi must be of shape {(n_if,)}; got {shape}.")
-
-    shape_varphi = qml.math.shape(varphi)
-    if shape_varphi != (n_wires,):
-        raise ValueError(f"Varphi must be of shape {(n_wires,)}; got {shape_varphi}.")
-
-    return shape_varphi
-
-
-@template
-def Interferometer(theta, phi, varphi, wires, mesh="rectangular", beamsplitter="pennylane"):
+class Interferometer(CVOperation):
     r"""General linear interferometer, an array of beamsplitters and phase shifters.
 
     For :math:`M` wires, the general interferometer is specified by
@@ -134,53 +101,189 @@ def Interferometer(theta, phi, varphi, wires, mesh="rectangular", beamsplitter="
 
     Raises:
         ValueError: if inputs do not have the correct format
+
+    Example:
+
+        The template requires :math:`3` sets of parameters. The ``mesh`` and ``beamsplitter`` keyword arguments are optional and
+        have ``'rectangular'`` and ``'pennylane'`` as default values.
+
+        .. code-block:: python
+
+            dev = qml.device('default.gaussian', wires=4)
+
+            @qml.qnode(dev)
+            def circuit(params):
+                qml.Interferometer(*params, wires=range(4))
+                return qml.expval(qml.Identity(0))
+
+            shapes = [[6, ], [6, ], [4, ]]
+            params = []
+            for shape in shapes:
+                params.append(np.random.random(shape))
+
+        Using these random parameters, the resulting circuit is:
+
+        >>> print(qml.draw(circuit, expansion_strategy="device")(params))
+        0: ─╭BS(0.97,0.09)────────────────╭BS(0.89,0.33)──R(0.83)────────────────┤  <I>
+        1: ─╰BS(0.97,0.09)─╭BS(0.94,0.05)─╰BS(0.89,0.33)─╭BS(0.92,0.27)──R(0.36)─┤
+        2: ─╭BS(0.78,0.20)─╰BS(0.94,0.05)─╭BS(0.60,0.39)─╰BS(0.92,0.27)──R(0.28)─┤
+        3: ─╰BS(0.78,0.20)────────────────╰BS(0.60,0.39)──R(0.54)────────────────┤
+
+        Using different values for optional arguments:
+
+        .. code-block:: python
+
+            @qml.qnode(dev)
+            def circuit(params):
+                qml.Interferometer(*params, wires=range(4), mesh='triangular', beamsplitter='clements')
+                return qml.expval(qml.Identity(0))
+
+            shapes = [[6, ], [6, ], [4, ]]
+            params = []
+            for shape in shapes:
+                params.append(np.random.random(shape))
+
+            print(qml.draw(circuit, expansion_strategy="device")(params))
+
+        .. code-block::
+
+            0: ──R(0.71)───────────────────────────────╭BS(0.07,0.00)──R(0.36)──────────────────────────────
+            1: ──R(0.82)────────────────╭BS(0.80,0.00)─╰BS(0.07,0.00)──R(0.77)───────╭BS(0.77,0.00)──R(0.12)
+            2: ──R(0.01)─╭BS(0.14,0.00)─╰BS(0.80,0.00)──R(0.73)───────╭BS(0.99,0.00)─╰BS(0.77,0.00)──R(0.07)
+            3: ──────────╰BS(0.14,0.00)───────────────────────────────╰BS(0.99,0.00)────────────────────────
+
+            ──────────────────────────┤  <I>
+            ──────────────────────────┤
+            ──╭BS(0.20,0.00)──R(0.86)─┤
+            ──╰BS(0.20,0.00)──R(0.62)─┤
     """
 
-    wires = Wires(wires)
-    M = len(wires)
+    num_wires = AnyWires
+    grad_method = None
 
-    shape_varphi = _preprocess(theta, phi, varphi, wires)
+    def __init__(
+        self,
+        theta,
+        phi,
+        varphi,
+        wires,
+        mesh="rectangular",
+        beamsplitter="pennylane",
+        do_queue=True,
+        id=None,
+    ):
 
-    if M == 1:
-        # the interferometer is a single rotation
-        Rotation(varphi[0], wires=wires[0])
-        return
+        wires = Wires(wires)
 
-    n = 0  # keep track of free parameters
+        n_wires = len(wires)
+        shape_theta_phi = n_wires * (n_wires - 1) // 2
 
-    if mesh == "rectangular":
-        # Apply the Clements beamsplitter array
-        # The array depth is N
-        for l in range(M):
-            for k, (w1, w2) in enumerate(zip(wires[:-1], wires[1:])):
-                # skip even or odd pairs depending on layer
-                if (l + k) % 2 != 1:
-                    if beamsplitter == "clements":
-                        Rotation(phi[n], wires=Wires(w1))
-                        Beamsplitter(theta[n], 0, wires=Wires([w1, w2]))
-                    elif beamsplitter == "pennylane":
-                        Beamsplitter(theta[n], phi[n], wires=Wires([w1, w2]))
-                    else:
-                        raise ValueError(f"did not recognize beamsplitter {beamsplitter}")
-                    n += 1
+        shape = qml.math.shape(theta)
+        if shape != (shape_theta_phi,):
+            raise ValueError(f"Theta must be of shape {(shape_theta_phi,)}; got {shape}.")
 
-    elif mesh == "triangular":
-        # apply the Reck beamsplitter array
-        # The array depth is 2*N-3
-        for l in range(2 * M - 3):
-            for k in range(abs(l + 1 - (M - 1)), M - 1, 2):
-                if beamsplitter == "clements":
-                    Rotation(phi[n], wires=wires[k])
-                    Beamsplitter(theta[n], 0, wires=wires.subset([k, k + 1]))
-                elif beamsplitter == "pennylane":
-                    Beamsplitter(theta[n], phi[n], wires=wires.subset([k, k + 1]))
-                else:
-                    raise ValueError(f"did not recognize beamsplitter {beamsplitter} ")
-                n += 1
-    else:
-        raise ValueError(f"did not recognize mesh {mesh}")
+        shape = qml.math.shape(phi)
+        if shape != (shape_theta_phi,):
+            raise ValueError(f"Phi must be of shape {(shape_theta_phi,)}; got {shape}.")
 
-    # apply the final local phase shifts to all modes
-    for i in range(shape_varphi[0]):
-        act_on = wires[i]
-        Rotation(varphi[i], wires=act_on)
+        shape_varphi = qml.math.shape(varphi)
+        if shape_varphi != (n_wires,):
+            raise ValueError(f"Varphi must be of shape {(n_wires,)}; got {shape_varphi}.")
+
+        self._hyperparameters = {
+            "mesh": mesh,
+            "beamsplitter": beamsplitter,
+        }
+        super().__init__(theta, phi, varphi, wires=wires, do_queue=do_queue, id=id)
+
+    @staticmethod
+    def compute_decomposition(
+        theta, phi, varphi, wires, mesh, beamsplitter
+    ):  # pylint: disable=arguments-differ
+        r"""Representation of the operator as a product of other operators.
+
+        .. math:: O = O_1 O_2 \dots O_n.
+
+
+
+        .. seealso:: :meth:`~.Interferometer.decomposition`.
+
+        Args:
+            theta (tensor_like): size :math:`(M(M-1)/2,)` tensor of transmittivity angles
+            phi (tensor_like): size :math:`(M(M-1)/2,)` tensor of phase angles
+            varphi (tensor_like): size :math:`(M,)` tensor of rotation angles
+            wires (Any or Iterable[Any]): wires that the operator acts on
+            mesh (string): the type of mesh to use
+            beamsplitter (str): beamsplitter convention
+
+        Returns:
+            list[.Operator]: decomposition of the operator
+        """
+
+        wires = Wires(wires)
+        M = len(wires)
+        op_list = []
+
+        if M == 1:
+            # the interferometer is a single rotation
+            op_list.append(Rotation(varphi[0], wires=wires[0]))
+        else:
+            n = 0  # keep track of free parameters
+
+            if mesh == "rectangular":
+                # Apply the Clements beamsplitter array
+                # The array depth is N
+                for m, (k, (w1, w2)) in product(range(M), enumerate(zip(wires[:-1], wires[1:]))):
+                    # skip even or odd pairs depending on layer
+                    if (m + k) % 2 != 1:
+                        if beamsplitter == "clements":
+                            op_list.append(Rotation(phi[n], wires=Wires(w1)))
+                            op_list.append(Beamsplitter(theta[n], 0, wires=Wires([w1, w2])))
+                        elif beamsplitter == "pennylane":
+                            op_list.append(Beamsplitter(theta[n], phi[n], wires=Wires([w1, w2])))
+                        else:
+                            raise ValueError(f"did not recognize beamsplitter {beamsplitter}")
+                        n += 1
+
+            elif mesh == "triangular":
+                # apply the Reck beamsplitter array
+                # The array depth is 2*N-3
+                for m in range(2 * M - 3):
+                    for k in range(abs(m + 1 - (M - 1)), M - 1, 2):
+                        if beamsplitter == "clements":
+                            op_list.append(Rotation(phi[n], wires=wires[k]))
+                            op_list.append(
+                                Beamsplitter(theta[n], 0, wires=wires.subset([k, k + 1]))
+                            )
+                        elif beamsplitter == "pennylane":
+                            op_list.append(
+                                Beamsplitter(theta[n], phi[n], wires=wires.subset([k, k + 1]))
+                            )
+                        else:
+                            raise ValueError(f"did not recognize beamsplitter {beamsplitter} ")
+                        n += 1
+            else:
+                raise ValueError(f"did not recognize mesh {mesh}")
+
+            # apply the final local phase shifts to all modes
+            for i in range(qml.math.shape(varphi)[0]):
+                act_on = wires[i]
+                op_list.append(Rotation(varphi[i], wires=act_on))
+
+        return op_list
+
+    @staticmethod
+    def shape(n_wires):
+        r"""Returns a list of shapes for the 3 parameter tensors.
+
+        Args:
+            n_wires (int): number of wires
+
+        Returns:
+            list[tuple[int]]: list of shapes
+        """
+        shape_theta_phi = n_wires * (n_wires - 1) // 2
+
+        shapes = [(shape_theta_phi,)] * 2 + [(n_wires,)]
+
+        return shapes

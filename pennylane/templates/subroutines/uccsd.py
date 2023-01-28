@@ -25,7 +25,7 @@ class UCCSD(Operation):
     r"""Implements the Unitary Coupled-Cluster Singles and Doubles (UCCSD) ansatz.
 
     The UCCSD ansatz calls the
-    :func:`~.SingleExcitationUnitary` and :func:`~.DoubleExcitationUnitary`
+    :func:`~.FermionicSingleExcitation` and :func:`~.FermionicDoubleExcitation`
     templates to exponentiate the coupled-cluster excitation operator. UCCSD is a VQE ansatz
     commonly used to run quantum chemistry simulations.
 
@@ -61,9 +61,9 @@ class UCCSD(Operation):
     Args:
         weights (tensor_like): Size ``(len(s_wires) + len(d_wires),)`` tensor containing the parameters
             :math:`\theta_{pr}` and :math:`\theta_{pqrs}` entering the Z rotation in
-            :func:`~.SingleExcitationUnitary`
+            :func:`~.FermionicSingleExcitation`
             and
-            :func:`~.DoubleExcitationUnitary`. These parameters are the coupled-cluster
+            :func:`~.FermionicDoubleExcitation`. These parameters are the coupled-cluster
             amplitudes that need to be optimized for each single and double excitation generated
             with the :func:`~.excitations` function.
         wires (Iterable): wires that the template acts on
@@ -84,14 +84,15 @@ class UCCSD(Operation):
         init_state (array[int]): Length ``len(wires)`` occupation-number vector representing the
             HF state. ``init_state`` is used to initialize the wires.
 
-    .. UsageDetails::
+    .. details::
+        :title: Usage Details
 
         Notice that:
 
         #. The number of wires has to be equal to the number of spin orbitals included in
            the active space.
 
-        #. The single and double excitations can be generated be generated with the function
+        #. The single and double excitations can be generated with the function
            :func:`~.excitations`. See example below.
 
         #. The vector of parameters ``weights`` is a one-dimensional array of size
@@ -103,62 +104,82 @@ class UCCSD(Operation):
         .. code-block:: python
 
             import pennylane as qml
-            from pennylane import qchem
-            from pennylane.templates import UCCSD
+            from pennylane import numpy as np
 
-            from functools import partial
+            # Define the molecule
+            symbols  = ['H', 'H', 'H']
+            geometry = np.array([[0.01076341,  0.04449877,  0.0],
+                                 [0.98729513,  1.63059094,  0.0],
+                                 [1.87262415, -0.00815842,  0.0]], requires_grad = False)
+            electrons = 2
+            charge = 1
 
             # Build the electronic Hamiltonian
-            name = "h2"
-            geo_file = "h2.xyz"
-            h, qubits = qchem.molecular_hamiltonian(name, geo_file)
-
-            # Number of electrons
-            electrons = 2
+            H, qubits = qml.qchem.molecular_hamiltonian(symbols, geometry, charge=charge)
 
             # Define the HF state
-            ref_state = qchem.hf_state(electrons, qubits)
+            hf_state = qml.qchem.hf_state(electrons, qubits)
 
             # Generate single and double excitations
-            singles, doubles = qchem.excitations(electrons, qubits)
+            singles, doubles = qml.qchem.excitations(electrons, qubits)
 
             # Map excitations to the wires the UCCSD circuit will act on
-            s_wires, d_wires = qchem.excitations_to_wires(singles, doubles)
+            s_wires, d_wires = qml.qchem.excitations_to_wires(singles, doubles)
 
             # Define the device
-            dev = qml.device('default.qubit', wires=qubits)
+            dev = qml.device("default.qubit", wires=qubits)
 
-            # Define the UCCSD ansatz
-            ansatz = partial(UCCSD, init_state=ref_state, s_wires=s_wires, d_wires=d_wires)
+            # Define the qnode
+            @qml.qnode(dev)
+            def circuit(params, wires, s_wires, d_wires, hf_state):
+                qml.UCCSD(params, wires, s_wires, d_wires, hf_state)
+                return qml.expval(H)
 
-            # Define the cost function
-            cost_fn = qml.ExpvalCost(ansatz, h, dev)
+            # Define the initial values of the circuit parameters
+            params = np.zeros(len(singles) + len(doubles))
 
-            # Compute the expectation value of 'h' for given set of parameters 'params'
-            params = np.random.normal(0, np.pi, len(singles) + len(doubles))
-            print(cost_fn(params))
+            # Define the optimizer
+            optimizer = qml.GradientDescentOptimizer(stepsize=0.5)
+
+            # Optimize the circuit parameters and compute the energy
+            for n in range(21):
+                params, energy = optimizer.step_and_cost(circuit, params,
+                wires=range(qubits), s_wires=s_wires, d_wires=d_wires, hf_state=hf_state)
+                if n % 2 == 0:
+                    print("step = {:},  E = {:.8f} Ha".format(n, energy))
+
+        .. code-block:: none
+
+            step = 0,  E = -1.24654994 Ha
+            step = 2,  E = -1.27016844 Ha
+            step = 4,  E = -1.27379541 Ha
+            step = 6,  E = -1.27434106 Ha
+            step = 8,  E = -1.27442311 Ha
+            step = 10,  E = -1.27443547 Ha
+            step = 12,  E = -1.27443733 Ha
+            step = 14,  E = -1.27443761 Ha
+            step = 16,  E = -1.27443765 Ha
+            step = 18,  E = -1.27443766 Ha
+            step = 20,  E = -1.27443766 Ha
 
     """
 
-    num_params = 1
     num_wires = AnyWires
-    par_domain = "A"
+    grad_method = None
 
-    def __init__(self, weights, wires, s_wires=None, d_wires=None, init_state=None, do_queue=True):
+    def __init__(
+        self, weights, wires, s_wires=None, d_wires=None, init_state=None, do_queue=True, id=None
+    ):
 
         if (not s_wires) and (not d_wires):
             raise ValueError(
-                "s_wires and d_wires lists can not be both empty; got ph={}, pphh={}".format(
-                    s_wires, d_wires
-                )
+                f"s_wires and d_wires lists can not be both empty; got ph={s_wires}, pphh={d_wires}"
             )
 
         for d_wires_ in d_wires:
             if len(d_wires_) != 2:
                 raise ValueError(
-                    "expected entries of d_wires to be of size 2; got {} of length {}".format(
-                        d_wires_, len(d_wires_)
-                    )
+                    f"expected entries of d_wires to be of size 2; got {d_wires_} of length {len(d_wires_)}"
                 )
 
         shape = qml.math.shape(weights)
@@ -167,33 +188,55 @@ class UCCSD(Operation):
                 f"Weights tensor must be of shape {(len(s_wires) + len(d_wires),)}; got {shape}."
             )
 
-        # we can extract the numpy representation here
-        # since init_state can never be differentiable
-        self.init_state = qml.math.toarray(init_state)
-        self.s_wires = s_wires
-        self.d_wires = d_wires
+        init_state = qml.math.toarray(init_state)
 
         if init_state.dtype != np.dtype("int"):
             raise ValueError(f"Elements of 'init_state' must be integers; got {init_state.dtype}")
 
-        self.init_state_flipped = np.flip(init_state)
+        self._hyperparameters = {"init_state": init_state, "s_wires": s_wires, "d_wires": d_wires}
 
-        super().__init__(weights, wires=wires, do_queue=do_queue)
+        super().__init__(weights, wires=wires, do_queue=do_queue, id=id)
 
-    def expand(self):
+    @property
+    def num_params(self):
+        return 1
 
-        weights = self.parameters[0]
+    @staticmethod
+    def compute_decomposition(
+        weights, wires, s_wires, d_wires, init_state
+    ):  # pylint: disable=arguments-differ
+        r"""Representation of the operator as a product of other operators.
 
-        with qml.tape.QuantumTape() as tape:
+        .. math:: O = O_1 O_2 \dots O_n.
 
-            BasisState(self.init_state_flipped, wires=self.wires)
 
-            for i, (w1, w2) in enumerate(self.d_wires):
-                qml.templates.DoubleExcitationUnitary(
-                    weights[len(self.s_wires) + i], wires1=w1, wires2=w2
-                )
 
-            for j, s_wires_ in enumerate(self.s_wires):
-                qml.templates.SingleExcitationUnitary(weights[j], wires=s_wires_)
+        .. seealso:: :meth:`~.UCCSD.decomposition`.
 
-        return tape
+        Args:
+            weights (tensor_like): Size ``(len(s_wires) + len(d_wires),)`` tensor containing the parameters
+                entering the Z rotation in :func:`~.FermionicSingleExcitation` and :func:`~.FermionicDoubleExcitation`.
+            wires (Any or Iterable[Any]): wires that the operator acts on
+            s_wires (Sequence[Sequence]): Sequence of lists containing the wires ``[r,...,p]``
+                resulting from the single excitation.
+            d_wires (Sequence[Sequence[Sequence]]): Sequence of lists, each containing two lists that
+                specify the indices ``[s, ...,r]`` and ``[q,..., p]`` defining the double excitation.
+            init_state (array[int]): Length ``len(wires)`` occupation-number vector representing the
+                HF state. ``init_state`` is used to initialize the wires.
+
+        Returns:
+            list[.Operator]: decomposition of the operator
+        """
+        op_list = []
+
+        op_list.append(BasisState(init_state, wires=wires))
+
+        for i, (w1, w2) in enumerate(d_wires):
+            op_list.append(
+                qml.FermionicDoubleExcitation(weights[len(s_wires) + i], wires1=w1, wires2=w2)
+            )
+
+        for j, s_wires_ in enumerate(s_wires):
+            op_list.append(qml.FermionicSingleExcitation(weights[j], wires=s_wires_))
+
+        return op_list

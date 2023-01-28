@@ -23,12 +23,23 @@ import math
 import sys
 
 
-@qml.template
-def _simple_ansatz(x, params):
-    """A simple quantum circuit ansatz."""
-    qml.RX(params[0], wires=[0])
-    qml.RZ(x, wires=[0])
-    qml.RX(params[1], wires=[0])
+@pytest.fixture()
+def cvxpy_support():
+    try:
+        import cvxpy
+        import cvxopt
+
+        cvxpy_support = True
+    except:
+        cvxpy_support = False
+
+    return cvxpy_support
+
+
+@pytest.fixture()
+def skip_if_no_cvxpy_support(cvxpy_support):
+    if not cvxpy_support:
+        pytest.skip("Skipped, no cvxpy support")
 
 
 def _mock_kernel(x1, x2, history):
@@ -192,7 +203,7 @@ class TestKernelTargetAlignment:
             rescale_class_labels=False,
         )
 
-        assert alignment == 1.6 / (2 * math.sqrt(2 + 2 * 0.2 ** 2))
+        assert alignment == 1.6 / (2 * math.sqrt(2 + 2 * 0.2**2))
         assert alignment == alignment_assume
 
     def test_alignment_value_other_labels(self):
@@ -210,7 +221,7 @@ class TestKernelTargetAlignment:
             rescale_class_labels=False,
         )
 
-        assert alignment == 2.4 / (2 * math.sqrt(2 + 2 * 0.2 ** 2))
+        assert alignment == 2.4 / (2 * math.sqrt(2 + 2 * 0.2**2))
         assert alignment == alignment_assume
 
     def test_alignment_value_three(self):
@@ -357,22 +368,41 @@ class TestRegularization:
             (np.array([[0, 1], [1, 0]]), False, np.array([[1, 1], [1, 1]]) / 2),
             (np.diag([1, -1]), True, np.diag([1, 1])),
             (np.array([[1, 1], [1, -1]]), True, np.array([[1.0, 1.0], [1.0, 1.0]])),
-            # the small perturbation ensures that the solver does not get stuck
-            (np.array([[0, 1.000001], [1, 0]]), True, np.array([[1, 1], [1, 1]])),
         ],
     )
+    @pytest.mark.usefixtures("skip_if_no_cvxpy_support")
     def test_closest_psd_matrix(self, input, fix_diagonal, expected_output):
         """Test obtaining the closest positive semi-definite matrix using a semi-definite program."""
         try:
             import cvxpy as cp
 
             output = kern.closest_psd_matrix(input, fix_diagonal=fix_diagonal, feastol=1e-10)
-        except ModuleNotFoundError:
+        except cp.error.SolverError:
             pytest.skip(
-                "cvxpy seems to not be installed on the system."
-                "It is required for qml.kernels.closest_psd_matrix"
-                " and can be installed via `pip install cvxpy`."
+                "The cvxopt solver seems to not be installed on the system."
+                "It is the default solver for qml.kernels.closest_psd_matrix"
+                " and can be installed via `pip install cvxopt`."
             )
+
+        assert np.allclose(output, expected_output, atol=1e-5)
+
+    @pytest.mark.usefixtures("skip_if_no_cvxpy_support")
+    @pytest.mark.xfail(raises=RuntimeError, reason="solver did not converge")
+    def test_closest_psd_matrix_small_perturb(self):
+        """Test obtaining the closest positive semi-definite matrix using a
+        semi-definite program with a small perturbation input.
+
+        The small perturbation ensures that the solver does not get stuck.
+        """
+        input, fix_diagonal, expected_output = (
+            np.array([[0, 1.000001], [1, 0]]),
+            True,
+            np.array([[1, 1], [1, 1]]),
+        )
+        try:
+            import cvxpy as cp
+
+            output = kern.closest_psd_matrix(input, fix_diagonal=fix_diagonal, feastol=1e-10)
         except cp.error.SolverError:
             pytest.skip(
                 "The cvxopt solver seems to not be installed on the system."
@@ -402,6 +432,7 @@ class TestRegularization:
             (np.diag([1, -1]), "I am not a solver"),
         ],
     )
+    @pytest.mark.usefixtures("skip_if_no_cvxpy_support")
     def test_closest_psd_matrix_solve_error(self, input, solver):
         """Test verbose error raising if problem.solve crashes."""
         with pytest.raises(Exception) as solve_error:
@@ -413,14 +444,14 @@ class TestRegularization:
 def depolarize(mat, rates, num_wires, level):
     """Apply effect of depolarizing noise in circuit to kernel matrix."""
     if level == "per_circuit":
-        noisy_mat = (1 - rates) * mat + rates / (2 ** num_wires) * np.ones_like(mat)
+        noisy_mat = (1 - rates) * mat + rates / (2**num_wires) * np.ones_like(mat)
     elif level == "per_embedding":
         noisy_mat = np.copy(mat)
         for i in range(len(mat)):
             for j in range(i, len(mat)):
                 rate = rates[i] + rates[j] - rates[i] * rates[j]
                 noisy_mat[i, j] *= 1 - rate
-                noisy_mat[i, j] += rate / (2 ** num_wires)
+                noisy_mat[i, j] += rate / (2**num_wires)
 
     return noisy_mat
 

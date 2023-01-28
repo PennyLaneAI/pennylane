@@ -15,6 +15,7 @@
 Unit tests for ``optimize_measurements`` function in ``grouping/optimize_measurements.py``.
 """
 import pytest
+import numpy as np
 from pennylane import Identity, PauliX, PauliY, PauliZ
 from pennylane.grouping.utils import are_identical_pauli_words
 from pennylane.grouping.optimize_measurements import optimize_measurements
@@ -108,7 +109,8 @@ class TestOptimizeMeasurements:
         assert len(grouped_coeffs) == len(grouped_coeffs)
 
         assert all(
-            grouped_coeffs[i] == grouped_coeffs_sol[i] for i in range(len(grouped_coeffs_sol))
+            np.allclose(grouped_coeffs[i], grouped_coeffs_sol[i])
+            for i in range(len(grouped_coeffs_sol))
         )
 
     @pytest.mark.parametrize(
@@ -140,7 +142,8 @@ class TestOptimizeMeasurements:
         assert len(grouped_coeffs) == len(grouped_coeffs)
 
         assert all(
-            grouped_coeffs[i] == grouped_coeffs_sol[i] for i in range(len(grouped_coeffs_sol))
+            np.allclose(grouped_coeffs[i], grouped_coeffs_sol[i])
+            for i in range(len(grouped_coeffs_sol))
         )
 
     def test_optimize_measurements_not_implemented_catch(self):

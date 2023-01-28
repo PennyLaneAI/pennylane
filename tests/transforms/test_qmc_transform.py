@@ -26,8 +26,52 @@ from pennylane.transforms.qmc import (
     quantum_monte_carlo,
 )
 from pennylane.templates.subroutines.qmc import _make_V, _make_Z, make_Q
-from pennylane.templates.state_preparations.mottonen import _uniform_rotation_dagger as r_unitary
 from pennylane.wires import Wires
+
+
+def r_unitary(gate, alpha, control_wires, target_wire):
+    r"""Applies a uniformly-controlled rotation to the target qubit.
+
+    A uniformly-controlled rotation is a sequence of multi-controlled
+    rotations, each of which is conditioned on the control qubits being in a different state.
+
+    For example, a uniformly-controlled rotation with two control qubits describes a sequence of
+    four multi-controlled rotations, each applying the rotation only if the control qubits
+    are in states :math:`|00\rangle`, :math:`|01\rangle`, :math:`|10\rangle`, and :math:`|11\rangle`, respectively.
+
+    To implement a uniformly-controlled rotation using single qubit rotations and CNOT gates,
+    a decomposition based on Gray codes is used. For this purpose, the multi-controlled rotation
+    angles alpha have to be converted into a set of non-controlled rotation angles theta.
+    For more details, see `Möttönen and Vartiainen (2005), Fig 7a<https://arxiv.org/abs/quant-ph/0504100>`_.
+
+    Args:
+        gate (.Operation): gate to be applied, needs to have exactly one parameter
+        alpha (tensor_like): angles to decompose the uniformly-controlled rotation into multi-controlled rotations
+        control_wires (array[int]): wires that act as control
+        target_wire (int): wire that acts as target
+    """
+
+    theta = qml.templates.state_preparations.mottonen.compute_theta(alpha)
+
+    gray_code_rank = len(control_wires)
+
+    if gray_code_rank == 0:
+        if qml.math.all(theta[..., 0] != 0.0):
+            gate(theta[..., 0], wires=[target_wire])
+        return
+
+    code = qml.templates.state_preparations.mottonen.gray_code(gray_code_rank)
+    num_selections = len(code)
+
+    control_indices = [
+        int(np.log2(int(code[i], 2) ^ int(code[(i + 1) % num_selections], 2)))
+        for i in range(num_selections)
+    ]
+
+    for i, control_index in enumerate(control_indices):
+        if qml.math.all(theta[..., i] != 0.0):
+            gate(theta[..., i], wires=[target_wire])
+        qml.CNOT(wires=[control_wires[control_index], target_wire])
 
 
 def get_unitary(circ, n_wires):
@@ -41,7 +85,7 @@ def get_unitary(circ, n_wires):
         return qml.state()
 
     bitstrings = list(itertools.product([0, 1], repeat=n_wires))
-    u = [unitary_z(bitstring).numpy() for bitstring in bitstrings]
+    u = [unitary_z(np.array(bitstring)).numpy() for bitstring in bitstrings]
     u = np.array(u).T
     return u
 
@@ -63,7 +107,7 @@ def test_apply_controlled_z(n_wires):
 
     # Note the sign flip in the following. The sign does not matter when performing the Q unitary
     # because two Zs are used.
-    z_ideal = -_make_Z(2 ** n_wires)
+    z_ideal = -_make_Z(2**n_wires)
 
     circ = lambda: qml.ControlledQubitUnitary(z_ideal, wires=wires, control_wires=control_wire)
     u_ideal = get_unitary(circ, n_all_wires)
@@ -85,7 +129,7 @@ def test_apply_controlled_v(n_wires):
 
     # Note the sign flip in the following. The sign does not matter when performing the Q unitary
     # because two Vs are used.
-    v_ideal = -_make_V(2 ** n_wires)
+    v_ideal = -_make_V(2**n_wires)
 
     circ = lambda: qml.ControlledQubitUnitary(v_ideal, wires=wires, control_wires=control_wire)
     u_ideal = get_unitary(circ, n_all_wires)
@@ -96,6 +140,7 @@ def test_apply_controlled_v(n_wires):
 class TestApplyControlledQ:
     """Tests for the apply_controlled_Q function"""
 
+    @pytest.mark.slow
     @pytest.mark.parametrize("n_wires", range(2, 5))
     def test_apply(self, n_wires):
         """Test if the apply_controlled_Q performs the correct transformation by reconstructing the
@@ -108,7 +153,7 @@ class TestApplyControlledQ:
         control_wire = n_wires
 
         a_mat = unitary_group.rvs(2 ** (n_wires - 1), random_state=1967)
-        r_mat = unitary_group.rvs(2 ** n_wires, random_state=1967)
+        r_mat = unitary_group.rvs(2**n_wires, random_state=1967)
         q_mat = make_Q(a_mat, r_mat)
 
         def fn():
@@ -137,6 +182,7 @@ class TestApplyControlledQ:
 class TestQuantumMonteCarlo:
     """Tests for the quantum_monte_carlo function"""
 
+    @pytest.mark.slow
     @pytest.mark.parametrize("n_wires", range(2, 4))
     def test_apply(self, n_wires):
         """Test if the quantum_monte_carlo performs the correct transformation by reconstructing the
@@ -149,7 +195,7 @@ class TestQuantumMonteCarlo:
         estimation_wires = range(n_wires, 2 * n_wires)
 
         a_mat = unitary_group.rvs(2 ** (n_wires - 1), random_state=1967)
-        r_mat = unitary_group.rvs(2 ** n_wires, random_state=1967)
+        r_mat = unitary_group.rvs(2**n_wires, random_state=1967)
         q_mat = make_Q(a_mat, r_mat)
 
         def fn():
@@ -181,13 +227,14 @@ class TestQuantumMonteCarlo:
                 lambda: None, wires=wires, target_wire=0, estimation_wires=estimation_wires
             )
 
+    @pytest.mark.slow
     def test_integration(self):
         """Test if quantum_monte_carlo generates the correct circuit by comparing it to the
         QuantumMonteCarlo template on the practical example specified in the usage details. Custom
         wire labels are also used."""
 
         m = 5  # number of wires in A
-        M = 2 ** m
+        M = 2**m
 
         xmax = np.pi  # bound to region [-pi, pi]
         xs = np.linspace(-xmax, xmax, M)
@@ -211,17 +258,18 @@ class TestQuantumMonteCarlo:
             fn, wires=wires, target_wire=target_wire, estimation_wires=estimation_wires
         )
 
-        with qml.tape.QuantumTape() as tape:
+        with qml.queuing.AnnotatedQueue() as q:
             qmc_circuit()
             qml.probs(estimation_wires)
 
-        tape = tape.expand()
+        tape = qml.tape.QuantumScript.from_queue(q)
+        tape = tape.expand(depth=2)
 
         for op in tape.operations:
             unexpanded = (
                 isinstance(op, qml.MultiControlledX)
-                or isinstance(op, qml.QFT)
-                or isinstance(op, qml.tape.QuantumTape)
+                or isinstance(op, qml.templates.QFT)
+                or isinstance(op, qml.tape.QuantumScript)
             )
             assert not unexpanded
 

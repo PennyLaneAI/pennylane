@@ -33,19 +33,45 @@ The following frameworks are currently supported:
 """
 import autoray as ar
 
+from .is_independent import is_independent
+from .matrix_manipulation import expand_matrix, reduce_matrices
 from .multi_dispatch import (
-    _multi_dispatch,
+    add,
+    array,
     block_diag,
     concatenate,
     diag,
     dot,
+    einsum,
+    expm,
+    eye,
+    frobenius_inner_product,
+    gammainc,
+    get_trainable_indices,
+    iscomplex,
+    kron,
+    matmul,
+    multi_dispatch,
     ones_like,
+    scatter,
+    scatter_element_add,
     stack,
+    tensordot,
+    unwrap,
     where,
 )
-
-from .quantum import cov_matrix, marginal_prob
-
+from .quantum import (
+    cov_matrix,
+    fidelity,
+    marginal_prob,
+    mutual_info,
+    purity,
+    reduced_dm,
+    relative_entropy,
+    sqrt_matrix,
+    vn_entropy,
+    max_entropy,
+)
 from .utils import (
     allclose,
     allequal,
@@ -53,14 +79,14 @@ from .utils import (
     cast_like,
     convert_like,
     get_interface,
+    in_backprop,
+    is_abstract,
     requires_grad,
 )
-
 
 sum = ar.numpy.sum
 toarray = ar.numpy.to_numpy
 T = ar.numpy.transpose
-
 
 class NumpyMimic(ar.autoray.NumpyMimic):
     """Subclass of the Autoray NumpyMimic class in order to support
@@ -75,27 +101,52 @@ class NumpyMimic(ar.autoray.NumpyMimic):
 numpy_mimic = NumpyMimic()
 numpy_fft = ar.autoray.NumpyMimic("fft")
 
+# small constant for numerical stability that the user can modify
+eps = 1e-14
+
 
 def __getattr__(name):
     return getattr(numpy_mimic, name)
 
 
 __all__ = [
-    "_multi_dispatch",
-    "block_diag",
-    "concatenate",
-    "diag",
-    "dot",
-    "ones_like",
-    "stack",
-    "where",
+    "multi_dispatch",
     "allclose",
     "allequal",
+    "array",
+    "block_diag",
     "cast",
     "cast_like",
+    "concatenate",
     "convert_like",
-    "get_interface",
-    "requires_grad",
     "cov_matrix",
+    "diag",
+    "dot",
+    "einsum",
+    "eye",
+    "fidelity",
+    "frobenius_inner_product",
+    "get_interface",
+    "get_trainable_indices",
+    "in_backprop",
+    "is_abstract",
+    "is_independent",
     "marginal_prob",
+    "max_entropy",
+    "mutual_info",
+    "ones_like",
+    "purity",
+    "reduced_dm",
+    "relative_entropy",
+    "requires_grad",
+    "sqrt_matrix",
+    "scatter_element_add",
+    "stack",
+    "tensordot",
+    "unwrap",
+    "vn_entropy",
+    "where",
+    "add",
+    "iscomplex",
+    "expand_matrix",
 ]

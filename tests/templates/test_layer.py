@@ -18,10 +18,9 @@ Integration tests should be placed into ``test_templates.py``.
 # pylint: disable=protected-access,cell-var-from-loop
 import pytest
 import pennylane as qml
-from pennylane import layer, template
+from pennylane import layer
 
 
-@template
 def ConstantCircuit():
 
     qml.PauliX(wires=[0])
@@ -29,7 +28,6 @@ def ConstantCircuit():
     qml.PauliY(wires=[1])
 
 
-@template
 def StaticCircuit(wires, var):
 
     qml.CNOT(wires=[wires[3], wires[1]])
@@ -40,7 +38,6 @@ def StaticCircuit(wires, var):
         qml.Hadamard(wires=wires[0])
 
 
-@template
 def KwargCircuit(wires, **kwargs):
 
     qml.CNOT(wires=[wires[3], wires[1]])
@@ -51,7 +48,6 @@ def KwargCircuit(wires, **kwargs):
         qml.Hadamard(wires=wires[0])
 
 
-@template
 def DynamicCircuit(parameters):
 
     for i in range(2):
@@ -60,7 +56,6 @@ def DynamicCircuit(parameters):
     qml.MultiRZ(parameters[1], wires=[0, 1])
 
 
-@template
 def MultiCircuit(parameters1, parameters2, var1, wires, var2):
 
     if var2 == True:
@@ -155,3 +150,23 @@ class TestLayer:
             target = [gates[i].name, gates[i].parameters, gates[i].wires]
 
         assert prep == target
+
+    @pytest.mark.tf
+    def test_layer_tf(self):
+        """Tests that the layering function accepts Tensorflow variables."""
+
+        import tensorflow as tf
+
+        def unitary(param):
+            qml.RX(param, wires=0)
+
+        x = tf.Variable([0.1, 0.2, 0.3])
+
+        with qml.tape.OperationRecorder() as rec:
+            layer(unitary, 3, x)
+
+        assert len(rec.operations) == 3
+
+        for ii, op in enumerate(rec.operations):
+            assert qml.math.allclose(op.parameters[0], x[ii])
+            assert isinstance(op, qml.RX)

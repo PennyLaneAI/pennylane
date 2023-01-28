@@ -41,7 +41,7 @@ class TestDecomposition:
 
         weights = np.random.random(size=weight_shape)
 
-        op = qml.templates.BasicEntanglerLayers(weights, wires=range(n_wires))
+        op = qml.BasicEntanglerLayers(weights, wires=range(n_wires))
         tape = op.expand()
 
         for i, gate in enumerate(tape.operations):
@@ -54,7 +54,7 @@ class TestDecomposition:
 
         weights = np.zeros(shape=(1, 2))
 
-        op = qml.templates.BasicEntanglerLayers(weights, wires=range(2), rotation=rotation)
+        op = qml.BasicEntanglerLayers(weights, wires=range(2), rotation=rotation)
         queue = op.expand().operations
 
         assert rotation in [type(gate) for gate in queue]
@@ -75,7 +75,7 @@ class TestDecomposition:
 
         @qml.qnode(dev)
         def circuit(weights):
-            qml.templates.BasicEntanglerLayers(weights, wires=range(n_wires))
+            qml.BasicEntanglerLayers(weights, wires=range(n_wires))
             return [qml.expval(qml.PauliZ(i)) for i in range(n_wires)]
 
         expectations = circuit(weights)
@@ -90,12 +90,12 @@ class TestDecomposition:
 
         @qml.qnode(dev)
         def circuit():
-            qml.templates.BasicEntanglerLayers(weights, wires=range(3))
+            qml.BasicEntanglerLayers(weights, wires=range(3))
             return qml.expval(qml.Identity(0))
 
         @qml.qnode(dev2)
         def circuit2():
-            qml.templates.BasicEntanglerLayers(weights, wires=["z", "a", "k"])
+            qml.BasicEntanglerLayers(weights, wires=["z", "a", "k"])
             return qml.expval(qml.Identity("z"))
 
         circuit()
@@ -115,14 +115,19 @@ class TestInputs:
 
         @qml.qnode(dev)
         def circuit(weights):
-            qml.templates.BasicEntanglerLayers(weights=weights, wires=range(n_wires))
+            qml.BasicEntanglerLayers(weights=weights, wires=range(n_wires))
             return [qml.expval(qml.PauliZ(i)) for i in range(n_wires)]
 
         with pytest.raises(ValueError, match="Weights tensor must be 2-dimensional"):
             circuit([1, 0])
 
-        with pytest.raises(ValueError, match="Weights tensor must have second dimension of length"):
+        with pytest.raises(ValueError, match="Weights tensor must have last dimension of length"):
             circuit([[1, 0], [1, 0]])
+
+    def test_id(self):
+        """Tests that the id attribute can be set."""
+        template = qml.BasicEntanglerLayers(np.array([[1]]), wires=[0], id="a")
+        assert template.id == "a"
 
 
 class TestAttributes:
@@ -139,12 +144,12 @@ class TestAttributes:
     def test_shape(self, n_layers, n_wires, expected_shape):
         """Test that the shape method returns the correct shape of the weights tensor"""
 
-        shape = qml.templates.BasicEntanglerLayers.shape(n_layers, n_wires)
+        shape = qml.BasicEntanglerLayers.shape(n_layers, n_wires)
         assert shape == expected_shape
 
 
 def circuit_template(weights):
-    qml.templates.BasicEntanglerLayers(weights, range(3))
+    qml.BasicEntanglerLayers(weights, range(3))
     return qml.expval(qml.PauliZ(0))
 
 
@@ -162,25 +167,7 @@ class TestInterfaces:
     """Tests that the template is compatible with all interfaces, including the computation
     of gradients."""
 
-    def test_list_and_tuples(self, tol):
-        """Tests common iterables as inputs."""
-
-        weights = [[0.1, -1.1, 0.2]]
-
-        dev = qml.device("default.qubit", wires=3)
-
-        circuit = qml.QNode(circuit_template, dev)
-        circuit2 = qml.QNode(circuit_decomposed, dev)
-
-        res = circuit(weights)
-        res2 = circuit2(weights)
-        np.testing.assert_allclose(res, res2, atol=tol, rtol=0)
-
-        weights_tuple = [tuple(weights[0])]
-        res = circuit(weights_tuple)
-        res2 = circuit2(weights_tuple)
-        assert qml.math.allclose(res, res2, atol=tol, rtol=0)
-
+    @pytest.mark.autograd
     def test_autograd(self, tol):
         """Tests the autograd interface."""
 
@@ -204,10 +191,11 @@ class TestInterfaces:
 
         assert np.allclose(grads[0], grads2[0], atol=tol, rtol=0)
 
+    @pytest.mark.jax
     def test_jax(self, tol):
         """Tests the jax interface."""
 
-        jax = pytest.importorskip("jax")
+        import jax
         import jax.numpy as jnp
 
         weights = jnp.array(np.random.random(size=(1, 3)))
@@ -229,10 +217,11 @@ class TestInterfaces:
 
         assert np.allclose(grads[0], grads2[0], atol=tol, rtol=0)
 
+    @pytest.mark.tf
     def test_tf(self, tol):
         """Tests the tf interface."""
 
-        tf = pytest.importorskip("tensorflow")
+        import tensorflow as tf
 
         weights = tf.Variable(np.random.random(size=(1, 3)))
 
@@ -255,10 +244,11 @@ class TestInterfaces:
 
         assert np.allclose(grads[0], grads2[0], atol=tol, rtol=0)
 
+    @pytest.mark.torch
     def test_torch(self, tol):
         """Tests the torch interface."""
 
-        torch = pytest.importorskip("torch")
+        import torch
 
         weights = torch.tensor(np.random.random(size=(1, 3)), requires_grad=True)
 

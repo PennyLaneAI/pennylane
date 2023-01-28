@@ -16,9 +16,11 @@ Unit tests for ``PauliGroupingStrategy`` and ``group_observables`` in ``grouping
 """
 import pytest
 import numpy as np
+import pennylane as qml
 from pennylane import Identity, PauliX, PauliY, PauliZ
 from pennylane.grouping.utils import are_identical_pauli_words
 from pennylane.grouping.group_observables import PauliGroupingStrategy, group_observables
+from pennylane import numpy as pnp
 
 
 class TestPauliGroupingStrategy:
@@ -142,6 +144,7 @@ observables_list = [
         PauliX("b") @ PauliZ("a"),
         PauliZ("a") @ PauliZ("b") @ PauliZ("c"),
     ],
+    [PauliX([(0, 0)]), PauliZ([(0, 0)])],
 ]
 
 qwc_sols = [
@@ -165,6 +168,7 @@ qwc_sols = [
         [PauliZ(wires=["a"]) @ PauliZ(wires=["b"]) @ PauliZ(wires=["c"])],
         [PauliX(wires=["a"]), PauliX(wires=["a"]) @ PauliZ(wires=["b"])],
     ],
+    [[PauliX([(0, 0)])], [PauliZ([(0, 0)])]],
 ]
 
 commuting_sols = [
@@ -188,6 +192,7 @@ commuting_sols = [
         [PauliX(wires=["a"]), PauliX(wires=["a"]) @ PauliZ(wires=["b"])],
         [PauliZ(wires=["a"]) @ PauliX(wires=["b"])],
     ],
+    [[PauliX([(0, 0)])], [PauliZ([(0, 0)])]],
 ]
 
 anticommuting_sols = [
@@ -213,6 +218,7 @@ anticommuting_sols = [
         ],
         [PauliX(wires=["a"]), PauliZ(wires=["a"]) @ PauliX(wires=["b"])],
     ],
+    [[PauliX([(0, 0)]), PauliZ([(0, 0)])]],
 ]
 
 
@@ -221,7 +227,7 @@ class TestGroupObservables:
     Tests for ``group_observables`` function using QWC, commuting, and anticommuting partitioning.
     """
 
-    qwc_tuples = [(obs, qwc_sols[i]) for i, obs in enumerate(observables_list)]
+    qwc_tuples = [(obs, sol) for obs, sol in zip(observables_list, qwc_sols)]
 
     @pytest.mark.parametrize("observables,qwc_partitions_sol", qwc_tuples)
     def test_qwc_partitioning(self, observables, qwc_partitions_sol):
@@ -240,7 +246,7 @@ class TestGroupObservables:
             for j, pauli in enumerate(partition):
                 assert are_identical_pauli_words(pauli, qwc_partitions_sol[i][j])
 
-    com_tuples = [(obs, commuting_sols[i]) for i, obs in enumerate(observables_list)]
+    com_tuples = [(obs, sol) for obs, sol in zip(observables_list, commuting_sols)]
 
     @pytest.mark.parametrize("observables,com_partitions_sol", com_tuples)
     def test_commuting_partitioning(self, observables, com_partitions_sol):
@@ -259,7 +265,7 @@ class TestGroupObservables:
             for j, pauli in enumerate(partition):
                 assert are_identical_pauli_words(pauli, com_partitions_sol[i][j])
 
-    anticom_tuples = [(obs, anticommuting_sols[i]) for i, obs in enumerate(observables_list)]
+    anticom_tuples = [(obs, sols) for obs, sols in zip(observables_list, anticommuting_sols)]
 
     @pytest.mark.parametrize("observables,anticom_partitions_sol", anticom_tuples)
     def test_anticommuting_partitioning(self, observables, anticom_partitions_sol):
@@ -301,3 +307,99 @@ class TestGroupObservables:
         _ = grouping_instance.binary_repr(n_qubits, wire_map)
 
         assert grouping_instance._wire_map == wire_map
+
+    def test_return_list_coefficients(self):
+        """Tests that if the coefficients are given as a list, the groups
+        are likewise lists."""
+        obs = [qml.PauliX(0), qml.PauliX(1)]
+        coeffs = [1.0, 2.0]
+        _, grouped_coeffs = group_observables(obs, coeffs)
+        assert isinstance(grouped_coeffs[0], list)
+
+
+class TestDifferentiable:
+    """Tests that grouping observables is differentiable with respect to the coefficients."""
+
+    def test_differentiation_autograd(self, tol):
+        """Test that grouping is differentiable with autograd tensors as coefficient"""
+        coeffs = pnp.array([1.0, 2.0, 3.0], requires_grad=True)
+        obs = [PauliX(wires=0), PauliX(wires=1), PauliZ(wires=1)]
+
+        def group(coeffs, select=None):
+            _, grouped_coeffs = qml.grouping.group_observables(obs, coeffs)
+            return grouped_coeffs[select]
+
+        jac_fn = qml.jacobian(group)
+        assert pnp.allclose(
+            jac_fn(coeffs, select=0), pnp.array([[1.0, 0.0, 0.0], [0.0, 1.0, 0.0]]), atol=tol
+        )
+        assert pnp.allclose(jac_fn(coeffs, select=1), pnp.array([[0.0, 0.0, 1.0]]), atol=tol)
+
+    @pytest.mark.jax
+    def test_differentiation_jax(self, tol):
+        """Test that grouping is differentiable with jax tensors as coefficient"""
+        import jax
+        import jax.numpy as jnp
+
+        coeffs = jnp.array([1.0, 2.0, 3.0])
+        obs = [PauliX(wires=0), PauliX(wires=1), PauliZ(wires=1)]
+
+        def group(coeffs, select=None):
+            _, grouped_coeffs = qml.grouping.group_observables(obs, coeffs)
+            return grouped_coeffs[select]
+
+        jac_fn = jax.jacobian(group)
+        assert np.allclose(
+            jac_fn(coeffs, select=0), pnp.array([[1.0, 0.0, 0.0], [0.0, 1.0, 0.0]]), atol=tol
+        )
+        assert np.allclose(jac_fn(coeffs, select=1), pnp.array([[0.0, 0.0, 1.0]]), atol=tol)
+
+    @pytest.mark.torch
+    def test_differentiation_torch(self, tol):
+        """Test that grouping is differentiable with torch tensors as coefficient"""
+        import torch
+
+        obs = [PauliX(wires=0), PauliX(wires=1), PauliZ(wires=1)]
+
+        def group(coeffs, select_group=None, select_index=None):
+            # we return a scalar, since torch is best at computing gradients
+            _, grouped_coeffs = qml.grouping.group_observables(obs, coeffs)
+            return grouped_coeffs[select_group][select_index]
+
+        coeffs = torch.tensor([1.0, 2.0, 3.0], requires_grad=True)
+        res = group(coeffs, select_group=0, select_index=0)
+        res.backward()
+        assert np.allclose(coeffs.grad, [1.0, 0.0, 0.0], atol=tol)
+
+        coeffs = torch.tensor([1.0, 2.0, 3.0], requires_grad=True)
+        res = group(coeffs, select_group=0, select_index=1)
+        res.backward()
+        assert np.allclose(coeffs.grad, [0.0, 1.0, 0.0], atol=tol)
+
+        coeffs = torch.tensor([1.0, 2.0, 3.0], requires_grad=True)
+        res = group(coeffs, select_group=1, select_index=0)
+        res.backward()
+        assert np.allclose(coeffs.grad, [0.0, 0.0, 1.0], atol=tol)
+
+    @pytest.mark.tf
+    def test_differentiation_tf(self, tol):
+        """Test that grouping is differentiable with tf tensors as coefficient"""
+        import tensorflow as tf
+
+        obs = [PauliX(wires=0), PauliX(wires=1), PauliZ(wires=1)]
+
+        def group(coeffs, select=None):
+            _, grouped_coeffs = qml.grouping.group_observables(obs, coeffs)
+            return grouped_coeffs[select]
+
+        coeffs = tf.Variable([1.0, 2.0, 3.0], dtype=tf.double)
+
+        with tf.GradientTape() as tape:
+            res = group(coeffs, select=0)
+        grad = tape.jacobian(res, [coeffs])
+        assert np.allclose(grad, pnp.array([[1.0, 0.0, 0.0], [0.0, 1.0, 0.0]]), atol=tol)
+
+        with tf.GradientTape() as tape:
+            res = group(coeffs, select=1)
+        grad = tape.jacobian(res, [coeffs])
+        assert np.allclose(grad, pnp.array([[0.0, 0.0, 1.0]]), atol=tol)

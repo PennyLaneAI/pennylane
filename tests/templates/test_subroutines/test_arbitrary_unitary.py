@@ -101,7 +101,7 @@ class TestDecomposition:
         """Test that the correct gates are applied on a single wire."""
         weights = np.arange(3, dtype=float)
 
-        op = qml.templates.ArbitraryUnitary(weights, wires=[0])
+        op = qml.ArbitraryUnitary(weights, wires=[0])
         queue = op.expand().operations
 
         for gate in queue:
@@ -112,13 +112,13 @@ class TestDecomposition:
 
         for i, op in enumerate(queue):
             assert op.data[0] == weights[i]
-            assert op.data[1] == pauli_words[i]
+            assert op.hyperparameters["pauli_word"] == pauli_words[i]
 
     def test_correct_gates_two_wires(self):
         """Test that the correct gates are applied on two wires."""
         weights = np.arange(15, dtype=float)
 
-        op = qml.templates.ArbitraryUnitary(weights, wires=[0, 1])
+        op = qml.ArbitraryUnitary(weights, wires=[0, 1])
         queue = op.expand().operations
 
         for gate in queue:
@@ -145,7 +145,7 @@ class TestDecomposition:
 
         for i, op in enumerate(queue):
             assert op.data[0] == weights[i]
-            assert op.data[1] == pauli_words[i]
+            assert op.hyperparameters["pauli_word"] == pauli_words[i]
 
     def test_custom_wire_labels(self, tol):
         """Test that template can deal with non-numeric, nonconsecutive wire labels."""
@@ -156,12 +156,12 @@ class TestDecomposition:
 
         @qml.qnode(dev)
         def circuit():
-            qml.templates.ArbitraryUnitary(weights, wires=range(3))
+            qml.ArbitraryUnitary(weights, wires=range(3))
             return qml.expval(qml.Identity(0))
 
         @qml.qnode(dev2)
         def circuit2():
-            qml.templates.ArbitraryUnitary(weights, wires=["z", "a", "k"])
+            qml.ArbitraryUnitary(weights, wires=["z", "a", "k"])
             return qml.expval(qml.Identity("z"))
 
         circuit()
@@ -180,12 +180,17 @@ class TestInputs:
 
         @qml.qnode(dev)
         def circuit(weights):
-            qml.templates.ArbitraryUnitary(weights, wires=range(2))
+            qml.ArbitraryUnitary(weights, wires=range(2))
             return qml.expval(qml.PauliZ(0))
 
         with pytest.raises(ValueError, match="Weights tensor must be of shape"):
             weights = np.array([0, 1])
             circuit(weights)
+
+    def test_id(self):
+        """Tests that the id attribute can be set."""
+        template = qml.ArbitraryUnitary(np.random.random(size=(63,)), wires=range(3), id="a")
+        assert template.id == "a"
 
 
 class TestAttributes:
@@ -202,7 +207,7 @@ class TestAttributes:
     def test_shape(self, n_wires, expected_shape):
         """Test that the shape method returns the correct shape of the weights tensor"""
 
-        shape = qml.templates.ArbitraryUnitary.shape(n_wires)
+        shape = qml.ArbitraryUnitary.shape(n_wires)
         assert shape == expected_shape
 
 
@@ -212,7 +217,7 @@ paulis_two_qubits = PAULI_WORD_TEST_DATA[1][1]
 
 
 def circuit_template(weights):
-    qml.templates.ArbitraryUnitary(weights, wires=range(2))
+    qml.ArbitraryUnitary(weights, wires=range(2))
     return qml.expval(qml.PauliZ(0))
 
 
@@ -240,6 +245,7 @@ class TestInterfaces:
         res2 = circuit2(weights)
         assert qml.math.allclose(res, res2, atol=tol, rtol=0)
 
+    @pytest.mark.autograd
     def test_autograd(self, tol):
         """Tests the autograd interface."""
 
@@ -262,10 +268,11 @@ class TestInterfaces:
 
         assert np.allclose(grads, grads2, atol=tol, rtol=0)
 
+    @pytest.mark.jax
     def test_jax(self, tol):
         """Tests the jax interface."""
 
-        jax = pytest.importorskip("jax")
+        import jax
         import jax.numpy as jnp
 
         weights = jnp.array(np.random.random(size=(15,)))
@@ -286,10 +293,11 @@ class TestInterfaces:
 
         assert np.allclose(grads[0], grads2[0], atol=tol, rtol=0)
 
+    @pytest.mark.tf
     def test_tf(self, tol):
         """Tests the tf interface."""
 
-        tf = pytest.importorskip("tensorflow")
+        import tensorflow as tf
 
         weights = tf.Variable(np.random.random(size=(15,)))
         dev = qml.device("default.qubit", wires=2)
@@ -311,10 +319,11 @@ class TestInterfaces:
 
         assert np.allclose(grads[0], grads2[0], atol=tol, rtol=0)
 
+    @pytest.mark.torch
     def test_torch(self, tol):
         """Tests the torch interface."""
 
-        torch = pytest.importorskip("torch")
+        import torch
 
         weights = torch.tensor(np.random.random(size=(15,)), requires_grad=True)
 

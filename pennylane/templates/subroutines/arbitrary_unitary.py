@@ -45,7 +45,7 @@ def _n_k_gray_code(n, k, start=0):
         start (int, optional): Optional start of the Gray code. The generated code
             will be shorter as the code does not wrap. Defaults to 0.
     """
-    for i in range(start, n ** k):
+    for i in range(start, n**k):
         codeword = [0] * k
 
         base_repesentation = []
@@ -82,9 +82,8 @@ class ArbitraryUnitary(Operation):
 
     .. code-block:: python
 
-        @qml.template
         def arbitrary_nearest_neighbour_interaction(weights, wires):
-            qml.broadcast(unitary=ArbitraryUnitary, pattern="double", wires=wires, params=weights)
+            qml.broadcast(unitary=ArbitraryUnitary, pattern="double", wires=wires, parameters=weights)
 
     Args:
         weights (tensor_like): The angles of the Pauli word rotations, needs to have length :math:`4^n - 1`
@@ -92,11 +91,10 @@ class ArbitraryUnitary(Operation):
         wires (Iterable): wires that the template acts on
     """
 
-    num_params = 1
     num_wires = AnyWires
-    par_domain = "A"
+    grad_method = None
 
-    def __init__(self, weights, wires, do_queue=True):
+    def __init__(self, weights, wires, do_queue=True, id=None):
 
         shape = qml.math.shape(weights)
         if shape != (4 ** len(wires) - 1,):
@@ -104,18 +102,37 @@ class ArbitraryUnitary(Operation):
                 f"Weights tensor must be of shape {(4 ** len(wires) - 1,)}; got {shape}."
             )
 
-        super().__init__(weights, wires=wires, do_queue=do_queue)
+        super().__init__(weights, wires=wires, do_queue=do_queue, id=id)
 
-    def expand(self):
+    @property
+    def num_params(self):
+        return 1
 
-        weights = self.parameters[0]
+    @staticmethod
+    def compute_decomposition(weights, wires):  # pylint: disable=arguments-differ
+        r"""Representation of the operator as a product of other operators.
 
-        with qml.tape.QuantumTape() as tape:
+        .. math:: O = O_1 O_2 \dots O_n.
 
-            for i, pauli_word in enumerate(_all_pauli_words_but_identity(len(self.wires))):
-                PauliRot(weights[i], pauli_word, wires=self.wires)
 
-        return tape
+
+        .. seealso:: :meth:`~.ArbitraryUnitary.decomposition`.
+
+        Args:
+            weights (tensor_like): The angles of the Pauli word rotations, needs to have length :math:`4^n - 1`
+                    where :math:`n` is the number of wires the template acts upon.
+            wires (Any or Iterable[Any]): wires that the operator acts on
+
+
+        Returns:
+            list[.Operator]: decomposition of the operator
+        """
+        op_list = []
+
+        for i, pauli_word in enumerate(_all_pauli_words_but_identity(len(wires))):
+            op_list.append(PauliRot(weights[i], pauli_word, wires=wires))
+
+        return op_list
 
     @staticmethod
     def shape(n_wires):
@@ -124,4 +141,4 @@ class ArbitraryUnitary(Operation):
         Args:
             n_wires (int): number of wires that template acts on
         """
-        return (4 ** n_wires - 1,)
+        return (4**n_wires - 1,)

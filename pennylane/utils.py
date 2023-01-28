@@ -19,10 +19,7 @@ across the PennyLane submodules.
 from collections.abc import Iterable
 import functools
 import inspect
-import itertools
 import numbers
-from operator import matmul
-import warnings
 
 import numpy as np
 import scipy
@@ -30,91 +27,17 @@ import scipy
 import pennylane as qml
 
 
-def decompose_hamiltonian(H, hide_identity=False):
-    r"""Decomposes a Hermitian matrix into a linear combination of Pauli operators.
-
-    Args:
-        H (array[complex]): a Hermitian matrix of dimension :math:`2^n\times 2^n`
-        hide_identity (bool): does not include the :class:`~.Identity` observable within
-            the tensor products of the decomposition if ``True``
-
-    Returns:
-        tuple[list[float], list[~.Observable]]: a list of coefficients and a list
-        of corresponding tensor products of Pauli observables that decompose the Hamiltonian.
-
-    **Example:**
-
-    We can use this function to compute the Pauli operator decomposition of an arbitrary Hermitian
-    matrix:
-
-    >>> A = np.array(
-    ... [[-2, -2+1j, -2, -2], [-2-1j,  0,  0, -1], [-2,  0, -2, -1], [-2, -1, -1,  0]])
-    >>> coeffs, obs_list = decompose_hamiltonian(A)
-    >>> coeffs
-    [-1.0, -1.5, -0.5, -1.0, -1.5, -1.0, -0.5, 1.0, -0.5, -0.5]
-
-    We can use the output coefficients and tensor Pauli terms to construct a :class:`~.Hamiltonian`:
-
-    >>> H = qml.Hamiltonian(coeffs, obs_list)
-    >>> print(H)
-    (-1.0) [I0 I1]
-    + (-1.5) [X1]
-    + (-0.5) [Y1]
-    + (-1.0) [Z1]
-    + (-1.5) [X0]
-    + (-1.0) [X0 X1]
-    + (-0.5) [X0 Z1]
-    + (1.0) [Y0 Y1]
-    + (-0.5) [Z0 X1]
-    + (-0.5) [Z0 Y1]
-
-    This Hamiltonian can then be used in defining VQE problems using :class:`~.ExpvalCost`.
-    """
-    n = int(np.log2(len(H)))
-    N = 2 ** n
-
-    if H.shape != (N, N):
-        raise ValueError(
-            "The Hamiltonian should have shape (2**n, 2**n), for any qubit number n>=1"
-        )
-
-    if not np.allclose(H, H.conj().T):
-        raise ValueError("The Hamiltonian is not Hermitian")
-
-    paulis = [qml.Identity, qml.PauliX, qml.PauliY, qml.PauliZ]
-    obs = []
-    coeffs = []
-
-    for term in itertools.product(paulis, repeat=n):
-        matrices = [i._matrix() for i in term]
-        coeff = np.trace(functools.reduce(np.kron, matrices) @ H) / N
-        coeff = np.real_if_close(coeff).item()
-
-        if not np.allclose(coeff, 0):
-            coeffs.append(coeff)
-
-            if not all(t is qml.Identity for t in term) and hide_identity:
-                obs.append(
-                    functools.reduce(
-                        matmul,
-                        [t(i) for i, t in enumerate(term) if t is not qml.Identity],
-                    )
-                )
-            else:
-                obs.append(functools.reduce(matmul, [t(i) for i, t in enumerate(term)]))
-
-    return coeffs, obs
-
-
-def sparse_hamiltonian(H):
+def sparse_hamiltonian(H, wires=None):
     r"""Computes the sparse matrix representation a Hamiltonian in the computational basis.
 
     Args:
         H (~.Hamiltonian): Hamiltonian operator for which the matrix representation should be
          computed
+        wires (Iterable): Wire labels that indicate the order of wires according to which the matrix
+         is constructed. If not profided, ``H.wires`` is used.
 
     Returns:
-        coo_matrix: a sparse matrix in scipy coordinate list (COO) format with dimension
+        csr_matrix: a sparse matrix in scipy Compressed Sparse Row (CSR) format with dimension
         :math:`(2^n, 2^n)`, where :math:`n` is the number of wires
 
     **Example:**
@@ -140,20 +63,61 @@ def sparse_hamiltonian(H):
     if not isinstance(H, qml.Hamiltonian):
         raise TypeError("Passed Hamiltonian must be of type `qml.Hamiltonian`")
 
-    n = len(H.wires)
-    matrix = scipy.sparse.coo_matrix((2 ** n, 2 ** n), dtype="complex128")
+    if wires is None:
+        wires = H.wires
+    else:
+        wires = qml.wires.Wires(wires)
 
-    for coeffs, ops in zip(H.coeffs, H.ops):
+    n = len(wires)
+    matrix = scipy.sparse.csr_matrix((2**n, 2**n), dtype="complex128")
 
-        obs = [scipy.sparse.coo_matrix(o.matrix) for o in qml.operation.Tensor(ops).obs]
-        mat = [scipy.sparse.eye(2, format="coo")] * n
+    coeffs = qml.math.toarray(H.data)
 
-        for i, j in enumerate(ops.wires):
-            mat[j] = obs[i]
+    temp_mats = []
+    for coeff, op in zip(coeffs, H.ops):
+        obs = []
+        for o in qml.operation.Tensor(op).obs:
+            if len(o.wires) > 1:
+                # todo: deal with operations created from multi-qubit operations such as Hermitian
+                raise ValueError(
+                    f"Can only sparsify Hamiltonians whose constituent observables consist of "
+                    f"(tensor products of) single-qubit operators; got {op}."
+                )
+            obs.append(o.matrix())
 
-        matrix += functools.reduce(lambda i, j: scipy.sparse.kron(i, j, format="coo"), mat) * coeffs
+        # Array to store the single-wire observables which will be Kronecker producted together
+        mat = []
+        # i_count tracks the number of consecutive single-wire identity matrices encountered
+        # in order to avoid unnecessary Kronecker products, since I_n x I_m = I_{n+m}
+        i_count = 0
+        for wire_lab in wires:
+            if wire_lab in op.wires:
+                if i_count > 0:
+                    mat.append(scipy.sparse.eye(2**i_count, format="coo"))
+                i_count = 0
+                idx = op.wires.index(wire_lab)
+                # obs is an array storing the single-wire observables which
+                # make up the full Hamiltonian term
+                sp_obs = scipy.sparse.coo_matrix(obs[idx])
+                mat.append(sp_obs)
+            else:
+                i_count += 1
 
-    return matrix.tocoo()
+        if i_count > 0:
+            mat.append(scipy.sparse.eye(2**i_count, format="coo"))
+
+        red_mat = functools.reduce(lambda i, j: scipy.sparse.kron(i, j, format="coo"), mat) * coeff
+
+        temp_mats.append(red_mat.tocsr())
+        # Value of 100 arrived at empirically to balance time savings vs memory use. At this point
+        # the `temp_mats` are summed into the final result and the temporary storage array is
+        # cleared.
+        if (len(temp_mats) % 100) == 0:
+            matrix += sum(temp_mats)
+            temp_mats = []
+
+    matrix += sum(temp_mats)
+    return matrix
 
 
 def _flatten(x):
@@ -212,7 +176,7 @@ def _unflatten(flat, model):
             res.append(val)
         return res, flat
 
-    raise TypeError("Unsupported type in the model: {}".format(type(model)))
+    raise TypeError(f"Unsupported type in the model: {type(model)}")
 
 
 def unflatten(flat, model):
@@ -285,180 +249,6 @@ def pauli_eigs(n):
     return np.concatenate([pauli_eigs(n - 1), -pauli_eigs(n - 1)])
 
 
-def inv(operation_list):
-    """Invert a list of operations or a :doc:`template </introduction/templates>`.
-
-    If the inversion happens inside a QNode, the operations are removed and requeued
-    in the reversed order for proper inversion.
-
-    .. warning::
-        Use of :func:`~.inv()` is deprecated and should be replaced with
-        :func:`~.adjoint()`.
-
-    **Example:**
-
-    The following example illuminates the inversion of a template:
-
-    .. code-block:: python3
-
-        @qml.template
-        def ansatz(weights, wires):
-            for idx, wire in enumerate(wires):
-                qml.RX(weights[idx], wires=[wire])
-
-            for idx in range(len(wires) - 1):
-                qml.CNOT(wires=[wires[idx], wires[idx + 1]])
-
-        dev = qml.device('default.qubit', wires=2)
-
-        @qml.qnode(dev)
-        def circuit(weights):
-            qml.inv(ansatz(weights, wires=[0, 1]))
-            return qml.expval(qml.PauliZ(0) @ qml.PauliZ(1))
-
-    We may also invert an operation sequence:
-
-    .. code-block:: python3
-
-        dev = qml.device('default.qubit', wires=2)
-
-        @qml.qnode(dev)
-        def circuit1():
-            qml.T(wires=[0]).inv()
-            qml.Hadamard(wires=[0]).inv()
-            qml.S(wires=[0]).inv()
-            return qml.expval(qml.PauliZ(0) @ qml.PauliZ(1))
-
-        @qml.qnode(dev)
-        def circuit2():
-            qml.inv([qml.S(wires=[0]), qml.Hadamard(wires=[0]), qml.T(wires=[0])])
-            return qml.expval(qml.PauliZ(0) @ qml.PauliZ(1))
-
-    Double checking that both circuits produce the same output:
-
-    >>> ZZ1 = circuit1()
-    >>> ZZ2 = circuit2()
-    >>> assert ZZ1 == ZZ2
-    True
-
-    Args:
-        operation_list (Iterable[~.Operation]): An iterable of operations
-
-    Returns:
-        List[~.Operation]: The inverted list of operations
-    """
-
-    warnings.warn(
-        "Use of qml.inv() is deprecated and should be replaced with qml.adjoint().",
-        UserWarning,
-    )
-    if isinstance(operation_list, qml.operation.Operation):
-        operation_list = [operation_list]
-    elif operation_list is None:
-        raise ValueError(
-            "None was passed as an argument to inv. "
-            "This could happen if inversion of a template without the template decorator is attempted."
-        )
-    elif callable(operation_list):
-        raise ValueError(
-            "A function was passed as an argument to inv. "
-            "This could happen if inversion of a template function is attempted. "
-            "Please use inv on the function including its arguments, as in inv(template(args))."
-        )
-    elif isinstance(operation_list, qml.tape.QuantumTape):
-        new_tape = operation_list.adjoint()
-        return new_tape
-
-    elif not isinstance(operation_list, Iterable):
-        raise ValueError("The provided operation_list is not iterable.")
-
-    non_ops = [
-        (idx, op)
-        for idx, op in enumerate(operation_list)
-        if not isinstance(op, qml.operation.Operation)
-    ]
-
-    if non_ops:
-        string_reps = [" operation_list[{}] = {}".format(idx, op) for idx, op in non_ops]
-        raise ValueError(
-            "The given operation_list does not only contain Operations."
-            + "The following elements of the iterable were not Operations:"
-            + ",".join(string_reps)
-        )
-
-    for op in operation_list:
-        try:
-            # remove the queued operation to be inverted
-            # from the existing queuing context
-            qml.QueuingContext.remove(op)
-        except KeyError:
-            # operation to be inverted does not
-            # exist on the queuing context
-            pass
-
-    def qfunc():
-        for o in operation_list:
-            o.queue()
-
-    with qml.tape.QuantumTape() as tape:
-        qml.adjoint(qfunc)()
-
-    return tape
-
-
-def expand(matrix, original_wires, expanded_wires):
-    r"""Expand a an operator matrix to more wires.
-
-    Args:
-        matrix (array): :math:`2^n \times 2^n` matrix where n = len(original_wires).
-        original_wires (Sequence[int]): original wires of matrix
-        expanded_wires (Union[Sequence[int], int]): expanded wires of matrix, can be shuffled.
-            If a single int m is given, corresponds to list(range(m))
-
-    Returns:
-        array: :math:`2^m \times 2^m` matrix where m = len(expanded_wires).
-    """
-    if isinstance(expanded_wires, numbers.Integral):
-        expanded_wires = list(range(expanded_wires))
-
-    N = len(original_wires)
-    M = len(expanded_wires)
-    D = M - N
-
-    if not set(expanded_wires).issuperset(original_wires):
-        raise ValueError("Invalid target subsystems provided in 'original_wires' argument.")
-
-    if matrix.shape != (2 ** N, 2 ** N):
-        raise ValueError(
-            "Matrix parameter must be of size (2**len(original_wires), 2**len(original_wires))"
-        )
-
-    dims = [2] * (2 * N)
-    tensor = matrix.reshape(dims)
-
-    if D > 0:
-        extra_dims = [2] * (2 * D)
-        identity = np.eye(2 ** D).reshape(extra_dims)
-        expanded_tensor = np.tensordot(tensor, identity, axes=0)
-        # Fix order of tensor factors
-        expanded_tensor = np.moveaxis(expanded_tensor, range(2 * N, 2 * N + D), range(N, N + D))
-    else:
-        expanded_tensor = tensor
-
-    wire_indices = []
-    for wire in original_wires:
-        wire_indices.append(expanded_wires.index(wire))
-
-    wire_indices = np.array(wire_indices)
-
-    # Order tensor factors according to wires
-    original_indices = np.array(range(N))
-    expanded_tensor = np.moveaxis(expanded_tensor, original_indices, wire_indices)
-    expanded_tensor = np.moveaxis(expanded_tensor, original_indices + M, wire_indices + M)
-
-    return expanded_tensor.reshape((2 ** M, 2 ** M))
-
-
 def expand_vector(vector, original_wires, expanded_wires):
     r"""Expand a vector to more wires.
 
@@ -481,16 +271,16 @@ def expand_vector(vector, original_wires, expanded_wires):
     if not set(expanded_wires).issuperset(original_wires):
         raise ValueError("Invalid target subsystems provided in 'original_wires' argument.")
 
-    if vector.shape != (2 ** N,):
+    if qml.math.shape(vector) != (2**N,):
         raise ValueError("Vector parameter must be of length 2**len(original_wires)")
 
     dims = [2] * N
-    tensor = vector.reshape(dims)
+    tensor = qml.math.reshape(vector, dims)
 
     if D > 0:
         extra_dims = [2] * D
-        ones = np.ones(2 ** D).reshape(extra_dims)
-        expanded_tensor = np.tensordot(tensor, ones, axes=0)
+        ones = qml.math.ones(2**D).reshape(extra_dims)
+        expanded_tensor = qml.math.tensordot(tensor, ones, axes=0)
     else:
         expanded_tensor = tensor
 
@@ -502,40 +292,8 @@ def expand_vector(vector, original_wires, expanded_wires):
 
     # Order tensor factors according to wires
     original_indices = np.array(range(N))
-    expanded_tensor = np.moveaxis(expanded_tensor, original_indices, wire_indices)
+    expanded_tensor = qml.math.moveaxis(
+        expanded_tensor, tuple(original_indices), tuple(wire_indices)
+    )
 
-    return expanded_tensor.reshape(2 ** M)
-
-
-def frobenius_inner_product(A, B, normalize=False):
-    r"""Frobenius inner product between two matrices.
-
-    .. math::
-
-        \langle A, B \rangle_F = \sum_{i,j=1}^n A_{ij} B_{ij} = \operatorname{tr} (A^T B)
-
-    The Frobenius inner product is equivalent to the Hilbert-Schmidt inner product for
-    matrices with real-valued entries.
-
-    Args:
-        A (array[float]): First matrix, assumed to be a square array.
-        B (array[float]): Second matrix, assumed to be a square array.
-        normalize (bool): If True, divide the inner_product by the Frobenius norms of A and B.
-            Defaults to False.
-
-    Returns:
-        float: Frobenius inner product of A and B
-
-    **Example**
-
-    >>> A = np.random.random((3,3))
-    >>> B = np.random.random((3,3))
-    >>> qml.utils.frobenius_inner_product(A, B)
-    3.091948202943376
-    """
-    inner_product = np.sum(A * B)
-
-    if normalize:
-        inner_product /= np.linalg.norm(A, "fro") * np.linalg.norm(B, "fro")
-
-    return inner_product
+    return qml.math.reshape(expanded_tensor, 2**M)

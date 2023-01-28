@@ -14,7 +14,8 @@
 """
 Contains functions to implement the dot product between QNode collections
 """
-# pylint: disable=too-many-arguments,import-outside-toplevel
+# pylint: disable=too-many-arguments,import-outside-toplevel,unnecessary-lambda-assignment
+import warnings
 
 
 def _get_dot_func(interface, x=None):
@@ -69,7 +70,7 @@ def _get_dot_func(interface, x=None):
 
         return np.dot, x
 
-    raise ValueError("Unknown interface {}".format(interface))
+    raise ValueError(f"Unknown interface {interface}")
 
 
 def dot(x, y):
@@ -118,10 +119,16 @@ def dot(x, y):
     This is a lazy dot product --- no QNode evaluation has yet occured. Evaluation
     only occurs when the returned function ``cost`` is evaluated:
 
-    >>> x = qml.init.strong_ent_layers_normal(3, 2) # generate random parameters
+    >>> shape = qml.templates.StronglyEntanglingLayers.shape(n_layers=3, n_wires=2)
+    >>> x = np.random.random(shape) # generate random parameters
     >>> cost(x)
     tensor(-0.2183, dtype=torch.float64, grad_fn=<DotBackward>)
     """
+    warnings.warn(
+        "The dot function of the collections module is deprecated and it will be removed soon.",
+        UserWarning,
+    )
+
     if hasattr(x, "interface") and hasattr(y, "interface"):
 
         if x.interface != y.interface:

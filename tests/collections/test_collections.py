@@ -14,34 +14,90 @@
 """
 Unit tests for the :mod:`pennylane.collection` submodule.
 """
-from collections.abc import Sequence
-
-import pytest
 import numpy as np
+import pytest
 
 import pennylane as qml
 
-try:
-    import torch
-except ImportError as e:
-    torch = None
 
-try:
-    import tensorflow as tf
+def qnodes(interface):
+    """Function returning some QNodes for a specific interface"""
 
-    if tf.__version__[0] == "1":
-        tf.enable_eager_execution()
+    dev1 = qml.device("default.qubit", wires=2)
+    dev2 = qml.device("default.qubit", wires=2)
 
-    from tensorflow import Variable
-except ImportError as e:
-    tf = None
-    Variable = None
+    @qml.qnode(dev1, interface=interface)
+    def qnode1(x):
+        qml.RX(x[0], wires=0)
+        qml.RY(x[1], wires=0)
+        qml.CNOT(wires=[0, 1])
+        return qml.var(qml.PauliZ(0)), qml.expval(qml.PauliZ(1))
 
-try:
-    import jax
-    import jax.numpy as jnp
-except ImportError as e:
-    jax = None
+    @qml.qnode(dev2, interface=interface)
+    def qnode2(x):
+        qml.Hadamard(wires=0)
+        qml.RX(x[0], wires=0)
+        qml.RY(x[1], wires=1)
+        qml.CNOT(wires=[0, 1])
+        return qml.expval(qml.PauliZ(0)), qml.var(qml.PauliZ(1))
+
+    return qnode1, qnode2
+
+
+def catch_warn_dot(x, y):
+    """Computes the dot and catches the initial deprecation warning."""
+
+    with pytest.warns(UserWarning, match="is deprecated"):
+        res = qml.dot(x, y)
+    return res
+
+
+def catch_warn_apply(func, qnode_collection):
+    """Computes the apply and catches the initial deprecation warning."""
+
+    with pytest.warns(UserWarning, match="is deprecated"):
+        res = qml.collections.apply(func, qnode_collection)
+    return res
+
+
+def catch_warn_sum(x):
+    """Computes the sum and catches the initial deprecation warning."""
+
+    with pytest.warns(UserWarning, match="is deprecated"):
+        res = qml.sum(x)
+    return res
+
+
+def catch_warn_map(
+    template,
+    observables,
+    device,
+    measure="expval",
+    interface="autograd",
+    diff_method="best",
+    **kwargs
+):
+    """Computes the map and catches the initial deprecation warning."""
+
+    with pytest.warns(UserWarning, match="is deprecated"):
+        res = qml.map(
+            template,
+            observables,
+            device,
+            measure=measure,
+            interface=interface,
+            diff_method=diff_method,
+            **kwargs
+        )
+    return res
+
+
+def catch_warn_QNodeCollection(qnodes):
+    """Computes the apply and catches the initial deprecation warning."""
+
+    with pytest.warns(UserWarning, match="is deprecated"):
+        res = qml.QNodeCollection(qnodes)
+    return res
 
 
 class TestMap:
@@ -52,7 +108,7 @@ class TestMap:
         """Test that an exception is correctly called if a
         template is not callable"""
         with pytest.raises(ValueError, match="template is not a callable"):
-            qml.map(5, 0, 0)
+            catch_warn_map(5, 0, 0)
 
     def test_mapping_over_observables(self):
         """Test that mapping over a list of observables produces
@@ -62,7 +118,7 @@ class TestMap:
         obs_list = [qml.PauliX(0), qml.PauliY(0)]
         template = lambda x, wires: qml.RX(x, wires=0)
 
-        qc = qml.map(template, obs_list, dev)
+        qc = catch_warn_map(template, obs_list, dev)
 
         assert len(qc) == 2
 
@@ -87,7 +143,7 @@ class TestMap:
         obs_list = (qml.PauliX(0), qml.PauliY(0))
         template = lambda x, wires: qml.RX(x, wires=0)
 
-        qc = qml.map(template, obs_list, dev)
+        qc = catch_warn_map(template, obs_list, dev)
 
         assert len(qc) == 2
 
@@ -112,7 +168,7 @@ class TestMap:
         obs_list = [qml.PauliX(0), qml.PauliY(0)]
         template = lambda x, wires: qml.RX(x, wires=0)
 
-        qc = qml.map(template, obs_list, dev_list)
+        qc = catch_warn_map(template, obs_list, dev_list)
 
         assert len(qc) == 2
 
@@ -140,7 +196,7 @@ class TestMap:
         obs_list = [qml.PauliX(0), qml.PauliY(0)]
         template = lambda x, wires: qml.RX(x, wires=0)
 
-        qc = qml.map(template, obs_list, dev, measure=["expval", "var"])
+        qc = catch_warn_map(template, obs_list, dev, measure=["expval", "var"])
 
         assert len(qc) == 2
 
@@ -151,13 +207,13 @@ class TestMap:
         assert len(queue) == 2
         assert queue[0].name == "RX"
         assert queue[1].name == "PauliX"
-        assert queue[1].return_type == qml.operation.Expectation
+        assert queue[1].return_type == qml.measurements.Expectation
 
         queue = qc[1].qtape.operations + qc[1].qtape.observables
         assert len(queue) == 2
         assert queue[0].name == "RX"
         assert queue[1].name == "PauliY"
-        assert queue[1].return_type == qml.operation.Variance
+        assert queue[1].return_type == qml.measurements.Variance
 
     def test_invalid_observable(self):
         """Test that an invalid observable raises an exception"""
@@ -167,7 +223,7 @@ class TestMap:
         template = lambda x, wires: qml.RX(x, wires=0)
 
         with pytest.raises(ValueError, match="Some or all observables are not valid"):
-            qml.map(template, obs_list, dev, measure=["expval", "var"])
+            catch_warn_map(template, obs_list, dev, measure=["expval", "var"])
 
     def test_passing_kwargs(self):
         """Test that the step size and order used for the finite differences
@@ -178,79 +234,149 @@ class TestMap:
         obs_list = [qml.PauliX(0), qml.PauliY(0)]
         template = lambda x, wires: qml.RX(x, wires=0)
 
-        qc = qml.map(template, obs_list, dev, measure=["expval", "var"], h=123, order=2)
+        qc = catch_warn_map(template, obs_list, dev, measure=["expval", "var"], h=123, order=2)
 
         qc(1)
 
         assert len(qc) == 2
 
         # Checking the h attribute which contains the step size
-        assert qc[0].diff_options["h"] == 123
-        assert qc[1].diff_options["h"] == 123
+        assert qc[0].gradient_kwargs["h"] == 123
+        assert qc[1].gradient_kwargs["h"] == 123
 
         # Checking that the order is set in each QNode
-        assert qc[0].diff_options["order"] == 2
-        assert qc[1].diff_options["order"] == 2
+        assert qc[0].gradient_kwargs["order"] == 2
+        assert qc[1].gradient_kwargs["order"] == 2
 
 
 class TestApply:
     """Tests for the apply function"""
 
-    @pytest.mark.parametrize("interface", ["autograd", "torch", "tf", "jax"])
-    def test_apply_summation(self, qnodes, interface, tf_support, torch_support, tol):
-        """Test that summation can be applied using all interfaces"""
-        if interface == "torch" and not torch_support:
-            pytest.skip("Skipped, no torch support")
-
-        if interface == "tf" and not tf_support:
-            pytest.skip("Skipped, no tf support")
-
-        qnode1, qnode2 = qnodes
-        qc = qml.QNodeCollection([qnode1, qnode2])
-
-        if interface == "tf":
-            sfn = tf.reduce_sum
-        elif interface == "torch":
-            sfn = torch.sum
-        elif interface == "jax":
-            sfn = jnp.sum
-        else:
-            sfn = np.sum
-
-        cost = qml.apply(sfn, qc)
+    @pytest.mark.autograd
+    def test_apply_summation_autograd(self, tol):
+        """Test that summation can be applied using autograd"""
+        qnode1, qnode2 = qnodes("autograd")
+        qc = catch_warn_QNodeCollection([qnode1, qnode2])
+        cost = catch_warn_apply(np.sum, qc)
 
         params = [0.5643, -0.45]
         res = cost(params)
-        expected = sfn(qc(params))
+        expected = np.sum(qc(params))
 
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
-    @pytest.mark.parametrize("interface", ["autograd", "torch", "tf", "jax"])
-    def test_nested_apply(self, qnodes, interface, tf_support, torch_support, tol):
-        """Test that nested apply can be done using all interfaces"""
-        if interface == "torch" and not torch_support:
-            pytest.skip("Skipped, no torch support")
+    @pytest.mark.torch
+    def test_apply_summation_torch(self, tol):
+        """Test that summation can be applied using torch"""
+        import torch
 
-        if interface == "tf" and not tf_support:
-            pytest.skip("Skipped, no tf support")
+        qnode1, qnode2 = qnodes("torch")
+        qc = catch_warn_QNodeCollection([qnode1, qnode2])
+        cost = catch_warn_apply(torch.sum, qc)
 
-        qnode1, qnode2 = qnodes
-        qc = qml.QNodeCollection([qnode1, qnode2])
+        params = [0.5643, -0.45]
+        res = cost(params)
+        expected = torch.sum(qc(params))
 
-        if interface == "tf":
-            sinfn = tf.sin
-            sfn = tf.reduce_sum
-        elif interface == "torch":
-            sinfn = torch.sin
-            sfn = torch.sum
-        elif interface == "jax":
-            sinfn = jnp.sin
-            sfn = jnp.sum
-        else:
-            sinfn = np.sin
-            sfn = np.sum
+        assert np.allclose(res, expected, atol=tol, rtol=0)
 
-        cost = qml.apply(sfn, qml.apply(sinfn, qc))
+    @pytest.mark.tf
+    def test_apply_summation_tf(self, tol):
+        """Test that summation can be applied using tf"""
+        import tensorflow as tf
+
+        qnode1, qnode2 = qnodes("tf")
+        qc = catch_warn_QNodeCollection([qnode1, qnode2])
+        cost = catch_warn_apply(tf.reduce_sum, qc)
+
+        params = [0.5643, -0.45]
+        res = cost(params)
+        expected = tf.reduce_sum(qc(params))
+
+        assert np.allclose(res, expected, atol=tol, rtol=0)
+
+    @pytest.mark.jax
+    def test_apply_summation_jax(self, tol):
+        """Test that summation can be applied using jax"""
+        import jax.numpy as jnp
+
+        qnode1, qnode2 = qnodes("jax")
+        qc = catch_warn_QNodeCollection([qnode1, qnode2])
+        cost = catch_warn_apply(jnp.sum, qc)
+
+        params = [0.5643, -0.45]
+        res = cost(params)
+        expected = jnp.sum(qc(params))
+
+        assert np.allclose(res, expected, atol=tol, rtol=0)
+
+    @pytest.mark.autograd
+    def test_nested_apply_autograd(self, tol):
+        """Test that nested apply can be done using autograd"""
+        qnode1, qnode2 = qnodes("autograd")
+        qc = catch_warn_QNodeCollection([qnode1, qnode2])
+
+        sinfn = np.sin
+        sfn = np.sum
+
+        cost = catch_warn_apply(sfn, catch_warn_apply(sinfn, qc))
+
+        params = [0.5643, -0.45]
+        res = cost(params)
+        expected = sfn(sinfn(qc(params)))
+
+        assert np.allclose(res, expected, atol=tol, rtol=0)
+
+    @pytest.mark.torch
+    def test_nested_apply_torch(self, tol):
+        """Test that nested apply can be done using torch"""
+        import torch
+
+        qnode1, qnode2 = qnodes("torch")
+        qc = catch_warn_QNodeCollection([qnode1, qnode2])
+
+        sinfn = torch.sin
+        sfn = torch.sum
+
+        cost = catch_warn_apply(sfn, catch_warn_apply(sinfn, qc))
+
+        params = [0.5643, -0.45]
+        res = cost(params)
+        expected = sfn(sinfn(qc(params)))
+
+        assert np.allclose(res, expected, atol=tol, rtol=0)
+
+    @pytest.mark.tf
+    def test_nested_apply_tf(self, tol):
+        """Test that nested apply can be done using tf"""
+        import tensorflow as tf
+
+        qnode1, qnode2 = qnodes("tf")
+        qc = catch_warn_QNodeCollection([qnode1, qnode2])
+
+        sinfn = tf.sin
+        sfn = tf.reduce_sum
+
+        cost = catch_warn_apply(sfn, catch_warn_apply(sinfn, qc))
+
+        params = [0.5643, -0.45]
+        res = cost(params)
+        expected = sfn(sinfn(qc(params)))
+
+        assert np.allclose(res, expected, atol=tol, rtol=0)
+
+    @pytest.mark.jax
+    def test_nested_apply_jax(self, tol):
+        """Test that nested apply can be done using jax"""
+        import jax.numpy as jnp
+
+        qnode1, qnode2 = qnodes("jax")
+        qc = catch_warn_QNodeCollection([qnode1, qnode2])
+
+        sinfn = jnp.sin
+        sfn = jnp.sum
+
+        cost = catch_warn_apply(sfn, catch_warn_apply(sinfn, qc))
 
         params = [0.5643, -0.45]
         res = cost(params)
@@ -262,26 +388,73 @@ class TestApply:
 class TestSum:
     """Tests for the sum function"""
 
-    @pytest.mark.parametrize("interface", ["autograd", "torch", "tf", "jax", None])
-    def test_apply_summation(self, qnodes, interface, tf_support, torch_support, tol):
-        """Test that summation can be applied using all interfaces"""
-        if interface == "torch" and not torch_support:
-            pytest.skip("Skipped, no torch support")
-
-        if interface == "tf" and not tf_support:
-            pytest.skip("Skipped, no tf support")
-
-        qnode1, qnode2 = qnodes
-        qc = qml.QNodeCollection([qnode1, qnode2])
-        cost = qml.sum(qc)
+    def test_apply_summation_vanilla(self, tol):
+        """Test that summation can be applied"""
+        qnode1, qnode2 = qnodes(None)
+        qc = catch_warn_QNodeCollection([qnode1, qnode2])
+        cost = catch_warn_sum(qc)
 
         params = [0.5643, -0.45]
         res = cost(params)
         expected = sum(qc[0](params) + qc[1](params))
 
-        if interface in ("tf", "torch"):
-            res = res.numpy()
-            expected = expected.numpy()
+        assert np.allclose(res, expected, atol=tol, rtol=0)
+
+    @pytest.mark.autograd
+    def test_apply_summation_autograd(self, tol):
+        """Test that summation can be applied with autograd"""
+        qnode1, qnode2 = qnodes("autograd")
+        qc = catch_warn_QNodeCollection([qnode1, qnode2])
+        cost = catch_warn_sum(qc)
+
+        params = [0.5643, -0.45]
+        res = cost(params)
+        expected = sum(qc[0](params) + qc[1](params))
+
+        assert np.allclose(res, expected, atol=tol, rtol=0)
+
+    @pytest.mark.torch
+    def test_apply_summation_torch(self, tol):
+        """Test that summation can be applied with torch"""
+        qnode1, qnode2 = qnodes("torch")
+        qc = catch_warn_QNodeCollection([qnode1, qnode2])
+        cost = catch_warn_sum(qc)
+
+        params = [0.5643, -0.45]
+        res = cost(params)
+        expected = sum(qc[0](params) + qc[1](params))
+
+        res = res.numpy()
+        expected = expected.numpy()
+
+        assert np.allclose(res, expected, atol=tol, rtol=0)
+
+    @pytest.mark.tf
+    def test_apply_summation_tf(self, tol):
+        """Test that summation can be applied with tf"""
+        qnode1, qnode2 = qnodes("tf")
+        qc = catch_warn_QNodeCollection([qnode1, qnode2])
+        cost = catch_warn_sum(qc)
+
+        params = [0.5643, -0.45]
+        res = cost(params)
+        expected = sum(qc[0](params) + qc[1](params))
+
+        res = res.numpy()
+        expected = expected.numpy()
+
+        assert np.allclose(res, expected, atol=tol, rtol=0)
+
+    @pytest.mark.jax
+    def test_apply_summation_jax(self, tol):
+        """Test that summation can be applied with jax"""
+        qnode1, qnode2 = qnodes("jax")
+        qc = catch_warn_QNodeCollection([qnode1, qnode2])
+        cost = catch_warn_sum(qc)
+
+        params = [0.5643, -0.45]
+        res = cost(params)
+        expected = sum(qc[0](params) + qc[1](params))
 
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
@@ -295,64 +468,131 @@ class TestSum:
             return qml.expval(qml.PauliZ(0))
 
         qnodes = [qml.QNode(circuit, dev) for i in range(4)]
-        qc = qml.QNodeCollection(qnodes)
+        qc = catch_warn_QNodeCollection(qnodes)
         with pytest.raises(ValueError, match="Unknown interface invalid"):
-            qml.sum(qc)
+            catch_warn_sum(qc)
 
 
 class TestDot:
     """Tests for the sum function"""
 
-    @pytest.mark.parametrize("interface", ["autograd", "torch", "tf", "jax", None])
-    def test_dot_product_tensor_qnodes(self, qnodes, interface, tf_support, torch_support):
-        """Test that the dot product of tensor.qnodes can be applied using all interfaces"""
-        if interface == "torch" and not torch_support:
-            pytest.skip("Skipped, no torch support")
+    def test_dot_product_tensor_qnodes(self):
+        """Test that the dot product of tensor.qnodes can be applied"""
 
-        if interface == "tf" and not tf_support:
-            pytest.skip("Skipped, no tf support")
-
-        qnode1, qnode2 = qnodes
-        qc = qml.QNodeCollection([qnode1, qnode2])
+        qnode1, qnode2 = qnodes(None)
+        qc = catch_warn_QNodeCollection([qnode1, qnode2])
         coeffs = [0.5, -0.1]
 
-        if interface == "torch":
-            coeffs = torch.tensor(coeffs, dtype=torch.float64)
-
-        if interface == "tf":
-            coeffs = tf.cast(coeffs, dtype=tf.float64)
-
         # test the dot product of tensor, qnodes
-        cost = qml.dot(coeffs, qc)
+        cost = catch_warn_dot(coeffs, qc)
 
         params = [0.5643, -0.45]
         res = cost(params)
 
         qcval = qc(params)
 
-        if interface in ("tf", "torch"):
-            res = res.numpy()
-            qcval = qcval.numpy()
-            coeffs = coeffs.numpy()
+        expected = np.dot(coeffs, qcval)
+        np.testing.assert_allclose(res, expected)
+
+    @pytest.mark.autograd
+    def test_dot_product_tensor_qnodes_autograd(self):
+        """Test that the dot product of tensor.qnodes can be applied using autograd"""
+
+        qnode1, qnode2 = qnodes("autograd")
+        qc = catch_warn_QNodeCollection([qnode1, qnode2])
+        coeffs = [0.5, -0.1]
+
+        # test the dot product of tensor, qnodes
+        cost = catch_warn_dot(coeffs, qc)
+
+        params = [0.5643, -0.45]
+        res = cost(params)
+
+        qcval = qc(params)
 
         expected = np.dot(coeffs, qcval)
         np.testing.assert_allclose(res, expected)
 
-    @pytest.mark.parametrize("interface", ["autograd", "torch", "tf", "jax", None])
-    def test_dot_product_qnodes_qnodes(self, qnodes, interface, tf_support, torch_support):
-        """Test that the dot product of qnodes.qnodes can be applied using all interfaces"""
-        if interface == "torch" and not torch_support:
-            pytest.skip("Skipped, no torch support")
+    @pytest.mark.torch
+    def test_dot_product_tensor_qnodes_torch(self):
+        """Test that the dot product of tensor.qnodes can be applied using torch."""
+        import torch
 
-        if interface == "tf" and not tf_support:
-            pytest.skip("Skipped, no tf support")
+        qnode1, qnode2 = qnodes("torch")
+        qc = catch_warn_QNodeCollection([qnode1, qnode2])
+        coeffs = [0.5, -0.1]
 
-        qnode1, qnode2 = qnodes
-        qc1 = qml.QNodeCollection([qnode1, qnode2])
-        qc2 = qml.QNodeCollection([qnode1, qnode2])
+        coeffs = torch.tensor(coeffs, dtype=torch.float64)
+
+        # test the dot product of tensor, qnodes
+        cost = catch_warn_dot(coeffs, qc)
+
+        params = [0.5643, -0.45]
+        res = cost(params)
+
+        qcval = qc(params)
+
+        res = res.numpy()
+        qcval = qcval.numpy()
+        coeffs = coeffs.numpy()
+
+        expected = np.dot(coeffs, qcval)
+        np.testing.assert_allclose(res, expected)
+
+    @pytest.mark.tf
+    def test_dot_product_tensor_qnodes_tf(self):
+        """Test that the dot product of tensor.qnodes can be applied using tf."""
+        import tensorflow as tf
+
+        qnode1, qnode2 = qnodes("tf")
+        qc = catch_warn_QNodeCollection([qnode1, qnode2])
+        coeffs = [0.5, -0.1]
+
+        coeffs = tf.cast(coeffs, dtype=tf.float64)
+
+        # test the dot product of tensor, qnodes
+        cost = catch_warn_dot(coeffs, qc)
+
+        params = [0.5643, -0.45]
+        res = cost(params)
+
+        qcval = qc(params)
+
+        res = res.numpy()
+        qcval = qcval.numpy()
+        coeffs = coeffs.numpy()
+
+        expected = np.dot(coeffs, qcval)
+        np.testing.assert_allclose(res, expected)
+
+    @pytest.mark.jax
+    def test_dot_product_tensor_jax(self):
+        """Test that the dot product of tensor.qnodes can be applied using all interfaces"""
+
+        qnode1, qnode2 = qnodes("jax")
+        qc = catch_warn_QNodeCollection([qnode1, qnode2])
+        coeffs = [0.5, -0.1]
+
+        # test the dot product of tensor, qnodes
+        cost = catch_warn_dot(coeffs, qc)
+
+        params = [0.5643, -0.45]
+        res = cost(params)
+
+        qcval = qc(params)
+
+        expected = np.dot(coeffs, qcval)
+        np.testing.assert_allclose(res, expected)
+
+    def test_dot_product_qnodes_qnodes(self):
+        """Test that the dot product of qnodes.qnodes can be applied"""
+
+        qnode1, qnode2 = qnodes(None)
+        qc1 = catch_warn_QNodeCollection([qnode1, qnode2])
+        qc2 = catch_warn_QNodeCollection([qnode1, qnode2])
 
         # test the dot product of qnodes, qnodes
-        cost = qml.dot(qc1, qc2)
+        cost = catch_warn_dot(qc1, qc2)
 
         params = [0.5643, -0.45]
         res = cost(params)
@@ -360,47 +600,195 @@ class TestDot:
         qc1val = qc1(params)
         qc2val = qc2(params)
 
-        if interface in ("tf", "torch"):
-            res = res.numpy()
-            qc1val = qc1val.numpy()
-            qc2val = qc2val.numpy()
+        expected = np.dot(qc1val, qc2val)
+        assert np.all(res == expected)
+
+    @pytest.mark.autograd
+    def test_dot_product_qnodes_qnodes_autograd(self):
+        """Test that the dot product of qnodes.qnodes can be applied using autograd"""
+
+        qnode1, qnode2 = qnodes("autograd")
+        qc1 = catch_warn_QNodeCollection([qnode1, qnode2])
+        qc2 = catch_warn_QNodeCollection([qnode1, qnode2])
+
+        # test the dot product of qnodes, qnodes
+        cost = catch_warn_dot(qc1, qc2)
+
+        params = [0.5643, -0.45]
+        res = cost(params)
+
+        qc1val = qc1(params)
+        qc2val = qc2(params)
 
         expected = np.dot(qc1val, qc2val)
         assert np.all(res == expected)
 
-    @pytest.mark.parametrize("interface", ["autograd", "torch", "tf", "jax", None])
-    def test_dot_product_qnodes_tensor(self, qnodes, interface, tf_support, torch_support):
-        """Test that the dot product of qnodes.tensor can be applied using all interfaces"""
-        if interface == "torch" and not torch_support:
-            pytest.skip("Skipped, no torch support")
+    @pytest.mark.torch
+    def test_dot_product_qnodes_qnodes_torch(self):
+        """Test that the dot product of qnodes.qnodes can be applied using torch"""
+        qnode1, qnode2 = qnodes("torch")
+        qc1 = catch_warn_QNodeCollection([qnode1, qnode2])
+        qc2 = catch_warn_QNodeCollection([qnode1, qnode2])
 
-        if interface == "tf" and not tf_support:
-            pytest.skip("Skipped, no tf support")
+        # test the dot product of qnodes, qnodes
+        cost = catch_warn_dot(qc1, qc2)
 
-        qnode1, _ = qnodes
-        qc = qml.QNodeCollection([qnode1])
+        params = [0.5643, -0.45]
+        res = cost(params)
+
+        qc1val = qc1(params)
+        qc2val = qc2(params)
+
+        res = res.numpy()
+        qc1val = qc1val.numpy()
+        qc2val = qc2val.numpy()
+
+        expected = np.dot(qc1val, qc2val)
+        assert np.all(res == expected)
+
+    @pytest.mark.tf
+    def test_dot_product_qnodes_qnodes_tf(self):
+        """Test that the dot product of qnodes.qnodes can be applied using tf"""
+        qnode1, qnode2 = qnodes("tf")
+        qc1 = catch_warn_QNodeCollection([qnode1, qnode2])
+        qc2 = catch_warn_QNodeCollection([qnode1, qnode2])
+
+        # test the dot product of qnodes, qnodes
+        cost = catch_warn_dot(qc1, qc2)
+
+        params = [0.5643, -0.45]
+        res = cost(params)
+
+        qc1val = qc1(params)
+        qc2val = qc2(params)
+
+        res = res.numpy()
+        qc1val = qc1val.numpy()
+        qc2val = qc2val.numpy()
+
+        expected = np.dot(qc1val, qc2val)
+        assert np.all(res == expected)
+
+    @pytest.mark.jax
+    def test_dot_product_qnodes_qnodes_jax(self):
+        """Test that the dot product of qnodes.qnodes can be applied using jax"""
+
+        qnode1, qnode2 = qnodes("jax")
+        qc1 = catch_warn_QNodeCollection([qnode1, qnode2])
+        qc2 = catch_warn_QNodeCollection([qnode1, qnode2])
+
+        # test the dot product of qnodes, qnodes
+        cost = catch_warn_dot(qc1, qc2)
+
+        params = [0.5643, -0.45]
+        res = cost(params)
+
+        qc1val = qc1(params)
+        qc2val = qc2(params)
+
+        expected = np.dot(qc1val, qc2val)
+        assert np.all(res == expected)
+
+    def test_dot_product_qnodes_tensor(self):
+        """Test that the dot product of qnodes.tensor can be applied"""
+
+        qnode1, _ = qnodes(None)
+        qc = catch_warn_QNodeCollection([qnode1])
         coeffs = [0.5, -0.1]
 
-        if interface == "torch":
-            coeffs = torch.tensor(coeffs, dtype=torch.float64)
-
-        if interface == "tf":
-            coeffs = tf.cast(coeffs, dtype=tf.float64)
-
         # test the dot product of qnodes, tensor
-        cost = qml.dot(qc, coeffs)
+        cost = catch_warn_dot(qc, coeffs)
 
         params = [0.5643, -0.45]
         res = cost(params)
         qcval = qc(params)
 
-        if interface in ("tf", "torch"):
-            res = res.numpy()
-            qcval = qcval.numpy()
-            coeffs = coeffs.numpy()
+        expected = np.dot(qcval, coeffs)
+        assert np.allclose(res, expected)
+
+    @pytest.mark.autograd
+    def test_dot_product_qnodes_tensor_autograd(self):
+        """Test that the dot product of qnodes.tensor can be applied using autograd"""
+
+        qnode1, _ = qnodes("autograd")
+        qc = catch_warn_QNodeCollection([qnode1])
+        coeffs = [0.5, -0.1]
+
+        # test the dot product of qnodes, tensor
+        cost = catch_warn_dot(qc, coeffs)
+
+        params = [0.5643, -0.45]
+        res = cost(params)
+        qcval = qc(params)
 
         expected = np.dot(qcval, coeffs)
-        assert np.all(res == expected)
+        assert np.allclose(res, expected)
+
+    @pytest.mark.torch
+    def test_dot_product_qnodes_tensor_torch(self):
+        """Test that the dot product of qnodes.tensor can be applied using torch"""
+        import torch
+
+        qnode1, _ = qnodes("torch")
+        qc = catch_warn_QNodeCollection([qnode1])
+        coeffs = [0.5, -0.1]
+
+        coeffs = torch.tensor(coeffs, dtype=torch.float64)
+        # test the dot product of qnodes, tensor
+        cost = catch_warn_dot(qc, coeffs)
+
+        params = [0.5643, -0.45]
+        res = cost(params)
+        qcval = qc(params)
+
+        res = res.numpy()
+        qcval = qcval.numpy()
+        coeffs = coeffs.numpy()
+
+        expected = np.dot(qcval, coeffs)
+        assert np.allclose(res, expected)
+
+    @pytest.mark.tf
+    def test_dot_product_qnodes_tensor_tf(self):
+        """Test that the dot product of qnodes.tensor can be applied using tf"""
+        import tensorflow as tf
+
+        qnode1, _ = qnodes("tf")
+        qc = catch_warn_QNodeCollection([qnode1])
+        coeffs = [0.5, -0.1]
+
+        coeffs = tf.Variable(coeffs, dtype=tf.float64)
+        # test the dot product of qnodes, tensor
+        cost = catch_warn_dot(qc, coeffs)
+
+        params = [0.5643, -0.45]
+        res = cost(params)
+        qcval = qc(params)
+
+        res = res.numpy()
+        qcval = qcval.numpy()
+        coeffs = coeffs.numpy()
+
+        expected = np.dot(qcval, coeffs)
+        assert np.allclose(res, expected)
+
+    @pytest.mark.jax
+    def test_dot_product_qnodes_tensor_jax(self):
+        """Test that the dot product of qnodes.tensor can be applied using jax"""
+
+        qnode1, _ = qnodes("jax")
+        qc = catch_warn_QNodeCollection([qnode1])
+        coeffs = [0.5, -0.1]
+
+        # test the dot product of qnodes, tensor
+        cost = catch_warn_dot(qc, coeffs)
+
+        params = [0.5643, -0.45]
+        res = cost(params)
+        qcval = qc(params)
+
+        expected = np.dot(qcval, coeffs)
+        assert np.allclose(res, expected)
 
     def test_unknown_interface(self, monkeypatch):
         """Test exception raised if the interface is unknown"""
@@ -417,9 +805,9 @@ class TestDot:
             qml.RX(x, wires=0)
             return qml.expval(qml.PauliZ(0))
 
-        qc = qml.QNodeCollection([circuit1, circuit2])
+        qc = catch_warn_QNodeCollection([circuit1, circuit2])
         with pytest.raises(ValueError, match="Unknown interface invalid"):
-            qml.dot([1, 2], qc)
+            catch_warn_dot([1, 2], qc)
 
     def test_mismatching_interface(self, monkeypatch):
         """Test exception raised if the interfaces don't match"""
@@ -435,12 +823,12 @@ class TestDot:
             qml.RX(x, wires=0)
             return qml.expval(qml.PauliZ(0))
 
-        qc1 = qml.QNodeCollection([circuit1])
-        qc2 = qml.QNodeCollection([circuit2])
+        qc1 = catch_warn_QNodeCollection([circuit1])
+        qc2 = catch_warn_QNodeCollection([circuit2])
         with pytest.raises(ValueError, match="have non-matching interfaces"):
-            qml.dot(qc1, qc2)
+            catch_warn_dot(qc1, qc2)
 
     def test_no_qnodes(self):
         """Test exception raised if no qnodes are provided as arguments"""
         with pytest.raises(ValueError, match="At least one argument must be a QNodeCollection"):
-            qml.dot([1, 2], [3, 4])
+            qml.collections.dot([1, 2], [3, 4])

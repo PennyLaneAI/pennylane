@@ -33,7 +33,12 @@ TOL_STOCHASTIC = 0.05
 # Number of shots to call the devices with
 N_SHOTS = 1e6
 # List of all devices that are included in PennyLane
-LIST_CORE_DEVICES = {"default.qubit", "default.qubit.tf", "default.qubit.autograd"}
+LIST_CORE_DEVICES = {
+    "default.qubit",
+    "default.qubit.torch",
+    "default.qubit.tf",
+    "default.qubit.autograd",
+}
 
 
 @pytest.fixture(scope="function")
@@ -55,7 +60,7 @@ def init_state():
     """Fixture to create an n-qubit random initial state vector."""
 
     def _init_state(n):
-        state = np.random.random([2 ** n]) + np.random.random([2 ** n]) * 1j
+        state = np.random.random([2**n]) + np.random.random([2**n]) * 1j
         state /= np.linalg.norm(state)
         return state
 
@@ -74,9 +79,7 @@ def skip_if():
             # skip if capability not found, or if capability has specific value
             if capability not in dev_capabilities or dev_capabilities[capability] == value:
                 pytest.skip(
-                    "Test skipped for {} device with capability {}:{}.".format(
-                        dev.name, capability, value
-                    )
+                    f"Test skipped for {dev.name} device with capability {capability}:{value}."
                 )
 
     return _skip_if
@@ -86,7 +89,8 @@ def skip_if():
 def device(device_kwargs):
     """Fixture to create a device."""
 
-    __tracebackhide__ = True
+    # internally used by pytest
+    __tracebackhide__ = True  # pylint:disable=unused-variable
 
     def _device(wires):
         device_kwargs["wires"] = wires
@@ -94,12 +98,11 @@ def device(device_kwargs):
         try:
             dev = qml.device(**device_kwargs)
         except qml.DeviceError:
+            dev_name = device_kwargs["name"]
             # exit the tests if the device cannot be created
             pytest.exit(
-                "Device {} cannot be created. To run the device tests on an external device, the "
-                "plugin and all of its dependencies must be installed.".format(
-                    device_kwargs["name"]
-                )
+                f"Device {dev_name} cannot be created. To run the device tests on an external device, the "
+                f"plugin and all of its dependencies must be installed."
             )
 
         capabilities = dev.capabilities()
@@ -118,7 +121,7 @@ def pytest_runtest_setup(item):
     # skip tests marked as broken
     for mark in item.iter_markers(name="broken"):
         if mark.args:
-            pytest.skip("Broken test skipped: {}".format(*mark.args))
+            pytest.skip(f"Broken test skipped: {mark.args}")
         else:
             pytest.skip("Test skipped as corresponding code base is currently broken!")
 
@@ -144,7 +147,7 @@ class StoreDictKeyPair(argparse.Action):
 
     def __init__(self, option_strings, dest, nargs=None, **kwargs):
         self._nargs = nargs
-        super(StoreDictKeyPair, self).__init__(option_strings, dest, nargs=nargs, **kwargs)
+        super().__init__(option_strings, dest, nargs=nargs, **kwargs)
 
     def __call__(self, parser, namespace, values, option_string=None):
         my_dict = {}
@@ -213,9 +216,9 @@ def pytest_generate_tests(metafunc):
     else:
         devices_to_test = [opt.device]
 
-    for device in devices_to_test:
+    for dev in devices_to_test:
 
-        device_kwargs = {"name": device}
+        device_kwargs = {"name": dev}
 
         # if shots specified in command line,
         # add to the device kwargs

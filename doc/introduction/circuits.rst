@@ -14,16 +14,16 @@ Quantum circuits
     :target: javascript:void(0);
 
 
-In PennyLane, quantum computations are represented as *quantum node* objects. A quantum node is used to
+In PennyLane, quantum computations, which involve the execution of one or more quantum circuits,
+are represented as *quantum node* objects. A quantum node is used to
 declare the quantum circuit, and also ties the computation to a specific device that executes it.
-Quantum nodes can be easily created by using the :ref:`qnode <intro_vcirc_decorator>` decorator.
 
 QNodes can interface with any of the supported numerical and machine learning libraries---:doc:`NumPy <interfaces/numpy>`,
 :doc:`PyTorch <interfaces/torch>`, :doc:`TensorFlow <interfaces/tf>`, and
-`JAX <https://github.com/google/jax>`__---indicated by providing an optional ``interface`` argument
+:doc:`JAX <interfaces/jax>`---indicated by providing an optional ``interface`` argument
 when creating a QNode. Each interface allows the quantum circuit to integrate seamlessly with
-library-specific data structures (e.g., NumPy arrays, or Pytorch/TensorFlow tensors) and
-:doc:`optimizers <optimizers>`.
+library-specific data structures (e.g., NumPy and JAX arrays or Pytorch/TensorFlow tensors) and
+:doc:`optimizers <interfaces>`.
 
 By default, QNodes use the NumPy interface. The other PennyLane interfaces are
 introduced in more detail in the section on :doc:`interfaces <interfaces>`.
@@ -58,26 +58,19 @@ Quantum functions are a restricted subset of Python functions, adhering to the f
 constraints:
 
 * The quantum function accepts classical inputs, and consists of
-  :doc:`quantum operations <operations>` or sequences of operations called :doc:`templates`,
-  using one instruction per line.
+  :doc:`quantum operators <operations>` or sequences of operators called :doc:`templates`.
 
-* The function can contain classical flow control structures such as ``for`` loops,
-  but in general they must not depend on the parameters of the function.
+* The function can contain classical flow control structures such as ``for`` loops or ``if`` statements.
 
 * The quantum function must always return either a single or a tuple of
-  *measured observable values*, by applying a :doc:`measurement function <measurements>`
-  to a :ref:`qubit observable <intro_ref_ops_qobs>` or :ref:`continuous-value observable <intro_ref_ops_cvobs>`.
+  *measurement values*, by applying a :doc:`measurement function <measurements>`
+  to the qubit register. The most common example is to measure the expectation value of
+  a :ref:`qubit observable <intro_ref_ops_qobs>` or
+  :ref:`continuous-value observable <intro_ref_ops_cvobs>`.
 
 .. note::
 
-    Measured observables **must** come after all other operations at the end
-    of the circuit function as part of the return statement, and cannot appear in the middle.
-
-.. note::
-
-    Quantum functions can only be evaluated on a device from within a QNode.
-
-
+    Quantum functions are evaluated on a device from within a QNode.
 
 .. _intro_vcirc_device:
 
@@ -94,37 +87,79 @@ instantiated using the :func:`device <pennylane.device>` loader.
 
     dev = qml.device('default.qubit', wires=2, shots=1000)
 
-PennyLane offers some basic devices such as the ``'default.qubit'`` and ``'default.gaussian'``
-simulators; additional devices can be installed as plugins (see
+PennyLane offers some basic devices such as the ``'default.qubit'``, ``'default.mixed'``, ``lightning.qubit``,
+and ``'default.gaussian'`` simulators; additional devices can be installed as plugins (see
 `available plugins <https://pennylane.ai/plugins.html>`_ for more details). Note that the
 choice of a device significantly determines the speed of your computation, as well as
 the available options that can be passed to the device loader.
+
+.. note::
+
+    For example, check out the ``'lightning.qubit'`` `plugin <https://github.com/PennyLaneAI/pennylane-lightning>`_,
+    which is a fast state-vector simulator supporting GPUs.
+
+.. note::
+
+    For details on saving device configurations, please visit the
+    :doc:`configurations page</introduction/configuration>`.
 
 Device options
 ^^^^^^^^^^^^^^
 
 When loading a device, the name of the device must always be specified.
-Further options can then be passed as keyword arguments; these options can differ based
-on the device. For the in-built ``'default.qubit'`` and ``'default.gaussian'``
-devices, the options are:
+Further options can then be passed as keyword arguments, and can differ based
+on the device. For a plugin device, refer to the plugin documentation for available device options.
 
-* ``wires`` (*int* or *Iterable*): Number of subsystems represented by the device,
-  or iterable that contains unique labels for the subsystems as numbers (i.e., ``[-1, 0, 2]``)
-  and/or strings (``['ancilla', 'q1', 'q2']``).
+The two most important device options are the ``wires`` and ``shots`` arguments.
 
-* ``shots`` (*None* or *int* or *list[int]*): How many times the circuit should be evaluated (or
-  sampled) to estimate statistical quantities. On some supported simulator devices,
-  ``shots=None`` indicates to compute measurement statistics *exactly*. Note that this
-  argument can be temporarily overwritten when a QNode is called. For example, ``my_qnode(shots=3)``
-  will temporarily evaluate ``my_qnode`` using three shots.
+Wires
+*****
 
-For a plugin device, refer to the plugin documentation for available device options.
+The wires argument can be an integer that defines the *number of wires*
+that you can address by consecutive integer labels ``0, 1, 2, ...``.
 
-Shot batches
-^^^^^^^^^^^^
+.. code-block:: python
 
-Batches of shots can be specified by passing a list, allowing measurement statistics
-to be course-grained with a single QNode evaluation.
+    dev = qml.device('default.qubit', wires=3)
+
+Alternatively, you can use custom labels by passing an iterable that contains unique labels for the subsystems:
+
+.. code-block:: python
+
+    dev_unique_wires = qml.device('default.qubit', wires=['aux', 'q1', 'q2'])
+
+In the quantum function you can now use your own labels to address wires:
+
+.. code-block:: python
+
+    def my_quantum_function(x, y):
+        qml.RZ(x, wires='q1')
+        qml.CNOT(wires=['aux' ,'q1'])
+        qml.RY(y, wires='q2')
+        return qml.expval(qml.PauliZ('q2'))
+
+Allowed wire labels can be of any type that is hashable, which allows two wires to be uniquely distinguished.
+
+.. note::
+
+    Some devices, such as hardware chips, may have a fixed number of wires.
+    The iterable of labels passed to the device's ``wires``
+    argument must match this expected number of wires.
+
+Shots
+*****
+
+The ``shots`` argument is an integer that defines how many times the circuit should be evaluated (or "sampled")
+to estimate statistical quantities. On some supported simulator devices, ``shots=None`` computes
+measurement statistics *exactly*.
+
+Note that this argument can be temporarily overwritten when a QNode is called. For example, ``my_qnode(shots=3)``
+will temporarily evaluate ``my_qnode`` using three shots. This is a feature of each QNode and it is not 
+necessary to manually implement the ``shots`` keyword argument of the quantum function.
+
+It is sometimes useful to retrieve the result of a computation for different shot numbers without evaluating a
+QNode several times ("shot batching"). Batches of shots can be specified by passing a list of integers,
+allowing measurement statistics to be course-grained with a single QNode evaluation.
 
 Consider
 
@@ -148,51 +183,10 @@ For example:
 Executing this, we will get an output of size ``(3, 2)``:
 
 >>> circuit(0.5)
-[[0.33333333 1.        ]
-[0.2        1.        ]
-[0.012      0.868     ]]
+tensor([[ 1.   ,  1.   ],
+        [ 0.2  ,  1.   ],
+        [-0.022,  0.876]], requires_grad=True)
 
-Custom wire labels
-^^^^^^^^^^^^^^^^^^
-
-When you create a device by passing an integer to the ``wires`` argument, the integer defines the *number of wires*
-that you can address by consecutive integer labels ``0, 1, 2, ...``.
-
-But you can define your own wire labels instead, which may be handy if wires have "meanings" like an
-ancilla or garbage register, if they are arranged in a non-linear fashion like a grid, or if there are wires
-that you want to skip because they do not work on a hardware device.
-
-This is done by passing an iterable of wire labels to the ``wires`` argument:
-
-.. code-block:: python
-
-    dev = qml.device('default.qubit', wires=['wire1', 'wire2'], shots=1000)
-
-In the quantum function you can now use your own labels to address wires:
-
-.. code-block:: python
-
-    def my_quantum_function(x, y):
-        qml.RZ(x, wires='wire1')
-        qml.CNOT(wires=['wire1' ,'wire2'])
-        qml.RY(y, wires='wire2')
-        return qml.expval(qml.PauliZ('wire2'))
-
-Allowed wire labels can be of the following types:
-
-* *strings* like ``wires=['a', 'd', 'b', ...]`` or ``wires=['ancilla', 'q1', 'q2', ...]``,
-
-* *integers* like ``wires=[0, 4, 7]`` or even ``wires=[-1, 0, 4]``
-
-* *floats* and other *numbers* like ``wires=[1., 2., 4.]``
-
-* *mixed types* like ``wires=['ancilla', -1, 0, 'q3']``
-
-.. note::
-
-    Some devices, such as hardware chips, may have a fixed number of wires.
-    The iterable of labels passed to the device's ``wires``
-    argument must match this expected number of wires.
 
 .. _intro_vcirc_qnode:
 
@@ -206,20 +200,33 @@ A QNode can be explicitly created as follows:
 
 .. code-block:: python
 
-    circuit = qml.QNode(my_quantum_function, dev)
+    circuit = qml.QNode(my_quantum_function, dev_unique_wires)
 
 The QNode can be used to compute the result of a quantum circuit as if it was a standard Python
 function. It takes the same arguments as the original quantum function:
 
 >>> circuit(np.pi/4, 0.7)
-0.7648421872844883
+tensor(0.764, requires_grad=True)
 
-To view the quantum circuit after it has been executed, we can use the :meth:`~.BaseQNode.draw`
-method:
+To view the quantum circuit given specific parameter values, we can use the :func:`~.pennylane.draw`
+transform,
 
->>> print(circuit.draw())
-0: ──RZ(0.785)──╭C───────────┤
-1: ─────────────╰X──RY(0.7)──┤ ⟨Z⟩
+>>> print(qml.draw(circuit)(np.pi/4, 0.7))
+aux: ───────────╭●─┤
+ q1: ──RZ(0.79)─╰X─┤
+ q2: ──RY(0.70)────┤  <Z>
+
+or the :func:`~.pennylane.draw_mpl` transform:
+
+>>> import matplotlib.pyplot as plt
+>>> qml.drawer.use_style("black_white")
+>>> fig, ax = qml.draw_mpl(circuit)(np.pi/4, 0.7)
+>>> plt.show()
+
+.. image:: ../_static/draw_mpl.png
+    :align: center
+    :width: 300px
+    :target: javascript:void(0);
 
 .. _intro_vcirc_decorator:
 
@@ -250,97 +257,44 @@ For example:
 
     result = circuit(0.543)
 
+Parameter Broadcasting in QNodes
+--------------------------------
 
-Collections of QNodes
----------------------
+Depending on the quantum operations used, a :class:`~.pennylane.QNode` may support execution at multiple parameters simultaneously:
 
-Sometimes you may need multiple QNodes that only differ in the measurement observable
-(like in VQE), or in the device they are run on (for example, if you benchmark different devices),
-or even the quantum circuit that is evaluated. While these QNodes can be defined manually
-"by hand", PennyLane offers **QNode collections** as a convenient way to define and run
-families of QNodes.
+>>> x = np.array([0.543, 1.234])
+>>> result = circuit(x)
+>>> result
+tensor([0.85616242, 0.33046511], requires_grad=True)
 
-QNode collections are a sequence of QNodes that:
+Note that we are passing in a 1-dimensional array of parameters to the `circuit()`
+QNode defined above, which takes a single parameter and returns a single expectation
+value. As the input is now an array, the output is also an array, with each
+element the expectation value of the corresponding input element.
 
-1. Have the same function signature, and
+This is called *parameter broadcasting* (as for, say, NumPy functions executed along an axis)
+or *parameter batching* (as in the application of a function to a *batch* of parameters in
+machine learning).
 
-2. Can be evaluated independently (that is, the input of any QNode in the collection
-   does not depend on the output of another).
+In addition to a more flexible execution syntax, broadcasting can yield performance boosts
+compared to the separate execution of the QNode for each parameter setting. Whether or not this is
+the case depends on quite a few details, but in particular for (at most) moderately sized circuits
+(:math:`\lesssim 20` wires) with a moderate number of parameters (:math:`\lesssim 200`) executed
+on a classical simulator, one can expect to benefit from broadcasting.
+See the :class:`~.pennylane.QNode` documentation for usage details.
 
-Consider the following two quantum nodes:
+Many standard quantum operators support broadcasting; see the corresponding attribute
+:obj:`~.pennylane.ops.qubit.attributes.supports_broadcasting` for a list. The
+:class:`~.pennylane.operation.Operator` documentation contains implementation details
+and a guide to make custom operators compatible with broadcasting.
+Broadcasting can be used with any device, but will usually only yield performance upgrades for
+devices like ``"default.qubit"`` that indicate that they support it:
 
+>>> cap = dev.capabilities()
+>>> cap["supports_broadcasting"]
+True
 
-.. code-block:: python
-
-    @qml.qnode(dev1)
-    def x_rotations(params):
-        qml.RX(params[0], wires=0)
-        qml.RX(params[1], wires=1)
-        qml.CNOT(wires=[0, 1])
-        return qml.expval(qml.PauliZ(0))
-
-    @qml.qnode(dev2)
-    def y_rotations(params):
-        qml.RY(params[0], wires=0)
-        qml.RY(params[1], wires=1)
-        qml.CNOT(wires=[0, 1])
-        return qml.expval(qml.Hadamard(0))
-
-As the QNodes in the collection have the same signature, and we can can construct a
-:class:`~.QNodeCollection` and therefore feed them the same parameters:
-
->>> qnodes = qml.QNodeCollection([x_rotations, y_rotations])
->>> len(qnodes)
-2
->>> qnodes([0.2, 0.1])
-array([0.98006658, 0.70703636])
-
-PennyLane also provides some high-level tools for creating and evaluating
-QNode collections. For example, :func:`~.map` allows a single
-function of quantum operations (or :doc:`template <templates>`) to be mapped across
-multiple observables or devices.
-
-For example, consider the following quantum function ansatz:
-
-.. code-block:: python
-
-    def my_ansatz(params, **kwargs):
-        qml.RX(params[0], wires=0)
-        qml.RX(params[1], wires=1)
-        qml.CNOT(wires=[0, 1])
-
-We can define a list of observables, and two devices:
-
->>> obs_list = [qml.PauliX(0) @ qml.PauliZ(1), qml.PauliZ(0) @ qml.PauliX(1)]
->>> qpu1 = qml.device("forest.qvm", device="Aspen-4-4Q-D") # requires PennyLane-Forest
->>> qpu2 = qml.device("forest.qvm", device="Aspen-7-4Q-B") # requires PennyLane-Forest
-
-.. note::
-
-    The two devices above require the `PennyLane-Forest plugin <https://pennylane-forest.rtfd.io>`_
-    be installed, as well as the Forest QVM. You can also try replacing them with alternate devices.
-
-Mapping the template across the observables and devices creates a :class:`~.QNodeCollection`:
-
->>> qnodes = qml.map(my_ansatz, obs_list, [qpu1, qpu2], measure="expval")
->>> type(qnodes)
-pennylane.collections.qnode_collection.QNodeCollection
->>> params = [0.54, 0.12]
->>> qnodes(params)
-array([-0.02854835  0.99280864])
-
-Functions are available to process QNode collections, including :func:`~.pennylane.collections.dot`,
-:func:`~.pennylane.collections.sum`, and :func:`~.pennylane.collections.apply`:
-
->>> cost_fn = qml.sum(qnodes)
->>> cost_fn(params)
-0.906
-
-.. note::
-
-    QNode collections support an experimental parallel execution mode. See
-    the :class:`~.QNodeCollection` documentation for more details.
-
+Other devices separate the parameters and execute the QNode sequentially.
 
 Importing circuits from other frameworks
 ----------------------------------------

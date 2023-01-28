@@ -33,8 +33,8 @@ class Configuration:
 
     Args:
         name (str): filename of the configuration file.
-        This should be a valid TOML file. You may also pass an absolute
-        or a relative file path to the configuration file.
+            This should be a valid TOML file. You may also pass an absolute
+            or a relative file path to the configuration file.
     """
 
     def __init__(self, name):
@@ -59,11 +59,11 @@ class Configuration:
 
     def __str__(self):
         if self._config:
-            return "{}".format(self._config)
+            return f"{self._config}"
         return ""
 
     def __repr__(self):
-        return "PennyLane Configuration <{}>".format(self._filepath)
+        return f"PennyLane Configuration <{self._filepath}>"
 
     @property
     def path(self):
@@ -79,7 +79,7 @@ class Configuration:
         Args:
             filepath (str): path to the configuration file.
         """
-        with open(filepath, "r") as f:
+        with open(filepath, "r", encoding="utf8") as f:
             self._config = toml.load(f)
 
     def save(self, filepath):
@@ -88,7 +88,7 @@ class Configuration:
         Args:
             filepath (str): path to the configuration file.
         """
-        with open(filepath, "w") as f:
+        with open(filepath, "w", encoding="utf8") as f:
             toml.dump(self._config, f)
 
     def __getitem__(self, key):

@@ -1,6 +1,8 @@
 .. role:: html(raw)
    :format: html
 
+:orphan:
+
 .. _intro_ref_config:
 
 Configuration

@@ -31,24 +31,32 @@ The available measurement functions are
 
     ~pennylane.expval
     ~pennylane.sample
+    ~pennylane.counts
     ~pennylane.var
     ~pennylane.probs
     ~pennylane.state
     ~pennylane.density_matrix
+    ~pennylane.vn_entropy
+    ~pennylane.mutual_info
+    ~pennylane.classical_shadow
+    ~pennylane.shadow_expval
 
 :html:`</div>`
 
 .. note::
 
     All measurement functions support analytic differentiation, with the
-    exception of :func:`~.pennylane.sample`, as it returns *stochastic*
+    exception of :func:`~.pennylane.sample`, :func:`~.pennylane.counts`, and
+    :func:`~.pennylane.classical_shadow`, as they return *stochastic*
     results.
 
 Combined measurements
 ---------------------
 
-Quantum functions can also return combined measurements of multiple observables, as long as each wire
-is not measured more than once:
+Quantum functions can also return combined measurements of multiple observables. If the observables are not
+qubit-wise-commuting, then multiple device executions may occur behind the scenes. Non-commuting oberservables
+can not be simultaneously measured in conjunction with non-observable type measurements such as :func:`sample`,
+:func:`counts`, :func:`probs`, :func:`state`, and :func:`density_matrix`.
 
 .. code-block:: python
 
@@ -56,7 +64,7 @@ is not measured more than once:
         qml.RZ(x, wires=0)
         qml.CNOT(wires=[0, 1])
         qml.RY(y, wires=1)
-        return qml.expval(qml.PauliZ(1)), qml.var(qml.PauliX(0))
+        return qml.expval(qml.PauliZ(0))), qml.var(qml.PauliX(0))
 
 You can also use list comprehensions, and other common Python patterns:
 
@@ -77,7 +85,7 @@ by a ``Hadamard`` and ``CNOT`` gate.
     import pennylane as qml
     from pennylane import numpy as np
 
-    dev = qml.device("default.qubit", wires=2)
+    dev = qml.device("default.qubit", wires=2, shots=1000)
 
     @qml.qnode(dev)
     def circuit():
@@ -99,7 +107,6 @@ the measurement results always coincide, and the lists are therefore equal:
 
 >>> np.all(result[0] == result[1])
 True
-
 
 Tensor observables
 ------------------
@@ -125,14 +132,92 @@ accept observables as arguments,
 including :func:`~.pennylane.expval`, :func:`~.pennylane.var`,
 and :func:`~.pennylane.sample`.
 
+Counts
+------
+
+To avoid dealing with long arrays for the larger numbers of shots, one can use :func:`~pennylane.counts` rather than
+:func:`~pennylane.sample`. This performs the same measurement as sampling, but returns a dictionary containing the
+possible measurement outcomes and the number of occurrences for each, rather than a list of all outcomes.
+
+The previous example will be modified as follows:
+
+.. code-block:: python
+
+    dev = qml.device("default.qubit", wires=2, shots=1000)
+
+    @qml.qnode(dev)
+    def circuit():
+        qml.Hadamard(wires=0)
+        qml.CNOT(wires=[0, 1])
+        return qml.counts(qml.PauliZ(0)), qml.counts(qml.PauliZ(1))
+
+After executing the circuit, we can directly see how many times each measurement outcome occurred:
+
+>>> circuit()
+({-1: 496, 1: 504}, {-1: 496, 1: 504})
+
+Similarly, if the observable is not provided, the count of the observed computational basis state is returned.
+
+.. code-block:: python
+
+    dev = qml.device("default.qubit", wires=2, shots=1000)
+
+    @qml.qnode(dev)
+    def circuit():
+        qml.Hadamard(wires=0)
+        qml.CNOT(wires=[0, 1])
+        return qml.counts()
+
+And the result is:
+
+>>> circuit()
+{'00': 495, '11': 505}
+
+By default, only observed outcomes are included in the dictionary. The kwarg ``all_outcomes=True`` can
+be used to display all possible outcomes, including those that were observed ``0`` times in sampling.
+
+For example, we could run the previous circuit with ``all_outcomes=True``:
+
+.. code-block:: python
+
+    dev = qml.device("default.qubit", wires=2, shots=1000)
+
+    @qml.qnode(dev)
+    def circuit():
+        qml.Hadamard(wires=0)
+        qml.CNOT(wires=[0, 1])
+        return qml.counts(all_outcomes=True)
+
+>>> result = circuit()
+>>> print(result)
+{'00': 518, '01': 0, '10': 0, '11': 482}
+
+Note: For complicated Hamiltonians, this can add considerable overhead time (due to the cost of calculating 
+eigenvalues to determine possible outcomes), and as the number of qubits increases, the length of the output 
+dictionary showing possible computational basis states grows rapidly. 
+
+If counts are obtained along with a measurement function other than :func:`~.pennylane.sample`,
+a tuple is returned to provide differentiability for the outputs of QNodes.
+
+.. code-block:: python
+
+    @qml.qnode(dev)
+    def circuit():
+        qml.Hadamard(wires=0)
+        qml.CNOT(wires=[0,1])
+        qml.PauliX(wires=1)
+        return qml.expval(qml.PauliZ(0)),qml.expval(qml.PauliZ(1)), qml.counts()
+
+>>> circuit()
+(-0.036, 0.036, {'01': 482, '10': 518}) 
+
 Probability
 -----------
 
 You can also train QNodes on computational basis probabilities, by using
-the :func:`~.pennylane.probs` measurement function. Unlike other
-measurement functions, **this does not accept observables**.
-Instead, it will return a flat array or tensor containing the (marginal)
-probabilities of each quantum state.
+the :func:`~.pennylane.probs` measurement function. The function can
+accept either specified ``wires`` or an observable that rotates the
+computational basis.
 
 .. code-block:: python3
 
@@ -154,6 +239,82 @@ The returned probability array uses lexicographical ordering,
 so corresponds to a :math:`99.75\%` probability of measuring
 state :math:`|00\rangle`, and a :math:`0.25\%` probability of
 measuring state :math:`|01\rangle`.
+
+Mid-circuit measurements and conditional operations
+---------------------------------------------------
+
+PennyLane allows specifying measurements in the middle of the circuit.
+Quantum functions such as operations can then be conditioned on the measurement
+outcome of such mid-circuit measurements:
+
+.. code-block:: python
+
+    def my_quantum_function(x, y):
+        qml.RY(x, wires=0)
+        qml.CNOT(wires=[0, 1])
+        m_0 = qml.measure(1)
+
+        qml.cond(m_0, qml.RY)(y, wires=0)
+        return qml.probs(wires=[0])
+
+A quantum function with mid-circuit measurements (defined using
+:func:`~.pennylane.measure`) and conditional operations (defined using
+:func:`~.pennylane.cond`) can be executed by applying the `deferred measurement
+principle <https://en.wikipedia.org/wiki/Deferred_Measurement_Principle>`__. In
+the example above, we apply the :class:`~.RY` rotation if the mid-circuit
+measurement on qubit 1 yielded ``1`` as an outcome, otherwise doing nothing
+for the ``0`` measurement outcome.
+
+PennyLane implements the deferred measurement principle to transform
+conditional operations with the :func:`~.defer_measurements` quantum
+function transform.
+
+.. code-block:: python
+
+    transformed_qfunc = qml.transforms.defer_measurements(my_quantum_function)
+    transformed_qnode = qml.QNode(transformed_qfunc, dev)
+    pars = np.array([0.643, 0.246], requires_grad=True)
+
+>>> transformed_qnode(*pars)
+tensor([0.90165331, 0.09834669], requires_grad=True)
+
+The decorator syntax applies equally well:
+
+.. code-block:: python
+
+    @qml.qnode(dev)
+    @qml.defer_measurements
+    def qnode(x, y):
+        (...)
+
+Note that we can also specify an outcome when defining a conditional operation:
+
+.. code-block:: python
+
+    @qml.qnode(dev)
+    @qml.defer_measurements
+    def qnode_conditional_op_on_zero(x, y):
+        qml.RY(x, wires=0)
+        qml.CNOT(wires=[0, 1])
+        m_0 = qml.measure(1)
+
+        qml.cond(m_0 == 0, qml.RY)(y, wires=0)
+        return qml.probs(wires=[0])
+
+    pars = np.array([0.643, 0.246], requires_grad=True)
+
+>>> qnode_conditional_op_on_zero(*pars)
+tensor([0.88660045, 0.11339955], requires_grad=True)
+
+The deferred measurement principle provides a natural method to simulate the
+application of mid-circuit measurements and conditional operations in a
+differentiable and device-independent way. Performing true mid-circuit
+measurements and conditional operations is dependent on the
+quantum hardware and PennyLane device capabilities.
+
+For more examples on applying quantum functions conditionally, refer to the
+:func:`~.pennylane.cond` transform.
+
 
 Changing the number of shots
 ----------------------------

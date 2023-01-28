@@ -1,11 +1,11 @@
 # Copyright 2018-2021 Xanadu Quantum Technologies Inc.
-
+#
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
-
+#
 #     http://www.apache.org/licenses/LICENSE-2.0
-
+#
 # Unless required by applicable law or agreed to in writing, software
 # distributed under the License is distributed on an "AS IS" BASIS,
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -15,13 +15,15 @@
 API."""
 import inspect
 from collections.abc import Iterable
-from typing import Optional
+from typing import Optional, Sequence, Text, Union
+
+from pennylane.transforms.batch_input import batch_input
 
 try:
     import tensorflow as tf
     from tensorflow.keras.layers import Layer
 
-    CORRECT_TF_VERSION = int(tf.__version__.split(".")[0]) > 1
+    CORRECT_TF_VERSION = int(tf.__version__.split(".", maxsplit=1)[0]) > 1
 except ImportError:
     # The following allows this module to be imported even if TensorFlow is not installed. Users
     # will instead see an ImportError when instantiating the KerasLayer.
@@ -52,6 +54,10 @@ class KerasLayer(Layer):
             arguments of the `add_weight()
             <https://www.tensorflow.org/api_docs/python/tf/keras/layers/Layer#add_weight>`__
             method and values being the corresponding specification.
+        batch_idx (Union[Sequence[int], int]): Argument location of the non-trainable inputs for
+            the circuit. This allows batch execution by creating executable circuits for each
+            input example with the same trainable weights. Default ``None``.
+            See :func:`~.pennylane.transforms.batch_input` for more details.
         **kwargs: additional keyword arguments passed to the Layer_ base class
 
     **Example**
@@ -88,7 +94,8 @@ class KerasLayer(Layer):
     >>> clayer = tf.keras.layers.Dense(2)
     >>> model = tf.keras.models.Sequential([qlayer, clayer])
 
-    .. UsageDetails::
+    .. details::
+        :title: Usage Details
 
         **QNode signature**
 
@@ -128,7 +135,7 @@ class KerasLayer(Layer):
         **Additional example**
 
         The code block below shows how a circuit composed of templates from the
-        :doc:`/code/qml_templates` module can be combined with classical
+        :doc:`/introduction/templates` module can be combined with classical
         `Dense <https://www.tensorflow.org/api_docs/python/tf/keras/layers/Dense>`__ layers to learn
         the two-dimensional `moons <https://scikit-learn.org/stable/modules/generated/sklearn
         .datasets.make_moons.html>`__ dataset.
@@ -185,8 +192,8 @@ class KerasLayer(Layer):
 
         **Returning a state**
 
-        If your QNode returns the state of the quantum circuit using :func:`~.state` or
-        :func:`~.density_matrix`, you must immediately follow your quantum Keras Layer with a layer
+        If your QNode returns the state of the quantum circuit using :func:`~pennylane.state` or
+        :func:`~pennylane.density_matrix`, you must immediately follow your quantum Keras Layer with a layer
         that casts to reals. For example, you could use
         `tf.keras.layers.Lambda <https://www.tensorflow.org/api_docs/python/tf/keras/layers/Lambda>`__
         with the function ``lambda x: tf.abs(x)``. This casting is required because TensorFlow's
@@ -196,8 +203,15 @@ class KerasLayer(Layer):
     """
 
     def __init__(
-        self, qnode, weight_shapes: dict, output_dim, weight_specs: Optional[dict] = None, **kwargs
+        self,
+        qnode,
+        weight_shapes: dict,
+        output_dim,
+        weight_specs: Optional[dict] = None,
+        batch_idx: Union[Sequence[int], int] = None,
+        **kwargs,
     ):
+        # pylint: disable=too-many-arguments
         if not CORRECT_TF_VERSION:
             raise ImportError(
                 "KerasLayer requires TensorFlow version 2 or above. The latest "
@@ -212,12 +226,14 @@ class KerasLayer(Layer):
         }
 
         self._signature_validation(qnode, weight_shapes)
-        self.qnode = qnode
 
-        dtype = tf.float32 if tf.keras.backend.floatx() == tf.float32 else tf.float64
+        self.argnum = batch_idx
+        if batch_idx is None:
+            self.qnode = qnode
+        else:
+            self.qnode = batch_input(qnode, argnum=batch_idx)
 
-        if self.qnode.diff_method != "backprop":
-            self.qnode.to_tf(dtype=dtype)
+        self.qnode.interface = "tf"
 
         # Allows output_dim to be specified as an int or as a tuple, e.g, 5, (5,), (5, 2), [5, 2]
         # Note: Single digit values will be considered an int and multiple as a tuple, e.g [5,] or (5,)
@@ -238,15 +254,13 @@ class KerasLayer(Layer):
 
         if self.input_arg not in sig:
             raise TypeError(
-                "QNode must include an argument with name {} for inputting data".format(
-                    self.input_arg
-                )
+                f"QNode must include an argument with name {self.input_arg} for inputting data"
             )
 
         if self.input_arg in set(weight_shapes.keys()):
             raise ValueError(
-                "{} argument should not have its dimension specified in "
-                "weight_shapes".format(self.input_arg)
+                f"{self.input_arg} argument should not have its dimension specified in "
+                f"weight_shapes"
             )
 
         param_kinds = [p.kind for p in sig.values()]
@@ -279,7 +293,7 @@ class KerasLayer(Layer):
         Returns:
             tensor: output data
         """
-        if len(tf.shape(inputs)) > 1:
+        if len(tf.shape(inputs)) > 1 and self.argnum is None:
             # If the input size is not 1-dimensional, unstack the input along its first dimension,
             # recursively call the forward pass on each of the yielded tensors, and then stack the
             # outputs back into the correct shape
@@ -299,7 +313,10 @@ class KerasLayer(Layer):
         Returns:
             tensor: output datapoint
         """
-        kwargs = {**{self.input_arg: x}, **{k: 1.0 * w for k, w in self.qnode_weights.items()}}
+        kwargs = {
+            **{self.input_arg: x},
+            **{k: 1.0 * w for k, w in self.qnode_weights.items()},
+        }
         return self.qnode(**kwargs)
 
     def compute_output_shape(self, input_shape):
@@ -328,3 +345,32 @@ class KerasLayer(Layer):
         `Layer <https://www.tensorflow.org/api_docs/python/tf/keras/layers/Layer>`__. Set to
         ``"inputs"``."""
         return self._input_arg
+
+    @staticmethod
+    def set_input_argument(input_name: Text = "inputs") -> None:
+        """
+        Set the name of the input argument.
+
+        Args:
+            input_name (str): Name of the input argument
+        """
+        KerasLayer._input_arg = input_name
+
+    def get_config(self) -> dict:
+        """
+        Get serialized layer configuration
+
+        Returns:
+            dict: layer configuration
+        """
+        config = super().get_config()
+
+        config.update(
+            {
+                "output_dim": self.output_dim,
+                "weight_specs": self.weight_specs,
+                "weight_shapes": self.weight_shapes,
+                "argnum": self.argnum,
+            }
+        )
+        return config

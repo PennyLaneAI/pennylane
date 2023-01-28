@@ -47,7 +47,7 @@ class TestDecomposition:
         weights = np.random.random(size=weight_shape)
         initial_layer = np.random.randn(n_wires)
 
-        op = qml.templates.SimplifiedTwoDesign(initial_layer, weights, wires=range(n_wires))
+        op = qml.SimplifiedTwoDesign(initial_layer, weights, wires=range(n_wires))
         queue = op.expand().operations
 
         for i, gate in enumerate(queue):
@@ -64,7 +64,7 @@ class TestDecomposition:
         initial_layer = np.random.randn(n_wires)
         weights = np.random.randn(*shape_weights)
 
-        op = qml.templates.SimplifiedTwoDesign(initial_layer, weights, wires=range(n_wires))
+        op = qml.SimplifiedTwoDesign(initial_layer, weights, wires=range(n_wires))
         queue = op.expand().operations
 
         # test the device parameters
@@ -100,12 +100,12 @@ class TestDecomposition:
 
         @qml.qnode(dev)
         def circuit(initial_layer, weights):
-            qml.templates.SimplifiedTwoDesign(
+            qml.SimplifiedTwoDesign(
                 initial_layer_weights=initial_layer, weights=weights, wires=range(n_wires)
             )
             return [qml.expval(qml.PauliZ(wires=i)) for i in range(n_wires)]
 
-        expectations = circuit(initial_layer_weights, weights)
+        expectations = circuit(np.array(initial_layer_weights), np.array(weights))
         for exp, target_exp in zip(expectations, target):
             assert np.allclose(exp, target_exp, atol=tol, rtol=0)
 
@@ -119,12 +119,12 @@ class TestDecomposition:
 
         @qml.qnode(dev)
         def circuit():
-            qml.templates.SimplifiedTwoDesign(initial_layer, weights, wires=range(3))
+            qml.SimplifiedTwoDesign(initial_layer, weights, wires=range(3))
             return qml.expval(qml.Identity(0))
 
         @qml.qnode(dev2)
         def circuit2():
-            qml.templates.SimplifiedTwoDesign(initial_layer, weights, wires=["z", "a", "k"])
+            qml.SimplifiedTwoDesign(initial_layer, weights, wires=["z", "a", "k"])
             return qml.expval(qml.Identity("z"))
 
         circuit()
@@ -145,7 +145,7 @@ class TestInputs:
 
         @qml.qnode(dev)
         def circuit(initial_layer, weights):
-            qml.templates.SimplifiedTwoDesign(initial_layer, weights, wires=range(2))
+            qml.SimplifiedTwoDesign(initial_layer, weights, wires=range(2))
             return qml.expval(qml.PauliZ(0))
 
         with pytest.raises(ValueError, match="Weights tensor must have second dimension"):
@@ -160,6 +160,13 @@ class TestInputs:
             initial_layer = np.random.randn(3)
             weights = np.random.randn(2, 1, 2)
             circuit(initial_layer, weights)
+
+    def test_id(self):
+        """Tests that the id attribute can be set."""
+        weights = np.random.random(size=(1, 2, 2))
+        initial_layer = np.random.randn(3)
+        template = qml.SimplifiedTwoDesign(initial_layer, weights, wires=range(3), id="a")
+        assert template.id == "a"
 
 
 class TestAttributes:
@@ -176,12 +183,12 @@ class TestAttributes:
     def test_shape(self, n_layers, n_wires, expected_shape):
         """Test that the shape method returns the correct shape of the weights tensor"""
 
-        shape = qml.templates.SimplifiedTwoDesign.shape(n_layers, n_wires)
+        shape = qml.SimplifiedTwoDesign.shape(n_layers, n_wires)
         assert shape == expected_shape
 
 
 def circuit_template(initial_weights, weights):
-    qml.templates.SimplifiedTwoDesign(initial_weights, weights, range(3))
+    qml.SimplifiedTwoDesign(initial_weights, weights, range(3))
     return qml.expval(qml.PauliZ(0))
 
 
@@ -205,27 +212,7 @@ class TestInterfaces:
     """Tests that the template is compatible with all interfaces, including the computation
     of gradients."""
 
-    def test_list_and_tuples(self, tol):
-        """Tests common iterables as inputs."""
-
-        weights = [[[[0.1, -1.1], [0.2, 0.1]], [[0.1, -1.1], [0.2, 0.1]]]]
-        initial_weights = [0.1, 0.2, 0.3]
-
-        dev = qml.device("default.qubit", wires=3)
-
-        circuit = qml.QNode(circuit_template, dev)
-        circuit2 = qml.QNode(circuit_decomposed, dev)
-
-        res = circuit(initial_weights, weights)
-        res2 = circuit2(initial_weights, weights)
-        assert qml.math.allclose(res, res2, atol=tol, rtol=0)
-
-        weights_tuple = [[tuple(weights[0][0]), tuple(weights[0][1])]]
-        init_weights_tuple = tuple(initial_weights)
-        res = circuit(init_weights_tuple, weights_tuple)
-        res2 = circuit2(init_weights_tuple, weights_tuple)
-        assert qml.math.allclose(res, res2, atol=tol, rtol=0)
-
+    @pytest.mark.autograd
     def test_autograd(self, tol):
         """Tests the autograd interface."""
 
@@ -252,10 +239,11 @@ class TestInterfaces:
         assert np.allclose(grads[0], grads2[0], atol=tol, rtol=0)
         assert np.allclose(grads[1], grads2[1], atol=tol, rtol=0)
 
+    @pytest.mark.jax
     def test_jax(self, tol):
         """Tests the jax interface."""
 
-        jax = pytest.importorskip("jax")
+        import jax
         import jax.numpy as jnp
 
         weights = jnp.array(np.random.random(size=(1, 2, 2)))
@@ -279,10 +267,11 @@ class TestInterfaces:
         assert np.allclose(grads[0], grads2[0], atol=tol, rtol=0)
         assert np.allclose(grads[1], grads2[1], atol=tol, rtol=0)
 
+    @pytest.mark.tf
     def test_tf(self, tol):
         """Tests the tf interface."""
 
-        tf = pytest.importorskip("tensorflow")
+        import tensorflow as tf
 
         weights = tf.Variable(np.random.random(size=(1, 2, 2)))
         initial_weights = tf.Variable(np.random.random(size=(3,)))
@@ -307,10 +296,11 @@ class TestInterfaces:
         assert np.allclose(grads[0], grads2[0], atol=tol, rtol=0)
         assert np.allclose(grads[1], grads2[1], atol=tol, rtol=0)
 
+    @pytest.mark.torch
     def test_torch(self, tol):
         """Tests the torch interface."""
 
-        torch = pytest.importorskip("torch")
+        import torch
 
         weights = torch.tensor(np.random.random(size=(1, 2, 2)), requires_grad=True)
         initial_weights = torch.tensor(np.random.random(size=(3,)), requires_grad=True)

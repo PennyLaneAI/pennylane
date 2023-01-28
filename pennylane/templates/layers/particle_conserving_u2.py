@@ -38,11 +38,11 @@ def u2_ex_gate(phi, wires=None):
     Args:
         phi (float): angle entering the controlled-RX operator :math:`CRX(2\phi)`
         wires (list[Wires]): the two wires ``n`` and ``m`` the circuit acts on
-    """
 
-    qml.CNOT(wires=wires)
-    qml.CRX(2 * phi, wires=wires[::-1])
-    qml.CNOT(wires=wires)
+    Returns:
+        list[.Operator]: sequence of operators defined by this function
+    """
+    return [qml.CNOT(wires=wires), qml.CRX(2 * phi, wires=wires[::-1]), qml.CNOT(wires=wires)]
 
 
 class ParticleConservingU2(Operation):
@@ -97,7 +97,8 @@ class ParticleConservingU2(Operation):
         init_state (tensor_like): iterable or shape ``(len(wires),)`` tensor representing the Hartree-Fock state
             used to initialize the wires.
 
-    .. UsageDetails::
+    .. details::
+        :title: Usage Details
 
 
         #. The number of wires has to be equal to the number of spin orbitals included in
@@ -111,12 +112,12 @@ class ParticleConservingU2(Operation):
         .. code-block:: python
 
             import pennylane as qml
-            from pennylane.templates import ParticleConservingU2
-
+            import numpy as np
             from functools import partial
 
-            # Build the electronic Hamiltonian from a local .xyz file
-            h, qubits = qml.qchem.molecular_hamiltonian("h2", "h2.xyz")
+            # Build the electronic Hamiltonian
+            symbols, coordinates = (['H', 'H'], np.array([0., 0., -0.66140414, 0., 0., 0.66140414]))
+            h, qubits = qml.qchem.molecular_hamiltonian(symbols, coordinates)
 
             # Define the HF state
             ref_state = qml.qchem.hf_state(2, qubits)
@@ -125,38 +126,38 @@ class ParticleConservingU2(Operation):
             dev = qml.device('default.qubit', wires=qubits)
 
             # Define the ansatz
-            ansatz = partial(ParticleConservingU2, init_state=ref_state)
+            ansatz = partial(qml.ParticleConservingU2, init_state=ref_state)
 
             # Define the cost function
             cost_fn = qml.ExpvalCost(ansatz, h, dev)
 
             # Compute the expectation value of 'h' for a given set of parameters
             layers = 1
-            params = qml.init.particle_conserving_u2_normal(layers, qubits)
+            shape = qml.ParticleConservingU2.shape(layers, qubits)
+            params = np.random.random(shape)
             print(cost_fn(params))
 
         **Parameter shape**
 
-        The shape of the weights argument can be computed by the static method
-        :meth:`~.ParticleConservingU2.shape` and used when creating randomly
+        The shape of the trainable weights tensor can be computed by the static method
+        :meth:`~qml.ParticleConservingU2.shape` and used when creating randomly
         initialised weight tensors:
 
         .. code-block:: python
 
-            shape = ParticleConservingU2.shape(n_layers=2, n_wires=2)
-            weights = np.random.random(size=shape)
+            shape = qml.ParticleConservingU2.shape(n_layers=2, n_wires=2)
+            params = np.random.random(size=shape)
     """
 
-    num_params = 1
     num_wires = AnyWires
-    par_domain = "A"
+    grad_method = None
 
-    def __init__(self, weights, wires, init_state=None, do_queue=True):
+    def __init__(self, weights, wires, init_state=None, do_queue=True, id=None):
 
         if len(wires) < 2:
             raise ValueError(
-                "This template requires the number of qubits to be greater than one;"
-                "got a wire sequence with {} elements".format(len(wires))
+                f"This template requires the number of qubits to be greater than one;"
+                f"got a wire sequence with {len(wires)} elements"
             )
 
         shape = qml.math.shape(weights)
@@ -169,30 +170,60 @@ class ParticleConservingU2(Operation):
                 f"Weights tensor must have a second dimension of length {2 * len(wires) - 1}; got {shape[1]}"
             )
 
-        self.n_layers = shape[0]
-        # we can extract the numpy representation here
-        # since init_state can never be differentiable
-        self.init_state = qml.math.toarray(init_state)
+        self._hyperparameters = {"init_state": qml.math.toarray(init_state)}
 
-        super().__init__(weights, wires=wires, do_queue=do_queue)
+        super().__init__(weights, wires=wires, do_queue=do_queue, id=id)
 
-    def expand(self):
+    @property
+    def num_params(self):
+        return 1
 
-        nm_wires = [self.wires[l : l + 2] for l in range(0, len(self.wires) - 1, 2)]
-        nm_wires += [self.wires[l : l + 2] for l in range(1, len(self.wires) - 1, 2)]
+    @staticmethod
+    def compute_decomposition(weights, wires, init_state):  # pylint: disable=arguments-differ
+        r"""Representation of the ParticleConservingU2operator as a product of other operators.
 
-        with qml.tape.QuantumTape() as tape:
+        .. math:: O = O_1 O_2 \dots O_n.
 
-            qml.templates.BasisEmbedding(self.init_state, wires=self.wires)
 
-            for l in range(self.n_layers):
 
-                for j, _ in enumerate(self.wires):
-                    qml.RZ(self.parameters[0][l, j], wires=self.wires[j])
+        .. seealso:: :meth:`~.ParticleConservingU2.decomposition`.
 
-                for i, wires_ in enumerate(nm_wires):
-                    u2_ex_gate(self.parameters[0][l, len(self.wires) + i], wires=wires_)
-        return tape
+        Args:
+            weights (tensor_like): Weight tensor of shape ``(D, M)`` where ``D`` is the number of
+                layers and ``M`` = ``2N-1`` is the total number of rotation ``(N)`` and exchange
+                ``(N-1)`` gates per layer.
+            wires (Any or Iterable[Any]): wires that the operator acts on
+            init_state (tensor_like): iterable or shape ``(len(wires),)`` tensor representing the Hartree-Fock state
+                used to initialize the wires.
+
+        Returns:
+            list[.Operator]: decomposition of the operator
+
+        **Example**
+
+        >>> torch.tensor([[0.3, 1., 0.2]])
+        >>> qml.ParticleConservingU2.compute_decomposition(weights, wires=["a", "b"], init_state=[0, 1])
+        [BasisEmbedding(wires=['a', 'b']),
+         RZ(tensor(0.3000), wires=['a']),
+         RZ(tensor(1.), wires=['b']),
+         CNOT(wires=['a', 'b']),
+         CRX(tensor(0.4000), wires=['b', 'a']),
+         CNOT(wires=['a', 'b'])]
+        """
+        nm_wires = [wires[l : l + 2] for l in range(0, len(wires) - 1, 2)]
+        nm_wires += [wires[l : l + 2] for l in range(1, len(wires) - 1, 2)]
+        n_layers = qml.math.shape(weights)[0]
+        op_list = [qml.BasisEmbedding(init_state, wires=wires)]
+
+        for l in range(n_layers):
+
+            for j, wires_ in enumerate(wires):
+                op_list.append(qml.RZ(weights[l, j], wires=wires_))
+
+            for i, wires_ in enumerate(nm_wires):
+                op_list.extend(u2_ex_gate(weights[l, len(wires) + i], wires=wires_))
+
+        return op_list
 
     @staticmethod
     def shape(n_layers, n_wires):
@@ -208,6 +239,6 @@ class ParticleConservingU2(Operation):
 
         if n_wires < 2:
             raise ValueError(
-                "The number of qubits must be greater than one; got 'n_wires' = {}".format(n_wires)
+                f"The number of qubits must be greater than one; got 'n_wires' = {n_wires}"
             )
         return n_layers, 2 * n_wires - 1

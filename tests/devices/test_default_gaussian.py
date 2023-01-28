@@ -16,15 +16,14 @@ Unit tests for the :mod:`pennylane.plugin.DefaultGaussian` device.
 """
 # pylint: disable=protected-access,cell-var-from-loop,no-self-use
 
-import pytest
-from scipy.special import factorial as fac
-from scipy.linalg import block_diag
 import numpy as np
 import numpy.random
+import pytest
+from scipy.linalg import block_diag
+from scipy.special import factorial as fac
 
 import pennylane as qml
 from pennylane import DeviceError
-from pennylane.wires import Wires
 from pennylane.devices.default_gaussian import (
     fock_prob,
     rotation,
@@ -41,7 +40,7 @@ from pennylane.devices.default_gaussian import (
     thermal_state,
     DefaultGaussian,
 )
-
+from pennylane.wires import Wires
 
 U = np.array(
     [
@@ -49,7 +48,6 @@ U = np.array(
         [-0.23889780 - 0.28101519j, -0.88031770 - 0.29832709j],
     ]
 )
-
 
 U2 = np.array(
     [
@@ -80,18 +78,9 @@ U2 = np.array(
     ]
 )
 
-
 H = np.array([[1.02789352, 1.61296440 - 0.3498192j], [1.61296440 + 0.3498192j, 1.23920938 + 0j]])
 
-
 hbar = 2
-
-
-def prep_par(par, op):
-    "Convert par into a list of parameters that op expects."
-    if op.par_domain == "A":
-        return [np.diag([x, 1]) for x in par]
-    return par
 
 
 @pytest.fixture(scope="function")
@@ -171,12 +160,28 @@ class TestAuxillaryFunctions:
         probs = [0.430461524043, 0.163699407559, 0.0582788388927, 0.00167706931355]
 
         for idx, e in enumerate(events):
-            res = fock_prob(mu, cov, e, hbar=hbar)
+            res = fock_prob(cov, mu, e, hbar=hbar)
             assert res == pytest.approx(probs[idx], abs=tol)
 
 
 class TestGates:
     """Gate tests."""
+
+    input_state = [vacuum_state(1), coherent_state(a=0.5)]
+
+    @pytest.mark.parametrize("inp_state", input_state)
+    def test_identity(self, inp_state, tol):
+        inp_cov_mat = inp_state[0]
+        inp_means = inp_state[1]
+
+        O = qml.Identity.identity_op()
+        out_means = O @ inp_means
+        out_cov_mat = O @ inp_cov_mat @ O.T
+
+        assert np.allclose(out_means, inp_means, atol=tol)
+        assert np.allclose(
+            out_cov_mat, inp_cov_mat, atol=tol
+        )  # Identity op shouldn't change means or cov mat
 
     def test_rotation(self, tol):
         """Test the Fourier transform of a displaced state."""
@@ -308,14 +313,14 @@ class TestStates:
     def test_vacuum_state(self, tol):
         """Test the vacuum state is correct."""
         wires = 3
-        means, cov = vacuum_state(wires, hbar=hbar)
+        cov, means = vacuum_state(wires, hbar=hbar)
         assert means == pytest.approx(np.zeros([2 * wires]), abs=tol)
         assert cov == pytest.approx(np.identity(2 * wires) * hbar / 2, abs=tol)
 
     def test_coherent_state(self, tol):
         """Test the coherent state is correct."""
         a = 0.432 - 0.123j
-        means, cov = coherent_state(a, hbar=hbar)
+        cov, means = coherent_state(a, hbar=hbar)
         assert means == pytest.approx(np.array([a.real, a.imag]) * np.sqrt(2 * hbar), abs=tol)
         assert cov == pytest.approx(np.identity(2) * hbar / 2, abs=tol)
 
@@ -323,7 +328,7 @@ class TestStates:
         """Test the squeezed state is correct."""
         r = 0.432
         phi = 0.123
-        means, cov = squeezed_state(r, phi, hbar=hbar)
+        cov, means = squeezed_state(r, phi, hbar=hbar)
 
         # test vector of means is zero
         assert means == pytest.approx(np.zeros([2]), abs=tol)
@@ -340,7 +345,7 @@ class TestStates:
         phi_a = np.angle(alpha)
         r = 0.432
         phi_r = 0.123
-        means, cov = displaced_squeezed_state(a, phi_a, r, phi_r, hbar=hbar)
+        cov, means = displaced_squeezed_state(a, phi_a, r, phi_r, hbar=hbar)
 
         # test vector of means is correct
         assert means == pytest.approx(
@@ -355,7 +360,7 @@ class TestStates:
     def thermal_state(self, tol):
         """Test the thermal state is correct."""
         nbar = 0.5342
-        means, cov = thermal_state(nbar, hbar=hbar)
+        cov, means = thermal_state(nbar, hbar=hbar)
         assert means == pytest.approx(np.zeros([2]), abs=tol)
         assert np.all((cov.diag * 2 / hbar - 1) / 2 == nbar)
 
@@ -377,7 +382,8 @@ class TestDefaultGaussianDevice:
             "Kerr",
         }
 
-        assert set(qml.ops._cv__ops__) - non_supported == set(gaussian_dev._operation_map)
+        cv_ops = set(qml.ops._cv__ops__) | {"Identity"}  # we also support identity operation
+        assert cv_ops - non_supported == set(gaussian_dev._operation_map)
 
     def test_observable_map(self, gaussian_dev):
         """Test that default Gaussian device supports all PennyLane Gaussian continuous observables."""
@@ -385,79 +391,118 @@ class TestDefaultGaussianDevice:
             gaussian_dev._observable_map
         )
 
-    def test_apply(self, gaussian_dev, tol):
-        """Test the application of gates to a state"""
+    def test_apply_general(self, tol):
+        """Test the application of gates to a state, using gates that use the default logic in
+        the apply function."""
 
-        # loop through all supported operations
-        for gate_name, fn in gaussian_dev._operation_map.items():
-            # log.debug("\tTesting %s gate...", gate_name)
-            gaussian_dev.reset()
+        gaussian_dev = qml.device("default.gaussian", wires=1)
 
-            # start in the displaced squeezed state
-            alpha = 0.542 + 0.123j
-            a = abs(alpha)
-            phi_a = np.angle(alpha)
-            r = 0.652
-            phi_r = -0.124
+        def dummy_gate_fn():
+            # dummy implementation of a symplectic matrix
+            return np.array([[2, 0], [0, 3]])
 
-            gaussian_dev.apply("DisplacedSqueezedState", wires=Wires([0]), par=[a, phi_a, r, phi_r])
-            gaussian_dev.apply("DisplacedSqueezedState", wires=Wires([1]), par=[a, phi_a, r, phi_r])
+        # temporarily add the gate to the device using an arbitrary implementation
+        gaussian_dev._operation_map["DummyGate"] = dummy_gate_fn
 
-            # get the equivalent pennylane operation class
-            op = qml.ops.__getattribute__(gate_name)
-            # the list of wires to apply the operation to
-            w = list(range(op.num_wires))
+        gaussian_dev.apply("DummyGate", wires=qml.wires.Wires([0]), par=[])
 
-            if op.par_domain == "A":
-                # the parameter is an array
-                if gate_name == "GaussianState":
-                    cov = np.diag([0.5234] * 4)
-                    mu = np.array([0.432, 0.123, 0.342, 0.123])
-                    p = [cov, mu]
-                    w = list(range(2))
-                    expected_out = [mu, cov]
-                elif gate_name == "Interferometer":
-                    w = list(range(2))
-                    p = [U]
-                    S = fn(*p)
-                    expected_out = S @ gaussian_dev._state[0], S @ gaussian_dev._state[1] @ S.T
-            else:
-                # the parameter is a float
-                p = [0.432423, -0.12312, 0.324, 0.751][: op.num_params]
+        exp_cov = np.array([[4.0, 0.0], [0.0, 9.0]])
+        exp_mu = np.array([0.0, 0.0])
 
-                if gate_name == "Displacement":
-                    alpha = p[0] * np.exp(1j * p[1])
-                    state = gaussian_dev._state
-                    mu = state[0].copy()
-                    mu[w[0]] += alpha.real * np.sqrt(2 * hbar)
-                    mu[w[0] + 2] += alpha.imag * np.sqrt(2 * hbar)
-                    expected_out = mu, state[1]
-                elif "State" in gate_name:
-                    mu, cov = fn(*p, hbar=hbar)
-                    expected_out = gaussian_dev._state
-                    expected_out[0][[w[0], w[0] + 2]] = mu
+        # verify the device is now in the expected state
+        assert gaussian_dev._state[0] == pytest.approx(exp_cov, abs=tol)
+        assert gaussian_dev._state[1] == pytest.approx(exp_mu, abs=tol)
 
-                    ind = np.concatenate([np.array([w[0]]), np.array([w[0]]) + 2])
-                    rows = ind.reshape(-1, 1)
-                    cols = ind.reshape(1, -1)
-                    expected_out[1][rows, cols] = cov
-                else:
-                    # if the default.gaussian is an operation accepting parameters,
-                    # initialise it using the parameters generated above.
-                    S = fn(*p)
+    def test_apply_gaussianstate(self, tol):
+        """Test the application of the GaussianState gate to a state, since it
+        uses a forked logic in the apply function."""
 
-                    # calculate the expected output
-                    if op.num_wires == 1:
-                        # reorder from symmetric ordering to xp-ordering
-                        S = block_diag(S, np.identity(2))[:, [0, 2, 1, 3]][[0, 2, 1, 3]]
+        gaussian_dev = qml.device("default.gaussian", wires=2)
 
-                    expected_out = S @ gaussian_dev._state[0], S @ gaussian_dev._state[1] @ S.T
+        # start in the displaced squeezed state
+        alpha = 0.542 + 0.123j
+        a = abs(alpha)
+        phi_a = np.angle(alpha)
+        r = 0.652
+        phi_r = -0.124
+        gaussian_dev.apply("DisplacedSqueezedState", wires=Wires([0]), par=[a, phi_a, r, phi_r])
+        gaussian_dev.apply("DisplacedSqueezedState", wires=Wires([1]), par=[a, phi_a, r, phi_r])
 
-            gaussian_dev.apply(gate_name, wires=Wires(w), par=p)
+        cov = np.diag([0.5234] * 4)
+        mu = np.array([0.432, 0.123, 0.342, 0.123])
+        p = [cov, mu]
+        w = list(range(2))
+        expected_out = [cov, mu]
 
-            # verify the device is now in the expected state
-            assert gaussian_dev._state[0] == pytest.approx(expected_out[0], abs=tol)
-            assert gaussian_dev._state[1] == pytest.approx(expected_out[1], abs=tol)
+        gaussian_dev.apply("GaussianState", wires=Wires(w), par=p)
+
+        # verify the device is now in the expected state
+        assert gaussian_dev._state[0] == pytest.approx(expected_out[0], abs=tol)
+        assert gaussian_dev._state[1] == pytest.approx(expected_out[1], abs=tol)
+
+    def test_apply_squeezedstate(self, tol):
+        """Test the application of one of the state preparation gates, since they
+        use a forked logic in the apply function."""
+
+        gaussian_dev = qml.device("default.gaussian", wires=2)
+
+        # start in the displaced squeezed state
+        alpha = 0.542 + 0.123j
+        a = abs(alpha)
+        phi_a = np.angle(alpha)
+        r = 0.652
+        phi_r = -0.124
+
+        gaussian_dev.apply("DisplacedSqueezedState", wires=Wires([0]), par=[a, phi_a, r, phi_r])
+        gaussian_dev.apply("DisplacedSqueezedState", wires=Wires([1]), par=[a, phi_a, r, phi_r])
+
+        w = [0]
+        p = [0.432423, -0.12312]
+        fn = gaussian_dev._operation_map["SqueezedState"]
+        cov, mu = fn(*p, hbar=hbar)
+        expected_out = gaussian_dev._state
+        expected_out[1][[w[0], w[0] + 2]] = mu
+
+        ind = np.concatenate([np.array([w[0]]), np.array([w[0]]) + 2])
+        rows = ind.reshape(-1, 1)
+        cols = ind.reshape(1, -1)
+        expected_out[0][rows, cols] = cov
+
+        gaussian_dev.apply("SqueezedState", wires=Wires(w), par=p)
+
+        # verify the device is now in the expected state
+        assert gaussian_dev._state[0] == pytest.approx(expected_out[0], abs=tol)
+        assert gaussian_dev._state[1] == pytest.approx(expected_out[1], abs=tol)
+
+    def test_apply_displacement(self, tol):
+        """Test the application of the displacement gate to a state, since it
+        uses a forked logic in the apply function."""
+
+        gaussian_dev = qml.device("default.gaussian", wires=2)
+
+        # start in the displaced squeezed state
+        alpha = 0.542 + 0.123j
+        a = abs(alpha)
+        phi_a = np.angle(alpha)
+        r = 0.652
+        phi_r = -0.124
+        gaussian_dev.apply("DisplacedSqueezedState", wires=Wires([0]), par=[a, phi_a, r, phi_r])
+        gaussian_dev.apply("DisplacedSqueezedState", wires=Wires([1]), par=[a, phi_a, r, phi_r])
+
+        w = [0]
+        p = [0.432423, -0.12312]
+        alpha = p[0] * np.exp(1j * p[1])
+        state = gaussian_dev._state
+        mu = state[1].copy()
+        mu[w[0]] += alpha.real * np.sqrt(2 * hbar)
+        mu[w[0] + 2] += alpha.imag * np.sqrt(2 * hbar)
+        expected_out = state[0], mu
+
+        gaussian_dev.apply("Displacement", wires=Wires(w), par=p)
+
+        # verify the device is now in the expected state
+        assert gaussian_dev._state[0] == pytest.approx(expected_out[0], abs=tol)
+        assert gaussian_dev._state[1] == pytest.approx(expected_out[1], abs=tol)
 
     def test_apply_errors(self, gaussian_dev):
         """Test that apply fails for incorrect state preparation"""
@@ -468,12 +513,12 @@ class TestDefaultGaussianDevice:
 
         with pytest.raises(ValueError, match="Incorrect number of subsystems"):
             p = U
-            gaussian_dev.apply("Interferometer", wires=Wires([0]), par=[p])
+            gaussian_dev.apply("InterferometerUnitary", wires=Wires([0]), par=[p])
 
         with pytest.raises(qml.wires.WireError, match="Did not find some of the wires"):
             p = U2
             # dev = DefaultGaussian(wires=4, shots=1000, hbar=hbar)
-            gaussian_dev.apply("Interferometer", wires=Wires([0, 1, 2]), par=[p])
+            gaussian_dev.apply("InterferometerUnitary", wires=Wires([0, 1, 2]), par=[p])
 
     def test_expectation(self, tol):
         """Test that expectation values are calculated correctly"""
@@ -502,7 +547,7 @@ class TestDefaultGaussianDevice:
         # on a coherent state
         for n in range(3):
             mean = dev.expval("FockStateProjector", Wires([0]), [np.array([n])])
-            expected = np.abs(np.exp(-np.abs(alpha) ** 2 / 2) * alpha ** n / np.sqrt(fac(n))) ** 2
+            expected = np.abs(np.exp(-np.abs(alpha) ** 2 / 2) * alpha**n / np.sqrt(fac(n))) ** 2
             assert mean == pytest.approx(expected, abs=tol)
 
         # test correct mean for number state expectation |<n|S(r)>|^2
@@ -513,7 +558,7 @@ class TestDefaultGaussianDevice:
         mean = dev.expval("FockStateProjector", Wires([0]), [np.array([2 * n])])
         expected = (
             np.abs(
-                np.sqrt(fac(2 * n)) / (2 ** n * fac(n)) * (-np.tanh(r)) ** n / np.sqrt(np.cosh(r))
+                np.sqrt(fac(2 * n)) / (2**n * fac(n)) * (-np.tanh(r)) ** n / np.sqrt(np.cosh(r))
             )
             ** 2
         )
@@ -528,7 +573,7 @@ class TestDefaultGaussianDevice:
         dev.apply("ThermalState", wires=Wires([0]), par=[nbar])
         dev.apply("Displacement", wires=Wires([0]), par=[alpha, 0])
         var = dev.var("NumberOperator", Wires([0]), [])
-        assert var == pytest.approx(nbar ** 2 + nbar + np.abs(alpha) ** 2 * (1 + 2 * nbar), abs=tol)
+        assert var == pytest.approx(nbar**2 + nbar + np.abs(alpha) ** 2 * (1 + 2 * nbar), abs=tol)
 
     def test_variance_coherent_homodyne(self, tol):
         """test correct variance for Homodyne P measurement"""
@@ -555,7 +600,7 @@ class TestDefaultGaussianDevice:
 
         for n in range(3):
             var = dev.var("FockStateProjector", Wires([0]), [np.array([n])])
-            mean = np.abs(np.exp(-np.abs(alpha) ** 2 / 2) * alpha ** n / np.sqrt(fac(n))) ** 2
+            mean = np.abs(np.exp(-np.abs(alpha) ** 2 / 2) * alpha**n / np.sqrt(fac(n))) ** 2
             assert var == pytest.approx(mean * (1 - mean), abs=tol)
 
     def test_variance_squeezed_numberstate(self, tol):
@@ -570,7 +615,7 @@ class TestDefaultGaussianDevice:
         var = dev.var("FockStateProjector", Wires([0]), [np.array([2 * n])])
         mean = (
             np.abs(
-                np.sqrt(fac(2 * n)) / (2 ** n * fac(n)) * (-np.tanh(r)) ** n / np.sqrt(np.cosh(r))
+                np.sqrt(fac(2 * n)) / (2**n * fac(n)) * (-np.tanh(r)) ** n / np.sqrt(np.cosh(r))
             )
             ** 2
         )
@@ -667,7 +712,9 @@ class TestSample:
         with pytest.raises(ValueError, match="Only one mode can be measured in homodyne"):
             sample = gaussian_device_2_wires.sample("P", [0, 1], [])
 
-    @pytest.mark.parametrize("observable", set(qml.ops.cv.obs) - set(["P", "X", "QuadOperator"]))
+    @pytest.mark.parametrize(
+        "observable", sorted(set(qml.ops.cv.obs) - set(["P", "X", "QuadOperator"]))
+    )
     def test_sample_error_unsupported_observable(self, gaussian_device_2_wires, observable):
         """Test that the sample function raises an error if the given observable is not supported"""
 
@@ -689,8 +736,8 @@ class TestDefaultGaussianIntegration:
             "supports_finite_shots": True,
             "returns_probs": False,
             "returns_state": False,
-            "supports_reversible_diff": False,
             "supports_analytic_computation": True,
+            "supports_broadcasting": False,
         }
         assert cap == capabilities
 
@@ -737,10 +784,42 @@ class TestDefaultGaussianIntegration:
 
         assert circuit(p) == pytest.approx(1, abs=tol)
 
+    def test_vacuum_x_squared_variance(self, tol):
+        """Test that variance of X^2 is correct for the vacuum
+
+        The expected analytic expression of hbar^2/ 2 follows as:
+
+        Var[X^2] = E[X^4] - E[X^2]
+
+        We assume that we've prepared the vaccuum state.
+
+        X = sqrt(hbar/2) * (a + a_{dagger}), where a and a_{dagger} are the
+        ladder operators.
+
+        Var[X^2] = <0|(sqrt(hbar/2) * (a + a_{dagger}))^ 4|0> -
+        (<0|(sqrt(hbar/2) * (a + a_{dagger})) ^ 2|0>) ^ 2
+
+        Let's label the two terms with (1) and (2).
+
+        In (1), only (a*a*a_{dagger}*a_{dagger} + a*a_{dagger}*a*a_{dagger}),
+        in (2), only (a*a_{dagger}) contributes (normalization excluded). The
+        rest of the terms are zero.
+
+        The a*a_{dagger}=Id+a_{dagger}*a equation is also used to yield
+        Var[X^2] = hbar^2/2.
+        """
+        dev = qml.device("default.gaussian", wires=1)
+
+        @qml.qnode(dev)
+        def circuit():
+            return qml.var(qml.PolyXP(np.diag([0, 1, 0]), wires=0))
+
+        assert circuit() == pytest.approx(dev.hbar**2 / 2)
+
     def test_nonzero_shots(self, tol_stochastic):
         """Test that the default gaussian plugin provides correct result for high shot number"""
 
-        shots = 10 ** 4
+        shots = 10**4
         dev = qml.device("default.gaussian", wires=1, shots=shots)
 
         p = 0.543
@@ -757,56 +836,21 @@ class TestDefaultGaussianIntegration:
 
         assert np.mean(runs) == pytest.approx(p * np.sqrt(2 * hbar), abs=tol_stochastic)
 
-    @pytest.mark.parametrize("g, qop", set(DefaultGaussian._operation_map.items()))
-    def test_supported_gates(self, g, qop, gaussian_dev):
-        """Test that all supported gates work correctly"""
-        a = 0.312
-        dev = gaussian_dev
-        dev.reset()
+    def test_shot_list_warns(self):
+        """Test that specifying a list of shots is unsupported for
+        default.gaussian and emits a warning"""
 
-        assert dev.supports_operation(g)
+        shots = [10, 10, 10]
+        dev = qml.device("default.gaussian", wires=1, shots=shots)
 
-        op = getattr(qml.ops, g)
-        if op.num_wires <= 0:
-            wires = list(range(2))
-        else:
-            wires = list(range(op.num_wires))
+        @qml.qnode(dev)
+        def circuit():
+            """Test quantum function"""
+            return qml.sample(qml.X(0))
 
-        @qml.qnode(gaussian_dev)
-        def circuit(*x):
-            """Reference quantum function"""
-            if "State" not in g:
-                qml.Displacement(a, 0, wires=[0])
-            op(*x, wires=wires)
-            return qml.expval(qml.X(0))
-
-        # compare to reference result
-        def reference(*x):
-            """reference circuit"""
-            if g == "GaussianState":
-                return x[1][0]
-
-            if g == "Displacement":
-                alpha = x[0] * np.exp(1j * x[1])
-                return (alpha + a).real * np.sqrt(2 * hbar)
-
-            if "State" in g:
-                mu, _ = qop(*x, hbar=hbar)
-                return mu[0]
-
-            S = qop(*x)
-
-            # calculate the expected output
-            if op.num_wires == 1:
-                S = block_diag(S, np.identity(2))[:, [0, 2, 1, 3]][[0, 2, 1, 3]]
-
-            return (S @ np.array([a.real, a.imag, 0, 0]) * np.sqrt(2 * hbar))[0]
-
-        if g == "GaussianState":
-            p = [np.diag([0.5234] * 4), np.array([0.432, 0.123, 0.342, 0.123])]
-        elif g == "Interferometer":
-            p = [U]
-        else:
-            p = [0.432423, -0.12312, 0.324, 0.763][: op.num_params]
-
-        assert circuit(*p) == reference(*p)
+        with pytest.warns(
+            UserWarning,
+            match="Specifying a list of shots is only supported for QubitDevice based devices.",
+        ):
+            circuit()
+        assert dev.shots == sum(shots)

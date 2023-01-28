@@ -1,12 +1,15 @@
-fixes:
-  - "pennylane_qchem/::qchem/pennylane_qchem/"
-
 ignore:
   - "pennylane/devices/tests/*"
 
 codecov:
   notify:
-    after_n_builds: 9
+    after_n_builds: 1
 
 comment:
-  after_n_builds: 9
+  after_n_builds: 1
+coverage:
+
+  status:
+    project:
+      default:
+        threshold: 0.02%

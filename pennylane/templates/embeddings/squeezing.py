@@ -36,7 +36,7 @@ class SqueezingEmbedding(Operation):
 
     Args:
         features (tensor_like): tensor of features
-        wires (Iterable): wires that the template acts on
+        wires (Any or Iterable[Any]): wires that the template acts on
         method (str): ``'phase'`` encodes the input into the phase of single-mode squeezing, while
             ``'amplitude'`` uses the amplitude
         c (float): value of the phase of all squeezing gates if ``execution='amplitude'``, or the
@@ -44,13 +44,65 @@ class SqueezingEmbedding(Operation):
 
     Raises:
         ValueError: if inputs do not have the correct format
+
+    Example:
+
+        Depending on the ``method`` argument, the feature vector will be encoded in the phase or the amplitude.
+        The argument ``c`` will define the value of the other quantity.
+        The default values are :math:`0.1` for ``c`` and ``'amplitude'`` for ``method``.
+
+        .. code-block:: python
+
+            dev = qml.device('default.gaussian', wires=3)
+
+            @qml.qnode(dev)
+            def circuit(feature_vector):
+                qml.SqueezingEmbedding(features=feature_vector, wires=range(3))
+                qml.QuadraticPhase(0.1, wires=1)
+                return qml.expval(qml.NumberOperator(wires=1))
+
+            X = [1, 2, 3]
+
+        >>> print(circuit(X))
+            13.018280763205285
+
+        And, the resulting circuit is:
+
+        >>> print(qml.draw(circuit)(X))
+        0: ─╭SqueezingEmbedding(M0)──────────┤
+        1: ─├SqueezingEmbedding(M0)──P(0.10)─┤  <n>
+        2: ─╰SqueezingEmbedding(M0)──────────┤
+
+        Using different parameters:
+
+        .. code-block:: python
+
+            dev = qml.device('default.gaussian', wires=3)
+
+            @qml.qnode(dev)
+            def circuit(feature_vector):
+                qml.SqueezingEmbedding(features=feature_vector, wires=range(3), method='phase', c=0.5)
+                qml.QuadraticPhase(0.1, wires=1)
+                return qml.expval(qml.NumberOperator(wires=1))
+
+            X = [1, 2, 3]
+
+        >>> print(circuit(X))
+            0.22319028857312428
+
+        And, the resulting circuit is:
+
+        >>> print(qml.draw(circuit)(X))
+        0: ─╭SqueezingEmbedding(M0)──────────┤
+        1: ─├SqueezingEmbedding(M0)──P(0.10)─┤  <n>
+        2: ─╰SqueezingEmbedding(M0)──────────┤
+
     """
 
-    num_params = 1
     num_wires = AnyWires
-    par_domain = "A"
+    grad_method = None
 
-    def __init__(self, features, wires, method="amplitude", c=0.1, do_queue=True):
+    def __init__(self, features, wires, method="amplitude", c=0.1, do_queue=True, id=None):
 
         shape = qml.math.shape(features)
         constants = [c] * shape[0]
@@ -72,15 +124,36 @@ class SqueezingEmbedding(Operation):
         else:
             raise ValueError(f"did not recognize method {method}")
 
-        super().__init__(pars, wires=wires, do_queue=do_queue)
+        super().__init__(pars, wires=wires, do_queue=do_queue, id=id)
 
-    def expand(self):
+    @property
+    def num_params(self):
+        return 1
 
-        pars = self.parameters[0]
+    @staticmethod
+    def compute_decomposition(pars, wires):  # pylint: disable=arguments-differ
+        r"""Representation of the operator as a product of other operators.
 
-        with qml.tape.QuantumTape() as tape:
+        .. math:: O = O_1 O_2 \dots O_n.
 
-            for i in range(len(self.wires)):
-                qml.Squeezing(pars[i, 0], pars[i, 1], wires=self.wires[i : i + 1])
 
-        return tape
+
+        .. seealso:: :meth:`~.SqueezingEmbedding.decomposition`.
+
+        Args:
+            pars (tensor_like): parameters extracted from features and constant
+            wires (Any or Iterable[Any]): wires that the operator acts on
+
+        Returns:
+            list[.Operator]: decomposition of the operator
+
+        **Example**
+
+        >>> pars = torch.tensor([[1., 0.], [2., 0.]])
+        >>> qml.SqueezingEmbedding.compute_decomposition(pars, wires=["a", "b"])
+        [Squeezing(tensor(1.), tensor(0.), wires=['a']),
+        Squeezing(tensor(2.), tensor(0.), wires=['b'])]
+        """
+        return [
+            qml.Squeezing(pars[i, 0], pars[i, 1], wires=wires[i : i + 1]) for i in range(len(wires))
+        ]

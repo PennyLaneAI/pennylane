@@ -14,40 +14,29 @@
 """This module contains a TensorFlow implementation of the :class:`~.DefaultQubit`
 reference plugin.
 """
+import itertools
 import numpy as np
 import semantic_version
 
-from pennylane.operation import DiagonalOperation
+import pennylane as qml
 
 try:
     import tensorflow as tf
 
-    if tf.__version__[0] == "1":
+    if tf.__version__[0] == "1":  # pragma: no cover
         raise ImportError("default.qubit.tf device requires TensorFlow>=2.0")
 
     from tensorflow.python.framework.errors_impl import InvalidArgumentError
 
     SUPPORTS_APPLY_OPS = semantic_version.match(">=2.3.0", tf.__version__)
 
-except ImportError as e:
+except ImportError as e:  # pragma: no cover
     raise ImportError("default.qubit.tf device requires TensorFlow>=2.0") from e
 
 
-# With TF 2.1+, the legacy tf.einsum was renamed to _einsum_v1, while
-# the replacement tf.einsum introduced the bug. This try-except block
-# will dynamically patch TensorFlow versions where _einsum_v1 exists, to make it the
-# default einsum implementation.
-#
-# For more details, see https://github.com/tensorflow/tensorflow/issues/37307
-try:
-    from tensorflow.python.ops.special_math_ops import _einsum_v1
-
-    tf.einsum = _einsum_v1
-except ImportError:
-    pass
-
+from pennylane.math.single_dispatch import _ndim_tf
 from . import DefaultQubit
-from . import tf_ops
+from .default_qubit import tolerance
 
 
 class DefaultQubitTF(DefaultQubit):
@@ -103,9 +92,10 @@ class DefaultQubitTF(DefaultQubit):
     * You must use the ``"tf"`` interface for classical backpropagation, as TensorFlow is
       used as the device backend.
 
-    * Only exact expectation values, variances, and probabilities are differentiable.
-      When instantiating the device with ``analytic=False``, differentiating QNode
-      outputs will result in ``None``.
+    * Only exact expectation values, variances, and probabilities are
+      differentiable. Creation of a backpropagation QNode with finite shots
+      raises an error. If you do try and take a derivative with finite shots on
+      this device, the gradient will be ``None``.
 
 
     If you wish to use a different machine-learning interface, or prefer to calculate quantum
@@ -128,31 +118,6 @@ class DefaultQubitTF(DefaultQubit):
     name = "Default qubit (TensorFlow) PennyLane plugin"
     short_name = "default.qubit.tf"
 
-    parametric_ops = {
-        "PhaseShift": tf_ops.PhaseShift,
-        "ControlledPhaseShift": tf_ops.ControlledPhaseShift,
-        "CPhase": tf_ops.ControlledPhaseShift,
-        "RX": tf_ops.RX,
-        "RY": tf_ops.RY,
-        "RZ": tf_ops.RZ,
-        "Rot": tf_ops.Rot,
-        "MultiRZ": tf_ops.MultiRZ,
-        "CRX": tf_ops.CRX,
-        "CRY": tf_ops.CRY,
-        "CRZ": tf_ops.CRZ,
-        "CRot": tf_ops.CRot,
-        "IsingXX": tf_ops.IsingXX,
-        "IsingZZ": tf_ops.IsingZZ,
-        "SingleExcitation": tf_ops.SingleExcitation,
-        "SingleExcitationPlus": tf_ops.SingleExcitationPlus,
-        "SingleExcitationMinus": tf_ops.SingleExcitationMinus,
-        "DoubleExcitation": tf_ops.DoubleExcitation,
-        "DoubleExcitationPlus": tf_ops.DoubleExcitationPlus,
-        "DoubleExcitationMinus": tf_ops.DoubleExcitationMinus,
-    }
-
-    C_DTYPE = tf.complex128
-    R_DTYPE = tf.float64
     _asarray = staticmethod(tf.convert_to_tensor)
     _dot = staticmethod(lambda x, y: tf.tensordot(x, y, axes=1))
     _abs = staticmethod(tf.abs)
@@ -165,24 +130,40 @@ class DefaultQubitTF(DefaultQubit):
     _transpose = staticmethod(tf.transpose)
     _tensordot = staticmethod(tf.tensordot)
     _conj = staticmethod(tf.math.conj)
+    _real = staticmethod(tf.math.real)
     _imag = staticmethod(tf.math.imag)
     _roll = staticmethod(tf.roll)
     _stack = staticmethod(tf.stack)
+    _size = staticmethod(tf.size)
+    _ndim = staticmethod(_ndim_tf)
+
+    @staticmethod
+    def _const_mul(constant, array):
+        return constant * array
 
     @staticmethod
     def _asarray(array, dtype=None):
+        if isinstance(array, tf.Tensor):
+            if dtype is None or dtype == array.dtype:
+                return array
+            return tf.cast(array, dtype)
+
         try:
-            res = tf.convert_to_tensor(array, dtype=dtype)
+            res = tf.convert_to_tensor(array, dtype)
         except InvalidArgumentError:
-            res = tf.concat([tf.reshape(i, [-1]) for i in array], axis=0)
+            axis = 0
+            res = tf.concat([tf.reshape(i, [-1]) for i in array], axis)
 
             if dtype is not None:
-                res = tf.cast(res, dtype=dtype)
+                res = tf.cast(res, dtype)
 
         return res
 
     def __init__(self, wires, *, shots=None, analytic=None):
-        super().__init__(wires, shots=shots, cache=0, analytic=analytic)
+        r_dtype = tf.float64
+        c_dtype = tf.complex128
+
+        super().__init__(wires, shots=shots, r_dtype=r_dtype, c_dtype=c_dtype, analytic=analytic)
 
         # prevent using special apply method for this gate due to slowdown in TF implementation
         del self._apply_ops["CZ"]
@@ -197,10 +178,7 @@ class DefaultQubitTF(DefaultQubit):
     @classmethod
     def capabilities(cls):
         capabilities = super().capabilities().copy()
-        capabilities.update(
-            passthru_interface="tf",
-            supports_reversible_diff=False,
-        )
+        capabilities.update(passthru_interface="tf")
         return capabilities
 
     @staticmethod
@@ -208,33 +186,76 @@ class DefaultQubitTF(DefaultQubit):
         indices = np.expand_dims(indices, 1)
         return tf.scatter_nd(indices, array, new_dimensions)
 
-    def _get_unitary_matrix(self, unitary):
-        """Return the matrix representing a unitary operation.
+    def _get_batch_size(self, tensor, expected_shape, expected_size):
+        """Determine whether a tensor has an additional batch dimension for broadcasting,
+        compared to an expected_shape. Differs from QubitDevice implementation by the
+        exception made for abstract tensors."""
+        try:
+            size = self._size(tensor)
+            ndim = qml.math.ndim(tensor)
+            if ndim > len(expected_shape) or size > expected_size:
+                return size // expected_size
+
+        except (ValueError, tf.errors.OperatorNotAllowedInGraphError) as err:
+            # This except clause covers the usage of tf.function, which is not compatible
+            # with `DefaultQubit._get_batch_size`
+            if not qml.math.is_abstract(tensor):
+                raise err
+
+        return None
+
+    def _apply_state_vector(self, state, device_wires):
+        """Initialize the internal state vector in a specified state.
 
         Args:
-            unitary (~.Operation): a PennyLane unitary operation
+            state (array[complex]): normalized input state of length ``2**len(wires)``
+                or broadcasted state of shape ``(batch_size, 2**len(wires))``
+            device_wires (Wires): wires that get initialized in the state
 
-        Returns:
-            tf.Tensor[complex] or array[complex]: Returns a 2D matrix representation of
-            the unitary in the computational basis, or, in the case of a diagonal unitary,
-            a 1D array representing the matrix diagonal. For non-parametric unitaries,
-            the return type will be a ``np.ndarray``. For parametric unitaries, a ``tf.Tensor``
-            object will be returned.
+        This implementation only adds a check for parameter broadcasting when initializing
+        a quantum state on subsystems of the device.
         """
-        op_name = unitary.name.split(".inv")[0]
 
-        if op_name in self.parametric_ops:
-            if op_name == "MultiRZ":
-                mat = self.parametric_ops[op_name](*unitary.parameters, len(unitary.wires))
-            else:
-                mat = self.parametric_ops[op_name](*unitary.parameters)
+        # translate to wire labels used by device
+        device_wires = self.map_wires(device_wires)
+        dim = 2 ** len(device_wires)
 
-            if unitary.inverse:
-                mat = self._transpose(self._conj(mat))
+        state = self._asarray(state, dtype=self.C_DTYPE)
+        batch_size = self._get_batch_size(state, (dim,), dim)
+        output_shape = [2] * self.num_wires
+        if batch_size:
+            output_shape.insert(0, batch_size)
 
-            return mat
+        if not (state.shape in [(dim,), (batch_size, dim)]):
+            raise ValueError("State vector must have shape (2**wires,) or (batch_size, 2**wires).")
 
-        if isinstance(unitary, DiagonalOperation):
-            return unitary.eigvals
+        if not qml.math.is_abstract(state):
+            norm = qml.math.linalg.norm(state, axis=-1, ord=2)
+            if not qml.math.allclose(norm, 1.0, atol=tolerance):
+                raise ValueError("Sum of amplitudes-squared does not equal one.")
 
-        return unitary.matrix
+        if len(device_wires) == self.num_wires and sorted(device_wires) == device_wires:
+            # Initialize the entire device state with the input state
+            self._state = self._reshape(state, output_shape)
+            return
+
+        # generate basis states on subset of qubits via the cartesian product
+        basis_states = np.array(list(itertools.product([0, 1], repeat=len(device_wires))))
+
+        # get basis states to alter on full set of qubits
+        unravelled_indices = np.zeros((2 ** len(device_wires), self.num_wires), dtype=int)
+        unravelled_indices[:, device_wires] = basis_states
+
+        # get indices for which the state is changed to input state vector elements
+        ravelled_indices = np.ravel_multi_index(unravelled_indices.T, [2] * self.num_wires)
+
+        if batch_size:
+            # This is the only logical branch that differs from DefaultQubit
+            raise NotImplementedError(
+                "Parameter broadcasting is not supported together with initializing the state "
+                "vector of a subsystem of the device when using DefaultQubitTF."
+            )
+        # The following line is unchanged in the "else"-clause in DefaultQubit's implementation
+        state = self._scatter(ravelled_indices, state, [2**self.num_wires])
+        state = self._reshape(state, output_shape)
+        self._state = self._asarray(state, dtype=self.C_DTYPE)

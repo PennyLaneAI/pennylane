@@ -14,18 +14,15 @@
 """This module contains an jax implementation of the :class:`~.DefaultQubit`
 reference plugin.
 """
-
-import warnings
-
-from pennylane.operation import DiagonalOperation
-from pennylane.devices import DefaultQubit
-from pennylane.devices import jax_ops
-
 import numpy as np
+
+import pennylane as qml
+from pennylane.devices import DefaultQubit
 
 try:
     import jax.numpy as jnp
     import jax
+    from jax.config import config as jax_config
 
 except ImportError as e:  # pragma: no cover
     raise ImportError("default.qubit.jax device requires installing jax>0.2.0") from e
@@ -73,7 +70,8 @@ class DefaultQubitJax(DefaultQubit):
     * You must use the ``"jax"`` interface for classical backpropagation, as JAX is
       used as the device backend.
 
-    .. UsageDetails::
+    .. details::
+        :title: Usage Details
 
         JAX does randomness in a special way when compared to NumPy, in that all randomness needs to
         be seeded. While we handle this for you automatically in op-by-op mode, when using ``jax.jit``,
@@ -134,38 +132,12 @@ class DefaultQubitJax(DefaultQubit):
     name = "Default qubit (jax) PennyLane plugin"
     short_name = "default.qubit.jax"
 
-    parametric_ops = {
-        "PhaseShift": jax_ops.PhaseShift,
-        "ControlledPhaseShift": jax_ops.ControlledPhaseShift,
-        "CPhase": jax_ops.ControlledPhaseShift,
-        "RX": jax_ops.RX,
-        "RY": jax_ops.RY,
-        "RZ": jax_ops.RZ,
-        "Rot": jax_ops.Rot,
-        "CRX": jax_ops.CRX,
-        "CRY": jax_ops.CRY,
-        "CRZ": jax_ops.CRZ,
-        "CRot": jax_ops.CRot,
-        "MultiRZ": jax_ops.MultiRZ,
-        "IsingXX": jax_ops.IsingXX,
-        "IsingZZ": jax_ops.IsingZZ,
-        "SingleExcitation": jax_ops.SingleExcitation,
-        "SingleExcitationPlus": jax_ops.SingleExcitationPlus,
-        "SingleExcitationMinus": jax_ops.SingleExcitationMinus,
-        "DoubleExcitation": jax_ops.DoubleExcitation,
-        "DoubleExcitationPlus": jax_ops.DoubleExcitationPlus,
-        "DoubleExcitationMinus": jax_ops.DoubleExcitationMinus,
-    }
-
-    C_DTYPE = jnp.complex64
-    R_DTYPE = jnp.float32
     _asarray = staticmethod(jnp.array)
     _dot = staticmethod(jnp.dot)
     _abs = staticmethod(jnp.abs)
     _reduce_sum = staticmethod(lambda array, axes: jnp.sum(array, axis=tuple(axes)))
     _reshape = staticmethod(jnp.reshape)
     _flatten = staticmethod(lambda array: array.ravel())
-    _gather = staticmethod(lambda array, indices: array[indices])
     _einsum = staticmethod(jnp.einsum)
     _cast = staticmethod(jnp.array)
     _transpose = staticmethod(jnp.transpose)
@@ -175,12 +147,22 @@ class DefaultQubitJax(DefaultQubit):
         )
     )
     _conj = staticmethod(jnp.conj)
+    _real = staticmethod(jnp.real)
     _imag = staticmethod(jnp.imag)
     _roll = staticmethod(jnp.roll)
     _stack = staticmethod(jnp.stack)
+    _const_mul = staticmethod(jnp.multiply)
+    _size = staticmethod(jnp.size)
+    _ndim = staticmethod(jnp.ndim)
 
     def __init__(self, wires, *, shots=None, prng_key=None, analytic=None):
-        super().__init__(wires, shots=shots, cache=0, analytic=analytic)
+        if jax_config.read("jax_enable_x64"):
+            c_dtype = jnp.complex128
+            r_dtype = jnp.float64
+        else:
+            c_dtype = jnp.complex64
+            r_dtype = jnp.float32
+        super().__init__(wires, r_dtype=r_dtype, c_dtype=c_dtype, shots=shots, analytic=analytic)
 
         # prevent using special apply methods for these gates due to slowdown in jax
         # implementation
@@ -192,10 +174,7 @@ class DefaultQubitJax(DefaultQubit):
     @classmethod
     def capabilities(cls):
         capabilities = super().capabilities().copy()
-        capabilities.update(
-            passthru_interface="jax",
-            supports_reversible_diff=False,
-        )
+        capabilities.update(passthru_interface="jax")
         return capabilities
 
     @staticmethod
@@ -203,35 +182,6 @@ class DefaultQubitJax(DefaultQubit):
         new_array = jnp.zeros(new_dimensions, dtype=array.dtype.type)
         new_array = new_array.at[indices].set(array)
         return new_array
-
-    def _get_unitary_matrix(self, unitary):
-        """Return the matrix representing a unitary operation.
-
-        Args:
-            unitary (~.Operation): a PennyLane unitary operation
-
-        Returns:
-            array[complex]: Returns a 2D matrix representation of
-            the unitary in the computational basis, or, in the case of a diagonal unitary,
-            a 1D array representing the matrix diagonal.
-        """
-        op_name = unitary.name.split(".inv")[0]
-
-        if op_name in self.parametric_ops:
-            if op_name == "MultiRZ":
-                mat = self.parametric_ops[op_name](*unitary.parameters, len(unitary.wires))
-            else:
-                mat = self.parametric_ops[op_name](*unitary.parameters)
-
-            if unitary.inverse:
-                mat = self._transpose(self._conj(mat))
-
-            return mat
-
-        if isinstance(unitary, DiagonalOperation):
-            return unitary.eigvals
-
-        return unitary.matrix
 
     def sample_basis_states(self, number_of_states, state_probability):
         """Sample from the computational basis states based on the state
@@ -246,21 +196,31 @@ class DefaultQubitJax(DefaultQubit):
             List[int]: the sampled basis states
         """
         if self.shots is None:
-            warnings.warn(
-                "The number of shots has to be explicitly set on the jax device "
-                "when using sample-based measurements. Since no shots are specified, "
-                "a default of 1000 shots is used.\n"
-                "This warning will be replaced with an error in a future release.",
-                UserWarning,
+
+            raise qml.QuantumFunctionError(
+                "The number of shots has to be explicitly set on the device "
+                "when using sample-based measurements."
             )
 
-        shots = self.shots or 1000
+        shots = self.shots
 
         if self._prng_key is None:
             # Assuming op-by-op, so we'll just make one.
-            key = jax.random.PRNGKey(np.random.randint(0, 2 ** 31))
+            key = jax.random.PRNGKey(np.random.randint(0, 2**31))
         else:
             key = self._prng_key
+        if jnp.ndim(state_probability) == 2:
+            # Produce separate keys for each of the probabilities along the broadcasted axis
+            keys = []
+            for _ in state_probability:
+                key, subkey = jax.random.split(key)
+                keys.append(subkey)
+            return jnp.array(
+                [
+                    jax.random.choice(_key, number_of_states, shape=(shots,), p=prob)
+                    for _key, prob in zip(keys, state_probability)
+                ]
+            )
         return jax.random.choice(key, number_of_states, shape=(shots,), p=state_probability)
 
     @staticmethod
@@ -280,5 +240,60 @@ class DefaultQubitJax(DefaultQubit):
             List[int]: basis states in binary representation
         """
         powers_of_two = 1 << jnp.arange(num_wires, dtype=dtype)
-        states_sampled_base_ten = samples[:, None] & powers_of_two
-        return (states_sampled_base_ten > 0).astype(dtype)[:, ::-1]
+        states_sampled_base_ten = samples[..., None] & powers_of_two
+        return (states_sampled_base_ten > 0).astype(dtype)[..., ::-1]
+
+    @staticmethod
+    def _count_unbinned_samples(indices, batch_size, dim):
+        """Count the occurences of sampled indices and convert them to relative
+        counts in order to estimate their occurence probability."""
+
+        shape = (dim + 1,) if batch_size is None else (batch_size, dim + 1)
+        prob = qml.math.convert_like(jnp.zeros(shape, dtype=jnp.float64), indices)
+        if batch_size is None:
+            basis_states, counts = jnp.unique(indices, return_counts=True, size=dim, fill_value=-1)
+            for state, count in zip(basis_states, counts):
+                prob = prob.at[state].set(count / len(indices))
+            # resize prob which discards the 'filled values'
+            return prob[:-1]
+
+        for i, idx in enumerate(indices):
+            basis_states, counts = jnp.unique(idx, return_counts=True, size=dim, fill_value=-1)
+            for state, count in zip(basis_states, counts):
+                prob = prob.at[i, state].set(count / len(idx))
+
+        # resize prob which discards the 'filled values'
+        return prob[:, :-1]
+
+    @staticmethod
+    def _count_binned_samples(indices, batch_size, dim, bin_size, num_bins):
+        """Count the occurences of bins of sampled indices and convert them to relative
+        counts in order to estimate their occurence probability per bin."""
+
+        # extend the probability vectors to store 'filled values'
+        shape = (dim + 1, num_bins) if batch_size is None else (batch_size, dim + 1, num_bins)
+        prob = qml.math.convert_like(jnp.zeros(shape, dtype=jnp.float64), indices)
+        if batch_size is None:
+            indices = indices.reshape((num_bins, bin_size))
+
+            # count the basis state occurrences, and construct the probability vector for each bin
+            for b, idx in enumerate(indices):
+                idx = qml.math.convert_like(idx, indices)
+                basis_states, counts = jnp.unique(idx, return_counts=True, size=dim, fill_value=-1)
+                for state, count in zip(basis_states, counts):
+                    prob = prob.at[state, b].set(count / bin_size)
+
+            # resize prob which discards the 'filled values'
+            return prob[:-1]
+
+        indices = indices.reshape((batch_size, num_bins, bin_size))
+        # count the basis state occurrences, and construct the probability vector
+        # for each bin and broadcasting index
+        for i, _indices in enumerate(indices):  # First iterate over broadcasting dimension
+            for b, idx in enumerate(_indices):  # Then iterate over bins dimension
+                idx = qml.math.convert_like(idx, indices)
+                basis_states, counts = jnp.unique(idx, return_counts=True, size=dim, fill_value=-1)
+                for state, count in zip(basis_states, counts):
+                    prob = prob.at[i, state, b].set(count / bin_size)
+        # resize prob which discards the 'filled values'
+        return prob[:, :-1]

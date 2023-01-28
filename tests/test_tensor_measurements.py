@@ -109,6 +109,7 @@ class TestTensorExpval:
 
         assert np.allclose(res, expected, **tolerance)
 
+    @pytest.mark.autograd
     def test_paulix_tensor_pauliy_gradient(self, shots, theta, phi, varphi, tolerance):
         """Test that a tensor product involving PauliX and PauliY works correctly"""
         dev = qml.device("default.qubit", wires=3, shots=shots)
@@ -384,9 +385,9 @@ class TestTensorSample:
         s1 = circuit(theta, phi, varphi)
 
         # s1 should only contain 1 and -1
-        assert np.allclose(s1 ** 2, 1, atol=tol_stochastic, rtol=0)
+        assert np.allclose(s1**2, 1, atol=tol_stochastic, rtol=0)
 
-        zero_state = np.zeros(2 ** 3)
+        zero_state = np.zeros(2**3)
         zero_state[0] = 1
         psi = zero_state
         psi = tensor_product([Rotx(theta), I, I]) @ zero_state
@@ -416,7 +417,7 @@ class TestTensorSample:
 
         s1 = circuit(theta, phi, varphi)
 
-        zero_state = np.zeros(2 ** 3)
+        zero_state = np.zeros(2**3)
         zero_state[0] = 1
         psi = zero_state
         psi = tensor_product([Rotx(theta), I, I]) @ zero_state
@@ -436,7 +437,7 @@ class TestTensorSample:
         assert np.allclose(dev.probability(), expected_probabilities, atol=tol_stochastic, rtol=0)
 
         # s1 should only contain 1 and -1
-        assert np.allclose(s1 ** 2, 1, atol=tol_stochastic, rtol=0)
+        assert np.allclose(s1**2, 1, atol=tol_stochastic, rtol=0)
 
     def test_tensor_hermitian(self, theta, phi, varphi, tol_stochastic):
         """Test that a tensor product involving qml.Hermitian works correctly"""
@@ -451,7 +452,7 @@ class TestTensorSample:
             ]
         )
 
-        @qml.qnode(dev, diff_method="parameter-shift")
+        @qml.qnode(dev, diff_method=None)
         def circuit(a, b, c):
             ansatz(a, b, c)
             return sample(qml.PauliZ(0) @ qml.Hermitian(A, [1, 2]))
@@ -464,7 +465,7 @@ class TestTensorSample:
         eigvals = np.linalg.eigvalsh(np.kron(Z, A))
         assert set(np.round(s1, 8)).issubset(set(np.round(eigvals, 8)))
 
-        zero_state = np.zeros(2 ** 3)
+        zero_state = np.zeros(2**3)
         zero_state[0] = 1
         psi = tensor_product([Rotx(theta), I, I]) @ zero_state
         psi = tensor_product([I, Rotx(phi), I]) @ psi

@@ -12,13 +12,21 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Tests that the different measurement types work correctly on a device."""
-# pylint: disable=no-self-use
-# pylint: disable=pointless-statement
-import numpy as np
+# pylint: disable=no-self-use,pointless-statement, no-member
 import pytest
 from flaky import flaky
+from scipy.sparse import csr_matrix
 
 import pennylane as qml
+from pennylane import numpy as np
+from pennylane.measurements import (
+    ClassicalShadowMP,
+    MeasurementTransform,
+    SampleMeasurement,
+    SampleMP,
+    StateMeasurement,
+    StateMP,
+)
 
 pytestmark = pytest.mark.skip_unsupported
 
@@ -34,12 +42,53 @@ obs = {
     "PauliY": qml.PauliY(wires=[0]),
     "PauliZ": qml.PauliZ(wires=[0]),
     "Projector": qml.Projector(np.array([1]), wires=[0]),
+    "SparseHamiltonian": qml.SparseHamiltonian(csr_matrix(np.eye(8)), wires=[0, 1, 2]),
+    "Hamiltonian": qml.Hamiltonian([1, 1], [qml.PauliZ(0), qml.PauliX(0)]),
 }
 
 all_obs = obs.keys()
 
+# All qubit observables should be available to test in the device test suite
+all_available_obs = qml.ops._qubit__obs__.copy()  # pylint: disable=protected-access
+# Note that the identity is not technically a qubit observable
+all_available_obs |= {"Identity"}
+
+if not set(all_obs) == all_available_obs:
+    raise ValueError(
+        "A qubit observable has been added that is not being tested in the "
+        "device test suite. Please add to the obs dictionary in "
+        "pennylane/devices/tests/test_measurements.py"
+    )
+
 # single qubit Hermitian observable
 A = np.array([[1.02789352, 1.61296440 - 0.3498192j], [1.61296440 + 0.3498192j, 1.23920938 + 0j]])
+
+obs_lst = [
+    qml.PauliX(wires=0) @ qml.PauliY(wires=1),
+    qml.PauliX(wires=1) @ qml.PauliY(wires=0),
+    qml.PauliX(wires=1) @ qml.PauliZ(wires=2),
+    qml.PauliX(wires=2) @ qml.PauliZ(wires=1),
+    qml.Identity(wires=0) @ qml.Identity(wires=1) @ qml.PauliZ(wires=2),
+    qml.PauliZ(wires=0) @ qml.PauliX(wires=1) @ qml.PauliY(wires=2),
+]
+
+obs_permuted_lst = [
+    qml.PauliY(wires=1) @ qml.PauliX(wires=0),
+    qml.PauliY(wires=0) @ qml.PauliX(wires=1),
+    qml.PauliZ(wires=2) @ qml.PauliX(wires=1),
+    qml.PauliZ(wires=1) @ qml.PauliX(wires=2),
+    qml.PauliZ(wires=2) @ qml.Identity(wires=0) @ qml.Identity(wires=1),
+    qml.PauliX(wires=1) @ qml.PauliY(wires=2) @ qml.PauliZ(wires=0),
+]
+
+label_maps = [[0, 1, 2], ["a", "b", "c"], ["beta", "alpha", "gamma"], [3, "beta", "a"]]
+
+
+def sub_routine(label_map):
+    """Quantum function to initalize state in tests"""
+    qml.Hadamard(wires=label_map[0])
+    qml.RX(0.12, wires=label_map[1])
+    qml.RY(3.45, wires=label_map[2])
 
 
 class TestSupportedObservables:
@@ -51,11 +100,18 @@ class TestSupportedObservables:
         device_kwargs["wires"] = 3
         dev = qml.device(**device_kwargs)
 
+        if device_kwargs.get("shots", None) is not None and observable == "SparseHamiltonian":
+            pytest.skip("SparseHamiltonian only supported in analytic mode")
+
         assert hasattr(dev, "observables")
         if observable in dev.observables:
 
-            @qml.qnode(dev)
+            kwargs = {"diff_method": "parameter-shift"} if observable == "SparseHamiltonian" else {}
+
+            @qml.qnode(dev, **kwargs)
             def circuit():
+                if dev.supports_operation(qml.PauliX):  # ionq can't have empty circuits
+                    qml.PauliX(0)
                 return qml.expval(obs[observable])
 
             assert isinstance(circuit(), (float, np.ndarray))
@@ -74,9 +130,62 @@ class TestSupportedObservables:
 
         @qml.qnode(dev)
         def circuit():
+            if dev.supports_operation(qml.PauliX):  # ionq can't have empty circuits
+                qml.PauliX(0)
             return qml.expval(qml.Identity(wires=0) @ qml.Identity(wires=1))
 
         assert isinstance(circuit(), (float, np.ndarray))
+
+
+# pylint: disable=too-few-public-methods
+@flaky(max_runs=10)
+class TestHamiltonianSupport:
+    """Separate test to ensure that the device can differentiate Hamiltonian observables."""
+
+    def test_hamiltonian_diff(self, device_kwargs, tol):
+        """Tests a simple VQE gradient using parameter-shift rules."""
+        device_kwargs["wires"] = 1
+        dev = qml.device(**device_kwargs)
+        coeffs = np.array([-0.05, 0.17])
+        param = np.array(1.7, requires_grad=True)
+
+        @qml.qnode(dev, diff_method="parameter-shift")
+        def circuit(coeffs, param):
+            qml.RX(param, wires=0)
+            qml.RY(param, wires=0)
+            return qml.expval(
+                qml.Hamiltonian(
+                    coeffs,
+                    [qml.PauliX(0), qml.PauliZ(0)],
+                )
+            )
+
+        grad_fn = qml.grad(circuit)
+        grad = grad_fn(coeffs, param)
+
+        def circuit1(param):
+            """First Pauli subcircuit"""
+            qml.RX(param, wires=0)
+            qml.RY(param, wires=0)
+            return qml.expval(qml.PauliX(0))
+
+        def circuit2(param):
+            """Second Pauli subcircuit"""
+            qml.RX(param, wires=0)
+            qml.RY(param, wires=0)
+            return qml.expval(qml.PauliZ(0))
+
+        half1 = qml.QNode(circuit1, dev, diff_method="parameter-shift")
+        half2 = qml.QNode(circuit2, dev, diff_method="parameter-shift")
+
+        def combine(coeffs, param):
+            return coeffs[0] * half1(param) + coeffs[1] * half2(param)
+
+        grad_fn_expected = qml.grad(combine)
+        grad_expected = grad_fn_expected(coeffs, param)
+
+        assert np.allclose(grad[0], grad_expected[0], atol=tol(dev.shots))
+        assert np.allclose(grad[1], grad_expected[1], atol=tol(dev.shots))
 
 
 @flaky(max_runs=10)
@@ -336,6 +445,74 @@ class TestTensorExpval:
         expected = -(np.cos(varphi) * np.sin(phi) + np.sin(varphi) * np.cos(theta)) / np.sqrt(2)
         assert np.allclose(res, expected, atol=tol(dev.shots))
 
+    # pylint: disable=too-many-arguments
+    @pytest.mark.parametrize(
+        "base_obs, permuted_obs",
+        list(zip(obs_lst, obs_permuted_lst)),
+    )
+    def test_wire_order_in_tensor_prod_observables(
+        self, device, base_obs, permuted_obs, tol, skip_if
+    ):
+        """Test that when given a tensor observable the expectation value is the same regardless of the order of terms
+        in the tensor observable, provided the wires each term acts on remain constant.
+
+        eg:
+        ob1 = qml.PauliZ(wires=0) @ qml.PauliY(wires=1)
+        ob2 = qml.PauliY(wires=1) @ qml.PauliZ(wires=0)
+
+        @qml.qnode(dev)
+        def circ(obs):
+            return qml.expval(obs)
+
+        circ(ob1) == circ(ob2)
+        """
+        n_wires = 3
+        dev = device(n_wires)
+        skip_if(dev, {"supports_tensor_observables": False})
+
+        @qml.qnode(dev)
+        def circ(ob):
+            sub_routine(label_map=range(3))
+            return qml.expval(ob)
+
+        assert np.allclose(circ(base_obs), circ(permuted_obs), atol=tol(dev.shots), rtol=0)
+
+    @pytest.mark.parametrize("label_map", label_maps)
+    def test_wire_label_in_tensor_prod_observables(self, device, label_map, tol, skip_if):
+        """Test that when given a tensor observable the expectation value is the same regardless of how the
+        wires are labelled, as long as they match the device order.
+
+        For example:
+
+        dev1 = qml.device("default.qubit", wires=[0, 1, 2])
+        dev2 = qml.device("default.qubit", wires=['c', 'b', 'a']
+
+        def circ(wire_labels):
+            return qml.expval(qml.PauliZ(wires=wire_labels[0]) @ qml.PauliX(wires=wire_labels[2]))
+
+        c1, c2 = qml.QNode(circ, dev1), qml.QNode(circ, dev2)
+        c1([0, 1, 2]) == c2(['c', 'b', 'a'])
+        """
+        dev = device(wires=3)
+        dev_custom_labels = device(wires=label_map)
+        skip_if(dev, {"supports_tensor_observables": False})
+
+        def circ(wire_labels):
+            sub_routine(wire_labels)
+            return qml.expval(
+                qml.PauliX(wire_labels[0]) @ qml.PauliY(wire_labels[1]) @ qml.PauliZ(wire_labels[2])
+            )
+
+        circ_base_label = qml.QNode(circ, device=dev)
+        circ_custom_label = qml.QNode(circ, device=dev_custom_labels)
+
+        assert np.allclose(
+            circ_base_label(wire_labels=range(3)),
+            circ_custom_label(wire_labels=label_map),
+            atol=tol(dev.shots),
+            rtol=0,
+        )
+
     def test_hermitian(self, device, tol, skip_if):
         """Test that a tensor product involving qml.Hermitian works correctly"""
         n_wires = 3
@@ -424,6 +601,36 @@ class TestTensorExpval:
         ) ** 2
         assert np.allclose(res, expected, atol=tol(dev.shots))
 
+    def test_sparse_hamiltonian_expval(self, device, tol):
+        """Test that expectation values of sparse Hamiltonians are properly calculated."""
+        n_wires = 4
+        dev = device(n_wires)
+
+        if "SparseHamiltonian" not in dev.observables:
+            pytest.skip("Skipped because device does not support the SparseHamiltonian observable.")
+        if dev.shots is not None:
+            pytest.skip("SparseHamiltonian only supported in analytic mode")
+
+        h_row = np.array([0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15])
+        h_col = np.array([15, 14, 13, 12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1, 0])
+        h_data = np.array(
+            [-1, 1, 1, -1, -1, 1, 1, -1, -1, 1, 1, -1, -1, 1, 1, -1], dtype=np.complex128
+        )
+        h = csr_matrix((h_data, (h_row, h_col)), shape=(16, 16))  # XXYY
+
+        @qml.qnode(dev, diff_method="parameter-shift")
+        def result():
+            qml.PauliX(0)
+            qml.PauliX(2)
+            qml.SingleExcitation(0.1, wires=[0, 1])
+            qml.SingleExcitation(0.2, wires=[2, 3])
+            qml.SingleExcitation(0.3, wires=[1, 2])
+            return qml.expval(qml.SparseHamiltonian(h, wires=[0, 1, 2, 3]))
+
+        res = result()
+        exp_res = 0.019833838076209875
+        assert np.allclose(res, exp_res, atol=tol(False))
+
 
 @flaky(max_runs=10)
 class TestSample:
@@ -447,7 +654,7 @@ class TestSample:
         res = circuit()
 
         # res should only contain 1 and -1
-        assert np.allclose(res ** 2, 1, atol=tol(False))
+        assert np.allclose(res**2, 1, atol=tol(False))
 
     def test_sample_values_hermitian(self, device, tol):
         """Tests if the samples of a Hermitian observable returned by sample have
@@ -650,7 +857,7 @@ class TestTensorSample:
         res = circuit()
 
         # res should only contain 1 and -1
-        assert np.allclose(res ** 2, 1, atol=tol(False))
+        assert np.allclose(res**2, 1, atol=tol(False))
 
         mean = np.mean(res)
         expected = np.sin(theta) * np.sin(phi) * np.sin(varphi)
@@ -695,7 +902,7 @@ class TestTensorSample:
         res = circuit()
 
         # s1 should only contain 1 and -1
-        assert np.allclose(res ** 2, 1, atol=tol(False))
+        assert np.allclose(res**2, 1, atol=tol(False))
 
         mean = np.mean(res)
         expected = -(np.cos(varphi) * np.sin(phi) + np.sin(varphi) * np.cos(theta)) / np.sqrt(2)
@@ -1077,6 +1284,73 @@ class TestTensorVar:
         ) / 4
         assert np.allclose(res, expected, atol=tol(dev.shots))
 
+    # pylint: disable=too-many-arguments
+    @pytest.mark.parametrize(
+        "base_obs, permuted_obs",
+        list(zip(obs_lst, obs_permuted_lst)),
+    )
+    def test_wire_order_in_tensor_prod_observables(
+        self, device, base_obs, permuted_obs, tol, skip_if
+    ):
+        """Test that when given a tensor observable the variance is the same regardless of the order of terms
+        in the tensor observable, provided the wires each term acts on remain constant.
+
+        eg:
+        ob1 = qml.PauliZ(wires=0) @ qml.PauliY(wires=1)
+        ob2 = qml.PauliY(wires=1) @ qml.PauliZ(wires=0)
+
+        @qml.qnode(dev)
+        def circ(obs):
+            return qml.var(obs)
+
+        circ(ob1) == circ(ob2)
+        """
+        n_wires = 3
+        dev = device(n_wires)
+        skip_if(dev, {"supports_tensor_observables": False})
+
+        @qml.qnode(dev)
+        def circ(ob):
+            sub_routine(label_map=range(3))
+            return qml.var(ob)
+
+        assert np.allclose(circ(base_obs), circ(permuted_obs), atol=tol(dev.shots), rtol=0)
+
+    @pytest.mark.parametrize("label_map", label_maps)
+    def test_wire_label_in_tensor_prod_observables(self, device, label_map, tol, skip_if):
+        """Test that when given a tensor observable the variance is the same regardless of how the
+        wires are labelled, as long as they match the device order.
+
+        eg:
+        dev1 = qml.device("default.qubit", wires=[0, 1, 2])
+        dev2 = qml.device("default.qubit", wires=['c', 'b', 'a']
+
+        def circ(wire_labels):
+            return qml.var(qml.PauliZ(wires=wire_labels[0]) @ qml.PauliX(wires=wire_labels[2]))
+
+        c1, c2 = qml.QNode(circ, dev1), qml.QNode(circ, dev2)
+        c1([0, 1, 2]) == c2(['c', 'b', 'a'])
+        """
+        dev = device(wires=3)
+        dev_custom_labels = device(wires=label_map)
+        skip_if(dev, {"supports_tensor_observables": False})
+
+        def circ(wire_labels):
+            sub_routine(wire_labels)
+            return qml.var(
+                qml.PauliX(wire_labels[0]) @ qml.PauliY(wire_labels[1]) @ qml.PauliZ(wire_labels[2])
+            )
+
+        circ_base_label = qml.QNode(circ, device=dev)
+        circ_custom_label = qml.QNode(circ, device=dev_custom_labels)
+
+        assert np.allclose(
+            circ_base_label(wire_labels=range(3)),
+            circ_custom_label(wire_labels=label_map),
+            atol=tol(dev.shots),
+            rtol=0,
+        )
+
     def test_hermitian(self, device, tol, skip_if):
         """Test that a tensor product involving qml.Hermitian works correctly"""
         n_wires = 3
@@ -1210,3 +1484,188 @@ class TestTensorVar:
             - (np.cos(varphi / 2) * np.cos(phi / 2) * np.sin(theta / 2)) ** 2
         ) ** 2
         assert np.allclose(res, expected, atol=tol(dev.shots))
+
+
+def _skip_test_for_braket(dev):
+    """Skip the specific test because the Braket plugin does not yet support custom measurement processes."""
+    if "braket" in dev.short_name:
+        pytest.skip(f"Custom measurement test skipped for {dev.short_name}.")
+
+
+class TestSampleMeasurement:
+    """Tests for the SampleMeasurement class."""
+
+    def test_custom_sample_measurement(self, device):
+        """Test the execution of a custom sampled measurement."""
+
+        dev = device(2)
+        _skip_test_for_braket(dev)
+
+        if dev.shots is None:
+            pytest.skip("Shots must be specified in the device to compute a sampled measurement.")
+
+        class MyMeasurement(SampleMeasurement):
+            """Dummy sampled measurement."""
+
+            def process_samples(self, samples, wire_order, shot_range=None, bin_size=None):
+                return 1
+
+        @qml.qnode(dev)
+        def circuit():
+            qml.PauliX(0)
+            return MyMeasurement(wires=[0]), MyMeasurement(wires=[1])
+
+        res = circuit()
+        assert qml.math.allequal(res, [1, 1])
+
+    def test_sample_measurement_without_shots(self, device):
+        """Test that executing a sampled measurement with ``shots=None`` raises an error."""
+        dev = device(2)
+
+        if dev.shots is not None:
+            pytest.skip("If shots!=None no error is raised.")
+
+        class MyMeasurement(SampleMeasurement):
+            """Dummy sampled measurement."""
+
+            def process_samples(self, samples, wire_order, shot_range=None, bin_size=None):
+                return 1
+
+        @qml.qnode(dev)
+        def circuit():
+            qml.PauliX(0)
+            return MyMeasurement(wires=[0]), MyMeasurement(wires=[1])
+
+        with pytest.raises(
+            ValueError, match="Shots must be specified in the device to compute the measurement "
+        ):
+            circuit()
+
+    def test_method_overriden_by_device(self, device):
+        """Test that the device can override a measurement process."""
+        dev = device(2)
+        _skip_test_for_braket(dev)
+
+        if dev.shots is None:
+            pytest.skip(
+                "The number of shots has to be explicitly set on the device when using "
+                "sample-based measurements."
+            )
+
+        @qml.qnode(dev)
+        def circuit():
+            qml.PauliX(0)
+            return qml.sample(wires=0), qml.sample(wires=1)
+
+        circuit.device.measurement_map[SampleMP] = "test_method"
+        circuit.device.test_method = lambda obs, shot_range=None, bin_size=None: 2
+
+        assert qml.math.allequal(circuit(), [2, 2])
+
+
+class TestStateMeasurement:
+    """Tests for the SampleMeasurement class."""
+
+    def test_custom_state_measurement(self, device):
+        """Test the execution of a custom state measurement."""
+        dev = device(2)
+        _skip_test_for_braket(dev)
+
+        if dev.shots is not None:
+            pytest.skip("Some plugins don't update state information when shots is not None.")
+
+        class MyMeasurement(StateMeasurement):
+            """Dummy state measurement."""
+
+            def process_state(self, state, wire_order):
+                return 1
+
+        @qml.qnode(dev)
+        def circuit():
+            qml.PauliX(0)
+            return MyMeasurement()
+
+        assert circuit() == 1
+
+    def test_sample_measurement_with_shots(self, device):
+        """Test that executing a state measurement with shots raises a warning."""
+        dev = device(2)
+        _skip_test_for_braket(dev)
+
+        if dev.shots is None:
+            pytest.skip("If shots=None no warning is raised.")
+
+        class MyMeasurement(StateMeasurement):
+            """Dummy state measurement."""
+
+            def process_state(self, state, wire_order):
+                return 1
+
+        @qml.qnode(dev)
+        def circuit():
+            qml.PauliX(0)
+            return MyMeasurement()
+
+        with pytest.warns(
+            UserWarning,
+            match="Requested measurement MyMeasurement with finite shots",
+        ):
+            circuit()
+
+    def test_method_overriden_by_device(self, device):
+        """Test that the device can override a measurement process."""
+        dev = device(2)
+        _skip_test_for_braket(dev)
+
+        @qml.qnode(dev)
+        def circuit():
+            qml.PauliX(0)
+            return qml.state()
+
+        circuit.device.measurement_map[StateMP] = "test_method"
+        circuit.device.test_method = lambda obs, shot_range=None, bin_size=None: 2
+
+        assert circuit() == 2
+
+
+class TestCustomMeasurement:
+    """Tests for the CustomMeasurement class."""
+
+    def test_custom_measurement(self, device):
+        """Test the execution of a custom measurement."""
+        dev = device(2)
+        _skip_test_for_braket(dev)
+
+        class MyMeasurement(MeasurementTransform):
+            """Dummy measurement transform."""
+
+            def process(self, tape, device):
+                return 1
+
+        @qml.qnode(dev)
+        def circuit():
+            qml.PauliX(0)
+            return MyMeasurement()
+
+        assert circuit() == 1
+
+    def test_method_overriden_by_device(self, device):
+        """Test that the device can override a measurement process."""
+        dev = device(2)
+        _skip_test_for_braket(dev)
+
+        if dev.shots is None:
+            pytest.skip(
+                "The number of shots has to be explicitly set on the device when using "
+                "sample-based measurements."
+            )
+
+        @qml.qnode(dev)
+        def circuit():
+            qml.PauliX(0)
+            return qml.classical_shadow(wires=0)
+
+        circuit.device.measurement_map[ClassicalShadowMP] = "test_method"
+        circuit.device.test_method = lambda tape: 2
+
+        assert circuit() == 2

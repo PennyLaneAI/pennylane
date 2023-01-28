@@ -28,6 +28,14 @@ except ImportError:
     TF_SUPPORT = False
 
 try:
+    import torch
+
+    TORCH_SUPPORT = True
+
+except ImportError:
+    TORCH_SUPPORT = False
+
+try:
     import jax
 
     JAX_SUPPORT = True
@@ -36,21 +44,6 @@ except ImportError:
     JAX_SUPPORT = False
 
 # Shared test data =====
-
-
-def qfunc_no_input():
-    """Model agnostic quantum function"""
-    return qml.expval(qml.Identity(wires=0))
-
-
-def qfunc_tensor_obs():
-    """Model agnostic quantum function with tensor observable"""
-    return qml.expval(qml.Identity(wires=0) @ qml.Identity(wires=1))
-
-
-def qfunc_probs():
-    """Model agnostic quantum function returning probs"""
-    return qml.probs(wires=0)
 
 
 def qfunc_with_scalar_input(model=None):
@@ -115,10 +108,22 @@ class TestCapabilities:
         assert "model" in cap
         assert cap["model"] in ["qubit", "cv"]
 
-        qnode = qml.QNode(qfunc_no_input, dev)
+        if cap["model"] == "qubit":
+
+            @qml.qnode(dev)
+            def circuit():
+                qml.PauliX(wires=0)
+                return qml.expval(qml.PauliZ(wires=0))
+
+        else:
+
+            @qml.qnode(dev)
+            def circuit():
+                qml.Displacement(1.0, 1.2345, wires=0)
+                return qml.expval(qml.X(wires=0))
 
         # assert that device can measure observable from its model
-        qnode()
+        circuit()
 
     def test_passthru_interface_is_correct(self, device_kwargs):
         """Test that the capabilities dictionary defines a valid passthru interface, if not None."""
@@ -130,11 +135,10 @@ class TestCapabilities:
             pytest.skip("No passthru_interface capability specified by device.")
 
         interface = cap["passthru_interface"]
-        assert interface in ["tf", "autograd", "jax"]  # for new interface, add test case
+        assert interface in ["tf", "autograd", "jax", "torch"]  # for new interface, add test case
 
         qfunc = qfunc_with_scalar_input(cap["model"])
-        qnode = qml.QNode(qfunc, dev)
-        qnode.interface = interface
+        qnode = qml.QNode(qfunc, dev, interface=interface)
 
         # assert that we can do a simple gradient computation in the passthru interface
         # without raising an error
@@ -161,18 +165,14 @@ class TestCapabilities:
             else:
                 pytest.skip("Cannot import jax")
 
-    def test_provides_jacobian(self, device_kwargs):
-        """Test that the device computes the jacobian."""
-        device_kwargs["wires"] = 1
-        dev = qml.device(**device_kwargs)
-        cap = dev.capabilities()
-
-        if "provides_jacobian" not in cap:
-            pytest.skip("No provides_jacobian capability specified by device.")
-
-        qnode = qml.QNode(qfunc_no_input, dev)
-
-        assert cap["provides_jacobian"] == hasattr(qnode, "jacobian")
+        if interface == "torch":
+            if TORCH_SUPPORT:
+                x = torch.tensor(0.1, requires_grad=True)
+                res = qnode(x)
+                res.backward()
+                assert hasattr(x, "grad")
+            else:
+                pytest.skip("Cannot import torch")
 
     def test_supports_tensor_observables(self, device_kwargs):
         """Tests that the device reports correctly whether it supports tensor observables."""
@@ -183,51 +183,57 @@ class TestCapabilities:
         if "supports_tensor_observables" not in cap:
             pytest.skip("No supports_tensor_observables capability specified by device.")
 
-        qnode = qml.QNode(qfunc_tensor_obs, dev)
+        @qml.qnode(dev)
+        def circuit():
+            """Model agnostic quantum function with tensor observable"""
+            if cap["model"] == "qubit":
+                qml.PauliX(wires=0)
+            else:
+                qml.X(wires=0)
+            return qml.expval(qml.Identity(wires=0) @ qml.Identity(wires=1))
 
         if cap["supports_tensor_observables"]:
-            qnode()
+            circuit()
         else:
             with pytest.raises(qml.QuantumFunctionError):
-                qnode()
-
-    def test_reversible_diff(self, device_kwargs):
-        """Tests that the device reports correctly whether it supports reversible differentiation."""
-        device_kwargs["wires"] = 1
-        dev = qml.device(**device_kwargs)
-        cap = dev.capabilities()
-
-        if "supports_reversible_diff" not in cap:
-            pytest.skip("No supports_reversible_diff capability specified by device.")
-
-        if cap["supports_reversible_diff"]:
-            qfunc = qfunc_with_scalar_input(model=cap["model"])
-            qnode = qml.QNode(qfunc, dev, diff_method="reversible")
-            g = qml.grad(qnode)
-            g(0.1)
-        # no need to check else statement, since the reversible qnode creation fails in that case by default
+                circuit()
 
     def test_returns_state(self, device_kwargs):
-        """Tests that the device reports correctly whether it supports reversible differentiation."""
+        """Tests that the device reports correctly whether it supports returning the state."""
         device_kwargs["wires"] = 1
         dev = qml.device(**device_kwargs)
         cap = dev.capabilities()
 
-        if "returns_state" not in cap:
-            pytest.skip("No returns_state capability specified by device.")
+        @qml.qnode(dev)
+        def circuit():
+            qml.PauliX(wires=0)
+            return qml.state()
 
-        qnode = qml.QNode(qfunc_no_input, dev)
-        qnode()
+        if not cap.get("returns_state"):
 
-        if cap["returns_state"]:
-            assert dev.state is not None
-        else:
+            # If the device is not defined to return state then the
+            # access_state method should raise
+            with pytest.raises(qml.QuantumFunctionError):
+                dev.access_state()
+
             try:
                 state = dev.state
-            except AttributeError:
+            except (AttributeError, NotImplementedError):
                 state = None
 
             assert state is None
+        else:
+
+            if dev.shots is not None:
+                with pytest.warns(
+                    UserWarning,
+                    match="Requested state or density matrix with finite shots; the returned",
+                ):
+                    circuit()
+            else:
+                circuit()
+
+            assert dev.state is not None
 
     def test_returns_probs(self, device_kwargs):
         """Tests that the device reports correctly whether it supports reversible differentiation."""
@@ -238,10 +244,55 @@ class TestCapabilities:
         if "returns_probs" not in cap:
             pytest.skip("No returns_probs capability specified by device.")
 
-        qnode = qml.QNode(qfunc_probs, dev)
+        @qml.qnode(dev)
+        def circuit():
+            if cap["model"] == "qubit":
+                qml.PauliX(wires=0)
+            else:
+                qml.X(wires=0)
+            return qml.probs(wires=0)
 
         if cap["returns_probs"]:
-            qnode()
+            circuit()
         else:
             with pytest.raises(NotImplementedError):
-                qnode()
+                circuit()
+
+    def test_supports_broadcasting(self, device_kwargs, mocker):
+        """Tests that the device reports correctly whether it supports parameter broadcasting
+        and that it can execute broadcasted tapes in any case."""
+
+        device_kwargs["wires"] = 1
+        dev = qml.device(**device_kwargs)
+        cap = dev.capabilities()
+
+        assert "supports_broadcasting" in cap
+
+        @qml.qnode(dev)
+        def circuit(x):
+            if cap["model"] == "qubit":
+                qml.RX(x, wires=0)
+            else:
+                qml.Rotation(x, wires=0)
+            return qml.probs(wires=0)
+
+        spy = mocker.spy(qml.transforms, "broadcast_expand")
+        circuit(0.5)
+        if cap.get("returns_state"):
+            orig_shape = pnp.array(dev.access_state()).shape
+        spy.assert_not_called()
+        x = pnp.array([0.5, 2.1, -0.6], requires_grad=True)
+
+        if cap["supports_broadcasting"]:
+            res = circuit(x)
+            spy.assert_not_called()
+            if cap.get("returns_state"):
+                assert pnp.array(dev.access_state()).shape != orig_shape
+        else:
+            res = circuit(x)
+            spy.assert_called()
+            if cap.get("returns_state"):
+                assert pnp.array(dev.access_state()).shape == orig_shape
+
+        assert pnp.ndim(res) == 2
+        assert res.shape[0] == 3  # pylint:disable=unsubscriptable-object

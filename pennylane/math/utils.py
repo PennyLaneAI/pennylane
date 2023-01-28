@@ -12,10 +12,14 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Utility functions"""
-# pylint: disable=import-outside-toplevel
+import warnings
+
 import autoray as ar
-from autoray import numpy as np
 import numpy as _np
+
+# pylint: disable=import-outside-toplevel
+from autograd.numpy.numpy_boxes import ArrayBox
+from autoray import numpy as np
 
 from . import single_dispatch  # pylint:disable=unused-import
 
@@ -54,9 +58,23 @@ def allequal(tensor1, tensor2, **kwargs):
 def allclose(a, b, rtol=1e-05, atol=1e-08, **kwargs):
     """Wrapper around np.allclose, allowing tensors ``a`` and ``b``
     to differ in type"""
-    t1 = ar.to_numpy(a)
-    t2 = ar.to_numpy(b)
-    return np.allclose(t1, t2, rtol=rtol, atol=atol, **kwargs)
+    try:
+        # Some frameworks may provide their own allclose implementation.
+        # Try and use it if available.
+        res = np.allclose(a, b, rtol=rtol, atol=atol, **kwargs)
+    except (TypeError, AttributeError, ImportError, RuntimeError):
+        # Otherwise, convert the input to NumPy arrays.
+        #
+        # TODO: replace this with a bespoke, framework agnostic
+        # low-level implementation to avoid the NumPy conversion:
+        #
+        #    np.abs(a - b) <= atol + rtol * np.abs(b)
+        #
+        t1 = ar.to_numpy(a)
+        t2 = ar.to_numpy(b)
+        res = np.allclose(t1, t2, rtol=rtol, atol=atol, **kwargs)
+
+    return res
 
 
 allclose.__doc__ = _np.allclose.__doc__
@@ -96,7 +114,7 @@ def cast(tensor, dtype):
     if not isinstance(dtype, str):
         try:
             dtype = np.dtype(dtype).name
-        except (AttributeError, TypeError):
+        except (AttributeError, TypeError, ImportError):
             dtype = getattr(dtype, "name", dtype)
 
     return ar.astype(tensor, ar.to_backend_dtype(dtype, like=ar.infer_backend(tensor)))
@@ -120,7 +138,10 @@ def cast_like(tensor1, tensor2):
     >>> cast_like(x, y)
     tensor([1., 2.])
     """
-    dtype = ar.to_numpy(tensor2).dtype.type
+    if not is_abstract(tensor2):
+        dtype = ar.to_numpy(tensor2).dtype.type
+    else:
+        dtype = tensor2.dtype
     return cast(tensor1, dtype)
 
 
@@ -142,10 +163,85 @@ def convert_like(tensor1, tensor2):
     >>> convert_like(x, y)
     <tf.Tensor: shape=(2,), dtype=int64, numpy=array([1, 2])>
     """
-    return np.asarray(tensor1, like=get_interface(tensor2))
+    interface = get_interface(tensor2)
+
+    if interface == "torch":
+        dev = tensor2.device
+        return np.asarray(tensor1, device=dev, like=interface)
+
+    return np.asarray(tensor1, like=interface)
 
 
-def get_interface(tensor):
+def get_interface(*values):
+    """Determines the correct framework to dispatch to given a tensor-like object or a
+    sequence of tensor-like objects.
+
+    Args:
+        *values (tensor_like): variable length argument list with single tensor-like objects
+
+    Returns:
+        str: the name of the interface
+
+    To determine the framework to dispatch to, the following rules
+    are applied:
+
+    * Tensors that are incompatible (such as Torch, TensorFlow and Jax tensors)
+      cannot both be present.
+
+    * Autograd tensors *may* be present alongside Torch, TensorFlow and Jax tensors,
+      but Torch, TensorFlow and Jax take precendence; the autograd arrays will
+      be treated as non-differentiable NumPy arrays. A warning will be raised
+      suggesting that vanilla NumPy be used instead.
+
+    * Vanilla NumPy arrays and SciPy sparse matrices can be used alongside other tensor objects;
+      they will always be treated as non-differentiable constants.
+
+    .. warning::
+        ``get_interface`` defaults to ``"numpy"`` whenever Python built-in objects are passed.
+        I.e. a list or tuple of ``torch`` tensors will be identified as ``"numpy"``:
+
+        >>> get_interface([torch.tensor([1]), torch.tensor([1])])
+        "numpy"
+
+        The correct usage in that case is to unpack the arguments ``get_interface(*[torch.tensor([1]), torch.tensor([1])])``.
+
+    """
+
+    if len(values) == 1:
+        return _get_interface_of_single_tensor(values[0])
+
+    interfaces = {_get_interface_of_single_tensor(v) for v in values}
+
+    if len(interfaces - {"numpy", "scipy", "autograd"}) > 1:
+        # contains multiple non-autograd interfaces
+        raise ValueError("Tensors contain mixed types; cannot determine dispatch library")
+
+    non_numpy_scipy_interfaces = set(interfaces) - {"numpy", "scipy"}
+
+    if len(non_numpy_scipy_interfaces) > 1:
+        # contains autograd and another interface
+        warnings.warn(
+            f"Contains tensors of types {non_numpy_scipy_interfaces}; dispatch will prioritize "
+            "TensorFlow, PyTorch, and  Jax over Autograd. Consider replacing Autograd with vanilla NumPy.",
+            UserWarning,
+        )
+
+    if "tensorflow" in interfaces:
+        return "tensorflow"
+
+    if "torch" in interfaces:
+        return "torch"
+
+    if "autograd" in interfaces:
+        return "autograd"
+
+    if "jax" in interfaces:
+        return "jax"
+
+    return "numpy"
+
+
+def _get_interface_of_single_tensor(tensor):
     """Returns the name of the package that any array/tensor manipulations
     will dispatch to. The returned strings correspond to those used for PennyLane
     :doc:`interfaces </introduction/interfaces>`.
@@ -179,12 +275,132 @@ def get_interface(tensor):
     return res
 
 
-def requires_grad(tensor):
+def is_abstract(tensor, like=None):
+    """Returns True if the tensor is considered abstract.
+
+    Abstract arrays have no internal value, and are used primarily when
+    tracing Python functions, for example, in order to perform just-in-time
+    (JIT) compilation.
+
+    Abstract tensors most commonly occur within a function that has been
+    decorated using ``@tf.function`` or ``@jax.jit``.
+
+    .. note::
+
+        Currently Autograd tensors and Torch tensors will always return ``False``.
+        This is because:
+
+        - Autograd does not provide JIT compilation, and
+
+        - ``@torch.jit.script`` is not currently compatible with QNodes.
+
+    Args:
+        tensor (tensor_like): input tensor
+        like (str): The name of the interface. Will be determined automatically
+            if not provided.
+
+    Returns:
+        bool: whether the tensor is abstract or not
+
+    **Example**
+
+    Consider the following JAX function:
+
+    .. code-block:: python
+
+        import jax
+        from jax import numpy as jnp
+
+        def function(x):
+            print("Value:", x)
+            print("Abstract:", qml.math.is_abstract(x))
+            return jnp.sum(x ** 2)
+
+    When we execute it, we see that the tensor is not abstract; it has known value:
+
+    >>> x = jnp.array([0.5, 0.1])
+    >>> function(x)
+    Value: [0.5, 0.1]
+    Abstract: False
+    Array(0.26, dtype=float32)
+
+    However, if we use the ``@jax.jit`` decorator, the tensor will now be abstract:
+
+    >>> x = jnp.array([0.5, 0.1])
+    >>> jax.jit(function)(x)
+    Value: Traced<ShapedArray(float32[2])>with<DynamicJaxprTrace(level=0/1)>
+    Abstract: True
+    Array(0.26, dtype=float32)
+
+    Note that JAX uses an abstract *shaped* array, so although we won't be able to
+    include conditionals within our function that depend on the value of the tensor,
+    we *can* include conditionals that depend on the shape of the tensor.
+
+    Similarly, consider the following TensorFlow function:
+
+    .. code-block:: python
+
+        import tensorflow as tf
+
+        def function(x):
+            print("Value:", x)
+            print("Abstract:", qml.math.is_abstract(x))
+            return tf.reduce_sum(x ** 2)
+
+    >>> x = tf.Variable([0.5, 0.1])
+    >>> function(x)
+    Value: <tf.Variable 'Variable:0' shape=(2,) dtype=float32, numpy=array([0.5, 0.1], dtype=float32)>
+    Abstract: False
+    <tf.Tensor: shape=(), dtype=float32, numpy=0.26>
+
+    If we apply the ``@tf.function`` decorator, the tensor will now be abstract:
+
+    >>> tf.function(function)(x)
+    Value: <tf.Variable 'Variable:0' shape=(2,) dtype=float32>
+    Abstract: True
+    <tf.Tensor: shape=(), dtype=float32, numpy=0.26>
+    """
+    interface = like or get_interface(tensor)
+
+    if interface == "jax":
+        import jax
+        from jax.interpreters.partial_eval import DynamicJaxprTracer
+
+        if isinstance(
+            tensor,
+            (
+                jax.ad.JVPTracer,
+                jax.interpreters.batching.BatchTracer,
+                jax.interpreters.partial_eval.JaxprTracer,
+            ),
+        ):
+            # Tracer objects will be used when computing gradients or applying transforms.
+            # If the value of the tracer is known, it will contain a ConcreteArray.
+            # Otherwise, it will be abstract.
+            return not isinstance(tensor.aval, jax.core.ConcreteArray)
+
+        return isinstance(tensor, DynamicJaxprTracer)
+
+    if interface == "tensorflow":
+        import tensorflow as tf
+        from tensorflow.python.framework.ops import EagerTensor
+
+        return not isinstance(tf.convert_to_tensor(tensor), EagerTensor)
+
+    # Autograd does not have a JIT
+
+    # QNodes do not currently support TorchScript:
+    #   NotSupportedError: Compiled functions can't take variable number of arguments or
+    #   use keyword-only arguments with defaults.
+    return False
+
+
+def requires_grad(tensor, interface=None):
     """Returns True if the tensor is considered trainable.
 
     .. warning::
 
-        The implemetation depends on the contained tensor type, and
+        The implementation depends on the contained tensor type, and
         may be context dependent.
 
         For example, Torch tensors and PennyLane tensors track trainability
@@ -193,6 +409,8 @@ def requires_grad(tensor):
 
     Args:
         tensor (tensor_like): input tensor
+        interface (str): The name of the interface. Will be determined automatically
+            if not provided.
 
     **Example**
 
@@ -229,7 +447,7 @@ def requires_grad(tensor):
     ...     print(requires_grad(x))
     True
     """
-    interface = get_interface(tensor)
+    interface = interface or get_interface(tensor)
 
     if interface == "tensorflow":
         import tensorflow as tf
@@ -241,13 +459,68 @@ def requires_grad(tensor):
 
         return should_record_backprop([tf.convert_to_tensor(tensor)])
 
-    if interface in ("torch", "autograd"):
-        return tensor.requires_grad
+    if interface == "autograd":
+        if isinstance(tensor, ArrayBox):
+            return True
 
-    if interface == "numpy":
+        return getattr(tensor, "requires_grad", False)
+
+    if interface == "torch":
+        return getattr(tensor, "requires_grad", False)
+
+    if interface in {"numpy", "scipy"}:
         return False
 
     if interface == "jax":
-        return True
+        import jax
+
+        return isinstance(tensor, jax.core.Tracer)
 
     raise ValueError(f"Argument {tensor} is an unknown object")
+
+
+def in_backprop(tensor, interface=None):
+    """Returns True if the tensor is considered to be in a backpropagation environment, it works for Autograd,
+    Tensorflow and Jax. It is not only checking the differentiability of the tensor like :func:`~.requires_grad`, but
+    rather checking if the gradient is actually calculated.
+
+    Args:
+        tensor (tensor_like): input tensor
+        interface (str): The name of the interface. Will be determined automatically
+            if not provided.
+
+    **Example**
+
+    >>> x = tf.Variable([0.6, 0.1])
+    >>> requires_grad(x)
+    False
+    >>> with tf.GradientTape() as tape:
+    ...     print(requires_grad(x))
+    True
+
+    .. seealso:: :func:`~.requires_grad`
+    """
+    interface = interface or get_interface(tensor)
+
+    if interface == "tensorflow":
+        import tensorflow as tf
+
+        try:
+            from tensorflow.python.eager.tape import should_record_backprop
+        except ImportError:  # pragma: no cover
+            from tensorflow.python.eager.tape import should_record as should_record_backprop
+
+        return should_record_backprop([tf.convert_to_tensor(tensor)])
+
+    if interface == "autograd":
+        return isinstance(tensor, ArrayBox)
+
+    if interface == "jax":
+        import jax
+
+        return isinstance(tensor, jax.core.Tracer)
+
+    if interface in {"numpy", "scipy"}:
+        return False
+
+    raise ValueError(f"Cannot determine if {tensor} is in backpropagation.")

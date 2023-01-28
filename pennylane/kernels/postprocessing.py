@@ -116,7 +116,8 @@ def flip_matrix(K):
         array[float]: Kernel matrix with flipped negative eigenvalues.
 
     Reference:
-        This method is introduced in `arXiv:2103.16774 <https://arxiv.org/abs/2103.16774>`_.
+        This method is introduced in
+        `Wang, Du, Luo & Tao (2021) <https://doi.org/10.22331/q-2021-08-30-531>`_.
 
     **Example:**
 
@@ -217,7 +218,7 @@ def closest_psd_matrix(K, fix_diagonal=False, solver=None, **kwargs):
     if not fix_diagonal:
         return threshold_matrix(K)
     try:
-        import cvxpy as cp
+        import cvxpy as cp  # pylint: disable=import-outside-toplevel
 
         if solver is None:
             solver = cp.CVXOPT
@@ -231,7 +232,7 @@ def closest_psd_matrix(K, fix_diagonal=False, solver=None, **kwargs):
 
     try:
         problem.solve(solver=solver, **kwargs)
-    except Exception:
+    except Exception:  # pylint: disable=broad-except
         try:
             problem.solve(solver=solver, verbose=True, **kwargs)
         except Exception as e:
@@ -269,7 +270,7 @@ def mitigate_depolarizing_noise(K, num_wires, method, use_entries=None):
     For an example usage of ``mitigate_depolarizing_noise`` please refer to the
     `PennyLane demo on the kernel module <https://github.com/PennyLaneAI/qml/tree/master/demonstrations/tutorial_kernel_based_training.py>`_ or `the postprocessing demo for arXiv:2105.02276 <https://github.com/thubregtsen/qhack/blob/master/paper/post_processing_demo.py>`_.
     """
-    dim = 2 ** num_wires
+    dim = 2**num_wires
 
     if method == "single":
         if use_entries is None:

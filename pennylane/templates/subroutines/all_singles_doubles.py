@@ -70,7 +70,8 @@ class AllSinglesDoubles(Operation):
         doubles (Sequence[Sequence]): sequence of lists with the indices of the four qubits
             the :class:`~.pennylane.DoubleExcitation` operations act on
 
-    .. UsageDetails::
+    .. details::
+        :title: Usage Details
 
         Notice that:
 
@@ -111,35 +112,30 @@ class AllSinglesDoubles(Operation):
             circuit(params, hf_state, singles=singles, doubles=doubles)
     """
 
-    num_params = 1
     num_wires = AnyWires
-    par_domain = "A"
+    grad_method = None
 
-    def __init__(self, weights, wires, hf_state, singles=None, doubles=None, do_queue=True):
+    def __init__(
+        self, weights, wires, hf_state, singles=None, doubles=None, do_queue=True, id=None
+    ):
 
         if len(wires) < 2:
             raise ValueError(
-                "The number of qubits (wires) can not be less than 2; got len(wires) = {}".format(
-                    len(wires)
-                )
+                f"The number of qubits (wires) can not be less than 2; got len(wires) = {len(wires)}"
             )
 
         if doubles is not None:
             for d_wires in doubles:
                 if len(d_wires) != 4:
                     raise ValueError(
-                        "Expected entries of 'doubles' to be of size 4; got {} of length {}".format(
-                            d_wires, len(d_wires)
-                        )
+                        f"Expected entries of 'doubles' to be of size 4; got {d_wires} of length {len(d_wires)}"
                     )
 
         if singles is not None:
             for s_wires in singles:
                 if len(s_wires) != 2:
                     raise ValueError(
-                        "Expected entries of 'singles' to be of size 2; got {} of length {}".format(
-                            s_wires, len(s_wires)
-                        )
+                        f"Expected entries of 'singles' to be of size 2; got {s_wires} of length {len(s_wires)}"
                     )
 
         weights_shape = qml.math.shape(weights)
@@ -147,31 +143,59 @@ class AllSinglesDoubles(Operation):
         if weights_shape != exp_shape:
             raise ValueError(f"'weights' tensor must be of shape {exp_shape}; got {weights_shape}.")
 
-        # we can extract the numpy representation here since hf_state can never be differentiable
-        self.hf_state = qml.math.toarray(hf_state)
-        self.singles = singles
-        self.doubles = doubles
+        self._hyperparameters = {
+            "hf_state": qml.math.toarray(hf_state),
+            "singles": singles,
+            "doubles": doubles,
+        }
 
         if hf_state.dtype != np.dtype("int"):
             raise ValueError(f"Elements of 'hf_state' must be integers; got {hf_state.dtype}")
 
-        super().__init__(weights, wires=wires, do_queue=do_queue)
+        super().__init__(weights, wires=wires, do_queue=do_queue, id=id)
 
-    def expand(self):
+    @property
+    def num_params(self):
+        return 1
 
-        weights = self.parameters[0]
+    @staticmethod
+    def compute_decomposition(
+        weights, wires, hf_state, singles, doubles
+    ):  # pylint: disable=arguments-differ
+        r"""Representation of the operator as a product of other operators.
 
-        with qml.tape.QuantumTape() as tape:
+        .. math:: O = O_1 O_2 \dots O_n.
 
-            BasisState(self.hf_state, wires=self.wires)
 
-            for i, d_wires in enumerate(self.doubles):
-                qml.DoubleExcitation(weights[len(self.singles) + i], wires=d_wires)
 
-            for j, s_wires in enumerate(self.singles):
-                qml.SingleExcitation(weights[j], wires=s_wires)
+        .. seealso:: :meth:`~.AllSinglesDoubles.decomposition`.
 
-        return tape
+        Args:
+            weights (tensor_like): size ``(len(singles) + len(doubles),)`` tensor containing the
+                angles entering the :class:`~.pennylane.SingleExcitation` and
+                :class:`~.pennylane.DoubleExcitation` operations, in that order
+            wires (Any or Iterable[Any]): wires that the operator acts on
+            hf_state (array[int]): Length ``len(wires)`` occupation-number vector representing the
+                Hartree-Fock state. ``hf_state`` is used to initialize the wires.
+            singles (Sequence[Sequence]): sequence of lists with the indices of the two qubits
+                the :class:`~.pennylane.SingleExcitation` operations act on
+            doubles (Sequence[Sequence]): sequence of lists with the indices of the four qubits
+                the :class:`~.pennylane.DoubleExcitation` operations act on
+
+        Returns:
+            list[.Operator]: decomposition of the operator
+        """
+        op_list = []
+
+        op_list.append(BasisState(hf_state, wires=wires))
+
+        for i, d_wires in enumerate(doubles):
+            op_list.append(qml.DoubleExcitation(weights[len(singles) + i], wires=d_wires))
+
+        for j, s_wires in enumerate(singles):
+            op_list.append(qml.SingleExcitation(weights[j], wires=s_wires))
+
+        return op_list
 
     @staticmethod
     def shape(singles, doubles):
@@ -189,8 +213,8 @@ class AllSinglesDoubles(Operation):
         if singles is None or not singles:
             if doubles is None or not doubles:
                 raise ValueError(
-                    "'singles' and 'doubles' lists can not be both empty;"
-                    " got singles = {}, doubles = {}".format(singles, doubles)
+                    f"'singles' and 'doubles' lists can not be both empty;"
+                    f" got singles = {singles}, doubles = {doubles}"
                 )
             if doubles is not None:
                 shape_ = (len(doubles),)

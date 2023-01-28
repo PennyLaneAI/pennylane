@@ -18,61 +18,34 @@
 This module contains core quantum operations supported by PennyLane -
 such as gates, state preparations and observables.
 """
-import numpy as np
-
-from pennylane.operation import AnyWires, Observable, CVObservable
 
 from .cv import *
 from .qubit import *
 from .channel import *
+from .op_math import *
+from .qutrit import *
 
 from .cv import __all__ as _cv__all__
 from .cv import ops as _cv__ops__
 from .cv import obs as _cv__obs__
 
+from .qutrit import __all__ as _qutrit__all__
+from .qutrit import ops as _qutrit__ops__
+from .qutrit import obs as _qutrit__obs__
+
+from .channel import __all__ as _channel__ops__
+
 from .qubit import __all__ as _qubit__all__
 from .qubit import ops as _qubit__ops__
 from .qubit import obs as _qubit__obs__
 
-from .channel import __all__ as _channel__ops__
+# we would like these to just live in .qubit, but can't because of circular imports
+from .op_math import controlled_qubit_ops as _controlled_qubit__ops__
+
+_qubit__ops__ = _qubit__ops__ | _controlled_qubit__ops__
+_qubit__all__ = _qubit__all__ + list(_controlled_qubit__ops__)
 
 
-class Identity(CVObservable):
-    r"""pennylane.Identity(wires)
-    The identity observable :math:`\I`.
-
-    The expectation of this observable
-
-    .. math::
-        E[\I] = \text{Tr}(\I \rho)
-
-    corresponds to the trace of the quantum state, which in exact
-    simulators should always be equal to 1.
-    """
-    num_wires = AnyWires
-    num_params = 0
-    par_domain = None
-    grad_method = None
-
-    ev_order = 1
-    eigvals = np.array([1, 1])
-
-    @classmethod
-    def _eigvals(cls, *params):
-        return cls.eigvals
-
-    @classmethod
-    def _matrix(cls, *params):
-        return np.eye(2)
-
-    @staticmethod
-    def _heisenberg_rep(p):
-        return np.array([1, 0, 0])
-
-    def diagonalizing_gates(self):
-        return []
-
-
-__all__ = _cv__all__ + _qubit__all__ + _channel__ops__ + ["Identity"]
-__all_ops__ = list(_cv__ops__ | _qubit__ops__)
-__all_obs__ = list(_cv__obs__ | _qubit__obs__) + ["Identity"]
+__all__ = _cv__all__ + _qubit__all__ + _qutrit__all__ + _channel__ops__
+__all_ops__ = list(_cv__ops__ | _qubit__ops__ | _qutrit__ops__)
+__all_obs__ = list(_cv__obs__ | _qubit__obs__ | _qutrit__obs__)

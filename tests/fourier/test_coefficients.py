@@ -258,7 +258,7 @@ class TestAntiAliasing:
         """Test that the coefficients obtained through anti-aliasing are the
         same as the ones when we don't anti-alias at the correct degree."""
         coeffs_regular = coefficients(circuit, len(inpt), degree, lowpass_filter=False)
-        coeffs_anti_aliased = coefficients(circuit, len(inpt), degree)
+        coeffs_anti_aliased = coefficients(circuit, len(inpt), degree, lowpass_filter=True)
 
         assert np.allclose(coeffs_regular, coeffs_anti_aliased)
 
@@ -285,9 +285,11 @@ class TestInterfaces:
         ]
     )
 
+    @pytest.mark.tf
     def test_coefficients_tf_interface(self):
         """Test that coefficients are correctly computed when using the Tensorflow interface."""
-        tf = pytest.importorskip("tensorflow")
+        import tensorflow as tf
+
         qnode = qml.QNode(self.circuit, self.dev, interface="tf")
 
         weights = tf.Variable([0.5, 0.2])
@@ -296,9 +298,11 @@ class TestInterfaces:
 
         assert np.allclose(obtained_result, self.expected_result)
 
+    @pytest.mark.torch
     def test_coefficients_torch_interface(self):
         """Test that coefficients are correctly computed when using the PyTorch interface."""
-        torch = pytest.importorskip("torch")
+        import torch
+
         qnode = qml.QNode(self.circuit, self.dev, interface="torch")
 
         weights = torch.tensor([0.5, 0.2])
@@ -307,9 +311,10 @@ class TestInterfaces:
 
         assert np.allclose(obtained_result, self.expected_result)
 
+    @pytest.mark.jax
     def test_coefficients_jax_interface(self):
         """Test that coefficients are correctly computed when using the JAX interface."""
-        jax = pytest.importorskip("jax")
+        import jax
 
         # Need to enable float64 support
         from jax.config import config

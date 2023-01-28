@@ -16,10 +16,13 @@ Unit tests for the :mod:`pennylane.circuit_graph` module.
 """
 # pylint: disable=no-self-use,too-many-arguments,protected-access
 
-import pytest
 import numpy as np
+import io
+import contextlib
+import pytest
 
 import pennylane as qml
+from pennylane import numpy as pnp
 from pennylane.circuit_graph import CircuitGraph
 from pennylane.wires import Wires
 
@@ -112,21 +115,21 @@ class TestCircuitGraph:
 
         circuit = CircuitGraph(ops, obs, Wires([0, 1, 2]))
         graph = circuit.graph
-        assert len(graph) == 9
+        assert len(graph.node_indexes()) == 9
         assert len(graph.edges()) == 9
 
         queue = ops + obs
 
         # all ops should be nodes in the graph
         for k in queue:
-            assert k in graph.nodes
+            assert k in graph.nodes()
 
         # all nodes in the graph should be ops
-        for k in graph.nodes:
+        # for k in graph.nodes:
+        for k in graph.nodes():
             assert k is queue[k.queue_idx]
-
-        # Finally, checking the adjacency of the returned DAG:
-        assert set(graph.edges()) == set(
+        a = set((graph.get_node_data(e[0]), graph.get_node_data(e[1])) for e in graph.edge_list())
+        b = set(
             (queue[a], queue[b])
             for a, b in [
                 (0, 3),
@@ -140,6 +143,7 @@ class TestCircuitGraph:
                 (6, 8),
             ]
         )
+        assert a == b
 
     def test_ancestors_and_descendants_example(self, ops, obs):
         """
@@ -157,6 +161,26 @@ class TestCircuitGraph:
         descendants = circuit.descendants([queue[6]])
         assert descendants == set([queue[8]])
 
+    def test_in_topological_order_example(self, ops, obs):
+        """
+        Test ``_in_topological_order`` method returns the expected result.
+        """
+        circuit = CircuitGraph(ops, obs, Wires([0, 1, 2]))
+
+        to = circuit._in_topological_order(ops)
+
+        to_expected = [
+            qml.RZ(0.35, wires=[2]),
+            qml.Hadamard(wires=[2]),
+            qml.RY(0.35, wires=[1]),
+            qml.RX(0.43, wires=[0]),
+            qml.CNOT(wires=[0, 1]),
+            qml.PauliX(wires=[1]),
+            qml.CNOT(wires=[2, 0]),
+        ]
+
+        assert str(to) == str(to_expected)
+
     def test_update_node(self, ops, obs):
         """Changing nodes in the graph."""
 
@@ -165,13 +189,21 @@ class TestCircuitGraph:
         circuit.update_node(ops[0], new)
         assert circuit.operations[0] is new
 
+    def test_update_node_error(self, ops, obs):
+        """Test that changing nodes in the graph may raise an error."""
+        circuit = CircuitGraph(ops, obs, Wires([0, 1, 2]))
+        new = qml.RX(0.1, wires=0)
+        new = qml.CNOT(wires=[0, 1])
+        with pytest.raises(ValueError):
+            circuit.update_node(ops[0], new)
+
     def test_observables(self, circuit, obs):
         """Test that the `observables` property returns the list of observables in the circuit."""
-        assert circuit.observables == obs
+        assert str(circuit.observables) == str(obs)
 
     def test_operations(self, circuit, ops):
         """Test that the `operations` property returns the list of operations in the circuit."""
-        assert circuit.operations == ops
+        assert str(circuit.operations) == str(ops)
 
     def test_op_indices(self, circuit):
         """Test that for the given circuit, this method will fetch the correct operation indices for
@@ -186,11 +218,11 @@ class TestCircuitGraph:
 
     @pytest.mark.parametrize("wires", [["a", "q1", 3]])
     def test_layers(self, parameterized_circuit, wires):
-        """A test of a simple circuit with 3 layers and 6 parameters"""
+        """A test of a simple circuit with 3 layers and 6 trainable parameters"""
 
         dev = qml.device("default.gaussian", wires=wires)
         qnode = qml.QNode(parameterized_circuit, dev)
-        qnode(0.1, 0.2, 0.3, 0.4, 0.5, 0.6)
+        qnode(*pnp.array([0.1, 0.2, 0.3, 0.4, 0.5, 0.6], requires_grad=True))
         circuit = qnode.qtape.graph
         layers = circuit.parametrized_layers
         ops = circuit.operations
@@ -209,7 +241,7 @@ class TestCircuitGraph:
 
         dev = qml.device("default.gaussian", wires=wires)
         qnode = qml.QNode(parameterized_circuit, dev)
-        qnode(0.1, 0.2, 0.3, 0.4, 0.5, 0.6)
+        qnode(*pnp.array([0.1, 0.2, 0.3, 0.4, 0.5, 0.6], requires_grad=True))
         circuit = qnode.qtape.graph
         result = list(circuit.iterate_parametrized_layers())
 
@@ -246,3 +278,47 @@ class TestCircuitGraph:
         qnode()
         circuit = qnode.qtape.graph
         assert circuit.max_simultaneous_measurements == expected
+
+    def test_grid_when_sample_no_wires(self):
+        """A test to ensure the sample operation applies to all wires when
+        none are explicitly provided."""
+
+        ops = [qml.Hadamard(wires=0), qml.CNOT(wires=[0, 1])]
+        obs_no_wires = [qml.sample(op=None, wires=None)]
+        obs_w_wires = [qml.sample(op=None, wires=[0, 1, 2])]
+
+        circuit_no_wires = CircuitGraph(ops, obs_no_wires, wires=Wires([0, 1, 2]))
+        circuit_w_wires = CircuitGraph(ops, obs_w_wires, wires=Wires([0, 1, 2]))
+
+        sample_w_wires_op = qml.sample(op=None, wires=[0, 1, 2])
+        expected_grid = {
+            0: [ops[0], ops[1], sample_w_wires_op],
+            1: [ops[1], sample_w_wires_op],
+            2: [sample_w_wires_op],
+        }
+
+        for key in range(3):
+            lst_w_wires = circuit_w_wires._grid[key]
+            lst_no_wires = circuit_no_wires._grid[key]
+            lst_expected = expected_grid[key]
+
+            for el1, el2 in zip(lst_no_wires, lst_w_wires):
+                assert qml.equal(el1, el2)
+
+            for el1, el2 in zip(lst_no_wires, lst_expected):
+                assert qml.equal(el1, el2)
+
+    def test_print_contents(self):
+        """Tests if the circuit prints correct."""
+        ops = [qml.Hadamard(wires=0), qml.CNOT(wires=[0, 1])]
+        obs_w_wires = [qml.measurements.sample(op=None, wires=[0, 1, 2])]
+
+        circuit_w_wires = CircuitGraph(ops, obs_w_wires, wires=Wires([0, 1, 2]))
+
+        f = io.StringIO()
+        with contextlib.redirect_stdout(f):
+            circuit_w_wires.print_contents()
+        out = f.getvalue().strip()
+
+        expected = """Operations\n==========\nHadamard(wires=[0])\nCNOT(wires=[0, 1])\n\nObservables\n===========\nsample(wires=[0, 1, 2])"""
+        assert out == expected

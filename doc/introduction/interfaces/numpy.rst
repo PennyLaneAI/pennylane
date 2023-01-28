@@ -3,7 +3,7 @@
 NumPy interface
 ===============
 
-.. note:: This interface is the default interface supported by PennyLane's :class:`~.QNode`.
+.. note:: This interface is the default interface supported by PennyLane's :class:`QNode <pennylane.QNode>`.
 
 
 Using the NumPy interface
@@ -108,8 +108,8 @@ with respect to both QNode parameters ``phi`` and ``theta``:
 
 .. code-block:: python
 
-    phi = np.array([0.5, 0.1])
-    theta = 0.2
+    phi = np.array([0.5, 0.1], requires_grad=True)
+    theta = np.array(0.2, requires_grad=True)
     dcircuit = qml.grad(circuit3)
 
 Evaluating this gradient function at specific parameter values:
@@ -122,20 +122,22 @@ Differentiable and non-differentiable arguments
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 How does PennyLane know which arguments of a quantum function to differentiate, and which to ignore?
-For example, you may want to pass arguments as positional arguments to a QNode but *not* have
+For example, you may want to pass arguments to a QNode but *not* have
 PennyLane consider them when computing gradients.
 
-As a basic rule, **all positional arguments provided to the QNode are assumed to be differentiable
-by default**. To accomplish this, all arrays created by the PennyLane NumPy module have a special
-flag ``requires_grad`` specifying whether they are trainable or not:
+Regular positional arguments provided to the QNode are not assumed to be differentiable
+by default. This includes arguments in the form of built-in Python data types, and arrays from
+the original NumPy module. Thus, arguments need to be explicitly marked as trainable or selected
+using the ``argnum`` keyword. To mark an argument as trainable, a special flag ``requires_grad``
+has been added to arrays from PennyLane's NumPy module:
 
 >>> from pennylane import numpy as np
->>> np.array([0.1, 0.2])
+>>> np.array([0.1, 0.2], requires_grad=True)
 tensor([0.1, 0.2], requires_grad=True)
 
-If you would like to provide explicit non-differentiable arguments to the
-QNode or gradient function, make sure to use a NumPy array that specifies
-``requires_grad=False``:
+When omitted, the value for this flag is ``True``, so if you would like to provide a
+non-differentiable PennyLane NumPy array to the QNode or gradient function, make sure
+to specify ``requires_grad=False``:
 
 >>> from pennylane import numpy as np
 >>> np.array([0.1, 0.2], requires_grad=False)
@@ -146,63 +148,60 @@ tensor([0.1, 0.2], requires_grad=False)
     The ``requires_grad`` argument can be passed to any NumPy function provided by PennyLane,
     including NumPy functions that create arrays like ``np.random.random``, ``np.zeros``, etc.
 
-For example, consider the following QNode that accepts one trainable argument ``weights``,
-and two non-trainable arguments ``data`` and ``wires``:
+On the other hand, keyword arguments (whether they have a default value or not), are always
+considered non-trainable, no matter their data type or flags they may have. For example, consider
+the following QNode that accepts two arguments ``data`` and ``weights``:
 
 .. code-block:: python
 
     dev = qml.device('default.qubit', wires=5)
 
     @qml.qnode(dev)
-    def circuit(weights, data, wires):
-        qml.templates.AmplitudeEmbedding(data, wires=wires, normalize=True)
-        qml.RX(weights[0], wires=wires[0])
-        qml.RY(weights[1], wires=wires[1])
-        qml.RZ(weights[2], wires=wires[2])
-        qml.CNOT(wires=[wires[0], wires[1]])
-        qml.CNOT(wires=[wires[0], wires[2]])
-        return qml.expval(qml.PauliZ(wires[0]))
+    def circuit(data, weights):
+        qml.AmplitudeEmbedding(data, wires=[0, 1, 2], normalize=True)
+        qml.RX(weights[0], wires=0)
+        qml.RY(weights[1], wires=1)
+        qml.RZ(weights[2], wires=2)
+        qml.CNOT(wires=[0, 1])
+        qml.CNOT(wires=[0, 2])
+        return qml.expval(qml.PauliZ(0))
 
-We must specify that ``data`` and ``wires`` are NumPy arrays with ``requires_grad=False``:
+    rng = np.random.default_rng(seed=42)  # make the results reproducable
+    data = rng.random([2 ** 3], requires_grad=False)
+    weights = np.array([0.1, 0.2, 0.3], requires_grad=True)
 
->>> weights = np.array([0.1, 0.2, 0.3])
->>> data = np.random.random([2**3], requires_grad=False)
->>> wires = np.array([2, 0, 1], requires_grad=False)
->>> circuit(weights, data, wires)
-0.16935626052294817
+When we compute the derivative, arguments with ``requires_grad=False`` as well as arguments
+passed as keyword arguments are ignored by :func:`~.grad`, which in this case means no gradient
+is computed at all:
 
-When we compute the derivative, arguments with ``requires_grad=False`` are explicitly ignored
-by :func:`~.grad`:
-
->>> grad_fn = qml.grad(circuit)
->>> grad_fn(weights, data, wires)
-(array([-1.69923049e-02,  0.00000000e+00, -8.32667268e-17]),)
-
-.. note::
-
-    **Keyword arguments**
-
-    The :func:`~.grad` function does not differentiate keyword arguments. A QNode may be defined
-    using arguments with default values; for example
-
-    .. code-block:: python
-
-        @qml.qnode(dev)
-        def circuit(weights, data=None):
-
-    These arguments must always be passed using ``keyword=value`` syntax:
-
-    >>> circuit(weights, data=[0.34, 0.1])
-
-    These arguments will always be treated as non-differentiable by the QNode and :func:`~.grad`
-    function.
-
+>>> qml.grad(circuit)(data, weights=weights)
+UserWarning: Attempted to differentiate a function with no trainable parameters. If this is unintended, please add trainable parameters via the 'requires_grad' attribute or 'argnum' keyword.
+()
 
 Optimization
 ------------
 
 To optimize your hybrid classical-quantum model using the NumPy interface,
-use the provided :ref:`PennyLane optimizers <intro_ref_opt>`.
+use the provided optimizers:
+
+:html:`<div class="summary-table">`
+
+.. autosummary::
+    :nosignatures:
+
+    ~pennylane.AdagradOptimizer
+    ~pennylane.AdamOptimizer
+    ~pennylane.GradientDescentOptimizer
+    ~pennylane.LieAlgebraOptimizer
+    ~pennylane.MomentumOptimizer
+    ~pennylane.NesterovMomentumOptimizer
+    ~pennylane.QNGOptimizer
+    ~pennylane.RMSPropOptimizer
+    ~pennylane.RotosolveOptimizer
+    ~pennylane.RotoselectOptimizer
+    ~pennylane.ShotAdaptiveOptimizer
+
+:html:`</div>`
 
 For example, we can optimize a NumPy-interfacing QNode (below) such that the weights ``x``
 lead to a final expectation value of 0.5:
@@ -225,7 +224,7 @@ lead to a final expectation value of 0.5:
     opt = qml.GradientDescentOptimizer(stepsize=0.4)
 
     steps = 100
-    params = np.array([0.011, 0.012, 0.05])
+    params = np.array([0.011, 0.012, 0.05], requires_grad=True)
 
     for i in range(steps):
         # update the circuit parameters
@@ -234,9 +233,9 @@ lead to a final expectation value of 0.5:
 The final weights and circuit value are:
 
 >>> params
-array([ 0.19846757,  0.012     ,  1.03559806])
+tensor([0.19846757, 0.012     , 1.03559806], requires_grad=True)
 >>> circuit4(params)
-0.5
+tensor(0.5, requires_grad=True)
 
 For more details on the NumPy optimizers, check out the tutorials, as well as the
 :mod:`pennylane.optimize` documentation.
@@ -264,8 +263,9 @@ How does automatic differentiation work in the case where the QNode returns mult
 If we were to naively try computing the gradient of ``circuit5`` using the :func:`~.grad` function,
 
 >>> g1 = qml.grad(circuit5)
->>> params = np.array([np.pi/2, 0.2])
+>>> params = np.array([np.pi/2, 0.2], requires_grad=True)
 >>> g1(params)
+TypeError: Grad only applies to real scalar-output functions. Try jacobian, elementwise_grad or holomorphic_grad.
 
 we would get an error message. This is because the `gradient <https://en.wikipedia.org/wiki/Gradient>`_ is
 only defined for scalar functions, i.e., functions which return a single value. In the case where the QNode
@@ -355,15 +355,17 @@ to the ``scipy.minimize`` function:
     def cost(x):
         return np.abs(circuit(x) - 0.5) ** 2
 
-    params = np.array([0.011, 0.012, 0.05])
+    params = np.array([0.011, 0.012, 0.05], requires_grad=True)
 
     minimize(cost, params, method='BFGS')
 
 Some of the SciPy minimization methods require information about the gradient
 of the cost function via the ``jac`` keyword argument. This is easy to include; we
-can simply create a function that computes the gradient using ``qml.grad``:
+can simply create a function that computes the gradient using ``qml.grad``. Since
+``minimize`` does not use our wrapped version of numpy, we need to explicitly
+specify which arguments are trainable via the ``argnum`` keyword.
 
->>> minimize(cost, params, method='BFGS', jac=qml.grad(cost))
+>>> minimize(cost, params, method='BFGS', jac=qml.grad(cost, argnum=0))
       fun: 6.3491130264451484e-18
  hess_inv: array([[ 1.85642354e+00, -8.84954187e-22,  3.89539943e+00],
        [-8.84954187e-22,  1.00000000e+00, -4.02571211e-21],

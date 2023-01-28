@@ -14,9 +14,10 @@
 """
 Contains the QNodeCollection class.
 """
+import warnings
+
 # pylint: disable=too-many-arguments,import-outside-toplevel
 from collections.abc import Sequence
-import warnings
 
 
 class QNodeCollection(Sequence):
@@ -140,7 +141,8 @@ class QNodeCollection(Sequence):
 
     We can now create some parameters and evaluate the collection:
 
-    >>> params = qml.init.strong_ent_layers_normal(n_layers=4, n_wires=4)
+    >>> shape = qml.templates.StronglyEntanglingLayers.shape(n_layers=4, n_wires=4)
+    >>> params = np.random.random(shape)
     >>> qnodes(params)
     array([0.046875  , 0.93164062])
 
@@ -158,6 +160,10 @@ class QNodeCollection(Sequence):
     """
 
     def __init__(self, qnodes=None):
+        warnings.warn(
+            "The QNodeCollection class is deprecated and it will be removed soon.", UserWarning
+        )
+
         self.qnodes = []
         self.extend(qnodes or [])
 
@@ -182,8 +188,8 @@ class QNodeCollection(Sequence):
 
         if self.qnodes and (qnodes[0].interface != self.interface):
             raise ValueError(
-                "Interface mismatch. Provided QNodes use the {} interface, "
-                "QNode collection uses the {} interface".format(qnodes[0].interface, self.interface)
+                f"Interface mismatch. Provided QNodes use the {qnodes[0].interface} interface, "
+                f"QNode collection uses the {self.interface} interface"
             )
 
         self.qnodes.extend(qnodes)

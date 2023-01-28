@@ -51,6 +51,11 @@ class ArbitraryStatePreparation(Operation):
     independent real parameters. This templates uses Pauli word rotations to
     parametrize the unitary.
 
+    Args:
+        weights (tensor_like): Angles of the Pauli word rotations. Needs to have length :math:`2^{n+1} - 2`
+            where :math:`n` is the number of wires the template acts upon.
+        wires (Iterable): wires that the template acts on
+
     **Example**
 
     ArbitraryStatePreparation can be used to train state preparations,
@@ -62,7 +67,7 @@ class ArbitraryStatePreparation(Operation):
 
         @qml.qnode(dev)
         def vqe(weights):
-            qml.templates.ArbitraryStatePreparation(weights, wires=[0, 1, 2, 3])
+            qml.ArbitraryStatePreparation(weights, wires=[0, 1, 2, 3])
 
             return qml.expval(qml.Hermitian(H, wires=[0, 1, 2, 3]))
 
@@ -70,20 +75,14 @@ class ArbitraryStatePreparation(Operation):
 
     .. code-block:: python
 
-        shape = qml.templates.ArbitraryStatePreparation.shape(n_wires=4)
+        shape = qml.ArbitraryStatePreparation.shape(n_wires=4)
 
-
-    Args:
-        weights (tensor_like): Angles of the Pauli word rotations. Needs to have length :math:`2^(n+1) - 2`
-            where :math:`n` is the number of wires the template acts upon.
-        wires (Iterable): wires that the template acts on
     """
 
-    num_params = 1
     num_wires = AnyWires
-    par_domain = "A"
+    grad_method = None
 
-    def __init__(self, weights, wires, do_queue=True):
+    def __init__(self, weights, wires, do_queue=True, id=None):
 
         shape = qml.math.shape(weights)
         if shape != (2 ** (len(wires) + 1) - 2,):
@@ -91,15 +90,46 @@ class ArbitraryStatePreparation(Operation):
                 f"Weights tensor must be of shape {(2 ** (len(wires) + 1) - 2,)}; got {shape}."
             )
 
-        super().__init__(weights, wires=wires, do_queue=do_queue)
+        super().__init__(weights, wires=wires, do_queue=do_queue, id=id)
 
-    def expand(self):
+    @property
+    def num_params(self):
+        return 1
 
-        with qml.tape.QuantumTape() as tape:
-            for i, pauli_word in enumerate(_state_preparation_pauli_words(len(self.wires))):
-                qml.PauliRot(self.parameters[0][i], pauli_word, wires=self.wires)
+    @staticmethod
+    def compute_decomposition(weights, wires):  # pylint: disable=arguments-differ
+        r"""Representation of the operator as a product of other operators.
 
-        return tape
+        .. math:: O = O_1 O_2 \dots O_n.
+
+
+
+        .. seealso:: :meth:`~.ArbitraryStatePreparation.decomposition`.
+
+        Args:
+            weights (tensor_like): Angles of the Pauli word rotations. Needs to have length :math:`2^{n+1} - 2`
+                where :math:`n` is the number of wires the template acts upon.
+            wires (Any or Iterable[Any]): wires that the operator acts on
+
+        Returns:
+            list[.Operator]: decomposition of the operator
+
+        **Example**
+
+        >>> weights = torch.tensor([1., 2., 3., 4., 5., 6.])
+        >>> qml.ArbitraryStatePreparation.compute_decomposition(weights, wires=["a", "b"])
+        [PauliRot(tensor(1.), 'XI', wires=['a', 'b']),
+         PauliRot(tensor(2.), 'YI', wires=['a', 'b']),
+         PauliRot(tensor(3.), 'IX', wires=['a', 'b']),
+         PauliRot(tensor(4.), 'IY', wires=['a', 'b']),
+         PauliRot(tensor(5.), 'XX', wires=['a', 'b']),
+         PauliRot(tensor(6.), 'XY', wires=['a', 'b'])]
+        """
+        op_list = []
+        for i, pauli_word in enumerate(_state_preparation_pauli_words(len(wires))):
+            op_list.append(qml.PauliRot(weights[i], pauli_word, wires=wires))
+
+        return op_list
 
     @staticmethod
     def shape(n_wires):
