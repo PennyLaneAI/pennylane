@@ -98,9 +98,10 @@ parameters and a time at which to evaluate the coefficients :math:`f_j`.
 
 .. warning::
     The order of the coefficients and operators matters. When initializing the
-     :class:`~.ParametrizedHamiltonian`, terms defined with fixed coefficients
-    have to come before parametrized terms to prevent discrepancy in the wire order. When passing parameters, ensure
-    that the order of the coefficient functions and the order of the parameters match.
+    :class:`~.ParametrizedHamiltonian`, terms defined with fixed coefficients
+    have to come before parametrized terms to prevent discrepancy in the wire order.
+    When passing parameters, ensure that the order of the coefficient functions and
+    the order of the parameters match.
 
 Convenience functions for building a ParametrizedHamiltonian
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
