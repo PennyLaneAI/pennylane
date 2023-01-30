@@ -73,11 +73,16 @@ class TestQNode:
             return qml.expval(qml.PauliZ(0))
 
         a = np.array(0.1, requires_grad=True)
-        circuit(a)
+
+        if interface == "jax-jit":
+            jax.jit(circuit)(a)
+        else:
+            circuit(a)
 
         assert circuit.interface == interface
 
         # the tape is able to deduce trainable parameters
+
         assert circuit.qtape.trainable_params == [0]
 
         # gradients should work
@@ -103,7 +108,11 @@ class TestQNode:
             qml.CNOT(wires=[0, 1])
             return qml.expval(qml.Hamiltonian([1, 1], [qml.PauliZ(0), qml.PauliY(1)]))
 
-        grad_fn = jax.grad(circuit, argnums=[0, 1])
+        if interface == "jax.jit":
+            grad_fn = jax.jit(jax.grad(circuit, argnums=[0, 1]))
+        else:
+            grad_fn = jax.grad(circuit, argnums=[0, 1])
+
         spy = mocker.spy(qml.gradients.param_shift, "transform_fn")
         res = grad_fn(a, b)
 
@@ -117,7 +126,11 @@ class TestQNode:
         assert len(spy.spy_return[0]) == 4
 
         # make the second QNode argument a constant
-        grad_fn = jax.grad(circuit, argnums=0)
+        if interface == "jax.jit":
+            grad_fn = jax.jit(jax.grad(circuit, argnums=0))
+        else:
+            grad_fn = jax.grad(circuit, argnums=0)
+
         res = grad_fn(a, b)
 
         # the tape has reported only the first argument as trainable
@@ -132,7 +145,12 @@ class TestQNode:
         # trainability also updates on evaluation
         a = np.array(0.54, requires_grad=False)
         b = np.array(0.8, requires_grad=True)
-        circuit(a, b)
+
+        if interface == "jax.jit":
+            jax.jit(circuit)(a, b)
+        else:
+            circuit(a, b)
+
         assert circuit.qtape.trainable_params == [1]
 
     def test_classical_processing(self, dev_name, diff_method, mode, interface, tol):

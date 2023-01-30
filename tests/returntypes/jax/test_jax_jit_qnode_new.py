@@ -62,7 +62,6 @@ class TestQNode:
         a = np.array(0.1, requires_grad=True)
         jax.jit(circuit)(a)
 
-
         assert circuit.interface == interface
 
         # the tape is able to deduce trainable parameters

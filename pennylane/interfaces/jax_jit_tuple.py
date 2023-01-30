@@ -139,9 +139,9 @@ def execute_tuple(tapes, device, execute_fn, gradient_fn, gradient_kwargs, _n=1,
     # pylint: disable=unused-argument
 
     if any(
-            m.return_type in (qml.measurements.Counts, qml.measurements.AllCounts)
-            for t in tapes
-            for m in t.measurements
+        m.return_type in (qml.measurements.Counts, qml.measurements.AllCounts)
+        for t in tapes
+        for m in t.measurements
     ):
         # Obtaining information about the shape of the Counts measurements is
         # not implemeneted and is required for the callback logic
@@ -180,14 +180,14 @@ def execute_tuple(tapes, device, execute_fn, gradient_fn, gradient_kwargs, _n=1,
 
 
 def _execute_bwd_tuple(
-        params,
-        tapes=None,
-        device=None,
-        execute_fn=None,
-        gradient_fn=None,
-        gradient_kwargs=None,
-        _n=1,
-        max_diff=2,
+    params,
+    tapes=None,
+    device=None,
+    execute_fn=None,
+    gradient_fn=None,
+    gradient_kwargs=None,
+    _n=1,
+    max_diff=2,
 ):  # pylint: disable=dangerous-default-value,unused-argument
     @jax.custom_jvp
     def execute_wrapper(params):
@@ -243,7 +243,9 @@ def _execute_bwd_tuple(
                 if len(tapes) == 1:
                     jacobians_from_callback = [jacobians_from_callback]
 
-                jvps = _jit_compute_jvps(jacobians_from_callback, tangents[0], multi_measurements, trainable_params)
+                jvps = _jit_compute_jvps(
+                    jacobians_from_callback, tangents[0], multi_measurements, trainable_params
+                )
             else:
 
                 new_tapes = [_copy_tape(t, a) for t, a in zip(tapes, params)]
@@ -265,7 +267,9 @@ def _execute_bwd_tuple(
                     jacs = res_processing_fn(jacs)
                     all_jacs.append(jacs)
 
-                jvps = _jit_compute_jvps(all_jacs, tangents[0], multi_measurements, trainable_params)
+                jvps = _jit_compute_jvps(
+                    all_jacs, tangents[0], multi_measurements, trainable_params
+                )
         else:
             # Gradient function is a device method
             res_from_callback = _device_method_jac_via_callback(params, device)
@@ -273,7 +277,9 @@ def _execute_bwd_tuple(
             if len(tapes) == 1:
                 res_from_callback = [res_from_callback]
 
-            jvps = _jit_compute_jvps(res_from_callback, tangents[0], multi_measurements, trainable_params)
+            jvps = _jit_compute_jvps(
+                res_from_callback, tangents[0], multi_measurements, trainable_params
+            )
 
         return evaluation_results, jvps
 
@@ -349,12 +355,12 @@ def _execute_bwd_tuple(
 
 # The execute function in forward mode
 def _execute_fwd_tuple(
-        params,
-        tapes=None,
-        device=None,
-        execute_fn=None,
-        gradient_kwargs=None,
-        _n=1,
+    params,
+    tapes=None,
+    device=None,
+    execute_fn=None,
+    gradient_kwargs=None,
+    _n=1,
 ):  # pylint: disable=dangerous-default-value,unused-argument
     """The auxiliary execute function for cases when the user requested
     jacobians to be computed in forward mode (e.g. adjoint) or when no gradient function was

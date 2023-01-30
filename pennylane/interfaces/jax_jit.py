@@ -79,7 +79,7 @@ def execute(tapes, device, execute_fn, gradient_fn, gradient_kwargs, _n=1, max_d
             params = tape.get_parameters(trainable_only=False)
             trainable_params = set()
             for idx, p in enumerate(params):
-                if isinstance(p, jax.core.Tracer):
+                if isinstance(p, jax.core.Tracer) or qml.math.requires_grad(p):
                     trainable_params.add(idx)
             tape.trainable_params = trainable_params
 
