@@ -13,8 +13,8 @@
 # limitations under the License.
 """Tests for the shot adaptive optimizer"""
 import pytest
-from scipy.stats import multinomial
 from flaky import flaky
+from scipy.stats import multinomial
 
 import pennylane as qml
 from pennylane import numpy as np
@@ -425,7 +425,7 @@ class TestWeightedRandomSampling:
         opt = qml.ShotAdaptiveOptimizer(min_shots=10)
         spy = mocker.spy(opt, "weighted_random_sampling")
 
-        new_weights = opt.step(expval_cost, weights)
+        _ = opt.step(expval_cost, weights)
         spy.assert_called_once()
 
         grads = opt.weighted_random_sampling(expval_cost.qnodes, coeffs, 10, [0], weights)

@@ -176,10 +176,12 @@ def hamiltonian_expand(tape: QuantumTape, group=True):
                     for c_group, r_group in zip(coeff_groupings, res_groupings)
                 ]
             else:
-                dot_products = [
-                    qml.math.dot(r_group, c_group)
-                    for c_group, r_group in zip(coeff_groupings, res_groupings)
-                ]
+                dot_products = []
+                for c_group, r_group in zip(coeff_groupings, res_groupings):
+                    if len(c_group) == 1 and len(r_group) != 1:
+                        dot_products.append(r_group * c_group)
+                    else:
+                        dot_products.append(qml.math.dot(r_group, c_group))
             summed_dot_products = qml.math.sum(qml.math.stack(dot_products), axis=0)
             return qml.math.convert_like(summed_dot_products, res_groupings[0])
 
@@ -196,7 +198,12 @@ def hamiltonian_expand(tape: QuantumTape, group=True):
 
     # pylint: disable=function-redefined
     def processing_fn(res):
-        dot_products = [qml.math.dot(qml.math.squeeze(r), c) for c, r in zip(coeffs, res)]
+        dot_products = []
+        for c, r in zip(coeffs, res):
+            if qml.math.ndim(c) == 0 and qml.math.size(r) != 1:
+                dot_products.append(qml.math.squeeze(r) * c)
+            else:
+                dot_products.append(qml.math.dot(qml.math.squeeze(r), c))
         summed_dot_products = qml.math.sum(qml.math.stack(dot_products), axis=0)
         return qml.math.convert_like(summed_dot_products, res[0])
 
