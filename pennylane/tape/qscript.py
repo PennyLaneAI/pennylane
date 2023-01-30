@@ -688,7 +688,7 @@ class QuantumScript:
         else:
             iterator = enumerate(params)
             required_length = len(self._par_info)
-
+        print(required_length, self._par_info)
         if len(params) != required_length:
             raise ValueError("Number of provided parameters does not match.")
 

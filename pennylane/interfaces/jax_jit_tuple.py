@@ -30,7 +30,8 @@ dtype = jnp.float64
 def _copy_tape(t, a):
     """Copy a given tape with operations and set parameters"""
     tc = t.copy(copy_operations=True)
-    tc.set_parameters(a)
+    print(a)
+    tc.set_parameters(a, trainable_only=False)
     return tc
 
 
@@ -139,9 +140,14 @@ def execute_tuple(tapes, device, execute_fn, gradient_fn, gradient_kwargs, _n=1,
             # set the trainable parameters
             params = tape.get_parameters(trainable_only=False)
             tape.trainable_params = qml.math.get_trainable_indices(params)
-    print(tapes[0].circuit)
-    parameters = tuple(list(t.get_parameters()) for t in tapes)
-    print(parameters)
+    parameters = []
+
+    for tape in tapes:
+        params = tape.get_parameters(trainable_only=False)
+        params = [p for p in params if isinstance(p, jax.core.Tracer)]
+        parameters.append(params)
+
+    parameters = tuple(parameters)
 
     if gradient_fn is None:
         return _execute_fwd_tuple(
@@ -182,7 +188,9 @@ def _execute_bwd_tuple(
 
         def wrapper(p):
             """Compute the forward pass."""
+            print(p)
             new_tapes = [_copy_tape(t, a) for t, a in zip(tapes, p)]
+
             with qml.tape.Unwrap(*new_tapes):
                 res, _ = execute_fn(new_tapes, **gradient_kwargs)
 
@@ -197,6 +205,7 @@ def _execute_bwd_tuple(
             # we detect with the heuristic above if we are executing under vmap and we
             # swap the order in that case.
             res = jax.tree_map(lambda r, s: r.T if r.ndim > s.ndim else r, res, shape_dtype_structs)
+            print(res)
             return res
 
         # Jit params, not trainable only.
