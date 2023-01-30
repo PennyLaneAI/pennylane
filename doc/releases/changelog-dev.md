@@ -335,6 +335,9 @@
 
 <h3>Deprecations</h3>
 
+* `qml.transforms.measurement_grouping` has been removed. Users should use `qml.transforms.hamiltonian_expand`
+  instead.
+
 <h3>Documentation</h3>
 
 * Updated the code example in `qml.SparseHamiltonian` with the correct wire range.
