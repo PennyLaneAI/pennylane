@@ -13,6 +13,7 @@
 # limitations under the License.
 """Unit tests for the TensorBox functional API in pennylane.fn.fn
 """
+# pylint: disable=import-outside-toplevel
 import itertools
 from functools import partial
 
@@ -249,6 +250,7 @@ test_conj_data = [
 
 @pytest.mark.parametrize("t", test_conj_data)
 def test_conj(t):
+    """Test the qml.math.conj function."""
     res = fn.conj(t)
     assert fn.allequal(res, np.conj(t))
 
@@ -523,6 +525,8 @@ class TestDot:
         """Test that the matrix-matrix dot product of two vectors results in a matrix"""
         res = fn.dot(t1, t1)
         assert fn.allequal(res, np.array([[7, 10], [15, 22]]))
+        res = fn.dot(t2, t2)
+        assert fn.allequal(res, 85)
 
     def test_matrix_vector_product_tensorflow_autograph(self):
         """Test that the matrix-matrix dot product of two vectors results in a matrix
@@ -533,7 +537,7 @@ class TestDot:
         def cost(t1, t2):
             return fn.dot(t1, t2)
 
-        with tf.GradientTape() as tape:
+        with tf.GradientTape():
             res = cost(t1, t2)
 
         assert fn.allequal(res, [20, 46])
@@ -759,13 +763,16 @@ class TestTensordotTorch:
 
     @pytest.mark.parametrize("axes", [[[0], [0]], [[-1], [0]], [[0], [-1]], [[-1], [-1]]])
     def test_tensordot_torch_vector_vector(self, axes):
+        """Test tensordot vector-vector product with PyTorch."""
         assert fn.allclose(fn.tensordot(self.v1, self.v2, axes=axes), self.v1_dot_v2)
 
     def test_tensordot_torch_outer(self):
+        """Test tensordot outer product with PyTorch."""
         assert fn.allclose(fn.tensordot(self.v1, self.v2, axes=0), self.v1_outer_v2)
         assert fn.allclose(fn.tensordot(self.v2, self.v1, axes=0), qml.math.T(self.v1_outer_v2))
 
     def test_tensordot_torch_outer_with_old_version(self, monkeypatch):
+        """Test tensordot outer product with an old version of PyTorch."""
         with monkeypatch.context() as m:
             m.setattr("torch.__version__", "1.9.0")
             assert fn.allclose(fn.tensordot(self.v1, self.v2, axes=0), self.v1_outer_v2)
@@ -777,10 +784,12 @@ class TestTensordotTorch:
     )
     @pytest.mark.parametrize("axes", [[[1], [0]], [[-1], [0]], [[1], [-1]], [[-1], [-1]]])
     def test_tensordot_torch_matrix_vector(self, M, v, expected, axes):
+        """Test tensordot matrix-vector product with PyTorch."""
         assert fn.allclose(fn.tensordot(M, v, axes=axes), expected)
 
     @pytest.mark.parametrize("axes", [[[1], [0]], [[-1], [0]], [[1], [-2]], [[-1], [-2]]])
     def test_tensordot_torch_matrix_matrix(self, axes):
+        """Test tensordot matrix-matrix product with PyTorch."""
         assert fn.allclose(fn.tensordot(self.M1, qml.math.T(self.M2), axes=axes), self.M1_dot_M2T)
         assert fn.allclose(
             fn.tensordot(self.M2, qml.math.T(self.M1), axes=axes), qml.math.T(self.M1_dot_M2T)
@@ -793,16 +802,19 @@ class TestTensordotTorch:
     @pytest.mark.parametrize("axes", [[[1], [0]], [[-3], [0]], [[1], [-1]], [[-3], [-1]]])
     @pytest.mark.parametrize("v, expected", [(v1, T1_dot_v1), (v2, T1_dot_v2)])
     def test_tensordot_torch_tensor_vector(self, v, expected, axes):
+        """Test tensordot tensor-vector product with PyTorch."""
         assert fn.allclose(fn.tensordot(self.T1, v, axes=axes), expected)
 
     @pytest.mark.parametrize("axes1", [[1, 2], [-3, -2], [1, -2], [-3, 2]])
     @pytest.mark.parametrize("axes2", [[1, 0], [-1, -2], [1, -2]])
     @pytest.mark.parametrize("M, expected", [(M1, T1_dot_M1), (M2, T1_dot_M2)])
     def test_tensordot_torch_tensor_matrix(self, M, expected, axes1, axes2):
+        """Test tensordot tensor-matrix product with PyTorch."""
         assert fn.allclose(fn.tensordot(self.T1, M, axes=[axes1, axes2]), expected)
 
 
 class TestTensordotDifferentiability:
+    """Test the differentiability of qml.math.tensordot."""
 
     v0 = np.array([0.1, 5.3, -0.9, 1.1])
     v1 = np.array([0.5, -1.7, -2.9, 0.0])
@@ -1240,21 +1252,20 @@ class TestInBackprop:
         with tf.GradientTape():
             # variables are automatically watched within a context,
             # but constants are not
-            y = f_pow(t1)
+            _ = f_pow(t1)
             assert fn.in_backprop(t1)
             assert not fn.in_backprop(t2)
 
         with tf.GradientTape() as tape:
             # watching makes all tensors trainable
             tape.watch([t1, t2])
-            y = f_pow(t1)
+            _ = f_pow(t1)
             assert fn.in_backprop(t1)
             assert fn.in_backprop(t2)
 
     @pytest.mark.torch
     def test_unknown_interface_in_backprop(self):
         """Test that an error is raised if the interface is unknown"""
-        import torch
 
         with pytest.raises(ValueError, match="is in backpropagation."):
             fn.in_backprop(torch.tensor([0.1]))
@@ -1509,17 +1520,6 @@ class TestTake:
         assert fn.allclose(res, expected)
 
     @pytest.mark.parametrize("t", take_data)
-    def test_array_indexing_along_axis(self, t):
-        """Test that indexing with a sequence properly extracts
-        the elements from the specified tensor axis"""
-        indices = [0, 1, -2]
-        res = fn.take(t, indices, axis=2)
-        expected = np.array(
-            [[[1, 2, 1], [3, 4, 3], [-1, 1, -1]], [[5, 6, 5], [0, -1, 0], [2, 1, 2]]]
-        )
-        assert fn.allclose(res, expected)
-
-    @pytest.mark.parametrize("t", take_data)
     def test_multidimensional_indexing_along_axis(self, t):
         """Test that indexing with a sequence properly extracts
         the elements from the specified tensor axis"""
@@ -1551,18 +1551,18 @@ class TestTake:
 
 
 where_data = [
-    ("autograd", np.array([[[1, 2], [3, 4], [-1, 1]], [[5, 6], [0, -1], [2, 1]]])),
-    ("torch", torch.tensor([[[1, 2], [3, 4], [-1, 1]], [[5, 6], [0, -1], [2, 1]]])),
-    ("numpy", onp.array([[[1, 2], [3, 4], [-1, 1]], [[5, 6], [0, -1], [2, 1]]])),
-    ("tf", tf.constant([[[1, 2], [3, 4], [-1, 1]], [[5, 6], [0, -1], [2, 1]]])),
-    ("tf", tf.Variable([[[1, 2], [3, 4], [-1, 1]], [[5, 6], [0, -1], [2, 1]]])),
-    ("jax", jnp.array([[[1, 2], [3, 4], [-1, 1]], [[5, 6], [0, -1], [2, 1]]])),
+    np.array([[[1, 2], [3, 4], [-1, 1]], [[5, 6], [0, -1], [2, 1]]]),
+    torch.tensor([[[1, 2], [3, 4], [-1, 1]], [[5, 6], [0, -1], [2, 1]]]),
+    onp.array([[[1, 2], [3, 4], [-1, 1]], [[5, 6], [0, -1], [2, 1]]]),
+    tf.constant([[[1, 2], [3, 4], [-1, 1]], [[5, 6], [0, -1], [2, 1]]]),
+    tf.Variable([[[1, 2], [3, 4], [-1, 1]], [[5, 6], [0, -1], [2, 1]]]),
+    jnp.array([[[1, 2], [3, 4], [-1, 1]], [[5, 6], [0, -1], [2, 1]]]),
 ]
 
 
-@pytest.mark.parametrize("interface, t", where_data)
-def test_where(interface, t):
-    """Test that the where function works as expected"""
+@pytest.mark.parametrize("t", where_data)
+def test_where(t):
+    """Test that the qml.math.where function works as expected"""
     # With output values
     res = fn.where(t < 0, 100 * fn.ones_like(t), t)
     expected = np.array([[[1, 2], [3, 4], [100, 1]], [[5, 6], [0, 100], [2, 1]]])
@@ -1618,7 +1618,11 @@ class TestScatterElementAdd:
         assert isinstance(res, np.ndarray)
         assert fn.allclose(res, self.expected_val)
 
-        grad = qml.grad(lambda *weights: cost(*weights)[self.index[0], self.index[1]])(x, y)
+        def grab_cost_entry(*weights):
+            """Return a single entry of the cost"""
+            return cost(*weights)[self.index[0], self.index[1]]
+
+        grad = qml.grad(grab_cost_entry)(x, y)
         assert fn.allclose(grad[0], self.expected_grad_x)
         assert fn.allclose(grad[1], self.expected_grad_y)
 
@@ -1635,7 +1639,7 @@ class TestScatterElementAdd:
         assert isinstance(res, np.ndarray)
         assert fn.allclose(res, self.expected_val)
 
-        jac = qml.jacobian(lambda *weights: cost_multi(*weights))(x, y)
+        jac = qml.jacobian(cost_multi)(x, y)
         assert fn.allclose(jac[0], self.expected_jac_x)
         assert fn.allclose(jac[1], self.expected_jac_y)
 
@@ -1652,7 +1656,7 @@ class TestScatterElementAdd:
         assert isinstance(res, np.ndarray)
         assert fn.allclose(res, onp.array([[1.0, 1.3136, 1.0], [1.0, 1.0, 1.09]]))
 
-        jac = qml.jacobian(lambda *weights: cost_multi(*weights))(x, y)
+        jac = qml.jacobian(cost_multi)(x, y)
         assert fn.allclose(jac[0], self.expected_jac_x)
         exp_jac_y = onp.zeros((2, 3, 2))
         exp_jac_y[0, 1, 0] = 2 * y[0]
@@ -1702,7 +1706,11 @@ class TestScatterElementAdd:
         assert isinstance(res, jax.Array)
         assert fn.allclose(res, self.expected_val)
 
-        grad = jax.grad(lambda weights: cost(weights)[self.index[0], self.index[1]])([x, y])
+        def grab_cost_entry(*weights):
+            """Return a single entry of the cost"""
+            return cost(*weights)[self.index[0], self.index[1]]
+
+        grad = jax.grad(grab_cost_entry)([x, y])
         assert fn.allclose(grad[0], self.expected_grad_x)
         assert fn.allclose(grad[1], self.expected_grad_y)
 
@@ -1719,7 +1727,7 @@ class TestScatterElementAdd:
         assert isinstance(res, jax.Array)
         assert fn.allclose(res, self.expected_val)
 
-        jac = jax.jacobian(lambda *weights: cost_multi(*weights), argnums=[0, 1])(x, y)
+        jac = jax.jacobian(cost_multi, argnums=[0, 1])(x, y)
         assert fn.allclose(jac[0], self.expected_jac_x)
         assert fn.allclose(jac[1], self.expected_jac_y)
 
@@ -1750,11 +1758,12 @@ class TestScatterElementAddMultiValue:
         assert isinstance(res, np.ndarray)
         assert fn.allclose(res, self.expected_val)
 
-        scalar_cost = (
-            lambda *weights: cost(*weights)[self.indices[0][0], self.indices[1][0]]
-            + cost(*weights)[self.indices[0][1], self.indices[1][1]]
-        )
-        grad = qml.grad(scalar_cost)(x, y)
+        def add_cost_entries(*weights):
+            """Add two entries of the cost."""
+            c = cost(*weights)
+            return c[self.indices[0][0], self.indices[1][0]] + c[self.indices[0][1], self.indices[1][1]]
+
+        grad = qml.grad(add_cost_entries)(x, y)
         assert fn.allclose(grad[0], self.expected_grad_x)
         assert fn.allclose(grad[1], self.expected_grad_y)
 
@@ -1815,11 +1824,12 @@ class TestScatterElementAddMultiValue:
         assert isinstance(res, jax.Array)
         assert fn.allclose(res, self.expected_val)
 
-        scalar_cost = (
-            lambda weights: cost(weights)[self.indices[0][0], self.indices[1][0]]
-            + cost(weights)[self.indices[0][1], self.indices[1][1]]
-        )
-        grad = jax.grad(scalar_cost)([x, y])
+        def add_cost_entries(*weights):
+            """Add two entries of the cost."""
+            c = cost(*weights)
+            return c[self.indices[0][0], self.indices[1][0]] + c[self.indices[0][1], self.indices[1][1]]
+
+        grad = jax.grad(add_cost_entries)(x, y)
         assert fn.allclose(grad[0], self.expected_grad_x)
         assert fn.allclose(grad[1], self.expected_grad_y)
 
@@ -1953,7 +1963,11 @@ class TestCovMatrix:
         expected = self.expected_cov(weights)
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
-        grad_fn = qml.grad(lambda weights: cov(weights)[0, 1])
+        def grab_cov_entry(weights):
+            """Grab an entry of the cov output."""
+            return cov(weights)[0, 1]
+
+        grad_fn = qml.grad(grab_cov_entry)
         res = grad_fn(weights)
         expected = self.expected_grad(weights)
         assert np.allclose(res, expected, atol=tol, rtol=0)
@@ -1983,7 +1997,11 @@ class TestCovMatrix:
         expected = self.expected_cov(weights)
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
-        grad_fn = qml.grad(lambda weights: cov(weights)[0, 1])
+        def grab_cov_entry(weights):
+            """Grab an entry of the cov output."""
+            return cov(weights)[0, 1]
+
+        grad_fn = qml.grad(grab_cov_entry)
         res = grad_fn(weights)
         expected = self.expected_grad(weights)
         assert np.allclose(res, expected, atol=tol, rtol=0)
@@ -2074,7 +2092,11 @@ class TestCovMatrix:
         expected = self.expected_cov(weights)
         assert jnp.allclose(res, expected, atol=tol, rtol=0)
 
-        grad_fn = jax.grad(lambda weights: cov(weights)[0, 1])
+        def grab_cov_entry(weights):
+            """Grab an entry of the cov output."""
+            return cov(weights)[0, 1]
+
+        grad_fn = jax.grad(grab_cov_entry)
         res = grad_fn(weights)
         expected = self.expected_grad(weights)
         assert jnp.allclose(res, expected, atol=tol, rtol=0)
@@ -2099,27 +2121,31 @@ def test_block_diag(tensors):
 
 
 class TestBlockDiagDiffability:
+    """Test differentiability of qml.math.block_diag."""
 
-    expected = lambda self, x, y: (
-        [
-            [-np.sin(x * y) * y, 0, 0],
-            [0, 1.0, 0],
-            [0, 2 * x, -1 / y],
-        ],
-        [
-            [-np.sin(x * y) * x, 0, 0],
-            [0, 0.0, 1.2],
-            [0, -1 / 3, x / y**2],
-        ],
-    )
+    @staticmethod
+    def expected(x, y):
+        return (
+            [
+                [-np.sin(x * y) * y, 0, 0],
+                [0, 1.0, 0],
+                [0, 2 * x, -1 / y],
+            ],
+            [
+                [-np.sin(x * y) * x, 0, 0],
+                [0, 0.0, 1.2],
+                [0, -1 / 3, x / y**2],
+            ],
+        )
 
     def test_autograd(self):
         """Tests for differentiating the block diagonal function with autograd."""
-        tensors = lambda x, y: [
-            np.array([[fn.cos(x * y)]]),
-            np.array([[x, 1.2 * y], [x**2 - y / 3, -x / y]]),
-        ]
-        f = lambda x, y: fn.block_diag(tensors(x, y))
+        def f(x, y):
+            return fn.block_diag([
+                np.array([[fn.cos(x * y)]]),
+                np.array([[x, 1.2 * y], [x**2 - y / 3, -x / y]]),
+            ])
+
         x, y = np.array([0.2, 1.5], requires_grad=True)
         res = qml.jacobian(f)(x, y)
         exp = self.expected(x, y)
@@ -2128,12 +2154,11 @@ class TestBlockDiagDiffability:
 
     def test_jax(self):
         """Tests for differentiating the block diagonal function with JAX."""
-        jax = pytest.importorskip("jax")
-        tensors = lambda x, y: [
-            jnp.array([[fn.cos(x * y)]]),
-            jnp.array([[x, 1.2 * y], [x**2 - y / 3, -x / y]]),
-        ]
-        f = lambda x, y: fn.block_diag(tensors(x, y))
+        def f(x, y):
+            return fn.block_diag([
+                np.array([[fn.cos(x * y)]]),
+                np.array([[x, 1.2 * y], [x**2 - y / 3, -x / y]]),
+            ])
         x, y = 0.2, 1.5
         res = jax.jacobian(f, argnums=[0, 1])(x, y)
         exp = self.expected(x, y)
@@ -2142,7 +2167,6 @@ class TestBlockDiagDiffability:
 
     def test_tf(self):
         """Tests for differentiating the block diagonal function with Tensorflow."""
-        tf = pytest.importorskip("tensorflow")
         x, y = [tf.Variable([[0.2]]), tf.Variable([[0.1, 0.2], [0.3, 0.4]])]
         with tf.GradientTape() as tape:
             out = fn.block_diag([x, y])
@@ -2156,9 +2180,10 @@ class TestBlockDiagDiffability:
 
     def test_torch(self):
         """Tests for differentiating the block diagonal function with Torch."""
-        torch = pytest.importorskip("torch")
         x, y = [torch.tensor([[0.2]]), torch.tensor([[0.1, 0.2], [0.3, 0.4]])]
-        f = lambda x, y: fn.block_diag([x, y])
+        def f(x, y):
+            return fn.block_diag([x, y])
+
         res = torch.autograd.functional.jacobian(f, (x, y))
         exp_0 = np.zeros((3, 3, 1, 1))
         exp_0[0, 0, 0, 0] = 1.0
@@ -2456,6 +2481,8 @@ class TestExpm:
 
 
 class TestSize:
+    """Test qml.math.size method."""
+    #pylint: disable=too-few-public-methods
 
     array_and_size = [
         ([], 0),
@@ -2470,8 +2497,6 @@ class TestSize:
     @pytest.mark.parametrize(("array", "size"), array_and_size)
     def test_size_torch(self, array, size):
         """Test size function with the torch interface."""
-        import torch
-
         r = fn.size(torch.tensor(array))
         assert r == size
 
@@ -2549,8 +2574,6 @@ class TestFft:
     @pytest.mark.jax
     def test_fft_jax(self):
         """Test that the functions are available in JAX."""
-        import jax
-
         x = jax.numpy.array(self.arg, dtype=jax.numpy.complex64)
         arg = qml.math.sin(x) - qml.math.cos(x) / 2
         out = qml.math.fft.fft(arg)
@@ -2561,8 +2584,6 @@ class TestFft:
     @pytest.mark.torch
     def test_fft_torch(self):
         """Test that the functions are available in PyTorch."""
-        import torch
-
         x = torch.tensor(self.arg, requires_grad=True)
         arg = qml.math.sin(x) - qml.math.cos(x) / 2
         out = qml.math.fft.fft(arg)
@@ -2574,8 +2595,6 @@ class TestFft:
     @pytest.mark.tf
     def test_fft_tf(self):
         """Test that the functions are available in TensorFlow."""
-        import tensorflow as tf
-
         arg = qml.math.cast_like(qml.math.sin(self.arg) - qml.math.cos(self.arg) / 2, 1j)
         arg = tf.Variable(arg)
         with tf.GradientTape(persistent=True) as t:
