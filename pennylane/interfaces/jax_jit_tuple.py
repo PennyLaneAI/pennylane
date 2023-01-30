@@ -97,10 +97,15 @@ def _jac_shape_dtype_tuple(tapes, device):
 
 
 def _jit_compute_jvps(jacobians, tangents, multi_measurements, trainable_params):
-    tangents_trainable = [tangent for tangent in tangents if tangent in trainable_params]
+    """Adapated function for jitting."""
+    tangents_trainable = []
+    for i, tangent in enumerate(tangents):
+        tangent_ = [tangent[j] for j in trainable_params[i]]
+        tangents_trainable.append(tangent_)
+
     jvps = _compute_jvps(jacobians, tangents_trainable, multi_measurements)
 
-    # Add the zeros
+    print(jvps)
 
     return jvps
 
@@ -222,8 +227,7 @@ def _execute_bwd_tuple(
         # Select the trainable params
         # Non trainable params are 0
         trainable_params = [t.trainable_params for t in tapes]
-        shapes = [t.shape(device) for t in tapes]
-        print(trainable_params, shapes)
+
         multi_measurements = [len(tape.measurements) > 1 for tape in tapes]
 
         # Execution: execute the function first
@@ -235,10 +239,11 @@ def _execute_bwd_tuple(
             if _n == max_diff:
 
                 jacobians_from_callback = _grad_transform_jac_via_callback(params, device)
-                if len(tapes) == 1:
-                    jacobians_from_callback = [res_from_callback]
 
-                jvps = _jit_compute_jvps(jacobians_from_callback, tangents[0], multi_measurements)
+                if len(tapes) == 1:
+                    jacobians_from_callback = [jacobians_from_callback]
+
+                jvps = _jit_compute_jvps(jacobians_from_callback, tangents[0], multi_measurements, trainable_params)
             else:
 
                 new_tapes = [_copy_tape(t, a) for t, a in zip(tapes, params)]
@@ -260,7 +265,7 @@ def _execute_bwd_tuple(
                     jacs = res_processing_fn(jacs)
                     all_jacs.append(jacs)
 
-                jvps = _jit_compute_jvps(all_jacs, tangents[0], multi_measurements)
+                jvps = _jit_compute_jvps(all_jacs, tangents[0], multi_measurements, trainable_params)
         else:
             # Gradient function is a device method
             res_from_callback = _device_method_jac_via_callback(params, device)
@@ -268,7 +273,7 @@ def _execute_bwd_tuple(
             if len(tapes) == 1:
                 res_from_callback = [res_from_callback]
 
-            jvps = _jit_compute_jvps(res_from_callback, tangents[0], multi_measurements)
+            jvps = _jit_compute_jvps(res_from_callback, tangents[0], multi_measurements, trainable_params)
 
         return evaluation_results, jvps
 
@@ -376,13 +381,14 @@ def _execute_fwd_tuple(
     @execute_wrapper.defjvp
     def execute_wrapper_jvp(primals, tangents):
         """Primals[0] are parameters as Jax tracers and tangents[0] is a list of tangent vectors as Jax tracers."""
+        trainable_params = [t.trainable_params for t in tapes]
         res, jacs = execute_wrapper(primals[0])
         multi_measurements = [len(tape.measurements) > 1 for tape in tapes]
 
         if len(tapes) == 1:
             jacs = [jacs]
 
-        jvps = _jit_compute_jvps(jacs, tangents[0], multi_measurements)
+        jvps = _jit_compute_jvps(jacs, tangents[0], multi_measurements, trainable_params)
         return res, jvps
 
     res = execute_wrapper(params)

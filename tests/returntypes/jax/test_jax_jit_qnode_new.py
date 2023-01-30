@@ -283,7 +283,7 @@ class TestVectorValuedQNode:
 
         res = jax.jit(circuit)(a, b)
 
-        assert circuit.qtape.trainable_params == [0, 1]
+        assert circuit.qtape.trainable_params == []
         assert isinstance(res, tuple)
         assert len(res) == 2
 
@@ -292,6 +292,8 @@ class TestVectorValuedQNode:
         assert np.allclose(res[1], expected[1], atol=tol, rtol=0)
 
         res = jax.jit(jax.jacobian(circuit, argnums=[0, 1]))(a, b)
+        assert circuit.qtape.trainable_params == [0, 1]
+
         expected = np.array([[-np.sin(a), 0], [np.sin(a) * np.sin(b), -np.cos(a) * np.cos(b)]])
         assert isinstance(res, tuple)
         assert len(res) == 2
