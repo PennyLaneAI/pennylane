@@ -1,0 +1,381 @@
+# Copyright 2018-2023 Xanadu Quantum Technologies Inc.
+
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+
+#     http://www.apache.org/licenses/LICENSE-2.0
+
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+"""
+Tests the apply_operation functions from devices/qubit
+"""
+import pytest
+
+import numpy as np
+import pennylane as qml
+
+
+from pennylane.devices.qubit.apply_operation import (
+    apply_operation,
+    apply_operation_einsum,
+    apply_operation_tensordot,
+)
+
+ml_frameworks_list = [
+    "numpy",
+    pytest.param("autograd", marks=pytest.mark.autograd),
+    pytest.param("jax", marks=pytest.mark.jax),
+    pytest.param("torch", marks=pytest.mark.torch),
+    pytest.param("tensorflow", marks=pytest.mark.tf),
+]
+
+
+def test_custom_operator_with_matrix():
+    """Test that apply_operation works with any operation that defines a matrix."""
+
+    mat = np.array(
+        [
+            [0.39918205 + 0.3024376j, -0.86421077 + 0.04821758j],
+            [0.73240679 + 0.46126509j, 0.49576832 - 0.07091251j],
+        ]
+    )
+
+    # pylint: disable=too-few-public-methods
+    class CustomOp(qml.operation.Operation):
+        num_wires = 1
+
+        def matrix(self):
+            return mat
+
+    state = np.array([-0.30688912 - 0.4768824j, 0.8100052 - 0.14931113j])
+
+    new_state = apply_operation(CustomOp(0), state)
+    assert qml.math.allclose(new_state, mat @ state)
+
+
+@pytest.mark.parametrize("ml_framework", ml_frameworks_list)
+@pytest.mark.parametrize(
+    "method", (apply_operation_einsum, apply_operation_tensordot, apply_operation)
+)
+@pytest.mark.parametrize("wire", (0, 1))
+class TestTwoQubitStateSpecialCases:
+    """Test the special cases on a two qubit state.  Also tests the special cases for einsum and tensor application methods
+    for additional testing of these generic matrix application methods."""
+
+    def test_paulix(self, method, wire, ml_framework):
+        """Test the application of a paulix gate on a two qubit state."""
+
+        initial_state = np.array(
+            [
+                [0.04624539 + 0.3895457j, 0.22399401 + 0.53870339j],
+                [-0.483054 + 0.2468498j, -0.02772249 - 0.45901669j],
+            ]
+        )
+        initial_state = qml.math.asarray(initial_state, like=ml_framework)
+
+        new_state = method(qml.PauliX(wire), initial_state)
+
+        initial0dim = qml.math.take(initial_state, 0, axis=wire)
+        new1dim = qml.math.take(new_state, 1, axis=wire)
+
+        assert qml.math.allclose(initial0dim, new1dim)
+
+        initial1dim = qml.math.take(initial_state, 1, axis=wire)
+        new0dim = qml.math.take(new_state, 0, axis=wire)
+        assert qml.math.allclose(initial1dim, new0dim)
+
+    def test_pauliz(self, method, wire, ml_framework):
+        """Test the application of a pauliz gate on a two qubit state."""
+        initial_state = np.array(
+            [
+                [0.04624539 + 0.3895457j, 0.22399401 + 0.53870339j],
+                [-0.483054 + 0.2468498j, -0.02772249 - 0.45901669j],
+            ]
+        )
+        initial_state = qml.math.asarray(initial_state, like=ml_framework)
+
+        new_state = method(qml.PauliZ(wire), initial_state)
+
+        initial0 = qml.math.take(initial_state, 0, axis=wire)
+        new0 = qml.math.take(new_state, 0, axis=wire)
+        assert qml.math.allclose(initial0, new0)
+
+        initial1 = qml.math.take(initial_state, 1, axis=wire)
+        new1 = qml.math.take(new_state, 1, axis=wire)
+        assert qml.math.allclose(initial1, -new1)
+
+    def test_pauliy(self, method, wire, ml_framework):
+        """Test the application of a pauliy gate on a two qubit state."""
+        initial_state = np.array(
+            [
+                [0.04624539 + 0.3895457j, 0.22399401 + 0.53870339j],
+                [-0.483054 + 0.2468498j, -0.02772249 - 0.45901669j],
+            ]
+        )
+        initial_state = qml.math.asarray(initial_state, like=ml_framework)
+
+        new_state = method(qml.PauliY(wire), initial_state)
+
+        initial0 = qml.math.take(initial_state, 0, axis=wire)
+        new1 = qml.math.take(new_state, 1, axis=wire)
+        assert qml.math.allclose(1j * initial0, new1)
+
+        initial1 = qml.math.take(initial_state, 1, axis=wire)
+        new0 = qml.math.take(new_state, 0, axis=wire)
+        assert qml.math.allclose(-1j * initial1, new0)
+
+    def test_hadamard(self, method, wire, ml_framework):
+        """Test the application of a hadamard on a two qubit state."""
+        initial_state = np.array(
+            [
+                [0.04624539 + 0.3895457j, 0.22399401 + 0.53870339j],
+                [-0.483054 + 0.2468498j, -0.02772249 - 0.45901669j],
+            ]
+        )
+        initial_state = qml.math.asarray(initial_state, like=ml_framework)
+
+        new_state = method(qml.Hadamard(wire), initial_state)
+
+        inv_sqrt2 = 1 / np.sqrt(2)
+
+        initial0 = qml.math.take(initial_state, 0, axis=wire)
+        initial1 = qml.math.take(initial_state, 1, axis=wire)
+
+        expected0 = inv_sqrt2 * (initial0 + initial1)
+        new0 = qml.math.take(new_state, 0, axis=wire)
+        assert qml.math.allclose(new0, expected0)
+
+        expected1 = inv_sqrt2 * (initial0 - initial1)
+        new1 = qml.math.take(new_state, 1, axis=wire)
+        assert qml.math.allclose(new1, expected1)
+
+    def test_phaseshift(self, method, wire, ml_framework):
+        """test the application of a phaseshift gate on a two qubit state."""
+
+        initial_state = np.array(
+            [
+                [0.04624539 + 0.3895457j, 0.22399401 + 0.53870339j],
+                [-0.483054 + 0.2468498j, -0.02772249 - 0.45901669j],
+            ]
+        )
+        initial_state = qml.math.asarray(initial_state, like=ml_framework)
+
+        phase = qml.math.asarray(-2.3, like=ml_framework)
+        shift = np.exp(qml.math.multiply(1j, phase))
+
+        new_state = method(qml.PhaseShift(phase, wire), initial_state)
+
+        new0 = qml.math.take(new_state, 0, axis=wire)
+        initial0 = qml.math.take(initial_state, 0, axis=wire)
+        assert qml.math.allclose(new0, initial0)
+
+        initial1 = qml.math.take(initial_state, 1, axis=wire)
+        new1 = qml.math.take(new_state, 1, axis=wire)
+        assert qml.math.allclose(shift * initial1, new1)
+
+    def test_cnot(self, method, wire, ml_framework):
+        """Test the application of a cnot gate on a two qubit state."""
+
+        initial_state = np.array(
+            [
+                [0.04624539 + 0.3895457j, 0.22399401 + 0.53870339j],
+                [-0.483054 + 0.2468498j, -0.02772249 - 0.45901669j],
+            ]
+        )
+        initial_state = qml.math.asarray(initial_state, like=ml_framework)
+
+        control = wire
+        target = int(not control)
+
+        new_state = method(qml.CNOT((control, target)), initial_state)
+
+        initial0 = qml.math.take(initial_state, 0, axis=control)
+        new0 = qml.math.take(new_state, 0, axis=control)
+        assert qml.math.allclose(initial0, new0)
+
+        initial1 = qml.math.take(initial_state, 1, axis=control)
+        new1 = qml.math.take(new_state, 1, axis=control)
+        assert qml.math.allclose(initial1[1], new1[0])
+        assert qml.math.allclose(initial1[0], new1[1])
+
+
+@pytest.mark.parametrize(
+    "method", (apply_operation_einsum, apply_operation_tensordot, apply_operation)
+)
+class TestRXCalcGrad:
+    """Tests the application and differentiation of an RX gate in the different interfaces."""
+
+    state = np.array(
+        [
+            [
+                [-0.22209168 + 0.21687383j, -0.1302055 - 0.06014422j],
+                [-0.24033117 + 0.28282153j, -0.14025702 - 0.13125938j],
+            ],
+            [
+                [-0.42373896 + 0.51912421j, -0.01934135 + 0.07422255j],
+                [0.22311677 + 0.2245953j, 0.33154166 + 0.20820744j],
+            ],
+        ]
+    )
+
+    def compare_expected_result(self, phi, state, new_state, g):
+
+        expected0 = np.cos(phi / 2) * state[0, :, :] + -1j * np.sin(phi / 2) * state[1, :, :]
+        expected1 = -1j * np.sin(phi / 2) * state[0, :, :] + np.cos(phi / 2) * state[1, :, :]
+
+        assert qml.math.allclose(new_state[0, :, :], expected0)
+        assert qml.math.allclose(new_state[1, :, :], expected1)
+
+        g_expected0 = (
+            -0.5 * np.sin(phi / 2) * state[0, :, :] - 0.5j * np.cos(phi / 2) * state[1, :, :]
+        )
+        g_expected1 = (
+            -0.5j * np.cos(phi / 2) * state[0, :, :] - 0.5 * np.sin(phi / 2) * state[1, :, :]
+        )
+
+        assert qml.math.allclose(g[0], g_expected0)
+        assert qml.math.allclose(g[1], g_expected1)
+
+    @pytest.mark.autograd
+    def test_rx_grad_autograd(self, method):
+        """Test that the application of an rx gate is differentiable with autograd."""
+
+        state = qml.numpy.array(self.state)
+
+        def f(phi):
+            op = qml.RX(phi, wires=0)
+            return method(op, state)
+
+        phi = qml.numpy.array(0.325 + 0j, requires_grad=True)
+
+        new_state = f(phi)
+        g = qml.jacobian(lambda x: qml.math.real(f(x)))(phi)
+        self.compare_expected_result(phi, state, new_state, g)
+
+    @pytest.mark.jax
+    @pytest.mark.parametrize("use_jit", (True, False))
+    def test_rx_grad_jax(self, method, use_jit):
+        """Test that the application of an rx gate is differentiable with jax."""
+
+        import jax
+
+        state = jax.numpy.array(self.state)
+
+        def f(phi):
+            op = qml.RX(phi, wires=0)
+            return method(op, state)
+
+        if use_jit:
+            f = jax.jit(f)
+
+        phi = 0.325
+
+        new_state = f(phi)
+        g = jax.jacobian(f, holomorphic=True)(phi + 0j)
+        self.compare_expected_result(phi, state, new_state, g)
+
+    @pytest.mark.torch
+    def test_rx_grad_torch(self, method):
+        """Tests the application and differentiation of an rx gate with torch."""
+
+        import torch
+
+        state = torch.tensor(self.state)
+
+        def f(phi):
+            op = qml.RX(phi, wires=0)
+            return method(op, state)
+
+        phi = torch.tensor(0.325, requires_grad=True)
+
+        new_state = f(phi)
+        g = torch.autograd.functional.jacobian(f, phi + 0j)
+
+        # torch takes gradient with respect to conj(z), so we need to conj the gradient
+        g = torch.conj(g).resolve_conj()
+
+        self.compare_expected_result(
+            phi.detach().numpy(),
+            state.detach().numpy(),
+            new_state.detach().numpy(),
+            g.detach().numpy(),
+        )
+
+    @pytest.mark.tf
+    def test_rx_grad_tf(self, method):
+        """Tests the application and differentiation of an rx gate with tensorflow"""
+        import tensorflow as tf
+
+        state = tf.Variable(self.state)
+        phi = tf.Variable(0.8589 + 0j)
+
+        with tf.GradientTape() as grad_tape:
+            op = qml.RX(phi, wires=0)
+            new_state = method(op, state)
+
+        grads = grad_tape.jacobian(new_state, [phi])
+        # tf takes gradient with respect to conj(z), so we need to conj the gradient
+        phi_grad = tf.math.conj(grads[0])
+
+        self.compare_expected_result(phi, state, new_state, phi_grad)
+
+
+@pytest.mark.parametrize(
+    "method", (apply_operation_einsum, apply_operation_tensordot, apply_operation)
+)
+class TestLargerOperations:
+    """Tests matrix applications on states and operations with larger numbers of wires."""
+
+    state = np.array(
+        [
+            [
+                [
+                    [-0.21733955 - 0.01990267j, 0.22960893 - 0.0312392j],
+                    [0.21406652 - 0.07552019j, 0.09527143 + 0.01870987j],
+                ],
+                [
+                    [0.05603182 - 0.26879067j, -0.02755183 - 0.03097822j],
+                    [-0.43962358 - 0.17435254j, 0.12820737 + 0.06794554j],
+                ],
+            ],
+            [
+                [
+                    [-0.09270161 - 0.3132961j, -0.03276799 + 0.07557535j],
+                    [-0.15712707 - 0.32666969j, -0.00898954 + 0.1324474j],
+                ],
+                [
+                    [-0.17760532 + 0.08415488j, -0.26872752 - 0.05767781j],
+                    [0.23142582 - 0.1970496j, 0.15483611 - 0.15100495j],
+                ],
+            ],
+        ]
+    )
+
+    def test_multicontrolledx(self, method):
+        """Tests a four qubit multi-controlled x gate."""
+
+        new_state = method(qml.MultiControlledX(wires=(0, 1, 2, 3)), self.state)
+
+        expected_state = np.copy(self.state)
+        expected_state[1, 1, 1, 1] = self.state[1, 1, 1, 0]
+        expected_state[1, 1, 1, 0] = self.state[1, 1, 1, 1]
+
+        assert qml.math.allclose(new_state, expected_state)
+
+    def test_double_excitation(self, method):
+        """Tests a double excitation operation compared to its decomposition."""
+
+        op = qml.DoubleExcitation(np.array(2.14), wires=(3, 1, 2, 0))
+
+        state_v1 = method(op, self.state)
+
+        state_v2 = self.state
+        for d_op in op.decomposition():
+            state_v2 = method(d_op, state_v2)
+
+        assert qml.math.allclose(state_v1, state_v2)
