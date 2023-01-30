@@ -39,7 +39,7 @@
   ```pycon
   >>> coeffs = [2, f1, f2]
   >>> ops = [XX, YY, ZZ]
-  >>> H =  qml.ops.dot(coeffs, ops)
+  >>> H =  qml.dot(coeffs, ops)
   ```
 
 * A `ParametrizedHamiltonian` can be time-evolved by using `ParametrizedEvolution`.
@@ -48,15 +48,15 @@
 * A new function called `qml.evolve` has been added that returns the evolution of an operator or a `ParametrizedHamiltonian`.
   [(#3617)](https://github.com/PennyLaneAI/pennylane/pull/3617)
 
-* A new function called `qml.ops.dot` has been added to compute the dot product between a vector and a list of operators.
+* A new function `dot` has been added to compute the dot product between a vector and a list of operators. `qml.dot` will now target this new function.
   [(#3586)](https://github.com/PennyLaneAI/pennylane/pull/3586)
 
   ```pycon
   >>> coeffs = np.array([1.1, 2.2])
   >>> ops = [qml.PauliX(0), qml.PauliY(0)]
-  >>> qml.ops.dot(coeffs, ops)
+  >>> qml.dot(coeffs, ops)
   (1.1*(PauliX(wires=[0]))) + (2.2*(PauliY(wires=[0])))
-  >>> qml.ops.dot(coeffs, ops, pauli=True)
+  >>> qml.dot(coeffs, ops, pauli=True)
   1.1 * X(0)
   + 2.2 * Y(0)
   ```
@@ -354,7 +354,7 @@
 * `Sum` and `Prod` operations now have broadcasted operands.
   [(#3611)](https://github.com/PennyLaneAI/pennylane/pull/3611)
 
-* `qml.ops.dot` is now compatible with JAX-JIT.
+* `qml.dot` is now compatible with JAX-JIT.
   [(#3636)](https://github.com/PennyLaneAI/pennylane/pull/3636)
 
 * All dunder methods now return `NotImplemented`, allowing the right dunder method (e.g. `__radd__`)
@@ -420,6 +420,12 @@
   [(#3624)](https://github.com/PennyLaneAI/pennylane/pull/3624)
 
 <h3>Deprecations</h3>
+
+* Deprecate the `collections` module.
+  [(#3686)](https://github.com/PennyLaneAI/pennylane/pull/3686)
+
+* `qml.op_sum` has been deprecated. Users should use `qml.sum` instead.
+  [(#3686)](https://github.com/PennyLaneAI/pennylane/pull/3686)
 
 <h3>Documentation</h3>
 
