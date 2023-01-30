@@ -157,7 +157,7 @@ A few additional examples of defining a :class:`~.ParametrizedHamiltonian` are p
 Here we use :func:`~.rect` to create a parametrized coefficient that has a value of ``0`` outside the time interval
 ``t=(1, 7)``, and is defined by ``jnp.polyval(p, t)`` within the interval:
 
-.. figure:: ../../_static/pulse/rect_example.png
+.. figure:: doc/_static/pulse/rect_example.png
             :align: center
             :width: 60%
             :target: javascript:void(0);
@@ -183,7 +183,7 @@ The function :func:`~.pwc` can be used to create a parametrized coefficient func
 within the interval ``t``, and 0 outside of it. When creating the callable, only the timespan is passed. The number
 of bins and values for the parameters are set when ``params`` is passed to the callable.
 
-.. figure:: ../_static/pulse/pwc_example.png
+.. figure:: pennylane/doc/_static/pulse/pwc_example.png
             :align: center
             :width: 60%
             :target: javascript:void(0);
