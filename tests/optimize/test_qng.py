@@ -220,7 +220,7 @@ class TestOptimize:
         obs_list = [qml.PauliX(0), qml.PauliZ(0)]
 
         qnodes = qml.map(circuit, obs_list, dev, measure="expval")
-        cost_fn = qml.collections.dot(coeffs, qnodes)
+        cost_fn = qml.dot(coeffs, qnodes)
 
         def gradient(params):
             """Returns the gradient"""
