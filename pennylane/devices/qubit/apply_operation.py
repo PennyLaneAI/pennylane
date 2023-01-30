@@ -22,7 +22,7 @@ from pennylane import math
 SQRT2INV = 1 / math.sqrt(2)
 
 EINSUM_OP_WIRECOUNT_PERF_THRESHOLD = 3
-EINSUM_STATE_WIRECOUNT_PERF_THRESHOLD = 10
+EINSUM_STATE_WIRECOUNT_PERF_THRESHOLD = 13
 
 
 def _get_slice(index, axis, num_axes):
@@ -168,7 +168,7 @@ def apply_operation(op: qml.operation.Operator, state):
 
 
 @apply_operation.register
-def apply_x(op: qml.PauliX, state):
+def apply_paulix(op: qml.PauliX, state):
     """Apply :class:`pennylane.PauliX` operator to the quantum state"""
     return math.roll(state, 1, op.wires[0])
 
