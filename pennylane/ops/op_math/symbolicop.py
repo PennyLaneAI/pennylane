@@ -148,7 +148,7 @@ class ScalarSymbolicOp(SymbolicOp):
 
     Args:
         base (~.operation.Operator): the base operation that is modified symbolicly
-        coeff (float): the scalar coefficient
+        scalar (float): the scalar coefficient
         do_queue (bool): indicates whether the operator should be recorded when created in a tape
             context
         id (str): custom label given to an operator instance, can be useful for some applications
@@ -158,7 +158,7 @@ class ScalarSymbolicOp(SymbolicOp):
     :class:`~.ops.op_math.SProd` and :class:`~.ops.op_math.Pow`.
     """
 
-    _name = "CoeffSymbolicOp"
+    _name = "ScalarSymbolicOp"
 
     def __init__(self, base, scalar: float, do_queue=True, id=None):
         self.scalar = np.array(scalar) if isinstance(scalar, list) else scalar

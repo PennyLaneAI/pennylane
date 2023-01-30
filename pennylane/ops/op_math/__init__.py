@@ -49,6 +49,7 @@ Symbolic Classes
     ~Sum
     ~SProd
     ~SymbolicOp
+    ~ScalarSymbolicOp
 
 Controlled Operator Classes
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~
