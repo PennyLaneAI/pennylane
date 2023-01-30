@@ -319,7 +319,7 @@ def qnode_execution_wrapper(self, qnode, targs, tkwargs):
                 UserWarning,
             )
 
-        qnode = qnode.qnodes.qnodes[0]
+        qnode = qnode.qnodes[0]
 
     tkwargs.setdefault("device_wires", qnode.device.wires)
     mt_fn = self.default_qnode_wrapper(qnode, targs, tkwargs)
