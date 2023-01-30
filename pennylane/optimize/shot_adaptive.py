@@ -18,7 +18,6 @@ from scipy.stats import multinomial
 import pennylane as qml
 from pennylane import numpy as np
 
-
 from .gradient_descent import GradientDescentOptimizer
 
 

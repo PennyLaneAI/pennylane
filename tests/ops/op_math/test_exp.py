@@ -125,15 +125,6 @@ class TestProperties:
 
         assert not Exp(qml.RX(1.2, wires=0)).is_hermitian
 
-    def test_setting_inverse_raises_error(self):
-        op = Exp(qml.PauliX(0), -1.234j)
-
-        with pytest.raises(NotImplementedError):
-            op.inverse = True
-
-        with pytest.raises(NotImplementedError):
-            op.inv()
-
 
 class TestMatrix:
     """Test the matrix method."""
@@ -408,7 +399,7 @@ class TestMiscMethods:
     def test_simplify_s_prod(self):
         """Tests that when simplification of the base results in an SProd,
         the scalar is included in the coeff rather than the base"""
-        base = qml.s_prod(2, qml.op_sum(qml.PauliX(0), qml.PauliX(0)))
+        base = qml.s_prod(2, qml.sum(qml.PauliX(0), qml.PauliX(0)))
         op = Exp(base, 3)
         new_op = op.simplify()
 
@@ -758,7 +749,7 @@ class TestEvolution:
     def test_simplify_s_prod(self):
         """Tests that when simplification of the base results in an SProd,
         the scalar is included in the coeff rather than the base"""
-        base = qml.s_prod(2, qml.op_sum(qml.PauliX(0), qml.PauliX(0)))
+        base = qml.s_prod(2, qml.sum(qml.PauliX(0), qml.PauliX(0)))
         op = Evolution(base, 3)
         new_op = op.simplify()
 

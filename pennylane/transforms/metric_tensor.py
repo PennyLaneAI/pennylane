@@ -319,7 +319,7 @@ def qnode_execution_wrapper(self, qnode, targs, tkwargs):
                 UserWarning,
             )
 
-        qnode = qnode.qnodes.qnodes[0]
+        qnode = qnode.qnodes[0]
 
     tkwargs.setdefault("device_wires", qnode.device.wires)
     mt_fn = self.default_qnode_wrapper(qnode, targs, tkwargs)
@@ -479,7 +479,7 @@ def _get_gen_op(op, allow_nonunitary, aux_wire):
 
     except KeyError as e:
         if allow_nonunitary:
-            mat = qml.matrix(qml.generator(op, format="observable"))
+            mat = qml.matrix(qml.generator(op)[0])
             return qml.ControlledQubitUnitary(mat, control_wires=aux_wire, wires=op.wires)
 
         raise ValueError(

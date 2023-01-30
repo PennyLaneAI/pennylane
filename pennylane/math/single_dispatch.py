@@ -12,9 +12,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Autoray registrations"""
+
 # pylint:disable=protected-access,import-outside-toplevel,wrong-import-position, disable=unnecessary-lambda
 from importlib import import_module
-import numbers
 
 import autoray as ar
 import numpy as np
@@ -255,27 +255,9 @@ def _ndim_tf(tensor):
 ar.register_function("tensorflow", "ndim", _ndim_tf)
 
 
-def _take_tf(tensor, indices, axis=None):
-    """Implement a TensorFlow version of np.take"""
+def _take_tf(tensor, indices, axis=None, **kwargs):
     tf = _i("tf")
-
-    if isinstance(indices, numbers.Number):
-        indices = [indices]
-
-    indices = tf.convert_to_tensor(indices)
-
-    if np.any(indices < 0):
-        # Unlike NumPy, TensorFlow doesn't support negative indices.
-        dim_length = tf.size(tensor).numpy() if axis is None else tf.shape(tensor)[axis]
-        indices = tf.where(indices >= 0, indices, indices + dim_length)
-
-    if axis is None:
-        # Unlike NumPy, if axis=None TensorFlow defaults to the first
-        # dimension rather than flattening the array.
-        data = tf.reshape(tensor, [-1])
-        return tf.gather(data, indices)
-
-    return tf.gather(tensor, indices, axis=axis)
+    return tf.experimental.numpy.take(tensor, indices, axis=axis, **kwargs)
 
 
 ar.register_function("tensorflow", "take", _take_tf)
@@ -481,7 +463,7 @@ def _round_torch(tensor, decimals=0):
 ar.register_function("torch", "round", _round_torch)
 
 
-def _take_torch(tensor, indices, axis=None):
+def _take_torch(tensor, indices, axis=None, **_):
     """Torch implementation of np.take"""
     torch = _i("torch")
 
@@ -616,7 +598,13 @@ def _ndim_torch(tensor):
     return tensor.dim()
 
 
+def _size_torch(tensor):
+    return tensor.numel()
+
+
 ar.register_function("torch", "ndim", _ndim_torch)
+ar.register_function("torch", "size", _size_torch)
+
 
 ar.register_function("torch", "eigvalsh", lambda x: _i("torch").linalg.eigvalsh(x))
 ar.register_function("torch", "entr", lambda x: _i("torch").sum(_i("torch").special.entr(x)))
@@ -656,8 +644,8 @@ ar.register_function("jax", "flatten", lambda x: x.flatten())
 ar.register_function(
     "jax",
     "take",
-    lambda x, indices, axis=None: _i("jax").numpy.take(
-        x, np.array(indices), axis=axis, mode="wrap"
+    lambda x, indices, axis=None, **kwargs: _i("jax").numpy.take(
+        x, np.array(indices), axis=axis, **kwargs
     ),
 )
 ar.register_function("jax", "coerce", lambda x: x)
