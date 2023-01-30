@@ -2474,3 +2474,107 @@ class TestSize:
 
         r = fn.size(torch.tensor(array))
         assert r == size
+
+
+@pytest.skip("These tests are WIP")
+class TestFft:
+    """Test qml.math.fft.fft differentiability."""
+
+    arg = onp.linspace(0, np.pi, 5)
+    exp = [
+        2.414213,
+        -1.903347 + 0.17493j,
+        -0.55376019 + 0.02838791j,
+        -0.55376019 - 0.02838791j,
+        -1.9033466 - 0.17493416j,
+    ]
+    exp_jac = [
+        [
+            1.0 + 0.0j,
+            1.0 + 0.0j,
+            1.0 + 0.0j,
+            1.0 + 0.0j,
+            1.0 + 0.0j,
+        ],
+        [
+            1.0 + 0.0j,
+            0.30901699 - 0.95105652j,
+            -0.80901699 - 0.58778525j,
+            -0.80901699 + 0.58778525j,
+            0.30901699 + 0.95105652j,
+        ],
+        [
+            1.0 + 0.0j,
+            -0.80901699 - 0.58778525j,
+            0.30901699 + 0.95105652j,
+            0.30901699 - 0.95105652j,
+            -0.80901699 + 0.58778525j,
+        ],
+        [
+            1.0 + 0.0j,
+            -0.80901699 + 0.58778525j,
+            0.30901699 - 0.95105652j,
+            0.30901699 + 0.95105652j,
+            -0.80901699 - 0.58778525j,
+        ],
+        [
+            1.0 + 0.0j,
+            0.30901699 + 0.95105652j,
+            -0.80901699 + 0.58778525j,
+            -0.80901699 - 0.58778525j,
+            0.30901699 - 0.95105652j,
+        ],
+    ]
+
+    @staticmethod
+    def fft_real(x):
+        """Compute the real part of an FFT."""
+        return qml.math.real(qml.math.fft.fft(x))
+
+    @staticmethod
+    def fft_imag(x):
+        """Compute the imag part of an FFT."""
+        return qml.math.imag(qml.math.fft.fft(x))
+
+    @pytest.mark.autograd
+    def test_fft_autograd(self):
+        """Test that the functions are available in Autograd."""
+        x = np.array(self.arg, requires_grad=True)
+        arg = qml.math.sin(x) - qml.math.cos(x) / 2
+        out = qml.math.fft.fft(arg)
+        assert qml.math.allclose(out, self.exp)
+        jac_real = qml.jacobian(self.fft_real)(arg)
+        jac_imag = qml.jacobian(self.fft_imag)(arg)
+        assert qml.math.allclose(jac_real + 1j * jac_imag, self.exp_jac)
+
+    @pytest.mark.torch
+    def test_fft_torch(self):
+        """Test that the functions are available in PyTorch."""
+        import torch
+
+        x = torch.tensor(self.arg, requires_grad=True)
+        arg = qml.math.sin(x) - qml.math.cos(x) / 2
+        out = qml.math.fft.fft(arg)
+        assert qml.math.allclose(out, self.exp)
+        jac_real = torch.autograd.functional.jacobian(self.fft_real, arg)
+        jac_imag = torch.autograd.functional.jacobian(self.fft_imag, arg)
+        assert qml.math.allclose(jac_real + 1j * jac_imag, self.exp_jac)
+
+    @pytest.mark.tf
+    def test_fft_tf(self):
+        """Test that the functions are available in TensorFlow."""
+        import tensorflow as tf
+
+        arg = qml.math.cast_like(qml.math.sin(self.arg) - qml.math.cos(self.arg) / 2, 1j)
+        arg = tf.Variable(arg)
+        with tf.GradientTape(persistent=True) as t:
+            out_real = self.fft_real(arg)
+            out_imag = self.fft_imag(arg)
+        jac_real = t.jacobian(out_real, arg)
+        jac_imag = t.jacobian(out_imag, arg)
+        assert qml.math.allclose(
+            qml.math.cast_like(out_real, 1j) + 1j * qml.math.cast_like(out_imag, 1j), self.exp
+        )
+        assert qml.math.allclose(
+            qml.math.cast_like(jac_real, 1j) + 1j * qml.math.cast_like(jac_imag, 1j), self.exp_jac
+        )
