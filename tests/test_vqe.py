@@ -329,6 +329,9 @@ class TestVQE:
         """Tests that the cost function evaluates properly"""
         hamiltonian = qml.Hamiltonian(coeffs, observables)
         dev = qml.device("default.qubit", wires=3)
+        dev.observables.remove(
+            "Hamiltonian"
+        )  # remove Hamiltonian from observables to force its expansion
         expval = catch_warn_ExpvalCost(ansatz, hamiltonian, dev)
         assert expval(params).dtype == np.float64
         assert np.shape(expval(params)) == ()  # expval should be scalar
