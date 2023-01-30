@@ -95,10 +95,10 @@ class ParametrizedEvolution(Operation):
 
     >>> ops = [qml.PauliX(0), qml.PauliY(1), qml.PauliZ(2)]
     >>> coeffs = [lambda p, t: p for _ in range(3)]
-    >>> H1 = qml.ops.dot(coeffs, ops)  # time-independent parametrized hamiltonian
+    >>> H1 = qml.dot(coeffs, ops)  # time-independent parametrized Hamiltonian
     >>> ops = [qml.PauliZ(0), qml.PauliY(1), qml.PauliX(2)]
     >>> coeffs = [lambda p, t: p * jnp.sin(t) for _ in range(3)]
-    >>> H2 = qml.ops.dot(coeffs, ops) # time-dependent parametrized hamiltonian
+    >>> H2 = qml.dot(coeffs, ops) # time-dependent parametrized Hamiltonian
     >>> H1, H2
     (ParametrizedHamiltonian: terms=3, ParametrizedHamiltonian: terms=3)
 

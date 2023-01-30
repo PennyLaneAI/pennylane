@@ -225,7 +225,7 @@ def sum_expand(tape: QuantumTape, group=True):
 
     .. code-block:: python3
 
-        S = qml.op_sum(qml.prod(qml.PauliY(2), qml.PauliZ(1)), qml.s_prod(0.5, qml.PauliZ(2)), qml.PauliZ(1))
+        S = qml.sum(qml.prod(qml.PauliY(2), qml.PauliZ(1)), qml.s_prod(0.5, qml.PauliZ(2)), qml.PauliZ(1))
 
     and a tape of the form,
 
@@ -278,7 +278,7 @@ def sum_expand(tape: QuantumTape, group=True):
 
     .. code-block:: python3
 
-        S = qml.op_sum(qml.PauliZ(0), qml.s_prod(2, qml.PauliX(1)), qml.s_prod(3, qml.PauliX(0)))
+        S = qml.sum(qml.PauliZ(0), qml.s_prod(2, qml.PauliX(1)), qml.s_prod(3, qml.PauliX(0)))
 
         with qml.tape.QuantumTape() as tape:
             qml.Hadamard(wires=0)

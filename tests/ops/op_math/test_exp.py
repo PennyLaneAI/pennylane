@@ -399,7 +399,7 @@ class TestMiscMethods:
     def test_simplify_s_prod(self):
         """Tests that when simplification of the base results in an SProd,
         the scalar is included in the coeff rather than the base"""
-        base = qml.s_prod(2, qml.op_sum(qml.PauliX(0), qml.PauliX(0)))
+        base = qml.s_prod(2, qml.sum(qml.PauliX(0), qml.PauliX(0)))
         op = Exp(base, 3)
         new_op = op.simplify()
 
@@ -749,7 +749,7 @@ class TestEvolution:
     def test_simplify_s_prod(self):
         """Tests that when simplification of the base results in an SProd,
         the scalar is included in the coeff rather than the base"""
-        base = qml.s_prod(2, qml.op_sum(qml.PauliX(0), qml.PauliX(0)))
+        base = qml.s_prod(2, qml.sum(qml.PauliX(0), qml.PauliX(0)))
         op = Evolution(base, 3)
         new_op = op.simplify()
 

@@ -299,14 +299,14 @@ class TestIntegration:
 
         coeffs = [1, f1, f2]
         ops = [qml.PauliX(0), qml.PauliY(1), qml.PauliX(2)]
-        H1 = qml.ops.dot(coeffs, ops)
+        H1 = qml.dot(coeffs, ops)
 
         def f3(p, t):
             return jnp.cos(t) * (p + 1)
 
         coeffs = [7, f3]
         ops = [qml.PauliX(0), qml.PauliX(2)]
-        H2 = qml.ops.dot(coeffs, ops)
+        H2 = qml.dot(coeffs, ops)
 
         dev = qml.device("default.qubit", wires=3)
 
