@@ -1495,7 +1495,7 @@ class TestTake:
         """Test that indexing with a sequence properly extracts
         the elements from the flattened tensor"""
         indices = [0, 2, 3, 6, -2]
-        res = fn.take(t, indices)
+        res = fn.take(t, indices, mode="wrap")
         assert fn.allclose(res, [1, 3, 4, 5, 2])
 
     def test_array_indexing_autograd(self):
