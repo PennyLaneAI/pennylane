@@ -2476,7 +2476,6 @@ class TestSize:
         assert r == size
 
 
-@pytest.skip("These tests are WIP")
 class TestFft:
     """Test qml.math.fft.fft differentiability."""
 
@@ -2547,6 +2546,18 @@ class TestFft:
         jac_imag = qml.jacobian(self.fft_imag)(arg)
         assert qml.math.allclose(jac_real + 1j * jac_imag, self.exp_jac)
 
+    @pytest.mark.jax
+    def test_fft_jax(self):
+        """Test that the functions are available in JAX."""
+        import jax
+
+        x = jax.numpy.array(self.arg, dtype=jax.numpy.complex64)
+        arg = qml.math.sin(x) - qml.math.cos(x) / 2
+        out = qml.math.fft.fft(arg)
+        assert qml.math.allclose(out, self.exp)
+        jac = jax.jacobian(qml.math.fft.fft, holomorphic=True)(arg)
+        assert qml.math.allclose(jac, self.exp_jac)
+
     @pytest.mark.torch
     def test_fft_torch(self):
         """Test that the functions are available in PyTorch."""
@@ -2568,13 +2579,8 @@ class TestFft:
         arg = qml.math.cast_like(qml.math.sin(self.arg) - qml.math.cos(self.arg) / 2, 1j)
         arg = tf.Variable(arg)
         with tf.GradientTape(persistent=True) as t:
-            out_real = self.fft_real(arg)
-            out_imag = self.fft_imag(arg)
-        jac_real = t.jacobian(out_real, arg)
-        jac_imag = t.jacobian(out_imag, arg)
-        assert qml.math.allclose(
-            qml.math.cast_like(out_real, 1j) + 1j * qml.math.cast_like(out_imag, 1j), self.exp
-        )
-        assert qml.math.allclose(
-            qml.math.cast_like(jac_real, 1j) + 1j * qml.math.cast_like(jac_imag, 1j), self.exp_jac
-        )
+            out = qml.math.fft.fft(arg)
+        assert qml.math.allclose(out, self.exp)
+        jac = t.jacobian(out, arg)
+        # The tensorflow Jacobian is the complex conjugate of the holomorphic derivative
+        assert qml.math.allclose(jac, qml.math.conj(self.exp_jac))
