@@ -12,6 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Unit tests for the ``Exp`` class"""
+import copy
+
 import pytest
 
 import pennylane as qml
@@ -506,7 +508,7 @@ class TestMiscMethods:
     def test_copy(self):
         """Tests making a copy."""
         op = Exp(qml.CNOT([0, 1]), 2)
-        copied_op = op.__copy__()
+        copied_op = copy.copy(op)
 
         assert qml.equal(op.base, copied_op.base)
         assert op.data == copied_op.data

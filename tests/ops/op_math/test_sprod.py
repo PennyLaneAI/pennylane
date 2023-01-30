@@ -171,7 +171,7 @@ class TestMscMethods:
         """Test the repr dunder method."""
         scalar, op = op_scalar_tup
         sprod_op = SProd(scalar, op)
-        assert op_rep == sprod_op.__repr__()
+        assert op_rep == repr(sprod_op)
 
     @pytest.mark.parametrize("op_scalar_tup", ops)
     def test_copy(self, op_scalar_tup):

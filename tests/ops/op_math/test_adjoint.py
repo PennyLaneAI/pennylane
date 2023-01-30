@@ -647,7 +647,6 @@ class TestEigvals:
 
         assert qml.math.allclose(qml.math.conj(base_eigvals), adj_eigvals)
 
-    @pytest.mark.xfail
     def test_batching_eigvals(self):
         """Test that eigenvalues work with batched parameters."""
         x = np.array([1.2, 2.3, 3.4])
@@ -655,7 +654,7 @@ class TestEigvals:
         adj = Adjoint(base)
         compare = qml.RX(-x, 0)
 
-        assert qml.math.allclose(adj.eigvals(), compare.eigvals())
+        assert qml.math.allclose(adj.eigvals(), compare.eigvals()[::-1])
 
     def test_no_matrix_defined_eigvals(self):
         """Test that if the base does not define eigvals, The Adjoint raises the same error."""
