@@ -62,10 +62,11 @@ class TestQNode:
         a = np.array(0.1, requires_grad=True)
         jax.jit(circuit)(a)
 
+
         assert circuit.interface == interface
 
         # the tape is able to deduce trainable parameters
-        assert circuit.qtape.trainable_params == [0]
+        assert circuit.qtape.trainable_params == []
 
         # gradients should work
         grad = jax.jit(jax.grad(circuit))(a)

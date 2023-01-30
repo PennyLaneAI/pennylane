@@ -140,14 +140,8 @@ def execute_tuple(tapes, device, execute_fn, gradient_fn, gradient_kwargs, _n=1,
             # set the trainable parameters
             params = tape.get_parameters(trainable_only=False)
             tape.trainable_params = qml.math.get_trainable_indices(params)
-    parameters = []
 
-    for tape in tapes:
-        params = tape.get_parameters(trainable_only=False)
-        params = [p for p in params if isinstance(p, jax.core.Tracer)]
-        parameters.append(params)
-
-    parameters = tuple(parameters)
+    parameters = tuple(list(t.get_parameters(trainable_only=False)) for t in tapes)
 
     if gradient_fn is None:
         return _execute_fwd_tuple(
@@ -183,7 +177,7 @@ def _execute_bwd_tuple(
 ):  # pylint: disable=dangerous-default-value,unused-argument
     @jax.custom_jvp
     def execute_wrapper(params):
-        print("p", params)
+
         shape_dtype_structs = _tapes_shape_dtype_tuple(tapes, device)
 
         def wrapper(p):
@@ -216,6 +210,11 @@ def _execute_bwd_tuple(
     def execute_wrapper_jvp(primals, tangents):
         # pylint: disable=unused-variable
         params = primals[0]
+        # Select the trainable params
+        # Non trainable params are 0
+        trainable_params = [t.trainable_params for t in tapes]
+        shapes = [t.shape(device) for t in tapes]
+        print(trainable_params, shapes)
         multi_measurements = [len(tape.measurements) > 1 for tape in tapes]
 
         # Execution: execute the function first
