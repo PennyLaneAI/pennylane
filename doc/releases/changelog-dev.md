@@ -389,7 +389,6 @@
   
   dev = qml.device("default.qubit", wires=2)
   
-  
   @qml.qnode(dev)
   def circuit(a, b):
       qml.RY(a, wires=0)
@@ -401,7 +400,6 @@
   ```pycon
   >>> circuit(a, b)
   (Array(0.9950042, dtype=float32), Array(-0.19767681, dtype=float32))
-  
   >>> jac = jax.jacobian(circuit)(a, b)
   (Array(-0.09983341, dtype=float32, weak_type=True), Array(0.01983384, dtype=float32, weak_type=True))
   ```
