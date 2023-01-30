@@ -1406,7 +1406,7 @@ class Operator(abc.ABC):
     def __add__(self, other):
         """The addition operation of Operator-Operator objects and Operator-scalar."""
         if isinstance(other, Operator):
-            return qml.op_sum(self, other)
+            return qml.sum(self, other)
         if other == 0:
             return self
         if isinstance(other, qml.pulse.ParametrizedHamiltonian):
@@ -1415,7 +1415,7 @@ class Operator(abc.ABC):
         if (backend == "builtins" and isinstance(other, numbers.Number)) or (
             backend in SUPPORTED_INTERFACES and qml.math.shape(other) == ()
         ):
-            return qml.op_sum(self, qml.s_prod(scalar=other, operator=qml.Identity(self.wires)))
+            return qml.sum(self, qml.s_prod(scalar=other, operator=qml.Identity(self.wires)))
         return NotImplemented
 
     __radd__ = __add__
