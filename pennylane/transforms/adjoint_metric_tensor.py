@@ -16,9 +16,9 @@ Contains the adjoint_metric_tensor.
 """
 import warnings
 from itertools import chain
-from pennylane import numpy as np
 
 import pennylane as qml
+from pennylane import numpy as np
 
 # pylint: disable=protected-access
 from pennylane.transforms.metric_tensor import _contract_metric_tensor_with_cjac
@@ -99,7 +99,7 @@ def adjoint_metric_tensor(circuit, device=None, hybrid=True):
           Note also that this makes the metric tensor strictly real-valued.
 
     Args:
-        circuit (.QuantumScript or .QNode): Circuit to compute the metric tensor of
+        circuit (.QuantumTape or .QNode): Circuit to compute the metric tensor of
         device (.Device): Device to use for the adjoint method
         hybrid (bool): Whether to take classical preprocessing into account. Ignored if
             ``circuit`` is a tape.
@@ -161,7 +161,7 @@ def adjoint_metric_tensor(circuit, device=None, hybrid=True):
     if isinstance(circuit, (qml.QNode, qml.ExpvalCost)):
         return _adjoint_metric_tensor_qnode(circuit, device, hybrid)
 
-    raise qml.QuantumFunctionError("The passed object is not a QuantumScript or QNode.")
+    raise qml.QuantumFunctionError("The passed object is not a QuantumTape or QNode.")
 
 
 def _adjoint_metric_tensor_tape(tape, device):
@@ -265,7 +265,7 @@ def _adjoint_metric_tensor_qnode(qnode, device, hybrid):
                     "will be used to evaluate the metric tensor with the adjoint method.",
                     UserWarning,
                 )
-            qnode = qnode.qnodes.qnodes[0]
+            qnode = qnode.qnodes[0]
         device = qnode.device
 
     cjac_fn = qml.transforms.classical_jacobian(

@@ -21,7 +21,7 @@ from pennylane.measurements import (
     MeasurementProcess,
     MeasurementShapeError,
     Probability,
-    _Probability,
+    ProbabilityMP,
 )
 from pennylane.queuing import AnnotatedQueue
 
@@ -84,7 +84,7 @@ class TestProbs:
 
         circuit()
 
-        assert isinstance(circuit.tape[0], _Probability)
+        assert isinstance(circuit.tape[0], ProbabilityMP)
 
     def test_numeric_type(self):
         """Test that the numeric type is correct."""
@@ -116,7 +116,7 @@ class TestProbs:
         the shape of certain measurements."""
         with pytest.raises(
             MeasurementShapeError,
-            match="The device argument is required to obtain the shape of the measurement process",
+            match="The device argument is required to obtain the shape of the measurement",
         ):
             measurement.shape()
 

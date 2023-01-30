@@ -118,22 +118,17 @@ The function queues a copy of the original object if it already in the queue.
 >>> q.queue[0] is q.queue[1]
 False
 
-In the case of operators composed of other operators, each operator in the composite will be queued.
-For example, both ``PauliX`` and ``PauliX`` raised to a power.
+In the case of operators composed of other operators, like with :class:`~.SymbolicOp` and
+:class:`~.CompositeOp`, the new nested operation removes its constituents from the queue.
+Only the operators that will end up in the circuit will remain.
 
 >>> with qml.queuing.AnnotatedQueue() as q:
 ...     base = qml.PauliX(0)
+...     print(q.queue)
 ...     pow_op = base ** 1.5
->>> q.queue
-[PauliX(wires=[0]), PauliX(wires=[0])**1.5]
-
-In this case, each object will have metadata associated with it. At later processing steps, the original
-``PauliX`` will be ignored in favor of the operator that *owns* it.
-
->>> q.get_info(base)
-{'owner': PauliX(wires=[0])**1.5}
->>> q.get_info(base)["owner"] is pow_op
-True
+...     print(q.queue)
+[PauliX(wires=[0])]
+[PauliX(wires=[0])**1.5]
 
 Once the queue is constructed, the :func:`~.process_queue` function converts it into the operations,
 measurements, and state prep present in the final circuit. This step eliminates any object that has an owner.
@@ -359,8 +354,9 @@ class AnnotatedQueue(OrderedDict):
         self[obj] = kwargs
 
     def remove(self, obj):
-        """Remove ``obj`` from the queue.  Raises ``KeyError`` if ``obj`` is not already in the queue."""
-        del self[obj]
+        """Remove ``obj`` from the queue. Passes silently if the object is not in the queue."""
+        if obj in self:
+            del self[obj]
 
     def update_info(self, obj, **kwargs):
         """Update ``obj``'s metadata with ``kwargs`` if it exists in the queue."""

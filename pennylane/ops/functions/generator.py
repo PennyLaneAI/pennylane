@@ -78,11 +78,11 @@ def _generator_prefactor(gen, op):
       :class:`~.SparseHamiltonian`, or a tensor product
       of Pauli words.
     """
-    if isinstance(gen, (qml.Hermitian, qml.SparseHamiltonian)):
-        obs = gen
-        prefactor = 1.0
 
-    elif isinstance(gen, qml.operation.Observable):
+    obs = gen
+    prefactor = 1.0
+
+    if isinstance(gen, qml.operation.Observable):
         # convert to a qml.Hamiltonian
         gen = 1.0 * gen
 
@@ -192,9 +192,9 @@ def generator(op, format="prefactor"):
         # versions <=0.22, assume op.generator is a property
         gen = _generator_backcompatibility(op)
 
-    if not isinstance(gen, qml.operation.Observable):
+    if not gen.is_hermitian:
         raise qml.QuantumFunctionError(
-            f"Generator {gen.name} of operation {op.name} is not an observable"
+            f"Generator {gen.name} of operation {op.name} is not hermitian"
         )
 
     if format == "prefactor":

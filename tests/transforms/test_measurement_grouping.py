@@ -20,12 +20,13 @@ import pennylane as qml
 def test_measurement_grouping():
     """Test that measurement grouping works as expected."""
 
-    with qml.tape.QuantumTape() as tape:
+    with qml.queuing.AnnotatedQueue() as q:
         qml.RX(0.1, wires=0)
         qml.RX(0.2, wires=1)
         qml.CNOT(wires=[0, 1])
         qml.CNOT(wires=[1, 2])
 
+    tape = qml.tape.QuantumScript.from_queue(q)
     obs = [qml.PauliZ(0), qml.PauliX(0) @ qml.PauliZ(1), qml.PauliX(2)]
     coeffs = [2.0, -0.54, 0.1]
 
@@ -40,12 +41,13 @@ def test_measurement_grouping():
 def test_deprecation_warning_measurement_grouping():
     """Tests that a deprecation warning is raised when using measurement_grouping."""
 
-    with qml.tape.QuantumTape() as tape:
+    with qml.queuing.AnnotatedQueue() as q:
         qml.RX(0.1, wires=0)
         qml.RX(0.2, wires=1)
         qml.CNOT(wires=[0, 1])
         qml.CNOT(wires=[1, 2])
 
+    tape = qml.tape.QuantumScript.from_queue(q)
     obs = [qml.PauliZ(0), qml.PauliX(0) @ qml.PauliZ(1), qml.PauliX(2)]
     coeffs = [2.0, -0.54, 0.1]
 

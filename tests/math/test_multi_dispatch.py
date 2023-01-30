@@ -15,17 +15,18 @@
 """
 import autoray
 import numpy as onp
-import scipy as s
 import pytest
+import scipy as s
 from autoray import numpy as anp
-from pennylane import numpy as np
+
 from pennylane import math as fn
+from pennylane import numpy as np
 
 pytestmark = pytest.mark.all_interfaces
 
 tf = pytest.importorskip("tensorflow", minversion="2.1")
 torch = pytest.importorskip("torch")
-jax = pytest.importorskip("jax")
+jnp = pytest.importorskip("jax.numpy")
 
 test_multi_dispatch_stack_data = [
     [[1.0, 0.0], [2.0, 3.0]],
@@ -33,7 +34,7 @@ test_multi_dispatch_stack_data = [
     onp.array([[1.0, 0.0], [2.0, 3.0]]),
     anp.array([[1.0, 0.0], [2.0, 3.0]]),
     np.array([[1.0, 0.0], [2.0, 3.0]]),
-    jax.numpy.array([[1.0, 0.0], [2.0, 3.0]]),
+    jnp.array([[1.0, 0.0], [2.0, 3.0]]),
     tf.constant([[1.0, 0.0], [2.0, 3.0]]),
 ]
 
@@ -79,7 +80,7 @@ test_data0 = [
     anp.array([1, 2, 3]),
     np.array([1, 2, 3]),
     torch.tensor([1, 2, 3]),
-    jax.numpy.array([1, 2, 3]),
+    jnp.array([1, 2, 3]),
     tf.constant([1, 2, 3]),
 ]
 
@@ -104,7 +105,7 @@ test_data_values = [
     [onp.array([1, 2, 3]) for _ in range(5)],
     [anp.array([1, 2, 3]) for _ in range(5)],
     [torch.tensor([1, 2, 3]) for _ in range(5)],
-    [jax.numpy.array([1, 2, 3]) for _ in range(5)],
+    [jnp.array([1, 2, 3]) for _ in range(5)],
     [tf.constant([1, 2, 3]) for _ in range(5)],
 ]
 
@@ -129,8 +130,8 @@ def test_multi_dispatch_decorate_non_dispatch(values):
 @pytest.mark.all_interfaces
 def test_unwrap():
     """Test that unwrap converts lists to lists and interface variables to numpy."""
-    import torch
     import tensorflow as tf
+    import torch
     from jax import numpy as jnp
 
     params = [
@@ -168,3 +169,43 @@ def test_kron():
     assert np.allclose(expected_result, fn.kron(m1, m2, like="scipy"))
     with pytest.warns(DeprecationWarning):
         _ = s.kron(m1, m2)
+
+
+@pytest.mark.parametrize(
+    ("n", "t", "gamma_ref"),
+    [
+        (
+            0.1,
+            jnp.array([0.2, 0.3, 0.4]),
+            jnp.array([0.87941963, 0.90835799, 0.92757383]),
+        ),
+        (
+            0.1,
+            np.array([0.2, 0.3, 0.4]),
+            np.array([0.87941963, 0.90835799, 0.92757383]),
+        ),
+        (
+            0.1,
+            onp.array([0.2, 0.3, 0.4]),
+            onp.array([0.87941963, 0.90835799, 0.92757383]),
+        ),
+    ],
+)
+def test_gammainc(n, t, gamma_ref):
+    """Test that the lower incomplete Gamma function is computed correctly."""
+    gamma = fn.gammainc(n, t)
+
+    assert np.allclose(gamma, gamma_ref)
+
+
+class TestMatmul:
+    @pytest.mark.torch
+    def test_matmul_torch(self):
+        import torch
+
+        m1 = torch.tensor([[1, 0], [0, 1]])
+        m2 = [[1, 2], [3, 4]]
+        assert fn.allequal(fn.matmul(m1, m2), m2)
+        assert fn.allequal(fn.matmul(m2, m1), m2)
+        assert fn.allequal(fn.matmul(m2, m2, like="torch"), np.matmul(m2, m2))
+        assert fn.allequal(fn.matmul(m1, m1), m1)

@@ -80,7 +80,7 @@ class TestConstruction:
         """Test that qubit quantum operations correctly queue"""
         tape, ops, obs = make_tape
 
-        assert len(tape.queue) == 7
+        assert len(tape.queue) == 6
         assert tape.operations == ops
         assert tape.observables == obs
         assert tape.output_dim == 5
@@ -197,7 +197,7 @@ class TestConstruction:
             C = A @ B
             D = qml.expval(C)
 
-        assert len(tape.queue) == 4
+        assert len(tape.queue) == 1
         assert not tape.operations
         assert tape.measurements == [D]
         assert tape.observables == [C]
@@ -221,7 +221,7 @@ class TestConstruction:
             qml.expval(obs[0])
             obs += [qml.probs(wires=[0, "a"])]
 
-        assert len(tape.queue) == 5
+        assert len(tape.queue) == 4
         assert tape.operations == ops
         assert tape.observables == obs
         assert tape.output_dim == 5
@@ -295,11 +295,12 @@ class TestConstruction:
             qml.RY(x, wires=1)
             qml.PauliZ(1)
 
-        with qml.tape.QuantumTape() as tape:
+        with qml.queuing.AnnotatedQueue() as q:
             m_0 = qml.measure(0)
             qml.cond(m_0, f)(r)
             qml.apply(terminal_measurement)
 
+        tape = qml.tape.QuantumScript.from_queue(q)
         target_wire = qml.wires.Wires(1)
 
         assert len(tape.circuit) == 5
@@ -334,21 +335,23 @@ class TestConstruction:
         batch_size, when creating and when using `set_parameters`."""
 
         # Test with tape construction
-        with qml.tape.QuantumTape() as tape:
+        with qml.queuing.AnnotatedQueue() as q:
             qml.RX(x, wires=0)
             qml.Rot(*rot, wires=1)
             qml.apply(qml.expval(qml.PauliZ(0)))
             qml.apply(qml.expval(qml.PauliX(1)))
 
+        tape = qml.tape.QuantumScript.from_queue(q)
         assert tape.batch_size == exp_batch_size
 
         # Test with set_parameters
-        with qml.tape.QuantumTape() as tape:
+        with qml.queuing.AnnotatedQueue() as q:
             qml.RX(0.2, wires=0)
             qml.Rot(1.0, 0.2, -0.3, wires=1)
             qml.apply(qml.expval(qml.PauliZ(0)))
             qml.apply(qml.expval(qml.PauliX(1)))
 
+        tape = qml.tape.QuantumScript.from_queue(q)
         assert tape.batch_size is None
 
         tape.set_parameters([x] + rot)
@@ -368,17 +371,19 @@ class TestConstruction:
         with pytest.raises(
             ValueError, match="batch sizes of the quantum script operations do not match."
         ):
-            with qml.tape.QuantumTape() as tape:
+            with qml.queuing.AnnotatedQueue() as q:
                 qml.RX(x, wires=0)
                 qml.Rot(*rot, wires=1)
                 qml.RX(y, wires=1)
                 qml.apply(qml.expval(qml.PauliZ(0)))
 
-        with qml.tape.QuantumTape() as tape:
+            tape = qml.tape.QuantumScript.from_queue(q)
+        with qml.queuing.AnnotatedQueue() as q:
             qml.RX(0.2, wires=0)
             qml.Rot(1.0, 0.2, -0.3, wires=1)
             qml.RX(0.2, wires=1)
             qml.apply(qml.expval(qml.PauliZ(0)))
+        tape = qml.tape.QuantumScript.from_queue(q)
         with pytest.raises(
             ValueError, match="batch sizes of the quantum script operations do not match."
         ):
@@ -901,7 +906,11 @@ class TestInverseAdjoint:
 
         with QuantumTape() as tape:
             prep = qml.BasisState(init_state, wires=[0, "a"])
-            ops = [qml.RX(p[0], wires=0), qml.Rot(*p[1:], wires=0).inv(), qml.CNOT(wires=[0, "a"])]
+            ops = [
+                qml.RX(p[0], wires=0),
+                qml.adjoint(qml.Rot(*p[1:], wires=0)),
+                qml.CNOT(wires=[0, "a"]),
+            ]
             m1 = qml.probs(wires=0)
             m2 = qml.probs(wires="a")
 
@@ -1844,11 +1853,12 @@ class TestOutputShape:
         a = np.array(0.1)
         b = np.array(0.2)
 
-        with qml.tape.QuantumTape() as tape:
+        with qml.queuing.AnnotatedQueue() as q:
             qml.RY(a, wires=0)
             qml.RX(b, wires=0)
             qml.apply(measurement)
 
+        tape = qml.tape.QuantumScript.from_queue(q)
         shot_dim = shots if not isinstance(shots, tuple) else len(shots)
         if expected_shape is None:
             expected_shape = shot_dim if shot_dim == 1 else (shot_dim,)
@@ -1887,11 +1897,12 @@ class TestOutputShape:
         a = np.array(0.1)
         b = np.array(0.2)
 
-        with qml.tape.QuantumTape() as tape:
+        with qml.queuing.AnnotatedQueue() as q:
             qml.RY(a, wires=0)
             qml.RX(b, wires=0)
             qml.apply(measurement)
 
+        tape = qml.tape.QuantumScript.from_queue(q)
         res = qml.execute([tape], dev, gradient_fn=qml.gradients.param_shift)[0]
 
         if isinstance(res, tuple):
@@ -1945,8 +1956,10 @@ class TestOutputShape:
         a = np.array(0.1)
         b = np.array(0.2)
 
-        with qml.tape.QuantumTape() as tape:
+        with qml.queuing.AnnotatedQueue() as q:
             qml.probs(wires=[0])
+
+        tape = qml.tape.QuantumScript.from_queue(q)
 
         @qml.qnode(dev)
         def circuit(a, b):
@@ -1966,12 +1979,13 @@ class TestOutputShape:
         a = np.array(0.1)
         b = np.array(0.2)
 
-        with qml.tape.QuantumTape() as tape:
+        with qml.queuing.AnnotatedQueue() as q:
             qml.RY(a, wires=0)
             qml.RX(b, wires=0)
             for m in measurements:
                 qml.apply(m)
 
+        tape = qml.tape.QuantumScript.from_queue(q)
         if measurements[0].return_type is qml.measurements.Sample:
             expected[1] = shots
             expected = tuple(expected)
@@ -2002,12 +2016,13 @@ class TestOutputShape:
         a = np.array(0.1)
         b = np.array(0.2)
 
-        with qml.tape.QuantumTape() as tape:
+        with qml.queuing.AnnotatedQueue() as q:
             qml.RY(a, wires=0)
             qml.RX(b, wires=0)
             for m in measurements:
                 qml.apply(m)
 
+        tape = qml.tape.QuantumScript.from_queue(q)
         if measurements[0].return_type is qml.measurements.Sample:
             expected[1] = shots
             expected = tuple(expected)
@@ -2032,12 +2047,13 @@ class TestOutputShape:
         b = np.array(0.2)
 
         num_samples = 3
-        with qml.tape.QuantumTape() as tape:
+        with qml.queuing.AnnotatedQueue() as q:
             qml.RY(a, wires=0)
             qml.RX(b, wires=0)
             for i in range(num_samples):
                 qml.sample(qml.PauliZ(i))
 
+        tape = qml.tape.QuantumScript.from_queue(q)
         expected = (num_samples, shots)
 
         res = tape.shape(dev)
@@ -2058,12 +2074,13 @@ class TestOutputShape:
         b = np.array(0.2)
 
         num_samples = 3
-        with qml.tape.QuantumTape() as tape:
+        with qml.queuing.AnnotatedQueue() as q:
             qml.RY(a, wires=0)
             qml.RX(b, wires=0)
             for i in range(num_samples):
                 qml.sample(qml.PauliZ(i))
 
+        tape = qml.tape.QuantumScript.from_queue(q)
         expected = []
         for s in shots:
             shape = (num_samples,) if s == 1 else (s, num_samples)
@@ -2095,11 +2112,12 @@ class TestOutputShape:
         a = np.array([0.1, 0.2, 0.3])
         b = np.array([0.4, 0.5, 0.6])
 
-        with qml.tape.QuantumTape() as tape:
+        with qml.queuing.AnnotatedQueue() as q:
             qml.RY(a, wires=0)
             qml.RX(b, wires=0)
             qml.apply(measurement)
 
+        tape = qml.tape.QuantumScript.from_queue(q)
         expected_shape = qml.execute([tape], dev, gradient_fn=None)[0].shape
 
         assert tape.shape(dev) == expected_shape
@@ -2121,12 +2139,13 @@ class TestOutputShape:
         a = np.array([0.1, 0.2, 0.3])
         b = np.array([0.4, 0.5, 0.6])
 
-        with qml.tape.QuantumTape() as tape:
+        with qml.queuing.AnnotatedQueue() as q:
             qml.RY(a, wires=0)
             qml.RX(b, wires=0)
             for _ in range(2):
                 qml.apply(measurement)
 
+        tape = qml.tape.QuantumScript.from_queue(q)
         expected = qml.execute([tape], dev, gradient_fn=None)[0].shape
 
         assert tape.shape(dev) == expected
@@ -2137,10 +2156,11 @@ class TestOutputShape:
         using a device with a shot vector."""
         dev = qml.device("default.qubit", wires=3, shots=(1, 2, 3))
 
-        with qml.tape.QuantumTape() as tape:
+        with qml.queuing.AnnotatedQueue() as q:
             qml.probs(wires=[0])
             qml.probs(wires=[1, 2])
 
+        tape = qml.tape.QuantumScript.from_queue(q)
         with pytest.raises(ValueError, match="multiple probability measurements"):
             tape.shape(dev)
 
@@ -2149,12 +2169,13 @@ class TestOutputShape:
         types of measurements raises an error."""
         dev = qml.device("default.qubit", wires=3)
 
-        with qml.tape.QuantumTape() as tape:
+        with qml.queuing.AnnotatedQueue() as q:
             qml.RY(0.3, wires=0)
             qml.RX(0.2, wires=0)
             qml.expval(qml.PauliZ(0))
             qml.sample(qml.PauliZ(0))
 
+        tape = qml.tape.QuantumScript.from_queue(q)
         with pytest.raises(
             ValueError,
             match="contains multiple types of measurements is unsupported",
@@ -2166,12 +2187,13 @@ class TestOutputShape:
         state measurements raises an error."""
         dev = qml.device("default.qubit", wires=3)
 
-        with qml.tape.QuantumTape() as tape:
+        with qml.queuing.AnnotatedQueue() as q:
             qml.RY(0.3, wires=0)
             qml.RX(0.2, wires=0)
             qml.state()
             qml.density_matrix(wires=0)
 
+        tape = qml.tape.QuantumScript.from_queue(q)
         with pytest.raises(ValueError, match="multiple state measurements is not supported"):
             tape.shape(dev)
 
@@ -2180,11 +2202,12 @@ class TestOutputShape:
         along with a device with a shot vector raises an error."""
         dev = qml.device("default.qubit", wires=3, shots=(1, 2, 3))
 
-        with qml.tape.QuantumTape() as tape:
+        with qml.queuing.AnnotatedQueue() as q:
             qml.RY(0.3, wires=0)
             qml.RX(0.2, wires=0)
             qml.sample()
 
+        tape = qml.tape.QuantumScript.from_queue(q)
         with pytest.raises(
             ValueError,
             match="returning samples along with a device with a shot vector",
@@ -2196,11 +2219,12 @@ class TestOutputShape:
         along with a device with a shot vector raises an error."""
         dev = qml.device("default.qubit", wires=3, shots=(1, 2, 3))
 
-        with qml.tape.QuantumTape() as tape:
+        with qml.queuing.AnnotatedQueue() as q:
             qml.RY(0.3, wires=0)
             qml.RX(0.2, wires=0)
             qml.sample()
 
+        tape = qml.tape.QuantumScript.from_queue(q)
         with pytest.raises(
             MeasurementShapeError,
             match="returning samples along with a device with a shot vector",
@@ -2337,12 +2361,13 @@ class TestNumericType:
         a = 0.3
         b = 0.3
 
-        with qml.tape.QuantumTape() as tape:
+        with qml.queuing.AnnotatedQueue() as q:
             qml.RY(a, wires=[0])
             qml.RZ(b, wires=[0])
             qml.expval(qml.PauliZ(0))
             qml.probs(wires=[0])
 
+        tape = qml.tape.QuantumScript.from_queue(q)
         with pytest.raises(
             ValueError,
             match="Getting the numeric type of a quantum script that contains multiple types of measurements is unsupported.",

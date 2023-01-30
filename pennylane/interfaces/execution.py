@@ -740,7 +740,10 @@ def _get_jax_execute_fn(interface: str, tapes: Sequence[QuantumTape]):
         interface = get_jax_interface_name(tapes)
 
     if interface == "jax-jit":
-        from .jax_jit import execute as _execute
+        if qml.active_return():
+            from .jax_jit_tuple import execute_tuple as _execute
+        else:
+            from .jax_jit import execute as _execute
     else:
         if qml.active_return():
             from .jax import execute_new as _execute

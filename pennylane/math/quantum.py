@@ -1014,7 +1014,7 @@ def _check_density_matrix(density_matrix):
         if not allclose(density_matrix, conj_trans):
             raise ValueError("The matrix is not Hermitian.")
         # Check if positive semi-definite
-        evs = np.linalg.eigvalsh(density_matrix)
+        evs, _ = qml.math.linalg.eigh(density_matrix)
         evs = np.real(evs)
         evs_non_negative = [ev for ev in evs if ev >= 0.0]
         if len(evs) != len(evs_non_negative):
@@ -1032,3 +1032,97 @@ def _check_state_vector(state_vector):
     if not is_abstract(norm):
         if not allclose(norm, 1.0, atol=1e-10):
             raise ValueError("Sum of amplitudes-squared does not equal one.")
+
+
+def max_entropy(state, indices, base=None, check_state=False, c_dtype="complex128"):
+    r"""Compute the maximum entropy from a state vector or density matrix on a given subsystem. It supports all
+    interfaces (Numpy, Autograd, Torch, Tensorflow and Jax).
+
+    .. math::
+        S_{\text{max}}( \rho ) = \log( \text{rank} ( \rho ))
+
+    Args:
+        state (tensor_like): ``(2**N)`` state vector or ``(2**N, 2**N)`` density matrix.
+        indices (list(int)): List of indices in the considered subsystem.
+        base (float): Base for the logarithm. If None, the natural logarithm is used.
+        check_state (bool): If True, the function will check the state validity (shape and norm).
+        c_dtype (str): Complex floating point precision type.
+
+    Returns:
+        float: The maximum entropy of the considered subsystem.
+
+    **Example**
+
+    The maximum entropy of a subsystem for any state vector can be obtained. Here is an example for the
+    maximally entangled state, where the subsystem entropy is maximal (default base for log is exponential).
+
+
+    >>> x = [1, 0, 0, 1] / np.sqrt(2)
+    >>> max_entropy(x, indices=[0])
+    0.6931472
+
+    The logarithm base can be switched to 2 for example.
+
+    >>> max_entropy(x, indices=[0], base=2)
+    1.0
+
+    The maximum entropy can be obtained by providing a quantum state as a density matrix, for example:
+
+    >>> y = [[1/2, 0, 0, 1/2], [0, 0, 0, 0], [0, 0, 0, 0], [1/2, 0, 0, 1/2]]
+    >>> max_entropy(x, indices=[0])
+    0.6931472
+
+    The maximum entropy is always greater or equal to the Von Neumann entropy. In this maximally
+    entangled example, they are equal:
+
+    >>> vn_entropy(x, indices=[0])
+    0.6931472
+
+    However, in general, the Von Neumann entropy is lower:
+
+    >>> x = [np.cos(np.pi/8), 0, 0, -1j*np.sin(np.pi/8)]
+    >>> vn_entropy(x, indices=[1])
+    0.4164955
+    >>> max_entropy(x, indices=[1])
+    0.6931472
+
+    """
+    density_matrix = reduced_dm(state, indices, check_state, c_dtype)
+    maximum_entropy = _compute_max_entropy(density_matrix, base)
+
+    return maximum_entropy
+
+
+def _compute_max_entropy(density_matrix, base):
+    """Compute the maximum entropy from a density matrix
+
+    Args:
+        density_matrix (tensor_like): ``(2**N, 2**N)`` tensor density matrix for an integer `N`.
+        base (float, int): Base for the logarithm. If None, the natural logarithm is used.
+
+    Returns:
+        float: Maximum entropy of the density matrix.
+
+    **Example**
+
+    >>> x = [[1/2, 0], [0, 1/2]]
+    >>> _compute_max_entropy(x)
+    0.6931472
+
+    >>> x = [[1/2, 0], [0, 1/2]]
+    >>> _compute_max_entropy(x, base=2)
+    1.0
+
+    """
+    # Change basis if necessary
+    if base:
+        div_base = np.log(base)
+    else:
+        div_base = 1
+
+    evs, _ = qml.math.linalg.eigh(density_matrix)
+    evs = qml.math.real(evs)
+    rank = qml.math.sum(evs / qml.math.where(evs > 1e-8, evs, 1.0))
+    maximum_entropy = qml.math.log(rank) / div_base
+
+    return maximum_entropy

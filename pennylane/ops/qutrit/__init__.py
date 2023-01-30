@@ -34,6 +34,7 @@ ops = {
     "TClock",
     "TAdd",
     "TSWAP",
+    "THadamard",
 }
 
 obs = {

@@ -32,10 +32,11 @@ class TestMetricTensor:
         dev = qml.device("default.qubit", wires=1)
         params = np.array([1.0, 2.0, 3.0], requires_grad=True)
 
-        with qml.tape.QuantumTape() as circuit:
+        with qml.queuing.AnnotatedQueue() as q_circuit:
             qml.Rot(params[0], params[1], params[2], wires=0)
             qml.expval(qml.PauliX(0))
 
+        circuit = qml.tape.QuantumScript.from_queue(q_circuit)
         tapes, _ = qml.metric_tensor(circuit, approx="block-diag")
         assert len(tapes) == 3
 
@@ -98,13 +99,15 @@ class TestMetricTensor:
         """Test correct subcircuits constructed"""
         dev = qml.device("default.qubit", wires=2)
 
-        with qml.tape.QuantumTape() as tape:
+        with qml.queuing.AnnotatedQueue() as q:
             qml.RX(np.array(1.0, requires_grad=True), wires=0)
             qml.RY(np.array(1.0, requires_grad=True), wires=0)
             qml.CNOT(wires=[0, 1])
             qml.PhaseShift(np.array(1.0, requires_grad=True), wires=1)
-            return qml.expval(qml.PauliX(0)), qml.expval(qml.PauliX(1))
+            qml.expval(qml.PauliX(0))
+            qml.expval(qml.PauliX(1))
 
+        tape = qml.tape.QuantumScript.from_queue(q)
         tapes, _ = qml.metric_tensor(tape, approx="block-diag")
         assert len(tapes) == 3
 
@@ -121,12 +124,11 @@ class TestMetricTensor:
         assert isinstance(tapes[1].operations[3], qml.Hadamard)
 
         # third parameter subcircuit
-        assert len(tapes[2].operations) == 4
+        assert len(tapes[2].operations) == 3
         assert isinstance(tapes[2].operations[0], qml.RX)
         assert isinstance(tapes[2].operations[1], qml.RY)
         assert isinstance(tapes[2].operations[2], qml.CNOT)
-        # Phase shift generator
-        assert isinstance(tapes[2].operations[3], qml.QubitUnitary)
+        # No decomposition for operator that is diagonal in computational basis
 
     def test_construct_subcircuit_layers(self):
         """Test correct subcircuits constructed
@@ -134,7 +136,7 @@ class TestMetricTensor:
         dev = qml.device("default.qubit", wires=3)
         params = np.ones([8])
 
-        with qml.tape.QuantumTape() as tape:
+        with qml.queuing.AnnotatedQueue() as q:
             # section 1
             qml.RX(params[0], wires=0)
             # section 2
@@ -153,8 +155,11 @@ class TestMetricTensor:
             qml.RZ(params[7], wires=2)
             qml.CNOT(wires=[0, 1])
             qml.CNOT(wires=[1, 2])
-            return qml.expval(qml.PauliX(0)), qml.expval(qml.PauliX(1)), qml.expval(qml.PauliX(2))
+            qml.expval(qml.PauliX(0))
+            qml.expval(qml.PauliX(1))
+            qml.expval(qml.PauliX(2))
 
+        tape = qml.tape.QuantumScript.from_queue(q)
         tapes, _ = qml.metric_tensor(tape, approx="block-diag")
 
         # this circuit should split into 4 independent
@@ -312,7 +317,7 @@ class TestMetricTensor:
             x, y, z, h, g, f = params
             non_parametrized_layer(a, b, c)
             qml.RX(x, wires=0)
-            qml.RY(-y, wires=1).inv()
+            qml.adjoint(qml.RY)(-y, wires=1)
             qml.RZ(z, wires=2)
             non_parametrized_layer(a, b, c)
             qml.RY(f, wires=1)
@@ -580,7 +585,7 @@ class TestMetricTensor:
         """Test that a tape with Ising gates has the correct metric tensor tapes."""
 
         dev = qml.device("default.qubit", wires=3)
-        with qml.tape.QuantumTape() as tape:
+        with qml.queuing.AnnotatedQueue() as q:
             qml.Hadamard(0)
             qml.Hadamard(2)
             qml.IsingXX(0.2, wires=[0, 1])
@@ -588,6 +593,7 @@ class TestMetricTensor:
             qml.IsingZZ(1.02, wires=[0, 1])
             qml.IsingZZ(-4.2, wires=[1, 2])
 
+        tape = qml.tape.QuantumScript.from_queue(q)
         tapes, proc_fn = qml.metric_tensor(tape, approx="block-diag")
         assert len(tapes) == 4
         assert [len(tape.operations) for tape in tapes] == [3, 5, 4, 5]
@@ -682,11 +688,12 @@ class TestMetricTensor:
         dev = qml.device("default.qubit", wires=3)
 
         weights = [0.1, 0.2]
-        with qml.tape.QuantumTape() as tape:
+        with qml.queuing.AnnotatedQueue() as q:
             qml.RX(weights[0], wires=0)
             qml.RY(weights[1], wires=0)
             qml.expval(qml.PauliZ(0) @ qml.PauliZ(1))
 
+        tape = qml.tape.QuantumScript.from_queue(q)
         # TODO: remove once #2155 is resolved
         tape.trainable_params = []
 
@@ -698,7 +705,7 @@ class TestMetricTensor:
         assert res == ()
 
 
-fixed_pars = np.array([-0.2, 0.2, 0.5, 0.3, 0.7], requires_grad=False)
+fixed_pars = [-0.2, 0.2, 0.5, 0.3, 0.7]
 
 
 def fubini_ansatz0(params, wires=None):
@@ -728,11 +735,11 @@ def fubini_ansatz2(params, wires=None):
     qml.RX(fixed_pars[1], wires=0)
     qml.Rot(*fixed_pars[2:5], wires=1)
     qml.CNOT(wires=[0, 1])
-    qml.RY(params0, wires=0)
+    qml.RY(params0, wires=0) ** 0.4
     qml.RY(params0, wires=1)
     qml.CNOT(wires=[0, 1])
-    qml.RX(params1, wires=0).inv()
-    qml.RX(params1, wires=1).inv()
+    qml.adjoint(qml.RX)(params1, wires=0)
+    qml.adjoint(qml.RX(params1, wires=1))
 
 
 def fubini_ansatz3(params, wires=None):
@@ -743,7 +750,7 @@ def fubini_ansatz3(params, wires=None):
     qml.RX(fixed_pars[3], wires=1)
     qml.CNOT(wires=[0, 1])
     qml.CNOT(wires=[1, 2])
-    qml.RX(params0, wires=0).inv()
+    qml.adjoint(qml.RX(params0, wires=0))
     qml.RX(params0, wires=1)
     qml.CNOT(wires=[0, 1])
     qml.CNOT(wires=[1, 2])
@@ -1076,6 +1083,7 @@ class TestDifferentiability:
     dev = qml.device("default.qubit", wires=3)
 
     @pytest.mark.autograd
+    @pytest.mark.filterwarnings("ignore:Attempted to compute the gradient")
     def test_autograd_diag(self, diff_method, tol, ansatz, weights, expected_diag_jac):
         """Test metric tensor differentiability in the autograd interface"""
         circuit = self.get_circuit(ansatz)
@@ -1103,6 +1111,7 @@ class TestDifferentiability:
             assert qml.math.allclose(jac, expected_diag_jac(*weights), atol=tol, rtol=0)
 
     @pytest.mark.autograd
+    @pytest.mark.filterwarnings("ignore:Attempted to compute the gradient")
     def test_autograd(self, diff_method, tol, ansatz, weights, expected_diag_jac):
         """Test metric tensor differentiability in the autograd interface"""
         circuit = self.get_circuit(ansatz)
@@ -1258,10 +1267,11 @@ class TestDifferentiability:
 @pytest.mark.parametrize("approx", [True, False, "Invalid", 2])
 def test_invalid_value_for_approx(approx):
     """Test exception is raised if ``approx`` is invalid."""
-    with qml.tape.QuantumTape() as tape:
+    with qml.queuing.AnnotatedQueue() as q:
         qml.RX(np.array(0.5, requires_grad=True), wires=0)
         qml.expval(qml.PauliX(0))
 
+    tape = qml.tape.QuantumScript.from_queue(q)
     with pytest.raises(ValueError, match="keyword argument approx"):
         qml.metric_tensor(tape, approx=approx)
 
@@ -1272,11 +1282,12 @@ def test_generator_no_expval(monkeypatch):
     with monkeypatch.context() as m:
         m.setattr("pennylane.RX.generator", lambda self: qml.RX(0.1, wires=0))
 
-        with qml.tape.QuantumTape() as tape:
+        with qml.queuing.AnnotatedQueue() as q:
             qml.RX(np.array(0.5, requires_grad=True), wires=0)
             qml.expval(qml.PauliX(0))
 
-        with pytest.raises(qml.QuantumFunctionError, match="is not an observable"):
+        tape = qml.tape.QuantumScript.from_queue(q)
+        with pytest.raises(qml.QuantumFunctionError, match="is not hermitian"):
             qml.metric_tensor(tape, approx="block-diag")
 
 
@@ -1317,6 +1328,7 @@ def test_error_not_available_aux_wire():
         qml.metric_tensor(circuit, aux_wire=404)(x)
 
 
+@pytest.mark.filterwarnings("ignore:An auxiliary wire is not")
 def test_error_aux_wire_replaced():
     """Tests that even if an aux_wire is provided, it is superseded by a device
     wire if it does not exist itself on the device, so that the metric_tensor is
@@ -1437,8 +1449,9 @@ def aux_wire_ansatz_1(x, y):
 def test_get_aux_wire(aux_wire, ansatz):
     """Test ``_get_aux_wire`` without device_wires."""
     x, y = np.array([0.2, 0.1], requires_grad=True)
-    with qml.tape.QuantumTape() as tape:
+    with qml.queuing.AnnotatedQueue() as q:
         ansatz(x, y)
+    tape = qml.tape.QuantumScript.from_queue(q)
     out = _get_aux_wire(aux_wire, tape, None)
 
     if aux_wire is not None:
@@ -1450,10 +1463,11 @@ def test_get_aux_wire(aux_wire, ansatz):
 def test_get_aux_wire_with_device_wires():
     """Test ``_get_aux_wire`` with device_wires."""
     x, y = np.array([0.2, 0.1], requires_grad=True)
-    with qml.tape.QuantumTape() as tape:
+    with qml.queuing.AnnotatedQueue() as q:
         qml.RX(x, wires=0)
         qml.RX(x, wires="one")
 
+    tape = qml.tape.QuantumScript.from_queue(q)
     device_wires = qml.wires.Wires([0, "aux", "one"])
 
     assert _get_aux_wire(0, tape, device_wires) == 0
@@ -1464,9 +1478,10 @@ def test_get_aux_wire_with_device_wires():
 def test_get_aux_wire_with_unavailable_aux():
     """Test ``_get_aux_wire`` with device_wires and a requested ``aux_wire`` that is missing."""
     x, y = np.array([0.2, 0.1], requires_grad=True)
-    with qml.tape.QuantumTape() as tape:
+    with qml.queuing.AnnotatedQueue() as q:
         qml.RX(x, wires=0)
         qml.RX(x, wires="one")
+    tape = qml.tape.QuantumScript.from_queue(q)
     device_wires = qml.wires.Wires([0, "one"])
     with pytest.raises(qml.wires.WireError, match="The requested aux_wire does not exist"):
         _get_aux_wire("two", tape, device_wires)

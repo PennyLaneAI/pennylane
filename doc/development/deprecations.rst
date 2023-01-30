@@ -6,8 +6,14 @@ Deprecations
 Pending deprecations
 --------------------
 
+* The ``get_operation`` tape method is updated to return the operation index as well, changing its signature.
+
+  - The new signature is available by changing the arg ``return_op_index`` to ``True`` in v0.29
+  - The old signature is replaced with the new one in v0.30
+
 * The ``observables`` argument in ``QubitDevice.statistics`` is deprecated. Please use ``circuit``
-  instead.
+  instead. Using a list of observables in ``QubitDevice.statistics`` is deprecated. Please use a
+  ``QuantumTape`` instead.
 
   - Still accessible in v0.28
   - Will be removed in v0.29
@@ -16,8 +22,8 @@ Pending deprecations
   A new argument ``seed`` has been added, which defaults to ``None`` and can contain an integer with the 
   wanted seed.
 
-  - Still accessible in v0.27
-  - Will be removed in v0.28
+  - Still accessible in v0.28
+  - Will be removed in v0.29
 
 * The ``grouping`` module is deprecated. The functionality has been moved and
   reorganized in the new ``pauli`` module under ``pauli/utils.py`` or ``pauli/grouping/``.
@@ -29,33 +35,10 @@ Pending deprecations
   ``grouping/utils.py`` have been moved to ``pauli/utils.py``. The remaining functions
   have been consolidated in the ``pauli/grouping/`` directory.
 
-* In-place inversion — ``op.inv()`` and ``op.inverse=value`` — is deprecated. Please
-  use ``qml.adjoint`` or ``qml.pow`` instead. 
-
-  - Still accessible in v0.27 and v0.28
-  - Will be removed in v0.29
-
-  Don't use:
-
-  >>> v1 = qml.PauliX(0).inv()
-  >>> v2 = qml.PauliX(0)
-  >>> v2.inverse = True
-
-  Instead, use:
-
-  >>> qml.adjoint(qml.PauliX(0))
-  Adjoint(PauliX(wires=[0]))
-  >>> qml.pow(qml.PauliX(0), -1)
-  PauliX(wires=[0])**-1
-  >>> qml.pow(qml.PauliX(0), -1, lazy=False)
-  PauliX(wires=[0])
-  >>> qml.PauliX(0) ** -1
-  PauliX(wires=[0])**-1
-
 * ``qml.ExpvalCost`` has been deprecated, and usage will now raise a warning.
   
   - Deprecated in v0.24
-  - Will be removed in v0.28
+  - Will be removed in v0.29
 
   Instead, it is recommended to simply
   pass Hamiltonians to the ``qml.expval`` function inside QNodes:
@@ -100,8 +83,48 @@ Pending deprecations
 
     tapes, fn = qml.transforms.hamiltonian_expand(tape)
 
+* ``qml.transforms.make_tape`` has been deprecated, and usage will now raise a warning.
+  Instead, use ``qml.tape.make_qscript``.
+
+  - Deprecated in v0.28
+  - Will be removed in v0.29
+
+* The ``collections`` module has been deprecated.
+
+  - Deprecated in v0.29
+  - Will be removed in v0.31
+
+* ``qml.op_sum``` is deprecated. Users should use ``qml.sum`` instead.
+
+  - Deprecated in v0.29.
+  - Will be removed in v0.31.
+
 Completed deprecation cycles
 ----------------------------
+
+
+* In-place inversion — ``op.inv()`` and ``op.inverse=value`` — is deprecated. Please
+  use ``qml.adjoint`` or ``qml.pow`` instead. 
+
+  - Still accessible in v0.27 and v0.28
+  - Removed in v0.29
+
+  Don't use:
+
+  >>> v1 = qml.PauliX(0).inv()
+  >>> v2 = qml.PauliX(0)
+  >>> v2.inverse = True
+
+  Instead, use:
+
+  >>> qml.adjoint(qml.PauliX(0))
+  Adjoint(PauliX(wires=[0]))
+  >>> qml.pow(qml.PauliX(0), -1)
+  PauliX(wires=[0])**-1
+  >>> qml.pow(qml.PauliX(0), -1, lazy=False)
+  PauliX(wires=[0])
+  >>> qml.PauliX(0) ** -1
+  PauliX(wires=[0])**-1
 
 * The ``qml.utils.decompose_hamiltonian()`` method is removed. Please
   use ``qml.pauli_decompose()``.

@@ -15,20 +15,33 @@
 This file contains the implementation of the Sum class which contains logic for
 computing the sum of operations.
 """
+import itertools
+import warnings
 from copy import copy
-from typing import List
 from functools import reduce
+from typing import List
 
 import numpy as np
 
 import pennylane as qml
 from pennylane import math
 from pennylane.operation import Operator
+from pennylane.ops.qubit import Hamiltonian
+from pennylane.queuing import QueuingManager
 
 from .composite import CompositeOp
 
 
-def op_sum(*summands, do_queue=True, id=None):
+def op_sum(*summands, do_queue=True, id=None, lazy=True):
+    """This function is deprecated and will be removed soon. Please use :func:`sum` instead."""
+    warnings.warn(
+        "The `op_sum` function is deprecated and will be removed soon. Please use `sum` instead.",
+        UserWarning,
+    )
+    return sum(*summands, do_queue=do_queue, id=id, lazy=lazy)
+
+
+def sum(*summands, do_queue=True, id=None, lazy=True):
     r"""Construct an operator which is the sum of the given operators.
 
     Args:
@@ -38,6 +51,8 @@ def op_sum(*summands, do_queue=True, id=None):
         do_queue (bool): determines if the sum operator will be queued (currently not supported).
             Default is True.
         id (str or None): id for the Sum operator. Default is None.
+        lazy=True (bool): If ``lazy=False``, a simplification will be performed such that when any
+            of the operators is already a sum operator, its operands (summands) will be used instead.
 
     Returns:
         ~ops.op_math.Sum: The operator representing the sum of summands.
@@ -46,14 +61,29 @@ def op_sum(*summands, do_queue=True, id=None):
 
     **Example**
 
-    >>> summed_op = op_sum(qml.PauliX(0), qml.PauliZ(0))
+    >>> summed_op = qml.sum(qml.PauliX(0), qml.PauliZ(0))
     >>> summed_op
     PauliX(wires=[0]) + PauliZ(wires=[0])
     >>> summed_op.matrix()
     array([[ 1,  1],
            [ 1, -1]])
     """
-    return Sum(*summands, do_queue=do_queue, id=id)
+    if len(summands) == 1 and isinstance(summands[0], qml.QNodeCollection):
+        return qml.collections.sum(summands[0])
+    if lazy:
+        return Sum(*summands, do_queue=do_queue, id=id)
+
+    summands_simp = Sum(
+        *itertools.chain.from_iterable([op if isinstance(op, Sum) else [op] for op in summands]),
+        do_queue=do_queue,
+        id=id,
+    )
+
+    if do_queue:
+        for op in summands:
+            QueuingManager.remove(op)
+
+    return summands_simp
 
 
 class Sum(CompositeOp):
@@ -69,7 +99,18 @@ class Sum(CompositeOp):
     .. note::
         Currently this operator can not be queued in a circuit as an operation, only measured terminally.
 
-    .. seealso:: :func:`~.ops.op_math.op_sum`
+    .. note::
+
+        This operator supports batched operands:
+        >>> op = qml.sum(qml.RX(np.array([1, 2, 3]), wires=0), qml.PauliX(1))
+        >>> op.matrix().shape
+        (3, 4, 4)
+
+        But it doesn't support batching of operators:
+        >>> op = qml.sum(np.array([qml.RX(0.4, 0), qml.RZ(0.3, 0)]), qml.PauliZ(0))
+        AttributeError: 'numpy.ndarray' object has no attribute 'wires'
+
+    .. seealso:: :func:`~.ops.op_math.sum`
 
     **Example**
 
@@ -108,7 +149,7 @@ class Sum(CompositeOp):
             sum_op = Sum(qml.PauliX(0), qml.PauliZ(1))
             dev = qml.device("default.qubit", wires=2)
 
-            @qml.qnode(dev, grad_method="best")
+            @qml.qnode(dev, diff_method="best")
             def circuit(weights):
                 qml.RX(weights[0], wires=0)
                 qml.RY(weights[1], wires=1)
@@ -168,13 +209,10 @@ class Sum(CompositeOp):
             return pr.to_mat(wire_order=wires)
 
         mats_and_wires_gen = (
-            (qml.matrix(op) if isinstance(op, qml.Hamiltonian) else op.matrix(), op.wires)
-            for op in self
+            (qml.matrix(op) if isinstance(op, Hamiltonian) else op.matrix(), op.wires) for op in self
         )
 
-        reduced_mat, sum_wires = math.reduce_matrices(
-            mats_and_wires_gen=mats_and_wires_gen, reduce_func=math.add
-        )
+        reduced_mat, sum_wires = math.reduce_matrices(mats_and_wires_gen, reduce_func=math.add)
 
         wire_order = wire_order or self.wires
 
@@ -187,9 +225,7 @@ class Sum(CompositeOp):
 
         mats_and_wires_gen = ((op.sparse_matrix(), op.wires) for op in self)
 
-        reduced_mat, sum_wires = math.reduce_matrices(
-            mats_and_wires_gen=mats_and_wires_gen, reduce_func=math.add
-        )
+        reduced_mat, sum_wires = math.reduce_matrices(mats_and_wires_gen, reduce_func=math.add)
 
         wire_order = wire_order or self.wires
 

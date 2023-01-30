@@ -43,9 +43,10 @@ class TestDecomposition:
     def test_identity_permutation_tape(self):
         """Test that identity permutations have no effect on tapes."""
 
-        with qml.tape.QuantumTape() as tape:
+        with qml.queuing.AnnotatedQueue() as q:
             qml.Permute([0, "a", "c", "d"], wires=[0, "a", "c", "d"])
 
+        tape = qml.tape.QuantumScript.from_queue(q)
         # expand the Permute operation
         tape = tape.expand()
 
@@ -96,9 +97,10 @@ class TestDecomposition:
     def test_two_cycle_permutations_tape(self, permutation_order, wire_order, expected_wires):
         """Test some two-cycles on tapes."""
 
-        with qml.tape.QuantumTape() as tape:
+        with qml.queuing.AnnotatedQueue() as q:
             qml.Permute(permutation_order, wire_order)
 
+        tape = qml.tape.QuantumScript.from_queue(q)
         # expand the Permute operation
         tape = tape.expand()
 
@@ -145,9 +147,10 @@ class TestDecomposition:
     def test_cyclic_permutations_tape(self, permutation_order, wire_order, expected_wires):
         """Test more general cycles on tapes."""
 
-        with qml.tape.QuantumTape() as tape:
+        with qml.queuing.AnnotatedQueue() as q:
             qml.Permute(permutation_order, wire_order)
 
+        tape = qml.tape.QuantumScript.from_queue(q)
         # expand the Permute operation
         tape = tape.expand()
 
@@ -202,9 +205,10 @@ class TestDecomposition:
     def test_arbitrary_permutations_tape(self, permutation_order, wire_order, expected_wires):
         """Test arbitrarily generated permutations on tapes."""
 
-        with qml.tape.QuantumTape() as tape:
+        with qml.queuing.AnnotatedQueue() as q:
             qml.Permute(permutation_order, wire_order)
 
+        tape = qml.tape.QuantumScript.from_queue(q)
         # expand the Permute operation
         tape = tape.expand()
 
@@ -260,12 +264,13 @@ class TestDecomposition:
     ):
         """Test permutation of wire subsets on tapes."""
 
-        with qml.tape.QuantumTape() as tape:
+        with qml.queuing.AnnotatedQueue() as q:
             # Make sure all the wires are actually there
             for wire in wire_labels:
                 qml.RZ(0, wires=wire)
             qml.Permute(permutation_order, wire_subset)
 
+        tape = qml.tape.QuantumScript.from_queue(q)
         # expand the Permute operation
         tape = tape.expand()
 
@@ -336,9 +341,11 @@ class TestInputs:
 
         wire_labels = [0, 2, "a", "c", 1]
 
-        with qml.tape.QuantumTape() as tape:
+        with qml.queuing.AnnotatedQueue() as q:
             with pytest.raises(ValueError, match=expected_error_message):
                 qml.Permute(permutation_order, wires=wire_labels)
+
+        tape = qml.tape.QuantumScript.from_queue(q)
 
     def test_id(self):
         """Tests that the id attribute can be set."""

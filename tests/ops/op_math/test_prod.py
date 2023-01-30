@@ -177,9 +177,10 @@ class TestInitialization:
         of the provided factors on a tape."""
         prod_op = prod(*ops_lst)
         true_decomposition = list(ops_lst[::-1])  # reversed list of factors
-        with qml.tape.QuantumTape() as tape:
+        with qml.queuing.AnnotatedQueue() as q:
             prod_op.decomposition()
 
+        tape = qml.tape.QuantumScript.from_queue(q)
         for op1, op2 in zip(tape.operations, true_decomposition):
             assert qml.equal(op1, op2)
 
@@ -479,6 +480,45 @@ class TestMatrix:
             [0.0, 0.0, -0.5, 0.0],
         ]
         assert np.allclose(mat, true_mat)
+
+    def test_matrix_all_batched(self):
+        """Test that Prod matrix has batching support when all operands are batched."""
+        x = qml.numpy.array([0.1, 0.2, 0.3])
+        y = qml.numpy.array([0.4, 0.5, 0.6])
+        op = prod(qml.RX(x, wires=0), qml.RY(y, wires=2), qml.PauliZ(1))
+        mat = op.matrix()
+        sum_list = [
+            prod(qml.RX(i, wires=0), qml.RY(j, wires=2), qml.PauliZ(1)) for i, j in zip(x, y)
+        ]
+        compare = qml.math.stack([s.matrix() for s in sum_list])
+        assert qml.math.allclose(mat, compare)
+        assert mat.shape == (3, 8, 8)
+
+    def test_matrix_not_all_batched(self):
+        """Test that Prod matrix has batching support when all operands are not batched."""
+        x = qml.numpy.array([0.1, 0.2, 0.3])
+        y = 0.5
+        z = qml.numpy.array([0.4, 0.5, 0.6])
+        op = prod(
+            qml.RX(x, wires=0),
+            qml.RY(y, wires=2),
+            qml.RZ(z, wires=1),
+            qml.prod(qml.PauliX(2), qml.PauliY(3)),
+        )
+        mat = op.matrix()
+        batched_y = [y for _ in x]
+        sum_list = [
+            prod(
+                qml.RX(i, wires=0),
+                qml.RY(j, wires=2),
+                qml.RZ(k, wires=1),
+                qml.prod(qml.PauliX(2), qml.PauliY(3)),
+            )
+            for i, j, k in zip(x, batched_y, z)
+        ]
+        compare = qml.math.stack([s.matrix() for s in sum_list])
+        assert qml.math.allclose(mat, compare)
+        assert mat.shape == (3, 16, 16)
 
     # Add interface tests for each interface !
 
@@ -823,7 +863,7 @@ class TestSimplify:
     def test_simplify_method_product_of_sums(self):
         """Test the simplify method with a product of sums."""
         prod_op = Prod(qml.PauliX(0) + qml.RX(1, 0), qml.PauliX(1) + qml.RX(1, 1), qml.Identity(3))
-        final_op = qml.op_sum(
+        final_op = qml.sum(
             Prod(qml.PauliX(0), qml.PauliX(1)),
             qml.PauliX(0) @ qml.RX(1, 1),
             qml.PauliX(1) @ qml.RX(1, 0),
@@ -869,7 +909,7 @@ class TestSimplify:
             qml.Identity(0),
         )
         mod_angle = -1 % (4 * np.pi)
-        final_op = qml.op_sum(
+        final_op = qml.sum(
             qml.Identity(0),
             5 * Prod(qml.PauliX(0), qml.RX(1, 1)),
             5 * Prod(qml.PauliX(0), qml.PauliX(1)),
@@ -908,9 +948,9 @@ class TestSimplify:
     def test_simplify_method_with_pauli_words(self):
         """Test that the simplify method groups pauli words."""
         prod_op = qml.prod(
-            qml.op_sum(qml.PauliX(0), qml.PauliX(1)), qml.PauliZ(1), qml.PauliX(0), qml.PauliY(1)
+            qml.sum(qml.PauliX(0), qml.PauliX(1)), qml.PauliZ(1), qml.PauliX(0), qml.PauliY(1)
         )
-        final_op = qml.op_sum(qml.s_prod(0 - 1j, qml.PauliX(1)), qml.s_prod(0 - 1j, qml.PauliX(0)))
+        final_op = qml.sum(qml.s_prod(0 - 1j, qml.PauliX(1)), qml.s_prod(0 - 1j, qml.PauliX(0)))
         simplified_op = prod_op.simplify()
 
         # TODO: Use qml.equal when supported for nested operators
@@ -960,9 +1000,9 @@ class TestSimplify:
     def test_grouping_with_product_of_sum(self):
         """Test that grouping works with product of a sum"""
         prod_op = qml.prod(
-            qml.PauliX(0), qml.op_sum(qml.PauliY(0), qml.Identity(0)), qml.PauliZ(0), qml.PauliX(0)
+            qml.PauliX(0), qml.sum(qml.PauliY(0), qml.Identity(0)), qml.PauliZ(0), qml.PauliX(0)
         )
-        final_op = qml.op_sum(qml.s_prod(1j, qml.PauliX(0)), qml.s_prod(-1, qml.PauliZ(0)))
+        final_op = qml.sum(qml.s_prod(1j, qml.PauliX(0)), qml.s_prod(-1, qml.PauliZ(0)))
         simplified_op = prod_op.simplify()
 
         assert isinstance(simplified_op, qml.ops.Sum)
@@ -975,7 +1015,7 @@ class TestSimplify:
     def test_grouping_with_product_of_sums(self):
         """Test that grouping works with product of two sums"""
         prod_op = qml.prod(qml.S(0) + qml.T(1), qml.S(0) + qml.T(1))
-        final_op = qml.op_sum(
+        final_op = qml.sum(
             qml.PauliZ(wires=[0]),
             2 * qml.prod(qml.S(wires=[0]), qml.T(wires=[1])),
             qml.S(wires=[1]),
@@ -1024,6 +1064,30 @@ class TestWrapperFunc:
         assert prod_class_op.id == prod_func_op.id
         assert prod_class_op.wires == prod_func_op.wires
         assert prod_class_op.parameters == prod_func_op.parameters
+
+    def test_lazy_mode(self):
+        """Test that by default, the operator is simply wrapped in `Prod`, even if a simplification exists."""
+        op = prod(qml.S(0), Prod(qml.S(1), qml.T(1)))
+
+        assert isinstance(op, Prod)
+        assert len(op) == 2
+
+    def test_non_lazy_mode(self):
+        """Test the lazy=False keyword."""
+        op = prod(qml.S(0), Prod(qml.S(1), qml.T(1)), lazy=False)
+
+        assert isinstance(op, Prod)
+        assert len(op) == 3
+
+    def test_nonlazy_mode_queueing(self):
+        """Test that if a simpification is accomplished, the metadata for the original op
+        and the new simplified op is updated."""
+        with qml.queuing.AnnotatedQueue() as q:
+            prod1 = prod(qml.S(1), qml.T(1))
+            prod2 = prod(qml.S(0), prod1, lazy=False)
+
+        assert len(q) == 1
+        assert q.queue[0] is prod2
 
 
 class TestIntegration:
@@ -1162,7 +1226,7 @@ class TestIntegration:
     def test_batched_operation(self):
         """Test that prod with batching gives expected results."""
         x = qml.numpy.array([1.0, 2.0, 3.0])
-        y = qml.numpy.array(0.5)
+        y = qml.numpy.array([4.0, 5.0, 6.0])
 
         dev = qml.device("default.qubit", wires=1)
 

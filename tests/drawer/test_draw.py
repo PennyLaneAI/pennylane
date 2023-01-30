@@ -14,12 +14,12 @@
 """
 Integration tests for the draw transform
 """
-import pytest
 from functools import partial
+
+import pytest
 
 import pennylane as qml
 from pennylane import numpy as np
-
 from pennylane.drawer import draw
 
 
@@ -172,7 +172,7 @@ class TestMatrixParameters:
         expected2 = (
             "0: ─╭QubitStateVector(M0)──U(M1)─┤  <𝓗(M1)>\n"
             "1: ─╰QubitStateVector(M0)────────┤         \n"
-            "M0 = \n[1.0, 0.0]\n"
+            "M0 = \n[1. 0.]\n"
             "M1 = \n[[1. 0.]\n [0. 1.]]"
         )
 
@@ -299,19 +299,24 @@ def test_draw_batch_transform(transform):
     assert draw(circuit, decimals=1)(np.array(0.6, requires_grad=True)) == expected
 
 
+@pytest.mark.skip("Nested tapes are being deprecated")
 def test_nested_tapes():
     """Test nested tapes inside the qnode."""
 
     @qml.qnode(qml.device("default.qubit", wires=1))
     def circuit():
-        with qml.tape.QuantumTape() as tape1:
+        with qml.queuing.AnnotatedQueue() as q_tape1:
             qml.PauliX(0)
-            with qml.tape.QuantumTape() as tape2:
+            with qml.queuing.AnnotatedQueue() as q_tape2:
                 qml.PauliY(0)
-        with qml.tape.QuantumTape() as tape3:
+            tape2 = qml.tape.QuantumScript.from_queue(q_tape2)
+        tape1 = qml.tape.QuantumScript.from_queue(q_tape1)
+        with qml.queuing.AnnotatedQueue() as q_tape3:
             qml.PauliZ(0)
-            with qml.tape.QuantumTape() as tape4:
+            with qml.queuing.AnnotatedQueue() as q_tape4:
                 qml.PauliX(0)
+            tape4 = qml.tape.QuantumScript.from_queue(q_tape4)
+        tape3 = qml.tape.QuantumScript.from_queue(q_tape3)
         return qml.expval(qml.PauliZ(0))
 
     expected = (

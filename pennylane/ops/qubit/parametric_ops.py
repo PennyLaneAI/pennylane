@@ -124,8 +124,7 @@ class RX(Operation):
         return [RX(self.data[0] * z, wires=self.wires)]
 
     def _controlled(self, wire):
-        new_op = CRX(*self.parameters, wires=wire + self.wires)
-        return new_op.inv() if self.inverse else new_op
+        return CRX(*self.parameters, wires=wire + self.wires)
 
     def simplify(self):
         theta = self.data[0] % (4 * np.pi)
@@ -222,8 +221,7 @@ class RY(Operation):
         return [RY(self.data[0] * z, wires=self.wires)]
 
     def _controlled(self, wire):
-        new_op = CRY(*self.parameters, wires=wire + self.wires)
-        return new_op.inv() if self.inverse else new_op
+        return CRY(*self.parameters, wires=wire + self.wires)
 
     def simplify(self):
         theta = self.data[0] % (4 * np.pi)
@@ -319,7 +317,7 @@ class RZ(Operation):
     def compute_eigvals(theta):  # pylint: disable=arguments-differ
         r"""Eigenvalues of the operator in the computational basis (static method).
 
-        If :attr:`diagonalizing_gates` are specified and implement a unitary :math:`U^{dagger}`,
+        If :attr:`diagonalizing_gates` are specified and implement a unitary :math:`U^{\dagger}`,
         the operator can be reconstructed as
 
         .. math:: O = U \Sigma U^{\dagger},
@@ -360,8 +358,7 @@ class RZ(Operation):
         return [RZ(self.data[0] * z, wires=self.wires)]
 
     def _controlled(self, wire):
-        new_op = CRZ(*self.parameters, wires=wire + self.wires)
-        return new_op.inv() if self.inverse else new_op
+        return CRZ(*self.parameters, wires=wire + self.wires)
 
     def simplify(self):
         theta = self.data[0] % (4 * np.pi)
@@ -462,7 +459,7 @@ class PhaseShift(Operation):
     def compute_eigvals(phi):  # pylint: disable=arguments-differ
         r"""Eigenvalues of the operator in the computational basis (static method).
 
-        If :attr:`diagonalizing_gates` are specified and implement a unitary :math:`U^{dagger}`,
+        If :attr:`diagonalizing_gates` are specified and implement a unitary :math:`U^{\dagger}`,
         the operator can be reconstructed as
 
         .. math:: O = U \Sigma U^{\dagger},
@@ -527,8 +524,7 @@ class PhaseShift(Operation):
         return [PhaseShift(self.data[0] * z, wires=self.wires)]
 
     def _controlled(self, wire):
-        new_op = ControlledPhaseShift(*self.parameters, wires=wire + self.wires)
-        return new_op.inv() if self.inverse else new_op
+        return ControlledPhaseShift(*self.parameters, wires=wire + self.wires)
 
     def simplify(self):
         phi = self.data[0] % (2 * np.pi)
@@ -636,7 +632,7 @@ class ControlledPhaseShift(Operation):
     def compute_eigvals(phi):  # pylint: disable=arguments-differ
         r"""Eigenvalues of the operator in the computational basis (static method).
 
-        If :attr:`diagonalizing_gates` are specified and implement a unitary :math:`U^{dagger}`,
+        If :attr:`diagonalizing_gates` are specified and implement a unitary :math:`U^{\dagger}`,
         the operator can be reconstructed as
 
         .. math:: O = U \Sigma U^{\dagger},
@@ -1414,8 +1410,7 @@ class Rot(Operation):
         return Rot(-omega, -theta, -phi, wires=self.wires)
 
     def _controlled(self, wire):
-        new_op = CRot(*self.parameters, wires=wire + self.wires)
-        return new_op.inv() if self.inverse else new_op
+        return CRot(*self.parameters, wires=wire + self.wires)
 
     def single_qubit_rot_angles(self):
         return self.data
@@ -1533,7 +1528,7 @@ class MultiRZ(Operation):
     def compute_eigvals(theta, num_wires):  # pylint: disable=arguments-differ
         r"""Eigenvalues of the operator in the computational basis (static method).
 
-        If :attr:`diagonalizing_gates` are specified and implement a unitary :math:`U^{dagger}`,
+        If :attr:`diagonalizing_gates` are specified and implement a unitary :math:`U^{\dagger}`,
         the operator can be reconstructed as
 
         .. math:: O = U \Sigma U^{\dagger},
@@ -1829,7 +1824,7 @@ class PauliRot(Operation):
     def compute_eigvals(theta, pauli_word):  # pylint: disable=arguments-differ
         r"""Eigenvalues of the operator in the computational basis (static method).
 
-        If :attr:`diagonalizing_gates` are specified and implement a unitary :math:`U^{dagger}`,
+        If :attr:`diagonalizing_gates` are specified and implement a unitary :math:`U^{\dagger}`,
         the operator can be reconstructed as
 
         .. math:: O = U \Sigma U^{\dagger},
@@ -2360,7 +2355,7 @@ class CRZ(Operation):
     def compute_eigvals(theta):  # pylint: disable=arguments-differ
         r"""Eigenvalues of the operator in the computational basis (static method).
 
-        If :attr:`diagonalizing_gates` are specified and implement a unitary :math:`U^{dagger}`,
+        If :attr:`diagonalizing_gates` are specified and implement a unitary :math:`U^{\dagger}`,
         the operator can be reconstructed as
 
         .. math:: O = U \Sigma U^{\dagger},
@@ -3431,7 +3426,7 @@ class IsingZZ(Operation):
 
         **Example:**
 
-        >>> qml.IsingZZ.compute_decomposition(1.23, wires=0)
+        >>> qml.IsingZZ.compute_decomposition(1.23, wires=[0,1])
         [CNOT(wires=[0, 1]), RZ(1.23, wires=[1]), CNOT(wires=[0, 1])]
 
         """
@@ -3486,7 +3481,7 @@ class IsingZZ(Operation):
     def compute_eigvals(phi):  # pylint: disable=arguments-differ
         r"""Eigenvalues of the operator in the computational basis (static method).
 
-        If :attr:`diagonalizing_gates` are specified and implement a unitary :math:`U^{dagger}`,
+        If :attr:`diagonalizing_gates` are specified and implement a unitary :math:`U^{\dagger}`,
         the operator can be reconstructed as
 
         .. math:: O = U \Sigma U^{\dagger},
@@ -3685,7 +3680,7 @@ class IsingXY(Operation):
     def compute_eigvals(phi):  # pylint: disable=arguments-differ
         r"""Eigenvalues of the operator in the computational basis (static method).
 
-        If :attr:`diagonalizing_gates` are specified and implement a unitary :math:`U^{dagger}`,
+        If :attr:`diagonalizing_gates` are specified and implement a unitary :math:`U^{\dagger}`,
         the operator can be reconstructed as
 
         .. math:: O = U \Sigma U^{\dagger},
@@ -3841,7 +3836,7 @@ class PSWAP(Operation):
     def compute_eigvals(phi):  # pylint: disable=arguments-differ
         r"""Eigenvalues of the operator in the computational basis (static method).
 
-        If :attr:`diagonalizing_gates` are specified and implement a unitary :math:`U^{dagger}`,
+        If :attr:`diagonalizing_gates` are specified and implement a unitary :math:`U^{\dagger}`,
         the operator can be reconstructed as
 
         .. math:: O = U \Sigma U^{\dagger},

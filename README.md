@@ -1,7 +1,7 @@
 <p align="center">
   <!-- Tests (GitHub actions) -->
   <a href="https://github.com/PennyLaneAI/pennylane/actions?query=workflow%3ATests">
-    <img src="https://img.shields.io/github/workflow/status/PennyLaneAI/pennylane/Tests/master?logo=github&style=flat-square" />
+    <img src="https://img.shields.io/github/actions/workflow/status/PennyLaneAI/PennyLane/tests.yml?branch=master&style=flat-square" />
   </a>
   <!-- CodeCov -->
   <a href="https://codecov.io/gh/PennyLaneAI/pennylane">

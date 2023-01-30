@@ -612,7 +612,7 @@ class TestSimplify:
 
     def test_simplify_with_sum_operator(self):
         """Test the simplify method a scalar product of a Sum operator."""
-        sprod_op = s_prod(0 - 3j, qml.op_sum(qml.PauliX(0), qml.PauliX(0)))
+        sprod_op = s_prod(0 - 3j, qml.sum(qml.PauliX(0), qml.PauliX(0)))
         final_op = s_prod(0 - 6j, qml.PauliX(0))
         simplified_op = sprod_op.simplify()
 
@@ -644,6 +644,32 @@ class TestWrapperFunc:
         assert sprod_class_op.id == sprod_func_op.id
         assert sprod_class_op.wires == sprod_func_op.wires
         assert sprod_class_op.parameters == sprod_func_op.parameters
+
+    def test_lazy_mode(self):
+        """Test that by default, the operator is simply wrapped in `SProd`, even if a simplification exists."""
+        op = s_prod(3, s_prod(4, qml.PauliX(0)))
+
+        assert isinstance(op, SProd)
+        assert op.scalar == 3
+        assert isinstance(op.base, SProd)
+
+    def test_non_lazy_mode(self):
+        """Test the lazy=False keyword."""
+        op = s_prod(3, s_prod(4, qml.PauliX(0)), lazy=False)
+
+        assert isinstance(op, SProd)
+        assert op.scalar == 12
+        assert qml.equal(op.base, qml.PauliX(0))
+
+    def test_non_lazy_mode_queueing(self):
+        """Test that if a simpification is accomplished, the metadata for the original op
+        and the new simplified op is updated."""
+        with qml.queuing.AnnotatedQueue() as q:
+            sprod1 = s_prod(4, qml.PauliX(0))
+            sprod2 = s_prod(3, sprod1, lazy=False)
+
+        assert len(q) == 1
+        assert q.queue[0] is sprod2
 
 
 class TestIntegration:
@@ -729,7 +755,7 @@ class TestIntegration:
         is used in the measurement process."""
         dev = qml.device("default.qubit", wires=1)
 
-        @qml.qnode(dev, grad_method="best")
+        @qml.qnode(dev, diff_method="best")
         def circuit(scalar):
             qml.PauliX(wires=0)
             return qml.expval(SProd(scalar, qml.Hadamard(wires=0)))
@@ -745,7 +771,7 @@ class TestIntegration:
         sprod_op = SProd(100, qml.Hadamard(0))
         dev = qml.device("default.qubit", wires=1)
 
-        @qml.qnode(dev, grad_method="best")
+        @qml.qnode(dev, diff_method="best")
         def circuit(weights):
             qml.RX(weights[0], wires=0)
             return qml.expval(sprod_op)

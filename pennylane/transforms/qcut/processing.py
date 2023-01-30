@@ -61,6 +61,16 @@ def qcut_processing_fn(
         float or tensor_like: the output of the original uncut circuit arising from contracting
         the tensor network of circuit fragments
     """
+    if qml.active_return():
+        # each tape contains only expval measurements or sample measurements, so
+        # stacking won't create any ragged arrays
+        results = [
+            qml.math.stack(tape_res)
+            if isinstance(tape_res, tuple)
+            else qml.math.reshape(tape_res, [-1])
+            for tape_res in results
+        ]
+
     flat_results = qml.math.concatenate(results)
 
     tensors = _to_tensors(flat_results, prepare_nodes, measure_nodes)
@@ -93,8 +103,8 @@ def qcut_processing_fn_sample(
     Returns:
         List[tensor_like]: the sampled output for all terminal measurements over the number of shots given
     """
-    res0 = results[0]
     results = _reshape_results(results, shots)
+    res0 = results[0][0]
     out_degrees = [d for _, d in communication_graph.out_degree]
 
     samples = []
@@ -140,8 +150,8 @@ def qcut_processing_fn_mc(
         float or tensor_like: the expectation value calculated in accordance to Eq. (35) of
         `Peng et al. <https://arxiv.org/abs/1904.00102>`__
     """
-    res0 = results[0]
     results = _reshape_results(results, shots)
+    res0 = results[0][0]
     out_degrees = [d for _, d in communication_graph.out_degree]
 
     evals = (0.5, 0.5, 0.5, -0.5, 0.5, -0.5, 0.5, -0.5)
@@ -181,6 +191,14 @@ def _reshape_results(results: Sequence, shots: int) -> List[List]:
     is determined by the number of shots and whose number of columns is determined by the number of
     cuts.
     """
+    if qml.active_return():
+        # each tape contains only expval measurements or sample measurements, so
+        # stacking won't create any ragged arrays
+        results = [
+            qml.math.stack(tape_res) if isinstance(tape_res, tuple) else tape_res
+            for tape_res in results
+        ]
+
     results = [qml.math.flatten(r) for r in results]
     results = [results[i : i + shots] for i in range(0, len(results), shots)]
     results = list(map(list, zip(*results)))  # calculate list-based transpose

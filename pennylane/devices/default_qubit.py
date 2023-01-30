@@ -168,6 +168,7 @@ class DefaultQubit(QubitDevice):
         "SProd",
         "Prod",
         "Exp",
+        "Evolution",
     }
 
     def __init__(
@@ -941,10 +942,10 @@ class DefaultQubit(QubitDevice):
             thus the classical shadow measurement for this device supports at most 52
             qubits.
 
-        .. seealso:: :func:`~.classical_shadow`
+        .. seealso:: :func:`~pennylane.classical_shadow`
 
         Args:
-            obs (~.pennylane.measurements.ClassicalShadow): The classical shadow measurement process
+            obs (~.pennylane.measurements.ClassicalShadowMP): The classical shadow measurement process
             circuit (~.tapes.QuantumTape): The quantum tape that is being executed
 
         Returns:

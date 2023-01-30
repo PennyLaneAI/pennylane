@@ -111,7 +111,7 @@ class hessian_transform(qml.batch_transform):
 
     - ``tape`` (*QuantumTape*): the input quantum tape to compute the Hessian of
 
-    - ``hessian_tapes`` (*List[QuantumTape]*): is a list of output tapes to be
+    - ``hessian_tapes`` (*list[QuantumTape]*): is a list of output tapes to be
       evaluated. If this list is empty, no quantum evaluations will be made.
 
     - ``processing_fn`` is a processing function to be applied to the output of the
@@ -134,7 +134,7 @@ class hessian_transform(qml.batch_transform):
     .. note::
 
         The input tape might have parameters of various types, including NumPy arrays,
-        JAX DeviceArrays, and TensorFlow and PyTorch tensors.
+        JAX Arrays, and TensorFlow and PyTorch tensors.
 
         If the Hessian transform is written in a autodiff-compatible manner, either by
         using a framework such as Autograd or TensorFlow, or by using ``qml.math`` for

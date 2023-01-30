@@ -18,9 +18,10 @@ This module contains the functions needed for tapering qubits using symmetries.
 
 import functools
 import itertools
-import autograd.numpy as anp
-import scipy
+
 import numpy
+import scipy
+
 import pennylane as qml
 from pennylane import numpy as np
 from pennylane.pauli import simplify
@@ -351,7 +352,7 @@ def taper(h, generators, paulixops, paulix_sector):
             )
         )
 
-    c = anp.multiply(val, h.terms()[0])
+    c = qml.math.multiply(val, h.terms()[0])
     c = qml.math.stack(c)
 
     tapered_ham = simplify(qml.Hamiltonian(c, o))
@@ -764,7 +765,7 @@ def taper_operation(
         r"""Applies the tapered operation for the specified parameter value whenever
         queing context is active, otherwise returns it as a list."""
         if qml.QueuingManager.recording():
-            qml.QueuingManager.update_info(operation, owner=gen_tapered)
+            qml.QueuingManager.remove(operation)
             for coeff, op in zip(*gen_tapered.terms()):
                 qml.exp(op, 1j * params * coeff)
         else:

@@ -40,7 +40,7 @@ def custom_measurement_process(device, spy):
             )
         else:
             new_res = meas.process_state(state=state, wire_order=device.wires)
-        assert qml.math.allequal(old_res, new_res)
+        assert qml.math.allclose(old_res, new_res)
 
 
 class TestVar:
@@ -148,4 +148,29 @@ class TestVar:
 
         assert np.allclose(res, expected, atol=0.02, rtol=0.02)
 
+        custom_measurement_process(dev, spy)
+
+    def test_permuted_wires(self, mocker):
+        """Test that the variance of an operator with permuted wires is the same."""
+        obs = qml.prod(qml.PauliZ(8), qml.s_prod(2, qml.PauliZ(10)), qml.s_prod(3, qml.PauliZ("h")))
+        obs_2 = qml.prod(
+            qml.s_prod(3, qml.PauliZ("h")), qml.PauliZ(8), qml.s_prod(2, qml.PauliZ(10))
+        )
+
+        dev = qml.device("default.qubit", wires=["h", 8, 10])
+        spy = mocker.spy(qml.QubitDevice, "var")
+
+        @qml.qnode(dev)
+        def circuit():
+            qml.RX(1.23, wires=["h"])
+            qml.RY(2.34, wires=[8])
+            return qml.var(obs)
+
+        @qml.qnode(dev)
+        def circuit2():
+            qml.RX(1.23, wires=["h"])
+            qml.RY(2.34, wires=[8])
+            return qml.var(obs_2)
+
+        assert circuit() == circuit2()
         custom_measurement_process(dev, spy)

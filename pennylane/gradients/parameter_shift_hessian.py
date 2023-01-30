@@ -15,24 +15,22 @@
 This module contains functions for computing the parameter-shift hessian
 of a qubit-based quantum tape.
 """
-import warnings
 import itertools as it
+import warnings
 from collections.abc import Sequence
 
 import pennylane as qml
 from pennylane import numpy as np
+from pennylane.measurements import ProbabilityMP, StateMP, VarianceMP
 
-from .gradient_transform import (
-    gradient_analysis,
-    grad_method_validation,
-)
-from .hessian_transform import hessian_transform
-from .parameter_shift import _get_operation_recipe
 from .general_shift_rules import (
     _combine_shift_rules,
-    generate_shifted_tapes,
     generate_multishifted_tapes,
+    generate_shifted_tapes,
 )
+from .gradient_transform import grad_method_validation, gradient_analysis
+from .hessian_transform import hessian_transform
+from .parameter_shift import _get_operation_recipe
 
 
 def _process_argnum(argnum, tape):
@@ -193,7 +191,7 @@ def _all_zero_grad_new(tape):
 
     zeros_list = []
     for m in tape.measurements:
-        shape = 2 ** len(m.wires) if m.return_type is qml.measurements.Probability else ()
+        shape = 2 ** len(m.wires) if isinstance(m, ProbabilityMP) else ()
 
         zeros = tuple(
             tuple(qml.math.zeros(shape) for _ in range(num_params)) for _ in range(num_params)
@@ -239,9 +237,10 @@ def expval_hessian_param_shift(
             instead of evaluating the input tape, reducing the number of device invocations.
 
     Returns:
-        tuple[list[QuantumTape], function]: A tuple containing a list of generated tapes, in
-            addition to a post-processing function to be applied to the results of the evaluated
-            tapes.
+        tuple[list[QuantumTape], function]: A tuple containing a
+        list of generated tapes, together with a post-processing
+        function to be applied to the results of the evaluated tapes
+        in order to obtain the Hessian matrix.
     """
     # pylint: disable=too-many-arguments, too-many-statements
     h_dim = tape.num_params
@@ -357,9 +356,10 @@ def _expval_hessian_param_shift_tuple(
             instead of evaluating the input tape, reducing the number of device invocations.
 
     Returns:
-        tuple[list[QuantumTape], function]: A tuple containing a list of generated tapes, in
-            addition to a post-processing function to be applied to the results of the evaluated
-            tapes.
+        tuple[list[QuantumTape], function]: A tuple containing a
+        list of generated tapes, together with a post-processing
+        function to be applied to the results of the evaluated tapes
+        in order to obtain the Hessian matrix.
     """
     # pylint: disable=too-many-arguments, too-many-statements
     h_dim = tape.num_params
@@ -516,17 +516,19 @@ def param_shift_hessian(tape, argnum=None, diagonal_shifts=None, off_diagonal_sh
             instead of evaluating the input tape, reducing the number of device invocations.
 
     Returns:
-        tensor_like or tuple[tensor_like] or tuple[list[QuantumTape], function]:
+        function or tuple[list[QuantumTape], function]:
 
-        - If the input is a QNode with a single trainable argument, a tensor representing the
-          Hessian of size ``(*QNode output dimensions, *QNode input dimensions, *QNode input dimensions)``
-          is returned.
-
-        - If the input is a QNode with multiple trainable arguments, a tuple of Hessian tensors is
+        - If the input is a QNode, an object representing the Hessian (function) of the QNode
+          that can be executed to obtain the Hessian matrix.
+          For QNodes with a single trainable argument, the returned matrix is a tensor of size
+          ``(*QNode output dimensions, *QNode input dimensions, *QNode input dimensions)``.
+          For QNodes with multiple trainable arguments, a tuple of Hessian tensors is
           returned, one for each argument.
 
-        - If the input is a tape, a tuple containing the list of parameter-shifted tapes, and a
-          post-processing function to be applied to the evaluated tapes, is returned.
+        - If the input is a tape, a tuple containing a
+          list of generated tapes, together with a post-processing
+          function to be applied to the results of the evaluated tapes
+          in order to obtain the Hessian matrix.
 
         Note: By default a QNode with the keyword ``hybrid=True`` computes derivates with respect to
         QNode arguments, which can include classical computations on those arguments before they are
@@ -632,14 +634,14 @@ def param_shift_hessian(tape, argnum=None, diagonal_shifts=None, off_diagonal_sh
         )
 
     # Perform input validation before generating tapes.
-    if any(m.return_type is qml.measurements.State for m in tape.measurements):
+    if any(isinstance(m, StateMP) for m in tape.measurements):
         raise ValueError(
             "Computing the Hessian of circuits that return the state is not supported."
         )
 
     # The parameter-shift Hessian implementation currently doesn't support variance measurements.
     # TODO: Support variances similar to how param_shift does it
-    if any(m.return_type is qml.measurements.Variance for m in tape.measurements):
+    if any(isinstance(m, VarianceMP) for m in tape.measurements):
         raise ValueError(
             "Computing the Hessian of circuits that return variances is currently not supported."
         )
@@ -740,17 +742,18 @@ def _param_shift_hessian_tuple(
             instead of evaluating the input tape, reducing the number of device invocations.
 
     Returns:
-        tensor_like or tuple[tensor_like] or tuple[list[QuantumTape], function]:
+        function or tuple[list[QuantumTape], function]:
 
-        - If the input is a QNode with a single trainable argument, a tensor representing the
-          Hessian of size ``(*QNode output dimensions, *QNode input dimensions, *QNode input dimensions)``
-          is returned.
+        - If the input is a QNode, an object representing the Hessian (function) of
+          the QNode that can be executed to obtain the Hessian matrix.
+          The returned Hessian matrix is given as a tensor or nested tuples of tensors.
+          The level of nesting depends on the number of trainable QNode arguments, the output
+          shape(s) of the input QNode itself, and the usage of shot vectors in the QNode execution.
 
-        - If the input is a QNode with multiple trainable arguments, a tuple of Hessian tensors is
-          returned, one for each argument.
-
-        - If the input is a tape, a tuple containing the list of parameter-shifted tapes, and a
-          post-processing function to be applied to the evaluated tapes, is returned.
+        - If the input is a tape, a tuple containing a
+          list of generated tapes, together with a post-processing
+          function to be applied to the results of the evaluated tapes
+          in order to obtain the Hessian matrix.
 
         Note: By default a QNode with the keyword ``hybrid=True`` computes derivates with respect to
         QNode arguments, which can include classical computations on those arguments before they are
@@ -847,14 +850,14 @@ def _param_shift_hessian_tuple(
     """
 
     # Perform input validation before generating tapes.
-    if any(m.return_type is qml.measurements.State for m in tape.measurements):
+    if any(isinstance(m, StateMP) for m in tape.measurements):
         raise ValueError(
             "Computing the Hessian of circuits that return the state is not supported."
         )
 
     # The parameter-shift Hessian implementation currently doesn't support variance measurements.
     # TODO: Support variances similar to how param_shift does it
-    if any(m.return_type is qml.measurements.Variance for m in tape.measurements):
+    if any(isinstance(m, VarianceMP) for m in tape.measurements):
         raise ValueError(
             "Computing the Hessian of circuits that return variances is currently not supported."
         )

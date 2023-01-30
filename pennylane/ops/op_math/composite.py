@@ -16,7 +16,7 @@ This submodule defines a base class for composite operations.
 """
 # pylint: disable=too-many-instance-attributes
 import abc
-from typing import Callable, List, Tuple
+from typing import Callable, List
 
 import numpy as np
 
@@ -64,6 +64,17 @@ class CompositeOp(Operator):
 
         if do_queue:
             self.queue()
+
+        self._set_batch_size()
+
+    def _set_batch_size(self):
+        batch_sizes = {op.batch_size for op in self if op.batch_size is not None}
+        if len(batch_sizes) > 1:
+            raise ValueError(
+                "Broadcasting was attempted but the broadcasted dimensions "
+                f"do not match: {batch_sizes}."
+            )
+        self._batch_size = batch_sizes.pop() if batch_sizes else None
 
     def __repr__(self):
         return f" {self._op_symbol} ".join(
@@ -169,7 +180,7 @@ class CompositeOp(Operator):
         """Representation of the operator as a matrix in the computational basis."""
 
     @property
-    def overlapping_ops(self) -> List[Tuple[Wires, List[Operator]]]:
+    def overlapping_ops(self) -> List[List[Operator]]:
         """Groups all operands of the composite operator that act on overlapping wires.
 
         Returns:
@@ -294,8 +305,8 @@ class CompositeOp(Operator):
         """Updates each operator's owner to self, this ensures
         that the operators are not applied to the circuit repeatedly."""
         for op in self:
-            context.update_info(op, owner=self)
-        context.append(self, owns=self.operands)
+            context.remove(op)
+        context.append(self)
         return self
 
     @classmethod

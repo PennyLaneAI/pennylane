@@ -21,7 +21,7 @@ import pytest
 import pennylane as qml
 from pennylane import numpy as np
 from pennylane.operation import DecompositionUndefinedError
-from pennylane.ops.op_math.controlled_class import ControlledOp
+from pennylane.ops.op_math.controlled import ControlledOp
 from pennylane.ops.op_math.pow import Pow, PowOperation
 
 
@@ -59,8 +59,8 @@ class TestConstructor:
         """Test that nonlazy pow returns a single identity if the power decomposes
         to the identity."""
 
-        op = qml.pow(op, 2, lazy=False)
-        assert qml.equal(op, qml.Identity(0))
+        op_new = qml.pow(op, 2, lazy=False)
+        assert qml.equal(op_new, qml.Identity(op.wires))
 
     def test_simplification_multiple_ops(self):
         """Test that when the simplification method returns a list of multiple operators,
@@ -85,8 +85,7 @@ class TestConstructor:
             original_op = qml.PauliX(0)
             new_op = qml.pow(original_op, 0.5, lazy=False)
 
-        assert q[original_op]["owner"] is new_op
-        assert q[new_op]["owns"] is original_op
+        assert original_op not in q.queue
 
 
 @pytest.mark.parametrize("power_method", [Pow, pow_using_dunder_method, qml.pow])
@@ -424,7 +423,7 @@ class TestSimplify:
 
     def test_simplify_method(self):
         """Test that the simplify method reduces complexity to the minimum."""
-        pow_op = Pow(qml.op_sum(qml.PauliX(0), qml.PauliX(0)) + qml.PauliX(0), 2)
+        pow_op = Pow(qml.sum(qml.PauliX(0), qml.PauliX(0)) + qml.PauliX(0), 2)
         final_op = qml.s_prod(9, qml.PauliX(0))
         simplified_op = pow_op.simplify()
 
@@ -557,32 +556,30 @@ class TestQueueing:
     def test_queueing(self):
         """Test queuing and metadata when both Pow and base defined inside a recording context."""
 
-        with qml.tape.QuantumTape() as tape:
+        with qml.queuing.AnnotatedQueue() as q:
             base = qml.Rot(1.2345, 2.3456, 3.4567, wires="b")
             op = Pow(base, 1.2)
 
-        assert tape.get_info(base)["owner"] is op
-        assert tape.get_info(op)["owns"] is base
-        assert tape.operations == [op]
+        assert q.queue[0] is op
+        assert len(q) == 1
 
     def test_queueing_base_defined_outside(self):
         """Test that base is added to queue even if it's defined outside the recording context."""
 
         base = qml.Rot(1.2345, 2.3456, 3.4567, wires="b")
-        with qml.tape.QuantumTape() as tape:
+        with qml.queuing.AnnotatedQueue() as q:
             op = Pow(base, 3.4)
 
-        assert len(tape.queue) == 1
-        assert tape.get_info(op)["owns"] is base
-        assert tape.operations == [op]
+        assert len(q) == 1
+        assert q.queue[0] is op
 
     def test_do_queue_False(self):
         """Test that when `do_queue` is specified, the operation is not queued."""
         base = qml.PauliX(0)
-        with qml.tape.QuantumTape() as tape:
+        with qml.queuing.AnnotatedQueue() as q:
             op = Pow(base, 4.5, do_queue=False)
 
-        assert len(tape) == 0
+        assert len(q) == 0
 
 
 class TestMatrix:
@@ -764,50 +761,6 @@ class TestDecompositionExpand:
 
         with pytest.raises(DecompositionUndefinedError):
             op.decomposition()
-
-
-class TestInverse:
-    """Test the interaction between in-place inversion and the power operator."""
-
-    def test_base_already_inverted(self):
-        """Test that if the base is already inverted, then initialization un-inverts
-        it and applies a negative sign to the exponent."""
-        with pytest.warns(UserWarning, match="In-place inversion with inverse is deprecated"):
-            base = qml.S(0).inv()
-        op = Pow(base, 2)
-
-        assert base.inverse is False
-
-        assert op.z == -2
-        assert op.name == "S**-2"
-        assert op.base_name == "S**-2"
-        assert op.inverse is False
-
-    def test_invert_pow_op(self):
-        """Test that in-place inversion of a power operator only changes the sign
-        of the power and does not change the `inverse` property."""
-        base = qml.S(0)
-        op = Pow(base, 2)
-
-        with pytest.warns(UserWarning, match="In-place inversion with inv is deprecated"):
-            op.inv()
-
-        assert base.inverse is False
-
-        assert op.z == -2
-        assert op.name == "S**-2"
-        assert op.base_name == "S**-2"
-        assert op.inverse is False
-
-    def test_inverse_setter(self):
-        """Assert that the inverse can be set to False, but trying to set it to True raises a
-        NotImplementedError."""
-        op = Pow(qml.S(0), 2.1)
-
-        op.inverse = False
-
-        with pytest.raises(NotImplementedError):
-            op.inverse = True
 
 
 @pytest.mark.parametrize("power_method", [Pow, pow_using_dunder_method, qml.pow])
