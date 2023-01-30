@@ -57,13 +57,13 @@ def is_pauli_word(observable):
 
     A Pauli word can be either:
 
-    * A single pauli operator (see :class:`~.PauliX for an example).
+    * A single pauli operator (see :class:`~.PauliX` for an example).
 
     * A :class:`Tensor` instance containing Pauli operators.
 
     * A :class:`Prod` instance containing Pauli operators.
 
-    * A :class:`SProd` instance containing a Pauli operator.
+    * A :class:`SProd` instance containing a valid Pauli word.
 
     * A :class:`Hamiltonian` instance with only one term.
 
@@ -379,7 +379,7 @@ def pauli_word_to_string(pauli_word, wire_map=None):
 
     A Pauli word can be either:
 
-    * A single pauli operator (see :class:`~.PauliX for an example).
+    * A single pauli operator (see :class:`~.PauliX` for an example).
 
     * A :class:`Tensor` instance containing Pauli operators.
 
