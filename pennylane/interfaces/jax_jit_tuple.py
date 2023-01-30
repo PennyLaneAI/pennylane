@@ -30,7 +30,6 @@ dtype = jnp.float64
 def _copy_tape(t, a):
     """Copy a given tape with operations and set parameters"""
     tc = t.copy(copy_operations=True)
-    print(a)
     tc.set_parameters(a, trainable_only=False)
     return tc
 
@@ -104,8 +103,6 @@ def _jit_compute_jvps(jacobians, tangents, multi_measurements, trainable_params)
         tangents_trainable.append(tangent_)
 
     jvps = _compute_jvps(jacobians, tangents_trainable, multi_measurements)
-
-    print(jvps)
 
     return jvps
 
@@ -196,7 +193,6 @@ def _execute_bwd_tuple(
 
         def wrapper(p):
             """Compute the forward pass."""
-            print(p)
             new_tapes = [_copy_tape(t, a) for t, a in zip(tapes, p)]
 
             with qml.tape.Unwrap(*new_tapes):
@@ -213,7 +209,6 @@ def _execute_bwd_tuple(
             # we detect with the heuristic above if we are executing under vmap and we
             # swap the order in that case.
             res = jax.tree_map(lambda r, s: r.T if r.ndim > s.ndim else r, res, shape_dtype_structs)
-            print(res)
             return res
 
         # Jit params, not trainable only.

@@ -401,7 +401,6 @@ def execute_new(tapes, device, execute_fn, gradient_fn, gradient_kwargs, _n=1, m
         for tape in tapes:
             params = tape.get_parameters(trainable_only=False)
             tape.trainable_params = qml.math.get_trainable_indices(params)
-            print(params, tape.trainable_params, _n)
 
     parameters = tuple(list(t.get_parameters()) for t in tapes)
 

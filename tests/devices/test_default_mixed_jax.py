@@ -575,7 +575,7 @@ class TestPassthruIntegration:
             # TODO: https://github.com/PennyLaneAI/pennylane/issues/2762
             pytest.xfail("Parameter broadcasting currently not supported for JAX jit")
 
-        @qml.batch_params
+        @qml.batch_params(all_operations=True)
         @qml.qnode(dev, diff_method="backprop", interface="jax")
         def circuit(a, b):
             qml.RX(a, wires=0)

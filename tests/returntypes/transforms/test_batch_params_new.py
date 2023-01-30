@@ -487,7 +487,7 @@ class TestDiffMulti:
 
         dev = qml.device("default.qubit", wires=2)
 
-        @qml.batch_params
+        @qml.batch_params(all_operations=True)
         @qml.qnode(dev, diff_method=diff_method, interface="jax")
         def circuit(x):
             qml.RY(x, wires=0)
@@ -536,7 +536,7 @@ class TestDiffMulti:
         dev = qml.device("default.qubit", wires=2)
 
         @jax.jit
-        @qml.batch_params
+        @qml.batch_params(all_operations=True)
         @qml.qnode(dev, diff_method=diff_method, interface="jax-jit")
         def circuit(x):
             qml.RY(x, wires=0)
