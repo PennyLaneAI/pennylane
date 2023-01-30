@@ -96,6 +96,34 @@ parameters and a time at which to evaluate the coefficients :math:`f_j`.
     >>> qml.equal(H1(params, t=0.5), H2(params, t=0.5))
     True
 
+We can visualize the behaviour in time of the parametrized coefficients for a given set of parameters:
+
+.. code-block:: python
+
+    import matplotlib.pyplot as plt
+
+    times = jnp.linspace(0., 5., 1000)
+    fs = H1.coeffs_parametrized
+    ops = H1.ops_parametrized
+    params = [1.2, [2.3, 3.4]]
+
+    fig, axs = plt.subplots(nrows=len(ops))
+    for n, f in enumerate(fs):
+        ax = axs[n]
+        ax.plot(times, f(params[n], times), label=f"p={params[n]}")
+        ax.set_ylabel(f"{ops[n].label()}")
+        ax.legend(loc="upper left")
+
+    ax.set_xlabel("time")
+    axs[0].set_title(f"H1 parametrized coefficients")
+    plt.tight_layout()
+    plt.show()
+
+.. figure:: ../../_static/pulse/parametrized_coefficients_example.png
+            :align: center
+            :width: 60%
+            :target: javascript:void(0);
+
 .. warning::
     The order of the coefficients and operators matters. When initializing the
     :class:`~.ParametrizedHamiltonian`, terms defined with fixed coefficients
@@ -126,11 +154,17 @@ Further examples
 
 A few additional examples of defining a :class:`~.ParametrizedHamiltonian` are provided here.
 
-Using ``rect`` to create a parametrized coefficient that has a value of 0 outside the time interval
+Here we use ``rect`` to create a parametrized coefficient that has a value of 0 outside the time interval
 :math:`t=(1, 7)`, and is defined by ``jnp.polyval(p, t)`` within the interval:
 
-.. code-block:: python
+.. figure:: ../../_static/pulse/rect_example.png
+            :align: center
+            :width: 60%
+            :target: javascript:void(0);
 
+This can be used to create a :class:`~.ParametrizedHamiltonian` in the following way:
+
+.. code-block:: python
 
     def f(p, t):
         return jnp.polyval(p, t)
@@ -144,14 +178,21 @@ Using ``rect`` to create a parametrized coefficient that has a value of 0 outsid
     H([3], t=0.5 )
     >>> 0.0*(PauliX(wires=[0]))
 
-Using ``pwc`` to create a parametrized coefficient function that is piecewise constant
-within the interval ``t``, and 0 outside of it.
+
+The function :func:`~.pwc` can be used to create a parametrized coefficient function that is piecewise constant
+within the interval ``t``, and 0 outside of it. When creating the callable, only the timespan is passed. The number
+of bins and values for the parameters are set when ``params`` is passed to the callable.
+
+.. figure:: ../../_static/pulse/pwc_example.png
+            :align: center
+            :width: 60%
+            :target: javascript:void(0);
 
 .. code-block:: python
 
     from pennylane.pulse.convenience_functions import pwc
 
-    f1 = pwc(timespan=(2, 7))  # TODO: maybe this should be renamed window for uniformity?
+    f1 = pwc(timespan=(2, 7))
     H = f1 * qml.PauliX(0)
 
     # passing pwc((2, 7)) an array evenly distributes the array values in the interval t=2 to t=7
@@ -170,6 +211,7 @@ within the interval ``t``, and 0 outside of it.
     H(params=[[1, 2, 3, 4, 5]], t=8)
     >>> 0.0*(PauliX(wires=[0]))
 
+
 ParametrizedEvolution
 ---------------------
 During a pulse sequence spanning time :math:`(t_0, t_1)`, the state evolves according to the time-dependent Schrodinger equation
@@ -182,6 +224,10 @@ realizing a unitary evolution :math:`U(t_0, t_1)` of the input state, i.e.
 
 A :class:`~.ParametrizedEvolution` is this solution :math:`U(t_0, t_1)` to the time-dependent
 Schrodinger equation for a :class:`~.ParametrizedHamiltonian`.
+
+.. note::
+    The :class:`~.ParametrizedHamiltonian` must be Hermitian at all times. This is not explicitly
+    checked; ensuring a correctly defined Hamiltonian is the responsibility of the user.
 
 The :class:`~.ParametrizedEvolution` class uses a numerical ordinary differential equation
 solver (`here <https://github.com/google/jax/blob/main/jax/experimental/ode.py>`_). It
