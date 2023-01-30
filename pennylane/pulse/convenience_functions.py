@@ -124,9 +124,9 @@ def rect(x: Union[float, Callable], windows: List[Tuple[float]] = None):
     def f(p, t):
         p = jnp.array(p, dtype=float)  # if p is an integer, f(p, t) will be cast to an integer
         if windows is not None:
-            return jnp.where(
-                jnp.any(jnp.array([(t >= ti) & (t <= tf) for ti, tf in windows])), _f(p, t), 0
-            )
+            ti, tf = zip(*windows)
+            ti, tf = jnp.array(ti), jnp.array(tf)
+            return jnp.where(jnp.any((t >= ti) & (t <= tf)), _f(p, t), 0)
         return _f(p, t)
 
     return f
