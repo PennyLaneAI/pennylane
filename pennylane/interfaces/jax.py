@@ -96,10 +96,11 @@ def execute(tapes, device, execute_fn, gradient_fn, gradient_kwargs, _n=1, max_d
 
     _validate_tapes(tapes)
 
-    for tape in tapes:
-        # set the trainable parameters
-        params = tape.get_parameters(trainable_only=False)
-        tape.trainable_params = qml.math.get_trainable_indices(params)
+    if _n == 1:
+        for tape in tapes:
+            # set the trainable parameters
+            params = tape.get_parameters(trainable_only=False)
+            tape.trainable_params = qml.math.get_trainable_indices(params)
 
     parameters = tuple(list(t.get_parameters()) for t in tapes)
 
@@ -396,9 +397,11 @@ def execute_new(tapes, device, execute_fn, gradient_fn, gradient_kwargs, _n=1, m
         the returned list corresponds in order to the provided tapes.
     """
     # Set the trainable parameters
-    for tape in tapes:
-        params = tape.get_parameters(trainable_only=False)
-        tape.trainable_params = qml.math.get_trainable_indices(params)
+    if _n == 1:
+        for tape in tapes:
+            params = tape.get_parameters(trainable_only=False)
+            tape.trainable_params = qml.math.get_trainable_indices(params)
+            print(params, tape.trainable_params, _n)
 
     parameters = tuple(list(t.get_parameters()) for t in tapes)
 
@@ -495,6 +498,7 @@ def _execute_bwd_new(
                         max_diff=max_diff,
                     )
                 )
+
             res = execute_wrapper(primals[0])
         else:
             # Execution: execute the function first

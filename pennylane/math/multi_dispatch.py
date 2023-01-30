@@ -410,28 +410,10 @@ def get_trainable_indices(values, like=None):
     Trainable: {0}
     tensor(0.0899685, requires_grad=True)
     """
-    trainable = requires_grad
     trainable_params = set()
 
-    if like == "jax":
-        import jax
-
-        if not any(isinstance(v, jax.core.Tracer) for v in values):
-            # No JAX tracing is occuring; treat all `Array` objects as trainable.
-
-            # pylint: disable=function-redefined,unused-argument
-            def trainable(p, **kwargs):
-                return isinstance(p, jax.Array)
-
-        else:
-            # JAX tracing is occuring; use the default behaviour (only traced arrays
-            # are treated as trainable). This is required to ensure that `jax.grad(func, argnums=...)
-            # works correctly, as the argnums argnument determines which parameters are
-            # traced arrays.
-            trainable = requires_grad
-
     for idx, p in enumerate(values):
-        if trainable(p, interface=like):
+        if requires_grad(p, interface=like):
             trainable_params.add(idx)
 
     return trainable_params
