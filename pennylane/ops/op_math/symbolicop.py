@@ -223,6 +223,14 @@ class ScalarSymbolicOp(SymbolicOp):
         else:
             base_matrix = self.base.matrix()
 
+        scalar_interface = qml.math.get_interface(self.scalar)
+        if scalar_interface == "torch":
+            # other wise get `RuntimeError: Can't call numpy() on Tensor that requires grad.`
+            base_matrix = qml.math.convert_like(base_matrix, self.scalar)
+        elif scalar_interface == "tensorflow" and not qml.math.iscomplex(self.scalar):
+            # cast scalar to complex to avoid an error
+            self.scalar = qml.math.cast_like(self.scalar, base_matrix)
+
         # compute scalar operation on base matrix taking batching into account
         scalar_size = qml.math.size(self.scalar)
         if scalar_size != 1:
