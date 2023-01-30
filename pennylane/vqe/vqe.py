@@ -172,25 +172,11 @@ class ExpvalCost:
         self.qnodes = []
         """The QNodes to be evaluated."""
 
-        if self._multiple_devices:
-            coeffs, observables = hamiltonian.terms()
-            for obs, c, dev in zip(observables, coeffs, device):
-                wires = dev.wires
-                new_obs = c * obs
+        if optimize:
+            if self._multiple_devices:
+                raise ValueError("Using multiple devices is not supported when optimize=True")
 
-                @qml.qnode(
-                    dev,  # pylint: disable=cell-var-from-loop
-                    interface=interface,
-                    diff_method=diff_method,
-                    **kwargs,
-                )
-                def circuit(params, _wires=wires, _obs=new_obs, **circuit_kwargs):
-                    ansatz(params, wires=_wires, **circuit_kwargs)
-                    return qml.expval(_obs)
-
-                self.qnodes.append(circuit)
-
-        else:
+            hamiltonian.compute_grouping()
 
             @qml.qnode(device, interface=interface, diff_method=diff_method, **kwargs)
             def circuit(params, **circuit_kwargs):
@@ -198,14 +184,31 @@ class ExpvalCost:
                 return qml.expval(hamiltonian)
 
             self.qnodes.append(circuit)
+            self.cost_fn = self.qnodes[0]
 
-        self.cost_fn = lambda *args, **kwargs: sum(c(*args, **kwargs) for c in self.qnodes)
+        else:
+            coeffs, observables = hamiltonian.terms()
+            if not self._multiple_devices:
+                device = [device] * len(coeffs)
 
-        if optimize:
-            if self._multiple_devices:
-                raise ValueError("Using multiple devices is not supported when optimize=True")
+            for obs, dev in zip(observables, device):
+                wires = dev.wires
 
-            hamiltonian.compute_grouping()
+                @qml.qnode(
+                    dev,  # pylint: disable=cell-var-from-loop
+                    interface=interface,
+                    diff_method=diff_method,
+                    **kwargs,
+                )
+                def circuit(params, _wires=wires, _obs=obs, **circuit_kwargs):
+                    ansatz(params, wires=_wires, **circuit_kwargs)
+                    return qml.expval(_obs)
+
+                self.qnodes.append(circuit)
+
+            self.cost_fn = lambda *args, **kwargs: sum(
+                c * q(*args, **kwargs) for c, q in zip(coeffs, self.qnodes)
+            )
 
     def __call__(self, *args, **kwargs):
         return self.cost_fn(*args, **kwargs)

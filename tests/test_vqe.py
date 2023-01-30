@@ -326,13 +326,9 @@ class TestVQE:
         """Tests that the cost function evaluates properly"""
         hamiltonian = qml.Hamiltonian(coeffs, observables)
         dev = qml.device("default.qubit", wires=3)
-        dev.observables.remove(
-            "Hamiltonian"
-        )  # remove Hamiltonian from observables to force its expansion
         expval = catch_warn_ExpvalCost(ansatz, hamiltonian, dev)
         assert expval(params).dtype == np.float64
         assert np.shape(expval(params)) == ()  # expval should be scalar
-        dev.observables.add("Hamiltonian")
 
     @pytest.mark.parametrize(
         "coeffs, observables, expected", hamiltonians_with_expvals + zero_hamiltonians_with_expvals
@@ -409,10 +405,7 @@ class TestVQE:
         exec_no_opt = dev.num_executions
 
         assert exec_opt == 5  # Number of groups in the Hamiltonian
-        if shots is None:
-            assert exec_no_opt == 1  # the hamiltonian is not expanded
-        else:
-            assert exec_no_opt == 15
+        assert exec_no_opt == 15
 
         assert np.allclose(c1, c2, atol=1e-1)
 
@@ -457,10 +450,8 @@ class TestVQE:
         exec_no_opt = dev.num_executions
 
         assert exec_opt == 5  # Number of groups in the Hamiltonian
-        if shots is None:
-            assert exec_no_opt == 1  # the hamiltonian is not expanded
-        else:
-            assert exec_no_opt == 15
+        assert exec_no_opt == 15
+
         assert np.allclose(c1, c2, atol=1e-1)
 
     @pytest.mark.autograd
@@ -504,10 +495,7 @@ class TestVQE:
         exec_no_opt = dev.num_executions
 
         assert exec_opt == 5  # Number of groups in the Hamiltonian
-        if shots is None:
-            assert exec_no_opt == 1  # the hamiltonian is not expanded
-        else:
-            assert exec_no_opt == 15
+        assert exec_no_opt == 15
 
         assert np.allclose(c1, c2, atol=1e-1)
 
@@ -527,7 +515,6 @@ class TestVQE:
             qml.PauliZ(wires=[2]) @ qml.PauliZ(wires=[0]),
             qml.PauliZ(wires=[3]) @ qml.PauliZ(wires=[1]),
             qml.PauliZ(wires=[4]) @ qml.PauliZ(wires=[3]),
-            qml.PauliX(wires=[2]) @ qml.PauliY(wires=[1]),
         ]
 
         coefs = (np.random.rand(len(obs)) - 0.5) * 2
@@ -562,8 +549,8 @@ class TestVQE:
         c2 = cost2(w)
         exec_no_opt = dev.num_executions
 
-        assert exec_opt == 2  # Number of groups in the Hamiltonian
-        assert exec_no_opt == 1  # the hamiltonian is not expanded
+        assert exec_opt == 1  # Number of groups in the Hamiltonian
+        assert exec_no_opt == 8
 
         assert np.allclose(c1, c2)
 
@@ -574,7 +561,6 @@ class TestVQE:
         are non-unique Hamiltonian terms."""
 
         dev = qml.device("default.qubit", wires=5)
-
         obs = [
             qml.PauliZ(wires=[2]) @ qml.PauliZ(wires=[4]),  # <---- These two terms
             qml.PauliZ(wires=[4]) @ qml.PauliZ(wires=[2]),  # <---- are equal
@@ -584,7 +570,6 @@ class TestVQE:
             qml.PauliZ(wires=[2]) @ qml.PauliZ(wires=[0]),
             qml.PauliZ(wires=[3]) @ qml.PauliZ(wires=[1]),
             qml.PauliZ(wires=[4]) @ qml.PauliZ(wires=[3]),
-            qml.PauliX(wires=[2]) @ qml.PauliY(wires=[1]),
         ]
 
         coefs = (np.random.rand(len(obs)) - 0.5) * 2
@@ -619,8 +604,9 @@ class TestVQE:
         c2 = cost2(w)
         exec_no_opt = dev.num_executions
 
-        assert exec_opt == 2  # Number of groups in the Hamiltonian
-        assert exec_no_opt == 1  # the hamiltonian is not expanded
+        assert exec_opt == 1  # Number of groups in the Hamiltonian
+        assert exec_no_opt == 8
+
         assert np.allclose(c1, c2)
 
     @pytest.mark.tf
@@ -630,7 +616,6 @@ class TestVQE:
         are non-unique Hamiltonian terms."""
 
         dev = qml.device("default.qubit", wires=5)
-
         obs = [
             qml.PauliZ(wires=[2]) @ qml.PauliZ(wires=[4]),  # <---- These two terms
             qml.PauliZ(wires=[4]) @ qml.PauliZ(wires=[2]),  # <---- are equal
@@ -640,7 +625,6 @@ class TestVQE:
             qml.PauliZ(wires=[2]) @ qml.PauliZ(wires=[0]),
             qml.PauliZ(wires=[3]) @ qml.PauliZ(wires=[1]),
             qml.PauliZ(wires=[4]) @ qml.PauliZ(wires=[3]),
-            qml.PauliX(wires=[2]) @ qml.PauliY(wires=[1]),
         ]
 
         coefs = (np.random.rand(len(obs)) - 0.5) * 2
@@ -675,8 +659,8 @@ class TestVQE:
         c2 = cost2(w)
         exec_no_opt = dev.num_executions
 
-        assert exec_opt == 2  # Number of groups in the Hamiltonian
-        assert exec_no_opt == 1  # the hamiltonian is not expanded
+        assert exec_opt == 1  # Number of groups in the Hamiltonian
+        assert exec_no_opt == 8
 
         assert np.allclose(c1, c2)
 
@@ -715,9 +699,7 @@ class TestVQE:
         dc2 = qml.grad(cost2)(w)
         exec_no_opt = dev.num_executions
 
-        assert (
-            exec_no_opt < exec_opt
-        )  # when optimized, more tapes are being executed (because of hamiltonian_expand)
+        assert exec_no_opt > exec_opt
         assert np.allclose(dc, big_hamiltonian_grad)
         assert np.allclose(dc2, big_hamiltonian_grad)
 
@@ -836,7 +818,7 @@ class TestVQE:
         res = qnodes(w)
 
         spy.assert_called_once()
-        spy2.call_count == 2  # hamiltonian is expanded
+        spy2.assert_called_once()
 
         mapped = qml.map(qml.templates.BasicEntanglerLayers, obs, dev)
         exp = sum(mapped(w))
