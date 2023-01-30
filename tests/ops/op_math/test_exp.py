@@ -12,6 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Unit tests of the ``Exp`` class."""
+import copy
+
 import pytest
 
 import pennylane as qml
@@ -399,7 +401,7 @@ class TestMiscMethods:
     def test_simplify_s_prod(self):
         """Tests that when simplification of the base results in an SProd,
         the scalar is included in the coeff rather than the base"""
-        base = qml.s_prod(2, qml.op_sum(qml.PauliX(0), qml.PauliX(0)))
+        base = qml.s_prod(2, qml.sum(qml.PauliX(0), qml.PauliX(0)))
         op = Exp(base, 3)
         new_op = op.simplify()
 
@@ -410,7 +412,7 @@ class TestMiscMethods:
     def test_copy(self):
         """Tests making a copy."""
         op = Exp(qml.CNOT([0, 1]), 2)
-        copied_op = op.__copy__()
+        copied_op = copy.copy(op)
 
         assert qml.equal(op.base, copied_op.base)
         assert op.data == copied_op.data
