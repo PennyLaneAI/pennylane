@@ -161,7 +161,10 @@ class hessian_transform(qml.batch_transform):
         cjac_fn = qml.transforms.classical_jacobian(qnode, expand_fn=self.expand_fn)
 
         def hessian_wrapper(*args, **kwargs):
-            if not qml.math.get_trainable_indices(args):
+            if not qml.math.get_trainable_indices(args) and not qml.math.get_interface(*args) in [
+                "jax",
+                "jax-jit",
+            ]:
                 warnings.warn(
                     "Attempted to compute the hessian of a QNode with no trainable parameters. "
                     "If this is unintended, please add trainable parameters in accordance with "
