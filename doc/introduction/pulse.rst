@@ -154,8 +154,8 @@ Further examples
 
 A few additional examples of defining a :class:`~.ParametrizedHamiltonian` are provided here.
 
-Here we use ``rect`` to create a parametrized coefficient that has a value of 0 outside the time interval
-:math:`t=(1, 7)`, and is defined by ``jnp.polyval(p, t)`` within the interval:
+Here we use :func:`~.rect` to create a parametrized coefficient that has a value of ``0`` outside the time interval
+``t=(1, 7)``, and is defined by ``jnp.polyval(p, t)`` within the interval:
 
 .. figure:: ../../_static/pulse/rect_example.png
             :align: center
@@ -231,7 +231,7 @@ Schrodinger equation for a :class:`~.ParametrizedHamiltonian`.
 
 The :class:`~.ParametrizedEvolution` class uses a numerical ordinary differential equation
 solver (`here <https://github.com/google/jax/blob/main/jax/experimental/ode.py>`_). It
-can be created using the :func:`~qml.evolve` function:
+can be created using the :func:`~.functions.evolve` function:
 
 .. code-block:: python
 
@@ -302,7 +302,11 @@ will be ``params1 + params2``.
 
 .. code-block:: python
 
+    import jax
+
     dev = qml.device("default.qubit", wires=3)
+
+    @jax.jit
     @qml.qnode(dev, interface="jax")
     def circuit(params):
         qml.evolve(H1 + H2)(params, t=[0, 10])
@@ -312,10 +316,14 @@ will be ``params1 + params2``.
     circuit(params)
     >>> Array(-0.78236955, dtype=float32)
 
+We can use the decorator ``jax.jit`` to compile this execution just-in-time. This means the first execution
+will typically take a little longer with the benefit that all following executions will be significantly faster.
+JIT-compiling is optional, and one can remove the decorator when only single executions are of interest. See the
+``jax`` docs on jitting for more information.
 
 .. warning::
     In the example above, we want to find the simultaneous evolution of the two operators, so it is important
-    that ``H1`` and ``H2`` are included in the same ``qml.evolve``.
+    that ``H1`` and ``H2`` are included in the same :func:`~.functions.evolve`.
     For non-commuting operations, applying ``qml.evolve(H1)(params, t=[0, 10])`` followed by
     ``qml.evolve(H2)(params, t=[0, 10])`` will NOT apply the two pulses simultaneously, despite the overlapping
     time window. Instead, it will execute ``H1`` in the ``[0, 10]`` time window, and then subsequently execute
