@@ -273,6 +273,8 @@ class TestGroupingUtils:
         (qml.prod(qml.PauliX(0), qml.PauliY(0)), True),
         (qml.prod(qml.PauliX(0), qml.PauliY(1)), True),
         (qml.prod(qml.PauliX(0), qml.Hadamard(1)), False),
+        (qml.s_prod(5, qml.PauliX(0) @ qml.PauliZ(1)), True),
+        (qml.s_prod(5, qml.Hadamard(0)), False),
     )
 
     @pytest.mark.parametrize("ob, is_pw", obs_pw_status)
@@ -378,6 +380,8 @@ class TestGroupingUtils:
             (qml.prod(PauliX(0), PauliY(1)), {0: 0, 1: 1}, "XY"),
             (PauliX(0) @ PauliZ(0), {0: 0}, "X"),  # second operator is ignored!!
             (3 * PauliZ(0) @ PauliY(3), {0: 0, 3: 1}, "ZY"),
+            (qml.s_prod(8, qml.PauliX(0) @ qml.PauliZ(1)), {0: 0, 1: 1}, "XZ"),
+            (qml.Hamiltonian([4], [qml.PauliX(0) @ qml.PauliZ(1)]), {0: 0, 1: 1}, "XZ"),
         ],
     )
     def test_pauli_word_to_string(self, pauli_word, wire_map, expected_string):
