@@ -394,6 +394,7 @@
       qml.CNOT(wires=[0, 1])
       return qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliY(1))
   ```
+  
   ```pycon
   >>> circuit(a, b)
   (Array(0.9950042, dtype=float32), Array(-0.19767681, dtype=float32))

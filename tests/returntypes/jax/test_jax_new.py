@@ -48,7 +48,7 @@ class TestJaxExecuteUnitTests:
             match="jax not found. Please install the latest version "
             "of jax to enable the 'jax' interface",
         ):
-            qml.execute([tape], dev, gradient_fn=qml.gradients.param_shift)
+            qml.execute([tape], dev, interface="jax", gradient_fn=qml.gradients.param_shift)
 
     def test_jacobian_options(self, mocker, tol):
         """Test setting jacobian options"""
