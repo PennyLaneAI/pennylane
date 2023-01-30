@@ -119,7 +119,7 @@ We can visualize the behaviour in time of the parametrized coefficients for a gi
     plt.tight_layout()
     plt.show()
 
-.. figure:: ../_static/pulse/parametrized_coefficients_example.png
+.. figure:: /pennylane/doc/_static/pulse/parametrized_coefficients_example.png
             :align: center
             :width: 60%
             :target: javascript:void(0);
@@ -183,7 +183,7 @@ The function :func:`~.pwc` can be used to create a parametrized coefficient func
 within the interval ``t``, and 0 outside of it. When creating the callable, only the timespan is passed. The number
 of bins and values for the parameters are set when ``params`` is passed to the callable.
 
-.. figure:: ../../pennylane/doc/_static/pulse/pwc_example.png
+.. figure:: ../../_static/pulse/pwc_example.png
             :align: center
             :width: 60%
             :target: javascript:void(0);
