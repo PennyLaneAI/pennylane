@@ -16,6 +16,7 @@ This file contains the implementation of the Sum class which contains logic for
 computing the sum of operations.
 """
 import itertools
+import warnings
 from copy import copy
 from functools import reduce
 from typing import List
@@ -32,6 +33,15 @@ from .composite import CompositeOp
 
 
 def op_sum(*summands, do_queue=True, id=None, lazy=True):
+    """This function is deprecated and will be removed soon. Please use :func:`sum` instead."""
+    warnings.warn(
+        "The `op_sum` function is deprecated and will be removed soon. Please use `sum` instead.",
+        UserWarning,
+    )
+    return sum(*summands, do_queue=do_queue, id=id, lazy=lazy)
+
+
+def sum(*summands, do_queue=True, id=None, lazy=True):
     r"""Construct an operator which is the sum of the given operators.
 
     Args:
@@ -64,13 +74,15 @@ def op_sum(*summands, do_queue=True, id=None, lazy=True):
 
     **Example**
 
-    >>> summed_op = op_sum(qml.PauliX(0), qml.PauliZ(0))
+    >>> summed_op = qml.sum(qml.PauliX(0), qml.PauliZ(0))
     >>> summed_op
     PauliX(wires=[0]) + PauliZ(wires=[0])
     >>> summed_op.matrix()
     array([[ 1,  1],
            [ 1, -1]])
     """
+    if len(summands) == 1 and isinstance(summands[0], qml.QNodeCollection):
+        return qml.collections.sum(summands[0])
     if lazy:
         return Sum(*summands, do_queue=do_queue, id=id)
 
@@ -100,7 +112,18 @@ class Sum(CompositeOp):
     .. note::
         Currently this operator can not be queued in a circuit as an operation, only measured terminally.
 
-    .. seealso:: :func:`~.ops.op_math.op_sum`
+    .. note::
+
+        This operator supports batched operands:
+        >>> op = qml.sum(qml.RX(np.array([1, 2, 3]), wires=0), qml.PauliX(1))
+        >>> op.matrix().shape
+        (3, 4, 4)
+
+        But it doesn't support batching of operators:
+        >>> op = qml.sum(np.array([qml.RX(0.4, 0), qml.RZ(0.3, 0)]), qml.PauliZ(0))
+        AttributeError: 'numpy.ndarray' object has no attribute 'wires'
+
+    .. seealso:: :func:`~.ops.op_math.sum`
 
     **Example**
 

@@ -484,7 +484,7 @@ class TestConvertersZX:
     def test_no_suitable_decomposition(self):
         """Test that an error is raised when no suitable decomposition is found."""
 
-        operations = [qml.op_sum(qml.PauliX(0), qml.PauliZ(0))]
+        operations = [qml.sum(qml.PauliX(0), qml.PauliZ(0))]
 
         qscript = QuantumScript(operations, [], [])
         with pytest.raises(
