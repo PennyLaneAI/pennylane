@@ -850,3 +850,107 @@ class TestSpecialUnitary:
 
         expected = tape.jacobian(loss, theta)
         assert np.allclose(jac, expected)
+
+
+class TestSpecialUnitaryIntegration:
+    """Test that the operation SpecialUnitary is executable and
+    differentiable in a QNode context, both with automatic differentiation
+    and parameter-shift rules."""
+
+    @staticmethod
+    def circuit(x):
+        """Test circuit involving a single SpecialUnitary operations."""
+        qml.SpecialUnitary(x, wires=[0, 1])
+        return qml.expval(qml.PauliZ(0) @ qml.PauliX(1))
+
+    x = np.linspace(0.2, 1.5, 15)
+    state = special_unitary_matrix(x, 2) @ np.eye(4)[0]
+    exp = np.vdot(state, qml.matrix(qml.PauliZ(0) @ qml.PauliX(1)) @ state).real
+
+    def test_qnode_numpy(self):
+        """Test that the QNode executes with Numpy."""
+        dev = qml.device("default.qubit", wires=2)
+        qnode = qml.QNode(self.circuit, dev, interface=None)
+
+        res = qnode(self.x)
+        assert qml.math.shape(res) == ()
+        assert qml.math.isclose(res, self.exp)
+
+    def test_qnode_autograd(self):
+        """Test that the QNode executes with Autograd.
+        Neither hardware-ready nor autodiff gradients are available in Autograd."""
+
+        dev = qml.device("default.qubit", wires=2)
+        qnode = qml.QNode(self.circuit, dev, interface="autograd")
+
+        x = qml.numpy.array(self.x, requires_grad=True)
+        res = qnode(x)
+        assert qml.math.shape(res) == ()
+        assert qml.math.isclose(res, self.exp)
+
+    @pytest.mark.parametrize("use_jit", [False, True])
+    @pytest.mark.parametrize("shots, atol", [(None, 1e-6), (10000, 1e-1)])
+    def test_qnode_jax(self, shots, atol, use_jit):
+        """Test that the QNode executes and is differentiable with JAX. The shots
+        argument controls whether autodiff or parameter-shift gradients are used."""
+        if use_jit and shots is not None:
+            pytest.skip("Hardware-ready differentiation does not support JITting yet.")
+        import jax
+
+        jax.config.update("jax_enable_x64", True)
+
+        dev = qml.device("default.qubit", wires=2, shots=shots)
+        qnode = qml.QNode(self.circuit, dev, interface="jax")
+        if use_jit:
+            qnode = jax.jit(qnode)
+
+        x = jax.numpy.array(self.x)
+        res = qnode(x)
+        assert qml.math.shape(res) == ()
+        assert qml.math.isclose(res, self.exp, atol=atol)
+
+        jac_fn = jax.jacobian(qnode)
+        if use_jit:
+            jac_fn = jax.jit(jac_fn)
+
+        jac = jac_fn(x)
+        assert qml.math.shape(jac) == (15,)
+        assert not qml.math.allclose(jac, jac * 0.0)
+
+    @pytest.mark.parametrize("shots, atol", [(None, 1e-6), (10000, 1e-1)])
+    def test_qnode_torch(self, shots, atol):
+        """Test that the QNode executes and is differentiable with Torch. The shots
+        argument controls whether autodiff or parameter-shift gradients are used."""
+        import torch
+
+        dev = qml.device("default.qubit", wires=2, shots=shots)
+        qnode = qml.QNode(self.circuit, dev, interface="torch")
+
+        x = torch.tensor(self.x, requires_grad=True)
+        res = qnode(x)
+        assert qml.math.shape(res) == ()
+        assert qml.math.isclose(res, torch.tensor(self.exp), atol=atol)
+
+        jac = torch.autograd.functional.jacobian(qnode, x)
+        assert qml.math.shape(jac) == (15,)
+        assert not qml.math.allclose(jac, jac * 0.0)
+
+    @pytest.mark.parametrize("shots, atol", [(None, 1e-6), (10000, 1e-1)])
+    def test_qnode_tf(self, shots, atol):
+        """Test that the QNode executes and is differentiable with TensorFlow. The shots
+        argument controls whether autodiff or parameter-shift gradients are used."""
+        import tensorflow as tf
+
+        dev = qml.device("default.qubit", wires=2, shots=shots)
+        qnode = qml.QNode(self.circuit, dev, interface="tf")
+
+        x = tf.Variable(self.x)
+        with tf.GradientTape() as tape:
+            res = qnode(x)
+
+        assert qml.math.shape(res) == ()
+        assert qml.math.isclose(res, self.exp, atol=atol)
+
+        jac = tape.jacobian(res, x)
+        assert qml.math.shape(jac) == (15,)
+        assert not qml.math.allclose(jac, jac * 0.0)
