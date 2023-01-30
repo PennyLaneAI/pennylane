@@ -384,6 +384,13 @@
 * The `StatePrep` class has been added as an interface that state-prep operators must implement.
   [(#3654)](https://github.com/PennyLaneAI/pennylane/pull/3654)
 
+* `qml.pauli.is_pauli_word` now supports `Prod` and `SProd` operators, and it returns `False` when a
+  `Hamiltonian` contains more than one term.
+  [(#3692)](https://github.com/PennyLaneAI/pennylane/pull/3692)
+
+* `qml.pauli.pauli_word_to_string` now supports `Prod`, `SProd` and `Hamiltonian` operators.
+  [(#3692)](https://github.com/PennyLaneAI/pennylane/pull/3692)
+
 <h3>Breaking changes</h3>
 
 * The tape method `get_operation` can also now return the operation index in the tape, and it can be
