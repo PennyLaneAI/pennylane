@@ -846,6 +846,15 @@ class TestVQE:
         with pytest.warns(UserWarning, match="ExpvalCost was instantiated with multiple devices."):
             qml.metric_tensor(qnodes, approx="block-diag")(w)
 
+    def test_multiple_devices_opt_true(self):
+        """Test if a ValueError is raised when multiple devices are passed when optimize=True."""
+        dev = [qml.device("default.qubit", wires=2), qml.device("default.qubit", wires=2)]
+
+        h = qml.Hamiltonian([1, 1], [qml.PauliZ(0), qml.PauliZ(1)])
+
+        with pytest.raises(ValueError, match="Using multiple devices is not supported when"):
+            catch_warn_ExpvalCost(qml.templates.StronglyEntanglingLayers, h, dev, optimize=True)
+
     def test_variance_error(self):
         """Test that an error is raised if attempting to use ExpvalCost to measure
         variances"""

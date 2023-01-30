@@ -202,6 +202,9 @@ class ExpvalCost:
         self.cost_fn = lambda *args, **kwargs: sum(c(*args, **kwargs) for c in self.qnodes)
 
         if optimize:
+            if self._multiple_devices:
+                raise ValueError("Using multiple devices is not supported when optimize=True")
+
             hamiltonian.compute_grouping()
 
     def __call__(self, *args, **kwargs):
