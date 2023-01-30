@@ -57,7 +57,7 @@ def is_pauli_word(observable):
 
     A Pauli word can be either:
 
-    * A single pauli operator (see :class:`~.PauliX for an example).
+    * A single pauli operator (see :class:`~.PauliX` for an example).
 
     * A :class:`Tensor` instance containing Pauli operators.
 
