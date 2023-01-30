@@ -140,10 +140,10 @@ class TestInitialization:
     @pytest.mark.parametrize("scalar, op", ops)
     def test_terms(self, op, scalar):
         sprod_op = SProd(scalar, op)
-        coeff, ops = sprod_op.terms()
+        coeff, op2 = sprod_op.terms()
 
         assert coeff == [scalar]
-        for op1, op2 in zip(ops, [op]):
+        for op1, op2 in zip(op2, [op]):
             assert qml.equal(op1, op2)
 
     def test_decomposition_raises_error(self):
@@ -212,6 +212,7 @@ class TestMscMethods:
         """Test that a scalar product with an operator that has `has_matrix=False`
         has `has_matrix=True` as well."""
 
+        # pylint: disable=too-few-public-methods
         class MyOp(qml.RX):
             """Variant of qml.RX that claims to not have `adjoint` or a matrix defined."""
 
@@ -224,6 +225,7 @@ class TestMscMethods:
     def test_has_diagonalizing_gates(self, value):
         """Test that SProd defers has_diagonalizing_gates to base operator."""
 
+        # pylint: disable=too-few-public-methods
         class DummyOp(qml.operation.Operator):
             num_wires = 1
             has_diagonalizing_gates = value
@@ -429,7 +431,7 @@ class TestMatrix:
         expected_sparse_matrix = csr_matrix(expected_sparse_matrix)
         expected_sparse_matrix.sort_indices()
 
-        assert type(sparse_matrix) == type(expected_sparse_matrix)
+        assert isinstance(sparse_matrix, type(expected_sparse_matrix))
         assert all(sparse_matrix.data == expected_sparse_matrix.data)
         assert all(sparse_matrix.indices == expected_sparse_matrix.indices)
 
@@ -512,11 +514,11 @@ class TestMatrix:
 
 class TestProperties:
     @pytest.mark.parametrize("op_scalar_tup", ops)
-    def test_queue_catagory(self, op_scalar_tup):
-        """Test queue_catagory property is always None."""  # currently not supporting queuing SProd
+    def test_queue_category(self, op_scalar_tup):
+        """Test queue_category property is always None."""  # currently not supporting queuing SProd
         scalar, op = op_scalar_tup
         sprod_op = SProd(scalar, op)
-        assert sprod_op._queue_category is None
+        assert sprod_op._queue_category is None  # pylint: disable=protected-access
 
     def test_eigvals(self):
         """Test that the eigvals of the scalar product op are correct."""
@@ -617,13 +619,13 @@ class TestProperties:
     @pytest.mark.parametrize("op, rep", op_pauli_reps)
     def test_pauli_rep(self, op, rep):
         """Test the pauli rep is produced as expected."""
-        assert op._pauli_rep == rep
+        assert op._pauli_rep == rep  # pylint: disable=protected-access
 
     def test_pauli_rep_none_if_base_pauli_rep_none(self):
         """Test that None is produced if the base op does not have a pauli rep"""
         base = qml.RX(1.23, wires=0)
         op = qml.s_prod(2, base)
-        assert op._pauli_rep is None
+        assert op._pauli_rep is None  # pylint: disable=protected-access
 
     def test_batching_properties(self):
         """Test the batching properties and methods."""

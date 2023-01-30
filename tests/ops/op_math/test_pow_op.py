@@ -25,13 +25,14 @@ from pennylane.ops.op_math.controlled import ControlledOp
 from pennylane.ops.op_math.pow import Pow, PowOperation
 
 
+# pylint: disable=too-few-public-methods
 class TempOperator(qml.operation.Operator):
     """Dummy operator"""
 
     num_wires = 1
 
 
-def pow_using_dunder_method(base, z, do_queue=True, id=None):
+def pow_using_dunder_method(base, z):
     """Helper function which computes the base raised to the power invoking the __pow__ dunder
     method."""
     return base**z
@@ -66,10 +67,11 @@ class TestConstructor:
         """Test that when the simplification method returns a list of multiple operators,
         pow returns a list of multiple operators."""
 
+        # pylint: disable=too-few-public-methods
         class Temp(qml.operation.Operator):
             num_wires = 1
 
-            def pow(self, z):
+            def pow(self, z):  # pylint: disable=unused-argument
                 return [qml.S(0), qml.T(0)]
 
         new_op = qml.pow(Temp(0), 2, lazy=False)
@@ -83,7 +85,7 @@ class TestConstructor:
 
         with qml.queuing.AnnotatedQueue() as q:
             original_op = qml.PauliX(0)
-            new_op = qml.pow(original_op, 0.5, lazy=False)
+            _ = qml.pow(original_op, 0.5, lazy=False)
 
         assert original_op not in q.queue
 
@@ -333,12 +335,12 @@ class TestProperties:
     def test_queue_category(self, power_method):
         """Test that the queue category `"_ops"` carries over."""
         op: Pow = power_method(base=qml.PauliX(0), z=3.5)
-        assert op._queue_category == "_ops"
+        assert op._queue_category == "_ops"  # pylint: disable=protected-access
 
     def test_queue_category_None(self, power_method):
         """Test that the queue category `None` for some observables carries over."""
         op: Pow = power_method(base=qml.PauliX(0) @ qml.PauliY(1), z=-1.1)
-        assert op._queue_category is None
+        assert op._queue_category is None  # pylint: disable=protected-access
 
     def test_batching_properties(self, power_method):
         """Test the batching properties and methods."""
@@ -379,7 +381,7 @@ class TestProperties:
     def test_pauli_rep(self, base, exp, rep, power_method):
         """Test the pauli rep is produced as expected."""
         op = power_method(base, exp)
-        assert op._pauli_rep == rep
+        assert op._pauli_rep == rep  # pylint: disable=protected-access
 
     def test_pauli_rep_is_none_for_bad_exponents(self, power_method):
         """Test that the _pauli_rep is None if the exponent is not positive or non integer."""
@@ -388,13 +390,13 @@ class TestProperties:
 
         for exponent in exponents:
             op = power_method(base, z=exponent)
-            assert op._pauli_rep is None
+            assert op._pauli_rep is None  # pylint: disable=protected-access
 
     def test_pauli_rep_none_if_base_pauli_rep_none(self, power_method):
         """Test that None is produced if the base op does not have a pauli rep"""
         base = qml.RX(1.23, wires=0)
         op = power_method(base, z=2)
-        assert op._pauli_rep is None
+        assert op._pauli_rep is None  # pylint: disable=protected-access
 
 
 class TestSimplify:
@@ -590,7 +592,7 @@ class TestQueueing:
         """Test that when `do_queue` is specified, the operation is not queued."""
         base = qml.PauliX(0)
         with qml.queuing.AnnotatedQueue() as q:
-            op = Pow(base, 4.5, do_queue=False)
+            _ = Pow(base, 4.5, do_queue=False)
 
         assert len(q) == 0
 
