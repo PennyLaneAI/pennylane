@@ -311,14 +311,14 @@ class TestIntegration:
         dev = qml.device("default.qubit", wires=3)
 
         @jax.jit
-        @qml.qnode(dev)
+        @qml.qnode(dev, interface="jax")
         def circuit1(params):
             qml.evolve(H1)(params[0], t=2)
             qml.evolve(H2)(params[1], t=2)
             return qml.expval(qml.PauliZ(0) @ qml.PauliZ(1) @ qml.PauliZ(2))
 
         @jax.jit
-        @qml.qnode(dev)
+        @qml.qnode(dev, interface="jax")
         def circuit2(params):
             qml.evolve(H1 + H2)(params, t=2)
             return qml.expval(qml.PauliZ(0) @ qml.PauliZ(1) @ qml.PauliZ(2))

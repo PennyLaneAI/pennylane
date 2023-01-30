@@ -375,8 +375,9 @@
 
 <h3>Breaking changes</h3>
 
-* The default interface is now `auto`, there is no need to specify the interface anzmore! It is automatically 
-  determined giving your `QNode` parameters.
+* The default interface is now `auto`, there is no need to specify the interface anymore! It is automatically 
+  determined by checking your `QNode` parameters.
+  [(#3677)](https://github.com/PennyLaneAI/pennylane/pull/3677)
   
   ```python
   import jax
@@ -405,10 +406,10 @@
   (Array(-0.09983341, dtype=float32, weak_type=True), Array(0.01983384, dtype=float32, weak_type=True))
   ```
   
-  It comes with a small overhead and the fact that is determined during the `QNode` call instead of the initialization. 
-  It means that the `gradient_fn` and `gradient_kwargs` are only defined on the QNode at the beginning of the call. 
-  Also without specifying the interface it is not possible to guarantee that the device will not be changed during 
-  the call if you are using backprop(`default.qubit` to `default.qubit,jax`e.g.) where before it was happening at 
+  It comes with a small overhead and the fact that the interface is determined during the `QNode` call instead of the 
+  initialization. It means that the `gradient_fn` and `gradient_kwargs` are only defined on the QNode at the beginning 
+  of the call. Also without specifying the interface it is not possible to guarantee that the device will not be changed 
+  during the call if you are using backprop(`default.qubit` to `default.qubit,jax`e.g.) where before it was happening at 
   initialization, therefore you should not try to track the device without specifying the interface.
 
 * The tape method `get_operation` can also now return the operation index in the tape, and it can be
