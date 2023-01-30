@@ -13,8 +13,8 @@
 # limitations under the License.
 """Tests for the shot adaptive optimizer"""
 import pytest
-from flaky import flaky
 from scipy.stats import multinomial
+from flaky import flaky
 
 import pennylane as qml
 from pennylane import numpy as np
