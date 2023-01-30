@@ -654,7 +654,9 @@ class TestEigvals:
         adj = Adjoint(base)
         compare = qml.RX(-x, 0)
 
-        assert qml.math.allclose(adj.eigvals(), compare.eigvals()[::-1])
+        # eigvals might have different orders
+        assert qml.math.allclose(adj.eigvals()[:, 0], compare.eigvals()[:, 1])
+        assert qml.math.allclose(adj.eigvals()[:, 1], compare.eigvals()[:, 0])
 
     def test_no_matrix_defined_eigvals(self):
         """Test that if the base does not define eigvals, The Adjoint raises the same error."""
