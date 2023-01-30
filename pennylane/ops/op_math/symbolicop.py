@@ -17,6 +17,8 @@ This submodule defines a base class for symbolic operations representing operato
 from abc import abstractmethod
 from copy import copy
 
+import numpy as np
+
 import pennylane as qml
 from pennylane.operation import Operator
 from pennylane.queuing import QueuingManager
@@ -159,7 +161,7 @@ class ScalarSymbolicOp(SymbolicOp):
     _name = "CoeffSymbolicOp"
 
     def __init__(self, base, scalar: float, do_queue=True, id=None):
-        self.scalar = scalar
+        self.scalar = np.array(scalar) if isinstance(scalar, list) else scalar
         super().__init__(base, do_queue=do_queue, id=id)
         self._batch_size = self._check_and_compute_batch_size(scalar)
 

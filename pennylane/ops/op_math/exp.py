@@ -247,8 +247,7 @@ class Exp(ScalarSymbolicOp, Operation):
         return [qml.PauliRot(new_coeff, string_base, wires=self.wires)]
 
     def matrix(self, wire_order=None):
-        scalar = [self.scalar] if qml.math.ndim(self.scalar) == 0 else self.scalar
-        coeff_interface = math.get_interface(*scalar)
+        coeff_interface = math.get_interface(self.scalar)
         if coeff_interface == "autograd" and math.requires_grad(self.scalar):
             # math.expm is not differentiable with autograd
             # So we try to do a differentiable construction if possible
@@ -259,7 +258,7 @@ class Exp(ScalarSymbolicOp, Operation):
                 eigvals = self.eigvals()
                 eigvals_mat = (
                     math.stack(math.diag(e) for e in eigvals)
-                    if len(scalar) > 1
+                    if qml.math.ndim(self.scalar) > 0
                     else math.diag(eigvals)
                 )
                 if len(self.diagonalizing_gates()) == 0:
