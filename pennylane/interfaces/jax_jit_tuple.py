@@ -96,7 +96,7 @@ def _jac_shape_dtype_tuple(tapes, device):
 
 
 def _jit_compute_jvps(jacobians, tangents, multi_measurements, trainable_params):
-    """Adapated function for jitting."""
+    # Remove the the jitted parameters that are no trainable as it is not contributing to the jacobian.
     tangents_trainable = []
     for i, tangent in enumerate(tangents):
         tangent_ = [tangent[j] for j in trainable_params[i]]
@@ -211,7 +211,6 @@ def _execute_bwd_tuple(
             res = jax.tree_map(lambda r, s: r.T if r.ndim > s.ndim else r, res, shape_dtype_structs)
             return res
 
-        # Jit params, not trainable only.
         res = jax.pure_callback(wrapper, shape_dtype_structs, params, vectorized=True)
         return res
 
