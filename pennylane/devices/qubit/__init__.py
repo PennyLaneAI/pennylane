@@ -13,13 +13,16 @@
 # limitations under the License.
 """
 Submodule for performing qubit-based simulations of quantum circuits.
+
 This submodule is internal and subject to change without a deprecation cycle. Use
 at your own discretion.
+
 .. currentmodule:: pennylane.devices.qubit
 .. autosummary::
     :toctree: api
-
     create_initial_state
+    apply_operaiton
 """
 
+from .apply_operation import apply_operation
 from .initialize_state import create_initial_state

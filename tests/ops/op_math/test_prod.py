@@ -863,7 +863,7 @@ class TestSimplify:
     def test_simplify_method_product_of_sums(self):
         """Test the simplify method with a product of sums."""
         prod_op = Prod(qml.PauliX(0) + qml.RX(1, 0), qml.PauliX(1) + qml.RX(1, 1), qml.Identity(3))
-        final_op = qml.op_sum(
+        final_op = qml.sum(
             Prod(qml.PauliX(0), qml.PauliX(1)),
             qml.PauliX(0) @ qml.RX(1, 1),
             qml.PauliX(1) @ qml.RX(1, 0),
@@ -909,7 +909,7 @@ class TestSimplify:
             qml.Identity(0),
         )
         mod_angle = -1 % (4 * np.pi)
-        final_op = qml.op_sum(
+        final_op = qml.sum(
             qml.Identity(0),
             5 * Prod(qml.PauliX(0), qml.RX(1, 1)),
             5 * Prod(qml.PauliX(0), qml.PauliX(1)),
@@ -948,9 +948,9 @@ class TestSimplify:
     def test_simplify_method_with_pauli_words(self):
         """Test that the simplify method groups pauli words."""
         prod_op = qml.prod(
-            qml.op_sum(qml.PauliX(0), qml.PauliX(1)), qml.PauliZ(1), qml.PauliX(0), qml.PauliY(1)
+            qml.sum(qml.PauliX(0), qml.PauliX(1)), qml.PauliZ(1), qml.PauliX(0), qml.PauliY(1)
         )
-        final_op = qml.op_sum(qml.s_prod(0 - 1j, qml.PauliX(1)), qml.s_prod(0 - 1j, qml.PauliX(0)))
+        final_op = qml.sum(qml.s_prod(0 - 1j, qml.PauliX(1)), qml.s_prod(0 - 1j, qml.PauliX(0)))
         simplified_op = prod_op.simplify()
 
         # TODO: Use qml.equal when supported for nested operators
@@ -1000,9 +1000,9 @@ class TestSimplify:
     def test_grouping_with_product_of_sum(self):
         """Test that grouping works with product of a sum"""
         prod_op = qml.prod(
-            qml.PauliX(0), qml.op_sum(qml.PauliY(0), qml.Identity(0)), qml.PauliZ(0), qml.PauliX(0)
+            qml.PauliX(0), qml.sum(qml.PauliY(0), qml.Identity(0)), qml.PauliZ(0), qml.PauliX(0)
         )
-        final_op = qml.op_sum(qml.s_prod(1j, qml.PauliX(0)), qml.s_prod(-1, qml.PauliZ(0)))
+        final_op = qml.sum(qml.s_prod(1j, qml.PauliX(0)), qml.s_prod(-1, qml.PauliZ(0)))
         simplified_op = prod_op.simplify()
 
         assert isinstance(simplified_op, qml.ops.Sum)
@@ -1015,7 +1015,7 @@ class TestSimplify:
     def test_grouping_with_product_of_sums(self):
         """Test that grouping works with product of two sums"""
         prod_op = qml.prod(qml.S(0) + qml.T(1), qml.S(0) + qml.T(1))
-        final_op = qml.op_sum(
+        final_op = qml.sum(
             qml.PauliZ(wires=[0]),
             2 * qml.prod(qml.S(wires=[0]), qml.T(wires=[1])),
             qml.S(wires=[1]),
