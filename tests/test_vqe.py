@@ -317,7 +317,7 @@ class TestVQE:
         """Tests that the aggregate function returns correct expectation values"""
         dev = qml.device("default.qubit", wires=2)
         qnodes = qml.map(lambda params, **kwargs: None, observables, dev)
-        expval = qml.collections.dot(coeffs, qnodes)
+        expval = qml.dot(coeffs, qnodes)
         assert expval([]) == sum(expected)
 
     @pytest.mark.parametrize("ansatz, params", CIRCUITS)
@@ -846,7 +846,7 @@ class TestVQE:
         """Test that an error is raised if attempting to use ExpvalCost to measure
         variances"""
         dev = qml.device("default.qubit", wires=4)
-        hamiltonian = big_hamiltonian_grouped
+        hamiltonian = big_hamiltonian
 
         with pytest.raises(ValueError, match="sums of expectation values"):
             catch_warn_ExpvalCost(
@@ -1038,7 +1038,7 @@ class TestNewVQE:
     def test_grad_autograd(self, diff_method, tol):
         """Tests the VQE gradient in the autograd interface."""
         dev = qml.device("default.qubit", wires=4)
-        H = big_hamiltonian_grouped
+        H = big_hamiltonian
         w = pnp.array(PARAMS, requires_grad=True)
 
         @qml.qnode(dev, diff_method=diff_method)
@@ -1071,7 +1071,7 @@ class TestNewVQE:
         import torch
 
         dev = qml.device("default.qubit", wires=4)
-        H = big_hamiltonian_grouped
+        H = big_hamiltonian
 
         @qml.qnode(dev, interface="torch")
         def circuit(w):
@@ -1092,7 +1092,7 @@ class TestNewVQE:
         import tensorflow as tf
 
         dev = qml.device("default.qubit", wires=4)
-        H = big_hamiltonian_grouped
+        H = big_hamiltonian
 
         @qml.qnode(dev, interface="tf")
         def circuit(w):
@@ -1116,7 +1116,7 @@ class TestNewVQE:
         from jax import numpy as jnp
 
         dev = qml.device("default.qubit", wires=4)
-        H = big_hamiltonian_grouped
+        H = big_hamiltonian
         np.random.seed(1967)
         w = jnp.array(PARAMS)
 
