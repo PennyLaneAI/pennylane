@@ -225,11 +225,11 @@ class TestPauliSentence:
 
     operator_ps = (
         (
-            qml.op_sum(qml.s_prod(2, qml.PauliZ(wires=0)), qml.PauliX(wires=1)),
+            qml.sum(qml.s_prod(2, qml.PauliZ(wires=0)), qml.PauliX(wires=1)),
             PauliSentence({PauliWord({0: "Z"}): 2, PauliWord({1: "X"}): 1}),
         ),
         (
-            qml.op_sum(
+            qml.sum(
                 qml.s_prod(2, qml.PauliZ(wires=0)),
                 -0.5 * qml.prod(qml.PauliX(wires=0), qml.PauliZ(wires=1)),
             ),
@@ -241,7 +241,7 @@ class TestPauliSentence:
             ),
         ),
         (
-            qml.op_sum(
+            qml.sum(
                 qml.s_prod(2, qml.PauliZ(wires=0)),
                 -0.5 * qml.prod(qml.PauliX(wires=0), qml.PauliZ(wires="a")),
                 qml.s_prod(2.14, qml.Identity(wires=0)),
