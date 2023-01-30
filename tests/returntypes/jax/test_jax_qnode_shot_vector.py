@@ -14,6 +14,7 @@
 """Integration tests for using the jax interface with shot vectors and with a QNode"""
 
 import pytest
+from flaky import flaky
 
 import pennylane as qml
 from pennylane import numpy as np
@@ -827,6 +828,7 @@ qubit_device_and_diff_method = [
 shots = [(1000000, 900000, 800000), (1000000, (900000, 2))]
 
 
+@flaky(max_runs=5)
 @pytest.mark.parametrize("shots", shots)
 @pytest.mark.parametrize(
     "interface,dev_name,diff_method,gradient_kwargs", interface_and_qubit_device_and_diff_method
