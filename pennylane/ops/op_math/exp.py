@@ -23,6 +23,7 @@ from scipy.sparse.linalg import expm as sparse_expm
 import pennylane as qml
 from pennylane import math
 from pennylane.operation import (
+    DecompositionUndefinedError,
     GeneratorUndefinedError,
     Operation,
     OperatorPropertyUndefined,
@@ -36,7 +37,7 @@ from .sum import Sum
 from .symbolicop import SymbolicOp
 
 
-def exp(op, coeff=1, k=1, id=None):
+def exp(op, coeff=1, num_steps=1, id=None):
     """Take the exponential of an Operator times a coefficient.
 
     Args:
@@ -84,7 +85,7 @@ def exp(op, coeff=1, k=1, id=None):
     tensor(20.08553692, requires_grad=True)
 
     """
-    return Exp(op, coeff, k=k, id=id)
+    return Exp(op, coeff, num_steps=num_steps, id=id)
 
 
 class Exp(SymbolicOp, Operation):
@@ -136,12 +137,12 @@ class Exp(SymbolicOp, Operation):
     control_wires = Wires([])
 
     # pylint: disable=too-many-arguments
-    def __init__(self, base=None, coeff=1, k=1, do_queue=True, id=None):
+    def __init__(self, base=None, coeff=1, num_steps=1, do_queue=True, id=None):
         super().__init__(base, do_queue=do_queue, id=id)
         self._name = "Exp"
         self._data = [[coeff], self.base.data]
         self.grad_recipe = [None]
-        self.k = k
+        self.num_steps = num_steps
 
     def __repr__(self):
         return (
@@ -212,7 +213,7 @@ class Exp(SymbolicOp, Operation):
             list[PauliRot]: decomposition of the operator
         """
         base = self.base
-        coeff = self.coeff / self.k  # divide by trotter number
+        coeff = self.coeff / self.num_steps  # divide by trotter number
         if isinstance(base, SProd):
             coeff *= base.scalar
             base = base.base
@@ -225,6 +226,7 @@ class Exp(SymbolicOp, Operation):
             return [qml.PauliRot(theta=coeff, pauli_word=pauli_word, wires=base.wires)]
 
         op_list = []
+
         if isinstance(base, Hamiltonian):
             coeffs, ops = base.terms()
             for c, o in zip(coeffs, ops):
@@ -236,7 +238,9 @@ class Exp(SymbolicOp, Operation):
                 else:
                     op_list.append(qml.exp(op=o, coeff=c))
 
-        elif isinstance(base, Sum):
+            return op_list * self.num_steps
+
+        if isinstance(base, Sum):
             for op in base.operands:
                 c = coeff
                 if isinstance(op, SProd):
@@ -248,9 +252,9 @@ class Exp(SymbolicOp, Operation):
                     op_list.append(qml.PauliRot(theta=c, pauli_word=pauli_word, wires=op.wires))
                 else:
                     op_list.append(qml.exp(op=op, coeff=c))
+            return op_list * self.num_steps  # apply operators ``num_steps`` times
 
-        op_list *= self.k  # apply operators K times (where K is the trotter number)
-        return op_list
+        raise DecompositionUndefinedError
 
     def matrix(self, wire_order=None):
 
