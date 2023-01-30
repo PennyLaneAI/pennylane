@@ -297,6 +297,12 @@
   DeviceArray(0., dtype=float32)
   ```
   
+*Next generation device API:*
+
+* The `apply_operation` single-dispatch function is added to `devices/qubit` that applies an operation
+  to a state and returns a new state.
+  [(#3637)](https://github.com/PennyLaneAI/pennylane/pull/3637)
+
 <h3>Improvements</h3>
 
 * `qml.purity` is added as a measurement process for purity
