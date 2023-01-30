@@ -52,7 +52,7 @@ class ParametrizedHamiltonian:
 
     **Example:**
 
-    A ``ParametrizedHamiltonian`` can be created using :func:`~.functions.dot.dot`, by passing a list of coefficients
+    A ``ParametrizedHamiltonian`` can be created using :func:`~.pennylane.dot`, by passing a list of coefficients
     (scalars or functions), as well as a list of corresponding observables. Each coefficient function must
     take two arguments, the first one being the trainable parameters and the second one being time. The resulting
     object can be passed parameters, and will return an :class:`~.Operator` representing the ``ParametrizedHamiltonian``
