@@ -235,10 +235,8 @@ If not specified, they will default to predetermined values. See :class:`.Parame
 Using qml.evolve in a QNode
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-The :class:`~.ParametrizedEvolution` can be implemented in the QNode in the same way as any other
-PennyLane :class:`~.Operator`.
-
-To look at an example of this, let's start with two instances of :class:`~.ParametrizedHamiltonian`:
+The :class:`~.ParametrizedEvolution` can be implemented in a QNode. To look at an example of this,
+let's start with two instances of :class:`~.ParametrizedHamiltonian`:
 
 .. code-block:: python
 
@@ -268,7 +266,8 @@ Now we can execute the evolution of these Hamiltonians applied simultaneously:
 
 
 .. warning::
-    In this example, it is important that ``H1`` and ``H2`` are included in the same ``qml.evolve`` operation.
+    In the example above, we want to find the simultaneous evolution of the two operators, so it is important
+    that ``H1`` and ``H2`` are included in the same ``qml.evolve``.
     For non-commuting operations, applying ``qml.evolve(H1)(params, t=[0, 10])`` followed by
     ``qml.evolve(H2)(params, t=[0, 10])`` will NOT apply the two pulses simultaneously, despite the overlapping
     time window. Instead, it will execute ``H1`` in the ``[0, 10]`` time window, and then subsequently execute
