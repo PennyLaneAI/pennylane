@@ -292,6 +292,12 @@
   DeviceArray(0., dtype=float32)
   ```
   
+*Next generation device API:*
+
+* The `apply_operation` single-dispatch function is added to `devices/qubit` that applies an operation
+  to a state and returns a new state.
+  [(#3637)](https://github.com/PennyLaneAI/pennylane/pull/3637)
+
 <h3>Improvements</h3>
 
 * `qml.purity` is added as a measurement process for purity
@@ -372,6 +378,13 @@
 
 * The `StatePrep` class has been added as an interface that state-prep operators must implement.
   [(#3654)](https://github.com/PennyLaneAI/pennylane/pull/3654)
+
+* `qml.pauli.is_pauli_word` now supports `Prod` and `SProd` operators, and it returns `False` when a
+  `Hamiltonian` contains more than one term.
+  [(#3692)](https://github.com/PennyLaneAI/pennylane/pull/3692)
+
+* `qml.pauli.pauli_word_to_string` now supports `Prod`, `SProd` and `Hamiltonian` operators.
+  [(#3692)](https://github.com/PennyLaneAI/pennylane/pull/3692)
 
 * `BasisState` now implements the `StatePrep` interface.
   [(#3693)](https://github.com/PennyLaneAI/pennylane/pull/3693)
