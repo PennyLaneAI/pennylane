@@ -17,7 +17,6 @@ Contains core operations used in the Quantum Singular Value Transform framework.
 import numpy as np
 from scipy.linalg import sqrtm, norm
 
-import pennylane as qml
 from pennylane.operation import Operation, AnyWires
 
 
@@ -27,11 +26,10 @@ class BlockEncoding(Operation):
     num_wires = AnyWires
 
     def __init__(self, a, wires, do_queue=True, id=None):
-        normalization = np.max(norm(a @ np.conj(a).T, ord=np.inf), norm(np.conj(a).T @ a, ord=np.inf))
+        normalization = np.max([norm(a @ np.conj(a).T, ord=np.inf), norm(np.conj(a).T @ a, ord=np.inf)])
         a = a / normalization if normalization > 1 else a
 
         super().__init__(a, wires=wires, do_queue=do_queue, id=id)
-        self.hyperparameters["normalization"] = normalization
 
     @staticmethod
     def compute_matrix(a):
