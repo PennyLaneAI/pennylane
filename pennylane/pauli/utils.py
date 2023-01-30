@@ -63,7 +63,7 @@ def is_pauli_word(observable):
 
     * A :class:`Prod` instance containing Pauli operators.
 
-    * A :class:`SProd` instance containing a Pauli operator.
+    * A :class:`SProd` instance containing a valid Pauli word.
 
     * A :class:`Hamiltonian` instance with only one term.
 
