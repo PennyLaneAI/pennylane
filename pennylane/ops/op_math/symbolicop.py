@@ -168,8 +168,9 @@ class ScalarSymbolicOp(SymbolicOp):
         return self._batch_size
 
     def _check_and_compute_batch_size(self, scalar):
+        batched_scalar = qml.math.ndim(scalar) > 0
         scalar_size = qml.math.size(scalar)
-        if scalar_size == 1:
+        if not batched_scalar:
             # coeff is not batched
             return self.base.batch_size
         # coeff is batched

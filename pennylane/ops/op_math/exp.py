@@ -319,7 +319,7 @@ class Exp(ScalarSymbolicOp, Operation):
         """
         base_eigvals = math.convert_like(self.base.eigvals(), self.coeff)
         base_eigvals = math.cast_like(base_eigvals, self.coeff)
-        if qml.math.size(self.scalar) > 1:
+        if qml.math.ndim(self.scalar) > 0:
             # exp coeff is broadcasted
             return qml.math.stack([qml.math.exp(c * base_eigvals) for c in self.coeff])
         return qml.math.exp(self.coeff * base_eigvals)
