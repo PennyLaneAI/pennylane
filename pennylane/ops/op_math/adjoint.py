@@ -55,6 +55,7 @@ def adjoint(fn, lazy=True):
         (3, 2, 2)
 
         But it doesn't support batching of operators:
+
         >>> op = qml.adjoint([qml.RX(1, wires=0), qml.RX(2, wires=0)])
         ValueError: The object [RX(1, wires=[0]), RX(2, wires=[0])] of type <class 'list'> is not callable.
         This error might occur if you apply adjoint to a list of operations instead of a function or template.
