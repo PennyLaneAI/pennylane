@@ -117,9 +117,6 @@ big_hamiltonian_ops = [
 ]
 
 big_hamiltonian = qml.Hamiltonian(big_hamiltonian_coeffs, big_hamiltonian_ops)
-big_hamiltonian_grouped = qml.Hamiltonian(big_hamiltonian_coeffs, big_hamiltonian_ops)
-big_hamiltonian_grouped.compute_grouping()
-
 
 big_hamiltonian_grad = (
     np.array(
