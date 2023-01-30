@@ -35,7 +35,8 @@ _pauli_letters = "IXYZ"
 
 @lru_cache
 def pauli_basis(num_wires):
-    r"""Compute all elements of the Pauli basis of the Lie algebra :math:`\mathfrak{su}(N)`.
+    r"""Compute all elements of the Pauli basis of the Lie algebra :math:`\mathfrak{su}(N)`
+    as a single, dense tensor.
 
     Args:
         num_wires (int): The number of wires on which the associated Pauli group acts.
@@ -121,7 +122,7 @@ def pauli_words(num_wires):
     >>> len(pauli_words(3))
     63
     """
-    return ["".join(letters) for letters in list(product(_pauli_letters, repeat=num_wires))[1:]]
+    return ["".join(letters) for letters in product(_pauli_letters, repeat=num_wires)][1:]
 
 
 def _detach(array, interface):
