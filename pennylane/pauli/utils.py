@@ -379,7 +379,7 @@ def pauli_word_to_string(pauli_word, wire_map=None):
 
     A Pauli word can be either:
 
-    * A single pauli operator (see :class:`~.PauliX for an example).
+    * A single pauli operator (see :class:`~.PauliX` for an example).
 
     * A :class:`Tensor` instance containing Pauli operators.
 
