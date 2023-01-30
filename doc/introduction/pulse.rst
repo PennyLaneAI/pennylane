@@ -134,7 +134,7 @@ Using ``rect`` to create a parametrized coefficient that has a value of 0 outsid
 
     def f(p, t):
         return jnp.polyval(p, t)
-    H = qml.pulse.rect(f1, windows=[(1, 7)]) * qml.PauliX(0)
+    H = qml.pulse.rect(f, windows=[(1, 7)]) * qml.PauliX(0)
 
     # inside the window
     >>> H([3], t=2)
@@ -241,7 +241,7 @@ let's start with two instances of :class:`~.ParametrizedHamiltonian`:
 .. code-block:: python
 
     ops = [qml.PauliX(0), qml.PauliY(1), qml.PauliZ(2)]
-    coeffs = [lambda p, t: p for _ in range(3)]
+    coeffs = [qml.pulse.constant for _ in range(3)]
     H1 = qml.ops.dot(coeffs, ops)  # time-independent parametrized hamiltonian
 
 .. code-block:: python
@@ -250,7 +250,9 @@ let's start with two instances of :class:`~.ParametrizedHamiltonian`:
     coeffs = [lambda p, t: p * jnp.sin(t) for _ in range(3)]
     H2 = qml.ops.dot(coeffs, ops) # time-dependent parametrized hamiltonian
 
-Now we can execute the evolution of these Hamiltonians applied simultaneously:
+Now we can execute the evolution of these Hamiltonians applied simultaneously. To do this, we can add the two
+to form a single :class:`~.ParametrizedHamiltonian`. This will combine the two so that the expected parameters
+will be ``params1 + params2``.
 
 .. code-block:: python
 
@@ -281,4 +283,3 @@ We can also compute the gradient of this evolution with respect to the input par
     jax.grad(circuit)(params)
     >>> Array([-4.8066125,  3.7038102, -1.3294725, -2.4061902,  0.6811545,
         -0.5226515], dtype=float32)
-
