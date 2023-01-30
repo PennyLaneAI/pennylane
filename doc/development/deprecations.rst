@@ -6,6 +6,11 @@ Deprecations
 Pending deprecations
 --------------------
 
+* The ``get_operation`` tape method is updated to return the operation index as well, changing its signature.
+
+  - The new signature is available by changing the arg ``return_op_index`` to ``True`` in v0.29
+  - The old signature is replaced with the new one in v0.30
+
 * The ``observables`` argument in ``QubitDevice.statistics`` is deprecated. Please use ``circuit``
   instead. Using a list of observables in ``QubitDevice.statistics`` is deprecated. Please use a
   ``QuantumTape`` instead.
@@ -50,6 +55,16 @@ Pending deprecations
 
   - Deprecated in v0.28
   - Will be removed in v0.29
+
+* The ``collections`` module has been deprecated.
+
+  - Deprecated in v0.29
+  - Will be removed in v0.31
+
+* ``qml.op_sum``` is deprecated. Users should use ``qml.sum`` instead.
+
+  - Deprecated in v0.29.
+  - Will be removed in v0.31.
 
 Completed deprecation cycles
 ----------------------------

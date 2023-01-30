@@ -25,12 +25,10 @@ Constructor Functions
     ~adjoint
     ~ctrl
     ~exp
-    ~op_sum
+    ~sum
     ~pow
     ~prod
     ~s_prod
-    ~ops.dot
-    ~evolve
 
 Symbolic Classes
 ~~~~~~~~~~~~~~~~
@@ -51,8 +49,6 @@ Symbolic Classes
     ~Sum
     ~SProd
     ~SymbolicOp
-    ~ParametrizedHamiltonian
-    ~ParametrizedEvolution
 
 Controlled Operator Classes
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -68,14 +64,11 @@ from .adjoint import Adjoint, adjoint
 from .composite import CompositeOp
 from .controlled import Controlled, ControlledOp, ctrl
 from .controlled_ops import ControlledQubitUnitary
-from .dot import dot
-from .evolve import ParametrizedEvolution, evolve
 from .exp import Evolution, Exp, exp
-from .parametrized_hamiltonian import ParametrizedHamiltonian
 from .pow import Pow, pow
 from .prod import Prod, prod
 from .sprod import SProd, s_prod
-from .sum import Sum, op_sum
+from .sum import Sum, sum, op_sum
 from .symbolicop import SymbolicOp
 
 controlled_qubit_ops = {

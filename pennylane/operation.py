@@ -15,6 +15,14 @@ r"""
 This module contains the abstract base classes for defining PennyLane
 operations and observables.
 
+.. warning::
+
+    Unless you are a PennyLane or plugin developer, you likely do not need
+    to use these classes directly.
+
+    See the :doc:`main operations page <../introduction/operations>` for
+    details on available operations and observables.
+
 Description
 -----------
 
@@ -91,6 +99,117 @@ and :math:`\mathbf{r} = (\I, \x_0, \p_0, \x_1, \p_1, \ldots)` for multi-mode ope
 .. note::
     Non-Gaussian CV operations and observables are currently only supported via
     the finite-difference method of gradient computation.
+
+Contents
+--------
+
+.. currentmodule:: pennylane.operation
+
+Operator Types
+~~~~~~~~~~~~~~
+
+.. currentmodule:: pennylane.operation
+
+.. autosummary::
+    :toctree: api
+
+    ~Operator
+    ~Operation
+    ~Observable
+    ~CV
+    ~CVObservable
+    ~CVOperation
+    ~Channel
+    ~Tensor
+    ~StatePrep
+
+.. currentmodule:: pennylane.operation
+
+.. inheritance-diagram:: Operator Operation Observable Channel CV CVObservable CVOperation Tensor StatePrep
+    :parts: 1
+
+Errors
+~~~~~~
+
+When an :class:`~.Operator` method is undefined, it raises a error type that depends
+on the method that is undefined.
+
+.. currentmodule:: pennylane.operation
+
+.. autosummary::
+    :toctree: api
+
+    ~OperatorPropertyUndefined
+    ~AdjointUndefinedError
+    ~DecompositionUndefinedError
+    ~DiagGatesUndefinedError
+    ~EigvalsUndefinedError
+    ~GeneratorUndefinedError
+    ~MatrixUndefinedError
+    ~ParameterFrequenciesUndefinedError
+    ~PowUndefinedError
+    ~SparseMatrixUndefinedError
+    ~TermsUndefinedError
+
+Boolean Functions
+~~~~~~~~~~~~~~~~~
+
+:class:`~.BooleanFn`'s are functions of a single object that return ``True`` or ``False``.
+The ``operation`` module provides the following:
+
+.. currentmodule:: pennylane.operation
+
+.. autosummary::
+    :toctree: api
+
+    ~defines_diagonalizing_gates
+    ~gen_is_multi_term_hamiltonian
+    ~has_gen
+    ~has_grad_method
+    ~has_multipar
+    ~has_nopar
+    ~has_unitary_gen
+    ~is_measurement
+    ~is_trainable
+    ~not_tape
+
+Other
+~~~~~
+
+.. currentmodule:: pennylane.operation
+
+.. autosummary::
+    :toctree: api
+
+    ~operation_derivative
+    ~WiresEnum
+    ~AllWires
+    ~AnyWires
+
+Operation attributes
+~~~~~~~~~~~~~~~~~~~~
+
+PennyLane contains a mechanism for storing lists of operations with similar
+attributes and behaviour (for example, those that are their own inverses).
+The attributes below are already included, and are used primarily for the
+purpose of compilation transforms. New attributes can be added by instantiating
+new :class:`~pennylane.ops.qubit.attributes.Attribute` objects. Please note that
+these objects are located in ``pennylane.ops.qubit.attributes``, not ``pennylane.operation``.
+
+.. currentmodule:: pennylane
+
+.. autosummary::
+    :toctree: api
+
+    ~ops.qubit.attributes.Attribute
+    ~ops.qubit.attributes.composable_rotations
+    ~ops.qubit.attributes.diagonal_in_z_basis
+    ~ops.qubit.attributes.has_unitary_generator
+    ~ops.qubit.attributes.self_inverses
+    ~ops.qubit.attributes.supports_broadcasting
+    ~ops.qubit.attributes.symmetric_over_all_wires
+    ~ops.qubit.attributes.symmetric_over_control_wires
+
 """
 # pylint:disable=access-member-before-definition
 import abc
@@ -105,7 +224,7 @@ from typing import List
 import numpy as np
 from numpy.linalg import multi_dot
 from scipy.sparse import coo_matrix, eye, kron
-
+import autoray
 import pennylane as qml
 from pennylane.math import expand_matrix
 from pennylane.queuing import QueuingManager
@@ -116,6 +235,8 @@ from .utils import pauli_eigs
 # =============================================================================
 # Errors
 # =============================================================================
+
+SUPPORTED_INTERFACES = {"numpy", "scipy", "autograd", "torch", "tensorflow", "jax"}
 
 
 class OperatorPropertyUndefined(Exception):
@@ -883,7 +1004,7 @@ class Operator(abc.ABC):
 
         self._check_batching(params)
 
-        self.data = list(params)  #: list[Any]: parameters of the operator
+        self.data = [np.array(p) if isinstance(p, list) else p for p in params]
 
         if do_queue:
             self.queue()
@@ -1285,26 +1406,30 @@ class Operator(abc.ABC):
     def __add__(self, other):
         """The addition operation of Operator-Operator objects and Operator-scalar."""
         if isinstance(other, Operator):
-            return qml.op_sum(self, other)
+            return qml.sum(self, other)
         if other == 0:
             return self
-        if isinstance(other, qml.ops.ParametrizedHamiltonian):  # pylint: disable=no-member
+        if isinstance(other, qml.pulse.ParametrizedHamiltonian):
             return other.__add__(self)
-        try:
-            return qml.op_sum(self, qml.s_prod(scalar=other, operator=qml.Identity(self.wires)))
-        except ValueError:
-            return NotImplemented
+        backend = autoray.infer_backend(other)
+        if (backend == "builtins" and isinstance(other, numbers.Number)) or (
+            backend in SUPPORTED_INTERFACES and qml.math.shape(other) == ()
+        ):
+            return qml.sum(self, qml.s_prod(scalar=other, operator=qml.Identity(self.wires)))
+        return NotImplemented
 
     __radd__ = __add__
 
     def __mul__(self, other):
         """The scalar multiplication between scalars and Operators."""
         if callable(other):
-            return qml.ops.ParametrizedHamiltonian([other], [self])  # pylint: disable=no-member
-        try:
+            return qml.pulse.ParametrizedHamiltonian([other], [self])
+        backend = autoray.infer_backend(other)
+        if (backend == "builtins" and isinstance(other, numbers.Number)) or (
+            backend in SUPPORTED_INTERFACES and qml.math.shape(other) == ()
+        ):
             return qml.s_prod(scalar=other, operator=self)
-        except ValueError:
-            return NotImplemented
+        return NotImplemented
 
     __rmul__ = __mul__
 
@@ -2542,6 +2667,27 @@ class CVObservable(CV, Observable):
         p = self.parameters
         U = self._heisenberg_rep(p)  # pylint: disable=assignment-from-none
         return self.heisenberg_expand(U, wire_order)
+
+
+class StatePrep(Operation):
+    """An interface for state-prep operations."""
+
+    grad_method = None
+    _queue_category = "_prep"
+
+    # pylint:disable=too-few-public-methods
+    @abc.abstractmethod
+    def state_vector(self, wire_order=None):
+        """
+        Returns the initial state vector for a circuit given a state preparation.
+
+        Args:
+            wire_order (Iterable): global wire order, must contain all wire labels
+                from the operator's wires
+
+        Returns:
+            array: A state vector for all wires in a circuit
+        """
 
 
 def operation_derivative(operation) -> np.ndarray:
