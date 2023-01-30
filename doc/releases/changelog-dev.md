@@ -438,16 +438,7 @@
 * The tape constructed by a QNode is no longer queued to surrounding contexts.
   [(#3509)](https://github.com/PennyLaneAI/pennylane/pull/3509)
 
-* Nested operators like `Tensor`, `Hamiltoniandev = qml.device(dev_name, wires=1)
-
-        @qnode(dev, interface=interface, diff_method=diff_method, mode=mode)
-        def circuit(a):
-            qml.RY(a, wires=0)
-            qml.RX(0.2, wires=0)
-            return qml.expval(qml.PauliZ(0))
-
-        a = np.array(0.1, requires_grad=True)
-        circuit(a)`, and `Adjoint` now remove their owned operators
+* Nested operators like `Tensor`, `Hamiltonian`, and `Adjoint` now remove their owned operators
   from the queue instead of updating their metadata to have an `"owner"`.
   [(#3282)](https://github.com/PennyLaneAI/pennylane/pull/3282)
 
