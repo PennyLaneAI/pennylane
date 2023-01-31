@@ -52,7 +52,10 @@ def _hadamard_grad(
     **Example**
 
     """
-
+    if any(isinstance(m, VarianceMP) for m in tape.measurements):
+        raise ValueError(
+            "Computing the gradient of variance with hadamard test gradient is not implemented yet."
+        )
     if any(isinstance(m, (StateMP, VnEntropyMP, MutualInfoMP)) for m in tape.measurements):
         raise ValueError(
             "Computing the gradient of circuits that return the state is not supported."
@@ -80,11 +83,6 @@ def _hadamard_grad(
         aux_wire = _get_aux_wire(aux_wire, tape, device_wires)
     elif aux_wire.labels[0] in tape.wires:
         raise qml.QuantumFunctionError("The auxiliary wire is already used in the tape.")
-
-    if any(isinstance(m, VarianceMP) for m in tape.measurements):
-        raise qml.QuantumFunctionError(
-            "Hadamard test for gradient of variance is not implemented yet."
-        )
 
     g_tapes, processing_fn = _expval_hadamard_grad(tape, argnum, aux_wire)
 
@@ -184,7 +182,6 @@ def _expval_hadamard_grad(tape, argnum, aux_wire):
         gradient_data.append(num_tape)
 
     def processing_fn(results):  # pylint: disable=too-many-branches
-        # TODO interface compatibility
         multi_measurements = len(tape.measurements) > 1
         multi_params = len(tape.trainable_params) > 1
 
@@ -197,6 +194,10 @@ def _expval_hadamard_grad(tape, argnum, aux_wire):
         # Post process for probs
         if measurements_probs:
             projector = np.array([1, -1])
+            if multi_measurements:
+                projector = qml.math.convert_like(projector, final_res[0][0])
+            else:
+                projector = qml.math.convert_like(projector, final_res[0])
             for idx, res in enumerate(final_res):
                 if multi_measurements:
                     for prob_idx in measurements_probs:
@@ -213,6 +214,7 @@ def _expval_hadamard_grad(tape, argnum, aux_wire):
                     wires = prob.wires
                     num_wires = len(wires)
                     res = qml.math.reshape(res, (2**num_wires, 2))
+                    print(res, projector)
                     final_res[idx] = qml.math.tensordot(res, projector, axes=[[1], [0]])
 
         for idx, num_tape in enumerate(gradient_data):
@@ -221,7 +223,7 @@ def _expval_hadamard_grad(tape, argnum, aux_wire):
             elif num_tape == 1:
                 grads.append(final_res[idx])
             else:
-                grads.append(sum(final_res[idx : idx + num_tape]))
+                grads.append(qml.math.sum(final_res[idx : idx + num_tape]))
 
         if not multi_measurements and not multi_params:
             return np.array(grads[0])
@@ -236,11 +238,7 @@ def _expval_hadamard_grad(tape, argnum, aux_wire):
             for j in range(len(tape.trainable_params)):
                 grads_reorder[i][j] = grads[j][i]
 
-        # To tuple
-        if multi_params:
-            grads_tuple = tuple(tuple(elem) for elem in grads_reorder)
-        else:
-            grads_tuple = tuple(elem[0] for elem in grads_reorder)
+        grads_tuple = tuple(tuple(elem) for elem in grads_reorder)
 
         return grads_tuple
 
@@ -253,12 +251,11 @@ def _get_generators(trainable_op):
     if isinstance(trainable_op, (qml.PhaseShift, qml.U1)):
         generators = [qml.Identity(wires=trainable_op.wires), qml.PauliZ(wires=trainable_op.wires)]
         coeffs = [-0.5, -0.5]
-    # For rotation it possible to only use CZ by applying some other rotations in the main function
-    elif isinstance(trainable_op, qml.CRZ):
+    elif isinstance(trainable_op, qml.CRX):
         generators = [
-            qml.PauliZ(wires=trainable_op.wires[1]),
+            qml.PauliX(wires=trainable_op.wires[1]),
             qml.prod(
-                qml.PauliZ(wires=trainable_op.wires[0]), qml.PauliZ(wires=trainable_op.wires[1])
+                qml.PauliZ(wires=trainable_op.wires[0]), qml.PauliX(wires=trainable_op.wires[1])
             ),
         ]
         coeffs = [-0.25, 0.25]
@@ -267,6 +264,14 @@ def _get_generators(trainable_op):
             qml.PauliY(wires=trainable_op.wires[1]),
             qml.prod(
                 qml.PauliZ(wires=trainable_op.wires[0]), qml.PauliY(wires=trainable_op.wires[1])
+            ),
+        ]
+        coeffs = [-0.25, 0.25]
+    elif isinstance(trainable_op, qml.CRZ):
+        generators = [
+            qml.PauliZ(wires=trainable_op.wires[1]),
+            qml.prod(
+                qml.PauliZ(wires=trainable_op.wires[0]), qml.PauliZ(wires=trainable_op.wires[1])
             ),
         ]
         coeffs = [-0.25, 0.25]
@@ -291,14 +296,7 @@ def _get_generators(trainable_op):
             )
         ]
         coeffs = [-0.5]
-    elif isinstance(trainable_op, qml.CRX):
-        generators = [
-            qml.PauliX(wires=trainable_op.wires[1]),
-            qml.prod(
-                qml.PauliZ(wires=trainable_op.wires[0]), qml.PauliX(wires=trainable_op.wires[1])
-            ),
-        ]
-        coeffs = [-0.25, 0.25]
+    # For rotation it possible to only use PauliZ by applying some other rotations in the main function
     elif isinstance(trainable_op, qml.Rot):
         generators = [qml.PauliZ(wires=trainable_op.wires)]
         coeffs = [-0.5]

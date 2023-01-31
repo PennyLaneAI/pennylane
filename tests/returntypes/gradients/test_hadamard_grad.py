@@ -357,9 +357,8 @@ class TestHadamardGrad:
         assert isinstance(res[0], tuple)
         assert len(res[0]) == 2
 
-        # TODO: add test
-        # assert res[0][0]
-        # assert res[0][1]
+        assert res[0][0].shape == ()
+        assert res[0][1].shape == ()
 
         assert isinstance(res[1], tuple)
         assert len(res[1]) == 2
@@ -572,6 +571,22 @@ class TestHadamardGradEdgeCases:
 
         tape = qml.tape.QuantumScript.from_queue(q)
         with pytest.raises(ValueError, match=r"return the state is not supported"):
+            qml.gradients.hadamard_grad(tape)
+
+    def test_variance_non_differentiable_error(self):
+        """Test error raised if attempting to differentiate with respect to a variance"""
+
+        with qml.queuing.AnnotatedQueue() as q:
+            qml.RX(0.543, wires=[0])
+            qml.RY(-0.654, wires=[1])
+            qml.var(qml.PauliZ(wires=0))
+
+        tape = qml.tape.QuantumScript.from_queue(q)
+        with pytest.raises(
+            ValueError,
+            match=r"Computing the gradient of variance with hadamard test gradient is not "
+            r"implemented yet",
+        ):
             qml.gradients.hadamard_grad(tape)
 
     def test_independent_parameter(self, mocker):
@@ -848,3 +863,109 @@ class TestHadamardGradEdgeCases:
 
         tapes, _ = qml.gradients.hadamard_grad(circuit.tape)
         assert tapes == []
+
+
+class TestHadamardTestGradDiff:
+    """Test that the transform is differentiable"""
+
+    @pytest.mark.autograd
+    def test_autograd(self):
+        """Tests that the output of the parameter-shift transform
+        can be differentiated using autograd, yielding second derivatives."""
+        dev = qml.device("default.qubit.autograd", wires=3)
+        params = np.array([0.543, -0.654], requires_grad=True)
+
+        def cost_fn(x):
+            with qml.queuing.AnnotatedQueue() as q:
+                qml.RX(x[0], wires=[0])
+                qml.RY(x[1], wires=[1])
+                qml.CNOT(wires=[0, 1])
+                qml.expval(qml.PauliZ(0) @ qml.PauliX(1))
+
+            tape = qml.tape.QuantumScript.from_queue(q)
+            tape.trainable_params = {0, 1}
+            tapes, fn = qml.gradients.hadamard_grad(tape)
+            jac = fn(dev.batch_execute(tapes))
+            return qml.math.stack(jac)
+
+        res = qml.jacobian(cost_fn)(params)
+        print(res)
+
+    @pytest.mark.tf
+    def test_tf(self):
+        """Tests that the output of the finite-difference transform
+        can be differentiated using TF, yielding second derivatives."""
+        import tensorflow as tf
+
+        dev = qml.device("default.qubit.tf", wires=3)
+        params = tf.Variable([0.543, -0.654], dtype=tf.float64)
+
+        with tf.GradientTape() as t:
+            with qml.queuing.AnnotatedQueue() as q:
+                qml.RX(params[0], wires=[0])
+                qml.RY(params[1], wires=[1])
+                qml.CNOT(wires=[0, 1])
+                qml.expval(qml.PauliZ(0) @ qml.PauliX(1))
+
+            tape = qml.tape.QuantumScript.from_queue(q)
+            tape.trainable_params = {0, 1}
+            tapes, fn = qml.gradients.hadamard_grad(tape)
+            jac = fn(dev.batch_execute(tapes))
+            jac = qml.math.stack(jac)
+
+        res = t.jacobian(jac, params)
+        print(res)
+
+    @pytest.mark.torch
+    def test_torch(self):
+        """Tests that the output of the finite-difference transform
+        can be differentiated using Torch, yielding second derivatives."""
+        import torch
+
+        dev = qml.device("default.qubit.torch", wires=3)
+        params = torch.tensor([0.543, -0.654], dtype=torch.float64, requires_grad=True)
+
+        def cost(x):
+            with qml.queuing.AnnotatedQueue() as q:
+                qml.RX(x[0], wires=[0])
+                qml.RY(x[1], wires=[1])
+                qml.CNOT(wires=[0, 1])
+                qml.expval(qml.PauliZ(0) @ qml.PauliX(1))
+
+            tape = qml.tape.QuantumScript.from_queue(q)
+            tapes, fn = qml.gradients.hadamard_grad(tape)
+
+            jac = fn(dev.batch_execute(tapes))
+            return jac
+
+        res = torch.autograd.functional.jacobian(cost, params)
+        print(res)
+
+    @pytest.mark.jax
+    def test_jax(self):
+        """Tests that the output of the finite-difference transform
+        can be differentiated using JAX, yielding second derivatives."""
+        import jax
+        from jax import numpy as jnp
+        from jax.config import config
+
+        config.update("jax_enable_x64", True)
+
+        dev = qml.device("default.qubit.jax", wires=3)
+        params = jnp.array([0.543, -0.654])
+
+        def cost_fn(x):
+            with qml.queuing.AnnotatedQueue() as q:
+                qml.RX(x[0], wires=[0])
+                qml.RY(x[1], wires=[1])
+                qml.CNOT(wires=[0, 1])
+                qml.expval(qml.PauliZ(0) @ qml.PauliX(1))
+
+            tape = qml.tape.QuantumScript.from_queue(q)
+            tape.trainable_params = {0, 1}
+            tapes, fn = qml.gradients.hadamard_grad(tape)
+
+            jac = fn(dev.batch_execute(tapes))
+            return jac
+
+        res = jax.jacobian(cost_fn)(params)
