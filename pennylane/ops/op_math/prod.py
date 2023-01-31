@@ -61,6 +61,19 @@ def prod(*ops, do_queue=True, id=None, lazy=True):
     Returns:
         ~ops.op_math.Prod: the operator representing the product.
 
+    .. note::
+
+        This operator supports batched operands:
+
+        >>> op = qml.prod(qml.RX(np.array([1, 2, 3]), wires=0), qml.PauliX(1))
+        >>> op.matrix().shape
+        (3, 4, 4)
+
+        But it doesn't support batching of operators:
+
+        >>> op = qml.prod(np.array([qml.RX(0.5, 0), qml.RZ(0.3, 0)]), qml.PauliZ(0))
+        AttributeError: 'numpy.ndarray' object has no attribute 'wires'
+
     .. seealso:: :class:`~.ops.op_math.Prod`
 
     **Example**
@@ -98,17 +111,6 @@ class Prod(CompositeOp):
     Keyword Args:
         do_queue (bool): determines if the product operator will be queued. Default is True.
         id (str or None): id for the product operator. Default is None.
-
-    .. note::
-
-        This operator supports batched operands:
-        >>> op = qml.prod(qml.RX(np.array([1, 2, 3]), wires=0), qml.PauliX(1))
-        >>> op.matrix().shape
-        (3, 4, 4)
-
-        But it doesn't support batching of operators:
-        >>> op = qml.prod(np.array([qml.RX(0.5, 0), qml.RZ(0.3, 0)]), qml.PauliZ(0))
-        AttributeError: 'numpy.ndarray' object has no attribute 'wires'
 
     .. seealso:: :func:`~.ops.op_math.prod`
 
