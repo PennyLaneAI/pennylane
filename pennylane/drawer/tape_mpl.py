@@ -73,18 +73,6 @@ def _add_barrier(drawer, layer, mapped_wires, op):
 
 
 # pylint: disable=unused-argument
-def _add_snapshot(drawer, layer, mapped_wires, op):
-    ymin = min(mapped_wires) - 0.5
-    ymax = max(mapped_wires) + 0.5
-    xmin = layer - 0.1
-    xmax = layer + 0.1
-    drawer.ax.vlines(layer - 0.1, ymin=ymin, ymax=ymax)
-    drawer.ax.vlines(layer + 0.1, ymin=ymin, ymax=ymax)
-    drawer.ax.hlines(ymax, xmin=xmin, xmax=xmax)
-    drawer.ax.hlines(ymin, xmin=xmin, xmax=xmax)
-
-
-# pylint: disable=unused-argument
 def _add_wirecut(drawer, layer, mapped_wires, op):
     ymin = min(mapped_wires) - 0.5
     ymax = max(mapped_wires) + 0.5
@@ -101,7 +89,6 @@ special_cases = {
     ops.CZ: _add_cz,
     ops.CCZ: _add_cz,
     ops.Barrier: _add_barrier,
-    ops.Snapshot: _add_snapshot,
     ops.WireCut: _add_wirecut,
 }
 """Dictionary mapping special case classes to functions for drawing them."""
@@ -143,7 +130,11 @@ def _tape_mpl(tape, wire_order=None, show_all_wires=False, decimals=None, **kwar
             else:
                 op_control_wires = getattr(op, "control_wires", [])
                 control_wires = [wire_map[w] for w in op_control_wires]
-                target_wires = [wire_map[w] for w in op.wires if w not in op_control_wires]
+                target_wires = (
+                    [wire_map[w] for w in op.wires if w not in op_control_wires]
+                    if len(op.wires) != 0
+                    else wire_map.values()
+                )
                 control_values = op.hyperparameters.get("control_values", None)
 
                 if control_values is None:
