@@ -797,6 +797,7 @@ class TestSpecialUnitaryIntegration:
         assert qml.math.shape(res) == ()
         assert qml.math.isclose(res, self.exp)
 
+    @pytest.mark.autograd
     def test_qnode_autograd(self):
         """Test that the QNode executes with Autograd.
         Neither hardware-ready nor autodiff gradients are available in Autograd."""
@@ -809,6 +810,7 @@ class TestSpecialUnitaryIntegration:
         assert qml.math.shape(res) == ()
         assert qml.math.isclose(res, self.exp)
 
+    @pytest.mark.jax
     @pytest.mark.parametrize("use_jit", [False, True])
     @pytest.mark.parametrize("shots, atol", [(None, 1e-6), (10000, 1e-1)])
     def test_qnode_jax(self, shots, atol, use_jit):
@@ -838,6 +840,7 @@ class TestSpecialUnitaryIntegration:
         assert qml.math.shape(jac) == (15,)
         assert not qml.math.allclose(jac, jac * 0.0)
 
+    @pytest.mark.torch
     @pytest.mark.parametrize("shots, atol", [(None, 1e-6), (10000, 1e-1)])
     def test_qnode_torch(self, shots, atol):
         """Test that the QNode executes and is differentiable with Torch. The shots
@@ -856,6 +859,7 @@ class TestSpecialUnitaryIntegration:
         assert qml.math.shape(jac) == (15,)
         assert not qml.math.allclose(jac, jac * 0.0)
 
+    @pytest.mark.tf
     @pytest.mark.parametrize("shots, atol", [(None, 1e-6), (10000, 1e-1)])
     def test_qnode_tf(self, shots, atol):
         """Test that the QNode executes and is differentiable with TensorFlow. The shots
@@ -882,8 +886,13 @@ class TestTmpPauliRot:
 
     def test_has_matrix_false(self):
         """Test that TmpPauliRot reports to not have a matrix."""
-        assert not TmpPauliRot.has_matrix
-        assert not TmpPauliRot(0.2, "X", 0).has_matrix
+        assert TmpPauliRot.has_matrix is False
+        assert TmpPauliRot(0.2, "X", 0).has_matrix is False
+
+    def test_has_grad_method(self):
+        """Test that TmpPauliRot reports to have an analytic grad method."""
+        assert TmpPauliRot.grad_method == "A"
+        assert TmpPauliRot(0.2, "X", 0).grad_method == "A"
 
     def test_repr(self):
         """Test the string representation of TmpPauliRot."""
