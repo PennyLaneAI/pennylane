@@ -16,6 +16,7 @@
 import pytest
 
 import pennylane as qml
+from pennylane import numpy as np
 from pennylane.devices.qubit import create_initial_state
 from pennylane.operation import StatePrep
 
@@ -48,3 +49,17 @@ class TestInitializeState:
         state = create_initial_state([0, 1], prep_operation=prep_op)
         assert qml.math.allequal(state, [1 / 2] * 4)
         assert qml.math.get_interface(state) == interface
+
+    def test_create_initial_state_with_BasisState(self):
+        """Tests that create_initial_state works with a real state-prep operator."""
+        prep_op = qml.BasisState([0, 1, 0], wires=[0, 1, 2])
+        state = create_initial_state([0, 1, 2], prep_operation=prep_op)
+        assert state[0, 1, 0] == 1
+        state[0, 1, 0] = 0  # set to zero to make test below simple
+        assert qml.math.allequal(state, np.zeros((2, 2, 2)))
+
+    def test_create_initialize_state_prefers_op_interface_over_like(self):
+        """Tests that the like argument is ignored when a prep-op is provided."""
+        prep_op = self.DefaultPrep([0, 0, 0, 1], wires=[0, 1])
+        state = create_initial_state([0, 1], prep_operation=prep_op, like="torch")
+        assert qml.math.get_interface(state) == "numpy"
