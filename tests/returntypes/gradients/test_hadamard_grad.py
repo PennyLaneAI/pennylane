@@ -969,3 +969,4 @@ class TestHadamardTestGradDiff:
             return jac
 
         res = jax.jacobian(cost_fn)(params)
+        print(res)
