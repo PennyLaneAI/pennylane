@@ -118,6 +118,14 @@ class TestStateVector:
         ket[one_position] = 0  # everything else should be zero, as we assert below
         assert np.allclose(np.zeros((2,) * num_wires), ket)
 
+    def test_QubitStateVector_reordering(self):
+        """Tests that wires get re-ordered as expected."""
+        qsv_op = qml.QubitStateVector(np.array([1, -1, 1j, -1j]) / 2, wires=[0, 1])
+        ket = qsv_op.state_vector(wire_order=[2, 1, 3, 0])
+        expected = np.zeros((2, 2, 2, 2), dtype=np.complex128)
+        expected[0, :, 0, :] = np.array([[1, 1j], [-1, -1j]]) / 2
+        assert np.array_equal(ket, expected)
+
     @pytest.mark.all_interfaces
     @pytest.mark.parametrize("interface", ["numpy", "jax", "torch", "tensorflow"])
     def test_QubitStateVector_state_vector_preserves_parameter_type(self, interface):

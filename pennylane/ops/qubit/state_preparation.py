@@ -155,20 +155,32 @@ class QubitStateVector(StatePrep):
         return [MottonenStatePreparation(state, wires)]
 
     def state_vector(self, wire_order=None):
+        num_op_wires = len(self.wires)
+        op_vector = reshape(self.parameters[0], (2,) * num_op_wires)
+
         if wire_order is None:
-            return reshape(self.parameters[0], (2,) * len(self.wires))
+            return op_vector
 
         wires = Wires(wire_order)
         if not wires.contains_wires(self.wires):
             raise WireError("Custom wire_order must contain all QubitStateVector wires")
-        num_wires = len(wires)
-        indices = [0] * num_wires
-        for base_wire_idx in [wires.index(w) for w in self.wires]:
-            indices[base_wire_idx] = slice(None)  # same as ":"
 
-        ket = np.zeros((2,) * num_wires)
-        ket[tuple(indices)] = reshape(self.parameters[0], (2,) * len(self.wires))
-        return convert_like(ket, self.parameters[0])
+        num_total_wires = len(wire_order)
+        indices = tuple([slice(None)] * num_op_wires + [0] * (num_total_wires - num_op_wires))
+        ket = np.zeros((2,) * num_total_wires, dtype=np.complex128)
+        ket[indices] = op_vector
+
+        # unless wire_order is [*self.wires, *new_wires], need to rearrange
+        if (op_wires := list(self.wires)) != wire_order[:num_op_wires]:
+            new_order = op_wires + list(set(wires) - set(op_wires))
+            for i, wire in enumerate(wire_order):
+                # after each loop, the i'th axis will represent the correct wire
+                i_wire_pos = new_order.index(wire)
+                if i_wire_pos != i:
+                    ket = np.swapaxes(ket, i, i_wire_pos)
+                    new_order[i], new_order[i_wire_pos] = new_order[i_wire_pos], new_order[i]
+
+        return convert_like(ket, op_vector)
 
 
 class QubitDensityMatrix(Operation):
