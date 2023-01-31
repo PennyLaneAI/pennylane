@@ -428,6 +428,10 @@
   Please provide a seed to each individual function instead if you want controllable results.
   [(#3624)](https://github.com/PennyLaneAI/pennylane/pull/3624)
 
+* `qml.transforms.measurement_grouping` has been removed. Users should use `qml.transforms.hamiltonian_expand`
+  instead.
+  [(#3701)](https://github.com/PennyLaneAI/pennylane/pull/3701)
+
 <h3>Deprecations</h3>
 
 * Deprecate the `collections` module.
@@ -501,6 +505,7 @@ Soran Jahangiri
 Christina Lee
 Albert Mitjans Coma
 Romain Moyard
+Mudit Pandey
 Borja Requena
 Matthew Silverman
 Antal Száva
