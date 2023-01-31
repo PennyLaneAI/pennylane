@@ -38,7 +38,7 @@ to verify and test quantum gradient computations.
 Next generation devices
 -----------------------
 
-:class:`~.QuantumDevice` in an experimantal interface for the next generation of devices that
+:class:`~.DeviceDriver` in an experimantal interface for the next generation of devices that
 will eventually replace :class:`~.Device` and :class:`~.QubitDevice`.
 
 .. currentmodule:: pennylane.devices
@@ -46,11 +46,11 @@ will eventually replace :class:`~.Device` and :class:`~.QubitDevice`.
     :toctree: api
 
     ExecutionConfig
-    QuantumDevice
+    DeviceDriver
 
 """
 
-from .device_api import QuantumDevice
+from .device_api import DeviceDriver
 
 # DefaultQubitTF and DefaultQubitAutograd not imported here since this
 # would lead to an automatic import of tensorflow and autograd, which are

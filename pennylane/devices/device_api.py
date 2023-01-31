@@ -23,16 +23,16 @@ from typing import Callable, Union, Sequence, Tuple
 from pennylane.tape import QuantumTape
 from pennylane import Tracker
 
-from .execution_config import ExecutionConfig
+from .execution_config import ExecutionConfig, DefaultExecutionConfig
 
 QuantumTapeBatch = Sequence[QuantumTape]
 QuantumTape_or_Batch = Union[QuantumTape, QuantumTapeBatch]
 
-Config_or_Batch = Union[None, ExecutionConfig, Sequence[ExecutionConfig]]
+Config_or_Batch = Union[ExecutionConfig, Sequence[ExecutionConfig]]
 
 # pylint: disable=unused-argument, no-self-use
-class QuantumDevice(abc.ABC):
-    """An experimental PennyLane device.
+class DeviceDriver(abc.ABC):
+    """An experimental PennyLane device driver.
 
     The child classes can define any number of class specific arguments and keyword arguments.
 
@@ -40,12 +40,6 @@ class QuantumDevice(abc.ABC):
     return shape specification.
 
     Only the ``execute`` function must be defined to construct a device.
-
-    .. warning::
-
-        The ``QuantumTape`` objects passed to the device may inherit from :class:`~.AnnotatedQueue` and have a threading lock.
-        To use these objects in a distributed manner, please convert them to a :class:`~.QuantumScript` internally to remove
-        the threading lock before sending them to different threads.
 
     .. details::
         :title: Design Motivation
@@ -65,14 +59,14 @@ class QuantumDevice(abc.ABC):
     .. details::
         :title: Porting from the old interface
 
-        :meth:`~.Device.batch_execute` and :meth:`~.Device.execute` are now a single method, :meth:`~.QuantumDevice.execute`
+        :meth:`~.Device.batch_execute` and :meth:`~.Device.execute` are now a single method, :meth:`~.DeviceDriver.execute`
 
-        :meth:`~.Device.batch_transform` and :meth:`~.Device.expand_fn` are now a single method, :meth:`~.QuantumDevice.preprocess`
+        :meth:`~.Device.batch_transform` and :meth:`~.Device.expand_fn` are now a single method, :meth:`~.DeviceDriver.preprocess`
 
-        Shot information is no longer stored on the device, but instead provided by a runtime argument, the :class:`~.ExecutionConfig`. Devices
-        may define their own default values in the absence of specified values in the execution config.
+        Shot information is no longer stored on the device, but instead specified on individual input :class:`~.QuantumTape`.
+        If the individual :class:`~.QuantumTape` does not specify shot information, device defaults should be used instead.
 
-        The old devices defined a :meth:`~.Device.capabilities` dictionary that defined characterisitics of the devices and controlled various
+        The old devices defined a :meth:`~.Device.capabilities` dictionary that defined characterisitßics of the devices and controlled various
         preprocessing and validation steps, such as ``"supports_broadcasting"``.  These capabilites should now be handled by the
         :meth:`~.QuantumDevice.preprocess` method. For example, if a device does not support broadcasting, ``preprocess`` should
         split a quantum script with broadcasted parameters into a batch of quantum scripts. If the device does not support mid circuit
@@ -101,11 +95,12 @@ class QuantumDevice(abc.ABC):
 
         Execution config properties most relevant for devices are:
 
-        * ``shots``: Either an integer or a tuple of integer. A tuple of integers represenents a shot vector.
-
         * ``device_options``: A dictionary of device specific options. For example, the python device may have `use_multiprocessing`
           as a key. These should be documented in the class docstring.
 
+        * ``gradient_method``: Only ``"device"`` and ``"backprop"`` options must be handled by the device.
+
+        * ``derivative_order``: Relevant for requested device derivatives.
 
     """
 
@@ -134,14 +129,14 @@ class QuantumDevice(abc.ABC):
     def preprocess(
         self,
         circuits: QuantumTape_or_Batch,
-        execution_config: Config_or_Batch = None,
+        execution_config: Config_or_Batch = DefaultExecutionConfig,
     ) -> Tuple[QuantumTapeBatch, Callable]:
         """Device preprocessing function.
 
         Args:
             circuits (Union[QuantumTape, Sequence[QuantumTape]]): The circuit or a batch of circuits to preprocess
                 before execution on the device
-            execution_config (ExecutionConfig): A datastructure describing the parameters needed to fully describe
+            execution_config (Union[ExecutionConfig, Sequence[ExecutionConfig]]): A datastructure describing the parameters needed to fully describe
                 the execution. Includes such information as shots.
 
         Returns:
@@ -163,7 +158,7 @@ class QuantumDevice(abc.ABC):
         device doesn't support finite shots but the ``execution_config`` requests it.
 
         Processing steps can depend on the requested gradient method. For example, when the device gradient method is requested,
-        preprocessing can decompose the operations till they all have
+        preprocessing can decompose the operations till they all have a generator.
 
         """
 
@@ -183,12 +178,16 @@ class QuantumDevice(abc.ABC):
         return circuit_batch, blank_postprocessing_fn
 
     @abc.abstractmethod
-    def execute(self, circuits: QuantumTape_or_Batch, execution_config: Config_or_Batch = None):
-        """Execute a quantum script or a batch of quantum scripts and turn it into results.
+    def execute(
+        self,
+        circuits: QuantumTape_or_Batch,
+        execution_config: Config_or_Batch = DefaultExecutionConfig,
+    ):
+        """Execute a circuit or a batch of circuits and turn it into results.
 
         Args:
-            circuits (Union[QuantumTape, Sequence[QuantumTape]]): the quantum script(s) to be executed
-            execution_config (Union[None, ExecutionConfig, Sequence[ExecutionConfg]]): a datastructure with all additional information required for execution
+            circuits (Union[QuantumTape, Sequence[QuantumTape]]): the quantum circuits to be executed
+            execution_config (Union[ExecutionConfig, Sequence[ExecutionConfg]]): a datastructure with additional information required for execution
 
         Returns:
             A numeric result of the computation.
@@ -254,20 +253,23 @@ class QuantumDevice(abc.ABC):
         raise NotImplementedError
 
     @classmethod
-    def supports_differentiation(cls, execution_config: Config_or_Batch = None) -> bool:
+    def supports_derivatives(
+        cls, execution_config: ExecutionConfig = DefaultExecutionConfig
+    ) -> bool:
         """Determine whether or not a gradient is available with a given execution configuration.
 
         Default behaviour assumes first order derivatives exist if :meth:`~.differentiate` is overriden.
 
         Args:
             execution_config (ExecutionConfig): A description of the hyperparameters for the desired computation.
+              Note that this method accepts only a single ``ExecutionConfig``, not an iterable of them.
 
         Returns:
             Bool
 
         **Example:**
 
-        For example, the Python device will a device differentiation via the adjoint differentiation algorithm
+        For example, the Python device will support device differentiation via the adjoint differentiation algorithm
         if the order is ``1`` and the execution occurs with no shots ``shots=None``.
 
         >>> config = ExecutionConfig(derivative_order=1, shots=None, gradient_method="device")
@@ -292,21 +294,25 @@ class QuantumDevice(abc.ABC):
         False
 
         """
-        if getattr(execution_config, "gradient_method", None) != "device":
+        execution_config = execution_config or ExecutionConfig()
+        if execution_config.gradient_method != "device":
             return False
-        order = getattr(execution_config, "derivative_order", 1)
-        return cls.differentiate != QuantumDevice.differentiate if order == 1 else False
+        return (
+            cls.compute_derivatives != DeviceDriver.compute_derivatives
+            if execution_config.derivative_order == 1
+            else False
+        )
 
-    def differentiate(
+    def compute_derivatives(
         self,
         circuits: QuantumTape_or_Batch,
-        execution_config: Config_or_Batch = None,
+        execution_config: Config_or_Batch = DefaultExecutionConfig,
     ):
         """Calculate the jacobian of either a single or a batch of Quantum Scripts.
 
         Args:
             circuits (Union[QuantumTape, Sequence[QuantumTape]]): the QuantumTape to be executed
-            execution_config (Union[None, ExecutionConfig, Sequence[ExecutionConfg]]): a datastructure with all additional information required for execution
+            execution_config (Union[ExecutionConfig, Sequence[ExecutionConfg]]): a datastructure with all additional information required for execution
 
         Returns:
             Tuple: The jacobian for each trainable parameter
@@ -327,16 +333,16 @@ class QuantumDevice(abc.ABC):
         """
         raise NotImplementedError
 
-    def execute_and_differentiate(
+    def execute_and_compute_derivatives(
         self,
         circuits: QuantumTape_or_Batch,
-        execution_config: Config_or_Batch = None,
+        execution_config: Config_or_Batch = DefaultExecutionConfig,
     ):
         """Compute the results and jacobians of QuantumTapes at the same time.
 
         Args:
             circuits (Union[QuantumTape, Sequence[QuantumTape]]): the QuantumTape or batch to be executed
-            execution_config (Union[None, ExecutionConfig, Sequence[ExecutionConfg]]: a datastructure with all additional information required for execution
+            execution_config (Union[ExecutionConfig, Sequence[ExecutionConfg]]): a datastructure with all additional information required for execution
 
         Returns:
             tuple, tuple: A numeric result of the computation and the gradient.
@@ -349,7 +355,7 @@ class QuantumDevice(abc.ABC):
         diff gradients, calculating the result and gradient at the same can save computational work.
 
         """
-        return self.execute(circuits, execution_config), self.differentiate(
+        return self.execute(circuits, execution_config), self.compute_derivatives(
             circuits, execution_config
         )
 
@@ -357,14 +363,14 @@ class QuantumDevice(abc.ABC):
         self,
         circuits: QuantumTape_or_Batch,
         tangents: Tuple[Number],
-        execution_config: Config_or_Batch = None,
+        execution_config: Config_or_Batch = DefaultExecutionConfig,
     ):
         r"""The jacobian vector product used in forward mode calculation of derivatives.
 
         Args:
             circuits (Union[QuantumTape, Sequence[QuantumTape]]): the QuantumTape to be executed
             tangents (tensor-like): Gradient vector for input parameters.
-            execution_config (Union[None, ExecutionConfig, Sequence[ExecutionConfg]]): a datastructure with all additional information required for execution
+            execution_config (Union[ExecutionConfig, Sequence[ExecutionConfg]]): a datastructure with all additional information required for execution
 
         Returns:
             Tuple[tensor-like]: A numeric result of computing the jacobian vector product
@@ -396,14 +402,14 @@ class QuantumDevice(abc.ABC):
         self,
         circuits: QuantumTape_or_Batch,
         tangents: Tuple[Number],
-        execution_config: Config_or_Batch = None,
+        execution_config: Config_or_Batch = DefaultExecutionConfig,
     ):
         """Execute a batch of quantum scripts and compute their jacobian vector products.
 
         Args:
             circuits (Union[QuantumTape, Sequence[QuantumTape]]): the QuantumTape to be executed
             tangents (tensor-like): Gradient vector for input parameters.
-            execution_config (Union[None, ExecutionConfig, Sequence[ExecutionConfg]]): a datastructure with all additional information required for execution
+            execution_config (Union[ExecutionConfig, Sequence[ExecutionConfg]]): a datastructure with all additional information required for execution
 
         Returns:
             Tuple[tensor-like], Tuple[tensor-like]: A numeric result of computing the jacobian vector product
@@ -415,19 +421,19 @@ class QuantumDevice(abc.ABC):
         )
 
     @classmethod
-    def supports_jvp(cls, execution_config: Config_or_Batch = None) -> bool:
+    def supports_jvp(cls, execution_config: Config_or_Batch = DefaultExecutionConfig) -> bool:
         """Whether or not a given device defines a custom jacobian vector product.
 
         Default behaviour assumes this to be ``True`` if :meth:`~.jvp` is overridden.
 
         """
-        return cls.jvp != QuantumDevice.jvp
+        return cls.jvp != DeviceDriver.jvp
 
     def vjp(
         self,
         circuits: QuantumTape_or_Batch,
         cotangents: Tuple[Number],
-        execution_config: Config_or_Batch = None,
+        execution_config: Config_or_Batch = DefaultExecutionConfig,
     ):
         r"""The vector jacobian product used in reversed mode differentiation.
 
@@ -435,7 +441,7 @@ class QuantumDevice(abc.ABC):
             circuits (Union[QuantumTape, Sequence[QuantumTape]]): the QuantumTape to be executed
             cotangents (Tuple[Number]): Gradient-output vector. Must have shape matching the output shape of the
                 corresponding circuit
-            execution_config (Union[None, ExecutionConfig, Sequence[ExecutionConfg]]): a datastructure with all additional information required for execution
+            execution_config (Union[ExecutionConfig, Sequence[ExecutionConfg]]): a datastructure with all additional information required for execution
 
         Returns:
             tensor-like: A numeric result of computing the vector jacobian product
@@ -464,7 +470,7 @@ class QuantumDevice(abc.ABC):
         self,
         circuits: QuantumTape_or_Batch,
         cotangents: Tuple[Number],
-        execution_config: Config_or_Batch = None,
+        execution_config: Config_or_Batch = DefaultExecutionConfig,
     ):
         r"""Calculate both the results and the vector jacobian product used in reversed mode differentiation.
 
@@ -472,7 +478,7 @@ class QuantumDevice(abc.ABC):
             circuits (Union[QuantumTape, Sequence[QuantumTape]]): the QuantumTape to be executed
             cotangents Tuple[Number]: Gradient-output vector. Must have shape matching the output shape of the
                 corresponding circuit
-            execution_config (Union[None, ExecutionConfig, Sequence[ExecutionConfg]]): a datastructure with all additional information required for execution
+            execution_config (Union[ExecutionConfig, Sequence[ExecutionConfg]]): a datastructure with all additional information required for execution
 
         Returns:
             Tuple, Tuple: the result of executing the scripts and the numeric result of computing the vector jacobian product
@@ -484,9 +490,9 @@ class QuantumDevice(abc.ABC):
         )
 
     @classmethod
-    def supports_vjp(cls, execution_config: Config_or_Batch = None) -> bool:
+    def supports_vjp(cls, execution_config: Config_or_Batch = DefaultExecutionConfig) -> bool:
         """Whether or not a given device defines a custom vector jacobian product.
 
         Default behaviour assumes this to be ``True`` if :meth:`~.vjp` is overridden.
         """
-        return cls.vjp != QuantumDevice.vjp
+        return cls.vjp != DeviceDriver.vjp
