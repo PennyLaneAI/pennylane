@@ -119,7 +119,7 @@ We can visualize the behaviour in time of the parametrized coefficients for a gi
     plt.tight_layout()
     plt.show()
 
-.. figure:: /pennylane/doc/_static/pulse/parametrized_coefficients_example.png
+.. figure:: ../../_static//pulse/parametrized_coefficients_example.png
             :align: center
             :width: 60%
             :target: javascript:void(0);
@@ -157,7 +157,7 @@ A few additional examples of defining a :class:`~.ParametrizedHamiltonian` are p
 Here we use :func:`~.rect` to create a parametrized coefficient that has a value of ``0`` outside the time interval
 ``t=(1, 7)``, and is defined by ``jnp.polyval(p, t)`` within the interval:
 
-.. figure:: ../../doc/_static/pulse/rect_example.png
+.. figure:: ../../_static/pulse/rect_example.png
             :align: center
             :width: 60%
             :target: javascript:void(0);
