@@ -11,9 +11,10 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+"""Unit tests for the ``Exp`` class"""
+import copy
 
 import pytest
-from copy import copy
 
 import pennylane as qml
 from pennylane import numpy as np
@@ -22,7 +23,7 @@ from pennylane.operation import (
     GeneratorUndefinedError,
     ParameterFrequenciesUndefinedError,
 )
-from pennylane.ops.op_math import Exp, Evolution
+from pennylane.ops.op_math import Evolution, Exp
 
 
 @pytest.mark.parametrize("constructor", (qml.exp, Exp))
@@ -87,6 +88,7 @@ class TestInitialization:
     def test_has_diagonalizing_gates(self, value, constructor):
         """Test that Exp defers has_diagonalizing_gates to base operator."""
 
+        # pylint: disable=too-few-public-methods
         class DummyOp(qml.operation.Operator):
             num_wires = 1
             has_diagonalizing_gates = value
@@ -109,6 +111,7 @@ class TestProperties:
 
         assert op.data == [[coeff], [phi]]
 
+    # pylint: disable=protected-access
     def test_queue_category_ops(self):
         """Test the _queue_category property."""
         assert Exp(qml.PauliX(0), -1.234j)._queue_category == "_ops"
@@ -125,9 +128,105 @@ class TestProperties:
 
         assert not Exp(qml.RX(1.2, wires=0)).is_hermitian
 
+    def test_batching_properties(self):
+        """Test the batching properties and methods."""
+
+        # base is batched
+        base = qml.RX(np.array([1.2, 2.3, 3.4]), 0)
+        op = Exp(base)
+        assert op.batch_size == 3
+
+        # coeff is batched
+        base = qml.RX(1, 0)
+        op = Exp(base, coeff=np.array([1.2, 2.3, 3.4]))
+        assert op.batch_size == 3
+
+        # both are batched
+        base = qml.RX(np.array([1.2, 2.3, 3.4]), 0)
+        op = Exp(base, coeff=np.array([1.2, 2.3, 3.4]))
+        assert op.batch_size == 3
+
+    def test_different_batch_sizes_raises_error(self):
+        """Test that using different batch sizes for base and scalar raises an error."""
+        base = qml.RX(np.array([1.2, 2.3, 3.4]), 0)
+        with pytest.raises(
+            ValueError, match="Broadcasting was attempted but the broadcasted dimensions"
+        ):
+            _ = Exp(base, np.array([0.1, 1.2, 2.3, 3.4]))
+
 
 class TestMatrix:
     """Test the matrix method."""
+
+    def test_base_batching_support(self):
+        """Test that Exp matrix has base batching support."""
+        x = np.array([-1, -2, -3])
+        op = Exp(qml.RX(x, 0), 3)
+        mat = op.matrix()
+        true_mat = qml.math.stack([Exp(qml.RX(i, 0), 3).matrix() for i in x])
+        assert qml.math.allclose(mat, true_mat)
+        assert mat.shape == (3, 2, 2)
+
+    def test_coeff_batching_support(self):
+        """Test that Exp matrix has coeff batching support."""
+        x = np.array([-1, -2, -3])
+        op = Exp(qml.PauliX(0), x)
+        mat = op.matrix()
+        true_mat = qml.math.stack([Exp(qml.PauliX(0), i).matrix() for i in x])
+        assert qml.math.allclose(mat, true_mat)
+        assert mat.shape == (3, 2, 2)
+
+    def test_base_and_coeff_batching_support(self):
+        """Test that Exp matrix has base and coeff batching support."""
+        x = np.array([-1, -2, -3])
+        y = np.array([1, 2, 3])
+        op = Exp(qml.RX(x, 0), y)
+        mat = op.matrix()
+        true_mat = qml.math.stack([Exp(qml.RX(i, 0), j).matrix() for i, j in zip(x, y)])
+        assert qml.math.allclose(mat, true_mat)
+        assert mat.shape == (3, 2, 2)
+
+    @pytest.mark.jax
+    def test_batching_jax(self):
+        """Test that Exp matrix has batching support with the jax interface."""
+        import jax.numpy as jnp
+
+        x = jnp.array([-1, -2, -3])
+        y = jnp.array([1, 2, 3])
+        op = Exp(qml.RX(x, 0), y)
+        mat = op.matrix()
+        true_mat = qml.math.stack([Exp(qml.RX(i, 0), j).matrix() for i, j in zip(x, y)])
+        assert qml.math.allclose(mat, true_mat)
+        assert mat.shape == (3, 2, 2)
+        assert isinstance(mat, jnp.ndarray)
+
+    @pytest.mark.torch
+    def test_batching_torch(self):
+        """Test that Exp matrix has batching support with the torch interface."""
+        import torch
+
+        x = torch.tensor([-1, -2, -3])
+        y = torch.tensor([1, 2, 3])
+        op = Exp(qml.RX(x, 0), y)
+        mat = op.matrix()
+        true_mat = qml.math.stack([Exp(qml.RX(i, 0), j).matrix() for i, j in zip(x, y)])
+        assert qml.math.allclose(mat, true_mat)
+        assert mat.shape == (3, 2, 2)
+        assert isinstance(mat, torch.Tensor)
+
+    @pytest.mark.tf
+    def test_batching_tf(self):
+        """Test that Exp matrix has batching support with the tensorflow interface."""
+        import tensorflow as tf
+
+        x = tf.constant([-1.0, -2.0, -3.0])
+        y = tf.constant([1.0, 2.0, 3.0])
+        op = Exp(qml.RX(x, 0), y)
+        mat = op.matrix()
+        true_mat = qml.math.stack([Exp(qml.RX(i, 0), j).matrix() for i, j in zip(x, y)])
+        assert qml.math.allclose(mat, true_mat)
+        assert mat.shape == (3, 2, 2)
+        assert isinstance(mat, tf.Tensor)
 
     def test_tensor_base_isingxx(self):
         """Test that isingxx can be created with a tensor base."""
@@ -379,7 +478,6 @@ class TestMiscMethods:
     def test_simplify_sprod(self):
         """Test that simplify merges SProd into the coefficent."""
         base = qml.adjoint(qml.PauliX(0))
-        coeff1 = 2.0
         s_op = qml.s_prod(2.0, base)
 
         op = Exp(s_op, 3j)
@@ -410,7 +508,7 @@ class TestMiscMethods:
     def test_copy(self):
         """Tests making a copy."""
         op = Exp(qml.CNOT([0, 1]), 2)
-        copied_op = op.__copy__()
+        copied_op = copy.copy(op)
 
         assert qml.equal(op.base, copied_op.base)
         assert op.data == copied_op.data
@@ -418,7 +516,7 @@ class TestMiscMethods:
 
         for attr, value in vars(copied_op).items():
             if (
-                not attr == "_hyperparameters"
+                attr != "_hyperparameters"
             ):  # hyperparameters contains base, which can't be compared via ==
                 assert vars(op)[attr] == value
 
@@ -467,7 +565,9 @@ class TestIntegration:
         phi_grad = tape.gradient(res, phi)
 
         assert qml.math.allclose(res, tf.cos(phi))
-        assert qml.math.allclose(phi_grad, -tf.sin(phi))
+        assert qml.math.allclose(
+            phi_grad, -tf.sin(phi)  # pylint: disable=invalid-unary-operand-type
+        )
 
     @pytest.mark.torch
     def test_torch_qnode(self):
@@ -618,9 +718,23 @@ class TestIntegration:
             Exp(qml.PauliX(0), -0.5j * phi)
 
         tape = qml.tape.QuantumScript.from_queue(q)
-        qml.drawer.tape_text(tape)
 
-        assert "0: ──Exp─┤  "
+        assert qml.drawer.tape_text(tape) == "0: ──Exp(-0.6j X)─┤  "
+
+    def test_exp_batching(self):
+        """Test execution of a batched Exp operator."""
+        dev = qml.device("default.qubit", wires=1)
+
+        @qml.qnode(dev)
+        def circuit(x):
+            Exp(qml.PauliX(0), 0.5j * x)
+            return qml.expval(qml.PauliY(0))
+
+        x = qml.numpy.array([1.234, 2.34, 3.456])
+        res = circuit(x)
+
+        expected = np.sin(x)
+        assert qml.math.allclose(res, expected)
 
 
 class TestDifferentiation:
@@ -655,7 +769,7 @@ class TestDifferentiation:
         with pytest.raises(GeneratorUndefinedError):
             op.generator()
         with pytest.raises(ParameterFrequenciesUndefinedError):
-            op.parameter_frequencies
+            _ = op.parameter_frequencies
 
     def test_parameter_frequency_with_parameters_in_base_operator(self):
         """Test that parameter_frequency raises an error for the Exp class, but not the

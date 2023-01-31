@@ -17,7 +17,6 @@ computing the scalar product of operations.
 """
 from typing import Union
 
-
 import pennylane as qml
 import pennylane.math as qnp
 from pennylane.operation import Operator
@@ -25,7 +24,7 @@ from pennylane.ops.op_math.pow import Pow
 from pennylane.ops.op_math.sum import Sum
 from pennylane.queuing import QueuingManager
 
-from .symbolicop import SymbolicOp
+from .symbolicop import ScalarSymbolicOp
 
 
 def s_prod(scalar, operator, lazy=True, do_queue=True, id=None):
@@ -42,6 +41,25 @@ def s_prod(scalar, operator, lazy=True, do_queue=True, id=None):
         id (str or None): id for the scalar product operator. Default is None.
     Returns:
         ~ops.op_math.SProd: The operator representing the scalar product.
+
+    .. note::
+
+        This operator supports a batched base, a batched coefficient and a combination of both:
+
+        >>> op = qml.s_prod(scalar=4, operator=qml.RX([1, 2, 3], wires=0))
+        >>> qml.matrix(op).shape
+        (3, 2, 2)
+        >>> op = qml.s_prod(scalar=[1, 2, 3], operator=qml.RX(1, wires=0))
+        >>> qml.matrix(op).shape
+        (3, 2, 2)
+        >>> op = qml.s_prod(scalar=[4, 5, 6], operator=qml.RX([1, 2, 3], wires=0))
+        >>> qml.matrix(op).shape
+        (3, 2, 2)
+
+        But it doesn't support batching of operators:
+
+        >>> op = qml.s_prod(scalar=4, operator=[qml.RX(1, wires=0), qml.RX(2, wires=0)])
+        AttributeError: 'list' object has no attribute 'batch_size'
 
     .. seealso:: :class:`~.ops.op_math.SProd` and :class:`~.ops.op_math.SymbolicOp`
 
@@ -65,7 +83,7 @@ def s_prod(scalar, operator, lazy=True, do_queue=True, id=None):
     return sprod_op
 
 
-class SProd(SymbolicOp):
+class SProd(ScalarSymbolicOp):
     r"""Arithmetic operator representing the scalar product of an
     operator with the given scalar.
 
@@ -117,13 +135,10 @@ class SProd(SymbolicOp):
     _name = "SProd"
 
     def __init__(self, scalar: Union[int, float, complex], base: Operator, do_queue=True, id=None):
-        self.scalar = scalar
-        super().__init__(base=base, do_queue=do_queue, id=id)
+        super().__init__(base=base, scalar=scalar, do_queue=do_queue, id=id)
 
         if base_pauli_rep := getattr(self.base, "_pauli_rep", None):
-            pr = {}
-            for pw, coeff in base_pauli_rep.items():
-                pr[pw] = qnp.dot(coeff, self.scalar)  # to support dispatching over interfaces
+            pr = {pw: qnp.dot(coeff, self.scalar) for pw, coeff in base_pauli_rep.items()}
             self._pauli_rep = qml.pauli.PauliSentence(pr)
         else:
             self._pauli_rep = None

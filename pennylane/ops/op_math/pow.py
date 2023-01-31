@@ -32,7 +32,7 @@ from pennylane.ops.identity import Identity
 from pennylane.queuing import QueuingManager, apply
 from pennylane.wires import Wires
 
-from .symbolicop import SymbolicOp
+from .symbolicop import ScalarSymbolicOp, SymbolicOp
 
 _superscript = str.maketrans("0123456789.+-", "⁰¹²³⁴⁵⁶⁷⁸⁹⋅⁺⁻")
 
@@ -54,6 +54,25 @@ def pow(base, z=1, lazy=True, do_queue=True, id=None):
 
     Returns:
         Operator
+
+    .. note::
+
+        This operator supports a batched base, a batched coefficient and a combination of both:
+
+        >>> op = qml.pow(qml.RX([1, 2, 3], wires=0), z=4)
+        >>> qml.matrix(op).shape
+        (3, 2, 2)
+        >>> op = qml.pow(qml.RX(1, wires=0), z=[1, 2, 3])
+        >>> qml.matrix(op).shape
+        (3, 2, 2)
+        >>> op = qml.pow(qml.RX([1, 2, 3], wires=0), z=[4, 5, 6])
+        >>> qml.matrix(op).shape
+        (3, 2, 2)
+
+        But it doesn't support batching of operators:
+
+        >>> op = qml.pow([qml.RX(1, wires=0), qml.RX(2, wires=0)], z=4)
+        AttributeError: 'list' object has no attribute 'name'
 
     .. seealso:: :class:`~.Pow`, :meth:`~.Operator.pow`.
 
@@ -128,7 +147,7 @@ class PowOperation(Operation):
         return self.base.control_wires
 
 
-class Pow(SymbolicOp):
+class Pow(ScalarSymbolicOp):
     """Symbolic operator denoting an operator raised to a power.
 
     Args:
@@ -197,7 +216,7 @@ class Pow(SymbolicOp):
         self.hyperparameters["z"] = z
         self._name = f"{base.name}**{z}"
 
-        super().__init__(base, do_queue=do_queue, id=id)
+        super().__init__(base, scalar=z, do_queue=do_queue, id=id)
 
         if isinstance(self.z, int) and self.z > 0:
             if (
