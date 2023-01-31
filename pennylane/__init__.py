@@ -87,7 +87,6 @@ from pennylane.transforms import (
     compile,
     cond,
     defer_measurements,
-    measurement_grouping,
     metric_tensor,
     specs,
     qfunc_transform,
