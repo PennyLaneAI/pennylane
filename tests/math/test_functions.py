@@ -2713,3 +2713,31 @@ class TestFft:
         jac = t.jacobian(out, arg)
         # The tensorflow Jacobian is the complex conjugate of the holomorphic derivative
         assert qml.math.allclose(jac, qml.math.conj(self.exp_jac_fft[name]))
+
+
+class TestIfft2Tensorflow:
+    """Test that custom behaviour is correct in qml.math.fft submodule for Tensorflow."""
+
+    def test_errors(self):
+        """Test that qml.math.fft.ifft2 raises errors correctly when used with Tensorflow
+        and unsupported kwargs."""
+        x = tf.Variable([0.4])
+        with pytest.raises(ValueError, match="does not support passing axes"):
+            _ = qml.math.fft.ifft2(x, axes=(0, 2))
+
+        with pytest.raises(ValueError, match="does not support the 'norm' keyword"):
+            _ = qml.math.fft.ifft2(x, norm="ortho")
+
+        with pytest.raises(ValueError, match="does not support the 's' keyword"):
+            _ = qml.math.fft.ifft2(x, s=(0, 2))
+
+    @pytest.mark.parametrize(
+        "dtype_in, exp_dtype_out", [(tf.float32, tf.complex64), (tf.float64, tf.complex128)]
+    )
+    def test_casting(self, dtype_in, exp_dtype_out):
+        """Test that qml.math.fft.ifft2 casts real-valued inputs correctly to the
+        corresponding complex values."""
+        x = onp.outer([0, np.pi / 2, np.pi], [0, np.pi])
+        x = tf.Variable(x, dtype=dtype_in)
+        out = qml.math.fft.ifft2(x)
+        assert out.dtype == exp_dtype_out
