@@ -79,7 +79,7 @@ def _hadamard_grad(
     if aux_wire is None:
         aux_wire = _get_aux_wire(aux_wire, tape, device_wires)
     elif aux_wire.labels[0] in tape.wires:
-            raise qml.QuantumFunctionError("The auxiliary wire is already used in the tape.")
+        raise qml.QuantumFunctionError("The auxiliary wire is already used in the tape.")
 
     if any(isinstance(m, VarianceMP) for m in tape.measurements):
         raise qml.QuantumFunctionError(
@@ -189,7 +189,10 @@ def _expval_hadamard_grad(tape, argnum, aux_wire):
         multi_params = len(tape.trainable_params) > 1
 
         grads = []
-        final_res = [[2 * coeff * r for r in res] if isinstance(res, tuple) else 2 * coeff * res for coeff, res in zip(coeffs, results)]
+        final_res = [
+            [2 * coeff * r for r in res] if isinstance(res, tuple) else 2 * coeff * res
+            for coeff, res in zip(coeffs, results)
+        ]
 
         # Post process for probs
         if measurements_probs:

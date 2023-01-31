@@ -471,7 +471,7 @@ class TestHadamardGrad:
 
         tape = qml.tape.QuantumScript.from_queue(q)
         with warnings.catch_warnings(record=True) as record:
-            grad_fn(tape)
+            grad_fn(tape, dev=dev)
 
         assert len(record) == 0
 
