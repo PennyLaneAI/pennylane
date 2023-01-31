@@ -102,11 +102,13 @@ class Prod(CompositeOp):
     .. note::
 
         This operator supports batched operands:
+
         >>> op = qml.prod(qml.RX(np.array([1, 2, 3]), wires=0), qml.PauliX(1))
         >>> op.matrix().shape
         (3, 4, 4)
 
         But it doesn't support batching of operators:
+
         >>> op = qml.prod(np.array([qml.RX(0.5, 0), qml.RZ(0.3, 0)]), qml.PauliZ(0))
         AttributeError: 'numpy.ndarray' object has no attribute 'wires'
 
@@ -125,7 +127,7 @@ class Prod(CompositeOp):
 
     .. note::
         When a Prod operator is applied in a circuit, its factors are applied in the reverse order.
-        (i.e ``Prod(op1, op2)`` corresponds to :math:`\hat{op}_{1}\dot\hat{op}_{2}` which indicates
+        (i.e ``Prod(op1, op2)`` corresponds to :math:`\hat{op}_{1}\cdot\hat{op}_{2}` which indicates
         first applying :math:`\hat{op}_{2}` then :math:`\hat{op}_{1}` in the circuit. We can see this
         in the decomposition of the operator.
 
@@ -245,8 +247,8 @@ class Prod(CompositeOp):
         r"""Decomposition of the product operator is given by each factor applied in succession.
 
         Note that the decomposition is the list of factors returned in reversed order. This is
-        to support the intuition that when we write $\hat{O} = \hat{A} \dot \hat{B}$ it is implied
-        that $\hat{B}$ is applied to the state before $\hat{A}$ in the quantum circuit.
+        to support the intuition that when we write :math:`\hat{O} = \hat{A} \cdot \hat{B}` it is implied
+        that :math:`\hat{B}` is applied to the state before :math:`\hat{A}` in the quantum circuit.
         """
         if qml.queuing.QueuingManager.recording():
             return [qml.apply(op) for op in self[::-1]]
