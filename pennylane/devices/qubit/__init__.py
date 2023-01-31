@@ -21,7 +21,7 @@ at your own discretion.
 .. autosummary::
     :toctree: api
     create_initial_state
-    apply_operaiton
+    apply_operation
 """
 
 from .apply_operation import apply_operation
