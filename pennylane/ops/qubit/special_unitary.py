@@ -33,7 +33,7 @@ _pauli_letters = "IXYZ"
 
 
 @lru_cache
-def pauli_basis(num_wires):
+def pauli_basis_matrices(num_wires):
     r"""Compute all elements of the Pauli basis of the Lie algebra :math:`\mathfrak{su}(N)`
     as a single, dense tensor.
 
@@ -69,7 +69,7 @@ def pauli_basis(num_wires):
 
     **Example**
 
-    >>> pauli_basis(1)
+    >>> pauli_basis_matrices(1)
     array([[[ 0.+0.j,  1.+0.j],
             [ 1.+0.j,  0.+0.j]],
            [[ 0.+0.j, -0.-1.j],
@@ -77,7 +77,7 @@ def pauli_basis(num_wires):
            [[ 1.+0.j,  0.+0.j],
             [ 0.+0.j, -1.+0.j]]])
 
-    >>> pauli_basis(3).shape
+    >>> pauli_basis_matrices(3).shape
     (63, 8, 8)
     """
     if num_wires < 1:
@@ -90,7 +90,7 @@ def pauli_basis(num_wires):
 
 
 @lru_cache
-def pauli_words(num_wires):
+def pauli_basis_strings(num_wires):
     r"""Compute all :math:`n`-qubit Pauli words except ``"I"*num_wires``,
     corresponding to the Pauli basis of the Lie algebra :math:`\mathfrak{su}(N)`.
 
@@ -116,52 +116,12 @@ def pauli_words(num_wires):
 
     **Example**
 
-    >>> pauli_words(1)
+    >>> pauli_basis_strings(1)
     ['X', 'Y', 'Z']
-    >>> len(pauli_words(3))
+    >>> len(pauli_basis_strings(3))
     63
     """
     return ["".join(letters) for letters in product(_pauli_letters, repeat=num_wires)][1:]
-
-
-def special_unitary_matrix(theta, num_wires):
-    r"""Compute the matrix of an element in SU(N), given by the Pauli basis coordinated
-    of the associated Lie algebra element.
-
-    Args:
-        theta (tensor_like): Pauli coordinates of the exponent :math:`A(\theta)`.
-        num_wires (int): The number of wires the matrix acts on.
-
-    Returns:
-        tensor_like: matrix of the special unitary corresponding to ``theta``. It
-            has the shape ``(2**num_wires, 2**num_wires)``.
-
-    The :math:`4^n-1` Pauli basis elements of the Lie algebra :math:`\mathfrak{su}(N)`
-    for :math:`n` qubits are
-    :math:`P_m\in\{I, X, Y, Z\}^{\otimes n}\setminus\{I^{\otimes n}\}`, and the special
-    unitary matrix is computed as
-
-    .. math::
-
-        U(\theta) = \exp(i\sum_{m=1}^d \theta_m P_m)
-
-    See :func:`~.ops.qubit.matrix_ops.pauli_words` for the ordering of Pauli words.
-
-    .. note::
-
-        Note that this method internally handles a complex-valued tensor of size
-        ``(4**num_wires, 2**num_wires, 2**num_wires)``, which requires at least
-        ``4 ** (2 * num_wires - 13)`` GB of memory (at default precision).
-    """
-    if num_wires > 5:
-        theta = qml.math.hstack([[0], theta])
-        A = sum(
-            t * reduce(np.kron, letters)
-            for t, letters in zip(theta, product(_pauli_matrices, repeat=num_wires))
-        )
-    else:
-        A = qml.math.tensordot(theta, pauli_basis(num_wires), axes=[[-1], [0]])
-    return qml.math.expm(1j * A)
 
 
 class SpecialUnitary(Operation):
@@ -211,9 +171,9 @@ class SpecialUnitary(Operation):
     The parameter ``theta`` refers to all Pauli words (except for the identity) in
     lexicographical order, which looks like the following for one and two qubits:
 
-    >>> qml.ops.qubit.matrix_ops.pauli_words(1) # 4**1-1 = 3 Pauli words
+    >>> qml.ops.qubit.matrix_ops.pauli_basis_strings(1) # 4**1-1 = 3 Pauli words
     ['X', 'Y', 'Z']
-    >>> qml.ops.qubit.matrix_ops.pauli_words(2) # 4**2-1 = 15 Pauli words
+    >>> qml.ops.qubit.matrix_ops.pauli_basis_strings(2) # 4**2-1 = 15 Pauli words
     ['IX', 'IY', 'IZ', 'XI', 'XX', 'XY', 'XZ', 'YI', 'YX', 'YY', 'YZ', 'ZI', 'ZX', 'ZY', 'ZZ']
 
     **Examples**
@@ -295,11 +255,25 @@ class SpecialUnitary(Operation):
         .. seealso:: :meth:`~.SpecialUnitary.matrix`
 
         Args:
-            theta (tensor_like): Pauli coordinates of the exponent :math:`A(\theta)`
-            num_wires (int): The number of wires
+            theta (tensor_like): Pauli coordinates of the exponent :math:`A(\theta)`.
+            num_wires (int): The number of wires the matrix acts on.
 
         Returns:
-            tensor_like: canonical matrix
+            tensor_like: canonical matrix of the special unitary corresponding to ``theta``. It
+                has the shape ``(2**num_wires, 2**num_wires)``.
+
+        Compute the matrix of an element in SU(N), given by the Pauli basis coordinated
+        of the associated Lie algebra element.
+        The :math:`4^n-1` Pauli basis elements of the Lie algebra :math:`\mathfrak{su}(N)`
+        for :math:`n` qubits are
+        :math:`P_m\in\{I, X, Y, Z\}^{\otimes n}\setminus\{I^{\otimes n}\}`, and the special
+        unitary matrix is computed as
+
+        .. math::
+
+            U(\theta) = \exp(i\sum_{m=1}^d \theta_m P_m)
+
+        See :func:`~.ops.qubit.matrix_ops.pauli_basis_strings` for the ordering of Pauli words.
 
         .. note::
 
@@ -314,7 +288,15 @@ class SpecialUnitary(Operation):
         array([[ 0.83004499-0.28280371j,  0.0942679 +0.47133952j],
                [-0.0942679 +0.47133952j,  0.83004499+0.28280371j]])
         """
-        return special_unitary_matrix(theta, num_wires)
+        if num_wires > 5:
+            theta = qml.math.hstack([[0], theta])
+            A = sum(
+                t * reduce(np.kron, letters)
+                for t, letters in zip(theta, product(_pauli_matrices, repeat=num_wires))
+            )
+        else:
+            A = qml.math.tensordot(theta, pauli_basis_matrices(num_wires), axes=[[-1], [0]])
+        return qml.math.expm(1j * A)
 
     @staticmethod
     def compute_decomposition(theta, wires, num_wires):
@@ -341,7 +323,7 @@ class SpecialUnitary(Operation):
         [QubitUnitary(array([[ 0.83004499-0.28280371j,  0.0942679 +0.47133952j],
             [-0.0942679 +0.47133952j,  0.83004499+0.28280371j]]), wires=[0])]
         """
-        return [qml.QubitUnitary(special_unitary_matrix(theta, num_wires), wires=wires)]
+        return [qml.QubitUnitary(qml.SpecialUnitary.compute_matrix(theta, num_wires), wires=wires)]
 
     def adjoint(self):
         return SpecialUnitary(-self.data[0], wires=self.wires)

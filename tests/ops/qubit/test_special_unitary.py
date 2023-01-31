@@ -20,9 +20,8 @@ from scipy.linalg import expm
 import pytest
 import pennylane as qml
 from pennylane.ops.qubit.special_unitary import (
-    pauli_basis,
-    pauli_words,
-    special_unitary_matrix,
+    pauli_basis_matrices,
+    pauli_basis_strings,
     _pauli_letters,
     _pauli_matrices,
 )
@@ -30,9 +29,9 @@ from pennylane.wires import Wires
 
 
 class TestPauliUtils:
-    """Test the utility functions ``pauli_basis`` and ``pauli_words``."""
+    """Test the utility functions ``pauli_basis_matrices`` and ``pauli_basis_strings``."""
 
-    def test_pauli_basis_letters(self):
+    def test_pauli_letters(self):
         """Test that the hardcoded Pauli letters and matrices match the PennyLane
         convention regarding order and prefactors."""
         assert _pauli_letters == "IXYZ"
@@ -42,28 +41,28 @@ class TestPauliUtils:
             assert np.allclose(op.matrix(), mat)
 
     @pytest.mark.parametrize("n", [1, 2, 3])
-    def test_pauli_basis(self, n):
+    def test_pauli_basis_matrices(self, n):
         """Test that the Pauli basis matrices are correct."""
-        basis = pauli_basis(n)
+        basis = pauli_basis_matrices(n)
         d = 4**n - 1
         assert basis.shape == (d, 2**n, 2**n)
         assert np.allclose(basis, basis.conj().transpose([0, 2, 1]))
         assert all(np.allclose(np.eye(2**n), b @ b) for b in basis)
 
-    def test_pauli_basis_raises_too_few_wires(self):
-        """Test that pauli_basis raises an error if less than one wire is given."""
+    def test_pauli_basis_matrices_raises_too_few_wires(self):
+        """Test that pauli_basis_matrices raises an error if less than one wire is given."""
         with pytest.raises(ValueError, match="Require at least one"):
-            _ = pauli_basis(0)
+            _ = pauli_basis_matrices(0)
 
-    def test_pauli_basis_raises_too_many_wires(self):
-        """Test that pauli_basis raises an error if too many wires are given."""
+    def test_pauli_basis_matrices_raises_too_many_wires(self):
+        """Test that pauli_basis_matrices raises an error if too many wires are given."""
         with pytest.raises(ValueError, match="Creating the Pauli basis tensor"):
-            _ = pauli_basis(8)
+            _ = pauli_basis_matrices(8)
 
     @pytest.mark.parametrize("n", [1, 2, 3])
-    def test_pauli_words(self, n):
+    def test_pauli_basis_strings(self, n):
         """Test that the Pauli words are correct."""
-        words = pauli_words(n)
+        words = pauli_basis_strings(n)
         d = 4**n - 1
         assert len(words) == d  # There are d words
         assert len(set(words)) == d  # The words are unique
@@ -94,78 +93,6 @@ special_matrix_cases = [
     (2, 0.8 * eye[-1], qml.IsingZZ(-1.6, [0, 1]).matrix()),
 ]
 
-
-class TestSpecialUnitaryMatrix:
-    """Test the special_unitary_matrix utility function."""
-
-    @pytest.mark.parametrize("n", [1, 2, 3])
-    @pytest.mark.parametrize("seed", [214, 2491, 8623])
-    def test_special_unitary_matrix_random(self, n, seed):
-        """Test that ``special_unitary_matrix`` returns a correctly-shaped
-        unitary matrix for random input parameters."""
-        np.random.seed(seed)
-        d = 4**n - 1
-        theta = np.random.random(d)
-        matrix = special_unitary_matrix(theta, n)
-        assert matrix.shape == (2**n, 2**n)
-        assert np.allclose(matrix @ matrix.conj().T, np.eye(2**n))
-
-    @pytest.mark.parametrize("seed", [214, 8623])
-    def test_special_unitary_matrix_random_many_wires(self, seed):
-        """Test that ``special_unitary_matrix`` returns a correctly-shaped
-        unitary matrix for random input parameters and more than 5 wires."""
-        np.random.seed(seed)
-        n = 6
-        d = 4**n - 1
-        theta = np.random.random(d)
-        matrix = special_unitary_matrix(theta, n)
-        assert matrix.shape == (2**n, 2**n)
-        assert np.allclose(matrix @ matrix.conj().T, np.eye(2**n))
-
-    @pytest.mark.parametrize("n", [1, 2])
-    @pytest.mark.parametrize("seed", [214, 2491, 8623])
-    def test_special_unitary_matrix_random_broadcasted(self, n, seed):
-        """Test that ``special_unitary_matrix`` returns a correctly-shaped
-        unitary matrix for broadcasted random input parameters."""
-        np.random.seed(seed)
-        d = 4**n - 1
-        theta = np.random.random((2, d))
-        matrix = special_unitary_matrix(theta, n)
-        assert matrix.shape == (2, 2**n, 2**n)
-        assert all(np.allclose(m @ m.conj().T, np.eye(2**n)) for m in matrix)
-        separate_matrices = [special_unitary_matrix(t, n) for t in theta]
-        assert qml.math.allclose(separate_matrices, matrix)
-
-    @pytest.mark.parametrize("n", [1, 2, 3])
-    def test_special_unitary_matrix_single_param(self, n):
-        """Test that ``special_unitary_matrix`` returns a Pauli rotation matrix for
-        inputs with a single non-zero parameter, and that the parameter mapping
-        matches the lexicographical ordering of ``pauli_words``."""
-        d = 4**n - 1
-        words = pauli_words(n)
-        for word, theta in zip(words, np.eye(d)):
-            x = 0.2142
-            matrix = special_unitary_matrix(x * theta, n)
-            paulirot_matrix = qml.PauliRot(-2 * x, word, wires=list(range(n))).matrix()
-            assert np.allclose(matrix @ matrix.conj().T, np.eye(2**n))
-            assert np.allclose(paulirot_matrix, matrix)
-
-    @pytest.mark.parametrize("n, theta, expected", special_matrix_cases)
-    def test_special_unitary_matrix_special_cases(self, n, theta, expected):
-        """Tests that ``special_unitary_matrix`` returns the correct matrices
-        for a few specific cases."""
-        matrix = special_unitary_matrix(theta, n)
-        assert qml.math.allclose(matrix, expected)
-
-    def test_special_unitary_matrix_special_cases_broadcasted(self):
-        """Tests that ``special_unitary_matrix`` returns the correct matrices
-        for a few specific cases broadcasted together."""
-        _, thetas, exp = zip(*special_matrix_cases[1:])
-        theta = np.stack(thetas)
-        matrix = special_unitary_matrix(theta, 2)
-        assert qml.math.allclose(matrix, np.stack(exp))
-
-
 theta_1 = np.array([0.4, 0.1, 0.1])
 theta_2 = np.array([0.4, 0.1, 0.1, 0.6, 0.2, 0.3, 0.1, 0.2, 0, 0.2, 0.2, 0.2, 0.1, 0.5, 0.2])
 n_and_theta = [(1, theta_1), (2, theta_2)]
@@ -173,6 +100,98 @@ n_and_theta = [(1, theta_1), (2, theta_2)]
 
 class TestSpecialUnitary:
     """Tests for the Operation ``SpecialUnitary``."""
+
+    @pytest.mark.parametrize("n", [1, 2, 3])
+    @pytest.mark.parametrize("seed", [214, 2491, 8623])
+    def test_compute_matrix_random(self, n, seed):
+        """Test that ``compute_matrix`` returns a correctly-shaped
+        unitary matrix for random input parameters."""
+        np.random.seed(seed)
+        d = 4**n - 1
+        theta = np.random.random(d)
+        matrices = [
+            qml.SpecialUnitary(theta, list(range(n))).matrix(),
+            qml.SpecialUnitary.compute_matrix(theta, n),
+        ]
+        for matrix in matrices:
+            assert matrix.shape == (2**n, 2**n)
+            assert np.allclose(matrix @ matrix.conj().T, np.eye(2**n))
+
+    @pytest.mark.parametrize("seed", [214, 8623])
+    def test_compute_matrix_random_many_wires(self, seed):
+        """Test that ``compute_matrix`` returns a correctly-shaped
+        unitary matrix for random input parameters and more than 5 wires."""
+        np.random.seed(seed)
+        n = 6
+        d = 4**n - 1
+        theta = np.random.random(d)
+        matrices = [
+            qml.SpecialUnitary(theta, list(range(n))).matrix(),
+            qml.SpecialUnitary.compute_matrix(theta, n),
+        ]
+        for matrix in matrices:
+            assert matrix.shape == (2**n, 2**n)
+            assert np.allclose(matrix @ matrix.conj().T, np.eye(2**n))
+
+    @pytest.mark.parametrize("n", [1, 2])
+    @pytest.mark.parametrize("seed", [214, 2491, 8623])
+    def test_compute_matrix_random_broadcasted(self, n, seed):
+        """Test that ``compute_matrix`` returns a correctly-shaped
+        unitary matrix for broadcasted random input parameters."""
+        np.random.seed(seed)
+        d = 4**n - 1
+        theta = np.random.random((2, d))
+        matrices = [
+            qml.SpecialUnitary(theta, list(range(n))).matrix(),
+            qml.SpecialUnitary.compute_matrix(theta, n),
+        ]
+        separate_matrices = [qml.SpecialUnitary.compute_matrix(t, n) for t in theta]
+        for matrix in matrices:
+            assert matrix.shape == (2, 2**n, 2**n)
+            assert all(np.allclose(m @ m.conj().T, np.eye(2**n)) for m in matrix)
+            assert qml.math.allclose(separate_matrices, matrix)
+
+    @pytest.mark.parametrize("n", [1, 2, 3])
+    def test_compute_matrix_single_param(self, n):
+        """Test that ``compute_matrix`` returns a Pauli rotation matrix for
+        inputs with a single non-zero parameter, and that the parameter mapping
+        matches the lexicographical ordering of ``pauli_basis_strings``."""
+        d = 4**n - 1
+        words = pauli_basis_strings(n)
+        for word, theta in zip(words, np.eye(d)):
+            x = 0.2142
+            matrices = [
+                qml.SpecialUnitary(x * theta, list(range(n))).matrix(),
+                qml.SpecialUnitary.compute_matrix(x * theta, n),
+            ]
+            paulirot_matrix = qml.PauliRot(-2 * x, word, list(range(n))).matrix()
+            for matrix in matrices:
+                assert np.allclose(matrix @ matrix.conj().T, np.eye(2**n))
+                assert np.allclose(paulirot_matrix, matrix)
+
+    @pytest.mark.parametrize("n, theta, expected", special_matrix_cases)
+    def test_compute_matrix_special_cases(self, n, theta, expected):
+        """Tests that ``compute_matrix`` returns the correct matrices
+        for a few specific cases."""
+        matrices = [
+            qml.SpecialUnitary(theta, list(range(n))).matrix(),
+            qml.SpecialUnitary.compute_matrix(theta, n),
+        ]
+        for matrix in matrices:
+            assert qml.math.allclose(matrix, expected)
+
+    def test_compute_matrix_special_cases_broadcasted(self):
+        """Tests that ``compute_matrix`` returns the correct matrices
+        for a few specific cases broadcasted together."""
+        _, thetas, exp = zip(*special_matrix_cases[1:])
+        n = 2
+        theta = np.stack(thetas)
+        matrices = [
+            qml.SpecialUnitary(theta, list(range(n))).matrix(),
+            qml.SpecialUnitary.compute_matrix(theta, n),
+        ]
+        for matrix in matrices:
+            assert qml.math.allclose(matrix, np.stack(exp))
 
     @pytest.mark.parametrize("n, theta", n_and_theta)
     def test_decomposition(self, n, theta):
@@ -185,7 +204,7 @@ class TestSpecialUnitary:
         assert len(decomp) == 1 == len(decomp2)
         assert decomp[0].name == "QubitUnitary" == decomp2[0].name
         assert decomp[0].wires == Wires(wires) == decomp2[0].wires
-        mat = special_unitary_matrix(theta, n)
+        mat = qml.SpecialUnitary.compute_matrix(theta, n)
         assert np.allclose(decomp[0].data[0], mat)
         assert np.allclose(decomp2[0].data[0], mat)
 
@@ -202,73 +221,9 @@ class TestSpecialUnitary:
         assert decomp[0].name == "QubitUnitary" == decomp2[0].name
         assert decomp[0].wires == Wires(wires) == decomp2[0].wires
 
-        mat = special_unitary_matrix(theta, n)
+        mat = qml.SpecialUnitary.compute_matrix(theta, n)
         assert np.allclose(decomp[0].data[0], mat)
         assert np.allclose(decomp2[0].data[0], mat)
-
-    @pytest.mark.parametrize("n, theta", n_and_theta)
-    def test_matrix_representation(self, n, theta, tol):
-        """Test that the matrix representation is defined correctly"""
-        wires = list(range(n))
-        res_static = qml.SpecialUnitary.compute_matrix(theta, n)
-        res_dynamic = qml.SpecialUnitary(theta, wires).matrix()
-        expected = special_unitary_matrix(theta, n)
-        assert np.allclose(res_static, expected, atol=tol)
-        assert np.allclose(res_dynamic, expected, atol=tol)
-
-    @pytest.mark.parametrize("n, theta, expected", special_matrix_cases)
-    def test_matrix_representation_special_cases(self, n, theta, expected):
-        """Tests that ``special_unitary_matrix`` returns the correct matrices
-        for a few specific cases."""
-        wires = list(range(n))
-        res_static = qml.SpecialUnitary.compute_matrix(theta, n)
-        res_dynamic = qml.SpecialUnitary(theta, wires).matrix()
-        assert qml.math.allclose(res_static, expected)
-        assert qml.math.allclose(res_dynamic, expected)
-
-    @pytest.mark.parametrize("n, theta", n_and_theta)
-    def test_matrix_representation_broadcasted(self, n, theta, tol):
-        """Test that the matrix representation is defined correctly for
-        a broadcasted SpecialUnitary."""
-        theta = np.outer([0.2, 1.0, -0.3], theta)
-        wires = list(range(n))
-        res_static = qml.SpecialUnitary.compute_matrix(theta, n)
-        res_dynamic = qml.SpecialUnitary(theta, wires).matrix()
-        expected = special_unitary_matrix(theta, n)
-        assert np.allclose(res_static, expected, atol=tol)
-        assert np.allclose(res_dynamic, expected, atol=tol)
-
-    @pytest.mark.parametrize("n", [1, 2, 3])
-    def test_matrix_unitarity(self, n):
-        """Test that the matrix of SpecialUnitary is unitary."""
-        wires = list(range(n))
-        d = 4**n - 1
-        theta = np.random.random(d)
-        U = qml.SpecialUnitary(theta, wires).matrix()
-        assert qml.math.allclose(U.conj().T @ U, np.eye(2**n))
-
-    @pytest.mark.parametrize("n", [1, 2, 3])
-    def test_matrix_PauliRot(self, n):
-        """Test that the matrix of SpecialUnitary matches the matrix
-        of a PauliRot operation if only one term is active in the parameters."""
-        wires = list(range(n))
-        d = 4**n - 1
-        words = pauli_words(n)
-        prefactors = np.random.random(d)
-        thetas = prefactors * np.eye(d)
-        for theta, pref, word in zip(thetas, prefactors, words):
-            U = qml.SpecialUnitary(theta, wires)
-            rot = qml.PauliRot(-2 * pref, word, wires)
-            assert qml.math.allclose(U.matrix(), rot.matrix())
-
-    @pytest.mark.parametrize("batch_size", [1, 3])
-    @pytest.mark.parametrize("n, theta", n_and_theta)
-    def test_matrix_broadcasting(self, theta, n, batch_size):
-        """Test that the matrix of SpecialUnitary works with broadcasting and is unitary."""
-        wires = list(range(n))
-        theta = np.outer(np.arange(batch_size), theta)
-        U = qml.SpecialUnitary(theta, wires).matrix()
-        assert all(qml.math.allclose(_U, special_unitary_matrix(_t, n)) for _U, _t in zip(U, theta))
 
     @pytest.mark.parametrize("n, theta", n_and_theta)
     def test_adjoint(self, theta, n):
@@ -311,7 +266,7 @@ class TestSpecialUnitary:
             return qml.probs(wires=[0])
 
         def comparison(x):
-            state = special_unitary_matrix(x, 1) @ jnp.array([1, 0])
+            state = qml.SpecialUnitary.compute_matrix(x, 1) @ jnp.array([1, 0])
             return jnp.abs(state) ** 2
 
         jac = jax.jacobian(circuit)(theta)
@@ -340,7 +295,7 @@ class TestSpecialUnitary:
             return qml.probs(wires=[0])
 
         def comparison(x):
-            state = special_unitary_matrix(x, 1) @ jnp.array([1, 0])
+            state = qml.SpecialUnitary.compute_matrix(x, 1) @ jnp.array([1, 0])
             return jnp.abs(state) ** 2
 
         jac = jax.jacobian(circuit)(theta)
@@ -371,7 +326,7 @@ class TestSpecialUnitary:
 
         def comparison(x):
             state = qml.math.tensordot(
-                special_unitary_matrix(x, 1),
+                qml.SpecialUnitary.compute_matrix(x, 1),
                 tf.constant([1, 0], dtype=tf.complex128),
                 axes=[[1], [0]],
             )
