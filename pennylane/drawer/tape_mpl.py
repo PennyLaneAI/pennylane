@@ -73,6 +73,18 @@ def _add_barrier(drawer, layer, mapped_wires, op):
 
 
 # pylint: disable=unused-argument
+def _add_snapshot(drawer, layer, mapped_wires, op):
+    ymin = min(mapped_wires) - 0.5
+    ymax = max(mapped_wires) + 0.5
+    xmin = layer - 0.1
+    xmax = layer + 0.1
+    drawer.ax.vlines(layer - 0.1, ymin=ymin, ymax=ymax)
+    drawer.ax.vlines(layer + 0.1, ymin=ymin, ymax=ymax)
+    drawer.ax.hlines(ymax, xmin=xmin, xmax=xmax)
+    drawer.ax.hlines(ymin, xmin=xmin, xmax=xmax)
+
+
+# pylint: disable=unused-argument
 def _add_wirecut(drawer, layer, mapped_wires, op):
     ymin = min(mapped_wires) - 0.5
     ymax = max(mapped_wires) + 0.5
@@ -89,6 +101,7 @@ special_cases = {
     ops.CZ: _add_cz,
     ops.CCZ: _add_cz,
     ops.Barrier: _add_barrier,
+    ops.Snapshot: _add_snapshot,
     ops.WireCut: _add_wirecut,
 }
 """Dictionary mapping special case classes to functions for drawing them."""
@@ -110,6 +123,9 @@ def _tape_mpl(tape, wire_order=None, show_all_wires=False, decimals=None, **kwar
 
     drawer = MPLDrawer(n_layers=n_layers, n_wires=n_wires, wire_options=wire_options)
 
+    if n_wires == 0:
+        return drawer.fig, drawer.ax
+
     if fontsize is not None:
         drawer.fontsize = fontsize
 
@@ -119,7 +135,9 @@ def _tape_mpl(tape, wire_order=None, show_all_wires=False, decimals=None, **kwar
         for op in layer_ops:
             specialfunc = special_cases.get(op.__class__, None)
             if specialfunc is not None:
-                mapped_wires = [wire_map[w] for w in op.wires]
+                mapped_wires = (
+                    [wire_map[w] for w in op.wires] if len(op.wires) != 0 else wire_map.values()
+                )
                 specialfunc(drawer, layer, mapped_wires, op)
 
             else:

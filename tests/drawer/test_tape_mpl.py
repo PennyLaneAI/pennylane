@@ -16,10 +16,9 @@
 See section on "Testing Matplotlib based code" in the "Software Tests"
 page in the developement guide.
 """
-
+# pylint: disable=protected-access, expression-not-assigned
 
 import pytest
-from pytest_mock import mocker
 import pennylane as qml
 
 from pennylane.drawer import tape_mpl
@@ -349,7 +348,6 @@ class TestSpecialGates:
 
         tape = QuantumScript.from_queue(q_tape)
         _, ax = tape_mpl(tape)
-        layer = 0
 
         assert len(ax.lines) == 3
         assert len(ax.collections) == 2
@@ -359,14 +357,26 @@ class TestSpecialGates:
     def test_Snapshot(self):
         """Test Snapshot gets correct special call."""
 
+        # Nothing should render when the only operation is `qml.Snapshot`
         with qml.queuing.AnnotatedQueue() as q_tape:
             qml.Snapshot()
 
         tape = QuantumScript.from_queue(q_tape)
         _, ax = tape_mpl(tape)
 
-        assert len(ax.lines) == 3
-        assert len(ax.collections) == 2
+        assert len(ax.lines) == 0
+        assert len(ax.collections) == 0
+
+        # Need to add a gate with wires to the tape for snapshot to render
+        with qml.queuing.AnnotatedQueue() as q_tape:
+            qml.Snapshot()
+            qml.Hadamard(0)
+
+        tape = QuantumScript.from_queue(q_tape)
+        _, ax = tape_mpl(tape)
+
+        assert len(ax.lines) == 1  # One line because one wire is rendered
+        assert len(ax.collections) == 4  # 4 lines used to render the `Snapshot`
 
         plt.close()
 
@@ -378,7 +388,6 @@ class TestSpecialGates:
 
         tape = QuantumScript.from_queue(q_tape)
         _, ax = tape_mpl(tape)
-        layer = 0
 
         assert len(ax.lines) == 2
         assert len(ax.texts) == 3
@@ -392,7 +401,6 @@ class TestSpecialGates:
 
         tape = QuantumScript.from_queue(q_tape)
         _, ax = tape_mpl(tape)
-        layer = 0
 
         assert len(ax.lines) == 1
         assert len(ax.collections) == 0
