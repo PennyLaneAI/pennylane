@@ -34,7 +34,7 @@ from pennylane.wires import Wires
 
 from .sprod import SProd
 from .sum import Sum
-from .symbolicop import SymbolicOp
+from .symbolicop import ScalarSymbolicOp
 
 
 def exp(op, coeff=1, num_steps=1, id=None):
@@ -46,6 +46,25 @@ def exp(op, coeff=1, num_steps=1, id=None):
 
     Returns:
        :class:`Exp`: A :class`~.operation.Operator` representing an operator exponential.
+
+    .. note::
+
+        This operator supports a batched base, a batched coefficient and a combination of both:
+
+        >>> op = qml.exp(qml.RX([1, 2, 3], wires=0), coeff=4)
+        >>> qml.matrix(op).shape
+        (3, 2, 2)
+        >>> op = qml.exp(qml.RX(1, wires=0), coeff=[1, 2, 3])
+        >>> qml.matrix(op).shape
+        (3, 2, 2)
+        >>> op = qml.exp(qml.RX([1, 2, 3], wires=0), coeff=[4, 5, 6])
+        >>> qml.matrix(op).shape
+        (3, 2, 2)
+
+        But it doesn't support batching of operators:
+
+        >>> op = qml.exp([qml.RX(1, wires=0), qml.RX(2, wires=0)], coeff=4)
+        AttributeError: 'list' object has no attribute 'batch_size'
 
     **Example**
 
@@ -88,7 +107,7 @@ def exp(op, coeff=1, num_steps=1, id=None):
     return Exp(op, coeff, num_steps=num_steps, id=id)
 
 
-class Exp(SymbolicOp, Operation):
+class Exp(ScalarSymbolicOp, Operation):
     """A symbolic operator representating the exponential of a operator.
 
     Args:
@@ -135,10 +154,11 @@ class Exp(SymbolicOp, Operation):
     """
 
     control_wires = Wires([])
+    _name = "Exp"
 
     # pylint: disable=too-many-arguments
-    def __init__(self, base=None, coeff=1, num_steps=1, do_queue=True, id=None):
-        super().__init__(base, do_queue=do_queue, id=id)
+    def __init__(self, base, coeff=1, num_steps=1, do_queue=True, id=None):
+        super().__init__(base, scalar=coeff, do_queue=do_queue, id=id)
         self._name = "Exp"
         self._data = [[coeff], self.base.data]
         self.grad_recipe = [None]
@@ -179,7 +199,7 @@ class Exp(SymbolicOp, Operation):
     @property
     def coeff(self):
         """The numerical coefficient of the operator in the exponent."""
-        return self.data[0][0]
+        return self.scalar
 
     @property
     def num_params(self):
@@ -187,11 +207,11 @@ class Exp(SymbolicOp, Operation):
 
     @property
     def is_hermitian(self):
-        return self.base.is_hermitian and math.imag(self.coeff) == 0
+        return self.base.is_hermitian and math.allequal(math.imag(self.coeff), 0)
 
     @property
     def _queue_category(self):
-        if self.base.is_hermitian and math.real(self.coeff) == 0:
+        if self.base.is_hermitian and math.allequal(math.real(self.coeff), 0):
             return "_ops"
         return None
 
@@ -257,20 +277,23 @@ class Exp(SymbolicOp, Operation):
         raise DecompositionUndefinedError
 
     def matrix(self, wire_order=None):
-
-        coeff_interface = math.get_interface(self.coeff)
-        if coeff_interface == "autograd" and math.requires_grad(self.coeff):
+        coeff_interface = math.get_interface(self.scalar)
+        if coeff_interface == "autograd" and math.requires_grad(self.scalar):
             # math.expm is not differentiable with autograd
             # So we try to do a differentiable construction if possible
             #
             # This won't catch situations when the base matrix is autograd,
             # but at least this provides as much trainablility as possible
             try:
+                eigvals = self.eigvals()
+                eigvals_mat = (
+                    math.stack(math.diag(e) for e in eigvals)
+                    if qml.math.ndim(self.scalar) > 0
+                    else math.diag(eigvals)
+                )
                 if len(self.diagonalizing_gates()) == 0:
-                    eigvals_mat = math.diag(self.eigvals())
                     return expand_matrix(eigvals_mat, wires=self.wires, wire_order=wire_order)
                 diagonalizing_mat = qml.matrix(self.diagonalizing_gates, wire_order=self.wires)()
-                eigvals_mat = math.diag(self.eigvals())
                 mat = diagonalizing_mat.conj().T @ eigvals_mat @ diagonalizing_mat
                 return expand_matrix(mat, wires=self.wires, wire_order=wire_order)
             except OperatorPropertyUndefined:
@@ -279,15 +302,11 @@ class Exp(SymbolicOp, Operation):
                     "Use a different interface if you need backpropagation.",
                     UserWarning,
                 )
-        base_mat = (
-            qml.matrix(self.base) if isinstance(self.base, qml.Hamiltonian) else self.base.matrix()
-        )
-        if coeff_interface == "torch":
-            # other wise get `RuntimeError: Can't call numpy() on Tensor that requires grad.`
-            base_mat = math.convert_like(base_mat, self.coeff)
-        mat = math.expm(self.coeff * base_mat)
+        return super().matrix(wire_order=wire_order)
 
-        return expand_matrix(mat, wires=self.wires, wire_order=wire_order)
+    @staticmethod
+    def _matrix(scalar, mat):
+        return math.expm(scalar * mat)
 
     # pylint: disable=arguments-differ
     def sparse_matrix(self, wire_order=None, format="csr"):
@@ -322,6 +341,9 @@ class Exp(SymbolicOp, Operation):
         """
         base_eigvals = math.convert_like(self.base.eigvals(), self.coeff)
         base_eigvals = math.cast_like(base_eigvals, self.coeff)
+        if qml.math.ndim(self.scalar) > 0:
+            # exp coeff is broadcasted
+            return qml.math.stack([qml.math.exp(c * base_eigvals) for c in self.coeff])
         return qml.math.exp(self.coeff * base_eigvals)
 
     def label(self, decimals=None, base_label=None, cache=None):
