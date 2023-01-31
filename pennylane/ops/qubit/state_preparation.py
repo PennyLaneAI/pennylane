@@ -96,13 +96,12 @@ class BasisState(StatePrep):
             num_wires = len(self.wires)
             indices = prep_vals
         else:
-            new_wires = Wires(wire_order)
-            if not new_wires.contains_wires(self.wires):
+            if not Wires(wire_order).contains_wires(self.wires):
                 raise WireError("Custom wire_order must contain all BasisState wires")
-            num_wires = len(new_wires)
+            num_wires = len(wire_order)
             indices = [0] * num_wires
             for base_wire_label, value in zip(self.wires, prep_vals):
-                indices[new_wires.index(base_wire_label)] = value
+                indices[wire_order.index(base_wire_label)] = value
 
         ket = np.zeros((2,) * num_wires)
         ket[tuple(indices)] = 1
