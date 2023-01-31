@@ -178,8 +178,7 @@ class QubitStateVector(StatePrep):
         if wire_order is None or Wires(wire_order) == self.wires:
             return op_vector
 
-        wires = Wires(wire_order)
-        if not wires.contains_wires(self.wires):
+        if not Wires(wire_order).contains_wires(self.wires):
             raise WireError("Custom wire_order must contain all QubitStateVector wires")
 
         num_total_wires = len(wire_order)
@@ -187,11 +186,12 @@ class QubitStateVector(StatePrep):
         ket = np.zeros((2,) * num_total_wires, dtype=np.complex128)
         ket[indices] = op_vector
 
-        # unless wire_order is [*self.wires, *new_wires], need to rearrange
+        # unless wire_order is [*self.wires, *rest_of_wire_order], need to rearrange
         if (op_wires := list(self.wires)) != wire_order[:num_op_wires]:
-            new_order = op_wires + list(set(wires) - set(op_wires))
+            new_wires = set(wire_order) - set(op_wires)
+            new_order = op_wires + list(new_wires)
             for i, wire in enumerate(wire_order):
-                # after each loop, the i'th axis will represent the correct wire
+                # after each loop iteration, the i'th axis will represent the correct wire
                 i_wire_pos = new_order.index(wire)
                 if i_wire_pos != i:
                     ket = np.swapaxes(ket, i, i_wire_pos)
