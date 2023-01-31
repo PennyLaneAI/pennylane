@@ -2524,105 +2524,192 @@ class TestSize:
         assert r == size
 
 
+@pytest.mark.parametrize("name", ["fft", "ifft", "fft2", "ifft2"])
 class TestFft:
-    """Test qml.math.fft.fft differentiability."""
+    """Test qml.math.fft functions and their differentiability."""
 
-    arg = onp.linspace(0, np.pi, 5)
-    exp = [
-        2.414213,
-        -1.903347 + 0.17493j,
-        -0.55376019 + 0.02838791j,
-        -0.55376019 - 0.02838791j,
-        -1.9033466 - 0.17493416j,
-    ]
-    exp_jac = [
-        [
-            1.0 + 0.0j,
-            1.0 + 0.0j,
-            1.0 + 0.0j,
-            1.0 + 0.0j,
-            1.0 + 0.0j,
+    arg = {
+        "fft": onp.sin(onp.linspace(0, np.pi, 5)) - onp.cos(onp.linspace(0, np.pi, 5)) / 2,
+        "ifft": onp.linspace(0, np.pi, 5),
+        "fft2": onp.outer(
+            0.4 * onp.sin(onp.linspace(0, onp.pi, 3)), np.cos(onp.linspace(onp.pi, 0, 2)) / 2
+        ),
+        "ifft2": onp.outer(
+            0.4 * onp.sin(onp.linspace(0, onp.pi, 3)), np.cos(onp.linspace(onp.pi, 0, 2)) / 2
+        ),
+    }
+
+    exp_fft = {
+        "fft": [
+            2.414213,
+            -1.903347 + 0.17493j,
+            -0.55376019 + 0.02838791j,
+            -0.55376019 - 0.02838791j,
+            -1.9033466 - 0.17493416j,
         ],
-        [
-            1.0 + 0.0j,
-            0.30901699 - 0.95105652j,
-            -0.80901699 - 0.58778525j,
-            -0.80901699 + 0.58778525j,
-            0.30901699 + 0.95105652j,
+        "ifft": [
+            1.57079633 + 0.0j,
+            -0.39269908 - 0.54050392j,
+            -0.39269908 - 0.12759567j,
+            -0.39269908 + 0.12759567j,
+            -0.39269908 + 0.54050392j,
         ],
-        [
-            1.0 + 0.0j,
-            -0.80901699 - 0.58778525j,
-            0.30901699 + 0.95105652j,
-            0.30901699 - 0.95105652j,
-            -0.80901699 + 0.58778525j,
+        "fft2": [[0, -0.4], [0, 0.2 + 0.34641016j], [0, 0.2 - 0.34641016j]],
+        "ifft2": [[0, -1 / 15 + 0.0j], [0, 1 / 30 - 0.05773503j], [0, 1 / 30 + 0.05773503j]],
+    }
+
+    exp_jac_fft = {
+        "fft": [
+            [1, 1, 1, 1, 1],
+            [
+                1,
+                0.30901699 - 0.95105652j,
+                -0.80901699 - 0.58778525j,
+                -0.80901699 + 0.58778525j,
+                0.30901699 + 0.95105652j,
+            ],
+            [
+                1,
+                -0.80901699 - 0.58778525j,
+                0.30901699 + 0.95105652j,
+                0.30901699 - 0.95105652j,
+                -0.80901699 + 0.58778525j,
+            ],
+            [
+                1,
+                -0.80901699 + 0.58778525j,
+                0.30901699 - 0.95105652j,
+                0.30901699 + 0.95105652j,
+                -0.80901699 - 0.58778525j,
+            ],
+            [
+                1,
+                0.30901699 + 0.95105652j,
+                -0.80901699 + 0.58778525j,
+                -0.80901699 - 0.58778525j,
+                0.30901699 - 0.95105652j,
+            ],
         ],
-        [
-            1.0 + 0.0j,
-            -0.80901699 + 0.58778525j,
-            0.30901699 - 0.95105652j,
-            0.30901699 + 0.95105652j,
-            -0.80901699 - 0.58778525j,
+        "ifft": [
+            [0.2 + 0.0j, 0.2 + 0.0j, 0.2 + 0.0j, 0.2 + 0.0j, 0.2 + 0.0j],
+            [
+                0.2 + 0.0j,
+                0.0618034 + 0.1902113j,
+                -0.1618034 + 0.11755705j,
+                -0.1618034 - 0.11755705j,
+                0.0618034 - 0.1902113j,
+            ],
+            [
+                0.2 + 0.0j,
+                -0.1618034 + 0.11755705j,
+                0.0618034 - 0.1902113j,
+                0.0618034 + 0.1902113j,
+                -0.1618034 - 0.11755705j,
+            ],
+            [
+                0.2 + 0.0j,
+                -0.1618034 - 0.11755705j,
+                0.0618034 + 0.1902113j,
+                0.0618034 - 0.1902113j,
+                -0.1618034 + 0.11755705j,
+            ],
+            [
+                0.2 + 0.0j,
+                0.0618034 - 0.1902113j,
+                -0.1618034 - 0.11755705j,
+                -0.1618034 + 0.11755705j,
+                0.0618034 + 0.1902113j,
+            ],
         ],
-        [
-            1.0 + 0.0j,
-            0.30901699 + 0.95105652j,
-            -0.80901699 + 0.58778525j,
-            -0.80901699 - 0.58778525j,
-            0.30901699 - 0.95105652j,
+        "fft2": [
+            [[[1, 1], [1, 1], [1, 1]], [[1, -1], [1, -1], [1, -1]]],
+            [
+                [[1, 1], [-0.5 - (x := 0.8660254j), -0.5 - x], [-0.5 + x, -0.5 + x]],
+                [[1, -1], [-0.5 - x, 0.5 + x], [-0.5 + x, 0.5 - x]],
+            ],
+            [
+                [[1, 1], [-0.5 + x, -0.5 + x], [-0.5 - x, -0.5 - x]],
+                [[1, -1], [-0.5 + x, 0.5 - x], [-0.5 - x, 0.5 + x]],
+            ],
         ],
-    ]
+        "ifft2": [
+            [
+                [[1 / 6, 1 / 6], [1 / 6, 1 / 6], [1 / 6, 1 / 6]],
+                [[1 / 6, -1 / 6], [1 / 6, -1 / 6], [1 / 6, -1 / 6]],
+            ],
+            [
+                [
+                    [1 / 6, 1 / 6],
+                    [-1 / 12 + (x := 0.14433757j), -1 / 12 + x],
+                    [-1 / 12 - x, -1 / 12 - x],
+                ],
+                [[1 / 6, -1 / 6], [-1 / 12 + x, 1 / 12 - x], [-1 / 12 - x, 1 / 12 + x]],
+            ],
+            [
+                [[1 / 6, 1 / 6], [-1 / 12 - x, -1 / 12 - x], [-1 / 12 + x, -1 / 12 + x]],
+                [[1 / 6, -1 / 6], [-1 / 12 - x, 1 / 12 + x], [-1 / 12 + x, 1 / 12 - x]],
+            ],
+        ],
+    }
 
     @staticmethod
-    def fft_real(x):
-        """Compute the real part of an FFT."""
-        return qml.math.real(qml.math.fft.fft(x))
+    def fft_real(x, func=None):
+        """Compute the real part of an FFT function output."""
+        return qml.math.real(func(x))
 
     @staticmethod
-    def fft_imag(x):
-        """Compute the imag part of an FFT."""
-        return qml.math.imag(qml.math.fft.fft(x))
+    def fft_imag(x, func=None):
+        """Compute the imag part of an FFT function output."""
+        return qml.math.imag(func(x))
+
+    def test_numpy(self, name):
+        """Test that the functions are available in Numpy."""
+        func = getattr(qml.math.fft, name)
+        out = func(self.arg[name])
+        assert qml.math.allclose(out, self.exp_fft[name])
 
     @pytest.mark.autograd
-    def test_fft_autograd(self):
+    def test_autograd(self, name):
         """Test that the functions are available in Autograd."""
-        x = np.array(self.arg, requires_grad=True)
-        arg = qml.math.sin(x) - qml.math.cos(x) / 2
-        out = qml.math.fft.fft(arg)
-        assert qml.math.allclose(out, self.exp)
-        jac_real = qml.jacobian(self.fft_real)(arg)
-        jac_imag = qml.jacobian(self.fft_imag)(arg)
-        assert qml.math.allclose(jac_real + 1j * jac_imag, self.exp_jac)
+        func = getattr(qml.math.fft, name)
+        arg = np.array(self.arg[name], requires_grad=True)
+        out = func(arg)
+        assert qml.math.allclose(out, self.exp_fft[name])
+        jac_real = qml.jacobian(self.fft_real)(arg, func=func)
+        jac_imag = qml.jacobian(self.fft_imag)(arg, func=func)
+        assert qml.math.allclose(jac_real + 1j * jac_imag, self.exp_jac_fft[name])
 
     @pytest.mark.jax
-    def test_fft_jax(self):
+    def test_jax(self, name):
         """Test that the functions are available in JAX."""
-        x = jax.numpy.array(self.arg, dtype=jax.numpy.complex64)
-        arg = qml.math.sin(x) - qml.math.cos(x) / 2
-        out = qml.math.fft.fft(arg)
-        assert qml.math.allclose(out, self.exp)
-        jac = jax.jacobian(qml.math.fft.fft, holomorphic=True)(arg)
-        assert qml.math.allclose(jac, self.exp_jac)
+        func = getattr(qml.math.fft, name)
+        arg = jax.numpy.array(self.arg[name], dtype=jax.numpy.complex64)
+        out = func(arg)
+        assert qml.math.allclose(out, self.exp_fft[name])
+        jac = jax.jacobian(func, holomorphic=True)(arg)
+        assert qml.math.allclose(jac, self.exp_jac_fft[name])
 
     @pytest.mark.torch
-    def test_fft_torch(self):
+    def test_torch(self, name):
         """Test that the functions are available in PyTorch."""
-        x = torch.tensor(self.arg, requires_grad=True)
-        arg = qml.math.sin(x) - qml.math.cos(x) / 2
-        out = qml.math.fft.fft(arg)
-        assert qml.math.allclose(out, self.exp)
-        jac_real = torch.autograd.functional.jacobian(self.fft_real, arg)
-        jac_imag = torch.autograd.functional.jacobian(self.fft_imag, arg)
-        assert qml.math.allclose(jac_real + 1j * jac_imag, self.exp_jac)
+        func = getattr(qml.math.fft, name)
+        arg = torch.tensor(self.arg[name], requires_grad=True)
+        out = func(arg)
+        assert qml.math.allclose(out, self.exp_fft[name])
+        jac_real = torch.autograd.functional.jacobian(partial(self.fft_real, func=func), arg)
+        jac_imag = torch.autograd.functional.jacobian(partial(self.fft_imag, func=func), arg)
+        print(jac_real + 1j * jac_imag)
+        print(self.exp_jac_fft[name])
+        assert qml.math.allclose(jac_real + 1j * jac_imag, self.exp_jac_fft[name])
 
     @pytest.mark.tf
-    def test_fft_tf(self):
+    def test_tf(self, name):
         """Test that the functions are available in TensorFlow."""
-        arg = qml.math.cast_like(qml.math.sin(self.arg) - qml.math.cos(self.arg) / 2, 1j)
-        arg = tf.Variable(arg)
+        func = getattr(qml.math.fft, name)
+        arg = tf.Variable(qml.math.cast_like(self.arg[name], 1j))
         with tf.GradientTape(persistent=True) as t:
-            out = qml.math.fft.fft(arg)
-        assert qml.math.allclose(out, self.exp)
+            out = func(arg)
+        assert qml.math.allclose(out, self.exp_fft[name])
         jac = t.jacobian(out, arg)
         # The tensorflow Jacobian is the complex conjugate of the holomorphic derivative
-        assert qml.math.allclose(jac, qml.math.conj(self.exp_jac))
+        assert qml.math.allclose(jac, qml.math.conj(self.exp_jac_fft[name]))
