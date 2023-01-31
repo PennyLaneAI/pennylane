@@ -147,6 +147,12 @@ class TestStateVector:
         with pytest.raises(ValueError, match="Sum of amplitudes-squared does not equal one."):
             _ = qsv_op.state_vector()
 
+    def test_QubitStateVector_wrong_param_size(self):
+        """Tests that the parameter must be of shape (2**num_wires,)."""
+        qsv_op = qml.QubitStateVector([0, 1], wires=[0, 1])
+        with pytest.raises(ValueError, match="State vector must have shape"):
+            _ = qsv_op.state_vector()
+
     @pytest.mark.parametrize(
         "num_wires,wire_order,one_position",
         [
@@ -187,5 +193,13 @@ class TestStateVector:
         op = qml.BasisState([2, 1], wires=[0, 1])
         with pytest.raises(
             ValueError, match="BasisState parameter must consist of 0 or 1 integers."
+        ):
+            _ = op.state_vector()
+
+    def test_BasisState_wrong_param_size(self):
+        """Tests that the parameter must be of length num_wires."""
+        op = qml.BasisState([0], wires=[0, 1])
+        with pytest.raises(
+            ValueError, match="BasisState parameter and wires must be of equal length."
         ):
             _ = op.state_vector()

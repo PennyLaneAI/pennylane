@@ -92,8 +92,10 @@ class BasisState(StatePrep):
         if any(i not in [0, 1] for i in prep_vals):
             raise ValueError("BasisState parameter must consist of 0 or 1 integers.")
 
+        if (num_wires := len(self.wires)) != len(prep_vals):
+            raise ValueError("BasisState parameter and wires must be of equal length.")
+
         if wire_order is None:
-            num_wires = len(self.wires)
             indices = prep_vals
         else:
             if not Wires(wire_order).contains_wires(self.wires):
@@ -171,13 +173,17 @@ class QubitStateVector(StatePrep):
         return [MottonenStatePreparation(state, wires)]
 
     def state_vector(self, wire_order=None):
+        num_op_wires = len(self.wires)
         param = math.cast(self.parameters[0], np.complex128)
+
+        if len(param) != 2**num_op_wires:
+            raise ValueError("State vector must have shape (2**wires,)")
+
         if not math.is_abstract(param):
             norm = math.linalg.norm(param)
             if not math.allclose(norm, 1.0, atol=1e-10):
                 raise ValueError("Sum of amplitudes-squared does not equal one.")
 
-        num_op_wires = len(self.wires)
         op_vector = math.reshape(param, (2,) * num_op_wires)
         if wire_order is None or Wires(wire_order) == self.wires:
             return op_vector
