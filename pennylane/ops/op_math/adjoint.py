@@ -46,6 +46,20 @@ def adjoint(fn, lazy=True):
 
         The adjoint and inverse are identical for unitary gates, but not in general. For example, quantum channels and observables may have different adjoint and inverse operators.
 
+    .. note::
+
+        This function supports a batched operator:
+
+        >>> op = qml.adjoint(qml.RX([1, 2, 3], wires=0))
+        >>> qml.matrix(op).shape
+        (3, 2, 2)
+
+        But it doesn't support batching of operators:
+
+        >>> op = qml.adjoint([qml.RX(1, wires=0), qml.RX(2, wires=0)])
+        ValueError: The object [RX(1, wires=[0]), RX(2, wires=[0])] of type <class 'list'> is not callable.
+        This error might occur if you apply adjoint to a list of operations instead of a function or template.
+
     .. seealso:: :class:`~.ops.op_math.Adjoint` and :meth:`.Operator.adjoint`
 
     **Example**
