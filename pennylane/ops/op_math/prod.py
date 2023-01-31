@@ -128,7 +128,7 @@ class Prod(CompositeOp):
     .. note::
         When a Prod operator is applied in a circuit, its factors are applied in the reverse order.
         (i.e ``Prod(op1, op2)`` corresponds to :math:`\hat{op}_{1}\cdot\hat{op}_{2}` which indicates
-        first applying :math:`\hat{op}_{2}` then :math:`\hat{op}_{1}` in the circuit. We can see this
+        first applying :math:`\hat{op}_{2}` then :math:`\hat{op}_{1}` in the circuit). We can see this
         in the decomposition of the operator.
 
     >>> op = Prod(qml.PauliX(wires=0), qml.PauliZ(wires=1))
