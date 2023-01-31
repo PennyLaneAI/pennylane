@@ -274,25 +274,14 @@ class Exp(ScalarSymbolicOp, Operation):
                 return [getattr(qml, f"R{pauli_word}")(phi=coeff, wires=base.wires)]
             return [qml.PauliRot(theta=coeff, pauli_word=pauli_word, wires=base.wires)]
 
-        op_list = []
+        if isinstance(base, (Hamiltonian, Sum)):
+            coeffs, ops = (
+                base.terms() if isinstance(base, Hamiltonian) else ([1] * len(base), base.operands)
+            )
+            op_list = []
 
-        if isinstance(base, Hamiltonian):
-            coeffs, ops = base.terms()
-            for c, o in zip(coeffs, ops):
+            for c, op in zip(coeffs, ops):
                 c *= coeff
-                if math.real(c) == 0:
-                    pauli_word = qml.pauli.pauli_word_to_string(o)
-                    if pauli_word != "I" * o.num_wires:
-                        c = 2j * c  # need to cancel the coefficients added by PauliRot
-                        op_list.append(qml.PauliRot(theta=c, pauli_word=pauli_word, wires=o.wires))
-                else:
-                    op_list.append(qml.exp(op=o, coeff=c))
-
-            return op_list * self.num_steps
-
-        if isinstance(base, Sum):
-            for op in base.operands:
-                c = coeff
                 if isinstance(op, SProd):
                     c *= op.scalar
                     op = op.base
