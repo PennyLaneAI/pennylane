@@ -101,17 +101,18 @@ class TestStateVector:
     @pytest.mark.parametrize(
         "num_wires,wire_order,one_position",
         [
-            (2, None, (1, 1)),
-            (2, [1, 2], (1, 1)),
-            (3, [0, 1, 2], (0, 1, 1)),
-            (3, ["a", 1, 2], (0, 1, 1)),
-            (3, [1, 2, 0], (1, 1, 0)),
-            (3, [1, 2, "a"], (1, 1, 0)),
+            (2, None, (1, 0)),
+            (2, [1, 2], (1, 0)),
+            (3, [0, 1, 2], (0, 1, 0)),
+            (3, ["a", 1, 2], (0, 1, 0)),
+            (3, [1, 2, 0], (1, 0, 0)),
+            (3, [1, 2, "a"], (1, 0, 0)),
+            (3, [2, 1, 0], (0, 1, 0)),
         ],
     )
     def test_QubitStateVector_state_vector(self, num_wires, wire_order, one_position):
         """Tests that QubitStateVector state_vector returns kets as expected."""
-        qsv_op = qml.QubitStateVector([0, 0, 0, 1], wires=[1, 2])
+        qsv_op = qml.QubitStateVector([0, 0, 1, 0], wires=[1, 2])  # |10>
         ket = qsv_op.state_vector(wire_order=wire_order)
         assert ket[one_position] == 1
         ket[one_position] = 0  # everything else should be zero, as we assert below
