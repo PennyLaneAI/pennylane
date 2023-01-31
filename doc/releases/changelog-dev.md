@@ -389,6 +389,9 @@
 * `qml.pauli.pauli_word_to_string` now supports `Prod`, `SProd` and `Hamiltonian` operators.
   [(#3692)](https://github.com/PennyLaneAI/pennylane/pull/3692)
 
+* `BasisState` now implements the `StatePrep` interface.
+  [(#3693)](https://github.com/PennyLaneAI/pennylane/pull/3693)
+
 * Add `qml.devices.qubit.create_initial_state` to create an initial state for an execution.
   [(#3683)](https://github.com/PennyLaneAI/pennylane/pull/3683)
 
@@ -430,6 +433,10 @@
   different random numbers and an independence of the results from the global random number generation state.
   Please provide a seed to each individual function instead if you want controllable results.
   [(#3624)](https://github.com/PennyLaneAI/pennylane/pull/3624)
+
+* `qml.transforms.measurement_grouping` has been removed. Users should use `qml.transforms.hamiltonian_expand`
+  instead.
+  [(#3701)](https://github.com/PennyLaneAI/pennylane/pull/3701)
 
 <h3>Deprecations</h3>
 
@@ -504,6 +511,7 @@ Soran Jahangiri
 Christina Lee
 Albert Mitjans Coma
 Romain Moyard
+Mudit Pandey
 Borja Requena
 Matthew Silverman
 Antal Száva
