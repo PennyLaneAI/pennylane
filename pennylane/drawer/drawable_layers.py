@@ -82,7 +82,7 @@ def drawable_layers(ops, wire_map=None):
 
     """
 
-    if wire_map is None:
+    if wire_map is None or wire_map == {}:
         wire_map = default_wire_map(ops)
 
     # initialize

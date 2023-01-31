@@ -356,6 +356,20 @@ class TestSpecialGates:
 
         plt.close()
 
+    def test_Snapshot(self):
+        """Test Snapshot gets correct special call."""
+
+        with qml.queuing.AnnotatedQueue() as q_tape:
+            qml.Snapshot()
+
+        tape = QuantumScript.from_queue(q_tape)
+        _, ax = tape_mpl(tape)
+
+        assert len(ax.lines) == 3
+        assert len(ax.collections) == 2
+
+        plt.close()
+
     def test_WireCut(self):
         """Test WireCut gets correct special call."""
 
