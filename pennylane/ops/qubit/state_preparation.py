@@ -88,25 +88,25 @@ class BasisState(StatePrep):
 
     def state_vector(self, wire_order=None):
         """Returns a state-vector of shape ``(2,) * num_wires``."""
-        state = self.parameters[0]
-        if any(i not in [0, 1] for i in state):
+        prep_vals = self.parameters[0]
+        if any(i not in [0, 1] for i in prep_vals):
             raise ValueError("BasisState parameter must consist of 0 or 1 integers.")
 
         if wire_order is None:
             num_wires = len(self.wires)
-            indices = state
+            indices = prep_vals
         else:
             new_wires = Wires(wire_order)
             if not new_wires.contains_wires(self.wires):
                 raise WireError("Custom wire_order must contain all BasisState wires")
             num_wires = len(new_wires)
             indices = [0] * num_wires
-            for base_wire_label, value in zip(self.wires, state):
+            for base_wire_label, value in zip(self.wires, prep_vals):
                 indices[new_wires.index(base_wire_label)] = value
 
         ket = np.zeros((2,) * num_wires)
         ket[tuple(indices)] = 1
-        return convert_like(ket, state)
+        return convert_like(ket, prep_vals)
 
 
 class QubitStateVector(Operation):
