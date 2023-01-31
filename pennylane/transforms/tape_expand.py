@@ -210,9 +210,9 @@ expand_invalid_trainable = create_expand_fn(
 )
 
 _expand_invalid_trainable_doc_hadamard = """Expand out a tape so that it supports differentiation
-of requested operations.
+of requested operations with the Hadamard test gradient.
 
-This is achieved by decomposing all trainable operations that have
+This is achieved by decomposing all trainable operations that
 are not in the Hadamard compatible list until all resulting operations
 are in the list up to maximum depth ``depth``. Note that this
 might not be possible, in which case the gradient rule will fail to apply.

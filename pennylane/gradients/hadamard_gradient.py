@@ -37,12 +37,12 @@ def _hadamard_grad(
     aux_wire=None,
     device_wires=None,
 ):
-    r"""Transform a QNode to compute the hadamard test gradient of all gate
-    parameters with respect to its inputs. This function is adapted to the new return system.
+    r"""Transform a QNode to compute the Hadamard test gradient of all gates
+    with respect to their inputs. This function is adapted to the new return system.
 
     Args:
         tape (pennylane.QNode or .QuantumTape): quantum tape or QNode to differentiate
-        argnum (int or list[int] or None): Trainable parameter indices to differentiate
+        argnum (int or list[int] or None): Trainable tape parameter indices to differentiate
             with respect to. If not provided, the derivatives with respect to all
             trainable parameters are returned.
 
@@ -78,8 +78,7 @@ def _hadamard_grad(
     # Get default for aux_wire
     if aux_wire is None:
         aux_wire = _get_aux_wire(aux_wire, tape, device_wires)
-    else:
-        if aux_wire.labels[0] in tape.wires:
+    elif aux_wire.labels[0] in tape.wires:
             raise qml.QuantumFunctionError("The auxiliary wire is already used in the tape.")
 
     if any(isinstance(m, VarianceMP) for m in tape.measurements):
@@ -93,8 +92,9 @@ def _hadamard_grad(
 
 
 def _expval_hadamard_grad(tape, argnum, aux_wire):
-    r"""It computes the hadamard test gradient for a given of all trainable gate parameters with respect to its inputs.
-    The auxiliary wire is the wire which is used to apply the hadamard gates and controlled gates.
+    r"""Compute the Hadamard test gradient of a tape that returns an expectation value with respect to a
+    given set of all trainable gate parameters.
+    The auxiliary wire is the wire which is used to apply the Hadamard gates and controlled gates.
     """
     # pylint: disable=too-many-statements
     argnums = argnum or tape.trainable_params
@@ -130,17 +130,17 @@ def _expval_hadamard_grad(tape, argnum, aux_wire):
             if isinstance(trainable_op, qml.Rot):
                 # Given that we only used Z as generator, we need to apply some gates before and after the generator.
                 if p_idx == 0:
-                    op_temp = ops_to_trainable_op.pop(-1)
-                    ops_after_trainable_op = [op_temp] + ops_after_trainable_op
+                    op_before_trainable_op = ops_to_trainable_op.pop(-1)
+                    ops_after_trainable_op = [op_before_trainable_op] + ops_after_trainable_op
                 elif p_idx == 1:
                     ops_to_add_before = [
                         qml.RZ(-trainable_op.data[2], wires=trainable_op.wires),
-                        qml.RX(qml.numpy.pi / 2, wires=trainable_op.wires),
+                        qml.RX(np.pi / 2, wires=trainable_op.wires),
                     ]
                     ops_to_trainable_op.extend(ops_to_add_before)
 
                     ops_to_add_after = [
-                        qml.RX(-qml.numpy.pi / 2, wires=trainable_op.wires),
+                        qml.RX(-np.pi / 2, wires=trainable_op.wires),
                         qml.RZ(trainable_op.data[2], wires=trainable_op.wires),
                     ]
                     ops_after_trainable_op = ops_to_add_after + ops_after_trainable_op
@@ -155,11 +155,10 @@ def _expval_hadamard_grad(tape, argnum, aux_wire):
 
                 if isinstance(m.obs, qml.operation.Tensor):
                     obs_new = m.obs.obs.copy()
+                elif m.obs:
+                    obs_new = [m.obs]
                 else:
-                    if m.obs:
-                        obs_new = [m.obs]
-                    else:
-                        obs_new = [qml.PauliZ(wires=i) for i in m.wires]
+                    obs_new = [qml.PauliZ(wires=i) for i in m.wires]
 
                 obs_new.append(qml.PauliY(wires=aux_wire))
                 obs_new = qml.operation.Tensor(*obs_new)
@@ -169,7 +168,7 @@ def _expval_hadamard_grad(tape, argnum, aux_wire):
                 else:
                     measurements.append(qml.probs(op=obs_new))
 
-            new_tape = qml.tape.QuantumTape(ops=ops, measurements=measurements)
+            new_tape = qml.tape.QuantumScript(ops=ops, measurements=measurements)
 
             def stop_at(obj):
                 return ~qml.operation.is_measurement(obj)
@@ -190,12 +189,7 @@ def _expval_hadamard_grad(tape, argnum, aux_wire):
         multi_params = len(tape.trainable_params) > 1
 
         grads = []
-        final_res = []
-        for coeff, res in zip(coeffs, results):
-            if isinstance(res, tuple):
-                final_res.append([2 * coeff * r for r in res])
-            else:
-                final_res.append(2 * coeff * res)
+        final_res = [[2 * coeff * r for r in res] if isinstance(res, tuple) else 2 * coeff * res for coeff, res in zip(coeffs, results)]
 
         # Post process for probs
         if measurements_probs:
@@ -229,9 +223,8 @@ def _expval_hadamard_grad(tape, argnum, aux_wire):
         if not multi_measurements and not multi_params:
             return np.array(grads[0])
 
-        if (multi_params and not multi_measurements) or (not multi_params and multi_measurements):
-            grads_tuple = tuple(grads)
-            return grads_tuple
+        if not (multi_params and multi_measurements):
+            return tuple(grads)
 
         # Reordering to match the right shape for multiple measurements
         grads_reorder = [[0] * len(tape.trainable_params) for _ in range(len(tape.measurements))]

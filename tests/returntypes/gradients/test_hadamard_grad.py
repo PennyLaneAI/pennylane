@@ -100,7 +100,6 @@ class TestHadamardGrad:
 
     @pytest.mark.parametrize("theta", np.linspace(-2 * np.pi, 2 * np.pi, 7))
     def test_rot_gradient(self, theta, tol):
-
         """Tests that the automatic gradient of an arbitrary Euler-angle-parameterized gate is correct."""
         dev = qml.device("default.qubit", wires=2)
         params = np.array([theta, theta**3, np.sqrt(2) * theta])
@@ -125,8 +124,7 @@ class TestHadamardGrad:
         tapes, fn = qml.gradients.param_shift(tape)
         param_val = fn(dev.batch_execute(tapes))
 
-        for a_val, n_val in zip(hadamard_val, param_val):
-            assert np.allclose(a_val, n_val, atol=tol, rtol=0)
+        assert np.allclose(hadamard_val, param_val, atol=tol, rtol=0)
 
     @pytest.mark.parametrize("theta", np.linspace(-2 * np.pi, 2 * np.pi, 7))
     @pytest.mark.parametrize("G", [qml.CRX, qml.CRY, qml.CRZ])
@@ -159,7 +157,7 @@ class TestHadamardGrad:
     @pytest.mark.parametrize("theta", np.linspace(-2 * np.pi, 2 * np.pi, 7))
     @pytest.mark.parametrize("G", [qml.IsingXX, qml.IsingYY, qml.IsingZZ])
     def test_ising_gradient(self, G, theta, tol):
-        """Test gradient of controlled rotation gates"""
+        """Test gradient of Ising coupling gates"""
         dev = qml.device("default.qubit", wires=3)
 
         with qml.queuing.AnnotatedQueue() as q:
@@ -216,7 +214,7 @@ class TestHadamardGrad:
         assert np.allclose(-grad[1] / 2, expected[2], atol=tol, rtol=0)
 
     def test_gradients_agree_finite_differences(self, tol):
-        """Tests that the parameter-shift rule agrees with the first and second
+        """Tests that the Hadamard test gradient agrees with the first and second
         order finite differences"""
         params = np.array([0.1, -1.6, np.pi / 5])
 
@@ -473,8 +471,7 @@ class TestHadamardGrad:
 
         tape = qml.tape.QuantumScript.from_queue(q)
         with warnings.catch_warnings(record=True) as record:
-            tapes, fn = qml.gradients.hadamard_grad(tape)
-            fn(dev.batch_execute(tapes))
+            grad_fn(tape)
 
         assert len(record) == 0
 
