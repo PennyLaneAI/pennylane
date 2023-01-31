@@ -390,6 +390,11 @@ class TestDecomposition:
         with pytest.raises(DecompositionUndefinedError):
             op.decomposition()
 
+        op = Exp(2 * qml.S(0) + qml.PauliZ(1), -0.5j)
+        assert not op.has_decomposition
+        with pytest.raises(DecompositionUndefinedError):
+            op.decomposition()
+
     def test_nontensor_tensor_raises_error(self):
         """Checks that accessing the decomposition throws an error if the base is a Tensor
         object that is not a mathematical tensor"""
@@ -465,20 +470,6 @@ class TestDecomposition:
                 2,
                 [qml.PauliRot(2.0, "X", wires=[0]), qml.PauliRot(2.0, "X", wires=[0])],
             ),
-            (
-                2,
-                qml.sum(
-                    qml.s_prod(2, qml.Hadamard("a")),
-                    qml.s_prod(0.5, qml.PauliZ(-15) @ qml.PauliX("a")),
-                    qml.s_prod(0.5, qml.Identity(0) @ qml.PauliY(-15)),
-                ),
-                1,
-                [
-                    qml.exp(qml.Hadamard("a"), -4j),
-                    qml.PauliRot(2.0, "ZX", wires=[-15, "a"]),
-                    qml.PauliRot(2.0, "IY", wires=[0, -15]),
-                ],
-            ),
         ],
     )
     def test_evolution_operations(self, time, hamiltonian, steps, expected_queue):
@@ -517,6 +508,26 @@ class TestDecomposition:
         circuit2()
 
         assert np.allclose(dev.state, dev2.state, atol=tol, rtol=0)
+
+    @pytest.mark.parametrize(
+        "coeff, hamiltonian",
+        [
+            (3j, qml.Hamiltonian([1, 2, 3], [qml.PauliX(0), qml.PauliY(1), qml.PauliZ(2)])),
+            (3, qml.Hamiltonian([1j, 2j, 3j], [qml.PauliX(0), qml.PauliY(1), qml.PauliZ(2)])),
+            (-1j, qml.sum(qml.PauliY(1), 3 * qml.prod(qml.PauliX(0), qml.PauliZ(2)))),
+            (
+                -1,
+                qml.sum(
+                    qml.s_prod(1j, qml.PauliY(1)), qml.s_prod(3j, qml.PauliX(0) @ qml.PauliZ(2))
+                ),
+            ),
+        ],
+    )
+    def test_decomposition_matrices(self, coeff, hamiltonian):
+        """Test that the matrix of the decomposed gates is the same as the exponentiated matrix."""
+        op = qml.exp(hamiltonian, coeff, num_steps=100)
+        matrix = qml.prod(*op.decomposition()).matrix()
+        assert qml.math.allclose(matrix, op.matrix())
 
 
 class TestMiscMethods:

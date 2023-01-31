@@ -236,8 +236,11 @@ class Exp(ScalarSymbolicOp, Operation):
             coeff *= base.scalar
             base = base.base
         is_pauli_rot = qml.pauli.is_pauli_word(self.base) and math.real(self.coeff) == 0
-        is_sum = isinstance(base, (Hamiltonian, Sum))
-        return is_pauli_rot or is_sum
+        is_hamiltonian = isinstance(base, Hamiltonian)
+        is_sum_of_pauli_words = isinstance(base, Sum) and all(
+            qml.pauli.is_pauli_word(o) for o in base
+        )
+        return is_pauli_rot or is_hamiltonian or is_sum_of_pauli_words
 
     # pylint: disable=too-many-branches
     def decomposition(self):
@@ -285,13 +288,15 @@ class Exp(ScalarSymbolicOp, Operation):
                 if isinstance(op, SProd):
                     c *= op.scalar
                     op = op.base
-                if qml.pauli.is_pauli_word(op) and math.real(c) == 0:
-                    pauli_word = qml.pauli.pauli_word_to_string(op)
-                    if pauli_word != "I" * op.num_wires:
-                        c = 2j * c  # need to cancel the coefficients added by PauliRot
-                        op_list.append(qml.PauliRot(theta=c, pauli_word=pauli_word, wires=op.wires))
-                else:
-                    op_list.append(qml.exp(op=op, coeff=c))
+                if not (qml.pauli.is_pauli_word(op) and math.real(c) == 0):
+                    raise DecompositionUndefinedError(
+                        "The decomposition of the exponential of a non-pauli word is not defined."
+                    )
+                pauli_word = qml.pauli.pauli_word_to_string(op)
+                if pauli_word != "I" * op.num_wires:
+                    c = 2j * c  # need to cancel the coefficients added by PauliRot
+                    op_list.append(qml.PauliRot(theta=c, pauli_word=pauli_word, wires=op.wires))
+
             return op_list * self.num_steps  # apply operators ``num_steps`` times
 
         raise DecompositionUndefinedError
