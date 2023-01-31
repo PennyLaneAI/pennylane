@@ -6,6 +6,23 @@
 
 <h4>Add new features here</h4>
 
+* The `qml.math` module now also contains a submodule for
+  fast Fourier transforms, `qml.math.fft`.
+  [(#1440)](https://github.com/PennyLaneAI/pennylane/pull/1440)
+  
+  The submodule in particular provides differentiable
+  versions of the following functions, available in all common
+  interfaces for PennyLane
+
+    + [fft](https://numpy.org/doc/stable/reference/generated/numpy.fft.fft.html)
+    + [ifft](https://numpy.org/doc/stable/reference/generated/numpy.fft.ifft.html)
+    + [fft2](https://numpy.org/doc/stable/reference/generated/numpy.fft.fft2.html)
+    + [ifft2](https://numpy.org/doc/stable/reference/generated/numpy.fft.ifft2.html)
+
+  Note that the output of the derivative of these functions
+  may differ when used with complex-valued inputs, due to different
+  conventions on complex-valued derivatives.
+
 <h4>Feel the pulse 🔊</h4>
 
 * Parameterized Hamiltonians can now be created with the addition of `ParametrizedHamiltonian`.
