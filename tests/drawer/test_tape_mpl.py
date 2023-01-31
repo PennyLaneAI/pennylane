@@ -354,32 +354,6 @@ class TestSpecialGates:
 
         plt.close()
 
-    def test_Snapshot(self):
-        """Test Snapshot gets correct special call."""
-
-        # Nothing should render when the only operation is `qml.Snapshot`
-        with qml.queuing.AnnotatedQueue() as q_tape:
-            qml.Snapshot()
-
-        tape = QuantumScript.from_queue(q_tape)
-        _, ax = tape_mpl(tape)
-
-        assert len(ax.lines) == 0
-        assert len(ax.collections) == 0
-
-        # Need to add a gate with wires to the tape for snapshot to render
-        with qml.queuing.AnnotatedQueue() as q_tape:
-            qml.Snapshot()
-            qml.Hadamard(0)
-
-        tape = QuantumScript.from_queue(q_tape)
-        _, ax = tape_mpl(tape)
-
-        assert len(ax.lines) == 1  # One line because one wire is rendered
-        assert len(ax.collections) == 4  # 4 lines used to render the `Snapshot`
-
-        plt.close()
-
     def test_WireCut(self):
         """Test WireCut gets correct special call."""
 
@@ -560,6 +534,37 @@ class TestGeneralOperations:
         assert ax.patches[0].get_height() == num_wires - 1 + self.width
 
         plt.close()
+
+    def test_snapshot(self):
+        """Test that `qml.Snapshot` works properly with `tape_mpl`."""
+
+        # Test that empty figure is created when the only gate is `qml.Snapshot`
+        with qml.queuing.AnnotatedQueue() as q_tape:
+            qml.Snapshot()
+
+        tape = QuantumScript.from_queue(q_tape)
+        fig, ax = tape_mpl(tape)
+
+        assert isinstance(fig, mpl.figure.Figure)
+        assert isinstance(ax, mpl.axes._axes.Axes)
+
+        assert fig.axes == [ax]
+
+        # Test that `qml.Snapshot` works properly when other gates are present
+        with qml.queuing.AnnotatedQueue() as q_tape:
+            qml.Snapshot()
+            qml.Hadamard(0)
+            qml.Hadamard(1)
+            qml.Hadamard(2)
+
+        tape = QuantumScript.from_queue(q_tape)
+        _, ax = tape_mpl(tape)
+
+        assert isinstance(ax.patches[0], mpl.patches.FancyBboxPatch)
+        assert ax.patches[0].get_x() == -self.width / 2.0
+        assert ax.patches[0].get_y() == -self.width / 2.0
+        assert ax.patches[0].get_width() == self.width
+        assert ax.patches[0].get_height() == 2 + self.width
 
     @pytest.mark.parametrize("op", general_op_data)
     def test_general_operations_decimals(self, op):
