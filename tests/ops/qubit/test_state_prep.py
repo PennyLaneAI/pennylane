@@ -140,6 +140,13 @@ class TestStateVector:
         with pytest.raises(WireError, match="wire_order must contain all QubitStateVector wires"):
             qsv_op.state_vector(wire_order=[1, 2])
 
+    @pytest.mark.parametrize("vec", [[0] * 4, [1] * 4])
+    def test_QubitStateVector_state_vector_not_one(self, vec):
+        """Tests that the state-vector provided must have norm equal to 1."""
+        qsv_op = qml.QubitStateVector(vec, wires=[0, 1])
+        with pytest.raises(ValueError, match="Sum of amplitudes-squared does not equal one."):
+            _ = qsv_op.state_vector()
+
     @pytest.mark.parametrize(
         "num_wires,wire_order,one_position",
         [

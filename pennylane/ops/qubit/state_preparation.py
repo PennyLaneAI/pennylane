@@ -17,7 +17,7 @@ with preparing a certain state on the device.
 """
 # pylint:disable=abstract-method,arguments-differ,protected-access,no-member
 from pennylane import numpy as np
-from pennylane.math import convert_like, reshape
+from pennylane import math
 from pennylane.operation import AnyWires, Operation, StatePrep
 from pennylane.templates.state_preparations import BasisStatePreparation, MottonenStatePreparation
 from pennylane.wires import Wires, WireError
@@ -105,7 +105,7 @@ class BasisState(StatePrep):
 
         ket = np.zeros((2,) * num_wires)
         ket[tuple(indices)] = 1
-        return convert_like(ket, prep_vals)
+        return math.convert_like(ket, prep_vals)
 
 
 class QubitStateVector(StatePrep):
@@ -171,9 +171,14 @@ class QubitStateVector(StatePrep):
         return [MottonenStatePreparation(state, wires)]
 
     def state_vector(self, wire_order=None):
-        num_op_wires = len(self.wires)
-        op_vector = reshape(self.parameters[0], (2,) * num_op_wires)
+        param = math.cast(self.parameters[0], np.complex128)
+        if not math.is_abstract(param):
+            norm = math.linalg.norm(param)
+            if not math.allclose(norm, 1.0, atol=1e-10):
+                raise ValueError("Sum of amplitudes-squared does not equal one.")
 
+        num_op_wires = len(self.wires)
+        op_vector = math.reshape(param, (2,) * num_op_wires)
         if wire_order is None or Wires(wire_order) == self.wires:
             return op_vector
 
@@ -196,7 +201,7 @@ class QubitStateVector(StatePrep):
                     ket = np.swapaxes(ket, i, i_wire_pos)
                     new_order[i], new_order[i_wire_pos] = new_order[i_wire_pos], new_order[i]
 
-        return convert_like(ket, op_vector)
+        return math.convert_like(ket, param)
 
 
 class QubitDensityMatrix(Operation):
