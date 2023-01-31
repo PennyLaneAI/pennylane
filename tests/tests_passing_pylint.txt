@@ -10,3 +10,4 @@ tests/ops/qutrit/test_qutrit_observables.py
 tests/test_operation.py
 tests/pulse/**
 tests/math/test_init.py
+tests/math/test_functions.py

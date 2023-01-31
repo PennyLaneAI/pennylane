@@ -1761,7 +1761,10 @@ class TestScatterElementAddMultiValue:
         def add_cost_entries(*weights):
             """Add two entries of the cost."""
             c = cost(*weights)
-            return c[self.indices[0][0], self.indices[1][0]] + c[self.indices[0][1], self.indices[1][1]]
+            return (
+                c[self.indices[0][0], self.indices[1][0]]
+                + c[self.indices[0][1], self.indices[1][1]]
+            )
 
         grad = qml.grad(add_cost_entries)(x, y)
         assert fn.allclose(grad[0], self.expected_grad_x)
@@ -1827,7 +1830,10 @@ class TestScatterElementAddMultiValue:
         def add_cost_entries(*weights):
             """Add two entries of the cost."""
             c = cost(*weights)
-            return c[self.indices[0][0], self.indices[1][0]] + c[self.indices[0][1], self.indices[1][1]]
+            return (
+                c[self.indices[0][0], self.indices[1][0]]
+                + c[self.indices[0][1], self.indices[1][1]]
+            )
 
         grad = jax.grad(add_cost_entries)(x, y)
         assert fn.allclose(grad[0], self.expected_grad_x)
@@ -2125,6 +2131,7 @@ class TestBlockDiagDiffability:
 
     @staticmethod
     def expected(x, y):
+        """Return the expected Jacobian of block_diag."""
         return (
             [
                 [-np.sin(x * y) * y, 0, 0],
@@ -2140,11 +2147,14 @@ class TestBlockDiagDiffability:
 
     def test_autograd(self):
         """Tests for differentiating the block diagonal function with autograd."""
+
         def f(x, y):
-            return fn.block_diag([
-                np.array([[fn.cos(x * y)]]),
-                np.array([[x, 1.2 * y], [x**2 - y / 3, -x / y]]),
-            ])
+            return fn.block_diag(
+                [
+                    np.array([[fn.cos(x * y)]]),
+                    np.array([[x, 1.2 * y], [x**2 - y / 3, -x / y]]),
+                ]
+            )
 
         x, y = np.array([0.2, 1.5], requires_grad=True)
         res = qml.jacobian(f)(x, y)
@@ -2154,11 +2164,15 @@ class TestBlockDiagDiffability:
 
     def test_jax(self):
         """Tests for differentiating the block diagonal function with JAX."""
+
         def f(x, y):
-            return fn.block_diag([
-                np.array([[fn.cos(x * y)]]),
-                np.array([[x, 1.2 * y], [x**2 - y / 3, -x / y]]),
-            ])
+            return fn.block_diag(
+                [
+                    np.array([[fn.cos(x * y)]]),
+                    np.array([[x, 1.2 * y], [x**2 - y / 3, -x / y]]),
+                ]
+            )
+
         x, y = 0.2, 1.5
         res = jax.jacobian(f, argnums=[0, 1])(x, y)
         exp = self.expected(x, y)
@@ -2181,6 +2195,7 @@ class TestBlockDiagDiffability:
     def test_torch(self):
         """Tests for differentiating the block diagonal function with Torch."""
         x, y = [torch.tensor([[0.2]]), torch.tensor([[0.1, 0.2], [0.3, 0.4]])]
+
         def f(x, y):
             return fn.block_diag([x, y])
 
@@ -2248,7 +2263,7 @@ class TestCoercion:
             RuntimeError,
             match="Expected all tensors to be on the same device, but found at least two devices",
         ):
-            res = qml.math.coerce(tensors, like="torch")
+            _ = qml.math.coerce(tensors, like="torch")
 
 
 class TestUnwrap:
@@ -2279,6 +2294,7 @@ class TestUnwrap:
     def test_autograd_unwrapping_forward(self):
         """Test that a sequence of Autograd values is properly unwrapped
         during the forward pass"""
+        # pylint: disable=not-an-iterable
         unwrapped_params = None
 
         def cost_fn(params):
@@ -2296,6 +2312,7 @@ class TestUnwrap:
     def test_autograd_unwrapping_backward(self):
         """Test that a sequence of Autograd values is properly unwrapped
         during the backward pass"""
+        # pylint: disable=not-an-iterable
         unwrapped_params = None
 
         def cost_fn(*params):
@@ -2308,7 +2325,7 @@ class TestUnwrap:
             np.tensor(0.1, dtype=np.float64, requires_grad=True),
             np.tensor([0.5, 0.2], requires_grad=True),
         ]
-        grad = qml.grad(cost_fn, argnum=[1, 2])(*values)
+        _ = qml.grad(cost_fn, argnum=[1, 2])(*values)
 
         expected = [np.array([0.1, 0.2]), 0.1, np.array([0.5, 0.2])]
         assert all(np.allclose(a, b) for a, b in zip(unwrapped_params, expected))
@@ -2317,6 +2334,7 @@ class TestUnwrap:
     def test_autograd_unwrapping_backward_nested(self):
         """Test that a sequence of Autograd values is properly unwrapped
         during multiple backward passes"""
+        # pylint: disable=not-an-iterable
         unwrapped_params = None
 
         def cost_fn(p, max_depth=None):
@@ -2325,7 +2343,7 @@ class TestUnwrap:
             return np.sum(np.sin(np.prod(p)))
 
         values = np.tensor([0.1, 0.2, 0.3])
-        hess = qml.jacobian(qml.grad(cost_fn))(values)
+        _ = qml.jacobian(qml.grad(cost_fn))(values)
 
         expected = np.array([0.1, 0.2, 0.3])
         assert np.allclose(unwrapped_params, expected)
@@ -2333,12 +2351,13 @@ class TestUnwrap:
 
         # Specifying max_depth=1 will result in the second backward
         # pass not being unwrapped
-        hess = qml.jacobian(qml.grad(cost_fn))(values, max_depth=1)
+        _ = qml.jacobian(qml.grad(cost_fn))(values, max_depth=1)
         assert all(isinstance(a, ArrayBox) for a in unwrapped_params)
 
     def test_jax_unwrapping(self):
         """Test that a sequence of Autograd values is properly unwrapped
         during the forward pass"""
+        # pylint: disable=not-an-iterable
         unwrapped_params = None
 
         def cost_fn(params):
@@ -2424,7 +2443,7 @@ class TestGetTrainable:
             np.tensor(0.1, requires_grad=True),
             np.tensor([0.5, 0.2], requires_grad=False),
         ]
-        grad = qml.grad(cost_fn)(*values)
+        _ = qml.grad(cost_fn)(*values)
 
         assert res == {0, 1}
 
@@ -2443,6 +2462,8 @@ test_sort_data = [
 class TestSortFunction:
     """Test the sort function works across all interfaces"""
 
+    # pylint: disable=too-few-public-methods
+
     @pytest.mark.parametrize("input, test_output", test_sort_data)
     def test_sort(self, input, test_output):
         """Test the sort method is outputting only sorted values not indices"""
@@ -2452,6 +2473,7 @@ class TestSortFunction:
 
 
 class TestExpm:
+    """Test the expm function works across all interfaces"""
 
     _compare_mat = None
 
@@ -2482,7 +2504,8 @@ class TestExpm:
 
 class TestSize:
     """Test qml.math.size method."""
-    #pylint: disable=too-few-public-methods
+
+    # pylint: disable=too-few-public-methods
 
     array_and_size = [
         ([], 0),
