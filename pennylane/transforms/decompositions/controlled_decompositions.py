@@ -75,7 +75,6 @@ def ctrl_decomp_zyz(target_operation: Operator, control_wires: Wires):
     tensor([0.125, 0.125, 0.125, 0.125, 0.125, 0.125, 0.125, 0.125], requires_grad=True)
 
     """
-    # TODO: Add support for general unitaries, not just SU(2) matrices
     if len(target_operation.wires) != 1:
         raise ValueError(
             "The target operation must be a single-qubit operation, instead "
@@ -83,13 +82,6 @@ def ctrl_decomp_zyz(target_operation: Operator, control_wires: Wires):
         )
 
     target_wire = target_operation.wires
-
-    if len(control_wires) > 2:
-        control_gate = qml.MultiControlledX(wires=control_wires + target_wire)
-    elif len(control_wires) == 2:
-        control_gate = qml.Toffoli(wires=control_wires + target_wire)
-    else:
-        control_gate = qml.CNOT(wires=control_wires + target_wire)
 
     try:
         phi, theta, omega = target_operation.single_qubit_rot_angles()
@@ -100,9 +92,9 @@ def ctrl_decomp_zyz(target_operation: Operator, control_wires: Wires):
     return [
         qml.RZ(phi, wires=target_wire),
         qml.RY(theta / 2, wires=target_wire),
-        control_gate,
+        qml.MultiControlledX(wires=control_wires + target_wire),
         qml.RY(-theta / 2, wires=target_wire),
         qml.RZ(-(phi + omega) / 2, wires=target_wire),
-        control_gate,
+        qml.MultiControlledX(wires=control_wires + target_wire),
         qml.RZ((omega - phi) / 2, wires=target_wire),
     ]

@@ -1102,7 +1102,7 @@ class TestControlledDecompositionZYZ:
         expected_op = qml.ctrl(op, control_wires)
         decomp_mats = [
             np.kron(np.eye(2 ** len(control_wires)), decomp_op.matrix())
-            if not isinstance(decomp_op, (qml.CNOT, qml.Toffoli, qml.MultiControlledX))
+            if not isinstance(decomp_op, qml.MultiControlledX)
             else decomp_op.matrix()
             for decomp_op in decomps
         ]
@@ -1111,23 +1111,20 @@ class TestControlledDecompositionZYZ:
         expected = expected_op.matrix()
         assert np.allclose(expected, res, atol=tol, rtol=0)
 
-    @pytest.mark.parametrize(
-        "control_wires, control_gate",
-        [([1], qml.CNOT), ([1, 2], qml.Toffoli), ([1, 2, 3], qml.MultiControlledX)],
-    )
-    def test_correct_decomp(self, control_wires, control_gate):
+    def test_correct_decomp(self):
         """Test that the operations in the decomposition are correct."""
         phi, theta, omega = 0.123, 0.456, 0.789
         op = qml.Rot(phi, theta, omega, wires=0)
+        control_wires = [1, 2, 3]
         decomps = ctrl_decomp_zyz(op, Wires(control_wires))
 
         expected_ops = [
             qml.RZ(0.123, wires=0),
             qml.RY(0.456 / 2, wires=0),
-            control_gate(wires=control_wires + [0]),
+            qml.MultiControlledX(wires=control_wires + [0]),
             qml.RY(-0.456 / 2, wires=0),
             qml.RZ(-(0.123 + 0.789) / 2, wires=0),
-            control_gate(wires=control_wires + [0]),
+            qml.MultiControlledX(wires=control_wires + [0]),
             qml.RZ((0.789 - 0.123) / 2, wires=0),
         ]
         assert all(
