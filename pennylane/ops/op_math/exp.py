@@ -27,6 +27,7 @@ from pennylane.operation import (
     GeneratorUndefinedError,
     Operation,
     OperatorPropertyUndefined,
+    Tensor,
     expand_matrix,
 )
 from pennylane.ops.qubit import Hamiltonian
@@ -220,6 +221,25 @@ class Exp(ScalarSymbolicOp, Operation):
         """Setting inverse is not defined for Exp, so the inverse is always False"""
         return False
 
+    # pylint: disable=invalid-overridden-method
+    @property
+    def has_decomposition(self):
+        if isinstance(self.base, Tensor) and len(self.base.wires) != len(self.base.obs):
+            raise DecompositionUndefinedError(
+                "Unable to determine if the exponential has a decomposition "
+                "when the base operator is a Tensor object with overlapping wires. "
+                f"Received base {self.base}."
+            )
+        base = self.base
+        coeff = self.coeff
+        if isinstance(base, SProd):
+            coeff *= base.scalar
+            base = base.base
+        is_pauli_rot = qml.pauli.is_pauli_word(self.base) and math.real(self.coeff) == 0
+        is_sum = isinstance(base, (Hamiltonian, Sum))
+        return is_pauli_rot or is_sum
+
+    # pylint: disable=too-many-branches
     def decomposition(self):
         r"""Representation of the operator as a product of other operators. Decomposes into
         :class:`~.PauliRot` if the coefficient is imaginary and the base is a Pauli Word.
@@ -238,10 +258,19 @@ class Exp(ScalarSymbolicOp, Operation):
             coeff *= base.scalar
             base = base.base
 
+        if isinstance(base, Tensor) and len(base.wires) != len(base.obs):
+            raise DecompositionUndefinedError(
+                "Unable to determine if the exponential has a decomposition "
+                "when the base operator is a Tensor object with overlapping wires. "
+                f"Received base {self.base}."
+            )
+
         if qml.pauli.is_pauli_word(base) and math.real(coeff) == 0:
             pauli_word = qml.pauli.pauli_word_to_string(base)
             coeff = 2j * coeff  # need to cancel the coefficients added by PauliRot
-            if len(pauli_word) == 1 and pauli_word != "I":
+            if pauli_word == "I" * base.num_wires:
+                return qml.Identity(wires=base.wires)
+            if len(pauli_word) == 1:
                 return [getattr(qml, f"R{pauli_word}")(phi=coeff, wires=base.wires)]
             return [qml.PauliRot(theta=coeff, pauli_word=pauli_word, wires=base.wires)]
 
@@ -253,8 +282,9 @@ class Exp(ScalarSymbolicOp, Operation):
                 c *= coeff
                 if math.real(c) == 0:
                     pauli_word = qml.pauli.pauli_word_to_string(o)
-                    c = 2j * c  # need to cancel the coefficients added by PauliRot
-                    op_list.append(qml.PauliRot(theta=c, pauli_word=pauli_word, wires=o.wires))
+                    if pauli_word != "I" * o.num_wires:
+                        c = 2j * c  # need to cancel the coefficients added by PauliRot
+                        op_list.append(qml.PauliRot(theta=c, pauli_word=pauli_word, wires=o.wires))
                 else:
                     op_list.append(qml.exp(op=o, coeff=c))
 
@@ -268,8 +298,9 @@ class Exp(ScalarSymbolicOp, Operation):
                     op = op.base
                 if qml.pauli.is_pauli_word(op) and math.real(c) == 0:
                     pauli_word = qml.pauli.pauli_word_to_string(op)
-                    c = 2j * c  # need to cancel the coefficients added by PauliRot
-                    op_list.append(qml.PauliRot(theta=c, pauli_word=pauli_word, wires=op.wires))
+                    if pauli_word != "I" * op.num_wires:
+                        c = 2j * c  # need to cancel the coefficients added by PauliRot
+                        op_list.append(qml.PauliRot(theta=c, pauli_word=pauli_word, wires=op.wires))
                 else:
                     op_list.append(qml.exp(op=op, coeff=c))
             return op_list * self.num_steps  # apply operators ``num_steps`` times

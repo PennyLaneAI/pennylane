@@ -373,6 +373,8 @@ class TestMatrix:
 
 
 class TestDecomposition:
+    """Test the decomposition of the `Exp` gate."""
+
     @pytest.mark.parametrize("coeff", (1, 1 + 0.5j))
     def test_non_imag_no_decomposition(self, coeff):
         """Tests that the decomposition doesn't exist if the coefficient has a real component."""
@@ -394,28 +396,127 @@ class TestDecomposition:
         base_op = qml.PauliX(0) @ qml.PauliZ(0)
         op = Exp(base_op, 1j)
 
-        with pytest.raises(NotImplementedError):
-            op.has_decomposition()
+        with pytest.raises(DecompositionUndefinedError):
+            _ = op.has_decomposition
 
-        with pytest.raises(NotImplementedError):
-            op.decomposition()
+        with pytest.raises(DecompositionUndefinedError):
+            _ = op.decomposition()
 
     @pytest.mark.parametrize(
         "base, base_string",
         (
-            (qml.PauliX(0), "X"),
             (qml.PauliZ(0) @ qml.PauliY(1), "ZY"),
             (qml.PauliY(0) @ qml.Identity(1) @ qml.PauliZ(2), "YIZ"),
         ),
     )
-    def test_pauli_word_decompositions(self, base, base_string):
-        """Check that Exp decomposes into PauliRot if possible."""
+    def test_decomposition_into_pauli_rot(self, base, base_string):
+        """Check that Exp decomposes into PauliRot if base is a pauli word with more than one term."""
         theta = 3.21
         op = Exp(base, -0.5j * theta)
 
         assert op.has_decomposition
         pr = op.decomposition()[0]
         assert qml.equal(pr, qml.PauliRot(3.21, base_string, base.wires))
+
+    @pytest.mark.parametrize(
+        "base, rot",
+        ((qml.PauliX(0), qml.RX), (qml.PauliY(0), qml.RY), (qml.PauliZ(0), qml.RZ)),
+    )
+    def test_decomposition_into_rotation_gates(self, base, rot):
+        """Check that Exp decomposes into single rotation gates if base is a pauli operator."""
+        theta = 3.21
+        op = Exp(base, -0.5j * theta)
+
+        assert op.has_decomposition
+        pr = op.decomposition()[0]
+        assert qml.equal(pr, rot(theta, base.wires))
+
+    @pytest.mark.parametrize(
+        ("time", "hamiltonian", "steps", "expected_queue"),
+        [
+            (
+                2,
+                qml.Hamiltonian([1, 1], [qml.PauliX(0), qml.PauliX(1)]),
+                2,
+                [
+                    qml.PauliRot(2.0, "X", wires=[0]),
+                    qml.PauliRot(2.0, "X", wires=[1]),
+                    qml.PauliRot(2.0, "X", wires=[0]),
+                    qml.PauliRot(2.0, "X", wires=[1]),
+                ],
+            ),
+            (
+                2,
+                qml.sum(
+                    qml.s_prod(2, qml.PauliX("a")),
+                    qml.s_prod(0.5, qml.PauliZ("b") @ qml.PauliX("a")),
+                ),
+                2,
+                [
+                    qml.PauliRot(4.0, "X", wires=["a"]),
+                    qml.PauliRot(1.0, "ZX", wires=["b", "a"]),
+                    qml.PauliRot(4.0, "X", wires=["a"]),
+                    qml.PauliRot(1.0, "ZX", wires=["b", "a"]),
+                ],
+            ),
+            (
+                2,
+                qml.Hamiltonian([1, 1], [qml.PauliX(0), qml.Identity(0) @ qml.Identity(1)]),
+                2,
+                [qml.PauliRot(2.0, "X", wires=[0]), qml.PauliRot(2.0, "X", wires=[0])],
+            ),
+            (
+                2,
+                qml.sum(
+                    qml.s_prod(2, qml.Hadamard("a")),
+                    qml.s_prod(0.5, qml.PauliZ(-15) @ qml.PauliX("a")),
+                    qml.s_prod(0.5, qml.Identity(0) @ qml.PauliY(-15)),
+                ),
+                1,
+                [
+                    qml.exp(qml.Hadamard("a"), -4j),
+                    qml.PauliRot(2.0, "ZX", wires=[-15, "a"]),
+                    qml.PauliRot(2.0, "IY", wires=[0, -15]),
+                ],
+            ),
+        ],
+    )
+    def test_evolution_operations(self, time, hamiltonian, steps, expected_queue):
+        """Tests that the sequence of gates implemented in the ApproxTimeEvolution template is correct"""
+
+        op = qml.exp(hamiltonian, coeff=-1j * time, num_steps=steps)
+        queue = op.expand().operations
+
+        for expected_gate, gate in zip(expected_queue, queue):
+            prep = [gate.parameters, gate.wires]
+            target = [expected_gate.parameters, expected_gate.wires]
+
+            assert prep == target
+
+    def test_custom_wire_labels(self, tol):
+        """Test that template can deal with non-numeric, nonconsecutive wire labels."""
+        hamiltonian = qml.Hamiltonian([1, 1, 1], [qml.PauliX(0), qml.PauliX(1), qml.PauliX(2)])
+        hamiltonian2 = qml.Hamiltonian(
+            [1, 1, 1], [qml.PauliX("z"), qml.PauliX("a"), qml.PauliX("k")]
+        )
+
+        dev = qml.device("default.qubit", wires=3)
+        dev2 = qml.device("default.qubit", wires=["z", "a", "k"])
+
+        @qml.qnode(dev)
+        def circuit():
+            qml.exp(hamiltonian, coeff=-1j * 0.5, num_steps=2)
+            return qml.expval(qml.Identity(0))
+
+        @qml.qnode(dev2)
+        def circuit2():
+            qml.exp(hamiltonian2, coeff=-1j * 0.5, num_steps=2)
+            return qml.expval(qml.Identity("z"))
+
+        circuit()
+        circuit2()
+
+        assert np.allclose(dev.state, dev2.state, atol=tol, rtol=0)
 
 
 class TestMiscMethods:
