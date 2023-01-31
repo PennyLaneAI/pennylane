@@ -1706,9 +1706,9 @@ class TestScatterElementAdd:
         assert isinstance(res, jax.Array)
         assert fn.allclose(res, self.expected_val)
 
-        def grab_cost_entry(*weights):
+        def grab_cost_entry(weights):
             """Return a single entry of the cost"""
-            return cost(*weights)[self.index[0], self.index[1]]
+            return cost(weights)[self.index[0], self.index[1]]
 
         grad = jax.grad(grab_cost_entry)([x, y])
         assert fn.allclose(grad[0], self.expected_grad_x)
@@ -1827,15 +1827,15 @@ class TestScatterElementAddMultiValue:
         assert isinstance(res, jax.Array)
         assert fn.allclose(res, self.expected_val)
 
-        def add_cost_entries(*weights):
+        def add_cost_entries(weights):
             """Add two entries of the cost."""
-            c = cost(*weights)
+            c = cost(weights)
             return (
                 c[self.indices[0][0], self.indices[1][0]]
                 + c[self.indices[0][1], self.indices[1][1]]
             )
 
-        grad = jax.grad(add_cost_entries)(x, y)
+        grad = jax.grad(add_cost_entries)([x, y])
         assert fn.allclose(grad[0], self.expected_grad_x)
         assert fn.allclose(grad[1], self.expected_grad_y)
 
@@ -2134,12 +2134,12 @@ class TestBlockDiagDiffability:
         """Return the expected Jacobian of block_diag."""
         return (
             [
-                [-np.sin(x * y) * y, 0, 0],
+                [-fn.sin(x * y) * y, 0, 0],
                 [0, 1.0, 0],
                 [0, 2 * x, -1 / y],
             ],
             [
-                [-np.sin(x * y) * x, 0, 0],
+                [-fn.sin(x * y) * x, 0, 0],
                 [0, 0.0, 1.2],
                 [0, -1 / 3, x / y**2],
             ],
@@ -2168,8 +2168,8 @@ class TestBlockDiagDiffability:
         def f(x, y):
             return fn.block_diag(
                 [
-                    np.array([[fn.cos(x * y)]]),
-                    np.array([[x, 1.2 * y], [x**2 - y / 3, -x / y]]),
+                    jnp.array([[fn.cos(x * y)]]),
+                    jnp.array([[x, 1.2 * y], [x**2 - y / 3, -x / y]]),
                 ]
             )
 
