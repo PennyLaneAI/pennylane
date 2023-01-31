@@ -31,7 +31,7 @@ def measure_state_diagonalizing_gates(state, measurementprocess: StateMeasuremen
     for op in measurementprocess.obs.diagonalizing_gates():
         state = apply_operation(op, state)
 
-    return measurementprocess.process_state(state.flatten(), wires)
+    return measurementprocess.process_state(qml.math.flatten(state), wires)
 
 
 def measure(mp: StateMeasurement, state):
@@ -42,7 +42,7 @@ def measure(mp: StateMeasurement, state):
             # no need to apply diagonalizing gates
             total_indices = len(state.shape)
             wires = Wires(range(total_indices))
-            return mp.process_state(state.flatten(), wires)
+            return mp.process_state(qml.math.flatten(state), wires)
 
         if mp.obs.has_diagonalizing_gates:
             return measure_state_diagonalizing_gates(state, mp)
@@ -50,7 +50,7 @@ def measure(mp: StateMeasurement, state):
     raise NotImplementedError
 
 
-def simulate(circuit: qml.tape.QuantumScript):
+def simulate(circuit: qml.tape.QuantumScript, like="numpy"):
     """Simulate a single quantum script.
 
     This is an internal function that will be called by the to-be-created ``PythonDevice``.
@@ -69,7 +69,9 @@ def simulate(circuit: qml.tape.QuantumScript):
     tensor([0.68117888, 0.        , 0.31882112, 0.        ], requires_grad=True))
 
     """
-    state = create_initial_state(circuit.wires, circuit._prep[0] if circuit._prep else None)
+    state = create_initial_state(
+        circuit.wires, circuit._prep[0] if circuit._prep else None, like=like
+    )
 
     for op in circuit._ops:
         state = apply_operation(op, state)
