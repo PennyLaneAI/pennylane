@@ -144,6 +144,7 @@ class TestGetOneParameterGenerators:
 
     @staticmethod
     def get_one_parameter_generators(theta, num_wires, interface):
+        """Create a SpecialUnitary operation and return its one-parameter group generators."""
         return qml.SpecialUnitary(theta, list(range(num_wires))).get_one_parameter_generators(
             interface
         )
@@ -289,6 +290,7 @@ class TestGetOneParameterGeneratorsDiffability:
 
     @staticmethod
     def get_one_parameter_generators(theta, num_wires, interface):
+        """Create a SpecialUnitary operation and return its one-parameter group generators."""
         return qml.SpecialUnitary(theta, list(range(num_wires))).get_one_parameter_generators(
             interface
         )
