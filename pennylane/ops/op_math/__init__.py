@@ -49,6 +49,7 @@ Symbolic Classes
     ~Sum
     ~SProd
     ~SymbolicOp
+    ~ScalarSymbolicOp
 
 Controlled Operator Classes
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -69,8 +70,8 @@ from .exp import Exp, exp
 from .pow import Pow, pow
 from .prod import Prod, prod
 from .sprod import SProd, s_prod
-from .sum import Sum, sum, op_sum
-from .symbolicop import SymbolicOp
+from .sum import Sum, op_sum, sum
+from .symbolicop import ScalarSymbolicOp, SymbolicOp
 
 controlled_qubit_ops = {
     "ControlledQubitUnitary",

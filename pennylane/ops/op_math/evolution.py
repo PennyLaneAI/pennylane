@@ -71,9 +71,11 @@ class Evolution(Exp):
 
     """
 
+    _name = "Evolution"
+    num_params = 1
+
     def __init__(self, generator, param, do_queue=True, id=None):
         super().__init__(generator, coeff=1j * param, do_queue=do_queue, id=id)
-        self._name = "Evolution"
         self._data = [param]
 
     @property
@@ -84,10 +86,6 @@ class Evolution(Exp):
     @property
     def coeff(self):
         return 1j * self.data[0]
-
-    @property
-    def num_params(self):
-        return 1
 
     def label(self, decimals=None, base_label=None, cache=None):
         param = (
