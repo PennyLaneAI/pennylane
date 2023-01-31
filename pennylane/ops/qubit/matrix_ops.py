@@ -17,6 +17,7 @@ accept a hermitian or an unitary matrix as a parameter.
 """
 # pylint:disable=arguments-differ
 import warnings
+
 import numpy as np
 
 import pennylane as qml
@@ -320,15 +321,8 @@ class DiagonalQubitUnitary(Operation):
         return DiagonalQubitUnitary(qml.math.conj(self.parameters[0]), wires=self.wires)
 
     def pow(self, z):
-        if isinstance(self.data[0], list):
-            if isinstance(self.data[0][0], list):
-                # Support broadcasted list
-                new_data = [[(el + 0j) ** z for el in x] for x in self.data[0]]
-            else:
-                new_data = [(x + 0.0j) ** z for x in self.data[0]]
-            return [DiagonalQubitUnitary(new_data, wires=self.wires)]
-        casted_data = qml.math.cast(self.data[0], np.complex128)
-        return [DiagonalQubitUnitary(casted_data**z, wires=self.wires)]
+        cast_data = qml.math.cast(self.data[0], np.complex128)
+        return [DiagonalQubitUnitary(cast_data**z, wires=self.wires)]
 
     def _controlled(self, control):
         return DiagonalQubitUnitary(
