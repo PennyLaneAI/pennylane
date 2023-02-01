@@ -51,7 +51,6 @@ def _generator_hamiltonian(gen, op):
         H = gen
 
     elif isinstance(gen, (qml.Hermitian, qml.SparseHamiltonian)):
-
         if isinstance(gen, qml.Hermitian):
             mat = gen.parameters[0]
 

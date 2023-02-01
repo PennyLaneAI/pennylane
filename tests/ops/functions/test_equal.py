@@ -1105,7 +1105,8 @@ class TestEqual:
 
     def test_equal_with_unsupported_nested_operators_raises_error(self):
         """Test that the equal method with two operators with the same arithmetic depth (>0) raises
-        an error unless there is a singledispatch function specifically comparing that operator type."""
+        an error unless there is a singledispatch function specifically comparing that operator type.
+        """
 
         op1 = SymbolicOp(qml.PauliY(0))
         op2 = SymbolicOp(qml.PauliY(0))
