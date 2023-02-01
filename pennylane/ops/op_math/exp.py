@@ -109,7 +109,7 @@ def exp(op, coeff=1, num_steps=1, id=None):
 
 
 class Exp(ScalarSymbolicOp, Operation):
-    """A symbolic operator representating the exponential of a operator.
+    """A symbolic operator representing the exponential of a operator.
 
     Args:
         base (~.operation.Operator): The Operator to be exponentiated
@@ -255,7 +255,7 @@ class Exp(ScalarSymbolicOp, Operation):
             list[PauliRot]: decomposition of the operator
         """
         base = self.base
-        coeff = self.coeff / self.num_steps  # divide by trotter number
+        coeff = self.coeff
         if isinstance(base, SProd):
             coeff *= base.scalar
             base = base.base
@@ -277,6 +277,7 @@ class Exp(ScalarSymbolicOp, Operation):
             return [qml.PauliRot(theta=coeff, pauli_word=pauli_word, wires=base.wires)]
 
         if isinstance(base, (Hamiltonian, Sum)):
+            coeff /= self.num_steps  # divide by trotter number
             coeffs, ops = (
                 base.terms() if isinstance(base, Hamiltonian) else ([1] * len(base), base.operands)
             )
