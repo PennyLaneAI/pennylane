@@ -298,6 +298,9 @@
   to a state and returns a new state.
   [(#3637)](https://github.com/PennyLaneAI/pennylane/pull/3637)
 
+* The `create_initial_state` function is added to `devices/qubit` that returns an initial state for an execution.
+  [(#3683)](https://github.com/PennyLaneAI/pennylane/pull/3683)
+
 <h3>Improvements</h3>
 
 * `qml.purity` is added as a measurement process for purity
@@ -391,9 +394,6 @@
 
 * `BasisState` now implements the `StatePrep` interface.
   [(#3693)](https://github.com/PennyLaneAI/pennylane/pull/3693)
-
-* Add `qml.devices.qubit.create_initial_state` to create an initial state for an execution.
-  [(#3683)](https://github.com/PennyLaneAI/pennylane/pull/3683)
 
 <h3>Breaking changes</h3>
 
