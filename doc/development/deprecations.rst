@@ -38,7 +38,7 @@ Pending deprecations
 * ``qml.ExpvalCost`` has been deprecated, and usage will now raise a warning.
   
   - Deprecated in v0.24
-  - Will be removed in v0.29
+  - Will be removed in v0.30
 
   Instead, it is recommended to simply
   pass Hamiltonians to the ``qml.expval`` function inside QNodes:
@@ -49,39 +49,6 @@ Pending deprecations
     def ansatz(params):
         some_qfunc(params)
         return qml.expval(Hamiltonian)
-
-* ``qml.transforms.measurement_grouping`` has been deprecated, and usage will now raise a warning.
-
-  - Deprecated in v0.28
-  - Will be removed in v0.29
-
-  Don't use:
-
-  .. code-block:: python
-
-    with qml.tape.QuantumTape() as tape:
-      qml.RX(0.1, wires=0)
-      qml.RX(0.2, wires=1)
-
-    obs = [qml.PauliZ(0), qml.PauliX(1)]
-    coeffs = [2.0, 1.0]
-
-    tapes, fn = qml.transforms.measurement_grouping(tape, obs, coeffs)
-
-  Instead, use:
-
-  .. code-block:: python
-
-    obs = [qml.PauliZ(0), qml.PauliX(1)]
-    coeffs = [2.0, 1.0]
-    H = qml.Hamiltonian(coeffs, obs)
-
-    with qml.tape.QuantumTape() as tape:
-      qml.RX(0.1, wires=0)
-      qml.RX(0.2, wires=1)
-      qml.expval(H)
-
-    tapes, fn = qml.transforms.hamiltonian_expand(tape)
 
 * ``qml.transforms.make_tape`` has been deprecated, and usage will now raise a warning.
   Instead, use ``qml.tape.make_qscript``.
@@ -180,3 +147,10 @@ Completed deprecation cycles
 
   - Deprecated in v0.22
   - Removed in v0.28
+
+* ``qml.transforms.measurement_grouping`` has been removed. Please use ``qml.transforms.hamiltonian_expand``
+  instead. 
+
+  - Deprecated in v0.28
+  - Removed in v0.29
+
