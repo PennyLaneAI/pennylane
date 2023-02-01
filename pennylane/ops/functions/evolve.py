@@ -63,14 +63,6 @@ def evolve(
     >>> op
     Exp(2j PauliX)
 
-    When we have an exponential of a linear combination of operators, the Suzuki-Trotter algorithm
-    is used to decompose the initial operator into a product of exponentials:
-
-    >>> op = 3 * qml.PauliX(0) + 7 * qml.PauliZ(1) @ qml.PauliX(2)
-    >>> ev = qml.evolve(op, dt=0.5)
-    >>> ev
-    Exp(1j Hamiltonian)
-
     When evolving a :class:`.ParametrizedHamiltonian` class, then a :class:`.ParametrizedEvolution`
     instance is returned:
 
