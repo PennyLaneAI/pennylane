@@ -500,7 +500,6 @@ def purity(state, indices, check_state=False, c_dtype="complex128"):
     # If the state is a state vector and the system in question is the entire system,
     # return 1 directly because a valid state vector always represents a pure state.
     if state.shape == (len_state,) and len(indices) == num_wires:
-
         if check_state:
             _check_state_vector(state)
 

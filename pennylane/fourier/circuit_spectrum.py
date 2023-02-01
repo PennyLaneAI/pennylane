@@ -195,7 +195,6 @@ def circuit_spectrum(qnode, encoding_gates=None, decimals=8):
             is_encoding_gate = encoding_gates is None or id in encoding_gates
 
             if is_encoding_gate:
-
                 if len(op.parameters) != 1:
                     raise ValueError(
                         "Can only consider one-parameter gates as "
