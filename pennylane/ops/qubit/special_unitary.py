@@ -311,7 +311,7 @@ class SpecialUnitary(Operation):
         **Example:**
 
         >>> theta = np.array([0.5, 0.1, -0.3])
-        >>> qml.SpecialUnitary(theta, 0, num_wires=1).decomposition()
+        >>> qml.SpecialUnitary(theta, wires=[0]).decomposition()
         [QubitUnitary(array([[ 0.83004499-0.28280371j,  0.0942679 +0.47133952j],
             [-0.0942679 +0.47133952j,  0.83004499+0.28280371j]]), wires=[0])]
         """
