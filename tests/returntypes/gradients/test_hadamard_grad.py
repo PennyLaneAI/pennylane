@@ -144,6 +144,28 @@ class TestHadamardGrad:
         assert np.allclose(res_hadamard, expected, atol=tol, rtol=0)
 
     @pytest.mark.parametrize("theta", np.linspace(-2 * np.pi, 2 * np.pi, 7))
+    @pytest.mark.parametrize("G", [qml.CRX, qml.CRY, qml.CRZ])
+    def test_controlled_rotation_gradient_multi(self, G, theta, tol):
+        """Test gradient of controlled rotation gates with multiple measurements"""
+        dev = qml.device("default.qubit", wires=3)
+
+        with qml.queuing.AnnotatedQueue() as q:
+            qml.QubitStateVector(np.array([1.0, -1.0], requires_grad=False) / np.sqrt(2), wires=0)
+            G(theta, wires=[0, 1])
+            qml.expval(qml.PauliX(0))
+            qml.probs(wires=[1])
+
+        tape = qml.tape.QuantumScript.from_queue(q)
+        tape.trainable_params = {1}
+
+        res_hadamard, _ = grad_fn(tape, dev)
+        res_param_shift, _ = grad_fn(tape, dev, qml.gradients.param_shift)
+
+        assert isinstance(res_hadamard, tuple)
+        assert np.allclose(res_hadamard[0], res_param_shift[0], atol=tol, rtol=0)
+        assert np.allclose(res_hadamard[1], res_param_shift[1], atol=tol, rtol=0)
+
+    @pytest.mark.parametrize("theta", np.linspace(-2 * np.pi, 2 * np.pi, 7))
     @pytest.mark.parametrize("G", [qml.IsingXX, qml.IsingYY, qml.IsingZZ])
     def test_ising_gradient(self, G, theta, tol):
         """Test gradient of Ising coupling gates"""
@@ -359,13 +381,17 @@ class TestHadamardGrad:
         assert isinstance(res_hadamard[0], tuple)
         assert len(res_hadamard[0]) == 2
 
+        assert isinstance(res_hadamard[0][0], np.ndarray)
         assert res_hadamard[0][0].shape == ()
+        assert isinstance(res_hadamard[0][1], np.ndarray)
         assert res_hadamard[0][1].shape == ()
 
         assert isinstance(res_hadamard[1], tuple)
         assert len(res_hadamard[1]) == 2
 
+        assert isinstance(res_hadamard[1][0], np.ndarray)
         assert res_hadamard[1][0].shape == (4,)
+        assert isinstance(res_hadamard[1][1], np.ndarray)
         assert res_hadamard[1][1].shape == (4,)
 
         expval_expected = [-2 * np.sin(x) / 2, 0]
@@ -762,7 +788,7 @@ class TestHadamardGradEdgeCases:
         tape = qml.tape.QuantumScript.from_queue(q)
 
         res_hadamard, tapes = grad_fn(tape, dev)
-        print(res_hadamard)
+
         assert tapes == []
 
         assert isinstance(res_hadamard, tuple)
@@ -906,7 +932,7 @@ class TestHadamardTestGradDiff:
 
         res_hadamard = qml.jacobian(cost_fn_hadamard)(params)
         res_param_shift = qml.jacobian(cost_fn_param_shift)(params)
-        assert np.allclos(res_hadamard, res_param_shift)
+        assert np.allclose(res_hadamard, res_param_shift)
 
     @pytest.mark.tf
     def test_tf(self):
@@ -1032,5 +1058,4 @@ class TestHadamardTestGradDiff:
 
         res_hadamard = jax.jacobian(cost_h)(params)
         res_param_shift = jax.jacobian(cost_p)(params)
-
         assert np.allclose(res_hadamard, res_param_shift)

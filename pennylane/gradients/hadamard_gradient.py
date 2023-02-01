@@ -108,7 +108,7 @@ def _expval_hadamard_grad(tape, argnum, aux_wire):
     for id_argnum, _ in enumerate(tape.trainable_params):
         if id_argnum not in argnums:
             # parameter has zero gradient
-            gradient_data.append(None)
+            gradient_data.append(0)
             continue
 
         trainable_op, idx, p_idx = tape.get_operation(id_argnum, return_op_index=True)
@@ -182,9 +182,10 @@ def _expval_hadamard_grad(tape, argnum, aux_wire):
         multi_measurements = len(tape.measurements) > 1
         multi_params = len(tape.trainable_params) > 1
 
-        grads = []
         final_res = [
-            [2 * coeff * r for r in res] if isinstance(res, tuple) else 2 * coeff * res
+            [qml.math.convert_like(2 * coeff * r, r) for r in res]
+            if isinstance(res, tuple)
+            else qml.math.convert_like(2 * coeff * res, res)
             for coeff, res in zip(coeffs, results)
         ]
 
@@ -208,19 +209,25 @@ def _expval_hadamard_grad(tape, argnum, aux_wire):
                     num_wires_probs = len(tape.measurements[prob_idx].wires)
                     res = qml.math.reshape(res, (2**num_wires_probs, 2))
                     final_res[idx] = qml.math.tensordot(res, projector, axes=[[1], [0]])
+        grads = []
 
         for idx, num_tape in enumerate(gradient_data):
-            if num_tape is None:
+            if num_tape == 0:
                 grads.append(qml.math.zeros(()))
             elif num_tape == 1:
                 grads.append(final_res[idx])
             else:
-                grads.append(qml.math.sum(final_res[idx : idx + num_tape]))
+                if not multi_measurements:
+                    grads.append(qml.math.sum(final_res[idx : idx + num_tape]))
+                else:
+                    grads.append(qml.math.sum(final_res[idx : idx + num_tape], axis=0))
 
         if not multi_measurements and not multi_params:
-            return np.array(grads[0])
+            return grads[0]
 
         if not (multi_params and multi_measurements):
+            if multi_measurements:
+                return tuple(grads[0])
             return tuple(grads)
 
         # Reordering to match the right shape for multiple measurements
