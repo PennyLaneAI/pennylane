@@ -298,6 +298,9 @@
   to a state and returns a new state.
   [(#3637)](https://github.com/PennyLaneAI/pennylane/pull/3637)
 
+* The `create_initial_state` function is added to `devices/qubit` that returns an initial state for an execution.
+  [(#3683)](https://github.com/PennyLaneAI/pennylane/pull/3683)
+
 <h3>Improvements</h3>
 
 * `qml.purity` is added as a measurement process for purity
@@ -379,7 +382,18 @@
 * The `StatePrep` class has been added as an interface that state-prep operators must implement.
   [(#3654)](https://github.com/PennyLaneAI/pennylane/pull/3654)
 
-* Add `qml.devices.qubit.create_initial_state` to create an initial state for an execution.
+* Allow batching in all `SymbolicOp` operators, which include `Exp`, `Pow` and `SProd`.
+  [(#3597)](https://github.com/PennyLaneAI/pennylane/pull/3597)
+
+* `qml.pauli.is_pauli_word` now supports `Prod` and `SProd` operators, and it returns `False` when a
+  `Hamiltonian` contains more than one term.
+  [(#3692)](https://github.com/PennyLaneAI/pennylane/pull/3692)
+
+* `qml.pauli.pauli_word_to_string` now supports `Prod`, `SProd` and `Hamiltonian` operators.
+  [(#3692)](https://github.com/PennyLaneAI/pennylane/pull/3692)
+
+* `BasisState` now implements the `StatePrep` interface.
+  [(#3693)](https://github.com/PennyLaneAI/pennylane/pull/3693)
 
 <h3>Breaking changes</h3>
 
@@ -419,6 +433,10 @@
   different random numbers and an independence of the results from the global random number generation state.
   Please provide a seed to each individual function instead if you want controllable results.
   [(#3624)](https://github.com/PennyLaneAI/pennylane/pull/3624)
+
+* `qml.transforms.measurement_grouping` has been removed. Users should use `qml.transforms.hamiltonian_expand`
+  instead.
+  [(#3701)](https://github.com/PennyLaneAI/pennylane/pull/3701)
 
 <h3>Deprecations</h3>
 
@@ -493,6 +511,7 @@ Soran Jahangiri
 Christina Lee
 Albert Mitjans Coma
 Romain Moyard
+Mudit Pandey
 Borja Requena
 Matthew Silverman
 Antal Száva

@@ -653,7 +653,6 @@ def test_taper_excitations(
     obs_all, obs_tap = exc_obs[0] + exc_obs[1], exc_tap[0] + exc_tap[1]
     for op_all, op_tap in zip(obs_all, obs_tap):
         if op_tap:
-
             excited_state = np.matmul(qml.matrix(op_all, wire_order=range(len(hf_state))), state)
             ob_tap_mat = functools.reduce(
                 lambda i, j: np.matmul(i, j),

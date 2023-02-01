@@ -22,7 +22,7 @@ from pennylane import numpy as np
 def create_initial_state(
     wires: Union[qml.wires.Wires, Iterable],
     prep_operation: qml.operation.StatePrep = None,
-    like: str = "autograd",
+    like: str = "numpy",
 ):
     r"""
     Returns an initial state, defaulting to :math:`\ket{0}` if no state-prep operator is provided.
@@ -30,7 +30,8 @@ def create_initial_state(
     Args:
         wires (Union[Wires, Iterable]): The wires to be present in the initial state
         prep_operation (Optional[StatePrep]): An operation to prepare the initial state
-        like (Optional[str]): The machine learning interface used to create the initial state
+        like (Optional[str]): The machine learning interface used to create the initial state.
+            Defaults to numpy
 
     Returns:
         array: The initial state of a circuit
@@ -41,4 +42,4 @@ def create_initial_state(
         state[(0,) * num_wires] = 1
         return qml.math.array(state, like=like)
 
-    return prep_operation.state_vector(wire_order=wires)
+    return prep_operation.state_vector(wire_order=list(wires))

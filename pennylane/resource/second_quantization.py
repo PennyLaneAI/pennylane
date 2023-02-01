@@ -104,7 +104,6 @@ class DoubleFactorization(Operation):
         beta=20,
         chemist_notation=False,
     ):
-
         self.one_electron = one_electron
         if chemist_notation:
             self.two_electron = two_electron

@@ -144,7 +144,6 @@ class DefaultMixed(QubitDevice):
 
     @staticmethod
     def _asarray(array, dtype=None):
-
         # Support float
         if not hasattr(array, "__len__"):
             return np.asarray(array, dtype=dtype)
@@ -246,7 +245,6 @@ class DefaultMixed(QubitDevice):
         self._pre_rotated_state = self._state
 
     def analytic_probability(self, wires=None):
-
         if self._state is None:
             return None
 
@@ -604,12 +602,10 @@ class DefaultMixed(QubitDevice):
         return super().execute(circuit, **kwargs)
 
     def apply(self, operations, rotations=None, **kwargs):
-
         rotations = rotations or []
 
         # apply the circuit operations
         for i, operation in enumerate(operations):
-
             if i > 0 and isinstance(operation, (QubitStateVector, BasisState)):
                 raise DeviceError(
                     f"Operation {operation.name} cannot be used after other Operations have already been applied "
