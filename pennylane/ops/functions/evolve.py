@@ -35,7 +35,6 @@ def evolve(
 
             * If ``op`` is a :class:`.Operator`, ``t`` corresponds to the coefficient multiplying
             the exponentiated operator: :math:`\exp\{i\bm{O}t)\}`. If ``None``, ``t=1`` is used.
-
             * If ``op`` is a :class:`.ParametrizedHamiltonian`, ``t`` can be either a float or a
             tuple of floats. If a float, the operator is evolved from ``0`` to ``t``. If a tuple of
             floats, each value corresponds to the start and end time of the evolution. Note that such
