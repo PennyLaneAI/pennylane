@@ -298,20 +298,12 @@ class SpecialUnitary(Operation):
             A = qml.math.tensordot(theta, pauli_basis_matrices(num_wires), axes=[[-1], [0]])
         return qml.math.expm(1j * A)
 
-    @staticmethod
-    def compute_decomposition(theta, wires, num_wires):
-        r"""Representation of the operator as a product of other operators (static method).
+    def decomposition(self):
+        r"""Representation of the operator as a product of other operators.
 
-        .. math:: O = O_1 O_2 \dots O_n.
+        .. math:: O = O_1 O_2 \dots O_n
 
         This ``Operation`` is decomposed into the corresponding ``QubitUnitary``.
-
-        .. seealso:: :meth:`~.SpecialUnitary.decomposition`.
-
-        Args:
-            theta (tensor_like): Pauli coordinates of the exponent :math:`A(\theta)`
-            wires (Iterable[Any] or Wires): the wire(s) the operation acts on
-            num_wires (int): The number of wires
 
         Returns:
             list[Operator]: decomposition of the operator
@@ -319,11 +311,11 @@ class SpecialUnitary(Operation):
         **Example:**
 
         >>> theta = np.array([0.5, 0.1, -0.3])
-        >>> qml.SpecialUnitary.compute_decomposition(theta, 0, num_wires=1)
+        >>> qml.SpecialUnitary(theta, 0, num_wires=1).decomposition()
         [QubitUnitary(array([[ 0.83004499-0.28280371j,  0.0942679 +0.47133952j],
             [-0.0942679 +0.47133952j,  0.83004499+0.28280371j]]), wires=[0])]
         """
-        return [qml.QubitUnitary(qml.SpecialUnitary.compute_matrix(theta, num_wires), wires=wires)]
+        return [qml.QubitUnitary(self.matrix(), wires=wires)]
 
     def adjoint(self):
         return SpecialUnitary(-self.data[0], wires=self.wires)

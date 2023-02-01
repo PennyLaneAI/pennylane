@@ -198,15 +198,13 @@ class TestSpecialUnitary:
         """Test that SpecialUnitary falls back to QubitUnitary."""
 
         wires = list(range(n))
-        decomp = qml.SpecialUnitary.compute_decomposition(theta, wires, n)
-        decomp2 = qml.SpecialUnitary(theta, wires).decomposition()
+        decomp = qml.SpecialUnitary(theta, wires).decomposition()
 
-        assert len(decomp) == 1 == len(decomp2)
-        assert decomp[0].name == "QubitUnitary" == decomp2[0].name
-        assert decomp[0].wires == Wires(wires) == decomp2[0].wires
+        assert len(decomp) == 1
+        assert decomp[0].name == "QubitUnitary"
+        assert decomp[0].wires == Wires(wires)
         mat = qml.SpecialUnitary.compute_matrix(theta, n)
         assert np.allclose(decomp[0].data[0], mat)
-        assert np.allclose(decomp2[0].data[0], mat)
 
     @pytest.mark.parametrize("n, theta", n_and_theta)
     def test_decomposition_broadcasted(self, n, theta):
@@ -214,16 +212,14 @@ class TestSpecialUnitary:
         theta = np.outer([0.2, 1.0, -0.3], theta)
         wires = list(range(n))
 
-        decomp = qml.SpecialUnitary.compute_decomposition(theta, wires, n)
-        decomp2 = qml.SpecialUnitary(theta, wires).decomposition()
+        decomp = qml.SpecialUnitary(theta, wires).decomposition()
 
-        assert len(decomp) == 1 == len(decomp2)
-        assert decomp[0].name == "QubitUnitary" == decomp2[0].name
-        assert decomp[0].wires == Wires(wires) == decomp2[0].wires
+        assert len(decomp) == 1
+        assert decomp[0].name == "QubitUnitary"
+        assert decomp[0].wires == Wires(wires)
 
         mat = qml.SpecialUnitary.compute_matrix(theta, n)
         assert np.allclose(decomp[0].data[0], mat)
-        assert np.allclose(decomp2[0].data[0], mat)
 
     @pytest.mark.parametrize("n, theta", n_and_theta)
     def test_adjoint(self, theta, n):
