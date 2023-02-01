@@ -513,7 +513,6 @@ class TestJaxExecuteIntegration:
         assert tape.trainable_params == [0, 1]
 
         def cost(a, b):
-
             # An explicit call to _update() is required here to update the
             # trainable parameters in between tape executions.
             # This is different from how the autograd interface works.
@@ -595,7 +594,6 @@ class TestJaxExecuteIntegration:
         params = jax.numpy.array([0.3, 0.2])
 
         def cost_fn(x):
-
             with qml.queuing.AnnotatedQueue() as q1:
                 qml.Hadamard(0)
                 qml.RY(x[0], wires=[0])
@@ -925,7 +923,6 @@ class TestVectorValuedJIT:
             pytest.skip("The adjoint diff method doesn't support probabilities.")
 
         def cost(x, y, device, interface, ek):
-
             with qml.queuing.AnnotatedQueue() as q1:
                 qml.RX(x, wires=[0])
                 qml.RY(y, wires=[1])

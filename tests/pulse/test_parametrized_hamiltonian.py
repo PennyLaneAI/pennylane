@@ -120,7 +120,6 @@ class TestInitialization:
 
 
 class TestCall:
-
     coeffs_and_ops_and_params = (
         (
             [f1, f2],
@@ -232,7 +231,8 @@ class TestInteractionWithOperators:
     @pytest.mark.parametrize("H, coeff", ops_with_coeffs)
     def test_add_special_operators(self, H, coeff):
         """Test that a Hamiltonian and SProd can be added to a ParametrizedHamiltonian, and
-        will be incorporated in the H_fixed term, with their coefficients included in H_coeffs_fixed"""
+        will be incorporated in the H_fixed term, with their coefficients included in H_coeffs_fixed
+        """
         pH = ParametrizedHamiltonian([f1, f2], [qml.PauliX(0), qml.PauliY(1)])
         params = [1, 2]
         # Adding on the right

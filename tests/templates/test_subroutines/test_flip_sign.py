@@ -36,7 +36,6 @@ class TestFlipSign:
         ],
     )
     def test_eval(self, n_status, n_wires):
-
         if isinstance(n_wires, int):
             n_wires = 1 if n_wires == 0 else n_wires
             n_wires = list(range(n_wires))
