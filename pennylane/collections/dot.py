@@ -130,7 +130,6 @@ def dot(x, y):
     )
 
     if hasattr(x, "interface") and hasattr(y, "interface"):
-
         if x.interface != y.interface:
             raise ValueError("QNodeCollections have non-matching interfaces")
 

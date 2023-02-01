@@ -258,7 +258,6 @@ class op_transform:
             return self._fn(obj, *args, **kwargs)
 
         except Exception as e1:  # pylint: disable=broad-except
-
             try:
                 # attempt to decompose the operation and call
                 # the tape transform function if defined

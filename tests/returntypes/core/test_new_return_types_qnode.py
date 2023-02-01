@@ -1138,7 +1138,6 @@ class TestIntegrationMultipleReturns:
         res = qnode(0.5)
 
         if shot_vector is None:
-
             assert isinstance(res, list)
             assert len(res) == wires
             for r in res:
@@ -1447,7 +1446,6 @@ class TestIntegrationMultipleReturnsTensorflow:
         res = qnode(tf.Variable(0.5))
 
         if shot_vector is None:
-
             assert isinstance(res, list)
             assert len(res) == wires
             for r in res:
@@ -1708,7 +1706,6 @@ class TestIntegrationMultipleReturnsTorch:
         res = qnode(torch.tensor(0.5, requires_grad=True))
 
         if shot_vector is None:
-
             assert isinstance(res, list)
             assert len(res) == wires
             for r in res:
@@ -1992,7 +1989,6 @@ class TestIntegrationMultipleReturnJax:
         res = qnode(jax.numpy.array(0.5))
 
         if shot_vector is None:
-
             assert isinstance(res, list)
             assert len(res) == wires
             for r in res:
@@ -2126,7 +2122,6 @@ class TestIntegrationShotVectors:
 
         assert len(res) == len(all_shot_copies)
         for r, shots in zip(res, all_shot_copies):
-
             if shots == 1:
                 # Scalar tensors
                 assert r.shape == ()
@@ -2349,7 +2344,6 @@ class TestIntegrationMultipleMeasurementsShotVector:
         for meas_res in res:
             for i, r in enumerate(meas_res):
                 if i % 2 == 0:
-
                     # Scalar-val meas
                     assert r.shape == ()
                 else:

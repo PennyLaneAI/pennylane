@@ -224,7 +224,6 @@ class TestRXCalcGrad:
     )
 
     def compare_expected_result(self, phi, state, new_state, g):
-
         expected0 = np.cos(phi / 2) * state[0, :, :] + -1j * np.sin(phi / 2) * state[1, :, :]
         expected1 = -1j * np.sin(phi / 2) * state[0, :, :] + np.cos(phi / 2) * state[1, :, :]
 

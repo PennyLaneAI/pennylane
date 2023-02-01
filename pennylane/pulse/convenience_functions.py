@@ -22,6 +22,7 @@ try:
 except ImportError:
     has_jax = False
 
+
 # pylint: disable=unused-argument
 def constant(scalar, time):
     """Parametrized function that is constant in time and returns the given ``scalar``.

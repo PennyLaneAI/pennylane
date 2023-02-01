@@ -209,7 +209,8 @@ class TestQubitSum:
 
     def test_adjoint(self):
         """Test the adjoint method of QubitSum by reconstructing the unitary matrix and checking
-        if it is equal to qml.QubitSum's matrix representation (recall that the operation is self-adjoint)"""
+        if it is equal to qml.QubitSum's matrix representation (recall that the operation is self-adjoint)
+        """
         dev = qml.device("default.qubit", wires=3)
 
         @qml.qnode(dev)

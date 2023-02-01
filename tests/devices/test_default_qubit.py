@@ -2311,7 +2311,6 @@ class TestDenseMatrixDecompositionThreshold:
 
     @pytest.mark.parametrize("op, n_wires, condition", input)
     def test_threshold(self, op, n_wires, condition):
-
         wires = np.linspace(0, n_wires - 1, n_wires, dtype=int)
         op = op(wires=wires)
         assert DefaultQubit.stopping_condition.__get__(op)(op) == condition
