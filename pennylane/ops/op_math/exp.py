@@ -38,12 +38,16 @@ from .sum import Sum
 from .symbolicop import ScalarSymbolicOp
 
 
-def exp(op, coeff=1, num_steps=1, id=None):
+def exp(op, coeff=1, num_steps=None, id=None):
     """Take the exponential of an Operator times a coefficient.
 
     Args:
         base (~.operation.Operator): The Operator to be exponentiated
-        coeff=1 (Number): A scalar coefficient of the operator.
+        coeff (float): a scalar coefficient of the operator
+        num_steps (int): The number of steps used in the decomposition of the exponential operator,
+            also known as the Trotter number. If this value is `None` and the Suzuki-Trotter
+            decomposition is needed, an error will be raised.
+        id (str): id for the Sum operator. Default is None.
 
     Returns:
        :class:`Exp`: A :class`~.operation.Operator` representing an operator exponential.
@@ -114,6 +118,11 @@ class Exp(ScalarSymbolicOp, Operation):
     Args:
         base (~.operation.Operator): The Operator to be exponentiated
         coeff=1 (Number): A scalar coefficient of the operator.
+        num_steps (int): The number of steps used in the decomposition of the exponential operator,
+            also known as the Trotter number. If this value is `None` and the Suzuki-Trotter
+            decomposition is needed, an error will be raised.
+        do_queue (bool): determines if the sum operator will be queued. Default is True.
+        id (str): id for the sum operator. Default is None.
 
     **Example**
 
@@ -158,7 +167,7 @@ class Exp(ScalarSymbolicOp, Operation):
     _name = "Exp"
 
     # pylint: disable=too-many-arguments
-    def __init__(self, base, coeff=1, num_steps=1, do_queue=True, id=None):
+    def __init__(self, base, coeff=1, num_steps=None, do_queue=True, id=None):
         super().__init__(base, scalar=coeff, do_queue=do_queue, id=id)
         self._data = [[coeff], self.base.data]
         self.grad_recipe = [None]
@@ -276,30 +285,36 @@ class Exp(ScalarSymbolicOp, Operation):
                 return [getattr(qml, f"R{pauli_word}")(phi=coeff, wires=base.wires)]
             return [qml.PauliRot(theta=coeff, pauli_word=pauli_word, wires=base.wires)]
 
-        if isinstance(base, (Hamiltonian, Sum)):
-            coeff /= self.num_steps  # divide by trotter number
-            coeffs, ops = (
-                base.terms() if isinstance(base, Hamiltonian) else ([1] * len(base), base.operands)
+        if not isinstance(base, (Hamiltonian, Sum)):
+            raise DecompositionUndefinedError
+
+        if self.num_steps is None:
+            raise ValueError(
+                "The number of steps is required to calculate the Suzuki-Trotter "
+                "decomposition of the exponential operator. Please specify a value "
+                "for ``num_steps`` when instantiating the operator."
             )
-            op_list = []
+        coeff /= self.num_steps  # divide by trotter number
+        coeffs, ops = (
+            base.terms() if isinstance(base, Hamiltonian) else ([1] * len(base), base.operands)
+        )
+        op_list = []
 
-            for c, op in zip(coeffs, ops):
-                c *= coeff
-                if isinstance(op, SProd):
-                    c *= op.scalar
-                    op = op.base
-                if not (qml.pauli.is_pauli_word(op) and math.real(c) == 0):
-                    raise DecompositionUndefinedError(
-                        "The decomposition of the exponential of a non-pauli word is not defined."
-                    )
-                pauli_word = qml.pauli.pauli_word_to_string(op)
-                if pauli_word != "I" * op.num_wires:
-                    c = 2j * c  # need to cancel the coefficients added by PauliRot
-                    op_list.append(qml.PauliRot(theta=c, pauli_word=pauli_word, wires=op.wires))
+        for c, op in zip(coeffs, ops):
+            c *= coeff
+            if isinstance(op, SProd):
+                c *= op.scalar
+                op = op.base
+            if not (qml.pauli.is_pauli_word(op) and math.real(c) == 0):
+                raise DecompositionUndefinedError(
+                    "The decomposition of the exponential of a non-pauli word is not defined."
+                )
+            pauli_word = qml.pauli.pauli_word_to_string(op)
+            if pauli_word != "I" * op.num_wires:
+                c = 2j * c  # need to cancel the coefficients added by PauliRot
+                op_list.append(qml.PauliRot(theta=c, pauli_word=pauli_word, wires=op.wires))
 
-            return op_list * self.num_steps  # apply operators ``num_steps`` times
-
-        raise DecompositionUndefinedError
+        return op_list * self.num_steps  # apply operators ``num_steps`` times
 
     def matrix(self, wire_order=None):
         coeff_interface = math.get_interface(self.scalar)
