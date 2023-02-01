@@ -160,7 +160,6 @@ class Exp(ScalarSymbolicOp, Operation):
     # pylint: disable=too-many-arguments
     def __init__(self, base, coeff=1, num_steps=1, do_queue=True, id=None):
         super().__init__(base, scalar=coeff, do_queue=do_queue, id=id)
-        self._name = "Exp"
         self._data = [[coeff], self.base.data]
         self.grad_recipe = [None]
         self.num_steps = num_steps
