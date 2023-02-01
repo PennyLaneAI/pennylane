@@ -337,6 +337,7 @@ A = np.array([[1.02789352, 1.61296440 - 0.3498192j], [1.61296440 + 0.3498192j, 1
 
 # ===============================================================
 
+
 # pylint: disable=too-few-public-methods
 class TestSupportedGates:
     """Test that the device can implement all gates that it claims to support."""

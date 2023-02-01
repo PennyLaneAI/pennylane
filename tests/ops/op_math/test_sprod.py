@@ -835,7 +835,6 @@ class TestIntegration:
     @pytest.mark.tf
     @pytest.mark.parametrize("diff_method", ("parameter-shift", "backprop"))
     def test_tensorflow_qnode(self, diff_method):
-
         import tensorflow as tf
 
         dev = qml.device("default.qubit", wires=5)

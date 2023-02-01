@@ -443,7 +443,6 @@ class TestAdjointOperation:
             Adjoint(1.0 * qml.PauliX(0)).generator()
 
     def test_single_qubit_rot_angles(self):
-
         param = 1.234
         base = qml.RX(param, wires=0)
         op = Adjoint(base)

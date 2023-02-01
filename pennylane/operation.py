@@ -355,7 +355,6 @@ def classproperty(func):
 
 
 def _process_data(op):
-
     # Use qml.math.real to take the real part. We may get complex inputs for
     # example when differentiating holomorphic functions with JAX: a complex
     # valued QNode (one that returns qml.state) requires complex typed inputs.
@@ -1656,7 +1655,6 @@ class Operation(Operator):
         return super().label(decimals=decimals, base_label=base_label, cache=cache)
 
     def __init__(self, *params, wires=None, do_queue=True, id=None):
-
         self._inverse = False
         super().__init__(*params, wires=wires, do_queue=do_queue, id=id)
 
@@ -1915,7 +1913,6 @@ class Tensor(Observable):
     has_matrix = True
 
     def __init__(self, *args):  # pylint: disable=super-init-not-called
-
         wires = [op.wires for op in args]
         if len(wires) != len(set(wires)):
             warnings.warn(
@@ -1966,7 +1963,6 @@ class Tensor(Observable):
         constituents = self._args if init else self.obs
 
         for o in constituents:
-
             if init:
                 if isinstance(o, Tensor):
                     self.obs.extend(o.obs)

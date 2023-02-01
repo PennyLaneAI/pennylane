@@ -208,6 +208,7 @@ class RotoselectOptimizer:
         Returns:
             array: the input sequence ``x`` with the value at position ``d`` optimized
         """
+
         # helper function for x[d] = theta
         def insert(x, d, theta):
             x[d] = theta

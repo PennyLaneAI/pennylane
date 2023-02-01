@@ -279,7 +279,13 @@ class TestCaching:
                 qml.expval(qml.PauliZ(0))
 
             tape = qml.tape.QuantumScript.from_queue(q)
-            return execute([tape], dev, gradient_fn=param_shift, cache=cache, interface=interface,)[
+            return execute(
+                [tape],
+                dev,
+                gradient_fn=param_shift,
+                cache=cache,
+                interface=interface,
+            )[
                 0
             ][0]
 
@@ -338,7 +344,13 @@ class TestCaching:
                 qml.expval(qml.PauliZ(0))
 
             tape = qml.tape.QuantumScript.from_queue(q)
-            return execute([tape], dev, gradient_fn=param_shift, cache=cache, interface=interface,)[
+            return execute(
+                [tape],
+                dev,
+                gradient_fn=param_shift,
+                cache=cache,
+                interface=interface,
+            )[
                 0
             ][0]
 
@@ -499,7 +511,6 @@ class TestJaxExecuteIntegration:
         assert tape.trainable_params == [0, 1]
 
         def cost(a, b):
-
             # An explicit call to _update() is required here to update the
             # trainable parameters in between tape executions.
             # This is different from how the autograd interface works.

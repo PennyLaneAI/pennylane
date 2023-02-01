@@ -237,10 +237,10 @@ class LieAlgebraOptimizer:
     -2.2283086057521713
 
     """
+
     # pylint: disable=too-many-arguments
     # pylint: disable=too-many-instance-attributes
     def __init__(self, circuit, stepsize=0.01, restriction=None, exact=False, trottersteps=1):
-
         if not isinstance(circuit, qml.QNode):
             raise TypeError(f"circuit must be a QNode, received {type(circuit)}")
 

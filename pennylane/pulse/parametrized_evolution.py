@@ -157,6 +157,7 @@ class ParametrizedEvolution(Operation):
 
     _name = "ParametrizedEvolution"
     num_wires = AnyWires
+
     # pylint: disable=too-many-arguments, super-init-not-called
     def __init__(
         self,

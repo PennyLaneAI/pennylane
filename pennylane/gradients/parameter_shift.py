@@ -62,7 +62,6 @@ def _square_observable(obs):
         components_squared = []
 
         for comp in obs.obs:
-
             try:
                 components_squared.append(NONINVOLUTORY_OBS[comp.name](comp))
             except KeyError:
@@ -489,7 +488,6 @@ def _expval_param_shift_tuple(
     at_least_one_unshifted = False
 
     for idx, _ in enumerate(tape.trainable_params):
-
         if idx not in argnum:
             # parameter has zero gradient
             gradient_data.append((0, [], None, None, 0))
@@ -534,7 +532,6 @@ def _expval_param_shift_tuple(
 
         grads = []
         for data in gradient_data:
-
             num_tapes, *_, unshifted_coeff, batch_size = data
             if num_tapes == 0:
                 if unshifted_coeff is None:
@@ -643,7 +640,6 @@ def expval_param_shift(
     at_least_one_unshifted = False
 
     for idx, _ in enumerate(tape.trainable_params):
-
         if idx not in argnum:
             # parameter has zero gradient
             gradient_data.append((0, [], None, None, 0))
@@ -706,7 +702,6 @@ def expval_param_shift(
         start, r0 = (1, results[0]) if at_least_one_unshifted and f0 is None else (0, f0)
 
         for data in gradient_data:
-
             num_tapes, *_, unshifted_coeff, batch_size = data
             if num_tapes == 0:
                 # parameter has zero gradient. We don't know the output shape yet, so just memorize
@@ -828,9 +823,7 @@ def _single_variance_gradient(tape, var_mask, pdA2, f0, pdA):
     num_params = len(tape.trainable_params)
     num_measurements = len(tape.measurements)
     if num_measurements > 1:
-
         if num_params == 1:
-
             var_grad = []
 
             for m_idx in range(num_measurements):

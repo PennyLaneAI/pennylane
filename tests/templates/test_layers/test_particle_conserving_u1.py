@@ -106,7 +106,6 @@ class TestDecomposition:
 
                     # check that parametrized gates take the parameters \phi and \theta properly
                     if exp_gate is qml.CRot:
-
                         if j < idx_CRot:
                             exp_params = [-phi, np.pi, phi]
                         if j > idx_CRot:
@@ -117,7 +116,6 @@ class TestDecomposition:
                         assert queue[idx].parameters == exp_params
 
                     elif exp_gate is qml.PhaseShift:
-
                         if j < idx_CRot:
                             exp_params = -phi
                             if j == idx_CRot / 2:

@@ -84,7 +84,6 @@ def measurement_grouping(tape, obs_list, coeffs_list):
     tapes = []
 
     for obs in obs_groupings:
-
         with qml.queuing.AnnotatedQueue() as q:
             for op in tape.operations:
                 op.queue()

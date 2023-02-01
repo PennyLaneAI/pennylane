@@ -138,7 +138,7 @@ class GradientDescentOptimizer:
 
         trained_index = 0
         for index, arg in enumerate(args):
-            #if getattr(arg, "requires_grad", False):
+            # if getattr(arg, "requires_grad", False):
             args_new[index] = arg - self.stepsize * grad[trained_index]
 
             trained_index += 1
