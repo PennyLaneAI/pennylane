@@ -98,7 +98,6 @@ def simplify(input: Union[Operator, MeasurementProcess, QuantumTape, QNode, Call
         )
 
     if callable(input):
-
         old_qfunc = input.func if isinstance(input, QNode) else input
 
         @wraps(old_qfunc)

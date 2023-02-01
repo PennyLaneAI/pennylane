@@ -219,7 +219,6 @@ def bit_flip_mixer(graph: Union[nx.Graph, rx.PyGraph], b: int):
     get_nvalue = lambda i: graph.nodes()[i] if is_rx else i
 
     for i in graph_nodes:
-
         neighbours = sorted(graph.neighbors(i)) if is_rx else list(graph.neighbors(i))
         degree = len(neighbours)
 

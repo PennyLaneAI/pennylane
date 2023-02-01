@@ -903,7 +903,6 @@ def autodiff_metric_tensor(ansatz, num_wires):
 
 
 class TestFullMetricTensor:
-
     num_wires = 3
 
     @pytest.mark.autograd

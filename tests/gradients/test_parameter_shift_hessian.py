@@ -341,7 +341,6 @@ class TestParameterShiftHessian:
         recipe = list(zip(c, np.ones_like(c), s))
 
         class DummyOp(qml.CRX):
-
             grad_recipe = (recipe,)
 
         @qml.qnode(dev, diff_method="parameter-shift", max_diff=2)
@@ -762,7 +761,6 @@ class TestParameterShiftHessian:
         dev = qml.device("default.qubit", wires=2)
 
         class DummyOp(qml.CRZ):
-
             grad_method = "F"
 
         @qml.qnode(dev, max_diff=2, diff_method="parameter-shift")
@@ -787,7 +785,6 @@ class TestParameterShiftHessian:
         dev = qml.device("default.qubit", wires=2)
 
         class DummyOp(qml.CRZ):
-
             grad_method = "F"
 
         @qml.qnode(dev, max_diff=2, diff_method="parameter-shift")
@@ -849,7 +846,6 @@ class TestParameterShiftHessian:
         """Test that no error is thrown for operations that are not marked differentiable"""
 
         class DummyOp(qml.CRZ):
-
             grad_method = "F"
 
         dev = qml.device("default.qubit", wires=2)

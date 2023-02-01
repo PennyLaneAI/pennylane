@@ -464,7 +464,6 @@ class TestJaxExecuteIntegration:
         assert tape.trainable_params == [0, 1]
 
         def cost(a, b):
-
             # An explicit call to _update() is required here to update the
             # trainable parameters in between tape executions.
             # This is different from how the autograd interface works.
