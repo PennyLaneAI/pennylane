@@ -221,10 +221,10 @@ import warnings
 from enum import IntEnum
 from typing import List
 
+import autoray
 import numpy as np
 from numpy.linalg import multi_dot
 from scipy.sparse import coo_matrix, eye, kron
-import autoray
 import pennylane as qml
 from pennylane.math import expand_matrix
 from pennylane.queuing import QueuingManager
@@ -1411,9 +1411,9 @@ class Operator(abc.ABC):
         if isinstance(other, qml.pulse.ParametrizedHamiltonian):
             return other.__add__(self)
         backend = autoray.infer_backend(other)
-        if (backend == "builtins" and isinstance(other, numbers.Number)) or (
-            backend in SUPPORTED_INTERFACES and qml.math.shape(other) == ()
-        ):
+        if (
+            backend == "builtins" and isinstance(other, numbers.Number)
+        ) or backend in SUPPORTED_INTERFACES:
             return qml.sum(self, qml.s_prod(scalar=other, operator=qml.Identity(self.wires)))
         return NotImplemented
 
@@ -1424,9 +1424,9 @@ class Operator(abc.ABC):
         if callable(other):
             return qml.pulse.ParametrizedHamiltonian([other], [self])
         backend = autoray.infer_backend(other)
-        if (backend == "builtins" and isinstance(other, numbers.Number)) or (
-            backend in SUPPORTED_INTERFACES and qml.math.shape(other) == ()
-        ):
+        if (
+            backend == "builtins" and isinstance(other, numbers.Number)
+        ) or backend in SUPPORTED_INTERFACES:
             return qml.s_prod(scalar=other, operator=self)
         return NotImplemented
 
@@ -1452,7 +1452,10 @@ class Operator(abc.ABC):
 
     def __pow__(self, other):
         r"""The power operation of an Operator object."""
-        if isinstance(other, numbers.Number):
+        backend = autoray.infer_backend(other)
+        if (
+            backend == "builtins" and isinstance(other, numbers.Number)
+        ) or backend in SUPPORTED_INTERFACES:
             return qml.pow(self, z=other)
         return NotImplemented
 

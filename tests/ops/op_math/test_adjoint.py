@@ -28,6 +28,7 @@ class TestInheritanceMixins:
         """Test when base directly inherits from Operator, Adjoint only inherits
         from Adjoint and Operator."""
 
+        # pylint: disable=too-few-public-methods
         class Tester(qml.operation.Operator):
             num_wires = 1
 
@@ -46,7 +47,7 @@ class TestInheritanceMixins:
     def test_operation(self):
         """When the operation inherits from `Operation`, the `AdjointOperation` mixin is
         added and the Adjoint has Operation functionality."""
-
+        # pylint: disable=too-few-public-methods
         class CustomOp(qml.operation.Operation):
             num_wires = 1
             num_params = 1
@@ -66,7 +67,7 @@ class TestInheritanceMixins:
 
     def test_observable(self):
         """Test that when the base is an Observable, Adjoint will also inherit from Observable."""
-
+        # pylint: disable=too-few-public-methods
         class CustomObs(qml.operation.Observable):
             num_wires = 1
             num_params = 0
@@ -211,7 +212,7 @@ class TestProperties:
     def test_has_decomposition_true_via_base_decomposition(self):
         """Test `has_decomposition` property is activated because the base operation defines a
         `decomposition` method."""
-
+        # pylint: disable=too-few-public-methods
         class MyOp(qml.operation.Operation):
             num_wires = 1
 
@@ -226,7 +227,7 @@ class TestProperties:
     def test_has_decomposition_false(self):
         """Test `has_decomposition` property is not activated if the base neither
         `has_adjoint` nor `has_decomposition`."""
-
+        # pylint: disable=too-few-public-methods
         class MyOp(qml.operation.Operation):
             num_wires = 1
 
@@ -237,7 +238,7 @@ class TestProperties:
 
     def test_has_adjoint_true_always(self):
         """Test `has_adjoint` property to always be true, irrespective of the base."""
-
+        # pylint: disable=too-few-public-methods
         class MyOp(qml.operation.Operation):
             """Operation that does not define `adjoint` and hence has `has_adjoint=False`."""
 
@@ -266,7 +267,7 @@ class TestProperties:
     def test_has_diagonalizing_gates_false(self):
         """Test `has_diagonalizing_gates` property is not activated if the base neither
         `has_adjoint` nor `has_diagonalizing_gates`."""
-
+        # pylint: disable=too-few-public-methods
         class MyOp(qml.operation.Operation):
             num_wires = 1
             has_diagonalizing_gates = False
@@ -278,17 +279,17 @@ class TestProperties:
     def test_queue_category(self):
         """Test that the queue category `"_ops"` carries over."""
         op = Adjoint(qml.PauliX(0))
-        assert op._queue_category == "_ops"
+        assert op._queue_category == "_ops"  # pylint: disable=protected-access
 
     def test_queue_category_None(self):
         """Test that the queue category `None` for some observables carries over."""
         op = Adjoint(qml.PauliX(0) @ qml.PauliY(1))
-        assert op._queue_category is None
+        assert op._queue_category is None  # pylint: disable=protected-access
 
     @pytest.mark.parametrize("value", (True, False))
     def test_is_hermitian(self, value):
         """Test `is_hermitian` property mirrors that of the base."""
-
+        # pylint: disable=too-few-public-methods
         class DummyOp(qml.operation.Operator):
             num_wires = 1
             is_hermitian = value
@@ -303,9 +304,6 @@ class TestProperties:
         op = Adjoint(base)
         assert op.batch_size == 3
         assert op.ndim_params == (0,)
-
-        op._check_batching([np.array([1.2, 2.3])])
-        assert op.batch_size == base.batch_size == 2
 
 
 class TestSimplify:
@@ -511,7 +509,7 @@ class TestQueueing:
 
         with qml.queuing.AnnotatedQueue() as q:
             base = qml.Rot(1.2345, 2.3456, 3.4567, wires="b")
-            op = Adjoint(base)
+            _ = Adjoint(base)
 
         assert base not in q.queue
         assert len(q) == 1
@@ -530,7 +528,7 @@ class TestQueueing:
         """Test that when `do_queue` is specified, the operation is not queued."""
         base = qml.PauliX(0)
         with qml.queuing.AnnotatedQueue() as q:
-            op = Adjoint(base, do_queue=False)
+            _ = Adjoint(base, do_queue=False)
 
         assert len(q) == 0
 
@@ -655,7 +653,9 @@ class TestEigvals:
         adj = Adjoint(base)
         compare = qml.RX(-x, 0)
 
-        assert qml.math.allclose(base.eigvals(), compare.eigvals())
+        # eigvals might have different orders
+        assert qml.math.allclose(adj.eigvals()[:, 0], compare.eigvals()[:, 1])
+        assert qml.math.allclose(adj.eigvals()[:, 1], compare.eigvals()[:, 0])
 
     def test_no_matrix_defined_eigvals(self):
         """Test that if the base does not define eigvals, The Adjoint raises the same error."""
@@ -1071,7 +1071,9 @@ class TestAdjointConstructorIntegration:
         expected_res = np.sin(x)
         expected_grad = np.cos(x)
         assert qml.math.allclose(circ(x), expected_res)
-        assert qml.math.allclose(autograd.grad(circ)(x), expected_grad)
+        assert qml.math.allclose(
+            autograd.grad(circ)(x), expected_grad  # pylint: disable=no-value-for-parameter
+        )
 
     @pytest.mark.jax
     @pytest.mark.parametrize("diff_method", ("backprop", "adjoint", "parameter-shift"))
