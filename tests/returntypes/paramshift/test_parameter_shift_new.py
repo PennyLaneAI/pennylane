@@ -1221,7 +1221,6 @@ class TestParameterShiftRule:
         params = np.array([x, y], requires_grad=True)
 
         def cost_fn(params):
-
             with qml.queuing.AnnotatedQueue() as q:
                 qml.RX(params[0], wires=[0])
                 RX(params[1], wires=[0])
@@ -1268,7 +1267,6 @@ class TestParameterShiftRule:
         params = np.array([x, y], requires_grad=True)
 
         def cost_fn(params):
-
             with qml.queuing.AnnotatedQueue() as q:
                 RX(params[0], wires=[0])
                 RY(params[1], wires=[1])
@@ -1724,7 +1722,6 @@ class TestParameterShiftRule:
         y = -0.654
 
         with qml.queuing.AnnotatedQueue() as q:
-
             # Ops influencing var res
             qml.RX(a, wires=0)
             qml.RX(a, wires=1)
@@ -1776,7 +1773,6 @@ class TestParameterShiftRule:
         y = -0.654
 
         with qml.queuing.AnnotatedQueue() as q:
-
             # Ops influencing var res
             qml.RX(a, wires=0)
             qml.RX(a, wires=1)

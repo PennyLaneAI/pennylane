@@ -140,10 +140,10 @@ class TestInitialization:
     @pytest.mark.parametrize("scalar, op", ops)
     def test_terms(self, op, scalar):
         sprod_op = SProd(scalar, op)
-        coeff, ops = sprod_op.terms()
+        coeff, op2 = sprod_op.terms()
 
         assert coeff == [scalar]
-        for op1, op2 in zip(ops, [op]):
+        for op1, op2 in zip(op2, [op]):
             assert qml.equal(op1, op2)
 
     def test_decomposition_raises_error(self):
@@ -171,7 +171,7 @@ class TestMscMethods:
         """Test the repr dunder method."""
         scalar, op = op_scalar_tup
         sprod_op = SProd(scalar, op)
-        assert op_rep == sprod_op.__repr__()
+        assert op_rep == repr(sprod_op)
 
     @pytest.mark.parametrize("op_scalar_tup", ops)
     def test_copy(self, op_scalar_tup):
@@ -212,6 +212,7 @@ class TestMscMethods:
         """Test that a scalar product with an operator that has `has_matrix=False`
         has `has_matrix=True` as well."""
 
+        # pylint: disable=too-few-public-methods
         class MyOp(qml.RX):
             """Variant of qml.RX that claims to not have `adjoint` or a matrix defined."""
 
@@ -224,6 +225,7 @@ class TestMscMethods:
     def test_has_diagonalizing_gates(self, value):
         """Test that SProd defers has_diagonalizing_gates to base operator."""
 
+        # pylint: disable=too-few-public-methods
         class DummyOp(qml.operation.Operator):
             num_wires = 1
             has_diagonalizing_gates = value
@@ -234,6 +236,76 @@ class TestMscMethods:
 
 class TestMatrix:
     """Tests of the matrix of a SProd class."""
+
+    def test_base_batching_support(self):
+        """Test that SProd matrix has base batching support."""
+        x = np.array([-1, -2, -3])
+        op = qml.s_prod(3, qml.RX(x, 0))
+        mat = op.matrix()
+        true_mat = qml.math.stack([qml.s_prod(3, qml.RX(i, 0)).matrix() for i in x])
+        assert qml.math.allclose(mat, true_mat)
+        assert mat.shape == (3, 2, 2)
+
+    def test_coeff_batching_support(self):
+        """Test that SProd matrix has coeff batching support."""
+        x = np.array([-1, -2, -3])
+        op = qml.s_prod(x, qml.PauliX(0))
+        mat = op.matrix()
+        true_mat = qml.math.stack([qml.s_prod(i, qml.PauliX(0)).matrix() for i in x])
+        assert qml.math.allclose(mat, true_mat)
+        assert mat.shape == (3, 2, 2)
+
+    def test_base_and_coeff_batching_support(self):
+        """Test that SProd matrix has base and coeff batching support."""
+        x = np.array([-1, -2, -3])
+        y = np.array([1, 2, 3])
+        op = qml.s_prod(y, qml.RX(x, 0))
+        mat = op.matrix()
+        true_mat = qml.math.stack([qml.s_prod(j, qml.RX(i, 0)).matrix() for i, j in zip(x, y)])
+        assert qml.math.allclose(mat, true_mat)
+        assert mat.shape == (3, 2, 2)
+
+    @pytest.mark.jax
+    def test_batching_jax(self):
+        """Test that SProd matrix has batching support with the jax interface."""
+        import jax.numpy as jnp
+
+        x = jnp.array([-1, -2, -3])
+        y = jnp.array([1, 2, 3])
+        op = qml.s_prod(y, qml.RX(x, 0))
+        mat = op.matrix()
+        true_mat = qml.math.stack([qml.s_prod(j, qml.RX(i, 0)).matrix() for i, j in zip(x, y)])
+        assert qml.math.allclose(mat, true_mat)
+        assert mat.shape == (3, 2, 2)
+        assert isinstance(mat, jnp.ndarray)
+
+    @pytest.mark.torch
+    def test_batching_torch(self):
+        """Test that SProd matrix has batching support with the torch interface."""
+        import torch
+
+        x = torch.tensor([-1, -2, -3])
+        y = torch.tensor([1, 2, 3])
+        op = qml.s_prod(y, qml.RX(x, 0))
+        mat = op.matrix()
+        true_mat = qml.math.stack([qml.s_prod(j, qml.RX(i, 0)).matrix() for i, j in zip(x, y)])
+        assert qml.math.allclose(mat, true_mat)
+        assert mat.shape == (3, 2, 2)
+        assert isinstance(mat, torch.Tensor)
+
+    @pytest.mark.tf
+    def test_batching_tf(self):
+        """Test that SProd matrix has batching support with the tensorflow interface."""
+        import tensorflow as tf
+
+        x = tf.constant([-1.0, -2.0, -3.0])
+        y = tf.constant([1.0, 2.0, 3.0])
+        op = qml.s_prod(y, qml.RX(x, 0))
+        mat = op.matrix()
+        true_mat = qml.math.stack([qml.s_prod(j, qml.RX(i, 0)).matrix() for i, j in zip(x, y)])
+        assert qml.math.allclose(mat, true_mat)
+        assert mat.shape == (3, 2, 2)
+        assert isinstance(mat, tf.Tensor)
 
     @pytest.mark.parametrize("scalar", scalars)
     @pytest.mark.parametrize("op, mat", param_ops + non_param_ops)
@@ -359,7 +431,7 @@ class TestMatrix:
         expected_sparse_matrix = csr_matrix(expected_sparse_matrix)
         expected_sparse_matrix.sort_indices()
 
-        assert type(sparse_matrix) == type(expected_sparse_matrix)
+        assert isinstance(sparse_matrix, type(expected_sparse_matrix))
         assert all(sparse_matrix.data == expected_sparse_matrix.data)
         assert all(sparse_matrix.indices == expected_sparse_matrix.indices)
 
@@ -442,11 +514,11 @@ class TestMatrix:
 
 class TestProperties:
     @pytest.mark.parametrize("op_scalar_tup", ops)
-    def test_queue_catagory(self, op_scalar_tup):
-        """Test queue_catagory property is always None."""  # currently not supporting queuing SProd
+    def test_queue_category(self, op_scalar_tup):
+        """Test queue_category property is always None."""  # currently not supporting queuing SProd
         scalar, op = op_scalar_tup
         sprod_op = SProd(scalar, op)
-        assert sprod_op._queue_category is None
+        assert sprod_op._queue_category is None  # pylint: disable=protected-access
 
     def test_eigvals(self):
         """Test that the eigvals of the scalar product op are correct."""
@@ -547,13 +619,39 @@ class TestProperties:
     @pytest.mark.parametrize("op, rep", op_pauli_reps)
     def test_pauli_rep(self, op, rep):
         """Test the pauli rep is produced as expected."""
-        assert op._pauli_rep == rep
+        assert op._pauli_rep == rep  # pylint: disable=protected-access
 
     def test_pauli_rep_none_if_base_pauli_rep_none(self):
         """Test that None is produced if the base op does not have a pauli rep"""
         base = qml.RX(1.23, wires=0)
         op = qml.s_prod(2, base)
-        assert op._pauli_rep is None
+        assert op._pauli_rep is None  # pylint: disable=protected-access
+
+    def test_batching_properties(self):
+        """Test the batching properties and methods."""
+
+        # base is batched
+        base = qml.RX(np.array([1.2, 2.3, 3.4]), 0)
+        op = qml.s_prod(0.5, base)
+        assert op.batch_size == 3
+
+        # coeff is batched
+        base = qml.RX(1, 0)
+        op = qml.s_prod(np.array([1.2, 2.3, 3.4]), base)
+        assert op.batch_size == 3
+
+        # both are batched
+        base = qml.RX(np.array([1.2, 2.3, 3.4]), 0)
+        op = qml.s_prod(np.array([1.2, 2.3, 3.4]), base)
+        assert op.batch_size == 3
+
+    def test_different_batch_sizes_raises_error(self):
+        """Test that using different batch sizes for base and scalar raises an error."""
+        base = qml.RX(np.array([1.2, 2.3, 3.4]), 0)
+        with pytest.raises(
+            ValueError, match="Broadcasting was attempted but the broadcasted dimensions"
+        ):
+            _ = qml.s_prod(np.array([0.1, 1.2, 2.3, 3.4]), base)
 
 
 class TestSimplify:
@@ -612,7 +710,7 @@ class TestSimplify:
 
     def test_simplify_with_sum_operator(self):
         """Test the simplify method a scalar product of a Sum operator."""
-        sprod_op = s_prod(0 - 3j, qml.op_sum(qml.PauliX(0), qml.PauliX(0)))
+        sprod_op = s_prod(0 - 3j, qml.sum(qml.PauliX(0), qml.PauliX(0)))
         final_op = s_prod(0 - 6j, qml.PauliX(0))
         simplified_op = sprod_op.simplify()
 
@@ -816,7 +914,7 @@ class TestIntegration:
 
     @pytest.mark.jax
     @pytest.mark.parametrize("diff_method", ("parameter-shift", "backprop"))
-    def test_torch(self, diff_method):
+    def test_jax(self, diff_method):
         """Test that interface parameters can be unwrapped to numpy. This will occur when parameter-shift
         is requested for a given interface."""
 
@@ -835,7 +933,6 @@ class TestIntegration:
     @pytest.mark.tf
     @pytest.mark.parametrize("diff_method", ("parameter-shift", "backprop"))
     def test_tensorflow_qnode(self, diff_method):
-
         import tensorflow as tf
 
         dev = qml.device("default.qubit", wires=5)

@@ -135,7 +135,6 @@ class single_tape_transform:
     """
 
     def __init__(self, transform_fn):
-
         if not callable(transform_fn):
             raise ValueError(
                 f"The tape transform function to register, {transform_fn}, "

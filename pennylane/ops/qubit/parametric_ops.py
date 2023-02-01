@@ -1774,7 +1774,6 @@ class PauliRot(Operation):
 
         # Simplest case is if the Pauli is the identity matrix
         if set(pauli_word) == {"I"}:
-
             exp = qml.math.exp(-0.5j * theta)
             iden = qml.math.eye(2 ** len(pauli_word), like=theta)
             if qml.math.get_interface(theta) == "tensorflow":
@@ -3426,7 +3425,7 @@ class IsingZZ(Operation):
 
         **Example:**
 
-        >>> qml.IsingZZ.compute_decomposition(1.23, wires=0)
+        >>> qml.IsingZZ.compute_decomposition(1.23, wires=[0,1])
         [CNOT(wires=[0, 1]), RZ(1.23, wires=[1]), CNOT(wires=[0, 1])]
 
         """

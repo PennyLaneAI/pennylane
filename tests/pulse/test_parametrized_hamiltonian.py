@@ -20,7 +20,7 @@ import pytest
 
 import pennylane as qml
 from pennylane import numpy as np
-from pennylane.ops.op_math import ParametrizedHamiltonian
+from pennylane.pulse import ParametrizedHamiltonian
 from pennylane.wires import Wires
 
 
@@ -43,7 +43,7 @@ class TestInitialization:
     """Test initialization of the ParametrizedHamiltonian class"""
 
     def test_initialization_via_dot(self):
-        """Test that using qml.ops.dot initializes a ParametrizedHamiltonian"""
+        """Test that using qml.dot initializes a ParametrizedHamiltonian"""
 
         XX = qml.PauliX(0) @ qml.PauliX(1)
         YY = qml.PauliY(0) @ qml.PauliY(1)
@@ -52,7 +52,7 @@ class TestInitialization:
         coeffs = [2, f1, f2]
         ops = [XX, YY, ZZ]
 
-        H = qml.ops.dot(coeffs, ops)
+        H = qml.dot(coeffs, ops)
         expected_H = ParametrizedHamiltonian(coeffs, ops)
 
         assert qml.equal(H([1.2, 2.3], 3.4), expected_H([1.2, 2.3], 3.4))
@@ -90,7 +90,7 @@ class TestInitialization:
     def test_H_fixed(self):
         """Test that H_fixed() is an Operator of the expected form"""
         H_fixed = test_example.H_fixed()
-        op = qml.op_sum(qml.s_prod(1, qml.PauliX(0)), qml.s_prod(2, qml.PauliY(1)))
+        op = qml.sum(qml.s_prod(1, qml.PauliX(0)), qml.s_prod(2, qml.PauliY(1)))
         assert qml.equal(H_fixed, op)
 
     def test_H_parametrized(self):
@@ -120,7 +120,6 @@ class TestInitialization:
 
 
 class TestCall:
-
     coeffs_and_ops_and_params = (
         (
             [f1, f2],
@@ -166,10 +165,8 @@ class TestCall:
 
         H_fixed = op[0]
         H_parametrized = op[1]
-        expected_H_fixed = qml.op_sum(
-            qml.s_prod(1.2, qml.PauliX(0)), qml.s_prod(2.3, qml.PauliX(2))
-        )
-        expected_H_parametrized = qml.op_sum(
+        expected_H_fixed = qml.sum(qml.s_prod(1.2, qml.PauliX(0)), qml.s_prod(2.3, qml.PauliX(2)))
+        expected_H_parametrized = qml.sum(
             qml.s_prod(f1(params[0], t), qml.PauliX(1)), qml.s_prod(f2(params[1], t), qml.PauliX(3))
         )
 
@@ -234,7 +231,8 @@ class TestInteractionWithOperators:
     @pytest.mark.parametrize("H, coeff", ops_with_coeffs)
     def test_add_special_operators(self, H, coeff):
         """Test that a Hamiltonian and SProd can be added to a ParametrizedHamiltonian, and
-        will be incorporated in the H_fixed term, with their coefficients included in H_coeffs_fixed"""
+        will be incorporated in the H_fixed term, with their coefficients included in H_coeffs_fixed
+        """
         pH = ParametrizedHamiltonian([f1, f2], [qml.PauliX(0), qml.PauliY(1)])
         params = [1, 2]
         # Adding on the right
@@ -337,10 +335,8 @@ class TestInterfaces:
 
         H_fixed = op[0]
         H_parametrized = op[1]
-        expected_H_fixed = qml.op_sum(
-            qml.s_prod(1.2, qml.PauliX(0)), qml.s_prod(2.3, qml.PauliX(2))
-        )
-        expected_H_parametrized = qml.op_sum(
+        expected_H_fixed = qml.sum(qml.s_prod(1.2, qml.PauliX(0)), qml.s_prod(2.3, qml.PauliX(2)))
+        expected_H_parametrized = qml.sum(
             qml.s_prod(f1(params[0], t), qml.PauliX(1)), qml.s_prod(f2(params[1], t), qml.PauliX(3))
         )
 
@@ -361,10 +357,8 @@ class TestInterfaces:
 
         H_fixed = op[0]
         H_parametrized = op[1]
-        expected_H_fixed = qml.op_sum(
-            qml.s_prod(1.2, qml.PauliX(0)), qml.s_prod(2.3, qml.PauliX(2))
-        )
-        expected_H_parametrized = qml.op_sum(
+        expected_H_fixed = qml.sum(qml.s_prod(1.2, qml.PauliX(0)), qml.s_prod(2.3, qml.PauliX(2)))
+        expected_H_parametrized = qml.sum(
             qml.s_prod(f1(params[0], t), qml.PauliX(1)), qml.s_prod(f2(params[1], t), qml.PauliX(3))
         )
 
@@ -385,10 +379,8 @@ class TestInterfaces:
 
         H_fixed = op[0]
         H_parametrized = op[1]
-        expected_H_fixed = qml.op_sum(
-            qml.s_prod(1.2, qml.PauliX(0)), qml.s_prod(2.3, qml.PauliX(2))
-        )
-        expected_H_parametrized = qml.op_sum(
+        expected_H_fixed = qml.sum(qml.s_prod(1.2, qml.PauliX(0)), qml.s_prod(2.3, qml.PauliX(2)))
+        expected_H_parametrized = qml.sum(
             qml.s_prod(f1(params[0], t), qml.PauliX(1)), qml.s_prod(f2(params[1], t), qml.PauliX(3))
         )
 

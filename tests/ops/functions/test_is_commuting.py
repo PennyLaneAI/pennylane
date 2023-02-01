@@ -830,7 +830,7 @@ class TestCommutingFunction:
             qml.is_commuting(qml.PauliX(wires=0), qml.PauliRot(1, "X", wires=0))
 
     arithmetic_ops = (
-        (qml.op_sum(qml.PauliX(0), qml.Identity(1)), "Sum"),
+        (qml.sum(qml.PauliX(0), qml.Identity(1)), "Sum"),
         (qml.prod(qml.PauliX(0), qml.Identity(1)), "Prod"),
         (qml.s_prod(1.23, qml.PauliX(0)), "SProd"),
         (qml.exp(qml.PauliX(0), 1.2), "Exp"),

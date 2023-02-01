@@ -14,6 +14,7 @@
 """
 Contains the apply function
 """
+import warnings
 
 
 # pylint:disable=unnecessary-lambda-assignment
@@ -48,6 +49,8 @@ def apply(func, qnode_collection):
     >>> cost(x)
     tensor(0.9092, dtype=torch.float64, grad_fn=<SumBackward0>)
     """
+    warnings.warn("The apply function is deprecated and it will be removed soon.", UserWarning)
+
     new_func = lambda params, **kwargs: func(qnode_collection(params, **kwargs))
     new_func.interface = qnode_collection.interface
     return new_func
