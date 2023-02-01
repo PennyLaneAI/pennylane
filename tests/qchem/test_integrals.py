@@ -284,7 +284,6 @@ class TestOverlap:
 
         for i in range(len(alpha)):
             for j in range(len(alpha[0])):
-
                 alpha_minus = alpha.copy()
                 alpha_plus = alpha.copy()
                 alpha_minus[i][j] = alpha_minus[i][j] - delta
@@ -442,7 +441,6 @@ class TestMoment:
 
         for i in range(len(alpha)):
             for j in range(len(alpha[0])):
-
                 alpha_minus = alpha.copy()
                 alpha_plus = alpha.copy()
                 alpha_minus[i][j] = alpha_minus[i][j] - delta
@@ -592,7 +590,6 @@ class TestKinetic:
 
         for i in range(len(alpha)):
             for j in range(len(alpha[0])):
-
                 alpha_minus = alpha.copy()
                 alpha_plus = alpha.copy()
                 alpha_minus[i][j] = alpha_minus[i][j] - delta
@@ -699,7 +696,6 @@ class TestAttraction:
 
         for i in range(len(alpha)):
             for j in range(len(alpha[0])):
-
                 alpha_minus = alpha.copy()
                 alpha_plus = alpha.copy()
                 alpha_minus[i][j] = alpha_minus[i][j] - delta
@@ -835,7 +831,6 @@ class TestRepulsion:
 
         for i in range(len(alpha)):
             for j in range(len(alpha[0])):
-
                 alpha_minus = alpha.copy()
                 alpha_plus = alpha.copy()
                 alpha_minus[i][j] = alpha_minus[i][j] - delta

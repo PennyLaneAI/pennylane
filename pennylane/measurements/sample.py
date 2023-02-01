@@ -142,7 +142,6 @@ class SampleMP(SampleMeasurement):
         # Note: we only assume an integer numeric type if the observable is a
         # built-in observable with integer eigenvalues or a tensor product thereof
         if self.obs is None:
-
             # Computational basis samples
             return int
         int_eigval_obs = {qml.PauliX, qml.PauliY, qml.PauliZ, qml.Hadamard, qml.Identity}
