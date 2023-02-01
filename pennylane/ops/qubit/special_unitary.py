@@ -440,7 +440,12 @@ class SpecialUnitary(Operation):
 
         Args:
             interface (str): The auto-differentiation framework to be used for the
-                computation.
+                computation. Has to be one of ``["jax", "tensorflow", "tf", "torch"]``.
+
+        Raises:
+            NotImplementedError: If the chosen interface is ``"autograd"``. Autograd
+                does not support differentiation of ``linalg.expm``.
+            ValueError: If the chosen interface is not supported.
 
         Returns:
             tensor_like: The generators for one-parameter groups that reproduce the
@@ -460,7 +465,7 @@ class SpecialUnitary(Operation):
 
         .. math::
 
-            \frac{\partial}{\partial \theta_\ell} U(\theta) &= U(\theta)
+            \frac{\partial}{\partial \theta_\ell} U(\theta) = U(\theta)
             \frac{\mathrm{d}}{\mathrm{d}t}\exp\left(t\Omega_\ell(\theta)\right)\large|_{t=0}
 
         where :math:`\Omega_\ell(\theta)` is the one-parameter generator belonging to the partial
@@ -469,7 +474,7 @@ class SpecialUnitary(Operation):
 
         .. math::
 
-            \Omega_\ell(\theta) &= U(\theta)^\dagger
+            \Omega_\ell(\theta) = U(\theta)^\dagger
             \left(\frac{\partial}{\partial \theta_\ell}\mathfrak{Re}[U(\theta)]
             +i\frac{\partial}{\partial \theta_\ell}\mathfrak{Im}[U(\theta)]\right)
 
@@ -481,49 +486,44 @@ class SpecialUnitary(Operation):
             The matrix exponential is not differentiable in Autograd. Therefore this function
             only supports JAX, Torch and Tensorflow.
 
-        ..seealso:: `~.SpecialUnitary`
-
         """
         theta = self.data[0]
         if len(qml.math.shape(theta)) > 1:
             raise ValueError("Broadcasting is not supported.")
 
         num_wires = self.hyperparameters["num_wires"]
+
+        def split_matrix(theta):
+            mat = self.compute_matrix(theta, num_wires)
+            return qml.math.real(mat), qml.math.imag(mat)
+
         if interface == "jax":
             import jax
 
             theta = qml.math.cast_like(theta, 1j)
             jac = jax.jacobian(self.compute_matrix, argnums=0, holomorphic=True)(theta, num_wires)
 
-        elif interface in ["torch", "autograd"]:
-            # TODO check whether we can add support for Autograd using eigenvalue decomposition
-            if interface == "autograd":
-                raise NotImplementedError(
-                    "The matrix exponential expm is not differentiable in Autograd."
-                )
-
-            def real_matrix(theta):
-                return qml.math.real(self.compute_matrix(theta, num_wires))
-
-            def imag_matrix(theta):
-                return qml.math.imag(self.compute_matrix(theta, num_wires))
-
+        elif interface == "torch":
             import torch
 
             # These lines compute the Jacobian of compute_matrix every time -> to be optimized
-            real_jac = torch.autograd.functional.jacobian(real_matrix, theta)
-            imag_jac = torch.autograd.functional.jacobian(imag_matrix, theta)
-            jac = real_jac + 1j * imag_jac
+            rjac, ijac = torch.autograd.functional.jacobian(split_matrix, theta)
+            jac = rjac + 1j * ijac
 
         elif interface in ("tensorflow", "tf"):
             import tensorflow as tf
 
             with tf.GradientTape(persistent=True) as tape:
-                mat = self.compute_matrix(theta, num_wires)
-                rmat, imat = tf.math.real(mat), tf.math.imag(mat)
+                mats = qml.math.stack(split_matrix(theta))
 
-            rjac, ijac = tape.jacobian(rmat, theta), tape.jacobian(imat, theta)
+            rjac, ijac = tape.jacobian(mats, theta)
             jac = qml.math.cast_like(rjac, 1j) + 1j * qml.math.cast_like(ijac, 1j)
+
+        elif interface == "autograd":
+            # TODO check whether we can add support for Autograd using eigenvalue decomposition
+            raise NotImplementedError(
+                "The matrix exponential expm is not differentiable in Autograd."
+            )
 
         else:
             raise ValueError(f"The interface {interface} is not supported.")
@@ -542,14 +542,15 @@ class SpecialUnitary(Operation):
                 computation.
 
         Returns:
-            tensor_like: The generators for one-parameter groups that reproduce the
-            partial derivatives of the special unitary gate defined by ``theta``.
-            There are :math:`d=4^n-1` generators for :math:`n` qubits, so that the
-            output shape is ``(4**num_wires-1, 2**num_wires, 2**num_wires)``.
+            tensor_like: The Pauli basis coefficients of the effective generators
+            that reproduce the partial derivatives of the special unitary gate
+            defined by ``theta``. There are :math:`d=4^n-1` generators for
+            :math:`n` qubits and :math:`d` Pauli coefficients per generator, so that the
+            output shape is ``(4**num_wires-1, 4**num_wires-1)``.
 
-        Given a generator :math:`\Omega` of a one-parameter group that reproduces a partial derivative
-        of a special unitary gate, it can be decomposed in the Pauli basis of :math:`\mathfrak{su}(N)`
-        via
+        Given a generator :math:`\Omega` of a one-parameter group that
+        reproduces a partial derivative of a special unitary gate, it can be decomposed in
+        the Pauli basis of :math:`\mathfrak{su}(N)` via
 
         .. math::
 
@@ -574,7 +575,7 @@ class SpecialUnitary(Operation):
             The matrix exponential is not differentiable in Autograd. Therefore this function
             only supports JAX, Torch and Tensorflow.
 
-        ..seealso:: `~.transforms.insert_paulirot.get_one_parameter_generators`
+        ..seealso:: `~.SpecialUnitary.get_one_parameter_generators`
 
         """
         num_wires = self.hyperparameters["num_wires"]
@@ -627,9 +628,9 @@ class SpecialUnitary(Operation):
 
 
 class TmpPauliRot(PauliRot):
-    r"""A custom version of qml.PauliRot that is inserted with rotation angle zero when
-    decomposing SpecialUnitary. The differentiation logic makes use of the gradient
-    recipe of qml.PauliRot, but deactivates the matrix property so that a decomposition
+    r"""A custom version of ``PauliRot`` that is inserted with rotation angle zero when
+    decomposing ``SpecialUnitary``. The differentiation logic makes use of the gradient
+    recipe of ``PauliRot``, but deactivates the matrix property so that a decomposition
     of differentiated tapes is forced. During this decomposition, this private operation
     removes itself if its angle remained at zero.
 
@@ -646,24 +647,27 @@ class TmpPauliRot(PauliRot):
 
     @staticmethod
     def compute_decomposition(theta, wires, pauli_word):
-        r"""Representation of the operator as a product of other operators (static method).
+        r"""Representation of the operator as a product of other operators (static method). :
 
         .. math:: O = O_1 O_2 \dots O_n.
 
-        This ``Operation`` is decomposed into the corresponding ``QubitUnitary``.
 
-        .. seealso:: :meth:`~.QubitUnitary.decomposition`.
+        .. seealso:: :meth:`~.TmpPauliRot.decomposition`.
 
         Args:
-            theta (tensor_like): Pauli coordinates of the exponent :math:`A(\theta)`
-            wires (Iterable[Any] or Wires): the wire(s) the operation acts on
-            num_wires (int): The number of wires
+            theta (float): rotation angle :math:`\theta`
+            wires (Iterable, Wires): the wires the operation acts on
+            pauli_word (string): the Pauli word defining the rotation
 
         Returns:
-            list[Operator]: decomposition of the operator
+            list[Operator]: decomposition into an empty list of operations for
+            vanishing ``theta``, or into a list containing a single :class:`~.PauliRot`
+            for non-zero ``theta``.
 
-        Decomposes TmpPauliRot into :class`~.PauliRot` if ``theta`` is non-zero,
-        otherwise removes the operation by returning an empty decomposition.
+        .. note::
+
+            This operation is used in a differentiation pipeline of :class:`~.SpecialUnitary`
+            and most likely should not be created manually by users.
         """
         if qml.math.isclose(theta, theta * 0):
             return []

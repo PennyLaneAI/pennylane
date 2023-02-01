@@ -685,7 +685,7 @@ class TestSpecialUnitary:
         jax.config.update("jax_enable_x64", True)
         jnp = jax.numpy
 
-        dev = qml.device("default.qubit", wires=1, shots=None)
+        dev = qml.device("default.qubit", wires=1)
 
         theta = jnp.array(theta_1)
 
@@ -714,7 +714,7 @@ class TestSpecialUnitary:
         jax.config.update("jax_enable_x64", True)
         jnp = jax.numpy
 
-        dev = qml.device("default.qubit", wires=1, shots=None)
+        dev = qml.device("default.qubit", wires=1)
 
         theta = jnp.outer(jnp.array([-0.4, 0.1, 1.0]), theta_1)
 
@@ -739,7 +739,7 @@ class TestSpecialUnitary:
         within a QNode that uses TensorFlow autograph"""
         import tensorflow as tf
 
-        dev = qml.device("default.qubit", wires=1, shots=None)
+        dev = qml.device("default.qubit", wires=1)
 
         @tf.function
         @qml.qnode(dev, interface="tf")
@@ -784,6 +784,13 @@ class TestSpecialUnitaryIntegration:
         qml.SpecialUnitary(x, wires=[0, 1])
         return qml.expval(qml.PauliZ(0) @ qml.PauliX(1))
 
+    @staticmethod
+    def paulirot_comp_circuit(x, word=None):
+        """Test circuit involving a single PauliRot operation to compare to."""
+        # Take into account that PauliRot includes a -0.5 prefactor, and mitigate it.
+        qml.PauliRot(-2 * x, word, wires=[0, 1])
+        return qml.expval(qml.PauliZ(0) @ qml.PauliX(1))
+
     x = np.linspace(0.2, 1.5, 15)
     state = qml.SpecialUnitary.compute_matrix(x, 2) @ np.eye(4)[0]
     exp = np.vdot(state, qml.matrix(qml.PauliZ(0) @ qml.PauliX(1)) @ state).real
@@ -823,7 +830,8 @@ class TestSpecialUnitaryIntegration:
         jax.config.update("jax_enable_x64", True)
 
         dev = qml.device("default.qubit", wires=2, shots=shots)
-        qnode = qml.QNode(self.circuit, dev, interface="jax")
+        diff_method = "backprop" if shots is None else "parameter-shift"
+        qnode = qml.QNode(self.circuit, dev, interface="jax", diff_method=diff_method)
         if use_jit:
             qnode = jax.jit(qnode)
 
@@ -840,6 +848,17 @@ class TestSpecialUnitaryIntegration:
         assert qml.math.shape(jac) == (15,)
         assert not qml.math.allclose(jac, jac * 0.0)
 
+        # Compare to PauliRot circuits
+        paulirot_qnode = qml.QNode(
+            self.paulirot_comp_circuit, dev, interface="jax", diff_method=diff_method
+        )
+        exp_jac_fn = jax.jacobian(paulirot_qnode)
+        words = qml.ops.qubit.special_unitary.pauli_basis_strings(2)
+        for i, (single_x, unit_vector, word) in enumerate(zip(x, jax.numpy.eye(15), words)):
+            jac = jac_fn(single_x * unit_vector)
+            exp_jac = exp_jac_fn(single_x, word)
+            assert qml.math.allclose(jac[i], exp_jac, atol=atol)
+
     @pytest.mark.torch
     @pytest.mark.parametrize("shots, atol", [(None, 1e-6), (10000, 1e-1)])
     def test_qnode_torch(self, shots, atol):
@@ -848,7 +867,8 @@ class TestSpecialUnitaryIntegration:
         import torch
 
         dev = qml.device("default.qubit", wires=2, shots=shots)
-        qnode = qml.QNode(self.circuit, dev, interface="torch")
+        diff_method = "backprop" if shots is None else "parameter-shift"
+        qnode = qml.QNode(self.circuit, dev, interface="torch", diff_method=diff_method)
 
         x = torch.tensor(self.x, requires_grad=True)
         res = qnode(x)
@@ -859,6 +879,18 @@ class TestSpecialUnitaryIntegration:
         assert qml.math.shape(jac) == (15,)
         assert not qml.math.allclose(jac, jac * 0.0)
 
+        # Compare to PauliRot circuits
+        paulirot_qnode = qml.QNode(
+            self.paulirot_comp_circuit, dev, interface="torch", diff_method=diff_method
+        )
+        words = qml.ops.qubit.special_unitary.pauli_basis_strings(2)
+        for i, (single_x, unit_vector, word) in enumerate(zip(x, torch.eye(15), words)):
+            jac = torch.autograd.functional.jacobian(qnode, single_x * unit_vector)
+            exp_jac = torch.autograd.functional.jacobian(
+                partial(paulirot_qnode, word=word), single_x
+            )
+            assert qml.math.allclose(jac[i], exp_jac, atol=atol)
+
     @pytest.mark.tf
     @pytest.mark.parametrize("shots, atol", [(None, 1e-6), (10000, 1e-1)])
     def test_qnode_tf(self, shots, atol):
@@ -867,7 +899,8 @@ class TestSpecialUnitaryIntegration:
         import tensorflow as tf
 
         dev = qml.device("default.qubit", wires=2, shots=shots)
-        qnode = qml.QNode(self.circuit, dev, interface="tf")
+        diff_method = "backprop" if shots is None else "parameter-shift"
+        qnode = qml.QNode(self.circuit, dev, interface="tf", diff_method=diff_method)
 
         x = tf.Variable(self.x)
         with tf.GradientTape() as tape:
@@ -876,9 +909,27 @@ class TestSpecialUnitaryIntegration:
         assert qml.math.shape(res) == ()
         assert qml.math.isclose(res, self.exp, atol=atol)
 
-        jac = tape.jacobian(res, x)
+        jac = tape.gradient(res, x)
         assert qml.math.shape(jac) == (15,)
         assert not qml.math.allclose(jac, jac * 0.0)
+
+        # Compare to PauliRot circuits
+        paulirot_qnode = qml.QNode(
+            self.paulirot_comp_circuit, dev, interface="tf", diff_method=diff_method
+        )
+        words = qml.ops.qubit.special_unitary.pauli_basis_strings(2)
+        for i, (single_x, unit_vector, word) in enumerate(
+            zip(self.x, tf.eye(15, dtype=tf.float64), words)
+        ):
+            x = tf.Variable(single_x * unit_vector)
+            with tf.GradientTape() as tape:
+                res = qnode(x)
+            jac = tape.gradient(res, x)
+            single_x = tf.Variable(single_x)
+            with tf.GradientTape() as tape:
+                res = paulirot_qnode(single_x, word)
+            exp_jac = tape.gradient(res, single_x)
+            assert qml.math.allclose(jac[i], exp_jac, atol=atol)
 
 
 class TestTmpPauliRot:
