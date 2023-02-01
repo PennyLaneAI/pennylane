@@ -172,7 +172,6 @@ class Interferometer(CVOperation):
         do_queue=True,
         id=None,
     ):
-
         wires = Wires(wires)
 
         n_wires = len(wires)

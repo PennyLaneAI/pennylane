@@ -149,7 +149,6 @@ def classical_jacobian(qnode, argnum=None, expand_fn=None, trainable_only=True):
         return qml.math.stack(tape.get_parameters(trainable_only=trainable_only))
 
     if qnode.interface == "autograd":
-
         return qml.jacobian(classical_preprocessing, argnum=argnum)
 
     if qnode.interface == "torch":

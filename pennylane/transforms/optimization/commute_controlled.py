@@ -36,7 +36,6 @@ def _commute_controlled_right(op_list):
     current_location = len(op_list) - 1
 
     while current_location >= 0:
-
         current_gate = op_list[current_location]
 
         # We are looking only at the gates that can be pushed through
@@ -108,7 +107,6 @@ def _commute_controlled_left(op_list):
     current_location = 0
 
     while current_location < len(op_list):
-
         current_gate = op_list[current_location]
 
         if current_gate.basis is None or len(current_gate.wires) != 1:
