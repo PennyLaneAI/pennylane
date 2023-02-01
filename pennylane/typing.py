@@ -69,12 +69,19 @@ def _is_jax(other, subclass=False):
     """Check if other is an instance or a subclass of a jax tensor."""
     if "jax" in sys.modules:
         with contextlib.suppress(ImportError):
+            import jax
+            import jaxlib
             from jax.numpy import ndarray
-            from jax import Array
 
+            JaxTensor = Union[
+                ndarray,
+                jax.Array  # TODO: keep this after jax>=0.4 is required
+                if hasattr(jax, "Array")
+                else Union[jaxlib.xla_extension.DeviceArray, jax.core.Tracer],
+            ]
             check = issubclass if subclass else isinstance
 
-            return check(other, (ndarray, Array))
+            return check(other, JaxTensor)
     return False
 
 
