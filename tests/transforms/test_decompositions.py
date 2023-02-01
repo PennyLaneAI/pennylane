@@ -1097,7 +1097,6 @@ class TestControlledDecompositionZYZ:
     def test_decomposition_matrix(self, op, control_wires, tol):
         """Tests that the matrix representation of the controlled ZYZ decomposition
         of a single-qubit operation is correct"""
-        # TODO: Update tests to include non-SU(2) unitaries once supported
         decomps = ctrl_decomp_zyz(op, Wires(control_wires))
         expected_op = qml.ctrl(op, control_wires)
         decomp_mats = [
