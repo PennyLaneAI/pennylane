@@ -742,7 +742,6 @@ class TestAutogradExecuteIntegration:
                 )
 
         def cost_fn(a, p, device):
-
             with qml.queuing.AnnotatedQueue() as q_tape:
                 qml.RX(a, wires=0)
                 U3(*p, wires=0)
