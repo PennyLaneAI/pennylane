@@ -298,6 +298,10 @@
   to a state and returns a new state.
   [(#3637)](https://github.com/PennyLaneAI/pennylane/pull/3637)
 
+* The `preprocess` function is added to `devices/qubit` that validates, expands, and transforms a batch
+  of `QuantumScript` objects to abstract preprocessing details away from the device.
+  [(#3708)](https://github.com/PennyLaneAI/pennylane/pull/3708)
+
 <h3>Improvements</h3>
 
 * `qml.purity` is added as a measurement process for purity
