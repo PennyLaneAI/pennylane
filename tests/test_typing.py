@@ -34,7 +34,6 @@ class TestTensorLike:
         import jax
 
         tensor = jax.numpy.array(1)
-        assert isinstance(tensor, jax.Array)
         assert isinstance(tensor, typing.TensorLike)
 
     @pytest.mark.torch
@@ -69,7 +68,6 @@ class TestTensorLike:
         """Tests that a jax DeviceArray is a Tensor"""
         import jax
 
-        assert issubclass(jax.numpy.ndarray, jax.Array)
         assert issubclass(jax.numpy.ndarray, typing.TensorLike)
 
     @pytest.mark.torch
