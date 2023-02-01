@@ -102,7 +102,6 @@ class SimplifiedTwoDesign(Operation):
     grad_method = None
 
     def __init__(self, initial_layer_weights, weights, wires, do_queue=True, id=None):
-
         shape = qml.math.shape(weights)
 
         if len(shape) > 1:
@@ -172,7 +171,6 @@ class SimplifiedTwoDesign(Operation):
             op_list.append(qml.RY(initial_layer_weights[i], wires=wires[i]))
 
         for layer in range(n_layers):
-
             # even layer of entanglers
             even_wires = [wires[i : i + 2] for i in range(0, len(wires) - 1, 2)]
             for i, wire_pair in enumerate(even_wires):

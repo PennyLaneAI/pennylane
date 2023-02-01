@@ -373,7 +373,6 @@ class DefaultQutrit(QutritDevice):
         self._pre_rotated_state = self._state
 
     def analytic_probability(self, wires=None):
-
         if self._state is None:
             return None
 

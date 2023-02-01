@@ -386,7 +386,6 @@ class Prod(CompositeOp):
             op_list = list(op_list)
 
         for i in range(1, len(op_list)):
-
             key_op = op_list[i]
 
             j = i - 1
