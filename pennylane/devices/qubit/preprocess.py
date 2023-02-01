@@ -27,7 +27,7 @@ from pennylane.measurements import (
     ProbabilityMP,
     CountsMP,
 )
-from pennylane.devices import DeviceError
+from pennylane import DeviceError
 
 
 def _stopping_condition(op):
@@ -52,7 +52,6 @@ def _supports_observable(dev, observable):
     if isinstance(observable, type) and issubclass(observable, Observable):
         return observable.__name__ in dev.observables
     if isinstance(observable, str):
-
         # This check regards observables that are also operations
         if observable.endswith(".inv"):
             return dev.supports_operation(observable[:-4])
@@ -222,7 +221,6 @@ def check_validity(queue, dev, observables):
     """
 
     for o in queue:
-
         operation_name = o.name
 
         if isinstance(o, MidMeasureMP) and not dev.capabilities().get(
