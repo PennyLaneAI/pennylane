@@ -102,23 +102,16 @@ def evolve(
     if isinstance(op, ParametrizedHamiltonian):
         if t is None:
             raise ValueError("Time must be specified to evolve a ParametrizedHamiltonian.")
-<<<<<<< HEAD
         t = [0, t] if qml.math.ndim(t) == 0 else t
         if dt is not None:
             t = qml.math.arange(*t, step=dt)
 
         return ParametrizedEvolution(H=op, t=t)
 
-    t = t or 1
     num_steps = dt if dt is None else int(1 / dt)
 
-    return Evolution(generator=op, param=t, num_steps=num_steps)
-=======
-        t = [0.0, t] if qml.math.ndim(t) == 0 else t
-        if dt is not None:
-            t = qml.math.arange(t[0], t[1], step=dt)
-
-        return ParametrizedEvolution(H=op, t=t)
-
-    return Evolution(op) if t is None else Evolution(op, t)
->>>>>>> refactor-evolve
+    return (
+        Evolution(op, num_steps=num_steps)
+        if t is None
+        else Evolution(op, param=t, num_steps=num_steps)
+    )
