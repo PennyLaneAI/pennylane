@@ -23,11 +23,11 @@ class TestTensorLike:
     def test_numpy_array(self):
         """Tests that a numpy array is a Tensor"""
         # Using `isinstance` with `Union` types is only supported from python 3.10
-        assert isinstance(np.array(1), typing.TensorLike.__args__)
+        assert isinstance(np.array(1), typing.TensorLike)
 
     def test_pennylane_tensor(self):
         """Tests that a PennyLane numpy tensor is a Tensor"""
-        assert isinstance(pnp.array(1), typing.TensorLike.__args__)
+        assert isinstance(pnp.array(1), typing.TensorLike)
 
     @pytest.mark.jax
     def test_jax_array_is_tensor_like(self):
@@ -36,7 +36,7 @@ class TestTensorLike:
 
         tensor = jax.numpy.array(1)
         assert isinstance(tensor, jax.Array)
-        assert isinstance(tensor, typing.TensorLike.__args__)
+        assert isinstance(tensor, typing.TensorLike)
 
     @pytest.mark.torch
     def test_torch_tensor_is_tensor_like(self):
@@ -44,7 +44,7 @@ class TestTensorLike:
         import torch
 
         tensor = torch.Tensor(1)
-        assert isinstance(tensor, typing.TensorLike.__args__)
+        assert isinstance(tensor, typing.TensorLike)
 
     @pytest.mark.tf
     def test_tf_tensor_is_tensor_like(self):
@@ -53,6 +53,6 @@ class TestTensorLike:
 
         tensor = tf.constant([1, 2, 3])
         assert isinstance(tensor, tf.Tensor)
-        assert isinstance(tensor, typing.TensorLike.__args__)
+        assert isinstance(tensor, typing.TensorLike)
         var = tf.Variable(9)
-        assert isinstance(var, typing.TensorLike.__args__)
+        assert isinstance(var, typing.TensorLike)
