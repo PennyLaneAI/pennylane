@@ -588,6 +588,8 @@ class SpecialUnitary(Operation):
 
         .. math:: O = O_1 O_2 \dots O_n
 
+        This ``Operation`` is decomposed into the corresponding ``QubitUnitary``.
+
         Returns:
             list[Operator]: decomposition of the operator
 

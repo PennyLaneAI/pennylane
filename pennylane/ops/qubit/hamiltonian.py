@@ -31,7 +31,6 @@ OBS_MAP = {"PauliX": "X", "PauliY": "Y", "PauliZ": "Z", "Hadamard": "H", "Identi
 
 
 def _compute_grouping_indices(observables, grouping_type="qwc", method="rlf"):
-
     # todo: directly compute the
     # indices, instead of extracting groups of observables first
     observable_groups = qml.pauli.group_observables(
@@ -172,7 +171,6 @@ class Hamiltonian(Observable):
         id=None,
         do_queue=True,
     ):
-
         if qml.math.shape(coeffs)[0] != len(observables):
             raise ValueError(
                 "Could not create valid Hamiltonian; "
@@ -407,7 +405,6 @@ class Hamiltonian(Observable):
         terms_ls = []
 
         for coeff, obs in paired_coeff_obs:
-
             if isinstance(obs, Tensor):
                 obs_strs = [f"{OBS_MAP.get(ob.name, ob.name)}{wires_print(ob)}" for ob in obs.obs]
                 ob_str = " ".join(obs_strs)

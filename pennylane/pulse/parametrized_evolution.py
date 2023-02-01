@@ -157,6 +157,7 @@ class ParametrizedEvolution(Operation):
 
     _name = "ParametrizedEvolution"
     num_wires = AnyWires
+
     # pylint: disable=too-many-arguments, super-init-not-called
     def __init__(
         self,
@@ -183,12 +184,12 @@ class ParametrizedEvolution(Operation):
         if t is None:
             self.t = None
         else:
-            self.t = jnp.array([0, t] if qml.math.size(t) == 1 else t, dtype=float)
+            self.t = jnp.array([0, t] if qml.math.ndim(t) == 0 else t, dtype=float)
         super().__init__(wires=H.wires, do_queue=do_queue, id=id)
 
     def __call__(self, params, t, **odeint_kwargs):
         self.params = params
-        self.t = jnp.array([0, t] if qml.math.size(t) == 1 else t, dtype=float)
+        self.t = jnp.array([0, t] if qml.math.ndim(t) == 0 else t, dtype=float)
         if odeint_kwargs:
             self.odeint_kwargs.update(odeint_kwargs)
         return self

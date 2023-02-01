@@ -214,7 +214,6 @@ def pattern_matching_optimization(tape: QuantumTape, pattern_tapes, custom_quant
                 with qml.queuing.AnnotatedQueue() as q_inside:
                     # Loop over all possible substitutions
                     for group in substitution.substitution_list:
-
                         circuit_sub = group.circuit_config
                         template_inverse = group.template_config
 
@@ -823,7 +822,6 @@ class ForwardMatch:  # pylint: disable=too-many-instance-attributes,too-few-publ
 
         # While the list of matched nodes is not empty
         while self.matched_nodes_list:
-
             # Return first element of the matched_nodes_list and removes it from the list
             v_first, successors_to_visit = self._get_node_forward(0)
             self._remove_node_forward(0)
@@ -1105,7 +1103,6 @@ class BackwardMatch:  # pylint: disable=too-many-instance-attributes, too-few-pu
 
         # While the scenario stack is not empty.
         while self.matching_list.matching_scenarios_list:
-
             scenario = self.matching_list.pop_scenario()
 
             circuit_matched = scenario.circuit_matched
@@ -1159,7 +1156,6 @@ class BackwardMatch:  # pylint: disable=too-many-instance-attributes, too-few-pu
 
             # Loop over the pattern candidates.
             for pattern_id in candidates_indices:
-
                 node_pattern = self.pattern_dag.get_node(pattern_id)
                 wires2 = self.pattern_dag.get_node(pattern_id).wires
                 control_wires2 = self.pattern_dag.get_node(pattern_id).control_wires
@@ -1299,7 +1295,6 @@ class BackwardMatch:  # pylint: disable=too-many-instance-attributes, too-few-pu
                 # Third option: if blocking the succesors breaks a match, we consider
                 # also the possibility to block all predecessors (push the gate to the left).
                 if broken_matches and all(global_broken):
-
                     circuit_matched_block_p = circuit_matched.copy()
                     circuit_blocked_block_p = circuit_blocked.copy()
 
@@ -1325,7 +1320,6 @@ class BackwardMatch:  # pylint: disable=too-many-instance-attributes, too-few-pu
 
             # If there is no match then there are three options.
             if not global_match:
-
                 circuit_blocked[circuit_id] = True
 
                 following_matches = []
@@ -1340,7 +1334,6 @@ class BackwardMatch:  # pylint: disable=too-many-instance-attributes, too-few-pu
                 predecessors = self.circuit_dag.get_node(circuit_id).predecessors
 
                 if not predecessors or not following_matches:
-
                     matching_scenario = MatchingScenarios(
                         circuit_matched,
                         circuit_blocked,
@@ -1352,7 +1345,6 @@ class BackwardMatch:  # pylint: disable=too-many-instance-attributes, too-few-pu
                     self.matching_list.append_scenario(matching_scenario)
 
                 else:
-
                     circuit_matched_nomatch = circuit_matched.copy()
                     circuit_blocked_nomatch = circuit_blocked.copy()
 
@@ -1702,7 +1694,6 @@ class TemplateSubstitution:  # pylint: disable=too-few-public-methods
         """
 
         while self.match_stack:
-
             # Get the first match scenario of the list
             current = self.match_stack.pop(0)
 

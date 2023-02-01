@@ -145,7 +145,6 @@ def moment_matrix(basis_functions, order, idx):
         matrix = qml.math.zeros((n, n))
 
         for (i, a), (j, b) in it.combinations_with_replacement(enumerate(basis_functions), r=2):
-
             args_ab = []
             if args:
                 args_ab.extend([arg[i], arg[j]] for arg in args)

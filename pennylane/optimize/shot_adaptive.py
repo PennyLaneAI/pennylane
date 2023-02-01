@@ -237,7 +237,6 @@ class ShotAdaptiveOptimizer(GradientDescentOptimizer):
         grads = []
 
         for h, c, p, s in zip(qnodes, coeffs, prob_shots, shots_per_term):
-
             # if the number of shots is 0, do nothing
             if s == 0:
                 continue

@@ -54,7 +54,6 @@ class Attribute(set):
             return super().add(obj)
 
         try:
-
             if isinstance(obj, Operator):
                 return super().add(obj.name)
 
@@ -75,7 +74,6 @@ class Attribute(set):
             return super().__contains__(obj)
 
         try:
-
             # Hotfix: return False for all tensors.
             # Can be removed or updated when tensor class is
             # improved.

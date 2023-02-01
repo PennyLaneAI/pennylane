@@ -879,7 +879,6 @@ MWC = list(zip(DIGRAPHS, MWC_CONSTRAINED, COST_HAMILTONIANS, MIXER_HAMILTONIANS,
 
 
 def decompose_hamiltonian(hamiltonian):
-
     coeffs = list(qml.math.toarray(hamiltonian.coeffs))
     ops = [i.name for i in hamiltonian.ops]
     wires = [i.wires for i in hamiltonian.ops]
@@ -1154,7 +1153,6 @@ class TestLayers:
         rec = rec.expand()
 
         for i, j in zip(rec.operations, gates):
-
             prep = [i.name, i.parameters, i.wires]
             target = [j.name, j.parameters, j.wires]
 
@@ -1897,7 +1895,6 @@ class TestCycles:
         )
 
         for energy, bs in energies_bitstrings:
-
             # convert binary string to wires then wires to edges
             wires_ = tuple(i for i, s in enumerate(bs) if s != 0)
             edges = tuple(m[w] for w in wires_)
@@ -1950,7 +1947,6 @@ class TestCycles:
         # We now have the energies of each bitstring/state. We also want to calculate the net flow of
         # the corresponding edges
         for energy, state in energies_states:
-
             # This part converts from a binary string of wires selected to graph edges
             wires_ = tuple(i for i, s in enumerate(state) if s != 0)
             edges = tuple(m[w] for w in wires_)

@@ -37,6 +37,7 @@ except (ModuleNotFoundError, ImportError) as e:  # pragma: no cover
 # create a private method here and add it to the ``special_cases`` dictionary
 # These methods should accept arguments in the order of ``drawer, layer, mapped_wires, op``
 
+
 # pylint: disable=unused-argument,no-member
 def _add_swap(drawer, layer, mapped_wires, op):
     drawer.SWAP(layer, mapped_wires)
@@ -92,6 +93,7 @@ special_cases = {
     ops.WireCut: _add_wirecut,
 }
 """Dictionary mapping special case classes to functions for drawing them."""
+
 
 # pylint: disable=too-many-branches
 def _tape_mpl(tape, wire_order=None, show_all_wires=False, decimals=None, **kwargs):
