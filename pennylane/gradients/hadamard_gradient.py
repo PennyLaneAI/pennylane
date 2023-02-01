@@ -106,7 +106,6 @@ def _expval_hadamard_grad(tape, argnum, aux_wire):
         if isinstance(m, qml.measurements.ProbabilityMP)
     ]
     for id_argnum, _ in enumerate(tape.trainable_params):
-
         if id_argnum not in argnums:
             # parameter has zero gradient
             gradient_data.append(None)
@@ -124,7 +123,6 @@ def _expval_hadamard_grad(tape, argnum, aux_wire):
         num_tape = 0
 
         for gen in generators:
-
             if isinstance(trainable_op, qml.Rot):
                 # Given that we only used Z as generator, we need to apply some gates before and after the generator.
                 if p_idx == 0:
@@ -150,7 +148,6 @@ def _expval_hadamard_grad(tape, argnum, aux_wire):
             measurements = []
             # Add the Y measurement on the aux qubit
             for m in tape.measurements:
-
                 if isinstance(m.obs, qml.operation.Tensor):
                     obs_new = m.obs.obs.copy()
                 elif m.obs:
@@ -201,20 +198,15 @@ def _expval_hadamard_grad(tape, argnum, aux_wire):
             for idx, res in enumerate(final_res):
                 if multi_measurements:
                     for prob_idx in measurements_probs:
-                        prob = tape.measurements[prob_idx]
-                        wires = prob.wires
-                        num_wires = len(wires)
-                        res_reshaped = qml.math.reshape(res[prob_idx], (2**num_wires, 2))
+                        num_wires_probs = len(tape.measurements[prob_idx].wires)
+                        res_reshaped = qml.math.reshape(res[prob_idx], (2**num_wires_probs, 2))
                         final_res[idx][prob_idx] = qml.math.tensordot(
                             res_reshaped, projector, axes=[[1], [0]]
                         )
                 else:
                     prob_idx = measurements_probs[0]
-                    prob = tape.measurements[prob_idx]
-                    wires = prob.wires
-                    num_wires = len(wires)
-                    res = qml.math.reshape(res, (2**num_wires, 2))
-                    print(res, projector)
+                    num_wires_probs = len(tape.measurements[prob_idx].wires)
+                    res = qml.math.reshape(res, (2**num_wires_probs, 2))
                     final_res[idx] = qml.math.tensordot(res, projector, axes=[[1], [0]])
 
         for idx, num_tape in enumerate(gradient_data):
@@ -249,8 +241,8 @@ def _get_generators(trainable_op):
     """From a trainable operation, extract the unitary generators and their coefficients."""
     # For PhaseShift, we need to separate the generator in two unitaries (Hardware compatibility)
     if isinstance(trainable_op, (qml.PhaseShift, qml.U1)):
-        generators = [qml.Identity(wires=trainable_op.wires), qml.PauliZ(wires=trainable_op.wires)]
-        coeffs = [-0.5, -0.5]
+        generators = [qml.PauliZ(wires=trainable_op.wires)]
+        coeffs = [-0.5]
     elif isinstance(trainable_op, qml.CRX):
         generators = [
             qml.PauliX(wires=trainable_op.wires[1]),

@@ -83,10 +83,7 @@ class TestHadamardGrad:
 
         tapes, fn = qml.gradients.hadamard_grad(tape)
 
-        if isinstance(G(theta, wires=[0]), (qml.RX, qml.RY, qml.RZ)):
-            assert len(tapes) == 1
-        else:
-            assert len(tapes) == 2
+        assert len(tapes) == 1
 
         hadamard_val = fn(dev.batch_execute(tapes))
 
@@ -241,6 +238,22 @@ class TestHadamardGrad:
         # gradients computed with different methods must agree
         assert np.allclose(grad_A, grad_F1, atol=tol, rtol=0)
         assert np.allclose(grad_A, grad_F2, atol=tol, rtol=0)
+
+    @pytest.mark.parametrize("angle", np.linspace(0, 2 * np.pi, 7, requires_grad=True))
+    @pytest.mark.parametrize("pauli_word", ["XX", "YY", "ZZ", "XY", "YX", "ZX", "ZY", "YZ"])
+    def test_differentiability_paulirot(self, angle, pauli_word, tol):
+        """Test that differentiation of PauliRot works."""
+
+        dev = qml.device("default.qubit", wires=3)
+        with qml.queuing.AnnotatedQueue() as q:
+            qml.PauliRot(angle, pauli_word, wires=[0, 1])
+            qml.expval(qml.PauliY(0) @ qml.PauliZ(1))
+
+        tape = qml.tape.QuantumScript.from_queue(q)
+        grad_hadamard = grad_fn(tape, dev)
+
+        grad_par_shift = grad_fn(tape, dev, fn=qml.gradients.param_shift)
+        assert np.allclose(grad_hadamard, grad_par_shift)
 
     def test_single_expectation_value(self, tol):
         """Tests correct output shape and evaluation for a tape
