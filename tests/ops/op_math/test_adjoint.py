@@ -47,6 +47,7 @@ class TestInheritanceMixins:
     def test_operation(self):
         """When the operation inherits from `Operation`, the `AdjointOperation` mixin is
         added and the Adjoint has Operation functionality."""
+
         # pylint: disable=too-few-public-methods
         class CustomOp(qml.operation.Operation):
             num_wires = 1
@@ -67,6 +68,7 @@ class TestInheritanceMixins:
 
     def test_observable(self):
         """Test that when the base is an Observable, Adjoint will also inherit from Observable."""
+
         # pylint: disable=too-few-public-methods
         class CustomObs(qml.operation.Observable):
             num_wires = 1
@@ -212,6 +214,7 @@ class TestProperties:
     def test_has_decomposition_true_via_base_decomposition(self):
         """Test `has_decomposition` property is activated because the base operation defines a
         `decomposition` method."""
+
         # pylint: disable=too-few-public-methods
         class MyOp(qml.operation.Operation):
             num_wires = 1
@@ -227,6 +230,7 @@ class TestProperties:
     def test_has_decomposition_false(self):
         """Test `has_decomposition` property is not activated if the base neither
         `has_adjoint` nor `has_decomposition`."""
+
         # pylint: disable=too-few-public-methods
         class MyOp(qml.operation.Operation):
             num_wires = 1
@@ -238,6 +242,7 @@ class TestProperties:
 
     def test_has_adjoint_true_always(self):
         """Test `has_adjoint` property to always be true, irrespective of the base."""
+
         # pylint: disable=too-few-public-methods
         class MyOp(qml.operation.Operation):
             """Operation that does not define `adjoint` and hence has `has_adjoint=False`."""
@@ -267,6 +272,7 @@ class TestProperties:
     def test_has_diagonalizing_gates_false(self):
         """Test `has_diagonalizing_gates` property is not activated if the base neither
         `has_adjoint` nor `has_diagonalizing_gates`."""
+
         # pylint: disable=too-few-public-methods
         class MyOp(qml.operation.Operation):
             num_wires = 1
@@ -289,6 +295,7 @@ class TestProperties:
     @pytest.mark.parametrize("value", (True, False))
     def test_is_hermitian(self, value):
         """Test `is_hermitian` property mirrors that of the base."""
+
         # pylint: disable=too-few-public-methods
         class DummyOp(qml.operation.Operator):
             num_wires = 1
@@ -441,7 +448,6 @@ class TestAdjointOperation:
             Adjoint(1.0 * qml.PauliX(0)).generator()
 
     def test_single_qubit_rot_angles(self):
-
         param = 1.234
         base = qml.RX(param, wires=0)
         op = Adjoint(base)

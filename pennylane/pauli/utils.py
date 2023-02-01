@@ -271,7 +271,6 @@ def pauli_to_binary(pauli_word, n_qubits=None, wire_map=None, check_is_pauli_wor
         operations_zip = zip(pauli_wires, pauli_word.name)
 
     for wire, name in operations_zip:
-
         if name == "PauliX":
             binary_pauli[wire] = 1
 
@@ -645,7 +644,6 @@ def is_qwc(pauli_vec_1, pauli_vec_2):
     n_qubits = int(len(pauli_vec_1) / 2)
 
     for i in range(n_qubits):
-
         first_vec_ith_qubit_paulix = pauli_vec_1[i]
         first_vec_ith_qubit_pauliz = pauli_vec_1[n_qubits + i]
         second_vec_ith_qubit_paulix = pauli_vec_2[i]
@@ -1139,7 +1137,6 @@ def qwc_rotation(pauli_operators):
             f" instead got pauli_operators = {pauli_operators}."
         )
     with OperationRecorder() as rec:
-
         for pauli in pauli_operators:
             if isinstance(pauli, qml.PauliX):
                 qml.RY(-np.pi / 2, wires=pauli.wires)
@@ -1305,7 +1302,6 @@ def diagonalize_qwc_groupings(qwc_groupings):
     m_groupings = len(qwc_groupings)
 
     for i in range(m_groupings):
-
         diagonalizing_unitary, diag_grouping = diagonalize_qwc_pauli_words(qwc_groupings[i])
         post_rotations.append(diagonalizing_unitary)
         diag_groupings.append(diag_grouping)

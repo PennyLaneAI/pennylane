@@ -31,6 +31,7 @@ try:  # pragma: no cover
 except (ModuleNotFoundError, ImportError) as e:  # pragma: no cover
     _has_mpl = False
 
+
 # pragma: no cover
 def _needs_mpl(func):
     def wrapper():

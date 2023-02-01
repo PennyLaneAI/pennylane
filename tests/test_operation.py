@@ -2237,13 +2237,11 @@ def test_docstring_example_of_operator_class(tol):
     page in the developer guide."""
 
     class FlipAndRotate(qml.operation.Operation):
-
         num_wires = qml.operation.AnyWires
         grad_method = "A"
 
         # pylint: disable=too-many-arguments
         def __init__(self, angle, wire_rot, wire_flip=None, do_flip=False, do_queue=True, id=None):
-
             if do_flip and wire_flip is None:
                 raise ValueError("Expected a wire to flip; got None.")
 

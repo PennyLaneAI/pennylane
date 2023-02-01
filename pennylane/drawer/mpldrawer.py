@@ -246,7 +246,6 @@ class MPLDrawer:
     """Box style for active wire notches."""
 
     def __init__(self, n_layers, n_wires, wire_options=None, figsize=None):
-
         if not has_mpl:  # pragma: no cover
             raise ImportError(
                 "Module matplotlib is required for ``MPLDrawer`` class. "

@@ -243,7 +243,6 @@ class Controlled(SymbolicOp):
     def __init__(
         self, base, control_wires, control_values=None, work_wires=None, do_queue=True, id=None
     ):
-
         control_wires = Wires(control_wires)
         work_wires = Wires([]) if work_wires is None else Wires(work_wires)
 
@@ -390,7 +389,6 @@ class Controlled(SymbolicOp):
         return self.base.label(decimals=decimals, base_label=base_label, cache=cache)
 
     def matrix(self, wire_order=None):
-
         base_matrix = self.base.matrix()
         interface = qmlmath.get_interface(base_matrix)
 
