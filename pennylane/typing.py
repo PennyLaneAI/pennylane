@@ -54,7 +54,7 @@ def is_torch_instance(instance):
     return False
 
 
-tensor_like_base = Union[int, float, bool, complex, bytes, str, np.ndarray, ArrayBox]
+tensor_like_base = Union[int, float, bool, complex, bytes, str, list, tuple, np.ndarray, ArrayBox]
 
 
 class TensorLikeMETA(type):
