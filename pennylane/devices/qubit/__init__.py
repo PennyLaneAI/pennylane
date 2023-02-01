@@ -12,9 +12,16 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-This module contains classes and functions used in pulse programming.
+Submodule for performing qubit-based simulations of quantum circuits.
+
+This submodule is internal and subject to change without a deprecation cycle. Use
+at your own discretion.
+
+.. currentmodule:: pennylane.devices.qubit
+.. autosummary::
+    :toctree: api
+
+    apply_operation
 """
 
-from .convenience_functions import constant, rect, pwc, pwc_from_function
-from .parametrized_evolution import ParametrizedEvolution
-from .parametrized_hamiltonian import ParametrizedHamiltonian
+from .apply_operation import apply_operation

@@ -95,10 +95,10 @@ class ParametrizedEvolution(Operation):
 
     >>> ops = [qml.PauliX(0), qml.PauliY(1), qml.PauliZ(2)]
     >>> coeffs = [lambda p, t: p for _ in range(3)]
-    >>> H1 = qml.ops.dot(coeffs, ops)  # time-independent parametrized hamiltonian
+    >>> H1 = qml.dot(coeffs, ops)  # time-independent parametrized Hamiltonian
     >>> ops = [qml.PauliZ(0), qml.PauliY(1), qml.PauliX(2)]
     >>> coeffs = [lambda p, t: p * jnp.sin(t) for _ in range(3)]
-    >>> H2 = qml.ops.dot(coeffs, ops) # time-dependent parametrized hamiltonian
+    >>> H2 = qml.dot(coeffs, ops) # time-dependent parametrized Hamiltonian
     >>> H1, H2
     (ParametrizedHamiltonian: terms=3, ParametrizedHamiltonian: terms=3)
 
@@ -183,12 +183,12 @@ class ParametrizedEvolution(Operation):
         if t is None:
             self.t = None
         else:
-            self.t = jnp.array([0, t] if qml.math.size(t) == 1 else t, dtype=float)
+            self.t = jnp.array([0, t] if qml.math.ndim(t) == 0 else t, dtype=float)
         super().__init__(wires=H.wires, do_queue=do_queue, id=id)
 
     def __call__(self, params, t, **odeint_kwargs):
         self.params = params
-        self.t = jnp.array([0, t] if qml.math.size(t) == 1 else t, dtype=float)
+        self.t = jnp.array([0, t] if qml.math.ndim(t) == 0 else t, dtype=float)
         if odeint_kwargs:
             self.odeint_kwargs.update(odeint_kwargs)
         return self
