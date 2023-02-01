@@ -127,7 +127,7 @@ def _tape_mpl(tape, wire_order=None, show_all_wires=False, decimals=None, **kwar
                 mapped_wires = (
                     [wire_map[w] for w in op.wires] if len(op.wires) != 0 else wire_map.values()
                 )
-                # It is assumed that if `op.wires == 0`, `op` acts on all wires
+                # It is assumed that if `len(op.wires) == 0`, `op` acts on all wires
                 specialfunc(drawer, layer, mapped_wires, op)
 
             else:
