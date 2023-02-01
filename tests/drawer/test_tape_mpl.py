@@ -539,10 +539,7 @@ class TestGeneralOperations:
         """Test that `qml.Snapshot` works properly with `tape_mpl`."""
 
         # Test that empty figure is created when the only gate is `qml.Snapshot`
-        with qml.queuing.AnnotatedQueue() as q_tape:
-            qml.Snapshot()
-
-        tape = QuantumScript.from_queue(q_tape)
+        tape = QuantumScript([qml.Snapshot()])
         fig, ax = tape_mpl(tape)
 
         assert isinstance(fig, mpl.figure.Figure)
