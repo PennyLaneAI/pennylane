@@ -221,10 +221,10 @@ import warnings
 from enum import IntEnum
 from typing import List
 
+import autoray
 import numpy as np
 from numpy.linalg import multi_dot
 from scipy.sparse import coo_matrix, eye, kron
-import autoray
 import pennylane as qml
 from pennylane.math import expand_matrix
 from pennylane.queuing import QueuingManager
@@ -355,7 +355,6 @@ def classproperty(func):
 
 
 def _process_data(op):
-
     # Use qml.math.real to take the real part. We may get complex inputs for
     # example when differentiating holomorphic functions with JAX: a complex
     # valued QNode (one that returns qml.state) requires complex typed inputs.
@@ -1409,16 +1408,16 @@ class Operator(abc.ABC):
     def __add__(self, other):
         """The addition operation of Operator-Operator objects and Operator-scalar."""
         if isinstance(other, Operator):
-            return qml.op_sum(self, other)
+            return qml.sum(self, other)
         if other == 0:
             return self
         if isinstance(other, qml.pulse.ParametrizedHamiltonian):
             return other.__add__(self)
         backend = autoray.infer_backend(other)
-        if (backend == "builtins" and isinstance(other, numbers.Number)) or (
-            backend in SUPPORTED_INTERFACES and qml.math.shape(other) == ()
-        ):
-            return qml.op_sum(self, qml.s_prod(scalar=other, operator=qml.Identity(self.wires)))
+        if (
+            backend == "builtins" and isinstance(other, numbers.Number)
+        ) or backend in SUPPORTED_INTERFACES:
+            return qml.sum(self, qml.s_prod(scalar=other, operator=qml.Identity(self.wires)))
         return NotImplemented
 
     __radd__ = __add__
@@ -1428,9 +1427,9 @@ class Operator(abc.ABC):
         if callable(other):
             return qml.pulse.ParametrizedHamiltonian([other], [self])
         backend = autoray.infer_backend(other)
-        if (backend == "builtins" and isinstance(other, numbers.Number)) or (
-            backend in SUPPORTED_INTERFACES and qml.math.shape(other) == ()
-        ):
+        if (
+            backend == "builtins" and isinstance(other, numbers.Number)
+        ) or backend in SUPPORTED_INTERFACES:
             return qml.s_prod(scalar=other, operator=self)
         return NotImplemented
 
@@ -1456,7 +1455,10 @@ class Operator(abc.ABC):
 
     def __pow__(self, other):
         r"""The power operation of an Operator object."""
-        if isinstance(other, numbers.Number):
+        backend = autoray.infer_backend(other)
+        if (
+            backend == "builtins" and isinstance(other, numbers.Number)
+        ) or backend in SUPPORTED_INTERFACES:
             return qml.pow(self, z=other)
         return NotImplemented
 
@@ -1659,7 +1661,6 @@ class Operation(Operator):
         return super().label(decimals=decimals, base_label=base_label, cache=cache)
 
     def __init__(self, *params, wires=None, do_queue=True, id=None):
-
         self._inverse = False
         super().__init__(*params, wires=wires, do_queue=do_queue, id=id)
 
@@ -1918,7 +1919,6 @@ class Tensor(Observable):
     has_matrix = True
 
     def __init__(self, *args):  # pylint: disable=super-init-not-called
-
         wires = [op.wires for op in args]
         if len(wires) != len(set(wires)):
             warnings.warn(
@@ -1969,7 +1969,6 @@ class Tensor(Observable):
         constituents = self._args if init else self.obs
 
         for o in constituents:
-
             if init:
                 if isinstance(o, Tensor):
                     self.obs.extend(o.obs)

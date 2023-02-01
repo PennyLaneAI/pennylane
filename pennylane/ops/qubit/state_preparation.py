@@ -16,13 +16,16 @@ This submodule contains the discrete-variable quantum operations concerned
 with preparing a certain state on the device.
 """
 # pylint:disable=abstract-method,arguments-differ,protected-access,no-member
-from pennylane.operation import AnyWires, Operation
+from pennylane import numpy as np
+from pennylane.math import convert_like
+from pennylane.operation import AnyWires, Operation, StatePrep
 from pennylane.templates.state_preparations import BasisStatePreparation, MottonenStatePreparation
+from pennylane.wires import Wires, WireError
 
 state_prep_ops = {"BasisState", "QubitStateVector", "QubitDensityMatrix"}
 
 
-class BasisState(Operation):
+class BasisState(StatePrep):
     r"""BasisState(n, wires)
     Prepares a single computational basis state.
 
@@ -58,11 +61,6 @@ class BasisState(Operation):
     num_params = 1
     """int: Number of trainable parameters that the operator depends on."""
 
-    grad_method = None
-
-    # This is a temporary attribute to fix the operator queuing behaviour
-    _queue_category = "_prep"
-
     @staticmethod
     def compute_decomposition(n, wires):
         r"""Representation of the operator as a product of other operators (static method). :
@@ -87,6 +85,28 @@ class BasisState(Operation):
 
         """
         return [BasisStatePreparation(n, wires)]
+
+    def state_vector(self, wire_order=None):
+        """Returns a state-vector of shape ``(2,) * num_wires``."""
+        prep_vals = self.parameters[0]
+        if any(i not in [0, 1] for i in prep_vals):
+            raise ValueError("BasisState parameter must consist of 0 or 1 integers.")
+
+        if wire_order is None:
+            num_wires = len(self.wires)
+            indices = prep_vals
+        else:
+            new_wires = Wires(wire_order)
+            if not new_wires.contains_wires(self.wires):
+                raise WireError("Custom wire_order must contain all BasisState wires")
+            num_wires = len(new_wires)
+            indices = [0] * num_wires
+            for base_wire_label, value in zip(self.wires, prep_vals):
+                indices[new_wires.index(base_wire_label)] = value
+
+        ket = np.zeros((2,) * num_wires)
+        ket[tuple(indices)] = 1
+        return convert_like(ket, prep_vals)
 
 
 class QubitStateVector(Operation):

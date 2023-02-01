@@ -358,6 +358,7 @@ class IntegerComparator(Operation):
     """int: Number of trainable parameters that the operator depends on."""
 
     grad_method = None
+
     # pylint: disable=too-many-arguments
     def __init__(
         self,
@@ -367,7 +368,6 @@ class IntegerComparator(Operation):
         work_wires=None,
         do_queue=True,
     ):
-
         if not isinstance(value, int):
             raise ValueError(f"The compared value must be an int. Got {type(value)}.")
         if wires is None:

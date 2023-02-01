@@ -182,7 +182,6 @@ def draw(
 
     @wraps(qnode)
     def wrapper(*args, **kwargs):
-
         original_expansion_strategy = getattr(qnode, "expansion_strategy", None)
 
         try:

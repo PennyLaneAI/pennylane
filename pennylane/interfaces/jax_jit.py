@@ -189,7 +189,6 @@ def _execute(
         return wrapped_exec(params), params
 
     def wrapped_exec_bwd(params, g):
-
         if isinstance(gradient_fn, qml.gradients.gradient_transform):
             for t in tapes:
                 multi_probs = (
@@ -319,7 +318,6 @@ def _execute_with_fwd(
         return res, tuple([jacs, params])
 
     def wrapped_exec_bwd(params, g):
-
         _raise_vector_valued_fwd(tapes)
 
         # Use the jacobian that was computed on the forward pass

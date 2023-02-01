@@ -14,9 +14,10 @@
 """
 Contains the QNodeCollection class.
 """
+import warnings
+
 # pylint: disable=too-many-arguments,import-outside-toplevel
 from collections.abc import Sequence
-import warnings
 
 
 class QNodeCollection(Sequence):
@@ -159,6 +160,10 @@ class QNodeCollection(Sequence):
     """
 
     def __init__(self, qnodes=None):
+        warnings.warn(
+            "The QNodeCollection class is deprecated and it will be removed soon.", UserWarning
+        )
+
         self.qnodes = []
         self.extend(qnodes or [])
 
