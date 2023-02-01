@@ -50,7 +50,7 @@ def measure(mp: StateMeasurement, state):
     raise NotImplementedError
 
 
-def simulate(circuit: qml.tape.QuantumScript, like="numpy"):
+def simulate(circuit: qml.tape.QuantumScript):
     """Simulate a single quantum script.
 
     This is an internal function that will be called by the to-be-created ``PythonDevice``.
@@ -69,9 +69,7 @@ def simulate(circuit: qml.tape.QuantumScript, like="numpy"):
     tensor([0.68117888, 0.        , 0.31882112, 0.        ], requires_grad=True))
 
     """
-    state = create_initial_state(
-        circuit.wires, circuit._prep[0] if circuit._prep else None, like=like
-    )
+    state = create_initial_state(circuit.wires, circuit._prep[0] if circuit._prep else None)
 
     for op in circuit._ops:
         state = apply_operation(op, state)

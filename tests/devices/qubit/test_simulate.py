@@ -75,7 +75,7 @@ class TestBasicCircuit:
 
         def f(x):
             qs = qml.tape.QuantumScript([qml.RX(x, wires=0)], [qml.expval(qml.PauliZ(0))])
-            return simulate(qs, like="jax")[0]
+            return simulate(qs)[0]
 
         if use_jit:
             f = jax.jit(f)
@@ -99,7 +99,7 @@ class TestBasicCircuit:
 
         def f(x):
             qs = qml.tape.QuantumScript([qml.RX(x, wires=0)], [qml.expval(qml.PauliZ(0))])
-            return simulate(qs, like="torch")[0]
+            return simulate(qs)[0]
 
         result = f(phi)
         result.backward()
@@ -116,7 +116,7 @@ class TestBasicCircuit:
 
         with tf.GradientTape() as grad_tape:
             qs = qml.tape.QuantumScript([qml.RX(phi, wires=0)], [qml.expval(qml.PauliZ(0))])
-            result = simulate(qs, like="tensorflow")[0]
+            result = simulate(qs)[0]
 
         grads = grad_tape.jacobian(result, [phi])
 
