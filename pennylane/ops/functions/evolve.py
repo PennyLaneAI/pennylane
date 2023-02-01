@@ -34,24 +34,24 @@ def evolve(
         t (Union[float, Tuple[float]]): Time.
 
             * If ``op`` is a :class:`.Operator`, ``t`` corresponds to the coefficient multiplying
-            the exponentiated operator: :math:`\exp\{i\bm{O}t)\}`. If ``None``, ``t=1`` is used.
+                the exponentiated operator: :math:`\exp\{i\bm{O}t)\}`. If ``None``, ``t=1`` is used.
 
             * If ``op`` is a :class:`.ParametrizedHamiltonian`, ``t`` can be either a float or a
-            tuple of floats. If a float, it corresponds to the duration of the evolution (start
-            time is 0). If a tuple of floats, it corresponds to the start and end time of the evolution.
-            Note that such absolute times only have meaning within an instance of
-            ``ParametrizedEvolution`` and will not affect other gates.
+                tuple of floats. If a float, it corresponds to the duration of the evolution (start
+                time is 0). If a tuple of floats, it corresponds to the start and end time of the evolution.
+                Note that such absolute times only have meaning within an instance of
+                ``ParametrizedEvolution`` and will not affect other gates.
 
         dt (float): Time step used.
 
             * If ``op`` is a :class:`.Operator`, ``1/dt`` corresponds to the Trotter number, which
-            is the number of time steps used in the Suzuki-Trotter decomposition of the
-            :class:`.Evolution` operator.
+                is the number of time steps used in the Suzuki-Trotter decomposition of the
+                :class:`.Evolution` operator.
 
             * If ``op`` is a :class:`.ParametrizedHamiltonian`, ``dt`` will be
-            used to convert the initial and final time values into a list of values that the ``odeint``
-            solver will use. The solver might perform intermediate steps if necessary. It is recommended
-            to not provide a value for ``dt``.
+                used to convert the initial and final time values into a list of values that the ``odeint``
+                solver will use. The solver might perform intermediate steps if necessary. It is recommended
+                to not provide a value for ``dt``.
 
     Returns:
         Union[.Evolution, ~pennylane.ops.op_math.evolve.ParametrizedEvolution]: evolution operator
@@ -88,13 +88,13 @@ def evolve(
     >>> coeffs = [lambda p, t: p * t for _ in range(4)]
     >>> ops = [qml.PauliX(i) for i in range(4)]
     >>> H = qml.dot(coeffs, ops)
-    >>> qml.evolve(H)
+    >>> qml.evolve(H, t=[4, 10])
     ParametrizedEvolution(wires=[0, 1, 2, 3])
 
     The :class:`.ParametrizedEvolution` instance can then be called to update the needed attributes
     to compute the evolution of the :class:`.ParametrizedHamiltonian`:
 
-    >>> qml.evolve(H)(params=[1., 2., 3.], t=[4, 10], atol=1e-6, mxstep=1)
+    >>> qml.evolve(H, t=[4, 10])(params=[1., 2., 3.], atol=1e-6, mxstep=1)
     ParametrizedEvolution(wires=[0, 1, 2, 3])
 
     Please check the :class:`.ParametrizedEvolution` class for more information.
@@ -102,6 +102,7 @@ def evolve(
     if isinstance(op, ParametrizedHamiltonian):
         if t is None:
             raise ValueError("Time must be specified to evolve a ParametrizedHamiltonian.")
+<<<<<<< HEAD
         t = [0, t] if qml.math.ndim(t) == 0 else t
         if dt is not None:
             t = qml.math.arange(*t, step=dt)
@@ -112,3 +113,12 @@ def evolve(
     num_steps = dt if dt is None else int(1 / dt)
 
     return Evolution(generator=op, param=t, num_steps=num_steps)
+=======
+        t = [0.0, t] if qml.math.ndim(t) == 0 else t
+        if dt is not None:
+            t = qml.math.arange(t[0], t[1], step=dt)
+
+        return ParametrizedEvolution(H=op, t=t)
+
+    return Evolution(op) if t is None else Evolution(op, t)
+>>>>>>> refactor-evolve
