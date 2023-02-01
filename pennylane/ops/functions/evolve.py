@@ -37,10 +37,10 @@ def evolve(
                 the exponentiated operator: :math:`\exp\{i\bm{O}t)\}`. If ``None``, ``t=1`` is used.
 
             * If ``op`` is a :class:`.ParametrizedHamiltonian`, ``t`` can be either a float or a
-                tuple of floats. If a float, it corresponds to the duration of the evolution (start
-                time is 0). If a tuple of floats, it corresponds to the start and end time of the evolution.
-                Note that such absolute times only have meaning within an instance of
-                ``ParametrizedEvolution`` and will not affect other gates.
+                tuple of floats. If a float, the operator is evolved from ``0`` to ``t``. If a tuple of
+                floats, each value corresponds to the start and end time of the evolution. Note that such
+                absolute times only have meaning within an instance of ``ParametrizedEvolution`` and
+                will not affect other gates.
 
         dt (float): Time step used.
 
@@ -102,9 +102,9 @@ def evolve(
     if isinstance(op, ParametrizedHamiltonian):
         if t is None:
             raise ValueError("Time must be specified to evolve a ParametrizedHamiltonian.")
-        t = [0, t] if qml.math.ndim(t) == 0 else t
+        t = [0.0, t] if qml.math.ndim(t) == 0 else t
         if dt is not None:
-            t = qml.math.arange(*t, step=dt)
+            t = qml.math.arange(t[0], t[1], step=dt)
 
         return ParametrizedEvolution(H=op, t=t)
 
