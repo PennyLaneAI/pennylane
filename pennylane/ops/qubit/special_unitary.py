@@ -288,6 +288,9 @@ class SpecialUnitary(Operation):
         array([[ 0.83004499-0.28280371j,  0.0942679 +0.47133952j],
                [-0.0942679 +0.47133952j,  0.83004499+0.28280371j]])
         """
+        interface = qml.math.get_interface(theta)
+        if interface == "tensorflow":
+            theta = qml.math.cast_like(theta, 1j)
         if num_wires > 5:
             matrices = product(_pauli_matrices, repeat=num_wires)
             # Drop the identity from the generator of matrices
@@ -295,7 +298,7 @@ class SpecialUnitary(Operation):
             A = sum(t * reduce(np.kron, letters) for t, letters in zip(theta, matrices))
         else:
             A = qml.math.tensordot(theta, pauli_basis_matrices(num_wires), axes=[[-1], [0]])
-        if qml.math.get_interface(theta) == "jax" and qml.math.ndim(theta) > 1:
+        if interface == "jax" and qml.math.ndim(theta) > 1:
             # jax.numpy.expm does not support broadcasting
             return qml.math.stack([qml.math.expm(1j * _A) for _A in A])
         return qml.math.expm(1j * A)

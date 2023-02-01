@@ -166,7 +166,7 @@ class TestSpecialUnitary:
             qml.SpecialUnitary(theta, list(range(n))).matrix(),
             qml.SpecialUnitary.compute_matrix(theta, n),
         ]
-        I = self.interface_array(np.eye(2**n), interface)
+        I = self.interface_array(np.eye(2**n, dtype=np.complex128), interface)
         for matrix in matrices:
             if interface == "torch":
                 matrix = matrix.detach().numpy()
@@ -182,12 +182,12 @@ class TestSpecialUnitary:
         np.random.seed(seed)
         d = 4**n - 1
         theta = np.random.random((2, d))
+        separate_matrices = [qml.SpecialUnitary.compute_matrix(t, n) for t in theta]
         theta = self.interface_array(theta, interface)
         matrices = [
             qml.SpecialUnitary(theta, list(range(n))).matrix(),
             qml.SpecialUnitary.compute_matrix(theta, n),
         ]
-        separate_matrices = [qml.SpecialUnitary.compute_matrix(t, n) for t in theta]
         I = self.interface_array(np.eye(2**n), interface)
         for matrix in matrices:
             if interface == "torch":
