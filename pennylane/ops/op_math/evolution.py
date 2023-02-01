@@ -32,6 +32,11 @@ class Evolution(Exp):
         base (~.operation.Operator): The operator to be used as a generator, G.
         param (float): The evolution parameter, x. This parameter is expected not to have
             any complex component.
+        num_steps (int): The number of steps used in the decomposition of the exponential operator,
+            also known as the Trotter number. If this value is `None` and the Suzuki-Trotter
+            decomposition is needed, an error will be raised.
+        do_queue (bool): determines if the sum operator will be queued. Default is True.
+        id (str): id for the sum operator. Default is None.
 
     Returns:
        :class:`Evolution`: A :class:`~.operation.Operator` representing an operator exponential of the form :math:`e^{ix\hat{G}}`,
@@ -74,8 +79,9 @@ class Evolution(Exp):
     _name = "Evolution"
     num_params = 1
 
-    def __init__(self, generator, param, do_queue=True, id=None):
-        super().__init__(generator, coeff=1j * param, do_queue=do_queue, id=id)
+    # pylint: disable=too-many-arguments
+    def __init__(self, generator, param, num_steps=None, do_queue=True, id=None):
+        super().__init__(generator, coeff=1j * param, num_steps=num_steps, do_queue=do_queue, id=id)
         self._data = [param]
 
     @property
