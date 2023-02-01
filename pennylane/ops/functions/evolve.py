@@ -14,18 +14,40 @@
 """
 This module contains the qml.evolve function.
 """
-from typing import Union
+from typing import Union, Tuple
 
 from pennylane.operation import Operator
 from pennylane.ops import Evolution
 from pennylane.pulse import ParametrizedEvolution, ParametrizedHamiltonian
+import pennylane as qml
 
 
-def evolve(op: Union[Operator, ParametrizedHamiltonian]):
-    """Returns a new operator that computes the evolution of ``op``.
+def evolve(
+    op: Union[Operator, ParametrizedHamiltonian],
+    t: Union[float, Tuple[float]] = None,
+    dt: float = None,
+):
+    r"""Returns a new operator that computes the evolution of ``op``.
 
     Args:
         op (Union[.Operator, .ParametrizedHamiltonian]): operator to evolve
+        t (Union[float, Tuple[float]]): Time.
+
+            * If ``op`` is a :class:`.Operator`, ``t`` corresponds to the coefficient multiplying
+            the exponentiated operator: :math:`\exp\{i\bm{O}t)\}`. If ``None``, ``t=1`` is used.
+
+            * If ``op`` is a :class:`.ParametrizedHamiltonian`, ``t`` can be either a float or a
+            tuple of floats. If a float, the operator is evolved from ``0`` to ``t``. If a tuple of
+            floats, each value corresponds to the start and end time of the evolution. Note that such
+            absolute times only have meaning within an instance of ``ParametrizedEvolution`` and
+            will not affect other gates.
+
+        dt (float): Time step used.
+
+            * If ``op`` is a :class:`.ParametrizedHamiltonian`, ``dt`` will be
+            used to convert the initial and final time values into a list of values that the ``odeint``
+            solver will use. The solver might perform intermediate steps if necessary. It is recommended
+            to not provide a value for ``dt``.
 
     Returns:
         Union[.Evolution, ~pennylane.ops.op_math.evolve.ParametrizedEvolution]: evolution operator
@@ -37,9 +59,17 @@ def evolve(op: Union[Operator, ParametrizedHamiltonian]):
 
     We can use ``qml.evolve`` to compute the evolution of any PennyLane operator:
 
-    >>> op = qml.s_prod(2, qml.PauliX(0))
-    >>> qml.evolve(op)
-    Exp(1j 2*(PauliX(wires=[0])))
+    >>> op = qml.evolve(qml.PauliX(0), t=2)
+    >>> op
+    Exp(2j PauliX)
+
+    When we have an exponential of a linear combination of operators, the Suzuki-Trotter algorithm
+    is used to decompose the initial operator into a product of exponentials:
+
+    >>> op = 3 * qml.PauliX(0) + 7 * qml.PauliZ(1) @ qml.PauliX(2)
+    >>> ev = qml.evolve(op, dt=0.5)
+    >>> ev
+    Exp(1j Hamiltonian)
 
     When evolving a :class:`.ParametrizedHamiltonian` class, then a :class:`.ParametrizedEvolution`
     instance is returned:
@@ -47,18 +77,26 @@ def evolve(op: Union[Operator, ParametrizedHamiltonian]):
     >>> coeffs = [lambda p, t: p * t for _ in range(4)]
     >>> ops = [qml.PauliX(i) for i in range(4)]
     >>> H = qml.dot(coeffs, ops)
-    >>> qml.evolve(H)
+    >>> qml.evolve(H, t=[4, 10])
     ParametrizedEvolution(wires=[0, 1, 2, 3])
 
     The :class:`.ParametrizedEvolution` instance can then be called to update the needed attributes
     to compute the evolution of the :class:`.ParametrizedHamiltonian`:
 
-    >>> qml.evolve(H)(params=[1., 2., 3.], t=[4, 10], atol=1e-6, mxstep=1)
+    >>> qml.evolve(H, t=[4, 10])(params=[1., 2., 3.], atol=1e-6, mxstep=1)
     ParametrizedEvolution(wires=[0, 1, 2, 3])
 
     Please check the :class:`.ParametrizedEvolution` class for more information.
     """
     if isinstance(op, ParametrizedHamiltonian):
-        return ParametrizedEvolution(H=op)
+        if t is None:
+            raise ValueError("Time must be specified to evolve a ParametrizedHamiltonian.")
+        t = [0.0, t] if qml.math.ndim(t) == 0 else t
+        if dt is not None:
+            t = qml.math.arange(t[0], t[1], step=dt)
 
-    return Evolution(generator=op, param=1.0)
+        return ParametrizedEvolution(H=op, t=t)
+
+    t = t or 1
+
+    return Evolution(generator=op, param=t)

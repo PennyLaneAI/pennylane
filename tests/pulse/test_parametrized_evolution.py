@@ -85,7 +85,7 @@ class TestInitialization:
         ops = [qml.PauliX(0), qml.PauliY(1)]
         coeffs = [1, 2]
         H = ParametrizedHamiltonian(coeffs, ops)
-        ev = ParametrizedEvolution(H=H, params=[1, 2], t=2)
+        ev = ParametrizedEvolution(H=H, params=[1, 2], t=[0, 2])
 
         assert ev.H is H
         assert qml.math.allequal(ev.t, [0, 2])
@@ -115,17 +115,15 @@ class TestInitialization:
         ops = [qml.PauliX(0), qml.PauliY(1)]
         coeffs = [1, 2]
         H = ParametrizedHamiltonian(coeffs, ops)
-        ev = ParametrizedEvolution(H=H, mxstep=10)
+        ev = ParametrizedEvolution(H=H, t=[0, 2], mxstep=10)
 
         assert ev.params is None
-        assert ev.t is None
+        assert qml.math.allequal(ev.t, [0, 2])
         assert ev.odeint_kwargs == {"mxstep": 10}
         params = [1, 2, 3]
-        t = 6
-        ev(params, t, atol=1e-6, rtol=1e-4)
+        ev(params, atol=1e-6, rtol=1e-4)
 
         assert qml.math.allequal(ev.params, params)
-        assert qml.math.allequal(ev.t, [0, 6])
         assert ev.odeint_kwargs == {"mxstep": 10, "atol": 1e-6, "rtol": 1e-4}
 
     def test_list_of_times(self):
@@ -213,7 +211,7 @@ class TestIntegration:
 
         dev = qml.device("default.qubit", wires=2)
 
-        t = 4
+        t = [0, 4]
 
         @qml.qnode(dev, interface="jax")
         def circuit(params):
@@ -228,7 +226,7 @@ class TestIntegration:
 
         @qml.qnode(dev, interface="jax")
         def true_circuit(params):
-            true_mat = qml.math.expm(-1j * qml.matrix(H(params, t=t)) * t)
+            true_mat = qml.math.expm(-1j * qml.matrix(H(params, t=t[1])) * t[1])
             QubitUnitary(U=true_mat, wires=[0, 1])
             return qml.expval(qml.PauliX(0) @ qml.PauliX(1))
 
@@ -254,11 +252,11 @@ class TestIntegration:
         H = time_dependent_hamiltonian()
 
         dev = qml.device("default.qubit", wires=2)
-        t = 2
+        t = [0, 2]
 
         def generator(params):
             time_step = 1e-3
-            times = jnp.arange(0, t, step=time_step)
+            times = jnp.arange(t[0], t[1], step=time_step)
             for ti in times:
                 yield jax.scipy.linalg.expm(-1j * time_step * qml.matrix(H(params, t=ti)))
 
@@ -318,14 +316,14 @@ class TestIntegration:
         @jax.jit
         @qml.qnode(dev, interface="jax")
         def circuit1(params):
-            qml.evolve(H1)(params[0], t=2)
-            qml.evolve(H2)(params[1], t=2)
+            qml.evolve(H1, t=2)(params[0])
+            qml.evolve(H2, t=2)(params[1])
             return qml.expval(qml.PauliZ(0) @ qml.PauliZ(1) @ qml.PauliZ(2))
 
         @jax.jit
         @qml.qnode(dev, interface="jax")
         def circuit2(params):
-            qml.evolve(H1 + H2)(params, t=2)
+            qml.evolve(H1 + H2, t=2)(params)
             return qml.expval(qml.PauliZ(0) @ qml.PauliZ(1) @ qml.PauliZ(2))
 
         params1 = [(1.0, 2.0), (3.0,)]

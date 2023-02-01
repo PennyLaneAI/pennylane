@@ -43,11 +43,11 @@ class TestEvolveConstructor:
         coeffs = [1, 2, 3]
         ops = [qml.PauliX(0), qml.PauliY(1), qml.PauliZ(2)]
         H = ParametrizedHamiltonian(coeffs=coeffs, observables=ops)
-        final_op = qml.evolve(H)
+        final_op = qml.evolve(H, t=1)
         assert isinstance(final_op, ParametrizedEvolution)
         assert final_op.params is None
-        assert final_op.t is None
-        param_evolution = final_op(params=[1, 2, 3], t=1)
+        assert qml.math.allequal(final_op.t, [0, 1])
+        param_evolution = final_op(params=[1, 2, 3])
         assert isinstance(param_evolution, ParametrizedEvolution)
         assert param_evolution.H is H
         assert qml.math.allequal(param_evolution.params, [1, 2, 3])
