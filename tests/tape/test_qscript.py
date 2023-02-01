@@ -407,7 +407,6 @@ class TestIteration:
 
     @pytest.fixture
     def make_qs(self):
-
         ops = [
             qml.RX(0.432, wires=0),
             qml.Rot(0.543, 0, 0.23, wires=0),
@@ -440,7 +439,6 @@ class TestIteration:
                 counter += 1
 
             except StopIteration:
-
                 # StopIteration is raised by next when there are no more
                 # elements to iterate over
                 iterating = False

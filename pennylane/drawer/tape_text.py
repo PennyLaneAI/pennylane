@@ -305,7 +305,6 @@ def tape_text(
     enders = [True, False]  # add "─┤" after all operations
 
     for layers, add, filler, ender in zip(layers_list, add_list, fillers, enders):
-
         for layer in layers:
             layer_str = [filler] * n_wires
 

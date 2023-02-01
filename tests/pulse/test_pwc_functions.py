@@ -433,7 +433,8 @@ class TestIntegration:
 
     def test_qnode_pwc_from_function_jit(self):
         """Test that the evolution of a ParametrizedHamiltonian defined with a function decorated by pwc_from_function
-        can be executed on a QNode using jax-jit, and the results don't differ from an execution without jitting."""
+        can be executed on a QNode using jax-jit, and the results don't differ from an execution without jitting.
+        """
         import jax
 
         @qml.pulse.pwc_from_function((2, 5), 20)

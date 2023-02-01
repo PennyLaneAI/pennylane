@@ -163,7 +163,7 @@ def givens_decomposition(unitary):
                 left_givens.append((grot_mat, indices))
 
     nleft_givens = []
-    for (grot_mat, (i, j)) in reversed(left_givens):
+    for grot_mat, (i, j) in reversed(left_givens):
         sphase_mat = np.diag(np.diag(unitary)[[i, j]])
         decomp_mat = grot_mat.conj().T @ sphase_mat
         givens_mat = _givens_matrix(*decomp_mat[1, :].T)
@@ -177,7 +177,7 @@ def givens_decomposition(unitary):
         nleft_givens.append((givens_mat.conj(), (i, j)))
 
     phases, ordered_rotations = np.diag(unitary), []
-    for (grot_mat, (i, j)) in list(reversed(nleft_givens)) + list(reversed(right_givens)):
+    for grot_mat, (i, j) in list(reversed(nleft_givens)) + list(reversed(right_givens)):
         if not np.all(np.isreal(grot_mat[0, 1]) and np.isreal(grot_mat[1, 1])):  # pragma: no cover
             raise ValueError(f"Incorrect Givens Rotation encountered, {grot_mat}")
         ordered_rotations.append((grot_mat, (i, j)))
