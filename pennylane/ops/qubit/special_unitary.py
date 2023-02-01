@@ -481,7 +481,7 @@ class SpecialUnitary(Operation):
             The matrix exponential is not differentiable in Autograd. Therefore this function
             only supports JAX, Torch and Tensorflow.
 
-        ..seealso:: `~.SpecialUnitary`
+        .. seealso:: `~.SpecialUnitary`
 
         """
         theta = self.data[0]
@@ -574,7 +574,7 @@ class SpecialUnitary(Operation):
             The matrix exponential is not differentiable in Autograd. Therefore this function
             only supports JAX, Torch and Tensorflow.
 
-        ..seealso:: `~.transforms.insert_paulirot.get_one_parameter_generators`
+        .. seealso:: `~.transforms.insert_paulirot.get_one_parameter_generators`
 
         """
         num_wires = self.hyperparameters["num_wires"]
