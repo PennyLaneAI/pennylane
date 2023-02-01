@@ -2196,7 +2196,7 @@ class TestHamiltonianExpvalGradients:
             op1 = qml.s_prod(a, qml.PauliZ(0))
             op2 = qml.s_prod(b, qml.prod(qml.PauliZ(0), qml.PauliX(1)))
             op3 = qml.s_prod(c, qml.PauliY(0))
-            H = qml.op_sum(op1, op2, op3)
+            H = qml.sum(op1, op2, op3)
             qml.expval(H)
 
         tape = qml.tape.QuantumScript.from_queue(q)

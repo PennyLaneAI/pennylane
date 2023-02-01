@@ -431,7 +431,7 @@ class TestPauliSentence:
         (PauliSentence({PauliWord({0: X}): 1}), qml.s_prod(1, qml.PauliX(wires=0))),
         (
             ps1_hamiltonian,
-            qml.op_sum(
+            qml.sum(
                 1.23 * qml.prod(qml.PauliX(wires=1), qml.PauliY(wires=2)),
                 4 * qml.prod(qml.PauliX(wires="a"), qml.PauliX(wires="b"), qml.PauliZ(wires="c")),
                 -0.5 * qml.prod(qml.PauliZ(wires=0), qml.PauliZ(wires="b"), qml.PauliZ(wires="c")),
@@ -439,7 +439,7 @@ class TestPauliSentence:
         ),
         (
             ps2_hamiltonian,
-            qml.op_sum(
+            qml.sum(
                 -1.23 * qml.prod(qml.PauliX(wires=1), qml.PauliY(wires=2)),
                 -4 * qml.prod(qml.PauliX(wires="a"), qml.PauliX(wires="b"), qml.PauliZ(wires="c")),
                 0.5 * qml.prod(qml.PauliZ(wires=0), qml.PauliZ(wires="b"), qml.PauliZ(wires="c")),
@@ -470,7 +470,7 @@ class TestPauliSentence:
         """Test that a PauliSentence with an empty PauliWord can be cast to
         operation correctly."""
         full_ps_op = ps3.operation()
-        full_op = qml.op_sum(
+        full_op = qml.sum(
             -0.5 * qml.prod(qml.PauliZ(wires=0), qml.PauliZ(wires="b"), qml.PauliZ(wires="c")),
             qml.s_prod(1, qml.Identity(wires=[0, "b", "c"])),
         )

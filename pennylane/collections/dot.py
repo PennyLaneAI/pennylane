@@ -15,6 +15,7 @@
 Contains functions to implement the dot product between QNode collections
 """
 # pylint: disable=too-many-arguments,import-outside-toplevel,unnecessary-lambda-assignment
+import warnings
 
 
 def _get_dot_func(interface, x=None):
@@ -123,6 +124,11 @@ def dot(x, y):
     >>> cost(x)
     tensor(-0.2183, dtype=torch.float64, grad_fn=<DotBackward>)
     """
+    warnings.warn(
+        "The dot function of the collections module is deprecated and it will be removed soon.",
+        UserWarning,
+    )
+
     if hasattr(x, "interface") and hasattr(y, "interface"):
 
         if x.interface != y.interface:
