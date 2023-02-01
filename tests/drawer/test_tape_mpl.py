@@ -548,13 +548,7 @@ class TestGeneralOperations:
         assert fig.axes == [ax]
 
         # Test that `qml.Snapshot` works properly when other gates are present
-        with qml.queuing.AnnotatedQueue() as q_tape:
-            qml.Snapshot()
-            qml.Hadamard(0)
-            qml.Hadamard(1)
-            qml.Hadamard(2)
-
-        tape = QuantumScript.from_queue(q_tape)
+        tape = QuantumScript([qml.Snapshot(), qml.Hadamard(0), qml.Hadamard(1), qml.Hadamard(2)])
         _, ax = tape_mpl(tape)
 
         assert isinstance(ax.patches[0], mpl.patches.FancyBboxPatch)
