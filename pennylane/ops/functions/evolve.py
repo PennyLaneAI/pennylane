@@ -33,9 +33,10 @@ def evolve(
         op (Union[.Operator, .ParametrizedHamiltonian]): operator to evolve
         t (Union[float, Tuple[float]]): Time.
 
-            * If ``op`` is a :class:`.Operator`, ``t`` corresponds to the coefficient multiplying
+        * If ``op`` is a :class:`.Operator`, ``t`` corresponds to the coefficient multiplying
             the exponentiated operator: :math:`\exp\{i\bm{O}t)\}`. If ``None``, ``t=1`` is used.
-            * If ``op`` is a :class:`.ParametrizedHamiltonian`, ``t`` can be either a float or a
+
+        * If ``op`` is a :class:`.ParametrizedHamiltonian`, ``t`` can be either a float or a
             tuple of floats. If a float, the operator is evolved from ``0`` to ``t``. If a tuple of
             floats, each value corresponds to the start and end time of the evolution. Note that such
             absolute times only have meaning within an instance of ``ParametrizedEvolution`` and
@@ -43,7 +44,7 @@ def evolve(
 
         dt (float): Time step used.
 
-            * If ``op`` is a :class:`.ParametrizedHamiltonian`, ``dt`` will be
+        * If ``op`` is a :class:`.ParametrizedHamiltonian`, ``dt`` will be
             used to convert the initial and final time values into a list of values that the ``odeint``
             solver will use. The solver might perform intermediate steps if necessary. It is recommended
             to not provide a value for ``dt``.
