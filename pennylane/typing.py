@@ -29,7 +29,7 @@ class TensorLikeMETA(type):
 
     def __instancecheck__(cls, other):
         return (
-            isinstance(other, _TensorLike)
+            isinstance(other, _TensorLike.__args__)  # TODO: Remove __args__ when python>=3.10
             or _is_jax(other)
             or _is_torch(other)
             or _is_tensorflow(other)
@@ -37,7 +37,7 @@ class TensorLikeMETA(type):
 
     def __subclasscheck__(cls, other):
         return (
-            issubclass(other, _TensorLike)
+            issubclass(other, _TensorLike.__args__)  # TODO: Remove __args__ when python>=3.10
             or _is_jax(other, subclass=True)
             or _is_torch(other, subclass=True)
             or _is_tensorflow(other, subclass=True)
