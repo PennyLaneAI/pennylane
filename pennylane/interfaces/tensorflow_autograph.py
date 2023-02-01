@@ -145,7 +145,6 @@ def execute(tapes, device, execute_fn, gradient_fn, gradient_kwargs, _n=1, max_d
 
     @tf.custom_gradient
     def _execute(*all_params):  # pylint:disable=unused-argument
-
         res = tf.numpy_function(func=_forward, inp=all_params, Tout=output_types)
         output_sizes = res[-len(tapes) :]
 
@@ -177,7 +176,6 @@ def execute(tapes, device, execute_fn, gradient_fn, gradient_kwargs, _n=1, max_d
 
                     # Generate and execute the required gradient tapes
                     if _n == max_diff:
-
                         len_all_params = len(all_params)
 
                         def _backward(*all_params):
@@ -372,7 +370,6 @@ def _execute_new(
 
     @tf.custom_gradient
     def _execute(*all_params):  # pylint:disable=unused-argument
-
         res = tf.numpy_function(func=_forward, inp=all_params, Tout=output_types)
         output_sizes = res[-total_measurements * num_shot_copies :]
 
@@ -419,7 +416,6 @@ def _execute_new(
 
                     # Generate and execute the required gradient tapes
                     if _n == max_diff:
-
                         len_all_params = len(all_params)
 
                         def _backward(*all_params):

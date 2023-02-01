@@ -92,7 +92,6 @@ def _res_restructured(res, tapes, shots=None):
     start = 0
     res_nested = []
     for tape in tapes:
-
         shot_res_nested = []
         num_meas = len(tape.measurements)
 
@@ -230,7 +229,6 @@ def execute(tapes, device, execute_fn, gradient_fn, gradient_kwargs, _n=1, max_d
 
                     # Generate and execute the required gradient tapes
                     if _n == max_diff or not context.executing_eagerly():
-
                         with qml.tape.Unwrap(*tapes, params=params_unwrapped):
                             vjp_tapes, processing_fn = qml.gradients.batch_vjp(
                                 tapes,
@@ -368,7 +366,6 @@ def _execute_new(
 
                     # Generate and execute the required gradient tapes
                     if _n == max_diff or not context.executing_eagerly():
-
                         with qml.tape.Unwrap(*tapes, params=params_unwrapped):
                             vjp_tapes, processing_fn = qml.gradients.batch_vjp(
                                 tapes,

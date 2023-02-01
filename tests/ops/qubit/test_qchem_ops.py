@@ -60,7 +60,6 @@ class TestParameterFrequencies:
         try:
             mat = gen.matrix()
         except (AttributeError, qml.operation.MatrixUndefinedError):
-
             if isinstance(gen, qml.Hamiltonian):
                 mat = qml.utils.sparse_hamiltonian(gen).toarray()
             elif isinstance(gen, qml.SparseHamiltonian):
@@ -213,7 +212,6 @@ class TestSingleExcitation:
 
     @pytest.mark.parametrize("n", (2, -2, 1.3, -0.6))
     def test_single_excitatation_pow(self, n):
-
         op = qml.SingleExcitation(1.234, wires=(0, 1))
 
         pow_ops = op.pow(n)
@@ -1106,7 +1104,6 @@ class TestFermionicSWAP:
 
     @pytest.mark.parametrize("n", (2, -2, 1.3, -0.6))
     def test_fermionic_swap_pow(self, n):
-
         op = qml.FermionicSWAP(1.234, wires=(0, 1))
 
         pow_ops = op.pow(n)

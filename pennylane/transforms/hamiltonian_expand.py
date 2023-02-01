@@ -142,7 +142,6 @@ def hamiltonian_expand(tape: QuantumTape, group=True):
     # and not hamiltonian.coeffs when recombining the results
 
     if group or hamiltonian.grouping_indices is not None:
-
         if hamiltonian.grouping_indices is None:
             # explicitly selected grouping, but indices not yet computed
             hamiltonian.compute_grouping()

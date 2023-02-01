@@ -201,7 +201,7 @@ def violin(coeffs, n_inputs, ax, colour_dict=None, show_freqs=True):
     # Get the labels and data
     nvecs_formatted, data = _extract_data_and_labels(coeffs)
 
-    for (data_type, axis) in zip(["real", "imag"], ax):
+    for data_type, axis in zip(["real", "imag"], ax):
         violinplt = axis.violinplot(data[data_type], showextrema=False)
         for bd in violinplt["bodies"]:
             bd.set_color(colour_dict[data_type])
@@ -307,7 +307,7 @@ def box(coeffs, n_inputs, ax, colour_dict=None, show_freqs=True, show_fliers=Tru
     # Get the labels and data
     nvecs_formatted, data = _extract_data_and_labels(coeffs)
 
-    for (data_type, axis) in zip(["real", "imag"], ax):
+    for data_type, axis in zip(["real", "imag"], ax):
         data_colour = colour_dict[data_type]
         axis.boxplot(
             data[data_type],
@@ -418,7 +418,7 @@ def bar(coeffs, n_inputs, ax, colour_dict=None, show_freqs=True):
     nvecs_formatted, data = _extract_data_and_labels(np.array([coeffs]))
     data_len = len(data["real"][0])
 
-    for (data_type, axis) in zip(["real", "imag"], ax):
+    for data_type, axis in zip(["real", "imag"], ax):
         axis.bar(np.arange(data_len), data[data_type][0], color=colour_dict[data_type], alpha=0.7)
         axis.set_ylabel(data_type)
         axis.xaxis.set_ticks(np.arange(data_len))
