@@ -76,11 +76,11 @@ class TensorLike(metaclass=TensorLikeMETA):
 
     **Examples**
 
-    >>> from pennylane import typing
-    >>> isinstance(4, typing.TensorLike)
+    >>> from pennylane.typing import TensorLike
+    >>> isinstance(4, TensorLike)
     True
-    >>> isinstance([2, 6, 8], typing.TensorLike)
+    >>> isinstance([2, 6, 8], TensorLike)
     True
-    >>> isinstance(torch.tensor([1, 2, 3]), typing.TensorLike)
+    >>> isinstance(torch.tensor([1, 2, 3]), TensorLike)
     True
     """
