@@ -17,3 +17,4 @@ tests/ops/op_math/test_exp.py
 tests/ops/op_math/test_evolution.py
 tests/test_operation.py
 tests/pulse/**
+tests/ops/qubit/test_state_prep.py
