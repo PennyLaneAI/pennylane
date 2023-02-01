@@ -97,58 +97,103 @@ theta_1 = np.array([0.4, 0.1, 0.1])
 theta_2 = np.array([0.4, 0.1, 0.1, 0.6, 0.2, 0.3, 0.1, 0.2, 0, 0.2, 0.2, 0.2, 0.1, 0.5, 0.2])
 n_and_theta = [(1, theta_1), (2, theta_2)]
 
+interfaces = [
+    None,
+    pytest.param("autograd", marks=pytest.mark.autograd),
+    pytest.param("jax", marks=pytest.mark.jax),
+    pytest.param("torch", marks=pytest.mark.torch),
+    pytest.param("tf", marks=pytest.mark.tf),
+]
+
 
 class TestSpecialUnitary:
     """Tests for the Operation ``SpecialUnitary``."""
 
+    @staticmethod
+    def interface_array(x, interface):
+        """Create a trainable array of x in the specified interface."""
+        if interface is None:
+            return x
+        if interface == "autograd":
+            return qml.numpy.array(x)
+        if interface == "jax":
+            import jax
+
+            jax.config.update("jax_enable_x64", True)
+            return jax.numpy.array(x)
+        if interface == "torch":
+            import torch
+
+            return torch.tensor(x)
+        if interface == "tf":
+            import tensorflow as tf
+
+            return tf.Variable(x)
+        return None
+
+    @pytest.mark.parametrize("interface", interfaces)
     @pytest.mark.parametrize("n", [1, 2, 3])
     @pytest.mark.parametrize("seed", [214, 2491, 8623])
-    def test_compute_matrix_random(self, n, seed):
+    def test_compute_matrix_random(self, n, seed, interface):
         """Test that ``compute_matrix`` returns a correctly-shaped
         unitary matrix for random input parameters."""
         np.random.seed(seed)
         d = 4**n - 1
         theta = np.random.random(d)
+        theta = self.interface_array(theta, interface)
         matrices = [
             qml.SpecialUnitary(theta, list(range(n))).matrix(),
             qml.SpecialUnitary.compute_matrix(theta, n),
         ]
+        I = self.interface_array(np.eye(2**n), interface)
         for matrix in matrices:
+            if interface == "torch":
+                matrix = matrix.detach().numpy()
             assert matrix.shape == (2**n, 2**n)
-            assert np.allclose(matrix @ matrix.conj().T, np.eye(2**n))
+            assert np.allclose(matrix @ qml.math.conj(qml.math.T(matrix)), I)
 
+    @pytest.mark.parametrize("interface", interfaces)
     @pytest.mark.parametrize("seed", [214, 8623])
-    def test_compute_matrix_random_many_wires(self, seed):
+    def test_compute_matrix_random_many_wires(self, seed, interface):
         """Test that ``compute_matrix`` returns a correctly-shaped
         unitary matrix for random input parameters and more than 5 wires."""
         np.random.seed(seed)
         n = 6
         d = 4**n - 1
         theta = np.random.random(d)
+        theta = self.interface_array(theta, interface)
         matrices = [
             qml.SpecialUnitary(theta, list(range(n))).matrix(),
             qml.SpecialUnitary.compute_matrix(theta, n),
         ]
+        I = self.interface_array(np.eye(2**n), interface)
         for matrix in matrices:
+            if interface == "torch":
+                matrix = matrix.detach().numpy()
             assert matrix.shape == (2**n, 2**n)
-            assert np.allclose(matrix @ matrix.conj().T, np.eye(2**n))
+            assert np.allclose(matrix @ qml.math.conj(qml.math.T(matrix)), I)
 
+    @pytest.mark.parametrize("interface", interfaces)
     @pytest.mark.parametrize("n", [1, 2])
     @pytest.mark.parametrize("seed", [214, 2491, 8623])
-    def test_compute_matrix_random_broadcasted(self, n, seed):
+    def test_compute_matrix_random_broadcasted(self, n, seed, interface):
         """Test that ``compute_matrix`` returns a correctly-shaped
         unitary matrix for broadcasted random input parameters."""
         np.random.seed(seed)
         d = 4**n - 1
         theta = np.random.random((2, d))
+        theta = self.interface_array(theta, interface)
         matrices = [
             qml.SpecialUnitary(theta, list(range(n))).matrix(),
             qml.SpecialUnitary.compute_matrix(theta, n),
         ]
         separate_matrices = [qml.SpecialUnitary.compute_matrix(t, n) for t in theta]
+        I = self.interface_array(np.eye(2**n), interface)
         for matrix in matrices:
+            if interface == "torch":
+                matrix = matrix.detach().numpy()
             assert matrix.shape == (2, 2**n, 2**n)
-            assert all(np.allclose(m @ m.conj().T, np.eye(2**n)) for m in matrix)
+            assert all(np.allclose(m @ qml.math.conj(qml.math.T(m)), I) for m in matrix)
             assert qml.math.allclose(separate_matrices, matrix)
 
     @pytest.mark.parametrize("n", [1, 2, 3])
@@ -269,8 +314,6 @@ class TestSpecialUnitary:
         expected_jac = jax.jacobian(comparison)(theta)
         assert np.allclose(jac, expected_jac)
 
-    # The JAX version of scipy.linalg.expm does not support broadcasting.
-    @pytest.mark.xfail
     @pytest.mark.jax
     def test_jax_jit_broadcasted(self):
         """Test that the SpecialUnitary operation works

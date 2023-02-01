@@ -289,13 +289,22 @@ class SpecialUnitary(Operation):
                [-0.0942679 +0.47133952j,  0.83004499+0.28280371j]])
         """
         if num_wires > 5:
-            theta = qml.math.hstack([[0], theta])
-            A = sum(
-                t * reduce(np.kron, letters)
-                for t, letters in zip(theta, product(_pauli_matrices, repeat=num_wires))
-            )
+            matrices = product(_pauli_matrices, repeat=num_wires)
+            # Drop the identity from the generator of matrices
+            _ = next(matrices)
+            A = sum(t * reduce(np.kron, letters) for t, letters in zip(theta, matrices))
         else:
             A = qml.math.tensordot(theta, pauli_basis_matrices(num_wires), axes=[[-1], [0]])
+        if qml.math.get_interface(theta) == "jax":
+            print(theta, qml.math.ndim(theta))
+            print(A.dtype)
+            print(A.shape)
+            print(qml.math.allclose(A.real, 0.0))
+            print(qml.math.allclose(A.imag, 0.0))
+            print(A)
+        if qml.math.get_interface(theta) == "jax" and qml.math.ndim(theta) > 1:
+            # jax.numpy.expm does not support broadcasting
+            return qml.math.stack([qml.math.expm(1j * _A) for _A in A])
         return qml.math.expm(1j * A)
 
     def decomposition(self):
