@@ -315,7 +315,7 @@ class SpecialUnitary(Operation):
         [QubitUnitary(array([[ 0.83004499-0.28280371j,  0.0942679 +0.47133952j],
             [-0.0942679 +0.47133952j,  0.83004499+0.28280371j]]), wires=[0])]
         """
-        return [qml.QubitUnitary(self.matrix(), wires=wires)]
+        return [qml.QubitUnitary(self.matrix(), wires=self.wires)]
 
     def adjoint(self):
         return SpecialUnitary(-self.data[0], wires=self.wires)
