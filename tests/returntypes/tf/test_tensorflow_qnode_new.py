@@ -1217,7 +1217,6 @@ class TestTapeExpansion:
 
         # test second-order derivatives
         if diff_method in ("parameter-shift", "backprop") and max_diff == 2:
-
             grad2_c = t2.jacobian(grad[2], c)
             assert grad2_c is None or np.allclose(grad2_c, 0, atol=tol)
 

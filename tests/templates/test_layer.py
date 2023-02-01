@@ -22,14 +22,12 @@ from pennylane import layer
 
 
 def ConstantCircuit():
-
     qml.PauliX(wires=[0])
     qml.Hadamard(wires=[0])
     qml.PauliY(wires=[1])
 
 
 def StaticCircuit(wires, var):
-
     qml.CNOT(wires=[wires[3], wires[1]])
     qml.Hadamard(wires=wires[1])
     qml.PauliY(wires=wires[2])
@@ -39,7 +37,6 @@ def StaticCircuit(wires, var):
 
 
 def KwargCircuit(wires, **kwargs):
-
     qml.CNOT(wires=[wires[3], wires[1]])
     qml.Hadamard(wires=wires[1])
     qml.PauliY(wires=wires[2])
@@ -49,7 +46,6 @@ def KwargCircuit(wires, **kwargs):
 
 
 def DynamicCircuit(parameters):
-
     for i in range(2):
         qml.RX(parameters[0][i], wires=i)
 
@@ -57,7 +53,6 @@ def DynamicCircuit(parameters):
 
 
 def MultiCircuit(parameters1, parameters2, var1, wires, var2):
-
     if var2 == True:
         for i, w in enumerate(wires):
             qml.RY(parameters1[i], wires=w)
