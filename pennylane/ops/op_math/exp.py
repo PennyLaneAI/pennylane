@@ -406,7 +406,7 @@ class Evolution(Exp):
     _name = "Evolution"
     num_params = 1
 
-    def __init__(self, generator, param, do_queue=True, id=None):
+    def __init__(self, generator, param=1, do_queue=True, id=None):
         super().__init__(generator, coeff=1j * param, do_queue=do_queue, id=id)
         self._data = [param]
 

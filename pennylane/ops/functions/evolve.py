@@ -88,6 +88,4 @@ def evolve(
 
         return ParametrizedEvolution(H=op, t=t)
 
-    t = t or 1
-
-    return Evolution(generator=op, param=t)
+    return Evolution(op) if t is None else Evolution(op, t)
