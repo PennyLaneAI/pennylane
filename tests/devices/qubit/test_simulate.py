@@ -29,6 +29,23 @@ ml_frameworks_list = [
 ]
 
 
+class TestCurrentlyUnsupportedCases:
+    def test_hamiltonian_observable(self):
+        """Test that measuring hamiltonians gives a NotImplementedError."""
+
+        H = qml.Hamiltonian([2.0], [qml.PauliX(0)])
+        qs = qml.tape.QuantumScript(measurements=[qml.expval(H)])
+        with pytest.raises(NotImplementedError):
+            simulate(qs)
+
+    def test_sample_based_observable(self):
+        """Test sample-only measurements raise a notimplementedError."""
+
+        qs = qml.tape.QuantumScript(measurements=[qml.sample(wires=0)])
+        with pytest.raises(NotImplementedError):
+            simulate(qs)
+
+
 class TestBasicCircuit:
     @pytest.mark.autograd
     def test_autograd_results_and_backprop(self):
