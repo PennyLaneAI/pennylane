@@ -429,7 +429,6 @@ class TestIteration:
                 counter += 1
 
             except StopIteration:
-
                 # StopIteration is raised by next when there are no more
                 # elements to iterate over
                 iterating = False

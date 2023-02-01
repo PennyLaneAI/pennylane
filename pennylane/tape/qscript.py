@@ -753,11 +753,9 @@ class QuantumScript:
         shot_vector = device._shot_vector
         if shot_vector is None:
             if isinstance(mps[0], (ExpectationMP, VarianceMP)):
-
                 shape = (len(mps),)
 
             elif isinstance(mps[0], ProbabilityMP):
-
                 wires_num_set = {len(meas.wires) for meas in mps}
                 same_num_wires = len(wires_num_set) == 1
                 if same_num_wires:
@@ -774,7 +772,6 @@ class QuantumScript:
                     shape = (sum(2 ** len(m.wires) for m in mps),)
 
             elif isinstance(mps[0], SampleMP):
-
                 dim = mps[0].shape(device)
                 shape = (len(mps),) + dim[1:]
 
@@ -803,7 +800,6 @@ class QuantumScript:
             shape = (num, len(mps))
 
         elif isinstance(mps[0], ProbabilityMP):
-
             wires_num_set = {len(meas.wires) for meas in mps}
             same_num_wires = len(wires_num_set) == 1
             if not same_num_wires:

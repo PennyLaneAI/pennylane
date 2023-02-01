@@ -119,7 +119,6 @@ def purity(qnode, wires):
     """
 
     def wrapper(*args, **kwargs):
-
         # Construct tape
         qnode.construct(args, kwargs)
 
