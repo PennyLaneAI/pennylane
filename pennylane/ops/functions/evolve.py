@@ -46,7 +46,7 @@ def parametrized_evolution(op: ParametrizedHamiltonian):
     >>> coeffs = [lambda p, t: p * t for _ in range(4)]
     >>> ops = [qml.PauliX(i) for i in range(4)]
     >>> H = qml.dot(coeffs, ops)
-    >>> qml.evolve(H, t=[4, 10])
+    >>> qml.evolve(H)
     ParametrizedEvolution(wires=[0, 1, 2, 3])
 
     The :class:`.ParametrizedEvolution` instance can then be called to update the needed attributes
