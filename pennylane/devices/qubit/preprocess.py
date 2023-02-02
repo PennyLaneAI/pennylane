@@ -285,12 +285,29 @@ def check_validity(dev, queue, observables):
 
 
 # pylint: disable=unused-argument, missing-function-docstring
-def preprocess(tapes, dev, execution_config=None):
+def preprocess(tapes, dev, execution_config=None, max_expansion=10):
+    """Preprocess a batch of `QuantumScript`s to make them ready for execution.
+    
+    This function validates a batch of `QuantumScript`s by transforming and expanding
+    them to ensure all operators and measurements are supported by the execution device.
+    
+    Args:
+        tapes (Sequence[QuantumScript]): Batch of tapes to be processed.
+        dev (.Device): device to be used for execution.
+        execution_config (.ExecutionConfig): execution configuration with configurable
+            options for the execution.
+        max_expansion (int): The number of times the circuit should be
+            expanded. Expansion occurs when an operation or measurement is not
+            supported, and results in a gate decomposition. If any operations
+            in the decomposition remain unsupported by the device, another
+            expansion occurs.
+    """
     # Combine check_validity, expand_fn and batch_transform in this function:
-    # Check that tapes are valid
+    # Split tapes as needed with batch_transform
     # Expand tapes
-    # Split tapes as needed
+    # Check that tapes are valid
     # Create wrapper function that combines results of expanded and batched tapes as expected
     # Return tapes, wrapper
     # Returns Sequence[QuantumScript], callable
-    pass
+    finite_shots = getattr(execution_config, "shots", None) is not None
+    tapes, batch_fn = qml.transforms.map_batch_transform(batch_transform, tapes, dev, finite_shots)
