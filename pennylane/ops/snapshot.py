@@ -15,7 +15,7 @@
 This module contains the Snapshot (pseudo) operation that is common to both
 cv and qubit computing paradigms in PennyLane.
 """
-from pennylane.operation import AllWires, Operation
+from pennylane.operation import AnyWires, Operation
 
 
 # pylint: disable=unused-argument
@@ -57,7 +57,7 @@ class Snapshot(Operation):
 
     .. seealso:: :func:`~.snapshots`
     """
-    num_wires = AllWires
+    num_wires = AnyWires
     num_params = 0
     grad_method = None
 
