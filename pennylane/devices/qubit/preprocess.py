@@ -18,7 +18,7 @@ that they are supported for execution by a device."""
 import pennylane as qml
 
 # from pennylane.tape import QuantumScript
-from pennylane.operation import Operation, Observable, Tensor
+from pennylane.operation import Observable, Tensor
 from pennylane.measurements import (
     MidMeasureMP,
     ExpectationMP,
@@ -208,29 +208,15 @@ def check_validity(dev, tape):
         DeviceError: if there are operations in the queue or observables that the device does
             not support
     """
-
     for o in tape.operations:
         operation_name = o.name
 
-        if isinstance(o, MidMeasureMP) and not dev.capabilities().get(
-            "supports_mid_measure", False
-        ):
+        if isinstance(o, MidMeasureMP):
             raise DeviceError(
                 f"Mid-circuit measurements are not natively supported on device {dev.short_name}. "
                 "Apply the @qml.defer_measurements decorator to your quantum function to "
                 "simulate the application of mid-circuit measurements on this device."
             )
-
-        if getattr(o, "inverse", False):
-            # TODO: update when all capabilities keys changed to "supports_inverse_operations"
-            supports_inv = dev.capabilities().get(
-                "supports_inverse_operations", False
-            ) or dev.capabilities().get("inverse_operations", False)
-            if not supports_inv:
-                raise DeviceError(
-                    f"The inverse of gates are not supported on device {dev.short_name}"
-                )
-            operation_name = o.base_name
 
         if not _stopping_condition(o):
             raise DeviceError(f"Gate {operation_name} not supported on device {dev.short_name}")
@@ -240,13 +226,6 @@ def check_validity(dev, tape):
             o = o.obs
 
         if isinstance(o, Tensor):
-            # TODO: update when all capabilities keys changed to "supports_tensor_observables"
-            supports_tensor = dev.capabilities().get(
-                "supports_tensor_observables", False
-            ) or dev.capabilities().get("tensor_observables", False)
-            if not supports_tensor:
-                raise DeviceError(f"Tensor observables not supported on device {dev.short_name}")
-
             for i in o.obs:
                 if not _supports_observable(dev, i.name):
                     raise DeviceError(
@@ -254,17 +233,6 @@ def check_validity(dev, tape):
                     )
         else:
             observable_name = o.name
-
-            if issubclass(o.__class__, Operation) and o.inverse:
-                # TODO: update when all capabilities keys changed to "supports_inverse_operations"
-                supports_inv = dev.capabilities().get(
-                    "supports_inverse_operations", False
-                ) or dev.capabilities().get("inverse_operations", False)
-                if not supports_inv:
-                    raise DeviceError(
-                        f"The inverse of gates are not supported on device {dev.short_name}"
-                    )
-                observable_name = o.base_name
 
             if not _supports_observable(dev, observable_name):
                 raise DeviceError(
@@ -300,6 +268,7 @@ def preprocess(tapes, dev, execution_config=None, max_expansion=10):
     )
 
     for i, tape in enumerate(tapes):
+        # TODO: Defer mid-measurement in expand_fn
         tapes[i] = expand_fn(tape, dev, max_expansion=max_expansion)
         check_validity(dev, tapes[i])
 

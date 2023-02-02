@@ -12,6 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Unit tests for preprocess in devices/qubit."""
+
+# pylint: disable=unused-import
 import pytest
 
 import pennylane as qml
@@ -23,6 +25,7 @@ from pennylane.devices.qubit.preprocess import (
     batch_transform,
     preprocess,
 )
+from pennylane.tape import QuantumScript
 from pennylane import DeviceError
 
 
@@ -48,17 +51,38 @@ class TestPreprocess:
         res = _supports_observable(dev, obs)
         assert res == expected
 
+    @pytest.mark.parametrize(
+        "tape, err_msg",
+        [
+            (
+                QuantumScript([qml.measure(0)]),
+                "Mid-circuit measurements are not natively supported on device default.qubit.",
+            ),
+            (QuantumScript(ops=[qml.TShift(0)]), "Gate TShift not supported on device"),
+            (
+                QuantumScript(measurements=[qml.expval(qml.PauliZ(0) @ qml.GellMann(1, wires=1))]),
+                "Observable GellMann not supported on device",
+            ),
+            (
+                QuantumScript(measurements=[qml.expval(qml.GellMann(1, wires=0))]),
+                "Observable GellMann not supported on device",
+            ),
+        ],
+    )
+    def test_check_validity_fails(self, tape, err_msg):
+        """Test that check_validity throws the appropriate error when expected"""
+        dev = qml.device("default.qubit", wires=2)
+        with pytest.raises(DeviceError, match=err_msg):
+            check_validity(dev, tape)
+
+    def test_check_validity_passes(self):
+        """Test that check_validity doesn't throw any errors for a valid circuit"""
+
     def test_batch_transform(self):
         """Test that batch_transform works correctly"""
 
     def test_expand_fn(self):
         """Test that expand_fn works correctly"""
-
-    def test_check_validity_fails(self):
-        """Test that check_validity throws the appropriate error when expected"""
-
-    def test_check_validity_passes(self):
-        """Test that check_validity doesn't throw any errors for a valid circuit"""
 
     def test_preprocess(self):
         """Test that preprocess works correctly"""
