@@ -169,6 +169,7 @@ to help build custom QNode, quantum function, and tape transforms:
     ~transforms.create_expand_fn
     ~transforms.create_decomp_expand_fn
     ~transforms.expand_invalid_trainable
+    ~transforms.expand_invalid_trainable_hadamard_gradient
     ~transforms.expand_multipar
     ~transforms.expand_trainable_multipar
     ~transforms.expand_nonunitary_gen
