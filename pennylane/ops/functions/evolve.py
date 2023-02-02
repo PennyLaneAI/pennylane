@@ -15,9 +15,7 @@
 This module contains the qml.evolve function.
 """
 from functools import singledispatch
-from typing import Tuple, Union
 
-import pennylane as qml
 from pennylane.operation import Operator
 from pennylane.ops import Evolution
 from pennylane.pulse import ParametrizedEvolution, ParametrizedHamiltonian
@@ -29,18 +27,11 @@ def evolve(op, *args, **kwargs):  # pylint: disable=unused-argument
 
 
 @evolve.register
-def _(op: ParametrizedHamiltonian, t: Union[float, Tuple[float]], dt: float = None):
+def parametrized_evolution(op: ParametrizedHamiltonian):
     """Returns a new operator that computes the evolution of ``op``.
 
     Args:
         op (Union[.Operator, .ParametrizedHamiltonian]): operator to evolve
-        t (Union[float, Tuple[float]]): If a float, the operator is evolved from ``0`` to ``t``.
-            If a tuple of floats, each value corresponds to the start and end time of the evolution.
-            Note that such absolute times only have meaning within an instance of
-            ``ParametrizedEvolution`` and will not affect other gates.
-        dt (float): Time step. ``dt`` will be used to convert the initial and final time values into
-            a list of values that the ``odeint`` solver will use. The solver might perform
-            intermediate steps if necessary. It is recommended to not provide a value for ``dt``.
 
     Returns:
         ~pennylane.ops.op_math.evolve.ParametrizedEvolution: evolution operator
@@ -55,26 +46,22 @@ def _(op: ParametrizedHamiltonian, t: Union[float, Tuple[float]], dt: float = No
     >>> coeffs = [lambda p, t: p * t for _ in range(4)]
     >>> ops = [qml.PauliX(i) for i in range(4)]
     >>> H = qml.dot(coeffs, ops)
-    >>> qml.evolve(H, t=[4, 10])
+    >>> qml.evolve(H)
     ParametrizedEvolution(wires=[0, 1, 2, 3])
 
     The :class:`.ParametrizedEvolution` instance can then be called to update the needed attributes
     to compute the evolution of the :class:`.ParametrizedHamiltonian`:
 
-    >>> qml.evolve(H, t=[4, 10])(params=[1., 2., 3.], atol=1e-6, mxstep=1)
+    >>> qml.evolve(H)(params=[1., 2., 3.], t=[4, 10], atol=1e-6, mxstep=1)
     ParametrizedEvolution(wires=[0, 1, 2, 3])
 
     Please check the :class:`.ParametrizedEvolution` class for more information.
     """
-    t = [0.0, t] if qml.math.ndim(t) == 0 else t
-    if dt is not None:
-        t = qml.math.arange(t[0], t[1], step=dt)
-
-    return ParametrizedEvolution(H=op, t=t)
+    return ParametrizedEvolution(H=op)
 
 
 @evolve.register
-def _(op: Operator, coeff: float = 1, num_steps: int = None):
+def evolution(op: Operator, coeff: float = 1, num_steps: int = None):
     r"""Returns a new operator that computes the evolution of ``op``.
 
     Args:

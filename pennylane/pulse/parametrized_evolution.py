@@ -18,7 +18,7 @@
 This file contains the ``ParametrizedEvolution`` operator and the ``evolve`` constructor.
 """
 
-from typing import List
+from typing import List, Union
 
 import pennylane as qml
 from pennylane.operation import AnyWires, Operation
@@ -51,15 +51,16 @@ class ParametrizedEvolution(Operation):
         The default parameters of the numerical ordinary differential equation solver can be
         overwritten when calling the :class:`ParametrizedEvolution` class:
 
-        >>> qml.evolve(H, t=[4, 10])(params=[1., 2., 3.], mxstep=1, atol=1e-6)
+        >>> qml.evolve(H)(params=[1., 2., 3.], t=[4, 10], mxstep=1, atol=1e-6)
 
     Args:
         H (ParametrizedHamiltonian): hamiltonian to evolve
-        t (List[float]): List of time values that the ``odeint`` solver will use. The solver will
-            perform intermediate steps if necessary. It is recommended to just provide a start and
-            end time. Note that such absolute times only have meaning within an instance of
-            ``ParametrizedEvolution`` and will not affect other gates.
         params (ndarray): trainable parameters
+        t (Union[float, List[float]]): If a float, it corresponds to the duration of the evolution.
+            If a list of floats, the ``odeint`` solver will use all the provided time values, and
+            perform intermediate steps if necessary. It is recommended to just provide a start and end time.
+            Note that such absolute times only have meaning within an instance of
+            ``ParametrizedEvolution`` and will not affect other gates.
         do_queue (bool): determines if the scalar product operator will be queued. Default is True.
         id (str or None): id for the scalar product operator. Default is None.
 
@@ -102,17 +103,17 @@ class ParametrizedEvolution(Operation):
     >>> dev = qml.device("default.qubit", wires=3)
     >>> @qml.qnode(dev, interface="jax")
     ... def circuit(params):
-    ...     qml.evolve(H1, t=[0, 10])(params)
-    ...     qml.evolve(H2, t=[0, 10])(params)
+    ...     qml.evolve(H1)(params, t=[0, 10])
+    ...     qml.evolve(H2)(params, t=[0, 10])
     ...     return qml.expval(qml.PauliZ(0) @ qml.PauliZ(1) @ qml.PauliZ(2))
     >>> params = jnp.array([1., 2., 3.])
     >>> circuit(params)
-    Array(-0.01544147, dtype=float32)
+    Array(-0.01543971, dtype=float32)
 
     We can also compute the gradient of this evolution with respect to the input parameters!
 
     >>> jax.grad(circuit)(params)
-    Array([ 0.6908492 ,  0.08653487, -1.4596266 ], dtype=float32)
+    Array([ 0.6908507,  0.0865578, -1.4594607], dtype=float32)
 
     As mentioned in the warning above, ``circuit`` is not executing the evolution of ``H1`` and ``H2``
     simultaneously, but rather executing ``H1`` in the ``[0, 10]`` time window and then executing
@@ -123,28 +124,29 @@ class ParametrizedEvolution(Operation):
 
     >>> @qml.qnode(dev, interface="jax")
     ... def circuit(params):
-    ...     qml.evolve(H1 + H2, t=[0, 10])(params)
+    ...     qml.evolve(H1 + H2)(params, t=[0, 10])
     ...     return qml.expval(qml.PauliZ(0) @ qml.PauliZ(1) @ qml.PauliZ(2))
     >>> params = jnp.concatenate([params, params])  # H1 + H2 requires 6 parameters!
     >>> circuit(params)
-    Array(-0.7823444, dtype=float32)
+    Array(-0.78236955, dtype=float32)
     >>> jax.grad(circuit)(params)
-    Array([-4.806791  ,  3.704908  , -1.3295313 , -2.4062803 ,  0.68136114,
-        -0.5226718 ], dtype=float32)
+    Array([-4.8066125,  3.7038102, -1.3294725, -2.4061902,  0.6811545,
+        -0.5226515], dtype=float32)
 
-    One can also provide a time step ``dt``, which will be used to create a list of time values that
-    the odeint will use to calculate the parametrized hamiltonian's evolution. Keep in mind that our
-    odeint solver uses an adaptive step size, thus it might use intermediate time values.
+    One can also provide a list of time values that the odeint will use to calculate the parametrized
+    hamiltonian's evolution. Keep in mind that our odeint solver uses an adaptive step size, thus
+    it might use intermediate time values.
 
+    >>> t = jnp.arange(0., 10.1, 0.1)
     >>> @qml.qnode(dev, interface="jax")
     ... def circuit(params):
-    ...     qml.evolve(H1 + H2, t=[0, 10.01], dt=0.01)(params)
+    ...     qml.evolve(H1 + H2)(params, t=t)
     ...     return qml.expval(qml.PauliZ(0) @ qml.PauliZ(1) @ qml.PauliZ(2))
     >>> circuit(params)
-    Array(-0.7823444, dtype=float32)
+    Array(-0.78236955, dtype=float32)
     >>> jax.grad(circuit)(params)
-    Array([-4.806791  ,  3.704908  , -1.3295313 , -2.4062803 ,  0.68136114,
-        -0.5226718 ], dtype=float32)
+    Array([-4.8066125 ,  3.703827  , -1.3297377 , -2.406232  ,  0.6811726 ,
+        -0.52277344], dtype=float32)
 
     Given that we used the same time window ([0, 10]), the results are the same as before.
     """
@@ -156,8 +158,8 @@ class ParametrizedEvolution(Operation):
     def __init__(
         self,
         H: ParametrizedHamiltonian,
-        t: List[float],
         params: list = None,
+        t: Union[float, List[float]] = None,
         do_queue=True,
         id=None,
         **odeint_kwargs
@@ -173,11 +175,15 @@ class ParametrizedEvolution(Operation):
         self.H = H
         self.params = params
         self.odeint_kwargs = odeint_kwargs
-        self.t = jnp.array(t, dtype=float)
+        if t is None:
+            self.t = None
+        else:
+            self.t = jnp.array([0, t] if qml.math.ndim(t) == 0 else t, dtype=float)
         super().__init__(wires=H.wires, do_queue=do_queue, id=id)
 
-    def __call__(self, params, **odeint_kwargs):
+    def __call__(self, params, t, **odeint_kwargs):
         self.params = params
+        self.t = jnp.array([0, t] if qml.math.ndim(t) == 0 else t, dtype=float)
         if odeint_kwargs:
             self.odeint_kwargs.update(odeint_kwargs)
         return self
@@ -189,7 +195,7 @@ class ParametrizedEvolution(Operation):
 
     # pylint: disable=import-outside-toplevel
     def matrix(self, wire_order=None):
-        if self.params is None:
+        if self.params is None or self.t is None:
             raise ValueError(
                 "The parameters and the time window are required to compute the matrix. "
                 "You can update its values by calling the class: EV(params, t)."

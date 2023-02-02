@@ -194,13 +194,13 @@ class TestIntegration:
 
         @qml.qnode(dev, interface="jax")
         def circuit(params):
-            qml.evolve(H, t=t)(params=params)
+            qml.evolve(H)(params=params, t=t)
             return qml.expval(qml.PauliZ(0) @ qml.PauliZ(1))
 
         @jax.jit
         @qml.qnode(dev, interface="jax")
         def jitted_circuit(params):
-            qml.evolve(H, t=t)(params=params)
+            qml.evolve(H)(params=params, t=t)
             return qml.expval(qml.PauliZ(0) @ qml.PauliZ(1))
 
         @qml.qnode(dev, interface="jax")
