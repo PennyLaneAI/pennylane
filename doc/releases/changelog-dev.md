@@ -65,6 +65,28 @@
 
 <h4>Always differentiable 📈</h4>
 
+* The hadamard test gradient tranform `qml.gradients.hadamard_grad` is now available.
+  [#3625](https://github.com/PennyLaneAI/pennylane/pull/3625)
+
+  This hardware compatible transform allows you to get the gradient of your circuit by
+  performing a hadamard test on your circuit where one added the controlled generator 
+  of the trainable unitary. Your device needs an auxiliary wire to perform it.
+
+  ```pycon
+  >>> dev = qml.device("default.qubit", wires=2)
+  >>> @qml.qnode(dev)
+  ... def circuit(params):
+  ...     qml.RX(params[0], wires=0)
+  ...     qml.RY(params[1], wires=0)
+  ...     qml.RX(params[2], wires=0)
+  ...     return qml.expval(qml.PauliZ(0))
+  >>> params = np.array([0.1, 0.2, 0.3], requires_grad=True)
+  >>> qml.gradients.hadamard_grad(circuit)(params)
+  (tensor([-0.3875172], requires_grad=True),
+   tensor([-0.18884787], requires_grad=True),
+   tensor([-0.38355704], requires_grad=True))
+  ```
+
 * The gradient transform `qml.gradients.spsa_grad` is now registered as a
   differentiation method for `QNode`s.
   [#3440](https://github.com/PennyLaneAI/pennylane/pull/3440)
