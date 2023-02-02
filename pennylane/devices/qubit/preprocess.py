@@ -43,24 +43,15 @@ def _supports_observable(dev, observable):
         dev (.Device): device to check
         observable (type or str): observable to be checked
 
-    Raises:
-        ValueError: if `observable` is not a :class:`~.Observable` class or string
-
     Returns:
         bool: ``True`` iff supplied observable is supported
     """
     if isinstance(observable, type) and issubclass(observable, Observable):
-        return observable.__name__ in dev.observables
+        observable = observable.__name__
     if isinstance(observable, str):
-        # This check regards observables that are also operations
-        if observable.endswith(".inv"):
-            return dev.supports_operation(observable[:-4])
-
         return observable in dev.observables
-
-    raise ValueError(
-        "The given observable must either be a pennylane.Observable class or a string."
-    )
+    
+    return False
 
 
 def expand_fn(circuit, dev, max_expansion=10):
