@@ -64,7 +64,7 @@ def pwc_example(savefile="pwc_example.png"):
     time = jnp.linspace(0, 10, 1000)
     y = qml.pulse.pwc(timespan=(2, 7))(params, time)
 
-    plt.plot(time, y, label=f"params = {params}, \n timespan = (3, 8)")
+    plt.plot(time, y, label=f"params = {params}, \n timespan = (2, 7)")
     plt.legend(loc="upper left")
 
     plt.savefig(folder / savefile)

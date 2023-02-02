@@ -166,17 +166,15 @@ This can be used to create a :class:`~.ParametrizedHamiltonian` in the following
 
 .. code-block:: python
 
-    def f(p, t):
-        return jnp.polyval(p, t)
-    H = qml.pulse.rect(f, windows=[(1, 7)]) * qml.PauliX(0)
+    H = qml.pulse.rect(jnp.polyval, windows=[(1, 7)]) * qml.PauliX(0)
 
     # inside the window
     >>> H([3], t=2)
     2.7278921604156494*(PauliX(wires=[0]))
 
     # outside the window
-    H([3], t=0.5 )
-    >>> 0.0*(PauliX(wires=[0]))
+    >>> H([3], t=0.5 )
+    0.0*(PauliX(wires=[0]))
 
 
 The function :func:`~.pwc` can be used to create a parametrized coefficient function that is piecewise constant
@@ -325,7 +323,7 @@ JIT-compiling is optional, and one can remove the decorator when only single exe
     In the example above, we want to find the simultaneous evolution of the two operators, so it is important
     that ``H1`` and ``H2`` are included in the same :func:`~.functions.evolve`.
     For non-commuting operations, applying ``qml.evolve(H1)(params, t=[0, 10])`` followed by
-    ``qml.evolve(H2)(params, t=[0, 10])`` will NOT apply the two pulses simultaneously, despite the overlapping
+    ``qml.evolve(H2)(params, t=[0, 10])`` will **not** apply the two pulses simultaneously, despite the overlapping
     time window. Instead, it will execute ``H1`` in the ``[0, 10]`` time window, and then subsequently execute
     ``H2`` using the same time window to calculate the evolution, but without taking into account how the time
     evolution of ``H1`` affects the evolution of ``H2`` and vice versa.
