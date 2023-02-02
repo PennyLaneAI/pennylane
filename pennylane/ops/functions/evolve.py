@@ -14,54 +14,41 @@
 """
 This module contains the qml.evolve function.
 """
-from typing import Union, Tuple
+from functools import singledispatch
+from typing import Tuple, Union
 
+import pennylane as qml
 from pennylane.operation import Operator
 from pennylane.ops import Evolution
 from pennylane.pulse import ParametrizedEvolution, ParametrizedHamiltonian
-import pennylane as qml
 
 
-def evolve(
-    op: Union[Operator, ParametrizedHamiltonian],
-    t: Union[float, Tuple[float]] = None,
-    dt: float = None,
-):
-    r"""Returns a new operator that computes the evolution of ``op``.
+@singledispatch
+def evolve(op, *args, **kwargs):  # pylint: disable=unused-argument
+    """Returns a new operator that computes the evolution of ``op``"""
+
+
+@evolve.register
+def _(op: ParametrizedHamiltonian, t: Union[float, Tuple[float]], dt: float = None):
+    """Returns a new operator that computes the evolution of ``op``.
 
     Args:
         op (Union[.Operator, .ParametrizedHamiltonian]): operator to evolve
-        t (Union[float, Tuple[float]]): Time.
+        t (Union[float, Tuple[float]]): If a float, the operator is evolved from ``0`` to ``t``.
+            If a tuple of floats, each value corresponds to the start and end time of the evolution.
+            Note that such absolute times only have meaning within an instance of
+            ``ParametrizedEvolution`` and will not affect other gates.
 
-            * If ``op`` is a :class:`.Operator`, ``t`` corresponds to the coefficient multiplying
-                the exponentiated operator: :math:`\exp\{i\bm{O}t)\}`. If ``None``, ``t=1`` is used.
-
-            * If ``op`` is a :class:`.ParametrizedHamiltonian`, ``t`` can be either a float or a
-                tuple of floats. If a float, the operator is evolved from ``0`` to ``t``. If a tuple of
-                floats, each value corresponds to the start and end time of the evolution. Note that such
-                absolute times only have meaning within an instance of ``ParametrizedEvolution`` and
-                will not affect other gates.
-
-        dt (float): Time step used.
-
-            * If ``op`` is a :class:`.ParametrizedHamiltonian`, ``dt`` will be
-                used to convert the initial and final time values into a list of values that the ``odeint``
-                solver will use. The solver might perform intermediate steps if necessary. It is recommended
-                to not provide a value for ``dt``.
+        dt (float): Time step. ``dt`` will be used to convert the initial and final time values into
+            a list of values that the ``odeint`` solver will use. The solver might perform
+            intermediate steps if necessary. It is recommended to not provide a value for ``dt``.
 
     Returns:
-        Union[.Evolution, ~pennylane.ops.op_math.evolve.ParametrizedEvolution]: evolution operator
+        ~pennylane.ops.op_math.evolve.ParametrizedEvolution: evolution operator
 
     .. seealso:: :class:`.ParametrizedEvolution`
-    .. seealso:: :class:`.Evolution`
 
     **Examples**
-
-    We can use ``qml.evolve`` to compute the evolution of any PennyLane operator:
-
-    >>> op = qml.evolve(qml.PauliX(0), t=2)
-    >>> op
-    Exp(2j PauliX)
 
     When evolving a :class:`.ParametrizedHamiltonian` class, then a :class:`.ParametrizedEvolution`
     instance is returned:
@@ -80,13 +67,32 @@ def evolve(
 
     Please check the :class:`.ParametrizedEvolution` class for more information.
     """
-    if isinstance(op, ParametrizedHamiltonian):
-        if t is None:
-            raise ValueError("Time must be specified to evolve a ParametrizedHamiltonian.")
-        t = [0.0, t] if qml.math.ndim(t) == 0 else t
-        if dt is not None:
-            t = qml.math.arange(t[0], t[1], step=dt)
+    t = [0.0, t] if qml.math.ndim(t) == 0 else t
+    if dt is not None:
+        t = qml.math.arange(t[0], t[1], step=dt)
 
-        return ParametrizedEvolution(H=op, t=t)
+    return ParametrizedEvolution(H=op, t=t)
 
-    return Evolution(op) if t is None else Evolution(op, t)
+
+@evolve.register
+def _(op: Operator, coeff=1):
+    r"""Returns a new operator that computes the evolution of ``op``.
+
+    Args:
+        op (Union[.Operator, .ParametrizedHamiltonian]): operator to evolve
+        coeff (float): coefficient multiplying the exponentiated operator: :math:`\exp\{i\bm{O}x)\}`.
+
+    Returns:
+        .Evolution: evolution operator
+
+    .. seealso:: :class:`.Evolution`
+
+    **Examples**
+
+    We can use ``qml.evolve`` to compute the evolution of any PennyLane operator:
+
+    >>> op = qml.evolve(qml.PauliX(0), t=2)
+    >>> op
+    Exp(2j PauliX)
+    """
+    return Evolution(op, coeff)
