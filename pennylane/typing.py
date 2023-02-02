@@ -21,7 +21,7 @@ from typing import Union
 import numpy as np
 from autograd.numpy.numpy_boxes import ArrayBox
 
-_TensorLike = Union[int, float, bool, complex, bytes, str, list, tuple, np.ndarray, ArrayBox]
+_TensorLike = Union[int, float, bool, complex, bytes, list, tuple, np.ndarray, ArrayBox]
 
 
 class TensorLikeMETA(type):
