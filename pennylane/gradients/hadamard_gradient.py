@@ -48,7 +48,7 @@ def _hadamard_grad(
         aux_wire (pennylane.wires.Wires): Auxiliary wire to be used for the Hadamard tests. If ``None`` (the default),
             a suitable wire is inferred from the (number of) used wires in the original circuit and ``device_wires``.
         device_wires (pennylane.wires.Wires): Wires of the device that is going to be used for the
-            metric tensor. Facilitates finding a default for ``aux_wire`` if ``aux_wire``
+            gradient. Facilitates finding a default for ``aux_wire`` if ``aux_wire``
             is ``None``.
 
     Returns:
@@ -74,7 +74,7 @@ def _hadamard_grad(
         U(\mathbf{p})^\dagger \hat{O} U(\mathbf{p}) \vert 0\rangle.
 
 
-    The gradient of this expectation value can be calculated via the hadamard test gradient:
+    The gradient of this expectation value can be calculated via the Hadamard test gradient:
 
     .. math::
 
@@ -82,7 +82,7 @@ def _hadamard_grad(
         0} - \bra{0} G\hat{O} \ket{0}\right) = -2 \bra{+}\bra{0} ctrl-G^{\dagger} (\hat{Y} \otimes \hat{O}) ctrl-G
         \ket{+}\ket{0}
 
-    Here, :math:`G` is the generator of the unitary U.
+    Here, :math:`G` is the generator of the unitary :math:`U`.
 
     **Example**
 
@@ -129,7 +129,7 @@ def _hadamard_grad(
 
     .. note::
 
-        ``hadamard_grad`` will decompose the operations that are not in the list of supported operation.
+        ``hadamard_grad`` will decompose the operations that are not in the list of supported operations.
 
         - ``pennylane.RX``
         - ``pennylane.RY``
@@ -145,8 +145,7 @@ def _hadamard_grad(
         - ``pennylane.IsingZZ``
 
         The expansion will fail if a suitable decomposition in terms of supported operation is not found,
-        an error is then raised. The number of trainable parameters can potentially increase due to the
-        decomposition.
+        an error is then raised. The number of trainable parameters may increase due to the decomposition.
 
     """
     if any(isinstance(m, VarianceMP) for m in tape.measurements):
@@ -264,12 +263,9 @@ def _expval_hadamard_grad(tape, argnum, aux_wire):
 
             new_tape = qml.tape.QuantumScript(ops=ops, measurements=measurements)
 
-            def stop_at(obj):
-                return ~qml.operation.is_measurement(obj)
-
             # Expand measurements only
             new_tape = qml.tape.tape.expand_tape(
-                new_tape, stop_at=stop_at, expand_measurements=True
+                new_tape, stop_at=~qml.operation.is_measurement, expand_measurements=True
             )
             num_tape += 1
 
@@ -316,10 +312,8 @@ def _expval_hadamard_grad(tape, argnum, aux_wire):
             elif num_tape == 1:
                 grads.append(final_res[idx])
             else:
-                if not multi_measurements:
-                    grads.append(qml.math.sum(final_res[idx : idx + num_tape]))
-                else:
-                    grads.append(qml.math.sum(final_res[idx : idx + num_tape], axis=0))
+                axis = None if not multi_measurements else 0
+                grads.append(qml.math.sum(final_res[idx : idx + num_tape], axis=axis))
 
         if not multi_measurements and not multi_params:
             return grads[0]
