@@ -50,7 +50,7 @@ def _supports_observable(dev, observable):
         observable = observable.__name__
     if isinstance(observable, str):
         return observable in dev.observables
-    
+
     return False
 
 
