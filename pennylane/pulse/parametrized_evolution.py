@@ -97,6 +97,7 @@ class ParametrizedEvolution(Operation):
         coeffs = [lambda p, t: p * jnp.sin(t) for _ in range(3)]
         H2 = qml.dot(coeffs, ops) # time-dependent parametrized Hamiltonian
 
+
     >>> H1, H2
     (ParametrizedHamiltonian: terms=3, ParametrizedHamiltonian: terms=3)
 

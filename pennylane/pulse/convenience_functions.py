@@ -22,7 +22,6 @@ try:
 except ImportError:
     has_jax = False
 
-
 # pylint: disable=unused-argument
 def constant(scalar, time):
     """Parametrized function that is constant in time and returns the given ``scalar``.
@@ -57,6 +56,7 @@ def constant(scalar, time):
         def circuit(params):
             qml.evolve(H)(params, t=2)
             return qml.expval(qml.PauliZ(0))
+
 
     >>> params = jnp.array([5.0])
     >>> circuit(params)

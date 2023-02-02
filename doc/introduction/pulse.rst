@@ -14,13 +14,13 @@ implement the higher level gates used for quantum computation.
 
 The :mod:`~.pulse` module provides functions and classes used to simulate pulse-level control of quantum
 systems. It contains a :class:`~.ParametrizedHamiltonian` class, which can be used to define the time-dependent
-Hamiltonian describing the interaction between the applied pulses and the system. The
-:class:`~.ParametrizedHamiltonian` can be used to create a :class:`~.ParametrizedEvolution`
-(:class:`~.Operation`) that provides the time evolution of the Hamiltonian. The :mod:`~.pulse` module also
+Hamiltonian describing the interaction between the applied pulses and the system. A
+:class:`~.ParametrizedHamiltonian` instance can be used to create a :class:`~.ParametrizedEvolution`
+(an :class:`~.Operation`) that provides the time evolution under the Hamiltonian. The :mod:`~.pulse` module also
 includes several convenience functions for defining pulse envelopes.
 
 The :mod:`~.pulse` module relies on the external package `JAX <https://jax.readthedocs.io/en/latest/>`_, which
-requires separate installation. The module is written for ``jax`` and will not work with the other machine learning
+requires separate installation. The module is written for ``jax`` and will not work with other machine learning
 frameworks typically encountered in PennyLane.
 
 
@@ -34,11 +34,6 @@ The :mod:`~.pulse` module provides a framework to create a time-dependent Hamilt
 
 with constant operators :math:`H_j` and scalar functions :math:`f_j(p, t)` that may depend on
 parameters :math:`p` and time :math:`t`.
-
-.. note::
-    The :class:`~.ParametrizedHamiltonian` is not a PennyLane :class:`~.Operator`. If an :class:`~.Operator`
-    representing the :class:`~.ParametrizedHamiltonian` is needed, the initialized :class:`~.ParametrizedHamiltonian`
-    must be called with fixed parameters and time.
 
 Defining a :class:`~.ParametrizedHamiltonian` requires coefficients and operators. In the example below, we define a
 Hamiltonian with a single drift term, and two parametrized terms.
@@ -57,10 +52,10 @@ Hamiltonian with a single drift term, and two parametrized terms.
     YY = qml.PauliY(0) @ qml.PauliY(1)
     ZZ = qml.PauliZ(0) @ qml.PauliZ(1)
 
-The functions defining the parameterized coefficients must have the call signature ``(p, t)``, where ``p`` can be a float,
-list or jnp.array. These functions should be defined using ``jax.numpy`` rather than ``numpy`` where relevant.
+The functions defining the parameterized coefficients must have the call signature ``(p, t)``, where ``p`` can be a ``float``,
+``list`` or ``jnp.array``. These functions should be defined using ``jax.numpy`` rather than ``numpy`` where relevant.
 
-There are two way to construct a :class:`~.ParametrizedHamiltonian` from the coefficients
+There are two ways to construct a :class:`~.ParametrizedHamiltonian` from the coefficients
 and operators:
 
 .. code-block:: python
@@ -71,7 +66,7 @@ and operators:
     # Option 2
     coeffs = [2, f1, f2]
     ops = [XX, YY, ZZ]
-    H2 =  qml.ops.dot(coeffs, ops)
+    H2 =  qml.dot(coeffs, ops)
 
 
 .. warning::
@@ -85,7 +80,7 @@ and operators:
     possible to define ``coeffs = [lambda p, t: p * t**i for i in range(3)]`` to create a list
     ``coeffs = [(lambda p, t: p), (lambda p, t: p * t), (lambda p, t: p * t**2)]``. The value of ``i`` when
     creating the lambda functions is set to be the final value in the iteration, such that this will
-    produce ``coeffs = [(lambda p, t: p * t**2)] * 3``.
+    produce three identical functions ``coeffs = [(lambda p, t: p * t**2)] * 3``.
 
 
 The :class:`~.ParametrizedHamiltonian` is a callable, and can return an :class:`~.Operator` if passed a set of
@@ -101,16 +96,46 @@ parameters and a time at which to evaluate the coefficients :math:`f_j`.
     >>> qml.equal(H1(params, t=0.5), H2(params, t=0.5))
     True
 
+We can visualize the behaviour in time of the parametrized coefficients for a given set of parameters:
+
+.. code-block:: python
+
+    import matplotlib.pyplot as plt
+
+    times = jnp.linspace(0., 5., 1000)
+    fs = H1.coeffs_parametrized
+    ops = H1.ops_parametrized
+    params = [1.2, [2.3, 3.4]]
+
+    fig, axs = plt.subplots(nrows=len(ops))
+    for n, f in enumerate(fs):
+        ax = axs[n]
+        ax.plot(times, f(params[n], times), label=f"p={params[n]}")
+        ax.set_ylabel(f"{ops[n].label()}")
+        ax.legend(loc="upper left")
+
+    ax.set_xlabel("time")
+    axs[0].set_title(f"H1 parametrized coefficients")
+    plt.tight_layout()
+    plt.show()
+
+.. figure:: ../../doc/_static/pulse/parametrized_coefficients_example.png
+            :align: center
+            :width: 60%
+            :target: javascript:void(0);
+
 .. warning::
-    Order matters here. When initializing the :class:`~.ParametrizedHamiltonian`, terms defined with fixed coefficients
-    should come before parametrized terms to prevent discrepancy in the wire order. When passing parameters, ensure
-    that the order of the coefficient functions and the order of the parameters match.
+    The order of the coefficients and operators matters. When initializing the
+    :class:`~.ParametrizedHamiltonian`, terms defined with fixed coefficients
+    have to come before parametrized terms to prevent discrepancy in the wire order.
+    When passing parameters, ensure that the order of the coefficient functions and
+    the order of the parameters match.
 
 Convenience functions for building a ParametrizedHamiltonian
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-The convenience functions currently available in PennyLane to assist in creating coefficients functions
-for a :class:`~.ParametrizedHamiltonian` are:
+The following convenience functions currently are available in PennyLane to assist in creating coefficient functions
+for a :class:`~.ParametrizedHamiltonian`:
 
 :html:`<div class="summary-table">`
 
@@ -129,33 +154,43 @@ Further examples
 
 A few additional examples of defining a :class:`~.ParametrizedHamiltonian` are provided here.
 
-Using ``rect`` to create a parametrized coefficient that has a value of 0 outside the time interval
-:math:`t=(1, 7)`, and within the interval is defined by ``jnp.polyval(p, t)``:
+Here we use :func:`~.rect` to create a parametrized coefficient that has a value of ``0`` outside the time interval
+``t=(1, 7)``, and is defined by ``jnp.polyval(p, t)`` within the interval:
+
+.. figure:: ../../doc/_static/pulse/rect_example.png
+            :align: center
+            :width: 60%
+            :target: javascript:void(0);
+
+This can be used to create a :class:`~.ParametrizedHamiltonian` in the following way:
 
 .. code-block:: python
 
-    from pennylane.pulse.convenience_functions import rect
-
-    def f(p, t):
-        return jnp.polyval(p, t)
-    H = qml.pulse.rect(f1, windows=[(1, 7)]) * qml.PauliX(0)
+    H = qml.pulse.rect(jnp.polyval, windows=[(1, 7)]) * qml.PauliX(0)
 
     # inside the window
-    H([3], t=2)
-    >>> 2.7278921604156494*(PauliX(wires=[0]))
+    >>> H([3], t=2)
+    2.7278921604156494*(PauliX(wires=[0]))
 
     # outside the window
-    H([3], t=0.5 )
-    >>> 0.0*(PauliX(wires=[0]))
+    >>> H([3], t=0.5 )
+    0.0*(PauliX(wires=[0]))
 
-Using a ``pwc`` to create a parametrized coefficient that is piecewise constant
-within the interval ``t``, and 0 outside it:
+
+The function :func:`~.pwc` can be used to create a parametrized coefficient function that is piecewise constant
+within the interval ``t``, and 0 outside of it. When creating the callable, only the timespan is passed. The number
+of bins and values for the parameters are set when ``params`` is passed to the callable.
+
+.. figure:: ../../doc/_static/pulse/pwc_example.png
+            :align: center
+            :width: 60%
+            :target: javascript:void(0);
 
 .. code-block:: python
 
     from pennylane.pulse.convenience_functions import pwc
 
-    f1 = pwc(timespan=(2, 7))  # TODO: maybe this should be renamed window for uniformity?
+    f1 = pwc(timespan=(2, 7))
     H = f1 * qml.PauliX(0)
 
     # passing pwc((2, 7)) an array evenly distributes the array values in the interval t=2 to t=7
@@ -170,9 +205,10 @@ within the interval ``t``, and 0 outside it:
     H(params=[[1, 2, 3, 4, 5]], t=3.1)
     >>> 2.0*(PauliX(wires=[0]))
 
-    # outside the window where the function is assigned non-zero values
+    # outside the window - the function is assigned non-zero values
     H(params=[[1, 2, 3, 4, 5]], t=8)
     >>> 0.0*(PauliX(wires=[0]))
+
 
 ParametrizedEvolution
 ---------------------
@@ -187,9 +223,13 @@ realizing a unitary evolution :math:`U(t_0, t_1)` of the input state, i.e.
 A :class:`~.ParametrizedEvolution` is this solution :math:`U(t_0, t_1)` to the time-dependent
 Schrodinger equation for a :class:`~.ParametrizedHamiltonian`.
 
-Creation of the :class:`~.ParametrizedEvolution` uses an a numerical ordinary differential equation
-solver (`here <https://github.com/google/jax/blob/main/jax/experimental/ode.py>`_). The :class:`~.ParametrizedEvolution`
-can be found using the :func:`~qml.evolve` function:
+.. note::
+    The :class:`~.ParametrizedHamiltonian` must be Hermitian at all times. This is not explicitly
+    checked; ensuring a correctly defined Hamiltonian is the responsibility of the user.
+
+The :class:`~.ParametrizedEvolution` class uses a numerical ordinary differential equation
+solver (`here <https://github.com/google/jax/blob/main/jax/experimental/ode.py>`_). It
+can be created using the :func:`~.functions.evolve` function:
 
 .. code-block:: python
 
@@ -202,7 +242,7 @@ can be found using the :func:`~qml.evolve` function:
     >>> ParametrizedEvolution(wires=[0, 1])
 
 The initial :class:`~.ParametrizedEvolution` does not have parameters defined, and so will
-not have a defined matrix. To complete initialization of the :class:`~.Operator`, it must be passed
+not have a matrix defined. To obtain an :class:`~.Operator` with a matrix, it must be passed
 parameters and a time interval:
 
 .. code-block:: python
@@ -229,25 +269,23 @@ along with the parameters, as keyword arguments:
 
 These options are:
 
-- `atol (float, optional)`: Absolute error tolerance
-- `rtol (float, optional)`: Relative error tolerance
-- `mxstep (int, optional)`: maximum number of steps to take for each time point
-- `hmax (float, optional)`: maximum step size allowed
+- ``atol (float, optional)``: Absolute error tolerance
+- ``rtol (float, optional)``: Relative error tolerance
+- ``mxstep (int, optional)``: maximum number of steps to take for each time point
+- ``hmax (float, optional)``: maximum step size
 
 If not specified, they will default to predetermined values. See :class:`.ParametrizedEvolution` for details.
 
 Using qml.evolve in a QNode
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-The :class:`~.ParametrizedEvolution` can be implemented in the QNode in the same way as any other
-PennyLane :class:`~.Operator`.
-
-To look at an example of this, let's start with two instances of :class:`~.ParametrizedHamiltonian`:
+The :class:`~.ParametrizedEvolution` can be implemented in a QNode. To look at an example of this,
+let's start with two instances of :class:`~.ParametrizedHamiltonian`:
 
 .. code-block:: python
 
     ops = [qml.PauliX(0), qml.PauliY(1), qml.PauliZ(2)]
-    coeffs = [lambda p, t: p for _ in range(3)]
+    coeffs = [qml.pulse.constant for _ in range(3)]
     H1 = qml.ops.dot(coeffs, ops)  # time-independent parametrized hamiltonian
 
 .. code-block:: python
@@ -256,11 +294,17 @@ To look at an example of this, let's start with two instances of :class:`~.Param
     coeffs = [lambda p, t: p * jnp.sin(t) for _ in range(3)]
     H2 = qml.ops.dot(coeffs, ops) # time-dependent parametrized hamiltonian
 
-Now we can execute the evolution of these Hamiltonians applied simultaneously:
+Now we can execute the evolution of these Hamiltonians applied simultaneously. To do this, we can add the two
+to form a single :class:`~.ParametrizedHamiltonian`. This will combine the two so that the expected parameters
+will be ``params1 + params2``.
 
 .. code-block:: python
 
+    import jax
+
     dev = qml.device("default.qubit", wires=3)
+
+    @jax.jit
     @qml.qnode(dev, interface="jax")
     def circuit(params):
         qml.evolve(H1 + H2)(params, t=[0, 10])
@@ -270,11 +314,16 @@ Now we can execute the evolution of these Hamiltonians applied simultaneously:
     circuit(params)
     >>> Array(-0.78236955, dtype=float32)
 
+We can use the decorator ``jax.jit`` to compile this execution just-in-time. This means the first execution
+will typically take a little longer with the benefit that all following executions will be significantly faster.
+JIT-compiling is optional, and one can remove the decorator when only single executions are of interest. See the
+``jax`` docs on jitting for more information.
 
 .. warning::
-    In this example, it is important that ``H1`` and ``H2`` are included in the same ``qml.evolve`` operation.
+    In the example above, we want to find the simultaneous evolution of the two operators, so it is important
+    that ``H1`` and ``H2`` are included in the same :func:`~.functions.evolve`.
     For non-commuting operations, applying ``qml.evolve(H1)(params, t=[0, 10])`` followed by
-    ``qml.evolve(H2)(params, t=[0, 10])`` will NOT apply the two pulses simultaneously, despite the overlapping
+    ``qml.evolve(H2)(params, t=[0, 10])`` will **not** apply the two pulses simultaneously, despite the overlapping
     time window. Instead, it will execute ``H1`` in the ``[0, 10]`` time window, and then subsequently execute
     ``H2`` using the same time window to calculate the evolution, but without taking into account how the time
     evolution of ``H1`` affects the evolution of ``H2`` and vice versa.
@@ -286,4 +335,3 @@ We can also compute the gradient of this evolution with respect to the input par
     jax.grad(circuit)(params)
     >>> Array([-4.8066125,  3.7038102, -1.3294725, -2.4061902,  0.6811545,
         -0.5226515], dtype=float32)
-
