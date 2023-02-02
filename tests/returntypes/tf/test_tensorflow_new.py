@@ -580,7 +580,6 @@ class TestTensorFlowExecuteIntegration:
         dev = qml.device("default.qubit", wires=2)
 
         with tf.GradientTape() as t:
-
             with qml.queuing.AnnotatedQueue() as q:
                 qml.QubitUnitary(U, wires=0)
                 qml.RY(a, wires=0)
@@ -615,7 +614,6 @@ class TestTensorFlowExecuteIntegration:
         p = tf.Variable([0.1, 0.2, 0.3], dtype=tf.float64)
 
         with tf.GradientTape() as tape:
-
             with qml.queuing.AnnotatedQueue() as q_qtape:
                 qml.RX(a, wires=0)
                 U3(p[0], p[1], p[2], wires=0)

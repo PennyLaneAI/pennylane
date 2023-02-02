@@ -95,7 +95,6 @@ class TwoLocalSwapNetwork(Operation):
         id=None,
         **kwargs,
     ):  # pylint: disable=too-many-arguments
-
         if len(wires) < 2:
             raise ValueError(f"TwoLocalSwapNetwork requires at least 2 wires, got {len(wires)}")
 

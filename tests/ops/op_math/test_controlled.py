@@ -1048,7 +1048,8 @@ class TestControlledSupportsBroadcasting:
     @pytest.mark.parametrize("name", single_scalar_single_wire_ops)
     def test_controlled_of_single_scalar_single_wire_ops(self, name):
         """Test that a Controlled operation whose base is a single-scalar-parameter operations
-        on a single wire marked as supporting parameter broadcasting actually do support broadcasting."""
+        on a single wire marked as supporting parameter broadcasting actually do support broadcasting.
+        """
         par = np.array([0.25, 2.1, -0.42])
         wires = ["wire0"]
 
@@ -1064,7 +1065,8 @@ class TestControlledSupportsBroadcasting:
     @pytest.mark.parametrize("name", single_scalar_multi_wire_ops)
     def test_controlled_single_scalar_multi_wire_ops(self, name):
         """Test that a Controlled operation whose base is a single-scalar-parameter operations
-        on multiple wires marked as supporting parameter broadcasting actually do support broadcasting."""
+        on multiple wires marked as supporting parameter broadcasting actually do support broadcasting.
+        """
         par = np.array([0.25, 2.1, -0.42])
         cls = getattr(qml, name)
 
@@ -1082,7 +1084,8 @@ class TestControlledSupportsBroadcasting:
     @pytest.mark.parametrize("name", two_scalar_single_wire_ops)
     def test_controlled_two_scalar_single_wire_ops(self, name):
         """Test that a Controlled operation whose base is a two-scalar-parameter operations
-        on a single wire marked as supporting parameter broadcasting actually do support broadcasting."""
+        on a single wire marked as supporting parameter broadcasting actually do support broadcasting.
+        """
         par = (np.array([0.25, 2.1, -0.42]), np.array([-6.2, 0.12, 0.421]))
         wires = ["wire0"]
 
@@ -1099,7 +1102,8 @@ class TestControlledSupportsBroadcasting:
     @pytest.mark.parametrize("name", three_scalar_single_wire_ops)
     def test_controlled_three_scalar_single_wire_ops(self, name):
         """Test that a Controlled operation whose base is a three-scalar-parameter operations
-        on a single wire marked as supporting parameter broadcasting actually do support broadcasting."""
+        on a single wire marked as supporting parameter broadcasting actually do support broadcasting.
+        """
         par = (
             np.array([0.25, 2.1, -0.42]),
             np.array([-6.2, 0.12, 0.421]),
@@ -1120,7 +1124,8 @@ class TestControlledSupportsBroadcasting:
     @pytest.mark.parametrize("name", three_scalar_multi_wire_ops)
     def test_controlled_three_scalar_multi_wire_ops(self, name):
         """Test that a Controlled operation whose base is a three-scalar-parameter operations
-        on multiple wires marked as supporting parameter broadcasting actually do support broadcasting."""
+        on multiple wires marked as supporting parameter broadcasting actually do support broadcasting.
+        """
         par = (
             np.array([0.25, 2.1, -0.42]),
             np.array([-6.2, 0.12, 0.421]),

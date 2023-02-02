@@ -185,7 +185,6 @@ def vjp(
     cached_jac = {}
 
     def _get_jac_with_caching():
-
         if "jacobian" in cached_jac:
             return cached_jac["jacobian"]
 
@@ -418,7 +417,6 @@ def _vjp_new(
     cached_jac = {}
 
     def _get_jac_with_caching():
-
         if "jacobian" in cached_jac:
             return cached_jac["jacobian"]
 

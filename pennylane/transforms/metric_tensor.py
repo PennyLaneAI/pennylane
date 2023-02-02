@@ -435,7 +435,6 @@ def _metric_tensor_cov_matrix(tape, diag_approx):
         gs = []
 
         for prob, obs, coeffs in zip(probs, obs_list, coeffs_list):
-
             # calculate the covariance matrix of this layer
             scale = qml.math.convert_like(qml.math.outer(coeffs, coeffs), prob)
             scale = qml.math.cast_like(scale, prob)

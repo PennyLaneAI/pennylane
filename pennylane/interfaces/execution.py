@@ -132,7 +132,6 @@ def cache_execute(fn: Callable, cache, pass_kwargs=False, return_tuple=True, exp
 
     @wraps(fn)
     def wrapper(tapes: Sequence[QuantumTape], **kwargs):
-
         if not pass_kwargs:
             kwargs = {}
 

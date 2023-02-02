@@ -120,6 +120,7 @@ class QNSPSAOptimizer:
             the cost values in the last ``history_length`` steps (default: 5)
         seed (int): seed for the random sampling (default: None)
     """
+
     # pylint: disable=too-many-arguments
     # pylint: disable=too-many-instance-attributes
     def __init__(

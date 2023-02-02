@@ -336,7 +336,6 @@ class TestVectorValuedQNode:
             return qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliY(1))
 
         if diff_method == "adjoint" and mode == "backward":
-
             # TODO: jit here too when the following issue is resolved:
             # https://github.com/PennyLaneAI/pennylane/issues/3475
             jac_fn = jax.jacobian(circuit, argnums=[0, 1])

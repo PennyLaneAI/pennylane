@@ -618,7 +618,6 @@ class TestBarrier:
         assert optimized_gates == 0
 
         def qfunc():
-
             qml.Hadamard(wires=0)
             qml.Barrier(wires=0)
             qml.Barrier(wires=0)

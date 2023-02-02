@@ -65,7 +65,7 @@ class TestDecomposition:
 
         gate_ops, gate_angles, gate_wires = [], [], []
 
-        for (indices, angle) in diags + givens[::-1]:
+        for indices, angle in diags + givens[::-1]:
             g_op = qml.PhaseShift if len(indices) == 1 else qml.SingleExcitation
             gate_ops.append(g_op)
             gate_angles.append(qml.numpy.array(angle))

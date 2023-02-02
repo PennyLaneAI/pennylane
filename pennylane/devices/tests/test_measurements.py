@@ -105,7 +105,6 @@ class TestSupportedObservables:
 
         assert hasattr(dev, "observables")
         if observable in dev.observables:
-
             kwargs = {"diff_method": "parameter-shift"} if observable == "SparseHamiltonian" else {}
 
             @qml.qnode(dev, **kwargs)

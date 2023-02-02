@@ -5152,7 +5152,6 @@ class TestKaHyPar:
         frags, comm_graph = qcut.fragment_graph(cut_graph)
 
         if num_frags == 2:
-
             assert len(frags) == num_frags
             assert len(comm_graph.edges) == expected_num_cut_edges
 

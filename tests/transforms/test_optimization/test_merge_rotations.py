@@ -261,6 +261,7 @@ class TestMergeRotations:
 # Example QNode and device for interface testing
 dev = qml.device("default.qubit", wires=3)
 
+
 # Test each of single-qubit, two-qubit, and Rot gates
 def qfunc(theta):
     qml.Hadamard(wires=0)

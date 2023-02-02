@@ -58,6 +58,7 @@ single_qubit_decomps = [
     ),
 ]
 
+
 # A simple quantum function for testing
 def qfunc(U):
     qml.Hadamard(wires="a")

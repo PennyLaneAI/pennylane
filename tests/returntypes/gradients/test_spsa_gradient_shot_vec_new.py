@@ -825,7 +825,6 @@ class TestSpsaGradientIntegration:
         assert len(all_res) == len(default_shot_vector)
 
         for res in all_res:
-
             assert isinstance(res, tuple)
             assert len(res) == 2
 
@@ -880,7 +879,6 @@ class TestSpsaGradientIntegration:
         assert len(all_res) == len(default_shot_vector)
 
         for res in all_res:
-
             assert isinstance(res, tuple)
             assert len(res) == 2
 
@@ -935,7 +933,6 @@ class TestSpsaGradientIntegration:
         assert len(all_res) == len(default_shot_vector)
 
         for res in all_res:
-
             assert isinstance(res, tuple)
             assert len(res) == 2
 

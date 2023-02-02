@@ -76,7 +76,6 @@ class QutritDevice(QubitDevice):  # pylint: disable=too-many-public-methods
 
     @classmethod
     def capabilities(cls):
-
         capabilities = super().capabilities().copy()
         capabilities.update(model="qutrit")
         return capabilities
@@ -367,7 +366,6 @@ class QutritDevice(QubitDevice):  # pylint: disable=too-many-public-methods
                 samples = self._samples[sample_slice]
 
         else:
-
             # Replace the basis state in the computational basis with the correct eigenvalue.
             # Extract only the columns of the basis samples required based on ``wires``.
             samples = self._samples[

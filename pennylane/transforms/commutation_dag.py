@@ -95,7 +95,6 @@ def commutation_dag(circuit):
 
     @wraps(circuit)
     def wrapper(*args, **kwargs):
-
         if isinstance(circuit, qml.QNode):
             # user passed a QNode, get the tape
             circuit.construct(args, kwargs)
@@ -213,7 +212,6 @@ class CommutationDAG:
     """
 
     def __init__(self, tape: QuantumTape):
-
         self.num_wires = len(tape.wires)
         self.node_id = -1
         self._multi_graph = nx.MultiDiGraph()
@@ -419,7 +417,6 @@ class CommutationDAG:
         )
 
     def _add_successors(self):
-
         for node_id in range(len(self._multi_graph) - 1, -1, -1):
             direct_successors = self.direct_successors(node_id)
 
@@ -432,7 +429,6 @@ class CommutationDAG:
             )
 
     def _update_edges(self):
-
         max_node_id = len(self._multi_graph) - 1
         max_node = self.get_node(max_node_id).op
 
