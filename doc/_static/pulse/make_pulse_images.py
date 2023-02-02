@@ -89,37 +89,8 @@ def rect_example(savefile="rect_example.png"):
     plt.close()
 
 
-def pwc_and_rect_example(savefile="pwc_and_rect.png"):
-    def f(p, t):
-        return jnp.polyval(p, t)
-
-    times = jnp.linspace(0., 10., 1000)
-
-    fig, axs = plt.subplots(1, 2)
-
-    polyval_params = jnp.array([1, 2, 3])
-    windows = [(3, 6)]
-
-    axs[0].plot(times, f(polyval_params, times), label=f"polyval, p = {polyval_params}")
-    axs[0].plot(times, [qml.pulse.rect(f, windows=windows)(polyval_params, t) for t in times],
-                label=f"rect(polyval), \n windows={windows}")
-    axs[0].set_title("rect")
-    axs[0].set_xlabel("time")
-    axs[0].legend()
-
-    axs[1].plot(times, qml.pulse.pwc(windows[0])([1, 2, 3, 4, 5], times),
-                label=f"timespan = {windows[0]}, \n params = [1, 2, 3, 4, 5]")
-    axs[1].set_title("pwc")
-    axs[1].set_xlabel("time")
-    axs[1].legend(loc="upper left")
-
-    plt.tight_layout()
-    plt.savefig(folder / savefile)
-    plt.close()
-
-
 if __name__ == "__main__":
     parametrized_coefficients_example()
     pwc_example()
     rect_example()
-    pwc_and_rect_example()
+
