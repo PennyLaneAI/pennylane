@@ -26,7 +26,10 @@ _TensorLike = Union[int, float, bool, complex, bytes, str, list, tuple, np.ndarr
 
 class TensorLikeMETA(type):
     """TensorLike metaclass that defines dunder methods for the ``isinstance`` and ``issubclass``
-    checks."""
+    checks.
+
+    .. note:: These special dunder methods can only be defined inside a metaclass.
+    """
 
     def __instancecheck__(cls, other):
         """Dunder method used to check if an object is a `TensorLike` instance."""
