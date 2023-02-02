@@ -148,6 +148,21 @@ class QubitStateVector(StatePrep):
     ndim_params = (1,)
     """int: Number of dimensions per trainable parameter of the operator."""
 
+    def __init__(self, state, wires, do_queue=True, id=None):
+        super().__init__(state, wires=wires, do_queue=do_queue, id=id)
+        state = self.parameters[0]
+
+        if len(state.shape) == 1:
+            state = math.reshape(state, (1, state.shape[0]))
+        if state.shape[1] != 2 ** len(self.wires):
+            raise ValueError("State vector must have shape (2**wires,) or (batch_size, 2**wires).")
+
+        param = math.cast(state, np.complex128)
+        if not math.is_abstract(param):
+            norm = math.linalg.norm(param, axis=-1, ord=2)
+            if not math.allclose(norm, 1.0, atol=1e-10):
+                raise ValueError("Sum of amplitudes-squared does not equal one.")
+
     @staticmethod
     def compute_decomposition(state, wires):
         r"""Representation of the operator as a product of other operators (static method). :
@@ -174,17 +189,8 @@ class QubitStateVector(StatePrep):
 
     def state_vector(self, wire_order=None):
         num_op_wires = len(self.wires)
-        param = math.cast(self.parameters[0], np.complex128)
+        op_vector = math.reshape(self.parameters[0], (2,) * num_op_wires)
 
-        if len(param) != 2**num_op_wires:
-            raise ValueError("State vector must have shape (2**wires,)")
-
-        if not math.is_abstract(param):
-            norm = math.linalg.norm(param)
-            if not math.allclose(norm, 1.0, atol=1e-10):
-                raise ValueError("Sum of amplitudes-squared does not equal one.")
-
-        op_vector = math.reshape(param, (2,) * num_op_wires)
         if wire_order is None or Wires(wire_order) == self.wires:
             return op_vector
 
@@ -207,7 +213,7 @@ class QubitStateVector(StatePrep):
                     ket = np.swapaxes(ket, i, i_wire_pos)
                     new_order[i], new_order[i_wire_pos] = new_order[i_wire_pos], new_order[i]
 
-        return math.convert_like(ket, param)
+        return math.convert_like(ket, op_vector)
 
 
 class QubitDensityMatrix(Operation):
