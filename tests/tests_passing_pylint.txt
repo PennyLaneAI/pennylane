@@ -1,6 +1,7 @@
 tests/data/**
 tests/devices/qubit/test_apply_operation.py
 tests/devices/test_execution_config.py
+tests/drawer/test_tape_mpl.py
 tests/qchem/test_givens_rotations.py
 tests/templates/test_subroutines/test_basis_rotation.py
 tests/ops/op_math/test_controlled_ops.py
