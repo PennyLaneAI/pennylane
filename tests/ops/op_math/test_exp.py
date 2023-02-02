@@ -463,12 +463,12 @@ class TestDecomposition:
         [
             (
                 2,
-                qml.Hamiltonian([1, 1], [qml.PauliX(0), qml.PauliX(1)]),
+                qml.Hamiltonian([1, 1], [qml.PauliX(0) @ qml.PauliX(1), qml.PauliX(1)]),
                 2,
                 [
-                    qml.PauliRot(2.0, "X", wires=[0]),
+                    qml.IsingXX(2.0, wires=[0, 1]),
                     qml.PauliRot(2.0, "X", wires=[1]),
-                    qml.PauliRot(2.0, "X", wires=[0]),
+                    qml.IsingXX(2.0, wires=[0, 1]),
                     qml.PauliRot(2.0, "X", wires=[1]),
                 ],
             ),
@@ -476,14 +476,14 @@ class TestDecomposition:
                 2,
                 qml.sum(
                     qml.s_prod(2, qml.PauliX("a")),
-                    qml.s_prod(0.5, qml.PauliZ("b") @ qml.PauliX("a")),
+                    qml.s_prod(0.5, qml.PauliZ("b") @ qml.PauliZ("a")),
                 ),
                 2,
                 [
                     qml.PauliRot(4.0, "X", wires=["a"]),
-                    qml.PauliRot(1.0, "ZX", wires=["b", "a"]),
+                    qml.IsingZZ(1.0, wires=["b", "a"]),
                     qml.PauliRot(4.0, "X", wires=["a"]),
-                    qml.PauliRot(1.0, "ZX", wires=["b", "a"]),
+                    qml.IsingZZ(1.0, wires=["b", "a"]),
                 ],
             ),
             (
