@@ -105,7 +105,7 @@ def expand_fn(circuit, dev, max_expansion=10):
     return circuit
 
 
-def batch_transform(self, circuit, dev):
+def batch_transform(circuit, dev, finite_shots):
     """Apply a differentiable batch transform for preprocessing a circuit
     prior to execution. This method is called directly by the QNode, and
     should be overwritten if the device requires a transform that
@@ -126,6 +126,7 @@ def batch_transform(self, circuit, dev):
     Args:
         circuit (.QuantumTape): the circuit to preprocess
         dev (.Device): the device to execute circuit on
+        finite_shots (bool): whether the execution has finite shots or not
 
     Returns:
         tuple[Sequence[.QuantumTape], callable]: Returns a tuple containing
@@ -133,14 +134,13 @@ def batch_transform(self, circuit, dev):
         to be applied to the list of evaluated circuit results.
     """
     supports_hamiltonian = _supports_observable(dev, "Hamiltonian")
-    finite_shots = dev.shots is not None
     grouping_known = all(
         obs.grouping_indices is not None
         for obs in circuit.observables
         if isinstance(obs, qml.Hamiltonian)
     )
     # device property present in braket plugin
-    use_grouping = getattr(self, "use_grouping", True)
+    use_grouping = getattr(dev, "use_grouping", True)
 
     hamiltonian_in_obs = any(isinstance(obs, qml.Hamiltonian) for obs in circuit.observables)
     expval_sum_in_obs = any(
@@ -185,7 +185,7 @@ def batch_transform(self, circuit, dev):
 
     # Check whether the circuit was broadcasted (then the Hamiltonian-expanded
     # ones will be as well) and whether broadcasting is supported
-    if circuit.batch_size is None or self.capabilities().get("supports_broadcasting"):
+    if circuit.batch_size is None or dev.capabilities().get("supports_broadcasting"):
         # If the circuit wasn't broadcasted or broadcasting is supported, no action required
         return circuits, hamiltonian_fn
 
@@ -204,14 +204,15 @@ def batch_transform(self, circuit, dev):
     return expanded_tapes, total_processing
 
 
-def check_validity(queue, dev, observables):
+# pylint: disable=too-many-branches
+def check_validity(dev, queue, observables):
     """Checks whether the operations and observables in queue are all supported by the device.
     Includes checks for inverse operations.
 
     Args:
+        dev (.Device): device for which to validate queue
         queue (Iterable[~.operation.Operation]): quantum operation objects which are intended
             to be applied on the device
-        dev (.Device): device for which to validate queue
         observables (Iterable[~.operation.Observable]): observables which are intended
             to be evaluated on the device
 
@@ -243,7 +244,7 @@ def check_validity(queue, dev, observables):
                 )
             operation_name = o.base_name
 
-        if not dev.stopping_condition(o):
+        if not _stopping_condition(o):
             raise DeviceError(f"Gate {operation_name} not supported on device {dev.short_name}")
 
     for o in observables:
@@ -285,7 +286,7 @@ def check_validity(queue, dev, observables):
 
 # pylint: disable=unused-argument, missing-function-docstring
 def preprocess(tapes, dev, execution_config=None):
-    # Combine check_validity, _expand_fn and batch_transform in this function:
+    # Combine check_validity, expand_fn and batch_transform in this function:
     # Check that tapes are valid
     # Expand tapes
     # Split tapes as needed
