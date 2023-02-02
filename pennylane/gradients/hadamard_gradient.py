@@ -266,6 +266,7 @@ def _expval_hadamard_grad(tape, argnum, aux_wire):
             new_tape = qml.tape.QuantumScript(ops=ops, measurements=measurements)
 
             # Expand measurements only
+            # pylint: disable=invalid-unary-operand-type
             new_tape = qml.tape.tape.expand_tape(
                 new_tape, stop_at=~qml.operation.is_measurement, expand_measurements=True
             )
