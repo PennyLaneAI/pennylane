@@ -395,15 +395,12 @@ class TestDecomposition:
         with pytest.raises(DecompositionUndefinedError):
             op.decomposition()
 
-    def test_nontensor_tensor_raises_error(self):
+    def test_nontensor_tensor_no_decomposition(self):
         """Checks that accessing the decomposition throws an error if the base is a Tensor
         object that is not a mathematical tensor"""
         base_op = qml.PauliX(0) @ qml.PauliZ(0)
         op = Exp(base_op, 1j)
-
-        with pytest.raises(DecompositionUndefinedError):
-            _ = op.has_decomposition
-
+        assert not op.has_decomposition
         with pytest.raises(DecompositionUndefinedError):
             _ = op.decomposition()
 

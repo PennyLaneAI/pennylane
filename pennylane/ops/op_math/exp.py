@@ -235,11 +235,7 @@ class Exp(ScalarSymbolicOp, Operation):
     @property
     def has_decomposition(self):
         if isinstance(self.base, Tensor) and len(self.base.wires) != len(self.base.obs):
-            raise DecompositionUndefinedError(
-                "Unable to determine if the exponential has a decomposition "
-                "when the base operator is a Tensor object with overlapping wires. "
-                f"Received base {self.base}."
-            )
+            return False
         base = self.base
         coeff = self.coeff
         if isinstance(base, SProd):
