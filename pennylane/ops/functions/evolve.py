@@ -23,7 +23,15 @@ from pennylane.pulse import ParametrizedEvolution, ParametrizedHamiltonian
 
 @singledispatch
 def evolve(op, *args, **kwargs):  # pylint: disable=unused-argument
-    """Returns a new operator that computes the evolution of ``op``"""
+    """Returns a new operator that computes the evolution of ``op``.
+
+    Depending on the ``op`` type, this function is dispatched into the following functions:
+
+    * :func:`~.evolution` if ``op`` is an :class:`~.Operator`.
+
+    * :func:`~.parametrized_evolution` if ``op`` is a :class:`~.ParametrizedHamiltonian`.
+
+    """
 
 
 @evolve.register
