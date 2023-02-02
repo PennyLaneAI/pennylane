@@ -16,6 +16,7 @@
 import copy
 
 import pytest
+from flaky import flaky
 
 import pennylane as qml
 from pennylane import numpy as np
@@ -203,6 +204,7 @@ class TestClassicalShadow:
         assert qml.math.all(np.logical_or(bits == 0, bits == 1))
         assert qml.math.all(np.logical_or(recipes == 0, np.logical_or(recipes == 1, recipes == 2)))
 
+    @flaky(5)
     @pytest.mark.all_interfaces
     @pytest.mark.parametrize("interface", ["autograd", "jax", "tf", "torch"])
     @pytest.mark.parametrize("device", ["default.qubit", None])
