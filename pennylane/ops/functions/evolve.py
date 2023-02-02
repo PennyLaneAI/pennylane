@@ -75,7 +75,7 @@ def _(op: ParametrizedHamiltonian, t: Union[float, Tuple[float]], dt: float = No
 
 
 @evolve.register
-def _(op: Operator, coeff=1):
+def _(op: Operator, coeff: float = 1):
     r"""Returns a new operator that computes the evolution of ``op``.
 
     Args:
