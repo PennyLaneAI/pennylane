@@ -32,7 +32,7 @@ class TestEvolveConstructor:
 
     def test_matrix(self):
         """Test that the matrix of the evolved function is correct."""
-        final_op = qml.evolve(qml.PauliX(0), t=2)
+        final_op = qml.evolve(qml.PauliX(0), coeff=2)
         mat = qml.math.expm(1j * qml.matrix(2 * qml.PauliX(0)))
         assert qml.math.allequal(qml.matrix(final_op), mat)
 
@@ -50,11 +50,3 @@ class TestEvolveConstructor:
         assert isinstance(param_evolution, ParametrizedEvolution)
         assert param_evolution.H is H
         assert qml.math.allequal(param_evolution.params, [1, 2, 3])
-
-    def test_evolve_raises_error(self):
-        """Test that `qml.evolve` raises an error when using a `ParametrizedHamiltonian` and not
-        defining `t`."""
-        with pytest.raises(
-            ValueError, match="Time must be specified to evolve a ParametrizedHamiltonian"
-        ):
-            qml.evolve(ParametrizedHamiltonian([], []))
