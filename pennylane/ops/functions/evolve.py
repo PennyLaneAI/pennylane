@@ -91,7 +91,7 @@ def _(op: Operator, coeff: float = 1):
 
     We can use ``qml.evolve`` to compute the evolution of any PennyLane operator:
 
-    >>> op = qml.evolve(qml.PauliX(0), t=2)
+    >>> op = qml.evolve(qml.PauliX(0), coeff=2)
     >>> op
     Exp(2j PauliX)
     """
