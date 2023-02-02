@@ -20,9 +20,12 @@ at your own discretion.
 .. currentmodule:: pennylane.devices.qubit
 .. autosummary::
     :toctree: api
+
     create_initial_state
     apply_operation
+    sample_state
 """
 
 from .apply_operation import apply_operation
 from .initialize_state import create_initial_state
+from .sampling import sample_state
