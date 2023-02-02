@@ -298,7 +298,7 @@ class TestIntegration:
 
         @qml.qnode(dev, interface="jax")
         def circuit(params):
-            qml.evolve(H, t=t)(params=params)
+            qml.evolve(H)(params=params, t=t)
             return qml.expval(qml.PauliZ(0) @ qml.PauliZ(1))
 
         @qml.qnode(dev, interface="jax")
@@ -336,13 +336,13 @@ class TestIntegration:
 
         @qml.qnode(dev, interface="jax")
         def circuit(params):
-            qml.evolve(H, t=t)(params=params)
+            qml.evolve(H)(params=params, t=t)
             return qml.expval(qml.PauliZ(0) @ qml.PauliZ(1))
 
         @jax.jit
         @qml.qnode(dev, interface="jax")
         def jitted_circuit(params):
-            qml.evolve(H, t=t)(params=params)
+            qml.evolve(H)(params=params, t=t)
             return qml.expval(qml.PauliZ(0) @ qml.PauliZ(1))
 
         constants = np.linspace(0, 9, 10)
@@ -408,7 +408,7 @@ class TestIntegration:
 
         @qml.qnode(dev, interface="jax")
         def circuit(params):
-            qml.evolve(H, t=t)(params=params)
+            qml.evolve(H)(params=params, t=t)
             return qml.expval(qml.PauliZ(0) @ qml.PauliZ(1))
 
         @qml.qnode(dev, interface="jax")
@@ -453,13 +453,13 @@ class TestIntegration:
 
         @qml.qnode(dev, interface="jax")
         def circuit(params):
-            qml.evolve(H, t=t)(params=params)
+            qml.evolve(H)(params=params, t=t)
             return qml.expval(qml.PauliZ(0) @ qml.PauliZ(1))
 
         @jax.jit
         @qml.qnode(dev, interface="jax")
         def jitted_circuit(params):
-            qml.evolve(H, t=t)(params=params)
+            qml.evolve(H)(params=params, t=t)
             return qml.expval(qml.PauliZ(0) @ qml.PauliZ(1))
 
         params = [1.2, [2.3, 3.4]]
