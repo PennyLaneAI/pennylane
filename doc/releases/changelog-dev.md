@@ -46,6 +46,9 @@
   
   This operation supports parameter broadcasting/batching.
 
+* Add `typing.TensorLike` type.
+  [(#3675)](https://github.com/PennyLaneAI/pennylane/pull/3675)
+
 <h4>Feel the pulse 🔊</h4>
 
 * Parameterized Hamiltonians can now be created with the addition of `ParametrizedHamiltonian`.

@@ -16,6 +16,7 @@ tests/ops/qutrit/test_qutrit_observables.py
 tests/ops/qubit/test_special_unitary.py
 tests/ops/qubit/test_matrix_ops.py
 tests/ops/op_math/test_exp.py
+tests/test_typing.py
 tests/ops/op_math/test_evolution.py
 tests/test_operation.py
 tests/pulse/**
