@@ -14,73 +14,40 @@
 """
 This module contains the qml.evolve function.
 """
-from typing import Union, Tuple
+from functools import singledispatch
+from typing import Tuple, Union
 
+import pennylane as qml
 from pennylane.operation import Operator
 from pennylane.ops import Evolution
 from pennylane.pulse import ParametrizedEvolution, ParametrizedHamiltonian
-import pennylane as qml
 
 
-def evolve(
-    op: Union[Operator, ParametrizedHamiltonian],
-    t: Union[float, Tuple[float]] = None,
-    dt: float = None,
-):
-    r"""Returns a new operator that computes the evolution of ``op``.
+@singledispatch
+def evolve(op, *args, **kwargs):  # pylint: disable=unused-argument
+    """Returns a new operator that computes the evolution of ``op``"""
+
+
+@evolve.register
+def _(op: ParametrizedHamiltonian, t: Union[float, Tuple[float]], dt: float = None):
+    """Returns a new operator that computes the evolution of ``op``.
 
     Args:
         op (Union[.Operator, .ParametrizedHamiltonian]): operator to evolve
-        t (Union[float, Tuple[float]]): Time.
-
-            * If ``op`` is a :class:`.Operator`, ``t`` corresponds to the coefficient multiplying
-                the exponentiated operator: :math:`\exp\{i\bm{O}t)\}`. If ``None``, ``t=1`` is used.
-
-            * If ``op`` is a :class:`.ParametrizedHamiltonian`, ``t`` can be either a float or a
-                tuple of floats. If a float, the operator is evolved from ``0`` to ``t``. If a tuple of
-                floats, each value corresponds to the start and end time of the evolution. Note that such
-                absolute times only have meaning within an instance of ``ParametrizedEvolution`` and
-                will not affect other gates.
-
-        dt (float): Time step used.
-
-            * If ``op`` is a :class:`.Operator`, ``1/dt`` corresponds to the Trotter number, which
-                is the number of time steps used in the Suzuki-Trotter decomposition of the
-                :class:`.Evolution` operator.
-
-            * If ``op`` is a :class:`.ParametrizedHamiltonian`, ``dt`` will be
-                used to convert the initial and final time values into a list of values that the ``odeint``
-                solver will use. The solver might perform intermediate steps if necessary. It is recommended
-                to not provide a value for ``dt``.
+        t (Union[float, Tuple[float]]): If a float, the operator is evolved from ``0`` to ``t``.
+            If a tuple of floats, each value corresponds to the start and end time of the evolution.
+            Note that such absolute times only have meaning within an instance of
+            ``ParametrizedEvolution`` and will not affect other gates.
+        dt (float): Time step. ``dt`` will be used to convert the initial and final time values into
+            a list of values that the ``odeint`` solver will use. The solver might perform
+            intermediate steps if necessary. It is recommended to not provide a value for ``dt``.
 
     Returns:
-        Union[.Evolution, ~pennylane.ops.op_math.evolve.ParametrizedEvolution]: evolution operator
+        ~pennylane.ops.op_math.evolve.ParametrizedEvolution: evolution operator
 
     .. seealso:: :class:`.ParametrizedEvolution`
-    .. seealso:: :class:`.Evolution`
 
     **Examples**
-
-    We can use ``qml.evolve`` to compute the evolution of any PennyLane operator:
-
-    >>> op = qml.evolve(qml.PauliX(0), t=2)
-    >>> op
-    Exp(2j PauliX)
-    >>> op.decomposition()
-    [RX((-4+0j), wires=[0])]
-
-    When we have an exponential of a linear combination of operators, the Suzuki-Trotter algorithm
-    is used to decompose the initial operator into a product of exponentials:
-
-    >>> op = 3 * qml.PauliX(0) + 7 * qml.PauliZ(1) @ qml.PauliX(2)
-    >>> ev = qml.evolve(op, dt=0.5)
-    >>> ev
-    Exp(1j Hamiltonian)
-    >>> ev.decomposition()
-    [PauliRot((-3+0j), X, wires=[0]),
-    PauliRot((-7+0j), ZX, wires=[1, 2]),
-    PauliRot((-3+0j), X, wires=[0]),
-    PauliRot((-7+0j), ZX, wires=[1, 2])]
 
     When evolving a :class:`.ParametrizedHamiltonian` class, then a :class:`.ParametrizedEvolution`
     instance is returned:
@@ -99,19 +66,50 @@ def evolve(
 
     Please check the :class:`.ParametrizedEvolution` class for more information.
     """
-    if isinstance(op, ParametrizedHamiltonian):
-        if t is None:
-            raise ValueError("Time must be specified to evolve a ParametrizedHamiltonian.")
-        t = [0.0, t] if qml.math.ndim(t) == 0 else t
-        if dt is not None:
-            t = qml.math.arange(t[0], t[1], step=dt)
+    t = [0.0, t] if qml.math.ndim(t) == 0 else t
+    if dt is not None:
+        t = qml.math.arange(t[0], t[1], step=dt)
 
-        return ParametrizedEvolution(H=op, t=t)
+    return ParametrizedEvolution(H=op, t=t)
 
-    num_steps = dt if dt is None else int(1 / dt)
 
-    return (
-        Evolution(op, num_steps=num_steps)
-        if t is None
-        else Evolution(op, param=t, num_steps=num_steps)
-    )
+@evolve.register
+def _(op: Operator, coeff: float = 1, num_steps: int = None):
+    r"""Returns a new operator that computes the evolution of ``op``.
+
+    Args:
+        op (Union[.Operator, .ParametrizedHamiltonian]): operator to evolve
+        coeff (float): coefficient multiplying the exponentiated operator: :math:`\exp\{i\bm{O}x)\}`
+        num_steps (int): number of time steps used in the Suzuki-Trotter decomposition of the 
+            :class:`.Evolution` operator. If ``None``, an error will be raised when requesting the
+            decomposition. Defaults to ``None``.
+
+    Returns:
+        .Evolution: evolution operator
+
+    .. seealso:: :class:`.Evolution`
+
+    **Examples**
+
+    We can use ``qml.evolve`` to compute the evolution of any PennyLane operator:
+
+    >>> op = qml.evolve(qml.PauliX(0), coeff=2)
+    >>> op
+    Exp(2j PauliX)
+    >>> op.decomposition()
+    [RX((-4+0j), wires=[0])]
+
+    When we have an exponential of a linear combination of operators, the Suzuki-Trotter algorithm
+    is used to decompose the initial operator into a product of exponentials:
+
+    >>> op = 3 * qml.PauliX(0) + 7 * qml.PauliZ(1) @ qml.PauliX(2)
+    >>> ev = qml.evolve(op, num_steps=2)
+    >>> ev
+    Exp(1j Hamiltonian)
+    >>> ev.decomposition()
+    [PauliRot((-3+0j), X, wires=[0]),
+    PauliRot((-7+0j), ZX, wires=[1, 2]),
+    PauliRot((-3+0j), X, wires=[0]),
+    PauliRot((-7+0j), ZX, wires=[1, 2])]
+    """
+    return Evolution(op, coeff, num_steps)
