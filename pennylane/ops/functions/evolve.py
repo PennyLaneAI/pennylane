@@ -29,7 +29,9 @@ def evolve(op, *args, **kwargs):  # pylint: disable=unused-argument
 
 
 @evolve.register
-def _(op: ParametrizedHamiltonian, t: Union[float, Tuple[float]], dt: float = None):
+def parametrized_evolution(
+    op: ParametrizedHamiltonian, t: Union[float, Tuple[float]], dt: float = None
+):
     """Returns a new operator that computes the evolution of ``op``.
 
     Args:
@@ -75,7 +77,7 @@ def _(op: ParametrizedHamiltonian, t: Union[float, Tuple[float]], dt: float = No
 
 
 @evolve.register
-def _(op: Operator, coeff: float = 1):
+def evolution(op: Operator, coeff: float = 1):
     r"""Returns a new operator that computes the evolution of ``op``.
 
     Args:
