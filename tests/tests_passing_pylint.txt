@@ -16,5 +16,6 @@ tests/ops/functions/test_evolve.py
 tests/ops/qutrit/test_qutrit_observables.py
 tests/ops/qubit/test_state_prep.py
 tests/devices/qubit/**
+tests/test_typing.py
 tests/test_operation.py
 tests/pulse/**
