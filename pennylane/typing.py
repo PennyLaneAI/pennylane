@@ -25,9 +25,11 @@ _TensorLike = Union[int, float, bool, complex, bytes, str, list, tuple, np.ndarr
 
 
 class TensorLikeMETA(type):
-    """TensorLike metaclass."""
+    """TensorLike metaclass that defines dunder methods for the ``isinstance`` and ``issubclass``
+    checks."""
 
     def __instancecheck__(cls, other):
+        """Dunder method used to check if an object is a `TensorLike` instance."""
         return (
             isinstance(other, _TensorLike.__args__)  # TODO: Remove __args__ when python>=3.10
             or _is_jax(other)
@@ -36,6 +38,7 @@ class TensorLikeMETA(type):
         )
 
     def __subclasscheck__(cls, other):
+        """Dunder method that checks if a class is a subclass of ``TensorLike``."""
         return (
             issubclass(other, _TensorLike.__args__)  # TODO: Remove __args__ when python>=3.10
             or _is_jax(other, subclass=True)
