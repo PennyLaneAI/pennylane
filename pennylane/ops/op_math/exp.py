@@ -321,8 +321,8 @@ class Exp(ScalarSymbolicOp, Operation):
         combination of ``coeffs`` and ``ops``.
 
         Args:
-            coeffs (List[complex]): list of coefficients of the linear combination
             ops (List[Operator]): list of operators of the linear combination
+            coeffs (List[complex]): list of coefficients of the linear combination
 
         Raises:
             ValueError: if the Trotter number (``num_steps``) is not defined
