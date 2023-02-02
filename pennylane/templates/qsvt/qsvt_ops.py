@@ -18,6 +18,7 @@ import numpy as np
 from scipy.linalg import sqrtm, norm
 
 from pennylane.operation import Operation, AnyWires
+from pennylane import PauliX, PhaseShift, ctrl
 
 
 class BlockEncoding(Operation):
@@ -43,26 +44,64 @@ class BlockEncoding(Operation):
         return u
 
 
-class PiControlledPhase(Operation):
+class PCPhase(Operation):
     """A Pi-Controlled Phase gate"""
     num_wires = AnyWires
 
-    def __init__(self, phi, size, wires, do_queue=True, id=None):
+    def __init__(self, phi, dim, wires, do_queue=True, id=None):
         """Pi-Controlled phase gate.
 
         Args:
             phi (float): The phase we wish to apply.
-            size (Tuple[int, int]): The tuple (d, t) where
-                d represents the first d entries to apply phase along, and
-                t represents the total matrix size.
+            dim (int): Represents the first dim entries to apply phase along
         """
         super().__init__(phi, wires=wires, do_queue=do_queue, id=id)
-        self.hyperparameters["size"] = size
+        self.hyperparameters["dimension"] = (dim, 2**len(wires))
 
     @staticmethod
     def compute_matrix(*params, **hyperparams):
         """Get the matrix representation of Pi-controlled phase unitary."""
         phi = params[0]
-        d, t = hyperparams["size"]
+        d, t = hyperparams["dimension"]
         diag_vals = [np.exp(1j * phi) if index < d else 1 for index in range(t)]
         return np.diag(diag_vals)
+
+    @staticmethod
+    def compute_decomposition(*params, wires=None, **hyperparameters):
+        r"""Representation of the operator as a product of other operators (static method).
+
+        .. math:: O = O_1 O_2 \dots O_n.
+
+        .. note::
+
+            Operations making up the decomposition should be queued within the
+            ``compute_decomposition`` method.
+
+        .. seealso:: :meth:`~.Operator.decomposition`.
+
+        Args:
+            params (list): trainable parameters of the operator, as stored in the ``parameters`` attribute
+            wires (Iterable[Any], Wires): wires that the operator acts on
+            hyperparams (dict): non-trainable hyperparameters of the operator, as stored in the ``hyperparameters`` attribute
+
+        Returns:
+            list[Operator]: decomposition of the operator
+        """
+        phi = params[0]
+        k, n = hyperparameters["dimension"]
+
+        def _get_base_ops(theta, wire):
+            return PauliX(wire) @ PhaseShift(theta, wire) @ PauliX(wire), PhaseShift(theta, wire)
+
+        def _get_op_from_binary_rep(binary_rep, theta, wires):
+            if len(binary_rep) == 1:
+                op = _get_base_ops(theta, wire=wires[0])[int(binary_rep)]
+            else:
+                base_op = _get_base_ops(theta, wire=wires[-1])[int(binary_rep[-1])]
+                op = ctrl(base_op, control=wires[:-1], control_values=[int(i) for i in binary_rep[:-1]])
+            return op
+
+        n_log2 = int(np.log2(n))
+        binary_reps = [bin(_k)[2:].zfill(n_log2) for _k in range(k)]
+
+        return [_get_op_from_binary_rep(br, phi, wires=wires) for br in binary_reps]

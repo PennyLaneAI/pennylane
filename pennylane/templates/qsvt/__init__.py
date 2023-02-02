@@ -15,8 +15,8 @@
 A module for performing QSVT with PennyLane.
 """
 import numpy as np
-from pennylane.ops.op_math import adjoint
-from .qsvt_ops import BlockEncoding, PiControlledPhase
+from pennylane import adjoint
+from .qsvt_ops import BlockEncoding, PCPhase
 
 
 def _qsvt_protocol(A, phi_vect, wires):
@@ -28,19 +28,19 @@ def _qsvt_protocol(A, phi_vect, wires):
     lst_operations = []
 
     if d % 2 == 0:
-        for i in range(d//2):
-            lst_operations.append(PiControlledPhase(phi_vect[2*i], (c, u_size), wires=wires))
+        for i in range(1, d//2 + 1):
+            lst_operations.append(PCPhase(phi_vect[2*i - 2], c, wires=wires))
             lst_operations.append(adjoint(BlockEncoding(A, wires=wires)))
-            lst_operations.append(PiControlledPhase(phi_vect[2*i + 1], (r, u_size), wires=wires))
+            lst_operations.append(PCPhase(phi_vect[2*i - 1], r, wires=wires))
             lst_operations.append(BlockEncoding(A, wires=wires))
     else:
-        lst_operations.append(PiControlledPhase(phi_vect[0], (r, u_size), wires=wires))
+        lst_operations.append(PCPhase(phi_vect[0], r, wires=wires))
         lst_operations.append(BlockEncoding(A, wires=wires))
 
-        for i in range(d-1 // 2):
-            lst_operations.append(PiControlledPhase(phi_vect[2*i + 1], (c, u_size), wires=wires))
+        for i in range(1, (d-1) // 2 + 1):
+            lst_operations.append(PCPhase(phi_vect[2*i - 1], c, wires=wires))
             lst_operations.append(adjoint(BlockEncoding(A, wires=wires)))
-            lst_operations.append(PiControlledPhase(phi_vect[2*i + 2], (r, u_size), wires=wires))
+            lst_operations.append(PCPhase(phi_vect[2*i], r, wires=wires))
             lst_operations.append(BlockEncoding(A, wires=wires))
 
     return lst_operations
