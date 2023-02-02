@@ -22,13 +22,16 @@ try:
 except ImportError:
     has_jax = False
 
+
 # pylint: disable=unused-argument
 def constant(scalar, time):
-    """Parametrized function that is constant in time and returns the given ``scalar``.
+    """Creates a callable for defining a :class:`~.ParametrizedHamiltonian`. Returns the given ``scalar``,
+    for use in defining a :class:`~.ParametrizedHamiltonian` with a trainable coefficient.
 
     Args:
         scalar (float): the scalar to be returned
-        time (float): Time. This argument is not used.
+        time (float): Time. This argument is not used, but is required to match the call
+            signature of :class:`~.ParametrizedHamiltonian`.
 
     This function is mainly used to build a :class:`~.ParametrizedHamiltonian` that can be differentiated
     with respect to its time-independent term. It is an alias for `lambda scalar, t: scalar`.
@@ -68,12 +71,8 @@ def constant(scalar, time):
 
 
 def rect(x: Union[float, Callable], windows: List[Tuple[float]] = None):
-    """Multiplies ``x`` by a rectangular function, returning a callable ``f(p, t)`` that evaluates
-    the given function/scalar ``x`` inside the time windows defined in ``windows``.
-
-    .. note::
-
-        If ``x`` is a function, it must accept two arguments: the trainable parameters and time.
+    """Creates a callable for defining a :class:`~.ParametrizedHamiltonian`. Takes a scalar or a scalar-valued function,
+    x, and applies a rectangular window to it, such that the returned function is x inside the window and 0 outside it.
 
     Args:
         x (Union[float, Callable]): a scalar or a function that accepts two arguments: the trainable
@@ -81,25 +80,46 @@ def rect(x: Union[float, Callable], windows: List[Tuple[float]] = None):
         windows (Tuple[float, Tuple[float]]): List of tuples containing time windows where x is
             evaluated. If ``None`` it is always evaluated. Defaults to ``None``.
 
+    Returns:
+        A callable ``f(p, t)`` which evaluates the given function/scalar ``x`` inside the time windows defined in
+        ``windows``, and otherwise returns 0.
+
+    .. note::
+        If ``x`` is a function, it must accept two arguments: the trainable parameters and time.
+
     **Example**
 
-    The ``rect`` function can be used to create a :class:`.ParametrizedHamiltonian`
+    Here we use :func:`~.rect` to create a parametrized coefficient that has a value of ``0`` outside the time interval
+    ``t=(1, 7)``, and is defined by ``jnp.polyval(p, t)`` within the interval:
+
+    .. figure:: ../../doc/_static/pulse/rect_example.png
+            :align: center
+            :width: 60%
+            :target: javascript:void(0);
+
+    This can be used to create a :class:`~.ParametrizedHamiltonian` in the following way:
 
     .. code-block:: python
 
-        def f1(p, t):
-            return jnp.polyval(p, t)
+        >>> H = qml.pulse.rect(jnp.polyval, windows=[(1, 7)]) * qml.PauliX(0)
+
+        # inside the window
+        >>> H([3], t=2)
+        2.7278921604156494*(PauliX(wires=[0]))
+
+        # outside the window
+        >>> H([3], t=0.5 )
+        0.0*(PauliX(wires=[0]))
+
+    It is also possible to define multiple windows for the same function:
+
+    .. code-block:: python
+
         windows = [(1, 7), (9, 14)]
-        H = qml.pulse.rect(f1, windows) * qml.PauliX(0)
+        H = qml.pulse.rect(jnp.polyval, windows) * qml.PauliX(0)
 
     When calling the :class:`.ParametrizedHamiltonian`, ``rect`` will evaluate the given function only
     inside the time windows
-
-    >>> params = [jnp.ones(4)]
-    >>> H(params, t=8)  # t is outside the time windows
-    0.0*(PauliX(wires=[0]))
-    >>> H(params, t=5)  # t is inside the time windows
-    156.0*(PauliX(wires=[0]))
 
     One can also pass a scalar to the ``rect`` function
 
@@ -139,7 +159,8 @@ def rect(x: Union[float, Callable], windows: List[Tuple[float]] = None):
 
 
 def pwc(timespan):
-    """Creates a function that is piecewise-constant in time.
+    """Creates a callable for defining a :class:`~.ParametrizedHamiltonian`. The returned callable is
+    piecewise-constant in time, and takes arguments ``(p, t)``, where p defines the bin values for the function.
 
     Args:
             timespan(Union[float, tuple(float, float)]: The timespan defining the region where the function is non-zero.
@@ -147,29 +168,47 @@ def pwc(timespan):
 
     Returns:
             func: a function that takes two arguments, an array of trainable parameters and a `float` defining the
-            time at which the function is evaluated. When called, the function uses the array of parameters to
-            create evenly sized bins within the ``timespan``, with each bin value set by an element of the array.
-            It then selects the value of the parameter array corresponding to the specified time, based on the
-            assigned binning.
+            time at which the function is evaluated.
+
+    This function can be used to create a parametrized coefficient function that is piecewise constant
+    within the interval ``t``, and 0 outside it. When creating the callable, only the timespan is passed. The number
+    of bins and values for the parameters are set when ``params`` is passed to the callable. Each bin value is set by
+    an element of the ``params`` array. The variable ``t`` is used to select the value of the parameter array
+    corresponding to the specified time, based on the assigned binning.
+
+    .. figure:: ../../doc/_static/pulse/pwc_example.png
+        :align: center
+        :width: 60%
+        :target: javascript:void(0);
 
     **Example**
 
-    >>> timespan = (1, 3)
+    >>> timespan = (2, 7)
     >>> f1 = qml.pulse.pwc(timespan)
 
     The resulting function ``f1`` has the call signature ``f1(params, t)``. If passed an array of parameters and
     a time, it will assign the array as the constants in the piecewise function, and select the constant corresponding
     to the specified time, based on the time interval defined by ``timespan``.
 
-    >>> params = [10, 11, 12, 13, 14]
-    >>> f1(params, 2)
-    Array(12, dtype=int32)
+    .. code-block:: python
 
-    >>> f1(params, 2.1)  # same bin
-    Array(12, dtype=int32)
+        >>> H = f1 * qml.PauliX(0)
 
-    >>> f1(params, 2.5)  # next bin
-    Array(13, dtype=int32)
+        # passing pwc((2, 7)) an array evenly distributes the array values in the interval t=2 to t=7
+        >>> H(params=[[11, 12, 13, 14, 15]], t=2.3)
+        11.0*(PauliX(wires=[0]))
+
+        # different time, same bin, same result
+        >>> H(params=[[1, 2, 3, 4, 5]], t=2.5)
+        11.0*(PauliX(wires=[0]))
+
+        # next bin
+        >>> H(params=[[1, 2, 3, 4, 5]], t=3.1)
+        12.0*(PauliX(wires=[0]))
+
+        # outside the window - the function is assigned non-zero values
+        >>> H(params=[[1, 2, 3, 4, 5]], t=8)
+        0.0*(PauliX(wires=[0]))
     """
     if not has_jax:
         raise ImportError(
@@ -197,7 +236,8 @@ def pwc(timespan):
 
 def pwc_from_function(timespan, num_bins):
     """
-    Decorator to turn a smooth function into a piecewise constant function.
+    Creates a callable for defining a :class:`~.ParametrizedHamiltonian`. Decorates a smooth function, creating
+    a piecewise constant function that approximates it.
 
     Args:
             timespan(Union[float, tuple(float)]): The timespan defining the region where the function is non-zero.
