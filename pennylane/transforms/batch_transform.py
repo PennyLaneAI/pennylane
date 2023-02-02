@@ -421,15 +421,16 @@ class batch_transform:
         return lambda tape: self.construct(tape, *targs, **tkwargs)
 
 
-def map_batch_transform(transform, tapes):
+def map_batch_transform(transform, tapes, targs=None):
     """Map a batch transform over multiple tapes.
 
     Args:
         transform (.batch_transform): the batch transform
             to be mapped
-        tapes (Sequence[QuantumTape]): The sequence of tapes the batch
+        tapes (Sequence[QuantumScript]): The sequence of tapes the batch
             transform should be applied to. Each tape in the sequence
             is transformed by the batch transform.
+        targs: Arguments to pass to the batch transform
 
     **Example**
 
@@ -468,7 +469,7 @@ def map_batch_transform(transform, tapes):
         # Preprocess the tapes by applying batch transforms
         # to each tape, and storing corresponding tapes
         # for execution, processing functions, and list of tape lengths.
-        new_tapes, fn = transform(t)
+        new_tapes, fn = transform(t) if targs is None else transform(t, *targs)
         execution_tapes.extend(new_tapes)
         batch_fns.append(fn)
         tape_counts.append(len(new_tapes))
