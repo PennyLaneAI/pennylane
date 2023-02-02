@@ -25,8 +25,10 @@ except ImportError:
 
 # pylint: disable=unused-argument
 def constant(scalar, time):
-    """Creates a callable for defining a :class:`~.ParametrizedHamiltonian`. Returns the given ``scalar``,
-    for use in defining a :class:`~.ParametrizedHamiltonian` with a trainable coefficient.
+    """Returns the given ``scalar``, for use in defining a :class:`~.ParametrizedHamiltonian` with a
+    trainable coefficient.
+
+    Creates a callable for defining a :class:`~.ParametrizedHamiltonian`.
 
     Args:
         scalar (float): the scalar to be returned
@@ -71,8 +73,10 @@ def constant(scalar, time):
 
 
 def rect(x: Union[float, Callable], windows: List[Tuple[float]] = None):
-    """Creates a callable for defining a :class:`~.ParametrizedHamiltonian`. Takes a scalar or a scalar-valued function,
-    x, and applies a rectangular window to it, such that the returned function is x inside the window and 0 outside it.
+    """Takes a scalar or a scalar-valued function, x, and applies a rectangular window to it, such that the
+    returned function is x inside the window and 0 outside it.
+
+    Creates a callable for defining a :class:`~.ParametrizedHamiltonian`.
 
     Args:
         x (Union[float, Callable]): a scalar or a function that accepts two arguments: the trainable
@@ -159,8 +163,10 @@ def rect(x: Union[float, Callable], windows: List[Tuple[float]] = None):
 
 
 def pwc(timespan):
-    """Creates a callable for defining a :class:`~.ParametrizedHamiltonian`. The returned callable is
-    piecewise-constant in time, and takes arguments ``(p, t)``, where p defines the bin values for the function.
+    """Takes a timespan and returns callable for creating a function that is piecewise-constant in time. The returned
+    function takes arguments ``(p, t)``, where ``p`` is an array that defines the bin values for the function.
+
+    Creates a callable for defining a :class:`~.ParametrizedHamiltonian`.
 
     Args:
             timespan(Union[float, tuple(float, float)]: The timespan defining the region where the function is non-zero.
@@ -236,8 +242,9 @@ def pwc(timespan):
 
 def pwc_from_function(timespan, num_bins):
     """
-    Creates a callable for defining a :class:`~.ParametrizedHamiltonian`. Decorates a smooth function, creating
-    a piecewise constant function that approximates it.
+    Decorates a smooth function, creating a piecewise constant function that approximates it.
+
+    Creates a callable for defining a :class:`~.ParametrizedHamiltonian`.
 
     Args:
             timespan(Union[float, tuple(float)]): The timespan defining the region where the function is non-zero.
