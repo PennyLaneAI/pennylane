@@ -57,7 +57,7 @@ class Snapshot(Operation):
 
     .. seealso:: :func:`~.snapshots`
     """
-    num_wires = AnyWires
+    num_wires = AllWires
     num_params = 0
     grad_method = None
 
