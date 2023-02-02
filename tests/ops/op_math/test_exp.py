@@ -442,6 +442,11 @@ class TestDecomposition:
             (qml.PauliX(0) @ qml.PauliX(1), qml.IsingXX),
             (qml.prod(qml.PauliY("a"), qml.PauliY("b")), qml.IsingYY),
             (qml.PauliZ(5) @ qml.PauliZ(6), qml.IsingZZ),
+            (qml.PauliY(0) @ qml.PauliY(1) + qml.PauliX(0) @ qml.PauliX(1), qml.IsingXY),
+            (
+                qml.prod(qml.PauliX(0), qml.PauliX(1)) + qml.prod(qml.PauliY(0), qml.PauliY(1)),
+                qml.IsingXY,
+            ),
         ),
     )
     def test_decomposition_into_ising_gates(self, base, ising):

@@ -15,6 +15,7 @@
 This submodule defines the symbolic operation that stands for an exponential of an operator.
 """
 from copy import copy
+from typing import List
 from warnings import warn
 
 import numpy as np
@@ -281,7 +282,17 @@ class Exp(ScalarSymbolicOp, Operation):
             return self._pauli_decomposition(coeff, base)
 
         if isinstance(base, (Hamiltonian, Sum)):
-            return self._trotter_decomposition(coeff, base)
+            coeffs, ops = (
+                base.terms() if isinstance(base, Hamiltonian) else ([1] * len(base), base.operands)
+            )
+            coeffs = [c * coeff for c in coeffs]
+            if len(ops) == 2 and ops[0].wires == ops[1].wires and coeffs[0] == coeffs[1]:
+                # Check if the exponential can be decomposed into an IsingXY gate
+                word1 = qml.pauli.pauli_word_to_string(ops[0])
+                word2 = qml.pauli.pauli_word_to_string(ops[1])
+                if word1 in {"XX", "YY"} and word2 in ({"XX", "YY"} - {word1}):
+                    return [qml.IsingXY(phi=2j * coeffs[0], wires=ops[0].wires)]
+            return self._trotter_decomposition(coeffs, ops)
 
         raise DecompositionUndefinedError
 
@@ -296,8 +307,8 @@ class Exp(ScalarSymbolicOp, Operation):
         Returns:
             _type_: _description_
         """
+        coeff = 2j * coeff  # need to cancel the coefficients added by PauliRot and Ising gates
         pauli_word = qml.pauli.pauli_word_to_string(base)
-        coeff = 2j * coeff  # need to cancel the coefficients added by PauliRot
         if pauli_word == "I" * base.num_wires:
             return []
         if pauli_word in ("XX", "YY", "ZZ"):
@@ -306,21 +317,32 @@ class Exp(ScalarSymbolicOp, Operation):
             return [getattr(qml, f"R{pauli_word}")(phi=coeff, wires=base.wires)]
         return [qml.PauliRot(theta=coeff, pauli_word=pauli_word, wires=base.wires)]
 
-    def _trotter_decomposition(self, coeff: complex, base: Operator):
+    def _trotter_decomposition(self, coeffs: List[complex], ops: List[Operator]):
+        """Uses the Suzuki-Trotter approximation to decompose the exponential of the linear
+        combination of ``coeffs`` and ``ops``.
+
+        Args:
+            coeffs (List[complex]): list of coefficients of the linear combination
+            ops (List[Operator]): list of operators of the linear combination
+
+        Raises:
+            ValueError: if the Trotter number (``num_steps``) is not defined
+            DecompositionUndefinedError: if the linear combination contains operators that are not
+                Pauli words
+
+        Returns:
+            List[Operator]: a list of operators containing the decomposition
+        """
         if self.num_steps is None:
             raise ValueError(
                 "The number of steps is required to calculate the Suzuki-Trotter "
                 "decomposition of the exponential operator. Please specify a value "
                 "for ``num_steps`` when instantiating the operator."
             )
-        coeff /= self.num_steps  # divide by trotter number
-        coeffs, ops = (
-            base.terms() if isinstance(base, Hamiltonian) else ([1] * len(base), base.operands)
-        )
-        op_list = []
 
+        op_list = []
         for c, op in zip(coeffs, ops):
-            c *= coeff
+            c /= self.num_steps  # divide by trotter number
             if isinstance(op, SProd):
                 c *= op.scalar
                 op = op.base
