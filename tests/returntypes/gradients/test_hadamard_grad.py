@@ -507,9 +507,10 @@ class TestHadamardGrad:
 class TestHadamardGradEdgeCases:
     """Test the Hadamard gradient transform and edge cases such as non diff parameters, auxiliary wires, etc..."""
 
-    device_wires = [[0, 1, "aux"], [0, 1, 2]]
+    device_wires = [qml.wires.Wires([0, 1, "aux"])]
+    device_wires_no_aux = [qml.wires.Wires([0, 1, 2])]
 
-    working_wires = [None, qml.wires.Wires(2)]
+    working_wires = [None, qml.wires.Wires("aux")]
     already_used_wires = [qml.wires.Wires(0), qml.wires.Wires(1)]
 
     @pytest.mark.parametrize("aux_wire", working_wires)
@@ -548,8 +549,27 @@ class TestHadamardGradEdgeCases:
 
         tape = qml.tape.QuantumScript.from_queue(q)
 
+        with pytest.raises(qml.QuantumFunctionError, match="The auxiliary wire is already."):
+            qml.gradients.hadamard_grad(tape, aux_wire=aux_wire, device_wires=dev.wires)
+
+    @pytest.mark.parametrize("device_wires", device_wires_no_aux)
+    def test_aux_wire_already_used_wires(self, device_wires):
+        """Test if the aux wire is not on the device an error is raised."""
+        aux_wire = qml.wires.Wires("aux")
+        dev = qml.device("default.qubit", wires=device_wires)
+        x = 0.543
+        y = -0.654
+
+        with qml.queuing.AnnotatedQueue() as q:
+            qml.RX(x, wires=[0])
+            qml.RY(y, wires=[1])
+            qml.CNOT(wires=[0, 1])
+            qml.expval(qml.PauliZ(0) @ qml.PauliX(1))
+
+        tape = qml.tape.QuantumScript.from_queue(q)
         with pytest.raises(
-            qml.QuantumFunctionError, match="The auxiliary wire is already used in the tape"
+            qml.QuantumFunctionError,
+            match="The requested aux_wire does not exist on the used device.",
         ):
             qml.gradients.hadamard_grad(tape, aux_wire=aux_wire, device_wires=dev.wires)
 

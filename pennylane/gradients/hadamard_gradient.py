@@ -45,11 +45,108 @@ def _hadamard_grad(
         argnum (int or list[int] or None): Trainable tape parameter indices to differentiate
             with respect to. If not provided, the derivatives with respect to all
             trainable parameters are returned.
+        aux_wire (pennylane.wires.Wires): Auxiliary wire to be used for the Hadamard tests. If ``None`` (the default),
+            a suitable wire is inferred from the (number of) used wires in the original circuit and ``device_wires``.
+        device_wires (pennylane.wires.Wires): Wires of the device that is going to be used for the
+            metric tensor. Facilitates finding a default for ``aux_wire`` if ``aux_wire``
+            is ``None``.
 
     Returns:
-        function or tuple[list[QuantumTape], function]
+        function or tuple[list[QuantumTape], function]:
+
+        - If the input is a QNode, an object representing the Jacobian (function) of the QNode
+          that can be executed to obtain the Jacobian matrix.
+          The type of the matrix returned is either a tensor, a tuple or a
+          nested tuple depending on the nesting structure of the original QNode output.
+
+        - If the input is a tape, a tuple containing a
+          list of generated tapes, together with a post-processing
+          function to be applied to the results of the evaluated tapes
+          in order to obtain the Jacobian matrix.
+
+
+    For a variational evolution :math:`U(\mathbf{p}) \vert 0\rangle` with
+    :math:`N` parameters :math:`\mathbf{p}`,
+    consider the expectation value of an observable :math:`O`:
+
+    .. math::
+
+        f(\mathbf{p})  = \langle \hat{O} \rangle(\mathbf{p}) = \langle 0 \vert
+        U(\mathbf{p})^\dagger \hat{O} U(\mathbf{p}) \vert 0\rangle.
+
+
+    The gradient of this expectation value can be calculated via the hadamard test gradient:
+
+    .. math::
+
+        \frac{\partial f}{\partial \mathbf{p}} = -2 \Im[\bra{0} \hat{O} G \ket{0}] = i \left(\bra{0} \hat{O} G \ket{
+        0} - \bra{0} G\hat{O} \ket{0}\right) = -2 \bra{+}\bra{0} ctrl-G^{\dagger} (\hat{Y} \otimes \hat{O}) ctrl-G
+        \ket{+}\ket{0}
+
+    Here, :math:`G` is the generator of the unitary U.
 
     **Example**
+
+    This gradient transform can be applied directly to :class:`QNode <pennylane.QNode>` objects:
+    >>> dev = qml.device("default.qubit", wires=2)
+    >>> @qml.qnode(dev)
+    ... def circuit(params):
+    ...     qml.RX(params[0], wires=0)
+    ...     qml.RY(params[1], wires=0)
+    ...     qml.RX(params[2], wires=0)
+    ...     return qml.expval(qml.PauliZ(0))
+    >>> params = np.array([0.1, 0.2, 0.3], requires_grad=True)
+    >>> qml.gradients.hadamard_grad(circuit)(params)
+    (tensor([-0.3875172], requires_grad=True),
+     tensor([-0.18884787], requires_grad=True),
+     tensor([-0.38355704], requires_grad=True))
+
+    This quantum gradient transform can also be applied to low-level
+    :class:`~.QuantumTape` objects. This will result in no implicit quantum
+    device evaluation. Instead, the processed tapes, and post-processing
+    function, which together define the gradient are directly returned:
+
+    >>> with qml.tape.QuantumTape() as tape:
+    ...     qml.RX(params[0], wires=0)
+    ...     qml.RY(params[1], wires=0)
+    ...     qml.RX(params[2], wires=0)
+    ...     qml.expval(qml.PauliZ(0))
+    >>> gradient_tapes, fn = qml.gradients.hadamard_grad(tape)
+    >>> gradient_tapes
+    [<QuantumTape: wires=[0, 1], params=3>,
+     <QuantumTape: wires=[0, 1], params=3>,
+     <QuantumTape: wires=[0, 1], params=3>]
+
+    This can be useful if the underlying circuits representing the gradient
+    computation need to be analyzed.
+
+    The output tapes can then be evaluated and post-processed to retrieve
+    the gradient:
+
+    >>> dev = qml.device("default.qubit", wires=2)
+    >>> fn(qml.execute(gradient_tapes, dev, None))
+    (array(-0.3875172), array(-0.18884787), array(-0.38355704))
+
+    .. note::
+
+        ``hadamard_grad`` will decompose the operations that are not in the list of supported operation.
+
+        - ``pennylane.RX``
+        - ``pennylane.RY``
+        - ``pennylane.RZ``
+        - ``pennylane.Rot``
+        - ``pennylane.PhaseShift``
+        - ``pennylane.U1``
+        - ``pennylane.CRX``
+        - ``pennylane.CRY``
+        - ``pennylane.CRZ``
+        - ``pennylane.IsingXX``
+        - ``pennylane.IsingYY``
+        - ``pennylane.IsingZZ``
+
+        The expansion will fail if a suitable decomposition in terms of supported operation is not found,
+        an error is then raised. The number of trainable parameters can potentially increase due to the
+        decomposition.
 
     """
     if any(isinstance(m, VarianceMP) for m in tape.measurements):
@@ -81,8 +178,10 @@ def _hadamard_grad(
     # Get default for aux_wire
     if aux_wire is None:
         aux_wire = _get_aux_wire(aux_wire, tape, device_wires)
-    elif aux_wire.labels[0] in tape.wires:
-        raise qml.QuantumFunctionError("The auxiliary wire is already used in the tape.")
+    elif aux_wire[0] in tape.wires:
+        raise qml.QuantumFunctionError("The auxiliary wire is already used.")
+    elif aux_wire[0] not in device_wires:
+        raise qml.QuantumFunctionError("The requested aux_wire does not exist on the used device.")
 
     g_tapes, processing_fn = _expval_hadamard_grad(tape, argnum, aux_wire)
 
@@ -90,8 +189,8 @@ def _hadamard_grad(
 
 
 def _expval_hadamard_grad(tape, argnum, aux_wire):
-    r"""Compute the Hadamard test gradient of a tape that returns an expectation value with respect to a
-    given set of all trainable gate parameters.
+    r"""Compute the Hadamard test gradient of a tape that returns an expectation value (probabilities are expectations
+    values) with respect to a given set of all trainable gate parameters.
     The auxiliary wire is the wire which is used to apply the Hadamard gates and controlled gates.
     """
     # pylint: disable=too-many-statements
