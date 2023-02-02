@@ -64,7 +64,6 @@ def _hadamard_grad(
           function to be applied to the results of the evaluated tapes
           in order to obtain the Jacobian matrix.
 
-
     For a variational evolution :math:`U(\mathbf{p}) \vert 0\rangle` with
     :math:`N` parameters :math:`\mathbf{p}`,
     consider the expectation value of an observable :math:`O`:
@@ -88,6 +87,7 @@ def _hadamard_grad(
     **Example**
 
     This gradient transform can be applied directly to :class:`QNode <pennylane.QNode>` objects:
+
     >>> dev = qml.device("default.qubit", wires=2)
     >>> @qml.qnode(dev)
     ... def circuit(params):
