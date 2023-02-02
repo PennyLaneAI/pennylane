@@ -205,7 +205,7 @@ of bins and values for the parameters are set when ``params`` is passed to the c
     H(params=[[1, 2, 3, 4, 5]], t=3.1)
     >>> 2.0*(PauliX(wires=[0]))
 
-    # outside the window where the function is assigned non-zero values
+    # outside the window - the function is assigned non-zero values
     H(params=[[1, 2, 3, 4, 5]], t=8)
     >>> 0.0*(PauliX(wires=[0]))
 
