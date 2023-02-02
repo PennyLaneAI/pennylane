@@ -150,7 +150,7 @@ def _hadamard_grad(
     """
     if any(isinstance(m, VarianceMP) for m in tape.measurements):
         raise ValueError(
-            "Computing the gradient of variance with hadamard test gradient is not implemented yet."
+            "Computing the gradient of variances with the Hadamard test gradient is not implemented."
         )
     if any(isinstance(m, (StateMP, VnEntropyMP, MutualInfoMP)) for m in tape.measurements):
         raise ValueError(
@@ -180,7 +180,9 @@ def _hadamard_grad(
     elif aux_wire[0] in tape.wires:
         raise qml.QuantumFunctionError("The auxiliary wire is already used.")
     elif aux_wire[0] not in device_wires:
-        raise qml.QuantumFunctionError("The requested aux_wire does not exist on the used device.")
+        raise qml.QuantumFunctionError(
+            "The requested auxiliary wire does not exist on the used device."
+        )
 
     g_tapes, processing_fn = _expval_hadamard_grad(tape, argnum, aux_wire)
 
@@ -388,7 +390,7 @@ def _get_generators(trainable_op):
             )
         ]
         coeffs = [-0.5]
-    # For rotation it possible to only use PauliZ by applying some other rotations in the main function
+    # For rotation it is possible to only use PauliZ by applying some other rotations in the main function
     elif isinstance(trainable_op, qml.Rot):
         generators = [qml.PauliZ(wires=trainable_op.wires)]
         coeffs = [-0.5]

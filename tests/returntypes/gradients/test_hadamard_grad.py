@@ -569,7 +569,7 @@ class TestHadamardGradEdgeCases:
         tape = qml.tape.QuantumScript.from_queue(q)
         with pytest.raises(
             qml.QuantumFunctionError,
-            match="The requested aux_wire does not exist on the used device.",
+            match="The requested auxiliary wire does not exist on the used device.",
         ):
             qml.gradients.hadamard_grad(tape, aux_wire=aux_wire, device_wires=dev.wires)
 
@@ -637,8 +637,7 @@ class TestHadamardGradEdgeCases:
         tape = qml.tape.QuantumScript.from_queue(q)
         with pytest.raises(
             ValueError,
-            match=r"Computing the gradient of variance with hadamard test gradient is not "
-            r"implemented yet",
+            match=r"Computing the gradient of variances with the Hadamard test gradient is not implemented.",
         ):
             qml.gradients.hadamard_grad(tape)
 
