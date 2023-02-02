@@ -283,7 +283,7 @@ class Exp(ScalarSymbolicOp, Operation):
         raise DecompositionUndefinedError
 
     def _pauli_decomposition(self, coeff: complex, base: Operator):
-        """Decomposes the exponential of a Pauli word into Pauli rotations or Ising gates.
+        """Decomposes the exponential of a Pauli word into a PauliRot, Ising or rotation gate.
 
         Args:
             base (Operator): exponentiated operator
