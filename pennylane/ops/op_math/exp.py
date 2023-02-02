@@ -263,7 +263,7 @@ class Exp(ScalarSymbolicOp, Operation):
         """
 
         if qml.pauli.is_pauli_word(self.base):
-            return self._pauli_decomposition(self.coeff, self.base)
+            return self._pauli_decomposition(self.base, self.coeff)
 
         if isinstance(self.base, (Hamiltonian, Sum)):
             coeffs = (
@@ -278,11 +278,11 @@ class Exp(ScalarSymbolicOp, Operation):
                 word2 = qml.pauli.pauli_word_to_string(ops[1])
                 if word1 in {"XX", "YY"} and word2 in ({"XX", "YY"} - {word1}):
                     return [qml.IsingXY(phi=-4j * coeffs[0], wires=ops[0].wires)]
-            return self._trotter_decomposition(coeffs, ops)
+            return self._trotter_decomposition(ops, coeffs)
 
         raise DecompositionUndefinedError
 
-    def _pauli_decomposition(self, coeff: complex, base: Operator):
+    def _pauli_decomposition(self, base: Operator, coeff: complex):
         """Decomposes the exponential of a Pauli word into a PauliRot, Ising or rotation gate.
 
         Args:
@@ -293,7 +293,7 @@ class Exp(ScalarSymbolicOp, Operation):
             _type_: _description_
         """
         if isinstance(base, SProd):
-            return self._pauli_decomposition(base.scalar * coeff, base.base)
+            return self._pauli_decomposition(base.base, base.scalar * coeff)
 
         if isinstance(base, Tensor) and len(base.wires) != len(base.obs):
             raise DecompositionUndefinedError(
@@ -316,7 +316,7 @@ class Exp(ScalarSymbolicOp, Operation):
             return [getattr(qml, f"R{pauli_word}")(phi=coeff, wires=base.wires)]
         return [qml.PauliRot(theta=coeff, pauli_word=pauli_word, wires=base.wires)]
 
-    def _trotter_decomposition(self, coeffs: List[complex], ops: List[Operator]):
+    def _trotter_decomposition(self, ops: List[Operator], coeffs: List[complex]):
         """Uses the Suzuki-Trotter approximation to decompose the exponential of the linear
         combination of ``coeffs`` and ``ops``.
 
@@ -349,7 +349,7 @@ class Exp(ScalarSymbolicOp, Operation):
                 raise DecompositionUndefinedError(
                     "The decomposition of the exponential of a non-pauli word is not defined."
                 )
-            op_list.extend(self._pauli_decomposition(c, op))
+            op_list.extend(self._pauli_decomposition(op, c))
 
         return op_list * self.num_steps  # apply operators ``num_steps`` times
 
