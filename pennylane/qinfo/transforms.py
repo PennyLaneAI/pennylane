@@ -466,7 +466,9 @@ def classical_fisher(qnode, argnums=0):
     new_qnode = _make_probs(qnode)
 
     def wrapper(*args, **kwargs):
-        if qnode.interface == "auto":
+        old_interface = qnode.interface
+
+        if old_interface == "auto":
             qnode.interface = qml.math.get_interface(*args, *list(kwargs.values()))
 
         interface = qnode.interface
@@ -487,6 +489,9 @@ def classical_fisher(qnode, argnums=0):
 
         j = jac(*args, **kwargs)
         p = new_qnode(*args, **kwargs)
+
+        if old_interface == "auto":
+            qnode.interface = "auto"
 
         # In case multiple variables are used, we create a list of cfi matrices
         if isinstance(j, tuple):

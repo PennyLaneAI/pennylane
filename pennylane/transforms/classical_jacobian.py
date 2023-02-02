@@ -151,12 +151,13 @@ def classical_jacobian(qnode, argnum=None, expand_fn=None, trainable_only=True):
     wrapper_argnum = argnum if argnum is not None else None
 
     def qnode_wrapper(*args, **kwargs):  # pylint: disable=inconsistent-return-statements
+        old_interface = qnode.interface
 
-        if qnode.interface == "auto":
+        if old_interface == "auto":
             qnode.interface = qml.math.get_interface(*args, *list(kwargs.values()))
 
         if qnode.interface == "autograd":
-            return qml.jacobian(classical_preprocessing, argnum=wrapper_argnum)(*args, **kwargs)
+            jac = qml.jacobian(classical_preprocessing, argnum=wrapper_argnum)(*args, **kwargs)
 
         if qnode.interface == "torch":
             import torch
@@ -175,7 +176,7 @@ def classical_jacobian(qnode, argnum=None, expand_fn=None, trainable_only=True):
                     jac = tuple((jac[idx] for idx in torch_argnum))
                 return jac
 
-            return _jacobian(*args, **kwargs)
+            jac = _jacobian(*args, **kwargs)
 
         if qnode.interface == "jax":
             import jax
@@ -195,7 +196,7 @@ def classical_jacobian(qnode, argnum=None, expand_fn=None, trainable_only=True):
 
                 return jax.jacobian(classical_preprocessing, argnums=argnum)(*args, **kwargs)
 
-            return _jacobian(*args, **kwargs)
+            jac = _jacobian(*args, **kwargs)
 
         if qnode.interface == "tf":
             import tensorflow as tf
@@ -214,6 +215,11 @@ def classical_jacobian(qnode, argnum=None, expand_fn=None, trainable_only=True):
                 jac = tape.jacobian(gate_params, sub_args)
                 return jac
 
-            return _jacobian(*args, **kwargs)
+            jac = _jacobian(*args, **kwargs)
+
+        if old_interface == "auto":
+            qnode.interface = "auto"
+
+        return jac
 
     return qnode_wrapper

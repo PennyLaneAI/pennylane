@@ -82,11 +82,15 @@ def snapshots(qnode):
     """
 
     def get_snapshots(*args, **kwargs):
-        if qnode.interface == "auto":
+        old_interface = qnode.interface
+        if old_interface == "auto":
             qnode.interface = qml.math.get_interface(*args, *list(kwargs.values()))
 
         with _Debugger(qnode.device) as dbg:
             results = qnode(*args, **kwargs)
+            # Reset interface
+            if old_interface == "auto":
+                qnode.interface = "auto"
         dbg.snapshots["execution_results"] = results
         return dbg.snapshots
 

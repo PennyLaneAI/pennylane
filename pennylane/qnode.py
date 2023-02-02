@@ -423,7 +423,7 @@ class QNode:
         self._user_gradient_kwargs = gradient_kwargs
         self._original_device = device
         self.gradient_fn = None
-        self.gradient_kwargs = None
+        self.gradient_kwargs = {}
         self._tape_cached = False
 
         self._update_gradient_fn()

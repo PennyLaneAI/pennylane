@@ -286,7 +286,9 @@ class batch_transform:
         def _wrapper(*args, **kwargs):
             shots = kwargs.pop("shots", False)
 
-            if qnode.interface == "auto":
+            old_interface = qnode.interface
+
+            if old_interface == "auto":
                 qnode.interface = qml.math.get_interface(*args, *list(kwargs.values()))
 
             qnode.construct(args, kwargs)
@@ -302,6 +304,9 @@ class batch_transform:
 
             if interface is None or not self.differentiable:
                 gradient_fn = None
+
+            if old_interface == "auto":
+                qnode.interface = "auto"
 
             res = qml.execute(
                 tapes,

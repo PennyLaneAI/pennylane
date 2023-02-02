@@ -269,7 +269,8 @@ def _adjoint_metric_tensor_qnode(qnode, device, hybrid):
         device = qnode.device
 
     def wrapper(*args, **kwargs):
-        if qnode.interface == "auto":
+        old_interface = qnode.interface
+        if old_interface == "auto":
             qnode.interface = qml.math.get_interface(*args, *list(kwargs.values()))
 
         cjac_fn = qml.transforms.classical_jacobian(
@@ -278,6 +279,9 @@ def _adjoint_metric_tensor_qnode(qnode, device, hybrid):
 
         qnode.construct(args, kwargs)
         mt = _adjoint_metric_tensor_tape(qnode.qtape, device)
+
+        if old_interface == "auto":
+            qnode.interface = "auto"
 
         if not hybrid:
             return mt

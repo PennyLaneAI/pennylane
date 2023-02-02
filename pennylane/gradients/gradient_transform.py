@@ -277,7 +277,9 @@ class gradient_transform(qml.batch_transform):
         # inside the QNode.
         hybrid = tkwargs.pop("hybrid", self.hybrid)
 
-        if qnode.interface == "auto":
+        old_interface = qnode.interface
+
+        if old_interface == "auto":
             qnode.interface = qml.math.get_interface(*targs, *list(tkwargs.values()))
 
         _wrapper = super().default_qnode_wrapper(qnode, targs, tkwargs)
@@ -300,6 +302,9 @@ class gradient_transform(qml.batch_transform):
 
             kwargs.pop("shots", False)
             cjac = cjac_fn(*args, **kwargs)
+
+            if old_interface == "auto":
+                qnode.interface = "auto"
 
             if isinstance(cjac, tuple):
                 # Classical processing of multiple arguments is present. Return qjac @ cjac.

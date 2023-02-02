@@ -158,7 +158,9 @@ class hessian_transform(qml.batch_transform):
         # that classical processing may be present inside the QNode.
         hybrid = tkwargs.pop("hybrid", self.hybrid)
 
-        if qnode.interface == "auto":
+        old_interface = qnode.interface
+
+        if old_interface == "auto":
             qnode.interface = qml.math.get_interface(*targs, *list(tkwargs.values()))
 
         _wrapper = super().default_qnode_wrapper(qnode, targs, tkwargs)
@@ -174,6 +176,9 @@ class hessian_transform(qml.batch_transform):
                 return ()
 
             qhess = _wrapper(*args, **kwargs)
+
+            if old_interface == "auto":
+                qnode.interface = "auto"
 
             if not hybrid:
                 return qhess

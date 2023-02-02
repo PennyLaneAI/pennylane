@@ -52,7 +52,7 @@ The QNode ``circuit()`` is now a TensorFlow-capable QNode, accepting ``tf.Variab
 <tf.Tensor: id=22, shape=(2,), dtype=float64, numpy=array([ 0.87758256,  0.68803733])>
 
 The interface can also be automatically determined when the ``QNode`` is called. You do not need to pass the interface
-if you provide parameters, but it comes with a small overhead.
+if you provide parameters.
 
 TensorFlow-capable QNodes can also be created using the
 :ref:`QNode class constructor <intro_vcirc_qnode>`:

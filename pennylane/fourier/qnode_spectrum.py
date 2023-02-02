@@ -384,8 +384,11 @@ def qnode_spectrum(qnode, encoding_args=None, argnum=None, decimals=8, validatio
 
     @wraps(qnode)
     def wrapper(*args, **kwargs):
-        if qnode.interface == "auto":
+        old_interface = qnode.interface
+
+        if old_interface == "auto":
             qnode.interface = qml.math.get_interface(*args, *list(kwargs.values()))
+
         jac_fn = qml.transforms.classical_jacobian(
             qnode, argnum=argnum, expand_fn=qml.transforms.expand_multipar
         )
@@ -462,6 +465,8 @@ def qnode_spectrum(qnode, encoding_args=None, argnum=None, decimals=8, validatio
                 _spectra[idx] = [-freq for freq in spec[:0:-1]] + spec
             spectra[arg_name] = _spectra
 
+            if old_interface == "auto":
+                qnode.interface = "auto"
         return spectra
 
     return wrapper

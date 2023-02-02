@@ -328,8 +328,9 @@ def qnode_execution_wrapper(self, qnode, targs, tkwargs):
         return self.expand_fn(tape, *targs, **tkwargs)
 
     def wrapper(*args, **kwargs):
+        old_interface = qnode.interface
 
-        if qnode.interface == "auto":
+        if old_interface == "auto":
             qnode.interface = qml.math.get_interface(*args, *list(kwargs.values()))
 
         cjac_fn = qml.transforms.classical_jacobian(qnode, expand_fn=_expand_fn)
@@ -363,6 +364,9 @@ def qnode_execution_wrapper(self, qnode, targs, tkwargs):
                 )
             tkwargs["approx"] = "block-diag"
             return self(qnode, *targs, **tkwargs)(*args, **kwargs)
+
+        if old_interface == "auto":
+            qnode.interface = "auto"
 
         if not hybrid:
             return mt
