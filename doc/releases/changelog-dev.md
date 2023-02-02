@@ -68,12 +68,12 @@
 
 <h4>Always differentiable 📈</h4>
 
-* The Hadamard test gradient tranform `qml.gradients.hadamard_grad` is now available.
+* The Hadamard test gradient tranform is now available via `qml.gradients.hadamard_grad`.
   [#3625](https://github.com/PennyLaneAI/pennylane/pull/3625)
 
-  This hardware compatible transform allows you to get the gradient of your circuit by
-  performing a Hadamard test on your circuit where one added the controlled generator 
-  of the trainable unitary. Your device needs an auxiliary wire to perform it.
+  `qml.gradients.hadamard_grad` is a hardware-compatible transform that calculates the 
+  gradient of a quantum circuit using the Hadamard test. Note that the device requires an 
+  auxiliary wire to calculate the gradient.
 
   ```pycon
   >>> dev = qml.device("default.qubit", wires=2)
