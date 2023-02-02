@@ -452,7 +452,10 @@ class TestDecomposition:
     def test_decomposition_into_ising_gates(self, base, ising):
         """Check that Exp decomposes into single rotation gates if base is a pauli operator."""
         theta = 3.21
-        op = Exp(base, -0.5j * theta)
+        if ising is qml.IsingXY:
+            op = Exp(base, 0.25j * theta)
+        else:
+            op = Exp(base, -0.5j * theta)
 
         assert op.has_decomposition
         pr = op.decomposition()[0]

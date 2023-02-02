@@ -265,38 +265,27 @@ class Exp(ScalarSymbolicOp, Operation):
         Returns:
             list[PauliRot]: decomposition of the operator
         """
-        base = self.base
-        coeff = self.coeff
-        if isinstance(base, SProd):
-            coeff *= base.scalar
-            base = base.base
 
-        if isinstance(base, Tensor) and len(base.wires) != len(base.obs):
-            raise DecompositionUndefinedError(
-                "Unable to determine if the exponential has a decomposition "
-                "when the base operator is a Tensor object with overlapping wires. "
-                f"Received base {self.base}."
+        if qml.pauli.is_pauli_word(self.base):
+            return self._pauli_decomposition(self.coeff, self.base)
+
+        if isinstance(self.base, (Hamiltonian, Sum)):
+            coeffs = (
+                self.base.coeffs if isinstance(self.base, Hamiltonian) else [1] * len(self.base)
             )
+            coeffs = [c * self.coeff for c in coeffs]
+            ops = self.base.ops if isinstance(self.base, Hamiltonian) else self.base.operands
 
-        if qml.pauli.is_pauli_word(base) and math.real(coeff) == 0:
-            return self._pauli_decomposition(coeff, base)
-
-        if isinstance(base, (Hamiltonian, Sum)):
-            coeffs, ops = (
-                base.terms() if isinstance(base, Hamiltonian) else ([1] * len(base), base.operands)
-            )
-            coeffs = [c * coeff for c in coeffs]
             if len(ops) == 2 and ops[0].wires == ops[1].wires and coeffs[0] == coeffs[1]:
                 # Check if the exponential can be decomposed into an IsingXY gate
                 word1 = qml.pauli.pauli_word_to_string(ops[0])
                 word2 = qml.pauli.pauli_word_to_string(ops[1])
                 if word1 in {"XX", "YY"} and word2 in ({"XX", "YY"} - {word1}):
-                    return [qml.IsingXY(phi=2j * coeffs[0], wires=ops[0].wires)]
+                    return [qml.IsingXY(phi=-4j * coeffs[0], wires=ops[0].wires)]
             return self._trotter_decomposition(coeffs, ops)
 
         raise DecompositionUndefinedError
 
-    # pylint: disable=no-self-use
     def _pauli_decomposition(self, coeff: complex, base: Operator):
         """Decomposes the exponential of a Pauli word into Pauli rotations or Ising gates.
 
@@ -307,6 +296,20 @@ class Exp(ScalarSymbolicOp, Operation):
         Returns:
             _type_: _description_
         """
+        if isinstance(base, SProd):
+            return self._pauli_decomposition(base.scalar * coeff, base.base)
+
+        if isinstance(base, Tensor) and len(base.wires) != len(base.obs):
+            raise DecompositionUndefinedError(
+                "Unable to determine if the exponential has a decomposition "
+                "when the base operator is a Tensor object with overlapping wires. "
+                f"Received base {self.base}."
+            )
+        if math.real(coeff) != 0:
+            raise DecompositionUndefinedError(
+                "Cannot decompose an exponential of an operator with a real coefficient."
+            )
+
         coeff = 2j * coeff  # need to cancel the coefficients added by PauliRot and Ising gates
         pauli_word = qml.pauli.pauli_word_to_string(base)
         if pauli_word == "I" * base.num_wires:
