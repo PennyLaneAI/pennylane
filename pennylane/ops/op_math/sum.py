@@ -25,7 +25,7 @@ import numpy as np
 
 import pennylane as qml
 from pennylane import math
-from pennylane.operation import Operator
+from pennylane.operation import Operator, Tensor
 from pennylane.ops.qubit import Hamiltonian
 from pennylane.queuing import QueuingManager
 
@@ -178,6 +178,20 @@ class Sum(CompositeOp):
     _op_symbol = "+"
     _math_op = math.sum
 
+    @staticmethod
+    def from_hamiltonian(H: Hamiltonian):
+        """Converts a ``Hamiltonian`` into a ``Sum`` operator.
+
+        Args:
+            H (Hamiltonian): hamiltonian to convert
+
+        Returns:
+            Sum: Sum operator
+        """
+        coeffs, ops = H.terms()
+        ops = [qml.prod(*op.obs) if isinstance(op, Tensor) else op for op in ops]
+        return qml.dot(coeffs, ops)
+
     @property
     def is_hermitian(self):
         """If all of the terms in the sum are hermitian, then the Sum is hermitian."""
@@ -316,7 +330,7 @@ class Sum(CompositeOp):
         if isinstance(op_list, tuple):
             op_list = list(op_list)
 
-        def _sort_key(op) -> bool:
+        def _sort_key(op: Operator) -> bool:
             """Sorting key.
 
             Args:
@@ -328,7 +342,7 @@ class Sum(CompositeOp):
             wires = op.wires
             if wire_map is not None:
                 wires = wires.map(wire_map)
-            return np.min(wires), len(wires)
+            return np.min(wires), len(wires), str(op)
 
         return sorted(op_list, key=_sort_key)
 

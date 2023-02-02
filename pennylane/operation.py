@@ -225,6 +225,7 @@ import autoray
 import numpy as np
 from numpy.linalg import multi_dot
 from scipy.sparse import coo_matrix, eye, kron
+
 import pennylane as qml
 from pennylane.math import expand_matrix
 from pennylane.queuing import QueuingManager
@@ -1927,6 +1928,7 @@ class Tensor(Observable):
         self.obs: List[Observable] = []
         self._args = args
         self._batch_size = None
+        self._pauli_rep = None
         self.queue(init=True)
 
     def label(self, decimals=None, base_label=None, cache=None):

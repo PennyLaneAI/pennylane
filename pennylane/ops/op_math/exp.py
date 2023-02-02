@@ -33,6 +33,7 @@ from pennylane.operation import (
     expand_matrix,
 )
 from pennylane.ops.qubit import Hamiltonian
+from pennylane.ops.qubit.attributes import has_unitary_generator
 from pennylane.wires import Wires
 
 from .sprod import SProd
@@ -174,6 +175,9 @@ class Exp(ScalarSymbolicOp, Operation):
         self._data = [[coeff], self.base.data]
         self.grad_recipe = [None]
         self.num_steps = num_steps
+        self._ops_with_generator = [
+            getattr(qml, op_name) for op_name in has_unitary_generator if op_name != "PauliRot"
+        ]
 
     def __repr__(self):
         return (
@@ -261,59 +265,77 @@ class Exp(ScalarSymbolicOp, Operation):
         Returns:
             list[PauliRot]: decomposition of the operator
         """
+        return self._recursive_decomposition(self.base, self.coeff)
 
-        if qml.pauli.is_pauli_word(self.base):
-            return self._pauli_decomposition(self.base, self.coeff)
-
-        if isinstance(self.base, (Hamiltonian, Sum)):
-            coeffs = (
-                self.base.coeffs if isinstance(self.base, Hamiltonian) else [1] * len(self.base)
-            )
-            coeffs = [c * self.coeff for c in coeffs]
-            ops = self.base.ops if isinstance(self.base, Hamiltonian) else self.base.operands
-
-            if len(ops) == 2 and ops[0].wires == ops[1].wires and coeffs[0] == coeffs[1]:
-                # Check if the exponential can be decomposed into an IsingXY gate
-                word1 = qml.pauli.pauli_word_to_string(ops[0])
-                word2 = qml.pauli.pauli_word_to_string(ops[1])
-                if word1 in {"XX", "YY"} and word2 in ({"XX", "YY"} - {word1}):
-                    return [qml.IsingXY(phi=-4j * coeffs[0], wires=ops[0].wires)]
-            return self._trotter_decomposition(ops, coeffs)
-
-        raise DecompositionUndefinedError
-
-    def _pauli_decomposition(self, base: Operator, coeff: complex):
-        """Decomposes the exponential of a Pauli word into a PauliRot, Ising or rotation gate.
+    def _recursive_decomposition(self, base: Operator, coeff: complex):
+        """Decompose the exponential of ``base`` multiplied by ``coeff``.
 
         Args:
             base (Operator): exponentiated operator
             coeff (complex): coefficient multiplying the exponentiated operator
 
         Returns:
-            _type_: _description_
+            List[Operator]: decomposition
         """
-        if isinstance(base, SProd):
-            return self._pauli_decomposition(base.base, base.scalar * coeff)
+        with qml.QueuingManager.stop_recording():
+            # Change base to `Sum`/`Prod`
+            if isinstance(base, Hamiltonian):
+                base = Sum.from_hamiltonian(base)
+            elif isinstance(base, Tensor):
+                base = qml.prod(*base.obs)
 
         if isinstance(base, Tensor) and len(base.wires) != len(base.obs):
             raise DecompositionUndefinedError(
                 "Unable to determine if the exponential has a decomposition "
                 "when the base operator is a Tensor object with overlapping wires. "
-                f"Received base {self.base}."
+                f"Received base {base}."
             )
-        if math.real(coeff) != 0:
-            raise DecompositionUndefinedError(
-                "Cannot decompose an exponential of an operator with a real coefficient."
-            )
+        if isinstance(base, SProd):
+            return self._recursive_decomposition(base.base, base.scalar * coeff)
 
+        for op_class in self._ops_with_generator:
+            # Check if the exponentiated operator is a generator of another operator
+            if op_class.num_wires == base.num_wires:
+                with qml.QueuingManager.stop_recording():
+                    g, c = qml.generator(op_class)(coeff, base.wires)
+                    # Make sure both ``g`` and ``base`` are of the same type
+                    if isinstance(g, Hamiltonian):
+                        g = Sum.from_hamiltonian(g)
+                    elif isinstance(g, Tensor):
+                        g = qml.prod(*g.obs)
+
+                if qml.equal(base, g) and math.real(coeff) == 0:
+                    coeff *= -1j / c  # cancel the coefficients added by the generator
+                    return [op_class(coeff, base.wires)]
+
+        if qml.pauli.is_pauli_word(base) and math.real(coeff) == 0:
+            # Check if the exponential can be decomposed into a PauliRot gate
+            return self._pauli_rot_decomposition(base, coeff)
+
+        if isinstance(base, (Hamiltonian, Sum)):
+            # Apply trotter decomposition
+            coeffs = base.coeffs if isinstance(base, Hamiltonian) else [1] * len(base)
+            coeffs = [c * coeff for c in coeffs]
+            ops = base.ops if isinstance(base, Hamiltonian) else base.operands
+            return self._trotter_decomposition(ops, coeffs)
+
+        raise DecompositionUndefinedError
+
+    @staticmethod
+    def _pauli_rot_decomposition(base: Operator, coeff: complex):
+        """Decomposes the exponential of a Pauli word into a PauliRot.
+
+        Args:
+            base (Operator): exponentiated operator
+            coeff (complex): coefficient multiplying the exponentiated operator
+
+        Returns:
+            List[Operator]: list containing the PauliRot operator
+        """
         coeff = 2j * coeff  # need to cancel the coefficients added by PauliRot and Ising gates
         pauli_word = qml.pauli.pauli_word_to_string(base)
         if pauli_word == "I" * base.num_wires:
             return []
-        if pauli_word in ("XX", "YY", "ZZ"):
-            return [getattr(qml, f"Ising{pauli_word}")(phi=coeff, wires=base.wires)]
-        if len(pauli_word) == 1:
-            return [getattr(qml, f"R{pauli_word}")(phi=coeff, wires=base.wires)]
         return [qml.PauliRot(theta=coeff, pauli_word=pauli_word, wires=base.wires)]
 
     def _trotter_decomposition(self, ops: List[Operator], coeffs: List[complex]):
@@ -345,11 +367,7 @@ class Exp(ScalarSymbolicOp, Operation):
             if isinstance(op, SProd):
                 c *= op.scalar
                 op = op.base
-            if not (qml.pauli.is_pauli_word(op) and math.real(c) == 0):
-                raise DecompositionUndefinedError(
-                    "The decomposition of the exponential of a non-pauli word is not defined."
-                )
-            op_list.extend(self._pauli_decomposition(op, c))
+            op_list.extend(self._recursive_decomposition(op, c))
 
         return op_list * self.num_steps  # apply operators ``num_steps`` times
 
