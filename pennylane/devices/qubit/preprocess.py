@@ -205,23 +205,20 @@ def batch_transform(circuit, dev, finite_shots):
 
 
 # pylint: disable=too-many-branches
-def check_validity(dev, queue, observables):
+def check_validity(dev, tape):
     """Checks whether the operations and observables in queue are all supported by the device.
     Includes checks for inverse operations.
 
     Args:
         dev (.Device): device for which to validate queue
-        queue (Iterable[~.operation.Operation]): quantum operation objects which are intended
-            to be applied on the device
-        observables (Iterable[~.operation.Observable]): observables which are intended
-            to be evaluated on the device
+        tape (.QuantumScript): tape from which to validate operations and observables
 
     Raises:
         DeviceError: if there are operations in the queue or observables that the device does
             not support
     """
 
-    for o in queue:
+    for o in tape.operations:
         operation_name = o.name
 
         if isinstance(o, MidMeasureMP) and not dev.capabilities().get(
@@ -247,7 +244,7 @@ def check_validity(dev, queue, observables):
         if not _stopping_condition(o):
             raise DeviceError(f"Gate {operation_name} not supported on device {dev.short_name}")
 
-    for o in observables:
+    for o in tape.observables:
         if isinstance(o, qml.measurements.MeasurementProcess) and o.obs is not None:
             o = o.obs
 
@@ -284,13 +281,12 @@ def check_validity(dev, queue, observables):
                 )
 
 
-# pylint: disable=unused-argument, missing-function-docstring
 def preprocess(tapes, dev, execution_config=None, max_expansion=10):
     """Preprocess a batch of `QuantumScript`s to make them ready for execution.
-    
+
     This function validates a batch of `QuantumScript`s by transforming and expanding
     them to ensure all operators and measurements are supported by the execution device.
-    
+
     Args:
         tapes (Sequence[QuantumScript]): Batch of tapes to be processed.
         dev (.Device): device to be used for execution.
@@ -301,13 +297,19 @@ def preprocess(tapes, dev, execution_config=None, max_expansion=10):
             supported, and results in a gate decomposition. If any operations
             in the decomposition remain unsupported by the device, another
             expansion occurs.
+
+    Returns:
+        Tuple[Sequence[.QuantumScript], callable]: Returns a tuple containing
+        the sequence of circuits to be executed, and a post-processing function
+        to be applied to the list of evaluated circuit results.
     """
-    # Combine check_validity, expand_fn and batch_transform in this function:
-    # Split tapes as needed with batch_transform
-    # Expand tapes
-    # Check that tapes are valid
-    # Create wrapper function that combines results of expanded and batched tapes as expected
-    # Return tapes, wrapper
-    # Returns Sequence[QuantumScript], callable
     finite_shots = getattr(execution_config, "shots", None) is not None
-    tapes, batch_fn = qml.transforms.map_batch_transform(batch_transform, tapes, dev, finite_shots)
+    tapes, batch_fn = qml.transforms.map_batch_transform(
+        batch_transform, tapes, targs=[dev, finite_shots]
+    )
+
+    for i, tape in enumerate(tapes):
+        tapes[i] = expand_fn(tape, dev, max_expansion=max_expansion)
+        check_validity(dev, tapes[i])
+
+    return tapes, batch_fn
