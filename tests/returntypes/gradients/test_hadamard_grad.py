@@ -553,7 +553,7 @@ class TestHadamardGradEdgeCases:
             qml.gradients.hadamard_grad(tape, aux_wire=aux_wire, device_wires=dev.wires)
 
     @pytest.mark.parametrize("device_wires", device_wires_no_aux)
-    def test_aux_wire_already_used_wires(self, device_wires):
+    def test_requested_wire_not_exist(self, device_wires):
         """Test if the aux wire is not on the device an error is raised."""
         aux_wire = qml.wires.Wires("aux")
         dev = qml.device("default.qubit", wires=device_wires)
