@@ -225,6 +225,7 @@ from .commutation_dag import (
 )
 from .tape_expand import (
     expand_invalid_trainable,
+    expand_invalid_trainable_hadamard_gradient,
     expand_multipar,
     expand_nonunitary_gen,
     expand_trainable_multipar,
