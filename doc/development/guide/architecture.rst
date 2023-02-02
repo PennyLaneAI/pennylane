@@ -266,7 +266,7 @@ In other words, these steps can invoke differentiable classical computations, su
 
 There are some devices where the execution of the quantum circuit is also tracked by the
 autodifferentiation framework. This is possible if the device is a simulator that is
-coded entiely in the framework's language (such as a TensorFlow quantum simulator).
+coded entirely in the framework's language (such as a TensorFlow quantum simulator).
 
 |
 

@@ -241,7 +241,6 @@ def _execute_bwd_tuple(
                     jacobians_from_callback, tangents[0], multi_measurements, trainable_params
                 )
             else:
-
                 new_tapes = [_copy_tape(t, a) for t, a in zip(tapes, params)]
 
                 all_jacs = []

@@ -803,7 +803,6 @@ class TestTensordotTorch:
 
 
 class TestTensordotDifferentiability:
-
     v0 = np.array([0.1, 5.3, -0.9, 1.1])
     v1 = np.array([0.5, -1.7, -2.9, 0.0])
     v2 = np.array([-0.4, 9.1, 1.6])
@@ -2121,7 +2120,6 @@ def test_block_diag(tensors):
 
 
 class TestBlockDiagDiffability:
-
     expected = lambda self, x, y: (
         [
             [-np.sin(x * y) * y, 0, 0],
@@ -2449,7 +2447,6 @@ class TestSortFunction:
 
 
 class TestExpm:
-
     _compare_mat = None
 
     def get_compare_mat(self):
@@ -2478,7 +2475,6 @@ class TestExpm:
 
 
 class TestSize:
-
     array_and_size = [
         ([], 0),
         (1, 1),

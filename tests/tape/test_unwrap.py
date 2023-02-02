@@ -28,7 +28,6 @@ def test_unwrap_tensorflow():
     p = [tf.Variable(0.1), tf.constant(0.2), np.array(0.5), tf.Variable(0.3)]
 
     with tf.GradientTape():
-
         with qml.queuing.AnnotatedQueue() as q:
             qml.RX(p[0], wires=0)
             qml.RY(p[1], wires=0)

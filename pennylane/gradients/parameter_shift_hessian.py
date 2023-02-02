@@ -395,7 +395,6 @@ def _expval_hessian_param_shift_tuple(
     unshifted_coeffs = {key: val for key, val in unshifted_coeffs.items() if val is not None}
 
     def processing_fn(results):
-
         num_measurements = len(tape.measurements)
         if num_measurements == 1:
             results = tuple((r,) for r in results)
@@ -413,7 +412,6 @@ def _expval_hessian_param_shift_tuple(
         r0 = results[0] if start == 1 else f0
 
         for i, j in it.product(range(h_dim), repeat=2):
-
             if j < i:
                 hessians.append(hessians[j * h_dim + i])
                 continue
@@ -435,7 +433,6 @@ def _expval_hessian_param_shift_tuple(
             unshifted_coeff = unshifted_coeffs.get((i, j), None)
             hessian = []
             for m in range(num_measurements):
-
                 # the res array has shape (num_tapes, num_measurements, *output_dims)
 
                 # first collect all tape results for the individual measurements

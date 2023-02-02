@@ -6,6 +6,9 @@
 
 <h4>Add new features here</h4>
 
+* Add `typing.TensorLike` type.
+  [(#3675)](https://github.com/PennyLaneAI/pennylane/pull/3675)
+
 <h4>Feel the pulse 🔊</h4>
 
 * Parameterized Hamiltonians can now be created with the addition of `ParametrizedHamiltonian`.
@@ -297,6 +300,9 @@
 * The `apply_operation` single-dispatch function is added to `devices/qubit` that applies an operation
   to a state and returns a new state.
   [(#3637)](https://github.com/PennyLaneAI/pennylane/pull/3637)
+
+* The `create_initial_state` function is added to `devices/qubit` that returns an initial state for an execution.
+  [(#3683)](https://github.com/PennyLaneAI/pennylane/pull/3683)
 
 <h3>Improvements</h3>
 

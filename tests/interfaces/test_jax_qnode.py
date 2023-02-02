@@ -574,7 +574,6 @@ class TestQubitIntegration:
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
         if diff_method in {"finite-diff", "parameter-shift", "spsa"} and interface == "jax-jit":
-
             with pytest.raises(
                 InterfaceUnsupportedError,
                 match="The JAX-JIT interface doesn't support differentiating QNodes",
@@ -1382,7 +1381,6 @@ class TestTapeExpansion:
 
         # test second-order derivatives
         if diff_method in ("parameter-shift", "backprop") and max_diff == 2:
-
             grad2_c = jax.jacobian(jax.grad(circuit, argnum=2), argnum=2)(d, w, c)
             assert np.allclose(grad2_c, 0, atol=tol)
 
