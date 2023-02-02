@@ -29,23 +29,36 @@ from pennylane import DeviceError
 class TestPreprocess:
     """Test that functions in qml.devices.qubit.preprocess work as expected"""
 
-    def test_stopping_condition(self):
-        pass
+    @pytest.mark.parametrize(
+        "op, expected",
+        [(qml.PauliX(0), True), (qml.CRX, True), (qml.Snapshot(), False), (qml.Barrier, False)],
+    )
+    def test_stopping_condition(self, op, expected):
+        """Test that _stopping_condition works correctly"""
+        res = _stopping_condition(op)
+        assert res == expected
 
-    def test_supports_observable(self):
-        pass
+    @pytest.mark.parametrize(
+        "obs, expected",
+        [("Hamiltonian", True), (qml.Identity, True), ("QubitUnitary", False), (qml.RX, False)],
+    )
+    def test_supports_observable(self, obs, expected):
+        """Test that _supports_observable works correctly"""
+        dev = qml.device("default.qubit", wires=2)
+        res = _supports_observable(dev, obs)
+        assert res == expected
 
     def test_batch_transform(self):
-        pass
+        """Test that batch_transform works correctly"""
 
     def test_expand_fn(self):
-        pass
+        """Test that expand_fn works correctly"""
 
     def test_check_validity_fails(self):
-        pass
+        """Test that check_validity throws the appropriate error when expected"""
 
     def test_check_validity_passes(self):
-        pass
+        """Test that check_validity doesn't throw any errors for a valid circuit"""
 
     def test_preprocess(self):
-        pass
+        """Test that preprocess works correctly"""
