@@ -30,7 +30,7 @@ def constant(scalar, time):
         scalar (float): the scalar to be returned
         time (float): Time. This argument is not used.
 
-    This function is mainly used to build a parametrized Hamiltonian that can be differentiated
+    This function is mainly used to build a :class:`~.ParametrizedHamiltonian` that can be differentiated
     with respect to its time-independent term. It is an alias for `lambda scalar, t: scalar`.
 
     **Example**
@@ -49,11 +49,15 @@ def constant(scalar, time):
 
     We can differentiate the parametrized hamiltonian with respect to the constant parameter:
 
-    >>> dev = qml.device("default.qubit", wires=1)
-    >>> @qml.qnode(dev, interface="jax")
-    ... def circuit(params):
-    ...     qml.evolve(H)(params, t=2)
-    ...     return qml.expval(qml.PauliZ(0))
+    .. code-block:: python
+
+        dev = qml.device("default.qubit", wires=1)
+        @qml.qnode(dev, interface="jax")
+        def circuit(params):
+            qml.evolve(H)(params, t=2)
+            return qml.expval(qml.PauliZ(0))
+
+
     >>> params = jnp.array([5.0])
     >>> circuit(params)
     Array(0.40808904, dtype=float32)
@@ -69,7 +73,7 @@ def rect(x: Union[float, Callable], windows: List[Tuple[float]] = None):
 
     .. note::
 
-        If ``x`` is a function, it must accepts two arguments: the trainable parameters and time.
+        If ``x`` is a function, it must accept two arguments: the trainable parameters and time.
 
     Args:
         x (Union[float, Callable]): a scalar or a function that accepts two arguments: the trainable
@@ -79,14 +83,16 @@ def rect(x: Union[float, Callable], windows: List[Tuple[float]] = None):
 
     **Example**
 
-    The ``rect`` function can be used to create a parametrized hamiltonian
+    The ``rect`` function can be used to create a :class:`.ParametrizedHamiltonian`
 
-    >>> def f1(p, t):
-    ...     return jnp.polyval(p, t)
-    >>> windows = [(1, 7), (9, 14)]
-    >>> H = qml.pulse.rect(f1, windows) * qml.PauliX(0)
+    .. code-block:: python
 
-    When calling the parametrized hamiltonian, ``rect`` will evaluate the given function only
+        def f1(p, t):
+            return jnp.polyval(p, t)
+        windows = [(1, 7), (9, 14)]
+        H = qml.pulse.rect(f1, windows) * qml.PauliX(0)
+
+    When calling the :class:`.ParametrizedHamiltonian`, ``rect`` will evaluate the given function only
     inside the time windows
 
     >>> params = [jnp.ones(4)]
@@ -149,7 +155,7 @@ def pwc(timespan):
     **Example**
 
     >>> timespan = (1, 3)
-    >>> f1 = pwc(timespan)
+    >>> f1 = qml.pulse.pwc(timespan)
 
     The resulting function ``f1`` has the call signature ``f1(params, t)``. If passed an array of parameters and
     a time, it will assign the array as the constants in the piecewise function, and select the constant corresponding
@@ -212,7 +218,7 @@ def pwc_from_function(timespan, num_bins):
         timespan = 10
         num_bins = 10
 
-        binned_function = pwc_from_function(timespan, num_bins)(f0)
+        binned_function = qml.pulse.pwc_from_function(timespan, num_bins)(smooth_function)
 
     >>> binned_function([2, 4], 3), smooth_function([2, 4], 3)  # t = 3
     (DeviceArray(10.666666, dtype=float32), DeviceArray(10, dtype=int32))
@@ -225,11 +231,16 @@ def pwc_from_function(timespan, num_bins):
 
     The same effect can be achieved by decorating the smooth function:
 
-    >>> @pwc_from_function(timespan, num_bins)
-    ... def fn(params, t):
-    ...      return params[0] * t + params[1]
-    >>> fn([2, 4], 3)
-    DeviceArray(10.666666, dtype=float32)
+    .. code-block:: python
+
+        from pennylane.pulse.convenience_functions import pwc_from_function
+
+        @pwc_from_function(timespan, num_bins)
+        def fn(params, t):
+            return params[0] * t + params[1]
+
+        fn([2, 4], 3)
+        >>> DeviceArray(10.666666, dtype=float32)
 
     """
     if not has_jax:

@@ -30,8 +30,8 @@ def evolve(op: Union[Operator, ParametrizedHamiltonian]):
     Returns:
         Union[.Evolution, ~pennylane.ops.op_math.evolve.ParametrizedEvolution]: evolution operator
 
-    .. seealso:: :class:`.ParametrizedEvolution`
-    .. seealso:: :class:`.Evolution`
+    .. seealso::
+        :class:`.ParametrizedEvolution`, :class:`.Evolution`
 
     **Examples**
 
@@ -44,11 +44,18 @@ def evolve(op: Union[Operator, ParametrizedHamiltonian]):
     When evolving a :class:`.ParametrizedHamiltonian` class, then a :class:`.ParametrizedEvolution`
     instance is returned:
 
-    >>> coeffs = [lambda p, t: p * t for _ in range(4)]
-    >>> ops = [qml.PauliX(i) for i in range(4)]
-    >>> H = qml.dot(coeffs, ops)
+    .. code-block:: python
+
+        coeffs = [lambda p, t: p * t for _ in range(4)]
+        ops = [qml.PauliX(i) for i in range(4)]
+        H = qml.dot(coeffs, ops)
+
     >>> qml.evolve(H)
     ParametrizedEvolution(wires=[0, 1, 2, 3])
+
+    .. note::
+        The underlying ODE that solves the matrix for a :class:`~.ParametrizedEvolution` requires ``jax``,
+        and will not work with other machine learning frameworks typically encountered in PennyLane.
 
     The :class:`.ParametrizedEvolution` instance can then be called to update the needed attributes
     to compute the evolution of the :class:`.ParametrizedHamiltonian`:

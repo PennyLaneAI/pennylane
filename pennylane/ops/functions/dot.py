@@ -52,6 +52,14 @@ def dot(coeffs: Sequence[float], ops: Sequence[Operator], pauli=False):
     1.1 * X(0)
     + 2.2 * Y(0)
 
+    If any of the parameters listed in ``coeffs`` are callables, the resulting dot product will be a
+    :class:`~.ParametrizedHamiltonian`:
+
+    >>> coeffs = [lambda p, t: p * jnp.sin(t) for _ in range(2)]
+    >>> ops = [qml.PauliX(0), qml.PauliY(0)]
+    >>> qml.dot(coeffs, ops)
+    ParametrizedHamiltonian: terms=2
+
     ``pauli=True`` can be used to construct a more efficient, simplified version of the operator.
     Note that it returns a :class:`~.PauliSentence`, which is not an :class:`~.Operator`. This
     specialized representation can be converted to an operator:
