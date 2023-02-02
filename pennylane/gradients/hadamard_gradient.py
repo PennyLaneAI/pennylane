@@ -46,8 +46,8 @@ def _hadamard_grad(
             with respect to. If not provided, the derivatives with respect to all
             trainable parameters are returned.
         aux_wire (pennylane.wires.Wires): Auxiliary wire to be used for the Hadamard tests. If ``None`` (the default),
-            a suitable wire is inferred from the (number of) used wires in the original circuit and ``device_wires``.
-        device_wires (pennylane.wires.Wires): Wires of the device that is going to be used for the
+            a suitable wire is inferred from the wires used in the original circuit and ``device_wires``.
+        device_wires (pennylane.wires.Wires): Wires of the device that are going to be used for the
             gradient. Facilitates finding a default for ``aux_wire`` if ``aux_wire``
             is ``None``.
 
@@ -144,8 +144,8 @@ def _hadamard_grad(
         - ``pennylane.IsingYY``
         - ``pennylane.IsingZZ``
 
-        The expansion will fail if a suitable decomposition in terms of supported operation is not found,
-        an error is then raised. The number of trainable parameters may increase due to the decomposition.
+        The expansion will fail if a suitable decomposition in terms of supported operation is not found.
+        The number of trainable parameters may increase due to the decomposition.
 
     """
     if any(isinstance(m, VarianceMP) for m in tape.measurements):
