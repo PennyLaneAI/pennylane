@@ -437,6 +437,23 @@ class TestDecomposition:
         assert qml.equal(pr, rot(theta, base.wires))
 
     @pytest.mark.parametrize(
+        "base, ising",
+        (
+            (qml.PauliX(0) @ qml.PauliX(1), qml.IsingXX),
+            (qml.prod(qml.PauliY("a"), qml.PauliY("b")), qml.IsingYY),
+            (qml.PauliZ(5) @ qml.PauliZ(6), qml.IsingZZ),
+        ),
+    )
+    def test_decomposition_into_ising_gates(self, base, ising):
+        """Check that Exp decomposes into single rotation gates if base is a pauli operator."""
+        theta = 3.21
+        op = Exp(base, -0.5j * theta)
+
+        assert op.has_decomposition
+        pr = op.decomposition()[0]
+        assert qml.equal(pr, ising(theta, base.wires))
+
+    @pytest.mark.parametrize(
         ("time", "hamiltonian", "steps", "expected_queue"),
         [
             (

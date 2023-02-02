@@ -26,6 +26,7 @@ from pennylane.operation import (
     DecompositionUndefinedError,
     GeneratorUndefinedError,
     Operation,
+    Operator,
     OperatorPropertyUndefined,
     Tensor,
     expand_matrix,
@@ -277,17 +278,35 @@ class Exp(ScalarSymbolicOp, Operation):
             )
 
         if qml.pauli.is_pauli_word(base) and math.real(coeff) == 0:
-            pauli_word = qml.pauli.pauli_word_to_string(base)
-            coeff = 2j * coeff  # need to cancel the coefficients added by PauliRot
-            if pauli_word == "I" * base.num_wires:
-                return qml.Identity(wires=base.wires)
-            if len(pauli_word) == 1:
-                return [getattr(qml, f"R{pauli_word}")(phi=coeff, wires=base.wires)]
-            return [qml.PauliRot(theta=coeff, pauli_word=pauli_word, wires=base.wires)]
+            return self._pauli_decomposition(coeff, base)
 
-        if not isinstance(base, (Hamiltonian, Sum)):
-            raise DecompositionUndefinedError
+        if isinstance(base, (Hamiltonian, Sum)):
+            return self._trotter_decomposition(coeff, base)
 
+        raise DecompositionUndefinedError
+
+    # pylint: disable=no-self-use
+    def _pauli_decomposition(self, coeff: complex, base: Operator):
+        """Decomposes the exponential of a Pauli word into Pauli rotations or Ising gates.
+
+        Args:
+            base (Operator): exponentiated operator
+            coeff (complex): coefficient multiplying the exponentiated operator
+
+        Returns:
+            _type_: _description_
+        """
+        pauli_word = qml.pauli.pauli_word_to_string(base)
+        coeff = 2j * coeff  # need to cancel the coefficients added by PauliRot
+        if pauli_word == "I" * base.num_wires:
+            return []
+        if pauli_word in ("XX", "YY", "ZZ"):
+            return [getattr(qml, f"Ising{pauli_word}")(phi=coeff, wires=base.wires)]
+        if len(pauli_word) == 1:
+            return [getattr(qml, f"R{pauli_word}")(phi=coeff, wires=base.wires)]
+        return [qml.PauliRot(theta=coeff, pauli_word=pauli_word, wires=base.wires)]
+
+    def _trotter_decomposition(self, coeff: complex, base: Operator):
         if self.num_steps is None:
             raise ValueError(
                 "The number of steps is required to calculate the Suzuki-Trotter "
@@ -309,10 +328,7 @@ class Exp(ScalarSymbolicOp, Operation):
                 raise DecompositionUndefinedError(
                     "The decomposition of the exponential of a non-pauli word is not defined."
                 )
-            pauli_word = qml.pauli.pauli_word_to_string(op)
-            if pauli_word != "I" * op.num_wires:
-                c = 2j * c  # need to cancel the coefficients added by PauliRot
-                op_list.append(qml.PauliRot(theta=c, pauli_word=pauli_word, wires=op.wires))
+            op_list.extend(self._pauli_decomposition(c, op))
 
         return op_list * self.num_steps  # apply operators ``num_steps`` times
 
