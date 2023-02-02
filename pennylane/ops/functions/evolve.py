@@ -80,7 +80,7 @@ def _(op: Operator, coeff: float = 1, num_steps: int = None):
     Args:
         op (Union[.Operator, .ParametrizedHamiltonian]): operator to evolve
         coeff (float): coefficient multiplying the exponentiated operator: :math:`\exp\{i\bm{O}x)\}`
-        num_steps (int): number of time steps used in the Suzuki-Trotter decomposition of the 
+        num_steps (int): number of time steps used in the Suzuki-Trotter decomposition of the
             :class:`.Evolution` operator. If ``None``, an error will be raised when requesting the
             decomposition. Defaults to ``None``.
 
