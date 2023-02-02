@@ -186,6 +186,12 @@ class SpecialUnitary(Operation):
         ValueError: If the shape of the input does not match the Lie algebra
             dimension :math:`d=4^n-1` for :math:`n` wires.
 
+    .. note::
+
+        This operation should only be used to parametrize special unitaries that
+        can not easily be represented by other operations, as it incurs
+        computational cost that scale exponentially with the wires it acts on.
+
     The parameter ``theta`` refers to all Pauli words (except for the identity) in
     lexicographical order, which looks like the following for one and two qubits:
 
