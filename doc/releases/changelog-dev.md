@@ -312,7 +312,7 @@
   4: ─────────────────╰RY(0.81)─╰SWAP─────────────────╰RY(0.06)─╰SWAP─────────────────┤  State
   ```
   
-*Next generation device API:*
+<h4>Next generation device API ⚙️</h4>
 
 * The `apply_operation` single-dispatch function is added to `devices/qubit` that applies an operation
   to a state and returns a new state.
