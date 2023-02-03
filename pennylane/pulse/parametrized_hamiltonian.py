@@ -68,6 +68,7 @@ class ParametrizedHamiltonian:
     ``ParametrizedHamiltonian`` with the specified parameters.
 
     .. code-block:: python3
+
         >>> H
         ParametrizedHamiltonian: terms=2
         >>> H([jnp.ones(2)], 1.)
