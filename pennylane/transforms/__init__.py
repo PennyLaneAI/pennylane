@@ -83,7 +83,6 @@ both transforms, and decompositions within the larger PennyLane codebase.
     ~transforms.xyx_decomposition
     ~transforms.two_qubit_decomposition
     ~transforms.set_decomposition
-    ~transforms.ctrl_decomp_zyz
     ~transforms.pattern_matching
     ~transforms.to_zx
     ~transforms.from_zx
@@ -198,8 +197,7 @@ from .compile import compile
 from .decompositions import (
     zyz_decomposition,
     xyx_decomposition,
-    two_qubit_decomposition,
-    ctrl_decomp_zyz,
+    two_qubit_decomposition
 )
 from .defer_measurements import defer_measurements
 from .hamiltonian_expand import hamiltonian_expand, sum_expand

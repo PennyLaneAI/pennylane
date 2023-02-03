@@ -18,4 +18,3 @@ unitary operations into sequences of elementary operations.
 from .single_qubit_unitary import zyz_decomposition
 from .single_qubit_unitary import xyx_decomposition
 from .two_qubit_unitary import two_qubit_decomposition
-from .controlled_decompositions import ctrl_decomp_zyz
