@@ -799,6 +799,11 @@ class QNode:
 
         if old_interface == "auto":
             self.interface = qml.math.get_interface(*args, *list(kwargs.values()))
+            if self.device is not self._original_device:
+                warnings.warn(
+                    "The device was switched during the call of the QNode, to avoid this behaviour define"
+                    "an interface argument instead of auto."
+                )
 
         if not self._qfunc_uses_shots_arg:
             # If shots specified in call but not in qfunc signature,

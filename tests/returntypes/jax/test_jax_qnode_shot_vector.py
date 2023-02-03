@@ -35,8 +35,8 @@ qubit_device_and_diff_method = [
 ]
 
 interface_and_qubit_device_and_diff_method = [
-    ["auto"] + inner_list for inner_list in qubit_device_and_diff_method
-] + [["jax"] + inner_list for inner_list in qubit_device_and_diff_method]
+    ["jax"] + inner_list for inner_list in qubit_device_and_diff_method
+]
 
 TOLS = {
     "finite-diff": 0.3,

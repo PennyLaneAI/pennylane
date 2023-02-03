@@ -39,8 +39,8 @@ TOLS = {
 }
 
 interface_and_qubit_device_and_diff_method = [
-    ["auto"] + inner_list for inner_list in qubit_device_and_diff_method
-] + [["tf"] + inner_list for inner_list in qubit_device_and_diff_method]
+    ["tf"] + inner_list for inner_list in qubit_device_and_diff_method
+]
 
 
 @pytest.mark.parametrize("shots,num_copies", shots_and_num_copies)

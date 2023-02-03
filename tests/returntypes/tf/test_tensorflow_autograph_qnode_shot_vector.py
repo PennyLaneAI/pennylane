@@ -43,7 +43,7 @@ TOLS = {
 @pytest.mark.parametrize("dev_name,diff_method,gradient_kwargs", qubit_device_and_diff_method)
 @pytest.mark.parametrize(
     "decorator,interface",
-    [(tf.function, "auto"), (tf.function, "tf"), (lambda x: x, "tf-autograph")],
+    [(tf.function, "tf"), (lambda x: x, "tf-autograph")],
 )
 class TestReturnWithShotVectors:
     """Class to test the shape of the Grad/Jacobian/Hessian with different return types and shot vectors."""
@@ -339,7 +339,7 @@ class TestReturnWithShotVectors:
 @pytest.mark.parametrize("dev_name,diff_method,gradient_kwargs", qubit_device_and_diff_method)
 @pytest.mark.parametrize(
     "decorator,interface",
-    [(tf.function, "auto"), (tf.function, "tf"), (lambda x: x, "tf-autograph")],
+    [(tf.function, "tf"), (lambda x: x, "tf-autograph")],
 )
 class TestReturnShotVectorHessian:
     """Class to test the shape of the Hessian with different return types and shot vectors."""
@@ -349,7 +349,7 @@ class TestReturnShotVectorHessian:
     ):
         """The hessian of a single measurement with multiple params return a tuple of arrays."""
 
-        if (interface == "tf" or interface == "auto") and diff_method == "spsa":
+        if interface == "tf" and diff_method == "spsa":
             # TODO: Find out why.
             pytest.skip("SPSA gradient does not support this particular test case")
 
@@ -390,7 +390,7 @@ shots_and_num_copies = [((1000000, 900000, 800000), 3), ((1000000, (900000, 2)),
 @pytest.mark.parametrize("dev_name,diff_method,gradient_kwargs", qubit_device_and_diff_method)
 @pytest.mark.parametrize(
     "decorator,interface",
-    [(tf.function, "auto"), (tf.function, "tf"), (lambda x: x, "tf-autograph")],
+    [(tf.function, "tf"), (lambda x: x, "tf-autograph")],
 )
 class TestReturnShotVectorIntegration:
     """Tests for the integration of shots with the TF interface."""

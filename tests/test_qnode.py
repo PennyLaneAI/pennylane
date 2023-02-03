@@ -561,6 +561,22 @@ class TestValidation:
         assert "Use diff_method instead" in str(w[0].message)
         assert "Use diff_method instead" in str(w[1].message)
 
+    def test_auto_interface_device_switched_warning(self):
+        """Test that checks that a warning is raised if the device is switched during the QNode call due to auto int."""
+        dev = qml.device("default.qubit", wires=1)
+
+        @qml.qnode(dev)
+        def circuit(params):
+            qml.RX(params, wires=0)
+            return qml.expval(qml.PauliZ(0))
+
+        with pytest.warns(
+            UserWarning,
+            match="The device was switched during the call of the QNode, to avoid this behaviour "
+            "define ",
+        ):
+            circuit(qml.numpy.array(0.1, requires_grad=True))
+
 
 class TestTapeConstruction:
     """Tests for the tape construction"""
