@@ -15,7 +15,7 @@
 # pylint: disable=too-few-public-methods,function-redefined
 
 """
-This file contains the ``ParametrizedEvolution`` operator and the ``evolve`` constructor.
+This file contains the ``ParametrizedEvolution`` operator.
 """
 
 from typing import List, Union
@@ -34,7 +34,8 @@ except ImportError as e:
 
 
 class ParametrizedEvolution(Operation):
-    r"""Parametrized evolution gate.
+    r"""Parametrized evolution gate, created by passing a :class:`~.ParametrizedHamiltonian` to the
+    :func:`~.functions.evolve` function.
 
     For a time-dependent Hamiltonian of the form
     :math:`H(v, t) = H_\text{drift} + \sum_j f_j(v, t) H_j` it implements the corresponding
