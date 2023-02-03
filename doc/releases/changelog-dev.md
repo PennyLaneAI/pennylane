@@ -181,7 +181,6 @@
 
 <h4>Tools for quantum chemistry and other applications 🛠️</h4>
 
-
 * A new method called `qml.qchem.givens_decomposition` has been added, which decomposes a unitary into a sequence
   of Givens rotation gates with phase shifts and a diagonal phase matrix.
   [(#3573)](https://github.com/PennyLaneAI/pennylane/pull/3573)
