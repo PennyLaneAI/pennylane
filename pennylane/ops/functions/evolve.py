@@ -28,7 +28,6 @@ def evolve(op, *args, **kwargs):  # pylint: disable=unused-argument
 
     .. raw:: html
 
-        <h1>Input: <code>Operator</code></h1>
         <hr>
 
     Args:
