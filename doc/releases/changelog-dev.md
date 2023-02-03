@@ -73,8 +73,8 @@
 * The Hadamard test gradient tranform is now available via `qml.gradients.hadamard_grad`.
   [#3625](https://github.com/PennyLaneAI/pennylane/pull/3625)
 
-  `qml.gradients.hadamard_grad` is a hardware-compatible transform that calculates the 
-  gradient of a quantum circuit using the Hadamard test. Note that the device requires an 
+  `qml.gradients.hadamard_grad` is a hardware-compatible transform that calculates the
+  gradient of a quantum circuit using the Hadamard test. Note that the device requires an
   auxiliary wire to calculate the gradient.
 
   ```pycon
@@ -472,6 +472,10 @@
 
 * `qml.op_sum` has been deprecated. Users should use `qml.sum` instead.
   [(#3686)](https://github.com/PennyLaneAI/pennylane/pull/3686)
+
+* The use of `Evolution` directly has been deprecated. Users should use `qml.evolve` instead.
+  This new function changes the sign of the given parameter.
+  [(#3706)](https://github.com/PennyLaneAI/pennylane/pull/3706)
 
 <h3>Documentation</h3>
 
