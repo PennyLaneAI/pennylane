@@ -91,7 +91,7 @@ class TestControlledDecompositionZYZ:
         """Tests that the matrix representation of the controlled ZYZ decomposition
         of a single-qubit operation is correct"""
         expected_op = qml.ctrl(op, control_wires)
-        res = qml.matrix(ctrl_decomp_zyz)(op, control_wires)
+        res = qml.matrix(ctrl_decomp_zyz, wire_order=control_wires + [0])(op, control_wires)
         expected = expected_op.matrix()
 
         assert np.allclose(expected, res, atol=tol, rtol=0)
