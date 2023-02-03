@@ -758,10 +758,9 @@ class QNode:
             )
 
         for obj in self.tape.operations + self.tape.observables:
-            if (
-                getattr(obj, "num_wires", None) is qml.operation.WiresEnum.AllWires
-                and len(obj.wires) != self.device.num_wires
-            ):
+            if getattr(obj, "num_wires", None) is qml.operation.WiresEnum.AllWires and len(
+                obj.wires
+            ) not in [0, self.device.num_wires]:
                 # check here only if enough wires
                 raise qml.QuantumFunctionError(f"Operator {obj.name} must act on all wires")
 
