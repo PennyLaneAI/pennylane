@@ -39,7 +39,7 @@ def parametrized_evolution(op: ParametrizedHamiltonian):
     """Returns a new operator that computes the evolution of ``op``.
 
     Args:
-        op (Union[.Operator, .ParametrizedHamiltonian]): operator to evolve
+        op (.ParametrizedHamiltonian): operator to evolve
 
     Returns:
         ~pennylane.ops.op_math.evolve.ParametrizedEvolution: evolution operator
