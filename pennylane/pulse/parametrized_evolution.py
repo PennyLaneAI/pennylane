@@ -189,7 +189,7 @@ class ParametrizedEvolution(Operation):
             coeffs = [lambda p, t: p * jnp.sin(t) for _ in range(3)]
             H2 = qml.dot(coeffs, ops) # time-dependent parametrized Hamiltonian
 
-        The evolutions of the :class:`ParametrizedHamiltonian` can be used in a QNode:
+        The evolutions of the :class:`ParametrizedHamiltonian` can be used in a QNode.
 
         .. code-block:: python
 
@@ -206,6 +206,11 @@ class ParametrizedEvolution(Operation):
                 qml.evolve(H1 + H2)(params, t=[0, 10])
                 return qml.expval(qml.PauliZ(0) @ qml.PauliZ(1) @ qml.PauliZ(2))
 
+        In ``circuit1``, the two Hamiltonians are evolved over the same time window, but inside different operators.
+        In ``circuit2``, we add the two to form a single :class:`~.ParametrizedHamiltonian`. This will combine the
+        two so that the expected parameters will be ``params1 + params2``. They can then be included inside a single
+        :class:`~.ParametrizedEvolution`.
+
         The resulting evolutions of ``circuit1`` and ``circuit2`` are *not* identical:
 
         >>> params = jnp.array([1., 2., 3.])
@@ -217,8 +222,8 @@ class ParametrizedEvolution(Operation):
         Array(-0.78236955, dtype=float32)
 
         The ``circuit1`` is not executing the evolution of ``H1`` and ``H2`` simultaneously, but rather
-        executing ``H1`` in the ``[0, 10]`` time window and then executing ``H2`` with the same time window!
-
+        executing ``H1`` in the ``[0, 10]`` time window and then executing ``H2`` with the same time window,
+        without taking into account how the time evolution of ``H1`` affects the evolution of ``H2`` and vice versa!
 
         One can also provide a list of time values that the odeint will use to calculate the evolution of the
         :class:`ParametrizedHamiltonian`. Keep in mind that our odeint solver uses an adaptive step size, thus
