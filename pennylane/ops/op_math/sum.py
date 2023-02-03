@@ -190,7 +190,10 @@ class Sum(CompositeOp):
         """
         coeffs, ops = H.terms()
         ops = [qml.prod(*op.obs) if isinstance(op, Tensor) else op for op in ops]
-        return qml.dot(coeffs, ops)
+        # We avoid using `qml.dot` because it always returns SProd operators (we cannot use
+        # the following if statement because the function needs to be jittable).
+        operands = [op if c == 1 else qml.s_prod(c, op) for c, op in zip(coeffs, ops)]
+        return operands[0] if len(operands) == 1 else sum(*operands)
 
     @property
     def is_hermitian(self):

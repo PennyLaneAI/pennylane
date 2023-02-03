@@ -277,6 +277,13 @@ class Exp(ScalarSymbolicOp, Operation):
         Returns:
             List[Operator]: decomposition
         """
+        if isinstance(base, Tensor) and len(base.wires) != len(base.obs):
+            raise DecompositionUndefinedError(
+                "Unable to determine if the exponential has a decomposition "
+                "when the base operator is a Tensor object with overlapping wires. "
+                f"Received base {base}."
+            )
+
         with qml.QueuingManager.stop_recording():
             # Change base to `Sum`/`Prod`
             if isinstance(base, Hamiltonian):
@@ -284,12 +291,6 @@ class Exp(ScalarSymbolicOp, Operation):
             elif isinstance(base, Tensor):
                 base = qml.prod(*base.obs)
 
-        if isinstance(base, Tensor) and len(base.wires) != len(base.obs):
-            raise DecompositionUndefinedError(
-                "Unable to determine if the exponential has a decomposition "
-                "when the base operator is a Tensor object with overlapping wires. "
-                f"Received base {base}."
-            )
         if isinstance(base, SProd):
             return self._recursive_decomposition(base.base, base.scalar * coeff)
 
