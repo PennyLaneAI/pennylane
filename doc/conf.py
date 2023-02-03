@@ -33,6 +33,7 @@ needs_sphinx = "3.3"
 # ones.
 extensions = [
     "sphinx.ext.autodoc",
+    "sphinx_autodoc_typehints",
     "sphinx.ext.autosummary",
     "sphinx.ext.todo",
     "sphinx.ext.coverage",
@@ -45,7 +46,6 @@ extensions = [
     "sphinx.ext.intersphinx",
     "sphinx_automodapi.automodapi",
     "sphinx_copybutton",
-    "sphinx_autodoc_typehints",
     "m2r2",
 ]
 
