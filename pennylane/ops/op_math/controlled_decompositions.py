@@ -38,7 +38,7 @@ def ctrl_decomp_zyz(target_operation: Operator, control_wires: Wires):
         list[Operation]: the decomposed operations
 
     Raises:
-        ValueError: if `target_operation` is not a single-qubit operation
+        ValueError: if ``target_operation`` is not a single-qubit operation
 
     **Example**
 
