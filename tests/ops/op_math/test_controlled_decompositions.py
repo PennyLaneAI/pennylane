@@ -14,7 +14,6 @@
 """
 Tests for the controlled decompositions.
 """
-from functools import reduce
 import pytest
 
 import numpy as np
