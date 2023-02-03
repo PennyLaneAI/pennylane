@@ -16,10 +16,9 @@
 See section on "Testing Matplotlib based code" in the "Software Tests"
 page in the developement guide.
 """
-
+# pylint: disable=protected-access, expression-not-assigned
 
 import pytest
-from pytest_mock import mocker
 import pennylane as qml
 
 from pennylane.drawer import tape_mpl
@@ -349,7 +348,6 @@ class TestSpecialGates:
 
         tape = QuantumScript.from_queue(q_tape)
         _, ax = tape_mpl(tape)
-        layer = 0
 
         assert len(ax.lines) == 3
         assert len(ax.collections) == 2
@@ -364,7 +362,6 @@ class TestSpecialGates:
 
         tape = QuantumScript.from_queue(q_tape)
         _, ax = tape_mpl(tape)
-        layer = 0
 
         assert len(ax.lines) == 2
         assert len(ax.texts) == 3
@@ -378,7 +375,6 @@ class TestSpecialGates:
 
         tape = QuantumScript.from_queue(q_tape)
         _, ax = tape_mpl(tape)
-        layer = 0
 
         assert len(ax.lines) == 1
         assert len(ax.collections) == 0
@@ -538,6 +534,28 @@ class TestGeneralOperations:
         assert ax.patches[0].get_height() == num_wires - 1 + self.width
 
         plt.close()
+
+    def test_snapshot(self):
+        """Test that `qml.Snapshot` works properly with `tape_mpl`."""
+
+        # Test that empty figure is created when the only gate is `qml.Snapshot`
+        tape = QuantumScript([qml.Snapshot()])
+        fig, ax = tape_mpl(tape)
+
+        assert isinstance(fig, mpl.figure.Figure)
+        assert isinstance(ax, mpl.axes._axes.Axes)
+
+        assert fig.axes == [ax]
+
+        # Test that `qml.Snapshot` works properly when other gates are present
+        tape = QuantumScript([qml.Snapshot(), qml.Hadamard(0), qml.Hadamard(1), qml.Hadamard(2)])
+        _, ax = tape_mpl(tape)
+
+        assert isinstance(ax.patches[0], mpl.patches.FancyBboxPatch)
+        assert ax.patches[0].get_x() == -self.width / 2.0
+        assert ax.patches[0].get_y() == -self.width / 2.0
+        assert ax.patches[0].get_width() == self.width
+        assert ax.patches[0].get_height() == 2 + self.width
 
     @pytest.mark.parametrize("op", general_op_data)
     def test_general_operations_decimals(self, op):
