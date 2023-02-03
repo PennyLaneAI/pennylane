@@ -108,6 +108,28 @@
 
 <h4>Always differentiable 📈</h4>
 
+* The Hadamard test gradient tranform is now available via `qml.gradients.hadamard_grad`.
+  [#3625](https://github.com/PennyLaneAI/pennylane/pull/3625)
+
+  `qml.gradients.hadamard_grad` is a hardware-compatible transform that calculates the 
+  gradient of a quantum circuit using the Hadamard test. Note that the device requires an 
+  auxiliary wire to calculate the gradient.
+
+  ```pycon
+  >>> dev = qml.device("default.qubit", wires=2)
+  >>> @qml.qnode(dev)
+  ... def circuit(params):
+  ...     qml.RX(params[0], wires=0)
+  ...     qml.RY(params[1], wires=0)
+  ...     qml.RX(params[2], wires=0)
+  ...     return qml.expval(qml.PauliZ(0))
+  >>> params = np.array([0.1, 0.2, 0.3], requires_grad=True)
+  >>> qml.gradients.hadamard_grad(circuit)(params)
+  (tensor([-0.3875172], requires_grad=True),
+   tensor([-0.18884787], requires_grad=True),
+   tensor([-0.38355704], requires_grad=True))
+  ```
+
 * The gradient transform `qml.gradients.spsa_grad` is now registered as a
   differentiation method for `QNode`s.
   [#3440](https://github.com/PennyLaneAI/pennylane/pull/3440)
@@ -341,6 +363,9 @@
   to a state and returns a new state.
   [(#3637)](https://github.com/PennyLaneAI/pennylane/pull/3637)
 
+* The `create_initial_state` function is added to `devices/qubit` that returns an initial state for an execution.
+  [(#3683)](https://github.com/PennyLaneAI/pennylane/pull/3683)
+
 <h3>Improvements</h3>
 
 * `qml.purity` is added as a measurement process for purity
@@ -534,6 +559,9 @@
 
 * Fixed typo in the example of IsingZZ gate decomposition
   [(#3676)](https://github.com/PennyLaneAI/pennylane/pull/3676)
+
+* Fixed a bug that made tapes/qnodes using `qml.Snapshot` incompatible with `qml.drawer.tape_mpl`.
+  [(#3704)](https://github.com/PennyLaneAI/pennylane/pull/3704)
 
 <h3>Contributors</h3>
 
