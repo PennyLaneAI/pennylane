@@ -230,11 +230,6 @@ class Exp(ScalarSymbolicOp, Operation):
             return "_ops"
         return None
 
-    @property
-    def inverse(self):
-        """Setting inverse is not defined for Exp, so the inverse is always False"""
-        return False
-
     # pylint: disable=invalid-overridden-method
     @property
     def has_decomposition(self):
@@ -252,6 +247,11 @@ class Exp(ScalarSymbolicOp, Operation):
             qml.pauli.is_pauli_word(o) for o in base
         )
         return is_pauli_rot or is_hamiltonian or is_sum_of_pauli_words
+
+    @property
+    def inverse(self):
+        """Setting inverse is not defined for Exp, so the inverse is always False"""
+        return False
 
     # pylint: disable=too-many-branches
     def decomposition(self):
