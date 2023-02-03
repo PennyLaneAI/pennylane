@@ -49,7 +49,7 @@
   [(#3617)](https://github.com/PennyLaneAI/pennylane/pull/3617)
   [(#3706)](https://github.com/PennyLaneAI/pennylane/pull/3706)
 
-* A new function called `qml.evolve` has been added that returns the evolution of an operator or a `ParametrizedHamiltonian`.
+* A new function called `qml.evolve` has been added that returns the evolution of an `Operator` or a `ParametrizedHamiltonian`.
   [(#3617)](https://github.com/PennyLaneAI/pennylane/pull/3617)
   [(#3706)](https://github.com/PennyLaneAI/pennylane/pull/3706)
 
