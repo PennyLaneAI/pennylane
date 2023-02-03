@@ -31,8 +31,8 @@ from pennylane import DeviceError
 
 
 def _stopping_condition(op):
-    """Specify whether or not an Operator is supported"""
-    return getattr(op, "has_matrix", False)
+    """Specify whether or not an Operator object is supported by the device"""
+    return getattr(op, "has_matrix", False) and qml.matrix(op).shape[-1] % 2 == 0
 
 
 def _supports_observable(dev, observable):

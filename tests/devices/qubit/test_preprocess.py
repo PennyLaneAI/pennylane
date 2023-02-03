@@ -34,7 +34,13 @@ class TestPreprocess:
 
     @pytest.mark.parametrize(
         "op, expected",
-        [(qml.PauliX(0), True), (qml.CRX, True), (qml.Snapshot(), False), (qml.Barrier, False)],
+        [
+            (qml.PauliX(0), True),
+            (qml.CRX(0.1, wires=[0, 1]), True),
+            (qml.Snapshot(), False),
+            (qml.Barrier(), False),
+            (qml.TShift(1), False),
+        ],
     )
     def test_stopping_condition(self, op, expected):
         """Test that _stopping_condition works correctly"""
@@ -55,16 +61,20 @@ class TestPreprocess:
         "tape, err_msg",
         [
             (
-                QuantumScript([qml.measure(0)]),
+                QuantumScript([qml.measurements.MidMeasureMP(wires=qml.wires.Wires([0]))]),
                 "Mid-circuit measurements are not natively supported on device default.qubit.",
             ),
             (QuantumScript(ops=[qml.TShift(0)]), "Gate TShift not supported on device"),
             (
-                QuantumScript(measurements=[qml.expval(qml.PauliZ(0) @ qml.GellMann(1, wires=1))]),
+                QuantumScript(
+                    measurements=[
+                        qml.expval(qml.GellMann(wires=0, index=1) @ qml.GellMann(wires=1, index=2))
+                    ]
+                ),
                 "Observable GellMann not supported on device",
             ),
             (
-                QuantumScript(measurements=[qml.expval(qml.GellMann(1, wires=0))]),
+                QuantumScript(measurements=[qml.expval(qml.GellMann(wires=0, index=1))]),
                 "Observable GellMann not supported on device",
             ),
         ],
