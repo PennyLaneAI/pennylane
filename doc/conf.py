@@ -299,7 +299,7 @@ texinfo_documents = [
 autodoc_member_order = "bysource"
 
 # remove types from function signatures
-autodoc_typehints_format = "short"
+autodoc_typehints = "none"
 
 # inheritance_diagram graphviz attributes
 inheritance_node_attrs = dict(color="lightskyblue1", style="filled")
