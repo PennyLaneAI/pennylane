@@ -37,7 +37,7 @@ def evolve(*args, **kwargs):  # pylint: disable=unused-argument
 
     .. math::
 
-        e^{-i x \bm{O})}
+        e^{-i x \bm{O}}
 
     Args:
         op (.Operator): operator to evolve
