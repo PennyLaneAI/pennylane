@@ -14,6 +14,7 @@
 """
 This submodule defines the Evolution class.
 """
+import warnings
 from warnings import warn
 
 import numpy as np
@@ -81,6 +82,9 @@ class Evolution(Exp):
 
     # pylint: disable=too-many-arguments
     def __init__(self, generator, param=1, num_steps=None, do_queue=True, id=None):
+        warnings.warn(
+            "Please use `qml.evolve` to instantiate an `Evolution` operator.", UserWarning
+        )
         super().__init__(generator, coeff=1j * param, num_steps=num_steps, do_queue=do_queue, id=id)
         self._data = [param]
 

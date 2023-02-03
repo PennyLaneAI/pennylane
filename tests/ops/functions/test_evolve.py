@@ -12,6 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Unit tests for the ``evolve`` function."""
+import warnings
+
 import pytest
 
 import pennylane as qml
@@ -23,6 +25,12 @@ from pennylane.pulse import ParametrizedEvolution, ParametrizedHamiltonian
 class TestEvolveConstructor:
     """Unit tests for the evolve function"""
 
+    def test_evolve_doesnt_raise_any_warning(self):
+        """Test that using `qml.evolve`, the warning inside `Evolution.__init__` is not raised."""
+        with warnings.catch_warnings():
+            warnings.simplefilter("error")
+            qml.evolve(qml.PauliX(0))
+
     def test_evolve_returns_evolution_op(self):
         """Test that the evolve function returns the `Evolution` operator when the input is
         a generic operator."""
@@ -33,7 +41,7 @@ class TestEvolveConstructor:
     def test_matrix(self):
         """Test that the matrix of the evolved function is correct."""
         final_op = qml.evolve(qml.PauliX(0), coeff=2)
-        mat = qml.math.expm(1j * qml.matrix(2 * qml.PauliX(0)))
+        mat = qml.math.expm(-1j * qml.matrix(2 * qml.PauliX(0)))
         assert qml.math.allequal(qml.matrix(final_op), mat)
 
     def test_evolve_returns_parametrized_evolution(self):
