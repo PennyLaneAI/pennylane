@@ -224,7 +224,7 @@ def _expval_hadamard_grad(tape, argnum, aux_wire):
 
         for gen in generators:
             if isinstance(trainable_op, qml.Rot):
-                # We only registered PauliZ as generator for Rot, therefore we need to apply some gates 
+                # We only registered PauliZ as generator for Rot, therefore we need to apply some gates
                 # before and after the generator for the first two parameters.
                 if p_idx == 0:
                     # Move the Rot gate past the generator
@@ -345,7 +345,8 @@ def _expval_hadamard_grad(tape, argnum, aux_wire):
 
 def _get_generators(trainable_op):
     """From a trainable operation, extract the unitary generators and their coefficients. If an operation is added here
-    one needs to also update the list of supported operation in the expand function given to the gradient transform."""
+    one needs to also update the list of supported operation in the expand function given to the gradient transform.
+    """
     # For PhaseShift, we need to separate the generator in two unitaries (Hardware compatibility)
     if isinstance(trainable_op, (qml.PhaseShift, qml.U1)):
         generators = [qml.PauliZ(wires=trainable_op.wires)]
