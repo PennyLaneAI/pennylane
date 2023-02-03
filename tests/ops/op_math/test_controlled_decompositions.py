@@ -91,17 +91,10 @@ class TestControlledDecompositionZYZ:
     def test_decomposition_matrix(self, op, control_wires, tol):
         """Tests that the matrix representation of the controlled ZYZ decomposition
         of a single-qubit operation is correct"""
-        decomps = ctrl_decomp_zyz(op, Wires(control_wires))
         expected_op = qml.ctrl(op, control_wires)
-        decomp_mats = [
-            np.kron(np.eye(2 ** len(control_wires)), decomp_op.matrix())
-            if not isinstance(decomp_op, qml.MultiControlledX)
-            else decomp_op.matrix()
-            for decomp_op in decomps
-        ]
-
-        res = reduce(np.matmul, reversed(decomp_mats))
+        res = qml.matrix(ctrl_decomp_zyz)(op, control_wires)
         expected = expected_op.matrix()
+
         assert np.allclose(expected, res, atol=tol, rtol=0)
 
     def test_correct_decomp(self):

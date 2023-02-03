@@ -51,15 +51,15 @@ def ctrl_decomp_zyz(target_operation: Operator, control_wires: Wires):
 
         @qml.qnode(dev)
         def expected_circuit(op):
-            for i in range(3):
-                qml.Hadamard(i)
+            qml.Hadamard(wires=0)
+            qml.Hadamard(wires=1)
             qml.ctrl(op, [0,1])
             return qml.probs()
 
         @qml.qnode(dev)
         def decomp_circuit(op):
-            for i in range(3):
-                qml.Hadamard(i)
+            qml.Hadamard(wires=0)
+            qml.Hadamard(wires=1)
             qml.ops.ctrl_decomp_zyz(op, [0,1])
             return qml.probs()
 
@@ -67,9 +67,11 @@ def ctrl_decomp_zyz(target_operation: Operator, control_wires: Wires):
 
     >>> op = qml.RX(0.123, wires=2)
     >>> expected_circuit(op)
-    tensor([0.125, 0.125, 0.125, 0.125, 0.125, 0.125, 0.125, 0.125], requires_grad=True)
+    tensor([0.25      , 0.        , 0.25      , 0.        , 0.25      ,
+        0.        , 0.24905563, 0.00094437], requires_grad=True)
     >>> decomp_circuit(op)
-    tensor([0.125, 0.125, 0.125, 0.125, 0.125, 0.125, 0.125, 0.125], requires_grad=True)
+    tensor([0.25      , 0.        , 0.25      , 0.        , 0.25      ,
+        0.        , 0.24905563, 0.00094437], requires_grad=True)
 
     """
     if len(target_operation.wires) != 1:
@@ -83,7 +85,10 @@ def ctrl_decomp_zyz(target_operation: Operator, control_wires: Wires):
     try:
         phi, theta, omega = target_operation.single_qubit_rot_angles()
     except NotImplementedError:
-        zyz_decomp = qml.transforms.zyz_decomposition(qml.matrix(target_operation), target_wire)[0]
+        with qml.QueuingManager.stop_recording():
+            zyz_decomp = qml.transforms.zyz_decomposition(
+                qml.matrix(target_operation), target_wire
+            )[0]
         phi, theta, omega = zyz_decomp.single_qubit_rot_angles()
 
     return [
