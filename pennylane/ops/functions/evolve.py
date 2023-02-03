@@ -23,8 +23,7 @@ from pennylane.pulse import ParametrizedEvolution, ParametrizedHamiltonian
 
 @singledispatch
 def evolve(*args, **kwargs):  # pylint: disable=unused-argument
-    r"""Returns a new operator that computes the evolution of ``op``. This method is dispatched and
-    its functionality depends on the type of the input ``op``.
+    r"""This method is dispatched and its functionality depends on the type of the input ``op``.
 
     .. raw:: html
 
@@ -33,9 +32,15 @@ def evolve(*args, **kwargs):  # pylint: disable=unused-argument
             <hr>
         </html>
 
+    Returns a new operator that computes the evolution of ``op``.
+
+    .. math::
+
+        \exp\{-i \times \bm{op} \times coeff)\}
+
     Args:
         op (.Operator): operator to evolve
-        coeff (float): coefficient multiplying the exponentiated operator: :math:`\exp\{i\bm{O}x)\}`.
+        coeff (float): coefficient multiplying the exponentiated operator
 
     Returns:
         .Evolution: evolution operator
@@ -95,4 +100,4 @@ def parametrized_hamiltonian(op: ParametrizedHamiltonian):
 # pylint: disable=missing-docstring
 @evolve.register
 def evolution(op: Operator, coeff: float = 1):
-    return Evolution(op, coeff)
+    return Evolution(op, -1 * coeff)
