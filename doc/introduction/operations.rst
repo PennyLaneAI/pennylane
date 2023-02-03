@@ -472,3 +472,34 @@ Qutrit Observables
 
 :html:`</div>`
 
+.. _intro_ref_ops_pulse:
+
+Pulse-level operators
+---------------------
+
+If you would like to learn more about the implementation of pulse-level control in PennyLane, see the
+:mod:`~.pulse` module documentation.
+
+
+Pulse operator
+^^^^^^^^^^^^^^
+
+:html:`<div class="summary-table">`
+
+.. autosummary::
+    :nosignatures:
+
+    ~pennylane.pulse.ParametrizedEvolution
+
+:html:`</div>`
+
+This operator can be created via the :class:`~.ParametrizedHamiltonian` to Operator function:
+
+:html:`<div class="summary-table">`
+
+.. autosummary::
+    :nosignatures:
+
+    ~pennylane.evolve
+
+:html:`</div>`
