@@ -424,6 +424,9 @@
 * `BasisState` now implements the `StatePrep` interface.
   [(#3693)](https://github.com/PennyLaneAI/pennylane/pull/3693)
 
+* `QubitStateVector` now implements the `StatePrep` interface.
+  [(#3685)](https://github.com/PennyLaneAI/pennylane/pull/3685)
+
 <h3>Breaking changes</h3>
 
 * The tape method `get_operation` can also now return the operation index in the tape, and it can be
