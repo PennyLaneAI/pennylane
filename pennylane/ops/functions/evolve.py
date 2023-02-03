@@ -22,7 +22,7 @@ from pennylane.pulse import ParametrizedEvolution, ParametrizedHamiltonian
 
 
 @singledispatch
-def evolve(op, *args, **kwargs):  # pylint: disable=unused-argument
+def evolve(*args, **kwargs):  # pylint: disable=unused-argument
     r"""Returns a new operator that computes the evolution of ``op``. This method is dispatched and
     its functionality depends on the type of the input ``op``.
 
