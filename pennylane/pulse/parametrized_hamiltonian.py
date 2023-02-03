@@ -67,7 +67,7 @@ class ParametrizedHamiltonian:
     The resulting object can be passed parameters, and will return an :class:`~.Operator` representing the
     ``ParametrizedHamiltonian`` with the specified parameters.
 
-    .. code-bloc:: python3
+    .. code-block:: python3
         >>> H
         ParametrizedHamiltonian: terms=2
         >>> H([jnp.ones(2)], 1.)
