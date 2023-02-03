@@ -171,40 +171,36 @@ If not specified, they will default to predetermined values. See :class:`.Parame
 Using qml.evolve in a QNode
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-The :class:`~.ParametrizedEvolution` can be implemented in a QNode. To look at an example of this,
-let's start with two instances of :class:`~.ParametrizedHamiltonian`:
+The :class:`~.ParametrizedEvolution` can be implemented in a QNode. We will evolve the
+:class:`~.ParametrizedHamiltonian`:
 
 .. code-block:: python
 
-    ops = [qml.PauliX(0), qml.PauliY(1), qml.PauliZ(2)]
-    coeffs = [qml.pulse.constant for _ in range(3)]
-    H1 = qml.dot(coeffs, ops)  # time-independent parametrized hamiltonian
+        from jax import numpy as jnp
 
-.. code-block:: python
+        f1 = lambda p, t: jnp.sin(p * t)
+        H = f1 * qml.PauliY(0)
 
-    ops = [qml.PauliZ(0), qml.PauliY(1), qml.PauliX(2)]
-    coeffs = [lambda p, t: p * jnp.sin(t) for _ in range(3)]
-    H2 = qml.dot(coeffs, ops) # time-dependent parametrized hamiltonian
 
-Now we can execute the evolution of these Hamiltonians applied simultaneously. To do this, we can add the two
-to form a single :class:`~.ParametrizedHamiltonian`. This will combine the two so that the expected parameters
-will be ``params1 + params2``.
+Now we can execute the evolution of this Hamiltonian in a QNode:
 
 .. code-block:: python
 
     import jax
 
-    dev = qml.device("default.qubit", wires=3)
-
+    dev = qml.device("default.qubit", wires=1)
     @jax.jit
     @qml.qnode(dev, interface="jax")
     def circuit(params):
-        qml.evolve(H1 + H2)(params, t=[0, 10])
-        return qml.expval(qml.PauliZ(0) @ qml.PauliZ(1) @ qml.PauliZ(2))
+        qml.evolve(H)(params, t=[0, 10])
+        return qml.expval(qml.PauliZ(0))
 
-    params = jnp.array([1., 2., 3., 4., 5., 6.])
-    circuit(params)
-    >>> Array(-0.78236955, dtype=float32)
+    >>> params = [1.2]
+    >>> circuit(params)
+    Array(0.96632576, dtype=float32)
+
+    >>> jax.grad(circuit)(params)
+    Array([2.3569832], dtype=float32)
 
 We can use the decorator ``jax.jit`` to compile this execution just-in-time. This means the first execution
 will typically take a little longer with the benefit that all following executions will be significantly faster.
@@ -212,18 +208,8 @@ JIT-compiling is optional, and one can remove the decorator when only single exe
 ``jax`` docs on jitting for more information.
 
 .. warning::
-    In the example above, we want to find the simultaneous evolution of the two operators, so it is important
-    that ``H1`` and ``H2`` are included in the same :func:`~.functions.evolve`.
+    To find the simultaneous evolution of the two operators, so it is important that ``H1`` and ``H2`` are included
+    in the same :func:`~.functions.evolve`.
     For non-commuting operations, applying ``qml.evolve(H1)(params, t=[0, 10])`` followed by
     ``qml.evolve(H2)(params, t=[0, 10])`` will **not** apply the two pulses simultaneously, despite the overlapping
-    time window. Instead, it will execute ``H1`` in the ``[0, 10]`` time window, and then subsequently execute
-    ``H2`` using the same time window to calculate the evolution, but without taking into account how the time
-    evolution of ``H1`` affects the evolution of ``H2`` and vice versa.
-
-We can also compute the gradient of this evolution with respect to the input parameters:
-
-.. code-block:: python
-
-    jax.grad(circuit)(params)
-    >>> Array([-4.8066125,  3.7038102, -1.3294725, -2.4061902,  0.6811545,
-        -0.5226515], dtype=float32)
+    time window. See Usage Details of :class:`~.ParametrizedEvolution` for a detailed example.
