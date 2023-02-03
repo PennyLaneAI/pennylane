@@ -30,7 +30,7 @@ from pennylane import DeviceError
 
 
 class TestPreprocess:
-    """Test that functions in qml.devices.qubit.preprocess work as expected"""
+    """Unit tests for functions in qml.devices.qubit.preprocess"""
 
     @pytest.mark.parametrize(
         "op, expected",
@@ -77,6 +77,11 @@ class TestPreprocess:
 
     def test_check_validity_passes(self):
         """Test that check_validity doesn't throw any errors for a valid circuit"""
+        dev = qml.device("default.qubit", wires=1)
+        tape = QuantumScript(
+            ops=[qml.PauliX(0), qml.RZ(0.123, wires=0)], measurements=[qml.expval(qml.Hadamard(0))]
+        )
+        check_validity(dev, tape)
 
     def test_batch_transform(self):
         """Test that batch_transform works correctly"""
