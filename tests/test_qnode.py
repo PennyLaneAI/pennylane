@@ -562,7 +562,8 @@ class TestValidation:
         assert "Use diff_method instead" in str(w[1].message)
 
     def test_auto_interface_device_switched_warning(self):
-        """Test that checks that a warning is raised if the device is switched during the QNode call due to auto interface."""
+        """Test that checks that a warning is raised if the device is switched during the QNode call due to auto
+        interface."""
         dev = qml.device("default.qubit", wires=1)
 
         @qml.qnode(dev)
@@ -572,8 +573,7 @@ class TestValidation:
 
         with pytest.warns(
             UserWarning,
-            match="The device was switched during the call of the QNode, to avoid this behaviour "
-            "define ",
+            match="The device was switched during the call of the QNode",
         ):
             circuit(qml.numpy.array(0.1, requires_grad=True))
 
