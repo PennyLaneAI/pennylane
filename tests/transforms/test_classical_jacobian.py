@@ -228,6 +228,8 @@ def test_autograd_with_scalar_argnum(circuit, args, expected_jac, argnum, diff_m
     dev = qml.device("default.qubit", wires=2)
     qnode = qml.QNode(circuit, dev, interface=interface, diff_method=diff_method)
     jac = classical_jacobian(qnode, argnum=argnum)(*args)
+    if interface == "auto":
+        assert qnode.interface == "auto"
     expected_jac = expected_jac[argnum]
     assert np.allclose(jac, expected_jac)
 

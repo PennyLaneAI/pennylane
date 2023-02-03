@@ -105,7 +105,7 @@ class TestIntegration:
         """Testing that for any number of wires and parameters, the correct size and values are computed"""
         dev = qml.device("default.qubit", wires=n_wires)
 
-        @qml.qnode(dev, interface="autograd")
+        @qml.qnode(dev)
         def circ(params):
             for i in range(n_wires):
                 qml.Hadamard(wires=i)
@@ -120,6 +120,7 @@ class TestIntegration:
 
         params = pnp.zeros(n_params, requires_grad=True)
         res = classical_fisher(circ)(params)
+        assert circ.interface == "auto"
         assert np.allclose(res, n_wires * np.ones((n_params, n_params)))
 
     def test_hardware_compatibility_classical_fisher(

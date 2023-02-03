@@ -933,6 +933,9 @@ class TestFullMetricTensor:
 
         mt = qml.metric_tensor(circuit, approx=None)(*params)
 
+        if interface == "auto":
+            assert circuit.interface == "auto"
+
         if isinstance(mt, tuple):
             assert all(qml.math.allclose(_mt, _exp) for _mt, _exp in zip(mt, expected))
         else:

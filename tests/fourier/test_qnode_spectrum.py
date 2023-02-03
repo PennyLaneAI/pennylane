@@ -235,6 +235,7 @@ class TestCircuits:
         dev = qml.device("default.qubit", wires=2)
         qnode = qml.QNode(circuit, dev)
         spec = qnode_spectrum(qnode)(*args)
+        assert qnode.interface == "auto"
         assert spec.keys() == expected.keys()
         for outer_key in spec.keys():
             assert spec[outer_key].keys() == expected[outer_key].keys()

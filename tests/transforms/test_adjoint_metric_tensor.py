@@ -689,6 +689,9 @@ class TestAdjointMetricTensorDifferentiability:
 
         mt_jac = qml.jacobian(qml.adjoint_metric_tensor(circuit))(*params)
 
+        if interface == "auto":
+            assert circuit.interface == "auto"
+
         if isinstance(mt_jac, tuple):
             assert all(qml.math.allclose(_mt, _exp) for _mt, _exp in zip(mt_jac, expected))
         else:

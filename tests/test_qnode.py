@@ -562,7 +562,7 @@ class TestValidation:
         assert "Use diff_method instead" in str(w[1].message)
 
     def test_auto_interface_device_switched_warning(self):
-        """Test that checks that a warning is raised if the device is switched during the QNode call due to auto int."""
+        """Test that checks that a warning is raised if the device is switched during the QNode call due to auto interface."""
         dev = qml.device("default.qubit", wires=1)
 
         @qml.qnode(dev)
@@ -576,6 +576,20 @@ class TestValidation:
             "define ",
         ):
             circuit(qml.numpy.array(0.1, requires_grad=True))
+
+    def test_autograd_interface_device_switched_no_warnings(self):
+        """Test that checks that no warning is raised for device switch when you define an interface."""
+        dev = qml.device("default.qubit", wires=1)
+
+        @qml.qnode(dev, interface="autograd")
+        def circuit(params):
+            qml.RX(params, wires=0)
+            return qml.expval(qml.PauliZ(0))
+
+        with warnings.catch_warnings(record=True) as record:
+            circuit(qml.numpy.array(0.1, requires_grad=True))
+
+        assert len(record) == 0
 
 
 class TestTapeConstruction:

@@ -424,6 +424,7 @@ class TestBatchTransform:
 
         expected = fn(dev.batch_execute(tapes))
         assert res == expected
+        assert circuit.interface == "auto"
 
     def test_parametrized_transform_qnode_decorator(self, mocker):
         """Test that a parametrized transform can be applied

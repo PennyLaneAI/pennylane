@@ -207,7 +207,7 @@ class TestGradientTransformIntegration:
 
         w = np.array([0.543, -0.654], requires_grad=True)
         res = grad_fn(w)
-
+        assert circuit.interface == "auto"
         x, y = w
         expected = np.array([[-np.sin(x), 0], [0, -2 * np.cos(y) * np.sin(y)]])
         assert np.allclose(res, expected, atol=tol, rtol=0)
