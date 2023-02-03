@@ -178,13 +178,13 @@ let's start with two instances of :class:`~.ParametrizedHamiltonian`:
 
     ops = [qml.PauliX(0), qml.PauliY(1), qml.PauliZ(2)]
     coeffs = [qml.pulse.constant for _ in range(3)]
-    H1 = qml.ops.dot(coeffs, ops)  # time-independent parametrized hamiltonian
+    H1 = qml.dot(coeffs, ops)  # time-independent parametrized hamiltonian
 
 .. code-block:: python
 
     ops = [qml.PauliZ(0), qml.PauliY(1), qml.PauliX(2)]
     coeffs = [lambda p, t: p * jnp.sin(t) for _ in range(3)]
-    H2 = qml.ops.dot(coeffs, ops) # time-dependent parametrized hamiltonian
+    H2 = qml.dot(coeffs, ops) # time-dependent parametrized hamiltonian
 
 Now we can execute the evolution of these Hamiltonians applied simultaneously. To do this, we can add the two
 to form a single :class:`~.ParametrizedHamiltonian`. This will combine the two so that the expected parameters
