@@ -224,11 +224,14 @@ def _expval_hadamard_grad(tape, argnum, aux_wire):
 
         for gen in generators:
             if isinstance(trainable_op, qml.Rot):
-                # Given that we only used Z as generator, we need to apply some gates before and after the generator.
+                # We only registered PauliZ as generator for Rot, therefore we need to apply some gates 
+                # before and after the generator for the first two parameters.
                 if p_idx == 0:
+                    # Move the Rot gate past the generator
                     op_before_trainable_op = ops_to_trainable_op.pop(-1)
                     ops_after_trainable_op = [op_before_trainable_op] + ops_after_trainable_op
                 elif p_idx == 1:
+                    # Apply additional rotations that effectively move the generator to the middle of Rot
                     ops_to_add_before = [
                         qml.RZ(-trainable_op.data[2], wires=trainable_op.wires),
                         qml.RX(np.pi / 2, wires=trainable_op.wires),
