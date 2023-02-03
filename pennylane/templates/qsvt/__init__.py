@@ -15,32 +15,33 @@
 A module for performing QSVT with PennyLane.
 """
 import numpy as np
-from pennylane import adjoint
+from pennylane.ops.op_math import adjoint
 from .qsvt_ops import BlockEncoding, PCPhase
 
 
-def _qsvt_protocol(A, phi_vect, wires):
+def qsvt(A, phi_vect, wires):
     """Executes the operations to perform the qsvt protocol"""
     d = len(phi_vect)
     c, r = A.shape
-    u_size = c + r
+    phi_vect = np.flip(phi_vect)
 
     lst_operations = []
 
     if d % 2 == 0:
         for i in range(1, d//2 + 1):
+            lst_operations.append(BlockEncoding(A, wires=wires))
+            lst_operations.append(PCPhase(phi_vect[2 * i - 1], r, wires=wires))
+            lst_operations.append(adjoint(BlockEncoding(A, wires=wires)))
             lst_operations.append(PCPhase(phi_vect[2*i - 2], c, wires=wires))
-            lst_operations.append(adjoint(BlockEncoding(A, wires=wires)))
-            lst_operations.append(PCPhase(phi_vect[2*i - 1], r, wires=wires))
-            lst_operations.append(BlockEncoding(A, wires=wires))
-    else:
-        lst_operations.append(PCPhase(phi_vect[0], r, wires=wires))
-        lst_operations.append(BlockEncoding(A, wires=wires))
 
+    else:
         for i in range(1, (d-1) // 2 + 1):
-            lst_operations.append(PCPhase(phi_vect[2*i - 1], c, wires=wires))
-            lst_operations.append(adjoint(BlockEncoding(A, wires=wires)))
-            lst_operations.append(PCPhase(phi_vect[2*i], r, wires=wires))
             lst_operations.append(BlockEncoding(A, wires=wires))
+            lst_operations.append(PCPhase(phi_vect[2 * i], r, wires=wires))
+            lst_operations.append(adjoint(BlockEncoding(A, wires=wires)))
+            lst_operations.append(PCPhase(phi_vect[2*i - 1], c, wires=wires))
+
+        lst_operations.append(BlockEncoding(A, wires=wires))
+        lst_operations.append(PCPhase(phi_vect[0], r, wires=wires))
 
     return lst_operations

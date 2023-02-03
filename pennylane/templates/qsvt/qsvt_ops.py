@@ -21,14 +21,15 @@ from pennylane.operation import Operation, AnyWires
 from pennylane.ops.qubit.non_parametric_ops import PauliX
 from pennylane.ops import PhaseShift, ctrl
 
+
 class BlockEncoding(Operation):
     """General Block Encoding"""
     num_params = 1
     num_wires = AnyWires
 
     def __init__(self, a, wires, method="simple", do_queue=True, id=None):
-        if isinstance(a,int) or isinstance(a,float):
-            normalization= a if a > 1 else 1
+        if isinstance(a, int) or isinstance(a, float):
+            normalization = a if a > 1 else 1
         else:
             normalization = np.max([norm(a @ np.conj(a).T, ord=np.inf), norm(np.conj(a).T @ a, ord=np.inf)])    
         a = a / normalization if normalization > 1 else a
