@@ -73,7 +73,7 @@ def evolution(op: Operator, coeff: float = 1):
     r"""Returns a new operator that computes the evolution of ``op``.
 
     Args:
-        op (Union[.Operator, .ParametrizedHamiltonian]): operator to evolve
+        op (.Operator): operator to evolve
         coeff (float): coefficient multiplying the exponentiated operator: :math:`\exp\{i\bm{O}x)\}`.
 
     Returns:
