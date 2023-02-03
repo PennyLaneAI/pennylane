@@ -237,7 +237,7 @@ def basis_rotation(one_electron, two_electron, tol_factor=1.0e-5):
         .. math::
 
             H = \sum_{\alpha \in \{\uparrow, \downarrow \} } \sum_{pq} T_{pq} a_{p,\alpha}^{\dagger}
-            a_{q, \alpha} + \frac{1}{2} \sum_r^R \left ( \sum_{\alpha, \beta \in \{\uparrow, \downarrow \} } \sum_{pq}
+            a_{q, \alpha} + \frac{1}{2} \sum_r^R \left ( \sum_{\alpha \in \{\uparrow, \downarrow \} } \sum_{pq}
             L_{pq}^{(r)} a_{p, \alpha}^{\dagger} a_{q, \alpha} \right )^2.
 
         The orbital basis can be rotated such that each :math:`T` and :math:`L^{(r)}` matrix is
@@ -278,7 +278,7 @@ def basis_rotation(one_electron, two_electron, tol_factor=1.0e-5):
     one_body_tensor = np.kron(one_electron, np.eye(2))  # account for spin
     one_body_correction, chemist_two_body_tensor = chemist_notation_transform(two_electron, True)
 
-    factors, _, _ = qml.qchem.factorize(chemist_two_body_tensor)
+    factors, _, _ = factorize(chemist_two_body_tensor, tol_factor=tol_factor)
     factors = [np.kron(factor, np.eye(2)) for factor in factors]  # account for spin
 
     v_coeffs, v_unitaries = np.linalg.eigh(factors)
@@ -305,7 +305,6 @@ def basis_rotation(one_electron, two_electron, tol_factor=1.0e-5):
                         + qml.pauli.pauli_mult_with_phase(qml.PauliZ(p), qml.PauliZ(q))[0]
                     )
                 )
-        nmat = qml.matrix(ops_l_)
         ops_l.append(ops_l_)
 
     ops = [ops_t] + ops_l
@@ -358,7 +357,7 @@ def chemist_notation_transform(two_body_tensor, spatial_basis=True):
     one_body_correction = -np.einsum("prrs", chemist_two_body_coeffs)
 
     if spatial_basis:
-        chemist_two_body_coeffs *= 0.5
+        chemist_two_body_coeffs = 0.5 * chemist_two_body_coeffs
         one_body_correction = 0.5 * np.kron(one_body_correction, np.eye(2))
 
     return one_body_correction, chemist_two_body_coeffs
