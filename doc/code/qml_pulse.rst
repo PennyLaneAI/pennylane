@@ -82,7 +82,6 @@ and operators:
     creating the lambda functions is set to be the final value in the iteration, such that this will
     produce three identical functions ``coeffs = [(lambda p, t: p * t**2)] * 3``.
 
-
 The :class:`~.ParametrizedHamiltonian` is a callable, and can return an :class:`~.Operator` if passed a set of
 parameters and a time at which to evaluate the coefficients :math:`f_j`.
 
@@ -96,11 +95,11 @@ parameters and a time at which to evaluate the coefficients :math:`f_j`.
     (2*(PauliX(wires=[0]) @ PauliX(wires=[1]))) + ((-0.2876553535461426*(PauliY(wires=[0]) @ PauliY(wires=[1]))) + (1.5179612636566162*(PauliZ(wires=[0]) @ PauliZ(wires=[1]))))
 
 
-.. warning::
-    The order of the coefficients and operators matters. When passing parameters, ensure
-    that the order of the coefficient functions and the order of the parameters match. When
-    initializing a :class:`~.ParametrizedHamiltonian`, terms defined with fixed coefficients
-    have to come before parametrized terms to prevent discrepancy in the wire order.
+When passing parameters, ensure that the order of the coefficient functions and the order of
+the parameters match.
+
+When initializing a :class:`~.ParametrizedHamiltonian`, terms defined with fixed coefficients have to come
+before parametrized terms to prevent discrepancy in the wire order.
 
 
 ParametrizedEvolution
