@@ -441,7 +441,7 @@ class TestDecomposition:
         generator of that operator."""
         phi = 1.23
         op = op_class(phi, wires=list(range(op_class.num_wires)))
-        exp = qml.evolve(op.generator(), coeff=phi)
+        exp = qml.evolve(op.generator(), coeff=-phi)
         dec = exp.decomposition()
         assert len(dec) == 1
         assert qml.equal(op, dec[0])
