@@ -34,7 +34,10 @@ except ImportError as e:
 
 
 class ParametrizedEvolution(Operation):
-    r"""Parametrized evolution gate, created by passing a :class:`~.ParametrizedHamiltonian` to the
+    r"""
+    ParametrizedEvolution(H, params=None, t=None, do_queue=True, id=None, **odeint_kwargs)
+
+    Parametrized evolution gate, created by passing a :class:`~.ParametrizedHamiltonian` to the
     :func:`~.functions.evolve` function.
 
     For a time-dependent Hamiltonian of the form
@@ -44,7 +47,7 @@ class ParametrizedEvolution(Operation):
 
     .. math:: \frac{d}{dt}U(t) = -i H(v, t) U(t).
 
-    Under the hood, it is using a numerical ordinary differential equation solver. It requires ``jax``,
+    Under the hood, it is using a numerical ordinary differential equation (ODE) solver. It requires ``jax``,
     and will not work with other machine learning frameworks typically encountered in PennyLane.
 
     Args:
@@ -71,118 +74,176 @@ class ParametrizedEvolution(Operation):
         hmax (float, optional): maximum step size allowed. Defaults to ``jnp.inf``.
 
     .. warning::
-
-        The time argument ``t`` corresponds to the time window used to compute the scalar-valued
-        functions present in the :class:`ParametrizedHamiltonian` class. Consequently, executing
-        two ``ParametrizedEvolution`` operators using the same time window does not mean both
-        operators are executed simultaneously, but rather that both evaluate their respective
-        scalar-valued functions using the same time window.
-
-        To execute two :class:`ParametrizedHamiltonian` instances simultaneously one must wrap them
-        with the same ``ParametrizedEvolution`` operator. See example for details.
+        The :class:`~.ParametrizedHamiltonian` must be Hermitian at all times. This is not explicitly checked
+        when creating a :class:`~.ParametrizedEvolution` from the :class:`~.ParametrizedHamiltonian`.
 
 
     **Example**
 
-    Let's first build two :class:`ParametrizedHamiltonian` objects:
+    To create a :class:`~.ParametrizedEvolution`, we first define a :class:`.~ParametrizedHamiltonian`
+    describing the system, and then pass it to :func:`~pennylane.evolve`:
 
     .. code-block:: python
 
         from jax import numpy as jnp
 
-        ops = [qml.PauliX(0), qml.PauliY(1), qml.PauliZ(2)]
-        coeffs = [lambda p, t: p for _ in range(3)]
-        H1 = qml.dot(coeffs, ops)  # time-independent parametrized Hamiltonian
+        f1 = lambda p, t: jnp.sin(p * t)
+        H = f1 * qml.PauliY(0)
 
-        ops = [qml.PauliZ(0), qml.PauliY(1), qml.PauliX(2)]
-        coeffs = [lambda p, t: p * jnp.sin(t) for _ in range(3)]
-        H2 = qml.dot(coeffs, ops) # time-dependent parametrized Hamiltonian
+        ev = qml.evolve(H)
 
+    The initial :class:`~.ParametrizedEvolution` does not have set parameters, and so will not
+    have a matrix defined. To obtain an Operator with a matrix, it must be passed parameters and
+    a time interval:
 
-    >>> H1, H2
-    (ParametrizedHamiltonian: terms=3, ParametrizedHamiltonian: terms=3)
+    >>>  qml.matrix(ev([1.2], t=[0, 4]))
+    Array([[ 0.72454906+0.j, -0.6892243 +0.j],
+       [ 0.6892243 +0.j,  0.72454906+0.j]], dtype=complex64)
 
-    .. warning::
-        The :class:`~.ParametrizedHamiltonian` must be Hermitian at all times. This is not explicitly checked
-        when creating a :class:`~.ParametrizedEvolution` from the :class:`~.ParametrizedHamiltonian`.
+    The parameters can be updated by calling the :class:`~.ParametrizedEvolution` again with different inputs.
 
-    A :class:`~.ParametrizedEvolution` can be defined by passing a :class:`~.ParametrizedHamiltonian` to
-    :func:`~.functions.evolve`. The parameters for the Hamiltonian and ODE can then be specified by calling
-    the :class:`~.ParametrizedEvolution`.
+    Additional options regarding how the matrix is calculated can be passed to the :class:`.ParametrizedEvolution`
+    along with the parameters, as keyword arguments.
 
-    >>> ev = qml.evolve(H1)(params=[1., 2., 3.], t=[4, 10], mxstep=1, atol=1e-6)
-
-    The evolutions of the :class:`ParametrizedHamiltonian` defined above can be used in a QNode:
+    The :class:`~.ParametrizedEvolution` can be implemented in a QNode:
 
     .. code-block:: python
 
-        dev = qml.device("default.qubit", wires=3)
+        import jax
+
+        dev = qml.device("default.qubit", wires=1)
         @jax.jit
         @qml.qnode(dev, interface="jax")
         def circuit(params):
-            qml.evolve(H1)(params, t=[0, 10])
-            qml.evolve(H2)(params, t=[0, 10])
-            return qml.expval(qml.PauliZ(0) @ qml.PauliZ(1) @ qml.PauliZ(2))
+            qml.evolve(H)(params, t=[0, 10])
+            return qml.expval(qml.PauliZ(0))
 
-    >>> params = jnp.array([1., 2., 3.])
+    >>> params = [1.2]
     >>> circuit(params)
-    Array(-0.01543971, dtype=float32)
+    Array(0.96632576, dtype=float32)
+
+    >>> jax.grad(circuit)(params)
+    Array([2.3569832], dtype=float32)
 
     .. note::
-        In the example above, the decorator ``@jax.jit is`` used to compile this execution just-in-time. This means
+        In the example above, the decorator ``@jax.jit`` is used to compile this execution just-in-time. This means
         the first execution will typically take a little longer with the benefit that all following executions
         will be significantly faster, see the jax docs on jitting. JIT-compiling is optional, and one can remove
         the decorator when only single executions are of interest.
 
-    We can also compute the gradient of this evolution with respect to the input parameters!
+    .. warning::
 
-    >>> jax.grad(circuit)(params)
-    Array([ 0.6908507,  0.0865578, -1.4594607], dtype=float32)
+        The time argument ``t`` corresponds to the time window used to compute the scalar-valued
+        functions present in the :class:`ParametrizedHamiltonian` class. Consequently, executing
+        two ``ParametrizedEvolution`` operators using the same time window does not mean both
+        operators are executed simultaneously, but rather that both evaluate their respective
+        scalar-valued functions using the same time window. See Usage Details.
 
-    As mentioned in the warning above, ``circuit`` is not executing the evolution of ``H1`` and ``H2``
-    simultaneously, but rather executing ``H1`` in the ``[0, 10]`` time window and then executing
-    ``H2`` with the same time window.
 
-    If we want to execute both hamiltonians simultaneously, we need to wrap them with the same
-    ``ParametrizedEvolution`` operator:
+    .. details::
+        :title: Usage Details
 
-    .. code-block:: python
+        The parameters used when calling the ``ParametrizedEvolution`` are expected to have the same order
+        as the functions used to define the :class:`~.ParametrizedHamiltonian`. For example:
 
-        @qml.qnode(dev, interface="jax")
-        def circuit(params):
-            qml.evolve(H1 + H2)(params, t=[0, 10])
-            return qml.expval(qml.PauliZ(0) @ qml.PauliZ(1) @ qml.PauliZ(2))
+        .. code-block:: python3
 
-    >>> params = jnp.concatenate([params, params])  # H1 + H2 requires 6 parameters!
-    >>> circuit(params)
-    Array(-0.78236955, dtype=float32)
-    >>> jax.grad(circuit)(params)
-    Array([-4.8066125,  3.7038102, -1.3294725, -2.4061902,  0.6811545,
-        -0.5226515], dtype=float32)
+            def f1(p, t):
+                return jnp.sin(p[0] * t**2) + p[1]
 
-    One can also provide a list of time values that the odeint will use to calculate the parametrized
-    hamiltonian's evolution. Keep in mind that our odeint solver uses an adaptive step size, thus
-    it might use intermediate time values.
+            def f2(p, t):
+                return p * jnp.cos(t)
 
-    .. code-block:: python
+            H = 2 * qml.PauliX(0) + f1 * qml.PauliY(0) + f2 * qml.PauliZ(0)
+            ev = qml.evolve(H)
 
-        t = jnp.arange(0., 10.1, 0.1)
-        @qml.qnode(dev, interface="jax")
-        def circuit(params):
-            qml.evolve(H1 + H2)(params, t=t)
-            return qml.expval(qml.PauliZ(0) @ qml.PauliZ(1) @ qml.PauliZ(2))
+            >>> params = [[4.6, 2.3], 1.2]
+            >>> qml.matrix(ev(params, t=0.5))
+            Array([[-0.18354285-0.26303384j, -0.7271658 -0.606923j  ],
+                   [ 0.7271658 -0.606923j  , -0.18354285+0.26303384j]],      dtype=complex64)
 
-    >>> circuit(params)
-    Array(-0.78236955, dtype=float32)
-    >>> jax.grad(circuit)(params)
-    Array([-4.8066125 ,  3.703827  , -1.3297377 , -2.406232  ,  0.6811726 ,
-        -0.52277344], dtype=float32)
+        Internally the solver is using ``f1([4.6, 2.3], t)`` and ``f2(1.2, t)`` at each timestep when
+        finding the matrix.
 
-    Given that we used the same time window ([0, 10]), the results are the same as before.
+        In the case where we have defined two Hamiltonians, ``H1`` and ``H2``, and we want to find a time evolution
+        where the two are driven simultaneously for some period of time, it is important that both are included in
+        the same call of :func:`~.pennylane.evolve`.
+
+        For non-commuting operations, applying ``qml.evolve(H1)(params, t=[0, 10])`` followed by
+        ``qml.evolve(H2)(params, t=[0, 10])`` will **not** apply the two pulses simultaneously, despite the overlapping
+        time window. Instead, it will execute ``H1`` in the ``[0, 10]`` time window, and then subsequently execute
+        ``H2`` using the same time window to calculate the evolution, but without taking into account how the time
+        evolution of ``H1`` affects the evolution of ``H2`` and vice versa.
+
+        Consider two non-commuting :class:`ParametrizedHamiltonian` objects:
+
+        .. code-block:: python
+
+            from jax import numpy as jnp
+
+            ops = [qml.PauliX(0), qml.PauliY(1), qml.PauliZ(2)]
+            coeffs = [lambda p, t: p for _ in range(3)]
+            H1 = qml.dot(coeffs, ops)  # time-independent parametrized Hamiltonian
+
+            ops = [qml.PauliZ(0), qml.PauliY(1), qml.PauliX(2)]
+            coeffs = [lambda p, t: p * jnp.sin(t) for _ in range(3)]
+            H2 = qml.dot(coeffs, ops) # time-dependent parametrized Hamiltonian
+
+        The evolutions of the :class:`ParametrizedHamiltonian` can be used in a QNode:
+
+        .. code-block:: python
+
+            dev = qml.device("default.qubit", wires=3)
+
+            @qml.qnode(dev, interface="jax")
+            def circuit1(params):
+                qml.evolve(H1)(params, t=[0, 10])
+                qml.evolve(H2)(params, t=[0, 10])
+                return qml.expval(qml.PauliZ(0) @ qml.PauliZ(1) @ qml.PauliZ(2))
+
+            @qml.qnode(dev, interface="jax")
+            def circuit2(params):
+                qml.evolve(H1 + H2)(params, t=[0, 10])
+                return qml.expval(qml.PauliZ(0) @ qml.PauliZ(1) @ qml.PauliZ(2))
+
+        The resulting evolutions of ``circuit1`` and ``circuit2`` are *not* identical:
+
+        >>> params = jnp.array([1., 2., 3.])
+        >>> circuit1(params)
+        Array(-0.01543971, dtype=float32)
+
+        >>> params = jnp.concatenate([params, params])  # H1 + H2 requires 6 parameters!
+        >>> circuit2(params)
+        Array(-0.78236955, dtype=float32)
+
+        The ``circuit1`` is not executing the evolution of ``H1`` and ``H2`` simultaneously, but rather
+        executing ``H1`` in the ``[0, 10]`` time window and then executing ``H2`` with the same time window!
+
+
+        One can also provide a list of time values that the odeint will use to calculate the evolution of the
+        :class:`ParametrizedHamiltonian`. Keep in mind that our odeint solver uses an adaptive step size, thus
+        it might use intermediate time values.
+
+        .. code-block:: python
+
+            t = jnp.arange(0., 10.1, 0.1)
+            @qml.qnode(dev, interface="jax")
+            def circuit(params):
+                qml.evolve(H1 + H2)(params, t=t)
+                return qml.expval(qml.PauliZ(0) @ qml.PauliZ(1) @ qml.PauliZ(2))
+
+        >>> circuit(params)
+        Array(-0.78236955, dtype=float32)
+        >>> jax.grad(circuit)(params)
+        Array([-4.8066125 ,  3.703827  , -1.3297377 , -2.406232  ,  0.6811726 ,
+            -0.52277344], dtype=float32)
+
+        Given that we used the same time window (``[0, 10]``), the results are the same as before.
     """
 
     _name = "ParametrizedEvolution"
     num_wires = AnyWires
+
     # pylint: disable=too-many-arguments, super-init-not-called
     def __init__(
         self,
@@ -196,7 +257,8 @@ class ParametrizedEvolution(Operation):
     ):
         if not has_jax:
             raise ImportError(
-                "Module jax is required for the ``ParametrizedEvolution`` class. You can install jax via: pip install jax"
+                "Module jax is required for the ``ParametrizedEvolution`` class. "
+                "You can install jax via: pip install jax"
             )
         if not all(op.has_matrix or isinstance(op, qml.Hamiltonian) for op in H.ops):
             raise ValueError(
