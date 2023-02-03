@@ -6,9 +6,6 @@
 
 <h4>Add new features here</h4>
 
-* Add `typing.TensorLike` type.
-  [(#3675)](https://github.com/PennyLaneAI/pennylane/pull/3675)
-
 <h4>Feel the pulse 🔊</h4>
 
 * Parameterized Hamiltonians can now be created with the addition of `ParametrizedHamiltonian`.
@@ -327,6 +324,9 @@
   [(#3683)](https://github.com/PennyLaneAI/pennylane/pull/3683)
 
 <h3>Improvements</h3>
+
+* Add `typing.TensorLike` type.
+  [(#3675)](https://github.com/PennyLaneAI/pennylane/pull/3675)
 
 * `qml.purity` is added as a measurement process for purity
   [(#3551)](https://github.com/PennyLaneAI/pennylane/pull/3551)
