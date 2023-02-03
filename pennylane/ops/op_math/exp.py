@@ -300,22 +300,20 @@ class Exp(ScalarSymbolicOp, Operation):
         for op_class in self._ops_with_generator:
             # Check if the exponentiated operator is a generator of another operator
             if op_class.num_wires == base.num_wires:
-                if op_class is qml.OrbitalRotation:
-                    # TODO: Fix generator of OrbitalRotation
-                    wires = [base.wires[0], base.wires[2], base.wires[1], base.wires[3]]
-                else:
-                    wires = base.wires
                 with qml.QueuingManager.stop_recording():
-                    g, c = qml.generator(op_class)(coeff, wires)
+                    g, c = qml.generator(op_class)(coeff, base.wires)
                     # Make sure both ``g`` and ``base`` are of the same type
                     if isinstance(g, Hamiltonian):
                         g = Sum.from_hamiltonian(g)
                     elif isinstance(g, Tensor):
                         g = qml.prod(*g.obs)
 
-                if qml.equal(base, g) and math.real(coeff) == 0:
+                    # Some generators are not wire-ordered (e.g. OrbitalRotation)
+                    new_g = qml.map_wires(g, dict(zip(g.wires, base.wires)))
+
+                if qml.equal(base, new_g) and math.real(coeff) == 0:
                     coeff *= -1j / c  # cancel the coefficients added by the generator
-                    return [op_class(coeff, wires)]
+                    return [op_class(coeff, g.wires)]
 
         if qml.pauli.is_pauli_word(base) and math.real(coeff) == 0:
             # Check if the exponential can be decomposed into a PauliRot gate

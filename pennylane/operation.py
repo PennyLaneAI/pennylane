@@ -2039,6 +2039,12 @@ class Tensor(Observable):
         """
         return sum((o.data for o in self.obs), [])
 
+    @data.setter
+    def data(self, new_data):
+        """Set the data property"""
+        for new_entry, op in zip(new_data, self.obs):
+            op.data = new_entry
+
     @property
     def num_params(self):
         """Raw parameters of all constituent observables in the tensor product.
