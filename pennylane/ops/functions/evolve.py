@@ -14,48 +14,73 @@
 """
 This module contains the qml.evolve function.
 """
-from typing import Union
+import warnings
+from functools import singledispatch
 
 from pennylane.operation import Operator
 from pennylane.ops import Evolution
 from pennylane.pulse import ParametrizedEvolution, ParametrizedHamiltonian
 
 
-def evolve(op: Union[Operator, ParametrizedHamiltonian]):
-    """Returns a new operator that computes the evolution of ``op``.
+@singledispatch
+def evolve(*args, **kwargs):  # pylint: disable=unused-argument
+    r"""This method is dispatched and its functionality depends on the type of the input ``op``.
+
+    .. raw:: html
+
+        <html>
+            <h3>Input: Operator</h3>
+            <hr>
+        </html>
+
+    Returns a new operator that computes the evolution of ``op``.
+
+    .. math::
+
+        e^{-i x \bm{O}}
 
     Args:
-        op (Union[.Operator, .ParametrizedHamiltonian]): operator to evolve
+        op (.Operator): operator to evolve
+        coeff (float): coefficient multiplying the exponentiated operator
 
     Returns:
-        Union[.Evolution, ~pennylane.ops.op_math.evolve.ParametrizedEvolution]: evolution operator
+        .Evolution: evolution operator
 
-    .. seealso::
-        :class:`.ParametrizedEvolution`, :class:`.Evolution`
+    .. seealso:: :class:`~.Evolution`
 
     **Examples**
 
     We can use ``qml.evolve`` to compute the evolution of any PennyLane operator:
 
-    >>> op = qml.s_prod(2, qml.PauliX(0))
-    >>> qml.evolve(op)
-    Exp(1j 2*(PauliX(wires=[0])))
+    >>> op = qml.evolve(qml.PauliX(0), coeff=2)
+    >>> op
+    Exp(2j PauliX)
+
+    .. raw:: html
+
+        <html>
+            <h3>Input: ParametrizedHamiltonian</h3>
+            <hr>
+        </html>
+
+    Args:
+        op (.ParametrizedHamiltonian): operator to evolve
+
+    Returns:
+        ~pennylane.ops.op_math.evolve.ParametrizedEvolution: evolution operator
+
+    .. seealso:: :class:`.ParametrizedEvolution`
+
+    **Examples**
 
     When evolving a :class:`.ParametrizedHamiltonian` class, then a :class:`.ParametrizedEvolution`
     instance is returned:
 
-    .. code-block:: python
-
-        coeffs = [lambda p, t: p * t for _ in range(4)]
-        ops = [qml.PauliX(i) for i in range(4)]
-        H = qml.dot(coeffs, ops)
-
+    >>> coeffs = [lambda p, t: p * t for _ in range(4)]
+    >>> ops = [qml.PauliX(i) for i in range(4)]
+    >>> H = qml.dot(coeffs, ops)
     >>> qml.evolve(H)
     ParametrizedEvolution(wires=[0, 1, 2, 3])
-
-    .. note::
-        The underlying ODE that solves the matrix for a :class:`~.ParametrizedEvolution` requires ``jax``,
-        and will not work with other machine learning frameworks typically encountered in PennyLane.
 
     The :class:`.ParametrizedEvolution` instance can then be called to update the needed attributes
     to compute the evolution of the :class:`.ParametrizedHamiltonian`:
@@ -65,7 +90,19 @@ def evolve(op: Union[Operator, ParametrizedHamiltonian]):
 
     Please check the :class:`.ParametrizedEvolution` class for more information.
     """
-    if isinstance(op, ParametrizedHamiltonian):
-        return ParametrizedEvolution(H=op)
 
-    return Evolution(generator=op, param=1.0)
+
+# pylint: disable=missing-docstring
+@evolve.register
+def parametrized_hamiltonian(op: ParametrizedHamiltonian):
+    return ParametrizedEvolution(H=op)
+
+
+# pylint: disable=missing-docstring
+@evolve.register
+def evolution(op: Operator, coeff: float = 1):
+    with warnings.catch_warnings():
+        # Ignore the warning raised in `Evolution`
+        warnings.simplefilter("ignore")
+        ev = Evolution(op, -1 * coeff)
+    return ev
