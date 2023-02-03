@@ -732,7 +732,7 @@ class TestSortWires:
     """Tests for the wire sorting algorithm."""
 
     def test_sorting_operators_with_one_wire(self):
-        """Test that the sorting alforithm works for operators that act on one wire."""
+        """Test that the sorting algorithm works for operators that act on one wire."""
         op_list = [
             qml.PauliX(3),
             qml.PauliZ(2),
@@ -749,15 +749,15 @@ class TestSortWires:
             qml.PauliZ(2),
             qml.PauliX(3),
             qml.PauliZ(3),
-            qml.RX(1, 5),
             qml.PauliX(5),
+            qml.RX(1, 5),
         ]
 
         for op1, op2 in zip(final_list, sorted_list):
             assert qml.equal(op1, op2)
 
     def test_sorting_operators_with_multiple_wires(self):
-        """Test that the sorting alforithm works for operators that act on multiple wires."""
+        """Test that the sorting algorithm works for operators that act on multiple wires."""
         op_tuple = (
             qml.PauliX(3),
             qml.PauliX(5),
@@ -786,7 +786,7 @@ class TestSortWires:
             assert qml.equal(op1, op2)
 
     def test_sorting_operators_with_wire_map(self):
-        """Test that the sorting alforithm works using a wire map."""
+        """Test that the sorting algorithm works using a wire map."""
         op_list = [
             qml.PauliX("three"),
             qml.PauliX(5),

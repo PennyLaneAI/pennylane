@@ -150,8 +150,8 @@ class TestEvolution:
     def test_generator_not_observable_class(self, base):
         """Test that qml.generator will return generator if it is_hermitian, but is not a subclass of Observable"""
         op = Evolution(base, 1)
-        gen = qml.generator(op)[0]
-        assert qml.equal(gen, base)
+        gen, c = qml.generator(op)
+        assert qml.equal(gen if c == 1 else qml.s_prod(c, gen), base)
 
     def test_generator_error_if_not_hermitian(self):
         """Tests that an error is raised if the generator is not hermitian."""
