@@ -23,21 +23,31 @@ from pennylane.pulse import ParametrizedEvolution, ParametrizedHamiltonian
 
 @singledispatch
 def evolve(op, *args, **kwargs):  # pylint: disable=unused-argument
-    """Returns a new operator that computes the evolution of ``op``.
+    r"""Returns a new operator that computes the evolution of ``op``. This method is dispatched and
+    its functionality depends on the type of the input ``op``.
 
-    Depending on the ``op`` type, this function is dispatched into the following functions:
+    Input: <:class:`~.Operator`>
+    ----------------------------
+    Args:
+        op (.Operator): operator to evolve
+        coeff (float): coefficient multiplying the exponentiated operator: :math:`\exp\{i\bm{O}x)\}`.
 
-    * :func:`~.evolution` if ``op`` is an :class:`~.Operator`.
+    Returns:
+        .Evolution: evolution operator
 
-    * :func:`~.parametrized_evolution` if ``op`` is a :class:`~.ParametrizedHamiltonian`.
+    .. seealso:: :class:`.Evolution`
 
-    """
+    **Examples**
+
+    We can use ``qml.evolve`` to compute the evolution of any PennyLane operator:
+
+    >>> op = qml.evolve(qml.PauliX(0), coeff=2)
+    >>> op
+    Exp(2j PauliX)
 
 
-@evolve.register
-def parametrized_evolution(op: ParametrizedHamiltonian):
-    """Returns a new operator that computes the evolution of ``op``.
-
+    Input: <:class:`~.ParametrizedHamiltonian`>
+    --------------------------------------------
     Args:
         op (.ParametrizedHamiltonian): operator to evolve
 
@@ -65,28 +75,13 @@ def parametrized_evolution(op: ParametrizedHamiltonian):
 
     Please check the :class:`.ParametrizedEvolution` class for more information.
     """
+
+
+@evolve.register
+def _(op: ParametrizedHamiltonian):
     return ParametrizedEvolution(H=op)
 
 
 @evolve.register
-def evolution(op: Operator, coeff: float = 1):
-    r"""Returns a new operator that computes the evolution of ``op``.
-
-    Args:
-        op (.Operator): operator to evolve
-        coeff (float): coefficient multiplying the exponentiated operator: :math:`\exp\{i\bm{O}x)\}`.
-
-    Returns:
-        .Evolution: evolution operator
-
-    .. seealso:: :class:`.Evolution`
-
-    **Examples**
-
-    We can use ``qml.evolve`` to compute the evolution of any PennyLane operator:
-
-    >>> op = qml.evolve(qml.PauliX(0), coeff=2)
-    >>> op
-    Exp(2j PauliX)
-    """
+def _(op: Operator, coeff: float = 1):
     return Evolution(op, coeff)
