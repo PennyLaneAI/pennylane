@@ -71,8 +71,8 @@
 * The Hadamard test gradient tranform is now available via `qml.gradients.hadamard_grad`.
   [#3625](https://github.com/PennyLaneAI/pennylane/pull/3625)
 
-  `qml.gradients.hadamard_grad` is a hardware-compatible transform that calculates the 
-  gradient of a quantum circuit using the Hadamard test. Note that the device requires an 
+  `qml.gradients.hadamard_grad` is a hardware-compatible transform that calculates the
+  gradient of a quantum circuit using the Hadamard test. Note that the device requires an
   auxiliary wire to calculate the gradient.
 
   ```pycon
@@ -387,9 +387,6 @@
 
 * `Sum` and `Prod` operations now have broadcasted operands.
   [(#3611)](https://github.com/PennyLaneAI/pennylane/pull/3611)
-
-* `qml.dot` is now compatible with JAX-JIT.
-  [(#3636)](https://github.com/PennyLaneAI/pennylane/pull/3636)
 
 * All dunder methods now return `NotImplemented`, allowing the right dunder method (e.g. `__radd__`)
   of the other class to be called.
