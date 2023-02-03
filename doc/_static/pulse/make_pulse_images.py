@@ -27,32 +27,28 @@ folder = pathlib.Path(__file__).parent
 
 
 def parametrized_coefficients_example(savefile="parametrized_coefficients_example.png"):
+    def f1(p, t):
+        return jnp.sin(p[0] * t**2) + p[1]
 
-    # defining the coefficients fj(v, t) for the two parametrized terms
-    f1 = lambda p, t: p * jnp.sin(t) * (t - 1)
-    f2 = lambda p, t: p[0] * jnp.cos(p[1] * t ** 2)
+    def f2(p, t):
+        return p * jnp.cos(t)
 
-    # defining the operations for the three terms in the Hamiltonian
-    XX = qml.PauliX(0) @ qml.PauliX(1)
-    YY = qml.PauliY(0) @ qml.PauliY(1)
-    ZZ = qml.PauliZ(0) @ qml.PauliZ(1)
-
-    H1 = 2 * XX + f1 * YY + f2 * ZZ
+    H = 2 * qml.PauliX(0) + f1 * qml.PauliY(0) + f2 * qml.PauliZ(0)
 
     times = jnp.linspace(0., 5., 1000)
-    fs = H1.coeffs_parametrized
-    ops = H1.ops_parametrized
-    params = [1.2, [2.3, 3.4]]
+    fs = H.coeffs_parametrized
+    ops = H.ops_parametrized
+    params = [[4.6, 2.3], 1.2]
 
     fig, axs = plt.subplots(nrows=len(ops))
     for n, f in enumerate(fs):
         ax = axs[n]
         ax.plot(times, f(params[n], times), label=f"p={params[n]}")
-        ax.set_ylabel(f"{ops[n].label()}")
+        ax.set_ylabel(f"f{n}")
         ax.legend(loc="upper left")
 
-    ax.set_xlabel("time")
-    axs[0].set_title(f"H1 parametrized coefficients")
+    ax.set_xlabel("Time")
+    axs[0].set_title(f"H parametrized coefficients")
     plt.tight_layout()
 
     plt.savefig(folder / savefile)

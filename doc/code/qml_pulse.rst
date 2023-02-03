@@ -4,16 +4,16 @@ qml.pulse
 .. automodule:: pennylane.pulse
 
 Pulse control
-=============
+-------------
 
 Pulse control is used in a variety of quantum systems for low-level control of quantum operations. A
 time-dependent electromagnetic field tuned to the characteristic energies is applied,
-leading to a time-dependent Hamiltonian interaction :math:`H(t)`. We call driving the system with such an
-electromagnetic field for a fixed time window a *pulse sequence*. These pulse sequences can then be tuned to
+leading to a time-dependent Hamiltonian interaction :math:`H(t)`. Driving the system with such an
+electromagnetic field for a fixed time window is a *pulse sequence*. These pulse sequences can be tuned to
 implement the higher level gates used for quantum computation.
 
 The :mod:`~.pulse` module provides functions and classes used to simulate pulse-level control of quantum
-systems. It contains a :class:`~.ParametrizedHamiltonian` class, which can be used to define the time-dependent
+systems. It contains a :class:`~.ParametrizedHamiltonian` class defining the time-dependent
 Hamiltonian describing the interaction between the applied pulses and the system. A
 :class:`~.ParametrizedHamiltonian` instance can be used to create a :class:`~.ParametrizedEvolution`
 (an :class:`~.Operation`) that provides the time evolution under the Hamiltonian. The :mod:`~.pulse` module also
@@ -35,8 +35,9 @@ The :mod:`~.pulse` module provides a framework to create a time-dependent Hamilt
 with constant operators :math:`H_j` and scalar functions :math:`f_j(p, t)` that may depend on
 parameters :math:`p` and time :math:`t`.
 
-Defining a :class:`~.ParametrizedHamiltonian` requires coefficients and operators. In the example below, we define a
-Hamiltonian with a single drift term, and two parametrized terms.
+Defining a :class:`~.ParametrizedHamiltonian` requires coefficients and operators, where some of the coefficients
+are callables. The callables defining the parameterized coefficients must have the call signature ``(p, t)``, where ``p`` can be a ``float``,
+``list`` or ``jnp.array``. These functions should be defined using ``jax.numpy`` rather than ``numpy`` where relevant.
 
 .. code-block:: python
 
@@ -52,8 +53,7 @@ Hamiltonian with a single drift term, and two parametrized terms.
     YY = qml.PauliY(0) @ qml.PauliY(1)
     ZZ = qml.PauliZ(0) @ qml.PauliZ(1)
 
-The functions defining the parameterized coefficients must have the call signature ``(p, t)``, where ``p`` can be a ``float``,
-``list`` or ``jnp.array``. These functions should be defined using ``jax.numpy`` rather than ``numpy`` where relevant.
+
 
 There are two ways to construct a :class:`~.ParametrizedHamiltonian` from the coefficients
 and operators:
@@ -90,64 +90,17 @@ parameters and a time at which to evaluate the coefficients :math:`f_j`.
 
     >>> H1
     ParametrizedHamiltonian: terms=3
+
     >>> params = [1.2, [2.3, 3.4]]  # f1 takes a single parameter, f2 takes 2
     >>> H1(params, t=0.5)
     (2*(PauliX(wires=[0]) @ PauliX(wires=[1]))) + ((-0.2876553535461426*(PauliY(wires=[0]) @ PauliY(wires=[1]))) + (1.5179612636566162*(PauliZ(wires=[0]) @ PauliZ(wires=[1]))))
-    >>> qml.equal(H1(params, t=0.5), H2(params, t=0.5))
-    True
 
-We can visualize the behaviour in time of the parametrized coefficients for a given set of parameters:
-
-.. code-block:: python
-
-    import matplotlib.pyplot as plt
-
-    times = jnp.linspace(0., 5., 1000)
-    fs = H1.coeffs_parametrized
-    ops = H1.ops_parametrized
-    params = [1.2, [2.3, 3.4]]
-
-    fig, axs = plt.subplots(nrows=len(ops))
-    for n, f in enumerate(fs):
-        ax = axs[n]
-        ax.plot(times, f(params[n], times), label=f"p={params[n]}")
-        ax.set_ylabel(f"{ops[n].label()}")
-        ax.legend(loc="upper left")
-
-    ax.set_xlabel("time")
-    axs[0].set_title(f"H1 parametrized coefficients")
-    plt.tight_layout()
-    plt.show()
-
-.. figure:: ../../doc/_static/pulse/parametrized_coefficients_example.png
-            :align: center
-            :width: 60%
-            :target: javascript:void(0);
 
 .. warning::
-    The order of the coefficients and operators matters. When initializing the
-    :class:`~.ParametrizedHamiltonian`, terms defined with fixed coefficients
+    The order of the coefficients and operators matters. When passing parameters, ensure
+    that the order of the coefficient functions and the order of the parameters match. When
+    initializing a :class:`~.ParametrizedHamiltonian`, terms defined with fixed coefficients
     have to come before parametrized terms to prevent discrepancy in the wire order.
-    When passing parameters, ensure that the order of the coefficient functions and
-    the order of the parameters match.
-
-Convenience functions for building a ParametrizedHamiltonian
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-
-The following convenience functions currently are available in PennyLane to assist in creating coefficient functions
-for a :class:`~.ParametrizedHamiltonian`:
-
-:html:`<div class="summary-table">`
-
-.. autosummary::
-    :nosignatures:
-
-    ~pennylane.pulse.constant
-    ~pennylane.pulse.pwc
-    ~pennylane.pulse.pwc_from_function
-    ~pennylane.pulse.rect
-
-:html:`</div>`
 
 
 ParametrizedEvolution
