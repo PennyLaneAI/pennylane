@@ -190,8 +190,17 @@ class Sum(CompositeOp):
         """
         coeffs, ops = H.terms()
         ops = [qml.prod(*op.obs) if isinstance(op, Tensor) else op for op in ops]
-        # We avoid using `qml.dot` because it always returns SProd operators (we cannot use
-        # the following if statement because the function needs to be jittable).
+        # We avoid using `qml.dot` because it doesn't simplify the return operator (we cannot use
+        # an if statement because the function needs to be jittable).
+        if len(set(coeffs)) == 1 and coeffs[0] != 1:
+            return qml.s_prod(coeffs[0], ops[0] if len(ops) == 1 else sum(*ops))
+        if len(set(qml.math.abs(coeffs))) == 1 and abs(coeffs[0]) != 1:
+            # Coefficients have the same absolute value
+            gcd = abs(coeffs[0])
+            coeffs = [c / gcd for c in coeffs]
+            return qml.s_prod(
+                gcd, sum(*[op if c == 1 else qml.s_prod(c, op) for c, op in zip(coeffs, ops)])
+            )
         operands = [op if c == 1 else qml.s_prod(c, op) for c, op in zip(coeffs, ops)]
         return operands[0] if len(operands) == 1 else sum(*operands)
 

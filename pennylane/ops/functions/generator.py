@@ -21,7 +21,7 @@ import warnings
 import numpy as np
 
 import pennylane as qml
-from pennylane.ops.op_math import SProd, Sum
+from pennylane.ops import Hamiltonian, SProd, Sum
 
 
 def _generator_observable(gen, op):
@@ -84,16 +84,22 @@ def _generator_prefactor(gen, op):
 
     if isinstance(gen, qml.operation.Observable):
         # convert to a qml.Hamiltonian
-        gen = 1.0 * gen
+        gen: Hamiltonian = 1.0 * gen
+        coeffs_set = set(gen.coeffs)
 
         if len(gen.ops) == 1:
             # case where the Hamiltonian is a single Pauli word
             obs = gen.ops[0]
             prefactor = gen.coeffs[0]
-        elif len(set(gen.coeffs)) == 1:
+        elif len(coeffs_set) == 1:
             # case where the Hamiltonian coefficients are all the same
             obs = sum(gen.ops)
             prefactor = gen.coeffs[0]
+        elif len(coeffs_set) == 2 and abs(coeffs_set.pop()) == abs(coeffs_set.pop()):
+            # absolute value of coefficients is the same
+            prefactor = abs(gen.coeffs[0])
+            coeffs = [c / prefactor for c in gen.coeffs]
+            obs = Hamiltonian(coeffs, gen.ops)
         else:
             obs = gen
             prefactor = 1.0

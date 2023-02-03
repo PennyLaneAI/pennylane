@@ -16,6 +16,7 @@ This file contains a number of attributes that may be held by operators,
 and lists all operators satisfying those criteria.
 """
 from inspect import isclass
+
 from pennylane.operation import Operator, Tensor
 
 
@@ -134,6 +135,7 @@ has_unitary_generator = Attribute(
         "IsingYY",
         "IsingXY",
         "IsingZZ",
+        "SingleExcitation",
         "SingleExcitationMinus",
         "SingleExcitationPlus",
         "DoubleExcitationMinus",

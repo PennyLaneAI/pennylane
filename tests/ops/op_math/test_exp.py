@@ -421,42 +421,30 @@ class TestDecomposition:
         assert qml.equal(pr, qml.PauliRot(3.21, base_string, base.wires))
 
     @pytest.mark.parametrize(
-        "base, rot",
-        ((qml.PauliX(0), qml.RX), (qml.PauliY(0), qml.RY), (qml.PauliZ(0), qml.RZ)),
+        "op_class",
+        [
+            qml.RX,
+            qml.RY,
+            qml.RZ,
+            qml.IsingXX,
+            qml.IsingXY,
+            qml.IsingYY,
+            qml.IsingZZ,
+            qml.SingleExcitation,
+            qml.SingleExcitationMinus,
+            qml.SingleExcitationPlus,
+            qml.OrbitalRotation,
+        ],
     )
-    def test_decomposition_into_rotation_gates(self, base, rot):
-        """Check that Exp decomposes into single rotation gates if base is a pauli operator."""
-        theta = 3.21
-        op = Exp(base, -0.5j * theta)
-
-        assert op.has_decomposition
-        pr = op.decomposition()[0]
-        assert qml.equal(pr, rot(theta, base.wires))
-
-    @pytest.mark.parametrize(
-        "base, ising",
-        (
-            (qml.PauliX(0) @ qml.PauliX(1), qml.IsingXX),
-            (qml.prod(qml.PauliY("a"), qml.PauliY("b")), qml.IsingYY),
-            (qml.PauliZ(5) @ qml.PauliZ(6), qml.IsingZZ),
-            (qml.PauliY(0) @ qml.PauliY(1) + qml.PauliX(0) @ qml.PauliX(1), qml.IsingXY),
-            (
-                qml.prod(qml.PauliX(0), qml.PauliX(1)) + qml.prod(qml.PauliY(0), qml.PauliY(1)),
-                qml.IsingXY,
-            ),
-        ),
-    )
-    def test_decomposition_into_ising_gates(self, base, ising):
-        """Check that Exp decomposes into single rotation gates if base is a pauli operator."""
-        theta = 3.21
-        if ising is qml.IsingXY:
-            op = Exp(base, 0.25j * theta)
-        else:
-            op = Exp(base, -0.5j * theta)
-
-        assert op.has_decomposition
-        pr = op.decomposition()[0]
-        assert qml.equal(pr, ising(theta, base.wires))
+    def test_generator_decomposition(self, op_class):
+        """Check that Exp decomposes into a specific operator if ``base`` corresponds to the
+        generator of that operator."""
+        phi = 1.23
+        op = op_class(phi, wires=list(range(op_class.num_wires)))
+        exp = qml.evolve(op.generator(), coeff=phi)
+        dec = exp.decomposition()
+        assert len(dec) == 1
+        assert qml.equal(op, dec[0])
 
     @pytest.mark.parametrize(
         ("time", "hamiltonian", "steps", "expected_queue"),
@@ -498,8 +486,8 @@ class TestDecomposition:
             ),
         ],
     )
-    def test_evolution_operations(self, time, hamiltonian, steps, expected_queue):
-        """Tests that the sequence of gates implemented in the ApproxTimeEvolution template is correct"""
+    def test_trotter_decomposition(self, time, hamiltonian, steps, expected_queue):
+        """Tests that the sequence of gates implemented in the trotter decomposition is correct"""
 
         op = qml.exp(hamiltonian, coeff=-1j * time, num_steps=steps)
         queue = op.expand().operations
@@ -509,31 +497,6 @@ class TestDecomposition:
             target = [expected_gate.parameters, expected_gate.wires]
 
             assert prep == target
-
-    def test_custom_wire_labels(self, tol):
-        """Test that template can deal with non-numeric, nonconsecutive wire labels."""
-        hamiltonian = qml.Hamiltonian([1, 1, 1], [qml.PauliX(0), qml.PauliX(1), qml.PauliX(2)])
-        hamiltonian2 = qml.Hamiltonian(
-            [1, 1, 1], [qml.PauliX("z"), qml.PauliX("a"), qml.PauliX("k")]
-        )
-
-        dev = qml.device("default.qubit", wires=3)
-        dev2 = qml.device("default.qubit", wires=["z", "a", "k"])
-
-        @qml.qnode(dev)
-        def circuit():
-            qml.exp(hamiltonian, coeff=-1j * 0.5, num_steps=2)
-            return qml.expval(qml.Identity(0))
-
-        @qml.qnode(dev2)
-        def circuit2():
-            qml.exp(hamiltonian2, coeff=-1j * 0.5, num_steps=2)
-            return qml.expval(qml.Identity("z"))
-
-        circuit()
-        circuit2()
-
-        assert np.allclose(dev.state, dev2.state, atol=tol, rtol=0)
 
     @pytest.mark.parametrize(
         "coeff, hamiltonian",
