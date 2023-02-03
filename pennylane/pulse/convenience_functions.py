@@ -215,6 +215,17 @@ def pwc(timespan):
         # outside the window - the function is assigned non-zero values
         >>> H(params=[[1, 2, 3, 4, 5]], t=8)
         0.0*(PauliX(wires=[0]))
+
+    .. note::
+        The final time in the timespan indicates the index at which the function output switches from params[-1] to 0.
+        As such, the final time in ``timespan`` returns 0:
+
+        >>> H(params=[[1, 2, 3, 4, 5]], t=6.999999)
+        15.0*(PauliX(wires=[0]))
+
+        >>> H(params=[[1, 2, 3, 4, 5]], t=7)
+        0.0*(PauliX(wires=[0]))
+
     """
     if not has_jax:
         raise ImportError(
