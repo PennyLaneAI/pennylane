@@ -18,8 +18,8 @@ import numpy as np
 from scipy.linalg import sqrtm, norm
 
 from pennylane.operation import Operation, AnyWires
-from pennylane import PauliX, PhaseShift, ctrl
-
+from pennylane.ops.qubit.non_parametric_ops import PauliX
+from pennylane.ops import PhaseShift, ctrl
 
 class BlockEncoding(Operation):
     """General Block Encoding"""
@@ -27,7 +27,10 @@ class BlockEncoding(Operation):
     num_wires = AnyWires
 
     def __init__(self, a, wires, method="simple", do_queue=True, id=None):
-        normalization = np.max([norm(a @ np.conj(a).T, ord=np.inf), norm(np.conj(a).T @ a, ord=np.inf)])
+        if isinstance(a,int) or isinstance(a,float):
+            normalization= a if a > 1 else 1
+        else:
+            normalization = np.max([norm(a @ np.conj(a).T, ord=np.inf), norm(np.conj(a).T @ a, ord=np.inf)])    
         a = a / normalization if normalization > 1 else a
 
         super().__init__(a, wires=wires, do_queue=do_queue, id=id)
@@ -38,9 +41,13 @@ class BlockEncoding(Operation):
     def compute_matrix(*params, **hyperparams):
         """Get the matrix representation of block encoded unitary."""
         a = params[0]
-        d1, d2 = a.shape
-        u = np.block([[a, sqrtm(np.eye(d1) - a @ np.conj(a).T)],
-                      [sqrtm(np.eye(d2) - np.conj(a).T @ a), -np.conj(a).T]])
+        if isinstance(a,int) or isinstance(a,float):
+            u = np.block([[a,np.sqrt(1-a*np.conj(a))],
+                        [np.sqrt(1-a*np.conj(a)), -np.conj(a)]])
+        else:
+            d1, d2 = a.shape
+            u = np.block([[a, sqrtm(np.eye(d1) - a @ np.conj(a).T)],
+                        [sqrtm(np.eye(d2) - np.conj(a).T @ a), -np.conj(a).T]])        
         return u
 
 
