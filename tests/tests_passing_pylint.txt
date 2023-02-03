@@ -1,6 +1,7 @@
 tests/data/**
 tests/devices/qubit/test_apply_operation.py
 tests/devices/test_execution_config.py
+tests/drawer/test_tape_mpl.py
 tests/qchem/test_givens_rotations.py
 tests/templates/test_subroutines/test_basis_rotation.py
 tests/ops/op_math/test_controlled_ops.py
@@ -11,9 +12,13 @@ tests/ops/op_math/test_pow_op.py
 tests/ops/op_math/test_adjoint.py
 tests/ops/op_math/test_exp.py
 tests/ops/op_math/test_evolution.py
+tests/ops/op_math/test_controlled_decompositions.py
 tests/ops/functions/test_dot.py
 tests/ops/functions/test_evolve.py
 tests/ops/qutrit/test_qutrit_observables.py
+tests/transforms/test_decompositions.py
+tests/returntypes/gradients/test_hadamard_grad.py
+tests/ops/op_math/test_exp.py
 tests/ops/qubit/test_state_prep.py
 tests/devices/qubit/**
 tests/test_typing.py

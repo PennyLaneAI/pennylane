@@ -79,7 +79,7 @@ class TestHelperFunctions:
             (qml.CNOT(wires=(0, 2)), ["╭●", "│", "╰X", "─"]),
             (qml.Toffoli(wires=(0, 1, 3)), ["╭●", "├●", "│", "╰X"]),
             (qml.IsingXX(1.23, wires=(0, 2)), ["╭IsingXX", "│", "╰IsingXX", "─"]),
-            (qml.Snapshot(), ["─|S|", "─|S|", "─|S|", "─|S|"]),
+            (qml.Snapshot(), ["─|Snap|", "─|Snap|", "─|Snap|", "─|Snap|"]),
             (qml.Barrier(), ["─||", "─||", "─||", "─||"]),
             (qml.S(0) @ qml.T(0), ["─S@T", "─", "─", "─"]),
         ],

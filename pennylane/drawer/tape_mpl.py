@@ -112,6 +112,9 @@ def _tape_mpl(tape, wire_order=None, show_all_wires=False, decimals=None, **kwar
 
     drawer = MPLDrawer(n_layers=n_layers, n_wires=n_wires, wire_options=wire_options)
 
+    if n_wires == 0:
+        return drawer.fig, drawer.ax
+
     if fontsize is not None:
         drawer.fontsize = fontsize
 
@@ -121,13 +124,21 @@ def _tape_mpl(tape, wire_order=None, show_all_wires=False, decimals=None, **kwar
         for op in layer_ops:
             specialfunc = special_cases.get(op.__class__, None)
             if specialfunc is not None:
-                mapped_wires = [wire_map[w] for w in op.wires]
+                mapped_wires = (
+                    [wire_map[w] for w in op.wires] if len(op.wires) != 0 else wire_map.values()
+                )
+                # It is assumed that if `len(op.wires) == 0`, `op` acts on all wires
                 specialfunc(drawer, layer, mapped_wires, op)
 
             else:
                 op_control_wires = getattr(op, "control_wires", [])
                 control_wires = [wire_map[w] for w in op_control_wires]
-                target_wires = [wire_map[w] for w in op.wires if w not in op_control_wires]
+                target_wires = (
+                    [wire_map[w] for w in op.wires if w not in op_control_wires]
+                    if len(op.wires) != 0
+                    else wire_map.values()
+                )
+                # It is assumed that if `op.wires == 0`, `op` acts on all wires
                 control_values = op.hyperparameters.get("control_values", None)
 
                 if control_values is None:
