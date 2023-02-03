@@ -19,7 +19,7 @@ from pennylane import numpy as np
 
 
 def factorize(two_electron, tol_factor=1.0e-5, tol_eigval=1.0e-5):
-    r"""Return the double-factorized form of a two-electron integral tensor.
+    r"""Return the double-factorized form of a two-electron integral tensor in spatial basis.
 
     The two-electron tensor :math:`V`, in
     `chemist notation <http://vergil.chemistry.gatech.edu/notes/permsymm/permsymm.pdf>`_, is first
@@ -274,44 +274,126 @@ def basis_rotation(one_electron, two_electron, tol_factor=1.0e-5):
         eigenvector of the corresponding :math:`T` or :math:`L^{(r)}` matrix.
     """
 
-    t_matrix = one_electron - 0.5 * np.einsum("illj", two_electron)
-    two_electron = np.swapaxes(two_electron, 1, 3)
+    num_orbitals = one_electron.shape[0] * 2
+    one_body_tensor = np.kron(one_electron, np.eye(2))  # account for spin
+    one_body_correction, chemist_two_body_tensor = chemist_notation_transform(two_electron, True)
 
-    _, eigvals_m, eigvecs_m = qml.qchem.factorize(two_electron, tol_factor, 0.0)
-    t_eigvals, t_eigvecs = np.linalg.eigh(t_matrix)
+    factors, _, _ = qml.qchem.factorize(chemist_two_body_tensor)
+    factors = [np.kron(factor, np.eye(2)) for factor in factors]  # account for spin
 
-    eigvals = [np.array(t_eigvals)] + [np.outer(x, x).flatten() * 0.5 for x in eigvals_m]
-    eigvecs = [t_eigvecs] + eigvecs_m
+    v_coeffs, v_unitaries = np.linalg.eigh(factors)
+    chemist_one_body_tensor = one_body_tensor + one_body_correction
+    t_eigvals, t_eigvecs = np.linalg.eigh(chemist_one_body_tensor)
 
     ops_t = 0.0
-    for i in range(len(eigvals[0])):
-        ops_t += 0.5 * eigvals[0][i] * qml.Identity(i) - 0.5 * eigvals[0][i] * qml.PauliZ(i)
+    for p in range(num_orbitals):
+        ops_t += 0.5 * t_eigvals[p] * (qml.Identity(p) - qml.PauliZ(p))
 
     ops_l = []
-    for coeff in eigvals[1:]:
-        n = int(len(coeff) ** 0.5)
+    for idx in range(len(factors)):
         ops_l_ = 0.0
-        count = 0
-        for i in range(n):
-            for j in range(n):
-                c = coeff[count]
-                count += 1
+        for p in range(num_orbitals):
+            for q in range(num_orbitals):
                 ops_l_ += (
-                    c
+                    v_coeffs[idx][p]
+                    * v_coeffs[idx][q]
                     * 0.25
                     * (
-                        qml.Identity(i)
-                        - qml.PauliZ(i)
-                        - qml.PauliZ(j)
-                        + qml.pauli.pauli_mult_with_phase(qml.PauliZ(i), qml.PauliZ(j))[0]
+                        qml.Identity(p)
+                        - qml.PauliZ(p)
+                        - qml.PauliZ(q)
+                        + qml.pauli.pauli_mult_with_phase(qml.PauliZ(p), qml.PauliZ(q))[0]
                     )
                 )
+        nmat = qml.matrix(ops_l_)
         ops_l.append(ops_l_)
 
     ops = [ops_t] + ops_l
-
-    c_group = [op.coeffs * 2 for op in ops]  # coeffs are multiplied by 2 to account for spin
+    c_group = [op.coeffs for op in ops]
     o_group = [op.ops for op in ops]
-    u_transform = [eigvec.T for eigvec in eigvecs]
+    u_transform = [
+        eigvec for eigvec in [t_eigvecs] + list(v_unitaries)
+    ]  # Inverse of diagonalizing unitaries
 
     return c_group, o_group, u_transform
+
+
+def chemist_notation_transform(two_body_tensor, spatial_basis=True):
+    r"""Transform a two-body tensor to `chemist notation <http://vergil.chemistry.gatech.edu/notes/permsymm/permsymm.pdf>`_ notation.
+
+    This converts the input two-body tensor :math:`h_{pqrs}` that constructs :math:`\sum_{pqrs} h_{pqrs} a^\dagger_p a^\dagger_q a_r a_s`
+    to a transformed two-body tensor :math:`V_{pqrs}` that follows the chemist convention to construct :math:`\sum_{pqrs} V_{pqrs} a^\dagger_p a_q a^\dagger_r a_s`
+    in the spatial basis. During the tranformation, some extra one-body terms come out which are returned as well.
+
+    Args:
+        two_body_tensor (ndarray): a two-electron integral tensor giving the h_{pqrs}.
+        spatial_basis (bool): True if the two-body terms are passed in spatial-orbital basis. False if they are in spin basis.
+
+    Returns:
+        tuple(ndarray, ndarray): a one-body :math:`a^\dagger_p a_q` term which come out during the processs and  thetransformed two-body tensor :math:`V_{pqrs}`\ .
+
+    **Example**
+
+    >>> symbols  = ['H', 'H']
+    >>> geometry = np.array([[0.0, 0.0, 0.0], [1.398397361, 0.0, 0.0]], requires_grad = False)
+    >>> mol = qml.qchem.Molecule(symbols, geometry)
+    >>> core, one, two = qml.qchem.electron_integrals(mol)()
+    >>> qml.qchem.chemist_notation_transform(two, spatial_basis=True)
+    (tensor([[-0.427983, -0.      , -0.      , -0.      ],
+             [-0.      , -0.427983, -0.      , -0.      ],
+             [-0.      , -0.      , -0.439431, -0.      ],
+             [-0.      , -0.      , -0.      , -0.439431]], requires_grad=True),
+    tensor([[[[0.337378, 0.      ],
+             [0.       , 0.331856]],
+             [[0.      , 0.090605],
+             [0.090605 , 0.      ]]],
+            [[[0.      , 0.090605],
+             [0.090605 , 0.      ]],
+             [[0.331856, 0.      ],
+             [0.       , 0.348826]]]], requires_grad=True))
+
+    """
+
+    chemist_two_body_coeffs = np.swapaxes(two_body_tensor, 1, 3)
+    one_body_correction = -np.einsum("prrs", chemist_two_body_coeffs)
+
+    if spatial_basis:
+        chemist_two_body_coeffs *= 0.5
+        one_body_correction = 0.5 * np.kron(one_body_correction, np.eye(2))
+
+    return one_body_correction, chemist_two_body_coeffs
+
+
+def build_spin_tensors(one_body_integrals, two_body_integrals=None):
+    r"""Build spin-adjusted tensors :math:`h_{pq}` and :math:`h_{pqrs}` from one-body and two-body integrals
+
+    Args:
+        one_electron (array[float]): one-electron integral in the molecular orbital basis
+        two_electron (array[array[float]]): two-electron integral in the molecular orbital basis
+
+    Returns:
+        tuple(array[float]): a tuple containing spin-adjusted tensors for the provided integrals
+
+    **Example**
+
+    >>> symbols  = ['H', 'H']
+    >>> geometry = np.array([[0.0, 0.0, 0.0], [1.398397361, 0.0, 0.0]], requires_grad = False)
+    >>> mol = qml.qchem.Molecule(symbols, geometry)
+    >>> core, one, two = qml.qchem.electron_integrals(mol)()
+    >>> qml.qchem.build_spin_tensors(one_body_integrals=one, two_body_integrals=two)
+    (tensor([[-1.25331 , -0.      , -0.      , -0.      ],
+             [-0.      , -1.25331 , -0.      , -0.      ],
+             [-0.      , -0.      , -0.475069, -0.      ],
+             [-0.      , -0.      , -0.      , -0.475069]], requires_grad=True))
+
+    """
+
+    # Build operators that account for spins.
+    one_body_op, two_body_op = np.eye(2), np.eye(4).reshape(2, 2, 2, 2).swapaxes(0, 1)
+
+    one_body_tensor = np.kron(one_body_integrals, one_body_op)
+    if two_body_integrals is None:
+        return (one_body_tensor,)
+
+    two_body_tensor = 0.5 * np.kron(two_body_integrals, two_body_op)
+    return one_body_tensor, two_body_tensor
