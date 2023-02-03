@@ -161,6 +161,35 @@ class ParametrizedHamiltonian:
                     :align: center
                     :width: 60%
                     :target: javascript:void(0);
+
+
+        It is possible to add two instance of ``ParametrizedHamiltonian`` together. The resulting
+        ``ParametrizedHamiltonian`` takes a list of parameters that is a concatenation of the initial
+        two Hamiltonian parameters:
+
+        .. code-block:: python3
+
+            coeffs = [lambda p, t: jnp.sin(p*t) for _ in range(2)]
+            ops = [qml.PauliX(0), qml.PauliY(1)]
+            H1 = qml.dot(coeffs, ops)
+
+            def f1(p, t): return t + p
+            def f2(p, t): return p[0] * jnp.sin(p[1] * t**2)
+            H2 = f1 * qml.PauliY(0) + f2 * qml.PauliX(1)
+
+            params1 = [2., 3.]
+            params2 = [4., [5., 6.]]
+
+        >>> H1(params1, t=1)
+        (0.9092974066734314*(PauliX(wires=[0]))) + (0.14112000167369843*(PauliY(wires=[1])))
+
+        >>> H2(params2, t=1)
+        (5.0*(PauliY(wires=[0]))) + (-1.3970774412155151*(PauliX(wires=[1])))
+
+        >>> H3 = H2 + H1
+        >>> H3([4., [5., 6.], 2., 3.], t=1)
+        (5.0*(PauliY(wires=[0]))) + (-1.3970774412155151*(PauliX(wires=[1]))) + (0.9092974066734314*(PauliX(wires=[0]))) + (0.14112000167369843*(PauliY(wires=[1])))
+
     """
 
     def __init__(self, coeffs, observables):
