@@ -42,10 +42,11 @@ def ctrl_decomp_zyz(target_operation: Operator, control_wires: Wires):
 
     **Example**
 
+    We can create a controlled operation using `qml.ctrl`, or by creating the
+    decomposed controlled version of using `qml.ctrl_decomp_zyz`.
+
     .. code-block:: python
 
-        # We can create a controlled operation using `qml.ctrl`, or by creating the
-        # decomposed controlled version of using `qml.ctrl_decomp_zyz`.
         op = qml.RX(0.123, wires=2)
         ctrl_op = qml.ctrl(op, [0, 1])
         ctrl_decomp = qml.ops.ctrl_decomp_zyz(op, [0, 1])
