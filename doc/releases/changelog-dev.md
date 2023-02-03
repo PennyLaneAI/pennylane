@@ -61,8 +61,6 @@
   + 2.2 * Y(0)
   ```
 
-  [(#3586)](https://github.com/PennyLaneAI/pennylane/pull/3586)
-
 <h4>Always differentiable 📈</h4>
 
 * The Hadamard test gradient tranform is now available via `qml.gradients.hadamard_grad`.
