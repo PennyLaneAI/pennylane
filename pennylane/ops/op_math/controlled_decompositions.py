@@ -56,7 +56,7 @@ def ctrl_decomp_zyz(target_operation: Operator, control_wires: Wires):
         def expected_circuit():
             for i in range(3):
                 qml.Hadamard(i)
-            qml.apply(ctrl_op)
+            qml.ctrl(op, [0,1])
             return qml.probs()
 
         @qml.qnode(dev)
