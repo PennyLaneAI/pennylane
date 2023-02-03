@@ -45,6 +45,7 @@ extensions = [
     "sphinx.ext.intersphinx",
     "sphinx_automodapi.automodapi",
     "sphinx_copybutton",
+    "sphinx_autodoc_typehints",
     "m2r2",
 ]
 
