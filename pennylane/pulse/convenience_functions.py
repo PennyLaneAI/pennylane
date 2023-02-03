@@ -96,7 +96,7 @@ def rect(x: Union[float, Callable], windows: List[Tuple[float]] = None):
     Here we use :func:`~.rect` to create a parametrized coefficient that has a value of ``0`` outside the time interval
     ``t=(1, 7)``, and is defined by ``jnp.polyval(p, t)`` within the interval:
 
-    .. figure:: ../../doc/_static/pulse/rect_example.png
+    .. figure:: ../../_static/pulse/rect_example.png
             :align: center
             :width: 60%
             :target: javascript:void(0);
@@ -182,7 +182,7 @@ def pwc(timespan):
     an element of the ``params`` array. The variable ``t`` is used to select the value of the parameter array
     corresponding to the specified time, based on the assigned binning.
 
-    .. figure:: ../../doc/_static/pulse/pwc_example.png
+    .. figure:: ../../_static/pulse/pwc_example.png
         :align: center
         :width: 60%
         :target: javascript:void(0);
