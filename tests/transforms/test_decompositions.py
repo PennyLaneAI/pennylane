@@ -14,10 +14,13 @@
 """
 Tests for the QubitUnitary decomposition transforms.
 """
+# pylint: disable=unused-variable
 
-import pytest
 from functools import reduce
+import pytest
 
+from test_optimization.utils import check_matrix_equivalence
+from gate_data import I, Z, S, T, H, X, Y, CNOT, SWAP
 import pennylane as qml
 from pennylane import numpy as np
 
@@ -32,8 +35,6 @@ from pennylane.transforms.decompositions.two_qubit_unitary import (
     _compute_num_cnots,
 )
 
-from test_optimization.utils import check_matrix_equivalence
-from gate_data import I, Z, S, T, H, X, Y, CNOT, SWAP
 
 single_qubit_decomps_zyz = [
     # First set of gates are diagonal and converted to RZ
