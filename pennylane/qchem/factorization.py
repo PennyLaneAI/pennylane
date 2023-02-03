@@ -278,12 +278,16 @@ def basis_rotation(one_electron, two_electron, tol_factor=1.0e-5):
     one_body_tensor = np.kron(one_electron, np.eye(2))  # account for spin
     one_body_correction, chemist_two_body_tensor = chemist_notation_transform(two_electron, True)
 
+    chemist_one_body_tensor = one_body_tensor + one_body_correction
+    t_eigvals, t_eigvecs = np.linalg.eigh(chemist_one_body_tensor)
+
     factors, _, _ = factorize(chemist_two_body_tensor, tol_factor=tol_factor)
     factors = [np.kron(factor, np.eye(2)) for factor in factors]  # account for spin
 
-    v_coeffs, v_unitaries = np.linalg.eigh(factors)
-    chemist_one_body_tensor = one_body_tensor + one_body_correction
-    t_eigvals, t_eigvecs = np.linalg.eigh(chemist_one_body_tensor)
+    v_coeffs, v_unitaries = np.linalg.eig(factors)
+    indices = [np.argsort(v_coeff)[::-1] for v_coeff in v_coeffs]
+    v_coeffs = [v_coeff[indices[idx]] for idx, v_coeff in enumerate(v_coeffs)]
+    v_unitaries = [v_unitary[:, indices[idx]] for idx, v_unitary in enumerate(v_unitaries)]
 
     ops_t = 0.0
     for p in range(num_orbitals):
