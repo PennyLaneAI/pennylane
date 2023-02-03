@@ -161,3 +161,7 @@ class TestEvolution:
             qml.QuantumFunctionError, match="of operation Evolution is not hermitian"
         ):
             qml.generator(op)
+
+    def test_warning_is_raised(self):
+        with pytest.warns(UserWarning, match="Please use `qml.evolve"):
+            Evolution(qml.PauliX(0))
