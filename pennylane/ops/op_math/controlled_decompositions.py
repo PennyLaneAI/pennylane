@@ -63,8 +63,7 @@ def ctrl_decomp_zyz(target_operation: Operator, control_wires: Wires):
         def decomp_circuit():
             for i in range(3):
                 qml.Hadamard(i)
-            for op in ctrl_decomp:
-                qml.apply(op)
+            qml.ops.ctrl_decomp_zyz(op, [0,1])
             return qml.probs()
 
     Measurements on both circuits will give us the same results:
