@@ -62,10 +62,12 @@ Controlled Operator Classes
 Decompositions
 ~~~~~~~~~~~~~~
 
+.. currentmodule:: pennylane.ops.op_math
+
 .. autosummary::
     :toctree: api
 
-    ~ctrl_zyz_decomp
+    ~ctrl_decomp_zyz
 
 """
 
