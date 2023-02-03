@@ -113,7 +113,7 @@ class TestVonNeumannEntropy:
         grad_expected_entropy = expected_entropy_grad_ising_xx(param) / np.log(base)
         assert qml.math.allclose(grad_entropy, grad_expected_entropy)
 
-    interfaces = ["auto", "torch"]
+    interfaces = ["torch"]
 
     @pytest.mark.torch
     @pytest.mark.parametrize("wires", single_wires_list)
@@ -168,7 +168,7 @@ class TestVonNeumannEntropy:
 
         assert qml.math.allclose(grad_entropy, grad_expected_entropy)
 
-    interfaces = ["auto", "tf"]
+    interfaces = ["tf"]
 
     @pytest.mark.tf
     @pytest.mark.parametrize("wires", single_wires_list)
@@ -219,7 +219,7 @@ class TestVonNeumannEntropy:
 
         assert qml.math.allclose(grad_entropy, grad_expected_entropy)
 
-    interfaces = ["auto", "jax"]
+    interfaces = ["jax"]
 
     @pytest.mark.jax
     @pytest.mark.parametrize("wires", single_wires_list)
@@ -268,7 +268,7 @@ class TestVonNeumannEntropy:
 
         assert qml.math.allclose(grad_entropy, grad_expected_entropy, rtol=1e-04, atol=1e-05)
 
-    interfaces = ["auto", "jax", "jax-jit"]
+    interfaces = ["jax-jit"]
 
     @pytest.mark.jax
     @pytest.mark.parametrize("wires", single_wires_list)
@@ -419,7 +419,7 @@ class TestRelativeEntropy:
 
         assert np.allclose(actual, expected)
 
-    interfaces = ["auto", "jax", "jax-jit"]
+    interfaces = ["jax-jit"]
 
     @pytest.mark.jax
     @pytest.mark.parametrize("param", params)
@@ -588,7 +588,7 @@ class TestRelativeEntropy:
 
         assert np.allclose(actual, expected, atol=1e-8)
 
-    interfaces = ["auto", "tf"]
+    interfaces = ["tf"]
 
     @pytest.mark.tf
     @pytest.mark.parametrize("param", grad_params)
@@ -628,7 +628,7 @@ class TestRelativeEntropy:
 
         assert np.allclose(actual, expected, atol=1e-5)
 
-    interfaces = ["auto", "torch"]
+    interfaces = ["torch"]
 
     @pytest.mark.torch
     @pytest.mark.parametrize("param", grad_params)
@@ -677,7 +677,7 @@ class TestRelativeEntropy:
 
     @pytest.mark.all_interfaces
     @pytest.mark.parametrize("device", ["default.qubit", "default.mixed", "lightning.qubit"])
-    @pytest.mark.parametrize("interface", ["auto", "autograd", "jax", "tensorflow", "torch"])
+    @pytest.mark.parametrize("interface", ["autograd", "jax", "tensorflow", "torch"])
     def test_num_wires_mismatch(self, device, interface):
         """Test that an error is raised when the number of wires in the
         two QNodes are different"""

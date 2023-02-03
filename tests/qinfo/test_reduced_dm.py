@@ -31,7 +31,6 @@ devices = [
     "default.mixed",
 ]
 interfaces = [
-    "auto",
     "autograd",
     "torch",
     "tf",

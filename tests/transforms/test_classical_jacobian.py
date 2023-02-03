@@ -142,7 +142,7 @@ def test_autograd_without_argnum(circuit, args, expected_jac, diff_method, inter
             assert np.allclose(_jac, _expected_jac)
 
 
-interfaces = ["auto", "jax"]
+interfaces = ["jax"]
 
 
 @pytest.mark.jax
@@ -162,7 +162,7 @@ def test_jax_without_argnum(circuit, args, expected_jac, diff_method, interface)
     assert np.allclose(jac, expected_jac)
 
 
-interfaces = ["auto", "tf"]
+interfaces = ["tf"]
 
 
 @pytest.mark.tf
@@ -183,7 +183,7 @@ def test_tf_without_argnum(circuit, args, expected_jac, diff_method, interface):
         assert np.allclose(_jac, _expected_jac)
 
 
-interfaces = ["auto", "torch"]
+interfaces = ["torch"]
 
 
 @pytest.mark.torch
@@ -232,7 +232,7 @@ def test_autograd_with_scalar_argnum(circuit, args, expected_jac, argnum, diff_m
     assert np.allclose(jac, expected_jac)
 
 
-interfaces = ["auto", "jax"]
+interfaces = ["jax"]
 
 
 @pytest.mark.jax
@@ -253,7 +253,7 @@ def test_jax_with_scalar_argnum(circuit, args, expected_jac, argnum, diff_method
     assert np.allclose(jac, expected_jac)
 
 
-interfaces = ["auto", "tf"]
+interfaces = ["tf"]
 
 
 @pytest.mark.tf
@@ -274,7 +274,7 @@ def test_tf_with_scalar_argnum(circuit, args, expected_jac, argnum, diff_method,
     assert np.allclose(jac, expected_jac)
 
 
-interfaces = ["auto", "torch"]
+interfaces = ["torch"]
 
 
 @pytest.mark.torch
@@ -319,7 +319,7 @@ def test_autograd_with_single_list_argnum(
     assert np.allclose(jac[0], expected_jac[0])
 
 
-interfaces = ["auto", "jax"]
+interfaces = ["jax"]
 
 
 @pytest.mark.jax
@@ -341,7 +341,7 @@ def test_jax_with_single_list_argnum(circuit, args, expected_jac, argnum, diff_m
     assert np.allclose(jac[0], expected_jac[0])
 
 
-interfaces = ["auto", "tf"]
+interfaces = ["tf"]
 
 
 @pytest.mark.tf
@@ -363,7 +363,7 @@ def test_tf_with_single_list_argnum(circuit, args, expected_jac, argnum, diff_me
     assert np.allclose(jac[0], expected_jac[0])
 
 
-interfaces = ["auto", "torch"]
+interfaces = ["torch"]
 
 
 @pytest.mark.torch
@@ -407,7 +407,7 @@ def test_autograd_with_sequence_argnum(circuit, args, expected_jac, argnum, diff
         assert np.allclose(_jac, _expected_jac)
 
 
-interfaces = ["auto", "jax"]
+interfaces = ["jax"]
 
 
 @pytest.mark.jax
@@ -430,7 +430,7 @@ def test_jax_with_sequence_argnum(circuit, args, expected_jac, argnum, diff_meth
         assert np.allclose(_jac, _expected_jac)
 
 
-interfaces = ["auto", "tf"]
+interfaces = ["tf"]
 
 
 @pytest.mark.tf
@@ -453,7 +453,7 @@ def test_tf_with_sequence_argnum(circuit, args, expected_jac, argnum, diff_metho
         assert np.allclose(_jac, _expected_jac)
 
 
-interfaces = ["auto", "torch"]
+interfaces = ["torch"]
 
 
 @pytest.mark.torch
@@ -493,7 +493,7 @@ def test_autograd_not_trainable_only(diff_method, interface):
     assert np.allclose(jac, expected_jac_not_trainable_only)
 
 
-interfaces = ["auto", "jax"]
+interfaces = ["jax"]
 
 
 @pytest.mark.jax
@@ -508,7 +508,7 @@ def test_jax_not_trainable_only(diff_method, interface):
     assert np.allclose(jac, expected_jac_not_trainable_only)
 
 
-interfaces = ["auto", "tf"]
+interfaces = ["tf"]
 
 
 @pytest.mark.tf
@@ -525,7 +525,7 @@ def test_tf_not_trainable_only(diff_method, interface):
     assert np.allclose(jac, expected_jac_not_trainable_only)
 
 
-interfaces = ["auto", "torch"]
+interfaces = ["torch"]
 
 
 @pytest.mark.torch

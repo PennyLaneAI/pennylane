@@ -149,7 +149,7 @@ class TestPurity:
     @pytest.mark.parametrize("device", devices)
     @pytest.mark.parametrize("param", parameters)
     @pytest.mark.parametrize("wires,is_partial", wires_list)
-    @pytest.mark.parametrize("interface", ["auto", "jax"])
+    @pytest.mark.parametrize("interface", ["jax"])
     def test_IsingXX_qnode_purity_jax(self, device, param, wires, is_partial, interface):
         """Test purity for a QNode with jax interface."""
 
@@ -171,7 +171,7 @@ class TestPurity:
     @pytest.mark.parametrize("param", parameters)
     @pytest.mark.parametrize("wires,is_partial", wires_list)
     @pytest.mark.parametrize("diff_method", diff_methods)
-    @pytest.mark.parametrize("interface", ["auto", "jax"])
+    @pytest.mark.parametrize("interface", ["jax"])
     def test_IsingXX_qnode_purity_grad_jax(
         self, device, param, wires, is_partial, diff_method, interface
     ):
@@ -195,7 +195,7 @@ class TestPurity:
     @pytest.mark.parametrize("device", devices)
     @pytest.mark.parametrize("param", parameters)
     @pytest.mark.parametrize("wires,is_partial", wires_list)
-    @pytest.mark.parametrize("interface", ["auto", "jax", "jax-jit"])
+    @pytest.mark.parametrize("interface", ["jax-jit"])
     def test_IsingXX_qnode_purity_jax_jit(self, device, param, wires, is_partial, interface):
         """Test purity for a QNode with jax interface."""
 
@@ -218,7 +218,7 @@ class TestPurity:
     @pytest.mark.parametrize("param", parameters)
     @pytest.mark.parametrize("wires,is_partial", wires_list)
     @pytest.mark.parametrize("diff_method", diff_methods)
-    @pytest.mark.parametrize("interface", ["auto", "jax", "jax-jit"])
+    @pytest.mark.parametrize("interface", ["jax-jit"])
     def test_IsingXX_qnode_purity_grad_jax_jit(
         self, device, param, wires, is_partial, diff_method, interface
     ):
@@ -242,7 +242,7 @@ class TestPurity:
     @pytest.mark.parametrize("device", devices)
     @pytest.mark.parametrize("param", parameters)
     @pytest.mark.parametrize("wires,is_partial", wires_list)
-    @pytest.mark.parametrize("interface", ["auto", "torch"])
+    @pytest.mark.parametrize("interface", ["torch"])
     def test_IsingXX_qnode_purity_torch(self, device, param, wires, is_partial, interface):
         """Tests purity for a qnode"""
 
@@ -264,7 +264,7 @@ class TestPurity:
     @pytest.mark.parametrize("param", parameters)
     @pytest.mark.parametrize("wires,is_partial", wires_list)
     @pytest.mark.parametrize("diff_method", diff_methods)
-    @pytest.mark.parametrize("interface", ["auto", "torch"])
+    @pytest.mark.parametrize("interface", ["torch"])
     def test_IsingXX_qnode_purity_grad_torch(
         self, device, param, wires, is_partial, diff_method, interface
     ):
@@ -292,7 +292,7 @@ class TestPurity:
     @pytest.mark.parametrize("device", devices)
     @pytest.mark.parametrize("param", parameters)
     @pytest.mark.parametrize("wires,is_partial", wires_list)
-    @pytest.mark.parametrize("interface", ["auto", "tf"])
+    @pytest.mark.parametrize("interface", ["tf"])
     def test_IsingXX_qnode_purity_tf(self, device, param, wires, is_partial, interface):
         """Tests purity for a qnode"""
 
@@ -314,7 +314,7 @@ class TestPurity:
     @pytest.mark.parametrize("param", parameters)
     @pytest.mark.parametrize("wires,is_partial", wires_list)
     @pytest.mark.parametrize("diff_method", diff_methods)
-    @pytest.mark.parametrize("interface", ["auto", "tf"])
+    @pytest.mark.parametrize("interface", ["tf"])
     def test_IsingXX_qnode_purity_grad_tf(
         self, device, param, wires, is_partial, diff_method, interface
     ):

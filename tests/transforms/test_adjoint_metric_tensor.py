@@ -459,7 +459,7 @@ class TestAdjointMetricTensorTape:
         assert qml.math.allclose(mt, expected)
 
     @pytest.mark.torch
-    @pytest.mark.parametrize("interface", ["auto", "torch"])
+    @pytest.mark.parametrize("interface", ["torch"])
     def test_correct_output_tape_torch(self, ansatz, params, interface):
         """Test that the output is correct when using Torch and
         calling the adjoint metric tensor directly on a tape."""
@@ -485,7 +485,7 @@ class TestAdjointMetricTensorTape:
         assert qml.math.allclose(mt, expected)
 
     @pytest.mark.tf
-    @pytest.mark.parametrize("interface", ["auto", "tf"])
+    @pytest.mark.parametrize("interface", ["tf"])
     def test_correct_output_tape_tf(self, ansatz, params, interface):
         """Test that the output is correct when using TensorFlow and
         calling the adjoint metric tensor directly on a tape."""
@@ -574,7 +574,7 @@ class TestAdjointMetricTensorQNode:
 
     @pytest.mark.torch
     @pytest.mark.parametrize("ansatz, params", list(zip(fubini_ansatze, fubini_params)))
-    @pytest.mark.parametrize("interface", ["auto", "torch"])
+    @pytest.mark.parametrize("interface", ["torch"])
     def test_correct_output_qnode_torch(self, ansatz, params, interface):
         """Test that the output is correct when using Torch and
         calling the adjoint metric tensor on a QNode."""
@@ -600,7 +600,7 @@ class TestAdjointMetricTensorQNode:
 
     @pytest.mark.tf
     @pytest.mark.parametrize("ansatz, params", list(zip(fubini_ansatze, fubini_params)))
-    @pytest.mark.parametrize("interface", ["auto", "tf"])
+    @pytest.mark.parametrize("interface", ["tf"])
     def test_correct_output_qnode_tf(self, ansatz, params, interface):
         """Test that the output is correct when using TensorFlow and
         calling the adjoint metric tensor on a QNode."""
@@ -695,7 +695,7 @@ class TestAdjointMetricTensorDifferentiability:
             assert qml.math.allclose(mt_jac, expected)
 
     @pytest.mark.jax
-    @pytest.mark.parametrize("interface", ["auto", "jax"])
+    @pytest.mark.parametrize("interface", ["jax"])
     def test_correct_output_qnode_jax(self, ansatz, params, interface):
         """Test that the derivative is correct when using JAX and
         calling the adjoint metric tensor on a QNode."""

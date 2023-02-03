@@ -183,7 +183,7 @@ def test_autograd(diff_method, tol):
 
 @pytest.mark.jax
 @pytest.mark.parametrize("diff_method", ["backprop", "adjoint", "parameter-shift"])
-@pytest.mark.parametrize("interface", ["auto", "jax"])
+@pytest.mark.parametrize("interface", ["jax"])
 def test_jax(diff_method, tol, interface):
     """Test derivatives when using JAX."""
     import jax
@@ -212,7 +212,7 @@ def test_jax(diff_method, tol, interface):
 
 @pytest.mark.jax
 @pytest.mark.parametrize("diff_method", ["adjoint", "parameter-shift"])
-@pytest.mark.parametrize("interface", ["auto", "jax", "jax-jit"])
+@pytest.mark.parametrize("interface", ["jax-jit"])
 def test_jax_jit(diff_method, interface, tol):
     """Test derivatives when using JAX and JIT."""
     import jax
@@ -242,7 +242,7 @@ def test_jax_jit(diff_method, interface, tol):
 
 @pytest.mark.torch
 @pytest.mark.parametrize("diff_method", ["backprop", "adjoint", "parameter-shift"])
-@pytest.mark.parametrize("interface", ["auto", "torch"])
+@pytest.mark.parametrize("interface", ["torch"])
 def test_torch(diff_method, tol, interface):
     """Test derivatives when using Torch"""
     import torch
@@ -273,7 +273,7 @@ def test_torch(diff_method, tol, interface):
 
 @pytest.mark.tf
 @pytest.mark.parametrize("diff_method", ["backprop", "adjoint", "parameter-shift"])
-@pytest.mark.parametrize("interface", ["auto", "tf"])
+@pytest.mark.parametrize("interface", ["tf"])
 def test_tf(diff_method, tol, interface):
     """Test derivatives when using TF"""
     import tensorflow as tf

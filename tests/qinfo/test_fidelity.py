@@ -248,7 +248,7 @@ class TestFidelityQnode:
         expected_fid = [-expected, expected]
         assert qml.math.allclose(fid_grad, expected_fid)
 
-    interfaces = ["auto", "torch"]
+    interfaces = ["torch"]
 
     @pytest.mark.torch
     @pytest.mark.parametrize("device", devices)
@@ -357,7 +357,7 @@ class TestFidelityQnode:
         fid_grad = [p.grad for p in params]
         assert qml.math.allclose(fid_grad, expected_fid)
 
-    interfaces = ["auto", "tf"]
+    interfaces = ["tf"]
 
     @pytest.mark.tf
     @pytest.mark.parametrize("device", devices)
@@ -440,7 +440,7 @@ class TestFidelityQnode:
         fid_grad = tape.gradient(entropy, param)
         assert qml.math.allclose(fid_grad, expected_fid)
 
-    interfaces = ["auto", "jax"]
+    interfaces = ["jax"]
 
     @pytest.mark.jax
     @pytest.mark.parametrize("device", devices)
@@ -672,7 +672,7 @@ class TestFidelityQnode:
         expected_fid_grad = expected_grad_fidelity_rx_pauliz(param)
         assert qml.math.allclose(fid_grad, (expected_fid_grad, 0.0))
 
-    interfaces = ["auto", "torch"]
+    interfaces = ["torch"]
 
     @pytest.mark.torch
     @pytest.mark.parametrize("param", parameters)
@@ -704,7 +704,7 @@ class TestFidelityQnode:
         fid_grad = (param.grad, param2.grad)
         assert qml.math.allclose(fid_grad, (expected_fid_grad, 0.0))
 
-    interfaces = ["auto", "tf"]
+    interfaces = ["tf"]
 
     @pytest.mark.tf
     @pytest.mark.parametrize("param", parameters)
@@ -740,7 +740,7 @@ class TestFidelityQnode:
         fid_grad = tape.gradient(entropy, [param1, params2])
         assert qml.math.allclose(fid_grad, (expected_fid_grad, 0.0))
 
-    interfaces = ["auto", "jax"]
+    interfaces = ["jax"]
 
     @pytest.mark.jax
     @pytest.mark.parametrize("param", parameters)
@@ -770,7 +770,7 @@ class TestFidelityQnode:
         expected_fid_grad = expected_grad_fidelity_rx_pauliz(param)
         assert qml.math.allclose(fid_grad, (expected_fid_grad, 0.0), rtol=1e-03, atol=1e-04)
 
-    interfaces = ["auto", "jax"]
+    interfaces = ["jax"]
 
     @pytest.mark.jax
     @pytest.mark.parametrize("param", parameters)

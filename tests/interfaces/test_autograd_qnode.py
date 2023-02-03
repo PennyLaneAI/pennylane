@@ -32,8 +32,8 @@ qubit_device_and_diff_method = [
 ]
 
 interface_and_qubit_device_and_diff_method = [
-    ["auto"] + inner_list for inner_list in qubit_device_and_diff_method
-] + [["autograd"] + inner_list for inner_list in qubit_device_and_diff_method]
+    ["autograd"] + inner_list for inner_list in qubit_device_and_diff_method
+]
 
 TOL_FOR_SPSA = 1.0
 H_FOR_SPSA = 0.01

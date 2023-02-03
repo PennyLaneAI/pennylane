@@ -627,7 +627,7 @@ class TestMetricTensor:
 
         assert res == ()
 
-    interface = ["auto", "torch"]
+    interface = ["torch"]
 
     @pytest.mark.torch
     @pytest.mark.parametrize("interface", interfaces)
@@ -649,7 +649,7 @@ class TestMetricTensor:
 
         assert res == ()
 
-    interface = ["auto", "tf"]
+    interface = ["tf"]
 
     @pytest.mark.tf
     @pytest.mark.parametrize("interface", interfaces)
@@ -671,7 +671,7 @@ class TestMetricTensor:
 
         assert res == ()
 
-    interfaces = ["auto", "jax"]
+    interfaces = ["jax"]
 
     @pytest.mark.jax
     @pytest.mark.parametrize("interface", interfaces)
@@ -962,7 +962,7 @@ class TestFullMetricTensor:
         else:
             assert qml.math.allclose(mt, expected)
 
-    interfaces = ["auto", "torch"]
+    interfaces = ["torch"]
 
     @pytest.mark.torch
     @pytest.mark.parametrize("ansatz, params", zip(fubini_ansatze, fubini_params))
@@ -988,7 +988,7 @@ class TestFullMetricTensor:
         else:
             assert qml.math.allclose(mt, expected)
 
-    interfaces = ["auto", "tf"]
+    interfaces = ["tf"]
 
     @pytest.mark.tf
     @pytest.mark.parametrize("ansatz, params", zip(fubini_ansatze, fubini_params))

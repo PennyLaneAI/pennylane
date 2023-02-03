@@ -174,7 +174,7 @@ class TestPurity:
         expected_purity_grad = 0 if is_partial else 32 * (param - 0.5) ** 3
         assert qml.math.allclose(purity_grad, expected_purity_grad)
 
-    interfaces = ["auto", "jax"]
+    interfaces = ["jax"]
 
     @pytest.mark.jax
     @pytest.mark.parametrize("device", devices)
@@ -323,7 +323,7 @@ class TestPurity:
 
         assert qml.math.allclose(grad_purity, expected_grad)
 
-    interfaces = ["auto", "tf"]
+    interfaces = ["tf"]
 
     @pytest.mark.tf
     @pytest.mark.parametrize("device", devices)

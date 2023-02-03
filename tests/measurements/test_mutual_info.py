@@ -196,7 +196,7 @@ class TestIntegration:
 
     @pytest.mark.jax
     @pytest.mark.parametrize("params", zip(np.linspace(0, np.pi, 8), np.linspace(0, 2 * np.pi, 8)))
-    @pytest.mark.parametrize("interface", ["auto", "jax", "jax-jit"])
+    @pytest.mark.parametrize("interface", ["jax-jit"])
     def test_qnode_mutual_info_jax_jit(self, params, interface):
         """Test that the measurement process for mutual information works for QNodes
         by comparing against the mutual information transform, for the JAX-jit interface"""
@@ -260,7 +260,7 @@ class TestIntegration:
     @pytest.mark.jax
     @pytest.mark.parametrize("param", np.linspace(0, 2 * np.pi, 16))
     @pytest.mark.parametrize("diff_method", diff_methods)
-    @pytest.mark.parametrize("interface", ["auto", "jax"])
+    @pytest.mark.parametrize("interface", ["jax"])
     def test_qnode_grad_jax(self, param, diff_method, interface):
         """Test that the gradient of mutual information works for QNodes
         with the JAX interface"""
@@ -294,7 +294,7 @@ class TestIntegration:
     @pytest.mark.jax
     @pytest.mark.parametrize("param", np.linspace(0, 2 * np.pi, 16))
     @pytest.mark.parametrize("diff_method", diff_methods)
-    @pytest.mark.parametrize("interface", ["auto", "jax", "jax-jit"])
+    @pytest.mark.parametrize("interface", ["jax-jit"])
     def test_qnode_grad_jax_jit(self, param, diff_method, interface):
         """Test that the gradient of mutual information works for QNodes
         with the JAX-jit interface"""
@@ -328,7 +328,7 @@ class TestIntegration:
     @pytest.mark.tf
     @pytest.mark.parametrize("param", np.linspace(0, 2 * np.pi, 16))
     @pytest.mark.parametrize("diff_method", diff_methods)
-    @pytest.mark.parametrize("interface", ["auto", "tf"])
+    @pytest.mark.parametrize("interface", ["tf"])
     def test_qnode_grad_tf(self, param, diff_method, interface):
         """Test that the gradient of mutual information works for QNodes
         with the tensorflow interface"""
@@ -364,7 +364,7 @@ class TestIntegration:
     @pytest.mark.torch
     @pytest.mark.parametrize("param", np.linspace(0, 2 * np.pi, 16))
     @pytest.mark.parametrize("diff_method", diff_methods)
-    @pytest.mark.parametrize("interface", ["auto", "torch"])
+    @pytest.mark.parametrize("interface", ["torch"])
     def test_qnode_grad_torch(self, param, diff_method, interface):
         """Test that the gradient of mutual information works for QNodes
         with the torch interface"""

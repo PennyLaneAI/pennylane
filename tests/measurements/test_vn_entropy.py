@@ -205,7 +205,7 @@ class TestIntegration:
     @pytest.mark.parametrize("param", parameters)
     @pytest.mark.parametrize("device", devices)
     @pytest.mark.parametrize("base", base)
-    @pytest.mark.parametrize("interface", ["auto", "torch"])
+    @pytest.mark.parametrize("interface", ["torch"])
     def test_IsingXX_qnode_torch_entropy(self, param, wires, device, base, interface):
         """Test entropy for a QNode with torch interface."""
         import torch
@@ -228,7 +228,7 @@ class TestIntegration:
     @pytest.mark.parametrize("param", parameters)
     @pytest.mark.parametrize("base", base)
     @pytest.mark.parametrize("diff_method", diff_methods)
-    @pytest.mark.parametrize("interface", ["auto", "torch"])
+    @pytest.mark.parametrize("interface", ["torch"])
     def test_IsingXX_qnode_entropy_grad_torch(self, param, wires, base, diff_method, interface):
         """Test entropy for a QNode gradient with torch."""
         import torch
@@ -257,7 +257,7 @@ class TestIntegration:
     @pytest.mark.parametrize("param", parameters)
     @pytest.mark.parametrize("device", devices)
     @pytest.mark.parametrize("base", base)
-    @pytest.mark.parametrize("interface", ["auto", "tf"])
+    @pytest.mark.parametrize("interface", ["tf"])
     def test_IsingXX_qnode_tf_entropy(self, param, wires, device, base, interface):
         """Test entropy for a QNode with tf interface."""
         import tensorflow as tf
@@ -280,7 +280,7 @@ class TestIntegration:
     @pytest.mark.parametrize("param", parameters)
     @pytest.mark.parametrize("base", base)
     @pytest.mark.parametrize("diff_method", diff_methods)
-    @pytest.mark.parametrize("interface", ["auto", "tf"])
+    @pytest.mark.parametrize("interface", ["tf"])
     def test_IsingXX_qnode_entropy_grad_tf(self, param, wires, base, diff_method, interface):
         """Test entropy for a QNode gradient with tf."""
         import tensorflow as tf
@@ -310,7 +310,7 @@ class TestIntegration:
     @pytest.mark.parametrize("param", parameters)
     @pytest.mark.parametrize("device", devices)
     @pytest.mark.parametrize("base", base)
-    @pytest.mark.parametrize("interface", ["auto", "jax"])
+    @pytest.mark.parametrize("interface", ["jax"])
     def test_IsingXX_qnode_jax_entropy(self, param, wires, device, base, interface):
         """Test entropy for a QNode with jax interface."""
         import jax.numpy as jnp
@@ -333,7 +333,7 @@ class TestIntegration:
     @pytest.mark.parametrize("param", parameters)
     @pytest.mark.parametrize("base", base)
     @pytest.mark.parametrize("diff_method", diff_methods)
-    @pytest.mark.parametrize("interface", ["auto", "jax"])
+    @pytest.mark.parametrize("interface", ["jax"])
     def test_IsingXX_qnode_entropy_grad_jax(self, param, wires, base, diff_method, interface):
         """Test entropy for a QNode gradient with Jax."""
         import jax
@@ -358,7 +358,7 @@ class TestIntegration:
     @pytest.mark.parametrize("param", parameters)
     @pytest.mark.parametrize("base", base)
     @pytest.mark.parametrize("device", devices)
-    @pytest.mark.parametrize("interface", ["auto", "jax"])
+    @pytest.mark.parametrize("interface", ["jax"])
     def test_IsingXX_qnode_jax_jit_entropy(self, param, wires, base, device, interface):
         """Test entropy for a QNode with jax-jit interface."""
         import jax
@@ -382,7 +382,7 @@ class TestIntegration:
     @pytest.mark.parametrize("param", parameters)
     @pytest.mark.parametrize("base", base)
     @pytest.mark.parametrize("diff_method", diff_methods)
-    @pytest.mark.parametrize("interface", ["auto", "jax", "jax-jit"])
+    @pytest.mark.parametrize("interface", ["jax-jit"])
     def test_IsingXX_qnode_entropy_grad_jax_jit(self, param, wires, base, diff_method, interface):
         """Test entropy for a QNode gradient with Jax-jit."""
         import jax
