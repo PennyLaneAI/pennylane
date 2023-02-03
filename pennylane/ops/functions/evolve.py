@@ -159,5 +159,5 @@ def evolution(op: Operator, coeff: float = 1, num_steps: int = None):
     PauliRot((-3+0j), X, wires=[0]),
     PauliRot((-7+0j), ZX, wires=[1, 2])]
     """
-    
+
     return Evolution(op, coeff, num_steps)
