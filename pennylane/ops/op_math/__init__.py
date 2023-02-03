@@ -59,6 +59,16 @@ Controlled Operator Classes
 
     ~ControlledQubitUnitary
 
+Decompositions
+~~~~~~~~~~~~~~
+
+.. currentmodule:: pennylane.ops.op_math
+
+.. autosummary::
+    :toctree: api
+
+    ~ctrl_decomp_zyz
+
 """
 
 from .adjoint import Adjoint, adjoint
@@ -72,6 +82,7 @@ from .prod import Prod, prod
 from .sprod import SProd, s_prod
 from .sum import Sum, op_sum, sum
 from .symbolicop import ScalarSymbolicOp, SymbolicOp
+from .controlled_decompositions import ctrl_decomp_zyz
 
 controlled_qubit_ops = {
     "ControlledQubitUnitary",

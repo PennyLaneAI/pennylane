@@ -366,6 +366,10 @@
 * The `create_initial_state` function is added to `devices/qubit` that returns an initial state for an execution.
   [(#3683)](https://github.com/PennyLaneAI/pennylane/pull/3683)
 
+ * Added `qml.ops.ctrl_decomp_zyz` to compute the decomposition of a controlled single-qubit operation given
+  a single-qubit operation and the control wires.
+  [(#3681)](https://github.com/PennyLaneAI/pennylane/pull/3681)
+
 <h3>Improvements</h3>
 
 * `qml.purity` is added as a measurement process for purity
@@ -459,6 +463,9 @@
 
 * `BasisState` now implements the `StatePrep` interface.
   [(#3693)](https://github.com/PennyLaneAI/pennylane/pull/3693)
+
+* `QubitStateVector` now implements the `StatePrep` interface.
+  [(#3685)](https://github.com/PennyLaneAI/pennylane/pull/3685)
 
 <h3>Breaking changes</h3>
 
