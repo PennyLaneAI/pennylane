@@ -26,9 +26,9 @@ def evolve(op, *args, **kwargs):  # pylint: disable=unused-argument
     r"""Returns a new operator that computes the evolution of ``op``. This method is dispatched and
     its functionality depends on the type of the input ``op``.
 
-    ----------------------------
-    Input: <:class:`~Operator`>
-    ----------------------------
+    .. raw:: html
+        <h1>Input: <code>Operator</code></h1>
+        <hr>
 
     Args:
         op (.Operator): operator to evolve
@@ -47,9 +47,9 @@ def evolve(op, *args, **kwargs):  # pylint: disable=unused-argument
     >>> op
     Exp(2j PauliX)
 
-    ------------------------------------------
-    Input: <:class:`~ParametrizedHamiltonian`>
-    ------------------------------------------
+    .. raw:: html
+        <h1>Input: <code>ParametrizedHamiltonian</code></h1>
+        <hr>
 
     Args:
         op (.ParametrizedHamiltonian): operator to evolve
