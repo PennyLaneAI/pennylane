@@ -61,29 +61,23 @@ class TestControlledDecompositionZYZ:
     def test_decomposition_circuit(self, op, control_wires, tol):
         """Tests that the controlled decomposition of a single-qubit operation
         behaves as expected in a quantum circuit"""
-        decomps = ctrl_decomp_zyz(op, Wires(control_wires))
-        expected_op = qml.ctrl(op, control_wires)
-
         dev = qml.device("default.qubit", wires=4)
 
         @qml.qnode(dev)
         def decomp_circuit():
-            for i in range(4):
-                qml.Hadamard(i)
-            for decomp_op in decomps:
-                qml.apply(decomp_op)
+            qml.broadcast(unitary=qml.Hadamard, pattern="single", wires=control_wires)
+            ctrl_decomp_zyz(op, Wires(control_wires))
             return qml.probs()
 
         @qml.qnode(dev)
         def expected_circuit():
-            for i in range(4):
-                qml.Hadamard(i)
-            qml.apply(expected_op)
+            qml.broadcast(unitary=qml.Hadamard, pattern="single", wires=control_wires)
+            qml.ctrl(op, control_wires)
             return qml.probs()
 
         res = decomp_circuit()
         expected = expected_circuit()
-        assert np.allclose(res, expected, atol=tol, rtol=0)
+        assert np.allclose(res, expected)
 
     @pytest.mark.parametrize("op", su2_ops)
     @pytest.mark.parametrize("control_wires", ([1], [1, 2], [1, 2, 3]))
@@ -117,3 +111,28 @@ class TestControlledDecompositionZYZ:
             for decomp_op, expected_op in zip(decomps, expected_ops)
         )
         assert len(decomps) == 7
+
+    @pytest.mark.parametrize("op", su2_ops + unitary_ops)
+    @pytest.mark.parametrize("control_wires", ([1], [1, 2], [1, 2, 3]))
+    def test_decomp_queues_correctly(self, op, control_wires, tol):
+        """Test that any incorrect operations aren't queued when using
+        ``ctrl_decomp_zyz``."""
+        decomp = ctrl_decomp_zyz(op, control_wires=Wires(control_wires))
+        dev = qml.device("default.qubit", wires=4)
+
+        @qml.qnode(dev)
+        def queue_from_list():
+            qml.broadcast(unitary=qml.Hadamard, pattern="single", wires=control_wires)
+            for o in decomp:
+                qml.apply(o)
+            return qml.state()
+
+        @qml.qnode(dev)
+        def queue_from_qnode():
+            qml.broadcast(unitary=qml.Hadamard, pattern="single", wires=control_wires)
+            ctrl_decomp_zyz(op, control_wires=Wires(control_wires))
+            return qml.state()
+
+        res1 = queue_from_list()
+        res2 = queue_from_qnode()
+        assert np.allclose(res1, res2, atol=tol, rtol=0)
