@@ -136,4 +136,5 @@ def evolution(op: Operator, coeff: float = 1):
     ParametrizedEvolution(wires=[0, 1, 2, 3])
 
     Please check the :class:`.ParametrizedEvolution` class for more information."""
+
     return Evolution(op, coeff)
