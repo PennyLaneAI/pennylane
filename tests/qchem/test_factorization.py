@@ -847,6 +847,8 @@ def test_chemist_notation_transform(
 )
 def test_build_spin_tensors(one_body_terms, two_body_terms, one_body_tensor, two_body_tensor):
     r"""Test that `build_spin_tensors` builds correct spin-adjusted tensors from one-body and two-body integrals"""
-    one_body, two_body = qml.qchem.build_spin_tensors(one_body_terms, two_body_terms)
+    (one_body,) = qml.qchem.build_spin_tensors(one_body_terms, None)
     assert np.allclose(one_body, one_body_tensor)
+
+    one_body, two_body = qml.qchem.build_spin_tensors(one_body_terms, two_body_terms)
     assert np.allclose(two_body, two_body_tensor)
