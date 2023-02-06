@@ -818,6 +818,28 @@ class TestSortWires:
             assert op1.wires == op2.wires
             assert op1.data == op2.data
 
+    def test_sort_wires_alphabetically(self):
+        """Test that the summands are sorted alphabetically."""
+        mixed_list = [
+            qml.PauliY(1),
+            qml.PauliZ(0),
+            qml.PauliX(1),
+            qml.PauliY(0),
+            qml.PauliX(0),
+            qml.PauliZ(1),
+        ]
+        final_list = [
+            qml.PauliX(0),
+            qml.PauliY(0),
+            qml.PauliZ(0),
+            qml.PauliX(1),
+            qml.PauliY(1),
+            qml.PauliZ(1),
+        ]
+        sorted_list = Sum._sort(mixed_list)  # pylint: disable=protected-access
+        for op1, op2 in zip(final_list, sorted_list):
+            assert qml.equal(op1, op2)
+
 
 class TestWrapperFunc:
     """Test wrapper function."""
