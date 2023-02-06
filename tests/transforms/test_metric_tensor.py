@@ -1006,9 +1006,10 @@ class TestFullMetricTensor:
             assert qml.math.allclose(mt, expected)
 
     @pytest.mark.jax
-    @pytest.mark.skip(reason="JAX does not support the forward pass metric tensor.")
     @pytest.mark.parametrize("ansatz, params", zip(fubini_ansatze, fubini_params))
     def test_correct_output_jax(self, ansatz, params):
+        from jax.config import config
+        config.update("jax_enable_x64", True)
         from jax import numpy as jnp
 
         expected = autodiff_metric_tensor(ansatz, self.num_wires)(*params)
@@ -1022,7 +1023,10 @@ class TestFullMetricTensor:
             ansatz(*params, dev.wires[:-1])
             return qml.expval(qml.PauliZ(0))
 
-        mt = qml.metric_tensor(circuit, approx=None)(*params)
+        if len(params) > 1:
+            mt = qml.metric_tensor(circuit, argnum=range(0, len(params)), approx=None)(*params)
+        else:
+            mt = qml.metric_tensor(circuit, approx=None)(*params)
 
         if isinstance(mt, tuple):
             assert all(qml.math.allclose(_mt, _exp) for _mt, _exp in zip(mt, expected))

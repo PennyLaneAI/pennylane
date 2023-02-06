@@ -350,7 +350,9 @@ def qnode_execution_wrapper(self, qnode, targs, tkwargs):
     def _expand_fn(tape):
         return self.expand_fn(tape, *targs, **tkwargs)
 
-    cjac_fn = qml.transforms.classical_jacobian(qnode, expand_fn=_expand_fn)
+    argnum = tkwargs.pop("argnum", None)
+
+    cjac_fn = qml.transforms.classical_jacobian(qnode, argnum=argnum, expand_fn=_expand_fn)
 
     def wrapper(*args, **kwargs):
         if not qml.math.get_trainable_indices(args):
