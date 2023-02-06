@@ -145,11 +145,11 @@ class SpecialUnitary(Operation):
         A(\bm{\theta}) &= \sum_{m=1}^d i \theta_m P_m\\
         P_m &\in \{I, X, Y, Z\}^{\otimes n} \setminus \{I^{\otimes n}\}
 
-    This means, :math:`U(\bm{\theta})` is the exponential of operator :math:`A(\bm{\theta})`,
+    This means, :math:`U(\bm{\theta})` is the exponential of the operator :math:`A(\bm{\theta})`,
     which in turn is a linear combination of Pauli words with coefficients :math:`i\bm{\theta}`
     and satisfies :math:`A(\bm{\theta})^\dagger=-A(\bm{\theta})` (it is *skew-Hermitian*).
     Note that this gate takes an exponential number :math:`d=4^n-1` of parameters.
-    See below for more theoretical background and differentiability.
+    See below for more theoretical background and details regarding differentiability.
 
     **Details:**
 
@@ -221,6 +221,9 @@ class SpecialUnitary(Operation):
     >>> qml.math.allclose(su.matrix(), rx.matrix())
     True
 
+    Note that for specific operations like the ``RX`` rotation gate above, it is
+    strongly recommended to use the specialized implementation ``qml.RX`` rather
+    than ``PauliRot`` or ``SpecialUnitary``.
     However, ``SpecialUnitary`` gates go beyong such rotations: Multiple Pauli words
     can be activated simultaneously, giving access to more complex operations.
     For two qubits, this could look like this:
@@ -309,28 +312,30 @@ class SpecialUnitary(Operation):
         :math:`\Omega_\ell(\bm{\theta})` is skew-Hermitian. Therefore they are purely imaginary.
 
         Now we turn to the derivative of an expectation value-based function which uses a circuit
-        that contains a ``SpecialUnitary`` operation. Absorbing the remaining circuit into the
+        with a ``SpecialUnitary`` operation. Absorbing the remaining circuit into the
         quantum state :math:`\rho` and the observable :math:`H`, this can be written as
 
         .. math::
 
-            f(U(\bm{\theta})) &= \operatorname{Tr}{H U(\bm{\theta})\rho U^\dagger(\bm{\theta})}\\
-            \partial_\ell f(U(\bm{\theta})) &= \operatorname{Tr}{H U(\bm{\theta})
-            [\Omega_\ell(\bm{\theta}),\rho] U^\dagger(\bm{\theta})}
+            f(U(\bm{\theta})) &= \operatorname{Tr}\left\{H U(\bm{\theta})\rho
+            U^\dagger(\bm{\theta})\right\}\\
+            \partial_\ell f(U(\bm{\theta})) &= \operatorname{Tr}\left\{H U(\bm{\theta})
+            [\Omega_\ell(\bm{\theta}),\rho] U^\dagger(\bm{\theta})\right\}
 
-        Inserting the decomposition for the effective generator, we may rewrite this as a combination
-        of derivatives of Pauli rotation gates that are inserted in addition to :math:`U(\bm{\theta})`:
+        Inserting the decomposition for the effective generator from above, we may rewrite this as
+        a combination of derivatives of Pauli rotation gates:
 
         .. math::
 
             \partial_\ell f(U(\bm{\theta}))
-            &= \operatorname{Tr}{H U(\bm{\theta})
-            \left[\sum_{m=1}^d \omega_{\ell m}(\bm{\theta}) G_m,\rho\right] U^\dagger(\bm{\theta})}\\
+            &= \operatorname{Tr}\left\{H U(\bm{\theta})
+            \left[\sum_{m=1}^d \omega_{\ell m}(\bm{\theta}) G_m,\rho\right]
+            U^\dagger(\bm{\theta})\right\}\\
             &= \sum_{m=1}^d 2i\omega_{\ell m}(\bm{\theta})
             \frac{\mathrm{d}}{\mathrm{d}t}f\left(R_{G_m}(t)U(\bm{\theta})\right)\bigg|_{t=0}.
 
         Here we abbreviated a Pauli rotation gate as :math:`R_{G_m}(t) = \exp\{-i\frac{t}{2} G_m\}`.
-        As all partial derivatives are combinations of the Pauli rotation derivatives, we may
+        As all partial derivatives are combinations of these Pauli rotation derivatives, we may
         write the gradient of :math:`f` as
 
         .. math::
@@ -505,6 +510,7 @@ class SpecialUnitary(Operation):
         num_wires = self.hyperparameters["num_wires"]
 
         def split_matrix(theta):
+            """Compute the real and imaginary parts of the special unitary matrix."""
             mat = self.compute_matrix(theta, num_wires)
             return qml.math.real(mat), qml.math.imag(mat)
 
@@ -512,12 +518,12 @@ class SpecialUnitary(Operation):
             import jax
 
             theta = qml.math.cast_like(theta, 1j)
+            # These lines compute the Jacobian of compute_matrix every time -> to be optimized
             jac = jax.jacobian(self.compute_matrix, argnums=0, holomorphic=True)(theta, num_wires)
 
         elif interface == "torch":
             import torch
 
-            # These lines compute the Jacobian of compute_matrix every time -> to be optimized
             rjac, ijac = torch.autograd.functional.jacobian(split_matrix, theta)
             jac = rjac + 1j * ijac
 
