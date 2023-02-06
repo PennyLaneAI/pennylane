@@ -698,13 +698,11 @@ def test_basis_rotation_utransform(core, one_electron, two_electron):
         ),
     ],
 )
-def test_chemist_notation_transform(
+def test_chemist_transform(
     two_body_tensor, spatial_basis, one_body_correction, chemist_two_body_coeffs
 ):
-    r"""Test that `chemist_notation_transform` builds correct two-body tensors in chemist notation with correct one-body corrections"""
-    one_body_corr, chemist_two_body = qml.qchem.chemist_notation_transform(
-        two_body_tensor, spatial_basis
-    )
+    r"""Test that `chemist_transform` builds correct two-body tensors in chemist notation with correct one-body corrections"""
+    one_body_corr, chemist_two_body = qml.qchem.chemist_transform(two_body_tensor, spatial_basis)
     assert np.allclose(one_body_corr, one_body_correction)
     assert np.allclose(chemist_two_body, chemist_two_body_coeffs)
 

@@ -276,7 +276,7 @@ def basis_rotation(one_electron, two_electron, tol_factor=1.0e-5):
 
     num_orbitals = one_electron.shape[0] * 2
     one_body_tensor = np.kron(one_electron, np.eye(2))  # account for spin
-    one_body_correction, chemist_two_body_tensor = chemist_notation_transform(two_electron, True)
+    one_body_correction, chemist_two_body_tensor = chemist_transform(two_electron, True)
 
     chemist_one_body_tensor = one_body_tensor + one_body_correction
     t_eigvals, t_eigvecs = np.linalg.eigh(chemist_one_body_tensor)
@@ -319,19 +319,19 @@ def basis_rotation(one_electron, two_electron, tol_factor=1.0e-5):
     return c_group, o_group, u_transform
 
 
-def chemist_notation_transform(two_body_tensor, spatial_basis=True):
-    r"""Transform a two-body tensor to `chemist notation <http://vergil.chemistry.gatech.edu/notes/permsymm/permsymm.pdf>`_ notation.
+def chemist_transform(two_body_tensor, spatial_basis=True):
+    r"""Transform a two-body tensor to `chemists' notation <http://vergil.chemistry.gatech.edu/notes/permsymm/permsymm.pdf>`_ notation.
 
     This converts the input two-body tensor :math:`h_{pqrs}` that constructs :math:`\sum_{pqrs} h_{pqrs} a^\dagger_p a^\dagger_q a_r a_s`
     to a transformed two-body tensor :math:`V_{pqrs}` that follows the chemist convention to construct :math:`\sum_{pqrs} V_{pqrs} a^\dagger_p a_q a^\dagger_r a_s`
     in the spatial basis. During the tranformation, some extra one-body terms come out which are returned as well.
 
     Args:
-        two_body_tensor (ndarray): a two-electron integral tensor giving the h_{pqrs}.
+        two_body_tensor (ndarray): a two-electron integral tensor giving the :math:`h_{pqrs}`.
         spatial_basis (bool): True if the two-body terms are passed in spatial-orbital basis. False if they are in spin basis.
 
     Returns:
-        tuple(ndarray, ndarray): a one-body :math:`a^\dagger_p a_q` term which come out during the processs and  thetransformed two-body tensor :math:`V_{pqrs}`\ .
+        tuple(ndarray, ndarray): a one-body :math:`a^\dagger_p a_q` term which come out during the processs and the transformed two-body tensor :math:`V_{pqrs}`\ .
 
     **Example**
 
@@ -339,7 +339,7 @@ def chemist_notation_transform(two_body_tensor, spatial_basis=True):
     >>> geometry = np.array([[0.0, 0.0, 0.0], [1.398397361, 0.0, 0.0]], requires_grad = False)
     >>> mol = qml.qchem.Molecule(symbols, geometry)
     >>> core, one, two = qml.qchem.electron_integrals(mol)()
-    >>> qml.qchem.chemist_notation_transform(two, spatial_basis=True)
+    >>> qml.qchem.chemist_transform(two, spatial_basis=True)
     (tensor([[-0.427983, -0.      , -0.      , -0.      ],
              [-0.      , -0.427983, -0.      , -0.      ],
              [-0.      , -0.      , -0.439431, -0.      ],
@@ -353,6 +353,30 @@ def chemist_notation_transform(two_body_tensor, spatial_basis=True):
              [[0.331856, 0.      ],
              [0.       , 0.348826]]]], requires_grad=True))
 
+    .. details::
+        :title: Theory
+
+        The two-electron integral in physicists' notation :math:`(\langle \cdot \rangle)` is defined as:
+        
+        .. math::
+
+            \langle pq \vert rs \rangle = h_{pqrs} = \int \frac{\chi^*_{p}(x_1) \chi^*_{q}(x_2) \chi_{r}(x_1) \chi_{s}(x_2)}{|r_1 - r_2|} dx_1 dx_2,
+
+        while in chemists' notation :math:`([ \cdot ])` it is written as:
+        
+        .. math::
+
+            [pq \vert rs] = V_{pqrs} = \int \frac{\chi^*_{p}(r_1) \chi^*_{q}(x_1) \chi_{r}(x_2) \chi_{s}(x_2)}{|r_1 - r_2|} dx_1 dx_2.
+
+        In the spin basis, this index reordering :math:`pqrs \rangle psrq` leads to formation of one-body terms :math:`h_{prrs}` that come out during 
+        the coversion:
+
+        .. math::
+
+            :math:`h_{prrs}` = \int \frac{\chi^*_{p}(x_1) \chi^*_{r}(x_2) \chi_{r}(x_1) \chi_{s}(x_2)}{|x_1 - x_2|} dx_1 dx_2,
+
+        where :math:`\chi_{r}(x)` will have same spin, i.e., :math:`\chi_{r}(x_i) = \phi(r_i)\alpha(\omega)` or :math:`\chi_{r}(x_i) = \phi(r_i)\beta(\omega)`.
+        
     """
 
     chemist_two_body_coeffs = np.swapaxes(two_body_tensor, 1, 3)
