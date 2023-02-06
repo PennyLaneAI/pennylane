@@ -297,5 +297,8 @@ texinfo_documents = [
 # the order in which autodoc lists the documented members
 autodoc_member_order = "bysource"
 
+# remove types from function signatures
+autodoc_typehints = "none"
+
 # inheritance_diagram graphviz attributes
 inheritance_node_attrs = dict(color="lightskyblue1", style="filled")
