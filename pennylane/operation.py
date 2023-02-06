@@ -2041,7 +2041,23 @@ class Tensor(Observable):
 
     @data.setter
     def data(self, new_data):
-        """Set the data property"""
+        """Setter used to set the parameters of all constituent observables in the tensor product.
+
+        The ``new_data`` argument should contain a list of elements, where each element corresponds
+        to a list containing the parameters of each observable (in order). If an observable doesn't
+        have any parameter, an empty list must be used.
+
+        **Example:**
+
+        >>> op = qml.PauliX(0) @ qml.Hermitian(np.eye(2), wires=1)
+        >>> op.data
+        [array([[1., 0.],
+        [0., 1.]])]
+        >>> op.data = [[], [np.eye(2) * 5]]
+        >>> op.data
+        [array([[5., 0.],
+        [0., 5.]])]
+        """
         for new_entry, op in zip(new_data, self.obs):
             op.data = new_entry
 
