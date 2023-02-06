@@ -404,7 +404,6 @@ def _execute_new(
             tapes[i] = expand_fn(tape)
 
         if gradient_kwargs.get("method", "") == "adjoint_jacobian":
-
             mode = "forward" if grad_on_execution else "backward"
             tapes = _adjoint_jacobian_expansion(tapes, mode, interface, max_expansion)
 
@@ -594,8 +593,6 @@ def execute(
            [ 0.        ,  0.        , -0.95533649]])
     """
     if qml.active_return():
-
-
         grad_on_execution = mode == "forward" if mode != "best" else "best"
 
         return _execute_new(

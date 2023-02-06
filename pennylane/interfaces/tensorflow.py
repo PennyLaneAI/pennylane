@@ -283,9 +283,7 @@ def execute(tapes, device, execute_fn, gradient_fn, gradient_kwargs, _n=1, max_d
     return _execute(*parameters)
 
 
-def _execute_new(
-    tapes, device, execute_fn, gradient_fn, gradient_kwargs, _n=1, max_diff=2
-):
+def _execute_new(tapes, device, execute_fn, gradient_fn, gradient_kwargs, _n=1, max_diff=2):
     """Execute a batch of tapes with TensorFlow parameters on a device.
 
     Args:

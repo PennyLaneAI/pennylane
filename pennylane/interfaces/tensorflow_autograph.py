@@ -73,8 +73,8 @@ def execute(tapes, device, execute_fn, gradient_fn, gradient_kwargs, _n=1, max_d
         the returned list corresponds in order to the provided tapes.
     """
     if qml.active_return():
-        grad_on_execution = True if mode == "forward" else False
-        print(grad_on_execution)
+        grad_on_execution = mode in ["forward"]
+
         return _execute_new(
             tapes,
             device,
@@ -120,7 +120,7 @@ def execute(tapes, device, execute_fn, gradient_fn, gradient_kwargs, _n=1, max_d
         params_unwrapped = []
 
         for s in lens:
-            params_unwrapped.append(all_params[count: count + s])
+            params_unwrapped.append(all_params[count : count + s])
             count += s
 
         return params_unwrapped
@@ -148,10 +148,10 @@ def execute(tapes, device, execute_fn, gradient_fn, gradient_kwargs, _n=1, max_d
     @tf.custom_gradient
     def _execute(*all_params):  # pylint:disable=unused-argument
         res = tf.numpy_function(func=_forward, inp=all_params, Tout=output_types)
-        output_sizes = res[-len(tapes):]
+        output_sizes = res[-len(tapes) :]
 
         if mode == "forward":
-            jacs = res[len(tapes): 2 * len(tapes)]
+            jacs = res[len(tapes) : 2 * len(tapes)]
 
         res = res[: len(tapes)]
 
@@ -270,7 +270,14 @@ def execute(tapes, device, execute_fn, gradient_fn, gradient_kwargs, _n=1, max_d
 
 
 def _execute_new(
-        tapes, device, execute_fn, gradient_fn, gradient_kwargs, _n=1, max_diff=2, grad_on_execution=None
+    tapes,
+    device,
+    execute_fn,
+    gradient_fn,
+    gradient_kwargs,
+    _n=1,
+    max_diff=2,
+    grad_on_execution=None,
 ):
     """Execute a batch of tapes with TensorFlow parameters on a device.
 
@@ -341,7 +348,7 @@ def _execute_new(
         params_unwrapped = []
 
         for s in lens:
-            params_unwrapped.append(all_params[count: count + s])
+            params_unwrapped.append(all_params[count : count + s])
             count += s
 
         return params_unwrapped
@@ -373,10 +380,10 @@ def _execute_new(
     @tf.custom_gradient
     def _execute(*all_params):  # pylint:disable=unused-argument
         res = tf.numpy_function(func=_forward, inp=all_params, Tout=output_types)
-        output_sizes = res[-total_measurements * num_shot_copies:]
+        output_sizes = res[-total_measurements * num_shot_copies :]
 
         if grad_on_execution:
-            jacs = res[total_measurements * num_shot_copies: -total_measurements * num_shot_copies]
+            jacs = res[total_measurements * num_shot_copies : -total_measurements * num_shot_copies]
 
         res = res[: total_measurements * num_shot_copies]
 
@@ -397,8 +404,8 @@ def _execute_new(
 
                 def _backward(*args):
                     dy = args[: total_measurements * num_shot_copies]
-                    jacs = args[total_measurements * num_shot_copies: -len(tapes)]
-                    multi_measurements = args[-len(tapes):]
+                    jacs = args[total_measurements * num_shot_copies : -len(tapes)]
+                    multi_measurements = args[-len(tapes) :]
 
                     dy = _res_restructured(dy, tapes, shots=device.shot_vector)
                     jacs = _jac_restructured(jacs, tapes)
