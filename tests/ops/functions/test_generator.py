@@ -16,12 +16,13 @@ Unit tests for the qml.generator transform
 """
 from functools import reduce
 from operator import matmul
+
 import pytest
 from scipy import sparse
 
 import pennylane as qml
 from pennylane import numpy as np
-from pennylane.transforms.op_transforms import OperationTransformError
+from pennylane.ops import Hamiltonian, Prod, SProd, Sum
 
 ###################################################################
 # Test operations
@@ -68,6 +69,66 @@ class HamiltonianOp(CustomOp):
     def generator(self):
         obs = [reduce(matmul, [o(w) for o, w in zip(word, self.wires)]) for word in self.obs]
         return qml.Hamiltonian(self.coeff, obs)
+
+
+class HamiltonianOpSameCoeff(CustomOp):
+    """Returns the generator as a Hamiltonian"""
+
+    num_wires = 2
+    coeff = [0.5, 0.5]
+    obs = [[qml.PauliX, qml.Identity], [qml.PauliX, qml.PauliY]]
+
+    def generator(self):
+        obs = [reduce(matmul, [o(w) for o, w in zip(word, self.wires)]) for word in self.obs]
+        return qml.Hamiltonian(self.coeff, obs)
+
+
+class HamiltonianOpSameAbsCoeff(CustomOp):
+    """Returns the generator as a Hamiltonian"""
+
+    num_wires = 2
+    coeff = [0.5, -0.5]
+    obs = [[qml.PauliX, qml.Identity], [qml.PauliX, qml.PauliY]]
+
+    def generator(self):
+        obs = [reduce(matmul, [o(w) for o, w in zip(word, self.wires)]) for word in self.obs]
+        return qml.Hamiltonian(self.coeff, obs)
+
+
+class SumOp(CustomOp):
+    """Returns the generator as a Sum"""
+
+    num_wires = 2
+    coeff = [1.0, 0.5]
+    obs = [[qml.PauliX, qml.Identity], [qml.PauliX, qml.PauliY]]
+
+    def generator(self):
+        obs = [reduce(matmul, [o(w) for o, w in zip(word, self.wires)]) for word in self.obs]
+        return qml.dot(self.coeff, obs)
+
+
+class SumOpSameCoeff(CustomOp):
+    """Returns the generator as a Sum"""
+
+    num_wires = 2
+    coeff = [0.5, 0.5]
+    obs = [[qml.PauliX, qml.Identity], [qml.PauliX, qml.PauliY]]
+
+    def generator(self):
+        obs = [reduce(matmul, [o(w) for o, w in zip(word, self.wires)]) for word in self.obs]
+        return qml.dot(self.coeff, obs)
+
+
+class SumOpSameAbsCoeff(CustomOp):
+    """Returns the generator as a Sum"""
+
+    num_wires = 2
+    coeff = [0.5, -0.5]
+    obs = [[qml.PauliX, qml.Identity], [qml.PauliX, qml.PauliY]]
+
+    def generator(self):
+        obs = [reduce(matmul, [o(w) for o, w in zip(word, self.wires)]) for word in self.obs]
+        return qml.dot(self.coeff, obs)
 
 
 class HermitianOp(CustomOp):
@@ -205,6 +266,57 @@ class TestPrefactorReturn:
         gen, prefactor = qml.generator(HamiltonianOp, format="prefactor")(0.5, wires=[0, 1])
         assert prefactor == 1.0
         assert gen.name == "Hamiltonian"
+
+    def test_hamiltonian_with_same_term(self):
+        """Test a generator that returns a Hamiltonian with multiple terms, all containing the same
+        coefficient."""
+        gen, prefactor = qml.generator(HamiltonianOpSameCoeff, format="prefactor")(
+            0.5, wires=[0, 1]
+        )
+        assert prefactor == 0.5
+        assert isinstance(gen, Hamiltonian)
+        assert qml.math.allequal(gen.coeffs, [1, 1])
+
+    def test_hamiltonian_with_same_abs_term(self):
+        """Test a generator that returns a Hamiltonian with multiple terms, all containing the same
+        absolute coefficient."""
+        gen, prefactor = qml.generator(HamiltonianOpSameAbsCoeff, format="prefactor")(
+            0.5, wires=[0, 1]
+        )
+        assert prefactor == 0.5
+        assert isinstance(gen, Sum)
+        for op in gen:
+            if isinstance(op, SProd):
+                assert op.scalar == -1
+            else:
+                assert isinstance(op, Prod)
+
+    def test_sum(self):
+        """Test a generator that returns a Sum"""
+        gen, prefactor = qml.generator(SumOp, format="prefactor")(0.5, wires=[0, 1])
+        assert prefactor == 1.0
+        assert isinstance(gen, Sum)
+
+    def test_sum_with_same_term(self):
+        """Test a generator that returns a Sum with multiple terms, all containing the same
+        coefficient."""
+        gen, prefactor = qml.generator(SumOpSameCoeff, format="prefactor")(0.5, wires=[0, 1])
+        assert prefactor == 0.5
+        assert isinstance(gen, Sum)
+        for op in gen:
+            assert isinstance(op, Prod)
+
+    def test_sum_with_same_abs_term(self):
+        """Test a generator that returns a Sum with multiple terms, all containing the same
+        absolute coefficient."""
+        gen, prefactor = qml.generator(SumOpSameAbsCoeff, format="prefactor")(0.5, wires=[0, 1])
+        assert prefactor == 0.5
+        assert isinstance(gen, Sum)
+        for op in gen:
+            if isinstance(op, SProd):
+                assert op.scalar == -1
+            else:
+                assert isinstance(op, Prod)
 
     def test_hermitian(self):
         """Test a generator that returns a Hermitian observable

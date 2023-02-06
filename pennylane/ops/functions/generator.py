@@ -85,19 +85,18 @@ def _generator_prefactor(gen, op):
     if isinstance(gen, qml.operation.Observable):
         # convert to a qml.Hamiltonian
         gen: Hamiltonian = 1.0 * gen
-        coeffs_set = set(gen.coeffs)
-
+        abs_coeffs = list(qml.math.abs(gen.coeffs))
         if len(gen.ops) == 1:
             # case where the Hamiltonian is a single Pauli word
             obs = gen.ops[0]
             prefactor = gen.coeffs[0]
-        elif len(coeffs_set) == 1:
+        elif [gen.coeffs[0]] * len(gen.coeffs) == list(gen.coeffs):
             # case where the Hamiltonian coefficients are all the same
             obs = sum(gen.ops)
             prefactor = gen.coeffs[0]
-        elif len(coeffs_set) == 2 and abs(coeffs_set.pop()) == abs(coeffs_set.pop()):
+        elif [abs_coeffs[0]] * len(abs_coeffs) == abs_coeffs:
             # absolute value of coefficients is the same
-            prefactor = abs(gen.coeffs[0])
+            prefactor = abs_coeffs[0]
             coeffs = [c / prefactor for c in gen.coeffs]
             obs = qml.dot(coeffs, gen.ops)
         else:
@@ -107,9 +106,18 @@ def _generator_prefactor(gen, op):
         obs = gen.base
         prefactor = gen.scalar
     elif isinstance(gen, Sum):
-        if all(isinstance(o, SProd) for o in gen) and len({o.scalar for o in gen}) == 1:
-            obs = Sum(*[o.base for o in gen])
-            prefactor = gen[0].scalar
+        if all(isinstance(o, SProd) for o in gen):
+            scalars = [o.scalar for o in gen]
+            abs_scalars = list(qml.math.abs(scalars))
+            if [scalars[0]] * len(scalars) == scalars:
+                # case where the Sum coefficients are all the same
+                obs = Sum(*[o.base for o in gen])
+                prefactor = gen[0].scalar
+            elif [abs_scalars[0]] * len(abs_scalars) == abs_scalars:
+                # absolute value of coefficients is the same
+                prefactor = abs_scalars[0]
+                coeffs = [s / prefactor for s in scalars]
+                obs = qml.dot(coeffs, gen.operands)
 
     if op.inverse:
         prefactor *= -1.0
