@@ -888,7 +888,7 @@ class TestSpecialUnitaryIntegration:
             jac_fn = jax.jit(jac_fn)
 
         jac = jac_fn(x)
-        assert qml.math.shape(jac) == (15,)
+        assert jac.shape == (15,)
         assert not qml.math.allclose(jac, jac * 0.0)
 
         # Compare to PauliRot circuits
