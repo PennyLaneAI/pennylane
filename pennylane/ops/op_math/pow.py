@@ -202,7 +202,6 @@ class Pow(ScalarSymbolicOp):
         return object.__new__(Pow)
 
     def __init__(self, base=None, z=1, do_queue=True, id=None):
-
         self.hyperparameters["z"] = z
         self._name = f"{base.name}**{z}"
 
