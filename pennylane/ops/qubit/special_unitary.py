@@ -143,7 +143,7 @@ class SpecialUnitary(Operation):
 
         U(\bm{\theta}) &= \exp\{A(\bm{\theta})\}\\
         A(\bm{\theta}) &= \sum_{m=1}^d i \theta_m P_m\\
-        P_m &\in {I, X, Y, Z}^{\otimes n} \setminus \{I^{\otimes n}\}
+        P_m &\in \{I, X, Y, Z\}^{\otimes n} \setminus \{I^{\otimes n}\}
 
     This means, :math:`U(\bm{\theta})` is the exponential of operator :math:`A(\bm{\theta})`,
     which in turn is a linear combination of Pauli words with coefficients :math:`i\bm{\theta}`
