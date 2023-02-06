@@ -21,6 +21,7 @@ from functools import reduce
 from itertools import combinations
 from typing import List, Tuple, Union
 
+import numpy as np
 from scipy.sparse import kron as sparse_kron
 
 import pennylane as qml
@@ -29,6 +30,7 @@ from pennylane.operation import Operator
 from pennylane.ops.op_math.pow import Pow
 from pennylane.ops.op_math.sprod import SProd
 from pennylane.ops.op_math.sum import Sum
+from pennylane.ops.qubit import Hamiltonian
 from pennylane.ops.qubit.non_parametric_ops import PauliX, PauliY, PauliZ
 from pennylane.queuing import QueuingManager
 from pennylane.wires import Wires
@@ -54,10 +56,23 @@ def prod(*ops, do_queue=True, id=None, lazy=True):
     Keyword Args:
         do_queue (bool): determines if the product operator will be queued. Default is True.
         id (str or None): id for the product operator. Default is None.
-        lazy=True (bool): If ``lazy=False``, a simplification will be peformed such that when any of the operators is already a product operator, its operands will be used instead.
+        lazy=True (bool): If ``lazy=False``, a simplification will be performed such that when any of the operators is already a product operator, its operands will be used instead.
 
     Returns:
         ~ops.op_math.Prod: the operator representing the product.
+
+    .. note::
+
+        This operator supports batched operands:
+
+        >>> op = qml.prod(qml.RX(np.array([1, 2, 3]), wires=0), qml.PauliX(1))
+        >>> op.matrix().shape
+        (3, 4, 4)
+
+        But it doesn't support batching of operators:
+
+        >>> op = qml.prod(np.array([qml.RX(0.5, 0), qml.RZ(0.3, 0)]), qml.PauliZ(0))
+        AttributeError: 'numpy.ndarray' object has no attribute 'wires'
 
     .. seealso:: :class:`~.ops.op_math.Prod`
 
@@ -81,8 +96,7 @@ def prod(*ops, do_queue=True, id=None, lazy=True):
 
     if do_queue:
         for op in ops:
-            QueuingManager.update_info(op, owner=ops_simp)
-        QueuingManager.update_info(ops_simp, owns=ops)
+            QueuingManager.remove(op)
 
     return ops_simp
 
@@ -113,8 +127,8 @@ class Prod(CompositeOp):
 
     .. note::
         When a Prod operator is applied in a circuit, its factors are applied in the reverse order.
-        (i.e ``Prod(op1, op2)`` corresponds to :math:`\hat{op}_{1}\dot\hat{op}_{2}` which indicates
-        first applying :math:`\hat{op}_{2}` then :math:`\hat{op}_{1}` in the circuit. We can see this
+        (i.e ``Prod(op1, op2)`` corresponds to :math:`\hat{op}_{1}\cdot\hat{op}_{2}` which indicates
+        first applying :math:`\hat{op}_{2}` then :math:`\hat{op}_{1}` in the circuit). We can see this
         in the decomposition of the operator.
 
     >>> op = Prod(qml.PauliX(wires=0), qml.PauliZ(wires=1))
@@ -182,11 +196,6 @@ class Prod(CompositeOp):
         return [1.0], [self]
 
     @property
-    def batch_size(self):
-        """Batch size of input parameters."""
-        return next((op.batch_size for op in self if op.batch_size is not None), None)
-
-    @property
     def is_hermitian(self):
         """Check if the product operator is hermitian.
 
@@ -238,8 +247,8 @@ class Prod(CompositeOp):
         r"""Decomposition of the product operator is given by each factor applied in succession.
 
         Note that the decomposition is the list of factors returned in reversed order. This is
-        to support the intuition that when we write $\hat{O} = \hat{A} \dot \hat{B}$ it is implied
-        that $\hat{B}$ is applied to the state before $\hat{A}$ in the quantum circuit.
+        to support the intuition that when we write :math:`\hat{O} = \hat{A} \cdot \hat{B}` it is implied
+        that :math:`\hat{B}` is applied to the state before :math:`\hat{A}` in the quantum circuit.
         """
         if qml.queuing.QueuingManager.recording():
             return [qml.apply(op) for op in self[::-1]]
@@ -248,39 +257,39 @@ class Prod(CompositeOp):
     def matrix(self, wire_order=None):
         """Representation of the operator as a matrix in the computational basis."""
 
-        def mats_gen():
-            for ops in self.overlapping_ops:
-                if len(ops) == 1:
-                    yield (
-                        qml.matrix(ops[0])
-                        if isinstance(ops[0], qml.Hamiltonian)
-                        else ops[0].matrix()
-                    )
-                else:
-                    mats_and_wires_gen = (
-                        (
-                            qml.matrix(op) if isinstance(op, qml.Hamiltonian) else op.matrix(),
-                            op.wires,
-                        )
-                        for op in ops
-                    )
+        mats: List[np.ndarray] = []  # TODO: change type to `tensor_like` when available
+        batched: List[bool] = []  # batched[i] tells if mats[i] is batched or not
+        for ops in self.overlapping_ops:
+            gen = (
+                (qml.matrix(op) if isinstance(op, Hamiltonian) else op.matrix(), op.wires)
+                for op in ops
+            )
 
-                    reduced_mat, _ = math.reduce_matrices(
-                        mats_and_wires_gen=mats_and_wires_gen, reduce_func=math.dot
-                    )
+            reduced_mat, _ = math.reduce_matrices(gen, reduce_func=math.matmul)
 
-                    yield reduced_mat
+            if self.batch_size is not None:
+                batched.append(any(op.batch_size is not None for op in ops))
+            else:
+                batched.append(False)
 
-        full_mat = reduce(math.kron, mats_gen())
+            mats.append(reduced_mat)
+
+        if self.batch_size is None:
+            full_mat = reduce(math.kron, mats)
+        else:
+            full_mat = qml.math.stack(
+                [
+                    reduce(math.kron, [m[i] if b else m for m, b in zip(mats, batched)])
+                    for i in range(self.batch_size)
+                ]
+            )
         return math.expand_matrix(full_mat, self.wires, wire_order=wire_order)
 
     def sparse_matrix(self, wire_order=None):
         if self.has_overlapping_wires or self.num_wires > MAX_NUM_WIRES_KRON_PRODUCT:
-            mats_and_wires_gen = ((op.sparse_matrix(), op.wires) for op in self)
+            gen = ((op.sparse_matrix(), op.wires) for op in self)
 
-            reduced_mat, prod_wires = math.reduce_matrices(
-                mats_and_wires_gen=mats_and_wires_gen, reduce_func=math.dot
-            )
+            reduced_mat, prod_wires = math.reduce_matrices(gen, reduce_func=math.dot)
 
             wire_order = wire_order or self.wires
 
@@ -377,7 +386,6 @@ class Prod(CompositeOp):
             op_list = list(op_list)
 
         for i in range(1, len(op_list)):
-
             key_op = op_list[i]
 
             j = i - 1

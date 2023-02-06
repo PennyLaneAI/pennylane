@@ -216,7 +216,10 @@ class GellMann(Observable):
         super().__init__(wires=wires, do_queue=do_queue, id=id)
 
     def label(self, decimals=None, base_label=None, cache=None):
-        return base_label or "GellMann(" + str(self.hyperparameters["index"]) + ")"
+        return base_label or f"GellMann({self.hyperparameters['index']})"
+
+    def __repr__(self):
+        return f"GellMann{self.hyperparameters['index']}(wires=[{self.wires[0]}])"
 
     _eigvecs = {
         1: np.array(

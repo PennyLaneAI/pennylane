@@ -15,6 +15,7 @@ r"""
 Methods for generating QAOA cost Hamiltonians corresponding to
 different optimization problems.
 """
+# pylint: disable=unnecessary-lambda-assignment
 from typing import Iterable, Union
 import networkx as nx
 import retworkx as rx
@@ -196,7 +197,6 @@ def edge_driver(graph: Union[nx.Graph, rx.PyGraph], reward: list):
         ops = [qml.Identity(v) for v in graph_nodes]
 
     else:
-
         reward = list(set(reward) - {"01"})
         sign = -1
 

@@ -92,7 +92,7 @@ def map_wires(
             with QueuingManager.stop_recording():
                 new_op = input.map_wires(wire_map=wire_map)
             if replace:
-                QueuingManager.update_info(input, owner=new_op)
+                QueuingManager.remove(input)
             if queue:
                 qml.apply(new_op)
             return new_op
@@ -106,7 +106,6 @@ def map_wires(
         return input.__class__(ops=ops, measurements=measurements, prep=prep)
 
     if callable(input):
-
         func = input.func if isinstance(input, QNode) else input
 
         @wraps(func)

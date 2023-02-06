@@ -102,17 +102,7 @@ class TShift(Operation):
     # TODO: Add compute_decomposition once parametric ops are added.
 
     def pow(self, z):
-        if isinstance(z, int):
-            z_mod3 = z % 3
-            if z_mod3 < 2:
-                return super().pow(z_mod3)
-            return [self.adjoint()]
-        return super().pow(z)
-
-    def adjoint(self):
-        op = TShift(wires=self.wires)
-        op.inverse = not self.inverse
-        return op
+        return super().pow(z % 3)
 
 
 class TClock(Operation):
@@ -192,17 +182,7 @@ class TClock(Operation):
     # TODO: Add compute_decomposition() once parametric ops are added.
 
     def pow(self, z):
-        if isinstance(z, int):
-            z_mod3 = z % 3
-            if z_mod3 < 2:
-                return super().pow(z_mod3)
-            return [self.adjoint()]
-        return super().pow(z)
-
-    def adjoint(self):
-        op = TClock(wires=self.wires)
-        op.inverse = not self.inverse
-        return op
+        return super().pow(z % 3)
 
 
 class TAdd(Operation):
@@ -309,17 +289,7 @@ class TAdd(Operation):
     # TODO: Add compute_decomposition() once parametric ops are added.
 
     def pow(self, z):
-        if isinstance(z, int):
-            z_mod3 = z % 3
-            if z_mod3 < 2:
-                return super().pow(z_mod3)
-            return [self.adjoint()]
-        return super().pow(z)
-
-    def adjoint(self):
-        op = TAdd(self.wires)
-        op.inverse = not self.inverse
-        return op
+        return super().pow(z % 3)
 
     @property
     def control_wires(self):
@@ -495,11 +465,7 @@ class THadamard(Operation):
     """int: Number of trainable parameters that the operator depends on."""
 
     def label(self, decimals=None, base_label=None, cache=None):
-        label = base_label or "TH"
-        if self.subspace is None and self.inverse:
-            label += "⁻¹"
-
-        return label
+        return base_label or "TH"
 
     def __init__(self, wires, subspace=None, do_queue=True):
         self._subspace = self.validate_subspace(subspace) if subspace is not None else None
@@ -565,19 +531,15 @@ class THadamard(Operation):
 
         return mat / np.sqrt(2)
 
+    @property
+    def has_adjoint(self):  # pylint: disable=arguments-renamed, invalid-overridden-method
+        return self.subspace is not None
+
     def adjoint(self):
-        op = THadamard(wires=self.wires, subspace=self.subspace)
-
         if self.subspace is None:
-            op.inverse = not self.inverse
-
-        return op
+            raise qml.operation.AdjointUndefinedError
+        return THadamard(wires=self.wires, subspace=self.subspace)
 
     def pow(self, z):
-        if self.subspace is not None:
-            if not isinstance(z, int):
-                return super().pow(z)
-
-            return super().pow(z % 2)
-
-        return super().pow(z)
+        new_exp = z % 4 if self.subspace is None else z % 2
+        return super().pow(new_exp)

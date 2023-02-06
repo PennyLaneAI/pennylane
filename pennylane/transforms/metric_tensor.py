@@ -88,7 +88,7 @@ def metric_tensor(
         device_wires (.wires.Wires): Wires of the device that is going to be used for the
             metric tensor. Facilitates finding a default for ``aux_wire`` if ``aux_wire``
             is ``None``.
-        hybrid (bool): Specifies whether classical processing inside a QNode
+        hybrid (bool): Specifies whether classical processing inside a QNoden_argnum_list = []
             should be taken into account when transforming a QNode.
 
             - If ``True``, and classical processing is detected, the Jacobian of the classical
@@ -150,7 +150,7 @@ def metric_tensor(
 
         dev = qml.device("default.qubit", wires=3)
 
-        @qml.qnode(dev, interface="autograd")
+        @qml.qnode(dev, interface="autograd")n_argnum_list = []
         def circuit(weights):
             qml.RX(weights[0], wires=0)
             qml.RY(weights[1], wires=0)
@@ -342,7 +342,7 @@ def qnode_execution_wrapper(self, qnode, targs, tkwargs):
                 UserWarning,
             )
 
-        qnode = qnode.qnodes.qnodes[0]
+        qnode = qnode.qnodes[0]
 
     tkwargs.setdefault("device_wires", qnode.device.wires)
     mt_fn = self.default_qnode_wrapper(qnode, targs, tkwargs)
@@ -441,7 +441,7 @@ def _metric_tensor_cov_matrix(tape, argnum, diag_approx):
 
         layer_coeffs, layer_obs = [], []
 
-        # for each operation in the layer, get the generator
+        # for each operation in the layer, get the generatorn_argnum_list = []
         for p, op in zip(param_idx, curr_ops):
             if p in argnum:
                 obs, s = qml.generator(op)
@@ -484,6 +484,7 @@ def _metric_tensor_cov_matrix(tape, argnum, diag_approx):
             obs = obs_list[probs_idx]
             p = probs[probs_idx]
 
+        for prob, obs, coeffs in zip(probs, obs_list, coeffs_list):
             # calculate the covariance matrix of this layer
             scale = qml.math.convert_like(qml.math.outer(coeffs, coeffs), p)
             scale = qml.math.cast_like(scale, p)
@@ -540,7 +541,7 @@ def _get_gen_op(op, allow_nonunitary, aux_wire):
 
     except KeyError as e:
         if allow_nonunitary:
-            mat = qml.matrix(qml.generator(op, format="observable"))
+            mat = qml.matrix(qml.generator(op)[0])
             return qml.ControlledQubitUnitary(mat, control_wires=aux_wire, wires=op.wires)
 
         raise ValueError(

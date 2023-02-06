@@ -100,6 +100,9 @@ class QNode:
             * ``"finite-diff"``: Uses numerical finite-differences for all quantum operation
               arguments.
 
+            * ``"spsa"``: Uses a simultaneous perturbation of all operation arguments to approximate
+              the derivative.
+
             * ``None``: QNode cannot be differentiated. Works the same as ``interface=None``.
 
         expansion_strategy (str): The strategy to use when circuit expansions or decompositions
@@ -472,7 +475,6 @@ class QNode:
         # of the user's device before and after executing the tape.
 
         if self.device is not self._original_device:
-
             if not self._tape_cached:
                 self._original_device._num_executions += 1  # pylint: disable=protected-access
 
@@ -494,9 +496,9 @@ class QNode:
             device (.Device): PennyLane device
             interface (str): name of the requested interface
             diff_method (str or .gradient_transform): The requested method of differentiation.
-                If a string, allowed options are ``"best"``, ``"backprop"``, ``"adjoint"``, ``"device"``,
-                ``"parameter-shift"``, or ``"finite-diff"``. A gradient transform may
-                also be passed here.
+                If a string, allowed options are ``"best"``, ``"backprop"``, ``"adjoint"``,
+                ``"device"``, ``"parameter-shift"``, ``"finite-diff"``, or ``"spsa"``.
+                A gradient transform may also be passed here.
 
         Returns:
             tuple[str or .gradient_transform, dict, .Device: Tuple containing the ``gradient_fn``,
@@ -520,10 +522,14 @@ class QNode:
         if diff_method == "finite-diff":
             return qml.gradients.finite_diff, {}, device
 
+        if diff_method == "spsa":
+            return qml.gradients.spsa_grad, {}, device
+
         if isinstance(diff_method, str):
             raise qml.QuantumFunctionError(
                 f"Differentiation method {diff_method} not recognized. Allowed "
-                "options are ('best', 'parameter-shift', 'backprop', 'finite-diff', 'device', 'adjoint')."
+                "options are ('best', 'parameter-shift', 'backprop', 'finite-diff', "
+                "'device', 'adjoint', 'spsa')."
             )
 
         if isinstance(diff_method, qml.gradients.gradient_transform):
@@ -547,7 +553,8 @@ class QNode:
         * ``"finite-diff"``
 
         The first differentiation method that is supported (going from
-        top to bottom) will be returned.
+        top to bottom) will be returned. Note that the SPSA-based gradient
+        is not included here.
 
         Args:
             device (.Device): PennyLane device
@@ -582,7 +589,8 @@ class QNode:
         * ``"finite-diff"``
 
         The first differentiation method that is supported (going from
-        top to bottom) will be returned.
+        top to bottom) will be returned. Note that the SPSA-based gradient
+        is not included here.
 
         This method is intended only for debugging purposes. Otherwise,
         :meth:`~.get_best_method` should be used instead.
@@ -633,7 +641,6 @@ class QNode:
             # device is analytic and has child devices that support backpropagation natively
 
             if mapped_interface in backprop_devices:
-
                 # no need to create another device if the child device is the same (e.g., default.mixed)
                 if backprop_devices[mapped_interface] == device.short_name:
                     return "backprop", {}, device
@@ -722,9 +729,7 @@ class QNode:
         """Call the quantum function with a tape context, ensuring the operations get queued."""
 
         self._tape = make_qscript(self.func)(*args, **kwargs)
-        self._tape._queue_category = "_ops"
         self._qfunc_output = self.tape._qfunc_output
-        qml.QueuingManager.append(self.tape)
 
         params = self.tape.get_parameters(trainable_only=False)
         self.tape.trainable_params = qml.math.get_trainable_indices(params)
@@ -753,7 +758,6 @@ class QNode:
             )
 
         for obj in self.tape.operations + self.tape.observables:
-
             if (
                 getattr(obj, "num_wires", None) is qml.operation.WiresEnum.AllWires
                 and len(obj.wires) != self.device.num_wires
@@ -896,7 +900,6 @@ class QNode:
         if isinstance(self._qfunc_output, Sequence) and any(
             isinstance(m, CountsMP) for m in self._qfunc_output
         ):
-
             # If Counts was returned with other measurements, then apply the
             # data structure used in the qfunc
             qfunc_output_type = type(self._qfunc_output)

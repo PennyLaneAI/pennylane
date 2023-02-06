@@ -30,7 +30,14 @@ shots = [(1, 20, 100), (1, (20, 1), 100), ((5, 4), 1, 100)]
 qubit_device_and_diff_method = [
     ["default.qubit", "finite-diff", {"h": 10e-2}],
     ["default.qubit", "parameter-shift", {}],
+    ["default.qubit", "spsa", {"h": 10e-2, "num_directions": 20}],
 ]
+
+TOLS = {
+    "finite-diff": 0.3,
+    "parameter-shift": 1e-2,
+    "spsa": 0.3,
+}
 
 jacobian_fn = [jax.jacobian, jax.jacrev, jax.jacfwd]
 
@@ -803,9 +810,6 @@ qubit_device_and_diff_method = [
     ["default.qubit", "parameter-shift", {}],
 ]
 
-finite_diff_shot_vec_tol = 0.3
-param_shift_shot_vec_tol = 10e-3
-
 shots = [(1000000, 900000, 800000), (1000000, (900000, 2))]
 
 
@@ -846,11 +850,7 @@ class TestReturnShotVectorIntegration:
 
             assert isinstance(res[1], jax.numpy.ndarray)
             assert res[1].shape == ()
-            tol = (
-                finite_diff_shot_vec_tol
-                if diff_method == "finite-diff"
-                else param_shift_shot_vec_tol
-            )
+            tol = TOLS[diff_method]
             assert np.allclose(res, expected, atol=tol, rtol=0)
 
     @pytest.mark.parametrize("jacobian", jacobian_fn)
@@ -870,7 +870,7 @@ class TestReturnShotVectorIntegration:
 
         all_res = jacobian(circuit, argnums=[0, 1])(x, y)
 
-        tol = finite_diff_shot_vec_tol if diff_method == "finite-diff" else param_shift_shot_vec_tol
+        tol = TOLS[diff_method]
 
         assert isinstance(all_res, tuple)
         num_copies = sum(

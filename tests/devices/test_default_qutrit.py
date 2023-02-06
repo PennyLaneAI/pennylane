@@ -91,37 +91,6 @@ class TestApply:
         (qml.THadamard, [0, 0, 1], np.array([1, OMEGA**2, OMEGA]) * (-1j / np.sqrt(3)), None),
     ]
 
-    test_data_no_parameters_inverses = [
-        (qml.TShift, [0, 1, 0], np.array([1, 0, 0]), None),
-        (
-            qml.TShift,
-            [0, 1 / math.sqrt(2), 1 / math.sqrt(2)],
-            np.array([1 / math.sqrt(2), 1 / math.sqrt(2), 0]),
-            None,
-        ),
-        (qml.TClock, [1, 0, 0], np.array([1, 0, 0]), None),
-        (qml.TClock, [0, OMEGA, 0], np.array([0, 1, 0]), None),
-        (qml.THadamard, [0, 1, 0], np.array([0, 1, 0]), [0, 2]),
-        (
-            qml.THadamard,
-            [1 / np.sqrt(2), 0, 1 / np.sqrt(2)],
-            np.array([1 / np.sqrt(2), 0.5, -0.5]),
-            [1, 2],
-        ),
-        (
-            qml.THadamard,
-            np.array([1, OMEGA, OMEGA**2]) * (-1j / np.sqrt(3)),
-            np.array([0, 1, 0]),
-            None,
-        ),
-        (
-            qml.THadamard,
-            np.array([1, OMEGA**2, OMEGA]) * (-1j / np.sqrt(3)),
-            np.array([0, 0, 1]),
-            None,
-        ),
-    ]
-
     @pytest.mark.parametrize("operation, input, expected_output, subspace", test_data_no_parameters)
     def test_apply_operation_single_wire_no_parameters(
         self, qutrit_device_1_wire, tol, operation, input, expected_output, subspace
@@ -132,27 +101,6 @@ class TestApply:
         qutrit_device_1_wire._state = np.array(input, dtype=qutrit_device_1_wire.C_DTYPE)
         qutrit_device_1_wire.apply(
             [operation(wires=[0]) if subspace is None else operation(wires=[0], subspace=subspace)]
-        )
-
-        assert np.allclose(qutrit_device_1_wire._state, np.array(expected_output), atol=tol, rtol=0)
-        assert qutrit_device_1_wire._state.dtype == qutrit_device_1_wire.C_DTYPE
-
-    @pytest.mark.parametrize(
-        "operation,input,expected_output, subspace", test_data_no_parameters_inverses
-    )
-    def test_apply_operation_single_wire_no_parameters_inverse(
-        self, qutrit_device_1_wire, tol, operation, input, expected_output, subspace
-    ):
-        """Tests that applying an inverse operation yields the expected output state for single wire
-        operations that have no parameters."""
-
-        qutrit_device_1_wire._state = np.array(input, dtype=qutrit_device_1_wire.C_DTYPE)
-        qutrit_device_1_wire.apply(
-            [
-                operation(wires=[0]).inv()
-                if subspace is None
-                else operation(wires=[0], subspace=subspace).inv()
-            ]
         )
 
         assert np.allclose(qutrit_device_1_wire._state, np.array(expected_output), atol=tol, rtol=0)
@@ -190,22 +138,6 @@ class TestApply:
         ),
     ]
 
-    test_data_tadd_inv = [
-        (qml.TAdd, [0, 0, 0, 0, 0, 1, 0, 0, 0], np.array([0, 0, 0, 0, 1, 0, 0, 0, 0]), None),
-        (
-            qml.TAdd,
-            [0, 0, 0, 0, 1 / math.sqrt(2), 0, 1 / math.sqrt(2), 0, 0],
-            np.array([0, 0, 0, 1 / math.sqrt(2), 0, 0, 0, 1 / math.sqrt(2), 0]),
-            None,
-        ),
-        (
-            qml.TAdd,
-            [0, 0.5, -0.5, 0, 0, -0.5 * 1j, 0, 0.5 * 1j, 0],
-            np.array([0, 0.5, -0.5, 0, -0.5 * 1j, 0, 0, 0, 0.5 * 1j]),
-            None,
-        ),
-    ]
-
     all_two_wires_no_parameters = test_data_two_wires_no_parameters + test_data_tadd
 
     @pytest.mark.parametrize(
@@ -230,36 +162,6 @@ class TestApply:
 
         assert np.allclose(
             qutrit_device_2_wires._state.flatten(), np.array(expected_output), atol=tol, rtol=0
-        )
-        assert qutrit_device_2_wires._state.dtype == qutrit_device_2_wires.C_DTYPE
-
-    all_two_wires_no_parameters_inv = test_data_two_wires_no_parameters + test_data_tadd_inv
-
-    @pytest.mark.parametrize(
-        "operation,input,expected_output, subspace", all_two_wires_no_parameters_inv
-    )
-    def test_apply_operation_two_wires_no_parameters_inverse(
-        self, qutrit_device_2_wires, tol, operation, input, expected_output, subspace
-    ):
-        """Tests that applying an inverse operation yields the expected output state for two wire
-        operations that have no parameters."""
-
-        qutrit_device_2_wires._state = np.array(input, dtype=qutrit_device_2_wires.C_DTYPE).reshape(
-            (3, 3)
-        )
-        qutrit_device_2_wires.apply(
-            [
-                operation(wires=[0, 1]).inv()
-                if subspace is None
-                else operation(wires=[0, 1], subspace=subspace).inv()
-            ]
-        )
-
-        assert np.allclose(
-            qutrit_device_2_wires._state.flatten(),
-            np.array(expected_output),
-            atol=tol,
-            rtol=0,
         )
         assert qutrit_device_2_wires._state.dtype == qutrit_device_2_wires.C_DTYPE
 
@@ -290,30 +192,6 @@ class TestApply:
         assert np.allclose(qutrit_device_1_wire._state, np.array(expected_output), atol=tol, rtol=0)
         assert qutrit_device_1_wire._state.dtype == qutrit_device_1_wire.C_DTYPE
 
-    # TODO: Add more data as parametric ops get added
-    test_data_single_wire_with_parameters_inverse = [
-        (qml.QutritUnitary, [1, 0, 0], [0, 0, 1], TSHIFT),
-        (qml.QutritUnitary, [0, 0, 1], [0, 1, 0], TSHIFT),
-        (qml.QutritUnitary, [0, OMEGA, 0], [0, 1, 0], TCLOCK),
-        (qml.QutritUnitary, [0, 0, OMEGA**2], [0, 0, 1], TCLOCK),
-    ]
-
-    @pytest.mark.parametrize(
-        "operation, input, expected_output, par", test_data_single_wire_with_parameters_inverse
-    )
-    def test_apply_operation_single_wire_with_parameters_inverse(
-        self, qutrit_device_1_wire, tol, operation, input, expected_output, par
-    ):
-        """Tests that applying an operation yields the expected output state for single wire
-        operations that have parameters."""
-
-        qutrit_device_1_wire._state = np.array(input, dtype=qutrit_device_1_wire.C_DTYPE)
-
-        qutrit_device_1_wire.apply([operation(par, wires=[0]).inv()])
-
-        assert np.allclose(qutrit_device_1_wire._state, np.array(expected_output), atol=tol, rtol=0)
-        assert qutrit_device_1_wire._state.dtype == qutrit_device_1_wire.C_DTYPE
-
     # TODO: Add more ops as parametric operations get added
     test_data_two_wires_with_parameters = [
         (qml.QutritUnitary, [0, 0, 0, 0, 0, 1, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 1, 0], TSWAP),
@@ -332,27 +210,6 @@ class TestApply:
         ),
         (qml.QutritUnitary, [0, 0, 0, 1, 0, 0, 0, 0, 0], [0, 0, 0, 0, 1, 0, 0, 0, 0], TADD),
         (qml.QutritUnitary, [0, 0, 0, 0, 0, 0, 0, 1, 0], [0, 0, 0, 0, 0, 0, 1, 0, 0], TADD),
-    ]
-
-    # TODO: Add more ops as parametric operations get added
-    test_data_two_wires_with_parameters_inverse = [
-        (qml.QutritUnitary, [0, 0, 0, 0, 0, 1, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 1, 0], TSWAP),
-        (qml.QutritUnitary, [1, 0, 0, 0, 0, 0, 0, 0, 0], [1, 0, 0, 0, 0, 0, 0, 0, 0], TSWAP),
-        (
-            qml.QutritUnitary,
-            [0, 0, 1, 0, 0, 0, 0, 1, 0] / np.sqrt(2),
-            [0, 0, 0, 0, 0, 1, 1, 0, 0] / np.sqrt(2),
-            TSWAP,
-        ),
-        (
-            qml.QutritUnitary,
-            np.multiply([0, 1, 1, 0, 0, 0, 0, 1, 1], 0.5),
-            np.multiply([0, 0, 0, 1, 0, 1, 1, 0, 1], 0.5),
-            TSWAP,
-        ),
-        (qml.QutritUnitary, [0, 0, 0, 1, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 1, 0, 0, 0], TADD),
-        (qml.QutritUnitary, [0, 0, 0, 0, 0, 0, 1, 0, 0], [0, 0, 0, 0, 0, 0, 0, 1, 0], TADD),
-        (qml.QutritUnitary, [0, 0, 0, 0, 0, 1, 0, 0, 0], [0, 0, 0, 0, 1, 0, 0, 0, 0], TADD),
     ]
 
     @pytest.mark.parametrize(
@@ -374,25 +231,6 @@ class TestApply:
         )
         assert qutrit_device_2_wires._state.dtype == qutrit_device_2_wires.C_DTYPE
 
-    @pytest.mark.parametrize(
-        "operation,input,expected_output,par", test_data_two_wires_with_parameters_inverse
-    )
-    def test_apply_operation_two_wires_with_parameters_inverse(
-        self, qutrit_device_2_wires, tol, operation, input, expected_output, par
-    ):
-        """Tests that applying the inverse of an operation yields the expected output state for two wire
-        operations that have parameters."""
-
-        qutrit_device_2_wires._state = np.array(input, dtype=qutrit_device_2_wires.C_DTYPE).reshape(
-            (3, 3)
-        )
-        qutrit_device_2_wires.apply([operation(par, wires=[0, 1]).inv()])
-
-        assert np.allclose(
-            qutrit_device_2_wires._state.flatten(), np.array(expected_output), atol=tol, rtol=0
-        )
-        assert qutrit_device_2_wires._state.dtype == qutrit_device_2_wires.C_DTYPE
-
     def test_apply_rotations_one_wire(self, qutrit_device_1_wire, tol):
         """Tests that rotations are applied in correct order after operations"""
 
@@ -400,7 +238,7 @@ class TestApply:
         qutrit_device_1_wire._state = np.array(state, dtype=qutrit_device_1_wire.C_DTYPE)
 
         ops = [
-            qml.QutritUnitary(TSHIFT, wires=0).inv(),
+            qml.adjoint(qml.QutritUnitary(TSHIFT, wires=0)),
             qml.QutritUnitary(U_thadamard_01, wires=0),
         ]
         rotations = [
@@ -1208,7 +1046,6 @@ class TestWiresIntegration:
         assert dev.map_wires.cache_info().hits > original_hits
 
 
-@pytest.mark.parametrize("inverse", [True, False])
 class TestApplyOps:
     """Tests for special methods listed in _apply_ops that use array manipulation tricks to apply
     gates in DefaultQutrit."""
@@ -1227,31 +1064,31 @@ class TestApplyOps:
     ]
 
     @pytest.mark.parametrize("op, method", single_qutrit_ops)
-    def test_apply_single_qutrit_op(self, op, method, inverse):
+    def test_apply_single_qutrit_op(self, op, method):
         """Test if the application of single qutrit operations is correct"""
-        state_out = method(self.state, axes=[1], inverse=inverse)
+        state_out = method(self.state, axes=[1])
         op = op(wires=[1])
-        matrix = op.inv().matrix() if inverse else op.matrix()
+        matrix = op.matrix()
         state_out_einsum = np.einsum("ab,ibjk->iajk", matrix, self.state)
         assert np.allclose(state_out, state_out_einsum)
 
     @pytest.mark.parametrize("op, method", two_qutrit_ops)
-    def test_apply_two_qutrit_op(self, op, method, inverse):
+    def test_apply_two_qutrit_op(self, op, method):
         """Test if the application of two qutrit operations is correct."""
-        state_out = method(self.state, axes=[0, 1], inverse=inverse)
+        state_out = method(self.state, axes=[0, 1])
         op1 = op(wires=[0, 1])
-        matrix = op1.inv().matrix() if inverse else op1.matrix()
+        matrix = op1.matrix()
         matrix = matrix.reshape((3, 3, 3, 3))
         state_out_einsum = np.einsum("abcd,cdjk->abjk", matrix, self.state)
         assert np.allclose(state_out, state_out_einsum)
 
     @pytest.mark.parametrize("op, method", two_qutrit_ops)
-    def test_apply_two_qutrit_op_reverse(self, op, method, inverse):
+    def test_apply_two_qutrit_op_reverse(self, op, method):
         """Test if the application of two qutrit operations is correct when the
         applied wires are reversed."""
-        state_out = method(self.state, axes=[1, 0], inverse=inverse)
+        state_out = method(self.state, axes=[1, 0])
         op2 = op(wires=[1, 0])
-        matrix = op2.inv().matrix() if inverse else op2.matrix()
+        matrix = op2.matrix()
         matrix = matrix.reshape((3, 3, 3, 3))
         state_out_einsum = np.einsum("badc,cdjk->abjk", matrix, self.state)
         assert np.allclose(state_out, state_out_einsum)
@@ -1260,8 +1097,7 @@ class TestApplyOps:
 class TestApplyOperationUnit:
     """Unit tests for the internal _apply_operation method."""
 
-    @pytest.mark.parametrize("inverse", [True, False])
-    def test_apply_tensordot_case(self, inverse, monkeypatch):
+    def test_apply_tensordot_case(self, monkeypatch):
         """Tests the case when np.tensordot is used to apply an operation in
         default.qutrit."""
         dev = qml.device("default.qutrit", wires=2)
@@ -1281,9 +1117,6 @@ class TestApplyOperationUnit:
 
         assert op.name in dev.operations
         assert op.name not in dev._apply_ops
-
-        if inverse:
-            op = op.inv()
 
         # Set the internal _apply_unitary_tensordot
         history = []
@@ -1314,8 +1147,7 @@ class TestApplyOperationUnit:
         assert res is starting_state
         spy_unitary.assert_not_called()
 
-    @pytest.mark.parametrize("inverse", [True, False])
-    def test_internal_apply_ops_case(self, inverse, monkeypatch, mocker):
+    def test_internal_apply_ops_case(self, monkeypatch, mocker):
         """Tests that if we provide an operation that has an internal
         implementation, then we use that specific implementation.
 
@@ -1335,11 +1167,7 @@ class TestApplyOperationUnit:
             m.setattr(dev, "_apply_ops", {"QutritUnitary": supported_gate_application})
 
             test_state = np.array([1, 0, 0])
-            op = (
-                qml.QutritUnitary(TSHIFT, wires=0)
-                if not inverse
-                else qml.QutritUnitary(TSHIFT, wires=0).inv()
-            )
+            op = qml.QutritUnitary(TSHIFT, wires=0)
             spy_unitary = mocker.spy(dev, "_apply_unitary")
 
             res = dev._apply_operation(test_state, op)

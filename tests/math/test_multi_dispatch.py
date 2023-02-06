@@ -15,11 +15,12 @@
 """
 import autoray
 import numpy as onp
-import scipy as s
 import pytest
+import scipy as s
 from autoray import numpy as anp
-from pennylane import numpy as np
+
 from pennylane import math as fn
+from pennylane import numpy as np
 
 pytestmark = pytest.mark.all_interfaces
 
@@ -129,8 +130,8 @@ def test_multi_dispatch_decorate_non_dispatch(values):
 @pytest.mark.all_interfaces
 def test_unwrap():
     """Test that unwrap converts lists to lists and interface variables to numpy."""
-    import torch
     import tensorflow as tf
+    import torch
     from jax import numpy as jnp
 
     params = [
@@ -195,3 +196,16 @@ def test_gammainc(n, t, gamma_ref):
     gamma = fn.gammainc(n, t)
 
     assert np.allclose(gamma, gamma_ref)
+
+
+class TestMatmul:
+    @pytest.mark.torch
+    def test_matmul_torch(self):
+        import torch
+
+        m1 = torch.tensor([[1, 0], [0, 1]])
+        m2 = [[1, 2], [3, 4]]
+        assert fn.allequal(fn.matmul(m1, m2), m2)
+        assert fn.allequal(fn.matmul(m2, m1), m2)
+        assert fn.allequal(fn.matmul(m2, m2, like="torch"), np.matmul(m2, m2))
+        assert fn.allequal(fn.matmul(m1, m1), m1)

@@ -97,7 +97,6 @@ class HilbertSchmidt(Operation):
     grad_method = None
 
     def __init__(self, *params, v_function, v_wires, u_tape, do_queue=True, id=None):
-
         self._num_params = len(params)
 
         if not isinstance(u_tape, qml.tape.QuantumScript):

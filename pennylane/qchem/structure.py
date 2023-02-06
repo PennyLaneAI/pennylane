@@ -422,7 +422,7 @@ def mol_data(identifier, identifier_type="name"):
     repositories for information on chemical substances from which symbols and geometry can be
     retrieved for a compound by its name, SMILES, InChI, InChIKey, or PubChem Compound ID (CID) to
     build a molecule object for Hartree-Fock calculations. The retrieved atomic coordinates will be
-    converted to atomic units <https://en.wikipedia.org/wiki/Bohr_radius>__ for consistency.
+    converted to `atomic units <https://en.wikipedia.org/wiki/Bohr_radius>`__ for consistency.
 
     Args:
         identifier (str or int): compound's identifier as required by the PubChem database

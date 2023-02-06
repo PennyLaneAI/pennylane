@@ -314,10 +314,10 @@ def _to_zx(tape, expand_measurements=False):
         if op.name == "RY":
             theta = op.data[0]
             decomp = [
-                qml.RX(np.pi / 2, wires=0),
-                qml.RZ(theta + np.pi, wires=0),
-                qml.RX(np.pi / 2, wires=0),
-                qml.RZ(3 * np.pi, wires=0),
+                qml.RX(np.pi / 2, wires=op.wires),
+                qml.RZ(theta + np.pi, wires=op.wires),
+                qml.RX(np.pi / 2, wires=op.wires),
+                qml.RZ(3 * np.pi, wires=op.wires),
             ]
             expanded_operations.extend(decomp)
         else:
@@ -348,7 +348,6 @@ def _add_operations_to_graph(tape, graph, gate_types, q_mapper, c_mapper):
     """Add the tape operation to the PyZX graph."""
     # Create graph from circuit in the quantum tape (operations, measurements)
     for op in tape.operations:
-
         # Check that the gate is compatible with PyZX
         name = op.name
         if name not in gate_types:
@@ -459,7 +458,6 @@ def from_zx(graph, decompose_phases=True):
 
     for row_key in sorted(rows.keys()):
         for vertex in rows[row_key]:
-
             qubit_1 = qubits[vertex]
             param = params[vertex]
             type_1 = types[vertex]
@@ -549,7 +547,6 @@ def _add_one_qubit_gate(param, type_1, qubit_1, decompose_phases):
 def _add_two_qubit_gates(graph, vertex, neighbor, type_1, type_2, qubit_1, qubit_2):
     """Return the list of two qubit gates giveeen the vertex and its neighbor."""
     if type_1 == type_2:
-
         if graph.edge_type(graph.edge(vertex, neighbor)) != EdgeType.HADAMARD:
             raise qml.QuantumFunctionError(
                 "Two green or respectively two red nodes connected by a simple edge does not have a "

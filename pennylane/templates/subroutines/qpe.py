@@ -140,9 +140,7 @@ class QuantumPhaseEstimation(Operation):
     grad_method = None
 
     def __init__(self, unitary, target_wires=None, estimation_wires=None, do_queue=True, id=None):
-
         if isinstance(unitary, Operator):
-
             # If the unitary is expressed in terms of operators, do not provide target wires
             if target_wires is not None:
                 raise qml.QuantumFunctionError(
@@ -208,8 +206,8 @@ class QuantumPhaseEstimation(Operation):
         return new_op
 
     def queue(self, context=QueuingManager):
-        context.update_info(self._hyperparameters["unitary"], owner=self)
-        context.append(self, owns=self._hyperparameters["unitary"])
+        context.remove(self._hyperparameters["unitary"])
+        context.append(self)
         return self
 
     @staticmethod
