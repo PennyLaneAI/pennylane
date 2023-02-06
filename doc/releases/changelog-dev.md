@@ -163,7 +163,7 @@
 
   ```python
   import pennylane as qml
-  import jaxhttps://github.com/PennyLaneAI/pennylane/pull/3724
+  import jax
   from jax import numpy as jnp
   
   jax.config.update("jax_enable_x64", True)
