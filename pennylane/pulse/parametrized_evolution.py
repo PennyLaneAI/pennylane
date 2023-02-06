@@ -61,8 +61,6 @@ class ParametrizedEvolution(Operation):
             perform intermediate steps if necessary. It is recommended to just provide a start and end time.
             Note that such absolute times only have meaning within an instance of
             ``ParametrizedEvolution`` and will not affect other gates.
-        time (str, optional): The name of the time-based parameter in the parametrized Hamiltonian.
-            Defaults to "t".
         do_queue (bool): determines if the scalar product operator will be queued. Default is True.
         id (str or None): id for the scalar product operator. Default is None.
 
@@ -78,11 +76,9 @@ class ParametrizedEvolution(Operation):
 
     .. warning::
 
-        The time argument ``t`` corresponds to the time window used to compute the scalar-valued
-        functions present in the :class:`ParametrizedHamiltonian` class. Consequently, executing
-        two ``ParametrizedEvolution`` gates using the same time window does not mean both gates
-        are executed simultaneously, but rather both gates evaluate their respective scalar-valued
-        functions using the same time window.
+        Executing two ``ParametrizedEvolution`` gates using the same time values does not mean both
+        gates are executed simultaneously, but rather both gates evaluate their respective
+        scalar-valued functions using the same time values.
 
     .. note::
 
@@ -158,13 +154,12 @@ class ParametrizedEvolution(Operation):
     _name = "ParametrizedEvolution"
     num_wires = AnyWires
 
-    # pylint: disable=too-many-arguments, super-init-not-called
+    # pylint: disable=too-many-arguments
     def __init__(
         self,
         H: ParametrizedHamiltonian,
         params: list = None,
         t: Union[float, List[float]] = None,
-        time="t",
         do_queue=True,
         id=None,
         **odeint_kwargs
@@ -178,7 +173,6 @@ class ParametrizedEvolution(Operation):
                 "All operators inside the parametrized hamiltonian must have a matrix defined."
             )
         self.H = H
-        self.time = time
         self.params = params
         self.odeint_kwargs = odeint_kwargs
         if t is None:
