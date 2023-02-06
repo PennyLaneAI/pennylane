@@ -80,11 +80,12 @@ def dot(coeffs: Sequence[float], ops: Sequence[Operator], pauli=False):
     # When casting a Hamiltonian to a Sum, we also cast its inner Tensors to Prods
     ops = [qml.prod(*op.obs) if isinstance(op, Tensor) else op for op in ops]
 
-    if len(set(coeffs)) == 1 and coeffs[0] != 1:
+    if coeffs[0] != 1 and [coeffs[0]] * len(coeffs) == coeffs:
         # Coefficients have the same value (different to 1)
         return qml.s_prod(coeffs[0], ops[0] if len(ops) == 1 else sum(ops))
 
-    if len(set(qml.math.abs(coeffs))) == 1 and abs(coeffs[0]) != 1:
+    abs_coeffs = qml.math.abs(coeffs)
+    if abs_coeffs[0] != 1 and [abs_coeffs[0]] * len(abs_coeffs) == abs_coeffs:
         # Coefficients have the same absolute value (different to 1)
         gcd = abs(coeffs[0])
         coeffs = [c / gcd for c in coeffs]
