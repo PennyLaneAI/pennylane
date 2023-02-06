@@ -841,7 +841,7 @@ class TestDecomposition:
             # pylint: disable=unused-variable
             decomp = op.expand().circuit if test_expand else op.decomposition()
 
-    def test_zyz_decomp_no_control_values(self):
+    def test_zyz_decomp_no_control_values(self, test_expand):
         """Test that the ZYZ decomposition is used for single qubit target operations
         when other decompositions aren't available."""
 
@@ -849,12 +849,12 @@ class TestDecomposition:
         op = Controlled(base, (0, 1, 2))
 
         assert op.has_decomposition()
-        decomp = op.decomposition()
+        decomp = op.expand().circuit if test_expand else op.decomposition()
         expected = qml.ops.ctrl_decomp_zyz(base, (0, 1, 2))
         for op, exp_op in zip(decomp, expected):
             assert qml.equal(op, exp_op)
 
-    def test_zyz_decomp_control_values(self):
+    def test_zyz_decomp_control_values(self, test_expand):
         """Test that the ZYZ decomposition is used for single qubit target operations
         when other decompositions aren't available and control values are present."""
 
@@ -862,7 +862,7 @@ class TestDecomposition:
         op = Controlled(base, (0, 1, 2), control_values=[True, False, False])
 
         assert op.has_decomposition()
-        decomp = op.decomposition()
+        decomp = op.expand().circuit if test_expand else op.decomposition()
         assert qml.equal(qml.PauliX(1), decomp[0])
         assert qml.equal(qml.PauliX(2), decomp[1])
         assert qml.equal(qml.PauliX(1), decomp[-2])
