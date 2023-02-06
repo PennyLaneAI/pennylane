@@ -125,15 +125,6 @@ def pauli_basis_strings(num_wires):
     return ["".join(letters) for letters in product(_pauli_letters, repeat=num_wires)][1:]
 
 
-def _detach(array, interface):
-    """Detach an array from its trace and return just its numerical values."""
-    if interface == "jax":
-        import jax
-
-        return jax.lax.stop_gradient(array)
-    return qml.math.convert_like(qml.math.to_numpy(array), array)
-
-  
 class SpecialUnitary(Operation):
     r"""Gate from the group :math:`SU(N)` with :math:`N=2^n` for :math:`n` qubits.
 
@@ -205,6 +196,13 @@ class SpecialUnitary(Operation):
         This operation only is differentiable when using the JAX, Torch or Tensorflow
         interfaces, even when using hardware-compatible differentiation techniques like
         the parameter-shift rule.
+
+
+    .. warning::
+
+        This operation supports broadcasting and hardware-compatible differentiation
+        techniques like the parameter-shift rule. However, the two features can not be
+        used simultaneously.
 
     **Examples**
 
@@ -546,7 +544,7 @@ class SpecialUnitary(Operation):
             raise ValueError(f"The interface {interface} is not supported.")
 
         # Compute the Omegas from the Jacobian. The adjoint of U(theta) is realized via -theta
-        U_dagger = self.compute_matrix(-_detach(theta, interface), num_wires)
+        U_dagger = self.compute_matrix(-qml.math.detach(theta), num_wires)
         # After contracting, move the parameter derivative axis to the first position
         return qml.math.transpose(qml.math.tensordot(U_dagger, jac, axes=[[1], [0]]), [2, 0, 1])
 
@@ -628,7 +626,7 @@ class SpecialUnitary(Operation):
             omega = qml.math.real(2j * self.get_one_parameter_coeffs(interface))
 
             # Create zero parameters for each Pauli rotation gate that take over the trace of theta
-            detached_theta = _detach(theta, interface)
+            detached_theta = qml.math.detach(theta)
             zeros = theta - detached_theta
             # Apply the linear map omega to the zeros to create the correct preprocessing Jacobian
             zeros = qml.math.tensordot(omega, zeros, axes=[[1], [0]])

@@ -24,7 +24,6 @@ from pennylane.ops.qubit.special_unitary import (
     pauli_basis_matrices,
     pauli_basis_strings,
     TmpPauliRot,
-    _detach,
     _pauli_letters,
     _pauli_matrices,
 )
@@ -95,47 +94,6 @@ special_matrix_cases = [
     (2, 0.6 * (eye[4] + eye[9]), qml.IsingXY(2.4, [0, 1]).matrix()),
     (2, 0.8 * eye[-1], qml.IsingZZ(-1.6, [0, 1]).matrix()),
 ]
-
-
-class TestDetach:
-    """Test the utility function _detach."""
-
-    @pytest.mark.jax
-    @pytest.mark.parametrize("use_jit", [True, False])
-    def test_jax(self, use_jit):
-        """Test that _detach works with JAX."""
-        import jax
-
-        x = jax.numpy.array(0.3)
-        fn = jax.jit(_detach, static_argnums=1) if use_jit else _detach
-        jac = jax.jacobian(fn, argnums=0)(x, "jax")
-        assert jax.numpy.isclose(jac, 0.0)
-
-    @pytest.mark.torch
-    def test_torch(self):
-        """Test that _detach works with Torch."""
-        import torch
-
-        x = torch.tensor(0.3, requires_grad=True)
-        assert x.requires_grad is True
-        detached_x = _detach(x, "torch")
-        assert detached_x.requires_grad is False
-        jac = torch.autograd.functional.jacobian(partial(_detach, interface="torch"), x)
-        assert qml.math.isclose(jac, jac * 0.0)
-
-    @pytest.mark.tf
-    def test_tf(self):
-        """Test that _detach works with Tensorflow."""
-        import tensorflow as tf
-
-        x = tf.Variable(0.3)
-        assert x.trainable is True
-        detached_x = _detach(x, "tf")
-        assert not hasattr(detached_x, "trainable")
-        with tf.GradientTape() as t:
-            out = _detach(x, "tf")
-        jac = t.jacobian(out, x)
-        assert jac is None
 
 
 class TestGetOneParameterGenerators:
@@ -251,23 +209,12 @@ class TestGetOneParameterGenerators:
             )
             assert qml.math.allclose(Omegas[i], 1j * pauli_mat)
 
-    # Autograd does not support differentiating expm.
-    @pytest.mark.xfail
-    @pytest.mark.autograd
-    @pytest.mark.parametrize("n", [1, 2, 3])
-    def test_autograd(self, n):
-        """Test that generators are computed correctly in Autograd."""
-        np.random.seed(14521)
-        d = 4**n - 1
-        theta = qml.numpy.array(np.random.random(d), requires_grad=True)
-        Omegas = self.get_one_parameter_generators(theta, n, "autograd")
-        assert Omegas.shape == (d, 2**n, 2**n)
-        assert all(qml.math.allclose(qml.math.conj(qml.math.T(O)), -O) for O in Omegas)
-
     def test_raises_autograd(self):
-        """Test that computing generators raises an error when attempting to use Autograd."""
+        """Test that computing generators raises an
+        error when attempting to use Autograd."""
+        op = qml.SpecialUnitary(qml.numpy.ones(3), [0])
         with pytest.raises(NotImplementedError, match="expm is not differentiable in Autograd"):
-            self.get_one_parameter_generators(np.ones(3), 1, "autograd")
+            op.get_one_parameter_generators("autograd")
 
     def test_raises_unknown_interface(self):
         """Test that computing generators raises an error when attempting
@@ -283,7 +230,6 @@ class TestGetOneParameterGenerators:
             self.get_one_parameter_generators(theta, 1, "dummy")
 
 
-@pytest.mark.parametrize("n", [1, 2])
 class TestGetOneParameterGeneratorsDiffability:
     """Tests for the effective generators computing function
     get_one_parameter_generators of qml.SpecialUnitary to be differentiable."""
@@ -297,6 +243,7 @@ class TestGetOneParameterGeneratorsDiffability:
 
     @pytest.mark.jax
     @pytest.mark.parametrize("use_jit", [True, False])
+    @pytest.mark.parametrize("n", [1, 2])
     def test_jacobian_jax(self, n, use_jit):
         """Test that generators are differentiable in JAX."""
         import jax
@@ -316,6 +263,7 @@ class TestGetOneParameterGeneratorsDiffability:
         assert dOmegas.shape == (d, 2**n, 2**n, d)
 
     @pytest.mark.tf
+    @pytest.mark.parametrize("n", [1, 2])
     def test_jacobian_tf(self, n):
         """Test that generators are differentiable in Tensorflow."""
         import tensorflow as tf
@@ -329,6 +277,7 @@ class TestGetOneParameterGeneratorsDiffability:
         assert dOmegas.shape == (d, 2**n, 2**n, d)
 
     @pytest.mark.torch
+    @pytest.mark.parametrize("n", [1, 2])
     def test_jacobian_torch(self, n):
         """Test that generators are differentiable in Torch."""
         import torch
@@ -343,24 +292,19 @@ class TestGetOneParameterGeneratorsDiffability:
         dOmegas = torch.autograd.functional.jacobian(fn, theta)
         assert dOmegas.shape == (d, 2**n, 2**n, d)
 
-    # Autograd does not support differentiating expm.
-    @pytest.mark.xfail
-    @pytest.mark.autograd
-    def test_jacobian_autograd(self, n):
-        """Test that generators are differentiable in Autograd."""
-        np.random.seed(14521)
-        d = 4**n - 1
-        theta = qml.numpy.array(np.random.random(d), requires_grad=True)
-        dOmegas = qml.jacobian(self.get_one_parameter_generators)(theta, n, "autograd")
-        assert dOmegas.shape == (d, 2**n, 2**n, d)
+    def test_raises_autograd(self):
+        """Test that computing generator derivatives raises an error
+        when attempting to use Autograd."""
+        with pytest.raises(NotImplementedError, match="expm is not differentiable in Autograd"):
+            qml.jacobian(self.get_one_parameter_generators)(qml.numpy.ones(3), 1, "autograd")
 
 
-@pytest.mark.parametrize("n", [1, 2, 3])
 class TestGetOneParameterCoeffs:
     """Tests for the coefficients of effective generators computing function
     get_one_parameter_coeffs of qml.SpecialUnitary."""
 
     @pytest.mark.jax
+    @pytest.mark.parametrize("n", [1, 2, 3])
     def test_jax(self, n):
         """Test that the coefficients of the generators are computed correctly in JAX."""
         import jax
@@ -382,6 +326,7 @@ class TestGetOneParameterCoeffs:
         assert jnp.allclose(reconstructed_Omegas, Omegas)
 
     @pytest.mark.tf
+    @pytest.mark.parametrize("n", [1, 2, 3])
     def test_tf(self, n):
         """Test that the coefficients of the generators are computed correctly in Tensorflow."""
         import tensorflow as tf
@@ -400,6 +345,7 @@ class TestGetOneParameterCoeffs:
         assert qml.math.allclose(reconstructed_Omegas, Omegas)
 
     @pytest.mark.torch
+    @pytest.mark.parametrize("n", [1, 2, 3])
     def test_torch(self, n):
         """Test that the coefficients of the generators are computed correctly in Torch."""
         import torch
@@ -417,23 +363,12 @@ class TestGetOneParameterCoeffs:
         Omegas = op.get_one_parameter_generators("torch")
         assert qml.math.allclose(reconstructed_Omegas, Omegas)
 
-    # Autograd does not support differentiating expm.
-    @pytest.mark.xfail
-    @pytest.mark.autograd
-    def test_autograd(self, n):
-        """Test that the coefficients of the generators are computed correctly in Autograd."""
-        np.random.seed(14521)
-        d = 4**n - 1
-        theta = qml.numpy.array(np.random.random(d), requires_grad=True)
-        op = qml.SpecialUnitary(theta, list(range(n)))
-        omegas = op.get_one_parameter_coeffs("autograd")
-        assert omegas.shape == (d, d)
-        assert qml.math.allclose(qml.math.real(omegas), 0)
-
-        basis = pauli_basis_matrices(n)
-        reconstructed_Omegas = qml.math.tensordot(omegas, basis, axes=[[0], [0]])
-        Omegas = op.get_one_parameter_generators("autograd")
-        assert qml.math.allclose(reconstructed_Omegas, Omegas)
+    def test_raises_autograd(self):
+        """Test that computing coefficient derivatives raises an
+        error when attempting to use Autograd."""
+        op = qml.SpecialUnitary(qml.numpy.ones(3), [0])
+        with pytest.raises(NotImplementedError, match="expm is not differentiable in Autograd"):
+            op.get_one_parameter_coeffs("autograd")
 
 
 theta_1 = np.array([0.4, 0.1, 0.1])
@@ -632,10 +567,10 @@ class TestSpecialUnitary:
                     check_trainability=False,
                     check_interface=False,
                 )
-            assert qml.equal(qml.SpecialUnitary(_detach(theta, "jax"), wires=wires), decomp[-1])
+            assert qml.equal(qml.SpecialUnitary(qml.math.detach(theta), wires=wires), decomp[-1])
 
-            decomp = qml.SpecialUnitary(_detach(theta, "jax"), wires).decomposition()
-            mat = qml.SpecialUnitary.compute_matrix(_detach(theta, "jax"), n)
+            decomp = qml.SpecialUnitary(qml.math.detach(theta), wires).decomposition()
+            mat = qml.SpecialUnitary.compute_matrix(qml.math.detach(theta), n)
             assert len(decomp) == 1
             assert qml.equal(qml.QubitUnitary(mat, wires=wires), decomp[0])
 
@@ -664,10 +599,10 @@ class TestSpecialUnitary:
                 check_trainability=False,
                 check_interface=False,
             )
-        assert qml.equal(qml.SpecialUnitary(_detach(theta, "torch"), wires=wires), decomp[-1])
+        assert qml.equal(qml.SpecialUnitary(qml.math.detach(theta), wires=wires), decomp[-1])
 
-        decomp = qml.SpecialUnitary(_detach(theta, "torch"), wires).decomposition()
-        mat = qml.SpecialUnitary.compute_matrix(_detach(theta, "torch"), n)
+        decomp = qml.SpecialUnitary(qml.math.detach(theta), wires).decomposition()
+        mat = qml.SpecialUnitary.compute_matrix(qml.math.detach(theta), n)
         assert len(decomp) == 1
         assert qml.equal(qml.QubitUnitary(mat, wires=wires), decomp[0])
 
@@ -692,10 +627,10 @@ class TestSpecialUnitary:
                     check_trainability=False,
                     check_interface=False,
                 )
-            assert qml.equal(qml.SpecialUnitary(_detach(theta, "tf"), wires=wires), decomp[-1])
+            assert qml.equal(qml.SpecialUnitary(qml.math.detach(theta), wires=wires), decomp[-1])
 
-            decomp = qml.SpecialUnitary(_detach(theta, "tf"), wires).decomposition()
-            mat = qml.SpecialUnitary.compute_matrix(_detach(theta, "tf"), n)
+            decomp = qml.SpecialUnitary(qml.math.detach(theta), wires).decomposition()
+            mat = qml.SpecialUnitary.compute_matrix(qml.math.detach(theta), n)
             assert len(decomp) == 1
             assert qml.equal(qml.QubitUnitary(mat, wires=wires), decomp[0])
 
