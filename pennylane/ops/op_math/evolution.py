@@ -14,6 +14,7 @@
 """
 This submodule defines the Evolution class.
 """
+import warnings
 from warnings import warn
 
 import numpy as np
@@ -74,7 +75,10 @@ class Evolution(Exp):
     _name = "Evolution"
     num_params = 1
 
-    def __init__(self, generator, param, do_queue=True, id=None):
+    def __init__(self, generator, param=1, do_queue=True, id=None):
+        warnings.warn(
+            "Please use `qml.evolve` to instantiate an `Evolution` operator.", UserWarning
+        )
         super().__init__(generator, coeff=1j * param, do_queue=do_queue, id=id)
         self._data = [param]
 

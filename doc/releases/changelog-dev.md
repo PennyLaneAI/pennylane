@@ -87,9 +87,11 @@
 
 * A `ParametrizedHamiltonian` can be time-evolved by using `ParametrizedEvolution`.
   [(#3617)](https://github.com/PennyLaneAI/pennylane/pull/3617)
+  [(#3706)](https://github.com/PennyLaneAI/pennylane/pull/3706)
 
-* A new function called `qml.evolve` has been added that returns the evolution of an operator or a `ParametrizedHamiltonian`.
+* A new function called `qml.evolve` has been added that returns the evolution of an `Operator` or a `ParametrizedHamiltonian`.
   [(#3617)](https://github.com/PennyLaneAI/pennylane/pull/3617)
+  [(#3706)](https://github.com/PennyLaneAI/pennylane/pull/3706)
 
 * A new function `dot` has been added to compute the dot product between a vector and a list of operators. `qml.dot` will now target this new function.
   [(#3586)](https://github.com/PennyLaneAI/pennylane/pull/3586)
@@ -111,8 +113,8 @@
 * The Hadamard test gradient tranform is now available via `qml.gradients.hadamard_grad`.
   [#3625](https://github.com/PennyLaneAI/pennylane/pull/3625)
 
-  `qml.gradients.hadamard_grad` is a hardware-compatible transform that calculates the 
-  gradient of a quantum circuit using the Hadamard test. Note that the device requires an 
+  `qml.gradients.hadamard_grad` is a hardware-compatible transform that calculates the
+  gradient of a quantum circuit using the Hadamard test. Note that the device requires an
   auxiliary wire to calculate the gradient.
 
   ```pycon
@@ -517,6 +519,10 @@
 
 * `qml.op_sum` has been deprecated. Users should use `qml.sum` instead.
   [(#3686)](https://github.com/PennyLaneAI/pennylane/pull/3686)
+
+* The use of `Evolution` directly has been deprecated. Users should use `qml.evolve` instead.
+  This new function changes the sign of the given parameter.
+  [(#3706)](https://github.com/PennyLaneAI/pennylane/pull/3706)
 
 <h3>Documentation</h3>
 
