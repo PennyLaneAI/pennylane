@@ -99,7 +99,7 @@ def _generator_prefactor(gen, op):
             # absolute value of coefficients is the same
             prefactor = abs(gen.coeffs[0])
             coeffs = [c / prefactor for c in gen.coeffs]
-            obs = Hamiltonian(coeffs, gen.ops)
+            obs = qml.dot(coeffs, gen.ops)
         else:
             obs = gen
             prefactor = 1.0

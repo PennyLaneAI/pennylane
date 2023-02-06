@@ -25,7 +25,7 @@ import numpy as np
 
 import pennylane as qml
 from pennylane import math
-from pennylane.operation import Operator, Tensor
+from pennylane.operation import Operator
 from pennylane.ops.qubit import Hamiltonian
 from pennylane.queuing import QueuingManager
 
@@ -177,32 +177,6 @@ class Sum(CompositeOp):
 
     _op_symbol = "+"
     _math_op = math.sum
-
-    @staticmethod
-    def from_hamiltonian(H: Hamiltonian):
-        """Converts a ``Hamiltonian`` into a ``Sum`` operator.
-
-        Args:
-            H (Hamiltonian): hamiltonian to convert
-
-        Returns:
-            Sum: Sum operator
-        """
-        coeffs, ops = H.terms()
-        ops = [qml.prod(*op.obs) if isinstance(op, Tensor) else op for op in ops]
-        # We avoid using `qml.dot` because it doesn't simplify the return operator (we cannot use
-        # an if statement because the function needs to be jittable).
-        if len(set(coeffs)) == 1 and coeffs[0] != 1:
-            return qml.s_prod(coeffs[0], ops[0] if len(ops) == 1 else sum(*ops))
-        if len(set(qml.math.abs(coeffs))) == 1 and abs(coeffs[0]) != 1:
-            # Coefficients have the same absolute value
-            gcd = abs(coeffs[0])
-            coeffs = [c / gcd for c in coeffs]
-            return qml.s_prod(
-                gcd, sum(*[op if c == 1 else qml.s_prod(c, op) for c, op in zip(coeffs, ops)])
-            )
-        operands = [op if c == 1 else qml.s_prod(c, op) for c, op in zip(coeffs, ops)]
-        return operands[0] if len(operands) == 1 else sum(*operands)
 
     @property
     def is_hermitian(self):

@@ -288,7 +288,7 @@ class Exp(ScalarSymbolicOp, Operation):
         with qml.QueuingManager.stop_recording():
             # Change base to `Sum`/`Prod`
             if isinstance(base, Hamiltonian):
-                base = Sum.from_hamiltonian(base)
+                base = qml.dot(base.coeffs, base.ops)
             elif isinstance(base, Tensor):
                 base = qml.prod(*base.obs)
 
@@ -304,7 +304,7 @@ class Exp(ScalarSymbolicOp, Operation):
                     g, c = qml.generator(op_class)(coeff, base.wires)
                     # Make sure both ``g`` and ``base`` are of the same type
                     if isinstance(g, Hamiltonian):
-                        g = Sum.from_hamiltonian(g)
+                        g = qml.dot(g.coeffs, g.ops)
                     elif isinstance(g, Tensor):
                         g = qml.prod(*g.obs)
 
