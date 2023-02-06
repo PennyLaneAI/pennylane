@@ -111,11 +111,7 @@ class TestJaxExecuteUnitTests:
 
             tape = qml.tape.QuantumScript.from_queue(q)
             return execute(
-                [tape],
-                device,
-                gradient_fn=param_shift,
-                mode="forward",
-                interface=interface,
+                [tape], device, gradient_fn=param_shift, mode="forward", interface=interface
             )[0]
 
         with pytest.raises(
@@ -136,12 +132,7 @@ class TestJaxExecuteUnitTests:
                 qml.expval(qml.PauliZ(0))
 
             tape = qml.tape.QuantumScript.from_queue(q)
-            return execute(
-                [tape],
-                device,
-                gradient_fn=param_shift,
-                interface="None",
-            )[0]
+            return execute([tape], device, gradient_fn=param_shift, interface="None")[0]
 
         with pytest.raises(ValueError, match="Unknown interface"):
             cost(a, device=dev)
@@ -252,11 +243,7 @@ class TestCaching:
 
             tape = qml.tape.QuantumScript.from_queue(q)
             return execute(
-                [tape],
-                dev,
-                gradient_fn=param_shift,
-                cachesize=cachesize,
-                interface=interface,
+                [tape], dev, gradient_fn=param_shift, cachesize=cachesize, interface=interface
             )[0][0]
 
         params = jnp.array([0.1, 0.2])
@@ -279,7 +266,7 @@ class TestCaching:
                 qml.expval(qml.PauliZ(0))
 
             tape = qml.tape.QuantumScript.from_queue(q)
-            return execute([tape], dev, gradient_fn=param_shift, cache=cache, interface=interface,)[
+            return execute([tape], dev, gradient_fn=param_shift, cache=cache, interface=interface)[
                 0
             ][0]
 
@@ -312,11 +299,7 @@ class TestCaching:
 
             tape2 = qml.tape.QuantumScript.from_queue(q2)
             res = execute(
-                [tape1, tape2],
-                dev,
-                gradient_fn=param_shift,
-                cache=cache,
-                interface=interface,
+                [tape1, tape2], dev, gradient_fn=param_shift, cache=cache, interface=interface
             )
             return res[0][0]
 
@@ -338,7 +321,7 @@ class TestCaching:
                 qml.expval(qml.PauliZ(0))
 
             tape = qml.tape.QuantumScript.from_queue(q)
-            return execute([tape], dev, gradient_fn=param_shift, cache=cache, interface=interface,)[
+            return execute([tape], dev, gradient_fn=param_shift, cache=cache, interface=interface)[
                 0
             ][0]
 
@@ -499,7 +482,6 @@ class TestJaxExecuteIntegration:
         assert tape.trainable_params == [0, 1]
 
         def cost(a, b):
-
             # An explicit call to _update() is required here to update the
             # trainable parameters in between tape executions.
             # This is different from how the autograd interface works.

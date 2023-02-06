@@ -77,7 +77,6 @@ def _process_shot_sequence(shot_list):
     integer is repeated.
     """
     if all(isinstance(s, int) for s in shot_list):
-
         if len(set(shot_list)) == 1:
             # All shots are identical, only require a single shot tuple
             shot_vector = [ShotTuple(shots=shot_list[0], copies=len(shot_list))]
@@ -134,7 +133,6 @@ class Device(abc.ABC):
     _asarray = staticmethod(np.asarray)
 
     def __init__(self, wires=1, shots=1000, *, analytic=None):
-
         self.shots = shots
 
         if analytic is not None:
@@ -462,7 +460,6 @@ class Device(abc.ABC):
             self.pre_measure()
 
             for obs in observables:
-
                 if isinstance(obs, Tensor):
                     wires = [ob.wires for ob in obs.obs]
                 else:
@@ -875,6 +872,7 @@ class Device(abc.ABC):
         are then evaluated within the context of this context manager (see the
         source of :meth:`.Device.execute` for more details).
         """
+
         # pylint: disable=no-self-use
         class MockContext:  # pylint: disable=too-few-public-methods
             """Mock class as a default for the with statement in execute()."""
@@ -902,7 +900,6 @@ class Device(abc.ABC):
         if isinstance(operation, type) and issubclass(operation, Operation):
             return operation.__name__ in self.operations
         if isinstance(operation, str):
-
             if operation.endswith(".inv"):
                 in_ops = operation[:-4] in self.operations
                 # TODO: update when all capabilities keys changed to "supports_inverse_operations"
@@ -933,7 +930,6 @@ class Device(abc.ABC):
         if isinstance(observable, type) and issubclass(observable, Observable):
             return observable.__name__ in self.observables
         if isinstance(observable, str):
-
             # This check regards observables that are also operations
             if observable.endswith(".inv"):
                 return self.supports_operation(observable[:-4])
@@ -960,7 +956,6 @@ class Device(abc.ABC):
         """
 
         for o in queue:
-
             operation_name = o.name
 
             if isinstance(o, MidMeasureMP) and not self.capabilities().get(

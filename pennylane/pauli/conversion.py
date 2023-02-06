@@ -204,7 +204,7 @@ def _(op: SProd):
 
 @pauli_sentence.register
 def _(op: Hamiltonian):
-    if not is_pauli_word(op):
+    if not all(is_pauli_word(o) for o in op.ops):
         raise ValueError(f"Op must be a linear combination of Pauli operators only, got: {op}")
 
     summands = []

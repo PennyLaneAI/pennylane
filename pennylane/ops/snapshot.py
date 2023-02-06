@@ -66,7 +66,7 @@ class Snapshot(Operation):
         super().__init__(wires=[], do_queue=do_queue)
 
     def label(self, decimals=None, base_label=None, cache=None):
-        return "|S|"
+        return "|Snap|"
 
     @staticmethod
     def compute_decomposition(*params, wires=None, **hyperparameters):

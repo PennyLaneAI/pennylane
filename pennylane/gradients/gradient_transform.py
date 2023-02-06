@@ -40,6 +40,7 @@ SUPPORTED_GRADIENT_KWARGS = [
     "shots",
     "strategy",
     "validate_params",
+    "device_wires",
 ]
 
 
@@ -77,7 +78,6 @@ def gradient_analysis(tape, use_graph=True, grad_fn=None):
         tape._gradient_fn = grad_fn
 
     for idx, info in enumerate(tape._par_info):
-
         if idx not in tape.trainable_params:
             # non-trainable parameters do not require a grad_method
             info["grad_method"] = None

@@ -74,7 +74,6 @@ class Molecule:
         coeff=None,
         normalize=True,
     ):
-
         if basis_name.lower() not in [
             "sto-3g",
             "6-31g",

@@ -1771,7 +1771,6 @@ class PauliRot(Operation):
 
         # Simplest case is if the Pauli is the identity matrix
         if set(pauli_word) == {"I"}:
-
             exp = qml.math.exp(-0.5j * theta)
             iden = qml.math.eye(2 ** len(pauli_word), like=theta)
             if qml.math.get_interface(theta) == "tensorflow":

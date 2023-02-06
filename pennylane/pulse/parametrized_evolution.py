@@ -61,8 +61,6 @@ class ParametrizedEvolution(Operation):
             perform intermediate steps if necessary. It is recommended to just provide a start and end time.
             Note that such absolute times only have meaning within an instance of
             ``ParametrizedEvolution`` and will not affect other gates.
-        time (str, optional): The name of the time-based parameter in the parametrized Hamiltonian.
-            Defaults to "t".
         do_queue (bool): determines if the scalar product operator will be queued. Default is True.
         id (str or None): id for the scalar product operator. Default is None.
 
@@ -78,11 +76,9 @@ class ParametrizedEvolution(Operation):
 
     .. warning::
 
-        The time argument ``t`` corresponds to the time window used to compute the scalar-valued
-        functions present in the :class:`ParametrizedHamiltonian` class. Consequently, executing
-        two ``ParametrizedEvolution`` gates using the same time window does not mean both gates
-        are executed simultaneously, but rather both gates evaluate their respective scalar-valued
-        functions using the same time window.
+        Executing two ``ParametrizedEvolution`` gates using the same time values does not mean both
+        gates are executed simultaneously, but rather both gates evaluate their respective
+        scalar-valued functions using the same time values.
 
     .. note::
 
@@ -95,10 +91,10 @@ class ParametrizedEvolution(Operation):
 
     >>> ops = [qml.PauliX(0), qml.PauliY(1), qml.PauliZ(2)]
     >>> coeffs = [lambda p, t: p for _ in range(3)]
-    >>> H1 = qml.ops.dot(coeffs, ops)  # time-independent parametrized hamiltonian
+    >>> H1 = qml.dot(coeffs, ops)  # time-independent parametrized Hamiltonian
     >>> ops = [qml.PauliZ(0), qml.PauliY(1), qml.PauliX(2)]
     >>> coeffs = [lambda p, t: p * jnp.sin(t) for _ in range(3)]
-    >>> H2 = qml.ops.dot(coeffs, ops) # time-dependent parametrized hamiltonian
+    >>> H2 = qml.dot(coeffs, ops) # time-dependent parametrized Hamiltonian
     >>> H1, H2
     (ParametrizedHamiltonian: terms=3, ParametrizedHamiltonian: terms=3)
 
@@ -157,13 +153,13 @@ class ParametrizedEvolution(Operation):
 
     _name = "ParametrizedEvolution"
     num_wires = AnyWires
-    # pylint: disable=too-many-arguments, super-init-not-called
+
+    # pylint: disable=too-many-arguments
     def __init__(
         self,
         H: ParametrizedHamiltonian,
         params: list = None,
         t: Union[float, List[float]] = None,
-        time="t",
         do_queue=True,
         id=None,
         **odeint_kwargs
@@ -177,18 +173,17 @@ class ParametrizedEvolution(Operation):
                 "All operators inside the parametrized hamiltonian must have a matrix defined."
             )
         self.H = H
-        self.time = time
         self.params = params
         self.odeint_kwargs = odeint_kwargs
         if t is None:
             self.t = None
         else:
-            self.t = jnp.array([0, t] if qml.math.size(t) == 1 else t, dtype=float)
+            self.t = jnp.array([0, t] if qml.math.ndim(t) == 0 else t, dtype=float)
         super().__init__(wires=H.wires, do_queue=do_queue, id=id)
 
     def __call__(self, params, t, **odeint_kwargs):
         self.params = params
-        self.t = jnp.array([0, t] if qml.math.size(t) == 1 else t, dtype=float)
+        self.t = jnp.array([0, t] if qml.math.ndim(t) == 0 else t, dtype=float)
         if odeint_kwargs:
             self.odeint_kwargs.update(odeint_kwargs)
         return self

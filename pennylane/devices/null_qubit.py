@@ -22,6 +22,7 @@ from pennylane import QubitDevice
 from pennylane import numpy as np
 from .._version import __version__
 
+
 # pylint: disable=unused-argument, no-self-use
 class NullQubit(QubitDevice):
     """Null qubit device for PennyLane. This device performs no operations involved in numerical calculations.

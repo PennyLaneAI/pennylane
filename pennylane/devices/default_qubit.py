@@ -247,7 +247,6 @@ class DefaultQubit(QubitDevice):
 
         # apply the circuit operations
         for i, operation in enumerate(operations):
-
             if i > 0 and isinstance(operation, (QubitStateVector, BasisState)):
                 raise DeviceError(
                     f"Operation {operation.name} cannot be used after other Operations have already been applied "
@@ -566,7 +565,6 @@ class DefaultQubit(QubitDevice):
                 # the interfaces, whereas the .coeff attribute will always be the same input dtype
                 # that the user provided.
                 for op, coeff in zip(observable.ops, observable.data):
-
                     # extract a scipy.sparse.coo_matrix representation of this Pauli word
                     coo = qml.operation.Tensor(op).sparse_matrix(wires=self.wires, format="coo")
                     Hmat = qml.math.cast(qml.math.convert_like(coo.data, self.state), self.C_DTYPE)
@@ -692,14 +690,6 @@ class DefaultQubit(QubitDevice):
         output_shape = [2] * self.num_wires
         if batch_size is not None:
             output_shape.insert(0, batch_size)
-
-        if not (state.shape in [(dim,), (batch_size, dim)]):
-            raise ValueError("State vector must have shape (2**wires,) or (batch_size, 2**wires).")
-
-        if not qml.math.is_abstract(state):
-            norm = qml.math.linalg.norm(state, axis=-1, ord=2)
-            if not qml.math.allclose(norm, 1.0, atol=tolerance):
-                raise ValueError("Sum of amplitudes-squared does not equal one.")
 
         if len(device_wires) == self.num_wires and sorted(device_wires) == device_wires:
             # Initialize the entire device state with the input state
@@ -901,7 +891,6 @@ class DefaultQubit(QubitDevice):
         self._pre_rotated_state = self._state
 
     def analytic_probability(self, wires=None):
-
         if self._state is None:
             return None
 
@@ -1007,7 +996,6 @@ class DefaultQubit(QubitDevice):
         stacked_state = self._stack([transposed_state for _ in range(n_snapshots)])
 
         for i in range(n_qubits):
-
             # trace out every qubit except the first
             first_qubit_state = self._einsum(
                 f"{ABC[device_qubits - i + 1]}{ABC[:device_qubits - i]},{ABC[device_qubits - i + 1]}{ABC[device_qubits - i]}{ABC[1:device_qubits - i]}"
