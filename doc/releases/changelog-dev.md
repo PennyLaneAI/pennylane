@@ -9,11 +9,11 @@
 * A new operation `SpecialUnitary` was added, providing access to an arbitrary
   unitary gate via a parametrization in the Pauli basis.
   [(#3650)](https://github.com/PennyLaneAI/pennylane/pull/3650)
- 
+
   The new operation takes a single argument, a one-dimensional `tensor_like`
   of length `4**num_wires-1`, where `num_wires` is the number of wires the unitary acts on.
 
-  The parameter `theta` refers to all Pauli words (except for the identity) in lexicographical 
+  The parameter `theta` refers to all Pauli words (except for the identity) in lexicographical
   order, which looks like the following for one and two qubits:
 
   ```pycon
@@ -369,7 +369,7 @@
 * The `create_initial_state` function is added to `devices/qubit` that returns an initial state for an execution.
   [(#3683)](https://github.com/PennyLaneAI/pennylane/pull/3683)
 
- * Added `qml.ops.ctrl_decomp_zyz` to compute the decomposition of a controlled single-qubit operation given
+* Added `qml.ops.ctrl_decomp_zyz` to compute the decomposition of a controlled single-qubit operation given
   a single-qubit operation and the control wires.
   [(#3681)](https://github.com/PennyLaneAI/pennylane/pull/3681)
 
@@ -573,6 +573,9 @@
 
 * Fixed a bug that made tapes/qnodes using `qml.Snapshot` incompatible with `qml.drawer.tape_mpl`.
   [(#3704)](https://github.com/PennyLaneAI/pennylane/pull/3704)
+
+* `Tensor._pauli_rep` is set to `None` during initialization. Add `Tensor.data` setter.
+  [(#3722)](https://github.com/PennyLaneAI/pennylane/pull/3722)
 
 <h3>Contributors</h3>
 
