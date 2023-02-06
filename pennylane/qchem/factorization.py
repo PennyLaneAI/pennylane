@@ -357,18 +357,18 @@ def chemist_transform(two_body_tensor, spatial_basis=True):
         :title: Theory
 
         The two-electron integral in physicists' notation :math:`(\langle \cdot \rangle)` is defined as:
-        
+
         .. math::
 
             \langle pq \vert rs \rangle = h_{pqrs} = \int \frac{\chi^*_{p}(x_1) \chi^*_{q}(x_2) \chi_{r}(x_1) \chi_{s}(x_2)}{|r_1 - r_2|} dx_1 dx_2,
 
         while in chemists' notation :math:`([ \cdot ])` it is written as:
-        
+
         .. math::
 
             [pq \vert rs] = V_{pqrs} = \int \frac{\chi^*_{p}(r_1) \chi^*_{q}(x_1) \chi_{r}(x_2) \chi_{s}(x_2)}{|r_1 - r_2|} dx_1 dx_2.
 
-        In the spin basis, this index reordering :math:`pqrs \rangle psrq` leads to formation of one-body terms :math:`h_{prrs}` that come out during 
+        In the spin basis, this index reordering :math:`pqrs \rangle psrq` leads to formation of one-body terms :math:`h_{prrs}` that come out during
         the coversion:
 
         .. math::
@@ -376,7 +376,7 @@ def chemist_transform(two_body_tensor, spatial_basis=True):
             :math:`h_{prrs}` = \int \frac{\chi^*_{p}(x_1) \chi^*_{r}(x_2) \chi_{r}(x_1) \chi_{s}(x_2)}{|x_1 - x_2|} dx_1 dx_2,
 
         where :math:`\chi_{r}(x)` will have same spin, i.e., :math:`\chi_{r}(x_i) = \phi(r_i)\alpha(\omega)` or :math:`\chi_{r}(x_i) = \phi(r_i)\beta(\omega)`.
-        
+
     """
 
     chemist_two_body_coeffs = np.swapaxes(two_body_tensor, 1, 3)

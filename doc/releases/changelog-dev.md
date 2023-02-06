@@ -241,6 +241,12 @@
 * A new function called `max_entropy` has been added to compute the maximum entropy of a quantum state.
   [(#3594)](https://github.com/PennyLaneAI/pennylane/pull/3594)
 
+* A new function called `chemist_tranform` has been added to perform conversion of two-particle terms between physicists' and chemists' notations.
+  [(#3714)](https://github.com/PennyLaneAI/pennylane/pull/3714)
+
+* A new function called `build_spin_tensors` has been added to perform efficient transformation of electrong integrals from spatial to spin basis.
+  [(#3714)](https://github.com/PennyLaneAI/pennylane/pull/3714)
+
 * A new template called `TwoLocalSwapNetwork` has been added that implements a canonical 2-complete linear (2-CCL) swap network
   described in [arXiv:1905.05118](https://arxiv.org/abs/1905.05118).
   [(#3447)](https://github.com/PennyLaneAI/pennylane/pull/3447)
@@ -419,6 +425,11 @@
 
 * `BasisState` now implements the `StatePrep` interface.
   [(#3693)](https://github.com/PennyLaneAI/pennylane/pull/3693)
+
+* `qml.qchem.basis_rotation` now accounts for spin, allowing it to perform Basis Rotation Groupings
+  for molecular hamiltonians.
+  [(#3714)](https://github.com/PennyLaneAI/pennylane/pull/3714)
+
 
 <h3>Breaking changes</h3>
 
