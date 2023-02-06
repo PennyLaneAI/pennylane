@@ -546,8 +546,8 @@ class TestSpecialUnitary:
         matches the lexicographical ordering of ``pauli_basis_strings``."""
         d = 4**n - 1
         words = pauli_basis_strings(n)
+        x = 0.2142
         for word, theta in zip(words, np.eye(d)):
-            x = 0.2142
             matrices = [
                 qml.SpecialUnitary(x * theta, list(range(n))).matrix(),
                 qml.SpecialUnitary.compute_matrix(x * theta, n),
@@ -584,7 +584,6 @@ class TestSpecialUnitary:
     @pytest.mark.parametrize("n, theta", n_and_theta)
     def test_decomposition_numpy(self, n, theta):
         """Test that SpecialUnitary falls back to QubitUnitary with NumPy inputs."""
-
         wires = list(range(n))
         decomp = qml.SpecialUnitary(theta, wires).decomposition()
 

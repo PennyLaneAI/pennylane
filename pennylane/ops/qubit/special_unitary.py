@@ -133,7 +133,7 @@ def _detach(array, interface):
         return jax.lax.stop_gradient(array)
     return qml.math.convert_like(qml.math.to_numpy(array), array)
 
-
+  
 class SpecialUnitary(Operation):
     r"""Gate from the group :math:`SU(N)` with :math:`N=2^n` for :math:`n` qubits.
 
@@ -195,9 +195,9 @@ class SpecialUnitary(Operation):
     The parameter ``theta`` refers to all Pauli words (except for the identity) in
     lexicographical order, which looks like the following for one and two qubits:
 
-    >>> qml.ops.qubit.matrix_ops.pauli_basis_strings(1) # 4**1-1 = 3 Pauli words
+    >>> qml.ops.qubit.special_unitary.pauli_basis_strings(1) # 4**1-1 = 3 Pauli words
     ['X', 'Y', 'Z']
-    >>> qml.ops.qubit.matrix_ops.pauli_basis_strings(2) # 4**2-1 = 15 Pauli words
+    >>> qml.ops.qubit.special_unitary.pauli_basis_strings(2) # 4**2-1 = 15 Pauli words
     ['IX', 'IY', 'IZ', 'XI', 'XX', 'XY', 'XZ', 'YI', 'YX', 'YY', 'YZ', 'ZI', 'ZX', 'ZY', 'ZZ']
 
     .. warning::

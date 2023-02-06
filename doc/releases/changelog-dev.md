@@ -17,9 +17,9 @@
   order, which looks like the following for one and two qubits:
 
   ```pycon
-  >>> qml.ops.qubit.matrix_ops.pauli_words(1) # 4**1-1 = 3 Pauli words
+  >>> qml.ops.qubit.special_unitary.pauli_basis_strings(1) # 4**1-1 = 3 Pauli words
   ['X', 'Y', 'Z']
-  >>> qml.ops.qubit.matrix_ops.pauli_words(2) # 4**2-1 = 15 Pauli words
+  >>> qml.ops.qubit.special_unitary.pauli_basis_strings(2) # 4**2-1 = 15 Pauli words
   ['IX', 'IY', 'IZ', 'XI', 'XX', 'XY', 'XZ', 'YI', 'YX', 'YY', 'YZ', 'ZI', 'ZX', 'ZY', 'ZZ'] 
   ```
   
@@ -44,8 +44,8 @@
   True
   ```
   
-  This operation can be differentiated with hardware-compatible methods like parameter shifts,
-  and it supports parameter broadcasting/batching.
+  This operation can be differentiated with hardware-compatible methods like parameter shifts
+  and it supports parameter broadcasting/batching, but not both at the same time.
 
 * Add `typing.TensorLike` type.
   [(#3675)](https://github.com/PennyLaneAI/pennylane/pull/3675)
@@ -88,9 +88,11 @@
 
 * A `ParametrizedHamiltonian` can be time-evolved by using `ParametrizedEvolution`.
   [(#3617)](https://github.com/PennyLaneAI/pennylane/pull/3617)
+  [(#3706)](https://github.com/PennyLaneAI/pennylane/pull/3706)
 
-* A new function called `qml.evolve` has been added that returns the evolution of an operator or a `ParametrizedHamiltonian`.
+* A new function called `qml.evolve` has been added that returns the evolution of an `Operator` or a `ParametrizedHamiltonian`.
   [(#3617)](https://github.com/PennyLaneAI/pennylane/pull/3617)
+  [(#3706)](https://github.com/PennyLaneAI/pennylane/pull/3706)
 
 * A new function `dot` has been added to compute the dot product between a vector and a list of operators. `qml.dot` will now target this new function.
   [(#3586)](https://github.com/PennyLaneAI/pennylane/pull/3586)
@@ -108,6 +110,28 @@
   [(#3586)](https://github.com/PennyLaneAI/pennylane/pull/3586)
 
 <h4>Always differentiable 📈</h4>
+
+* The Hadamard test gradient tranform is now available via `qml.gradients.hadamard_grad`.
+  [#3625](https://github.com/PennyLaneAI/pennylane/pull/3625)
+
+  `qml.gradients.hadamard_grad` is a hardware-compatible transform that calculates the
+  gradient of a quantum circuit using the Hadamard test. Note that the device requires an
+  auxiliary wire to calculate the gradient.
+
+  ```pycon
+  >>> dev = qml.device("default.qubit", wires=2)
+  >>> @qml.qnode(dev)
+  ... def circuit(params):
+  ...     qml.RX(params[0], wires=0)
+  ...     qml.RY(params[1], wires=0)
+  ...     qml.RX(params[2], wires=0)
+  ...     return qml.expval(qml.PauliZ(0))
+  >>> params = np.array([0.1, 0.2, 0.3], requires_grad=True)
+  >>> qml.gradients.hadamard_grad(circuit)(params)
+  (tensor([-0.3875172], requires_grad=True),
+   tensor([-0.18884787], requires_grad=True),
+   tensor([-0.38355704], requires_grad=True))
+  ```
 
 * The gradient transform `qml.gradients.spsa_grad` is now registered as a
   differentiation method for `QNode`s.
@@ -342,6 +366,13 @@
   to a state and returns a new state.
   [(#3637)](https://github.com/PennyLaneAI/pennylane/pull/3637)
 
+* The `create_initial_state` function is added to `devices/qubit` that returns an initial state for an execution.
+  [(#3683)](https://github.com/PennyLaneAI/pennylane/pull/3683)
+
+ * Added `qml.ops.ctrl_decomp_zyz` to compute the decomposition of a controlled single-qubit operation given
+  a single-qubit operation and the control wires.
+  [(#3681)](https://github.com/PennyLaneAI/pennylane/pull/3681)
+
 <h3>Improvements</h3>
 
 * `qml.purity` is added as a measurement process for purity
@@ -404,9 +435,6 @@
 * `Sum` and `Prod` operations now have broadcasted operands.
   [(#3611)](https://github.com/PennyLaneAI/pennylane/pull/3611)
 
-* `qml.dot` is now compatible with JAX-JIT.
-  [(#3636)](https://github.com/PennyLaneAI/pennylane/pull/3636)
-
 * All dunder methods now return `NotImplemented`, allowing the right dunder method (e.g. `__radd__`)
   of the other class to be called.
   [(#3631)](https://github.com/PennyLaneAI/pennylane/pull/3631)
@@ -435,6 +463,9 @@
 
 * `BasisState` now implements the `StatePrep` interface.
   [(#3693)](https://github.com/PennyLaneAI/pennylane/pull/3693)
+
+* `QubitStateVector` now implements the `StatePrep` interface.
+  [(#3685)](https://github.com/PennyLaneAI/pennylane/pull/3685)
 
 <h3>Breaking changes</h3>
 
@@ -487,6 +518,10 @@
 * `qml.op_sum` has been deprecated. Users should use `qml.sum` instead.
   [(#3686)](https://github.com/PennyLaneAI/pennylane/pull/3686)
 
+* The use of `Evolution` directly has been deprecated. Users should use `qml.evolve` instead.
+  This new function changes the sign of the given parameter.
+  [(#3706)](https://github.com/PennyLaneAI/pennylane/pull/3706)
+
 <h3>Documentation</h3>
 
 * Organizes the module for documentation for ``operation``.
@@ -535,6 +570,9 @@
 
 * Fixed typo in the example of IsingZZ gate decomposition
   [(#3676)](https://github.com/PennyLaneAI/pennylane/pull/3676)
+
+* Fixed a bug that made tapes/qnodes using `qml.Snapshot` incompatible with `qml.drawer.tape_mpl`.
+  [(#3704)](https://github.com/PennyLaneAI/pennylane/pull/3704)
 
 <h3>Contributors</h3>
 
