@@ -349,7 +349,6 @@ def cut_circuit(
     g = tape_to_graph(tape)
 
     if auto_cutter is True or callable(auto_cutter):
-
         cut_strategy = kwargs.pop("cut_strategy", None) or CutStrategy(
             max_free_wires=len(device_wires)
         )

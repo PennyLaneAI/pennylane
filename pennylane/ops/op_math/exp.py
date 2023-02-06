@@ -1,4 +1,4 @@
-# Copyright 2018-2022 Xanadu Quantum Technologies Inc.
+# Copyright 2018-2023 Xanadu Quantum Technologies Inc.
 
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -16,22 +16,23 @@ This submodule defines the symbolic operation that stands for an exponential of 
 """
 from copy import copy
 from warnings import warn
-from scipy.sparse.linalg import expm as sparse_expm
+
 import numpy as np
+from scipy.sparse.linalg import expm as sparse_expm
 
 import pennylane as qml
 from pennylane import math
 from pennylane.operation import (
     DecompositionUndefinedError,
-    expand_matrix,
-    OperatorPropertyUndefined,
     GeneratorUndefinedError,
+    Operation,
+    OperatorPropertyUndefined,
     Tensor,
+    expand_matrix,
 )
 from pennylane.wires import Wires
-from pennylane.operation import Operation
 
-from .symbolicop import SymbolicOp
+from .symbolicop import ScalarSymbolicOp
 
 
 def exp(op, coeff=1, id=None):
@@ -43,6 +44,25 @@ def exp(op, coeff=1, id=None):
 
     Returns:
        :class:`Exp`: A :class`~.operation.Operator` representing an operator exponential.
+
+    .. note::
+
+        This operator supports a batched base, a batched coefficient and a combination of both:
+
+        >>> op = qml.exp(qml.RX([1, 2, 3], wires=0), coeff=4)
+        >>> qml.matrix(op).shape
+        (3, 2, 2)
+        >>> op = qml.exp(qml.RX(1, wires=0), coeff=[1, 2, 3])
+        >>> qml.matrix(op).shape
+        (3, 2, 2)
+        >>> op = qml.exp(qml.RX([1, 2, 3], wires=0), coeff=[4, 5, 6])
+        >>> qml.matrix(op).shape
+        (3, 2, 2)
+
+        But it doesn't support batching of operators:
+
+        >>> op = qml.exp([qml.RX(1, wires=0), qml.RX(2, wires=0)], coeff=4)
+        AttributeError: 'list' object has no attribute 'batch_size'
 
     **Example**
 
@@ -85,7 +105,7 @@ def exp(op, coeff=1, id=None):
     return Exp(op, coeff, id=id)
 
 
-class Exp(SymbolicOp, Operation):
+class Exp(ScalarSymbolicOp, Operation):
     """A symbolic operator representating the exponential of a operator.
 
     Args:
@@ -132,10 +152,10 @@ class Exp(SymbolicOp, Operation):
     """
 
     control_wires = Wires([])
+    _name = "Exp"
 
     def __init__(self, base=None, coeff=1, do_queue=True, id=None):
-        super().__init__(base, do_queue=do_queue, id=id)
-        self._name = "Exp"
+        super().__init__(base, scalar=coeff, do_queue=do_queue, id=id)
         self._data = [[coeff], self.base.data]
         self.grad_recipe = [None]
 
@@ -174,7 +194,7 @@ class Exp(SymbolicOp, Operation):
     @property
     def coeff(self):
         """The numerical coefficient of the operator in the exponent."""
-        return self.data[0][0]
+        return self.scalar
 
     @property
     def num_params(self):
@@ -182,11 +202,11 @@ class Exp(SymbolicOp, Operation):
 
     @property
     def is_hermitian(self):
-        return self.base.is_hermitian and math.imag(self.coeff) == 0
+        return self.base.is_hermitian and math.allequal(math.imag(self.coeff), 0)
 
     @property
     def _queue_category(self):
-        if self.base.is_hermitian and math.real(self.coeff) == 0:
+        if self.base.is_hermitian and math.allequal(math.real(self.coeff), 0):
             return "_ops"
         return None
 
@@ -227,20 +247,23 @@ class Exp(SymbolicOp, Operation):
         return [qml.PauliRot(new_coeff, string_base, wires=self.wires)]
 
     def matrix(self, wire_order=None):
-
-        coeff_interface = math.get_interface(self.coeff)
-        if coeff_interface == "autograd" and math.requires_grad(self.coeff):
+        coeff_interface = math.get_interface(self.scalar)
+        if coeff_interface == "autograd" and math.requires_grad(self.scalar):
             # math.expm is not differentiable with autograd
             # So we try to do a differentiable construction if possible
             #
             # This won't catch situations when the base matrix is autograd,
             # but at least this provides as much trainablility as possible
             try:
+                eigvals = self.eigvals()
+                eigvals_mat = (
+                    math.stack(math.diag(e) for e in eigvals)
+                    if qml.math.ndim(self.scalar) > 0
+                    else math.diag(eigvals)
+                )
                 if len(self.diagonalizing_gates()) == 0:
-                    eigvals_mat = math.diag(self.eigvals())
                     return expand_matrix(eigvals_mat, wires=self.wires, wire_order=wire_order)
                 diagonalizing_mat = qml.matrix(self.diagonalizing_gates, wire_order=self.wires)()
-                eigvals_mat = math.diag(self.eigvals())
                 mat = diagonalizing_mat.conj().T @ eigvals_mat @ diagonalizing_mat
                 return expand_matrix(mat, wires=self.wires, wire_order=wire_order)
             except OperatorPropertyUndefined:
@@ -249,15 +272,11 @@ class Exp(SymbolicOp, Operation):
                     "Use a different interface if you need backpropagation.",
                     UserWarning,
                 )
-        base_mat = (
-            qml.matrix(self.base) if isinstance(self.base, qml.Hamiltonian) else self.base.matrix()
-        )
-        if coeff_interface == "torch":
-            # other wise get `RuntimeError: Can't call numpy() on Tensor that requires grad.`
-            base_mat = math.convert_like(base_mat, self.coeff)
-        mat = math.expm(self.coeff * base_mat)
+        return super().matrix(wire_order=wire_order)
 
-        return expand_matrix(mat, wires=self.wires, wire_order=wire_order)
+    @staticmethod
+    def _matrix(scalar, mat):
+        return math.expm(scalar * mat)
 
     # pylint: disable=arguments-differ
     def sparse_matrix(self, wire_order=None, format="csr"):
@@ -292,6 +311,9 @@ class Exp(SymbolicOp, Operation):
         """
         base_eigvals = math.convert_like(self.base.eigvals(), self.coeff)
         base_eigvals = math.cast_like(base_eigvals, self.coeff)
+        if qml.math.ndim(self.scalar) > 0:
+            # exp coeff is broadcasted
+            return qml.math.stack([qml.math.exp(c * base_eigvals) for c in self.coeff])
         return qml.math.exp(self.coeff * base_eigvals)
 
     def label(self, decimals=None, base_label=None, cache=None):
@@ -333,107 +355,3 @@ class Exp(SymbolicOp, Operation):
             f"generator. Consider using op.simplify() to simplify before finding the generator, or define the operator "
             f"in the form exp(ixG) through the Evolution class."
         )
-
-
-class Evolution(Exp):
-    r"""Create an exponential operator that defines a generator, of the form :math:`e^{ix\hat{G}}`
-
-    Args:
-        base (~.operation.Operator): The operator to be used as a generator, G.
-        param (float): The evolution parameter, x. This parameter is expected not to have
-            any complex component.
-
-    Returns:
-       :class:`Evolution`: A :class:`~.operation.Operator` representing an operator exponential of the form :math:`e^{ix\hat{G}}`,
-       where x is real.
-
-    **Usage Details**
-
-    In contrast to the general :class:`~.Exp` class, the ``Evolution`` operator :math:`e^{ix\hat{G}}` is constrained to have a single trainable
-    parameter, x. Any parameters contained in the base operator are not trainable. This allows the operator
-    to be differentiated with regard to the evolution parameter. Defining a mathematically identical operator
-    using the :class:`~.Exp` class will be incompatible with a variety of PennyLane functions that require only a single
-    trainable parameter.
-
-    **Example**
-    This symbolic operator can be used to make general rotation operators:
-
-    >>> theta = np.array(1.23)
-    >>> op = Evolution(qml.PauliX(0), -0.5 * theta)
-    >>> qml.math.allclose(op.matrix(), qml.RX(theta, wires=0).matrix())
-    True
-
-    Or to define a time evolution operator for a time-independent Hamiltonian:
-
-    >>> H = qml.Hamiltonian([1, 1], [qml.PauliY(0), qml.PauliX(1)])
-    >>> t = 10e-6
-    >>> U = Evolution(H, -1 * t)
-
-    If the base operator is Hermitian, then the gate can be used in a circuit,
-    though it may not be supported by the device and may not be differentiable.
-
-    >>> @qml.qnode(qml.device('default.qubit', wires=1))
-    ... def circuit(x):
-    ...     qml.ops.Evolution(qml.PauliX(0), -0.5 * x)
-    ...     return qml.expval(qml.PauliZ(0))
-    >>> print(qml.draw(circuit)(1.23))
-    0: ──Exp(-0.61j X)─┤  <Z>
-
-    """
-
-    def __init__(self, generator, param, do_queue=True, id=None):
-        super().__init__(generator, coeff=1j * param, do_queue=do_queue, id=id)
-        self._name = "Evolution"
-        self._data = [param]
-
-    @property
-    def param(self):
-        """A real coefficient with ``1j`` factored out."""
-        return self.data[0]
-
-    @property
-    def coeff(self):
-        return 1j * self.data[0]
-
-    @property
-    def num_params(self):
-        return 1
-
-    def label(self, decimals=None, base_label=None, cache=None):
-        param = (
-            self.data[0]
-            if decimals is None
-            else format(math.toarray(self.data[0]), f".{decimals}f")
-        )
-        return base_label or f"Exp({param}j {self.base.label(decimals=decimals, cache=cache)})"
-
-    def simplify(self):
-        new_base = self.base.simplify()
-        if isinstance(new_base, qml.ops.op_math.SProd):  # pylint: disable=no-member
-            return Evolution(new_base.base, self.param * new_base.scalar)
-        return Evolution(new_base, self.param)
-
-    def generator(self):
-        r"""Generator of an operator that is in single-parameter-form.
-
-        For example, for operator
-
-        .. math::
-
-            U(\phi) = e^{i\phi (0.5 Y + Z\otimes X)}
-
-        we get the generator
-
-        >>> U.generator()
-          (0.5) [Y0]
-        + (1.0) [Z0 X1]
-
-        """
-        if not self.base.is_hermitian:
-            warn(f"The base {self.base} may not be hermitian.")
-        if np.real(self.coeff):
-            raise GeneratorUndefinedError(
-                f"The operator coefficient {self.coeff} is not imaginary; the expected format is exp(ixG)."
-                f"The generator is not defined."
-            )
-        return self.base

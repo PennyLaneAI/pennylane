@@ -306,7 +306,6 @@ def _equal_hamiltonian(op1: Hamiltonian, op2: Observable, **kwargs):
 @_equal.register
 # pylint: disable=unused-argument
 def _equal_measurements(op1: MeasurementProcess, op2: MeasurementProcess, **kwargs):
-
     """Determine whether two MeasurementProcess objects are equal"""
 
     if op1.obs is not None and op2.obs is not None:

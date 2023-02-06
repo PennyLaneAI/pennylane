@@ -79,7 +79,7 @@ class TestHelperFunctions:
             (qml.CNOT(wires=(0, 2)), ["╭●", "│", "╰X", "─"]),
             (qml.Toffoli(wires=(0, 1, 3)), ["╭●", "├●", "│", "╰X"]),
             (qml.IsingXX(1.23, wires=(0, 2)), ["╭IsingXX", "│", "╰IsingXX", "─"]),
-            (qml.Snapshot(), ["─|S|", "─|S|", "─|S|", "─|S|"]),
+            (qml.Snapshot(), ["─|Snap|", "─|Snap|", "─|Snap|", "─|Snap|"]),
             (qml.Barrier(), ["─||", "─||", "─||", "─||"]),
             (qml.S(0) @ qml.T(0), ["─S@T", "─", "─", "─"]),
         ],
@@ -129,17 +129,17 @@ class TestLabeling:
         """Test wire labels with different kinds of objects."""
 
         split_str = tape_text(tape).split("\n")
-        assert split_str[0][0:6] == "    0:"
-        assert split_str[1][0:6] == "    a:"
-        assert split_str[2][0:6] == "1.234:"
+        assert split_str[0][:6] == "    0:"
+        assert split_str[1][:6] == "    a:"
+        assert split_str[2][:6] == "1.234:"
 
     def test_wire_order(self):
         """Test wire_order keyword changes order of the wires"""
 
         split_str = tape_text(tape, wire_order=[1.234, "a", 0, "b"]).split("\n")
-        assert split_str[2][0:6] == "    0:"
-        assert split_str[1][0:6] == "    a:"
-        assert split_str[0][0:6] == "1.234:"
+        assert split_str[2][:6] == "    0:"
+        assert split_str[1][:6] == "    a:"
+        assert split_str[0][:6] == "1.234:"
 
     def test_show_all_wires(self):
         """Test wire_order constains unused wires, show_all_wires
@@ -147,10 +147,10 @@ class TestLabeling:
 
         split_str = tape_text(tape, wire_order=["b"], show_all_wires=True).split("\n")
 
-        assert split_str[0][0:6] == "    b:"
-        assert split_str[1][0:6] == "    0:"
-        assert split_str[2][0:6] == "    a:"
-        assert split_str[3][0:6] == "1.234:"
+        assert split_str[0][:6] == "    b:"
+        assert split_str[1][:6] == "    0:"
+        assert split_str[2][:6] == "    a:"
+        assert split_str[3][:6] == "1.234:"
 
 
 class TestDecimals:
@@ -351,12 +351,11 @@ class TestLayering:
         assert tape_text(tape, wire_order=[0, 1, 2]) == expected
 
 
-with qml.queuing.AnnotatedQueue() as q_tape_matrices:
-    qml.QubitStateVector([1.0, 0.0], wires=(0, 1))
-    qml.QubitUnitary(np.eye(2), wires=0)
-    qml.expval(qml.Hermitian(np.eye(2), wires=0))
-
-tape_matrices = qml.tape.QuantumScript.from_queue(q_tape_matrices)
+tape_matrices = qml.tape.QuantumScript(
+    prep=[qml.QubitStateVector([1.0, 0.0, 0.0, 0.0], wires=(0, 1))],
+    ops=[qml.QubitUnitary(np.eye(2), wires=0)],
+    measurements=[qml.expval(qml.Hermitian(np.eye(2), wires=0))],
+)
 
 
 class TestShowMatrices:
@@ -378,7 +377,7 @@ class TestShowMatrices:
         expected = (
             "0: ─╭QubitStateVector(M0)──U(M1)─┤  <𝓗(M1)>\n"
             "1: ─╰QubitStateVector(M0)────────┤         \n"
-            "M0 = \n[1. 0.]\n"
+            "M0 = \n[1. 0. 0. 0.]\n"
             "M1 = \n[[1. 0.]\n [0. 1.]]"
         )
 
@@ -395,11 +394,11 @@ class TestShowMatrices:
             "1: ─╰QubitStateVector(M2)────────┤         \n"
             "M0 = \n[[1. 0.]\n [0. 1.]]\n"
             "M1 = \n[[-1. -0. -0.]\n [-0. -1. -0.]\n [-0. -0. -1.]]\n"
-            "M2 = \n[1. 0.]"
+            "M2 = \n[1. 0. 0. 0.]"
         )
 
         assert tape_text(tape_matrices, show_matrices=True, cache=cache) == expected
-        assert qml.math.allequal(cache["matrices"][2], [1.0, 0.0])
+        assert qml.math.allequal(cache["matrices"][2], [1.0, 0.0, 0.0, 0.0])
 
 
 # @pytest.mark.skip("Nested tapes are being deprecated")

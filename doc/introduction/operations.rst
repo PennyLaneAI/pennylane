@@ -253,6 +253,7 @@ Gates constructed from a matrix
     ~pennylane.QubitUnitary
     ~pennylane.ControlledQubitUnitary
     ~pennylane.DiagonalQubitUnitary
+    ~pennylane.SpecialUnitary
 
 :html:`</div>`
 

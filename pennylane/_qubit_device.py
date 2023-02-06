@@ -277,7 +277,6 @@ class QubitDevice(Device):
 
     @classmethod
     def capabilities(cls):
-
         capabilities = super().capabilities().copy()
         capabilities.update(
             model="qubit",
@@ -318,7 +317,6 @@ class QubitDevice(Device):
                 r = qml.math.squeeze(r)
 
             if counts_exist:
-
                 # This happens when at least one measurement type is Counts
                 for result_group in r:
                     if isinstance(result_group, list):
@@ -380,7 +378,6 @@ class QubitDevice(Device):
 
         # compute the required statistics
         if self._shot_vector is not None:
-
             results = self.shot_vec_statistics(circuit)
 
         else:
@@ -445,7 +442,6 @@ class QubitDevice(Device):
             results = self.statistics(circuit=circuit)
 
         if not circuit.is_sampled:
-
             if len(measurements) == 1:
                 if isinstance(measurements[0], StateMP):
                     # State: assumed to only be allowed if it's the only measurement
@@ -1711,7 +1707,6 @@ class QubitDevice(Device):
         return self._gather(prob, perm, axis=1 if batch_size is not None else 0)
 
     def expval(self, observable, shot_range=None, bin_size=None):
-
         if observable.name == "Projector":
             # branch specifically to handle the projector observable
             idx = int("".join(str(i) for i in observable.parameters[0]), 2)
@@ -1746,7 +1741,6 @@ class QubitDevice(Device):
         return np.squeeze(np.mean(samples, axis=axis))
 
     def var(self, observable, shot_range=None, bin_size=None):
-
         if observable.name == "Projector":
             # branch specifically to handle the projector observable
             idx = int("".join(str(i) for i in observable.parameters[0]), 2)
@@ -1897,7 +1891,6 @@ class QubitDevice(Device):
                 samples = sub_samples
 
         else:
-
             # Replace the basis state in the computational basis with the correct eigenvalue.
             # Extract only the columns of the basis samples required based on ``wires``.
             samples = sub_samples[..., np.array(device_wires)]  # Add np.array here for Jax support.
@@ -2047,7 +2040,6 @@ class QubitDevice(Device):
         param_number = len(tape.get_parameters(trainable_only=False, operations_only=True)) - 1
         trainable_param_number = len(trainable_params) - 1
         for op in expanded_ops:
-
             adj_op = qml.adjoint(op)
             ket = self._apply_operation(ket, adj_op)
 

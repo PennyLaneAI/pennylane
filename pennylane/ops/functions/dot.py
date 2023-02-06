@@ -85,7 +85,7 @@ def dot(coeffs: Sequence[float], ops: Sequence[Operator], pauli=False):
     if pauli:
         return _pauli_dot(coeffs, ops)
 
-    operands = [qml.s_prod(coeff, op) for coeff, op in zip(coeffs, ops)]
+    operands = [op if coeff == 1 else qml.s_prod(coeff, op) for coeff, op in zip(coeffs, ops)]
     return qml.sum(*operands) if len(operands) > 1 else operands[0]
 
 

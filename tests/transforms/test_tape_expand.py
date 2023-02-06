@@ -751,7 +751,6 @@ class TestCreateCustomDecompExpandFn:
         correct method under the hood and produces expected results."""
         res = []
         for i in range(2):
-
             custom_decomps = {"MultiRZ": qml.MultiRZ.compute_decomposition}
             dev = qml.device("lightning.qubit", wires=2, custom_decomps=custom_decomps)
 

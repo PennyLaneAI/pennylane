@@ -60,7 +60,6 @@ def _grad_method(tape, idx):
     best = []
 
     for m in tape.measurements:
-
         if isinstance(m, ProbabilityMP) or (m.obs.ev_order not in (1, 2)):
             # Higher-order observables (including probability) only support finite differences.
             best.append("F")
@@ -85,7 +84,6 @@ def _grad_method(tape, idx):
             best_method = "F"
 
         elif m.obs.ev_order == 2:
-
             if isinstance(m, ExpectationMP):
                 # If the observable is second-order, we must use the second-order
                 # CV parameter shift rule
@@ -435,7 +433,6 @@ def second_order_param_shift(tape, dev_wires, argnum=None, shifts=None, gradient
         iterator = enumerate(zip(shapes, gradient_values, obs_indices))
 
         for i, (shape, grad_value, obs_ind) in iterator:
-
             if shape == 0:
                 # parameter has zero gradient
                 isscalar = qml.math.ndim(results[0]) == 0

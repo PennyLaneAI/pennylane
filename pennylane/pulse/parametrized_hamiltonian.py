@@ -194,7 +194,6 @@ class ParametrizedHamiltonian:
     """
 
     def __init__(self, coeffs, observables):
-
         if len(coeffs) != len(observables):
             raise ValueError(
                 "Could not create valid Hamiltonian; "
@@ -232,8 +231,11 @@ class ParametrizedHamiltonian:
 
     def H_fixed(self):
         """The fixed term(s) of the ``ParametrizedHamiltonian``. Returns a ``Sum`` operator of ``SProd``
-        operators (or a single ``SProd`` operator in the event that there is only one term in ``H_fixed``)."""
-        return qml.dot(self.coeffs_fixed, self.ops_fixed) if self.coeffs_fixed else 0
+        operators (or a single ``SProd`` operator in the event that there is only one term in ``H_fixed``).
+        """
+        if self.coeffs_fixed:
+            return sum(qml.s_prod(c, o) for c, o in zip(self.coeffs_fixed, self.ops_fixed))
+        return 0
 
     def H_parametrized(self, params, t):
         """The parametrized terms of the Hamiltonian for the specified parameters and time.
@@ -246,7 +248,7 @@ class ParametrizedHamiltonian:
         ``~SProd`` operator in the event that there is only one term in ``H_parametrized``)."""
 
         coeffs = [f(param, t) for f, param in zip(self.coeffs_parametrized, params)]
-        return qml.dot(coeffs, self.ops_parametrized) if coeffs else 0
+        return sum(qml.s_prod(c, o) for c, o in zip(coeffs, self.ops_parametrized)) if coeffs else 0
 
     @property
     def coeffs(self):

@@ -18,9 +18,8 @@ Unit tests for the convenience functions used in pulsed programming.
 import inspect
 from functools import partial
 
-import pytest
-
 import numpy as np
+import pytest
 
 import pennylane as qml
 from pennylane.pulse.parametrized_hamiltonian import ParametrizedHamiltonian
@@ -29,10 +28,15 @@ from pennylane.pulse.parametrized_hamiltonian import ParametrizedHamiltonian
 # error expected to be raised locally - test will pass in CI, where it will be run without jax installed
 def test_error_raised_if_jax_not_installed():
     """Test that an error is raised if a convenience function is called without jax installed"""
-    with pytest.raises(ImportError, match="Module jax is required"):
-        qml.pulse.pwc(10)
-    with pytest.raises(ImportError, match="Module jax is required"):
-        qml.pulse.pwc_from_function(10, 10)
+    try:
+        import jax  # pylint: disable=unused-import
+
+        pytest.skip()
+    except ImportError:
+        with pytest.raises(ImportError, match="Module jax is required"):
+            qml.pulse.pwc(10)
+        with pytest.raises(ImportError, match="Module jax is required"):
+            qml.pulse.pwc_from_function(10, 10)
 
 
 @pytest.mark.jax
@@ -429,7 +433,8 @@ class TestIntegration:
 
     def test_qnode_pwc_from_function_jit(self):
         """Test that the evolution of a ParametrizedHamiltonian defined with a function decorated by pwc_from_function
-        can be executed on a QNode using jax-jit, and the results don't differ from an execution without jitting."""
+        can be executed on a QNode using jax-jit, and the results don't differ from an execution without jitting.
+        """
         import jax
 
         @qml.pulse.pwc_from_function((2, 5), 20)

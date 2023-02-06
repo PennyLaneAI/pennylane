@@ -231,7 +231,6 @@ class TestGroupObservables:
 
     @pytest.mark.parametrize("observables,qwc_partitions_sol", qwc_tuples)
     def test_qwc_partitioning(self, observables, qwc_partitions_sol):
-
         qwc_partitions = group_observables(observables, grouping_type="qwc")
 
         # assert the correct number of partitions:
@@ -250,7 +249,6 @@ class TestGroupObservables:
 
     @pytest.mark.parametrize("observables,com_partitions_sol", com_tuples)
     def test_commuting_partitioning(self, observables, com_partitions_sol):
-
         com_partitions = group_observables(observables, grouping_type="commuting")
 
         # assert the correct number of partitions:
@@ -269,7 +267,6 @@ class TestGroupObservables:
 
     @pytest.mark.parametrize("observables,anticom_partitions_sol", anticom_tuples)
     def test_anticommuting_partitioning(self, observables, anticom_partitions_sol):
-
         anticom_partitions = group_observables(observables, grouping_type="anticommuting")
 
         # assert the correct number of partitions:

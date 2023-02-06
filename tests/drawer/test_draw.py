@@ -158,7 +158,7 @@ class TestMatrixParameters:
 
         @qml.qnode(qml.device("default.qubit", wires=2))
         def matrices_circuit():
-            qml.QubitStateVector([1.0, 0.0], wires=(0, 1))
+            qml.QubitStateVector([1.0, 0.0, 0.0, 0.0], wires=(0, 1))
             qml.QubitUnitary(np.eye(2), wires=0)
             return qml.expval(qml.Hermitian(np.eye(2), wires=0))
 
@@ -172,7 +172,7 @@ class TestMatrixParameters:
         expected2 = (
             "0: ─╭QubitStateVector(M0)──U(M1)─┤  <𝓗(M1)>\n"
             "1: ─╰QubitStateVector(M0)────────┤         \n"
-            "M0 = \n[1. 0.]\n"
+            "M0 = \n[1. 0. 0. 0.]\n"
             "M1 = \n[[1. 0.]\n [0. 1.]]"
         )
 
@@ -184,7 +184,7 @@ class TestMatrixParameters:
         @qml.gradients.param_shift(shifts=[(0.2,)])
         @qml.qnode(qml.device("default.qubit", wires=2))
         def matrices_circuit(x):
-            qml.QubitStateVector([1.0, 0.0], wires=(0, 1))
+            qml.QubitStateVector([1.0, 0.0, 0.0, 0.0], wires=(0, 1))
             qml.QubitUnitary(np.eye(2, requires_grad=False), wires=0)
             qml.RX(x, wires=1)
             return qml.expval(qml.Hermitian(np.eye(2, requires_grad=False), wires=1))
@@ -203,7 +203,7 @@ class TestMatrixParameters:
             "1: ─╰QubitStateVector(M0)──RX(1.20)─┤  <𝓗(M1)>\n\n"
             "0: ─╭QubitStateVector(M0)──U(M1)────┤         \n"
             "1: ─╰QubitStateVector(M0)──RX(0.80)─┤  <𝓗(M1)>\n\n"
-            "M0 = \n[1.0, 0.0]\n"
+            "M0 = \n[1.0, 0.0, 0.0, 0.0]\n"
             "M1 = \n[[1. 0.]\n [0. 1.]]"
         )
         assert draw(matrices_circuit, show_matrices=True)(np.array(1.0, requires_grad=True))
