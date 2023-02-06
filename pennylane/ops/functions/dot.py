@@ -82,9 +82,9 @@ def dot(coeffs: Sequence[float], ops: Sequence[Operator], pauli=False):
 
     if coeffs[0] != 1 and [coeffs[0]] * len(coeffs) == coeffs:
         # Coefficients have the same value (different to 1)
-        return qml.s_prod(coeffs[0], ops[0] if len(ops) == 1 else sum(ops))
+        return qml.s_prod(coeffs[0], ops[0] if len(ops) == 1 else qml.sum(*ops))
 
-    abs_coeffs = qml.math.abs(coeffs)
+    abs_coeffs = list(qml.math.abs(coeffs))
     if abs_coeffs[0] != 1 and [abs_coeffs[0]] * len(abs_coeffs) == abs_coeffs:
         # Coefficients have the same absolute value (different to 1)
         gcd = abs(coeffs[0])
