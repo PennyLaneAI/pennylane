@@ -106,18 +106,17 @@ def _generator_prefactor(gen, op):
         obs = gen.base
         prefactor = gen.scalar
     elif isinstance(gen, Sum):
-        if all(isinstance(o, SProd) for o in gen):
-            scalars = [o.scalar for o in gen]
-            abs_scalars = list(qml.math.abs(scalars))
-            if qml.math.allequal(scalars[0], scalars):
-                # case where the Sum coefficients are all the same
-                obs = Sum(*[o.base for o in gen])
-                prefactor = gen[0].scalar
-            elif qml.math.allequal(abs_scalars[0], abs_scalars):
-                # absolute value of coefficients is the same
-                prefactor = abs_scalars[0]
-                coeffs = [s / prefactor for s in scalars]
-                obs = qml.dot(coeffs, gen.operands)
+        scalars = [o.scalar if isinstance(o, SProd) else 1 for o in gen]
+        abs_scalars = list(qml.math.abs(scalars))
+        if qml.math.allequal(scalars[0], scalars):
+            # case where the Sum coefficients are all the same
+            obs = Sum(*[o.base for o in gen])
+            prefactor = gen[0].scalar
+        elif qml.math.allequal(abs_scalars[0], abs_scalars):
+            # absolute value of coefficients is the same
+            prefactor = abs_scalars[0]
+            coeffs = [s / prefactor for s in scalars]
+            obs = qml.dot(coeffs, gen.operands)
 
     if op.inverse:
         prefactor *= -1.0
