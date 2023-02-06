@@ -230,7 +230,7 @@ class Exp(ScalarSymbolicOp, Operation):
             return "_ops"
         return None
 
-    # pylint: disable=invalid-overridden-method
+    # pylint: disable=invalid-overridden-method, arguments-renamed
     @property
     def has_decomposition(self):
         # TODO: Support nested sums in method
