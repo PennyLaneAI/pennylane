@@ -451,7 +451,7 @@ def _execute_new(
                 from .tensorflow_autograph import execute as _execute  # pragma: no cover
 
                 # TODO: Remove when old interface is deprecated
-                _mode = "forward" if grad_on_execution else "backward"
+                _mode = "forward" if _grad_on_execution else "backward"
 
                 _execute = partial(_execute, mode=_mode)
 
