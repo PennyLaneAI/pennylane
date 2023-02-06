@@ -17,6 +17,7 @@
 import pytest
 
 import pennylane as qml
+from pennylane.operation import Operation
 from pennylane.devices.qubit.preprocess import (
     _stopping_condition,
     _supports_observable,
@@ -25,8 +26,20 @@ from pennylane.devices.qubit.preprocess import (
     batch_transform,
     preprocess,
 )
+from pennylane.measurements import ExpectationMP, ProbabilityMP
 from pennylane.tape import QuantumScript
 from pennylane import DeviceError
+
+
+# pylint: disable=missing-docstring
+class NoMatOp(Operation):
+    num_wires = 1
+
+    def has_matrix(self):
+        return False
+
+    def decomposition(self):
+        return [qml.PauliX(self.wires), qml.PauliY(self.wires)]
 
 
 class TestPreprocess:
@@ -53,51 +66,64 @@ class TestPreprocess:
     )
     def test_supports_observable(self, obs, expected):
         """Test that _supports_observable works correctly"""
-        dev = qml.device("default.qubit", wires=2)
-        res = _supports_observable(dev, obs)
+        res = _supports_observable(obs)
         assert res == expected
 
-    @pytest.mark.parametrize(
-        "tape, err_msg",
-        [
-            (
-                QuantumScript([qml.measurements.MidMeasureMP(wires=qml.wires.Wires([0]))]),
-                "Mid-circuit measurements are not natively supported on device default.qubit.",
-            ),
-            (QuantumScript(ops=[qml.TShift(0)]), "Gate TShift not supported on device"),
-            (
-                QuantumScript(
-                    measurements=[
-                        qml.expval(qml.GellMann(wires=0, index=1) @ qml.GellMann(wires=1, index=2))
-                    ]
-                ),
-                "Observable GellMann not supported on device",
-            ),
-            (
-                QuantumScript(measurements=[qml.expval(qml.GellMann(wires=0, index=1))]),
-                "Observable GellMann not supported on device",
-            ),
-        ],
-    )
-    def test_check_validity_fails(self, tape, err_msg):
-        """Test that check_validity throws the appropriate error when expected"""
-        dev = qml.device("default.qubit", wires=2)
-        with pytest.raises(DeviceError, match=err_msg):
-            check_validity(dev, tape)
+    def test_check_validity_invalid_op(self):
+        """Test that check_validity throws an error when an operation is invalid."""
+        tape = QuantumScript(ops=[qml.TShift(0)], measurements=[qml.expval(qml.Hadamard(0))])
+        with pytest.raises(DeviceError, match="Gate TShift not supported on Python Device"):
+            check_validity(tape)
+
+    def test_check_validity_invalid_observable(self):
+        """Test that check_validity throws an error when an observable is invalid."""
+        tape = QuantumScript(
+            ops=[qml.PauliX(0)], measurements=[qml.expval(qml.GellMann(wires=0, index=1))]
+        )
+        with pytest.raises(DeviceError, match="Observable GellMann not supported on Python Device"):
+            check_validity(tape)
+
+    def test_check_validity_invalid_tensor_observable(self):
+        """Test that check_validity throws an error when a tensor includes invalid obserables"""
+        tape = QuantumScript(
+            ops=[qml.PauliX(0), qml.PauliY(1)],
+            measurements=[
+                qml.expval(qml.GellMann(wires=0, index=1) @ qml.GellMann(wires=1, index=2))
+            ],
+        )
+        with pytest.raises(DeviceError, match="Observable GellMann not supported on Python Device"):
+            check_validity(tape)
 
     def test_check_validity_passes(self):
         """Test that check_validity doesn't throw any errors for a valid circuit"""
-        dev = qml.device("default.qubit", wires=1)
         tape = QuantumScript(
             ops=[qml.PauliX(0), qml.RZ(0.123, wires=0)], measurements=[qml.expval(qml.Hadamard(0))]
         )
-        check_validity(dev, tape)
+        check_validity(tape)
 
     def test_batch_transform(self):
         """Test that batch_transform works correctly"""
 
-    def test_expand_fn(self):
-        """Test that expand_fn works correctly"""
+    def test_expand_fn_expand_unsupported_op(self):
+        """Test that expand_fn expands the tape when unsupported operators are present"""
+        ops = [qml.Hadamard(0), NoMatOp(1), qml.RZ(0.123, wires=1)]
+        measurements = [qml.expval(qml.PauliZ(0)), qml.probs()]
+        tape = QuantumScript(ops=ops, measurements=measurements)
+
+        expanded_tape = expand_fn(tape)
+        expected = [qml.Hadamard(0), qml.PauliX(1), qml.PauliY(1), qml.RZ(0.123, wires=1)]
+
+        for expanded_op, expected_op in zip(expanded_tape.operations, expected):
+            assert qml.equal(expanded_op, expected_op)
+
+        mps = [ExpectationMP, ProbabilityMP]
+        for meas, exp_meas, mp in zip(expanded_tape.measurements, measurements, mps):
+            assert qml.equal(meas.obs, exp_meas.obs)
+            assert isinstance(meas, mp)
+
+    def test_expand_fn_defer_measurement(self):
+        """Test that expand_fn defers mid-circuit measurements."""
+        # ops = [qml.Hadamard(0), qml.measure(1)]
 
     def test_preprocess(self):
         """Test that preprocess works correctly"""
