@@ -241,10 +241,10 @@
 * A new function called `max_entropy` has been added to compute the maximum entropy of a quantum state.
   [(#3594)](https://github.com/PennyLaneAI/pennylane/pull/3594)
 
-* A new function called `chemist_tranform` has been added to perform conversion of two-particle terms between physicists' and chemists' notations.
+* A new function called `chemist_tranform` has been added to help perform conversion of two-electron integrals from physicists' to chemists' notations.
   [(#3714)](https://github.com/PennyLaneAI/pennylane/pull/3714)
 
-* A new function called `build_spin_tensors` has been added to perform efficient transformation of electrong integrals from spatial to spin basis.
+* A new function called `build_spin_tensors` has been added to perform efficient transformation of electron integrals from spatial to spin basis.
   [(#3714)](https://github.com/PennyLaneAI/pennylane/pull/3714)
 
 * A new template called `TwoLocalSwapNetwork` has been added that implements a canonical 2-complete linear (2-CCL) swap network
