@@ -466,6 +466,10 @@
 * `QubitStateVector` now implements the `StatePrep` interface.
   [(#3685)](https://github.com/PennyLaneAI/pennylane/pull/3685)
 
+* `Controlled` can now decompose single qubit target operations more effectively using the ZYZ
+  decomposition.
+  [(#3726)](https://github.com/PennyLaneAI/pennylane/pull/3726)
+
 <h3>Breaking changes</h3>
 
 * The tape method `get_operation` can also now return the operation index in the tape, and it can be
