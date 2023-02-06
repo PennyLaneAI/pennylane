@@ -131,6 +131,7 @@ separately_tested_ops = [
     "QubitUnitary",
     "ControlledQubitUnitary",
     "DiagonalQubitUnitary",
+    "SpecialUnitary",
     "PauliRot",
     "MultiRZ",
     "QubitStateVector",
@@ -305,6 +306,21 @@ class TestSupportsBroadcasting:
         mat1 = op.matrix()
         mat2 = qml.DiagonalQubitUnitary.compute_matrix(diag)
         single_mats = [qml.DiagonalQubitUnitary(d, wires=wires).matrix() for d in diag]
+
+        assert qml.math.allclose(mat1, single_mats)
+        assert qml.math.allclose(mat2, single_mats)
+
+    def test_special_unitary(self):
+        """Test that SpecialUnitary, which is marked as supporting parameter broadcasting,
+        actually does support broadcasting."""
+        theta = np.array([[0.2, -0.1, 0.2], [0, 1, 0], [0.4, 0.2, 0.9], [0, 0, 0]])
+        wires = ["a"]
+
+        op = qml.SpecialUnitary(theta, wires=wires)
+
+        mat1 = op.matrix()
+        mat2 = qml.SpecialUnitary.compute_matrix(theta, 1)
+        single_mats = [qml.SpecialUnitary(t, wires=wires).matrix() for t in theta]
 
         assert qml.math.allclose(mat1, single_mats)
         assert qml.math.allclose(mat2, single_mats)
