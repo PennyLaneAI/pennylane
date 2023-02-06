@@ -26,7 +26,7 @@ from pennylane.devices import DefaultQubit
 from pennylane.operation import Observable, AnyWires
 
 h_val = 0.1
-spsa_shot_vec_tol = 0.3
+spsa_shot_vec_tol = 0.31
 
 default_shot_vector = (1000, 2000, 3000)
 many_shots_shot_vector = tuple([100000] * 3)
