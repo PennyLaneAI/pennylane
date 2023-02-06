@@ -132,12 +132,7 @@ class TestJaxExecuteUnitTests:
                 qml.expval(qml.PauliZ(0))
 
             tape = qml.tape.QuantumScript.from_queue(q)
-            return execute(
-                [tape],
-                device,
-                gradient_fn=param_shift,
-                interface="None",
-            )[0]
+            return execute([tape], device, gradient_fn=param_shift, interface="None")[0]
 
         with pytest.raises(ValueError, match="Unknown interface"):
             cost(a, device=dev)
