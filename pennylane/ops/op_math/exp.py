@@ -294,8 +294,6 @@ class Exp(ScalarSymbolicOp, Operation):
 
         if isinstance(base, SProd):
             return self._recursive_decomposition(base.base, base.scalar * coeff)
-        if isinstance(base, Hamiltonian) and len(base.ops) == 1:
-            return self._recursive_decomposition(base.ops[0], base.coeffs[0] * coeff)
 
         for op_class in self._ops_with_generator:
             # Check if the exponentiated operator is a generator of another operator

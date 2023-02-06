@@ -375,6 +375,11 @@ class TestMatrix:
 class TestDecomposition:
     """Test the decomposition of the `Exp` gate."""
 
+    def test_sprod_decomposition(self):
+        """Test that the exp of an SProd has a decomposition."""
+        op = Exp(qml.s_prod(3, qml.PauliX(0)), 1j)
+        assert op.has_decomposition
+
     @pytest.mark.parametrize("coeff", (1, 1 + 0.5j))
     def test_non_imag_no_decomposition(self, coeff):
         """Tests that the decomposition doesn't exist if the coefficient has a real component."""
@@ -497,6 +502,14 @@ class TestDecomposition:
             target = [expected_gate.parameters, expected_gate.wires]
 
             assert prep == target
+
+    def test_trotter_decomposition_raises_error(self):
+        """Test that the trotter decomposition raises an error when no ``num_steps`` is specified."""
+        op = qml.evolve(qml.sum(qml.PauliX(0), qml.PauliY(1)))
+        with pytest.raises(
+            ValueError, match="The number of steps is required to calculate the Suzuki-Trotter"
+        ):
+            op.decomposition()
 
     @pytest.mark.parametrize(
         "coeff, hamiltonian",
