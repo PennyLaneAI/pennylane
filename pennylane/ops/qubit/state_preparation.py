@@ -17,7 +17,7 @@ with preparing a certain state on the device.
 """
 # pylint:disable=abstract-method,arguments-differ,protected-access,no-member
 from pennylane import numpy as np
-from pennylane.math import convert_like
+from pennylane import math
 from pennylane.operation import AnyWires, Operation, StatePrep
 from pennylane.templates.state_preparations import BasisStatePreparation, MottonenStatePreparation
 from pennylane.wires import Wires, WireError
@@ -92,24 +92,25 @@ class BasisState(StatePrep):
         if any(i not in [0, 1] for i in prep_vals):
             raise ValueError("BasisState parameter must consist of 0 or 1 integers.")
 
+        if (num_wires := len(self.wires)) != len(prep_vals):
+            raise ValueError("BasisState parameter and wires must be of equal length.")
+
         if wire_order is None:
-            num_wires = len(self.wires)
             indices = prep_vals
         else:
-            new_wires = Wires(wire_order)
-            if not new_wires.contains_wires(self.wires):
+            if not Wires(wire_order).contains_wires(self.wires):
                 raise WireError("Custom wire_order must contain all BasisState wires")
-            num_wires = len(new_wires)
+            num_wires = len(wire_order)
             indices = [0] * num_wires
             for base_wire_label, value in zip(self.wires, prep_vals):
-                indices[new_wires.index(base_wire_label)] = value
+                indices[wire_order.index(base_wire_label)] = value
 
         ket = np.zeros((2,) * num_wires)
         ket[tuple(indices)] = 1
-        return convert_like(ket, prep_vals)
+        return math.convert_like(ket, prep_vals)
 
 
-class QubitStateVector(Operation):
+class QubitStateVector(StatePrep):
     r"""QubitStateVector(state, wires)
     Prepare subsystems using the given ket vector in the computational basis.
 
@@ -147,10 +148,20 @@ class QubitStateVector(Operation):
     ndim_params = (1,)
     """int: Number of dimensions per trainable parameter of the operator."""
 
-    grad_method = None
+    def __init__(self, state, wires, do_queue=True, id=None):
+        super().__init__(state, wires=wires, do_queue=do_queue, id=id)
+        state = self.parameters[0]
 
-    # This is a temporary attribute to fix the operator queuing behaviour
-    _queue_category = "_prep"
+        if len(state.shape) == 1:
+            state = math.reshape(state, (1, state.shape[0]))
+        if state.shape[1] != 2 ** len(self.wires):
+            raise ValueError("State vector must have shape (2**wires,) or (batch_size, 2**wires).")
+
+        param = math.cast(state, np.complex128)
+        if not math.is_abstract(param):
+            norm = math.linalg.norm(param, axis=-1, ord=2)
+            if not math.allclose(norm, 1.0, atol=1e-10):
+                raise ValueError("Sum of amplitudes-squared does not equal one.")
 
     @staticmethod
     def compute_decomposition(state, wires):
@@ -175,6 +186,34 @@ class QubitStateVector(Operation):
 
         """
         return [MottonenStatePreparation(state, wires)]
+
+    def state_vector(self, wire_order=None):
+        num_op_wires = len(self.wires)
+        op_vector = math.reshape(self.parameters[0], (2,) * num_op_wires)
+
+        if wire_order is None or Wires(wire_order) == self.wires:
+            return op_vector
+
+        if not Wires(wire_order).contains_wires(self.wires):
+            raise WireError("Custom wire_order must contain all QubitStateVector wires")
+
+        num_total_wires = len(wire_order)
+        indices = tuple([slice(None)] * num_op_wires + [0] * (num_total_wires - num_op_wires))
+        ket = np.zeros((2,) * num_total_wires, dtype=np.complex128)
+        ket[indices] = op_vector
+
+        # unless wire_order is [*self.wires, *rest_of_wire_order], need to rearrange
+        if (op_wires := list(self.wires)) != wire_order[:num_op_wires]:
+            new_wires = set(wire_order) - set(op_wires)
+            new_order = op_wires + list(new_wires)
+            for i, wire in enumerate(wire_order):
+                # after each loop iteration, the i'th axis will represent the correct wire
+                i_wire_pos = new_order.index(wire)
+                if i_wire_pos != i:
+                    ket = np.swapaxes(ket, i, i_wire_pos)
+                    new_order[i], new_order[i_wire_pos] = new_order[i_wire_pos], new_order[i]
+
+        return math.convert_like(ket, op_vector)
 
 
 class QubitDensityMatrix(Operation):
