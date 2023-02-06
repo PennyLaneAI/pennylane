@@ -114,9 +114,9 @@ class TestJaxExecuteUnitTests:
         for args in spy.call_args_list:
             assert args[1]["shifts"] == [(np.pi / 4,)] * 2
 
-    def test_incorrect_mode(self):
+    def test_incorrect_gradients_on_execution(self):
         """Test that an error is raised if an gradient transform
-        is used with mode=forward"""
+        is used with grad_on_execution=True"""
         a = jax.numpy.array([0.1, 0.2])
 
         dev = qml.device("default.qubit", wires=1)
@@ -138,7 +138,7 @@ class TestJaxExecuteUnitTests:
             )[0]
 
         with pytest.raises(
-            ValueError, match="Gradient transforms cannot be used with mode='forward'"
+            ValueError, match="Gradient transforms cannot be used with grad_on_execution=True"
         ):
             res = jax.grad(cost)(a, device=dev)
 
@@ -166,8 +166,8 @@ class TestJaxExecuteUnitTests:
         with pytest.raises(ValueError, match="Unknown interface"):
             cost(a, device=dev)
 
-    def test_forward_mode(self, mocker):
-        """Test that forward mode uses the `device.execute_and_gradients` pathway"""
+    def test_grad_on_execution(self, mocker):
+        """Test that grad on execution uses the `device.execute_and_gradients` pathway"""
         dev = qml.device("default.qubit", wires=1)
         spy = mocker.spy(dev, "execute_and_gradients")
 
@@ -197,8 +197,8 @@ class TestJaxExecuteUnitTests:
         assert dev.num_executions == 1
         spy.assert_called()
 
-    def test_backward_mode(self, mocker):
-        """Test that backward mode uses the `device.batch_execute` and `device.gradients` pathway"""
+    def test_no_gradients_on_execution(self, mocker):
+        """Test that no grad on execution uses the `device.batch_execute` and `device.gradients` pathway"""
         dev = qml.device("default.qubit", wires=1)
         spy_execute = mocker.spy(qml.devices.DefaultQubit, "batch_execute")
         spy_gradients = mocker.spy(qml.devices.DefaultQubit, "gradients")

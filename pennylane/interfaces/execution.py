@@ -232,7 +232,7 @@ def _execute_new(
     device,
     gradient_fn: Callable = None,
     interface="autograd",
-    mode="best",
+    grad_on_execution="best",
     gradient_kwargs=None,
     cache=True,
     cachesize=10000,
@@ -256,8 +256,7 @@ def _execute_new(
         interface (str): The interface that will be used for classical autodifferentiation.
             This affects the types of parameters that can exist on the input tapes.
             Available options include ``autograd``, ``torch``, ``tf``, ``jax`` and ``auto``.
-        mode (str): Whether the gradients should be computed on the forward
-            pass (``forward``) or the backward pass (``backward``). Only applies
+        grad_on_execution (bool): Whether the gradients should be computed on the execution or not. Only applies
             if the device is queried for the gradient; gradient transform
             functions available in ``qml.gradients`` are only supported on the backward
             pass.
@@ -391,7 +390,8 @@ def _execute_new(
 
     # the default execution function is batch_execute
     execute_fn = qml.interfaces.cache_execute(batch_execute, cache, expand_fn=expand_fn)
-    _mode = "backward"
+
+    _grad_on_execution = False
 
     if gradient_fn == "device":
         # gradient function is a device method
@@ -404,16 +404,19 @@ def _execute_new(
             tapes[i] = expand_fn(tape)
 
         if gradient_kwargs.get("method", "") == "adjoint_jacobian":
+
+            mode = "forward" if grad_on_execution else "backward"
             tapes = _adjoint_jacobian_expansion(tapes, mode, interface, max_expansion)
 
-        if mode in ("forward", "best"):
+        # grad on execution or best was chosen
+        if grad_on_execution:
             # replace the forward execution function to return
             # both results and gradients
             execute_fn = set_shots(device, override_shots)(device.execute_and_gradients)
             gradient_fn = None
-            _mode = "forward"
+            _grad_on_execution = True
 
-        elif mode == "backward":
+        else:
             # disable caching on the forward pass
             execute_fn = qml.interfaces.cache_execute(batch_execute, cache=None)
 
@@ -424,12 +427,11 @@ def _execute_new(
                 pass_kwargs=True,
                 return_tuple=False,
             )
-
-    elif mode == "forward":
+    elif grad_on_execution is True:
         # In "forward" mode, gradients are automatically handled
         # within execute_and_gradients, so providing a gradient_fn
         # in this case would have ambiguous behaviour.
-        raise ValueError("Gradient transforms cannot be used with mode='forward'")
+        raise ValueError("Gradient transforms cannot be used with grad_on_execution=True")
 
     try:
         mapped_interface = INTERFACE_MAP[interface]
@@ -447,6 +449,9 @@ def _execute_new(
 
             if not tf.executing_eagerly() or "autograph" in interface:  # pragma: no cover
                 from .tensorflow_autograph import execute as _execute  # pragma: no cover
+
+                # TODO: Remove when old interface is deprecated
+                _mode = "forward" if grad_on_execution else "backward"
 
                 _execute = partial(_execute, mode=_mode)
 
@@ -589,12 +594,16 @@ def execute(
            [ 0.        ,  0.        , -0.95533649]])
     """
     if qml.active_return():
+
+
+        grad_on_execution = mode == "forward" if mode != "best" else "best"
+
         return _execute_new(
             tapes,
             device,
             gradient_fn,
             interface=interface,
-            mode=mode,
+            grad_on_execution=grad_on_execution,
             gradient_kwargs=gradient_kwargs,
             cache=cache,
             cachesize=cachesize,
