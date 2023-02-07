@@ -400,7 +400,6 @@ class Device(abc.ABC):
             def capabilities(cls):
                 capabilities = super().capabilities().copy()
                 capabilities.update(
-                    supports_inverse_operations=False,
                     supports_a_new_capability=True,
                 )
                 return capabilities
@@ -900,14 +899,6 @@ class Device(abc.ABC):
         if isinstance(operation, type) and issubclass(operation, Operation):
             return operation.__name__ in self.operations
         if isinstance(operation, str):
-            if operation.endswith(".inv"):
-                in_ops = operation[:-4] in self.operations
-                # TODO: update when all capabilities keys changed to "supports_inverse_operations"
-                supports_inv = self.capabilities().get(
-                    "supports_inverse_operations", False
-                ) or self.capabilities().get("inverse_operations", False)
-                return in_ops and supports_inv
-
             return operation in self.operations
 
         raise ValueError(
@@ -930,10 +921,6 @@ class Device(abc.ABC):
         if isinstance(observable, type) and issubclass(observable, Observable):
             return observable.__name__ in self.observables
         if isinstance(observable, str):
-            # This check regards observables that are also operations
-            if observable.endswith(".inv"):
-                return self.supports_operation(observable[:-4])
-
             return observable in self.observables
 
         raise ValueError(
@@ -942,7 +929,6 @@ class Device(abc.ABC):
 
     def check_validity(self, queue, observables):
         """Checks whether the operations and observables in queue are all supported by the device.
-        Includes checks for inverse operations.
 
         Args:
             queue (Iterable[~.operation.Operation]): quantum operation objects which are intended
@@ -966,17 +952,6 @@ class Device(abc.ABC):
                     "Apply the @qml.defer_measurements decorator to your quantum function to "
                     "simulate the application of mid-circuit measurements on this device."
                 )
-
-            if getattr(o, "inverse", False):
-                # TODO: update when all capabilities keys changed to "supports_inverse_operations"
-                supports_inv = self.capabilities().get(
-                    "supports_inverse_operations", False
-                ) or self.capabilities().get("inverse_operations", False)
-                if not supports_inv:
-                    raise DeviceError(
-                        f"The inverse of gates are not supported on device {self.short_name}"
-                    )
-                operation_name = o.base_name
 
             if not self.stopping_condition(o):
                 raise DeviceError(
@@ -1004,17 +979,6 @@ class Device(abc.ABC):
                         )
             else:
                 observable_name = o.name
-
-                if issubclass(o.__class__, Operation) and o.inverse:
-                    # TODO: update when all capabilities keys changed to "supports_inverse_operations"
-                    supports_inv = self.capabilities().get(
-                        "supports_inverse_operations", False
-                    ) or self.capabilities().get("inverse_operations", False)
-                    if not supports_inv:
-                        raise DeviceError(
-                            f"The inverse of gates are not supported on device {self.short_name}"
-                        )
-                    observable_name = o.base_name
 
                 if not self.supports_observable(observable_name):
                     raise DeviceError(
