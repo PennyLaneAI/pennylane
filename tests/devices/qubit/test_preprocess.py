@@ -26,7 +26,7 @@ from pennylane.devices.qubit.preprocess import (
     batch_transform,
     preprocess,
 )
-from pennylane.measurements import ExpectationMP, ProbabilityMP
+from pennylane.measurements import MidMeasureMP, MeasurementValue
 from pennylane.tape import QuantumScript
 from pennylane import DeviceError
 
@@ -35,6 +35,7 @@ from pennylane import DeviceError
 class NoMatOp(Operation):
     num_wires = 1
 
+    @property
     def has_matrix(self):
         return False
 
@@ -101,9 +102,6 @@ class TestPreprocess:
         )
         check_validity(tape)
 
-    def test_batch_transform(self):
-        """Test that batch_transform works correctly"""
-
     def test_expand_fn_expand_unsupported_op(self):
         """Test that expand_fn expands the tape when unsupported operators are present"""
         ops = [qml.Hadamard(0), NoMatOp(1), qml.RZ(0.123, wires=1)]
@@ -113,17 +111,38 @@ class TestPreprocess:
         expanded_tape = expand_fn(tape)
         expected = [qml.Hadamard(0), qml.PauliX(1), qml.PauliY(1), qml.RZ(0.123, wires=1)]
 
-        for expanded_op, expected_op in zip(expanded_tape.operations, expected):
-            assert qml.equal(expanded_op, expected_op)
-
-        mps = [ExpectationMP, ProbabilityMP]
-        for meas, exp_meas, mp in zip(expanded_tape.measurements, measurements, mps):
-            assert qml.equal(meas.obs, exp_meas.obs)
-            assert isinstance(meas, mp)
+        for op, exp in zip(expanded_tape.circuit, expected + measurements):
+            assert qml.equal(op, exp)
 
     def test_expand_fn_defer_measurement(self):
         """Test that expand_fn defers mid-circuit measurements."""
-        # ops = [qml.Hadamard(0), qml.measure(1)]
+        mv = MeasurementValue(["test_id"], processing_fn=lambda v: v)
+        ops = [
+            qml.Hadamard(0),
+            MidMeasureMP(wires=[0], id="test_id"),
+            qml.transforms.Conditional(mv, qml.RX(0.123, wires=1)),
+        ]
+        measurements = [qml.expval(qml.PauliZ(1))]
+        tape = QuantumScript(ops=ops, measurements=measurements)
+
+        expanded_tape = expand_fn(tape)
+        expected = [qml.Hadamard(0), qml.ops.Controlled(qml.RX(0.123, wires=1), 0)]
+
+        for op, exp in zip(expanded_tape, expected + measurements):
+            assert qml.equal(op, exp)
+
+    def test_expand_fn_no_expansion(self):
+        """Test that expand_fn does nothing to a fully supported quantum script."""
+        ops = [qml.Hadamard(0), qml.CNOT([0, 1]), qml.RZ(0.123, wires=1)]
+        measurements = [qml.expval(qml.PauliZ(0)), qml.probs()]
+        tape = QuantumScript(ops=ops, measurements=measurements)
+        expanded_tape = expand_fn(tape)
+
+        for op, exp in zip(expanded_tape.circuit, ops + measurements):
+            assert qml.equal(op, exp)
+
+    def test_batch_transform(self):
+        """Test that batch_transform works correctly"""
 
     def test_preprocess(self):
         """Test that preprocess works correctly"""
