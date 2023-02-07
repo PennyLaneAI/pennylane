@@ -13,7 +13,6 @@
 # limitations under the License.
 """Unit tests for preprocess in devices/qubit."""
 
-# pylint: disable=unused-import
 import pytest
 
 import numpy as np
@@ -31,9 +30,13 @@ from pennylane.measurements import MidMeasureMP, MeasurementValue
 from pennylane.tape import QuantumScript
 from pennylane import DeviceError
 
+# pylint: disable=too-few-public-methods
 
-# pylint: disable=missing-docstring
+
 class NoMatOp(Operation):
+    """Dummy operation for expanding circuit."""
+
+    # pylint: disable=missing-function-docstring
     num_wires = 1
 
     @property
@@ -44,8 +47,20 @@ class NoMatOp(Operation):
         return [qml.PauliX(self.wires), qml.PauliY(self.wires)]
 
 
-class TestPreprocess:
-    """Unit tests for functions in qml.devices.qubit.preprocess"""
+class NoMatNoDecompOp(Operation):
+    """Dummy operation for checking check_validity throws error when
+    expected."""
+
+    # pylint: disable=missing-function-docstring
+    num_wires = 1
+
+    @property
+    def has_matrix(self):
+        return False
+
+
+class TestHelpers:
+    """Unit tests for helper functions in qml.devices.qubit.preprocess"""
 
     @pytest.mark.parametrize(
         "op, expected",
@@ -243,5 +258,120 @@ class TestPreprocess:
         res = batch_fn(dev.batch_execute(tapes))
         assert np.allclose(res, expected)
 
-    def test_preprocess(self):
-        """Test that preprocess works correctly"""
+
+class TestPreprocess:
+    """Unit tests for ``qml.devices.qubit.preprocess``."""
+
+    def test_preprocess_finite_shots_error(self):
+        """Test that preprocess throws an error if finite shots are present."""
+        config = qml.devices.ExecutionConfig(shots=100)
+        tape = QuantumScript(ops=[], measurements=[])
+        with pytest.raises(
+            qml.DeviceError, match="The Python Device does not support finite shots."
+        ):
+            _ = preprocess([tape], execution_config=config)
+
+    def test_preprocess_batch_transform(self):
+        """Test that preprocess returns the correct tapes when a batch transform
+        is needed."""
+        ops = [qml.Hadamard(0), qml.CNOT([0, 1]), qml.RX([np.pi, np.pi / 2], wires=1)]
+        # Need to specify grouping type to transform tape
+        measurements = [qml.expval(qml.PauliX(0)), qml.expval(qml.PauliZ(1))]
+        tapes = [
+            QuantumScript(ops=ops, measurements=[measurements[0]]),
+            QuantumScript(ops=ops, measurements=[measurements[1]]),
+        ]
+
+        res_tapes, batch_fn = preprocess(tapes)
+        expected_ops = [
+            [qml.Hadamard(0), qml.CNOT([0, 1]), qml.RX(np.pi, wires=1)],
+            [qml.Hadamard(0), qml.CNOT([0, 1]), qml.RX(np.pi / 2, wires=1)],
+        ]
+
+        assert len(res_tapes) == 4
+        for i, t in enumerate(res_tapes):
+            for op, expected_op in zip(t.operations, expected_ops[i % 2]):
+                assert qml.equal(op, expected_op)
+            assert len(t.measurements) == 1
+            if i < 2:
+                assert qml.equal(t.measurements[0], measurements[0])
+            else:
+                assert qml.equal(t.measurements[0], measurements[1])
+
+        # Replace with Python Device once added
+        dev = qml.device("default.qubit", wires=2)
+        expected = qml.execute(tapes, dev)
+        res = batch_fn(dev.batch_execute(res_tapes))
+        assert np.allclose(res, expected)
+
+    def test_preprocess_expand(self):
+        """Test that preprocess returns the correct tapes when expansion is needed."""
+        ops = [qml.Hadamard(0), NoMatOp(1), qml.RZ(0.123, wires=1)]
+        measurements = [[qml.expval(qml.PauliZ(0))], [qml.expval(qml.PauliX(1))]]
+        tapes = [
+            QuantumScript(ops=ops, measurements=measurements[0]),
+            QuantumScript(ops=ops, measurements=measurements[1]),
+        ]
+
+        res_tapes, batch_fn = preprocess(tapes)
+        expected = [qml.Hadamard(0), qml.PauliX(1), qml.PauliY(1), qml.RZ(0.123, wires=1)]
+
+        assert len(res_tapes) == 2
+        for i, t in enumerate(res_tapes):
+            for op, exp in zip(t.circuit, expected + measurements[i]):
+                assert qml.equal(op, exp)
+
+        # Replace with Python Device once added
+        dev = qml.device("default.qubit", wires=2)
+        expected = qml.execute(tapes, dev)
+        res = batch_fn(dev.batch_execute(res_tapes))
+        assert np.allclose(res, expected)
+
+    def test_preprocess_split_and_expand(self):
+        """Test that preprocess returns the correct tapes when splitting and expanding
+        is needed."""
+        ops = [qml.Hadamard(0), NoMatOp(1), qml.RX([np.pi, np.pi / 2], wires=1)]
+        # Need to specify grouping type to transform tape
+        measurements = [qml.expval(qml.PauliX(0)), qml.expval(qml.PauliZ(1))]
+        tapes = [
+            QuantumScript(ops=ops, measurements=[measurements[0]]),
+            QuantumScript(ops=ops, measurements=[measurements[1]]),
+        ]
+
+        res_tapes, batch_fn = preprocess(tapes)
+        expected_ops = [
+            [qml.Hadamard(0), qml.PauliX(1), qml.PauliY(1), qml.RX(np.pi, wires=1)],
+            [qml.Hadamard(0), qml.PauliX(1), qml.PauliY(1), qml.RX(np.pi / 2, wires=1)],
+        ]
+
+        assert len(res_tapes) == 4
+        for i, t in enumerate(res_tapes):
+            for op, expected_op in zip(t.operations, expected_ops[i % 2]):
+                assert qml.equal(op, expected_op)
+            assert len(t.measurements) == 1
+            if i < 2:
+                assert qml.equal(t.measurements[0], measurements[0])
+            else:
+                assert qml.equal(t.measurements[0], measurements[1])
+
+        # Replace with Python Device once added
+        dev = qml.device("default.qubit", wires=2)
+        expected = qml.execute(tapes, dev)
+        res = batch_fn(dev.batch_execute(res_tapes))
+        # Need to check each row individually because the dimensions of ``res`` and
+        # ``expected`` are different
+        for r, e in zip(res, expected):
+            assert np.allclose(r, e)
+
+    def test_preprocess_check_validity_fail(self):
+        """Test that preprocess throws an error if the split and expanded tapes have
+        unsupported operators."""
+        ops = [qml.Hadamard(0), NoMatNoDecompOp(1), qml.RZ(0.123, wires=1)]
+        measurements = [[qml.expval(qml.PauliZ(0))], [qml.expval(qml.PauliX(1))]]
+        tapes = [
+            QuantumScript(ops=ops, measurements=measurements[0]),
+            QuantumScript(ops=ops, measurements=measurements[1]),
+        ]
+
+        with pytest.raises(qml.DeviceError, match="Gate NoMatNoDecompOp not supported"):
+            _ = preprocess(tapes)
