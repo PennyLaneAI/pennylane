@@ -475,6 +475,8 @@
 
 <h3>Breaking changes</h3>
 
+* `qml.VQECost` is removed.
+
 * The tape method `get_operation` can also now return the operation index in the tape, and it can be
   activated by setting the `return_op_index` to `True`: `get_operation(idx, return_op_index=True)`. It will become
   the default in version 0.30.
