@@ -94,6 +94,7 @@
 * A `ParametrizedHamiltonian` can be time-evolved by using `ParametrizedEvolution`.
   [(#3617)](https://github.com/PennyLaneAI/pennylane/pull/3617)
   [(#3706)](https://github.com/PennyLaneAI/pennylane/pull/3706)
+  [(#3730)](https://github.com/PennyLaneAI/pennylane/pull/3730)
 
 * A new function called `qml.evolve` has been added that returns the evolution of an `Operator` or a `ParametrizedHamiltonian`.
   [(#3617)](https://github.com/PennyLaneAI/pennylane/pull/3617)
@@ -581,6 +582,9 @@
 
 * `Tensor._pauli_rep` is set to `None` during initialization. Add `Tensor.data` setter.
   [(#3722)](https://github.com/PennyLaneAI/pennylane/pull/3722)
+
+* Redirect `qml.math.ndim` to `jnp.ndim` when using it on a jax tensor.
+  [(#3730)](https://github.com/PennyLaneAI/pennylane/pull/3730)
 
 <h3>Contributors</h3>
 
