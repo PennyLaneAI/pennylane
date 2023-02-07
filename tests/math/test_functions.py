@@ -2478,3 +2478,14 @@ def test_jax_ndim():
         _ = qml.math.ndim(jax.numpy.array(3))
 
     mock_ndim.assert_called_once_with(3)
+
+
+@pytest.mark.torch
+@pytest.mark.jax
+@pytest.mark.parametrize("array", [qml.numpy.zeros((2, 2)), torch.zeros((2, 2)), jnp.zeros((2, 2))])
+def test_set_index_jax(array):
+    """Test that an array can be created that is a copy of the
+    original array, with the value at the specified index updated"""
+
+    array2 = qml.math.set_index(array, (1, 1), 3)
+    assert qml.math.allclose(array2, np.array([[0, 0], [0, 3]]))
