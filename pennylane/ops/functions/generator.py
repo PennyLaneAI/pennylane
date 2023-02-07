@@ -82,41 +82,30 @@ def _generator_prefactor(gen, op):
     obs = gen
     prefactor = 1.0
 
-    if isinstance(gen, qml.operation.Observable):
-        # convert to a qml.Hamiltonian
-        gen: Hamiltonian = 1.0 * gen
-        abs_coeffs = list(qml.math.abs(gen.coeffs))
-        if len(gen.ops) == 1:
+    if isinstance(gen, (Hamiltonian, Sum)):
+        ops = gen.ops if isinstance(gen, Hamiltonian) else gen.operands
+        coeffs = (
+            gen.coeffs
+            if isinstance(gen, Hamiltonian)
+            else [o.scalar if isinstance(o, SProd) else 1 for o in gen]
+        )
+        abs_coeffs = list(qml.math.abs(coeffs))
+        if len(ops) == 1:
             # case where the Hamiltonian is a single Pauli word
-            obs = gen.ops[0]
-            prefactor = gen.coeffs[0]
-        elif qml.math.allequal(gen.coeffs[0], gen.coeffs):
+            obs = ops[0]
+            prefactor = coeffs[0]
+        elif qml.math.allequal(coeffs[0], coeffs):
             # case where the Hamiltonian coefficients are all the same
-            obs = sum(gen.ops)
-            prefactor = gen.coeffs[0]
+            obs = sum(ops)
+            prefactor = coeffs[0]
         elif qml.math.allequal(abs_coeffs[0], abs_coeffs):
             # absolute value of coefficients is the same
             prefactor = abs_coeffs[0]
-            coeffs = [c / prefactor for c in gen.coeffs]
-            obs = qml.dot(coeffs, gen.ops)
-        else:
-            obs = gen
-            prefactor = 1.0
+            coeffs = [c / prefactor for c in coeffs]
+            obs = qml.dot(coeffs, ops)
     elif isinstance(gen, SProd):
         obs = gen.base
         prefactor = gen.scalar
-    elif isinstance(gen, Sum):
-        scalars = [o.scalar if isinstance(o, SProd) else 1 for o in gen]
-        abs_scalars = list(qml.math.abs(scalars))
-        if qml.math.allequal(scalars[0], scalars):
-            # case where the Sum coefficients are all the same
-            obs = Sum(*[o.base for o in gen])
-            prefactor = gen[0].scalar
-        elif qml.math.allequal(abs_scalars[0], abs_scalars):
-            # absolute value of coefficients is the same
-            prefactor = abs_scalars[0]
-            coeffs = [s / prefactor for s in scalars]
-            obs = qml.dot(coeffs, gen.operands)
 
     if op.inverse:
         prefactor *= -1.0
