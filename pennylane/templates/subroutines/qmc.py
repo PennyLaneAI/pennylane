@@ -54,7 +54,6 @@ def probs_to_unitary(probs):
            [ 0.5       ,  0.16666667, -0.83333333,  0.16666667],
            [ 0.5       ,  0.16666667,  0.16666667, -0.83333333]])
     """
-
     if not qml.math.is_abstract(probs):  # skip warning if jitting to avoid angering JAX
         if not qml.math.allclose(sum(probs), 1) or min(probs) < 0:
             raise ValueError(
@@ -126,10 +125,11 @@ def func_to_unitary(func, M):
     unitary = np.zeros((2 * M, 2 * M))
 
     fs = [func(i) for i in range(M)]
-    if min(fs) < 0 or max(fs) > 1:
-        raise ValueError(
-            "func must be bounded within the interval [0, 1] for the range of input values"
-        )
+    if not qml.math.is_abstract(fs[0]):
+        if min(fs) < 0 or max(fs) > 1:
+            raise ValueError(
+                "func must be bounded within the interval [0, 1] for the range of input values"
+            )
 
     for i, f in enumerate(fs):
         unitary[2 * i, 2 * i] = np.sqrt(1 - f)
@@ -334,6 +334,7 @@ class QuantumMonteCarlo(Operation):
     grad_method = None
 
     def __init__(self, probs, func, target_wires, estimation_wires, do_queue=True, id=None):
+
         if isinstance(probs, np.ndarray) and probs.ndim != 1:
             raise ValueError("The probability distribution must be specified as a flat array")
 
