@@ -56,6 +56,7 @@ from .multi_dispatch import (
     ones_like,
     scatter,
     scatter_element_add,
+    set_index,
     stack,
     tensordot,
     unwrap,

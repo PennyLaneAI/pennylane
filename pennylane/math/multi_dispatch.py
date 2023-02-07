@@ -896,3 +896,17 @@ def detach(tensor, like=None):
         return np.to_numpy(tensor)
 
     return tensor
+
+
+@multi_dispatch(argnum=[0, 1, 2])
+def set_index(array, idx, val, like=None):
+    """Does what array[idx]=val usually does, and then returns the updated
+    array, even if using JAX-JIT"""
+
+    if like == "jax":
+        array.at[idx].set(val)
+
+    else:
+        array[idx] = val
+
+    return array
