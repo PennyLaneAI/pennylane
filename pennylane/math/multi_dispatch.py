@@ -900,8 +900,17 @@ def detach(tensor, like=None):
 
 @multi_dispatch(argnum=[0, 1, 2])
 def set_index(array, idx, val, like=None):
-    """Does what array[idx]=val usually does, and then returns the updated
-    array, even if using JAX-JIT"""
+    """Set the value at a specified index in an array.
+    Returns ``array[idx]=val`` unless JAX.
+
+    Args:
+        array (tensor_like): array to be modified
+        idx (int, tuple): index to modify
+        val (int, float): value to set
+
+    Returns:
+        a new copy of the array with the specified index updated to ``val``
+    """
 
     if like == "jax":
         from jax import numpy as jnp
