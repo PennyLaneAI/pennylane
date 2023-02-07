@@ -266,7 +266,8 @@ class TestProperties:
         no path of decomposition would work, here we use a single control wire."""
 
         # all control values are 1, there is only one control wire but TempOperator does
-        # not have `_controlled`, is not `PauliX`, and reports `has_decomposition=False`
+        # not have `_controlled`, is not `PauliX`, doesn't have a ZYZ decomposition,
+        # and reports `has_decomposition=False`
         op = Controlled(TempOperator(0.5, 1), 0)
         assert op.has_decomposition is False
 
@@ -275,8 +276,8 @@ class TestProperties:
         no path of decomposition would work, here we use multiple control wires."""
 
         # all control values are 1, there are multiple control wires,
-        # `RX` is not `PauliX`, and reports `has_decomposition=False`
-        op = Controlled(qml.RX(0.5, 1), [0, 5])
+        # `TempOperator` is not `PauliX`, and reports `has_decomposition=False`
+        op = Controlled(TempOperator(0.5, 1), [0, 5])
         assert op.has_decomposition is False
 
     @pytest.mark.parametrize("value", (True, False))
@@ -848,7 +849,7 @@ class TestDecomposition:
         base = qml.RX(0.123, wires="a")
         op = Controlled(base, (0, 1, 2))
 
-        assert op.has_decomposition()
+        assert op.has_decomposition
         decomp = op.expand().circuit if test_expand else op.decomposition()
         expected = qml.ops.ctrl_decomp_zyz(base, (0, 1, 2))
         for op, exp_op in zip(decomp, expected):
@@ -861,7 +862,7 @@ class TestDecomposition:
         base = qml.RX(0.123, wires="a")
         op = Controlled(base, (0, 1, 2), control_values=[True, False, False])
 
-        assert op.has_decomposition()
+        assert op.has_decomposition
         decomp = op.expand().circuit if test_expand else op.decomposition()
         assert qml.equal(qml.PauliX(1), decomp[0])
         assert qml.equal(qml.PauliX(2), decomp[1])

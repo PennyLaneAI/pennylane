@@ -473,7 +473,7 @@ class Controlled(SymbolicOp):
             return True
         if self.base.has_decomposition:
             return True
-        if len(self.base.wires) == 1:
+        if len(self.base.wires) == 1 and getattr(self.base, "has_matrix", False):
             return True
 
         return False
@@ -556,7 +556,7 @@ def _decompose_no_control_values(op: "operation.Operator") -> List["operation.Op
         if len(op.control_wires) == 2:
             return [qml.Toffoli(op.active_wires)]
         return [qml.MultiControlledX(wires=op.active_wires, work_wires=op.work_wires)]
-    if len(op.base.wires) == 1:
+    if len(op.base.wires) == 1 and getattr(op.base, "has_matrix", False):
         return ctrl_decomp_zyz(op.base, op.control_wires)
 
     if not op.base.has_decomposition:
