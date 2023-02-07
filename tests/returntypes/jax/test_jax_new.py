@@ -491,8 +491,8 @@ class TestJaxExecuteIntegration:
         expected = -2 * np.sin(2 * a)
         assert np.allclose(jac, expected, atol=tol, rtol=0)
 
-    def test_grad_with_no_grad_on_execution(self, execute_kwargs):
-        """Test jax grad for adjoint diff method in no grad on execution."""
+    def test_grad_with_different_grad_on_execution(self, execute_kwargs):
+        """Test jax grad for adjoint diff method with different execution kwargs."""
         dev = qml.device("default.qubit", wires=2)
         params = jax.numpy.array([0.1, 0.2, 0.3])
         expected_results = jax.numpy.array([-0.3875172, -0.18884787, -0.38355705])
