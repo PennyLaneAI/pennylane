@@ -23,6 +23,7 @@ SUPPORTED_GRADIENT_KWARGS = [
     "approx_order",
     "argnum",
     "broadcast",
+    "device_wires",
     "diagonal_shifts",
     "f0",
     "force_order2",
@@ -31,6 +32,7 @@ SUPPORTED_GRADIENT_KWARGS = [
     "h",
     "n",
     "num",
+    "num_directions",
     "off_diagonal_shifts",
     "order",
     "reduction",
@@ -40,7 +42,6 @@ SUPPORTED_GRADIENT_KWARGS = [
     "shots",
     "strategy",
     "validate_params",
-    "device_wires",
 ]
 
 
