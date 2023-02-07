@@ -652,6 +652,15 @@ ar.register_function("jax", "block_diag", lambda x: _i("jax").scipy.linalg.block
 ar.register_function("jax", "gather", lambda x, indices: x[np.array(indices)])
 
 
+def _ndim_jax(x):
+    import jax.numpy as jnp
+
+    return jnp.ndim(x)
+
+
+ar.register_function("jax", "ndim", lambda x: _ndim_jax(x))
+
+
 def _scatter_jax(indices, array, new_dimensions):
     from jax import numpy as jnp
 
