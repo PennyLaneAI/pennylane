@@ -172,30 +172,36 @@ class ParametrizedEvolution(Operation):
             raise ValueError(
                 "All operators inside the parametrized hamiltonian must have a matrix defined."
             )
+        self._has_matrix = params is not None and t is not None
         self.H = H
-        self.params = params
         self.odeint_kwargs = odeint_kwargs
         if t is None:
             self.t = None
         else:
             self.t = jnp.array([0, t] if qml.math.ndim(t) == 0 else t, dtype=float)
-        super().__init__(wires=H.wires, do_queue=do_queue, id=id)
+        params = [] if params is None else params
+        super().__init__(*params, wires=H.wires, do_queue=do_queue, id=id)
 
     def __call__(self, params, t, **odeint_kwargs):
-        self.params = params
-        self.t = jnp.array([0, t] if qml.math.ndim(t) == 0 else t, dtype=float)
-        if odeint_kwargs:
-            self.odeint_kwargs.update(odeint_kwargs)
-        return self
+        # Need to cast all elements inside params to `jnp.arrays` to make sure they are not casted
+        # to `np.arrays` inside `Operator.__init__`
+        params = [jnp.array(p) for p in params]
+        odeint_kwargs = {**self.odeint_kwargs, **odeint_kwargs}
+        if qml.QueuingManager.recording():
+            qml.QueuingManager.remove(self)
+
+        return ParametrizedEvolution(
+            H=self.H, params=params, t=t, do_queue=True, id=self.id, **odeint_kwargs
+        )
 
     # pylint: disable=arguments-renamed, invalid-overridden-method
     @property
     def has_matrix(self):
-        return True
+        return self._has_matrix
 
     # pylint: disable=import-outside-toplevel
     def matrix(self, wire_order=None):
-        if self.params is None or self.t is None:
+        if not self.has_matrix:
             raise ValueError(
                 "The parameters and the time window are required to compute the matrix. "
                 "You can update its values by calling the class: EV(params, t)."
@@ -204,7 +210,7 @@ class ParametrizedEvolution(Operation):
 
         def fun(y, t):
             """dy/dt = -i H(t) y"""
-            return -1j * qml.matrix(self.H(self.params, t=t)) @ y
+            return -1j * qml.matrix(self.H(self.data, t=t)) @ y
 
         result = odeint(fun, y0, self.t, **self.odeint_kwargs)
         mat = result[-1]
