@@ -666,12 +666,7 @@ class TestSpsaGradientIntegration:
 
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
-    def test_multiple_expectation_value_with_argnum_one(
-        self,
-        approx_order,
-        strategy,
-        validate,
-    ):
+    def test_multiple_expectation_value_with_argnum_one(self, approx_order, strategy, validate):
         """Tests correct output shape and evaluation for a tape
         with a multiple measurement, where only one parameter is chosen to
         be trainable.
