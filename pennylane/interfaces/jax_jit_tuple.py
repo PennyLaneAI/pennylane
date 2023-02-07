@@ -188,7 +188,6 @@ def _execute_bwd_tuple(
 ):  # pylint: disable=dangerous-default-value,unused-argument
     @jax.custom_jvp
     def execute_wrapper(params):
-
         shape_dtype_structs = _tapes_shape_dtype_tuple(tapes, device)
 
         def wrapper(p):
@@ -231,7 +230,6 @@ def _execute_bwd_tuple(
         if isinstance(gradient_fn, qml.gradients.gradient_transform):
             # Gradient function is a gradient transform
             if _n == max_diff:
-
                 jacobians_from_callback = _grad_transform_jac_via_callback(params, device)
 
                 if len(tapes) == 1:
