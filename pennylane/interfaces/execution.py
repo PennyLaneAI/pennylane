@@ -256,10 +256,10 @@ def _execute_new(
         interface (str): The interface that will be used for classical autodifferentiation.
             This affects the types of parameters that can exist on the input tapes.
             Available options include ``autograd``, ``torch``, ``tf``, ``jax`` and ``auto``.
-        grad_on_execution (bool): Whether the gradients should be computed on the execution or not. Only applies
+        grad_on_execution (bool, str): Whether the gradients should be computed on the execution or not. Only applies
             if the device is queried for the gradient; gradient transform
             functions available in ``qml.gradients`` are only supported on the backward
-            pass.
+            pass. The 'best' option chooses automatically between the two options and is default.
         gradient_kwargs (dict): dictionary of keyword arguments to pass when
             determining the gradients of tapes
         cache (bool): Whether to cache evaluations. This can result in
@@ -408,7 +408,7 @@ def _execute_new(
             tapes = _adjoint_jacobian_expansion(tapes, mode, interface, max_expansion)
 
         # grad on execution or best was chosen
-        if grad_on_execution:
+        if grad_on_execution is True or grad_on_execution == "best":
             # replace the forward execution function to return
             # both results and gradients
             execute_fn = set_shots(device, override_shots)(device.execute_and_gradients)
