@@ -125,7 +125,7 @@ class Exp(ScalarSymbolicOp, Operation):
             also known as the Trotter number. If this value is `None` and the Suzuki-Trotter
             decomposition is needed, an error will be raised.
         do_queue (bool): determines if the sum operator will be queued. Default is True.
-        id (str): id for the sum operator. Default is None.
+        id (str): id for the Exp operator. Default is None.
 
     **Example**
 
