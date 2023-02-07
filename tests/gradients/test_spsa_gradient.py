@@ -14,6 +14,7 @@
 """
 Tests for the gradients.spsa_gradient module.
 """
+#pylint: disable="import-outside-toplevel"
 import pytest
 
 from pennylane import numpy as np
@@ -30,6 +31,7 @@ def coordinate_sampler(indices, num_params, idx, seed=None):
     to the index ``indices[idx]``. This is a sequential coordinate sampler
     that allows to exactly reproduce derivatives, instead of using SPSA in the
     intended way."""
+    #pylint: disable=unused-argument
     idx = idx % len(indices)
     direction = np.zeros(num_params)
     direction[indices[idx]] = 1.0
@@ -274,10 +276,9 @@ class TestSpsaGradient:
         tapes, _ = spsa_grad(circuit.tape)
         assert tapes == []
 
-    def test_y0(self, mocker):
+    def test_y0(self):
         """Test that if the first order finite difference is underlying the SPSA, then
         the tape is executed only once using the current parameter values."""
-        dev = qml.device("default.qubit", wires=2)
 
         with qml.queuing.AnnotatedQueue() as q:
             qml.RX(0.543, wires=[0])
@@ -286,7 +287,7 @@ class TestSpsaGradient:
 
         tape = qml.tape.QuantumScript.from_queue(q)
         n = 13
-        tapes, fn = spsa_grad(tape, strategy="forward", approx_order=1, num_directions=n)
+        tapes, _ = spsa_grad(tape, strategy="forward", approx_order=1, num_directions=n)
 
         # one tape per direction, plus one global call
         assert len(tapes) == n + 1
@@ -306,7 +307,7 @@ class TestSpsaGradient:
         tape = qml.tape.QuantumScript.from_queue(q)
         f0 = dev.execute(tape)
         n = 9
-        tapes, fn = spsa_grad(tape, strategy="forward", approx_order=1, num_directions=n, f0=f0)
+        tapes, _ = spsa_grad(tape, strategy="forward", approx_order=1, num_directions=n, f0=f0)
         # one tape per direction, the unshifted one already was evaluated above
         assert len(tapes) == n
 
@@ -412,6 +413,7 @@ class TestSpsaGradient:
 
         class SpecialObservable(Observable):
             """SpecialObservable"""
+            #pylint:disable=too-few-public-methods
 
             num_wires = AnyWires
 
@@ -420,19 +422,23 @@ class TestSpsaGradient:
                 return []
 
         class DeviceSupportingSpecialObservable(DefaultQubit):
+            """A device class supporting SpecialObservable."""
+            #pylint:disable=too-few-public-methods
             name = "Device supporting SpecialObservable"
             short_name = "default.qubit.specialobservable"
             observables = DefaultQubit.observables.union({"SpecialObservable"})
 
             @staticmethod
             def _asarray(arr, dtype=None):
-                return np.array(arr)
+                return np.array(arr, dtype=dtype)
 
             def __init__(self, *args, **kwargs):
                 super().__init__(*args, **kwargs)
                 self.R_DTYPE = SpecialObservable
 
             def expval(self, observable, **kwargs):
+                """Compute the expectation value by returning a SpecialObject
+                if the observable is a SpecialObservable and the device is analytic."""
                 if self.analytic and isinstance(observable, SpecialObservable):
                     val = super().expval(qml.PauliZ(wires=0), **kwargs)
                     return SpecialObject(val)
@@ -766,7 +772,7 @@ class TestSpsaGradientDifferentiation:
             tape.trainable_params = {0, 1}
             tapes, fn = spsa_grad(tape, n=1, num_directions=num_directions, sampler=sampler)
             jac = fn(dev.batch_execute(tapes))
-            if sampler == coordinate_sampler:
+            if sampler is coordinate_sampler:
                 jac *= 2
             return jac
 
@@ -800,7 +806,7 @@ class TestSpsaGradientDifferentiation:
             tape.trainable_params = {0, 1}
             tapes, fn = spsa_grad(tape, n=1, num_directions=num_directions, sampler=sampler)
             jac = fn(dev.batch_execute(tapes))
-            if sampler == coordinate_sampler:
+            if sampler is coordinate_sampler:
                 jac *= 2
             return jac[1, 0]
 
@@ -831,7 +837,7 @@ class TestSpsaGradientDifferentiation:
             tape.trainable_params = {0, 1}
             tapes, fn = spsa_grad(tape, n=1, num_directions=num_directions, sampler=sampler)
             jac = fn(dev.batch_execute(tapes))
-            if sampler == coordinate_sampler:
+            if sampler is coordinate_sampler:
                 jac *= 2
 
         x, y = 1.0 * params
@@ -870,7 +876,7 @@ class TestSpsaGradientDifferentiation:
             tape.trainable_params = {0, 1}
             tapes, fn = spsa_grad(tape, n=1, num_directions=num_directions, sampler=sampler)
             jac = fn(dev.batch_execute(tapes))[1, 0]
-            if sampler == coordinate_sampler:
+            if sampler is coordinate_sampler:
                 jac *= 2
 
         x, y = 1.0 * params
@@ -897,7 +903,7 @@ class TestSpsaGradientDifferentiation:
         tape = qml.tape.QuantumScript.from_queue(q)
         tapes, fn = spsa_grad(tape, n=1, num_directions=num_directions, sampler=sampler)
         jac = fn(dev.batch_execute(tapes))
-        if sampler == coordinate_sampler:
+        if sampler is coordinate_sampler:
             jac *= 2
         cost = torch.sum(jac)
         cost.backward()
@@ -941,7 +947,7 @@ class TestSpsaGradientDifferentiation:
             tape.trainable_params = {0, 1}
             tapes, fn = spsa_grad(tape, n=1, num_directions=num_directions, sampler=sampler)
             jac = fn(dev.batch_execute(tapes))
-            if sampler == coordinate_sampler:
+            if sampler is coordinate_sampler:
                 jac *= 2
             return jac
 

@@ -14,6 +14,7 @@
 """
 Tests for the gradients.spsa_gradient module using shot vectors.
 """
+#pylint: disable="import-outside-toplevel"
 import numpy
 import pytest
 
@@ -37,6 +38,7 @@ def coordinate_sampler(indices, num_params, idx, seed=None):
     to the index ``indices[idx]``. This is a sequential coordinate sampler
     that allows to exactly reproduce derivatives, instead of using SPSA in the
     intended way."""
+    #pylint: disable=unused-argument
     idx = idx % len(indices)
     direction = np.zeros(num_params)
     direction[indices[idx]] = 1.0
@@ -334,12 +336,10 @@ class TestSpsaGradient:
             tapes, _ = spsa_grad(circuit.tape, h=h_val, shots=default_shot_vector)
             assert tapes == []
 
-    def test_y0(self, mocker):
+    def test_y0(self):
         """Test that if first order finite differences is underlying the SPSA, then
         the tape is executed only once using the current parameter
         values."""
-        dev = qml.device("default.qubit", wires=2, shots=default_shot_vector)
-
         with qml.queuing.AnnotatedQueue() as q:
             qml.RX(0.543, wires=[0])
             qml.RY(-0.654, wires=[0])
@@ -347,7 +347,7 @@ class TestSpsaGradient:
 
         tape = qml.tape.QuantumScript.from_queue(q)
         n = 5
-        tapes, fn = spsa_grad(
+        tapes, _ = spsa_grad(
             tape,
             strategy="forward",
             approx_order=1,
@@ -371,7 +371,7 @@ class TestSpsaGradient:
         tape = qml.tape.QuantumScript.from_queue(q)
         f0 = dev.execute(tape)
         n = 3
-        tapes, fn = spsa_grad(
+        tapes, _ = spsa_grad(
             tape,
             strategy="forward",
             approx_order=1,
@@ -507,6 +507,7 @@ class TestSpsaGradient:
 
         class SpecialObservable(Observable):
             """SpecialObservable"""
+            #pylint:disable=too-few-public-methods
 
             num_wires = AnyWires
 
@@ -515,19 +516,23 @@ class TestSpsaGradient:
                 return []
 
         class DeviceSupportingSpecialObservable(DefaultQubit):
+            """A device class supporting SpecialObservable."""
+            #pylint:disable=too-few-public-methods
             name = "Device supporting SpecialObservable"
             short_name = "default.qubit.specialobservable"
             observables = DefaultQubit.observables.union({"SpecialObservable"})
 
             @staticmethod
             def _asarray(arr, dtype=None):
-                return np.array(arr)
+                return np.array(arr, dtype=dtype)
 
             def __init__(self, *args, **kwargs):
                 super().__init__(*args, **kwargs)
                 self.R_DTYPE = SpecialObservable
 
             def expval(self, observable, **kwargs):
+                """Compute the expectation value by returning a SpecialObject
+                if the observable is a SpecialObservable and the device is analytic."""
                 if self.analytic and isinstance(observable, SpecialObservable):
                     val = super().expval(qml.PauliZ(wires=0), **kwargs)
                     return SpecialObject(val)
@@ -599,7 +604,7 @@ class TestSpsaGradientIntegration:
             assert res[1][1].shape == (4,)
             assert res[1][2].shape == (4,)
 
-    def test_single_expectation_value(self, approx_order, strategy, validate, tol):
+    def test_single_expectation_value(self, approx_order, strategy, validate):
         """Tests correct output shape and evaluation for a tape
         with a single expval output"""
         np.random.seed(42)
@@ -645,7 +650,7 @@ class TestSpsaGradientIntegration:
             # 1 / num_params here.
             assert np.allclose([2 * r for r in res], expected, atol=spsa_shot_vec_tol, rtol=0)
 
-    def test_single_expectation_value_with_argnum_all(self, approx_order, strategy, validate, tol):
+    def test_single_expectation_value_with_argnum_all(self, approx_order, strategy, validate):
         """Tests correct output shape and evaluation for a tape
         with a single expval output where all parameters are chosen to compute
         the jacobian"""
@@ -694,7 +699,7 @@ class TestSpsaGradientIntegration:
             # 1 / num_params here.
             assert np.allclose([2 * r for r in res], expected, atol=spsa_shot_vec_tol, rtol=0)
 
-    def test_single_expectation_value_with_argnum_one(self, approx_order, strategy, validate, tol):
+    def test_single_expectation_value_with_argnum_one(self, approx_order, strategy, validate):
         """Tests correct output shape and evaluation for a tape
         with a single expval output where only one parameter is chosen to
         estimate the jacobian.
@@ -748,7 +753,7 @@ class TestSpsaGradientIntegration:
             assert np.allclose(res, expected, atol=spsa_shot_vec_tol, rtol=0)
 
     def test_multiple_expectation_value_with_argnum_one(
-        self, approx_order, strategy, validate, tol
+        self, approx_order, strategy, validate
     ):
         """Tests correct output shape and evaluation for a tape
         with a multiple measurement, where only one parameter is chosen to
@@ -782,14 +787,10 @@ class TestSpsaGradientIntegration:
             h=h_val,
             shots=many_shots_shot_vector,
         )
-        res = fn(dev.batch_execute(tapes))
-
         all_res = fn(dev.batch_execute(tapes))
 
         assert isinstance(all_res, tuple)
         assert len(all_res) == len(default_shot_vector)
-
-        expected = [0, np.cos(y) * np.cos(x)]
 
         for res in all_res:
             assert isinstance(res, tuple)
@@ -800,7 +801,7 @@ class TestSpsaGradientIntegration:
             assert isinstance(res[1], tuple)
             assert np.allclose(res[1][0], 0)
 
-    def test_multiple_expectation_values(self, approx_order, strategy, validate, tol):
+    def test_multiple_expectation_values(self, approx_order, strategy, validate):
         """Tests correct output shape and evaluation for a tape
         with multiple expval outputs"""
         np.random.seed(42)
@@ -854,7 +855,7 @@ class TestSpsaGradientIntegration:
             res_1 = (2 * res[1][0], 2 * res[1][1])
             assert np.allclose(res_1, [0, np.cos(y)], atol=spsa_shot_vec_tol, rtol=0)
 
-    def test_var_expectation_values(self, approx_order, strategy, validate, tol):
+    def test_var_expectation_values(self, approx_order, strategy, validate):
         """Tests correct output shape and evaluation for a tape
         with expval and var outputs"""
         dev = qml.device("default.qubit", wires=2, shots=many_shots_shot_vector)
@@ -909,7 +910,7 @@ class TestSpsaGradientIntegration:
                 res_1, [0, -2 * np.cos(y) * np.sin(y)], atol=spsa_shot_vec_tol, rtol=0
             )
 
-    def test_prob_expectation_values(self, approx_order, strategy, validate, tol):
+    def test_prob_expectation_values(self, approx_order, strategy, validate):
         """Tests correct output shape and evaluation for a tape
         with prob and expval outputs"""
         np.random.seed(42)
@@ -993,7 +994,7 @@ class TestSpsaGradientDifferentiation:
     """Test that the transform is differentiable"""
 
     @pytest.mark.autograd
-    def test_autograd(self, approx_order, strategy, tol):
+    def test_autograd(self, approx_order, strategy):
         """Tests that the output of the SPSA gradient transform
         can be differentiated using autograd, yielding second derivatives."""
         dev = qml.device("default.qubit.autograd", wires=2, shots=many_shots_shot_vector)
@@ -1037,7 +1038,7 @@ class TestSpsaGradientDifferentiation:
             assert np.allclose(res, expected, atol=spsa_shot_vec_tol, rtol=0)
 
     @pytest.mark.autograd
-    def test_autograd_ragged(self, approx_order, strategy, tol):
+    def test_autograd_ragged(self, approx_order, strategy):
         """Tests that the output of the SPSA gradient transform
         of a ragged tape can be differentiated using autograd, yielding second derivatives."""
         dev = qml.device("default.qubit.autograd", wires=2, shots=many_shots_shot_vector)
@@ -1077,7 +1078,7 @@ class TestSpsaGradientDifferentiation:
 
     @pytest.mark.tf
     @pytest.mark.slow
-    def test_tf(self, approx_order, strategy, tol):
+    def test_tf(self, approx_order, strategy):
         """Tests that the output of the SPSA gradient transform
         can be differentiated using TF, yielding second derivatives."""
         import tensorflow as tf
@@ -1119,7 +1120,7 @@ class TestSpsaGradientDifferentiation:
         assert np.allclose([res_0, res_1], expected, atol=spsa_shot_vec_tol, rtol=0)
 
     @pytest.mark.tf
-    def test_tf_ragged(self, approx_order, strategy, tol):
+    def test_tf_ragged(self, approx_order, strategy):
         """Tests that the output of the SPSA gradient transform
         of a ragged tape can be differentiated using TF, yielding second derivatives."""
         import tensorflow as tf
@@ -1158,7 +1159,7 @@ class TestSpsaGradientDifferentiation:
         assert np.allclose(res_01[0], expected, atol=spsa_shot_vec_tol, rtol=0)
 
     @pytest.mark.torch
-    def test_torch(self, approx_order, strategy, tol):
+    def test_torch(self, approx_order, strategy):
         """Tests that the output of the SPSA gradient transform
         can be differentiated using Torch, yielding second derivatives."""
         import torch
@@ -1201,7 +1202,7 @@ class TestSpsaGradientDifferentiation:
         assert np.allclose(hess[1].detach().numpy(), expected[1], atol=spsa_shot_vec_tol, rtol=0)
 
     @pytest.mark.jax
-    def test_jax(self, approx_order, strategy, tol):
+    def test_jax(self, approx_order, strategy):
         """Tests that the output of the SPSA gradient transform
         can be differentiated using JAX, yielding second derivatives."""
         import jax
@@ -1382,14 +1383,12 @@ class TestReturn:
                 assert isinstance(res, np.ndarray)
                 assert res.shape == shape
 
-    @pytest.mark.parametrize("meas, shape", single_meas_with_shape)
     @pytest.mark.parametrize("op_wires", [(0, 1, 2, 3, 4), (5, 5, 5, 5, 5)])
-    def test_N_N(self, shot_vec, meas, shape, op_wires):
+    def test_N_N(self, shot_vec, op_wires):
         """Test multi-param multi-measurement case"""
         dev = qml.device("default.qubit", wires=6, shots=shot_vec)
         params = np.random.random(6)
 
-        A = np.array([[4, -1 + 6j], [-1 - 6j, 2]])
         with qml.queuing.AnnotatedQueue() as q:
             for idx, w in enumerate(op_wires):
                 qml.RY(
@@ -1398,8 +1397,8 @@ class TestReturn:
 
             # Extra op - 5 measurements in total
             qml.RY(
-                params[5], wires=[w]
-            )  # Op acts either on wire 0-4 (non-zero grad) or wire 5 (zero grad)
+                params[5], wires=[op_wires[-1]]
+            )  # Op acts either on wire 4 (non-zero grad) or wire 5 (zero grad)
 
             # 4 measurements
             qml.expval(qml.PauliZ(wires=0))
