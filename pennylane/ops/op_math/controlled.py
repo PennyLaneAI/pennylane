@@ -471,9 +471,9 @@ class Controlled(SymbolicOp):
             return True
         if isinstance(self.base, qml.PauliX):
             return True
-        if self.base.has_decomposition:
-            return True
         if len(self.base.wires) == 1 and getattr(self.base, "has_matrix", False):
+            return True
+        if self.base.has_decomposition:
             return True
 
         return False
