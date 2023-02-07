@@ -27,7 +27,7 @@ from .basis_data import load_basisset
 from .basis_set import BasisFunction, atom_basis_data, mol_basis_data
 from .convert import import_operator
 from .dipole import dipole_integrals, fermionic_dipole, dipole_moment
-from .factorization import basis_rotation, factorize, chemist_transform, build_spin_tensors
+from .factorization import basis_rotation, factorize, chemist_transform, spin_tensors
 from .hamiltonian import electron_integrals, fermionic_hamiltonian, diff_hamiltonian
 from .hartree_fock import scf, nuclear_energy, hf_energy
 from .integrals import (

@@ -450,10 +450,8 @@ def test_basis_rotation_utransform(core, one_electron, two_electron):
             True,
             np.array(
                 [
-                    [-4.27983194e-01, -0.00000000e00, -2.33965625e-13, -0.00000000e00],
-                    [-0.00000000e00, -4.27983194e-01, -0.00000000e00, -2.33965625e-13],
-                    [-2.33882358e-13, -0.00000000e00, -4.39430980e-01, -0.00000000e00],
-                    [-0.00000000e00, -2.33882358e-13, -0.00000000e00, -4.39430980e-01],
+                    [-4.27983194e-01, -2.33965625e-13],
+                    [-2.33882358e-13, -4.39430980e-01],
                 ]
             ),
             np.array(
@@ -843,10 +841,13 @@ def test_chemist_transform(
         ),
     ],
 )
-def test_build_spin_tensors(one_body_terms, two_body_terms, one_body_tensor, two_body_tensor):
-    r"""Test that `build_spin_tensors` builds correct spin-adjusted tensors from one-body and two-body integrals"""
-    (one_body,) = qml.qchem.build_spin_tensors(one_body_terms, None)
+def test_spin_tensors(one_body_terms, two_body_terms, one_body_tensor, two_body_tensor):
+    r"""Test that `spin_tensors` builds correct spin-adjusted tensors from one-body and two-body integrals"""
+    (one_body,) = qml.qchem.spin_tensors(one_body_terms, None)
     assert np.allclose(one_body, one_body_tensor)
 
-    one_body, two_body = qml.qchem.build_spin_tensors(one_body_terms, two_body_terms)
+    (two_body,) = qml.qchem.spin_tensors(None, two_body_terms)
     assert np.allclose(two_body, two_body_tensor)
+
+    one_body, two_body = qml.qchem.spin_tensors(one_body_terms, two_body_terms)
+    assert np.allclose(one_body, one_body_tensor) and np.allclose(two_body, two_body_tensor)
