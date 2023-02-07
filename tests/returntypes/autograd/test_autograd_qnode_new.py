@@ -28,6 +28,7 @@ qubit_device_and_diff_method = [
     ["default.qubit", "adjoint", "forward"],
     ["default.qubit", "adjoint", "backward"],
     ["default.qubit", "spsa", "backward"],
+    ["default.qubit", "hadamard", "backward"],
 ]
 
 interface_qubit_device_and_diff_method = [
@@ -37,12 +38,14 @@ interface_qubit_device_and_diff_method = [
     ["autograd", "default.qubit", "adjoint", "forward"],
     ["autograd", "default.qubit", "adjoint", "backward"],
     ["autograd", "default.qubit", "spsa", "backward"],
+    ["autograd", "default.qubit", "hadamard", "backward"],
     ["auto", "default.qubit", "finite-diff", "backward"],
     ["auto", "default.qubit", "parameter-shift", "backward"],
     ["auto", "default.qubit", "backprop", "forward"],
     ["auto", "default.qubit", "adjoint", "forward"],
     ["auto", "default.qubit", "adjoint", "backward"],
     ["auto", "default.qubit", "spsa", "backward"],
+    ["auto", "default.qubit", "hadamard", "backward"],
 ]
 
 pytestmark = pytest.mark.autograd
@@ -114,7 +117,7 @@ class TestQNode:
         if diff_method == "backprop":
             pytest.skip("Test does not support backprop")
 
-        dev = qml.device(dev_name, wires=1)
+        dev = qml.device(dev_name, wires=2)
 
         @qnode(dev, interface=None)
         def circuit(a):
@@ -141,7 +144,7 @@ class TestQNode:
         if diff_method == "backprop":
             pytest.skip("Test does not support backprop")
 
-        dev = qml.device(dev_name, wires=1)
+        dev = qml.device(dev_name, wires=2)
 
         @qnode(dev, interface=interface, diff_method=diff_method)
         def circuit(a):
@@ -171,7 +174,7 @@ class TestQNode:
         a = np.array(0.1, requires_grad=True)
         b = np.array(0.2, requires_grad=True)
 
-        dev = qml.device(dev_name, wires=2)
+        dev = qml.device(dev_name, wires=3)
 
         @qnode(dev, diff_method=diff_method, interface=interface, mode=mode)
         def circuit(a, b):
@@ -220,7 +223,7 @@ class TestQNode:
         a = np.array(0.1, requires_grad=True)
         b = np.array(0.2, requires_grad=True)
 
-        dev = qml.device(dev_name, wires=2)
+        dev = qml.device(dev_name, wires=3)
 
         @qnode(dev, diff_method=diff_method, interface=interface, mode=mode)
         def circuit(a, b):
@@ -335,7 +338,7 @@ class TestQNode:
         b = np.array(0.2, requires_grad=False)
         c = np.array(0.3, requires_grad=True)
 
-        dev = qml.device(dev_name, wires=1)
+        dev = qml.device(dev_name, wires=2)
 
         @qnode(dev, diff_method=diff_method, interface=interface, mode=mode)
         def circuit(a, b, c):
@@ -448,7 +451,7 @@ class TestQNode:
                 tape = QuantumScript.from_queue(q_tape)
                 return tape
 
-        dev = qml.device(dev_name, wires=1)
+        dev = qml.device(dev_name, wires=2)
         a = np.array(0.1, requires_grad=False)
         p = np.array([0.1, 0.2, 0.3], requires_grad=True)
 
@@ -590,7 +593,7 @@ class TestQubitIntegration:
             np.random.seed(SEED_FOR_SPSA)
             tol = TOL_FOR_SPSA
 
-        dev = qml.device(dev_name, wires=2)
+        dev = qml.device(dev_name, wires=3)
         x = np.array(0.543, requires_grad=True)
         y = np.array(-0.654, requires_grad=True)
 
@@ -622,7 +625,7 @@ class TestQubitIntegration:
             np.random.seed(SEED_FOR_SPSA)
             tol = TOL_FOR_SPSA
 
-        dev = qml.device(dev_name, wires=2)
+        dev = qml.device(dev_name, wires=3)
         x = np.array(0.543, requires_grad=True)
         y = np.array(-0.654, requires_grad=True)
 
@@ -722,6 +725,9 @@ class TestQubitIntegration:
         elif diff_method == "spsa":
             np.random.seed(SEED_FOR_SPSA)
             tol = TOL_FOR_SPSA
+        elif diff_method == "hadamard":
+            pytest.skip("Hadamard gradient does not support variances.")
+
 
         dev = qml.device(dev_name, wires=2)
         x = np.array(0.543, requires_grad=True)
@@ -1292,6 +1298,8 @@ class TestQubitIntegration:
         elif diff_method == "spsa":
             np.random.seed(SEED_FOR_SPSA)
             tol = TOL_FOR_SPSA
+        elif diff_method == "hadamard":
+            pytest.skip("Hadamard gradient does not support variances.")
 
         dev = qml.device(dev_name, wires=2)
         P = np.array([1], requires_grad=False)
@@ -1350,6 +1358,8 @@ class TestCV:
         dev = qml.device("default.gaussian", wires=1)
         if diff_method == "spsa":
             tol = TOL_FOR_SPSA
+        elif diff_method == "hadamard":
+            pytest.skip("Hadamard gradient does not support variances.")
 
         r = np.array(0.543, requires_grad=True)
         phi = np.array(-0.654, requires_grad=True)
@@ -1381,6 +1391,8 @@ class TestCV:
         dev = qml.device("default.gaussian", wires=1)
         if diff_method == "spsa":
             tol = TOL_FOR_SPSA
+        elif diff_method == "hadamard":
+            pytest.skip("Hadamard gradient does not support variances.")
 
         n = np.array(0.12, requires_grad=True)
         a = np.array(0.765, requires_grad=True)
@@ -1625,6 +1637,8 @@ class TestSample:
 
     def test_sample_combination(self, tol):
         """Test the output of combining expval, var and sample"""
+        if diff_method == "hadamard":
+            pytest.skip("Hadamard gradient does not support variances.")
         n_sample = 10
 
         dev = qml.device("default.qubit", wires=3, shots=n_sample)
@@ -1962,6 +1976,8 @@ class TestReturn:
 
         if diff_method == "adjoint":
             pytest.skip("The adjoint method does not currently support second-order diff.")
+        elif diff_method == "hadamard":
+            pytest.skip("Hadamard gradient does not support variances.")
 
         par_0 = qml.numpy.array(0.1, requires_grad=True)
         par_1 = qml.numpy.array(0.2, requires_grad=True)
@@ -1991,6 +2007,8 @@ class TestReturn:
         """The hessian of single measurement with a multiple params array return a single array."""
         if diff_method == "adjoint":
             pytest.skip("The adjoint method does not currently support second-order diff.")
+        elif diff_method == "hadamard":
+            pytest.skip("Hadamard gradient does not support variances.")
 
         dev = qml.device(dev_name, wires=2)
 
@@ -2073,6 +2091,8 @@ class TestReturn:
 
         if diff_method == "adjoint":
             pytest.skip("The adjoint method does not currently support second-order diff.")
+        elif diff_method == "hadamard":
+            pytest.skip("Hadamard gradient does not support variances.")
 
         par_0 = qml.numpy.array(0.1, requires_grad=True)
         par_1 = qml.numpy.array(0.2, requires_grad=True)
@@ -2105,6 +2125,8 @@ class TestReturn:
         """The hessian of multiple measurements with a multiple param array return a single array."""
         if diff_method == "adjoint":
             pytest.skip("The adjoint method does not currently support second-order diff.")
+        elif diff_method == "hadamard":
+            pytest.skip("Hadamard gradient does not support variances.")
 
         dev = qml.device(dev_name, wires=2)
 
