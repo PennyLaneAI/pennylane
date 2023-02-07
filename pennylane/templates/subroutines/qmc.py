@@ -63,14 +63,14 @@ def probs_to_unitary(probs):
 
     # Using the approach discussed here:
     # https://quantumcomputing.stackexchange.com/questions/10239/how-can-i-fill-a-unitary-knowing-only-its-first-column
-    psi = np.sqrt(probs)
+    psi = qml.math.sqrt(probs)
     overlap = psi[0]
-    denominator = np.sqrt(2 + 2 * overlap)
-    psi[0] += 1
+    denominator = qml.math.sqrt(2 + 2 * overlap)
+    psi = psi.at[0].set(1)
     psi /= denominator
 
     dim = len(probs)
-    return 2 * np.outer(psi, psi) - np.eye(dim)
+    return 2 * qml.math.outer(psi, psi) - np.eye(dim)
 
 
 def func_to_unitary(func, M):
