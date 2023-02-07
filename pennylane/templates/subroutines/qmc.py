@@ -66,7 +66,7 @@ def probs_to_unitary(probs):
     psi = qml.math.sqrt(probs)
     overlap = psi[0]
     denominator = qml.math.sqrt(2 + 2 * overlap)
-    psi = psi.at[0].set(1)
+    psi = qml.math.set_index(psi, 0, psi[0] + 1)  # psi[0] += 1, but JAX-JIT compatible
     psi /= denominator
 
     dim = len(probs)
