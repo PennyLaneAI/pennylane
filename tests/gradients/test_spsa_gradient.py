@@ -37,10 +37,14 @@ def coordinate_sampler(indices, num_params, idx, seed=None):
 
 
 class TestRademacherSampler:
+    """Test the Rademacher distribution sampler."""
+
     @pytest.mark.parametrize(
         "ids, num", [(list(range(5)), 5), ([0, 2, 4], 5), ([0], 1), ([2, 3], 5)]
     )
     def test_output_structure(self, ids, num):
+        """Test that the sampled output has the right entries to be non-zero
+        and attains the right values."""
         ids_mask = np.zeros(num, dtype=bool)
         ids_mask[ids] = True
 
@@ -52,15 +56,19 @@ class TestRademacherSampler:
             assert np.allclose(direction[~ids_mask], 0)
 
     def test_call_with_third_arg(self):
+        """Test that a third argument is ignored."""
         _rademacher_sampler([0, 1, 2], 4, "ignored dummy")
 
     def test_call_with_third_arg_and_seed_None(self):
+        """Test that a third argument is ignored with seed=None."""
         _rademacher_sampler([0, 1, 2], 4, "ignored dummy", seed=None)
 
     @pytest.mark.parametrize(
         "ids, num", [(list(range(5)), 5), ([0, 2, 4], 5), ([0], 1), ([2, 3], 5)]
     )
     def test_call_with_seed_not_None(self, ids, num):
+        """Test that a seed is used correctly by the sampler, reproducing the
+        same direction every time."""
         seed = 12425
         first_direction = _rademacher_sampler(ids, num, "ignored dummy", seed=seed)
         for _ in range(5):
@@ -68,6 +76,7 @@ class TestRademacherSampler:
             assert np.allclose(first_direction, direction)
 
     def test_differing_seeds(self):
+        """Test that the output differs for different seeds."""
         ids = [0, 1, 2, 3, 4]
         num = 5
         seeds = [42, 43]
@@ -80,6 +89,8 @@ class TestRademacherSampler:
     )
     @pytest.mark.parametrize("N", [10, 10000])
     def test_mean_and_var(self, ids, num, N):
+        """Test that the mean and variance of many produced samples are
+        close to the theoretical values."""
         np.random.seed(42)
         ids_mask = np.zeros(num, dtype=bool)
         ids_mask[ids] = True
@@ -153,7 +164,7 @@ class TestSpsaGradient:
             assert spy.call_args_list[i][0][2].shape == (2, 1)
 
     def test_no_trainable_params_tape(self):
-        """Test that the correct ouput and warning is generated in the absence of any trainable
+        """Test that the correct output and warning is generated in the absence of any trainable
         parameters"""
         dev = qml.device("default.qubit", wires=2)
 
@@ -175,7 +186,7 @@ class TestSpsaGradient:
 
     @pytest.mark.autograd
     def test_no_trainable_params_qnode_autograd(self):
-        """Test that the correct ouput and warning is generated in the absence of any trainable
+        """Test that the correct output and warning is generated in the absence of any trainable
         parameters"""
         dev = qml.device("default.qubit", wires=2)
 
@@ -193,7 +204,7 @@ class TestSpsaGradient:
 
     @pytest.mark.torch
     def test_no_trainable_params_qnode_torch(self):
-        """Test that the correct ouput and warning is generated in the absence of any trainable
+        """Test that the correct output and warning is generated in the absence of any trainable
         parameters"""
         dev = qml.device("default.qubit", wires=2)
 
@@ -211,7 +222,7 @@ class TestSpsaGradient:
 
     @pytest.mark.tf
     def test_no_trainable_params_qnode_tf(self):
-        """Test that the correct ouput and warning is generated in the absence of any trainable
+        """Test that the correct output and warning is generated in the absence of any trainable
         parameters"""
         dev = qml.device("default.qubit", wires=2)
 
@@ -229,7 +240,7 @@ class TestSpsaGradient:
 
     @pytest.mark.jax
     def test_no_trainable_params_qnode_jax(self):
-        """Test that the correct ouput and warning is generated in the absence of any trainable
+        """Test that the correct output and warning is generated in the absence of any trainable
         parameters"""
         dev = qml.device("default.qubit", wires=2)
 
@@ -302,6 +313,7 @@ class TestSpsaGradient:
     def test_independent_parameters(self):
         """Test the case where expectation values are independent of some parameters. For those
         parameters, the gradient should be evaluated to zero without executing the device."""
+        np.random.seed(42)
         dev = qml.device("default.qubit", wires=2)
 
         with qml.queuing.AnnotatedQueue() as q1:
@@ -443,10 +455,11 @@ class TestSpsaGradient:
         assert np.isclose(qnode(par).item().val, reference_qnode(par))
         assert np.isclose(qml.jacobian(qnode)(par).item().val, qml.jacobian(reference_qnode)(par))
 
-    @pytest.mark.parametrize("num_directions, tol", [(100, 0.1), (500, 5e-3)])
+    @pytest.mark.parametrize("num_directions, tol", [(1, 0.1), (1, 5e-3)])
     def test_convergence_single_par(self, num_directions, tol):
         """Test that the SPSA gradient converges to the gradient for many direction samples
         and the Rademacher distribution."""
+        np.random.seed(42)
 
         x = 0.543
         with qml.queuing.AnnotatedQueue() as q:

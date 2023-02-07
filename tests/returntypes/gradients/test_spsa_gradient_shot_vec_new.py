@@ -246,6 +246,7 @@ class TestSpsaGradient:
     def test_all_zero_diff_methods(self):
         """Test that the transform works correctly when the diff method for every parameter is
         identified to be 0, and that no tapes were generated."""
+        np.random.seed(42)
         dev = qml.device("default.qubit", wires=4, shots=default_shot_vector)
 
         @qml.qnode(dev)
@@ -281,6 +282,7 @@ class TestSpsaGradient:
     def test_all_zero_diff_methods_multiple_returns(self):
         """Test that the transform works correctly when the diff method for every parameter is
         identified to be 0, and that no tapes were generated."""
+        np.random.seed(42)
 
         dev = qml.device("default.qubit", wires=4, shots=many_shots_shot_vector)
 
@@ -384,6 +386,7 @@ class TestSpsaGradient:
     def test_independent_parameters(self):
         """Test the case where expectation values are independent of some parameters. For those
         parameters, the gradient should be evaluated to zero without executing the device."""
+        np.random.seed(42)
         dev = qml.device("default.qubit", wires=2, shots=many_shots_shot_vector)
 
         with qml.queuing.AnnotatedQueue() as q1:
@@ -599,6 +602,7 @@ class TestSpsaGradientIntegration:
     def test_single_expectation_value(self, approx_order, strategy, validate, tol):
         """Tests correct output shape and evaluation for a tape
         with a single expval output"""
+        np.random.seed(42)
         dev = qml.device("default.qubit", wires=2, shots=many_shots_shot_vector)
         x = 0.543
         y = -0.654
@@ -698,6 +702,7 @@ class TestSpsaGradientIntegration:
         This test relies on the fact that exactly one term of the estimated
         jacobian will match the expected analytical value.
         """
+        np.random.seed(42)
         dev = qml.device("default.qubit", wires=2, shots=many_shots_shot_vector)
         x = 0.543
         y = -0.654
@@ -752,6 +757,7 @@ class TestSpsaGradientIntegration:
         This test relies on the fact that exactly one term of the estimated
         jacobian will match the expected analytical value.
         """
+        np.random.seed(42)
         dev = qml.device("default.qubit", wires=2, shots=many_shots_shot_vector)
         x = 0.543
         y = -0.654
@@ -797,6 +803,7 @@ class TestSpsaGradientIntegration:
     def test_multiple_expectation_values(self, approx_order, strategy, validate, tol):
         """Tests correct output shape and evaluation for a tape
         with multiple expval outputs"""
+        np.random.seed(42)
         dev = qml.device("default.qubit", wires=2, shots=many_shots_shot_vector)
         x = 0.543
         y = -0.654
@@ -905,6 +912,7 @@ class TestSpsaGradientIntegration:
     def test_prob_expectation_values(self, approx_order, strategy, validate, tol):
         """Tests correct output shape and evaluation for a tape
         with prob and expval outputs"""
+        np.random.seed(42)
         dev = qml.device("default.qubit", wires=2, shots=many_shots_shot_vector)
         x = 0.543
         y = -0.654
