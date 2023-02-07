@@ -909,7 +909,11 @@ def set_index(array, idx, val, like=None):
         val (int, float): value to set
 
     Returns:
-        a new copy of the array with the specified index updated to ``val``
+        a new copy of the array with the specified index updated to ``val``.
+
+    Whether the original array is modified is interface-dependent.
+
+    .. note:: TensorFlow EagerTensor does not support item assignment
     """
 
     if like == "jax":
