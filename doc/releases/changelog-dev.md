@@ -583,6 +583,9 @@
 * `Tensor._pauli_rep` is set to `None` during initialization. Add `Tensor.data` setter.
   [(#3722)](https://github.com/PennyLaneAI/pennylane/pull/3722)
 
+* Redirect `qml.math.ndim` to `jnp.ndim` when using it on a jax tensor.
+  [(#3730)](https://github.com/PennyLaneAI/pennylane/pull/3730)
+
 <h3>Contributors</h3>
 
 This release contains contributions from (in alphabetical order):
