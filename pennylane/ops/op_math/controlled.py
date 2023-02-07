@@ -562,9 +562,7 @@ def _decompose_no_control_values(op: "operation.Operator") -> List["operation.Op
     if not op.base.has_decomposition:
         return None
 
-    # Need to use expand because of in-place inversion
-    # revert to decomposition once in-place inversion removed
-    base_decomp = op.base.expand().circuit
+    base_decomp = op.base.decomposition()
 
     return [Controlled(newop, op.control_wires, work_wires=op.work_wires) for newop in base_decomp]
 
