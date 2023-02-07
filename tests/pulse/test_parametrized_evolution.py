@@ -89,7 +89,6 @@ class TestInitialization:
 
         assert ev.H is H
         assert qml.math.allequal(ev.t, [0, 2])
-        assert qml.math.allequal(ev.params, [1, 2])
 
         assert ev.wires == H.wires
         assert ev.num_wires == AnyWires
@@ -97,9 +96,9 @@ class TestInitialization:
         assert ev.id is None
         assert ev.queue_idx is None
 
-        assert ev.data == []
-        assert ev.parameters == []
-        assert ev.num_params == 0
+        assert qml.math.allequal(ev.data, [1, 2])
+        assert qml.math.allequal(ev.parameters, [1, 2])
+        assert ev.num_params == 2
 
     def test_odeint_kwargs(self):
         """Test the initialization with odeint kwargs."""
@@ -117,14 +116,14 @@ class TestInitialization:
         H = ParametrizedHamiltonian(coeffs, ops)
         ev = ParametrizedEvolution(H=H, mxstep=10)
 
-        assert ev.params is None
+        assert ev.parameters == []
         assert ev.t is None
         assert ev.odeint_kwargs == {"mxstep": 10}
         params = [1, 2, 3]
         t = 6
         ev(params, t, atol=1e-6, rtol=1e-4)
 
-        assert qml.math.allequal(ev.params, params)
+        assert qml.math.allequal(ev.parameters, params)
         assert qml.math.allequal(ev.t, [0, 6])
         assert ev.odeint_kwargs == {"mxstep": 10, "atol": 1e-6, "rtol": 1e-4}
 
