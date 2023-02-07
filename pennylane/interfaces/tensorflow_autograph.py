@@ -299,8 +299,7 @@ def _execute_new(
             the maximum number of derivatives to support. Increasing this value allows
             for higher order derivatives to be extracted, at the cost of additional
             (classical) computational overhead during the backwards pass.
-        mode (str): Whether the gradients should be computed on the forward
-            pass (``forward``) or the backward pass (``backward``).
+        grad_on_execution (bool): Whether the gradients should be computed on execution or not.
 
     Returns:
         list[list[tf.Tensor]]: A nested list of tape results. Each element in
