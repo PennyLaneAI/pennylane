@@ -6,9 +6,14 @@
 
 <h4>Add new features here</h4>
 
+* Add `qml.math.detach`, which detaches a tensor from its trace. This stops
+  automatic gradient computations.
+  [(#3674)](https://github.com/PennyLaneAI/pennylane/pull/3674)
+
 * A new operation `SpecialUnitary` was added, providing access to an arbitrary
   unitary gate via a parametrization in the Pauli basis.
   [(#3650)](https://github.com/PennyLaneAI/pennylane/pull/3650)
+  [(#3674)](https://github.com/PennyLaneAI/pennylane/pull/3674)
 
   The new operation takes a single argument, a one-dimensional `tensor_like`
   of length `4**num_wires-1`, where `num_wires` is the number of wires the unitary acts on.
@@ -44,7 +49,8 @@
   True
   ```
   
-  This operation supports parameter broadcasting/batching.
+  This operation can be differentiated with hardware-compatible methods like parameter shifts
+  and it supports parameter broadcasting/batching, but not both at the same time.
 
 * Add `typing.TensorLike` type.
   [(#3675)](https://github.com/PennyLaneAI/pennylane/pull/3675)
