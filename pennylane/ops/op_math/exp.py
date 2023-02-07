@@ -298,12 +298,6 @@ class Exp(ScalarSymbolicOp, Operation):
             if op_class.num_wires in {base.num_wires, AnyWires} and op_class is not qml.PauliRot:
                 with qml.QueuingManager.stop_recording():
                     g, c = qml.generator(op_class)(coeff, base.wires)
-                    # Make sure both ``g`` and ``base`` are of the same type
-                    if isinstance(g, Hamiltonian):
-                        g = qml.dot(g.coeffs, g.ops)
-                    elif isinstance(g, Tensor):
-                        g = qml.prod(*g.obs)
-
                     # Some generators are not wire-ordered (e.g. OrbitalRotation)
                     new_g = qml.map_wires(g, dict(zip(g.wires, base.wires)))
 

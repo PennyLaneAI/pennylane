@@ -259,13 +259,13 @@ class TestPrefactorReturn:
         """Test a generator that returns a tensor observable is correct"""
         gen, prefactor = qml.generator(TensorOp, format="prefactor")(0.5, wires=[0, 1])
         assert prefactor == 0.5
-        assert gen.name == ["PauliX", "PauliY"]
+        assert gen.name == "Prod"
 
     def test_hamiltonian(self):
         """Test a generator that returns a Hamiltonian"""
         gen, prefactor = qml.generator(HamiltonianOp, format="prefactor")(0.5, wires=[0, 1])
         assert prefactor == 1.0
-        assert gen.name == "Hamiltonian"
+        assert gen.name == "Sum"
 
     def test_hamiltonian_with_same_term(self):
         """Test a generator that returns a Hamiltonian with multiple terms, all containing the same
@@ -274,8 +274,9 @@ class TestPrefactorReturn:
             0.5, wires=[0, 1]
         )
         assert prefactor == 0.5
-        assert isinstance(gen, Hamiltonian)
-        assert qml.math.allequal(gen.coeffs, [1, 1])
+        assert isinstance(gen, Sum)
+        for op in gen:
+            assert isinstance(op, Prod)
 
     def test_hamiltonian_with_same_abs_term(self):
         """Test a generator that returns a Hamiltonian with multiple terms, all containing the same

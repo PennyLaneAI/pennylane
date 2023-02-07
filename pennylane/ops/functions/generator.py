@@ -79,38 +79,36 @@ def _generator_prefactor(gen, op):
       of Pauli words.
     """
 
-    obs = gen
     prefactor = 1.0
 
-    if isinstance(gen, (Hamiltonian, Sum)):
-        ops = gen.ops if isinstance(gen, Hamiltonian) else gen.operands
-        coeffs = (
-            gen.coeffs
-            if isinstance(gen, Hamiltonian)
-            else [o.scalar if isinstance(o, SProd) else 1 for o in gen]
-        )
+    if isinstance(gen, Hamiltonian):
+        gen = qml.dot(gen.coeffs, gen.ops)  # convert to Sum
+
+    if isinstance(gen, Sum):
+        ops = gen.operands
+        coeffs = [o.scalar if isinstance(o, SProd) else 1 for o in gen]
         abs_coeffs = list(qml.math.abs(coeffs))
         if len(ops) == 1:
             # case where the Hamiltonian is a single Pauli word
-            obs = ops[0]
+            gen = ops[0]
             prefactor = coeffs[0]
         elif qml.math.allequal(coeffs[0], coeffs):
             # case where the Hamiltonian coefficients are all the same
-            obs = sum(ops)
+            gen = qml.sum(*ops)
             prefactor = coeffs[0]
         elif qml.math.allequal(abs_coeffs[0], abs_coeffs):
             # absolute value of coefficients is the same
             prefactor = abs_coeffs[0]
             coeffs = [c / prefactor for c in coeffs]
-            obs = qml.dot(coeffs, ops)
+            gen = qml.dot(coeffs, ops)
     elif isinstance(gen, SProd):
-        obs = gen.base
         prefactor = gen.scalar
+        gen = gen.base
 
     if op.inverse:
         prefactor *= -1.0
 
-    return obs, prefactor
+    return gen, prefactor
 
 
 def _generator_backcompatibility(op):
