@@ -186,7 +186,7 @@ class ParametrizedEvolution(Operation):
         # Need to cast all elements inside params to `jnp.arrays` to make sure they are not casted
         # to `np.arrays` inside `Operator.__init__`
         params = [jnp.array(p) for p in params]
-        odeint_kwargs = dict(list(self.odeint_kwargs.items()) + list(odeint_kwargs.items()))
+        odeint_kwargs = {**self.odeint_kwargs, **odeint_kwargs}
         if qml.QueuingManager.recording():
             qml.QueuingManager.remove(self)
 
