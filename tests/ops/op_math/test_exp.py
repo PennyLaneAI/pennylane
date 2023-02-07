@@ -19,11 +19,13 @@ import pytest
 import pennylane as qml
 from pennylane import numpy as np
 from pennylane.operation import (
+    AnyWires,
     DecompositionUndefinedError,
     GeneratorUndefinedError,
     ParameterFrequenciesUndefinedError,
 )
 from pennylane.ops.op_math import Evolution, Exp
+from pennylane.ops.qubit.attributes import has_unitary_generator_types
 
 
 @pytest.mark.parametrize("constructor", (qml.exp, Exp))
@@ -425,27 +427,22 @@ class TestDecomposition:
         pr = op.decomposition()[0]
         assert qml.equal(pr, qml.PauliRot(3.21, base_string, base.wires))
 
-    @pytest.mark.parametrize(
-        "op_class",
-        [
-            qml.RX,
-            qml.RY,
-            qml.RZ,
-            qml.IsingXX,
-            qml.IsingXY,
-            qml.IsingYY,
-            qml.IsingZZ,
-            qml.SingleExcitation,
-            qml.SingleExcitationMinus,
-            qml.SingleExcitationPlus,
-            qml.OrbitalRotation,
-        ],
-    )
+    @pytest.mark.parametrize("op_class", has_unitary_generator_types)
     def test_generator_decomposition(self, op_class):
         """Check that Exp decomposes into a specific operator if ``base`` corresponds to the
         generator of that operator."""
+        if op_class in {qml.DoubleExcitationMinus, qml.DoubleExcitationPlus}:
+            pytest.skip("qml.equal doesn't work for `SparseHamiltonian` generators.")
+
         phi = 1.23
-        op = op_class(phi, wires=list(range(op_class.num_wires)))
+
+        wires = [0, 1, 2] if op_class.num_wires is AnyWires else list(range(op_class.num_wires))
+
+        if op_class is qml.PauliRot:
+            op = op_class(phi, pauli_word="XYZ", wires=wires)
+        else:
+            op = op_class(phi, wires=wires)
+
         exp = qml.evolve(op.generator(), coeff=-phi)
         dec = exp.decomposition()
         assert len(dec) == 1

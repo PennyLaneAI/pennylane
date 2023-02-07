@@ -24,6 +24,7 @@ from scipy.sparse.linalg import expm as sparse_expm
 import pennylane as qml
 from pennylane import math
 from pennylane.operation import (
+    AnyWires,
     DecompositionUndefinedError,
     GeneratorUndefinedError,
     Operation,
@@ -33,7 +34,7 @@ from pennylane.operation import (
     expand_matrix,
 )
 from pennylane.ops.qubit import Hamiltonian
-from pennylane.ops.qubit.attributes import has_unitary_generator
+from pennylane.ops.qubit.attributes import has_unitary_generator_types
 from pennylane.wires import Wires
 
 from .sprod import SProd
@@ -175,9 +176,6 @@ class Exp(ScalarSymbolicOp, Operation):
         self._data = [[coeff], self.base.data]
         self.grad_recipe = [None]
         self.num_steps = num_steps
-        self._ops_with_generator = [
-            getattr(qml, op_name) for op_name in has_unitary_generator if op_name != "PauliRot"
-        ]
 
     def __repr__(self):
         return (
@@ -295,9 +293,9 @@ class Exp(ScalarSymbolicOp, Operation):
         if isinstance(base, SProd):
             return self._recursive_decomposition(base.base, base.scalar * coeff)
 
-        for op_class in self._ops_with_generator:
+        for op_class in has_unitary_generator_types:
             # Check if the exponentiated operator is a generator of another operator
-            if op_class.num_wires == base.num_wires:
+            if op_class.num_wires in {base.num_wires, AnyWires} and op_class is not qml.PauliRot:
                 with qml.QueuingManager.stop_recording():
                     g, c = qml.generator(op_class)(coeff, base.wires)
                     # Make sure both ``g`` and ``base`` are of the same type
