@@ -183,13 +183,16 @@ class ParametrizedEvolution(Operation):
         super().__init__(*params, wires=H.wires, do_queue=do_queue, id=id)
 
     def __call__(self, params, t, **odeint_kwargs):
-        self.data = [jnp.array(p) if isinstance(p, list) else p for p in params]
-        self._num_params = len(params)
-        self.t = jnp.array([0, t] if qml.math.ndim(t) == 0 else t, dtype=float)
-        if odeint_kwargs:
-            self.odeint_kwargs.update(odeint_kwargs)
-        self._has_matrix = True
-        return self
+        # Need to cast all elements inside params to `jnp.arrays` to make sure they are not casted
+        # to `np.arrays` inside `Operator.__init__`
+        params = [jnp.array(p) for p in params]
+        odeint_kwargs = dict(list(self.odeint_kwargs.items()) + list(odeint_kwargs.items()))
+        if qml.QueuingManager.recording():
+            qml.QueuingManager.remove(self)
+
+        return ParametrizedEvolution(
+            H=self.H, params=params, t=t, do_queue=True, id=self.id, **odeint_kwargs
+        )
 
     # pylint: disable=arguments-renamed, invalid-overridden-method
     @property

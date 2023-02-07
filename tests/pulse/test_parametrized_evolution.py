@@ -25,6 +25,7 @@ import pennylane as qml
 from pennylane.operation import AnyWires
 from pennylane.ops import QubitUnitary
 from pennylane.pulse import ParametrizedEvolution, ParametrizedHamiltonian
+from pennylane.tape import QuantumTape
 
 
 class MyOp(qml.RX):  # pylint: disable=too-few-public-methods
@@ -122,12 +123,27 @@ class TestInitialization:
         assert ev.odeint_kwargs == {"mxstep": 10}
         params = [1, 2, 3]
         t = 6
-        ev(params, t, atol=1e-6, rtol=1e-4)
+        new_ev = ev(params, t, atol=1e-6, rtol=1e-4)
 
-        assert qml.math.allequal(ev.parameters, params)
-        assert ev.num_params == 3
-        assert qml.math.allequal(ev.t, [0, 6])
-        assert ev.odeint_kwargs == {"mxstep": 10, "atol": 1e-6, "rtol": 1e-4}
+        assert new_ev is not ev
+        assert qml.math.allequal(new_ev.parameters, params)
+        assert new_ev.num_params == 3
+        assert qml.math.allequal(new_ev.t, [0, 6])
+        assert new_ev.odeint_kwargs == {"mxstep": 10, "atol": 1e-6, "rtol": 1e-4}
+
+    def test_update_attributes_inside_queuing_context(self):
+        """Make sure that updating a ``ParametrizedEvolution`` inside a queuing context, the initial
+        operator is removed from the queue."""
+        ops = [qml.PauliX(0), qml.PauliY(1)]
+        coeffs = [1, 2]
+        H = ParametrizedHamiltonian(coeffs, ops)
+
+        with QuantumTape() as tape:
+            op = qml.evolve(H)
+            op2 = op(params=[1, 2, 3], t=6)
+
+        assert len(tape) == 1
+        assert tape[0] is op2
 
     def test_list_of_times(self):
         """Test the initialization."""
@@ -143,12 +159,15 @@ class TestInitialization:
         assert qml.math.allclose(ev.t, t)
 
     def test_has_matrix_true(self):
-        """Test that a parametrized evolution always has ``has_matrix=True``."""
+        """Test that a parametrized evolution has ``has_matrix=True`` only when `t` and `params` are
+        defined."""
         ops = [qml.PauliX(0), qml.PauliY(1)]
         coeffs = [1, 2]
         H = ParametrizedHamiltonian(coeffs, ops)
-        ev = ParametrizedEvolution(H=H, params=[1, 2], t=2)
-        assert ev.has_matrix is True
+        ev = ParametrizedEvolution(H=H)
+        assert ev.has_matrix is False
+        new_ev = ev(params=[1, 2, 3], t=3)
+        assert new_ev.has_matrix is True
 
     def test_evolve_with_operator_without_matrix_raises_error(self):
         """Test that an error is raised when an ``ParametrizedEvolution`` operator is initialized with a
