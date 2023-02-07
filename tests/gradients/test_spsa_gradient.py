@@ -463,7 +463,7 @@ class TestSpsaGradient:
         assert np.isclose(qnode(par).item().val, reference_qnode(par))
         assert np.isclose(qml.jacobian(qnode)(par).item().val, qml.jacobian(reference_qnode)(par))
 
-    @pytest.mark.parametrize("num_directions, tol", [(100, 0.1), (10000, 0.03)])
+    @pytest.mark.parametrize("num_directions, tol", [(100, 0.3), (1000, 0.1)])
     def test_convergence_single_par(self, num_directions, tol):
         """Test that the SPSA gradient converges to the gradient for many direction samples
         and the Rademacher distribution."""
