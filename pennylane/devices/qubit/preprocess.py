@@ -173,9 +173,6 @@ def check_validity(tape):
             raise DeviceError(f"Gate {operation_name} not supported on Python Device")
 
     for o in tape.observables:
-        if isinstance(o, qml.measurements.MeasurementProcess) and o.obs is not None:
-            o = o.obs
-
         if isinstance(o, Tensor):
             for i in o.obs:
                 if not _supports_observable(i.name):

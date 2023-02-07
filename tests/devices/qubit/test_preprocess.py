@@ -114,7 +114,7 @@ class TestHelpers:
     def test_check_validity_passes(self):
         """Test that check_validity doesn't throw any errors for a valid circuit"""
         tape = QuantumScript(
-            ops=[qml.PauliX(0), qml.RZ(0.123, wires=0)], measurements=[qml.expval(qml.Hadamard(0))]
+            ops=[qml.PauliX(0), qml.RZ(0.123, wires=0)], measurements=[qml.state()]
         )
         check_validity(tape)
 
