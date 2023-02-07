@@ -35,7 +35,6 @@ class TestApplyOperations:
         out = qml.math.reshape(out, 4)
         exp = np.array([np.cos(self.x / 2), 0.0, -1j * np.sin(self.x / 2), 0.0])
         assert np.allclose(out, exp)
-        assert not op.inverse
 
     def test_operation_group(self):
         """Test that a group of operations with is applied correctly

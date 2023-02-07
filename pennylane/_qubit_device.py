@@ -675,8 +675,7 @@ class QubitDevice(Device):
 
         Both arguments are provided as lists of PennyLane :class:`~.Operation`
         instances. Useful properties include :attr:`~.Operation.name`,
-        :attr:`~.Operation.wires`, and :attr:`~.Operation.parameters`,
-        and :attr:`~.Operation.inverse`:
+        :attr:`~.Operation.wires`, and :attr:`~.Operation.parameters`:
 
         >>> op = qml.RX(0.2, wires=[0])
         >>> op.name # returns the operation name
@@ -685,11 +684,6 @@ class QubitDevice(Device):
         <Wires = [0]>
         >>> op.parameters # returns a list of parameters
         [0.2]
-        >>> op.inverse # check if the operation should be inverted
-        False
-        >>> op = qml.RX(0.2, wires=[0]).inv
-        >>> op.inverse
-        True
 
         Args:
             operations (list[~.Operation]): operations to apply to the device
@@ -1930,7 +1924,7 @@ class QubitDevice(Device):
         """Implements the adjoint method outlined in
         `Jones and Gacon <https://arxiv.org/abs/2009.02823>`__ to differentiate an input tape.
 
-        After a forward pass, the circuit is reversed by iteratively applying inverse (adjoint)
+        After a forward pass, the circuit is reversed by iteratively applying adjoint
         gates to scan backwards through the circuit.
 
         .. note::
@@ -2009,7 +2003,7 @@ class QubitDevice(Device):
         expanded_ops = []
         for op in reversed(tape.operations):
             if op.num_params > 1:
-                if not isinstance(op, qml.Rot) or op.inverse:
+                if not isinstance(op, qml.Rot):
                     raise qml.QuantumFunctionError(
                         f"The {op.name} operation is not supported using "
                         'the "adjoint" differentiation method'
