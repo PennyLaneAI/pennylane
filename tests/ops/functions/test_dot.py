@@ -69,6 +69,8 @@ class TestDotSum:
         result = qml.dot(coeffs=[4, 4, 4], ops=[qml.PauliX(0), qml.PauliX(1), qml.PauliX(2)])
         assert isinstance(result, SProd)
         assert result.scalar == 4
+        assert isinstance(result.base, Sum)
+        assert len(result.base) == 3
         for op in result.base:
             assert isinstance(op, qml.PauliX)
 
