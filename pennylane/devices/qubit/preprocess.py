@@ -18,6 +18,7 @@ that they are supported for execution by a device."""
 import pennylane as qml
 
 from pennylane.operation import Observable, Tensor
+from pennylane.ops import Sum
 from pennylane.measurements import (
     MidMeasureMP,
     ExpectationMP,
@@ -102,8 +103,7 @@ def batch_transform(circuit):
     prior to execution.
 
     By default, this method contains logic for generating multiple
-    circuits, one per term, of a circuit that terminates in ``expval(H)``,
-    if the device requires finite shots.
+    circuits, one per term, of a circuit that terminates in ``expval(Sum)``.
 
     .. warning::
 
@@ -120,55 +120,38 @@ def batch_transform(circuit):
         the sequence of circuits to be executed, and a post-processing function
         to be applied to the list of evaluated circuit results.
     """
-    grouping_known = all(
-        obs.grouping_indices is not None
-        for obs in circuit.observables
-        if isinstance(obs, qml.Hamiltonian)
-    )
-
-    hamiltonian_in_obs = any(isinstance(obs, qml.Hamiltonian) for obs in circuit.observables)
     expval_sum_in_obs = any(
-        isinstance(m.obs, qml.Sum) and isinstance(m, ExpectationMP) for m in circuit.measurements
+        isinstance(m.obs, Sum) and isinstance(m, ExpectationMP) for m in circuit.measurements
     )
 
     is_shadow = any(isinstance(m, ShadowExpvalMP) for m in circuit.measurements)
 
-    if hamiltonian_in_obs and (not is_shadow or grouping_known):
-        # If the observable contains a Hamiltonian and if the simulation uses finite shots,
-        # or if the Hamiltonian explicitly specifies an observable grouping, split tape
-        # into multiple tapes of diagonalizable known observables.
-        try:
-            circuits, hamiltonian_fn = qml.transforms.hamiltonian_expand(circuit, group=False)
-        except ValueError as e:
-            raise ValueError(
-                "Can only return the expectation of a single Hamiltonian observable"
-            ) from e
-    elif expval_sum_in_obs and not is_shadow:
-        circuits, hamiltonian_fn = qml.transforms.sum_expand(circuit)
+    if expval_sum_in_obs and not is_shadow:
+        circuits, sum_fn = qml.transforms.sum_expand(circuit)
 
     else:
         # otherwise, return the output of an identity transform
         circuits = [circuit]
 
-        def hamiltonian_fn(res):
+        def sum_fn(res):
             return res[0]
 
     # Check whether the circuit was broadcasted
     if circuit.batch_size is None:
         # If the circuit wasn't broadcasted, no action required
-        return circuits, hamiltonian_fn
+        return circuits, sum_fn
 
-    # Expand each of the broadcasted Hamiltonian-expanded circuits
+    # Expand each of the broadcasted sum-expanded circuits
     expanded_tapes, expanded_fn = qml.transforms.map_batch_transform(
         qml.transforms.broadcast_expand, circuits
     )
 
-    # Chain the postprocessing functions of the broadcasted-tape expansions and the Hamiltonian
+    # Chain the postprocessing functions of the broadcasted-tape expansions and the Sum
     # expansion. Note that the application order is reversed compared to the expansion order,
-    # i.e. while we first applied `hamiltonian_expand` to the tape, we need to process the
+    # i.e. while we first applied `sum_expand` to the tape, we need to process the
     # results from the broadcast expansion first.
     def total_processing(results):
-        return hamiltonian_fn(expanded_fn(results))
+        return sum_fn(expanded_fn(results))
 
     return expanded_tapes, total_processing
 

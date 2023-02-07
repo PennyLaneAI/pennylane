@@ -16,6 +16,7 @@
 # pylint: disable=unused-import
 import pytest
 
+import numpy as np
 import pennylane as qml
 from pennylane.operation import Operation
 from pennylane.devices.qubit.preprocess import (
@@ -141,8 +142,106 @@ class TestPreprocess:
         for op, exp in zip(expanded_tape.circuit, ops + measurements):
             assert qml.equal(op, exp)
 
-    def test_batch_transform(self):
-        """Test that batch_transform works correctly"""
+    def test_batch_transform_no_batching(self):
+        """Test that batch_transform does nothing when no batching is required."""
+        ops = [qml.Hadamard(0), qml.CNOT([0, 1]), qml.RX(0.123, wires=1)]
+        measurements = [qml.expval(qml.PauliZ(1))]
+        tape = QuantumScript(ops=ops, measurements=measurements)
+
+        tapes, batch_fn = batch_transform(tape)
+
+        assert len(tapes) == 1
+        for op, expected in zip(tapes[0].circuit, ops + measurements):
+            assert qml.equal(op, expected)
+
+        # Replace with Python Device once added
+        dev = qml.device("default.qubit", wires=2)
+        expected = dev.execute(tape)
+        res = batch_fn(dev.batch_execute(tapes))
+        assert np.allclose(res, expected)
+
+    def test_batch_transform_expval_sum(self):
+        """Test that batch_transform creates a batch of tapes when a Sum expectation value
+        is measured."""
+        ops = [qml.Hadamard(0), qml.CNOT([0, 1]), qml.RX(np.pi, wires=1)]
+        obs = qml.sum(qml.s_prod(0.5, qml.PauliZ(0)), qml.prod(qml.PauliX(0), qml.PauliZ(1)))
+        # Need to specify grouping type to transform tape
+        measurements = [qml.expval(obs)]
+        tape = QuantumScript(ops=ops, measurements=measurements)
+
+        tapes, batch_fn = batch_transform(tape)
+
+        assert len(tapes) == 2
+        for t in tapes:
+            for op, expected_op in zip(t.operations, ops):
+                assert qml.equal(op, expected_op)
+        assert len(tapes[0].measurements) == 1 == len(tapes[0].measurements)
+        assert qml.equal(tapes[0].measurements[0], qml.expval(qml.PauliZ(0)))
+        assert qml.equal(
+            tapes[1].measurements[0], qml.expval(qml.prod(qml.PauliX(0), qml.PauliZ(1)))
+        )
+
+        # Replace with Python Device once added
+        dev = qml.device("default.qubit", wires=2)
+        expected = dev.execute(tape)
+        res = batch_fn(dev.batch_execute(tapes))
+        assert np.allclose(res, expected)
+
+    def test_batch_transform_broadcast(self):
+        """Test that batch_transform splits broadcasted tapes correctly."""
+        ops = [qml.Hadamard(0), qml.CNOT([0, 1]), qml.RX([np.pi, np.pi / 2], wires=1)]
+        measurements = [qml.expval(qml.PauliZ(1))]
+        tape = QuantumScript(ops=ops, measurements=measurements)
+
+        tapes, batch_fn = batch_transform(tape)
+        expected_ops = [
+            [qml.Hadamard(0), qml.CNOT([0, 1]), qml.RX(np.pi, wires=1)],
+            [qml.Hadamard(0), qml.CNOT([0, 1]), qml.RX(np.pi / 2, wires=1)],
+        ]
+
+        assert len(tapes) == 2
+        for i, t in enumerate(tapes):
+            for op, expected in zip(t.circuit, expected_ops[i] + measurements):
+                assert qml.equal(op, expected)
+
+        # Replace with Python Device once added
+        dev = qml.device("default.qubit", wires=2)
+        expected = dev.execute(tape)
+        res = batch_fn(dev.batch_execute(tapes))
+        assert np.allclose(res, expected)
+
+    def test_batch_transform_expval_sum_broadcast(self):
+        """Test that batch_transform splits broadcasted tapes with Sum expectation values
+        correctly"""
+        ops = [qml.Hadamard(0), qml.CNOT([0, 1]), qml.RX([np.pi, np.pi / 2], wires=1)]
+        obs = qml.sum(qml.s_prod(0.5, qml.PauliZ(0)), qml.prod(qml.PauliX(0), qml.PauliZ(1)))
+        # Need to specify grouping type to transform tape
+        measurements = [qml.expval(obs)]
+        tape = QuantumScript(ops=ops, measurements=measurements)
+
+        tapes, batch_fn = batch_transform(tape)
+        expected_ops = [
+            [qml.Hadamard(0), qml.CNOT([0, 1]), qml.RX(np.pi, wires=1)],
+            [qml.Hadamard(0), qml.CNOT([0, 1]), qml.RX(np.pi / 2, wires=1)],
+        ]
+
+        assert len(tapes) == 4
+        for i, t in enumerate(tapes):
+            for op, expected_op in zip(t.operations, expected_ops[i % 2]):
+                assert qml.equal(op, expected_op)
+            assert len(t.measurements) == 1
+            if i < 2:
+                assert qml.equal(t.measurements[0], qml.expval(qml.PauliZ(0)))
+            else:
+                assert qml.equal(
+                    t.measurements[0], qml.expval(qml.prod(qml.PauliX(0), qml.PauliZ(1)))
+                )
+
+        # Replace with Python Device once added
+        dev = qml.device("default.qubit", wires=2)
+        expected = dev.execute(tape)
+        res = batch_fn(dev.batch_execute(tapes))
+        assert np.allclose(res, expected)
 
     def test_preprocess(self):
         """Test that preprocess works correctly"""
