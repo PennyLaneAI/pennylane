@@ -51,7 +51,7 @@ def exp(op, coeff=1, num_steps=None, id=None):
         num_steps (int): The number of steps used in the decomposition of the exponential operator,
             also known as the Trotter number. If this value is `None` and the Suzuki-Trotter
             decomposition is needed, an error will be raised.
-        id (str): id for the Sum operator. Default is None.
+        id (str): id for the Exp operator. Default is None.
 
     Returns:
        :class:`Exp`: A :class`~.operation.Operator` representing an operator exponential.
@@ -126,7 +126,7 @@ class Exp(ScalarSymbolicOp, Operation):
             also known as the Trotter number. If this value is `None` and the Suzuki-Trotter
             decomposition is needed, an error will be raised.
         do_queue (bool): determines if the sum operator will be queued. Default is True.
-        id (str): id for the sum operator. Default is None.
+        id (str): id for the Exp operator. Default is None.
 
     **Example**
 

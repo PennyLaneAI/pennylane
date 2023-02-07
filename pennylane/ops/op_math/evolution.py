@@ -37,7 +37,7 @@ class Evolution(Exp):
             also known as the Trotter number. If this value is `None` and the Suzuki-Trotter
             decomposition is needed, an error will be raised.
         do_queue (bool): determines if the sum operator will be queued. Default is True.
-        id (str): id for the sum operator. Default is None.
+        id (str): id for the Evolution operator. Default is None.
 
     Returns:
        :class:`Evolution`: A :class:`~.operation.Operator` representing an operator exponential of the form :math:`e^{ix\hat{G}}`,
