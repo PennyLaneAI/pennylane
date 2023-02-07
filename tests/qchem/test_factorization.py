@@ -700,9 +700,16 @@ def test_chemist_transform(
     two_body_tensor, spatial_basis, one_body_correction, chemist_two_body_coeffs
 ):
     r"""Test that `chemist_transform` builds correct two-body tensors in chemist notation with correct one-body corrections"""
-    one_body_corr, chemist_two_body = qml.qchem.chemist_transform(two_body_tensor, spatial_basis)
+    one_body_corr, chemist_two_body = qml.qchem.chemist_transform(
+        two_body_tensor=two_body_tensor, spatial_basis=spatial_basis
+    )
     assert np.allclose(one_body_corr, one_body_correction)
     assert np.allclose(chemist_two_body, chemist_two_body_coeffs)
+
+    (chemist_one_body,) = qml.qchem.chemist_transform(
+        one_body_tensor=one_body_correction, spatial_basis=spatial_basis
+    )
+    assert np.allclose(chemist_one_body, one_body_correction)
 
 
 @pytest.mark.parametrize(
