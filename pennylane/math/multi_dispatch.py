@@ -901,7 +901,7 @@ def detach(tensor, like=None):
 @multi_dispatch()
 def set_index(array, idx, val, like=None):
     """Set the value at a specified index in an array.
-    Returns ``array[idx]=val`` unless JAX.
+    Calls ``array[idx]=val`` and returns the updated array unless JAX.
 
     Args:
         array (tensor_like): array to be modified
