@@ -474,10 +474,6 @@
 * `BasisState` now implements the `StatePrep` interface.
   [(#3693)](https://github.com/PennyLaneAI/pennylane/pull/3693)
 
-* `qml.transforms.map_batch_transform` now accepts a list of arguments to pass to a batch
-  transform to allow a less restrictive interface for batch transforms.
-  [(#3708)](https://github.com/PennyLaneAI/pennylane/pull/3708)
-
 * `QubitStateVector` now implements the `StatePrep` interface.
   [(#3685)](https://github.com/PennyLaneAI/pennylane/pull/3685)
 
