@@ -15,6 +15,7 @@
 Unit tests for the SpecialUnitary operation and its utility functions.
 """
 # pylint:disable=import-outside-toplevel
+from functools import partial
 import numpy as np
 from scipy.linalg import expm
 import pytest
@@ -22,6 +23,7 @@ import pennylane as qml
 from pennylane.ops.qubit.special_unitary import (
     pauli_basis_matrices,
     pauli_basis_strings,
+    TmpPauliRot,
     _pauli_letters,
     _pauli_matrices,
 )
@@ -92,6 +94,282 @@ special_matrix_cases = [
     (2, 0.6 * (eye[4] + eye[9]), qml.IsingXY(2.4, [0, 1]).matrix()),
     (2, 0.8 * eye[-1], qml.IsingZZ(-1.6, [0, 1]).matrix()),
 ]
+
+
+class TestGetOneParameterGenerators:
+    """Tests for the effective generators computing function
+    get_one_parameter_generators of qml.SpecialUnitary."""
+
+    @staticmethod
+    def get_one_parameter_generators(theta, num_wires, interface):
+        """Create a SpecialUnitary operation and return its one-parameter group generators."""
+        return qml.SpecialUnitary(theta, list(range(num_wires))).get_one_parameter_generators(
+            interface
+        )
+
+    @pytest.mark.jax
+    @pytest.mark.parametrize("n", [1, 2, 3])
+    @pytest.mark.parametrize("use_jit", [True, False])
+    def test_jax(self, n, use_jit):
+        """Test that generators are computed correctly in JAX."""
+        import jax
+
+        jax.config.update("jax_enable_x64", True)
+        from jax import numpy as jnp
+
+        np.random.seed(14521)
+        d = 4**n - 1
+        theta = jnp.array(np.random.random(d))
+        fn = (
+            jax.jit(self.get_one_parameter_generators, static_argnums=[1, 2])
+            if use_jit
+            else self.get_one_parameter_generators
+        )
+        Omegas = fn(theta, n, "jax")
+        assert Omegas.shape == (d, 2**n, 2**n)
+        assert all(jnp.allclose(O.conj().T, -O) for O in Omegas)
+
+    @pytest.mark.jax
+    @pytest.mark.parametrize("use_jit", [True, False])
+    def test_jax_pauli_generated(self, use_jit):
+        """Test that generators match Pauli words."""
+        import jax
+
+        jax.config.update("jax_enable_x64", True)
+        from jax import numpy as jnp
+
+        n = 1
+        fn = (
+            jax.jit(self.get_one_parameter_generators, static_argnums=[1, 2])
+            if use_jit
+            else self.get_one_parameter_generators
+        )
+        basis = pauli_basis_matrices(n)
+        d = 4**n - 1
+        for i, (theta, pauli_mat) in enumerate(zip(jnp.eye(d), basis)):
+            Omegas = fn(theta, n, "jax")
+            assert Omegas.shape == (d, 2**n, 2**n)
+            assert all(jnp.allclose(O.conj().T, -O) for O in Omegas)
+            assert jnp.allclose(Omegas[i], 1j * pauli_mat)
+
+    @pytest.mark.tf
+    @pytest.mark.parametrize("n", [1, 2, 3])
+    def test_tf(self, n):
+        """Test that generators are computed correctly in Tensorflow."""
+        import tensorflow as tf
+
+        np.random.seed(14521)
+        d = 4**n - 1
+        theta = tf.Variable(np.random.random(d))
+        Omegas = self.get_one_parameter_generators(theta, n, "tf")
+        assert Omegas.shape == (d, 2**n, 2**n)
+        assert all(qml.math.allclose(qml.math.conj(qml.math.T(O)), -O) for O in Omegas)
+
+    @pytest.mark.tf
+    def test_tf_pauli_generated(self):
+        """Test that generators match Pauli words."""
+        import tensorflow as tf
+
+        n = 1
+        basis = pauli_basis_matrices(n)
+        d = 4**n - 1
+        for i, (theta, pauli_mat) in enumerate(zip(np.eye(d), basis)):
+            theta = tf.Variable(theta)
+            Omegas = self.get_one_parameter_generators(theta, n, "tf")
+            assert Omegas.shape == (d, 2**n, 2**n)
+            assert all(qml.math.allclose(qml.math.conj(qml.math.T(O)), -O) for O in Omegas)
+            assert qml.math.allclose(Omegas[i], 1j * pauli_mat)
+
+    @pytest.mark.torch
+    @pytest.mark.parametrize("n", [1, 2, 3])
+    def test_torch(self, n):
+        """Test that generators are computed correctly in Torch."""
+        import torch
+
+        np.random.seed(14521)
+        d = 4**n - 1
+        theta = torch.tensor(np.random.random(d), requires_grad=True)
+        Omegas = self.get_one_parameter_generators(theta, n, "torch")
+        assert Omegas.shape == (d, 2**n, 2**n)
+        assert all(qml.math.allclose(qml.math.conj(qml.math.T(O)), -O) for O in Omegas)
+
+    @pytest.mark.torch
+    def test_torch_pauli_generated(self):
+        """Test that generators match Pauli words."""
+        import torch
+
+        n = 1
+        basis = pauli_basis_matrices(n)
+        d = 4**n - 1
+        for i, (theta, pauli_mat) in enumerate(zip(torch.eye(d, requires_grad=True), basis)):
+            Omegas = self.get_one_parameter_generators(theta, n, "torch")
+            assert Omegas.shape == (d, 2**n, 2**n)
+            assert all(
+                qml.math.allclose(qml.math.conj(qml.math.T(O)), -O, atol=3e-8) for O in Omegas
+            )
+            assert qml.math.allclose(Omegas[i], 1j * pauli_mat)
+
+    def test_raises_autograd(self):
+        """Test that computing generators raises an
+        error when attempting to use Autograd."""
+        op = qml.SpecialUnitary(qml.numpy.ones(3), [0])
+        with pytest.raises(NotImplementedError, match="expm is not differentiable in Autograd"):
+            op.get_one_parameter_generators("autograd")
+
+    def test_raises_unknown_interface(self):
+        """Test that computing generators raises an error when attempting
+        to use an unknown interface."""
+        with pytest.raises(ValueError, match="The interface test is not supported"):
+            self.get_one_parameter_generators(np.ones(3), 1, "test")
+
+    def test_raises_broadcasting(self):
+        """Test that computing generators raises an error when attempting
+        to use broadcasting."""
+        theta = np.random.random((2, 3))
+        with pytest.raises(ValueError, match="Broadcasting is not supported"):
+            self.get_one_parameter_generators(theta, 1, "dummy")
+
+
+class TestGetOneParameterGeneratorsDiffability:
+    """Tests for the effective generators computing function
+    get_one_parameter_generators of qml.SpecialUnitary to be differentiable."""
+
+    @staticmethod
+    def get_one_parameter_generators(theta, num_wires, interface):
+        """Create a SpecialUnitary operation and return its one-parameter group generators."""
+        return qml.SpecialUnitary(theta, list(range(num_wires))).get_one_parameter_generators(
+            interface
+        )
+
+    @pytest.mark.jax
+    @pytest.mark.parametrize("use_jit", [True, False])
+    @pytest.mark.parametrize("n", [1, 2])
+    def test_jacobian_jax(self, n, use_jit):
+        """Test that generators are differentiable in JAX."""
+        import jax
+
+        jax.config.update("jax_enable_x64", True)
+        from jax import numpy as jnp
+
+        np.random.seed(14521)
+        d = 4**n - 1
+        theta = jnp.array(np.random.random(d), dtype=jnp.complex128)
+        fn = (
+            jax.jit(self.get_one_parameter_generators, static_argnums=[1, 2])
+            if use_jit
+            else self.get_one_parameter_generators
+        )
+        dOmegas = jax.jacobian(fn, holomorphic=True)(theta, n, "jax")
+        assert dOmegas.shape == (d, 2**n, 2**n, d)
+
+    @pytest.mark.tf
+    @pytest.mark.parametrize("n", [1, 2])
+    def test_jacobian_tf(self, n):
+        """Test that generators are differentiable in Tensorflow."""
+        import tensorflow as tf
+
+        np.random.seed(14521)
+        d = 4**n - 1
+        theta = tf.Variable(np.random.random(d))
+        with tf.GradientTape() as t:
+            Omegas = self.get_one_parameter_generators(theta, n, "tf")
+        dOmegas = t.jacobian(Omegas, theta)
+        assert dOmegas.shape == (d, 2**n, 2**n, d)
+
+    @pytest.mark.torch
+    @pytest.mark.parametrize("n", [1, 2])
+    def test_jacobian_torch(self, n):
+        """Test that generators are differentiable in Torch."""
+        import torch
+
+        np.random.seed(14521)
+        d = 4**n - 1
+        theta = torch.tensor(np.random.random(d), requires_grad=True)
+
+        def fn(theta):
+            return self.get_one_parameter_generators(theta, n, "torch")
+
+        dOmegas = torch.autograd.functional.jacobian(fn, theta)
+        assert dOmegas.shape == (d, 2**n, 2**n, d)
+
+    def test_raises_autograd(self):
+        """Test that computing generator derivatives raises an error
+        when attempting to use Autograd."""
+        with pytest.raises(NotImplementedError, match="expm is not differentiable in Autograd"):
+            qml.jacobian(self.get_one_parameter_generators)(qml.numpy.ones(3), 1, "autograd")
+
+
+class TestGetOneParameterCoeffs:
+    """Tests for the coefficients of effective generators computing function
+    get_one_parameter_coeffs of qml.SpecialUnitary."""
+
+    @pytest.mark.jax
+    @pytest.mark.parametrize("n", [1, 2, 3])
+    def test_jax(self, n):
+        """Test that the coefficients of the generators are computed correctly in JAX."""
+        import jax
+
+        jax.config.update("jax_enable_x64", True)
+        from jax import numpy as jnp
+
+        np.random.seed(14521)
+        d = 4**n - 1
+        theta = jnp.array(np.random.random(d))
+        op = qml.SpecialUnitary(theta, list(range(n)))
+        omegas = op.get_one_parameter_coeffs("jax")
+        assert omegas.shape == (d, d)
+        assert jnp.allclose(omegas.real, 0)
+
+        basis = pauli_basis_matrices(n)
+        reconstructed_Omegas = jnp.tensordot(omegas, basis, axes=[[0], [0]])
+        Omegas = op.get_one_parameter_generators("jax")
+        assert jnp.allclose(reconstructed_Omegas, Omegas)
+
+    @pytest.mark.tf
+    @pytest.mark.parametrize("n", [1, 2, 3])
+    def test_tf(self, n):
+        """Test that the coefficients of the generators are computed correctly in Tensorflow."""
+        import tensorflow as tf
+
+        np.random.seed(14521)
+        d = 4**n - 1
+        theta = tf.Variable(np.random.random(d))
+        op = qml.SpecialUnitary(theta, list(range(n)))
+        omegas = op.get_one_parameter_coeffs("tf")
+        assert omegas.shape == (d, d)
+        assert qml.math.allclose(qml.math.real(omegas), 0)
+
+        basis = pauli_basis_matrices(n)
+        reconstructed_Omegas = qml.math.tensordot(omegas, basis, axes=[[0], [0]])
+        Omegas = op.get_one_parameter_generators("tf")
+        assert qml.math.allclose(reconstructed_Omegas, Omegas)
+
+    @pytest.mark.torch
+    @pytest.mark.parametrize("n", [1, 2, 3])
+    def test_torch(self, n):
+        """Test that the coefficients of the generators are computed correctly in Torch."""
+        import torch
+
+        np.random.seed(14521)
+        d = 4**n - 1
+        theta = torch.tensor(np.random.random(d), requires_grad=True)
+        op = qml.SpecialUnitary(theta, list(range(n)))
+        omegas = op.get_one_parameter_coeffs("torch")
+        assert omegas.shape == (d, d)
+        assert qml.math.allclose(qml.math.real(omegas), 0)
+
+        basis = pauli_basis_matrices(n)
+        reconstructed_Omegas = qml.math.tensordot(omegas, basis, axes=[[0], [0]])
+        Omegas = op.get_one_parameter_generators("torch")
+        assert qml.math.allclose(reconstructed_Omegas, Omegas)
+
+    def test_raises_autograd(self):
+        """Test that computing coefficient derivatives raises an
+        error when attempting to use Autograd."""
+        op = qml.SpecialUnitary(qml.numpy.ones(3), [0])
+        with pytest.raises(NotImplementedError, match="expm is not differentiable in Autograd"):
+            op.get_one_parameter_coeffs("autograd")
+
 
 theta_1 = np.array([0.4, 0.1, 0.1])
 theta_2 = np.array([0.4, 0.1, 0.1, 0.6, 0.2, 0.3, 0.1, 0.2, 0, 0.2, 0.2, 0.2, 0.1, 0.5, 0.2])
@@ -239,9 +517,8 @@ class TestSpecialUnitary:
             assert qml.math.allclose(matrix, np.stack(exp))
 
     @pytest.mark.parametrize("n, theta", n_and_theta)
-    def test_decomposition(self, n, theta):
-        """Test that SpecialUnitary falls back to QubitUnitary."""
-
+    def test_decomposition_numpy(self, n, theta):
+        """Test that SpecialUnitary falls back to QubitUnitary with NumPy inputs."""
         wires = list(range(n))
         decomp = qml.SpecialUnitary(theta, wires).decomposition()
 
@@ -252,8 +529,8 @@ class TestSpecialUnitary:
         assert np.allclose(decomp[0].data[0], mat)
 
     @pytest.mark.parametrize("n, theta", n_and_theta)
-    def test_decomposition_broadcasted(self, n, theta):
-        """Test that the broadcasted SpecialUnitary falls back to QubitUnitary."""
+    def test_decomposition_broadcasted_numpy(self, n, theta):
+        """Test that the broadcasted SpecialUnitary falls back to QubitUnitary with NumPy inputs."""
         theta = np.outer([0.2, 1.0, -0.3], theta)
         wires = list(range(n))
 
@@ -265,6 +542,97 @@ class TestSpecialUnitary:
 
         mat = qml.SpecialUnitary.compute_matrix(theta, n)
         assert np.allclose(decomp[0].data[0], mat)
+
+    @pytest.mark.jax
+    @pytest.mark.parametrize("n, theta", n_and_theta)
+    def test_decomposition_jax(self, n, theta):
+        """Test that a trainable SpecialUnitary in JAX
+        decomposes into a non-trainable SpecialUnitary and TmpPauliRot ops."""
+        import jax
+
+        jax.config.update("jax_enable_x64", True)
+
+        d = 4**n - 1
+        words = pauli_basis_strings(n)
+        wires = list(range(n))
+
+        def assertion_fn(theta):
+            """Wrapper function to allow marking the parameters as trainable in JAX."""
+            decomp = qml.SpecialUnitary(theta, wires).decomposition()
+            assert len(decomp) == d + 1
+            for w, op in zip(words, decomp[:-1]):
+                assert qml.equal(
+                    TmpPauliRot(0.0, w, wires=wires),
+                    op,
+                    check_trainability=False,
+                    check_interface=False,
+                )
+            assert qml.equal(qml.SpecialUnitary(qml.math.detach(theta), wires=wires), decomp[-1])
+
+            decomp = qml.SpecialUnitary(qml.math.detach(theta), wires).decomposition()
+            mat = qml.SpecialUnitary.compute_matrix(qml.math.detach(theta), n)
+            assert len(decomp) == 1
+            assert qml.equal(qml.QubitUnitary(mat, wires=wires), decomp[0])
+
+            return theta
+
+        theta = jax.numpy.array(theta)
+        jax.jacobian(assertion_fn)(theta)
+
+    @pytest.mark.torch
+    @pytest.mark.parametrize("n, theta", n_and_theta)
+    def test_decomposition_torch(self, n, theta):
+        """Test that a trainable SpecialUnitary in Torch
+        decomposes into a non-trainable SpecialUnitary and TmpPauliRot ops."""
+        import torch
+
+        d = 4**n - 1
+        words = pauli_basis_strings(n)
+        wires = list(range(n))
+        theta = torch.tensor(theta, requires_grad=True)
+        decomp = qml.SpecialUnitary(theta, wires).decomposition()
+        assert len(decomp) == d + 1
+        for w, op in zip(words, decomp[:-1]):
+            assert qml.equal(
+                TmpPauliRot(0.0, w, wires=wires),
+                op,
+                check_trainability=False,
+                check_interface=False,
+            )
+        assert qml.equal(qml.SpecialUnitary(qml.math.detach(theta), wires=wires), decomp[-1])
+
+        decomp = qml.SpecialUnitary(qml.math.detach(theta), wires).decomposition()
+        mat = qml.SpecialUnitary.compute_matrix(qml.math.detach(theta), n)
+        assert len(decomp) == 1
+        assert qml.equal(qml.QubitUnitary(mat, wires=wires), decomp[0])
+
+    @pytest.mark.tf
+    @pytest.mark.parametrize("n, theta", n_and_theta)
+    def test_decomposition_tf(self, n, theta):
+        """Test that a trainable SpecialUnitary in Tensorflow
+        decomposes into a non-trainable SpecialUnitary and TmpPauliRot ops."""
+        import tensorflow as tf
+
+        d = 4**n - 1
+        words = pauli_basis_strings(n)
+        wires = list(range(n))
+        theta = tf.Variable(theta)
+        with tf.GradientTape():
+            decomp = qml.SpecialUnitary(theta, wires).decomposition()
+            assert len(decomp) == d + 1
+            for w, op in zip(words, decomp[:-1]):
+                assert qml.equal(
+                    TmpPauliRot(0.0, w, wires=wires),
+                    op,
+                    check_trainability=False,
+                    check_interface=False,
+                )
+            assert qml.equal(qml.SpecialUnitary(qml.math.detach(theta), wires=wires), decomp[-1])
+
+            decomp = qml.SpecialUnitary(qml.math.detach(theta), wires).decomposition()
+            mat = qml.SpecialUnitary.compute_matrix(qml.math.detach(theta), n)
+            assert len(decomp) == 1
+            assert qml.equal(qml.QubitUnitary(mat, wires=wires), decomp[0])
 
     @pytest.mark.parametrize("n, theta", n_and_theta)
     def test_adjoint(self, theta, n):
@@ -296,7 +664,7 @@ class TestSpecialUnitary:
         jax.config.update("jax_enable_x64", True)
         jnp = jax.numpy
 
-        dev = qml.device("default.qubit", wires=1, shots=None)
+        dev = qml.device("default.qubit", wires=1)
 
         theta = jnp.array(theta_1)
 
@@ -323,7 +691,7 @@ class TestSpecialUnitary:
         jax.config.update("jax_enable_x64", True)
         jnp = jax.numpy
 
-        dev = qml.device("default.qubit", wires=1, shots=None)
+        dev = qml.device("default.qubit", wires=1)
 
         theta = jnp.outer(jnp.array([-0.4, 0.1, 1.0]), theta_1)
 
@@ -348,7 +716,7 @@ class TestSpecialUnitary:
         within a QNode that uses TensorFlow autograph"""
         import tensorflow as tf
 
-        dev = qml.device("default.qubit", wires=1, shots=None)
+        dev = qml.device("default.qubit", wires=1)
 
         @tf.function
         @qml.qnode(dev, interface="tf")
@@ -380,3 +748,202 @@ class TestSpecialUnitary:
 
         expected = tape.jacobian(loss, theta)
         assert np.allclose(jac, expected)
+
+
+class TestSpecialUnitaryIntegration:
+    """Test that the operation SpecialUnitary is executable and
+    differentiable in a QNode context, both with automatic differentiation
+    and parameter-shift rules."""
+
+    @staticmethod
+    def circuit(x):
+        """Test circuit involving a single SpecialUnitary operations."""
+        qml.SpecialUnitary(x, wires=[0, 1])
+        return qml.expval(qml.PauliZ(0) @ qml.PauliX(1))
+
+    @staticmethod
+    def paulirot_comp_circuit(x, word=None):
+        """Test circuit involving a single PauliRot operation to compare to."""
+        # Take into account that PauliRot includes a -0.5 prefactor, and mitigate it.
+        qml.PauliRot(-2 * x, word, wires=[0, 1])
+        return qml.expval(qml.PauliZ(0) @ qml.PauliX(1))
+
+    x = np.linspace(0.2, 1.5, 15)
+    state = qml.SpecialUnitary.compute_matrix(x, 2) @ np.eye(4)[0]
+    exp = np.vdot(state, qml.matrix(qml.PauliZ(0) @ qml.PauliX(1)) @ state).real
+
+    def test_qnode_numpy(self):
+        """Test that the QNode executes with Numpy."""
+        dev = qml.device("default.qubit", wires=2)
+        qnode = qml.QNode(self.circuit, dev, interface=None)
+
+        res = qnode(self.x)
+        assert qml.math.shape(res) == ()
+        assert qml.math.isclose(res, self.exp)
+
+    @pytest.mark.autograd
+    def test_qnode_autograd(self):
+        """Test that the QNode executes with Autograd.
+        Neither hardware-ready nor autodiff gradients are available in Autograd."""
+
+        dev = qml.device("default.qubit", wires=2)
+        qnode = qml.QNode(self.circuit, dev, interface="autograd")
+
+        x = qml.numpy.array(self.x, requires_grad=True)
+        res = qnode(x)
+        assert qml.math.shape(res) == ()
+        assert qml.math.isclose(res, self.exp)
+
+    @pytest.mark.jax
+    @pytest.mark.parametrize("use_jit", [False, True])
+    @pytest.mark.parametrize("shots, atol", [(None, 1e-6), (10000, 1e-1)])
+    def test_qnode_jax(self, shots, atol, use_jit):
+        """Test that the QNode executes and is differentiable with JAX. The shots
+        argument controls whether autodiff or parameter-shift gradients are used."""
+        if use_jit and shots is not None:
+            pytest.skip("Hardware-ready differentiation does not support JITting yet.")
+        import jax
+
+        jax.config.update("jax_enable_x64", True)
+
+        dev = qml.device("default.qubit", wires=2, shots=shots)
+        diff_method = "backprop" if shots is None else "parameter-shift"
+        qnode = qml.QNode(self.circuit, dev, interface="jax", diff_method=diff_method)
+        if use_jit:
+            qnode = jax.jit(qnode)
+
+        x = jax.numpy.array(self.x)
+        res = qnode(x)
+        assert qml.math.shape(res) == ()
+        assert qml.math.isclose(res, self.exp, atol=atol)
+
+        jac_fn = jax.jacobian(qnode)
+        if use_jit:
+            jac_fn = jax.jit(jac_fn)
+
+        jac = jac_fn(x)
+        assert jac.shape == (15,)
+        assert not qml.math.allclose(jac, jac * 0.0)
+
+        # Compare to PauliRot circuits
+        paulirot_qnode = qml.QNode(
+            self.paulirot_comp_circuit, dev, interface="jax", diff_method=diff_method
+        )
+        exp_jac_fn = jax.jacobian(paulirot_qnode)
+        words = qml.ops.qubit.special_unitary.pauli_basis_strings(2)
+        for i, (single_x, unit_vector, word) in enumerate(zip(x, jax.numpy.eye(15), words)):
+            jac = jac_fn(single_x * unit_vector)
+            exp_jac = exp_jac_fn(single_x, word)
+            assert qml.math.allclose(jac[i], exp_jac, atol=atol)
+
+    @pytest.mark.torch
+    @pytest.mark.parametrize("shots, atol", [(None, 1e-6), (10000, 1e-1)])
+    def test_qnode_torch(self, shots, atol):
+        """Test that the QNode executes and is differentiable with Torch. The shots
+        argument controls whether autodiff or parameter-shift gradients are used."""
+        import torch
+
+        dev = qml.device("default.qubit", wires=2, shots=shots)
+        diff_method = "backprop" if shots is None else "parameter-shift"
+        qnode = qml.QNode(self.circuit, dev, interface="torch", diff_method=diff_method)
+
+        x = torch.tensor(self.x, requires_grad=True)
+        res = qnode(x)
+        assert qml.math.shape(res) == ()
+        assert qml.math.isclose(res, torch.tensor(self.exp), atol=atol)
+
+        jac = torch.autograd.functional.jacobian(qnode, x)
+        assert qml.math.shape(jac) == (15,)
+        assert not qml.math.allclose(jac, jac * 0.0)
+
+        # Compare to PauliRot circuits
+        paulirot_qnode = qml.QNode(
+            self.paulirot_comp_circuit, dev, interface="torch", diff_method=diff_method
+        )
+        words = qml.ops.qubit.special_unitary.pauli_basis_strings(2)
+        for i, (single_x, unit_vector, word) in enumerate(zip(x, torch.eye(15), words)):
+            jac = torch.autograd.functional.jacobian(qnode, single_x * unit_vector)
+            exp_jac = torch.autograd.functional.jacobian(
+                partial(paulirot_qnode, word=word), single_x
+            )
+            assert qml.math.allclose(jac[i], exp_jac, atol=atol)
+
+    @pytest.mark.tf
+    @pytest.mark.parametrize("shots, atol", [(None, 1e-6), (10000, 1e-1)])
+    def test_qnode_tf(self, shots, atol):
+        """Test that the QNode executes and is differentiable with TensorFlow. The shots
+        argument controls whether autodiff or parameter-shift gradients are used."""
+        import tensorflow as tf
+
+        dev = qml.device("default.qubit", wires=2, shots=shots)
+        diff_method = "backprop" if shots is None else "parameter-shift"
+        qnode = qml.QNode(self.circuit, dev, interface="tf", diff_method=diff_method)
+
+        x = tf.Variable(self.x)
+        with tf.GradientTape() as tape:
+            res = qnode(x)
+
+        assert qml.math.shape(res) == ()
+        assert qml.math.isclose(res, self.exp, atol=atol)
+
+        jac = tape.gradient(res, x)
+        assert qml.math.shape(jac) == (15,)
+        assert not qml.math.allclose(jac, jac * 0.0)
+
+        # Compare to PauliRot circuits
+        paulirot_qnode = qml.QNode(
+            self.paulirot_comp_circuit, dev, interface="tf", diff_method=diff_method
+        )
+        words = qml.ops.qubit.special_unitary.pauli_basis_strings(2)
+        for i, (single_x, unit_vector, word) in enumerate(
+            zip(self.x, tf.eye(15, dtype=tf.float64), words)
+        ):
+            x = tf.Variable(single_x * unit_vector)
+            with tf.GradientTape() as tape:
+                res = qnode(x)
+            jac = tape.gradient(res, x)
+            single_x = tf.Variable(single_x)
+            with tf.GradientTape() as tape:
+                res = paulirot_qnode(single_x, word)
+            exp_jac = tape.gradient(res, single_x)
+            assert qml.math.allclose(jac[i], exp_jac, atol=atol)
+
+
+class TestTmpPauliRot:
+    """Tests for the helper Operation TmpPauliRot."""
+
+    def test_has_matrix_false(self):
+        """Test that TmpPauliRot reports to not have a matrix."""
+        assert TmpPauliRot.has_matrix is False
+        assert TmpPauliRot(0.2, "X", 0).has_matrix is False
+
+    def test_has_grad_method(self):
+        """Test that TmpPauliRot reports to have an analytic grad method."""
+        assert TmpPauliRot.grad_method == "A"
+        assert TmpPauliRot(0.2, "X", 0).grad_method == "A"
+
+    def test_repr(self):
+        """Test the string representation of TmpPauliRot."""
+        rep = str(TmpPauliRot(0.2, "IX", [1, 0]))
+        assert "TmpPauliRot" in rep
+        assert "IX" in rep
+
+    @pytest.mark.parametrize("word", ["X", "IZ", "YYY"])
+    def test_decomposition_at_zero(self, word):
+        """Test the decomposition of TmpPauliRot at zero to return an empty list."""
+        wires = list(range(len(word)))
+        op = TmpPauliRot(0.0, word, wires=wires)
+        assert op.decomposition() == []
+        assert TmpPauliRot.compute_decomposition(0.0, wires, word) == []
+
+    @pytest.mark.parametrize("word", ["X", "IZ", "YYY"])
+    @pytest.mark.parametrize("x", [1.2, 1e-4])
+    def test_decomposition_nonzero(self, word, x):
+        """Test the decomposition of TmpPauliRot away from zero to return a PauliRot."""
+        wires = list(range(len(word)))
+        op = TmpPauliRot(x, word, wires=wires)
+        decomp = op.decomposition()
+        decomp2 = TmpPauliRot.compute_decomposition(x, wires, word)
+        for dec in [decomp, decomp2]:
+            assert len(dec) == 1
+            assert qml.equal(dec[0], qml.PauliRot(x, word, wires))

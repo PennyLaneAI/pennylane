@@ -6,9 +6,14 @@
 
 <h4>Add new features here</h4>
 
+* Add `qml.math.detach`, which detaches a tensor from its trace. This stops
+  automatic gradient computations.
+  [(#3674)](https://github.com/PennyLaneAI/pennylane/pull/3674)
+
 * A new operation `SpecialUnitary` was added, providing access to an arbitrary
   unitary gate via a parametrization in the Pauli basis.
   [(#3650)](https://github.com/PennyLaneAI/pennylane/pull/3650)
+  [(#3674)](https://github.com/PennyLaneAI/pennylane/pull/3674)
 
   The new operation takes a single argument, a one-dimensional `tensor_like`
   of length `4**num_wires-1`, where `num_wires` is the number of wires the unitary acts on.
@@ -44,7 +49,8 @@
   True
   ```
   
-  This operation supports parameter broadcasting/batching.
+  This operation can be differentiated with hardware-compatible methods like parameter shifts
+  and it supports parameter broadcasting/batching, but not both at the same time.
 
 * Add `typing.TensorLike` type.
   [(#3675)](https://github.com/PennyLaneAI/pennylane/pull/3675)
@@ -88,6 +94,7 @@
 * A `ParametrizedHamiltonian` can be time-evolved by using `ParametrizedEvolution`.
   [(#3617)](https://github.com/PennyLaneAI/pennylane/pull/3617)
   [(#3706)](https://github.com/PennyLaneAI/pennylane/pull/3706)
+  [(#3730)](https://github.com/PennyLaneAI/pennylane/pull/3730)
 
 * A new function called `qml.evolve` has been added that returns the evolution of an `Operator` or a `ParametrizedHamiltonian`.
   [(#3617)](https://github.com/PennyLaneAI/pennylane/pull/3617)
@@ -483,7 +490,7 @@
   the default in version 0.30.
   [(#3667)](https://github.com/PennyLaneAI/pennylane/pull/3667)
 
-* `Operator.inv()` and the `Operator.inverse` setter have been removed. Please use `qml.adjoint` or `qml.pow` instead.
+* `Operation.inv()` and the `Operation.inverse` setter have been removed. Please use `qml.adjoint` or `qml.pow` instead.
   [(#3618)](https://github.com/PennyLaneAI/pennylane/pull/3618)
   
   For example, instead of
@@ -497,6 +504,9 @@
   ```pycon
   >>> qml.adjoint(qml.PauliX(0))
   ```
+
+* The `Operation.inverse` property has been removed completely.
+  [(#3725)](https://github.com/PennyLaneAI/pennylane/pull/3725)
 
 * The target wires of `qml.ControlledQubitUnitary` are no longer available via `op.hyperparameters["u_wires"]`.
   Instead, they can be accesses via `op.base.wires` or `op.target_wires`.
@@ -585,6 +595,9 @@
 
 * `Tensor._pauli_rep` is set to `None` during initialization. Add `Tensor.data` setter.
   [(#3722)](https://github.com/PennyLaneAI/pennylane/pull/3722)
+
+* Redirect `qml.math.ndim` to `jnp.ndim` when using it on a jax tensor.
+  [(#3730)](https://github.com/PennyLaneAI/pennylane/pull/3730)
 
 <h3>Contributors</h3>
 
