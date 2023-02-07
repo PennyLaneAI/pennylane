@@ -97,8 +97,10 @@ def _jac_shape_dtype_tuple(tapes, device):
 
 def _jit_compute_jvps(jacobians, tangents, multi_measurements, trainable_params):
     # Remove the the jitted parameters that are not trainable as they are not contributing to the jacobian.
-    tangents_trainable = []
-tangents_trainable = [[tangent[idx] for idx in trainable] for tangent, trainable in zip(tangents, trainable_params)]
+    tangents_trainable = [
+        [tangent[idx] for idx in trainable]
+        for tangent, trainable in zip(tangents, trainable_params)
+    ]
 
     jvps = _compute_jvps(jacobians, tangents_trainable, multi_measurements)
 
