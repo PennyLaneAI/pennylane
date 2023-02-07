@@ -473,6 +473,9 @@
 * `QubitStateVector` now implements the `StatePrep` interface.
   [(#3685)](https://github.com/PennyLaneAI/pennylane/pull/3685)
 
+* `QuantumMonteCarlo` template is now JAX-JIT compatible when passing `jax.numpy` arrays to the template.
+  [(#3734)](https://github.com/PennyLaneAI/pennylane/pull/3734)
+
 <h3>Breaking changes</h3>
 
 * The tape method `get_operation` can also now return the operation index in the tape, and it can be
