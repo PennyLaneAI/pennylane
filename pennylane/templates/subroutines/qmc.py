@@ -54,11 +54,13 @@ def probs_to_unitary(probs):
            [ 0.5       ,  0.16666667, -0.83333333,  0.16666667],
            [ 0.5       ,  0.16666667,  0.16666667, -0.83333333]])
     """
-    if not np.allclose(sum(probs), 1) or min(probs) < 0:
-        raise ValueError(
-            "A valid probability distribution of non-negative numbers that sum to one"
-            "must be input"
-        )
+
+    if not qml.math.is_abstract(probs):  # skip warning if jitting to avoid angering JAX
+        if not qml.math.allclose(sum(probs), 1) or min(probs) < 0:
+            raise ValueError(
+                "A valid probability distribution of non-negative numbers that sum to one"
+                "must be input"
+            )
 
     # Using the approach discussed here:
     # https://quantumcomputing.stackexchange.com/questions/10239/how-can-i-fill-a-unitary-knowing-only-its-first-column
