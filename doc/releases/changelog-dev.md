@@ -483,7 +483,7 @@
   the default in version 0.30.
   [(#3667)](https://github.com/PennyLaneAI/pennylane/pull/3667)
 
-* `Operator.inv()` and the `Operator.inverse` setter have been removed. Please use `qml.adjoint` or `qml.pow` instead.
+* `Operation.inv()` and the `Operation.inverse` setter have been removed. Please use `qml.adjoint` or `qml.pow` instead.
   [(#3618)](https://github.com/PennyLaneAI/pennylane/pull/3618)
   
   For example, instead of
@@ -497,6 +497,9 @@
   ```pycon
   >>> qml.adjoint(qml.PauliX(0))
   ```
+
+* The `Operation.inverse` property has been removed completely.
+  [(#3725)](https://github.com/PennyLaneAI/pennylane/pull/3725)
 
 * The target wires of `qml.ControlledQubitUnitary` are no longer available via `op.hyperparameters["u_wires"]`.
   Instead, they can be accesses via `op.base.wires` or `op.target_wires`.
