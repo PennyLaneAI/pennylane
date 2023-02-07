@@ -71,7 +71,7 @@ def multi_dispatch(argnum=None, tensor_list=None):
 
 
     Args:
-        argnum (list[int]): A list of integers indicating indicating the indices
+        argnum (list[int]): A list of integers indicating the indices
             to dispatch (i.e., the arguments that are tensors handled by an interface).
             If ``None``, dispatch over all arguments.
         tensor_lists (list[int]): a list of integers indicating which indices
@@ -904,9 +904,11 @@ def set_index(array, idx, val, like=None):
     array, even if using JAX-JIT"""
 
     if like == "jax":
-        array.at[idx].set(val)
+        from jax import numpy as jnp
 
-    else:
-        array[idx] = val
+        # ensure array is jax array (interface may be jax because of idx or val and not array)
+        jax_array = jnp.array(array)
+        return jax_array.at[idx].set(val)
 
+    array[idx] = val
     return array
