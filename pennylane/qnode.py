@@ -727,8 +727,9 @@ class QNode:
 
     def construct(self, args, kwargs):
         """Call the quantum function with a tape context, ensuring the operations get queued."""
+        old_interface = self.interface
 
-        if self.interface == "auto":
+        if old_interface == "auto":
             self.interface = qml.math.get_interface(*args, *list(kwargs.values()))
 
         self._tape = make_qscript(self.func)(*args, **kwargs)
@@ -792,6 +793,9 @@ class QNode:
         # all operations are supported by the transform.
         if isinstance(self.gradient_fn, qml.gradients.gradient_transform):
             self._tape = self.gradient_fn.expand_fn(self._tape)
+
+        if old_interface == "auto":
+            self.interface = "auto"
 
     def __call__(self, *args, **kwargs):  # pylint: disable=too-many-branches, too-many-statements
         override_shots = False
