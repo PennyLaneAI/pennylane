@@ -14,7 +14,7 @@
 """
 Tests for the gradients.spsa_gradient module.
 """
-#pylint: disable="import-outside-toplevel"
+# pylint: disable="import-outside-toplevel"
 import numpy
 import pytest
 
@@ -31,7 +31,7 @@ def coordinate_sampler(indices, num_params, idx, seed=None):
     to the index ``indices[idx]``. This is a sequential coordinate sampler
     that allows to exactly reproduce derivatives, instead of using SPSA in the
     intended way."""
-    #pylint: disable=unused-argument
+    # pylint: disable=unused-argument
     idx = idx % len(indices)
     direction = np.zeros(num_params)
     direction[indices[idx]] = 1.0
@@ -441,7 +441,8 @@ class TestSpsaGradient:
 
         class SpecialObservable(Observable):
             """SpecialObservable"""
-            #pylint:disable=too-few-public-methods
+
+            # pylint:disable=too-few-public-methods
 
             num_wires = AnyWires
 
@@ -451,7 +452,8 @@ class TestSpsaGradient:
 
         class DeviceSupportingSpecialObservable(DefaultQubit):
             """A device class supporting SpecialObservable."""
-            #pylint:disable=too-few-public-methods
+
+            # pylint:disable=too-few-public-methods
             name = "Device supporting SpecialObservable"
             short_name = "default.qubit.specialobservable"
             observables = DefaultQubit.observables.union({"SpecialObservable"})
@@ -665,7 +667,10 @@ class TestSpsaGradientIntegration:
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
     def test_multiple_expectation_value_with_argnum_one(
-        self, approx_order, strategy, validate,
+        self,
+        approx_order,
+        strategy,
+        validate,
     ):
         """Tests correct output shape and evaluation for a tape
         with a multiple measurement, where only one parameter is chosen to
