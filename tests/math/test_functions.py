@@ -15,6 +15,7 @@
 """
 import itertools
 from functools import partial
+from unittest.mock import patch
 
 import numpy as onp
 import pytest
@@ -2492,3 +2493,10 @@ class TestSize:
 
         r = fn.size(torch.tensor(array))
         assert r == size
+
+
+def test_jax_ndim():
+    with patch("jax.numpy.ndim") as mock_ndim:
+        _ = qml.math.ndim(jax.numpy.array(3))
+
+    mock_ndim.assert_called_once_with(3)

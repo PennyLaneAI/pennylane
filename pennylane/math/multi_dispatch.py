@@ -847,3 +847,34 @@ def gammainc(m, t, like=None):
     import scipy
 
     return scipy.special.gammainc(m, t)
+
+
+@multi_dispatch()
+def detach(tensor, like=None):
+    """Detach a tensor from its trace and return just its numerical values.
+
+    Args:
+        tensor (tensor_like): Tensor to detach
+        like (str): Manually chosen interface to dispatch to.
+
+    Returns:
+        tensor_like: A tensor in the same interface as the input tensor but
+        with a stopped gradient.
+    """
+    if like == "jax":
+        import jax
+
+        return jax.lax.stop_gradient(tensor)
+
+    if like == "torch":
+        return tensor.detach()
+
+    if like == "tensorflow":
+        import tensorflow as tf
+
+        return tf.stop_gradient(tensor)
+
+    if like == "autograd":
+        return np.to_numpy(tensor)
+
+    return tensor

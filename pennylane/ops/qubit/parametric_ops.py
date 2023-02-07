@@ -1871,8 +1871,8 @@ class PauliRot(Operation):
 
         Args:
             theta (float): rotation angle :math:`\theta`
-            pauli_word (string): the Pauli word defining the rotation
             wires (Iterable, Wires): the wires the operation acts on
+            pauli_word (string): the Pauli word defining the rotation
 
         Returns:
             list[Operator]: decomposition into lower level operations
