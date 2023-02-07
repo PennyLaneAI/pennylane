@@ -518,7 +518,7 @@ class TestDiagonalQubitUnitary:
             loss = circuit(x)
 
         grad = tape.gradient(loss, x)
-        expected = -tf.math.sin(x)
+        expected = -tf.math.sin(x)  # pylint: disable=invalid-unary-operand-type
         assert np.allclose(grad, expected)
 
 
