@@ -117,6 +117,7 @@ class TestInitialization:
         ev = ParametrizedEvolution(H=H, mxstep=10)
 
         assert ev.parameters == []
+        assert ev.num_params == 0
         assert ev.t is None
         assert ev.odeint_kwargs == {"mxstep": 10}
         params = [1, 2, 3]
@@ -124,6 +125,7 @@ class TestInitialization:
         ev(params, t, atol=1e-6, rtol=1e-4)
 
         assert qml.math.allequal(ev.parameters, params)
+        assert ev.num_params == 3
         assert qml.math.allequal(ev.t, [0, 6])
         assert ev.odeint_kwargs == {"mxstep": 10, "atol": 1e-6, "rtol": 1e-4}
 

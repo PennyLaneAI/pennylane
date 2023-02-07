@@ -184,6 +184,7 @@ class ParametrizedEvolution(Operation):
 
     def __call__(self, params, t, **odeint_kwargs):
         self.data = [jnp.array(p) if isinstance(p, list) else p for p in params]
+        self._num_params = len(params)
         self.t = jnp.array([0, t] if qml.math.ndim(t) == 0 else t, dtype=float)
         if odeint_kwargs:
             self.odeint_kwargs.update(odeint_kwargs)
