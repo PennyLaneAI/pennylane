@@ -132,10 +132,12 @@ def func_to_unitary(func, M):
             )
 
     for i, f in enumerate(fs):
-        unitary[2 * i, 2 * i] = np.sqrt(1 - f)
-        unitary[2 * i + 1, 2 * i] = np.sqrt(f)
-        unitary[2 * i, 2 * i + 1] = np.sqrt(f)
-        unitary[2 * i + 1, 2 * i + 1] = -np.sqrt(1 - f)
+
+        # array = set_index(array, idx, val) is a JAX-JIT compatible version of array[idx] = val
+        unitary = qml.math.set_index(unitary, (2 * i, 2 * i), qml.math.sqrt(1 - f))
+        unitary = qml.math.set_index(unitary, (2 * i + 1, 2 * i), qml.math.sqrt(f))
+        unitary = qml.math.set_index(unitary, (2 * i, 2 * i + 1), qml.math.sqrt(f))
+        unitary = qml.math.set_index(unitary, (2 * i + 1, 2 * i + 1), -qml.math.sqrt(1 - f))
 
     return unitary
 
