@@ -898,7 +898,7 @@ def detach(tensor, like=None):
     return tensor
 
 
-@multi_dispatch(argnum=[0, 1, 2])
+@multi_dispatch()
 def set_index(array, idx, val, like=None):
     """Set the value at a specified index in an array.
     Returns ``array[idx]=val`` unless JAX.
