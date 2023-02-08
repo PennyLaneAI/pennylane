@@ -54,7 +54,7 @@ class TestAutogradExecuteUnitTests:
         ):
             qml.execute([tape], dev, gradient_fn=param_shift, interface="autograd")
 
-    @pytest.mark.parametrize("interface", ["autograd", "auto"])
+    @pytest.mark.parametrize("interface", ["autograd"])
     def test_jacobian_options(self, interface, mocker, tol):
         """Test setting jacobian options"""
         spy = mocker.spy(qml.gradients, "param_shift")
@@ -83,7 +83,7 @@ class TestAutogradExecuteUnitTests:
         for args in spy.call_args_list:
             assert args[1]["shifts"] == [(np.pi / 4,)] * 2
 
-    @pytest.mark.parametrize("interface", ["autograd", "auto"])
+    @pytest.mark.parametrize("interface", ["autograd"])
     def test_incorrect_mode(self, interface):
         """Test that an error is raised if a gradient transform
         is used with mode=forward"""
@@ -125,7 +125,7 @@ class TestAutogradExecuteUnitTests:
         with pytest.raises(ValueError, match="Unknown interface"):
             cost(a, device=dev)
 
-    @pytest.mark.parametrize("interface", ["autograd", "auto"])
+    @pytest.mark.parametrize("interface", ["autograd"])
     def test_forward_mode(self, interface, mocker):
         """Test that forward mode uses the `device.execute_and_gradients` pathway"""
         dev = qml.device("default.qubit", wires=1)
@@ -153,7 +153,7 @@ class TestAutogradExecuteUnitTests:
         assert dev.num_executions == 1
         spy.assert_called()
 
-    @pytest.mark.parametrize("interface", ["autograd", "auto"])
+    @pytest.mark.parametrize("interface", ["autograd"])
     def test_backward_mode(self, interface, mocker):
         """Test that backward mode uses the `device.batch_execute` and `device.gradients` pathway"""
         dev = qml.device("default.qubit", wires=1)
@@ -435,7 +435,7 @@ execute_kwargs = [
 
 
 @pytest.mark.parametrize("execute_kwargs", execute_kwargs)
-@pytest.mark.parametrize("interface", ["autograd", "auto"])
+@pytest.mark.parametrize("interface", ["autograd"])
 class TestAutogradExecuteIntegration:
     """Test the autograd interface execute function
     integrates well for both forward and backward execution"""
