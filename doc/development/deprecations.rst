@@ -75,6 +75,10 @@ Pending deprecations
 Completed deprecation cycles
 ----------------------------
 
+* ``qml.VQECost`` is removed. 
+
+   - Deprecated in 0.13
+   - Removed in 0.29
 
 * In-place inversion — ``op.inv()`` and ``op.inverse=value`` — is deprecated. Please
   use ``qml.adjoint`` or ``qml.pow`` instead. 
