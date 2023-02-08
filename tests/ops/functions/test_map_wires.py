@@ -203,7 +203,7 @@ class TestMapWiresCallables:
 
         @jax.jit
         @partial(qml.map_wires, wire_map=wire_map)
-        @qml.qnode(qml.device("default.qubit.jax", wires=5), interface="jax")
+        @qml.qnode(qml.device("default.qubit", wires=5))
         def circuit(x):
             qml.adjoint(qml.RX(x, wires=0))
             qml.PauliX(0) ** 2

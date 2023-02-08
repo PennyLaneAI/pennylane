@@ -290,7 +290,7 @@ class TestInterfaces:
         """Test that coefficients are correctly computed when using the Tensorflow interface."""
         import tensorflow as tf
 
-        qnode = qml.QNode(self.circuit, self.dev, interface="tf")
+        qnode = qml.QNode(self.circuit, self.dev)
 
         weights = tf.Variable([0.5, 0.2])
 
@@ -303,7 +303,7 @@ class TestInterfaces:
         """Test that coefficients are correctly computed when using the PyTorch interface."""
         import torch
 
-        qnode = qml.QNode(self.circuit, self.dev, interface="torch")
+        qnode = qml.QNode(self.circuit, self.dev)
 
         weights = torch.tensor([0.5, 0.2])
 
@@ -322,7 +322,7 @@ class TestInterfaces:
         remember = config.read("jax_enable_x64")
         config.update("jax_enable_x64", True)
 
-        qnode = qml.QNode(self.circuit, self.dev, interface="jax", diff_method="parameter-shift")
+        qnode = qml.QNode(self.circuit, self.dev, diff_method="parameter-shift")
 
         weights = jax.numpy.array([0.5, 0.2])
 

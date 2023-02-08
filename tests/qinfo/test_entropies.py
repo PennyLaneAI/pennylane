@@ -91,16 +91,19 @@ class TestVonNeumannEntropy:
         expected_entropy = expected_entropy_ising_xx(param) / np.log(base)
         assert qml.math.allclose(entropy, expected_entropy)
 
+    interfaces = ["auto", "autograd"]
+
     @pytest.mark.autograd
     @pytest.mark.parametrize("wires", single_wires_list)
     @pytest.mark.parametrize("param", parameters)
     @pytest.mark.parametrize("base", base)
-    def test_IsingXX_qnode_entropy_grad(self, param, wires, base):
+    @pytest.mark.parametrize("interface", interfaces)
+    def test_IsingXX_qnode_entropy_grad(self, param, wires, base, interface):
         """Test entropy for a QNode gradient with autograd."""
 
         dev = qml.device("default.qubit", wires=2)
 
-        @qml.qnode(dev, diff_method="backprop")
+        @qml.qnode(dev, interface=interface)
         def circuit_state(x):
             qml.IsingXX(x, wires=[0, 1])
             return qml.state()
@@ -110,18 +113,21 @@ class TestVonNeumannEntropy:
         grad_expected_entropy = expected_entropy_grad_ising_xx(param) / np.log(base)
         assert qml.math.allclose(grad_entropy, grad_expected_entropy)
 
+    interfaces = ["torch"]
+
     @pytest.mark.torch
     @pytest.mark.parametrize("wires", single_wires_list)
     @pytest.mark.parametrize("param", parameters)
     @pytest.mark.parametrize("device", devices)
     @pytest.mark.parametrize("base", base)
-    def test_IsingXX_qnode_torch_entropy(self, param, wires, device, base):
+    @pytest.mark.parametrize("interface", interfaces)
+    def test_IsingXX_qnode_torch_entropy(self, param, wires, device, base, interface):
         """Test entropy for a QNode with torch interface."""
         import torch
 
         dev = qml.device(device, wires=2)
 
-        @qml.qnode(dev, interface="torch")
+        @qml.qnode(dev, interface=interface)
         def circuit_state(x):
             qml.IsingXX(x, wires=[0, 1])
             return qml.state()
@@ -135,13 +141,14 @@ class TestVonNeumannEntropy:
     @pytest.mark.parametrize("wires", single_wires_list)
     @pytest.mark.parametrize("param", parameters)
     @pytest.mark.parametrize("base", base)
-    def test_IsingXX_qnode_entropy_grad_torch(self, param, wires, base):
+    @pytest.mark.parametrize("interface", interfaces)
+    def test_IsingXX_qnode_entropy_grad_torch(self, param, wires, base, interface):
         """Test entropy for a QNode gradient with torch."""
         import torch
 
         dev = qml.device("default.qubit", wires=2)
 
-        @qml.qnode(dev, interface="torch", diff_method="backprop")
+        @qml.qnode(dev, interface=interface, diff_method="backprop")
         def circuit_state(x):
             qml.IsingXX(x, wires=[0, 1])
             return qml.state()
@@ -161,18 +168,21 @@ class TestVonNeumannEntropy:
 
         assert qml.math.allclose(grad_entropy, grad_expected_entropy)
 
+    interfaces = ["tf"]
+
     @pytest.mark.tf
     @pytest.mark.parametrize("wires", single_wires_list)
     @pytest.mark.parametrize("param", parameters)
     @pytest.mark.parametrize("device", devices)
     @pytest.mark.parametrize("base", base)
-    def test_IsingXX_qnode_tf_entropy(self, param, wires, device, base):
+    @pytest.mark.parametrize("interface", interfaces)
+    def test_IsingXX_qnode_tf_entropy(self, param, wires, device, base, interface):
         """Test entropy for a QNode with tf interface."""
         import tensorflow as tf
 
         dev = qml.device(device, wires=2)
 
-        @qml.qnode(dev, interface="tf")
+        @qml.qnode(dev, interface=interface)
         def circuit_state(x):
             qml.IsingXX(x, wires=[0, 1])
             return qml.state()
@@ -187,13 +197,14 @@ class TestVonNeumannEntropy:
     @pytest.mark.parametrize("wires", single_wires_list)
     @pytest.mark.parametrize("param", parameters)
     @pytest.mark.parametrize("base", base)
-    def test_IsingXX_qnode_entropy_grad_tf(self, param, wires, base):
+    @pytest.mark.parametrize("interface", interfaces)
+    def test_IsingXX_qnode_entropy_grad_tf(self, param, wires, base, interface):
         """Test entropy for a QNode gradient with tf."""
         import tensorflow as tf
 
         dev = qml.device("default.qubit", wires=2)
 
-        @qml.qnode(dev, interface="tf", diff_method="backprop")
+        @qml.qnode(dev, interface=interface, diff_method="backprop")
         def circuit_state(x):
             qml.IsingXX(x, wires=[0, 1])
             return qml.state()
@@ -208,18 +219,21 @@ class TestVonNeumannEntropy:
 
         assert qml.math.allclose(grad_entropy, grad_expected_entropy)
 
+    interfaces = ["jax"]
+
     @pytest.mark.jax
     @pytest.mark.parametrize("wires", single_wires_list)
     @pytest.mark.parametrize("param", parameters)
     @pytest.mark.parametrize("device", devices)
     @pytest.mark.parametrize("base", base)
-    def test_IsingXX_qnode_jax_entropy(self, param, wires, device, base):
+    @pytest.mark.parametrize("interface", interfaces)
+    def test_IsingXX_qnode_jax_entropy(self, param, wires, device, base, interface):
         """Test entropy for a QNode with jax interface."""
         import jax.numpy as jnp
 
         dev = qml.device(device, wires=2)
 
-        @qml.qnode(dev, interface="jax")
+        @qml.qnode(dev, interface=interface)
         def circuit_state(x):
             qml.IsingXX(x, wires=[0, 1])
             return qml.state()
@@ -234,13 +248,14 @@ class TestVonNeumannEntropy:
     @pytest.mark.parametrize("wires", single_wires_list)
     @pytest.mark.parametrize("param", parameters)
     @pytest.mark.parametrize("base", base)
-    def test_IsingXX_qnode_entropy_grad_jax(self, param, wires, base):
+    @pytest.mark.parametrize("interface", interfaces)
+    def test_IsingXX_qnode_entropy_grad_jax(self, param, wires, base, interface):
         """Test entropy for a QNode gradient with Jax."""
         import jax
 
         dev = qml.device("default.qubit", wires=2)
 
-        @qml.qnode(dev, interface="jax", diff_method="backprop")
+        @qml.qnode(dev, interface=interface, diff_method="backprop")
         def circuit_state(x):
             qml.IsingXX(x, wires=[0, 1])
             return qml.state()
@@ -253,18 +268,21 @@ class TestVonNeumannEntropy:
 
         assert qml.math.allclose(grad_entropy, grad_expected_entropy, rtol=1e-04, atol=1e-05)
 
+    interfaces = ["jax-jit"]
+
     @pytest.mark.jax
     @pytest.mark.parametrize("wires", single_wires_list)
     @pytest.mark.parametrize("param", parameters)
     @pytest.mark.parametrize("base", base)
-    def test_IsingXX_qnode_jax_jit_entropy(self, param, wires, base):
+    @pytest.mark.parametrize("interface", interfaces)
+    def test_IsingXX_qnode_jax_jit_entropy(self, param, wires, base, interface):
         """Test entropy for a QNode with jax-jit interface."""
         import jax
         import jax.numpy as jnp
 
         dev = qml.device("default.qubit", wires=2)
 
-        @qml.qnode(dev, interface="jax-jit")
+        @qml.qnode(dev, interface=interface)
         def circuit_state(x):
             qml.IsingXX(x, wires=[0, 1])
             return qml.state()
@@ -281,13 +299,14 @@ class TestVonNeumannEntropy:
     @pytest.mark.parametrize("wires", single_wires_list)
     @pytest.mark.parametrize("param", parameters)
     @pytest.mark.parametrize("base", base)
-    def test_IsingXX_qnode_entropy_grad_jax_jit(self, param, wires, base):
+    @pytest.mark.parametrize("interface", interfaces)
+    def test_IsingXX_qnode_entropy_grad_jax_jit(self, param, wires, base, interface):
         """Test entropy for a QNode gradient with Jax-jit."""
         import jax
 
         dev = qml.device("default.qubit", wires=2)
 
-        @qml.qnode(dev, interface="jax-jit", diff_method="backprop")
+        @qml.qnode(dev, interface=interface, diff_method="backprop")
         def circuit_state(x):
             qml.IsingXX(x, wires=[0, 1])
             return qml.state()
@@ -400,9 +419,12 @@ class TestRelativeEntropy:
 
         assert np.allclose(actual, expected)
 
+    interfaces = ["jax-jit"]
+
     @pytest.mark.jax
     @pytest.mark.parametrize("param", params)
-    def test_qnode_relative_entropy_jax_jit(self, param):
+    @pytest.mark.parametrize("interface", interfaces)
+    def test_qnode_relative_entropy_jax_jit(self, param, interface):
         """Test that the mutual information transform works for QNodes by comparing
         against analytic values, for the JAX-jit interface"""
         import jax
@@ -412,13 +434,13 @@ class TestRelativeEntropy:
 
         param = jnp.array(param)
 
-        @qml.qnode(dev, interface="jax-jit")
+        @qml.qnode(dev, interface=interface)
         def circuit1(params):
             qml.RY(params, wires=0)
             qml.CNOT(wires=[0, 1])
             return qml.state()
 
-        @qml.qnode(dev, interface="jax-jit")
+        @qml.qnode(dev, interface=interface)
         def circuit2(params):
             qml.RY(params, wires=0)
             qml.CNOT(wires=[0, 1])
@@ -444,9 +466,94 @@ class TestRelativeEntropy:
 
         assert np.allclose(actual, expected)
 
+    @pytest.mark.jax
+    @pytest.mark.parametrize("param", grad_params)
+    @pytest.mark.parametrize("interface", interfaces)
+    def test_qnode_grad_jax(self, param, interface):
+        """Test that the gradient of relative entropy works for QNodes
+        with the JAX interface"""
+        import jax
+        import jax.numpy as jnp
+
+        dev = qml.device("default.qubit", wires=2)
+
+        @qml.qnode(dev, interface=interface, diff_method="backprop")
+        def circuit1(param):
+            qml.RY(param, wires=0)
+            qml.CNOT(wires=[0, 1])
+            return qml.state()
+
+        @qml.qnode(dev, interface=interface, diff_method="backprop")
+        def circuit2(param):
+            qml.RY(param, wires=0)
+            qml.CNOT(wires=[0, 1])
+            return qml.state()
+
+        rel_ent_circuit = qml.qinfo.relative_entropy(circuit1, circuit2, [0], [1])
+
+        def wrapper(param0, param1):
+            return rel_ent_circuit((param0,), (param1,))
+
+        expected = [
+            np.sin(param[0] / 2)
+            * np.cos(param[0] / 2)
+            * (np.log(np.tan(param[0] / 2) ** 2) - np.log(np.tan(param[1] / 2) ** 2)),
+            np.cos(param[0] / 2) ** 2 * np.tan(param[1] / 2)
+            - np.sin(param[0] / 2) ** 2 / np.tan(param[1] / 2),
+        ]
+
+        param0, param1 = jnp.array(param[0]), jnp.array(param[1])
+        actual = jax.grad(wrapper, argnums=[0, 1])(param0, param1)
+
+        assert np.allclose(actual, expected, atol=1e-8)
+
+    @pytest.mark.jax
+    @pytest.mark.parametrize("param", grad_params)
+    @pytest.mark.parametrize("interface", interfaces)
+    def test_qnode_grad_jax_jit(self, param, interface):
+        """Test that the gradient of relative entropy works for QNodes
+        with the JAX interface"""
+        import jax
+        import jax.numpy as jnp
+
+        dev = qml.device("default.qubit", wires=2)
+
+        @qml.qnode(dev, interface=interface, diff_method="backprop")
+        def circuit1(param):
+            qml.RY(param, wires=0)
+            qml.CNOT(wires=[0, 1])
+            return qml.state()
+
+        @qml.qnode(dev, interface=interface, diff_method="backprop")
+        def circuit2(param):
+            qml.RY(param, wires=0)
+            qml.CNOT(wires=[0, 1])
+            return qml.state()
+
+        rel_ent_circuit = qml.qinfo.relative_entropy(circuit1, circuit2, [0], [1])
+
+        def wrapper(param0, param1):
+            return rel_ent_circuit((param0,), (param1,))
+
+        expected = [
+            np.sin(param[0] / 2)
+            * np.cos(param[0] / 2)
+            * (np.log(np.tan(param[0] / 2) ** 2) - np.log(np.tan(param[1] / 2) ** 2)),
+            np.cos(param[0] / 2) ** 2 * np.tan(param[1] / 2)
+            - np.sin(param[0] / 2) ** 2 / np.tan(param[1] / 2),
+        ]
+
+        param0, param1 = jnp.array(param[0]), jnp.array(param[1])
+        actual = jax.jit(jax.grad(wrapper, argnums=[0, 1]))(param0, param1)
+
+        assert np.allclose(actual, expected, atol=1e-8)
+
+    interfaces = ["auto", "autograd"]
+
     @pytest.mark.autograd
     @pytest.mark.parametrize("param", grad_params)
-    def test_qnode_grad(self, param):
+    @pytest.mark.parametrize("interface", interfaces)
+    def test_qnode_grad(self, param, interface):
         """Test that the gradient of relative entropy works for QNodes
         with the autograd interface"""
         dev = qml.device("default.qubit", wires=2)
@@ -481,89 +588,12 @@ class TestRelativeEntropy:
 
         assert np.allclose(actual, expected, atol=1e-8)
 
-    @pytest.mark.jax
-    @pytest.mark.parametrize("param", grad_params)
-    def test_qnode_grad_jax(self, param):
-        """Test that the gradient of relative entropy works for QNodes
-        with the JAX interface"""
-        import jax
-        import jax.numpy as jnp
-
-        dev = qml.device("default.qubit", wires=2)
-
-        @qml.qnode(dev, interface="jax", diff_method="backprop")
-        def circuit1(param):
-            qml.RY(param, wires=0)
-            qml.CNOT(wires=[0, 1])
-            return qml.state()
-
-        @qml.qnode(dev, interface="jax", diff_method="backprop")
-        def circuit2(param):
-            qml.RY(param, wires=0)
-            qml.CNOT(wires=[0, 1])
-            return qml.state()
-
-        rel_ent_circuit = qml.qinfo.relative_entropy(circuit1, circuit2, [0], [1])
-
-        def wrapper(param0, param1):
-            return rel_ent_circuit((param0,), (param1,))
-
-        expected = [
-            np.sin(param[0] / 2)
-            * np.cos(param[0] / 2)
-            * (np.log(np.tan(param[0] / 2) ** 2) - np.log(np.tan(param[1] / 2) ** 2)),
-            np.cos(param[0] / 2) ** 2 * np.tan(param[1] / 2)
-            - np.sin(param[0] / 2) ** 2 / np.tan(param[1] / 2),
-        ]
-
-        param0, param1 = jnp.array(param[0]), jnp.array(param[1])
-        actual = jax.grad(wrapper, argnums=[0, 1])(param0, param1)
-
-        assert np.allclose(actual, expected, atol=1e-8)
-
-    @pytest.mark.jax
-    @pytest.mark.parametrize("param", grad_params)
-    def test_qnode_grad_jax_jit(self, param):
-        """Test that the gradient of relative entropy works for QNodes
-        with the JAX interface"""
-        import jax
-        import jax.numpy as jnp
-
-        dev = qml.device("default.qubit", wires=2)
-
-        @qml.qnode(dev, interface="jax", diff_method="backprop")
-        def circuit1(param):
-            qml.RY(param, wires=0)
-            qml.CNOT(wires=[0, 1])
-            return qml.state()
-
-        @qml.qnode(dev, interface="jax", diff_method="backprop")
-        def circuit2(param):
-            qml.RY(param, wires=0)
-            qml.CNOT(wires=[0, 1])
-            return qml.state()
-
-        rel_ent_circuit = qml.qinfo.relative_entropy(circuit1, circuit2, [0], [1])
-
-        def wrapper(param0, param1):
-            return rel_ent_circuit((param0,), (param1,))
-
-        expected = [
-            np.sin(param[0] / 2)
-            * np.cos(param[0] / 2)
-            * (np.log(np.tan(param[0] / 2) ** 2) - np.log(np.tan(param[1] / 2) ** 2)),
-            np.cos(param[0] / 2) ** 2 * np.tan(param[1] / 2)
-            - np.sin(param[0] / 2) ** 2 / np.tan(param[1] / 2),
-        ]
-
-        param0, param1 = jnp.array(param[0]), jnp.array(param[1])
-        actual = jax.jit(jax.grad(wrapper, argnums=[0, 1]))(param0, param1)
-
-        assert np.allclose(actual, expected, atol=1e-8)
+    interfaces = ["tf"]
 
     @pytest.mark.tf
     @pytest.mark.parametrize("param", grad_params)
-    def test_qnode_grad_tf(self, param):
+    @pytest.mark.parametrize("interface", interfaces)
+    def test_qnode_grad_tf(self, param, interface):
         """Test that the gradient of relative entropy works for QNodes
         with the TensorFlow interface"""
         import tensorflow as tf
@@ -598,9 +628,12 @@ class TestRelativeEntropy:
 
         assert np.allclose(actual, expected, atol=1e-5)
 
+    interfaces = ["torch"]
+
     @pytest.mark.torch
     @pytest.mark.parametrize("param", grad_params)
-    def test_qnode_grad_torch(self, param):
+    @pytest.mark.parametrize("interface", interfaces)
+    def test_qnode_grad_torch(self, param, interface):
         """Test that the gradient of relative entropy works for QNodes
         with the Torch interface"""
         import torch

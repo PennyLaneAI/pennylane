@@ -1068,7 +1068,7 @@ class TestNewVQE:
         dev = qml.device("default.qubit", wires=4)
         H = big_hamiltonian
 
-        @qml.qnode(dev, interface="torch")
+        @qml.qnode(dev)
         def circuit(w):
             qml.templates.StronglyEntanglingLayers(w, wires=range(4))
             return qml.expval(H)
@@ -1089,7 +1089,7 @@ class TestNewVQE:
         dev = qml.device("default.qubit", wires=4)
         H = big_hamiltonian
 
-        @qml.qnode(dev, interface="tf")
+        @qml.qnode(dev)
         def circuit(w):
             qml.templates.StronglyEntanglingLayers(w, wires=range(4))
             return qml.expval(H)
@@ -1115,7 +1115,7 @@ class TestNewVQE:
         np.random.seed(1967)
         w = jnp.array(PARAMS)
 
-        @qml.qnode(dev, interface="jax")
+        @qml.qnode(dev)
         def circuit(w):
             qml.templates.StronglyEntanglingLayers(w, wires=range(4))
             return qml.expval(H)
