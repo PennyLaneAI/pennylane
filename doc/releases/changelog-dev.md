@@ -477,6 +477,9 @@
   decomposition.
   [(#3726)](https://github.com/PennyLaneAI/pennylane/pull/3726)
 
+* `QuantumMonteCarlo` template is now JAX-JIT compatible when passing `jax.numpy` arrays to the template.
+  [(#3734)](https://github.com/PennyLaneAI/pennylane/pull/3734)
+
 <h3>Breaking changes</h3>
 
 * The argument `mode` in execution is replaced by the boolean `grad_on_execution` in the new execution pipeline.
@@ -586,6 +589,9 @@
   
 * A hyperlink has been added in the text for a URL in the `qml.qchem.mol_data` docstring.
   [(#3644)](https://github.com/PennyLaneAI/pennylane/pull/3644)
+
+* A typo was corrected in the documentation for `qml.math.vn_entropy()`.
+[(#3740)](https://github.com/PennyLaneAI/pennylane/pull/3740)
 
 <h3>Bug fixes</h3>
 
