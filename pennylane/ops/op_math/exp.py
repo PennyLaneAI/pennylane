@@ -246,12 +246,6 @@ class Exp(ScalarSymbolicOp, Operation):
         )
         return is_pauli_rot or is_hamiltonian or is_sum_of_pauli_words
 
-    @property
-    def inverse(self):
-        """Setting inverse is not defined for Exp, so the inverse is always False"""
-        return False
-
-    # pylint: disable=too-many-branches
     def decomposition(self):
         r"""Representation of the operator as a product of other operators. Decomposes into
         :class:`~.PauliRot` if the coefficient is imaginary and the base is a Pauli Word.
