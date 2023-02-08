@@ -478,6 +478,9 @@
 * The argument `mode` in execution is replaced by the boolean `grad_on_execution` in the new execution pipeline.
   [(#3723)](https://github.com/PennyLaneAI/pennylane/pull/3723)
 
+* `qml.VQECost` is removed.
+  [(#3735)](https://github.com/PennyLaneAI/pennylane/pull/3735)
+
 * The default interface is now `auto`. There is no need to specify the interface anymore! It is automatically 
   determined by checking your `QNode` parameters.
   [(#3677)](https://github.com/PennyLaneAI/pennylane/pull/3677)
