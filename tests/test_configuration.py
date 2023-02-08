@@ -14,6 +14,7 @@
 """
 Unit tests for the :mod:`pennylane` configuration classe :class:`Configuration`.
 """
+import logging as log
 import os
 
 import pytest
@@ -21,6 +22,9 @@ import toml
 
 import pennylane as qml
 from pennylane import Configuration
+
+logger = log.getLogger("PennyLane")
+
 
 config_filename = "default_config.toml"
 
@@ -120,11 +124,16 @@ class TestConfigurationFileInteraction:
         assert config._config == config_toml
         assert config.path == os.path.join(os.getcwd(), config_path)
 
-    def test_not_found_warning(self):
+    def test_not_found_warning(self, caplog):
         """Test that a warning is raised if no configuration file found."""
 
-        with pytest.warns(UserWarning, match="No PennyLane configuration file found"):
-            Configuration("noconfig")
+        caplog.clear()
+        caplog.set_level(log.INFO)
+
+        Configuration("noconfig")
+
+        assert len(caplog.records) == 1
+        assert caplog.records[0].message == "No PennyLane configuration file found."
 
     def test_save(self, tmp_path):
         """Test saving a configuration file."""

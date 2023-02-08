@@ -16,11 +16,13 @@ This module contains the :class:`Configuration` class, which is used to
 load, store, save, and modify configuration options for PennyLane and all
 supported plugins and devices.
 """
+import logging as log
 import os
-import warnings
 
 import toml
 from appdirs import user_config_dir
+
+logger = log.getLogger("PennyLane")
 
 
 class Configuration:
@@ -53,7 +55,7 @@ class Configuration:
                 break
             except FileNotFoundError:
                 if idx == len(directories) - 1:
-                    warnings.warn("No PennyLane configuration file found.", UserWarning)
+                    logger.info("No PennyLane configuration file found.")
 
     def __str__(self):
         if self._config:
