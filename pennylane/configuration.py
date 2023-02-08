@@ -53,7 +53,7 @@ class Configuration:
                 break
             except FileNotFoundError:
                 if idx == len(directories) - 1:
-                    warnings.warn("No PennyLane configuration file found.")
+                    warnings.warn("No PennyLane configuration file found.", UserWarning)
 
     def __str__(self):
         if self._config:

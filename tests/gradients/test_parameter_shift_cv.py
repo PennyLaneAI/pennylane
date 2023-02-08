@@ -23,7 +23,6 @@ from pennylane.gradients.parameter_shift_cv import (
     _transform_observable,
 )
 
-
 hbar = 2
 
 
@@ -467,7 +466,7 @@ class TestParameterShiftLogic:
         qml.gradients.param_shift_cv(tape, dev, force_order2=True)
         spy.assert_called()
 
-    def test_no_poly_xp_support(self, mocker, monkeypatch, caplog):
+    def test_no_poly_xp_support(self, mocker, monkeypatch):
         """Test that if a device does not support PolyXP
         and the second-order parameter-shift rule is required,
         we fallback to finite differences."""
@@ -489,7 +488,7 @@ class TestParameterShiftLogic:
 
         spy_second_order.assert_not_called()
 
-    def test_no_poly_xp_support_variance(self, mocker, monkeypatch, caplog):
+    def test_no_poly_xp_support_variance(self, mocker, monkeypatch):
         """Test that if a device does not support PolyXP
         and the variance parameter-shift rule is required,
         we fallback to finite differences."""
