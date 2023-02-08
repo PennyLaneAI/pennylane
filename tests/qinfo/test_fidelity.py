@@ -201,19 +201,22 @@ class TestFidelityQnode:
         expected_fid = expected_grad_fidelity_rx_pauliz(param)
         assert qml.math.allclose(fid_grad, expected_fid)
 
+    interfaces = ["auto", "autograd"]
+
     @pytest.mark.autograd
     @pytest.mark.parametrize("param", parameters)
     @pytest.mark.parametrize("wire", wires)
-    def test_fidelity_qnodes_pauliz_rx_grad(self, param, wire):
+    @pytest.mark.parametrize("interface", interfaces)
+    def test_fidelity_qnodes_pauliz_rx_grad(self, param, wire, interface):
         """Test the gradient of the fidelity between PauliZ and Rx circuits."""
         dev = qml.device("default.qubit", wires=wire)
 
-        @qml.qnode(dev, interface="autograd", diff_method="backprop")
+        @qml.qnode(dev, interface=interface, diff_method="backprop")
         def circuit0():
             qml.PauliZ(wires=0)
             return qml.state()
 
-        @qml.qnode(dev, interface="autograd", diff_method="backprop")
+        @qml.qnode(dev, interface=interface, diff_method="backprop")
         def circuit1(x):
             qml.RX(x, wires=0)
             return qml.state()
@@ -227,11 +230,12 @@ class TestFidelityQnode:
     @pytest.mark.autograd
     @pytest.mark.parametrize("param", parameters)
     @pytest.mark.parametrize("wire", wires)
-    def test_fidelity_qnodes_rx_tworx_grad(self, param, wire):
+    @pytest.mark.parametrize("interface", interfaces)
+    def test_fidelity_qnodes_rx_tworx_grad(self, param, wire, interface):
         """Test the gradient of the fidelity between two trainable circuits."""
         dev = qml.device("default.qubit", wires=wire)
 
-        @qml.qnode(dev, interface="autograd", diff_method="backprop")
+        @qml.qnode(dev, interface=interface, diff_method="backprop")
         def circuit(x):
             qml.RX(x, wires=0)
             return qml.state()
@@ -244,17 +248,20 @@ class TestFidelityQnode:
         expected_fid = [-expected, expected]
         assert qml.math.allclose(fid_grad, expected_fid)
 
+    interfaces = ["torch"]
+
     @pytest.mark.torch
     @pytest.mark.parametrize("device", devices)
     @pytest.mark.parametrize("param", parameters)
     @pytest.mark.parametrize("wire", wires)
-    def test_fidelity_qnodes_rx_pauliz_torch(self, device, param, wire):
+    @pytest.mark.parametrize("interface", interfaces)
+    def test_fidelity_qnodes_rx_pauliz_torch(self, device, param, wire, interface):
         """Test the fidelity between Rx and PauliZ circuits with Torch."""
         import torch
 
         dev = qml.device(device, wires=wire)
 
-        @qml.qnode(dev, interface="torch")
+        @qml.qnode(dev, interface=interface)
         def circuit0(x):
             qml.RX(x, wires=0)
             return qml.state()
@@ -271,13 +278,14 @@ class TestFidelityQnode:
     @pytest.mark.torch
     @pytest.mark.parametrize("param", parameters)
     @pytest.mark.parametrize("wire", wires)
-    def test_fidelity_qnodes_rx_pauliz_torch_grad(self, param, wire):
+    @pytest.mark.parametrize("interface", interfaces)
+    def test_fidelity_qnodes_rx_pauliz_torch_grad(self, param, wire, interface):
         """Test the gradient of fidelity between Rx and PauliZ circuits with Torch."""
         import torch
 
         dev = qml.device("default.qubit", wires=wire)
 
-        @qml.qnode(dev, interface="torch", diff_method="backprop")
+        @qml.qnode(dev, interface=interface, diff_method="backprop")
         def circuit0(x):
             qml.RX(x, wires=0)
             return qml.state()
@@ -298,7 +306,8 @@ class TestFidelityQnode:
     @pytest.mark.torch
     @pytest.mark.parametrize("param", parameters)
     @pytest.mark.parametrize("wire", wires)
-    def test_fidelity_qnodes_pauliz_rx_torch_grad(self, param, wire):
+    @pytest.mark.parametrize("interface", interfaces)
+    def test_fidelity_qnodes_pauliz_rx_torch_grad(self, param, wire, interface):
         """Test the gradient of the fidelity between PauliZ and Rx circuits with Torch."""
         import torch
 
@@ -309,7 +318,7 @@ class TestFidelityQnode:
             qml.PauliZ(wires=0)
             return qml.state()
 
-        @qml.qnode(dev, interface="torch", diff_method="backprop")
+        @qml.qnode(dev, interface=interface, diff_method="backprop")
         def circuit1(x):
             qml.RX(x, wires=0)
             return qml.state()
@@ -325,13 +334,14 @@ class TestFidelityQnode:
     @pytest.mark.torch
     @pytest.mark.parametrize("param", parameters)
     @pytest.mark.parametrize("wire", wires)
-    def test_fidelity_qnodes_rx_tworx_torch_grad(self, param, wire):
+    @pytest.mark.parametrize("interface", interfaces)
+    def test_fidelity_qnodes_rx_tworx_torch_grad(self, param, wire, interface):
         """Test the gradient of the fidelity between two trainable circuits with Torch."""
         import torch
 
         dev = qml.device("default.qubit", wires=wire)
 
-        @qml.qnode(dev, interface="torch", diff_method="backprop")
+        @qml.qnode(dev, interface=interface, diff_method="backprop")
         def circuit(x):
             qml.RX(x, wires=0)
             return qml.state()
@@ -347,17 +357,20 @@ class TestFidelityQnode:
         fid_grad = [p.grad for p in params]
         assert qml.math.allclose(fid_grad, expected_fid)
 
+    interfaces = ["tf"]
+
     @pytest.mark.tf
     @pytest.mark.parametrize("device", devices)
     @pytest.mark.parametrize("param", parameters)
     @pytest.mark.parametrize("wire", wires)
-    def test_fidelity_qnodes_rx_pauliz_tf(self, device, param, wire):
+    @pytest.mark.parametrize("interface", interfaces)
+    def test_fidelity_qnodes_rx_pauliz_tf(self, device, param, wire, interface):
         """Test the fidelity between Rx and PauliZ circuits with Tensorflow."""
         import tensorflow as tf
 
         dev = qml.device(device, wires=wire)
 
-        @qml.qnode(dev, interface="tf")
+        @qml.qnode(dev, interface=interface)
         def circuit0(x):
             qml.RX(x, wires=0)
             return qml.state()
@@ -374,13 +387,14 @@ class TestFidelityQnode:
     @pytest.mark.tf
     @pytest.mark.parametrize("param", parameters)
     @pytest.mark.parametrize("wire", wires)
-    def test_fidelity_qnodes_rx_pauliz_tf_grad(self, param, wire):
+    @pytest.mark.parametrize("interface", interfaces)
+    def test_fidelity_qnodes_rx_pauliz_tf_grad(self, param, wire, interface):
         """Test the gradient of fidelity between Rx and PauliZ circuits with Tensorflow."""
         import tensorflow as tf
 
         dev = qml.device("default.qubit", wires=wire)
 
-        @qml.qnode(dev, interface="tf")
+        @qml.qnode(dev, interface=interface)
         def circuit0(x):
             qml.RX(x, wires=0)
             return qml.state()
@@ -401,7 +415,8 @@ class TestFidelityQnode:
     @pytest.mark.tf
     @pytest.mark.parametrize("param", parameters)
     @pytest.mark.parametrize("wire", wires)
-    def test_fidelity_qnodes_pauliz_rx_tf_grad(self, param, wire):
+    @pytest.mark.parametrize("interface", interfaces)
+    def test_fidelity_qnodes_pauliz_rx_tf_grad(self, param, wire, interface):
         """Test the gradient of the fidelity between PauliZ and Rx circuits with Tensorflow."""
         import tensorflow as tf
 
@@ -412,7 +427,7 @@ class TestFidelityQnode:
             qml.PauliZ(wires=0)
             return qml.state()
 
-        @qml.qnode(dev, interface="tf")
+        @qml.qnode(dev, interface=interface)
         def circuit1(x):
             qml.RX(x, wires=0)
             return qml.state()
@@ -425,17 +440,20 @@ class TestFidelityQnode:
         fid_grad = tape.gradient(entropy, param)
         assert qml.math.allclose(fid_grad, expected_fid)
 
+    interfaces = ["jax"]
+
     @pytest.mark.jax
     @pytest.mark.parametrize("device", devices)
     @pytest.mark.parametrize("param", parameters)
     @pytest.mark.parametrize("wire", wires)
-    def test_fidelity_qnodes_rx_pauliz_jax(self, device, param, wire):
+    @pytest.mark.parametrize("interface", interfaces)
+    def test_fidelity_qnodes_rx_pauliz_jax(self, device, param, wire, interface):
         """Test the fidelity between Rx and PauliZ circuits with Jax."""
         import jax
 
         dev = qml.device(device, wires=wire)
 
-        @qml.qnode(dev, interface="jax")
+        @qml.qnode(dev, interface=interface)
         def circuit0(x):
             qml.RX(x, wires=0)
             return qml.state()
@@ -454,7 +472,8 @@ class TestFidelityQnode:
     @pytest.mark.jax
     @pytest.mark.parametrize("param", parameters)
     @pytest.mark.parametrize("wire", wires)
-    def test_fidelity_qnodes_rx_pauliz_jax_jit(self, param, wire):
+    @pytest.mark.parametrize("interface", interfaces)
+    def test_fidelity_qnodes_rx_pauliz_jax_jit(self, param, wire, interface):
         """Test the fidelity between Rx and PauliZ circuits with Jax jit."""
         import jax
 
@@ -480,13 +499,14 @@ class TestFidelityQnode:
     @pytest.mark.jax
     @pytest.mark.parametrize("param", parameters)
     @pytest.mark.parametrize("wire", wires)
-    def test_fidelity_qnodes_rx_pauliz_jax_grad(self, param, wire):
+    @pytest.mark.parametrize("interface", interfaces)
+    def test_fidelity_qnodes_rx_pauliz_jax_grad(self, param, wire, interface):
         """Test the gradient of the fidelity between Rx and PauliZ circuits."""
         import jax
 
         dev = qml.device("default.qubit", wires=wire)
 
-        @qml.qnode(dev, interface="jax")
+        @qml.qnode(dev, interface=interface)
         def circuit0(x):
             qml.RX(x, wires=0)
             return qml.state()
@@ -504,13 +524,14 @@ class TestFidelityQnode:
 
     @pytest.mark.jax
     @pytest.mark.parametrize("param", parameters)
-    def test_fidelity_qnodes_rx_pauliz_jax_grad_jit(self, param):
+    @pytest.mark.parametrize("interface", interfaces)
+    def test_fidelity_qnodes_rx_pauliz_jax_grad_jit(self, param, interface):
         """Test the gradient of the fidelity between Rx and PauliZ circuits."""
         import jax
 
         dev = qml.device("default.qubit", wires=2)
 
-        @qml.qnode(dev, interface="jax")
+        @qml.qnode(dev, interface=interface)
         def circuit0(x):
             qml.RX(x, wires=0)
             return qml.state()
@@ -529,7 +550,8 @@ class TestFidelityQnode:
     @pytest.mark.jax
     @pytest.mark.parametrize("param", parameters)
     @pytest.mark.parametrize("wire", wires)
-    def test_fidelity_qnodes_pauliz_rx_jax_grad(self, param, wire):
+    @pytest.mark.parametrize("interface", interfaces)
+    def test_fidelity_qnodes_pauliz_rx_jax_grad(self, param, wire, interface):
         """Test the gradient of the fidelity between PauliZ and Rx circuits with Jax."""
         import jax
 
@@ -540,7 +562,7 @@ class TestFidelityQnode:
             qml.PauliZ(wires=0)
             return qml.state()
 
-        @qml.qnode(dev, interface="jax")
+        @qml.qnode(dev, interface=interface)
         def circuit1(x):
             qml.RX(x, wires=0)
             return qml.state()
@@ -553,7 +575,8 @@ class TestFidelityQnode:
 
     @pytest.mark.jax
     @pytest.mark.parametrize("param", parameters)
-    def test_fidelity_qnodes_pauliz_rx_jax_grad_jit(self, param):
+    @pytest.mark.parametrize("interface", interfaces)
+    def test_fidelity_qnodes_pauliz_rx_jax_grad_jit(self, param, interface):
         """Test the gradient of the fidelity between PauliZ and Rx circuits with Jax."""
         import jax
 
@@ -564,7 +587,7 @@ class TestFidelityQnode:
             qml.PauliZ(wires=0)
             return qml.state()
 
-        @qml.qnode(dev, interface="jax")
+        @qml.qnode(dev, interface=interface)
         def circuit1(x):
             qml.RX(x, wires=0)
             return qml.state()
@@ -578,13 +601,14 @@ class TestFidelityQnode:
     @pytest.mark.jax
     @pytest.mark.parametrize("param", parameters)
     @pytest.mark.parametrize("wire", wires)
-    def test_fidelity_qnodes_rx_tworx_jax_grad(self, param, wire):
+    @pytest.mark.parametrize("interface", interfaces)
+    def test_fidelity_qnodes_rx_tworx_jax_grad(self, param, wire, interface):
         """Test the gradient of the fidelity between two trainable circuits with Jax."""
         import jax
 
         dev = qml.device("default.qubit", wires=wire)
 
-        @qml.qnode(dev, interface="jax")
+        @qml.qnode(dev, interface=interface)
         def circuit(x):
             qml.RX(x, wires=0)
             return qml.state()
@@ -601,13 +625,14 @@ class TestFidelityQnode:
 
     @pytest.mark.jax
     @pytest.mark.parametrize("param", parameters)
-    def test_fidelity_qnodes_rx_tworx_jax_grad_jit(self, param):
+    @pytest.mark.parametrize("interface", interfaces)
+    def test_fidelity_qnodes_rx_tworx_jax_grad_jit(self, param, interface):
         """Test the gradient of the fidelity between two trainable circuits with Jax."""
         import jax
 
         dev = qml.device("default.qubit", wires=2)
 
-        @qml.qnode(dev, interface="jax")
+        @qml.qnode(dev, interface=interface)
         def circuit(x):
             qml.RX(x, wires=0)
             return qml.state()
@@ -619,19 +644,22 @@ class TestFidelityQnode:
         expected_fid = [-expected, expected]
         assert qml.math.allclose(fid_grad, expected_fid, rtol=1e-04, atol=1e-03)
 
+    interfaces = ["auto", "autograd"]
+
     @pytest.mark.autograd
     @pytest.mark.parametrize("param", parameters)
     @pytest.mark.parametrize("wire", wires)
-    def test_fidelity_qnodes_rx_pauliz_grad_two_params(self, param, wire):
+    @pytest.mark.parametrize("interface", interfaces)
+    def test_fidelity_qnodes_rx_pauliz_grad_two_params(self, param, wire, interface):
         """Test the gradient of the fidelity between Rx and PauliZ circuits with two parameters."""
         dev = qml.device("default.qubit", wires=wire)
 
-        @qml.qnode(dev, interface="autograd", diff_method="backprop")
+        @qml.qnode(dev, interface=interface, diff_method="backprop")
         def circuit0(x):
             qml.RX(x, wires=0)
             return qml.state()
 
-        @qml.qnode(dev, interface="autograd", diff_method="backprop")
+        @qml.qnode(dev, interface=interface, diff_method="backprop")
         def circuit1(x):
             qml.RX(x, wires=0)
             qml.RX(-x, wires=0)
@@ -644,21 +672,24 @@ class TestFidelityQnode:
         expected_fid_grad = expected_grad_fidelity_rx_pauliz(param)
         assert qml.math.allclose(fid_grad, (expected_fid_grad, 0.0))
 
+    interfaces = ["torch"]
+
     @pytest.mark.torch
     @pytest.mark.parametrize("param", parameters)
     @pytest.mark.parametrize("wire", wires)
-    def test_fidelity_qnodes_rx_pauliz_torch_grad_two_params(self, param, wire):
+    @pytest.mark.parametrize("interface", interfaces)
+    def test_fidelity_qnodes_rx_pauliz_torch_grad_two_params(self, param, wire, interface):
         """Test the gradient of fidelity between Rx and PauliZ circuits with Torch and two parameters."""
         import torch
 
         dev = qml.device("default.qubit", wires=wire)
 
-        @qml.qnode(dev, interface="torch", diff_method="backprop")
+        @qml.qnode(dev, interface=interface, diff_method="backprop")
         def circuit0(x):
             qml.RX(x, wires=0)
             return qml.state()
 
-        @qml.qnode(dev, interface="torch", diff_method="backprop")
+        @qml.qnode(dev, interface=interface, diff_method="backprop")
         def circuit1(x):
             qml.RX(x, wires=0)
             qml.RX(-x, wires=0)
@@ -673,21 +704,24 @@ class TestFidelityQnode:
         fid_grad = (param.grad, param2.grad)
         assert qml.math.allclose(fid_grad, (expected_fid_grad, 0.0))
 
+    interfaces = ["tf"]
+
     @pytest.mark.tf
     @pytest.mark.parametrize("param", parameters)
     @pytest.mark.parametrize("wire", wires)
-    def test_fidelity_qnodes_rx_pauliz_tf_grad_two_params(self, param, wire):
+    @pytest.mark.parametrize("interface", interfaces)
+    def test_fidelity_qnodes_rx_pauliz_tf_grad_two_params(self, param, wire, interface):
         """Test the gradient of fidelity between Rx and PauliZ circuits with Tensorflow and two parameters."""
         import tensorflow as tf
 
         dev = qml.device("default.qubit", wires=wire)
 
-        @qml.qnode(dev, interface="tf")
+        @qml.qnode(dev, interface=interface)
         def circuit0(x):
             qml.RX(x, wires=0)
             return qml.state()
 
-        @qml.qnode(dev, interface="tf")
+        @qml.qnode(dev, interface=interface)
         def circuit1(x):
             qml.RX(x, wires=0)
             qml.RX(-x, wires=0)
@@ -706,21 +740,24 @@ class TestFidelityQnode:
         fid_grad = tape.gradient(entropy, [param1, params2])
         assert qml.math.allclose(fid_grad, (expected_fid_grad, 0.0))
 
+    interfaces = ["jax"]
+
     @pytest.mark.jax
     @pytest.mark.parametrize("param", parameters)
     @pytest.mark.parametrize("wire", wires)
-    def test_fidelity_qnodes_rx_pauliz_jax_grad_two_params(self, param, wire):
+    @pytest.mark.parametrize("interface", interfaces)
+    def test_fidelity_qnodes_rx_pauliz_jax_grad_two_params(self, param, wire, interface):
         """Test the gradient of the fidelity between Rx and PauliZ circuits with Jax and two params."""
         import jax
 
         dev = qml.device("default.qubit", wires=wire)
 
-        @qml.qnode(dev, interface="jax")
+        @qml.qnode(dev, interface=interface)
         def circuit0(x):
             qml.RX(x, wires=0)
             return qml.state()
 
-        @qml.qnode(dev, interface="jax")
+        @qml.qnode(dev, interface=interface)
         def circuit1(x):
             qml.RX(x, wires=0)
             qml.RX(-x, wires=0)
@@ -733,21 +770,24 @@ class TestFidelityQnode:
         expected_fid_grad = expected_grad_fidelity_rx_pauliz(param)
         assert qml.math.allclose(fid_grad, (expected_fid_grad, 0.0), rtol=1e-03, atol=1e-04)
 
+    interfaces = ["jax"]
+
     @pytest.mark.jax
     @pytest.mark.parametrize("param", parameters)
     @pytest.mark.parametrize("wire", wires)
-    def test_fidelity_qnodes_rx_pauliz_jax_jit_grad_two_params(self, param, wire):
+    @pytest.mark.parametrize("interface", interfaces)
+    def test_fidelity_qnodes_rx_pauliz_jax_jit_grad_two_params(self, param, wire, interface):
         """Test the gradient of the fidelity between Rx and PauliZ circuits with Jax Jit and two params."""
         import jax
 
         dev = qml.device("default.qubit", wires=wire)
 
-        @qml.qnode(dev, interface="jax-jit")
+        @qml.qnode(dev, interface=interface)
         def circuit0(x):
             qml.RX(x, wires=0)
             return qml.state()
 
-        @qml.qnode(dev, interface="jax-jit")
+        @qml.qnode(dev, interface=interface)
         def circuit1(x):
             qml.RX(x, wires=0)
             qml.RX(-x, wires=0)

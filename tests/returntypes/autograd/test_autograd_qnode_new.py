@@ -557,11 +557,10 @@ class TestShotsIntegration:
             qml.CNOT(wires=[0, 1])
             return qml.expval(qml.PauliY(1))
 
+        cost_fn(a, b)
         # since we are using finite shots, parameter-shift will
         # be chosen
         assert cost_fn.gradient_fn is qml.gradients.param_shift
-
-        cost_fn(a, b)
         assert spy.call_args[1]["gradient_fn"] is qml.gradients.param_shift
 
         # if we set the shots to None, backprop can now be used

@@ -278,7 +278,14 @@ class gradient_transform(qml.batch_transform):
         # to take into account that classical processing may be present
         # inside the QNode.
         hybrid = tkwargs.pop("hybrid", self.hybrid)
+
+        old_interface = qnode.interface
+
+        if old_interface == "auto":
+            qnode.interface = qml.math.get_interface(*targs, *list(tkwargs.values()))
+
         _wrapper = super().default_qnode_wrapper(qnode, targs, tkwargs)
+
         cjac_fn = qml.transforms.classical_jacobian(qnode, expand_fn=expand_invalid_trainable)
 
         def jacobian_wrapper(*args, **kwargs):
@@ -297,6 +304,9 @@ class gradient_transform(qml.batch_transform):
 
             kwargs.pop("shots", False)
             cjac = cjac_fn(*args, **kwargs)
+
+            if old_interface == "auto":
+                qnode.interface = "auto"
 
             if isinstance(cjac, tuple):
                 # Classical processing of multiple arguments is present. Return qjac @ cjac.
