@@ -475,6 +475,9 @@
 
 <h3>Breaking changes</h3>
 
+* The argument `mode` in execution is replaced by the boolean `grad_on_execution` in the new execution pipeline.
+  [(#3723)](https://github.com/PennyLaneAI/pennylane/pull/3723)
+
 * `qml.VQECost` is removed.
   [(#3735)](https://github.com/PennyLaneAI/pennylane/pull/3735)
 
