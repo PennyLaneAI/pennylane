@@ -6,6 +6,52 @@
 
 <h4>Add new features here</h4>
 
+* Add `qml.math.detach`, which detaches a tensor from its trace. This stops
+  automatic gradient computations.
+  [(#3674)](https://github.com/PennyLaneAI/pennylane/pull/3674)
+
+* A new operation `SpecialUnitary` was added, providing access to an arbitrary
+  unitary gate via a parametrization in the Pauli basis.
+  [(#3650)](https://github.com/PennyLaneAI/pennylane/pull/3650)
+  [(#3674)](https://github.com/PennyLaneAI/pennylane/pull/3674)
+
+  The new operation takes a single argument, a one-dimensional `tensor_like`
+  of length `4**num_wires-1`, where `num_wires` is the number of wires the unitary acts on.
+
+  The parameter `theta` refers to all Pauli words (except for the identity) in lexicographical
+  order, which looks like the following for one and two qubits:
+
+  ```pycon
+  >>> qml.ops.qubit.special_unitary.pauli_basis_strings(1) # 4**1-1 = 3 Pauli words
+  ['X', 'Y', 'Z']
+  >>> qml.ops.qubit.special_unitary.pauli_basis_strings(2) # 4**2-1 = 15 Pauli words
+  ['IX', 'IY', 'IZ', 'XI', 'XX', 'XY', 'XZ', 'YI', 'YX', 'YY', 'YZ', 'ZI', 'ZX', 'ZY', 'ZZ'] 
+  ```
+  
+  For example, on a single qubit, we may define
+  
+  ```pycon
+  >>> theta = np.array([0.2, 0.1, -0.5])
+  >>> U = qml.SpecialUnitary(theta, 0)
+  >>> U.matrix()
+  array([[ 0.8537127 -0.47537233j,  0.09507447+0.19014893j],
+         [-0.09507447+0.19014893j,  0.8537127 +0.47537233j]])
+  ```
+  
+  A single non-zero entry in the parameters will create a Pauli rotation:
+
+  ```pycon
+  >>> x = 0.412
+  >>> theta = x * np.array([1, 0, 0]) # The first entry belongs to the Pauli word "X"
+  >>> su = qml.SpecialUnitary(theta, wires=0)
+  >>> rx = qml.RX(-2 * x, 0) # RX introduces a prefactor -0.5 that has to be compensated
+  >>> qml.math.allclose(su.matrix(), rx.matrix())
+  True
+  ```
+  
+  This operation can be differentiated with hardware-compatible methods like parameter shifts
+  and it supports parameter broadcasting/batching, but not both at the same time.
+
 * Add `typing.TensorLike` type.
   [(#3675)](https://github.com/PennyLaneAI/pennylane/pull/3675)
 
@@ -47,9 +93,12 @@
 
 * A `ParametrizedHamiltonian` can be time-evolved by using `ParametrizedEvolution`.
   [(#3617)](https://github.com/PennyLaneAI/pennylane/pull/3617)
+  [(#3706)](https://github.com/PennyLaneAI/pennylane/pull/3706)
+  [(#3730)](https://github.com/PennyLaneAI/pennylane/pull/3730)
 
-* A new function called `qml.evolve` has been added that returns the evolution of an operator or a `ParametrizedHamiltonian`.
+* A new function called `qml.evolve` has been added that returns the evolution of an `Operator` or a `ParametrizedHamiltonian`.
   [(#3617)](https://github.com/PennyLaneAI/pennylane/pull/3617)
+  [(#3706)](https://github.com/PennyLaneAI/pennylane/pull/3706)
 
 * A new function `dot` has been added to compute the dot product between a vector and a list of operators. `qml.dot` will now target this new function.
   [(#3586)](https://github.com/PennyLaneAI/pennylane/pull/3586)
@@ -71,8 +120,8 @@
 * The Hadamard test gradient tranform is now available via `qml.gradients.hadamard_grad`.
   [#3625](https://github.com/PennyLaneAI/pennylane/pull/3625)
 
-  `qml.gradients.hadamard_grad` is a hardware-compatible transform that calculates the 
-  gradient of a quantum circuit using the Hadamard test. Note that the device requires an 
+  `qml.gradients.hadamard_grad` is a hardware-compatible transform that calculates the
+  gradient of a quantum circuit using the Hadamard test. Note that the device requires an
   auxiliary wire to calculate the gradient.
 
   ```pycon
@@ -395,9 +444,6 @@
 * `Sum` and `Prod` operations now have broadcasted operands.
   [(#3611)](https://github.com/PennyLaneAI/pennylane/pull/3611)
 
-* `qml.dot` is now compatible with JAX-JIT.
-  [(#3636)](https://github.com/PennyLaneAI/pennylane/pull/3636)
-
 * All dunder methods now return `NotImplemented`, allowing the right dunder method (e.g. `__radd__`)
   of the other class to be called.
   [(#3631)](https://github.com/PennyLaneAI/pennylane/pull/3631)
@@ -432,12 +478,53 @@
 
 <h3>Breaking changes</h3>
 
+* The argument `mode` in execution is replaced by the boolean `grad_on_execution` in the new execution pipeline.
+  [(#3723)](https://github.com/PennyLaneAI/pennylane/pull/3723)
+
+* `qml.VQECost` is removed.
+  [(#3735)](https://github.com/PennyLaneAI/pennylane/pull/3735)
+
+* The default interface is now `auto`. There is no need to specify the interface anymore! It is automatically 
+  determined by checking your `QNode` parameters.
+  [(#3677)](https://github.com/PennyLaneAI/pennylane/pull/3677)
+  
+  ```python
+  import jax
+  import jax.numpy as jnp
+  
+  qml.enable_return()
+  a = jnp.array(0.1)
+  b = jnp.array(0.2)
+  
+  dev = qml.device("default.qubit", wires=2)
+  
+  @qml.qnode(dev)
+  def circuit(a, b):
+      qml.RY(a, wires=0)
+      qml.RX(b, wires=1)
+      qml.CNOT(wires=[0, 1])
+      return qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliY(1))
+  ```
+  
+  ```pycon
+  >>> circuit(a, b)
+  (Array(0.9950042, dtype=float32), Array(-0.19767681, dtype=float32))
+  >>> jac = jax.jacobian(circuit)(a, b)
+  (Array(-0.09983341, dtype=float32, weak_type=True), Array(0.01983384, dtype=float32, weak_type=True))
+  ```
+  
+  It comes with the fact that the interface is determined during the `QNode` call instead of the 
+  initialization. It means that the `gradient_fn` and `gradient_kwargs` are only defined on the QNode at the beginning 
+  of the call. As well, without specifying the interface it is not possible to guarantee that the device will not be changed 
+  during the call if you are using backprop(`default.qubit` to `default.qubit,jax`e.g.) whereas before it was happening at 
+  initialization, therefore you should not try to track the device without specifying the interface.
+
 * The tape method `get_operation` can also now return the operation index in the tape, and it can be
   activated by setting the `return_op_index` to `True`: `get_operation(idx, return_op_index=True)`. It will become
   the default in version 0.30.
   [(#3667)](https://github.com/PennyLaneAI/pennylane/pull/3667)
 
-* `Operator.inv()` and the `Operator.inverse` setter have been removed. Please use `qml.adjoint` or `qml.pow` instead.
+* `Operation.inv()` and the `Operation.inverse` setter have been removed. Please use `qml.adjoint` or `qml.pow` instead.
   [(#3618)](https://github.com/PennyLaneAI/pennylane/pull/3618)
   
   For example, instead of
@@ -451,6 +538,9 @@
   ```pycon
   >>> qml.adjoint(qml.PauliX(0))
   ```
+
+* The `Operation.inverse` property has been removed completely.
+  [(#3725)](https://github.com/PennyLaneAI/pennylane/pull/3725)
 
 * The target wires of `qml.ControlledQubitUnitary` are no longer available via `op.hyperparameters["u_wires"]`.
   Instead, they can be accesses via `op.base.wires` or `op.target_wires`.
@@ -480,6 +570,10 @@
 
 * `qml.op_sum` has been deprecated. Users should use `qml.sum` instead.
   [(#3686)](https://github.com/PennyLaneAI/pennylane/pull/3686)
+
+* The use of `Evolution` directly has been deprecated. Users should use `qml.evolve` instead.
+  This new function changes the sign of the given parameter.
+  [(#3706)](https://github.com/PennyLaneAI/pennylane/pull/3706)
 
 <h3>Documentation</h3>
 
@@ -532,6 +626,12 @@
 
 * Fixed a bug that made tapes/qnodes using `qml.Snapshot` incompatible with `qml.drawer.tape_mpl`.
   [(#3704)](https://github.com/PennyLaneAI/pennylane/pull/3704)
+
+* `Tensor._pauli_rep` is set to `None` during initialization. Add `Tensor.data` setter.
+  [(#3722)](https://github.com/PennyLaneAI/pennylane/pull/3722)
+
+* Redirect `qml.math.ndim` to `jnp.ndim` when using it on a jax tensor.
+  [(#3730)](https://github.com/PennyLaneAI/pennylane/pull/3730)
 
 <h3>Contributors</h3>
 

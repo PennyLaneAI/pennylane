@@ -465,25 +465,33 @@ def classical_fisher(qnode, argnums=0):
     """
     new_qnode = _make_probs(qnode)
 
-    interface = qnode.interface
-
-    if interface in ("jax", "jax-jit"):
-        import jax
-
-        jac = jax.jacobian(new_qnode, argnums=argnums)
-
-    if interface == "torch":
-        jac = _torch_jac(new_qnode)
-
-    if interface == "autograd":
-        jac = qml.jacobian(new_qnode)
-
-    if interface == "tf":
-        jac = _tf_jac(new_qnode)
-
     def wrapper(*args, **kwargs):
+        old_interface = qnode.interface
+
+        if old_interface == "auto":
+            qnode.interface = qml.math.get_interface(*args, *list(kwargs.values()))
+
+        interface = qnode.interface
+
+        if interface in ("jax", "jax-jit"):
+            import jax
+
+            jac = jax.jacobian(new_qnode, argnums=argnums)
+
+        if interface == "torch":
+            jac = _torch_jac(new_qnode)
+
+        if interface == "autograd":
+            jac = qml.jacobian(new_qnode)
+
+        if interface == "tf":
+            jac = _tf_jac(new_qnode)
+
         j = jac(*args, **kwargs)
         p = new_qnode(*args, **kwargs)
+
+        if old_interface == "auto":
+            qnode.interface = "auto"
 
         # In case multiple variables are used, we create a list of cfi matrices
         if isinstance(j, tuple):

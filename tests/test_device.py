@@ -250,23 +250,6 @@ class TestDeviceSupportedLogic:
         assert not dev.supports_observable("Identity")
         assert not dev.supports_observable(qml.Identity)
 
-    def test_supports_obeservable_inverse(self, mock_device_supporting_paulis_and_inverse):
-        dev = mock_device_supporting_paulis_and_inverse()
-
-        assert dev.supports_observable("PauliX.inv")
-        assert not dev.supports_observable("Identity.inv")
-
-    def test_supports_obeservable_raise_error_hermitian_inverse(
-        self, mock_device_supporting_observables_and_inverse
-    ):
-        dev = mock_device_supporting_observables_and_inverse()
-
-        assert dev.supports_observable("PauliX")
-        assert dev.supports_observable("PauliX.inv")
-        assert dev.supports_observable("Hermitian")
-
-        assert not dev.supports_observable("Hermitian.inv")
-
     def test_supports_operation_exception(self, mock_device):
         """check that device.supports_operation raises proper errors
         if the argument is of the wrong type"""
