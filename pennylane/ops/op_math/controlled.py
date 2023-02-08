@@ -274,6 +274,13 @@ class Controlled(SymbolicOp):
                 "Work wires must be different the control_wires and base operation wires."
             )
 
+        if isinstance(base, Controlled):
+            qml.QueuingManager.remove(base)
+            control_wires = control_wires + base.control_wires
+            work_wires = work_wires + base.work_wires
+            control_values = control_values + base.control_values
+            base = base.base
+
         self.hyperparameters["control_wires"] = control_wires
         self.hyperparameters["control_values"] = control_values
         self.hyperparameters["work_wires"] = work_wires

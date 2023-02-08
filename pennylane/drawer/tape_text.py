@@ -16,7 +16,8 @@ This module contains logic for the text based circuit drawer through the ``tape_
 """
 
 import pennylane as qml
-from pennylane.measurements import Expectation, Probability, Sample, Variance, State
+from pennylane.measurements import Expectation, Probability, Sample, State, Variance
+from pennylane.ops import Controlled
 
 from .drawable_layers import drawable_layers
 from .utils import convert_wire_order
@@ -47,6 +48,11 @@ def _add_op(op, layer_str, wire_map, decimals, cache):
 
     control_wires = getattr(op, "control_wires", [])
     control_values = op.hyperparameters.get("control_values", None)
+
+    if isinstance(op, Controlled) and (base_control_wires := getattr(op.base, "control_wires", [])):
+        control_wires += base_control_wires
+        control_values += [1] * len(base_control_wires)
+
     if control_values:
         for w, val in zip(control_wires, control_values):
             layer_str[wire_map[w]] += "●" if _bool_control_value(val) else "○"

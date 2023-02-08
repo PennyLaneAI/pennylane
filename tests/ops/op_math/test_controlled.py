@@ -160,6 +160,17 @@ class TestInitialization:
         op = Controlled(self.temp_op, (0, 1, 2), control_values=["", None, 5])
         assert op.control_values == [False, False, True]
 
+    def test_nested_controlled_ops(self):
+        """Test that nested controlled operations are simplified during initialization."""
+        op = Controlled(self.temp_op, (0, 1, 2), control_values=[True, False, True])
+        op2 = Controlled(op, (3, 4, 5), control_values=[False, True, False])
+
+        final_op = Controlled(
+            self.temp_op, (3, 4, 5, 0, 1, 2), control_values=[False, True, False, True, False, True]
+        )
+
+        assert qml.equal(op2, final_op)
+
     def test_control_values_wrong_length(self):
         """Test checking control_values length error."""
         with pytest.raises(ValueError, match="control_values should be the same length"):
@@ -1381,7 +1392,7 @@ def test_nested_ctrl():
     assert len(tape.operations) == 1
     op = tape.operations[0]
     assert isinstance(op, Controlled)
-    new_tape = tape.expand(depth=2)
+    new_tape = tape.expand(depth=1)
     assert qml.equal(new_tape[0], qml.Toffoli(wires=[3, 7, 0]))
 
 

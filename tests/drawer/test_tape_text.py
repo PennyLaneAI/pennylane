@@ -82,6 +82,11 @@ class TestHelperFunctions:
             (qml.Snapshot(), ["─|Snap|", "─|Snap|", "─|Snap|", "─|Snap|"]),
             (qml.Barrier(), ["─||", "─||", "─||", "─||"]),
             (qml.S(0) @ qml.T(0), ["─S@T", "─", "─", "─"]),
+            (qml.ctrl(qml.CNOT(wires=(0, 2)), control=1), ["╭●", "├●", "╰X", "─"]),
+            (
+                qml.ctrl(qml.CNOT(wires=(0, 2)), control=1, control_values=[False]),
+                ["╭●", "├○", "╰X", "─"],
+            ),
         ],
     )
     def test_add_op(self, op, out):

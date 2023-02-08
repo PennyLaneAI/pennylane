@@ -20,9 +20,8 @@ import pytest
 from scipy.stats import unitary_group
 
 import pennylane as qml
-from pennylane.wires import Wires
 from pennylane.ops.qubit.matrix_ops import QubitUnitary
-
+from pennylane.wires import Wires
 
 X = np.array([[0, 1], [1, 0]])
 X_broadcasted = np.array([X] * 3)
@@ -228,8 +227,8 @@ class TestControlledQubitUnitary:
         U = unitary_group.rvs(2 ** len(target_wires), random_state=1967)
 
         # Pick random starting state for the control and target qubits
-        control_state_weights = np.random.normal(size=(2 ** (len(control_wires) + 1) - 2))
-        target_state_weights = np.random.normal(size=(2 ** (len(target_wires) + 1) - 2))
+        control_state_weights = np.random.normal(size=2 ** (len(control_wires) + 1) - 2)
+        target_state_weights = np.random.normal(size=2 ** (len(target_wires) + 1) - 2)
 
         @qml.qnode(dev)
         def circuit_mixed_polarity():
