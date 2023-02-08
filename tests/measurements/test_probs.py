@@ -211,6 +211,27 @@ class TestProbs:
 
         custom_measurement_process(dev, spy_probs)
 
+    @pytest.mark.all_interfaces
+    @pytest.mark.parametrize("interface", ["numpy", "jax", "torch", "tensorflow"])
+    @pytest.mark.parametrize(
+        "subset_wires,expected",
+        [
+            ([0, 1], [0.25, 0.25, 0.25, 0.25]),
+            ([1, 2], [0.5, 0, 0.5, 0]),
+            ([0, 2], [0.5, 0, 0.5, 0]),
+            ([2, 0], [0.5, 0.5, 0, 0]),
+            ([2, 1], [0.5, 0.5, 0, 0]),
+            ([1, 2, 0], [0.25, 0.25, 0.25, 0.25, 0, 0, 0, 0]),
+        ],
+    )
+    def test_process_state(self, interface, subset_wires, expected):
+        """Tests that process_state functions as expected with all interfaces."""
+        state = qml.math.array([1 / 2, 0] * 4, like=interface)
+        wires = qml.wires.Wires(range(3))
+        subset_probs = qml.probs(wires=subset_wires).process_state(state, wires)
+        assert subset_probs.shape == (len(expected),)
+        assert qml.math.allclose(subset_probs, expected)
+
     def test_integration(self, tol, mocker):
         """Test the probability is correct for a known state preparation."""
         dev = qml.device("default.qubit", wires=2)
