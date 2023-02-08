@@ -62,19 +62,17 @@ def _generator_prefactor(gen):
         gen = qml.dot(gen.coeffs, gen.ops)  # convert to Sum
 
     if isinstance(gen, Sum):
-        ops = gen.operands
+        ops = [o.base if isinstance(o, SProd) else o for o in gen]
         coeffs = [o.scalar if isinstance(o, SProd) else 1 for o in gen]
         abs_coeffs = list(qml.math.abs(coeffs))
-        if len(ops) == 1:
-            # case where the Hamiltonian is a single Pauli word
-            return ops[0], coeffs[0]
         if qml.math.allequal(coeffs[0], coeffs):
             # case where the Hamiltonian coefficients are all the same
             return qml.sum(*ops), coeffs[0]
         if qml.math.allequal(abs_coeffs[0], abs_coeffs):
             # absolute value of coefficients is the same
+            prefactor = abs_coeffs[0]
             coeffs = [c / prefactor for c in coeffs]
-            return qml.dot(coeffs, ops), abs_coeffs[0]
+            return qml.dot(coeffs, ops), prefactor
     elif isinstance(gen, SProd):
         return gen.base, gen.scalar
 

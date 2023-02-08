@@ -99,36 +99,36 @@ class SumOp(CustomOp):
     """Returns the generator as a Sum"""
 
     num_wires = 2
-    coeff = [1.0, 0.5]
-    obs = [[qml.PauliX, qml.Identity], [qml.PauliX, qml.PauliY]]
 
     def generator(self):
-        obs = [reduce(matmul, [o(w) for o, w in zip(word, self.wires)]) for word in self.obs]
-        return qml.dot(self.coeff, obs)
+        return qml.sum(
+            qml.PauliX(self.wires[0]) @ qml.Identity(self.wires[1]),
+            0.5 * qml.prod(qml.PauliX(self.wires[0]), qml.PauliY(self.wires[1])),
+        )
 
 
 class SumOpSameCoeff(CustomOp):
     """Returns the generator as a Sum"""
 
     num_wires = 2
-    coeff = [0.5, 0.5]
-    obs = [[qml.PauliX, qml.Identity], [qml.PauliX, qml.PauliY]]
 
     def generator(self):
-        obs = [reduce(matmul, [o(w) for o, w in zip(word, self.wires)]) for word in self.obs]
-        return qml.dot(self.coeff, obs)
+        return qml.sum(
+            0.5 * qml.prod(qml.PauliX(self.wires[0]), qml.Identity(self.wires[1])),
+            0.5 * qml.prod(qml.PauliX(self.wires[0]), qml.PauliY(self.wires[1])),
+        )
 
 
 class SumOpSameAbsCoeff(CustomOp):
     """Returns the generator as a Sum"""
 
     num_wires = 2
-    coeff = [0.5, -0.5]
-    obs = [[qml.PauliX, qml.Identity], [qml.PauliX, qml.PauliY]]
 
     def generator(self):
-        obs = [reduce(matmul, [o(w) for o, w in zip(word, self.wires)]) for word in self.obs]
-        return qml.dot(self.coeff, obs)
+        return qml.sum(
+            0.5 * qml.prod(qml.PauliX(self.wires[0]), qml.Identity(self.wires[1])),
+            -0.5 * qml.prod(qml.PauliX(self.wires[0]), qml.PauliY(self.wires[1])),
+        )
 
 
 class HermitianOp(CustomOp):
