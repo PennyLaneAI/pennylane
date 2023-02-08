@@ -127,8 +127,8 @@ class Prod(CompositeOp):
 
     .. note::
         When a Prod operator is applied in a circuit, its factors are applied in the reverse order.
-        (i.e ``Prod(op1, op2)`` corresponds to :math:`\hat{op}_{1}\dot\hat{op}_{2}` which indicates
-        first applying :math:`\hat{op}_{2}` then :math:`\hat{op}_{1}` in the circuit. We can see this
+        (i.e ``Prod(op1, op2)`` corresponds to :math:`\hat{op}_{1}\cdot\hat{op}_{2}` which indicates
+        first applying :math:`\hat{op}_{2}` then :math:`\hat{op}_{1}` in the circuit). We can see this
         in the decomposition of the operator.
 
     >>> op = Prod(qml.PauliX(wires=0), qml.PauliZ(wires=1))
@@ -247,8 +247,8 @@ class Prod(CompositeOp):
         r"""Decomposition of the product operator is given by each factor applied in succession.
 
         Note that the decomposition is the list of factors returned in reversed order. This is
-        to support the intuition that when we write $\hat{O} = \hat{A} \dot \hat{B}$ it is implied
-        that $\hat{B}$ is applied to the state before $\hat{A}$ in the quantum circuit.
+        to support the intuition that when we write :math:`\hat{O} = \hat{A} \cdot \hat{B}` it is implied
+        that :math:`\hat{B}` is applied to the state before :math:`\hat{A}` in the quantum circuit.
         """
         if qml.queuing.QueuingManager.recording():
             return [qml.apply(op) for op in self[::-1]]
@@ -386,7 +386,6 @@ class Prod(CompositeOp):
             op_list = list(op_list)
 
         for i in range(1, len(op_list)):
-
             key_op = op_list[i]
 
             j = i - 1

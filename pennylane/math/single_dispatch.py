@@ -442,7 +442,6 @@ ar.autoray._FUNC_ALIASES["torch", "unstack"] = "unbind"
 
 def _to_numpy_torch(x):
     if getattr(x, "is_conj", False) and x.is_conj():  # pragma: no cover
-
         # The following line is only covered if using Torch <v1.10.0
         x = x.resolve_conj()
 
@@ -544,7 +543,6 @@ def _coerce_types_torch(tensors):
     # Extract existing set devices, if any
     device_set = set(t.device for t in tensors if isinstance(t, torch.Tensor))
     if len(device_set) > 1:  # pragma: no cover
-
         # GPU specific case
         device_names = ", ".join(str(d) for d in device_set)
         raise RuntimeError(
@@ -700,6 +698,15 @@ ar.register_function("jax", "coerce", lambda x: x)
 ar.register_function("jax", "to_numpy", _to_numpy_jax)
 ar.register_function("jax", "block_diag", lambda x: _i("jax").scipy.linalg.block_diag(*x))
 ar.register_function("jax", "gather", lambda x, indices: x[np.array(indices)])
+
+
+def _ndim_jax(x):
+    import jax.numpy as jnp
+
+    return jnp.ndim(x)
+
+
+ar.register_function("jax", "ndim", lambda x: _ndim_jax(x))
 
 
 def _scatter_jax(indices, array, new_dimensions):

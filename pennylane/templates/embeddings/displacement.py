@@ -101,7 +101,6 @@ class DisplacementEmbedding(Operation):
     grad_method = None
 
     def __init__(self, features, wires, method="amplitude", c=0.1, do_queue=True, id=None):
-
         shape = qml.math.shape(features)
         constants = [c] * shape[0]
         constants = qml.math.convert_like(constants, features)

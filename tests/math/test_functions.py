@@ -16,6 +16,7 @@
 # pylint: disable=import-outside-toplevel
 import itertools
 from functools import partial
+from unittest.mock import patch
 
 import numpy as onp
 import pytest
@@ -2741,3 +2742,9 @@ class TestIfft2Tensorflow:
         x = tf.Variable(x, dtype=dtype_in)
         out = qml.math.fft.ifft2(x)
         assert out.dtype == exp_dtype_out
+
+def test_jax_ndim():
+    with patch("jax.numpy.ndim") as mock_ndim:
+        _ = qml.math.ndim(jax.numpy.array(3))
+
+    mock_ndim.assert_called_once_with(3)

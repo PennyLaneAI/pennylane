@@ -25,6 +25,7 @@ from scipy.linalg import sqrtm
 def get_single_input_qnode():
     """Prepare qnode with a single tensor as input."""
     dev = qml.device("default.qubit", wires=2)
+
     # the analytical expression of the qnode goes as:
     # np.cos(params[0][0] / 2) ** 2 - np.sin(params[0][0] / 2) ** 2 * np.cos(params[0][1])
     @qml.qnode(dev)
@@ -39,6 +40,7 @@ def get_single_input_qnode():
 def get_multi_input_qnode():
     """Prepare qnode with two separate tensors as input."""
     dev = qml.device("default.qubit", wires=2)
+
     # the analytical expression of the qnode goes as:
     # np.cos(x1 / 2) ** 2 - np.sin(x1 / 2) ** 2 * np.cos(x2)
     @qml.qnode(dev)

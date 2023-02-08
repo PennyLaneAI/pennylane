@@ -23,6 +23,7 @@ SUPPORTED_GRADIENT_KWARGS = [
     "approx_order",
     "argnum",
     "broadcast",
+    "device_wires",
     "diagonal_shifts",
     "f0",
     "force_order2",
@@ -31,6 +32,7 @@ SUPPORTED_GRADIENT_KWARGS = [
     "h",
     "n",
     "num",
+    "num_directions",
     "off_diagonal_shifts",
     "order",
     "reduction",
@@ -77,7 +79,6 @@ def gradient_analysis(tape, use_graph=True, grad_fn=None):
         tape._gradient_fn = grad_fn
 
     for idx, info in enumerate(tape._par_info):
-
         if idx not in tape.trainable_params:
             # non-trainable parameters do not require a grad_method
             info["grad_method"] = None
