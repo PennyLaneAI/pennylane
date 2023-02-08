@@ -364,6 +364,7 @@ class TestQuantumMonteCarlo:
 
         assert np.allclose(estimates[-1], exact, rtol=1e-3)
 
+    @pytest.mark.jax
     def test_expected_value_jax_jit(self):
         """Test that the QuantumMonteCarlo template can correctly estimate the expectation value
         following the example in the usage details using JAX-JIT"""
