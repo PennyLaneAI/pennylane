@@ -30,8 +30,7 @@ def sample_state(state, shots: int, rng: np.random.Generator = None) -> np.ndarr
     Returns:
         ndarray: Sample values of the shape (shots, num_wires)
     """
-    if rng is None:
-        rng = np.random.default_rng()
+    rng = np.random.default_rng(rng)
 
     flat_state = qml.math.flatten(state)
     real_state = qml.math.real(flat_state)
