@@ -199,7 +199,6 @@ class TestClassicalShadow:
         assert qml.math.all(np.logical_or(bits == 0, bits == 1))
         assert qml.math.all(np.logical_or(recipes == 0, np.logical_or(recipes == 1, recipes == 2)))
 
-    @flaky(5)
     @pytest.mark.all_interfaces
     @pytest.mark.parametrize("interface", ["autograd", "jax", "tf", "torch"])
     @pytest.mark.parametrize("device", ["default.qubit", None])
@@ -211,6 +210,7 @@ class TestClassicalShadow:
         """Test that the distribution of the bits and recipes are correct for a circuit
         that prepares all qubits in a Pauli basis"""
         # high number of shots to prevent true negatives
+        np.random.seed(42)
         shots = 1000
 
         circuit = circuit_fn(wires, shots=shots, interface=interface, device=device)
