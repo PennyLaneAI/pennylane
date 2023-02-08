@@ -473,6 +473,9 @@
 * `QubitStateVector` now implements the `StatePrep` interface.
   [(#3685)](https://github.com/PennyLaneAI/pennylane/pull/3685)
 
+* Nested `Controlled` operators are simplified during initialization.
+  [(#3737)](https://github.com/PennyLaneAI/pennylane/pull/3737)
+
 <h3>Breaking changes</h3>
 
 * The tape method `get_operation` can also now return the operation index in the tape, and it can be
@@ -588,6 +591,9 @@
 
 * Redirect `qml.math.ndim` to `jnp.ndim` when using it on a jax tensor.
   [(#3730)](https://github.com/PennyLaneAI/pennylane/pull/3730)
+
+* Fix bug where `qml.draw` didn't take into account the `control_wires` of nested controlled operators.
+  [(#3737)](https://github.com/PennyLaneAI/pennylane/pull/3737)
 
 <h3>Contributors</h3>
 
