@@ -898,7 +898,7 @@ def detach(tensor, like=None):
     return tensor
 
 
-@multi_dispatch()
+@multi_dispatch(tensor_list=[1])
 def set_index(array, idx, val, like=None):
     """Set the value at a specified index in an array.
     Calls ``array[idx]=val`` and returns the updated array unless JAX.
@@ -915,14 +915,6 @@ def set_index(array, idx, val, like=None):
 
     .. note:: TensorFlow EagerTensor does not support item assignment
     """
-    # if passed an index of the form (DynamicJaxprTracer, DynamicJaxprTracer),
-    # multidispatch only sees the Tuple and doesn't recognize the interface as jax
-    try:
-        if get_interface(*idx) == "jax":
-            like = "jax"
-    except TypeError:
-        pass
-
     if like == "jax":
         from jax import numpy as jnp
 
