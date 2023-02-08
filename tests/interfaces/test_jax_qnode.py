@@ -35,12 +35,6 @@ qubit_device_and_diff_method = [
     ["default.qubit", "adjoint", "forward", "jax-jit"],
     ["default.qubit", "adjoint", "backward", "jax-jit"],
     ["default.qubit", "spsa", "backward", "jax-jit"],
-    # Auto
-    ["default.qubit", "finite-diff", "backward", "auto"],
-    ["default.qubit", "parameter-shift", "backward", "auto"],
-    ["default.qubit", "adjoint", "forward", "auto"],
-    ["default.qubit", "adjoint", "backward", "auto"],
-    ["default.qubit", "spsa", "backward", "auto"],
 ]
 
 pytestmark = pytest.mark.jax
@@ -718,9 +712,6 @@ class TestQubitIntegration:
 
         if diff_method == "adjoint":
             pytest.skip("Adjoint warns with finite shots")
-
-        if interface == "auto":
-            pytest.skip("Can't detect interface without a parametrized gate in the tape")
 
         dev = qml.device(dev_name, wires=2, shots=10)
 

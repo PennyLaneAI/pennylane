@@ -209,7 +209,8 @@ class TestIntegration:
 
     @pytest.mark.jax
     @pytest.mark.parametrize("params", zip(np.linspace(0, np.pi, 8), np.linspace(0, 2 * np.pi, 8)))
-    def test_qnode_mutual_info_jax_jit(self, params):
+    @pytest.mark.parametrize("interface", ["jax-jit"])
+    def test_qnode_mutual_info_jax_jit(self, params, interface):
         """Test that the measurement process for mutual information works for QNodes
         by comparing against the mutual information transform, for the JAX-jit interface"""
         import jax
@@ -219,7 +220,7 @@ class TestIntegration:
 
         params = jnp.array(params)
 
-        @qml.qnode(dev, interface="jax-jit")
+        @qml.qnode(dev, interface=interface)
         def circuit_mutual_info(params):
             qml.RY(params[0], wires=0)
             qml.RY(params[1], wires=1)
@@ -243,12 +244,13 @@ class TestIntegration:
     @pytest.mark.autograd
     @pytest.mark.parametrize("param", np.linspace(0, 2 * np.pi, 16))
     @pytest.mark.parametrize("diff_method", diff_methods)
-    def test_qnode_grad(self, param, diff_method):
+    @pytest.mark.parametrize("interface", ["auto", "autograd"])
+    def test_qnode_grad(self, param, diff_method, interface):
         """Test that the gradient of mutual information works for QNodes
         with the autograd interface"""
         dev = qml.device("default.qubit", wires=2)
 
-        @qml.qnode(dev, interface="autograd", diff_method=diff_method)
+        @qml.qnode(dev, interface=interface, diff_method=diff_method)
         def circuit(param):
             qml.RY(param, wires=0)
             qml.CNOT(wires=[0, 1])
@@ -271,7 +273,8 @@ class TestIntegration:
     @pytest.mark.jax
     @pytest.mark.parametrize("param", np.linspace(0, 2 * np.pi, 16))
     @pytest.mark.parametrize("diff_method", diff_methods)
-    def test_qnode_grad_jax(self, param, diff_method):
+    @pytest.mark.parametrize("interface", ["jax"])
+    def test_qnode_grad_jax(self, param, diff_method, interface):
         """Test that the gradient of mutual information works for QNodes
         with the JAX interface"""
         import jax
@@ -281,7 +284,7 @@ class TestIntegration:
 
         param = jnp.array(param)
 
-        @qml.qnode(dev, interface="jax", diff_method=diff_method)
+        @qml.qnode(dev, interface=interface, diff_method=diff_method)
         def circuit(param):
             qml.RY(param, wires=0)
             qml.CNOT(wires=[0, 1])
@@ -304,7 +307,8 @@ class TestIntegration:
     @pytest.mark.jax
     @pytest.mark.parametrize("param", np.linspace(0, 2 * np.pi, 16))
     @pytest.mark.parametrize("diff_method", diff_methods)
-    def test_qnode_grad_jax_jit(self, param, diff_method):
+    @pytest.mark.parametrize("interface", ["jax-jit"])
+    def test_qnode_grad_jax_jit(self, param, diff_method, interface):
         """Test that the gradient of mutual information works for QNodes
         with the JAX-jit interface"""
         import jax
@@ -314,7 +318,7 @@ class TestIntegration:
 
         param = jnp.array(param)
 
-        @qml.qnode(dev, interface="jax-jit", diff_method=diff_method)
+        @qml.qnode(dev, interface=interface, diff_method=diff_method)
         def circuit(param):
             qml.RY(param, wires=0)
             qml.CNOT(wires=[0, 1])
@@ -337,7 +341,8 @@ class TestIntegration:
     @pytest.mark.tf
     @pytest.mark.parametrize("param", np.linspace(0, 2 * np.pi, 16))
     @pytest.mark.parametrize("diff_method", diff_methods)
-    def test_qnode_grad_tf(self, param, diff_method):
+    @pytest.mark.parametrize("interface", ["tf"])
+    def test_qnode_grad_tf(self, param, diff_method, interface):
         """Test that the gradient of mutual information works for QNodes
         with the tensorflow interface"""
         import tensorflow as tf
@@ -346,7 +351,7 @@ class TestIntegration:
 
         param = tf.Variable(param)
 
-        @qml.qnode(dev, interface="tensorflow", diff_method=diff_method)
+        @qml.qnode(dev, interface=interface, diff_method=diff_method)
         def circuit(param):
             qml.RY(param, wires=0)
             qml.CNOT(wires=[0, 1])
@@ -372,14 +377,15 @@ class TestIntegration:
     @pytest.mark.torch
     @pytest.mark.parametrize("param", np.linspace(0, 2 * np.pi, 16))
     @pytest.mark.parametrize("diff_method", diff_methods)
-    def test_qnode_grad_torch(self, param, diff_method):
+    @pytest.mark.parametrize("interface", ["torch"])
+    def test_qnode_grad_torch(self, param, diff_method, interface):
         """Test that the gradient of mutual information works for QNodes
         with the torch interface"""
         import torch
 
         dev = qml.device("default.qubit", wires=2)
 
-        @qml.qnode(dev, interface="torch", diff_method=diff_method)
+        @qml.qnode(dev, interface=interface, diff_method=diff_method)
         def circuit(param):
             qml.RY(param, wires=0)
             qml.CNOT(wires=[0, 1])

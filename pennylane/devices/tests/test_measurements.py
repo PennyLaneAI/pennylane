@@ -1614,9 +1614,10 @@ class TestStateMeasurement:
     def test_method_overriden_by_device(self, device):
         """Test that the device can override a measurement process."""
         dev = device(2)
+
         _skip_test_for_braket(dev)
 
-        @qml.qnode(dev)
+        @qml.qnode(dev, interface="autograd")
         def circuit():
             qml.PauliX(0)
             return qml.state()

@@ -218,13 +218,14 @@ class TestIntegration:
     @pytest.mark.parametrize("param", parameters)
     @pytest.mark.parametrize("device", devices)
     @pytest.mark.parametrize("base", base)
-    def test_IsingXX_qnode_torch_entropy(self, param, wires, device, base):
+    @pytest.mark.parametrize("interface", ["torch"])
+    def test_IsingXX_qnode_torch_entropy(self, param, wires, device, base, interface):
         """Test entropy for a QNode with torch interface."""
         import torch
 
         dev = qml.device(device, wires=2)
 
-        @qml.qnode(dev, interface="torch")
+        @qml.qnode(dev, interface=interface)
         def circuit_entropy(x):
             qml.IsingXX(x, wires=[0, 1])
             return qml.vn_entropy(wires=wires, log_base=base)
@@ -240,7 +241,8 @@ class TestIntegration:
     @pytest.mark.parametrize("param", parameters)
     @pytest.mark.parametrize("base", base)
     @pytest.mark.parametrize("diff_method", diff_methods)
-    def test_IsingXX_qnode_entropy_grad_torch(self, param, wires, base, diff_method):
+    @pytest.mark.parametrize("interface", ["torch"])
+    def test_IsingXX_qnode_entropy_grad_torch(self, param, wires, base, diff_method, interface):
         """Test entropy for a QNode gradient with torch."""
         import torch
 
@@ -268,13 +270,14 @@ class TestIntegration:
     @pytest.mark.parametrize("param", parameters)
     @pytest.mark.parametrize("device", devices)
     @pytest.mark.parametrize("base", base)
-    def test_IsingXX_qnode_tf_entropy(self, param, wires, device, base):
+    @pytest.mark.parametrize("interface", ["tf"])
+    def test_IsingXX_qnode_tf_entropy(self, param, wires, device, base, interface):
         """Test entropy for a QNode with tf interface."""
         import tensorflow as tf
 
         dev = qml.device(device, wires=2)
 
-        @qml.qnode(dev, interface="tf")
+        @qml.qnode(dev, interface=interface)
         def circuit_entropy(x):
             qml.IsingXX(x, wires=[0, 1])
             return qml.vn_entropy(wires=wires, log_base=base)
@@ -290,13 +293,14 @@ class TestIntegration:
     @pytest.mark.parametrize("param", parameters)
     @pytest.mark.parametrize("base", base)
     @pytest.mark.parametrize("diff_method", diff_methods)
-    def test_IsingXX_qnode_entropy_grad_tf(self, param, wires, base, diff_method):
+    @pytest.mark.parametrize("interface", ["tf"])
+    def test_IsingXX_qnode_entropy_grad_tf(self, param, wires, base, diff_method, interface):
         """Test entropy for a QNode gradient with tf."""
         import tensorflow as tf
 
         dev = qml.device("default.qubit", wires=2)
 
-        @qml.qnode(dev, interface="tf", diff_method=diff_method)
+        @qml.qnode(dev, interface=interface, diff_method=diff_method)
         def circuit_entropy(x):
             qml.IsingXX(x, wires=[0, 1])
             return qml.vn_entropy(wires=wires, log_base=base)
@@ -319,13 +323,14 @@ class TestIntegration:
     @pytest.mark.parametrize("param", parameters)
     @pytest.mark.parametrize("device", devices)
     @pytest.mark.parametrize("base", base)
-    def test_IsingXX_qnode_jax_entropy(self, param, wires, device, base):
+    @pytest.mark.parametrize("interface", ["jax"])
+    def test_IsingXX_qnode_jax_entropy(self, param, wires, device, base, interface):
         """Test entropy for a QNode with jax interface."""
         import jax.numpy as jnp
 
         dev = qml.device(device, wires=2)
 
-        @qml.qnode(dev, interface="jax")
+        @qml.qnode(dev, interface=interface)
         def circuit_entropy(x):
             qml.IsingXX(x, wires=[0, 1])
             return qml.vn_entropy(wires=wires, log_base=base)
@@ -341,13 +346,14 @@ class TestIntegration:
     @pytest.mark.parametrize("param", parameters)
     @pytest.mark.parametrize("base", base)
     @pytest.mark.parametrize("diff_method", diff_methods)
-    def test_IsingXX_qnode_entropy_grad_jax(self, param, wires, base, diff_method):
+    @pytest.mark.parametrize("interface", ["jax"])
+    def test_IsingXX_qnode_entropy_grad_jax(self, param, wires, base, diff_method, interface):
         """Test entropy for a QNode gradient with Jax."""
         import jax
 
         dev = qml.device("default.qubit", wires=2)
 
-        @qml.qnode(dev, interface="jax", diff_method=diff_method)
+        @qml.qnode(dev, interface=interface, diff_method=diff_method)
         def circuit_entropy(x):
             qml.IsingXX(x, wires=[0, 1])
             return qml.vn_entropy(wires=wires, log_base=base)
@@ -365,14 +371,15 @@ class TestIntegration:
     @pytest.mark.parametrize("param", parameters)
     @pytest.mark.parametrize("base", base)
     @pytest.mark.parametrize("device", devices)
-    def test_IsingXX_qnode_jax_jit_entropy(self, param, wires, base, device):
+    @pytest.mark.parametrize("interface", ["jax"])
+    def test_IsingXX_qnode_jax_jit_entropy(self, param, wires, base, device, interface):
         """Test entropy for a QNode with jax-jit interface."""
         import jax
         import jax.numpy as jnp
 
         dev = qml.device(device, wires=2)
 
-        @qml.qnode(dev, interface="jax-jit")
+        @qml.qnode(dev, interface=interface)
         def circuit_entropy(x):
             qml.IsingXX(x, wires=[0, 1])
             return qml.vn_entropy(wires=wires, log_base=base)
@@ -388,13 +395,14 @@ class TestIntegration:
     @pytest.mark.parametrize("param", parameters)
     @pytest.mark.parametrize("base", base)
     @pytest.mark.parametrize("diff_method", diff_methods)
-    def test_IsingXX_qnode_entropy_grad_jax_jit(self, param, wires, base, diff_method):
+    @pytest.mark.parametrize("interface", ["jax-jit"])
+    def test_IsingXX_qnode_entropy_grad_jax_jit(self, param, wires, base, diff_method, interface):
         """Test entropy for a QNode gradient with Jax-jit."""
         import jax
 
         dev = qml.device("default.qubit", wires=2)
 
-        @qml.qnode(dev, interface="jax-jit", diff_method=diff_method)
+        @qml.qnode(dev, interface=interface, diff_method=diff_method)
         def circuit_entropy(x):
             qml.IsingXX(x, wires=[0, 1])
             return qml.vn_entropy(wires=wires, log_base=base)
