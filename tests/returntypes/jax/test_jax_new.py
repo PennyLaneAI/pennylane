@@ -77,9 +77,9 @@ class TestJaxExecuteUnitTests:
         for args in spy.call_args_list:
             assert args[1]["shifts"] == [(np.pi / 4,)] * 2
 
-    def test_incorrect_mode(self):
+    def test_incorrect_grad_on_execution(self):
         """Test that an error is raised if an gradient transform
-        is used with mode=forward"""
+        is used with grad_on_execution=True"""
         a = jax.numpy.array([0.1, 0.2])
 
         dev = qml.device("default.qubit", wires=1)
@@ -99,7 +99,7 @@ class TestJaxExecuteUnitTests:
             )[0]
 
         with pytest.raises(
-            ValueError, match="Gradient transforms cannot be used with mode='forward'"
+            ValueError, match="Gradient transforms cannot be used with grad_on_execution=True"
         ):
             res = jax.grad(cost)(a, device=dev)
 
@@ -126,8 +126,8 @@ class TestJaxExecuteUnitTests:
         with pytest.raises(ValueError, match="Unknown interface"):
             cost(a, device=dev)
 
-    def test_forward_mode(self, mocker):
-        """Test that forward mode uses the `device.execute_and_gradients` pathway"""
+    def test_grad_on_execution(self, mocker):
+        """Test that grad_on_execution uses the `device.execute_and_gradients` pathway"""
         dev = qml.device("default.qubit", wires=1)
         spy = mocker.spy(dev, "execute_and_gradients")
 
@@ -155,8 +155,8 @@ class TestJaxExecuteUnitTests:
         assert dev.num_executions == 1
         spy.assert_called()
 
-    def test_backward_mode(self, mocker):
-        """Test that backward mode uses the `device.batch_execute` and `device.gradients` pathway"""
+    def test_no_grad_on_execution(self, mocker):
+        """Test that no grad on execution uses the `device.batch_execute` and `device.gradients` pathway"""
         dev = qml.device("default.qubit", wires=1)
         spy_execute = mocker.spy(qml.devices.DefaultQubit, "batch_execute")
         spy_gradients = mocker.spy(qml.devices.DefaultQubit, "gradients")
@@ -325,7 +325,7 @@ class TestCaching:
 
     def test_caching_adjoint_backward(self):
         """Test that caching produces the optimum number of adjoint evaluations
-        when mode=backward"""
+        when no grad on execution."""
         dev = qml.device("default.qubit", wires=2)
         params = jax.numpy.array([0.1, 0.2, 0.3])
 
@@ -482,8 +482,8 @@ class TestJaxExecuteIntegration:
         expected = -2 * np.sin(2 * a)
         assert np.allclose(jac, expected, atol=tol, rtol=0)
 
-    def test_grad_with_backward_mode(self, execute_kwargs):
-        """Test jax grad for adjoint diff method in backward mode"""
+    def test_grad_with_different_grad_on_execution(self, execute_kwargs):
+        """Test jax grad for adjoint diff method with different execution kwargs."""
         dev = qml.device("default.qubit", wires=2)
         params = jax.numpy.array([0.1, 0.2, 0.3])
         expected_results = jax.numpy.array([-0.3875172, -0.18884787, -0.38355705])
