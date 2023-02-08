@@ -16,7 +16,6 @@
 import copy
 
 import pytest
-from flaky import flaky
 
 import pennylane as qml
 from pennylane import numpy as np
