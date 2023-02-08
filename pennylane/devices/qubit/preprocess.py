@@ -209,10 +209,12 @@ def preprocess(tapes, execution_config=None, max_expansion=10):
     if execution_config and getattr(execution_config, "shots", None) is not None:
         raise DeviceError("The Python Device does not support finite shots.")
 
-    tapes, batch_fn = qml.transforms.map_batch_transform(batch_transform, tapes)
-
     for i, tape in enumerate(tapes):
         tapes[i] = expand_fn(tape, max_expansion=max_expansion)
-        check_validity(tapes[i])
+
+    tapes, batch_fn = qml.transforms.map_batch_transform(batch_transform, tapes)
+
+    for tape in tapes:
+        check_validity(tape)
 
     return tapes, batch_fn
