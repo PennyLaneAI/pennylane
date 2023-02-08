@@ -2481,8 +2481,6 @@ def test_jax_ndim():
 
 
 class TestSetIndex:
-    @pytest.mark.torch
-    @pytest.mark.jax
     @pytest.mark.parametrize(
         "array", [qml.numpy.zeros((2, 2)), torch.zeros((2, 2)), jnp.zeros((2, 2))]
     )
@@ -2495,8 +2493,6 @@ class TestSetIndex:
         # since idx and val have no interface, we expect the returned array type to match initial type
         assert type(array2) == type(array)
 
-    @pytest.mark.torch
-    @pytest.mark.jax
     @pytest.mark.parametrize("array", [qml.numpy.zeros((4)), torch.zeros((4)), jnp.zeros((4))])
     def test_set_index_jax_1d_array(self, array):
         """Test that an array can be created that is a copy of the
@@ -2507,7 +2503,6 @@ class TestSetIndex:
         # since idx and val have no interface, we expect the returned array type to match initial type
         assert type(array2) == type(array)
 
-    @pytest.mark.jax
     @pytest.mark.parametrize(
         "array",
         [jnp.array([[1, 2], [3, 4]]), onp.array([[1, 2], [3, 4]]), np.array([[1, 2], [3, 4]])],
@@ -2528,7 +2523,6 @@ class TestSetIndex:
         assert qml.math.allclose(array2, jnp.array([[7, 2], [3, 4]]))
         assert isinstance(array2, jnp.ndarray)
 
-    @pytest.mark.jax
     @pytest.mark.parametrize(
         "array",
         [jnp.array([[1, 2], [3, 4]]), onp.array([[1, 2], [3, 4]]), np.array([[1, 2], [3, 4]])],
@@ -2549,7 +2543,6 @@ class TestSetIndex:
         assert qml.math.allclose(array2, jnp.array([[1, 2], [7, 4]]))
         assert isinstance(array2, jnp.ndarray)
 
-    @pytest.mark.jax
     @pytest.mark.parametrize(
         "array", [jnp.array([1, 2, 3, 4]), onp.array([1, 2, 3, 4]), np.array([1, 2, 3, 4])]
     )
