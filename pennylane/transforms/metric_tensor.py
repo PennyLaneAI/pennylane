@@ -355,6 +355,13 @@ def qnode_execution_wrapper(self, qnode, targs, tkwargs):
     cjac_fn = qml.transforms.classical_jacobian(qnode, argnum=argnum, expand_fn=_expand_fn)
 
     def wrapper(*args, **kwargs):
+        old_interface = qnode.interface
+
+        if old_interface == "auto":
+            qnode.interface = qml.math.get_interface(*args, *list(kwargs.values()))
+
+        cjac_fn = qml.transforms.classical_jacobian(qnode, expand_fn=_expand_fn)
+
         if not qml.math.get_trainable_indices(args):
             warnings.warn(
                 "Attempted to compute the metric tensor of a QNode with no trainable parameters. "
@@ -384,6 +391,9 @@ def qnode_execution_wrapper(self, qnode, targs, tkwargs):
                 )
             tkwargs["approx"] = "block-diag"
             return self(qnode, *targs, **tkwargs)(*args, **kwargs)
+
+        if old_interface == "auto":
+            qnode.interface = "auto"
 
         if not hybrid:
             return mt

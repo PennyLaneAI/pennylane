@@ -38,6 +38,7 @@ The available measurement functions are
     ~pennylane.density_matrix
     ~pennylane.vn_entropy
     ~pennylane.mutual_info
+    ~pennylane.purity
     ~pennylane.classical_shadow
     ~pennylane.shadow_expval
 

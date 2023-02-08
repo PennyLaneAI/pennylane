@@ -223,11 +223,6 @@ class Exp(ScalarSymbolicOp, Operation):
                 )
         return math.real(self.coeff) == 0 and qml.pauli.is_pauli_word(self.base)
 
-    @property
-    def inverse(self):
-        """Setting inverse is not defined for Exp, so the inverse is always False"""
-        return False
-
     def decomposition(self):
         r"""Representation of the operator as a product of other operators. Decomposes into
         :class:`~.PauliRot` if the coefficient is imaginary and the base is a Pauli Word.

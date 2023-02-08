@@ -157,6 +157,12 @@ class hessian_transform(qml.batch_transform):
         # Here, we overwrite the QNode execution wrapper in order to take into account
         # that classical processing may be present inside the QNode.
         hybrid = tkwargs.pop("hybrid", self.hybrid)
+
+        old_interface = qnode.interface
+
+        if old_interface == "auto":
+            qnode.interface = qml.math.get_interface(*targs, *list(tkwargs.values()))
+
         _wrapper = super().default_qnode_wrapper(qnode, targs, tkwargs)
         cjac_fn = qml.transforms.classical_jacobian(qnode, expand_fn=self.expand_fn)
 
@@ -170,6 +176,9 @@ class hessian_transform(qml.batch_transform):
                 return ()
 
             qhess = _wrapper(*args, **kwargs)
+
+            if old_interface == "auto":
+                qnode.interface = "auto"
 
             if not hybrid:
                 return qhess
