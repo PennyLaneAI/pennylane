@@ -15,6 +15,7 @@
 """
 import itertools
 from functools import partial
+from unittest.mock import patch
 
 import numpy as onp
 import pytest
@@ -803,7 +804,6 @@ class TestTensordotTorch:
 
 
 class TestTensordotDifferentiability:
-
     v0 = np.array([0.1, 5.3, -0.9, 1.1])
     v1 = np.array([0.5, -1.7, -2.9, 0.0])
     v2 = np.array([-0.4, 9.1, 1.6])
@@ -1473,7 +1473,7 @@ class TestTake:
         """Test that indexing with a sequence properly extracts
         the elements from the flattened tensor"""
         indices = [0, 2, 3, 6, -2]
-        res = fn.take(t, indices)
+        res = fn.take(t, indices, mode="wrap")
         assert fn.allclose(res, [1, 3, 4, 5, 2])
 
     def test_array_indexing_autograd(self):
@@ -2099,7 +2099,6 @@ def test_block_diag(tensors):
 
 
 class TestBlockDiagDiffability:
-
     expected = lambda self, x, y: (
         [
             [-np.sin(x * y) * y, 0, 0],
@@ -2427,7 +2426,6 @@ class TestSortFunction:
 
 
 class TestExpm:
-
     _compare_mat = None
 
     def get_compare_mat(self):
@@ -2456,7 +2454,6 @@ class TestExpm:
 
 
 class TestSize:
-
     array_and_size = [
         ([], 0),
         (1, 1),
@@ -2474,3 +2471,10 @@ class TestSize:
 
         r = fn.size(torch.tensor(array))
         assert r == size
+
+
+def test_jax_ndim():
+    with patch("jax.numpy.ndim") as mock_ndim:
+        _ = qml.math.ndim(jax.numpy.array(3))
+
+    mock_ndim.assert_called_once_with(3)

@@ -25,12 +25,12 @@ from numpy.linalg import multi_dot
 
 import pennylane as qml
 from pennylane import numpy as pnp
-from pennylane.operation import Operation, Operator, Tensor, operation_derivative
+from pennylane.operation import Operation, Operator, StatePrep, Tensor, operation_derivative
 from pennylane.ops import Prod, SProd, Sum, cv
 from pennylane.wires import Wires
 
 # pylint: disable=no-self-use, no-member, protected-access, redefined-outer-name, too-few-public-methods
-# pylint: disable=too-many-public-methods, unused-argument, unnecessary-lambda-assignment
+# pylint: disable=too-many-public-methods, unused-argument, unnecessary-lambda-assignment, unnecessary-dunder-call
 
 Toffoli_broadcasted = np.tensordot([0.1, -4.2j], Toffoli, axes=0)
 CNOT_broadcasted = np.tensordot([1.4], CNOT, axes=0)
@@ -894,7 +894,7 @@ class TestOperatorIntegration:
     def test_sum_with_operator(self):
         """Test the __sum__ dunder method with two operators."""
         sum_op = qml.PauliX(0) + qml.RX(1, 0)
-        final_op = qml.op_sum(qml.PauliX(0), qml.RX(1, 0))
+        final_op = qml.sum(qml.PauliX(0), qml.RX(1, 0))
         #  TODO: Use qml.equal when fixed.
         assert isinstance(sum_op, Sum)
         for s1, s2 in zip(sum_op.operands, final_op.operands):
@@ -906,7 +906,7 @@ class TestOperatorIntegration:
     def test_sum_with_scalar(self):
         """Test the __sum__ dunder method with a scalar value."""
         sum_op = 5 + qml.PauliX(0) + 0
-        final_op = qml.op_sum(qml.PauliX(0), qml.s_prod(5, qml.Identity(0)))
+        final_op = qml.sum(qml.PauliX(0), qml.s_prod(5, qml.Identity(0)))
         # TODO: Use qml.equal when fixed.
         assert isinstance(sum_op, Sum)
         for s1, s2 in zip(sum_op.operands, final_op.operands):
@@ -954,7 +954,7 @@ class TestOperatorIntegration:
     def test_sum_multi_wire_operator_with_scalar(self):
         """Test the __sum__ dunder method with a multi-wire operator and a scalar value."""
         sum_op = 5 + qml.CNOT(wires=[0, 1])
-        final_op = qml.op_sum(
+        final_op = qml.sum(
             qml.CNOT(wires=[0, 1]),
             qml.s_prod(5, qml.Identity([0, 1])),
         )
@@ -1197,6 +1197,13 @@ class TestTensor:
         t = Tensor(X, Y)
         assert t.batch_size is None
 
+    def test_pauli_rep(self):
+        """Test that the _pauli_rep attribute of the Tensor is initialized as None."""
+        X = qml.PauliX(0)
+        Y = qml.PauliY(2)
+        t = Tensor(X, Y)
+        assert t._pauli_rep is None
+
     def test_has_matrix(self):
         """Test that the Tensor class has a ``has_matrix`` static attribute set to True."""
         assert Tensor.has_matrix is True
@@ -1224,6 +1231,17 @@ class TestTensor:
         Y = qml.Hermitian(p, wires=[1, 2])
         t = Tensor(X, Y)
         assert t.data == [p]
+
+    def test_data_setter(self):
+        """Test the data setter"""
+        p = np.eye(4)
+        X = qml.PauliX(0)
+        Y = qml.Hermitian(p, wires=[1, 2])
+        t = Tensor(X, Y)
+        assert t.data == [p]
+        new_data = np.eye(4) * 6
+        t.data = [[], [new_data]]
+        assert qml.math.allequal(t.data, [new_data])
 
     def test_num_params(self):
         """Test that the correct number of parameters is returned"""
@@ -2120,6 +2138,36 @@ class TestCVOperation:
             op.heisenberg_expand(U_high_order, op.wires)
 
 
+class TestStatePrep:
+    """Test the StatePrep interface."""
+
+    # pylint:disable=unused-argument,too-few-public-methods
+    def test_basic_stateprep(self):
+        """Tests a basic implementation of the StatePrep interface."""
+
+        class DefaultPrep(StatePrep):
+            """A dummy class that assumes it was given a state vector."""
+
+            num_wires = qml.operation.AllWires
+
+            def state_vector(self, wire_order=None):
+                return self.parameters[0]
+
+        prep_op = DefaultPrep([1, 0], wires=[0])
+        assert np.array_equal(prep_op.state_vector(), [1, 0])
+
+    def test_child_must_implement_state_vector(self):
+        """Tests that a child class that does not implement state_vector fails."""
+
+        class NoStatePrepOp(StatePrep):
+            """A class that is missing the state_vector implementation."""
+
+            num_wires = qml.operation.AllWires
+
+        with pytest.raises(TypeError, match="Can't instantiate abstract class"):
+            NoStatePrepOp(wires=[0])
+
+
 class TestCriteria:
     doubleExcitation = qml.DoubleExcitation(0.1, wires=[0, 1, 2, 3])
     rx = qml.RX(qml.numpy.array(0.3, requires_grad=True), wires=1)
@@ -2201,13 +2249,11 @@ def test_docstring_example_of_operator_class(tol):
     page in the developer guide."""
 
     class FlipAndRotate(qml.operation.Operation):
-
         num_wires = qml.operation.AnyWires
         grad_method = "A"
 
         # pylint: disable=too-many-arguments
         def __init__(self, angle, wire_rot, wire_flip=None, do_flip=False, do_queue=True, id=None):
-
             if do_flip and wire_flip is None:
                 raise ValueError("Expected a wire to flip; got None.")
 

@@ -475,7 +475,6 @@ class QNode:
         # of the user's device before and after executing the tape.
 
         if self.device is not self._original_device:
-
             if not self._tape_cached:
                 self._original_device._num_executions += 1  # pylint: disable=protected-access
 
@@ -642,7 +641,6 @@ class QNode:
             # device is analytic and has child devices that support backpropagation natively
 
             if mapped_interface in backprop_devices:
-
                 # no need to create another device if the child device is the same (e.g., default.mixed)
                 if backprop_devices[mapped_interface] == device.short_name:
                     return "backprop", {}, device
@@ -760,7 +758,6 @@ class QNode:
             )
 
         for obj in self.tape.operations + self.tape.observables:
-
             if (
                 getattr(obj, "num_wires", None) is qml.operation.WiresEnum.AllWires
                 and len(obj.wires) != self.device.num_wires
@@ -903,7 +900,6 @@ class QNode:
         if isinstance(self._qfunc_output, Sequence) and any(
             isinstance(m, CountsMP) for m in self._qfunc_output
         ):
-
             # If Counts was returned with other measurements, then apply the
             # data structure used in the qfunc
             qfunc_output_type = type(self._qfunc_output)

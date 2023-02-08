@@ -72,7 +72,6 @@ class BasisEmbedding(Operation):
     grad_method = None
 
     def __init__(self, features, wires, do_queue=True, id=None):
-
         if isinstance(features, list):
             features = qml.math.stack(features)
 

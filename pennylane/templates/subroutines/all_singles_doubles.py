@@ -118,7 +118,6 @@ class AllSinglesDoubles(Operation):
     def __init__(
         self, weights, wires, hf_state, singles=None, doubles=None, do_queue=True, id=None
     ):
-
         if len(wires) < 2:
             raise ValueError(
                 f"The number of qubits (wires) can not be less than 2; got len(wires) = {len(wires)}"

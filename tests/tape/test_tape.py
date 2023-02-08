@@ -429,7 +429,6 @@ class TestIteration:
                 counter += 1
 
             except StopIteration:
-
                 # StopIteration is raised by next when there are no more
                 # elements to iterate over
                 iterating = False
@@ -861,7 +860,7 @@ class TestParameters:
         params = [a, 0.32, 0.76, 1.0]
 
         with QuantumTape() as tape:
-            op = qml.QubitStateVector(params[0], wires=0)
+            op = qml.QubitStateVector(params[0], wires=[0, 1])
             qml.Rot(params[1], params[2], params[3], wires=0)
 
         assert tape.num_params == len(params)

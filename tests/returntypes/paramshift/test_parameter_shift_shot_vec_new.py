@@ -961,7 +961,6 @@ class TestParameterShiftRule:
         params = np.array([x, y], requires_grad=True)
 
         def cost_fn(params):
-
             with qml.queuing.AnnotatedQueue() as q:
                 qml.RX(params[0], wires=[0])
                 RX(params[1], wires=[0])
@@ -1010,7 +1009,6 @@ class TestParameterShiftRule:
         params = np.array([x, y], requires_grad=True)
 
         def cost_fn(params):
-
             with qml.queuing.AnnotatedQueue() as q:
                 RX(params[0], wires=[0])
                 RY(params[1], wires=[1])
@@ -1290,7 +1288,6 @@ class TestParameterShiftRule:
         )
 
         for r in res:
-
             # Expvals
             assert isinstance(r[0], tuple)
             assert len(r[0]) == len(tape.trainable_params)
@@ -1386,7 +1383,6 @@ class TestParameterShiftRule:
         assert isinstance(all_res, tuple)
 
         for gradA in all_res:
-
             assert isinstance(gradA[0], np.ndarray)
             assert gradA[0].shape == ()
 
@@ -1398,7 +1394,6 @@ class TestParameterShiftRule:
         tapes, fn = qml.gradients.finite_diff(tape, h=h_val, shots=shot_vec)
         all_res = fn(dev.batch_execute(tapes))
         for gradF in all_res:
-
             assert len(tapes) == 3
 
             expected = 2 * np.sin(a + b) * np.cos(a + b)
@@ -1646,7 +1641,6 @@ class TestParameterShiftRule:
         y = -0.654
 
         with qml.queuing.AnnotatedQueue() as q:
-
             # Ops influencing var res
             qml.RX(a, wires=0)
             qml.RX(a, wires=1)
@@ -1706,7 +1700,6 @@ class TestParameterShiftRule:
         y = -0.654
 
         with qml.queuing.AnnotatedQueue() as q:
-
             # Ops influencing var res
             qml.RX(a, wires=0)
             qml.RX(a, wires=1)
@@ -1731,7 +1724,6 @@ class TestParameterShiftRule:
         assert isinstance(all_res, tuple)
 
         for gradA in all_res:
-
             assert isinstance(gradA, tuple)
             assert len(gradA) == 3
             var1_res = gradA[0]
@@ -1837,7 +1829,6 @@ class TestParameterShiftRule:
 
         expected = np.array([2 * np.cos(a) * np.sin(a), -np.cos(b) * np.sin(a), 0])
         for gradA in all_res:
-
             assert isinstance(gradA, tuple)
             for a_comp, e_comp in zip(gradA, expected):
                 assert isinstance(a_comp, np.ndarray)
@@ -2196,7 +2187,7 @@ class TestHamiltonianExpvalGradients:
             op1 = qml.s_prod(a, qml.PauliZ(0))
             op2 = qml.s_prod(b, qml.prod(qml.PauliZ(0), qml.PauliX(1)))
             op3 = qml.s_prod(c, qml.PauliY(0))
-            H = qml.op_sum(op1, op2, op3)
+            H = qml.sum(op1, op2, op3)
             qml.expval(H)
 
         tape = qml.tape.QuantumScript.from_queue(q)

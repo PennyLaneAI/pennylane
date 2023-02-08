@@ -17,6 +17,7 @@ executed by a device.
 """
 # pylint: disable=too-many-instance-attributes, protected-access, too-many-public-methods
 
+import warnings
 import contextlib
 import copy
 from collections import Counter, defaultdict
@@ -52,9 +53,9 @@ OPENQASM_GATES = {
     "PauliZ": "z",
     "Hadamard": "h",
     "S": "s",
-    "S.inv": "sdg",
+    "Adjoint(S)": "sdg",
     "T": "t",
-    "T.inv": "tdg",
+    "Adjoint(T)": "tdg",
     "RX": "rx",
     "RY": "ry",
     "RZ": "rz",
@@ -398,12 +399,16 @@ class QuantumScript:
             _par_info (list): Parameter information
         """
         self._par_info = []
-        for op in self.operations:
-            self._par_info.extend({"op": op, "p_idx": i} for i, d in enumerate(op.data))
+        for idx, op in enumerate(self.operations):
+            self._par_info.extend(
+                {"op": op, "op_idx": idx, "p_idx": i} for i, d in enumerate(op.data)
+            )
 
-        for m in self.measurements:
+        for idx, m in enumerate(self.measurements):
             if m.obs is not None:
-                self._par_info.extend({"op": m.obs, "p_idx": i} for i, d in enumerate(m.obs.data))
+                self._par_info.extend(
+                    {"op": m.obs, "op_idx": idx, "p_idx": i} for i, d in enumerate(m.obs.data)
+                )
 
     def _update_trainable_params(self):
         """Set the trainable parameters
@@ -546,16 +551,42 @@ class QuantumScript:
 
         self._trainable_params = sorted(set(param_indices))
 
-    def get_operation(self, idx):
+    def get_operation(self, idx, return_op_index=False):
         """Returns the trainable operation, and the corresponding operation argument
+        index, for a specified trainable parameter index.
+
+        Args:
+            idx (int): the trainable parameter index
+            return_op_index (bool): Whether the function also returns the operation index.
+        Returns:
+            tuple[.Operation, int, int]: tuple containing the corresponding
+            operation, the operation index, and an integer representing the argument index,
+            for the provided trainable parameter.
+        """
+        if return_op_index:
+            return self._get_operation(idx)
+        warnings.warn(
+            "The get_operation will soon be updated to also return the index of the trainable operation in the tape."
+            "If you want to switch to the new behavior, you can pass `return_op_index=True`"
+        )
+
+        # get the index of the parameter in the script
+        t_idx = self.trainable_params[idx]
+
+        # get the info for the parameter
+        info = self._par_info[t_idx]
+        return info["op"], info["p_idx"]
+
+    def _get_operation(self, idx):
+        """Returns the trainable operation, the operation index and the corresponding operation argument
         index, for a specified trainable parameter index.
 
         Args:
             idx (int): the trainable parameter index
 
         Returns:
-            tuple[.Operation, int]: tuple containing the corresponding
-            operation, and an integer representing the argument index,
+            tuple[.Operation, int, int]: tuple containing the corresponding
+            operation, operation index and an integer representing the argument index,
             for the provided trainable parameter.
         """
         # get the index of the parameter in the script
@@ -563,7 +594,7 @@ class QuantumScript:
 
         # get the info for the parameter
         info = self._par_info[t_idx]
-        return info["op"], info["p_idx"]
+        return info["op"], info["op_idx"], info["p_idx"]
 
     def get_parameters(
         self, trainable_only=True, operations_only=False, **kwargs
@@ -722,11 +753,9 @@ class QuantumScript:
         shot_vector = device._shot_vector
         if shot_vector is None:
             if isinstance(mps[0], (ExpectationMP, VarianceMP)):
-
                 shape = (len(mps),)
 
             elif isinstance(mps[0], ProbabilityMP):
-
                 wires_num_set = {len(meas.wires) for meas in mps}
                 same_num_wires = len(wires_num_set) == 1
                 if same_num_wires:
@@ -743,7 +772,6 @@ class QuantumScript:
                     shape = (sum(2 ** len(m.wires) for m in mps),)
 
             elif isinstance(mps[0], SampleMP):
-
                 dim = mps[0].shape(device)
                 shape = (len(mps),) + dim[1:]
 
@@ -772,7 +800,6 @@ class QuantumScript:
             shape = (num, len(mps))
 
         elif isinstance(mps[0], ProbabilityMP):
-
             wires_num_set = {len(meas.wires) for meas in mps}
             same_num_wires = len(wires_num_set) == 1
             if not same_num_wires:

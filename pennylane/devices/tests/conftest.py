@@ -217,7 +217,6 @@ def pytest_generate_tests(metafunc):
         devices_to_test = [opt.device]
 
     for dev in devices_to_test:
-
         device_kwargs = {"name": dev}
 
         # if shots specified in command line,
@@ -244,7 +243,6 @@ def pytest_runtest_makereport(item, call):
 
     if "skip_unsupported" in item.keywords and item.config.option.skip_ops:
         if call.excinfo is not None:
-
             # Exclude failing test cases for unsupported operations/observables
             # and those using not implemented features
             if (

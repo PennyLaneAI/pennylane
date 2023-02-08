@@ -406,11 +406,9 @@ class TestSupportedConfs:
             circuit = get_qnode(interface, "parameter-shift", return_type, shots, wire_specs)
             x = get_variable(interface, wire_specs, complex=complex)
             if shots is not None:
-
                 with pytest.warns(UserWarning, match="the returned result is analytic"):
                     grad = compute_gradient(x, interface, circuit, return_type, complex=complex)
             else:
-
                 grad = compute_gradient(x, interface, circuit, return_type, complex=complex)
 
     @pytest.mark.parametrize("interface", diff_interfaces)
@@ -429,7 +427,6 @@ class TestSupportedConfs:
         circuit = get_qnode(interface, diff_method, return_type, shots, wire_specs)
         x = get_variable(interface, wire_specs)
         if shots is not None and return_type in (VnEntropy, MutualInfo):
-
             with pytest.warns(UserWarning, match="unaffected by sampling"):
                 grad = compute_gradient(x, interface, circuit, return_type)
         else:
@@ -455,7 +452,6 @@ class TestSupportedConfs:
             x = get_variable(interface, wire_specs, complex=complex)
 
             if shots is not None:
-
                 with pytest.warns(UserWarning, match="unaffected by sampling"):
                     grad = compute_gradient(x, interface, circuit, return_type, complex=complex)
             else:

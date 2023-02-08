@@ -13,15 +13,16 @@
 # limitations under the License.
 """The Pauli arithmetic abstract reduced representation classes"""
 from copy import copy
-from typing import Iterable
 from functools import reduce
+from typing import Iterable
 
 import numpy as np
 from scipy import sparse
+
+import pennylane as qml
 from pennylane import math, wires
 from pennylane.operation import Tensor
-from pennylane.ops import s_prod, op_sum, prod, Identity, PauliX, PauliY, PauliZ, Hamiltonian
-
+from pennylane.ops import Hamiltonian, Identity, PauliX, PauliY, PauliZ, prod, s_prod
 
 I = "I"
 X = "X"
@@ -369,7 +370,7 @@ class PauliSentence(dict):
         for pw, coeff in self.items():
             pw_op = pw.operation(wire_order=list(self.wires))
             summands.append(pw_op if coeff == 1 else s_prod(coeff, pw_op))
-        return summands[0] if len(summands) == 1 else op_sum(*summands)
+        return summands[0] if len(summands) == 1 else qml.sum(*summands)
 
     def hamiltonian(self, wire_order=None):
         """Returns a native PennyLane :class:`~pennylane.Hamiltonian` representing the PauliSentence."""

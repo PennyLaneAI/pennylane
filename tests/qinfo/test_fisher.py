@@ -530,7 +530,8 @@ class TestDiffCFIM:
     @pytest.mark.all_interfaces
     def test_consistency(self):
         """Testing that the derivative of the cfim is giving consistently the same results for all interfaces.
-        Currently failing as (jax and autograd) and (torch and tf) are giving two different results."""
+        Currently failing as (jax and autograd) and (torch and tf) are giving two different results.
+        """
         import tensorflow as tf
         import torch
         import jax.numpy as jnp
