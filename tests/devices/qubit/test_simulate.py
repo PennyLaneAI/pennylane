@@ -183,3 +183,118 @@ class TestStatePrep:
         expected = np.zeros(8)
         expected[2] = 1.0
         assert qml.math.allclose(probs, expected)
+
+
+class TestQInfoMeasurements:
+
+    measurements = [
+        qml.density_matrix(0),
+        qml.density_matrix(1),
+        qml.density_matrix((0, 1)),
+        qml.vn_entropy(0),
+        qml.vn_entropy(1),
+        qml.mutual_info(0, 1),
+    ]
+
+    def expected_results(self, phi):
+
+        density_i = np.array([[np.cos(phi / 2) ** 2, 0], [0, np.sin(phi / 2) ** 2]])
+        density_both = np.array(
+            [
+                [np.cos(phi / 2) ** 2, 0, 0, 0.0 + np.sin(phi) * 0.5j],
+                [0, 0, 0, 0],
+                [0, 0, 0, 0],
+                [0.0 - np.sin(phi) * 0.5j, 0, 0, np.sin(phi / 2) ** 2],
+            ]
+        )
+        eig_1 = (1 + np.sqrt(1 - 4 * np.cos(phi / 2) ** 2 * np.sin(phi / 2) ** 2)) / 2
+        eig_2 = (1 - np.sqrt(1 - 4 * np.cos(phi / 2) ** 2 * np.sin(phi / 2) ** 2)) / 2
+        eigs = [eig_1, eig_2]
+        eigs = [eig for eig in eigs if eig > 0]
+        rho_log_rho = eigs * np.log(eigs)
+        expected_entropy = -np.sum(rho_log_rho)
+        mutual_info = 2 * expected_entropy
+
+        return (density_i, density_i, density_both, expected_entropy, expected_entropy, mutual_info)
+
+    def calculate_entropy_grad(self, phi):
+        eig_1 = (1 + np.sqrt(1 - 4 * np.cos(phi / 2) ** 2 * np.sin(phi / 2) ** 2)) / 2
+        eig_2 = (1 - np.sqrt(1 - 4 * np.cos(phi / 2) ** 2 * np.sin(phi / 2) ** 2)) / 2
+        eigs = [eig_1, eig_2]
+        eigs = np.maximum(eigs, 1e-08)
+
+        return -(
+            (np.log(eigs[0]) + 1)
+            * (np.sin(phi / 2) ** 3 * np.cos(phi / 2) - np.sin(phi / 2) * np.cos(phi / 2) ** 3)
+            / np.sqrt(1 - 4 * np.cos(phi / 2) ** 2 * np.sin(phi / 2) ** 2)
+        ) - (
+            (np.log(eigs[1]) + 1)
+            * (np.sin(phi / 2) * np.cos(phi / 2) * (np.cos(phi / 2) ** 2 - np.sin(phi / 2) ** 2))
+            / np.sqrt(1 - 4 * np.cos(phi / 2) ** 2 * np.sin(phi / 2) ** 2)
+        )
+
+    def expected_grad(self, phi):
+
+        p_2 = phi / 2
+        g_density_i = np.array([[-np.cos(p_2) * np.sin(p_2), 0], [0, np.sin(p_2) * np.cos(p_2)]])
+        g_density_both = np.array(
+            [
+                [-np.cos(p_2) * np.sin(p_2), 0, 0, 0.0 + 0.5j * np.cos(phi)],
+                [0, 0, 0, 0],
+                [0, 0, 0, 0],
+                [0.0 - 0.5j * np.cos(phi), 0, 0, np.sin(p_2) * np.cos(p_2)],
+            ]
+        )
+        g_entropy = self.calculate_entropy_grad(phi)
+        g_mutual_info = 2 * g_entropy
+        return (g_density_i, g_density_i, g_density_both, g_entropy, g_entropy, g_mutual_info)
+
+    def test_qinfo_numpy(self):
+        """Test quantum info measurements with numpy"""
+        phi = -0.623
+        qs = qml.tape.QuantumScript([qml.IsingXX(phi, wires=(0, 1))], self.measurements)
+
+        results = simulate(qs)
+        for val1, val2 in zip(results, self.expected_results(phi)):
+            assert qml.math.allclose(val1, val2)
+
+    @pytest.mark.jax
+    @pytest.mark.parametrize("use_jit", (True, False))
+    def test_qinfo_jax(self, use_jit):
+        """Test qinfo meausrements work with jitting."""
+
+        import jax
+
+        def f(x):
+            qs = qml.tape.QuantumScript([qml.IsingXX(x, wires=(0, 1))], self.measurements)
+            return simulate(qs)
+
+        if use_jit:
+            f = jax.jit(f)
+
+        phi = jax.numpy.array(-0.792 + 0j)
+
+        results = f(phi)
+        for val1, val2 in zip(results, self.expected_results(phi)):
+            assert qml.math.allclose(val1, val2)
+
+        def complex_out(phi):
+            return tuple(res + 0j for res in f(phi))
+
+        grads = jax.jacobian(complex_out, holomorphic=True)(phi)
+        expected_grads = self.expected_grad(phi)
+
+        # Writing this way makes it easier to figure out which is failing
+        # density 0
+        assert qml.math.allclose(grads[0], expected_grads[0])
+        # density 1
+        assert qml.math.allclose(grads[1], expected_grads[1])
+        # density both
+        # this is currently broken for some strange reason
+        assert qml.math.allclose(grads[2], expected_grads[2])
+        # entropy 0
+        assert qml.math.allclose(grads[3], expected_grads[3])
+        # entropy 1
+        assert qml.math.allclose(grads[4], expected_grads[4])
+        # mutual info
+        assert qml.math.allclose(grads[5], expected_grads[5])
