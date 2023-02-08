@@ -290,6 +290,7 @@ class TestCaching:
 
 execute_kwargs = [
     {"gradient_fn": param_shift, "interface": "tf"},
+    {"gradient_fn": param_shift, "interface": "auto"},
     {
         "gradient_fn": "device",
         "mode": "forward",
@@ -301,6 +302,18 @@ execute_kwargs = [
         "mode": "backward",
         "gradient_kwargs": {"method": "adjoint_jacobian"},
         "interface": "tf",
+    },
+    {
+        "gradient_fn": "device",
+        "mode": "backward",
+        "gradient_kwargs": {"method": "adjoint_jacobian"},
+        "interface": "auto",
+    },
+    {
+        "gradient_fn": "device",
+        "mode": "forward",
+        "gradient_kwargs": {"method": "adjoint_jacobian", "use_device_state": True},
+        "interface": "auto",
     },
 ]
 
@@ -718,6 +731,7 @@ class TestTensorFlowExecuteIntegration:
 
         with tf.GradientTape() as t:
             with qml.queuing.AnnotatedQueue() as q:
+                qml.RY(tf.Variable(0.1), wires=0)
                 qml.Hadamard(wires=[0])
                 qml.CNOT(wires=[0, 1])
                 qml.sample(qml.PauliZ(0))
@@ -731,6 +745,7 @@ class TestTensorFlowExecuteIntegration:
         assert isinstance(res, tf.Tensor)
 
 
+@pytest.mark.parametrize("interface", ["auto", "tf"])
 class TestHigherOrderDerivatives:
     """Test that the TensorFlow execute function can be differentiated"""
 
@@ -743,7 +758,7 @@ class TestHigherOrderDerivatives:
             tf.Variable([-2.0, 0], dtype=tf.float64),
         ],
     )
-    def test_parameter_shift_hessian(self, params, tol):
+    def test_parameter_shift_hessian(self, params, tol, interface):
         """Tests that the output of the parameter-shift transform
         can be differentiated using tensorflow, yielding second derivatives."""
         dev = qml.device("default.qubit.tf", wires=2)
@@ -766,7 +781,7 @@ class TestHigherOrderDerivatives:
 
                 tape2 = qml.tape.QuantumScript.from_queue(q2)
                 result = execute(
-                    [tape1, tape2], dev, gradient_fn=param_shift, interface="tf", max_diff=2
+                    [tape1, tape2], dev, gradient_fn=param_shift, interface=interface, max_diff=2
                 )
                 res = result[0] + result[1][0]
 
@@ -788,7 +803,7 @@ class TestHigherOrderDerivatives:
         )
         assert np.allclose(hess, expected, atol=tol, rtol=0)
 
-    def test_hessian_vector_valued(self, tol):
+    def test_hessian_vector_valued(self, tol, interface):
         """Test hessian calculation of a vector valued QNode"""
         dev = qml.device("default.qubit.tf", wires=1)
         params = tf.Variable([0.543, -0.654], dtype=tf.float64)
@@ -801,7 +816,9 @@ class TestHigherOrderDerivatives:
                     qml.probs(wires=0)
 
                 tape = qml.tape.QuantumScript.from_queue(q)
-                res = execute([tape], dev, gradient_fn=param_shift, interface="tf", max_diff=2)[0]
+                res = execute(
+                    [tape], dev, gradient_fn=param_shift, interface=interface, max_diff=2
+                )[0]
                 res = tf.stack(res)
 
             g = t1.jacobian(res, params, experimental_use_pfor=False)
@@ -835,7 +852,7 @@ class TestHigherOrderDerivatives:
 
         np.testing.assert_allclose(hess, expected_hess, atol=tol, rtol=0, verbose=True)
 
-    def test_adjoint_hessian(self, tol):
+    def test_adjoint_hessian(self, tol, interface):
         """Since the adjoint hessian is not a differentiable transform,
         higher-order derivatives are not supported."""
         dev = qml.device("default.qubit", wires=2)
@@ -855,7 +872,7 @@ class TestHigherOrderDerivatives:
                     dev,
                     gradient_fn="device",
                     gradient_kwargs={"method": "adjoint_jacobian", "use_device_state": True},
-                    interface="tf",
+                    interface=interface,
                 )[0]
 
             grad = t1.gradient(res, params)
@@ -866,7 +883,7 @@ class TestHigherOrderDerivatives:
         hess = t2.jacobian(grad, params)
         assert hess is None
 
-    def test_max_diff(self, tol):
+    def test_max_diff(self, tol, interface):
         """Test that setting the max_diff parameter blocks higher-order
         derivatives"""
         dev = qml.device("default.qubit.tf", wires=2)
@@ -890,7 +907,7 @@ class TestHigherOrderDerivatives:
 
                 tape2 = qml.tape.QuantumScript.from_queue(q2)
                 result = execute(
-                    [tape1, tape2], dev, gradient_fn=param_shift, max_diff=1, interface="tf"
+                    [tape1, tape2], dev, gradient_fn=param_shift, max_diff=1, interface=interface
                 )
                 res = result[0] + result[1][0]
 
@@ -911,6 +928,8 @@ class TestHigherOrderDerivatives:
 execute_kwargs = [
     {"gradient_fn": param_shift, "interface": "tensorflow"},
     {"gradient_fn": finite_diff, "interface": "tensorflow"},
+    {"gradient_fn": param_shift, "interface": "auto"},
+    {"gradient_fn": finite_diff, "interface": "auto"},
 ]
 
 

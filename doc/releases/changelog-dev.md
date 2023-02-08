@@ -479,6 +479,41 @@
 
 <h3>Breaking changes</h3>
 
+* The default interface is now `auto`. There is no need to specify the interface anymore! It is automatically 
+  determined by checking your `QNode` parameters.
+  [(#3677)](https://github.com/PennyLaneAI/pennylane/pull/3677)
+  
+  ```python
+  import jax
+  import jax.numpy as jnp
+  
+  qml.enable_return()
+  a = jnp.array(0.1)
+  b = jnp.array(0.2)
+  
+  dev = qml.device("default.qubit", wires=2)
+  
+  @qml.qnode(dev)
+  def circuit(a, b):
+      qml.RY(a, wires=0)
+      qml.RX(b, wires=1)
+      qml.CNOT(wires=[0, 1])
+      return qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliY(1))
+  ```
+  
+  ```pycon
+  >>> circuit(a, b)
+  (Array(0.9950042, dtype=float32), Array(-0.19767681, dtype=float32))
+  >>> jac = jax.jacobian(circuit)(a, b)
+  (Array(-0.09983341, dtype=float32, weak_type=True), Array(0.01983384, dtype=float32, weak_type=True))
+  ```
+  
+  It comes with the fact that the interface is determined during the `QNode` call instead of the 
+  initialization. It means that the `gradient_fn` and `gradient_kwargs` are only defined on the QNode at the beginning 
+  of the call. As well, without specifying the interface it is not possible to guarantee that the device will not be changed 
+  during the call if you are using backprop(`default.qubit` to `default.qubit,jax`e.g.) whereas before it was happening at 
+  initialization, therefore you should not try to track the device without specifying the interface.
+
 * The tape method `get_operation` can also now return the operation index in the tape, and it can be
   activated by setting the `return_op_index` to `True`: `get_operation(idx, return_op_index=True)`. It will become
   the default in version 0.30.
