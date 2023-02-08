@@ -584,6 +584,7 @@
   [(#3644)](https://github.com/PennyLaneAI/pennylane/pull/3644)
 
 * A typo was corrected in the documentation for `qml.math.vn_entropy()`.
+[(#3740)](https://github.com/PennyLaneAI/pennylane/pull/3740)
 
 <h3>Bug fixes</h3>
 
