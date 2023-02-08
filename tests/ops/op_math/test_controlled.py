@@ -1382,23 +1382,23 @@ def test_adjoint_of_ctrl():
         qml.RZ(c, wires=0)
 
     with qml.queuing.AnnotatedQueue() as q1:
-        cmy_op_dagger = qml.adjoint(ctrl(my_op, 5))
+        cmy_op_dagger = qml.simplify(qml.adjoint(ctrl(my_op, 5)))
         # Execute controlled and adjointed version of my_op.
         cmy_op_dagger(0.789, 0.123, c=0.456)
 
     tape1 = QuantumScript.from_queue(q1)
     with qml.queuing.AnnotatedQueue() as q2:
-        cmy_op_dagger = ctrl(qml.adjoint(my_op), 5)
+        cmy_op_dagger = qml.simplify(ctrl(qml.adjoint(my_op), 5))
         # Execute adjointed and controlled version of my_op.
         cmy_op_dagger(0.789, 0.123, c=0.456)
 
     tape2 = QuantumScript.from_queue(q2)
     expected = [
-        qml.CRZ(-0.456, wires=[5, 0]),
-        qml.CRY(-0.123, wires=[5, 3]),
-        qml.CRX(-0.789, wires=[5, 2]),
+        qml.CRZ(4 * onp.pi - 0.456, wires=[5, 0]),
+        qml.CRY(4 * onp.pi - 0.123, wires=[5, 3]),
+        qml.CRX(4 * onp.pi - 0.789, wires=[5, 2]),
     ]
-    for tape in [tape1.expand(depth=2), tape2.expand(depth=2)]:
+    for tape in [tape1.expand(depth=1), tape2.expand(depth=1)]:
         for op1, op2 in zip(tape, expected):
             assert qml.equal(op1, op2)
 

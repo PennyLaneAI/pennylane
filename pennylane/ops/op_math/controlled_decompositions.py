@@ -91,12 +91,16 @@ def ctrl_decomp_zyz(target_operation: Operator, control_wires: Wires):
             )[0]
         phi, theta, omega = zyz_decomp.single_qubit_rot_angles()
 
-    return [
-        qml.RZ(phi, wires=target_wire),
-        qml.RY(theta / 2, wires=target_wire),
-        qml.MultiControlledX(wires=control_wires + target_wire),
-        qml.RY(-theta / 2, wires=target_wire),
-        qml.RZ(-(phi + omega) / 2, wires=target_wire),
-        qml.MultiControlledX(wires=control_wires + target_wire),
-        qml.RZ((omega - phi) / 2, wires=target_wire),
-    ]
+    angles = [phi, theta / 2, -theta / 2, -(phi + omega) / 2, (omega - phi) / 2]
+    ops = [qml.RZ, qml.RY, qml.RY, qml.RZ, qml.RZ]
+
+    decomp = []
+    for i, (op, angle) in enumerate(zip(ops, angles)):
+        if not qml.math.isclose(angle, 0.0, atol=1e-8, rtol=0):
+            # Add rotation to decomposition if non-trivial
+            decomp.append(op(angle, wires=target_wire))
+        if i % 2 == 1:
+            # Add MultiControlledX to decomposition
+            decomp.append(qml.MultiControlledX(wires=control_wires + target_wire))
+
+    return decomp
