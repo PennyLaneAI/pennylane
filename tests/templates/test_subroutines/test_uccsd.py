@@ -350,8 +350,8 @@ class TestInterfaces:
         weights = jnp.array(np.random.random(size=(2,)))
         dev = qml.device("default.qubit", wires=4)
 
-        circuit = qml.QNode(circuit_template, dev, interface="jax")
-        circuit2 = qml.QNode(circuit_decomposed, dev, interface="jax")
+        circuit = qml.QNode(circuit_template, dev)
+        circuit2 = qml.QNode(circuit_decomposed, dev)
 
         res = circuit(weights)
         res2 = circuit2(weights)
@@ -374,8 +374,8 @@ class TestInterfaces:
         weights = tf.Variable(np.random.random(size=(2,)))
         dev = qml.device("default.qubit", wires=4)
 
-        circuit = qml.QNode(circuit_template, dev, interface="tf")
-        circuit2 = qml.QNode(circuit_decomposed, dev, interface="tf")
+        circuit = qml.QNode(circuit_template, dev)
+        circuit2 = qml.QNode(circuit_decomposed, dev)
 
         res = circuit(weights)
         res2 = circuit2(weights)
@@ -401,8 +401,8 @@ class TestInterfaces:
 
         dev = qml.device("default.qubit", wires=4)
 
-        circuit = qml.QNode(circuit_template, dev, interface="torch")
-        circuit2 = qml.QNode(circuit_decomposed, dev, interface="torch")
+        circuit = qml.QNode(circuit_template, dev)
+        circuit2 = qml.QNode(circuit_decomposed, dev)
 
         res = circuit(weights)
         res2 = circuit2(weights)
