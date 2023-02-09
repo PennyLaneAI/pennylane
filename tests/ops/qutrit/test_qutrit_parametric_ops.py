@@ -323,6 +323,7 @@ subspace_error_data = [
 @pytest.mark.parametrize("op", [qml.TRX])
 @pytest.mark.parametrize("subspace, err_msg", subspace_error_data)
 def test_subspace_errors(op, subspace, err_msg):
+    """Test that the correct error is thrown for ill-defined subspaces."""
     with pytest.raises(ValueError, match=err_msg):
         op(0.123, wires=0, subspace=subspace)
 
@@ -330,31 +331,36 @@ def test_subspace_errors(op, subspace, err_msg):
 class TestGrad:
     """Test that the gradients for qutrit parametrized operations are correct"""
 
+    # ``default.qutrit`` doesn't currently support device, adjoint, or backprop diff methods
+    diff_methods = ["parameter-shift", "finite-diff", "best"]
+
     @pytest.mark.parametrize("phi", npp.linspace(0, 2 * np.pi, 7, requires_grad=True))
-    def test_trx_differentiability(self, phi):
+    @pytest.mark.parametrize("diff_method", diff_methods)
+    def test_trx_differentiability(self, phi, diff_method, tol):
         """Test that TRX is differentiable and the gradient is correct"""
         dev = qml.device("default.qutrit", wires=1)
 
-        @qml.qnode(dev)
+        @qml.qnode(dev, diff_method=diff_method)
         def circuit(phi):
             qml.TRX(phi, wires=0)
             return qml.expval(qml.GellMann(wires=0, index=3))
 
         grad = np.squeeze(qml.grad(circuit)(phi))
 
-        assert np.isclose(grad, -np.sin(phi))
+        assert np.isclose(grad, -np.sin(phi), atol=tol, rtol=0)
 
-    def test_trx_differentiability_broadcasted(self):
+    @pytest.mark.parametrize("diff_method", diff_methods)
+    def test_trx_differentiability_broadcasted(self, diff_method, tol):
         """Test that differentiation of TRX with broadcasting works."""
         phi = npp.linspace(0, 2 * np.pi, 7, requires_grad=True)
 
         dev = qml.device("default.qutrit", wires=1)
 
-        @qml.qnode(dev)
+        @qml.qnode(dev, diff_method=diff_method)
         def circuit(phi):
             qml.TRX(phi, wires=0)
             return qml.expval(qml.GellMann(wires=0, index=3))
 
         jac = qml.jacobian(circuit)(phi)
 
-        assert np.allclose(jac, -1.0 * np.sin(np.diag(phi)))
+        assert np.allclose(jac, -1.0 * np.sin(np.diag(phi)), atol=tol, rtol=0)
