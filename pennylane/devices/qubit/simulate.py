@@ -55,7 +55,6 @@ def measure(measurementprocess: MeasurementProcess, state: TensorLike) -> Tensor
         Tensorlike: the result of the measurement
     """
     if isinstance(measurementprocess, StateMeasurement):
-
         if measurementprocess.obs is None:
             # no need to apply diagonalizing gates
             total_indices = len(state.shape)
@@ -68,7 +67,7 @@ def measure(measurementprocess: MeasurementProcess, state: TensorLike) -> Tensor
     raise NotImplementedError
 
 
-def simulate(circuit: qml.tape.QuantumScript) -> tuple[TensorLike]:
+def simulate(circuit: qml.tape.QuantumScript) -> tuple:
     """Simulate a single quantum script.
 
     This is an internal function that will be called by successor to ``default.qubit``.
