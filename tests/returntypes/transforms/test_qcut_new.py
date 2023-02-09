@@ -2744,7 +2744,6 @@ class TestCutCircuitMCTransform:
         ):
             cut_circuit(v)
 
-    @pytest.mark.filterwarnings("ignore:Detected 'shots'")
     def test_qnode_shots_arg_error(self):
         """
         Tests that if a shots argument is passed directly to the qnode when using
@@ -2815,7 +2814,7 @@ class TestCutCircuitMCTransform:
         dev = qml.device("default.qubit", wires=2, shots=shots)
 
         @qml.cut_circuit_mc
-        @qml.qnode(dev, interface="autograd")
+        @qml.qnode(dev)
         def cut_circuit(x):
             qml.RX(x, wires=0)
             qml.RY(0.5, wires=1)
@@ -2850,7 +2849,7 @@ class TestCutCircuitMCTransform:
         dev = qml.device("default.qubit", wires=2, shots=shots)
 
         @qml.cut_circuit_mc
-        @qml.qnode(dev, interface="tf")
+        @qml.qnode(dev)
         def cut_circuit(x):
             qml.RX(x, wires=0)
             qml.RY(0.5, wires=1)
@@ -2885,7 +2884,7 @@ class TestCutCircuitMCTransform:
         dev = qml.device("default.qubit", wires=2, shots=shots)
 
         @qml.cut_circuit_mc
-        @qml.qnode(dev, interface="torch")
+        @qml.qnode(dev)
         def cut_circuit(x):
             qml.RX(x, wires=0)
             qml.RY(0.5, wires=1)
@@ -2920,7 +2919,7 @@ class TestCutCircuitMCTransform:
         dev = qml.device("default.qubit", wires=2, shots=shots)
 
         @qml.cut_circuit_mc
-        @qml.qnode(dev, interface="jax")
+        @qml.qnode(dev)
         def cut_circuit(x):
             qml.RX(x, wires=0)
             qml.RY(0.5, wires=1)
@@ -2955,7 +2954,7 @@ class TestCutCircuitMCTransform:
         dev = qml.device("default.qubit", wires=2, shots=shots)
 
         @qml.cut_circuit_mc(fn)
-        @qml.qnode(dev, interface="autograd")
+        @qml.qnode(dev)
         def cut_circuit(x):
             qml.RX(x, wires=0)
             qml.RY(0.5, wires=1)
@@ -2988,7 +2987,7 @@ class TestCutCircuitMCTransform:
         dev = qml.device("default.qubit", wires=2, shots=shots)
 
         @qml.cut_circuit_mc(fn)
-        @qml.qnode(dev, interface="tf")
+        @qml.qnode(dev)
         def cut_circuit(x):
             qml.RX(x, wires=0)
             qml.RY(0.5, wires=1)
@@ -3021,7 +3020,7 @@ class TestCutCircuitMCTransform:
         dev = qml.device("default.qubit", wires=2, shots=shots)
 
         @qml.cut_circuit_mc(fn)
-        @qml.qnode(dev, interface="torch")
+        @qml.qnode(dev)
         def cut_circuit(x):
             qml.RX(x, wires=0)
             qml.RY(0.5, wires=1)
@@ -3054,7 +3053,7 @@ class TestCutCircuitMCTransform:
         dev = qml.device("default.qubit", wires=2, shots=shots)
 
         @qml.cut_circuit_mc(fn)
-        @qml.qnode(dev, interface="jax")
+        @qml.qnode(dev)
         def cut_circuit(x):
             qml.RX(x, wires=0)
             qml.RY(0.5, wires=1)
@@ -3863,7 +3862,6 @@ class TestCutCircuitTransform:
     Tests for the cut_circuit transform
     """
 
-    @pytest.mark.filterwarnings("ignore:Attempted to compute the gradient")
     @flaky(max_runs=3)
     @pytest.mark.parametrize("shots", [None, int(1e7)])
     def test_simple_cut_circuit(self, mocker, use_opt_einsum, shots):
@@ -3912,7 +3910,7 @@ class TestCutCircuitTransform:
 
         dev = qml.device("default.qubit", wires=2)
 
-        @qml.qnode(dev, interface="torch")
+        @qml.qnode(dev)
         def circuit(x):
             qml.RX(x, wires=0)
             qml.RY(0.543, wires=1)
@@ -3951,7 +3949,7 @@ class TestCutCircuitTransform:
 
         dev = qml.device("default.qubit", wires=2)
 
-        @qml.qnode(dev, interface="tf")
+        @qml.qnode(dev)
         def circuit(x):
             qml.RX(x, wires=0)
             qml.RY(0.543, wires=1)
@@ -3991,7 +3989,7 @@ class TestCutCircuitTransform:
 
         dev = qml.device("default.qubit", wires=2)
 
-        @qml.qnode(dev, interface="jax")
+        @qml.qnode(dev)
         def circuit(x):
             qml.RX(x, wires=0)
             qml.RY(0.543, wires=1)
@@ -4114,15 +4112,14 @@ class TestCutCircuitTransform:
 
         spy.assert_not_called()
 
-    @pytest.mark.tf
     @pytest.mark.skipif(networkx_version[0] >= "3", reason="networkx version 3 breaks this test.")
+    @pytest.mark.tf
     def test_simple_cut_circuit_tf_jit(self, mocker, use_opt_einsum):
         """
         Tests the full circuit cutting pipeline returns the correct value and
         gradient for a simple circuit using the `cut_circuit` transform with the TF interface and
         using JIT.
         """
-
         if use_opt_einsum:
             pytest.importorskip("opt_einsum")
 
@@ -4130,7 +4127,7 @@ class TestCutCircuitTransform:
 
         dev = qml.device("default.qubit", wires=2)
 
-        @qml.qnode(dev, interface="tf")
+        @qml.qnode(dev)
         def circuit(x):
             qml.RX(x, wires=0)
             qml.RY(0.543, wires=1)
@@ -4206,7 +4203,7 @@ class TestCutCircuitTransform:
 
         dev = qml.device("default.qubit", wires=2)
 
-        @qml.qnode(dev, interface="jax")
+        @qml.qnode(dev)
         def circuit(x):
             qml.RX(x, wires=0)
             qml.RY(0.543, wires=1)

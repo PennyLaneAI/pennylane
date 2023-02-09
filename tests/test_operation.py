@@ -25,13 +25,7 @@ from numpy.linalg import multi_dot
 
 import pennylane as qml
 from pennylane import numpy as pnp
-from pennylane.operation import (
-    Operation,
-    Operator,
-    Tensor,
-    operation_derivative,
-    StatePrep,
-)
+from pennylane.operation import Operation, Operator, StatePrep, Tensor, operation_derivative
 from pennylane.ops import Prod, SProd, Sum, cv
 from pennylane.wires import Wires
 
@@ -1203,6 +1197,13 @@ class TestTensor:
         t = Tensor(X, Y)
         assert t.batch_size is None
 
+    def test_pauli_rep(self):
+        """Test that the _pauli_rep attribute of the Tensor is initialized as None."""
+        X = qml.PauliX(0)
+        Y = qml.PauliY(2)
+        t = Tensor(X, Y)
+        assert t._pauli_rep is None
+
     def test_has_matrix(self):
         """Test that the Tensor class has a ``has_matrix`` static attribute set to True."""
         assert Tensor.has_matrix is True
@@ -1230,6 +1231,17 @@ class TestTensor:
         Y = qml.Hermitian(p, wires=[1, 2])
         t = Tensor(X, Y)
         assert t.data == [p]
+
+    def test_data_setter(self):
+        """Test the data setter"""
+        p = np.eye(4)
+        X = qml.PauliX(0)
+        Y = qml.Hermitian(p, wires=[1, 2])
+        t = Tensor(X, Y)
+        assert t.data == [p]
+        new_data = np.eye(4) * 6
+        t.data = [[], [new_data]]
+        assert qml.math.allequal(t.data, [new_data])
 
     def test_num_params(self):
         """Test that the correct number of parameters is returned"""

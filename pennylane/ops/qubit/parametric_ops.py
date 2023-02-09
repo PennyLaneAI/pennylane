@@ -1716,9 +1716,6 @@ class PauliRot(Operation):
         pauli_word = self.hyperparameters["pauli_word"]
         op_label = base_label or ("R" + pauli_word)
 
-        if self.inverse:
-            op_label += "⁻¹"
-
         # TODO[dwierichs]: Implement a proper label for parameter-broadcasted operators
         if decimals is not None and self.batch_size is None:
             param_string = f"\n({qml.math.asarray(self.parameters[0]):.{decimals}f})"
@@ -1871,8 +1868,8 @@ class PauliRot(Operation):
 
         Args:
             theta (float): rotation angle :math:`\theta`
-            pauli_word (string): the Pauli word defining the rotation
             wires (Iterable, Wires): the wires the operation acts on
+            pauli_word (string): the Pauli word defining the rotation
 
         Returns:
             list[Operator]: decomposition into lower level operations
