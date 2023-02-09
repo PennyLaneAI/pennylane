@@ -2743,7 +2743,9 @@ class TestIfft2Tensorflow:
         out = qml.math.fft.ifft2(x)
         assert out.dtype == exp_dtype_out
 
+
 def test_jax_ndim():
+    """Test that qml.math.ndim dispatches to jax.numpy.ndim."""
     with patch("jax.numpy.ndim") as mock_ndim:
         _ = qml.math.ndim(jax.numpy.array(3))
 
@@ -2751,6 +2753,8 @@ def test_jax_ndim():
 
 
 class TestSetIndex:
+    """Test the set_index method."""
+
     @pytest.mark.parametrize(
         "array", [qml.numpy.zeros((2, 2)), torch.zeros((2, 2)), jnp.zeros((2, 2))]
     )
@@ -2761,7 +2765,7 @@ class TestSetIndex:
         array2 = qml.math.set_index(array, (1, 1), 3)
         assert qml.math.allclose(array2, np.array([[0, 0], [0, 3]]))
         # since idx and val have no interface, we expect the returned array type to match initial type
-        assert type(array2) == type(array)
+        assert isinstance(array2, type(array))
 
     @pytest.mark.parametrize("array", [qml.numpy.zeros((4)), torch.zeros((4)), jnp.zeros((4))])
     def test_set_index_jax_1d_array(self, array):
@@ -2771,7 +2775,7 @@ class TestSetIndex:
         array2 = qml.math.set_index(array, 3, 3)
         assert qml.math.allclose(array2, np.array([[0, 0, 0, 3]]))
         # since idx and val have no interface, we expect the returned array type to match initial type
-        assert type(array2) == type(array)
+        assert isinstance(array2, type(array))
 
     @pytest.mark.parametrize(
         "array",
