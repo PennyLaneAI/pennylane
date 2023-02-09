@@ -17,10 +17,9 @@ This module contains logic for the text based circuit drawer through the ``tape_
 
 import pennylane as qml
 from pennylane.measurements import Expectation, Probability, Sample, Variance, State
-from pennylane.ops import ControlledOp
 
 from .drawable_layers import drawable_layers
-from .utils import convert_wire_order
+from .utils import convert_wire_order, unwrap_controls
 
 
 def _add_grouping_symbols(op, layer_str, wire_map):
@@ -46,27 +45,7 @@ def _add_op(op, layer_str, wire_map, decimals, cache):
     """Updates ``layer_str`` with ``op`` operation."""
     layer_str = _add_grouping_symbols(op, layer_str, wire_map)
 
-    control_wires = getattr(op, "control_wires", [])
-    control_values = op.hyperparameters.get("control_values", None)
-
-    # Controlled operations may themselves contain controlled operations; check
-    # for any nesting of operators when drawing so that we correctly identify
-    # and label _all_ control and target qubits
-    if isinstance(op, ControlledOp):
-        next_ctrl = op
-
-        while hasattr(next_ctrl, "base"):
-            base_control_wires = getattr(next_ctrl.base, "control_wires", [])
-            control_wires += base_control_wires
-
-            base_control_values = next_ctrl.base.hyperparameters.get(
-                "control_values", [True] * len(base_control_wires)
-            )
-
-            if control_values is not None:
-                control_values.extend(base_control_values)
-
-            next_ctrl = next_ctrl.base
+    control_wires, control_values = unwrap_controls(op)
 
     if control_values:
         for w, val in zip(control_wires, control_values):
