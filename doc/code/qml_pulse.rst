@@ -3,10 +3,10 @@ qml.pulse
 
 .. automodule:: pennylane.pulse
 
-Pulse control
--------------
+Pulse programming
+---------------------
 
-Pulse control is used in a variety of quantum systems for low-level control of quantum operations. A
+Pulse programming is used in a variety of quantum systems for low-level control of quantum operations. A
 time-dependent electromagnetic field tuned to the characteristic energies is applied,
 leading to a time-dependent Hamiltonian interaction :math:`H(t)`. Driving the system with such an
 electromagnetic field for a fixed time window is a *pulse sequence*. These pulse sequences can be tuned to
@@ -120,7 +120,7 @@ Schrodinger equation for a :class:`~.ParametrizedHamiltonian`.
     checked; ensuring a correctly defined Hamiltonian is the responsibility of the user.
 
 The :class:`~.ParametrizedEvolution` class uses a numerical ordinary differential equation
-solver (`here <https://github.com/google/jax/blob/main/jax/experimental/ode.py>`_). It
+solver (see `jax.experimental.ode <https://github.com/google/jax/blob/main/jax/experimental/ode.py>`_). It
 can be created using the :func:`~.functions.evolve` function:
 
 .. code-block:: python
@@ -134,7 +134,7 @@ can be created using the :func:`~.functions.evolve` function:
     >>> ParametrizedEvolution(wires=[0, 1])
 
 The initial :class:`~.ParametrizedEvolution` does not have parameters defined, and so will
-not have a matrix defined. To obtain an :class:`~.Operator` with a matrix, it must be passed
+not have a matrix defined. To obtain an :class:`~.Operator` with a matrix, we have to pass
 parameters and a time interval:
 
 .. code-block:: python
@@ -182,7 +182,7 @@ The :class:`~.ParametrizedEvolution` can be implemented in a QNode. We will evol
         H = f1 * qml.PauliY(0)
 
 
-Now we can execute the evolution of this Hamiltonian in a QNode:
+Now we can execute the evolution of this Hamiltonian in a QNode and compute its gradient:
 
 .. code-block:: python
 
