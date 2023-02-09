@@ -1302,6 +1302,37 @@ class TestParameterShiftRule:
         assert gradA == pytest.approx(expected, abs=tol)
         assert gradF == pytest.approx(expected, abs=tol)
 
+    def test_recycling_unshifted_tape_result(self):
+        """Test that an unshifted term in the used gradient recipe is reused
+        for the chain rule computation within the variance parameter shift rule."""
+        dev = qml.device("default.qubit", wires=2)
+        gradient_recipes = ([[-1e-5, 1, 0], [1e-5, 1, 0], [-1e5, 1, -5e-6], [1e5, 1, 5e-6]], None)
+        x = [0.543, -0.654]
+
+        with qml.queuing.AnnotatedQueue() as q:
+            qml.RX(x[0], wires=[0])
+            qml.RX(x[1], wires=[0])
+            qml.var(qml.PauliZ(0))
+
+        tape = qml.tape.QuantumScript.from_queue(q)
+        tapes, fn = qml.gradients.param_shift(tape, gradient_recipes=gradient_recipes)
+        # 2 operations x 2 shifted positions + 1 unshifted term overall
+        assert len(tapes) == 2 * 2 + 1
+
+        with qml.queuing.AnnotatedQueue() as q:
+            qml.RX(x[0], wires=[0])
+            qml.RX(x[1], wires=[0])
+            qml.var(qml.Projector([1], wires=0))
+
+        tape = qml.tape.QuantumScript.from_queue(q)
+        tape.trainable_params = [0, 1]
+        tapes, fn = qml.gradients.param_shift(tape, gradient_recipes=gradient_recipes)
+        for tape in tapes:
+            print(tape.measurements)
+        # 2 operations x 2 shifted positions + 1 unshifted term overall    <-- <H>
+        # + 2 operations x 2 shifted positions + 1 unshifted term          <-- <H^2>
+        assert len(tapes) == (2 * 2 + 1) + (2 * 2 + 1)
+
     def test_projector_variance(self, tol):
         """Test that the variance of a projector is correctly returned"""
         dev = qml.device("default.qubit", wires=2)
@@ -1315,7 +1346,7 @@ class TestParameterShiftRule:
             qml.var(qml.Projector(P, wires=0) @ qml.PauliX(1))
 
         tape = qml.tape.QuantumScript.from_queue(q)
-        tape.trainable_params = {0, 1}
+        tape.trainable_params = [0, 1]
 
         res = dev.execute(tape)
         expected = 0.25 * np.sin(x / 2) ** 2 * (3 + np.cos(2 * y) + 2 * np.cos(x) * np.sin(y) ** 2)

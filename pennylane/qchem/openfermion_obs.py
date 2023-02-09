@@ -40,7 +40,6 @@ def _import_of():
 
 
 def observable(fermion_ops, init_term=0, mapping="jordan_wigner", wires=None):
-
     r"""Builds the fermionic many-body observable whose expectation value can be
     measured in PennyLane.
 
@@ -414,7 +413,6 @@ def two_particle(matrix_elements, core=None, active=None, cutoff=1.0e-12):
     if core:
         for alpha in active:
             for beta in active:
-
                 element = 2 * np.sum(
                     matrix_elements[np.array(core), alpha, beta, np.array(core)]
                 ) - np.sum(matrix_elements[np.array(core), alpha, np.array(core), beta])

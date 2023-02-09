@@ -13,8 +13,8 @@
 # limitations under the License.
 """Tests for the shot adaptive optimizer"""
 import pytest
-from scipy.stats import multinomial
 from flaky import flaky
+from scipy.stats import multinomial
 
 import pennylane as qml
 from pennylane import numpy as np
@@ -24,7 +24,6 @@ def catch_warn_ExpvalCost(ansatz, hamiltonian, device, **kwargs):
     """Computes the ExpvalCost and catches the initial deprecation warning."""
 
     with pytest.warns(UserWarning, match="is deprecated,"):
-
         res = qml.ExpvalCost(ansatz, hamiltonian, device, **kwargs)
     return res
 
@@ -425,7 +424,7 @@ class TestWeightedRandomSampling:
         opt = qml.ShotAdaptiveOptimizer(min_shots=10)
         spy = mocker.spy(opt, "weighted_random_sampling")
 
-        new_weights = opt.step(expval_cost, weights)
+        _ = opt.step(expval_cost, weights)
         spy.assert_called_once()
 
         grads = opt.weighted_random_sampling(expval_cost.qnodes, coeffs, 10, [0], weights)

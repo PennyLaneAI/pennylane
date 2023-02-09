@@ -232,11 +232,11 @@ def get_interface(*values):
     if "torch" in interfaces:
         return "torch"
 
-    if "autograd" in interfaces:
-        return "autograd"
-
     if "jax" in interfaces:
         return "jax"
+
+    if "autograd" in interfaces:
+        return "autograd"
 
     return "numpy"
 

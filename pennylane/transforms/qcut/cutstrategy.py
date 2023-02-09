@@ -343,7 +343,6 @@ class CutStrategy:
         probed_cuts = []
 
         if max_gates_by_fragment is None and max_wires_by_fragment is None:
-
             # k_lower, when supplied by a user, can be higher than k_lb if the the desired k is known:
             k_lower = self.k_lower if self.k_lower is not None else k_lb
             # k_upper, when supplied by a user, can be higher than k_ub to encourage exploration:

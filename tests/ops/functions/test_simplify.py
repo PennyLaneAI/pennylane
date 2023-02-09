@@ -170,7 +170,7 @@ class TestSimplifyCallables:
         import jax
 
         @jax.jit
-        @qml.qnode(qml.device("default.qubit.jax", wires=1), interface="jax")
+        @qml.qnode(qml.device("default.qubit", wires=1))
         @qml.simplify
         def circuit(x):
             qml.adjoint(qml.RX(x, wires=0))

@@ -138,7 +138,6 @@ def test_step_and_cost_nodrain(circuit, energy_ref, pool):
     """Test that step_and_cost function returns the correct results when drain_pool is False."""
     opt = qml.AdaptiveOptimizer()
     for i in range(4):
-
         circuit, energy, gradient = opt.step_and_cost(circuit, pool, drain_pool=False)
 
     _ = circuit()

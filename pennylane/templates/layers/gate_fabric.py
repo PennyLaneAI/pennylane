@@ -177,7 +177,6 @@ class GateFabric(Operation):
     grad_method = None
 
     def __init__(self, weights, wires, init_state, include_pi=False, do_queue=True, id=None):
-
         if len(wires) < 4:
             raise ValueError(
                 f"This template requires the number of qubits to be greater than four; got wires {wires}"
@@ -261,7 +260,6 @@ class GateFabric(Operation):
 
         for layer in range(n_layers):
             for idx, wires_ in enumerate(wire_pattern):
-
                 if include_pi:
                     op_list.append(qml.OrbitalRotation(np.pi, wires=wires_))
 
