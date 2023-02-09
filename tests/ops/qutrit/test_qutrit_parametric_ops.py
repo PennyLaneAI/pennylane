@@ -14,16 +14,17 @@
 """
 Unit tests for the available built-in parametric qutrit operations.
 """
+# pylint: disable=unnecessary-lambda-assignment, too-few-public-methods, too-many-arguments
+
+import copy
 from functools import reduce
 import pytest
-import copy
 import numpy as np
+from gate_data import TSHIFT, TCLOCK
 from pennylane import numpy as npp
-
 import pennylane as qml
 from pennylane.wires import Wires
 
-from gate_data import TSHIFT, TCLOCK
 
 PARAMETRIZED_OPERATIONS = [
     qml.TRX(0.123, wires=0, subspace=[1, 2]),
