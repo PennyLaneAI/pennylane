@@ -38,6 +38,8 @@ class TestSnapshot:
 
         circuit()
         assert dev._debugger is None
+        if method != None:
+            assert circuit.interface == "auto"
 
         result = qml.snapshots(circuit)()
         expected = {

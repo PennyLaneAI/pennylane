@@ -202,8 +202,8 @@ class TestInterfaces:
 
         dev = qml.device("default.qubit", wires=3)
 
-        circuit = qml.QNode(circuit_template, dev, interface="jax")
-        circuit2 = qml.QNode(circuit_decomposed, dev, interface="jax")
+        circuit = qml.QNode(circuit_template, dev)
+        circuit2 = qml.QNode(circuit_decomposed, dev)
 
         res = circuit(features)
         res2 = circuit2(features)
@@ -223,8 +223,8 @@ class TestInterfaces:
 
         dev = qml.device("default.qubit", wires=3)
 
-        circuit = qml.QNode(circuit_template, dev, interface="jax")
-        circuit2 = qml.QNode(circuit_decomposed, dev, interface="jax")
+        circuit = qml.QNode(circuit_template, dev)
+        circuit2 = qml.QNode(circuit_decomposed, dev)
 
         res = circuit(features)
         res2 = circuit2(features)
@@ -245,8 +245,8 @@ class TestInterfaces:
 
         dev = qml.device("default.qubit", wires=3)
 
-        circuit = qml.QNode(circuit_template, dev, interface="tf")
-        circuit2 = qml.QNode(circuit_decomposed, dev, interface="tf")
+        circuit = qml.QNode(circuit_template, dev)
+        circuit2 = qml.QNode(circuit_decomposed, dev)
 
         res = circuit(features)
         res2 = circuit2(features)
@@ -265,8 +265,8 @@ class TestInterfaces:
 
         dev = qml.device("default.qubit", wires=3)
 
-        circuit = qml.QNode(circuit_template, dev, interface="tf-autograph")
-        circuit2 = qml.QNode(circuit_decomposed, dev, interface="tf-autograph")
+        circuit = qml.QNode(circuit_template, dev)
+        circuit2 = qml.QNode(circuit_decomposed, dev)
 
         res = circuit(features)
         res2 = circuit2(features)
@@ -285,8 +285,8 @@ class TestInterfaces:
 
         dev = qml.device("default.qubit", wires=3)
 
-        circuit = qml.QNode(circuit_template, dev, interface="torch")
-        circuit2 = qml.QNode(circuit_decomposed, dev, interface="torch")
+        circuit = qml.QNode(circuit_template, dev)
+        circuit2 = qml.QNode(circuit_decomposed, dev)
 
         res = circuit(features)
         res2 = circuit2(features)

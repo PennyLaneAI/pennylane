@@ -646,7 +646,7 @@ class TestIntegration:
 
         phi = jnp.array(1.234)
 
-        @qml.qnode(qml.device("default.qubit.jax", wires=1), interface="jax")
+        @qml.qnode(qml.device("default.qubit", wires=1))
         def circ(phi):
             Exp(qml.PauliX(0), -0.5j * phi)
             return qml.expval(qml.PauliZ(0))
@@ -663,9 +663,9 @@ class TestIntegration:
 
         phi = tf.Variable(1.2, dtype=tf.complex128)
 
-        dev = qml.device("default.qubit.tf", wires=1)
+        dev = qml.device("default.qubit", wires=1)
 
-        @qml.qnode(dev, interface="tensorflow")
+        @qml.qnode(dev)
         def circ(phi):
             Exp(qml.PauliX(0), -0.5j * phi)
             return qml.expval(qml.PauliZ(0))
@@ -689,7 +689,7 @@ class TestIntegration:
 
         dev = qml.device("default.qubit", wires=1)
 
-        @qml.qnode(dev, interface="torch")
+        @qml.qnode(dev)
         def circuit(phi):
             Exp(qml.PauliX(0), -0.5j * phi)
             return qml.expval(qml.PauliZ(0))
@@ -763,7 +763,7 @@ class TestIntegration:
 
         x = torch.tensor(2.0, requires_grad=True, dtype=float)
 
-        @qml.qnode(qml.device("default.qubit", wires=1), interface="torch")
+        @qml.qnode(qml.device("default.qubit", wires=1))
         def circuit(x):
             qml.Hadamard(0)
             return qml.expval(Exp(qml.PauliZ(0), x))
@@ -785,7 +785,7 @@ class TestIntegration:
 
         x = jnp.array(2.0)
 
-        @qml.qnode(qml.device("default.qubit", wires=1), interface="jax")
+        @qml.qnode(qml.device("default.qubit", wires=1))
         def circuit(x):
             qml.Hadamard(0)
             return qml.expval(Exp(qml.PauliZ(0), x))
@@ -805,7 +805,7 @@ class TestIntegration:
 
         x = tf.Variable(2.0)
 
-        @qml.qnode(qml.device("default.qubit", wires=1), interface="tensorflow")
+        @qml.qnode(qml.device("default.qubit", wires=1))
         def circuit(x):
             qml.Hadamard(0)
             return qml.expval(Exp(qml.PauliZ(0), x))

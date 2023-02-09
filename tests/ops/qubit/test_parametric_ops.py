@@ -2026,7 +2026,7 @@ class TestGrad:
         norm = np.linalg.norm(init_state)
         init_state /= norm
 
-        @qml.qnode(dev, diff_method=diff_method, interface="autograd")
+        @qml.qnode(dev, diff_method=diff_method)
         def circuit(phi):
             qml.QubitStateVector(init_state, wires=[0, 1])
             qml.PSWAP(phi, wires=[0, 1])
@@ -2059,7 +2059,7 @@ class TestGrad:
         norm = torch.norm(init_state)
         init_state /= norm
 
-        @qml.qnode(dev, diff_method=diff_method, interface="torch")
+        @qml.qnode(dev, diff_method=diff_method)
         def circuit(phi):
             qml.QubitStateVector(init_state, wires=[0, 1])
             qml.PSWAP(phi, wires=[0, 1])
@@ -2097,7 +2097,7 @@ class TestGrad:
         norm = jnp.linalg.norm(init_state)
         init_state = init_state / norm
 
-        @qml.qnode(dev, diff_method=diff_method, interface="jax")
+        @qml.qnode(dev, diff_method=diff_method)
         def circuit(phi):
             qml.QubitStateVector(init_state, wires=[0, 1])
             qml.PSWAP(phi, wires=[0, 1])
@@ -2132,7 +2132,7 @@ class TestGrad:
         norm = tf.norm(init_state)
         init_state = init_state / norm
 
-        @qml.qnode(dev, interface="tf", diff_method=diff_method)
+        @qml.qnode(dev, diff_method=diff_method)
         def circuit(phi):
             qml.QubitStateVector(init_state, wires=[0, 1])
             qml.PSWAP(phi, wires=[0, 1])
@@ -2167,7 +2167,7 @@ class TestGrad:
         norm = np.linalg.norm(init_state)
         init_state /= norm
 
-        @qml.qnode(dev, diff_method=diff_method, interface="autograd")
+        @qml.qnode(dev, diff_method=diff_method)
         def circuit(phi):
             qml.QubitStateVector(init_state, wires=[0, 1])
             qml.IsingXX(phi, wires=[0, 1])
@@ -2203,7 +2203,7 @@ class TestGrad:
         norm = np.linalg.norm(init_state)
         init_state /= norm
 
-        @qml.qnode(dev, diff_method=diff_method, interface="autograd")
+        @qml.qnode(dev, diff_method=diff_method)
         def circuit(phi):
             qml.QubitStateVector(init_state, wires=[0, 1])
             qml.IsingYY(phi, wires=[0, 1])
@@ -2239,7 +2239,7 @@ class TestGrad:
         norm = np.linalg.norm(init_state)
         init_state /= norm
 
-        @qml.qnode(dev, diff_method=diff_method, interface="autograd")
+        @qml.qnode(dev, diff_method=diff_method)
         def circuit(phi):
             qml.QubitStateVector(init_state, wires=[0, 1])
             qml.IsingZZ(phi, wires=[0, 1])
@@ -2267,7 +2267,7 @@ class TestGrad:
         norm = np.linalg.norm(init_state)
         init_state /= norm
 
-        @qml.qnode(dev, diff_method=diff_method, interface="autograd")
+        @qml.qnode(dev, diff_method=diff_method)
         def circuit(phi):
             qml.QubitStateVector(init_state, wires=[0, 1])
             qml.IsingXY(phi, wires=[0, 1])
@@ -2305,7 +2305,7 @@ class TestGrad:
         norm = jnp.linalg.norm(init_state)
         init_state = init_state / norm
 
-        @qml.qnode(dev, diff_method=diff_method, interface="jax")
+        @qml.qnode(dev, diff_method=diff_method)
         def circuit(phi):
             qml.QubitStateVector(init_state, wires=[0, 1])
             qml.IsingXY(phi, wires=[0, 1])
@@ -2343,7 +2343,7 @@ class TestGrad:
         norm = jnp.linalg.norm(init_state)
         init_state = init_state / norm
 
-        @qml.qnode(dev, diff_method=diff_method, interface="jax")
+        @qml.qnode(dev, diff_method=diff_method)
         def circuit(phi):
             qml.QubitStateVector(init_state, wires=[0, 1])
             qml.IsingXX(phi, wires=[0, 1])
@@ -2391,7 +2391,7 @@ class TestGrad:
         norm = jnp.linalg.norm(init_state)
         init_state = init_state / norm
 
-        @qml.qnode(dev, diff_method=diff_method, interface="jax")
+        @qml.qnode(dev, diff_method=diff_method)
         def circuit(phi):
             qml.QubitStateVector(init_state, wires=[0, 1])
             qml.IsingYY(phi, wires=[0, 1])
@@ -2439,7 +2439,7 @@ class TestGrad:
         norm = jnp.linalg.norm(init_state)
         init_state = init_state / norm
 
-        @qml.qnode(dev, diff_method=diff_method, interface="jax")
+        @qml.qnode(dev, diff_method=diff_method)
         def circuit(phi):
             qml.QubitStateVector(init_state, wires=[0, 1])
             qml.IsingZZ(phi, wires=[0, 1])
@@ -2469,7 +2469,7 @@ class TestGrad:
         norm = tf.norm(init_state)
         init_state = init_state / norm
 
-        @qml.qnode(dev, interface="tf", diff_method=diff_method)
+        @qml.qnode(dev, diff_method=diff_method)
         def circuit(phi):
             qml.QubitStateVector(init_state, wires=[0, 1])
             qml.IsingXY(phi, wires=[0, 1])
@@ -2501,7 +2501,7 @@ class TestGrad:
         norm = tf.norm(init_state)
         init_state = init_state / norm
 
-        @qml.qnode(dev, interface="tf", diff_method=diff_method)
+        @qml.qnode(dev, diff_method=diff_method)
         def circuit(phi):
             qml.QubitStateVector(init_state, wires=[0, 1])
             qml.IsingXX(phi, wires=[0, 1])
@@ -2543,7 +2543,7 @@ class TestGrad:
         norm = tf.norm(init_state)
         init_state = init_state / norm
 
-        @qml.qnode(dev, interface="tf", diff_method=diff_method)
+        @qml.qnode(dev, diff_method=diff_method)
         def circuit(phi):
             qml.QubitStateVector(init_state, wires=[0, 1])
             qml.IsingYY(phi, wires=[0, 1])
@@ -2585,7 +2585,7 @@ class TestGrad:
         norm = tf.norm(init_state)
         init_state = init_state / norm
 
-        @qml.qnode(dev, interface="tf", diff_method=diff_method)
+        @qml.qnode(dev, diff_method=diff_method)
         def circuit(phi):
             qml.QubitStateVector(init_state, wires=[0, 1])
             qml.IsingZZ(phi, wires=[0, 1])
@@ -2609,7 +2609,7 @@ class TestGrad:
 
         dev = qml.device("default.qubit", wires=1)
 
-        @qml.qnode(dev, diff_method="backprop", interface="jax")
+        @qml.qnode(dev, diff_method="backprop")
         def test(x):
             qml.RX(x, wires=[0])
             return qml.state()
@@ -3364,7 +3364,7 @@ class TestSimplify:
 
         dev = qml.device("default.qubit", wires=2)
 
-        @qml.qnode(dev, interface="tf")
+        @qml.qnode(dev)
         def circuit(simplify, wires, *params):
             if simplify:
                 qml.simplify(op(*params, wires))
@@ -3403,7 +3403,7 @@ class TestSimplify:
         dev = qml.device("default.qubit", wires=2)
 
         @tf.function
-        @qml.qnode(dev, interface="tf")
+        @qml.qnode(dev)
         def circuit(simplify, wires, *params):
             if simplify:
                 qml.simplify(op(*params, wires))
@@ -3439,7 +3439,7 @@ class TestSimplify:
 
         dev = qml.device("default.qubit", wires=2)
 
-        @qml.qnode(dev, interface="torch")
+        @qml.qnode(dev)
         def circuit(simplify, wires, *params):
             if simplify:
                 qml.simplify(op(*params, wires))
@@ -3472,9 +3472,9 @@ class TestSimplify:
         import jax
         import jax.numpy as jnp
 
-        dev = qml.device("default.qubit", wires=2)
+        dev = qml.device("default.qubit.jax", wires=2)
 
-        @qml.qnode(dev, interface="jax")
+        @qml.qnode(dev)
         def circuit(simplify, wires, *params):
             if simplify:
                 qml.simplify(op(*params, wires))
@@ -3515,13 +3515,13 @@ class TestSimplify:
         wires = 0 if op.num_wires == 1 else [0, 1]
 
         @jax.jit
-        @qml.qnode(dev, interface="jax")
+        @qml.qnode(dev)
         def simplified_circuit(*params):
             qml.simplify(op(*params, wires=wires))
             return qml.expval(qml.PauliZ(0))
 
         @jax.jit
-        @qml.qnode(dev, interface="jax")
+        @qml.qnode(dev)
         def unsimplified_circuit(*params):
             op(*params, wires=wires)
             return qml.expval(qml.PauliZ(0))
