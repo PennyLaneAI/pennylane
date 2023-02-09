@@ -96,6 +96,21 @@ def rect(x: Union[float, Callable], windows: List[Tuple[float]] = None):
     Here we use :func:`~.rect` to create a parametrized coefficient that has a value of ``0`` outside the time interval
     ``t=(1, 7)``, and is defined by ``jnp.polyval(p, t)`` within the interval:
 
+    .. code-block:: python3
+
+        def f(p, t):
+            return jnp.polyval(p, t)
+
+        p = jnp.array([1, 2, 3])
+        time = jnp.linspace(0, 10, 1000)
+
+        y1 = f(p, time)
+        y2 = [qml.pulse.rect(f, windows=[(1, 7)])(p, t) for t in time]
+
+        plt.plot(time, y1)
+        plt.plot(time, y2)
+        plt.show()
+
     .. figure:: ../../_static/pulse/rect_example.png
             :align: center
             :width: 60%
@@ -181,6 +196,13 @@ def pwc(timespan):
     of bins and values for the parameters are set when ``params`` is passed to the callable. Each bin value is set by
     an element of the ``params`` array. The variable ``t`` is used to select the value of the parameter array
     corresponding to the specified time, based on the assigned binning.
+
+    .. code-block:: python3
+        params = jnp.array([1, 2, 3, 4, 5])
+        time = jnp.linspace(0, 10, 1000)
+        y = qml.pulse.pwc(timespan=(2, 7))(params, time)
+        plt.plot(time, y)
+        plt.show()
 
     .. figure:: ../../_static/pulse/pwc_example.png
         :align: center
