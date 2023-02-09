@@ -42,7 +42,7 @@ def factorize(two_electron, tol_factor=1.0e-5, tol_eigval=1.0e-5):
     **Example**
 
     >>> symbols  = ['H', 'H']
-    >>> geometry = np.array([[0.0, 0.0, 0.0], 
+    >>> geometry = np.array([[0.0, 0.0, 0.0],
     ...                      [1.398397361, 0.0, 0.0]], requires_grad=False)
     >>> mol = qml.qchem.Molecule(symbols, geometry)
     >>> core, one, two = qml.qchem.electron_integrals(mol)()
@@ -190,7 +190,7 @@ def basis_rotation(one_electron, two_electron, tol_factor=1.0e-5):
     **Example**
 
     >>> symbols  = ['H', 'H']
-    >>> geometry = np.array([[0.0, 0.0, 0.0], 
+    >>> geometry = np.array([[0.0, 0.0, 0.0],
     ...                      [1.398397361, 0.0, 0.0]], requires_grad=False)
     >>> mol = qml.qchem.Molecule(symbols, geometry)
     >>> core, one, two = qml.qchem.electron_integrals(mol)()
@@ -338,7 +338,7 @@ def _chemist_transform(one_body_tensor=None, two_body_tensor=None, spatial_basis
     **Example**
 
     >>> symbols  = ['H', 'H']
-    >>> geometry = np.array([[0.0, 0.0, 0.0], 
+    >>> geometry = np.array([[0.0, 0.0, 0.0],
     ...                      [1.398397361, 0.0, 0.0]], requires_grad=False)
     >>> mol = qml.qchem.Molecule(symbols, geometry)
     >>> core, one, two = qml.qchem.electron_integrals(mol)()
