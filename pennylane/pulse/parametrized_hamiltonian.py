@@ -181,12 +181,6 @@ class ParametrizedHamiltonian:
             params1 = [2., 3.]
             params2 = [4., [5., 6.]]
 
-        >>> H1(params1, t=1)
-        (0.9092974066734314*(PauliX(wires=[0]))) + (0.14112000167369843*(PauliY(wires=[1])))
-
-        >>> H2(params2, t=1)
-        (5.0*(PauliY(wires=[0]))) + (-1.3970774412155151*(PauliX(wires=[1])))
-
         >>> H3 = H2 + H1
         >>> H3([4., [5., 6.], 2., 3.], t=1)
         (5.0*(PauliY(wires=[0]))) + (-1.3970774412155151*(PauliX(wires=[1]))) + (0.9092974066734314*(PauliX(wires=[0]))) + (0.14112000167369843*(PauliY(wires=[1])))
