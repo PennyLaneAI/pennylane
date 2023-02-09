@@ -97,9 +97,15 @@ class Molecule:
 
         self.n_basis, self.basis_data = mol_basis_data(self.basis_name, self.symbols, load_data)
 
+        self.nuclear_charges = [atomic_numbers[s] for s in self.symbols]
+
+        self.n_electrons = sum(np.array(self.nuclear_charges)) - self.charge
+
         if self.n_electrons % 2 == 1 or self.mult != 1:
-            raise ValueError(f"Openshell systems are not supported. Change the charge or spin"
-                             f" multiplicity of the molecule.")
+            raise ValueError(
+                f"Openshell systems are not supported. Change the charge or spin"
+                f" multiplicity of the molecule."
+            )
 
         if l is None:
             l = [i[0] for i in self.basis_data]
@@ -130,10 +136,6 @@ class Molecule:
             BasisFunction(self.l[i], self.alpha[i], self.coeff[i], self.r[i]) for i in range(len(l))
         ]
         self.n_orbitals = len(self.l)
-
-        self.nuclear_charges = [atomic_numbers[s] for s in self.symbols]
-
-        self.n_electrons = sum(np.array(self.nuclear_charges)) - self.charge
 
         self.mo_coefficients = None
 
