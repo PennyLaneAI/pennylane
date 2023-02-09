@@ -185,7 +185,7 @@ class DefaultQubitJax(DefaultQubit):
         if operation.data is None or operation.t is None:
             raise ValueError(
                 "The parameters and the time window are required to execute a ParametrizedEvolution "
-                "You can update its values by calling the ParametrizedEvolution class: EV(params, t)."
+                "You can update these values by calling the ParametrizedEvolution class: EV(params, t)."
             )
 
         state = jnp.ravel(state)
