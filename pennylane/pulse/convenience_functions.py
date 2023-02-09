@@ -198,6 +198,7 @@ def pwc(timespan):
     corresponding to the specified time, based on the assigned binning.
 
     .. code-block:: python3
+
         params = jnp.array([1, 2, 3, 4, 5])
         time = jnp.linspace(0, 10, 1000)
         y = qml.pulse.pwc(timespan=(2, 7))(params, time)
