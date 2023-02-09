@@ -257,7 +257,7 @@ def test_partial_evaluation_jax(diff_method):
 
     dev = qml.device("default.qubit", wires=2)
 
-    @qml.qnode(dev, interface="jax", diff_method=diff_method)
+    @qml.qnode(dev, diff_method=diff_method)
     def circuit(x, y):
         qml.RX(x, wires=0)
         qml.RY(y[..., 0], wires=0)
@@ -295,7 +295,7 @@ def test_partial_evaluation_tf(diff_method):
 
     dev = qml.device("default.qubit", wires=2)
 
-    @qml.qnode(dev, interface="tf", diff_method=diff_method)
+    @qml.qnode(dev, diff_method=diff_method)
     def circuit(x, y):
         qml.RX(x, wires=0)
         qml.RY(y[..., 0], wires=0)
@@ -343,7 +343,7 @@ def test_partial_evaluation_torch(diff_method):
 
     dev = qml.device("default.qubit", wires=2)
 
-    @qml.qnode(dev, interface="torch", diff_method=diff_method)
+    @qml.qnode(dev, diff_method=diff_method)
     def circuit(x, y):
         qml.RX(x, wires=0)
         qml.RY(y[..., 0], wires=0)
@@ -469,7 +469,7 @@ def test_lambda_evaluation_jax(diff_method):
 
     dev = qml.device("default.qubit", wires=2)
 
-    @qml.qnode(dev, interface="jax", diff_method=diff_method)
+    @qml.qnode(dev, diff_method=diff_method)
     def circuit(x, y):
         qml.RX(x, wires=0)
         qml.RY(y[..., 0], wires=0)
@@ -517,7 +517,7 @@ def test_lambda_evaluation_tf(diff_method):
 
     dev = qml.device("default.qubit", wires=2)
 
-    @qml.qnode(dev, interface="tf", diff_method=diff_method)
+    @qml.qnode(dev, diff_method=diff_method)
     def circuit(x, y):
         qml.RX(x, wires=0)
         qml.RY(y[..., 0], wires=0)
@@ -572,7 +572,7 @@ def test_lambda_evaluation_torch(diff_method):
 
     dev = qml.device("default.qubit", wires=2)
 
-    @qml.qnode(dev, interface="torch", diff_method=diff_method)
+    @qml.qnode(dev, diff_method=diff_method)
     def circuit(x, y):
         qml.RX(x, wires=0)
         qml.RY(y[..., 0], wires=0)

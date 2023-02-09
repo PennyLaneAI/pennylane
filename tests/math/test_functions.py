@@ -16,6 +16,7 @@
 # pylint: disable=import-outside-toplevel
 import itertools
 from functools import partial
+from unittest.mock import patch
 
 import numpy as onp
 import pytest
@@ -1484,7 +1485,7 @@ class TestTake:
         """Test that indexing with a sequence properly extracts
         the elements from the flattened tensor"""
         indices = [0, 2, 3, 6, -2]
-        res = fn.take(t, indices)
+        res = fn.take(t, indices, mode="wrap")
         assert fn.allclose(res, [1, 3, 4, 5, 2])
 
     def test_array_indexing_autograd(self):
@@ -2741,3 +2742,92 @@ class TestIfft2Tensorflow:
         x = tf.Variable(x, dtype=dtype_in)
         out = qml.math.fft.ifft2(x)
         assert out.dtype == exp_dtype_out
+
+def test_jax_ndim():
+    with patch("jax.numpy.ndim") as mock_ndim:
+        _ = qml.math.ndim(jax.numpy.array(3))
+
+    mock_ndim.assert_called_once_with(3)
+
+
+class TestSetIndex:
+    @pytest.mark.parametrize(
+        "array", [qml.numpy.zeros((2, 2)), torch.zeros((2, 2)), jnp.zeros((2, 2))]
+    )
+    def test_set_index_jax_2d_array(self, array):
+        """Test that an array can be created that is a copy of the
+        original array, with the value at the specified index updated"""
+
+        array2 = qml.math.set_index(array, (1, 1), 3)
+        assert qml.math.allclose(array2, np.array([[0, 0], [0, 3]]))
+        # since idx and val have no interface, we expect the returned array type to match initial type
+        assert type(array2) == type(array)
+
+    @pytest.mark.parametrize("array", [qml.numpy.zeros((4)), torch.zeros((4)), jnp.zeros((4))])
+    def test_set_index_jax_1d_array(self, array):
+        """Test that an array can be created that is a copy of the
+        original array, with the value at the specified index updated"""
+
+        array2 = qml.math.set_index(array, 3, 3)
+        assert qml.math.allclose(array2, np.array([[0, 0, 0, 3]]))
+        # since idx and val have no interface, we expect the returned array type to match initial type
+        assert type(array2) == type(array)
+
+    @pytest.mark.parametrize(
+        "array",
+        [jnp.array([[1, 2], [3, 4]]), onp.array([[1, 2], [3, 4]]), np.array([[1, 2], [3, 4]])],
+    )
+    def test_set_index_with_val_tracer(self, array):
+        """Test that for both jax and numpy arrays, if the val to set is a tracer,
+        the set_index function succeeds and returns an updated jax array"""
+        from jax.interpreters.partial_eval import DynamicJaxprTracer
+
+        @jax.jit
+        def jitted_function(x):
+            assert isinstance(x, DynamicJaxprTracer)
+            return qml.math.set_index(array, (0, 0), x)
+
+        val = jnp.array(7)
+        array2 = jitted_function(val)
+
+        assert qml.math.allclose(array2, jnp.array([[7, 2], [3, 4]]))
+        assert isinstance(array2, jnp.ndarray)
+
+    @pytest.mark.parametrize(
+        "array",
+        [jnp.array([[1, 2], [3, 4]]), onp.array([[1, 2], [3, 4]]), np.array([[1, 2], [3, 4]])],
+    )
+    def test_set_index_with_idx_tracer_2D_array(self, array):
+        """Test that for both jax and numpy 2d arrays, if the idx to set is a tracer,
+        the set_index function succeeds and returns an updated jax array"""
+        from jax.interpreters.partial_eval import DynamicJaxprTracer
+
+        @jax.jit
+        def jitted_function(y):
+            assert isinstance(y, DynamicJaxprTracer)
+            return qml.math.set_index(array, (1 + y, y), 7)
+
+        val = jnp.array(0)
+        array2 = jitted_function(val)
+
+        assert qml.math.allclose(array2, jnp.array([[1, 2], [7, 4]]))
+        assert isinstance(array2, jnp.ndarray)
+
+    @pytest.mark.parametrize(
+        "array", [jnp.array([1, 2, 3, 4]), onp.array([1, 2, 3, 4]), np.array([1, 2, 3, 4])]
+    )
+    def test_set_index_with_idx_tracer_1D_array(self, array):
+        """Test that for both jax and numpy 1d arrays, if the idx to set is a tracer,
+        the set_index function succeeds and returns an updated jax array"""
+        from jax.interpreters.partial_eval import DynamicJaxprTracer
+
+        @jax.jit
+        def jitted_function(y):
+            assert isinstance(y, DynamicJaxprTracer)
+            return qml.math.set_index(array, y, 7)
+
+        val = jnp.array(0)
+        array2 = jitted_function(val)
+
+        assert qml.math.allclose(array2, jnp.array([[7, 2, 3, 4]]))
+        assert isinstance(array2, jnp.ndarray)

@@ -12,7 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Autoray registrations"""
-import numbers
 
 # pylint:disable=protected-access,import-outside-toplevel,wrong-import-position, disable=unnecessary-lambda
 from importlib import import_module
@@ -295,27 +294,9 @@ def _ndim_tf(tensor):
 ar.register_function("tensorflow", "ndim", _ndim_tf)
 
 
-def _take_tf(tensor, indices, axis=None):
-    """Implement a TensorFlow version of np.take"""
+def _take_tf(tensor, indices, axis=None, **kwargs):
     tf = _i("tf")
-
-    if isinstance(indices, numbers.Number):
-        indices = [indices]
-
-    indices = tf.convert_to_tensor(indices)
-
-    if np.any(indices < 0):
-        # Unlike NumPy, TensorFlow doesn't support negative indices.
-        dim_length = tf.size(tensor).numpy() if axis is None else tf.shape(tensor)[axis]
-        indices = tf.where(indices >= 0, indices, indices + dim_length)
-
-    if axis is None:
-        # Unlike NumPy, if axis=None TensorFlow defaults to the first
-        # dimension rather than flattening the array.
-        data = tf.reshape(tensor, [-1])
-        return tf.gather(data, indices)
-
-    return tf.gather(tensor, indices, axis=axis)
+    return tf.experimental.numpy.take(tensor, indices, axis=axis, **kwargs)
 
 
 ar.register_function("tensorflow", "take", _take_tf)
@@ -461,7 +442,6 @@ ar.autoray._FUNC_ALIASES["torch", "unstack"] = "unbind"
 
 def _to_numpy_torch(x):
     if getattr(x, "is_conj", False) and x.is_conj():  # pragma: no cover
-
         # The following line is only covered if using Torch <v1.10.0
         x = x.resolve_conj()
 
@@ -530,7 +510,7 @@ def _round_torch(tensor, decimals=0):
 ar.register_function("torch", "round", _round_torch)
 
 
-def _take_torch(tensor, indices, axis=None):
+def _take_torch(tensor, indices, axis=None, **_):
     """Torch implementation of np.take"""
     torch = _i("torch")
 
@@ -563,7 +543,6 @@ def _coerce_types_torch(tensors):
     # Extract existing set devices, if any
     device_set = set(t.device for t in tensors if isinstance(t, torch.Tensor))
     if len(device_set) > 1:  # pragma: no cover
-
         # GPU specific case
         device_names = ", ".join(str(d) for d in device_set)
         raise RuntimeError(
@@ -711,14 +690,23 @@ ar.register_function("jax", "flatten", lambda x: x.flatten())
 ar.register_function(
     "jax",
     "take",
-    lambda x, indices, axis=None: _i("jax").numpy.take(
-        x, np.array(indices), axis=axis, mode="wrap"
+    lambda x, indices, axis=None, **kwargs: _i("jax").numpy.take(
+        x, np.array(indices), axis=axis, **kwargs
     ),
 )
 ar.register_function("jax", "coerce", lambda x: x)
 ar.register_function("jax", "to_numpy", _to_numpy_jax)
 ar.register_function("jax", "block_diag", lambda x: _i("jax").scipy.linalg.block_diag(*x))
 ar.register_function("jax", "gather", lambda x, indices: x[np.array(indices)])
+
+
+def _ndim_jax(x):
+    import jax.numpy as jnp
+
+    return jnp.ndim(x)
+
+
+ar.register_function("jax", "ndim", lambda x: _ndim_jax(x))
 
 
 def _scatter_jax(indices, array, new_dimensions):

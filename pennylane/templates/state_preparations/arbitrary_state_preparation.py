@@ -83,7 +83,6 @@ class ArbitraryStatePreparation(Operation):
     grad_method = None
 
     def __init__(self, weights, wires, do_queue=True, id=None):
-
         shape = qml.math.shape(weights)
         if shape != (2 ** (len(wires) + 1) - 2,):
             raise ValueError(

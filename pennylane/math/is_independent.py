@@ -201,7 +201,6 @@ def _get_random_args(args, interface, num, seed, bounds):
             tuple(rng.random(np.shape(arg)) * width + bounds[0] for arg in args) for _ in range(num)
         ]
         if interface == "autograd":
-
             # Mark the arguments as trainable with Autograd
             rnd_args = [tuple(pnp.array(a, requires_grad=True) for a in arg) for arg in rnd_args]
 

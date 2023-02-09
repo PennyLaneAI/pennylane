@@ -135,7 +135,7 @@ class TestInterfaces:
         w = pnp.array([[-1, -2, -3], [-4, -5, -6]], requires_grad=True)
 
         dev = qml.device("default.qubit", wires=3)
-        qnode = qml.QNode(circuit, dev, interface="autograd")
+        qnode = qml.QNode(circuit, dev)
 
         res = circuit_spectrum(qnode)(x, w)
         for (k1, v1), (k2, v2) in zip(res.items(), expected_result.items()):
@@ -153,7 +153,7 @@ class TestInterfaces:
         w = torch.tensor([[-1, -2, -3], [-4, -5, -6]], requires_grad=False)
 
         dev = qml.device("default.qubit", wires=3)
-        qnode = qml.QNode(circuit, dev, interface="torch")
+        qnode = qml.QNode(circuit, dev)
 
         res = circuit_spectrum(qnode)(x, w)
         assert res
@@ -168,7 +168,7 @@ class TestInterfaces:
         import tensorflow as tf
 
         dev = qml.device("default.qubit", wires=3)
-        qnode = qml.QNode(circuit, dev, interface="tf")
+        qnode = qml.QNode(circuit, dev)
 
         x = tf.Variable([1.0, 2.0, 3.0])
         w = tf.constant([[-1, -2, -3], [-4, -5, -6]])
@@ -189,7 +189,7 @@ class TestInterfaces:
         w = [[-1, -2, -3], [-4, -5, -6]]
 
         dev = qml.device("default.qubit", wires=3)
-        qnode = qml.QNode(circuit, dev, interface="jax")
+        qnode = qml.QNode(circuit, dev)
 
         res = circuit_spectrum(qnode)(x, w)
 

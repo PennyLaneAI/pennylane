@@ -50,7 +50,6 @@ def qwc_rotation(pauli_operators):
             f" instead got pauli_operators = {pauli_operators}."
         )
     with OperationRecorder() as rec:
-
         for pauli in pauli_operators:
             if isinstance(pauli, qml.PauliX):
                 qml.RY(-np.pi / 2, wires=pauli.wires)
@@ -211,7 +210,6 @@ def diagonalize_qwc_groupings(qwc_groupings):
     m_groupings = len(qwc_groupings)
 
     for i in range(m_groupings):
-
         diagonalizing_unitary, diag_grouping = diagonalize_qwc_pauli_words(qwc_groupings[i])
         post_rotations.append(diagonalizing_unitary)
         diag_groupings.append(diag_grouping)

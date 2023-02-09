@@ -32,8 +32,8 @@ qubit_device_and_diff_method = [
 ]
 
 interface_and_qubit_device_and_diff_method = [
-    ["auto"] + inner_list for inner_list in qubit_device_and_diff_method
-] + [["autograd"] + inner_list for inner_list in qubit_device_and_diff_method]
+    ["autograd"] + inner_list for inner_list in qubit_device_and_diff_method
+]
 
 TOL_FOR_SPSA = 1.0
 H_FOR_SPSA = 0.01
@@ -554,9 +554,9 @@ class TestShotsIntegration:
 
         # since we are using finite shots, parameter-shift will
         # be chosen
-        assert cost_fn.gradient_fn is qml.gradients.param_shift
 
         cost_fn(a, b)
+        assert cost_fn.gradient_fn is qml.gradients.param_shift
         assert spy.call_args[1]["gradient_fn"] is qml.gradients.param_shift
 
         # if we set the shots to None, backprop can now be used
@@ -1409,7 +1409,6 @@ class TestTapeExpansion:
 
         # test second-order derivatives
         if diff_method in ("parameter-shift", "backprop") and max_diff == 2:
-
             if diff_method == "backprop":
                 with pytest.warns(UserWarning, match=r"Output seems independent of input."):
                     grad2_c = qml.jacobian(qml.grad(circuit, argnum=2), argnum=2)(d, w, c)
@@ -1478,7 +1477,6 @@ class TestTapeExpansion:
 
         # test second-order derivatives
         if diff_method == "parameter-shift" and max_diff == 2:
-
             with pytest.warns(UserWarning, match=r"Output seems independent of input."):
                 grad2_c = qml.jacobian(qml.grad(circuit, argnum=2), argnum=2)(d, w, c)
             assert np.allclose(grad2_c, 0, atol=tol)

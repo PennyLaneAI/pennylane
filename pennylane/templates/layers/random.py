@@ -179,7 +179,6 @@ class RandomLayers(Operation):
         do_queue=True,
         id=None,
     ):
-
         shape = qml.math.shape(weights)
         if len(shape) != 2:
             raise ValueError(f"Weights tensor must be 2-dimensional; got shape {shape}")
@@ -240,7 +239,6 @@ class RandomLayers(Operation):
         op_list = []
 
         for l in range(n_layers):
-
             i = 0
             while i < shape[1]:
                 if rng.random() > ratio_imprimitive:
