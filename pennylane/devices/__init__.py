@@ -38,7 +38,7 @@ to verify and test quantum gradient computations.
 Next generation devices
 -----------------------
 
-:class:`~.DeviceDriver` in an experimantal interface for the next generation of devices that
+:class:`~.DeviceDriver` in an experimental interface for the next generation of devices that
 will eventually replace :class:`~.Device` and :class:`~.QubitDevice`.
 
 .. currentmodule:: pennylane.devices

@@ -1,4 +1,4 @@
-# Copyright 2018-2022 Xanadu Quantum Technologies Inc.
+# Copyright 2018-2023 Xanadu Quantum Technologies Inc.
 
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -11,8 +11,8 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""This module contains the Abstract Base Class for the next generation of devices.
-
+"""
+This module contains the Abstract Base Class for the next generation of devices.
 """
 
 import abc
@@ -66,7 +66,7 @@ class DeviceDriver(abc.ABC):
         Shot information is no longer stored on the device, but instead specified on individual input :class:`~.QuantumTape`.
         If the individual :class:`~.QuantumTape` does not specify shot information, device defaults should be used instead.
 
-        The old devices defined a :meth:`~.Device.capabilities` dictionary that defined characterisitßics of the devices and controlled various
+        The old devices defined a :meth:`~.Device.capabilities` dictionary that defined characteristics of the devices and controlled various
         preprocessing and validation steps, such as ``"supports_broadcasting"``.  These capabilites should now be handled by the
         :meth:`~.QuantumDevice.preprocess` method. For example, if a device does not support broadcasting, ``preprocess`` should
         split a quantum script with broadcasted parameters into a batch of quantum scripts. If the device does not support mid circuit
@@ -140,8 +140,8 @@ class DeviceDriver(abc.ABC):
                 the execution. Includes such information as shots.
 
         Returns:
-            Sequence[QuantumTape], Callable: QuantumTapes that the device can natively execute without
-            error and a postprocessing function to be called after execution.
+            Sequence[QuantumTape], Callable: QuantumTapes that the device can natively execute
+            and a postprocessing function to be called after execution.
 
         Raises:
             Exception: An exception is raised if the input cannot be converted into a form supported by the device.
@@ -195,7 +195,7 @@ class DeviceDriver(abc.ABC):
         **Interface parameters:**
 
         Note that the parameters contained within the quantum script may contain interface-specific data types, such as
-        ``torch.tensor`` or ``tensorflow.Variable``. If the device does not wish to handle interface-specific parameters, they
+        ``torch.Tensor`` or ``jax.Array``. If the device does not wish to handle interface-specific parameters, they
         can implement an optional "internal preprocessing" step that converts all parameters to vanilla numpy. A convenience
         transform implementing this will be provided.
 
@@ -308,7 +308,7 @@ class DeviceDriver(abc.ABC):
         circuits: QuantumTape_or_Batch,
         execution_config: Config_or_Batch = DefaultExecutionConfig,
     ):
-        """Calculate the jacobian of either a single or a batch of Quantum Scripts.
+        """Calculate the jacobian of either a single or a batch of Quantum Scripts on the device.
 
         Args:
             circuits (Union[QuantumTape, Sequence[QuantumTape]]): the QuantumTape to be executed
@@ -321,7 +321,7 @@ class DeviceDriver(abc.ABC):
 
         **Execution Config:**
 
-        The execution config has an ``order`` property that describes the order of gradient requested. If the requested order
+        The execution config has an ``order`` property that describes the order of differentiation requested. If the requested order
         of gradient is not provided, the device should raise a ``NotImplementedError``. The :meth:`~.supports_jacobian_with_configuration`
         method can pre-validate supported orders.
 
@@ -435,7 +435,7 @@ class DeviceDriver(abc.ABC):
         cotangents: Tuple[Number],
         execution_config: Config_or_Batch = DefaultExecutionConfig,
     ):
-        r"""The vector jacobian product used in reversed mode differentiation.
+        r"""The vector jacobian product used in reverse-mode differentiation.
 
         Args:
             circuits (Union[QuantumTape, Sequence[QuantumTape]]): the QuantumTape to be executed
@@ -472,7 +472,7 @@ class DeviceDriver(abc.ABC):
         cotangents: Tuple[Number],
         execution_config: Config_or_Batch = DefaultExecutionConfig,
     ):
-        r"""Calculate both the results and the vector jacobian product used in reversed mode differentiation.
+        r"""Calculate both the results and the vector jacobian product used in reverse-mode differentiation.
 
         Args:
             circuits (Union[QuantumTape, Sequence[QuantumTape]]): the QuantumTape to be executed
