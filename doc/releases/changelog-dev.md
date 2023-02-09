@@ -6,6 +6,23 @@
 
 <h4>Add new features here</h4>
 
+* The `qml.math` module now also contains a submodule for
+  fast Fourier transforms, `qml.math.fft`.
+  [(#1440)](https://github.com/PennyLaneAI/pennylane/pull/1440)
+  
+  The submodule in particular provides differentiable
+  versions of the following functions, available in all common
+  interfaces for PennyLane
+
+    + [fft](https://numpy.org/doc/stable/reference/generated/numpy.fft.fft.html)
+    + [ifft](https://numpy.org/doc/stable/reference/generated/numpy.fft.ifft.html)
+    + [fft2](https://numpy.org/doc/stable/reference/generated/numpy.fft.fft2.html)
+    + [ifft2](https://numpy.org/doc/stable/reference/generated/numpy.fft.ifft2.html)
+
+  Note that the output of the derivative of these functions
+  may differ when used with complex-valued inputs, due to different
+  conventions on complex-valued derivatives.
+
 * Add `qml.math.detach`, which detaches a tensor from its trace. This stops
   automatic gradient computations.
   [(#3674)](https://github.com/PennyLaneAI/pennylane/pull/3674)
@@ -510,7 +527,51 @@
 * `QubitStateVector` now implements the `StatePrep` interface.
   [(#3685)](https://github.com/PennyLaneAI/pennylane/pull/3685)
 
+* `QuantumMonteCarlo` template is now JAX-JIT compatible when passing `jax.numpy` arrays to the template.
+  [(#3734)](https://github.com/PennyLaneAI/pennylane/pull/3734)
+
 <h3>Breaking changes</h3>
+
+* The argument `mode` in execution is replaced by the boolean `grad_on_execution` in the new execution pipeline.
+  [(#3723)](https://github.com/PennyLaneAI/pennylane/pull/3723)
+
+* `qml.VQECost` is removed.
+  [(#3735)](https://github.com/PennyLaneAI/pennylane/pull/3735)
+
+* The default interface is now `auto`. There is no need to specify the interface anymore! It is automatically 
+  determined by checking your `QNode` parameters.
+  [(#3677)](https://github.com/PennyLaneAI/pennylane/pull/3677)
+  
+  ```python
+  import jax
+  import jax.numpy as jnp
+  
+  qml.enable_return()
+  a = jnp.array(0.1)
+  b = jnp.array(0.2)
+  
+  dev = qml.device("default.qubit", wires=2)
+  
+  @qml.qnode(dev)
+  def circuit(a, b):
+      qml.RY(a, wires=0)
+      qml.RX(b, wires=1)
+      qml.CNOT(wires=[0, 1])
+      return qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliY(1))
+  ```
+  
+  ```pycon
+  >>> circuit(a, b)
+  (Array(0.9950042, dtype=float32), Array(-0.19767681, dtype=float32))
+  >>> jac = jax.jacobian(circuit)(a, b)
+  (Array(-0.09983341, dtype=float32, weak_type=True), Array(0.01983384, dtype=float32, weak_type=True))
+  ```
+  
+  It comes with the fact that the interface is determined during the `QNode` call instead of the 
+  initialization. It means that the `gradient_fn` and `gradient_kwargs` are only defined on the QNode at the beginning 
+  of the call. As well, without specifying the interface it is not possible to guarantee that the device will not be changed 
+  during the call if you are using backprop(`default.qubit` to `default.qubit,jax`e.g.) whereas before it was happening at 
+  initialization, therefore you should not try to track the device without specifying the interface.
 
 * The tape method `get_operation` can also now return the operation index in the tape, and it can be
   activated by setting the `return_op_index` to `True`: `get_operation(idx, return_op_index=True)`. It will become
@@ -578,6 +639,9 @@
   
 * A hyperlink has been added in the text for a URL in the `qml.qchem.mol_data` docstring.
   [(#3644)](https://github.com/PennyLaneAI/pennylane/pull/3644)
+
+* A typo was corrected in the documentation for `qml.math.vn_entropy()`.
+[(#3740)](https://github.com/PennyLaneAI/pennylane/pull/3740)
 
 <h3>Bug fixes</h3>
 

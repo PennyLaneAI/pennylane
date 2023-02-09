@@ -323,7 +323,7 @@ class TestVJPGradients:
         tape = qml.tape.QuantumScript.from_queue(q)
         tape.trainable_params = {0, 1}
         tapes, fn = qml.gradients.vjp(tape, dy, param_shift)
-        vjp = fn(qml.execute(tapes, dev, qml.gradients.param_shift, interface="torch"))
+        vjp = fn(qml.execute(tapes, dev, qml.gradients.param_shift))
 
         assert np.allclose(vjp.detach(), expected(params.detach()), atol=tol, rtol=0)
 
@@ -372,7 +372,7 @@ class TestVJPGradients:
         dev.C_DTYPE = vanilla_numpy.complex64
         dev.R_DTYPE = vanilla_numpy.float32
 
-        @qml.qnode(dev, interface="tf", diff_method="adjoint")
+        @qml.qnode(dev, diff_method="adjoint")
         def circuit(weights, features):
             for i in range(nwires):
                 qml.RX(features[i], wires=i)

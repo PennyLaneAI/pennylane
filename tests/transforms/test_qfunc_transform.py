@@ -381,7 +381,7 @@ class TestQFuncTransformGradients:
         """Test that a qfunc transform is differentiable when using
         autograd"""
         dev = qml.device("default.qubit", wires=2)
-        qnode = qml.QNode(self.circuit, dev, interface="autograd", diff_method=diff_method)
+        qnode = qml.QNode(self.circuit, dev, diff_method=diff_method)
 
         a = np.array(0.5, requires_grad=True)
         b = np.array([0.1, 0.2], requires_grad=True)
@@ -401,7 +401,7 @@ class TestQFuncTransformGradients:
         import tensorflow as tf
 
         dev = qml.device("default.qubit", wires=2)
-        qnode = qml.QNode(self.circuit, dev, interface="tf", diff_method=diff_method)
+        qnode = qml.QNode(self.circuit, dev, diff_method=diff_method)
 
         a_np = np.array(0.5, requires_grad=True)
         b_np = np.array([0.1, 0.2], requires_grad=True)
@@ -426,7 +426,7 @@ class TestQFuncTransformGradients:
         import torch
 
         dev = qml.device("default.qubit", wires=2)
-        qnode = qml.QNode(self.circuit, dev, interface="torch", diff_method=diff_method)
+        qnode = qml.QNode(self.circuit, dev, diff_method=diff_method)
 
         a_np = np.array(0.5, requires_grad=True)
         b_np = np.array([0.1, 0.2], requires_grad=True)
@@ -452,7 +452,7 @@ class TestQFuncTransformGradients:
         import jax
 
         dev = qml.device("default.qubit", wires=2)
-        qnode = qml.QNode(self.circuit, dev, interface="jax", diff_method=diff_method)
+        qnode = qml.QNode(self.circuit, dev, diff_method=diff_method)
 
         a = jax.numpy.array(0.5)
         b = jax.numpy.array([0.1, 0.2])
