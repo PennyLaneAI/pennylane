@@ -18,14 +18,14 @@ import numpy as np
 
 import pennylane as qml
 from pennylane.devices import DefaultQubit
-from pennylane.typing import TensorLike
 from pennylane.pulse import ParametrizedEvolution
+from pennylane.typing import TensorLike
 
 try:
     import jax
     import jax.numpy as jnp
-    from jax.experimental.ode import odeint
     from jax.config import config as jax_config
+    from jax.experimental.ode import odeint
 
 except ImportError as e:  # pragma: no cover
     raise ImportError("default.qubit.jax device requires installing jax>0.2.0") from e
@@ -188,7 +188,7 @@ class DefaultQubitJax(DefaultQubit):
                 "You can update these values by calling the ParametrizedEvolution class: EV(params, t)."
             )
 
-        state = jnp.ravel(state)
+        state = self._flatten(state)
 
         def fun(y, t):
             """dy/dt = -i H(t) y"""
