@@ -36,7 +36,7 @@ def constant(scalar, time):
             signature of :class:`~.ParametrizedHamiltonian`.
 
     This function is mainly used to build a :class:`~.ParametrizedHamiltonian` that can be differentiated
-    with respect to its time-independent term. It is an alias for `lambda scalar, t: scalar`.
+    with respect to its time-independent term. It is an alias for ``lambda scalar, t: scalar``.
 
     **Example**
 
@@ -52,7 +52,7 @@ def constant(scalar, time):
     >>> H(params, t=5)
     5.0*(PauliX(wires=[0]))
 
-    We can differentiate the parametrized hamiltonian with respect to the constant parameter:
+    We can differentiate the parametrized Hamiltonian with respect to the constant parameter:
 
     .. code-block:: python
 
@@ -163,7 +163,7 @@ def rect(x: Union[float, Callable], windows: List[Tuple[float]] = None):
 
 
 def pwc(timespan):
-    """Takes a timespan and returns callable for creating a function that is piecewise-constant in time. The returned
+    """Takes a timespan and returns a callable for creating a function that is piecewise-constant in time. The returned
     function takes arguments ``(p, t)``, where ``p`` is an array that defines the bin values for the function.
 
     Creates a callable for defining a :class:`~.ParametrizedHamiltonian`.

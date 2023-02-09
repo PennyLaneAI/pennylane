@@ -77,7 +77,7 @@ class ParametrizedEvolution(Operation):
 
     **Example**
 
-    To create a :class:`~.ParametrizedEvolution`, we first define a :class:`.~ParametrizedHamiltonian`
+    To create a :class:`~.ParametrizedEvolution`, we first define a :class:`~.ParametrizedHamiltonian`
     describing the system, and then pass it to :func:`~pennylane.evolve`:
 
     .. code-block:: python
