@@ -51,7 +51,11 @@ ar.register_function("numpy", "flatten", lambda x: x.flatten())
 ar.register_function("numpy", "coerce", lambda x: x)
 ar.register_function("numpy", "block_diag", lambda x: _scipy_block_diag(*x))
 ar.register_function("builtins", "block_diag", lambda x: _scipy_block_diag(*x))
-ar.register_function("numpy", "gather", lambda x, indices: x[np.array(indices)])
+ar.register_function(
+    "numpy",
+    "gather",
+    lambda x, indices, axis=0: x[:, np.array(indices)] if axis == 1 else x[np.array(indices)],
+)
 ar.register_function("numpy", "unstack", list)
 
 ar.register_function("builtins", "unstack", list)
@@ -105,7 +109,11 @@ ar.autoray._MODULE_ALIASES["autograd"] = "pennylane.numpy"
 
 ar.register_function("autograd", "flatten", lambda x: x.flatten())
 ar.register_function("autograd", "coerce", lambda x: x)
-ar.register_function("autograd", "gather", lambda x, indices: x[np.array(indices)])
+ar.register_function(
+    "autograd",
+    "gather",
+    lambda x, indices, axis=0: x[:, np.array(indices)] if axis == 1 else x[np.array(indices)],
+)
 ar.register_function("autograd", "unstack", list)
 
 
@@ -476,7 +484,9 @@ ar.register_function("torch", "asarray", _asarray_torch)
 ar.register_function("torch", "diag", lambda x, k=0: _i("torch").diag(x, diagonal=k))
 ar.register_function("torch", "expand_dims", lambda x, axis: _i("torch").unsqueeze(x, dim=axis))
 ar.register_function("torch", "shape", lambda x: tuple(x.shape))
-ar.register_function("torch", "gather", lambda x, indices: x[indices])
+ar.register_function(
+    "torch", "gather", lambda x, indices, axis=0: x[:, indices] if axis == 1 else x[indices]
+)
 ar.register_function("torch", "equal", lambda x, y: _i("torch").eq(x, y))
 
 ar.register_function(
@@ -697,7 +707,11 @@ ar.register_function(
 ar.register_function("jax", "coerce", lambda x: x)
 ar.register_function("jax", "to_numpy", _to_numpy_jax)
 ar.register_function("jax", "block_diag", lambda x: _i("jax").scipy.linalg.block_diag(*x))
-ar.register_function("jax", "gather", lambda x, indices: x[np.array(indices)])
+ar.register_function(
+    "jax",
+    "gather",
+    lambda x, indices, axis=0: x[:, np.array(indices)] if axis == 1 else x[np.array(indices)],
+)
 
 
 def _ndim_jax(x):
