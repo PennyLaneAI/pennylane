@@ -532,7 +532,7 @@ class TestStateMeasurement:
 
         dev = qml.device("default.qubit", wires=2)
 
-        @qml.qnode(dev)
+        @qml.qnode(dev, interface="autograd")
         def circuit():
             return qml.state()
 
