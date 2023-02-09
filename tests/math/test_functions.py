@@ -13,6 +13,7 @@
 # limitations under the License.
 """Unit tests for the TensorBox functional API in pennylane.fn.fn
 """
+# pylint: disable=import-outside-toplevel
 import itertools
 from functools import partial
 from unittest.mock import patch
@@ -250,6 +251,7 @@ test_conj_data = [
 
 @pytest.mark.parametrize("t", test_conj_data)
 def test_conj(t):
+    """Test the qml.math.conj function."""
     res = fn.conj(t)
     assert fn.allequal(res, np.conj(t))
 
@@ -524,6 +526,8 @@ class TestDot:
         """Test that the matrix-matrix dot product of two vectors results in a matrix"""
         res = fn.dot(t1, t1)
         assert fn.allequal(res, np.array([[7, 10], [15, 22]]))
+        res = fn.dot(t2, t2)
+        assert fn.allequal(res, 85)
 
     def test_matrix_vector_product_tensorflow_autograph(self):
         """Test that the matrix-matrix dot product of two vectors results in a matrix
@@ -534,7 +538,7 @@ class TestDot:
         def cost(t1, t2):
             return fn.dot(t1, t2)
 
-        with tf.GradientTape() as tape:
+        with tf.GradientTape():
             res = cost(t1, t2)
 
         assert fn.allequal(res, [20, 46])
@@ -760,13 +764,16 @@ class TestTensordotTorch:
 
     @pytest.mark.parametrize("axes", [[[0], [0]], [[-1], [0]], [[0], [-1]], [[-1], [-1]]])
     def test_tensordot_torch_vector_vector(self, axes):
+        """Test tensordot vector-vector product with PyTorch."""
         assert fn.allclose(fn.tensordot(self.v1, self.v2, axes=axes), self.v1_dot_v2)
 
     def test_tensordot_torch_outer(self):
+        """Test tensordot outer product with PyTorch."""
         assert fn.allclose(fn.tensordot(self.v1, self.v2, axes=0), self.v1_outer_v2)
         assert fn.allclose(fn.tensordot(self.v2, self.v1, axes=0), qml.math.T(self.v1_outer_v2))
 
     def test_tensordot_torch_outer_with_old_version(self, monkeypatch):
+        """Test tensordot outer product with an old version of PyTorch."""
         with monkeypatch.context() as m:
             m.setattr("torch.__version__", "1.9.0")
             assert fn.allclose(fn.tensordot(self.v1, self.v2, axes=0), self.v1_outer_v2)
@@ -778,10 +785,12 @@ class TestTensordotTorch:
     )
     @pytest.mark.parametrize("axes", [[[1], [0]], [[-1], [0]], [[1], [-1]], [[-1], [-1]]])
     def test_tensordot_torch_matrix_vector(self, M, v, expected, axes):
+        """Test tensordot matrix-vector product with PyTorch."""
         assert fn.allclose(fn.tensordot(M, v, axes=axes), expected)
 
     @pytest.mark.parametrize("axes", [[[1], [0]], [[-1], [0]], [[1], [-2]], [[-1], [-2]]])
     def test_tensordot_torch_matrix_matrix(self, axes):
+        """Test tensordot matrix-matrix product with PyTorch."""
         assert fn.allclose(fn.tensordot(self.M1, qml.math.T(self.M2), axes=axes), self.M1_dot_M2T)
         assert fn.allclose(
             fn.tensordot(self.M2, qml.math.T(self.M1), axes=axes), qml.math.T(self.M1_dot_M2T)
@@ -794,16 +803,20 @@ class TestTensordotTorch:
     @pytest.mark.parametrize("axes", [[[1], [0]], [[-3], [0]], [[1], [-1]], [[-3], [-1]]])
     @pytest.mark.parametrize("v, expected", [(v1, T1_dot_v1), (v2, T1_dot_v2)])
     def test_tensordot_torch_tensor_vector(self, v, expected, axes):
+        """Test tensordot tensor-vector product with PyTorch."""
         assert fn.allclose(fn.tensordot(self.T1, v, axes=axes), expected)
 
     @pytest.mark.parametrize("axes1", [[1, 2], [-3, -2], [1, -2], [-3, 2]])
     @pytest.mark.parametrize("axes2", [[1, 0], [-1, -2], [1, -2]])
     @pytest.mark.parametrize("M, expected", [(M1, T1_dot_M1), (M2, T1_dot_M2)])
     def test_tensordot_torch_tensor_matrix(self, M, expected, axes1, axes2):
+        """Test tensordot tensor-matrix product with PyTorch."""
         assert fn.allclose(fn.tensordot(self.T1, M, axes=[axes1, axes2]), expected)
 
 
 class TestTensordotDifferentiability:
+    """Test the differentiability of qml.math.tensordot."""
+
     v0 = np.array([0.1, 5.3, -0.9, 1.1])
     v1 = np.array([0.5, -1.7, -2.9, 0.0])
     v2 = np.array([-0.4, 9.1, 1.6])
@@ -1262,21 +1275,20 @@ class TestInBackprop:
         with tf.GradientTape():
             # variables are automatically watched within a context,
             # but constants are not
-            y = f_pow(t1)
+            _ = f_pow(t1)
             assert fn.in_backprop(t1)
             assert not fn.in_backprop(t2)
 
         with tf.GradientTape() as tape:
             # watching makes all tensors trainable
             tape.watch([t1, t2])
-            y = f_pow(t1)
+            _ = f_pow(t1)
             assert fn.in_backprop(t1)
             assert fn.in_backprop(t2)
 
     @pytest.mark.torch
     def test_unknown_interface_in_backprop(self):
         """Test that an error is raised if the interface is unknown"""
-        import torch
 
         with pytest.raises(ValueError, match="is in backpropagation."):
             fn.in_backprop(torch.tensor([0.1]))
@@ -1531,17 +1543,6 @@ class TestTake:
         assert fn.allclose(res, expected)
 
     @pytest.mark.parametrize("t", take_data)
-    def test_array_indexing_along_axis(self, t):
-        """Test that indexing with a sequence properly extracts
-        the elements from the specified tensor axis"""
-        indices = [0, 1, -2]
-        res = fn.take(t, indices, axis=2)
-        expected = np.array(
-            [[[1, 2, 1], [3, 4, 3], [-1, 1, -1]], [[5, 6, 5], [0, -1, 0], [2, 1, 2]]]
-        )
-        assert fn.allclose(res, expected)
-
-    @pytest.mark.parametrize("t", take_data)
     def test_multidimensional_indexing_along_axis(self, t):
         """Test that indexing with a sequence properly extracts
         the elements from the specified tensor axis"""
@@ -1573,18 +1574,18 @@ class TestTake:
 
 
 where_data = [
-    ("autograd", np.array([[[1, 2], [3, 4], [-1, 1]], [[5, 6], [0, -1], [2, 1]]])),
-    ("torch", torch.tensor([[[1, 2], [3, 4], [-1, 1]], [[5, 6], [0, -1], [2, 1]]])),
-    ("numpy", onp.array([[[1, 2], [3, 4], [-1, 1]], [[5, 6], [0, -1], [2, 1]]])),
-    ("tf", tf.constant([[[1, 2], [3, 4], [-1, 1]], [[5, 6], [0, -1], [2, 1]]])),
-    ("tf", tf.Variable([[[1, 2], [3, 4], [-1, 1]], [[5, 6], [0, -1], [2, 1]]])),
-    ("jax", jnp.array([[[1, 2], [3, 4], [-1, 1]], [[5, 6], [0, -1], [2, 1]]])),
+    np.array([[[1, 2], [3, 4], [-1, 1]], [[5, 6], [0, -1], [2, 1]]]),
+    torch.tensor([[[1, 2], [3, 4], [-1, 1]], [[5, 6], [0, -1], [2, 1]]]),
+    onp.array([[[1, 2], [3, 4], [-1, 1]], [[5, 6], [0, -1], [2, 1]]]),
+    tf.constant([[[1, 2], [3, 4], [-1, 1]], [[5, 6], [0, -1], [2, 1]]]),
+    tf.Variable([[[1, 2], [3, 4], [-1, 1]], [[5, 6], [0, -1], [2, 1]]]),
+    jnp.array([[[1, 2], [3, 4], [-1, 1]], [[5, 6], [0, -1], [2, 1]]]),
 ]
 
 
-@pytest.mark.parametrize("interface, t", where_data)
-def test_where(interface, t):
-    """Test that the where function works as expected"""
+@pytest.mark.parametrize("t", where_data)
+def test_where(t):
+    """Test that the qml.math.where function works as expected"""
     # With output values
     res = fn.where(t < 0, 100 * fn.ones_like(t), t)
     expected = np.array([[[1, 2], [3, 4], [100, 1]], [[5, 6], [0, 100], [2, 1]]])
@@ -1640,7 +1641,11 @@ class TestScatterElementAdd:
         assert isinstance(res, np.ndarray)
         assert fn.allclose(res, self.expected_val)
 
-        grad = qml.grad(lambda *weights: cost(*weights)[self.index[0], self.index[1]])(x, y)
+        def grab_cost_entry(*weights):
+            """Return a single entry of the cost"""
+            return cost(*weights)[self.index[0], self.index[1]]
+
+        grad = qml.grad(grab_cost_entry)(x, y)
         assert fn.allclose(grad[0], self.expected_grad_x)
         assert fn.allclose(grad[1], self.expected_grad_y)
 
@@ -1657,7 +1662,7 @@ class TestScatterElementAdd:
         assert isinstance(res, np.ndarray)
         assert fn.allclose(res, self.expected_val)
 
-        jac = qml.jacobian(lambda *weights: cost_multi(*weights))(x, y)
+        jac = qml.jacobian(cost_multi)(x, y)
         assert fn.allclose(jac[0], self.expected_jac_x)
         assert fn.allclose(jac[1], self.expected_jac_y)
 
@@ -1674,7 +1679,7 @@ class TestScatterElementAdd:
         assert isinstance(res, np.ndarray)
         assert fn.allclose(res, onp.array([[1.0, 1.3136, 1.0], [1.0, 1.0, 1.09]]))
 
-        jac = qml.jacobian(lambda *weights: cost_multi(*weights))(x, y)
+        jac = qml.jacobian(cost_multi)(x, y)
         assert fn.allclose(jac[0], self.expected_jac_x)
         exp_jac_y = onp.zeros((2, 3, 2))
         exp_jac_y[0, 1, 0] = 2 * y[0]
@@ -1724,7 +1729,11 @@ class TestScatterElementAdd:
         assert isinstance(res, jax.Array)
         assert fn.allclose(res, self.expected_val)
 
-        grad = jax.grad(lambda weights: cost(weights)[self.index[0], self.index[1]])([x, y])
+        def grab_cost_entry(weights):
+            """Return a single entry of the cost"""
+            return cost(weights)[self.index[0], self.index[1]]
+
+        grad = jax.grad(grab_cost_entry)([x, y])
         assert fn.allclose(grad[0], self.expected_grad_x)
         assert fn.allclose(grad[1], self.expected_grad_y)
 
@@ -1741,7 +1750,7 @@ class TestScatterElementAdd:
         assert isinstance(res, jax.Array)
         assert fn.allclose(res, self.expected_val)
 
-        jac = jax.jacobian(lambda *weights: cost_multi(*weights), argnums=[0, 1])(x, y)
+        jac = jax.jacobian(cost_multi, argnums=[0, 1])(x, y)
         assert fn.allclose(jac[0], self.expected_jac_x)
         assert fn.allclose(jac[1], self.expected_jac_y)
 
@@ -1772,11 +1781,15 @@ class TestScatterElementAddMultiValue:
         assert isinstance(res, np.ndarray)
         assert fn.allclose(res, self.expected_val)
 
-        scalar_cost = (
-            lambda *weights: cost(*weights)[self.indices[0][0], self.indices[1][0]]
-            + cost(*weights)[self.indices[0][1], self.indices[1][1]]
-        )
-        grad = qml.grad(scalar_cost)(x, y)
+        def add_cost_entries(*weights):
+            """Add two entries of the cost."""
+            c = cost(*weights)
+            return (
+                c[self.indices[0][0], self.indices[1][0]]
+                + c[self.indices[0][1], self.indices[1][1]]
+            )
+
+        grad = qml.grad(add_cost_entries)(x, y)
         assert fn.allclose(grad[0], self.expected_grad_x)
         assert fn.allclose(grad[1], self.expected_grad_y)
 
@@ -1837,11 +1850,15 @@ class TestScatterElementAddMultiValue:
         assert isinstance(res, jax.Array)
         assert fn.allclose(res, self.expected_val)
 
-        scalar_cost = (
-            lambda weights: cost(weights)[self.indices[0][0], self.indices[1][0]]
-            + cost(weights)[self.indices[0][1], self.indices[1][1]]
-        )
-        grad = jax.grad(scalar_cost)([x, y])
+        def add_cost_entries(weights):
+            """Add two entries of the cost."""
+            c = cost(weights)
+            return (
+                c[self.indices[0][0], self.indices[1][0]]
+                + c[self.indices[0][1], self.indices[1][1]]
+            )
+
+        grad = jax.grad(add_cost_entries)([x, y])
         assert fn.allclose(grad[0], self.expected_grad_x)
         assert fn.allclose(grad[1], self.expected_grad_y)
 
@@ -1975,7 +1992,11 @@ class TestCovMatrix:
         expected = self.expected_cov(weights)
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
-        grad_fn = qml.grad(lambda weights: cov(weights)[0, 1])
+        def grab_cov_entry(weights):
+            """Grab an entry of the cov output."""
+            return cov(weights)[0, 1]
+
+        grad_fn = qml.grad(grab_cov_entry)
         res = grad_fn(weights)
         expected = self.expected_grad(weights)
         assert np.allclose(res, expected, atol=tol, rtol=0)
@@ -2005,7 +2026,11 @@ class TestCovMatrix:
         expected = self.expected_cov(weights)
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
-        grad_fn = qml.grad(lambda weights: cov(weights)[0, 1])
+        def grab_cov_entry(weights):
+            """Grab an entry of the cov output."""
+            return cov(weights)[0, 1]
+
+        grad_fn = qml.grad(grab_cov_entry)
         res = grad_fn(weights)
         expected = self.expected_grad(weights)
         assert np.allclose(res, expected, atol=tol, rtol=0)
@@ -2096,7 +2121,11 @@ class TestCovMatrix:
         expected = self.expected_cov(weights)
         assert jnp.allclose(res, expected, atol=tol, rtol=0)
 
-        grad_fn = jax.grad(lambda weights: cov(weights)[0, 1])
+        def grab_cov_entry(weights):
+            """Grab an entry of the cov output."""
+            return cov(weights)[0, 1]
+
+        grad_fn = jax.grad(grab_cov_entry)
         res = grad_fn(weights)
         expected = self.expected_grad(weights)
         assert jnp.allclose(res, expected, atol=tol, rtol=0)
@@ -2121,26 +2150,35 @@ def test_block_diag(tensors):
 
 
 class TestBlockDiagDiffability:
-    expected = lambda self, x, y: (
-        [
-            [-np.sin(x * y) * y, 0, 0],
-            [0, 1.0, 0],
-            [0, 2 * x, -1 / y],
-        ],
-        [
-            [-np.sin(x * y) * x, 0, 0],
-            [0, 0.0, 1.2],
-            [0, -1 / 3, x / y**2],
-        ],
-    )
+    """Test differentiability of qml.math.block_diag."""
+
+    @staticmethod
+    def expected(x, y):
+        """Return the expected Jacobian of block_diag."""
+        return (
+            [
+                [-fn.sin(x * y) * y, 0, 0],
+                [0, 1.0, 0],
+                [0, 2 * x, -1 / y],
+            ],
+            [
+                [-fn.sin(x * y) * x, 0, 0],
+                [0, 0.0, 1.2],
+                [0, -1 / 3, x / y**2],
+            ],
+        )
 
     def test_autograd(self):
         """Tests for differentiating the block diagonal function with autograd."""
-        tensors = lambda x, y: [
-            np.array([[fn.cos(x * y)]]),
-            np.array([[x, 1.2 * y], [x**2 - y / 3, -x / y]]),
-        ]
-        f = lambda x, y: fn.block_diag(tensors(x, y))
+
+        def f(x, y):
+            return fn.block_diag(
+                [
+                    np.array([[fn.cos(x * y)]]),
+                    np.array([[x, 1.2 * y], [x**2 - y / 3, -x / y]]),
+                ]
+            )
+
         x, y = np.array([0.2, 1.5], requires_grad=True)
         res = qml.jacobian(f)(x, y)
         exp = self.expected(x, y)
@@ -2149,12 +2187,15 @@ class TestBlockDiagDiffability:
 
     def test_jax(self):
         """Tests for differentiating the block diagonal function with JAX."""
-        jax = pytest.importorskip("jax")
-        tensors = lambda x, y: [
-            jnp.array([[fn.cos(x * y)]]),
-            jnp.array([[x, 1.2 * y], [x**2 - y / 3, -x / y]]),
-        ]
-        f = lambda x, y: fn.block_diag(tensors(x, y))
+
+        def f(x, y):
+            return fn.block_diag(
+                [
+                    jnp.array([[fn.cos(x * y)]]),
+                    jnp.array([[x, 1.2 * y], [x**2 - y / 3, -x / y]]),
+                ]
+            )
+
         x, y = 0.2, 1.5
         res = jax.jacobian(f, argnums=[0, 1])(x, y)
         exp = self.expected(x, y)
@@ -2163,7 +2204,6 @@ class TestBlockDiagDiffability:
 
     def test_tf(self):
         """Tests for differentiating the block diagonal function with Tensorflow."""
-        tf = pytest.importorskip("tensorflow")
         x, y = [tf.Variable([[0.2]]), tf.Variable([[0.1, 0.2], [0.3, 0.4]])]
         with tf.GradientTape() as tape:
             out = fn.block_diag([x, y])
@@ -2177,9 +2217,11 @@ class TestBlockDiagDiffability:
 
     def test_torch(self):
         """Tests for differentiating the block diagonal function with Torch."""
-        torch = pytest.importorskip("torch")
         x, y = [torch.tensor([[0.2]]), torch.tensor([[0.1, 0.2], [0.3, 0.4]])]
-        f = lambda x, y: fn.block_diag([x, y])
+
+        def f(x, y):
+            return fn.block_diag([x, y])
+
         res = torch.autograd.functional.jacobian(f, (x, y))
         exp_0 = np.zeros((3, 3, 1, 1))
         exp_0[0, 0, 0, 0] = 1.0
@@ -2244,7 +2286,7 @@ class TestCoercion:
             RuntimeError,
             match="Expected all tensors to be on the same device, but found at least two devices",
         ):
-            res = qml.math.coerce(tensors, like="torch")
+            _ = qml.math.coerce(tensors, like="torch")
 
 
 class TestUnwrap:
@@ -2275,6 +2317,7 @@ class TestUnwrap:
     def test_autograd_unwrapping_forward(self):
         """Test that a sequence of Autograd values is properly unwrapped
         during the forward pass"""
+        # pylint: disable=not-an-iterable
         unwrapped_params = None
 
         def cost_fn(params):
@@ -2292,6 +2335,7 @@ class TestUnwrap:
     def test_autograd_unwrapping_backward(self):
         """Test that a sequence of Autograd values is properly unwrapped
         during the backward pass"""
+        # pylint: disable=not-an-iterable
         unwrapped_params = None
 
         def cost_fn(*params):
@@ -2304,7 +2348,7 @@ class TestUnwrap:
             np.tensor(0.1, dtype=np.float64, requires_grad=True),
             np.tensor([0.5, 0.2], requires_grad=True),
         ]
-        grad = qml.grad(cost_fn, argnum=[1, 2])(*values)
+        _ = qml.grad(cost_fn, argnum=[1, 2])(*values)
 
         expected = [np.array([0.1, 0.2]), 0.1, np.array([0.5, 0.2])]
         assert all(np.allclose(a, b) for a, b in zip(unwrapped_params, expected))
@@ -2313,6 +2357,7 @@ class TestUnwrap:
     def test_autograd_unwrapping_backward_nested(self):
         """Test that a sequence of Autograd values is properly unwrapped
         during multiple backward passes"""
+        # pylint: disable=not-an-iterable
         unwrapped_params = None
 
         def cost_fn(p, max_depth=None):
@@ -2321,7 +2366,7 @@ class TestUnwrap:
             return np.sum(np.sin(np.prod(p)))
 
         values = np.tensor([0.1, 0.2, 0.3])
-        hess = qml.jacobian(qml.grad(cost_fn))(values)
+        _ = qml.jacobian(qml.grad(cost_fn))(values)
 
         expected = np.array([0.1, 0.2, 0.3])
         assert np.allclose(unwrapped_params, expected)
@@ -2329,12 +2374,13 @@ class TestUnwrap:
 
         # Specifying max_depth=1 will result in the second backward
         # pass not being unwrapped
-        hess = qml.jacobian(qml.grad(cost_fn))(values, max_depth=1)
+        _ = qml.jacobian(qml.grad(cost_fn))(values, max_depth=1)
         assert all(isinstance(a, ArrayBox) for a in unwrapped_params)
 
     def test_jax_unwrapping(self):
         """Test that a sequence of Autograd values is properly unwrapped
         during the forward pass"""
+        # pylint: disable=not-an-iterable
         unwrapped_params = None
 
         def cost_fn(params):
@@ -2420,7 +2466,7 @@ class TestGetTrainable:
             np.tensor(0.1, requires_grad=True),
             np.tensor([0.5, 0.2], requires_grad=False),
         ]
-        grad = qml.grad(cost_fn)(*values)
+        _ = qml.grad(cost_fn)(*values)
 
         assert res == {0, 1}
 
@@ -2439,6 +2485,8 @@ test_sort_data = [
 class TestSortFunction:
     """Test the sort function works across all interfaces"""
 
+    # pylint: disable=too-few-public-methods
+
     @pytest.mark.parametrize("input, test_output", test_sort_data)
     def test_sort(self, input, test_output):
         """Test the sort method is outputting only sorted values not indices"""
@@ -2448,6 +2496,8 @@ class TestSortFunction:
 
 
 class TestExpm:
+    """Test the expm function works across all interfaces"""
+
     _compare_mat = None
 
     def get_compare_mat(self):
@@ -2476,6 +2526,10 @@ class TestExpm:
 
 
 class TestSize:
+    """Test qml.math.size method."""
+
+    # pylint: disable=too-few-public-methods
+
     array_and_size = [
         ([], 0),
         (1, 1),
@@ -2489,14 +2543,317 @@ class TestSize:
     @pytest.mark.parametrize(("array", "size"), array_and_size)
     def test_size_torch(self, array, size):
         """Test size function with the torch interface."""
-        import torch
-
         r = fn.size(torch.tensor(array))
         assert r == size
 
 
+@pytest.mark.parametrize("name", ["fft", "ifft", "fft2", "ifft2"])
+class TestFft:
+    """Test qml.math.fft functions and their differentiability."""
+
+    arg = {
+        "fft": onp.sin(onp.linspace(0, np.pi, 5)) - onp.cos(onp.linspace(0, np.pi, 5)) / 2,
+        "ifft": onp.linspace(0, np.pi, 5),
+        "fft2": onp.outer(
+            0.4 * onp.sin(onp.linspace(0, onp.pi, 3)), np.cos(onp.linspace(onp.pi, 0, 2)) / 2
+        ),
+        "ifft2": onp.outer(
+            0.4 * onp.sin(onp.linspace(0, onp.pi, 3)), np.cos(onp.linspace(onp.pi, 0, 2)) / 2
+        ),
+    }
+
+    exp_fft = {
+        "fft": [
+            2.414213,
+            -1.903347 + 0.17493j,
+            -0.55376019 + 0.02838791j,
+            -0.55376019 - 0.02838791j,
+            -1.9033466 - 0.17493416j,
+        ],
+        "ifft": [
+            1.57079633 + 0.0j,
+            -0.39269908 - 0.54050392j,
+            -0.39269908 - 0.12759567j,
+            -0.39269908 + 0.12759567j,
+            -0.39269908 + 0.54050392j,
+        ],
+        "fft2": [[0, -0.4], [0, 0.2 + 0.34641016j], [0, 0.2 - 0.34641016j]],
+        "ifft2": [[0, -1 / 15 + 0.0j], [0, 1 / 30 - 0.05773503j], [0, 1 / 30 + 0.05773503j]],
+    }
+
+    exp_jac_fft = {
+        "fft": [
+            [1, 1, 1, 1, 1],
+            [
+                1,
+                0.30901699 - 0.95105652j,
+                -0.80901699 - 0.58778525j,
+                -0.80901699 + 0.58778525j,
+                0.30901699 + 0.95105652j,
+            ],
+            [
+                1,
+                -0.80901699 - 0.58778525j,
+                0.30901699 + 0.95105652j,
+                0.30901699 - 0.95105652j,
+                -0.80901699 + 0.58778525j,
+            ],
+            [
+                1,
+                -0.80901699 + 0.58778525j,
+                0.30901699 - 0.95105652j,
+                0.30901699 + 0.95105652j,
+                -0.80901699 - 0.58778525j,
+            ],
+            [
+                1,
+                0.30901699 + 0.95105652j,
+                -0.80901699 + 0.58778525j,
+                -0.80901699 - 0.58778525j,
+                0.30901699 - 0.95105652j,
+            ],
+        ],
+        "ifft": [
+            [0.2 + 0.0j, 0.2 + 0.0j, 0.2 + 0.0j, 0.2 + 0.0j, 0.2 + 0.0j],
+            [
+                0.2 + 0.0j,
+                0.0618034 + 0.1902113j,
+                -0.1618034 + 0.11755705j,
+                -0.1618034 - 0.11755705j,
+                0.0618034 - 0.1902113j,
+            ],
+            [
+                0.2 + 0.0j,
+                -0.1618034 + 0.11755705j,
+                0.0618034 - 0.1902113j,
+                0.0618034 + 0.1902113j,
+                -0.1618034 - 0.11755705j,
+            ],
+            [
+                0.2 + 0.0j,
+                -0.1618034 - 0.11755705j,
+                0.0618034 + 0.1902113j,
+                0.0618034 - 0.1902113j,
+                -0.1618034 + 0.11755705j,
+            ],
+            [
+                0.2 + 0.0j,
+                0.0618034 - 0.1902113j,
+                -0.1618034 - 0.11755705j,
+                -0.1618034 + 0.11755705j,
+                0.0618034 + 0.1902113j,
+            ],
+        ],
+        "fft2": [
+            [[[1, 1], [1, 1], [1, 1]], [[1, -1], [1, -1], [1, -1]]],
+            [
+                [[1, 1], [-0.5 - (x := 0.8660254j), -0.5 - x], [-0.5 + x, -0.5 + x]],
+                [[1, -1], [-0.5 - x, 0.5 + x], [-0.5 + x, 0.5 - x]],
+            ],
+            [
+                [[1, 1], [-0.5 + x, -0.5 + x], [-0.5 - x, -0.5 - x]],
+                [[1, -1], [-0.5 + x, 0.5 - x], [-0.5 - x, 0.5 + x]],
+            ],
+        ],
+        "ifft2": [
+            [
+                [[1 / 6, 1 / 6], [1 / 6, 1 / 6], [1 / 6, 1 / 6]],
+                [[1 / 6, -1 / 6], [1 / 6, -1 / 6], [1 / 6, -1 / 6]],
+            ],
+            [
+                [
+                    [1 / 6, 1 / 6],
+                    [-1 / 12 + (x := 0.14433757j), -1 / 12 + x],
+                    [-1 / 12 - x, -1 / 12 - x],
+                ],
+                [[1 / 6, -1 / 6], [-1 / 12 + x, 1 / 12 - x], [-1 / 12 - x, 1 / 12 + x]],
+            ],
+            [
+                [[1 / 6, 1 / 6], [-1 / 12 - x, -1 / 12 - x], [-1 / 12 + x, -1 / 12 + x]],
+                [[1 / 6, -1 / 6], [-1 / 12 - x, 1 / 12 + x], [-1 / 12 + x, 1 / 12 - x]],
+            ],
+        ],
+    }
+
+    @staticmethod
+    def fft_real(x, func=None):
+        """Compute the real part of an FFT function output."""
+        return qml.math.real(func(x))
+
+    @staticmethod
+    def fft_imag(x, func=None):
+        """Compute the imag part of an FFT function output."""
+        return qml.math.imag(func(x))
+
+    def test_numpy(self, name):
+        """Test that the functions are available in Numpy."""
+        func = getattr(qml.math.fft, name)
+        out = func(self.arg[name])
+        assert qml.math.allclose(out, self.exp_fft[name])
+
+    @pytest.mark.autograd
+    def test_autograd(self, name):
+        """Test that the functions are available in Autograd."""
+        func = getattr(qml.math.fft, name)
+        arg = np.array(self.arg[name], requires_grad=True)
+        out = func(arg)
+        assert qml.math.allclose(out, self.exp_fft[name])
+        jac_real = qml.jacobian(self.fft_real)(arg, func=func)
+        jac_imag = qml.jacobian(self.fft_imag)(arg, func=func)
+        assert qml.math.allclose(jac_real + 1j * jac_imag, self.exp_jac_fft[name])
+
+    @pytest.mark.jax
+    def test_jax(self, name):
+        """Test that the functions are available in JAX."""
+        func = getattr(qml.math.fft, name)
+        arg = jax.numpy.array(self.arg[name], dtype=jax.numpy.complex64)
+        out = func(arg)
+        assert qml.math.allclose(out, self.exp_fft[name])
+        jac = jax.jacobian(func, holomorphic=True)(arg)
+        assert qml.math.allclose(jac, self.exp_jac_fft[name])
+
+    @pytest.mark.torch
+    def test_torch(self, name):
+        """Test that the functions are available in PyTorch."""
+        func = getattr(qml.math.fft, name)
+        arg = torch.tensor(self.arg[name], requires_grad=True)
+        out = func(arg)
+        assert qml.math.allclose(out, self.exp_fft[name])
+        jac_real = torch.autograd.functional.jacobian(partial(self.fft_real, func=func), arg)
+        jac_imag = torch.autograd.functional.jacobian(partial(self.fft_imag, func=func), arg)
+        print(jac_real + 1j * jac_imag)
+        print(self.exp_jac_fft[name])
+        assert qml.math.allclose(jac_real + 1j * jac_imag, self.exp_jac_fft[name])
+
+    @pytest.mark.tf
+    def test_tf(self, name):
+        """Test that the functions are available in TensorFlow."""
+        func = getattr(qml.math.fft, name)
+        arg = tf.Variable(qml.math.cast_like(self.arg[name], 1j))
+        with tf.GradientTape(persistent=True) as t:
+            out = func(arg)
+        assert qml.math.allclose(out, self.exp_fft[name])
+        jac = t.jacobian(out, arg)
+        # The tensorflow Jacobian is the complex conjugate of the holomorphic derivative
+        assert qml.math.allclose(jac, qml.math.conj(self.exp_jac_fft[name]))
+
+
+class TestIfft2Tensorflow:
+    """Test that custom behaviour is correct in qml.math.fft submodule for Tensorflow."""
+
+    def test_errors(self):
+        """Test that qml.math.fft.ifft2 raises errors correctly when used with Tensorflow
+        and unsupported kwargs."""
+        x = tf.Variable([0.4])
+        with pytest.raises(ValueError, match="does not support passing axes"):
+            _ = qml.math.fft.ifft2(x, axes=(0, 2))
+
+        with pytest.raises(ValueError, match="does not support the 'norm' keyword"):
+            _ = qml.math.fft.ifft2(x, norm="ortho")
+
+        with pytest.raises(ValueError, match="does not support the 's' keyword"):
+            _ = qml.math.fft.ifft2(x, s=(0, 2))
+
+    @pytest.mark.parametrize(
+        "dtype_in, exp_dtype_out", [(tf.float32, tf.complex64), (tf.float64, tf.complex128)]
+    )
+    def test_casting(self, dtype_in, exp_dtype_out):
+        """Test that qml.math.fft.ifft2 casts real-valued inputs correctly to the
+        corresponding complex values."""
+        x = onp.outer([0, np.pi / 2, np.pi], [0, np.pi])
+        x = tf.Variable(x, dtype=dtype_in)
+        out = qml.math.fft.ifft2(x)
+        assert out.dtype == exp_dtype_out
+
+
 def test_jax_ndim():
+    """Test that qml.math.ndim dispatches to jax.numpy.ndim."""
     with patch("jax.numpy.ndim") as mock_ndim:
         _ = qml.math.ndim(jax.numpy.array(3))
 
     mock_ndim.assert_called_once_with(3)
+
+
+class TestSetIndex:
+    """Test the set_index method."""
+
+    @pytest.mark.parametrize(
+        "array", [qml.numpy.zeros((2, 2)), torch.zeros((2, 2)), jnp.zeros((2, 2))]
+    )
+    def test_set_index_jax_2d_array(self, array):
+        """Test that an array can be created that is a copy of the
+        original array, with the value at the specified index updated"""
+
+        array2 = qml.math.set_index(array, (1, 1), 3)
+        assert qml.math.allclose(array2, np.array([[0, 0], [0, 3]]))
+        # since idx and val have no interface, we expect the returned array type to match initial type
+        assert isinstance(array2, type(array))
+
+    @pytest.mark.parametrize("array", [qml.numpy.zeros((4)), torch.zeros((4)), jnp.zeros((4))])
+    def test_set_index_jax_1d_array(self, array):
+        """Test that an array can be created that is a copy of the
+        original array, with the value at the specified index updated"""
+
+        array2 = qml.math.set_index(array, 3, 3)
+        assert qml.math.allclose(array2, np.array([[0, 0, 0, 3]]))
+        # since idx and val have no interface, we expect the returned array type to match initial type
+        assert isinstance(array2, type(array))
+
+    @pytest.mark.parametrize(
+        "array",
+        [jnp.array([[1, 2], [3, 4]]), onp.array([[1, 2], [3, 4]]), np.array([[1, 2], [3, 4]])],
+    )
+    def test_set_index_with_val_tracer(self, array):
+        """Test that for both jax and numpy arrays, if the val to set is a tracer,
+        the set_index function succeeds and returns an updated jax array"""
+        from jax.interpreters.partial_eval import DynamicJaxprTracer
+
+        @jax.jit
+        def jitted_function(x):
+            assert isinstance(x, DynamicJaxprTracer)
+            return qml.math.set_index(array, (0, 0), x)
+
+        val = jnp.array(7)
+        array2 = jitted_function(val)
+
+        assert qml.math.allclose(array2, jnp.array([[7, 2], [3, 4]]))
+        assert isinstance(array2, jnp.ndarray)
+
+    @pytest.mark.parametrize(
+        "array",
+        [jnp.array([[1, 2], [3, 4]]), onp.array([[1, 2], [3, 4]]), np.array([[1, 2], [3, 4]])],
+    )
+    def test_set_index_with_idx_tracer_2D_array(self, array):
+        """Test that for both jax and numpy 2d arrays, if the idx to set is a tracer,
+        the set_index function succeeds and returns an updated jax array"""
+        from jax.interpreters.partial_eval import DynamicJaxprTracer
+
+        @jax.jit
+        def jitted_function(y):
+            assert isinstance(y, DynamicJaxprTracer)
+            return qml.math.set_index(array, (1 + y, y), 7)
+
+        val = jnp.array(0)
+        array2 = jitted_function(val)
+
+        assert qml.math.allclose(array2, jnp.array([[1, 2], [7, 4]]))
+        assert isinstance(array2, jnp.ndarray)
+
+    @pytest.mark.parametrize(
+        "array", [jnp.array([1, 2, 3, 4]), onp.array([1, 2, 3, 4]), np.array([1, 2, 3, 4])]
+    )
+    def test_set_index_with_idx_tracer_1D_array(self, array):
+        """Test that for both jax and numpy 1d arrays, if the idx to set is a tracer,
+        the set_index function succeeds and returns an updated jax array"""
+        from jax.interpreters.partial_eval import DynamicJaxprTracer
+
+        @jax.jit
+        def jitted_function(y):
+            assert isinstance(y, DynamicJaxprTracer)
+            return qml.math.set_index(array, y, 7)
+
+        val = jnp.array(0)
+        array2 = jitted_function(val)
+
+        assert qml.math.allclose(array2, jnp.array([[7, 2, 3, 4]]))
+        assert isinstance(array2, jnp.ndarray)
