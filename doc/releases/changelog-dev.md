@@ -493,6 +493,10 @@
 * `QuantumMonteCarlo` template is now JAX-JIT compatible when passing `jax.numpy` arrays to the template.
   [(#3734)](https://github.com/PennyLaneAI/pennylane/pull/3734)
 
+* Updated `qml.math.gather` to accept an `axis` parameter.
+  As well, updated `probs().process_state()` to use the new `gather`.
+  [(#3746)](https://github.com/PennyLaneAI/pennylane/pull/3746)
+
 <h3>Breaking changes</h3>
 
 * The argument `mode` in execution is replaced by the boolean `grad_on_execution` in the new execution pipeline.
