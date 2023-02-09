@@ -38,7 +38,7 @@ class ParametrizedEvolution(Operation):
     ParametrizedEvolution(H, params=None, t=None, do_queue=True, id=None, **odeint_kwargs)
 
     Parametrized evolution gate, created by passing a :class:`~.ParametrizedHamiltonian` to the
-    :func:`~.functions.evolve` function.
+    :func:`~.functions.evolve` function
 
     For a time-dependent Hamiltonian of the form
     :math:`H(v, t) = H_\text{drift} + \sum_j f_j(v, t) H_j` it implements the corresponding
@@ -62,14 +62,14 @@ class ParametrizedEvolution(Operation):
         id (str or None): id for the scalar product operator. Default is None.
 
     Keyword Args:
-        atol (float, optional): Absolute error tolerance. Defaults to 1.4e-8.
-        rtol (float, optional): Relative error tolerance. The error is estimated
+        atol (float, optional): Absolute error tolerance for the ODE solver. Defaults to 1.4e-8.
+        rtol (float, optional): Relative error tolerance for the ODE solver. The error is estimated
             from comparing a 4th and 5th order Runge-Kutta step in the Dopri5 algorithm. This error
             is guaranteed to stay below ``tol = atol + rtol * abs(y)`` through adaptive step size
             selection. Defaults to 1.4e-8.
-        mxstep (int, optional): maximum number of steps to take for each timepoint. Defaults to
+        mxstep (int, optional): maximum number of steps to take for each timepoint for the ODE solver. Defaults to
             ``jnp.inf``.
-        hmax (float, optional): maximum step size allowed. Defaults to ``jnp.inf``.
+        hmax (float, optional): maximum step size allowed for the ODE solver. Defaults to ``jnp.inf``.
 
     .. warning::
         The :class:`~.ParametrizedHamiltonian` must be Hermitian at all times. This is not explicitly checked
@@ -99,8 +99,8 @@ class ParametrizedEvolution(Operation):
 
     The parameters can be updated by calling the :class:`~.ParametrizedEvolution` again with different inputs.
 
-    Additional options regarding how the matrix is calculated can be passed to the :class:`.ParametrizedEvolution`
-    along with the parameters, as keyword arguments.
+    When calling the :class:`~.ParametrizedEvolution`, keyword arguments can be passed to specify
+    behaviour of the ODE solver.
 
     The :class:`~.ParametrizedEvolution` can be implemented in a QNode:
 
