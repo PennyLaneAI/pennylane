@@ -20,11 +20,13 @@ import cmath
 import math
 
 import pytest
+
 import pennylane as qml
-from pennylane import numpy as np, DeviceError
-from pennylane.devices.default_qubit import _get_slice, DefaultQubit
-from pennylane.wires import Wires, WireError
+from pennylane import DeviceError
+from pennylane import numpy as np
+from pennylane.devices.default_qubit import DefaultQubit, _get_slice
 from pennylane.pulse import ParametrizedHamiltonian
+from pennylane.wires import WireError, Wires
 
 U = np.array(
     [
@@ -2015,6 +2017,7 @@ class TestApplyOps:
         state_out_einsum = np.einsum("abcdef,kdfe->kacb", matrix, self.state)
         assert np.allclose(state_out, state_out_einsum)
 
+    @pytest.mark.jax
     def test_apply_parametrized_evolution_raises_error(self):
         """Test that applying a ParametrizedEvolution raises an error."""
         param_ev = qml.evolve(ParametrizedHamiltonian([1], [qml.PauliX(0)]))
