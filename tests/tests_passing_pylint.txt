@@ -32,3 +32,4 @@ tests/math/test_functions.py
 tests/gradients/test_spsa_gradient.py
 tests/returntypes/gradients/test_spsa_gradient_new.py
 tests/returntypes/gradients/test_spsa_gradient_shot_vec_new.py
+tests/kernels/**
