@@ -304,6 +304,11 @@
 * The `create_initial_state` function is added to `devices/qubit` that returns an initial state for an execution.
   [(#3683)](https://github.com/PennyLaneAI/pennylane/pull/3683)
 
+* The `simulate` function is added to `devices/qubit` that turns a single quantum tape into a measurement result.
+  The function only supports state based measurements with either no observables or observables with diagonalizing gates.
+  It supports simultanous measurement of non-commuting observables.
+  [(#3600)](https://github.com/PennyLaneAI/pennylane/pull/3700)
+
 <h3>Improvements</h3>
 
 * `qml.purity` is added as a measurement process for purity

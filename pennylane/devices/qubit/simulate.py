@@ -16,15 +16,25 @@
 # pylint: disable=protected-access
 import pennylane as qml
 from pennylane.wires import Wires
-from pennylane.measurements import StateMeasurement
+from pennylane.measurements import StateMeasurement, MeasurementProcess
+from pennylane.typing import TensorLike
 
 from .initialize_state import create_initial_state
 from .apply_operation import apply_operation
 
 
-def measure_state_diagonalizing_gates(state, measurementprocess: StateMeasurement):
-    """Measure ``state`` using ``measurementprocess`` if measurement process is state based
-    and has an observable that provides diagonalizing gates.."""
+def measure_state_diagonalizing_gates(
+    measurementprocess: StateMeasurement, state: TensorLike
+) -> TensorLike:
+    """Apply a measurement to state when the measurement process has an observable with diagonalizing gates.
+
+    Args:
+        measurementprocess (StateMeasurement): measurement to apply to the state
+        state (TensorLike): state to apply the measurement to
+
+    Returns:
+        TensorLike: the result of the measurement
+    """
     total_indices = len(state.shape)
     wires = Wires(range(total_indices))
 
@@ -34,34 +44,46 @@ def measure_state_diagonalizing_gates(state, measurementprocess: StateMeasuremen
     return measurementprocess.process_state(qml.math.flatten(state), wires)
 
 
-def measure(mp: StateMeasurement, state):
-    """Measure ``mp`` on the ``state``."""
-    if isinstance(mp, StateMeasurement):
+def measure(measurementprocess: MeasurementProcess, state: TensorLike) -> TensorLike:
+    """Apply a measurement process to a state.
 
-        if mp.obs is None:
+    Args:
+        measurementprocess (MeasurementProcess): measurement process to apply to the state
+        state (TensorLike): the state to measure
+
+    Returns:
+        Tensorlike: the result of the measurement
+    """
+    if isinstance(measurementprocess, StateMeasurement):
+
+        if measurementprocess.obs is None:
             # no need to apply diagonalizing gates
             total_indices = len(state.shape)
             wires = Wires(range(total_indices))
-            return mp.process_state(qml.math.flatten(state), wires)
+            return measurementprocess.process_state(qml.math.flatten(state), wires)
 
-        if mp.obs.has_diagonalizing_gates:
-            return measure_state_diagonalizing_gates(state, mp)
+        if measurementprocess.obs.has_diagonalizing_gates:
+            return measure_state_diagonalizing_gates(measurementprocess, state)
 
     raise NotImplementedError
 
 
-def simulate(circuit: qml.tape.QuantumScript):
+def simulate(circuit: qml.tape.QuantumScript) -> tuple[TensorLike]:
     """Simulate a single quantum script.
 
-    This is an internal function that will be called by the to-be-created ``PythonDevice``.
+    This is an internal function that will be called by successor to ``default.qubit``.
 
     Args:
-        circuit: The single circuit to simulate
+        circuit (.QuantumScript): The single circuit to simulate
 
     Returns:
         tuple(ndarray): The results of the simulation
 
-    This function assummes that wire labels denote indices and all operations provide matrices.
+    Note that this function can return measurements for non-commuting observables simultaneously.
+
+    It does currently not support sampling or observables without diagonalizing gates.
+
+    This function assumes that all operations provide matrices.
 
     >>> qs = qml.tape.QuantumScript([qml.RX(1.2, wires=0)], [qml.expval(qml.PauliZ(0)), qml.probs(wires=(0,1))])
     >>> simulate(qs)
