@@ -93,7 +93,6 @@ class TRX(Operation):
     def __init__(
         self, phi, wires, subspace=[0, 1], do_queue=True, id=None
     ):  # pylint: disable=dangerous-default-value
-
         self._subspace = self.validate_subspace(subspace)
         self._hyperparameters = {
             "subspace": self._subspace,
@@ -114,7 +113,7 @@ class TRX(Operation):
 
     @staticmethod
     def compute_matrix(
-        theta, subspace=[0, 1]
+        theta, subspace=(0, 1)
     ):  # pylint: disable=arguments-differ,dangerous-default-value
         r"""Representation of the operator as a canonical matrix in the computational basis (static method).
 
@@ -137,7 +136,6 @@ class TRX(Operation):
                 [0.0000+0.0000j, 1.0000+0.0000j, 0.0000+0.0000j],
                 [0.0000-0.2474j, 0.0000+0.0000j, 0.9689+0.0000j]])
         """
-        subspace = TRX.validate_subspace(subspace)
         c = qml.math.cos(theta / 2)
         s = qml.math.sin(theta / 2)
 

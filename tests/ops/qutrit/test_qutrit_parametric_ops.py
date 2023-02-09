@@ -22,7 +22,6 @@ from pennylane import numpy as npp
 
 import pennylane as qml
 from pennylane.wires import Wires
-from tests.ops.qubit.test_parametric_ops import NON_PARAMETRIZED_OPERATIONS
 
 from gate_data import TSHIFT, TCLOCK
 
@@ -98,7 +97,6 @@ class TestParameterFrequencies:
         try:
             mat = gen.matrix()
         except (AttributeError, qml.operation.MatrixUndefinedError):
-
             if isinstance(gen, qml.Hamiltonian):
                 mat = qml.utils.sparse_hamiltonian(gen, level=3).toarray()
             elif isinstance(gen, qml.SparseHamiltonian):
@@ -325,6 +323,38 @@ subspace_error_data = [
 @pytest.mark.parametrize("op", [qml.TRX])
 @pytest.mark.parametrize("subspace, err_msg", subspace_error_data)
 def test_subspace_errors(op, subspace, err_msg):
-
     with pytest.raises(ValueError, match=err_msg):
         op(0.123, wires=0, subspace=subspace)
+
+
+class TestGrad:
+    """Test that the gradients for qutrit parametrized operations are correct"""
+
+    @pytest.mark.parametrize("phi", npp.linspace(0, 2 * np.pi, 7, requires_grad=True))
+    def test_trx_differentiability(self, phi):
+        """Test that TRX is differentiable and the gradient is correct"""
+        dev = qml.device("default.qutrit", wires=1)
+
+        @qml.qnode(dev)
+        def circuit(phi):
+            qml.TRX(phi, wires=0)
+            return qml.expval(qml.GellMann(wires=0, index=3))
+
+        grad = np.squeeze(qml.grad(circuit)(phi))
+
+        assert np.isclose(grad, -np.sin(phi))
+
+    def test_trx_differentiability_broadcasted(self):
+        """Test that differentiation of TRX with broadcasting works."""
+        phi = npp.linspace(0, 2 * np.pi, 7, requires_grad=True)
+
+        dev = qml.device("default.qutrit", wires=1)
+
+        @qml.qnode(dev)
+        def circuit(phi):
+            qml.TRX(phi, wires=0)
+            return qml.expval(qml.GellMann(wires=0, index=3))
+
+        jac = qml.jacobian(circuit)(phi)
+
+        assert np.allclose(jac, -1.0 * np.sin(np.diag(phi)))
