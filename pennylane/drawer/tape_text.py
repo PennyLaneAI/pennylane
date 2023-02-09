@@ -17,6 +17,7 @@ This module contains logic for the text based circuit drawer through the ``tape_
 
 import pennylane as qml
 from pennylane.measurements import Expectation, Probability, Sample, Variance, State
+from pennylane.ops import ControlledOp
 
 from .drawable_layers import drawable_layers
 from .utils import convert_wire_order
@@ -51,7 +52,7 @@ def _add_op(op, layer_str, wire_map, decimals, cache):
     # Controlled operations may themselves contain controlled operations; check
     # for any nesting of operators when drawing so that we correctly identify
     # and label _all_ control and target qubits
-    if isinstance(op, qml.ops.ControlledOp):
+    if isinstance(op, ControlledOp):
         next_ctrl = op
 
         while hasattr(next_ctrl, "base"):
