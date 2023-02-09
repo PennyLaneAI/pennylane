@@ -9,7 +9,7 @@
 * The `qml.math` module now also contains a submodule for
   fast Fourier transforms, `qml.math.fft`.
   [(#1440)](https://github.com/PennyLaneAI/pennylane/pull/1440)
-  
+
   The submodule in particular provides differentiable
   versions of the following functions, available in all common
   interfaces for PennyLane
@@ -42,11 +42,11 @@
   >>> qml.ops.qubit.special_unitary.pauli_basis_strings(1) # 4**1-1 = 3 Pauli words
   ['X', 'Y', 'Z']
   >>> qml.ops.qubit.special_unitary.pauli_basis_strings(2) # 4**2-1 = 15 Pauli words
-  ['IX', 'IY', 'IZ', 'XI', 'XX', 'XY', 'XZ', 'YI', 'YX', 'YY', 'YZ', 'ZI', 'ZX', 'ZY', 'ZZ'] 
+  ['IX', 'IY', 'IZ', 'XI', 'XX', 'XY', 'XZ', 'YI', 'YX', 'YY', 'YZ', 'ZI', 'ZX', 'ZY', 'ZZ']
   ```
-  
+
   For example, on a single qubit, we may define
-  
+
   ```pycon
   >>> theta = np.array([0.2, 0.1, -0.5])
   >>> U = qml.SpecialUnitary(theta, 0)
@@ -54,7 +54,7 @@
   array([[ 0.8537127 -0.47537233j,  0.09507447+0.19014893j],
          [-0.09507447+0.19014893j,  0.8537127 +0.47537233j]])
   ```
-  
+
   A single non-zero entry in the parameters will create a Pauli rotation:
 
   ```pycon
@@ -65,7 +65,7 @@
   >>> qml.math.allclose(su.matrix(), rx.matrix())
   True
   ```
-  
+
   This operation can be differentiated with hardware-compatible methods like parameter shifts
   and it supports parameter broadcasting/batching, but not both at the same time.
 
@@ -80,7 +80,7 @@
   A `ParametrizedHamiltonian` holds information representing a linear combination of operators
   with parametrized coefficents. The `ParametrizedHamiltonian` can be passed parameters to create the operator for
   the specified parameters.
-  
+
   ```pycon
   f1 = lambda p, t: p * np.sin(t) * (t - 1)
   f2 = lambda p, t: p[0] * np.cos(p[1]* t ** 2)
@@ -170,7 +170,7 @@
   ...     qml.RX(x, 0)
   ...     qml.RX(x, 1)
   ...     return qml.expval(qml.PauliZ(0))
-  >>> jax.jacobian(circuit)(jax.numpy.array(0.5)) 
+  >>> jax.jacobian(circuit)(jax.numpy.array(0.5))
   DeviceArray(-0.4792258, dtype=float32, weak_type=True)
   ```
 
@@ -189,20 +189,20 @@
   import pennylane as qml
   import jax
   from jax import numpy as jnp
-  
+
   jax.config.update("jax_enable_x64", True)
-  
+
   qml.enable_return()
-  
+
   dev = qml.device("lightning.qubit", wires=2)
-  
+
   @jax.jit
   @qml.qnode(dev, interface="jax-jit", diff_method="parameter-shift", max_diff=2)
   def circuit(a, b):
       qml.RY(a, wires=0)
       qml.RX(b, wires=1)
       return qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliZ(1))
-  
+
   a, b = jnp.array(1.0), jnp.array(2.0)
   ```
 
@@ -231,7 +231,7 @@
   import pennylane as qml
   from pennylane import numpy as np
   import jax
-  
+
   symbols = ["H", "H"]
   geometry = np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]])
 
@@ -352,16 +352,16 @@
 
   ```pycon
   >>> f(params=[1.2, 2.3, 3.4, 4.5], t=3.9)
-  DeviceArray(4.5, dtype=float32) 
-  >>> f(params=[1.2, 2.3, 3.4, 4.5], t=6)  # zero outside the range (2, 4) 
+  DeviceArray(4.5, dtype=float32)
+  >>> f(params=[1.2, 2.3, 3.4, 4.5], t=6)  # zero outside the range (2, 4)
   DeviceArray(0., dtype=float32)
   ```
-  
+
 * Added `pwc_from_function` as a decorator for defining a `ParametrizedHamiltonian`.
   This function can be used to decorate a function and create a piecewise constant
   approximation of it.
   [(#3645)](https://github.com/PennyLaneAI/pennylane/pull/3645)
-  
+
   ```pycon
   >>> @pwc_from_function(t=(2, 4), num_bins=10)
   ... def f1(p, t):
@@ -370,7 +370,7 @@
 
   The resulting function approximates the same of `p**2 * t` on the interval `t=(2, 4)`
   in 10 bins, and returns zero outside the interval.
-  
+
   ```pycon
   # t=2 and t=2.1 are within the same bin
   >>> f1(3, 2), f1(3, 2.1)
@@ -382,7 +382,7 @@
   >>> f1(3, 5)
   DeviceArray(0., dtype=float32)
   ```
-  
+
 *Next generation device API:*
 
 * The `apply_operation` single-dispatch function is added to `devices/qubit` that applies an operation
@@ -435,6 +435,10 @@
            [0.92, 1.  , 0.91, 1.  ]]], requires_grad=True)
   ```
   
+* The parameter-shift derivative of variances saves a redundant evaluation of the
+  corresponding unshifted expectation value tape, if possible
+  [(#3744)](https://github.com/PennyLaneAI/pennylane/pull/3744)
+
 * `qml.purity` is added as a measurement process for purity
   [(#3551)](https://github.com/PennyLaneAI/pennylane/pull/3551)
 
@@ -538,20 +542,20 @@
 * `qml.VQECost` is removed.
   [(#3735)](https://github.com/PennyLaneAI/pennylane/pull/3735)
 
-* The default interface is now `auto`. There is no need to specify the interface anymore! It is automatically 
+* The default interface is now `auto`. There is no need to specify the interface anymore! It is automatically
   determined by checking your `QNode` parameters.
   [(#3677)](https://github.com/PennyLaneAI/pennylane/pull/3677)
-  
+
   ```python
   import jax
   import jax.numpy as jnp
-  
+
   qml.enable_return()
   a = jnp.array(0.1)
   b = jnp.array(0.2)
-  
+
   dev = qml.device("default.qubit", wires=2)
-  
+
   @qml.qnode(dev)
   def circuit(a, b):
       qml.RY(a, wires=0)
@@ -559,18 +563,18 @@
       qml.CNOT(wires=[0, 1])
       return qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliY(1))
   ```
-  
+
   ```pycon
   >>> circuit(a, b)
   (Array(0.9950042, dtype=float32), Array(-0.19767681, dtype=float32))
   >>> jac = jax.jacobian(circuit)(a, b)
   (Array(-0.09983341, dtype=float32, weak_type=True), Array(0.01983384, dtype=float32, weak_type=True))
   ```
-  
-  It comes with the fact that the interface is determined during the `QNode` call instead of the 
-  initialization. It means that the `gradient_fn` and `gradient_kwargs` are only defined on the QNode at the beginning 
-  of the call. As well, without specifying the interface it is not possible to guarantee that the device will not be changed 
-  during the call if you are using backprop(`default.qubit` to `default.qubit,jax`e.g.) whereas before it was happening at 
+
+  It comes with the fact that the interface is determined during the `QNode` call instead of the
+  initialization. It means that the `gradient_fn` and `gradient_kwargs` are only defined on the QNode at the beginning
+  of the call. As well, without specifying the interface it is not possible to guarantee that the device will not be changed
+  during the call if you are using backprop(`default.qubit` to `default.qubit,jax`e.g.) whereas before it was happening at
   initialization, therefore you should not try to track the device without specifying the interface.
 
 * The tape method `get_operation` can also now return the operation index in the tape, and it can be
@@ -580,13 +584,13 @@
 
 * `Operation.inv()` and the `Operation.inverse` setter have been removed. Please use `qml.adjoint` or `qml.pow` instead.
   [(#3618)](https://github.com/PennyLaneAI/pennylane/pull/3618)
-  
+
   For example, instead of
-  
+
   ```pycon
   >>> qml.PauliX(0).inv()
   ```
-  
+
   use
 
   ```pycon
@@ -636,7 +640,7 @@
 
 * Updated the code example in `qml.SparseHamiltonian` with the correct wire range.
   [(#3643)](https://github.com/PennyLaneAI/pennylane/pull/3643)
-  
+
 * A hyperlink has been added in the text for a URL in the `qml.qchem.mol_data` docstring.
   [(#3644)](https://github.com/PennyLaneAI/pennylane/pull/3644)
 
