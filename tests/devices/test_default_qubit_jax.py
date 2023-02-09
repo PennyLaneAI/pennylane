@@ -521,7 +521,7 @@ class TestQNodeIntegration:
         spy = mocker.spy(dev, "_evolve_state_vector_under_parametrized_evolution")
 
         @jax.jit
-        @qml.qnode(dev, interface="jax", diff_method=None)
+        @qml.qnode(dev, interface="jax")
         def circuit():
             qml.evolve(H)(params=[], t=np.pi / 2)  # corresponds to a PauliX gate
             return qml.expval(qml.PauliZ(0))
