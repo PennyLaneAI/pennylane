@@ -383,7 +383,7 @@
 
 * The kernel matrix utility functions in `qml.kernels` are now autodifferentiation-compatible.
   In addition they support batching, for example for quantum kernel execution with shot vectors.
-  [(#3yyy)](https://github.com/PennyLaneAI/pennylane/pull/3yyy)
+  [(#3742)](https://github.com/PennyLaneAI/pennylane/pull/3742)
 
   In addition to the autodifferentiation support in JAX, Autograd, Tensorflow and PyTorch,
   optional batching was added, allowing for the following:
@@ -404,6 +404,7 @@
   We can then compute the kernel matrix on a set of 4 (random) feature
   vectors ``X`` but using two sets of 100 shots each via
 
+  ```pycon
   >>> X = np.random.random((4, 2))
   >>> qml.kernels.square_kernel_matrix(X, kernel)
   tensor([[[1.  , 0.86, 0.88, 0.92],
@@ -415,6 +416,7 @@
            [0.93, 1.  , 0.8 , 1.  ],
            [0.91, 0.8 , 1.  , 0.91],
            [0.92, 1.  , 0.91, 1.  ]]], requires_grad=True)
+  ```
   
 * `qml.purity` is added as a measurement process for purity
   [(#3551)](https://github.com/PennyLaneAI/pennylane/pull/3551)
