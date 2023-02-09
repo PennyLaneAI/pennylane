@@ -182,6 +182,30 @@ class DefaultQubitJax(DefaultQubit):
         return capabilities
 
     def _apply_parametrized_evolution(self, state: TensorLike, operation: ParametrizedEvolution):
+        # given that wires is a static value (it is not a tracer), we can use an if statement
+        if 2 * len(operation.wires) > self.num_wires:
+            # the device state vector contains less values than the operation matrix --> evolve state
+            return self._evolve_state_vector_under_parametrized_evolution(state, operation)
+        # the device state vector contains more/equal values than the operation matrix --> evolve matrix
+        return self._apply_operation(state, operation)
+
+    def _evolve_state_vector_under_parametrized_evolution(
+        self, state: TensorLike, operation: ParametrizedEvolution
+    ):
+        """Uses an odeint solver to compute the evolution of the input ``state`` under the given
+        ``ParametrizedEvolution`` operation.
+
+        Args:
+            state (array[complex]): input state
+            operation (ParametrizedEvolution): operation to apply on the state
+
+        Raises:
+            ValueError: If the parameters and time windows of the ``ParametrizedEvolution`` are
+                not defined.
+
+        Returns:
+            _type_: _description_
+        """
         if operation.data is None or operation.t is None:
             raise ValueError(
                 "The parameters and the time window are required to execute a ParametrizedEvolution "

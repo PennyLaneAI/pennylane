@@ -14,10 +14,10 @@
   versions of the following functions, available in all common
   interfaces for PennyLane
 
-    + [fft](https://numpy.org/doc/stable/reference/generated/numpy.fft.fft.html)
-    + [ifft](https://numpy.org/doc/stable/reference/generated/numpy.fft.ifft.html)
-    + [fft2](https://numpy.org/doc/stable/reference/generated/numpy.fft.fft2.html)
-    + [ifft2](https://numpy.org/doc/stable/reference/generated/numpy.fft.ifft2.html)
+  * [fft](https://numpy.org/doc/stable/reference/generated/numpy.fft.fft.html)
+  * [ifft](https://numpy.org/doc/stable/reference/generated/numpy.fft.ifft.html)
+  * [fft2](https://numpy.org/doc/stable/reference/generated/numpy.fft.fft2.html)
+  * [ifft2](https://numpy.org/doc/stable/reference/generated/numpy.fft.ifft2.html)
 
   Note that the output of the derivative of these functions
   may differ when used with complex-valued inputs, due to different
@@ -493,8 +493,8 @@
 * `QuantumMonteCarlo` template is now JAX-JIT compatible when passing `jax.numpy` arrays to the template.
   [(#3734)](https://github.com/PennyLaneAI/pennylane/pull/3734)
 
-* `DefaultQubitJax` now supports the execution of `ParametrizedEvolution` gates, using an odeint
-  solver to evolve the state vector.
+* `DefaultQubitJax` now supports evolving the state vector when executing `ParametrizedEvolution`
+  gates.
   [(#3743)](https://github.com/PennyLaneAI/pennylane/pull/3743)
 
 <h3>Breaking changes</h3>

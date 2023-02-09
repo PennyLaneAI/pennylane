@@ -197,7 +197,7 @@ class ParametrizedEvolution(Operation):
     # pylint: disable=arguments-renamed, invalid-overridden-method
     @property
     def has_matrix(self):
-        return True
+        return self._has_matrix
 
     # pylint: disable=import-outside-toplevel
     def matrix(self, wire_order=None):
