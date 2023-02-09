@@ -97,6 +97,10 @@ class Molecule:
 
         self.n_basis, self.basis_data = mol_basis_data(self.basis_name, self.symbols, load_data)
 
+        if self.n_electrons % 2 == 1 or self.mult != 1:
+            raise ValueError(f"Openshell systems are not supported. Change the charge or spin"
+                             f" multiplicity of the molecule.")
+
         if l is None:
             l = [i[0] for i in self.basis_data]
 
