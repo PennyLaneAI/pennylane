@@ -134,4 +134,4 @@ def kernel_matrix(X1, X2, kernel):
     if qml.math.ndim(matrix[0]) == 0:
         return qml.math.reshape(matrix, (N, M))
 
-    return qml.math.moveaxis(qml.math.reshape(matrix, (N, M, qml.math.size(matrix[0]))), 2, 0)
+    return qml.math.moveaxis(qml.math.reshape(matrix, (N, M, qml.math.size(matrix[0]))), -1, 0)
