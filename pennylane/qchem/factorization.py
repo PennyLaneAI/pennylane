@@ -275,8 +275,8 @@ def basis_rotation(one_electron, two_electron, tol_factor=1.0e-5):
     """
 
     num_orbitals = one_electron.shape[0] * 2
-    one_body_tensor, chemist_two_body_tensor = chemist_transform(one_electron, two_electron)
-    (chemist_one_body_tensor,) = spin_tensors(one_body_tensor)  # account for spin
+    one_body_tensor, chemist_two_body_tensor = _chemist_transform(one_electron, two_electron)
+    chemist_one_body_tensor = np.kron(one_body_tensor, np.eye(2))  # account for spin
     t_eigvals, t_eigvecs = np.linalg.eigh(chemist_one_body_tensor)
 
     factors, _, _ = factorize(chemist_two_body_tensor, tol_factor=tol_factor)
@@ -317,7 +317,7 @@ def basis_rotation(one_electron, two_electron, tol_factor=1.0e-5):
     return c_group, o_group, u_transform
 
 
-def chemist_transform(one_body_tensor=None, two_body_tensor=None, spatial_basis=True):
+def _chemist_transform(one_body_tensor=None, two_body_tensor=None, spatial_basis=True):
     r"""Transforms one- and two-body terms in physicists' notation to `chemists' notation <http://vergil.chemistry.gatech.edu/notes/permsymm/permsymm.pdf>`_\ .
 
     This converts the input two-body tensor :math:`h_{pqrs}` that constructs :math:`\sum_{pqrs} h_{pqrs} a^\dagger_p a^\dagger_q a_r a_s`
@@ -339,7 +339,7 @@ def chemist_transform(one_body_tensor=None, two_body_tensor=None, spatial_basis=
     >>> geometry = np.array([[0.0, 0.0, 0.0], [1.398397361, 0.0, 0.0]])
     >>> mol = qml.qchem.Molecule(symbols, geometry)
     >>> core, one, two = qml.qchem.electron_integrals(mol)()
-    >>> qml.qchem.chemist_transform(two_body_tensor=two, spatial_basis=True)
+    >>> qml.qchem.factorization._chemist_transform(two_body_tensor=two, spatial_basis=True)
     (tensor([[-0.427983, -0.      ],
              [-0.      , -0.439431]], requires_grad=True),
     tensor([[[[0.337378, 0.      ],
@@ -398,41 +398,3 @@ def chemist_transform(one_body_tensor=None, two_body_tensor=None, spatial_basis=
         chemist_one_body_coeffs += one_body_coeffs
 
     return (x for x in [chemist_one_body_coeffs, chemist_two_body_coeffs] if x is not None)
-
-
-def spin_tensors(one_body_integrals=None, two_body_integrals=None):
-    r"""Build spin-adjusted tensors :math:`h_{pq}` and :math:`h_{pqrs}` from one-body and two-body integrals
-
-    Args:
-        one_electron (array[float]): one-electron integral in the molecular orbital basis
-        two_electron (array[array[float]]): two-electron integral in the molecular orbital basis
-
-    Returns:
-        tuple(array[float],) or tuple(array[float], array[float]): a tuple containing spin-adjusted tensors for the provided integrals
-
-    **Example**
-
-    >>> symbols  = ['H', 'H']
-    >>> geometry = np.array([[0.0, 0.0, 0.0], [1.398397361, 0.0, 0.0]])
-    >>> mol = qml.qchem.Molecule(symbols, geometry)
-    >>> core, one, two = qml.qchem.electron_integrals(mol)()
-    >>> qml.qchem.spin_tensors(one_body_integrals=one)
-    (tensor([[-1.25331 , -0.      , -0.      , -0.      ],
-             [-0.      , -1.25331 , -0.      , -0.      ],
-             [-0.      , -0.      , -0.475069, -0.      ],
-             [-0.      , -0.      , -0.      , -0.475069]], requires_grad=True),)
-
-    """
-
-    # Build operators that account for spins.
-    one_body_op, two_body_op = np.eye(2), np.eye(4).reshape(2, 2, 2, 2).swapaxes(0, 1)
-
-    one_body_tensor = one_body_integrals
-    if one_body_integrals is not None:
-        one_body_tensor = np.kron(one_body_integrals, one_body_op)
-
-    two_body_tensor = two_body_integrals
-    if two_body_integrals is not None:
-        two_body_tensor = 0.5 * np.kron(two_body_integrals, two_body_op)
-
-    return (x for x in [one_body_tensor, two_body_tensor] if x is not None)
