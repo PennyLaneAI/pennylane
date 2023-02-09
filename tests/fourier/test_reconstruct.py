@@ -833,10 +833,11 @@ class TestReconstruct:
         self, qnode, params, ids, nums_frequency, spectra, shifts, exp_calls, mocker
     ):
         """Run a full reconstruction on a QNode."""
-        qnode = qml.QNode(qnode, dev_1)
+        qnode = qml.QNode(qnode, dev_1, interface="autograd")
 
         with qml.Tracker(qnode.device) as tracker:
             recons = reconstruct(qnode, ids, nums_frequency, spectra, shifts)(*params)
+
         assert tracker.totals["executions"] == exp_calls
         arg_names = list(signature(qnode.func).parameters.keys())
         for outer_key in recons:

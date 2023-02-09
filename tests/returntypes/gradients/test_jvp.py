@@ -527,7 +527,7 @@ class TestJVPGradients:
         tape = qml.tape.QuantumScript.from_queue(q)
         tape.trainable_params = {0, 1}
         tapes, fn = qml.gradients.jvp(tape, tangent, param_shift)
-        jvp = fn(qml.execute(tapes, dev, qml.gradients.param_shift, interface="torch"))
+        jvp = fn(qml.execute(tapes, dev, qml.gradients.param_shift))
 
         assert np.allclose(jvp.detach(), expected(params.detach()), atol=tol, rtol=0)
 
