@@ -20,13 +20,6 @@ import numpy as np
 import pennylane as qml
 from pennylane.devices.qubit import simulate
 
-ml_frameworks_list = [
-    "numpy",
-    pytest.param("autograd", marks=pytest.mark.autograd),
-    pytest.param("jax", marks=pytest.mark.jax),
-    pytest.param("torch", marks=pytest.mark.torch),
-    pytest.param("tensorflow", marks=pytest.mark.tf),
-]
 
 
 class TestCurrentlyUnsupportedCases:
@@ -68,7 +61,7 @@ class TestStatePrep:
     """Tests integration with various state prep methods."""
 
     def test_basis_state(self):
-        """Test that the basis state method operator the quantum script into the right state."""
+        """Test that the BasisState operator prepares the desired state."""
         qs = qml.tape.QuantumScript(
             measurements=[qml.probs(wires=(0, 1, 2))], prep=[qml.BasisState([0, 1], wires=(0, 1))]
         )

@@ -70,13 +70,13 @@ def measure(measurementprocess: MeasurementProcess, state: TensorLike) -> Tensor
 def simulate(circuit: qml.tape.QuantumScript) -> tuple:
     """Simulate a single quantum script.
 
-    This is an internal function that will be called by successor to ``default.qubit``.
+    This is an internal function that will be called by the successor to ``default.qubit``.
 
     Args:
         circuit (.QuantumScript): The single circuit to simulate
 
     Returns:
-        tuple(ndarray): The results of the simulation
+        tuple(TensorLike): The results of the simulation
 
     Note that this function can return measurements for non-commuting observables simultaneously.
 
