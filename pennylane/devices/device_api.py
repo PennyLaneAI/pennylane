@@ -31,15 +31,18 @@ QuantumTape_or_Batch = Union[QuantumTape, QuantumTapeBatch]
 Config_or_Batch = Union[ExecutionConfig, Sequence[ExecutionConfig]]
 
 # pylint: disable=unused-argument, no-self-use
-class DeviceDriver(abc.ABC):
-    """An experimental PennyLane device driver.
+class QuantumDevice(abc.ABC):
+    """A device driver that can control one or more backends. A backend can be either a physical
+    Quantum Processing Unit or a virtual one such as a simulator.
 
-    The child classes can define any number of class specific arguments and keyword arguments.
+    .. warning::
 
-    Experimental devices should be configured to run under :func:`~.enable_return`, the newer
+        This interface is **experimental** and not yet integrated with the rest of PennyLane.
+
+    Device drivers should be configured to run under :func:`~.enable_return`, the newer
     return shape specification.
 
-    Only the ``execute`` function must be defined to construct a device.
+    Only the ``execute`` method must be defined to construct a device driver.
 
     .. details::
         :title: Design Motivation
@@ -59,9 +62,9 @@ class DeviceDriver(abc.ABC):
     .. details::
         :title: Porting from the old interface
 
-        :meth:`~.Device.batch_execute` and :meth:`~.Device.execute` are now a single method, :meth:`~.DeviceDriver.execute`
+        :meth:`~.Device.batch_execute` and :meth:`~.Device.execute` are now a single method, :meth:`~.QuantumDevice.execute`
 
-        :meth:`~.Device.batch_transform` and :meth:`~.Device.expand_fn` are now a single method, :meth:`~.DeviceDriver.preprocess`
+        :meth:`~.Device.batch_transform` and :meth:`~.Device.expand_fn` are now a single method, :meth:`~.QuantumDevice.preprocess`
 
         Shot information is no longer stored on the device, but instead specified on individual input :class:`~.QuantumTape`.
         If the individual :class:`~.QuantumTape` does not specify shot information, device defaults should be used instead.
@@ -75,6 +78,10 @@ class DeviceDriver(abc.ABC):
 
         A class will be provided to easily construct default preprocessing steps from supported operations, supported observables,
         supported measurement processes, and various capabilities.
+
+        Utility functions will be added to the ``devices`` module to query whether or not the device driver can do certain things, such
+        as ``devices.supports_operator(op, dev, native=True)``. These functions will work by checking the behaviour of :meth:`~.QuantumDevice.preprocess`
+        to certain inputs.
 
         Versioning should be specified by the package containing the device. If an external package includes a PennyLane device,
         then the package requirements should specify the minimium PennyLane version required to work with the device.
@@ -103,6 +110,16 @@ class DeviceDriver(abc.ABC):
         * ``derivative_order``: Relevant for requested device derivatives.
 
     """
+
+    @property
+    def name(self) -> str:
+        """The name of the device or set of devices.
+
+        This property can either be the name of the class, or an alias to be used in the :func:`~.device` constructor,
+        such as `"default.qubit"` or `"lightning.qubit"`.
+
+        """
+        return type(self).__name__
 
     tracker: Tracker = Tracker()
     """A :class:`~.Tracker` that can store information about device executions, shots, batches,
@@ -190,7 +207,7 @@ class DeviceDriver(abc.ABC):
             execution_config (Union[ExecutionConfig, Sequence[ExecutionConfg]]): a datastructure with additional information required for execution
 
         Returns:
-            A numeric result of the computation.
+            TensorLike, tuple[TensorLike], tuple[tuple[TensorLike]]: A numeric result of the computation.
 
         **Interface parameters:**
 
@@ -298,7 +315,7 @@ class DeviceDriver(abc.ABC):
         if execution_config.gradient_method != "device":
             return False
         return (
-            cls.compute_derivatives != DeviceDriver.compute_derivatives
+            cls.compute_derivatives != QuantumDevice.compute_derivatives
             if execution_config.derivative_order == 1
             else False
         )
@@ -427,7 +444,7 @@ class DeviceDriver(abc.ABC):
         Default behaviour assumes this to be ``True`` if :meth:`~.jvp` is overridden.
 
         """
-        return cls.jvp != DeviceDriver.jvp
+        return cls.jvp != QuantumDevice.jvp
 
     def vjp(
         self,
@@ -495,4 +512,4 @@ class DeviceDriver(abc.ABC):
 
         Default behaviour assumes this to be ``True`` if :meth:`~.vjp` is overridden.
         """
-        return cls.vjp != DeviceDriver.vjp
+        return cls.vjp != QuantumDevice.vjp
