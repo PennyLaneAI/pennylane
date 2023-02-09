@@ -197,7 +197,7 @@ class ParametrizedEvolution(Operation):
     # pylint: disable=arguments-renamed, invalid-overridden-method
     @property
     def has_matrix(self):
-        return self._has_matrix
+        return True
 
     # pylint: disable=import-outside-toplevel
     def matrix(self, wire_order=None):
@@ -210,7 +210,7 @@ class ParametrizedEvolution(Operation):
 
         def fun(y, t):
             """dy/dt = -i H(t) y"""
-            return -1j * qml.matrix(self.H(self.data, t=t)) @ y
+            return -1j * qml.matrix(self.H(self.data, t=t), wire_order=self.wires) @ y
 
         result = odeint(fun, y0, self.t, **self.odeint_kwargs)
         mat = result[-1]

@@ -18,10 +18,13 @@ import numpy as np
 
 import pennylane as qml
 from pennylane.devices import DefaultQubit
+from pennylane.typing import TensorLike
+from pennylane.pulse import ParametrizedEvolution
 
 try:
-    import jax.numpy as jnp
     import jax
+    import jax.numpy as jnp
+    from jax.experimental.ode import odeint
     from jax.config import config as jax_config
 
 except ImportError as e:  # pragma: no cover
@@ -169,6 +172,7 @@ class DefaultQubitJax(DefaultQubit):
         del self._apply_ops["PauliY"]
         del self._apply_ops["Hadamard"]
         del self._apply_ops["CZ"]
+        self.operations.add("ParametrizedEvolution")
         self._prng_key = prng_key
 
     @classmethod
@@ -176,6 +180,22 @@ class DefaultQubitJax(DefaultQubit):
         capabilities = super().capabilities().copy()
         capabilities.update(passthru_interface="jax")
         return capabilities
+
+    def _apply_parametrized_evolution(self, state: TensorLike, operation: ParametrizedEvolution):
+        if operation.data is None or operation.t is None:
+            raise ValueError(
+                "The parameters and the time window are required to execute a ParametrizedEvolution "
+                "You can update its values by calling the ParametrizedEvolution class: EV(params, t)."
+            )
+
+        state = jnp.ravel(state)
+
+        def fun(y, t):
+            """dy/dt = -i H(t) y"""
+            return -1j * qml.matrix(operation.H(operation.data, t=t), wire_order=self.wires) @ y
+
+        result = odeint(fun, state, operation.t, **operation.odeint_kwargs)
+        return self._reshape(result[-1], [2] * self.num_wires)
 
     @staticmethod
     def _scatter(indices, array, new_dimensions):

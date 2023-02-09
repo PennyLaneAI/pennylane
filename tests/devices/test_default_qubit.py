@@ -24,6 +24,7 @@ import pennylane as qml
 from pennylane import numpy as np, DeviceError
 from pennylane.devices.default_qubit import _get_slice, DefaultQubit
 from pennylane.wires import Wires, WireError
+from pennylane.pulse import ParametrizedHamiltonian
 
 U = np.array(
     [
@@ -2013,6 +2014,26 @@ class TestApplyOps:
         matrix = matrix.reshape((2, 2) * 3)
         state_out_einsum = np.einsum("abcdef,kdfe->kacb", matrix, self.state)
         assert np.allclose(state_out, state_out_einsum)
+
+    def test_apply_parametrized_evolution_raises_error(self):
+        """Test that applying a ParametrizedEvolution raises an error."""
+        param_ev = qml.evolve(ParametrizedHamiltonian([1], [qml.PauliX(0)]))
+        with pytest.raises(
+            NotImplementedError,
+            match="The device default.qubit cannot execute a ParametrizedEvolution operation",
+        ):
+            self.dev._apply_parametrized_evolution(state=self.state, operation=param_ev)
+
+        @qml.qnode(self.dev)
+        def circuit():
+            qml.apply(param_ev)
+            return qml.expval(qml.PauliZ(0))
+
+        with pytest.raises(
+            NotImplementedError,
+            match="The device default.qubit.autograd cannot execute a ParametrizedEvolution operation",
+        ):
+            circuit()
 
 
 class TestStateVector:

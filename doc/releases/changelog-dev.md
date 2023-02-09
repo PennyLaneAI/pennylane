@@ -476,6 +476,10 @@
 * `QuantumMonteCarlo` template is now JAX-JIT compatible when passing `jax.numpy` arrays to the template.
   [(#3734)](https://github.com/PennyLaneAI/pennylane/pull/3734)
 
+* `DefaultQubitJax` now supports the execution of `ParametrizedEvolution` gates, using an odeint
+  solver to evolve the state vector.
+  [(#3743)](https://github.com/PennyLaneAI/pennylane/pull/3743)
+
 <h3>Breaking changes</h3>
 
 * The argument `mode` in execution is replaced by the boolean `grad_on_execution` in the new execution pipeline.
@@ -484,7 +488,7 @@
 * `qml.VQECost` is removed.
   [(#3735)](https://github.com/PennyLaneAI/pennylane/pull/3735)
 
-* The default interface is now `auto`. There is no need to specify the interface anymore! It is automatically 
+* The default interface is now `auto`. There is no need to specify the interface anymore! It is automatically
   determined by checking your `QNode` parameters.
   [(#3677)](https://github.com/PennyLaneAI/pennylane/pull/3677)
   
@@ -513,10 +517,10 @@
   (Array(-0.09983341, dtype=float32, weak_type=True), Array(0.01983384, dtype=float32, weak_type=True))
   ```
   
-  It comes with the fact that the interface is determined during the `QNode` call instead of the 
-  initialization. It means that the `gradient_fn` and `gradient_kwargs` are only defined on the QNode at the beginning 
-  of the call. As well, without specifying the interface it is not possible to guarantee that the device will not be changed 
-  during the call if you are using backprop(`default.qubit` to `default.qubit,jax`e.g.) whereas before it was happening at 
+  It comes with the fact that the interface is determined during the `QNode` call instead of the
+  initialization. It means that the `gradient_fn` and `gradient_kwargs` are only defined on the QNode at the beginning
+  of the call. As well, without specifying the interface it is not possible to guarantee that the device will not be changed
+  during the call if you are using backprop(`default.qubit` to `default.qubit,jax`e.g.) whereas before it was happening at
   initialization, therefore you should not try to track the device without specifying the interface.
 
 * The tape method `get_operation` can also now return the operation index in the tape, and it can be
