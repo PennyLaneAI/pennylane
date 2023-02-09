@@ -47,6 +47,26 @@ def _add_op(op, layer_str, wire_map, decimals, cache):
 
     control_wires = getattr(op, "control_wires", [])
     control_values = op.hyperparameters.get("control_values", None)
+
+    # Controlled operations may themselves contain controlled operations; check
+    # for any nesting of operators when drawing so that we correctly identify
+    # and label _all_ control and target qubits
+    if isinstance(op, qml.ops.ControlledOp):
+        next_ctrl = op
+
+        while hasattr(next_ctrl, "base"):
+            base_control_wires = getattr(next_ctrl.base, "control_wires", [])
+            control_wires += base_control_wires
+
+            base_control_values = next_ctrl.base.hyperparameters.get(
+                "control_values", [True] * len(base_control_wires)
+            )
+
+            if control_values is not None:
+                control_values.extend(base_control_values)
+
+            next_ctrl = next_ctrl.base
+
     if control_values:
         for w, val in zip(control_wires, control_values):
             layer_str[wire_map[w]] += "●" if _bool_control_value(val) else "○"
