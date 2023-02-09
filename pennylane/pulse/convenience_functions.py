@@ -191,6 +191,15 @@ def pwc(timespan):
             func: a function that takes two arguments, an array of trainable parameters and a `float` defining the
             time at which the function is evaluated.
 
+    ``pwc`` essentially implements
+
+    .. code-block:: python3
+
+        def pwc(timespan):
+            def wrapped(p, t):
+                return p[int(t/len(p))]
+            return wrapped
+
     This function can be used to create a parametrized coefficient function that is piecewise constant
     within the interval ``t``, and 0 outside it. When creating the callable, only the timespan is passed. The number
     of bins and values for the parameters are set when ``params`` is passed to the callable. Each bin value is set by
@@ -209,6 +218,16 @@ def pwc(timespan):
         :align: center
         :width: 60%
         :target: javascript:void(0);
+
+    .. warning::
+        The final time in the timespan indicates the index at which the function output switches from params[-1] to 0.
+        As such, the final time in ``timespan`` returns 0:
+
+        >>> H(params=[[1, 2, 3, 4, 5]], t=6.999999)
+        15.0*(PauliX(wires=[0]))
+
+        >>> H(params=[[1, 2, 3, 4, 5]], t=7)
+        0.0*(PauliX(wires=[0]))
 
     **Example**
 
@@ -237,16 +256,6 @@ def pwc(timespan):
 
         # outside the window - the function is assigned non-zero values
         >>> H(params=[[1, 2, 3, 4, 5]], t=8)
-        0.0*(PauliX(wires=[0]))
-
-    .. note::
-        The final time in the timespan indicates the index at which the function output switches from params[-1] to 0.
-        As such, the final time in ``timespan`` returns 0:
-
-        >>> H(params=[[1, 2, 3, 4, 5]], t=6.999999)
-        15.0*(PauliX(wires=[0]))
-
-        >>> H(params=[[1, 2, 3, 4, 5]], t=7)
         0.0*(PauliX(wires=[0]))
 
     """
