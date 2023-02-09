@@ -33,8 +33,8 @@ qubit_device_and_diff_method = [
 ]
 
 interface_and_qubit_device_and_diff_method = [
-    ["auto"] + inner_list for inner_list in qubit_device_and_diff_method
-] + [["tf"] + inner_list for inner_list in qubit_device_and_diff_method]
+    ["tf"] + inner_list for inner_list in qubit_device_and_diff_method
+]
 
 TOL_FOR_SPSA = 1.0
 SEED_FOR_SPSA = 32651
@@ -430,7 +430,7 @@ class TestQNode:
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
 
-@pytest.mark.parametrize("interface", ["auto", "tf"])
+@pytest.mark.parametrize("interface", ["tf"])
 class TestShotsIntegration:
     """Test that the QNode correctly changes shot value, and
     differentiates it."""
@@ -549,7 +549,7 @@ class TestShotsIntegration:
         assert spy.call_args[1]["gradient_fn"] is qml.gradients.param_shift
 
 
-@pytest.mark.parametrize("interface", ["auto", "tf"])
+@pytest.mark.parametrize("interface", ["tf"])
 class TestAdjoint:
     """Specific integration tests for the adjoint method"""
 

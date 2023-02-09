@@ -1805,7 +1805,7 @@ class TestHashing:
 
 
 def cost(tape, dev):
-    return qml.execute([tape], dev, interface="autograd", gradient_fn=qml.gradients.param_shift)
+    return qml.execute([tape], dev, gradient_fn=qml.gradients.param_shift)
 
 
 measures = [
@@ -2342,7 +2342,7 @@ class TestNumericType:
         )
         herm = np.outer(arr, arr)
 
-        @qml.qnode(dev, interface="autograd")
+        @qml.qnode(dev)
         def circuit(a, b):
             qml.RY(a, wires=0)
             qml.RX(b, wires=0)

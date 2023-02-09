@@ -583,7 +583,7 @@ def vn_entropy(state, indices, base=None, check_state=False, c_dtype="complex128
     The entropy can be obtained by providing a quantum state as a density matrix, for example:
 
     >>> y = [[1/2, 0, 0, 1/2], [0, 0, 0, 0], [0, 0, 0, 0], [1/2, 0, 0, 1/2]]
-    >>> vn_entropy(x, indices=[0])
+    >>> vn_entropy(y, indices=[0])
     0.6931472
 
     .. seealso:: :func:`pennylane.qinfo.transforms.vn_entropy` and :func:`pennylane.vn_entropy`
