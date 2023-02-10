@@ -285,7 +285,11 @@ class batch_transform:
 
         def _wrapper(*args, **kwargs):
             shots = kwargs.pop("shots", False)
+            argnums = kwargs.pop("argnums", None)
+            tkwargs["argnums"] = argnums
+
             qnode.construct(args, kwargs)
+            print(tkwargs)
             tapes, processing_fn = self.construct(qnode.qtape, *targs, **tkwargs)
 
             interface = qnode.interface
@@ -399,7 +403,9 @@ class batch_transform:
 
         if expand and self.expand_fn is not None:
             tape = self.expand_fn(tape, *args, **kwargs)
-
+        argnums = kwargs.pop("argnums", None)
+        if argnums is not None:
+            tape.trainable_params = argnums
         tapes, processing_fn = self.transform_fn(tape, *args, **kwargs)
 
         if processing_fn is None:

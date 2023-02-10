@@ -878,3 +878,18 @@ def detach(tensor, like=None):
         return np.to_numpy(tensor)
 
     return tensor
+
+
+def jax_argnums_to_tape_trainable(qnode, argnums, expand_fn, args, kwargs):
+    import jax
+
+    with jax.core.new_main(jax.ad.JVPTrace) as main:
+        trace = jax.ad.JVPTrace(main, 0)
+
+    args_jvp = [jax.ad.JVPTracer(trace, arg, jax.numpy.zeros(1)) if i in argnums else arg for i, arg in enumerate(args)]
+    qnode.construct(args_jvp, kwargs)
+    tape = qnode.qtape
+    tape = expand_fn(tape)
+    params_tape = tape.get_parameters()
+    del trace
+    return params_tape

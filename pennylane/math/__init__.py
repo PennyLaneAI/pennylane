@@ -60,6 +60,7 @@ from .multi_dispatch import (
     tensordot,
     unwrap,
     where,
+    jax_argnums_to_tape_trainable
 )
 from .quantum import (
     cov_matrix,

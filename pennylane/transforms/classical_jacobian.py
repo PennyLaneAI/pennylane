@@ -140,12 +140,12 @@ def classical_jacobian(qnode, argnum=None, expand_fn=None, trainable_only=True):
     def classical_preprocessing(*args, **kwargs):
         """Returns the trainable gate parameters for a given QNode input."""
         kwargs.pop("shots", None)
+        kwargs.pop("argnums", None)
         qnode.construct(args, kwargs)
         tape = qnode.qtape
 
         if expand_fn is not None:
             tape = expand_fn(tape)
-
         return qml.math.stack(tape.get_parameters(trainable_only=trainable_only))
 
     if qnode.interface == "autograd":
@@ -173,12 +173,8 @@ def classical_jacobian(qnode, argnum=None, expand_fn=None, trainable_only=True):
 
         def _jacobian(*args, **kwargs):
             if trainable_only:
-                _argnum = list(range(len(args)))
-                full_jac = jax.jacobian(classical_preprocessing, argnums=_argnum)(*args, **kwargs)
-                if np.isscalar(argnum):
-                    return full_jac[argnum]
-
-                return tuple(full_jac[i] for i in argnum)
+                full_jac = jax.jacobian(classical_preprocessing, argnums=argnum)(*args, **kwargs)
+                return full_jac
 
             return jax.jacobian(classical_preprocessing, argnums=argnum)(*args, **kwargs)
 

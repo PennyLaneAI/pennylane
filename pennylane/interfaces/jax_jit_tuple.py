@@ -96,7 +96,7 @@ def _jac_shape_dtype_tuple(tapes, device):
 
 
 def _jit_compute_jvps(jacobians, tangents, multi_measurements, trainable_params):
-    # Remove the the jitted parameters that are not trainable as they are not contributing to the jacobian.
+    # Remove the jitted parameters that are not trainable as they are not contributing to the jacobian.
     tangents_trainable = [
         [tangent[idx] for idx in trainable]
         for tangent, trainable in zip(tangents, trainable_params)
@@ -217,8 +217,8 @@ def _execute_bwd_tuple(
     def execute_wrapper_jvp(primals, tangents):
         # pylint: disable=unused-variable
         params = primals[0]
+
         # Select the trainable params
-        # Non trainable params are 0
         trainable_params = [t.trainable_params for t in tapes]
 
         multi_measurements = [len(tape.measurements) > 1 for tape in tapes]
