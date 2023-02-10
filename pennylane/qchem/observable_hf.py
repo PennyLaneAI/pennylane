@@ -186,7 +186,7 @@ def jordan_wigner(op):
                 c[k[0]] = c[k[0]] + c[j]
                 del c[j]
 
-    pauli_map = {"X": qml.PauliX, "Y": qml.PauliY, "Z": qml.PauliZ}
+    pauli_map = {"I": qml.Identity, "X": qml.PauliX, "Y": qml.PauliY, "Z": qml.PauliZ}
     for i, term in enumerate(o):
         if len(term) == 0:
             o[i] = qml.Identity(0)

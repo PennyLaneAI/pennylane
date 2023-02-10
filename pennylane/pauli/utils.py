@@ -1398,8 +1398,6 @@ def _pauli_mult(p1, p2):
                 else:
                     k.append((i[0], pauli_mult_dict[i[1] + j[1]]))
 
-    k = [i for i in k if "I" not in i[1]]
-
     for item in k:
         k_ = [i for i, x in enumerate(k) if x == item]
         if len(k_) >= 2:
