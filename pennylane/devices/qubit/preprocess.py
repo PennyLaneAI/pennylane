@@ -206,7 +206,7 @@ def preprocess(tapes, execution_config=None, max_expansion=10):
         to be applied to the list of evaluated circuit results.
     """
     # Finite shot support will be added later
-    if execution_config and getattr(execution_config, "shots", None) is not None:
+    if execution_config and execution_config.shots is not None:
         raise DeviceError("The Python Device does not support finite shots.")
 
     for i, tape in enumerate(tapes):
