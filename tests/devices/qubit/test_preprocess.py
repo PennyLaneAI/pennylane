@@ -306,10 +306,6 @@ class TestPreprocess:
         dev = qml.device("default.qubit", wires=2)
         expected = qml.execute(tapes, dev)
         res = batch_fn(dev.batch_execute(res_tapes))
-        # Need to check each row individually because the dimensions of ``res`` and
-        # ``expected`` are different
-        # for r, e in zip(res, expected):
-        #     assert np.allclose(r, e)
         assert np.allclose(res, expected)
         qml.disable_return()
 
