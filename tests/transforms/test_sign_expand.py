@@ -19,7 +19,7 @@ import pennylane.tape
 dev = qml.device("default.qubit", wires=[0, 1, 2, 3, "Hadamard", "Target"])
 """Defines the device used for all tests"""
 
-"""Defines circuits to be used in queueing/output tests"""
+# Defines circuits to be used in queueing/output tests
 with pennylane.tape.QuantumTape() as tape1:
     qml.PauliX(0)
     H1 = qml.Hamiltonian([1.5], [qml.PauliZ(0) @ qml.PauliZ(1)])
