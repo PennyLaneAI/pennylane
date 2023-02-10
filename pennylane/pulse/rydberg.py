@@ -16,13 +16,12 @@ individual (trapped) rydberg atoms under the excitation of several laser fields.
 import numpy as np
 
 import pennylane as qml
-from pennylane.operation import Operator
 from pennylane.ops import SProd, Sum
 
 from .parametrized_hamiltonian import ParametrizedHamiltonian
 
 
-class RydbergEnsemble(Operator):
+class RydbergEnsemble:
     """Class representing the interaction of an ensemble of Rydberg atoms.
 
     Args:
@@ -37,8 +36,7 @@ class RydbergEnsemble(Operator):
     def __init__(self, qubit_positions: list, wires: list = None) -> None:
         self.qubit_positions = qubit_positions
         self._rydberg_interaction = None
-        wires = wires or range(len(qubit_positions))
-        super().__init__(wires=wires)
+        self.wires = wires or range(len(qubit_positions))
 
     @property
     def rydberg_interaction(self) -> Sum:
