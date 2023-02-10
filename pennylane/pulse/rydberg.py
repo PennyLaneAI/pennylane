@@ -19,7 +19,7 @@ import pennylane as qml
 from pennylane.ops import SProd, Sum
 
 
-def rydberg_interaction(qubit_positions: list, separation: float, wires: list) -> Sum:
+def rydberg_interaction(qubit_positions: list, wires: list, distance: float = 1) -> Sum:
     r"""Returns the hamiltonian of the interaction of an ensemble of Rydberg atoms located in the
     given qubit positions:
 
@@ -60,8 +60,8 @@ def rydberg_interaction(qubit_positions: list, separation: float, wires: list) -
     H = 0
     for idx, (pos1, wire1) in enumerate(zip(qubit_positions[1:], wires[1:])):
         for pos2, wire2 in zip(qubit_positions[: idx + 1], wires[: idx + 1]):
-            atom_distance = separation * np.linalg.norm(qml.math.substract(pos2, pos1))
+            atom_distance = distance * np.linalg.norm(qml.math.array(pos2) - pos1)
             Vij = 1 / (abs(atom_distance) ** 6)  # van der Waals potential
-            H += Vij * qml.prod(rydberg_projector(wire1), rydberg_projector(wire2))
+            H += qml.s_prod(Vij, qml.prod(rydberg_projector(wire1), rydberg_projector(wire2)))
 
     return H

@@ -229,6 +229,7 @@ from scipy.sparse import coo_matrix, eye, kron
 import pennylane as qml
 from pennylane.math import expand_matrix
 from pennylane.queuing import QueuingManager
+from pennylane.typing import TensorLike
 from pennylane.wires import Wires
 
 from .utils import pauli_eigs
@@ -1406,10 +1407,7 @@ class Operator(abc.ABC):
             return self
         if isinstance(other, qml.pulse.ParametrizedHamiltonian):
             return other.__add__(self)
-        backend = autoray.infer_backend(other)
-        if (
-            backend == "builtins" and isinstance(other, numbers.Number)
-        ) or backend in SUPPORTED_INTERFACES:
+        if isinstance(other, TensorLike):
             return qml.sum(self, qml.s_prod(scalar=other, operator=qml.Identity(self.wires)))
         return NotImplemented
 
@@ -1419,11 +1417,14 @@ class Operator(abc.ABC):
         """The scalar multiplication between scalars and Operators."""
         if callable(other):
             return qml.pulse.ParametrizedHamiltonian([other], [self])
-        backend = autoray.infer_backend(other)
-        if (
-            backend == "builtins" and isinstance(other, numbers.Number)
-        ) or backend in SUPPORTED_INTERFACES:
+        if isinstance(other, TensorLike):
             return qml.s_prod(scalar=other, operator=self)
+        return NotImplemented
+
+    def __truediv__(self, other):
+        """The division between an Operator and a number."""
+        if isinstance(other, TensorLike):
+            return self.__mul__(1 / other)
         return NotImplemented
 
     __rmul__ = __mul__
