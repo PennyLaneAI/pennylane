@@ -460,16 +460,15 @@ class QNode:
             self.gradient_fn = None
             self.gradient_kwargs = {}
             return
-        if self.interface == "auto":
+        if self.interface == "auto" and self.diff_method == "backprop":
             # Check that the device has the capabilities to support backprop
-            if self.diff_method == "backprop":
-                backprop_devices = self.device.capabilities().get("passthru_devices", None)
-                if backprop_devices is None:
-                    raise qml.QuantumFunctionError(
-                        f"The {self.device.short_name} device does not support native computations with "
-                        "autodifferentiation frameworks."
-                    )
-                return
+            backprop_devices = self.device.capabilities().get("passthru_devices", None)
+            if backprop_devices is None:
+                raise qml.QuantumFunctionError(
+                    f"The {self.device.short_name} device does not support native computations with "
+                    "autodifferentiation frameworks."
+                )
+            return
 
         self.gradient_fn, self.gradient_kwargs, self.device = self.get_gradient_fn(
             self._original_device, self.interface, self.diff_method

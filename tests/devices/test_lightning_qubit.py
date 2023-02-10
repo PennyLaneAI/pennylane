@@ -61,7 +61,7 @@ def test_no_backprop_auto_interface():
 
 
 def test_finite_shots_adjoint():
-    """Test that that shots and adjoint diff raises an error."""
+    """Test that shots and adjoint diff raises an error."""
 
     dev = qml.device("lightning.qubit", wires=2, shots=2)
 
