@@ -154,26 +154,26 @@ def jordan_wigner(op):
         if op[0][0][0] == op[0][1][0] or op[0][2][0] == op[0][3][0]:
             return 0
 
-    for t in op:
-        for l in t:
-            z = [(index, "Z") for index in range(l[0])]
-            x = z + [(l[0], "X"), 0.5]
+    t = op[0]
+    for l in t:
+        z = [(index, "Z") for index in range(l[0])]
+        x = z + [(l[0], "X"), 0.5]
 
-            if l[1]:
-                y = z + [(l[0], "Y"), -0.5j]
+        if l[1]:
+            y = z + [(l[0], "Y"), -0.5j]
 
-            else:
-                y = z + [(l[0], "Y"), 0.5j]
+        else:
+            y = z + [(l[0], "Y"), 0.5j]
 
-            if t.index(l) == 0:
-                q = [x, y]
-            else:
-                m = []
-                for t1 in q:
-                    for t2 in [x, y]:
-                        q1, c1 = _pauli_mult(t1[:-1], t2[:-1])
-                        m.append(q1 + [c1 * t1[-1] * t2[-1]])
-                q = m
+        if t.index(l) == 0:
+            q = [x, y]
+        else:
+            m = []
+            for t1 in q:
+                for t2 in [x, y]:
+                    q1, c1 = _pauli_mult(t1[:-1], t2[:-1])
+                    m.append(q1 + [c1 * t1[-1] * t2[-1]])
+            q = m
 
     c = [p[-1] for p in q]
     o = [p[:-1] for p in q]
