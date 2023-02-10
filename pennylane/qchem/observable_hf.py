@@ -155,7 +155,7 @@ def jordan_wigner(op):
             return 0
 
     t = op[0]
-    q = [[(0, 'I'), 1.0]]
+    q = [[(0, "I"), 1.0]]
     for l in t:
         z = [(index, "Z") for index in range(l[0])]
         x = z + [(l[0], "X"), 0.5]
