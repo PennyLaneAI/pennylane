@@ -277,7 +277,6 @@ class QubitDevice(Device):
 
     @classmethod
     def capabilities(cls):
-
         capabilities = super().capabilities().copy()
         capabilities.update(
             model="qubit",
@@ -318,7 +317,6 @@ class QubitDevice(Device):
                 r = qml.math.squeeze(r)
 
             if counts_exist:
-
                 # This happens when at least one measurement type is Counts
                 for result_group in r:
                     if isinstance(result_group, list):
@@ -380,7 +378,6 @@ class QubitDevice(Device):
 
         # compute the required statistics
         if self._shot_vector is not None:
-
             results = self.shot_vec_statistics(circuit)
 
         else:
@@ -445,7 +442,6 @@ class QubitDevice(Device):
             results = self.statistics(circuit=circuit)
 
         if not circuit.is_sampled:
-
             if len(measurements) == 1:
                 if isinstance(measurements[0], StateMP):
                     # State: assumed to only be allowed if it's the only measurement
@@ -679,8 +675,7 @@ class QubitDevice(Device):
 
         Both arguments are provided as lists of PennyLane :class:`~.Operation`
         instances. Useful properties include :attr:`~.Operation.name`,
-        :attr:`~.Operation.wires`, and :attr:`~.Operation.parameters`,
-        and :attr:`~.Operation.inverse`:
+        :attr:`~.Operation.wires`, and :attr:`~.Operation.parameters`:
 
         >>> op = qml.RX(0.2, wires=[0])
         >>> op.name # returns the operation name
@@ -689,11 +684,6 @@ class QubitDevice(Device):
         <Wires = [0]>
         >>> op.parameters # returns a list of parameters
         [0.2]
-        >>> op.inverse # check if the operation should be inverted
-        False
-        >>> op = qml.RX(0.2, wires=[0]).inv
-        >>> op.inverse
-        True
 
         Args:
             operations (list[~.Operation]): operations to apply to the device
@@ -1711,7 +1701,6 @@ class QubitDevice(Device):
         return self._gather(prob, perm, axis=1 if batch_size is not None else 0)
 
     def expval(self, observable, shot_range=None, bin_size=None):
-
         if observable.name == "Projector":
             # branch specifically to handle the projector observable
             idx = int("".join(str(i) for i in observable.parameters[0]), 2)
@@ -1746,7 +1735,6 @@ class QubitDevice(Device):
         return np.squeeze(np.mean(samples, axis=axis))
 
     def var(self, observable, shot_range=None, bin_size=None):
-
         if observable.name == "Projector":
             # branch specifically to handle the projector observable
             idx = int("".join(str(i) for i in observable.parameters[0]), 2)
@@ -1897,7 +1885,6 @@ class QubitDevice(Device):
                 samples = sub_samples
 
         else:
-
             # Replace the basis state in the computational basis with the correct eigenvalue.
             # Extract only the columns of the basis samples required based on ``wires``.
             samples = sub_samples[..., np.array(device_wires)]  # Add np.array here for Jax support.
@@ -1937,7 +1924,7 @@ class QubitDevice(Device):
         """Implements the adjoint method outlined in
         `Jones and Gacon <https://arxiv.org/abs/2009.02823>`__ to differentiate an input tape.
 
-        After a forward pass, the circuit is reversed by iteratively applying inverse (adjoint)
+        After a forward pass, the circuit is reversed by iteratively applying adjoint
         gates to scan backwards through the circuit.
 
         .. note::
@@ -2016,7 +2003,7 @@ class QubitDevice(Device):
         expanded_ops = []
         for op in reversed(tape.operations):
             if op.num_params > 1:
-                if not isinstance(op, qml.Rot) or op.inverse:
+                if not isinstance(op, qml.Rot):
                     raise qml.QuantumFunctionError(
                         f"The {op.name} operation is not supported using "
                         'the "adjoint" differentiation method'
@@ -2047,7 +2034,6 @@ class QubitDevice(Device):
         param_number = len(tape.get_parameters(trainable_only=False, operations_only=True)) - 1
         trainable_param_number = len(trainable_params) - 1
         for op in expanded_ops:
-
             adj_op = qml.adjoint(op)
             ket = self._apply_operation(ket, adj_op)
 

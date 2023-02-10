@@ -425,8 +425,8 @@ class TestDifferentiableZNE:
         import jax
         import jax.numpy as jnp
 
-        qnode_noisy = qml.QNode(qfunc, dev_noisy, interface="jax-jit")
-        qnode_ideal = qml.QNode(qfunc, dev_ideal, interface="jax-jit")
+        qnode_noisy = qml.QNode(qfunc, dev_noisy)
+        qnode_ideal = qml.QNode(qfunc, dev_ideal)
 
         scale_factors = [1.0, 2.0, 3.0]
 
@@ -452,8 +452,8 @@ class TestDifferentiableZNE:
         import jax
         import jax.numpy as jnp
 
-        qnode_noisy = qml.QNode(qfunc, dev_noisy, interface="jax-jit")
-        qnode_ideal = qml.QNode(qfunc, dev_ideal, interface="jax-jit")
+        qnode_noisy = qml.QNode(qfunc, dev_noisy)
+        qnode_ideal = qml.QNode(qfunc, dev_ideal)
 
         scale_factors = [1.0, 2.0, 3.0]
 
@@ -478,8 +478,8 @@ class TestDifferentiableZNE:
         """Testing that the mitigated qnode can be differentiated and returns the correct gradient in torch"""
         import torch
 
-        qnode_noisy = qml.QNode(qfunc, dev_noisy, interface="torch")
-        qnode_ideal = qml.QNode(qfunc, dev_ideal, interface="torch")
+        qnode_noisy = qml.QNode(qfunc, dev_noisy)
+        qnode_ideal = qml.QNode(qfunc, dev_ideal)
 
         scale_factors = [1.0, 2.0, 3.0]
 
@@ -506,8 +506,8 @@ class TestDifferentiableZNE:
         """Testing that the mitigated qnode can be differentiated and returns the correct gradient in tf"""
         import tensorflow as tf
 
-        qnode_noisy = qml.QNode(qfunc, dev_noisy, interface="tf")
-        qnode_ideal = qml.QNode(qfunc, dev_ideal, interface="tf")
+        qnode_noisy = qml.QNode(qfunc, dev_noisy)
+        qnode_ideal = qml.QNode(qfunc, dev_ideal)
 
         scale_factors = [1.0, 2.0, 3.0]
 

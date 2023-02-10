@@ -65,7 +65,7 @@ class TestDecomposition:
 
         gate_ops, gate_angles, gate_wires = [], [], []
 
-        for (indices, angle) in diags + givens[::-1]:
+        for indices, angle in diags + givens[::-1]:
             g_op = qml.PhaseShift if len(indices) == 1 else qml.SingleExcitation
             gate_ops.append(g_op)
             gate_angles.append(qml.numpy.array(angle))
@@ -374,8 +374,8 @@ class TestInterfaces:
 
         dev = qml.device("default.qubit", wires=3)
 
-        circuit = qml.QNode(circuit_template, dev, interface="autograd")
-        circuit2 = qml.QNode(circuit_decomposed, dev, interface="autograd")
+        circuit = qml.QNode(circuit_template, dev)
+        circuit2 = qml.QNode(circuit_decomposed, dev)
 
         res = circuit(unitary_matrix)
         res2 = circuit2(weights)
@@ -416,8 +416,8 @@ class TestInterfaces:
 
         dev = qml.device("default.qubit", wires=3)
 
-        circuit = qml.QNode(circuit_template, dev, interface="jax")
-        circuit2 = qml.QNode(circuit_decomposed, dev, interface="jax")
+        circuit = qml.QNode(circuit_template, dev)
+        circuit2 = qml.QNode(circuit_decomposed, dev)
 
         res = circuit(unitary_matrix)
         res2 = circuit2(weights)
@@ -460,8 +460,8 @@ class TestInterfaces:
 
         dev = qml.device("default.qubit", wires=3)
 
-        circuit = qml.QNode(circuit_template, dev, interface="tf")
-        circuit2 = qml.QNode(circuit_decomposed, dev, interface="tf")
+        circuit = qml.QNode(circuit_template, dev)
+        circuit2 = qml.QNode(circuit_decomposed, dev)
 
         res = circuit(unitary_matrix)
         res2 = circuit2(weights)
@@ -504,8 +504,8 @@ class TestInterfaces:
 
         dev = qml.device("default.qubit", wires=3)
 
-        circuit = qml.QNode(circuit_template, dev, interface="torch")
-        circuit2 = qml.QNode(circuit_decomposed, dev, interface="torch")
+        circuit = qml.QNode(circuit_template, dev)
+        circuit2 = qml.QNode(circuit_decomposed, dev)
 
         res = circuit(unitary_matrix)
         res2 = circuit2(weights)

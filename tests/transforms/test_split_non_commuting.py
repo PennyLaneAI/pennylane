@@ -179,7 +179,7 @@ class TestAutodiffSplitNonCommuting:
         """Test that results after splitting are still differentiable with autograd"""
         dev = qml.device("default.qubit", wires=3)
 
-        @qml.qnode(dev, interface="autograd")
+        @qml.qnode(dev)
         def circuit(params):
             qml.RX(params[0], wires=0)
             qml.RY(params[1], wires=1)
@@ -205,7 +205,7 @@ class TestAutodiffSplitNonCommuting:
 
         dev = qml.device("default.qubit.jax", wires=3)
 
-        @qml.qnode(dev, interface="jax")
+        @qml.qnode(dev)
         def circuit(params):
             qml.RX(params[0], wires=0)
             qml.RY(params[1], wires=1)
@@ -230,7 +230,7 @@ class TestAutodiffSplitNonCommuting:
 
         dev = qml.device("default.qubit.torch", wires=3)
 
-        @qml.qnode(dev, interface="torch")
+        @qml.qnode(dev)
         def circuit(params):
             qml.RX(params[0], wires=0)
             qml.RY(params[1], wires=1)
@@ -254,7 +254,7 @@ class TestAutodiffSplitNonCommuting:
 
         dev = qml.device("default.qubit.tf", wires=3)
 
-        @qml.qnode(dev, interface="tf")
+        @qml.qnode(dev)
         def circuit(params):
             qml.RX(params[0], wires=0)
             qml.RY(params[1], wires=1)

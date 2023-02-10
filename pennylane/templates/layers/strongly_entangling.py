@@ -133,7 +133,6 @@ class StronglyEntanglingLayers(Operation):
     grad_method = None
 
     def __init__(self, weights, wires, ranges=None, imprimitive=None, do_queue=True, id=None):
-
         shape = qml.math.shape(weights)[-3:]
 
         if shape[1] != len(wires):
@@ -204,7 +203,6 @@ class StronglyEntanglingLayers(Operation):
         op_list = []
 
         for l in range(n_layers):
-
             for i in range(len(wires)):  # pylint: disable=consider-using-enumerate
                 op_list.append(
                     qml.Rot(

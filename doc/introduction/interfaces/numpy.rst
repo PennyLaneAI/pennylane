@@ -58,6 +58,9 @@ It can now be used like any other Python/NumPy function:
 >>> circuit1(phi, theta)
 array([ 0.87758256,  0.68803733])
 
+The interface can also be automatically determined when the ``QNode`` is called. You do not need to pass the interface
+if you provide parameters.
+
 Via the QNode constructor
 ^^^^^^^^^^^^^^^^^^^^^^^^^
 
