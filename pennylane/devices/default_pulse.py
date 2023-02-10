@@ -18,7 +18,7 @@ pulse-based circuits.
 import numpy as np
 
 from .._version import __version__
-from .default_qubit import DefaultQubit
+from .default_qubit_jax import DefaultQubitJax
 
 
 class DefaultPulse(DefaultQubitJax):
