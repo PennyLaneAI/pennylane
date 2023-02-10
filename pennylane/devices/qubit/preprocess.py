@@ -125,8 +125,10 @@ def batch_transform(circuit):
 
         return circuits, batch_fn
 
-    # Expand each of the broadcasted circuits and return the tapes and processing function
-    return qml.transforms.broadcast_expand(circuit)
+    # Expand each of the broadcasted circuits
+    tapes, batch_fn = qml.transforms.broadcast_expand(circuit)
+
+    return tapes, batch_fn
 
 
 def check_validity(tape):
@@ -184,10 +186,8 @@ def preprocess(tapes, execution_config=None, max_expansion=10):
 
     for i, tape in enumerate(tapes):
         tapes[i] = expand_fn(tape, max_expansion=max_expansion)
+        check_validity(tape)
 
     tapes, batch_fn = qml.transforms.map_batch_transform(batch_transform, tapes)
-
-    for tape in tapes:
-        check_validity(tape)
 
     return tapes, batch_fn
