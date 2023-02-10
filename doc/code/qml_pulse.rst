@@ -4,7 +4,7 @@ qml.pulse
 .. automodule:: pennylane.pulse
 
 Pulse programming
----------------------
+-----------------
 
 Pulse programming is used in a variety of quantum systems for low-level control of quantum operations. A
 time-dependent electromagnetic field tuned to the characteristic energies is applied,
