@@ -196,20 +196,16 @@ class TestProbs:
         spy_probs = mocker.spy(qml.QubitDevice, "probability")
         state = init_state(4)
 
-        spy = mocker.spy(qml.QubitDevice, "states_to_binary")
-
         @qml.qnode(dev)
         def circuit():
             qml.QubitStateVector(state, wires=list(range(4)))
-            return qml.probs(wires=[1, 0, 3])  # <--- more than 2 wires: states_to_binary used
+            return qml.probs(wires=[1, 0, 3])
 
         res = circuit()
 
         expected = np.reshape(np.abs(state) ** 2, [2] * 4)
         expected = np.einsum("ijkl->jil", expected).flatten()
         assert np.allclose(res, expected, atol=tol, rtol=0)
-
-        spy.assert_called_once()
 
         custom_measurement_process(dev, spy_probs)
 
