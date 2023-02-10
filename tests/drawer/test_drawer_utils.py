@@ -116,6 +116,15 @@ class TestUnwrapControls:
                 [True, False],
             ),
             (
+                qml.ctrl(
+                    qml.CRX(0.3, wires=["c", "e"]),
+                    control=["a", "b", "d"],
+                    control_values=[True, False, False],
+                ),
+                Wires(["a", "b", "d", "c"]),
+                [True, False, False, True],
+            ),
+            (
                 qml.ctrl(qml.CNOT(wires=["c", "d"]), control=["a", "b"]),
                 Wires(["a", "b", "c"]),
                 [True, True, True],

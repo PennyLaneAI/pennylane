@@ -75,7 +75,12 @@ def unwrap_controls(op):
         control values.
     """
     control_wires = getattr(op, "control_wires", [])
+
+    # Get wires and control values of base operation; need to make a copy of
+    # control values, otherwise it will modify the list in the operation itself.
     control_values = op.hyperparameters.get("control_values", None)
+    if isinstance(control_values, list):
+        control_values = control_values.copy()
 
     if isinstance(op, Controlled):
         next_ctrl = op
