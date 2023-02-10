@@ -14,23 +14,28 @@
 """
 Unit tests for the :mod:`pennylane` kernels module.
 """
-import pennylane as qml
-import pennylane.kernels as kern
-import pytest
-import numpy as np
-from pennylane import numpy as pnp
+# pylint: disable=import-outside-toplevel
 import math
 import sys
+from functools import partial
+
+import pytest
+import numpy as np
+import pennylane as qml
+import pennylane.kernels as kern
+from pennylane import numpy as pnp
 
 
-@pytest.fixture()
-def cvxpy_support():
+@pytest.fixture(name="cvxpy_support")
+def fixture_cvxpy_support():
+    """Fixture to determine whether cvxpy and cvxopt are installed."""
+    # pylint: disable=unused-import
     try:
         import cvxpy
         import cvxopt
 
         cvxpy_support = True
-    except:
+    except ModuleNotFoundError:
         cvxpy_support = False
 
     return cvxpy_support
@@ -38,44 +43,82 @@ def cvxpy_support():
 
 @pytest.fixture()
 def skip_if_no_cvxpy_support(cvxpy_support):
+    """Fixture to skip a test if cvxpy or cvxopt are not installed."""
     if not cvxpy_support:
         pytest.skip("Skipped, no cvxpy support")
 
 
-def _mock_kernel(x1, x2, history):
+def _mock_kernel(x1, x2, history, batch=None):
     """A kernel that memorizes its calls and encodes a fixed values for equal/unequal
     datapoint pairs."""
     history.append((x1, x2))
 
+    mult = 1.0 if batch is None else np.linspace(1, 5, batch)
+
     if x1 == x2:
-        return 1
-    else:
-        return 0.2
+        return 1 * mult
+    return 0.2 * mult
 
 
-def _laplace_kernel(x1, x2):
+def _laplace_kernel(x1, x2, batch=None):
     """The laplace kernel on scalar data."""
-    return np.exp(-math.fabs(x1 - x2))
+    mult = 1.0 if batch is None else np.linspace(1, 5, batch)
+
+    return mult * np.exp(-math.fabs(x1 - x2))
+
+
+def _diffable_kernel(x1, x2):
+    """A differentiable kernel"""
+    return qml.math.exp(-((x1 - x2) ** 2))
+
+
+def _jacobian_of_diffable_kernel(x1, x2):
+    """Analytic Jacobian of diffable_kernel"""
+    return -2 * (x1 - x2) * qml.math.exp(-((x1 - x2) ** 2))
 
 
 class TestKernelMatrix:
     """Tests kernel matrix computations."""
 
-    def test_simple_kernel(self):
+    @pytest.mark.parametrize("batch", [None, 1, 4])
+    def test_simple_kernel(self, batch):
         """Test square_kernel_matrix and kernel_matrix of the _mock_kernel above."""
         X1 = [0.1, 0.4]
         X2 = [0.1, 0.3, 0.5]
 
         K1_expected = pnp.array([[1, 0.2], [0.2, 1]])
         K2_expected = pnp.array([[1, 0.2, 0.2], [0.2, 0.2, 0.2]])
+        if batch is not None:
+            K1_expected = pnp.tensordot(np.linspace(1, 5, batch), K1_expected, axes=0)
+            K2_expected = pnp.tensordot(np.linspace(1, 5, batch), K2_expected, axes=0)
 
-        K1 = kern.square_kernel_matrix(X1, lambda x1, x2: _mock_kernel(x1, x2, []))
-        K2 = kern.kernel_matrix(X1, X2, lambda x1, x2: _mock_kernel(x1, x2, []))
+        K1 = kern.square_kernel_matrix(X1, partial(_mock_kernel, history=[], batch=batch))
+        K2 = kern.kernel_matrix(X1, X2, partial(_mock_kernel, history=[], batch=batch))
 
         assert np.array_equal(K1, K1_expected)
         assert np.array_equal(K2, K2_expected)
 
-    def test_laplace_kernel(self):
+    def test_square_kernel_single_datapoint(self):
+        """Test that the square kernel matrix of a data set containing a single
+        data point is computed correctly for the _mock_kernel above."""
+        X = [0.1]
+
+        hist = []
+
+        K1 = kern.square_kernel_matrix(X, partial(_mock_kernel, history=hist), True)
+        assert not hist
+        assert qml.math.array_equal(K1, np.eye(1))
+        K2 = kern.square_kernel_matrix(X, partial(_mock_kernel, history=hist), False)
+        assert hist == [(0.1, 0.1)]
+        assert qml.math.array_equal(K2, np.eye(1))
+        # When not using assume_normalized_kernel, also test batching
+        hist = []
+        K3 = kern.square_kernel_matrix(X, partial(_mock_kernel, history=hist, batch=4), False)
+        assert hist == [(0.1, 0.1)]
+        assert qml.math.array_equal(K3, np.array([[[val]] for val in np.linspace(1, 5, 4)]))
+
+    @pytest.mark.parametrize("batch", [None, 1, 4])
+    def test_laplace_kernel(self, batch):
         """Test square_kernel_matrix and kernel_matrix of the _laplace_kernel above."""
         X1 = [0.1, 0.4, 0.2]
         X2 = [0.0, 0.1, 0.3, 0.2]
@@ -84,12 +127,146 @@ class TestKernelMatrix:
         K2_expected = pnp.exp(
             -np.array([[0.1, 0.0, 0.2, 0.1], [0.4, 0.3, 0.1, 0.2], [0.2, 0.1, 0.1, 0.0]])
         )
+        if batch is not None:
+            K1_expected = pnp.tensordot(np.linspace(1, 5, batch), K1_expected, axes=0)
+            K2_expected = pnp.tensordot(np.linspace(1, 5, batch), K2_expected, axes=0)
 
-        K1 = kern.square_kernel_matrix(X1, _laplace_kernel, assume_normalized_kernel=False)
-        K2 = kern.kernel_matrix(X1, X2, _laplace_kernel)
+        K1 = kern.square_kernel_matrix(X1, partial(_laplace_kernel, batch=batch), False)
+        K2 = kern.kernel_matrix(X1, X2, partial(_laplace_kernel, batch=batch))
 
         assert np.allclose(K1, K1_expected)
         assert np.allclose(K2, K2_expected)
+
+    X1 = [0.1, 0.4, 0.2]
+    X2 = [0.0, 0.1, 0.3, 0.2]
+    expected_K1 = np.exp(-((np.outer(X1, np.ones(3)) - np.outer(np.ones(3), X1)) ** 2))
+    expected_K2 = np.exp(-((np.outer(X1, np.ones(4)) - np.outer(np.ones(3), X2)) ** 2))
+    expected_K3 = expected_K1.copy()
+    expected_K3 = expected_K3 - np.diag(np.diag(expected_K3)) + np.eye(3)
+    expected_dK1 = np.zeros((3, 3, 3))
+    expected_dK3 = np.zeros((3, 3, 3))
+    for i, x1 in enumerate(X1):
+        for j, x2 in enumerate(X1):
+            expected_dK1[i, j, i] = _jacobian_of_diffable_kernel(x1, x2)
+            expected_dK1[i, j, j] = -_jacobian_of_diffable_kernel(x1, x2)
+            if i != j:
+                expected_dK3[i, j, i] = _jacobian_of_diffable_kernel(x1, x2)
+                expected_dK3[i, j, j] = -_jacobian_of_diffable_kernel(x1, x2)
+
+    expected_dK2 = (np.zeros((3, 4, 3)), np.zeros((3, 4, 4)))
+    for i, x1 in enumerate(X1):
+        for j, x2 in enumerate(X2):
+            expected_dK2[0][i, j, i] = _jacobian_of_diffable_kernel(x1, x2)
+            expected_dK2[1][i, j, j] = -_jacobian_of_diffable_kernel(x1, x2)
+
+    @pytest.mark.autograd
+    def test_autograd(self):
+        """Test differentiability of the kernel matrix methods with Autograd."""
+        X1 = pnp.array(self.X1, requires_grad=True)
+        X2 = pnp.array(self.X2, requires_grad=True)
+        K1 = kern.square_kernel_matrix(X1, _diffable_kernel, False)
+        K2 = kern.kernel_matrix(X1, X2, _diffable_kernel)
+        K3 = kern.square_kernel_matrix(X1, _diffable_kernel, True)
+
+        assert qml.math.allclose(K1, self.expected_K1)
+        assert qml.math.allclose(K2, self.expected_K2)
+        assert qml.math.allclose(K3, self.expected_K3)
+
+        dK1 = qml.jacobian(kern.square_kernel_matrix, argnum=0)(X1, _diffable_kernel, False)
+        assert qml.math.allclose(dK1, self.expected_dK1)
+        dK2 = qml.jacobian(kern.kernel_matrix, argnum=(0, 1))(X1, X2, _diffable_kernel)
+        assert qml.math.allclose(dK2[0], self.expected_dK2[0])
+        assert qml.math.allclose(dK2[1], self.expected_dK2[1])
+        dK3 = qml.jacobian(kern.square_kernel_matrix, argnum=0)(X1, _diffable_kernel, True)
+        assert qml.math.allclose(dK3, self.expected_dK3)
+
+    @pytest.mark.jax
+    def test_jax(self):
+        """Test differentiability of the kernel matrix methods with JAX."""
+        import jax
+
+        jax.config.update("jax_enable_x64", True)
+        jnp = jax.numpy
+
+        X1 = jnp.array(self.X1)
+        X2 = jnp.array(self.X2)
+        K1 = kern.square_kernel_matrix(X1, _diffable_kernel, False)
+        K2 = kern.kernel_matrix(X1, X2, _diffable_kernel)
+        K3 = kern.square_kernel_matrix(X1, _diffable_kernel, True)
+
+        assert qml.math.allclose(K1, self.expected_K1)
+        assert qml.math.allclose(K2, self.expected_K2)
+        assert qml.math.allclose(K3, self.expected_K3)
+
+        dK1 = jax.jacobian(kern.square_kernel_matrix, argnums=0)(X1, _diffable_kernel, False)
+        assert qml.math.allclose(dK1, self.expected_dK1)
+        dK2 = jax.jacobian(kern.kernel_matrix, argnums=(0, 1))(X1, X2, _diffable_kernel)
+        assert qml.math.allclose(dK2[0], self.expected_dK2[0])
+        assert qml.math.allclose(dK2[1], self.expected_dK2[1])
+        dK3 = jax.jacobian(kern.square_kernel_matrix, argnums=0)(X1, _diffable_kernel, True)
+        assert qml.math.allclose(dK3, self.expected_dK3)
+
+    @pytest.mark.torch
+    def test_torch(self):
+        """Test differentiability of the kernel matrix methods with PyTorch."""
+        import torch
+
+        X1 = torch.tensor(self.X1, requires_grad=True)
+        X2 = torch.tensor(self.X2, requires_grad=True)
+        K1 = kern.square_kernel_matrix(X1, _diffable_kernel, False)
+        K2 = kern.kernel_matrix(X1, X2, _diffable_kernel)
+        K3 = kern.square_kernel_matrix(X1, _diffable_kernel, True)
+
+        assert qml.math.allclose(K1, self.expected_K1)
+        assert qml.math.allclose(K2, self.expected_K2)
+        assert qml.math.allclose(K3, self.expected_K3)
+
+        jac = torch.autograd.functional.jacobian
+        dK1 = jac(
+            partial(
+                kern.square_kernel_matrix,
+                kernel=_diffable_kernel,
+                assume_normalized_kernel=False,
+            ),
+            X1,
+        )
+        assert qml.math.allclose(dK1, self.expected_dK1)
+        dK2 = jac(partial(kern.kernel_matrix, kernel=_diffable_kernel), (X1, X2))
+        assert qml.math.allclose(dK2[0], self.expected_dK2[0])
+        assert qml.math.allclose(dK2[1], self.expected_dK2[1])
+        dK3 = jac(
+            partial(
+                kern.square_kernel_matrix,
+                kernel=_diffable_kernel,
+                assume_normalized_kernel=True,
+            ),
+            X1,
+        )
+        assert qml.math.allclose(dK3, self.expected_dK3)
+
+    @pytest.mark.tf
+    def test_tf(self):
+        """Test differentiability of the kernel matrix methods with Tensorflow."""
+        import tensorflow as tf
+
+        X1 = tf.Variable(self.X1)
+        X2 = tf.Variable(self.X2)
+        with tf.GradientTape(persistent=True) as tape:
+            K1 = kern.square_kernel_matrix(X1, _diffable_kernel, False)
+            K2 = kern.kernel_matrix(X1, X2, _diffable_kernel)
+            K3 = kern.square_kernel_matrix(X1, _diffable_kernel, True)
+
+        assert qml.math.allclose(K1, self.expected_K1)
+        assert qml.math.allclose(K2, self.expected_K2)
+        assert qml.math.allclose(K3, self.expected_K3)
+
+        dK1 = tape.jacobian(K1, X1)
+        assert qml.math.allclose(dK1, self.expected_dK1)
+        dK2 = tape.jacobian(K2, (X1, X2))
+        assert qml.math.allclose(dK2[0], self.expected_dK2[0])
+        assert qml.math.allclose(dK2[1], self.expected_dK2[1])
+        dK3 = tape.jacobian(K3, X1)
+        assert qml.math.allclose(dK3, self.expected_dK3)
 
 
 class TestKernelPolarity:
@@ -105,7 +282,7 @@ class TestKernelPolarity:
 
         kern.polarity(X, Y, lambda x1, x2: _mock_kernel(x1, x2, hist))
 
-        assert hist == [(0.1, 0.1), (0.1, 0.4), (0.4, 0.4)]
+        assert hist == [(0.1, 0.4), (0.1, 0.1), (0.4, 0.4)]
 
     def test_correct_calls_normalized(self):
         """Test number and order of calls of the kernel function when computing the
@@ -171,7 +348,7 @@ class TestKernelTargetAlignment:
 
         kern.target_alignment(X, Y, lambda x1, x2: _mock_kernel(x1, x2, hist))
 
-        assert hist == [(0.1, 0.1), (0.1, 0.4), (0.4, 0.4)]
+        assert hist == [(0.1, 0.4), (0.1, 0.1), (0.4, 0.4)]
 
     def test_correct_calls_normalized(self):
         """Test number and order of calls of the kernel function when computing the
@@ -422,7 +599,7 @@ class TestRegularization:
         """Test import error raising if cvxpy is not installed."""
         with pytest.raises(ImportError) as import_error:
             mocker.patch.dict(sys.modules, {"cvxpy": None})
-            output = kern.closest_psd_matrix(input, fix_diagonal=True, feastol=1e-10)
+            _ = kern.closest_psd_matrix(input, fix_diagonal=True, feastol=1e-10)
 
         assert "CVXPY is required" in str(import_error.value)
 
@@ -436,7 +613,7 @@ class TestRegularization:
     def test_closest_psd_matrix_solve_error(self, input, solver):
         """Test verbose error raising if problem.solve crashes."""
         with pytest.raises(Exception) as solve_error:
-            output = kern.closest_psd_matrix(input, solver=solver, fix_diagonal=True, feastol=1e-10)
+            _ = kern.closest_psd_matrix(input, solver=solver, fix_diagonal=True, feastol=1e-10)
 
         assert "CVXPY solver did not converge." in str(solve_error.value)
 
@@ -531,14 +708,14 @@ class TestErrorForNonRealistic:
     """Tests that the noise mitigation techniques raise an error whenever the
     used quantities are too small."""
 
-    def test_mitigate_depolarizing_noise_wrong_method(self, recwarn):
+    def test_mitigate_depolarizing_noise_wrong_method(self):
         """Test that an error is raised when specifying an incorrect method."""
         with pytest.raises(
             ValueError, match="Incorrect noise depolarization mitigation method specified"
         ):
             qml.kernels.mitigate_depolarizing_noise(np.array([0]), 4, method="some_dummy_strat")
 
-    def test_mitigate_depolarizing_noise_average_method_error(self, recwarn):
+    def test_mitigate_depolarizing_noise_average_method_error(self):
         """Test that an error is raised when using the average method for the
         mitigation of depolarizing noise with a matrix that has too small diagonal
         entries."""
@@ -553,7 +730,8 @@ class TestErrorForNonRealistic:
             qml.adjoint(qml.templates.AngleEmbedding)(x2, wires=wires)
             return qml.probs(wires)
 
-        kernel = lambda x1, x2: kernel_circuit(x1, x2)[0]
+        def kernel(x1, x2):
+            return kernel_circuit(x1, x2)[0]
 
         # "Training feature vectors"
         X_train = qml.numpy.tensor(
@@ -592,7 +770,8 @@ class TestErrorForNonRealistic:
             qml.adjoint(qml.templates.AngleEmbedding)(x2, wires=wires)
             return qml.probs(wires)
 
-        kernel = lambda x1, x2: kernel_circuit(x1, x2)[0]
+        def kernel(x1, x2):
+            return kernel_circuit(x1, x2)[0]
 
         # "Training feature vectors"
         X_train = qml.numpy.tensor(
