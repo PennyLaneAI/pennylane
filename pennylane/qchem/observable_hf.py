@@ -150,14 +150,14 @@ def jordan_wigner(op, notation="ccaa"):
 
     if len(op) == 4:
         if notation == "ccaa":
-            op = [((op[0], 1), (op[1], 1), (op[2], 0), (op[3], 0))]
-            if op[0][0][0] == op[0][1][0] or op[0][2][0] == op[0][3][0]:
+            if op[0] == op[1] or op[2] == op[3]:
                 return 0
+            op = [((op[0], 1), (op[1], 1), (op[2], 0), (op[3], 0))]
         if notation == "caca":
-            op = [((op[0], 1), (op[1], 0), (op[2], 1), (op[3], 0))]
-            if op[0][0][0] == op[0][2][0] or op[0][1][0] == op[0][3][0]:
-                if op[0][1][0] != op[0][2][0]:
+            if op[0] == op[2] or op[1] == op[3]:
+                if op[1] != op[2]:
                     return 0
+            op = [((op[0], 1), (op[1], 0), (op[2], 1), (op[3], 0))]
 
     return _jordan_wigner(op)
 
