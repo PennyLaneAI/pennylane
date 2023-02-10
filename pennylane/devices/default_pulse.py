@@ -15,7 +15,6 @@ r"""
 The default.pulse device builds on PennyLane's standard qubit-based device, adding support for
 pulse-based circuits.
 """
-import numpy as np
 
 from .._version import __version__
 from .default_qubit_jax import DefaultQubitJax
