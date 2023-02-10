@@ -25,18 +25,12 @@ from pennylane.wires import Wires
 class ParametrizedHamiltonian:
     r"""Callable object holding the information representing a parametrized Hamiltonian.
 
-    Passing parameters to the ``ParametrizedHamiltonian`` returns an :class:`~pennylane.operation.Operator`
-    representing the Hamiltonian for that set of parameters.
-
     The Hamiltonian can be represented as a linear combination of other operators, e.g.,
 
     .. math::
         H(\{v_j\}, t) = H_\text{drift} + \sum_j f_j(v_j, t) H_j
 
     where the :math:`\{v_j\}` are trainable parameters for each scalar-valued parametrization :math:`f_j`, and t is time.
-
-    For example, a time-dependent ``ParametrizedHamiltonian`` with a single trainable parameter can
-    be: :math:`a`, could be :math:`H = 2 X_1 X_2 + \sin(a t) Y_1 Y_2`
 
     Args:
         coeffs (Union[float, callable]): coefficients of the Hamiltonian expression, which may be
