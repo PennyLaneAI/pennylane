@@ -141,67 +141,6 @@ class QubitDevice(Device):
         """Data type preserving multiply operation"""
         return qmlmul(constant, array, dtype=array.dtype)
 
-    def _permute_wires(self, observable):
-        r"""Given an observable which acts on multiple wires, permute the wires to
-          be consistent with the device wire order.
-
-          Suppose we are given an observable :math:`\hat{O} = \Identity \otimes \Identity \otimes \hat{Z}`.
-          This observable can be represented in many ways:
-
-        .. code-block:: python
-
-              O_1 = qml.Identity(wires=0) @ qml.Identity(wires=1) @ qml.PauliZ(wires=2)
-              O_2 = qml.PauliZ(wires=2) @ qml.Identity(wires=0) @ qml.Identity(wires=1)
-
-          Notice that while the explicit tensor product matrix representation of :code:`O_1` and :code:`O_2` is
-          different, the underlying operator is identical due to the wire labelling (assuming the labels in
-          ascending order are {0,1,2}). If we wish to compute the expectation value of such an observable, we must
-          ensure it is identical in both cases. To facilitate this, we permute the wires in our state vector such
-          that they are consistent with this swapping of order in the tensor observable.
-
-        .. code-block:: python
-
-              >>> print(O_1.wires)
-              <Wires = [0, 1, 2]>
-              >>> print(O_2.wires)
-              <Wires = [2, 0, 1]>
-
-          We might naively think that we must permute our state vector to match the wire order of our tensor observable.
-          We must be careful and realize that the wire order of the terms in the tensor observable DOES NOT match the
-          permutation of the terms themselves. As an example we directly compare :code:`O_1` and :code:`O_2`:
-
-          The first term in :code:`O_1` (:code:`qml.Identity(wires=0)`) became the second term in :code:`O_2`.
-          By similar comparison we see that each term in the tensor product was shifted one position forward
-          (i.e 0 --> 1, 1 --> 2, 2 --> 0). The wires in our permuted quantum state should follow their respective
-          terms in the tensor product observable.
-
-          Thus, the correct wire ordering should be :code:`permuted_wires = <Wires = [1, 2, 0]>`. But if we had
-          taken the naive approach we would have permuted our state according to
-          :code:`permuted_wires = <Wires = [2, 0, 1]>` which is NOT correct.
-
-          This function uses the observable wires and the global device wire ordering in order to determine the
-          permutation of the wires in the observable required such that if our quantum state vector is
-          permuted accordingly then the amplitudes of the state will match the matrix representation of the observable.
-
-          Args:
-              observable (Observable): the observable whose wires are to be permuted.
-
-          Returns:
-              permuted_wires (Wires): permuted wires object
-        """
-        ordered_obs_wire_lst = self.order_wires(
-            observable.wires
-        ).tolist()  # order according to device wire order
-
-        mapped_wires = self.map_wires(observable.wires)
-        if isinstance(mapped_wires, Wires):
-            # by default this should be a Wires obj, but it is overwritten to list object in default.qubit
-            mapped_wires = mapped_wires.tolist()
-
-        permutation = np.argsort(mapped_wires)  # extract permutation via argsort
-
-        return Wires([ordered_obs_wire_lst[index] for index in permutation])
-
     observables = {
         "PauliX",
         "PauliY",
@@ -1712,11 +1651,7 @@ class QubitDevice(Device):
                     f"Cannot compute analytic expectations of {observable.name}."
                 ) from e
 
-            # the probability vector must be permuted to account for the permuted
-            # wire order of the observable
-            permuted_wires = self._permute_wires(observable)
-
-            prob = self.probability(wires=permuted_wires)
+            prob = self.probability(wires=observable.wires)
             # In case of broadcasting, `prob` has two axes and this is a matrix-vector product
             return self._dot(prob, eigvals)
 
@@ -1747,10 +1682,7 @@ class QubitDevice(Device):
                     f"Cannot compute analytic variance of {observable.name}."
                 ) from e
 
-            # the probability vector must be permuted to account for the permuted wire order of the observable
-            permuted_wires = self._permute_wires(observable)
-
-            prob = self.probability(wires=permuted_wires)
+            prob = self.probability(wires=observable.wires)
             # In case of broadcasting, `prob` has two axes and these are a matrix-vector products
             return self._dot(prob, (eigvals**2)) - self._dot(prob, eigvals) ** 2
 
