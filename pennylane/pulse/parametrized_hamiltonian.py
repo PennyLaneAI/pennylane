@@ -18,6 +18,7 @@ This submodule contains the ParametrizedHamiltonian class
 import pennylane as qml
 from pennylane.operation import Operator
 from pennylane.ops.qubit.hamiltonian import Hamiltonian
+from pennylane.typing import TensorLike
 from pennylane.wires import Wires
 
 
@@ -213,4 +214,23 @@ class ParametrizedHamiltonian:
 
         return NotImplemented
 
+    def __mul__(self, other):
+        ops = self.ops.copy()
+        coeffs_fixed = self.coeffs_fixed.copy()
+        coeffs_parametrized = self.coeffs_parametrized.copy()
+        if isinstance(other, TensorLike) and qml.math.ndim(other) == 0:
+            coeffs_fixed = [other * c for c in coeffs_fixed]
+            coeffs_parametrized = [
+                lambda p, t, new_c=c: other * new_c(p, t) for c in coeffs_parametrized
+            ]
+            return ParametrizedHamiltonian(coeffs_fixed + coeffs_parametrized, ops)
+        if callable(other):
+            coeffs_fixed = [lambda p, t, new_c=c: new_c * other(p, t) for c in coeffs_fixed]
+            coeffs_parametrized = [
+                lambda p, t, new_c=c: new_c(p, t) * other(p, t) for c in coeffs_parametrized
+            ]
+            return ParametrizedHamiltonian(coeffs_fixed + coeffs_parametrized, ops)
+        return NotImplemented
+
     __radd__ = __add__
+    __rmul__ = __mul__
