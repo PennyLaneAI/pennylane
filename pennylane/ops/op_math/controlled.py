@@ -243,7 +243,6 @@ class Controlled(SymbolicOp):
     def __init__(
         self, base, control_wires, control_values=None, work_wires=None, do_queue=True, id=None
     ):
-
         control_wires = Wires(control_wires)
         work_wires = Wires([]) if work_wires is None else Wires(work_wires)
 
@@ -390,7 +389,6 @@ class Controlled(SymbolicOp):
         return self.base.label(decimals=decimals, base_label=base_label, cache=cache)
 
     def matrix(self, wire_order=None):
-
         base_matrix = self.base.matrix()
         interface = qmlmath.get_interface(base_matrix)
 
@@ -559,9 +557,7 @@ def _decompose_no_control_values(op: "operation.Operator") -> List["operation.Op
     if not op.base.has_decomposition:
         return None
 
-    # Need to use expand because of in-place inversion
-    # revert to decomposition once in-place inversion removed
-    base_decomp = op.base.expand().circuit
+    base_decomp = op.base.decomposition()
 
     return [Controlled(newop, op.control_wires, work_wires=op.work_wires) for newop in base_decomp]
 

@@ -143,7 +143,7 @@ class TestBroadcastExpand:
         def cost(*params):
             tape = make_tape(*params, obs)
             tapes, fn = qml.transforms.broadcast_expand(tape)
-            return fn(qml.execute(tapes, dev, qml.gradients.param_shift, interface="jax"))
+            return fn(qml.execute(tapes, dev, qml.gradients.param_shift))
 
         assert qml.math.allclose(cost(*params), exp_fn(*params))
 
@@ -164,7 +164,7 @@ class TestBroadcastExpand:
         def cost(*params):
             tape = make_tape(*params, obs)
             tapes, fn = qml.transforms.broadcast_expand(tape)
-            return fn(qml.execute(tapes, dev, qml.gradients.param_shift, interface="tf"))
+            return fn(qml.execute(tapes, dev, qml.gradients.param_shift))
 
         with tf.GradientTape(persistent=True) as t:
             out = cost(*params)
@@ -194,7 +194,7 @@ class TestBroadcastExpand:
         def cost(*params):
             tape = make_tape(*params, obs)
             tapes, fn = qml.transforms.broadcast_expand(tape)
-            return fn(qml.execute(tapes, dev, qml.gradients.param_shift, interface="torch"))
+            return fn(qml.execute(tapes, dev, qml.gradients.param_shift))
 
         assert qml.math.allclose(cost(*torch_params), exp_fn(*params))
 

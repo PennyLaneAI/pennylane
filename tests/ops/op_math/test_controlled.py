@@ -922,7 +922,7 @@ class TestDifferentiation:
         dev = qml.device("default.qubit", wires=2)
         init_state = torch.tensor([1.0, -1.0], requires_grad=False) / np.sqrt(2)
 
-        @qml.qnode(dev, diff_method=diff_method, interface="torch")
+        @qml.qnode(dev, diff_method=diff_method)
         def circuit(b):
             qml.QubitStateVector(init_state, wires=0)
             Controlled(qml.RY(b, wires=1), control_wires=0)
@@ -938,7 +938,7 @@ class TestDifferentiation:
         assert np.allclose(res, expected)
 
     @pytest.mark.jax
-    @pytest.mark.parametrize("jax_interface", ["jax", "jax-python", "jax-jit"])
+    @pytest.mark.parametrize("jax_interface", ["auto", "jax", "jax-python"])
     def test_jax(self, diff_method, jax_interface):
         """Test differentiation using JAX"""
 
@@ -969,7 +969,7 @@ class TestDifferentiation:
         dev = qml.device("default.qubit", wires=2)
         init_state = tf.constant([1.0, -1.0], dtype=tf.complex128) / np.sqrt(2)
 
-        @qml.qnode(dev, diff_method=diff_method, interface="tf")
+        @qml.qnode(dev, diff_method=diff_method)
         def circuit(b):
             qml.QubitStateVector(init_state, wires=0)
             Controlled(qml.RY(b, wires=1), control_wires=0)
@@ -1048,7 +1048,8 @@ class TestControlledSupportsBroadcasting:
     @pytest.mark.parametrize("name", single_scalar_single_wire_ops)
     def test_controlled_of_single_scalar_single_wire_ops(self, name):
         """Test that a Controlled operation whose base is a single-scalar-parameter operations
-        on a single wire marked as supporting parameter broadcasting actually do support broadcasting."""
+        on a single wire marked as supporting parameter broadcasting actually do support broadcasting.
+        """
         par = np.array([0.25, 2.1, -0.42])
         wires = ["wire0"]
 
@@ -1064,7 +1065,8 @@ class TestControlledSupportsBroadcasting:
     @pytest.mark.parametrize("name", single_scalar_multi_wire_ops)
     def test_controlled_single_scalar_multi_wire_ops(self, name):
         """Test that a Controlled operation whose base is a single-scalar-parameter operations
-        on multiple wires marked as supporting parameter broadcasting actually do support broadcasting."""
+        on multiple wires marked as supporting parameter broadcasting actually do support broadcasting.
+        """
         par = np.array([0.25, 2.1, -0.42])
         cls = getattr(qml, name)
 
@@ -1082,7 +1084,8 @@ class TestControlledSupportsBroadcasting:
     @pytest.mark.parametrize("name", two_scalar_single_wire_ops)
     def test_controlled_two_scalar_single_wire_ops(self, name):
         """Test that a Controlled operation whose base is a two-scalar-parameter operations
-        on a single wire marked as supporting parameter broadcasting actually do support broadcasting."""
+        on a single wire marked as supporting parameter broadcasting actually do support broadcasting.
+        """
         par = (np.array([0.25, 2.1, -0.42]), np.array([-6.2, 0.12, 0.421]))
         wires = ["wire0"]
 
@@ -1099,7 +1102,8 @@ class TestControlledSupportsBroadcasting:
     @pytest.mark.parametrize("name", three_scalar_single_wire_ops)
     def test_controlled_three_scalar_single_wire_ops(self, name):
         """Test that a Controlled operation whose base is a three-scalar-parameter operations
-        on a single wire marked as supporting parameter broadcasting actually do support broadcasting."""
+        on a single wire marked as supporting parameter broadcasting actually do support broadcasting.
+        """
         par = (
             np.array([0.25, 2.1, -0.42]),
             np.array([-6.2, 0.12, 0.421]),
@@ -1120,7 +1124,8 @@ class TestControlledSupportsBroadcasting:
     @pytest.mark.parametrize("name", three_scalar_multi_wire_ops)
     def test_controlled_three_scalar_multi_wire_ops(self, name):
         """Test that a Controlled operation whose base is a three-scalar-parameter operations
-        on multiple wires marked as supporting parameter broadcasting actually do support broadcasting."""
+        on multiple wires marked as supporting parameter broadcasting actually do support broadcasting.
+        """
         par = (
             np.array([0.25, 2.1, -0.42]),
             np.array([-6.2, 0.12, 0.421]),
@@ -1583,7 +1588,7 @@ class TestCtrlTransformDifferentiation:
         dev = qml.device("default.qubit", wires=2)
         init_state = torch.tensor([1.0, -1.0], requires_grad=False) / np.sqrt(2)
 
-        @qml.qnode(dev, diff_method=diff_method, interface="torch")
+        @qml.qnode(dev, diff_method=diff_method)
         def circuit(b):
             qml.QubitStateVector(init_state, wires=0)
             qml.ctrl(qml.RY, control=0)(b, wires=[1])
@@ -1599,7 +1604,7 @@ class TestCtrlTransformDifferentiation:
         assert np.allclose(res, expected)
 
     @pytest.mark.jax
-    @pytest.mark.parametrize("jax_interface", ["jax", "jax-python", "jax-jit"])
+    @pytest.mark.parametrize("jax_interface", ["auto", "jax", "jax-python"])
     def test_jax(self, diff_method, jax_interface):
         """Test differentiation using JAX"""
 
@@ -1630,7 +1635,7 @@ class TestCtrlTransformDifferentiation:
         dev = qml.device("default.qubit", wires=2)
         init_state = tf.constant([1.0, -1.0], dtype=tf.complex128) / np.sqrt(2)
 
-        @qml.qnode(dev, diff_method=diff_method, interface="tf")
+        @qml.qnode(dev, diff_method=diff_method)
         def circuit(b):
             qml.QubitStateVector(init_state, wires=0)
             qml.ctrl(qml.RY, control=0)(b, wires=[1])

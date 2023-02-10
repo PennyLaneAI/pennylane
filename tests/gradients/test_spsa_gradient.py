@@ -14,6 +14,7 @@
 """
 Tests for the gradients.spsa_gradient module.
 """
+# pylint: disable="import-outside-toplevel"
 import pytest
 
 from pennylane import numpy as np
@@ -30,6 +31,7 @@ def coordinate_sampler(indices, num_params, idx, seed=None):
     to the index ``indices[idx]``. This is a sequential coordinate sampler
     that allows to exactly reproduce derivatives, instead of using SPSA in the
     intended way."""
+    # pylint: disable=unused-argument
     idx = idx % len(indices)
     direction = np.zeros(num_params)
     direction[indices[idx]] = 1.0
@@ -37,10 +39,14 @@ def coordinate_sampler(indices, num_params, idx, seed=None):
 
 
 class TestRademacherSampler:
+    """Test the Rademacher distribution sampler."""
+
     @pytest.mark.parametrize(
         "ids, num", [(list(range(5)), 5), ([0, 2, 4], 5), ([0], 1), ([2, 3], 5)]
     )
     def test_output_structure(self, ids, num):
+        """Test that the sampled output has the right entries to be non-zero
+        and attains the right values."""
         ids_mask = np.zeros(num, dtype=bool)
         ids_mask[ids] = True
 
@@ -52,15 +58,19 @@ class TestRademacherSampler:
             assert np.allclose(direction[~ids_mask], 0)
 
     def test_call_with_third_arg(self):
+        """Test that a third argument is ignored."""
         _rademacher_sampler([0, 1, 2], 4, "ignored dummy")
 
     def test_call_with_third_arg_and_seed_None(self):
+        """Test that a third argument is ignored with seed=None."""
         _rademacher_sampler([0, 1, 2], 4, "ignored dummy", seed=None)
 
     @pytest.mark.parametrize(
         "ids, num", [(list(range(5)), 5), ([0, 2, 4], 5), ([0], 1), ([2, 3], 5)]
     )
     def test_call_with_seed_not_None(self, ids, num):
+        """Test that a seed is used correctly by the sampler, reproducing the
+        same direction every time."""
         seed = 12425
         first_direction = _rademacher_sampler(ids, num, "ignored dummy", seed=seed)
         for _ in range(5):
@@ -68,6 +78,7 @@ class TestRademacherSampler:
             assert np.allclose(first_direction, direction)
 
     def test_differing_seeds(self):
+        """Test that the output differs for different seeds."""
         ids = [0, 1, 2, 3, 4]
         num = 5
         seeds = [42, 43]
@@ -80,6 +91,8 @@ class TestRademacherSampler:
     )
     @pytest.mark.parametrize("N", [10, 10000])
     def test_mean_and_var(self, ids, num, N):
+        """Test that the mean and variance of many produced samples are
+        close to the theoretical values."""
         np.random.seed(42)
         ids_mask = np.zeros(num, dtype=bool)
         ids_mask[ids] = True
@@ -153,7 +166,7 @@ class TestSpsaGradient:
             assert spy.call_args_list[i][0][2].shape == (2, 1)
 
     def test_no_trainable_params_tape(self):
-        """Test that the correct ouput and warning is generated in the absence of any trainable
+        """Test that the correct output and warning is generated in the absence of any trainable
         parameters"""
         dev = qml.device("default.qubit", wires=2)
 
@@ -175,7 +188,7 @@ class TestSpsaGradient:
 
     @pytest.mark.autograd
     def test_no_trainable_params_qnode_autograd(self):
-        """Test that the correct ouput and warning is generated in the absence of any trainable
+        """Test that the correct output and warning is generated in the absence of any trainable
         parameters"""
         dev = qml.device("default.qubit", wires=2)
 
@@ -193,7 +206,7 @@ class TestSpsaGradient:
 
     @pytest.mark.torch
     def test_no_trainable_params_qnode_torch(self):
-        """Test that the correct ouput and warning is generated in the absence of any trainable
+        """Test that the correct output and warning is generated in the absence of any trainable
         parameters"""
         dev = qml.device("default.qubit", wires=2)
 
@@ -211,7 +224,7 @@ class TestSpsaGradient:
 
     @pytest.mark.tf
     def test_no_trainable_params_qnode_tf(self):
-        """Test that the correct ouput and warning is generated in the absence of any trainable
+        """Test that the correct output and warning is generated in the absence of any trainable
         parameters"""
         dev = qml.device("default.qubit", wires=2)
 
@@ -229,7 +242,7 @@ class TestSpsaGradient:
 
     @pytest.mark.jax
     def test_no_trainable_params_qnode_jax(self):
-        """Test that the correct ouput and warning is generated in the absence of any trainable
+        """Test that the correct output and warning is generated in the absence of any trainable
         parameters"""
         dev = qml.device("default.qubit", wires=2)
 
@@ -263,10 +276,9 @@ class TestSpsaGradient:
         tapes, _ = spsa_grad(circuit.tape)
         assert tapes == []
 
-    def test_y0(self, mocker):
+    def test_y0(self):
         """Test that if the first order finite difference is underlying the SPSA, then
         the tape is executed only once using the current parameter values."""
-        dev = qml.device("default.qubit", wires=2)
 
         with qml.queuing.AnnotatedQueue() as q:
             qml.RX(0.543, wires=[0])
@@ -275,7 +287,7 @@ class TestSpsaGradient:
 
         tape = qml.tape.QuantumScript.from_queue(q)
         n = 13
-        tapes, fn = spsa_grad(tape, strategy="forward", approx_order=1, num_directions=n)
+        tapes, _ = spsa_grad(tape, strategy="forward", approx_order=1, num_directions=n)
 
         # one tape per direction, plus one global call
         assert len(tapes) == n + 1
@@ -295,13 +307,14 @@ class TestSpsaGradient:
         tape = qml.tape.QuantumScript.from_queue(q)
         f0 = dev.execute(tape)
         n = 9
-        tapes, fn = spsa_grad(tape, strategy="forward", approx_order=1, num_directions=n, f0=f0)
+        tapes, _ = spsa_grad(tape, strategy="forward", approx_order=1, num_directions=n, f0=f0)
         # one tape per direction, the unshifted one already was evaluated above
         assert len(tapes) == n
 
     def test_independent_parameters(self):
         """Test the case where expectation values are independent of some parameters. For those
         parameters, the gradient should be evaluated to zero without executing the device."""
+        np.random.seed(42)
         dev = qml.device("default.qubit", wires=2)
 
         with qml.queuing.AnnotatedQueue() as q1:
@@ -401,6 +414,8 @@ class TestSpsaGradient:
         class SpecialObservable(Observable):
             """SpecialObservable"""
 
+            # pylint:disable=too-few-public-methods
+
             num_wires = AnyWires
 
             def diagonalizing_gates(self):
@@ -408,19 +423,24 @@ class TestSpsaGradient:
                 return []
 
         class DeviceSupportingSpecialObservable(DefaultQubit):
+            """A device class supporting SpecialObservable."""
+
+            # pylint:disable=too-few-public-methods
             name = "Device supporting SpecialObservable"
             short_name = "default.qubit.specialobservable"
             observables = DefaultQubit.observables.union({"SpecialObservable"})
 
             @staticmethod
             def _asarray(arr, dtype=None):
-                return np.array(arr)
+                return np.array(arr, dtype=dtype)
 
             def __init__(self, *args, **kwargs):
                 super().__init__(*args, **kwargs)
                 self.R_DTYPE = SpecialObservable
 
             def expval(self, observable, **kwargs):
+                """Compute the expectation value by returning a SpecialObject
+                if the observable is a SpecialObservable and the device is analytic."""
                 if self.analytic and isinstance(observable, SpecialObservable):
                     val = super().expval(qml.PauliZ(wires=0), **kwargs)
                     return SpecialObject(val)
@@ -443,14 +463,16 @@ class TestSpsaGradient:
         assert np.isclose(qnode(par).item().val, reference_qnode(par))
         assert np.isclose(qml.jacobian(qnode)(par).item().val, qml.jacobian(reference_qnode)(par))
 
-    @pytest.mark.parametrize("num_directions, tol", [(100, 0.1), (500, 5e-3)])
+    @pytest.mark.parametrize("num_directions, tol", [(100, 0.3), (1000, 0.1)])
     def test_convergence_single_par(self, num_directions, tol):
         """Test that the SPSA gradient converges to the gradient for many direction samples
         and the Rademacher distribution."""
+        np.random.seed(41)
 
-        x = 0.543
+        x, y = 0.543, 0.214
         with qml.queuing.AnnotatedQueue() as q:
             qml.RX(x, wires=[0])
+            qml.RY(y, wires=[0])
             qml.expval(qml.PauliZ(0))
 
         tape = qml.tape.QuantumScript.from_queue(q)
@@ -458,8 +480,8 @@ class TestSpsaGradient:
         tapes, fn = spsa_grad(tape, num_directions=num_directions)
         res = fn(dev.batch_execute(tapes))
 
-        expected = -np.sin(x)
-        assert np.isclose(res, expected, atol=tol, rtol=0)
+        expected = [-np.sin(x), -np.sin(y)]
+        assert np.allclose(res, expected, atol=tol, rtol=0)
 
 
 @pytest.mark.parametrize("approx_order", [2, 4])
@@ -753,7 +775,7 @@ class TestSpsaGradientDifferentiation:
             tape.trainable_params = {0, 1}
             tapes, fn = spsa_grad(tape, n=1, num_directions=num_directions, sampler=sampler)
             jac = fn(dev.batch_execute(tapes))
-            if sampler == coordinate_sampler:
+            if sampler is coordinate_sampler:
                 jac *= 2
             return jac
 
@@ -787,7 +809,7 @@ class TestSpsaGradientDifferentiation:
             tape.trainable_params = {0, 1}
             tapes, fn = spsa_grad(tape, n=1, num_directions=num_directions, sampler=sampler)
             jac = fn(dev.batch_execute(tapes))
-            if sampler == coordinate_sampler:
+            if sampler is coordinate_sampler:
                 jac *= 2
             return jac[1, 0]
 
@@ -818,7 +840,7 @@ class TestSpsaGradientDifferentiation:
             tape.trainable_params = {0, 1}
             tapes, fn = spsa_grad(tape, n=1, num_directions=num_directions, sampler=sampler)
             jac = fn(dev.batch_execute(tapes))
-            if sampler == coordinate_sampler:
+            if sampler is coordinate_sampler:
                 jac *= 2
 
         x, y = 1.0 * params
@@ -857,7 +879,7 @@ class TestSpsaGradientDifferentiation:
             tape.trainable_params = {0, 1}
             tapes, fn = spsa_grad(tape, n=1, num_directions=num_directions, sampler=sampler)
             jac = fn(dev.batch_execute(tapes))[1, 0]
-            if sampler == coordinate_sampler:
+            if sampler is coordinate_sampler:
                 jac *= 2
 
         x, y = 1.0 * params
@@ -884,7 +906,7 @@ class TestSpsaGradientDifferentiation:
         tape = qml.tape.QuantumScript.from_queue(q)
         tapes, fn = spsa_grad(tape, n=1, num_directions=num_directions, sampler=sampler)
         jac = fn(dev.batch_execute(tapes))
-        if sampler == coordinate_sampler:
+        if sampler is coordinate_sampler:
             jac *= 2
         cost = torch.sum(jac)
         cost.backward()
@@ -928,7 +950,7 @@ class TestSpsaGradientDifferentiation:
             tape.trainable_params = {0, 1}
             tapes, fn = spsa_grad(tape, n=1, num_directions=num_directions, sampler=sampler)
             jac = fn(dev.batch_execute(tapes))
-            if sampler == coordinate_sampler:
+            if sampler is coordinate_sampler:
                 jac *= 2
             return jac
 

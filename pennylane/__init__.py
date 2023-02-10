@@ -87,7 +87,6 @@ from pennylane.transforms import (
     compile,
     cond,
     defer_measurements,
-    measurement_grouping,
     metric_tensor,
     specs,
     qfunc_transform,
@@ -101,7 +100,7 @@ from pennylane.transforms import (
 )
 from pennylane.ops.functions import *
 from pennylane.optimize import *
-from pennylane.vqe import ExpvalCost, VQECost
+from pennylane.vqe import ExpvalCost
 from pennylane.debugging import snapshots
 from pennylane.shadows import ClassicalShadow
 import pennylane.data
@@ -112,7 +111,6 @@ from .collections import QNodeCollection, map
 import pennylane.gradients  # pylint:disable=wrong-import-order
 import pennylane.qinfo  # pylint:disable=wrong-import-order
 from pennylane.interfaces import execute  # pylint:disable=wrong-import-order
-
 
 # Look for an existing configuration file
 default_config = Configuration("config.toml")
