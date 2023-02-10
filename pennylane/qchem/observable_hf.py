@@ -122,7 +122,7 @@ def qubit_observable(o_ferm, cutoff=1.0e-12):
     return o_qubit
 
 
-def jordan_wigner(op):
+def jordan_wigner(op, notation="ccaa"):
     r"""Convert a fermionic operator to a qubit operator using the Jordan-Wigner mapping.
 
     For instance, the one-body fermionic operator :math:`a_2^\dagger a_0` should be constructed as
@@ -149,10 +149,21 @@ def jordan_wigner(op):
         op = [((op[0], 1), (op[1], 0))]
 
     if len(op) == 4:
-        op = [((op[0], 1), (op[1], 1), (op[2], 0), (op[3], 0))]
+        if notation == "ccaa":
+            op = [((op[0], 1), (op[1], 1), (op[2], 0), (op[3], 0))]
+            if op[0][0][0] == op[0][1][0] or op[0][2][0] == op[0][3][0]:
+                return 0
+        if notation == "caca":
+            op = [((op[0], 1), (op[1], 0), (op[2], 1), (op[3], 0))]
+            if op[0][0][0] == op[0][2][0] or op[0][1][0] == op[0][3][0]:
+                if op[0][1][0] != op[0][2][0]:
+                    return 0
 
-        if op[0][0][0] == op[0][1][0] or op[0][2][0] == op[0][3][0]:
-            return 0
+    return _jordan_wigner(op)
+
+
+def _jordan_wigner(op):
+    r"""Convert a fermionic operator to a qubit operator using the Jordan-Wigner mapping."""
 
     t = op[0]
     q = [[(0, "I"), 1.0]]
