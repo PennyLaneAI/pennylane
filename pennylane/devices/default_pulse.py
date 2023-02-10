@@ -44,11 +44,9 @@ class DefaultPulse(DefaultQubitJax):
     author = "Xanadu Inc."
 
     def __init__(self, wires, *, shots=None, analytic=None, dt=1e-5, dim=2, drift=None):
-        r_dtype = np.float64
-        c_dtype = np.complex128
 
         self.dt = dt
         self.dim = dim
         self.drift = drift
 
-        super().__init__(wires, shots=shots, r_dtype=r_dtype, c_dtype=c_dtype, analytic=analytic)
+        super().__init__(wires, shots=shots, analytic=analytic)
