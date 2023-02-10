@@ -69,7 +69,6 @@ class TestHelpers:
             (qml.CRX(0.1, wires=[0, 1]), True),
             (qml.Snapshot(), False),
             (qml.Barrier(), False),
-            (qml.TShift(1), False),
         ],
     )
     def test_stopping_condition(self, op, expected):
@@ -88,8 +87,8 @@ class TestHelpers:
 
     def test_check_validity_invalid_op(self):
         """Test that check_validity throws an error when an operation is invalid."""
-        tape = QuantumScript(ops=[qml.TShift(0)], measurements=[qml.expval(qml.Hadamard(0))])
-        with pytest.raises(DeviceError, match="Gate TShift not supported on Python Device"):
+        tape = QuantumScript(ops=[qml.Barrier(0)], measurements=[qml.expval(qml.Hadamard(0))])
+        with pytest.raises(DeviceError, match="Gate Barrier not supported on Python Device"):
             check_validity(tape)
 
     def test_check_validity_invalid_observable(self):
@@ -170,37 +169,12 @@ class TestHelpers:
             assert qml.equal(op, expected)
 
         # Replace with Python Device once added
+        qml.enable_return()
         dev = qml.device("default.qubit", wires=2)
         expected = dev.execute(tape)
         res = batch_fn(dev.batch_execute(tapes))
         assert np.allclose(res, expected)
-
-    def test_batch_transform_expval_sum(self):
-        """Test that batch_transform creates a batch of tapes when a Sum expectation value
-        is measured."""
-        ops = [qml.Hadamard(0), qml.CNOT([0, 1]), qml.RX(np.pi, wires=1)]
-        obs = qml.sum(qml.s_prod(0.5, qml.PauliZ(0)), qml.prod(qml.PauliX(0), qml.PauliZ(1)))
-        # Need to specify grouping type to transform tape
-        measurements = [qml.expval(obs)]
-        tape = QuantumScript(ops=ops, measurements=measurements)
-
-        tapes, batch_fn = batch_transform(tape)
-
-        assert len(tapes) == 2
-        for t in tapes:
-            for op, expected_op in zip(t.operations, ops):
-                assert qml.equal(op, expected_op)
-        assert len(tapes[0].measurements) == 1 == len(tapes[0].measurements)
-        assert qml.equal(tapes[0].measurements[0], qml.expval(qml.PauliZ(0)))
-        assert qml.equal(
-            tapes[1].measurements[0], qml.expval(qml.prod(qml.PauliX(0), qml.PauliZ(1)))
-        )
-
-        # Replace with Python Device once added
-        dev = qml.device("default.qubit", wires=2)
-        expected = dev.execute(tape)
-        res = batch_fn(dev.batch_execute(tapes))
-        assert np.allclose(res, expected)
+        qml.disable_return()
 
     def test_batch_transform_broadcast(self):
         """Test that batch_transform splits broadcasted tapes correctly."""
@@ -220,43 +194,12 @@ class TestHelpers:
                 assert qml.equal(op, expected)
 
         # Replace with Python Device once added
+        qml.enable_return()
         dev = qml.device("default.qubit", wires=2)
         expected = dev.execute(tape)
         res = batch_fn(dev.batch_execute(tapes))
         assert np.allclose(res, expected)
-
-    def test_batch_transform_expval_sum_broadcast(self):
-        """Test that batch_transform splits broadcasted tapes with Sum expectation values
-        correctly"""
-        ops = [qml.Hadamard(0), qml.CNOT([0, 1]), qml.RX([np.pi, np.pi / 2], wires=1)]
-        obs = qml.sum(qml.s_prod(0.5, qml.PauliZ(0)), qml.prod(qml.PauliX(0), qml.PauliZ(1)))
-        # Need to specify grouping type to transform tape
-        measurements = [qml.expval(obs)]
-        tape = QuantumScript(ops=ops, measurements=measurements)
-
-        tapes, batch_fn = batch_transform(tape)
-        expected_ops = [
-            [qml.Hadamard(0), qml.CNOT([0, 1]), qml.RX(np.pi, wires=1)],
-            [qml.Hadamard(0), qml.CNOT([0, 1]), qml.RX(np.pi / 2, wires=1)],
-        ]
-
-        assert len(tapes) == 4
-        for i, t in enumerate(tapes):
-            for op, expected_op in zip(t.operations, expected_ops[i % 2]):
-                assert qml.equal(op, expected_op)
-            assert len(t.measurements) == 1
-            if i < 2:
-                assert qml.equal(t.measurements[0], qml.expval(qml.PauliZ(0)))
-            else:
-                assert qml.equal(
-                    t.measurements[0], qml.expval(qml.prod(qml.PauliX(0), qml.PauliZ(1)))
-                )
-
-        # Replace with Python Device once added
-        dev = qml.device("default.qubit", wires=2)
-        expected = dev.execute(tape)
-        res = batch_fn(dev.batch_execute(tapes))
-        assert np.allclose(res, expected)
+        qml.disable_return()
 
 
 class TestPreprocess:
@@ -299,10 +242,12 @@ class TestPreprocess:
                 assert qml.equal(t.measurements[0], measurements[1])
 
         # Replace with Python Device once added
+        qml.enable_return()
         dev = qml.device("default.qubit", wires=2)
         expected = qml.execute(tapes, dev)
         res = batch_fn(dev.batch_execute(res_tapes))
         assert np.allclose(res, expected)
+        qml.disable_return()
 
     def test_preprocess_expand(self):
         """Test that preprocess returns the correct tapes when expansion is needed."""
@@ -322,10 +267,12 @@ class TestPreprocess:
                 assert qml.equal(op, exp)
 
         # Replace with Python Device once added
+        qml.enable_return()
         dev = qml.device("default.qubit", wires=2)
         expected = qml.execute(tapes, dev)
         res = batch_fn(dev.batch_execute(res_tapes))
         assert np.allclose(res, expected)
+        qml.disable_return()
 
     def test_preprocess_split_and_expand(self):
         """Test that preprocess returns the correct tapes when splitting and expanding
@@ -355,13 +302,16 @@ class TestPreprocess:
                 assert qml.equal(t.measurements[0], measurements[1])
 
         # Replace with Python Device once added
+        qml.enable_return()
         dev = qml.device("default.qubit", wires=2)
         expected = qml.execute(tapes, dev)
         res = batch_fn(dev.batch_execute(res_tapes))
         # Need to check each row individually because the dimensions of ``res`` and
         # ``expected`` are different
-        for r, e in zip(res, expected):
-            assert np.allclose(r, e)
+        # for r, e in zip(res, expected):
+        #     assert np.allclose(r, e)
+        assert np.allclose(res, expected)
+        qml.disable_return()
 
     def test_preprocess_check_validity_fail(self):
         """Test that preprocess throws an error if the split and expanded tapes have

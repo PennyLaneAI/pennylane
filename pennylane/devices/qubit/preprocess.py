@@ -18,12 +18,7 @@ that they are supported for execution by a device."""
 import pennylane as qml
 
 from pennylane.operation import Observable, Tensor
-from pennylane.ops import Sum
-from pennylane.measurements import (
-    MidMeasureMP,
-    ExpectationMP,
-    ShadowExpvalMP,
-)
+from pennylane.measurements import MidMeasureMP
 from pennylane import DeviceError
 
 # Update observable list. Current list is same as supported observables for
@@ -48,7 +43,7 @@ _observables = {
 
 def _stopping_condition(op):
     """Specify whether or not an Operator object is supported by the device"""
-    return getattr(op, "has_matrix", False) and qml.matrix(op).shape[-1] % 2 == 0
+    return getattr(op, "has_matrix", False)
 
 
 def _supports_observable(observable):
@@ -73,7 +68,7 @@ def expand_fn(circuit, max_expansion=10):
 
     This method expands the tape if:
 
-    - nested tapes are present,
+    - mid-circuit measurements are present,
     - any operations are not supported on the device.
 
     Args:
@@ -120,40 +115,18 @@ def batch_transform(circuit):
         the sequence of circuits to be executed, and a post-processing function
         to be applied to the list of evaluated circuit results.
     """
-    expval_sum_in_obs = any(
-        isinstance(m.obs, Sum) and isinstance(m, ExpectationMP) for m in circuit.measurements
-    )
-
-    is_shadow = any(isinstance(m, ShadowExpvalMP) for m in circuit.measurements)
-
-    if expval_sum_in_obs and not is_shadow:
-        circuits, sum_fn = qml.transforms.sum_expand(circuit)
-
-    else:
-        # otherwise, return the output of an identity transform
-        circuits = [circuit]
-
-        def sum_fn(res):
-            return res[0]
-
     # Check whether the circuit was broadcasted
     if circuit.batch_size is None:
         # If the circuit wasn't broadcasted, no action required
-        return circuits, sum_fn
+        circuits = [circuit]
 
-    # Expand each of the broadcasted sum-expanded circuits
-    expanded_tapes, expanded_fn = qml.transforms.map_batch_transform(
-        qml.transforms.broadcast_expand, circuits
-    )
+        def batch_fn(res):
+            return res[0]
 
-    # Chain the postprocessing functions of the broadcasted-tape expansions and the Sum
-    # expansion. Note that the application order is reversed compared to the expansion order,
-    # i.e. while we first applied `sum_expand` to the tape, we need to process the
-    # results from the broadcast expansion first.
-    def total_processing(results):
-        return sum_fn(expanded_fn(results))
+        return circuits, batch_fn
 
-    return expanded_tapes, total_processing
+    # Expand each of the broadcasted circuits and return the tapes and processing function
+    return qml.transforms.broadcast_expand(circuit)
 
 
 def check_validity(tape):
@@ -185,9 +158,9 @@ def check_validity(tape):
 
 
 def preprocess(tapes, execution_config=None, max_expansion=10):
-    """Preprocess a batch of `QuantumTape` objects to make them ready for execution.
+    """Preprocess a batch of :class:`~.QuantumTape` objects to make them ready for execution.
 
-    This function validates a batch of `QuantumTape` objects by transforming and expanding
+    This function validates a batch of :class:`~.QuantumTape` objects by transforming and expanding
     them to ensure all operators and measurements are supported by the execution device.
 
     Args:
@@ -205,8 +178,8 @@ def preprocess(tapes, execution_config=None, max_expansion=10):
         the sequence of circuits to be executed, and a post-processing function
         to be applied to the list of evaluated circuit results.
     """
-    # Finite shot support will be added later
     if execution_config and execution_config.shots is not None:
+        # Finite shot support will be added later
         raise DeviceError("The Python Device does not support finite shots.")
 
     for i, tape in enumerate(tapes):

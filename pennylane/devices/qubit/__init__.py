@@ -22,7 +22,9 @@ at your own discretion.
     :toctree: api
     create_initial_state
     apply_operation
+    preprocess
 """
 
 from .apply_operation import apply_operation
 from .initialize_state import create_initial_state
+from .preprocess import preprocess
