@@ -318,4 +318,4 @@ class ProbabilityMP(SampleMeasurement, StateMeasurement):
 
         powers_of_two = 2 ** qml.math.arange(num_wires)[::-1]
         perm = basis_states @ powers_of_two
-        return prob[:, perm] if batch_size is not None else prob[perm]
+        return prob[:, perm] if batch_size is not None else qml.math.gather(prob, perm)
