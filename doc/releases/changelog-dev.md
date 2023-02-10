@@ -134,10 +134,10 @@
   ```
 
 * The gradient transform `qml.gradients.spsa_grad` is now registered as a
-  differentiation method for `QNode`s.
+  differentiation method for QNodes.
   [#3440](https://github.com/PennyLaneAI/pennylane/pull/3440)
 
-  The SPSA gradient transform can now also be used implicitly by marking a `QNode`
+  The SPSA gradient transform can now be used implicitly by marking a QNode
   as differentiable with SPSA. It can be selected via
 
   ```pycon
