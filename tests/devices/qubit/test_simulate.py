@@ -21,7 +21,6 @@ import pennylane as qml
 from pennylane.devices.qubit import simulate
 
 
-
 class TestCurrentlyUnsupportedCases:
     def test_hamiltonian_observable(self):
         """Test that measuring hamiltonians gives a NotImplementedError."""
@@ -291,14 +290,13 @@ class TestOperatorArithmetic:
 
             return simulate(qs)
 
-        phi_numpy = phi.detach().numpy()
         results = f(phi)
-        assert qml.math.allclose(results[0], -np.sin(phi_numpy) - 1)
-        assert qml.math.allclose(results[1], 3 * np.cos(phi_numpy))
+        assert qml.math.allclose(results[0], -torch.sin(phi) - 1)
+        assert qml.math.allclose(results[1], 3 * torch.cos(phi))
 
         g = torch.autograd.functional.jacobian(f, phi)
-        assert qml.math.allclose(g[0], -np.cos(phi_numpy))
-        assert qml.math.allclose(g[1], -3 * np.sin(phi_numpy))
+        assert qml.math.allclose(g[0], -torch.cos(phi))
+        assert qml.math.allclose(g[1], -3 * torch.sin(phi))
 
     @pytest.mark.tf
     def test_tensorflow_op_arithmetic(self):
