@@ -18,7 +18,7 @@ This module contains the Abstract Base Class for the next generation of devices.
 import abc
 
 from numbers import Number
-from typing import Callable, Union, Sequence, Tuple
+from typing import Callable, Union, Sequence, Tuple, Optional
 
 from pennylane.tape import QuantumTape
 from pennylane import Tracker
@@ -116,7 +116,7 @@ class QuantumDevice(abc.ABC):
         """The name of the device or set of devices.
 
         This property can either be the name of the class, or an alias to be used in the :func:`~.device` constructor,
-        such as `"default.qubit"` or `"lightning.qubit"`.
+        such as ``"default.qubit"`` or ``"lightning.qubit"``.
 
         """
         return type(self).__name__
@@ -269,20 +269,28 @@ class QuantumDevice(abc.ABC):
         """
         raise NotImplementedError
 
-    @classmethod
     def supports_derivatives(
-        cls, execution_config: ExecutionConfig = DefaultExecutionConfig
+        self,
+        execution_config: Optional[ExecutionConfig] = None,
+        circuit: Optional[QuantumTape] = None,
     ) -> bool:
-        """Determine whether or not a gradient is available with a given execution configuration.
+        """Determine whether or not a device provided derivative is potentially available.
 
-        Default behaviour assumes first order derivatives exist if :meth:`~.differentiate` is overriden.
+        Default behaviour assumes first order derivatives for all circuits exist if :meth:`~.compute_derivatives is overriden.
 
         Args:
-            execution_config (ExecutionConfig): A description of the hyperparameters for the desired computation.
+            execution_config (None, ExecutionConfig): A description of the hyperparameters for the desired computation.
               Note that this method accepts only a single ``ExecutionConfig``, not an iterable of them.
+            circuit (None, QuantumTape): A specific circuit to check differentation for.
 
         Returns:
             Bool
+
+        If ``execution_config`` and ``circuit`` are both ``None``, then this method should return ``True`` if **any**
+        device derivative exists for **any** circumstance.
+
+        If either ``execution_config`` is specified but not ``circuit``, then the method should return whether or not
+        device derivatives exist for **any** circuits.
 
         **Example:**
 
@@ -290,14 +298,32 @@ class QuantumDevice(abc.ABC):
         if the order is ``1`` and the execution occurs with no shots ``shots=None``.
 
         >>> config = ExecutionConfig(derivative_order=1, shots=None, gradient_method="device")
-        >>> dev.supports_differentiation(config)
+        >>> dev.supports_derivatives(config)
         True
         >>> config = ExecutionConfig(derivative_order=1, shots=10, gradient_method="device")
-        >>> dev.supports_differentiation(config)
+        >>> dev.supports_derivatives(config)
         False
         >>> config = ExecutionConfig(derivative_order=2, shots=None, gradient_method="device")
-        >>> dev.supports_differentiation(config)
+        >>> dev.supports_derivatives(config)
         False
+
+        Adjoint differentiation will only be supported for circuits with expectation value measurements.
+        If a circuit is provided and it cannot be converted to a form supported by differentiation method by
+        :meth:`~.QuantumDevice.preprocess`, then ``supports_derivatives`` should return False.
+
+        >>> circuit = qml.tape.QuantumScript([qml.RX(2.0, wires=0)], [qml.probs(wires=(0,1))])
+        >>> dev.supports_derivatives(circuit=circuit)
+        False
+
+        If the circuit is not natively supported by the differentiation method but can be converted into a form
+        that is supported, it should still return ``True``.  For example, :class:`~.Rot` gates are not natively
+        supported by adjoint differentation, as they do not have a generator, but they can be compiled into
+        operations supported by adjoint differentiation. Therefore this method may reproduce compilation
+        and validation steps performed by :meth:`~.QuantumDevice.preprocess`.
+
+        >>> circuit = qml.tape.QuantumScript([qml.Rot(1.2, 2.3, 3.4, wires=0)], [qml.expval(qml.PauliZ(0))])
+        >>> dev.supports_derivatives(circuit=circuit)
+        True
 
         **Backpropagation:**
 
@@ -305,20 +331,19 @@ class QuantumDevice(abc.ABC):
         is only supported if the devices is transparent to the machine learning framework from start to finish.
 
         >>> config = ExecutionConfig(gradient_method="backprop", framework="torch")
-        >>> python_device.supports_differentiation(config)
+        >>> python_device.supports_derivatives(config)
         True
-        >>> cpp_device.supports_differentiation(config)
+        >>> cpp_device.supports_derivatives(config)
         False
 
         """
-        execution_config = execution_config or ExecutionConfig()
-        if execution_config.gradient_method != "device":
+        if execution_config is None:
+            return self.compute_derivatives != QuantumDevice.compute_derivatives
+
+        if execution_config.gradient_method != "device" or execution_config.derivative_order != 1:
             return False
-        return (
-            cls.compute_derivatives != QuantumDevice.compute_derivatives
-            if execution_config.derivative_order == 1
-            else False
-        )
+
+        return self.compute_derivatives != QuantumDevice.compute_derivatives
 
     def compute_derivatives(
         self,
