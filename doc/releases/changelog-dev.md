@@ -14,10 +14,10 @@
   versions of the following functions, available in all common
   interfaces for PennyLane
 
-    + [fft](https://numpy.org/doc/stable/reference/generated/numpy.fft.fft.html)
-    + [ifft](https://numpy.org/doc/stable/reference/generated/numpy.fft.ifft.html)
-    + [fft2](https://numpy.org/doc/stable/reference/generated/numpy.fft.fft2.html)
-    + [ifft2](https://numpy.org/doc/stable/reference/generated/numpy.fft.ifft2.html)
+  * [fft](https://numpy.org/doc/stable/reference/generated/numpy.fft.fft.html)
+  * [ifft](https://numpy.org/doc/stable/reference/generated/numpy.fft.ifft.html)
+  * [fft2](https://numpy.org/doc/stable/reference/generated/numpy.fft.fft2.html)
+  * [ifft2](https://numpy.org/doc/stable/reference/generated/numpy.fft.ifft2.html)
 
   Note that the output of the derivative of these functions
   may differ when used with complex-valued inputs, due to different
@@ -383,6 +383,10 @@
   DeviceArray(0., dtype=float32)
   ```
 
+* Added `qml.ops.ctrl_decomp_zyz` to compute the decomposition of a controlled single-qubit operation given
+  a single-qubit operation and the control wires.
+  [(#3681)](https://github.com/PennyLaneAI/pennylane/pull/3681)
+
 *Next generation device API:*
 
 * The `apply_operation` single-dispatch function is added to `devices/qubit` that applies an operation
@@ -392,9 +396,10 @@
 * The `create_initial_state` function is added to `devices/qubit` that returns an initial state for an execution.
   [(#3683)](https://github.com/PennyLaneAI/pennylane/pull/3683)
 
-* Added `qml.ops.ctrl_decomp_zyz` to compute the decomposition of a controlled single-qubit operation given
-  a single-qubit operation and the control wires.
-  [(#3681)](https://github.com/PennyLaneAI/pennylane/pull/3681)
+* The `simulate` function is added to `devices/qubit` that turns a single quantum tape into a measurement result.
+  The function only supports state based measurements with either no observables or observables with diagonalizing gates.
+  It supports simultanous measurement of non-commuting observables.
+  [(#3700)](https://github.com/PennyLaneAI/pennylane/pull/3700)
 
 <h3>Improvements</h3>
 
@@ -533,6 +538,10 @@
 
 * `QuantumMonteCarlo` template is now JAX-JIT compatible when passing `jax.numpy` arrays to the template.
   [(#3734)](https://github.com/PennyLaneAI/pennylane/pull/3734)
+
+* `DefaultQubitJax` now supports evolving the state vector when executing `ParametrizedEvolution`
+  gates.
+  [(#3743)](https://github.com/PennyLaneAI/pennylane/pull/3743)
 
 <h3>Breaking changes</h3>
 
