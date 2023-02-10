@@ -335,7 +335,6 @@ class TestOperatorArithmetic:
 
 
 class TestQInfoMeasurements:
-
     measurements = [
         qml.density_matrix(0),
         qml.density_matrix(1),
@@ -346,7 +345,6 @@ class TestQInfoMeasurements:
     ]
 
     def expected_results(self, phi):
-
         density_i = np.array([[np.cos(phi / 2) ** 2, 0], [0, np.sin(phi / 2) ** 2]])
         density_both = np.array(
             [
@@ -383,7 +381,6 @@ class TestQInfoMeasurements:
         )
 
     def expected_grad(self, phi):
-
         p_2 = phi / 2
         g_density_i = np.array([[-np.cos(p_2) * np.sin(p_2), 0], [0, np.sin(p_2) * np.cos(p_2)]])
         g_density_both = np.array(
