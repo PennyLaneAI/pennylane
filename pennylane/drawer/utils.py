@@ -14,7 +14,7 @@
 """
 This module contains some useful utility functions for circuit drawing.
 """
-from pennylane.ops import ControlledOp
+from pennylane.ops import Controlled
 
 
 def default_wire_map(tape):
@@ -77,7 +77,7 @@ def unwrap_controls(op):
     control_wires = getattr(op, "control_wires", [])
     control_values = op.hyperparameters.get("control_values", None)
 
-    if isinstance(op, ControlledOp):
+    if isinstance(op, Controlled):
         next_ctrl = op
 
         while hasattr(next_ctrl, "base"):
