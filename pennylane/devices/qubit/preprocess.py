@@ -121,6 +121,8 @@ def batch_transform(circuit):
         circuits = [circuit]
 
         def batch_fn(res):
+            """A post-processing function to convert the results of a batch of
+            executions into the result of a single executiion."""
             return res[0]
 
         return circuits, batch_fn

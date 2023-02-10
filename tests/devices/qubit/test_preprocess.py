@@ -168,13 +168,8 @@ class TestHelpers:
         for op, expected in zip(tapes[0].circuit, ops + measurements):
             assert qml.equal(op, expected)
 
-        # Replace with Python Device once added
-        qml.enable_return()
-        dev = qml.device("default.qubit", wires=2)
-        expected = dev.execute(tape)
-        res = batch_fn(dev.batch_execute(tapes))
-        assert np.allclose(res, expected)
-        qml.disable_return()
+        input = (("a", "b"), "c")
+        assert batch_fn(input) == input[0]
 
     def test_batch_transform_broadcast(self):
         """Test that batch_transform splits broadcasted tapes correctly."""
@@ -193,13 +188,8 @@ class TestHelpers:
             for op, expected in zip(t.circuit, expected_ops[i] + measurements):
                 assert qml.equal(op, expected)
 
-        # Replace with Python Device once added
-        qml.enable_return()
-        dev = qml.device("default.qubit", wires=2)
-        expected = dev.execute(tape)
-        res = batch_fn(dev.batch_execute(tapes))
-        assert np.allclose(res, expected)
-        qml.disable_return()
+        input = ([[1, 2]], [[3, 4]])
+        assert np.array_equal(batch_fn(input), np.array([[1, 2], [3, 4]]))
 
 
 class TestPreprocess:
@@ -241,13 +231,8 @@ class TestPreprocess:
             else:
                 assert qml.equal(t.measurements[0], measurements[1])
 
-        # Replace with Python Device once added
-        qml.enable_return()
-        dev = qml.device("default.qubit", wires=2)
-        expected = qml.execute(tapes, dev)
-        res = batch_fn(dev.batch_execute(res_tapes))
-        assert np.allclose(res, expected)
-        qml.disable_return()
+        input = ([[1, 2]], [[3, 4]], [[5, 6]], [[7, 8]])
+        assert np.array_equal(batch_fn(input), np.array([[[1, 2], [3, 4]], [[5, 6], [7, 8]]]))
 
     def test_preprocess_expand(self):
         """Test that preprocess returns the correct tapes when expansion is needed."""
@@ -266,13 +251,8 @@ class TestPreprocess:
             for op, exp in zip(t.circuit, expected + measurements[i]):
                 assert qml.equal(op, exp)
 
-        # Replace with Python Device once added
-        qml.enable_return()
-        dev = qml.device("default.qubit", wires=2)
-        expected = qml.execute(tapes, dev)
-        res = batch_fn(dev.batch_execute(res_tapes))
-        assert np.allclose(res, expected)
-        qml.disable_return()
+        input = (("a", "b"), "c", "d")
+        assert batch_fn(input) == [("a", "b"), "c"]
 
     def test_preprocess_split_and_expand(self):
         """Test that preprocess returns the correct tapes when splitting and expanding
@@ -301,13 +281,8 @@ class TestPreprocess:
             else:
                 assert qml.equal(t.measurements[0], measurements[1])
 
-        # Replace with Python Device once added
-        qml.enable_return()
-        dev = qml.device("default.qubit", wires=2)
-        expected = qml.execute(tapes, dev)
-        res = batch_fn(dev.batch_execute(res_tapes))
-        assert np.allclose(res, expected)
-        qml.disable_return()
+        input = ([[1, 2]], [[3, 4]], [[5, 6]], [[7, 8]])
+        assert np.array_equal(batch_fn(input), np.array([[[1, 2], [3, 4]], [[5, 6], [7, 8]]]))
 
     def test_preprocess_check_validity_fail(self):
         """Test that preprocess throws an error if the split and expanded tapes have
