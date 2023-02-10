@@ -180,7 +180,7 @@ def apply_pauliz(op: qml.PauliZ, state):
     sl_0 = _get_slice(0, op.wires[0], n_wires)
     sl_1 = _get_slice(1, op.wires[0], n_wires)
 
-    state1 = math.multiply(-1, state[sl_1])
+    state1 = math.multiply(state[sl_1], -1)
     return math.stack([state[sl_0], state1], axis=op.wires[0])
 
 
