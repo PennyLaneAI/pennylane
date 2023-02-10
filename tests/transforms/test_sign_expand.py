@@ -9,7 +9,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
+"""This file contains unit tests for the ``sign_expand`` transform."""
 import pytest
 import numpy as np
 import pennylane as qml
