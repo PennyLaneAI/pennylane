@@ -1670,35 +1670,29 @@ class QubitDevice(Device):
         device_wires = self.map_wires(wires)
         inactive_device_wires = self.map_wires(inactive_wires)
 
-        # reshape the probability so that each axis corresponds to a wire
-        shape = [2] * self.num_wires
-        if batch_size is not None:
-            shape.insert(0, batch_size)
-        # prob now is reshaped to have self.num_wires+1 axes in the case of broadcasting
-        prob = self._reshape(prob, shape)
-
-        # sum over all inactive wires
         # hotfix to catch when default.qubit uses this method
         # since then device_wires is a list
         if isinstance(inactive_device_wires, Wires):
             inactive_device_wires = inactive_device_wires.labels
 
+        # reshape the probability so that each axis corresponds to a wire
+        shape = [2] * self.num_wires
+        desired_axes = np.argsort(np.argsort(device_wires))
+        flat_shape = (-1,)
         if batch_size is not None:
+            shape.insert(0, batch_size)
             inactive_device_wires = [idx + 1 for idx in inactive_device_wires]
-        flat_shape = (-1,) if batch_size is None else (batch_size, -1)
-        prob = self._reshape(self._reduce_sum(prob, inactive_device_wires), flat_shape)
+            desired_axes = np.insert(desired_axes + 1, 0, 0)
+            flat_shape = (batch_size, -1)
 
-        # The wires provided might not be in consecutive order (i.e., wires might be [2, 0]).
-        # If this is the case, we must permute the marginalized probability so that
-        # it corresponds to the orders of the wires passed.
-        num_wires = len(device_wires)
-        basis_states = self.generate_basis_states(num_wires)
-        basis_states = basis_states[:, np.argsort(np.argsort(device_wires))]
-
-        powers_of_two = 2 ** np.arange(len(device_wires))[::-1]
-        perm = basis_states @ powers_of_two
-        # The permutation happens on the last axis both with and without broadcasting
-        return self._gather(prob, perm, axis=1 if batch_size is not None else 0)
+        # prob now is reshaped to have self.num_wires+1 axes in the case of broadcasting
+        prob = self._reshape(prob, shape)
+        # sum over all inactive wires
+        prob = self._reduce_sum(prob, inactive_device_wires)
+        # rearrange wires to desired order
+        prob = self._transpose(prob, desired_axes)
+        # flatten and return probabilities
+        return self._reshape(prob, flat_shape)
 
     def expval(self, observable, shot_range=None, bin_size=None):
         if observable.name == "Projector":
