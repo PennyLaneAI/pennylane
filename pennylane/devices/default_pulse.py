@@ -21,7 +21,7 @@ from .._version import __version__
 from .default_qubit import DefaultQubit
 
 
-class DefaultPulse(DefaultQubit):
+class DefaultPulse(DefaultQubitJax):
     """Default pulses device for PennyLane.
 
     Args:
