@@ -904,7 +904,7 @@ class TestIntegration:
 
         dev = qml.device("default.qubit", wires=1)
 
-        @qml.qnode(dev, interface="torch", diff_method=diff_method)
+        @qml.qnode(dev, diff_method=diff_method)
         def circuit(s):
             return qml.expval(qml.s_prod(s, qml.PauliZ(0)))
 
@@ -922,7 +922,7 @@ class TestIntegration:
 
         dev = qml.device("default.qubit", wires=1)
 
-        @qml.qnode(dev, interface="jax", diff_method=diff_method)
+        @qml.qnode(dev, diff_method=diff_method)
         def circuit(s):
             return qml.expval(qml.s_prod(s, qml.PauliZ(0)))
 
@@ -937,7 +937,7 @@ class TestIntegration:
 
         dev = qml.device("default.qubit", wires=5)
 
-        @qml.qnode(dev, interface="tensorflow", diff_method=diff_method)
+        @qml.qnode(dev, diff_method=diff_method)
         def circuit(s):
             return qml.expval(qml.s_prod(s, qml.PauliZ(0)))
 

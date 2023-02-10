@@ -56,6 +56,7 @@ from .multi_dispatch import (
     ones_like,
     scatter,
     scatter_element_add,
+    set_index,
     stack,
     tensordot,
     unwrap,
@@ -91,12 +92,27 @@ toarray = ar.numpy.to_numpy
 T = ar.numpy.transpose
 
 
+class NumpyMimic(ar.autoray.NumpyMimic):
+    """Subclass of the Autoray NumpyMimic class in order to support
+    the NumPy fft submodule"""
+
+    # pylint: disable=too-few-public-methods
+
+    def __getattribute__(self, fn):
+        if fn == "fft":
+            return numpy_fft
+        return super().__getattribute__(fn)
+
+
+numpy_mimic = NumpyMimic()
+numpy_fft = ar.autoray.NumpyMimic("fft")
+
 # small constant for numerical stability that the user can modify
 eps = 1e-14
 
 
 def __getattr__(name):
-    return getattr(ar.numpy, name)
+    return getattr(numpy_mimic, name)
 
 
 __all__ = [

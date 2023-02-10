@@ -148,53 +148,71 @@ def classical_jacobian(qnode, argnum=None, expand_fn=None, trainable_only=True):
             tape = expand_fn(tape)
         return qml.math.stack(tape.get_parameters(trainable_only=trainable_only))
 
-    if qnode.interface == "autograd":
-        return qml.jacobian(classical_preprocessing, argnum=argnum)
+    wrapper_argnum = argnum if argnum is not None else None
 
-    if qnode.interface == "torch":
-        import torch
+    def qnode_wrapper(*args, **kwargs):  # pylint: disable=inconsistent-return-statements
+        old_interface = qnode.interface
 
-        def _jacobian(*args, **kwargs):  # pylint: disable=unused-argument
-            jac = torch.autograd.functional.jacobian(classical_preprocessing, args)
+        if old_interface == "auto":
+            qnode.interface = qml.math.get_interface(*args, *list(kwargs.values()))
 
-            torch_argnum = argnum if argnum is not None else qml.math.get_trainable_indices(args)
-            if np.isscalar(torch_argnum):
-                jac = jac[torch_argnum]
-            else:
-                jac = tuple((jac[idx] for idx in torch_argnum))
-            return jac
+        if qnode.interface == "autograd":
+            jac = qml.jacobian(classical_preprocessing, argnum=wrapper_argnum)(*args, **kwargs)
 
-        return _jacobian
+        if qnode.interface == "torch":
+            import torch
 
-    if qnode.interface == "jax":
-        import jax
+            def _jacobian(*args, **kwargs):  # pylint: disable=unused-argument
+                jac = torch.autograd.functional.jacobian(classical_preprocessing, args)
 
-        argnum = 0 if argnum is None else argnum
+                torch_argnum = (
+                    wrapper_argnum
+                    if wrapper_argnum is not None
+                    else qml.math.get_trainable_indices(args)
+                )
+                if np.isscalar(torch_argnum):
+                    jac = jac[torch_argnum]
+                else:
+                    jac = tuple((jac[idx] for idx in torch_argnum))
+                return jac
 
-        def _jacobian(*args, **kwargs):
-            if trainable_only:
-                full_jac = jax.jacobian(classical_preprocessing, argnums=argnum)(*args, **kwargs)
+            jac = _jacobian(*args, **kwargs)
+
+        if qnode.interface == "jax":
+            import jax
+
+            argnum = 0 if wrapper_argnum is None else wrapper_argnum
+
+            def _jacobian(*args, **kwargs):
+                    full_jac = jax.jacobian(classical_preprocessing, argnums=argnum)(*args, **kwargs)
                 return full_jac
 
-            return jax.jacobian(classical_preprocessing, argnums=argnum)(*args, **kwargs)
+                return jax.jacobian(classical_preprocessing, argnums=argnum)(*args, **kwargs)
 
-        return _jacobian
+            jac = _jacobian(*args, **kwargs)
 
-    if qnode.interface == "tf":
-        import tensorflow as tf
+        if qnode.interface == "tf":
+            import tensorflow as tf
 
-        def _jacobian(*args, **kwargs):
-            if np.isscalar(argnum):
-                sub_args = args[argnum]
-            elif argnum is None:
-                sub_args = args
-            else:
-                sub_args = tuple((args[i] for i in argnum))
+            def _jacobian(*args, **kwargs):
+                if np.isscalar(wrapper_argnum):
+                    sub_args = args[wrapper_argnum]
+                elif wrapper_argnum is None:
+                    sub_args = args
+                else:
+                    sub_args = tuple((args[i] for i in wrapper_argnum))
 
-            with tf.GradientTape() as tape:
-                gate_params = classical_preprocessing(*args, **kwargs)
+                with tf.GradientTape() as tape:
+                    gate_params = classical_preprocessing(*args, **kwargs)
 
-            jac = tape.jacobian(gate_params, sub_args)
-            return jac
+                jac = tape.jacobian(gate_params, sub_args)
+                return jac
 
-        return _jacobian
+            jac = _jacobian(*args, **kwargs)
+
+        if old_interface == "auto":
+            qnode.interface = "auto"
+
+        return jac
+
+    return qnode_wrapper
