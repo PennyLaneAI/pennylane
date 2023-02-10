@@ -312,7 +312,8 @@ class TestIntegration:
 
     def test_two_commuting_parametrized_hamiltonians(self):
         """Test that the evolution of two parametrized hamiltonians that commute with each other
-        is equal to evolve the two hamiltonians simultaneously."""
+        is equal to evolve the two hamiltonians simultaneously. This test uses 8 wires for the device
+        to test the case where 2 * n < N (the matrix is evolved instead of the state)."""
         import jax
         import jax.numpy as jnp
 
@@ -333,7 +334,7 @@ class TestIntegration:
         ops = [qml.PauliX(0), qml.PauliX(2)]
         H2 = qml.dot(coeffs, ops)
 
-        dev = qml.device("default.qubit", wires=3)
+        dev = qml.device("default.qubit", wires=8)
 
         @jax.jit
         @qml.qnode(dev, interface="jax")
