@@ -31,9 +31,9 @@ class ParametrizedHamiltonian:
     The Hamiltonian can be represented as a linear combination of other operators, e.g.,
 
     .. math::
-        H(v, t) = H_\text{drift} + \sum_j f_j(v, t) H_j
+        H(\{v_j\}, t) = H_\text{drift} + \sum_j f_j(v_j, t) H_j
 
-    where the :math:`v` are trainable parameters, and t is time.
+    where the :math:`\{v_j\}` are trainable parameters for each scalar-valued parametrization :math:`f_j`, and t is time.
 
     For example, a time-dependent ``ParametrizedHamiltonian`` with a single trainable parameter can
     be: :math:`a`, could be :math:`H = 2 X_1 X_2 + \sin(a t) Y_1 Y_2`
