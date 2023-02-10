@@ -46,6 +46,9 @@ def evolve(*args, **kwargs):  # pylint: disable=unused-argument
     Returns:
         .Evolution: evolution operator
 
+    .. seealso::
+
+        :class:`~.Evolution`
 
     **Examples**
 
@@ -84,6 +87,10 @@ def evolve(*args, **kwargs):  # pylint: disable=unused-argument
 
     The :class:`~.ParametrizedEvolution` class uses a numerical ordinary differential equation
     solver (`here <https://github.com/google/jax/blob/main/jax/experimental/ode.py>`_).
+
+    .. seealso::
+
+        :class:`~.ParametrizedEvolution`
 
     **Examples**
 

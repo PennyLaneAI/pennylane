@@ -159,14 +159,8 @@ along with the parameters, as keyword arguments:
 
     qml.evolve(H)(params=[1.2], t=[0, 4], atol=1e-6, mxstep=1)
 
-These options are:
-
-- ``atol (float, optional)``: Absolute error tolerance
-- ``rtol (float, optional)``: Relative error tolerance
-- ``mxstep (int, optional)``: maximum number of steps to take for each time point
-- ``hmax (float, optional)``: maximum step size
-
-If not specified, they will default to predetermined values. See :class:`.ParametrizedEvolution` for details.
+The available keyword arguments can be found in in :class:`~.ParametrizedEvolution`. If not specified, they
+will default to predetermined values.
 
 Using qml.evolve in a QNode
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -208,8 +202,9 @@ JIT-compiling is optional, and one can remove the decorator when only single exe
 ``jax`` docs on jitting for more information.
 
 .. warning::
-    To find the simultaneous evolution of the two operators, so it is important that ``H1`` and ``H2`` are included
-    in the same :func:`~.functions.evolve`.
-    For non-commuting operations, applying ``qml.evolve(H1)(params, t=[0, 10])`` followed by
-    ``qml.evolve(H2)(params, t=[0, 10])`` will **not** apply the two pulses simultaneously, despite the overlapping
-    time window. See Usage Details of :class:`~.ParametrizedEvolution` for a detailed example.
+    To find the simultaneous evolution of the two operators, so it is important that they are both included
+    in the same :func:`~.functions.evolve`. For non-commuting operations, applying
+    ``qml.evolve(H1)(params, t=[0, 10])`` followed by ``qml.evolve(H2)(params, t=[0, 10])`` will **not**
+    apply the two pulses simultaneously, despite the overlapping time window.
+
+    See Usage Details of :class:`~.ParametrizedEvolution` for a detailed example.
