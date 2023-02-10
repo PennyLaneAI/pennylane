@@ -13,9 +13,9 @@
 Contains the sign (and xi) decomposition tape transform, implementation of ideas from arXiv:2207.09479
 """
 # pylint: disable=protected-access
-import json
 from os import path
 from functools import partial
+import json
 import pennylane as qml
 from pennylane import numpy as np
 from pennylane.transforms.batch_transform import batch_transform
