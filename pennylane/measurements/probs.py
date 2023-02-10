@@ -17,6 +17,7 @@ This module contains the qml.probs measurement.
 from typing import Sequence, Tuple
 
 import pennylane as qml
+from pennylane import numpy as np
 from pennylane.wires import Wires
 
 from .measurements import MeasurementShapeError, Probability, SampleMeasurement, StateMeasurement
@@ -299,23 +300,24 @@ class ProbabilityMP(SampleMeasurement, StateMeasurement):
         # reshape the probability so that each axis corresponds to a wire
         num_device_wires = len(wire_order)
         shape = [2] * num_device_wires
+        desired_axes = np.argsort(np.argsort(mapped_wires))
+        flat_shape = (-1,)
         if batch_size is not None:
             shape.insert(0, batch_size)
             inactive_wires = [idx + 1 for idx in inactive_wires]
+            desired_axes = np.insert(desired_axes + 1, 0, 0)
+            flat_shape = (batch_size, -1)
+
         # prob now is reshaped to have self.num_wires+1 axes in the case of broadcasting
         prob = qml.math.reshape(prob, shape)
 
         # sum over all inactive wires
-        flat_shape = (-1,) if batch_size is None else (batch_size, -1)
-        prob = qml.math.reshape(qml.math.sum(prob, axis=tuple(inactive_wires)), flat_shape)
+        if inactive_wires:
+            prob = qml.math.sum(prob, axis=tuple(inactive_wires))
 
-        # The wires provided might not be in consecutive order (i.e., wires might be [2, 0]).
-        # If this is the case, we must permute the marginalized probability so that
-        # it corresponds to the orders of the wires passed.
-        num_wires = len(mapped_wires)
-        basis_states = qml.QubitDevice.generate_basis_states(num_wires)
-        basis_states = basis_states[:, qml.math.argsort(qml.math.argsort(mapped_wires))]
+        # rearrange wires if necessary
+        if not np.all(desired_axes == range(len(desired_axes))):
+            prob = qml.math.transpose(prob, desired_axes)
 
-        powers_of_two = 2 ** qml.math.arange(num_wires)[::-1]
-        perm = basis_states @ powers_of_two
-        return prob[:, perm] if batch_size is not None else qml.math.gather(prob, perm)
+        # flatten and return probabilities
+        return qml.math.reshape(prob, flat_shape)
