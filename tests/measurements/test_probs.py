@@ -58,8 +58,8 @@ def custom_measurement_process(device, spy):
 np.random.seed(42)
 
 
-@pytest.fixture
-def init_state():
+@pytest.fixture(name="init_state")
+def fixture_init_state():
     """Fixture that creates an initial state"""
 
     def _init_state(n):
@@ -73,6 +73,8 @@ def init_state():
 
 class TestProbs:
     """Tests for the probs function"""
+
+    # pylint:disable=too-many-public-methods
 
     def test_queue(self):
         """Test that the right measurement class is queued."""
@@ -453,6 +455,7 @@ class TestProbs:
     @pytest.mark.parametrize("wire", [0, 1, 2, 3])
     def test_prob_generalize_initial_state(self, hermitian, wire, init_state, tol, mocker):
         """Test that the correct probability is returned."""
+        # pylint:disable=too-many-arguments
         dev = qml.device("default.qubit", wires=4)
         spy = mocker.spy(qml.QubitDevice, "probability")
         state = init_state(4)
@@ -496,6 +499,7 @@ class TestProbs:
     @pytest.mark.parametrize("wire", [0, 1, 2, 3])
     def test_operation_prob(self, operation, wire, init_state, tol, mocker):
         "Test the rotated probability with different wires and rotating operations."
+        # pylint:disable=too-many-arguments
         dev = qml.device("default.qubit", wires=4)
         spy = mocker.spy(qml.QubitDevice, "probability")
         state = init_state(4)
