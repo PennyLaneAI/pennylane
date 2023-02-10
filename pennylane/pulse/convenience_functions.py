@@ -118,17 +118,15 @@ def rect(x: Union[float, Callable], windows: List[Tuple[float]] = None):
 
     This can be used to create a :class:`~.ParametrizedHamiltonian` in the following way:
 
-    .. code-block:: python
+    >>> H = qml.pulse.rect(jnp.polyval, windows=[(1, 7)]) * qml.PauliX(0)
 
-        >>> H = qml.pulse.rect(jnp.polyval, windows=[(1, 7)]) * qml.PauliX(0)
+    The resulting Hamiltonian will be non-zero only inside the window.
 
-        # inside the window
-        >>> H([3], t=2)
-        2.7278921604156494*(PauliX(wires=[0]))
+    >>> H([3], t=2)  # inside the window
+    2.7278921604156494*(PauliX(wires=[0]))
 
-        # outside the window
-        >>> H([3], t=0.5 )
-        0.0*(PauliX(wires=[0]))
+    >>> H([3], t=0.5 )  # outside the window
+    0.0*(PauliX(wires=[0]))
 
     It is also possible to define multiple windows for the same function:
 
@@ -233,30 +231,26 @@ def pwc(timespan):
 
     >>> timespan = (2, 7)
     >>> f1 = qml.pulse.pwc(timespan)
+    >>> H = f1 * qml.PauliX(0)
 
     The resulting function ``f1`` has the call signature ``f1(params, t)``. If passed an array of parameters and
     a time, it will assign the array as the constants in the piecewise function, and select the constant corresponding
     to the specified time, based on the time interval defined by ``timespan``.
 
-    .. code-block:: python
+    In the following example, passing ``pwc((2, 7))`` an array evenly distributes the array values in the
+    interval t=2 to t=7. The time ``t`` is then used to select one of the array values based on this distribution.
 
-        >>> H = f1 * qml.PauliX(0)
+    >>> H(params=[[11, 12, 13, 14, 15]], t=2.3)
+    11.0*(PauliX(wires=[0]))
 
-        # passing pwc((2, 7)) an array evenly distributes the array values in the interval t=2 to t=7
-        >>> H(params=[[11, 12, 13, 14, 15]], t=2.3)
-        11.0*(PauliX(wires=[0]))
+    >>> H(params=[[11, 12, 13, 14, 15]], t=2.5) # different time, same bin, same result
+    11.0*(PauliX(wires=[0]))
 
-        # different time, same bin, same result
-        >>> H(params=[[1, 2, 3, 4, 5]], t=2.5)
-        11.0*(PauliX(wires=[0]))
+    >>> H(params=[[11, 12, 13, 14, 15]], t=3.1) # next bin
+    12.0*(PauliX(wires=[0]))
 
-        # next bin
-        >>> H(params=[[1, 2, 3, 4, 5]], t=3.1)
-        12.0*(PauliX(wires=[0]))
-
-        # outside the window - the function is assigned non-zero values
-        >>> H(params=[[1, 2, 3, 4, 5]], t=8)
-        0.0*(PauliX(wires=[0]))
+    >>> H(params=[[11, 12, 13, 14, 15]], t=8) # outside the window returns 0
+    0.0*(PauliX(wires=[0]))
 
     """
     if not has_jax:
@@ -329,8 +323,8 @@ def pwc_from_function(timespan, num_bins):
         def fn(params, t):
             return params[0] * t + params[1]
 
-        fn([2, 4], 3)
-        >>> DeviceArray(10.666666, dtype=float32)
+    >>> fn([2, 4], 3)
+    DeviceArray(10.666666, dtype=float32)
 
     """
     if not has_jax:
