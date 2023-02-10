@@ -38,7 +38,7 @@ class ParametrizedEvolution(Operation):
     ParametrizedEvolution(H, params=None, t=None, do_queue=True, id=None, **odeint_kwargs)
 
     Parametrized evolution gate, created by passing a :class:`~.ParametrizedHamiltonian` to the
-    :func:`~.functions.evolve` function
+    :func:`~.pennylane.evolve` function
 
     For a time-dependent Hamiltonian of the form
     :math:`H(v, t) = H_\text{drift} + \sum_j f_j(v, t) H_j` it implements the corresponding

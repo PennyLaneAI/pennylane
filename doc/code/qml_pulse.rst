@@ -100,7 +100,7 @@ Schrödinger equation for a :class:`~.ParametrizedHamiltonian`.
 
 The :class:`~.ParametrizedEvolution` class uses a numerical ordinary differential equation
 solver (see `jax.experimental.ode <https://github.com/google/jax/blob/main/jax/experimental/ode.py>`_). It
-can be created using the :func:`~.functions.evolve` function:
+can be created using the :func:`~.pennylane.evolve` function:
 
 .. code-block:: python
 
@@ -179,7 +179,7 @@ JIT-compiling is optional, and one can remove the decorator when only single exe
 
 .. warning::
     To find the simultaneous evolution of the two operators, so it is important that they are both included
-    in the same :func:`~.functions.evolve`. For non-commuting operations, applying
+    in the same :func:`~.pennylane.evolve`. For non-commuting operations, applying
     ``qml.evolve(H1)(params, t=[0, 10])`` followed by ``qml.evolve(H2)(params, t=[0, 10])`` will **not**
     apply the two pulses simultaneously, despite the overlapping time window.
 
