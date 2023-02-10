@@ -85,14 +85,12 @@ and operators:
 The :class:`~.ParametrizedHamiltonian` is a callable, and can return an :class:`~.Operator` if passed a set of
 parameters and a time at which to evaluate the coefficients :math:`f_j`.
 
-.. code-block:: python
+>>> H1
+ParametrizedHamiltonian: terms=3
 
-    >>> H1
-    ParametrizedHamiltonian: terms=3
-
-    >>> params = [1.2, [2.3, 3.4]]  # f1 takes a single parameter, f2 takes 2
-    >>> H1(params, t=0.5)
-    (2*(PauliX(wires=[0]) @ PauliX(wires=[1]))) + ((-0.2876553535461426*(PauliY(wires=[0]) @ PauliY(wires=[1]))) + (1.5179612636566162*(PauliZ(wires=[0]) @ PauliZ(wires=[1]))))
+>>> params = [1.2, [2.3, 3.4]]  # f1 takes a single parameter, f2 takes 2
+>>> H1(params, t=0.5)
+(2*(PauliX(wires=[0]) @ PauliX(wires=[1]))) + ((-0.2876553535461426*(PauliY(wires=[0]) @ PauliY(wires=[1]))) + (1.5179612636566162*(PauliZ(wires=[0]) @ PauliZ(wires=[1]))))
 
 
 When passing parameters, ensure that the order of the coefficient functions and the order of
@@ -130,8 +128,9 @@ can be created using the :func:`~.functions.evolve` function:
     f1 = lambda p, t: p * jnp.sin(t) * (t - 1)
     H = 2 * qml.PauliX(0) + f1 * qml.PauliY(1)
     ev = qml.evolve(H)
-    ev
-    >>> ParametrizedEvolution(wires=[0, 1])
+
+>>> ev
+ParametrizedEvolution(wires=[0, 1])
 
 The initial :class:`~.ParametrizedEvolution` does not have parameters defined, and so will
 not have a matrix defined. To obtain an :class:`~.Operator` with a matrix, we have to pass
@@ -153,9 +152,7 @@ The parameters can be updated by calling the :class:`~.ParametrizedEvolution` ag
 Additional options with regards to how the matrix is calculated can be passed to the :class:`.ParametrizedEvolution`
 along with the parameters, as keyword arguments:
 
-.. code-block:: python
-
-    qml.evolve(H)(params=[1.2], t=[0, 4], atol=1e-6, mxstep=1)
+>>> qml.evolve(H)(params=[1.2], t=[0, 4], atol=1e-6, mxstep=1)
 
 The available keyword arguments can be found in in :class:`~.ParametrizedEvolution`. If not specified, they
 will default to predetermined values.
@@ -187,12 +184,12 @@ Now we can execute the evolution of this Hamiltonian in a QNode and compute its 
         qml.evolve(H)(params, t=[0, 10])
         return qml.expval(qml.PauliZ(0))
 
-    >>> params = [1.2]
-    >>> circuit(params)
-    Array(0.96632576, dtype=float32)
+>>> params = [1.2]
+>>> circuit(params)
+Array(0.96632576, dtype=float32)
 
-    >>> jax.grad(circuit)(params)
-    Array([2.3569832], dtype=float32)
+>>> jax.grad(circuit)(params)
+Array([2.3569832], dtype=float32)
 
 We can use the decorator ``jax.jit`` to compile this execution just-in-time. This means the first execution
 will typically take a little longer with the benefit that all following executions will be significantly faster.
