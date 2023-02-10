@@ -469,7 +469,7 @@ class QNode:
                         f"The {self.device.short_name} device does not support native computations with "
                         "autodifferentiation frameworks."
                     )
-            return
+                return
 
         self.gradient_fn, self.gradient_kwargs, self.device = self.get_gradient_fn(
             self._original_device, self.interface, self.diff_method
