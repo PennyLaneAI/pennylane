@@ -103,8 +103,8 @@ class Molecule:
 
         if self.n_electrons % 2 == 1 or self.mult != 1:
             raise ValueError(
-                f"Openshell systems are not supported. Change the charge or spin"
-                f" multiplicity of the molecule."
+                "Openshell systems are not supported. Change the charge or spin"
+                " multiplicity of the molecule."
             )
 
         if l is None:
