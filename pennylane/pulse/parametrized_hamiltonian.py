@@ -31,9 +31,9 @@ class ParametrizedHamiltonian:
     The Hamiltonian can be represented as a linear combination of other operators, e.g.,
 
     .. math::
-        H(v, t) = H_\text{drift} + \sum_j f_j(v, t) H_j
+        H(\{v_j\}, t) = H_\text{drift} + \sum_j f_j(v_j, t) H_j
 
-    where the :math:`v` are trainable parameters, and t is time.
+    where the :math:`\{v_j\}` are trainable parameters for each scalar-valued parametrization :math:`f_j`, and t is time.
 
     For example, a time-dependent ``ParametrizedHamiltonian`` with a single trainable parameter can
     be: :math:`a`, could be :math:`H = 2 X_1 X_2 + \sin(a t) Y_1 Y_2`
@@ -60,8 +60,10 @@ class ParametrizedHamiltonian:
 
     .. code-block:: python3
 
-        coeffs = [2, lambda p, t: p[0] * jnp.sin(p[1] * t)]
-        observables =  [qml.PauliX(0), qml.PauliY(1)]
+        f1 = lambda p, t: p[0] * jnp.sin(p[1] * t)
+        f2 = lambda p, t: p * t
+        coeffs = [2., f1, f2]
+        observables =  [qml.PauliX(0), qml.PauliY(0), qml.PauliZ(0)]
         H = qml.dot(coeffs, observables)
 
     The resulting object can be passed parameters, and will return an :class:`~.Operator` representing the
@@ -69,10 +71,11 @@ class ParametrizedHamiltonian:
 
     .. code-block:: python3
 
-        >>> H
-        ParametrizedHamiltonian: terms=2
-        >>> H([jnp.ones(2)], 1.)
-        (2*(PauliX(wires=[0]))) + (0.8414710164070129*(PauliY(wires=[1])))
+        p1 = jnp.array([1., 1.])
+        p2 = 1.
+        params = [p1, p2]
+        >>> H(params, t=1.)
+        (2.0*(PauliX(wires=[0]))) + ((0.8414709568023682*(PauliY(wires=[0]))) + (1.0*(PauliZ(wires=[0]))))
 
     .. note::
         To be able to compute the time evolution of the Hamiltonian with :func:`~.functions.evolve`,
@@ -85,7 +88,7 @@ class ParametrizedHamiltonian:
     >>> H.H_fixed()
     2*(PauliX(wires=[0]))
     >>> H.H_parametrized([[1.2, 2.3], 4.5], 0.5)
-    (2.864642381668091*(PauliY(wires=[0]))) + (3.9491214752197266*(PauliZ(wires=[0])))
+    (1.095316767692566*(PauliY(wires=[0]))) + (2.25*(PauliZ(wires=[0])))
 
     .. details::
         :title: Usage Details
