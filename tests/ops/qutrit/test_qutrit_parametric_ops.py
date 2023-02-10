@@ -59,10 +59,9 @@ class TestOperations:
         copied_op = copy.copy(op)
         assert np.allclose(op.matrix(), copied_op.matrix(), atol=tol)
 
-        op.inv()
+        op = qml.adjoint(op)
         copied_op2 = copy.copy(op)
         assert np.allclose(op.matrix(), copied_op2.matrix(), atol=tol)
-        op.inv()
 
     @pytest.mark.parametrize("op", PARAMETRIZED_OPERATIONS)
     def test_adjoint_unitaries(self, op, tol):
@@ -195,11 +194,11 @@ class TestMatrix:
 # TODO: Add tests for grad
 
 label_data = [
-    (qml.TRX(1.23456, wires=0), "TRX", "TRX\n(1.23)", "TRX\n(1)", "TRX⁻¹\n(1)"),
+    (qml.TRX(1.23456, wires=0), "TRX", "TRX\n(1.23)", "TRX\n(1)", "TRX\n(1)†"),
 ]
 
 label_data_broadcasted = [
-    (qml.TRX(np.array([1.23, 4.56]), wires=0), "TRX", "TRX", "TRX", "TRX⁻¹"),
+    (qml.TRX(np.array([1.23, 4.56]), wires=0), "TRX", "TRX", "TRX", "TRX†"),
 ]
 
 
@@ -214,9 +213,8 @@ class TestLabel:
         assert op.label(decimals=2) == label2
         assert op.label(decimals=0) == label3
 
-        op.inv()
+        op = qml.adjoint(op)
         assert op.label(decimals=0) == label4
-        op.inv()
 
     @pytest.mark.parametrize("op, label1, label2, label3, label4", label_data_broadcasted)
     def test_label_method_broadcasted(self, op, label1, label2, label3, label4):
@@ -226,9 +224,8 @@ class TestLabel:
         assert op.label(decimals=2) == label2
         assert op.label(decimals=0) == label3
 
-        op.inv()
+        op = qml.adjoint(op)
         assert op.label(decimals=0) == label4
-        op.inv()
 
     @pytest.mark.tf
     def test_label_tf(self):
