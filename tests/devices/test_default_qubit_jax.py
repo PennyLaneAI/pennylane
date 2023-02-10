@@ -513,27 +513,34 @@ class TestQNodeIntegration:
 
         circuit()  # Just don't crash.
 
-    def test_parametrized_evolution_state_vector(self, mocker):
+    @pytest.mark.parametrize("phi", np.pi * np.array([1e-8, 1 / 8, 1 / 4, 1 / 2, 1]))
+    def test_parametrized_evolution_state_vector(self, phi, mocker):
         """Test that when executing a ParametrizedEvolution with ``num_wires >= device.num_wires/2``
         the `_evolve_state_vector_under_parametrized_evolution` method is used."""
-        dev = qml.device("default.qubit.jax", wires=1, shots=1000)
+        dev = qml.device("default.qubit.jax", wires=1)
         H = ParametrizedHamiltonian([1], [qml.PauliX(0)])
         spy = mocker.spy(dev, "_evolve_state_vector_under_parametrized_evolution")
 
         @jax.jit
         @qml.qnode(dev, interface="jax")
         def circuit():
-            qml.evolve(H)(params=[], t=np.pi / 2)  # corresponds to a PauliX gate
+            qml.evolve(H)(params=[], t=phi / 2)
+            return qml.expval(qml.PauliZ(0))
+
+        @qml.qnode(dev)
+        def true_circuit():
+            qml.RX(phi, 0)
             return qml.expval(qml.PauliZ(0))
 
         res = circuit()
         spy.assert_called_once()
-        assert qml.math.allclose(res, -1)
+        assert qml.math.allclose(res, true_circuit(), atol=1e-6)
 
-    def test_parametrized_evolution_matrix(self, mocker):
+    @pytest.mark.parametrize("phi", np.pi * np.array([1e-8, 1 / 8, 1 / 4, 1 / 2, 1]))
+    def test_parametrized_evolution_matrix(self, phi, mocker):
         """Test that when executing a ParametrizedEvolution with ``num_wires < device.num_wires/2``
         the `_apply_operation` method is used."""
-        dev = qml.device("default.qubit.jax", wires=3, shots=1000)
+        dev = qml.device("default.qubit.jax", wires=3)
         H = ParametrizedHamiltonian([1], [qml.PauliX(0)])
         spy = mocker.spy(dev, "_evolve_state_vector_under_parametrized_evolution")
         spy2 = mocker.spy(dev, "_apply_operation")
@@ -541,13 +548,18 @@ class TestQNodeIntegration:
         @jax.jit
         @qml.qnode(dev, interface="jax")
         def circuit():
-            qml.evolve(H)(params=[], t=np.pi / 2)  # corresponds to a PauliX gate
+            qml.evolve(H)(params=[], t=phi / 2)  # corresponds to a PauliX gate
+            return qml.expval(qml.PauliZ(0))
+
+        @qml.qnode(dev)
+        def true_circuit():
+            qml.RX(phi, 0)
             return qml.expval(qml.PauliZ(0))
 
         res = circuit()
         spy.assert_not_called()
         spy2.assert_called_once()
-        assert qml.math.allclose(res, -1)
+        assert qml.math.allclose(res, true_circuit(), atol=1e-6)
 
 
 @pytest.mark.jax
