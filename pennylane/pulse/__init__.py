@@ -12,10 +12,28 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-This module contains classes and functions used in pulse programming.
+Pulse programming is used in a variety of quantum systems for low-level control of quantum operations. A
+time-dependent electromagnetic field tuned to the characteristic energies is applied,
+leading to a time-dependent Hamiltonian interaction :math:`H(t)`. Driving the system with such an
+electromagnetic field for a fixed time window is a **pulse sequence**. These pulse sequences can be tuned to
+implement the higher level gates used for quantum computation.
+
+The :mod:`~.pulse` module provides functions and classes used to simulate pulse-level control of quantum
+systems.
+
+It contains a :class:`~.ParametrizedHamiltonian` and :class:`~.ParametrizedEvolution` class for
+describing interactions between pulses and systems. The :mod:`~.pulse` module also includes several convenience
+functions for defining pulses.
+
+The :mod:`~.pulse` module relies on the external package `JAX <https://jax.readthedocs.io/en/latest/>`_, which
+requires separate installation. The module is written for ``jax`` and will not work with other machine learning
+frameworks typically encountered in PennyLane.
+
+Overview
+--------
 
 Time evolution classes
-~~~~~~~~~~~~~~~~~~~~~~
+^^^^^^^^^^^^^^^^^^^^^^
 
 .. currentmodule:: pennylane.pulse
 
@@ -26,7 +44,7 @@ Time evolution classes
     ~ParametrizedEvolution
 
 Convenience Functions
-~~~~~~~~~~~~~~~~~~~~~
+^^^^^^^^^^^^^^^^^^^^^
 
 .. currentmodule:: pennylane.pulse
 

@@ -3,34 +3,13 @@ qml.pulse
 
 .. automodule:: pennylane.pulse
 
-Pulse programming
------------------
-
-Pulse programming is used in a variety of quantum systems for low-level control of quantum operations. A
-time-dependent electromagnetic field tuned to the characteristic energies is applied,
-leading to a time-dependent Hamiltonian interaction :math:`H(t)`. Driving the system with such an
-electromagnetic field for a fixed time window is a *pulse sequence*. These pulse sequences can be tuned to
-implement the higher level gates used for quantum computation.
-
-The :mod:`~.pulse` module provides functions and classes used to simulate pulse-level control of quantum
-systems. It contains a :class:`~.ParametrizedHamiltonian` class defining the time-dependent
-Hamiltonian describing the interaction between the applied pulses and the system. A
-:class:`~.ParametrizedHamiltonian` instance can be used to create a :class:`~.ParametrizedEvolution`
-(an :class:`~.Operation`) that provides the time evolution under the Hamiltonian. The :mod:`~.pulse` module also
-includes several convenience functions for defining pulse envelopes.
-
-The :mod:`~.pulse` module relies on the external package `JAX <https://jax.readthedocs.io/en/latest/>`_, which
-requires separate installation. The module is written for ``jax`` and will not work with other machine learning
-frameworks typically encountered in PennyLane.
-
-
-
 Creating a parametrized Hamiltonian
 -----------------------------------
 
 The :mod:`~.pulse` module provides a framework to create a time-dependent Hamiltonian of the form
 
-.. math:: H(p, t) = H_\text{drift} + \sum_j f_j(p, t) H_j
+.. math::
+    H(p, t) = H_\text{drift} + \sum_j f_j(p, t) H_j
 
 with constant operators :math:`H_j` and scalar functions :math:`f_j(p, t)` that may depend on
 parameters :math:`p` and time :math:`t`.
@@ -104,14 +83,16 @@ ParametrizedEvolution
 ---------------------
 During a pulse sequence spanning time :math:`(t_0, t_1)`, the state evolves according to the time-dependent Schrodinger equation
 
-.. math:: \frac{\partial}{\partial t} |\psi\rangle = -i H(t) |\psi\rangle
+.. math::
+    \frac{\partial}{\partial t} |\psi\rangle = -i H(t) |\psi\rangle
 
 realizing a unitary evolution :math:`U(t_0, t_1)` of the input state, i.e.
 
-.. math:: |\psi(t_1)\rangle = U(t_0, t_1) |\psi(t_0)\rangle
+.. math::
+    |\psi(t_1)\rangle = U(t_0, t_1) |\psi(t_0)\rangle
 
 A :class:`~.ParametrizedEvolution` is this solution :math:`U(t_0, t_1)` to the time-dependent
-Schrodinger equation for a :class:`~.ParametrizedHamiltonian`.
+Schrödinger equation for a :class:`~.ParametrizedHamiltonian`.
 
 .. note::
     The :class:`~.ParametrizedHamiltonian` must be Hermitian at all times. This is not explicitly
