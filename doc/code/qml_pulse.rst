@@ -137,17 +137,15 @@ The initial :class:`~.ParametrizedEvolution` does not have parameters defined, a
 not have a matrix defined. To obtain an :class:`~.Operator` with a matrix, we have to pass
 parameters and a time interval:
 
-.. code-block:: python
-
-    ev([1.2], t=[0, 4]).matrix()
-    >>> Array([[-0.14115842+0.j        ,  0.03528605+0.j        ,
-                 0.        -0.95982337j,  0.        +0.23993255j],
-               [-0.03528605+0.j        , -0.14115842+0.j        ,
-                 0.        -0.23993255j,  0.        -0.95982337j],
-               [ 0.        -0.95982337j,  0.        +0.23993255j,
-                -0.14115842+0.j        ,  0.03528605+0.j        ],
-               [ 0.        -0.23993255j,  0.        -0.95982337j,
-                -0.03528605+0.j        , -0.14115842+0.j        ]],      dtype=complex64)
+>>> ev([1.2], t=[0, 4]).matrix()
+Array([[-0.14115842+0.j        ,  0.03528605+0.j        ,
+         0.        -0.95982337j,  0.        +0.23993255j],
+       [-0.03528605+0.j        , -0.14115842+0.j        ,
+         0.        -0.23993255j,  0.        -0.95982337j],
+       [ 0.        -0.95982337j,  0.        +0.23993255j,
+        -0.14115842+0.j        ,  0.03528605+0.j        ],
+       [ 0.        -0.23993255j,  0.        -0.95982337j,
+        -0.03528605+0.j        , -0.14115842+0.j        ]],      dtype=complex64)
 
 
 The parameters can be updated by calling the :class:`~.ParametrizedEvolution` again with different inputs.
