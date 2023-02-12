@@ -369,7 +369,7 @@ def _chemist_transform(one_body_tensor=None, two_body_tensor=None, spatial_basis
 
             [pq \vert rs] = V_{pqrs} = \int \frac{\chi^*_{p}(x_1) \chi_{q}(x_1) \chi^*_{r}(x_2) \chi_{s}(x_2)}{|r_1 - r_2|} dx_1 dx_2.
 
-        In the spin basis, this index reordering :math:`pqrs \rangle psrq` leads to formation of one-body terms :math:`h_{prrs}` that come out during
+        In the spin basis, this index reordering :math:`pqrs \rightarrow psrq` leads to formation of one-body terms :math:`h_{prrs}` that come out during
         the coversion:
 
         .. math::
