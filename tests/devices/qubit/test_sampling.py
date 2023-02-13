@@ -29,6 +29,7 @@ def test_sample_state_basic(interface):
     state = qml.math.array(two_qubit_state, like=interface)
     samples = sample_state(state, 10)
     assert samples.shape == (10, 2)
+    assert samples.dtype == np.bool8
     assert all(qml.math.allequal(s, [0, 1]) or qml.math.allequal(s, [1, 0]) for s in samples)
 
 
