@@ -665,6 +665,10 @@
 
 <h3>Bug fixes</h3>
 
+* Fixed a bug in the drawer where nested controlled operations would output
+  the label of the operation being controlled, rather than the control values.
+  [(#3745)](https://github.com/PennyLaneAI/pennylane/pull/3745)
+
 * Fixed a bug in `qml.transforms.metric_tensor` where prefactors of operation generators were taken
   into account multiple times, leading to wrong outputs for non-standard operations.
   [(#3579)](https://github.com/PennyLaneAI/pennylane/pull/3579)
@@ -721,6 +725,7 @@ Utkarsh Azad
 Cristian Boghiu
 Astral Cai
 Isaac De Vlugt
+Olivia Di Matteo
 Lillian M. A. Frederiksen
 Soran Jahangiri
 Christina Lee
