@@ -126,10 +126,6 @@ class PowOperation(Operation):
     grad_method = None
 
     @property
-    def inverse(self):
-        return False
-
-    @property
     def base_name(self):
         return self._name
 
@@ -207,12 +203,6 @@ class Pow(ScalarSymbolicOp):
         return object.__new__(Pow)
 
     def __init__(self, base=None, z=1, do_queue=True, id=None):
-
-        # incorporate base inverse attribute into the exponent
-        if getattr(base, "inverse", False):
-            base.inverse = False
-            z *= -1
-
         self.hyperparameters["z"] = z
         self._name = f"{base.name}**{z}"
 

@@ -363,7 +363,6 @@ class ExecuteTapesNew(torch.autograd.Function):
                 break
 
         for i, r in enumerate(res):
-
             res[i] = _res_to_torch(r, ctx)
 
             # In place change of the numpy array Jacobians to Torch objects

@@ -124,7 +124,7 @@ def test_mottonenstate_preparation(mocker):
     dev = qml.device("default.qubit", wires=3)
 
     @qml.batch_input(argnum=0)
-    @qml.qnode(dev)
+    @qml.qnode(dev, interface="autograd")
     def circuit(data, weights):
         qml.templates.MottonenStatePreparation(data, wires=[0, 1, 2])
         qml.templates.StronglyEntanglingLayers(weights, wires=[0, 1, 2])

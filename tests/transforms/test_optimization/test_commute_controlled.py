@@ -340,8 +340,8 @@ class TestCommuteControlledInterfaces:
     def test_commute_controlled_autograd(self):
         """Test QNode and gradient in autograd interface."""
 
-        original_qnode = qml.QNode(qfunc, dev, interface="autograd")
-        transformed_qnode = qml.QNode(transformed_qfunc, dev, interface="autograd")
+        original_qnode = qml.QNode(qfunc, dev)
+        transformed_qnode = qml.QNode(transformed_qfunc, dev)
 
         input = np.array([0.1, 0.2], requires_grad=True)
 
@@ -362,8 +362,8 @@ class TestCommuteControlledInterfaces:
         """Test QNode and gradient in torch interface."""
         import torch
 
-        original_qnode = qml.QNode(qfunc, dev, interface="torch")
-        transformed_qnode = qml.QNode(transformed_qfunc, dev, interface="torch")
+        original_qnode = qml.QNode(qfunc, dev)
+        transformed_qnode = qml.QNode(transformed_qfunc, dev)
 
         original_input = torch.tensor([1.2, -0.35], requires_grad=True)
         transformed_input = torch.tensor([1.2, -0.35], requires_grad=True)
@@ -389,8 +389,8 @@ class TestCommuteControlledInterfaces:
         """Test QNode and gradient in tensorflow interface."""
         import tensorflow as tf
 
-        original_qnode = qml.QNode(qfunc, dev, interface="tf")
-        transformed_qnode = qml.QNode(transformed_qfunc, dev, interface="tf")
+        original_qnode = qml.QNode(qfunc, dev)
+        transformed_qnode = qml.QNode(transformed_qfunc, dev)
 
         original_input = tf.Variable([0.8, -0.6])
         transformed_input = tf.Variable([0.8, -0.6])
@@ -427,8 +427,8 @@ class TestCommuteControlledInterfaces:
         remember = config.read("jax_enable_x64")
         config.update("jax_enable_x64", True)
 
-        original_qnode = qml.QNode(qfunc, dev, interface="jax")
-        transformed_qnode = qml.QNode(transformed_qfunc, dev, interface="jax")
+        original_qnode = qml.QNode(qfunc, dev)
+        transformed_qnode = qml.QNode(transformed_qfunc, dev)
 
         input = jnp.array([0.3, 0.4], dtype=jnp.float64)
 

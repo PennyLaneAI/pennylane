@@ -159,7 +159,6 @@ class GroverOperator(Operation):
     @staticmethod
     @functools.lru_cache()
     def compute_matrix(n_wires, work_wires):  # pylint: disable=arguments-differ,unused-argument
-
         # s1 = H|0>, Hadamard on a single qubit in the ground state
         s1 = np.array([1, 1]) / np.sqrt(2)
 

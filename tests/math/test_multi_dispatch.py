@@ -209,3 +209,59 @@ class TestMatmul:
         assert fn.allequal(fn.matmul(m2, m1), m2)
         assert fn.allequal(fn.matmul(m2, m2, like="torch"), np.matmul(m2, m2))
         assert fn.allequal(fn.matmul(m1, m1), m1)
+
+
+class TestDetach:
+    """Test the utility function detach."""
+
+    def test_numpy(self):
+        """Test that detach works with NumPy and does not do anything."""
+        x = onp.array(0.3)
+        detached_x = fn.detach(x)
+        assert x is detached_x
+
+    def test_autograd(self):
+        """Test that detach works with Autograd."""
+        import autograd
+
+        x = np.array(0.3, requires_grad=True)
+        assert fn.requires_grad(x) is True
+        detached_x = fn.detach(x)
+        assert fn.requires_grad(detached_x) is False
+        with pytest.warns(UserWarning, match="Output seems independent"):
+            jac = autograd.jacobian(fn.detach)(x)
+        assert fn.isclose(jac, jac * 0.0)
+
+    @pytest.mark.parametrize("use_jit", [True, False])
+    def test_jax(self, use_jit):
+        """Test that detach works with JAX."""
+        import jax
+
+        x = jax.numpy.array(0.3)
+        func = jax.jit(fn.detach, static_argnums=1) if use_jit else fn.detach
+        jac = jax.jacobian(func)(x)
+        assert jax.numpy.isclose(jac, 0.0)
+
+    def test_torch(self):
+        """Test that detach works with Torch."""
+        import torch
+
+        x = torch.tensor(0.3, requires_grad=True)
+        assert x.requires_grad is True
+        detached_x = fn.detach(x)
+        assert detached_x.requires_grad is False
+        jac = torch.autograd.functional.jacobian(fn.detach, x)
+        assert fn.isclose(jac, jac * 0.0)
+
+    def test_tf(self):
+        """Test that detach works with Tensorflow."""
+        import tensorflow as tf
+
+        x = tf.Variable(0.3)
+        assert x.trainable is True
+        detached_x = fn.detach(x)
+        assert not hasattr(detached_x, "trainable")
+        with tf.GradientTape() as t:
+            out = fn.detach(x)
+        jac = t.jacobian(out, x)
+        assert jac is None
