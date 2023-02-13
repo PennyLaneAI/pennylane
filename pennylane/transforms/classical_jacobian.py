@@ -184,10 +184,8 @@ def classical_jacobian(qnode, argnum=None, expand_fn=None, trainable_only=True):
             argnum = 0 if wrapper_argnum is None else wrapper_argnum
 
             def _jacobian(*args, **kwargs):
-                    full_jac = jax.jacobian(classical_preprocessing, argnums=argnum)(*args, **kwargs)
+                full_jac = jax.jacobian(classical_preprocessing, argnums=argnum)(*args, **kwargs)
                 return full_jac
-
-                return jax.jacobian(classical_preprocessing, argnums=argnum)(*args, **kwargs)
 
             jac = _jacobian(*args, **kwargs)
 
