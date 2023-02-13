@@ -72,6 +72,11 @@ Pending deprecations
   - Deprecated in v0.29.
   - Will be removed in v0.30.
 
+* ``ApproxTimeEvolution`` has been deprecated.
+
+  - Deprecated in v0.29
+  - Will be removed in v0.31
+
 Completed deprecation cycles
 ----------------------------
 
