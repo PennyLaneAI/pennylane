@@ -217,6 +217,11 @@ class ScalarSymbolicOp(SymbolicOp):
         Returns:
             tensor_like: matrix representation
         """
+        # check if pauli_rep is defined:
+        if pr := self._pauli_rep:
+            wires = wire_order or self.wires.tolist()
+            return pr.to_mat(wire_order=wires)
+
         # compute base matrix
         if isinstance(self.base, qml.Hamiltonian):
             base_matrix = qml.matrix(self.base)
