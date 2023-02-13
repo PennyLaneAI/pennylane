@@ -17,7 +17,22 @@ import pennylane as qml
 from pennylane import numpy as np
 
 
-def sample_state(state, shots: int, wires=None, rng=None) -> np.ndarray:
+def states_to_binary(samples, num_wires: int) -> np.ndarray[np.bool8]:
+    """Convert basis states from base 10 to binary representation.
+
+    Args:
+        samples (array[int]): samples of basis states in base 10 representation.
+            Shape will be (num_samples,) or (num_batches, num_samples) when broadcasting is used
+        num_wires (int): the number of qubits
+
+    Returns:
+        ndarray[bool]: basis states in binary representation
+    """
+    powers_of_two = 1 << np.arange(num_wires, dtype=np.int64)[::-1]
+    return (samples[..., None] & powers_of_two).astype(np.bool8)
+
+
+def sample_state(state, shots: int, wires=None, rng=None) -> np.ndarray[np.bool8]:
     """
     Returns a series of samples of a state.
 
@@ -30,7 +45,7 @@ def sample_state(state, shots: int, wires=None, rng=None) -> np.ndarray:
             If no value is provided, a default RNG will be used
 
     Returns:
-        ndarray: Sample values of the shape (shots, num_wires)
+        ndarray[bool]: Sample values of the shape (shots, num_wires)
     """
     rng = np.random.default_rng(rng)
     state_wires = qml.wires.Wires(range(len(state.shape)))
@@ -40,6 +55,4 @@ def sample_state(state, shots: int, wires=None, rng=None) -> np.ndarray:
 
     probs = qml.probs(wires=wires_to_sample).process_state(state, state_wires)
     samples = rng.choice(basis_states, shots, p=probs)
-    powers_of_two = 1 << np.arange(num_wires, dtype=np.int64)
-    states_sampled_base_ten = samples[..., None] & powers_of_two
-    return (states_sampled_base_ten > 0).astype(np.int64)[..., ::-1]
+    return states_to_binary(samples, num_wires)
