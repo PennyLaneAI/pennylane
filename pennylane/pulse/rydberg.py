@@ -117,6 +117,7 @@ class RydbergEnsemble:
         Args:
             amplitudes (list): list of laser amplitudes
             detunings (list): list of laser detuning parameters
+            phases (list): list of phases
             wires (list): list of wires to drive
 
         Returns:
