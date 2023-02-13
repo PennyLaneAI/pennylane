@@ -24,6 +24,7 @@ from pennylane import DeviceError
 
 pytestmark = pytest.mark.autograd
 
+
 def test_analytic_deprecation():
     """Tests if the kwarg `analytic` is used and displays error message."""
     msg = "The analytic argument has been replaced by shots=None. "
@@ -213,18 +214,22 @@ class TestOps:
         assert np.all(np.reshape(dev._state, (8, 8)) == state)
         spy.assert_called()
 
-@pytest.mark.parametrize("op, exp_method, dev_wires", [
-    (qml.RX(np.array(0.2), 0), "_apply_channel", 1),
-    (qml.RX(np.array(0.2), 0), "_apply_channel", 8),
-    (qml.CNOT([0, 1]), "_apply_channel", 3),
-    (qml.CNOT([0, 1]), "_apply_channel", 8),
-    (qml.MultiControlledX(wires=list(range(2))), "_apply_channel", 3),
-    (qml.MultiControlledX(wires=list(range(3))), "_apply_channel_tensordot", 3),
-    (qml.MultiControlledX(wires=list(range(8))), "_apply_channel_tensordot", 8),
-    (qml.PauliError("X", np.array(0.5), 0), "_apply_channel", 2),
-    (qml.PauliError("XXX", np.array(0.5), [0, 1, 2]), "_apply_channel_tensordot", 4),
-    (qml.PauliError("X"*8, np.array(0.5), list(range(8))), "_apply_channel_tensordot", 8),
-])
+
+@pytest.mark.parametrize(
+    "op, exp_method, dev_wires",
+    [
+        (qml.RX(np.array(0.2), 0), "_apply_channel", 1),
+        (qml.RX(np.array(0.2), 0), "_apply_channel", 8),
+        (qml.CNOT([0, 1]), "_apply_channel", 3),
+        (qml.CNOT([0, 1]), "_apply_channel", 8),
+        (qml.MultiControlledX(wires=list(range(2))), "_apply_channel", 3),
+        (qml.MultiControlledX(wires=list(range(3))), "_apply_channel_tensordot", 3),
+        (qml.MultiControlledX(wires=list(range(8))), "_apply_channel_tensordot", 8),
+        (qml.PauliError("X", np.array(0.5), 0), "_apply_channel", 2),
+        (qml.PauliError("XXX", np.array(0.5), [0, 1, 2]), "_apply_channel_tensordot", 4),
+        (qml.PauliError("X" * 8, np.array(0.5), list(range(8))), "_apply_channel_tensordot", 8),
+    ],
+)
 def test_method_choice(mocker, op, exp_method, dev_wires):
     """Test that the right method between _apply_channel and _apply_channel_tensordot
     is chosen."""
