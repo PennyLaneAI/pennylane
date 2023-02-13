@@ -79,6 +79,7 @@ class Evolution(Exp):
 
     _name = "Evolution"
     num_params = 1
+    grad_method = "A"
 
     # pylint: disable=too-many-arguments
     def __init__(self, generator, param=1, num_steps=None, do_queue=True, id=None):
@@ -92,6 +93,13 @@ class Evolution(Exp):
     def param(self):
         """A real coefficient with ``1j`` factored out."""
         return self.data[0]
+
+    def __repr__(self):
+        return (
+            f"Evolution({self.coeff} {self.base})"
+            if self.base.arithmetic_depth > 0
+            else f"Evolution({self.coeff} {self.base.name})"
+        )
 
     @property
     def coeff(self):
