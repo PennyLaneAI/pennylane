@@ -258,7 +258,14 @@ class Exp(ScalarSymbolicOp, Operation):
         Returns:
             list[PauliRot]: decomposition of the operator
         """
-        return self._recursive_decomposition(self.base, self.coeff)
+        with qml.QueuingManager.stop_recording():
+            d = self._recursive_decomposition(self.base, self.coeff)
+
+        if qml.QueuingManager.recording():
+            for op in d:
+                qml.apply(op)
+
+        return d
 
     def _recursive_decomposition(self, base: Operator, coeff: complex):
         """Decompose the exponential of ``base`` multiplied by ``coeff``.
@@ -277,12 +284,11 @@ class Exp(ScalarSymbolicOp, Operation):
                 f"Received base {base}."
             )
 
-        with qml.QueuingManager.stop_recording():
-            # Change base to `Sum`/`Prod`
-            if isinstance(base, Hamiltonian):
-                base = qml.dot(base.coeffs, base.ops)
-            elif isinstance(base, Tensor):
-                base = qml.prod(*base.obs)
+        # Change base to `Sum`/`Prod`
+        if isinstance(base, Hamiltonian):
+            base = qml.dot(base.coeffs, base.ops)
+        elif isinstance(base, Tensor):
+            base = qml.prod(*base.obs)
 
         if isinstance(base, SProd):
             return self._recursive_decomposition(base.base, base.scalar * coeff)
@@ -290,10 +296,9 @@ class Exp(ScalarSymbolicOp, Operation):
         for op_class in has_unitary_generator_types:
             # Check if the exponentiated operator is a generator of another operator
             if op_class.num_wires in {base.num_wires, AnyWires} and op_class is not qml.PauliRot:
-                with qml.QueuingManager.stop_recording():
-                    g, c = qml.generator(op_class)(coeff, base.wires)
-                    # Some generators are not wire-ordered (e.g. OrbitalRotation)
-                    new_g = qml.map_wires(g, dict(zip(g.wires, base.wires)))
+                g, c = qml.generator(op_class)(coeff, base.wires)
+                # Some generators are not wire-ordered (e.g. OrbitalRotation)
+                new_g = qml.map_wires(g, dict(zip(g.wires, base.wires)))
 
                 if qml.equal(base, new_g) and math.real(coeff) == 0:
                     coeff *= -1j / c  # cancel the coefficients added by the generator
