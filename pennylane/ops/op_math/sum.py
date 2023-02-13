@@ -222,7 +222,8 @@ class Sum(CompositeOp):
             return pr.to_mat(wire_order=wires)
 
         mats_and_wires_gen = (
-            (qml.matrix(op) if isinstance(op, Hamiltonian) else op.matrix(), op.wires) for op in self
+            (qml.matrix(op) if isinstance(op, Hamiltonian) else op.matrix(), op.wires)
+            for op in self
         )
 
         reduced_mat, sum_wires = math.reduce_matrices(mats_and_wires_gen, reduce_func=math.add)
