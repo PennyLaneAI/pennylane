@@ -310,14 +310,9 @@ class ProbabilityMP(SampleMeasurement, StateMeasurement):
             flat_shape = (batch_size, -1)
 
         prob = qml.math.reshape(prob, shape)
-
         # sum over all inactive wires
-        if inactive_wires:
-            prob = qml.math.sum(prob, axis=tuple(inactive_wires))
-
+        prob = qml.math.sum(prob, axis=tuple(inactive_wires))
         # rearrange wires if necessary
-        if not np.all(desired_axes == range(len(desired_axes))):
-            prob = qml.math.transpose(prob, desired_axes)
-
+        prob = qml.math.transpose(prob, desired_axes)
         # flatten and return probabilities
         return qml.math.reshape(prob, flat_shape)
