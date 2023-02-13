@@ -246,25 +246,11 @@ class Pow(ScalarSymbolicOp):
             f"({base_label}){z_string}" if self.base.arithmetic_depth > 0 else base_label + z_string
         )
 
-    def matrix(self, wire_order=None):
-        if pr := self._pauli_rep:
-            wires = wire_order or self.wires.tolist()
-            return pr.to_mat(wire_order=wires)
-
-        if isinstance(self.base, qml.Hamiltonian):
-            base_matrix = qml.matrix(self.base)
-        else:
-            base_matrix = self.base.matrix()
-
-        if isinstance(self.z, int):
-            mat = qmlmath.linalg.matrix_power(base_matrix, self.z)
-        else:
-            mat = fractional_matrix_power(base_matrix, self.z)
-
-        if wire_order is None or self.wires == Wires(wire_order):
-            return mat
-
-        return qml.math.expand_matrix(mat, wires=self.wires, wire_order=wire_order)
+    @staticmethod
+    def _matrix(scalar, mat):
+        if isinstance(scalar, int):
+            return qmlmath.linalg.matrix_power(mat, scalar)
+        return fractional_matrix_power(mat, scalar)
 
     # pylint: disable=arguments-differ
     @staticmethod

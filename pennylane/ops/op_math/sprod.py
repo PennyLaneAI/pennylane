@@ -237,34 +237,12 @@ class SProd(ScalarSymbolicOp):
     def has_matrix(self):
         return isinstance(self.base, qml.Hamiltonian) or self.base.has_matrix
 
-    def matrix(self, wire_order=None):
-        r"""Representation of the operator as a matrix in the computational basis.
-
-        If ``wire_order`` is provided, the numerical representation considers the position of the
-        operator's wires in the global wire order. Otherwise, the wire order defaults to the
-        operator's wires.
-
-        If the matrix depends on trainable parameters, the result
-        will be cast in the same autodifferentiation framework as the parameters.
-
-        A ``MatrixUndefinedError`` is raised if the base matrix representation has not been defined.
-
-        .. seealso:: :meth:`~.Operator.compute_matrix`
-
-        Args:
-            wire_order (Iterable): global wire order, must contain all wire labels from the
-            operator's wires
-
-        Returns:
-            tensor_like: matrix representation
-        """
-        if pr := self._pauli_rep:
-            wires = wire_order or self.wires.tolist()
-            return pr.to_mat(wire_order=wires)
-
-        if isinstance(self.base, qml.Hamiltonian):
-            return self.scalar * qml.matrix(self.base, wire_order=wire_order)
-        return self.scalar * self.base.matrix(wire_order=wire_order)
+    @staticmethod
+    def _matrix(scalar, mat):
+        if qml.math.get_interface(scalar) == "tensorflow":
+            # we must cast ``scalar`` to complex to avoid an error
+            scalar = qml.math.cast_like(scalar, mat)
+        return scalar * mat
 
     @property
     def _queue_category(self):  # don't queue scalar prods as they might not be Unitary!
