@@ -488,6 +488,9 @@
   `qml.gradients.SUPPORTED_GRADIENT_KWARGS`.
   [(#3526)](https://github.com/PennyLaneAI/pennylane/pull/3526)
 
+* Moved `qml.utils.sparse_hamiltonian` function to `~.Hamiltonian.sparse_matrix` method.
+  [(#3585)](https://github.com/PennyLaneAI/pennylane/pull/3585)
+
 * The `PauliSentence.operation()` method has been improved to avoid instantiating an `SProd` operator when
   the coefficient is equal to 1.
   [(#3595)](https://github.com/PennyLaneAI/pennylane/pull/3595)
@@ -636,6 +639,10 @@
 
 <h3>Deprecations</h3>
 
+* `qml.utils.sparse_hamiltonian` function has been deprecated, and usage will now raise a warning.
+  Instead, one should use the `~.Hamiltonian.sparse_matrix` method.
+  [(#3585)](https://github.com/PennyLaneAI/pennylane/pull/3585)
+
 * Deprecate the `collections` module.
   [(#3686)](https://github.com/PennyLaneAI/pennylane/pull/3686)
 
@@ -723,6 +730,7 @@ Guillermo Alonso-Linaje
 Juan Miguel Arrazola
 Ikko Ashimine
 Utkarsh Azad
+Miriam Beddig
 Cristian Boghiu
 Astral Cai
 Isaac De Vlugt
