@@ -13,14 +13,11 @@
 # limitations under the License.
 """Functions to apply adjoint jacobian differentiation"""
 
-import warnings
 import numpy as np
 
 import pennylane as qml
 from pennylane.math import sum as qmlsum
-from pennylane.measurements import (
-    ExpectationMP,
-)
+
 from pennylane.operation import operation_derivative
 from pennylane.tape import QuantumTape
 
@@ -31,7 +28,7 @@ from pennylane.tape import QuantumTape
 
 
 def adjoint_jacobian(
-    self, tape: QuantumTape, starting_state=None, use_device_state=False
+    dev, tape: QuantumTape, starting_state=None, use_device_state=False
 ):  # pylint: disable=too-many-statements
     """Implements the adjoint method outlined in
     `Jones and Gacon <https://arxiv.org/abs/2009.02823>`__ to differentiate an input tape.
@@ -69,48 +66,27 @@ def adjoint_jacobian(
             or contains a multi-parameter operation aside from :class:`~.Rot`
     """
     # broadcasted inner product not summing over first dimension of b
-    sum_axes = tuple(range(1, self.num_wires + 1))
+    sum_axes = tuple(range(1, dev.num_wires + 1))
     # pylint: disable=unnecessary-lambda-assignment
-    dot_product_real = lambda b, k: self._real(qmlsum(self._conj(b) * k, axis=sum_axes))
+    dot_product_real = lambda b, k: dev._real(qmlsum(dev._conj(b) * k, axis=sum_axes))
 
     for m in tape.measurements:
-        if not isinstance(m, ExpectationMP):
-            raise qml.QuantumFunctionError(
-                "Adjoint differentiation method does not support"
-                f" measurement {m.__class__.__name__}"
-            )
-
-        if m.obs.name == "Hamiltonian":
-            raise qml.QuantumFunctionError(
-                "Adjoint differentiation method does not support Hamiltonian observables."
-            )
-
         if not hasattr(m.obs, "base_name"):
             m.obs.base_name = None  # This is needed for when the observable is a tensor product
 
-    if self.shot_vector is not None:
-        raise qml.QuantumFunctionError("Adjoint does not support shot vectors.")
-
-    if self.shots is not None:
-        warnings.warn(
-            "Requested adjoint differentiation to be computed with finite shots."
-            " The derivative is always exact when using the adjoint differentiation method.",
-            UserWarning,
-        )
-
     # Initialization of state
     if starting_state is not None:
-        ket = self._reshape(starting_state, [2] * self.num_wires)
+        ket = dev._reshape(starting_state, [2] * dev.num_wires)
     else:
         if not use_device_state:
-            self.reset()
-            self.execute(tape)
-        ket = self._pre_rotated_state
+            dev.reset()
+            dev.execute(tape)
+        ket = dev._pre_rotated_state
 
     n_obs = len(tape.observables)
-    bras = np.empty([n_obs] + [2] * self.num_wires, dtype=np.complex128)
+    bras = np.empty([n_obs] + [2] * dev.num_wires, dtype=np.complex128)
     for kk in range(n_obs):
-        bras[kk, ...] = self._apply_operation(ket, tape.observables[kk])
+        bras[kk, ...] = dev._apply_operation(ket, tape.observables[kk])
 
     expanded_ops = []
     for op in reversed(tape.operations):
@@ -127,19 +103,7 @@ def adjoint_jacobian(
 
     trainable_params = []
     for k in tape.trainable_params:
-        # pylint: disable=protected-access
-        if hasattr(tape._par_info[k]["op"], "return_type"):
-            warnings.warn(
-                "Differentiating with respect to the input parameters of "
-                f"{tape._par_info[k]['op'].name} is not supported with the "
-                "adjoint differentiation method. Gradients are computed "
-                "only with regards to the trainable parameters of the circuit.\n\n Mark "
-                "the parameters of the measured observables as non-trainable "
-                "to silence this warning.",
-                UserWarning,
-            )
-        else:
-            trainable_params.append(k)
+        trainable_params.append(k)
 
     jac = np.zeros((len(tape.observables), len(trainable_params)))
 
@@ -147,12 +111,12 @@ def adjoint_jacobian(
     trainable_param_number = len(trainable_params) - 1
     for op in expanded_ops:
         adj_op = qml.adjoint(op)
-        ket = self._apply_operation(ket, adj_op)
+        ket = dev._apply_operation(ket, adj_op)
 
         if op.grad_method is not None:
             if param_number in trainable_params:
                 d_op_matrix = operation_derivative(op)
-                ket_temp = self._apply_unitary(ket, d_op_matrix, op.wires)
+                ket_temp = dev._apply_unitary(ket, d_op_matrix, op.wires)
 
                 jac[:, trainable_param_number] = 2 * dot_product_real(bras, ket_temp)
 
@@ -160,9 +124,9 @@ def adjoint_jacobian(
             param_number -= 1
 
         for kk in range(n_obs):
-            bras[kk, ...] = self._apply_operation(bras[kk, ...], adj_op)
+            bras[kk, ...] = dev._apply_operation(bras[kk, ...], adj_op)
 
-    return self._adjoint_jacobian_processing(jac)
+    return dev._adjoint_jacobian_processing(jac)
 
 
 @staticmethod
