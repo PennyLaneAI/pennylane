@@ -467,7 +467,7 @@ class TestGrad:
     @pytest.mark.tf
     @pytest.mark.parametrize("diff_method", diff_methods)
     def test_trx_differentiability_tf_broadcasted(self, diff_method, tol):
-        """Test that differentiation of TRX with broadcasting works."""
+        """Test that differentiation of TRX in TensorFlow with broadcasting works."""
         import tensorflow as tf
 
         dev = qml.device("default.qutrit", wires=1)
