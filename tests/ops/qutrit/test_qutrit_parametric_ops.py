@@ -427,7 +427,7 @@ class TestGrad:
     @pytest.mark.torch
     @pytest.mark.parametrize("diff_method", diff_methods)
     def test_trx_differentiability_torch_broadcasted(self, diff_method, tol):
-        """Test that differentiation of TRX with broadcasting works."""
+        """Test that differentiation of TRX in Torch with broadcasting works."""
         import torch
 
         dev = qml.device("default.qutrit", wires=1)
