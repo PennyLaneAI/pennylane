@@ -160,24 +160,6 @@ def jordan_wigner(op, notation=None):
                     return 0
             op = [(op[0], 1), (op[1], 0), (op[2], 1), (op[3], 0)]
 
-    return _jordan_wigner(op)
-
-
-def _jordan_wigner(op):
-    r"""Convert a fermionic operator to a qubit operator using the Jordan-Wigner mapping.
-
-    The creation and annihilation operators should be specified by :math:`1` and :math:`0`,
-    respectively. For example, the fermionic operator :math:`a_4^\dagger a_3^\dagger a_2 a_1` should
-    be constructed as :math:`[((4, 1), (3, 1), (2, 0), (1, 0))]`.
-
-    Args:
-        op (list[tuple[tuple[int, int]]): the fermionic operator
-
-    Returns
-        tuple(list[complex], list[list[int, str]]): list of coefficients and the qubit-operator terms
-
-
-    """
     q = [[(0, "I"), 1.0]]
     for l in op:
         z = [(index, "Z") for index in range(l[0])]
