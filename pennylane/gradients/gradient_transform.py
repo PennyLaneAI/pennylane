@@ -287,7 +287,9 @@ class gradient_transform(qml.batch_transform):
 
         _wrapper = super().default_qnode_wrapper(qnode, targs, tkwargs)
 
-        cjac_fn = qml.transforms.classical_jacobian(qnode, argnum=argnums, expand_fn=self.expand_fn)
+        cjac_fn = qml.transforms.classical_jacobian(
+            qnode, argnums=argnums, expand_fn=self.expand_fn
+        )
 
         def jacobian_wrapper(*args, **kwargs):
             argnums_ = None
