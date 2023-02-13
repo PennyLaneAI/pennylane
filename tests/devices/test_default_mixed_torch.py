@@ -198,9 +198,12 @@ class TestOps:
         spy.assert_called()
 
 
+@pytest.mark.torch
 class TestApplyChannelMethodChoice:
     """Test that the right method between _apply_channel and _apply_channel_tensordot
     is chosen."""
+
+    import torch
 
     @pytest.mark.parametrize(
         "op, exp_method, dev_wires",
