@@ -178,12 +178,30 @@ class TestBasicCircuit:
 
 
 class TestSpecialMeasurements:
-    def test_hamiltonian_expval(self):
+    @pytest.mark.parametrize("obs, expected", [])
+    def test_hamiltonian_expval(self, obs, expected):
         """Test that the `measure_hamiltonian_expval` function works correctly."""
+        ops = [qml.Hadamard(0), qml.Hadamard(1)]
+        meas = [qml.expval(obs)]
+        tape = qml.tape.QuantumScript(ops, meas)
+        res = simulate(tape)
+        assert np.allclose(res, expected)
 
-    def test_hamiltonian_expval_execution(self):
+    @pytest.mark.parametrize("obs", [])
+    def test_hamiltonian_expval_execution(self, obs, mocker):
         """Test that `measure` uses the special helper function when the measured
         observable is the expectation value of a Hamiltonian."""
+        ops = [qml.Hadamard(0), qml.Hadamard(1)]
+        meas = [qml.expval(obs)]
+        tape = qml.tape.QuantumScript(ops, meas)
+
+        diag_spy = mocker.spy(qml.devices.qubit.simulate, "measure_state_diagonalizing_gates")
+        hamiltonian_spy = mocker.spy(qml.devices.qubit.simulate, "measure_hamiltonian_expval")
+
+        _ = simulate(tape)
+
+        diag_spy.assert_not_called()
+        hamiltonian_spy.assert_called()
 
 
 class TestOperatorArithmetic:
