@@ -114,7 +114,7 @@ class Evolution(Exp):
 
     @property
     def grad_method(self):
-        return self.base.grad_method if hasattr(self.base, "grad_method") else None
+        return self.base.grad_method if hasattr(self.base, "grad_method") else super().grad_method
 
     def simplify(self):
         new_base = self.base.simplify()
