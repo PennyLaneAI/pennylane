@@ -177,6 +177,15 @@ class TestBasicCircuit:
         assert qml.math.allclose(grad1[0], -tf.sin(phi))
 
 
+class TestSpecialMeasurements:
+    def test_hamiltonian_expval(self):
+        """Test that the `measure_hamiltonian_expval` function works correctly."""
+
+    def test_hamiltonian_expval_execution(self):
+        """Test that `measure` uses the special helper function when the measured
+        observable is the expectation value of a Hamiltonian."""
+
+
 class TestOperatorArithmetic:
     def test_numpy_op_arithmetic(self):
         """Test an operator arithmetic circuit with non-integer wires with numpy."""

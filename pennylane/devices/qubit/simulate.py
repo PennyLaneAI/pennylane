@@ -14,9 +14,10 @@
 """Simulate a quantum script."""
 
 # pylint: disable=protected-access
+from scipy.sparse import csr_matrix
 import pennylane as qml
 from pennylane.wires import Wires
-from pennylane.measurements import StateMeasurement, MeasurementProcess
+from pennylane.measurements import StateMeasurement, MeasurementProcess, ExpectationMP
 from pennylane.typing import TensorLike
 
 from .initialize_state import create_initial_state
@@ -44,6 +45,30 @@ def measure_state_diagonalizing_gates(
     return measurementprocess.process_state(qml.math.flatten(state), wires)
 
 
+def measure_hamiltonian_expval(
+    measurementprocess: MeasurementProcess, state: TensorLike
+) -> TensorLike:
+    """Measure the expectation value of the state when the measured observable is a ``Hamiltonian`` or
+    ``SparseHamiltonian``.
+
+    Args:
+        measurementprocess (MeasurementProcess): measurement process to apply to the state
+        state (TensorLike): the state to measure
+
+    Returns:
+        TensorLike: the result of the measurement
+    """
+    # Add case for backprop later
+    Hmat = measurementprocess.obs.sparse_matrix()
+    _state = qml.math.toarray(state)
+    res = csr_matrix.dot(
+        csr_matrix(qml.math.conj(_state)),
+        csr_matrix.dot(Hmat, csr_matrix(_state[..., None])),
+    ).toarray()[0]
+    # Add broadcasting later
+    return qml.math.real(qml.math.squeeze(res))
+
+
 def measure(measurementprocess: MeasurementProcess, state: TensorLike) -> TensorLike:
     """Apply a measurement process to a state.
 
@@ -60,6 +85,12 @@ def measure(measurementprocess: MeasurementProcess, state: TensorLike) -> Tensor
             total_indices = len(state.shape)
             wires = Wires(range(total_indices))
             return measurementprocess.process_state(qml.math.flatten(state), wires)
+
+        if isinstance(measurementprocess, ExpectationMP) and measurementprocess.obs.name in (
+            "Hamiltonian",
+            "SparseHamiltonian",
+        ):
+            return measure_hamiltonian_expval(measurementprocess, state)
 
         if measurementprocess.obs.has_diagonalizing_gates:
             return measure_state_diagonalizing_gates(measurementprocess, state)
