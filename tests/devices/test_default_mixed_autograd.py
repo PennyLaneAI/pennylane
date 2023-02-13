@@ -304,12 +304,12 @@ class TestPassthruIntegration:
         circuit1 = qml.QNode(circuit, dev1, diff_method="backprop", interface="autograd")
         circuit2 = qml.QNode(circuit, dev2, diff_method="parameter-shift")
 
-        assert circuit1.gradient_fn == "backprop"
-        assert circuit2.gradient_fn is qml.gradients.param_shift
-
         res = circuit1(p)
 
         assert np.allclose(res, circuit2(p), atol=tol, rtol=0)
+
+        assert circuit1.gradient_fn == "backprop"
+        assert circuit2.gradient_fn is qml.gradients.param_shift
 
         grad_fn = qml.jacobian(circuit1, 0)
         res = grad_fn(p)

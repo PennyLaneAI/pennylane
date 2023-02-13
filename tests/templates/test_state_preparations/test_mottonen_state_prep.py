@@ -245,7 +245,7 @@ class TestDecomposition:
 
         dev = qml.device("default.qubit", wires=n_wires)
 
-        @qml.qnode(dev)
+        @qml.qnode(dev, interface="autograd")
         def circuit(state_vector):
             qml.MottonenStatePreparation(state_vector, wires=range(n_wires))
             return qml.expval(qml.PauliX(wires=0))
@@ -380,7 +380,7 @@ class TestCasting:
         inputs = jnp.array(inputs)
         dev = qml.device("default.qubit", wires=2)
 
-        @qml.qnode(dev, interface="jax")
+        @qml.qnode(dev)
         def circuit(inputs):
             qml.MottonenStatePreparation(inputs, wires=[0, 1])
             return qml.probs(wires=[0, 1])
@@ -399,7 +399,7 @@ class TestCasting:
         dev = qml.device("default.qubit", wires=2)
 
         @jax.jit
-        @qml.qnode(dev, interface="jax")
+        @qml.qnode(dev)
         def circuit(inputs):
             qml.MottonenStatePreparation(inputs, wires=[0, 1])
             return qml.probs(wires=[0, 1])
@@ -416,7 +416,7 @@ class TestCasting:
         inputs = tf.Variable(inputs)
         dev = qml.device("default.qubit", wires=2)
 
-        @qml.qnode(dev, interface="tf")
+        @qml.qnode(dev)
         def circuit(inputs):
             qml.MottonenStatePreparation(inputs, wires=[0, 1])
             return qml.probs(wires=[0, 1])
@@ -433,7 +433,7 @@ class TestCasting:
         inputs = torch.tensor(inputs, requires_grad=True)
         dev = qml.device("default.qubit", wires=2)
 
-        @qml.qnode(dev, interface="torch")
+        @qml.qnode(dev)
         def circuit(inputs):
             qml.MottonenStatePreparation(inputs, wires=[0, 1])
             return qml.probs(wires=[0, 1])

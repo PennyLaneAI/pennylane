@@ -14,8 +14,12 @@
 """
 This submodule defines a base class for symbolic operations representing operator math.
 """
+from abc import abstractmethod
 from copy import copy
 
+import numpy as np
+
+import pennylane as qml
 from pennylane.operation import Operator
 from pennylane.queuing import QueuingManager
 
@@ -24,14 +28,14 @@ class SymbolicOp(Operator):
     """Developer-facing base class for single-operator symbolic operators.
 
     Args:
-        base (~.operation.Operator): The base operation that is modified symbolicly
+        base (~.operation.Operator): the base operation that is modified symbolicly
         do_queue (bool): indicates whether the operator should be
             recorded when created in a tape context
         id (str): custom label given to an operator instance,
             can be useful for some applications where the instance has to be identified
 
     This *developer-facing* class can serve as a parent to single base symbolic operators, such as
-    :class:`~.ops.op_math.Adjoint` and :class:`~.ops.op_math.Pow`.
+    :class:`~.ops.op_math.Adjoint`.
 
     New symbolic operators can inherit from this class to receive some common default behavior, such
     as deferring properties to the base class, copying the base class during a shallow copy, and
@@ -62,7 +66,7 @@ class SymbolicOp(Operator):
         return copied_op
 
     # pylint: disable=super-init-not-called
-    def __init__(self, base=None, do_queue=True, id=None):
+    def __init__(self, base, do_queue=True, id=None):
         self.hyperparameters["base"] = base
         self._id = id
         self.queue_idx = None
@@ -70,6 +74,10 @@ class SymbolicOp(Operator):
 
         if do_queue:
             self.queue()
+
+    @property
+    def batch_size(self):
+        return self.base.batch_size
 
     @property
     def base(self) -> Operator:
@@ -132,3 +140,111 @@ class SymbolicOp(Operator):
         new_op = copy(self)
         new_op.hyperparameters["base"] = self.base.map_wires(wire_map=wire_map)
         return new_op
+
+
+class ScalarSymbolicOp(SymbolicOp):
+    """Developer-facing base class for single-operator symbolic operators that contain a
+    scalar coefficient.
+
+    Args:
+        base (~.operation.Operator): the base operation that is modified symbolicly
+        scalar (float): the scalar coefficient
+        do_queue (bool): indicates whether the operator should be recorded when created in a tape
+            context
+        id (str): custom label given to an operator instance, can be useful for some applications
+            where the instance has to be identified
+
+    This *developer-facing* class can serve as a parent to single base symbolic operators, such as
+    :class:`~.ops.op_math.SProd` and :class:`~.ops.op_math.Pow`.
+    """
+
+    _name = "ScalarSymbolicOp"
+
+    def __init__(self, base, scalar: float, do_queue=True, id=None):
+        self.scalar = np.array(scalar) if isinstance(scalar, list) else scalar
+        super().__init__(base, do_queue=do_queue, id=id)
+        self._batch_size = self._check_and_compute_batch_size(scalar)
+
+    @property
+    def batch_size(self):
+        return self._batch_size
+
+    def _check_and_compute_batch_size(self, scalar):
+        batched_scalar = qml.math.ndim(scalar) > 0
+        scalar_size = qml.math.size(scalar)
+        if not batched_scalar:
+            # coeff is not batched
+            return self.base.batch_size
+        # coeff is batched
+        if self.base.batch_size is not None and self.base.batch_size != scalar_size:
+            raise ValueError(
+                "Broadcasting was attempted but the broadcasted dimensions "
+                f"do not match: {scalar_size}, {self.base.batch_size}."
+            )
+        return scalar_size
+
+    @staticmethod
+    @abstractmethod
+    def _matrix(scalar, mat):
+        """Scalar-matrix operation that doesn't take into account batching.
+
+        ``ScalarSymbolicOp.matrix`` will call this method to compute the matrix for a single scalar
+        and base matrix.
+
+        Args:
+            scalar (Union[int, float]): non-broadcasted scalar
+            mat (ndarray): non-broadcasted matrix
+        """
+
+    def matrix(self, wire_order=None):
+        r"""Representation of the operator as a matrix in the computational basis.
+
+        If ``wire_order`` is provided, the numerical representation considers the position of the
+        operator's wires in the global wire order. Otherwise, the wire order defaults to the
+        operator's wires.
+
+        If the matrix depends on trainable parameters, the result
+        will be cast in the same autodifferentiation framework as the parameters.
+
+        A ``MatrixUndefinedError`` is raised if the base matrix representation has not been defined.
+
+        .. seealso:: :meth:`~.Operator.compute_matrix`
+
+        Args:
+            wire_order (Iterable): global wire order, must contain all wire labels from the
+            operator's wires
+
+        Returns:
+            tensor_like: matrix representation
+        """
+        # compute base matrix
+        if isinstance(self.base, qml.Hamiltonian):
+            base_matrix = qml.matrix(self.base)
+        else:
+            base_matrix = self.base.matrix()
+
+        scalar_interface = qml.math.get_interface(self.scalar)
+        if scalar_interface == "torch":
+            # otherwise get `RuntimeError: Can't call numpy() on Tensor that requires grad.`
+            base_matrix = qml.math.convert_like(base_matrix, self.scalar)
+        elif scalar_interface == "tensorflow" and not qml.math.iscomplex(self.scalar):
+            # cast scalar to complex to avoid an error
+            self.scalar = qml.math.cast_like(self.scalar, base_matrix)
+
+        # compute scalar operation on base matrix taking batching into account
+        scalar_size = qml.math.size(self.scalar)
+        if scalar_size != 1:
+            if scalar_size == self.base.batch_size:
+                # both base and scalar are broadcasted
+                mat = qml.math.stack([self._matrix(s, m) for s, m in zip(self.scalar, base_matrix)])
+            else:
+                # only scalar is broadcasted
+                mat = qml.math.stack([self._matrix(s, base_matrix) for s in self.scalar])
+        elif self.base.batch_size is not None:
+            # only base is broadcasted
+            mat = qml.math.stack([self._matrix(self.scalar, ar2) for ar2 in base_matrix])
+        else:
+            # none are broadcasted
+            mat = self._matrix(self.scalar, base_matrix)
+
+        return qml.math.expand_matrix(mat, wires=self.wires, wire_order=wire_order)

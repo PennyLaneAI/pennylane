@@ -31,7 +31,6 @@ OBS_MAP = {"PauliX": "X", "PauliY": "Y", "PauliZ": "Z", "Hadamard": "H", "Identi
 
 
 def _compute_grouping_indices(observables, grouping_type="qwc", method="rlf"):
-
     # todo: directly compute the
     # indices, instead of extracting groups of observables first
     observable_groups = qml.pauli.group_observables(
@@ -172,7 +171,6 @@ class Hamiltonian(Observable):
         id=None,
         do_queue=True,
     ):
-
         if qml.math.shape(coeffs)[0] != len(observables):
             raise ValueError(
                 "Could not create valid Hamiltonian; "
@@ -407,7 +405,6 @@ class Hamiltonian(Observable):
         terms_ls = []
 
         for coeff, obs in paired_coeff_obs:
-
             if isinstance(obs, Tensor):
                 obs_strs = [f"{OBS_MAP.get(ob.name, ob.name)}{wires_print(ob)}" for ob in obs.obs]
                 ob_str = " ".join(obs_strs)
@@ -546,7 +543,7 @@ class Hamiltonian(Observable):
 
             return qml.Hamiltonian(coeffs1, terms, simplify=True)
 
-        raise ValueError(f"Cannot tensor product Hamiltonian and {type(H)}")
+        return NotImplemented
 
     def __rmatmul__(self, H):
         r"""The tensor product operation (from the right) between a Hamiltonian and
@@ -563,7 +560,7 @@ class Hamiltonian(Observable):
 
             return qml.Hamiltonian(coeffs1, terms, simplify=True)
 
-        raise ValueError(f"Cannot tensor product Hamiltonian and {type(H)}")
+        return NotImplemented
 
     def __add__(self, H):
         r"""The addition operation between a Hamiltonian and a Hamiltonian/Tensor/Observable."""
@@ -585,7 +582,7 @@ class Hamiltonian(Observable):
             ops.append(H)
             return qml.Hamiltonian(coeffs, ops, simplify=True)
 
-        raise ValueError(f"Cannot add Hamiltonian and {type(H)}")
+        return NotImplemented
 
     __radd__ = __add__
 
@@ -596,15 +593,15 @@ class Hamiltonian(Observable):
             coeffs = qml.math.multiply(a, self_coeffs)
             return qml.Hamiltonian(coeffs, self.ops.copy())
 
-        raise ValueError(f"Cannot multiply Hamiltonian by {type(a)}")
+        return NotImplemented
 
     __rmul__ = __mul__
 
     def __sub__(self, H):
         r"""The subtraction operation between a Hamiltonian and a Hamiltonian/Tensor/Observable."""
         if isinstance(H, (Hamiltonian, Tensor, Observable)):
-            return self.__add__(H.__mul__(-1))
-        raise ValueError(f"Cannot subtract {type(H)} from Hamiltonian")
+            return self + (-1 * H)
+        return NotImplemented
 
     def __iadd__(self, H):
         r"""The inplace addition operation between a Hamiltonian and a Hamiltonian/Tensor/Observable."""
@@ -625,7 +622,7 @@ class Hamiltonian(Observable):
             self.simplify()
             return self
 
-        raise ValueError(f"Cannot add Hamiltonian and {type(H)}")
+        return NotImplemented
 
     def __imul__(self, a):
         r"""The inplace scalar multiplication operation between a scalar and a Hamiltonian."""
@@ -633,14 +630,14 @@ class Hamiltonian(Observable):
             self._coeffs = qml.math.multiply(a, self._coeffs)
             return self
 
-        raise ValueError(f"Cannot multiply Hamiltonian by {type(a)}")
+        return NotImplemented
 
     def __isub__(self, H):
         r"""The inplace subtraction operation between a Hamiltonian and a Hamiltonian/Tensor/Observable."""
         if isinstance(H, (Hamiltonian, Tensor, Observable)):
             self.__iadd__(H.__mul__(-1))
             return self
-        raise ValueError(f"Cannot subtract {type(H)} from Hamiltonian")
+        return NotImplemented
 
     def queue(self, context=qml.QueuingManager):
         """Queues a qml.Hamiltonian instance"""

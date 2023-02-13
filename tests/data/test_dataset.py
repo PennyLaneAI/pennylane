@@ -47,6 +47,23 @@ def test_write_dataset(tmp_path):
     test_dataset.write(p)
 
 
+def test_write_standard_loads_before_writing(tmp_path):
+    """Test that the write method loads values before writing if they were None (lazy-loaded)."""
+    filepath = tmp_path / "myset_full.dat"
+    qml.data.Dataset._write_file({"molecule": 1, "hf_state": 2}, str(filepath))
+    dataset = qml.data.Dataset("qchem", str(tmp_path), "myset", "", standard=True)
+    assert dataset.attrs == {"molecule": None, "hf_state": None}
+
+    dest_file = str(tmp_path / "written.dat")
+    dataset.write(dest_file)
+    # these were None before - calling write() loaded them!
+    assert dataset.attrs == {"molecule": 1, "hf_state": 2}
+
+    read_dataset = qml.data.Dataset()
+    read_dataset.read(dest_file)
+    assert read_dataset.attrs == {"molecule": 1, "hf_state": 2}
+
+
 def test_read_dataset(tmp_path):
     """Test that datasets are loaded correctly."""
     test_dataset = qml.data.Dataset(kw1=1, kw2="2", kw3=[3])
@@ -60,6 +77,65 @@ def test_read_dataset(tmp_path):
     assert test_dataset.kw1 == 1
     assert test_dataset.kw2 == "2"
     assert test_dataset.kw3 == [3]
+
+
+def test_read_does_not_understand_single_attr_files(tmp_path):
+    """Test that single-attribute files are not understood by the read() method, even if it follows standard naming conventions."""
+    dataset = qml.data.Dataset("qchem", str(tmp_path), "myset", "", standard=True)
+    filename = str(tmp_path / "myset_molecule.dat")
+    dataset._write_file(1, filename)
+    assert dataset.list_attributes() == []
+    with pytest.raises(AttributeError, match="'int' object has no attribute 'items'"):
+        dataset.read(filename)
+
+
+def test_read_lazy(tmp_path):
+    """Test that read with lazy=True works for non-standard datasets."""
+    filename = str(tmp_path / "myfile.dat")
+    qml.data.Dataset._write_file({"molecule": 1}, filename)
+    dataset = qml.data.Dataset()
+    dataset.read(filename, lazy=True)
+    assert dataset.attrs == {"molecule": None}
+    assert dataset._attr_filemap == {"molecule": (filename, True)}
+    assert dataset.molecule == 1
+    assert dataset._attr_filemap == {}
+
+
+def test_read_fails_if_lazy_file_was_deleted(tmp_path):
+    """Test that read() fails if the file an attribute was loaded from was deleted before loading."""
+    filename = str(tmp_path / "myfile.dat")
+    qml.data.Dataset._write_file({"molecule": 1}, filename)
+    dataset = qml.data.Dataset()
+    dataset.read(filename, lazy=True)
+    os.remove(filename)
+    with pytest.raises(
+        qml.data.dataset.DatasetLoadError, match="the file originally containing it"
+    ):
+        _ = dataset.molecule
+
+
+def test_read_with_assign_to_without_lazy(tmp_path):
+    """Test that read() with assign_to simply sets the file contents."""
+    filename = str(tmp_path / "myfile.dat")
+    qml.data.Dataset._write_file(1, filename)
+    dataset = qml.data.Dataset()
+    dataset.read(filename, assign_to="molecule")
+    assert dataset.molecule == 1
+
+    dataset.write(filename)
+    dataset.read(filename, assign_to="molecule")
+    assert dataset.molecule == {"molecule": 1}
+
+
+def test_read_with_assign_to_with_lazy(tmp_path):
+    """Test that read() with assign_to and lazy set simply tracks the file location."""
+    filename = str(tmp_path / "myfile.dat")
+    qml.data.Dataset._write_file(1, filename)
+    dataset = qml.data.Dataset()
+    dataset.read(filename, assign_to="molecule", lazy=True)
+    assert dataset.attrs == {"molecule": None}
+    assert dataset._attr_filemap == {"molecule": (filename, False)}
+    assert dataset.molecule == 1
 
 
 def test_list_attributes():
@@ -76,6 +152,24 @@ def test_copy_non_standard():
     assert new_dataset._is_standard is False
 
 
+def test_copy_non_standard_with_lazy(tmp_path):
+    """Test that non-standard datasets copy lazy-loading metadata."""
+    filepath = str(tmp_path / "copyfile.dat")
+    test_dataset = qml.data.Dataset(foo=1, bar=2)
+    test_dataset.write(filepath)
+
+    base_dataset = qml.data.Dataset()
+    base_dataset.read(filepath, lazy=True)
+    assert base_dataset.attrs == {"foo": None, "bar": None}
+
+    copied_dataset = copy(base_dataset)
+    assert copied_dataset.attrs == {"foo": None, "bar": None}
+    assert copied_dataset._attr_filemap == {"foo": (filepath, True), "bar": (filepath, True)}
+    assert copied_dataset.foo == 1
+    assert copied_dataset._attr_filemap == {"bar": (filepath, True)}
+    assert base_dataset._attr_filemap == {"foo": (filepath, True), "bar": (filepath, True)}
+
+
 def test_copy_standard(tmp_path):
     """Test that standard datasets can be built from other standard datasets."""
     filepath = tmp_path / "myset_full.dat"
@@ -86,8 +180,8 @@ def test_copy_standard(tmp_path):
     assert new_dataset._is_standard == test_dataset._is_standard
     assert new_dataset._dtype == test_dataset._dtype
     assert new_dataset._folder == test_dataset._folder
-    assert new_dataset._prefix == test_dataset._prefix
-    assert new_dataset._prefix_len == test_dataset._prefix_len
+    assert new_dataset._attr_filemap == test_dataset._attr_filemap
+    assert new_dataset._attr_filemap is not test_dataset._attr_filemap
     assert new_dataset._fullfile == test_dataset._fullfile
     assert new_dataset.__doc__ == test_dataset.__doc__
     assert new_dataset.attrs == test_dataset.attrs
@@ -125,10 +219,11 @@ def test_getattribute_dunder_non_full(tmp_path):
         _ = standard_dataset.hf_state
     # create an hf_state file
     os.makedirs(folder)
-    qml.data.Dataset._write_file(2, str(folder / "myset_hf_state.dat"))
-    # this getattribute will read from the above created file
-    assert standard_dataset.hf_state == 2
-    assert standard_dataset._fullfile is None
+    filepath = str(folder / "myset_hf_state.dat")
+    qml.data.Dataset._write_file(2, filepath)
+    # getattribute does not try to find files that have not yet been read
+    with pytest.raises(AttributeError):
+        _ = standard_dataset.hf_state
 
 
 def test_getattribute_dunder_full(tmp_path):
@@ -144,18 +239,33 @@ def test_getattribute_dunder_full(tmp_path):
         _ = dataset.molecule
 
 
+def test_getattribute_fail_when_attribute_deleted_from_file(tmp_path):
+    """Test that getattribute fails if an expected attribute is not in a data file."""
+    filename = str(tmp_path / "dest.dat")
+    dataset = qml.data.Dataset(foo=1, bar=2)
+    dataset.write(filename)
+
+    new_dataset = qml.data.Dataset()
+    new_dataset.read(filename, lazy=True)
+    assert new_dataset.attrs == {"foo": None, "bar": None}
+
+    del dataset.foo
+    dataset.write(filename)  # overwrite the shared data file, deleting foo
+    assert new_dataset.bar == 2
+    with pytest.raises(
+        qml.data.dataset.DatasetLoadError, match="no longer appears to be in the file"
+    ):
+        _ = new_dataset.foo
+
+
 def test_none_attribute_value(tmp_path):
-    """Test that non-standard datasets return None while standard datasets raise an error."""
+    """Test that both non-standard and standard datasets allow None values."""
     non_standard_dataset = qml.data.Dataset(molecule=None)
     assert non_standard_dataset.molecule is None
 
     standard_dataset = qml.data.Dataset("qchem", str(tmp_path), "myset", "", standard=True)
-    standard_dataset.molecule = None  # wouldn't usually happen
-    with pytest.raises(
-        AttributeError,
-        match="Dataset has a 'molecule' attribute, but it is None and no data file was found",
-    ):
-        _ = standard_dataset.molecule
+    standard_dataset.molecule = None  # if set manually to None, it should be allowed
+    assert standard_dataset.molecule is None
 
 
 def test_lazy_load_until_access_non_full(tmp_path):
@@ -195,6 +305,27 @@ def test_hamiltonian_is_loaded_properly(tmp_path):
     assert qml.equal(qml.PauliZ(0), ops[1])
 
 
+def test_hamiltonian_is_loaded_properly_with_read(tmp_path):
+    """Tests that read() and __getattribute__() agree on how to handle hamiltonians."""
+    filename = str(tmp_path / "somefile.dat")
+    compressed_ham = {"terms": {"IIII": 0.1, "ZIII": 0.2}, "wire_map": {0: 0, 1: 1, 2: 2, 3: 3}}
+    qml.data.Dataset._write_file(compressed_ham, filename)
+    dataset = qml.data.Dataset()
+
+    # assigning to hamiltonian allows for special processing
+    dataset.read(filename, assign_to="hamiltonian")
+    assert isinstance(dataset.hamiltonian, qml.Hamiltonian)
+    # lazy-loading doesn't break this convention
+    dataset.read(filename, assign_to="tapered_hamiltonian", lazy=True)
+    assert isinstance(dataset.tapered_hamiltonian, qml.Hamiltonian)
+    # for non-special keys, assign_to will simply save the value
+    dataset.read(filename, assign_to="not_hamiltonian")
+    assert dataset.not_hamiltonian == compressed_ham
+    # ...and lazy-loading doesn't break this convention either
+    dataset.read(filename, assign_to="not_tapered_hamiltonian", lazy=True)
+    assert dataset.not_tapered_hamiltonian == compressed_ham
+
+
 def test_hamiltonian_write_preserves_wire_map(tmp_path):
     """Test that writing hamiltonians to file converts to the condensed format."""
     filename = str(tmp_path / "myset_full.dat")
@@ -204,10 +335,9 @@ def test_hamiltonian_write_preserves_wire_map(tmp_path):
     dataset.write(filename)
 
     # ensure that the non-standard dataset wrote the Hamiltonian in condensed format
-    terms_and_wiremap = qml.data.Dataset._read_file(filename)["hamiltonian"]
-    assert terms_and_wiremap == {
-        "terms": {"XIY": 0.1, "ZZZ": 0.2},
-        "wire_map": {"a": 0, "b": 1, "c": 2},
+    dataset.read(filename, assign_to="terms_and_wiremap")
+    assert dataset.terms_and_wiremap == {
+        "hamiltonian": {"terms": {"XIY": 0.1, "ZZZ": 0.2}, "wire_map": {"a": 0, "b": 1, "c": 2}}
     }
 
     # ensure std dataset reads what was written as expected (conversion happens in getattr dunder)
@@ -219,15 +349,6 @@ def test_hamiltonian_write_preserves_wire_map(tmp_path):
     non_std_dataset = qml.data.Dataset()
     non_std_dataset.read(filename)
     assert qml.equal(non_std_dataset.hamiltonian, dataset.hamiltonian)
-
-    # ensure with non-full files as well
-    print("entering")
-    other_dataset = qml.data.Dataset("qchem", str(tmp_path), "otherset", "", standard=True)
-    filename = str(tmp_path / "otherset_hamiltonian.dat")
-    dataset._write_file(qml.data.dataset.hamiltonian_to_dict(dataset.hamiltonian), filename)
-    assert other_dataset.list_attributes() == []
-    other_dataset.read(filename)
-    assert qml.equal(other_dataset.hamiltonian, dataset.hamiltonian)
 
 
 def test_import_zstd_dill(monkeypatch):

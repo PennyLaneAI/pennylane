@@ -27,7 +27,6 @@ class TestSpecsTransform:
         "diff_method, len_info", [("backprop", 15), ("parameter-shift", 16), ("adjoint", 15)]
     )
     def test_empty(self, diff_method, len_info):
-
         dev = qml.device("default.qubit", wires=1)
 
         @qml.qnode(dev, diff_method=diff_method)

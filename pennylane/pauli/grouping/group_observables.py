@@ -68,7 +68,6 @@ class PauliGroupingStrategy:  # pylint: disable=too-many-instance-attributes
     """
 
     def __init__(self, observables, grouping_type="qwc", graph_colourer="rlf"):
-
         if grouping_type.lower() not in GROUPING_TYPES:
             raise ValueError(
                 f"Grouping type must be one of: {GROUPING_TYPES}, instead got {grouping_type}."
@@ -147,11 +146,9 @@ class PauliGroupingStrategy:  # pylint: disable=too-many-instance-attributes
             )
 
             if self.grouping_type == "commuting":
-
                 adj = mat_prod % 2
 
             elif self.grouping_type == "anticommuting":
-
                 adj = (mat_prod + 1) % 2
                 np.fill_diagonal(adj, 0)
 

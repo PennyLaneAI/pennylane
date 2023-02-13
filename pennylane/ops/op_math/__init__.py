@@ -25,11 +25,10 @@ Constructor Functions
     ~adjoint
     ~ctrl
     ~exp
-    ~op_sum
+    ~sum
     ~pow
     ~prod
     ~s_prod
-    ~ops.dot
 
 Symbolic Classes
 ~~~~~~~~~~~~~~~~
@@ -50,16 +49,41 @@ Symbolic Classes
     ~Sum
     ~SProd
     ~SymbolicOp
+    ~ScalarSymbolicOp
+
+Controlled Operator Classes
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. autosummary::
+    :toctree: api
+
+    ~ControlledQubitUnitary
+
+Decompositions
+~~~~~~~~~~~~~~
+
+.. currentmodule:: pennylane.ops.op_math
+
+.. autosummary::
+    :toctree: api
+
+    ~ctrl_decomp_zyz
 
 """
 
 from .adjoint import Adjoint, adjoint
 from .composite import CompositeOp
 from .controlled import Controlled, ControlledOp, ctrl
-from .dot import dot
-from .exp import Evolution, Exp, exp
+from .controlled_ops import ControlledQubitUnitary
+from .evolution import Evolution
+from .exp import Exp, exp
 from .pow import Pow, pow
 from .prod import Prod, prod
 from .sprod import SProd, s_prod
-from .sum import Sum, op_sum
-from .symbolicop import SymbolicOp
+from .sum import Sum, op_sum, sum
+from .symbolicop import ScalarSymbolicOp, SymbolicOp
+from .controlled_decompositions import ctrl_decomp_zyz
+
+controlled_qubit_ops = {
+    "ControlledQubitUnitary",
+}

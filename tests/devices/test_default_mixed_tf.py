@@ -286,13 +286,13 @@ class TestPassthruIntegration:
         circuit1 = decorator(qml.QNode(circuit, dev1, diff_method="backprop", interface=interface))
         circuit2 = qml.QNode(circuit, dev2, diff_method="parameter-shift")
 
-        assert circuit1.gradient_fn == "backprop"
-        assert circuit2.gradient_fn is qml.gradients.param_shift
-
         with tf.GradientTape() as tape:
             res = circuit1(p_tf)
 
         assert np.allclose(res, circuit2(p), atol=tol, rtol=0)
+
+        assert circuit1.gradient_fn == "backprop"
+        assert circuit2.gradient_fn is qml.gradients.param_shift
 
         res = tape.jacobian(res, p_tf)
         assert np.allclose(res, qml.jacobian(circuit2)(p), atol=tol, rtol=0)

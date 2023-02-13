@@ -175,22 +175,19 @@ class TestAdjointJacobian:
         """Tests that the gradients of circuits match between the finite difference and device
         methods."""
 
-        with qml.queuing.AnnotatedQueue() as q:
-            qml.Hadamard(wires=0)
-            qml.RX(0.543, wires=0)
-            qml.CNOT(wires=[0, 1])
+        ops = [
+            qml.Hadamard(wires=0),
+            qml.RX(0.543, wires=0),
+            qml.CNOT(wires=[0, 1]),
+            op,
+            qml.Rot(1.3, -2.3, 0.5, wires=[0]),
+            qml.RZ(-0.5, wires=0),
+            qml.adjoint(qml.RY(0.5, wires=1)),
+            qml.CNOT(wires=[0, 1]),
+        ]
+        measurements = [qml.expval(obs(wires=0)), qml.expval(qml.PauliZ(wires=1))]
 
-            qml.apply(op)
-
-            qml.Rot(1.3, -2.3, 0.5, wires=[0])
-            qml.RZ(-0.5, wires=0)
-            qml.RY(0.5, wires=1).inv()
-            qml.CNOT(wires=[0, 1])
-
-            qml.expval(obs(wires=0))
-            qml.expval(qml.PauliZ(wires=1))
-
-        tape = qml.tape.QuantumScript.from_queue(q)
+        tape = qml.tape.QuantumScript(ops, measurements)
         tape.trainable_params = set(range(1, 1 + op.num_params))
 
         grad_F = (lambda t, fn: fn(qml.execute(t, dev, None)))(*qml.gradients.finite_diff(tape))
@@ -324,11 +321,16 @@ class TestAdjointJacobianQNode:
 
         dev = qml.device("default.qubit", wires=1, shots=1)
 
+        @qml.qnode(dev, diff_method="adjoint")
+        def circ(x):
+            qml.RX(x, wires=0)
+            return qml.expval(qml.PauliZ(0))
+
         with pytest.warns(
             UserWarning, match="Requested adjoint differentiation to be computed with finite shots."
         ):
 
-            @qml.qnode(dev, diff_method="adjoint")
+            @qml.qnode(dev, interface="autograd", diff_method="adjoint")
             def circ(x):
                 qml.RX(x, wires=0)
                 return qml.expval(qml.PauliZ(0))
@@ -471,8 +473,8 @@ class TestAdjointJacobianQNode:
         params1 = tf.Variable(0.3, dtype=tf.float64)
         params2 = tf.Variable(0.4, dtype=tf.float64)
 
-        qnode1 = QNode(f, dev, interface="tf", diff_method="adjoint")
-        qnode2 = QNode(f, dev, interface="tf", diff_method="finite-diff")
+        qnode1 = QNode(f, dev, diff_method="adjoint")
+        qnode2 = QNode(f, dev, diff_method="finite-diff")
 
         with tf.GradientTape() as tape:
             res1 = qnode1(params1, params2)
@@ -501,8 +503,8 @@ class TestAdjointJacobianQNode:
         params1 = torch.tensor(0.3, requires_grad=True)
         params2 = torch.tensor(0.4, requires_grad=True)
 
-        qnode1 = QNode(f, dev, interface="torch", diff_method="adjoint")
-        qnode2 = QNode(f, dev, interface="torch", diff_method="finite-diff")
+        qnode1 = QNode(f, dev, diff_method="adjoint")
+        qnode2 = QNode(f, dev, diff_method="finite-diff")
 
         res1 = qnode1(params1, params2)
         res1.backward()
@@ -531,8 +533,8 @@ class TestAdjointJacobianQNode:
         params1 = jax.numpy.array(0.3)
         params2 = jax.numpy.array(0.4)
 
-        qnode_adjoint = QNode(f, dev, interface="jax", diff_method="adjoint")
-        qnode_backprop = QNode(f, dev, interface="jax", diff_method="backprop")
+        qnode_adjoint = QNode(f, dev, diff_method="adjoint")
+        qnode_backprop = QNode(f, dev, diff_method="backprop")
 
         grad_adjoint = jax.grad(qnode_adjoint)(params1, params2)
         grad_backprop = jax.grad(qnode_backprop)(params1, params2)

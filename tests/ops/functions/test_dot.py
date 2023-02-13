@@ -17,8 +17,15 @@ Unit tests for the dot function
 import pytest
 
 import pennylane as qml
-from pennylane.ops import Hamiltonian, SProd, Sum, dot
+from pennylane.collections import QNodeCollection
+from pennylane.ops import Hamiltonian, SProd, Sum
 from pennylane.pauli.pauli_arithmetic import PauliSentence
+
+
+def test_dot_qnode_collection_raises_warning():
+    """Test that a deprecation warning is raised when using qml.dot for a QNodeCollection."""
+    with pytest.warns(UserWarning, match="is deprecated"):
+        qml.dot([], QNodeCollection())
 
 
 class TestDotSum:
@@ -28,18 +35,18 @@ class TestDotSum:
         """Test that the dot function returns a Sum operator when ``pauli=False``."""
         c = [1.0, 2.0, 3.0]
         o = [qml.PauliX(0), qml.PauliY(1), qml.PauliZ(2)]
-        S = dot(coeffs=c, ops=o)
+        S = qml.dot(coeffs=c, ops=o)
         assert isinstance(S, Sum)
-        for summand, coeff, op in zip(S.operands, c, o):
-            if coeff != 1:
+        for summand, coeff in zip(S.operands, c):
+            if coeff == 1:
+                assert isinstance(summand, qml.PauliX)
+            else:
                 assert isinstance(summand, SProd)
                 assert summand.scalar == coeff
-            else:
-                assert isinstance(summand, type(op))
 
     def test_dot_returns_sprod(self):
         """Test that the dot function returns a SProd operator when only one operator is input."""
-        O = dot(coeffs=[2.0], ops=[qml.PauliX(0)])
+        O = qml.dot(coeffs=[2.0], ops=[qml.PauliX(0)])
         assert isinstance(O, SProd)
         assert O.scalar == 2
 
@@ -50,7 +57,7 @@ class TestDotSum:
             ValueError,
             match="Number of coefficients and operators does not match",
         ):
-            dot([1.0], [qml.PauliX(0), qml.PauliY(1)])
+            qml.dot([1.0], [qml.PauliX(0), qml.PauliY(1)])
 
     def test_dot_empty_coeffs_or_ops(self):
         """Test that a ValueError is raised when the number of coefficients and operators does
@@ -59,63 +66,67 @@ class TestDotSum:
             ValueError,
             match="Cannot compute the dot product of an empty sequence",
         ):
-            dot([], [])
+            qml.dot([], [])
 
     @pytest.mark.autograd
-    def test_dot_autograd(self):
+    @pytest.mark.parametrize("dtype", (float, complex))
+    def test_dot_autograd(self, dtype):
         """Test the dot function with the autograd interface."""
-        c = qml.numpy.array([1.0, 2.0, 3.0])
+        c = qml.numpy.array([1.0, 2.0, 3.0], dtype=dtype)
         o = [qml.PauliX(0), qml.PauliY(1), qml.PauliZ(2)]
-        op_sum = dot(c, o)
+        op_sum = qml.dot(c, o)
         op_sum_2 = Sum(
             qml.PauliX(0),
-            SProd(qml.numpy.array(2.0), qml.PauliY(1)),
-            SProd(qml.numpy.array(3.0), qml.PauliZ(2)),
+            SProd(qml.numpy.array(2.0, dtype=dtype), qml.PauliY(1)),
+            SProd(qml.numpy.array(3.0, dtype=dtype), qml.PauliZ(2)),
         )
         assert qml.equal(op_sum, op_sum_2)
 
     @pytest.mark.tf
-    def test_dot_tf(self):
+    @pytest.mark.parametrize("dtype", ("float64", "complex128"))
+    def test_dot_tf(self, dtype):
         """Test the dot function with the tensorflow interface."""
         import tensorflow as tf
 
-        c = tf.constant([1.0, 2.0, 3.0])
+        c = tf.constant([1.0, 2.0, 3.0], dtype=getattr(tf, dtype))
         o = [qml.PauliX(0), qml.PauliY(1), qml.PauliZ(2)]
-        op_sum = dot(c, o)
+        op_sum = qml.dot(c, o)
         op_sum_2 = Sum(
             qml.PauliX(0),
-            SProd(tf.constant(2.0), qml.PauliY(1)),
-            SProd(tf.constant(3.0), qml.PauliZ(2)),
+            SProd(tf.constant(2.0, dtype=getattr(tf, dtype)), qml.PauliY(1)),
+            SProd(tf.constant(3.0, dtype=getattr(tf, dtype)), qml.PauliZ(2)),
         )
         assert qml.equal(op_sum, op_sum_2)
 
     @pytest.mark.torch
-    def test_dot_torch(self):
+    @pytest.mark.parametrize("dtype", ("float64", "complex128"))
+    def test_dot_torch(self, dtype):
         """Test the dot function with the torch interface."""
         import torch
 
-        c = torch.tensor([1.0, 2.0, 3.0])
+        c = torch.tensor([1.0, 2.0, 3.0], dtype=getattr(torch, dtype))
         o = [qml.PauliX(0), qml.PauliY(1), qml.PauliZ(2)]
-        op_sum = dot(c, o)
+        op_sum = qml.dot(c, o)
         op_sum_2 = Sum(
             qml.PauliX(0),
-            SProd(torch.tensor(2.0), qml.PauliY(1)),
-            SProd(torch.tensor(3.0), qml.PauliZ(2)),
+            SProd(torch.tensor(2.0, dtype=getattr(torch, dtype)), qml.PauliY(1)),
+            SProd(torch.tensor(3.0, dtype=getattr(torch, dtype)), qml.PauliZ(2)),
         )
         assert qml.equal(op_sum, op_sum_2)
 
     @pytest.mark.jax
-    def test_dot_jax(self):
+    @pytest.mark.parametrize("dtype", (float, complex))
+    def test_dot_jax(self, dtype):
         """Test the dot function with the torch interface."""
         import jax
 
-        c = jax.numpy.array([1.0, 2.0, 3.0])
+        c = jax.numpy.array([1.0, 2.0, 3.0], dtype=dtype)
         o = [qml.PauliX(0), qml.PauliY(1), qml.PauliZ(2)]
-        op_sum = dot(c, o)
+        op_sum = qml.dot(c, o)
         op_sum_2 = Sum(
             qml.PauliX(0),
-            SProd(jax.numpy.array(2.0), qml.PauliY(1)),
-            SProd(jax.numpy.array(3.0), qml.PauliZ(2)),
+            SProd(jax.numpy.array(2.0, dtype=dtype), qml.PauliY(1)),
+            SProd(jax.numpy.array(3.0, dtype=dtype), qml.PauliZ(2)),
         )
         assert qml.equal(op_sum, op_sum_2)
 
@@ -136,19 +147,19 @@ class TestDotPauliSentence:
 
     def test_dot_returns_pauli_sentence(self):
         """Test that the dot function returns a PauliSentence class."""
-        ps = dot(coeffs, ops, pauli=True)
+        ps = qml.dot(coeffs, ops, pauli=True)
         assert isinstance(ps, PauliSentence)
 
     def test_coeffs_and_ops(self):
         """Test that the coefficients and operators of the returned PauliSentence are correct."""
-        ps = dot(coeffs, ops, pauli=True)
+        ps = qml.dot(coeffs, ops, pauli=True)
         h = ps.hamiltonian()
         assert qml.math.allequal(h.coeffs, coeffs)
         assert all(qml.equal(op1, op2) for op1, op2 in zip(h.ops, ops))
 
     def test_dot_simplifies_linear_combination(self):
         """Test that the dot function groups equal pauli words."""
-        ps = dot(
+        ps = qml.dot(
             coeffs=[0.12, 1.2, 12], ops=[qml.PauliX(0), qml.PauliX(0), qml.PauliX(0)], pauli=True
         )
         assert len(ps) == 1
@@ -159,7 +170,7 @@ class TestDotPauliSentence:
     def test_dot_returns_hamiltonian_simplified(self):
         """Test that hamiltonian computed from the PauliSentence created by the dot function is equal
         to the simplified hamiltonian."""
-        ps = dot(coeffs, ops, pauli=True)
+        ps = qml.dot(coeffs, ops, pauli=True)
         h_ps = ps.hamiltonian()
         h = Hamiltonian(coeffs, ops)
         h.simplify()
@@ -170,7 +181,7 @@ class TestDotPauliSentence:
         """Test the dot function with the autograd interface."""
         c = qml.numpy.array([1.0, 2.0, 3.0])
         o = [qml.PauliX(0), qml.PauliY(1), qml.PauliZ(2)]
-        ps = dot(c, o, pauli=True)
+        ps = qml.dot(c, o, pauli=True)
         op_sum = Sum(
             qml.PauliX(0),
             SProd(qml.numpy.array(2.0), qml.PauliY(1)),
@@ -186,7 +197,7 @@ class TestDotPauliSentence:
 
         c = tf.constant([1.0, 2.0, 3.0])
         o = [qml.PauliX(0), qml.PauliY(1), qml.PauliZ(2)]
-        ps = dot(c, o, pauli=True)
+        ps = qml.dot(c, o, pauli=True)
         op_sum = Sum(
             qml.PauliX(0),
             SProd(tf.constant(2.0), qml.PauliY(1)),
@@ -202,7 +213,7 @@ class TestDotPauliSentence:
 
         c = torch.tensor([1.0, 2.0, 3.0])
         o = [qml.PauliX(0), qml.PauliY(1), qml.PauliZ(2)]
-        ps = dot(c, o, pauli=True)
+        ps = qml.dot(c, o, pauli=True)
         op_sum = Sum(
             qml.PauliX(0),
             SProd(torch.tensor(2.0), qml.PauliY(1)),
@@ -218,7 +229,7 @@ class TestDotPauliSentence:
 
         c = jax.numpy.array([1.0, 2.0, 3.0])
         o = [qml.PauliX(0), qml.PauliY(1), qml.PauliZ(2)]
-        ps = dot(c, o, pauli=True)
+        ps = qml.dot(c, o, pauli=True)
         op_sum = Sum(
             qml.PauliX(0),
             SProd(jax.numpy.array(2.0), qml.PauliY(1)),

@@ -250,23 +250,6 @@ class TestDeviceSupportedLogic:
         assert not dev.supports_observable("Identity")
         assert not dev.supports_observable(qml.Identity)
 
-    def test_supports_obeservable_inverse(self, mock_device_supporting_paulis_and_inverse):
-        dev = mock_device_supporting_paulis_and_inverse()
-
-        assert dev.supports_observable("PauliX.inv")
-        assert not dev.supports_observable("Identity.inv")
-
-    def test_supports_obeservable_raise_error_hermitian_inverse(
-        self, mock_device_supporting_observables_and_inverse
-    ):
-        dev = mock_device_supporting_observables_and_inverse()
-
-        assert dev.supports_observable("PauliX")
-        assert dev.supports_observable("PauliX.inv")
-        assert dev.supports_observable("Hermitian")
-
-        assert not dev.supports_observable("Hermitian.inv")
-
     def test_supports_operation_exception(self, mock_device):
         """check that device.supports_operation raises proper errors
         if the argument is of the wrong type"""
@@ -339,46 +322,6 @@ class TestInternalFunctions:
         # Raises an error if queue or observables are invalid
         dev.check_validity(queue, observables)
 
-    def test_check_validity_on_valid_queue_with_inverses(
-        self, mock_device_supporting_paulis_and_inverse
-    ):
-        """Tests the function Device.check_validity with valid queue
-        and the inverse of operations"""
-        dev = mock_device_supporting_paulis_and_inverse()
-
-        queue = [
-            qml.PauliX(wires=0).inv(),
-            qml.PauliY(wires=1).inv(),
-            qml.PauliZ(wires=2).inv(),
-            qml.PauliX(wires=0).inv().inv(),
-            qml.PauliY(wires=1).inv().inv(),
-            qml.PauliZ(wires=2).inv().inv(),
-        ]
-
-        observables = [qml.expval(qml.PauliZ(0))]
-
-        # Raises an error if queue or observables are invalid
-        dev.check_validity(queue, observables)
-
-    def test_check_validity_with_unsupported_operation_inverse(
-        self, mock_device_supporting_paulis_and_inverse
-    ):
-        """Tests the function Device.check_validity with an valid queue
-        and the inverse of not supported operations"""
-        dev = mock_device_supporting_paulis_and_inverse()
-
-        queue = [
-            qml.CNOT(wires=[0, 1]).inv(),
-        ]
-
-        observables = [qml.expval(qml.PauliZ(0))]
-
-        with pytest.raises(
-            DeviceError,
-            match="Gate CNOT not supported on device MockDevice",
-        ):
-            dev.check_validity(queue, observables)
-
     def test_check_validity_on_tensor_support(self, mock_device_supporting_paulis):
         """Tests the function Device.check_validity with tensor support capability"""
         dev = mock_device_supporting_paulis()
@@ -449,46 +392,6 @@ class TestInternalFunctions:
 
         with pytest.raises(DeviceError, match="Observable Hadamard not supported on device"):
             dev.check_validity(queue, observables)
-
-    def test_check_validity_on_invalid_queue_of_inverses(
-        self, mock_device_supporting_paulis_and_inverse
-    ):
-        """Tests the function Device.check_validity with invalid queue and valid inverses of operations"""
-        dev = mock_device_supporting_paulis_and_inverse()
-
-        queue = [
-            qml.PauliY(wires=1).inv(),
-            qml.PauliZ(wires=2).inv(),
-            qml.RX(1.0, wires=0).inv(),
-        ]
-
-        observables = [qml.expval(qml.PauliZ(0))]
-
-        with pytest.raises(DeviceError, match="Gate RX not supported on device"):
-            dev.check_validity(queue, observables)
-
-    def test_supports_inverse(self, mock_device_supporting_paulis_and_inverse):
-        """Tests the function Device.supports_inverse on device which supports inverses"""
-        dev = mock_device_supporting_paulis_and_inverse()
-
-        assert dev.check_validity([qml.PauliZ(0).inv()], []) is None
-        assert dev.check_validity([], [qml.PauliZ(0).inv()]) is None
-
-    def test_supports_inverse_device_does_not_support_inverses(self, mock_device_supporting_paulis):
-        """Tests the function Device.supports_inverse on device which does not support inverses"""
-        dev = mock_device_supporting_paulis()
-
-        with pytest.raises(
-            DeviceError,
-            match=f"The inverse of gates are not supported on device {dev.short_name}",
-        ):
-            dev.check_validity([qml.PauliZ(0).inv()], [])
-
-        with pytest.raises(
-            DeviceError,
-            match=f"The inverse of gates are not supported on device {dev.short_name}",
-        ):
-            dev.check_validity([], [qml.PauliZ(0).inv()])
 
     def test_args(self, mock_device):
         """Test that the device requires correct arguments"""
