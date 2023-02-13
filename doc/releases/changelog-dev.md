@@ -383,6 +383,10 @@
   DeviceArray(0., dtype=float32)
   ```
 
+* Added `qml.ops.ctrl_decomp_zyz` to compute the decomposition of a controlled single-qubit operation given
+  a single-qubit operation and the control wires.
+  [(#3681)](https://github.com/PennyLaneAI/pennylane/pull/3681)
+
 *Next generation device API:*
 
 * The `apply_operation` single-dispatch function is added to `devices/qubit` that applies an operation
@@ -392,9 +396,10 @@
 * The `create_initial_state` function is added to `devices/qubit` that returns an initial state for an execution.
   [(#3683)](https://github.com/PennyLaneAI/pennylane/pull/3683)
 
-* Added `qml.ops.ctrl_decomp_zyz` to compute the decomposition of a controlled single-qubit operation given
-  a single-qubit operation and the control wires.
-  [(#3681)](https://github.com/PennyLaneAI/pennylane/pull/3681)
+* The `simulate` function is added to `devices/qubit` that turns a single quantum tape into a measurement result.
+  The function only supports state based measurements with either no observables or observables with diagonalizing gates.
+  It supports simultanous measurement of non-commuting observables.
+  [(#3700)](https://github.com/PennyLaneAI/pennylane/pull/3700)
 
 <h3>Improvements</h3>
 
@@ -530,6 +535,10 @@
 
 * `QubitStateVector` now implements the `StatePrep` interface.
   [(#3685)](https://github.com/PennyLaneAI/pennylane/pull/3685)
+
+* `Controlled` can now decompose single qubit target operations more effectively using the ZYZ
+  decomposition.
+  [(#3726)](https://github.com/PennyLaneAI/pennylane/pull/3726)
 
 * `QuantumMonteCarlo` template is now JAX-JIT compatible when passing `jax.numpy` arrays to the template.
   [(#3734)](https://github.com/PennyLaneAI/pennylane/pull/3734)
