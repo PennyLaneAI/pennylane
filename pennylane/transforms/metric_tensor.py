@@ -319,7 +319,7 @@ def qnode_execution_wrapper(self, qnode, targs, tkwargs):
                 UserWarning,
             )
 
-        qnode = qnode.qnodes.qnodes[0]
+        qnode = qnode.qnodes[0]
 
     tkwargs.setdefault("device_wires", qnode.device.wires)
     mt_fn = self.default_qnode_wrapper(qnode, targs, tkwargs)
@@ -327,9 +327,14 @@ def qnode_execution_wrapper(self, qnode, targs, tkwargs):
     def _expand_fn(tape):
         return self.expand_fn(tape, *targs, **tkwargs)
 
-    cjac_fn = qml.transforms.classical_jacobian(qnode, expand_fn=_expand_fn)
-
     def wrapper(*args, **kwargs):
+        old_interface = qnode.interface
+
+        if old_interface == "auto":
+            qnode.interface = qml.math.get_interface(*args, *list(kwargs.values()))
+
+        cjac_fn = qml.transforms.classical_jacobian(qnode, expand_fn=_expand_fn)
+
         if not qml.math.get_trainable_indices(args):
             warnings.warn(
                 "Attempted to compute the metric tensor of a QNode with no trainable parameters. "
@@ -359,6 +364,9 @@ def qnode_execution_wrapper(self, qnode, targs, tkwargs):
                 )
             tkwargs["approx"] = "block-diag"
             return self(qnode, *targs, **tkwargs)(*args, **kwargs)
+
+        if old_interface == "auto":
+            qnode.interface = "auto"
 
         if not hybrid:
             return mt
@@ -431,7 +439,6 @@ def _metric_tensor_cov_matrix(tape, diag_approx):
         gs = []
 
         for prob, obs, coeffs in zip(probs, obs_list, coeffs_list):
-
             # calculate the covariance matrix of this layer
             scale = qml.math.convert_like(qml.math.outer(coeffs, coeffs), prob)
             scale = qml.math.cast_like(scale, prob)

@@ -266,7 +266,8 @@ class TestProperties:
         no path of decomposition would work, here we use a single control wire."""
 
         # all control values are 1, there is only one control wire but TempOperator does
-        # not have `_controlled`, is not `PauliX`, and reports `has_decomposition=False`
+        # not have `_controlled`, is not `PauliX`, doesn't have a ZYZ decomposition,
+        # and reports `has_decomposition=False`
         op = Controlled(TempOperator(0.5, 1), 0)
         assert op.has_decomposition is False
 
@@ -275,8 +276,8 @@ class TestProperties:
         no path of decomposition would work, here we use multiple control wires."""
 
         # all control values are 1, there are multiple control wires,
-        # `RX` is not `PauliX`, and reports `has_decomposition=False`
-        op = Controlled(qml.RX(0.5, 1), [0, 5])
+        # `TempOperator` is not `PauliX`, and reports `has_decomposition=False`
+        op = Controlled(TempOperator(0.5, 1), [0, 5])
         assert op.has_decomposition is False
 
     @pytest.mark.parametrize("value", (True, False))
@@ -530,7 +531,7 @@ class TestOperationProperties:
 
 
 class TestSimplify:
-    """Test qml.op_sum simplify method and depth property."""
+    """Test qml.sum simplify method and depth property."""
 
     def test_depth_property(self):
         """Test depth property."""
@@ -543,7 +544,7 @@ class TestSimplify:
             qml.RZ(1.32, wires=0) + qml.Identity(wires=0) + qml.RX(1.9, wires=1), control_wires=2
         )
         final_op = Controlled(
-            qml.op_sum(qml.RZ(1.32, wires=0), qml.Identity(wires=0), qml.RX(1.9, wires=1)),
+            qml.sum(qml.RZ(1.32, wires=0), qml.Identity(wires=0), qml.RX(1.9, wires=1)),
             control_wires=2,
         )
         simplified_op = controlled_op.simplify()
@@ -841,6 +842,36 @@ class TestDecomposition:
             # pylint: disable=unused-variable
             decomp = op.expand().circuit if test_expand else op.decomposition()
 
+    def test_zyz_decomp_no_control_values(self, test_expand):
+        """Test that the ZYZ decomposition is used for single qubit target operations
+        when other decompositions aren't available."""
+
+        base = qml.RX(0.123, wires="a")
+        op = Controlled(base, (0, 1, 2))
+
+        assert op.has_decomposition
+        decomp = op.expand().circuit if test_expand else op.decomposition()
+        expected = qml.ops.ctrl_decomp_zyz(base, (0, 1, 2))
+        for op, exp_op in zip(decomp, expected):
+            assert qml.equal(op, exp_op)
+
+    def test_zyz_decomp_control_values(self, test_expand):
+        """Test that the ZYZ decomposition is used for single qubit target operations
+        when other decompositions aren't available and control values are present."""
+
+        base = qml.RX(0.123, wires="a")
+        op = Controlled(base, (0, 1, 2), control_values=[True, False, False])
+
+        assert op.has_decomposition
+        decomp = op.expand().circuit if test_expand else op.decomposition()
+        assert qml.equal(qml.PauliX(1), decomp[0])
+        assert qml.equal(qml.PauliX(2), decomp[1])
+        assert qml.equal(qml.PauliX(1), decomp[-2])
+        assert qml.equal(qml.PauliX(2), decomp[-1])
+        expected = qml.ops.ctrl_decomp_zyz(base, (0, 1, 2))
+        for op, exp_op in zip(decomp[2:-2], expected):
+            assert qml.equal(op, exp_op)
+
 
 class TestArithmetic:
     """Test arithmetic decomposition methods."""
@@ -922,7 +953,7 @@ class TestDifferentiation:
         dev = qml.device("default.qubit", wires=2)
         init_state = torch.tensor([1.0, -1.0], requires_grad=False) / np.sqrt(2)
 
-        @qml.qnode(dev, diff_method=diff_method, interface="torch")
+        @qml.qnode(dev, diff_method=diff_method)
         def circuit(b):
             qml.QubitStateVector(init_state, wires=0)
             Controlled(qml.RY(b, wires=1), control_wires=0)
@@ -938,7 +969,7 @@ class TestDifferentiation:
         assert np.allclose(res, expected)
 
     @pytest.mark.jax
-    @pytest.mark.parametrize("jax_interface", ["jax", "jax-python", "jax-jit"])
+    @pytest.mark.parametrize("jax_interface", ["auto", "jax", "jax-python"])
     def test_jax(self, diff_method, jax_interface):
         """Test differentiation using JAX"""
 
@@ -969,7 +1000,7 @@ class TestDifferentiation:
         dev = qml.device("default.qubit", wires=2)
         init_state = tf.constant([1.0, -1.0], dtype=tf.complex128) / np.sqrt(2)
 
-        @qml.qnode(dev, diff_method=diff_method, interface="tf")
+        @qml.qnode(dev, diff_method=diff_method)
         def circuit(b):
             qml.QubitStateVector(init_state, wires=0)
             Controlled(qml.RY(b, wires=1), control_wires=0)
@@ -1048,7 +1079,8 @@ class TestControlledSupportsBroadcasting:
     @pytest.mark.parametrize("name", single_scalar_single_wire_ops)
     def test_controlled_of_single_scalar_single_wire_ops(self, name):
         """Test that a Controlled operation whose base is a single-scalar-parameter operations
-        on a single wire marked as supporting parameter broadcasting actually do support broadcasting."""
+        on a single wire marked as supporting parameter broadcasting actually do support broadcasting.
+        """
         par = np.array([0.25, 2.1, -0.42])
         wires = ["wire0"]
 
@@ -1064,7 +1096,8 @@ class TestControlledSupportsBroadcasting:
     @pytest.mark.parametrize("name", single_scalar_multi_wire_ops)
     def test_controlled_single_scalar_multi_wire_ops(self, name):
         """Test that a Controlled operation whose base is a single-scalar-parameter operations
-        on multiple wires marked as supporting parameter broadcasting actually do support broadcasting."""
+        on multiple wires marked as supporting parameter broadcasting actually do support broadcasting.
+        """
         par = np.array([0.25, 2.1, -0.42])
         cls = getattr(qml, name)
 
@@ -1082,7 +1115,8 @@ class TestControlledSupportsBroadcasting:
     @pytest.mark.parametrize("name", two_scalar_single_wire_ops)
     def test_controlled_two_scalar_single_wire_ops(self, name):
         """Test that a Controlled operation whose base is a two-scalar-parameter operations
-        on a single wire marked as supporting parameter broadcasting actually do support broadcasting."""
+        on a single wire marked as supporting parameter broadcasting actually do support broadcasting.
+        """
         par = (np.array([0.25, 2.1, -0.42]), np.array([-6.2, 0.12, 0.421]))
         wires = ["wire0"]
 
@@ -1099,7 +1133,8 @@ class TestControlledSupportsBroadcasting:
     @pytest.mark.parametrize("name", three_scalar_single_wire_ops)
     def test_controlled_three_scalar_single_wire_ops(self, name):
         """Test that a Controlled operation whose base is a three-scalar-parameter operations
-        on a single wire marked as supporting parameter broadcasting actually do support broadcasting."""
+        on a single wire marked as supporting parameter broadcasting actually do support broadcasting.
+        """
         par = (
             np.array([0.25, 2.1, -0.42]),
             np.array([-6.2, 0.12, 0.421]),
@@ -1120,7 +1155,8 @@ class TestControlledSupportsBroadcasting:
     @pytest.mark.parametrize("name", three_scalar_multi_wire_ops)
     def test_controlled_three_scalar_multi_wire_ops(self, name):
         """Test that a Controlled operation whose base is a three-scalar-parameter operations
-        on multiple wires marked as supporting parameter broadcasting actually do support broadcasting."""
+        on multiple wires marked as supporting parameter broadcasting actually do support broadcasting.
+        """
         par = (
             np.array([0.25, 2.1, -0.42]),
             np.array([-6.2, 0.12, 0.421]),
@@ -1346,23 +1382,23 @@ def test_adjoint_of_ctrl():
         qml.RZ(c, wires=0)
 
     with qml.queuing.AnnotatedQueue() as q1:
-        cmy_op_dagger = qml.adjoint(ctrl(my_op, 5))
+        cmy_op_dagger = qml.simplify(qml.adjoint(ctrl(my_op, 5)))
         # Execute controlled and adjointed version of my_op.
         cmy_op_dagger(0.789, 0.123, c=0.456)
 
     tape1 = QuantumScript.from_queue(q1)
     with qml.queuing.AnnotatedQueue() as q2:
-        cmy_op_dagger = ctrl(qml.adjoint(my_op), 5)
+        cmy_op_dagger = qml.simplify(ctrl(qml.adjoint(my_op), 5))
         # Execute adjointed and controlled version of my_op.
         cmy_op_dagger(0.789, 0.123, c=0.456)
 
     tape2 = QuantumScript.from_queue(q2)
     expected = [
-        qml.CRZ(-0.456, wires=[5, 0]),
-        qml.CRY(-0.123, wires=[5, 3]),
-        qml.CRX(-0.789, wires=[5, 2]),
+        qml.CRZ(4 * onp.pi - 0.456, wires=[5, 0]),
+        qml.CRY(4 * onp.pi - 0.123, wires=[5, 3]),
+        qml.CRX(4 * onp.pi - 0.789, wires=[5, 2]),
     ]
-    for tape in [tape1.expand(depth=2), tape2.expand(depth=2)]:
+    for tape in [tape1.expand(depth=1), tape2.expand(depth=1)]:
         for op1, op2 in zip(tape, expected):
             assert qml.equal(op1, op2)
 
@@ -1583,7 +1619,7 @@ class TestCtrlTransformDifferentiation:
         dev = qml.device("default.qubit", wires=2)
         init_state = torch.tensor([1.0, -1.0], requires_grad=False) / np.sqrt(2)
 
-        @qml.qnode(dev, diff_method=diff_method, interface="torch")
+        @qml.qnode(dev, diff_method=diff_method)
         def circuit(b):
             qml.QubitStateVector(init_state, wires=0)
             qml.ctrl(qml.RY, control=0)(b, wires=[1])
@@ -1599,7 +1635,7 @@ class TestCtrlTransformDifferentiation:
         assert np.allclose(res, expected)
 
     @pytest.mark.jax
-    @pytest.mark.parametrize("jax_interface", ["jax", "jax-python", "jax-jit"])
+    @pytest.mark.parametrize("jax_interface", ["auto", "jax", "jax-python"])
     def test_jax(self, diff_method, jax_interface):
         """Test differentiation using JAX"""
 
@@ -1630,7 +1666,7 @@ class TestCtrlTransformDifferentiation:
         dev = qml.device("default.qubit", wires=2)
         init_state = tf.constant([1.0, -1.0], dtype=tf.complex128) / np.sqrt(2)
 
-        @qml.qnode(dev, diff_method=diff_method, interface="tf")
+        @qml.qnode(dev, diff_method=diff_method)
         def circuit(b):
             qml.QubitStateVector(init_state, wires=0)
             qml.ctrl(qml.RY, control=0)(b, wires=[1])

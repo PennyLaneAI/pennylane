@@ -50,7 +50,6 @@ def get_jax_interface_name(tapes):
     """
     for t in tapes:
         for op in t:
-
             # Unwrap the observable from a MeasurementProcess
             op = op.obs if hasattr(op, "obs") else op
             if op is not None:
@@ -135,7 +134,6 @@ def _validate_tapes(tapes):
         InterfaceUnsupportedError: if tapes that produce ragged outputs were provided
     """
     for t in tapes:
-
         measurement_types = [type(m) for m in t.measurements]
         set_of_measurement_types = set(measurement_types)
         probs_or_sample_measure = (
@@ -195,7 +193,6 @@ def _execute(
         return wrapped_exec(params), params
 
     def wrapped_exec_bwd(params, g):
-
         if isinstance(gradient_fn, qml.gradients.gradient_transform):
             args = tuple(params) + (g,)
 
@@ -333,7 +330,6 @@ def _execute_fwd(
         return res, tuple([jacs, params])
 
     def wrapped_exec_bwd(params, g):
-
         # Use the jacobian that was computed on the forward pass
         jacs, params = params
 
@@ -462,7 +458,6 @@ def _execute_bwd_new(
 
         if isinstance(gradient_fn, qml.gradients.gradient_transform):
             if _n == max_diff:
-
                 with qml.tape.Unwrap(*new_tapes):
                     jvp_tapes, processing_fn = qml.gradients.batch_jvp(
                         new_tapes,
