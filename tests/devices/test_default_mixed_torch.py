@@ -14,7 +14,7 @@
 """
 Tests for the ``default.mixed`` device for the Torch interface.
 """
-# pylint: disable=protected-access
+# pylint: disable=protected-access, import-outside-toplevel
 import pytest
 import numpy as np
 
