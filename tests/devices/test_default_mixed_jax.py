@@ -14,13 +14,12 @@
 """
 Tests for the ``default.mixed`` device for the JAX interface
 """
-import re
+#pylint: disable=protected-access
 import pytest
 
 import pennylane as qml
 from pennylane import numpy as np
 from pennylane.devices.default_mixed import DefaultMixed
-from pennylane import DeviceError
 
 pytestmark = pytest.mark.jax
 
@@ -40,7 +39,7 @@ class TestQNodeIntegration:
         """Test that the plugin device loads correctly"""
         dev = qml.device("default.mixed", wires=2)
         assert dev.num_wires == 2
-        assert dev.shots == None
+        assert dev.shots is None
         assert dev.short_name == "default.mixed"
         assert dev.capabilities()["passthru_devices"]["jax"] == "default.mixed"
 
@@ -102,7 +101,7 @@ class TestDtypePreserved:
             qml.probs(wires=[2, 0]),
         ],
     )
-    def test_real_dtype(self, enable_x64, r_dtype, measurement, tol):
+    def test_real_dtype(self, enable_x64, r_dtype, measurement):
         """Test that the user-defined dtype of the device is preserved
         for QNodes with real-valued outputs"""
         config.config.update("jax_enable_x64", enable_x64)
@@ -123,7 +122,7 @@ class TestDtypePreserved:
         "measurement",
         [qml.state(), qml.density_matrix(wires=[1]), qml.density_matrix(wires=[2, 0])],
     )
-    def test_complex_dtype(self, enable_x64, c_dtype, measurement, tol):
+    def test_complex_dtype(self, enable_x64, c_dtype, measurement):
         """Test that the user-defined dtype of the device is preserved
         for QNodes with complex-valued outputs"""
         config.config.update("jax_enable_x64", enable_x64)
@@ -290,20 +289,20 @@ class TestPassthruIntegration:
         res = decorator(jacobian_fn(circuit1, 0))(p_jax)
         assert np.allclose(res, qml.jacobian(circuit2)(p), atol=tol, rtol=0)
 
-    # TODO: Uncomment the following tests once #3612 is merged
     @pytest.mark.parametrize(
         "op, wire_ids, exp_fn",
         [
             (qml.RY, [0], lambda a: -jnp.sin(a)),
-            # (qml.AmplitudeDamping, [0], lambda a: -2),
-            # (qml.DepolarizingChannel, [-1], lambda a: -4 / 3),
-            # (lambda a, wires: qml.ResetError(p0=a, p1=0.1, wires=wires), [0], lambda a: -2),
-            # (lambda a, wires: qml.ResetError(p0=0.1, p1=a, wires=wires), [0], lambda a: 0),
+            (qml.AmplitudeDamping, [0], lambda a: -2),
+            (qml.DepolarizingChannel, [-1], lambda a: -4 / 3),
+            (lambda a, wires: qml.ResetError(p0=a, p1=0.1, wires=wires), [0], lambda a: -2),
+            (lambda a, wires: qml.ResetError(p0=0.1, p1=a, wires=wires), [0], lambda a: 0),
         ],
     )
     @pytest.mark.parametrize("decorator", decorators)
     def test_state_differentiability(self, decorator, op, wire_ids, exp_fn, tol):
         """Test that the device state can be differentiated"""
+        #pylint: disable=too-many-arguments
         config.config.update("jax_enable_x64", True)
 
         dev = qml.device("default.mixed", wires=1)

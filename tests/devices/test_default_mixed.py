@@ -14,8 +14,12 @@
 """
 Unit tests for the :mod:`pennylane.devices.DefaultMixed` device.
 """
+#pylint: disable=protected-access
 
+import copy
 import pytest
+import numpy as np
+
 import pennylane as qml
 from pennylane import QubitStateVector, BasisState, DeviceError
 from pennylane.devices import DefaultMixed
@@ -36,24 +40,24 @@ from pennylane.ops import (
 )
 from pennylane.wires import Wires
 
-import numpy as np
-
 INV_SQRT2 = 1 / np.sqrt(2)
 
 
-# functions for creating different states used in testing
 def basis_state(index, nr_wires):
+    """Generate the density matrix of the computational basis state
+    indicated by ``index``."""
     rho = np.zeros((2**nr_wires, 2**nr_wires), dtype=np.complex128)
     rho[index, index] = 1
     return rho
 
 
 def hadamard_state(nr_wires):
-    """Equal superposition state (Hadamard on all qubits)"""
+    """Generate the equal superposition state (Hadamard on all qubits)"""
     return np.ones((2**nr_wires, 2**nr_wires), dtype=np.complex128) / (2**nr_wires)
 
 
 def max_mixed_state(nr_wires):
+    """Generate the maximally mixed state."""
     return np.eye(2**nr_wires, dtype=np.complex128) / (2**nr_wires)
 
 
@@ -65,6 +69,7 @@ def root_state(nr_wires):
 
 
 def random_state(num_wires):
+    """Generate a random density matrix."""
     shape = (2**num_wires, 2**num_wires)
     state = np.random.random(shape) + 1j * np.random.random(shape)
     state = state @ state.T.conj()
@@ -154,6 +159,7 @@ class TestReset:
     """Unit tests for the method `reset()`"""
 
     def test_reset_basis(self, nr_wires, tol):
+        """Test the reset after creating a basis state."""
         dev = qml.device("default.mixed", wires=nr_wires)
         dev._state = dev._create_basis_state(1)
         dev.reset()
@@ -178,6 +184,7 @@ class TestReset:
             ResetError(0.1, 0.5, wires=[0]),
             PauliError("X", 0.5, wires=0),
             PauliError("ZY", 0.3, wires=[1, 0]),
+            PauliX(0), PauliZ(0), Hadamard(0),
         ],
     )
     def test_reset_after_channel(self, nr_wires, op, tol):
@@ -185,16 +192,6 @@ class TestReset:
         wires"""
         dev = qml.device("default.mixed", wires=nr_wires)
         dev.apply([op])
-        dev.reset()
-
-        assert np.allclose(dev._state, dev._create_basis_state(0), atol=tol, rtol=0)
-
-    @pytest.mark.parametrize("op", [PauliX, PauliZ, Hadamard])
-    def test_reset_after_channel(self, nr_wires, op, tol):
-        """Tests that state is correctly reset after applying gates on the first
-        wire"""
-        dev = qml.device("default.mixed", wires=nr_wires)
-        dev.apply([op(wires=0)])
         dev.reset()
 
         assert np.allclose(dev._state, dev._create_basis_state(0), atol=tol, rtol=0)
@@ -508,6 +505,7 @@ class TestApplyChannel:
     @pytest.mark.parametrize("op", ops)
     @pytest.mark.parametrize("num_dev_wires", [1, 2, 3])
     def test_channel_against_matmul(self, num_dev_wires, op, apply_method, tol):
+        """Test the application of a channel againt matrix multiplication."""
         if num_dev_wires < max(op.wires) + 1:
             pytest.skip("Need at least as many wires in the device as in the operation.")
         np.random.seed(52)
@@ -871,7 +869,7 @@ class TestApplyOperation:
         spy_diagonal_unitary = mocker.spy(dev, "_apply_diagonal_unitary")
         spy_apply_channel = mocker.spy(dev, "_apply_channel")
 
-        initialstate = dev.state.__copy__()
+        initialstate = copy.copy(dev.state)
 
         dev._apply_operation(op)
 
