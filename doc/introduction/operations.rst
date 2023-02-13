@@ -491,16 +491,6 @@ Pulse operator
     :nosignatures:
 
     ~pennylane.pulse.ParametrizedEvolution
-
-:html:`</div>`
-
-This operator can be created via the :class:`~.ParametrizedHamiltonian` to Operator function:
-
-:html:`<div class="summary-table">`
-
-.. autosummary::
-    :nosignatures:
-
-    ~pennylane.evolve
+    ~pennylane.pulse.ParametrizedHamiltonian
 
 :html:`</div>`

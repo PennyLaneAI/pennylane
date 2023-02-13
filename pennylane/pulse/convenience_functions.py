@@ -176,7 +176,7 @@ def rect(x: Union[float, Callable], windows: List[Tuple[float]] = None):
 
 
 def pwc(timespan):
-    """Takes a timespan and returns a callable for creating a function that is piecewise-constant in time. The returned
+    """Takes a timespan and returns a callable for creating a function that is piece-wise constant in time. The returned
     function takes arguments ``(p, t)``, where ``p`` is an array that defines the bin values for the function.
 
     Creates a callable for defining a :class:`~.ParametrizedHamiltonian`.
@@ -198,7 +198,7 @@ def pwc(timespan):
                 return p[int(t/len(p))]
             return wrapped
 
-    This function can be used to create a parametrized coefficient function that is piecewise constant
+    This function can be used to create a parametrized coefficient function that is piece-wise constant
     within the interval ``t``, and 0 outside it. When creating the callable, only the timespan is passed. The number
     of bins and values for the parameters are set when ``params`` is passed to the callable. Each bin value is set by
     an element of the ``params`` array. The variable ``t`` is used to select the value of the parameter array
@@ -234,7 +234,7 @@ def pwc(timespan):
     >>> H = f1 * qml.PauliX(0)
 
     The resulting function ``f1`` has the call signature ``f1(params, t)``. If passed an array of parameters and
-    a time, it will assign the array as the constants in the piecewise function, and select the constant corresponding
+    a time, it will assign the array as the constants in the piece-wise function, and select the constant corresponding
     to the specified time, based on the time interval defined by ``timespan``.
 
     In the following example, passing ``pwc((2, 7))`` an array evenly distributes the array values in the
@@ -279,7 +279,7 @@ def pwc(timespan):
 
 def pwc_from_function(timespan, num_bins):
     """
-    Decorates a smooth function, creating a piecewise constant function that approximates it.
+    Decorates a smooth function, creating a piece-wise constant function that approximates it.
 
     Creates a callable for defining a :class:`~.ParametrizedHamiltonian`.
 
@@ -290,7 +290,7 @@ def pwc_from_function(timespan, num_bins):
 
     Returns:
             a function that takes some smooth function ``f(params, t)`` and converts it to a
-            piecewise constant function spanning time ``t`` in `num_bins` bins.
+            piece-wise constant function spanning time ``t`` in `num_bins` bins.
 
     **Example**
 

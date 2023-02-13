@@ -81,10 +81,6 @@ def evolve(*args, **kwargs):  # pylint: disable=unused-argument
 
     .. math:: |\psi(t_1)\rangle = U(t_0, t_1) |\psi(t_0)\rangle
 
-    .. note::
-        The :class:`~.ParametrizedHamiltonian` must be Hermitian at all times. This is not explicitly
-        checked; ensuring a correctly defined Hamiltonian is the responsibility of the user.
-
     The :class:`~.ParametrizedEvolution` class uses a numerical ordinary differential equation
     solver (`here <https://github.com/google/jax/blob/main/jax/experimental/ode.py>`_).
 

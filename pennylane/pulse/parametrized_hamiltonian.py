@@ -46,6 +46,14 @@ class ParametrizedHamiltonian:
     Calling the ``ParametrizedHamiltonian`` returns an :class:`~.Operator` representing an instance of the
     Hamiltonian with the specified parameter values.
 
+    .. seealso::
+
+        :class:`~.ParametrizedEvolution`
+
+    .. note::
+        The :class:`~.ParametrizedHamiltonian` must be Hermitian at all times. This is not explicitly
+        checked; ensuring a correctly defined Hamiltonian is the responsibility of the user.
+
     **Example**
 
     A ``ParametrizedHamiltonian`` can be created using :func:`~.pennylane.dot`, by passing a list of coefficients,
@@ -61,13 +69,14 @@ class ParametrizedHamiltonian:
         H = qml.dot(coeffs, observables)
 
     The resulting object can be passed parameters, and will return an :class:`~.Operator` representing the
-    ``ParametrizedHamiltonian`` with the specified parameters.
+    ``ParametrizedHamiltonian`` with the specified parameters. Note that parameters must be passed in the order
+    the functions were passed in creating the ``ParametrizedHamiltonian``:
 
     .. code-block:: python3
 
         p1 = jnp.array([1., 1.])
         p2 = 1.
-        params = [p1, p2]
+        params = [p1, p2]  # p1 is passed to f1, and p2 to f2
         >>> H(params, t=1.)
         (2.0*(PauliX(wires=[0]))) + ((0.8414709568023682*(PauliY(wires=[0]))) + (1.0*(PauliZ(wires=[0]))))
 
@@ -83,6 +92,7 @@ class ParametrizedHamiltonian:
     2*(PauliX(wires=[0]))
     >>> H.H_parametrized([[1.2, 2.3], 4.5], 0.5)
     (1.095316767692566*(PauliY(wires=[0]))) + (2.25*(PauliZ(wires=[0])))
+
 
     .. details::
         :title: Usage Details
@@ -100,8 +110,9 @@ class ParametrizedHamiltonian:
 
             H = 2 * qml.PauliX(0) + f1 * qml.PauliY(0) + f2 * qml.PauliZ(0)
 
-        Whichever method is used for initializing a :class:`~.ParametrizedHamiltonian`, the terms defined with fixed
-        coefficients should come before parametrized terms to prevent discrepancy in the wire order.
+        .. note::
+            Whichever method is used for initializing a :class:`~.ParametrizedHamiltonian`, the terms defined with fixed
+            coefficients should come before parametrized terms to prevent discrepancy in the wire order.
 
         .. note::
             The parameters used in the ``ParametrizedHamiltonian`` call should have the same order
