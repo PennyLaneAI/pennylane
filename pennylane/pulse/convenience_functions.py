@@ -259,7 +259,7 @@ def pwc(timespan):
             "You can install jax via: pip install jax"
         )
 
-    if isinstance(timespan, tuple):
+    if len(timespan) == 2:
         t1, t2 = timespan
     else:
         t1 = 0
