@@ -325,6 +325,8 @@ def qnode_execution_wrapper(self, qnode, targs, tkwargs):
     mt_fn = self.default_qnode_wrapper(qnode, targs, tkwargs)
 
     def _expand_fn(tape):
+        # Currently does not support it
+        tkwargs.pop("argnums", None)
         return self.expand_fn(tape, *targs, **tkwargs)
 
     def wrapper(*args, **kwargs):
