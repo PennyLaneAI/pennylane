@@ -692,6 +692,9 @@
   This new function changes the sign of the given parameter.
   [(#3706)](https://github.com/PennyLaneAI/pennylane/pull/3706)
 
+* `ApproxTimeEvolution` has been deprecated. Please use `qml.evolve` instead.
+  [(#3755)](https://github.com/PennyLaneAI/pennylane/pull/3755)
+
 <h3>Documentation</h3>
 
 * Organizes the module for documentation for ``operation``.
