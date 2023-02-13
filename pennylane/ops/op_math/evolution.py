@@ -79,7 +79,6 @@ class Evolution(Exp):
 
     _name = "Evolution"
     num_params = 1
-    grad_method = "A"
 
     # pylint: disable=too-many-arguments
     def __init__(self, generator, param=1, num_steps=None, do_queue=True, id=None):
@@ -112,6 +111,10 @@ class Evolution(Exp):
             else format(math.toarray(self.data[0]), f".{decimals}f")
         )
         return base_label or f"Exp({param}j {self.base.label(decimals=decimals, cache=cache)})"
+
+    @property
+    def grad_method(self):
+        return self.base.grad_method if hasattr(self.base, "grad_method") else None
 
     def simplify(self):
         new_base = self.base.simplify()
