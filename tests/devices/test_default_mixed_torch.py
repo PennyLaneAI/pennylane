@@ -198,27 +198,24 @@ class TestOps:
         spy.assert_called()
 
 
-@pytest.mark.torch
 class TestApplyChannelMethodChoice:
     """Test that the right method between _apply_channel and _apply_channel_tensordot
     is chosen."""
 
-    import torch
-
     @pytest.mark.parametrize(
         "op, exp_method, dev_wires",
         [
-            (qml.RX(torch.tensor(0.2), 0), "_apply_channel", 1),
-            (qml.RX(torch.tensor(0.2), 0), "_apply_channel", 8),
+            (qml.RX(0.2, 0), "_apply_channel", 1),
+            (qml.RX(0.2, 0), "_apply_channel", 8),
             (qml.CNOT([0, 1]), "_apply_channel", 3),
             (qml.CNOT([0, 1]), "_apply_channel", 8),
             (qml.MultiControlledX(wires=list(range(2))), "_apply_channel", 3),
             (qml.MultiControlledX(wires=list(range(3))), "_apply_channel_tensordot", 3),
             (qml.MultiControlledX(wires=list(range(8))), "_apply_channel_tensordot", 8),
-            (qml.PauliError("X", torch.tensor(0.5), 0), "_apply_channel", 2),
-            (qml.PauliError("XXX", torch.tensor(0.5), [0, 1, 2]), "_apply_channel", 4),
+            (qml.PauliError("X", 0.5, 0), "_apply_channel", 2),
+            (qml.PauliError("XXX", 0.5, [0, 1, 2]), "_apply_channel", 4),
             (
-                qml.PauliError("X" * 8, torch.tensor(0.5), list(range(8))),
+                qml.PauliError("X" * 8, 0.5, list(range(8))),
                 "_apply_channel_tensordot",
                 8,
             ),
@@ -227,6 +224,9 @@ class TestApplyChannelMethodChoice:
     def test_with_numpy_state(self, mocker, op, exp_method, dev_wires):
         """Test with a numpy array as device state."""
 
+        # Manually set the data of the operation to be torch data
+        # This is due to an import problem if these tests are skipped.
+        op.data = [d if isinstance(d, str) else torch.tensor(d) for d in op.data]
         methods = ["_apply_channel", "_apply_channel_tensordot"]
         del methods[methods.index(exp_method)]
         unexp_method = methods[0]
@@ -244,17 +244,17 @@ class TestApplyChannelMethodChoice:
     @pytest.mark.parametrize(
         "op, exp_method, dev_wires",
         [
-            (qml.RX(torch.tensor(0.2), 0), "_apply_channel", 1),
-            (qml.RX(torch.tensor(0.2), 0), "_apply_channel", 8),
+            (qml.RX(0.2, 0), "_apply_channel", 1),
+            (qml.RX(0.2, 0), "_apply_channel", 8),
             (qml.CNOT([0, 1]), "_apply_channel", 3),
             (qml.CNOT([0, 1]), "_apply_channel", 8),
             (qml.MultiControlledX(wires=list(range(2))), "_apply_channel", 3),
             (qml.MultiControlledX(wires=list(range(3))), "_apply_channel", 3),
             (qml.MultiControlledX(wires=list(range(8))), "_apply_channel_tensordot", 8),
-            (qml.PauliError("X", torch.tensor(0.5), 0), "_apply_channel", 2),
-            (qml.PauliError("XXX", torch.tensor(0.5), [0, 1, 2]), "_apply_channel", 4),
+            (qml.PauliError("X", 0.5, 0), "_apply_channel", 2),
+            (qml.PauliError("XXX", 0.5, [0, 1, 2]), "_apply_channel", 4),
             (
-                qml.PauliError("X" * 8, torch.tensor(0.5), list(range(8))),
+                qml.PauliError("X" * 8, 0.5, list(range(8))),
                 "_apply_channel_tensordot",
                 8,
             ),
@@ -263,6 +263,9 @@ class TestApplyChannelMethodChoice:
     def test_with_torch_state(self, mocker, op, exp_method, dev_wires):
         """Test with a Torch array as device state."""
 
+        # Manually set the data of the operation to be torch data
+        # This is due to an import problem if these tests are skipped.
+        op.data = [d if isinstance(d, str) else torch.tensor(d) for d in op.data]
         methods = ["_apply_channel", "_apply_channel_tensordot"]
         del methods[methods.index(exp_method)]
         unexp_method = methods[0]
