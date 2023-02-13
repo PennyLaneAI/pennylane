@@ -28,13 +28,15 @@ class RydbergEnsemble:
         qubit_positions (list): list of coordinates of each atom in the ensemble
         wires (list): List of wires for each atom in the ensemble. If ``None``, the wire values
             correspond to the index of the atom in the list of qubit positions. Defaults to ``None``.
+        distance (float): Separation distance between atoms (in meters). Defaults to 1e-6.
 
     Returns:
         RydbergEnsemble: class representing an ensemble of Rydberg atoms
     """
 
-    def __init__(self, qubit_positions: list, wires: list = None) -> None:
+    def __init__(self, qubit_positions: list, wires: list = None, distance: float = 1e-6) -> None:
         self.qubit_positions = qubit_positions
+        self.distance = distance
         self._rydberg_interaction = None
         self.wires = wires or range(len(qubit_positions))
 
@@ -83,7 +85,7 @@ class RydbergEnsemble:
         ops = []
         for idx, (pos1, wire1) in enumerate(zip(self.qubit_positions[1:], self.wires[1:])):
             for pos2, wire2 in zip(self.qubit_positions[: idx + 1], self.wires[: idx + 1]):
-                atom_distance = np.linalg.norm(qml.math.array(pos2) - pos1)
+                atom_distance = self.distance * np.linalg.norm(qml.math.array(pos2) - pos1)
                 Vij = 1 / (abs(atom_distance) ** 6)  # van der Waals potential
                 coeffs.append(Vij)
                 ops.append(qml.prod(rydberg_projector(wire1), rydberg_projector(wire2)))
