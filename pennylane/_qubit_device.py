@@ -1619,12 +1619,12 @@ class QubitDevice(Device):
         desired_axes = np.argsort(np.argsort(device_wires))
         flat_shape = (-1,)
         if batch_size is not None:
+            # prob now is reshaped to have self.num_wires+1 axes in the case of broadcasting
             shape.insert(0, batch_size)
             inactive_device_wires = [idx + 1 for idx in inactive_device_wires]
             desired_axes = np.insert(desired_axes + 1, 0, 0)
             flat_shape = (batch_size, -1)
 
-        # prob now is reshaped to have self.num_wires+1 axes in the case of broadcasting
         prob = self._reshape(prob, shape)
         # sum over all inactive wires
         prob = self._reduce_sum(prob, inactive_device_wires)
