@@ -17,13 +17,14 @@ import pennylane as qml
 from pennylane import numpy as np
 
 
-def sample_state(state, shots: int, rng=None) -> np.ndarray:
+def sample_state(state, shots: int, wires=None, rng=None) -> np.ndarray:
     """
     Returns a series of samples of a state.
 
     Args:
         state (array[complex]): A state vector to be sampled
         shots (int): The number of samples to take
+        wires (Sequence[int]): The wires to sample
         rng (Union[None, int, array_like[int], SeedSequence, BitGenerator, Generator]):
             A seed-like parameter matching that of ``seed`` for ``numpy.random.default_rng``.
             If no value is provided, a default RNG will be used
@@ -32,14 +33,12 @@ def sample_state(state, shots: int, rng=None) -> np.ndarray:
         ndarray: Sample values of the shape (shots, num_wires)
     """
     rng = np.random.default_rng(rng)
-    num_wires = len(state.shape)
+    state_wires = qml.wires.Wires(range(len(state.shape)))
+    wires_to_sample = wires or state_wires
+    num_wires = len(wires_to_sample)
     basis_states = np.arange(2**num_wires)
 
-    flat_state = qml.math.flatten(state)
-    real_state = qml.math.real(flat_state)
-    imag_state = qml.math.imag(flat_state)
-    probs = real_state**2 + imag_state**2
-
+    probs = qml.probs(wires=wires_to_sample).process_state(state, state_wires)
     samples = rng.choice(basis_states, shots, p=probs)
     powers_of_two = 1 << np.arange(num_wires, dtype=np.int64)
     states_sampled_base_ten = samples[..., None] & powers_of_two
