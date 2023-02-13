@@ -393,6 +393,10 @@
   to a state and returns a new state.
   [(#3637)](https://github.com/PennyLaneAI/pennylane/pull/3637)
 
+* The `preprocess` function is added to `devices/qubit` that validates, expands, and transforms a batch
+  of `QuantumTape` objects to abstract preprocessing details away from the device.
+  [(#3708)](https://github.com/PennyLaneAI/pennylane/pull/3708)
+
 * The `create_initial_state` function is added to `devices/qubit` that returns an initial state for an execution.
   [(#3683)](https://github.com/PennyLaneAI/pennylane/pull/3683)
 
@@ -487,6 +491,9 @@
   a `UserWarning` is raised. A list of the current expected gradient function keyword arguments can be accessed via
   `qml.gradients.SUPPORTED_GRADIENT_KWARGS`.
   [(#3526)](https://github.com/PennyLaneAI/pennylane/pull/3526)
+
+* Moved `qml.utils.sparse_hamiltonian` function to `~.Hamiltonian.sparse_matrix` method.
+  [(#3585)](https://github.com/PennyLaneAI/pennylane/pull/3585)
 
 * The `PauliSentence.operation()` method has been improved to avoid instantiating an `SProd` operator when
   the coefficient is equal to 1.
@@ -636,6 +643,10 @@
 
 <h3>Deprecations</h3>
 
+* `qml.utils.sparse_hamiltonian` function has been deprecated, and usage will now raise a warning.
+  Instead, one should use the `~.Hamiltonian.sparse_matrix` method.
+  [(#3585)](https://github.com/PennyLaneAI/pennylane/pull/3585)
+
 * Deprecate the `collections` module.
   [(#3686)](https://github.com/PennyLaneAI/pennylane/pull/3686)
 
@@ -711,6 +722,10 @@
 * Redirect `qml.math.ndim` to `jnp.ndim` when using it on a jax tensor.
   [(#3730)](https://github.com/PennyLaneAI/pennylane/pull/3730)
 
+* Implementations of `marginal_prob` (and subsequently, `qml.probs`) now return
+  probabilities with the expected wire order.
+  [(#3753)](https://github.com/PennyLaneAI/pennylane/pull/3753)
+
 <h3>Contributors</h3>
 
 This release contains contributions from (in alphabetical order):
@@ -719,6 +734,7 @@ Guillermo Alonso-Linaje
 Juan Miguel Arrazola
 Ikko Ashimine
 Utkarsh Azad
+Miriam Beddig
 Cristian Boghiu
 Astral Cai
 Isaac De Vlugt
