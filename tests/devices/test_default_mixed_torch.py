@@ -14,7 +14,7 @@
 """
 Tests for the ``default.mixed`` device for the Torch interface.
 """
-#pylint: disable=protected-access
+# pylint: disable=protected-access
 import pytest
 
 import pennylane as qml
@@ -299,16 +299,16 @@ class TestPassthruIntegration:
         "op, wire_ids, exp_fn",
         [
             (qml.RY, [0], lambda a: -torch.sin(a)),
-            (qml.AmplitudeDamping, [0], lambda a: -2),
+            (qml.AmplitudeDamping, [0], lambda a: -2.0),
             (qml.DepolarizingChannel, [-1], lambda a: -4 / 3),
-            (lambda a, wires: qml.ResetError(p0=a, p1=0.1, wires=wires), [0], lambda a: -2),
-            (lambda a, wires: qml.ResetError(p0=0.1, p1=a, wires=wires), [0], lambda a: 0),
+            (lambda a, wires: qml.ResetError(p0=a, p1=0.1, wires=wires), [0], lambda a: -2.0),
+            (lambda a, wires: qml.ResetError(p0=0.1, p1=a, wires=wires), [0], lambda a: 0.0),
         ],
     )
     @pytest.mark.parametrize("wires", [[0], ["abc"]])
     def test_state_differentiability(self, wires, op, wire_ids, exp_fn, tol):
         """Test that the device state can be differentiated"""
-        #pylint: disable=too-many-arguments
+        # pylint: disable=too-many-arguments
         dev = qml.device("default.mixed", wires=wires)
 
         @qml.qnode(dev, diff_method="backprop", interface="torch")
@@ -324,7 +324,7 @@ class TestPassthruIntegration:
         res = res[1][1] - res[0][0]
         res.backward()
 
-        expected = exp_fn(a)
+        expected = torch.tensor(exp_fn(a), dtype=torch.float64)
         assert torch.allclose(a.grad, expected, atol=tol, rtol=0)
 
     def test_state_vector_differentiability(self, tol):
@@ -633,7 +633,10 @@ class TestHighLevelIntegration:
         dev = qml.device("default.mixed", wires=2)
 
         obs_list = [qml.PauliX(0) @ qml.PauliY(1), qml.PauliZ(0), qml.PauliZ(0) @ qml.PauliZ(1)]
-        qnodes = qml.map(qml.templates.StronglyEntanglingLayers, obs_list, dev, interface="torch")
+        with pytest.warns(UserWarning, match="The map function is deprecated"):
+            qnodes = qml.map(
+                qml.templates.StronglyEntanglingLayers, obs_list, dev, interface="torch"
+            )
 
         assert qnodes.interface == "torch"
 

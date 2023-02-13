@@ -14,7 +14,7 @@
 """
 Tests for the ``default.mixed`` device for the TensorFlow interface
 """
-#pylint: disable=protected-access
+# pylint: disable=protected-access
 import pytest
 
 import pennylane as qml
@@ -311,7 +311,7 @@ class TestPassthruIntegration:
     @pytest.mark.parametrize("decorator, interface", decorators_interfaces)
     def test_state_differentiability(self, decorator, interface, wires, op, wire_ids, exp_fn, tol):
         """Test that the device state can be differentiated"""
-        #pylint: disable=too-many-arguments
+        # pylint: disable=too-many-arguments
         dev = qml.device("default.mixed", wires=wires)
 
         @decorator
@@ -579,7 +579,7 @@ class TestPassthruIntegration:
     def test_ragged_differentiation(self, decorator, interface, dev_name, diff_method, mode, tol):
         """Tests correct output shape and evaluation for a tape
         with prob and expval outputs"""
-        #pylint: disable=too-many-arguments
+        # pylint: disable=too-many-arguments
 
         dev = qml.device(dev_name, wires=2)
         x = tf.Variable(0.543, dtype=tf.float64)
@@ -673,7 +673,8 @@ class TestHighLevelIntegration:
         dev = qml.device("default.mixed", wires=2)
 
         obs_list = [qml.PauliX(0) @ qml.PauliY(1), qml.PauliZ(0), qml.PauliZ(0) @ qml.PauliZ(1)]
-        qnodes = qml.map(qml.templates.StronglyEntanglingLayers, obs_list, dev, interface="tf")
+        with pytest.warns(UserWarning, match="The map function is deprecated"):
+            qnodes = qml.map(qml.templates.StronglyEntanglingLayers, obs_list, dev, interface="tf")
 
         assert qnodes.interface == "tf"
 

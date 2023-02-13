@@ -14,7 +14,7 @@
 """
 Unit tests for the :mod:`pennylane.devices.DefaultMixed` device.
 """
-#pylint: disable=protected-access
+# pylint: disable=protected-access
 
 import copy
 import pytest
@@ -184,7 +184,9 @@ class TestReset:
             ResetError(0.1, 0.5, wires=[0]),
             PauliError("X", 0.5, wires=0),
             PauliError("ZY", 0.3, wires=[1, 0]),
-            PauliX(0), PauliZ(0), Hadamard(0),
+            PauliX(0),
+            PauliZ(0),
+            Hadamard(0),
         ],
     )
     def test_reset_after_channel(self, nr_wires, op, tol):

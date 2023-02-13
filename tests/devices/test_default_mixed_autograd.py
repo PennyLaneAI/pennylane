@@ -14,7 +14,7 @@
 """
 Tests for the ``default.mixed`` device for the Autograd interface
 """
-#pylint: disable=protected-access
+# pylint: disable=protected-access
 import pytest
 
 import pennylane as qml
@@ -328,7 +328,7 @@ class TestPassthruIntegration:
     @pytest.mark.parametrize("wires", [[0], ["abc"]])
     def test_state_differentiability(self, wires, op, wire_ids, exp_fn, tol):
         """Test that the device state can be differentiated"""
-        #pylint: disable=too-many-arguments
+        # pylint: disable=too-many-arguments
         dev = qml.device("default.mixed", wires=wires)
 
         @qml.qnode(dev, diff_method="backprop", interface="autograd")
@@ -631,13 +631,14 @@ class TestHighLevelIntegration:
         dev = qml.device("default.mixed", wires=2)
 
         def ansatz(weights, **kwargs):
-            #pylint: disable=unused-argument
+            # pylint: disable=unused-argument
             qml.RX(weights[0], wires=0)
             qml.RY(weights[1], wires=1)
             qml.CNOT(wires=[0, 1])
 
         obs_list = [qml.PauliX(0) @ qml.PauliY(1), qml.PauliZ(0), qml.PauliZ(0) @ qml.PauliZ(1)]
-        qnodes = qml.map(ansatz, obs_list, dev, interface="autograd")
+        with pytest.warns(UserWarning, match="The map function is deprecated"):
+            qnodes = qml.map(ansatz, obs_list, dev, interface="autograd")
 
         assert qnodes.interface == "autograd"
 

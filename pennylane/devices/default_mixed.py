@@ -357,6 +357,7 @@ class DefaultMixed(QubitDevice):
         axes_left = [channel_col_ids, row_wires_list]
         # Use column indices instead or rows to incorporate transposition of K^\dagger
         axes_right = [col_wires_list, channel_col_ids]
+
         # Apply the Kraus operators, and sum over all Kraus operators afterwards
         def _conjugate_state_with(k):
             """Perform the double tensor product k @ self._state @ k.conj().
@@ -593,7 +594,7 @@ class DefaultMixed(QubitDevice):
             print(interface)
             # Use tensordot for Autograd and Numpy if there are more than 2 wires
             # Use tensordot in any case for more than 7 wires, as einsum does not support this case
-            if (num_op_wires > 2 and interface in {"autograd", None}) or num_op_wires>7:
+            if (num_op_wires > 2 and interface in {"autograd", None}) or num_op_wires > 7:
                 self._apply_channel_tensordot(matrices, wires)
             else:
                 self._apply_channel(matrices, wires)

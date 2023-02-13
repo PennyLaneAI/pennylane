@@ -14,7 +14,7 @@
 """
 Tests for the ``default.mixed`` device for the JAX interface
 """
-#pylint: disable=protected-access
+# pylint: disable=protected-access
 import pytest
 
 import pennylane as qml
@@ -302,7 +302,7 @@ class TestPassthruIntegration:
     @pytest.mark.parametrize("decorator", decorators)
     def test_state_differentiability(self, decorator, op, wire_ids, exp_fn, tol):
         """Test that the device state can be differentiated"""
-        #pylint: disable=too-many-arguments
+        # pylint: disable=too-many-arguments
         config.config.update("jax_enable_x64", True)
 
         dev = qml.device("default.mixed", wires=1)
@@ -635,13 +635,14 @@ class TestHighLevelIntegration:
         dev = qml.device("default.mixed", wires=2)
 
         obs_list = [qml.PauliX(0) @ qml.PauliY(1), qml.PauliZ(0), qml.PauliZ(0) @ qml.PauliZ(1)]
-        qnodes = qml.map(
-            qml.templates.StronglyEntanglingLayers,
-            obs_list,
-            dev,
-            interface="jax",
-            diff_method="backprop",
-        )
+        with pytest.warns(UserWarning, match="The map function is deprecated"):
+            qnodes = qml.map(
+                qml.templates.StronglyEntanglingLayers,
+                obs_list,
+                dev,
+                interface="jax",
+                diff_method="backprop",
+            )
 
         assert qnodes.interface == "jax"
 
