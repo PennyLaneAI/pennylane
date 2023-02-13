@@ -191,7 +191,6 @@ class TestMatrix:
         )
 
 
-# TODO: Add tests for grad
 
 label_data = [
     (qml.TRX(1.23456, wires=0), "TRX", "TRX\n(1.23)", "TRX\n(1)", "TRX\n(1)†"),
