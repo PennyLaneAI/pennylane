@@ -879,19 +879,28 @@ def detach(tensor, like=None):
 
     return tensor
 
+
 def jax_argnums_to_tape_trainable(qnode, argnums, expand_fn, args, kwargs):
+    """This functions gets the tape parameters from the QNode construction given some argnums. The tape parameters
+    are transformed to JVPTracer if they are from trainable parameters to mimic the behavior of Jax and  alos mark
+    them trainable.
+    """
     import jax
 
     with jax.core.new_main(jax.ad.JVPTrace) as main:
         trace = jax.ad.JVPTrace(main, 0)
 
-    args_jvp = [jax.ad.JVPTracer(trace, arg, jax.numpy.zeros(1)) if i in argnums else arg for i, arg in enumerate(args)]
+    args_jvp = [
+        jax.ad.JVPTracer(trace, arg, jax.numpy.zeros(1)) if i in argnums else arg
+        for i, arg in enumerate(args)
+    ]
     qnode.construct(args_jvp, kwargs)
     tape = qnode.qtape
     tape = expand_fn(tape)
     params_tape = tape.get_parameters()
     del trace
     return params_tape
+
 
 @multi_dispatch(tensor_list=[1])
 def set_index(array, idx, val, like=None):

@@ -289,12 +289,12 @@ class gradient_transform(qml.batch_transform):
 
         cjac_fn = qml.transforms.classical_jacobian(qnode, argnum=argnums, expand_fn=self.expand_fn)
 
-
         def jacobian_wrapper(*args, **kwargs):
-
             if argnums is not None:
                 argnums_ = [argnums] if isinstance(argnums, int) else argnums
-                params = qml.math.jax_argnums_to_tape_trainable(qnode, argnums_, self.expand_fn, args, kwargs)
+                params = qml.math.jax_argnums_to_tape_trainable(
+                    qnode, argnums_, self.expand_fn, args, kwargs
+                )
                 argnums_ = qml.math.get_trainable_indices(params)
                 kwargs["argnums"] = argnums_
 
