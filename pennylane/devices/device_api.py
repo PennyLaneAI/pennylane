@@ -276,7 +276,7 @@ class QuantumDevice(abc.ABC):
     ) -> bool:
         """Determine whether or not a device provided derivative is potentially available.
 
-        Default behaviour assumes first order derivatives for all circuits exist if :meth:`~.compute_derivatives is overriden.
+        Default behaviour assumes first order derivatives for all circuits exist if :meth:`~.compute_derivatives` is overriden.
 
         Args:
             execution_config (None, ExecutionConfig): A description of the hyperparameters for the desired computation.
@@ -289,7 +289,7 @@ class QuantumDevice(abc.ABC):
         If ``execution_config`` and ``circuit`` are both ``None``, then this method should return ``True`` if **any**
         device derivative exists for **any** circumstance.
 
-        If either ``execution_config`` is specified but not ``circuit``, then the method should return whether or not
+        If ``execution_config`` is specified but not ``circuit``, then the method should return whether or not
         device derivatives exist for **any** circuits.
 
         **Example:**
