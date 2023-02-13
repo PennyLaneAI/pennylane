@@ -266,7 +266,8 @@ class TestProperties:
         no path of decomposition would work, here we use a single control wire."""
 
         # all control values are 1, there is only one control wire but TempOperator does
-        # not have `_controlled`, is not `PauliX`, and reports `has_decomposition=False`
+        # not have `_controlled`, is not `PauliX`, doesn't have a ZYZ decomposition,
+        # and reports `has_decomposition=False`
         op = Controlled(TempOperator(0.5, 1), 0)
         assert op.has_decomposition is False
 
@@ -275,8 +276,8 @@ class TestProperties:
         no path of decomposition would work, here we use multiple control wires."""
 
         # all control values are 1, there are multiple control wires,
-        # `RX` is not `PauliX`, and reports `has_decomposition=False`
-        op = Controlled(qml.RX(0.5, 1), [0, 5])
+        # `TempOperator` is not `PauliX`, and reports `has_decomposition=False`
+        op = Controlled(TempOperator(0.5, 1), [0, 5])
         assert op.has_decomposition is False
 
     @pytest.mark.parametrize("value", (True, False))
@@ -841,6 +842,36 @@ class TestDecomposition:
             # pylint: disable=unused-variable
             decomp = op.expand().circuit if test_expand else op.decomposition()
 
+    def test_zyz_decomp_no_control_values(self, test_expand):
+        """Test that the ZYZ decomposition is used for single qubit target operations
+        when other decompositions aren't available."""
+
+        base = qml.RX(0.123, wires="a")
+        op = Controlled(base, (0, 1, 2))
+
+        assert op.has_decomposition
+        decomp = op.expand().circuit if test_expand else op.decomposition()
+        expected = qml.ops.ctrl_decomp_zyz(base, (0, 1, 2))
+        for op, exp_op in zip(decomp, expected):
+            assert qml.equal(op, exp_op)
+
+    def test_zyz_decomp_control_values(self, test_expand):
+        """Test that the ZYZ decomposition is used for single qubit target operations
+        when other decompositions aren't available and control values are present."""
+
+        base = qml.RX(0.123, wires="a")
+        op = Controlled(base, (0, 1, 2), control_values=[True, False, False])
+
+        assert op.has_decomposition
+        decomp = op.expand().circuit if test_expand else op.decomposition()
+        assert qml.equal(qml.PauliX(1), decomp[0])
+        assert qml.equal(qml.PauliX(2), decomp[1])
+        assert qml.equal(qml.PauliX(1), decomp[-2])
+        assert qml.equal(qml.PauliX(2), decomp[-1])
+        expected = qml.ops.ctrl_decomp_zyz(base, (0, 1, 2))
+        for op, exp_op in zip(decomp[2:-2], expected):
+            assert qml.equal(op, exp_op)
+
 
 class TestArithmetic:
     """Test arithmetic decomposition methods."""
@@ -1351,23 +1382,23 @@ def test_adjoint_of_ctrl():
         qml.RZ(c, wires=0)
 
     with qml.queuing.AnnotatedQueue() as q1:
-        cmy_op_dagger = qml.adjoint(ctrl(my_op, 5))
+        cmy_op_dagger = qml.simplify(qml.adjoint(ctrl(my_op, 5)))
         # Execute controlled and adjointed version of my_op.
         cmy_op_dagger(0.789, 0.123, c=0.456)
 
     tape1 = QuantumScript.from_queue(q1)
     with qml.queuing.AnnotatedQueue() as q2:
-        cmy_op_dagger = ctrl(qml.adjoint(my_op), 5)
+        cmy_op_dagger = qml.simplify(ctrl(qml.adjoint(my_op), 5))
         # Execute adjointed and controlled version of my_op.
         cmy_op_dagger(0.789, 0.123, c=0.456)
 
     tape2 = QuantumScript.from_queue(q2)
     expected = [
-        qml.CRZ(-0.456, wires=[5, 0]),
-        qml.CRY(-0.123, wires=[5, 3]),
-        qml.CRX(-0.789, wires=[5, 2]),
+        qml.CRZ(4 * onp.pi - 0.456, wires=[5, 0]),
+        qml.CRY(4 * onp.pi - 0.123, wires=[5, 3]),
+        qml.CRX(4 * onp.pi - 0.789, wires=[5, 2]),
     ]
-    for tape in [tape1.expand(depth=2), tape2.expand(depth=2)]:
+    for tape in [tape1.expand(depth=1), tape2.expand(depth=1)]:
         for op1, op2 in zip(tape, expected):
             assert qml.equal(op1, op2)
 
