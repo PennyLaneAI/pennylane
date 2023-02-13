@@ -28,6 +28,8 @@ from scipy.sparse import csr_matrix
 import pennylane as qml
 from pennylane import BasisState, DeviceError, QubitDevice, QubitStateVector, Snapshot
 from pennylane.ops.qubit.attributes import diagonal_in_z_basis
+from pennylane.pulse import ParametrizedEvolution
+from pennylane.typing import TensorLike
 from pennylane.wires import WireError
 
 from .._version import __version__
@@ -264,6 +266,8 @@ class DefaultQubit(QubitDevice):
                         self._debugger.snapshots[operation.tag] = state_vector
                     else:
                         self._debugger.snapshots[len(self._debugger.snapshots)] = state_vector
+            elif isinstance(operation, ParametrizedEvolution):
+                self._state = self._apply_parametrized_evolution(self._state, operation)
             else:
                 self._state = self._apply_operation(self._state, operation)
 
@@ -273,6 +277,18 @@ class DefaultQubit(QubitDevice):
         # apply the circuit rotations
         for operation in rotations:
             self._state = self._apply_operation(self._state, operation)
+
+    def _apply_parametrized_evolution(self, state: TensorLike, operation: ParametrizedEvolution):
+        """Applies a parametrized evolution to the input state.
+
+        Args:
+            state (array[complex]): input state
+            operation (ParametrizedEvolution): operation to apply on the state
+        """
+        raise NotImplementedError(
+            f"The device {self.short_name} cannot execute a ParametrizedEvolution operation."
+            "Please use the jax  interface."
+        )
 
     def _apply_operation(self, state, operation):
         """Applies operations to the input state.
@@ -291,7 +307,7 @@ class DefaultQubit(QubitDevice):
         if operation.__class__.__name__ in self._apply_ops:
             shift = int(self._ndim(state) > self.num_wires)
             axes = [ax + shift for ax in self.wires.indices(wires)]
-            return self._apply_ops[operation.base_name](state, axes, inverse=operation.inverse)
+            return self._apply_ops[operation.base_name](state, axes)
 
         matrix = self._asarray(self._get_unitary_matrix(operation), dtype=self.C_DTYPE)
 

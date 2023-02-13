@@ -335,13 +335,6 @@ class AdjointOperation(Operation):
     class can be removed.
     """
 
-    # This inverse behavior only needs to temporarily patch behavior until in-place inversion is
-    # removed.
-
-    @property
-    def _inverse(self):
-        return self.base._inverse  # pylint: disable=protected-access
-
     @property
     def base_name(self):
         return self._name

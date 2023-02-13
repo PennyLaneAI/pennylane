@@ -388,10 +388,8 @@ class TestCompileInterfaces:
     def test_compile_autograd(self, diff_method):
         """Test QNode and gradient in autograd interface."""
 
-        original_qnode = qml.QNode(qfunc, dev, interface="autograd", diff_method=diff_method)
-        transformed_qnode = qml.QNode(
-            transformed_qfunc, dev, interface="autograd", diff_method=diff_method
-        )
+        original_qnode = qml.QNode(qfunc, dev, diff_method=diff_method)
+        transformed_qnode = qml.QNode(transformed_qfunc, dev, diff_method=diff_method)
 
         x = np.array([0.1, 0.2, 0.3], requires_grad=False)
         params = np.ones((2, 3))
@@ -413,10 +411,8 @@ class TestCompileInterfaces:
         """Test QNode and gradient in torch interface."""
         import torch
 
-        original_qnode = qml.QNode(qfunc, dev, interface="torch", diff_method="parameter-shift")
-        transformed_qnode = qml.QNode(
-            transformed_qfunc, dev, interface="torch", diff_method="parameter-shift"
-        )
+        original_qnode = qml.QNode(qfunc, dev, diff_method="parameter-shift")
+        transformed_qnode = qml.QNode(transformed_qfunc, dev, diff_method="parameter-shift")
 
         original_x = torch.tensor([0.3, -0.2, 0.8], requires_grad=False)
         original_params = torch.ones((2, 3), requires_grad=True)
@@ -446,10 +442,8 @@ class TestCompileInterfaces:
         """Test QNode and gradient in tensorflow interface."""
         import tensorflow as tf
 
-        original_qnode = qml.QNode(qfunc, dev, interface="tf", diff_method=diff_method)
-        transformed_qnode = qml.QNode(
-            transformed_qfunc, dev, interface="tf", diff_method=diff_method
-        )
+        original_qnode = qml.QNode(qfunc, dev, diff_method=diff_method)
+        transformed_qnode = qml.QNode(transformed_qfunc, dev, diff_method=diff_method)
 
         original_x = tf.Variable([0.8, -0.6, 0.4], dtype=tf.float64)
         original_params = tf.Variable(tf.ones((2, 3), dtype=tf.float64))
@@ -490,10 +484,8 @@ class TestCompileInterfaces:
         remember = config.read("jax_enable_x64")
         config.update("jax_enable_x64", True)
 
-        original_qnode = qml.QNode(qfunc, dev, interface="jax", diff_method=diff_method)
-        transformed_qnode = qml.QNode(
-            transformed_qfunc, dev, interface="jax", diff_method=diff_method
-        )
+        original_qnode = qml.QNode(qfunc, dev, diff_method=diff_method)
+        transformed_qnode = qml.QNode(transformed_qfunc, dev, diff_method=diff_method)
 
         x = jnp.array([0.1, 0.2, 0.3], dtype=jnp.float64)
         params = jnp.ones((2, 3), dtype=jnp.float64)
@@ -533,12 +525,12 @@ class TestCompileInterfaces:
             qml.QubitUnitary(qml.RZ.compute_matrix(x + 1), wires=1)
             return qml.expval(qml.PauliX(0) @ qml.PauliZ(1))
 
-        original_qnode = qml.QNode(test_qfunc, dev, interface="jax", diff_method=diff_method)
+        original_qnode = qml.QNode(test_qfunc, dev, diff_method=diff_method)
 
         pipeline = [cancel_inverses, unitary_to_rot, single_qubit_fusion]
 
         compiled_qfunc = qml.compile(pipeline=pipeline)(test_qfunc)
-        compiled_qnode = qml.QNode(compiled_qfunc, dev, interface="jax", diff_method=diff_method)
+        compiled_qnode = qml.QNode(compiled_qfunc, dev, diff_method=diff_method)
 
         jitted_compiled_qnode = jax.jit(compiled_qnode)
 

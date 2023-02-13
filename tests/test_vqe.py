@@ -1068,7 +1068,7 @@ class TestNewVQE:
         dev = qml.device("default.qubit", wires=4)
         H = big_hamiltonian
 
-        @qml.qnode(dev, interface="torch")
+        @qml.qnode(dev)
         def circuit(w):
             qml.templates.StronglyEntanglingLayers(w, wires=range(4))
             return qml.expval(H)
@@ -1089,7 +1089,7 @@ class TestNewVQE:
         dev = qml.device("default.qubit", wires=4)
         H = big_hamiltonian
 
-        @qml.qnode(dev, interface="tf")
+        @qml.qnode(dev)
         def circuit(w):
             qml.templates.StronglyEntanglingLayers(w, wires=range(4))
             return qml.expval(H)
@@ -1115,7 +1115,7 @@ class TestNewVQE:
         np.random.seed(1967)
         w = jnp.array(PARAMS)
 
-        @qml.qnode(dev, interface="jax")
+        @qml.qnode(dev)
         def circuit(w):
             qml.templates.StronglyEntanglingLayers(w, wires=range(4))
             return qml.expval(H)
@@ -1335,16 +1335,3 @@ class TestMultipleInterfaceIntegration:
 
         assert np.allclose(res, res_tf, atol=tol, rtol=0)
         assert np.allclose(res, res_torch, atol=tol, rtol=0)
-
-
-def test_vqe_cost():
-    """Tests that VQECost raises a UserWarning but otherwise behaves as ExpvalCost"""
-
-    h = qml.Hamiltonian([1], [qml.PauliZ(0)])
-    dev = qml.device("default.qubit", wires=1)
-    ansatz = qml.templates.StronglyEntanglingLayers
-
-    with pytest.warns(UserWarning, match="Use of VQECost is deprecated"):
-        cost = qml.VQECost(ansatz, h, dev)
-
-    assert isinstance(cost, qml.ExpvalCost)

@@ -459,7 +459,7 @@ class TestDiagonalQubitUnitary:
         dev = qml.device("default.qubit", wires=1, shots=None)
 
         @jax.jit
-        @qml.qnode(dev, interface="jax")
+        @qml.qnode(dev)
         def circuit(x):
             diag = jnp.exp(1j * x * jnp.array([1, -1]) / 2)
             qml.Hadamard(wires=0)
@@ -482,7 +482,7 @@ class TestDiagonalQubitUnitary:
         dev = qml.device("default.qubit", wires=1, shots=None)
 
         @jax.jit
-        @qml.qnode(dev, interface="jax")
+        @qml.qnode(dev)
         def circuit(x):
             diag = jnp.exp(1j * jnp.outer(x, jnp.array([1, -1])) / 2)
             qml.Hadamard(wires=0)
@@ -504,7 +504,7 @@ class TestDiagonalQubitUnitary:
         dev = qml.device("default.qubit", wires=1, shots=None)
 
         @tf.function
-        @qml.qnode(dev, interface="tf")
+        @qml.qnode(dev)
         def circuit(x):
             x = tf.cast(x, tf.complex128)
             diag = tf.math.exp(1j * x * tf.constant([1.0 + 0j, -1.0 + 0j]) / 2)
@@ -518,7 +518,7 @@ class TestDiagonalQubitUnitary:
             loss = circuit(x)
 
         grad = tape.gradient(loss, x)
-        expected = -tf.math.sin(x)
+        expected = -tf.math.sin(x)  # pylint: disable=invalid-unary-operand-type
         assert np.allclose(grad, expected)
 
 

@@ -25,7 +25,7 @@ from pennylane.gradients import finite_diff, param_shift
 from pennylane.interfaces import execute
 
 
-@pytest.mark.parametrize("interface", ["torch", "auto"])
+@pytest.mark.parametrize("interface", ["torch"])
 class TestTorchExecuteUnitTests:
     """Unit tests for torch execution"""
 
@@ -357,25 +357,6 @@ execute_kwargs = [
         "mode": "backward",
         "gradient_kwargs": {"method": "adjoint_jacobian"},
         "interface": "torch",
-    },
-    {"gradient_fn": param_shift, "interface": "auto"},
-    {
-        "gradient_fn": "device",
-        "mode": "forward",
-        "gradient_kwargs": {"method": "adjoint_jacobian", "use_device_state": False},
-        "interface": "auto",
-    },
-    {
-        "gradient_fn": "device",
-        "mode": "forward",
-        "gradient_kwargs": {"method": "adjoint_jacobian", "use_device_state": True},
-        "interface": "auto",
-    },
-    {
-        "gradient_fn": "device",
-        "mode": "backward",
-        "gradient_kwargs": {"method": "adjoint_jacobian"},
-        "interface": "auto",
     },
 ]
 
@@ -818,8 +799,6 @@ class TestTorchExecuteIntegration:
         """Test sampling works as expected"""
         if execute_kwargs["gradient_fn"] == "device" and execute_kwargs["mode"] == "forward":
             pytest.skip("Adjoint differentiation does not support samples")
-        if execute_kwargs["interface"] == "auto":
-            pytest.skip("Can't detect interface without a parametrized gate in the tape")
 
         dev = qml.device("default.qubit", wires=2, shots=10)
 
@@ -839,8 +818,6 @@ class TestTorchExecuteIntegration:
         """Test sampling works as expected if combined with expectation values"""
         if execute_kwargs["gradient_fn"] == "device" and execute_kwargs["mode"] == "forward":
             pytest.skip("Adjoint differentiation does not support samples")
-        if execute_kwargs["interface"] == "auto":
-            pytest.skip("Can't detect interface without a parametrized gate in the tape")
 
         dev = qml.device("default.qubit", wires=2, shots=10)
 

@@ -1067,9 +1067,7 @@ class TestAdjointConstructorIntegration:
         """Test gradients through the adjoint transform with autograd."""
         import autograd
 
-        @qml.qnode(
-            qml.device("default.qubit", wires=1), diff_method=diff_method, interface="autograd"
-        )
+        @qml.qnode(qml.device("default.qubit", wires=1), diff_method=diff_method)
         def circ(x):
             adjoint(qml.RX)(x, wires=0)
             return qml.expval(qml.PauliY(0))
@@ -1088,7 +1086,7 @@ class TestAdjointConstructorIntegration:
         """Test gradients through the adjoint transform with jax."""
         import jax
 
-        @qml.qnode(qml.device("default.qubit", wires=1), diff_method=diff_method, interface="jax")
+        @qml.qnode(qml.device("default.qubit", wires=1), diff_method=diff_method)
         def circ(x):
             adjoint(qml.RX)(x, wires=0)
             return qml.expval(qml.PauliY(0))
@@ -1105,7 +1103,7 @@ class TestAdjointConstructorIntegration:
         """Test gradients through the adjoint transform with torch."""
         import torch
 
-        @qml.qnode(qml.device("default.qubit", wires=1), diff_method=diff_method, interface="torch")
+        @qml.qnode(qml.device("default.qubit", wires=1), diff_method=diff_method)
         def circ(x):
             adjoint(qml.RX)(x, wires=0)
             return qml.expval(qml.PauliY(0))
@@ -1124,7 +1122,7 @@ class TestAdjointConstructorIntegration:
 
         import tensorflow as tf
 
-        @qml.qnode(qml.device("default.qubit", wires=1), diff_method=diff_method, interface="tf")
+        @qml.qnode(qml.device("default.qubit", wires=1), diff_method=diff_method)
         def circ(x):
             adjoint(qml.RX)(x, wires=0)
             return qml.expval(qml.PauliY(0))
