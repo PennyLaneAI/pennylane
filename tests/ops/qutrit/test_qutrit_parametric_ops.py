@@ -389,7 +389,7 @@ class TestGrad:
     @pytest.mark.jax
     @pytest.mark.parametrize("diff_method", diff_methods)
     def test_trx_differentiability_jax_broadcasted(self, diff_method, tol):
-        """Test that differentiation of TRX with broadcasting works."""
+        """Test that differentiation of TRX in JAX with broadcasting works."""
         import jax
         import jax.numpy as jnp
 
