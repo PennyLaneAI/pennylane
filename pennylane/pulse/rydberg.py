@@ -91,15 +91,17 @@ class RydbergEnsemble:
         self._rydberg_interaction = qml.dot(coeffs, ops)
         return self._rydberg_interaction
 
-    def drive(self, amplitudes: list, detunings: list, wires: list) -> ParametrizedHamiltonian:
+    def drive(
+        self, amplitudes: list, detunings: list, phases: list, wires: list
+    ) -> ParametrizedHamiltonian:
         r"""Returns a :class:`ParametrizedHamiltonian` describing the evolution of the Rydberg ensemble
         when driving the given atoms (``wires``) with lasers with the corresponding ``amplitude``
         and ``detuning``:
 
         .. math::
 
-            H = \frac{\hbar}{2} \sum_i  \Omega_i(t) \sigma_i^x - \frac{\hbar}{2} \sum_i
-                \delta_i(t) \sigma_i^z + \sum_{i<j} U_{ij} n_i n_j
+            H = \frac{\hbar}{2} \sum_i  \Omega_i(t) (\cos(\phi)\sigma_i^x - \sin(\phi)\sigma_i^y) -
+            \frac{\hbar}{2} \sum_i \delta_i(t) \sigma_i^z + \sum_{i<j} U_{ij} n_i n_j
 
         where :math:`\Omega_i` and :math:`\delta_i` correspond to the amplitude and detuning of the
         laser applied to atom :math:`i`, and :math:`\sigma^\alpha` for :math:`\alpha = x,y,z` are
@@ -120,6 +122,10 @@ class RydbergEnsemble:
         Returns:
             ParametrizedHamiltonian: hamiltonian describing the laser driving
         """
-        H1 = 1 / 2 * qml.dot(amplitudes, [qml.PauliX(w) for w in wires])
+        ops = [
+            qml.math.cos(p) * qml.PauliX(w) - qml.math.sin(p) * qml.PauliY(w)
+            for p, w in zip(phases, wires)
+        ]
+        H1 = (1 / 2) * qml.dot(amplitudes, ops)
         H2 = -1 / 2 * qml.dot(detunings, [qml.PauliZ(w) for w in wires])
         return H1 + H2 + self.rydberg_interaction
