@@ -837,30 +837,48 @@ class TestApplyDensityMatrix:
 
 
 class TestApplyOperation:
-    """Unit tests for the method `_apply_operation()`. Since this just calls `_apply_channel()`
-    and `_apply_diagonal_unitary()`, we just check that the correct method is called"""
+    """Unit tests for the method `_apply_operation()`. Since this just calls `_apply_channel()`,
+    `_apply_diagonal_unitary()` or `_apply_channel_tensordot`, we just check
+    that the correct method is called"""
 
     def test_diag_apply_op(self, mocker):
         """Tests that when applying a diagonal gate, only `_apply_diagonal_unitary` is called,
         exactly once"""
         spy_channel = mocker.spy(DefaultMixed, "_apply_channel")
+        spy_channel_tensordot = mocker.spy(DefaultMixed, "_apply_channel_tensordot")
         spy_diag = mocker.spy(DefaultMixed, "_apply_diagonal_unitary")
         dev = qml.device("default.mixed", wires=1)
         dev._apply_operation(PauliZ(0))
 
         spy_channel.assert_not_called()
+        spy_channel_tensordot.assert_not_called()
         spy_diag.assert_called_once()
 
     def test_channel_apply_op(self, mocker):
         """Tests that when applying a non-diagonal gate, only `_apply_channel` is called,
         exactly once"""
         spy_channel = mocker.spy(DefaultMixed, "_apply_channel")
+        spy_channel_tensordot = mocker.spy(DefaultMixed, "_apply_channel_tensordot")
         spy_diag = mocker.spy(DefaultMixed, "_apply_diagonal_unitary")
         dev = qml.device("default.mixed", wires=1)
         dev._apply_operation(PauliX(0))
 
         spy_diag.assert_not_called()
+        spy_channel_tensordot.assert_not_called()
         spy_channel.assert_called_once()
+
+    def test_channel_apply_tensordot_op(self, mocker):
+        """Tests that when applying a non-diagonal gate on more than two qubits,
+        only `_apply_channel_tensordot` is called, exactly once"""
+        spy_channel = mocker.spy(DefaultMixed, "_apply_channel")
+        spy_channel_tensordot = mocker.spy(DefaultMixed, "_apply_channel_tensordot")
+        spy_diag = mocker.spy(DefaultMixed, "_apply_diagonal_unitary")
+        dev = qml.device("default.mixed", wires=3)
+        dev._apply_operation(MultiControlledX(wires=[0, 1, 2]))
+
+        spy_diag.assert_not_called()
+        spy_channel.assert_not_called()
+        spy_channel_tensordot.assert_called_once()
 
     def test_identity_skipped(self, mocker):
         """Test that applying the identity does not perform any additional computations."""

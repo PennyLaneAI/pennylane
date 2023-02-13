@@ -16,9 +16,10 @@ Tests for the ``default.mixed`` device for the Torch interface.
 """
 # pylint: disable=protected-access
 import pytest
+import numpy as np
 
 import pennylane as qml
-from pennylane import numpy as np
+from pennylane import numpy as pnp
 from pennylane.devices.default_mixed import DefaultMixed
 
 pytestmark = pytest.mark.torch
@@ -196,6 +197,69 @@ class TestOps:
         assert torch.allclose(torch.reshape(dev._state, (8, 8)), state)
         spy.assert_called()
 
+class TestApplyChannelMethodChoice:
+    """Test that the right method between _apply_channel and _apply_channel_tensordot
+    is chosen."""
+
+    @pytest.mark.parametrize("op, exp_method, dev_wires", [
+        (qml.RX(torch.tensor(0.2), 0), "_apply_channel", 1),
+        (qml.RX(torch.tensor(0.2), 0), "_apply_channel", 8),
+        (qml.CNOT([0, 1]), "_apply_channel", 3),
+        (qml.CNOT([0, 1]), "_apply_channel", 8),
+        (qml.MultiControlledX(wires=list(range(2))), "_apply_channel", 3),
+        (qml.MultiControlledX(wires=list(range(3))), "_apply_channel_tensordot", 3),
+        (qml.MultiControlledX(wires=list(range(8))), "_apply_channel_tensordot", 8),
+        (qml.PauliError("X", torch.tensor(0.5), 0), "_apply_channel", 2),
+        (qml.PauliError("XXX", torch.tensor(0.5), [0, 1, 2]), "_apply_channel", 4),
+        (qml.PauliError("X"*8, torch.tensor(0.5), list(range(8))), "_apply_channel_tensordot", 8),
+    ])
+    def test_with_numpy_state(self, mocker, op, exp_method, dev_wires):
+        """Test with a numpy array as device state."""
+
+        methods = ["_apply_channel", "_apply_channel_tensordot"]
+        del methods[methods.index(exp_method)]
+        unexp_method = methods[0]
+        spy_exp = mocker.spy(DefaultMixed, exp_method)
+        spy_unexp = mocker.spy(DefaultMixed, unexp_method)
+        dev = qml.device("default.mixed", wires=dev_wires)
+        state = np.zeros((2**dev_wires, 2**dev_wires))
+        state[0, 0] = 1.
+        dev._state = np.array(state).reshape([2]*(2*dev_wires))
+        dev._apply_operation(op)
+
+        spy_unexp.assert_not_called()
+        spy_exp.assert_called_once()
+
+    @pytest.mark.parametrize("op, exp_method, dev_wires", [
+        (qml.RX(torch.tensor(0.2), 0), "_apply_channel", 1),
+        (qml.RX(torch.tensor(0.2), 0), "_apply_channel", 8),
+        (qml.CNOT([0, 1]), "_apply_channel", 3),
+        (qml.CNOT([0, 1]), "_apply_channel", 8),
+        (qml.MultiControlledX(wires=list(range(2))), "_apply_channel", 3),
+        (qml.MultiControlledX(wires=list(range(3))), "_apply_channel", 3),
+        (qml.MultiControlledX(wires=list(range(8))), "_apply_channel_tensordot", 8),
+        (qml.PauliError("X", torch.tensor(0.5), 0), "_apply_channel", 2),
+        (qml.PauliError("XXX", torch.tensor(0.5), [0, 1, 2]), "_apply_channel", 4),
+        (qml.PauliError("X"*8, torch.tensor(0.5), list(range(8))), "_apply_channel_tensordot", 8),
+    ])
+    def test_with_torch_state(self, mocker, op, exp_method, dev_wires):
+        """Test with a Torch array as device state."""
+
+        methods = ["_apply_channel", "_apply_channel_tensordot"]
+        del methods[methods.index(exp_method)]
+        unexp_method = methods[0]
+        spy_exp = mocker.spy(DefaultMixed, exp_method)
+        spy_unexp = mocker.spy(DefaultMixed, unexp_method)
+        dev = qml.device("default.mixed", wires=dev_wires)
+        state = np.zeros((2**dev_wires, 2**dev_wires))
+        state[0, 0] = 1.
+        dev._state = torch.tensor(state).reshape([2]*(2*dev_wires))
+        dev._apply_operation(op)
+
+        spy_unexp.assert_not_called()
+        spy_exp.assert_called_once()
+
+
 
 class TestPassthruIntegration:
     """Tests for integration with the PassthruQNode"""
@@ -269,7 +333,7 @@ class TestPassthruIntegration:
     def test_backprop_jacobian_agrees_parameter_shift(self, tol):
         """Test that jacobian of a QNode with an attached default.mixed.torch device
         gives the correct result with respect to the parameter-shift method"""
-        p = np.array([0.43316321, 0.2162158, 0.75110998, 0.94714242])
+        p = pnp.array([0.43316321, 0.2162158, 0.75110998, 0.94714242])
         p_torch = torch.tensor(p, dtype=torch.float64, requires_grad=True)
 
         def circuit(x):

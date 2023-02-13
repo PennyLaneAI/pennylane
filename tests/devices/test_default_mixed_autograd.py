@@ -22,8 +22,8 @@ from pennylane import numpy as np
 from pennylane.devices.default_mixed import DefaultMixed
 from pennylane import DeviceError
 
+pytestmark = pytest.mark.autograd
 
-@pytest.mark.autograd
 def test_analytic_deprecation():
     """Tests if the kwarg `analytic` is used and displays error message."""
     msg = "The analytic argument has been replaced by shots=None. "
@@ -36,7 +36,6 @@ def test_analytic_deprecation():
         qml.device("default.mixed", wires=1, shots=1, analytic=True)
 
 
-@pytest.mark.autograd
 class TestQNodeIntegration:
     """Integration tests for default.mixed.autograd. This test ensures it integrates
     properly with the PennyLane UI, in particular the QNode."""
@@ -116,7 +115,6 @@ class TestQNodeIntegration:
         assert np.allclose(state, expected, atol=tol, rtol=0)
 
 
-@pytest.mark.autograd
 class TestDtypePreserved:
     """Test that the user-defined dtype of the device is preserved for QNode
     evaluation"""
@@ -168,7 +166,6 @@ class TestDtypePreserved:
         assert res.dtype == c_dtype
 
 
-@pytest.mark.autograd
 class TestOps:
     """Unit tests for operations supported by the default.mixed.autograd device"""
 
@@ -216,8 +213,34 @@ class TestOps:
         assert np.all(np.reshape(dev._state, (8, 8)) == state)
         spy.assert_called()
 
+@pytest.mark.parametrize("op, exp_method, dev_wires", [
+    (qml.RX(np.array(0.2), 0), "_apply_channel", 1),
+    (qml.RX(np.array(0.2), 0), "_apply_channel", 8),
+    (qml.CNOT([0, 1]), "_apply_channel", 3),
+    (qml.CNOT([0, 1]), "_apply_channel", 8),
+    (qml.MultiControlledX(wires=list(range(2))), "_apply_channel", 3),
+    (qml.MultiControlledX(wires=list(range(3))), "_apply_channel_tensordot", 3),
+    (qml.MultiControlledX(wires=list(range(8))), "_apply_channel_tensordot", 8),
+    (qml.PauliError("X", np.array(0.5), 0), "_apply_channel", 2),
+    (qml.PauliError("XXX", np.array(0.5), [0, 1, 2]), "_apply_channel_tensordot", 4),
+    (qml.PauliError("X"*8, np.array(0.5), list(range(8))), "_apply_channel_tensordot", 8),
+])
+def test_method_choice(mocker, op, exp_method, dev_wires):
+    """Test that the right method between _apply_channel and _apply_channel_tensordot
+    is chosen."""
 
-@pytest.mark.autograd
+    methods = ["_apply_channel", "_apply_channel_tensordot"]
+    del methods[methods.index(exp_method)]
+    unexp_method = methods[0]
+    spy_exp = mocker.spy(DefaultMixed, exp_method)
+    spy_unexp = mocker.spy(DefaultMixed, unexp_method)
+    dev = qml.device("default.mixed", wires=dev_wires)
+    dev._apply_operation(op)
+
+    spy_unexp.assert_not_called()
+    spy_exp.assert_called_once()
+
+
 class TestPassthruIntegration:
     """Tests for integration with the PassthruQNode"""
 
@@ -607,7 +630,6 @@ class TestPassthruIntegration:
         assert np.allclose(np.diag(res_b), expected_b, atol=tol, rtol=0)
 
 
-@pytest.mark.autograd
 class TestHighLevelIntegration:
     """Tests for integration with higher level components of PennyLane."""
 

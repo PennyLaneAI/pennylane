@@ -590,11 +590,10 @@ class DefaultMixed(QubitDevice):
             self._apply_diagonal_unitary(matrices, wires)
         else:
             num_op_wires = len(wires)
-            interface = qml.math.get_interface(*matrices)
-            print(interface)
+            interface = qml.math.get_interface(self._state, *matrices)
             # Use tensordot for Autograd and Numpy if there are more than 2 wires
             # Use tensordot in any case for more than 7 wires, as einsum does not support this case
-            if (num_op_wires > 2 and interface in {"autograd", None}) or num_op_wires > 7:
+            if (num_op_wires > 2 and interface in {"autograd", "numpy"}) or num_op_wires > 7:
                 self._apply_channel_tensordot(matrices, wires)
             else:
                 self._apply_channel(matrices, wires)
