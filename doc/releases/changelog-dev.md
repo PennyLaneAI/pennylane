@@ -394,7 +394,7 @@
   [(#3637)](https://github.com/PennyLaneAI/pennylane/pull/3637)
 
 * The `preprocess` function is added to `devices/qubit` that validates, expands, and transforms a batch
-  of `QuantumScript` objects to abstract preprocessing details away from the device.
+  of `QuantumTape` objects to abstract preprocessing details away from the device.
   [(#3708)](https://github.com/PennyLaneAI/pennylane/pull/3708)
 
 * The `create_initial_state` function is added to `devices/qubit` that returns an initial state for an execution.

@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""This module contains functions for preprocessing `QuantumScript`s to ensure
+"""This module contains functions for preprocessing `QuantumTape` objects to ensure
 that they are supported for execution by a device."""
 
 import pennylane as qml
