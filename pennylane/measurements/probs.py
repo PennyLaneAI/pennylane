@@ -303,12 +303,12 @@ class ProbabilityMP(SampleMeasurement, StateMeasurement):
         desired_axes = np.argsort(np.argsort(mapped_wires))
         flat_shape = (-1,)
         if batch_size is not None:
+            # prob now is reshaped to have self.num_wires+1 axes in the case of broadcasting
             shape.insert(0, batch_size)
             inactive_wires = [idx + 1 for idx in inactive_wires]
             desired_axes = np.insert(desired_axes + 1, 0, 0)
             flat_shape = (batch_size, -1)
 
-        # prob now is reshaped to have self.num_wires+1 axes in the case of broadcasting
         prob = qml.math.reshape(prob, shape)
 
         # sum over all inactive wires
