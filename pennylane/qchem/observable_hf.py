@@ -122,12 +122,13 @@ def qubit_observable(o_ferm, cutoff=1.0e-12):
     return o_qubit
 
 
-def jordan_wigner(op, notation="ccaa"):
+def jordan_wigner(op, notation=None):
     r"""Convert a fermionic operator to a qubit operator using the Jordan-Wigner mapping.
 
     For instance, the one-body fermionic operator :math:`a_2^\dagger a_0` should be constructed as
     [2, 0] and the two-body operator :math:`a_4^\dagger a_3^\dagger a_2 a_1` should be constructed
-    as [4, 3, 2, 1].
+    as [4, 3, 2, 1]. If 'notation' is set to 'chemist', the two-body operator [4, 3, 2, 1] is
+    constructed as :math:`a_4^\dagger a_3 a_2^\dagger a_1`.
 
     Args:
         op (list[int]): the fermionic operator
@@ -143,31 +144,42 @@ def jordan_wigner(op, notation="ccaa"):
     ([(0.5+0j), (-0.5+0j)], [Identity(wires=[0]), PauliZ(wires=[0])]) # corresponds to :math:`\frac{1}{2}(I_0 - Z_0)`
     """
     if len(op) == 1:
-        op = [((op[0], 1),)]
+        op = [(op[0], 1)]
 
     if len(op) == 2:
-        op = [((op[0], 1), (op[1], 0))]
+        op = [(op[0], 1), (op[1], 0)]
 
     if len(op) == 4:
-        if notation == "ccaa":
+        if notation is None:
             if op[0] == op[1] or op[2] == op[3]:
                 return 0
-            op = [((op[0], 1), (op[1], 1), (op[2], 0), (op[3], 0))]
-        if notation == "caca":
+            op = [(op[0], 1), (op[1], 1), (op[2], 0), (op[3], 0)]
+        if notation == "chemist":
             if op[0] == op[2] or op[1] == op[3]:
                 if op[1] != op[2]:
                     return 0
-            op = [((op[0], 1), (op[1], 0), (op[2], 1), (op[3], 0))]
+            op = [(op[0], 1), (op[1], 0), (op[2], 1), (op[3], 0)]
 
     return _jordan_wigner(op)
 
 
 def _jordan_wigner(op):
-    r"""Convert a fermionic operator to a qubit operator using the Jordan-Wigner mapping."""
+    r"""Convert a fermionic operator to a qubit operator using the Jordan-Wigner mapping.
 
-    t = op[0]
+    The creation and annihilation operators should be specified by :math:`1` and :math:`0`,
+    respectively. For example, the fermionic operator :math:`a_4^\dagger a_3^\dagger a_2 a_1` should
+    be constructed as :math:`[((4, 1), (3, 1), (2, 0), (1, 0))]`.
+
+    Args:
+        op (list[tuple[tuple[int, int]]): the fermionic operator
+
+    Returns
+        tuple(list[complex], list[list[int, str]]): list of coefficients and the qubit-operator terms
+
+
+    """
     q = [[(0, "I"), 1.0]]
-    for l in t:
+    for l in op:
         z = [(index, "Z") for index in range(l[0])]
         x = z + [(l[0], "X"), 0.5]
         if l[1]:
