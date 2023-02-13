@@ -21,7 +21,8 @@ from pennylane.math import sum as qmlsum
 from pennylane.operation import operation_derivative
 from pennylane.tape import QuantumTape
 
-# from .apply_operation import apply_operation
+from .apply_operation import apply_operation
+
 # from .initialize_state import create_initial_state
 
 # pylint: disable=protected-access, too-many-branches
@@ -70,10 +71,6 @@ def adjoint_jacobian(
     # pylint: disable=unnecessary-lambda-assignment
     dot_product_real = lambda b, k: dev._real(qmlsum(dev._conj(b) * k, axis=sum_axes))
 
-    for m in tape.measurements:
-        if not hasattr(m.obs, "base_name"):
-            m.obs.base_name = None  # This is needed for when the observable is a tensor product
-
     # Initialization of state
     if starting_state is not None:
         ket = dev._reshape(starting_state, [2] * dev.num_wires)
@@ -83,19 +80,11 @@ def adjoint_jacobian(
             dev.execute(tape)
         ket = dev._pre_rotated_state
 
-    n_obs = len(tape.observables)
-    bras = np.empty([n_obs] + [2] * dev.num_wires, dtype=np.complex128)
-    for kk in range(n_obs):
-        bras[kk, ...] = dev._apply_operation(ket, tape.observables[kk])
+    bra = apply_operation(tape.observables[0], ket)
 
     expanded_ops = []
     for op in reversed(tape.operations):
         if op.num_params > 1:
-            if not isinstance(op, qml.Rot):
-                raise qml.QuantumFunctionError(
-                    f"The {op.name} operation is not supported using "
-                    'the "adjoint" differentiation method'
-                )
             ops = op.decomposition()
             expanded_ops.extend(reversed(ops))
         elif op.name not in ("QubitStateVector", "BasisState", "Snapshot"):
@@ -111,20 +100,18 @@ def adjoint_jacobian(
     trainable_param_number = len(trainable_params) - 1
     for op in expanded_ops:
         adj_op = qml.adjoint(op)
-        ket = dev._apply_operation(ket, adj_op)
+        ket = apply_operation(adj_op, ket)
 
         if op.grad_method is not None:
             if param_number in trainable_params:
                 d_op_matrix = operation_derivative(op)
                 ket_temp = dev._apply_unitary(ket, d_op_matrix, op.wires)
-
-                jac[:, trainable_param_number] = 2 * dot_product_real(bras, ket_temp)
+                jac[:, trainable_param_number] = 2 * dot_product_real([bra], ket_temp)
 
                 trainable_param_number -= 1
             param_number -= 1
 
-        for kk in range(n_obs):
-            bras[kk, ...] = dev._apply_operation(bras[kk, ...], adj_op)
+        bra = apply_operation(adj_op, bra)
 
     return dev._adjoint_jacobian_processing(jac)
 
