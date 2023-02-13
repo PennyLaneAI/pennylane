@@ -30,7 +30,6 @@ from pennylane.operation import (
 )
 from pennylane.ops.identity import Identity
 from pennylane.queuing import QueuingManager, apply
-from pennylane.wires import Wires
 
 from .symbolicop import ScalarSymbolicOp, SymbolicOp
 

@@ -14,7 +14,6 @@
 """The Pauli arithmetic abstract reduced representation classes"""
 from copy import copy
 from functools import reduce
-from typing import Iterable
 
 import numpy as np
 from scipy import sparse
@@ -67,7 +66,7 @@ sparse_mat_map = {
     Z: sparse_matZ,
 }
 
-sparse_mat_map_coo = {op: sparse.coo_matrix(sparse_mat_map[op]) for op in sparse_mat_map}
+sparse_mat_map_coo = {op: sparse.coo_matrix(mat) for op, mat in sparse_mat_map.items()}
 
 _map_I = {
     I: (1, I),
