@@ -49,6 +49,7 @@ def constant(scalar, time):
     >>> params = [5]
     >>> H(params, t=8)
     5.0*(PauliX(wires=[0]))
+
     >>> H(params, t=5)
     5.0*(PauliX(wires=[0]))
 
@@ -66,6 +67,7 @@ def constant(scalar, time):
     >>> params = jnp.array([5.0])
     >>> circuit(params)
     Array(0.40808904, dtype=float32)
+
     >>> jax.grad(circuit)(params)
     Array([-3.6517754], dtype=float32)
     """
@@ -79,9 +81,9 @@ def rect(x: Union[float, Callable], windows: List[Tuple[float]] = None):
     Creates a callable for defining a :class:`~.ParametrizedHamiltonian`.
 
     Args:
-        x (Union[float, Callable]): a scalar or a function that accepts two arguments: the trainable
+        x (Union[float, Callable]): either a scalar, or a function that accepts two arguments: the trainable
             parameters and time
-        windows (Tuple[float, Tuple[float]]): List of tuples containing time windows where x is
+        windows (Tuple[float, Tuple[float]]): List of tuples containing time windows where ``x`` is
             evaluated. If ``None`` it is always evaluated. Defaults to ``None``.
 
     Returns:
@@ -122,10 +124,10 @@ def rect(x: Union[float, Callable], windows: List[Tuple[float]] = None):
 
     The resulting Hamiltonian will be non-zero only inside the window.
 
-    >>> H([3], t=2)  # inside the window
-    2.7278921604156494*(PauliX(wires=[0]))
+    >>> H([[1, 3]], t=2)  # inside the window
+    5.0*(PauliX(wires=[0]))
 
-    >>> H([3], t=0.5 )  # outside the window
+    >>> H([[1, 3]], t=0.5 )  # outside the window
     0.0*(PauliX(wires=[0]))
 
     It is also possible to define multiple windows for the same function:
@@ -136,11 +138,11 @@ def rect(x: Union[float, Callable], windows: List[Tuple[float]] = None):
         H = qml.pulse.rect(jnp.polyval, windows) * qml.PauliX(0)
 
     When calling the :class:`.ParametrizedHamiltonian`, ``rect`` will evaluate the given function only
-    inside the time windows
+    inside the time windows, and otherwise return 0.
 
     One can also pass a scalar to the ``rect`` function
 
-    >>> H = qml.pulse.rect(10, windows) * qml.PauliX(0)
+    >>> H = qml.pulse.rect(10, (1, 7)) * qml.PauliX(0)
 
     In this case, ``rect`` will return the given scalar only when the time is inside the provided
     time windows
@@ -148,6 +150,7 @@ def rect(x: Union[float, Callable], windows: List[Tuple[float]] = None):
     >>> params = [None]  # the parameter value won't be used!
     >>> H(params, t=8)
     0.0*(PauliX(wires=[0]))
+
     >>> H(params, t=5)
     10.0*(PauliX(wires=[0]))
     """
@@ -186,10 +189,10 @@ def pwc(timespan):
               If an integer is provided, the timespan is defined as ``(0, timespan)``.
 
     Returns:
-            func: a function that takes two arguments, an array of trainable parameters and a `float` defining the
+            func: a function that takes two arguments: an array of trainable parameters, and a ``float`` defining the
             time at which the function is evaluated.
 
-    ``pwc`` essentially implements
+    The convenience function ``pwc`` essentially implements
 
     .. code-block:: python3
 
@@ -199,7 +202,9 @@ def pwc(timespan):
             return wrapped
 
     This function can be used to create a parametrized coefficient function that is piece-wise constant
-    within the interval ``t``, and 0 outside it. When creating the callable, only the timespan is passed. The number
+    within the interval ``t``, and 0 outside it.
+
+    When creating the callable, only the timespan is passed. The number
     of bins and values for the parameters are set when ``params`` is passed to the callable. Each bin value is set by
     an element of the ``params`` array. The variable ``t`` is used to select the value of the parameter array
     corresponding to the specified time, based on the assigned binning.
@@ -237,8 +242,8 @@ def pwc(timespan):
     a time, it will assign the array as the constants in the piece-wise function, and select the constant corresponding
     to the specified time, based on the time interval defined by ``timespan``.
 
-    In the following example, passing ``pwc((2, 7))`` an array evenly distributes the array values in the
-    interval t=2 to t=7. The time ``t`` is then used to select one of the array values based on this distribution.
+    In the following example, passing an array to ``pwc((2, 7))`` evenly distributes the array values in the
+    interval ``t=2`` to ``t=7``. The time ``t`` is then used to select one of the array values based on this distribution.
 
     >>> H(params=[[11, 12, 13, 14, 15]], t=2.3)
     11.0*(PauliX(wires=[0]))
@@ -290,7 +295,7 @@ def pwc_from_function(timespan, num_bins):
 
     Returns:
             a function that takes some smooth function ``f(params, t)`` and converts it to a
-            piece-wise constant function spanning time ``t`` in `num_bins` bins.
+            piece-wise constant function spanning time ``t`` in ``num_bins`` bins.
 
     **Example**
 

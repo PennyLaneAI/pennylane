@@ -150,10 +150,10 @@ def evolve(*args, **kwargs):  # pylint: disable=unused-argument
     Array(0.8627419, dtype=float32)
 
     >>> jax.grad(circuit)(params)
-    [Array(50.561726, dtype=float32),
-     Array(-0.00013974, dtype=float32),
-     Array(-0.00021444, dtype=float32),
-     Array(-0.0002045, dtype=float32)]
+    [Array(50.690746, dtype=float32),
+    Array(-6.296886e-05, dtype=float32),
+    Array(-6.3341584e-05, dtype=float32),
+    Array(-7.052516e-05, dtype=float32)]
 
     .. note::
         In the example above, the decorator ``@jax.jit`` is used to compile this execution just-in-time. This means

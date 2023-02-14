@@ -48,10 +48,11 @@ class ParametrizedHamiltonian:
 
     .. seealso::
 
+        :func:`~.pennylane.evolve`
         :class:`~.ParametrizedEvolution`
 
     .. note::
-        The :class:`~.ParametrizedHamiltonian` must be Hermitian at all times. This is not explicitly
+        The ``ParametrizedHamiltonian`` must be Hermitian at all times. This is not explicitly
         checked; ensuring a correctly defined Hamiltonian is the responsibility of the user.
 
     **Example**
@@ -77,11 +78,12 @@ class ParametrizedHamiltonian:
         p1 = jnp.array([1., 1.])
         p2 = 1.
         params = [p1, p2]  # p1 is passed to f1, and p2 to f2
-        >>> H(params, t=1.)
-        (2.0*(PauliX(wires=[0]))) + ((0.8414709568023682*(PauliY(wires=[0]))) + (1.0*(PauliZ(wires=[0]))))
+
+    >>> H(params, t=1.)
+    (2.0*(PauliX(wires=[0]))) + ((0.8414709568023682*(PauliY(wires=[0]))) + (1.0*(PauliZ(wires=[0]))))
 
     .. note::
-        To be able to compute the time evolution of the Hamiltonian with :func:`~.functions.evolve`,
+        To be able to compute the time evolution of the Hamiltonian with :func:`~.pennylane.evolve`,
         these coefficient functions should be defined using ``jax.numpy`` rather than ``numpy``.
 
     We can also access the fixed and parametrized terms of the ``ParametrizedHamiltonian``.

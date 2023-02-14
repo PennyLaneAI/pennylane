@@ -78,6 +78,10 @@ the parameters match.
 When initializing a :class:`~.ParametrizedHamiltonian`, terms defined with fixed coefficients have to come
 before parametrized terms to prevent discrepancy in the wire order.
 
+.. note::
+    The :class:`~.ParametrizedHamiltonian` must be Hermitian at all times. This is not explicitly
+    checked; ensuring a correctly defined Hamiltonian is the responsibility of the user.
+
 
 ParametrizedEvolution
 ---------------------
@@ -93,10 +97,6 @@ realizing a unitary evolution :math:`U(t_0, t_1)` of the input state, i.e.
 
 A :class:`~.ParametrizedEvolution` is this solution :math:`U(t_0, t_1)` to the time-dependent
 Schrödinger equation for a :class:`~.ParametrizedHamiltonian`.
-
-.. note::
-    The :class:`~.ParametrizedHamiltonian` must be Hermitian at all times. This is not explicitly
-    checked; ensuring a correctly defined Hamiltonian is the responsibility of the user.
 
 The :class:`~.ParametrizedEvolution` class uses a numerical ordinary differential equation
 solver (see `jax.experimental.ode <https://github.com/google/jax/blob/main/jax/experimental/ode.py>`_). It
@@ -134,6 +134,7 @@ Additional options with regards to how the matrix is calculated can be passed to
 along with the parameters, as keyword arguments:
 
 >>> qml.evolve(H)(params=[1.2], t=[0, 4], atol=1e-6, mxstep=1)
+ParametrizedEvolution(Array(1.2, dtype=float32, weak_type=True), wires=[0, 1])
 
 The available keyword arguments can be found in in :class:`~.ParametrizedEvolution`. If not specified, they
 will default to predetermined values.
@@ -159,6 +160,7 @@ Now we can execute the evolution of this Hamiltonian in a QNode and compute its 
     import jax
 
     dev = qml.device("default.qubit", wires=1)
+
     @jax.jit
     @qml.qnode(dev, interface="jax")
     def circuit(params):
@@ -179,7 +181,7 @@ JIT-compiling is optional, and one can remove the decorator when only single exe
 
 .. warning::
     To find the simultaneous evolution of the two operators, so it is important that they are both included
-    in the same :func:`~.pennylane.evolve`. For non-commuting operations, applying
+    in the same :func:`~.pennylane.evolve`. For two non-commuting :class:`~.ParametrizedHamiltonians`, applying
     ``qml.evolve(H1)(params, t=[0, 10])`` followed by ``qml.evolve(H2)(params, t=[0, 10])`` will **not**
     apply the two pulses simultaneously, despite the overlapping time window.
 

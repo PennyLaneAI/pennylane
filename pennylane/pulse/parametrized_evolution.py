@@ -52,7 +52,8 @@ class ParametrizedEvolution(Operation):
 
     Args:
         H (ParametrizedHamiltonian): Hamiltonian to evolve
-        params (Optional[list]): trainable parameters
+        params (Optional[list]): trainable parameters, passed as list where each element corresponds to
+            the parameters of a scalar-valued function of the hamiltonian being evolved.
         t (Union[float, List[float]]): If a float, it corresponds to the duration of the evolution.
             If a list of floats, the ``odeint`` solver will use all the provided time values, and
             perform intermediate steps if necessary. It is recommended to just provide a start and end time.
@@ -62,7 +63,7 @@ class ParametrizedEvolution(Operation):
         id (str or None): id for the scalar product operator. Default is None.
 
     Keyword Args:
-        atol (float, optional): Absolute error tolerance for the ODE solver. Defaults to 1.4e-8.
+        atol (float, optional): Absolute error tolerance for the ODE solver. Defaults to ``1.4e-8``.
         rtol (float, optional): Relative error tolerance for the ODE solver. The error is estimated
             from comparing a 4th and 5th order Runge-Kutta step in the Dopri5 algorithm. This error
             is guaranteed to stay below ``tol = atol + rtol * abs(y)`` through adaptive step size
@@ -154,10 +155,10 @@ class ParametrizedEvolution(Operation):
             H = 2 * qml.PauliX(0) + f1 * qml.PauliY(0) + f2 * qml.PauliZ(0)
             ev = qml.evolve(H)
 
-            >>> params = [[4.6, 2.3], 1.2]
-            >>> qml.matrix(ev(params, t=0.5))
-            Array([[-0.18354285-0.26303384j, -0.7271658 -0.606923j  ],
-                   [ 0.7271658 -0.606923j  , -0.18354285+0.26303384j]],      dtype=complex64)
+        >>> params = [[4.6, 2.3], 1.2]
+        >>> qml.matrix(ev(params, t=0.5))
+        Array([[-0.18354285-0.26303384j, -0.7271658 -0.606923j  ],
+               [ 0.7271658 -0.606923j  , -0.18354285+0.26303384j]],      dtype=complex64)
 
         Internally the solver is using ``f1([4.6, 2.3], t)`` and ``f2(1.2, t)`` at each timestep when
         finding the matrix.
@@ -218,12 +219,12 @@ class ParametrizedEvolution(Operation):
         >>> circuit2(params)
         Array(-0.78236955, dtype=float32)
 
-        The ``circuit1`` is not executing the evolution of ``H1`` and ``H2`` simultaneously, but rather
+        Here, ``circuit1`` is not executing the evolution of ``H1`` and ``H2`` simultaneously, but rather
         executing ``H1`` in the ``[0, 10]`` time window and then executing ``H2`` with the same time window,
         without taking into account how the time evolution of ``H1`` affects the evolution of ``H2`` and vice versa!
 
         One can also provide a list of time values that the odeint will use to calculate the evolution of the
-        :class:`ParametrizedHamiltonian`. Keep in mind that our odeint solver uses an adaptive step size, thus
+        :class:`ParametrizedHamiltonian`. Keep in mind that the odeint solver uses an adaptive step size, thus
         it might use intermediate time values.
 
         .. code-block:: python
