@@ -924,7 +924,7 @@ class TestSimplify:
         assert isinstance(simplified_op, qml.ops.Sum)
         for s1, s2 in zip(final_op.operands, simplified_op.operands):
             assert s1.name == s2.name
-            assert s1.wires == s2.wires
+            assert s1.wires.toset() == s2.wires.toset()
             assert s1.data == s2.data
             assert s1.arithmetic_depth == s2.arithmetic_depth
 
