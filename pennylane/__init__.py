@@ -46,7 +46,7 @@ from pennylane._version import __version__
 from pennylane.about import about
 from pennylane.circuit_graph import CircuitGraph
 from pennylane.configuration import Configuration
-from pennylane.drawer import draw, draw_mpl
+from pennylane.drawer import draw, draw_mpl, draw_qfunc
 from pennylane.tracker import Tracker
 from pennylane.io import *
 from pennylane.measurements import (

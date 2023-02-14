@@ -17,7 +17,9 @@
 Contains the drawing function.
 """
 from functools import wraps
+from typing import Callable
 
+from pennylane.tape import make_qscript
 from .tape_mpl import tape_mpl
 from .tape_text import tape_text
 
@@ -450,5 +452,15 @@ def draw_mpl(
             style=style,
             **kwargs,
         )
+
+    return wrapper
+
+
+def draw_qfunc(qfunc: Callable):
+    """Draws a :class:`QuantumTape`."""
+
+    def wrapper(*qfunc_args, **qfunc_kwargs):
+        tape = make_qscript(qfunc)(*qfunc_args, **qfunc_kwargs)
+        return tape_text(tape)
 
     return wrapper
