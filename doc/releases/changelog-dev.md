@@ -8,9 +8,9 @@
 
 <h4>Feel the pulse 🔊</h4>
 
-* Added support for creating pulse-based circuits that describe evolution under a time-dependent
-  Hamiltonian as well as support for executing and differentiating these pulse-based circuits on
-  simulator.
+* Support for creating pulse-based circuits that describe evolution under a time-dependent
+  Hamiltonian has now been added, as well as the ability to execute these
+  pulse-based circuits on simulator.
   [(#3586)](https://github.com/PennyLaneAI/pennylane/pull/3586)
   [(#3617)](https://github.com/PennyLaneAI/pennylane/pull/3617)
   [(#3645)](https://github.com/PennyLaneAI/pennylane/pull/3645)
@@ -49,7 +49,7 @@
       return qml.expval(qml.PauliX(0) @ qml.PauliZ(1))
   ```
 
-  Pulse-based circuits can be executed on the `default.qubit` simulator using JAX as an interface
+  Pulse-based circuits can be executed on the `default.qubit` simulator using JAX as an interface:
 
   ```pycon
   >>> dev = dev = qml.device("default.qubit", wires=2)
