@@ -27,6 +27,7 @@ from pennylane.operation import AnyWires, DecompositionUndefinedError, MatrixUnd
 from pennylane.ops.op_math.sprod import SProd, s_prod
 from pennylane.wires import Wires
 
+
 scalars = (1, 1.23, 0.0, 1 + 2j)  # int, float, zero, and complex cases accounted for
 
 no_mat_ops = (
@@ -419,16 +420,34 @@ class TestMatrix:
         qml.Hadamard(wires=0),
     )
 
+    @pytest.mark.parametrize("scalar", scalars)
     @pytest.mark.parametrize("op", sparse_ops)
-    def test_sparse_matrix(self, op):
+    def test_sparse_matrix(self, scalar, op):
         """Test the sparse_matrix representation of scaled ops."""
-        scalar = 1 + 2j
         sprod_op = SProd(scalar, op)
         sparse_matrix = sprod_op.sparse_matrix()
         sparse_matrix.sort_indices()
 
-        expected_sparse_matrix = scalar * op.matrix()
-        expected_sparse_matrix = csr_matrix(expected_sparse_matrix)
+        expected_sparse_matrix = csr_matrix(op.matrix()).multiply(scalar)
+        expected_sparse_matrix.sort_indices()
+
+        assert isinstance(sparse_matrix, type(expected_sparse_matrix))
+        assert all(sparse_matrix.data == expected_sparse_matrix.data)
+        assert all(sparse_matrix.indices == expected_sparse_matrix.indices)
+
+    @pytest.mark.jax
+    @pytest.mark.parametrize("scalar", scalars)
+    @pytest.mark.parametrize("op", sparse_ops)
+    def test_sparse_matrix_jax_scalar(self, scalar, op):
+        """Test the sparse_matrix representation of scaled ops."""
+        import jax.numpy as jnp
+
+        scalar = jnp.array(scalar)
+        sprod_op = SProd(scalar, op)
+        sparse_matrix = sprod_op.sparse_matrix()
+        sparse_matrix.sort_indices()
+
+        expected_sparse_matrix = csr_matrix(op.matrix()).multiply(scalar)
         expected_sparse_matrix.sort_indices()
 
         assert isinstance(sparse_matrix, type(expected_sparse_matrix))
