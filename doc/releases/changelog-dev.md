@@ -730,6 +730,9 @@
   probabilities with the expected wire order.
   [(#3753)](https://github.com/PennyLaneAI/pennylane/pull/3753)
 
+* Ensure that a `QNode` does not return an empty iterable.
+  [(#3769)](https://github.com/PennyLaneAI/pennylane/pull/3769)
+
 <h3>Contributors</h3>
 
 This release contains contributions from (in alphabetical order):
