@@ -456,7 +456,7 @@
 
 <h3>Improvements</h3>
 
-<h4>Add new improvements here in PR number order</h4>
+<h4>Add new improvements here</h4>
 
 <h4>Operations and batching</h4>
 
