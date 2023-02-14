@@ -6,7 +6,7 @@
 
 <h4>Add new features here</h4>
 
-<h4>Feel the pulse 🔊</h4>
+<h4>Pulse programming 🔊</h4>
 
 * Support for creating pulse-based circuits that describe evolution under a time-dependent
   Hamiltonian has now been added, as well as the ability to execute these
@@ -62,7 +62,7 @@
     Array(0.07700024, dtype=float32, weak_type=True)]]
   ```
 
-<h4>Here comes the SU(N) 🌞</h4>
+<h4>Special unitary operation 🌞</h4>
 
 * A new operation `SpecialUnitary` was added, providing access to an arbitrary
   unitary gate via a parametrization in the Pauli basis.
@@ -107,23 +107,6 @@
   and it supports parameter broadcasting/batching, but not both at the same time.
 
 <h4>Always differentiable 📈</h4>
-
-* The `qml.math` module now also contains a submodule for
-  fast Fourier transforms, `qml.math.fft`.
-  [(#1440)](https://github.com/PennyLaneAI/pennylane/pull/1440)
-
-  The submodule in particular provides differentiable
-  versions of the following functions, available in all common
-  interfaces for PennyLane
-
-  * [fft](https://numpy.org/doc/stable/reference/generated/numpy.fft.fft.html)
-  * [ifft](https://numpy.org/doc/stable/reference/generated/numpy.fft.ifft.html)
-  * [fft2](https://numpy.org/doc/stable/reference/generated/numpy.fft.fft2.html)
-  * [ifft2](https://numpy.org/doc/stable/reference/generated/numpy.fft.ifft2.html)
-
-  Note that the output of the derivative of these functions
-  may differ when used with complex-valued inputs, due to different
-  conventions on complex-valued derivatives.
 
 * The Hadamard test gradient tranform is now available via `qml.gradients.hadamard_grad`.
   [#3625](https://github.com/PennyLaneAI/pennylane/pull/3625)
@@ -325,41 +308,11 @@
   4: ─────────────────╰RY(0.81)─╰SWAP─────────────────╰RY(0.06)─╰SWAP─────────────────┤  State
   ```
 
-<h4>Next generation device API ⚙️</h4>
-
-* The `apply_operation` single-dispatch function is added to `devices/qubit` that applies an operation
-  to a state and returns a new state.
-  [(#3637)](https://github.com/PennyLaneAI/pennylane/pull/3637)
-
-* The `preprocess` function is added to `devices/qubit` that validates, expands, and transforms a batch
-  of `QuantumTape` objects to abstract preprocessing details away from the device.
-  [(#3708)](https://github.com/PennyLaneAI/pennylane/pull/3708)
-
-* The `create_initial_state` function is added to `devices/qubit` that returns an initial state for an execution.
-  [(#3683)](https://github.com/PennyLaneAI/pennylane/pull/3683)
-
-* The `simulate` function is added to `devices/qubit` that turns a single quantum tape into a measurement result.
-  The function only supports state based measurements with either no observables or observables with diagonalizing gates.
-  It supports simultanous measurement of non-commuting observables.
-  [(#3700)](https://github.com/PennyLaneAI/pennylane/pull/3700)
-
 <h3>Improvements</h3>
 
 <h4>Add new improvements here</h4>
 
 <h4>Pulse programming</h4>
-
-* A new function `dot` has been added to compute the dot product between a vector and a list of operators.
-  [(#3586)](https://github.com/PennyLaneAI/pennylane/pull/3586)
-
-  ```pycon
-  >>> coeffs = np.array([1.1, 2.2])
-  >>> ops = [qml.PauliX(0), qml.PauliY(0)]
-  >>> qml.dot(coeffs, ops)
-  (1.1*(PauliX(wires=[0]))) + (2.2*(PauliY(wires=[0])))
-  >>> qml.dot(coeffs, ops, pauli=True)
-  1.1 * X(0) + 2.2 * Y(0)
-  ```
 
 * A `ParametrizedHamiltonian` can be time-evolved by using `ParametrizedEvolution`.
   [(#3617)](https://github.com/PennyLaneAI/pennylane/pull/3617)
@@ -420,6 +373,18 @@
   ```
 
 <h4>Operations and batching</h4>
+
+* A new function `dot` has been added to compute the dot product between a vector and a list of operators.
+  [(#3586)](https://github.com/PennyLaneAI/pennylane/pull/3586)
+
+  ```pycon
+  >>> coeffs = np.array([1.1, 2.2])
+  >>> ops = [qml.PauliX(0), qml.PauliY(0)]
+  >>> qml.dot(coeffs, ops)
+  (1.1*(PauliX(wires=[0]))) + (2.2*(PauliY(wires=[0])))
+  >>> qml.dot(coeffs, ops, pauli=True)
+  1.1 * X(0) + 2.2 * Y(0)
+  ```
 
 * `qml.ControlledQubitUnitary` now inherits from `ControlledOp`, which defines `decomposition`, `expand`, and `sparse_matrix` rather than raising an error.
   [(#3450)](https://github.com/PennyLaneAI/pennylane/pull/3450)
@@ -484,6 +449,23 @@
   [(#3726)](https://github.com/PennyLaneAI/pennylane/pull/3726)
 
 <h4>Differentiability and interfaces</h4>
+
+* The `qml.math` module now also contains a submodule for
+  fast Fourier transforms, `qml.math.fft`.
+  [(#1440)](https://github.com/PennyLaneAI/pennylane/pull/1440)
+
+  The submodule in particular provides differentiable
+  versions of the following functions, available in all common
+  interfaces for PennyLane
+
+  * [fft](https://numpy.org/doc/stable/reference/generated/numpy.fft.fft.html)
+  * [ifft](https://numpy.org/doc/stable/reference/generated/numpy.fft.ifft.html)
+  * [fft2](https://numpy.org/doc/stable/reference/generated/numpy.fft.fft2.html)
+  * [ifft2](https://numpy.org/doc/stable/reference/generated/numpy.fft.ifft2.html)
+
+  Note that the output of the derivative of these functions
+  may differ when used with complex-valued inputs, due to different
+  conventions on complex-valued derivatives.
 
 * Validation has been added on gradient keyword arguments when initializing a QNode — if unexpected keyword arguments are passed,
   a `UserWarning` is raised. A list of the current expected gradient function keyword arguments can be accessed via
@@ -561,6 +543,22 @@
   [(#3744)](https://github.com/PennyLaneAI/pennylane/pull/3744)
 
 <h4>Next generation device API</h4>
+
+* The `apply_operation` single-dispatch function is added to `devices/qubit` that applies an operation
+  to a state and returns a new state.
+  [(#3637)](https://github.com/PennyLaneAI/pennylane/pull/3637)
+
+* The `preprocess` function is added to `devices/qubit` that validates, expands, and transforms a batch
+  of `QuantumTape` objects to abstract preprocessing details away from the device.
+  [(#3708)](https://github.com/PennyLaneAI/pennylane/pull/3708)
+
+* The `create_initial_state` function is added to `devices/qubit` that returns an initial state for an execution.
+  [(#3683)](https://github.com/PennyLaneAI/pennylane/pull/3683)
+
+* The `simulate` function is added to `devices/qubit` that turns a single quantum tape into a measurement result.
+  The function only supports state based measurements with either no observables or observables with diagonalizing gates.
+  It supports simultanous measurement of non-commuting observables.
+  [(#3700)](https://github.com/PennyLaneAI/pennylane/pull/3700)
 
 * The `ExecutionConfig` data class has been added.
   [(#3649)](https://github.com/PennyLaneAI/pennylane/pull/3649)
