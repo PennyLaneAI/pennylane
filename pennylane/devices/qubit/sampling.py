@@ -17,21 +17,6 @@ import pennylane as qml
 from pennylane import numpy as np
 
 
-def states_to_binary(samples, num_wires: int) -> np.ndarray:
-    """Convert basis states from base 10 to binary representation.
-
-    Args:
-        samples (array[int]): samples of basis states in base 10 representation.
-            Shape will be (num_samples,) or (num_batches, num_samples) when broadcasting is used
-        num_wires (int): the number of qubits
-
-    Returns:
-        ndarray[bool]: basis states in binary representation
-    """
-    powers_of_two = 1 << np.arange(num_wires, dtype=np.int64)[::-1]
-    return (samples[..., None] & powers_of_two).astype(np.bool8)
-
-
 def sample_state(state, shots: int, wires=None, rng=None) -> np.ndarray:
     """
     Returns a series of samples of a state.
@@ -55,4 +40,5 @@ def sample_state(state, shots: int, wires=None, rng=None) -> np.ndarray:
 
     probs = qml.probs(wires=wires_to_sample).process_state(state, state_wires)
     samples = rng.choice(basis_states, shots, p=probs)
-    return states_to_binary(samples, num_wires)
+    powers_of_two = 1 << np.arange(num_wires, dtype=np.int64)[::-1]
+    return (samples[..., None] & powers_of_two).astype(np.bool8)
