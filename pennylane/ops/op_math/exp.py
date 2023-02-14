@@ -351,7 +351,7 @@ class Exp(ScalarSymbolicOp, Operation):
             List[Operator]: a list of operators containing the decomposition
         """
         if self.num_steps is None:
-            raise ValueError(
+            raise DecompositionUndefinedError(
                 "The number of steps is required to calculate the Suzuki-Trotter "
                 "decomposition of the exponential operator. Please specify a value "
                 "for ``num_steps`` when instantiating the operator."
