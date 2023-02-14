@@ -57,6 +57,19 @@ def sum(*summands, do_queue=True, id=None, lazy=True):
     Returns:
         ~ops.op_math.Sum: The operator representing the sum of summands.
 
+    .. note::
+
+        This operator supports batched operands:
+
+        >>> op = qml.op_sum(qml.RX(np.array([1, 2, 3]), wires=0), qml.PauliX(1))
+        >>> op.matrix().shape
+        (3, 4, 4)
+
+        But it doesn't support batching of operators:
+
+        >>> op = qml.op_sum(np.array([qml.RX(0.4, 0), qml.RZ(0.3, 0)]), qml.PauliZ(0))
+        AttributeError: 'numpy.ndarray' object has no attribute 'wires'
+
     .. seealso:: :class:`~.ops.op_math.Sum`
 
     **Example**
@@ -204,28 +217,21 @@ class Sum(CompositeOp):
         Returns:
             tensor_like: matrix representation
         """
-        if pr := self._pauli_rep:
-            wires = wire_order or self.wires.tolist()
-            return pr.to_mat(wire_order=wires)
-
-        mats_and_wires_gen = (
-            (qml.matrix(op) if isinstance(op, Hamiltonian) else op.matrix(), op.wires) for op in self
+        gen = (
+            (qml.matrix(op) if isinstance(op, Hamiltonian) else op.matrix(), op.wires)
+            for op in self
         )
 
-        reduced_mat, sum_wires = math.reduce_matrices(mats_and_wires_gen, reduce_func=math.add)
+        reduced_mat, sum_wires = math.reduce_matrices(gen, reduce_func=math.add)
 
         wire_order = wire_order or self.wires
 
         return math.expand_matrix(reduced_mat, sum_wires, wire_order=wire_order)
 
     def sparse_matrix(self, wire_order=None):
-        if pr := self._pauli_rep:
-            wires = wire_order or self.wires.tolist()
-            return pr.to_mat(wire_order=wires, format="csr")
+        gen = ((op.sparse_matrix(), op.wires) for op in self)
 
-        mats_and_wires_gen = ((op.sparse_matrix(), op.wires) for op in self)
-
-        reduced_mat, sum_wires = math.reduce_matrices(mats_and_wires_gen, reduce_func=math.add)
+        reduced_mat, sum_wires = math.reduce_matrices(gen, reduce_func=math.add)
 
         wire_order = wire_order or self.wires
 
@@ -289,8 +295,8 @@ class Sum(CompositeOp):
         return new_summands
 
     def simplify(self, cutoff=1.0e-12) -> "Sum":  # pylint: disable=arguments-differ
+        # try using pauli_rep:
         if pr := self._pauli_rep:
-            pr = pr.simplify(tol=cutoff)
             return pr.operation(wire_order=self.wires)
 
         new_summands = self._simplify_summands(summands=self.operands).get_summands(cutoff=cutoff)

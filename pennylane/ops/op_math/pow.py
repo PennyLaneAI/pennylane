@@ -30,9 +30,8 @@ from pennylane.operation import (
 )
 from pennylane.ops.identity import Identity
 from pennylane.queuing import QueuingManager, apply
-from pennylane.wires import Wires
 
-from .symbolicop import SymbolicOp
+from .symbolicop import ScalarSymbolicOp, SymbolicOp
 
 _superscript = str.maketrans("0123456789.+-", "⁰¹²³⁴⁵⁶⁷⁸⁹⋅⁺⁻")
 
@@ -54,6 +53,25 @@ def pow(base, z=1, lazy=True, do_queue=True, id=None):
 
     Returns:
         Operator
+
+    .. note::
+
+        This operator supports a batched base, a batched coefficient and a combination of both:
+
+        >>> op = qml.pow(qml.RX([1, 2, 3], wires=0), z=4)
+        >>> qml.matrix(op).shape
+        (3, 2, 2)
+        >>> op = qml.pow(qml.RX(1, wires=0), z=[1, 2, 3])
+        >>> qml.matrix(op).shape
+        (3, 2, 2)
+        >>> op = qml.pow(qml.RX([1, 2, 3], wires=0), z=[4, 5, 6])
+        >>> qml.matrix(op).shape
+        (3, 2, 2)
+
+        But it doesn't support batching of operators:
+
+        >>> op = qml.pow([qml.RX(1, wires=0), qml.RX(2, wires=0)], z=4)
+        AttributeError: 'list' object has no attribute 'name'
 
     .. seealso:: :class:`~.Pow`, :meth:`~.Operator.pow`.
 
@@ -107,10 +125,6 @@ class PowOperation(Operation):
     grad_method = None
 
     @property
-    def inverse(self):
-        return False
-
-    @property
     def base_name(self):
         return self._name
 
@@ -128,7 +142,7 @@ class PowOperation(Operation):
         return self.base.control_wires
 
 
-class Pow(SymbolicOp):
+class Pow(ScalarSymbolicOp):
     """Symbolic operator denoting an operator raised to a power.
 
     Args:
@@ -188,23 +202,13 @@ class Pow(SymbolicOp):
         return object.__new__(Pow)
 
     def __init__(self, base=None, z=1, do_queue=True, id=None):
-
-        # incorporate base inverse attribute into the exponent
-        if getattr(base, "inverse", False):
-            base.inverse = False
-            z *= -1
-
         self.hyperparameters["z"] = z
         self._name = f"{base.name}**{z}"
 
-        super().__init__(base, do_queue=do_queue, id=id)
+        super().__init__(base, scalar=z, do_queue=do_queue, id=id)
 
         if isinstance(self.z, int) and self.z > 0:
-            if (
-                base_pauli_rep := getattr(
-                    self.base, "_pauli_rep", None
-                )  # pylint: disable=protected-access
-            ) is not None:
+            if (base_pauli_rep := getattr(self.base, "_pauli_rep", None)) and (self.batch_size is None):
                 pr = qml.pauli.PauliSentence({})
                 for _ in range(self.z):
                     pr = pr * base_pauli_rep
@@ -237,25 +241,11 @@ class Pow(SymbolicOp):
             f"({base_label}){z_string}" if self.base.arithmetic_depth > 0 else base_label + z_string
         )
 
-    def matrix(self, wire_order=None):
-        if pr := self._pauli_rep:
-            wires = wire_order or self.wires.tolist()
-            return pr.to_mat(wire_order=wires)
-
-        if isinstance(self.base, qml.Hamiltonian):
-            base_matrix = qml.matrix(self.base)
-        else:
-            base_matrix = self.base.matrix()
-
-        if isinstance(self.z, int):
-            mat = qmlmath.linalg.matrix_power(base_matrix, self.z)
-        else:
-            mat = fractional_matrix_power(base_matrix, self.z)
-
-        if wire_order is None or self.wires == Wires(wire_order):
-            return mat
-
-        return qml.math.expand_matrix(mat, wires=self.wires, wire_order=wire_order)
+    @staticmethod
+    def _matrix(scalar, mat):
+        if isinstance(scalar, int):
+            return qmlmath.linalg.matrix_power(mat, scalar)
+        return fractional_matrix_power(mat, scalar)
 
     # pylint: disable=arguments-differ
     @staticmethod
@@ -264,19 +254,6 @@ class Pow(SymbolicOp):
             base_matrix = base.compute_sparse_matrix(*params, **base.hyperparameters)
             return base_matrix**z
         raise SparseMatrixUndefinedError
-
-    def sparse_matrix(self, wire_order=None):
-        if pr := self._pauli_rep:
-            wires = wire_order or self.wires.tolist()
-            return pr.to_mat(wire_order=wires, format="csr")
-
-        canonical_sparse_matrix = self.compute_sparse_matrix(
-            *self.parameters, **self.hyperparameters
-        )
-
-        return qmlmath.expand_matrix(
-            canonical_sparse_matrix, wires=self.wires, wire_order=wire_order
-        )
 
     # pylint: disable=arguments-renamed, invalid-overridden-method
     @property
@@ -358,6 +335,7 @@ class Pow(SymbolicOp):
         return Pow(base=qml.adjoint(self.base), z=self.z)
 
     def simplify(self) -> Union["Pow", Identity]:
+        # try using pauli_rep:
         if pr := self._pauli_rep:
             return pr.operation(wire_order=self.wires)
 
