@@ -415,7 +415,7 @@
   2*(PauliX(wires=[0]) + PauliY(wires=[1]) + PauliZ(wires=[2]))
   ```
 
-* `qml.generator` now supports operators with generators containing `Sum` and `Prod` instances.
+* `qml.generator` now supports operators with `Sum` and `Prod` generators.
   [(#3691)](https://github.com/PennyLaneAI/pennylane/pull/3691)
 
 * `Exp` operator now detects if the base is a generator, and decomposes to its corresponding operator.
