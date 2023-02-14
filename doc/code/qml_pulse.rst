@@ -53,7 +53,7 @@ and operators:
     is possible to create a list of multiple coefficients of the same form iteratively using lambda
     functions, i.e.
 
-    ``coeffs = [lambda p, t: p for _ in range(3)]``.
+    ``coeffs = [lambda p, t: p * t for _ in range(3)]``.
 
     Do **not**, however, define the function as dependent on the value that is iterated over. That is, it is not
     possible to define ``coeffs = [lambda p, t: p * t**i for i in range(3)]`` to create a list
