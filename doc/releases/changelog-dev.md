@@ -8,14 +8,18 @@
 
 <h4>Feel the pulse 🔊</h4>
 
-* Parameterized Hamiltonians can now be created with the addition of `ParametrizedHamiltonian`.
+* Added support for creating pulse-based circuits that describe evolution under a time-dependent
+  Hamiltonian as well as support for executing and differentiating these pulse-based circuits on
+  simulator.
   [(#3586)](https://github.com/PennyLaneAI/pennylane/pull/3586)
   [(#3617)](https://github.com/PennyLaneAI/pennylane/pull/3617)
   [(#3645)](https://github.com/PennyLaneAI/pennylane/pull/3645)
+  [(#3706)](https://github.com/PennyLaneAI/pennylane/pull/3706)
+  [(#3730)](https://github.com/PennyLaneAI/pennylane/pull/3730)
 
-  A `ParametrizedHamiltonian` holds information representing a linear combination of operators
-  with parametrized coefficents. The `ParametrizedHamiltonian` can be passed parameters to create the operator for
-  the specified parameters.
+  A time-dependent Hamiltonian can be created using `ParametrizedHamiltonian`, which 
+  holds information representing a linear combination of operators
+  with parametrized coefficents and can be constructed as follows:
 
   ```pycon
   f1 = lambda p, t: p * np.sin(t) * (t - 1)
@@ -36,141 +40,26 @@
   (2*(PauliX(wires=[1]) @ PauliX(wires=[1]))) + ((-0.2876553535461426*(PauliY(wires=[0]) @ PauliY(wires=[0]))) + (1.5179612636566162*(PauliZ(wires=[0]) @ PauliZ(wires=[1]))))
   ```
 
-  The same `ParametrizedHamiltonian` can also be constructed via a list of coefficients and operators:
+  The time-dependent Hamiltonian can be used within a circuit with `qml.evolve`:
 
-  ```pycon
-  >>> coeffs = [2, f1, f2]
-  >>> ops = [XX, YY, ZZ]
-  >>> H =  qml.dot(coeffs, ops)
+  ```python
+  def pulse_circuit(params, time):
+      qml.Hadamard(0)
+      qml.evolve(H)(params, time)
+      return qml.expval(qml.PauliX(0) @ qml.PauliZ(1))
   ```
 
-* A `ParametrizedHamiltonian` can be time-evolved by using `ParametrizedEvolution`.
-  [(#3617)](https://github.com/PennyLaneAI/pennylane/pull/3617)
-  [(#3706)](https://github.com/PennyLaneAI/pennylane/pull/3706)
-  [(#3730)](https://github.com/PennyLaneAI/pennylane/pull/3730)
-
-* A new function called `qml.evolve` has been added that returns the evolution of an `Operator` or a `ParametrizedHamiltonian`.
-  [(#3617)](https://github.com/PennyLaneAI/pennylane/pull/3617)
-  [(#3706)](https://github.com/PennyLaneAI/pennylane/pull/3706)
-
-* A new function `dot` has been added to compute the dot product between a vector and a list of operators. `qml.dot` will now target this new function.
-  [(#3586)](https://github.com/PennyLaneAI/pennylane/pull/3586)
+  Pulse-based circuits can be executed on the `default.qubit` simulator using JAX as an interface
 
   ```pycon
-  >>> coeffs = np.array([1.1, 2.2])
-  >>> ops = [qml.PauliX(0), qml.PauliY(0)]
-  >>> qml.dot(coeffs, ops)
-  (1.1*(PauliX(wires=[0]))) + (2.2*(PauliY(wires=[0])))
-  >>> qml.dot(coeffs, ops, pauli=True)
-  1.1 * X(0) + 2.2 * Y(0)
-  ```
-
-  Other features for `ParameterizedHamiltonian` include:
-
-  - Time evolution via `qml.evolve`, which creates a `ParametrizedEvolution` object:
-  
-    ```python
-    >>> coeffs = [lambda p, t: p * t for _ in range(4)]
-    >>> ops = [qml.PauliX(i) for i in range(4)]
-    >>> H = qml.dot(coeffs, ops)
-    >>> qml.evolve(H)
-    ParametrizedEvolution(wires=[0, 1, 2, 3])
-    ```
-
-  - Added `pwc` as a convenience function for defining a `ParametrizedHamiltonian`.
-    This function can be used to create a callable coefficient by setting
-    the timespan over which the function should be non-zero. The resulting callable
-    can be passed an array of parameters and a time.
-
-    ```pycon
-    >>> timespan = (2, 4)
-    >>> f = pwc(timespan)
-    >>> f * qml.PauliX(0)
-    ParametrizedHamiltonian: terms=1
-    ```
-
-    The `params` array will be used as bin values evenly distributed over the timespan,
-    and the parameter `t` will determine which of the bins is returned.
-
-    ```pycon
-    >>> f(params=[1.2, 2.3, 3.4, 4.5], t=3.9)
-    DeviceArray(4.5, dtype=float32) 
-    >>> f(params=[1.2, 2.3, 3.4, 4.5], t=6)  # zero outside the range (2, 4) 
-    DeviceArray(0., dtype=float32)
-    ```
-    
-  - Added `pwc_from_function` as a decorator for defining a `ParametrizedHamiltonian`.
-    This function can be used to decorate a function and create a piecewise constant
-    approximation of it.
-    
-    ```pycon
-    >>> @pwc_from_function(t=(2, 4), num_bins=10)
-    ... def f1(p, t):
-    ...     return p * t
-    ```
-
-    The resulting function approximates the same of `p**2 * t` on the interval `t=(2, 4)`
-    in 10 bins, and returns zero outside the interval.
-    
-    ```pycon
-    # t=2 and t=2.1 are within the same bin
-    >>> f1(3, 2), f1(3, 2.1)
-    (DeviceArray(6., dtype=float32), DeviceArray(6., dtype=float32))
-    # next bin
-    >>> f1(3, 2.2)
-    DeviceArray(6.6666665, dtype=float32)
-    # outside the interval t=(2, 4)
-    >>> f1(3, 5)
-    DeviceArray(0., dtype=float32)
-    ```
-
-* Added `pwc` as a convenience function for defining a `ParametrizedHamiltonian`.
-  This function can be used to create a callable coefficient by setting
-  the timespan over which the function should be non-zero. The resulting callable
-  can be passed an array of parameters and a time.
-  [(#3645)](https://github.com/PennyLaneAI/pennylane/pull/3645)
-
-  ```pycon
-  >>> timespan = (2, 4)
-  >>> f = pwc(timespan)
-  >>> f * qml.PauliX(0)
-  ParametrizedHamiltonian: terms=1
-  ```
-
-  The `params` array will be used as bin values evenly distributed over the timespan,
-  and the parameter `t` will determine which of the bins is returned.
-
-  ```pycon
-  >>> f(params=[1.2, 2.3, 3.4, 4.5], t=3.9)
-  DeviceArray(4.5, dtype=float32)
-  >>> f(params=[1.2, 2.3, 3.4, 4.5], t=6)  # zero outside the range (2, 4)
-  DeviceArray(0., dtype=float32)
-  ```
-
-* Added `pwc_from_function` as a decorator for defining a `ParametrizedHamiltonian`.
-  This function can be used to decorate a function and create a piecewise constant
-  approximation of it.
-  [(#3645)](https://github.com/PennyLaneAI/pennylane/pull/3645)
-
-  ```pycon
-  >>> @pwc_from_function(t=(2, 4), num_bins=10)
-  ... def f1(p, t):
-  ...     return p * t
-  ```
-
-  The resulting function approximates the same of `p**2 * t` on the interval `t=(2, 4)`
-  in 10 bins, and returns zero outside the interval.
-
-  ```pycon
-  # t=2 and t=2.1 are within the same bin
-  >>> f1(3, 2), f1(3, 2.1)
-  (DeviceArray(6., dtype=float32), DeviceArray(6., dtype=float32))
-  # next bin
-  >>> f1(3, 2.2)
-  DeviceArray(6.6666665, dtype=float32)
-  # outside the interval t=(2, 4)
-  >>> f1(3, 5)
-  DeviceArray(0., dtype=float32)
+  >>> dev = dev = qml.device("default.qubit", wires=2)
+  >>> qnode = qml.QNode(pulse_circuit, dev, interface="jax")
+  >>> qnode(params, time=0.5)
+  Array(-0.5383645, dtype=float32)
+  >>> jax.grad(qnode)(params, time=0.5)
+  [Array(-4.980595e-09, dtype=float32),
+   [Array(-0.7838294, dtype=float32, weak_type=True),
+    Array(0.07700024, dtype=float32, weak_type=True)]]
   ```
 
 <h4>Here comes the SU(N) 🌞</h4>
@@ -457,6 +346,78 @@
 <h3>Improvements</h3>
 
 <h4>Add new improvements here</h4>
+
+<h4>Pulse programming</h4>
+
+* A new function `dot` has been added to compute the dot product between a vector and a list of operators.
+  [(#3586)](https://github.com/PennyLaneAI/pennylane/pull/3586)
+
+  ```pycon
+  >>> coeffs = np.array([1.1, 2.2])
+  >>> ops = [qml.PauliX(0), qml.PauliY(0)]
+  >>> qml.dot(coeffs, ops)
+  (1.1*(PauliX(wires=[0]))) + (2.2*(PauliY(wires=[0])))
+  >>> qml.dot(coeffs, ops, pauli=True)
+  1.1 * X(0) + 2.2 * Y(0)
+  ```
+
+* A `ParametrizedHamiltonian` can be time-evolved by using `ParametrizedEvolution`.
+  [(#3617)](https://github.com/PennyLaneAI/pennylane/pull/3617)
+  [(#3706)](https://github.com/PennyLaneAI/pennylane/pull/3706)
+  [(#3730)](https://github.com/PennyLaneAI/pennylane/pull/3730)
+
+* A new function called `qml.evolve` has been added that returns the evolution of an `Operator` or a `ParametrizedHamiltonian`.
+  [(#3617)](https://github.com/PennyLaneAI/pennylane/pull/3617)
+  [(#3706)](https://github.com/PennyLaneAI/pennylane/pull/3706)
+
+* Added `pwc` as a convenience function for defining a `ParametrizedHamiltonian`.
+  This function can be used to create a callable coefficient by setting
+  the timespan over which the function should be non-zero. The resulting callable
+  can be passed an array of parameters and a time.
+  [(#3645)](https://github.com/PennyLaneAI/pennylane/pull/3645)
+
+  ```pycon
+  >>> timespan = (2, 4)
+  >>> f = pwc(timespan)
+  >>> f * qml.PauliX(0)
+  ParametrizedHamiltonian: terms=1
+  ```
+
+  The `params` array will be used as bin values evenly distributed over the timespan,
+  and the parameter `t` will determine which of the bins is returned.
+
+  ```pycon
+  >>> f(params=[1.2, 2.3, 3.4, 4.5], t=3.9)
+  DeviceArray(4.5, dtype=float32)
+  >>> f(params=[1.2, 2.3, 3.4, 4.5], t=6)  # zero outside the range (2, 4)
+  DeviceArray(0., dtype=float32)
+  ```
+
+* Added `pwc_from_function` as a decorator for defining a `ParametrizedHamiltonian`.
+  This function can be used to decorate a function and create a piecewise constant
+  approximation of it.
+  [(#3645)](https://github.com/PennyLaneAI/pennylane/pull/3645)
+
+  ```pycon
+  >>> @pwc_from_function(t=(2, 4), num_bins=10)
+  ... def f1(p, t):
+  ...     return p * t
+  ```
+
+  The resulting function approximates the same of `p**2 * t` on the interval `t=(2, 4)`
+  in 10 bins, and returns zero outside the interval.
+
+  ```pycon
+  # t=2 and t=2.1 are within the same bin
+  >>> f1(3, 2), f1(3, 2.1)
+  (DeviceArray(6., dtype=float32), DeviceArray(6., dtype=float32))
+  # next bin
+  >>> f1(3, 2.2)
+  DeviceArray(6.6666665, dtype=float32)
+  # outside the interval t=(2, 4)
+  >>> f1(3, 5)
+  DeviceArray(0., dtype=float32)
+  ```
 
 <h4>Operations and batching</h4>
 
