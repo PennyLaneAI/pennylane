@@ -234,7 +234,7 @@ class SProd(ScalarSymbolicOp):
         return self.scalar * self.base.eigvals()
 
     def sparse_matrix(self, wire_order=None):
-        """ Computes, by default, a `scipy.sparse.csr_matrix` representation of this Tensor.
+        """Computes, by default, a `scipy.sparse.csr_matrix` representation of this Tensor.
 
         This is useful for larger qubit numbers, where the dense matrix becomes very large, while
         consisting mostly of zero entries.
@@ -276,7 +276,7 @@ class SProd(ScalarSymbolicOp):
         return [SProd(scalar=self.scalar**z, base=Pow(base=self.base, z=z))]
 
     def adjoint(self):
-        """ Create an operation that is the adjoint of this one.
+        """Create an operation that is the adjoint of this one.
 
         Adjointed operations are the conjugated and transposed version of the
         original operation. Adjointed ops are equivalent to the inverted operation for unitary
