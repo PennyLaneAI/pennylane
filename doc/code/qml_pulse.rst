@@ -9,9 +9,9 @@ Creating a parametrized Hamiltonian
 The :mod:`~.pulse` module provides a framework to create a time-dependent Hamiltonian of the form
 
 .. math::
-    H(p, t) = H_\text{drift} + \sum_j f_j(p, t) H_j
+    H(\{v_j\}, t) = H_\text{drift} + \sum_j f_j(v_j, t) H_j
 
-with constant operators :math:`H_j` and scalar functions :math:`f_j(p, t)` that may depend on
+with constant operators :math:`H_j` and scalar functions :math:`f_j(v_j, t)` that may depend on
 parameters :math:`p` and time :math:`t`.
 
 Defining a :class:`~.ParametrizedHamiltonian` requires coefficients and operators, where some of the coefficients
@@ -23,7 +23,7 @@ are callables. The callables defining the parameterized coefficients must have t
     import pennylane as qml
     from jax import numpy as jnp
 
-    # defining the coefficients fj(v, t) for the two parametrized terms
+    # defining the coefficients fj(p, t) for the two parametrized terms
     f1 = lambda p, t: p * jnp.sin(t) * (t - 1)
     f2 = lambda p, t: p[0] * jnp.cos(p[1]* t ** 2)
 
@@ -85,7 +85,7 @@ before parametrized terms to prevent discrepancy in the wire order.
 
 ParametrizedEvolution
 ---------------------
-During a pulse sequence spanning time :math:`(t_0, t_1)`, the state evolves according to the time-dependent Schrodinger equation
+During a pulse program spanning time :math:`(t_0, t_1)`, the state evolves according to the time-dependent Schrodinger equation
 
 .. math::
     \frac{\partial}{\partial t} |\psi\rangle = -i H(t) |\psi\rangle
@@ -143,7 +143,7 @@ Using qml.evolve in a QNode
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 The :class:`~.ParametrizedEvolution` can be implemented in a QNode. We will evolve the
-:class:`~.ParametrizedHamiltonian`:
+following :class:`~.ParametrizedHamiltonian`:
 
 .. code-block:: python
 
