@@ -170,6 +170,12 @@ class SProd(ScalarSymbolicOp):
 
     @property
     def num_params(self):
+        """Number of trainable parameters that the operator depends on.
+        Usually 1 + the number of trainable parameters for the base op.
+
+        Returns:
+            int: number of trainable parameters
+        """
         return 1 + self.base.num_params
 
     def terms(self):  # is this method necessary for this class?
@@ -194,6 +200,7 @@ class SProd(ScalarSymbolicOp):
     # pylint: disable=arguments-renamed,invalid-overridden-method
     @property
     def has_diagonalizing_gates(self):
+        """Bool: Whether the Operator returns defined diagonalizing gates."""
         return self.base.has_diagonalizing_gates
 
     def diagonalizing_gates(self):
@@ -227,10 +234,24 @@ class SProd(ScalarSymbolicOp):
         return self.scalar * self.base.eigvals()
 
     def sparse_matrix(self, wire_order=None):
+        """ Computes, by default, a `scipy.sparse.csr_matrix` representation of this Tensor.
+
+        This is useful for larger qubit numbers, where the dense matrix becomes very large, while
+        consisting mostly of zero entries.
+
+        Args:
+            wires (Iterable): Wire labels that indicate the order of wires according to which the matrix
+                is constructed. If not provided, ``self.wires`` is used.
+            format: the output format for the sparse representation. All scipy sparse formats are accepted.
+
+        Returns:
+            :class:`scipy.sparse._csr.csr_matrix`: sparse matrix representation
+        """
         return self.scalar * self.base.sparse_matrix(wire_order=wire_order)
 
     @property
     def has_matrix(self):
+        """Bool: Whether or not the Operator returns a defined matrix."""
         return isinstance(self.base, qml.Hamiltonian) or self.base.has_matrix
 
     @staticmethod
@@ -251,12 +272,28 @@ class SProd(ScalarSymbolicOp):
         return None
 
     def pow(self, z):
+        """Returns the operator raised to a given power."""
         return [SProd(scalar=self.scalar**z, base=Pow(base=self.base, z=z))]
 
     def adjoint(self):
+        """ Create an operation that is the adjoint of this one.
+
+        Adjointed operations are the conjugated and transposed version of the
+        original operation. Adjointed ops are equivalent to the inverted operation for unitary
+        gates.
+
+        Returns:
+            The adjointed operation.
+        """
         return SProd(scalar=qml.math.conjugate(self.scalar), base=qml.adjoint(self.base))
 
+    # pylint: disable=too-many-return-statements
     def simplify(self) -> Operator:
+        """Reduce the depth of nested operators to the minimum.
+
+        Returns:
+            .Operator: simplified operator
+        """
         # try using pauli_rep:
         if pr := self._pauli_rep:
             return pr.operation(wire_order=self.wires)
