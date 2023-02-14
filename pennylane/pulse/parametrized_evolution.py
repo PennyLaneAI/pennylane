@@ -45,7 +45,7 @@ class ParametrizedEvolution(Operation):
     time-evolution operator :math:`U(t_1, t_2)`, which is the solution to the time-dependent
     Schrodinger equation.
 
-    .. math:: \frac{d}{dt}U(t) = -i H(v, t) U(t).
+    .. math:: \frac{d}{dt}U(t) = -i H(\{v_j\}, t) U(t).
 
     Under the hood, it is using a numerical ordinary differential equation (ODE) solver. It requires ``jax``,
     and will not work with other machine learning frameworks typically encountered in PennyLane.

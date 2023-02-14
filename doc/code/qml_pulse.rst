@@ -55,11 +55,10 @@ and operators:
 
     ``coeffs = [lambda p, t: p for _ in range(3)]``.
 
-    Do **not**, however, define the function as dependent on the value that is iterated over. That is, it is not
-    possible to define ``coeffs = [lambda p, t: p * t**i for i in range(3)]`` to create a list
-    ``coeffs = [(lambda p, t: p), (lambda p, t: p * t), (lambda p, t: p * t**2)]``. The value of ``i`` when
-    creating the lambda functions is set to be the final value in the iteration, such that this will
-    produce three identical functions ``coeffs = [(lambda p, t: p * t**2)] * 3``.
+    Be careful when defining coefficients using lambda functions within a list comprehension. Avoid
+    doing ``coeffs = [lambda p, t: p * t**i for i in range(3)]``, which will only use the final index ``i=2``
+    in the ``lambda`` and will thus behave as ``coeffs = [(lambda p, t: p * t**2)] * 3``.
+    Instead, use ``coeffs = [lambda p, t, power=i: p * t**power for i in range(3)]``
 
 The :class:`~.ParametrizedHamiltonian` is a callable, and can return an :class:`~.Operator` if passed a set of
 parameters and a time at which to evaluate the coefficients :math:`f_j`.
@@ -183,6 +182,7 @@ JIT-compiling is optional, and one can remove the decorator when only single exe
     To find the simultaneous evolution of the two operators, so it is important that they are both included
     in the same :func:`~.pennylane.evolve`. For two non-commuting :class:`~.ParametrizedHamiltonians`, applying
     ``qml.evolve(H1)(params, t=[0, 10])`` followed by ``qml.evolve(H2)(params, t=[0, 10])`` will **not**
-    apply the two pulses simultaneously, despite the overlapping time window.
+    apply the two pulses simultaneously, despite the overlapping time window. Instead, they will be evolved
+    over the same timespan, but without taking into account how the evolution of ``H1`` affects ``H2``.
 
     See Usage Details of :class:`~.ParametrizedEvolution` for a detailed example.
