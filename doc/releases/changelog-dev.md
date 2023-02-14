@@ -554,6 +554,10 @@
   gates.
   [(#3743)](https://github.com/PennyLaneAI/pennylane/pull/3743)
 
+ * The `qchem.Molecule` class raises an error when the molecule has an odd number of electrons or 
+   when the spin multiplicity is not 1.
+   [(#3748)](https://github.com/PennyLaneAI/pennylane/pull/3748)
+
 <h3>Breaking changes</h3>
 
 * The argument `mode` in execution is replaced by the boolean `grad_on_execution` in the new execution pipeline.
