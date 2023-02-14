@@ -177,7 +177,7 @@ class RydbergMachine:
         return self._driving_interaction
 
     @property
-    def hamiltonian(self):
+    def hamiltonian(self) -> ParametrizedHamiltonian:
         r"""Returns a :class:`ParametrizedHamiltonian` describing the Hamiltonian of the array
         of Rydberg atoms:
 
@@ -201,3 +201,24 @@ class RydbergMachine:
             ParametrizedHamiltonian: hamiltonian describing the evolution of the array of Rydberg atoms
         """
         return self.rydberg_interaction + self.driving_interaction
+
+    @property
+    def ops(self):
+        """Return the operators of the Hamiltonian.
+
+        Returns:
+            Iterable[Observable]: observables in the Hamiltonian expression
+        """
+        return self.hamiltonian.ops
+
+    @property
+    def coeffs(self):
+        """Return the coefficients of the Hamiltonian.
+
+        Returns:
+            Iterable[float]: coefficients in the Hamiltonian expression
+        """
+        return self.hamiltonian.coeffs
+
+    def __call__(self, params, t):
+        return self.hamiltonian(params, t)
