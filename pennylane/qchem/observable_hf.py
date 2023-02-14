@@ -135,7 +135,7 @@ def jordan_wigner(op, notation=None):
         notation (str): notation specifying the order of the two-body fermionic operators
 
     Returns
-        tuple(list[complex], list[~.Operation]]): list of coefficients and qubit operators
+        tuple(list[complex], list[~.Operation]): list of coefficients and qubit operators
 
     **Example**
 
