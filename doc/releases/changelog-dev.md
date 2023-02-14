@@ -797,22 +797,22 @@
 
 This release contains contributions from (in alphabetical order):
 
-Guillermo Alonso-Linaje
-Juan Miguel Arrazola
-Ikko Ashimine
-Utkarsh Azad
-Miriam Beddig
-Cristian Boghiu
-Astral Cai
-Isaac De Vlugt
-Olivia Di Matteo
-Lillian M. A. Frederiksen
-Soran Jahangiri
-Christina Lee
-Albert Mitjans Coma
-Romain Moyard
-Mudit Pandey
-Borja Requena
-Matthew Silverman
-Antal Száva
-David Wierichs
+Guillermo Alonso-Linaje,
+Juan Miguel Arrazola,
+Ikko Ashimine,
+Utkarsh Azad,
+Miriam Beddig,
+Cristian Boghiu,
+Astral Cai,
+Isaac De Vlugt,
+Olivia Di Matteo,
+Lillian M. A. Frederiksen,
+Soran Jahangiri,
+Christina Lee,
+Albert Mitjans Coma,
+Romain Moyard,
+Mudit Pandey,
+Borja Requena,
+Matthew Silverman,
+Antal Száva,
+David Wierichs.
