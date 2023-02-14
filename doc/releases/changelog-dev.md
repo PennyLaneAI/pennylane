@@ -387,6 +387,10 @@
   a single-qubit operation and the control wires.
   [(#3681)](https://github.com/PennyLaneAI/pennylane/pull/3681)
 
+* Added `qml.draw_qfunc` and `qml.draw_qfunc_mpl` to draw any quantum function,
+  which allows visualizing only part of a complete circuit/QNode.
+  [(#3760)](https://github.com/PennyLaneAI/pennylane/pull/3760)
+
 *Next generation device API:*
 
 * The `apply_operation` single-dispatch function is added to `devices/qubit` that applies an operation

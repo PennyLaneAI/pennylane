@@ -20,7 +20,7 @@ This module provides the circuit drawing functionality used to display circuits 
 
 """
 
-from .draw import draw, draw_mpl, draw_qfunc
+from .draw import draw, draw_mpl
 from .tape_text import tape_text
 from .tape_mpl import tape_mpl
 from .mpldrawer import MPLDrawer

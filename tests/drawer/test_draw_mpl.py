@@ -305,3 +305,31 @@ class TestMPLIntegration:
         assert mpl.rcParams["axes.facecolor"] == initial_facecolor
         assert mpl.rcParams["patch.facecolor"] == initial_patch_facecolor
         assert mpl.rcParams["patch.edgecolor"] == initial_patch_edgecolor
+
+
+def test_draw_mpl_supports_qfuncs():
+    """Test that draw_mpl works with non-QNode quantum functions."""
+
+    def qfunc(x):
+        qml.RX(x, 0)
+
+    fig, ax = qml.draw_mpl(qfunc)(1.1)
+
+    assert isinstance(fig, mpl.figure.Figure)
+    assert isinstance(ax, mpl.axes._axes.Axes)
+    assert len(ax.patches) == 1
+    assert len(ax.lines) == 1
+    assert len(ax.texts) == 2
+    assert ax.texts[0].get_text() == "0"
+    assert ax.texts[1].get_text() == "RX"
+    plt.close()
+
+
+def test_draw_qfunc_warns_with_expansion_strategy():
+    """Test that draw warns the user about expansion_strategy being ignored."""
+
+    def qfunc():
+        qml.PauliZ(0)
+
+    with pytest.warns(UserWarning, match="the expansion_strategy argument is ignored"):
+        _ = qml.draw_mpl(qfunc, expansion_strategy="gradient")()

@@ -38,17 +38,17 @@ class TestLabelling:
         """Test wire labels with different kinds of objects."""
 
         split_str = draw(circuit)(1.2, 2.3, 3.4).split("\n")
-        assert split_str[0][0:6] == "    0:"
-        assert split_str[1][0:6] == "    a:"
-        assert split_str[2][0:6] == "1.234:"
+        assert split_str[0][:6] == "    0:"
+        assert split_str[1][:6] == "    a:"
+        assert split_str[2][:6] == "1.234:"
 
     def test_wire_order(self):
         """Test wire_order keyword changes order of the wires."""
 
         split_str = draw(circuit, wire_order=[1.234, "a", 0, "b"])(1.2, 2.3, 3.4).split("\n")
-        assert split_str[0][0:6] == "1.234:"
-        assert split_str[1][0:6] == "    a:"
-        assert split_str[2][0:6] == "    0:"
+        assert split_str[0][:6] == "1.234:"
+        assert split_str[1][:6] == "    a:"
+        assert split_str[2][:6] == "    0:"
 
     def test_show_all_wires(self):
         """Test show_all_wires=True forces empty wires to display."""
@@ -58,8 +58,8 @@ class TestLabelling:
             return qml.expval(qml.PauliZ(0))
 
         split_str = draw(circuit, show_all_wires=True)().split("\n")
-        assert split_str[0][0:2] == "0:"
-        assert split_str[1][0:2] == "1:"
+        assert split_str[0][:2] == "0:"
+        assert split_str[1][:2] == "1:"
 
     def test_show_all_wires_and_wire_order(self):
         """Test show_all_wires forces empty wires to display when empty wire is in wire order."""
@@ -69,8 +69,8 @@ class TestLabelling:
             return qml.expval(qml.PauliZ(0))
 
         split_str = draw(circuit, wire_order=[0, "a"], show_all_wires=True)().split("\n")
-        assert split_str[0][0:2] == "0:"
-        assert split_str[1][0:2] == "a:"
+        assert split_str[0][:2] == "0:"
+        assert split_str[1][:2] == "a:"
 
 
 class TestDecimals:
@@ -341,10 +341,27 @@ def test_expansion_strategy():
         return qml.probs(wires=0)
 
     expected_gradient = "0: ─╭ApproxTimeEvolution─┤  Probs\n1: ─╰ApproxTimeEvolution─┤       "
-    assert draw(circuit, expansion_strategy="gradient", decimals=None)(0.5)
+    assert draw(circuit, expansion_strategy="gradient", decimals=None)(0.5) == expected_gradient
 
-    expected_device = (
-        "0: ──H────────MultiRZ──H──H─╭MultiRZ──H──H────────MultiRZ──H──H─╭MultiRZ──H─┤  Probs\n"
-        "1: ──MultiRZ──H─────────────╰MultiRZ──H──MultiRZ──H─────────────╰MultiRZ──H─┤       "
-    )
-    assert draw(circuit, expansion_strategy="device", decimals=None)(0.5)
+    expected_device = "0: ──RX─╭RXX──RX─╭RXX─┤  Probs\n1: ──RZ─╰RXX──RZ─╰RXX─┤       "
+    assert draw(circuit, expansion_strategy="device", decimals=None)(0.5) == expected_device
+
+
+def test_draw_qfunc():
+    """Test a non-qnode qfunc can be drawn."""
+
+    def qfunc(x):
+        qml.RX(x, wires=[0])
+        qml.PauliZ(1)
+
+    assert qml.draw(qfunc)(1.1) == "0: ──RX(1.10)─┤  \n1: ──Z────────┤  "
+
+
+def test_draw_qfunc_warns_with_expansion_strategy():
+    """Test that draw warns the user about expansion_strategy being ignored."""
+
+    def qfunc():
+        qml.PauliZ(0)
+
+    with pytest.warns(UserWarning, match="the expansion_strategy argument is ignored"):
+        _ = qml.draw(qfunc, expansion_strategy="gradient")()
