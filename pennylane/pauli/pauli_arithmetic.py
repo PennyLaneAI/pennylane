@@ -367,8 +367,9 @@ class PauliSentence(dict):
             return Identity(wires=wire_order)
 
         summands = []
+        wire_order = wire_order or self.wires
         for pw, coeff in self.items():
-            pw_op = pw.operation(wire_order=list(self.wires))
+            pw_op = pw.operation(wire_order=list(wire_order))
             summands.append(pw_op if coeff == 1 else s_prod(coeff, pw_op))
         return summands[0] if len(summands) == 1 else qml.sum(*summands)
 
@@ -379,8 +380,9 @@ class PauliSentence(dict):
                 raise ValueError("Can't get the Hamiltonian for an empty PauliSentence.")
             return Hamiltonian([1], [Identity(wires=wire_order)])
 
+        wire_order = wire_order or self.wires
         return sum(
-            coeff * pw.hamiltonian(wire_order=list(self.wires)) for pw, coeff in self.items()
+            coeff * pw.hamiltonian(wire_order=list(wire_order)) for pw, coeff in self.items()
         )
 
     def simplify(self, tol=1e-8):
