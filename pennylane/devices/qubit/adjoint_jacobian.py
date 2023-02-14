@@ -105,7 +105,7 @@ def adjoint_jacobian(
         if op.grad_method is not None:
             if param_number in trainable_params:
                 d_op_matrix = operation_derivative(op)
-                ket_temp = dev._apply_unitary(ket, d_op_matrix, op.wires)
+                ket_temp = _apply_unitary(dev, ket, d_op_matrix, op.wires)
                 jac[:, trainable_param_number] = 2 * dot_product_real([bra], ket_temp)
 
                 trainable_param_number -= 1
@@ -113,7 +113,7 @@ def adjoint_jacobian(
 
         bra = apply_operation(adj_op, bra)
 
-    return dev._adjoint_jacobian_processing(jac)
+    return _adjoint_jacobian_processing(jac)
 
 
 @staticmethod
@@ -132,3 +132,61 @@ def _adjoint_jacobian_processing(jac):
 
     # must be 2-dimensional
     return tuple(tuple(np.array(j_) for j_ in j) for j in jac)
+
+
+def _apply_unitary(dev, state, mat, wires):
+    r"""Apply multiplication of a matrix to subsystems of the quantum state.
+
+    Args:
+        state (array[complex]): input state
+        mat (array): matrix to multiply
+        wires (Wires): target wires
+
+    Returns:
+        array[complex]: output state
+
+    Note: This function does not support simultaneously broadcasted states and matrices yet.
+    """
+    # translate to wire labels used by device
+    device_wires = dev.map_wires(wires)
+
+    dim = 2 ** len(device_wires)
+    mat_batch_size = dev._get_batch_size(mat, (dim, dim), dim**2)
+    state_batch_size = dev._get_batch_size(state, (2,) * dev.num_wires, 2**dev.num_wires)
+
+    shape = [2] * (len(device_wires) * 2)
+    state_axes = device_wires
+    # # If the matrix is broadcasted, it is reshaped to have leading axis of size mat_batch_size
+    # if mat_batch_size:
+    #     shape.insert(0, mat_batch_size)
+    #     if state_batch_size:
+    #         raise NotImplementedError(
+    #             "Applying a broadcasted unitary to an already broadcasted state via "
+    #             "_apply_unitary is not supported. Broadcasting sizes are "
+    #             f"({mat_batch_size}, {state_batch_size})."
+    #         )
+    # # If the state is broadcasted, the affected state axes need to be shifted by 1.
+    # if state_batch_size:
+    #     state_axes = [ax + 1 for ax in state_axes]
+    mat = dev._cast(dev._reshape(mat, shape), dtype=dev.C_DTYPE)
+    axes = (np.arange(-len(device_wires), 0), state_axes)
+    tdot = dev._tensordot(mat, state, axes=axes)
+
+    # tensordot causes the axes given in `wires` to end up in the first positions
+    # of the resulting tensor. This corresponds to a (partial) transpose of
+    # the correct output state
+    # We'll need to invert this permutation to put the indices in the correct place
+    unused_idxs = [idx for idx in range(dev.num_wires) if idx not in device_wires]
+    perm = list(device_wires) + unused_idxs
+    # If the matrix is broadcasted, all but the first dimension are shifted by 1
+    if mat_batch_size:
+        perm = [idx + 1 for idx in perm]
+        perm.insert(0, 0)
+    if state_batch_size:
+        # As the state broadcasting dimension always is the first in the state, it always
+        # ends up in position `len(device_wires)` after the tensordot. The -1 causes it
+        # being permuted to the leading dimension after transposition
+        perm.insert(len(device_wires), -1)
+
+    inv_perm = np.argsort(perm)  # argsort gives inverse permutation
+    return dev._transpose(tdot, inv_perm)
