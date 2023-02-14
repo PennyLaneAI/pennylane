@@ -314,15 +314,6 @@
 
 <h4>Pulse programming</h4>
 
-* A `ParametrizedHamiltonian` can be time-evolved by using `ParametrizedEvolution`.
-  [(#3617)](https://github.com/PennyLaneAI/pennylane/pull/3617)
-  [(#3706)](https://github.com/PennyLaneAI/pennylane/pull/3706)
-  [(#3730)](https://github.com/PennyLaneAI/pennylane/pull/3730)
-
-* A new function called `qml.evolve` has been added that returns the evolution of an `Operator` or a `ParametrizedHamiltonian`.
-  [(#3617)](https://github.com/PennyLaneAI/pennylane/pull/3617)
-  [(#3706)](https://github.com/PennyLaneAI/pennylane/pull/3706)
-
 * Added `pwc` as a convenience function for defining a `ParametrizedHamiltonian`.
   This function can be used to create a callable coefficient by setting
   the timespan over which the function should be non-zero. The resulting callable
@@ -386,6 +377,10 @@
   1.1 * X(0) + 2.2 * Y(0)
   ```
 
+* `qml.evolve` returns the evolution of an `Operator` or a `ParametrizedHamiltonian`.
+  [(#3617)](https://github.com/PennyLaneAI/pennylane/pull/3617)
+  [(#3706)](https://github.com/PennyLaneAI/pennylane/pull/3706)
+
 * `qml.ControlledQubitUnitary` now inherits from `ControlledOp`, which defines `decomposition`, `expand`, and `sparse_matrix` rather than raising an error.
   [(#3450)](https://github.com/PennyLaneAI/pennylane/pull/3450)
 
@@ -393,7 +388,7 @@
   broadcasting.
   [(#3450)](https://github.com/PennyLaneAI/pennylane/pull/3450)
 
-* The `qml.generator` function now checks if the generator is hermitian, rather than whether it is a subclass of
+* The `qml.generator` function now checks if the generator is Hermitian, rather than whether it is a subclass of
   `Observable`. This allows it to return valid generators from `SymbolicOp` and `CompositeOp` classes.
   [(#3485)](https://github.com/PennyLaneAI/pennylane/pull/3485)
 
