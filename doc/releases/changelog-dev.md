@@ -14,10 +14,10 @@
   versions of the following functions, available in all common
   interfaces for PennyLane
 
-    + [fft](https://numpy.org/doc/stable/reference/generated/numpy.fft.fft.html)
-    + [ifft](https://numpy.org/doc/stable/reference/generated/numpy.fft.ifft.html)
-    + [fft2](https://numpy.org/doc/stable/reference/generated/numpy.fft.fft2.html)
-    + [ifft2](https://numpy.org/doc/stable/reference/generated/numpy.fft.ifft2.html)
+  * [fft](https://numpy.org/doc/stable/reference/generated/numpy.fft.fft.html)
+  * [ifft](https://numpy.org/doc/stable/reference/generated/numpy.fft.ifft.html)
+  * [fft2](https://numpy.org/doc/stable/reference/generated/numpy.fft.fft2.html)
+  * [ifft2](https://numpy.org/doc/stable/reference/generated/numpy.fft.ifft2.html)
 
   Note that the output of the derivative of these functions
   may differ when used with complex-valued inputs, due to different
@@ -383,18 +383,27 @@
   DeviceArray(0., dtype=float32)
   ```
 
+* Added `qml.ops.ctrl_decomp_zyz` to compute the decomposition of a controlled single-qubit operation given
+  a single-qubit operation and the control wires.
+  [(#3681)](https://github.com/PennyLaneAI/pennylane/pull/3681)
+
 *Next generation device API:*
 
 * The `apply_operation` single-dispatch function is added to `devices/qubit` that applies an operation
   to a state and returns a new state.
   [(#3637)](https://github.com/PennyLaneAI/pennylane/pull/3637)
 
+* The `preprocess` function is added to `devices/qubit` that validates, expands, and transforms a batch
+  of `QuantumTape` objects to abstract preprocessing details away from the device.
+  [(#3708)](https://github.com/PennyLaneAI/pennylane/pull/3708)
+
 * The `create_initial_state` function is added to `devices/qubit` that returns an initial state for an execution.
   [(#3683)](https://github.com/PennyLaneAI/pennylane/pull/3683)
 
-* Added `qml.ops.ctrl_decomp_zyz` to compute the decomposition of a controlled single-qubit operation given
-  a single-qubit operation and the control wires.
-  [(#3681)](https://github.com/PennyLaneAI/pennylane/pull/3681)
+* The `simulate` function is added to `devices/qubit` that turns a single quantum tape into a measurement result.
+  The function only supports state based measurements with either no observables or observables with diagonalizing gates.
+  It supports simultanous measurement of non-commuting observables.
+  [(#3700)](https://github.com/PennyLaneAI/pennylane/pull/3700)
 
 <h3>Improvements</h3>
 
@@ -483,6 +492,9 @@
   `qml.gradients.SUPPORTED_GRADIENT_KWARGS`.
   [(#3526)](https://github.com/PennyLaneAI/pennylane/pull/3526)
 
+* Moved `qml.utils.sparse_hamiltonian` function to `~.Hamiltonian.sparse_matrix` method.
+  [(#3585)](https://github.com/PennyLaneAI/pennylane/pull/3585)
+
 * The `PauliSentence.operation()` method has been improved to avoid instantiating an `SProd` operator when
   the coefficient is equal to 1.
   [(#3595)](https://github.com/PennyLaneAI/pennylane/pull/3595)
@@ -531,8 +543,16 @@
 * `QubitStateVector` now implements the `StatePrep` interface.
   [(#3685)](https://github.com/PennyLaneAI/pennylane/pull/3685)
 
+* `Controlled` can now decompose single qubit target operations more effectively using the ZYZ
+  decomposition.
+  [(#3726)](https://github.com/PennyLaneAI/pennylane/pull/3726)
+
 * `QuantumMonteCarlo` template is now JAX-JIT compatible when passing `jax.numpy` arrays to the template.
   [(#3734)](https://github.com/PennyLaneAI/pennylane/pull/3734)
+
+* `DefaultQubitJax` now supports evolving the state vector when executing `ParametrizedEvolution`
+  gates.
+  [(#3743)](https://github.com/PennyLaneAI/pennylane/pull/3743)
 
 <h3>Breaking changes</h3>
 
@@ -623,6 +643,10 @@
 
 <h3>Deprecations</h3>
 
+* `qml.utils.sparse_hamiltonian` function has been deprecated, and usage will now raise a warning.
+  Instead, one should use the `~.Hamiltonian.sparse_matrix` method.
+  [(#3585)](https://github.com/PennyLaneAI/pennylane/pull/3585)
+
 * Deprecate the `collections` module.
   [(#3686)](https://github.com/PennyLaneAI/pennylane/pull/3686)
 
@@ -648,6 +672,10 @@
 [(#3740)](https://github.com/PennyLaneAI/pennylane/pull/3740)
 
 <h3>Bug fixes</h3>
+
+* Fixed a bug in the drawer where nested controlled operations would output
+  the label of the operation being controlled, rather than the control values.
+  [(#3745)](https://github.com/PennyLaneAI/pennylane/pull/3745)
 
 * Fixed a bug in `qml.transforms.metric_tensor` where prefactors of operation generators were taken
   into account multiple times, leading to wrong outputs for non-standard operations.
@@ -694,6 +722,10 @@
 * Redirect `qml.math.ndim` to `jnp.ndim` when using it on a jax tensor.
   [(#3730)](https://github.com/PennyLaneAI/pennylane/pull/3730)
 
+* Implementations of `marginal_prob` (and subsequently, `qml.probs`) now return
+  probabilities with the expected wire order.
+  [(#3753)](https://github.com/PennyLaneAI/pennylane/pull/3753)
+
 <h3>Contributors</h3>
 
 This release contains contributions from (in alphabetical order):
@@ -702,9 +734,11 @@ Guillermo Alonso-Linaje
 Juan Miguel Arrazola
 Ikko Ashimine
 Utkarsh Azad
+Miriam Beddig
 Cristian Boghiu
 Astral Cai
 Isaac De Vlugt
+Olivia Di Matteo
 Lillian M. A. Frederiksen
 Soran Jahangiri
 Christina Lee
