@@ -124,50 +124,6 @@
     DeviceArray(0., dtype=float32)
     ```
 
-<h4>Here comes the SU(N) 🌞</h4>
-
-* A new operation `SpecialUnitary` was added, providing access to an arbitrary
-  unitary gate via a parametrization in the Pauli basis.
-  [(#3650)](https://github.com/PennyLaneAI/pennylane/pull/3650)
-  [(#3674)](https://github.com/PennyLaneAI/pennylane/pull/3674)
-
-  The new operation takes a single argument, a one-dimensional `tensor_like`
-  of length `4**num_wires-1`, where `num_wires` is the number of wires the unitary acts on.
-
-  The parameter `theta` refers to all Pauli words (except for the identity) in lexicographical
-  order, which looks like the following for one and two qubits:
-
-  ```pycon
-  >>> qml.ops.qubit.special_unitary.pauli_basis_strings(1) # 4**1-1 = 3 Pauli words
-  ['X', 'Y', 'Z']
-  >>> qml.ops.qubit.special_unitary.pauli_basis_strings(2) # 4**2-1 = 15 Pauli words
-  ['IX', 'IY', 'IZ', 'XI', 'XX', 'XY', 'XZ', 'YI', 'YX', 'YY', 'YZ', 'ZI', 'ZX', 'ZY', 'ZZ']
-  ```
-
-  For example, on a single qubit, we may define
-
-  ```pycon
-  >>> theta = np.array([0.2, 0.1, -0.5])
-  >>> U = qml.SpecialUnitary(theta, 0)
-  >>> U.matrix()
-  array([[ 0.8537127 -0.47537233j,  0.09507447+0.19014893j],
-         [-0.09507447+0.19014893j,  0.8537127 +0.47537233j]])
-  ```
-
-  A single non-zero entry in the parameters will create a Pauli rotation:
-
-  ```pycon
-  >>> x = 0.412
-  >>> theta = x * np.array([1, 0, 0]) # The first entry belongs to the Pauli word "X"
-  >>> su = qml.SpecialUnitary(theta, wires=0)
-  >>> rx = qml.RX(-2 * x, 0) # RX introduces a prefactor -0.5 that has to be compensated
-  >>> qml.math.allclose(su.matrix(), rx.matrix())
-  True
-  ```
-
-  This operation can be differentiated with hardware-compatible methods like parameter shifts
-  and it supports parameter broadcasting/batching, but not both at the same time.
-
 * Added `pwc` as a convenience function for defining a `ParametrizedHamiltonian`.
   This function can be used to create a callable coefficient by setting
   the timespan over which the function should be non-zero. The resulting callable
@@ -216,6 +172,50 @@
   >>> f1(3, 5)
   DeviceArray(0., dtype=float32)
   ```
+
+<h4>Here comes the SU(N) 🌞</h4>
+
+* A new operation `SpecialUnitary` was added, providing access to an arbitrary
+  unitary gate via a parametrization in the Pauli basis.
+  [(#3650)](https://github.com/PennyLaneAI/pennylane/pull/3650)
+  [(#3674)](https://github.com/PennyLaneAI/pennylane/pull/3674)
+
+  The new operation takes a single argument, a one-dimensional `tensor_like`
+  of length `4**num_wires-1`, where `num_wires` is the number of wires the unitary acts on.
+
+  The parameter `theta` refers to all Pauli words (except for the identity) in lexicographical
+  order, which looks like the following for one and two qubits:
+
+  ```pycon
+  >>> qml.ops.qubit.special_unitary.pauli_basis_strings(1) # 4**1-1 = 3 Pauli words
+  ['X', 'Y', 'Z']
+  >>> qml.ops.qubit.special_unitary.pauli_basis_strings(2) # 4**2-1 = 15 Pauli words
+  ['IX', 'IY', 'IZ', 'XI', 'XX', 'XY', 'XZ', 'YI', 'YX', 'YY', 'YZ', 'ZI', 'ZX', 'ZY', 'ZZ']
+  ```
+
+  For example, on a single qubit, we may define
+
+  ```pycon
+  >>> theta = np.array([0.2, 0.1, -0.5])
+  >>> U = qml.SpecialUnitary(theta, 0)
+  >>> U.matrix()
+  array([[ 0.8537127 -0.47537233j,  0.09507447+0.19014893j],
+         [-0.09507447+0.19014893j,  0.8537127 +0.47537233j]])
+  ```
+
+  A single non-zero entry in the parameters will create a Pauli rotation:
+
+  ```pycon
+  >>> x = 0.412
+  >>> theta = x * np.array([1, 0, 0]) # The first entry belongs to the Pauli word "X"
+  >>> su = qml.SpecialUnitary(theta, wires=0)
+  >>> rx = qml.RX(-2 * x, 0) # RX introduces a prefactor -0.5 that has to be compensated
+  >>> qml.math.allclose(su.matrix(), rx.matrix())
+  True
+  ```
+
+  This operation can be differentiated with hardware-compatible methods like parameter shifts
+  and it supports parameter broadcasting/batching, but not both at the same time.
 
 <h4>Always differentiable 📈</h4>
 
