@@ -26,6 +26,7 @@ try:
     import jax.numpy as jnp
     from jax.config import config as jax_config
     from jax.experimental.ode import odeint
+    from ._jax_utils import JaxParametrisedOperator
 
 except ImportError as e:  # pragma: no cover
     raise ImportError("default.qubit.jax device requires installing jax>0.2.0") from e
@@ -214,11 +215,18 @@ class DefaultQubitJax(DefaultQubit):
 
         state = self._flatten(state)
 
-        def fun(y, t):
-            """dy/dt = -i H(t) y"""
-            return -1j * qml.matrix(operation.H(operation.data, t=t), wire_order=self.wires) @ y
+        with jax.ensure_compile_time_eval():
+            H_jax = JaxParametrisedOperator.from_parametrised_hamiltonian(
+                operation.H, dense=len(self.wires) > 4, wire_order=self.wires
+            )
 
-        result = odeint(fun, state, operation.t, **operation.odeint_kwargs)
+        def schroedinger(H, pars, y, t):
+            """dy/dt = -i H(t) y"""
+            return -1j * (H(pars, t=t) @ y)
+
+        odefun = jax.tree_util.Partial(schroedinger, H_jax, operation.data)
+
+        result = odeint(odefun, state, operation.t, **operation.odeint_kwargs)
         return self._reshape(result[-1], [2] * self.num_wires)
 
     @staticmethod
