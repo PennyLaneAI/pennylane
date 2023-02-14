@@ -6,69 +6,6 @@
 
 <h4>Add new features here</h4>
 
-* The `qml.math` module now also contains a submodule for
-  fast Fourier transforms, `qml.math.fft`.
-  [(#1440)](https://github.com/PennyLaneAI/pennylane/pull/1440)
-
-  The submodule in particular provides differentiable
-  versions of the following functions, available in all common
-  interfaces for PennyLane
-
-  * [fft](https://numpy.org/doc/stable/reference/generated/numpy.fft.fft.html)
-  * [ifft](https://numpy.org/doc/stable/reference/generated/numpy.fft.ifft.html)
-  * [fft2](https://numpy.org/doc/stable/reference/generated/numpy.fft.fft2.html)
-  * [ifft2](https://numpy.org/doc/stable/reference/generated/numpy.fft.ifft2.html)
-
-  Note that the output of the derivative of these functions
-  may differ when used with complex-valued inputs, due to different
-  conventions on complex-valued derivatives.
-
-* Add `qml.math.detach`, which detaches a tensor from its trace. This stops
-  automatic gradient computations.
-  [(#3674)](https://github.com/PennyLaneAI/pennylane/pull/3674)
-
-* A new operation `SpecialUnitary` was added, providing access to an arbitrary
-  unitary gate via a parametrization in the Pauli basis.
-  [(#3650)](https://github.com/PennyLaneAI/pennylane/pull/3650)
-  [(#3674)](https://github.com/PennyLaneAI/pennylane/pull/3674)
-
-  The new operation takes a single argument, a one-dimensional `tensor_like`
-  of length `4**num_wires-1`, where `num_wires` is the number of wires the unitary acts on.
-
-  The parameter `theta` refers to all Pauli words (except for the identity) in lexicographical
-  order, which looks like the following for one and two qubits:
-
-  ```pycon
-  >>> qml.ops.qubit.special_unitary.pauli_basis_strings(1) # 4**1-1 = 3 Pauli words
-  ['X', 'Y', 'Z']
-  >>> qml.ops.qubit.special_unitary.pauli_basis_strings(2) # 4**2-1 = 15 Pauli words
-  ['IX', 'IY', 'IZ', 'XI', 'XX', 'XY', 'XZ', 'YI', 'YX', 'YY', 'YZ', 'ZI', 'ZX', 'ZY', 'ZZ']
-  ```
-
-  For example, on a single qubit, we may define
-
-  ```pycon
-  >>> theta = np.array([0.2, 0.1, -0.5])
-  >>> U = qml.SpecialUnitary(theta, 0)
-  >>> U.matrix()
-  array([[ 0.8537127 -0.47537233j,  0.09507447+0.19014893j],
-         [-0.09507447+0.19014893j,  0.8537127 +0.47537233j]])
-  ```
-
-  A single non-zero entry in the parameters will create a Pauli rotation:
-
-  ```pycon
-  >>> x = 0.412
-  >>> theta = x * np.array([1, 0, 0]) # The first entry belongs to the Pauli word "X"
-  >>> su = qml.SpecialUnitary(theta, wires=0)
-  >>> rx = qml.RX(-2 * x, 0) # RX introduces a prefactor -0.5 that has to be compensated
-  >>> qml.math.allclose(su.matrix(), rx.matrix())
-  True
-  ```
-
-  This operation can be differentiated with hardware-compatible methods like parameter shifts
-  and it supports parameter broadcasting/batching, but not both at the same time.
-
 <h4>Feel the pulse 🔊</h4>
 
 * Parameterized Hamiltonians can now be created with the addition of `ParametrizedHamiltonian`.
@@ -187,7 +124,117 @@
     DeviceArray(0., dtype=float32)
     ```
 
+<h4>Here comes the SU(N) 🌞</h4>
+
+* A new operation `SpecialUnitary` was added, providing access to an arbitrary
+  unitary gate via a parametrization in the Pauli basis.
+  [(#3650)](https://github.com/PennyLaneAI/pennylane/pull/3650)
+  [(#3674)](https://github.com/PennyLaneAI/pennylane/pull/3674)
+
+  The new operation takes a single argument, a one-dimensional `tensor_like`
+  of length `4**num_wires-1`, where `num_wires` is the number of wires the unitary acts on.
+
+  The parameter `theta` refers to all Pauli words (except for the identity) in lexicographical
+  order, which looks like the following for one and two qubits:
+
+  ```pycon
+  >>> qml.ops.qubit.special_unitary.pauli_basis_strings(1) # 4**1-1 = 3 Pauli words
+  ['X', 'Y', 'Z']
+  >>> qml.ops.qubit.special_unitary.pauli_basis_strings(2) # 4**2-1 = 15 Pauli words
+  ['IX', 'IY', 'IZ', 'XI', 'XX', 'XY', 'XZ', 'YI', 'YX', 'YY', 'YZ', 'ZI', 'ZX', 'ZY', 'ZZ']
+  ```
+
+  For example, on a single qubit, we may define
+
+  ```pycon
+  >>> theta = np.array([0.2, 0.1, -0.5])
+  >>> U = qml.SpecialUnitary(theta, 0)
+  >>> U.matrix()
+  array([[ 0.8537127 -0.47537233j,  0.09507447+0.19014893j],
+         [-0.09507447+0.19014893j,  0.8537127 +0.47537233j]])
+  ```
+
+  A single non-zero entry in the parameters will create a Pauli rotation:
+
+  ```pycon
+  >>> x = 0.412
+  >>> theta = x * np.array([1, 0, 0]) # The first entry belongs to the Pauli word "X"
+  >>> su = qml.SpecialUnitary(theta, wires=0)
+  >>> rx = qml.RX(-2 * x, 0) # RX introduces a prefactor -0.5 that has to be compensated
+  >>> qml.math.allclose(su.matrix(), rx.matrix())
+  True
+  ```
+
+  This operation can be differentiated with hardware-compatible methods like parameter shifts
+  and it supports parameter broadcasting/batching, but not both at the same time.
+
+* Added `pwc` as a convenience function for defining a `ParametrizedHamiltonian`.
+  This function can be used to create a callable coefficient by setting
+  the timespan over which the function should be non-zero. The resulting callable
+  can be passed an array of parameters and a time.
+  [(#3645)](https://github.com/PennyLaneAI/pennylane/pull/3645)
+
+  ```pycon
+  >>> timespan = (2, 4)
+  >>> f = pwc(timespan)
+  >>> f * qml.PauliX(0)
+  ParametrizedHamiltonian: terms=1
+  ```
+
+  The `params` array will be used as bin values evenly distributed over the timespan,
+  and the parameter `t` will determine which of the bins is returned.
+
+  ```pycon
+  >>> f(params=[1.2, 2.3, 3.4, 4.5], t=3.9)
+  DeviceArray(4.5, dtype=float32)
+  >>> f(params=[1.2, 2.3, 3.4, 4.5], t=6)  # zero outside the range (2, 4)
+  DeviceArray(0., dtype=float32)
+  ```
+
+* Added `pwc_from_function` as a decorator for defining a `ParametrizedHamiltonian`.
+  This function can be used to decorate a function and create a piecewise constant
+  approximation of it.
+  [(#3645)](https://github.com/PennyLaneAI/pennylane/pull/3645)
+
+  ```pycon
+  >>> @pwc_from_function(t=(2, 4), num_bins=10)
+  ... def f1(p, t):
+  ...     return p * t
+  ```
+
+  The resulting function approximates the same of `p**2 * t` on the interval `t=(2, 4)`
+  in 10 bins, and returns zero outside the interval.
+
+  ```pycon
+  # t=2 and t=2.1 are within the same bin
+  >>> f1(3, 2), f1(3, 2.1)
+  (DeviceArray(6., dtype=float32), DeviceArray(6., dtype=float32))
+  # next bin
+  >>> f1(3, 2.2)
+  DeviceArray(6.6666665, dtype=float32)
+  # outside the interval t=(2, 4)
+  >>> f1(3, 5)
+  DeviceArray(0., dtype=float32)
+  ```
+
 <h4>Always differentiable 📈</h4>
+
+* The `qml.math` module now also contains a submodule for
+  fast Fourier transforms, `qml.math.fft`.
+  [(#1440)](https://github.com/PennyLaneAI/pennylane/pull/1440)
+
+  The submodule in particular provides differentiable
+  versions of the following functions, available in all common
+  interfaces for PennyLane
+
+  * [fft](https://numpy.org/doc/stable/reference/generated/numpy.fft.fft.html)
+  * [ifft](https://numpy.org/doc/stable/reference/generated/numpy.fft.ifft.html)
+  * [fft2](https://numpy.org/doc/stable/reference/generated/numpy.fft.fft2.html)
+  * [ifft2](https://numpy.org/doc/stable/reference/generated/numpy.fft.ifft2.html)
+
+  Note that the output of the derivative of these functions
+  may differ when used with complex-valued inputs, due to different
+  conventions on complex-valued derivatives.
 
 * The Hadamard test gradient tranform is now available via `qml.gradients.hadamard_grad`.
   [#3625](https://github.com/PennyLaneAI/pennylane/pull/3625)
@@ -389,59 +436,6 @@
   4: ─────────────────╰RY(0.81)─╰SWAP─────────────────╰RY(0.06)─╰SWAP─────────────────┤  State
   ```
 
-* Added `pwc` as a convenience function for defining a `ParametrizedHamiltonian`.
-  This function can be used to create a callable coefficient by setting
-  the timespan over which the function should be non-zero. The resulting callable
-  can be passed an array of parameters and a time.
-  [(#3645)](https://github.com/PennyLaneAI/pennylane/pull/3645)
-
-  ```pycon
-  >>> timespan = (2, 4)
-  >>> f = pwc(timespan)
-  >>> f * qml.PauliX(0)
-  ParametrizedHamiltonian: terms=1
-  ```
-
-  The `params` array will be used as bin values evenly distributed over the timespan,
-  and the parameter `t` will determine which of the bins is returned.
-
-  ```pycon
-  >>> f(params=[1.2, 2.3, 3.4, 4.5], t=3.9)
-  DeviceArray(4.5, dtype=float32)
-  >>> f(params=[1.2, 2.3, 3.4, 4.5], t=6)  # zero outside the range (2, 4)
-  DeviceArray(0., dtype=float32)
-  ```
-
-* Added `pwc_from_function` as a decorator for defining a `ParametrizedHamiltonian`.
-  This function can be used to decorate a function and create a piecewise constant
-  approximation of it.
-  [(#3645)](https://github.com/PennyLaneAI/pennylane/pull/3645)
-
-  ```pycon
-  >>> @pwc_from_function(t=(2, 4), num_bins=10)
-  ... def f1(p, t):
-  ...     return p * t
-  ```
-
-  The resulting function approximates the same of `p**2 * t` on the interval `t=(2, 4)`
-  in 10 bins, and returns zero outside the interval.
-
-  ```pycon
-  # t=2 and t=2.1 are within the same bin
-  >>> f1(3, 2), f1(3, 2.1)
-  (DeviceArray(6., dtype=float32), DeviceArray(6., dtype=float32))
-  # next bin
-  >>> f1(3, 2.2)
-  DeviceArray(6.6666665, dtype=float32)
-  # outside the interval t=(2, 4)
-  >>> f1(3, 5)
-  DeviceArray(0., dtype=float32)
-  ```
-
-* Added `qml.ops.ctrl_decomp_zyz` to compute the decomposition of a controlled single-qubit operation given
-  a single-qubit operation and the control wires.
-  [(#3681)](https://github.com/PennyLaneAI/pennylane/pull/3681)
-
 <h4>Next generation device API ⚙️</h4>
 
 * The `apply_operation` single-dispatch function is added to `devices/qubit` that applies an operation
@@ -461,6 +455,14 @@
   [(#3700)](https://github.com/PennyLaneAI/pennylane/pull/3700)
 
 <h3>Improvements</h3>
+
+* Added `qml.ops.ctrl_decomp_zyz` to compute the decomposition of a controlled single-qubit operation given
+  a single-qubit operation and the control wires.
+  [(#3681)](https://github.com/PennyLaneAI/pennylane/pull/3681)
+
+* Add `qml.math.detach`, which detaches a tensor from its trace. This stops
+  automatic gradient computations.
+  [(#3674)](https://github.com/PennyLaneAI/pennylane/pull/3674)
 
 * Add `typing.TensorLike` type.
   [(#3675)](https://github.com/PennyLaneAI/pennylane/pull/3675)
