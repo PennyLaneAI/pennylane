@@ -401,7 +401,7 @@
   [(#3683)](https://github.com/PennyLaneAI/pennylane/pull/3683)
 
 * The `simulate` function is added to `devices/qubit` that turns a single quantum tape into a measurement result.
-  The function only supports state based measurements with either no observables or observables with diagonalizing gates.
+  The function only supports state based measurements with either no observables, observables with diagonalizing gates, and Hamiltonian expectation values.
   It supports simultanous measurement of non-commuting observables.
   [(#3700)](https://github.com/PennyLaneAI/pennylane/pull/3700)
 

@@ -59,13 +59,17 @@ def measure_hamiltonian_expval(
         TensorLike: the result of the measurement
     """
     # Add case for backprop later
-    Hmat = measurementprocess.obs.sparse_matrix()
-    _state = qml.math.toarray(state)
-    res = csr_matrix.dot(
-        csr_matrix(qml.math.conj(_state)),
-        csr_matrix.dot(Hmat, csr_matrix(_state[..., None])),
-    ).toarray()[0]
+    total_wires = len(state.shape)
+    Hmat = measurementprocess.obs.sparse_matrix(wire_order=list(range(total_wires)))
+    _state = qml.math.toarray(state).flatten()
+
+    # Find the expectation value using the <\psi|H|\psi> matrix contraction
+    bra = csr_matrix(qml.math.conj(_state))
+    ket = csr_matrix(_state[..., None])
+    new_ket = csr_matrix.dot(Hmat, ket)
+    res = csr_matrix.dot(bra, new_ket).toarray()[0]
     # Add broadcasting later
+
     return qml.math.real(qml.math.squeeze(res))
 
 

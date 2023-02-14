@@ -16,20 +16,14 @@
 import pytest
 
 import numpy as np
+from scipy.sparse import csr_matrix
 
 import pennylane as qml
 from pennylane.devices.qubit import simulate
 
 
 class TestCurrentlyUnsupportedCases:
-    def test_hamiltonian_observable(self):
-        """Test that measuring hamiltonians gives a NotImplementedError."""
-
-        H = qml.Hamiltonian([2.0], [qml.PauliX(0)])
-        qs = qml.tape.QuantumScript(measurements=[qml.expval(H)])
-        with pytest.raises(NotImplementedError):
-            simulate(qs)
-
+    # pylint: disable=too-few-public-methods
     def test_sample_based_observable(self):
         """Test sample-only measurements raise a notimplementedError."""
 
@@ -178,30 +172,56 @@ class TestBasicCircuit:
 
 
 class TestSpecialMeasurements:
-    @pytest.mark.parametrize("obs, expected", [])
+    # pylint: disable=too-few-public-methods
+    @pytest.mark.parametrize(
+        "obs, expected",
+        [
+            (
+                qml.Hamiltonian([-0.5, 2], [qml.PauliX(0), qml.PauliX(0) @ qml.PauliX(1)]),
+                -0.25461982,
+            ),
+            (
+                qml.SparseHamiltonian(
+                    csr_matrix(
+                        np.array(
+                            [[0, 0, -0.5, 2], [0, 0, 2, -0.5], [-0.5, 2, 0, 0], [2, -0.5, 0, 0]]
+                        )
+                    ),
+                    wires=[0, 1],
+                ),
+                -0.25461982,
+            ),
+        ],
+    )
     def test_hamiltonian_expval(self, obs, expected):
         """Test that the `measure_hamiltonian_expval` function works correctly."""
-        ops = [qml.Hadamard(0), qml.Hadamard(1)]
+        ops = [qml.Hadamard(0), qml.RY(0.123, wires=1)]
         meas = [qml.expval(obs)]
         tape = qml.tape.QuantumScript(ops, meas)
         res = simulate(tape)
         assert np.allclose(res, expected)
 
-    @pytest.mark.parametrize("obs", [])
-    def test_hamiltonian_expval_execution(self, obs, mocker):
-        """Test that `measure` uses the special helper function when the measured
-        observable is the expectation value of a Hamiltonian."""
-        ops = [qml.Hadamard(0), qml.Hadamard(1)]
-        meas = [qml.expval(obs)]
-        tape = qml.tape.QuantumScript(ops, meas)
+    # @pytest.mark.parametrize(
+    #     "obs",
+    #     [
+    #         qml.Hamiltonian([0.5], [qml.PauliZ(0)]),
+    #         qml.SparseHamiltonian(csr_matrix(np.eye(2)), wires=0),
+    #     ],
+    # )
+    # def test_hamiltonian_expval_execution(self, obs, mocker):
+    #     """Test that `measure` uses the special helper function when the measured
+    #     observable is the expectation value of a Hamiltonian."""
+    #     ops = [qml.Hadamard(0), qml.Hadamard(1)]
+    #     meas = [qml.expval(obs)]
+    #     tape = qml.tape.QuantumScript(ops, meas)
 
-        diag_spy = mocker.spy(qml.devices.qubit.simulate, "measure_state_diagonalizing_gates")
-        hamiltonian_spy = mocker.spy(qml.devices.qubit.simulate, "measure_hamiltonian_expval")
+    #     diag_spy = mocker.spy(qml.devices.qubit.simulate, "measure_state_diagonalizing_gates")
+    #     hamiltonian_spy = mocker.spy(qml.devices.qubit.simulate, "measure_hamiltonian_expval")
 
-        _ = simulate(tape)
+    #     _ = simulate(tape)
 
-        diag_spy.assert_not_called()
-        hamiltonian_spy.assert_called()
+    #     diag_spy.assert_not_called()
+    #     hamiltonian_spy.assert_called()
 
 
 class TestOperatorArithmetic:
