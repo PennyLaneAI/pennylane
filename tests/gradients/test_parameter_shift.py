@@ -2804,7 +2804,6 @@ class TestJaxArgnums:
 
     expected_jacs = []
     interfaces = ["auto", "jax"]
-    st
 
     @pytest.mark.parametrize("argnums", [[0], [1], [0, 1]])
     @pytest.mark.parametrize("interface", interfaces)
