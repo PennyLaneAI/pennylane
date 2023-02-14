@@ -686,14 +686,17 @@ class TestMetricTensor:
         ]
         assert [[type(op) for op in tape.operations] for tape in tapes] == expected_ops
 
+    interfaces = ["auto", "autograd"]
+
     @pytest.mark.autograd
-    def test_no_trainable_params_qnode_autograd(self):
+    @pytest.mark.parametrize("interface", interfaces)
+    def test_no_trainable_params_qnode_autograd(self, interface):
         """Test that the correct ouput and warning is generated in the absence of any trainable
         parameters"""
 
         dev = qml.device("default.qubit", wires=3)
 
-        @qml.qnode(dev, interface="autograd")
+        @qml.qnode(dev, interface=interface)
         def circuit(weights):
             qml.RX(weights[0], wires=0)
             qml.RY(weights[1], wires=0)
@@ -704,15 +707,18 @@ class TestMetricTensor:
             res = qml.metric_tensor(circuit)(weights)
 
         assert res == ()
+
+    interface = ["torch"]
 
     @pytest.mark.torch
-    def test_no_trainable_params_qnode_torch(self):
+    @pytest.mark.parametrize("interface", interfaces)
+    def test_no_trainable_params_qnode_torch(self, interface):
         """Test that the correct ouput and warning is generated in the absence of any trainable
         parameters"""
 
         dev = qml.device("default.qubit", wires=3)
 
-        @qml.qnode(dev, interface="torch")
+        @qml.qnode(dev, interface=interface)
         def circuit(weights):
             qml.RX(weights[0], wires=0)
             qml.RY(weights[1], wires=0)
@@ -723,15 +729,18 @@ class TestMetricTensor:
             res = qml.metric_tensor(circuit)(weights)
 
         assert res == ()
+
+    interface = ["tf"]
 
     @pytest.mark.tf
-    def test_no_trainable_params_qnode_tf(self):
+    @pytest.mark.parametrize("interface", interfaces)
+    def test_no_trainable_params_qnode_tf(self, interface):
         """Test that the correct ouput and warning is generated in the absence of any trainable
         parameters"""
 
         dev = qml.device("default.qubit", wires=3)
 
-        @qml.qnode(dev, interface="tf")
+        @qml.qnode(dev, interface=interface)
         def circuit(weights):
             qml.RX(weights[0], wires=0)
             qml.RY(weights[1], wires=0)
@@ -743,14 +752,17 @@ class TestMetricTensor:
 
         assert res == ()
 
+    interfaces = ["jax"]
+
     @pytest.mark.jax
-    def test_no_trainable_params_qnode_jax(self):
+    @pytest.mark.parametrize("interface", interfaces)
+    def test_no_trainable_params_qnode_jax(self, interface):
         """Test that the correct ouput and warning is generated in the absence of any trainable
         parameters"""
 
         dev = qml.device("default.qubit", wires=3)
 
-        @qml.qnode(dev, interface="jax")
+        @qml.qnode(dev, interface=interface)
         def circuit(weights):
             qml.RX(weights[0], wires=0)
             qml.RY(weights[1], wires=0)
@@ -985,20 +997,25 @@ def autodiff_metric_tensor(ansatz, num_wires):
 
 class TestFullMetricTensor:
     num_wires = 3
+    interfaces = ["auto", "autograd"]
 
     @pytest.mark.autograd
     @pytest.mark.parametrize("ansatz, params", zip(fubini_ansatze, fubini_params))
-    def test_correct_output_autograd(self, ansatz, params):
+    @pytest.mark.parametrize("interface", interfaces)
+    def test_correct_output_autograd(self, ansatz, params, interface):
         expected = autodiff_metric_tensor(ansatz, self.num_wires)(*params)
         dev = qml.device("default.qubit.autograd", wires=self.num_wires + 1)
 
-        @qml.qnode(dev, interface="autograd")
+        @qml.qnode(dev, interface=interface)
         def circuit(*params):
             """Circuit with dummy output to create a QNode."""
             ansatz(*params, dev.wires[:-1])
             return qml.expval(qml.PauliZ(0))
 
         mt = qml.metric_tensor(circuit, approx=None)(*params)
+
+        if interface == "auto":
+            assert circuit.interface == "auto"
 
         if isinstance(mt, tuple):
             assert all(qml.math.allclose(_mt, _exp) for _mt, _exp in zip(mt, expected))
@@ -1029,9 +1046,12 @@ class TestFullMetricTensor:
         else:
             assert qml.math.allclose(mt, expected)
 
+    interfaces = ["torch"]
+
     @pytest.mark.torch
     @pytest.mark.parametrize("ansatz, params", zip(fubini_ansatze, fubini_params))
-    def test_correct_output_torch(self, ansatz, params):
+    @pytest.mark.parametrize("interface", interfaces)
+    def test_correct_output_torch(self, ansatz, params, interface):
         import torch
 
         expected = autodiff_metric_tensor(ansatz, self.num_wires)(*params)
@@ -1039,7 +1059,7 @@ class TestFullMetricTensor:
 
         params = tuple(torch.tensor(p, dtype=torch.float64, requires_grad=True) for p in params)
 
-        @qml.qnode(dev, interface="torch")
+        @qml.qnode(dev, interface=interface)
         def circuit(*params):
             """Circuit with dummy output to create a QNode."""
             ansatz(*params, dev.wires[:-1])
@@ -1052,9 +1072,12 @@ class TestFullMetricTensor:
         else:
             assert qml.math.allclose(mt, expected)
 
+    interfaces = ["tf"]
+
     @pytest.mark.tf
     @pytest.mark.parametrize("ansatz, params", zip(fubini_ansatze, fubini_params))
-    def test_correct_output_tf(self, ansatz, params):
+    @pytest.mark.parametrize("interface", interfaces)
+    def test_correct_output_tf(self, ansatz, params, interface):
         import tensorflow as tf
 
         expected = autodiff_metric_tensor(ansatz, self.num_wires)(*params)
@@ -1194,7 +1217,7 @@ class TestDifferentiability:
     def test_autograd(self, diff_method, tol, ansatz, weights, expected_diag_jac):
         """Test metric tensor differentiability in the autograd interface"""
         circuit = self.get_circuit(ansatz)
-        qnode = qml.QNode(circuit, self.dev, interface="autograd", diff_method=diff_method)
+        qnode = qml.QNode(circuit, self.dev, diff_method=diff_method)
 
         def cost_full(*weights):
             return np.array(qml.metric_tensor(qnode, approx=None)(*weights))
@@ -1220,7 +1243,7 @@ class TestDifferentiability:
         from jax import numpy as jnp
 
         circuit = self.get_circuit(ansatz)
-        qnode = qml.QNode(circuit, self.dev, interface="jax", diff_method=diff_method)
+        qnode = qml.QNode(circuit, self.dev, diff_method=diff_method)
 
         def cost_diag(*weights):
             return jnp.diag(qml.metric_tensor(qnode, approx="block-diag")(*weights))
@@ -1254,7 +1277,7 @@ class TestDifferentiability:
         import tensorflow as tf
 
         circuit = self.get_circuit(ansatz)
-        qnode = qml.QNode(circuit, self.dev, interface="tf", diff_method=diff_method)
+        qnode = qml.QNode(circuit, self.dev, diff_method=diff_method)
 
         weights_t = tuple(tf.Variable(w) for w in weights)
         with tf.GradientTape() as tape:
@@ -1270,7 +1293,7 @@ class TestDifferentiability:
         import tensorflow as tf
 
         circuit = self.get_circuit(ansatz)
-        qnode = qml.QNode(circuit, self.dev, interface="tf", diff_method=diff_method)
+        qnode = qml.QNode(circuit, self.dev, diff_method=diff_method)
 
         weights_t = tuple(tf.Variable(w) for w in weights)
         with tf.GradientTape() as tape:
@@ -1287,7 +1310,7 @@ class TestDifferentiability:
         import torch
 
         circuit = self.get_circuit(ansatz)
-        qnode = qml.QNode(circuit, self.dev, interface="torch", diff_method=diff_method)
+        qnode = qml.QNode(circuit, self.dev, diff_method=diff_method)
 
         weights_t = tuple(torch.tensor(w, requires_grad=True) for w in weights)
 
@@ -1322,7 +1345,7 @@ class TestDifferentiability:
         import torch
 
         circuit = self.get_circuit(ansatz)
-        qnode = qml.QNode(circuit, self.dev, interface="torch", diff_method=diff_method)
+        qnode = qml.QNode(circuit, self.dev, diff_method=diff_method)
         weights_t = tuple(torch.tensor(w, requires_grad=True) for w in weights)
         qnode(*weights_t)
         cost_full = qml.metric_tensor(qnode, approx=None)
