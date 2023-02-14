@@ -108,6 +108,7 @@ class TestStateVector:
             (3, [1, 2, 0], (1, 0, 0)),
             (3, [1, 2, "a"], (1, 0, 0)),
             (3, [2, 1, 0], (0, 1, 0)),
+            (4, [3, 2, 0, 1], (0, 0, 0, 1)),
         ],
     )
     def test_QubitStateVector_state_vector(self, num_wires, wire_order, one_position):
