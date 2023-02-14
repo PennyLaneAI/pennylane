@@ -108,7 +108,7 @@
 
 <h4>Always differentiable 📈</h4>
 
-* The Hadamard test gradient tranform is now available via `qml.gradients.hadamard_grad`.
+* The Hadamard test gradient transform is now available via `qml.gradients.hadamard_grad`.
   [#3625](https://github.com/PennyLaneAI/pennylane/pull/3625)
 
   `qml.gradients.hadamard_grad` is a hardware-compatible transform that calculates the
