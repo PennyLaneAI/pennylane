@@ -281,7 +281,6 @@ class gradient_transform(qml.batch_transform):
         argnums = tkwargs.get("argnums", None)
 
         _wrapper = super().default_qnode_wrapper(qnode, targs, tkwargs)
-
         cjac_fn = qml.transforms.classical_jacobian(
             qnode, argnums=argnums, expand_fn=self.expand_fn
         )
@@ -310,7 +309,15 @@ class gradient_transform(qml.batch_transform):
                 return qjac
 
             kwargs.pop("shots", False)
-            cjac = cjac_fn(*args, **kwargs)
+
+            # Special case where we apply a Jax transform (jacobian e.g.) on the gradient transform and argnums are
+            # defined on the outer transform and therefore on the args.
+            if argnums is None and qml.math.get_interface(*args) == "jax":
+                cjac = qml.transforms.classical_jacobian(
+                    qnode, argnums=qml.math.get_trainable_indices(args), expand_fn=self.expand_fn
+                )(*args, **kwargs)
+            else:
+                cjac = cjac_fn(*args, **kwargs)
 
             if isinstance(cjac, tuple):
                 # Classical processing of multiple arguments is present. Return qjac @ cjac.

@@ -901,3 +901,37 @@ class TestJaxArgnums:
         if argnums == [0, 1]:
             assert np.allclose(res[0], expected_0)
             assert np.allclose(res[1], expected_1)
+
+    @pytest.mark.parametrize("argnums", [[0], [1], [0, 1]])
+    @pytest.mark.parametrize("interface", interfaces)
+    @pytest.mark.parametrize("approx_order", [2, 4])
+    @pytest.mark.parametrize("strategy", ["forward", "backward", "center"])
+    def test_hessian(self, argnums, interface, approx_order, strategy):
+        import jax
+
+        dev = qml.device("default.qubit", wires=2)
+
+        @qml.qnode(dev, interface=interface)
+        def circuit(x, y):
+            qml.RX(x[0], wires=[0])
+            qml.RY(x[1], wires=[1])
+            qml.RY(y, wires=[1])
+            qml.CNOT(wires=[0, 1])
+            return qml.var(qml.PauliZ(0) @ qml.PauliX(1))
+
+        x = jax.numpy.array([0.543, -0.654])
+        y = jax.numpy.array(-0.123)
+
+        res = jax.jacobian(
+            qml.gradients.finite_diff(
+                circuit, approx_order=approx_order, strategy=strategy, h=10e-6
+            ),
+            argnums=argnums,
+        )(x, y)
+        res_expected = jax.hessian(circuit, argnums=argnums)(x, y)
+
+        assert len(res) == len(res_expected)
+
+        for r, r_e in zip(res[0], res_expected[0]):
+            tol = 10e-1
+            assert np.allclose(r, r_e, atol=tol)

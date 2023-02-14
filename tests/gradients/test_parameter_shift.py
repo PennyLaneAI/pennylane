@@ -2279,6 +2279,7 @@ class TestParamShiftGradients:
             return jac
 
         res = jax.jacobian(cost_fn)(params)
+        print(res)
         x, y = params
         expected = np.array(
             [
@@ -2866,3 +2867,29 @@ class TestJaxArgnums:
         if argnums == [0, 1]:
             assert np.allclose(res[0], expected_0)
             assert np.allclose(res[1], expected_1)
+
+    @pytest.mark.parametrize("argnums", [[0], [1], [0, 1]])
+    @pytest.mark.parametrize("interface", interfaces)
+    def test_hessian(self, argnums, interface):
+        import jax
+
+        dev = qml.device("default.qubit", wires=2)
+
+        @qml.qnode(dev, interface=interface)
+        def circuit(x, y):
+            qml.RX(x[0], wires=[0])
+            qml.RY(x[1], wires=[1])
+            qml.RY(y, wires=[1])
+            qml.CNOT(wires=[0, 1])
+            return qml.var(qml.PauliZ(0) @ qml.PauliX(1))
+
+        x = jax.numpy.array([0.543, -0.654])
+        y = jax.numpy.array(-0.123)
+
+        res = jax.jacobian(qml.gradients.param_shift(circuit), argnums=argnums)(x, y)
+        res_expected = jax.hessian(circuit, argnums=argnums)(x, y)
+
+        assert len(res) == len(res_expected)
+
+        for r, r_e in zip(res[0], res_expected[0]):
+            assert np.allclose(r, r_e)
