@@ -71,6 +71,11 @@ Pending deprecations
 
   - Deprecated in v0.29.
   - Will be removed in v0.30.
+  
+* The ``qml.utils.sparse_hamiltonian`` function is deprecated. ``~.Hamiltonian.sparse_matrix`` should be used instead.
+
+  - Deprecated in v0.29
+  - Removed in v0.31
 
 * ``ApproxTimeEvolution`` has been deprecated.
 
