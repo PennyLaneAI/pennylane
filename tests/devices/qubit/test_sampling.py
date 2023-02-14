@@ -33,6 +33,17 @@ def test_sample_state_basic(interface):
     assert all(qml.math.allequal(s, [0, 1]) or qml.math.allequal(s, [1, 0]) for s in samples)
 
 
+@pytest.mark.parametrize("wire_order", [[2], [2, 0], [0, 2, 1]])
+def test_marginal_sample_state(wire_order):
+    """Tests that marginal states can be sampled as expected."""
+    state = np.zeros((2, 2, 2))
+    state[:, :, 1] = 0.5  # third wire is always 1
+    alltrue_axis = wire_order.index(2)
+
+    samples = sample_state(state, 20, wires=wire_order)
+    assert all(samples[:, alltrue_axis])
+
+
 def test_sample_state_custom_rng():
     """Tests that a custom RNG can be used with sample_state."""
     custom_rng = np.random.default_rng(12345)
