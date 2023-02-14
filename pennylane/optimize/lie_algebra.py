@@ -59,7 +59,7 @@ def append_time_evolution(tape, riemannian_gradient, t, n, exact=False):
         qml.apply(obj)
     if exact:
         qml.QubitUnitary(
-            expm(-1j * t * qml.utils.sparse_hamiltonian(riemannian_gradient).toarray()),
+            expm(-1j * t * riemannian_gradient.sparse_matrix().toarray()),
             wires=range(len(riemannian_gradient.wires)),
         )
     else:
