@@ -208,7 +208,9 @@ class Pow(ScalarSymbolicOp):
         super().__init__(base, scalar=z, do_queue=do_queue, id=id)
 
         if isinstance(self.z, int) and self.z > 0:
-            if (base_pauli_rep := getattr(self.base, "_pauli_rep", None)) and (self.batch_size is None):
+            if (base_pauli_rep := getattr(self.base, "_pauli_rep", None)) and (
+                self.batch_size is None
+            ):
                 pr = qml.pauli.PauliSentence({})
                 for _ in range(self.z):
                     pr = pr * base_pauli_rep
