@@ -456,9 +456,91 @@
 
 <h3>Improvements</h3>
 
+<h4>Operations and batching</h4>
+
+* `qml.ControlledQubitUnitary` now inherits from `ControlledOp`, which defines `decomposition`, `expand`, and `sparse_matrix` rather than raising an error.
+  [(#3450)](https://github.com/PennyLaneAI/pennylane/pull/3450)
+
+* Parameter broadcasting support has been added for the `Controlled` class if the base operator supports
+  broadcasting.
+  [(#3450)](https://github.com/PennyLaneAI/pennylane/pull/3450)
+
+* The `qml.generator` function now checks if the generator is hermitian, rather than whether it is a subclass of
+  `Observable`. This allows it to return valid generators from `SymbolicOp` and `CompositeOp` classes.
+  [(#3485)](https://github.com/PennyLaneAI/pennylane/pull/3485)
+
+* The `qml.equal` function has been extended to compare `Prod` and `Sum` operators.
+  [(#3516)](https://github.com/PennyLaneAI/pennylane/pull/3516)
+
+* `qml.purity` is added as a measurement process for purity
+  [(#3551)](https://github.com/PennyLaneAI/pennylane/pull/3551)
+
+* In-place inversion has been removed for qutrit operations in preparation for the
+  removal of in-place inversion.
+  [(#3566)](https://github.com/PennyLaneAI/pennylane/pull/3566)
+
+* Moved `qml.utils.sparse_hamiltonian` function to `~.Hamiltonian.sparse_matrix` method.
+  [(#3585)](https://github.com/PennyLaneAI/pennylane/pull/3585)
+
+* The `PauliSentence.operation()` method has been improved to avoid instantiating an `SProd` operator when
+  the coefficient is equal to 1.
+  [(#3595)](https://github.com/PennyLaneAI/pennylane/pull/3595)
+
+* Allow batching in all `SymbolicOp` operators, which include `Exp`, `Pow` and `SProd`.
+  [(#3597)](https://github.com/PennyLaneAI/pennylane/pull/3597)
+
+* `Sum` and `Prod` operations now have broadcasted operands.
+  [(#3611)](https://github.com/PennyLaneAI/pennylane/pull/3611)
+
+* Implemented the XYX single-qubit unitary decomposition.
+  [(#3628)](https://github.com/PennyLaneAI/pennylane/pull/3628)
+
+* All dunder methods now return `NotImplemented`, allowing the right dunder method (e.g. `__radd__`)
+  of the other class to be called.
+  [(#3631)](https://github.com/PennyLaneAI/pennylane/pull/3631)
+
+* The `qml.GellMann` operators now include their index when displayed.
+  [(#3641)](https://github.com/PennyLaneAI/pennylane/pull/3641)
+
+* All `Operator`'s input parameters that are lists are cast into vanilla numpy arrays.
+  [(#3659)](https://github.com/PennyLaneAI/pennylane/pull/3659)
+
 * Added `qml.ops.ctrl_decomp_zyz` to compute the decomposition of a controlled single-qubit operation given
   a single-qubit operation and the control wires.
   [(#3681)](https://github.com/PennyLaneAI/pennylane/pull/3681)
+
+* `qml.pauli.is_pauli_word` now supports `Prod` and `SProd` operators, and it returns `False` when a
+  `Hamiltonian` contains more than one term.
+  [(#3692)](https://github.com/PennyLaneAI/pennylane/pull/3692)
+
+* `qml.pauli.pauli_word_to_string` now supports `Prod`, `SProd` and `Hamiltonian` operators.
+  [(#3692)](https://github.com/PennyLaneAI/pennylane/pull/3692)
+
+* `Controlled` can now decompose single qubit target operations more effectively using the ZYZ
+  decomposition.
+  [(#3726)](https://github.com/PennyLaneAI/pennylane/pull/3726)
+
+<h4>Differentiability and interfaces</h4>
+
+* Validation has been added on gradient keyword arguments when initializing a QNode — if unexpected keyword arguments are passed,
+  a `UserWarning` is raised. A list of the current expected gradient function keyword arguments can be accessed via
+  `qml.gradients.SUPPORTED_GRADIENT_KWARGS`.
+  [(#3526)](https://github.com/PennyLaneAI/pennylane/pull/3526)
+
+* The `numpy` version has been constrained to `<1.24`.
+  [(#3563)](https://github.com/PennyLaneAI/pennylane/pull/3563)
+
+* Support for two-qubit unitary decomposition with JAX-JIT has been added.
+  [(#3569)](https://github.com/PennyLaneAI/pennylane/pull/3569)
+
+* `qml.math.size` now supports PyTorch tensors.
+  [(#3606)](https://github.com/PennyLaneAI/pennylane/pull/3606)
+
+* Most quantum channels are now fully differentiable on all interfaces.
+  [(#3612)](https://github.com/PennyLaneAI/pennylane/pull/3612)
+
+* `qml.math.matmul` now supports PyTorch and Autograd tensors.
+  [(#3613)](https://github.com/PennyLaneAI/pennylane/pull/3613)
 
 * Add `qml.math.detach`, which detaches a tensor from its trace. This stops
   automatic gradient computations.
@@ -466,6 +548,9 @@
 
 * Add `typing.TensorLike` type.
   [(#3675)](https://github.com/PennyLaneAI/pennylane/pull/3675)
+
+* `QuantumMonteCarlo` template is now JAX-JIT compatible when passing `jax.numpy` arrays to the template.
+  [(#3734)](https://github.com/PennyLaneAI/pennylane/pull/3734)
 
 * The kernel matrix utility functions in `qml.kernels` are now autodifferentiation-compatible.
   In addition they support batching, for example for quantum kernel execution with shot vectors.
@@ -503,116 +588,36 @@
            [0.91, 0.8 , 1.  , 0.91],
            [0.92, 1.  , 0.91, 1.  ]]], requires_grad=True)
   ```
-  
+
+* `DefaultQubitJax` now supports evolving the state vector when executing `ParametrizedEvolution`
+  gates.
+  [(#3743)](https://github.com/PennyLaneAI/pennylane/pull/3743)
+
 * The parameter-shift derivative of variances saves a redundant evaluation of the
   corresponding unshifted expectation value tape, if possible
   [(#3744)](https://github.com/PennyLaneAI/pennylane/pull/3744)
 
-* `qml.purity` is added as a measurement process for purity
-  [(#3551)](https://github.com/PennyLaneAI/pennylane/pull/3551)
+<h4>Next generation device API</h4>
 
-* `qml.math.matmul` now supports PyTorch and Autograd tensors.
-  [(#3613)](https://github.com/PennyLaneAI/pennylane/pull/3613)
+* The `ExecutionConfig` data class has been added.
+  [(#3649)](https://github.com/PennyLaneAI/pennylane/pull/3649)
 
-* `qml.math.size` now supports PyTorch tensors.
-  [(#3606)](https://github.com/PennyLaneAI/pennylane/pull/3606)
+* The `StatePrep` class has been added as an interface that state-prep operators must implement.
+  [(#3654)](https://github.com/PennyLaneAI/pennylane/pull/3654)
 
-* `qml.purity` can now be used as a measurement process.
-  [(#3551)](https://github.com/PennyLaneAI/pennylane/pull/3551)
+* `QubitStateVector` now implements the `StatePrep` interface.
+  [(#3685)](https://github.com/PennyLaneAI/pennylane/pull/3685)
 
-* Most quantum channels are now fully differentiable on all interfaces.
-  [(#3612)](https://github.com/PennyLaneAI/pennylane/pull/3612)
+* `BasisState` now implements the `StatePrep` interface.
+  [(#3693)](https://github.com/PennyLaneAI/pennylane/pull/3693)
 
-* The `qml.equal` function has been extended to compare `Prod` and `Sum` operators.
-  [(#3516)](https://github.com/PennyLaneAI/pennylane/pull/3516)
-
-* `qml.ControlledQubitUnitary` now inherits from `ControlledOp`, which defines `decomposition`, `expand`, and `sparse_matrix` rather than raising an error.
-  [(#3450)](https://github.com/PennyLaneAI/pennylane/pull/3450)
-
-* Parameter broadcasting support has been added for the `Controlled` class if the base operator supports
-  broadcasting.
-  [(#3450)](https://github.com/PennyLaneAI/pennylane/pull/3450)
-
-* The `qml.generator` function now checks if the generator is hermitian, rather than whether it is a subclass of
-  `Observable`. This allows it to return valid generators from `SymbolicOp` and `CompositeOp` classes.
- [(#3485)](https://github.com/PennyLaneAI/pennylane/pull/3485)
-
-* Support for two-qubit unitary decomposition with JAX-JIT has been added.
-  [(#3569)](https://github.com/PennyLaneAI/pennylane/pull/3569)
-
-* The `numpy` version has been constrained to `<1.24`.
-  [(#3563)](https://github.com/PennyLaneAI/pennylane/pull/3563)
-
-* In-place inversion has been removed for qutrit operations in preparation for the
-  removal of in-place inversion.
-  [(#3566)](https://github.com/PennyLaneAI/pennylane/pull/3566)
-
-* Validation has been added on gradient keyword arguments when initializing a QNode — if unexpected keyword arguments are passed,
-  a `UserWarning` is raised. A list of the current expected gradient function keyword arguments can be accessed via
-  `qml.gradients.SUPPORTED_GRADIENT_KWARGS`.
-  [(#3526)](https://github.com/PennyLaneAI/pennylane/pull/3526)
-
-* Moved `qml.utils.sparse_hamiltonian` function to `~.Hamiltonian.sparse_matrix` method.
-  [(#3585)](https://github.com/PennyLaneAI/pennylane/pull/3585)
-
-* The `PauliSentence.operation()` method has been improved to avoid instantiating an `SProd` operator when
-  the coefficient is equal to 1.
-  [(#3595)](https://github.com/PennyLaneAI/pennylane/pull/3595)
+<h4>Data</h4>
 
 * Writing Hamiltonians to a file using the `data` module has been improved by employing a condensed writing format.
   [(#3592)](https://github.com/PennyLaneAI/pennylane/pull/3592)
 
 * Lazy-loading in the `Dataset.read()` method is more universally supported.
   [(#3605)](https://github.com/PennyLaneAI/pennylane/pull/3605)
-
-* Implemented the XYX single-qubit unitary decomposition.
-  [(#3628)](https://github.com/PennyLaneAI/pennylane/pull/3628)
-
-* `Sum` and `Prod` operations now have broadcasted operands.
-  [(#3611)](https://github.com/PennyLaneAI/pennylane/pull/3611)
-
-* All dunder methods now return `NotImplemented`, allowing the right dunder method (e.g. `__radd__`)
-  of the other class to be called.
-  [(#3631)](https://github.com/PennyLaneAI/pennylane/pull/3631)
-
-* The `qml.GellMann` operators now include their index when displayed.
-  [(#3641)](https://github.com/PennyLaneAI/pennylane/pull/3641)
-
-* The `ExecutionConfig` data class has been added.
-  [(#3649)](https://github.com/PennyLaneAI/pennylane/pull/3649)
-
-* All `Operator`'s input parameters that are lists are cast into vanilla numpy arrays.
-  [(#3659)](https://github.com/PennyLaneAI/pennylane/pull/3659)
-
-* The `StatePrep` class has been added as an interface that state-prep operators must implement.
-  [(#3654)](https://github.com/PennyLaneAI/pennylane/pull/3654)
-
-* Allow batching in all `SymbolicOp` operators, which include `Exp`, `Pow` and `SProd`.
-  [(#3597)](https://github.com/PennyLaneAI/pennylane/pull/3597)
-
-* `qml.pauli.is_pauli_word` now supports `Prod` and `SProd` operators, and it returns `False` when a
-  `Hamiltonian` contains more than one term.
-  [(#3692)](https://github.com/PennyLaneAI/pennylane/pull/3692)
-
-* `qml.pauli.pauli_word_to_string` now supports `Prod`, `SProd` and `Hamiltonian` operators.
-  [(#3692)](https://github.com/PennyLaneAI/pennylane/pull/3692)
-
-* `BasisState` now implements the `StatePrep` interface.
-  [(#3693)](https://github.com/PennyLaneAI/pennylane/pull/3693)
-
-* `QubitStateVector` now implements the `StatePrep` interface.
-  [(#3685)](https://github.com/PennyLaneAI/pennylane/pull/3685)
-
-* `Controlled` can now decompose single qubit target operations more effectively using the ZYZ
-  decomposition.
-  [(#3726)](https://github.com/PennyLaneAI/pennylane/pull/3726)
-
-* `QuantumMonteCarlo` template is now JAX-JIT compatible when passing `jax.numpy` arrays to the template.
-  [(#3734)](https://github.com/PennyLaneAI/pennylane/pull/3734)
-
-* `DefaultQubitJax` now supports evolving the state vector when executing `ParametrizedEvolution`
-  gates.
-  [(#3743)](https://github.com/PennyLaneAI/pennylane/pull/3743)
 
 <h3>Breaking changes</h3>
 
