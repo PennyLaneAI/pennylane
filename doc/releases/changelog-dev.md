@@ -554,6 +554,9 @@
   gates.
   [(#3743)](https://github.com/PennyLaneAI/pennylane/pull/3743)
 
+ * `AdaptiveOptimizer` is updated to use non-default user-defined qnode arguments.
+   [(#3765)](https://github.com/PennyLaneAI/pennylane/pull/3765)
+
 <h3>Breaking changes</h3>
 
 * The argument `mode` in execution is replaced by the boolean `grad_on_execution` in the new execution pipeline.
