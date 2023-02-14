@@ -256,6 +256,10 @@
            [0.92, 1.  , 0.91, 1.  ]]], requires_grad=True)
   ```
 
+<h4>Smartly decompose Hamiltonian evolution 💯</h4>
+
+To be merged this week
+
 <h4>Tools for quantum chemistry and other applications 🛠️</h4>
 
 * A new method called `qml.qchem.givens_decomposition` has been added, which decomposes a unitary into a sequence
