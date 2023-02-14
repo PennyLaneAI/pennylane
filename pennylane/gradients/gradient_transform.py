@@ -324,6 +324,8 @@ class gradient_transform(qml.batch_transform):
                 jacs = tuple(
                     qml.math.tensordot(qjac, c, [[-1], [0]]) for c in cjac if c is not None
                 )
+                if len(jacs) == 1:
+                    return jacs[0]
                 return jacs
 
             is_square = cjac.ndim == 2 and cjac.shape[0] == cjac.shape[1]

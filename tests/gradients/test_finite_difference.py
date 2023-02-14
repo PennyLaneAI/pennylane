@@ -851,15 +851,13 @@ class TestJaxArgnums:
             circuit, argnums=argnums, approx_order=approx_order, strategy=strategy, h=10e-6
         )(x, y)
 
-        assert isinstance(res, tuple)
         expected_0 = np.array([-np.sin(y) * np.sin(x[0]), 0])
         expected_1 = np.array(np.cos(y) * np.cos(x[0]))
-        print(res)
 
         if argnums == [0]:
-            assert np.allclose(res[0], expected_0)
+            assert np.allclose(res, expected_0)
         if argnums == [1]:
-            assert np.allclose(res[0], expected_1)
+            assert np.allclose(res, expected_1)
         if argnums == [0, 1]:
             assert np.allclose(res[0], expected_0)
             assert np.allclose(res[1], expected_1)
@@ -890,14 +888,13 @@ class TestJaxArgnums:
             circuit, argnums=argnums, approx_order=approx_order, strategy=strategy, h=10e-6
         )(x, y)
 
-        assert isinstance(res, tuple)
         expected_0 = np.array([[-np.sin(x[0]), 0.0], [0.0, 0.0]])
         expected_1 = np.array([0, np.cos(y)])
 
         if argnums == [0]:
-            assert np.allclose(res[0], expected_0)
+            assert np.allclose(res, expected_0)
         if argnums == [1]:
-            assert np.allclose(res[0], expected_1)
+            assert np.allclose(res, expected_1)
         if argnums == [0, 1]:
             assert np.allclose(res[0], expected_0)
             assert np.allclose(res[1], expected_1)
@@ -932,6 +929,9 @@ class TestJaxArgnums:
 
         assert len(res) == len(res_expected)
 
-        for r, r_e in zip(res[0], res_expected[0]):
+        if len(argnums) != 1:
+            res = res[0]
+
+        for r, r_e in zip(res, res_expected[0]):
             tol = 10e-1
             assert np.allclose(r, r_e, atol=tol)
