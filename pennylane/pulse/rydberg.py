@@ -22,23 +22,26 @@ from .parametrized_hamiltonian import ParametrizedHamiltonian
 
 
 class RydbergEnsemble:
-    """Class representing the interaction of an ensemble of Rydberg atoms.
+    r"""Class representing the interaction of an ensemble of Rydberg atoms.
 
     Args:
-        qubit_positions (list): list of coordinates of each atom in the ensemble
+        coordinates (list): List of coordinates (in micrometers) of each atom in the ensemble.
         wires (list): List of wires for each atom in the ensemble. If ``None``, the wire values
             correspond to the index of the atom in the list of qubit positions. Defaults to ``None``.
-        distance (float): Separation distance between atoms (in meters). Defaults to 1e-6.
+        interaction (float): Rydberg interaction constant in units: :math:`MHz \times \mu m^6`.
+            Defaults to :math:`862690 \times 2\pi MHz \times \mu m^6`.
 
     Returns:
         RydbergEnsemble: class representing an ensemble of Rydberg atoms
     """
 
-    def __init__(self, qubit_positions: list, wires: list = None, distance: float = 1e-6) -> None:
-        self.qubit_positions = qubit_positions
-        self.distance = distance
+    def __init__(
+        self, coordinates: list, wires: list = None, interaction_coeff: float = 862690 * np.pi
+    ) -> None:
+        self.coordinates = coordinates
+        self.interaction_coeff = interaction_coeff
         self._rydberg_interaction = None
-        self.wires = wires or range(len(qubit_positions))
+        self.wires = wires or range(len(coordinates))
 
     @property
     def rydberg_interaction(self) -> Sum:
@@ -47,16 +50,18 @@ class RydbergEnsemble:
 
         .. math::
 
-            \sum_{i<j} U_{ij} n_i n_j
+            \sum_{i<j} V_{ij} n_i n_j
 
         where :math:`n_i` corresponds to the projector on the Rydberg state of the atom :math:`i`, and
-        :math:`U_{ij}` is the van der Waals potential, which is proportional to:
+        :math:`V_{ij}` is the van der Waals potential:
 
         .. math::
 
-            U_{ij} \propto R_{ij}^{-6}
+            V_{ij} = \frac{C_6}{R_{ij}^6}
 
-        where :math:`R_{ij}` is the distance between the atoms :math:`i` and :math:`j`.
+        where :math:`R_{ij}` is the distance between the atoms :math:`i` and :math:`j`, and :math:`C_6`
+        is the Rydberg interaction constant, which can be set during initialization, and defaults
+        to :math:`862690 \times 2\pi MHz \times \mu m^6`.
 
         Args:
             qubit_positions (list): list of coordinates of the Rydberg atoms
@@ -83,10 +88,10 @@ class RydbergEnsemble:
 
         coeffs = []
         ops = []
-        for idx, (pos1, wire1) in enumerate(zip(self.qubit_positions[1:], self.wires[1:])):
-            for pos2, wire2 in zip(self.qubit_positions[: idx + 1], self.wires[: idx + 1]):
-                atom_distance = self.distance * np.linalg.norm(qml.math.array(pos2) - pos1)
-                Vij = 1 / (abs(atom_distance) ** 6)  # van der Waals potential
+        for idx, (pos1, wire1) in enumerate(zip(self.coordinates[1:], self.wires[1:])):
+            for pos2, wire2 in zip(self.coordinates[: idx + 1], self.wires[: idx + 1]):
+                atom_distance = np.linalg.norm(qml.math.array(pos2) - pos1)
+                Vij = self.interaction_coeff / (abs(atom_distance) ** 6)  # van der Waals potential
                 coeffs.append(Vij)
                 ops.append(qml.prod(rydberg_projector(wire1), rydberg_projector(wire2)))
 
@@ -94,7 +99,7 @@ class RydbergEnsemble:
         return self._rydberg_interaction
 
     def drive(
-        self, amplitudes: list, detunings: list, phases: list, wires: list
+        self, rabi: list, detunings: list, phases: list, wires: list
     ) -> ParametrizedHamiltonian:
         r"""Returns a :class:`ParametrizedHamiltonian` describing the evolution of the Rydberg ensemble
         when driving the given atoms (``wires``) with lasers with the corresponding ``amplitude``
@@ -102,8 +107,8 @@ class RydbergEnsemble:
 
         .. math::
 
-            H = \frac{\hbar}{2} \sum_i  \Omega_i(t) (\cos(\phi)\sigma_i^x - \sin(\phi)\sigma_i^y) -
-            \frac{\hbar}{2} \sum_i \delta_i(t) \sigma_i^z + \sum_{i<j} U_{ij} n_i n_j
+            H = \hbar \frac{1}{2} \sum_i  \Omega_i(t) (\cos(\phi)\sigma_i^x - \sin(\phi)\sigma_i^y) -
+            \frac{1}{2} \sum_i \delta_i(t) \sigma_i^z + \sum_{i<j} V_{ij} n_i n_j
 
         where :math:`\Omega_i` and :math:`\delta_i` correspond to the amplitude and detuning of the
         laser applied to atom :math:`i`, and :math:`\sigma^\alpha` for :math:`\alpha = x,y,z` are
@@ -117,10 +122,10 @@ class RydbergEnsemble:
             :math:`\hbar` is set to 1.
 
         Args:
-            amplitudes (list): list of laser amplitudes
-            detunings (list): list of laser detuning parameters
-            phases (list): list of phases
-            wires (list): list of wires to drive
+            rabi (list): list of Rabi frequency values (in MHz) of each driving laser field
+            detunings (list): list of detuning values (in MHz) of each driving laser field
+            phases (list): list of phases (in radiants) of each driving laser field
+            wires (list): list of wire values that each laser field acts on
 
         Returns:
             ParametrizedHamiltonian: hamiltonian describing the laser driving
@@ -129,6 +134,6 @@ class RydbergEnsemble:
             qml.math.cos(p) * qml.PauliX(w) - qml.math.sin(p) * qml.PauliY(w)
             for p, w in zip(phases, wires)
         ]
-        H1 = (1 / 2) * qml.dot(amplitudes, ops)
+        H1 = (1 / 2) * qml.dot(rabi, ops)
         H2 = -1 / 2 * qml.dot(detunings, [qml.PauliZ(w) for w in wires])
         return H1 + H2 + self.rydberg_interaction
