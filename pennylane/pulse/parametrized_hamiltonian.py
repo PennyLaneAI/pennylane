@@ -224,12 +224,6 @@ class ParametrizedHamiltonian:
                 lambda p, t, new_c=c: other * new_c(p, t) for c in coeffs_parametrized
             ]
             return ParametrizedHamiltonian(coeffs_fixed + coeffs_parametrized, ops)
-        if callable(other):
-            coeffs_fixed = [lambda p, t, new_c=c: new_c * other(p, t) for c in coeffs_fixed]
-            coeffs_parametrized = [
-                lambda p, t, new_c=c: new_c(p, t) * other(p, t) for c in coeffs_parametrized
-            ]
-            return ParametrizedHamiltonian(coeffs_fixed + coeffs_parametrized, ops)
         return NotImplemented
 
     __radd__ = __add__
