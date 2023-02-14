@@ -212,20 +212,3 @@ class ExpvalCost:
 
     def __call__(self, *args, **kwargs):
         return self.cost_fn(*args, **kwargs)
-
-
-class VQECost(ExpvalCost):
-    """Create a cost function that gives the expectation value of an input Hamiltonian.
-
-    .. warning::
-        Use of :class:`~.VQECost` is deprecated and should be replaced with
-        :class:`~.ExpvalCost`.
-    """
-
-    def __init__(self, *args, **kwargs):
-        warnings.warn(
-            "Use of VQECost is deprecated and should be replaced with ExpvalCost",
-            UserWarning,
-            2,
-        )
-        super().__init__(*args, **kwargs)

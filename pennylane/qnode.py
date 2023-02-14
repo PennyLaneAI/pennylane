@@ -352,7 +352,7 @@ class QNode:
         self,
         func,
         device,
-        interface="autograd",
+        interface="auto",
         diff_method="best",
         expansion_strategy="gradient",
         max_expansion=10,
@@ -423,7 +423,7 @@ class QNode:
         self._user_gradient_kwargs = gradient_kwargs
         self._original_device = device
         self.gradient_fn = None
-        self.gradient_kwargs = None
+        self.gradient_kwargs = {}
         self._tape_cached = False
 
         self._update_gradient_fn()
@@ -460,7 +460,15 @@ class QNode:
             self.gradient_fn = None
             self.gradient_kwargs = {}
             return
-        if self.interface == "auto":
+        if self.interface == "auto" and self.diff_method in ["backprop", "best"]:
+            if self.diff_method == "backprop":
+                # Check that the device has the capabilities to support backprop
+                backprop_devices = self.device.capabilities().get("passthru_devices", None)
+                if backprop_devices is None:
+                    raise qml.QuantumFunctionError(
+                        f"The {self.device.short_name} device does not support native computations with "
+                        "autodifferentiation frameworks."
+                    )
             return
 
         self.gradient_fn, self.gradient_kwargs, self.device = self.get_gradient_fn(
@@ -725,8 +733,12 @@ class QNode:
 
     qtape = tape  # for backwards compatibility
 
-    def construct(self, args, kwargs):
+    def construct(self, args, kwargs):  # pylint: disable=too-many-branches
         """Call the quantum function with a tape context, ensuring the operations get queued."""
+        old_interface = self.interface
+
+        if old_interface == "auto":
+            self.interface = qml.math.get_interface(*args, *list(kwargs.values()))
 
         self._tape = make_qscript(self.func)(*args, **kwargs)
         self._qfunc_output = self.tape._qfunc_output
@@ -790,11 +802,20 @@ class QNode:
         if isinstance(self.gradient_fn, qml.gradients.gradient_transform):
             self._tape = self.gradient_fn.expand_fn(self._tape)
 
+        if old_interface == "auto":
+            self.interface = "auto"
+
     def __call__(self, *args, **kwargs):  # pylint: disable=too-many-branches, too-many-statements
         override_shots = False
         old_interface = self.interface
+
         if old_interface == "auto":
             self.interface = qml.math.get_interface(*args, *list(kwargs.values()))
+            if self.device is not self._original_device:
+                warnings.warn(
+                    "The device was switched during the call of the QNode, to avoid this behaviour define"
+                    "an interface argument instead of auto."
+                )
 
         if not self._qfunc_uses_shots_arg:
             # If shots specified in call but not in qfunc signature,

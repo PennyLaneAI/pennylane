@@ -66,9 +66,24 @@ Pending deprecations
   - Deprecated in v0.29.
   - Will be removed in v0.31.
 
+* A warning has been added in ``Evolution`` redirecting users to ``qml.evolve``. This was added
+  because we want to change the behaviour of ``Evolution``, adding a ``-1`` to the given parameter.
+
+  - Deprecated in v0.29.
+  - Will be removed in v0.30.
+  
+* The ``qml.utils.sparse_hamiltonian`` function is deprecated. ``~.Hamiltonian.sparse_matrix`` should be used instead.
+
+  - Deprecated in v0.29
+  - Removed in v0.31
+
 Completed deprecation cycles
 ----------------------------
 
+* ``qml.VQECost`` is removed. 
+
+   - Deprecated in 0.13
+   - Removed in 0.29
 
 * In-place inversion — ``op.inv()`` and ``op.inverse=value`` — is deprecated. Please
   use ``qml.adjoint`` or ``qml.pow`` instead. 
