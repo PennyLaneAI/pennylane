@@ -38,7 +38,7 @@ def expand_fn(
 @functools.partial(batch_transform, expand_fn=expand_fn)
 def metric_tensor(
     tape, argnum=None, approx=None, allow_nonunitary=True, aux_wire=None, device_wires=None
-):
+):  # pylint: disable=too-many-arguments
     r"""Returns a function that computes the metric tensor of a given QNode or quantum tape.
 
     The metric tensor convention we employ here has the following form:
@@ -614,7 +614,9 @@ def _get_first_term_tapes(layer_i, layer_j, allow_nonunitary, aux_wire):
     return tapes, ids
 
 
-def _metric_tensor_hadamard(tape, argnum, allow_nonunitary, aux_wire, device_wires):
+def _metric_tensor_hadamard(
+    tape, argnum, allow_nonunitary, aux_wire, device_wires
+):  # pylint: disable=too-many-statements
     r"""Generate the quantum tapes that execute the Hadamard tests
     to compute the first term of off block-diagonal metric entries
     and combine them with the covariance matrix-based block-diagonal tapes.
@@ -755,8 +757,7 @@ def _metric_tensor_hadamard(tape, argnum, allow_nonunitary, aux_wire, device_wir
         coeffs_gen = (c for c in qml.math.hstack(coeffs_list))
         # flattened coeffs_list but also with 0s where parameters are not in argnum
         extended_coeffs_list = [
-            next(coeffs_gen)
-            if param_in_argnum else 0.0
+            next(coeffs_gen) if param_in_argnum else 0.0
             for param_in_argnum in qml.math.hstack(in_argnum_list)
         ]
 
