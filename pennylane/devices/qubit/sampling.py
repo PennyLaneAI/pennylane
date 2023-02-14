@@ -17,7 +17,7 @@ import pennylane as qml
 from pennylane import numpy as np
 
 
-def states_to_binary(samples, num_wires: int) -> np.ndarray[np.bool8]:
+def states_to_binary(samples, num_wires: int) -> np.ndarray:
     """Convert basis states from base 10 to binary representation.
 
     Args:
@@ -32,7 +32,7 @@ def states_to_binary(samples, num_wires: int) -> np.ndarray[np.bool8]:
     return (samples[..., None] & powers_of_two).astype(np.bool8)
 
 
-def sample_state(state, shots: int, wires=None, rng=None) -> np.ndarray[np.bool8]:
+def sample_state(state, shots: int, wires=None, rng=None) -> np.ndarray:
     """
     Returns a series of samples of a state.
 
