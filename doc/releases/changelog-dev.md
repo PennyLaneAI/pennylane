@@ -456,6 +456,8 @@
 
 <h3>Improvements</h3>
 
+<h4>Add new improvements here in PR number order</h4>
+
 <h4>Operations and batching</h4>
 
 * `qml.ControlledQubitUnitary` now inherits from `ControlledOp`, which defines `decomposition`, `expand`, and `sparse_matrix` rather than raising an error.
