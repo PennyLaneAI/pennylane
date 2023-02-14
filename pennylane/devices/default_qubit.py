@@ -28,6 +28,8 @@ from scipy.sparse import csr_matrix
 import pennylane as qml
 from pennylane import BasisState, DeviceError, QubitDevice, QubitStateVector, Snapshot
 from pennylane.ops.qubit.attributes import diagonal_in_z_basis
+from pennylane.pulse import ParametrizedEvolution
+from pennylane.typing import TensorLike
 from pennylane.wires import WireError
 
 from .._version import __version__
@@ -264,6 +266,8 @@ class DefaultQubit(QubitDevice):
                         self._debugger.snapshots[operation.tag] = state_vector
                     else:
                         self._debugger.snapshots[len(self._debugger.snapshots)] = state_vector
+            elif isinstance(operation, ParametrizedEvolution):
+                self._state = self._apply_parametrized_evolution(self._state, operation)
             else:
                 self._state = self._apply_operation(self._state, operation)
 
@@ -273,6 +277,18 @@ class DefaultQubit(QubitDevice):
         # apply the circuit rotations
         for operation in rotations:
             self._state = self._apply_operation(self._state, operation)
+
+    def _apply_parametrized_evolution(self, state: TensorLike, operation: ParametrizedEvolution):
+        """Applies a parametrized evolution to the input state.
+
+        Args:
+            state (array[complex]): input state
+            operation (ParametrizedEvolution): operation to apply on the state
+        """
+        raise NotImplementedError(
+            f"The device {self.short_name} cannot execute a ParametrizedEvolution operation."
+            "Please use the jax  interface."
+        )
 
     def _apply_operation(self, state, operation):
         """Applies operations to the input state.
@@ -584,10 +600,8 @@ class DefaultQubit(QubitDevice):
             else:
                 # Coefficients and the state are not trainable, we can be more
                 # efficient in how we compute the Hamiltonian sparse matrix.
-                if observable.name == "Hamiltonian":
-                    Hmat = qml.utils.sparse_hamiltonian(observable, wires=self.wires)
-                elif observable.name == "SparseHamiltonian":
-                    Hmat = observable.sparse_matrix()
+                if observable.name in {"Hamiltonian", "SparseHamiltonian"}:
+                    Hmat = observable.sparse_matrix(wire_order=self.wires)
 
                 state = qml.math.toarray(self.state)
                 if self._ndim(state) == 2:

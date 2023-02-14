@@ -42,6 +42,41 @@ def test_integration():
     assert np.allclose(qml.grad(qn_l)(weights), qml.grad(qn_d)(weights))
 
 
+def test_no_backprop_auto_interface():
+    """Test that lightning.qubit does not support the backprop
+    differentiation method."""
+
+    dev = qml.device("lightning.qubit", wires=2)
+
+    def circuit():
+        """Simple quantum function."""
+        return qml.expval(qml.PauliZ(0))
+
+    with pytest.raises(
+        qml.QuantumFunctionError,
+        match="The lightning.qubit device does not support native "
+        "computations with autodifferentiation frameworks.",
+    ):
+        qml.QNode(circuit, dev, diff_method="backprop")
+
+
+def test_finite_shots_adjoint():
+    """Test that shots and adjoint diff raises an error."""
+
+    dev = qml.device("lightning.qubit", wires=2, shots=2)
+
+    def circuit():
+        """Simple quantum function."""
+        return qml.expval(qml.PauliZ(0))
+
+    with pytest.warns(
+        UserWarning,
+        match="Requested adjoint differentiation to be computed with finite shots. Adjoint differentiation always "
+        "calculated exactly.",
+    ):
+        qml.QNode(circuit, dev, diff_method="adjoint")
+
+
 class TestDtypePreserved:
     """Test that the user-defined dtype of the device is preserved for QNode
     evaluation"""

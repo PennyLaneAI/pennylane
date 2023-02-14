@@ -361,16 +361,15 @@ class TestValidation:
 
         qn = QNode(dummyfunc, dev, diff_method="device")
         assert qn.diff_method == "device"
-        assert qn.gradient_fn is None
+        assert qn.gradient_fn == "device"
 
         qn = QNode(dummyfunc, dev, interface="autograd", diff_method="device")
         assert qn.diff_method == "device"
         assert qn.gradient_fn == "device"
-        mock_device.assert_called_once()
 
         qn = QNode(dummyfunc, dev, diff_method="finite-diff")
         assert qn.diff_method == "finite-diff"
-        assert qn.gradient_fn is None
+        assert qn.gradient_fn is qml.gradients.finite_diff
 
         qn = QNode(dummyfunc, dev, interface="autograd", diff_method="finite-diff")
         assert qn.diff_method == "finite-diff"
@@ -378,7 +377,7 @@ class TestValidation:
 
         qn = QNode(dummyfunc, dev, diff_method="spsa")
         assert qn.diff_method == "spsa"
-        assert qn.gradient_fn is None
+        assert qn.gradient_fn is qml.gradients.spsa_grad
 
         qn = QNode(dummyfunc, dev, interface="autograd", diff_method="spsa")
         assert qn.diff_method == "spsa"
@@ -386,7 +385,7 @@ class TestValidation:
 
         qn = QNode(dummyfunc, dev, diff_method="parameter-shift")
         assert qn.diff_method == "parameter-shift"
-        assert qn.gradient_fn is None
+        assert qn.gradient_fn is qml.gradients.param_shift
 
         qn = QNode(dummyfunc, dev, interface="autograd", diff_method="parameter-shift")
         assert qn.diff_method == "parameter-shift"

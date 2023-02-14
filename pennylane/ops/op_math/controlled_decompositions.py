@@ -91,12 +91,24 @@ def ctrl_decomp_zyz(target_operation: Operator, control_wires: Wires):
             )[0]
         phi, theta, omega = zyz_decomp.single_qubit_rot_angles()
 
-    return [
-        qml.RZ(phi, wires=target_wire),
-        qml.RY(theta / 2, wires=target_wire),
-        qml.MultiControlledX(wires=control_wires + target_wire),
-        qml.RY(-theta / 2, wires=target_wire),
-        qml.RZ(-(phi + omega) / 2, wires=target_wire),
-        qml.MultiControlledX(wires=control_wires + target_wire),
-        qml.RZ((omega - phi) / 2, wires=target_wire),
-    ]
+    decomp = []
+
+    if not qml.math.isclose(phi, 0.0, atol=1e-8, rtol=0):
+        decomp.append(qml.RZ(phi, wires=target_wire))
+    if not qml.math.isclose(theta / 2, 0.0, atol=1e-8, rtol=0):
+        decomp.extend(
+            [
+                qml.RY(theta / 2, wires=target_wire),
+                qml.MultiControlledX(wires=control_wires + target_wire),
+                qml.RY(-theta / 2, wires=target_wire),
+            ]
+        )
+    else:
+        decomp.append(qml.MultiControlledX(wires=control_wires + target_wire))
+    if not qml.math.isclose(-(phi + omega) / 2, 0.0, atol=1e-6, rtol=0):
+        decomp.append(qml.RZ(-(phi + omega) / 2, wires=target_wire))
+    decomp.append(qml.MultiControlledX(wires=control_wires + target_wire))
+    if not qml.math.isclose((omega - phi) / 2, 0.0, atol=1e-8, rtol=0):
+        decomp.append(qml.RZ((omega - phi) / 2, wires=target_wire))
+
+    return decomp
