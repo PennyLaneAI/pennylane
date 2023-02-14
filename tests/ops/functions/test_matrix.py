@@ -554,7 +554,7 @@ class TestInterfaces:
         dev = qml.device("default.qubit", wires=3)
 
         @qml.matrix
-        @qml.qnode(dev, interface="torch")
+        @qml.qnode(dev)
         def circuit(theta):
             qml.RZ(theta[0], wires=0)
             qml.RZ(theta[1], wires=1)
@@ -635,7 +635,6 @@ class TestDifferentiation:
     @pytest.mark.jax
     @pytest.mark.parametrize("v", np.linspace(0.2, 1.6, 8))
     def test_jax(self, v):
-
         import jax
 
         def circuit(theta):
@@ -660,7 +659,6 @@ class TestDifferentiation:
     @pytest.mark.torch
     @pytest.mark.parametrize("v", np.linspace(0.2, 1.6, 8))
     def test_torch(self, v):
-
         import torch
 
         def circuit(theta):
@@ -685,7 +683,6 @@ class TestDifferentiation:
     @pytest.mark.tf
     @pytest.mark.parametrize("v", np.linspace(0.2, 1.6, 8))
     def test_tensorflow(self, v):
-
         import tensorflow as tf
 
         def circuit(theta):

@@ -74,7 +74,6 @@ class AngleEmbedding(Operation):
     grad_method = None
 
     def __init__(self, features, wires, rotation="X", do_queue=True, id=None):
-
         if rotation not in ROT:
             raise ValueError(f"Rotation option {rotation} not recognized.")
 

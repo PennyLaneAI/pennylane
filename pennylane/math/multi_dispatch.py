@@ -71,7 +71,7 @@ def multi_dispatch(argnum=None, tensor_list=None):
 
 
     Args:
-        argnum (list[int]): A list of integers indicating indicating the indices
+        argnum (list[int]): A list of integers indicating the indices
             to dispatch (i.e., the arguments that are tensors handled by an interface).
             If ``None``, dispatch over all arguments.
         tensor_lists (list[int]): a list of integers indicating which indices
@@ -865,3 +865,62 @@ def gammainc(m, t, like=None):
     import scipy
 
     return scipy.special.gammainc(m, t)
+
+
+@multi_dispatch()
+def detach(tensor, like=None):
+    """Detach a tensor from its trace and return just its numerical values.
+
+    Args:
+        tensor (tensor_like): Tensor to detach
+        like (str): Manually chosen interface to dispatch to.
+
+    Returns:
+        tensor_like: A tensor in the same interface as the input tensor but
+        with a stopped gradient.
+    """
+    if like == "jax":
+        import jax
+
+        return jax.lax.stop_gradient(tensor)
+
+    if like == "torch":
+        return tensor.detach()
+
+    if like == "tensorflow":
+        import tensorflow as tf
+
+        return tf.stop_gradient(tensor)
+
+    if like == "autograd":
+        return np.to_numpy(tensor)
+
+    return tensor
+
+
+@multi_dispatch(tensor_list=[1])
+def set_index(array, idx, val, like=None):
+    """Set the value at a specified index in an array.
+    Calls ``array[idx]=val`` and returns the updated array unless JAX.
+
+    Args:
+        array (tensor_like): array to be modified
+        idx (int, tuple): index to modify
+        val (int, float): value to set
+
+    Returns:
+        a new copy of the array with the specified index updated to ``val``.
+
+    Whether the original array is modified is interface-dependent.
+
+    .. note:: TensorFlow EagerTensor does not support item assignment
+    """
+    if like == "jax":
+        from jax import numpy as jnp
+
+        # ensure array is jax array (interface may be jax because of idx or val and not array)
+        jax_array = jnp.array(array)
+        return jax_array.at[idx].set(val)
+
+    array[idx] = val
+    return array

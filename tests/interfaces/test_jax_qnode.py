@@ -35,12 +35,6 @@ qubit_device_and_diff_method = [
     ["default.qubit", "adjoint", "forward", "jax-jit"],
     ["default.qubit", "adjoint", "backward", "jax-jit"],
     ["default.qubit", "spsa", "backward", "jax-jit"],
-    # Auto
-    ["default.qubit", "finite-diff", "backward", "auto"],
-    ["default.qubit", "parameter-shift", "backward", "auto"],
-    ["default.qubit", "adjoint", "forward", "auto"],
-    ["default.qubit", "adjoint", "backward", "auto"],
-    ["default.qubit", "spsa", "backward", "auto"],
 ]
 
 pytestmark = pytest.mark.jax
@@ -556,7 +550,6 @@ class TestQubitIntegration:
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
         if diff_method in {"finite-diff", "parameter-shift", "spsa"} and interface == "jax-jit":
-
             with pytest.raises(
                 InterfaceUnsupportedError,
                 match="The JAX-JIT interface doesn't support differentiating QNodes",
@@ -719,9 +712,6 @@ class TestQubitIntegration:
 
         if diff_method == "adjoint":
             pytest.skip("Adjoint warns with finite shots")
-
-        if interface == "auto":
-            pytest.skip("Can't detect interface without a parametrized gate in the tape")
 
         dev = qml.device(dev_name, wires=2, shots=10)
 
@@ -1364,7 +1354,6 @@ class TestTapeExpansion:
 
         # test second-order derivatives
         if diff_method in ("parameter-shift", "backprop") and max_diff == 2:
-
             grad2_c = jax.jacobian(jax.grad(circuit, argnum=2), argnum=2)(d, w, c)
             assert np.allclose(grad2_c, 0, atol=tol)
 

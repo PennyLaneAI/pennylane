@@ -301,7 +301,6 @@ class TestConditionalOperations:
         terminal_measurement = qml.probs(wires=2)
 
         with qml.queuing.AnnotatedQueue() as q:
-
             # Create Alice's secret qubit state
             qml.RY(rads, wires=0)
 

@@ -354,7 +354,7 @@ class TestInterfaces:
 
         dev = qml.device("default.qubit", wires=4)
 
-        @qml.qnode(dev, interface="autograd")
+        @qml.qnode(dev)
         def circuit_decomposed(features):
             # need to cast to complex tensor, which is implicitly done in the template
             state = qml.math.cast(
@@ -363,7 +363,7 @@ class TestInterfaces:
             qml.QubitStateVector(state, wires=range(4))
             return qml.state()
 
-        @qml.qnode(dev, interface="autograd")
+        @qml.qnode(dev)
         def circuit(x=None):
             qml.AmplitudeEmbedding(x, list(range(4)), pad_with=0.0)
             return qml.state()
@@ -385,8 +385,8 @@ class TestInterfaces:
 
         dev = qml.device("default.qubit", wires=3)
 
-        circuit = qml.QNode(circuit_template, dev, interface="jax")
-        circuit2 = qml.QNode(circuit_decomposed, dev, interface="jax")
+        circuit = qml.QNode(circuit_template, dev)
+        circuit2 = qml.QNode(circuit_decomposed, dev)
 
         res = circuit(features)
         res2 = circuit2(features)
@@ -405,8 +405,8 @@ class TestInterfaces:
 
         dev = qml.device("default.qubit", wires=3)
 
-        circuit = jax.jit(qml.QNode(circuit_template, dev, interface="jax"))
-        circuit2 = jax.jit(qml.QNode(circuit_decomposed, dev, interface="jax"))
+        circuit = jax.jit(qml.QNode(circuit_template, dev))
+        circuit2 = jax.jit(qml.QNode(circuit_decomposed, dev))
 
         res = circuit(features)
         res2 = circuit2(features)
@@ -426,7 +426,7 @@ class TestInterfaces:
         dev = qml.device("default.qubit", wires=4)
 
         @jax.jit
-        @qml.qnode(dev, interface="jax")
+        @qml.qnode(dev)
         def circuit_decomposed(features):
             # need to cast to complex tensor, which is implicitly done in the template
             state = qml.math.cast(
@@ -436,7 +436,7 @@ class TestInterfaces:
             return qml.state()
 
         @jax.jit
-        @qml.qnode(dev, interface="jax")
+        @qml.qnode(dev)
         def circuit(x=None):
             qml.AmplitudeEmbedding(x, list(range(4)), pad_with=0.0)
             return qml.state()
@@ -456,8 +456,8 @@ class TestInterfaces:
 
         dev = qml.device("default.qubit", wires=3)
 
-        circuit = qml.QNode(circuit_template, dev, interface="tf")
-        circuit2 = qml.QNode(circuit_decomposed, dev, interface="tf")
+        circuit = qml.QNode(circuit_template, dev)
+        circuit2 = qml.QNode(circuit_decomposed, dev)
 
         res = circuit(features)
         res2 = circuit2(features)
@@ -474,7 +474,7 @@ class TestInterfaces:
 
         dev = qml.device("default.qubit", wires=4)
 
-        @qml.qnode(dev, interface="tf")
+        @qml.qnode(dev)
         def circuit_decomposed(features):
             # need to cast to complex tensor, which is implicitly done in the template
             state = qml.math.cast(
@@ -483,7 +483,7 @@ class TestInterfaces:
             qml.QubitStateVector(state, wires=range(4))
             return qml.state()
 
-        @qml.qnode(dev, interface="tf")
+        @qml.qnode(dev)
         def circuit(x=None):
             qml.AmplitudeEmbedding(x, list(range(4)), pad_with=0.0)
             return qml.state()
@@ -503,7 +503,7 @@ class TestInterfaces:
 
         dev = qml.device("default.qubit", wires=3)
 
-        circuit = qml.QNode(circuit_template, dev, interface="tf")
+        circuit = qml.QNode(circuit_template, dev)
 
         with pytest.raises(ValueError, match="does not support batched Tensorflow features"):
             circuit(features)
@@ -518,8 +518,8 @@ class TestInterfaces:
 
         dev = qml.device("default.qubit", wires=3)
 
-        circuit = tf.function(jit_compile=True)(qml.QNode(circuit_template, dev, interface="tf"))
-        circuit2 = tf.function(jit_compile=True)(qml.QNode(circuit_decomposed, dev, interface="tf"))
+        circuit = tf.function(jit_compile=True)(qml.QNode(circuit_template, dev))
+        circuit2 = tf.function(jit_compile=True)(qml.QNode(circuit_decomposed, dev))
 
         res = circuit(features)
         res2 = circuit2(features)
@@ -537,8 +537,8 @@ class TestInterfaces:
 
         dev = qml.device("default.qubit", wires=3)
 
-        circuit = qml.QNode(circuit_template, dev, interface="torch")
-        circuit2 = qml.QNode(circuit_decomposed, dev, interface="torch")
+        circuit = qml.QNode(circuit_template, dev)
+        circuit2 = qml.QNode(circuit_decomposed, dev)
 
         res = circuit(features)
         res2 = circuit2(features)
@@ -555,7 +555,7 @@ class TestInterfaces:
 
         dev = qml.device("default.qubit", wires=4)
 
-        @qml.qnode(dev, interface="torch")
+        @qml.qnode(dev)
         def circuit_decomposed(features):
             # need to cast to complex tensor, which is implicitly done in the template
             state = qml.math.cast(
@@ -564,7 +564,7 @@ class TestInterfaces:
             qml.QubitStateVector(state, wires=range(4))
             return qml.state()
 
-        @qml.qnode(dev, interface="torch")
+        @qml.qnode(dev)
         def circuit(x=None):
             qml.AmplitudeEmbedding(x, list(range(4)), pad_with=0.0)
             return qml.state()

@@ -209,6 +209,20 @@ ar.autoray._SUBMODULE_ALIASES["tensorflow", "isclose"] = "tensorflow.experimenta
 ar.autoray._SUBMODULE_ALIASES["tensorflow", "atleast_1d"] = "tensorflow.experimental.numpy"
 ar.autoray._SUBMODULE_ALIASES["tensorflow", "all"] = "tensorflow.experimental.numpy"
 
+tf_fft_functions = [
+    "fft",
+    "ifft",
+    "fft2",
+    "ifft2",
+]
+
+
+for fn in tf_fft_functions:
+    ar.autoray._SUBMODULE_ALIASES["tensorflow", "fft." + fn] = "tensorflow.signal"
+
+ar.autoray._FUNC_ALIASES["tensorflow", "fft.fft2"] = "fft2d"
+ar.autoray._FUNC_ALIASES["tensorflow", "fft.ifft2"] = "ifft2d"
+
 ar.autoray._FUNC_ALIASES["tensorflow", "arcsin"] = "asin"
 ar.autoray._FUNC_ALIASES["tensorflow", "arccos"] = "acos"
 ar.autoray._FUNC_ALIASES["tensorflow", "arctan"] = "atan"
@@ -233,6 +247,31 @@ ar.register_function(
         _i("tf").cast(x, "float64") if x.dtype.name in ("int64", "int32") else x
     ),
 )
+
+
+def _ifft2_tf(a, s=None, axes=(-2, -1), norm=None):
+    if axes != (-2, -1):
+        raise ValueError(
+            "TensorFlow does not support passing axes; the ifft "
+            "will always be performed over the inner-most 2 dimensions."
+        )
+
+    if norm is not None:
+        raise ValueError("TensorFlow does not support the 'norm' keyword argument.")
+    if s is not None:
+        raise ValueError("TensorFlow does not support the 's' keyword argument.")
+
+    # TensorFlow only supports FFT of complex tensors
+    if a.dtype not in [_i("tf").complex64, _i("tf").complex128]:
+        if a.dtype is _i("tf").float64:
+            a = _i("tf").cast(a, dtype=_i("tf").complex128)
+        else:
+            a = _i("tf").cast(a, dtype=_i("tf").complex64)
+
+    return _i("tf").signal.ifft2d(input=a)
+
+
+ar.register_function("tensorflow", "fft.ifft2", _ifft2_tf)
 
 
 def _round_tf(tensor, decimals=0):
@@ -403,7 +442,6 @@ ar.autoray._FUNC_ALIASES["torch", "unstack"] = "unbind"
 
 def _to_numpy_torch(x):
     if getattr(x, "is_conj", False) and x.is_conj():  # pragma: no cover
-
         # The following line is only covered if using Torch <v1.10.0
         x = x.resolve_conj()
 
@@ -440,6 +478,15 @@ ar.register_function("torch", "expand_dims", lambda x, axis: _i("torch").unsquee
 ar.register_function("torch", "shape", lambda x: tuple(x.shape))
 ar.register_function("torch", "gather", lambda x, indices: x[indices])
 ar.register_function("torch", "equal", lambda x, y: _i("torch").eq(x, y))
+
+ar.register_function(
+    "torch",
+    "fft.ifft2",
+    lambda a, s=None, axes=(-2, -1), norm=None: _i("torch").fft.ifft2(
+        input=a, s=s, dim=axes, norm=norm
+    ),
+)
+
 
 ar.register_function(
     "torch",
@@ -496,7 +543,6 @@ def _coerce_types_torch(tensors):
     # Extract existing set devices, if any
     device_set = set(t.device for t in tensors if isinstance(t, torch.Tensor))
     if len(device_set) > 1:  # pragma: no cover
-
         # GPU specific case
         device_names = ", ".join(str(d) for d in device_set)
         raise RuntimeError(
@@ -652,6 +698,15 @@ ar.register_function("jax", "coerce", lambda x: x)
 ar.register_function("jax", "to_numpy", _to_numpy_jax)
 ar.register_function("jax", "block_diag", lambda x: _i("jax").scipy.linalg.block_diag(*x))
 ar.register_function("jax", "gather", lambda x, indices: x[np.array(indices)])
+
+
+def _ndim_jax(x):
+    import jax.numpy as jnp
+
+    return jnp.ndim(x)
+
+
+ar.register_function("jax", "ndim", lambda x: _ndim_jax(x))
 
 
 def _scatter_jax(indices, array, new_dimensions):

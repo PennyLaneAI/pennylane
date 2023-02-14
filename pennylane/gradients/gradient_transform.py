@@ -23,6 +23,7 @@ SUPPORTED_GRADIENT_KWARGS = [
     "approx_order",
     "argnum",
     "broadcast",
+    "device_wires",
     "diagonal_shifts",
     "f0",
     "force_order2",
@@ -31,6 +32,7 @@ SUPPORTED_GRADIENT_KWARGS = [
     "h",
     "n",
     "num",
+    "num_directions",
     "off_diagonal_shifts",
     "order",
     "reduction",
@@ -77,7 +79,6 @@ def gradient_analysis(tape, use_graph=True, grad_fn=None):
         tape._gradient_fn = grad_fn
 
     for idx, info in enumerate(tape._par_info):
-
         if idx not in tape.trainable_params:
             # non-trainable parameters do not require a grad_method
             info["grad_method"] = None
@@ -277,7 +278,14 @@ class gradient_transform(qml.batch_transform):
         # to take into account that classical processing may be present
         # inside the QNode.
         hybrid = tkwargs.pop("hybrid", self.hybrid)
+
+        old_interface = qnode.interface
+
+        if old_interface == "auto":
+            qnode.interface = qml.math.get_interface(*targs, *list(tkwargs.values()))
+
         _wrapper = super().default_qnode_wrapper(qnode, targs, tkwargs)
+
         cjac_fn = qml.transforms.classical_jacobian(qnode, expand_fn=expand_invalid_trainable)
 
         def jacobian_wrapper(*args, **kwargs):
@@ -296,6 +304,9 @@ class gradient_transform(qml.batch_transform):
 
             kwargs.pop("shots", False)
             cjac = cjac_fn(*args, **kwargs)
+
+            if old_interface == "auto":
+                qnode.interface = "auto"
 
             if isinstance(cjac, tuple):
                 # Classical processing of multiple arguments is present. Return qjac @ cjac.
