@@ -504,7 +504,7 @@ class TestSparseMatrix:
     @pytest.mark.parametrize("scalar", scalars)
     @pytest.mark.parametrize("op", sparse_ops)
     def test_sparse_matrix_jax_scalar(self, scalar, op):
-        """Test the sparse_matrix representation of scaled ops."""
+        """Test the sparse_matrix representation of scaled ops when scalar is a jax array."""
         import jax.numpy as jnp
 
         scalar = jnp.array(scalar)
@@ -523,7 +523,7 @@ class TestSparseMatrix:
     @pytest.mark.parametrize("scalar", scalars)
     @pytest.mark.parametrize("op", sparse_ops)
     def test_sparse_matrix_torch_scalar(self, scalar, op):
-        """Test the sparse_matrix representation of scaled ops."""
+        """Test the sparse_matrix representation of scaled ops when scalar is a torch tensor."""
         import torch
 
         scalar = torch.tensor(scalar)
@@ -542,7 +542,7 @@ class TestSparseMatrix:
     @pytest.mark.parametrize("scalar", scalars)
     @pytest.mark.parametrize("op", sparse_ops)
     def test_sparse_matrix_tf_scalar(self, scalar, op):
-        """Test the sparse_matrix representation of scaled ops."""
+        """Test the sparse_matrix representation of scaled ops when scalar is a tf Variable."""
         import tensorflow as tf
 
         scalar = tf.Variable(scalar)
