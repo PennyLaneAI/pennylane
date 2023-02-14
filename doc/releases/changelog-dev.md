@@ -219,6 +219,43 @@
   >>> DeviceArray([[0.0, 0.0, 0.3650435], [0.0, 0.0, -0.3650435]], dtype=float32)
   ```
 
+* The kernel matrix utility functions in `qml.kernels` are now autodifferentiation-compatible.
+  In addition they support batching, for example for quantum kernel execution with shot vectors.
+  [(#3742)](https://github.com/PennyLaneAI/pennylane/pull/3742)
+
+  In addition to the autodifferentiation support in JAX, Autograd, Tensorflow and PyTorch,
+  optional batching was added, allowing for the following:
+  
+  ```python
+  dev = qml.device('default.qubit', wires=2, shots=(100, 100))
+  @qml.qnode(dev)
+  def circuit(x1, x2):
+      qml.templates.AngleEmbedding(x1, wires=dev.wires)
+      qml.adjoint(qml.templates.AngleEmbedding)(x2, wires=dev.wires)
+      return qml.probs(wires=dev.wires)
+
+  kernel = lambda x1, x2: circuit(x1, x2)[:, 0]
+  ```
+
+  Note that we extract the first probability vector entry for both
+  evaluations using 100 shots each.
+  We can then compute the kernel matrix on a set of 4 (random) feature
+  vectors ``X`` but using two sets of 100 shots each via
+
+  ```pycon
+  >>> X = np.random.random((4, 2))
+  >>> qml.kernels.square_kernel_matrix(X, kernel)
+  tensor([[[1.  , 0.86, 0.88, 0.92],
+           [0.86, 1.  , 0.75, 0.97],
+           [0.88, 0.75, 1.  , 0.91],
+           [0.92, 0.97, 0.91, 1.  ]],
+
+          [[1.  , 0.93, 0.91, 0.92],
+           [0.93, 1.  , 0.8 , 1.  ],
+           [0.91, 0.8 , 1.  , 0.91],
+           [0.92, 1.  , 0.91, 1.  ]]], requires_grad=True)
+  ```
+
 <h4>Tools for quantum chemistry and other applications 🛠️</h4>
 
 * A new method called `qml.qchem.givens_decomposition` has been added, which decomposes a unitary into a sequence
@@ -491,43 +528,6 @@
 
 * `QuantumMonteCarlo` template is now JAX-JIT compatible when passing `jax.numpy` arrays to the template.
   [(#3734)](https://github.com/PennyLaneAI/pennylane/pull/3734)
-
-* The kernel matrix utility functions in `qml.kernels` are now autodifferentiation-compatible.
-  In addition they support batching, for example for quantum kernel execution with shot vectors.
-  [(#3742)](https://github.com/PennyLaneAI/pennylane/pull/3742)
-
-  In addition to the autodifferentiation support in JAX, Autograd, Tensorflow and PyTorch,
-  optional batching was added, allowing for the following:
-  
-  ```python
-  dev = qml.device('default.qubit', wires=2, shots=(100, 100))
-  @qml.qnode(dev)
-  def circuit(x1, x2):
-      qml.templates.AngleEmbedding(x1, wires=dev.wires)
-      qml.adjoint(qml.templates.AngleEmbedding)(x2, wires=dev.wires)
-      return qml.probs(wires=dev.wires)
-
-  kernel = lambda x1, x2: circuit(x1, x2)[:, 0]
-  ```
-
-  Note that we extract the first probability vector entry for both
-  evaluations using 100 shots each.
-  We can then compute the kernel matrix on a set of 4 (random) feature
-  vectors ``X`` but using two sets of 100 shots each via
-
-  ```pycon
-  >>> X = np.random.random((4, 2))
-  >>> qml.kernels.square_kernel_matrix(X, kernel)
-  tensor([[[1.  , 0.86, 0.88, 0.92],
-           [0.86, 1.  , 0.75, 0.97],
-           [0.88, 0.75, 1.  , 0.91],
-           [0.92, 0.97, 0.91, 1.  ]],
-
-          [[1.  , 0.93, 0.91, 0.92],
-           [0.93, 1.  , 0.8 , 1.  ],
-           [0.91, 0.8 , 1.  , 0.91],
-           [0.92, 1.  , 0.91, 1.  ]]], requires_grad=True)
-  ```
 
 * `DefaultQubitJax` now supports evolving the state vector when executing `ParametrizedEvolution`
   gates.
