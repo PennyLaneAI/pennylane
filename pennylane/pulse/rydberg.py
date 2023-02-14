@@ -21,7 +21,7 @@ from pennylane.ops import SProd, Sum
 from .parametrized_hamiltonian import ParametrizedHamiltonian
 
 
-class RydbergEnsemble:
+class RydbergMachine:
     r"""Class representing the interaction of an ensemble of Rydberg atoms.
 
     Args:
@@ -40,8 +40,14 @@ class RydbergEnsemble:
     ) -> None:
         self.coordinates = coordinates
         self.interaction_coeff = interaction_coeff
-        self._rydberg_interaction = None
         self.wires = wires or range(len(coordinates))
+        self._rydberg_interaction = None
+        self._driving_interaction = ParametrizedHamiltonian([], [])
+        # The following 2 dictionaries are only needed to be able to run these laser drivings in hardware
+        # Dictionary containing the information about the local driving fields
+        self._local_drives = {"rabi": [], "detunings": [], "phases": [], "wires": []}
+        # List of tuples containing the information about the global driving field
+        self._global_drive = {"rabi": [], "detunings": [], "phases": []}
 
     @property
     def rydberg_interaction(self) -> Sum:
@@ -72,38 +78,108 @@ class RydbergEnsemble:
         Returns:
             Sum: hamiltonian of the interaction
         """
-        if self._rydberg_interaction is not None:
-            return self._rydberg_interaction
+        if self._rydberg_interaction is None:
 
-        def rydberg_projector(wire: int) -> SProd:
-            """Returns the projector into the Rydberg state for the given wire.
+            def rydberg_projector(wire: int) -> SProd:
+                """Returns the projector into the Rydberg state for the given wire.
 
-            Args:
-                wire (int): _description_
+                Args:
+                    wire (int): _description_
 
-            Returns:
-                SProd: projector into the Rydberg state
-            """
-            return (1 - qml.PauliZ(wire)) / 2
+                Returns:
+                    SProd: projector into the Rydberg state
+                """
+                return (1 - qml.PauliZ(wire)) / 2
 
-        coeffs = []
-        ops = []
-        for idx, (pos1, wire1) in enumerate(zip(self.coordinates[1:], self.wires[1:])):
-            for pos2, wire2 in zip(self.coordinates[: idx + 1], self.wires[: idx + 1]):
-                atom_distance = np.linalg.norm(qml.math.array(pos2) - pos1)
-                Vij = self.interaction_coeff / (abs(atom_distance) ** 6)  # van der Waals potential
-                coeffs.append(Vij)
-                ops.append(qml.prod(rydberg_projector(wire1), rydberg_projector(wire2)))
+            coeffs = []
+            ops = []
+            for idx, (pos1, wire1) in enumerate(zip(self.coordinates[1:], self.wires[1:])):
+                for pos2, wire2 in zip(self.coordinates[: idx + 1], self.wires[: idx + 1]):
+                    atom_distance = np.linalg.norm(qml.math.array(pos2) - pos1)
+                    Vij = self.interaction_coeff / (
+                        abs(atom_distance) ** 6
+                    )  # van der Waals potential
+                    coeffs.append(Vij)
+                    ops.append(qml.prod(rydberg_projector(wire1), rydberg_projector(wire2)))
 
-        self._rydberg_interaction = qml.dot(coeffs, ops)
+            self._rydberg_interaction = qml.dot(coeffs, ops)
+
         return self._rydberg_interaction
 
-    def drive(
-        self, rabi: list, detunings: list, phases: list, wires: list
-    ) -> ParametrizedHamiltonian:
+    def local_drive(self, rabi: list, detunings: list, phases: list, wires: list):
+        """Apply ``N = len(rabi)``  local driving laser fields with the given rabi frequencies,
+        detunings and phases acting on the given wires.
+
+        Args:
+            rabi (list): list of Rabi frequency values (in MHz) of each driving laser field
+            detunings (list): list of detuning values (in MHz) of each driving laser field
+            phases (list): list of phases (in radiants) of each driving laser field
+            wires (list): list of wire values that each laser field acts on
+        """
+        # Update `_driving_interaction` Hamiltonian
+        ops = [
+            qml.math.cos(p) * qml.PauliX(w) - qml.math.sin(p) * qml.PauliY(w)
+            for p, w in zip(phases, wires)
+        ]
+        H1 = qml.dot(rabi, ops)
+        H2 = qml.dot(detunings, [qml.PauliZ(w) for w in wires])
+        self._driving_interaction += 1 / 2 * H1 + 1 / 2 * H2
+        # Update dictionaries of applied pulses to allow translation into hardware
+        self._local_drives["rabi"].extend(rabi)
+        self._local_drives["detunings"].extend(detunings)
+        self._local_drives["phases"].extend(phases)
+        self._local_drives["wires"].extend(wires)
+
+    def global_drive(self, rabi: float, detuning: float, phase: float):
+        """Apply ``N = len(rabi)``  global driving laser fields with the given rabi frequencies,
+        detunings and phases acting on all wires.
+
+        Args:
+            rabi (float): rabi frequency (in MHz) of the global driving laser field
+            detuning (float): detuning (in MHz) of the global driving laser field
+            phase (float): phase (in radiants) of the global driving laser field
+        """
+        # Update `_driving_interaction` Hamiltonian
+        ops = qml.sum(
+            *[
+                qml.math.cos(phase) * qml.PauliX(w) - qml.math.sin(phase) * qml.PauliY(w)
+                for w in self.wires
+            ]
+        )
+        H1 = rabi * ops
+        H2 = detuning * qml.sum(*[qml.PauliZ(w) for w in self.wires])
+        self._driving_interaction += 1 / 2 * H1 + 1 / 2 * H2
+        # Update dictionaries of applied pulses to allow translation into hardware
+        self._global_drive = (rabi, detuning, phase)
+
+    @property
+    def driving_interaction(self) -> ParametrizedHamiltonian:
         r"""Returns a :class:`ParametrizedHamiltonian` describing the evolution of the Rydberg ensemble
         when driving the given atoms (``wires``) with lasers with the corresponding ``amplitude``
         and ``detuning``:
+
+        .. math::
+
+            H = \hbar \frac{1}{2} \sum_i  \Omega_i(t) (\cos(\phi)\sigma_i^x - \sin(\phi)\sigma_i^y) -
+            \frac{1}{2} \sum_i \delta_i(t) \sigma_i^z
+
+        where :math:`\Omega_i` and :math:`\delta_i` correspond to the amplitude and detuning of the
+        laser applied to atom :math:`i`, and :math:`\sigma^\alpha` for :math:`\alpha = x,y,z` are
+        the Pauli matrices.
+
+        .. note::
+
+            :math:`\hbar` is set to 1.
+
+        Returns:
+            ParametrizedHamiltonian: hamiltonian describing the laser driving
+        """
+        return self._driving_interaction
+
+    @property
+    def hamiltonian(self):
+        r"""Returns a :class:`ParametrizedHamiltonian` describing the Hamiltonian of the array
+        of Rydberg atoms:
 
         .. math::
 
@@ -121,19 +197,7 @@ class RydbergEnsemble:
 
             :math:`\hbar` is set to 1.
 
-        Args:
-            rabi (list): list of Rabi frequency values (in MHz) of each driving laser field
-            detunings (list): list of detuning values (in MHz) of each driving laser field
-            phases (list): list of phases (in radiants) of each driving laser field
-            wires (list): list of wire values that each laser field acts on
-
         Returns:
-            ParametrizedHamiltonian: hamiltonian describing the laser driving
+            ParametrizedHamiltonian: hamiltonian describing the evolution of the array of Rydberg atoms
         """
-        ops = [
-            qml.math.cos(p) * qml.PauliX(w) - qml.math.sin(p) * qml.PauliY(w)
-            for p, w in zip(phases, wires)
-        ]
-        H1 = (1 / 2) * qml.dot(rabi, ops)
-        H2 = -1 / 2 * qml.dot(detunings, [qml.PauliZ(w) for w in wires])
-        return H1 + H2 + self.rydberg_interaction
+        return self.rydberg_interaction + self.driving_interaction

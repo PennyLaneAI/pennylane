@@ -18,4 +18,4 @@ This module contains classes and functions used in pulse programming.
 from .convenience_functions import constant, pwc, pwc_from_function, rect
 from .parametrized_evolution import ParametrizedEvolution
 from .parametrized_hamiltonian import ParametrizedHamiltonian
-from .rydberg import RydbergEnsemble
+from .rydberg import RydbergMachine
