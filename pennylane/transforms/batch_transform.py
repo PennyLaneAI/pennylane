@@ -284,7 +284,6 @@ class batch_transform:
             )
 
         def _wrapper(*args, **kwargs):
-            print("args", kwargs, "tkwargs", tkwargs)
             shots = kwargs.pop("shots", False)
 
             argnums = kwargs.pop("argnums", None)

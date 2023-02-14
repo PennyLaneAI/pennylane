@@ -542,7 +542,6 @@ class QuantumScript:
         Args:
             param_indices (list[int]): parameter indices
         """
-        print(param_indices)
         if any(not isinstance(i, int) or i < 0 for i in param_indices):
             raise ValueError("Argument indices must be non-negative integers.")
 

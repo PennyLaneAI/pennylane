@@ -897,7 +897,7 @@ def jax_argnums_to_tape_trainable(qnode, argnums, expand_fn, args, kwargs):
     qnode.construct(args_jvp, kwargs)
     tape = qnode.qtape
     tape = expand_fn(tape)
-    params_tape = tape.get_parameters()
+    params_tape = tape.get_parameters(trainable_only=False)
     del trace
     return params_tape
 

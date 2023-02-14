@@ -280,11 +280,6 @@ class gradient_transform(qml.batch_transform):
         hybrid = tkwargs.pop("hybrid", self.hybrid)
         argnums = tkwargs.get("argnums", None)
 
-        old_interface = qnode.interface
-
-        if old_interface == "auto":
-            qnode.interface = qml.math.get_interface(*targs, *list(tkwargs.values()))
-
         _wrapper = super().default_qnode_wrapper(qnode, targs, tkwargs)
 
         cjac_fn = qml.transforms.classical_jacobian(
@@ -292,16 +287,16 @@ class gradient_transform(qml.batch_transform):
         )
 
         def jacobian_wrapper(*args, **kwargs):
-            argnums_ = None
             if argnums is not None:
                 argnums_ = [argnums] if isinstance(argnums, int) else argnums
+
                 params = qml.math.jax_argnums_to_tape_trainable(
                     qnode, argnums_, self.expand_fn, args, kwargs
                 )
                 argnums_ = qml.math.get_trainable_indices(params)
                 kwargs["argnums"] = argnums_
 
-            if not qml.math.get_trainable_indices(args) and not argnums_:
+            if not qml.math.get_trainable_indices(args) and not argnums:
                 warnings.warn(
                     "Attempted to compute the gradient of a QNode with no trainable parameters. "
                     "If this is unintended, please add trainable parameters in accordance with "
@@ -317,9 +312,6 @@ class gradient_transform(qml.batch_transform):
             kwargs.pop("shots", False)
             cjac = cjac_fn(*args, **kwargs)
 
-            if old_interface == "auto":
-                qnode.interface = "auto"
-
             if isinstance(cjac, tuple):
                 # Classical processing of multiple arguments is present. Return qjac @ cjac.
                 jacs = tuple(
@@ -333,7 +325,7 @@ class gradient_transform(qml.batch_transform):
                 # Classical Jacobian is the identity. No classical processing
                 # is present inside the QNode.
                 return qjac
-            print(qjac, cjac)
+
             return qml.math.tensordot(qjac, cjac, [[-1], [0]])
 
         return jacobian_wrapper
