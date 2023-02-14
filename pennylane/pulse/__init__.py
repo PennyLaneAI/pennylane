@@ -25,7 +25,9 @@ It contains a :class:`~.ParametrizedHamiltonian` and :class:`~.ParametrizedEvolu
 describing time-dependent Hamiltonian interactions. The :mod:`~.pulse` module also includes several convenience
 functions for defining pulses.
 
-The :mod:`~.pulse` module is written for ``jax`` and will not work with other machine learning frameworks typically encountered in PennyLane. It requires separate installation, see `jax.readthedocs.i <https://jax.readthedocs.io/en/latest/>`_.
+The :mod:`~.pulse` module is written for ``jax`` and will not work with other machine learning frameworks
+typically encountered in PennyLane. It requires separate installation, see
+`jax.readthedocs.io <https://jax.readthedocs.io/en/latest/>`_.
 
 Overview
 --------

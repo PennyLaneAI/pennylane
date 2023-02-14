@@ -41,9 +41,11 @@ class ParametrizedEvolution(Operation):
     :func:`~.pennylane.evolve` function
 
     For a time-dependent Hamiltonian of the form
-    :math:`H(\{v_j\}, t) = H_\text{drift} + \sum_j f_j(v_j, t) H_j` it implements the corresponding
-    time-evolution operator :math:`U(t_1, t_2)`, which is the solution to the time-dependent
-    Schrodinger equation.
+
+    .. math:: `H(\{v_j\}, t) = H_\text{drift} + \sum_j f_j(v_j, t) H_j`
+
+    it implements the corresponding time-evolution operator :math:`U(t_1, t_2)`, which is the
+    solution to the time-dependent Schrodinger equation.
 
     .. math:: \frac{d}{dt}U(t) = -i H(\{v_j\}, t) U(t).
 
