@@ -170,12 +170,8 @@ class QuantumDevice(abc.ABC):
         * expansion to :class:`~.Operator`'s and :class:`~.MeasurementProcess` objects supported by the device.
         * splitting a quantum script with the measurement of non-commuting observables or Hamiltonians into multiple executions
         * splitting quantum scripts with batched parameters into multiple executions
-
-        This step may also validate parameters of the ``execution_config``. For example, it could raise an error if the
-        device doesn't support finite shots but the ``execution_config`` requests it.
-
-        Processing steps can depend on the requested gradient method. For example, when the device gradient method is requested,
-        preprocessing can decompose the operations till they all have a generator.
+        * gradient specific preprocessing, such as making sure trainable operators have generators
+        * validation of configuration parameters
 
         """
 
