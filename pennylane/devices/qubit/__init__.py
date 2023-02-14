@@ -28,3 +28,5 @@ at your own discretion.
 from .apply_operation import apply_operation
 from .initialize_state import create_initial_state
 from .simulate import simulate
+
+from .default_qubit_2 import DefaultQubit2
