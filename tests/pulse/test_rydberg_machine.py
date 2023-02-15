@@ -16,6 +16,7 @@
 Unit tests for the RydbergMachine class.
 """
 import numpy as np
+import pytest
 
 import pennylane as qml
 from pennylane.ops import Sum
@@ -39,7 +40,7 @@ def test_initialization():
     assert rm._rydberg_interaction is None
     assert rm.interaction_coeff == 862690 * np.pi
     assert rm._local_drives == {"rabi": [], "detunings": [], "phases": [], "wires": []}
-    assert rm._global_drive == {"rabi": [], "detunings": [], "phases": []}
+    assert rm._global_drive is None
 
 
 class TestProperties:
@@ -73,6 +74,73 @@ class TestProperties:
             qml.simplify(rm.hamiltonian.H_fixed()), qml.simplify(rm.rydberg_interaction)
         )
 
+
+class TestMethods:
+    """Unit tests for the RydbergMachine methods."""
+
+    def test_local_drive_updates_dictionaries(self):
+        """Test that the local_drive method updates the internal dictionaries."""
+        rm = RydbergMachine(atom_coordinates, wires)
+
+        assert rm._local_drives == {"rabi": [], "detunings": [], "phases": [], "wires": []}
+
+        rm.local_drive(rabi=[0, 1, 2], detunings=[3, 4, 5], phases=[6, 7, 8], wires=[1, 2, 3])
+
+        assert rm._local_drives == {
+            "rabi": [0, 1, 2],
+            "detunings": [3, 4, 5],
+            "phases": [6, 7, 8],
+            "wires": [1, 2, 3],
+        }
+
+    def test_local_drive_updates_driving_hamiltonian(self):
+        """Test that the local_drive method updates the driving_interaction term of the Hamiltonian."""
+        rm = RydbergMachine(coordinates=atom_coordinates, wires=wires)
+
+        assert isinstance(rm.driving_interaction, ParametrizedHamiltonian)
+        assert rm.driving_interaction([], 0) == 0
+
         rm.local_drive(rabi=[lambda p, t: 1], detunings=[0], phases=[0], wires=[3])
 
-        assert rm.hamiltonian.H_parametrized([1], 1) != 0
+        assert rm.driving_interaction([1], 1) != 0
+
+    def test_local_drive_wrong_lengths_raises_error(self):
+        """Test that the local_drive method raises an error when the inputs have different lengths."""
+        rm = RydbergMachine(atom_coordinates, wires)
+
+        with pytest.raises(
+            ValueError, match="The lists containing the driving parameters must all have the same"
+        ):
+            rm.local_drive(rabi=[1, 2, 3], detunings=[0], phases=[0], wires=[1])
+
+    def test_local_drive_wrong_wires_raises_error(self):
+        """Test that the local_drive method raises an error when a wire value is not present in the
+        RydbergMachine."""
+        rm = RydbergMachine(atom_coordinates, wires)
+
+        with pytest.raises(
+            ValueError,
+            match="The wires list contains a wire value that is not present in the RydbergMachine",
+        ):
+            rm.local_drive(rabi=[1, 2, 3], detunings=[0, 1, 2], phases=[0, -1, 0], wires=[1, 5, 0])
+
+    def test_global_drive_updates_dictionaries(self):
+        """Test that the global_drive method updates the internal dictionaries."""
+        rm = RydbergMachine(atom_coordinates, wires)
+
+        assert rm._global_drive is None
+
+        rm.global_drive(rabi=1, detuning=2, phase=3)
+
+        assert rm._global_drive == (1, 2, 3)
+
+    def test_global_drive_updates_driving_hamiltonian(self):
+        """Test that the global_drive method updates the driving_interaction term of the Hamiltonian."""
+        rm = RydbergMachine(coordinates=atom_coordinates, wires=wires)
+
+        assert isinstance(rm.driving_interaction, ParametrizedHamiltonian)
+        assert rm.driving_interaction([], 0) == 0
+
+        rm.global_drive(rabi=1, detuning=2, phase=3)
+
+        assert rm.driving_interaction([], 0) != 0

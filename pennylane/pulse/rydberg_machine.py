@@ -39,6 +39,8 @@ class RydbergMachine:
     def __init__(
         self, coordinates: list, wires: list = None, interaction_coeff: float = 862690 * np.pi
     ) -> None:
+        if len(coordinates) != len(wires):
+            raise ValueError("Coordinates and wires must have the same length.")
         self.coordinates = coordinates
         self.interaction_coeff = interaction_coeff
         self.wires = Wires(wires) or Wires(range(len(coordinates)))
@@ -48,7 +50,7 @@ class RydbergMachine:
         # Dictionary containing the information about the local driving fields
         self._local_drives = {"rabi": [], "detunings": [], "phases": [], "wires": []}
         # List of tuples containing the information about the global driving field
-        self._global_drive = {"rabi": [], "detunings": [], "phases": []}
+        self._global_drive = None  # (rabi frequency, detuning, phase)
 
     @property
     def rydberg_interaction(self) -> Sum:
@@ -117,6 +119,16 @@ class RydbergMachine:
             phases (list): list of phases (in radiants) of each driving laser field
             wires (list): list of wire values that each laser field acts on
         """
+        lengths = [len(rabi), len(detunings), len(phases), len(wires)]
+        if len(set(lengths)) > 1:
+            raise ValueError(
+                "The lists containing the driving parameters must all have the same"
+                f"length. Got lengths: {lengths}"
+            )
+        if any(wire not in self.wires for wire in wires):
+            raise ValueError(
+                "The wires list contains a wire value that is not present in the RydbergMachine."
+            )
         # Update `_driving_interaction` Hamiltonian
         ops = [
             qml.math.cos(p) * qml.PauliX(w) - qml.math.sin(p) * qml.PauliY(w)
