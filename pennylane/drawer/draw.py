@@ -192,30 +192,60 @@ def draw(
     1: ───────────╰X─┤
 
     """
+    if hasattr(qnode, "construct"):
+        return _draw_qnode(
+            qnode,
+            wire_order=wire_order,
+            show_all_wires=show_all_wires,
+            decimals=decimals,
+            max_length=max_length,
+            show_matrices=show_matrices,
+            expansion_strategy=expansion_strategy,
+        )
+
+    if expansion_strategy is not None:
+        warnings.warn(
+            "When the input to qml.draw is not a QNode, the expansion_strategy argument is ignored.",
+            UserWarning,
+        )
 
     @wraps(qnode)
     def wrapper(*args, **kwargs):
-        if hasattr(qnode, "construct"):
-            original_expansion_strategy = getattr(qnode, "expansion_strategy", None)
+        tape = qml.tape.make_qscript(qnode)(*args, **kwargs)
+        _wire_order = wire_order or tape.wires
 
-            try:
-                qnode.expansion_strategy = expansion_strategy or original_expansion_strategy
-                tapes = qnode.construct(args, kwargs)
-            finally:
-                qnode.expansion_strategy = original_expansion_strategy
+        return tape_text(
+            tape,
+            wire_order=_wire_order,
+            show_all_wires=show_all_wires,
+            decimals=decimals,
+            show_matrices=show_matrices,
+            max_length=max_length,
+        )
 
-            if not tapes:
-                tape = qnode.qtape
-            _wire_order = wire_order or qnode.device.wires
-        else:
-            if expansion_strategy is not None:
-                warnings.warn(
-                    "When the input to qml.draw is not a QNode, the expansion_strategy argument is ignored.",
-                    UserWarning,
-                )
-            tapes = None
-            tape = qml.tape.make_qscript(qnode)(*args, **kwargs)
-            _wire_order = wire_order or tape.wires
+    return wrapper
+
+
+def _draw_qnode(
+    qnode,
+    wire_order=None,
+    show_all_wires=False,
+    decimals=2,
+    max_length=100,
+    show_matrices=False,
+    expansion_strategy=None,
+):
+    @wraps(qnode)
+    def wrapper(*args, **kwargs):
+        original_expansion_strategy = getattr(qnode, "expansion_strategy", None)
+
+        try:
+            qnode.expansion_strategy = expansion_strategy or original_expansion_strategy
+            tapes = qnode.construct(args, kwargs)
+        finally:
+            qnode.expansion_strategy = original_expansion_strategy
+
+        _wire_order = wire_order or qnode.device.wires
 
         if tapes is not None:
             cache = {"tape_offset": 0, "matrices": []}
@@ -239,7 +269,7 @@ def draw(
             return "\n\n".join(res)
 
         return tape_text(
-            tape,
+            qnode.qtape,
             wire_order=_wire_order,
             show_all_wires=show_all_wires,
             decimals=decimals,
@@ -262,7 +292,7 @@ def draw_mpl(
     """Draw a qnode with matplotlib
 
     Args:
-        qnode (.QNode): the input QNode that is to be drawn.
+        qnode (.QNode or Callable): the input QNode/quantum function that is to be drawn.
 
     Keyword Args:
         wire_order (Sequence[Any]): the order (from top to bottom) to print the wires of the circuit
@@ -454,31 +484,63 @@ def draw_mpl(
                 :target: javascript:void(0);
 
     """
+    if hasattr(qnode, "construct"):
+        return _draw_mpl_qnode(
+            qnode,
+            wire_order=wire_order,
+            show_all_wires=show_all_wires,
+            decimals=decimals,
+            expansion_strategy=expansion_strategy,
+            style=style,
+            **kwargs,
+        )
+
+    if expansion_strategy is not None:
+        warnings.warn(
+            "When the input to qml.draw is not a QNode, the expansion_strategy argument is ignored.",
+            UserWarning,
+        )
 
     @wraps(qnode)
-    def wrapper(*args, **kwargs_qnode):
-        if hasattr(qnode, "construct"):
-            original_expansion_strategy = getattr(qnode, "expansion_strategy", None)
-
-            try:
-                qnode.expansion_strategy = expansion_strategy or original_expansion_strategy
-                qnode.construct(args, kwargs_qnode)
-            finally:
-                qnode.expansion_strategy = original_expansion_strategy
-
-            tape = qnode.qtape
-            _wire_order = wire_order or qnode.device.wires
-        else:
-            if expansion_strategy is not None:
-                warnings.warn(
-                    "When the input to qml.draw is not a QNode, the expansion_strategy argument is ignored.",
-                    UserWarning,
-                )
-            tape = qml.tape.make_qscript(qnode)(*args, **kwargs)
-            _wire_order = wire_order or tape.wires
+    def wrapper(*args, **kwargs):
+        tape = qml.tape.make_qscript(qnode)(*args, **kwargs)
+        _wire_order = wire_order or tape.wires
 
         return tape_mpl(
             tape,
+            wire_order=_wire_order,
+            show_all_wires=show_all_wires,
+            decimals=decimals,
+            style=style,
+            **kwargs,
+        )
+
+    return wrapper
+
+
+def _draw_mpl_qnode(
+    qnode,
+    wire_order=None,
+    show_all_wires=False,
+    decimals=None,
+    expansion_strategy=None,
+    style="black_white",
+    **kwargs,
+):
+    @wraps(qnode)
+    def wrapper(*args, **kwargs_qnode):
+        original_expansion_strategy = getattr(qnode, "expansion_strategy", None)
+
+        try:
+            qnode.expansion_strategy = expansion_strategy or original_expansion_strategy
+            qnode.construct(args, kwargs_qnode)
+        finally:
+            qnode.expansion_strategy = original_expansion_strategy
+
+        _wire_order = wire_order or qnode.device.wires
+
+        return tape_mpl(
+            qnode.qtape,
             wire_order=_wire_order,
             show_all_wires=show_all_wires,
             decimals=decimals,
