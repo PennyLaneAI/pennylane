@@ -593,6 +593,7 @@
 * `qml.qchem.basis_rotation` now accounts for spin, allowing it to perform Basis Rotation Groupings
   for molecular hamiltonians.
   [(#3714)](https://github.com/PennyLaneAI/pennylane/pull/3714)
+  [(#3774)](https://github.com/PennyLaneAI/pennylane/pull/3774)
 
 * `QubitStateVector` now implements the `StatePrep` interface.
   [(#3685)](https://github.com/PennyLaneAI/pennylane/pull/3685)
@@ -607,6 +608,9 @@
 * `DefaultQubitJax` now supports evolving the state vector when executing `ParametrizedEvolution`
   gates.
   [(#3743)](https://github.com/PennyLaneAI/pennylane/pull/3743)
+
+* `SProd.sparse_matrix` now supports interface-specific variables with a single element as the `scalar`.
+  [(#3770)](https://github.com/PennyLaneAI/pennylane/pull/3770)
 
  * The `qchem.Molecule` class raises an error when the molecule has an odd number of electrons or 
    when the spin multiplicity is not 1.
