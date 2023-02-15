@@ -402,7 +402,7 @@ def qnode_execution_wrapper(self, qnode, targs, tkwargs):
     return wrapper
 
 
-def _metric_tensor_cov_matrix(tape, argnum, diag_approx):
+def _metric_tensor_cov_matrix(tape, argnum, diag_approx):  # pylint: disable=too-many-statements
     r"""This is the metric tensor method for the block diagonal, using
     the covariance matrix of the generators of each layer.
 
@@ -424,6 +424,8 @@ def _metric_tensor_cov_matrix(tape, argnum, diag_approx):
         list[list[bool]]: Each inner list corresponds to one tape and therefore also one parametrized
             layer and its elements determine whether a trainable parameter in that layer is
             contained in ``argnum``.
+        list[None, int]: Id list representing the layer for each parameter.
+        list[None, int]: Id list representing the observables for each parameter.
 
 
     This method assumes the ``generator`` of all parametrized operations with respect to
@@ -438,23 +440,35 @@ def _metric_tensor_cov_matrix(tape, argnum, diag_approx):
     coeffs_list = []
     params_list = []
     in_argnum_list = []
+    layers_ids = []
+    obs_ids = []
 
+    i = 0
     for queue, curr_ops, param_idx, _ in graph.iterate_parametrized_layers():
         params_list.append(param_idx)
         in_argnum_list.append([p in argnum for p in param_idx])
 
         if not any(in_argnum_list[-1]):
+            layers_ids.extend([None] * len(in_argnum_list[-1]))
+            obs_ids.extend([None] * len(in_argnum_list[-1]))
             # no tape needs to be created for this block
             continue
 
         layer_coeffs, layer_obs = [], []
 
-        # for each operation in the layer, get the generatorn_argnum_list = []
+        # for each operation in the layer, get the generator
+        j = 0
         for p, op in zip(param_idx, curr_ops):
+            layers_ids.append(i)
             if p in argnum:
                 obs, s = qml.generator(op)
                 layer_obs.append(obs)
                 layer_coeffs.append(s)
+                obs_ids.append(j)
+                j = j + 1
+            else:
+                obs_ids.append(None)
+        i = i + 1
 
         coeffs_list.append(layer_coeffs)
         obs_list.append(layer_obs)
@@ -509,7 +523,15 @@ def _metric_tensor_cov_matrix(tape, argnum, diag_approx):
         # create the block diagonal metric tensor
         return qml.math.block_diag(gs)
 
-    return metric_tensor_tapes, processing_fn, obs_list, coeffs_list, in_argnum_list
+    return (
+        metric_tensor_tapes,
+        processing_fn,
+        obs_list,
+        coeffs_list,
+        in_argnum_list,
+        layers_ids,
+        obs_ids,
+    )
 
 
 @functools.lru_cache()
@@ -641,9 +663,15 @@ def _metric_tensor_hadamard(
     """
     # Get tapes and processing function for the block-diagonal metric tensor,
     # as well as the generator observables and generator coefficients for each diff'ed operation
-    diag_tapes, diag_proc_fn, obs_list, coeffs_list, in_argnum_list = _metric_tensor_cov_matrix(
-        tape, argnum, diag_approx=False
-    )
+    (
+        diag_tapes,
+        diag_proc_fn,
+        obs_list,
+        coeffs_list,
+        in_argnum_list,
+        layer_ids,
+        obs_ids,
+    ) = _metric_tensor_cov_matrix(tape, argnum, diag_approx=False)
 
     # Obtain layers of parametrized operations and account for the discrepancy between trainable
     # and non-trainable parameter indices
@@ -723,29 +751,15 @@ def _metric_tensor_hadamard(
 
         # Second terms of off block-diagonal metric tensor
         expvals = qml.math.zeros_like(first_term[0])
-        idx = 0
-        layer_i = 0
-        for in_argnum in in_argnum_list:
-            obs_i = 0
-            if not any(in_argnum):
-                idx += len(in_argnum)
-                continue
 
-            for param_in_argnum in in_argnum:
-                if not param_in_argnum:
-                    idx += 1
-                    continue
-
+        for i, (layer_i, obs_i) in enumerate(zip(layer_ids, obs_ids)):
+            if layer_i is not None and obs_i is not None:
                 prob = diag_res[layer_i]
                 o = obs_list[layer_i][obs_i]
                 l = qml.math.cast(o.eigvals(), dtype=np.float64)
                 w = tape.wires.indices(o.wires)
                 p = qml.math.marginal_prob(prob, w)
-                expvals = qml.math.scatter_element_add(expvals, (idx,), qml.math.dot(l, p))
-                idx += 1
-                obs_i += 1
-
-            layer_i += 1
+                expvals = qml.math.scatter_element_add(expvals, (i,), qml.math.dot(l, p))
 
         # Construct <\partial_i\psi|\psi><\psi|\partial_j\psi> and mask it
         second_term = qml.math.tensordot(expvals, expvals, axes=0) * mask
