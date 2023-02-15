@@ -17,6 +17,7 @@ from quantum chemistry applications.
 """
 # pylint:disable=abstract-method,arguments-differ,protected-access
 import functools
+
 import numpy as np
 from scipy.sparse import csr_matrix
 
@@ -172,7 +173,7 @@ class SingleExcitation(Operation):
 
     def generator(self):
         w1, w2 = self.wires
-        return 0.25 * qml.PauliX(w1) @ qml.PauliY(w2) - 0.25 * qml.PauliY(w1) @ qml.PauliX(w2)
+        return 0.25 * (qml.PauliX(w1) @ qml.PauliY(w2) - qml.PauliY(w1) @ qml.PauliX(w2))
 
     def __init__(self, phi, wires, do_queue=True, id=None):
         super().__init__(phi, wires=wires, do_queue=do_queue, id=id)
@@ -287,11 +288,11 @@ class SingleExcitationMinus(Operation):
 
     def generator(self):
         w1, w2 = self.wires
-        return (
-            -0.25 * qml.Identity(w1)
-            + 0.25 * qml.PauliX(w1) @ qml.PauliY(w2)
-            - 0.25 * qml.PauliY(w1) @ qml.PauliX(w2)
-            - 0.25 * qml.PauliZ(w1) @ qml.PauliZ(w2)
+        return 0.25 * (
+            -qml.Identity(w1)
+            + qml.PauliX(w1) @ qml.PauliY(w2)
+            - qml.PauliY(w1) @ qml.PauliX(w2)
+            - qml.PauliZ(w1) @ qml.PauliZ(w2)
         )
 
     def __init__(self, phi, wires, do_queue=True, id=None):
@@ -418,11 +419,11 @@ class SingleExcitationPlus(Operation):
 
     def generator(self):
         w1, w2 = self.wires
-        return (
-            0.25 * qml.Identity(w1)
-            + 0.25 * qml.PauliX(w1) @ qml.PauliY(w2)
-            - 0.25 * qml.PauliY(w1) @ qml.PauliX(w2)
-            + 0.25 * qml.PauliZ(w1) @ qml.PauliZ(w2)
+        return 0.25 * (
+            qml.Identity(w1)
+            + qml.PauliX(w1) @ qml.PauliY(w2)
+            - qml.PauliY(w1) @ qml.PauliX(w2)
+            + qml.PauliZ(w1) @ qml.PauliZ(w2)
         )
 
     def __init__(self, phi, wires, do_queue=True, id=None):
@@ -944,11 +945,11 @@ class OrbitalRotation(Operation):
 
     def generator(self):
         w0, w1, w2, w3 = self.wires
-        return (
-            0.25 * qml.PauliX(w0) @ qml.PauliY(w2)
-            - 0.25 * qml.PauliY(w0) @ qml.PauliX(w2)
-            + 0.25 * qml.PauliX(w1) @ qml.PauliY(w3)
-            - 0.25 * qml.PauliY(w1) @ qml.PauliX(w3)
+        return 0.25 * (
+            qml.PauliX(w0) @ qml.PauliY(w2)
+            - qml.PauliY(w0) @ qml.PauliX(w2)
+            + qml.PauliX(w1) @ qml.PauliY(w3)
+            - qml.PauliY(w1) @ qml.PauliX(w3)
         )
 
     def __init__(self, phi, wires, do_queue=True, id=None):

@@ -680,6 +680,19 @@ class TestTapeConstruction:
         ):
             qn(5, 1)
 
+        def func(x, y):
+            qml.RX(x, wires=0)
+            qml.RY(y, wires=1)
+            qml.CNOT(wires=[0, 1])
+            return []
+
+        qn = QNode(func, dev)
+
+        with pytest.raises(
+            qml.QuantumFunctionError, match="must return either a single measurement"
+        ):
+            qn(5, 1)
+
     def test_inconsistent_measurement_order(self):
         """Test that an exception is raised if measurements are returned in an
         order different to how they were queued on the tape"""
