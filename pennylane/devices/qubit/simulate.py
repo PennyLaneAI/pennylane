@@ -14,103 +14,11 @@
 """Simulate a quantum script."""
 
 # pylint: disable=protected-access
-from scipy.sparse import csr_matrix
 import pennylane as qml
-from pennylane.ops import Sum
-from pennylane.wires import Wires
-from pennylane.measurements import StateMeasurement, MeasurementProcess, ExpectationMP
-from pennylane.typing import TensorLike
 
 from .initialize_state import create_initial_state
 from .apply_operation import apply_operation
-
-
-def measure_state_diagonalizing_gates(
-    measurementprocess: StateMeasurement, state: TensorLike
-) -> TensorLike:
-    """Apply a measurement to state when the measurement process has an observable with diagonalizing gates.
-
-    Args:
-        measurementprocess (StateMeasurement): measurement to apply to the state
-        state (TensorLike): state to apply the measurement to
-
-    Returns:
-        TensorLike: the result of the measurement
-    """
-    total_indices = len(state.shape)
-    wires = Wires(range(total_indices))
-
-    for op in measurementprocess.obs.diagonalizing_gates():
-        state = apply_operation(op, state)
-
-    return measurementprocess.process_state(qml.math.flatten(state), wires)
-
-
-def measure_hamiltonian_expval(
-    measurementprocess: MeasurementProcess, state: TensorLike
-) -> TensorLike:
-    """Measure the expectation value of the state when the measured observable is a ``Hamiltonian`` or
-    ``SparseHamiltonian``.
-
-    Args:
-        measurementprocess (MeasurementProcess): measurement process to apply to the state
-        state (TensorLike): the state to measure
-
-    Returns:
-        TensorLike: the result of the measurement
-    """
-    # Add case for backprop later
-    total_wires = len(state.shape)
-    Hmat = measurementprocess.obs.sparse_matrix(wire_order=list(range(total_wires)))
-    _state = qml.math.toarray(state).flatten()
-
-    # Find the expectation value using the <\psi|H|\psi> matrix contraction
-    bra = csr_matrix(qml.math.conj(_state))
-    ket = csr_matrix(_state[..., None])
-    new_ket = csr_matrix.dot(Hmat, ket)
-    res = csr_matrix.dot(bra, new_ket).toarray()[0]
-    # Add broadcasting later
-
-    return qml.math.real(qml.math.squeeze(res))
-
-
-def measure(measurementprocess: MeasurementProcess, state: TensorLike) -> TensorLike:
-    """Apply a measurement process to a state.
-
-    Args:
-        measurementprocess (MeasurementProcess): measurement process to apply to the state
-        state (TensorLike): the state to measure
-
-    Returns:
-        Tensorlike: the result of the measurement
-    """
-    if isinstance(measurementprocess, StateMeasurement):
-        if measurementprocess.obs is None:
-            # no need to apply diagonalizing gates
-            total_indices = len(state.shape)
-            wires = Wires(range(total_indices))
-            return measurementprocess.process_state(qml.math.flatten(state), wires)
-
-        if isinstance(measurementprocess, ExpectationMP) and measurementprocess.obs.name in (
-            "Hamiltonian",
-            "SparseHamiltonian",
-        ):
-            return measure_hamiltonian_expval(measurementprocess, state)
-
-        if (
-            isinstance(measurementprocess, ExpectationMP)
-            and isinstance(measurementprocess.obs, Sum)
-            and measurementprocess.obs.has_overlapping_wires
-            and len(measurementprocess.obs.wires) > 7
-        ):
-            # Use tensor contraction for `Sum` expectation values with non-commuting summands
-            # and 8 or more wires as it's faster than using eigenvalues.
-            return measure_hamiltonian_expval(measurementprocess, state)
-
-        if measurementprocess.obs.has_diagonalizing_gates:
-            return measure_state_diagonalizing_gates(measurementprocess, state)
-
-    raise NotImplementedError
+from .measure import measure
 
 
 def simulate(circuit: qml.tape.QuantumScript) -> tuple:
