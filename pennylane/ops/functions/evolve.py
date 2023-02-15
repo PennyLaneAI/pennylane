@@ -102,9 +102,9 @@ def parametrized_hamiltonian(op: Union[ParametrizedHamiltonian, RydbergMachine])
 
 # pylint: disable=missing-docstring
 @evolve.register
-def evolution(op: Operator, coeff: float = 1):
+def evolution(op: Operator, coeff: float = 1, num_steps: int = None):
     with warnings.catch_warnings():
         # Ignore the warning raised in `Evolution`
         warnings.simplefilter("ignore")
-        ev = Evolution(op, -1 * coeff)
+        ev = Evolution(op, -1 * coeff, num_steps)
     return ev
