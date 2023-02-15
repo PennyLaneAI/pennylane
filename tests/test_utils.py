@@ -199,6 +199,16 @@ class TestSparse:
 
         assert np.allclose(sparse_matrix.toarray(), ref_matrix)
 
+    def test_warning(self):
+        """Tests that a warning is raised if sparse_hamiltonian function is called"""
+
+        coeffs = [0.2, -0.543]
+        obs = [qml.PauliX(0) @ qml.PauliZ(1), qml.PauliZ(0) @ qml.Hadamard(2)]
+        H = qml.Hamiltonian(coeffs, obs)
+
+        with pytest.warns(UserWarning, match="sparse_hamiltonian is deprecated"):
+            qml.utils.sparse_hamiltonian(H)
+
     def test_sparse_format(self):
         """Tests that sparse_hamiltonian returns a scipy.sparse.csr_matrix object"""
 
