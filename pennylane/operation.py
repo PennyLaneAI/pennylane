@@ -1401,11 +1401,11 @@ class Operator(abc.ABC):
         """The addition operation of Operator-Operator objects and Operator-scalar."""
         if isinstance(other, Operator):
             return qml.sum(self, other)
-        if qml.math.allequal(other, 0):
-            return self
         if isinstance(other, qml.pulse.ParametrizedHamiltonian):
             return other.__add__(self)
         if isinstance(other, TensorLike):
+            if qml.math.allequal(other, 0):
+                return self
             return qml.sum(self, qml.s_prod(scalar=other, operator=qml.Identity(self.wires)))
         return NotImplemented
 

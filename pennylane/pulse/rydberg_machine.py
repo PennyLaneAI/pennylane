@@ -17,6 +17,7 @@ import numpy as np
 
 import pennylane as qml
 from pennylane.ops import SProd, Sum
+from pennylane.wires import Wires
 
 from .parametrized_hamiltonian import ParametrizedHamiltonian
 
@@ -40,7 +41,7 @@ class RydbergMachine:
     ) -> None:
         self.coordinates = coordinates
         self.interaction_coeff = interaction_coeff
-        self.wires = wires or range(len(coordinates))
+        self.wires = Wires(wires) or Wires(range(len(coordinates)))
         self._rydberg_interaction = None
         self._driving_interaction = ParametrizedHamiltonian([], [])
         # The following 2 dictionaries are only needed to be able to run these laser drivings in hardware
