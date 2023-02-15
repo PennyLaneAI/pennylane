@@ -461,6 +461,7 @@ class TestPassthruIntegration:
 
     def test_sample_backprop_error(self):
         """Test that sampling in backpropagation mode raises an error"""
+        # pylint: disable=unused-variable
         dev = qml.device("default.mixed", wires=1, shots=100)
 
         msg = "Backpropagation is only supported when shots=None"
