@@ -118,9 +118,9 @@ class TestProperties:
         """Test the _queue_category property."""
         assert Exp(qml.PauliX(0), -1.234j)._queue_category == "_ops"
 
-        assert Exp(qml.PauliX(0), 1 + 2j)._queue_category is None
+        assert Exp(qml.PauliX(0), 1 + 2j)._queue_category == "_ops"
 
-        assert Exp(qml.RX(1.2, 0), -1.2j)._queue_category is None
+        assert Exp(qml.RX(1.2, 0), -1.2j)._queue_category == "_ops"
 
     def test_is_hermitian(self):
         """Test that the op is hermitian if the base is hermitian and the coeff is real."""
@@ -448,6 +448,24 @@ class TestDecomposition:
         assert len(dec) == 1
         assert qml.equal(op, dec[0])
 
+    def test_trotter_is_used_if_num_steps_is_defined(self):
+        """Test that the Suzuki-Trotter decomposition is used when ``num_steps`` is defined."""
+        phi = 1.23
+        op = qml.IsingXY(phi, wires=[0, 1])
+        exp = qml.evolve(op.generator(), coeff=-phi, num_steps=3)
+        dec = exp.decomposition()
+        expected_decomp = [
+            qml.IsingXX(phi / 3, wires=[0, 1]),
+            qml.IsingYY(phi / 3, wires=[0, 1]),
+            qml.IsingXX(phi / 3, wires=[0, 1]),
+            qml.IsingYY(phi / 3, wires=[0, 1]),
+            qml.IsingXX(phi / 3, wires=[0, 1]),
+            qml.IsingYY(phi / 3, wires=[0, 1]),
+        ]
+        assert len(dec) == len(expected_decomp)
+        for op1, op2 in zip(dec, expected_decomp):
+            qml.equal(op1, op2)
+
     @pytest.mark.parametrize(
         ("time", "hamiltonian", "steps", "expected_queue"),
         [
@@ -505,7 +523,7 @@ class TestDecomposition:
         op = qml.evolve(qml.sum(qml.PauliX(0), qml.PauliY(1)))
         with pytest.raises(
             DecompositionUndefinedError,
-            match="The number of steps is required to calculate the Suzuki-Trotter",
+            match="Please set a value to ``num_steps`` when instantiating the ``Exp`` operator",
         ):
             op.decomposition()
 

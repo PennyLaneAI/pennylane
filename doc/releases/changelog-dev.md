@@ -425,6 +425,7 @@
 * `Exp` operator now detects if the base is a generator, and decomposes to its corresponding operator.
   If not, it decomposes to a `PauliRot`, or it uses the Suzuki-Trotter decomposition when necessary.
   [(#3691)](https://github.com/PennyLaneAI/pennylane/pull/3691)
+  [(#3777)](https://github.com/PennyLaneAI/pennylane/pull/3777)
 
   If the `base` operator is a generator of another operator, `Exp` returns this operator during decomposition:
 
@@ -608,7 +609,7 @@
   gates.
   [(#3743)](https://github.com/PennyLaneAI/pennylane/pull/3743)
 
- * The `qchem.Molecule` class raises an error when the molecule has an odd number of electrons or 
+* The `qchem.Molecule` class raises an error when the molecule has an odd number of electrons or
    when the spin multiplicity is not 1.
    [(#3748)](https://github.com/PennyLaneAI/pennylane/pull/3748)
 
