@@ -11,11 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""
-This module contains classes and functions used in pulse programming.
-"""
 
-from .convenience_functions import constant, pwc, pwc_from_function, rect
-from .parametrized_evolution import ParametrizedEvolution
-from .parametrized_hamiltonian import ParametrizedHamiltonian
-from .rydberg_machine import RydbergMachine
+"""
+Unit tests for the RydbergMachine class.
+"""
