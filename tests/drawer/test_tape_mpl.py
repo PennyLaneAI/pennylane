@@ -463,6 +463,20 @@ class TestControlledGates:
         tape = QuantumScript.from_queue(q_tape)
         self.check_tape_controlled_qubit_unitary(tape)
 
+    def test_nested_control_values_bool(self):
+        """Test control_values get displayed correctly for nested controlled operations
+        when they are provided as a list of bools."""
+
+        with qml.queuing.AnnotatedQueue() as q_tape:
+            qml.ctrl(
+                qml.ctrl(qml.PauliX(wires=4), control=[2, 3], control_values=[1, 0]),
+                control=[0, 1],
+                control_values=[1, 0],
+            )
+
+        tape = QuantumScript.from_queue(q_tape)
+        self.check_tape_controlled_qubit_unitary(tape)
+
     def check_tape_controlled_qubit_unitary(self, tape):
         """Checks the control symbols for a tape with some version of a controlled qubit unitary."""
         _, ax = tape_mpl(tape, style=None)  # set style to None to use plt.rcParams values
