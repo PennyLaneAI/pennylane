@@ -476,7 +476,6 @@ class TestMatrix:
 
 
 class TestSparseMatrix:
-
     sparse_ops = (
         qml.Identity(wires=0),
         qml.PauliX(wires=0),
