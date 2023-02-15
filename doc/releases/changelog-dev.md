@@ -542,6 +542,11 @@
   `qml.gradients.SUPPORTED_GRADIENT_KWARGS`.
   [(#3526)](https://github.com/PennyLaneAI/pennylane/pull/3526)
 
+* Added `argnum` argument to `metric_tensor`. By passing a sequence of indices referring to trainable tape parameters,
+  the metric tensor is only computed with respect to these parameters. This reduces the number of tapes that have to
+  be run.
+  [(#3587)](https://github.com/PennyLaneAI/pennylane/pull/3587)
+
 * Moved `qml.utils.sparse_hamiltonian` function to `~.Hamiltonian.sparse_matrix` method.
   [(#3585)](https://github.com/PennyLaneAI/pennylane/pull/3585)
 
@@ -816,4 +821,5 @@ Mudit Pandey
 Borja Requena
 Matthew Silverman
 Antal Száva
+Frederik Wilde
 David Wierichs
