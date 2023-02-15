@@ -42,7 +42,7 @@ def controlled_pauli_evolution(theta, wires, pauli_word, controls):
 
     ops = []
     for wire, gate in zip(active_wires, active_gates):
-        if gate in ('X', 'Y'):
+        if gate in ("X", "Y"):
             ops.append(
                 qml.Hadamard(wires=[wire]) if gate == "X" else qml.RX(-np.pi / 2, wires=[wire])
             )
@@ -52,7 +52,7 @@ def controlled_pauli_evolution(theta, wires, pauli_word, controls):
     ops.append(qml.CNOT(wires=[controls[1], wires[0]]))
 
     for wire, gate in zip(active_wires, active_gates):
-        if gate in ('X', 'Y'):
+        if gate in ("X", "Y"):
             ops.append(
                 qml.Hadamard(wires=[wire]) if gate == "X" else qml.RX(-np.pi / 2, wires=[wire])
             )
