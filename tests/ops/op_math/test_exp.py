@@ -504,7 +504,8 @@ class TestDecomposition:
         """Test that the trotter decomposition raises an error when no ``num_steps`` is specified."""
         op = qml.evolve(qml.sum(qml.PauliX(0), qml.PauliY(1)))
         with pytest.raises(
-            ValueError, match="The number of steps is required to calculate the Suzuki-Trotter"
+            DecompositionUndefinedError,
+            match="The number of steps is required to calculate the Suzuki-Trotter",
         ):
             op.decomposition()
 
