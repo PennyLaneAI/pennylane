@@ -12,9 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Tests for the gradients.jvp module."""
-from functools import partial
-from itertools import product
-
+# pylint:disable=import-outside-toplevel
 import pytest
 
 import pennylane as qml
@@ -134,74 +132,74 @@ tests_compute_jvp_single = [
     ),
 ]
 
-jacs, tangents, expects = list(zip(*tests_compute_jvp_single))
+jacs, tangs, expects = list(zip(*tests_compute_jvp_single))
 tests_compute_jvp_multi = [
-    (tuple(jacs[:3]), tangents[0], tuple(expects[:3])),  # scalar return types, scalar parameter
-    (tuple(jacs[:3]), tangents[1], tuple(expects[:3])),  # scalar return types, scalar parameter
-    (tuple(jacs[2:5]), tangents[0], tuple(expects[2:5])),  # mixed return types, scalar parameter
+    (tuple(jacs[:3]), tangs[0], tuple(expects[:3])),  # scalar return types, scalar parameter
+    (tuple(jacs[:3]), tangs[1], tuple(expects[:3])),  # scalar return types, scalar parameter
+    (tuple(jacs[2:5]), tangs[0], tuple(expects[2:5])),  # mixed return types, scalar parameter
     (
         (jacs[2], jacs[4], jacs[8]),
-        tangents[2],
+        tangs[2],
         (expects[2], expects[4], expects[8]),
     ),  # mixed return types, scalar parameter
     (
         (jacs[12], jacs[12]),
-        tangents[12],
+        tangs[12],
         (expects[12], expects[12]),
     ),  # scalar return types, tensor parameter
     (
         (jacs[12], jacs[15]),
-        tangents[12],
+        tangs[12],
         (expects[12], expects[15]),
     ),  # mixed return types, tensor parameter
     (
         tuple(jacs[18:20]),
-        tangents[18],
+        tangs[18],
         tuple(expects[18:20]),
     ),  # scalar return types, multiple scalar parameters
     (
         tuple(jacs[21:23]),
-        tangents[18],
+        tangs[18],
         tuple(expects[21:23]),
     ),  # tensor return types, multiple scalar parameters
     (
         tuple(jacs[24:26]),
-        tangents[24],
+        tangs[24],
         tuple(expects[24:26]),
     ),  # tensor return types, multiple scalar parameters
     (
         (jacs[18], jacs[19], jacs[22]),
-        tangents[18],
+        tangs[18],
         (expects[18], expects[19], expects[22]),
     ),  # mixed return types, multiple scalar parameters
     (
         (jacs[30], jacs[30]),
-        tangents[30],
+        tangs[30],
         (expects[30], expects[30]),
     ),  # scalar return types, multiple tensor parameter
     (
         (jacs[35], jacs[35]),
-        tangents[35],
+        tangs[35],
         (expects[35], expects[35]),
     ),  # tensor return types, multiple tensor parameters
     (
         (jacs[30], jacs[35]),
-        tangents[30],
+        tangs[30],
         (expects[30], expects[35]),
     ),  # mixed return types, multiple tensor parameters
     (
         (jacs[33], jacs[33]),
-        tangents[33],
+        tangs[33],
         (expects[33], expects[33]),
     ),  # scalar return types, mixed parameters
     (
         (jacs[38], jacs[38]),
-        tangents[38],
+        tangs[38],
         (expects[38], expects[38]),
     ),  # tensor return types, mixed parameters
     (
         (jacs[33], jacs[38]),
-        tangents[33],
+        tangs[33],
         (expects[33], expects[38]),
     ),  # mixed return types, mixed parameters
 ]
@@ -489,8 +487,8 @@ class TestJVP:
         res = fn(dev.batch_execute(tapes))
         assert res.shape == () if batch_dim is None else (batch_dim,)
 
-        expected = np.sum(np.array([-np.sin(y) * np.sin(x), np.cos(y) * np.cos(x)]), axis=0)
-        assert np.allclose(res, expected, atol=tol, rtol=0)
+        exp = np.sum(np.array([-np.sin(y) * np.sin(x), np.cos(y) * np.cos(x)]), axis=0)
+        assert np.allclose(res, exp, atol=tol, rtol=0)
 
     def test_multiple_expectation_values(self, tol, batch_dim):
         """Tests correct output shape and evaluation for a tape
@@ -518,10 +516,10 @@ class TestJVP:
         assert len(res) == 2
         assert all(r.shape == () if batch_dim is None else (batch_dim,) for r in res)
 
-        expected = [-np.sin(x), 2 * np.cos(y)]
+        exp = [-np.sin(x), 2 * np.cos(y)]
         if batch_dim is not None:
-            expected[1] = np.tensordot(np.ones(batch_dim), expected[1], axes=0)
-        assert np.allclose(res, expected, atol=tol, rtol=0)
+            exp[1] = np.tensordot(np.ones(batch_dim), exp[1], axes=0)
+        assert np.allclose(res, exp, atol=tol, rtol=0)
 
     def test_prob_expval_single_param(self, tol, batch_dim):
         """Tests correct output shape and evaluation for a tape
@@ -580,7 +578,7 @@ class TestJVP:
         assert isinstance(res, tuple)
         assert len(res) == 2
 
-        expected = [
+        exp = [
             -1 * np.sin(x),
             np.array(
                 [
@@ -593,8 +591,8 @@ class TestJVP:
             / 2,
         ]
 
-        assert np.allclose(res[0], expected[0], atol=tol, rtol=0)
-        assert np.allclose(res[1], expected[1], atol=tol, rtol=0)
+        assert np.allclose(res[0], exp[0], atol=tol, rtol=0)
+        assert np.allclose(res[1], exp[1], atol=tol, rtol=0)
 
     @pytest.mark.parametrize("dtype", [np.float32, np.float64])
     def test_dtype_matches_tangent(self, dtype, batch_dim):
@@ -624,6 +622,7 @@ def expected(params):
 
 
 def ansatz(x, y):
+    """Circuit ansatz for gradient tests"""
     qml.RX(x, wires=[0])
     qml.RZ(y, wires=[1])
     qml.CNOT(wires=[0, 1])
@@ -792,7 +791,6 @@ class TestBatchJVP:
 
     def test_all_tapes_no_trainable_parameters(self):
         """If all tapes have no trainable parameters all outputs will be None"""
-        dev = qml.device("default.qubit", wires=2)
 
         with qml.queuing.AnnotatedQueue() as q1:
             qml.RX(0.4, wires=0)
