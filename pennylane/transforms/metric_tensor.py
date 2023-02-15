@@ -266,6 +266,7 @@ def metric_tensor(
         Consider the following QNode in which parameters are used out of order:
 
         .. code-block:: python
+
             >>> dev = qml.device("default.qubit", wires=3)
             >>> @qml.qnode(dev, interface="autograd")
             >>> def circuit(weights):  # , extra_weight):
