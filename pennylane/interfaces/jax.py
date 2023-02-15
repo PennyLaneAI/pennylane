@@ -462,7 +462,6 @@ def _execute_bwd_new(
                 "gradient_kwargs": gradient_kwargs,
             }
             if _n == max_diff:
-                print(f"_n==max_diff")
                 with qml.tape.Unwrap(*new_tapes):
                     jvp_tapes, processing_fn = qml.gradients.batch_jvp(*_args, **_kwargs)
                     jvps = processing_fn(execute_fn(jvp_tapes)[0])
