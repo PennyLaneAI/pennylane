@@ -407,6 +407,10 @@
 
 <h3>Improvements</h3>
 
+* The `default.mixed` device received a performance improvement for multi-qubit operations.
+  This also allows to apply channels that act on more than seven qubits, which was not possible before.
+  [(#3584)](https://github.com/PennyLaneAI/pennylane/pull/3584)
+
 * `qml.dot` now groups coefficients together.
   [(#3691)](https://github.com/PennyLaneAI/pennylane/pull/3691)
 
@@ -594,6 +598,7 @@
 * `qml.qchem.basis_rotation` now accounts for spin, allowing it to perform Basis Rotation Groupings
   for molecular hamiltonians.
   [(#3714)](https://github.com/PennyLaneAI/pennylane/pull/3714)
+  [(#3774)](https://github.com/PennyLaneAI/pennylane/pull/3774)
 
 * `QubitStateVector` now implements the `StatePrep` interface.
   [(#3685)](https://github.com/PennyLaneAI/pennylane/pull/3685)
@@ -608,6 +613,9 @@
 * `DefaultQubitJax` now supports evolving the state vector when executing `ParametrizedEvolution`
   gates.
   [(#3743)](https://github.com/PennyLaneAI/pennylane/pull/3743)
+
+* `SProd.sparse_matrix` now supports interface-specific variables with a single element as the `scalar`.
+  [(#3770)](https://github.com/PennyLaneAI/pennylane/pull/3770)
 
  * The `qchem.Molecule` class raises an error when the molecule has an odd number of electrons or 
    when the spin multiplicity is not 1.
@@ -787,6 +795,9 @@
 * Implementations of `marginal_prob` (and subsequently, `qml.probs`) now return
   probabilities with the expected wire order.
   [(#3753)](https://github.com/PennyLaneAI/pennylane/pull/3753)
+
+* Ensure that a `QNode` does not return an empty iterable.
+  [(#3769)](https://github.com/PennyLaneAI/pennylane/pull/3769)
 
 <h3>Contributors</h3>
 
