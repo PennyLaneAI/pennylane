@@ -18,7 +18,7 @@ import pytest
 
 import pennylane as qml
 from pennylane.collections import QNodeCollection
-from pennylane.ops import Hamiltonian, SProd, Sum
+from pennylane.ops import Hamiltonian, Prod, SProd, Sum
 from pennylane.pauli.pauli_arithmetic import PauliSentence
 
 
@@ -49,6 +49,43 @@ class TestDotSum:
         O = qml.dot(coeffs=[2.0], ops=[qml.PauliX(0)])
         assert isinstance(O, SProd)
         assert O.scalar == 2
+
+    def test_cast_tensor_to_prod(self):
+        """Test that `dot` casts all `Tensor` objects to `Prod`."""
+        result = qml.dot(
+            coeffs=[1, 1, 1],
+            ops=[
+                qml.PauliX(0) @ qml.PauliY(0),
+                qml.PauliX(0) @ qml.PauliY(0),
+                qml.PauliX(0) @ qml.PauliY(0),
+            ],
+        )
+        assert isinstance(result, Sum)
+        for op in result:
+            assert isinstance(op, Prod)
+
+    def test_dot_groups_coeffs(self):
+        """Test that the `dot` function groups the coefficients."""
+        result = qml.dot(coeffs=[4, 4, 4], ops=[qml.PauliX(0), qml.PauliX(1), qml.PauliX(2)])
+        assert isinstance(result, SProd)
+        assert result.scalar == 4
+        assert isinstance(result.base, Sum)
+        assert len(result.base) == 3
+        for op in result.base:
+            assert isinstance(op, qml.PauliX)
+
+    def test_dot_groups_coeffs_with_different_sign(self):
+        """test that the `dot` function groups coefficients with different signs."""
+        cs = [4, -4, 4]
+        result = qml.dot(coeffs=cs, ops=[qml.PauliX(0), qml.PauliX(1), qml.PauliX(2)])
+        assert isinstance(result, SProd)
+        assert result.scalar == 4
+        for op, c in zip(result.base, cs):
+            if c == -4:
+                assert isinstance(op, SProd)
+                assert op.scalar == -1
+            else:
+                assert isinstance(op, qml.PauliX)
 
     def test_dot_different_number_of_coeffs_and_ops(self):
         """Test that a ValueError is raised when the number of coefficients and operators does

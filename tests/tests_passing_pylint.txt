@@ -34,3 +34,8 @@ tests/gradients/test_spsa_gradient.py
 tests/returntypes/gradients/test_spsa_gradient_new.py
 tests/returntypes/gradients/test_spsa_gradient_shot_vec_new.py
 tests/kernels/**
+tests/devices/test_default_mixed.py
+tests/devices/test_default_mixed_autograd.py
+tests/devices/test_default_mixed_jax.py
+tests/devices/test_default_mixed_torch.py
+tests/devices/test_default_mixed_tf.py

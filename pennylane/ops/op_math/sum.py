@@ -320,19 +320,21 @@ class Sum(CompositeOp):
         if isinstance(op_list, tuple):
             op_list = list(op_list)
 
-        def _sort_key(op) -> bool:
-            """Sorting key.
+        def _sort_key(op: Operator) -> tuple:
+            """Sorting key used in the `sorted` python built-in function.
 
             Args:
                 op (.Operator): Operator.
 
             Returns:
-                int: Minimum wire value.
+                Tuple[int, int, str]: Tuple containing the minimum wire value, the number of wires
+                    and the string of the operator. This tuple is used to compare different operators
+                    in the sorting algorithm.
             """
             wires = op.wires
             if wire_map is not None:
                 wires = wires.map(wire_map)
-            return np.min(wires), len(wires)
+            return np.min(wires), len(wires), str(op)
 
         return sorted(op_list, key=_sort_key)
 
