@@ -166,7 +166,7 @@ class hessian_transform(qml.batch_transform):
             qnode, argnums=argnums, expand_fn=self.expand_fn
         )
 
-        def hessian_wrapper(*args, **kwargs):
+        def hessian_wrapper(*args, **kwargs):  # pylint: disable=too-many-branches
             if argnums is not None:
                 argnums_ = [argnums] if isinstance(argnums, int) else argnums
 
