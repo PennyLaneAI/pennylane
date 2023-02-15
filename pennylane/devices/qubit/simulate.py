@@ -16,6 +16,7 @@
 # pylint: disable=protected-access
 from scipy.sparse import csr_matrix
 import pennylane as qml
+from pennylane.ops import Sum
 from pennylane.wires import Wires
 from pennylane.measurements import StateMeasurement, MeasurementProcess, ExpectationMP
 from pennylane.typing import TensorLike
@@ -94,6 +95,16 @@ def measure(measurementprocess: MeasurementProcess, state: TensorLike) -> Tensor
             "Hamiltonian",
             "SparseHamiltonian",
         ):
+            return measure_hamiltonian_expval(measurementprocess, state)
+
+        if (
+            isinstance(measurementprocess, ExpectationMP)
+            and isinstance(measurementprocess.obs, Sum)
+            and measurementprocess.obs.has_overlapping_wires
+            and len(measurementprocess.obs.wires) > 7
+        ):
+            # Use tensor contraction for `Sum` expectation values with non-commuting summands
+            # and 8 or more wires as it's faster than using eigenvalues.
             return measure_hamiltonian_expval(measurementprocess, state)
 
         if measurementprocess.obs.has_diagonalizing_gates:
