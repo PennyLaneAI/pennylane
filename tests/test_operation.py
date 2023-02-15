@@ -1859,24 +1859,6 @@ class TestTensorObservableOperations:
         """Tests the tensor product between Observables"""
         assert res.compare(obs1 @ obs2)
 
-    def test_arithmetic_errors(self):
-        """Tests that the arithmetic operations throw the correct errors"""
-        obs = qml.PauliZ(0)
-        tensor = qml.PauliZ(0) @ qml.PauliX(1)
-        A = [[1, 0], [0, -1]]
-        with pytest.raises(TypeError, match="unsupported operand type"):
-            _ = obs + A
-        with pytest.raises(TypeError, match="unsupported operand type"):
-            _ = tensor + A
-        with pytest.raises(TypeError, match="can't multiply sequence by non-int of type 'PauliZ'"):
-            _ = obs * A
-        with pytest.raises(TypeError, match="can't multiply sequence by non-int of type 'Tensor'"):
-            _ = A * tensor
-        with pytest.raises(TypeError, match="unsupported operand type"):
-            _ = obs - A
-        with pytest.raises(TypeError, match="unsupported operand type"):
-            _ = tensor - A
-
 
 # Dummy class inheriting from Operator
 class MyOp(Operator):

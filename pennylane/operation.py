@@ -216,12 +216,10 @@ import abc
 import copy
 import functools
 import itertools
-import numbers
 import warnings
 from enum import IntEnum
 from typing import List
 
-import autoray
 import numpy as np
 from numpy.linalg import multi_dot
 from scipy.sparse import coo_matrix, eye, kron
@@ -1403,7 +1401,7 @@ class Operator(abc.ABC):
         """The addition operation of Operator-Operator objects and Operator-scalar."""
         if isinstance(other, Operator):
             return qml.sum(self, other)
-        if other == 0:
+        if qml.math.allequal(other, 0):
             return self
         if isinstance(other, qml.pulse.ParametrizedHamiltonian):
             return other.__add__(self)
@@ -1435,8 +1433,8 @@ class Operator(abc.ABC):
 
     def __sub__(self, other):
         """The subtraction operation of Operator-Operator objects and Operator-scalar."""
-        if isinstance(other, (Operator, numbers.Number)):
-            return self + (-other)
+        if isinstance(other, (Operator, TensorLike)):
+            return self + (qml.math.multiply(-1, other))
         return NotImplemented
 
     def __rsub__(self, other):
@@ -1449,10 +1447,7 @@ class Operator(abc.ABC):
 
     def __pow__(self, other):
         r"""The power operation of an Operator object."""
-        backend = autoray.infer_backend(other)
-        if (
-            backend == "builtins" and isinstance(other, numbers.Number)
-        ) or backend in SUPPORTED_INTERFACES:
+        if isinstance(other, TensorLike):
             return qml.pow(self, z=other)
         return NotImplemented
 
