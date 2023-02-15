@@ -281,9 +281,7 @@ class gradient_transform(qml.batch_transform):
         argnums = tkwargs.get("argnums", None)
 
         _wrapper = super().default_qnode_wrapper(qnode, targs, tkwargs)
-        cjac_fn = qml.transforms.classical_jacobian(
-            qnode, argnums=argnums, expand_fn=self.expand_fn
-        )
+        cjac_fn = qml.transforms.classical_jacobian(qnode, argnum=argnums, expand_fn=self.expand_fn)
 
         def jacobian_wrapper(*args, **kwargs):
             if argnums is not None:
@@ -314,7 +312,7 @@ class gradient_transform(qml.batch_transform):
             # defined on the outer transform and therefore on the args.
             if argnums is None and qml.math.get_interface(*args) == "jax":
                 cjac = qml.transforms.classical_jacobian(
-                    qnode, argnums=qml.math.get_trainable_indices(args), expand_fn=self.expand_fn
+                    qnode, argnum=qml.math.get_trainable_indices(args), expand_fn=self.expand_fn
                 )(*args, **kwargs)
             else:
                 cjac = cjac_fn(*args, **kwargs)

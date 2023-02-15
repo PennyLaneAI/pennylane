@@ -162,9 +162,7 @@ class hessian_transform(qml.batch_transform):
         old_interface = qnode.interface
 
         _wrapper = super().default_qnode_wrapper(qnode, targs, tkwargs)
-        cjac_fn = qml.transforms.classical_jacobian(
-            qnode, argnums=argnums, expand_fn=self.expand_fn
-        )
+        cjac_fn = qml.transforms.classical_jacobian(qnode, argnum=argnums, expand_fn=self.expand_fn)
 
         def hessian_wrapper(*args, **kwargs):  # pylint: disable=too-many-branches
             if argnums is not None:
@@ -199,7 +197,7 @@ class hessian_transform(qml.batch_transform):
 
             if argnums is None and qml.math.get_interface(*args) == "jax":
                 cjac = qml.transforms.classical_jacobian(
-                    qnode, argnums=qml.math.get_trainable_indices(args), expand_fn=self.expand_fn
+                    qnode, argnum=qml.math.get_trainable_indices(args), expand_fn=self.expand_fn
                 )(*args, **kwargs)
             else:
                 cjac = cjac_fn(*args, **kwargs)
