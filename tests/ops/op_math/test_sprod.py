@@ -537,7 +537,7 @@ class TestSparseMatrix:
         assert all(sparse_matrix.data == expected_sparse_matrix.data)
         assert all(sparse_matrix.indices == expected_sparse_matrix.indices)
 
-    @pytest.mark.tensorflow
+    @pytest.mark.tf
     @pytest.mark.parametrize("scalar", scalars)
     @pytest.mark.parametrize("op", sparse_ops)
     def test_sparse_matrix_tf_scalar(self, scalar, op):
