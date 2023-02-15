@@ -22,6 +22,7 @@ tests/ops/qubit/test_special_unitary.py
 tests/ops/qubit/test_matrix_ops.py
 tests/ops/op_math/test_exp.py
 tests/transforms/test_decompositions.py
+tests/transforms/test_qfunc_transform.py
 tests/returntypes/gradients/test_hadamard_grad.py
 tests/ops/op_math/test_exp.py
 tests/ops/qubit/test_state_prep.py
