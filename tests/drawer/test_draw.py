@@ -347,7 +347,7 @@ def test_expansion_strategy():
     assert draw(circuit, expansion_strategy="device", decimals=None)(0.5) == expected_device
 
 
-def test_draw_qfunc():
+def test_draw_with_qfunc():
     """Test a non-qnode qfunc can be drawn."""
 
     def qfunc(x):
@@ -357,7 +357,7 @@ def test_draw_qfunc():
     assert qml.draw(qfunc)(1.1) == "0: ──RX(1.10)─┤  \n1: ──Z────────┤  "
 
 
-def test_draw_qfunc_warns_with_expansion_strategy():
+def test_draw_with_qfunc_warns_with_expansion_strategy():
     """Test that draw warns the user about expansion_strategy being ignored."""
 
     def qfunc():
