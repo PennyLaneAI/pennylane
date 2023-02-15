@@ -609,7 +609,10 @@
   gates.
   [(#3743)](https://github.com/PennyLaneAI/pennylane/pull/3743)
 
-* The `qchem.Molecule` class raises an error when the molecule has an odd number of electrons or
+* `SProd.sparse_matrix` now supports interface-specific variables with a single element as the `scalar`.
+  [(#3770)](https://github.com/PennyLaneAI/pennylane/pull/3770)
+
+ * The `qchem.Molecule` class raises an error when the molecule has an odd number of electrons or 
    when the spin multiplicity is not 1.
    [(#3748)](https://github.com/PennyLaneAI/pennylane/pull/3748)
 
