@@ -224,7 +224,7 @@
   [(#3495)](https://github.com/PennyLaneAI/pennylane/pull/3495)
 
   The JAX interface is automatically used when the differentiable parameters are JAX objects. Here
-  is an example for computing the Hartree-Fock energy gradients with respect to https://github.com/PennyLaneAI/pennylane/pull/3724the atomic
+  is an example for computing the Hartree-Fock energy gradients with respect to the atomic
   coordinates.
 
   ```python
