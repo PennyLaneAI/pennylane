@@ -40,7 +40,6 @@ tests_compute_jvp_single = [
     (np.array([5, -2]), [np.array([4, 9])], np.array(2)),
     (np.array([[5, -2]]), [np.array([[4, 9]])], np.array(2)),
     (np.array([[4, 3], [5, -2]]), [np.array([[-1, 2], [4, 9]])], np.array(4)),
-    # (np.array([[4, 3], [5, -2]]), np.array([[-1, 2], [4, 9]]), np.array(4)), #TODO
     # Single tensor parameter, tensor output
     (np.outer([-1, 3], [5, -2]), [np.array([4, 9])], np.array([-2, 6])),
     (np.array([[[3, 2]], [[5, -2]]]), [np.array([[4, 9]])], np.array([30, 2])),
@@ -49,7 +48,6 @@ tests_compute_jvp_single = [
         [np.array([[-1, 2], [4, 9]])],
         4 * _x.reshape((4, 3)),
     ),
-    # (np.array([[4, 3], [5, -2]]), np.array([[-1, 2], [4, 9]]), np.array(4)), #TODO
     # Multiple scalar parameters, scalar output
     (tuple(np.array(x) for x in [2, 1, -9]), np.array([4, -3, 2]), np.array(-13)),
     (tuple(np.array(x) for x in [2, 1, -9]), [np.array(x) for x in [4, -3, 2]], np.array(-13)),
@@ -618,7 +616,7 @@ def expected(params):
     x = 1.0 * x
     y = 1.0 * y
     # Transpose to put potential broadcasting axis first
-    return np.array([-np.sin(x / 2) * np.cos(x / 2), 0.0, 0.0, np.sin(x / 2) * np.cos(x / 2)]).T
+    return np.array([-np.sin(x / 2) * np.cos(x / 2), 0.0 * x * y, 0.0 * x * y, np.sin(x / 2) * np.cos(x / 2)]).T
 
 
 def ansatz(x, y):

@@ -85,7 +85,6 @@ def compute_jvp_single(tangent, jac):
     # ((a,), (b,)) denotes a list / tuple of tensors with the indicated shapes, respectively.
     # Ignore the case of no trainable parameters, as it is filtered out in advance.
     #
-    # TODO: Can tangent have shape (l_1, l_2, ... l_{L_1}) (without outer list) for (A)?
 
     # For scenario (A), the input shapes can be in
     #   tangent:
