@@ -298,6 +298,25 @@ single_op_tests_data = [
         ),
         "0: ───┤ ╭<𝓗>\n1: ───┤ ╰<𝓗>",
     ),
+    # Operations (both regular and controlled) and nested multi-valued controls
+    (qml.ctrl(qml.PauliX(wires=2), control=[0, 1]), "0: ─╭●─┤  \n1: ─├●─┤  \n2: ─╰X─┤  "),
+    (qml.ctrl(qml.CNOT(wires=[1, 2]), control=0), "0: ─╭●─┤  \n1: ─├●─┤  \n2: ─╰X─┤  "),
+    (
+        qml.ctrl(qml.CRZ(0.2, wires=[1, 2]), control=[3, 0]),
+        "3: ─╭●────────┤  \n0: ─├●────────┤  \n1: ─├●────────┤  \n2: ─╰RZ(0.20)─┤  ",
+    ),
+    (
+        qml.ctrl(qml.CH(wires=[0, 3]), control=[2, 1], control_values=[False, True]),
+        "2: ─╭○─┤  \n1: ─├●─┤  \n0: ─├●─┤  \n3: ─╰H─┤  ",
+    ),
+    (
+        qml.ctrl(
+            qml.ctrl(qml.CY(wires=[3, 4]), control=[1, 2], control_values=[True, False]),
+            control=0,
+            control_values=[False],
+        ),
+        "0: ─╭○─┤  \n1: ─├●─┤  \n2: ─├○─┤  \n3: ─├●─┤  \n4: ─╰Y─┤  ",
+    ),
 ]
 
 
