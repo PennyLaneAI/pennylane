@@ -303,31 +303,51 @@ class gradient_transform(qml.batch_transform):
             cjac = cjac_fn(*args, **kwargs)
 
             if qml.active_return():
+                if not isinstance(cjac, tuple):
+                    is_square = cjac.ndim == 2 and cjac.shape[0] == cjac.shape[1]
+
+                    if is_square and qml.math.allclose(cjac, qml.numpy.eye(cjac.shape[0])):
+                        # Classical Jacobian is the identity. No classical processing
+                        # is present inside the QNode.
+                        return qjac
+
                 multi_meas = len(qnode.tape.measurements) > 1
                 multi_params = isinstance(cjac, tuple)
-
                 if not multi_params and not multi_meas:
                     if qjac.shape == ():
-                        qjac = qjac.reshape((1))
+                        qjac = qml.math.reshape(qjac, (1,))
+
+                    # With dimension e.g. probs
+                    else:
+                        qjac = qml.math.reshape(qjac, (1, -1))
+
+                    return qml.math.tensordot(qjac, cjac, [[0], [0]])
+
                 elif multi_meas and not multi_params:
-                    jacs = tuple([qml.math.tensordot(q.reshape((1)), cjac, [[-1], [0]]) for q in qjac])
+                    jacs = tuple(
+                        [
+                            qml.math.tensordot(qml.math.reshape(q, (1,)), cjac, [[0], [0]])
+                            if q.shape == ()
+                            else qml.math.tensordot(qml.math.reshape(q, (1, -1)), cjac, [[0], [0]])
+                            for q in qjac
+                        ]
+                    )
                     return jacs
-
-
-
-            if isinstance(cjac, tuple):
-                # Classical processing of multiple arguments is present. Return qjac @ cjac.
-                jacs = tuple(
-                    qml.math.tensordot(qjac, c, [[-1], [0]]) for c in cjac if c is not None
-                )
-                return jacs
-
-            is_square = cjac.ndim == 2 and cjac.shape[0] == cjac.shape[1]
-
-            if is_square and qml.math.allclose(cjac, qml.numpy.eye(cjac.shape[0])):
-                # Classical Jacobian is the identity. No classical processing
-                # is present inside the QNode.
-                return qjac
+                elif not multi_meas and multi_params:
+                    jacs = tuple(
+                        qml.math.tensordot(qjac, c, [[0], [0]]) for c in cjac if c is not None
+                    )
+                    return jacs
+                else:
+                    jacs = tuple(
+                        [
+                            tuple(
+                                qml.math.tensordot(q, c, [[0], [0]]) for c in cjac if c is not None
+                            )
+                            for q in qjac
+                        ]
+                    )
+                    return jacs
 
             return qml.math.tensordot(qjac, cjac, [[-1], [0]])
 

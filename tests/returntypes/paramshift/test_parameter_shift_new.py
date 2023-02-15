@@ -3300,24 +3300,95 @@ class TestQnode:
     expected_jacs = []
     interfaces = ["auto", "autograd"]
 
+    @pytest.mark.autograd
     @pytest.mark.parametrize("interface", interfaces)
     def test_single_measurement_single_param(self, interface):
+        """Test for a single measurement and a single param."""
+        dev = qml.device("default.qubit", wires=2)
+
+        @qml.qnode(dev, interface=interface)
+        def circuit(x):
+            qml.RX(2 * x, wires=[0])
+            qml.CNOT(wires=[0, 1])
+            return qml.expval(qml.PauliZ(0))
+
+        x = qml.numpy.array(0.543, requires_grad=True)
+
+        res = qml.gradients.param_shift(circuit)(x)
+
+        res_expected = qml.jacobian(circuit)(x)
+
+        assert res.shape == res_expected.shape
+        assert np.allclose(res, res_expected)
+
+    @pytest.mark.autograd
+    @pytest.mark.parametrize("interface", interfaces)
+    def test_single_measurement_single_param_2(self, interface):
+        """Test for a single measurement and a single param."""
         dev = qml.device("default.qubit", wires=2)
 
         @qml.qnode(dev, interface=interface)
         def circuit(x):
             qml.RX(x[0], wires=[0])
             qml.CNOT(wires=[0, 1])
-            return qml.expval(qml.PauliZ(0) @ qml.PauliX(1))
+            return qml.expval(qml.PauliZ(0))
 
         x = qml.numpy.array([0.543, 0.2], requires_grad=True)
 
         res = qml.gradients.param_shift(circuit)(x)
 
+        res_expected = qml.jacobian(circuit)(x)
         print(res)
 
+        assert res.shape == res_expected.shape
+        assert np.allclose(res, res_expected)
+
+    @pytest.mark.autograd
+    @pytest.mark.parametrize("interface", interfaces)
+    def test_single_measurement_single_param_shape(self, interface):
+        """Test for a single measurement and a single param."""
+        dev = qml.device("default.qubit", wires=2)
+
+        @qml.qnode(dev, interface=interface)
+        def circuit(x):
+            qml.RX(2 * x, wires=[0])
+            qml.CNOT(wires=[0, 1])
+            return qml.probs(wires=[0, 1])
+
+        x = qml.numpy.array(0.543, requires_grad=True)
+
+        res = qml.gradients.param_shift(circuit)(x)
+
+        res_expected = qml.jacobian(circuit)(x)
+
+        assert res.shape == res_expected.shape
+        assert np.allclose(res, res_expected)
+
+    @pytest.mark.autograd
+    @pytest.mark.parametrize("interface", interfaces)
+    def test_single_measurement_single_param_shape_2(self, interface):
+        """Test for a single measurement (with shape) and a single param."""
+        dev = qml.device("default.qubit", wires=2)
+
+        @qml.qnode(dev, interface=interface)
+        def circuit(x):
+            qml.RX(x[0], wires=[0])
+            qml.CNOT(wires=[0, 1])
+            return qml.probs(wires=[0, 1])
+
+        x = qml.numpy.array([0.543, 0.2], requires_grad=True)
+
+        res = qml.gradients.param_shift(circuit)(x)
+        res_expected = qml.jacobian(circuit)(x)
+
+        print(res)
+
+        assert np.allclose(res, res_expected)
+
+    @pytest.mark.autograd
     @pytest.mark.parametrize("interface", interfaces)
     def test_multi_measurement_single_param(self, interface):
+        """Test for multiple measurement and a single param."""
         dev = qml.device("default.qubit", wires=2)
 
         @qml.qnode(dev, interface=interface)
@@ -3329,10 +3400,46 @@ class TestQnode:
         x = qml.numpy.array([0.543, 0.2], requires_grad=True)
 
         res = qml.gradients.param_shift(circuit)(x)
-        print(res)
 
+        def cost(x):
+            return qml.math.stack(circuit(x))
+
+        res_expected = qml.jacobian(cost)(x)
+
+        assert np.allclose(res[0], res_expected[0])
+        assert np.allclose(res[1], res_expected[1])
+
+    @pytest.mark.autograd
+    @pytest.mark.parametrize("interface", interfaces)
+    def test_multi_measurement_single_param_shape(self, interface):
+        """Test for multiple measurement (with shape) and a single param."""
+        dev = qml.device("default.qubit", wires=2)
+
+        @qml.qnode(dev, interface=interface)
+        def circuit(x):
+            qml.RX(x[0], wires=[0])
+            qml.CNOT(wires=[0, 1])
+            return qml.expval(qml.PauliZ(0)), qml.probs(wires=[0, 1])
+
+        x = qml.numpy.array([0.543, 0.2], requires_grad=True)
+
+        res = qml.gradients.param_shift(circuit)(x)
+
+        def cost(x):
+            return qml.math.hstack(circuit(x))
+
+        res_expected = qml.jacobian(cost)(x)
+
+        assert np.allclose(res[0], res_expected[0])
+        assert np.allclose(res[1][0], res_expected[1])
+        assert np.allclose(res[1][1], res_expected[2])
+        assert np.allclose(res[1][2], res_expected[3])
+        assert np.allclose(res[1][3], res_expected[4])
+
+    @pytest.mark.autograd
     @pytest.mark.parametrize("interface", interfaces)
     def test_single_measurement_multiple_params(self, interface):
+        """Test for a single measurement and multiple params."""
         dev = qml.device("default.qubit", wires=2)
 
         @qml.qnode(dev, interface=interface)
@@ -3346,15 +3453,37 @@ class TestQnode:
         y = qml.numpy.array(-0.654, requires_grad=True)
 
         res = qml.gradients.param_shift(circuit)(x, y)
+        res_expected = qml.jacobian(circuit)(x, y)
 
-        expected_0 = np.array([-np.sin(y) * np.sin(x[0]), 0])
-        expected_1 = np.array(np.cos(y) * np.cos(x[0]))
+        assert np.allclose(res[0], res_expected[0])
+        assert np.allclose(res[1], res_expected[1])
 
-        print(res)
+    @pytest.mark.autograd
+    @pytest.mark.parametrize("interface", interfaces)
+    def test_single_measurement_shape_multiple_params(self, interface):
+        """Test for a single measurement (with shape) and multiple params."""
+        dev = qml.device("default.qubit", wires=2)
 
+        @qml.qnode(dev, interface=interface)
+        def circuit(x, y):
+            qml.RX(x[0], wires=[0])
+            qml.RY(y, wires=[1])
+            qml.CNOT(wires=[0, 1])
+            return qml.probs(wires=[0, 1])
+
+        x = qml.numpy.array([0.543, 0.2], requires_grad=True)
+        y = qml.numpy.array(-0.654, requires_grad=True)
+
+        res = qml.gradients.param_shift(circuit)(x, y)
+        res_expected = qml.jacobian(circuit)(x, y)
+
+        assert np.allclose(res[0], res_expected[0])
+        assert np.allclose(res[1], res_expected[1])
+
+    @pytest.mark.autograd
     @pytest.mark.parametrize("interface", interfaces)
     def test_multi_expectation_values_multi_measurements(self, interface):
-        import jax
+        """Test for multiple measurements and multiple params."""
 
         dev = qml.device("default.qubit", wires=2)
 
@@ -3365,47 +3494,72 @@ class TestQnode:
             qml.CNOT(wires=[0, 1])
             return qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliX(1))
 
-        x = jax.numpy.array([0.543, 0.2])
-        y = jax.numpy.array(-0.654)
+        x = qml.numpy.array([0.543, 0.2], requires_grad=True)
+        y = qml.numpy.array(-0.654, requires_grad=True)
 
-        res = qml.gradients.param_shift(circuit, argnums=argnums)(x, y)
+        res = qml.gradients.param_shift(circuit)(x, y)
 
-        expected_0 = np.array([[-np.sin(x[0]), 0.0], [0.0, 0.0]])
-        expected_1 = np.array([0, np.cos(y)])
+        def cost(x, y):
+            return qml.math.stack(circuit(x, y))
 
-        if argnums == [0]:
-            assert np.allclose(res, expected_0)
-        if argnums == [1]:
-            assert np.allclose(res, expected_1)
-        if argnums == [0, 1]:
-            assert np.allclose(res[0], expected_0)
-            assert np.allclose(res[1], expected_1)
-    #
-    # @pytest.mark.parametrize("argnums", [[0], [1], [0, 1]])
-    # @pytest.mark.parametrize("interface", interfaces)
-    # def test_hessian(self, argnums, interface):
-    #     import jax
-    #
-    #     dev = qml.device("default.qubit", wires=2)
-    #
-    #     @qml.qnode(dev, interface=interface)
-    #     def circuit(x, y):
-    #         qml.RX(x[0], wires=[0])
-    #         qml.RY(x[1], wires=[1])
-    #         qml.RY(y, wires=[1])
-    #         qml.CNOT(wires=[0, 1])
-    #         return qml.var(qml.PauliZ(0) @ qml.PauliX(1))
-    #
-    #     x = jax.numpy.array([0.543, -0.654])
-    #     y = jax.numpy.array(-0.123)
-    #
-    #     res = jax.jacobian(qml.gradients.param_shift(circuit), argnums=argnums)(x, y)
-    #     res_expected = jax.hessian(circuit, argnums=argnums)(x, y)
-    #
-    #     assert len(res) == len(res_expected)
-    #
-    #     if len(argnums) != 1:
-    #         res = res[0]
-    #
-    #     for r, r_e in zip(res, res_expected[0]):
-    #         assert np.allclose(r, r_e)
+        res_expected = qml.jacobian(cost)(x, y)
+
+        assert np.allclose(res[0][0], res_expected[0][0])
+        assert np.allclose(res[0][1], res_expected[1][0])
+        assert np.allclose(res[1][0], res_expected[0][1])
+        assert np.allclose(res[1][1], res_expected[1][1])
+
+    @pytest.mark.autograd
+    @pytest.mark.parametrize("interface", interfaces)
+    def test_multi_meas_shape_values_multi_measurements(self, interface):
+        """Test for multiple measurements (with shape) and multiple params."""
+
+        dev = qml.device("default.qubit", wires=2)
+
+        @qml.qnode(dev, interface=interface)
+        def circuit(x, y):
+            qml.RX(x[0], wires=[0])
+            qml.RY(y, wires=[1])
+            qml.CNOT(wires=[0, 1])
+            return qml.expval(qml.PauliZ(0)), qml.probs(wires=[0, 1])
+
+        x = qml.numpy.array([0.543, 0.2], requires_grad=True)
+        y = qml.numpy.array(-0.654, requires_grad=True)
+
+        res = qml.gradients.param_shift(circuit)(x, y)
+
+        def cost(x, y):
+            return qml.math.hstack(circuit(x, y))
+
+        res_expected = qml.jacobian(cost)(x, y)
+
+        assert np.allclose(res[0][0], res_expected[0][0])
+        assert np.allclose(res[0][1], res_expected[1][0])
+        assert np.allclose(res[1][0][0], res_expected[0][1])
+        assert np.allclose(res[1][0][1], res_expected[0][2])
+        assert np.allclose(res[1][0][2], res_expected[0][3])
+        assert np.allclose(res[1][0][3], res_expected[0][4])
+        assert np.allclose(res[1][1][0], res_expected[1][1])
+        assert np.allclose(res[1][1][1], res_expected[1][2])
+        assert np.allclose(res[1][1][2], res_expected[1][3])
+        assert np.allclose(res[1][1][3], res_expected[1][4])
+
+    @pytest.mark.autograd
+    @pytest.mark.parametrize("interface", interfaces)
+    def test_identity_classical_jacobian(self, interface):
+        """Test for multiple measurements (with shape) and multiple params."""
+
+        dev = qml.device("default.qubit", wires=2)
+
+        @qml.qnode(dev, interface=interface)
+        def circuit(x):
+            qml.RX(x[0], wires=[0])
+            qml.RY(x[1], wires=[1])
+            qml.CNOT(wires=[0, 1])
+            return qml.expval(qml.PauliZ(0))
+
+        x = qml.numpy.array([0.543, -0.654], requires_grad=True)
+        res = qml.gradients.param_shift(circuit)(x)
+        res_expected = qml.jacobian(circuit)(x)
+
+        assert np.allclose(res, res_expected)
