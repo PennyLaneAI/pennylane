@@ -357,6 +357,17 @@ def test_draw_with_qfunc():
     assert qml.draw(qfunc)(1.1) == "0: ──RX(1.10)─┤  \n1: ──Z────────┤  "
 
 
+def test_draw_with_qfunc_with_measurements():
+    """Test a non-qnode qfunc with measurements can be drawn."""
+
+    def qfunc(x):
+        qml.RX(x, wires=[0])
+        qml.CNOT([0, 1])
+        return qml.expval(qml.PauliZ(1))
+
+    assert qml.draw(qfunc)(1.1) == "0: ──RX(1.10)─╭●─┤     \n1: ───────────╰X─┤  <Z>"
+
+
 def test_draw_with_qfunc_warns_with_expansion_strategy():
     """Test that draw warns the user about expansion_strategy being ignored."""
 
