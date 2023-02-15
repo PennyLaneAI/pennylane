@@ -419,13 +419,13 @@ class TestMiscMethods:
 
         assert base_gen_coeff == gen_coeff
 
-        for wire, ob in zip(op.control_wires, gen_tensor.obs):
+        for wire, ob in zip(op.control_wires, gen_tensor.operands):
             assert isinstance(ob, qml.Projector)
             assert ob.data == [[1]]
             assert ob.wires == qml.wires.Wires(wire)
 
-        assert gen_tensor.obs[-1].__class__ is base_gen.__class__
-        assert gen_tensor.obs[-1].wires == base_gen.wires
+        assert gen_tensor.operands[-1].__class__ is base_gen.__class__
+        assert gen_tensor.operands[-1].wires == base_gen.wires
 
     def test_diagonalizing_gates(self):
         """Test that the Controlled diagonalizing gates is the same as the base diagonalizing gates."""
