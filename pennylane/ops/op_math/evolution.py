@@ -93,6 +93,13 @@ class Evolution(Exp):
         """A real coefficient with ``1j`` factored out."""
         return self.data[0]
 
+    def __repr__(self):
+        return (
+            f"Evolution({self.coeff} {self.base})"
+            if self.base.arithmetic_depth > 0
+            else f"Evolution({self.coeff} {self.base.name})"
+        )
+
     @property
     def coeff(self):
         return 1j * self.data[0]
@@ -104,6 +111,10 @@ class Evolution(Exp):
             else format(math.toarray(self.data[0]), f".{decimals}f")
         )
         return base_label or f"Exp({param}j {self.base.label(decimals=decimals, cache=cache)})"
+
+    @property
+    def grad_method(self):
+        return self.base.grad_method if hasattr(self.base, "grad_method") else super().grad_method
 
     def simplify(self):
         new_base = self.base.simplify()
