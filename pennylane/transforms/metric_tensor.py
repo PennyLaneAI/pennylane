@@ -88,7 +88,7 @@ def metric_tensor(
         device_wires (.wires.Wires): Wires of the device that is going to be used for the
             metric tensor. Facilitates finding a default for ``aux_wire`` if ``aux_wire``
             is ``None``.
-        hybrid (bool): Specifies whether classical processing inside a QNoden_argnum_list = []
+        hybrid (bool): Specifies whether classical processing inside a QNode
             should be taken into account when transforming a QNode.
 
             - If ``True``, and classical processing is detected, the Jacobian of the classical
@@ -150,7 +150,7 @@ def metric_tensor(
 
         dev = qml.device("default.qubit", wires=3)
 
-        @qml.qnode(dev, interface="autograd")n_argnum_list = []
+        @qml.qnode(dev, interface="autograd")
         def circuit(weights):
             qml.RX(weights[0], wires=0)
             qml.RY(weights[1], wires=0)
@@ -253,6 +253,40 @@ def metric_tensor(
 
         This means that in total only the tapes for the first terms of the off block-diagonal
         are required in addition to the circuits for the block diagonal.
+
+        .. warning::
+
+            The ``argnum`` argument can be used to restrict the parameters which are taken into account
+            for computing the metric tensor.
+            When the metric tensor of a QNode is computed, the ordering of the parameters has to be
+            specified as they appear in the corresponding QuantumTape.
+
+        **Example**
+
+        Consider the following QNode in which parameters are used out of order:
+
+        .. code-block:: python
+            >>> dev = qml.device("default.qubit", wires=3)
+            >>> @qml.qnode(dev, interface="autograd")
+            >>> def circuit(weights):  # , extra_weight):
+            ...     qml.RX(weights[1], wires=0)
+            ...     qml.RY(weights[0], wires=0)
+            ...     qml.CNOT(wires=[0, 1])
+            ...     qml.RZ(weights[2], wires=1)
+            ...     qml.RZ(weights[3], wires=0)
+            ...     return qml.expval(qml.PauliZ(0))
+
+            >>> mt = qml.metric_tensor(circuit, argnum=(0, 2, 3))(weights)
+            >>> print(mt)
+            [[ 0.          0.          0.          0.        ]
+            [ 0.          0.25       -0.02495835 -0.02495835]
+            [ 0.         -0.02495835  0.01226071  0.01226071]
+            [ 0.         -0.02495835  0.01226071  0.01226071]]
+
+        Because the 0-th element of ``weights`` appears second in the QNode and therefore in the
+        underlying tape, it is the 1st tape parameter.
+        By setting ``argnum = (0, 2, 3)`` we exclude the 0-th element of ``weights`` from the computation
+        of the metric tensor and not the 1st element, as one might expect.
     """
     if not tape.trainable_params:
         warnings.warn(
