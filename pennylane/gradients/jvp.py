@@ -91,6 +91,7 @@ def compute_jvp_single(tangent, jac):
     #   tangent:
     #     - (1,)                         scalar parameter
     #     - [()]                         scalar parameter
+    #     - (())                         scalar parameter
     #     - [(l_1,..,l_{L_1})]           tensor parameter
     #   jac:
     #     - ()                           scalar return type and scalar parameter
@@ -106,6 +107,7 @@ def compute_jvp_single(tangent, jac):
     #   tangent:
     #     - (k,)                                   k scalar parameters
     #     - [(),..,()]                             k scalar parameters
+    #     - ((),..,())                             k scalar parameters
     #     - [(l_1,..,l_{L_1}),..,(l_1,..,l_{L_k})] k mixed scalar and tensor parameters
     #   jac:
     #     - ((),..,())                             scalar return type and k scalar params
@@ -146,10 +148,11 @@ def compute_jvp_single(tangent, jac):
         num_l = [t.ndim for t in tangent]
         tangent = [qml.math.reshape(t, (-1,)) for t in tangent]
         prod_l = [t.shape[0] for t in tangent]
+        tangent = qml.math.hstack(tangent)
     else:
         num_l = [0] * len(tangent)
         prod_l = [1] * len(tangent)
-    tangent = qml.math.stack(tangent)
+        tangent = qml.math.stack(tangent)
     new_shapes = [
         (j.shape if _num_l == 0 else j.shape[:-_num_l]) + (_prod_l,)
         for j, _num_l, _prod_l in zip(jac, num_l, prod_l)
