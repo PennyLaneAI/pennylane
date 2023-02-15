@@ -407,6 +407,10 @@
 
 <h3>Improvements</h3>
 
+* The `default.mixed` device received a performance improvement for multi-qubit operations.
+  This also allows to apply channels that act on more than seven qubits, which was not possible before.
+  [(#3584)](https://github.com/PennyLaneAI/pennylane/pull/3584)
+
 * `qml.dot` now groups coefficients together.
   [(#3691)](https://github.com/PennyLaneAI/pennylane/pull/3691)
 
