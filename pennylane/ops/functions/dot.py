@@ -19,7 +19,7 @@ from collections import defaultdict
 from typing import Sequence
 
 import pennylane as qml
-from pennylane.operation import Operator
+from pennylane.operation import Operator, Tensor
 from pennylane.pulse import ParametrizedHamiltonian
 
 
@@ -85,8 +85,22 @@ def dot(coeffs: Sequence[float], ops: Sequence[Operator], pauli=False):
     if pauli:
         return _pauli_dot(coeffs, ops)
 
+    # When casting a Hamiltonian to a Sum, we also cast its inner Tensors to Prods
+    ops = [qml.prod(*op.obs) if isinstance(op, Tensor) else op for op in ops]
+
+    if coeffs[0] != 1 and qml.math.allequal(coeffs[0], coeffs):
+        # Coefficients have the same value (different to 1)
+        return qml.s_prod(coeffs[0], ops[0] if len(ops) == 1 else qml.sum(*ops))
+
+    abs_coeffs = qml.math.abs(coeffs)
+    if abs_coeffs[0] != 1 and qml.math.allequal(abs_coeffs[0], abs_coeffs):
+        # Coefficients have the same absolute value (different to 1)
+        gcd = abs(coeffs[0])
+        coeffs = [c / gcd for c in coeffs]
+        return qml.s_prod(gcd, qml.dot(coeffs, ops))
+
     operands = [op if coeff == 1 else qml.s_prod(coeff, op) for coeff, op in zip(coeffs, ops)]
-    return qml.sum(*operands) if len(operands) > 1 else operands[0]
+    return operands[0] if len(operands) == 1 else qml.sum(*operands)
 
 
 def _pauli_dot(coeffs: Sequence[float], ops: Sequence[Operator]):
