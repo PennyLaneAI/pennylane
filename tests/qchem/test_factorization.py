@@ -177,7 +177,7 @@ def test_empty_error(two_tensor):
             # geometry = np.array([[0.0, 0.0, 0.0], [1.39839789, 0.0, 0.0]], requires_grad = False)
             # mol = qml.qchem.Molecule(symbols, geometry)
             # core, one_matrix, two_tensor = qml.qchem.electron_integrals(mol)()
-            np.array([[-1.25330978e+00, -2.11164419e-13], [-2.10831352e-13, -4.75068865e-01]]),
+            np.array([[-1.25330978e00, -2.11164419e-13], [-2.10831352e-13, -4.75068865e-01]]),
             np.array(  # two-electron integral tensor in physicist notation
                 [
                     [
