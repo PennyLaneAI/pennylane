@@ -543,6 +543,7 @@
 * `qml.qchem.basis_rotation` now accounts for spin, allowing it to perform Basis Rotation Groupings
   for molecular hamiltonians.
   [(#3714)](https://github.com/PennyLaneAI/pennylane/pull/3714)
+  [(#3774)](https://github.com/PennyLaneAI/pennylane/pull/3774)
 
 * `QubitStateVector` now implements the `StatePrep` interface.
   [(#3685)](https://github.com/PennyLaneAI/pennylane/pull/3685)
