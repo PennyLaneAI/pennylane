@@ -104,7 +104,8 @@ class TestSignExpand:
     @pytest.mark.parametrize(("tape", "output"), zip(TAPES, OUTPUTS))
     def test_hamiltonians_circuit_impl(self, tape, output):
         """Tests that the sign_expand transform returns the correct value
-        if we do not calculate analytical expectation values of groups but rely on their circuit approximations"""
+        if we do not calculate analytical expectation values of groups but rely on their circuit approximations
+        """
 
         tapes, fn = qml.transforms.sign_expand(tape, circuit=True)
         results = dev.batch_execute(tapes)
@@ -145,7 +146,8 @@ class TestSignExpand:
     @pytest.mark.parametrize(("tape", "output"), zip(TAPES_var, OUTPUTS_var))
     def test_hamiltonians_vars_circuit_impl(self, tape, output):
         """Tests that the sign_expand transform returns the correct value
-        if we do not calculate analytical expectation values of groups but rely on their circuit approximations"""
+        if we do not calculate analytical expectation values of groups but rely on their circuit approximations
+        """
 
         tapes, fn = qml.transforms.sign_expand(tape, circuit=True)
         results = dev.batch_execute(tapes)
