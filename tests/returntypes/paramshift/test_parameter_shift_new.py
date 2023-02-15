@@ -3292,3 +3292,120 @@ class TestHamiltonianExpvalGradients:
 
         # res = jax.jacobian(self.cost_fn, argnums=1)(weights, coeffs1, coeffs2, dev, broadcast)
         # assert np.allclose(res[:, -1], np.zeros([2, 1, 1]), atol=tol, rtol=0)
+
+
+class TestQnode:
+    """Class to test the integration of argnums (Jax) and the parameter shift transform."""
+
+    expected_jacs = []
+    interfaces = ["auto", "autograd"]
+
+    @pytest.mark.parametrize("interface", interfaces)
+    def test_single_measurement_single_param(self, interface):
+        dev = qml.device("default.qubit", wires=2)
+
+        @qml.qnode(dev, interface=interface)
+        def circuit(x):
+            qml.RX(x[0], wires=[0])
+            qml.CNOT(wires=[0, 1])
+            return qml.expval(qml.PauliZ(0) @ qml.PauliX(1))
+
+        x = qml.numpy.array([0.543, 0.2], requires_grad=True)
+
+        res = qml.gradients.param_shift(circuit)(x)
+
+        print(res)
+
+    @pytest.mark.parametrize("interface", interfaces)
+    def test_multi_measurement_single_param(self, interface):
+        dev = qml.device("default.qubit", wires=2)
+
+        @qml.qnode(dev, interface=interface)
+        def circuit(x):
+            qml.RX(x[0], wires=[0])
+            qml.CNOT(wires=[0, 1])
+            return qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliX(1))
+
+        x = qml.numpy.array([0.543, 0.2], requires_grad=True)
+
+        res = qml.gradients.param_shift(circuit)(x)
+        print(res)
+
+    @pytest.mark.parametrize("interface", interfaces)
+    def test_single_measurement_multiple_params(self, interface):
+        dev = qml.device("default.qubit", wires=2)
+
+        @qml.qnode(dev, interface=interface)
+        def circuit(x, y):
+            qml.RX(x[0], wires=[0])
+            qml.RY(y, wires=[1])
+            qml.CNOT(wires=[0, 1])
+            return qml.expval(qml.PauliZ(0) @ qml.PauliX(1))
+
+        x = qml.numpy.array([0.543, 0.2], requires_grad=True)
+        y = qml.numpy.array(-0.654, requires_grad=True)
+
+        res = qml.gradients.param_shift(circuit)(x, y)
+
+        expected_0 = np.array([-np.sin(y) * np.sin(x[0]), 0])
+        expected_1 = np.array(np.cos(y) * np.cos(x[0]))
+
+        print(res)
+
+    @pytest.mark.parametrize("interface", interfaces)
+    def test_multi_expectation_values_multi_measurements(self, interface):
+        import jax
+
+        dev = qml.device("default.qubit", wires=2)
+
+        @qml.qnode(dev, interface=interface)
+        def circuit(x, y):
+            qml.RX(x[0], wires=[0])
+            qml.RY(y, wires=[1])
+            qml.CNOT(wires=[0, 1])
+            return qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliX(1))
+
+        x = jax.numpy.array([0.543, 0.2])
+        y = jax.numpy.array(-0.654)
+
+        res = qml.gradients.param_shift(circuit, argnums=argnums)(x, y)
+
+        expected_0 = np.array([[-np.sin(x[0]), 0.0], [0.0, 0.0]])
+        expected_1 = np.array([0, np.cos(y)])
+
+        if argnums == [0]:
+            assert np.allclose(res, expected_0)
+        if argnums == [1]:
+            assert np.allclose(res, expected_1)
+        if argnums == [0, 1]:
+            assert np.allclose(res[0], expected_0)
+            assert np.allclose(res[1], expected_1)
+    #
+    # @pytest.mark.parametrize("argnums", [[0], [1], [0, 1]])
+    # @pytest.mark.parametrize("interface", interfaces)
+    # def test_hessian(self, argnums, interface):
+    #     import jax
+    #
+    #     dev = qml.device("default.qubit", wires=2)
+    #
+    #     @qml.qnode(dev, interface=interface)
+    #     def circuit(x, y):
+    #         qml.RX(x[0], wires=[0])
+    #         qml.RY(x[1], wires=[1])
+    #         qml.RY(y, wires=[1])
+    #         qml.CNOT(wires=[0, 1])
+    #         return qml.var(qml.PauliZ(0) @ qml.PauliX(1))
+    #
+    #     x = jax.numpy.array([0.543, -0.654])
+    #     y = jax.numpy.array(-0.123)
+    #
+    #     res = jax.jacobian(qml.gradients.param_shift(circuit), argnums=argnums)(x, y)
+    #     res_expected = jax.hessian(circuit, argnums=argnums)(x, y)
+    #
+    #     assert len(res) == len(res_expected)
+    #
+    #     if len(argnums) != 1:
+    #         res = res[0]
+    #
+    #     for r, r_e in zip(res, res_expected[0]):
+    #         assert np.allclose(r, r_e)

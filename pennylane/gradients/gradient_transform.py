@@ -281,9 +281,6 @@ class gradient_transform(qml.batch_transform):
 
         old_interface = qnode.interface
 
-        if old_interface == "auto":
-            qnode.interface = qml.math.get_interface(*targs, *list(tkwargs.values()))
-
         _wrapper = super().default_qnode_wrapper(qnode, targs, tkwargs)
 
         cjac_fn = qml.transforms.classical_jacobian(qnode, expand_fn=expand_invalid_trainable)
@@ -305,8 +302,18 @@ class gradient_transform(qml.batch_transform):
             kwargs.pop("shots", False)
             cjac = cjac_fn(*args, **kwargs)
 
-            if old_interface == "auto":
-                qnode.interface = "auto"
+            if qml.active_return():
+                multi_meas = len(qnode.tape.measurements) > 1
+                multi_params = isinstance(cjac, tuple)
+
+                if not multi_params and not multi_meas:
+                    if qjac.shape == ():
+                        qjac = qjac.reshape((1))
+                elif multi_meas and not multi_params:
+                    jacs = tuple([qml.math.tensordot(q.reshape((1)), cjac, [[-1], [0]]) for q in qjac])
+                    return jacs
+
+
 
             if isinstance(cjac, tuple):
                 # Classical processing of multiple arguments is present. Return qjac @ cjac.
