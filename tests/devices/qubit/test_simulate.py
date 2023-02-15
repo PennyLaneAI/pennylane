@@ -177,25 +177,21 @@ class TestSpecialMeasurements:
         "obs, expected",
         [
             (
-                qml.Hamiltonian([-0.5, 2], [qml.PauliX(0), qml.PauliX(0) @ qml.PauliX(1)]),
-                -0.25461982,
+                qml.Hamiltonian([-0.5, 2], [qml.PauliY(0), qml.PauliZ(0)]),
+                0.5 * np.sin(0.123) + 2 * np.cos(0.123),
             ),
             (
                 qml.SparseHamiltonian(
-                    csr_matrix(
-                        np.array(
-                            [[0, 0, -0.5, 2], [0, 0, 2, -0.5], [-0.5, 2, 0, 0], [2, -0.5, 0, 0]]
-                        )
-                    ),
-                    wires=[0, 1],
+                    csr_matrix(-0.5 * qml.PauliY(0).matrix() + 2 * qml.PauliZ(0).matrix()),
+                    wires=[0],
                 ),
-                -0.25461982,
+                0.5 * np.sin(0.123) + 2 * np.cos(0.123),
             ),
         ],
     )
     def test_hamiltonian_expval(self, obs, expected):
         """Test that the `measure_hamiltonian_expval` function works correctly."""
-        ops = [qml.Hadamard(0), qml.RY(0.123, wires=1)]
+        ops = [qml.RX(0.123, wires=0)]
         meas = [qml.expval(obs)]
         qs = qml.tape.QuantumScript(ops, meas)
         res = simulate(qs)
@@ -204,40 +200,30 @@ class TestSpecialMeasurements:
     def test_sum_expval_tensor_contraction(self):
         """Test that `Sum` expectation values are correct when tensor contraction
         is used for computation."""
-        summands = (qml.prod(qml.PauliX(i), qml.PauliY(i + 1)) for i in range(7))
+        summands = (qml.prod(qml.PauliX(i), qml.PauliZ(i + 1)) for i in range(7))
         obs = qml.sum(*summands)
-        ops = [
-            qml.Hadamard(0),
-            qml.RX(0.123, wires=1),
-            qml.RZ(0.456, wires=2),
-            qml.CRY(0.789, wires=[1, 3]),
-            qml.Toffoli(wires=[0, 3, 6]),
-            qml.PauliZ(7),
-        ]
+        ops = [qml.RX(0.123, wires=i) for i in range(8)]
         meas = [qml.expval(obs)]
         qs = qml.tape.QuantumScript(ops, meas)
 
         res = simulate(qs)
-        assert np.allclose(res, -0.11326612)
+        expected = 0
+        assert np.allclose(res, expected)
 
     @pytest.mark.parametrize(
         "obs, expected",
         [
-            (qml.sum(qml.PauliX(0), qml.prod(qml.PauliZ(0), qml.PauliZ(1))), 0.92613883),
-            (qml.sum(*(qml.PauliX(i) for i in range(8))), 2.02673995),
+            (qml.sum(qml.PauliY(0), qml.PauliZ(0)), -np.sin(0.123) + np.cos(0.123)),
+            (
+                qml.sum(*(qml.PauliZ(i) for i in range(8))),
+                sum(np.sin(i * np.pi / 2 + 0.123) for i in range(8)),
+            ),
         ],
     )
     def test_sum_expval_eigs(self, obs, expected):
         """Test that `Sum` expectation values are correct when eigenvalues are used
         for computation."""
-        ops = [
-            qml.Hadamard(0),
-            qml.Hadamard(1),
-            qml.RZ(0.456, wires=2),
-            qml.CRY(0.789, wires=[1, 3]),
-            qml.Toffoli(wires=[0, 3, 6]),
-            qml.PauliZ(7),
-        ]
+        ops = [qml.RX(i * np.pi / 2 + 0.123, wires=i) for i in range(8)]
         meas = [qml.expval(obs)]
         qs = qml.tape.QuantumScript(ops, meas)
 
