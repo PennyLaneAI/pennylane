@@ -33,6 +33,11 @@ class Evolution(Exp):
         base (~.operation.Operator): The operator to be used as a generator, G.
         param (float): The evolution parameter, x. This parameter is expected not to have
             any complex component.
+        num_steps (int): The number of steps used in the decomposition of the exponential operator,
+            also known as the Trotter number. If this value is `None` and the Suzuki-Trotter
+            decomposition is needed, an error will be raised.
+        do_queue (bool): determines if the sum operator will be queued. Default is True.
+        id (str): id for the Evolution operator. Default is None.
 
     Returns:
        :class:`Evolution`: A :class:`~.operation.Operator` representing an operator exponential of the form :math:`e^{ix\hat{G}}`,
@@ -75,17 +80,25 @@ class Evolution(Exp):
     _name = "Evolution"
     num_params = 1
 
-    def __init__(self, generator, param=1, do_queue=True, id=None):
+    # pylint: disable=too-many-arguments
+    def __init__(self, generator, param=1, num_steps=None, do_queue=True, id=None):
         warnings.warn(
             "Please use `qml.evolve` to instantiate an `Evolution` operator.", UserWarning
         )
-        super().__init__(generator, coeff=1j * param, do_queue=do_queue, id=id)
+        super().__init__(generator, coeff=1j * param, num_steps=num_steps, do_queue=do_queue, id=id)
         self._data = [param]
 
     @property
     def param(self):
         """A real coefficient with ``1j`` factored out."""
         return self.data[0]
+
+    def __repr__(self):
+        return (
+            f"Evolution({self.coeff} {self.base})"
+            if self.base.arithmetic_depth > 0
+            else f"Evolution({self.coeff} {self.base.name})"
+        )
 
     @property
     def coeff(self):
@@ -98,6 +111,10 @@ class Evolution(Exp):
             else format(math.toarray(self.data[0]), f".{decimals}f")
         )
         return base_label or f"Exp({param}j {self.base.label(decimals=decimals, cache=cache)})"
+
+    @property
+    def grad_method(self):
+        return self.base.grad_method if hasattr(self.base, "grad_method") else super().grad_method
 
     def simplify(self):
         new_base = self.base.simplify()
