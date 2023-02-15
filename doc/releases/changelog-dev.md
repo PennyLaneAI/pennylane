@@ -407,13 +407,17 @@
 
 <h3>Improvements</h3>
 
+* The custom JVP rules in PennyLane now also support non-scalar and mixed-shape tape parameters as
+  well as multi-dimensional tape return types, like broadcasted `qml.probs`, for example.
+  [(#3766)](https://github.com/PennyLaneAI/pennylane/pull/3766)
+
 * The kernel matrix utility functions in `qml.kernels` are now autodifferentiation-compatible.
   In addition they support batching, for example for quantum kernel execution with shot vectors.
   [(#3742)](https://github.com/PennyLaneAI/pennylane/pull/3742)
 
   In addition to the autodifferentiation support in JAX, Autograd, Tensorflow and PyTorch,
   optional batching was added, allowing for the following:
-  
+
   ```python
   dev = qml.device('default.qubit', wires=2, shots=(100, 100))
   @qml.qnode(dev)
@@ -443,7 +447,7 @@
            [0.91, 0.8 , 1.  , 0.91],
            [0.92, 1.  , 0.91, 1.  ]]], requires_grad=True)
   ```
-  
+
 * The parameter-shift derivative of variances saves a redundant evaluation of the
   corresponding unshifted expectation value tape, if possible
   [(#3744)](https://github.com/PennyLaneAI/pennylane/pull/3744)
@@ -558,7 +562,7 @@
   gates.
   [(#3743)](https://github.com/PennyLaneAI/pennylane/pull/3743)
 
- * The `qchem.Molecule` class raises an error when the molecule has an odd number of electrons or 
+ * The `qchem.Molecule` class raises an error when the molecule has an odd number of electrons or
    when the spin multiplicity is not 1.
    [(#3748)](https://github.com/PennyLaneAI/pennylane/pull/3748)
 
