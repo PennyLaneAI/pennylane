@@ -4,7 +4,8 @@
 
 <h3>New features since last release</h3>
 
-<h4>Add new features here</h4>
+* Added 'qml.sign_expand' tape tranforms which implements the optimal decomposition of a fast-forwardable Hamiltonian that minimizes the variance of its estimator in the Single-Qubit-Measurement from  arXiv:2207.09479
+  [(#2852)](https://github.com/PennyLaneAI/pennylane/pull/2852)
 
 * The `qml.math` module now also contains a submodule for
   fast Fourier transforms, `qml.math.fft`.
@@ -425,6 +426,7 @@
 * `Exp` operator now detects if the base is a generator, and decomposes to its corresponding operator.
   If not, it decomposes to a `PauliRot`, or it uses the Suzuki-Trotter decomposition when necessary.
   [(#3691)](https://github.com/PennyLaneAI/pennylane/pull/3691)
+  [(#3777)](https://github.com/PennyLaneAI/pennylane/pull/3777)
 
   If the `base` operator is a generator of another operator, `Exp` returns this operator during decomposition:
 
@@ -542,6 +544,11 @@
   `qml.gradients.SUPPORTED_GRADIENT_KWARGS`.
   [(#3526)](https://github.com/PennyLaneAI/pennylane/pull/3526)
 
+* Added `argnum` argument to `metric_tensor`. By passing a sequence of indices referring to trainable tape parameters,
+  the metric tensor is only computed with respect to these parameters. This reduces the number of tapes that have to
+  be run.
+  [(#3587)](https://github.com/PennyLaneAI/pennylane/pull/3587)
+
 * Moved `qml.utils.sparse_hamiltonian` function to `~.Hamiltonian.sparse_matrix` method.
   [(#3585)](https://github.com/PennyLaneAI/pennylane/pull/3585)
 
@@ -593,6 +600,7 @@
 * `qml.qchem.basis_rotation` now accounts for spin, allowing it to perform Basis Rotation Groupings
   for molecular hamiltonians.
   [(#3714)](https://github.com/PennyLaneAI/pennylane/pull/3714)
+  [(#3774)](https://github.com/PennyLaneAI/pennylane/pull/3774)
 
 * `QubitStateVector` now implements the `StatePrep` interface.
   [(#3685)](https://github.com/PennyLaneAI/pennylane/pull/3685)
@@ -790,10 +798,14 @@
   probabilities with the expected wire order.
   [(#3753)](https://github.com/PennyLaneAI/pennylane/pull/3753)
 
+* Ensure that a `QNode` does not return an empty iterable.
+  [(#3769)](https://github.com/PennyLaneAI/pennylane/pull/3769)
+
 <h3>Contributors</h3>
 
 This release contains contributions from (in alphabetical order):
 
+Gian-Luca Anselmetti
 Guillermo Alonso-Linaje
 Juan Miguel Arrazola
 Ikko Ashimine
@@ -812,4 +824,5 @@ Mudit Pandey
 Borja Requena
 Matthew Silverman
 Antal Száva
+Frederik Wilde
 David Wierichs
