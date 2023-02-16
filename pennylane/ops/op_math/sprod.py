@@ -227,7 +227,7 @@ class SProd(ScalarSymbolicOp):
         return self.scalar * self.base.eigvals()
 
     def sparse_matrix(self, wire_order=None):
-        return self.scalar * self.base.sparse_matrix(wire_order=wire_order)
+        return self.base.sparse_matrix(wire_order=wire_order).multiply(self.scalar)
 
     @property
     def has_matrix(self):

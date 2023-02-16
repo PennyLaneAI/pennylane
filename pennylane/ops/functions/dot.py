@@ -62,6 +62,14 @@ def dot(coeffs: Sequence[float], ops: Sequence[Operator], pauli=False):
     Using ``pauli=True`` and then converting the result to an :class:`~.Operator` is much faster
     than using ``pauli=False``, but it only works for pauli words
     (see :func:`~.is_pauli_word`).
+
+    If any of the parameters listed in ``coeffs`` are callables, the resulting dot product will be a
+    :class:`~.ParametrizedHamiltonian`:
+
+    >>> coeffs = [lambda p, t: p * jnp.sin(t) for _ in range(2)]
+    >>> ops = [qml.PauliX(0), qml.PauliY(0)]
+    >>> qml.dot(coeffs, ops)
+    ParametrizedHamiltonian: terms=2
     """
     if isinstance(coeffs, qml.QNodeCollection) or isinstance(ops, qml.QNodeCollection):
         return qml.collections.dot(coeffs, ops)
