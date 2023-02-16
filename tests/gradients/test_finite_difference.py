@@ -818,6 +818,10 @@ class TestFiniteDiffGradients:
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
 
+@pytest.mark.parametrize("argnums", [[0], [1], [0, 1]])
+@pytest.mark.parametrize("interface", interfaces)
+@pytest.mark.parametrize("approx_order", [2, 4])
+@pytest.mark.parametrize("strategy", ["forward", "backward", "center"])
 @pytest.mark.jax
 class TestJaxArgnums:
     """Class to test the integration of argnums (Jax) and the finite-diff transform."""
@@ -825,10 +829,6 @@ class TestJaxArgnums:
     expected_jacs = []
     interfaces = ["auto", "jax"]
 
-    @pytest.mark.parametrize("argnums", [[0], [1], [0, 1]])
-    @pytest.mark.parametrize("interface", interfaces)
-    @pytest.mark.parametrize("approx_order", [2, 4])
-    @pytest.mark.parametrize("strategy", ["forward", "backward", "center"])
     def test_single_expectation_value(self, argnums, interface, approx_order, strategy):
         import jax
         from jax.config import config
@@ -848,7 +848,7 @@ class TestJaxArgnums:
         y = jax.numpy.array(-0.654)
 
         res = qml.gradients.finite_diff(
-            circuit, argnums=argnums, approx_order=approx_order, strategy=strategy, h=10e-6
+            circuit, argnums=argnums, approx_order=approx_order, strategy=strategy, h=1e-5
         )(x, y)
 
         expected_0 = np.array([-np.sin(y) * np.sin(x[0]), 0])
@@ -862,10 +862,6 @@ class TestJaxArgnums:
             assert np.allclose(res[0], expected_0)
             assert np.allclose(res[1], expected_1)
 
-    @pytest.mark.parametrize("argnums", [[0], [1], [0, 1]])
-    @pytest.mark.parametrize("interface", interfaces)
-    @pytest.mark.parametrize("approx_order", [2, 4])
-    @pytest.mark.parametrize("strategy", ["forward", "backward", "center"])
     def test_multi_expectation_values(self, argnums, interface, approx_order, strategy):
         import jax
         from jax.config import config
@@ -885,7 +881,7 @@ class TestJaxArgnums:
         y = jax.numpy.array(-0.654)
 
         res = qml.gradients.finite_diff(
-            circuit, argnums=argnums, approx_order=approx_order, strategy=strategy, h=10e-6
+            circuit, argnums=argnums, approx_order=approx_order, strategy=strategy, h=1e-5
         )(x, y)
 
         expected_0 = np.array([[-np.sin(x[0]), 0.0], [0.0, 0.0]])
@@ -899,10 +895,6 @@ class TestJaxArgnums:
             assert np.allclose(res[0], expected_0)
             assert np.allclose(res[1], expected_1)
 
-    @pytest.mark.parametrize("argnums", [[0], [1], [0, 1]])
-    @pytest.mark.parametrize("interface", interfaces)
-    @pytest.mark.parametrize("approx_order", [2, 4])
-    @pytest.mark.parametrize("strategy", ["forward", "backward", "center"])
     def test_hessian(self, argnums, interface, approx_order, strategy):
         import jax
 
@@ -921,7 +913,7 @@ class TestJaxArgnums:
 
         res = jax.jacobian(
             qml.gradients.finite_diff(
-                circuit, approx_order=approx_order, strategy=strategy, h=10e-6
+                circuit, approx_order=approx_order, strategy=strategy, h=1e-5
             ),
             argnums=argnums,
         )(x, y)

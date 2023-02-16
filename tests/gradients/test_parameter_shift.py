@@ -2279,7 +2279,6 @@ class TestParamShiftGradients:
             return jac
 
         res = jax.jacobian(cost_fn)(params)
-        print(res)
         x, y = params
         expected = np.array(
             [
@@ -2806,8 +2805,6 @@ class TestJaxArgnums:
     expected_jacs = []
     interfaces = ["auto", "jax"]
 
-    @pytest.mark.parametrize("argnums", [[0], [1], [0, 1]])
-    @pytest.mark.parametrize("interface", interfaces)
     def test_single_expectation_value(self, argnums, interface):
         import jax
 
@@ -2836,8 +2833,6 @@ class TestJaxArgnums:
             assert np.allclose(res[0], expected_0)
             assert np.allclose(res[1], expected_1)
 
-    @pytest.mark.parametrize("argnums", [[0], [1], [0, 1]])
-    @pytest.mark.parametrize("interface", interfaces)
     def test_multi_expectation_values(self, argnums, interface):
         import jax
 
@@ -2866,8 +2861,6 @@ class TestJaxArgnums:
             assert np.allclose(res[0], expected_0)
             assert np.allclose(res[1], expected_1)
 
-    @pytest.mark.parametrize("argnums", [[0], [1], [0, 1]])
-    @pytest.mark.parametrize("interface", interfaces)
     def test_hessian(self, argnums, interface):
         import jax
 
