@@ -115,9 +115,12 @@ class RydbergMachine:
         detunings and phases acting on the given wires.
 
         Args:
-            rabi (list): list of Rabi frequency values (in MHz) of each driving laser field
-            detunings (list): list of detuning values (in MHz) of each driving laser field
-            phases (list): list of phases (in radiants) of each driving laser field
+            rabi (list): list of Rabi frequency values and/or callables returning frequency
+                values (in MHz) of each driving laser field
+            detunings (list): list of detuning values and/or callables returning detuning
+                values (in MHz) of each driving laser field
+            phases (list): list of phases and/or callables returning phase
+                values (in radiants) of each driving laser field
             wires (list): list of wire values that each laser field acts on
         """
         lengths = [len(rabi), len(detunings), len(phases), len(wires)]
