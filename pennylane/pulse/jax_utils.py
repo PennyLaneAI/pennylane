@@ -15,8 +15,6 @@
 from dataclasses import dataclass, field
 from typing import Callable, Optional, Tuple
 
-import numpy as np
-
 import pennylane as qml
 
 from .parametrized_hamiltonian import ParametrizedHamiltonian
@@ -80,24 +78,6 @@ class JaxParametrizedOperator:
 
         return JaxParametrizedOperator(fixed_mat, parametrized_mat, tuple(H.coeffs_parametrized))
 
-    @property
-    def shape(self):
-        """Returns the shape of the matrix representation of the JaxParametrizedOperator.
-
-        Returns:
-            tuple: matrix shape
-        """
-        return self.O_fixed.shape
-
-    @property
-    def ndim(self):
-        """Returns the number of dimensions of the matrix representation of the JaxParametrizedOperator.
-
-        Returns:
-            int: number of dimensions
-        """
-        return self.O_fixed.ndim
-
     def tree_flatten(self):
         """Function used by ``jax`` to flatten the JaxParametrizedOperator.
 
@@ -133,35 +113,9 @@ class JaxLazyDot:
     coeffs: Tuple[complex, ...]
     ops: Tuple[sparse.CSR, ...]
 
-    def __array__(self, dtype=None):
-        res = 0
-        for c, o in zip(self.coeffs, self.ops):
-            if hasattr(o, "todense"):
-                o = o.todense()
-            res += c * o
-        return np.asarray(res, dtype=dtype)
-
     @jax.jit
     def __matmul__(self, v):
         return sum(c * (o @ v) for c, o in zip(self.coeffs, self.ops))
-
-    @property
-    def shape(self):
-        """Returns the shape of the matrix result of the operation.
-
-        Returns:
-            tuple: result shape
-        """
-        return self.ops[0].shape
-
-    @property
-    def ndim(self):
-        """Returns the number of dimensions of the matrix result of the operation.
-
-        Returns:
-            int: number of dimensions of the result
-        """
-        return self.ops[0].ndim
 
     def tree_flatten(self):
         """Function used by ``jax`` to flatten the JaxLazyDot operation.
