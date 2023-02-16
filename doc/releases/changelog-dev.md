@@ -407,6 +407,56 @@
 
 <h3>Improvements</h3>
 
+* The `default.mixed` device received a performance improvement for multi-qubit operations.
+  This also allows to apply channels that act on more than seven qubits, which was not possible before.
+  [(#3584)](https://github.com/PennyLaneAI/pennylane/pull/3584)
+
+* `qml.dot` now groups coefficients together.
+  [(#3691)](https://github.com/PennyLaneAI/pennylane/pull/3691)
+
+  ```pycon
+  >>> qml.dot(coeffs=[2, 2, 2], ops=[qml.PauliX(0), qml.PauliY(1), qml.PauliZ(2)])
+  2*(PauliX(wires=[0]) + PauliY(wires=[1]) + PauliZ(wires=[2]))
+  ```
+
+* `qml.generator` now supports operators with `Sum` and `Prod` generators.
+  [(#3691)](https://github.com/PennyLaneAI/pennylane/pull/3691)
+
+* `Exp` operator now detects if the base is a generator, and decomposes to its corresponding operator.
+  If not, it decomposes to a `PauliRot`, or it uses the Suzuki-Trotter decomposition when necessary.
+  [(#3691)](https://github.com/PennyLaneAI/pennylane/pull/3691)
+
+  If the `base` operator is a generator of another operator, `Exp` returns this operator during decomposition:
+
+  ```pycon
+  >>> exp_op = qml.exp(qml.PauliX(0) @ qml.PauliX(1), coeff=1j)
+  >>> exp_op.decomposition()
+  [IsingXX((-2+0j), wires=[0, 1])]
+  ```
+
+  If the `base` operator is a Pauli word, `Exp` returns a `PauliRot` operator instead:
+
+  ```pycon
+  >>> qml.exp(qml.PauliZ(0) @ qml.PauliX(1), coeff=1j).decomposition()
+  [PauliRot((-2+0j), ZX, wires=[0, 1])]
+  ```
+
+  If the `base` operator is a linear combination of Hamiltonians, `Exp` uses the Suzuki-Trotter
+  algorithm to decompose the operator into a product of operators:
+
+  ```pycon
+  >>> qml.exp(qml.sum(qml.PauliX(0), qml.PauliY(1), qml.PauliZ(2)), coeff=1j, num_steps=2).decomposition()
+  [RX((-1+0j), wires=[0]),
+  RY((-1+0j), wires=[1]),
+  RZ((-1+0j), wires=[2]),
+  RX((-1+0j), wires=[0]),
+  RY((-1+0j), wires=[1]),
+  RZ((-1+0j), wires=[2])]
+  ```
+
+* `Sum._sort` method takes into account the name of the operator when sorting.
+  [(#3691)](https://github.com/PennyLaneAI/pennylane/pull/3691)
+
 * The kernel matrix utility functions in `qml.kernels` are now autodifferentiation-compatible.
   In addition they support batching, for example for quantum kernel execution with shot vectors.
   [(#3742)](https://github.com/PennyLaneAI/pennylane/pull/3742)
@@ -492,6 +542,11 @@
   `qml.gradients.SUPPORTED_GRADIENT_KWARGS`.
   [(#3526)](https://github.com/PennyLaneAI/pennylane/pull/3526)
 
+* Added `argnum` argument to `metric_tensor`. By passing a sequence of indices referring to trainable tape parameters,
+  the metric tensor is only computed with respect to these parameters. This reduces the number of tapes that have to
+  be run.
+  [(#3587)](https://github.com/PennyLaneAI/pennylane/pull/3587)
+
 * Moved `qml.utils.sparse_hamiltonian` function to `~.Hamiltonian.sparse_matrix` method.
   [(#3585)](https://github.com/PennyLaneAI/pennylane/pull/3585)
 
@@ -543,6 +598,7 @@
 * `qml.qchem.basis_rotation` now accounts for spin, allowing it to perform Basis Rotation Groupings
   for molecular hamiltonians.
   [(#3714)](https://github.com/PennyLaneAI/pennylane/pull/3714)
+  [(#3774)](https://github.com/PennyLaneAI/pennylane/pull/3774)
 
 * `QubitStateVector` now implements the `StatePrep` interface.
   [(#3685)](https://github.com/PennyLaneAI/pennylane/pull/3685)
@@ -558,9 +614,12 @@
   gates.
   [(#3743)](https://github.com/PennyLaneAI/pennylane/pull/3743)
 
-* The `qchem.Molecule` class raises an error when the molecule has an odd number of electrons or 
-  when the spin multiplicity is not 1.
-  [(#3748)](https://github.com/PennyLaneAI/pennylane/pull/3748)
+* `SProd.sparse_matrix` now supports interface-specific variables with a single element as the `scalar`.
+  [(#3770)](https://github.com/PennyLaneAI/pennylane/pull/3770)
+
+ * The `qchem.Molecule` class raises an error when the molecule has an odd number of electrons or 
+   when the spin multiplicity is not 1.
+   [(#3748)](https://github.com/PennyLaneAI/pennylane/pull/3748)
 
 * `AdaptiveOptimizer` is updated to use non-default user-defined qnode arguments.
   [(#3765)](https://github.com/PennyLaneAI/pennylane/pull/3765)
@@ -668,6 +727,9 @@
   This new function changes the sign of the given parameter.
   [(#3706)](https://github.com/PennyLaneAI/pennylane/pull/3706)
 
+* `ApproxTimeEvolution` has been deprecated. Please use `qml.evolve` instead.
+  [(#3755)](https://github.com/PennyLaneAI/pennylane/pull/3755)
+
 <h3>Documentation</h3>
 
 * Organizes the module for documentation for ``operation``.
@@ -737,6 +799,9 @@
   probabilities with the expected wire order.
   [(#3753)](https://github.com/PennyLaneAI/pennylane/pull/3753)
 
+* Ensure that a `QNode` does not return an empty iterable.
+  [(#3769)](https://github.com/PennyLaneAI/pennylane/pull/3769)
+
 <h3>Contributors</h3>
 
 This release contains contributions from (in alphabetical order):
@@ -759,4 +824,5 @@ Mudit Pandey
 Borja Requena
 Matthew Silverman
 Antal Száva
+Frederik Wilde
 David Wierichs
