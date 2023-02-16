@@ -364,21 +364,11 @@ class TestDifferentiableZNE:
     """Testing differentiable ZNE"""
 
     @pytest.mark.parametrize("lambda_", [1.0, 1.5, 1.7, 2.0, 2.5])
-    def test_correct_number_of_operators(self, lambda_):
+    @pytest.mark.parametrize("num_ops", [4, 8, 9, 12, 16])
+    def test_correct_number_of_operators(self, lambda_, num_ops):
         """Test the output corresponds to the right number of operators according to https://arxiv.org/abs/2005.10921"""
         x = np.arange(6)
-        circuit = qml.tape.QuantumScript(
-            [
-                qml.RX(x[0], wires=0),
-                qml.RY(x[1], wires=1),
-                qml.RZ(x[2], wires=2),
-                qml.CNOT(wires=(0, 1)),
-                qml.CNOT(wires=(1, 2)),
-                qml.RX(x[3], wires=0),
-                qml.RY(x[4], wires=1),
-                qml.RZ(x[5], wires=2),
-            ]
-        )
+        circuit = qml.tape.QuantumScript([qml.RX(x[0], wires=0) for i in range(num_ops)])
 
         d = len(circuit._ops)
 
