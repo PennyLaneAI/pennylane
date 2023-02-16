@@ -381,7 +381,6 @@ class TestDifferentiableZNE:
         )
 
         d = len(circuit._ops)
-        lambda_ = 1.5
 
         folded, _ = qml.transforms.fold_global(circuit, lambda_)
 
