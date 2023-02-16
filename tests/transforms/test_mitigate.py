@@ -367,8 +367,8 @@ class TestDifferentiableZNE:
     @pytest.mark.parametrize("num_ops", [4, 8, 9, 12, 16])
     def test_correct_number_of_operators(self, lambda_, num_ops):
         """Test the output corresponds to the right number of operators according to https://arxiv.org/abs/2005.10921"""
-        x = np.arange(6)
-        circuit = qml.tape.QuantumScript([qml.RX(x[0], wires=0) for i in range(num_ops)])
+        x = 0.5
+        circuit = qml.tape.QuantumScript([qml.RX(x, wires=0) for i in range(num_ops)])
 
         d = len(circuit._ops)
 
