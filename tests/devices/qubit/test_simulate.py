@@ -11,12 +11,11 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""Unit tests for create_initial_state in devices/qubit."""
+"""Unit tests for simulate in devices/qubit."""
 
 import pytest
 
 import numpy as np
-from scipy.sparse import csr_matrix
 
 import pennylane as qml
 from pennylane.devices.qubit import simulate
@@ -169,100 +168,6 @@ class TestBasicCircuit:
 
         assert qml.math.allclose(grad0[0], -tf.cos(phi))
         assert qml.math.allclose(grad1[0], -tf.sin(phi))
-
-
-class TestSpecialMeasurements:
-    # pylint: disable=too-few-public-methods
-    @pytest.mark.parametrize(
-        "obs, expected",
-        [
-            (
-                qml.Hamiltonian([-0.5, 2], [qml.PauliY(0), qml.PauliZ(0)]),
-                0.5 * np.sin(0.123) + 2 * np.cos(0.123),
-            ),
-            (
-                qml.SparseHamiltonian(
-                    csr_matrix(-0.5 * qml.PauliY(0).matrix() + 2 * qml.PauliZ(0).matrix()),
-                    wires=[0],
-                ),
-                0.5 * np.sin(0.123) + 2 * np.cos(0.123),
-            ),
-        ],
-    )
-    def test_hamiltonian_expval(self, obs, expected):
-        """Test that the `measure_hamiltonian_expval` function works correctly."""
-        ops = [qml.RX(0.123, wires=0)]
-        meas = [qml.expval(obs)]
-        qs = qml.tape.QuantumScript(ops, meas)
-        res = simulate(qs)
-        assert np.allclose(res, expected)
-
-    def test_sum_expval_tensor_contraction(self):
-        """Test that `Sum` expectation values are correct when tensor contraction
-        is used for computation."""
-        summands = (qml.prod(qml.PauliY(i), qml.PauliZ(i + 1)) for i in range(7))
-        obs = qml.sum(*summands)
-        ops = [qml.RX(0.123, wires=i) for i in range(8)]
-        meas = [qml.expval(obs)]
-        qs = qml.tape.QuantumScript(ops, meas)
-
-        res = simulate(qs)
-        expected = 7 * (-np.sin(0.123) * np.cos(0.123))
-        assert np.allclose(res, expected)
-
-    @pytest.mark.parametrize(
-        "obs, expected",
-        [
-            (qml.sum(qml.PauliY(0), qml.PauliZ(0)), -np.sin(0.123) + np.cos(0.123)),
-            (
-                qml.sum(*(qml.PauliZ(i) for i in range(8))),
-                sum(np.sin(i * np.pi / 2 + 0.123) for i in range(8)),
-            ),
-        ],
-    )
-    def test_sum_expval_eigs(self, obs, expected):
-        """Test that `Sum` expectation values are correct when eigenvalues are used
-        for computation."""
-        ops = [qml.RX(i * np.pi / 2 + 0.123, wires=i) for i in range(8)]
-        meas = [qml.expval(obs)]
-        qs = qml.tape.QuantumScript(ops, meas)
-
-        res = simulate(qs)
-        assert np.allclose(res, expected)
-
-    @pytest.mark.parametrize(
-        "obs, expected",
-        [
-            (qml.PauliZ(0), "state_diagonalizing_gates"),
-            (qml.s_prod(2.5, qml.prod(qml.PauliZ(0), qml.PauliX(1))), "state_diagonalizing_gates"),
-            (
-                qml.Hamiltonian([-0.5, 2], [qml.PauliY(0), qml.PauliZ(0)]),
-                "state_hamiltonian_expval",
-            ),
-            (
-                qml.SparseHamiltonian(
-                    csr_matrix(-0.5 * qml.PauliY(0).matrix() + 2 * qml.PauliZ(0).matrix()),
-                    wires=[0],
-                ),
-                "state_hamiltonian_expval",
-            ),
-            (
-                qml.sum(*(qml.prod(qml.PauliY(i), qml.PauliZ(i + 1)) for i in range(7))),
-                "state_hamiltonian_expval",
-            ),
-            (qml.sum(qml.PauliY(0), qml.PauliZ(0)), "state_diagonalizing_gates"),
-            (qml.sum(*(qml.PauliZ(i) for i in range(8))), "state_diagonalizing_gates"),
-        ],
-    )
-    def test_correct_expval_measurement_used(self, obs, expected, mocker):
-        """Test that the correct measurement function is used for a given observable."""
-        meas = [qml.expval(obs)]
-        qs = qml.tape.QuantumScript(measurements=meas)
-
-        spy = mocker.spy(qml.devices.qubit.measure, expected)
-        _ = simulate(qs)
-
-        spy.assert_called()
 
 
 class TestOperatorArithmetic:
