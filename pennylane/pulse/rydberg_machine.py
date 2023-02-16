@@ -121,8 +121,7 @@ class RydbergMachine:
                 values (in MHz) of each driving laser field
             detunings (list): list of detuning values and/or callables returning detuning
                 values (in MHz) of each driving laser field
-            phases (list): list of phases and/or callables returning phase
-                values (in radiants) of each driving laser field
+            phases (list): list of phase values (in radiants) of each driving laser field
             wires (list): list of wire values that each laser field acts on
         """
         lengths = [len(rabi), len(detunings), len(phases), len(wires)]
@@ -150,10 +149,7 @@ class RydbergMachine:
         self._local_drives["wires"].extend(wires)
 
     def global_drive(
-        self,
-        rabi: Union[float, Callable],
-        detuning: Union[float, Callable],
-        phase: Union[float, Callable],
+        self, rabi: Union[float, Callable], detuning: Union[float, Callable], phase: float
     ):
         """Apply ``N = len(rabi)``  global driving laser fields with the given rabi frequencies,
         detunings and phases acting on all wires.
@@ -163,8 +159,7 @@ class RydbergMachine:
                 (in MHz) of the global driving laser field
             detuning (Union[float, Callable]): detuning or callable returning detuning values
                 (in MHz) of the global driving laser field
-            phase (Union[float, Callable]): phase or callable returning phase values (in radiants)
-                of the global driving laser field
+            phase (Union[float, Callable]): phase value (in radiants) of the global driving laser field
         """
         # Update `_driving_interaction` Hamiltonian
         ops = qml.sum(
