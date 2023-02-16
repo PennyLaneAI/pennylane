@@ -1,5 +1,4 @@
 tests/data/**
-tests/devices/qubit/test_apply_operation.py
 tests/devices/test_execution_config.py
 tests/drawer/test_tape_mpl.py
 tests/measurements/test_probs.py
