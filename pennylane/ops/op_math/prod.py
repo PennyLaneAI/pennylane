@@ -355,6 +355,7 @@ class Prod(CompositeOp):
     def simplify(self) -> Union["Prod", Sum]:
         # try using pauli_rep:
         if pr := self._pauli_rep:
+            pr.simplify()
             return pr.operation(wire_order=self.wires)
 
         global_phase, factors = self._simplify_factors(factors=self.operands)

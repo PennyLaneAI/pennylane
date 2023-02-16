@@ -297,6 +297,7 @@ class Sum(CompositeOp):
     def simplify(self, cutoff=1.0e-12) -> "Sum":  # pylint: disable=arguments-differ
         # try using pauli_rep:
         if pr := self._pauli_rep:
+            pr.simplify()
             return pr.operation(wire_order=self.wires)
 
         new_summands = self._simplify_summands(summands=self.operands).get_summands(cutoff=cutoff)

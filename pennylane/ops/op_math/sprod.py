@@ -16,6 +16,7 @@ This file contains the implementation of the SProd class which contains logic fo
 computing the scalar product of operations.
 """
 from typing import Union
+from copy import copy
 
 import pennylane as qml
 import pennylane.math as qnp
@@ -138,7 +139,12 @@ class SProd(ScalarSymbolicOp):
         super().__init__(base=base, scalar=scalar, do_queue=do_queue, id=id)
 
         if (base_pauli_rep := getattr(self.base, "_pauli_rep", None)) and (self.batch_size is None):
-            pr = {pw: qnp.dot(coeff, self.scalar) for pw, coeff in base_pauli_rep.items()}
+            scalar = copy(self.scalar)
+            if qnp.get_interface(scalar) == "tensorflow" and not scalar.dtype.is_complex:
+                c = qnp.convert_like(1 + 0j, scalar)  # get a complex dtype in the same interface
+                scalar = qnp.cast_like(scalar, c)  # cast scalar to complex dtype
+
+            pr = {pw: qnp.dot(coeff, scalar) for pw, coeff in base_pauli_rep.items()}
             self._pauli_rep = qml.pauli.PauliSentence(pr)
         else:
             self._pauli_rep = None
@@ -296,6 +302,7 @@ class SProd(ScalarSymbolicOp):
         """
         # try using pauli_rep:
         if pr := self._pauli_rep:
+            pr.simplify()
             return pr.operation(wire_order=self.wires)
 
         if self.scalar == 1:

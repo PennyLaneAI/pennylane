@@ -709,8 +709,8 @@ class TestSimplify:
             qml.s_prod(-3, qml.PauliX(0)),
         )
         simplified_op = sum_op.simplify()
-        final_op = qml.s_prod(0, qml.Identity(0))
-        assert isinstance(simplified_op, qml.ops.SProd)
+        final_op = qml.Identity(0)
+        assert isinstance(simplified_op, qml.ops.Identity)
         assert simplified_op.name == final_op.name
         assert simplified_op.wires == final_op.wires
         assert simplified_op.data == final_op.data
@@ -726,6 +726,67 @@ class TestSimplify:
         assert simplified_op.wires == final_op.wires
         assert simplified_op.data == final_op.data
         assert simplified_op.arithmetic_depth == final_op.arithmetic_depth
+
+    @pytest.mark.jax
+    def test_simplify_pauli_rep_jax(self):
+        """Test that simplifying operators with a valid pauli representation works with jax interface."""
+        import jax.numpy as jnp
+
+        c1, c2, c3 = (jnp.array(1.23), jnp.array(-1.23), jnp.array(0.5))
+
+        op = qml.sum(
+            qml.s_prod(c1, qml.PauliX(0)),
+            qml.s_prod(c2, qml.PauliX(0)),
+            qml.s_prod(c3, qml.PauliZ(1)),
+        )
+        result = qml.s_prod(c3, qml.PauliZ(1))
+        simplified_op = op.simplify()
+
+        assert isinstance(simplified_op, type(result))
+        assert result.data == simplified_op.data
+        assert result.wires.toset() == simplified_op.wires.toset()
+        assert result.arithmetic_depth == simplified_op.arithmetic_depth
+
+    @pytest.mark.tf
+    def test_simplify_pauli_rep_tf(self):
+        """Test that simplifying operators with a valid pauli representation works with tf interface."""
+        import tensorflow as tf
+
+        c1, c2, c3 = (tf.Variable(1.23), tf.Variable(-1.23), tf.Variable(0.5))
+
+        op = qml.sum(
+            qml.s_prod(c1, qml.PauliX(0)),
+            qml.s_prod(c2, qml.PauliX(0)),
+            qml.s_prod(c3, qml.PauliZ(1)),
+        )
+        result = qml.s_prod(c3, qml.PauliZ(1))
+        simplified_op = op.simplify()
+
+        assert isinstance(simplified_op, type(result))
+        assert result.wires.toset() == simplified_op.wires.toset()
+        assert result.arithmetic_depth == simplified_op.arithmetic_depth
+        assert qnp.isclose(result.data[0], simplified_op.data[0])
+        assert result.data[1:] == simplified_op.data[1:]
+
+    @pytest.mark.torch
+    def test_simplify_pauli_rep_torch(self):
+        """Test that simplifying operators with a valid pauli representation works with torch interface."""
+        import torch
+
+        c1, c2, c3 = (torch.tensor(1.23), torch.tensor(-1.23), torch.tensor(0.5))
+
+        op = qml.sum(
+            qml.s_prod(c1, qml.PauliX(0)),
+            qml.s_prod(c2, qml.PauliX(0)),
+            qml.s_prod(c3, qml.PauliZ(1)),
+        )
+        result = qml.s_prod(c3, qml.PauliZ(1))
+        simplified_op = op.simplify()
+
+        assert isinstance(simplified_op, type(result))
+        assert result.data == simplified_op.data
+        assert result.wires.toset() == simplified_op.wires.toset()
+        assert result.arithmetic_depth == simplified_op.arithmetic_depth
 
 
 class TestSortWires:
