@@ -182,7 +182,7 @@ def use_style(style: str):
     * ``'sketch'``
     * ``'sketch_dark'``
     * ``'solarized_light'``
-    * ``'solarized_dark'
+    * ``'solarized_dark'``
 
     **Example**:
 
