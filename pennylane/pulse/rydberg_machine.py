@@ -13,6 +13,8 @@
 # limitations under the License.
 """This module contains the classes/functions needed to simulate the evolution of ensembles of
 individual (trapped) rydberg atoms under the excitation of several laser fields."""
+from typing import Callable, Union
+
 import numpy as np
 
 import pennylane as qml
@@ -147,14 +149,22 @@ class RydbergMachine:
         self._local_drives["phases"].extend(phases)
         self._local_drives["wires"].extend(wires)
 
-    def global_drive(self, rabi: float, detuning: float, phase: float):
+    def global_drive(
+        self,
+        rabi: Union[float, Callable],
+        detuning: Union[float, Callable],
+        phase: Union[float, Callable],
+    ):
         """Apply ``N = len(rabi)``  global driving laser fields with the given rabi frequencies,
         detunings and phases acting on all wires.
 
         Args:
-            rabi (float): rabi frequency (in MHz) of the global driving laser field
-            detuning (float): detuning (in MHz) of the global driving laser field
-            phase (float): phase (in radiants) of the global driving laser field
+            rabi (Union[float, Callable]): rabi frequency or callable returning frequency values
+                (in MHz) of the global driving laser field
+            detuning (Union[float, Callable]): detuning or callable returning detuning values
+                (in MHz) of the global driving laser field
+            phase (Union[float, Callable]): phase or callable returning phase values (in radiants)
+                of the global driving laser field
         """
         # Update `_driving_interaction` Hamiltonian
         ops = qml.sum(
