@@ -278,10 +278,13 @@ class gradient_transform(qml.batch_transform):
         # to take into account that classical processing may be present
         # inside the QNode.
         hybrid = tkwargs.pop("hybrid", self.hybrid)
+        argnums = tkwargs.pop("argnums", None)
 
         _wrapper = super().default_qnode_wrapper(qnode, targs, tkwargs)
 
-        cjac_fn = qml.transforms.classical_jacobian(qnode, expand_fn=expand_invalid_trainable)
+        cjac_fn = qml.transforms.classical_jacobian(
+            qnode, argnum=argnums, expand_fn=expand_invalid_trainable
+        )
 
         def jacobian_wrapper(
             *args, **kwargs
@@ -301,6 +304,9 @@ class gradient_transform(qml.batch_transform):
 
             kwargs.pop("shots", False)
             cjac = cjac_fn(*args, **kwargs)
+
+            if isinstance(cjac, tuple) and len(cjac) == 1:
+                cjac = cjac[0]
 
             if qml.active_return():
                 if not isinstance(cjac, tuple):
@@ -333,12 +339,18 @@ class gradient_transform(qml.batch_transform):
                     return jacs
                 if not multi_meas and multi_params:
                     jacs = tuple(
-                        qml.math.tensordot(qjac, c, [[0], [0]]) for c in cjac if c is not None
+                        qml.math.tensordot(qml.math.stack(qjac), c, [[0], [0]])
+                        for c in cjac
+                        if c is not None
                     )
                     return jacs
                 # Multi measurement and multi params
                 jacs = tuple(
-                    tuple(qml.math.tensordot(q, c, [[0], [0]]) for c in cjac if c is not None)
+                    tuple(
+                        qml.math.tensordot(qml.math.stack(q), c, [[0], [0]])
+                        for c in cjac
+                        if c is not None
+                    )
                     for q in qjac
                 )
                 return jacs
