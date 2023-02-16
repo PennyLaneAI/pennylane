@@ -218,7 +218,7 @@ class DefaultQubitJax(DefaultQubit):
 
         with jax.ensure_compile_time_eval():
             H_jax = ParametrizedHamiltonianPytree.from_hamiltonian(
-                operation.H, dense=len(self.wires) > 4, wire_order=self.wires
+                operation.H, dense=len(operation.wires) > 4, wire_order=self.wires
             )
 
         def fun(y, t):
