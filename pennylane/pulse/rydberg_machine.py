@@ -39,11 +39,12 @@ class RydbergMachine:
     def __init__(
         self, coordinates: list, wires: list = None, interaction_coeff: float = 862690 * np.pi
     ) -> None:
+        wires = Wires(wires or range(len(coordinates)))
         if len(coordinates) != len(wires):
             raise ValueError("Coordinates and wires must have the same length.")
         self.coordinates = coordinates
         self.interaction_coeff = interaction_coeff
-        self.wires = Wires(wires) or Wires(range(len(coordinates)))
+        self.wires = wires
         self._rydberg_interaction = None
         self._driving_interaction = ParametrizedHamiltonian([], [])
         # The following 2 dictionaries are only needed to be able to run these laser drivings in hardware
