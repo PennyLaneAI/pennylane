@@ -385,7 +385,7 @@ class TestDifferentiableZNE:
             return qml.expval(qml.PauliZ(0))
 
         res = [
-            fold_global(circuit, scale_factor=scale_factor)(w1, w2) for scale_factor in range(1, 5)
+            fold_global(circuit, scale_factor=scale_factor)(w1, w2) for scale_factor in [1., 1.5, 2., 2.5, 3.]
         ]
         # res = [qml.execute([folded], dev, None) for folded in folded_qnodes]
         assert np.allclose(res, 1)
