@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-This module contains functions for computing the parameter-shift gradient
+This module contains functions for computing the Hadamard-test gradient
 of a qubit-based quantum tape.
 """
 import pennylane as qml

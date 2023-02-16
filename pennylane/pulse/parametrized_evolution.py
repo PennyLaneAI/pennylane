@@ -29,7 +29,7 @@ has_jax = True
 try:
     import jax.numpy as jnp
     from jax.experimental.ode import odeint
-except ImportError as e:
+except ImportError as jax_import_error:
     has_jax = False
 
 
@@ -248,6 +248,7 @@ class ParametrizedEvolution(Operation):
 
     _name = "ParametrizedEvolution"
     num_wires = AnyWires
+    grad_method = "A"
 
     # pylint: disable=too-many-arguments
 
@@ -263,8 +264,8 @@ class ParametrizedEvolution(Operation):
         if not has_jax:
             raise ImportError(
                 "Module jax is required for the ``ParametrizedEvolution`` class. "
-                "You can install jax via: pip install jax"
-            )
+                "You can install jax via: pip install jax jaxlib"
+            ) from jax_import_error
         if not all(op.has_matrix or isinstance(op, qml.Hamiltonian) for op in H.ops):
             raise ValueError(
                 "All operators inside the parametrized hamiltonian must have a matrix defined."

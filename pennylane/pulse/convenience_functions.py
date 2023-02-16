@@ -157,7 +157,7 @@ def rect(x: Union[float, Callable], windows: List[Tuple[float]] = None):
     if not has_jax:
         raise ImportError(
             "Module jax is required for any pulse-related convenience function. "
-            "You can install jax via: pip install jax"
+            "You can install jax via: pip install jax jaxlib"
         )
     if not callable(x):
 
@@ -261,7 +261,7 @@ def pwc(timespan):
     if not has_jax:
         raise ImportError(
             "Module jax is required for any pulse-related convenience function. "
-            "You can install jax via: pip install jax"
+            "You can install jax via: pip install jax jaxlib"
         )
 
     if isinstance(timespan, (tuple, list)):
@@ -335,7 +335,7 @@ def pwc_from_function(timespan, num_bins):
     if not has_jax:
         raise ImportError(
             "Module jax is required for any pulse-related convenience function. "
-            "You can install jax via: pip install jax"
+            "You can install jax via: pip install jax jaxlib"
         )
 
     if isinstance(timespan, tuple):

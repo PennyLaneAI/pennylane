@@ -33,6 +33,7 @@ SUPPORTED_GRADIENT_KWARGS = [
     "n",
     "num",
     "num_directions",
+    "num_samples",
     "off_diagonal_shifts",
     "order",
     "reduction",
