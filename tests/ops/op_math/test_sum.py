@@ -709,7 +709,7 @@ class TestSimplify:
             qml.s_prod(-3, qml.PauliX(0)),
         )
         simplified_op = sum_op.simplify()
-        final_op = qml.Identity(0)
+        final_op = qml.s_prod(0, qml.Identity(0))
         assert isinstance(simplified_op, qml.ops.Identity)
         assert simplified_op.name == final_op.name
         assert simplified_op.wires == final_op.wires
