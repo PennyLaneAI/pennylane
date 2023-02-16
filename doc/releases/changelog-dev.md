@@ -405,6 +405,7 @@
   The function only supports state based measurements with either no observables, observables with diagonalizing gates, and Hamiltonian expectation values.
   It supports simultanous measurement of non-commuting observables.
   [(#3700)](https://github.com/PennyLaneAI/pennylane/pull/3700)
+  [(#3759)](https://github.com/PennyLaneAI/pennylane/pull/3759)
 
 <h3>Improvements</h3>
 

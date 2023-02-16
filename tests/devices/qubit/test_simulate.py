@@ -200,14 +200,14 @@ class TestSpecialMeasurements:
     def test_sum_expval_tensor_contraction(self):
         """Test that `Sum` expectation values are correct when tensor contraction
         is used for computation."""
-        summands = (qml.prod(qml.PauliX(i), qml.PauliZ(i + 1)) for i in range(7))
+        summands = (qml.prod(qml.PauliY(i), qml.PauliZ(i + 1)) for i in range(7))
         obs = qml.sum(*summands)
         ops = [qml.RX(0.123, wires=i) for i in range(8)]
         meas = [qml.expval(obs)]
         qs = qml.tape.QuantumScript(ops, meas)
 
         res = simulate(qs)
-        expected = 0
+        expected = 7 * (-np.sin(0.123) * np.cos(0.123))
         assert np.allclose(res, expected)
 
     @pytest.mark.parametrize(
