@@ -73,6 +73,8 @@ def execute(tapes, device, execute_fn, gradient_fn, gradient_kwargs, _n=1, max_d
         the returned list corresponds in order to the provided tapes.
     """
     if qml.active_return():
+        grad_on_execution = mode in ["forward"]
+
         return _execute_new(
             tapes,
             device,
@@ -81,7 +83,7 @@ def execute(tapes, device, execute_fn, gradient_fn, gradient_kwargs, _n=1, max_d
             gradient_kwargs,
             _n=_n,
             max_diff=max_diff,
-            mode=mode,
+            grad_on_execution=grad_on_execution,
         )
 
     all_params = []
@@ -268,7 +270,14 @@ def execute(tapes, device, execute_fn, gradient_fn, gradient_kwargs, _n=1, max_d
 
 
 def _execute_new(
-    tapes, device, execute_fn, gradient_fn, gradient_kwargs, _n=1, max_diff=2, mode=None
+    tapes,
+    device,
+    execute_fn,
+    gradient_fn,
+    gradient_kwargs,
+    _n=1,
+    max_diff=2,
+    grad_on_execution=None,
 ):
     """Execute a batch of tapes with TensorFlow parameters on a device.
 
@@ -290,8 +299,7 @@ def _execute_new(
             the maximum number of derivatives to support. Increasing this value allows
             for higher order derivatives to be extracted, at the cost of additional
             (classical) computational overhead during the backwards pass.
-        mode (str): Whether the gradients should be computed on the forward
-            pass (``forward``) or the backward pass (``backward``).
+        grad_on_execution (bool): Whether the gradients should be computed on execution or not.
 
     Returns:
         list[list[tf.Tensor]]: A nested list of tape results. Each element in
@@ -329,7 +337,7 @@ def _execute_new(
 
     total_measurements = sum(len(tape.measurements) for tape in tapes)
 
-    if mode == "forward":
+    if grad_on_execution:
         output_types += [tf.float64] * len(trainable)
 
     output_types += [tf.int32] * (total_measurements * num_shot_copies)
@@ -373,7 +381,7 @@ def _execute_new(
         res = tf.numpy_function(func=_forward, inp=all_params, Tout=output_types)
         output_sizes = res[-total_measurements * num_shot_copies :]
 
-        if mode == "forward":
+        if grad_on_execution:
             jacs = res[total_measurements * num_shot_copies : -total_measurements * num_shot_copies]
 
         res = res[: total_measurements * num_shot_copies]
@@ -389,8 +397,8 @@ def _execute_new(
             multi_measurements = [len(tape.measurements) > 1 for tape in tapes]
             dy = list(dy[: total_measurements * num_shot_copies])
 
-            if mode == "forward":
-                # Jacobians were computed on the forward pass (mode="forward")
+            if grad_on_execution:
+                # Jacobians were computed on the forward pass (grad_on_execution=True)
                 # No additional quantum evaluations needed; simply compute the VJPs directly.
 
                 def _backward(*args):
@@ -459,6 +467,8 @@ def _execute_new(
                         # This is where the magic happens. Note that we call ``execute``.
                         # This recursion, coupled with the fact that the gradient transforms
                         # are differentiable, allows for arbitrary order differentiation.
+                        mode = "forward" if grad_on_execution else "backward"
+
                         vjps = processing_fn(
                             execute(
                                 vjp_tapes,

@@ -3583,9 +3583,10 @@ class IsingXY(Operation):
     parameter_frequencies = [(0.5, 1.0)]
 
     def generator(self):
-        return 0.25 * qml.PauliX(wires=self.wires[0]) @ qml.PauliX(
-            wires=self.wires[1]
-        ) + 0.25 * qml.PauliY(wires=self.wires[0]) @ qml.PauliY(wires=self.wires[1])
+        return 0.25 * (
+            qml.PauliX(wires=self.wires[0]) @ qml.PauliX(wires=self.wires[1])
+            + qml.PauliY(wires=self.wires[0]) @ qml.PauliY(wires=self.wires[1])
+        )
 
     def __init__(self, phi, wires, do_queue=True, id=None):
         super().__init__(phi, wires=wires, do_queue=do_queue, id=id)

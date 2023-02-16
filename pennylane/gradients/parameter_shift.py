@@ -587,6 +587,8 @@ def _expval_param_shift_tuple(
 
         return tuple(grads)
 
+    processing_fn.first_result_unshifted = at_least_one_unshifted
+
     return gradient_tapes, processing_fn
 
 
@@ -737,6 +739,8 @@ def expval_param_shift(
                 grads[i] = qml.math.hstack(g)
 
         return qml.math.T(qml.math.stack(grads))
+
+    processing_fn.first_result_unshifted = at_least_one_unshifted
 
     return gradient_tapes, processing_fn
 
@@ -893,7 +897,7 @@ def _create_variance_proc_fn(
         shot_vector = isinstance(shots, Sequence)
 
         # analytic derivative of <A>
-        pdA = pdA_fn(results[1:tape_boundary])
+        pdA = pdA_fn(results[int(not pdA_fn.first_result_unshifted) : tape_boundary])
 
         # analytic derivative of <A^2>
         pdA2 = _get_pdA2(
@@ -969,8 +973,6 @@ def _var_param_shift_tuple(
     # Get <A>, the expectation value of the tape with unshifted parameters.
     expval_tape = tape.copy(copy_operations=True)
 
-    gradient_tapes = [expval_tape]
-
     # Convert all variance measurements on the tape into expectation values
     for i in var_indices:
         obs = expval_tape._measurements[i].obs
@@ -980,11 +982,12 @@ def _var_param_shift_tuple(
     pdA_tapes, pdA_fn = expval_param_shift(
         expval_tape, argnum, shifts, gradient_recipes, f0, broadcast, shots
     )
+    gradient_tapes = [] if pdA_fn.first_result_unshifted else [expval_tape]
     gradient_tapes.extend(pdA_tapes)
 
     # Store the number of first derivative tapes, so that we know
     # the number of results to post-process later.
-    tape_boundary = len(pdA_tapes) + 1
+    tape_boundary = len(gradient_tapes)
 
     # If there are non-involutory observables A present, we must compute d<A^2>/dp.
     # Get the indices in the measurement queue of all non-involutory
@@ -1020,9 +1023,6 @@ def _var_param_shift_tuple(
         )
         gradient_tapes.extend(pdA2_tapes)
 
-    # Store the number of first derivative tapes, so that we know
-    # the number of results to post-process later.
-    tape_boundary = len(pdA_tapes) + 1
     processing_fn = _create_variance_proc_fn(
         tape, var_mask, var_indices, pdA_fn, pdA2_fn, tape_boundary, non_involutory_indices, shots
     )
@@ -1076,8 +1076,6 @@ def var_param_shift(
     # Get <A>, the expectation value of the tape with unshifted parameters.
     expval_tape = tape.copy(copy_operations=True)
 
-    gradient_tapes = [expval_tape]
-
     # Convert all variance measurements on the tape into expectation values
     for i in var_idx:
         obs = expval_tape._measurements[i].obs
@@ -1087,11 +1085,12 @@ def var_param_shift(
     pdA_tapes, pdA_fn = expval_param_shift(
         expval_tape, argnum, shifts, gradient_recipes, f0, broadcast
     )
+    gradient_tapes = [] if pdA_fn.first_result_unshifted else [expval_tape]
     gradient_tapes.extend(pdA_tapes)
 
     # Store the number of first derivative tapes, so that we know
     # the number of results to post-process later.
-    tape_boundary = len(pdA_tapes) + 1
+    tape_boundary = len(gradient_tapes)
 
     # If there are non-involutory observables A present, we must compute d<A^2>/dp.
     # Get the indices in the measurement queue of all non-involutory
@@ -1153,7 +1152,7 @@ def var_param_shift(
         f0 = qml.math.expand_dims(res, -1)
         mask = qml.math.convert_like(qml.math.reshape(mask, qml.math.shape(f0)), res)
 
-        pdA = pdA_fn(results[1:tape_boundary])
+        pdA = pdA_fn(results[int(not pdA_fn.first_result_unshifted) : tape_boundary])
         pdA2 = 0
 
         if non_involutory:

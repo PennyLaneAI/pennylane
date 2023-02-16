@@ -18,11 +18,14 @@ import numpy as np
 
 import pennylane as qml
 from pennylane.devices import DefaultQubit
+from pennylane.pulse import ParametrizedEvolution
+from pennylane.typing import TensorLike
 
 try:
-    import jax.numpy as jnp
     import jax
+    import jax.numpy as jnp
     from jax.config import config as jax_config
+    from jax.experimental.ode import odeint
 
 except ImportError as e:  # pragma: no cover
     raise ImportError("default.qubit.jax device requires installing jax>0.2.0") from e
@@ -169,6 +172,7 @@ class DefaultQubitJax(DefaultQubit):
         del self._apply_ops["PauliY"]
         del self._apply_ops["Hadamard"]
         del self._apply_ops["CZ"]
+        self.operations.add("ParametrizedEvolution")
         self._prng_key = prng_key
 
     @classmethod
@@ -176,6 +180,46 @@ class DefaultQubitJax(DefaultQubit):
         capabilities = super().capabilities().copy()
         capabilities.update(passthru_interface="jax")
         return capabilities
+
+    def _apply_parametrized_evolution(self, state: TensorLike, operation: ParametrizedEvolution):
+        # given that wires is a static value (it is not a tracer), we can use an if statement
+        if 2 * len(operation.wires) > self.num_wires:
+            # the device state vector contains less values than the operation matrix --> evolve state
+            return self._evolve_state_vector_under_parametrized_evolution(state, operation)
+        # the device state vector contains more/equal values than the operation matrix --> evolve matrix
+        return self._apply_operation(state, operation)
+
+    def _evolve_state_vector_under_parametrized_evolution(
+        self, state: TensorLike, operation: ParametrizedEvolution
+    ):
+        """Uses an odeint solver to compute the evolution of the input ``state`` under the given
+        ``ParametrizedEvolution`` operation.
+
+        Args:
+            state (array[complex]): input state
+            operation (ParametrizedEvolution): operation to apply on the state
+
+        Raises:
+            ValueError: If the parameters and time windows of the ``ParametrizedEvolution`` are
+                not defined.
+
+        Returns:
+            _type_: _description_
+        """
+        if operation.data is None or operation.t is None:
+            raise ValueError(
+                "The parameters and the time window are required to execute a ParametrizedEvolution "
+                "You can update these values by calling the ParametrizedEvolution class: EV(params, t)."
+            )
+
+        state = self._flatten(state)
+
+        def fun(y, t):
+            """dy/dt = -i H(t) y"""
+            return -1j * qml.matrix(operation.H(operation.data, t=t), wire_order=self.wires) @ y
+
+        result = odeint(fun, state, operation.t, **operation.odeint_kwargs)
+        return self._reshape(result[-1], [2] * self.num_wires)
 
     @staticmethod
     def _scatter(indices, array, new_dimensions):

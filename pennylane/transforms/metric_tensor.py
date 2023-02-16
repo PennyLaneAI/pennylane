@@ -38,7 +38,7 @@ def expand_fn(
 @functools.partial(batch_transform, expand_fn=expand_fn)
 def metric_tensor(
     tape, argnum=None, approx=None, allow_nonunitary=True, aux_wire=None, device_wires=None
-):
+):  # pylint: disable=too-many-arguments
     r"""Returns a function that computes the metric tensor of a given QNode or quantum tape.
 
     The metric tensor convention we employ here has the following form:
@@ -253,6 +253,41 @@ def metric_tensor(
 
         This means that in total only the tapes for the first terms of the off block-diagonal
         are required in addition to the circuits for the block diagonal.
+
+        .. warning::
+
+            The ``argnum`` argument can be used to restrict the parameters which are taken into account
+            for computing the metric tensor.
+            When the metric tensor of a QNode is computed, the ordering of the parameters has to be
+            specified as they appear in the corresponding QuantumTape.
+
+        **Example**
+
+        Consider the following QNode in which parameters are used out of order:
+
+        .. code-block:: python
+
+            >>> dev = qml.device("default.qubit", wires=3)
+            >>> @qml.qnode(dev, interface="autograd")
+            >>> def circuit(weights):  # , extra_weight):
+            ...     qml.RX(weights[1], wires=0)
+            ...     qml.RY(weights[0], wires=0)
+            ...     qml.CNOT(wires=[0, 1])
+            ...     qml.RZ(weights[2], wires=1)
+            ...     qml.RZ(weights[3], wires=0)
+            ...     return qml.expval(qml.PauliZ(0))
+
+            >>> mt = qml.metric_tensor(circuit, argnum=(0, 2, 3))(weights)
+            >>> print(mt)
+            [[ 0.          0.          0.          0.        ]
+            [ 0.          0.25       -0.02495835 -0.02495835]
+            [ 0.         -0.02495835  0.01226071  0.01226071]
+            [ 0.         -0.02495835  0.01226071  0.01226071]]
+
+        Because the 0-th element of ``weights`` appears second in the QNode and therefore in the
+        underlying tape, it is the 1st tape parameter.
+        By setting ``argnum = (0, 2, 3)`` we exclude the 0-th element of ``weights`` from the computation
+        of the metric tensor and not the 1st element, as one might expect.
     """
     if not tape.trainable_params:
         warnings.warn(
@@ -406,7 +441,7 @@ def qnode_execution_wrapper(self, qnode, targs, tkwargs):
     return wrapper
 
 
-def _metric_tensor_cov_matrix(tape, argnum, diag_approx):
+def _metric_tensor_cov_matrix(tape, argnum, diag_approx):  # pylint: disable=too-many-statements
     r"""This is the metric tensor method for the block diagonal, using
     the covariance matrix of the generators of each layer.
 
@@ -428,6 +463,8 @@ def _metric_tensor_cov_matrix(tape, argnum, diag_approx):
         list[list[bool]]: Each inner list corresponds to one tape and therefore also one parametrized
             layer and its elements determine whether a trainable parameter in that layer is
             contained in ``argnum``.
+        list[None, int]: Id list representing the layer for each parameter.
+        list[None, int]: Id list representing the observables for each parameter.
 
 
     This method assumes the ``generator`` of all parametrized operations with respect to
@@ -442,24 +479,36 @@ def _metric_tensor_cov_matrix(tape, argnum, diag_approx):
     coeffs_list = []
     params_list = []
     in_argnum_list = []
+    layers_ids = []
+    obs_ids = []
 
+    i = 0
     for queue, curr_ops, param_idx, _ in graph.iterate_parametrized_layers():
         params_list.append(param_idx)
         in_argnum_list.append([p in argnum for p in param_idx])
 
         if not any(in_argnum_list[-1]):
+            layers_ids.extend([None] * len(in_argnum_list[-1]))
+            obs_ids.extend([None] * len(in_argnum_list[-1]))
             # no tape needs to be created for this block
             continue
 
         layer_coeffs, layer_obs = [], []
 
-        # for each operation in the layer, get the generatorn_argnum_list = []
+        # for each operation in the layer, get the generator
+        j = 0
         for p, op in zip(param_idx, curr_ops):
+            layers_ids.append(i)
             if p in argnum:
                 obs, s = qml.generator(op)
                 layer_obs.append(obs)
                 layer_coeffs.append(s)
-
+                obs_ids.append(j)
+                j = j + 1
+            else:
+                obs_ids.append(None)
+        i = i + 1
+        
         coeffs_list.append(layer_coeffs)
         obs_list.append(layer_obs)
 
@@ -513,7 +562,15 @@ def _metric_tensor_cov_matrix(tape, argnum, diag_approx):
         # create the block diagonal metric tensor
         return qml.math.block_diag(gs)
 
-    return metric_tensor_tapes, processing_fn, obs_list, coeffs_list, in_argnum_list
+    return (
+        metric_tensor_tapes,
+        processing_fn,
+        obs_list,
+        coeffs_list,
+        in_argnum_list,
+        layers_ids,
+        obs_ids,
+    )
 
 
 @functools.lru_cache()
@@ -618,7 +675,9 @@ def _get_first_term_tapes(layer_i, layer_j, allow_nonunitary, aux_wire):
     return tapes, ids
 
 
-def _metric_tensor_hadamard(tape, argnum, allow_nonunitary, aux_wire, device_wires):
+def _metric_tensor_hadamard(
+    tape, argnum, allow_nonunitary, aux_wire, device_wires
+):  # pylint: disable=too-many-statements
     r"""Generate the quantum tapes that execute the Hadamard tests
     to compute the first term of off block-diagonal metric entries
     and combine them with the covariance matrix-based block-diagonal tapes.
@@ -643,9 +702,15 @@ def _metric_tensor_hadamard(tape, argnum, allow_nonunitary, aux_wire, device_wir
     """
     # Get tapes and processing function for the block-diagonal metric tensor,
     # as well as the generator observables and generator coefficients for each diff'ed operation
-    diag_tapes, diag_proc_fn, obs_list, coeffs_list, in_argnum_list = _metric_tensor_cov_matrix(
-        tape, argnum, diag_approx=False
-    )
+    (
+        diag_tapes,
+        diag_proc_fn,
+        obs_list,
+        coeffs_list,
+        in_argnum_list,
+        layer_ids,
+        obs_ids,
+    ) = _metric_tensor_cov_matrix(tape, argnum, diag_approx=False)
 
     # Obtain layers of parametrized operations and account for the discrepancy between trainable
     # and non-trainable parameter indices
@@ -725,29 +790,15 @@ def _metric_tensor_hadamard(tape, argnum, allow_nonunitary, aux_wire, device_wir
 
         # Second terms of off block-diagonal metric tensor
         expvals = qml.math.zeros_like(first_term[0])
-        idx = 0
-        layer_i = 0
-        for in_argnum in in_argnum_list:
-            obs_i = 0
-            if not any(in_argnum):
-                idx += len(in_argnum)
-                continue
 
-            for param_in_argnum in in_argnum:
-                if not param_in_argnum:
-                    idx += 1
-                    continue
-
+        for i, (layer_i, obs_i) in enumerate(zip(layer_ids, obs_ids)):
+            if layer_i is not None and obs_i is not None:
                 prob = diag_res[layer_i]
                 o = obs_list[layer_i][obs_i]
                 l = qml.math.cast(o.eigvals(), dtype=np.float64)
                 w = tape.wires.indices(o.wires)
                 p = qml.math.marginal_prob(prob, w)
-                expvals = qml.math.scatter_element_add(expvals, (idx,), qml.math.dot(l, p))
-                idx += 1
-                obs_i += 1
-
-            layer_i += 1
+                expvals = qml.math.scatter_element_add(expvals, (i,), qml.math.dot(l, p))
 
         # Construct <\partial_i\psi|\psi><\psi|\partial_j\psi> and mask it
         second_term = qml.math.tensordot(expvals, expvals, axes=0) * mask
@@ -759,8 +810,7 @@ def _metric_tensor_hadamard(tape, argnum, allow_nonunitary, aux_wire, device_wir
         coeffs_gen = (c for c in qml.math.hstack(coeffs_list))
         # flattened coeffs_list but also with 0s where parameters are not in argnum
         extended_coeffs_list = [
-            next(coeffs_gen)
-            if param_in_argnum else 0.0
+            next(coeffs_gen) if param_in_argnum else 0.0
             for param_in_argnum in qml.math.hstack(in_argnum_list)
         ]
 
