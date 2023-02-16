@@ -610,19 +610,30 @@ class TestJVP:
         assert func([]).dtype == dtype
 
 
-def expected(params):
+def expected_probs(params):
     """Expected result of the below circuit ansatz."""
-    x, y = params
-    x = 1.0 * x
-    y = 1.0 * y
+    x, y = params[..., 0], params[..., 1]
+    c_x, s_x = np.cos(x / 2), np.sin(x / 2)
+    c_y, s_y = np.cos(y / 2), np.sin(y / 2)
     # Transpose to put potential broadcasting axis first
-    return np.array([-np.sin(x / 2) * np.cos(x / 2), 0.0 * x * y, 0.0 * x * y, np.sin(x / 2) * np.cos(x / 2)]).T
+    return np.array([c_x * c_y, c_x * s_y, s_x * s_y, s_x * c_y]).T ** 2
+
+
+def expected_jvp(params, tangent):
+    """Expected result of the JVP of the below circuit ansatz."""
+    j = qml.jacobian(expected_probs)(params)
+    if qml.math.ndim(params) > 1:
+        # If there is broadcasting, take the diagonal over
+        # the two axes corresponding to broadcasting
+        j = np.stack([j[i, :, i, :] for i in range(len(j))])
+
+    return np.tensordot(j, tangent, axes=1)
 
 
 def ansatz(x, y):
     """Circuit ansatz for gradient tests"""
     qml.RX(x, wires=[0])
-    qml.RZ(y, wires=[1])
+    qml.RY(y, wires=[1])
     qml.CNOT(wires=[0, 1])
     qml.probs(wires=[0, 1])
 
@@ -636,17 +647,14 @@ class TestJVPGradients:
         """Tests that the output of the JVP transform
         can be differentiated using autograd."""
         dev = qml.device("default.qubit.autograd", wires=2)
-        if batch_dim is None:
-            params = np.array([0.543, -0.654], requires_grad=True)
-        else:
-            params = (
-                np.arange(1, 1 + batch_dim, requires_grad=True) * 0.543,
-                np.array(-0.654, requires_grad=True),
-            )
+        params = np.array([0.543, -0.654], requires_grad=True)
+        if batch_dim is not None:
+            params = np.outer(np.arange(1, 1 + batch_dim), params, requires_grad=True)
+        tangent = np.array([1.0, 0.3], requires_grad=False)
 
-        def cost_fn(x, tangent):
+        def cost_fn(params, tangent):
             with qml.queuing.AnnotatedQueue() as q:
-                ansatz(*x)
+                ansatz(params[..., 0], params[..., 1])
 
             tape = qml.tape.QuantumScript.from_queue(q)
             tape.trainable_params = {0, 1}
@@ -654,76 +662,87 @@ class TestJVPGradients:
             jvp = fn(dev.batch_execute(tapes))
             return jvp
 
-        tangent = np.array([1.0, 0.3], requires_grad=False)
-
         res = cost_fn(params, tangent)
-        assert np.allclose(res, expected(params), atol=tol, rtol=0)
+        exp = expected_jvp(params, tangent)
+        assert np.allclose(res, exp, atol=tol, rtol=0)
 
         res = qml.jacobian(cost_fn)(params, tangent)
-        assert np.allclose(res, qml.jacobian(expected)(params), atol=tol, rtol=0)
+        exp = qml.jacobian(expected_jvp)(params, tangent)
+        assert np.allclose(res, exp, atol=tol, rtol=0)
 
     @pytest.mark.torch
-    def test_torch(self, tol):
+    @pytest.mark.parametrize("batch_dim", [None, 1, 3])
+    def test_torch(self, tol, batch_dim):
         """Tests that the output of the JVP transform
         can be differentiated using Torch."""
         import torch
 
-        dev = qml.device("default.qubit", wires=2)
+        dev = qml.device("default.qubit.torch", wires=2)
 
         params_np = np.array([0.543, -0.654], requires_grad=True)
+        if batch_dim is not None:
+            params_np = np.outer(np.arange(1, 1 + batch_dim), params_np, requires_grad=True)
+        tangent_np = np.array([1.2, -0.3], requires_grad=False)
         params = torch.tensor(params_np, requires_grad=True, dtype=torch.float64)
-        tangent = torch.tensor([1.0, 0.0], dtype=torch.float64)
+        tangent = torch.tensor(tangent_np, requires_grad=False, dtype=torch.float64)
 
-        with qml.queuing.AnnotatedQueue() as q:
-            ansatz(params[0], params[1])
-
-        tape = qml.tape.QuantumScript.from_queue(q)
-        tape.trainable_params = {0, 1}
-        tapes, fn = qml.gradients.jvp(tape, tangent, param_shift)
-        jvp = fn(qml.execute(tapes, dev, qml.gradients.param_shift))
-
-        assert np.allclose(jvp.detach(), expected(params.detach()), atol=tol, rtol=0)
-
-        cost = jvp[0]
-        cost.backward()
-
-        exp = qml.jacobian(lambda x: expected(x)[0])(params_np)
-        assert np.allclose(params.grad, exp, atol=tol, rtol=0)
-
-    @pytest.mark.tf
-    @pytest.mark.slow
-    def test_tf(self, tol):
-        """Tests that the output of the JVP transform
-        can be differentiated using TF."""
-        import tensorflow as tf
-
-        dev = qml.device("default.qubit.tf", wires=2)
-
-        params_np = np.array([0.543, -0.654], requires_grad=True)
-        params = tf.Variable(params_np, dtype=tf.float64)
-        tangent = tf.constant(
-            [
-                1.0,
-                0.0,
-            ],
-            dtype=tf.float64,
-        )
-
-        with tf.GradientTape() as t:
+        def cost_fn(params, tangent):
             with qml.queuing.AnnotatedQueue() as q:
-                ansatz(params[0], params[1])
+                ansatz(params[..., 0], params[..., 1])
 
             tape = qml.tape.QuantumScript.from_queue(q)
             tape.trainable_params = {0, 1}
             tapes, fn = qml.gradients.jvp(tape, tangent, param_shift)
             jvp = fn(dev.batch_execute(tapes))
-        assert np.allclose(jvp, expected(params), atol=tol, rtol=0)
+            return jvp
 
-        res = t.jacobian(jvp, params)
-        assert np.allclose(res, qml.jacobian(expected)(params_np), atol=tol, rtol=0)
+        res = cost_fn(params, tangent)
+        exp = expected_jvp(params_np, tangent_np)
+        assert np.allclose(res.detach(), exp, atol=tol, rtol=0)
+
+        res = torch.autograd.functional.jacobian(cost_fn, (params, tangent))[0]
+        exp = qml.jacobian(expected_jvp)(params_np, tangent_np)
+        assert np.allclose(res, exp, atol=tol, rtol=0)
+
+    @pytest.mark.tf
+    @pytest.mark.slow
+    @pytest.mark.parametrize("batch_dim", [None, 1, 3])
+    def test_tf(self, tol, batch_dim):
+        """Tests that the output of the JVP transform
+        can be differentiated using Tensorflow."""
+        import tensorflow as tf
+
+        dev = qml.device("default.qubit.tf", wires=2)
+        params_np = np.array([0.543, -0.654], requires_grad=True)
+        if batch_dim is not None:
+            params_np = np.outer(np.arange(1, 1 + batch_dim), params_np, requires_grad=True)
+        tangent_np = np.array([1.2, -0.3], requires_grad=False)
+        params = tf.Variable(params_np, dtype=tf.float64)
+        tangent = tf.constant(tangent_np, dtype=tf.float64)
+
+        def cost_fn(params, tangent):
+            with qml.queuing.AnnotatedQueue() as q:
+                ansatz(params[..., 0], params[..., 1])
+
+            tape = qml.tape.QuantumScript.from_queue(q)
+            tape.trainable_params = {0, 1}
+            tapes, fn = qml.gradients.jvp(tape, tangent, param_shift)
+            jvp = fn(dev.batch_execute(tapes))
+            return jvp
+
+        with tf.GradientTape() as t:
+            res = cost_fn(params, tangent)
+
+        exp = expected_jvp(params_np, tangent_np)
+        assert np.allclose(res, exp, atol=tol, rtol=0)
+
+        res = t.jacobian(res, params)
+        exp = qml.jacobian(expected_jvp)(params_np, tangent_np)
+        assert np.allclose(res, exp, atol=tol, rtol=0)
 
     @pytest.mark.jax
-    def test_jax(self, tol):
+    @pytest.mark.parametrize("batch_dim", [None, 1, 3])
+    def test_jax(self, tol, batch_dim):
         """Tests that the output of the JVP transform
         can be differentiated using JAX."""
         import jax
@@ -731,23 +750,28 @@ class TestJVPGradients:
 
         dev = qml.device("default.qubit.jax", wires=2)
         params_np = np.array([0.543, -0.654], requires_grad=True)
+        if batch_dim is not None:
+            params_np = np.outer(np.arange(1, 1 + batch_dim), params_np, requires_grad=True)
+        tangent_np = np.array([1.2, -0.3], requires_grad=False)
         params = jnp.array(params_np)
+        tangent = jnp.array(tangent_np)
 
-        def cost_fn(x):
+        def cost_fn(params, tangent):
             with qml.queuing.AnnotatedQueue() as q:
-                ansatz(x[0], x[1])
+                ansatz(params[..., 0], params[..., 1])
+
             tape = qml.tape.QuantumScript.from_queue(q)
-            tangent = jax.numpy.array([1.0, 0.0])
             tape.trainable_params = {0, 1}
             tapes, fn = qml.gradients.jvp(tape, tangent, param_shift)
             jvp = fn(dev.batch_execute(tapes))
             return jvp
 
-        res = cost_fn(params)
-        assert np.allclose(res, expected(params), atol=tol, rtol=0)
+        res = cost_fn(params, tangent)
+        exp = expected_jvp(params_np, tangent_np)
+        assert np.allclose(res, exp, atol=tol, rtol=0)
 
-        res = jax.jacobian(cost_fn, argnums=0)(params)
-        exp = qml.jacobian(expected)(params_np)
+        res = jax.jacobian(cost_fn)(params, tangent)
+        exp = qml.jacobian(expected_jvp)(params_np, tangent_np)
         assert np.allclose(res, exp, atol=tol, rtol=0)
 
 
