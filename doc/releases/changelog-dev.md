@@ -801,6 +801,11 @@
 * Ensure that a `QNode` does not return an empty iterable.
   [(#3769)](https://github.com/PennyLaneAI/pennylane/pull/3769)
 
+<h3>Testing and Continuous Integration/h3>
+
+* The plugin test is now run for PennyLane Lightning.
+  [(#3782)](https://github.com/PennyLaneAI/pennylane/pull/3782)
+
 <h3>Contributors</h3>
 
 This release contains contributions from (in alphabetical order):
