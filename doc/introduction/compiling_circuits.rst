@@ -282,7 +282,7 @@ The example below shows how a three-wire circuit can be run on a two-wire device
 
         qml.CZ(wires=[1, 2])
 
-        return qml.expval(qml.grouping.string_to_pauli_word("ZZZ"))
+        return qml.expval(qml.pauli.string_to_pauli_word("ZZZ"))
 
 Instead of being executed directly, the circuit will be partitioned into
 smaller fragments according to the :class:`~.pennylane.WireCut` locations,
@@ -319,16 +319,16 @@ It turns a QNode that measures non-commuting observables into a QNode that inter
 uses *multiple* circuit executions with qubit-wise commuting groups. The transform is used
 by devices to make such measurements possible.
 
-On a lower level, the :func:`~.pennylane.grouping.group_observables` function can be used to split lists of
+On a lower level, the :func:`~.pennylane.pauli.group_observables` function can be used to split lists of
 observables and coefficients:
 
 >>> obs = [qml.PauliY(0), qml.PauliX(0) @ qml.PauliX(1), qml.PauliZ(1)]
 >>> coeffs = [1.43, 4.21, 0.97]
->>> obs_groupings, coeffs_groupings = qml.grouping.group_observables(obs, coeffs, 'anticommuting', 'lf')
+>>> obs_groupings, coeffs_groupings = qml.pauli.group_observables(obs, coeffs, 'anticommuting', 'lf')
 >>> obs_groupings
 [[PauliZ(wires=[1]), PauliX(wires=[0]) @ PauliX(wires=[1])],
  [PauliY(wires=[0])]]
 >>> coeffs_groupings
 [[0.97, 4.21], [1.43]]
 
-This and more logic to manipulate Pauli observables is found in the :mod:`~.pennylane.grouping` module.
+This and more logic to manipulate Pauli observables is found in the :mod:`~.pennylane.pauli` module.
