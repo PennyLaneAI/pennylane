@@ -190,7 +190,7 @@ def _divmod(a, b):
     """Performs divmod but in an all-interface compatible manner"""
     out1 = qml.math.floor(a / b)
     out2 = a - out1 * b
-    return int(out1), int(out2)
+    return int(out1), out2
 
 
 def fold_global_tape(circuit, scale_factor):
