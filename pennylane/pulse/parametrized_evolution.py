@@ -22,9 +22,9 @@ from typing import List, Union
 
 import pennylane as qml
 from pennylane.operation import AnyWires, Operation
-from pennylane.pulse.jax_utils import JaxParametrizedOperator
 
 from .parametrized_hamiltonian import ParametrizedHamiltonian
+from .parametrized_hamiltonian_pytree import ParametrizedHamiltonianPytree
 
 has_jax = True
 try:
@@ -308,7 +308,7 @@ class ParametrizedEvolution(Operation):
         y0 = jnp.eye(2 ** len(self.wires), dtype=complex)
 
         with jax.ensure_compile_time_eval():
-            H_jax = JaxParametrizedOperator.from_parametrized_hamiltonian(
+            H_jax = ParametrizedHamiltonianPytree(
                 self.H, dense=len(self.wires) > 4, wire_order=self.wires
             )
 

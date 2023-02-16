@@ -19,7 +19,7 @@ import numpy as np
 import pennylane as qml
 from pennylane.devices import DefaultQubit
 from pennylane.pulse import ParametrizedEvolution
-from pennylane.pulse.jax_utils import JaxParametrizedOperator
+from pennylane.pulse.parametrized_hamiltonian_pytree import ParametrizedHamiltonianPytree
 from pennylane.typing import TensorLike
 
 try:
@@ -217,7 +217,7 @@ class DefaultQubitJax(DefaultQubit):
         state = self._flatten(state)
 
         with jax.ensure_compile_time_eval():
-            H_jax = JaxParametrizedOperator.from_parametrized_hamiltonian(
+            H_jax = ParametrizedHamiltonianPytree(
                 operation.H, dense=len(self.wires) > 4, wire_order=self.wires
             )
 
