@@ -230,6 +230,40 @@ class TestSpecialMeasurements:
         res = simulate(qs)
         assert np.allclose(res, expected)
 
+    @pytest.mark.parametrize(
+        "obs, expected",
+        [
+            (qml.PauliZ(0), "state_diagonalizing_gates"),
+            (qml.s_prod(2.5, qml.prod(qml.PauliZ(0), qml.PauliX(1))), "state_diagonalizing_gates"),
+            (
+                qml.Hamiltonian([-0.5, 2], [qml.PauliY(0), qml.PauliZ(0)]),
+                "state_hamiltonian_expval",
+            ),
+            (
+                qml.SparseHamiltonian(
+                    csr_matrix(-0.5 * qml.PauliY(0).matrix() + 2 * qml.PauliZ(0).matrix()),
+                    wires=[0],
+                ),
+                "state_hamiltonian_expval",
+            ),
+            (
+                qml.sum(*(qml.prod(qml.PauliY(i), qml.PauliZ(i + 1)) for i in range(7))),
+                "state_hamiltonian_expval",
+            ),
+            (qml.sum(qml.PauliY(0), qml.PauliZ(0)), "state_diagonalizing_gates"),
+            (qml.sum(*(qml.PauliZ(i) for i in range(8))), "state_diagonalizing_gates"),
+        ],
+    )
+    def test_correct_expval_measurement_used(self, obs, expected, mocker):
+        """Test that the correct measurement function is used for a given observable."""
+        meas = [qml.expval(obs)]
+        qs = qml.tape.QuantumScript(measurements=meas)
+
+        spy = mocker.spy(qml.devices.qubit.measure, expected)
+        _ = simulate(qs)
+
+        spy.assert_called()
+
 
 class TestOperatorArithmetic:
     def test_numpy_op_arithmetic(self):
