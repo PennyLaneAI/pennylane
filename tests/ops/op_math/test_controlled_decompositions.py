@@ -136,3 +136,18 @@ class TestControlledDecompositionZYZ:
         res1 = queue_from_list()
         res2 = queue_from_qnode()
         assert np.allclose(res1, res2, atol=tol, rtol=0)
+
+    def test_trivial_ops_in_decomposition(self):
+        """Test that an operator decomposition doesn't have trivial rotations."""
+        op = qml.RZ(np.pi, wires=0)
+        decomp = ctrl_decomp_zyz(op, [1])
+        expected = [
+            qml.RZ(np.pi, wires=0),
+            qml.MultiControlledX(wires=[1, 0]),
+            qml.RZ(-np.pi / 2, wires=0),
+            qml.MultiControlledX(wires=[1, 0]),
+            qml.RZ(-np.pi / 2, wires=0),
+        ]
+
+        assert len(decomp) == 5
+        assert all(qml.equal(o, e) for o, e in zip(decomp, expected))
