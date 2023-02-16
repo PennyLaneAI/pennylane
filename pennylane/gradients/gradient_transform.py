@@ -305,10 +305,10 @@ class gradient_transform(qml.batch_transform):
             kwargs.pop("shots", False)
             cjac = cjac_fn(*args, **kwargs)
 
-            if isinstance(cjac, tuple) and len(cjac) == 1:
-                cjac = cjac[0]
-
             if qml.active_return():
+                if isinstance(cjac, tuple) and len(cjac) == 1:
+                    cjac = cjac[0]
+
                 if not isinstance(cjac, tuple):
                     is_square = cjac.ndim == 2 and cjac.shape[0] == cjac.shape[1]
 
