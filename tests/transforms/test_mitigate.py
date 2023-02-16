@@ -363,19 +363,21 @@ grad_ideal_0 = [-np.sqrt(2) / 2, -np.sqrt(2)]
 class TestDifferentiableZNE:
     """Testing differentiable ZNE"""
 
-    @pytest.mark.parametrize("lambda_", [1., 1.5, 1.7, 2., 2.5])
+    @pytest.mark.parametrize("lambda_", [1.0, 1.5, 1.7, 2.0, 2.5])
     def test_correct_number_of_operators(self, lambda_):
         """Test the output corresponds to the right number of operators according to https://arxiv.org/abs/2005.10921"""
         x = np.arange(6)
-        circuit = qml.tape.QuantumScript([
-            qml.RX(x[0], wires=0),
-            qml.RY(x[1], wires=1),
-            qml.RZ(x[2], wires=2),
-            qml.CNOT(wires=(0,1)),
-            qml.CNOT(wires=(1,2)),
-            qml.RX(x[3], wires=0),
-            qml.RY(x[4], wires=1),
-            qml.RZ(x[5], wires=2),]
+        circuit = qml.tape.QuantumScript(
+            [
+                qml.RX(x[0], wires=0),
+                qml.RY(x[1], wires=1),
+                qml.RZ(x[2], wires=2),
+                qml.CNOT(wires=(0, 1)),
+                qml.CNOT(wires=(1, 2)),
+                qml.RX(x[3], wires=0),
+                qml.RY(x[4], wires=1),
+                qml.RZ(x[5], wires=2),
+            ]
         )
 
         d = len(circuit._ops)
@@ -383,12 +385,11 @@ class TestDifferentiableZNE:
 
         folded, _ = qml.transforms.fold_global(circuit, lambda_)
 
-
         n, s = divmod(lambda_ - 1, 2)
 
         s = int(round(s * d / 2))
 
-        total_new = d * (2*n + 1) + 2*s
+        total_new = d * (2 * n + 1) + 2 * s
         assert total_new == len(folded[0]._ops)
 
     def test_global_fold_constant_result(self):
@@ -413,7 +414,8 @@ class TestDifferentiableZNE:
             return qml.expval(qml.PauliZ(0))
 
         res = [
-            fold_global(circuit, scale_factor=scale_factor)(w1, w2) for scale_factor in [1., 1.5, 2., 2.5, 3.]
+            fold_global(circuit, scale_factor=scale_factor)(w1, w2)
+            for scale_factor in [1.0, 1.5, 2.0, 2.5, 3.0]
         ]
         # res = [qml.execute([folded], dev, None) for folded in folded_qnodes]
         assert np.allclose(res, 1)
