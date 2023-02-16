@@ -122,7 +122,6 @@ def grad_method_validation(method, tape):
     Returns:
         tuple[str, None]: the allowed parameter gradient methods for each trainable parameter
     """
-
     diff_methods = {
         idx: info["grad_method"]
         for idx, info in enumerate(tape._par_info)  # pylint: disable=protected-access

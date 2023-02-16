@@ -148,6 +148,10 @@ def _hadamard_grad(
         The number of trainable parameters may increase due to the decomposition.
 
     """
+    if not qml.active_return():
+        raise ValueError(
+            "The hadamard gradient only supports the new return type. Use `qml.enable_return()` to turn it on."
+        )
     if any(isinstance(m, VarianceMP) for m in tape.measurements):
         raise ValueError(
             "Computing the gradient of variances with the Hadamard test gradient is not implemented."
@@ -273,6 +277,7 @@ def _expval_hadamard_grad(tape, argnum, aux_wire):
             new_tape = qml.tape.tape.expand_tape(
                 new_tape, stop_at=~qml.operation.is_measurement, expand_measurements=True
             )
+            new_tape._update_par_info()
             num_tape += 1
 
             g_tapes.append(new_tape)
@@ -311,15 +316,17 @@ def _expval_hadamard_grad(tape, argnum, aux_wire):
                     res = qml.math.reshape(res, (2**num_wires_probs, 2))
                     final_res[idx] = qml.math.tensordot(res, projector, axes=[[1], [0]])
         grads = []
-
-        for idx, num_tape in enumerate(gradient_data):
+        idx = 0
+        for num_tape in gradient_data:
             if num_tape == 0:
                 grads.append(qml.math.zeros(()))
             elif num_tape == 1:
                 grads.append(final_res[idx])
+                idx += 1
             else:
                 axis = None if not multi_measurements else 0
                 grads.append(qml.math.sum(final_res[idx : idx + num_tape], axis=axis))
+                idx += 1
 
         if not multi_measurements and not multi_params:
             return grads[0]

@@ -379,9 +379,9 @@ class TestValidation:
         assert qn.diff_method == "spsa"
         assert qn.gradient_fn is qml.gradients.spsa_grad
 
-        qn = QNode(dummyfunc, dev, interface="autograd", diff_method="spsa")
-        assert qn.diff_method == "spsa"
-        assert qn.gradient_fn is qml.gradients.spsa_grad
+        qn = QNode(dummyfunc, dev, interface="autograd", diff_method="hadamard")
+        assert qn.diff_method == "hadamard"
+        assert qn.gradient_fn is qml.gradients.hadamard_grad
 
         qn = QNode(dummyfunc, dev, diff_method="parameter-shift")
         assert qn.diff_method == "parameter-shift"
