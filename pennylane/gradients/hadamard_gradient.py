@@ -150,7 +150,7 @@ def _hadamard_grad(
     """
     if not qml.active_return():
         raise ValueError(
-            "The hadamard gradient only supports the new return type. Use `qml.enable_return()` to turn it on."
+            "The hadamard gradient only supports the new return type. Use qml.enable_return() to turn it on."
         )
     if any(isinstance(m, VarianceMP) for m in tape.measurements):
         raise ValueError(
