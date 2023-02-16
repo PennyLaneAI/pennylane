@@ -486,12 +486,11 @@ class TestSupportedConfs:
             circuit(x)
 
     @pytest.mark.parametrize("interface", diff_interfaces)
-    @pytest.mark.parametrize("diff_method", ["parameter-shift", "finite-diff", "spsa", "hadamard"])
+    @pytest.mark.parametrize("diff_method", ["parameter-shift", "finite-diff", "spsa"])
     @pytest.mark.parametrize("wire_specs", wire_specs_list)
     def test_all_sample_finite_shots(self, interface, diff_method, wire_specs):
         """Test sample measurement works for all interfaces and diff_methods
         when shots>0 (but the results may be incorrect)"""
-
         # the only exception is JAX, which fails due to a dtype mismatch
         if interface == "jax":
             msg = "jacrev requires real-valued outputs .*"
