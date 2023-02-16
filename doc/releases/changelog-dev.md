@@ -4,7 +4,8 @@
 
 <h3>New features since last release</h3>
 
-<h4>Add new features here</h4>
+* Added 'qml.sign_expand' tape tranforms which implements the optimal decomposition of a fast-forwardable Hamiltonian that minimizes the variance of its estimator in the Single-Qubit-Measurement from  arXiv:2207.09479
+  [(#2852)](https://github.com/PennyLaneAI/pennylane/pull/2852)
 
 * The `qml.math` module now also contains a submodule for
   fast Fourier transforms, `qml.math.fft`.
@@ -803,6 +804,7 @@
 
 This release contains contributions from (in alphabetical order):
 
+Gian-Luca Anselmetti
 Guillermo Alonso-Linaje
 Juan Miguel Arrazola
 Ikko Ashimine
