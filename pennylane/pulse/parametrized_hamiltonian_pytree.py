@@ -41,6 +41,11 @@ class ParametrizedHamiltonianPytree:
     """
 
     def __init__(self, H: ParametrizedHamiltonian, dense: bool = False, wire_order=None):
+        if not has_jax:
+            raise ImportError(
+                "Module jax is required for the ``ParametrizedHamiltonianPytree`` class. "
+                "You can install jax via: pip install jax"
+            )
         make_array = jnp.array if dense else sparse.CSR.fromdense
 
         if len(H.ops_fixed) > 0:
