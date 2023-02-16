@@ -361,16 +361,15 @@ class TestValidation:
 
         qn = QNode(dummyfunc, dev, diff_method="device")
         assert qn.diff_method == "device"
-        assert qn.gradient_fn is None
+        assert qn.gradient_fn == "device"
 
         qn = QNode(dummyfunc, dev, interface="autograd", diff_method="device")
         assert qn.diff_method == "device"
         assert qn.gradient_fn == "device"
-        mock_device.assert_called_once()
 
         qn = QNode(dummyfunc, dev, diff_method="finite-diff")
         assert qn.diff_method == "finite-diff"
-        assert qn.gradient_fn is None
+        assert qn.gradient_fn is qml.gradients.finite_diff
 
         qn = QNode(dummyfunc, dev, interface="autograd", diff_method="finite-diff")
         assert qn.diff_method == "finite-diff"
@@ -378,7 +377,7 @@ class TestValidation:
 
         qn = QNode(dummyfunc, dev, diff_method="spsa")
         assert qn.diff_method == "spsa"
-        assert qn.gradient_fn is None
+        assert qn.gradient_fn is qml.gradients.spsa_grad
 
         qn = QNode(dummyfunc, dev, interface="autograd", diff_method="spsa")
         assert qn.diff_method == "spsa"
@@ -386,7 +385,7 @@ class TestValidation:
 
         qn = QNode(dummyfunc, dev, diff_method="parameter-shift")
         assert qn.diff_method == "parameter-shift"
-        assert qn.gradient_fn is None
+        assert qn.gradient_fn is qml.gradients.param_shift
 
         qn = QNode(dummyfunc, dev, interface="autograd", diff_method="parameter-shift")
         assert qn.diff_method == "parameter-shift"
@@ -673,6 +672,19 @@ class TestTapeConstruction:
             qml.RY(y, wires=1)
             qml.CNOT(wires=[0, 1])
             return qml.expval(qml.PauliZ(0)), 5
+
+        qn = QNode(func, dev)
+
+        with pytest.raises(
+            qml.QuantumFunctionError, match="must return either a single measurement"
+        ):
+            qn(5, 1)
+
+        def func(x, y):
+            qml.RX(x, wires=0)
+            qml.RY(y, wires=1)
+            qml.CNOT(wires=[0, 1])
+            return []
 
         qn = QNode(func, dev)
 
