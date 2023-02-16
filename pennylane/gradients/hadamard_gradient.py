@@ -277,6 +277,7 @@ def _expval_hadamard_grad(tape, argnum, aux_wire):
             new_tape = qml.tape.tape.expand_tape(
                 new_tape, stop_at=~qml.operation.is_measurement, expand_measurements=True
             )
+            # pylint: disable=protected-access
             new_tape._update_par_info()
             num_tape += 1
 
