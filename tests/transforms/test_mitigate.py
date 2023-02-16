@@ -363,7 +363,7 @@ grad_ideal_0 = [-np.sqrt(2) / 2, -np.sqrt(2)]
 class TestDifferentiableZNE:
     """Testing differentiable ZNE"""
 
-    @pytest.mark.parametrize("lambda_", [1., 1.5, 2., 2.5])
+    @pytest.mark.parametrize("lambda_", [1., 1.5, 1.7, 2., 2.5])
     def test_correct_number_of_operators(self, lambda_):
         """Test the output corresponds to the right number of operators according to https://arxiv.org/abs/2005.10921"""
         x = np.arange(6)
