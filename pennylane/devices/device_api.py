@@ -271,7 +271,7 @@ class QuantumDevice(abc.ABC):
 
     def supports_derivatives(
         self,
-        execution_config: Optional[ExecutionConfig] = None,
+        execution_config: ExecutionConfig,
         circuit: Optional[QuantumTape] = None,
     ) -> bool:
         """Determine whether or not a device provided derivative is potentially available.

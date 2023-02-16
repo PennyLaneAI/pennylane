@@ -27,8 +27,6 @@ from .preprocess import preprocess
 QuantumTapeBatch = Sequence[QuantumTape]
 QuantumTape_or_Batch = Union[QuantumTape, QuantumTapeBatch]
 
-Config_or_Batch = Union[ExecutionConfig, Sequence[ExecutionConfig]]
-
 
 class DefaultQubit2(QuantumDevice):
     """A PennyLane device written in Python and capable of backpropagation derivatives.
@@ -81,9 +79,9 @@ class DefaultQubit2(QuantumDevice):
             return post_processing_fn(results)
 
     >>> f(jax.numpy.array(1.2))
-    [DeviceArray(0.36235774, dtype=float32)]
-    >>> jax.jacobian(f)(jax.numpy.array(1.2))
-    [DeviceArray(-0.93203914, dtype=float32, weak_type=True)]
+    DeviceArray(0.36235774, dtype=float32)
+    >>> jax.grad(f)(jax.numpy.array(1.2))
+    DeviceArray(-0.93203914, dtype=float32, weak_type=True)
 
     """
 
@@ -93,11 +91,12 @@ class DefaultQubit2(QuantumDevice):
 
     @property
     def name(self):
+        """The name of the device."""
         return "default.qubit.2"
 
     def supports_derivatives(
         self,
-        execution_config: Optional[ExecutionConfig] = None,
+        execution_config: ExecutionConfig,
         circuit: Optional[QuantumTape] = None,
     ) -> bool:
         """Check whether or not derivatives are available for a given configuration and circuit.
@@ -112,26 +111,64 @@ class DefaultQubit2(QuantumDevice):
             Bool: Whether or not a derivative can be calculated provided the given information
 
         """
-        # requesting information about device derivatives. Adjoint jacobian not added yet
-        if execution_config is None:
-            return False
         # backpropogation currently supported for all supported circuits
         return execution_config.gradient_method == "backprop" and execution_config.shots is None
 
     def preprocess(
         self,
         circuits: QuantumTape_or_Batch,
-        execution_config: Config_or_Batch = DefaultExecutionConfig,
+        execution_config: ExecutionConfig = DefaultExecutionConfig,
     ) -> Tuple[QuantumTapeBatch, Callable]:
+        """Converts an arbitrary circuit or batch of circuits into a batch natively executable by the :meth:`~.execute` method.
+
+        Args:
+            circuits (Union[QuantumTape, Sequence[QuantumTape]]): The circuit or a batch of circuits to preprocess
+                before execution on the device
+            execution_config (Union[ExecutionConfig, Sequence[ExecutionConfig]]): A datastructure describing the parameters needed to fully describe
+                the execution. Includes such information as shots.
+
+        Returns:
+            Sequence[QuantumTape], Callable: QuantumTapes that the device can natively execute
+            and a postprocessing function to be called after execution.
+
+        This device:
+
+        * Supports any qubit operations that provide a matrix
+        * Currently does not support finite shots
+        * Currently does not intrinsically support parameter broadcasting
+
+        """
+        is_single_circuit = False
         if isinstance(circuits, QuantumScript):
             circuits = [circuits]
-        return preprocess(circuits, execution_config=execution_config)
+            is_single_circuit = True
+
+        batch, post_processing_fn = preprocess(circuits, execution_config=execution_config)
+
+        if is_single_circuit:
+
+            def convert_batch_to_single_output(results):
+                """Unwraps a dimension so that executing the batch of circuits looks like executing a single circuit."""
+                return post_processing_fn(results)[0]
+
+            return batch, convert_batch_to_single_output
+
+        return batch, post_processing_fn
 
     def execute(
         self,
         circuits: QuantumTape_or_Batch,
-        execution_config: Config_or_Batch = DefaultExecutionConfig,
+        execution_config: ExecutionConfig = DefaultExecutionConfig,
     ):
+        """Execute a circuit or a batch of circuits and turn it into results.
+
+        Args:
+            circuits (Union[QuantumTape, Sequence[QuantumTape]]): the quantum circuits to be executed
+            execution_config (Union[ExecutionConfig, Sequence[ExecutionConfg]]): a datastructure with additional information required for execution
+
+        Returns:
+            TensorLike, tuple[TensorLike], tuple[tuple[TensorLike]]: A numeric result of the computation.
+        """
         is_single_circuit = False
         if isinstance(circuits, QuantumScript):
             is_single_circuit = True
