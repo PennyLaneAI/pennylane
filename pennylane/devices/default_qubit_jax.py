@@ -19,6 +19,7 @@ import numpy as np
 import pennylane as qml
 from pennylane.devices import DefaultQubit
 from pennylane.pulse import ParametrizedEvolution
+from pennylane.pulse.jax_utils import JaxParametrizedOperator
 from pennylane.typing import TensorLike
 
 try:
@@ -26,6 +27,7 @@ try:
     import jax.numpy as jnp
     from jax.config import config as jax_config
     from jax.experimental.ode import odeint
+
 
 except ImportError as e:  # pragma: no cover
     raise ImportError("default.qubit.jax device requires installing jax>0.2.0") from e
@@ -214,9 +216,14 @@ class DefaultQubitJax(DefaultQubit):
 
         state = self._flatten(state)
 
+        with jax.ensure_compile_time_eval():
+            H_jax = JaxParametrizedOperator.from_parametrized_hamiltonian(
+                operation.H, dense=len(self.wires) > 4, wire_order=self.wires
+            )
+
         def fun(y, t):
             """dy/dt = -i H(t) y"""
-            return -1j * qml.matrix(operation.H(operation.data, t=t), wire_order=self.wires) @ y
+            return -1j * (H_jax(operation.data, t=t) @ y)
 
         result = odeint(fun, state, operation.t, **operation.odeint_kwargs)
         return self._reshape(result[-1], [2] * self.num_wires)

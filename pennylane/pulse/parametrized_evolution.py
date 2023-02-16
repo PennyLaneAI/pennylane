@@ -22,11 +22,13 @@ from typing import List, Union
 
 import pennylane as qml
 from pennylane.operation import AnyWires, Operation
+from pennylane.pulse.jax_utils import JaxParametrizedOperator
 
 from .parametrized_hamiltonian import ParametrizedHamiltonian
 
 has_jax = True
 try:
+    import jax
     import jax.numpy as jnp
     from jax.experimental.ode import odeint
 except ImportError as e:
@@ -305,9 +307,14 @@ class ParametrizedEvolution(Operation):
             )
         y0 = jnp.eye(2 ** len(self.wires), dtype=complex)
 
+        with jax.ensure_compile_time_eval():
+            H_jax = JaxParametrizedOperator.from_parametrized_hamiltonian(
+                self.H, dense=len(self.wires) > 4, wire_order=self.wires
+            )
+
         def fun(y, t):
             """dy/dt = -i H(t) y"""
-            return -1j * qml.matrix(self.H(self.data, t=t), wire_order=self.wires) @ y
+            return -1j * (H_jax(self.data, t=t) @ y)
 
         result = odeint(fun, y0, self.t, **self.odeint_kwargs)
         mat = result[-1]
