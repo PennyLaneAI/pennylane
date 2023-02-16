@@ -4,7 +4,8 @@
 
 <h3>New features since last release</h3>
 
-<h4>Add new features here</h4>
+* Added 'qml.sign_expand' tape tranforms which implements the optimal decomposition of a fast-forwardable Hamiltonian that minimizes the variance of its estimator in the Single-Qubit-Measurement from  arXiv:2207.09479
+  [(#2852)](https://github.com/PennyLaneAI/pennylane/pull/2852)
 
 <h4>Pulse programming 🔊</h4>
 
@@ -484,6 +485,66 @@ To be merged this week
   decomposition.
   [(#3726)](https://github.com/PennyLaneAI/pennylane/pull/3726)
 
+ * The `qchem.Molecule` class raises an error when the molecule has an odd number of electrons or 
+   when the spin multiplicity is not 1.
+   [(#3748)](https://github.com/PennyLaneAI/pennylane/pull/3748)
+
+* `qml.qchem.basis_rotation` now accounts for spin, allowing it to perform Basis Rotation Groupings
+  for molecular hamiltonians.
+  [(#3714)](https://github.com/PennyLaneAI/pennylane/pull/3714)
+  [(#3774)](https://github.com/PennyLaneAI/pennylane/pull/3774)
+
+* The `default.mixed` device received a performance improvement for multi-qubit operations.
+  This also allows to apply channels that act on more than seven qubits, which was not possible before.
+  [(#3584)](https://github.com/PennyLaneAI/pennylane/pull/3584)
+
+* `qml.dot` now groups coefficients together.
+  [(#3691)](https://github.com/PennyLaneAI/pennylane/pull/3691)
+
+  ```pycon
+  >>> qml.dot(coeffs=[2, 2, 2], ops=[qml.PauliX(0), qml.PauliY(1), qml.PauliZ(2)])
+  2*(PauliX(wires=[0]) + PauliY(wires=[1]) + PauliZ(wires=[2]))
+  ```
+
+* `qml.generator` now supports operators with `Sum` and `Prod` generators.
+  [(#3691)](https://github.com/PennyLaneAI/pennylane/pull/3691)
+
+* `Exp` operator now detects if the base is a generator, and decomposes to its corresponding operator.
+  If not, it decomposes to a `PauliRot`, or it uses the Suzuki-Trotter decomposition when necessary.
+  [(#3691)](https://github.com/PennyLaneAI/pennylane/pull/3691)
+  [(#3777)](https://github.com/PennyLaneAI/pennylane/pull/3777)
+
+  If the `base` operator is a generator of another operator, `Exp` returns this operator during decomposition:
+
+  ```pycon
+  >>> exp_op = qml.exp(qml.PauliX(0) @ qml.PauliX(1), coeff=1j)
+  >>> exp_op.decomposition()
+  [IsingXX((-2+0j), wires=[0, 1])]
+  ```
+
+  If the `base` operator is a Pauli word, `Exp` returns a `PauliRot` operator instead:
+
+  ```pycon
+  >>> qml.exp(qml.PauliZ(0) @ qml.PauliX(1), coeff=1j).decomposition()
+  [PauliRot((-2+0j), ZX, wires=[0, 1])]
+  ```
+
+  If the `base` operator is a linear combination of Hamiltonians, `Exp` uses the Suzuki-Trotter
+  algorithm to decompose the operator into a product of operators:
+
+  ```pycon
+  >>> qml.exp(qml.sum(qml.PauliX(0), qml.PauliY(1), qml.PauliZ(2)), coeff=1j, num_steps=2).decomposition()
+  [RX((-1+0j), wires=[0]),
+  RY((-1+0j), wires=[1]),
+  RZ((-1+0j), wires=[2]),
+  RX((-1+0j), wires=[0]),
+  RY((-1+0j), wires=[1]),
+  RZ((-1+0j), wires=[2])]
+  ```
+
+* `Sum._sort` method takes into account the name of the operator when sorting.
+  [(#3691)](https://github.com/PennyLaneAI/pennylane/pull/3691)
+
 <h4>Differentiability and interfaces</h4>
 
 * The `qml.math` module now also contains a submodule for
@@ -537,6 +598,19 @@ To be merged this week
   gates.
   [(#3743)](https://github.com/PennyLaneAI/pennylane/pull/3743)
 
+* `SProd.sparse_matrix` now supports interface-specific variables with a single element as the `scalar`.
+  [(#3770)](https://github.com/PennyLaneAI/pennylane/pull/3770)
+
+* Validation has been added on gradient keyword arguments when initializing a QNode — if unexpected keyword arguments are passed,
+  a `UserWarning` is raised. A list of the current expected gradient function keyword arguments can be accessed via
+  `qml.gradients.SUPPORTED_GRADIENT_KWARGS`.
+  [(#3526)](https://github.com/PennyLaneAI/pennylane/pull/3526)
+
+* Added `argnum` argument to `metric_tensor`. By passing a sequence of indices referring to trainable tape parameters,
+  the metric tensor is only computed with respect to these parameters. This reduces the number of tapes that have to
+  be run.
+  [(#3587)](https://github.com/PennyLaneAI/pennylane/pull/3587)
+
 * The parameter-shift derivative of variances saves a redundant evaluation of the
   corresponding unshifted expectation value tape, if possible
   [(#3744)](https://github.com/PennyLaneAI/pennylane/pull/3744)
@@ -564,6 +638,12 @@ To be merged this week
 
 * The `StatePrep` class has been added as an interface that state-prep operators must implement.
   [(#3654)](https://github.com/PennyLaneAI/pennylane/pull/3654)
+
+* `QubitStateVector` now implements the `StatePrep` interface.
+  [(#3685)](https://github.com/PennyLaneAI/pennylane/pull/3685)
+
+* `BasisState` now implements the `StatePrep` interface.
+  [(#3693)](https://github.com/PennyLaneAI/pennylane/pull/3693)
 
 * `QubitStateVector` now implements the `StatePrep` interface.
   [(#3685)](https://github.com/PennyLaneAI/pennylane/pull/3685)
@@ -682,6 +762,9 @@ To be merged this week
   This new function changes the sign of the given parameter.
   [(#3706)](https://github.com/PennyLaneAI/pennylane/pull/3706)
 
+* `ApproxTimeEvolution` has been deprecated. Please use `qml.evolve` instead.
+  [(#3755)](https://github.com/PennyLaneAI/pennylane/pull/3755)
+
 <h3>Documentation</h3>
 
 * Organizes the module for documentation for ``operation``.
@@ -751,10 +834,14 @@ To be merged this week
   probabilities with the expected wire order.
   [(#3753)](https://github.com/PennyLaneAI/pennylane/pull/3753)
 
+* Ensure that a `QNode` does not return an empty iterable.
+  [(#3769)](https://github.com/PennyLaneAI/pennylane/pull/3769)
+
 <h3>Contributors</h3>
 
 This release contains contributions from (in alphabetical order):
 
+Gian-Luca Anselmetti,
 Guillermo Alonso-Linaje,
 Juan Miguel Arrazola,
 Ikko Ashimine,
@@ -773,4 +860,5 @@ Mudit Pandey,
 Borja Requena,
 Matthew Silverman,
 Antal Száva,
+Frederik Wilde,
 David Wierichs.
