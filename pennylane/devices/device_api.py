@@ -258,7 +258,7 @@ class QuantumDevice(abc.ABC):
 
     def supports_derivatives(
         self,
-        execution_config: Optional[ExecutionConfig] = None,
+        execution_config: ExecutionConfig,
         circuit: Optional[QuantumTape] = None,
     ) -> bool:
         """Determine whether or not a device provided derivative is potentially available.
@@ -266,7 +266,7 @@ class QuantumDevice(abc.ABC):
         Default behaviour assumes first order device derivatives for all circuits exist if :meth:`~.compute_derivatives` is overriden.
 
         Args:
-            execution_config (None, ExecutionConfig): A description of the hyperparameters for the desired computation.
+            execution_config (ExecutionConfig): A description of the hyperparameters for the desired computation.
             circuit (None, QuantumTape): A specific circuit to check differentation for.
 
         Returns:
@@ -276,11 +276,7 @@ class QuantumDevice(abc.ABC):
         For example, a device can natively calculate ``"parameter-shift"`` derivatives, in which case :meth:`~.compute_derivatives`
         will be called for the derivative instead of :meth:`~.execute` with a batch of circuits.
 
-        If ``execution_config`` and ``circuit`` are both ``None``, then this method should return ``True`` if **any**
-        device derivative exists for **any** circumstance.
-
-        If ``execution_config`` is specified but not ``circuit``, then the method should return whether or not
-        device derivatives exist for **any** circuit.
+        If ``circuit`` is not provided, then the method should return whether or not device derivatives exist for **any** circuit.
 
         **Example:**
 
@@ -391,7 +387,7 @@ class QuantumDevice(abc.ABC):
             circuits, execution_config
         )
 
-    def jvp(
+    def compute_jvp(
         self,
         circuits: QuantumTape_or_Batch,
         tangents: Tuple[Number],
@@ -430,7 +426,7 @@ class QuantumDevice(abc.ABC):
         """
         raise NotImplementedError
 
-    def execute_and_jvp(
+    def execute_and_compute_jvp(
         self,
         circuits: QuantumTape_or_Batch,
         tangents: Tuple[Number],
@@ -446,22 +442,27 @@ class QuantumDevice(abc.ABC):
         Returns:
             Tuple, Tuple: A numeric result of execution and of computing the jacobian vector product
 
-        See :meth:`~.QuantumDevice.execute` and :meth:`~.QuantumDevice.jvp` for more information on each method.
+        See :meth:`~.QuantumDevice.execute` and :meth:`~.QuantumDevice.compute_jvp` for more information on each method.
         """
-        return self.execute(circuits, execution_config), self.jvp(
+        return self.execute(circuits, execution_config), self.compute_jvp(
             circuits, tangents, execution_config
         )
 
-    @classmethod
-    def supports_jvp(cls, execution_config: ExecutionConfig = DefaultExecutionConfig) -> bool:
+    def supports_jvp(
+        self, execution_config: ExecutionConfig, circuit: Optional[QuantumTape] = None
+    ) -> bool:
         """Whether or not a given device defines a custom jacobian vector product.
 
-        Default behaviour assumes this to be ``True`` if :meth:`~.jvp` is overridden.
+        Args:
+            execution_config (ExecutionConfig): A description of the hyperparameters for the desired computation.
+            circuit (None, QuantumTape): A specific circuit to check differentation for.
+
+        Default behaviour assumes this to be ``True`` if :meth:`~.compute_jvp` is overridden.
 
         """
-        return cls.jvp != QuantumDevice.jvp
+        return self.compute_jvp != QuantumDevice.compute_jvp
 
-    def vjp(
+    def compute_vjp(
         self,
         circuits: QuantumTape_or_Batch,
         cotangents: Tuple[Number],
@@ -500,7 +501,7 @@ class QuantumDevice(abc.ABC):
         """
         raise NotImplementedError
 
-    def execute_and_vjp(
+    def execute_and_compute_vjp(
         self,
         circuits: QuantumTape_or_Batch,
         cotangents: Tuple[Number],
@@ -509,7 +510,7 @@ class QuantumDevice(abc.ABC):
         r"""Calculate both the results and the vector jacobian product used in reverse-mode differentiation.
 
         Args:
-            circuits (Union[QuantumTape, Sequence[QuantumTape]]): the QuantumTape to be executed
+            circuits (Union[QuantumTape, Sequence[QuantumTape]]): the circuit or batch of circuits to be executed
             cotangents Tuple[Number]: Gradient-output vector. Must have shape matching the output shape of the
                 corresponding circuit
             execution_config (ExecutionConfig): a datastructure with all additional information required for execution
@@ -517,16 +518,21 @@ class QuantumDevice(abc.ABC):
         Returns:
             Tuple, Tuple: the result of executing the scripts and the numeric result of computing the vector jacobian product
 
-        See :meth:`~.QuantumDevice.execute` and :meth:`~.QuantumDevice.vjp` for more information.
+        See :meth:`~.QuantumDevice.execute` and :meth:`~.QuantumDevice.compute_vjp` for more information.
         """
-        return self.execute(circuits, execution_config), self.vjp(
+        return self.execute(circuits, execution_config), self.compute_vjp(
             circuits, cotangents, execution_config
         )
 
-    @classmethod
-    def supports_vjp(cls, execution_config: ExecutionConfig = DefaultExecutionConfig) -> bool:
+    def supports_vjp(
+        self, execution_config: ExecutionConfig, circuit: Optional[QuantumTape] = None
+    ) -> bool:
         """Whether or not a given device defines a custom vector jacobian product.
+
+        Args:
+            execution_config (ExecutionConfig): A description of the hyperparameters for the desired computation.
+            circuit (None, QuantumTape): A specific circuit to check differentation for.
 
         Default behaviour assumes this to be ``True`` if :meth:`~.vjp` is overridden.
         """
-        return cls.vjp != QuantumDevice.vjp
+        return self.compute_vjp != QuantumDevice.compute_vjp
