@@ -13,7 +13,7 @@
 # limitations under the License.
 """Module containing the ``JaxParametrizedHamiltonian`` class."""
 from dataclasses import dataclass
-from typing import Tuple
+from typing import Callable, Tuple, Union
 
 import pennylane as qml
 
@@ -30,17 +30,27 @@ except ImportError:
 
 
 @register_pytree_node_class
+@dataclass
 class ParametrizedHamiltonianPytree:
-    """Decorator that converts a ``ParametrizedHamiltonian`` into a jax pytree object.
+    """Jax pytree class that represents a ``ParametrizedHamiltonian``."""
 
-    Args:
-        H (ParametrizedHamiltonian): parametrized Hamiltonian to convert
-        dense (bool, optional): Decide wether a dense/sparse matrix is used. Defaults to False.
-        wire_order (list, optional): Wire order of the returned ``JaxParametrizedOperator``.
-            Defaults to None.
-    """
+    mat_fixed: Union[jnp.ndarray, sparse.CSR]
+    mats_parametrized: Tuple[Union[jnp.ndarray, sparse.CSR], ...]
+    coeffs_parametrized: Tuple[Callable]
 
-    def __init__(self, H: ParametrizedHamiltonian, dense: bool = False, wire_order=None):
+    @staticmethod
+    def from_hamiltonian(H: ParametrizedHamiltonian, dense: bool = False, wire_order=None):
+        """Convert a ``ParametrizedHamiltonian`` into a jax pytree object.
+
+        Args:
+            H (ParametrizedHamiltonian): parametrized Hamiltonian to convert
+            dense (bool, optional): Decide wether a dense/sparse matrix is used. Defaults to False.
+            wire_order (list, optional): Wire order of the returned ``JaxParametrizedOperator``.
+                Defaults to None.
+
+        Returns:
+            ParametrizedHamiltonianPytree: pytree object
+        """
         if not has_jax:
             raise ImportError(
                 "Module jax is required for the ``ParametrizedHamiltonianPytree`` class. "
@@ -49,14 +59,14 @@ class ParametrizedHamiltonianPytree:
         make_array = jnp.array if dense else sparse.CSR.fromdense
 
         if len(H.ops_fixed) > 0:
-            self.mat_fixed = make_array(qml.matrix(H.H_fixed(), wire_order=wire_order))
+            mat_fixed = make_array(qml.matrix(H.H_fixed(), wire_order=wire_order))
         else:
-            self.mat_fixed = None
+            mat_fixed = None
 
-        self.mats_parametrized = tuple(
+        mats_parametrized = tuple(
             make_array(qml.matrix(op, wire_order=wire_order)) for op in H.ops_parametrized
         )
-        self.coeffs_parametrized = H.coeffs_parametrized
+        return ParametrizedHamiltonianPytree(mat_fixed, mats_parametrized, H.coeffs_parametrized)
 
     def __call__(self, pars, t):
         if self.mat_fixed is not None:
@@ -98,11 +108,11 @@ class LazyDotPytree:
     """Jax pytree representing a lazy dot operation."""
 
     coeffs: Tuple[complex, ...]
-    ops: Tuple[sparse.CSR, ...]
+    mats: Tuple[sparse.CSR, ...]
 
     @jax.jit
-    def __matmul__(self, v):
-        return sum(c * (o @ v) for c, o in zip(self.coeffs, self.ops))
+    def __matmul__(self, other):
+        return sum(c * (m @ other) for c, m in zip(self.coeffs, self.mats))
 
     def tree_flatten(self):
         """Function used by ``jax`` to flatten the JaxLazyDot operation.
@@ -110,7 +120,7 @@ class LazyDotPytree:
         Returns:
             tuple: tuple containing children and the auxiliary data of the class
         """
-        children = (self.coeffs, self.ops)
+        children = (self.coeffs, self.mats)
         aux_data = None
         return (children, aux_data)
 

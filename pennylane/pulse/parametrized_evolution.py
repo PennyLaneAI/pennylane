@@ -308,7 +308,7 @@ class ParametrizedEvolution(Operation):
         y0 = jnp.eye(2 ** len(self.wires), dtype=complex)
 
         with jax.ensure_compile_time_eval():
-            H_jax = ParametrizedHamiltonianPytree(
+            H_jax = ParametrizedHamiltonianPytree.from_hamiltonian(
                 self.H, dense=len(self.wires) > 4, wire_order=self.wires
             )
 
