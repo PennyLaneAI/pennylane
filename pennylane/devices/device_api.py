@@ -66,7 +66,6 @@ class QuantumDevice(abc.ABC):
         :meth:`~.Device.batch_transform` and :meth:`~.Device.expand_fn` are now a single method, :meth:`~.QuantumDevice.preprocess`
 
         Shot information is no longer stored on the device, but instead specified on individual input :class:`~.QuantumTape`.
-        If the individual :class:`~.QuantumTape` does not specify shot information, device defaults should be used instead.
 
         The old devices defined a :meth:`~.Device.capabilities` dictionary that defined characteristics of the devices and controlled various
         preprocessing and validation steps, such as ``"supports_broadcasting"``.  These capabilites should now be handled by the
@@ -91,10 +90,12 @@ class QuantumDevice(abc.ABC):
 
         Execution config properties most relevant for devices are:
 
-        * ``device_options``: A dictionary of device specific options. For example, the python device may have `use_multiprocessing`
+        * ``device_options``: A dictionary of device specific options. For example, the python device may have ``multiprocessing_mode``
           as a key. These should be documented in the class docstring.
 
-        * ``gradient_method``: Only ``"device"`` and ``"backprop"`` options must be handled by the device.
+        * ``gradient_method``: A device can choose to have native support for any type of gradient method. If the method
+          :meth:`~.supports_derivatives` returns ``True`` for a particular gradient method, it will be treated as a device
+          derivative and not handled by pennylane core code.
 
         * ``derivative_order``: Relevant for requested device derivatives.
 
@@ -143,7 +144,7 @@ class QuantumDevice(abc.ABC):
             circuits (Union[QuantumTape, Sequence[QuantumTape]]): The circuit or a batch of circuits to preprocess
                 before execution on the device
             execution_config (ExecutionConfig): A datastructure describing the parameters needed to fully describe
-                the execution. Includes such information as shots.
+                the execution.
 
         Returns:
             Sequence[QuantumTape], Callable: QuantumTapes that the device can natively execute
@@ -157,8 +158,8 @@ class QuantumDevice(abc.ABC):
         Preprocessing steps may include:
 
         * expansion to :class:`~.Operator`'s and :class:`~.MeasurementProcess` objects supported by the device.
-        * splitting a quantum script with the measurement of non-commuting observables or Hamiltonians into multiple executions
-        * splitting quantum scripts with batched parameters into multiple executions
+        * splitting a circuit with the measurement of non-commuting observables or Hamiltonians into multiple executions
+        * splitting circuits with batched parameters into multiple executions
         * gradient specific preprocessing, such as making sure trainable operators have generators
         * validation of configuration parameters
 
@@ -199,7 +200,8 @@ class QuantumDevice(abc.ABC):
         Note that the parameters contained within the quantum script may contain interface-specific data types, such as
         ``torch.Tensor`` or ``jax.Array``. If the device does not wish to handle interface-specific parameters, they
         can implement an optional "internal preprocessing" step that converts all parameters to vanilla numpy. A convenience
-        transform implementing this will be provided.
+        transform implementing this will be provided. This step allows device to be transparent to things like jitting if they
+        so choose.
 
         .. details::
             :title: Return Shape
@@ -261,34 +263,37 @@ class QuantumDevice(abc.ABC):
     ) -> bool:
         """Determine whether or not a device provided derivative is potentially available.
 
-        Default behaviour assumes first order derivatives for all circuits exist if :meth:`~.compute_derivatives` is overriden.
+        Default behaviour assumes first order device derivatives for all circuits exist if :meth:`~.compute_derivatives` is overriden.
 
         Args:
             execution_config (None, ExecutionConfig): A description of the hyperparameters for the desired computation.
-              Note that this method accepts only a single ``ExecutionConfig``, not an iterable of them.
             circuit (None, QuantumTape): A specific circuit to check differentation for.
 
         Returns:
             Bool
 
+        The device can support multiple different types of "device derivatives", chosen via ``execution_config.gradient_method``.
+        For example, a device can natively calculate ``"parameter-shift"`` derivatives, in which case :meth:`~.compute_derivatives`
+        will be called for the derivative instead of :meth:`~.execute` with a batch of circuits.
+
         If ``execution_config`` and ``circuit`` are both ``None``, then this method should return ``True`` if **any**
         device derivative exists for **any** circumstance.
 
         If ``execution_config`` is specified but not ``circuit``, then the method should return whether or not
-        device derivatives exist for **any** circuits.
+        device derivatives exist for **any** circuit.
 
         **Example:**
 
         For example, the Python device will support device differentiation via the adjoint differentiation algorithm
         if the order is ``1`` and the execution occurs with no shots ``shots=None``.
 
-        >>> config = ExecutionConfig(derivative_order=1, shots=None, gradient_method="device")
+        >>> config = ExecutionConfig(derivative_order=1, shots=None, gradient_method="adjoint")
         >>> dev.supports_derivatives(config)
         True
-        >>> config = ExecutionConfig(derivative_order=1, shots=10, gradient_method="device")
+        >>> config = ExecutionConfig(derivative_order=1, shots=10, gradient_method="adjoint")
         >>> dev.supports_derivatives(config)
         False
-        >>> config = ExecutionConfig(derivative_order=2, shots=None, gradient_method="device")
+        >>> config = ExecutionConfig(derivative_order=2, shots=None, gradient_method="adjoint")
         >>> dev.supports_derivatives(config)
         False
 
@@ -297,7 +302,7 @@ class QuantumDevice(abc.ABC):
         :meth:`~.QuantumDevice.preprocess`, then ``supports_derivatives`` should return False.
 
         >>> circuit = qml.tape.QuantumScript([qml.RX(2.0, wires=0)], [qml.probs(wires=(0,1))])
-        >>> dev.supports_derivatives(circuit=circuit)
+        >>> dev.supports_derivatives(config, circuit=circuit)
         False
 
         If the circuit is not natively supported by the differentiation method but can be converted into a form
@@ -335,22 +340,22 @@ class QuantumDevice(abc.ABC):
         circuits: QuantumTape_or_Batch,
         execution_config: ExecutionConfig = DefaultExecutionConfig,
     ):
-        """Calculate the jacobian of either a single or a batch of Quantum Scripts on the device.
+        """Calculate the jacobian of either a single or a batch of circuits on the device.
 
         Args:
-            circuits (Union[QuantumTape, Sequence[QuantumTape]]): the QuantumTape to be executed
+            circuits (Union[QuantumTape, Sequence[QuantumTape]]): the circuits to calculate derivatives for
             execution_config (ExecutionConfig): a datastructure with all additional information required for execution
 
         Returns:
             Tuple: The jacobian for each trainable parameter
 
-        See also :meth:`~.supports_differentiation` and :meth:`~.execute_and_differentiate`.
+        See also :meth:`~.supports_differentiation` and :meth:`~.execute_and_compute_derivatives`.
 
         **Execution Config:**
 
-        The execution config has an ``order`` property that describes the order of differentiation requested. If the requested order
-        of gradient is not provided, the device should raise a ``NotImplementedError``. The :meth:`~.supports_jacobian_with_configuration`
-        method can pre-validate supported orders.
+        The execution config has ``gradient_method`` and ``order`` property that describes the order of differentiation requested. If the requested
+        method or order of gradient is not provided, the device should raise a ``NotImplementedError``. The :meth:`~.supports_derivatives`
+        method can pre-validate supported orders and gradient methods.
 
         **Return Shape:**
 
@@ -365,17 +370,17 @@ class QuantumDevice(abc.ABC):
         circuits: QuantumTape_or_Batch,
         execution_config: ExecutionConfig = DefaultExecutionConfig,
     ):
-        """Compute the results and jacobians of QuantumTapes at the same time.
+        """Compute the results and jacobians of circuits at the same time.
 
         Args:
-            circuits (Union[QuantumTape, Sequence[QuantumTape]]): the QuantumTape or batch to be executed
+            circuits (Union[QuantumTape, Sequence[QuantumTape]]): the circuits or batch of circuits
             execution_config (ExecutionConfig): a datastructure with all additional information required for execution
 
         Returns:
-            tuple, tuple: A numeric result of the computation and the gradient.
+            tuple: A numeric result of the computation and the gradient.
 
-        See :meth:`~.execute` and :meth:`~.differentiate` for more information about return shapes and behaviour. If :meth:`~.differentiate`
-        is defined, this method should be as well.
+        See :meth:`~.execute` and :meth:`~.compute_derivatives` for more information about return shapes and behaviour.
+        If :meth:`~.compute_derivatives` is defined, this method should be as well.
 
         This method can be used when the result and execution need to be computed at the same time, such as
         during a forward mode calculation of gradients. For certain gradient methods, such as adjoint
@@ -395,12 +400,12 @@ class QuantumDevice(abc.ABC):
         r"""The jacobian vector product used in forward mode calculation of derivatives.
 
         Args:
-            circuits (Union[QuantumTape, Sequence[QuantumTape]]): the QuantumTape to be executed
+            circuits (Union[QuantumTape, Sequence[QuantumTape]]): the circuit or batch of circuits
             tangents (tensor-like): Gradient vector for input parameters.
             execution_config (ExecutionConfig): a datastructure with all additional information required for execution
 
         Returns:
-            Tuple[tensor-like]: A numeric result of computing the jacobian vector product
+            Tuple: A numeric result of computing the jacobian vector product
 
         **Definition of jvp:**
 
@@ -431,15 +436,15 @@ class QuantumDevice(abc.ABC):
         tangents: Tuple[Number],
         execution_config: ExecutionConfig = DefaultExecutionConfig,
     ):
-        """Execute a batch of quantum scripts and compute their jacobian vector products.
+        """Execute a batch of cricuits and compute their jacobian vector products.
 
         Args:
-            circuits (Union[QuantumTape, Sequence[QuantumTape]]): the QuantumTape to be executed
+            circuits (Union[QuantumTape, Sequence[QuantumTape]]): circuit or batch of circuits
             tangents (tensor-like): Gradient vector for input parameters.
             execution_config (ExecutionConfig): a datastructure with all additional information required for execution
 
         Returns:
-            Tuple[tensor-like], Tuple[tensor-like]: A numeric result of computing the jacobian vector product
+            Tuple, Tuple: A numeric result of execution and of computing the jacobian vector product
 
         See :meth:`~.QuantumDevice.execute` and :meth:`~.QuantumDevice.jvp` for more information on each method.
         """
@@ -465,7 +470,7 @@ class QuantumDevice(abc.ABC):
         r"""The vector jacobian product used in reverse-mode differentiation.
 
         Args:
-            circuits (Union[QuantumTape, Sequence[QuantumTape]]): the QuantumTape to be executed
+            circuits (Union[QuantumTape, Sequence[QuantumTape]]): the circuit or batch of circuits
             cotangents (Tuple[Number]): Gradient-output vector. Must have shape matching the output shape of the
                 corresponding circuit
             execution_config (ExecutionConfig): a datastructure with all additional information required for execution
