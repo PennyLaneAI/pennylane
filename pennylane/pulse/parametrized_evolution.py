@@ -27,8 +27,11 @@ from .parametrized_hamiltonian import ParametrizedHamiltonian
 
 has_jax = True
 try:
+    import jax
     import jax.numpy as jnp
     from jax.experimental.ode import odeint
+
+    from .parametrized_hamiltonian_pytree import ParametrizedHamiltonianPytree
 except ImportError as e:
     has_jax = False
 
@@ -305,9 +308,14 @@ class ParametrizedEvolution(Operation):
             )
         y0 = jnp.eye(2 ** len(self.wires), dtype=complex)
 
+        with jax.ensure_compile_time_eval():
+            H_jax = ParametrizedHamiltonianPytree.from_hamiltonian(
+                self.H, dense=len(self.wires) < 3, wire_order=self.wires
+            )
+
         def fun(y, t):
             """dy/dt = -i H(t) y"""
-            return -1j * qml.matrix(self.H(self.data, t=t), wire_order=self.wires) @ y
+            return (-1j * H_jax(self.data, t=t)) @ y
 
         result = odeint(fun, y0, self.t, **self.odeint_kwargs)
         mat = result[-1]
