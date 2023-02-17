@@ -32,7 +32,7 @@ try:
 
 
 except ImportError as e:  # pragma: no cover
-    raise ImportError("default.qubit.jax device requires installing jax>0.2.0") from e
+    raise ImportError("default.qubit.jax device requires installing jax>0.3.20") from e
 
 
 class DefaultQubitJax(DefaultQubit):
