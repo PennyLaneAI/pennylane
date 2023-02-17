@@ -22,6 +22,7 @@ import numpy as np
 
 import pennylane as qml
 from pennylane.operation import Operation
+from .non_parametric_ops import Hadamard, PauliX, PauliY, PauliZ
 
 stack_last = functools.partial(qml.math.stack, axis=-1)
 
@@ -70,7 +71,7 @@ class RX(Operation):
     parameter_frequencies = [(1,)]
 
     def generator(self):
-        return -0.5 * qml.PauliX(wires=self.wires)
+        return -0.5 * PauliX(wires=self.wires)
 
     def __init__(self, phi, wires, do_queue=True, id=None):
         super().__init__(phi, wires=wires, do_queue=do_queue, id=id)
@@ -167,7 +168,7 @@ class RY(Operation):
     parameter_frequencies = [(1,)]
 
     def generator(self):
-        return -0.5 * qml.PauliY(wires=self.wires)
+        return -0.5 * PauliY(wires=self.wires)
 
     def __init__(self, phi, wires, do_queue=True, id=None):
         super().__init__(phi, wires=wires, do_queue=do_queue, id=id)
@@ -263,7 +264,7 @@ class RZ(Operation):
     parameter_frequencies = [(1,)]
 
     def generator(self):
-        return -0.5 * qml.PauliZ(wires=self.wires)
+        return -0.5 * PauliZ(wires=self.wires)
 
     def __init__(self, phi, wires, do_queue=True, id=None):
         super().__init__(phi, wires=wires, do_queue=do_queue, id=id)
@@ -696,7 +697,7 @@ class Rot(Operation):
         if _can_replace(p1, 0):
             return qml.RZ((p0 + p2) % (4 * np.pi), wires=self.wires)
         if _can_replace(p0, np.pi) and _can_replace(p1, np.pi / 2) and _can_replace(p2, 0):
-            return qml.Hadamard(wires=self.wires)
+            return Hadamard(wires=self.wires)
 
         return Rot(p0, p1, p2, wires=self.wires)
 

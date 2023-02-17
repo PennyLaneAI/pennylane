@@ -27,6 +27,7 @@ from pennylane.operation import AnyWires, Operation
 from pennylane.utils import pauli_eigs
 from pennylane.wires import Wires
 
+from .non_parametric_ops import Hadamard, PauliX, PauliY, PauliZ
 from .parametric_ops_single_qubit import _can_replace, stack_last
 
 
@@ -112,7 +113,7 @@ class MultiRZ(Operation):
         )
 
     def generator(self):
-        return -0.5 * functools.reduce(matmul, [qml.PauliZ(w) for w in self.wires])
+        return -0.5 * functools.reduce(matmul, [PauliZ(w) for w in self.wires])
 
     @staticmethod
     def compute_eigvals(theta, num_wires):  # pylint: disable=arguments-differ
@@ -253,7 +254,7 @@ class PauliRot(Operation):
     _ALLOWED_CHARACTERS = "IXYZ"
 
     _PAULI_CONJUGATION_MATRICES = {
-        "X": qml.Hadamard.compute_matrix(),
+        "X": Hadamard.compute_matrix(),
         "Y": qml.RX.compute_matrix(np.pi / 2),
         "Z": np.array([[1, 0], [0, 1]]),
     }
@@ -488,7 +489,7 @@ class PauliRot(Operation):
         ops = []
         for wire, gate in zip(active_wires, active_gates):
             if gate == "X":
-                ops.append(qml.Hadamard(wires=[wire]))
+                ops.append(Hadamard(wires=[wire]))
             elif gate == "Y":
                 ops.append(qml.RX(np.pi / 2, wires=[wire]))
 
@@ -496,7 +497,7 @@ class PauliRot(Operation):
 
         for wire, gate in zip(active_wires, active_gates):
             if gate == "X":
-                ops.append(qml.Hadamard(wires=[wire]))
+                ops.append(Hadamard(wires=[wire]))
             elif gate == "Y":
                 ops.append(qml.RX(-np.pi / 2, wires=[wire]))
         return ops
@@ -553,7 +554,7 @@ class IsingXX(Operation):
     parameter_frequencies = [(1,)]
 
     def generator(self):
-        return -0.5 * qml.PauliX(wires=self.wires[0]) @ qml.PauliX(wires=self.wires[1])
+        return -0.5 * PauliX(wires=self.wires[0]) @ PauliX(wires=self.wires[1])
 
     def __init__(self, phi, wires, do_queue=True, id=None):
         super().__init__(phi, wires=wires, do_queue=do_queue, id=id)
@@ -690,7 +691,7 @@ class IsingYY(Operation):
     parameter_frequencies = [(1,)]
 
     def generator(self):
-        return -0.5 * qml.PauliY(wires=self.wires[0]) @ qml.PauliY(wires=self.wires[1])
+        return -0.5 * PauliY(wires=self.wires[0]) @ PauliY(wires=self.wires[1])
 
     def __init__(self, phi, wires, do_queue=True, id=None):
         super().__init__(phi, wires=wires, do_queue=do_queue, id=id)
@@ -834,7 +835,7 @@ class IsingZZ(Operation):
     parameter_frequencies = [(1,)]
 
     def generator(self):
-        return -0.5 * qml.PauliZ(wires=self.wires[0]) @ qml.PauliZ(wires=self.wires[1])
+        return -0.5 * PauliZ(wires=self.wires[0]) @ PauliZ(wires=self.wires[1])
 
     def __init__(self, phi, wires, do_queue=True, id=None):
         super().__init__(phi, wires=wires, do_queue=do_queue, id=id)
@@ -1019,8 +1020,8 @@ class IsingXY(Operation):
 
     def generator(self):
         return 0.25 * (
-            qml.PauliX(wires=self.wires[0]) @ qml.PauliX(wires=self.wires[1])
-            + qml.PauliY(wires=self.wires[0]) @ qml.PauliY(wires=self.wires[1])
+            PauliX(wires=self.wires[0]) @ PauliX(wires=self.wires[1])
+            + PauliY(wires=self.wires[0]) @ PauliY(wires=self.wires[1])
         )
 
     def __init__(self, phi, wires, do_queue=True, id=None):
@@ -1049,12 +1050,12 @@ class IsingXY(Operation):
 
         """
         return [
-            qml.Hadamard(wires=[wires[0]]),
+            Hadamard(wires=[wires[0]]),
             qml.CY(wires=wires),
             qml.RY(phi / 2, wires=[wires[0]]),
             qml.RX(-phi / 2, wires=[wires[1]]),
             qml.CY(wires=wires),
-            qml.Hadamard(wires=[wires[0]]),
+            Hadamard(wires=[wires[0]]),
         ]
 
     @staticmethod

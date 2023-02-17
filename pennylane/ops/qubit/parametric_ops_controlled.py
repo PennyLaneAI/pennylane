@@ -23,6 +23,7 @@ import pennylane as qml
 from pennylane.operation import Operation
 from pennylane.wires import Wires
 
+from .non_parametric_ops import Hadamard, PauliX, PauliY, PauliZ
 from .parametric_ops_single_qubit import _can_replace, stack_last
 
 
@@ -372,15 +373,15 @@ class CPhaseShift00(Operation):
 
         """
         decomp_ops = [
-            qml.PauliX(wires[0]),
-            qml.PauliX(wires[1]),
+            PauliX(wires[0]),
+            PauliX(wires[1]),
             qml.PhaseShift(phi / 2, wires=[wires[0]]),
             qml.PhaseShift(phi / 2, wires=[wires[1]]),
             qml.CNOT(wires=wires),
             qml.PhaseShift(-phi / 2, wires=[wires[1]]),
             qml.CNOT(wires=wires),
-            qml.PauliX(wires[1]),
-            qml.PauliX(wires[0]),
+            PauliX(wires[1]),
+            PauliX(wires[0]),
         ]
         return decomp_ops
 
@@ -555,13 +556,13 @@ class CPhaseShift01(Operation):
 
         """
         decomp_ops = [
-            qml.PauliX(wires[0]),
+            PauliX(wires[0]),
             qml.PhaseShift(phi / 2, wires=[wires[0]]),
             qml.PhaseShift(phi / 2, wires=[wires[1]]),
             qml.CNOT(wires=wires),
             qml.PhaseShift(-phi / 2, wires=[wires[1]]),
             qml.CNOT(wires=wires),
-            qml.PauliX(wires[0]),
+            PauliX(wires[0]),
         ]
         return decomp_ops
 
@@ -735,13 +736,13 @@ class CPhaseShift10(Operation):
 
         """
         decomp_ops = [
-            qml.PauliX(wires[1]),
+            PauliX(wires[1]),
             qml.PhaseShift(phi / 2, wires=[wires[0]]),
             qml.PhaseShift(phi / 2, wires=[wires[1]]),
             qml.CNOT(wires=wires),
             qml.PhaseShift(-phi / 2, wires=[wires[1]]),
             qml.CNOT(wires=wires),
-            qml.PauliX(wires[1]),
+            PauliX(wires[1]),
         ]
         return decomp_ops
 
@@ -809,7 +810,7 @@ class CRX(Operation):
     parameter_frequencies = [(0.5, 1.0)]
 
     def generator(self):
-        return -0.5 * qml.Projector(np.array([1]), wires=self.wires[0]) @ qml.PauliX(self.wires[1])
+        return -0.5 * qml.Projector(np.array([1]), wires=self.wires[0]) @ PauliX(self.wires[1])
 
     def __init__(self, phi, wires, do_queue=True, id=None):
         super().__init__(phi, wires=wires, do_queue=do_queue, id=id)
@@ -973,7 +974,7 @@ class CRY(Operation):
     parameter_frequencies = [(0.5, 1.0)]
 
     def generator(self):
-        return -0.5 * qml.Projector(np.array([1]), wires=self.wires[0]) @ qml.PauliY(self.wires[1])
+        return -0.5 * qml.Projector(np.array([1]), wires=self.wires[0]) @ PauliY(self.wires[1])
 
     def __init__(self, phi, wires, do_queue=True, id=None):
         super().__init__(phi, wires=wires, do_queue=do_queue, id=id)
@@ -1136,7 +1137,7 @@ class CRZ(Operation):
     parameter_frequencies = [(0.5, 1.0)]
 
     def generator(self):
-        return -0.5 * qml.Projector(np.array([1]), wires=self.wires[0]) @ qml.PauliZ(self.wires[1])
+        return -0.5 * qml.Projector(np.array([1]), wires=self.wires[0]) @ PauliZ(self.wires[1])
 
     def __init__(self, phi, wires, do_queue=True, id=None):
         super().__init__(phi, wires=wires, do_queue=do_queue, id=id)
@@ -1473,6 +1474,6 @@ class CRot(Operation):
         if _can_replace(p1, 0):
             return qml.CRZ((p0 + p2) % (4 * np.pi), wires=wires)
         if _can_replace(p0, np.pi) and _can_replace(p1, np.pi / 2) and _can_replace(p2, 0):
-            return qml.ctrl(qml.Hadamard(wires=target_wires), control=self.control_wires)
+            return qml.ctrl(Hadamard(wires=target_wires), control=self.control_wires)
 
         return CRot(p0, p1, p2, wires=wires)
