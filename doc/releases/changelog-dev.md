@@ -258,8 +258,6 @@
 
 <h4>Smartly decompose Hamiltonian evolution 💯</h4>
 
-To be merged this week
-
 <h4>Tools for quantum chemistry and other applications 🛠️</h4>
 
 * A new method called `qml.qchem.givens_decomposition` has been added, which decomposes a unitary into a sequence
@@ -350,8 +348,6 @@ To be merged this week
   ```
 
 <h3>Improvements</h3>
-
-<h4>Add new improvements here</h4>
 
 <h4>Pulse programming</h4>
 
