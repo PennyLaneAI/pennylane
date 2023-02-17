@@ -366,7 +366,7 @@ class TestDifferentiableZNE:
     @pytest.mark.parametrize("lambda_", [1.0, 1.5, 1.7, 2.0, 2.5])
     @pytest.mark.parametrize("num_ops", [4, 8, 9, 12, 16])
     def test_correct_number_of_operators(self, lambda_, num_ops):
-        """Test the output corresponds to the right number of operators according to https://arxiv.org/abs/2005.10921"""
+        """Test the output corresponds to the right number of operators according to Sec. II A 1) in  https://arxiv.org/abs/2005.10921"""
         x = 0.5
         circuit = qml.tape.QuantumScript([qml.RX(x, wires=0) for i in range(num_ops)])
 
@@ -376,10 +376,10 @@ class TestDifferentiableZNE:
 
         n, s = divmod(lambda_ - 1, 2)
 
-        s = int(round(s * d / 2))
+        s = int(round(s * num_ops / 2))
 
-        total_new = d * (2 * n + 1) + 2 * s
-        assert total_new == len(folded[0]._ops)
+        exp_total_new = d * (2 * n + 1) + 2 * s
+        assert len(folded[0]._ops) == exp_total_new
 
     def test_global_fold_constant_result(self):
         """Ensuring that the folded circuits always yields the same results."""
@@ -404,7 +404,7 @@ class TestDifferentiableZNE:
 
         res = [
             fold_global(circuit, scale_factor=scale_factor)(w1, w2)
-            for scale_factor in [1.0, 1.5, 2.0, 2.5, 3.0]
+            for scale_factor in [1, 1.5, 2.0, 2.5, 3]
         ]
         # res = [qml.execute([folded], dev, None) for folded in folded_qnodes]
         assert np.allclose(res, 1)
