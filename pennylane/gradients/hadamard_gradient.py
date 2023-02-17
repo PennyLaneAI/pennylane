@@ -127,6 +127,20 @@ def _hadamard_grad(
     >>> fn(qml.execute(gradient_tapes, dev, None))
     (array(-0.3875172), array(-0.18884787), array(-0.38355704))
 
+    This transform can be registered directly as the quantum gradient transform
+    to use during autodifferentiation:
+
+    >>> dev = qml.device("default.qubit", wires=3)
+    >>> @qml.qnode(dev, interface="jax", diff_method="hadamard")
+    ... def circuit(params):
+    ...     qml.RX(params[0], wires=0)
+    ...     qml.RY(params[1], wires=0)
+    ...     qml.RX(params[2], wires=0)
+    ...     return qml.expval(qml.PauliZ(0))
+    >>> params = jax.numpy.array([0.1, 0.2, 0.3])
+    >>> jax.jacobian(circuit)(params)
+    [-0.3875172  -0.18884787 -0.38355704]
+
     .. note::
 
         ``hadamard_grad`` will decompose the operations that are not in the list of supported operations.

@@ -349,7 +349,12 @@ class TestVectorValuedQNode:
         a = jax.numpy.array(0.1)
         b = jax.numpy.array(0.2)
 
-        dev = qml.device(dev_name, wires=2)
+        num_wires = 2
+
+        if diff_method == "hadamard":
+            num_wires = 3
+
+        dev = qml.device(dev_name, wires=num_wires)
 
         @qnode(dev, diff_method=diff_method, interface=interface, mode=mode)
         def circuit(a, b):

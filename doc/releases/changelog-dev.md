@@ -135,8 +135,10 @@
 
 <h4>Always differentiable 📈</h4>
 
-* The Hadamard test gradient tranform is now available via `qml.gradients.hadamard_grad`.
+* The Hadamard test gradient tranform is now available via `qml.gradients.hadamard_grad`. The gradient transform 
+  `qml.gradients.hadamard_grad` is now registered as a differentiation method for `QNode`s.
   [#3625](https://github.com/PennyLaneAI/pennylane/pull/3625)
+  [#3736](https://github.com/PennyLaneAI/pennylane/pull/3736)
 
   `qml.gradients.hadamard_grad` is a hardware-compatible transform that calculates the
   gradient of a quantum circuit using the Hadamard test. Note that the device requires an
@@ -156,6 +158,21 @@
    tensor([-0.18884787], requires_grad=True),
    tensor([-0.38355704], requires_grad=True))
   ```
+  
+  This transform can be registered directly as the quantum gradient transform to use during autodifferentiation:
+  
+  ```pycon
+  >>> dev = qml.device("default.qubit", wires=3)
+  >>> @qml.qnode(dev, interface="jax", diff_method="hadamard")
+  ... def circuit(params):
+  ...     qml.RX(params[0], wires=0)
+  ...     qml.RY(params[1], wires=0)
+  ...     qml.RX(params[2], wires=0)
+  ...     return qml.expval(qml.PauliZ(0))
+  >>> params = jax.numpy.array([0.1, 0.2, 0.3])
+  >>> jax.jacobian(circuit)(params)
+  [-0.3875172  -0.18884787 -0.38355704]
+   ```
 
 * The gradient transform `qml.gradients.spsa_grad` is now registered as a
   differentiation method for `QNode`s.
