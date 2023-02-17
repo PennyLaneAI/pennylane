@@ -18,9 +18,9 @@
   [(#3706)](https://github.com/PennyLaneAI/pennylane/pull/3706)
   [(#3730)](https://github.com/PennyLaneAI/pennylane/pull/3730)
 
-  A time-dependent Hamiltonian can be created using `ParametrizedHamiltonian`, which 
+ A time-dependent Hamiltonian in PennyLane can be represented by a `ParametrizedHamiltonian`, which 
   holds information representing a linear combination of operators
-  with parametrized coefficents and can be constructed as follows:
+  with parametrized coefficients and can be constructed as follows:
 
   ```pycon
   f1 = lambda p, t: p * np.sin(t) * (t - 1)
@@ -50,7 +50,7 @@
       return qml.expval(qml.PauliX(0) @ qml.PauliZ(1))
   ```
 
-  Pulse-based circuits can be executed on the `default.qubit` simulator using JAX as an interface:
+  Pulse-based circuits like the one above can be executed on the `default.qubit` simulator:
 
   ```pycon
   >>> dev = dev = qml.device("default.qubit", wires=2)
@@ -220,8 +220,7 @@
   >>> DeviceArray([[0.0, 0.0, 0.3650435], [0.0, 0.0, -0.3650435]], dtype=float32)
   ```
 
-* The kernel matrix utility functions in `qml.kernels` are now autodifferentiation-compatible.
-  In addition they support batching, for example for quantum kernel execution with shot vectors.
+* The kernel matrix utility functions in `qml.kernels` are now autodifferentiation-compatible and support parameter broadcasting.
   [(#3742)](https://github.com/PennyLaneAI/pennylane/pull/3742)
 
   In addition to the autodifferentiation support in JAX, Autograd, Tensorflow, and PyTorch,
@@ -444,7 +443,7 @@ To be merged this week
   removal of in-place inversion.
   [(#3566)](https://github.com/PennyLaneAI/pennylane/pull/3566)
 
-* Moved `qml.utils.sparse_hamiltonian` function to `~.Hamiltonian.sparse_matrix` method.
+* The `qml.utils.sparse_hamiltonian` function has been moved to `qml.Hamiltonian.sparse_matrix` method.
   [(#3585)](https://github.com/PennyLaneAI/pennylane/pull/3585)
 
 * The `PauliSentence.operation()` method has been improved to avoid instantiating an `SProd` operator when
@@ -457,7 +456,7 @@ To be merged this week
 * `Sum` and `Prod` operations now have broadcasted operands.
   [(#3611)](https://github.com/PennyLaneAI/pennylane/pull/3611)
 
-* Implemented the XYX single-qubit unitary decomposition.
+* The XYX single-qubit unitary decomposition has been implemented.
   [(#3628)](https://github.com/PennyLaneAI/pennylane/pull/3628)
 
 * All dunder methods now return `NotImplemented`, allowing the right dunder method (e.g. `__radd__`)
