@@ -10,7 +10,7 @@
 <h4>Pulse programming 🔊</h4>
 
 * Support for creating pulse-based circuits that describe evolution under a time-dependent
-  Hamiltonian has now been added, as well as the ability to execute these
+  Hamiltonian has been added, as well as the ability to execute these
   pulse-based circuits on simulator.
   [(#3586)](https://github.com/PennyLaneAI/pennylane/pull/3586)
   [(#3617)](https://github.com/PennyLaneAI/pennylane/pull/3617)
@@ -65,7 +65,7 @@
 
 <h4>Special unitary operation 🌞</h4>
 
-* A new operation `SpecialUnitary` was added, providing access to an arbitrary
+* A new operation called `SpecialUnitary` has been added, providing access to an arbitrary
   unitary gate via a parametrization in the Pauli basis.
   [(#3650)](https://github.com/PennyLaneAI/pennylane/pull/3650)
   [(#3674)](https://github.com/PennyLaneAI/pennylane/pull/3674)
@@ -104,8 +104,8 @@
   True
   ```
 
-  This operation can be differentiated with hardware-compatible methods like parameter shifts
-  and it supports parameter broadcasting/batching, but not both at the same time.
+  This operation can be differentiated with hardware-compatible methods like the parameter-shift rule
+  and it supports parameter broadcasting, but not both at the same time.
 
 <h4>Always differentiable 📈</h4>
 
@@ -224,8 +224,8 @@
   In addition they support batching, for example for quantum kernel execution with shot vectors.
   [(#3742)](https://github.com/PennyLaneAI/pennylane/pull/3742)
 
-  In addition to the autodifferentiation support in JAX, Autograd, Tensorflow and PyTorch,
-  optional batching was added, allowing for the following:
+  In addition to the autodifferentiation support in JAX, Autograd, Tensorflow, and PyTorch,
+  optional parameter broadcasting was added for `shots` vectors, allowing for the following:
   
   ```python
   dev = qml.device('default.qubit', wires=2, shots=(100, 100))
@@ -241,7 +241,7 @@
   Note that we extract the first probability vector entry for both
   evaluations using 100 shots each.
   We can then compute the kernel matrix on a set of 4 (random) feature
-  vectors ``X`` but using two sets of 100 shots each via
+  vectors `X` but using two sets of 100 shots each via
 
   ```pycon
   >>> X = np.random.random((4, 2))
@@ -356,7 +356,7 @@ To be merged this week
 
 <h4>Pulse programming</h4>
 
-* Added `pwc` as a convenience function for defining a `ParametrizedHamiltonian`.
+* A piecewise constant function — `pwc` — has been added as a convenience function for defining a `ParametrizedHamiltonian`.
   This function can be used to create a callable coefficient by setting
   the timespan over which the function should be non-zero. The resulting callable
   can be passed an array of parameters and a time.
@@ -405,9 +405,9 @@ To be merged this week
   DeviceArray(0., dtype=float32)
   ```
 
-<h4>Operations and batching</h4>
+<h4>Operations and parameter broadcasting</h4>
 
-* A new function `dot` has been added to compute the dot product between a vector and a list of operators.
+* A new function called `dot` has been added to compute the dot product between a vector and a list of operators.
   [(#3586)](https://github.com/PennyLaneAI/pennylane/pull/3586)
 
   ```pycon
@@ -437,7 +437,7 @@ To be merged this week
 * The `qml.equal` function has been extended to compare `Prod` and `Sum` operators.
   [(#3516)](https://github.com/PennyLaneAI/pennylane/pull/3516)
 
-* `qml.purity` is added as a measurement process for purity
+* `qml.purity` has been added as a measurement process for purity
   [(#3551)](https://github.com/PennyLaneAI/pennylane/pull/3551)
 
 * In-place inversion has been removed for qutrit operations in preparation for the
@@ -451,7 +451,7 @@ To be merged this week
   the coefficient is equal to 1.
   [(#3595)](https://github.com/PennyLaneAI/pennylane/pull/3595)
 
-* Allow batching in all `SymbolicOp` operators, which include `Exp`, `Pow` and `SProd`.
+* `Exp`, `Pow` and `SProd` now support parameter broadcasting.
   [(#3597)](https://github.com/PennyLaneAI/pennylane/pull/3597)
 
 * `Sum` and `Prod` operations now have broadcasted operands.
@@ -470,7 +470,7 @@ To be merged this week
 * All `Operator`'s input parameters that are lists are cast into vanilla numpy arrays.
   [(#3659)](https://github.com/PennyLaneAI/pennylane/pull/3659)
 
-* Added `qml.ops.ctrl_decomp_zyz` to compute the decomposition of a controlled single-qubit operation given
+* A new function called `qml.ops.ctrl_decomp_zyz` has been added to compute the decomposition of a controlled single-qubit operation given
   a single-qubit operation and the control wires.
   [(#3681)](https://github.com/PennyLaneAI/pennylane/pull/3681)
 
@@ -494,8 +494,8 @@ To be merged this week
   [(#3714)](https://github.com/PennyLaneAI/pennylane/pull/3714)
   [(#3774)](https://github.com/PennyLaneAI/pennylane/pull/3774)
 
-* The `default.mixed` device received a performance improvement for multi-qubit operations.
-  This also allows to apply channels that act on more than seven qubits, which was not possible before.
+* The `default.mixed` device is now more performant for multi-qubit operations.
+  This also allows for the application of channels that act on more than seven qubits, which was not possible before.
   [(#3584)](https://github.com/PennyLaneAI/pennylane/pull/3584)
 
 * `qml.dot` now groups coefficients together.
@@ -542,16 +542,16 @@ To be merged this week
   RZ((-1+0j), wires=[2])]
   ```
 
-* `Sum._sort` method takes into account the name of the operator when sorting.
+* The `Sum._sort` method now takes into account the name of the operator when sorting.
   [(#3691)](https://github.com/PennyLaneAI/pennylane/pull/3691)
 
 <h4>Differentiability and interfaces</h4>
 
-* The `qml.math` module now also contains a submodule for
+* The `qml.math` module now contains a submodule for
   fast Fourier transforms, `qml.math.fft`.
   [(#1440)](https://github.com/PennyLaneAI/pennylane/pull/1440)
 
-  The submodule in particular provides differentiable
+  In particular, the submodule provides differentiable
   versions of the following functions, available in all common
   interfaces for PennyLane
 
@@ -561,7 +561,7 @@ To be merged this week
   * [ifft2](https://numpy.org/doc/stable/reference/generated/numpy.fft.ifft2.html)
 
   Note that the output of the derivative of these functions
-  may differ when used with complex-valued inputs, due to different
+  may differ when used with complex-valued inputs due to different
   conventions on complex-valued derivatives.
 
 * Validation has been added on gradient keyword arguments when initializing a QNode — if unexpected keyword arguments are passed,
@@ -584,14 +584,14 @@ To be merged this week
 * `qml.math.matmul` now supports PyTorch and Autograd tensors.
   [(#3613)](https://github.com/PennyLaneAI/pennylane/pull/3613)
 
-* Add `qml.math.detach`, which detaches a tensor from its trace. This stops
+* A new function called `qml.math.detach` has been added which detaches a tensor from its trace. This stops
   automatic gradient computations.
   [(#3674)](https://github.com/PennyLaneAI/pennylane/pull/3674)
 
-* Add `typing.TensorLike` type.
+* A new type called `typing.TensorLike` has been added.
   [(#3675)](https://github.com/PennyLaneAI/pennylane/pull/3675)
 
-* `QuantumMonteCarlo` template is now JAX-JIT compatible when passing `jax.numpy` arrays to the template.
+* The `QuantumMonteCarlo` template is now JAX-JIT compatible when passing `jax.numpy` arrays to the template.
   [(#3734)](https://github.com/PennyLaneAI/pennylane/pull/3734)
 
 * `DefaultQubitJax` now supports evolving the state vector when executing `ParametrizedEvolution`
@@ -612,28 +612,28 @@ To be merged this week
   [(#3587)](https://github.com/PennyLaneAI/pennylane/pull/3587)
 
 * The parameter-shift derivative of variances saves a redundant evaluation of the
-  corresponding unshifted expectation value tape, if possible
+  corresponding unshifted expectation value tape, if possible.
   [(#3744)](https://github.com/PennyLaneAI/pennylane/pull/3744)
 
 <h4>Next generation device API</h4>
 
-* The `apply_operation` single-dispatch function is added to `devices/qubit` that applies an operation
+* The `apply_operation` single-dispatch function has been added to `devices/qubit`, which applies an operation
   to a state and returns a new state.
   [(#3637)](https://github.com/PennyLaneAI/pennylane/pull/3637)
 
-* The `preprocess` function is added to `devices/qubit` that validates, expands, and transforms a batch
+* The `preprocess` function has been added to `devices/qubit`, which validates, expands, and transforms a batch
   of `QuantumTape` objects to abstract preprocessing details away from the device.
   [(#3708)](https://github.com/PennyLaneAI/pennylane/pull/3708)
 
-* The `create_initial_state` function is added to `devices/qubit` that returns an initial state for an execution.
+* The `create_initial_state` function has been added to `devices/qubit`, which returns an initial state for an execution.
   [(#3683)](https://github.com/PennyLaneAI/pennylane/pull/3683)
 
-* The `simulate` function is added to `devices/qubit` that turns a single quantum tape into a measurement result.
+* The `simulate` function has been added to `devices/qubit`, which turns a single quantum tape into a measurement result.
   The function only supports state based measurements with either no observables or observables with diagonalizing gates.
   It supports simultanous measurement of non-commuting observables.
   [(#3700)](https://github.com/PennyLaneAI/pennylane/pull/3700)
 
-* The `ExecutionConfig` data class has been added.
+* A data class called `ExecutionConfig` class has been added.
   [(#3649)](https://github.com/PennyLaneAI/pennylane/pull/3649)
 
 * The `StatePrep` class has been added as an interface that state-prep operators must implement.
