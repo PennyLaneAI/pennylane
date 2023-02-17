@@ -34,7 +34,7 @@ from pennylane import (
     Snapshot,
 )
 from pennylane import numpy as np
-from pennylane.measurements import Counts, AllCounts, MutualInfo, Sample, State, VnEntropy
+from pennylane.measurements import CountsMP, MutualInfoMP, SampleMP, StateMP, VnEntropyMP
 from pennylane.operation import Channel
 from pennylane.ops.qubit.attributes import diagonal_in_z_basis
 from pennylane.wires import Wires
@@ -86,9 +86,13 @@ class DefaultMixed(QubitDevice):
         "SX",
         "CNOT",
         "SWAP",
+        "ISWAP",
         "CSWAP",
         "Toffoli",
+        "CCZ",
+        "CY",
         "CZ",
+        "CH",
         "PhaseShift",
         "ControlledPhaseShift",
         "CPhaseShift00",
@@ -120,6 +124,7 @@ class DefaultMixed(QubitDevice):
         "QubitCarry",
         "QubitSum",
         "OrbitalRotation",
+        "FermionicSWAP",
         "QFT",
         "ThermalRelaxationError",
         "ECR",
@@ -127,6 +132,7 @@ class DefaultMixed(QubitDevice):
 
     _reshape = staticmethod(qnp.reshape)
     _flatten = staticmethod(qnp.flatten)
+    _transpose = staticmethod(qnp.transpose)
     # Allow for the `axis` keyword argument for integration with broadcasting-enabling
     # code in QubitDevice. However, it is not used as DefaultMixed does not support broadcasting
     # pylint: disable=unnecessary-lambda
@@ -139,7 +145,6 @@ class DefaultMixed(QubitDevice):
 
     @staticmethod
     def _asarray(array, dtype=None):
-
         # Support float
         if not hasattr(array, "__len__"):
             return np.asarray(array, dtype=dtype)
@@ -241,7 +246,6 @@ class DefaultMixed(QubitDevice):
         self._pre_rotated_state = self._state
 
     def analytic_probability(self, wires=None):
-
         if self._state is None:
             return None
 
@@ -329,6 +333,53 @@ class DefaultMixed(QubitDevice):
         )
 
         self._state = qnp.einsum(einsum_indices, kraus, self._state, kraus_dagger)
+
+    def _apply_channel_tensordot(self, kraus, wires):
+        r"""Apply a quantum channel specified by a list of Kraus operators to subsystems of the
+        quantum state. For a unitary gate, there is a single Kraus operator.
+
+        Args:
+            kraus (list[array]): Kraus operators
+            wires (Wires): target wires
+        """
+        channel_wires = self.map_wires(wires)
+        num_ch_wires = len(channel_wires)
+
+        # Shape kraus operators and cast them to complex data type
+        kraus_shape = [2] * (num_ch_wires * 2)
+        kraus = [qnp.cast(qnp.reshape(k, kraus_shape), dtype=self.C_DTYPE) for k in kraus]
+
+        # row indices of the quantum state affected by this operation
+        row_wires_list = channel_wires.tolist()
+        # column indices are shifted by the number of wires
+        col_wires_list = [w + self.num_wires for w in row_wires_list]
+
+        channel_col_ids = list(range(num_ch_wires, 2 * num_ch_wires))
+        axes_left = [channel_col_ids, row_wires_list]
+        # Use column indices instead or rows to incorporate transposition of K^\dagger
+        axes_right = [col_wires_list, channel_col_ids]
+
+        # Apply the Kraus operators, and sum over all Kraus operators afterwards
+        def _conjugate_state_with(k):
+            """Perform the double tensor product k @ self._state @ k.conj().
+            The `axes_left` and `axes_right` arguments are taken from the ambient variable space
+            and `axes_right` is assumed to incorporate the tensor product and the transposition
+            of k.conj() simultaneously."""
+            return qnp.tensordot(qnp.tensordot(k, self._state, axes_left), qnp.conj(k), axes_right)
+
+        if len(kraus) == 1:
+            _state = _conjugate_state_with(kraus[0])
+        else:
+            _state = qnp.sum(qnp.stack([_conjugate_state_with(k) for k in kraus]), axis=0)
+
+        # Permute the affected axes to their destination places.
+        # The row indices of the kraus operators are moved from the beginning to the original
+        # target row locations, the column indices from the end to the target column locations
+        source_left = list(range(num_ch_wires))
+        dest_left = row_wires_list
+        source_right = list(range(-num_ch_wires, 0))
+        dest_right = col_wires_list
+        self._state = qnp.moveaxis(_state, source_left + source_right, dest_left + dest_right)
 
     def _apply_diagonal_unitary(self, eigvals, wires):
         r"""Apply a diagonal unitary gate specified by a list of eigenvalues. This method uses
@@ -418,7 +469,7 @@ class DefaultMixed(QubitDevice):
         else:
             # generate basis states on subset of qubits via the cartesian product
             basis_states = qnp.asarray(
-                list(itertools.product([0, 1], repeat=len(device_wires))), dtype=self.C_DTYPE
+                list(itertools.product([0, 1], repeat=len(device_wires))), dtype=int
             )
 
             # get basis states to alter on full set of qubits
@@ -539,7 +590,14 @@ class DefaultMixed(QubitDevice):
         if operation in diagonal_in_z_basis:
             self._apply_diagonal_unitary(matrices, wires)
         else:
-            self._apply_channel(matrices, wires)
+            num_op_wires = len(wires)
+            interface = qml.math.get_interface(self._state, *matrices)
+            # Use tensordot for Autograd and Numpy if there are more than 2 wires
+            # Use tensordot in any case for more than 7 wires, as einsum does not support this case
+            if (num_op_wires > 2 and interface in {"autograd", "numpy"}) or num_op_wires > 7:
+                self._apply_channel_tensordot(matrices, wires)
+            else:
+                self._apply_channel(matrices, wires)
 
     # pylint: disable=arguments-differ
 
@@ -576,33 +634,33 @@ class DefaultMixed(QubitDevice):
 
         if self.readout_err:
             wires_list = []
-            for obs in circuit.observables:
-                if obs.return_type is State:
+            for m in circuit.measurements:
+                if isinstance(m, StateMP):
                     # State: This returns pre-rotated state, so no readout error.
                     # Assumed to only be allowed if it's the only measurement.
                     self.measured_wires = []
                     return super().execute(circuit, **kwargs)
-                if obs.return_type in (Sample, Counts, AllCounts):
-                    if obs.name == "Identity" and obs.wires in (qml.wires.Wires([]), self.wires):
-                        # Sample, Counts: Readout error applied to all device wires when wires
-                        # not specified or all wires specified.
-                        self.measured_wires = self.wires
-                        return super().execute(circuit, **kwargs)
-                if obs.return_type in (VnEntropy, MutualInfo):
+                if isinstance(m, (SampleMP, CountsMP)) and m.wires in (
+                    qml.wires.Wires([]),
+                    self.wires,
+                ):
+                    # Sample, Counts: Readout error applied to all device wires when wires
+                    # not specified or all wires specified.
+                    self.measured_wires = self.wires
+                    return super().execute(circuit, **kwargs)
+                if isinstance(m, (VnEntropyMP, MutualInfoMP)):
                     # VnEntropy, MutualInfo: Computed for the state prior to measurement. So, readout
                     # error need not be applied on the corresponding device wires.
                     continue
-                wires_list.append(obs.wires)
+                wires_list.append(m.wires)
             self.measured_wires = qml.wires.Wires.all_wires(wires_list)
         return super().execute(circuit, **kwargs)
 
     def apply(self, operations, rotations=None, **kwargs):
-
         rotations = rotations or []
 
         # apply the circuit operations
         for i, operation in enumerate(operations):
-
             if i > 0 and isinstance(operation, (QubitStateVector, BasisState)):
                 raise DeviceError(
                     f"Operation {operation.name} cannot be used after other Operations have already been applied "

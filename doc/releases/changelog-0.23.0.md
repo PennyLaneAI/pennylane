@@ -602,7 +602,7 @@
 
 * Fixed a bug where computing statistics for a relatively few number of shots
   (e.g., `shots=10`), an error arose due to indexing into an array using a
-  `DeviceArray`.
+  `Array`.
   [(#2427)](https://github.com/PennyLaneAI/pennylane/pull/2427)
 
 * PennyLane Lightning version in Docker container is pulled from latest wheel-builds.

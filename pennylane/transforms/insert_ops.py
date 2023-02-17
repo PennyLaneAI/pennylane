@@ -90,7 +90,7 @@ def insert(
         device which will transform circuits before execution
 
     Raises:
-        QuantumFunctionError: if some observables in the qscript are not qubit-wise commuting
+        QuantumFunctionError: if some observables in the tape are not qubit-wise commuting
         ValueError: if a single operation acting on multiple wires is passed to ``op``
         ValueError: if the requested ``position`` argument is not ``'start'``, ``'end'`` or
             ``'all'`` OR PennyLane Operation

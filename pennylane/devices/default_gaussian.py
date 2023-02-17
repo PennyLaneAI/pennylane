@@ -251,7 +251,6 @@ def beamsplitter(theta, phi):
 
 
 def two_mode_squeezing(r, phi):
-
     """Two-mode squeezing.
 
     Args:
@@ -710,7 +709,6 @@ class DefaultGaussian(Device):
         self.reset()
 
     def apply(self, operation, wires, par):
-
         # translate to wire labels used by device
         device_wires = self.map_wires(wires)
 
@@ -786,7 +784,6 @@ class DefaultGaussian(Device):
         return S2
 
     def expval(self, observable, wires, par):
-
         if observable == "PolyXP":
             cov, mu = self._state
             ev, var = self._observable_map[observable](
@@ -805,14 +802,13 @@ class DefaultGaussian(Device):
         return ev
 
     def var(self, observable, wires, par):
-
-        cov, mu = self.reduced_state(wires)
-
         if observable == "PolyXP":
+            cov, mu = self._state
             _, var = self._observable_map[observable](
                 cov, mu, wires, self.wires, par, hbar=self.hbar
             )
         else:
+            cov, mu = self.reduced_state(wires)
             _, var = self._observable_map[observable](cov, mu, par, hbar=self.hbar)
         return var
 

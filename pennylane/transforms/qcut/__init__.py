@@ -14,46 +14,58 @@
 """
 This subpackage contains quantum function transforms for cutting quantum circuits.
 """
-import pennylane as qml
 
-from .qcut import (
-    MeasureNode,
-    PrepareNode,
+from .utils import (
     replace_wire_cut_node,
     replace_wire_cut_nodes,
-    tape_to_graph,
     fragment_graph,
+    find_and_place_cuts,
+    place_wire_cuts,
+    _remove_existing_cuts,
+    _get_optim_cut,
+    _is_valid_cut,
+)
+from .tapes import (
     graph_to_tape,
+    tape_to_graph,
     expand_fragment_tape,
-    CutStrategy,
-    cut_circuit,
+    _qcut_expand_fn,
+    _get_measurements,
+    _find_new_wire,
+    _add_operator_node,
+)
+from .cutcircuit import cut_circuit, _cut_circuit_expand, qnode_execution_wrapper
+from .montecarlo import (
     cut_circuit_mc,
+    _cut_circuit_mc_expand,
+    qnode_execution_wrapper_mc,
     expand_fragment_tapes_mc,
+    MC_MEASUREMENTS,
+    MC_STATES,
+    _identity,
+    _pauliX,
+    _pauliY,
+    _pauliZ,
+)
+from .processing import (
+    qcut_processing_fn,
     qcut_processing_fn_sample,
     qcut_processing_fn_mc,
-    qnode_execution_wrapper_mc,
     contract_tensors,
-    qcut_processing_fn,
-    qnode_execution_wrapper,
-    kahypar_cut,
-    place_wire_cuts,
-    find_and_place_cuts,
-    _remove_existing_cuts,
-    _graph_to_hmetis,
-    _qcut_expand_fn,
     _process_tensor,
     _to_tensors,
     _reshape_results,
-    _get_measurements,
-    MC_STATES,
-    MC_MEASUREMENTS,
+    _get_symbol,
 )
-
-
-def __getattr__(name):
-    # for more information on overwriting `__getattr__`, see https://peps.python.org/pep-0562/
-    try:
-        return globals()[name]
-    except KeyError:
-        obj = getattr(qml.transforms.qcut.qcut, name)
-        return obj
+from .kahypar import kahypar_cut, _graph_to_hmetis
+from .cutstrategy import CutStrategy
+from .qcut import (
+    MeasureNode,
+    PrepareNode,
+    _prep_one_state,
+    _prep_zero_state,
+    _prep_plus_state,
+    _prep_minus_state,
+    _prep_iplus_state,
+    _prep_iminus_state,
+)

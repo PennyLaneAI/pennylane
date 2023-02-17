@@ -38,6 +38,11 @@ from .utils import (
     simplify,
 )
 
+from .conversion import (
+    pauli_decompose,
+    pauli_sentence,
+)
+
 from .grouping import (
     group_observables,
     PauliGroupingStrategy,

@@ -111,7 +111,7 @@ class hessian_transform(qml.batch_transform):
 
     - ``tape`` (*QuantumTape*): the input quantum tape to compute the Hessian of
 
-    - ``hessian_tapes`` (*List[QuantumTape]*): is a list of output tapes to be
+    - ``hessian_tapes`` (*list[QuantumTape]*): is a list of output tapes to be
       evaluated. If this list is empty, no quantum evaluations will be made.
 
     - ``processing_fn`` is a processing function to be applied to the output of the
@@ -134,7 +134,7 @@ class hessian_transform(qml.batch_transform):
     .. note::
 
         The input tape might have parameters of various types, including NumPy arrays,
-        JAX DeviceArrays, and TensorFlow and PyTorch tensors.
+        JAX Arrays, and TensorFlow and PyTorch tensors.
 
         If the Hessian transform is written in a autodiff-compatible manner, either by
         using a framework such as Autograd or TensorFlow, or by using ``qml.math`` for
@@ -157,6 +157,12 @@ class hessian_transform(qml.batch_transform):
         # Here, we overwrite the QNode execution wrapper in order to take into account
         # that classical processing may be present inside the QNode.
         hybrid = tkwargs.pop("hybrid", self.hybrid)
+
+        old_interface = qnode.interface
+
+        if old_interface == "auto":
+            qnode.interface = qml.math.get_interface(*targs, *list(tkwargs.values()))
+
         _wrapper = super().default_qnode_wrapper(qnode, targs, tkwargs)
         cjac_fn = qml.transforms.classical_jacobian(qnode, expand_fn=self.expand_fn)
 
@@ -170,6 +176,9 @@ class hessian_transform(qml.batch_transform):
                 return ()
 
             qhess = _wrapper(*args, **kwargs)
+
+            if old_interface == "auto":
+                qnode.interface = "auto"
 
             if not hybrid:
                 return qhess

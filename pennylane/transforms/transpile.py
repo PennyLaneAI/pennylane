@@ -1,17 +1,18 @@
 """
 Contains the transpiler transform.
 """
-from typing import Union, List
+from typing import List, Union
+
 import networkx as nx
 
 import pennylane as qml
-from pennylane import apply, Hamiltonian
-from pennylane.ops.qubit import SWAP
+from pennylane import Hamiltonian, apply
 from pennylane.operation import Tensor
 from pennylane.ops import __all__ as all_ops
+from pennylane.ops.qubit import SWAP
+from pennylane.queuing import QueuingManager
 from pennylane.tape import QuantumTape
 from pennylane.transforms import qfunc_transform
-from pennylane.queuing import QueuingManager
 from pennylane.wires import Wires
 
 
@@ -180,7 +181,7 @@ def _adjust_mmt_indices(_m, _map_wires):
 
     # change wires of observable
     if _m.obs is None:
-        return type(_m)(return_type=_m.return_type, eigvals=qml.eigvals(_m), wires=_new_wires)
+        return type(_m)(eigvals=qml.eigvals(_m), wires=_new_wires)
 
     _new_obs = type(_m.obs)(wires=_new_wires, id=_m.obs.id)
-    return type(_m)(return_type=_m.return_type, obs=_new_obs)
+    return type(_m)(obs=_new_obs)

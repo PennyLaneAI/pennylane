@@ -58,7 +58,6 @@ def load(quantum_circuit_object, format: str):
     """
 
     if format in plugin_converters:
-
         # loads the plugin load function
         plugin_converter = plugin_converters[format].load()
 

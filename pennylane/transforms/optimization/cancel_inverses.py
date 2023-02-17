@@ -50,12 +50,6 @@ def _are_inverses(op1, op2):
     if op1 in self_inverses and op1.name == op2.name:
         return True
 
-    # Either gate is the in-place inverse of the other
-    name_set = {op1.name, op2.name}
-    shortest_name = min(name_set)
-    if {shortest_name, shortest_name + ".inv"} == name_set:
-        return True
-
     # op1 is an `Adjoint` class and its base is equal to op2
     if isinstance(op1, Adjoint) and _ops_equal(op1.base, op2):
         return True

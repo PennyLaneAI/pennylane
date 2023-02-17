@@ -20,7 +20,10 @@ import itertools
 import numbers
 from collections.abc import Iterable
 from copy import copy
+import functools
 from typing import List
+import scipy
+
 
 import pennylane as qml
 from pennylane import numpy as np
@@ -31,7 +34,6 @@ OBS_MAP = {"PauliX": "X", "PauliY": "Y", "PauliZ": "Z", "Hadamard": "H", "Identi
 
 
 def _compute_grouping_indices(observables, grouping_type="qwc", method="rlf"):
-
     # todo: directly compute the
     # indices, instead of extracting groups of observables first
     observable_groups = qml.pauli.group_observables(
@@ -172,7 +174,6 @@ class Hamiltonian(Observable):
         id=None,
         do_queue=True,
     ):
-
         if qml.math.shape(coeffs)[0] != len(observables):
             raise ValueError(
                 "Could not create valid Hamiltonian; "
@@ -342,6 +343,92 @@ class Hamiltonian(Observable):
                 self.ops, grouping_type=grouping_type, method=method
             )
 
+    def sparse_matrix(self, wire_order=None):
+        r"""Computes the sparse matrix representation of a Hamiltonian in the computational basis.
+
+        Args:
+            wire_order (Iterable): global wire order, must contain all wire labels from the operator's wires.
+                If not provided, the default order of the wires (self.wires) of the Hamiltonian is used.
+
+        Returns:
+            csr_matrix: a sparse matrix in scipy Compressed Sparse Row (CSR) format with dimension
+            :math:`(2^n, 2^n)`, where :math:`n` is the number of wires
+
+        **Example:**
+
+        >>> coeffs = [1, -0.45]
+        >>> obs = [qml.PauliZ(0) @ qml.PauliZ(1), qml.PauliY(0) @ qml.PauliZ(1)]
+        >>> H = qml.Hamiltonian(coeffs, obs)
+        >>> H_sparse = H.sparse_matrix()
+        >>> H_sparse
+        <4x4 sparse matrix of type '<class 'numpy.complex128'>'
+                with 8 stored elements in Compressed Sparse Row format>
+
+        The resulting sparse matrix can be either used directly or transformed into a numpy array:
+
+        >>> H_sparse.toarray()
+        array([[ 1.+0.j  ,  0.+0.j  ,  0.+0.45j,  0.+0.j  ],
+               [ 0.+0.j  , -1.+0.j  ,  0.+0.j  ,  0.-0.45j],
+               [ 0.-0.45j,  0.+0.j  , -1.+0.j  ,  0.+0.j  ],
+               [ 0.+0.j  ,  0.+0.45j,  0.+0.j  ,  1.+0.j  ]])
+        """
+        if wire_order is None:
+            wires = self.wires
+        else:
+            wires = wire_order
+        n = len(wires)
+        matrix = scipy.sparse.csr_matrix((2**n, 2**n), dtype="complex128")
+
+        coeffs = qml.math.toarray(self.data)
+
+        temp_mats = []
+        for coeff, op in zip(coeffs, self.ops):
+            obs = []
+            for o in qml.operation.Tensor(op).obs:
+                if len(o.wires) > 1:
+                    # todo: deal with operations created from multi-qubit operations such as Hermitian
+                    raise ValueError(
+                        f"Can only sparsify Hamiltonians whose constituent observables consist of "
+                        f"(tensor products of) single-qubit operators; got {op}."
+                    )
+                obs.append(o.matrix())
+
+            # Array to store the single-wire observables which will be Kronecker producted together
+            mat = []
+            # i_count tracks the number of consecutive single-wire identity matrices encountered
+            # in order to avoid unnecessary Kronecker products, since I_n x I_m = I_{n+m}
+            i_count = 0
+            for wire_lab in wires:
+                if wire_lab in op.wires:
+                    if i_count > 0:
+                        mat.append(scipy.sparse.eye(2**i_count, format="coo"))
+                    i_count = 0
+                    idx = op.wires.index(wire_lab)
+                    # obs is an array storing the single-wire observables which
+                    # make up the full Hamiltonian term
+                    sp_obs = scipy.sparse.coo_matrix(obs[idx])
+                    mat.append(sp_obs)
+                else:
+                    i_count += 1
+
+            if i_count > 0:
+                mat.append(scipy.sparse.eye(2**i_count, format="coo"))
+
+            red_mat = (
+                functools.reduce(lambda i, j: scipy.sparse.kron(i, j, format="coo"), mat) * coeff
+            )
+
+            temp_mats.append(red_mat.tocsr())
+            # Value of 100 arrived at empirically to balance time savings vs memory use. At this point
+            # the `temp_mats` are summed into the final result and the temporary storage array is
+            # cleared.
+            if (len(temp_mats) % 100) == 0:
+                matrix += sum(temp_mats)
+                temp_mats = []
+
+        matrix += sum(temp_mats)
+        return matrix
+
     def simplify(self):
         r"""Simplifies the Hamiltonian by combining like-terms.
 
@@ -393,6 +480,7 @@ class Hamiltonian(Observable):
         self._wires = qml.wires.Wires.all_wires([op.wires for op in self.ops], sort=True)
         # reset grouping, since the indices refer to the old observables and coefficients
         self._grouping_indices = None
+        return self
 
     def __str__(self):
         def wires_print(ob: Observable):
@@ -406,7 +494,6 @@ class Hamiltonian(Observable):
         terms_ls = []
 
         for coeff, obs in paired_coeff_obs:
-
             if isinstance(obs, Tensor):
                 obs_strs = [f"{OBS_MAP.get(ob.name, ob.name)}{wires_print(ob)}" for ob in obs.obs]
                 ob_str = " ".join(obs_strs)
@@ -545,7 +632,7 @@ class Hamiltonian(Observable):
 
             return qml.Hamiltonian(coeffs1, terms, simplify=True)
 
-        raise ValueError(f"Cannot tensor product Hamiltonian and {type(H)}")
+        return NotImplemented
 
     def __rmatmul__(self, H):
         r"""The tensor product operation (from the right) between a Hamiltonian and
@@ -562,7 +649,7 @@ class Hamiltonian(Observable):
 
             return qml.Hamiltonian(coeffs1, terms, simplify=True)
 
-        raise ValueError(f"Cannot tensor product Hamiltonian and {type(H)}")
+        return NotImplemented
 
     def __add__(self, H):
         r"""The addition operation between a Hamiltonian and a Hamiltonian/Tensor/Observable."""
@@ -584,7 +671,7 @@ class Hamiltonian(Observable):
             ops.append(H)
             return qml.Hamiltonian(coeffs, ops, simplify=True)
 
-        raise ValueError(f"Cannot add Hamiltonian and {type(H)}")
+        return NotImplemented
 
     __radd__ = __add__
 
@@ -595,15 +682,15 @@ class Hamiltonian(Observable):
             coeffs = qml.math.multiply(a, self_coeffs)
             return qml.Hamiltonian(coeffs, self.ops.copy())
 
-        raise ValueError(f"Cannot multiply Hamiltonian by {type(a)}")
+        return NotImplemented
 
     __rmul__ = __mul__
 
     def __sub__(self, H):
         r"""The subtraction operation between a Hamiltonian and a Hamiltonian/Tensor/Observable."""
         if isinstance(H, (Hamiltonian, Tensor, Observable)):
-            return self.__add__(H.__mul__(-1))
-        raise ValueError(f"Cannot subtract {type(H)} from Hamiltonian")
+            return self + (-1 * H)
+        return NotImplemented
 
     def __iadd__(self, H):
         r"""The inplace addition operation between a Hamiltonian and a Hamiltonian/Tensor/Observable."""
@@ -624,7 +711,7 @@ class Hamiltonian(Observable):
             self.simplify()
             return self
 
-        raise ValueError(f"Cannot add Hamiltonian and {type(H)}")
+        return NotImplemented
 
     def __imul__(self, a):
         r"""The inplace scalar multiplication operation between a scalar and a Hamiltonian."""
@@ -632,20 +719,20 @@ class Hamiltonian(Observable):
             self._coeffs = qml.math.multiply(a, self._coeffs)
             return self
 
-        raise ValueError(f"Cannot multiply Hamiltonian by {type(a)}")
+        return NotImplemented
 
     def __isub__(self, H):
         r"""The inplace subtraction operation between a Hamiltonian and a Hamiltonian/Tensor/Observable."""
         if isinstance(H, (Hamiltonian, Tensor, Observable)):
             self.__iadd__(H.__mul__(-1))
             return self
-        raise ValueError(f"Cannot subtract {type(H)} from Hamiltonian")
+        return NotImplemented
 
     def queue(self, context=qml.QueuingManager):
         """Queues a qml.Hamiltonian instance"""
         for o in self.ops:
-            context.update_info(o, owner=self)
-        context.append(self, owns=tuple(self.ops))
+            context.remove(o)
+        context.append(self)
         return self
 
     def map_wires(self, wire_map: dict):

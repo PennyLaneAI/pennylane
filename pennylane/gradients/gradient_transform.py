@@ -19,6 +19,31 @@ import warnings
 import pennylane as qml
 from pennylane.transforms.tape_expand import expand_invalid_trainable
 
+SUPPORTED_GRADIENT_KWARGS = [
+    "approx_order",
+    "argnum",
+    "broadcast",
+    "device_wires",
+    "diagonal_shifts",
+    "f0",
+    "force_order2",
+    "gradient_recipes",
+    "gradient_kwargs",
+    "h",
+    "n",
+    "num",
+    "num_directions",
+    "off_diagonal_shifts",
+    "order",
+    "reduction",
+    "sampler",
+    "sampler_seed",
+    "shifts",
+    "shots",
+    "strategy",
+    "validate_params",
+]
+
 
 def gradient_analysis(tape, use_graph=True, grad_fn=None):
     """Update the parameter information dictionary of the tape with
@@ -46,15 +71,14 @@ def gradient_analysis(tape, use_graph=True, grad_fn=None):
             the cached gradient analysis will be used.
     """
     # pylint:disable=protected-access
-    if grad_fn is not None and getattr(tape, "_gradient_fn", None) is grad_fn:
-        # gradient analysis has already been performed on this tape
-        return
-
     if grad_fn is not None:
+        if getattr(tape, "_gradient_fn", None) is grad_fn:
+            # gradient analysis has already been performed on this tape
+            return
+
         tape._gradient_fn = grad_fn
 
     for idx, info in enumerate(tape._par_info):
-
         if idx not in tape.trainable_params:
             # non-trainable parameters do not require a grad_method
             info["grad_method"] = None
@@ -207,7 +231,7 @@ class gradient_transform(qml.batch_transform):
       to differentiate with respect to. If not provided, the derivatives with respect to all
       trainable inputs of the tape should be returned (``tape.trainable_params``).
 
-    - ``gradient_tapes`` (*List[QuantumTape]*): is a list of output tapes to be evaluated.
+    - ``gradient_tapes`` (*list[QuantumTape]*): is a list of output tapes to be evaluated.
       If this list is empty, no quantum evaluations will be made.
 
     - ``processing_fn`` is a processing function to be applied to the output of the evaluated
@@ -230,7 +254,7 @@ class gradient_transform(qml.batch_transform):
     .. note::
 
         The input tape might have parameters of various types, including
-        NumPy arrays, JAX DeviceArrays, and TensorFlow and PyTorch tensors.
+        NumPy arrays, JAX Arrays, and TensorFlow and PyTorch tensors.
 
         If the gradient transform is written in a autodiff-compatible manner, either by
         using a framework such as Autograd or TensorFlow, or by using ``qml.math`` for
@@ -254,7 +278,14 @@ class gradient_transform(qml.batch_transform):
         # to take into account that classical processing may be present
         # inside the QNode.
         hybrid = tkwargs.pop("hybrid", self.hybrid)
+
+        old_interface = qnode.interface
+
+        if old_interface == "auto":
+            qnode.interface = qml.math.get_interface(*targs, *list(tkwargs.values()))
+
         _wrapper = super().default_qnode_wrapper(qnode, targs, tkwargs)
+
         cjac_fn = qml.transforms.classical_jacobian(qnode, expand_fn=expand_invalid_trainable)
 
         def jacobian_wrapper(*args, **kwargs):
@@ -273,6 +304,9 @@ class gradient_transform(qml.batch_transform):
 
             kwargs.pop("shots", False)
             cjac = cjac_fn(*args, **kwargs)
+
+            if old_interface == "auto":
+                qnode.interface = "auto"
 
             if isinstance(cjac, tuple):
                 # Classical processing of multiple arguments is present. Return qjac @ cjac.

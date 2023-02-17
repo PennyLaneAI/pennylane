@@ -14,9 +14,11 @@
 r"""
 Contains the ApproxTimeEvolution template.
 """
+import warnings
+
 # pylint: disable-msg=too-many-branches,too-many-arguments,protected-access
 import pennylane as qml
-from pennylane.operation import Operation, AnyWires
+from pennylane.operation import AnyWires, Operation
 from pennylane.ops import PauliRot
 
 
@@ -102,7 +104,10 @@ class ApproxTimeEvolution(Operation):
     grad_method = None
 
     def __init__(self, hamiltonian, time, n, do_queue=True, id=None):
-
+        warnings.warn(
+            "The ApproxTimeEvolution class is deprecated. Please use `qml.evolve` instead.",
+            UserWarning,
+        )
         if not isinstance(hamiltonian, qml.Hamiltonian):
             raise ValueError(
                 f"hamiltonian must be of type pennylane.Hamiltonian, got {type(hamiltonian).__name__}"
@@ -150,7 +155,6 @@ class ApproxTimeEvolution(Operation):
         coeffs = coeffs_and_time[:-1]
         time = coeffs_and_time[-1]
         for i, term in enumerate(hamiltonian.ops):
-
             word = ""
 
             try:

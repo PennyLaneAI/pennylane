@@ -23,6 +23,7 @@ from autograd.numpy.numpy_boxes import ArrayBox
 
 import pennylane as qml
 from pennylane import numpy as np
+from pennylane.measurements import CountsMP
 
 
 def execute(tapes, device, execute_fn, gradient_fn, gradient_kwargs, _n=1, max_diff=2, mode=None):
@@ -124,10 +125,7 @@ def _execute(
         res, jacs = execute_fn(tapes, **gradient_kwargs)
 
     for i, r in enumerate(res):
-        if any(
-            m.return_type in (qml.measurements.Counts, qml.measurements.AllCounts)
-            for m in tapes[i].measurements
-        ):
+        if any(isinstance(m, CountsMP) for m in tapes[i].measurements):
             continue
 
         if isinstance(r, np.ndarray):
@@ -187,7 +185,6 @@ def vjp(
     cached_jac = {}
 
     def _get_jac_with_caching():
-
         if "jacobian" in cached_jac:
             return cached_jac["jacobian"]
 
@@ -420,7 +417,6 @@ def _vjp_new(
     cached_jac = {}
 
     def _get_jac_with_caching():
-
         if "jacobian" in cached_jac:
             return cached_jac["jacobian"]
 

@@ -6,21 +6,95 @@ Deprecations
 Pending deprecations
 --------------------
 
+* The ``get_operation`` tape method is updated to return the operation index as well, changing its signature.
+
+  - The new signature is available by changing the arg ``return_op_index`` to ``True`` in v0.29
+  - The old signature is replaced with the new one in v0.30
+
+* The ``observables`` argument in ``QubitDevice.statistics`` is deprecated. Please use ``circuit``
+  instead. Using a list of observables in ``QubitDevice.statistics`` is deprecated. Please use a
+  ``QuantumTape`` instead.
+
+  - Still accessible in v0.28
+  - Will be removed in v0.29
+
+* The ``seed_recipes`` argument in ``qml.classical_shadow`` and ``qml.shadow_expval`` is deprecated.
+  A new argument ``seed`` has been added, which defaults to ``None`` and can contain an integer with the 
+  wanted seed.
+
+  - Still accessible in v0.28
+  - Will be removed in v0.29
+
 * The ``grouping`` module is deprecated. The functionality has been moved and
   reorganized in the new ``pauli`` module under ``pauli/utils.py`` or ``pauli/grouping/``.
 
-  - Still accessible in v0.27
-  - Will be removed in v0.28
+  - Still accessible in v0.27, v0.28
+  - Will be removed in v0.29
 
   The functions from ``grouping/pauli.py``, ``grouping/transformations.py`` and
   ``grouping/utils.py`` have been moved to ``pauli/utils.py``. The remaining functions
   have been consolidated in the ``pauli/grouping/`` directory.
 
+* ``qml.ExpvalCost`` has been deprecated, and usage will now raise a warning.
+  
+  - Deprecated in v0.24
+  - Will be removed in v0.30
+
+  Instead, it is recommended to simply
+  pass Hamiltonians to the ``qml.expval`` function inside QNodes:
+
+  .. code-block:: python
+
+    @qml.qnode(dev)
+    def ansatz(params):
+        some_qfunc(params)
+        return qml.expval(Hamiltonian)
+
+* ``qml.transforms.make_tape`` has been deprecated, and usage will now raise a warning.
+  Instead, use ``qml.tape.make_qscript``.
+
+  - Deprecated in v0.28
+  - Will be removed in v0.29
+
+* The ``collections`` module has been deprecated.
+
+  - Deprecated in v0.29
+  - Will be removed in v0.31
+
+* ``qml.op_sum``` is deprecated. Users should use ``qml.sum`` instead.
+
+  - Deprecated in v0.29.
+  - Will be removed in v0.31.
+
+* A warning has been added in ``Evolution`` redirecting users to ``qml.evolve``. This was added
+  because we want to change the behaviour of ``Evolution``, adding a ``-1`` to the given parameter.
+
+  - Deprecated in v0.29.
+  - Will be removed in v0.30.
+  
+* The ``qml.utils.sparse_hamiltonian`` function is deprecated. ``~.Hamiltonian.sparse_matrix`` should be used instead.
+
+  - Deprecated in v0.29
+  - Removed in v0.31
+
+* ``ApproxTimeEvolution`` has been deprecated.
+
+  - Deprecated in v0.29
+  - Will be removed in v0.31
+
+Completed deprecation cycles
+----------------------------
+
+* ``qml.VQECost`` is removed. 
+
+   - Deprecated in 0.13
+   - Removed in 0.29
+
 * In-place inversion — ``op.inv()`` and ``op.inverse=value`` — is deprecated. Please
   use ``qml.adjoint`` or ``qml.pow`` instead. 
 
   - Still accessible in v0.27 and v0.28
-  - Will be removed in v0.29
+  - Removed in v0.29
 
   Don't use:
 
@@ -39,23 +113,11 @@ Pending deprecations
   >>> qml.PauliX(0) ** -1
   PauliX(wires=[0])**-1
 
-* ``qml.ExpvalCost`` has been deprecated, and usage will now raise a warning.
-  
-  - Deprecated in v0.24
-  - Will be removed in v0.28
+* The ``qml.utils.decompose_hamiltonian()`` method is removed. Please
+  use ``qml.pauli_decompose()``.
 
-  Instead, it is recommended to simply
-  pass Hamiltonians to the ``qml.expval`` function inside QNodes:
-
-  .. code-block:: python
-
-    @qml.qnode(dev)
-    def ansatz(params):
-        some_qfunc(params)
-        return qml.expval(Hamiltonian)
-
-Completed deprecation cycles
-----------------------------
+  - Still accessible in v0.27
+  - Removed in v0.28
 
 * ``qml.tape.get_active_tape`` is deprecated. Please use ``qml.QueuingManager.active_context()`` instead.
 
@@ -99,3 +161,16 @@ Completed deprecation cycles
 
   - Deprecated in v0.24
   - Removed in v0.27
+
+* The ``qml.Operation.get_parameter_shift`` method is removed. Use the methods of the ``gradients`` module
+  for general parameter-shift rules instead.
+
+  - Deprecated in v0.22
+  - Removed in v0.28
+
+* ``qml.transforms.measurement_grouping`` has been removed. Please use ``qml.transforms.hamiltonian_expand``
+  instead. 
+
+  - Deprecated in v0.28
+  - Removed in v0.29
+

@@ -270,7 +270,7 @@ your plugin which, by default, performs the following process:
         self._samples = self.generate_samples()
 
     # compute the required statistics
-    results = self.statistics(circuit.observables)
+    results = self.statistics(circuit)
 
     return self._asarray(results)
 

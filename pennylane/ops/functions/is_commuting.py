@@ -69,7 +69,9 @@ def _get_target_name(op):
     _control_base_map = {
         "CNOT": "PauliX",
         "CZ": "PauliZ",
+        "CCZ": "PauliZ",
         "CY": "PauliY",
+        "CH": "Hadamard",
         "CSWAP": "SWAP",
         "Toffoli": "PauliX",
         "ControlledPhaseShift": "PhaseShift",
@@ -120,11 +122,9 @@ def _create_commute_function():
         "Identity",
         "U1",
         "IsingZZ",
-        "S.inv",
-        "T.inv",
     }
     swap_group = {"SWAP", "ISWAP", "SISWAP", "Identity", "Adjoint(ISWAP)", "Adjoint(SISWAP)"}
-    paulix_group = {"PauliX", "SX", "RX", "Identity", "IsingXX", "SX.inv", "Adjoint(SX)"}
+    paulix_group = {"PauliX", "SX", "RX", "Identity", "IsingXX", "Adjoint(SX)"}
     pauliy_group = {"PauliY", "RY", "Identity", "IsingYY"}
 
     commutation_map = {}

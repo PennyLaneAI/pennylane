@@ -127,6 +127,10 @@ like VQE to perform quantum chemistry simulations.
     :figure: _static/templates/subroutines/all_singles_doubles.png
 
 .. gallery-item::
+    :description: :doc:`Basis Rotation <../code/api/pennylane.BasisRotation>`
+    :figure: _static/templates/subroutines/basis_rotation.jpeg
+
+.. gallery-item::
     :description: :doc:`GateFabric <../code/api/pennylane.GateFabric>`
     :figure: _static/templates/layers/gate_fabric_layer.png
 
@@ -169,6 +173,20 @@ can be broadcast with the shape and connectivity of tensor networks.
 .. gallery-item::
     :description: :doc:`Multi-scale Entanglement Renormalization Ansatz <../code/api/pennylane.MERA>`
     :figure: _static/templates/tensornetworks/MERA_template.png
+
+.. raw:: html
+
+        <div style='clear:both'></div>
+
+Swap networks
+--------------
+
+Swap network templates perform qubit routing with linear cost, providing a quadratic advantage in
+circuit depth for carrying out all pair-wise interactions between qubits.
+
+.. gallery-item::
+    :description: :doc:`Canonical 2-Complete Linear Swap Network <../code/api/pennylane.TwoLocalSwapNetwork>`
+    :figure: _static/templates/swap_networks/ccl2.jpeg
 
 .. raw:: html
 

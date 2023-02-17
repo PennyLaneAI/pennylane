@@ -228,11 +228,12 @@ class TestMultipleOperations:
         """Check the eigenvalues for a tape containing multiple gates
         assuming no overlap of wires"""
 
-        with qml.tape.QuantumTape() as tape:
+        with qml.queuing.AnnotatedQueue() as q:
             qml.PauliX(wires="a")
             qml.S(wires="b")
             qml.Hadamard(wires="c")
 
+        tape = qml.tape.QuantumScript.from_queue(q)
         res = qml.eigvals(tape)
         expected = np.linalg.eigvals(np.kron(X, np.kron(S, H)))
 
@@ -242,12 +243,13 @@ class TestMultipleOperations:
     def test_multiple_operations_tape(self):
         """Check the eigenvalues for a tape containing multiple gates"""
 
-        with qml.tape.QuantumTape() as tape:
+        with qml.queuing.AnnotatedQueue() as q:
             qml.PauliX(wires="a")
             qml.S(wires="b")
             qml.Hadamard(wires="c")
             qml.CNOT(wires=["b", "c"])
 
+        tape = qml.tape.QuantumScript.from_queue(q)
         with pytest.warns(UserWarning, match="the eigenvalues will be computed numerically"):
             res = qml.eigvals(tape)
 
@@ -294,7 +296,7 @@ class TestCompositeOperations:
 
     def test_sum_eigvals(self):
         """Test that a sum op returns the correct eigvals."""
-        sum_op = qml.op_sum(qml.s_prod(1j, qml.PauliZ(wires=0)), qml.Identity(wires=0))
+        sum_op = qml.sum(qml.s_prod(1j, qml.PauliZ(wires=0)), qml.Identity(wires=0))
         sum_eigvals = qml.eigvals(sum_op)
 
         mat_rep = np.array([[1 + 1j, 0], [0, 1 - 1j]])
@@ -338,9 +340,10 @@ class TestTemplates:
         with pytest.warns(UserWarning, match="the eigenvalues will be computed numerically"):
             res = qml.eigvals(op)
 
-        with qml.tape.QuantumTape() as tape:
+        with qml.queuing.AnnotatedQueue() as q:
             op.decomposition()
 
+        tape = qml.tape.QuantumScript.from_queue(q)
         with pytest.warns(UserWarning, match="the eigenvalues will be computed numerically"):
             expected = qml.eigvals(tape)
 
@@ -361,10 +364,11 @@ class TestTemplates:
 
         op = qml.StronglyEntanglingLayers(weights, wires=[0, 1])
 
-        with qml.tape.QuantumTape() as tape:
+        with qml.queuing.AnnotatedQueue() as q:
             op.decomposition()
             qml.RX(x, wires=0)
 
+        tape = qml.tape.QuantumScript.from_queue(q)
         with pytest.warns(UserWarning, match="the eigenvalues will be computed numerically"):
             expected = qml.eigvals(tape)
 
@@ -388,9 +392,10 @@ class TestTemplates:
             res = qml.eigvals(op)
 
         op = qml.StronglyEntanglingLayers(weights, wires=[0, 1])
-        with qml.tape.QuantumTape() as tape:
+        with qml.queuing.AnnotatedQueue() as q:
             op.decomposition()
 
+        tape = qml.tape.QuantumScript.from_queue(q)
         with pytest.warns(UserWarning, match="the eigenvalues will be computed numerically"):
             expected = qml.eigvals(tape)
 
@@ -419,10 +424,11 @@ class TestTemplates:
 
         op = qml.StronglyEntanglingLayers(weights, wires=[0, 1])
 
-        with qml.tape.QuantumTape() as tape:
+        with qml.queuing.AnnotatedQueue() as q:
             op.decomposition()
             qml.RX(x, wires=0)
 
+        tape = qml.tape.QuantumScript.from_queue(q)
         with pytest.warns(UserWarning, match="the eigenvalues will be computed numerically"):
             expected = qml.eigvals(tape)
 

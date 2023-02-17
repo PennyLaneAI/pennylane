@@ -14,15 +14,16 @@
 """
 Tests for the Hamiltonian class.
 """
+from collections.abc import Iterable
 from unittest.mock import patch
 
 import numpy as np
 import pytest
+import scipy
 
 import pennylane as qml
 from pennylane import numpy as pnp
 from pennylane.wires import Wires
-from collections.abc import Iterable
 
 # Make test data in different interfaces, if installed
 COEFFS_PARAM_INTERFACE = [
@@ -39,7 +40,7 @@ except ImportError:
     pass
 
 try:
-    import tf
+    import tensorflow as tf
 
     COEFFS_PARAM_INTERFACE.append(
         (tf.Variable([-0.05, 0.17], dtype=tf.double), tf.Variable(1.7, dtype=tf.double), "tf")
@@ -48,9 +49,9 @@ except ImportError:
     pass
 
 try:
-    import torch
+    from torch import tensor
 
-    COEFFS_PARAM_INTERFACE.append((torch.tensor([-0.05, 0.17]), torch.tensor(1.7), "torch"))
+    COEFFS_PARAM_INTERFACE.append((tensor([-0.05, 0.17]), tensor(1.7), "torch"))
 except ImportError:
     pass
 
@@ -727,7 +728,7 @@ class TestHamiltonian:
         """Tests that simplifying a Hamiltonian in a tape context
         queues the simplified Hamiltonian."""
 
-        with qml.tape.QuantumTape() as tape:
+        with qml.queuing.AnnotatedQueue() as q:
             a = qml.PauliX(wires=0)
             b = qml.PauliY(wires=1)
             c = qml.Identity(wires=2)
@@ -738,7 +739,7 @@ class TestHamiltonian:
         # check that H is simplified
         assert H.ops == [a, b]
         # check that the simplified Hamiltonian is in the queue
-        assert tape.get_info(H) is not None
+        assert q.get_info(H) is not None
 
     def test_data(self):
         """Tests the obs_data method"""
@@ -857,21 +858,21 @@ class TestHamiltonian:
         """Tests that the arithmetic operations thrown the correct errors"""
         H = qml.Hamiltonian([1], [qml.PauliZ(0)])
         A = [[1, 0], [0, -1]]
-        with pytest.raises(ValueError, match="Cannot tensor product Hamiltonian"):
-            H @ A
-        with pytest.raises(ValueError, match="Cannot tensor product Hamiltonian"):
-            H.__rmatmul__(A)
-        with pytest.raises(ValueError, match="Cannot add Hamiltonian"):
-            H + A
-        with pytest.raises(ValueError, match="Cannot multiply Hamiltonian"):
-            H * A
-        with pytest.raises(ValueError, match="Cannot subtract"):
-            H - A
-        with pytest.raises(ValueError, match="Cannot add Hamiltonian"):
+        with pytest.raises(TypeError, match="unsupported operand type"):
+            _ = H @ A
+        with pytest.raises(TypeError, match="unsupported operand type"):
+            _ = A @ H
+        with pytest.raises(TypeError, match="unsupported operand type"):
+            _ = H + A
+        with pytest.raises(TypeError, match="can't multiply sequence by non-int"):
+            _ = H * A
+        with pytest.raises(TypeError, match="unsupported operand type"):
+            _ = H - A
+        with pytest.raises(TypeError, match="unsupported operand type"):
             H += A
-        with pytest.raises(ValueError, match="Cannot multiply Hamiltonian"):
+        with pytest.raises(TypeError, match="unsupported operand type"):
             H *= A
-        with pytest.raises(ValueError, match="Cannot subtract"):
+        with pytest.raises(TypeError, match="unsupported operand type"):
             H -= A
 
     def test_hamiltonian_queue_outside(self):
@@ -887,43 +888,29 @@ class TestHamiltonian:
 
         H = qml.PauliX(1) + 3 * qml.PauliZ(0) @ qml.PauliZ(2) + qml.PauliZ(1)
 
-        with qml.tape.QuantumTape() as tape:
+        with qml.queuing.AnnotatedQueue() as q:
             qml.Hadamard(wires=1)
             qml.PauliX(wires=0)
             qml.expval(H)
 
-        assert len(tape.queue) == 3
-        assert isinstance(tape.queue[0], qml.Hadamard)
-        assert isinstance(tape.queue[1], qml.PauliX)
-        assert isinstance(tape.queue[2], qml.measurements.MeasurementProcess)
-        assert H.compare(tape.queue[2].obs)
+        assert len(q.queue) == 3
+        assert isinstance(q.queue[0], qml.Hadamard)
+        assert isinstance(q.queue[1], qml.PauliX)
+        assert isinstance(q.queue[2], qml.measurements.MeasurementProcess)
+        assert H.compare(q.queue[2].obs)
 
     def test_hamiltonian_queue_inside(self):
         """Tests that Hamiltonian are queued correctly when components are instantiated inside the recording context."""
 
-        queue = [
-            qml.Hadamard(wires=1),
-            qml.PauliX(wires=0),
-            qml.PauliX(1),
-            qml.PauliZ(0),
-            qml.PauliZ(2),
-            qml.PauliZ(0) @ qml.PauliZ(2),
-            qml.PauliZ(1),
-            qml.Hamiltonian(
-                [1, 3, 1], [qml.PauliX(1), qml.PauliZ(0) @ qml.PauliZ(2), qml.PauliZ(1)]
-            ),
-        ]
-
-        with qml.tape.QuantumTape() as tape:
-            qml.Hadamard(wires=1)
-            qml.PauliX(wires=0)
-            qml.expval(
+        with qml.queuing.AnnotatedQueue() as q:
+            m = qml.expval(
                 qml.Hamiltonian(
                     [1, 3, 1], [qml.PauliX(1), qml.PauliZ(0) @ qml.PauliZ(2), qml.PauliZ(1)]
                 )
             )
 
-        assert np.all([q1.compare(q2) for q1, q2 in zip(tape.queue, queue)])
+        assert len(q.queue) == 1
+        assert q.queue[0] is m
 
     def test_terms(self):
         """Tests that the terms representation is returned correctly."""
@@ -1231,6 +1218,165 @@ class TestHamiltonianArithmeticAutograd:
         assert H.compare(H1 @ H2)
 
 
+class TestHamiltonianSparseMatrix:
+    """Tests for sparse matrix representation."""
+
+    @pytest.mark.parametrize(
+        ("coeffs", "obs", "wires", "ref_matrix"),
+        [
+            (
+                [1, -0.45],
+                [qml.PauliZ(0) @ qml.PauliZ(1), qml.PauliY(0) @ qml.PauliZ(1)],
+                None,
+                np.array(
+                    [
+                        [1.0 + 0.0j, 0.0 + 0.0j, 0.0 + 0.45j, 0.0 + 0.0j],
+                        [0.0 + 0.0j, -1.0 + 0.0j, 0.0 + 0.0j, 0.0 - 0.45j],
+                        [0.0 - 0.45j, 0.0 + 0.0j, -1.0 + 0.0j, 0.0 + 0.0j],
+                        [0.0 + 0.0j, 0.0 + 0.45j, 0.0 + 0.0j, 1.0 + 0.0j],
+                    ]
+                ),
+            ),
+            (
+                [0.1],
+                [qml.PauliZ("b") @ qml.PauliX("a")],
+                ["a", "c", "b"],
+                np.array(
+                    [
+                        [
+                            0.0 + 0.0j,
+                            0.0 + 0.0j,
+                            0.0 + 0.0j,
+                            0.0 + 0.0j,
+                            0.1 + 0.0j,
+                            0.0 + 0.0j,
+                            0.0 + 0.0j,
+                            0.0 + 0.0j,
+                        ],
+                        [
+                            0.0 + 0.0j,
+                            0.0 + 0.0j,
+                            0.0 + 0.0j,
+                            0.0 + 0.0j,
+                            0.0 + 0.0j,
+                            -0.1 + 0.0j,
+                            0.0 + 0.0j,
+                            0.0 + 0.0j,
+                        ],
+                        [
+                            0.0 + 0.0j,
+                            0.0 + 0.0j,
+                            0.0 + 0.0j,
+                            0.0 + 0.0j,
+                            0.0 + 0.0j,
+                            0.0 + 0.0j,
+                            0.1 + 0.0j,
+                            0.0 + 0.0j,
+                        ],
+                        [
+                            0.0 + 0.0j,
+                            0.0 + 0.0j,
+                            0.0 + 0.0j,
+                            0.0 + 0.0j,
+                            0.0 + 0.0j,
+                            0.0 + 0.0j,
+                            0.0 + 0.0j,
+                            -0.1 + 0.0j,
+                        ],
+                        [
+                            0.1 + 0.0j,
+                            0.0 + 0.0j,
+                            0.0 + 0.0j,
+                            0.0 + 0.0j,
+                            0.0 + 0.0j,
+                            0.0 + 0.0j,
+                            0.0 + 0.0j,
+                            0.0 + 0.0j,
+                        ],
+                        [
+                            0.0 + 0.0j,
+                            -0.1 + 0.0j,
+                            0.0 + 0.0j,
+                            0.0 + 0.0j,
+                            0.0 + 0.0j,
+                            0.0 + 0.0j,
+                            0.0 + 0.0j,
+                            0.0 + 0.0j,
+                        ],
+                        [
+                            0.0 + 0.0j,
+                            0.0 + 0.0j,
+                            0.1 + 0.0j,
+                            0.0 + 0.0j,
+                            0.0 + 0.0j,
+                            0.0 + 0.0j,
+                            0.0 + 0.0j,
+                            0.0 + 0.0j,
+                        ],
+                        [
+                            0.0 + 0.0j,
+                            0.0 + 0.0j,
+                            0.0 + 0.0j,
+                            -0.1 + 0.0j,
+                            0.0 + 0.0j,
+                            0.0 + 0.0j,
+                            0.0 + 0.0j,
+                            0.0 + 0.0j,
+                        ],
+                    ]
+                ),
+            ),
+            (
+                [0.21, -0.78, 0.52],
+                [
+                    qml.PauliZ(0) @ qml.PauliZ(1),
+                    qml.PauliX(0) @ qml.PauliZ(1),
+                    qml.PauliY(0) @ qml.PauliZ(1),
+                ],
+                None,
+                np.array(
+                    [
+                        [0.21 + 0.0j, 0.0 + 0.0j, -0.78 - 0.52j, 0.0 + 0.0j],
+                        [0.0 + 0.0j, -0.21 + 0.0j, 0.0 + 0.0j, 0.78 + 0.52j],
+                        [-0.78 + 0.52j, 0.0 + 0.0j, -0.21 + 0.0j, 0.0 + 0.0j],
+                        [0.0 + 0.0j, 0.78 - 0.52j, 0.0 + 0.0j, 0.21 + 0.0j],
+                    ]
+                ),
+            ),
+        ],
+    )
+    def test_sparse_matrix(self, coeffs, obs, wires, ref_matrix):
+        """Tests that sparse_hamiltonian returns a correct sparse matrix"""
+        H = qml.Hamiltonian(coeffs, obs)
+
+        sparse_matrix = H.sparse_matrix(wire_order=wires)
+
+        assert np.allclose(sparse_matrix.toarray(), ref_matrix)
+
+    def test_sparse_format(self):
+        """Tests that sparse_hamiltonian returns a scipy.sparse.csr_matrix object"""
+
+        coeffs = [-0.25, 0.75]
+        obs = [
+            qml.PauliX(wires=[0]) @ qml.PauliZ(wires=[1]),
+            qml.PauliY(wires=[0]) @ qml.PauliZ(wires=[1]),
+        ]
+        H = qml.Hamiltonian(coeffs, obs)
+
+        sparse_matrix = H.sparse_matrix()
+
+        assert isinstance(sparse_matrix, scipy.sparse.csr_matrix)
+
+    def test_observable_error(self):
+        """Tests that an error is thrown if the observables are themselves constructed from multi-qubit
+        operations."""
+        with pytest.raises(ValueError, match="Can only sparsify Hamiltonians"):
+            H = qml.Hamiltonian(
+                [0.1], [qml.PauliZ("c") @ qml.Hermitian(np.eye(4), wires=["a", "b"])]
+            )
+            H.sparse_matrix(wire_order=["a", "c", "b"])
+
+
 class TestHamiltonianArithmeticJax:
     """Tests creation of Hamiltonians using arithmetic
     operations with jax tensor coefficients."""
@@ -1388,10 +1534,10 @@ class TestGrouping:
         obs = [a, b, c]
         coeffs = [1.0, 2.0, 3.0]
 
-        with qml.tape.QuantumTape() as tape:
+        with qml.queuing.AnnotatedQueue() as q:
             H = qml.Hamiltonian(coeffs, obs, grouping_type="qwc")
 
-        assert tape.queue == [H]
+        assert q.queue == [H]
 
     def test_grouping_method_can_be_set(self):
         r"""Tests that the grouping method can be controlled by kwargs.

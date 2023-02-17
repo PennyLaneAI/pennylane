@@ -11,7 +11,6 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-# pylint: disable=protected-access
 """
 This module contains the qml.expval measurement.
 """
@@ -50,18 +49,53 @@ def expval(op: Operator):
     Args:
         op (Observable): a quantum observable object
 
-    Raises:
-        QuantumFunctionError: `op` is not an instance of :class:`~.Observable`
+    Returns:
+        ExpectationMP: measurement process instance
     """
     if not op.is_hermitian:
         warnings.warn(f"{op.name} might not be hermitian.")
 
-    return _Expectation(Expectation, obs=op)
+    return ExpectationMP(obs=op)
 
 
-# TODO: Make public when removing the ObservableReturnTypes enum
-class _Expectation(SampleMeasurement, StateMeasurement):
-    """Measurement process that computes the probability of each computational basis state."""
+class ExpectationMP(SampleMeasurement, StateMeasurement):
+    """Measurement process that computes the expectation value of the supplied observable.
+
+    Please refer to :func:`expval` for detailed documentation.
+
+    Args:
+        obs (.Observable): The observable that is to be measured as part of the
+            measurement process. Not all measurement processes require observables (for
+            example ``Probability``); this argument is optional.
+        wires (.Wires): The wires the measurement process applies to.
+            This can only be specified if an observable was not provided.
+        eigvals (array): A flat array representing the eigenvalues of the measurement.
+            This can only be specified if an observable was not provided.
+        id (str): custom label given to a measurement instance, can be useful for some applications
+            where the instance has to be identified
+    """
+
+    @property
+    def return_type(self):
+        return Expectation
+
+    @property
+    def numeric_type(self):
+        return float
+
+    def shape(self, device=None):
+        if qml.active_return():
+            return self._shape_new(device)
+        if device is None or device.shot_vector is None:
+            return (1,)
+        num_shot_elements = sum(s.copies for s in device.shot_vector)
+        return (num_shot_elements,)
+
+    def _shape_new(self, device=None):
+        if device is None or device.shot_vector is None:
+            return ()
+        num_shot_elements = sum(s.copies for s in device.shot_vector)
+        return tuple(() for _ in range(num_shot_elements))
 
     def process_samples(
         self,
@@ -95,19 +129,8 @@ class _Expectation(SampleMeasurement, StateMeasurement):
             return probs[idx]
         eigvals = qml.math.asarray(self.obs.eigvals(), dtype="float64")
 
-        # the probability vector must be permuted to account for the permuted
-        # wire order of the observable
-        permuted_wires = self._permute_wires(self.obs.wires)
-
         # we use ``self.wires`` instead of ``self.obs`` because the observable was
         # already applied to the state
-        prob = qml.probs(wires=permuted_wires).process_state(state=state, wire_order=wire_order)
+        prob = qml.probs(wires=self.wires).process_state(state=state, wire_order=wire_order)
         # In case of broadcasting, `prob` has two axes and this is a matrix-vector product
         return qml.math.dot(prob, eigvals)
-
-    def _permute_wires(self, wires: Wires):
-        wire_map = dict(zip(wires, range(len(wires))))
-        ordered_obs_wire_lst = sorted(self.wires.tolist(), key=lambda label: wire_map[label])
-        mapped_wires = [wire_map[w] for w in self.wires]
-        permutation = qml.math.argsort(mapped_wires)  # extract permutation via argsort
-        return Wires([ordered_obs_wire_lst[index] for index in permutation])

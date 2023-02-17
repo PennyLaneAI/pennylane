@@ -13,7 +13,6 @@ for Pauli-word partitioning functionality used in measurement optimization.
 .. automodapi:: pennylane.pauli
     :no-heading:
     :no-main-docstr:
-    :no-inheritance-diagram:
     :no-inherited-members:
 
 PauliWord and PauliSentence
@@ -81,7 +80,6 @@ Graph colouring
 
 .. automodapi:: pennylane.pauli.grouping.graph_colouring
     :no-heading:
-    :no-inheritance-diagram:
     :no-inherited-members:
 
 

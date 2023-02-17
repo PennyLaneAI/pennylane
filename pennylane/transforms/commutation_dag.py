@@ -22,7 +22,7 @@ import networkx as nx
 from networkx.drawing.nx_pydot import to_pydot
 
 import pennylane as qml
-from pennylane.tape import QuantumScript
+from pennylane.tape import QuantumScript, make_qscript, QuantumTape
 from pennylane.wires import Wires
 
 
@@ -95,7 +95,6 @@ def commutation_dag(circuit):
 
     @wraps(circuit)
     def wrapper(*args, **kwargs):
-
         if isinstance(circuit, qml.QNode):
             # user passed a QNode, get the tape
             circuit.construct(args, kwargs)
@@ -107,7 +106,7 @@ def commutation_dag(circuit):
 
         elif callable(circuit):
             # user passed something that is callable but not a tape or qnode.
-            tape = qml.transforms.make_tape(circuit)(*args, **kwargs)
+            tape = make_qscript(circuit)(*args, **kwargs)
             # raise exception if it is not a quantum function
             if len(tape.operations) == 0:
                 raise ValueError("Function contains no quantum operation")
@@ -212,8 +211,7 @@ class CommutationDAG:
 
     """
 
-    def __init__(self, tape: QuantumScript):
-
+    def __init__(self, tape: QuantumTape):
         self.num_wires = len(tape.wires)
         self.node_id = -1
         self._multi_graph = nx.MultiDiGraph()
@@ -419,7 +417,6 @@ class CommutationDAG:
         )
 
     def _add_successors(self):
-
         for node_id in range(len(self._multi_graph) - 1, -1, -1):
             direct_successors = self.direct_successors(node_id)
 
@@ -432,7 +429,6 @@ class CommutationDAG:
             )
 
     def _update_edges(self):
-
         max_node_id = len(self._multi_graph) - 1
         max_node = self.get_node(max_node_id).op
 

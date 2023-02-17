@@ -653,7 +653,6 @@ def test_taper_excitations(
     obs_all, obs_tap = exc_obs[0] + exc_obs[1], exc_tap[0] + exc_tap[1]
     for op_all, op_tap in zip(obs_all, obs_tap):
         if op_tap:
-
             excited_state = np.matmul(qml.matrix(op_all, wire_order=range(len(hf_state))), state)
             ob_tap_mat = functools.reduce(
                 lambda i, j: np.matmul(i, j),
@@ -756,16 +755,17 @@ def test_consistent_taper_ops(operation, op_gen):
     )
     assert np.all([qml.equal(op1.base, op2.base) for op1, op2 in zip(taper_op1, taper_op2)])
 
-    tape1, tape2 = qml.tape.QuantumTape(), qml.tape.QuantumTape()
-    with tape1:
+    with qml.queuing.AnnotatedQueue() as q_tape1:
         taper_operation(operation, generators, paulixops, paulix_sector, wire_order, op_gen=None)
-    with tape2:
+    with qml.queuing.AnnotatedQueue() as q_tape2:
         taper_operation(operation, generators, paulixops, paulix_sector, wire_order, op_gen=op_gen)
-
+    tape1 = qml.tape.QuantumScript.from_queue(q_tape1)
+    tape2 = qml.tape.QuantumScript.from_queue(q_tape2)
     taper_circuit1 = [x for x in tape1.circuit if x.label() != "I"]
     taper_circuit2 = [x for x in tape2.circuit if x.label() != "I"]
 
-    assert len(taper_op1) == len(taper_circuit1) and len(taper_op2) == len(taper_circuit2)
+    assert len(taper_op1) == len(taper_circuit1)
+    assert len(taper_op2) == len(taper_circuit2)
     assert np.all([qml.equal(op1.base, op2.base) for op1, op2 in zip(taper_circuit1, taper_op1)])
     assert np.all([qml.equal(op1.base, op2.base) for op1, op2 in zip(taper_circuit2, taper_op2)])
 

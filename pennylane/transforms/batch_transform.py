@@ -285,6 +285,12 @@ class batch_transform:
 
         def _wrapper(*args, **kwargs):
             shots = kwargs.pop("shots", False)
+
+            old_interface = qnode.interface
+
+            if old_interface == "auto":
+                qnode.interface = qml.math.get_interface(*args, *list(kwargs.values()))
+
             qnode.construct(args, kwargs)
             tapes, processing_fn = self.construct(qnode.qtape, *targs, **tkwargs)
 
@@ -298,6 +304,9 @@ class batch_transform:
 
             if interface is None or not self.differentiable:
                 gradient_fn = None
+
+            if old_interface == "auto":
+                qnode.interface = "auto"
 
             res = qml.execute(
                 tapes,
@@ -387,7 +396,7 @@ class batch_transform:
         """Applies the batch tape transform to an input tape.
 
         Args:
-            tape (.QuantumScript): the tape to be transformed
+            tape (.QuantumTape): the tape to be transformed
             *args: positional arguments to pass to the tape transform
             **kwargs: keyword arguments to pass to the tape transform
 
@@ -427,7 +436,7 @@ def map_batch_transform(transform, tapes):
     Args:
         transform (.batch_transform): the batch transform
             to be mapped
-        tapes (Sequence[QuantumScript]): The sequence of tapes the batch
+        tapes (Sequence[QuantumTape]): The sequence of tapes the batch
             transform should be applied to. Each tape in the sequence
             is transformed by the batch transform.
 

@@ -17,9 +17,8 @@ This module contains the functions needed for creating fermionic and qubit obser
 # pylint: disable= too-many-branches,
 from functools import reduce
 
-import autograd.numpy as anp
-
 import pennylane as qml
+from pennylane import numpy as np
 from pennylane.pauli.utils import _pauli_mult, simplify
 
 
@@ -43,24 +42,25 @@ def fermionic_observable(constant, one=None, two=None, cutoff=1.0e-12):
     >>> ops
     [[], [0, 0], [0, 2], [1, 1], [1, 3], [2, 0], [2, 2], [3, 1], [3, 3]]
     """
-    coeffs = anp.array([])
+    coeffs = qml.math.array([])
 
-    if constant != anp.array([0.0]):
-        coeffs = anp.concatenate((coeffs, constant))
+    if not qml.math.allclose(constant, 0.0):
+        coeffs = qml.math.concatenate((coeffs, constant))
         operators = [[]]
     else:
         operators = []
 
     if one is not None:
-        indices_one = anp.argwhere(abs(one) >= cutoff)
+        indices_one = qml.math.argwhere(abs(one) >= cutoff)
         # up-up + down-down terms
         operators_one = (indices_one * 2).tolist() + (indices_one * 2 + 1).tolist()
-        coeffs_one = anp.tile(one[abs(one) >= cutoff], 2)
-        coeffs = anp.concatenate((coeffs, coeffs_one))
+        coeffs_one = qml.math.tile(one[abs(one) >= cutoff], 2)
+        coeffs = qml.math.convert_like(coeffs, one)
+        coeffs = qml.math.concatenate((coeffs, coeffs_one))
         operators = operators + operators_one
 
     if two is not None:
-        indices_two = anp.argwhere(abs(two) >= cutoff)
+        indices_two = np.array(qml.math.argwhere(abs(two) >= cutoff))
         n = len(indices_two)
         operators_two = (
             [(indices_two[i] * 2).tolist() for i in range(n)]  # up-up-up-up
@@ -68,12 +68,14 @@ def fermionic_observable(constant, one=None, two=None, cutoff=1.0e-12):
             + [(indices_two[i] * 2 + [1, 0, 0, 1]).tolist() for i in range(n)]  # down-up-up-down
             + [(indices_two[i] * 2 + 1).tolist() for i in range(n)]  # down-down-down-down
         )
-        coeffs_two = anp.tile(two[abs(two) >= cutoff], 4) / 2
+        coeffs_two = qml.math.tile(two[abs(two) >= cutoff], 4) / 2
 
-        coeffs = anp.concatenate((coeffs, coeffs_two))
+        coeffs = qml.math.concatenate((coeffs, coeffs_two))
         operators = operators + operators_two
 
     indices_sort = [operators.index(i) for i in sorted(operators)]
+    if len(indices_sort) != 0:
+        indices_sort = qml.math.array(indices_sort)
 
     return coeffs[indices_sort], sorted(operators)
 
@@ -102,18 +104,18 @@ def qubit_observable(o_ferm, cutoff=1.0e-12):
     + ((1+0j)) [I0]
     """
     ops = []
-    coeffs = anp.array([])
+    coeffs = qml.math.array([])
 
     for n, t in enumerate(o_ferm[1]):
         if len(t) == 0:
             ops = ops + [qml.Identity(0)]
-            coeffs = anp.array([0.0])
+            coeffs = qml.math.array([0.0])
             coeffs = coeffs + o_ferm[0][n]
         else:
             op = jordan_wigner(t)
             if op != 0:
                 ops = ops + op[1]
-                coeffs = anp.concatenate([coeffs, anp.array(op[0]) * o_ferm[0][n]])
+                coeffs = qml.math.concatenate([coeffs, qml.math.array(op[0]) * o_ferm[0][n]])
 
     o_qubit = simplify(qml.Hamiltonian(coeffs, ops), cutoff=cutoff)
 
