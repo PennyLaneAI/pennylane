@@ -140,7 +140,7 @@ class TestQNode:
         num_wires = 2
 
         if diff_method == "hadamard":
-            num_wires = 2
+            num_wires = 3
 
         dev = qml.device(dev_name, wires=num_wires)
 
