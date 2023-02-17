@@ -38,13 +38,13 @@ to verify and test quantum gradient computations.
 Next generation devices
 -----------------------
 
-:class:`Device` in an experimental interface for the next generation of devices that
+:class:`pennylane.devices.experimental.Device` in an experimental interface for the next generation of devices that
 will eventually replace :class:`~.Device` and :class:`~.QubitDevice`.
 
-While the current interface :`~.Device` is imported top level, the new :class:`Device` is
-only accesssible from the ``pennylane.devices.experimental`` submodule.
+While the current interface :class:`~.Device` is imported top level, the new :class:`Device` is
+accesssible from the ``pennylane.devices.experimental`` submodule.
 
-.. currentmodule:: pennylane.devices
+.. currentmodule:: pennylane.devices.experimental
 .. autosummary::
     :toctree: api
 

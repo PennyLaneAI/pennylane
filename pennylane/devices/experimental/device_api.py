@@ -142,6 +142,14 @@ class Device(abc.ABC):
     ) -> Tuple[QuantumTapeBatch, Callable]:
         """Device preprocessing function.
 
+        .. warning::
+
+            This function is tracked by machine learning interfaces and should be fully differentiable.
+            The ``pennylane.math`` module can be used to construct fully differntiable transformations.
+
+            Additional preprocessing independent of machine learning interfaces can be done inside of
+            the :meth:`~.execute` metod.
+
         Args:
             circuits (Union[QuantumTape, Sequence[QuantumTape]]): The circuit or a batch of circuits to preprocess
                 before execution on the device
@@ -154,8 +162,6 @@ class Device(abc.ABC):
 
         Raises:
             Exception: An exception is raised if the input cannot be converted into a form supported by the device.
-
-        This function is tracked by machine learning interfaces and should be fully differentiable.
 
         Preprocessing steps may include:
 
