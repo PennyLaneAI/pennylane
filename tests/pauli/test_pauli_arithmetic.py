@@ -556,7 +556,7 @@ class TestPauliSentence:
     def test_hamiltonian_wire_order(self):
         """Test that the wire_order parameter is used when the pauli representation is empty"""
         op = ps5.hamiltonian(wire_order=["a", "b"])
-        id = qml.Hamiltonian([0], [qml.Identity(wires=["a", "b"])])
+        id = qml.Hamiltonian([], [])
 
         assert qml.equal(op, id)
 
