@@ -278,18 +278,22 @@ class gradient_transform(qml.batch_transform):
         # to take into account that classical processing may be present
         # inside the QNode.
         hybrid = tkwargs.pop("hybrid", self.hybrid)
-
-        old_interface = qnode.interface
-
-        if old_interface == "auto":
-            qnode.interface = qml.math.get_interface(*targs, *list(tkwargs.values()))
+        argnums = tkwargs.get("argnums", None)
 
         _wrapper = super().default_qnode_wrapper(qnode, targs, tkwargs)
-
-        cjac_fn = qml.transforms.classical_jacobian(qnode, expand_fn=expand_invalid_trainable)
+        cjac_fn = qml.transforms.classical_jacobian(qnode, argnum=argnums, expand_fn=self.expand_fn)
 
         def jacobian_wrapper(*args, **kwargs):
-            if not qml.math.get_trainable_indices(args):
+            if argnums is not None:
+                argnums_ = [argnums] if isinstance(argnums, int) else argnums
+
+                params = qml.math.jax_argnums_to_tape_trainable(
+                    qnode, argnums_, self.expand_fn, args, kwargs
+                )
+                argnums_ = qml.math.get_trainable_indices(params)
+                kwargs["argnums"] = argnums_
+
+            if not qml.math.get_trainable_indices(args) and not argnums:
                 warnings.warn(
                     "Attempted to compute the gradient of a QNode with no trainable parameters. "
                     "If this is unintended, please add trainable parameters in accordance with "
@@ -303,16 +307,23 @@ class gradient_transform(qml.batch_transform):
                 return qjac
 
             kwargs.pop("shots", False)
-            cjac = cjac_fn(*args, **kwargs)
 
-            if old_interface == "auto":
-                qnode.interface = "auto"
+            # Special case where we apply a Jax transform (jacobian e.g.) on the gradient transform and argnums are
+            # defined on the outer transform and therefore on the args.
+            if argnums is None and qml.math.get_interface(*args) == "jax":
+                cjac = qml.transforms.classical_jacobian(
+                    qnode, argnum=qml.math.get_trainable_indices(args), expand_fn=self.expand_fn
+                )(*args, **kwargs)
+            else:
+                cjac = cjac_fn(*args, **kwargs)
 
             if isinstance(cjac, tuple):
                 # Classical processing of multiple arguments is present. Return qjac @ cjac.
                 jacs = tuple(
                     qml.math.tensordot(qjac, c, [[-1], [0]]) for c in cjac if c is not None
                 )
+                if len(jacs) == 1:
+                    return jacs[0]
                 return jacs
 
             is_square = cjac.ndim == 2 and cjac.shape[0] == cjac.shape[1]
