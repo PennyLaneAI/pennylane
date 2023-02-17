@@ -372,7 +372,7 @@ def execute_new(tapes, device, execute_fn, gradient_fn, gradient_kwargs, _n=1, m
 
     Args:
         tapes (Sequence[.QuantumTape]): batch of tapes to execute
-        device (.Device): Device to use for the shots vectors.
+        device (pennylane.Device): Device to use for the shots vectors.
         execute_fn (callable): The execution function used to execute the tapes
             during the forward pass. This function must return a tuple ``(results, jacobians)``.
             If ``jacobians`` is an empty list, then ``gradient_fn`` is used to

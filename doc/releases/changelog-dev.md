@@ -390,7 +390,8 @@
 
 *Next generation device API:*
 
-* New Abstract Base Class for devices `QuantumDevice` is added to the `devices` module.
+* New Abstract Base Class for devices `Device` is added to the `devices.experimental` submodule.
+  This interface is still in experimental mode and not integrated with the rest of pennylane.
   [(#3602)](https://github.com/PennyLaneAI/pennylane/pull/3602)
 
 * The `apply_operation` single-dispatch function is added to `devices/qubit` that applies an operation
