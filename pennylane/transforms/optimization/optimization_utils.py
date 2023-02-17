@@ -14,19 +14,11 @@
 """Utility functions for circuit optimization."""
 # pylint: disable=too-many-return-statements,import-outside-toplevel
 from functools import partial
+
 import numpy as np
 
-from pennylane.math import (
-    allclose,
-    sin,
-    cos,
-    arccos,
-    arctan2,
-    stack,
-    _multi_dispatch,
-    is_abstract,
-    abs as math_abs,
-)
+from pennylane.math import abs as math_abs
+from pennylane.math import allclose, arccos, arctan2, cos, get_interface, is_abstract, sin, stack
 from pennylane.wires import Wires
 
 
@@ -172,7 +164,7 @@ def fuse_rot_angles(angles_1, angles_2):
 
     # Check if we are tracing; if so, use the special conditionals
     if is_abstract(angles_1) or is_abstract(angles_2):
-        interface = _multi_dispatch([angles_1, angles_2])
+        interface = get_interface(angles_1, angles_2)
 
         # TODO: implement something similar for torch and tensorflow interfaces
         # If the interface is JAX, use jax.lax.cond so that we can jit even with conditionals

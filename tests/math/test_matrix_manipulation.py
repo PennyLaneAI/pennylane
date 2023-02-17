@@ -756,18 +756,6 @@ class TestExpandMatrixSparse:
         assert all(res.data == expected.data)
         assert all(res.indices == expected.indices)
 
-    def test_local_sparse_swap_mat(self):
-        """Test that the swap matrix for swaping index i, i+1 is
-        generated as expected."""
-        swap_mat = np.array([[1, 0, 0, 0], [0, 0, 1, 0], [0, 1, 0, 0], [0, 0, 0, 1]])
-        n = 5
-        for i in range(1, n - 1):
-            true_expanded_swap = np.kron(
-                np.kron(np.eye(2**i), swap_mat), np.eye(2 ** (n - (i + 2)))
-            )
-            computed_swap = qml.math.matrix_manipulation._local_sparse_swap_mat(i, n).toarray()
-            assert np.allclose(true_expanded_swap, computed_swap)
-
     def test_sparse_swap_mat(self):
         """Test the swap matrix generated is as expected."""
         n = 4

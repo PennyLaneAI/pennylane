@@ -21,6 +21,7 @@ from functools import reduce
 from itertools import combinations
 from typing import List, Tuple, Union
 
+import numpy as np
 from scipy.sparse import kron as sparse_kron
 
 import pennylane as qml
@@ -29,16 +30,19 @@ from pennylane.operation import Operator
 from pennylane.ops.op_math.pow import Pow
 from pennylane.ops.op_math.sprod import SProd
 from pennylane.ops.op_math.sum import Sum
+from pennylane.ops.qubit import Hamiltonian
 from pennylane.ops.qubit.non_parametric_ops import PauliX, PauliY, PauliZ
+from pennylane.queuing import QueuingManager
+from pennylane.wires import Wires
 
 from .composite import CompositeOp
 
-MAX_NUM_WIRES_KRON_PRODUCT = 11
+MAX_NUM_WIRES_KRON_PRODUCT = 9
 """The maximum number of wires up to which using ``math.kron`` is faster than ``math.dot`` for
 computing the sparse matrix representation."""
 
 
-def prod(*ops, do_queue=True, id=None):
+def prod(*ops, do_queue=True, id=None, lazy=True):
     """Construct an operator which represents the generalized product of the
     operators provided.
 
@@ -52,9 +56,23 @@ def prod(*ops, do_queue=True, id=None):
     Keyword Args:
         do_queue (bool): determines if the product operator will be queued. Default is True.
         id (str or None): id for the product operator. Default is None.
+        lazy=True (bool): If ``lazy=False``, a simplification will be performed such that when any of the operators is already a product operator, its operands will be used instead.
 
     Returns:
         ~ops.op_math.Prod: the operator representing the product.
+
+    .. note::
+
+        This operator supports batched operands:
+
+        >>> op = qml.prod(qml.RX(np.array([1, 2, 3]), wires=0), qml.PauliX(1))
+        >>> op.matrix().shape
+        (3, 4, 4)
+
+        But it doesn't support batching of operators:
+
+        >>> op = qml.prod(np.array([qml.RX(0.5, 0), qml.RZ(0.3, 0)]), qml.PauliZ(0))
+        AttributeError: 'numpy.ndarray' object has no attribute 'wires'
 
     .. seealso:: :class:`~.ops.op_math.Prod`
 
@@ -67,7 +85,20 @@ def prod(*ops, do_queue=True, id=None):
     array([[ 0, -1],
            [ 1,  0]])
     """
-    return Prod(*ops, do_queue=do_queue, id=id)
+    if lazy:
+        return Prod(*ops, do_queue=do_queue, id=id)
+
+    ops_simp = Prod(
+        *itertools.chain.from_iterable([op if isinstance(op, Prod) else [op] for op in ops]),
+        do_queue=do_queue,
+        id=id,
+    )
+
+    if do_queue:
+        for op in ops:
+            QueuingManager.remove(op)
+
+    return ops_simp
 
 
 class Prod(CompositeOp):
@@ -96,8 +127,8 @@ class Prod(CompositeOp):
 
     .. note::
         When a Prod operator is applied in a circuit, its factors are applied in the reverse order.
-        (i.e ``Prod(op1, op2)`` corresponds to :math:`\hat{op}_{1}\dot\hat{op}_{2}` which indicates
-        first applying :math:`\hat{op}_{2}` then :math:`\hat{op}_{1}` in the circuit. We can see this
+        (i.e ``Prod(op1, op2)`` corresponds to :math:`\hat{op}_{1}\cdot\hat{op}_{2}` which indicates
+        first applying :math:`\hat{op}_{2}` then :math:`\hat{op}_{1}` in the circuit). We can see this
         in the decomposition of the operator.
 
     >>> op = Prod(qml.PauliX(wires=0), qml.PauliZ(wires=1))
@@ -159,14 +190,10 @@ class Prod(CompositeOp):
     """
 
     _op_symbol = "@"
+    _math_op = math.prod
 
     def terms(self):  # is this method necessary for this class?
         return [1.0], [self]
-
-    @property
-    def batch_size(self):
-        """Batch size of input parameters."""
-        return next((op.batch_size for op in self if op.batch_size is not None), None)
 
     @property
     def is_hermitian(self):
@@ -181,64 +208,88 @@ class Prod(CompositeOp):
                 return False
         return all(op.is_hermitian for op in self)
 
+    @property
+    def overlapping_ops(self) -> List[Tuple[Wires, List[Operator]]]:
+        """Groups all operands of the composite operator that act on overlapping wires taking
+        into account operator commutivity.
+
+        Returns:
+            List[List[Operator]]: List of lists of operators that act on overlapping wires. All the
+            inner lists commute with each other.
+        """
+        if self._overlapping_ops is None:
+            overlapping_ops = []  # [(wires, [ops])]
+            for op in self:
+                op_idx = False
+                ops = [op]
+                wires = op.wires
+                for idx, (old_wires, old_ops) in reversed(list(enumerate(overlapping_ops))):
+                    if any(wire in old_wires for wire in wires):
+                        ops = old_ops + ops
+                        wires = old_wires + wires
+                        op_idx = idx
+                        old_wires, old_ops = overlapping_ops.pop(idx)
+                if op_idx is not False:
+                    overlapping_ops.insert(op_idx, (wires, ops))
+                else:
+                    overlapping_ops += [(wires, ops)]
+
+            self._overlapping_ops = [overlapping_op[1] for overlapping_op in overlapping_ops]
+
+        return self._overlapping_ops
+
+    # pylint: disable=arguments-renamed, invalid-overridden-method
+    @property
+    def has_decomposition(self):
+        return True
+
     def decomposition(self):
         r"""Decomposition of the product operator is given by each factor applied in succession.
 
         Note that the decomposition is the list of factors returned in reversed order. This is
-        to support the intuition that when we write $\hat{O} = \hat{A} \dot \hat{B}$ it is implied
-        that $\hat{B}$ is applied to the state before $\hat{A}$ in the quantum circuit.
+        to support the intuition that when we write :math:`\hat{O} = \hat{A} \cdot \hat{B}` it is implied
+        that :math:`\hat{B}` is applied to the state before :math:`\hat{A}` in the quantum circuit.
         """
-        if qml.queuing.QueuingContext.recording():
+        if qml.queuing.QueuingManager.recording():
             return [qml.apply(op) for op in self[::-1]]
         return list(self[::-1])
 
-    def eigvals(self):
-        """Return the eigenvalues of the specified operator.
-
-        This method uses pre-stored eigenvalues for standard observables where
-        possible and stores the corresponding eigenvectors from the eigendecomposition.
-
-        Returns:
-            array: array containing the eigenvalues of the operator
-        """
-        if self.has_overlapping_wires:
-            return self.eigendecomposition["eigval"]
-        eigvals = [
-            qml.utils.expand_vector(factor.eigvals(), list(factor.wires), list(self.wires))
-            for factor in self
-        ]
-
-        return qml.math.prod(eigvals, axis=0)
-
     def matrix(self, wire_order=None):
         """Representation of the operator as a matrix in the computational basis."""
-        if self.has_overlapping_wires:
-            mats_and_wires_gen = (
-                (qml.matrix(op) if isinstance(op, qml.Hamiltonian) else op.matrix(), op.wires)
-                for op in self
+
+        mats: List[np.ndarray] = []  # TODO: change type to `tensor_like` when available
+        batched: List[bool] = []  # batched[i] tells if mats[i] is batched or not
+        for ops in self.overlapping_ops:
+            gen = (
+                (qml.matrix(op) if isinstance(op, Hamiltonian) else op.matrix(), op.wires)
+                for op in ops
             )
 
-            reduced_mat, prod_wires = math.reduce_matrices(
-                mats_and_wires_gen=mats_and_wires_gen, reduce_func=math.dot
+            reduced_mat, _ = math.reduce_matrices(gen, reduce_func=math.matmul)
+
+            if self.batch_size is not None:
+                batched.append(any(op.batch_size is not None for op in ops))
+            else:
+                batched.append(False)
+
+            mats.append(reduced_mat)
+
+        if self.batch_size is None:
+            full_mat = reduce(math.kron, mats)
+        else:
+            full_mat = qml.math.stack(
+                [
+                    reduce(math.kron, [m[i] if b else m for m, b in zip(mats, batched)])
+                    for i in range(self.batch_size)
+                ]
             )
-
-            wire_order = wire_order or self.wires
-
-            return math.expand_matrix(reduced_mat, prod_wires, wire_order=wire_order)
-        mats_gen = (
-            qml.matrix(op) if isinstance(op, qml.Hamiltonian) else op.matrix() for op in self
-        )
-        full_mat = reduce(math.kron, mats_gen)
         return math.expand_matrix(full_mat, self.wires, wire_order=wire_order)
 
     def sparse_matrix(self, wire_order=None):
-        """Compute the sparse matrix representation of the Prod op in csr representation."""
         if self.has_overlapping_wires or self.num_wires > MAX_NUM_WIRES_KRON_PRODUCT:
-            mats_and_wires_gen = ((op.sparse_matrix(), op.wires) for op in self)
+            gen = ((op.sparse_matrix(), op.wires) for op in self)
 
-            reduced_mat, prod_wires = math.reduce_matrices(
-                mats_and_wires_gen=mats_and_wires_gen, reduce_func=math.dot
-            )
+            reduced_mat, prod_wires = math.reduce_matrices(gen, reduce_func=math.dot)
 
             wire_order = wire_order or self.wires
 
@@ -264,12 +315,27 @@ class Prod(CompositeOp):
         """
         return "_ops" if all(op._queue_category == "_ops" for op in self) else None
 
+    # pylint: disable=arguments-renamed, invalid-overridden-method
+    @property
+    def has_adjoint(self):
+        return True
+
     def adjoint(self):
         return Prod(*(qml.adjoint(factor) for factor in self[::-1]))
 
     @property
     def arithmetic_depth(self) -> int:
         return 1 + max(factor.arithmetic_depth for factor in self)
+
+    def _build_pauli_rep(self):
+        """PauliSentence representation of the Product of operations."""
+        if all(
+            operand_pauli_reps := [
+                op._pauli_rep for op in self.operands  # pylint: disable=protected-access
+            ]
+        ):
+            return reduce(lambda a, b: a * b, operand_pauli_reps)
+        return None
 
     def _simplify_factors(self, factors: Tuple[Operator]) -> Tuple[complex, Operator]:
         """Reduces the depth of nested factors and groups identical factors.
@@ -293,11 +359,7 @@ class Prod(CompositeOp):
         if len(factors) == 1:
             factor = factors[0]
             if len(factor) == 0:
-                op = (
-                    Prod(*(qml.Identity(w) for w in self.wires))
-                    if len(self.wires) > 1
-                    else qml.Identity(self.wires[0])
-                )
+                op = qml.Identity(self.wires)
             else:
                 op = factor[0] if len(factor) == 1 else Prod(*factor)
             return op if global_phase == 1 else qml.s_prod(global_phase, op)
@@ -324,7 +386,6 @@ class Prod(CompositeOp):
             op_list = list(op_list)
 
         for i in range(1, len(op_list)):
-
             key_op = op_list[i]
 
             j = i - 1
@@ -485,11 +546,7 @@ class _ProductFactorsGrouping:
                         continue
                     if exponent != 1:
                         op = Pow(base=op, z=exponent).simplify()
-                    if isinstance(op, Prod):
-                        self._factors += tuple(
-                            (factor,) for factor in op if not isinstance(factor, qml.Identity)
-                        )
-                    elif not isinstance(op, qml.Identity):
+                    if not isinstance(op, qml.Identity):
                         self._factors += ((op,),)
 
     def _remove_pauli_factors(self, wires: List[int]):

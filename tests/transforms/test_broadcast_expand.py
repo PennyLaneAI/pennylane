@@ -39,7 +39,7 @@ dev = qml.device("default.qubit", wires=2)
 def make_tape(x, y, z, obs):
     """Construct a tape with three parametrized, two unparametrized
     operations and expvals of provided observables."""
-    with qml.tape.QuantumTape() as tape:
+    with qml.queuing.AnnotatedQueue() as q:
         RX_broadcasted(x, wires=0)
         qml.PauliY(0)
         RX_broadcasted(y, wires=1)
@@ -48,6 +48,7 @@ def make_tape(x, y, z, obs):
         for ob in obs:
             qml.expval(ob)
 
+    tape = qml.tape.QuantumScript.from_queue(q)
     return tape
 
 
@@ -142,7 +143,7 @@ class TestBroadcastExpand:
         def cost(*params):
             tape = make_tape(*params, obs)
             tapes, fn = qml.transforms.broadcast_expand(tape)
-            return fn(qml.execute(tapes, dev, qml.gradients.param_shift, interface="jax"))
+            return fn(qml.execute(tapes, dev, qml.gradients.param_shift))
 
         assert qml.math.allclose(cost(*params), exp_fn(*params))
 
@@ -163,7 +164,7 @@ class TestBroadcastExpand:
         def cost(*params):
             tape = make_tape(*params, obs)
             tapes, fn = qml.transforms.broadcast_expand(tape)
-            return fn(qml.execute(tapes, dev, qml.gradients.param_shift, interface="tf"))
+            return fn(qml.execute(tapes, dev, qml.gradients.param_shift))
 
         with tf.GradientTape(persistent=True) as t:
             out = cost(*params)
@@ -193,7 +194,7 @@ class TestBroadcastExpand:
         def cost(*params):
             tape = make_tape(*params, obs)
             tapes, fn = qml.transforms.broadcast_expand(tape)
-            return fn(qml.execute(tapes, dev, qml.gradients.param_shift, interface="torch"))
+            return fn(qml.execute(tapes, dev, qml.gradients.param_shift))
 
         assert qml.math.allclose(cost(*torch_params), exp_fn(*params))
 

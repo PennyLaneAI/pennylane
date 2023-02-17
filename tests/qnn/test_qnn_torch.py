@@ -507,7 +507,7 @@ def test_interface_conversion(get_circuit):
 class TestTorchLayerIntegration:
     """Integration tests for the pennylane.qnn.torch.TorchLayer class."""
 
-    @pytest.mark.parametrize("dtype", [torch.float32, torch.float64])
+    @pytest.mark.parametrize("dtype", ["float32", "float64"])
     @pytest.mark.parametrize("n_qubits, output_dim", indices_up_to(2))
     @pytest.mark.parametrize("batch_size", [2])
     def test_step_module(self, module, batch_size, n_qubits, output_dim, dtype):
@@ -515,6 +515,11 @@ class TestTorchLayerIntegration:
         test checks that some of the parameters in the module are different after one step.
         The module is composed of two TorchLayers sandwiched between Linear neural network layers,
         and the dataset is simply input and output vectors of zeros."""
+        if dtype == "float32":
+            dtype = torch.float32
+        else:
+            dtype = torch.float64
+
         module = module.type(dtype)
         loss_func = torch.nn.MSELoss()
         optimizer = torch.optim.SGD(module.parameters(), lr=0.5)

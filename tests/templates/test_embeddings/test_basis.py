@@ -155,7 +155,6 @@ class TestInterfaces:
 
     def test_list_and_tuples(self, tol):
         """Tests common iterables as inputs."""
-
         features = [0, 1, 0]
 
         dev = qml.device("default.qubit", wires=3)
@@ -171,6 +170,9 @@ class TestInterfaces:
         res2 = circuit2(tuple(features))
         assert qml.math.allclose(res, res2, atol=tol, rtol=0)
 
+        res = circuit(2)
+        assert qml.math.allclose(res, res2, atol=tol, rtol=0)
+
     @pytest.mark.autograd
     def test_autograd(self, tol):
         """Tests the autograd interface."""
@@ -184,7 +186,9 @@ class TestInterfaces:
 
         res = circuit(features)
         res2 = circuit2(features)
+        assert qml.math.allclose(res, res2, atol=tol, rtol=0)
 
+        res = circuit(pnp.array(2))
         assert qml.math.allclose(res, res2, atol=tol, rtol=0)
 
     @pytest.mark.jax
@@ -198,12 +202,37 @@ class TestInterfaces:
 
         dev = qml.device("default.qubit", wires=3)
 
-        circuit = qml.QNode(circuit_template, dev, interface="jax")
-        circuit2 = qml.QNode(circuit_decomposed, dev, interface="jax")
+        circuit = qml.QNode(circuit_template, dev)
+        circuit2 = qml.QNode(circuit_decomposed, dev)
 
         res = circuit(features)
         res2 = circuit2(features)
+        assert qml.math.allclose(res, res2, atol=tol, rtol=0)
 
+        res = circuit(jnp.array(2))
+        assert qml.math.allclose(res, res2, atol=tol, rtol=0)
+
+    @pytest.mark.jax
+    def test_jax_jit(self, tol):
+        """Tests the jax-jit interface."""
+
+        import jax
+        import jax.numpy as jnp
+
+        features = jnp.array([0, 1, 0])
+
+        dev = qml.device("default.qubit", wires=3)
+
+        circuit = qml.QNode(circuit_template, dev)
+        circuit2 = qml.QNode(circuit_decomposed, dev)
+
+        res = circuit(features)
+        res2 = circuit2(features)
+        assert qml.math.allclose(res, res2, atol=tol, rtol=0)
+
+        circuit = jax.jit(circuit)
+
+        res = circuit(jnp.array(2))
         assert qml.math.allclose(res, res2, atol=tol, rtol=0)
 
     @pytest.mark.tf
@@ -216,12 +245,34 @@ class TestInterfaces:
 
         dev = qml.device("default.qubit", wires=3)
 
-        circuit = qml.QNode(circuit_template, dev, interface="tf")
-        circuit2 = qml.QNode(circuit_decomposed, dev, interface="tf")
+        circuit = qml.QNode(circuit_template, dev)
+        circuit2 = qml.QNode(circuit_decomposed, dev)
 
         res = circuit(features)
         res2 = circuit2(features)
+        assert qml.math.allclose(res, res2, atol=tol, rtol=0)
 
+        res = circuit(tf.Variable(2))
+        assert qml.math.allclose(res, res2, atol=tol, rtol=0)
+
+    @pytest.mark.tf
+    def test_tf_autograph(self, tol):
+        """Tests the tf interface with autograph"""
+
+        import tensorflow as tf
+
+        features = tf.Variable([0, 1, 0])
+
+        dev = qml.device("default.qubit", wires=3)
+
+        circuit = qml.QNode(circuit_template, dev)
+        circuit2 = qml.QNode(circuit_decomposed, dev)
+
+        res = circuit(features)
+        res2 = circuit2(features)
+        assert qml.math.allclose(res, res2, atol=tol, rtol=0)
+
+        res = circuit(tf.Variable(2))
         assert qml.math.allclose(res, res2, atol=tol, rtol=0)
 
     @pytest.mark.torch
@@ -234,10 +285,12 @@ class TestInterfaces:
 
         dev = qml.device("default.qubit", wires=3)
 
-        circuit = qml.QNode(circuit_template, dev, interface="torch")
-        circuit2 = qml.QNode(circuit_decomposed, dev, interface="torch")
+        circuit = qml.QNode(circuit_template, dev)
+        circuit2 = qml.QNode(circuit_decomposed, dev)
 
         res = circuit(features)
         res2 = circuit2(features)
+        assert qml.math.allclose(res, res2, atol=tol, rtol=0)
 
+        res = circuit(torch.tensor(2))
         assert qml.math.allclose(res, res2, atol=tol, rtol=0)

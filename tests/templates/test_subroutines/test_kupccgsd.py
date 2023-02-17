@@ -162,7 +162,7 @@ class TestDecomposition:
                 4,
                 4,
                 qml.math.array(
-                    [0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+                    [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0]
                 ),
             ),
             (
@@ -177,37 +177,14 @@ class TestDecomposition:
                         0.0,
                         0.0,
                         0.0,
-                        0.1077,
                         0.0,
                         0.0,
                         0.0,
                         0.0,
-                        0.0,
-                        0.686,
-                        0.0,
+                        -0.15774685,
                         0.0,
                         0.0,
-                        0.0,
-                        0.0,
-                        -0.0429,
-                        0.0,
-                        0.0,
-                        -0.0956,
-                        0.0,
-                        0.0,
-                        0.2733,
-                        0.0,
-                        0.0,
-                        -0.6089,
-                        0.0,
-                        0.0,
-                        0.0,
-                        0.0,
-                        0.0,
-                        0.0,
-                        0.0,
-                        0.0,
-                        -0.1777,
+                        0.07080115,
                         0.0,
                         0.0,
                         0.0,
@@ -219,14 +196,37 @@ class TestDecomposition:
                         0.0,
                         0.0,
                         0.0,
-                        0.0708,
-                        0.0,
-                        0.0,
-                        -0.1577,
+                        -0.17771614,
                         0.0,
                         0.0,
                         0.0,
                         0.0,
+                        0.0,
+                        0.0,
+                        0.0,
+                        0.0,
+                        -0.60887963,
+                        0.0,
+                        0.0,
+                        0.273282,
+                        0.0,
+                        0.0,
+                        -0.09556586,
+                        0.0,
+                        0.0,
+                        -0.0428926,
+                        0.0,
+                        0.0,
+                        0.0,
+                        0.0,
+                        0.0,
+                        0.68595815,
+                        0.0,
+                        0.0,
+                        0.0,
+                        0.0,
+                        0.0,
+                        0.10766361,
                         0.0,
                         0.0,
                         0.0,
@@ -490,7 +490,7 @@ def circuit_template(weights):
 
 
 def circuit_decomposed(weights):
-    qml.BasisState(np.array([0, 0, 1, 1]), wires=[0, 1, 2, 3])
+    qml.BasisState(np.array([1, 1, 0, 0]), wires=[0, 1, 2, 3])
     qml.FermionicDoubleExcitation(weights[0][4], wires1=[0, 1], wires2=[2, 3])
     qml.FermionicDoubleExcitation(weights[0][5], wires1=[2, 3], wires2=[0, 1])
     qml.FermionicSingleExcitation(weights[0][0], wires=[0, 1, 2])
@@ -520,6 +520,7 @@ class TestInterfaces:
         weights_tuple = [((0.55, 0.72, 0.6, 0.54, 0.42, 0.65))]
         res = circuit(weights_tuple)
         res2 = circuit2(weights_tuple)
+
         assert qml.math.allclose(res, res2, atol=tol, rtol=0)
 
     @pytest.mark.autograd
@@ -530,8 +531,8 @@ class TestInterfaces:
 
         dev = qml.device("default.qubit", wires=4)
 
-        circuit = qml.QNode(circuit_template, dev, interface="autograd")
-        circuit2 = qml.QNode(circuit_decomposed, dev, interface="autograd")
+        circuit = qml.QNode(circuit_template, dev)
+        circuit2 = qml.QNode(circuit_decomposed, dev)
 
         res = circuit(weights)
         res2 = circuit2(weights)
@@ -556,8 +557,8 @@ class TestInterfaces:
 
         dev = qml.device("default.qubit", wires=4)
 
-        circuit = qml.QNode(circuit_template, dev, interface="jax")
-        circuit2 = qml.QNode(circuit_decomposed, dev, interface="jax")
+        circuit = qml.QNode(circuit_template, dev)
+        circuit2 = qml.QNode(circuit_decomposed, dev)
 
         res = circuit(weights)
         res2 = circuit2(weights)
@@ -581,8 +582,8 @@ class TestInterfaces:
 
         dev = qml.device("default.qubit", wires=4)
 
-        circuit = qml.QNode(circuit_template, dev, interface="tf")
-        circuit2 = qml.QNode(circuit_decomposed, dev, interface="tf")
+        circuit = qml.QNode(circuit_template, dev)
+        circuit2 = qml.QNode(circuit_decomposed, dev)
 
         res = circuit(weights)
         res2 = circuit2(weights)
@@ -608,8 +609,8 @@ class TestInterfaces:
 
         dev = qml.device("default.qubit", wires=4)
 
-        circuit = qml.QNode(circuit_template, dev, interface="torch")
-        circuit2 = qml.QNode(circuit_decomposed, dev, interface="torch")
+        circuit = qml.QNode(circuit_template, dev)
+        circuit2 = qml.QNode(circuit_decomposed, dev)
 
         res = circuit(weights)
         res2 = circuit2(weights)

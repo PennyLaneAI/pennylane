@@ -639,7 +639,7 @@ class TestQubitGradient:
         trainable using the requires_grad attribute."""
         dev = qml.device("default.qubit", wires=5)
 
-        @qml.qnode(dev)
+        @qml.qnode(dev, interface="autograd")
         def test(x):
             qml.RZ(x, wires=[0])
             return qml.expval(qml.PauliZ(0))
@@ -654,7 +654,7 @@ class TestQubitGradient:
         trainable using the argnum argument."""
         dev = qml.device("default.qubit", wires=5)
 
-        @qml.qnode(dev)
+        @qml.qnode(dev, interface="autograd")
         def test(x):
             qml.RZ(x, wires=[0])
             return qml.expval(qml.PauliZ(0))
@@ -669,7 +669,7 @@ class TestQubitGradient:
         trainable using the requires_grad attribute."""
         dev = qml.device("default.qubit", wires=5)
 
-        @qml.qnode(dev)
+        @qml.qnode(dev, interface="autograd")
         def test(x):
             qml.RZ(x, wires=[0])
             return qml.probs(wires=[0])
@@ -684,7 +684,7 @@ class TestQubitGradient:
         trainable using the argnum argument."""
         dev = qml.device("default.qubit", wires=5)
 
-        @qml.qnode(dev)
+        @qml.qnode(dev, interface="autograd")
         def test(x):
             qml.RZ(x, wires=[0])
             return qml.probs(wires=[0])

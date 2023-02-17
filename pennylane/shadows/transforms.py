@@ -13,38 +13,45 @@
 # limitations under the License.
 """Classical shadow transforms"""
 
-from itertools import product
-from functools import reduce, wraps
 import warnings
+from functools import reduce, wraps
+from itertools import product
 
 import pennylane as qml
 import pennylane.numpy as np
+from pennylane.measurements import ClassicalShadowMP
+from pennylane.tape import QuantumScript, QuantumTape
 
 
 @qml.batch_transform
-def _replace_obs(tape, obs, *args, **kwargs):
+def _replace_obs(tape: QuantumTape, obs, *args, **kwargs):
     """
     Tape transform to replace the measurement processes with the given one
     """
     # check if the measurement process of the tape is qml.classical_shadow
-    for o in tape.observables:
-        if o.return_type is not qml.measurements.Shadow:
+    for m in tape.measurements:
+        if not isinstance(m, ClassicalShadowMP):
             raise ValueError(
-                f"Tape measurement must be {qml.measurements.Shadow!r}, got {o.return_type!r}"
+                f"Tape measurement must be ClassicalShadowMP, got {m.__class__.__name__!r}"
             )
 
-    with qml.tape.QuantumTape() as new_tape:
+    with qml.queuing.AnnotatedQueue() as q:
         # queue everything from the old tape except the measurement processes
         for op in tape.operations:
             qml.apply(op)
 
         # queue the new observable
         obs(*args, **kwargs)
+    qscript = QuantumScript.from_queue(q)
 
     def processing_fn(res):
+        if qml.active_return():
+            # no stacking necessary since there is only one measurement
+            return res[0]
+
         return qml.math.squeeze(qml.math.stack(res))
 
-    return [new_tape], processing_fn
+    return [qscript], processing_fn
 
 
 def shadow_expval(H, k=1):
@@ -69,7 +76,7 @@ def shadow_expval(H, k=1):
         H = qml.PauliZ(0) @ qml.PauliZ(1)
         dev = qml.device("default.qubit", wires=2, shots=10000)
 
-        @qml.shadows.expval(H, k=1)
+        @qml.shadows.shadow_expval(H, k=1)
         @qml.qnode(dev)
         def circuit(x):
             qml.Hadamard(wires=0)
@@ -92,7 +99,7 @@ def shadow_expval(H, k=1):
 
 def _shadow_state_diffable(wires):
     """Differentiable version of the shadow state transform"""
-    wires_list = [wires] if not isinstance(wires[0], list) else wires
+    wires_list = wires if isinstance(wires[0], list) else [wires]
 
     if any(len(w) >= 8 for w in wires_list):
         warnings.warn(
@@ -143,7 +150,7 @@ def _shadow_state_diffable(wires):
 
                 start += 4 ** len(w)
 
-            return states[0] if not isinstance(wires[0], list) else states
+            return states if isinstance(wires[0], list) else states[0]
 
         return wrapper
 
@@ -152,7 +159,7 @@ def _shadow_state_diffable(wires):
 
 def _shadow_state_undiffable(wires):
     """Non-differentiable version of the shadow state transform"""
-    wires_list = [wires] if not isinstance(wires[0], list) else wires
+    wires_list = wires if isinstance(wires[0], list) else [wires]
 
     def decorator(qnode):
         @wraps(qnode)
@@ -161,7 +168,7 @@ def _shadow_state_undiffable(wires):
             shadow = qml.shadows.ClassicalShadow(bits, recipes)
 
             states = [qml.math.mean(shadow.global_snapshots(wires=w), 0) for w in wires_list]
-            return states[0] if not isinstance(wires[0], list) else states
+            return states if isinstance(wires[0], list) else states[0]
 
         return wrapper
 
@@ -191,7 +198,7 @@ def shadow_state(wires, diffable=False):
 
         dev = qml.device("default.qubit", wires=2, shots=10000)
 
-        @qml.shadows.state(wires=[0, 1], diffable=True)
+        @qml.shadows.shadow_state(wires=[0, 1], diffable=True)
         @qml.qnode(dev)
         def circuit(x):
             qml.Hadamard(wires=0)
@@ -210,7 +217,7 @@ def shadow_state(wires, diffable=False):
             [ 0.33705002-0.01125j   ,  0.011025  +0.232575j  ,
              -0.006075  +0.225225j  ,  0.33475   +0.j        ]],
            dtype=complex64, requires_grad=True)
-    >>> qml.jacobian(circuit)(x)
+    >>> qml.jacobian(lambda x: np.real(circuit(x)))(x)
     array([[-0.245025, -0.005325,  0.004275, -0.2358  ],
            [-0.005325,  0.235275,  0.2358  , -0.004275],
            [ 0.004275,  0.2358  ,  0.244875, -0.002175],

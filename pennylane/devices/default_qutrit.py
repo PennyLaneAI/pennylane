@@ -55,17 +55,20 @@ class DefaultQutrit(QutritDevice):
     operations = {
         "Identity",
         "QutritUnitary",
+        "ControlledQutritUnitary",
         "TShift",
         "TClock",
         "TAdd",
         "TSWAP",
+        "THadamard",
     }
 
     # Identity is supported as an observable for qml.state() to work correctly. However, any
     # measurement types that rely on eigenvalue decomposition will not work with qml.Identity
     observables = {
-        "Identity",
         "THermitian",
+        "GellMann",
+        "Identity",
     }
 
     def __init__(
@@ -149,7 +152,7 @@ class DefaultQutrit(QutritDevice):
 
         if operation.base_name in self._apply_ops:
             axes = self.wires.indices(wires)
-            return self._apply_ops[operation.base_name](state, axes, inverse=operation.inverse)
+            return self._apply_ops[operation.base_name](state, axes)
 
         matrix = self._asarray(self._get_unitary_matrix(operation), dtype=self.C_DTYPE)
 
@@ -370,7 +373,6 @@ class DefaultQutrit(QutritDevice):
         self._pre_rotated_state = self._state
 
     def analytic_probability(self, wires=None):
-
         if self._state is None:
             return None
 

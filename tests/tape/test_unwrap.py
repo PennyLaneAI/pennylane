@@ -28,13 +28,13 @@ def test_unwrap_tensorflow():
     p = [tf.Variable(0.1), tf.constant(0.2), np.array(0.5), tf.Variable(0.3)]
 
     with tf.GradientTape():
-
-        with qml.tape.QuantumTape() as tape:
+        with qml.queuing.AnnotatedQueue() as q:
             qml.RX(p[0], wires=0)
             qml.RY(p[1], wires=0)
             qml.PhaseShift(p[2], wires=0)
             qml.RZ(p[3], wires=0)
 
+        tape = qml.tape.QuantumScript.from_queue(q)
         params = tape.get_parameters(trainable_only=False)
         tape.trainable_params = qml.math.get_trainable_indices(params)
 
@@ -63,12 +63,13 @@ def test_unwrap_torch():
         torch.tensor(0.3, requires_grad=True),
     ]
 
-    with qml.tape.QuantumTape() as tape:
+    with qml.queuing.AnnotatedQueue() as q:
         qml.RX(p[0], wires=0)
         qml.RY(p[1], wires=0)
         qml.PhaseShift(p[2], wires=0)
         qml.RZ(p[3], wires=0)
 
+    tape = qml.tape.QuantumScript.from_queue(q)
     params = tape.get_parameters(trainable_only=False)
     tape.trainable_params = qml.math.get_trainable_indices(params)
 
@@ -97,12 +98,13 @@ def test_unwrap_autograd():
         anp.tensor(0.3, requires_grad=True),
     ]
 
-    with qml.tape.QuantumTape() as tape:
+    with qml.queuing.AnnotatedQueue() as q:
         qml.RX(p[0], wires=0)
         qml.RY(p[1], wires=0)
         qml.PhaseShift(p[2], wires=0)
         qml.RZ(p[3], wires=0)
 
+    tape = qml.tape.QuantumScript.from_queue(q)
     with tape.unwrap() as unwrapped_tape:
         # inside the context manager, all parameters
         # will be unwrapped to NumPy arrays
@@ -126,12 +128,13 @@ def test_unwrap_autograd_backward():
     ]
 
     def cost(*p):
-        with qml.tape.QuantumTape() as tape:
+        with qml.queuing.AnnotatedQueue() as q:
             qml.RX(p[0][0], wires=0)
             qml.RY(p[1], wires=0)
             qml.PhaseShift(p[0][1], wires=0)
             qml.RZ(p[0][2], wires=0)
 
+        tape = qml.tape.QuantumScript.from_queue(q)
         params = tape.get_parameters(trainable_only=False)
         tape.trainable_params = qml.math.get_trainable_indices(params)
 
@@ -167,12 +170,13 @@ def test_unwrap_jax():
         jnp.array(0.3),
     ]
 
-    with qml.tape.QuantumTape() as tape:
+    with qml.queuing.AnnotatedQueue() as q:
         qml.RX(p[0], wires=0)
         qml.RY(p[1], wires=0)
         qml.PhaseShift(p[2], wires=0)
         qml.RZ(p[3], wires=0)
 
+    tape = qml.tape.QuantumScript.from_queue(q)
     params = tape.get_parameters(trainable_only=False)
     tape.trainable_params = qml.math.get_trainable_indices(params)
 
@@ -197,7 +201,6 @@ def test_unwrap_jax_backward():
     works as expected during a backwards pass"""
     import jax
     from jax import numpy as jnp
-    from jaxlib.xla_extension import DeviceArray
     from jax.interpreters.ad import JVPTracer
 
     p = [
@@ -206,12 +209,13 @@ def test_unwrap_jax_backward():
     ]
 
     def cost(*p):
-        with qml.tape.QuantumTape() as tape:
+        with qml.queuing.AnnotatedQueue() as q:
             qml.RX(p[0][0], wires=0)
             qml.RY(p[1], wires=0)
             qml.PhaseShift(p[0][1], wires=0)
             qml.RZ(p[0][2], wires=0)
 
+        tape = qml.tape.QuantumScript.from_queue(q)
         params = tape.get_parameters(trainable_only=False)
         tape.trainable_params = qml.math.get_trainable_indices(params)
 
@@ -225,7 +229,7 @@ def test_unwrap_jax_backward():
 
         # outside the context, the original parameters have been restored.
         params = tape.get_parameters(trainable_only=False)
-        assert all(isinstance(i, (DeviceArray, JVPTracer)) for i in params)
+        assert all(isinstance(i, (jax.Array, JVPTracer)) for i in params)
 
         return p[0][0] * p[1] ** 2 * jnp.sin(p[0][1]) * jnp.exp(-0.5 * p[0][2])
 
@@ -245,18 +249,20 @@ def test_multiple_unwrap():
         torch.tensor(0.3, requires_grad=True),
     ]
 
-    with qml.tape.QuantumTape() as tape1:
+    with qml.queuing.AnnotatedQueue() as q1:
         qml.RX(p[0], wires=0)
         qml.RY(p[1], wires=0)
         qml.PhaseShift(p[2], wires=0)
         qml.RZ(p[3], wires=0)
 
-    with qml.tape.QuantumTape() as tape2:
+    tape1 = qml.tape.QuantumScript.from_queue(q1)
+    with qml.queuing.AnnotatedQueue() as q2:
         qml.RX(p[1], wires=0)
         qml.RY(p[3], wires=0)
         qml.PhaseShift(p[0], wires=0)
         qml.RZ(p[2], wires=0)
 
+    tape2 = qml.tape.QuantumScript.from_queue(q2)
     for t in [tape1, tape2]:
         params = t.get_parameters(trainable_only=False)
         t.trainable_params = qml.math.get_trainable_indices(params)

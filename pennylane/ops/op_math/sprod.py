@@ -18,14 +18,16 @@ computing the scalar product of operations.
 from typing import Union
 
 import pennylane as qml
+import pennylane.math as qnp
 from pennylane.operation import Operator
 from pennylane.ops.op_math.pow import Pow
 from pennylane.ops.op_math.sum import Sum
+from pennylane.queuing import QueuingManager
 
-from .symbolicop import SymbolicOp
+from .symbolicop import ScalarSymbolicOp
 
 
-def s_prod(scalar, operator, do_queue=True, id=None):
+def s_prod(scalar, operator, lazy=True, do_queue=True, id=None):
     r"""Construct an operator which is the scalar product of the
     given scalar and operator provided.
 
@@ -34,11 +36,30 @@ def s_prod(scalar, operator, do_queue=True, id=None):
         operator (~.operation.Operator): the operator which will get scaled.
 
     Keyword Args:
+        lazy=True (bool): If ``lazy=False`` and the operator is already a scalar product operator, the scalar provided will simply be combined with the existing scaling factor.
         do_queue (bool): determines if the scalar product operator will be queued. Default is True.
         id (str or None): id for the scalar product operator. Default is None.
-
     Returns:
         ~ops.op_math.SProd: The operator representing the scalar product.
+
+    .. note::
+
+        This operator supports a batched base, a batched coefficient and a combination of both:
+
+        >>> op = qml.s_prod(scalar=4, operator=qml.RX([1, 2, 3], wires=0))
+        >>> qml.matrix(op).shape
+        (3, 2, 2)
+        >>> op = qml.s_prod(scalar=[1, 2, 3], operator=qml.RX(1, wires=0))
+        >>> qml.matrix(op).shape
+        (3, 2, 2)
+        >>> op = qml.s_prod(scalar=[4, 5, 6], operator=qml.RX([1, 2, 3], wires=0))
+        >>> qml.matrix(op).shape
+        (3, 2, 2)
+
+        But it doesn't support batching of operators:
+
+        >>> op = qml.s_prod(scalar=4, operator=[qml.RX(1, wires=0), qml.RX(2, wires=0)])
+        AttributeError: 'list' object has no attribute 'batch_size'
 
     .. seealso:: :class:`~.ops.op_math.SProd` and :class:`~.ops.op_math.SymbolicOp`
 
@@ -51,10 +72,18 @@ def s_prod(scalar, operator, do_queue=True, id=None):
     array([[ 0., 2.],
            [ 2., 0.]])
     """
-    return SProd(scalar, operator, do_queue=do_queue, id=id)
+    if lazy or not isinstance(operator, SProd):
+        return SProd(scalar, operator, do_queue=do_queue, id=id)
+
+    sprod_op = SProd(scalar=scalar * operator.scalar, base=operator.base, do_queue=do_queue, id=id)
+
+    if do_queue:
+        QueuingManager.remove(operator)
+
+    return sprod_op
 
 
-class SProd(SymbolicOp):
+class SProd(ScalarSymbolicOp):
     r"""Arithmetic operator representing the scalar product of an
     operator with the given scalar.
 
@@ -93,7 +122,7 @@ class SProd(SymbolicOp):
 
             dev = qml.device("default.qubit", wires=1)
 
-            @qml.qnode(dev, grad_method="best")
+            @qml.qnode(dev, diff_method="best")
             def circuit(scalar, theta):
                 qml.RX(theta, wires=0)
                 return qml.expval(qml.s_prod(scalar, qml.Hadamard(wires=0)))
@@ -106,8 +135,13 @@ class SProd(SymbolicOp):
     _name = "SProd"
 
     def __init__(self, scalar: Union[int, float, complex], base: Operator, do_queue=True, id=None):
-        self.scalar = scalar
-        super().__init__(base=base, do_queue=do_queue, id=id)
+        super().__init__(base=base, scalar=scalar, do_queue=do_queue, id=id)
+
+        if base_pauli_rep := getattr(self.base, "_pauli_rep", None):
+            pr = {pw: qnp.dot(coeff, self.scalar) for pw, coeff in base_pauli_rep.items()}
+            self._pauli_rep = qml.pauli.PauliSentence(pr)
+        else:
+            self._pauli_rep = None
 
     def __repr__(self):
         """Constructor-call-like representation."""
@@ -145,8 +179,6 @@ class SProd(SymbolicOp):
 
         A ``TermsUndefinedError`` is raised if no representation by terms is defined.
 
-        .. seealso:: :meth:`~.Operator.compute_terms`
-
         Returns:
             tuple[list[tensor_like or float], list[.Operation]]: list of coefficients :math:`c_i`
             and list of operations :math:`O_i`
@@ -158,6 +190,11 @@ class SProd(SymbolicOp):
         """If the base operator is hermitian and the scalar is real,
         then the scalar product operator is hermitian."""
         return self.base.is_hermitian and not qml.math.iscomplex(self.scalar)
+
+    # pylint: disable=arguments-renamed,invalid-overridden-method
+    @property
+    def has_diagonalizing_gates(self):
+        return self.base.has_diagonalizing_gates
 
     def diagonalizing_gates(self):
         r"""Sequence of gates that diagonalize the operator in the computational basis.
@@ -190,32 +227,18 @@ class SProd(SymbolicOp):
         return self.scalar * self.base.eigvals()
 
     def sparse_matrix(self, wire_order=None):
-        return self.scalar * self.base.sparse_matrix(wire_order=wire_order)
+        return self.base.sparse_matrix(wire_order=wire_order).multiply(self.scalar)
 
-    def matrix(self, wire_order=None):
-        r"""Representation of the operator as a matrix in the computational basis.
+    @property
+    def has_matrix(self):
+        return isinstance(self.base, qml.Hamiltonian) or self.base.has_matrix
 
-        If ``wire_order`` is provided, the numerical representation considers the position of the
-        operator's wires in the global wire order. Otherwise, the wire order defaults to the
-        operator's wires.
-
-        If the matrix depends on trainable parameters, the result
-        will be cast in the same autodifferentiation framework as the parameters.
-
-        A ``MatrixUndefinedError`` is raised if the base matrix representation has not been defined.
-
-        .. seealso:: :meth:`~.Operator.compute_matrix`
-
-        Args:
-            wire_order (Iterable): global wire order, must contain all wire labels from the
-            operator's wires
-
-        Returns:
-            tensor_like: matrix representation
-        """
-        if isinstance(self.base, qml.Hamiltonian):
-            return self.scalar * qml.matrix(self.base, wire_order=wire_order)
-        return self.scalar * self.base.matrix(wire_order=wire_order)
+    @staticmethod
+    def _matrix(scalar, mat):
+        if qml.math.get_interface(scalar) == "tensorflow":
+            # we must cast ``scalar`` to complex to avoid an error
+            scalar = qml.math.cast_like(scalar, mat)
+        return scalar * mat
 
     @property
     def _queue_category(self):  # don't queue scalar prods as they might not be Unitary!

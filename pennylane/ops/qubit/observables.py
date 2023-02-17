@@ -18,6 +18,7 @@ excepting the Pauli gates and Hadamard gate in ``non_parametric_ops.py``.
 
 from copy import copy
 
+from collections.abc import Sequence
 import numpy as np
 from scipy.sparse import csr_matrix
 
@@ -49,7 +50,7 @@ class Hermitian(Observable):
     * Gradient recipe: None
 
     Args:
-        A (array): square hermitian matrix
+        A (array or Sequence): square hermitian matrix
         wires (Sequence[int] or int): the wire(s) the operation acts on
         do_queue (bool): Indicates whether the operator should be
             immediately pushed into the Operator queue (optional)
@@ -60,10 +61,42 @@ class Hermitian(Observable):
     """int: Number of trainable parameters that the operator depends on."""
 
     grad_method = "F"
+
+    # Qubit case
+    _num_basis_states = 2
     _eigs = {}
 
     def __init__(self, A, wires, do_queue=True, id=None):
+        A = qml.math.asarray(A)
+        if not qml.math.is_abstract(A):
+            if isinstance(wires, Sequence) and not isinstance(wires, str):
+                if len(wires) == 0:
+                    raise ValueError(
+                        "Hermitian: wrong number of wires. At least one wire has to be given."
+                    )
+                expected_mx_shape = self._num_basis_states ** len(wires)
+            else:
+                # Assumably wires is an int; further validation checks are performed by calling super().__init__
+                expected_mx_shape = self._num_basis_states
+
+            Hermitian._validate_input(A, expected_mx_shape)
+
         super().__init__(A, wires=wires, do_queue=do_queue, id=id)
+
+    @staticmethod
+    def _validate_input(A, expected_mx_shape=None):
+        """Validate the input matrix."""
+        if len(A.shape) != 2 or A.shape[0] != A.shape[1]:
+            raise ValueError("Observable must be a square matrix.")
+
+        if expected_mx_shape is not None and A.shape[0] != expected_mx_shape:
+            raise ValueError(
+                f"Expected input matrix to have shape {expected_mx_shape}x{expected_mx_shape}, but "
+                f"a matrix with shape {A.shape[0]}x{A.shape[0]} was passed."
+            )
+
+        if not qml.math.allclose(A, qml.math.T(qml.math.conj(A))):
+            raise ValueError("Observable must be Hermitian.")
 
     def label(self, decimals=None, base_label=None, cache=None):
         return super().label(decimals=decimals, base_label=base_label or "𝓗", cache=cache)
@@ -91,13 +124,7 @@ class Hermitian(Observable):
          [ 1.+2.j -1.+0.j]]
         """
         A = qml.math.asarray(A)
-
-        if A.shape[0] != A.shape[1]:
-            raise ValueError("Observable must be a square matrix.")
-
-        if not qml.math.allclose(A, qml.math.T(qml.math.conj(A))):
-            raise ValueError("Observable must be Hermitian.")
-
+        Hermitian._validate_input(A)
         return A
 
     @property
@@ -195,7 +222,7 @@ class SparseHamiltonian(Observable):
     Args:
         H (csr_matrix): a sparse matrix in SciPy Compressed Sparse Row (CSR) format with
             dimension :math:`(2^n, 2^n)`, where :math:`n` is the number of wires
-        wires (Sequence[int] or int): the wire(s) the operation acts on
+        wires (Sequence[int]): the wire(s) the operation acts on
         do_queue (bool): Indicates whether the operator should be
             immediately pushed into the Operator queue (optional)
         id (str or None): String representing the operation (optional)
@@ -208,12 +235,12 @@ class SparseHamiltonian(Observable):
     the utility function :func:`~.utils.sparse_hamiltonian` to construct the sparse matrix that serves as the input
     to ``SparseHamiltonian``:
 
-    >>> wires = 20
-    >>> coeffs = [1 for _ in range(wires)]
-    >>> observables = [qml.PauliZ(i) for i in range(wires)]
+    >>> wires = range(20)
+    >>> coeffs = [1 for _ in wires]
+    >>> observables = [qml.PauliZ(i) for i in wires]
     >>> H = qml.Hamiltonian(coeffs, observables)
     >>> Hmat = qml.utils.sparse_hamiltonian(H)
-    >>> H_sparse = qml.SparseHamiltonian(Hmat, wires=wires)
+    >>> H_sparse = qml.SparseHamiltonian(Hmat, wires)
     """
     num_wires = AllWires
     num_params = 1
@@ -225,6 +252,11 @@ class SparseHamiltonian(Observable):
         if not isinstance(H, csr_matrix):
             raise TypeError("Observable must be a scipy sparse csr_matrix.")
         super().__init__(H, wires=wires, do_queue=do_queue, id=id)
+        mat_len = 2 ** len(self.wires)
+        if H.shape != (mat_len, mat_len):
+            raise ValueError(
+                f"Sparse Matrix must be of shape ({mat_len}, {mat_len}). Got {H.shape}."
+            )
 
     def label(self, decimals=None, base_label=None, cache=None):
         return super().label(decimals=decimals, base_label=base_label or "𝓗", cache=cache)
@@ -404,7 +436,7 @@ class Projector(Observable):
     def compute_eigvals(basis_state):  # pylint: disable=arguments-differ
         r"""Eigenvalues of the operator in the computational basis (static method).
 
-        If :attr:`diagonalizing_gates` are specified and implement a unitary :math:`U`,
+        If :attr:`diagonalizing_gates` are specified and implement a unitary :math:`U^{\dagger}`,
         the operator can be reconstructed as
 
         .. math:: O = U \Sigma U^{\dagger},

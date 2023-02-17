@@ -14,18 +14,13 @@
 """
 Unit tests for the :mod:`pennylane` configuration classe :class:`Configuration`.
 """
-import pytest
 import os
-import logging as log
-import sys
 
+import pytest
 import toml
 
 import pennylane as qml
 from pennylane import Configuration
-
-
-log.getLogger("defaults")
 
 
 config_filename = "default_config.toml"
@@ -126,17 +121,6 @@ class TestConfigurationFileInteraction:
         assert config._config == config_toml
         assert config.path == os.path.join(os.getcwd(), config_path)
 
-    def test_not_found_warning(self, caplog):
-        """Test that a warning is raised if no configuration file found."""
-
-        caplog.clear()
-        caplog.set_level(log.INFO)
-
-        Configuration("noconfig")
-
-        assert len(caplog.records) == 1
-        assert caplog.records[0].message == "No PennyLane configuration file found."
-
     def test_save(self, tmp_path):
         """Test saving a configuration file."""
         config = Configuration(name=config_filename)
@@ -200,6 +184,30 @@ class TestProperties:
 
         assert not config
         assert default_config
+
+    def test_str(self, default_config):
+        """Test string value of the Configuration object."""
+        config = Configuration("noconfig")
+
+        assert config.__str__() == ""
+
+    def test_str_loaded_config(self, default_config, monkeypatch, default_config_toml):
+        """Test string value of the Configuration object that has been
+        loaded."""
+        config_toml, config_path = default_config_toml
+
+        monkeypatch.chdir(".")
+        monkeypatch.setenv("PENNYLANE_CONF", "")
+        config = Configuration(name=config_path)
+
+        assert config.__str__() == f"{config_toml}"
+
+    def test_repr(self, default_config):
+        """Test repr value of the Configuration object."""
+        path = "noconfig"
+        config = Configuration(path)
+
+        assert config.__repr__() == "PennyLane Configuration <noconfig>"
 
 
 class TestPennyLaneInit:

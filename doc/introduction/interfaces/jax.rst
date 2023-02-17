@@ -67,13 +67,16 @@ a JAX-capable QNode in PennyLane. Simply specify the ``interface='jax'`` keyword
         qml.PhaseShift(theta, wires=0)
         return qml.expval(qml.PauliZ(0)), qml.expval(qml.Hadamard(1))
 
-The QNode ``circuit1()`` is now a JAX-capable QNode, accepting ``jax.DeviceArray`` objects
-as input, and returning ``jax.DeviceArray`` objects. It can now be used like any other JAX function:
+The QNode ``circuit1()`` is now a JAX-capable QNode, accepting ``jax.Array`` objects
+as input, and returning ``jax.Array`` objects. It can now be used like any other JAX function:
 
 >>> phi = jnp.array([0.5, 0.1])
 >>> theta = jnp.array(0.2)
 >>> circuit1(phi, theta)
-DeviceArray([0.8776, 0.6880], dtype=float64)
+Array([0.8776, 0.6880], dtype=float64)
+
+The interface can also be automatically determined when the ``QNode`` is called. You do not need to pass the interface
+if you provide parameters.
 
 Quantum gradients using JAX
 ---------------------------
@@ -103,9 +106,9 @@ For example:
 This has output:
 
 >>> phi_grad
-DeviceArray([-0.47942555,  0.        ], dtype=float32)
+Array([-0.47942555,  0.        ], dtype=float32)
 >>> theta_grad
-DeviceArray(-3.4332792e-10, dtype=float32)
+Array(-3.4332792e-10, dtype=float32)
 
 
 .. _jax_jit:
@@ -234,7 +237,7 @@ used to optimize a QNode that is transformed by ``jax.jit``:
     optimized_params = res.params
 
 >>> optimized_params
-DeviceArray(3.1415861, dtype=float64, weak_type=True)
+Array(3.1415861, dtype=float64, weak_type=True)
 
 Alternatively, optimizers from ``Optax`` may also be used to optimize the same
 QNode:
@@ -267,4 +270,4 @@ QNode:
         params = optax.apply_updates(params, updates)
 
 >>> params
-DeviceArray(3.14159111, dtype=float64)
+Array(3.14159111, dtype=float64)

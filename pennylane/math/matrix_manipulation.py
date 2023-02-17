@@ -13,28 +13,29 @@
 # limitations under the License.
 """This module contains methods to expand the matrix representation of an operator
 to a higher hilbert space with re-ordered wires."""
-import copy
+import itertools
 from functools import reduce
-from typing import Generator, Tuple
+from typing import Generator, Iterable, Tuple
 
 import numpy as np
-from scipy.sparse import csr_matrix, eye, issparse, kron
+from scipy.sparse import csr_matrix, eye, kron
 
 import pennylane as qml
 from pennylane.wires import Wires
 
 
-def expand_matrix(base_matrix, wires, wire_order=None, sparse_format="csr"):
-    """Re-express a base matrix acting on a subspace defined by a set of wire labels
+def expand_matrix(mat, wires, wire_order=None, sparse_format="csr"):
+    # pylint: disable=too-many-branches
+    """Re-express a matrix acting on a subspace defined by a set of wire labels
     according to a global wire order.
 
     Args:
-        base_matrix (tensor_like): base matrix to expand
-        wires (Iterable): wires determining the subspace that base matrix acts on; a base matrix of
+        mat (tensor_like): matrix to expand
+        wires (Iterable): wires determining the subspace that ``mat`` acts on; a matrix of
             dimension :math:`2^n` acts on a subspace of :math:`n` wires
         wire_order (Iterable): global wire order, which has to contain all wire labels in ``wires``, but can also
             contain additional labels
-        sparse_format (str): if the base matrix is a scipy sparse matrix then this is the string representing the
+        sparse_format (str): if ``mat`` is a SciPy sparse matrix then this is the string representing the
             preferred scipy sparse matrix format to cast the expanded matrix too
 
     Returns:
@@ -44,24 +45,24 @@ def expand_matrix(base_matrix, wires, wire_order=None, sparse_format="csr"):
 
     If the wire order is ``None`` or identical to ``wires``, the original matrix gets returned:
 
-    >>> base_matrix = np.array([[1, 2, 3, 4],
+    >>> matrix = np.array([[1, 2, 3, 4],
     ...                         [5, 6, 7, 8],
     ...                         [9, 10, 11, 12],
     ...                         [13, 14, 15, 16]])
-    >>> print(expand_matrix(base_matrix, wires=[0, 2], wire_order=[0, 2]))
+    >>> print(expand_matrix(matrix, wires=[0, 2], wire_order=[0, 2]))
     [[ 1  2  3  4]
      [ 5  6  7  8]
      [ 9 10 11 12]
      [13 14 15 16]]
-    >>> print(expand_matrix(base_matrix, wires=[0, 2]))
+    >>> print(expand_matrix(matrix, wires=[0, 2]))
     [[ 1  2  3  4]
      [ 5  6  7  8]
      [ 9 10 11 12]
      [13 14 15 16]]
 
-    If the wire order is a permutation of ``wires``, the entries of the base matrix get permuted:
+    If the wire order is a permutation of ``wires``, the entries of the matrix get permuted:
 
-    >>> print(expand_matrix(base_matrix, wires=[0, 2], wire_order=[2, 0]))
+    >>> print(expand_matrix(matrix, wires=[0, 2], wire_order=[2, 0]))
     [[ 1  3  2  4]
      [ 9 11 10 12]
      [ 5  7  6  8]
@@ -69,7 +70,7 @@ def expand_matrix(base_matrix, wires, wire_order=None, sparse_format="csr"):
 
     If the wire order contains wire labels not found in ``wires``, the matrix gets expanded:
 
-    >>> print(expand_matrix(base_matrix, wires=[0, 2], wire_order=[0, 1, 2]))
+    >>> print(expand_matrix(matrix, wires=[0, 2], wire_order=[0, 1, 2]))
     [[ 1  2  0  0  3  4  0  0]
      [ 5  6  0  0  7  8  0  0]
      [ 0  0  1  2  0  0  3  4]
@@ -81,15 +82,15 @@ def expand_matrix(base_matrix, wires, wire_order=None, sparse_format="csr"):
 
     The method works with tensors from all autodifferentiation frameworks, for example:
 
-    >>> base_matrix_torch = torch.tensor([[1., 2.],
+    >>> matrix_torch = torch.tensor([[1., 2.],
     ...                                   [3., 4.]], requires_grad=True)
-    >>> res = expand_matrix(base_matrix_torch, wires=["b"], wire_order=["a", "b"])
+    >>> res = expand_matrix(matrix_torch, wires=["b"], wire_order=["a", "b"])
     >>> type(res)
     torch.Tensor
     >>> res.requires_grad
     True
 
-    The method words with scipy sparse matrices, for example:
+    The method works with scipy sparse matrices, for example:
 
     >>> from scipy import sparse
     >>> mat = sparse.csr_matrix([[0, 1], [1, 0]])
@@ -102,47 +103,180 @@ def expand_matrix(base_matrix, wires, wire_order=None, sparse_format="csr"):
     """
 
     if (wire_order is None) or (wire_order == wires):
-        return base_matrix
+        return mat
 
-    interface = qml.math.get_interface(base_matrix)  # pylint: disable=protected-access
-    if interface == "scipy" and issparse(base_matrix):
-        return _sparse_expand_matrix(base_matrix, wires, wire_order, format=sparse_format)
+    wires = list(wires)
+    wire_order = list(wire_order)
 
-    wire_order = qml.wires.Wires(wire_order)
-    n = len(wires)
-    shape = qml.math.shape(base_matrix)
+    interface = qml.math.get_interface(mat)
+    shape = qml.math.shape(mat)
     batch_dim = shape[0] if len(shape) == 3 else None
 
-    # operator's wire positions relative to wire ordering
-    op_wire_pos = wire_order.indices(wires)
+    def eye_interface(dim):
+        if interface == "scipy":
+            return eye(2**dim, format="coo")
+        return qml.math.cast_like(qml.math.eye(2**dim, like=interface), mat)
 
-    identity = qml.math.reshape(
-        qml.math.eye(2 ** len(wire_order), like=interface), [2] * (len(wire_order) * 2)
-    )
-    # The first axis entries are range(n, 2n) for batch_dim=None and range(n+1, 2n+1) else
-    axes = (list(range(-n, 0)), op_wire_pos)
+    def kron_interface(mat1, mat2):
+        if interface == "scipy":
+            res = kron(mat1, mat2, format="coo")
+            res.eliminate_zeros()
+            return res
+        if interface == "torch":
+            # these lines are to avoid a crash when the matrices are not contiguous in memory
+            mat1 = mat1.contiguous()
+            mat2 = mat2.contiguous()
+        return qml.math.kron(mat1, mat2, like=interface)
 
-    # reshape op.matrix()
-    op_matrix_interface = qml.math.convert_like(base_matrix, identity)
-    shape = [batch_dim] + [2] * (n * 2) if batch_dim else [2] * (n * 2)
-    mat_op_reshaped = qml.math.reshape(op_matrix_interface, shape)
-    mat_tensordot = qml.math.tensordot(
-        mat_op_reshaped, qml.math.cast_like(identity, mat_op_reshaped), axes
-    )
+    # get a subset of `wire_order` values that contain all wire labels inside `wires` argument
+    # e.g. wire_order = [0, 1, 2, 3, 4]; wires = [3, 0, 2]
+    # --> subset_wire_order = [0, 1, 2, 3]; expanded_wires = [3, 0, 2, 1]
+    wire_indices = [wire_order.index(wire) for wire in wires]
+    subset_wire_order = wire_order[min(wire_indices) : max(wire_indices) + 1]
+    wire_difference = list(set(subset_wire_order) - set(wires))
+    expanded_wires = wires + wire_difference
 
-    unused_idxs = [idx for idx in range(len(wire_order)) if idx not in op_wire_pos]
-    # permute matrix axes to match wire ordering
-    perm = op_wire_pos + unused_idxs
-    sources = wire_order.indices(wire_order)
+    # expand the matrix if the wire subset is larger than the matrix wires
+    if wire_difference:
+        if batch_dim is not None:
+            batch_matrices = [
+                kron_interface(batch, eye_interface(len(wire_difference))) for batch in mat
+            ]
+            mat = qml.math.stack(batch_matrices, like=interface)
+        else:
+            mat = kron_interface(mat, eye_interface(len(wire_difference)))
+
+    # permute matrix
+    if interface == "scipy":
+        mat = _permute_sparse_matrix(mat, expanded_wires, subset_wire_order)
+    else:
+        mat = _permute_dense_matrix(mat, expanded_wires, subset_wire_order, batch_dim)
+
+    # expand the matrix even further if needed
+    if len(expanded_wires) < len(wire_order):
+        mats = []
+        num_pre_identities = min(wire_indices)
+        if num_pre_identities > 0:
+            mats.append((eye_interface(num_pre_identities),))
+
+        mats.append(tuple(mat) if batch_dim else (mat,))
+
+        num_post_identities = len(wire_order) - max(wire_indices) - 1
+        if num_post_identities > 0:
+            mats.append((eye_interface(num_post_identities),))
+
+        # itertools.product will create a tuple of matrices for each different batch
+        mats_list = list(itertools.product(*mats))
+        # here we compute the kron product of each different tuple and stack them back together
+        expanded_batch_matrices = [reduce(kron_interface, mats) for mats in mats_list]
+        mat = (
+            qml.math.stack(expanded_batch_matrices, like=interface)
+            if len(expanded_batch_matrices) > 1
+            else expanded_batch_matrices[0]
+        )
+    return mat.asformat(sparse_format) if interface == "scipy" else mat
+
+
+def _permute_sparse_matrix(matrix, wires, wire_order):
+    """Permute the matrix to match the wires given in `wire_order`.
+
+    Args:
+        matrix (scipy.sparse.spmatrix): matrix to permute
+        wires (list): wires determining the subspace that base matrix acts on; a base matrix of
+            dimension :math:`2^n` acts on a subspace of :math:`n` wires
+        wire_order (list): global wire order, which has to contain all wire labels in ``wires``,
+            but can also contain additional labels
+
+    Returns:
+        scipy.sparse.spmatrix: permuted matrix
+    """
+    U = _permutation_sparse_matrix(wires, wire_order)
+    if U is not None:
+        matrix = U.T @ matrix @ U
+        matrix.eliminate_zeros()
+    return matrix
+
+
+def _permute_dense_matrix(matrix, wires, wire_order, batch_dim):
+    """Permute the matrix to match the wires given in `wire_order`.
+
+    Args:
+        matrix (np.ndarray): matrix to permute
+        wires (list): wires determining the subspace that base matrix acts on; a base matrix of
+            dimension :math:`2^n` acts on a subspace of :math:`n` wires
+        wire_order (list): global wire order, which has to contain all wire labels in ``wires``,
+            but can also contain additional labels
+        batch_dim (int or None): Batch dimension. If ``None``, batching is ignored.
+
+    Returns:
+        np.ndarray: permuted matrix
+    """
+    if wires == wire_order:
+        return matrix
+
+    # compute the permutations needed to match wire order
+    perm = [wires.index(wire) for wire in wire_order]
+    num_wires = len(wire_order)
+
+    perm += [p + num_wires for p in perm]
     if batch_dim:
-        perm = [p + 1 for p in perm]
-        sources = [s + 1 for s in sources]
+        perm = [0] + [p + 1 for p in perm]
 
-    mat = qml.math.moveaxis(mat_tensordot, sources, perm)
-    shape = [batch_dim] + [2 ** len(wire_order)] * 2 if batch_dim else [2 ** len(wire_order)] * 2
-    mat = qml.math.reshape(mat, shape)
+    # reshape matrix to match wire values e.g. mat[0, 0, 0, 0] = <00|mat|00>
+    # with this reshape we can easily swap wires
+    shape = [batch_dim] + [2] * (num_wires * 2) if batch_dim else [2] * (num_wires * 2)
+    matrix = qml.math.reshape(matrix, shape)
+    # transpose matrix
+    matrix = qml.math.transpose(matrix, axes=perm)
+    # reshape back
+    shape = [batch_dim] + [2**num_wires] * 2 if batch_dim else [2**num_wires] * 2
+    return qml.math.reshape(matrix, shape)
 
-    return mat
+
+def _sparse_swap_mat(qubit_i, qubit_j, n):
+    """Helper function which generates the sparse matrix of SWAP
+    for qubits: i <--> j with final shape (2**n, 2**n)."""
+
+    def swap_qubits(index, i, j):
+        s = list(format(index, f"0{n}b"))  # convert to binary
+        si, sj = s[i], s[j]
+        if si == sj:
+            return index
+        s[i], s[j] = sj, si  # swap qubits
+        return int(f"0b{''.join(s)}", 2)  # convert to int
+
+    data = [1] * (2**n)
+    index_i = list(range(2**n))  # bras (we don't change anything)
+    index_j = [
+        swap_qubits(idx, qubit_i, qubit_j) for idx in index_i
+    ]  # kets (we swap qubits i and j): |10> --> |01>
+    return csr_matrix((data, (index_i, index_j)))
+
+
+def _permutation_sparse_matrix(expanded_wires: Iterable, wire_order: Iterable) -> csr_matrix:
+    """Helper function which generates a permutation matrix in sparse format that swaps the wires
+    in ``expanded_wires`` to match the order given by the ``wire_order`` argument.
+
+    Args:
+        expanded_wires (Iterable): inital wires
+        wire_order (Iterable): final wires
+
+    Returns:
+        csr_matrix: permutation matrix in CSR sparse format
+    """
+    n_total_wires = len(wire_order)
+    U = None
+    for i in range(n_total_wires):
+        if expanded_wires[i] != wire_order[i]:
+            if U is None:
+                U = eye(2**n_total_wires, format="csr")
+            j = expanded_wires.index(wire_order[i])  # location of correct wire
+            U = U @ _sparse_swap_mat(i, j, n_total_wires)  # swap incorrect wire for correct wire
+            U.eliminate_zeros()
+
+            expanded_wires[i], expanded_wires[j] = expanded_wires[j], expanded_wires[i]
+
+    return U
 
 
 def reduce_matrices(
@@ -165,94 +299,10 @@ def reduce_matrices(
         mat1, wires1 = op1_tuple
         mat2, wires2 = op2_tuple
         expanded_wires = wires1 + wires2
-        mat1 = qml.math.expand_matrix(mat1, wires1, wire_order=expanded_wires)
-        mat2 = qml.math.expand_matrix(mat2, wires2, wire_order=expanded_wires)
+        mat1 = expand_matrix(mat1, wires1, wire_order=expanded_wires)
+        mat2 = expand_matrix(mat2, wires2, wire_order=expanded_wires)
         return reduce_func(mat1, mat2), expanded_wires
 
     reduced_mat, final_wires = reduce(expand_and_reduce, mats_and_wires_gen)
 
     return reduced_mat, final_wires
-
-
-def _local_sparse_swap_mat(i, n, format="csr"):
-    """Helper function which generates the sparse matrix of SWAP
-    for qubits: i <--> i+1 with final shape (2**n, 2**n)."""
-    assert i < n - 1
-    swap_mat = csr_matrix([[1, 0, 0, 0], [0, 0, 1, 0], [0, 1, 0, 0], [0, 0, 0, 1]])
-
-    j = i + 1  # i is the index of the qubit, j is the number of qubits prior to and include qubit i
-    return kron(
-        kron(eye(2 ** (j - 1)), swap_mat), eye(2 ** (n - (j + 1))), format=format
-    )  # (j - 1) + 2 + (n - (j+1)) = n
-
-
-def _sparse_swap_mat(i, j, n, format="csr"):
-    """Helper function which generates the sparse matrix of SWAP
-    for qubits: i <--> j with final shape (2**n, 2**n)."""
-    assert i < n and j < n
-    if i == j:
-        return eye(2**n, format=format)
-
-    (small_i, big_j) = (i, j) if i < j else (j, i)
-    store_swaps = [
-        _local_sparse_swap_mat(index, n, format=format) for index in range(small_i, big_j)
-    ]
-
-    res = eye(2**n, format=format)
-    for mat in store_swaps:  # swap i --> j
-        res @= mat
-
-    for mat in store_swaps[-2::-1]:  # bring j --> old_i
-        res @= mat
-
-    return res
-
-
-def _sparse_expand_matrix(base_matrix, wires, wire_order, format="csr"):
-    """Re-express a sparse base matrix acting on a subspace defined by a set of wire labels
-    according to a global wire order.
-
-    Args:
-        base_matrix (scipy.sparse.spmatrix): base matrix to expand
-        wires (Iterable): wires determining the subspace that base matrix acts on; a base matrix of
-            dimension :math:`2^n` acts on a subspace of :math:`n` wires
-        wire_order (Iterable): global wire order, which has to contain all wire labels in ``wires``, but can also
-            contain additional labels
-        format (str): string representing the preferred scipy sparse matrix format to cast the expanded
-            matrix too
-
-    Returns:
-        tensor_like: expanded matrix
-    """
-    n_wires = len(wires)
-    n_total_wires = len(wire_order)
-
-    if isinstance(wires, qml.wires.Wires):
-        expanded_wires = wires.tolist()
-    else:
-        expanded_wires = list(copy.copy(wires))
-
-    for wire in wire_order:
-        if wire not in wires:
-            expanded_wires.append(wire)
-
-    num_missing_wires = n_total_wires - n_wires
-    if num_missing_wires > 0:
-        expanded_matrix = kron(
-            base_matrix, eye(2**num_missing_wires, format=format), format=format
-        )  # added missing wires at the end
-    else:
-        expanded_matrix = copy.copy(base_matrix)
-
-    U = eye(2**n_total_wires, format=format)
-    for i in range(n_total_wires):
-        if expanded_wires[i] != wire_order[i]:
-            j = expanded_wires.index(wire_order[i])  # location of correct wire
-            U = U @ _sparse_swap_mat(
-                i, j, n_total_wires, format=format
-            )  # swap incorrect wire for correct wire
-
-            expanded_wires[i], expanded_wires[j] = expanded_wires[j], expanded_wires[i]
-
-    expanded_matrix = U.T @ expanded_matrix @ U
-    return expanded_matrix.asformat(format)

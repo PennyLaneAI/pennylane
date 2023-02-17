@@ -44,7 +44,18 @@ class TestMolecule:
     def test_basis_error(self, symbols, geometry):
         r"""Test that an error is raised if a wrong basis set name is entered."""
         with pytest.raises(ValueError, match="Currently, the only supported basis sets"):
-            qchem.Molecule(symbols, geometry, basis_name="6-311g")
+            qchem.Molecule(symbols, geometry, basis_name="6-3_1_g")
+
+    @pytest.mark.parametrize(
+        ("symbols", "geometry", "charge", "mult"),
+        [
+            (["H", "He"], np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]]), 0, 2),
+        ],
+    )
+    def test_openshell_error(self, symbols, geometry, charge, mult):
+        r"""Test that an error is raised if the molecule has unpaired electrons."""
+        with pytest.raises(ValueError, match="Openshell systems are not supported"):
+            qchem.Molecule(symbols, geometry, charge=charge, mult=mult)
 
     @pytest.mark.parametrize(
         ("symbols", "geometry"),
@@ -123,7 +134,7 @@ class TestMolecule:
         assert np.allclose(mol.basis_data, basis_data)
 
     @pytest.mark.parametrize(
-        ("symbols", "geometry", "l", "alpha", "coeff", "r"),
+        ("symbols", "geometry", "l", "alpha", "coeff", "r", "load_data"),
         [
             (
                 ["H", "H"],
@@ -132,6 +143,16 @@ class TestMolecule:
                 [[3.42525091, 0.62391373, 0.1688554], [3.42525091, 0.62391373, 0.1688554]],
                 [[0.15432897, 0.53532814, 0.44463454], [0.15432897, 0.53532814, 0.44463454]],
                 np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]]),
+                False,
+            ),
+            (
+                ["H", "H"],
+                np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]]),
+                [(0, 0, 0), (0, 0, 0)],
+                [[3.42525091, 0.62391373, 0.1688554], [3.42525091, 0.62391373, 0.1688554]],
+                [[0.15432897, 0.53532814, 0.44463454], [0.15432897, 0.53532814, 0.44463454]],
+                np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]]),
+                True,
             ),
             (
                 ["H", "F"],
@@ -163,14 +184,16 @@ class TestMolecule:
                         [0.0, 0.0, 1.0],
                     ]
                 ),
+                False,
             ),
         ],
     )
-    def test_basisset(self, symbols, geometry, l, alpha, coeff, r):
+    def test_basisset(self, symbols, geometry, l, alpha, coeff, r, load_data):
         r"""Test that the molecule object contains the correct basis set and non-default basis data
         for a given molecule.
         """
-        mol = qchem.Molecule(symbols, geometry, normalize=False)
+        pytest.importorskip("basis_set_exchange")
+        mol = qchem.Molecule(symbols, geometry, load_data=load_data, normalize=False)
 
         assert set(map(type, mol.basis_set)) == {qchem.BasisFunction}
         assert mol.l == l
@@ -253,3 +276,26 @@ class TestMolecule:
         mo_value = mo(x, y, z)
 
         assert np.allclose(mo_value, ref_value)
+
+    def test_repr(self):
+        """Test that __repr__ for Molecule returns correct representation."""
+
+        symbols, geometry = (
+            ["H", "H", "H"],
+            np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.0], [0.0, 0.0, 2.0]]),
+        )
+        mol = qchem.Molecule(symbols, geometry, 1)
+        assert repr(mol) == "<Molecule = H3, Charge: 1, Basis: STO-3G, Orbitals: 3, Electrons: 2>"
+
+        symbols, geometry = (
+            ["H", "C", "O"],
+            np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.0], [0.0, 0.0, 2.0]]),
+        )
+        mol = qchem.Molecule(symbols, geometry, 1)
+        assert (
+            repr(mol) == "<Molecule = CHO, Charge: 1, Basis: STO-3G, Orbitals: 11, Electrons: 14>"
+        )
+
+        symbols, geometry = (["C", "O"], np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]]))
+        mol = qchem.Molecule(symbols, geometry, 0)
+        assert repr(mol) == "<Molecule = CO, Charge: 0, Basis: STO-3G, Orbitals: 10, Electrons: 14>"

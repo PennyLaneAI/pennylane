@@ -14,8 +14,9 @@
 """
 Unit tests for the GateFabric template.
 """
-import pytest
 import numpy as np
+import pytest
+
 import pennylane as qml
 from pennylane import numpy as pnp
 
@@ -762,7 +763,7 @@ def circuit_decomposed(weights):
     if len(wires) > 4:
         qwires += [wires[i : i + 4] for i in range(2, len(wires), 4) if len(wires[i : i + 4]) == 4]
     qml.BasisState(qml.math.array([1, 1, 0, 0]), wires=wires)
-    include_pi_param = qml.math.array(np.pi, like=qml.math._multi_dispatch(weights))
+    include_pi_param = qml.math.array(np.pi, like=qml.math.get_interface(*weights))
     for layer in range(weights.shape[0]):
         for idx in range(weights.shape[1]):
             qml.OrbitalRotation.compute_decomposition(include_pi_param, wires=qwires[idx])
@@ -784,8 +785,8 @@ class TestInterfaces:
 
         dev = qml.device("default.qubit", wires=4)
 
-        circuit = qml.QNode(circuit_template, dev, interface="autograd")
-        circuit2 = qml.QNode(circuit_decomposed, dev, interface="autograd")
+        circuit = qml.QNode(circuit_template, dev)
+        circuit2 = qml.QNode(circuit_decomposed, dev)
 
         res = circuit(weights)
         res2 = circuit2(weights)
@@ -810,8 +811,8 @@ class TestInterfaces:
 
         dev = qml.device("default.qubit", wires=4)
 
-        circuit = qml.QNode(circuit_template, dev, interface="jax")
-        circuit2 = qml.QNode(circuit_decomposed, dev, interface="jax")
+        circuit = qml.QNode(circuit_template, dev)
+        circuit2 = qml.QNode(circuit_decomposed, dev)
 
         res = circuit(weights)
         res2 = circuit2(weights)
@@ -835,8 +836,8 @@ class TestInterfaces:
 
         dev = qml.device("default.qubit", wires=4)
 
-        circuit = qml.QNode(circuit_template, dev, interface="tf")
-        circuit2 = qml.QNode(circuit_decomposed, dev, interface="tf")
+        circuit = qml.QNode(circuit_template, dev)
+        circuit2 = qml.QNode(circuit_decomposed, dev)
 
         res = circuit(weights)
         res2 = circuit2(weights)
@@ -862,8 +863,8 @@ class TestInterfaces:
 
         dev = qml.device("default.qubit", wires=4)
 
-        circuit = qml.QNode(circuit_template, dev, interface="torch")
-        circuit2 = qml.QNode(circuit_decomposed, dev, interface="torch")
+        circuit = qml.QNode(circuit_template, dev)
+        circuit2 = qml.QNode(circuit_decomposed, dev)
 
         res = circuit(weights)
         res2 = circuit2(weights)

@@ -14,6 +14,8 @@
 """
 Contains the map function, for mapping templates over observables and devices.
 """
+import warnings
+
 # pylint: disable=too-many-arguments
 from collections.abc import Sequence
 
@@ -21,7 +23,6 @@ import pennylane as qml
 from pennylane.operation import Observable
 
 from .qnode_collection import QNodeCollection
-
 
 MEASURE_MAP = {"expval": qml.expval, "var": qml.var, "sample": qml.sample}
 
@@ -103,6 +104,8 @@ def map(
     >>> qnodes(params)
     array([-0.06154835  0.99280864])
     """
+    warnings.warn("The map function is deprecated and it will be removed soon.", UserWarning)
+
     if not callable(template):
         raise ValueError("Could not create QNodes. The template is not a callable function.")
 

@@ -285,6 +285,12 @@ class batch_transform:
 
         def _wrapper(*args, **kwargs):
             shots = kwargs.pop("shots", False)
+
+            old_interface = qnode.interface
+
+            if old_interface == "auto":
+                qnode.interface = qml.math.get_interface(*args, *list(kwargs.values()))
+
             qnode.construct(args, kwargs)
             tapes, processing_fn = self.construct(qnode.qtape, *targs, **tkwargs)
 
@@ -298,6 +304,9 @@ class batch_transform:
 
             if interface is None or not self.differentiable:
                 gradient_fn = None
+
+            if old_interface == "auto":
+                qnode.interface = "auto"
 
             res = qml.execute(
                 tapes,
@@ -325,7 +334,7 @@ class batch_transform:
             # dev = some_transform(dev, *transform_args)
             return self._device_wrapper(*targs, **tkwargs)(qnode)
 
-        if isinstance(qnode, qml.tape.QuantumTape):
+        if isinstance(qnode, qml.tape.QuantumScript):
             # Input is a quantum tape.
             # tapes, fn = some_transform(tape, *transform_args)
             return self._tape_wrapper(*targs, **tkwargs)(qnode)
@@ -365,7 +374,7 @@ class batch_transform:
                 if isinstance(qnode, qml.Device):
                     return self._device_wrapper(*targs, **tkwargs)(qnode)
 
-                if isinstance(qnode, qml.tape.QuantumTape):
+                if isinstance(qnode, qml.tape.QuantumScript):
                     return self._tape_wrapper(*targs, **tkwargs)(qnode)
 
                 _wrapper = self.qnode_wrapper(qnode, targs, tkwargs)
@@ -403,7 +412,9 @@ class batch_transform:
         tapes, processing_fn = self.transform_fn(tape, *args, **kwargs)
 
         if processing_fn is None:
-            processing_fn = lambda x: x
+
+            def processing_fn(x):
+                return x
 
         return tapes, processing_fn
 

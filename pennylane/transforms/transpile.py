@@ -1,17 +1,18 @@
 """
 Contains the transpiler transform.
 """
-from typing import Union, List
+from typing import List, Union
+
 import networkx as nx
 
 import pennylane as qml
-from pennylane import apply, Hamiltonian
-from pennylane.ops.qubit import SWAP
+from pennylane import Hamiltonian, apply
 from pennylane.operation import Tensor
 from pennylane.ops import __all__ as all_ops
+from pennylane.ops.qubit import SWAP
+from pennylane.queuing import QueuingManager
 from pennylane.tape import QuantumTape
 from pennylane.transforms import qfunc_transform
-from pennylane.tape import stop_recording
 from pennylane.wires import Wires
 
 
@@ -69,7 +70,7 @@ def transpile(tape: QuantumTape, coupling_map: Union[List, nx.Graph]):
 
     >>> dev = qml.device('default.qubit', wires=[0, 1, 2, 3])
     >>> transpiled_circuit = qml.transforms.transpile(coupling_map=[(0, 1), (1, 3), (3, 2), (2, 0)])(circuit)
-    >>> transpiled_qnode = qml.QNode(circuit, dev)
+    >>> transpiled_qnode = qml.QNode(transpiled_circuit, dev)
     >>> print(qml.draw(transpiled_qnode)())
     0: ─╭●────────────────╭●─┤ ╭Probs
     1: ─╰X─╭●───────╭●────│──┤ ├Probs
@@ -96,13 +97,20 @@ def transpile(tape: QuantumTape, coupling_map: Union[List, nx.Graph]):
             "Measuring expectation values of tensor products or Hamiltonians is not yet supported"
         )
 
+    if any(len(op.wires) > 2 for op in tape.operations):
+        raise NotImplementedError(
+            "The transpile transform only supports gates acting on 1 or 2 qubits."
+        )
+
     gates = []
 
     # we wrap all manipulations inside stop_recording() so that we don't queue anything due to unrolling of templates
     # or newly applied swap gates
-    with stop_recording():
+    with QueuingManager.stop_recording():
         # this unrolls everything in the current tape (in particular templates)
-        stop_at = lambda obj: (obj.name in all_ops) and (not getattr(obj, "only_visual", False))
+        def stop_at(obj):
+            return (obj.name in all_ops) and (not getattr(obj, "only_visual", False))
+
         expanded_tape = tape.expand(stop_at=stop_at)
 
         # make copy of ops
@@ -113,7 +121,7 @@ def transpile(tape: QuantumTape, coupling_map: Union[List, nx.Graph]):
             op = list_op_copy[0]
 
             # gates which act only on one wire
-            if op.num_wires != 2:
+            if len(op.wires) == 1:
                 gates.append(op)
                 list_op_copy.pop(0)
                 continue
@@ -173,7 +181,7 @@ def _adjust_mmt_indices(_m, _map_wires):
 
     # change wires of observable
     if _m.obs is None:
-        return type(_m)(return_type=_m.return_type, eigvals=qml.eigvals(_m), wires=_new_wires)
+        return type(_m)(eigvals=qml.eigvals(_m), wires=_new_wires)
 
     _new_obs = type(_m.obs)(wires=_new_wires, id=_m.obs.id)
-    return type(_m)(return_type=_m.return_type, obs=_new_obs)
+    return type(_m)(obs=_new_obs)

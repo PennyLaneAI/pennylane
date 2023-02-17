@@ -21,7 +21,7 @@ from packaging import version
 
 import pennylane as qml
 from pennylane import numpy as np
-from pennylane.tape import QuantumTape
+from pennylane.tape import QuantumScript
 from pennylane.transforms import (
     mitigate_with_zne,
     poly_extrapolate,
@@ -29,7 +29,7 @@ from pennylane.transforms import (
     fold_global,
 )
 
-with QuantumTape() as tape:
+with qml.queuing.AnnotatedQueue() as q_tape:
     qml.BasisState([1], wires=0)
     qml.RX(0.9, wires=0)
     qml.RY(0.4, wires=1)
@@ -38,12 +38,16 @@ with QuantumTape() as tape:
     qml.RX(0.6, wires=1)
     qml.expval(qml.PauliZ(0) @ qml.PauliZ(1))
 
-with QuantumTape() as tape_base:
+tape = QuantumScript.from_queue(q_tape)
+with qml.queuing.AnnotatedQueue() as q_tape_base:
     qml.RX(0.9, wires=0)
     qml.RY(0.4, wires=1)
     qml.CNOT(wires=[0, 1])
     qml.RY(0.5, wires=0)
     qml.RX(0.6, wires=1)
+
+
+tape_base = QuantumScript.from_queue(q_tape_base)
 
 
 def same_tape(tape1, tape2):
@@ -421,8 +425,8 @@ class TestDifferentiableZNE:
         import jax
         import jax.numpy as jnp
 
-        qnode_noisy = qml.QNode(qfunc, dev_noisy, interface="jax-jit")
-        qnode_ideal = qml.QNode(qfunc, dev_ideal, interface="jax-jit")
+        qnode_noisy = qml.QNode(qfunc, dev_noisy)
+        qnode_ideal = qml.QNode(qfunc, dev_ideal)
 
         scale_factors = [1.0, 2.0, 3.0]
 
@@ -448,8 +452,8 @@ class TestDifferentiableZNE:
         import jax
         import jax.numpy as jnp
 
-        qnode_noisy = qml.QNode(qfunc, dev_noisy, interface="jax-jit")
-        qnode_ideal = qml.QNode(qfunc, dev_ideal, interface="jax-jit")
+        qnode_noisy = qml.QNode(qfunc, dev_noisy)
+        qnode_ideal = qml.QNode(qfunc, dev_ideal)
 
         scale_factors = [1.0, 2.0, 3.0]
 
@@ -474,8 +478,8 @@ class TestDifferentiableZNE:
         """Testing that the mitigated qnode can be differentiated and returns the correct gradient in torch"""
         import torch
 
-        qnode_noisy = qml.QNode(qfunc, dev_noisy, interface="torch")
-        qnode_ideal = qml.QNode(qfunc, dev_ideal, interface="torch")
+        qnode_noisy = qml.QNode(qfunc, dev_noisy)
+        qnode_ideal = qml.QNode(qfunc, dev_ideal)
 
         scale_factors = [1.0, 2.0, 3.0]
 
@@ -502,8 +506,8 @@ class TestDifferentiableZNE:
         """Testing that the mitigated qnode can be differentiated and returns the correct gradient in tf"""
         import tensorflow as tf
 
-        qnode_noisy = qml.QNode(qfunc, dev_noisy, interface="tf")
-        qnode_ideal = qml.QNode(qfunc, dev_ideal, interface="tf")
+        qnode_noisy = qml.QNode(qfunc, dev_noisy)
+        qnode_ideal = qml.QNode(qfunc, dev_ideal)
 
         scale_factors = [1.0, 2.0, 3.0]
 

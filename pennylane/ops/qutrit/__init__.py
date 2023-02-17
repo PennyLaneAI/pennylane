@@ -29,14 +29,17 @@ from ..identity import Identity
 ops = {
     "Identity",
     "QutritUnitary",
+    "ControlledQutritUnitary",
     "TShift",
     "TClock",
     "TAdd",
     "TSWAP",
+    "THadamard",
 }
 
 obs = {
     "THermitian",
+    "GellMann",
 }
 
 __all__ = list(ops | obs)

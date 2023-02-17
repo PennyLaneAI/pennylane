@@ -14,7 +14,6 @@
 """
 Unit tests for the Sum arithmetic class of qubit operations
 """
-from copy import copy
 from typing import Tuple
 
 import gate_data as gd  # a file containing matrix rep of each gate
@@ -24,8 +23,8 @@ import pytest
 import pennylane as qml
 import pennylane.numpy as qnp
 from pennylane import QuantumFunctionError, math
-from pennylane.operation import MatrixUndefinedError, Operator
-from pennylane.ops.op_math import Sum, op_sum
+from pennylane.operation import AnyWires, MatrixUndefinedError, Operator
+from pennylane.ops.op_math import Prod, Sum
 from pennylane.wires import Wires
 
 no_mat_ops = (
@@ -81,7 +80,12 @@ ops = (
 )
 
 
-def sum_using_dunder_method(*summands, do_queue=True, id=None):
+def _get_pw(w, pauli_op):
+    return qml.pauli.PauliWord({w: pauli_op})
+
+
+# pylint: disable=unused-argument
+def sum_using_dunder_method(*summands, do_queue=False, id=None):
     """Helper function which computes the sum of all the summands to invoke the
     __add__ dunder method."""
     return sum(summands)
@@ -110,7 +114,7 @@ def compare_and_expand_mat(mat1, mat2):
 class TestInitialization:
     """Test the initialization."""
 
-    @pytest.mark.parametrize("sum_method", [sum_using_dunder_method, op_sum])
+    @pytest.mark.parametrize("sum_method", [sum_using_dunder_method, qml.sum])
     @pytest.mark.parametrize("id", ("foo", "bar"))
     def test_init_sum_op(self, id, sum_method):
         """Test the initialization of a Sum operator."""
@@ -119,14 +123,14 @@ class TestInitialization:
         assert sum_op.wires == Wires((0, "a"))
         assert sum_op.num_wires == 2
         assert sum_op.name == "Sum"
-        if sum_method.__name__ == op_sum.__name__:
+        if sum_method.__name__ == sum.__name__:
             assert sum_op.id == id
 
         assert sum_op.data == [[], [0.23]]
         assert sum_op.parameters == [[], [0.23]]
         assert sum_op.num_params == 1
 
-    @pytest.mark.parametrize("sum_method", [sum_using_dunder_method, op_sum])
+    @pytest.mark.parametrize("sum_method", [sum_using_dunder_method, qml.sum])
     def test_init_sum_op_with_sum_summands(self, sum_method):
         """Test the initialization of a Sum operator which contains a summand that is another
         Sum operator."""
@@ -163,7 +167,7 @@ class TestInitialization:
         eig_vecs = eig_decomp["eigvec"]
         eig_vals = eig_decomp["eigval"]
 
-        eigs_cache = diag_sum_op._eigs[diag_sum_op.hash]
+        eigs_cache = diag_sum_op._eigs[diag_sum_op.hash]  # pylint: disable=protected-access
         cached_vecs = eigs_cache["eigvec"]
         cached_vals = eigs_cache["eigval"]
 
@@ -187,7 +191,10 @@ class TestMatrix:
         mat1, mat2 = compare_and_expand_mat(mat1, mat2)
         true_mat = mat1 + mat2
 
-        sum_op = Sum(op1(wires=range(op1.num_wires)), op2(wires=range(op2.num_wires)))
+        sum_op = Sum(
+            op1(wires=0 if op1.num_wires is AnyWires else range(op1.num_wires)),
+            op2(wires=0 if op2.num_wires is AnyWires else range(op2.num_wires)),
+        )
         sum_mat = sum_op.matrix()
 
         assert np.allclose(sum_mat, true_mat)
@@ -429,7 +436,7 @@ class TestMatrix:
     @pytest.mark.parametrize("op2, mat2", non_param_ops[:5])
     def test_sparse_matrix(self, op1, mat1, op2, mat2):
         """Test that the sparse matrix of a Prod op is defined and correct."""
-        sum_op = op_sum(op1(wires=0), op2(wires=1))
+        sum_op = qml.sum(op1(wires=0), op2(wires=1))
         true_mat = math.kron(mat1, np.eye(2)) + math.kron(np.eye(2), mat2)
         sum_mat = sum_op.sparse_matrix().todense()
 
@@ -442,7 +449,7 @@ class TestMatrix:
         with wire order and correct."""
         true_mat = math.kron(mat2, np.eye(4)) + math.kron(np.eye(4), mat1)
 
-        sum_op = op_sum(op1(wires=2), op2(wires=0))
+        sum_op = qml.sum(op1(wires=2), op2(wires=0))
         sum_mat = sum_op.sparse_matrix(wire_order=[0, 1, 2]).todense()
 
         assert np.allclose(true_mat, sum_mat)
@@ -451,13 +458,14 @@ class TestMatrix:
         """Test that an error is raised when the sparse matrix method
         is undefined for any of the factors."""
 
+        # pylint: disable=too-few-public-methods
         class DummyOp(qml.operation.Operation):
             num_wires = 1
 
             def sparse_matrix(self, wire_order=None):
                 raise qml.operation.SparseMatrixUndefinedError
 
-        sum_op = op_sum(qml.PauliX(wires=0), DummyOp(wires=1))
+        sum_op = qml.sum(qml.PauliX(wires=0), DummyOp(wires=1))
 
         with pytest.raises(qml.operation.SparseMatrixUndefinedError):
             sum_op.sparse_matrix()
@@ -466,7 +474,7 @@ class TestMatrix:
 class TestProperties:
     """Test class properties."""
 
-    @pytest.mark.parametrize("sum_method", [sum_using_dunder_method, op_sum])
+    @pytest.mark.parametrize("sum_method", [sum_using_dunder_method, qml.sum])
     @pytest.mark.parametrize("ops_lst", ops)
     def test_is_hermitian(self, ops_lst, sum_method):
         """Test is_hermitian property updates correctly."""
@@ -478,12 +486,12 @@ class TestProperties:
 
         assert sum_op.is_hermitian == true_hermitian_state
 
-    @pytest.mark.parametrize("sum_method", [sum_using_dunder_method, op_sum])
+    @pytest.mark.parametrize("sum_method", [sum_using_dunder_method, qml.sum])
     @pytest.mark.parametrize("ops_lst", ops)
-    def test_queue_catagory(self, ops_lst, sum_method):
-        """Test queue_catagory property is always None."""  # currently not supporting queuing Sum
+    def test_queue_category(self, ops_lst, sum_method):
+        """Test queue_category property is always None."""  # currently not supporting queuing Sum
         sum_op = sum_method(*ops_lst)
-        assert sum_op._queue_category is None
+        assert sum_op._queue_category is None  # pylint: disable=protected-access
 
     def test_eigendecompostion(self):
         """Test that the computed Eigenvalues and Eigenvectors are correct."""
@@ -505,6 +513,131 @@ class TestProperties:
 
         assert np.allclose(eig_vals, true_eigvals)
         assert np.allclose(eig_vecs, true_eigvecs)
+
+    op_pauli_reps = (
+        (
+            qml.sum(qml.PauliX(wires=0), qml.PauliY(wires=0), qml.PauliZ(wires=0)),
+            qml.pauli.PauliSentence({_get_pw(0, "X"): 1, _get_pw(0, "Y"): 1, _get_pw(0, "Z"): 1}),
+        ),
+        (
+            qml.sum(qml.PauliX(wires=0), qml.PauliX(wires=0), qml.PauliZ(wires=0)),
+            qml.pauli.PauliSentence({_get_pw(0, "X"): 2, _get_pw(0, "Z"): 1}),
+        ),
+        (
+            qml.sum(
+                qml.PauliX(wires=0),
+                qml.PauliY(wires=1),
+                qml.PauliZ(wires="a"),
+                qml.PauliZ(wires="a"),
+            ),
+            qml.pauli.PauliSentence({_get_pw(0, "X"): 1, _get_pw(1, "Y"): 1, _get_pw("a", "Z"): 2}),
+        ),
+    )
+
+    @pytest.mark.parametrize("op, rep", op_pauli_reps)
+    def test_pauli_rep(self, op, rep):
+        """Test that the pauli rep gives the expected result."""
+        assert op._pauli_rep == rep  # pylint: disable=protected-access
+
+    def test_pauli_rep_none(self):
+        """Test that None is produced if any of the summands don't have a _pauli_rep."""
+        op = qml.sum(qml.PauliX(wires=0), qml.RX(1.23, wires=1))
+        assert op._pauli_rep is None  # pylint: disable=protected-access
+
+    op_pauli_reps_nested = (
+        (
+            qml.sum(
+                qml.pow(
+                    qml.sum(
+                        qml.pow(qml.PauliZ(wires=0), z=3),
+                        qml.pow(qml.PauliX(wires=1), z=2),
+                        qml.pow(qml.PauliY(wires=2), z=1),
+                    ),
+                    z=3,
+                ),
+                qml.PauliY(wires=2),
+            ),
+            qml.pauli.PauliSentence(
+                {
+                    qml.pauli.PauliWord({0: "Z"}): 7,
+                    qml.pauli.PauliWord({2: "Y"}): 8,
+                    qml.pauli.PauliWord({0: "Z", 2: "Y"}): 6,
+                    qml.pauli.PauliWord({}): 7,  # identity
+                }
+            ),
+        ),  # sum + pow
+        (
+            qml.prod(
+                qml.sum(
+                    qml.prod(
+                        qml.sum(qml.PauliX(wires=0), qml.PauliY(wires=1), qml.PauliZ(wires=2)),
+                        qml.sum(qml.PauliZ(wires=0), qml.PauliZ(wires=1), qml.PauliZ(wires=2)),
+                    ),
+                    qml.Identity(wires=1),
+                ),
+                qml.PauliY(wires=3),
+            ),
+            qml.pauli.PauliSentence(
+                {
+                    qml.pauli.PauliWord({0: "Y", 3: "Y"}): -1j,
+                    qml.pauli.PauliWord({0: "X", 1: "Z", 3: "Y"}): 1,
+                    qml.pauli.PauliWord({0: "X", 2: "Z", 3: "Y"}): 1,
+                    qml.pauli.PauliWord({0: "Z", 1: "Y", 3: "Y"}): 1,
+                    qml.pauli.PauliWord({1: "X", 3: "Y"}): 1j,
+                    qml.pauli.PauliWord({1: "Y", 2: "Z", 3: "Y"}): 1,
+                    qml.pauli.PauliWord({0: "Z", 2: "Z", 3: "Y"}): 1,
+                    qml.pauli.PauliWord({1: "Z", 2: "Z", 3: "Y"}): 1,
+                    qml.pauli.PauliWord({3: "Y"}): 2,
+                }
+            ),
+        ),  # sum + prod
+        (
+            qml.sum(
+                qml.s_prod(
+                    0.5,
+                    qml.sum(
+                        qml.s_prod(2j, qml.PauliX(wires=0)),
+                        qml.s_prod(-4, qml.PauliY(wires=1)),
+                    ),
+                ),
+                qml.s_prod(1.23 - 0.4j, qml.PauliZ(wires=2)),
+            ),
+            qml.pauli.PauliSentence(
+                {_get_pw(0, "X"): 1.0j, _get_pw(1, "Y"): -2.0, _get_pw(2, "Z"): 1.23 - 0.4j}
+            ),
+        ),  # sum + s_prod
+        (
+            qml.prod(
+                qml.s_prod(
+                    -2,
+                    qml.sum(
+                        qml.s_prod(1j, qml.PauliX(wires=0)),
+                        qml.PauliY(wires=1),
+                    ),
+                ),
+                qml.pow(
+                    qml.sum(
+                        qml.s_prod(3, qml.PauliZ(wires=0)),
+                        qml.PauliZ(wires=1),
+                    ),
+                    z=2,
+                ),
+            ),
+            qml.pauli.PauliSentence(
+                {
+                    qml.pauli.PauliWord({0: "X"}): -20j,
+                    qml.pauli.PauliWord({1: "Y"}): -20,
+                    qml.pauli.PauliWord({0: "Y", 1: "Z"}): -12,
+                    qml.pauli.PauliWord({0: "Z", 1: "X"}): -12j,
+                }
+            ),
+        ),  # mixed
+    )
+
+    @pytest.mark.parametrize("op, rep", op_pauli_reps_nested)
+    def test_pauli_rep_nested(self, op, rep):
+        """Test that the pauli rep gives the expected result."""
+        assert op._pauli_rep == rep  # pylint: disable=protected-access
 
 
 class TestSimplify:
@@ -540,15 +673,15 @@ class TestSimplify:
 
     def test_simplify_grouping(self):
         """Test that the simplify method groups equal terms."""
-        sum_op = op_sum(
+        sum_op = qml.sum(
             qml.prod(qml.RX(1, 0), qml.PauliX(0), qml.PauliZ(1)),
             qml.prod(qml.RX(1.0, 0), qml.PauliX(0), qml.PauliZ(1)),
-            qml.adjoint(qml.op_sum(qml.RY(1, 0), qml.PauliZ(1))),
+            qml.adjoint(qml.sum(qml.RY(1, 0), qml.PauliZ(1))),
             qml.adjoint(qml.RY(1, 0)),
             qml.adjoint(qml.PauliZ(1)),
         )
         mod_angle = -1 % (4 * np.pi)
-        final_op = op_sum(
+        final_op = qml.sum(
             qml.s_prod(2, qml.prod(qml.RX(1, 0), qml.PauliX(0), qml.PauliZ(1))),
             qml.s_prod(2, qml.RY(mod_angle, 0)),
             qml.s_prod(2, qml.PauliZ(1)),
@@ -566,7 +699,7 @@ class TestSimplify:
 
     def test_simplify_grouping_delete_terms(self):
         """Test that the simplify method deletes all terms with coefficient equal to 0."""
-        sum_op = qml.op_sum(
+        sum_op = qml.sum(
             qml.PauliX(0),
             qml.s_prod(0.3, qml.PauliX(0)),
             qml.s_prod(0.8, qml.PauliX(0)),
@@ -585,7 +718,7 @@ class TestSimplify:
 
     def test_simplify_grouping_with_tolerance(self):
         """Test the simplify method with a specific tolerance."""
-        sum_op = qml.op_sum(-0.9 * qml.RX(1, 0), qml.RX(1, 0))
+        sum_op = qml.sum(-0.9 * qml.RX(1, 0), qml.RX(1, 0))
         final_op = qml.s_prod(0, qml.Identity(0))
         simplified_op = sum_op.simplify(cutoff=0.1)
         assert isinstance(simplified_op, qml.ops.SProd)
@@ -599,7 +732,7 @@ class TestSortWires:
     """Tests for the wire sorting algorithm."""
 
     def test_sorting_operators_with_one_wire(self):
-        """Test that the sorting alforithm works for operators that act on one wire."""
+        """Test that the sorting algorithm works for operators that act on one wire."""
         op_list = [
             qml.PauliX(3),
             qml.PauliZ(2),
@@ -609,22 +742,22 @@ class TestSortWires:
             qml.PauliZ(3),
             qml.PauliX(5),
         ]
-        sorted_list = Sum._sort(op_list)
+        sorted_list = Sum._sort(op_list)  # pylint: disable=protected-access
         final_list = [
             qml.PauliY(0),
             qml.PauliY(1),
             qml.PauliZ(2),
             qml.PauliX(3),
             qml.PauliZ(3),
-            qml.RX(1, 5),
             qml.PauliX(5),
+            qml.RX(1, 5),
         ]
 
         for op1, op2 in zip(final_list, sorted_list):
             assert qml.equal(op1, op2)
 
     def test_sorting_operators_with_multiple_wires(self):
-        """Test that the sorting alforithm works for operators that act on multiple wires."""
+        """Test that the sorting algorithm works for operators that act on multiple wires."""
         op_tuple = (
             qml.PauliX(3),
             qml.PauliX(5),
@@ -636,7 +769,7 @@ class TestSortWires:
             qml.PauliZ(3),
             qml.CRY(1, [1, 2]),
         )
-        sorted_list = Sum._sort(op_tuple)
+        sorted_list = Sum._sort(op_tuple)  # pylint: disable=protected-access
         final_list = [
             qml.PauliY(0),
             qml.CRX(1, [0, 2]),
@@ -653,7 +786,7 @@ class TestSortWires:
             assert qml.equal(op1, op2)
 
     def test_sorting_operators_with_wire_map(self):
-        """Test that the sorting alforithm works using a wire map."""
+        """Test that the sorting algorithm works using a wire map."""
         op_list = [
             qml.PauliX("three"),
             qml.PauliX(5),
@@ -665,7 +798,9 @@ class TestSortWires:
             qml.PauliZ("three"),
             qml.CRY(1, ["test", 2]),
         ]
-        sorted_list = Sum._sort(op_list, wire_map={0: 0, "test": 1, 2: 2, "three": 3, 4: 4, 5: 5})
+        sorted_list = Sum._sort(  # pylint: disable=protected-access
+            op_list, wire_map={0: 0, "test": 1, 2: 2, "three": 3, 4: 4, 5: 5}
+        )
         final_list = [
             qml.PauliY(0),
             qml.CRX(1, ["test", 2]),
@@ -683,6 +818,28 @@ class TestSortWires:
             assert op1.wires == op2.wires
             assert op1.data == op2.data
 
+    def test_sort_wires_alphabetically(self):
+        """Test that the summands are sorted alphabetically."""
+        mixed_list = [
+            qml.PauliY(1),
+            qml.PauliZ(0),
+            qml.PauliX(1),
+            qml.PauliY(0),
+            qml.PauliX(0),
+            qml.PauliZ(1),
+        ]
+        final_list = [
+            qml.PauliX(0),
+            qml.PauliY(0),
+            qml.PauliZ(0),
+            qml.PauliX(1),
+            qml.PauliY(1),
+            qml.PauliZ(1),
+        ]
+        sorted_list = Sum._sort(mixed_list)  # pylint: disable=protected-access
+        for op1, op2 in zip(final_list, sorted_list):
+            assert qml.equal(op1, op2)
+
 
 class TestWrapperFunc:
     """Test wrapper function."""
@@ -695,7 +852,7 @@ class TestWrapperFunc:
         op_id = "sum_op"
         do_queue = False
 
-        sum_func_op = op_sum(*summands, id=op_id, do_queue=do_queue)
+        sum_func_op = qml.sum(*summands, id=op_id, do_queue=do_queue)
         sum_class_op = Sum(*summands, id=op_id, do_queue=do_queue)
 
         assert sum_class_op.operands == sum_func_op.operands
@@ -703,6 +860,30 @@ class TestWrapperFunc:
         assert sum_class_op.id == sum_func_op.id
         assert sum_class_op.wires == sum_func_op.wires
         assert sum_class_op.parameters == sum_func_op.parameters
+
+    def test_lazy_mode(self):
+        """Test that by default, the operator is simply wrapped in `Sum`, even if a simplification exists."""
+        op = qml.sum(qml.S(0), Sum(qml.S(1), qml.T(1)))
+
+        assert isinstance(op, Sum)
+        assert len(op) == 2
+
+    def test_non_lazy_mode(self):
+        """Test the lazy=False keyword."""
+        op = qml.sum(qml.S(0), Sum(qml.S(1), qml.T(1)), lazy=False)
+
+        assert isinstance(op, Sum)
+        assert len(op) == 3
+
+    def test_non_lazy_mode_queueing(self):
+        """Test that if a simpification is accomplished, the metadata for the original op
+        and the new simplified op is updated."""
+        with qml.queuing.AnnotatedQueue() as q:
+            sum1 = qml.sum(qml.S(1), qml.T(1))
+            sum2 = qml.sum(qml.S(0), sum1, lazy=False)
+
+        assert len(q) == 1
+        assert q.queue[0] is sum2
 
 
 class TestIntegration:
@@ -779,7 +960,7 @@ class TestIntegration:
         results = my_circ()
 
         assert len(results) == 20
-        assert (results == 2).all()
+        assert np.allclose(results, qnp.tensor([2.0] * 20, requires_grad=True))
 
     def test_measurement_process_count(self):
         """Test Sum class instance in counts measurement process."""
@@ -794,15 +975,16 @@ class TestIntegration:
         results = my_circ()
 
         assert sum(results.values()) == 20
-        assert 2 in results
-        assert -2 not in results
+        assert np.allclose(
+            2, list(results.keys())[0]
+        )  # rounding errors due to float type of measurement outcome
 
     def test_differentiable_measurement_process(self):
         """Test that the gradient can be computed with a Sum op in the measurement process."""
         sum_op = Sum(qml.PauliX(0), qml.PauliZ(1))
         dev = qml.device("default.qubit", wires=2)
 
-        @qml.qnode(dev, grad_method="best")
+        @qml.qnode(dev, diff_method="best")
         def circuit(weights):
             qml.RX(weights[0], wires=0)
             qml.RY(weights[1], wires=1)
@@ -820,7 +1002,7 @@ class TestIntegration:
         """Test that non-hermitian ops in a measurement process will raise a warning."""
         wires = [0, 1]
         dev = qml.device("default.qubit", wires=wires)
-        sum_op = Sum(qml.RX(1.23, wires=0), qml.Identity(wires=1))
+        sum_op = Sum(Prod(qml.RX(1.23, wires=0), qml.Identity(wires=1)), qml.Identity(wires=1))
 
         @qml.qnode(dev)
         def my_circ():
@@ -831,6 +1013,7 @@ class TestIntegration:
             my_circ()
 
 
+# pylint: disable=too-few-public-methods
 class TestArithmetic:
     """Test arithmetic decomposition methods."""
 
@@ -849,3 +1032,53 @@ class TestArithmetic:
             assert s1.wires == s2.wires
             assert s1.data == s2.data
             assert s1.arithmetic_depth == s2.arithmetic_depth
+
+
+class TestSupportsBroadcasting:
+    """Test that the Sum operator supports broadcasting if its operands support broadcasting."""
+
+    def test_batch_size_all_batched(self):
+        """Test that the batch_size is correct when all operands are batched."""
+        base = qml.RX(np.array([1.2, 2.3, 3.4]), 0)
+        op = Sum(base, base, base)
+        assert op.batch_size == 3
+
+    def test_batch_size_not_all_batched(self):
+        """Test that the batch_size is correct when all operands are not batched."""
+        base = qml.RX(np.array([1.2, 2.3, 3.4]), 0)
+        op = Sum(base, qml.RY(1, 0), qml.RZ(np.array([1, 2, 3]), wires=2))
+        assert op.batch_size == 3
+
+    def test_batch_size_None(self):
+        """Test that the batch size is none if no operands have batching."""
+        prod_op = Sum(qml.PauliX(0), qml.RX(1.0, wires=0))
+        assert prod_op.batch_size is None
+
+    def test_matrix_all_batched(self):
+        """Test that Sum matrix has batching support when all operands are batched."""
+        x = qml.numpy.array([0.1, 0.2, 0.3])
+        y = qml.numpy.array([0.4, 0.5, 0.6])
+        op = Sum(qml.RX(x, wires=0), qml.RY(y, wires=2), qml.PauliZ(1))
+        mat = op.matrix()
+        sum_list = [
+            Sum(qml.RX(i, wires=0), qml.RY(j, wires=2), qml.PauliZ(1)) for i, j in zip(x, y)
+        ]
+        compare = qml.math.stack([s.matrix() for s in sum_list])
+        assert qml.math.allclose(mat, compare)
+        assert mat.shape == (3, 8, 8)
+
+    def test_matrix_not_all_batched(self):
+        """Test that Sum matrix has batching support when all operands are not batched."""
+        x = qml.numpy.array([0.1, 0.2, 0.3])
+        y = 0.5
+        z = qml.numpy.array([0.4, 0.5, 0.6])
+        op = Sum(qml.RX(x, wires=0), qml.RY(y, wires=2), qml.RZ(z, wires=1))
+        mat = op.matrix()
+        batched_y = [y for _ in x]
+        sum_list = [
+            Sum(qml.RX(i, wires=0), qml.RY(j, wires=2), qml.RZ(k, wires=1))
+            for i, j, k in zip(x, batched_y, z)
+        ]
+        compare = qml.math.stack([s.matrix() for s in sum_list])
+        assert qml.math.allclose(mat, compare)
+        assert mat.shape == (3, 8, 8)

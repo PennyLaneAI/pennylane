@@ -210,7 +210,6 @@ class TestCapabilities:
             return qml.state()
 
         if not cap.get("returns_state"):
-
             # If the device is not defined to return state then the
             # access_state method should raise
             with pytest.raises(qml.QuantumFunctionError):
@@ -223,7 +222,6 @@ class TestCapabilities:
 
             assert state is None
         else:
-
             if dev.shots is not None:
                 with pytest.warns(
                     UserWarning,
@@ -295,4 +293,4 @@ class TestCapabilities:
                 assert pnp.array(dev.access_state()).shape == orig_shape
 
         assert pnp.ndim(res) == 2
-        assert res.shape[0] == 3
+        assert res.shape[0] == 3  # pylint:disable=unsubscriptable-object

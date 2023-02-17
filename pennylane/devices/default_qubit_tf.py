@@ -23,14 +23,14 @@ import pennylane as qml
 try:
     import tensorflow as tf
 
-    if tf.__version__[0] == "1":
+    if tf.__version__[0] == "1":  # pragma: no cover
         raise ImportError("default.qubit.tf device requires TensorFlow>=2.0")
 
     from tensorflow.python.framework.errors_impl import InvalidArgumentError
 
     SUPPORTS_APPLY_OPS = semantic_version.match(">=2.3.0", tf.__version__)
 
-except ImportError as e:
+except ImportError as e:  # pragma: no cover
     raise ImportError("default.qubit.tf device requires TensorFlow>=2.0") from e
 
 

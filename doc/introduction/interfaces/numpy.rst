@@ -58,6 +58,9 @@ It can now be used like any other Python/NumPy function:
 >>> circuit1(phi, theta)
 array([ 0.87758256,  0.68803733])
 
+The interface can also be automatically determined when the ``QNode`` is called. You do not need to pass the interface
+if you provide parameters.
+
 Via the QNode constructor
 ^^^^^^^^^^^^^^^^^^^^^^^^^
 
@@ -167,14 +170,15 @@ the following QNode that accepts two arguments ``data`` and ``weights``:
         return qml.expval(qml.PauliZ(0))
 
     rng = np.random.default_rng(seed=42)  # make the results reproducable
-    data = rng.random([2 ** 3], requires_grad=True)
-    weights = np.array([0.1, 0.2, 0.3], requires_grad=False)
+    data = rng.random([2 ** 3], requires_grad=False)
+    weights = np.array([0.1, 0.2, 0.3], requires_grad=True)
 
 When we compute the derivative, arguments with ``requires_grad=False`` as well as arguments
 passed as keyword arguments are ignored by :func:`~.grad`, which in this case means no gradient
 is computed at all:
 
 >>> qml.grad(circuit)(data, weights=weights)
+UserWarning: Attempted to differentiate a function with no trainable parameters. If this is unintended, please add trainable parameters via the 'requires_grad' attribute or 'argnum' keyword.
 ()
 
 Optimization

@@ -15,13 +15,14 @@
 Unit tests for the composite operator class of qubit operations
 """
 from copy import copy
+
 import numpy as np
 import pytest
 
 import pennylane as qml
-from pennylane import numpy as qnp
 from pennylane.operation import DecompositionUndefinedError
 from pennylane.ops.op_math import CompositeOp
+from pennylane.wires import Wires
 
 ops = (
     (qml.PauliX(wires=0), qml.PauliZ(wires=0), qml.Hadamard(wires=0)),
@@ -42,6 +43,10 @@ ops_rep = (
 
 class ValidOp(CompositeOp):
     _op_symbol = "#"
+    _math_op = None
+
+    def _build_pauli_rep(self):
+        return qml.pauli.PauliSentence({})
 
     @property
     def is_hermitian(self):
@@ -115,12 +120,30 @@ class TestConstruction:
         with pytest.raises(AttributeError):
             _ = op.ndim_params
 
-    def test_batch_size_raises_error(self):
-        """Test that calling batch_size raises a ValueError."""
-        op = ValidOp(*self.simple_operands)
+    def test_batch_size_None(self):
+        """Test that the batch size is none if no operands have batching."""
+        prod_op = ValidOp(qml.PauliX(0), qml.RX(1.0, wires=0))
+        assert prod_op.batch_size is None
 
-        with pytest.raises(AttributeError):
-            _ = op.batch_size
+    def test_batch_size_all_batched(self):
+        """Test that the batch_size is correct when all operands are batched."""
+        base = qml.RX(np.array([1.2, 2.3, 3.4]), 0)
+        op = ValidOp(base, base, base)
+        assert op.batch_size == 3
+
+    def test_batch_size_not_all_batched(self):
+        """Test that the batch_size is correct when some but not all operands are batched."""
+        base = qml.RX(np.array([1.2, 2.3, 3.4]), 0)
+        op = ValidOp(base, qml.RY(1, 0), qml.RZ(np.array([1, 2, 3]), wires=2))
+        assert op.batch_size == 3
+
+    def test_different_batch_sizes_raises_error(self):
+        """Test that an error is raised if the operands have different batch sizes."""
+        base = qml.RX(np.array([1.2, 2.3, 3.4]), 0)
+        with pytest.raises(
+            ValueError, match="Broadcasting was attempted but the broadcasted dimensions"
+        ):
+            op = ValidOp(base, qml.RY(1, 0), qml.RZ(np.array([1, 2, 3, 4]), wires=2))
 
     def test_decomposition_raises_error(self):
         """Test that calling decomposition() raises a ValueError."""
@@ -160,6 +183,21 @@ class TestConstruction:
 
         assert np.allclose(eig_vals, cached_vals)
         assert np.allclose(eig_vecs, cached_vecs)
+
+    def test_map_wires(self):
+        """Test the map_wires method."""
+        diag_op = ValidOp(*self.simple_operands)
+        wire_map = {0: 5, 1: 7, 2: 9, 3: 11}
+        mapped_op = diag_op.map_wires(wire_map=wire_map)
+
+        assert mapped_op.wires == Wires([5, 7])
+        assert mapped_op[0].wires == Wires(5)
+        assert mapped_op[1].wires == Wires(7)
+
+    def test_build_pauli_rep(self):
+        """Test the build_pauli_rep"""
+        op = ValidOp(*self.simple_operands)
+        assert op._build_pauli_rep() == qml.pauli.PauliSentence({})
 
 
 class TestMscMethods:
@@ -258,3 +296,40 @@ class TestProperties:
 
         op = ValidOp(qml.PauliX(0), ValidOp(qml.Identity(wires=0), qml.RX(1.9, wires=1)))
         assert op.arithmetic_depth == 2
+
+    def test_overlapping_ops_property(self):
+        """Test the overlapping_ops property."""
+        valid_op = ValidOp(
+            qml.sum(qml.PauliX(0), qml.PauliY(5), qml.PauliZ(10)),
+            qml.sum(qml.PauliX(1), qml.PauliY(4), qml.PauliZ(6)),
+            qml.prod(qml.PauliX(10), qml.PauliY(2), qml.PauliZ(7)),
+            qml.PauliY(7),
+            qml.prod(qml.PauliX(4), qml.PauliY(3), qml.PauliZ(8)),
+        )
+        overlapping_ops = [
+            [
+                qml.sum(qml.PauliX(0), qml.PauliY(5), qml.PauliZ(10)),
+                qml.prod(qml.PauliX(10), qml.PauliY(2), qml.PauliZ(7)),
+                qml.PauliY(7),
+            ],
+            [
+                qml.sum(qml.PauliX(1), qml.PauliY(4), qml.PauliZ(6)),
+                qml.prod(qml.PauliX(4), qml.PauliY(3), qml.PauliZ(8)),
+            ],
+        ]
+
+        # TODO: Use qml.equal when supported for nested operators
+
+        for list_op1, list_op2 in zip(overlapping_ops, valid_op.overlapping_ops):
+            for op1, op2 in zip(list_op1, list_op2):
+                assert op1.name == op2.name
+                assert op1.wires == op2.wires
+                assert op1.data == op2.data
+                assert op1.arithmetic_depth == op2.arithmetic_depth
+
+    def test_overlapping_ops_private_attribute(self):
+        """Test that the private `_overlapping_ops` attribute gets updated after a call to
+        the `overlapping_ops` property."""
+        op = ValidOp(qml.RZ(1.32, wires=0), qml.Identity(wires=0), qml.RX(1.9, wires=1))
+        overlapping_ops = op.overlapping_ops
+        assert op._overlapping_ops == overlapping_ops

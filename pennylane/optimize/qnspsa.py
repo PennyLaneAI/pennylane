@@ -95,9 +95,9 @@ class QNSPSAOptimizer:
     >>> params = np.random.rand(2)
     >>> opt = QNSPSAOptimizer(stepsize=5e-2)
     >>> for i in range(51):
-    >>> params, loss = opt.step_and_cost(cost, params)
-    >>> if i % 10 == 0:
-    ...     print(f"Step {i}: cost = {loss:.4f}")
+    >>>     params, loss = opt.step_and_cost(cost, params)
+    >>>     if i % 10 == 0:
+    ...         print(f"Step {i}: cost = {loss:.4f}")
     Step 0: cost = 0.9987
     Step 10: cost = 0.9841
     Step 20: cost = 0.8921
@@ -120,6 +120,7 @@ class QNSPSAOptimizer:
             the cost values in the last ``history_length`` steps (default: 5)
         seed (int): seed for the random sampling (default: None)
     """
+
     # pylint: disable=too-many-arguments
     # pylint: disable=too-many-instance-attributes
     def __init__(
@@ -207,7 +208,7 @@ class QNSPSAOptimizer:
         all_grad_dirs = []
         all_metric_tapes = []
         all_tensor_dirs = []
-        for i in range(self.resamplings):
+        for _ in range(self.resamplings):
             # grad_tapes contains 2 tapes for the gradient estimation
             grad_tapes, grad_dirs = self._get_spsa_grad_tapes(cost, args, kwargs)
             # metric_tapes contains 4 tapes for tensor estimation
@@ -237,9 +238,7 @@ class QNSPSAOptimizer:
         self._update_tensor(tensor_avg)
         params_next = self._get_next_params(args, grad_avg)
 
-        if len(params_next) == 1:
-            return params_next[0]
-        return params_next
+        return params_next[0] if len(params_next) == 1 else params_next
 
     def _post_process_grad(self, grad_raw_results, grad_dirs):
         r"""Post process the gradient tape results to get the SPSA gradient estimation.
@@ -255,11 +254,10 @@ class QNSPSAOptimizer:
             the shape of the corresponding input parameter
         """
         loss_plus, loss_minus = grad_raw_results
-        grad = [
+        return [
             (loss_plus - loss_minus) / (2 * self.finite_diff_step) * grad_dir
             for grad_dir in grad_dirs
         ]
-        return grad
 
     def _post_process_tensor(self, tensor_raw_results, tensor_dirs):
         r"""Post process the corresponding tape results to get the metric tensor estimation.
@@ -284,7 +282,7 @@ class QNSPSAOptimizer:
             - tensor_raw_results[2][0]
             + tensor_raw_results[3][0]
         )
-        metric_tensor = (
+        return (
             -(
                 np.tensordot(tensor_dirs[0], tensor_dirs[1], axes=0)
                 + np.tensordot(tensor_dirs[1], tensor_dirs[0], axes=0)
@@ -292,7 +290,6 @@ class QNSPSAOptimizer:
             * tensor_finite_diff
             / (8 * self.finite_diff_step**2)
         )
-        return metric_tensor
 
     def _get_next_params(self, args, gradient):
         params = []
@@ -309,8 +306,8 @@ class QNSPSAOptimizer:
 
         # params_vec and grad_vec group multiple inputs into the same vector to solve the
         # linear equation
-        params_vec = np.concatenate(params).reshape(-1)
-        grad_vec = np.concatenate(gradient).reshape(-1)
+        params_vec = np.concatenate([param.reshape(-1) for param in params])
+        grad_vec = np.concatenate([grad.reshape(-1) for grad in gradient])
 
         new_params_vec = np.linalg.solve(
             self.metric_tensor,
@@ -396,9 +393,11 @@ class QNSPSAOptimizer:
             args_list[2][index] = arg + self.finite_diff_step * (-dir1 + dir2)
             args_list[3][index] = arg - self.finite_diff_step * dir1
         dir_vecs = (np.concatenate(dir1_list), np.concatenate(dir2_list))
-        tapes = []
-        for args_finite_diff in args_list:
-            tapes.append(self._get_overlap_tape(cost, args, args_finite_diff, kwargs))
+        tapes = [
+            self._get_overlap_tape(cost, args, args_finite_diff, kwargs)
+            for args_finite_diff in args_list
+        ]
+
         return tapes, dir_vecs
 
     def _get_overlap_tape(self, cost, args1, args2, kwargs):
@@ -409,13 +408,8 @@ class QNSPSAOptimizer:
         op_forward = self._get_operations(cost, args1, kwargs)
         op_inv = self._get_operations(cost, args2, kwargs)
 
-        with qml.tape.QuantumTape() as tape:
-            for op in op_forward:
-                qml.apply(op)
-            for op in reversed(op_inv):
-                op.adjoint()
-            qml.probs(wires=cost.tape.wires.labels)
-        return tape
+        new_ops = op_forward + [op.adjoint() for op in reversed(op_inv)]
+        return qml.tape.QuantumScript(new_ops, [qml.probs(wires=cost.tape.wires.labels)])
 
     @staticmethod
     def _get_operations(cost, args, kwargs):
@@ -433,7 +427,10 @@ class QNSPSAOptimizer:
         tape_loss_next = cost.tape.copy(copy_operations=True)
 
         loss_curr, loss_next = qml.execute([tape_loss_curr, tape_loss_next], cost.device, None)
-        loss_curr, loss_next = qml.math.squeeze(loss_curr), qml.math.squeeze(loss_next)
+
+        if not qml.active_return():
+            loss_curr, loss_next = qml.math.squeeze(loss_curr), qml.math.squeeze(loss_next)
+
         # self.k has been updated earlier
         ind = (self.k - 2) % self.last_n_steps.size
         self.last_n_steps[ind] = loss_curr

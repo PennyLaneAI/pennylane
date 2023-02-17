@@ -14,32 +14,30 @@
 """
 Unit tests for the :mod:`pennylane.qaoa` submodule.
 """
-import pytest
 import itertools
-import numpy as np
 
 import networkx as nx
-from networkx import Graph
+import numpy as np
+import pytest
 import retworkx as rx
-
-import pennylane as qml
-from pennylane import qaoa
-
-from pennylane.qaoa.cycle import (
-    edges_to_wires,
-    wires_to_edges,
-    _inner_net_flow_constraint_hamiltonian,
-    net_flow_constraint,
-    loss_hamiltonian,
-    _square_hamiltonian_terms,
-    cycle_mixer,
-    _partial_cycle_mixer,
-    out_flow_constraint,
-    _inner_out_flow_constraint_hamiltonian,
-)
+from networkx import Graph
 from scipy.linalg import expm
 from scipy.sparse import csc_matrix, kron
 
+import pennylane as qml
+from pennylane import qaoa
+from pennylane.qaoa.cycle import (
+    _inner_net_flow_constraint_hamiltonian,
+    _inner_out_flow_constraint_hamiltonian,
+    _partial_cycle_mixer,
+    _square_hamiltonian_terms,
+    cycle_mixer,
+    edges_to_wires,
+    loss_hamiltonian,
+    net_flow_constraint,
+    out_flow_constraint,
+    wires_to_edges,
+)
 
 #####################################################
 
@@ -879,7 +877,6 @@ MWC = list(zip(DIGRAPHS, MWC_CONSTRAINED, COST_HAMILTONIANS, MIXER_HAMILTONIANS,
 
 
 def decompose_hamiltonian(hamiltonian):
-
     coeffs = list(qml.math.toarray(hamiltonian.coeffs))
     ops = [i.name for i in hamiltonian.ops]
     wires = [i.wires for i in hamiltonian.ops]
@@ -1128,17 +1125,17 @@ class TestLayers:
         [
             [
                 qml.Hamiltonian([1, 1], [qml.PauliX(0), qml.PauliX(1)]),
-                [qml.PauliRot(2, "X", wires=[0]), qml.PauliRot(2, "X", wires=[1])],
+                [qml.RX(2, wires=[0]), qml.RX(2, wires=[1])],
             ],
             [
                 qaoa.xy_mixer(Graph([(0, 1), (1, 2), (2, 0)])),
                 [
-                    qml.PauliRot(1, "XX", wires=[0, 1]),
-                    qml.PauliRot(1, "YY", wires=[0, 1]),
-                    qml.PauliRot(1, "XX", wires=[0, 2]),
-                    qml.PauliRot(1, "YY", wires=[0, 2]),
-                    qml.PauliRot(1, "XX", wires=[1, 2]),
-                    qml.PauliRot(1, "YY", wires=[1, 2]),
+                    qml.IsingXX(1, wires=[0, 1]),
+                    qml.IsingYY(1, wires=[0, 1]),
+                    qml.IsingXX(1, wires=[0, 2]),
+                    qml.IsingYY(1, wires=[0, 2]),
+                    qml.IsingXX(1, wires=[1, 2]),
+                    qml.IsingYY(1, wires=[1, 2]),
                 ],
             ],
         ],
@@ -1154,7 +1151,6 @@ class TestLayers:
         rec = rec.expand()
 
         for i, j in zip(rec.operations, gates):
-
             prep = [i.name, i.parameters, i.wires]
             target = [j.name, j.parameters, j.wires]
 
@@ -1165,14 +1161,14 @@ class TestLayers:
         [
             [
                 qml.Hamiltonian([1, 1], [qml.PauliZ(0), qml.PauliZ(1)]),
-                [qml.PauliRot(2, "Z", wires=[0]), qml.PauliRot(2, "Z", wires=[1])],
+                [qml.RZ(2, wires=[0]), qml.RZ(2, wires=[1])],
             ],
             [
                 qaoa.maxcut(Graph([(0, 1), (1, 2), (2, 0)]))[0],
                 [
-                    qml.PauliRot(1, "ZZ", wires=[0, 1]),
-                    qml.PauliRot(1, "ZZ", wires=[0, 2]),
-                    qml.PauliRot(1, "ZZ", wires=[1, 2]),
+                    qml.IsingZZ(1, wires=[0, 1]),
+                    qml.IsingZZ(1, wires=[0, 2]),
+                    qml.IsingZZ(1, wires=[1, 2]),
                 ],
             ],
         ],
@@ -1858,6 +1854,17 @@ class TestCycles:
             assert str(h.ops[i]) == str(expected_op)
         assert all([op.wires == exp.wires for op, exp in zip(h.ops, expected_ops)])
 
+    def test_out_flow_constraint_raises(self, monkeypatch):
+        """Test the out-flow constraint function may raise an error."""
+
+        class OtherDirectedGraph(nx.DiGraph):
+            def __init__(self, *args, **kwargs):
+                pass
+
+        g = OtherDirectedGraph()
+        with pytest.raises(ValueError, match="must be directed"):
+            out_flow_constraint(g)
+
     @pytest.mark.parametrize(
         "g", [nx.complete_graph(3).to_directed(), rx.generators.directed_mesh_graph(3, [0, 1, 2])]
     )
@@ -1886,7 +1893,6 @@ class TestCycles:
         )
 
         for energy, bs in energies_bitstrings:
-
             # convert binary string to wires then wires to edges
             wires_ = tuple(i for i, s in enumerate(bs) if s != 0)
             edges = tuple(m[w] for w in wires_)
@@ -1939,7 +1945,6 @@ class TestCycles:
         # We now have the energies of each bitstring/state. We also want to calculate the net flow of
         # the corresponding edges
         for energy, state in energies_states:
-
             # This part converts from a binary string of wires selected to graph edges
             wires_ = tuple(i for i, s in enumerate(state) if s != 0)
             edges = tuple(m[w] for w in wires_)
@@ -1966,11 +1971,23 @@ class TestCycles:
                 assert energy > min(energies_states)[0]
 
     @pytest.mark.parametrize("g", [nx.complete_graph(3), rx.generators.mesh_graph(3, [0, 1, 2])])
-    def test_net_flow_constraint_undirected_raises_error(self, g):
-        """Test `net_flow_constraint` raises ValueError if input graph is not directed"""
+    def test_net_flow_constraint_wrong_graph_type_raises_error(self, g):
+        """Test `net_flow_constraint` raises ValueError if input graph is not
+        the correct graph type"""
 
-        with pytest.raises(ValueError):
+        with pytest.raises(ValueError, match="Input graph must be"):
             h = net_flow_constraint(g)
+
+    def test_net_flow_constraint_undirected_raises_error(self, monkeypatch):
+        """Test the net-flow constraint function may raise an error."""
+
+        class OtherDirectedGraph(nx.DiGraph):
+            def __init__(self, *args, **kwargs):
+                pass
+
+        g = OtherDirectedGraph()
+        with pytest.raises(ValueError, match="must be directed"):
+            net_flow_constraint(g)
 
     @pytest.mark.parametrize(
         "g", [nx.complete_graph(3).to_directed(), rx.generators.directed_mesh_graph(3, [0, 1, 2])]
