@@ -309,7 +309,7 @@ class ParametrizedEvolution(Operation):
 
         with jax.ensure_compile_time_eval():
             H_jax = ParametrizedHamiltonianPytree.from_hamiltonian(
-                self.H, dense=len(self.wires) > 4, wire_order=self.wires
+                self.H, dense=len(self.wires) < 3, wire_order=self.wires
             )
 
         def fun(y, t):
