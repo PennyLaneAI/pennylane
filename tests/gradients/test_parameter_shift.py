@@ -2798,6 +2798,8 @@ class TestHamiltonianExpvalGradients:
         assert np.allclose(res[:, -1], np.zeros([2, 1, 1]), atol=tol, rtol=0)
 
 
+@pytest.mark.parametrize("argnums", [[0], [1], [0, 1]])
+@pytest.mark.parametrize("interface", interfaces)
 @pytest.mark.jax
 class TestJaxArgnums:
     """Class to test the integration of argnums (Jax) and the parameter shift transform."""

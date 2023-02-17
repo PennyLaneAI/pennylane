@@ -520,11 +520,11 @@ class_jacs = [
 ]
 
 
+@pytest.mark.jax
+@pytest.mark.parametrize("diff_method", ["backprop", "parameter-shift"])
 class TestJax:
     interfaces = ["jax"]
 
-    @pytest.mark.jax
-    @pytest.mark.parametrize("diff_method", ["backprop", "parameter-shift"])
     @pytest.mark.parametrize("circuit, args, expected_jac", zip(circuits, all_args, class_jacs))
     @pytest.mark.parametrize("interface", interfaces)
     def test_jax_without_argnum(self, circuit, args, expected_jac, diff_method, interface):
@@ -539,8 +539,6 @@ class TestJax:
         jac = classical_jacobian(qnode)(*args)
         assert np.allclose(jac, expected_jac)
 
-    @pytest.mark.jax
-    @pytest.mark.parametrize("diff_method", ["backprop", "parameter-shift"])
     @pytest.mark.parametrize(
         "circuit, args, expected_jac, argnum",
         zip(circuits, all_args, class_jacs, single_list_argnum),
@@ -561,8 +559,6 @@ class TestJax:
         assert len(jac) == 1
         assert np.allclose(jac[0], expected_jac[0])
 
-    @pytest.mark.jax
-    @pytest.mark.parametrize("diff_method", ["backprop", "parameter-shift"])
     @pytest.mark.parametrize(
         "circuit, args, expected_jac, argnum", zip(circuits, all_args, class_jacs, scalar_argnum)
     )
@@ -580,8 +576,6 @@ class TestJax:
         expected_jac = expected_jac[argnum]
         assert np.allclose(jac, expected_jac)
 
-    @pytest.mark.jax
-    @pytest.mark.parametrize("diff_method", ["backprop", "parameter-shift"])
     @pytest.mark.parametrize(
         "circuit, args, expected_jac, argnum", zip(circuits, all_args, class_jacs, sequence_argnum)
     )
@@ -605,8 +599,6 @@ class TestJax:
         for _jac, _expected_jac in zip(jac, expected_jac):
             assert np.allclose(_jac, _expected_jac)
 
-    @pytest.mark.jax
-    @pytest.mark.parametrize("diff_method", ["backprop", "parameter-shift"])
     @pytest.mark.parametrize("interface", interfaces)
     def test_jax_not_trainable_only(self, diff_method, interface):
         r"""Test ``classical_jacobian`` with ``argnum=<int>`` and JAX
