@@ -369,6 +369,7 @@ class TestDifferentiableZNE:
         """Test the output corresponds to the right number of operators according to Sec. II A 1) in  https://arxiv.org/abs/2005.10921"""
         x = 0.5
         circuit = qml.tape.QuantumScript([qml.RX(x, wires=0) for i in range(num_ops)])
+        assert len(circuit._ops)==num_ops
 
         folded, _ = qml.transforms.fold_global(circuit, lambda_)
 
