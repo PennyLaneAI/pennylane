@@ -34,7 +34,7 @@ except ImportError:
 class ParametrizedHamiltonianPytree:
     """Jax pytree class that represents a ``ParametrizedHamiltonian``."""
 
-    mat_fixed: Union[jnp.ndarray, sparse.CSR]
+    mat_fixed: Optional[Union[jnp.ndarray, sparse.CSR]]
     mats_parametrized: Tuple[Union[jnp.ndarray, sparse.CSR], ...]
     coeffs_parametrized: Tuple[Callable]
 
