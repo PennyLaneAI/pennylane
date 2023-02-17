@@ -542,7 +542,7 @@ class TestPauliSentence:
     def test_hamiltonian_empty(self):
         """Test that an empty PauliSentence with wire_order returns Identity."""
         op = ps5.hamiltonian(wire_order=[0, 1])
-        id = qml.Hamiltonian([0], [qml.Identity(wires=[0, 1])])
+        id = qml.Hamiltonian([], [])
         assert op.compare(id)
 
     def test_hamiltonian_empty_error(self):

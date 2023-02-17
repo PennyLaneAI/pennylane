@@ -378,7 +378,7 @@ class PauliSentence(dict):
         if len(self) == 0:
             if wire_order in (None, [], wires.Wires([])):
                 raise ValueError("Can't get the Hamiltonian for an empty PauliSentence.")
-            return Hamiltonian([0], [Identity(wires=wire_order)])
+            return Hamiltonian([], [])
 
         wire_order = wire_order or self.wires
         return sum(

@@ -246,7 +246,7 @@ class SProd(ScalarSymbolicOp):
         consisting mostly of zero entries.
 
         Args:
-            wires (Iterable): Wire labels that indicate the order of wires according to which the matrix
+            wire_order (Iterable): Wire labels that indicate the order of wires according to which the matrix
                 is constructed. If not provided, ``self.wires`` is used.
 
         Returns:
