@@ -780,6 +780,49 @@ class TestSimplify:
         assert simplified_op.data == final_op.data
         assert simplified_op.arithmetic_depth == final_op.arithmetic_depth
 
+    @pytest.mark.jax
+    def test_simplify_pauli_rep_jax(self):
+        """Test that simplifying operators with a valid pauli representation works with jax interface."""
+        import jax.numpy as jnp
+
+        c1, c2, c3 = jnp.array(1.23), jnp.array(2.0), jnp.array(2.46)
+
+        op = s_prod(c1, s_prod(c2, qml.PauliX(0)))
+        result = s_prod(c3, qml.PauliX(0))
+        simplified_op = op.simplify()
+
+        assert qml.equal(simplified_op, result)
+
+    @pytest.mark.tf
+    def test_simplify_pauli_rep_tf(self):
+        """Test that simplifying operators with a valid pauli representation works with tf interface."""
+        import tensorflow as tf
+
+        c1, c2, c3 = tf.Variable(1.23), tf.Variable(2.0), tf.Variable(2.46)
+
+        op = s_prod(c1, s_prod(c2, qml.PauliX(0)))
+        result = s_prod(c3, qml.PauliX(0))
+        simplified_op = op.simplify()
+
+        assert isinstance(simplified_op, type(result))
+        assert result.wires == simplified_op.wires
+        assert result.arithmetic_depth == simplified_op.arithmetic_depth
+        assert qnp.isclose(result.data[0], simplified_op.data[0])
+        assert result.data[1:] == simplified_op.data[1:]
+
+    @pytest.mark.torch
+    def test_simplify_pauli_rep_torch(self):
+        """Test that simplifying operators with a valid pauli representation works with torch interface."""
+        import torch
+
+        c1, c2, c3 = torch.tensor(1.23), torch.tensor(2.0), torch.tensor(2.46)
+
+        op = s_prod(c1, s_prod(c2, qml.PauliX(0)))
+        result = s_prod(c3, qml.PauliX(0))
+        simplified_op = op.simplify()
+
+        assert qml.equal(simplified_op, result)
+
 
 class TestWrapperFunc:
     @pytest.mark.parametrize("op_scalar_tup", ops)
