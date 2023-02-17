@@ -65,15 +65,14 @@
 
 <h4>Special unitary operation 🌞</h4>
 
-* A new operation `qml.SpecialUnitary` was added, providing access to an arbitrary
+* A new operation `qml.SpecialUnitary` has been added, providing access to an arbitrary
   unitary gate via a parametrization in the Pauli basis.
   [(#3650)](https://github.com/PennyLaneAI/pennylane/pull/3650)
   [(#3674)](https://github.com/PennyLaneAI/pennylane/pull/3674)
 
-  The new operation takes a one-dimensional array of length `4**num_wires-1`, where `num_wires` is the number of wires the unitary acts on.
+  `qml.SpecialUnitary` creates a unitary that is a linear combination of all possible Pauli words in lexicographical order — except for the identity operator — for `num_wires` wires, of which there are `4**num_wires - 1`. As its first argument, it takes a list of `4**num_wires - 1` parameters that are the coefficients of the linear combination. 
 
-  The parameter `theta` refers to all Pauli words (except for the identity) in lexicographical
-  order, which looks like the following for one and two qubits:
+  To see all possible Pauli words for `num_wires` wires, you can use the `qml.ops.qubit.special_unitary.pauli_basis_strings` function:
 
   ```pycon
   >>> qml.ops.qubit.special_unitary.pauli_basis_strings(1) # 4**1-1 = 3 Pauli words
@@ -82,11 +81,11 @@
   ['IX', 'IY', 'IZ', 'XI', 'XX', 'XY', 'XZ', 'YI', 'YX', 'YY', 'YZ', 'ZI', 'ZX', 'ZY', 'ZZ']
   ```
 
-  For example, on a single qubit, we may define
+  To use `qml.SpecialUnitary`, for example, on a single qubit, we may define
 
   ```pycon
-  >>> theta = np.array([0.2, 0.1, -0.5])
-  >>> U = qml.SpecialUnitary(theta, 0)
+  >>> thetas = np.array([0.2, 0.1, -0.5])
+  >>> U = qml.SpecialUnitary(thetas, 0)
   >>> U.matrix()
   array([[ 0.8537127 -0.47537233j,  0.09507447+0.19014893j],
          [-0.09507447+0.19014893j,  0.8537127 +0.47537233j]])
