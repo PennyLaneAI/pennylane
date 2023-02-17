@@ -248,7 +248,6 @@ class SProd(ScalarSymbolicOp):
         Args:
             wires (Iterable): Wire labels that indicate the order of wires according to which the matrix
                 is constructed. If not provided, ``self.wires`` is used.
-            format: the output format for the sparse representation. All scipy sparse formats are accepted.
 
         Returns:
             :class:`scipy.sparse._csr.csr_matrix`: sparse matrix representation
