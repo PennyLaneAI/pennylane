@@ -304,7 +304,7 @@ class gradient_transform(qml.batch_transform):
 
             kwargs.pop("shots", False)
             cjac = cjac_fn(*args, **kwargs)
-
+            print(qjac, cjac)
             if qml.active_return():
                 if isinstance(cjac, tuple) and len(cjac) == 1:
                     cjac = cjac[0]
@@ -312,13 +312,15 @@ class gradient_transform(qml.batch_transform):
                 if not isinstance(cjac, tuple):
                     is_square = cjac.ndim == 2 and cjac.shape[0] == cjac.shape[1]
 
-                    if is_square and qml.math.allclose(cjac, qml.numpy.eye(cjac.shape[0])):
-                        # Classical Jacobian is the identity. No classical processing
-                        # is present inside the QNode.
-                        return qjac
+                    if not qml.math.is_abstract(cjac):
+                        if is_square and qml.math.allclose(cjac, qml.numpy.eye(cjac.shape[0])):
+                            # Classical Jacobian is the identity. No classical processing
+                            # is present inside the QNode.
+                            return qjac
 
                 multi_meas = len(qnode.tape.measurements) > 1
-                multi_params = isinstance(cjac, tuple)
+                multi_params = isinstance(cjac, tuple) or len(qnode.tape.trainable_params) > 1
+
                 if not multi_params and not multi_meas:
                     if qjac.shape == ():
                         qjac = qml.math.reshape(qjac, (1,))
@@ -338,21 +340,32 @@ class gradient_transform(qml.batch_transform):
                     )
                     return jacs
                 if not multi_meas and multi_params:
-                    jacs = tuple(
-                        qml.math.tensordot(qml.math.stack(qjac), c, [[0], [0]])
-                        for c in cjac
-                        if c is not None
-                    )
+                    if not isinstance(cjac, tuple):
+                        jacs = qml.math.tensordot(
+                            qml.math.stack(qjac), qml.math.stack(cjac), [[0], [0]]
+                        )
+                    else:
+                        jacs = tuple(
+                            qml.math.tensordot(qml.math.stack(qjac), c, [[0], [0]])
+                            for c in cjac
+                            if c is not None
+                        )
                     return jacs
                 # Multi measurement and multi params
-                jacs = tuple(
-                    tuple(
-                        qml.math.tensordot(qml.math.stack(q), c, [[0], [0]])
-                        for c in cjac
-                        if c is not None
+                if not isinstance(cjac, tuple):
+                    jacs = tuple(
+                        qml.math.tensordot(qml.math.stack(q), qml.math.stack(cjac), [[0], [0]])
+                        for q in qjac
                     )
-                    for q in qjac
-                )
+                else:
+                    jacs = tuple(
+                        tuple(
+                            qml.math.tensordot(qml.math.stack(q), c, [[0], [0]])
+                            for c in cjac
+                            if c is not None
+                        )
+                        for q in qjac
+                    )
                 return jacs
 
             if isinstance(cjac, tuple):
