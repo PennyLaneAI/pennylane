@@ -54,6 +54,7 @@ accesssible from the ``pennylane.devices.experimental`` submodule.
 """
 
 from . import experimental
+from .experimental import ExecutionConfig
 
 # DefaultQubitTF and DefaultQubitAutograd not imported here since this
 # would lead to an automatic import of tensorflow and autograd, which are
