@@ -15,12 +15,17 @@
 Unit tests for the ParametrizedHamiltonianPytree class
 """
 import numpy as np
+import pytest
 
 import pennylane as qml
-from pennylane.pulse.parametrized_hamiltonian_pytree import (
-    LazyDotPytree,
-    ParametrizedHamiltonianPytree,
-)
+
+try:
+    from pennylane.pulse.parametrized_hamiltonian_pytree import (
+        LazyDotPytree,
+        ParametrizedHamiltonianPytree,
+    )
+except ImportError:
+    pytestmark = pytest.mark.skip
 
 
 def f1(p, t):
@@ -36,6 +41,7 @@ params = [1.2, 2.3]
 H = qml.dot([1, 2, f1, f2], [qml.PauliX(0), qml.PauliY(1), qml.PauliZ(2), qml.Hadamard(3)])
 
 
+@pytest.mark.jax
 class TestParametrizedHamiltonianPytree:
     """Unit tests for the ParametrizedHamiltonianPytree class."""
 
@@ -93,6 +99,7 @@ class TestParametrizedHamiltonianPytree:
         assert new_H_pytree.coeffs_parametrized == H_pytree.coeffs_parametrized
 
 
+@pytest.mark.jax
 class TestLazyDotPytree:
     """Unit tests for the LazyDotPytree class."""
 
