@@ -142,7 +142,7 @@ def _hadamard_grad(
     >>> jax.jacobian(circuit)(params)
     [-0.3875172  -0.18884787 -0.38355704]
 
-    If you use custom wires on your device, you can also pass an auxiliary wire.
+    If you use custom wires on your device, you need to pass an auxiliary wire.
 
     >>> qml.enable_return()
     >>> dev_wires = ("a", "c")
