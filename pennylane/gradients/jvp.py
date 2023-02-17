@@ -138,9 +138,10 @@ def compute_jvp_single(tangent, jac):
         num_l = len(tangent.shape[1:])
         tangent = qml.math.reshape(tangent, (-1,))
         prod_l = tangent.shape[0]
-        new_shape = (jac.shape if num_l == 0 else jac.shape[:-num_l]) + (prod_l,)
         jac = qml.math.cast(qml.math.convert_like(jac, tangent), tangent.dtype)
-        jac = qml.math.reshape(jac, new_shape)
+        if num_l != 0:
+            new_shape = (jac.shape[:-num_l]) + (prod_l,)
+            jac = qml.math.reshape(jac, new_shape)
         return qml.math.tensordot(jac, tangent, [[-1], [0]])
 
     if isinstance(tangent, (tuple, list)) and any(t.ndim > 0 for t in tangent):
