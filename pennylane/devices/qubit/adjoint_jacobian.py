@@ -69,10 +69,12 @@ def adjoint_jacobian(
     # broadcasted inner product not summing over first dimension of b
     sum_axes = tuple(range(1, dev.num_wires + 1))
     # pylint: disable=unnecessary-lambda-assignment
-    dot_product_real = lambda b, k: dev._real(qmlsum(dev._conj(b) * k, axis=sum_axes))
+    dot_product_real = lambda b, k: dev._real(
+        qmlsum(dev._conj(b) * k, axis=sum_axes)
+    )  # ToDo: simplify this
 
     # Initialization of state
-    if starting_state is not None:
+    if starting_state is not None:  # ToDo: use new state_preparation fns
         ket = dev._reshape(starting_state, [2] * dev.num_wires)
     else:
         if not use_device_state:
@@ -80,7 +82,8 @@ def adjoint_jacobian(
             dev.execute(tape)
         ket = dev._pre_rotated_state
 
-    # currently assumes only one observable
+    # ToDo: compare to demo, make sure it all makes sense
+    # currently assumes only one observable, no batching
     bra = apply_operation(tape.observables[0], ket)
 
     expanded_ops = []
@@ -121,4 +124,7 @@ def adjoint_jacobian(
             return tuple(np.array(j) for j in jac)
 
         # must be 2-dimensional - I think this is only for batching
+        # ToDo: is this just for batching, and if so should we remove it for now?
         return tuple(tuple(np.array(j_) for j_ in j) for j in jac)
+
+    # ToDo: add tests
