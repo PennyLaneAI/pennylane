@@ -492,7 +492,7 @@ def param_shift_cv(
 
     Args:
         tape (.QuantumTape): quantum tape to differentiate
-        dev (.Device): device the parameter-shift method is to be computed on
+        dev (pennylane.Device): device the parameter-shift method is to be computed on
         argnum (int or list[int] or None): Trainable parameter indices to differentiate
             with respect to. If not provided, the derivative with respect to all
             trainable indices are returned.
@@ -501,7 +501,7 @@ def param_shift_cv(
             and the tuple should match the number of frequencies for that parameter.
             If unspecified, equidistant shifts are assumed.
         gradient_recipes (tuple(list[list[float]] or None)): List of gradient recipes
-            for the parameter-shift method. One gradient recipe must be provided
+            for the parameter-shpift method. One gradient recipe must be provided
             per trainable parameter.
 
             This is a tuple with one nested list per parameter. For

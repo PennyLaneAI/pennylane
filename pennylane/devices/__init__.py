@@ -39,9 +39,9 @@ Next generation devices
 -----------------------
 
 :class:`pennylane.devices.experimental.Device` in an experimental interface for the next generation of devices that
-will eventually replace :class:`~.Device` and :class:`~.QubitDevice`.
+will eventually replace :class:`pennylane.Device` and :class:`pennylane.QubitDevice`.
 
-While the current interface :class:`~.Device` is imported top level, the new :class:`Device` is
+While the current interface :class:`pennylane.Device` is imported top level, the new :class:`pennylane.devices.experimental.Device` is
 accesssible from the ``pennylane.devices.experimental`` submodule.
 
 .. currentmodule:: pennylane.devices.experimental
