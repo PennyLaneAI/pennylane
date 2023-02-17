@@ -22,6 +22,7 @@ from pennylane.transforms.tape_expand import expand_invalid_trainable
 SUPPORTED_GRADIENT_KWARGS = [
     "approx_order",
     "argnum",
+    "aux_wire",
     "broadcast",
     "device_wires",
     "diagonal_shifts",
@@ -122,7 +123,6 @@ def grad_method_validation(method, tape):
     Returns:
         tuple[str, None]: the allowed parameter gradient methods for each trainable parameter
     """
-
     diff_methods = {
         idx: info["grad_method"]
         for idx, info in enumerate(tape._par_info)  # pylint: disable=protected-access
