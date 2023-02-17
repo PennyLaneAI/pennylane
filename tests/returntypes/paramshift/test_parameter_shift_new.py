@@ -3295,7 +3295,7 @@ class TestHamiltonianExpvalGradients:
 
 @pytest.mark.autograd
 class TestQnodeAutograd:
-    """Class to the parameter shift transform with some classical processing."""
+    """Class to test the parameter shift transform on QNode with some classical processing."""
 
     interfaces = ["auto", "autograd"]
 
@@ -3340,8 +3340,8 @@ class TestQnodeAutograd:
         assert np.allclose(res, res_expected)
 
     @pytest.mark.parametrize("interface", interfaces)
-    def test_single_measurement_single_param_shape(self, interface):
-        """Test for a single measurement and a single param."""
+    def test_single_measurement_prob_single_param(self, interface):
+        """Test for a single measurement (probs) and a single param."""
         dev = qml.device("default.qubit", wires=2)
 
         @qml.qnode(dev, interface=interface)
@@ -3360,8 +3360,8 @@ class TestQnodeAutograd:
         assert np.allclose(res, res_expected)
 
     @pytest.mark.parametrize("interface", interfaces)
-    def test_single_measurement_single_param_shape_2(self, interface):
-        """Test for a single measurement (with shape) and a single param."""
+    def test_single_measurement_prob_single_param_2(self, interface):
+        """Test for a single measurement (probs) and a single param."""
         dev = qml.device("default.qubit", wires=2)
 
         @qml.qnode(dev, interface=interface)
@@ -3401,8 +3401,8 @@ class TestQnodeAutograd:
         assert np.allclose(res[1], res_expected[1])
 
     @pytest.mark.parametrize("interface", interfaces)
-    def test_multi_measurement_single_param_shape(self, interface):
-        """Test for multiple measurement (with shape) and a single param."""
+    def test_multi_measurement_expval_probs_single_param(self, interface):
+        """Test for multiple measurement (expval, probs) and a single param."""
         dev = qml.device("default.qubit", wires=2)
 
         @qml.qnode(dev, interface=interface)
@@ -3448,8 +3448,8 @@ class TestQnodeAutograd:
         assert np.allclose(res[1], res_expected[1])
 
     @pytest.mark.parametrize("interface", interfaces)
-    def test_single_measurement_shape_multiple_params(self, interface):
-        """Test for a single measurement (with shape) and multiple params."""
+    def test_single_measurement_probs_multiple_params(self, interface):
+        """Test for a single measurement (probs) and multiple params."""
         dev = qml.device("default.qubit", wires=2)
 
         @qml.qnode(dev, interface=interface)
@@ -3469,7 +3469,7 @@ class TestQnodeAutograd:
         assert np.allclose(res[1], res_expected[1])
 
     @pytest.mark.parametrize("interface", interfaces)
-    def test_multi_expectation_values_multi_measurements(self, interface):
+    def test_multi_measurements_expval_multi_params(self, interface):
         """Test for multiple measurements and multiple params."""
 
         dev = qml.device("default.qubit", wires=2)
@@ -3497,8 +3497,8 @@ class TestQnodeAutograd:
         assert np.allclose(res[1][1], res_expected[1][1])
 
     @pytest.mark.parametrize("interface", interfaces)
-    def test_multi_meas_shape_values_multi_measurements(self, interface):
-        """Test for multiple measurements (with shape) and multiple params."""
+    def test_multi_meas_expval_probs__multi_params(self, interface):
+        """Test for multiple measurements (expval , probs) and multiple params."""
 
         dev = qml.device("default.qubit", wires=2)
 
@@ -3532,7 +3532,7 @@ class TestQnodeAutograd:
 
     @pytest.mark.parametrize("interface", interfaces)
     def test_identity_classical_jacobian(self, interface):
-        """Test for multiple measurements (with shape) and multiple params."""
+        """Test for an identity cjac."""
 
         dev = qml.device("default.qubit", wires=2)
 
@@ -3552,7 +3552,7 @@ class TestQnodeAutograd:
 
 @pytest.mark.torch
 class TestQnodeTorch:
-    """Class to the parameter shift transform with some classical processing."""
+    """Class to test the parameter shift transform on QNode with some classical processing."""
 
     expected_jacs = []
     interfaces = ["auto", "torch"]
@@ -3601,8 +3601,8 @@ class TestQnodeTorch:
         assert np.allclose(res.detach().numpy(), res_expected)
 
     @pytest.mark.parametrize("interface", interfaces)
-    def test_single_measurement_single_param_shape(self, interface):
-        """Test for a single measurement and a single param."""
+    def test_single_measurement_probs_single_param(self, interface):
+        """Test for a single measurement (probs) and a single param."""
         dev = qml.device("default.qubit", wires=2)
         import torch
 
@@ -3622,8 +3622,8 @@ class TestQnodeTorch:
         assert np.allclose(res.detach().numpy(), res_expected)
 
     @pytest.mark.parametrize("interface", interfaces)
-    def test_single_measurement_single_param_shape_2(self, interface):
-        """Test for a single measurement (with shape) and a single param."""
+    def test_single_measurement_probs_single_param_2(self, interface):
+        """Test for a single measurement (probs) and a single param."""
         dev = qml.device("default.qubit", wires=2)
 
         import torch
@@ -3643,7 +3643,7 @@ class TestQnodeTorch:
 
     @pytest.mark.parametrize("interface", interfaces)
     def test_multi_measurement_single_param(self, interface):
-        """Test for multiple measurement and a single param."""
+        """Test for multiple measurements (expvals) and a single param."""
         dev = qml.device("default.qubit", wires=2)
         import torch
 
@@ -3663,7 +3663,7 @@ class TestQnodeTorch:
         assert np.allclose(res[1].detach().numpy(), res_expected[1])
 
     @pytest.mark.parametrize("interface", interfaces)
-    def test_multi_measurement_single_param_shape(self, interface):
+    def test_multi_measurement_expval_probs_single_param(self, interface):
         """Test for multiple measurement (with shape) and a single param."""
         dev = qml.device("default.qubit", wires=2)
         import torch
@@ -3706,8 +3706,8 @@ class TestQnodeTorch:
         assert np.allclose(res[1].detach().numpy(), res_expected[1])
 
     @pytest.mark.parametrize("interface", interfaces)
-    def test_single_measurement_shape_multiple_params(self, interface):
-        """Test for a single measurement (with shape) and multiple params."""
+    def test_single_measurement_probs_multiple_params(self, interface):
+        """Test for a single measurement (probs) and multiple params."""
         dev = qml.device("default.qubit", wires=2)
         import torch
 
@@ -3728,7 +3728,7 @@ class TestQnodeTorch:
         assert np.allclose(res[1].detach().numpy(), res_expected[1])
 
     @pytest.mark.parametrize("interface", interfaces)
-    def test_multi_expectation_values_multi_measurements(self, interface):
+    def test_multiple_measurements_multiple_params(self, interface):
         """Test for multiple measurements and multiple params."""
         dev = qml.device("default.qubit", wires=2)
         import torch
@@ -3753,8 +3753,8 @@ class TestQnodeTorch:
         assert np.allclose(res[1][1].detach().numpy(), res_expected[1][1])
 
     @pytest.mark.parametrize("interface", interfaces)
-    def test_multi_meas_shape_values_multi_measurements(self, interface):
-        """Test for multiple measurements (with shape) and multiple params."""
+    def test_multiple_measurements_expval_probs_multiple_params(self, interface):
+        """Test for multiple measurements (expval, probs) and multiple params."""
         import torch
 
         dev = qml.device("default.qubit", wires=2)
@@ -3780,7 +3780,7 @@ class TestQnodeTorch:
 
     @pytest.mark.parametrize("interface", interfaces)
     def test_identity_classical_jacobian(self, interface):
-        """Test for multiple measurements (with shape) and multiple params."""
+        """Test for an identity cjac."""
         import torch
 
         dev = qml.device("default.qubit", wires=2)
@@ -3851,8 +3851,8 @@ class TestQnodeJax:
         assert np.allclose(res, res_expected)
 
     @pytest.mark.parametrize("interface", interfaces)
-    def test_single_measurement_single_param_shape(self, interface):
-        """Test for a single measurement and a single param."""
+    def test_single_measurement_probs_single_param(self, interface):
+        """Test for a single measurement (probs) and a single param."""
         dev = qml.device("default.qubit", wires=2)
         import jax
 
@@ -3872,8 +3872,8 @@ class TestQnodeJax:
         assert np.allclose(res, res_expected)
 
     @pytest.mark.parametrize("interface", interfaces)
-    def test_single_measurement_single_param_shape_2(self, interface):
-        """Test for a single measurement (with shape) and a single param."""
+    def test_single_measurement_probs_single_param_2(self, interface):
+        """Test for a single measurement (probs) and a single param."""
         dev = qml.device("default.qubit", wires=2)
 
         import jax
@@ -3893,7 +3893,7 @@ class TestQnodeJax:
 
     @pytest.mark.parametrize("interface", interfaces)
     def test_multi_measurement_single_param(self, interface):
-        """Test for multiple measurement and a single param."""
+        """Test for multiple measurements and a single param."""
         dev = qml.device("default.qubit", wires=2)
         import jax
 
@@ -3913,8 +3913,8 @@ class TestQnodeJax:
         assert np.allclose(res[1], res_expected[1])
 
     @pytest.mark.parametrize("interface", interfaces)
-    def test_multi_measurement_single_param_shape(self, interface):
-        """Test for multiple measurement (with shape) and a single param."""
+    def test_multi_measurement_expval_probs_single_param(self, interface):
+        """Test for multiple measurement (probs) and a single param."""
         dev = qml.device("default.qubit", wires=2)
         import jax
 
@@ -3956,8 +3956,8 @@ class TestQnodeJax:
         assert np.allclose(res[1], res_expected[1])
 
     @pytest.mark.parametrize("interface", interfaces)
-    def test_single_measurement_shape_multiple_params(self, interface):
-        """Test for a single measurement (with shape) and multiple params."""
+    def test_single_measurement_probs_multiple_params(self, interface):
+        """Test for a single measurement (probs) and multiple params."""
         dev = qml.device("default.qubit", wires=2)
         import jax
 
@@ -3978,7 +3978,7 @@ class TestQnodeJax:
         assert np.allclose(res[1], res_expected[1])
 
     @pytest.mark.parametrize("interface", interfaces)
-    def test_multi_expectation_values_multi_measurements(self, interface, tol):
+    def test_multiple_measurements_multi_params(self, interface, tol):
         """Test for multiple measurements and multiple params."""
         dev = qml.device("default.qubit", wires=2)
         import jax
@@ -4003,7 +4003,7 @@ class TestQnodeJax:
         assert np.allclose(res[1][1], res_expected[1][1], atol=tol)
 
     @pytest.mark.parametrize("interface", interfaces)
-    def test_multi_meas_shape_values_multi_measurements(self, interface, tol):
+    def test_multiple_measurements_expval_probs_multi_params(self, interface, tol):
         """Test for multiple measurements (with shape) and multiple params."""
         import jax
 
@@ -4030,7 +4030,7 @@ class TestQnodeJax:
 
     @pytest.mark.parametrize("interface", interfaces)
     def test_identity_classical_jacobian(self, interface, tol):
-        """Test for multiple measurements (with shape) and multiple params."""
+        """Test for an identity cjac."""
         import jax
 
         dev = qml.device("default.qubit", wires=2)
@@ -4101,8 +4101,8 @@ class TestQnodeJaxJit:
         assert np.allclose(res, res_expected)
 
     @pytest.mark.parametrize("interface", interfaces)
-    def test_single_measurement_single_param_shape(self, interface):
-        """Test for a single measurement and a single param."""
+    def test_single_measurement_probs_single_param(self, interface):
+        """Test for a single measurement (probs) and a single param."""
         dev = qml.device("default.qubit", wires=2)
         import jax
 
@@ -4122,8 +4122,8 @@ class TestQnodeJaxJit:
         assert np.allclose(res, res_expected)
 
     @pytest.mark.parametrize("interface", interfaces)
-    def test_single_measurement_single_param_shape_2(self, interface):
-        """Test for a single measurement (with shape) and a single param."""
+    def test_single_measurement_probs_single_param_2(self, interface):
+        """Test for a single measurement (probs) and a single param."""
         dev = qml.device("default.qubit", wires=2)
 
         import jax
@@ -4143,7 +4143,7 @@ class TestQnodeJaxJit:
 
     @pytest.mark.parametrize("interface", interfaces)
     def test_multi_measurement_single_param(self, interface):
-        """Test for multiple measurement and a single param."""
+        """Test for multiple measurements and a single param."""
         dev = qml.device("default.qubit", wires=2)
         import jax
 
@@ -4163,8 +4163,8 @@ class TestQnodeJaxJit:
         assert np.allclose(res[1], res_expected[1])
 
     @pytest.mark.parametrize("interface", interfaces)
-    def test_multi_measurement_single_param_shape(self, interface):
-        """Test for multiple measurement (with shape) and a single param."""
+    def test_multi_measurement_expval_probs_single_param(self, interface):
+        """Test for multiple measurement (expval,probs) and a single param."""
         dev = qml.device("default.qubit", wires=2)
         import jax
 
@@ -4176,9 +4176,9 @@ class TestQnodeJaxJit:
 
         x = jax.numpy.array([0.543, 0.2])
 
-        res = qml.gradients.param_shift(circuit)(x)
+        res = jax.jit(qml.gradients.param_shift(circuit))(x)
 
-        res_expected = jax.jit(jax.jacobian(circuit))(x)
+        res_expected = jax.jacobian(circuit)(x)
 
         assert np.allclose(res[0], res_expected[0])
         assert np.allclose(res[1], res_expected[1])
@@ -4206,8 +4206,8 @@ class TestQnodeJaxJit:
         assert np.allclose(res[1], res_expected[1])
 
     @pytest.mark.parametrize("interface", interfaces)
-    def test_single_measurement_shape_multiple_params(self, interface):
-        """Test for a single measurement (with shape) and multiple params."""
+    def test_single_measurement_probs_multiple_params(self, interface):
+        """Test for a single measurement (probs) and multiple params."""
         dev = qml.device("default.qubit", wires=2)
         import jax
 
@@ -4228,7 +4228,7 @@ class TestQnodeJaxJit:
         assert np.allclose(res[1], res_expected[1])
 
     @pytest.mark.parametrize("interface", interfaces)
-    def test_multi_expectation_values_multi_measurements(self, interface, tol):
+    def test_multiple_measurement_multi_params(self, interface, tol):
         """Test for multiple measurements and multiple params."""
         dev = qml.device("default.qubit", wires=2)
         import jax
@@ -4253,8 +4253,8 @@ class TestQnodeJaxJit:
         assert np.allclose(res[1][1], res_expected[1][1], atol=tol)
 
     @pytest.mark.parametrize("interface", interfaces)
-    def test_multi_meas_shape_values_multi_measurements(self, interface, tol):
-        """Test for multiple measurements (with shape) and multiple params."""
+    def test_multiple_measurements_expval_probs_multi_params(self, interface, tol):
+        """Test for multiple measurements (expval, probs) and multiple params."""
         import jax
 
         dev = qml.device("default.qubit", wires=2)
@@ -4280,7 +4280,7 @@ class TestQnodeJaxJit:
 
     @pytest.mark.parametrize("interface", interfaces)
     def test_identity_classical_jacobian(self, interface, tol):
-        """Test for a single measurement and multiple params."""
+        """Test for an identity cjac."""
         import jax
 
         dev = qml.device("default.qubit", wires=2)
@@ -4301,7 +4301,7 @@ class TestQnodeJaxJit:
 
     @pytest.mark.parametrize("interface", interfaces)
     def test_identity_classical_jacobian_multi_meas(self, interface, tol):
-        """Test for multiple measurements (with shape) and multiple params."""
+        """Test for an identity cjac with qjac multiple measurements."""
         import jax
 
         dev = qml.device("default.qubit", wires=2)
