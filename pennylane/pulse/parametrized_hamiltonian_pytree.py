@@ -13,7 +13,7 @@
 # limitations under the License.
 """Module containing the ``JaxParametrizedHamiltonian`` class."""
 from dataclasses import dataclass
-from typing import Callable, Tuple, Union
+from typing import Callable, Optional, Tuple, Union
 
 import pennylane as qml
 
