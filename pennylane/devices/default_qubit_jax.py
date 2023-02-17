@@ -14,12 +14,12 @@
 """This module contains an jax implementation of the :class:`~.DefaultQubit`
 reference plugin.
 """
+# pylint: disable=ungrouped-imports
 import numpy as np
 
 import pennylane as qml
 from pennylane.devices import DefaultQubit
 from pennylane.pulse import ParametrizedEvolution
-from pennylane.pulse.parametrized_hamiltonian_pytree import ParametrizedHamiltonianPytree
 from pennylane.typing import TensorLike
 
 try:
@@ -27,6 +27,8 @@ try:
     import jax.numpy as jnp
     from jax.config import config as jax_config
     from jax.experimental.ode import odeint
+
+    from pennylane.pulse.parametrized_hamiltonian_pytree import ParametrizedHamiltonianPytree
 
 
 except ImportError as e:  # pragma: no cover
@@ -223,7 +225,7 @@ class DefaultQubitJax(DefaultQubit):
 
         def fun(y, t):
             """dy/dt = -i H(t) y"""
-            return -1j * (H_jax(operation.data, t=t) @ y)
+            return (-1j * H_jax(operation.data, t=t)) @ y
 
         result = odeint(fun, state, operation.t, **operation.odeint_kwargs)
         return self._reshape(result[-1], [2] * self.num_wires)

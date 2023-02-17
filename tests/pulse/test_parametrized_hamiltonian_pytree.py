@@ -15,26 +15,12 @@
 Unit tests for the ParametrizedHamiltonianPytree class
 """
 import numpy as np
-import pytest
 
 import pennylane as qml
-from pennylane.pulse import ParametrizedHamiltonian
 from pennylane.pulse.parametrized_hamiltonian_pytree import (
     LazyDotPytree,
     ParametrizedHamiltonianPytree,
 )
-
-
-def test_error_raised_if_jax_not_installed():
-    """Test that an error is raised if an ``Evolve`` operator is instantiated without jax installed"""
-    try:
-        import jax  # pylint: disable=unused-import
-
-        pytest.skip()
-    except ImportError:
-        ham = ParametrizedHamiltonian([], [])
-        with pytest.raises(ImportError, match="Module jax is required"):
-            ParametrizedHamiltonianPytree(ham)
 
 
 def f1(p, t):

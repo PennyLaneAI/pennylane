@@ -24,13 +24,14 @@ import pennylane as qml
 from pennylane.operation import AnyWires, Operation
 
 from .parametrized_hamiltonian import ParametrizedHamiltonian
-from .parametrized_hamiltonian_pytree import ParametrizedHamiltonianPytree
 
 has_jax = True
 try:
     import jax
     import jax.numpy as jnp
     from jax.experimental.ode import odeint
+
+    from .parametrized_hamiltonian_pytree import ParametrizedHamiltonianPytree
 except ImportError as e:
     has_jax = False
 
@@ -314,7 +315,7 @@ class ParametrizedEvolution(Operation):
 
         def fun(y, t):
             """dy/dt = -i H(t) y"""
-            return -1j * (H_jax(self.data, t=t) @ y)
+            return (-1j * H_jax(self.data, t=t)) @ y
 
         result = odeint(fun, y0, self.t, **self.odeint_kwargs)
         mat = result[-1]

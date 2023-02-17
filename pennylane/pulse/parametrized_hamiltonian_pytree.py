@@ -15,18 +15,14 @@
 from dataclasses import dataclass
 from typing import Callable, Optional, Tuple, Union
 
+import jax
+import jax.numpy as jnp
+from jax.experimental import sparse
+from jax.tree_util import register_pytree_node_class
+
 import pennylane as qml
 
 from .parametrized_hamiltonian import ParametrizedHamiltonian
-
-has_jax = True
-try:
-    import jax
-    import jax.numpy as jnp
-    from jax.experimental import sparse
-    from jax.tree_util import register_pytree_node_class
-except ImportError:
-    has_jax = False
 
 
 @register_pytree_node_class
@@ -51,11 +47,6 @@ class ParametrizedHamiltonianPytree:
         Returns:
             ParametrizedHamiltonianPytree: pytree object
         """
-        if not has_jax:
-            raise ImportError(
-                "Module jax is required for the ``ParametrizedHamiltonianPytree`` class. "
-                "You can install jax via: pip install jax"
-            )
         make_array = jnp.array if dense else sparse.CSR.fromdense
 
         if len(H.ops_fixed) > 0:
