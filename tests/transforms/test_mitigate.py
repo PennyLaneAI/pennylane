@@ -370,15 +370,13 @@ class TestDifferentiableZNE:
         x = 0.5
         circuit = qml.tape.QuantumScript([qml.RX(x, wires=0) for i in range(num_ops)])
 
-        d = len(circuit._ops)
-
         folded, _ = qml.transforms.fold_global(circuit, lambda_)
 
         n, s = divmod(lambda_ - 1, 2)
 
         s = int(round(s * num_ops / 2))
 
-        exp_total_new = d * (2 * n + 1) + 2 * s
+        exp_total_new = num_ops * (2 * n + 1) + 2 * s
         assert len(folded[0]._ops) == exp_total_new
 
     def test_global_fold_constant_result(self):
