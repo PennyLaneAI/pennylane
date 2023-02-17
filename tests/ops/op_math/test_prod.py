@@ -1049,23 +1049,20 @@ class TestSimplify:
         """Test that simplifying operators with a valid pauli representation works with jax interface."""
         import jax.numpy as jnp
 
-        c1, c2, c3 = (jnp.array(1.23), jnp.array(2.0), jnp.array(2.46j))
+        c1, c2, c3 = jnp.array(1.23), jnp.array(2.0), jnp.array(2.46j)
 
         op = prod(qml.s_prod(c1, qml.PauliX(0)), qml.s_prod(c2, prod(qml.PauliY(0), qml.PauliZ(1))))
         result = qml.s_prod(c3, prod(qml.PauliZ(0), qml.PauliZ(1)))
         simplified_op = op.simplify()
 
-        assert isinstance(simplified_op, type(result))
-        assert result.data == simplified_op.data
-        assert result.wires.toset() == simplified_op.wires.toset()
-        assert result.arithmetic_depth == simplified_op.arithmetic_depth
+        assert qml.equal(simplified_op, result)
 
     @pytest.mark.tf
     def test_simplify_pauli_rep_tf(self):
         """Test that simplifying operators with a valid pauli representation works with tf interface."""
         import tensorflow as tf
 
-        c1, c2, c3 = (tf.Variable(1.23), tf.Variable(2.0), tf.Variable(2.46j))
+        c1, c2, c3 = tf.Variable(1.23), tf.Variable(2.0), tf.Variable(2.46j)
 
         op = prod(qml.s_prod(c1, qml.PauliX(0)), qml.s_prod(c2, prod(qml.PauliY(0), qml.PauliZ(1))))
         result = qml.s_prod(c3, prod(qml.PauliZ(0), qml.PauliZ(1)))
@@ -1082,16 +1079,13 @@ class TestSimplify:
         """Test that simplifying operators with a valid pauli representation works with torch interface."""
         import torch
 
-        c1, c2, c3 = (torch.tensor(1.23), torch.tensor(2.0), torch.tensor(2.46j))
+        c1, c2, c3 = torch.tensor(1.23), torch.tensor(2.0), torch.tensor(2.46j)
 
         op = prod(qml.s_prod(c1, qml.PauliX(0)), qml.s_prod(c2, prod(qml.PauliY(0), qml.PauliZ(1))))
         result = qml.s_prod(c3, prod(qml.PauliZ(0), qml.PauliZ(1)))
         simplified_op = op.simplify()
 
-        assert isinstance(simplified_op, type(result))
-        assert result.data == simplified_op.data
-        assert result.wires.toset() == simplified_op.wires.toset()
-        assert result.arithmetic_depth == simplified_op.arithmetic_depth
+        assert qml.equal(simplified_op, result)
 
 
 class TestWrapperFunc:
