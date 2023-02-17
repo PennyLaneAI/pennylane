@@ -425,6 +425,10 @@
 
 <h3>Improvements</h3>
 
+* The gradient transforms work for the new return type system with non-trivial classical jacobians.
+  [(#3776)](https://github.com/PennyLaneAI/pennylane/pull/3776)
+
+
 * The `default.mixed` device received a performance improvement for multi-qubit operations.
   This also allows to apply channels that act on more than seven qubits, which was not possible before.
   [(#3584)](https://github.com/PennyLaneAI/pennylane/pull/3584)
@@ -643,6 +647,10 @@
 * `transforms.fold_global` now supports non-integer values.
   [(#3781)](https://github.com/PennyLaneAI/pennylane/pull/3781)
 
+* Updated `qml.draw` and `qml.draw_mpl` to draw any quantum function,
+  which allows for visualizing only part of a complete circuit/QNode.
+  [(#3760)](https://github.com/PennyLaneAI/pennylane/pull/3760)
+
 <h3>Breaking changes</h3>
 
 * The argument `mode` in execution is replaced by the boolean `grad_on_execution` in the new execution pipeline.
@@ -729,6 +737,10 @@
 * `qml.transforms.measurement_grouping` has been removed. Users should use `qml.transforms.hamiltonian_expand`
   instead.
   [(#3701)](https://github.com/PennyLaneAI/pennylane/pull/3701)
+
+* `op.simplify()` for operators which are linear combinations of pauli words will use a builtin pauli representation 
+  to more efficiently compute the simplification of the operator.
+  [(#3481)](https://github.com/PennyLaneAI/pennylane/pull/3481)
 
 <h3>Deprecations</h3>
 
@@ -844,6 +856,7 @@ Romain Moyard
 Mudit Pandey
 Borja Requena
 Matthew Silverman
+Jay Soni
 Antal Száva
 Frederik Wilde
 David Wierichs
