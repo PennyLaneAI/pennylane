@@ -80,13 +80,13 @@ def compute_jvp_single(tangent, jac):
 
     **Technical description**
 
-    There are multiple case distinctions in this function, for particular examples see above. 
+    There are multiple case distinctions in this function, for particular examples see above.
 
      - The JVP may be for one (A) or multiple (B) parameters. Call the number of parameters ``k``
      - The number ``R`` of tape return type dimensions may be between 0 and 3.
        Call the return type dimensions ``r_j``
      - Each parameter may have an arbitrary number ``L_i>=0`` of dimensions
-    
+
     In the following, ``(a, b)`` denotes a tensor_like of shape ``(a, b)`` and ``[(a,), (b,)]``
     / ``((a,), (b,))`` denotes a ``list`` / ``tuple`` of tensors with the indicated shapes,
     respectively. Ignore the case of no trainable parameters, as it is filtered out in advance.
@@ -105,7 +105,7 @@ def compute_jvp_single(tangent, jac):
         - (l_1,..,l_{L_1})             scalar return type and tensor parameter
         - (r_1,..,r_R, l_1,..,l_{L_1}) tensor return type and tensor parameter
       ---------------------------------------------------------------
-    
+
     In this scenario, the tangent is reshaped into a one-dimensional tensor with shape ``(prod_l,)``
     and the Jacobian is reshaped to have the dimensions ``(r_1, ... r_R, prod_l)``.
     This is followed by a ``tensordot`` contraction over the ``prod_l`` axis of both tensors.
@@ -124,10 +124,10 @@ def compute_jvp_single(tangent, jac):
         - ((r_1,..,r_R, l_1,..,l_{L_1}),..,(r_1,..,r_R, l_1,..,l_{L_k}))
                                                   tensor return type and k mixed params
       ---------------------------------------------------------------
-    
+
     Note that the return type dimensions always remain the same, whereas the
     dimensions of the tensor parameters may differ.
-    
+
     In this scenario, another case separation is used: If any of the parameters is a
     tensor (i.e. not a scalar), all tangent entries are reshaped into one-dimensional
     tensors with shapes ``(prod_l_i,)`` and then stacked into one one-dimensional tensor.
