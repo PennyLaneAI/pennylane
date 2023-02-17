@@ -408,6 +408,10 @@
 
 <h3>Improvements</h3>
 
+* The gradient transforms work for the new return type system with non-trivial classical jacobians.
+  [(#3776)](https://github.com/PennyLaneAI/pennylane/pull/3776)
+
+
 * The `default.mixed` device received a performance improvement for multi-qubit operations.
   This also allows to apply channels that act on more than seven qubits, which was not possible before.
   [(#3584)](https://github.com/PennyLaneAI/pennylane/pull/3584)
@@ -625,6 +629,10 @@
 
 * `transforms.fold_global` now supports non-integer values.
   [(#3781)](https://github.com/PennyLaneAI/pennylane/pull/3781)
+
+* Updated `qml.draw` and `qml.draw_mpl` to draw any quantum function,
+  which allows for visualizing only part of a complete circuit/QNode.
+  [(#3760)](https://github.com/PennyLaneAI/pennylane/pull/3760)
 
 <h3>Breaking changes</h3>
 
