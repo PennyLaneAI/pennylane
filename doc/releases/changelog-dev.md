@@ -63,6 +63,8 @@
     Array(0.07700024, dtype=float32, weak_type=True)]]
   ```
 
+Note that simulation of pulse-based circuits is only possible using the JAX interface.
+
 <h4>Special unitary operation 🌞</h4>
 
 * A new operation called `SpecialUnitary` has been added, providing access to an arbitrary
