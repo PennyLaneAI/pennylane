@@ -721,6 +721,10 @@
   instead.
   [(#3701)](https://github.com/PennyLaneAI/pennylane/pull/3701)
 
+* `op.simplify()` for operators which are linear combinations of pauli words will use a builtin pauli representation 
+  to more efficiently compute the simplification of the operator.
+  [(#3481)](https://github.com/PennyLaneAI/pennylane/pull/3481)
+
 <h3>Deprecations</h3>
 
 * `qml.utils.sparse_hamiltonian` function has been deprecated, and usage will now raise a warning.
@@ -835,6 +839,7 @@ Romain Moyard
 Mudit Pandey
 Borja Requena
 Matthew Silverman
+Jay Soni
 Antal Száva
 Frederik Wilde
 David Wierichs
