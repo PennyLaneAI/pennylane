@@ -188,16 +188,11 @@ def _execute(
 
     def wrapped_exec_bwd(params, g):
         if isinstance(gradient_fn, qml.gradients.gradient_transform):
-            args = tuple(params) + (g,)
-
-            p = args[:-1]
-            dy = args[-1]
-
-            new_tapes = [_copy_tape(t, a) for t, a in zip(tapes, p)]
+            new_tapes = [_copy_tape(t, a) for t, a in zip(tapes, params)]
             with qml.tape.Unwrap(*new_tapes):
                 vjp_tapes, processing_fn = qml.gradients.batch_vjp(
                     new_tapes,
-                    dy,
+                    g,
                     gradient_fn,
                     reduction="append",
                     gradient_kwargs=gradient_kwargs,
