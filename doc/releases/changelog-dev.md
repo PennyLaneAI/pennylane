@@ -110,7 +110,7 @@
 <h4>Always differentiable 📈</h4>
 
 * The Hadamard test gradient transform is now available via `qml.gradients.hadamard_grad`.
-  [#3625](https://github.com/PennyLaneAI/pennylane/pull/3625)
+  [(#3625)](https://github.com/PennyLaneAI/pennylane/pull/3625)
 
   `qml.gradients.hadamard_grad` is a hardware-compatible transform that calculates the
   gradient of a quantum circuit using the Hadamard test. Note that the device requires an
@@ -133,7 +133,7 @@
 
 * The gradient transform `qml.gradients.spsa_grad` is now registered as a
   differentiation method for QNodes.
-  [#3440](https://github.com/PennyLaneAI/pennylane/pull/3440)
+  [(#3440)](https://github.com/PennyLaneAI/pennylane/pull/3440)
 
   The SPSA gradient transform can now be used implicitly by marking a QNode
   as differentiable with SPSA. It can be selected via
