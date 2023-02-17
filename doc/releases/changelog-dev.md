@@ -659,6 +659,15 @@ To be merged this week
 * Lazy-loading in the `Dataset.read()` method is more universally supported.
   [(#3605)](https://github.com/PennyLaneAI/pennylane/pull/3605)
 
+<h4>Other</h4>
+
+* The `qchem.Molecule` class raises an error when the molecule has an odd number of electrons or 
+  when the spin multiplicity is not 1.
+  [(#3748)](https://github.com/PennyLaneAI/pennylane/pull/3748)
+
+* `transforms.fold_global` now supports non-integer values.
+  [(#3781)](https://github.com/PennyLaneAI/pennylane/pull/3781)
+
 <h3>Breaking changes</h3>
 
 * The argument `mode` in execution is replaced by the boolean `grad_on_execution` in the new execution pipeline.
@@ -841,6 +850,7 @@ To be merged this week
 
 This release contains contributions from (in alphabetical order):
 
+<<<<<<< HEAD
 Gian-Luca Anselmetti,
 Guillermo Alonso-Linaje,
 Juan Miguel Arrazola,
@@ -853,6 +863,7 @@ Isaac De Vlugt,
 Olivia Di Matteo,
 Lillian M. A. Frederiksen,
 Soran Jahangiri,
+Korbinian Kottmann,
 Christina Lee,
 Albert Mitjans Coma,
 Romain Moyard,
