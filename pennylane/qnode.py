@@ -98,7 +98,8 @@ class QNode:
               as a fallback.
 
             * ``"hadamard"``: Use the analytic hadamard gradient test
-              rule for all supported quantum operation arguments.
+              rule for all supported quantum operation arguments, more info in the documentation
+              :func:`qml.gradients.hadamard_grad <.gradients.hadamard_grad>`.
 
             * ``"finite-diff"``: Uses numerical finite-differences for all quantum operation
               arguments.

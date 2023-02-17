@@ -235,6 +235,8 @@ parameters.
 
 * ``"finite-diff"``: Use numerical finite-differences for all quantum operation arguments.
 
+* ``"hadamard"``: Use hadamard tests on the generators for all compatible quantum operations arguments.
+
 
 Device gradients
 ~~~~~~~~~~~~~~~~

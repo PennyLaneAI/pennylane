@@ -22,6 +22,7 @@ from pennylane.transforms.tape_expand import expand_invalid_trainable
 SUPPORTED_GRADIENT_KWARGS = [
     "approx_order",
     "argnum",
+    "aux_wire",
     "broadcast",
     "device_wires",
     "diagonal_shifts",

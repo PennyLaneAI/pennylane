@@ -88,6 +88,7 @@ def _hadamard_grad(
 
     This gradient transform can be applied directly to :class:`QNode <pennylane.QNode>` objects:
 
+    >>> qml.enable_return()
     >>> dev = qml.device("default.qubit", wires=2)
     >>> @qml.qnode(dev)
     ... def circuit(params):
@@ -137,6 +138,21 @@ def _hadamard_grad(
     ...     qml.RY(params[1], wires=0)
     ...     qml.RX(params[2], wires=0)
     ...     return qml.expval(qml.PauliZ(0))
+    >>> params = jax.numpy.array([0.1, 0.2, 0.3])
+    >>> jax.jacobian(circuit)(params)
+    [-0.3875172  -0.18884787 -0.38355704]
+
+    If you use custom wires on your device, you can also pass an auxiliary wire.
+
+    >>> qml.enable_return()
+    >>> dev_wires = ("a", "c")
+    >>> dev = qml.device("default.qubit", wires=dev_wires)
+    >>> @qml.qnode(dev, interface="jax", diff_method="hadamard", aux_wire="c", device_wires=dev_wires)
+    >>> def circuit(params):
+    ...    qml.RX(params[0], wires="a")
+    ...    qml.RY(params[1], wires="a")
+    ...    qml.RX(params[2], wires="a")
+    ...    return qml.expval(qml.PauliZ("a"))
     >>> params = jax.numpy.array([0.1, 0.2, 0.3])
     >>> jax.jacobian(circuit)(params)
     [-0.3875172  -0.18884787 -0.38355704]
@@ -286,13 +302,10 @@ def _expval_hadamard_grad(tape, argnum, aux_wire):
 
             new_tape = qml.tape.QuantumScript(ops=ops, measurements=measurements)
 
-            # Expand measurements only
-            # pylint: disable=invalid-unary-operand-type
-            new_tape = qml.tape.tape.expand_tape(
-                new_tape, stop_at=~qml.operation.is_measurement, expand_measurements=False
-            )
+            new_tape.expand()
             # pylint: disable=protected-access
-            new_tape._update_par_info()
+            new_tape._update()
+
             num_tape += 1
 
             g_tapes.append(new_tape)
