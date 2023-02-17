@@ -150,19 +150,18 @@ def compute_jvp_single(tangent, jac):
         L_1 = len(tangent.shape[1:])
         tangent = qml.math.reshape(tangent, (-1,))
         prod_l = tangent.shape[0]
+        shape = jac.shape
+        new_shape = shape[: len(shape) - L_1] + (prod_l,)
         jac = qml.math.cast(qml.math.convert_like(jac, tangent), tangent.dtype)
-        if L_1 != 0:
-            new_shape = (jac.shape[:-L_1]) + (prod_l,)
-            jac = qml.math.reshape(jac, new_shape)
+        jac = qml.math.reshape(jac, new_shape)
         return qml.math.tensordot(jac, tangent, [[-1], [0]])
 
+    L = [t.ndim for t in tangent]
     if isinstance(tangent, (tuple, list)) and any(t.ndim > 0 for t in tangent):
-        L = [t.ndim for t in tangent]
         tangent = [qml.math.reshape(t, (-1,)) for t in tangent]
         prod_l = [t.shape[0] for t in tangent]
         tangent = qml.math.hstack(tangent)
     else:
-        L = [0] * len(tangent)
         prod_l = [1] * len(tangent)
         tangent = qml.math.stack(tangent)
     new_shapes = [
