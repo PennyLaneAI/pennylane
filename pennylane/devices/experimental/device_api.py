@@ -30,7 +30,7 @@ QuantumTape_or_Batch = Union[QuantumTape, QuantumTapeBatch]
 
 
 # pylint: disable=unused-argument, no-self-use
-class QuantumDevice(abc.ABC):
+class Device(abc.ABC):
     """A device driver that can control one or more backends. A backend can be either a physical
     Quantum Processing Unit or a virtual one such as a simulator.
 
@@ -61,15 +61,15 @@ class QuantumDevice(abc.ABC):
     .. details::
         :title: Porting from the old interface
 
-        :meth:`~.Device.batch_execute` and :meth:`~.Device.execute` are now a single method, :meth:`~.QuantumDevice.execute`
+        :meth:`~.Device.batch_execute` and :meth:`~.Device.execute` are now a single method, :meth:`~.Device.execute`
 
-        :meth:`~.Device.batch_transform` and :meth:`~.Device.expand_fn` are now a single method, :meth:`~.QuantumDevice.preprocess`
+        :meth:`~.Device.batch_transform` and :meth:`~.Device.expand_fn` are now a single method, :meth:`~.Device.preprocess`
 
         Shot information is no longer stored on the device, but instead specified on individual input :class:`~.QuantumTape`.
 
         The old devices defined a :meth:`~.Device.capabilities` dictionary that defined characteristics of the devices and controlled various
         preprocessing and validation steps, such as ``"supports_broadcasting"``.  These capabilites should now be handled by the
-        :meth:`~.QuantumDevice.preprocess` method. For example, if a device does not support broadcasting, ``preprocess`` should
+        :meth:`~.Device.preprocess` method. For example, if a device does not support broadcasting, ``preprocess`` should
         split a quantum script with broadcasted parameters into a batch of quantum scripts. If the device does not support mid circuit
         measurements, then ``preprocess`` should apply :func:`~.defer_measurements`.  A set of default preprocessing steps will be available
         to make a seemless transition to the new interface.
@@ -78,7 +78,7 @@ class QuantumDevice(abc.ABC):
         supported measurement processes, and various capabilities.
 
         Utility functions will be added to the ``devices`` module to query whether or not the device driver can do certain things, such
-        as ``devices.supports_operator(op, dev, native=True)``. These functions will work by checking the behaviour of :meth:`~.QuantumDevice.preprocess`
+        as ``devices.supports_operator(op, dev, native=True)``. These functions will work by checking the behaviour of :meth:`~.Device.preprocess`
         to certain inputs.
 
         Versioning should be specified by the package containing the device. If an external package includes a PennyLane device,
@@ -96,6 +96,8 @@ class QuantumDevice(abc.ABC):
         * ``gradient_method``: A device can choose to have native support for any type of gradient method. If the method
           :meth:`~.supports_derivatives` returns ``True`` for a particular gradient method, it will be treated as a device
           derivative and not handled by pennylane core code.
+
+        * ``gradient_keyword_arguments``:
 
         * ``derivative_order``: Relevant for requested device derivatives.
 
@@ -166,7 +168,7 @@ class QuantumDevice(abc.ABC):
         """
 
         def blank_postprocessing_fn(res):
-            """Identity postprocessing function created in QuantumDevice preprocessing.
+            """Identity postprocessing function created in Device preprocessing.
 
             Args:
                 res (tensor-like): A result object
@@ -295,7 +297,7 @@ class QuantumDevice(abc.ABC):
 
         Adjoint differentiation will only be supported for circuits with expectation value measurements.
         If a circuit is provided and it cannot be converted to a form supported by differentiation method by
-        :meth:`~.QuantumDevice.preprocess`, then ``supports_derivatives`` should return False.
+        :meth:`~.Device.preprocess`, then ``supports_derivatives`` should return False.
 
         >>> circuit = qml.tape.QuantumScript([qml.RX(2.0, wires=0)], [qml.probs(wires=(0,1))])
         >>> dev.supports_derivatives(config, circuit=circuit)
@@ -305,7 +307,7 @@ class QuantumDevice(abc.ABC):
         that is supported, it should still return ``True``.  For example, :class:`~.Rot` gates are not natively
         supported by adjoint differentation, as they do not have a generator, but they can be compiled into
         operations supported by adjoint differentiation. Therefore this method may reproduce compilation
-        and validation steps performed by :meth:`~.QuantumDevice.preprocess`.
+        and validation steps performed by :meth:`~.Device.preprocess`.
 
         >>> circuit = qml.tape.QuantumScript([qml.Rot(1.2, 2.3, 3.4, wires=0)], [qml.expval(qml.PauliZ(0))])
         >>> dev.supports_derivatives(circuit=circuit)
@@ -324,12 +326,12 @@ class QuantumDevice(abc.ABC):
 
         """
         if execution_config is None:
-            return self.compute_derivatives != QuantumDevice.compute_derivatives
+            return self.compute_derivatives != Device.compute_derivatives
 
         if execution_config.gradient_method != "device" or execution_config.derivative_order != 1:
             return False
 
-        return self.compute_derivatives != QuantumDevice.compute_derivatives
+        return self.compute_derivatives != Device.compute_derivatives
 
     def compute_derivatives(
         self,
@@ -442,7 +444,7 @@ class QuantumDevice(abc.ABC):
         Returns:
             Tuple, Tuple: A numeric result of execution and of computing the jacobian vector product
 
-        See :meth:`~.QuantumDevice.execute` and :meth:`~.QuantumDevice.compute_jvp` for more information on each method.
+        See :meth:`~.Device.execute` and :meth:`~.Device.compute_jvp` for more information on each method.
         """
         return self.execute(circuits, execution_config), self.compute_jvp(
             circuits, tangents, execution_config
@@ -460,7 +462,7 @@ class QuantumDevice(abc.ABC):
         Default behaviour assumes this to be ``True`` if :meth:`~.compute_jvp` is overridden.
 
         """
-        return self.compute_jvp != QuantumDevice.compute_jvp
+        return self.compute_jvp != Device.compute_jvp
 
     def compute_vjp(
         self,
@@ -518,7 +520,7 @@ class QuantumDevice(abc.ABC):
         Returns:
             Tuple, Tuple: the result of executing the scripts and the numeric result of computing the vector jacobian product
 
-        See :meth:`~.QuantumDevice.execute` and :meth:`~.QuantumDevice.compute_vjp` for more information.
+        See :meth:`~.Device.execute` and :meth:`~.Device.compute_vjp` for more information.
         """
         return self.execute(circuits, execution_config), self.compute_vjp(
             circuits, cotangents, execution_config
@@ -535,4 +537,4 @@ class QuantumDevice(abc.ABC):
 
         Default behaviour assumes this to be ``True`` if :meth:`~.vjp` is overridden.
         """
-        return self.compute_vjp != QuantumDevice.compute_vjp
+        return self.compute_vjp != Device.compute_vjp

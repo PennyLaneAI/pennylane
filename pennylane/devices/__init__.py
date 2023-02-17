@@ -1,4 +1,4 @@
-# Copyright 2018-2021 Xanadu Quantum Technologies Inc.
+# Copyright 2018-2023 Xanadu Quantum Technologies Inc.
 
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -38,19 +38,22 @@ to verify and test quantum gradient computations.
 Next generation devices
 -----------------------
 
-:class:`~.QuantumDevice` in an experimental interface for the next generation of devices that
+:class:`Device` in an experimental interface for the next generation of devices that
 will eventually replace :class:`~.Device` and :class:`~.QubitDevice`.
+
+While the current interface :`~.Device` is imported top level, the new :class:`Device` is
+only accesssible from the ``pennylane.devices.experimental`` submodule.
 
 .. currentmodule:: pennylane.devices
 .. autosummary::
     :toctree: api
 
     ExecutionConfig
-    QuantumDevice
+    Device
 
 """
 
-from .device_api import QuantumDevice
+from . import experimental
 
 # DefaultQubitTF and DefaultQubitAutograd not imported here since this
 # would lead to an automatic import of tensorflow and autograd, which are
@@ -59,4 +62,3 @@ from .default_qubit import DefaultQubit
 from .default_gaussian import DefaultGaussian
 from .default_mixed import DefaultMixed
 from .null_qubit import NullQubit
-from .execution_config import ExecutionConfig
