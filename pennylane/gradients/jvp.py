@@ -25,7 +25,7 @@ from pennylane.measurements import ProbabilityMP
 
 
 def compute_jvp_single(tangent, jac):
-    """Convenience function to compute the Jacobian vector product for a given
+    r"""Convenience function to compute the Jacobian vector product for a given
     tangent vector and a Jacobian for a single measurement tape.
 
     Args:
