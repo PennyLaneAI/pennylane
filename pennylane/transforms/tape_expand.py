@@ -249,7 +249,10 @@ hadamard_comp_list = [
 
 expand_invalid_trainable_hadamard_gradient = create_expand_fn(
     depth=10,
-    stop_at=not_tape | is_measurement | (~is_trainable) | _is_hadamard_grad_compatible,
+    stop_at=not_tape
+    | is_measurement
+    | (~is_trainable)
+    | (_is_hadamard_grad_compatible & has_grad_method),
     docstring=_expand_invalid_trainable_doc_hadamard,
 )
 
