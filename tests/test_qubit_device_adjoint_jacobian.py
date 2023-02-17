@@ -418,6 +418,7 @@ class TestAdjointJacobian:
         ):
             res = dev.adjoint_jacobian(tape)
 
+
 class TestAdjointJacobianQNode:
     """Test QNode integration with the adjoint_jacobian method"""
 

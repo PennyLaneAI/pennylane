@@ -88,16 +88,17 @@ def _check_adjoint_diffability(tape, device):
 
         if not hasattr(m.obs, "base_name"):
             m.obs.base_name = None  # This is needed for when the observable is a tensor product
-            
-    if self.shot_vector is not None:
-            raise qml.QuantumFunctionError("Adjoint does not support shot vectors.")
-            
+
+    if device.shot_vector is not None:
+        raise qml.QuantumFunctionError("Adjoint does not support shot vectors.")
+
     if device.shots is not None:
         warnings.warn(
             "Requested adjoint differentiation to be computed with finite shots."
             " The derivative is always exact when using the adjoint differentiation method.",
             UserWarning,
         )
+
 
 def _get_trainable_params_wo_obs(tape):
     """Obtain the trainable parameters of a tape, excluding trainable parameters of observables.
