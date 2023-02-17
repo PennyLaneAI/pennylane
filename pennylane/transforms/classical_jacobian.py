@@ -178,7 +178,7 @@ def classical_jacobian(qnode, argnum=None, expand_fn=None, trainable_only=True):
 
             jac = _jacobian(*args, **kwargs)
 
-        if qnode.interface == "jax":
+        if qnode.interface in ["jax", "jax-jit"]:
             import jax
 
             argnum = 0 if wrapper_argnum is None else wrapper_argnum
