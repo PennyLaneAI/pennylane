@@ -2018,8 +2018,7 @@ class TestParameterShiftRule:
         tape = qml.tape.QuantumScript.from_queue(q)
         tape.trainable_params = [0, 1]
         tapes, fn = qml.gradients.param_shift(tape, gradient_recipes=gradient_recipes)
-        for tape in tapes:
-            print(tape.measurements)
+
         # 2 operations x 2 shifted positions + 1 unshifted term overall    <-- <H>
         # + 2 operations x 2 shifted positions + 1 unshifted term          <-- <H^2>
         assert len(tapes) == (2 * 2 + 1) + (2 * 2 + 1)
@@ -3336,7 +3335,6 @@ class TestQnodeAutograd:
         res = qml.gradients.param_shift(circuit)(x)
 
         res_expected = qml.jacobian(circuit)(x)
-        print(res)
 
         assert res.shape == res_expected.shape
         assert np.allclose(res, res_expected)
@@ -3376,8 +3374,6 @@ class TestQnodeAutograd:
 
         res = qml.gradients.param_shift(circuit)(x)
         res_expected = qml.jacobian(circuit)(x)
-
-        print(res)
 
         assert np.allclose(res, res_expected)
 
