@@ -629,6 +629,10 @@
 * `transforms.fold_global` now supports non-integer values.
   [(#3781)](https://github.com/PennyLaneAI/pennylane/pull/3781)
 
+* Updated `qml.draw` and `qml.draw_mpl` to draw any quantum function,
+  which allows for visualizing only part of a complete circuit/QNode.
+  [(#3760)](https://github.com/PennyLaneAI/pennylane/pull/3760)
+
 <h3>Breaking changes</h3>
 
 * The argument `mode` in execution is replaced by the boolean `grad_on_execution` in the new execution pipeline.
