@@ -14,16 +14,16 @@
 """
 Unit tests for the available built-in parametric qubit operations.
 """
-from functools import reduce
-import pytest
 import copy
+from functools import reduce
+
 import numpy as np
-from pennylane import numpy as npp
+import pytest
+from gate_data import ControlledPhaseShift, CPhaseShift00, CPhaseShift01, CPhaseShift10, Z
 
 import pennylane as qml
+from pennylane import numpy as npp
 from pennylane.wires import Wires
-
-from gate_data import ControlledPhaseShift, CPhaseShift00, CPhaseShift01, CPhaseShift10, Z
 
 PARAMETRIZED_OPERATIONS = [
     qml.RX(0.123, wires=0),
@@ -3066,8 +3066,8 @@ class TestPauliRot:
         expected = qml.PauliZ("a") @ qml.PauliY(7)
 
         assert coeff == -0.5
-        assert gen.obs[0].name == expected.obs[0].name
-        assert gen.obs[1].wires == expected.obs[1].wires
+        assert gen.operands[0].name == expected.obs[0].name
+        assert gen.operands[1].wires == expected.obs[1].wires
 
 
 class TestMultiRZ:
