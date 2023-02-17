@@ -753,7 +753,7 @@ class QNode:
         else:
             measurement_processes = self._qfunc_output
 
-        if not all(
+        if not measurement_processes or not all(
             isinstance(m, qml.measurements.MeasurementProcess) for m in measurement_processes
         ):
             raise qml.QuantumFunctionError(
