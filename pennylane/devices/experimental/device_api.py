@@ -72,7 +72,7 @@ class Device(abc.ABC):
         :meth:`~.Device.preprocess` method. For example, if a device does not support broadcasting, ``preprocess`` should
         split a quantum script with broadcasted parameters into a batch of quantum scripts. If the device does not support mid circuit
         measurements, then ``preprocess`` should apply :func:`~.defer_measurements`.  A set of default preprocessing steps will be available
-        to make a seemless transition to the new interface.
+        to make a seamless transition to the new interface.
 
         A class will be provided to easily construct default preprocessing steps from supported operations, supported observables,
         supported measurement processes, and various capabilities.
@@ -88,7 +88,7 @@ class Device(abc.ABC):
     .. details::
         :title: Execution Configuration
 
-        Execution config properties most relevant for devices are:
+        Execution config properties related to configuring a device include:
 
         * ``device_options``: A dictionary of device specific options. For example, the python device may have ``multiprocessing_mode``
           as a key. These should be documented in the class docstring.
@@ -240,7 +240,7 @@ class Device(abc.ABC):
             measurement value in a numpy array. ``shape`` currently accepts a device, as historically devices
             stored shot information. In the future, this method will accept an ``ExecutionConfig`` instead.
 
-            >>> qs = qml.tape.QuantumTape(measurements=qml.expval(qml.PauliZ(0))])
+            >>> tape = qml.tape.QuantumTape(measurements=qml.expval(qml.PauliZ(0))])
             >>> qs.shape(dev)
             ()
             >>> dev.execute(qs)
@@ -296,7 +296,7 @@ class Device(abc.ABC):
         **Example:**
 
         For example, the Python device will support device differentiation via the adjoint differentiation algorithm
-        if the order is ``1`` and the execution occurs with no shots ``shots=None``.
+        if the order is ``1`` and the execution occurs with no shots (``shots=None``).
 
         >>> config = ExecutionConfig(derivative_order=1, shots=None, gradient_method="adjoint")
         >>> dev.supports_derivatives(config)
@@ -331,7 +331,7 @@ class Device(abc.ABC):
         **Backpropagation:**
 
         This method is also used be to validate support for backpropagation derivatives. Backpropagation
-        is only supported if the devices is transparent to the machine learning framework from start to finish.
+        is only supported if the device is transparent to the machine learning framework from start to finish.
 
         >>> config = ExecutionConfig(gradient_method="backprop", framework="torch")
         >>> python_device.supports_derivatives(config)
@@ -550,6 +550,6 @@ class Device(abc.ABC):
             execution_config (ExecutionConfig): A description of the hyperparameters for the desired computation.
             circuit (None, QuantumTape): A specific circuit to check differentation for.
 
-        Default behaviour assumes this to be ``True`` if :meth:`~.vjp` is overridden.
+        Default behaviour assumes this to be ``True`` if :meth:`~.compute_vjp` is overridden.
         """
         return self.compute_vjp != Device.compute_vjp
