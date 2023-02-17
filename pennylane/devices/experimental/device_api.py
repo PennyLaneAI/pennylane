@@ -97,7 +97,7 @@ class Device(abc.ABC):
           :meth:`~.supports_derivatives` returns ``True`` for a particular gradient method, it will be treated as a device
           derivative and not handled by pennylane core code.
 
-        * ``gradient_keyword_arguments``:
+        * ``gradient_keyword_arguments``: Options for the gradient method.
 
         * ``derivative_order``: Relevant for requested device derivatives.
 
@@ -284,6 +284,13 @@ class Device(abc.ABC):
         For example, a device can natively calculate ``"parameter-shift"`` derivatives, in which case :meth:`~.compute_derivatives`
         will be called for the derivative instead of :meth:`~.execute` with a batch of circuits.
 
+        >>> config = ExecutionConfig(gradient_method="parameter-shift")
+        >>> custom_device.supports_derivatives(config)
+        True
+
+        In this case, :meth:`~.compute_derivatives` or :meth:`~.execute_and_compute_derivatives` will be called instead of :meth:`~.execute` with
+        a batch of circuits.
+
         If ``circuit`` is not provided, then the method should return whether or not device derivatives exist for **any** circuit.
 
         **Example:**
@@ -305,6 +312,7 @@ class Device(abc.ABC):
         If a circuit is provided and it cannot be converted to a form supported by differentiation method by
         :meth:`~.Device.preprocess`, then ``supports_derivatives`` should return False.
 
+        >>> config = ExecutionConfig(derivative_order=1, shots=None, gradient_method="adjoint")
         >>> circuit = qml.tape.QuantumScript([qml.RX(2.0, wires=0)], [qml.probs(wires=(0,1))])
         >>> dev.supports_derivatives(config, circuit=circuit)
         False
@@ -315,8 +323,9 @@ class Device(abc.ABC):
         operations supported by adjoint differentiation. Therefore this method may reproduce compilation
         and validation steps performed by :meth:`~.Device.preprocess`.
 
+        >>> config = ExecutionConfig(derivative_order=1, shots=None, gradient_method="adjoint")
         >>> circuit = qml.tape.QuantumScript([qml.Rot(1.2, 2.3, 3.4, wires=0)], [qml.expval(qml.PauliZ(0))])
-        >>> dev.supports_derivatives(circuit=circuit)
+        >>> dev.supports_derivatives(config, circuit=circuit)
         True
 
         **Backpropagation:**
