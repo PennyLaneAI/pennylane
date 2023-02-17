@@ -656,13 +656,13 @@
 
 <h3>Breaking changes</h3>
 
-* The argument `mode` in execution is replaced by the boolean `grad_on_execution` in the new execution pipeline.
+* The argument `mode` in execution has been replaced by the boolean `grad_on_execution` in the new execution pipeline.
   [(#3723)](https://github.com/PennyLaneAI/pennylane/pull/3723)
 
-* `qml.VQECost` is removed.
+* `qml.VQECost` has been removed.
   [(#3735)](https://github.com/PennyLaneAI/pennylane/pull/3735)
 
-* The default interface is now `auto`. There is no need to specify the interface anymore! It is automatically
+* The default interface is now `auto`. There is no need to specify the interface anymore; it is automatically
   determined by checking your QNode parameters.
   [(#3677)](https://github.com/PennyLaneAI/pennylane/pull/3677)
 
@@ -693,13 +693,13 @@
 
   It comes with the fact that the interface is determined during the QNode call instead of the
   initialization. It means that the `gradient_fn` and `gradient_kwargs` are only defined on the QNode at the beginning
-  of the call. As well, without specifying the interface it is not possible to guarantee that the device will not be changed
+  of the call. On top of this, without specifying the interface it is not possible to guarantee that the device will not be changed
   during the call if you are using backprop(`default.qubit` to `default.qubit,jax`e.g.) whereas before it was happening at
   initialization, therefore you should not try to track the device without specifying the interface.
 
 * The tape method `get_operation` can also now return the operation index in the tape, and it can be
   activated by setting the `return_op_index` to `True`: `get_operation(idx, return_op_index=True)`. It will become
-  the default in version 0.30.
+  the default in version `0.30`.
   [(#3667)](https://github.com/PennyLaneAI/pennylane/pull/3667)
 
 * `Operation.inv()` and the `Operation.inverse` setter have been removed. Please use `qml.adjoint` or `qml.pow` instead.
@@ -747,7 +747,7 @@
   Instead, one should use the `~.Hamiltonian.sparse_matrix` method.
   [(#3585)](https://github.com/PennyLaneAI/pennylane/pull/3585)
 
-* Deprecate the `collections` module.
+* The `collections` module has been deprecated.
   [(#3686)](https://github.com/PennyLaneAI/pennylane/pull/3686)
 
 * `qml.op_sum` has been deprecated. Users should use `qml.sum` instead.
@@ -757,15 +757,15 @@
   This new function changes the sign of the given parameter.
   [(#3706)](https://github.com/PennyLaneAI/pennylane/pull/3706)
 
-* `ApproxTimeEvolution` has been deprecated. Please use `qml.evolve` instead.
+* `qml.ApproxTimeEvolution` has been deprecated. Please use `qml.evolve` instead.
   [(#3755)](https://github.com/PennyLaneAI/pennylane/pull/3755)
 
 <h3>Documentation</h3>
 
-* Organizes the module for documentation for `operation`.
+* The documentation for `qml.operation` has been improved.
   [(#3664)](https://github.com/PennyLaneAI/pennylane/pull/3664)
 
-* Updated the code example in `qml.SparseHamiltonian` with the correct wire range.
+* The code example in `qml.SparseHamiltonian` has been updated with the correct wire range.
   [(#3643)](https://github.com/PennyLaneAI/pennylane/pull/3643)
 
 * A hyperlink has been added in the text for a URL in the `qml.qchem.mol_data` docstring.
@@ -787,7 +787,7 @@
 * Local random number generators are now used where possible to avoid mutating the global random state.
   [(#3624)](https://github.com/PennyLaneAI/pennylane/pull/3624)
 
-* Handles breaking the `networkx` version change by selectively skipping a `qcut` TensorFlow-JIT test.
+* The `networkx` version change being broken has been fixed by selectively skipping a `qcut` TensorFlow-JIT test.
   [(#3609)](https://github.com/PennyLaneAI/pennylane/pull/3609)
   [(#3619)](https://github.com/PennyLaneAI/pennylane/pull/3619)
 
@@ -813,23 +813,23 @@
 * `Tensor.has_matrix` is now set to `True`.
   [(#3647)](https://github.com/PennyLaneAI/pennylane/pull/3647)
 
-* Fixed typo in the example of IsingZZ gate decomposition
+* Fixed typo in the example of `qml.IsingZZ` gate decomposition.
   [(#3676)](https://github.com/PennyLaneAI/pennylane/pull/3676)
 
 * Fixed a bug that made tapes/qnodes using `qml.Snapshot` incompatible with `qml.drawer.tape_mpl`.
   [(#3704)](https://github.com/PennyLaneAI/pennylane/pull/3704)
 
-* `Tensor._pauli_rep` is set to `None` during initialization. Add `Tensor.data` setter.
+* `Tensor._pauli_rep` is set to `None` during initialization and `Tensor.data` has been added to its setter.
   [(#3722)](https://github.com/PennyLaneAI/pennylane/pull/3722)
 
-* Redirect `qml.math.ndim` to `jnp.ndim` when using it on a jax tensor.
+* `qml.math.ndim` has been redirected to `jnp.ndim` when using it on a `jax` tensor.
   [(#3730)](https://github.com/PennyLaneAI/pennylane/pull/3730)
 
-* Implementations of `marginal_prob` (and subsequently, `qml.probs`) now return
+* Implementations of `qml.marginal_prob` (and subsequently, `qml.probs`) now return
   probabilities with the expected wire order.
   [(#3753)](https://github.com/PennyLaneAI/pennylane/pull/3753)
 
-* Ensure that a QNode does not return an empty iterable.
+* Empty iterables can no longer be retured from QNodes.
   [(#3769)](https://github.com/PennyLaneAI/pennylane/pull/3769)
 
 <h3>Contributors</h3>
