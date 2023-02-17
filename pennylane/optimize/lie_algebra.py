@@ -16,6 +16,7 @@ import warnings
 
 import numpy as np
 from scipy.sparse.linalg import expm
+
 import pennylane as qml
 
 
@@ -59,11 +60,11 @@ def append_time_evolution(tape, riemannian_gradient, t, n, exact=False):
         qml.apply(obj)
     if exact:
         qml.QubitUnitary(
-            expm(-1j * t * qml.utils.sparse_hamiltonian(riemannian_gradient).toarray()),
+            expm(-1j * t * riemannian_gradient.sparse_matrix().toarray()),
             wires=range(len(riemannian_gradient.wires)),
         )
     else:
-        qml.templates.ApproxTimeEvolution(riemannian_gradient, t, n)
+        qml.evolve(riemannian_gradient, coeff=t, num_steps=n)
 
     for obj in tape.measurements:
         qml.apply(obj)

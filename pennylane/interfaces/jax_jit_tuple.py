@@ -218,7 +218,7 @@ def _execute_bwd_tuple(
         # pylint: disable=unused-variable
         params = primals[0]
 
-        # Select the trainable params
+        # Select the trainable params. Non-trainable params contribute a 0 gradient.
         trainable_params = [t.trainable_params for t in tapes]
 
         multi_measurements = [len(tape.measurements) > 1 for tape in tapes]
