@@ -2797,7 +2797,7 @@ class TestHamiltonianExpvalGradients:
         res = jax.jacobian(self.cost_fn, argnums=1)(weights, coeffs1, coeffs2, dev, broadcast)
         assert np.allclose(res[:, -1], np.zeros([2, 1, 1]), atol=tol, rtol=0)
 
-
+interfaces = ["jax"]
 @pytest.mark.parametrize("argnums", [[0], [1], [0, 1]])
 @pytest.mark.parametrize("interface", interfaces)
 @pytest.mark.jax
