@@ -20,7 +20,7 @@ from scipy.sparse import csr_matrix
 
 import pennylane as qml
 from pennylane.devices.qubit import simulate
-from pennylane.devices.qubit.measure import get_measurement_function, measure
+from pennylane.devices.qubit.measure import measure
 
 
 class TestCurrentlyUnsupportedCases:
@@ -30,7 +30,7 @@ class TestCurrentlyUnsupportedCases:
 
         state = 0.5 * np.ones((2, 2))
         with pytest.raises(NotImplementedError):
-            _ = get_measurement_function(qml.sample(wires=0), state)
+            _ = measure(qml.sample(wires=0), state)
 
 
 class TestMeasurements:
@@ -106,32 +106,42 @@ class TestMeasurements:
         assert np.allclose(res, expected)
 
     @pytest.mark.parametrize(
-        "obs, expected",
+        "meas, expected",
         [
-            (qml.PauliZ(0), "state_diagonalizing_gates"),
-            (qml.s_prod(2.5, qml.prod(qml.PauliZ(0), qml.PauliX(1))), "state_diagonalizing_gates"),
+            (qml.state(), "state_measurement_process"),
+            (qml.probs(wires=[0, 1]), "state_measurement_process"),
+            (qml.density_matrix(wires=[0]), "state_measurement_process"),
+            (qml.expval(qml.PauliZ(0)), "state_diagonalizing_gates"),
             (
-                qml.Hamiltonian([-0.5, 2], [qml.PauliY(0), qml.PauliZ(0)]),
+                qml.var(qml.s_prod(2.5, qml.prod(qml.PauliZ(0), qml.PauliX(1)))),
+                "state_diagonalizing_gates",
+            ),
+            (
+                qml.expval(qml.Hamiltonian([-0.5, 2], [qml.PauliY(0), qml.PauliZ(0)])),
                 "state_hamiltonian_expval",
             ),
             (
-                qml.SparseHamiltonian(
-                    csr_matrix(-0.5 * qml.PauliY(0).matrix() + 2 * qml.PauliZ(0).matrix()),
-                    wires=[0],
+                qml.expval(
+                    qml.SparseHamiltonian(
+                        csr_matrix(-0.5 * qml.PauliY(0).matrix() + 2 * qml.PauliZ(0).matrix()),
+                        wires=[0],
+                    )
                 ),
                 "state_hamiltonian_expval",
             ),
             (
-                qml.sum(*(qml.prod(qml.PauliY(i), qml.PauliZ(i + 1)) for i in range(7))),
+                qml.expval(
+                    qml.sum(*(qml.prod(qml.PauliY(i), qml.PauliZ(i + 1)) for i in range(7)))
+                ),
                 "state_hamiltonian_expval",
             ),
-            (qml.sum(qml.PauliY(0), qml.PauliZ(0)), "state_diagonalizing_gates"),
-            (qml.sum(*(qml.PauliZ(i) for i in range(8))), "state_diagonalizing_gates"),
+            (qml.expval(qml.sum(qml.PauliY(0), qml.PauliZ(0))), "state_diagonalizing_gates"),
+            (qml.expval(qml.sum(*(qml.PauliZ(i) for i in range(8)))), "state_diagonalizing_gates"),
         ],
     )
-    def test_correct_expval_measurement_used(self, obs, expected, mocker):
+    def test_correct_expval_measurement_used(self, meas, expected, mocker):
         """Test that the correct measurement function is used for a given observable."""
-        qs = qml.tape.QuantumScript(measurements=[qml.expval(obs)])
+        qs = qml.tape.QuantumScript(measurements=[meas])
         spy = mocker.spy(qml.devices.qubit.measure, expected)
         _ = simulate(qs)
 

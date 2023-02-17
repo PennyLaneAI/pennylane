@@ -58,7 +58,6 @@ def state_hamiltonian_expval(measurementprocess: ExpectationMP, state: TensorLik
     Returns:
         TensorLike: the result of the measurement
     """
-    # Add case for backprop later
     total_wires = len(state.shape)
     Hmat = measurementprocess.obs.sparse_matrix(wire_order=list(range(total_wires)))
     _state = math.toarray(state).flatten()
@@ -68,9 +67,25 @@ def state_hamiltonian_expval(measurementprocess: ExpectationMP, state: TensorLik
     ket = csr_matrix(_state[..., None])
     new_ket = csr_matrix.dot(Hmat, ket)
     res = csr_matrix.dot(bra, new_ket).toarray()[0]
-    # Add broadcasting later
 
     return math.real(math.squeeze(res))
+
+
+def state_measurement_process(
+    measurementprocess: StateMeasurement, state: TensorLike
+) -> TensorLike:
+    """Dispatcher to `StateMeasurement.process_state` for obtaining measurement outcomes
+
+    Args:
+        measurementprocess (StateMeasurement): measurement to apply to the state
+        state (TensorLike): state to apply the measurement to
+
+    Returns:
+        TensorLike: the result of the measurement
+    """
+    total_indices = len(state.shape)
+    wires = Wires(range(total_indices))
+    return measurementprocess.process_state(math.flatten(state), wires)
 
 
 def get_measurement_function(
@@ -87,15 +102,7 @@ def get_measurement_function(
     if isinstance(measurementprocess, StateMeasurement):
         if measurementprocess.obs is None:
             # no need to apply diagonalizing gates
-
-            def process_state_wrapper(measurementprocess, state):
-                """Wrapper around measurementprocess.process_state to be consistent with
-                function interface."""
-                total_indices = len(state.shape)
-                wires = Wires(range(total_indices))
-                return measurementprocess.process_state(math.flatten(state), wires)
-
-            return process_state_wrapper
+            return state_measurement_process
 
         if isinstance(measurementprocess, ExpectationMP) and measurementprocess.obs.name in (
             "Hamiltonian",
