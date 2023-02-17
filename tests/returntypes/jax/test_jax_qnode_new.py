@@ -426,7 +426,7 @@ class TestVectorValuedQNode:
             np.random.seed(SEED_FOR_SPSA)
             tol = TOL_FOR_SPSA
 
-        num_wires = 3
+        num_wires = 2
 
         if diff_method == "hadamard":
             num_wires = 3
@@ -1421,7 +1421,7 @@ class TestTapeExpansion:
     ):
         """Test that a *supported* operation with no gradient recipe is only
         expanded for parameter-shift and finite-differences when it is trainable."""
-        if diff_method not in ("parameter-shift", "finite-diff", "spsa", "hadamars"):
+        if diff_method not in ("parameter-shift", "finite-diff", "spsa", "hadamard"):
             pytest.skip("Only supports gradient transforms")
 
         num_wires = 1

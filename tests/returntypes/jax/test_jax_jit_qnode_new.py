@@ -682,7 +682,7 @@ class TestVectorValuedQNode:
         if diff_method == "adjoint":
             pytest.skip("Adjoint does not support probs")
         elif diff_method == "hadamard":
-            pytest.skip("Adjoint does not support var")
+            pytest.skip("Hadamard does not support var")
         elif diff_method == "spsa":
             gradient_kwargs = {"sampler_seed": SEED_FOR_SPSA}
             tol = TOL_FOR_SPSA

@@ -2172,7 +2172,7 @@ class TestReturn:
             pytest.skip("Test does not supports adjoint because second order diff.")
 
         if diff_method == "hadamard":
-            pytest.skip("Test does not support hadamard beecause of variance..")
+            pytest.skip("Test does not support hadamard because of variance.")
 
         par_0 = tf.Variable(0.1, dtype=tf.float64)
         par_1 = tf.Variable(0.2, dtype=tf.float64)
@@ -2208,7 +2208,7 @@ class TestReturn:
             pytest.skip("Test does not supports adjoint because second order diff.")
 
         if diff_method == "hadamard":
-            pytest.skip("Test does not support hadamard because of variance..")
+            pytest.skip("Test does not support hadamard because of variance.")
 
         dev = qml.device(dev_name, wires=2)
 
@@ -2316,7 +2316,7 @@ class TestReturn:
         if diff_method == "adjoint":
             pytest.skip("Test does not supports adjoint because second order diff.")
         if diff_method == "hadamard":
-            pytest.skip("Test does not support hadamard because of variance..")
+            pytest.skip("Test does not support hadamard because of variance.")
 
         par_0 = tf.Variable(0.1, dtype=tf.float64)
         par_1 = tf.Variable(0.2, dtype=tf.float64)
@@ -2352,7 +2352,7 @@ class TestReturn:
         if diff_method == "adjoint":
             pytest.skip("Test does not supports adjoint because second order diff.")
         if diff_method == "hadamard":
-            pytest.skip("Test does not support hadamard because of variance..")
+            pytest.skip("Test does not support hadamard because of variance.")
 
         dev = qml.device(dev_name, wires=2)
 
