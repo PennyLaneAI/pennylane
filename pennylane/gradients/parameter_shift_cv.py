@@ -501,7 +501,8 @@ def param_shift_cv(
             and the tuple should match the number of frequencies for that parameter.
             If unspecified, equidistant shifts are assumed.
         gradient_recipes (tuple(list[list[float]] or None)): List of gradient recipes
-            for the parameter-shpift method. One gradient recipe must be provided
+            for the parameter-shift method. One gradient recipe must be provided
+
             per trainable parameter.
 
             This is a tuple with one nested list per parameter. For
