@@ -866,15 +866,6 @@ def _param_shift_hessian_tuple(
         )
         return _no_trainable_grad_new(tape)
 
-    # For Jax the argnum defines the tape trainable parameters (it does not work for an array argnum).
-    if (
-        argnum is not None
-        and not isinstance(argnum, np.ndarray)
-        and not tape.trainable_params
-        and qml.math.get_interface(*tape.data) in ["jax", "jax-jit"]
-    ):
-        tape.trainable_params = argnum
-
     bool_argnum = _process_argnum(argnum, tape)
 
     compare_diag_to = qml.math.sum(qml.math.diag(bool_argnum))

@@ -819,7 +819,7 @@ class TestFiniteDiffGradients:
 
 
 @pytest.mark.parametrize("argnums", [[0], [1], [0, 1]])
-@pytest.mark.parametrize("interface", interfaces)
+@pytest.mark.parametrize("interface", ["jax"])
 @pytest.mark.parametrize("approx_order", [2, 4])
 @pytest.mark.parametrize("strategy", ["forward", "backward", "center"])
 @pytest.mark.jax
@@ -897,6 +897,9 @@ class TestJaxArgnums:
 
     def test_hessian(self, argnums, interface, approx_order, strategy):
         import jax
+        from jax.config import config
+
+        config.update("jax_enable_x64", True)
 
         dev = qml.device("default.qubit", wires=2)
 
@@ -925,5 +928,5 @@ class TestJaxArgnums:
             res = res[0]
 
         for r, r_e in zip(res, res_expected[0]):
-            tol = 10e-1
+            tol = 10e-6
             assert np.allclose(r, r_e, atol=tol)

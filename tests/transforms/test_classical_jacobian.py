@@ -523,6 +523,8 @@ class_jacs = [
 @pytest.mark.jax
 @pytest.mark.parametrize("diff_method", ["backprop", "parameter-shift"])
 class TestJax:
+    """Class to test Jax integration with classical Jacobian."""
+
     interfaces = ["jax"]
 
     @pytest.mark.parametrize("circuit, args, expected_jac", zip(circuits, all_args, class_jacs))
