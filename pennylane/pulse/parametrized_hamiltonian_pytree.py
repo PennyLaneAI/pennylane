@@ -35,7 +35,7 @@ class ParametrizedHamiltonianPytree:
     coeffs_parametrized: Tuple[Callable]
 
     @staticmethod
-    def from_hamiltonian(H: ParametrizedHamiltonian, dense: bool = False, wire_order=None):
+    def from_hamiltonian(H: ParametrizedHamiltonian, *, dense: bool = False, wire_order=None):
         """Convert a ``ParametrizedHamiltonian`` into a jax pytree object.
 
         Args:
