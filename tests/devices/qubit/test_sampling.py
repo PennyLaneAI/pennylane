@@ -13,6 +13,7 @@
 # limitations under the License.
 """Unit tests for sample_state in devices/qubit."""
 
+from random import shuffle
 import pytest
 
 import pennylane as qml
@@ -20,6 +21,30 @@ from pennylane import numpy as np
 from pennylane.devices.qubit import sample_state
 
 two_qubit_state = np.array([[0, 1j], [-1, 0]]) / np.sqrt(2)
+APPROX_ATOL = 0.01
+
+
+@pytest.fixture(name="init_state")
+def fixture_init_state():
+    """Generates a random initial state"""
+
+    def _init_state(n):
+        """random initial state"""
+        state = np.random.random([1 << n]) + np.random.random([1 << n]) * 1j
+        state /= np.linalg.norm(state)
+        return state.reshape((2,) * n)
+
+    return _init_state
+
+
+def samples_to_probs(samples, num_wires):
+    samples_decimal = [np.ravel_multi_index(sample, [2] * num_wires) for sample in samples]
+    counts = [0] * (2**num_wires)
+
+    for sample in samples_decimal:
+        counts[sample] += 1
+
+    return np.array(counts, dtype=np.float64) / len(samples)
 
 
 @pytest.mark.all_interfaces
@@ -50,3 +75,51 @@ def test_sample_state_custom_rng():
     samples = sample_state(two_qubit_state, 4, rng=custom_rng)
     expected = [[0, 1], [0, 1], [1, 0], [1, 0]]
     assert qml.math.allequal(samples, expected)
+
+
+def test_approximate_probs_from_samples(init_state):
+    """Tests that the generated samples are approximately as expected."""
+    n = 4
+    shots = 10000
+    state = init_state(n)
+
+    flat_state = state.flatten()
+    expected_probs = np.real(flat_state) ** 2 + np.imag(flat_state) ** 2
+
+    samples = sample_state(state, shots)
+    approx_probs = samples_to_probs(samples, n)
+    assert np.allclose(approx_probs, expected_probs, atol=APPROX_ATOL)
+
+
+def test_entangled_qubit_samples_always_match():
+    """Tests that entangled qubits are always in the same state."""
+    bell_state = np.array([[1, 0], [0, 1]]) / np.sqrt(2)
+    samples = sample_state(bell_state, 1000)
+    assert samples.shape == (1000, 2)
+    assert not any(samples[:, 0] ^ samples[:, 1])  # all samples are entangled
+    assert not all(samples[:, 0])  # some samples are |00>
+    assert any(samples[:, 0])  # ...and some are |11>!
+
+
+@pytest.mark.parametrize("num_wires", [13, 14, 15, 16])
+def test_sample_state_many_wires(num_wires):
+    """Tests that sample_state works as expected with many wires, and with re-ordering."""
+    shots = 10000
+    shape = (2,) * num_wires
+    flat_state = np.arange(1, 2**num_wires + 1, dtype=np.float64)
+    original_norm = np.linalg.norm(flat_state)
+    flat_state /= original_norm
+    state = flat_state.reshape(shape)
+    expected_probs = np.real(flat_state) ** 2 + np.imag(flat_state) ** 2
+
+    ordered_samples = sample_state(state, shots)
+    ordered_probs = samples_to_probs(ordered_samples, num_wires)
+    assert np.allclose(ordered_probs, expected_probs, atol=APPROX_ATOL)
+
+    random_wires = list(range(num_wires))
+    shuffle(random_wires)
+    random_samples = sample_state(state, shots, wires=random_wires)
+    random_probs = samples_to_probs(random_samples, num_wires)
+
+    reordered_probs = ordered_probs.reshape(shape).transpose(random_wires).flatten()
+    assert np.allclose(reordered_probs, random_probs, atol=APPROX_ATOL)
