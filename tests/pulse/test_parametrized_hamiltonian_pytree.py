@@ -124,6 +124,21 @@ class TestLazyDotPytree:
 
         assert qml.math.allclose(res, qml.matrix(qml.dot(coeffs, ops)) @ another_matrix)
 
+    def test_rmul(self):
+        """Test the __rmul__ method"""
+        import jax.numpy as jnp
+
+        coeffs = [1, 2, 3]
+        ops = [qml.PauliX(0), qml.PauliY(0), qml.PauliZ(0)]
+        mats = [qml.matrix(o) for o in ops]
+        D = LazyDotPytree(coeffs=coeffs, mats=mats)
+
+        assert isinstance(3 * D, LazyDotPytree)
+        assert isinstance(D * 3, LazyDotPytree)
+
+        with pytest.raises(TypeError, match="unsupported operand type"):
+            _ = jnp.array([[1], [2]]) * D
+
     def test_flatten_method(self):
         """Test the tree_flatten method."""
         coeffs = [1, 2, 3]

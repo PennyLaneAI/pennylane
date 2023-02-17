@@ -105,10 +105,12 @@ class LazyDotPytree:
     def __matmul__(self, other):
         return sum(c * (m @ other) for c, m in zip(self.coeffs, self.mats))
 
-    def __rmul__(self, other):
+    def __mul__(self, other):
         if jnp.array(other).ndim == 0:
             return LazyDotPytree(tuple(other * c for c in self.coeffs), self.mats)
         return NotImplemented
+
+    __rmul__ = __mul__
 
     def tree_flatten(self):
         """Function used by ``jax`` to flatten the JaxLazyDot operation.
