@@ -70,8 +70,8 @@
   [(#3650)](https://github.com/PennyLaneAI/pennylane/pull/3650)
   [(#3674)](https://github.com/PennyLaneAI/pennylane/pull/3674)
 
-  The new operation takes a single argument, a one-dimensional `tensor_like`
-  of length `4**num_wires-1`, where `num_wires` is the number of wires the unitary acts on.
+  `SpecialUnitary` takes a one-dimensional array `theta` of length `4**num_wires-1`, where
+  `num_wires` is the number of wires the unitary acts on.
 
   The parameter `theta` refers to all Pauli words (except for the identity) in lexicographical
   order, which looks like the following for one and two qubits:
@@ -161,7 +161,6 @@
   Here is an example of using JAX-JIT to compute the Hessian of a circuit:
 
   ```python
-  import pennylane as qml
   import jax
   from jax import numpy as jnp
 
@@ -203,8 +202,6 @@
   coordinates.
 
   ```python
-  import pennylane as qml
-  from pennylane import numpy as np
   import jax
 
   symbols = ["H", "H"]
@@ -266,15 +263,11 @@ To be merged this week
   of Givens rotation gates with phase shifts and a diagonal phase matrix.
   [(#3573)](https://github.com/PennyLaneAI/pennylane/pull/3573)
 
-  ```python
-  unitary = np.array([[ 0.73678+0.27511j, -0.5095 +0.10704j, -0.06847+0.32515j]
-                      [-0.21271+0.34938j, -0.38853+0.36497j,  0.61467-0.41317j]
-                      [ 0.41356-0.20765j, -0.00651-0.66689j,  0.32839-0.48293j]])
-
-  phase_mat, ordered_rotations = givens_decomposition(matrix)
-  ```
-
   ```pycon
+  >>> unitary = np.array([[ 0.73678+0.27511j, -0.5095 +0.10704j, -0.06847+0.32515j]
+  ...                    [-0.21271+0.34938j, -0.38853+0.36497j,  0.61467-0.41317j]
+  ...                    [ 0.41356-0.20765j, -0.00651-0.66689j,  0.32839-0.48293j]])
+  >>> phase_mat, ordered_rotations = givens_decomposition(matrix)
   >>> phase_mat
   [-0.20606284+0.97853876j -0.82993403+0.55786154j  0.56230707-0.82692851j]
   >>> ordered_rotations
@@ -404,6 +397,10 @@ To be merged this week
   DeviceArray(0., dtype=float32)
   ```
 
+* `DefaultQubitJax` now supports evolving the state vector when executing `ParametrizedEvolution`
+  gates.
+  [(#3743)](https://github.com/PennyLaneAI/pennylane/pull/3743)
+
 <h4>Operations and parameter broadcasting</h4>
 
 * A new function called `dot` has been added to compute the dot product between a vector and a list of operators.
@@ -488,7 +485,7 @@ To be merged this week
    when the spin multiplicity is not 1.
    [(#3748)](https://github.com/PennyLaneAI/pennylane/pull/3748)
 
-* `qml.qchem.basis_rotation` now accounts for spin, allowing it to perform Basis Rotation Groupings
+* `qml.qchem.basis_rotation` now accounts for spin, allowing it to perform basis rotation groupings
   for molecular hamiltonians.
   [(#3714)](https://github.com/PennyLaneAI/pennylane/pull/3714)
   [(#3774)](https://github.com/PennyLaneAI/pennylane/pull/3774)
@@ -593,21 +590,12 @@ To be merged this week
 * The `QuantumMonteCarlo` template is now JAX-JIT compatible when passing `jax.numpy` arrays to the template.
   [(#3734)](https://github.com/PennyLaneAI/pennylane/pull/3734)
 
-* `DefaultQubitJax` now supports evolving the state vector when executing `ParametrizedEvolution`
-  gates.
-  [(#3743)](https://github.com/PennyLaneAI/pennylane/pull/3743)
-
 * `SProd.sparse_matrix` now supports interface-specific variables with a single element as the `scalar`.
   [(#3770)](https://github.com/PennyLaneAI/pennylane/pull/3770)
 
-* Validation has been added on gradient keyword arguments when initializing a QNode — if unexpected keyword arguments are passed,
-  a `UserWarning` is raised. A list of the current expected gradient function keyword arguments can be accessed via
-  `qml.gradients.SUPPORTED_GRADIENT_KWARGS`.
-  [(#3526)](https://github.com/PennyLaneAI/pennylane/pull/3526)
-
-* Added `argnum` argument to `metric_tensor`. By passing a sequence of indices referring to trainable tape parameters,
-  the metric tensor is only computed with respect to these parameters. This reduces the number of tapes that have to
-  be run.
+* A new argument called `argnum` has been added to `metric_tensor`. By passing a sequence of indices
+  referring to trainable tape parameters, the metric tensor is only computed with respect to these
+  parameters. This reduces the number of tapes that have to be run.
   [(#3587)](https://github.com/PennyLaneAI/pennylane/pull/3587)
 
 * The parameter-shift derivative of variances saves a redundant evaluation of the
