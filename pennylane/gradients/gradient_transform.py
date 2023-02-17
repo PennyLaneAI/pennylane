@@ -278,17 +278,17 @@ class gradient_transform(qml.batch_transform):
         # to take into account that classical processing may be present
         # inside the QNode.
         hybrid = tkwargs.pop("hybrid", self.hybrid)
-
-        old_interface = qnode.interface
-
-        if old_interface == "auto":
-            qnode.interface = qml.math.get_interface(*targs, *list(tkwargs.values()))
+        argnums = tkwargs.pop("argnums", None)
 
         _wrapper = super().default_qnode_wrapper(qnode, targs, tkwargs)
 
-        cjac_fn = qml.transforms.classical_jacobian(qnode, expand_fn=expand_invalid_trainable)
+        cjac_fn = qml.transforms.classical_jacobian(
+            qnode, argnum=argnums, expand_fn=expand_invalid_trainable
+        )
 
-        def jacobian_wrapper(*args, **kwargs):
+        def jacobian_wrapper(
+            *args, **kwargs
+        ):  # pylint: disable=too-many-return-statements, too-many-branches
             if not qml.math.get_trainable_indices(args):
                 warnings.warn(
                     "Attempted to compute the gradient of a QNode with no trainable parameters. "
@@ -305,8 +305,68 @@ class gradient_transform(qml.batch_transform):
             kwargs.pop("shots", False)
             cjac = cjac_fn(*args, **kwargs)
 
-            if old_interface == "auto":
-                qnode.interface = "auto"
+            if qml.active_return():
+                if isinstance(cjac, tuple) and len(cjac) == 1:
+                    cjac = cjac[0]
+
+                if not isinstance(cjac, tuple):
+                    is_square = cjac.ndim == 2 and cjac.shape[0] == cjac.shape[1]
+
+                    if not qml.math.is_abstract(cjac):
+                        if is_square and qml.math.allclose(cjac, qml.numpy.eye(cjac.shape[0])):
+                            # Classical Jacobian is the identity. No classical processing
+                            # is present inside the QNode.
+                            return qjac
+
+                multi_meas = len(qnode.tape.measurements) > 1
+                multi_params = isinstance(cjac, tuple) or len(qnode.tape.trainable_params) > 1
+
+                if not multi_params and not multi_meas:
+                    if qjac.shape == ():
+                        qjac = qml.math.reshape(qjac, (1,))
+
+                    # With dimension e.g. probs
+                    else:
+                        qjac = qml.math.reshape(qjac, (1, -1))
+
+                    return qml.math.tensordot(qjac, cjac, [[0], [0]])
+
+                if multi_meas and not multi_params:
+                    jacs = tuple(
+                        qml.math.tensordot(qml.math.reshape(q, (1,)), cjac, [[0], [0]])
+                        if q.shape == ()
+                        else qml.math.tensordot(qml.math.reshape(q, (1, -1)), cjac, [[0], [0]])
+                        for q in qjac
+                    )
+                    return jacs
+                if not multi_meas and multi_params:
+                    if not isinstance(cjac, tuple):
+                        jacs = qml.math.tensordot(
+                            qml.math.stack(qjac), qml.math.stack(cjac), [[0], [0]]
+                        )
+                    else:
+                        jacs = tuple(
+                            qml.math.tensordot(qml.math.stack(qjac), c, [[0], [0]])
+                            for c in cjac
+                            if c is not None
+                        )
+                    return jacs
+                # Multi measurement and multi params
+                if not isinstance(cjac, tuple):
+                    jacs = tuple(
+                        qml.math.tensordot(qml.math.stack(q), qml.math.stack(cjac), [[0], [0]])
+                        for q in qjac
+                    )
+                else:
+                    jacs = tuple(
+                        tuple(
+                            qml.math.tensordot(qml.math.stack(q), c, [[0], [0]])
+                            for c in cjac
+                            if c is not None
+                        )
+                        for q in qjac
+                    )
+                return jacs
 
             if isinstance(cjac, tuple):
                 # Classical processing of multiple arguments is present. Return qjac @ cjac.
