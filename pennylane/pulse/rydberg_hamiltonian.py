@@ -19,7 +19,7 @@ from typing import Callable, Union
 import numpy as np
 
 import pennylane as qml
-from pennylane.operation import Operator
+from pennylane.operation import AnyWires, Operator
 from pennylane.ops import SProd, Sum
 from pennylane.wires import Wires
 
@@ -39,6 +39,8 @@ class RydbergHamiltonian(Operator):
     Returns:
         RydbergHamiltonian: class representing the hamiltonian of an ensemble of Rydberg atoms
     """
+    name = "RydbergHamiltonian"
+    num_wires = AnyWires
 
     # pylint: disable=too-many-arguments
     def __init__(
@@ -54,7 +56,6 @@ class RydbergHamiltonian(Operator):
             raise ValueError("Coordinates and wires must have the same length.")
         self.coordinates = coordinates
         self.interaction_coeff = interaction_coeff
-        self.wires = wires
         self._hamiltonian = None
         # The following 2 dictionaries are only needed to be able to run these laser drivings in hardware
         # Dictionary containing the information about the local driving fields
@@ -120,24 +121,6 @@ class RydbergHamiltonian(Operator):
 
         return self._hamiltonian
 
-    @property
-    def ops(self):
-        """Return the operators of the Hamiltonian.
-
-        Returns:
-            Iterable[Observable]: observables in the Hamiltonian expression
-        """
-        return self.hamiltonian.ops
-
-    @property
-    def coeffs(self):
-        """Return the coefficients of the Hamiltonian.
-
-        Returns:
-            Iterable[float]: coefficients in the Hamiltonian expression
-        """
-        return self.hamiltonian.coeffs
-
 
 def local_drive(
     ensemble: RydbergHamiltonian, rabi: list, detunings: list, phases: list, wires: list
@@ -183,7 +166,7 @@ def local_drive(
         )
     if any(wire not in ensemble.wires for wire in wires):
         raise ValueError(
-            "The wires list contains a wire value that is not present in the RydbergMachine."
+            "The wires list contains a wire value that is not present in the RydbergHamiltonian."
         )
     # Update `_driving_interaction` Hamiltonian
     ops = [
