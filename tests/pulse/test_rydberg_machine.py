@@ -13,14 +13,14 @@
 # limitations under the License.
 
 """
-Unit tests for the RydbergMachine class.
+Unit tests for the RydbergHamiltonian class.
 """
 import numpy as np
 import pytest
 
 import pennylane as qml
 from pennylane.ops import Sum
-from pennylane.pulse import ParametrizedHamiltonian, RydbergMachine
+from pennylane.pulse import ParametrizedHamiltonian, RydbergHamiltonian
 from pennylane.wires import Wires
 
 atom_coordinates = [[0, 0], [0, 5], [5, 0], [10, 5], [5, 10], [10, 10]]
@@ -29,36 +29,36 @@ wires = [1, 6, 9, 2, 4, 3]
 
 # pylint: disable=protected-access
 def test_initialization():
-    """Test the RydbergMachine class is initialized correctly."""
-    rm = RydbergMachine(coordinates=atom_coordinates, wires=wires)
+    """Test the RydbergHamiltonian class is initialized correctly."""
+    rm = RydbergHamiltonian(coordinates=atom_coordinates, wires=wires)
 
     assert qml.math.allequal(rm.coordinates, atom_coordinates)
     assert rm.wires == Wires(wires)
     assert isinstance(rm.driving_interaction, ParametrizedHamiltonian)
     assert rm.driving_interaction.H_parametrized([], 0) == 0
     assert rm.driving_interaction.H_fixed() == 0
-    assert rm._rydberg_interaction is None
+    assert rm._hamiltonian is None
     assert rm.interaction_coeff == 862690 * np.pi
     assert rm._local_drives == {"rabi": [], "detunings": [], "phases": [], "wires": []}
     assert rm._global_drive is None
 
 
 class TestProperties:
-    """Unit tests for the properties of the RydbergMachine class."""
+    """Unit tests for the properties of the RydbergHamiltonian class."""
 
     def test_rydberg_interaction(self):
         """Test that the rydberg_interaction property returns a Hamiltonian class, and that it
         contains the correct amount of coeffs and ops."""
-        rm = RydbergMachine(coordinates=atom_coordinates, wires=wires)
+        rm = RydbergHamiltonian(coordinates=atom_coordinates, wires=wires)
 
         N = len(wires)
         num_combinations = N * (N - 1) / 2  # number of terms on the rydberg_interaction hamiltonian
-        assert isinstance(rm.rydberg_interaction, Sum)
-        assert len(rm.rydberg_interaction.operands) == num_combinations
+        assert isinstance(rm.hamiltonian, Sum)
+        assert len(rm.hamiltonian.operands) == num_combinations
 
     def test_driving_interaction(self):
         """Test the driving_interaction property."""
-        rm = RydbergMachine(coordinates=atom_coordinates, wires=wires)
+        rm = RydbergHamiltonian(coordinates=atom_coordinates, wires=wires)
 
         assert isinstance(rm.driving_interaction, ParametrizedHamiltonian)
         assert rm.driving_interaction.H_parametrized([], 0) == 0
@@ -66,21 +66,19 @@ class TestProperties:
 
     def test_hamiltonian(self):
         """Test the hamiltonian property."""
-        rm = RydbergMachine(coordinates=atom_coordinates, wires=wires)
+        rm = RydbergHamiltonian(coordinates=atom_coordinates, wires=wires)
 
         assert isinstance(rm.hamiltonian, ParametrizedHamiltonian)
         assert rm.hamiltonian.H_parametrized([], 0) == 0
-        assert qml.equal(
-            qml.simplify(rm.hamiltonian.H_fixed()), qml.simplify(rm.rydberg_interaction)
-        )
+        assert qml.equal(qml.simplify(rm.hamiltonian.H_fixed()), qml.simplify(rm.hamiltonian))
 
 
 class TestMethods:
-    """Unit tests for the RydbergMachine methods."""
+    """Unit tests for the RydbergHamiltonian methods."""
 
     def test_local_drive_updates_dictionaries(self):
         """Test that the local_drive method updates the internal dictionaries."""
-        rm = RydbergMachine(atom_coordinates, wires)
+        rm = RydbergHamiltonian(atom_coordinates, wires)
 
         assert rm._local_drives == {"rabi": [], "detunings": [], "phases": [], "wires": []}
 
@@ -95,7 +93,7 @@ class TestMethods:
 
     def test_local_drive_updates_driving_hamiltonian(self):
         """Test that the local_drive method updates the driving_interaction term of the Hamiltonian."""
-        rm = RydbergMachine(coordinates=atom_coordinates, wires=wires)
+        rm = RydbergHamiltonian(coordinates=atom_coordinates, wires=wires)
 
         assert isinstance(rm.driving_interaction, ParametrizedHamiltonian)
         assert rm.driving_interaction([], 0) == 0
@@ -106,7 +104,7 @@ class TestMethods:
 
     def test_local_drive_wrong_lengths_raises_error(self):
         """Test that the local_drive method raises an error when the inputs have different lengths."""
-        rm = RydbergMachine(atom_coordinates, wires)
+        rm = RydbergHamiltonian(atom_coordinates, wires)
 
         with pytest.raises(
             ValueError, match="The lists containing the driving parameters must all have the same"
@@ -115,18 +113,18 @@ class TestMethods:
 
     def test_local_drive_wrong_wires_raises_error(self):
         """Test that the local_drive method raises an error when a wire value is not present in the
-        RydbergMachine."""
-        rm = RydbergMachine(atom_coordinates, wires)
+        RydbergHamiltonian."""
+        rm = RydbergHamiltonian(atom_coordinates, wires)
 
         with pytest.raises(
             ValueError,
-            match="The wires list contains a wire value that is not present in the RydbergMachine",
+            match="The wires list contains a wire value that is not present in the RydbergHamiltonian",
         ):
             rm.local_drive(rabi=[1, 2, 3], detunings=[0, 1, 2], phases=[0, -1, 0], wires=[1, 5, 0])
 
     def test_global_drive_updates_dictionaries(self):
         """Test that the global_drive method updates the internal dictionaries."""
-        rm = RydbergMachine(atom_coordinates, wires)
+        rm = RydbergHamiltonian(atom_coordinates, wires)
 
         assert rm._global_drive is None
 
@@ -136,7 +134,7 @@ class TestMethods:
 
     def test_global_drive_updates_driving_hamiltonian(self):
         """Test that the global_drive method updates the driving_interaction term of the Hamiltonian."""
-        rm = RydbergMachine(coordinates=atom_coordinates, wires=wires)
+        rm = RydbergHamiltonian(coordinates=atom_coordinates, wires=wires)
 
         assert isinstance(rm.driving_interaction, ParametrizedHamiltonian)
         assert rm.driving_interaction([], 0) == 0

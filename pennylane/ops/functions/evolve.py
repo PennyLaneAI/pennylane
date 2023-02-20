@@ -20,7 +20,7 @@ from typing import Union
 
 from pennylane.operation import Operator
 from pennylane.ops import Evolution
-from pennylane.pulse import ParametrizedEvolution, ParametrizedHamiltonian, RydbergMachine
+from pennylane.pulse import ParametrizedEvolution, ParametrizedHamiltonian, RydbergHamiltonian
 
 
 @singledispatch
@@ -168,8 +168,8 @@ def evolve(*args, **kwargs):  # pylint: disable=unused-argument
 
 # pylint: disable=missing-docstring
 @evolve.register(ParametrizedEvolution)
-@evolve.register(RydbergMachine)
-def parametrized_evolution(op: Union[ParametrizedHamiltonian, RydbergMachine]):
+@evolve.register(RydbergHamiltonian)
+def parametrized_evolution(op: Union[ParametrizedHamiltonian, RydbergHamiltonian]):
     return ParametrizedEvolution(H=op)
 
 
