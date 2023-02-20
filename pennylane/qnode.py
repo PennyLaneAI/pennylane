@@ -97,6 +97,11 @@ class QNode:
               rule for all supported quantum operation arguments, with finite-difference
               as a fallback.
 
+            * ``"hadamard"``: Use the analytic hadamard gradient test
+              rule for all supported quantum operation arguments. More info is in the documentation
+              :func:`qml.gradients.hadamard_grad <.gradients.hadamard_grad>`.
+
+
             * ``"finite-diff"``: Uses numerical finite-differences for all quantum operation
               arguments.
 
@@ -505,7 +510,7 @@ class QNode:
             interface (str): name of the requested interface
             diff_method (str or .gradient_transform): The requested method of differentiation.
                 If a string, allowed options are ``"best"``, ``"backprop"``, ``"adjoint"``,
-                ``"device"``, ``"parameter-shift"``, ``"finite-diff"``, or ``"spsa"``.
+                ``"device"``, ``"parameter-shift"``, ``"hadamard"``, ``"finite-diff"``, or ``"spsa"``.
                 A gradient transform may also be passed here.
 
         Returns:
@@ -533,11 +538,14 @@ class QNode:
         if diff_method == "spsa":
             return qml.gradients.spsa_grad, {}, device
 
+        if diff_method == "hadamard":
+            return qml.gradients.hadamard_grad, {}, device
+
         if isinstance(diff_method, str):
             raise qml.QuantumFunctionError(
                 f"Differentiation method {diff_method} not recognized. Allowed "
                 "options are ('best', 'parameter-shift', 'backprop', 'finite-diff', "
-                "'device', 'adjoint', 'spsa')."
+                "'device', 'adjoint', 'spsa', 'hadamard')."
             )
 
         if isinstance(diff_method, qml.gradients.gradient_transform):
@@ -561,8 +569,8 @@ class QNode:
         * ``"finite-diff"``
 
         The first differentiation method that is supported (going from
-        top to bottom) will be returned. Note that the SPSA-based gradient
-        is not included here.
+        top to bottom) will be returned. Note that the SPSA-based and Hadamard-based gradients
+        are not included here.
 
         Args:
             device (.Device): PennyLane device
@@ -597,8 +605,8 @@ class QNode:
         * ``"finite-diff"``
 
         The first differentiation method that is supported (going from
-        top to bottom) will be returned. Note that the SPSA-based gradient
-        is not included here.
+        top to bottom) will be returned. Note that the SPSA-based and Hadamard-based gradient
+        are not included here.
 
         This method is intended only for debugging purposes. Otherwise,
         :meth:`~.get_best_method` should be used instead.

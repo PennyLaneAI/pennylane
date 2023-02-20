@@ -173,6 +173,32 @@ class TestStateVector:
         ket[one_position] = 0  # everything else should be zero, as we assert below
         assert np.allclose(np.zeros((2,) * num_wires), ket)
 
+    @pytest.mark.parametrize(
+        "state",
+        [
+            np.array([0, 0]),
+            np.array([1, 0]),
+            np.array([0, 1]),
+            np.array([1, 1]),
+        ],
+    )
+    @pytest.mark.parametrize("device_wires", [3, 4, 5])
+    @pytest.mark.parametrize("op_wires", [[0, 1], [1, 0], [2, 0]])
+    def test_BasisState_state_vector_computed(self, state, device_wires, op_wires):
+        """Test BasisState initialization on a subset of device wires."""
+        basis_op = qml.BasisState(state, wires=op_wires)
+        basis_state = basis_op.state_vector(wire_order=list(range(device_wires)))
+
+        one_index = [0] * device_wires
+        for op_wire, idx_value in zip(op_wires, state):
+            if idx_value == 1:
+                one_index[op_wire] = 1
+        one_index = tuple(one_index)
+
+        assert basis_state[one_index] == 1
+        basis_state[one_index] = 0
+        assert not np.any(basis_state)
+
     @pytest.mark.all_interfaces
     @pytest.mark.parametrize("interface", ["numpy", "jax", "torch", "tensorflow"])
     def test_BasisState_state_vector_preserves_parameter_type(self, interface):
