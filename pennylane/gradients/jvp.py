@@ -98,7 +98,7 @@ def compute_jvp_single(tangent, jac):
 
         For scenario **(A)**, the input shapes can be in
 
-        .. list-table:: 
+        .. list-table::
            :widths: 30 40 30
            :header-rows: 1
 
@@ -129,7 +129,7 @@ def compute_jvp_single(tangent, jac):
 
         For scenario **(B)**, the input shapes can be in
 
-        .. list-table:: 
+        .. list-table::
            :widths: 30 40 30
            :header-rows: 1
 
