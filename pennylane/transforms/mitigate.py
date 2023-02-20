@@ -33,7 +33,7 @@ def fold_global(circuit, scale_factor):
 
     .. math:: \text{fold_global}(U) = U (U^\dagger U)^n (L^\dagger_d L^\dagger_{d-1} .. L^\dagger_s) (L_s .. L_d)
 
-    where :math:`n = \lfloor (\lambda - 1)/2 \rfloor` and :math:`s = \lfloor \left((\lambda -1) \mod 2 \right) (d/2) \rfloor` are determined via the ``scale_factor`` :math:`=\lambda`.
+    where :math:`n = \lfloor (\lambda - 1)/2 \rfloor` and :math:`s = \lfloor \left(\lambda - 1 \right) (d/2) \rfloor` are determined via the ``scale_factor`` :math:`=\lambda`.
     The purpose of folding is to artificially increase the noise for zero noise extrapolation, see :func:`~.pennylane.transforms.mitigate_with_zne`.
 
     Args:
@@ -190,7 +190,7 @@ def _divmod(a, b):
     """Performs divmod but in an all-interface compatible manner"""
     out1 = qml.math.floor(a / b)
     out2 = a - out1 * b
-    return int(out1), int(out2)
+    return int(out1), out2
 
 
 def fold_global_tape(circuit, scale_factor):
