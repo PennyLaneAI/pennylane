@@ -869,7 +869,7 @@ class Device(abc.ABC):
         quantum library requires that;
         all operations and method calls (including :meth:`apply` and :meth:`expval`)
         are then evaluated within the context of this context manager (see the
-        source of :meth:`.Device.execute` for more details).
+        source of :meth:`execute` for more details).
         """
 
         # pylint: disable=no-self-use
