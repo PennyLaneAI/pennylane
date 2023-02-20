@@ -97,39 +97,5 @@ class ExecutionConfig:
                 f"All gradient_keyword_arguments keys must be in {SUPPORTED_GRADIENT_KWARGS}, got unexpected values: {set(self.gradient_keyword_arguments) - set(SUPPORTED_GRADIENT_KWARGS)}"
             )
 
-        # Initialize private shot attributes
-        shots, shot_vector, raw_shot_sequence = None, None, None
 
-        if self.shots is None:
-            # analytic mode
-            shots = self.shots
-            shot_vector = None
-            raw_shot_sequence = None
-
-        elif isinstance(self.shots, int):
-            # sampling mode (unbatched)
-            if self.shots < 1:
-                raise DeviceError(
-                    f"The specified number of shots needs to be at least 1. Got {self.shots}."
-                )
-
-            shots = self.shots
-            shot_vector = None
-
-        elif isinstance(self.shots, Sequence) and not isinstance(self.shots, str):
-            # batched sampling mode
-            shots, shot_vector = _process_shot_sequence(self.shots)
-            raw_shot_sequence = self.shots
-
-        else:
-            raise DeviceError(
-                "Shots must be a single non-negative integer or a sequence of non-negative integers."
-            )
-
-        object.__setattr__(self, "_shots", shots)
-        object.__setattr__(self, "shots", shots)
-        if shot_vector is not None:
-            object.__setattr__(self, "_shot_vector", tuple(shot_vector))
-            object.__setattr__(self, "shot_vector", tuple(shot_vector))
-        if raw_shot_sequence is not None:
-            object.__setattr__(self, "_raw_shot_sequence", tuple(raw_shot_sequence))
+DefaultExecutionConfig = ExecutionConfig()
