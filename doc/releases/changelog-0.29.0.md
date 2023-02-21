@@ -286,7 +286,7 @@
   ```pycon
   >>> exp_op = qml.evolve(qml.PauliX(0) @ qml.PauliX(1))
   >>> exp_op.decomposition()
-  [IsingXX((-2+0j), wires=[0, 1])]
+  [IsingXX((2+0j), wires=[0, 1])]
   ```
   
   Otherwise, if the Hamiltonian is a Pauli word, then the decomposition is provided as a
@@ -294,20 +294,20 @@
 
   ```pycon
   >>> qml.evolve(qml.PauliZ(0) @ qml.PauliX(1)).decomposition()
-  [PauliRot((-2+0j), ZX, wires=[0, 1])]
+  [PauliRot((2+0j), ZX, wires=[0, 1])]
   ```
   
   Otherwise, the Hamiltonian is a linear combination of operators and the Suzuki-Trotter
   decomposition is used:
 
   ```pycon
-  >>> qml.evolve(qml.sum(qml.PauliX(0), qml.PauliY(1), qml.PauliZ(2)), num_steps=2).decomposition()
-  [RX((-1+0j), wires=[0]),
-  RY((-1+0j), wires=[1]),
-  RZ((-1+0j), wires=[2]),
-  RX((-1+0j), wires=[0]),
-  RY((-1+0j), wires=[1]),
-  RZ((-1+0j), wires=[2])]
+  >>> qml.evolve(qml.sum(qml.PauliX(0), qml.PauliY(0), qml.PauliZ(0)), num_steps=2).decomposition()
+  [RX((1+0j), wires=[0]),
+   RY((1+0j), wires=[0]),
+   RZ((1+0j), wires=[0]),
+   RX((1+0j), wires=[0]),
+   RY((1+0j), wires=[0]),
+   RZ((1+0j), wires=[0])]
   ```
 
 <h4>Tools for quantum chemistry and other applications 🛠️</h4>
