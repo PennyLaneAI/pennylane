@@ -231,7 +231,8 @@
 
   ```pycon
   >>> jax.grad(qml.qchem.hf_energy(mol))(*args)
-  >>> DeviceArray([[0.0, 0.0, 0.3650435], [0.0, 0.0, -0.3650435]], dtype=float32)
+  Array([[ 0.       ,  0.       ,  0.3650435],
+         [ 0.       ,  0.       , -0.3650435]], dtype=float64)
   ```
 
 * The kernel matrix utility functions in `qml.kernels` are now autodifferentiation-compatible.
