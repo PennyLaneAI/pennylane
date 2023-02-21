@@ -297,7 +297,7 @@ def test_qubit_observable(f_observable, q_observable):
                 [(-0.25 + 0j), (0.25 + 0j), (-0.25 + 0j), (0.25 + 0j)],
                 [qml.Identity(0), qml.PauliZ(1), qml.PauliZ(1) @ qml.PauliZ(3), qml.PauliZ(3)],
             ),
-            None,
+            "physicist",
         ),
         (
             [3, 1, 3, 1],
