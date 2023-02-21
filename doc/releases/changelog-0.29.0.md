@@ -4,9 +4,6 @@
 
 <h3>New features since last release</h3>
 
-* Added 'qml.sign_expand' tape tranforms which implements the optimal decomposition of a fast-forwardable Hamiltonian that minimizes the variance of its estimator in the Single-Qubit-Measurement from  arXiv:2207.09479
-  [(#2852)](https://github.com/PennyLaneAI/pennylane/pull/2852)
-
 <h4>Pulse programming 🔊</h4>
 
 * Support for creating pulse-based circuits that describe evolution under a time-dependent
@@ -559,6 +556,9 @@
 
 * `Sum._sort` method takes into account the name of the operator when sorting.
   [(#3691)](https://github.com/PennyLaneAI/pennylane/pull/3691)
+
+* Added 'qml.sign_expand' tape tranform, which implements the optimal decomposition of a fast-forwardable Hamiltonian that minimizes the variance of its estimator in the Single-Qubit-Measurement from [arXiv:2207.09479](https://arxiv.org/abs/2207.09479).
+  [(#2852)](https://github.com/PennyLaneAI/pennylane/pull/2852)
 
 <h4>Differentiability and interfaces</h4>
 
