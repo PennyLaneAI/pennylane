@@ -22,63 +22,6 @@ from gate_data import H, I, S, T, X, Z
 import pennylane as qml
 from pennylane.operation import DecompositionUndefinedError
 from pennylane.wires import Wires
-from pennylane.ops.qubit.matrix_ops import pauli_basis, pauli_words, special_unitary_matrix
-
-
-class TestUtilitiesForSpecialUnitary:
-    """Test the utility functions ``pauli_basis``, ``pauli_words`` and ``special_unitary_matrix``
-    that are used by the Operation SpecialUnitary."""
-
-    @pytest.mark.parametrize("n", [1, 2, 3])
-    def test_pauli_basis(self, n):
-        """Test that the Pauli basis matrices are correct."""
-        basis = pauli_basis(n)
-        d = 4**n - 1
-        assert basis.shape == (d, 2**n, 2**n)
-        assert np.allclose(basis, basis.conj().transpose([0, 2, 1]))
-        assert all(np.allclose(np.eye(2**n), b @ b) for b in basis)
-
-    @pytest.mark.parametrize("n", [1, 2, 3])
-    def test_pauli_words(self, n):
-        """Test that the Pauli words are correct."""
-        words = pauli_words(n)
-        d = 4**n - 1
-        assert len(words) == d  # There are d words
-        assert len(set(words)) == d  # The words are unique
-        assert all(len(w) == n for w in words)  # The words all have length n
-
-        # The words consist of I, X, Y, Z, all appear if n>1
-        expected_letters = {"I", "X", "Y", "Z"} if n > 1 else {"X", "Y", "Z"}
-        assert set("".join(words)) == expected_letters
-
-        # The words are sorted lexicographically
-        assert sorted(words) == words
-
-    @pytest.mark.parametrize("n", [1, 2, 3])
-    @pytest.mark.parametrize("seed", [214, 2491, 8623])
-    def test_special_unitary_matrix_random(self, n, seed):
-        """Test that ``special_unitary_matrix`` returns a correctly-shaped
-        unitary matrix for random input parameters."""
-        np.random.seed(seed)
-        d = 4**n - 1
-        theta = np.random.random(d)
-        matrix = special_unitary_matrix(theta, n)
-        assert matrix.shape == (2**n, 2**n)
-        assert np.allclose(matrix @ matrix.conj().T, np.eye(2**n))
-
-    @pytest.mark.parametrize("n", [1, 2, 3])
-    def test_special_unitary_matrix_single_param(self, n):
-        """Test that ``special_unitary_matrix`` returns a Pauli rotation matrix for
-        inputs with a single non-zero parameter, and that the parameter mapping
-        matches the lexicographical ordering of ``pauli_words``."""
-        d = 4**n - 1
-        words = pauli_words(n)
-        for word, theta in zip(words, np.eye(d)):
-            x = 0.2142
-            matrix = special_unitary_matrix(x * theta, n)
-            paulirot_matrix = qml.PauliRot(-2 * x, word, wires=list(range(n))).matrix()
-            assert np.allclose(matrix @ matrix.conj().T, np.eye(2**n))
-            assert np.allclose(paulirot_matrix, matrix)
 
 
 class TestQubitUnitary:
