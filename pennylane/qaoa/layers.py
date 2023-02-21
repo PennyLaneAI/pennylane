@@ -102,7 +102,7 @@ def cost_layer(gamma, hamiltonian):
     if not _diagonal_terms(hamiltonian):
         raise ValueError("hamiltonian must be written only in terms of PauliZ and Identity gates")
 
-    qml.evolve(hamiltonian, coeff=gamma, num_steps=1)
+    qml.templates.ApproxTimeEvolution(hamiltonian, gamma, 1)
 
 
 def mixer_layer(alpha, hamiltonian):
@@ -162,4 +162,4 @@ def mixer_layer(alpha, hamiltonian):
             f"hamiltonian must be of type pennylane.Hamiltonian, got {type(hamiltonian).__name__}"
         )
 
-    qml.evolve(hamiltonian, coeff=alpha, num_steps=1)
+    qml.templates.ApproxTimeEvolution(hamiltonian, alpha, 1)
