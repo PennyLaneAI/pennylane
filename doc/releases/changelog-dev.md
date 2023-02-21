@@ -6,6 +6,9 @@
 
 <h3>Improvements</h3>
 
+* The `qchem.jordan_wigner` function is extended to support more fermionic operator orders.
+  [(#3754)](https://github.com/PennyLaneAI/pennylane/pull/3754)
+
 <h3>Breaking changes</h3>
 
 <h3>Deprecations</h3>
@@ -17,3 +20,7 @@
 <h3>Contributors</h3>
 
 This release contains contributions from (in alphabetical order):
+
+Utkarsh Azad
+Soran Jahangiri
+Jay Soni
