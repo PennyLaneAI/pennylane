@@ -55,12 +55,14 @@
   >>> dev = dev = qml.device("default.qubit", wires=2)
   >>> qnode = qml.QNode(pulse_circuit, dev, interface="jax")
   >>> qnode(params, time=0.5)
-  Array(-0.5383645, dtype=float32)
+  Array(-0.5441851, dtype=float32)
   >>> jax.grad(qnode)(params, time=0.5)
-  [Array(-4.980595e-09, dtype=float32),
-   [Array(-0.7838294, dtype=float32, weak_type=True),
-    Array(0.07700024, dtype=float32, weak_type=True)]]
+  [Array(-0.0096471, dtype=float32),
+   Array([-0.7750168 ,  0.07650781], dtype=float32)]
   ```
+
+  Check out the [qml.pulse](https://docs.pennylane.ai/en/stable/code/qml_pulse.html) documentation
+  page for more details!
 
 <h4>Special unitary operation 🌞</h4>
 
@@ -69,7 +71,8 @@
   [(#3650)](https://github.com/PennyLaneAI/pennylane/pull/3650)
   [(#3674)](https://github.com/PennyLaneAI/pennylane/pull/3674)
 
-  `qml.SpecialUnitary` creates a unitary that is a linear combination of all possible Pauli words in lexicographical order — except for the identity operator — for `num_wires` wires, of which there are `4**num_wires - 1`. As its first argument, it takes a list of `4**num_wires - 1` parameters that are the coefficients of the linear combination. 
+  `qml.SpecialUnitary` creates a unitary that is a linear combination of all possible Pauli words in lexicographical order — except for the identity operator — for `num_wires` wires, of which there are `4**num_wires - 1`. As its first argument,
+  `qml.SpecialUnitary` takes a list of `4**num_wires - 1` parameters that are the coefficients of the linear combination. 
 
   To see all possible Pauli words for `num_wires` wires, you can use the `qml.ops.qubit.special_unitary.pauli_basis_strings` function:
 
@@ -106,10 +109,10 @@
 
 <h4>Always differentiable 📈</h4>
 
-* The Hadamard test gradient transform is now available via `qml.gradients.hadamard_grad`. The gradient transform 
-  `qml.gradients.hadamard_grad` is now registered as a differentiation method for `QNode`s.
-  [#3625](https://github.com/PennyLaneAI/pennylane/pull/3625)
-  [#3736](https://github.com/PennyLaneAI/pennylane/pull/3736)
+* The Hadamard test gradient transform is now available via `qml.gradients.hadamard_grad`. This transform 
+   is also available as a differentiation method within `QNode`s.
+  [(#3625)](https://github.com/PennyLaneAI/pennylane/pull/3625)
+  [(#3736)](https://github.com/PennyLaneAI/pennylane/pull/3736)
 
   `qml.gradients.hadamard_grad` is a hardware-compatible transform that calculates the
   gradient of a quantum circuit using the Hadamard test. Note that the device requires an
