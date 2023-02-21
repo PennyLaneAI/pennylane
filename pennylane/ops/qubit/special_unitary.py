@@ -222,7 +222,7 @@ class SpecialUnitary(Operation):
     Note that for specific operations like the ``RX`` rotation gate above, it is
     strongly recommended to use the specialized implementation ``qml.RX`` rather
     than ``PauliRot`` or ``SpecialUnitary``.
-    However, ``SpecialUnitary`` gates go beyong such rotations: Multiple Pauli words
+    However, ``SpecialUnitary`` gates go beyond such rotations: Multiple Pauli words
     can be activated simultaneously, giving access to more complex operations.
     For two qubits, this could look like this:
 
