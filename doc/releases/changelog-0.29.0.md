@@ -1,6 +1,6 @@
 :orphan:
 
-# Release 0.29.0-dev (development release)
+# Release 0.29.0 (current release)
 
 <h3>New features since last release</h3>
 
@@ -107,8 +107,10 @@
 
 <h4>Always differentiable 📈</h4>
 
-* The Hadamard test gradient transform is now available via `qml.gradients.hadamard_grad`.
+* The Hadamard test gradient transform is now available via `qml.gradients.hadamard_grad`. The gradient transform 
+  `qml.gradients.hadamard_grad` is now registered as a differentiation method for `QNode`s.
   [#3625](https://github.com/PennyLaneAI/pennylane/pull/3625)
+  [#3736](https://github.com/PennyLaneAI/pennylane/pull/3736)
 
   `qml.gradients.hadamard_grad` is a hardware-compatible transform that calculates the
   gradient of a quantum circuit using the Hadamard test. Note that the device requires an
@@ -128,6 +130,21 @@
    tensor([-0.18884787], requires_grad=True),
    tensor([-0.38355704], requires_grad=True))
   ```
+  
+  This transform can be registered directly as the quantum gradient transform to use during autodifferentiation:
+  
+  ```pycon
+  >>> dev = qml.device("default.qubit", wires=3)
+  >>> @qml.qnode(dev, interface="jax", diff_method="hadamard")
+  ... def circuit(params):
+  ...     qml.RX(params[0], wires=0)
+  ...     qml.RY(params[1], wires=0)
+  ...     qml.RX(params[2], wires=0)
+  ...     return qml.expval(qml.PauliZ(0))
+  >>> params = jax.numpy.array([0.1, 0.2, 0.3])
+  >>> jax.jacobian(circuit)(params)
+  [-0.3875172  -0.18884787 -0.38355704]
+   ```
 
 * The gradient transform `qml.gradients.spsa_grad` is now registered as a
   differentiation method for QNodes.
@@ -488,6 +505,10 @@
   [(#3714)](https://github.com/PennyLaneAI/pennylane/pull/3714)
   [(#3774)](https://github.com/PennyLaneAI/pennylane/pull/3774)
 
+* The gradient transforms work for the new return type system with non-trivial classical jacobians.
+  [(#3776)](https://github.com/PennyLaneAI/pennylane/pull/3776)
+
+
 * The `default.mixed` device received a performance improvement for multi-qubit operations.
   This also allows to apply channels that act on more than seven qubits, which was not possible before.
   [(#3584)](https://github.com/PennyLaneAI/pennylane/pull/3584)
@@ -645,6 +666,14 @@
 * `qml.BasisState` now implements the `StatePrep` interface.
   [(#3693)](https://github.com/PennyLaneAI/pennylane/pull/3693)
 
+* New Abstract Base Class for devices `Device` is added to the `devices.experimental` submodule.
+  This interface is still in experimental mode and not integrated with the rest of pennylane.
+  [(#3602)](https://github.com/PennyLaneAI/pennylane/pull/3602)
+
+* The `apply_operation` single-dispatch function is added to `devices/qubit` that applies an operation
+  to a state and returns a new state.
+  [(#3637)](https://github.com/PennyLaneAI/pennylane/pull/3637)
+
 <h4>Data</h4>
 
 * Writing Hamiltonians to a file using the `qml.data` module has been improved by employing a condensed writing format.
@@ -652,6 +681,10 @@
 
 * Lazy-loading in the `qml.Dataset.read()` method is more universally supported.
   [(#3605)](https://github.com/PennyLaneAI/pennylane/pull/3605)
+
+* Updated `qml.draw` and `qml.draw_mpl` to draw any quantum function,
+  which allows for visualizing only part of a complete circuit/QNode.
+  [(#3760)](https://github.com/PennyLaneAI/pennylane/pull/3760)
 
 <h3>Breaking changes</h3>
 
@@ -739,6 +772,10 @@
 * `qml.transforms.measurement_grouping` has been removed. Users should use `qml.transforms.hamiltonian_expand`
   instead.
   [(#3701)](https://github.com/PennyLaneAI/pennylane/pull/3701)
+
+* `op.simplify()` for operators which are linear combinations of pauli words will use a builtin pauli representation 
+  to more efficiently compute the simplification of the operator.
+  [(#3481)](https://github.com/PennyLaneAI/pennylane/pull/3481)
 
 <h3>Deprecations</h3>
 
@@ -847,12 +884,15 @@ Isaac De Vlugt,
 Olivia Di Matteo,
 Lillian M. A. Frederiksen,
 Soran Jahangiri,
+Korbinian Kottmann,
 Christina Lee,
 Albert Mitjans Coma,
 Romain Moyard,
 Mudit Pandey,
 Borja Requena,
 Matthew Silverman,
+Jay Soni,
 Antal Száva,
 Frederik Wilde,
-David Wierichs.
+David Wierichs,
+Moritz Willmann.
