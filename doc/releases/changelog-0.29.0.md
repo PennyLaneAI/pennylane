@@ -412,7 +412,7 @@
 
   ```pycon
   >>> timespan = (2, 4)
-  >>> f = pwc(timespan)
+  >>> f = qml.pulse.pwc(timespan)
   >>> f * qml.PauliX(0)
   ParametrizedHamiltonian: terms=1
   ```
@@ -433,7 +433,7 @@
   [(#3645)](https://github.com/PennyLaneAI/pennylane/pull/3645)
 
   ```pycon
-  >>> @pwc_from_function(t=(2, 4), num_bins=10)
+  >>> @qml.pulse.pwc_from_function((2, 4), num_bins=10)
   ... def f1(p, t):
   ...     return p * t
   ```
@@ -726,6 +726,7 @@
   >>> circuit(a, b)
   (Array(0.9950042, dtype=float32), Array(-0.19767681, dtype=float32))
   >>> jac = jax.jacobian(circuit)(a, b)
+  >>> jac
   (Array(-0.09983341, dtype=float32, weak_type=True), Array(0.01983384, dtype=float32, weak_type=True))
   ```
 
