@@ -358,25 +358,29 @@ class TestIntegration:
             jax.grad(circuit2)(params2),
             atol=5e-4,
         )
-    def test_mixed_device(self,):
+
+    def test_mixed_device(
+        self,
+    ):
         """Test mixed device integration matches that of default qubit"""
         import jax
         import jax.numpy as jnp
+
         mixed = qml.device("default.mixed", wires=range(3))
         default = qml.device("default.qubit", wires=range(3))
 
-        coeff = [qml.pulse.pwc(5.), qml.pulse.pwc(5.)]
+        coeff = [qml.pulse.pwc(5.0), qml.pulse.pwc(5.0)]
         ops = [qml.PauliX(0) @ qml.PauliX(1), qml.PauliY(1) @ qml.PauliY(2)]
         H_pulse = qml.dot(coeff, ops)
 
         @qml.qnode(default, interface="jax")
         def qnode_def(x):
-            qml.pulse.ParametrizedEvolution(H_pulse, x, 5.)
+            qml.pulse.ParametrizedEvolution(H_pulse, x, 5.0)
             return qml.expval(qml.PauliZ(0))
 
         @qml.qnode(mixed, interface="jax")
         def qnode_mix(x):
-            qml.pulse.ParametrizedEvolution(H_pulse, x, 5.)
+            qml.pulse.ParametrizedEvolution(H_pulse, x, 5.0)
             return qml.expval(qml.PauliZ(0))
 
         x = jnp.ones((2, 3))
