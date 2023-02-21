@@ -17,8 +17,6 @@ This submodule defines the Evolution class.
 import warnings
 from warnings import warn
 
-import numpy as np
-
 import pennylane as qml
 from pennylane import math
 from pennylane.operation import GeneratorUndefinedError
@@ -140,7 +138,7 @@ class Evolution(Exp):
         """
         if not self.base.is_hermitian:
             warn(f"The base {self.base} may not be hermitian.")
-        if np.real(self.coeff):
+        if qml.math.real(self.coeff):
             raise GeneratorUndefinedError(
                 f"The operator coefficient {self.coeff} is not imaginary; the expected format is exp(ixG)."
                 f"The generator is not defined."
