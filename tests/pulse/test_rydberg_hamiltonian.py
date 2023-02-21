@@ -15,13 +15,14 @@
 """
 Unit tests for the RydbergHamiltonian class.
 """
-# pylint: disable=protected-access
+# pylint: disable=protected-access, too-few-public-methods
 import numpy as np
 import pytest
 
 import pennylane as qml
 from pennylane.ops import Sum
 from pennylane.pulse import RydbergHamiltonian, global_drive, local_drive
+from pennylane.tape import QuantumTape
 from pennylane.wires import Wires
 
 atom_coordinates = [[0, 0], [0, 5], [5, 0], [10, 5], [5, 10], [10, 10]]
@@ -123,3 +124,16 @@ class TestGlobalDrive:
         H = global_drive(rm, rabi=1, detuning=2, phase=3)
 
         assert H is not rm.hamiltonian
+
+
+class TestIntegration:
+    """Integration tests for the ``RydbergHamiltonian`` class and the ``local_drive`` and
+    ``global_drive`` functions."""
+
+    def test_rydberg_hamiltonian_is_queued(self):
+        with QuantumTape() as tape:
+            rm = RydbergHamiltonian(coordinates=atom_coordinates, wires=wires)
+
+        assert qml.math.allclose(
+            qml.matrix(tape, wire_order=wires), qml.matrix(rm, wire_order=wires)
+        )

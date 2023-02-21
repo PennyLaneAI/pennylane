@@ -121,6 +121,9 @@ class RydbergHamiltonian(Operator):
 
         return self._hamiltonian
 
+    def matrix(self, wire_order=None):
+        return self.hamiltonian.matrix(wire_order)
+
 
 def local_drive(
     ensemble: RydbergHamiltonian, rabi: list, detunings: list, phases: list, wires: list
