@@ -35,8 +35,9 @@
   ```pycon
   >>> H
   ParametrizedHamiltonian: terms=3
-  >>> params = [jnp.array(1.2), jnp.array([2.3, 3.4])]
-  >>> H(params, t=0.5)
+  >>> p1 = jnp.array(1.2)
+  >>> p2 = jnp.array([2.3, 3.4])
+  >>> H((p1, p2), t=0.5)
   (2*(PauliX(wires=[1]) @ PauliX(wires=[1]))) + ((-0.2876553535461426*(PauliY(wires=[0]) @ PauliY(wires=[0]))) + (1.5179612636566162*(PauliZ(wires=[0]) @ PauliZ(wires=[1]))))
   ```
 
@@ -54,12 +55,12 @@
   ```pycon
   >>> dev = dev = qml.device("default.qubit", wires=2)
   >>> qnode = qml.QNode(pulse_circuit, dev, interface="jax")
+  >>> params = (p1, p2)
   >>> qnode(params, time=0.5)
   Array(-0.5441851, dtype=float32)
   >>> jax.grad(qnode)(params, time=0.5)
   [Array(-0.0096471, dtype=float32),
    Array([-0.7750168 ,  0.07650781], dtype=float32)]
-  ```
 
   Check out the [qml.pulse](https://docs.pennylane.ai/en/stable/code/qml_pulse.html) documentation
   page for more details!
