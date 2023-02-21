@@ -1,6 +1,6 @@
 :orphan:
 
-# Release 0.29.0-dev (development release)
+# Release 0.29.0 (current release)
 
 <h3>New features since last release</h3>
 
@@ -135,8 +135,10 @@
 
 <h4>Always differentiable 📈</h4>
 
-* The Hadamard test gradient tranform is now available via `qml.gradients.hadamard_grad`.
+* The Hadamard test gradient tranform is now available via `qml.gradients.hadamard_grad`. The gradient transform 
+  `qml.gradients.hadamard_grad` is now registered as a differentiation method for `QNode`s.
   [#3625](https://github.com/PennyLaneAI/pennylane/pull/3625)
+  [#3736](https://github.com/PennyLaneAI/pennylane/pull/3736)
 
   `qml.gradients.hadamard_grad` is a hardware-compatible transform that calculates the
   gradient of a quantum circuit using the Hadamard test. Note that the device requires an
@@ -156,6 +158,21 @@
    tensor([-0.18884787], requires_grad=True),
    tensor([-0.38355704], requires_grad=True))
   ```
+  
+  This transform can be registered directly as the quantum gradient transform to use during autodifferentiation:
+  
+  ```pycon
+  >>> dev = qml.device("default.qubit", wires=3)
+  >>> @qml.qnode(dev, interface="jax", diff_method="hadamard")
+  ... def circuit(params):
+  ...     qml.RX(params[0], wires=0)
+  ...     qml.RY(params[1], wires=0)
+  ...     qml.RX(params[2], wires=0)
+  ...     return qml.expval(qml.PauliZ(0))
+  >>> params = jax.numpy.array([0.1, 0.2, 0.3])
+  >>> jax.jacobian(circuit)(params)
+  [-0.3875172  -0.18884787 -0.38355704]
+   ```
 
 * The gradient transform `qml.gradients.spsa_grad` is now registered as a
   differentiation method for `QNode`s.
@@ -390,6 +407,10 @@
 
 *Next generation device API:*
 
+* New Abstract Base Class for devices `Device` is added to the `devices.experimental` submodule.
+  This interface is still in experimental mode and not integrated with the rest of pennylane.
+  [(#3602)](https://github.com/PennyLaneAI/pennylane/pull/3602)
+
 * The `apply_operation` single-dispatch function is added to `devices/qubit` that applies an operation
   to a state and returns a new state.
   [(#3637)](https://github.com/PennyLaneAI/pennylane/pull/3637)
@@ -407,6 +428,10 @@
   [(#3700)](https://github.com/PennyLaneAI/pennylane/pull/3700)
 
 <h3>Improvements</h3>
+
+* The gradient transforms work for the new return type system with non-trivial classical jacobians.
+  [(#3776)](https://github.com/PennyLaneAI/pennylane/pull/3776)
+
 
 * The `default.mixed` device received a performance improvement for multi-qubit operations.
   This also allows to apply channels that act on more than seven qubits, which was not possible before.
@@ -717,6 +742,10 @@
   instead.
   [(#3701)](https://github.com/PennyLaneAI/pennylane/pull/3701)
 
+* `op.simplify()` for operators which are linear combinations of pauli words will use a builtin pauli representation 
+  to more efficiently compute the simplification of the operator.
+  [(#3481)](https://github.com/PennyLaneAI/pennylane/pull/3481)
+
 <h3>Deprecations</h3>
 
 * `qml.utils.sparse_hamiltonian` function has been deprecated, and usage will now raise a warning.
@@ -831,6 +860,8 @@ Romain Moyard
 Mudit Pandey
 Borja Requena
 Matthew Silverman
+Jay Soni
 Antal Száva
 Frederik Wilde
 David Wierichs
+Moritz Willmann
