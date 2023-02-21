@@ -21,7 +21,6 @@ from pennylane.measurements import Expectation
 
 # TODO: Remove this when new CustomMP are the default
 def custom_measurement_process(device, spy):
-
     assert len(spy.call_args_list) > 0  # make sure method is mocked properly
 
     samples = device._samples  # pylint: disable=protected-access

@@ -21,6 +21,7 @@ from jax.config import config
 import pennylane as qml
 from pennylane import DeviceError
 from pennylane.devices.default_qubit_jax import DefaultQubitJax
+from pennylane.pulse import ParametrizedHamiltonian
 
 
 @pytest.mark.jax
@@ -511,6 +512,54 @@ class TestQNodeIntegration:
             return qml.sample(qml.PauliZ(wires=0))
 
         circuit()  # Just don't crash.
+
+    @pytest.mark.parametrize("phi", np.pi * np.array([1e-8, 1 / 8, 1 / 4, 1 / 2, 1]))
+    def test_parametrized_evolution_state_vector(self, phi, mocker):
+        """Test that when executing a ParametrizedEvolution with ``num_wires >= device.num_wires/2``
+        the `_evolve_state_vector_under_parametrized_evolution` method is used."""
+        dev = qml.device("default.qubit.jax", wires=1)
+        H = ParametrizedHamiltonian([1], [qml.PauliX(0)])
+        spy = mocker.spy(dev, "_evolve_state_vector_under_parametrized_evolution")
+
+        @jax.jit
+        @qml.qnode(dev, interface="jax")
+        def circuit():
+            qml.evolve(H)(params=[], t=phi / 2)
+            return qml.expval(qml.PauliZ(0))
+
+        @qml.qnode(dev)
+        def true_circuit():
+            qml.RX(phi, 0)
+            return qml.expval(qml.PauliZ(0))
+
+        res = circuit()
+        spy.assert_called_once()
+        assert qml.math.allclose(res, true_circuit(), atol=1e-6)
+
+    @pytest.mark.parametrize("phi", np.pi * np.array([1e-8, 1 / 8, 1 / 4, 1 / 2, 1]))
+    def test_parametrized_evolution_matrix(self, phi, mocker):
+        """Test that when executing a ParametrizedEvolution with ``num_wires < device.num_wires/2``
+        the `_apply_operation` method is used."""
+        dev = qml.device("default.qubit.jax", wires=3)
+        H = ParametrizedHamiltonian([1], [qml.PauliX(0)])
+        spy = mocker.spy(dev, "_evolve_state_vector_under_parametrized_evolution")
+        spy2 = mocker.spy(dev, "_apply_operation")
+
+        @jax.jit
+        @qml.qnode(dev, interface="jax")
+        def circuit():
+            qml.evolve(H)(params=[], t=phi / 2)  # corresponds to a PauliX gate
+            return qml.expval(qml.PauliZ(0))
+
+        @qml.qnode(dev)
+        def true_circuit():
+            qml.RX(phi, 0)
+            return qml.expval(qml.PauliZ(0))
+
+        res = circuit()
+        spy.assert_not_called()
+        spy2.assert_called_once()
+        assert qml.math.allclose(res, true_circuit(), atol=1e-6)
 
 
 @pytest.mark.jax
@@ -1064,6 +1113,30 @@ class TestOps:
 
         assert jnp.all(res == state)
         spy.assert_called()
+
+    def test_parametrized_evolution(self):
+        """Test applying a ParametrizedEvolution to a subset of wires of the full subsystem"""
+        dev = DefaultQubitJax(wires=["a", "b", "c"])
+        state = jnp.array([[[1.0, 0.0], [0.0, 0.0]], [[0.0, 0.0], [0.0, 0.0]]], dtype=complex)
+        expected_res = jnp.array(
+            [[[0.0, 0.0], [0.0, 0.0]], [[1.0, 0.0], [0.0, 0.0]]], dtype=complex
+        )
+        # ev corresponds to a PauliX gate
+        ev = qml.evolve(ParametrizedHamiltonian([1], [qml.PauliX("a")]))(params=[], t=np.pi / 2)
+        res = qml.math.abs(dev._apply_parametrized_evolution(state=state, operation=ev))
+
+        assert qml.math.allclose(res, expected_res, atol=1e-5)
+
+    def test_parametrized_evolution_raises_error(self):
+        """Test applying a ParametrizedEvolution without params or t specified raises an error."""
+        dev = DefaultQubitJax(wires=["a"])
+        state = jnp.array([[[1.0, 0.0], [0.0, 0.0]], [[0.0, 0.0], [0.0, 0.0]]], dtype=complex)
+        ev = qml.evolve(ParametrizedHamiltonian([1], [qml.PauliX("a")]))
+        with pytest.raises(
+            ValueError,
+            match="The parameters and the time window are required to execute a ParametrizedEvolution",
+        ):
+            dev._apply_parametrized_evolution(state=state, operation=ev)
 
 
 @pytest.mark.jax

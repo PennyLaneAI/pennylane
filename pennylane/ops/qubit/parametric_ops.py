@@ -1716,9 +1716,6 @@ class PauliRot(Operation):
         pauli_word = self.hyperparameters["pauli_word"]
         op_label = base_label or ("R" + pauli_word)
 
-        if self.inverse:
-            op_label += "⁻¹"
-
         # TODO[dwierichs]: Implement a proper label for parameter-broadcasted operators
         if decimals is not None and self.batch_size is None:
             param_string = f"\n({qml.math.asarray(self.parameters[0]):.{decimals}f})"
@@ -1774,7 +1771,6 @@ class PauliRot(Operation):
 
         # Simplest case is if the Pauli is the identity matrix
         if set(pauli_word) == {"I"}:
-
             exp = qml.math.exp(-0.5j * theta)
             iden = qml.math.eye(2 ** len(pauli_word), like=theta)
             if qml.math.get_interface(theta) == "tensorflow":
@@ -1872,8 +1868,8 @@ class PauliRot(Operation):
 
         Args:
             theta (float): rotation angle :math:`\theta`
-            pauli_word (string): the Pauli word defining the rotation
             wires (Iterable, Wires): the wires the operation acts on
+            pauli_word (string): the Pauli word defining the rotation
 
         Returns:
             list[Operator]: decomposition into lower level operations
@@ -3426,7 +3422,7 @@ class IsingZZ(Operation):
 
         **Example:**
 
-        >>> qml.IsingZZ.compute_decomposition(1.23, wires=0)
+        >>> qml.IsingZZ.compute_decomposition(1.23, wires=[0,1])
         [CNOT(wires=[0, 1]), RZ(1.23, wires=[1]), CNOT(wires=[0, 1])]
 
         """
@@ -3587,9 +3583,10 @@ class IsingXY(Operation):
     parameter_frequencies = [(0.5, 1.0)]
 
     def generator(self):
-        return 0.25 * qml.PauliX(wires=self.wires[0]) @ qml.PauliX(
-            wires=self.wires[1]
-        ) + 0.25 * qml.PauliY(wires=self.wires[0]) @ qml.PauliY(wires=self.wires[1])
+        return 0.25 * (
+            qml.PauliX(wires=self.wires[0]) @ qml.PauliX(wires=self.wires[1])
+            + qml.PauliY(wires=self.wires[0]) @ qml.PauliY(wires=self.wires[1])
+        )
 
     def __init__(self, phi, wires, do_queue=True, id=None):
         super().__init__(phi, wires=wires, do_queue=do_queue, id=id)

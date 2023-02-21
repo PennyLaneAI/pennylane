@@ -52,18 +52,19 @@ Operator to Operator functions
     ~pennylane.ctrl
     ~pennylane.cond
     ~pennylane.exp
-    ~pennylane.op_sum
+    ~pennylane.sum
     ~pennylane.pow
     ~pennylane.prod
     ~pennylane.s_prod
     ~pennylane.generator
     ~pennylane.map_wires
-    ~pennylane.ops.dot
+    ~pennylane.dot
+    ~pennylane.evolve
 
 These operator functions act on operators to produce new operators.
 
 >>> op = qml.prod(qml.PauliX(0), qml.PauliZ(1))
->>> op = qml.op_sum(qml.Hadamard(0), op)
+>>> op = qml.sum(qml.Hadamard(0), op)
 >>> op = qml.s_prod(1.2, op)
 >>> op
 1.2*(Hadamard(wires=[0]) + (PauliX(wires=[0]) @ PauliZ(wires=[1])))
@@ -252,6 +253,7 @@ Gates constructed from a matrix
     ~pennylane.QubitUnitary
     ~pennylane.ControlledQubitUnitary
     ~pennylane.DiagonalQubitUnitary
+    ~pennylane.SpecialUnitary
 
 :html:`</div>`
 
@@ -471,3 +473,24 @@ Qutrit Observables
 
 :html:`</div>`
 
+.. _intro_ref_ops_pulse:
+
+Pulse-level operators
+---------------------
+
+If you would like to learn more about the implementation of pulse-level control in PennyLane, see the
+:mod:`~.pulse` module documentation.
+
+
+Pulse operator
+^^^^^^^^^^^^^^
+
+:html:`<div class="summary-table">`
+
+.. autosummary::
+    :nosignatures:
+
+    ~pennylane.pulse.ParametrizedEvolution
+    ~pennylane.pulse.ParametrizedHamiltonian
+
+:html:`</div>`

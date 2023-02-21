@@ -430,7 +430,6 @@ def _finite_diff_new(
                 output_dims.append(1)
 
         for s in shapes:
-
             if s == 0:
                 # parameter has zero gradient
                 if not isinstance(results[0], tuple):
@@ -716,7 +715,6 @@ def finite_diff(
         r0 = f0 or results[0]
 
         for s in shapes:
-
             if s == 0:
                 # parameter has zero gradient
                 g = qml.math.zeros_like(results[0])

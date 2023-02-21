@@ -76,7 +76,6 @@ class QutritDevice(QubitDevice):  # pylint: disable=too-many-public-methods
 
     @classmethod
     def capabilities(cls):
-
         capabilities = super().capabilities().copy()
         capabilities.update(model="qutrit")
         return capabilities
@@ -314,18 +313,9 @@ class QutritDevice(QubitDevice):  # pylint: disable=too-many-public-methods
         else:
             wires = inactive_device_wires
 
-        prob = self._flatten(self._reduce_sum(prob, wires))
-
-        # The wires provided might not be in consecutive order (i.e., wires might be [2, 0]).
-        # If this is the case, we must permute the marginalized probability so that
-        # it corresponds to the orders of the wires passed.
-        num_wires = len(device_wires)
-        basis_states = self.generate_basis_states(num_wires)
-        basis_states = basis_states[:, np.argsort(np.argsort(device_wires))]
-
-        powers_of_three = 3 ** np.arange(len(device_wires))[::-1]
-        perm = basis_states @ powers_of_three
-        return self._gather(prob, perm)
+        prob = self._reduce_sum(prob, wires)
+        prob = self._transpose(prob, np.argsort(np.argsort(device_wires)))
+        return self._flatten(prob)
 
     def sample(self, observable, shot_range=None, bin_size=None, counts=False):
         def _samples_to_counts(samples, no_observable_provided):
@@ -367,7 +357,6 @@ class QutritDevice(QubitDevice):  # pylint: disable=too-many-public-methods
                 samples = self._samples[sample_slice]
 
         else:
-
             # Replace the basis state in the computational basis with the correct eigenvalue.
             # Extract only the columns of the basis samples required based on ``wires``.
             samples = self._samples[

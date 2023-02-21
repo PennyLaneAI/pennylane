@@ -200,7 +200,6 @@ class TestDecomposition:
         wire_range = range(3, 11)
 
         for wires in wire_range:
-
             dev = qml.device("default.qubit", wires=wires)
 
             # Offset the index of target wires to test the wire maÏp
@@ -279,7 +278,6 @@ class TestDecomposition:
 
         @qml.qnode(dev)
         def qpe_circuit():
-
             qml.Hadamard(wires=0)
             qml.PauliX(wires=1)
             qml.QuantumPhaseEstimation(

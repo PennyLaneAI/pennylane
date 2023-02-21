@@ -20,10 +20,13 @@ import cmath
 import math
 
 import pytest
+
 import pennylane as qml
-from pennylane import numpy as np, DeviceError
-from pennylane.devices.default_qubit import _get_slice, DefaultQubit
-from pennylane.wires import Wires, WireError
+from pennylane import DeviceError
+from pennylane import numpy as np
+from pennylane.devices.default_qubit import DefaultQubit, _get_slice
+from pennylane.pulse import ParametrizedHamiltonian
+from pennylane.wires import WireError, Wires
 
 U = np.array(
     [
@@ -2060,6 +2063,27 @@ class TestApplyOps:
         state_out_einsum = np.einsum("abcdef,kdfe->kacb", matrix, self.state)
         assert np.allclose(state_out, state_out_einsum)
 
+    @pytest.mark.jax
+    def test_apply_parametrized_evolution_raises_error(self):
+        """Test that applying a ParametrizedEvolution raises an error."""
+        param_ev = qml.evolve(ParametrizedHamiltonian([1], [qml.PauliX(0)]))
+        with pytest.raises(
+            NotImplementedError,
+            match="The device default.qubit cannot execute a ParametrizedEvolution operation",
+        ):
+            self.dev._apply_parametrized_evolution(state=self.state, operation=param_ev)
+
+        @qml.qnode(self.dev)
+        def circuit():
+            qml.apply(param_ev)
+            return qml.expval(qml.PauliZ(0))
+
+        with pytest.raises(
+            NotImplementedError,
+            match="The device default.qubit.autograd cannot execute a ParametrizedEvolution operation",
+        ):
+            circuit()
+
 
 class TestStateVector:
     """Unit tests for the _apply_state_vector method"""
@@ -2357,7 +2381,6 @@ class TestDenseMatrixDecompositionThreshold:
 
     @pytest.mark.parametrize("op, n_wires, condition", input)
     def test_threshold(self, op, n_wires, condition):
-
         wires = np.linspace(0, n_wires - 1, n_wires, dtype=int)
         op = op(wires=wires)
         assert DefaultQubit.stopping_condition.__get__(op)(op) == condition

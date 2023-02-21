@@ -206,7 +206,7 @@ def _equal_operators(
             if qml.math.get_interface(params_1) != qml.math.get_interface(params_2):
                 return False
 
-    return getattr(op1, "inverse", False) == getattr(op2, "inverse", False)
+    return True
 
 
 @_equal.register
@@ -306,7 +306,6 @@ def _equal_hamiltonian(op1: Hamiltonian, op2: Observable, **kwargs):
 @_equal.register
 # pylint: disable=unused-argument
 def _equal_measurements(op1: MeasurementProcess, op2: MeasurementProcess, **kwargs):
-
     """Determine whether two MeasurementProcess objects are equal"""
 
     if op1.obs is not None and op2.obs is not None:

@@ -161,6 +161,7 @@ class TestSingleQubitFusion:
 # Example QNode and device for interface testing
 dev = qml.device("default.qubit", wires=3)
 
+
 # Test each of single-qubit, two-qubit, and Rot gates
 def qfunc(theta):
     qml.Hadamard(wires=0)
@@ -211,8 +212,8 @@ class TestSingleQubitFusionInterfaces:
         """Test QNode and gradient in torch interface."""
         import torch
 
-        original_qnode = qml.QNode(qfunc, dev, interface="torch")
-        transformed_qnode = qml.QNode(transformed_qfunc, dev, interface="torch")
+        original_qnode = qml.QNode(qfunc, dev)
+        transformed_qnode = qml.QNode(transformed_qfunc, dev)
 
         original_input = torch.tensor([0.1, 0.2, 0.3, 0.4], requires_grad=True)
         transformed_input = torch.tensor([0.1, 0.2, 0.3, 0.4], requires_grad=True)
@@ -238,8 +239,8 @@ class TestSingleQubitFusionInterfaces:
         """Test QNode and gradient in tensorflow interface."""
         import tensorflow as tf
 
-        original_qnode = qml.QNode(qfunc, dev, interface="tf")
-        transformed_qnode = qml.QNode(transformed_qfunc, dev, interface="tf")
+        original_qnode = qml.QNode(qfunc, dev)
+        transformed_qnode = qml.QNode(transformed_qfunc, dev)
 
         original_input = tf.Variable([0.1, 0.2, 0.3, 0.4])
         transformed_input = tf.Variable([0.1, 0.2, 0.3, 0.4])
@@ -277,8 +278,8 @@ class TestSingleQubitFusionInterfaces:
         remember = config.read("jax_enable_x64")
         config.update("jax_enable_x64", True)
 
-        original_qnode = qml.QNode(qfunc, dev, interface="jax")
-        transformed_qnode = qml.QNode(transformed_qfunc, dev, interface="jax")
+        original_qnode = qml.QNode(qfunc, dev)
+        transformed_qnode = qml.QNode(transformed_qfunc, dev)
 
         input = jnp.array([0.1, 0.2, 0.3, 0.4], dtype=jnp.float64)
 
@@ -305,10 +306,10 @@ class TestSingleQubitFusionInterfaces:
         remember = config.read("jax_enable_x64")
         config.update("jax_enable_x64", True)
 
-        original_qnode = qml.QNode(qfunc, dev, interface="jax")
+        original_qnode = qml.QNode(qfunc, dev)
         jitted_qnode = jax.jit(original_qnode)
 
-        transformed_qnode = qml.QNode(transformed_qfunc, dev, interface="jax")
+        transformed_qnode = qml.QNode(transformed_qfunc, dev)
         jitted_transformed_qnode = jax.jit(transformed_qnode)
 
         input = jnp.array([0.1, 0.2, 0.3, 0.4], dtype=jnp.float64)

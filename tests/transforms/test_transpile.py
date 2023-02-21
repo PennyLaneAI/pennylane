@@ -147,7 +147,7 @@ class TestTranspile:
             return qml.expval(qml.PauliZ(0))
 
         transpiled_circ = transpile(coupling_map=[(0, 1), (1, 2)])(circuit)
-        transpiled_qnode = qml.QNode(transpiled_circ, dev, interface="autograd")
+        transpiled_qnode = qml.QNode(transpiled_circ, dev)
         params = np.array([0.5, 0.1, 0.2], requires_grad=True)
         qml.gradients.param_shift(transpiled_qnode)(params)
 

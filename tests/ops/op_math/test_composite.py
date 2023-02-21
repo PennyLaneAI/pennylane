@@ -300,20 +300,20 @@ class TestProperties:
     def test_overlapping_ops_property(self):
         """Test the overlapping_ops property."""
         valid_op = ValidOp(
-            qml.op_sum(qml.PauliX(0), qml.PauliY(5), qml.PauliZ(10)),
-            qml.op_sum(qml.PauliX(1), qml.PauliY(4), qml.PauliZ(6)),
+            qml.sum(qml.PauliX(0), qml.PauliY(5), qml.PauliZ(10)),
+            qml.sum(qml.PauliX(1), qml.PauliY(4), qml.PauliZ(6)),
             qml.prod(qml.PauliX(10), qml.PauliY(2), qml.PauliZ(7)),
             qml.PauliY(7),
             qml.prod(qml.PauliX(4), qml.PauliY(3), qml.PauliZ(8)),
         )
         overlapping_ops = [
             [
-                qml.op_sum(qml.PauliX(0), qml.PauliY(5), qml.PauliZ(10)),
+                qml.sum(qml.PauliX(0), qml.PauliY(5), qml.PauliZ(10)),
                 qml.prod(qml.PauliX(10), qml.PauliY(2), qml.PauliZ(7)),
                 qml.PauliY(7),
             ],
             [
-                qml.op_sum(qml.PauliX(1), qml.PauliY(4), qml.PauliZ(6)),
+                qml.sum(qml.PauliX(1), qml.PauliY(4), qml.PauliZ(6)),
                 qml.prod(qml.PauliX(4), qml.PauliY(3), qml.PauliZ(8)),
             ],
         ]

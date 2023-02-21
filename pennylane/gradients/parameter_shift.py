@@ -62,7 +62,6 @@ def _square_observable(obs):
         components_squared = []
 
         for comp in obs.obs:
-
             try:
                 components_squared.append(NONINVOLUTORY_OBS[comp.name](comp))
             except KeyError:
@@ -305,7 +304,7 @@ def _get_operation_recipe(tape, t_idx, shifts, order=1):
     if order not in {1, 2}:
         raise NotImplementedError("_get_operation_recipe only is implemented for orders 1 and 2.")
 
-    op, p_idx = tape.get_operation(t_idx)
+    op, _, p_idx = tape.get_operation(t_idx, return_op_index=True)
 
     # Try to use the stored grad_recipe of the operation
     op_recipe = _process_op_recipe(op, p_idx, order)
@@ -489,13 +488,12 @@ def _expval_param_shift_tuple(
     at_least_one_unshifted = False
 
     for idx, _ in enumerate(tape.trainable_params):
-
         if idx not in argnum:
             # parameter has zero gradient
             gradient_data.append((0, [], None, None, 0))
             continue
 
-        op, _ = tape.get_operation(idx)
+        op, *_ = tape.get_operation(idx, return_op_index=True)
 
         if op.name == "Hamiltonian":
             # operation is a Hamiltonian
@@ -534,7 +532,6 @@ def _expval_param_shift_tuple(
 
         grads = []
         for data in gradient_data:
-
             num_tapes, *_, unshifted_coeff, batch_size = data
             if num_tapes == 0:
                 if unshifted_coeff is None:
@@ -590,6 +587,8 @@ def _expval_param_shift_tuple(
 
         return tuple(grads)
 
+    processing_fn.first_result_unshifted = at_least_one_unshifted
+
     return gradient_tapes, processing_fn
 
 
@@ -643,13 +642,12 @@ def expval_param_shift(
     at_least_one_unshifted = False
 
     for idx, _ in enumerate(tape.trainable_params):
-
         if idx not in argnum:
             # parameter has zero gradient
             gradient_data.append((0, [], None, None, 0))
             continue
 
-        op, _ = tape.get_operation(idx)
+        op, *_ = tape.get_operation(idx, return_op_index=True)
 
         if op.name == "Hamiltonian":
             # operation is a Hamiltonian
@@ -706,7 +704,6 @@ def expval_param_shift(
         start, r0 = (1, results[0]) if at_least_one_unshifted and f0 is None else (0, f0)
 
         for data in gradient_data:
-
             num_tapes, *_, unshifted_coeff, batch_size = data
             if num_tapes == 0:
                 # parameter has zero gradient. We don't know the output shape yet, so just memorize
@@ -742,6 +739,8 @@ def expval_param_shift(
                 grads[i] = qml.math.hstack(g)
 
         return qml.math.T(qml.math.stack(grads))
+
+    processing_fn.first_result_unshifted = at_least_one_unshifted
 
     return gradient_tapes, processing_fn
 
@@ -828,9 +827,7 @@ def _single_variance_gradient(tape, var_mask, pdA2, f0, pdA):
     num_params = len(tape.trainable_params)
     num_measurements = len(tape.measurements)
     if num_measurements > 1:
-
         if num_params == 1:
-
             var_grad = []
 
             for m_idx in range(num_measurements):
@@ -900,7 +897,7 @@ def _create_variance_proc_fn(
         shot_vector = isinstance(shots, Sequence)
 
         # analytic derivative of <A>
-        pdA = pdA_fn(results[1:tape_boundary])
+        pdA = pdA_fn(results[int(not pdA_fn.first_result_unshifted) : tape_boundary])
 
         # analytic derivative of <A^2>
         pdA2 = _get_pdA2(
@@ -976,8 +973,6 @@ def _var_param_shift_tuple(
     # Get <A>, the expectation value of the tape with unshifted parameters.
     expval_tape = tape.copy(copy_operations=True)
 
-    gradient_tapes = [expval_tape]
-
     # Convert all variance measurements on the tape into expectation values
     for i in var_indices:
         obs = expval_tape._measurements[i].obs
@@ -987,11 +982,12 @@ def _var_param_shift_tuple(
     pdA_tapes, pdA_fn = expval_param_shift(
         expval_tape, argnum, shifts, gradient_recipes, f0, broadcast, shots
     )
+    gradient_tapes = [] if pdA_fn.first_result_unshifted else [expval_tape]
     gradient_tapes.extend(pdA_tapes)
 
     # Store the number of first derivative tapes, so that we know
     # the number of results to post-process later.
-    tape_boundary = len(pdA_tapes) + 1
+    tape_boundary = len(gradient_tapes)
 
     # If there are non-involutory observables A present, we must compute d<A^2>/dp.
     # Get the indices in the measurement queue of all non-involutory
@@ -1027,9 +1023,6 @@ def _var_param_shift_tuple(
         )
         gradient_tapes.extend(pdA2_tapes)
 
-    # Store the number of first derivative tapes, so that we know
-    # the number of results to post-process later.
-    tape_boundary = len(pdA_tapes) + 1
     processing_fn = _create_variance_proc_fn(
         tape, var_mask, var_indices, pdA_fn, pdA2_fn, tape_boundary, non_involutory_indices, shots
     )
@@ -1083,8 +1076,6 @@ def var_param_shift(
     # Get <A>, the expectation value of the tape with unshifted parameters.
     expval_tape = tape.copy(copy_operations=True)
 
-    gradient_tapes = [expval_tape]
-
     # Convert all variance measurements on the tape into expectation values
     for i in var_idx:
         obs = expval_tape._measurements[i].obs
@@ -1094,11 +1085,12 @@ def var_param_shift(
     pdA_tapes, pdA_fn = expval_param_shift(
         expval_tape, argnum, shifts, gradient_recipes, f0, broadcast
     )
+    gradient_tapes = [] if pdA_fn.first_result_unshifted else [expval_tape]
     gradient_tapes.extend(pdA_tapes)
 
     # Store the number of first derivative tapes, so that we know
     # the number of results to post-process later.
-    tape_boundary = len(pdA_tapes) + 1
+    tape_boundary = len(gradient_tapes)
 
     # If there are non-involutory observables A present, we must compute d<A^2>/dp.
     # Get the indices in the measurement queue of all non-involutory
@@ -1160,7 +1152,7 @@ def var_param_shift(
         f0 = qml.math.expand_dims(res, -1)
         mask = qml.math.convert_like(qml.math.reshape(mask, qml.math.shape(f0)), res)
 
-        pdA = pdA_fn(results[1:tape_boundary])
+        pdA = pdA_fn(results[int(not pdA_fn.first_result_unshifted) : tape_boundary])
         pdA2 = 0
 
         if non_involutory:

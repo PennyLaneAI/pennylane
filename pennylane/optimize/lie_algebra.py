@@ -16,6 +16,7 @@ import warnings
 
 import numpy as np
 from scipy.sparse.linalg import expm
+
 import pennylane as qml
 
 
@@ -59,11 +60,11 @@ def append_time_evolution(tape, riemannian_gradient, t, n, exact=False):
         qml.apply(obj)
     if exact:
         qml.QubitUnitary(
-            expm(-1j * t * qml.utils.sparse_hamiltonian(riemannian_gradient).toarray()),
+            expm(-1j * t * riemannian_gradient.sparse_matrix().toarray()),
             wires=range(len(riemannian_gradient.wires)),
         )
     else:
-        qml.templates.ApproxTimeEvolution(riemannian_gradient, t, n)
+        qml.evolve(riemannian_gradient, coeff=t, num_steps=n)
 
     for obj in tape.measurements:
         qml.apply(obj)
@@ -237,10 +238,10 @@ class LieAlgebraOptimizer:
     -2.2283086057521713
 
     """
+
     # pylint: disable=too-many-arguments
     # pylint: disable=too-many-instance-attributes
     def __init__(self, circuit, stepsize=0.01, restriction=None, exact=False, trottersteps=1):
-
         if not isinstance(circuit, qml.QNode):
             raise TypeError(f"circuit must be a QNode, received {type(circuit)}")
 

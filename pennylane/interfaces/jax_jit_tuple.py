@@ -100,7 +100,7 @@ def execute_tuple(tapes, device, execute_fn, gradient_fn, gradient_kwargs, _n=1,
 
     Args:
         tapes (Sequence[.QuantumTape]): batch of tapes to execute
-        device (.Device): Device to use to execute the batch of tapes.
+        device (pennylane.Device): Device to use to execute the batch of tapes.
             If the device does not provide a ``batch_execute`` method,
             by default the tapes will be executed in serial.
         execute_fn (callable): The execution function used to execute the tapes
@@ -212,14 +212,12 @@ def _execute_bwd_tuple(
         if isinstance(gradient_fn, qml.gradients.gradient_transform):
             # Gradient function is a gradient transform
             if _n == max_diff:
-
                 res_from_callback = _grad_transform_jac_via_callback(params, device)
                 if len(tapes) == 1:
                     res_from_callback = [res_from_callback]
 
                 jvps = _compute_jvps(res_from_callback, tangents[0], multi_measurements)
             else:
-
                 new_tapes = [_copy_tape(t, a) for t, a in zip(tapes, params)]
 
                 all_jacs = []

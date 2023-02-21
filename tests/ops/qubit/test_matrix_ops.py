@@ -14,10 +14,10 @@
 """
 Unit tests for the qubit matrix-based operations.
 """
+# pylint: disable=import-outside-toplevel
 import numpy as np
 import pytest
 from gate_data import H, I, S, T, X, Z
-from scipy.stats import unitary_group
 
 import pennylane as qml
 from pennylane.operation import DecompositionUndefinedError
@@ -282,8 +282,11 @@ class TestQubitUnitary:
         from jax import numpy as jnp
 
         U = jnp.array(U)
-        f = lambda m: qml.QubitUnitary(m, wires=range(num_wires)).matrix()
-        out = jax.jit(f)(U)
+
+        def mat_fn(m):
+            return qml.QubitUnitary(m, wires=range(num_wires)).matrix()
+
+        out = jax.jit(mat_fn)(U)
         assert qml.math.allclose(out, qml.QubitUnitary(U, wires=range(num_wires)).matrix())
 
     @pytest.mark.parametrize(
@@ -376,6 +379,7 @@ class TestQubitUnitary:
 
     def test_controlled(self):
         """Test QubitUnitary's controlled method."""
+        # pylint: disable=protected-access
         U = qml.PauliX.compute_matrix()
         base = qml.QubitUnitary(U, wires=0)
 
@@ -418,6 +422,7 @@ class TestDiagonalQubitUnitary:
 
     def test_controlled(self):
         """Test that the correct controlled operation is created when controlling a qml.DiagonalQubitUnitary."""
+        # pylint: disable=protected-access
         D = np.array([1j, 1, 1, -1, -1j, 1j, 1, -1])
         op = qml.DiagonalQubitUnitary(D, wires=[1, 2, 3])
         with qml.queuing.AnnotatedQueue() as q:
@@ -431,6 +436,7 @@ class TestDiagonalQubitUnitary:
     def test_controlled_broadcasted(self):
         """Test that the correct controlled operation is created when
         controlling a qml.DiagonalQubitUnitary with a broadcasted diagonal."""
+        # pylint: disable=protected-access
         D = np.array([[1j, 1, -1j, 1], [1, -1, 1j, -1]])
         op = qml.DiagonalQubitUnitary(D, wires=[1, 2])
         with qml.queuing.AnnotatedQueue() as q:
@@ -510,7 +516,7 @@ class TestDiagonalQubitUnitary:
         dev = qml.device("default.qubit", wires=1, shots=None)
 
         @jax.jit
-        @qml.qnode(dev, interface="jax")
+        @qml.qnode(dev)
         def circuit(x):
             diag = jnp.exp(1j * x * jnp.array([1, -1]) / 2)
             qml.Hadamard(wires=0)
@@ -533,7 +539,7 @@ class TestDiagonalQubitUnitary:
         dev = qml.device("default.qubit", wires=1, shots=None)
 
         @jax.jit
-        @qml.qnode(dev, interface="jax")
+        @qml.qnode(dev)
         def circuit(x):
             diag = jnp.exp(1j * jnp.outer(x, jnp.array([1, -1])) / 2)
             qml.Hadamard(wires=0)
@@ -555,7 +561,7 @@ class TestDiagonalQubitUnitary:
         dev = qml.device("default.qubit", wires=1, shots=None)
 
         @tf.function
-        @qml.qnode(dev, interface="tf")
+        @qml.qnode(dev)
         def circuit(x):
             x = tf.cast(x, tf.complex128)
             diag = tf.math.exp(1j * x * tf.constant([1.0 + 0j, -1.0 + 0j]) / 2)
@@ -569,239 +575,37 @@ class TestDiagonalQubitUnitary:
             loss = circuit(x)
 
         grad = tape.gradient(loss, x)
-        expected = -tf.math.sin(x)
+        expected = -tf.math.sin(x)  # pylint: disable=invalid-unary-operand-type
         assert np.allclose(grad, expected)
 
 
-theta_1 = np.array([0.4, 0.1, 0.1])
-theta_2 = np.array([0.4, 0.1, 0.1, 0.6, 0.2, 0.3, 0.1, 0.2, 0, 0.2, 0.2, 0.2, 0.1, 0.5, 0.2])
-theta_3 = np.ones(63)
-n_and_theta = [(1, theta_1), (2, theta_2), (3, theta_3)]
-
-
-class TestSpecialUnitary:
-    """Tests for the Operation ``SpecialUnitary``."""
-
-    @pytest.mark.parametrize("n, theta", n_and_theta)
-    def test_decomposition(self, n, theta):
-        """Test that SpecialUnitary falls back to QubitUnitary."""
-
-        wires = list(range(n))
-        decomp = qml.SpecialUnitary.compute_decomposition(theta, wires, n)
-        decomp2 = qml.SpecialUnitary(theta, wires).decomposition()
-
-        assert len(decomp) == 1 == len(decomp2)
-        assert decomp[0].name == "QubitUnitary" == decomp2[0].name
-        assert decomp[0].wires == Wires(wires) == decomp2[0].wires
-        mat = special_unitary_matrix(theta, n)
-        assert np.allclose(decomp[0].data[0], mat)
-        assert np.allclose(decomp2[0].data[0], mat)
-
-    @pytest.mark.parametrize("n, theta", n_and_theta)
-    def test_decomposition_broadcasted(self, n, theta):
-        """Test that the broadcasted SpecialUnitary falls back to QubitUnitary."""
-        theta = np.outer([0.2, 1.0, -0.3], theta)
-        wires = list(range(n))
-
-        decomp = qml.SpecialUnitary.compute_decomposition(theta, wires, n)
-        decomp2 = qml.SpecialUnitary(theta, wires).decomposition()
-
-        assert len(decomp) == 1 == len(decomp2)
-        assert decomp[0].name == "QubitUnitary" == decomp2[0].name
-        assert decomp[0].wires == Wires(wires) == decomp2[0].wires
-
-        mat = special_unitary_matrix(theta, n)
-        assert np.allclose(decomp[0].data[0], mat)
-        assert np.allclose(decomp2[0].data[0], mat)
-
-    @pytest.mark.parametrize("n, theta", n_and_theta)
-    def test_matrix_representation(self, n, theta, tol):
-        """Test that the matrix representation is defined correctly"""
-        wires = list(range(n))
-        res_static = qml.SpecialUnitary.compute_matrix(theta, n)
-        res_dynamic = qml.SpecialUnitary(theta, wires).matrix()
-        expected = special_unitary_matrix(theta, n)
-        assert np.allclose(res_static, expected, atol=tol)
-        assert np.allclose(res_dynamic, expected, atol=tol)
-
-    @pytest.mark.parametrize("n, theta", n_and_theta)
-    def test_matrix_representation_broadcasted(self, n, theta, tol):
-        """Test that the matrix representation is defined correctly for
-        a broadcasted SpecialUnitary."""
-        theta = np.outer([0.2, 1.0, -0.3], theta)
-        wires = list(range(n))
-        res_static = qml.SpecialUnitary.compute_matrix(theta, n)
-        res_dynamic = qml.SpecialUnitary(theta, wires).matrix()
-        expected = special_unitary_matrix(theta, n)
-        assert np.allclose(res_static, expected, atol=tol)
-        assert np.allclose(res_dynamic, expected, atol=tol)
-
-    @pytest.mark.parametrize("n", [1, 2, 3])
-    def test_matrix_unitarity(self, n):
-        wires = list(range(n))
-        d = 4**n - 1
-        theta = np.random.random(d)
-        U = qml.SpecialUnitary(theta, wires).matrix()
-        assert qml.math.allclose(U.conj().T @ U, np.eye(2**n))
-
-    @pytest.mark.parametrize("n", [1, 2, 3])
-    def test_matrix_PauliRot(self, n):
-        wires = list(range(n))
-        d = 4**n - 1
-        words = pauli_words(n)
-        prefactors = np.random.random(d)
-        thetas = prefactors * np.eye(d)
-        for theta, pref, word in zip(thetas, prefactors, words):
-            U = qml.SpecialUnitary(theta, wires)
-            rot = qml.PauliRot(-2 * pref, word, wires)
-            assert qml.math.allclose(U.matrix(), rot.matrix())
-
-    @pytest.mark.parametrize("batch_size", [1, 3])
-    @pytest.mark.parametrize("n, theta", n_and_theta)
-    def test_matrix_broadcasting(self, theta, n, batch_size):
-        wires = list(range(n))
-        d = 4**n - 1
-        theta = np.outer(np.arange(batch_size), theta)
-        U = qml.SpecialUnitary(theta, wires).matrix()
-        assert all(qml.math.allclose(_U, special_unitary_matrix(_t, n)) for _U, _t in zip(U, theta))
-
-    @pytest.mark.parametrize("n, theta", n_and_theta)
-    def test_adjoint(self, theta, n):
-        wires = list(range(n))
-        U = qml.SpecialUnitary(theta, wires)
-        U_dagger = qml.adjoint(qml.SpecialUnitary)(theta, wires)
-        U_dagger_inplace = qml.SpecialUnitary(theta, wires).adjoint()
-        U_minustheta = qml.SpecialUnitary(-theta, wires)
-        assert qml.math.allclose(U.matrix(), U_dagger.matrix().conj().T)
-        assert qml.math.allclose(U.matrix(), U_dagger_inplace.matrix().conj().T)
-        assert qml.math.allclose(U_minustheta.matrix(), U_dagger.matrix())
-
-    @pytest.mark.parametrize(
-        "theta, n", [(np.ones(4), 1), (9.421, 2), (np.ones((5, 2, 1)), 1), (np.ones((5, 16)), 2)]
-    )
-    def test_wrong_input_shape(self, theta, n):
-        wires = list(range(n))
-        with pytest.raises(ValueError, match="Expected the parameters to have"):
-            U = qml.SpecialUnitary(theta, wires)
-
-    @pytest.mark.jax
-    def test_jax_jit(self):
-        """Test that the SpecialUnitary operation works
-        within a QNode that uses the JAX JIT"""
-        import jax
-
-        jax.config.update("jax_enable_x64", True)
-        jnp = jax.numpy
-
-        dev = qml.device("default.qubit", wires=1, shots=None)
-
-        theta = jnp.array(theta_1)
-
-        @jax.jit
-        @qml.qnode(dev, interface="jax")
-        def circuit(x):
-            qml.SpecialUnitary(x, 0)
-            return qml.probs(wires=[0])
-
-        def comparison(x):
-            state = special_unitary_matrix(x, 1) @ jnp.array([1, 0])
-            return jnp.abs(state) ** 2
-
-        jac = jax.jacobian(circuit)(theta)
-        expected_jac = jax.jacobian(comparison)(theta)
-        assert np.allclose(jac, expected_jac)
-
-    # The JAX version of scipy.linalg.expm does not support broadcasting.
-    @pytest.mark.xfail
-    @pytest.mark.jax
-    def test_jax_jit_broadcasted(self):
-        """Test that the SpecialUnitary operation works
-        within a QNode that uses the JAX JIT and broadcasting."""
-        import jax
-
-        jax.config.update("jax_enable_x64", True)
-        jnp = jax.numpy
-
-        dev = qml.device("default.qubit", wires=1, shots=None)
-
-        theta = jnp.outer(jnp.array([-0.4, 0.1, 1.0]), theta_1)
-
-        @jax.jit
-        @qml.qnode(dev, interface="jax")
-        def circuit(x):
-            qml.SpecialUnitary(x, 0)
-            return qml.probs(wires=[0])
-
-        def comparison(x):
-            state = special_unitary_matrix(x, 1) @ jnp.array([1, 0])
-            return jnp.abs(state) ** 2
-
-        jac = jax.jacobian(circuit)(theta)
-        expected_jac = jax.jacobian(comparison)(theta)
-        assert np.allclose(jac, expected_jac)
-
-    @pytest.mark.tf
-    @pytest.mark.slow
-    def test_tf_function(self):
-        """Test that the SpecialUnitary operation works
-        within a QNode that uses TensorFlow autograph"""
-        import tensorflow as tf
-
-        dev = qml.device("default.qubit", wires=1, shots=None)
-
-        @tf.function
-        @qml.qnode(dev, interface="tf")
-        def circuit(x):
-            qml.SpecialUnitary(x, 0)
-            return qml.expval(qml.PauliX(0))
-
-        theta = tf.Variable(theta_1)
-
-        with tf.GradientTape() as tape:
-            loss = circuit(theta)
-
-        jac = tape.jacobian(loss, theta)
-
-        def comparison(x):
-            state = qml.math.tensordot(
-                special_unitary_matrix(x, 1),
-                tf.constant([1, 0], dtype=tf.complex128),
-                axes=[[1], [0]],
-            )
-            return qml.math.tensordot(
-                qml.math.conj(state),
-                qml.math.tensordot(qml.PauliX(0).matrix(), state, axes=[[1], [0]]),
-                axes=[[0], [0]],
-            )
-
-        with tf.GradientTape() as tape:
-            loss = comparison(theta)
-
-        expected = tape.jacobian(loss, theta)
-        assert np.allclose(jac, expected)
-
-
-label_data = [
-    (X, qml.QubitUnitary(X, wires=0)),
-    (X, qml.ControlledQubitUnitary(X, control_wires=0, wires=1)),
-    ([1, 1], qml.DiagonalQubitUnitary([1, 1], wires=0)),
+labels = [X, X, [1, 1]]
+ops = [
+    qml.QubitUnitary(X, wires=0),
+    qml.ControlledQubitUnitary(X, control_wires=0, wires=1),
+    qml.DiagonalQubitUnitary([1, 1], wires=0),
 ]
 
 
-@pytest.mark.parametrize("mat, op", label_data)
 class TestUnitaryLabels:
-    def test_no_cache(self, mat, op):
+    """Test the label of matrix operations."""
+
+    @pytest.mark.parametrize("op", ops)
+    def test_no_cache(self, op):
         """Test labels work without a provided cache."""
         assert op.label() == "U"
 
-    def test_matrices_not_in_cache(self, mat, op):
+    @pytest.mark.parametrize("op", ops)
+    def test_matrices_not_in_cache(self, op):
         """Test provided cache doesn't have a 'matrices' keyword."""
         assert op.label(cache={}) == "U"
 
-    def test_cache_matrices_not_list(self, mat, op):
+    @pytest.mark.parametrize("op", ops)
+    def test_cache_matrices_not_list(self, op):
         """Test 'matrices' key pair is not a list."""
         assert op.label(cache={"matrices": 0}) == "U"
 
+    @pytest.mark.parametrize("mat, op", zip(labels, ops))
     def test_empty_cache_list(self, mat, op):
         """Test matrices list is provided, but empty. Operation should have `0` label and matrix
         should be added to cache."""
@@ -809,6 +613,7 @@ class TestUnitaryLabels:
         assert op.label(cache=cache) == "U(M0)"
         assert qml.math.allclose(cache["matrices"][0], mat)
 
+    @pytest.mark.parametrize("mat, op", zip(labels, ops))
     def test_something_in_cache_list(self, mat, op):
         """If something exists in the matrix list, but parameter is not in the list, then parameter
         added to list and label given number of its position."""
@@ -818,6 +623,7 @@ class TestUnitaryLabels:
         assert len(cache["matrices"]) == 2
         assert qml.math.allclose(cache["matrices"][1], mat)
 
+    @pytest.mark.parametrize("mat, op", zip(labels, ops))
     def test_matrix_already_in_cache_list(self, mat, op):
         """If the parameter already exists in the matrix cache, then the label uses that index and the
         matrix cache is unchanged."""

@@ -335,7 +335,7 @@ class TestApply:
         """Test that an exception is raised if a state preparation is not the
         first operation in the circuit."""
         dev = device(wires=2, torch_device=torch_device)
-        state = torch.tensor([0, 12])
+        state = torch.tensor([0, 1])
 
         with pytest.raises(
             qml.DeviceError,
@@ -2209,9 +2209,9 @@ class TestPassthruIntegration:
 
         with pytest.raises(Exception) as e:
             assert qml.qnode(dev, diff_method="autograd", interface=interface)(circuit)
-        assert (
-            str(e.value)
-            == "Differentiation method autograd not recognized. Allowed options are ('best', 'parameter-shift', 'backprop', 'finite-diff', 'device', 'adjoint')."
+        assert str(e.value) == (
+            "Differentiation method autograd not recognized. Allowed options are ('best', "
+            "'parameter-shift', 'backprop', 'finite-diff', 'device', 'adjoint', 'spsa', 'hadamard')."
         )
 
 

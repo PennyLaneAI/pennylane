@@ -500,7 +500,6 @@ def purity(state, indices, check_state=False, c_dtype="complex128"):
     # If the state is a state vector and the system in question is the entire system,
     # return 1 directly because a valid state vector always represents a pure state.
     if state.shape == (len_state,) and len(indices) == num_wires:
-
         if check_state:
             _check_state_vector(state)
 
@@ -584,7 +583,7 @@ def vn_entropy(state, indices, base=None, check_state=False, c_dtype="complex128
     The entropy can be obtained by providing a quantum state as a density matrix, for example:
 
     >>> y = [[1/2, 0, 0, 1/2], [0, 0, 0, 0], [0, 0, 0, 0], [1/2, 0, 0, 1/2]]
-    >>> vn_entropy(x, indices=[0])
+    >>> vn_entropy(y, indices=[0])
     0.6931472
 
     .. seealso:: :func:`pennylane.qinfo.transforms.vn_entropy` and :func:`pennylane.vn_entropy`

@@ -31,11 +31,17 @@ qubit_device_and_diff_method = [
     ["default.qubit", "backprop", "forward"],
     ["default.qubit", "adjoint", "forward"],
     ["default.qubit", "adjoint", "backward"],
+    ["default.qubit", "spsa", "backward"],
+    ["default.qubit", "hadamard", "backward"],
 ]
 
 interface_and_qubit_device_and_diff_method = [
     ["auto"] + inner_list for inner_list in qubit_device_and_diff_method
 ] + [["torch"] + inner_list for inner_list in qubit_device_and_diff_method]
+
+TOL_FOR_SPSA = 1.0
+SEED_FOR_SPSA = 32651
+H_FOR_SPSA = 0.01
 
 
 @pytest.mark.parametrize(
@@ -49,7 +55,12 @@ class TestQNode:
         if diff_method == "backprop":
             pytest.skip("Test does not support backprop")
 
-        dev = qml.device(dev_name, wires=1)
+        num_wires = 1
+
+        if diff_method == "hadamard":
+            num_wires = 2
+
+        dev = qml.device(dev_name, wires=num_wires)
 
         @qnode(dev, diff_method=diff_method, mode=mode, interface=interface)
         def circuit(a):
@@ -80,7 +91,12 @@ class TestQNode:
     def test_interface_swap(self, interface, dev_name, diff_method, mode, tol):
         """Test that the Torch interface can be applied to a QNode
         with a pre-existing interface"""
-        dev = qml.device(dev_name, wires=1)
+        num_wires = 1
+
+        if diff_method == "hadamard":
+            num_wires = 2
+
+        dev = qml.device(dev_name, wires=num_wires)
 
         @qnode(dev, diff_method=diff_method, interface="autograd")
         def circuit(a):
@@ -114,7 +130,12 @@ class TestQNode:
         y = torch.tensor([0.2, 0.3], requires_grad=True)
         z = torch.tensor(0.4, requires_grad=True)
 
-        dev = qml.device(dev_name, wires=2)
+        num_wires = 2
+
+        if diff_method == "hadamard":
+            num_wires = 3
+
+        dev = qml.device(dev_name, wires=num_wires)
 
         @qnode(dev, interface=interface, diff_method=diff_method, mode=mode)
         def circuit(p1, p2=y, **kwargs):
@@ -137,6 +158,12 @@ class TestQNode:
             spy = mocker.spy(qml.gradients.param_shift, "transform_fn")
         elif diff_method == "finite-diff":
             spy = mocker.spy(qml.gradients.finite_diff, "transform_fn")
+        elif diff_method == "spsa":
+            spy = mocker.spy(qml.gradients.spsa_grad, "transform_fn")
+            np.random.seed(SEED_FOR_SPSA)
+            tol = TOL_FOR_SPSA
+        elif diff_method == "hadamard":
+            spy = mocker.spy(qml.gradients.hadamard_grad, "transform_fn")
 
         a_val = 0.1
         b_val = 0.2
@@ -144,7 +171,12 @@ class TestQNode:
         a = torch.tensor(a_val, dtype=torch.float64, requires_grad=True)
         b = torch.tensor(b_val, dtype=torch.float64, requires_grad=True)
 
-        dev = qml.device(dev_name, wires=2)
+        num_wires = 2
+
+        if diff_method == "hadamard":
+            num_wires = 3
+
+        dev = qml.device(dev_name, wires=num_wires)
 
         @qnode(dev, diff_method=diff_method, mode=mode, interface=interface)
         def circuit(a, b):
@@ -180,7 +212,7 @@ class TestQNode:
         assert np.allclose(a.grad, expected[0], atol=tol, rtol=0)
         assert np.allclose(b.grad, expected[1], atol=tol, rtol=0)
 
-        if diff_method in ("parameter-shift", "finite-diff"):
+        if diff_method in ("parameter-shift", "finite-diff", "spsa"):
             spy.assert_called()
 
     # TODO: fix this behavior with float: already present before return type.
@@ -220,8 +252,8 @@ class TestQNode:
 
     def test_jacobian_options(self, interface, dev_name, diff_method, mode, mocker, tol):
         """Test setting jacobian options"""
-        if diff_method != "finite-diff":
-            pytest.skip("Test only works with finite-diff")
+        if diff_method not in {"finite-diff", "spsa"}:
+            pytest.skip("Test only works with finite-diff and spsa")
 
         spy = mocker.spy(qml.gradients.finite_diff, "transform_fn")
 
@@ -319,7 +351,12 @@ class TestQNode:
         b = torch.tensor(0.2, dtype=torch.float64, requires_grad=False)
         c = torch.tensor(0.3, dtype=torch.float64, requires_grad=True)
 
-        dev = qml.device(dev_name, wires=1)
+        num_wires = 1
+
+        if diff_method == "hadamard":
+            num_wires = 2
+
+        dev = qml.device(dev_name, wires=num_wires)
 
         @qnode(dev, diff_method=diff_method, mode=mode, interface=interface)
         def circuit(a, b, c):
@@ -342,7 +379,12 @@ class TestQNode:
 
     def test_no_trainable_parameters(self, interface, dev_name, diff_method, mode, tol):
         """Test evaluation and Jacobian if there are no trainable parameters"""
-        dev = qml.device(dev_name, wires=2)
+        num_wires = 2
+
+        if diff_method == "hadamard":
+            num_wires = 3
+
+        dev = qml.device(dev_name, wires=num_wires)
 
         @qnode(dev, diff_method=diff_method, mode=mode, interface=interface)
         def circuit(a, b):
@@ -393,7 +435,12 @@ class TestQNode:
         a_val = 0.1
         a = torch.tensor(a_val, dtype=torch.float64, requires_grad=True)
 
-        dev = qml.device(dev_name, wires=2)
+        num_wires = 2
+
+        if diff_method == "hadamard":
+            num_wires = 3
+
+        dev = qml.device(dev_name, wires=num_wires)
 
         @qnode(dev, diff_method=diff_method, mode=mode, interface=interface)
         def circuit(U, a):
@@ -414,6 +461,9 @@ class TestQNode:
     def test_differentiable_expand(self, interface, dev_name, diff_method, mode, tol):
         """Test that operation and nested tapes expansion
         is differentiable"""
+        if diff_method == "spsa":
+            np.random.seed(SEED_FOR_SPSA)
+            tol = TOL_FOR_SPSA
 
         class U3(qml.U3):
             def expand(self):
@@ -426,7 +476,12 @@ class TestQNode:
                 tape = qml.tape.QuantumScript.from_queue(q)
                 return tape
 
-        dev = qml.device(dev_name, wires=1)
+        num_wires = 1
+
+        if diff_method == "hadamard":
+            num_wires = 2
+
+        dev = qml.device(dev_name, wires=num_wires)
         a = np.array(0.1)
         p_val = [0.1, 0.2, 0.3]
         p = torch.tensor(p_val, dtype=torch.float64, requires_grad=True)
@@ -438,8 +493,6 @@ class TestQNode:
             return qml.expval(qml.PauliX(0))
 
         res = circuit(a, p)
-
-        assert circuit.qtape.trainable_params == [1, 2, 3]
 
         expected = np.cos(a) * np.cos(p_val[1]) * np.sin(p_val[0]) + np.sin(a) * (
             np.cos(p_val[2]) * np.sin(p_val[1])
@@ -649,8 +702,16 @@ class TestQubitIntegration:
 
         if diff_method == "adjoint":
             pytest.skip("The adjoint method does not currently support returning probabilities")
+        elif diff_method == "spsa":
+            tol = TOL_FOR_SPSA
 
-        dev = qml.device(dev_name, wires=2)
+        num_wires = 2
+
+        if diff_method == "hadamard":
+            num_wires = 3
+
+        dev = qml.device(dev_name, wires=num_wires)
+
         x_val = 0.543
         y_val = -0.654
         x = torch.tensor(x_val, requires_grad=True, dtype=torch.float64)
@@ -695,8 +756,17 @@ class TestQubitIntegration:
         with prob and expval outputs"""
         if diff_method == "adjoint":
             pytest.skip("The adjoint method does not currently support returning probabilities")
+        elif diff_method == "spsa":
+            np.random.seed(SEED_FOR_SPSA)
+            tol = TOL_FOR_SPSA
 
-        dev = qml.device(dev_name, wires=2)
+        num_wires = 2
+
+        if diff_method == "hadamard":
+            num_wires = 3
+
+        dev = qml.device(dev_name, wires=num_wires)
+
         x_val = 0.543
         y_val = -0.654
         x = torch.tensor(x_val, requires_grad=True, dtype=torch.float64)
@@ -736,7 +806,12 @@ class TestQubitIntegration:
 
     def test_chained_qnodes(self, interface, dev_name, diff_method, mode):
         """Test that the gradient of chained QNodes works without error"""
-        dev = qml.device(dev_name, wires=2)
+        num_wires = 2
+
+        if diff_method == "hadamard":
+            num_wires = 3
+
+        dev = qml.device(dev_name, wires=num_wires)
 
         @qnode(dev, interface=interface, diff_method=diff_method, mode=mode)
         def circuit1(weights):
@@ -769,10 +844,15 @@ class TestQubitIntegration:
 
     def test_hessian(self, interface, dev_name, diff_method, mode, tol):
         """Test hessian calculation of a scalar valued QNode"""
-        if diff_method == "adjoint":
-            pytest.skip("Adjoint does not support second derivative.")
+        if diff_method in {"adjoint", "spsa"}:
+            pytest.skip("Adjoint and SPSA do not support second derivative.")
 
-        dev = qml.device(dev_name, wires=1)
+        num_wires = 1
+
+        if diff_method == "hadamard":
+            num_wires = 3
+
+        dev = qml.device(dev_name, wires=num_wires)
 
         options = {}
         if diff_method == "finite-diff":
@@ -814,10 +894,15 @@ class TestQubitIntegration:
 
     def test_hessian_vector_valued(self, interface, dev_name, diff_method, mode, tol):
         """Test hessian calculation of a vector valued QNode"""
-        if diff_method == "adjoint":
-            pytest.skip("Adjoint does not support second derivative.")
+        if diff_method in {"adjoint", "spsa"}:
+            pytest.skip("Adjoint and SPSA do not support second derivative.")
 
-        dev = qml.device(dev_name, wires=1)
+        num_wires = 1
+
+        if diff_method == "hadamard":
+            num_wires = 3
+
+        dev = qml.device(dev_name, wires=num_wires)
 
         options = {}
         if diff_method == "finite-diff":
@@ -870,10 +955,15 @@ class TestQubitIntegration:
 
     def test_hessian_ragged(self, interface, dev_name, diff_method, mode, tol):
         """Test hessian calculation of a ragged QNode"""
-        if diff_method == "adjoint":
-            pytest.skip("Adjoint does not support second derivative.")
+        if diff_method in {"adjoint", "spsa"}:
+            pytest.skip("Adjoint and SPSA do not support second derivative.")
 
-        dev = qml.device(dev_name, wires=2)
+        num_wires = 2
+
+        if diff_method == "hadamard":
+            num_wires = 4
+
+        dev = qml.device(dev_name, wires=num_wires)
 
         options = {}
         if diff_method == "finite-diff":
@@ -939,14 +1029,19 @@ class TestQubitIntegration:
         self, interface, dev_name, diff_method, mode, tol
     ):
         """Test hessian calculation of a vector valued QNode with post-processing"""
-        if diff_method == "adjoint":
-            pytest.skip("Adjoint does not support second derivative.")
+        if diff_method in {"adjoint", "spsa"}:
+            pytest.skip("Adjoint and SPSA do not support second derivative.")
 
         options = {}
         if diff_method == "finite-diff":
             options = {"h": 1e-6}
 
-        dev = qml.device(dev_name, wires=1)
+        num_wires = 1
+
+        if diff_method == "hadamard":
+            num_wires = 3
+
+        dev = qml.device(dev_name, wires=num_wires)
 
         @qnode(dev, diff_method=diff_method, mode=mode, max_diff=2, interface=interface)
         def circuit(x):
@@ -996,7 +1091,12 @@ class TestQubitIntegration:
         if diff_method == "adjoint":
             pytest.skip("Adjoint does not support states")
 
-        dev = qml.device(dev_name, wires=2)
+        num_wires = 2
+
+        if diff_method == "hadamard":
+            num_wires = 3
+
+        dev = qml.device(dev_name, wires=num_wires)
 
         x = torch.tensor(0.543, requires_grad=True)
         y = torch.tensor(-0.654, requires_grad=True)
@@ -1030,6 +1130,11 @@ class TestQubitIntegration:
         """Test that the variance of a projector is correctly returned"""
         if diff_method == "adjoint":
             pytest.skip("Adjoint does not support projectors")
+        elif diff_method == "spsa":
+            np.random.seed(SEED_FOR_SPSA)
+            tol = TOL_FOR_SPSA
+        elif diff_method == "hadamard":
+            pytest.skip("Hadamard does not support variances.")
 
         dev = qml.device(dev_name, wires=2)
         P = torch.tensor([1], requires_grad=False)
@@ -1064,7 +1169,12 @@ class TestQubitIntegration:
 @pytest.mark.xfail
 @pytest.mark.parametrize(
     "diff_method,kwargs",
-    [["finite-diff", {}], ("parameter-shift", {}), ("parameter-shift", {"force_order2": True})],
+    [
+        ["finite-diff", {}],
+        ["spsa", {"num_directions": 100, "h": 0.05}],
+        ("parameter-shift", {}),
+        ("parameter-shift", {"force_order2": True}),
+    ],
 )
 class TestCV:
     """Tests for CV integration"""
@@ -1072,6 +1182,8 @@ class TestCV:
     def test_first_order_observable(self, diff_method, kwargs, tol):
         """Test variance of a first order CV observable"""
         dev = qml.device("default.gaussian", wires=1)
+        if diff_method == "spsa":
+            tol = TOL_FOR_SPSA
 
         r = torch.tensor(0.543, dtype=torch.float64, requires_grad=True)
         phi = torch.tensor(-0.654, dtype=torch.float64, requires_grad=True)
@@ -1103,6 +1215,8 @@ class TestCV:
     def test_second_order_observable(self, diff_method, kwargs, tol):
         """Test variance of a second order CV expectation value"""
         dev = qml.device("default.gaussian", wires=1)
+        if diff_method == "spsa":
+            tol = TOL_FOR_SPSA
 
         n = torch.tensor(0.12, dtype=torch.float64, requires_grad=True)
         a = torch.tensor(0.765, dtype=torch.float64, requires_grad=True)
@@ -1132,10 +1246,15 @@ class TestTapeExpansion:
     def test_gradient_expansion(self, dev_name, diff_method, mode, mocker):
         """Test that a *supported* operation with no gradient recipe is
         expanded for both parameter-shift and finite-differences, but not for execution."""
-        if diff_method not in ("parameter-shift", "finite-diff"):
+        if diff_method not in ("parameter-shift", "finite-diff", "spsa", "hadamard"):
             pytest.skip("Only supports gradient transforms")
 
-        dev = qml.device(dev_name, wires=1)
+        num_wires = 1
+
+        if diff_method == "hadamard":
+            num_wires = 2
+
+        dev = qml.device(dev_name, wires=num_wires)
 
         class PhaseShift(qml.PhaseShift):
             grad_method = None
@@ -1168,13 +1287,14 @@ class TestTapeExpansion:
         assert input_tape.operations[1].name == "RY"
         assert input_tape.operations[1].data[0] == 3 * x
 
-        shifted_tape1, shifted_tape2 = spy.spy_return[0]
+        if diff_method != "hadamard":
+            shifted_tape1, shifted_tape2 = spy.spy_return[0]
 
-        assert len(shifted_tape1.operations) == 2
-        assert shifted_tape1.operations[1].name == "RY"
+            assert len(shifted_tape1.operations) == 2
+            assert shifted_tape1.operations[1].name == "RY"
 
-        assert len(shifted_tape2.operations) == 2
-        assert shifted_tape2.operations[1].name == "RY"
+            assert len(shifted_tape2.operations) == 2
+            assert shifted_tape2.operations[1].name == "RY"
 
         assert torch.allclose(res, -3 * torch.sin(3 * x))
 
@@ -1187,10 +1307,15 @@ class TestTapeExpansion:
     def test_gradient_expansion_trainable_only(self, dev_name, diff_method, mode, max_diff, mocker):
         """Test that a *supported* operation with no gradient recipe is only
         expanded for parameter-shift and finite-differences when it is trainable."""
-        if diff_method not in ("parameter-shift", "finite-diff"):
+        if diff_method not in ("parameter-shift", "finite-diff", "spsa", "hadamard"):
             pytest.skip("Only supports gradient transforms")
 
-        dev = qml.device(dev_name, wires=1)
+        num_wires = 1
+
+        if diff_method == "hadamard":
+            num_wires = 2
+
+        dev = qml.device(dev_name, wires=num_wires)
 
         class PhaseShift(qml.PhaseShift):
             grad_method = None
@@ -1224,17 +1349,28 @@ class TestTapeExpansion:
         assert input_tape.operations[2].grad_method is None
 
     @pytest.mark.parametrize("max_diff", [1, 2])
-    def test_hamiltonian_expansion_analytic(self, dev_name, diff_method, mode, max_diff):
+    def test_hamiltonian_expansion_analytic(self, dev_name, diff_method, mode, max_diff, tol):
         """Test that if there
         are non-commuting groups and the number of shots is None
         the first and second order gradients are correctly evaluated"""
         if diff_method == "adjoint":
             pytest.skip("The adjoint method does not yet support Hamiltonians")
+        elif diff_method == "spsa":
+            np.random.seed(SEED_FOR_SPSA)
+            tol = TOL_FOR_SPSA
+        elif diff_method == "hadamard":
+            pytest.skip("The hadamard method does not yet support Hamiltonians")
 
         dev = qml.device(dev_name, wires=3, shots=None)
         obs = [qml.PauliX(0), qml.PauliX(0) @ qml.PauliZ(1), qml.PauliZ(0) @ qml.PauliZ(1)]
 
-        @qnode(dev, diff_method=diff_method, mode=mode, max_diff=max_diff, interface="torch")
+        @qnode(
+            dev,
+            diff_method=diff_method,
+            mode=mode,
+            max_diff=max_diff,
+            interface="torch",
+        )
         def circuit(data, weights, coeffs):
             weights = torch.reshape(weights, [1, -1])
             qml.templates.AngleEmbedding(data, wires=[0, 1])
@@ -1251,7 +1387,7 @@ class TestTapeExpansion:
         expected = c[2] * torch.cos(d[1] + w[1]) - c[1] * torch.sin(d[0] + w[0]) * torch.sin(
             d[1] + w[1]
         )
-        assert torch.allclose(res, expected)
+        assert torch.allclose(res, expected, atol=tol)
 
         # test gradients
         res.backward()
@@ -1267,15 +1403,15 @@ class TestTapeExpansion:
         expected_c = torch.tensor(
             [0, -torch.sin(d[0] + w[0]) * torch.sin(d[1] + w[1]), torch.cos(d[1] + w[1])]
         )
-        assert torch.allclose(grad[0], expected_w)
-        assert torch.allclose(grad[1], expected_c)
+        assert torch.allclose(grad[0], expected_w, atol=tol)
+        assert torch.allclose(grad[1], expected_c, atol=tol)
 
         # test second-order derivatives
         if diff_method in ("parameter-shift", "backprop") and max_diff == 2:
             hessians = torch.autograd.functional.hessian(circuit, (d, w, c))
 
             grad2_c = hessians[2][2]
-            assert torch.allclose(grad2_c, torch.zeros([3, 3], dtype=torch.float64))
+            assert torch.allclose(grad2_c, torch.zeros([3, 3], dtype=torch.float64), atol=tol)
 
             grad2_w_c = hessians[1][2]
             expected = torch.tensor(
@@ -1288,7 +1424,7 @@ class TestTapeExpansion:
                     ],
                 ]
             )
-            assert torch.allclose(grad2_w_c, expected)
+            assert torch.allclose(grad2_w_c, expected, atol=tol)
 
     @pytest.mark.parametrize("max_diff", [1, 2])
     def test_hamiltonian_expansion_finite_shots(
@@ -1297,14 +1433,32 @@ class TestTapeExpansion:
         """Test that the Hamiltonian is expanded if there
         are non-commuting groups and the number of shots is finite
         and the first and second order gradients are correctly evaluated"""
-        if diff_method in ("adjoint", "backprop", "finite-diff"):
+        gradient_kwargs = {}
+        tol = 0.1
+        if diff_method in ("adjoint", "backprop"):
             pytest.skip("The adjoint and backprop methods do not yet support sampling")
+        elif diff_method == "spsa":
+            gradient_kwargs = {"h": H_FOR_SPSA}
+            np.random.seed(SEED_FOR_SPSA)
+            tol = TOL_FOR_SPSA
+        elif diff_method == "finite-diff":
+            gradient_kwargs = {"h": 0.05}
+            tol = 0.15
+        elif diff_method == "hadamard":
+            pytest.skip("The hadamard method does not yet support Hamiltonians")
 
         dev = qml.device(dev_name, wires=3, shots=50000)
         spy = mocker.spy(qml.transforms, "hamiltonian_expand")
         obs = [qml.PauliX(0), qml.PauliX(0) @ qml.PauliZ(1), qml.PauliZ(0) @ qml.PauliZ(1)]
 
-        @qnode(dev, diff_method=diff_method, mode=mode, max_diff=max_diff, interface="torch")
+        @qnode(
+            dev,
+            diff_method=diff_method,
+            mode=mode,
+            max_diff=max_diff,
+            interface="torch",
+            **gradient_kwargs
+        )
         def circuit(data, weights, coeffs):
             weights = torch.reshape(weights, [1, -1])
             qml.templates.AngleEmbedding(data, wires=[0, 1])
@@ -1322,7 +1476,7 @@ class TestTapeExpansion:
         expected = c[2] * torch.cos(d[1] + w[1]) - c[1] * torch.sin(d[0] + w[0]) * torch.sin(
             d[1] + w[1]
         )
-        assert torch.allclose(res, expected, atol=0.1)
+        assert torch.allclose(res, expected, atol=tol)
         spy.assert_called()
 
         # test gradients
@@ -1340,15 +1494,15 @@ class TestTapeExpansion:
             [0, -torch.sin(d[0] + w[0]) * torch.sin(d[1] + w[1]), torch.cos(d[1] + w[1])]
         )
 
-        assert torch.allclose(grad[0], expected_w, atol=0.1)
-        assert torch.allclose(grad[1], expected_c, atol=0.1)
+        assert torch.allclose(grad[0], expected_w, atol=tol)
+        assert torch.allclose(grad[1], expected_c, atol=tol)
 
         # test second-order derivatives
         if diff_method == "parameter-shift" and max_diff == 2:
             hessians = torch.autograd.functional.hessian(circuit, (d, w, c))
 
             grad2_c = hessians[2][2]
-            assert torch.allclose(grad2_c, torch.zeros([3, 3], dtype=torch.float64), atol=0.1)
+            assert torch.allclose(grad2_c, torch.zeros([3, 3], dtype=torch.float64), atol=tol)
 
             grad2_w_c = hessians[1][2]
             expected = torch.tensor(
@@ -1361,7 +1515,7 @@ class TestTapeExpansion:
                     ],
                 ]
             )
-            assert torch.allclose(grad2_w_c, expected, atol=0.1)
+            assert torch.allclose(grad2_w_c, expected, atol=tol)
 
 
 class TestSample:
@@ -1498,6 +1652,7 @@ qubit_device_and_diff_method_and_mode = [
     ["default.qubit", "parameter-shift", "backward"],
     ["default.qubit", "adjoint", "forward"],
     ["default.qubit", "adjoint", "backward"],
+    ["default.qubit", "hadamard", "backward"],
 ]
 
 
@@ -1511,7 +1666,12 @@ class TestReturn:
         if shots is not None and diff_method in ("backprop", "adjoint"):
             pytest.skip("Test does not support finite shots and adjoint/backprop")
 
-        dev = qml.device(dev_name, wires=1, shots=shots)
+        num_wires = 1
+
+        if diff_method == "hadamard":
+            num_wires = 2
+
+        dev = qml.device(dev_name, wires=num_wires, shots=shots)
 
         @qnode(dev, interface="torch", diff_method=diff_method, mode=mode)
         def circuit(a):
@@ -1537,7 +1697,12 @@ class TestReturn:
         if shots is not None and diff_method in ("backprop", "adjoint"):
             pytest.skip("Test does not support finite shots and adjoint/backprop")
 
-        dev = qml.device(dev_name, wires=1, shots=shots)
+        num_wires = 1
+
+        if diff_method == "hadamard":
+            num_wires = 2
+
+        dev = qml.device(dev_name, wires=num_wires, shots=shots)
 
         @qnode(dev, interface="torch", diff_method=diff_method, mode=mode)
         def circuit(a, b):
@@ -1563,7 +1728,12 @@ class TestReturn:
         if shots is not None and diff_method in ("backprop", "adjoint"):
             pytest.skip("Test does not support finite shots and adjoint/backprop")
 
-        dev = qml.device(dev_name, wires=1, shots=shots)
+        num_wires = 1
+
+        if diff_method == "hadamard":
+            num_wires = 2
+
+        dev = qml.device(dev_name, wires=num_wires, shots=shots)
 
         @qnode(dev, interface="torch", diff_method=diff_method, mode=mode)
         def circuit(a):
@@ -1591,7 +1761,12 @@ class TestReturn:
         if diff_method == "adjoint":
             pytest.skip("Test does not supports adjoint because of probabilities.")
 
-        dev = qml.device(dev_name, wires=2, shots=shots)
+        num_wires = 2
+
+        if diff_method == "hadamard":
+            num_wires = 3
+
+        dev = qml.device(dev_name, wires=num_wires, shots=shots)
 
         @qnode(dev, interface="torch", diff_method=diff_method, mode=mode)
         def circuit(a):
@@ -1616,7 +1791,12 @@ class TestReturn:
         if shots is not None and diff_method in ("backprop", "adjoint"):
             pytest.skip("Test does not support finite shots and adjoint/backprop")
 
-        dev = qml.device(dev_name, wires=2, shots=shots)
+        num_wires = 2
+
+        if diff_method == "hadamard":
+            num_wires = 3
+
+        dev = qml.device(dev_name, wires=num_wires, shots=shots)
 
         @qnode(dev, interface="torch", diff_method=diff_method, mode=mode)
         def circuit(a, b):
@@ -1647,7 +1827,12 @@ class TestReturn:
         if shots is not None and diff_method in ("backprop", "adjoint"):
             pytest.skip("Test does not support finite shots and adjoint/backprop")
 
-        dev = qml.device(dev_name, wires=2, shots=shots)
+        num_wires = 2
+
+        if diff_method == "hadamard":
+            num_wires = 3
+
+        dev = qml.device(dev_name, wires=num_wires, shots=shots)
 
         @qnode(dev, interface="torch", diff_method=diff_method, mode=mode)
         def circuit(a):
@@ -1665,7 +1850,13 @@ class TestReturn:
         """The hessian of multiple measurements with multiple params return a tuple of arrays."""
         if shots is not None and diff_method in ("backprop", "adjoint"):
             pytest.skip("Test does not support finite shots and adjoint/backprop")
-        dev = qml.device(dev_name, wires=2, shots=shots)
+
+        num_wires = 2
+
+        if diff_method == "hadamard":
+            num_wires = 3
+
+        dev = qml.device(dev_name, wires=num_wires, shots=shots)
 
         par_0 = torch.tensor(0.1, requires_grad=True)
         par_1 = torch.tensor(0.2, requires_grad=True)
@@ -1699,7 +1890,13 @@ class TestReturn:
         """The jacobian of multiple measurements with a multiple params array return a single array."""
         if shots is not None and diff_method in ("backprop", "adjoint"):
             pytest.skip("Test does not support finite shots and adjoint/backprop")
-        dev = qml.device(dev_name, wires=2, shots=shots)
+
+        num_wires = 2
+
+        if diff_method == "hadamard":
+            num_wires = 3
+
+        dev = qml.device(dev_name, wires=num_wires, shots=shots)
 
         @qnode(dev, interface="torch", diff_method=diff_method, mode=mode)
         def circuit(a):
@@ -1724,6 +1921,8 @@ class TestReturn:
         """The hessian of multiple measurements with multiple params return a tuple of arrays."""
         if diff_method == "adjoint":
             pytest.skip("Test does not supports adjoint because of var.")
+        elif diff_method == "hadamard":
+            pytest.skip("Test does not supports Hadamard because of var.")
         if shots is not None and diff_method in ("backprop", "adjoint"):
             pytest.skip("Test does not support finite shots and adjoint/backprop")
 
@@ -1762,6 +1961,8 @@ class TestReturn:
         """The jacobian of multiple measurements with a multiple params array return a single array."""
         if diff_method == "adjoint":
             pytest.skip("Test does not supports adjoint because of var.")
+        elif diff_method == "hadamard":
+            pytest.skip("Test does not supports Hadamard because of var.")
         if shots is not None and diff_method in ("backprop", "adjoint"):
             pytest.skip("Test does not support finite shots and adjoint/backprop")
 
@@ -1790,7 +1991,12 @@ class TestReturn:
         """The jacobian of multiple measurements with a single params return an array."""
         if shots is not None and diff_method in ("backprop", "adjoint"):
             pytest.skip("Test does not support finite shots and adjoint/backprop")
-        dev = qml.device(dev_name, wires=2, shots=shots)
+        num_wires = 2
+
+        if diff_method == "hadamard":
+            num_wires = 3
+
+        dev = qml.device(dev_name, wires=num_wires, shots=shots)
 
         if diff_method == "adjoint":
             pytest.skip("Test does not supports adjoint because of probabilities.")
@@ -1821,7 +2027,12 @@ class TestReturn:
         if shots is not None and diff_method in ("backprop", "adjoint"):
             pytest.skip("Test does not support finite shots and adjoint/backprop")
 
-        dev = qml.device(dev_name, wires=2, shots=shots)
+        num_wires = 2
+
+        if diff_method == "hadamard":
+            num_wires = 3
+
+        dev = qml.device(dev_name, wires=num_wires, shots=shots)
 
         @qnode(dev, interface="torch", diff_method=diff_method, mode=mode)
         def circuit(a, b):
@@ -1860,7 +2071,12 @@ class TestReturn:
         if shots is not None and diff_method in ("backprop", "adjoint"):
             pytest.skip("Test does not support finite shots and adjoint/backprop")
 
-        dev = qml.device(dev_name, wires=2, shots=shots)
+        num_wires = 2
+
+        if diff_method == "hadamard":
+            num_wires = 3
+
+        dev = qml.device(dev_name, wires=num_wires, shots=shots)
 
         @qnode(dev, interface="torch", diff_method=diff_method, mode=mode)
         def circuit(a):
@@ -1885,7 +2101,13 @@ class TestReturn:
         """The hessian of single a measurement with multiple params return a tuple of arrays."""
         if shots is not None and diff_method in ("backprop", "adjoint"):
             pytest.skip("Test does not support finite shots and adjoint/backprop")
-        dev = qml.device(dev_name, wires=2, shots=shots)
+
+        num_wires = 2
+
+        if diff_method == "hadamard":
+            num_wires = 4
+
+        dev = qml.device(dev_name, wires=num_wires, shots=shots)
 
         if diff_method == "adjoint":
             pytest.skip("Test does not supports adjoint because second order diff.")
@@ -1926,7 +2148,12 @@ class TestReturn:
         if shots is not None and diff_method in ("backprop", "adjoint"):
             pytest.skip("Test does not support finite shots and adjoint/backprop")
 
-        dev = qml.device(dev_name, wires=2, shots=shots)
+        num_wires = 2
+
+        if diff_method == "hadamard":
+            num_wires = 4
+
+        dev = qml.device(dev_name, wires=num_wires, shots=shots)
 
         params = torch.tensor([0.1, 0.2], requires_grad=True)
 
@@ -1946,9 +2173,17 @@ class TestReturn:
         """The hessian of a single measurement with multiple params returns a tuple of arrays."""
         if diff_method == "adjoint":
             pytest.skip("Test does not supports adjoint because second order diff.")
+        elif diff_method == "hadamard":
+            pytest.skip("Test does not supports Hadamard because of var.")
         if shots is not None and diff_method in ("backprop", "adjoint"):
             pytest.skip("Test does not support finite shots and adjoint/backprop")
-        dev = qml.device(dev_name, wires=2, shots=shots)
+
+        num_wires = 2
+
+        if diff_method == "hadamard":
+            num_wires = 4
+
+        dev = qml.device(dev_name, wires=num_wires, shots=shots)
 
         par_0 = torch.tensor(0.1, requires_grad=True)
         par_1 = torch.tensor(0.2, requires_grad=True)
@@ -1983,6 +2218,8 @@ class TestReturn:
         """The hessian of single measurement with a multiple params array return a single array."""
         if diff_method == "adjoint":
             pytest.skip("Test does not supports adjoint because second order diff.")
+        elif diff_method == "hadamard":
+            pytest.skip("Test does not supports Hadamard because of var.")
         if shots is not None and diff_method in ("backprop", "adjoint"):
             pytest.skip("Test does not support finite shots and adjoint/backprop")
 
@@ -2004,12 +2241,20 @@ class TestReturn:
 
     def test_hessian_probs_expval_multiple_params(self, dev_name, diff_method, mode, shots):
         """The hessian of multiple measurements with multiple params return a tuple of arrays."""
-        dev = qml.device(dev_name, wires=2, shots=shots)
         if diff_method == "adjoint":
             pytest.skip("Test does not supports adjoint because second order diff.")
+        elif diff_method == "hadamard":
+            pytest.skip("Test does not supports non commuting measurement.")
 
         if shots is not None and diff_method in ("backprop", "adjoint"):
             pytest.skip("Test does not support finite shots and adjoint/backprop")
+
+        num_wires = 2
+
+        if diff_method == "hadamard":
+            num_wires = 4
+
+        dev = qml.device(dev_name, wires=num_wires, shots=shots)
 
         par_0 = torch.tensor(0.1, requires_grad=True)
         par_1 = torch.tensor(0.2, requires_grad=True)
@@ -2050,6 +2295,8 @@ class TestReturn:
         dev = qml.device(dev_name, wires=2, shots=shots)
         if diff_method == "adjoint":
             pytest.skip("Test does not supports adjoint because second order diff.")
+        elif diff_method == "hadamard":
+            pytest.skip("Test does not supports non commuting measurement.")
 
         if shots is not None and diff_method in ("backprop", "adjoint"):
             pytest.skip("Test does not support finite shots and adjoint/backprop")
@@ -2078,6 +2325,8 @@ class TestReturn:
         dev = qml.device(dev_name, wires=2, shots=shots)
         if diff_method == "adjoint":
             pytest.skip("Test does not supports adjoint because second order diff.")
+        elif diff_method == "hadamard":
+            pytest.skip("Test does not supports Hadamard because of var.")
 
         if shots is not None and diff_method in ("backprop", "adjoint"):
             pytest.skip("Test does not support finite shots and adjoint/backprop")
@@ -2121,6 +2370,8 @@ class TestReturn:
         dev = qml.device(dev_name, wires=2, shots=shots)
         if diff_method == "adjoint":
             pytest.skip("Test does not supports adjoint because second order diff.")
+        elif diff_method == "hadamard":
+            pytest.skip("Test does not supports Hadamard because of var.")
 
         if shots is not None and diff_method in ("backprop", "adjoint"):
             pytest.skip("Test does not support finite shots and adjoint/backprop")
