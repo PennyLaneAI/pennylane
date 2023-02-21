@@ -142,7 +142,7 @@
   ...     return qml.expval(qml.PauliZ(0))
   >>> params = jax.numpy.array([0.1, 0.2, 0.3])
   >>> jax.jacobian(circuit)(params)
-  [-0.3875172  -0.18884787 -0.38355704]
+  Array([-0.3875172 , -0.18884787, -0.38355705], dtype=float32)
    ```
 
 * The gradient transform `qml.gradients.spsa_grad` is now registered as a
