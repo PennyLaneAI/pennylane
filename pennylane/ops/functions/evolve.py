@@ -16,11 +16,10 @@ This module contains the qml.evolve function.
 """
 import warnings
 from functools import singledispatch
-from typing import Union
 
 from pennylane.operation import Operator
 from pennylane.ops import Evolution
-from pennylane.pulse import ParametrizedEvolution, ParametrizedHamiltonian, RydbergHamiltonian
+from pennylane.pulse import ParametrizedEvolution, ParametrizedHamiltonian
 
 
 @singledispatch
@@ -167,9 +166,8 @@ def evolve(*args, **kwargs):  # pylint: disable=unused-argument
 
 
 # pylint: disable=missing-docstring
-@evolve.register(ParametrizedEvolution)
-@evolve.register(RydbergHamiltonian)
-def parametrized_evolution(op: Union[ParametrizedHamiltonian, RydbergHamiltonian]):
+@evolve.register(ParametrizedHamiltonian)
+def parametrized_evolution(op: ParametrizedHamiltonian):
     return ParametrizedEvolution(H=op)
 
 
