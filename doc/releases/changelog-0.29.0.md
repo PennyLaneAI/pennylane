@@ -128,9 +128,9 @@
   ...     return qml.expval(qml.PauliZ(0))
   >>> params = np.array([0.1, 0.2, 0.3], requires_grad=True)
   >>> qml.gradients.hadamard_grad(circuit)(params)
-  (tensor([-0.3875172], requires_grad=True),
-   tensor([-0.18884787], requires_grad=True),
-   tensor([-0.38355704], requires_grad=True))
+  (tensor(-0.3875172, requires_grad=True),
+   tensor(-0.18884787, requires_grad=True),
+   tensor(-0.38355704, requires_grad=True))
   ```
   
   This transform can be registered directly as the quantum gradient transform to use during autodifferentiation:
@@ -163,7 +163,7 @@
   ...     qml.RX(x, 1)
   ...     return qml.expval(qml.PauliZ(0))
   >>> jax.jacobian(circuit)(jax.numpy.array(0.5))
-  DeviceArray(-0.4792258, dtype=float32, weak_type=True)
+  Array(-0.4792258, dtype=float32, weak_type=True)
   ```
 
   The argument `num_directions` determines how many directions of simultaneous
