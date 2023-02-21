@@ -366,6 +366,12 @@ class Exp(ScalarSymbolicOp, Operation):
 
         return op_list * self.num_steps  # apply operators ``num_steps`` times
 
+    @property
+    def has_matrix(self):
+        return not (
+            math.get_interface(self.scalar) == "autograd" and math.requires_grad(self.scalar)
+        )
+
     def matrix(self, wire_order=None):
         coeff_interface = math.get_interface(self.scalar)
         if coeff_interface == "autograd" and math.requires_grad(self.scalar):

@@ -16,10 +16,9 @@
 that they are supported for execution by a device."""
 
 import pennylane as qml
-
-from pennylane.operation import Observable, Tensor
-from pennylane.measurements import MidMeasureMP
 from pennylane import DeviceError
+from pennylane.measurements import MidMeasureMP
+from pennylane.operation import Observable, Tensor
 
 # Update observable list. Current list is same as supported observables for
 # default.qubit.
@@ -36,8 +35,6 @@ _observables = {
     "Sum",
     "SProd",
     "Prod",
-    "Exp",
-    "Evolution",
 }
 
 
