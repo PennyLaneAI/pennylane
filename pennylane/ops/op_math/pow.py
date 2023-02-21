@@ -208,11 +208,9 @@ class Pow(ScalarSymbolicOp):
         super().__init__(base, scalar=z, do_queue=do_queue, id=id)
 
         if isinstance(self.z, int) and self.z > 0:
-            if (
-                base_pauli_rep := getattr(
-                    self.base, "_pauli_rep", None
-                )  # pylint: disable=protected-access
-            ) is not None:
+            if (base_pauli_rep := getattr(self.base, "_pauli_rep", None)) and (
+                self.batch_size is None
+            ):
                 pr = qml.pauli.PauliSentence({})
                 for _ in range(self.z):
                     pr = pr * base_pauli_rep
@@ -339,6 +337,11 @@ class Pow(ScalarSymbolicOp):
         return Pow(base=qml.adjoint(self.base), z=self.z)
 
     def simplify(self) -> Union["Pow", Identity]:
+        # try using pauli_rep:
+        if pr := self._pauli_rep:
+            pr.simplify()
+            return pr.operation(wire_order=self.wires)
+
         base = self.base.simplify()
         try:
             ops = base.pow(z=self.z)

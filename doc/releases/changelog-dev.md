@@ -4,7 +4,8 @@
 
 <h3>New features since last release</h3>
 
-<h4>Add new features here</h4>
+* Added 'qml.sign_expand' tape tranforms which implements the optimal decomposition of a fast-forwardable Hamiltonian that minimizes the variance of its estimator in the Single-Qubit-Measurement from  arXiv:2207.09479
+  [(#2852)](https://github.com/PennyLaneAI/pennylane/pull/2852)
 
 * The `qml.math` module now also contains a submodule for
   fast Fourier transforms, `qml.math.fft`.
@@ -134,8 +135,10 @@
 
 <h4>Always differentiable 📈</h4>
 
-* The Hadamard test gradient tranform is now available via `qml.gradients.hadamard_grad`.
+* The Hadamard test gradient tranform is now available via `qml.gradients.hadamard_grad`. The gradient transform 
+  `qml.gradients.hadamard_grad` is now registered as a differentiation method for `QNode`s.
   [#3625](https://github.com/PennyLaneAI/pennylane/pull/3625)
+  [#3736](https://github.com/PennyLaneAI/pennylane/pull/3736)
 
   `qml.gradients.hadamard_grad` is a hardware-compatible transform that calculates the
   gradient of a quantum circuit using the Hadamard test. Note that the device requires an
@@ -155,6 +158,21 @@
    tensor([-0.18884787], requires_grad=True),
    tensor([-0.38355704], requires_grad=True))
   ```
+  
+  This transform can be registered directly as the quantum gradient transform to use during autodifferentiation:
+  
+  ```pycon
+  >>> dev = qml.device("default.qubit", wires=3)
+  >>> @qml.qnode(dev, interface="jax", diff_method="hadamard")
+  ... def circuit(params):
+  ...     qml.RX(params[0], wires=0)
+  ...     qml.RY(params[1], wires=0)
+  ...     qml.RX(params[2], wires=0)
+  ...     return qml.expval(qml.PauliZ(0))
+  >>> params = jax.numpy.array([0.1, 0.2, 0.3])
+  >>> jax.jacobian(circuit)(params)
+  [-0.3875172  -0.18884787 -0.38355704]
+   ```
 
 * The gradient transform `qml.gradients.spsa_grad` is now registered as a
   differentiation method for `QNode`s.
@@ -389,6 +407,10 @@
 
 *Next generation device API:*
 
+* New Abstract Base Class for devices `Device` is added to the `devices.experimental` submodule.
+  This interface is still in experimental mode and not integrated with the rest of pennylane.
+  [(#3602)](https://github.com/PennyLaneAI/pennylane/pull/3602)
+
 * The `apply_operation` single-dispatch function is added to `devices/qubit` that applies an operation
   to a state and returns a new state.
   [(#3637)](https://github.com/PennyLaneAI/pennylane/pull/3637)
@@ -406,6 +428,10 @@
   [(#3700)](https://github.com/PennyLaneAI/pennylane/pull/3700)
 
 <h3>Improvements</h3>
+
+* The gradient transforms work for the new return type system with non-trivial classical jacobians.
+  [(#3776)](https://github.com/PennyLaneAI/pennylane/pull/3776)
+
 
 * The `default.mixed` device received a performance improvement for multi-qubit operations.
   This also allows to apply channels that act on more than seven qubits, which was not possible before.
@@ -425,6 +451,7 @@
 * `Exp` operator now detects if the base is a generator, and decomposes to its corresponding operator.
   If not, it decomposes to a `PauliRot`, or it uses the Suzuki-Trotter decomposition when necessary.
   [(#3691)](https://github.com/PennyLaneAI/pennylane/pull/3691)
+  [(#3777)](https://github.com/PennyLaneAI/pennylane/pull/3777)
 
   If the `base` operator is a generator of another operator, `Exp` returns this operator during decomposition:
 
@@ -617,9 +644,16 @@
 * `SProd.sparse_matrix` now supports interface-specific variables with a single element as the `scalar`.
   [(#3770)](https://github.com/PennyLaneAI/pennylane/pull/3770)
 
- * The `qchem.Molecule` class raises an error when the molecule has an odd number of electrons or 
-   when the spin multiplicity is not 1.
-   [(#3748)](https://github.com/PennyLaneAI/pennylane/pull/3748)
+* The `qchem.Molecule` class raises an error when the molecule has an odd number of electrons or 
+  when the spin multiplicity is not 1.
+  [(#3748)](https://github.com/PennyLaneAI/pennylane/pull/3748)
+
+* `transforms.fold_global` now supports non-integer values.
+  [(#3781)](https://github.com/PennyLaneAI/pennylane/pull/3781)
+
+* Updated `qml.draw` and `qml.draw_mpl` to draw any quantum function,
+  which allows for visualizing only part of a complete circuit/QNode.
+  [(#3760)](https://github.com/PennyLaneAI/pennylane/pull/3760)
 
 * `AdaptiveOptimizer` is updated to use non-default user-defined qnode arguments.
   [(#3765)](https://github.com/PennyLaneAI/pennylane/pull/3765)
@@ -710,6 +744,10 @@
 * `qml.transforms.measurement_grouping` has been removed. Users should use `qml.transforms.hamiltonian_expand`
   instead.
   [(#3701)](https://github.com/PennyLaneAI/pennylane/pull/3701)
+
+* `op.simplify()` for operators which are linear combinations of pauli words will use a builtin pauli representation 
+  to more efficiently compute the simplification of the operator.
+  [(#3481)](https://github.com/PennyLaneAI/pennylane/pull/3481)
 
 <h3>Deprecations</h3>
 
@@ -806,6 +844,7 @@
 
 This release contains contributions from (in alphabetical order):
 
+Gian-Luca Anselmetti
 Guillermo Alonso-Linaje
 Juan Miguel Arrazola
 Ikko Ashimine
@@ -817,12 +856,15 @@ Isaac De Vlugt
 Olivia Di Matteo
 Lillian M. A. Frederiksen
 Soran Jahangiri
+Korbinian Kottmann
 Christina Lee
 Albert Mitjans Coma
 Romain Moyard
 Mudit Pandey
 Borja Requena
 Matthew Silverman
+Jay Soni
 Antal Száva
 Frederik Wilde
 David Wierichs
+Moritz Willmann
