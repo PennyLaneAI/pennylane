@@ -7,7 +7,7 @@
 <h4>Pulse programming 🔊</h4>
 
 * Support for creating pulse-based circuits that describe evolution under a time-dependent
-  Hamiltonian has now been added, as well as the ability to execute these
+  Hamiltonian has now been added, as well as the ability to execute and differentiate these
   pulse-based circuits on simulator.
   [(#3586)](https://github.com/PennyLaneAI/pennylane/pull/3586)
   [(#3617)](https://github.com/PennyLaneAI/pennylane/pull/3617)
@@ -20,8 +20,10 @@
   with parametrized coefficents and can be constructed as follows:
 
   ```pycon
-  f1 = lambda p, t: p * np.sin(t) * (t - 1)
-  f2 = lambda p, t: p[0] * np.cos(p[1]* t ** 2)
+  from jax import numpy as jnp
+  
+  f1 = lambda p, t: p * jnp.sin(t) * (t - 1)
+  f2 = lambda p, t: p[0] * jnp.cos(p[1]* t ** 2)
 
   XX = qml.PauliX(1) @ qml.PauliX(1)
   YY = qml.PauliY(0) @ qml.PauliY(0)
@@ -33,7 +35,7 @@
   ```pycon
   >>> H
   ParametrizedHamiltonian: terms=3
-  >>> params = [1.2, [2.3, 3.4]]
+  >>> params = [jnp.array(1.2), jnp.array([2.3, 3.4])]
   >>> H(params, t=0.5)
   (2*(PauliX(wires=[1]) @ PauliX(wires=[1]))) + ((-0.2876553535461426*(PauliY(wires=[0]) @ PauliY(wires=[0]))) + (1.5179612636566162*(PauliZ(wires=[0]) @ PauliZ(wires=[1]))))
   ```
