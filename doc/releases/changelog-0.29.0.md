@@ -342,7 +342,7 @@
 
   ```python3
   dev = qml.device('default.qubit', wires=5)
-  weights = np.random.random(size=TwoLocalSwapNetwork.shape(len(dev.wires)))
+  weights = np.random.random(size=qml.templates.TwoLocalSwapNetwork.shape(len(dev.wires)))
   acquaintances = lambda index, wires, param: (qml.CRY(param, wires=index)
                                    if np.abs(wires[0]-wires[1]) else qml.CRZ(param, wires=index))
   @qml.qnode(dev)
@@ -355,7 +355,7 @@
   >>> print(weights)
   tensor([0.20308242, 0.91906199, 0.67988804, 0.81290256, 0.08708985,
           0.81860084, 0.34448344, 0.05655892, 0.61781612, 0.51829044], requires_grad=True)
-  >>> qml.draw(swap_network_circuit, expansion_strategy = 'device')()
+  >>> print(qml.draw(swap_network_circuit, expansion_strategy = 'device')())
   0: ─╭●────────╭SWAP─────────────────╭●────────╭SWAP─────────────────╭●────────╭SWAP─┤  State
   1: ─╰RY(0.20)─╰SWAP─╭●────────╭SWAP─╰RY(0.09)─╰SWAP─╭●────────╭SWAP─╰RY(0.62)─╰SWAP─┤  State
   2: ─╭●────────╭SWAP─╰RY(0.68)─╰SWAP─╭●────────╭SWAP─╰RY(0.34)─╰SWAP─╭●────────╭SWAP─┤  State
