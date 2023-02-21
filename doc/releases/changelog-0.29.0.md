@@ -781,6 +781,10 @@
 
 <h3>Bug fixes</h3>
 
+* Makes `Exp` and `Evolution` compatible with parameter shift derivatives. Removes native support
+  in `"default.qubit"`, so the operations will decompose if the base operator does not have a matrix.
+  [(#3796)](https://github.com/PennyLaneAI/pennylane/pull/3796)
+
 * Fixed a bug in the drawer where nested controlled operations would output
   the label of the operation being controlled, rather than the control values.
   [(#3745)](https://github.com/PennyLaneAI/pennylane/pull/3745)
