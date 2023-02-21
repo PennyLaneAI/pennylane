@@ -349,8 +349,8 @@
                                    if np.abs(wires[0]-wires[1]) else qml.CRZ(param, wires=index))
   @qml.qnode(dev)
   def swap_network_circuit():
-     qml.templates.TwoLocalSwapNetwork(dev.wires, acquaintances, weights, fermionic=False)
-     return qml.state()
+      qml.templates.TwoLocalSwapNetwork(dev.wires, acquaintances, weights, fermionic=False)
+      return qml.state()
   ```
 
   ```pycon
