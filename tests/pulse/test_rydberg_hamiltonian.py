@@ -79,14 +79,17 @@ class TestMethods:
     """Unit tests for the RydbergHamiltonian methods."""
 
     def test_local_drive_updates_dictionaries(self):
-        """Test that the local_drive method updates the internal dictionaries."""
+        """Test that the local_drive method returns a new instance and updates its internal dictionaries."""
         rm = RydbergHamiltonian(atom_coordinates, wires)
 
         assert rm._local_drives == {"rabi": [], "detunings": [], "phases": [], "wires": []}
 
-        rm.local_drive(rabi=[0, 1, 2], detunings=[3, 4, 5], phases=[6, 7, 8], wires=[1, 2, 3])
+        new_rm = rm.local_drive(
+            rabi=[0, 1, 2], detunings=[3, 4, 5], phases=[6, 7, 8], wires=[1, 2, 3]
+        )
 
-        assert rm._local_drives == {
+        assert rm._local_drives == {"rabi": [], "detunings": [], "phases": [], "wires": []}
+        assert new_rm._local_drives == {
             "rabi": [0, 1, 2],
             "detunings": [3, 4, 5],
             "phases": [6, 7, 8],
@@ -94,15 +97,16 @@ class TestMethods:
         }
 
     def test_local_drive_updates_driving_hamiltonian(self):
-        """Test that the local_drive method updates the driving_interaction term of the Hamiltonian."""
+        """Test that the local_drive method returns a new instance and updates the driving term of the hamiltonian."""
         rm = RydbergHamiltonian(coordinates=atom_coordinates, wires=wires)
 
         assert isinstance(rm.driving_interaction, ParametrizedHamiltonian)
         assert rm.driving_interaction([], 0) == 0
 
-        rm.local_drive(rabi=[lambda p, t: 1], detunings=[0], phases=[0], wires=[3])
+        new_rm = rm.local_drive(rabi=[lambda p, t: 1], detunings=[0], phases=[0], wires=[3])
 
-        assert rm.driving_interaction([1], 1) != 0
+        assert rm.driving_interaction([], 0) == 0
+        assert new_rm.driving_interaction([1], 1) != 0
 
     def test_local_drive_wrong_lengths_raises_error(self):
         """Test that the local_drive method raises an error when the inputs have different lengths."""
@@ -130,9 +134,10 @@ class TestMethods:
 
         assert rm._global_drive is None
 
-        rm.global_drive(rabi=1, detuning=2, phase=3)
+        new_rm = rm.global_drive(rabi=1, detuning=2, phase=3)
 
-        assert rm._global_drive == (1, 2, 3)
+        assert rm._global_drive is None
+        assert new_rm._global_drive == (1, 2, 3)
 
     def test_global_drive_updates_driving_hamiltonian(self):
         """Test that the global_drive method updates the driving_interaction term of the Hamiltonian."""
@@ -141,6 +146,7 @@ class TestMethods:
         assert isinstance(rm.driving_interaction, ParametrizedHamiltonian)
         assert rm.driving_interaction([], 0) == 0
 
-        rm.global_drive(rabi=1, detuning=2, phase=3)
+        new_rm = rm.global_drive(rabi=1, detuning=2, phase=3)
 
-        assert rm.driving_interaction([], 0) != 0
+        assert rm.driving_interaction([], 0) == 0
+        assert new_rm.driving_interaction([], 0) != 0

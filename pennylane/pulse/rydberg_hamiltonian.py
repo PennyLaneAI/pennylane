@@ -13,6 +13,8 @@
 # limitations under the License.
 """This module contains the classes/functions needed to simulate the evolution of ensembles of
 individual (trapped) rydberg atoms under the excitation of several laser fields."""
+# pylint: disable=protected-access, too-many-instance-attributes
+from copy import copy, deepcopy
 from typing import Callable, Union
 
 import numpy as np
@@ -48,7 +50,7 @@ class RydbergHamiltonian:
         self.interaction_coeff = interaction_coeff
         self.wires = wires
         self._rydberg_interaction = None
-        self._driving_interaction = ParametrizedHamiltonian([], [])
+        self.driving_interaction = ParametrizedHamiltonian([], [])
         # The following 2 dictionaries are only needed to be able to run these laser drivings in hardware
         # Dictionary containing the information about the local driving fields
         self._local_drives = {"rabi": [], "detunings": [], "phases": [], "wires": []}
@@ -141,12 +143,17 @@ class RydbergHamiltonian:
         ]
         H1 = qml.dot(rabi, ops)
         H2 = qml.dot(detunings, [qml.PauliZ(w) for w in wires])
-        self._driving_interaction += 1 / 2 * H1 + 1 / 2 * H2
+
+        # Create new instance
+        new_cls = copy(self)
+        # Update driving interaction term
+        new_cls.driving_interaction += 1 / 2 * H1 + 1 / 2 * H2
         # Update dictionaries of applied pulses to allow translation into hardware
-        self._local_drives["rabi"].extend(rabi)
-        self._local_drives["detunings"].extend(detunings)
-        self._local_drives["phases"].extend(phases)
-        self._local_drives["wires"].extend(wires)
+        new_cls._local_drives["rabi"].extend(rabi)
+        new_cls._local_drives["detunings"].extend(detunings)
+        new_cls._local_drives["phases"].extend(phases)
+        new_cls._local_drives["wires"].extend(wires)
+        return new_cls
 
     def global_drive(
         self, rabi: Union[float, Callable], detuning: Union[float, Callable], phase: float
@@ -170,33 +177,13 @@ class RydbergHamiltonian:
         )
         H1 = rabi * ops
         H2 = detuning * qml.sum(*[qml.PauliZ(w) for w in self.wires])
-        self._driving_interaction += 1 / 2 * H1 + 1 / 2 * H2
+        # Create new instance
+        new_cls = copy(self)
+        # Update driving interaction term
+        new_cls.driving_interaction += 1 / 2 * H1 + 1 / 2 * H2
         # Update dictionaries of applied pulses to allow translation into hardware
-        self._global_drive = (rabi, detuning, phase)
-
-    @property
-    def driving_interaction(self) -> ParametrizedHamiltonian:
-        r"""Returns a :class:`ParametrizedHamiltonian` describing the evolution of the Rydberg ensemble
-        when driving the given atoms (``wires``) with lasers with the corresponding ``amplitude``
-        and ``detuning``:
-
-        .. math::
-
-            H = \hbar \frac{1}{2} \sum_i  \Omega_i(t) (\cos(\phi)\sigma_i^x - \sin(\phi)\sigma_i^y) -
-            \frac{1}{2} \sum_i \delta_i(t) \sigma_i^z
-
-        where :math:`\Omega_i` and :math:`\delta_i` correspond to the amplitude and detuning of the
-        laser applied to atom :math:`i`, and :math:`\sigma^\alpha` for :math:`\alpha = x,y,z` are
-        the Pauli matrices.
-
-        .. note::
-
-            :math:`\hbar` is set to 1.
-
-        Returns:
-            ParametrizedHamiltonian: hamiltonian describing the laser driving
-        """
-        return self._driving_interaction
+        new_cls._global_drive = (rabi, detuning, phase)
+        return new_cls
 
     @property
     def hamiltonian(self) -> ParametrizedHamiltonian:
@@ -244,3 +231,13 @@ class RydbergHamiltonian:
 
     def __call__(self, params, t):
         return self.hamiltonian(params, t)
+
+    def __copy__(self):
+        new_cls = RydbergHamiltonian(
+            coordinates=self.coordinates, wires=self.wires, interaction_coeff=self.interaction_coeff
+        )
+        new_cls._rydberg_interaction = deepcopy(self._rydberg_interaction)
+        new_cls.driving_interaction = deepcopy(self.driving_interaction)
+        new_cls._global_drive = deepcopy(self._global_drive)
+        new_cls._local_drives = deepcopy(self._local_drives)
+        return new_cls
