@@ -71,8 +71,8 @@
   [(#3650)](https://github.com/PennyLaneAI/pennylane/pull/3650)
   [(#3674)](https://github.com/PennyLaneAI/pennylane/pull/3674)
 
-  `qml.SpecialUnitary` creates a unitary that is a linear combination of all possible Pauli words in lexicographical order — except for the identity operator — for `num_wires` wires, of which there are `4**num_wires - 1`. As its first argument,
-  `qml.SpecialUnitary` takes a list of `4**num_wires - 1` parameters that are the coefficients of the linear combination. 
+  `qml.SpecialUnitary` creates a unitary that exponentiates a linear combination of all possible Pauli words in lexicographical order — except for the identity operator — for `num_wires` wires, of which there are `4**num_wires - 1`. As its first argument,
+  `qml.SpecialUnitary` takes a list of the `4**num_wires - 1` parameters that are the coefficients of the linear combination. 
 
   To see all possible Pauli words for `num_wires` wires, you can use the `qml.ops.qubit.special_unitary.pauli_basis_strings` function:
 
@@ -88,7 +88,7 @@
   ```pycon
   >>> thetas = np.array([0.2, 0.1, -0.5])
   >>> U = qml.SpecialUnitary(thetas, 0)
-  >>> U.matrix()
+  >>> qml.matrix(U)
   array([[ 0.8537127 -0.47537233j,  0.09507447+0.19014893j],
          [-0.09507447+0.19014893j,  0.8537127 +0.47537233j]])
   ```
@@ -100,7 +100,7 @@
   >>> theta = x * np.array([1, 0, 0]) # The first entry belongs to the Pauli word "X"
   >>> su = qml.SpecialUnitary(theta, wires=0)
   >>> rx = qml.RX(-2 * x, 0) # RX introduces a prefactor -0.5 that has to be compensated
-  >>> qml.math.allclose(su.matrix(), rx.matrix())
+  >>> qml.math.allclose(qml.matrix(su), qml.matrix(rx))
   True
   ```
 
