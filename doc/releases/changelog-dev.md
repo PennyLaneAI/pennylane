@@ -135,7 +135,7 @@
 
 <h4>Always differentiable 📈</h4>
 
-* The Hadamard test gradient tranform is now available via `qml.gradients.hadamard_grad`. The gradient transform 
+* The Hadamard test gradient tranform is now available via `qml.gradients.hadamard_grad`. The gradient transform
   `qml.gradients.hadamard_grad` is now registered as a differentiation method for `QNode`s.
   [#3625](https://github.com/PennyLaneAI/pennylane/pull/3625)
   [#3736](https://github.com/PennyLaneAI/pennylane/pull/3736)
@@ -158,9 +158,9 @@
    tensor([-0.18884787], requires_grad=True),
    tensor([-0.38355704], requires_grad=True))
   ```
-  
+
   This transform can be registered directly as the quantum gradient transform to use during autodifferentiation:
-  
+
   ```pycon
   >>> dev = qml.device("default.qubit", wires=3)
   >>> @qml.qnode(dev, interface="jax", diff_method="hadamard")
@@ -429,15 +429,12 @@
 
 <h3>Improvements</h3>
 
-<<<<<<< HEAD
 * The custom JVP rules in PennyLane now also support non-scalar and mixed-shape tape parameters as
   well as multi-dimensional tape return types, like broadcasted `qml.probs`, for example.
   [(#3766)](https://github.com/PennyLaneAI/pennylane/pull/3766)
-=======
+
 * The gradient transforms work for the new return type system with non-trivial classical jacobians.
   [(#3776)](https://github.com/PennyLaneAI/pennylane/pull/3776)
-
->>>>>>> master
 
 * The `default.mixed` device received a performance improvement for multi-qubit operations.
   This also allows to apply channels that act on more than seven qubits, which was not possible before.
@@ -650,12 +647,7 @@
 * `SProd.sparse_matrix` now supports interface-specific variables with a single element as the `scalar`.
   [(#3770)](https://github.com/PennyLaneAI/pennylane/pull/3770)
 
-<<<<<<< HEAD
 * The `qchem.Molecule` class raises an error when the molecule has an odd number of electrons or
-  when the spin multiplicity is not 1.
-  [(#3748)](https://github.com/PennyLaneAI/pennylane/pull/3748)
-=======
-* The `qchem.Molecule` class raises an error when the molecule has an odd number of electrons or 
   when the spin multiplicity is not 1.
   [(#3748)](https://github.com/PennyLaneAI/pennylane/pull/3748)
 
@@ -665,7 +657,6 @@
 * Updated `qml.draw` and `qml.draw_mpl` to draw any quantum function,
   which allows for visualizing only part of a complete circuit/QNode.
   [(#3760)](https://github.com/PennyLaneAI/pennylane/pull/3760)
->>>>>>> master
 
 <h3>Breaking changes</h3>
 
@@ -754,7 +745,7 @@
   instead.
   [(#3701)](https://github.com/PennyLaneAI/pennylane/pull/3701)
 
-* `op.simplify()` for operators which are linear combinations of pauli words will use a builtin pauli representation 
+* `op.simplify()` for operators which are linear combinations of pauli words will use a builtin pauli representation
   to more efficiently compute the simplification of the operator.
   [(#3481)](https://github.com/PennyLaneAI/pennylane/pull/3481)
 
