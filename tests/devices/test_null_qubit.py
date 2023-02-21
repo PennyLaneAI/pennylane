@@ -1216,6 +1216,7 @@ class TestTrackerIntegration:
 
     def test_shots_execution(self, nullqubit_device, mocker):
         """Test that correct tracks shots."""
+        # pylint: disable=unexpected-keyword-arg
         dev = nullqubit_device(wires=1)
 
         @qml.qnode(dev)
