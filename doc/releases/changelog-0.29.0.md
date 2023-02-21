@@ -285,7 +285,7 @@
                       [-0.21271+0.34938j, -0.38853+0.36497j,  0.61467-0.41317j],
                       [ 0.41356-0.20765j, -0.00651-0.66689j,  0.32839-0.48293j]])
 
-  phase_mat, ordered_rotations = givens_decomposition(matrix)
+  phase_mat, ordered_rotations = qml.qchem.givens_decomposition(unitary)
   ```
 
   ```pycon
