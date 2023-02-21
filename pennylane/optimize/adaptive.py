@@ -184,7 +184,7 @@ class AdaptiveOptimizer:
             to the step, and the largest gradient
         """
         cost = circuit()
-        original_circ = copy.copy(circuit)
+        qnode = copy.copy(circuit)
 
         if drain_pool:
             repeated_gates = [
@@ -197,7 +197,6 @@ class AdaptiveOptimizer:
                 operator_pool.remove(gate)
 
         params = np.array([gate.parameters[0] for gate in operator_pool], requires_grad=True)
-        qnode = copy.copy(original_circ)
         qnode.func = self._circuit
         grads = qml.grad(qnode)(params, gates=operator_pool, initial_circuit=circuit.func)
 
@@ -214,7 +213,6 @@ class AdaptiveOptimizer:
                 qnode, params, gates=selected_gates, initial_circuit=circuit.func
             )
 
-        qnode = copy.copy(original_circ)
         qnode.func = append_gate(params, selected_gates)(circuit.func)
 
         return qnode, cost, max(abs(qml.math.toarray(grads)))
