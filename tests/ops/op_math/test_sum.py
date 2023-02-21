@@ -727,12 +727,67 @@ class TestSimplify:
         assert simplified_op.data == final_op.data
         assert simplified_op.arithmetic_depth == final_op.arithmetic_depth
 
+    @pytest.mark.jax
+    def test_simplify_pauli_rep_jax(self):
+        """Test that simplifying operators with a valid pauli representation works with jax interface."""
+        import jax.numpy as jnp
+
+        c1, c2, c3 = jnp.array(1.23), jnp.array(-1.23), jnp.array(0.5)
+
+        op = qml.sum(
+            qml.s_prod(c1, qml.PauliX(0)),
+            qml.s_prod(c2, qml.PauliX(0)),
+            qml.s_prod(c3, qml.PauliZ(1)),
+        )
+        result = qml.s_prod(c3, qml.PauliZ(1))
+        simplified_op = op.simplify()
+
+        assert qml.equal(simplified_op, result)
+
+    @pytest.mark.tf
+    def test_simplify_pauli_rep_tf(self):
+        """Test that simplifying operators with a valid pauli representation works with tf interface."""
+        import tensorflow as tf
+
+        c1, c2, c3 = tf.Variable(1.23), tf.Variable(-1.23), tf.Variable(0.5)
+
+        op = qml.sum(
+            qml.s_prod(c1, qml.PauliX(0)),
+            qml.s_prod(c2, qml.PauliX(0)),
+            qml.s_prod(c3, qml.PauliZ(1)),
+        )
+        result = qml.s_prod(c3, qml.PauliZ(1))
+        simplified_op = op.simplify()
+
+        assert isinstance(simplified_op, type(result))
+        assert result.wires.toset() == simplified_op.wires.toset()
+        assert result.arithmetic_depth == simplified_op.arithmetic_depth
+        assert qnp.isclose(result.data[0], simplified_op.data[0])
+        assert result.data[1:] == simplified_op.data[1:]
+
+    @pytest.mark.torch
+    def test_simplify_pauli_rep_torch(self):
+        """Test that simplifying operators with a valid pauli representation works with torch interface."""
+        import torch
+
+        c1, c2, c3 = torch.tensor(1.23), torch.tensor(-1.23), torch.tensor(0.5)
+
+        op = qml.sum(
+            qml.s_prod(c1, qml.PauliX(0)),
+            qml.s_prod(c2, qml.PauliX(0)),
+            qml.s_prod(c3, qml.PauliZ(1)),
+        )
+        result = qml.s_prod(c3, qml.PauliZ(1))
+        simplified_op = op.simplify()
+
+        assert qml.equal(simplified_op, result)
+
 
 class TestSortWires:
     """Tests for the wire sorting algorithm."""
 
     def test_sorting_operators_with_one_wire(self):
-        """Test that the sorting alforithm works for operators that act on one wire."""
+        """Test that the sorting algorithm works for operators that act on one wire."""
         op_list = [
             qml.PauliX(3),
             qml.PauliZ(2),
@@ -749,15 +804,15 @@ class TestSortWires:
             qml.PauliZ(2),
             qml.PauliX(3),
             qml.PauliZ(3),
-            qml.RX(1, 5),
             qml.PauliX(5),
+            qml.RX(1, 5),
         ]
 
         for op1, op2 in zip(final_list, sorted_list):
             assert qml.equal(op1, op2)
 
     def test_sorting_operators_with_multiple_wires(self):
-        """Test that the sorting alforithm works for operators that act on multiple wires."""
+        """Test that the sorting algorithm works for operators that act on multiple wires."""
         op_tuple = (
             qml.PauliX(3),
             qml.PauliX(5),
@@ -786,7 +841,7 @@ class TestSortWires:
             assert qml.equal(op1, op2)
 
     def test_sorting_operators_with_wire_map(self):
-        """Test that the sorting alforithm works using a wire map."""
+        """Test that the sorting algorithm works using a wire map."""
         op_list = [
             qml.PauliX("three"),
             qml.PauliX(5),
@@ -817,6 +872,28 @@ class TestSortWires:
             assert op1.name == op2.name
             assert op1.wires == op2.wires
             assert op1.data == op2.data
+
+    def test_sort_wires_alphabetically(self):
+        """Test that the summands are sorted alphabetically."""
+        mixed_list = [
+            qml.PauliY(1),
+            qml.PauliZ(0),
+            qml.PauliX(1),
+            qml.PauliY(0),
+            qml.PauliX(0),
+            qml.PauliZ(1),
+        ]
+        final_list = [
+            qml.PauliX(0),
+            qml.PauliY(0),
+            qml.PauliZ(0),
+            qml.PauliX(1),
+            qml.PauliY(1),
+            qml.PauliZ(1),
+        ]
+        sorted_list = Sum._sort(mixed_list)  # pylint: disable=protected-access
+        for op1, op2 in zip(final_list, sorted_list):
+            assert qml.equal(op1, op2)
 
 
 class TestWrapperFunc:
