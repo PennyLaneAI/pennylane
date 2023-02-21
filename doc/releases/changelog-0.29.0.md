@@ -276,6 +276,40 @@
 
 <h4>Smartly decompose Hamiltonian evolution 💯</h4>
 
+* Hamiltonian evolution using `qml.evolve` or `qml.exp` can now be decomposed into operations.
+  [(#3691)](https://github.com/PennyLaneAI/pennylane/pull/3691)
+  [(#3777)](https://github.com/PennyLaneAI/pennylane/pull/3777)
+
+  If the time-evolved Hamiltonian is equivalent to another PennyLane operation, then that
+  operation is returned as the decomposition:
+
+  ```pycon
+  >>> exp_op = qml.evolve(qml.PauliX(0) @ qml.PauliX(1))
+  >>> exp_op.decomposition()
+  [IsingXX((-2+0j), wires=[0, 1])]
+  ```
+  
+  Otherwise, if the Hamiltonian is a Pauli word, then the decomposition is provided as a
+  `PauliRot` operation:
+
+  ```pycon
+  >>> qml.evolve(qml.PauliZ(0) @ qml.PauliX(1)).decomposition()
+  [PauliRot((-2+0j), ZX, wires=[0, 1])]
+  ```
+  
+  Otherwise, the Hamiltonian is a linear combination of operators and the Suzuki-Trotter
+  decomposition is used:
+
+  ```pycon
+  >>> qml.evolve(qml.sum(qml.PauliX(0), qml.PauliY(1), qml.PauliZ(2)), num_steps=2).decomposition()
+  [RX((-1+0j), wires=[0]),
+  RY((-1+0j), wires=[1]),
+  RZ((-1+0j), wires=[2]),
+  RX((-1+0j), wires=[0]),
+  RY((-1+0j), wires=[1]),
+  RZ((-1+0j), wires=[2])]
+  ```
+
 <h4>Tools for quantum chemistry and other applications 🛠️</h4>
 
 * A new method called `qml.qchem.givens_decomposition` has been added, which decomposes a unitary into a sequence
@@ -510,7 +544,6 @@
 * The gradient transforms work for the new return type system with non-trivial classical jacobians.
   [(#3776)](https://github.com/PennyLaneAI/pennylane/pull/3776)
 
-
 * The `default.mixed` device received a performance improvement for multi-qubit operations.
   This also allows to apply channels that act on more than seven qubits, which was not possible before.
   [(#3584)](https://github.com/PennyLaneAI/pennylane/pull/3584)
@@ -525,39 +558,6 @@
 
 * `qml.generator` now supports operators with `Sum` and `Prod` generators.
   [(#3691)](https://github.com/PennyLaneAI/pennylane/pull/3691)
-
-* `Exp` operator now detects if the base is a generator, and decomposes to its corresponding operator.
-  If not, it decomposes to a `PauliRot`, or it uses the Suzuki-Trotter decomposition when necessary.
-  [(#3691)](https://github.com/PennyLaneAI/pennylane/pull/3691)
-  [(#3777)](https://github.com/PennyLaneAI/pennylane/pull/3777)
-
-  If the `base` operator is a generator of another operator, `Exp` returns this operator during decomposition:
-
-  ```pycon
-  >>> exp_op = qml.exp(qml.PauliX(0) @ qml.PauliX(1), coeff=1j)
-  >>> exp_op.decomposition()
-  [IsingXX((-2+0j), wires=[0, 1])]
-  ```
-
-  If the `base` operator is a Pauli word, `Exp` returns a `PauliRot` operator instead:
-
-  ```pycon
-  >>> qml.exp(qml.PauliZ(0) @ qml.PauliX(1), coeff=1j).decomposition()
-  [PauliRot((-2+0j), ZX, wires=[0, 1])]
-  ```
-
-  If the `base` operator is a linear combination of Hamiltonians, `Exp` uses the Suzuki-Trotter
-  algorithm to decompose the operator into a product of operators:
-
-  ```pycon
-  >>> qml.exp(qml.sum(qml.PauliX(0), qml.PauliY(1), qml.PauliZ(2)), coeff=1j, num_steps=2).decomposition()
-  [RX((-1+0j), wires=[0]),
-  RY((-1+0j), wires=[1]),
-  RZ((-1+0j), wires=[2]),
-  RX((-1+0j), wires=[0]),
-  RY((-1+0j), wires=[1]),
-  RZ((-1+0j), wires=[2])]
-  ```
 
 * `Sum._sort` method takes into account the name of the operator when sorting.
   [(#3691)](https://github.com/PennyLaneAI/pennylane/pull/3691)
