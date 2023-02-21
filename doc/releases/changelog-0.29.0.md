@@ -183,7 +183,7 @@
 
   qml.enable_return()
 
-  dev = qml.device("lightning.qubit", wires=2)
+  dev = qml.device("default.qubit", wires=2)
 
   @jax.jit
   @qml.qnode(dev, interface="jax-jit", diff_method="parameter-shift", max_diff=2)
@@ -197,14 +197,14 @@
 
   ```pycon
   >>> jax.hessian(circuit, argnums=[0, 1])(a, b)
-  (((DeviceArray(-0.54030231, dtype=float64, weak_type=True),
-     DeviceArray(1.76002563e-17, dtype=float64, weak_type=True)),
-    (DeviceArray(1.76002563e-17, dtype=float64, weak_type=True),
-     DeviceArray(1.11578284e-34, dtype=float64, weak_type=True))),
-   ((DeviceArray(2.77555756e-17, dtype=float64, weak_type=True),
-     DeviceArray(-4.54411427e-17, dtype=float64, weak_type=True)),
-    (DeviceArray(-1.76855671e-17, dtype=float64, weak_type=True),
-     DeviceArray(0.41614684, dtype=float64, weak_type=True))))
+  (((Array(-0.54030231, dtype=float64, weak_type=True),
+     Array(0., dtype=float64, weak_type=True)),
+    (Array(-1.76002563e-17, dtype=float64, weak_type=True),
+     Array(0., dtype=float64, weak_type=True))),
+   ((Array(0., dtype=float64, weak_type=True),
+     Array(-1.00700085e-17, dtype=float64, weak_type=True)),
+    (Array(0., dtype=float64, weak_type=True),
+    Array(0.41614684, dtype=float64, weak_type=True))))
   ```
 
 * The `qchem` workflow has been modified to support both Autograd and JAX frameworks.
