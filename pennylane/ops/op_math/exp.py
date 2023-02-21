@@ -396,7 +396,7 @@ class Exp(ScalarSymbolicOp, Operation):
 
     @staticmethod
     def _matrix(scalar, mat):
-        return math.expm(math.dot(scalar, mat))
+        return math.expm(math.multiply(scalar, mat))
 
     # pylint: disable=arguments-differ
     def sparse_matrix(self, wire_order=None, format="csr"):
