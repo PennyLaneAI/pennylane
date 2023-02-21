@@ -1058,7 +1058,7 @@ class TestApply:
         dev = qml.device("default.mixed", wires=num_wires)
         dev.apply([qml.SpecialUnitary(theta, wires=list(range(num_wires)))])
 
-        mat = qml.ops.qubit.matrix_ops.special_unitary_matrix(theta, num_wires)
+        mat = qml.SpecialUnitary.compute_matrix(theta, num_wires)
         init_rho = np.zeros((2**num_wires, 2**num_wires))
         init_rho[0, 0] = 1
         target_rho = mat @ init_rho @ mat.conj().T

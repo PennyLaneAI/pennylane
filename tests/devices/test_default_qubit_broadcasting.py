@@ -25,7 +25,6 @@ import pennylane as qml
 from pennylane import numpy as np, DeviceError
 from pennylane.devices.default_qubit import _get_slice, DefaultQubit
 from pennylane.wires import Wires, WireError
-from pennylane.ops.qubit.matrix_ops import special_unitary_matrix
 from gate_data import *
 
 THETA = np.linspace(0.11, 1, 3)
@@ -245,7 +244,7 @@ class TestApplyBroadcasted:
         )
     ]
     test_data_single_wire_with_parameters += [
-        (qml.SpecialUnitary, s, mat_vec(special_unitary_matrix(par[0], 1), s), par)
+        (qml.SpecialUnitary, s, mat_vec(qml.SpecialUnitary.compute_matrix(par[0], 1), s), par)
         for s, par in [(state_1, theta_1_par_5), (state_5, theta_1_par_1), (state_5, theta_1_par_5)]
     ]
 
@@ -388,7 +387,7 @@ class TestApplyBroadcasted:
     theta_2_par_1 = [np.linspace(0.1, 3, 15)]
     theta_2_par_5 = [np.array([0.4, -0.2, 1.2, -0.5, 2.2])[:, np.newaxis] * np.eye(15)[2::3]]
     test_data_two_wires_with_parameters += [
-        (qml.SpecialUnitary, s, mat_vec(special_unitary_matrix(par[0], 2), s), par)
+        (qml.SpecialUnitary, s, mat_vec(qml.SpecialUnitary.compute_matrix(par[0], 2), s), par)
         for s, par in [(state_1, theta_2_par_5), (state_5, theta_2_par_1), (state_5, theta_2_par_5)]
     ]
 

@@ -418,7 +418,7 @@ class SpecialUnitary(Operation):
 
             U(\theta) = \exp(i\sum_{m=1}^d \theta_m P_m)
 
-        See :func:`~.ops.qubit.matrix_ops.pauli_basis_strings` for the ordering of Pauli words.
+        See :func:`~.ops.qubit.special_unitary.pauli_basis_strings` for the ordering of Pauli words.
 
         .. note::
 

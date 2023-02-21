@@ -559,7 +559,7 @@ class TestGatesQubit:
         res = circuit()
 
         # Disabling Pylint test because qml.ops can be misunderstood as qml.ops.qubit.ops
-        basis = qml.ops.qubit.matrix_ops.pauli_basis(n_wires)  # pylint: disable=no-member
+        basis = qml.ops.qubit.special_unitary.pauli_basis_matrices(n_wires)  # pylint: disable=no-member
         mat = qml.math.expm(1j * np.tensordot(theta_, basis, axes=[[0], [0]]))
         expected = np.abs(mat @ rnd_state) ** 2
         assert np.allclose(res, expected, atol=tol(dev.shots))
