@@ -88,6 +88,7 @@ class TestMethods:
             rabi=[0, 1, 2], detunings=[3, 4, 5], phases=[6, 7, 8], wires=[1, 2, 3]
         )
 
+        assert new_rm is not rm
         assert rm._local_drives == {"rabi": [], "detunings": [], "phases": [], "wires": []}
         assert new_rm._local_drives == {
             "rabi": [0, 1, 2],
@@ -136,6 +137,7 @@ class TestMethods:
 
         new_rm = rm.global_drive(rabi=1, detuning=2, phase=3)
 
+        assert new_rm is not rm
         assert rm._global_drive is None
         assert new_rm._global_drive == (1, 2, 3)
 
@@ -148,5 +150,6 @@ class TestMethods:
 
         new_rm = rm.global_drive(rabi=1, detuning=2, phase=3)
 
+        assert new_rm is not rm
         assert rm.driving_interaction([], 0) == 0
         assert new_rm.driving_interaction([], 0) != 0
