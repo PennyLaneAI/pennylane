@@ -61,6 +61,7 @@
   >>> jax.grad(qnode)(params, time=0.5)
   [Array(-0.0096471, dtype=float32),
    Array([-0.7750168 ,  0.07650781], dtype=float32)]
+  ```
 
   Check out the [qml.pulse](https://docs.pennylane.ai/en/stable/code/qml_pulse.html) documentation
   page for more details!
