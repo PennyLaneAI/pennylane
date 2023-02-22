@@ -893,11 +893,10 @@ class TestApplyOps:
         (dev._apply_toffoli),
     ]
 
-    @pytest.mark.parametrize("inverse", [True, False])
     @pytest.mark.parametrize("method", single_qubit_ops)
-    def test_apply_single_qubit_op(self, method, inverse):
+    def test_apply_single_qubit_op(self, method):
         """Test if the application of single qubit operations is correct."""
-        state_out = method(self.state, axes=[1], inverse=inverse)
+        state_out = method(self.state, axes=[1])
         assert state_out == [0.0]
 
     @pytest.mark.parametrize("method", two_qubit_ops)
@@ -938,11 +937,10 @@ class TestApplyOps:
         (dev._apply_phase, [1.0]),
     ]
 
-    @pytest.mark.parametrize("inverse", [True, False])
     @pytest.mark.parametrize("method,par", single_qubit_ops_param)
-    def test_apply_single_qubit_op_(self, method, par, inverse):
+    def test_apply_single_qubit_op_param(self, method, par):
         """Test if the application of single qubit operations (with parameter) is correct."""
-        state_out = method(self.state, axes=[1], parameters=par, inverse=inverse)
+        state_out = method(self.state, axes=[1], parameters=par)
         assert state_out == [0.0]
 
 
