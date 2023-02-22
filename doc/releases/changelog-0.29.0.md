@@ -323,7 +323,7 @@
   [IsingXX((2+0j), wires=[0, 1])]
   ```
   
-  Otherwise, if the Hamiltonian is a Pauli word, then the decomposition is provided as a
+  If the Hamiltonian is a Pauli word, then the decomposition is provided as a
   `qml.PauliRot` operation:
 
   ```pycon
