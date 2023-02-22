@@ -38,20 +38,6 @@ from pennylane.measurements import CountsMP, MutualInfoMP, SampleMP, StateMP, Vn
 from pennylane.operation import Channel
 from pennylane.ops.qubit.attributes import diagonal_in_z_basis
 from pennylane.wires import Wires
-from pennylane.pulse import ParametrizedEvolution
-from pennylane.typing import TensorLike
-
-try:
-    import jax
-    import jax.numpy as jnp
-    from jax.config import config as jax_config
-    from jax.experimental.ode import odeint
-
-    from pennylane.pulse.parametrized_hamiltonian_pytree import ParametrizedHamiltonianPytree
-
-
-except ImportError as e:  # pragma: no cover
-    raise ImportError("default.qubit.jax device requires installing jax>0.3.20") from e
 
 from .._version import __version__
 
@@ -671,52 +657,6 @@ class DefaultMixed(QubitDevice):
                 wires_list.append(m.wires)
             self.measured_wires = qml.wires.Wires.all_wires(wires_list)
         return super().execute(circuit, **kwargs)
-    
-    def _apply_parametrized_evolution(self, state: TensorLike, operation: ParametrizedEvolution):
-        # given that wires is a static value (it is not a tracer), we can use an if statement
-        if 2 * len(operation.wires) > self.num_wires:
-            # the device state vector contains less values than the operation matrix --> evolve state
-            return self._evolve_state_vector_under_parametrized_evolution(state, operation)
-        # the device state vector contains more/equal values than the operation matrix --> evolve matrix
-        return self._apply_operation(state, operation)
-
-    def _evolve_state_vector_under_parametrized_evolution(
-        self, state: TensorLike, operation: ParametrizedEvolution
-    ):
-        """Uses an odeint solver to compute the evolution of the input ``state`` under the given
-        ``ParametrizedEvolution`` operation.
-
-        Args:
-            state (array[complex]): input state
-            operation (ParametrizedEvolution): operation to apply on the state
-
-        Raises:
-            ValueError: If the parameters and time windows of the ``ParametrizedEvolution`` are
-                not defined.
-
-        Returns:
-            _type_: _description_
-        """
-        if operation.data is None or operation.t is None:
-            raise ValueError(
-                "The parameters and the time window are required to execute a ParametrizedEvolution "
-                "You can update these values by calling the ParametrizedEvolution class: EV(params, t)."
-            )
-
-        state = qml.math.reshape(state, (2**self.num_wires, 2**self.num_wires))
-
-        with jax.ensure_compile_time_eval():
-            H_jax = ParametrizedHamiltonianPytree.from_hamiltonian(
-                operation.H, dense=len(operation.wires) < 3, wire_order=self.wires
-            )
-
-        def fun(y, t):
-            """dy/dt = -i [H(t), y] = -i (H(t)y - (H(t)y)^\dagger)"""
-            Hrho = H_jax(operation.data, t=t) @ y
-            return (-1j * (Hrho - Hrho.conj().T))
-
-        result = odeint(fun, state, operation.t, **operation.odeint_kwargs)
-        return self._reshape(result[-1], [2] * (2 * self.num_wires))
 
     def apply(self, operations, rotations=None, **kwargs):
         rotations = rotations or []
@@ -730,8 +670,6 @@ class DefaultMixed(QubitDevice):
                 )
 
         for operation in operations:
-            if isinstance(operation, ParametrizedEvolution):
-                self._state = self._apply_parametrized_evolution(self._state, operation)
             self._apply_operation(operation)
 
         # store the pre-rotated state
