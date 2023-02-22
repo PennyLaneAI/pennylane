@@ -49,7 +49,6 @@ def constant(scalar, time):
     >>> params = [5]
     >>> H(params, t=8)
     5.0*(PauliX(wires=[0]))
-
     >>> H(params, t=5)
     5.0*(PauliX(wires=[0]))
 
@@ -185,7 +184,7 @@ def pwc(timespan):
     Creates a callable for defining a :class:`~.ParametrizedHamiltonian`.
 
     Args:
-            timespan(Union[float, tuple(float, float)]: The timespan defining the region where the function is non-zero.
+            timespan(Union[float, tuple(float, float)]): The timespan defining the region where the function is non-zero.
               If an integer is provided, the timespan is defined as ``(0, timespan)``.
 
     Returns:

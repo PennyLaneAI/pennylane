@@ -152,11 +152,11 @@ class ParametrizedHamiltonian:
             import matplotlib.pyplot as plt
 
             times = jnp.linspace(0., 5., 1000)
-            fs = H.coeffs_parametrized
-            ops = H.ops_parametrized
+            fs = tuple(c for c in H.coeffs if callable(c))
             params = [[4.6, 2.3], 1.2]
 
-            fig, axs = plt.subplots(nrows=len(ops))
+            fig, axs = plt.subplots(nrows=len(fs))
+
             for n, f in enumerate(fs):
                 ax = axs[n]
                 ax.plot(times, f(params[n], times), label=f"p={params[n]}")
