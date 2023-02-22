@@ -880,7 +880,7 @@
   probabilities with the expected wire order.
   [(#3753)](https://github.com/PennyLaneAI/pennylane/pull/3753)
 
-* Empty iterables can no longer be retured from QNodes.
+* Empty iterables can no longer be returned from QNodes.
   [(#3769)](https://github.com/PennyLaneAI/pennylane/pull/3769)
 
 <h3>Contributors</h3>
