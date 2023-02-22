@@ -135,7 +135,7 @@
    tensor(-0.18884787, requires_grad=True),
    tensor(-0.38355704, requires_grad=True))
   ```
-  
+
   This transform can be registered directly as the quantum gradient transform to use during autodifferentiation:
 
   ```pycon
