@@ -429,7 +429,7 @@
   DeviceArray(0., dtype=float32)
   ```
 
-* A new function called `qml.pwc_from_function` has been added as a decorator for defining a `qml.ParametrizedHamiltonian`.
+* A new function called`qml.pwc_from_function` as a decorator for defining a `qml.ParametrizedHamiltonian`.
   This function can be used to decorate a function and create a piecewise constant
   approximation of it.
   [(#3645)](https://github.com/PennyLaneAI/pennylane/pull/3645)
@@ -501,10 +501,10 @@
   the coefficient is equal to 1.
   [(#3595)](https://github.com/PennyLaneAI/pennylane/pull/3595)
 
-* Allow batching in all `SymbolicOp` operators, which include `Exp`, `Pow` and `SProd`.
+* Batching is now allowed in all `SymbolicOp` operators, which include `Exp`, `Pow` and `SProd`.
   [(#3597)](https://github.com/PennyLaneAI/pennylane/pull/3597)
 
-* `Sum` and `Prod` operations now have broadcasted operands.
+* The `Sum` and `Prod` operations now have broadcasted operands.
   [(#3611)](https://github.com/PennyLaneAI/pennylane/pull/3611)
 
 * The XYX single-qubit unitary decomposition has been implemented.
