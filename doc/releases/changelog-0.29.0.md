@@ -494,7 +494,7 @@
 
 <h4>Operations and batching</h4>
 
-* A new function `qml.dot` has been added to compute the dot product between a vector and a list of operators.
+* A new function called `qml.dot` has been added to compute the dot product between a vector and a list of operators.
   [(#3586)](https://github.com/PennyLaneAI/pennylane/pull/3586)
 
   ```pycon
