@@ -129,6 +129,7 @@ class DefaultMixed(QubitDevice):
         "QFT",
         "ThermalRelaxationError",
         "ECR",
+        "ParametrizedEvolution",
     }
 
     _reshape = staticmethod(qnp.reshape)
