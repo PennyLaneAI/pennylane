@@ -553,9 +553,6 @@
 * The `qml.GellMann` operators now include their index when displayed.
   [(#3641)](https://github.com/PennyLaneAI/pennylane/pull/3641)
 
-* All `Operator`'s input parameters that are lists are cast into vanilla numpy arrays.
-  [(#3659)](https://github.com/PennyLaneAI/pennylane/pull/3659)
-
 * `qml.ops.ctrl_decomp_zyz` has been added to compute the decomposition of a controlled single-qubit operation given
   a single-qubit operation and the control wires.
   [(#3681)](https://github.com/PennyLaneAI/pennylane/pull/3681)
@@ -795,6 +792,9 @@
 * `op.simplify()` for operators which are linear combinations of pauli words will use a builtin pauli representation 
   to more efficiently compute the simplification of the operator.
   [(#3481)](https://github.com/PennyLaneAI/pennylane/pull/3481)
+
+* All `Operator`'s input parameters that are lists are cast into vanilla numpy arrays.
+  [(#3659)](https://github.com/PennyLaneAI/pennylane/pull/3659)
 
 <h3>Deprecations</h3>
 
