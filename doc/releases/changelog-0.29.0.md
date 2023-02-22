@@ -473,10 +473,10 @@
   [(#3617)](https://github.com/PennyLaneAI/pennylane/pull/3617)
   [(#3706)](https://github.com/PennyLaneAI/pennylane/pull/3706)
 
-* `qml.ControlledQubitUnitary` now inherits from `qml.ControlledOp`, which defines `decomposition`, `expand`, and `sparse_matrix` rather than raising an error.
+* `qml.ControlledQubitUnitary` now inherits from `qml.ops.op_math.ControlledOp`, which defines `decomposition`, `expand`, and `sparse_matrix` rather than raising an error.
   [(#3450)](https://github.com/PennyLaneAI/pennylane/pull/3450)
 
-* Parameter broadcasting support has been added for the `qml.Controlled` class if the base operator supports
+* Parameter broadcasting support has been added for the `qml.ops.op_math.Controlled` class if the base operator supports
   broadcasting.
   [(#3450)](https://github.com/PennyLaneAI/pennylane/pull/3450)
 
@@ -531,7 +531,7 @@
 * `qml.pauli.pauli_word_to_string` now supports `Prod`, `SProd` and `Hamiltonian` operators.
   [(#3692)](https://github.com/PennyLaneAI/pennylane/pull/3692)
 
-* `qml.Controlled` can now decompose single qubit target operations more effectively using the ZYZ
+* `qml.ops.op_math.Controlled` can now decompose single qubit target operations more effectively using the ZYZ
   decomposition.
   [(#3726)](https://github.com/PennyLaneAI/pennylane/pull/3726)
 
