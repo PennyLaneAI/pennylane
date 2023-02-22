@@ -175,6 +175,37 @@
   [SPSA gradient transform documentation](https://docs.pennylane.ai/en/stable/code/api/pennylane.gradients.spsa_grad.html) for details.
   Note: The full SPSA optimization method is already available as `qml.SPSAOptimizer`.
 
+* The default interface is now `auto`. There is no need to specify the interface anymore; it is automatically
+  determined by checking your QNode parameters.
+  [(#3677)](https://github.com/PennyLaneAI/pennylane/pull/3677)
+  [(#3752)](https://github.com/PennyLaneAI/pennylane/pull/3752)
+
+  ```python
+  import jax
+  import jax.numpy as jnp
+
+  qml.enable_return()
+  a = jnp.array(0.1)
+  b = jnp.array(0.2)
+
+  dev = qml.device("default.qubit", wires=2)
+
+  @qml.qnode(dev)
+  def circuit(a, b):
+      qml.RY(a, wires=0)
+      qml.RX(b, wires=1)
+      qml.CNOT(wires=[0, 1])
+      return qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliY(1))
+  ```
+
+  ```pycon
+  >>> circuit(a, b)
+  (Array(0.9950042, dtype=float32), Array(-0.19767681, dtype=float32))
+  >>> jac = jax.jacobian(circuit)(a, b)
+  >>> jac
+  (Array(-0.09983341, dtype=float32, weak_type=True), Array(0.01983384, dtype=float32, weak_type=True))
+  ```
+
 * The JAX-JIT interface now supports higher-order gradient computation with the new return types system.
   [(#3498)](https://github.com/PennyLaneAI/pennylane/pull/3498)
 
@@ -706,37 +737,11 @@
 * `qml.VQECost` has been removed.
   [(#3735)](https://github.com/PennyLaneAI/pennylane/pull/3735)
 
-* The default interface is now `auto`. There is no need to specify the interface anymore; it is automatically
-  determined by checking your QNode parameters.
+* The default interface is now `auto`.
   [(#3677)](https://github.com/PennyLaneAI/pennylane/pull/3677)
+  [(#3752)](https://github.com/PennyLaneAI/pennylane/pull/3752)
 
-  ```python
-  import jax
-  import jax.numpy as jnp
-
-  qml.enable_return()
-  a = jnp.array(0.1)
-  b = jnp.array(0.2)
-
-  dev = qml.device("default.qubit", wires=2)
-
-  @qml.qnode(dev)
-  def circuit(a, b):
-      qml.RY(a, wires=0)
-      qml.RX(b, wires=1)
-      qml.CNOT(wires=[0, 1])
-      return qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliY(1))
-  ```
-
-  ```pycon
-  >>> circuit(a, b)
-  (Array(0.9950042, dtype=float32), Array(-0.19767681, dtype=float32))
-  >>> jac = jax.jacobian(circuit)(a, b)
-  >>> jac
-  (Array(-0.09983341, dtype=float32, weak_type=True), Array(0.01983384, dtype=float32, weak_type=True))
-  ```
-
-  It comes with the fact that the interface is determined during the QNode call instead of the
+  The interface is determined during the QNode call instead of the
   initialization. It means that the `gradient_fn` and `gradient_kwargs` are only defined on the QNode at the beginning
   of the call. On top of this, without specifying the interface it is not possible to guarantee that the device will not be changed
   during the call if you are using backprop(`default.qubit` to `default.qubit,jax`e.g.) whereas before it was happening at
