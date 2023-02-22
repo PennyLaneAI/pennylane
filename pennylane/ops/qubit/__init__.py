@@ -36,7 +36,7 @@ from .observables import *
 from .parametric_ops import *
 from .qchem_ops import *
 from .state_preparation import *
-from .special_unitary import SpecialUnitary, pauli_basis_strings
+from .special_unitary import SpecialUnitary
 from .hamiltonian import Hamiltonian
 from ..identity import Identity
 from ..snapshot import Snapshot
