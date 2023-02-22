@@ -137,7 +137,7 @@
   ```
   
   This transform can be registered directly as the quantum gradient transform to use during autodifferentiation:
-  
+
   ```pycon
   >>> dev = qml.device("default.qubit", wires=3)
   >>> @qml.qnode(dev, interface="jax", diff_method="hadamard")
