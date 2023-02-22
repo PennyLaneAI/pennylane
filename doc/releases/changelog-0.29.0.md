@@ -833,8 +833,7 @@
 * Ensure that a `QNode` does not return an empty iterable.
   [(#3769)](https://github.com/PennyLaneAI/pennylane/pull/3769)
 
-* `QNode.__call__` now sets "jax_enable_x64" to `True` to avoid rounding errors when 32-bit floating
-  point precision is used.
+* PennyLane now sets "jax_enable_x64" to `True` during import to avoid rounding errors.
   [(#3803)](https://github.com/PennyLaneAI/pennylane/pull/3803)
 
 <h3>Contributors</h3>
