@@ -828,10 +828,11 @@ class QNode:
             import jax  # pylint: disable=import-outside-toplevel
             import jax.numpy as jnp  # pylint: disable=import-outside-toplevel
 
-            # We cast to 64-bit floating points to avoid rounding errors
-            jax.config.update("jax_enable_x64", True)
-            args = tuple(arg.astype(jnp.float64) for arg in args)
-            kwargs = {key: value.astype(jnp.float64) for key, value in kwargs.items()}
+            if jax.config.read("jax_enable_x64") is False:
+                # We cast to 64-bit floating points to avoid rounding errors
+                jax.config.update("jax_enable_x64", True)
+                args = tuple(arg.astype(jnp.float64) for arg in args)
+                kwargs = {key: value.astype(jnp.float64) for key, value in kwargs.items()}
 
         if not self._qfunc_uses_shots_arg:
             # If shots specified in call but not in qfunc signature,
