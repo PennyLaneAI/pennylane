@@ -780,7 +780,7 @@
 
 <h3>Bug fixes</h3>
 
-* Makes `Exp` and `Evolution` compatible with parameter shift derivatives.
+* Fixed a bug where calling `Evolution.generator` with `coeff` being a complex ArrayBox raised an error.
   [(#3796)](https://github.com/PennyLaneAI/pennylane/pull/3796)
 
 * Fixed a bug in the drawer where nested controlled operations would output
