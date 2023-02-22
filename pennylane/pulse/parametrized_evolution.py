@@ -58,9 +58,9 @@ class ParametrizedEvolution(Operation):
     Args:
         H (ParametrizedHamiltonian): Hamiltonian to evolve
         params (Optional[list]): trainable parameters, passed as list where each element corresponds to
-            the parameters of a scalar-valued function of the hamiltonian being evolved.
+            the parameters of a scalar-valued function of the Hamiltonian being evolved.
         t (Union[float, List[float]]): If a float, it corresponds to the duration of the evolution.
-            If a list of floats, the ``odeint`` solver will use all the provided time values, and
+            If a list of floats, the ODE solver will use all the provided time values, and
             perform intermediate steps if necessary. It is recommended to just provide a start and end time.
             Note that such absolute times only have meaning within an instance of
             ``ParametrizedEvolution`` and will not affect other gates.
@@ -99,9 +99,9 @@ class ParametrizedEvolution(Operation):
     have a matrix defined. To obtain an Operator with a matrix, it must be passed parameters and
     a time interval:
 
-    >>>  qml.matrix(ev([1.2], t=[0, 4]))
+    >>> qml.matrix(ev([1.2], t=[0, 4]))
     Array([[ 0.72454906+0.j, -0.6892243 +0.j],
-       [ 0.6892243 +0.j,  0.72454906+0.j]], dtype=complex64)
+           [ 0.6892243 +0.j,  0.72454906+0.j]], dtype=complex64)
 
     The parameters can be updated by calling the :class:`~.ParametrizedEvolution` again with different inputs.
 
@@ -171,7 +171,6 @@ class ParametrizedEvolution(Operation):
         In the case where we have defined two Hamiltonians, ``H1`` and ``H2``, and we want to find a time evolution
         where the two are driven simultaneously for some period of time, it is important that both are included in
         the same call of :func:`~.pennylane.evolve`.
-
         For non-commuting operations, applying ``qml.evolve(H1)(params, t=[0, 10])`` followed by
         ``qml.evolve(H2)(params, t=[0, 10])`` will **not** apply the two pulses simultaneously, despite the overlapping
         time window. Instead, it will execute ``H1`` in the ``[0, 10]`` time window, and then subsequently execute
@@ -211,10 +210,10 @@ class ParametrizedEvolution(Operation):
 
         In ``circuit1``, the two Hamiltonians are evolved over the same time window, but inside different operators.
         In ``circuit2``, we add the two to form a single :class:`~.ParametrizedHamiltonian`. This will combine the
-        two so that the expected parameters will be ``params1 + params2``. They can then be included inside a single
-        :class:`~.ParametrizedEvolution`.
+        two so that the expected parameters will be ``params1 + params2`` (as an addition of ``list``s).
+        They can then be included inside a single :class:`~.ParametrizedEvolution`.
 
-        The resulting evolutions of ``circuit1`` and ``circuit2`` are *not* identical:
+        The resulting evolutions of ``circuit1`` and ``circuit2`` are **not** identical:
 
         >>> params = jnp.array([1., 2., 3.])
         >>> circuit1(params)
@@ -228,9 +227,9 @@ class ParametrizedEvolution(Operation):
         executing ``H1`` in the ``[0, 10]`` time window and then executing ``H2`` with the same time window,
         without taking into account how the time evolution of ``H1`` affects the evolution of ``H2`` and vice versa!
 
-        One can also provide a list of time values that the odeint will use to calculate the evolution of the
-        :class:`ParametrizedHamiltonian`. Keep in mind that the odeint solver uses an adaptive step size, thus
-        it might use intermediate time values.
+        One can also provide a list of time values that the ODE solver will use to calculate the evolution of the
+        :class:`ParametrizedHamiltonian`. Keep in mind that the ODE solver uses an adaptive step size, thus
+        it might use additional intermediate time values.
 
         .. code-block:: python
 
@@ -244,7 +243,7 @@ class ParametrizedEvolution(Operation):
         Array(-0.78236955, dtype=float32)
         >>> jax.grad(circuit)(params)
         Array([-4.8066125 ,  3.703827  , -1.3297377 , -2.406232  ,  0.6811726 ,
-            -0.52277344], dtype=float32)
+                -0.52277344], dtype=float32)
 
         Given that we used the same time window (``[0, 10]``), the results are the same as before.
     """
@@ -283,7 +282,7 @@ class ParametrizedEvolution(Operation):
         super().__init__(*params, wires=H.wires, do_queue=do_queue, id=id)
 
     def __call__(self, params, t, **odeint_kwargs):
-        # Need to cast all elements inside params to `jnp.arrays` to make sure they are not casted
+        # Need to cast all elements inside params to `jnp.arrays` to make sure they are not cast
         # to `np.arrays` inside `Operator.__init__`
         params = [jnp.array(p) for p in params]
         odeint_kwargs = {**self.odeint_kwargs, **odeint_kwargs}

@@ -220,7 +220,7 @@ Now we can execute the evolution of this Hamiltonian in a QNode and compute its 
         qml.evolve(H)(params, t=[0, 10])
         return qml.expval(qml.PauliZ(0))
 
->>> params = [1.2]
+>>> params = jnp.array([1.2])
 >>> circuit(params)
 Array(0.96632576, dtype=float32)
 
