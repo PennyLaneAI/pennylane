@@ -276,7 +276,7 @@ class DefaultQubitJax(DefaultQubit):
         return jax.random.choice(key, number_of_states, shape=(shots,), p=state_probability)
 
     @staticmethod
-    def states_to_binary(samples, num_wires, dtype=jnp.int32):
+    def states_to_binary(samples, num_wires, dtype=jnp.int64):
         """Convert basis states from base 10 to binary representation.
 
         This is an auxiliary method to the generate_samples method.

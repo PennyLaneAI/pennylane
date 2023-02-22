@@ -158,12 +158,25 @@ def _execute(
     @jax.custom_vjp
     def wrapped_exec(params):
         result_shapes_dtypes = _extract_shape_dtype_structs(tapes, device)
+        # this will only be not None on default.qubit.jax
+        _prng_key = getattr(device, "_prng_key", None)
 
-        def wrapper(p):
+        def wrapper(p, prng_key):
             """Compute the forward pass."""
             new_tapes = [cp_tape(t, a) for t, a in zip(tapes, p)]
+
+            # cache the original tracer, but temporarily substitute
+            # the current PRNG Key.
+            _prng_key_original = getattr(device, "_prng_key", None)
+            if prng_key is not None:
+                device._prng_key = prng_key
+            
             with qml.tape.Unwrap(*new_tapes):
                 res, _ = execute_fn(new_tapes, **gradient_kwargs)
+
+            # Restore the original tracer
+            if _prng_key_original is not None:
+                device._prng_key = _prng_key_original
 
             # When executed under `jax.vmap` the `result_shapes_dtypes` will contain
             # the shape without the vmap dimensions, while the function here will be
@@ -182,7 +195,7 @@ def _execute(
                     res[i] = res[i].T
             return res
 
-        res = jax.pure_callback(wrapper, result_shapes_dtypes, params, vectorized=True)
+        res = jax.pure_callback(wrapper, result_shapes_dtypes, params, _prng_key, vectorized=True)
         return res
 
     def wrapped_exec_fwd(params):
