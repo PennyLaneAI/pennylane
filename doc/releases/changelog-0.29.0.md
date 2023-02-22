@@ -12,6 +12,7 @@
   [(#3586)](https://github.com/PennyLaneAI/pennylane/pull/3586)
   [(#3617)](https://github.com/PennyLaneAI/pennylane/pull/3617)
   [(#3645)](https://github.com/PennyLaneAI/pennylane/pull/3645)
+  [(#3665)](https://github.com/PennyLaneAI/pennylane/pull/3665)
   [(#3706)](https://github.com/PennyLaneAI/pennylane/pull/3706)
   [(#3730)](https://github.com/PennyLaneAI/pennylane/pull/3730)
 
@@ -803,6 +804,7 @@
 
 * The `collections` module has been deprecated.
   [(#3686)](https://github.com/PennyLaneAI/pennylane/pull/3686)
+  [(#3687)](https://github.com/PennyLaneAI/pennylane/pull/3687)
 
 * `qml.op_sum` has been deprecated. Users should use `qml.sum` instead.
   [(#3686)](https://github.com/PennyLaneAI/pennylane/pull/3686)
