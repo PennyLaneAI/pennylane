@@ -36,7 +36,7 @@ class ParametrizedHamiltonian:
         coeffs (Union[float, callable]): coefficients of the Hamiltonian expression, which may be
             constants or parametrized functions. All functions passed as ``coeffs`` must have two
             arguments, the first one being the trainable parameters and the second one being time.
-        observables (Iterable[Observable]): observables in the Hamiltonian expression, of same
+        observables (Iterable[Operator]): observables in the Hamiltonian expression, of same
             length as ``coeffs``
 
     A ``ParametrizedHamiltonian`` is a callable with the fixed signature ``H(params, t)``,
@@ -260,7 +260,7 @@ class ParametrizedHamiltonian:
         functions for the parametrized terms.
 
         Returns:
-            Iterable[float]): coefficients in the Hamiltonian expression
+            Iterable[float, Callable]): coefficients in the Hamiltonian expression
         """
         return self.coeffs_fixed + self.coeffs_parametrized
 
@@ -269,7 +269,7 @@ class ParametrizedHamiltonian:
         """Return the operators defining the ``ParametrizedHamiltonian``.
 
         Returns:
-            Iterable[Observable]): observables in the Hamiltonian expression
+            Iterable[Operator]): observables in the Hamiltonian expression
         """
         return self.ops_fixed + self.ops_parametrized
 
