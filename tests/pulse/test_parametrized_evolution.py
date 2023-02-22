@@ -383,7 +383,7 @@ class TestIntegration:
             qml.pulse.ParametrizedEvolution(H_pulse, x, 5.0)
             return qml.expval(qml.PauliZ(0))
 
-        x = [jnp.arange(3, dtype=float)]*2
+        x = [jnp.arange(3, dtype=float)] * 2
         res_def = qnode_def(x)
         grad_def = jax.grad(qnode_def)(x)
 
