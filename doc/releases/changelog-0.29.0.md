@@ -293,7 +293,7 @@
   ```
   
   Otherwise, if the Hamiltonian is a Pauli word, then the decomposition is provided as a
-  `PauliRot` operation:
+  `qml.PauliRot` operation:
 
   ```pycon
   >>> qml.evolve(qml.PauliZ(0) @ qml.PauliX(1)).decomposition()
