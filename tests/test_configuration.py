@@ -22,7 +22,6 @@ import toml
 import pennylane as qml
 from pennylane import Configuration
 
-
 config_filename = "default_config.toml"
 
 
@@ -220,3 +219,32 @@ class TestPennyLaneInit:
 
         assert dev.hbar == 2
         assert dev.shots == 1000
+
+
+class TestJaxConfig:
+    """Tests to ensure that ``float64`` is enabled for ``jax`` when importing PennyLane."""
+
+    @pytest.mark.jax
+    def test_import_pennylane_after_jax(self):
+        import jax
+        import jax.numpy as jnp
+
+        import pennylane
+
+        arr = jnp.array(1.0)
+
+        assert jax.config.read("jax_enable_x64") is True
+        assert arr.dtype == jnp.float64
+
+    @pytest.mark.jax
+    def test_import_pennylane_before_jax(self):
+        import pennylane
+
+        _ = None  # to avoid automatic sorting of imports
+        import jax
+        import jax.numpy as jnp
+
+        arr = jnp.array(1.0)
+
+        assert jax.config.read("jax_enable_x64") is True
+        assert arr.dtype == jnp.float64

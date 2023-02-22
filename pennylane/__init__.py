@@ -18,8 +18,9 @@ PennyLane can be directly imported.
 from importlib import reload
 import types
 import warnings
+import sys
+import os
 import pkg_resources
-
 
 import numpy as _np
 from semantic_version import SimpleSpec, Version
@@ -114,6 +115,13 @@ from pennylane.interfaces import execute  # pylint:disable=wrong-import-order
 
 # Look for an existing configuration file
 default_config = Configuration("config.toml")
+
+if "jax" in sys.modules:
+    import jax
+
+    jax.config.update("jax_enable_x64", True)
+else:
+    os.environ["JAX_ENABLE_X64"] = "1"
 
 
 class QuantumFunctionError(Exception):
