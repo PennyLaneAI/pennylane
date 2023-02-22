@@ -114,7 +114,7 @@
 <h4>Always differentiable 📈</h4>
 
 * The Hadamard test gradient transform is now available via `qml.gradients.hadamard_grad`. This transform 
-   is also available as a differentiation method within `QNode`s.
+  is also available as a differentiation method within `QNode`s.
   [(#3625)](https://github.com/PennyLaneAI/pennylane/pull/3625)
   [(#3736)](https://github.com/PennyLaneAI/pennylane/pull/3736)
 
@@ -137,7 +137,8 @@
    tensor(-0.38355704, requires_grad=True))
   ```
 
-  This transform can be registered directly as the quantum gradient transform to use during autodifferentiation:
+  This transform can be registered directly as the quantum gradient transform to use during
+  autodifferentiation:
 
   ```pycon
   >>> dev = qml.device("default.qubit", wires=3)
