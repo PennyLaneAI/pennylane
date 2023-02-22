@@ -455,6 +455,10 @@
   DeviceArray(0., dtype=float32)
   ```
 
+* Add `ParametrizedHamiltonianPytree` class, which is a pytree jax object representing a parametrized
+  Hamiltonian, where the matrix computation is delayed to improve performance.
+  [(#3779)](https://github.com/PennyLaneAI/pennylane/pull/3779)
+
 <h4>Operations and batching</h4>
 
 * A new function `qml.dot` has been added to compute the dot product between a vector and a list of operators.
