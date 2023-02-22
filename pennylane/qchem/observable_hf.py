@@ -134,15 +134,15 @@ def jordan_wigner(op, notation="physicist"):
         op (list[int]): the fermionic operator
         notation (str): notation specifying the order of the two-body fermionic operators
 
-    Returns
+    Returns:
         tuple(list[complex], list[Operation]): list of coefficients and qubit operators
 
     **Example**
 
     >>> f  = [0, 0]
     >>> q = jordan_wigner(f)
-    >>> q
-    ([(0.5+0j), (-0.5+0j)], [Identity(wires=[0]), PauliZ(wires=[0])]) # corresponds to :math:`\frac{1}{2}(I_0 - Z_0)`
+    >>> q # corresponds to :math:`\frac{1}{2}(I_0 - Z_0)`
+    ([(0.5+0j), (-0.5+0j)], [Identity(wires=[0]), PauliZ(wires=[0])])
     """
     if len(op) == 1:
         op = [(op[0], 1)]
