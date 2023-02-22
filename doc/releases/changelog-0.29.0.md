@@ -4,7 +4,9 @@
 
 <h3>New features since last release</h3>
 
-* Added 'qml.sign_expand' tape tranforms which implements the optimal decomposition of a fast-forwardable Hamiltonian that minimizes the variance of its estimator in the Single-Qubit-Measurement from  arXiv:2207.09479
+* Added 'qml.sign_expand' tape tranforms which implements the optimal decomposition of a
+  fast-forwardable Hamiltonian that minimizes the variance of its estimator in the
+  Single-Qubit-Measurement from  arXiv:2207.09479
   [(#2852)](https://github.com/PennyLaneAI/pennylane/pull/2852)
 
 * The `qml.math` module now also contains a submodule for
@@ -31,6 +33,7 @@
 * A new operation `SpecialUnitary` was added, providing access to an arbitrary
   unitary gate via a parametrization in the Pauli basis.
   [(#3650)](https://github.com/PennyLaneAI/pennylane/pull/3650)
+  [(#3651)](https://github.com/PennyLaneAI/pennylane/pull/3651)
   [(#3674)](https://github.com/PennyLaneAI/pennylane/pull/3674)
 
   The new operation takes a single argument, a one-dimensional `tensor_like`
@@ -760,9 +763,6 @@
 * The use of `Evolution` directly has been deprecated. Users should use `qml.evolve` instead.
   This new function changes the sign of the given parameter.
   [(#3706)](https://github.com/PennyLaneAI/pennylane/pull/3706)
-
-* `ApproxTimeEvolution` has been deprecated. Please use `qml.evolve` instead.
-  [(#3755)](https://github.com/PennyLaneAI/pennylane/pull/3755)
 
 <h3>Documentation</h3>
 
