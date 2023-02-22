@@ -123,9 +123,10 @@ def compute_jvp_single(tangent, jac):
         to allow for the distinction from scenario **(B)**. Internally, this input shape for
         ``tangent`` never occurs for scenario **(A)**.
 
-        In this scenario, the tangent is reshaped into a one-dimensional tensor with shape ``(prod_l,)``
-        and the Jacobian is reshaped to have the dimensions ``(r_1, ... r_R, prod_l)``.
-        This is followed by a ``tensordot`` contraction over the ``prod_l`` axis of both tensors.
+        In this scenario, the tangent is reshaped into a one-dimensional tensor with shape
+        ``(tangent_size,)`` and the Jacobian is reshaped to have the dimensions
+        ``(r_1, ... r_R, tangent_size)``. This is followed by a ``tensordot`` contraction over the
+        ``tangent_size`` axis of both tensors.
 
         For scenario **(B)**, the input shapes can be in
 
@@ -140,26 +141,27 @@ def compute_jvp_single(tangent, jac):
              - ``((),..,())`` (length ``k``)
              - scalar return, ``k`` scalar parameters
            * - ``(k,)`` or ``[(),..,()]`` or ``((),..,())``
-             - ``((r_1,..,r_R),..,(r_1,..,r_R))``
+             - ``((r_1,..,r_R),..,(r_1,..,r_R))`` [1]
              - tensor return, ``k`` scalar parameters
            * - ``[(l_1,..,l_{L_1}),..,(l_1,..,l_{L_k})]``
              - ``((l_1,..,l_{L_1}),..,(l_1,..,l_{L_k}))``
              - scalar return, ``k`` tensor parameters
            * - ``[(l_1,..,l_{L_1}),..,(l_1,..,l_{L_k})]``
-             - ``((r_1,..,r_R, l_1,..,l_{L_1}),..,(r_1,..,r_R, l_1,..,l_{L_k}))``
+             - ``((r_1,..,r_R, l_1,..,l_{L_1}),..,(r_1,..,r_R, l_1,..,l_{L_k}))`` [1]
              - tensor return, ``k`` tensor parameters
 
-        Note that the return type dimensions always remain the same, whereas the
-        dimensions of the tensor parameters may differ.
+        [1] Note that the return type dimensions ``(r_1,..,r_R)`` are the same for all entries
+        of ``jac``, whereas the dimensions of the entries in ``tanget``, and the according
+        dimensions ``(l_1,..,l_{L_k})`` of the ``jac`` entries may differ.
 
         In this scenario, another case separation is used: If any of the parameters is a
         tensor (i.e. not a scalar), all tangent entries are reshaped into one-dimensional
-        tensors with shapes ``(prod_{l_i},)`` and then stacked into one one-dimensional tensor.
+        tensors with shapes ``(tangent_size_i,)`` and then stacked into one one-dimensional tensor.
         If there are no tensor parameters, the tangent is just stacked and reshaped.
-        The Jacobians are reshaped to have the dimensions ``(r_1, ... r_R, prod_{l_i})``
+        The Jacobians are reshaped to have the dimensions ``(r_1, ... r_R, tangent_size_i)``
         and then are concatenated along their last (potentially mismatching) axis.
         This is followed by a tensordot contraction over the axes of size
-        :math:`\sum_i` ``prod_{l_i}``.
+        :math:`\sum_i` ``tangent_size_i``.
 
     """
     if jac is None:
@@ -171,26 +173,29 @@ def compute_jvp_single(tangent, jac):
 
     if single_param:
         tangent = qml.math.stack(tangent)
-        L_1 = len(tangent.shape[1:])
-        tangent = qml.math.reshape(tangent, (-1,))
-        prod_l = tangent.shape[0]
+        first_tangent_ndim = len(tangent.shape[1:])
+        tangent = qml.math.flatten(tangent)
+        tangent_size = tangent.shape[0]
         shape = jac.shape
-        new_shape = shape[: len(shape) - L_1] + (prod_l,)
+        new_shape = shape[: len(shape) - first_tangent_ndim] + (tangent_size,)
         jac = qml.math.cast(qml.math.convert_like(jac, tangent), tangent.dtype)
         jac = qml.math.reshape(jac, new_shape)
         return qml.math.tensordot(jac, tangent, [[-1], [0]])
 
-    L = [t.ndim for t in tangent]
+    tangent_ndims = [t.ndim for t in tangent]
     if isinstance(tangent, (tuple, list)) and any(t.ndim > 0 for t in tangent):
-        tangent = [qml.math.reshape(t, (-1,)) for t in tangent]
-        prod_l = [t.shape[0] for t in tangent]
+        # At least one tangent entry is not a scalar, requiring us to flatten them and hstack
+        tangent = [qml.math.flatten(t) for t in tangent]
+        tangent_sizes = [t.shape[0] for t in tangent]
         tangent = qml.math.hstack(tangent)
     else:
-        prod_l = [1] * len(tangent)
+        # Only scalar tangent entries, no flattening required and we may use stack
+        tangent_sizes = [1] * len(tangent)
         tangent = qml.math.stack(tangent)
+    jac_shapes = [j.shape for j in jac]
     new_shapes = [
-        (j.shape if L_i == 0 else j.shape[:-L_i]) + (_prod_l,)
-        for j, L_i, _prod_l in zip(jac, L, prod_l)
+        shape[: len(shape) - t_ndim] + (tsize,)
+        for shape, t_ndim, tsize in zip(jac_shapes, tangent_ndims, tangent_sizes)
     ]
     jac = qml.math.concatenate([qml.math.reshape(j, s) for j, s in zip(jac, new_shapes)], axis=-1)
     jac = qml.math.cast(qml.math.convert_like(jac, tangent), tangent.dtype)
