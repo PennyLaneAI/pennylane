@@ -138,7 +138,7 @@
 
 <h4>Always differentiable 📈</h4>
 
-* The Hadamard test gradient tranform is now available via `qml.gradients.hadamard_grad`. The gradient transform 
+* The Hadamard test gradient tranform is now available via `qml.gradients.hadamard_grad`. The gradient transform
   `qml.gradients.hadamard_grad` is now registered as a differentiation method for `QNode`s.
   [#3625](https://github.com/PennyLaneAI/pennylane/pull/3625)
   [#3736](https://github.com/PennyLaneAI/pennylane/pull/3736)
@@ -435,7 +435,6 @@
 * The gradient transforms work for the new return type system with non-trivial classical jacobians.
   [(#3776)](https://github.com/PennyLaneAI/pennylane/pull/3776)
 
-
 * The `default.mixed` device received a performance improvement for multi-qubit operations.
   This also allows to apply channels that act on more than seven qubits, which was not possible before.
   [(#3584)](https://github.com/PennyLaneAI/pennylane/pull/3584)
@@ -647,7 +646,7 @@
 * `SProd.sparse_matrix` now supports interface-specific variables with a single element as the `scalar`.
   [(#3770)](https://github.com/PennyLaneAI/pennylane/pull/3770)
 
-* The `qchem.Molecule` class raises an error when the molecule has an odd number of electrons or 
+* The `qchem.Molecule` class raises an error when the molecule has an odd number of electrons or
   when the spin multiplicity is not 1.
   [(#3748)](https://github.com/PennyLaneAI/pennylane/pull/3748)
 
@@ -657,6 +656,10 @@
 * Updated `qml.draw` and `qml.draw_mpl` to draw any quantum function,
   which allows for visualizing only part of a complete circuit/QNode.
   [(#3760)](https://github.com/PennyLaneAI/pennylane/pull/3760)
+
+* Add `ParametrizedHamiltonianPytree` class, which is a pytree jax object representing a parametrized
+  Hamiltonian, where the matrix computation is delayed to improve performance.
+  [(#3779)](https://github.com/PennyLaneAI/pennylane/pull/3779)
 
 <h3>Breaking changes</h3>
 
@@ -745,7 +748,7 @@
   instead.
   [(#3701)](https://github.com/PennyLaneAI/pennylane/pull/3701)
 
-* `op.simplify()` for operators which are linear combinations of pauli words will use a builtin pauli representation 
+* `op.simplify()` for operators which are linear combinations of pauli words will use a builtin pauli representation
   to more efficiently compute the simplification of the operator.
   [(#3481)](https://github.com/PennyLaneAI/pennylane/pull/3481)
 
