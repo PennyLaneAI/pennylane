@@ -487,7 +487,7 @@
 * The `qml.equal` function has been extended to compare `Prod` and `Sum` operators.
   [(#3516)](https://github.com/PennyLaneAI/pennylane/pull/3516)
 
-* `qml.purity` is added as a measurement process for purity
+* `qml.purity` has been added as a measurement process for purity
   [(#3551)](https://github.com/PennyLaneAI/pennylane/pull/3551)
 
 * In-place inversion has been removed for qutrit operations in preparation for the
