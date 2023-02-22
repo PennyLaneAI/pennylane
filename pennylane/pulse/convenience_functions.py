@@ -145,7 +145,7 @@ def rect(x: Union[float, Callable], windows: List[Tuple[float]] = None):
 
     One can also pass a scalar to the ``rect`` function
 
-    >>> H = qml.pulse.rect(10, (1, 7)) * qml.PauliX(0)
+    >>> H = qml.pulse.rect(10, [(1, 7)]) * qml.PauliX(0)
 
     In this case, ``rect`` will return the given scalar only when the time is inside the provided
     time windows
@@ -162,6 +162,9 @@ def rect(x: Union[float, Callable], windows: List[Tuple[float]] = None):
             "Module jax is required for any pulse-related convenience function. "
             "You can install jax via: pip install jax"
         )
+    #is_nested = any(hasattr(x, "__len__") and len(x)==2 for x in windows)
+    #if not is_nested:
+        #windows = [windows]
     if not callable(x):
 
         def _f(_, __):

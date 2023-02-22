@@ -243,7 +243,7 @@ class ParametrizedEvolution(Operation):
         Array(-0.78236955, dtype=float32)
         >>> jax.grad(circuit)(params)
         Array([-4.8066125 ,  3.703827  , -1.3297377 , -2.406232  ,  0.6811726 ,
-                -0.52277344], dtype=float32)
+            -0.52277344], dtype=float32)
 
         Given that we used the same time window (``[0, 10]``), the results are the same as before.
     """
