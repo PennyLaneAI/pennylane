@@ -256,7 +256,7 @@
       qml.adjoint(qml.templates.AngleEmbedding)(x2, wires=dev.wires)
       return qml.probs(wires=dev.wires)
 
-  kernel = lambda x1, x2: circuit(x1, x2)[:, 0]
+  kernel = lambda x1, x2: circuit(x1, x2)
   ```
 
   Note that we extract the first probability vector entry for both
@@ -266,7 +266,7 @@
 
   ```pycon
   >>> X = np.random.random((4, 2))
-  >>> qml.kernels.square_kernel_matrix(X, kernel)
+  >>> qml.kernels.square_kernel_matrix(X, kernel)[:, 0]
   tensor([[[1.  , 0.86, 0.88, 0.92],
            [0.86, 1.  , 0.75, 0.97],
            [0.88, 0.75, 1.  , 0.91],
