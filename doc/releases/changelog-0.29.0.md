@@ -810,9 +810,6 @@
 * The use of `Evolution` directly has been deprecated. Users should use `qml.evolve` instead.
   This new function changes the sign of the given parameter.
   [(#3706)](https://github.com/PennyLaneAI/pennylane/pull/3706)
-
-* `qml.ApproxTimeEvolution` has been deprecated. Please use `qml.evolve` instead.
-  [(#3755)](https://github.com/PennyLaneAI/pennylane/pull/3755)
   
 <h3>Documentation</h3>
 
