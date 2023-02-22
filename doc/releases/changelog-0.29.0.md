@@ -494,7 +494,7 @@
   removal of in-place inversion.
   [(#3566)](https://github.com/PennyLaneAI/pennylane/pull/3566)
 
-* Moved `qml.utils.sparse_hamiltonian` function to `~.Hamiltonian.sparse_matrix` method.
+* The `qml.utils.sparse_hamiltonian` function has been moved to the `~.Hamiltonian.sparse_matrix` method.
   [(#3585)](https://github.com/PennyLaneAI/pennylane/pull/3585)
 
 * The `qml.PauliSentence.operation()` method has been improved to avoid instantiating an `SProd` operator when
