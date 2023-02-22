@@ -175,6 +175,37 @@
   [SPSA gradient transform documentation](https://docs.pennylane.ai/en/stable/code/api/pennylane.gradients.spsa_grad.html) for details.
   Note: The full SPSA optimization method is already available as `qml.SPSAOptimizer`.
 
+* The default interface is now `auto`. There is no need to specify the interface anymore; it is automatically
+  determined by checking your QNode parameters.
+  [(#3677)](https://github.com/PennyLaneAI/pennylane/pull/3677)
+  [(#3752)](https://github.com/PennyLaneAI/pennylane/pull/3752)
+
+  ```python
+  import jax
+  import jax.numpy as jnp
+
+  qml.enable_return()
+  a = jnp.array(0.1)
+  b = jnp.array(0.2)
+
+  dev = qml.device("default.qubit", wires=2)
+
+  @qml.qnode(dev)
+  def circuit(a, b):
+      qml.RY(a, wires=0)
+      qml.RX(b, wires=1)
+      qml.CNOT(wires=[0, 1])
+      return qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliY(1))
+  ```
+
+  ```pycon
+  >>> circuit(a, b)
+  (Array(0.9950042, dtype=float32), Array(-0.19767681, dtype=float32))
+  >>> jac = jax.jacobian(circuit)(a, b)
+  >>> jac
+  (Array(-0.09983341, dtype=float32, weak_type=True), Array(0.01983384, dtype=float32, weak_type=True))
+  ```
+
 * The JAX-JIT interface now supports higher-order gradient computation with the new return types system.
   [(#3498)](https://github.com/PennyLaneAI/pennylane/pull/3498)
 
@@ -256,7 +287,7 @@
       qml.adjoint(qml.templates.AngleEmbedding)(x2, wires=dev.wires)
       return qml.probs(wires=dev.wires)
 
-  kernel = lambda x1, x2: circuit(x1, x2)[:, 0]
+  kernel = lambda x1, x2: circuit(x1, x2)
   ```
 
   Note that we extract the first probability vector entry for both
@@ -266,7 +297,7 @@
 
   ```pycon
   >>> X = np.random.random((4, 2))
-  >>> qml.kernels.square_kernel_matrix(X, kernel)
+  >>> qml.kernels.square_kernel_matrix(X, kernel)[:, 0]
   tensor([[[1.  , 0.86, 0.88, 0.92],
            [0.86, 1.  , 0.75, 0.97],
            [0.88, 0.75, 1.  , 0.91],
@@ -454,6 +485,10 @@
   >>> f1(3, 5)
   DeviceArray(0., dtype=float32)
   ```
+
+* Add `ParametrizedHamiltonianPytree` class, which is a pytree jax object representing a parametrized
+  Hamiltonian, where the matrix computation is delayed to improve performance.
+  [(#3779)](https://github.com/PennyLaneAI/pennylane/pull/3779)
 
 <h4>Operations and batching</h4>
 
@@ -702,40 +737,14 @@
 * `qml.VQECost` has been removed.
   [(#3735)](https://github.com/PennyLaneAI/pennylane/pull/3735)
 
-* The default interface is now `auto`. There is no need to specify the interface anymore; it is automatically
-  determined by checking your QNode parameters.
+* The default interface is now `auto`.
   [(#3677)](https://github.com/PennyLaneAI/pennylane/pull/3677)
+  [(#3752)](https://github.com/PennyLaneAI/pennylane/pull/3752)
 
-  ```python
-  import jax
-  import jax.numpy as jnp
-
-  qml.enable_return()
-  a = jnp.array(0.1)
-  b = jnp.array(0.2)
-
-  dev = qml.device("default.qubit", wires=2)
-
-  @qml.qnode(dev)
-  def circuit(a, b):
-      qml.RY(a, wires=0)
-      qml.RX(b, wires=1)
-      qml.CNOT(wires=[0, 1])
-      return qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliY(1))
-  ```
-
-  ```pycon
-  >>> circuit(a, b)
-  (Array(0.9950042, dtype=float32), Array(-0.19767681, dtype=float32))
-  >>> jac = jax.jacobian(circuit)(a, b)
-  >>> jac
-  (Array(-0.09983341, dtype=float32, weak_type=True), Array(0.01983384, dtype=float32, weak_type=True))
-  ```
-
-  It comes with the fact that the interface is determined during the QNode call instead of the
+  The interface is determined during the QNode call instead of the
   initialization. It means that the `gradient_fn` and `gradient_kwargs` are only defined on the QNode at the beginning
   of the call. On top of this, without specifying the interface it is not possible to guarantee that the device will not be changed
-  during the call if you are using backprop(`default.qubit` to `default.qubit,jax`e.g.) whereas before it was happening at
+  during the call if you are using backprop (such as `default.qubit` to `default.qubit,jax`) whereas before it was happening at
   initialization, therefore you should not try to track the device without specifying the interface.
 
 * The tape method `get_operation` can also now return the operation index in the tape, and it can be
@@ -801,9 +810,6 @@
 * The use of `Evolution` directly has been deprecated. Users should use `qml.evolve` instead.
   This new function changes the sign of the given parameter.
   [(#3706)](https://github.com/PennyLaneAI/pennylane/pull/3706)
-
-* `qml.ApproxTimeEvolution` has been deprecated. Please use `qml.evolve` instead.
-  [(#3755)](https://github.com/PennyLaneAI/pennylane/pull/3755)
   
 <h3>Documentation</h3>
 
@@ -874,7 +880,7 @@
   probabilities with the expected wire order.
   [(#3753)](https://github.com/PennyLaneAI/pennylane/pull/3753)
 
-* Empty iterables can no longer be retured from QNodes.
+* Empty iterables can no longer be returned from QNodes.
   [(#3769)](https://github.com/PennyLaneAI/pennylane/pull/3769)
 
 <h3>Contributors</h3>
@@ -888,7 +894,7 @@ Ikko Ashimine,
 Utkarsh Azad,
 Miriam Beddig,
 Cristian Boghiu,
-Tom Bromley,
+Thomas Bromley,
 Astral Cai,
 Isaac De Vlugt,
 Olivia Di Matteo,
