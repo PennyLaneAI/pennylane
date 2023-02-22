@@ -11,9 +11,9 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+"""This experimental directory contains the next generation interface
+for PennyLane devices.
 
 """
-Version number (major.minor.patch[-label])
-"""
-
-__version__ = "0.29.0"
+from .execution_config import ExecutionConfig, DefaultExecutionConfig
+from .device_api import Device
