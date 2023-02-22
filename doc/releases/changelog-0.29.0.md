@@ -562,10 +562,10 @@
 * `qml.generator` now supports operators with `Sum` and `Prod` generators.
   [(#3691)](https://github.com/PennyLaneAI/pennylane/pull/3691)
 
-* `Sum._sort` method takes into account the name of the operator when sorting.
+* The `Sum._sort` method now takes into account the name of the operator when sorting.
   [(#3691)](https://github.com/PennyLaneAI/pennylane/pull/3691)
 
-* Added 'qml.sign_expand' tape tranform, which implements the optimal decomposition of a fast-forwardable Hamiltonian that minimizes the variance of its estimator in the Single-Qubit-Measurement from [arXiv:2207.09479](https://arxiv.org/abs/2207.09479).
+* A new tape transform called 'qml.sign_expand' has been added. It implements the optimal decomposition of a fast-forwardable Hamiltonian that minimizes the variance of its estimator in the Single-Qubit-Measurement from [arXiv:2207.09479](https://arxiv.org/abs/2207.09479).
   [(#2852)](https://github.com/PennyLaneAI/pennylane/pull/2852)
 
 <h4>Differentiability and interfaces</h4>
