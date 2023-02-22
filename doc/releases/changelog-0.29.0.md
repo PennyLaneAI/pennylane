@@ -71,6 +71,7 @@
 * A new operation `qml.SpecialUnitary` has been added, providing access to an arbitrary
   unitary gate via a parametrization in the Pauli basis.
   [(#3650)](https://github.com/PennyLaneAI/pennylane/pull/3650)
+  [(#3651)](https://github.com/PennyLaneAI/pennylane/pull/3651)
   [(#3674)](https://github.com/PennyLaneAI/pennylane/pull/3674)
 
   `qml.SpecialUnitary` creates a unitary that exponentiates a linear combination of all possible Pauli words in lexicographical order — except for the identity operator — for `num_wires` wires, of which there are `4**num_wires - 1`. As its first argument,
@@ -803,7 +804,7 @@
 
 * `qml.ApproxTimeEvolution` has been deprecated. Please use `qml.evolve` instead.
   [(#3755)](https://github.com/PennyLaneAI/pennylane/pull/3755)
-
+  
 <h3>Documentation</h3>
 
 * The documentation for `qml.operation` has been improved.
