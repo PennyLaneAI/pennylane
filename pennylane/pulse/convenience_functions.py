@@ -74,7 +74,7 @@ def constant(scalar, time):
     return scalar
 
 
-def rect(x: Union[float, Callable], windows: List[Tuple[float]] = None):
+def rect(x: Union[float, Callable], windows: Union[Tuple[float], List[Tuple[float]]] = None):
     """Takes a scalar or a scalar-valued function, x, and applies a rectangular window to it, such that the
     returned function is x inside the window and 0 outside it.
 
@@ -83,7 +83,7 @@ def rect(x: Union[float, Callable], windows: List[Tuple[float]] = None):
     Args:
         x (Union[float, Callable]): either a scalar, or a function that accepts two arguments: the trainable
             parameters and time
-        windows (Tuple[float, Tuple[float]]): List of tuples containing time windows where ``x`` is
+        windows (Union[Tuple[float], List[Tuple[float]]]): List of tuples containing time windows where ``x`` is
             evaluated. If ``None`` it is always evaluated. Defaults to ``None``.
 
     Returns:
@@ -145,7 +145,7 @@ def rect(x: Union[float, Callable], windows: List[Tuple[float]] = None):
 
     One can also pass a scalar to the ``rect`` function
 
-    >>> H = qml.pulse.rect(10, [(1, 7)]) * qml.PauliX(0)
+    >>> H = qml.pulse.rect(10, (1, 7)) * qml.PauliX(0)
 
     In this case, ``rect`` will return the given scalar only when the time is inside the provided
     time windows
@@ -162,9 +162,14 @@ def rect(x: Union[float, Callable], windows: List[Tuple[float]] = None):
             "Module jax is required for any pulse-related convenience function. "
             "You can install jax via: pip install jax"
         )
-    #is_nested = any(hasattr(x, "__len__") and len(x)==2 for x in windows)
-    #if not is_nested:
-        #windows = [windows]
+    if windows is not None:
+        is_nested = any(hasattr(w, "__len__") for w in windows)
+        single_window = len(windows) == 2 and not is_nested
+        if single_window:
+            windows = [windows]
+        elif not all(hasattr(w, "__len__") and len(w) == 2 for w in windows):
+            raise ValueError("At least one provided window is not a two-element sequence.")
+
     if not callable(x):
 
         def _f(_, __):
