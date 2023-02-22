@@ -494,7 +494,7 @@
   removal of in-place inversion.
   [(#3566)](https://github.com/PennyLaneAI/pennylane/pull/3566)
 
-* The `qml.utils.sparse_hamiltonian` function has been moved to the `~.Hamiltonian.sparse_matrix` method.
+* The `qml.utils.sparse_hamiltonian` function has been moved to thee `~.Hamiltonian.sparse_matrix` method.
   [(#3585)](https://github.com/PennyLaneAI/pennylane/pull/3585)
 
 * The `qml.PauliSentence.operation()` method has been improved to avoid instantiating an `SProd` operator when
@@ -507,7 +507,7 @@
 * `Sum` and `Prod` operations now have broadcasted operands.
   [(#3611)](https://github.com/PennyLaneAI/pennylane/pull/3611)
 
-* Implemented the XYX single-qubit unitary decomposition.
+* The XYX single-qubit unitary decomposition has been implemented.
   [(#3628)](https://github.com/PennyLaneAI/pennylane/pull/3628)
 
 * All dunder methods now return `NotImplemented`, allowing the right dunder method (e.g. `__radd__`)
