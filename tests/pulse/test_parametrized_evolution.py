@@ -373,15 +373,12 @@ class TestIntegration:
         ops = [qml.PauliX(0) @ qml.PauliX(1), qml.PauliY(1) @ qml.PauliY(2)]
         H_pulse = qml.dot(coeff, ops)
 
-        @qml.qnode(default, interface="jax")
-        def qnode_def(x):
+        def circuit(x):
             qml.pulse.ParametrizedEvolution(H_pulse, x, 5.0)
             return qml.expval(qml.PauliZ(0))
 
-        @qml.qnode(mixed, interface="jax")
-        def qnode_mix(x):
-            qml.pulse.ParametrizedEvolution(H_pulse, x, 5.0)
-            return qml.expval(qml.PauliZ(0))
+        qnode_def = qml.QNode(circuit, default, interface="jax")
+        qnode_mix = qml.QNode(circuit, mixed, interface="jax")
 
         x = [jnp.arange(3, dtype=float)] * 2
         res_def = qnode_def(x)
