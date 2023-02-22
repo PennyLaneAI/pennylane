@@ -406,7 +406,7 @@
 
 <h4>Pulse programming</h4>
 
-* Added `qml.pwc` as a convenience function for defining a `qml.ParametrizedHamiltonian`.
+* A new function called `qml.pwc` has been added as a convenience function for defining a `qml.ParametrizedHamiltonian`.
   This function can be used to create a callable coefficient by setting
   the timespan over which the function should be non-zero. The resulting callable
   can be passed an array of parameters and a time.
@@ -429,7 +429,7 @@
   DeviceArray(0., dtype=float32)
   ```
 
-* Added `qml.pwc_from_function` as a decorator for defining a `qml.ParametrizedHamiltonian`.
+* A new function called `qml.pwc_from_function` has been added as a decorator for defining a `qml.ParametrizedHamiltonian`.
   This function can be used to decorate a function and create a piecewise constant
   approximation of it.
   [(#3645)](https://github.com/PennyLaneAI/pennylane/pull/3645)
