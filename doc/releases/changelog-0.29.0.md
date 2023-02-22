@@ -724,7 +724,7 @@
 * Lazy-loading in the `qml.Dataset.read()` method is more universally supported.
   [(#3605)](https://github.com/PennyLaneAI/pennylane/pull/3605)
 
-* Updated `qml.draw` and `qml.draw_mpl` to draw any quantum function,
+* `qml.draw` and `qml.draw_mpl` have been updated to draw any quantum function,
   which allows for visualizing only part of a complete circuit/QNode.
   [(#3760)](https://github.com/PennyLaneAI/pennylane/pull/3760)
 
