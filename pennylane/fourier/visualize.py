@@ -95,7 +95,7 @@ def _extract_data_and_labels(coeffs):
     nvecs = list(product(*(np.array(range(-(d // 2), d // 2 + 1)) for d in coeffs[0].shape)))
     nvecs_formatted = [format_nvec(nvec) for nvec in nvecs]
 
-    # extract flattened data by real part and imaginary part, and respecting negativ indices
+    # extract flattened data by real part and imaginary part, and respecting negative indices
     data = {}
     data["real"] = np.array([[c[nvec] for nvec in nvecs] for c in coeffs.real])
     data["imag"] = np.array([[c[nvec] for nvec in nvecs] for c in coeffs.imag])
