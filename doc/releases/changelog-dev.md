@@ -27,4 +27,5 @@ This release contains contributions from (in alphabetical order):
 
 Utkarsh Azad
 Soran Jahangiri
+Matthew Silverman
 Jay Soni
