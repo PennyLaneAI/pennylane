@@ -149,10 +149,6 @@ class SampleMP(SampleMeasurement):
         every_term_standard = all(o.__class__ in int_eigval_obs for o in tensor_terms)
         return int if every_term_standard else float
 
-    @property
-    def computational_basis(self):
-        return self.obs is None
-
     # pylint: disable=protected-access
     def shape(self, device=None):
         if qml.active_return():
