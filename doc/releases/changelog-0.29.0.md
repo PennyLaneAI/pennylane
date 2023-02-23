@@ -728,7 +728,7 @@
   Instead, they can be accesses via `op.base.wires` or `op.target_wires`.
   [(#3450)](https://github.com/PennyLaneAI/pennylane/pull/3450)
 
-* The tape constructed by a QNode is no longer queued to surrounding contexts.
+* The tape constructed by a `QNode` is no longer queued to surrounding contexts.
   [(#3509)](https://github.com/PennyLaneAI/pennylane/pull/3509)
 
 * Nested operators like `Tensor`, `Hamiltonian`, and `Adjoint` now remove their owned operators
