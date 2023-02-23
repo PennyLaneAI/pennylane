@@ -14,6 +14,7 @@
 """This module contains an jax implementation of the :class:`~.DefaultQubit`
 reference plugin.
 """
+# pylint: disable=ungrouped-imports
 import numpy as np
 
 import pennylane as qml
@@ -27,8 +28,11 @@ try:
     from jax.config import config as jax_config
     from jax.experimental.ode import odeint
 
+    from pennylane.pulse.parametrized_hamiltonian_pytree import ParametrizedHamiltonianPytree
+
+
 except ImportError as e:  # pragma: no cover
-    raise ImportError("default.qubit.jax device requires installing jax>0.2.0") from e
+    raise ImportError("default.qubit.jax device requires installing jax>0.3.20") from e
 
 
 class DefaultQubitJax(DefaultQubit):
@@ -214,9 +218,14 @@ class DefaultQubitJax(DefaultQubit):
 
         state = self._flatten(state)
 
+        with jax.ensure_compile_time_eval():
+            H_jax = ParametrizedHamiltonianPytree.from_hamiltonian(
+                operation.H, dense=len(operation.wires) < 3, wire_order=self.wires
+            )
+
         def fun(y, t):
             """dy/dt = -i H(t) y"""
-            return -1j * qml.matrix(operation.H(operation.data, t=t), wire_order=self.wires) @ y
+            return (-1j * H_jax(operation.data, t=t)) @ y
 
         result = odeint(fun, state, operation.t, **operation.odeint_kwargs)
         return self._reshape(result[-1], [2] * self.num_wires)
