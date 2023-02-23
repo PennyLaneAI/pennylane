@@ -6,6 +6,9 @@
 
 <h3>Improvements</h3>
 
+* The `qchem.jordan_wigner` function is extended to support more fermionic operator orders.
+  [(#3754)](https://github.com/PennyLaneAI/pennylane/pull/3754)
+
 * `AdaptiveOptimizer` is updated to use non-default user-defined qnode arguments.
   [(#3765)](https://github.com/PennyLaneAI/pennylane/pull/3765)
 
