@@ -305,7 +305,7 @@ class ClassicalShadowMP(MeasurementTransform):
         return qml.math.cast(qml.math.stack([outcomes, recipes]), dtype=np.int8)
 
     @property
-    def samples_computational_basis(self):
+    def measures_computational_basis(self):
         return False
 
     @property
@@ -364,7 +364,7 @@ class ShadowExpvalMP(MeasurementTransform):
         return shadow.expval(self.H, self.k)
 
     @property
-    def samples_computational_basis(self):
+    def measures_computational_basis(self):
         return False
 
     @property
