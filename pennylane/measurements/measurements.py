@@ -26,7 +26,8 @@ from typing import Sequence, Tuple, Union
 import numpy as np
 
 import pennylane as qml
-from pennylane.operation import Observable
+from pennylane.operation import Observable, Tensor
+from pennylane.ops.op_math.prod import Prod
 from pennylane.wires import Wires
 
 # =============================================================================
@@ -366,7 +367,15 @@ class MeasurementProcess(ABC):
     @property
     def measures_computational_basis(self):
         r"""Bool: Whether or not the MeasurementProcess measures in the computational basis."""
-        return self.obs is None
+        if self.obs is None:
+            return True
+        if isinstance(self.obs, qml.PauliZ):
+            return True
+        if isinstance(self.obs, Tensor):
+            return all(isinstance(o, qml.PauliZ) for o in self.obs.obs)
+        if isinstance(self.obs, Prod):
+            return all(isinstance(o, qml.PauliZ) for o in self.obs)
+        return False
 
     def expand(self):
         """Expand the measurement of an observable to a unitary
