@@ -387,9 +387,9 @@ class TestExpansion:
             ProbabilityMP(wires=["a", 1]),
         ],
     )
-    def test_computational_basis_true(self, m):
+    def test_samples_computational_basis_true(self, m):
         """Test that measurements of Paulis report to have a decomposition."""
-        assert m.computational_basis is True
+        assert m.samples_computational_basis is True
 
     @pytest.mark.parametrize(
         "m",
@@ -403,9 +403,9 @@ class TestExpansion:
             ClassicalShadowMP(wires=[["a", 1], ["b", 2]]),
         ],
     )
-    def test_computational_basis_false(self, m):
+    def test_samples_computational_basis_false(self, m):
         """Test that measurements of Paulis report to have a decomposition."""
-        assert m.computational_basis is False
+        assert m.samples_computational_basis is False
 
 
 class TestDiagonalizingGates:
