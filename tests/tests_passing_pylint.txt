@@ -43,3 +43,4 @@ tests/devices/test_default_mixed_autograd.py
 tests/devices/test_default_mixed_jax.py
 tests/devices/test_default_mixed_torch.py
 tests/devices/test_default_mixed_tf.py
+tests/fourier/test_coefficients.py

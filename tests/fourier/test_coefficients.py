@@ -14,6 +14,7 @@
 """
 Unit tests for :mod:`fourier` coefficient and spectra calculations.
 """
+# pylint: disable=import-outside-toplevel
 from functools import partial
 
 import pytest
@@ -41,33 +42,34 @@ def fourier_function(freq_dict, x):
     if 0 in freq_dict.keys():
         result = freq_dict[0]
 
-    result += sum(
-        [
-            coeff * np.exp(1j * freq * x) + np.conj(coeff) * np.exp(-1j * freq * x)
-            for freq, coeff in freq_dict.items()
-            if freq != 0
-        ]
-    )
+    _sum = sum(coeff * np.exp(1j * freq * x) for freq, coeff in freq_dict.items() if freq != 0)
+    result += _sum + np.conj(_sum)
     return result.real
 
 
 class TestExceptions:
     """Test that exceptions for ill-formatted inputs are raised."""
 
-    def dummy_fn(*args, **kwargs):
-        return None
+    # pylint: disable=unused-argument
+    def dummy_fn(self, *args, **kwargs):
+        """Dummy function that returns None."""
 
     @pytest.mark.parametrize("degree, n_inputs", [((2,), 2), ([3, 1, 2, 1], 2), ((1, 1), 1)])
     def test_wrong_number_of_degrees(self, degree, n_inputs):
+        """Test that a ValueError is raised if the number of degrees does
+        not match the number of inputs."""
         with pytest.raises(ValueError, match="If multiple degrees are provided, their number"):
             coefficients(self.dummy_fn, n_inputs, degree)
 
     @pytest.mark.parametrize("threshold, n_inputs", [((2,), 2), ([3, 1, 2, 1], 2), ((1, 1), 1)])
     def test_wrong_number_of_filter_thresholds(self, threshold, n_inputs):
+        """Test that a ValueError is raised if the number of filtering thresholds does
+        not match the number of inputs."""
         with pytest.raises(ValueError, match="If multiple filter_thresholds are provided"):
             coefficients(self.dummy_fn, n_inputs, 2, True, filter_threshold=threshold)
 
 
+# pylint: disable=too-few-public-methods
 class TestFourierCoefficientSingleVariable:
     """Test that the Fourier coefficients of a single-variable function are computed correctly"""
 
@@ -82,6 +84,8 @@ class TestFourierCoefficientSingleVariable:
         ],
     )
     def test_single_variable_fourier_coeffs(self, freq_dict, expected_coeffs):
+        """Test that the Fourier coefficients of a single-variable
+        function are computed correctly"""
         degree = max(freq_dict.keys())
         partial_func = partial(fourier_function, freq_dict)
         coeffs = coefficients(partial_func, 1, degree)
@@ -327,6 +331,7 @@ class TestInterfaces:
 
     @staticmethod
     def circuit(weights, inpt):
+        """Testing circuit."""
         qml.RX(weights[0], wires=0)
         qml.RY(weights[1], wires=1)
         qml.RY(inpt[0], wires=0)

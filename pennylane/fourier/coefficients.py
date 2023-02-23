@@ -248,8 +248,9 @@ def _coefficients_no_filter(f, degree, use_broadcasting):
     spacing = (2 * np.pi) / k
 
     for nvec in nvecs:
-        # As we fill in an array into the last entry of an array,
-        # this is a ragged array when use_broadcasting=True
+        # When use_broadcasting=True, `nvec` is made into a tuple[int,..int,ndarray].
+        # This would yield to a ragged array, so we do not cast `nvec` to an array but manually
+        # iterate over the first axis of `spacing` and `nvec`.
         if use_broadcasting:
             nvec = tuple([*nvec, n_ranges[-1]])
             sampling_point = [s * n for s, n in zip(spacing, nvec)]
