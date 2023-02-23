@@ -35,7 +35,6 @@ from pennylane.pulse import ParametrizedHamiltonian
     ],
 )
 def test_jax_version(version, package, should_raise, monkeypatch):
-
     from pennylane.devices.default_qubit_jax import _validate_jax_version
 
     with monkeypatch.context() as m:
