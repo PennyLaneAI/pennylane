@@ -45,7 +45,7 @@ def create_expand_fn(depth, stop_at=None, device=None, docstring=None):
             ``stop_at(obj)``, where ``obj`` is a *queueable* PennyLane object such as
             :class:`~.Operation` or :class:`~.MeasurementProcess`. It must return a
             boolean, indicating if the expansion should stop at this object.
-        device (.Device): Ensure that the expanded tape only uses native gates of the
+        device (pennylane.Device): Ensure that the expanded tape only uses native gates of the
             given device.
         docstring (str): docstring for the generated expansion function
 
@@ -249,7 +249,10 @@ hadamard_comp_list = [
 
 expand_invalid_trainable_hadamard_gradient = create_expand_fn(
     depth=10,
-    stop_at=not_tape | is_measurement | (~is_trainable) | _is_hadamard_grad_compatible,
+    stop_at=not_tape
+    | is_measurement
+    | (~is_trainable)
+    | (_is_hadamard_grad_compatible & has_grad_method),
     docstring=_expand_invalid_trainable_doc_hadamard,
 )
 
@@ -297,7 +300,7 @@ def create_decomp_expand_fn(custom_decomps, dev, decomp_depth=10):
     Args:
         custom_decomps (Dict[Union(str, qml.operation.Operation), Callable]): Custom
             decompositions to be applied by the device at runtime.
-        dev (qml.Device): A quantum device.
+        dev (pennylane.Device): A quantum device.
         decomp_depth: The maximum depth of the expansion.
 
     Returns:
@@ -352,7 +355,7 @@ def set_decomposition(custom_decomps, dev, decomp_depth=10):
     Args:
         custom_decomps (Dict[Union(str, qml.operation.Operation), Callable]): Custom
             decompositions to be applied by the device at runtime.
-        dev (qml.Device): A quantum device.
+        dev (pennylane.Device): A quantum device.
         decomp_depth: The maximum depth of the expansion.
 
     **Example**
