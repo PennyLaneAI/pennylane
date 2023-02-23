@@ -288,7 +288,6 @@ def sign_expand(  # pylint: disable=too-many-arguments
     As a last thing, as the paper is about variance minimizing one can also calculate the variance of the estimator by
     changing the tape
 
-    .. code-block:: python3
 
     .. code-block:: python3
 
