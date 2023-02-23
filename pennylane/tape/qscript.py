@@ -311,9 +311,9 @@ class QuantumScript:
         return self._measurements
 
     @property
-    def computational_basis(self):
+    def measures_computational_basis(self):
         """Determines if any of the measurements measures in the computational basis."""
-        return any(o.computational_basis for o in self.measurements)
+        return any(o.measures_computational_basis for o in self.measurements)
 
     @property
     def num_params(self):
