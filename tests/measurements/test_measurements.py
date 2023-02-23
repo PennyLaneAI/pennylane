@@ -385,6 +385,9 @@ class TestExpansion:
             VnEntropyMP(wires=["a", 1]),
             MutualInfoMP(wires=[["a", 1], ["b", 2]]),
             ProbabilityMP(wires=["a", 1]),
+            VarianceMP(obs=qml.PauliZ(4)),
+            ProbabilityMP(obs=qml.PauliZ(1) @ qml.PauliZ(2) @ qml.PauliZ(3)),
+            StateMP(obs=qml.prod(qml.PauliZ(0), qml.PauliZ(1))),
         ],
     )
     def test_measures_computational_basis_true(self, m):
@@ -401,6 +404,8 @@ class TestExpansion:
             CountsMP(obs=qml.PauliX("a")),
             ShadowExpvalMP(H=qml.PauliX("a")),
             ClassicalShadowMP(wires=[["a", 1], ["b", 2]]),
+            ProbabilityMP(obs=qml.PauliY(1) @ qml.PauliZ(2) @ qml.PauliZ(3)),
+            StateMP(obs=qml.prod(qml.PauliZ(0), qml.PauliX(1))),
         ],
     )
     def test_measures_computational_basis_false(self, m):
