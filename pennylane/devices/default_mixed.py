@@ -76,6 +76,7 @@ class DefaultMixed(QubitDevice):
         "ControlledQubitUnitary",
         "MultiControlledX",
         "DiagonalQubitUnitary",
+        "SpecialUnitary",
         "PauliX",
         "PauliY",
         "PauliZ",
@@ -128,6 +129,7 @@ class DefaultMixed(QubitDevice):
         "QFT",
         "ThermalRelaxationError",
         "ECR",
+        "ParametrizedEvolution",
     }
 
     _reshape = staticmethod(qnp.reshape)
