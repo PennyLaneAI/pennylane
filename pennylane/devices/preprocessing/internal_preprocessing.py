@@ -52,6 +52,9 @@ def convert_to_numpy_parameters(circuit: QuantumScript) -> QuantumScript:
     Returns:
         QuantumScript: A circuit with purely numpy parameters
 
+    See also :class:`pennylane.tape.Unwrap`.  ``convert_to_numpy_parameters`` function creates a new :class:`pennylane.tape.QuantumScript`
+    instead of modifying one in place.
+
     >>> ops = [qml.S(0), qml.RX(torch.tensor(0.1234), 0)]
     >>> measurements = [qml.state(), qml.expval(qml.Hermitian(torch.eye(2), 0))]
     >>> circuit = qml.tape.QuantumScript(ops, measurements )

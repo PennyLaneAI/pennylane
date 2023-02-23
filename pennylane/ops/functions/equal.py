@@ -309,7 +309,7 @@ def _equal_measurements(op1: MeasurementProcess, op2: MeasurementProcess, **kwar
     """Determine whether two MeasurementProcess objects are equal"""
 
     if op1.obs is not None and op2.obs is not None:
-        observables_match = equal(op1.obs, op2.obs)
+        observables_match = equal(op1.obs, op2.obs, **kwargs)
     # check obs equality when either one is None (False) or both are None (True)
     else:
         observables_match = op1.obs == op2.obs
