@@ -28,6 +28,7 @@ class TestAdjointHessianDiag:
 
     @pytest.fixture
     def dev(self):
+        """Fixture that creates a two-qubit default qubit device."""
         return qml.device("default.qubit", wires=2)
 
     def test_not_expval(self, dev):
@@ -186,7 +187,8 @@ class TestAdjointHessianDiag:
 
         tape.trainable_params = set(range(1, 1 + op.num_params))
 
-        grad_F = (lambda t, fn: fn(qml.execute(t, dev, None)))(*qml.gradients.finite_diff(tape))
+        tapes, fn = qml.gradients.finite_diff(tape)
+        grad_F = fn(qml.execute(tapes, dev, None))
         grad_D = dev.adjoint_jacobian(tape)
 
         assert np.allclose(grad_D, grad_F, atol=tol, rtol=0)
@@ -205,7 +207,8 @@ class TestAdjointHessianDiag:
         tape.trainable_params = {1, 2, 3}
 
         grad_D = dev.adjoint_jacobian(tape)
-        grad_F = (lambda t, fn: fn(qml.execute(t, dev, None)))(*qml.gradients.finite_diff(tape))
+        tapes, fn = qml.gradients.finite_diff(tape)
+        grad_F = fn(qml.execute(tapes, dev, None))
 
         # gradient has the correct shape and every element is nonzero
         assert grad_D.shape == (1, 3)
@@ -235,6 +238,7 @@ class TestAdjointHessianDiag:
 
     def test_provide_starting_state(self, tol, dev):
         """Tests provides correct answer when provided starting state."""
+        #pylint: disable=protected-access
         x, y, z = [0.5, 0.3, -0.7]
 
         with qml.tape.QuantumTape() as tape:
@@ -282,7 +286,7 @@ class TestAdjointHessianDiag:
         ]
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
-    def test_trainable_hermitian_warns(self, tol):
+    def test_trainable_hermitian_warns(self):
         """Test attempting to compute the gradient of a tape that obtains the
         expectation value of a Hermitian operator emits a warning if the
         parameters to Hermitian are trainable."""
@@ -296,4 +300,4 @@ class TestAdjointHessianDiag:
         with pytest.warns(
             UserWarning, match="Differentiating with respect to the input parameters of Hermitian"
         ):
-            res = dev.adjoint_jacobian(tape)
+            _ = dev.adjoint_jacobian(tape)
