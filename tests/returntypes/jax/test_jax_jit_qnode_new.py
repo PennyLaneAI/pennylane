@@ -2528,7 +2528,7 @@ class TestReturnHessian:
             qml.RX(x, wires=[0])
             qml.RY(y, wires=[1])
             qml.CNOT(wires=[0, 1])
-            return qml.expval(qml.PauliZ(0) @ qml.PauliX(1)), qml.probs(wires=[0, 1])
+            return qml.expval(qml.PauliZ(0) @ qml.PauliX(1)), qml.probs(wires=[0])
 
         hess = jax.jit(hessian(circuit, argnums=[0, 1]))(par_0, par_1)
 
@@ -2546,7 +2546,7 @@ class TestReturnHessian:
         for h in hess[1]:
             assert isinstance(h, tuple)
             for h_comp in h:
-                assert h_comp.shape == (4,)
+                assert h_comp.shape == (2,)
 
     def test_hessian_probs_expval_multiple_param_array(
         self, dev_name, diff_method, hessian, shots, mode, interface
@@ -2572,7 +2572,7 @@ class TestReturnHessian:
             qml.RX(x[0], wires=[0])
             qml.RY(x[1], wires=[1])
             qml.CNOT(wires=[0, 1])
-            return qml.expval(qml.PauliZ(0) @ qml.PauliX(1)), qml.probs(wires=[0, 1])
+            return qml.expval(qml.PauliZ(0) @ qml.PauliX(1)), qml.probs(wires=[0])
 
         hess = jax.jit(hessian(circuit))(params)
 
@@ -2582,7 +2582,7 @@ class TestReturnHessian:
         assert hess[0].shape == (2, 2)
 
         assert isinstance(hess[1], jax.numpy.ndarray)
-        assert hess[1].shape == (4, 2, 2)
+        assert hess[1].shape == (2, 2, 2)
 
     def test_hessian_probs_var_multiple_params(
         self, dev_name, diff_method, hessian, shots, mode, interface
@@ -2603,7 +2603,7 @@ class TestReturnHessian:
             qml.RX(x, wires=[0])
             qml.RY(y, wires=[1])
             qml.CNOT(wires=[0, 1])
-            return qml.var(qml.PauliZ(0) @ qml.PauliX(1)), qml.probs(wires=[0, 1])
+            return qml.var(qml.PauliZ(0) @ qml.PauliX(1)), qml.probs(wires=[0])
 
         hess = jax.jit(hessian(circuit, argnums=[0, 1]))(par_0, par_1)
 
@@ -2621,7 +2621,7 @@ class TestReturnHessian:
         for h in hess[1]:
             assert isinstance(h, tuple)
             for h_comp in h:
-                assert h_comp.shape == (4,)
+                assert h_comp.shape == (2,)
 
     def test_hessian_probs_var_multiple_param_array(
         self, dev_name, diff_method, hessian, shots, mode, interface
@@ -2641,7 +2641,7 @@ class TestReturnHessian:
             qml.RX(x[0], wires=[0])
             qml.RY(x[1], wires=[1])
             qml.CNOT(wires=[0, 1])
-            return qml.var(qml.PauliZ(0) @ qml.PauliX(1)), qml.probs(wires=[0, 1])
+            return qml.var(qml.PauliZ(0) @ qml.PauliX(1)), qml.probs(wires=[0])
 
         hess = jax.jit(hessian(circuit))(params)
 
@@ -2651,7 +2651,7 @@ class TestReturnHessian:
         assert hess[0].shape == (2, 2)
 
         assert isinstance(hess[1], jax.numpy.ndarray)
-        assert hess[1].shape == (4, 2, 2)
+        assert hess[1].shape == (2, 2, 2)
 
 
 @pytest.mark.parametrize("hessian", hessian_fn)
