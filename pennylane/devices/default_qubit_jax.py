@@ -11,7 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""This module contains an jax implementation of the :class:`~.DefaultQubit`
+"""This module contains a jax implementation of the :class:`~.DefaultQubit`
 reference plugin.
 """
 # pylint: disable=ungrouped-imports
@@ -30,9 +30,23 @@ try:
 
     from pennylane.pulse.parametrized_hamiltonian_pytree import ParametrizedHamiltonianPytree
 
-
 except ImportError as e:  # pragma: no cover
     raise ImportError("default.qubit.jax device requires installing jax>0.3.20") from e
+
+
+def _validate_jax_version():
+    import jaxlib  # pylint:disable=import-outside-toplevel
+
+    if jax.__version__ == "0.4.4":
+        raise RuntimeError(
+            "The current JAX installation is 0.4.4. The JAX implementation for default.qubit requires "
+            "version 0.4.3 or lower for JAX."
+        )
+    if jaxlib.__version__ == "0.4.4":
+        raise RuntimeError(
+            "The current jaxlib installation is 0.4.4. The JAX implementation for default.qubit "
+            "requires version 0.4.3 or lower for jaxlib."
+        )
 
 
 class DefaultQubitJax(DefaultQubit):
@@ -119,7 +133,7 @@ class DefaultQubitJax(DefaultQubit):
             a = keyed_circuit(key1)
             b = keyed_circuit(key2) # b will be different samples now.
 
-        Check out out the `JAX random documentation <https://jax.readthedocs.io/en/latest/jax.random.html>`__
+        Check out the `JAX random documentation <https://jax.readthedocs.io/en/latest/jax.random.html>`__
         for more information.
 
     Args:
@@ -135,6 +149,8 @@ class DefaultQubitJax(DefaultQubit):
             pseudo random number generator. If None, a random key will be generated.
 
     """
+
+    _validate_jax_version()
 
     name = "Default qubit (jax) PennyLane plugin"
     short_name = "default.qubit.jax"
