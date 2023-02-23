@@ -15,12 +15,11 @@
 Contains core operations used in the Quantum Singular Value Transform framework.
 """
 import numpy as np
-from scipy.linalg import sqrtm, norm
 
 from pennylane.operation import Operation, AnyWires
 from pennylane.ops.qubit.non_parametric_ops import PauliX
 from pennylane.ops import PhaseShift, ctrl
-from pennylane import QuantumFunctionError
+
 
 class PCPhase(Operation):
     """A Pi-Controlled Phase gate"""

@@ -14,13 +14,13 @@
 """
 Tests for the ``default.mixed`` device for the TensorFlow interface
 """
-import re
+# pylint: disable=protected-access
 import pytest
 
+import numpy as np
 import pennylane as qml
-from pennylane import numpy as np
+from pennylane import numpy as pnp
 from pennylane.devices.default_mixed import DefaultMixed
-from pennylane import DeviceError
 
 pytestmark = pytest.mark.tf
 
@@ -41,7 +41,7 @@ class TestQNodeIntegration:
         """Test that the plugin device loads correctly"""
         dev = qml.device("default.mixed", wires=2)
         assert dev.num_wires == 2
-        assert dev.shots == None
+        assert dev.shots is None
         assert dev.short_name == "default.mixed"
         assert dev.capabilities()["passthru_devices"]["tf"] == "default.mixed"
 
@@ -104,7 +104,7 @@ class TestDtypePreserved:
             qml.probs(wires=[2, 0]),
         ],
     )
-    def test_real_dtype(self, r_dtype, measurement, tol):
+    def test_real_dtype(self, r_dtype, measurement):
         """Test that the user-defined dtype of the device is preserved
         for QNodes with real-valued outputs"""
         p = tf.constant(0.543)
@@ -124,7 +124,7 @@ class TestDtypePreserved:
         "measurement",
         [qml.state(), qml.density_matrix(wires=[1]), qml.density_matrix(wires=[2, 0])],
     )
-    def test_complex_dtype(self, c_dtype, measurement, tol):
+    def test_complex_dtype(self, c_dtype, measurement):
         """Test that the user-defined dtype of the device is preserved
         for QNodes with complex-valued outputs"""
         p = tf.constant(0.543)
@@ -191,6 +191,83 @@ class TestOps:
 
         assert np.all(tf.reshape(dev._state, (8, 8)) == state)
         spy.assert_called()
+
+
+class TestApplyChannelMethodChoice:
+    """Test that the right method between _apply_channel and _apply_channel_tensordot
+    is chosen."""
+
+    @pytest.mark.parametrize(
+        "op, exp_method, dev_wires",
+        [
+            (qml.RX(tf.constant(0.2), 0), "_apply_channel", 1),
+            (qml.RX(tf.constant(0.2), 0), "_apply_channel", 8),
+            (qml.CNOT([0, 1]), "_apply_channel", 3),
+            (qml.CNOT([0, 1]), "_apply_channel", 8),
+            (qml.MultiControlledX(wires=list(range(2))), "_apply_channel", 3),
+            (qml.MultiControlledX(wires=list(range(3))), "_apply_channel_tensordot", 3),
+            (qml.MultiControlledX(wires=list(range(8))), "_apply_channel_tensordot", 8),
+            (qml.PauliError("X", tf.constant(0.5), 0), "_apply_channel", 2),
+            (qml.PauliError("XXX", tf.constant(0.5), [0, 1, 2]), "_apply_channel", 4),
+            (
+                qml.PauliError("X" * 8, tf.constant(0.5), list(range(8))),
+                "_apply_channel_tensordot",
+                8,
+            ),
+        ],
+    )
+    def test_with_numpy_state(self, mocker, op, exp_method, dev_wires):
+        """Test with a numpy array as device state."""
+
+        methods = ["_apply_channel", "_apply_channel_tensordot"]
+        del methods[methods.index(exp_method)]
+        unexp_method = methods[0]
+        spy_exp = mocker.spy(DefaultMixed, exp_method)
+        spy_unexp = mocker.spy(DefaultMixed, unexp_method)
+        dev = qml.device("default.mixed", wires=dev_wires)
+        state = np.zeros((2**dev_wires, 2**dev_wires))
+        state[0, 0] = 1.0
+        dev._state = np.array(state).reshape([2] * (2 * dev_wires))
+        dev._apply_operation(op)
+
+        spy_unexp.assert_not_called()
+        spy_exp.assert_called_once()
+
+    @pytest.mark.parametrize(
+        "op, exp_method, dev_wires",
+        [
+            (qml.RX(tf.constant(0.2), 0), "_apply_channel", 1),
+            (qml.RX(tf.constant(0.2), 0), "_apply_channel", 8),
+            (qml.CNOT([0, 1]), "_apply_channel", 3),
+            (qml.CNOT([0, 1]), "_apply_channel", 8),
+            (qml.MultiControlledX(wires=list(range(2))), "_apply_channel", 3),
+            (qml.MultiControlledX(wires=list(range(3))), "_apply_channel", 3),
+            (qml.MultiControlledX(wires=list(range(8))), "_apply_channel_tensordot", 8),
+            (qml.PauliError("X", tf.constant(0.5), 0), "_apply_channel", 2),
+            (qml.PauliError("XXX", tf.constant(0.5), [0, 1, 2]), "_apply_channel", 4),
+            (
+                qml.PauliError("X" * 8, tf.constant(0.5), list(range(8))),
+                "_apply_channel_tensordot",
+                8,
+            ),
+        ],
+    )
+    def test_with_tf_state(self, mocker, op, exp_method, dev_wires):
+        """Test with a Tensorflow array as device state."""
+
+        methods = ["_apply_channel", "_apply_channel_tensordot"]
+        del methods[methods.index(exp_method)]
+        unexp_method = methods[0]
+        spy_exp = mocker.spy(DefaultMixed, exp_method)
+        spy_unexp = mocker.spy(DefaultMixed, unexp_method)
+        dev = qml.device("default.mixed", wires=dev_wires)
+        state = np.zeros((2**dev_wires, 2**dev_wires))
+        state[0, 0] = 1.0
+        dev._state = tf.reshape(tf.constant(state), [2] * (2 * dev_wires))
+        dev._apply_operation(op)
+
+        spy_unexp.assert_not_called()
+        spy_exp.assert_called_once()
 
 
 class TestPassthruIntegration:
@@ -270,7 +347,7 @@ class TestPassthruIntegration:
     def test_backprop_jacobian_agrees_parameter_shift(self, decorator, interface, tol):
         """Test that jacobian of a QNode with an attached default.mixed.tf device
         gives the correct result with respect to the parameter-shift method"""
-        p = np.array([0.43316321, 0.2162158, 0.75110998, 0.94714242])
+        p = pnp.array([0.43316321, 0.2162158, 0.75110998, 0.94714242])
         p_tf = tf.Variable(p, trainable=True)
 
         def circuit(x):
@@ -298,16 +375,28 @@ class TestPassthruIntegration:
         res = tape.jacobian(res, p_tf)
         assert np.allclose(res, qml.jacobian(circuit2)(p), atol=tol, rtol=0)
 
+    @pytest.mark.parametrize(
+        "op, wire_ids, exp_fn",
+        [
+            (qml.RY, [0], lambda a: -np.sin(a)),
+            (qml.AmplitudeDamping, [0], lambda a: -2),
+            (qml.DepolarizingChannel, [-1], lambda a: -4 / 3),
+            (lambda a, wires: qml.ResetError(p0=a, p1=0.1, wires=wires), [0], lambda a: -2),
+            (lambda a, wires: qml.ResetError(p0=0.1, p1=a, wires=wires), [0], lambda a: 0),
+        ],
+    )
     @pytest.mark.parametrize("wires", [[0], ["abc"]])
     @pytest.mark.parametrize("decorator, interface", decorators_interfaces)
-    def test_state_differentiability(self, decorator, interface, wires, tol):
+    def test_state_differentiability(self, decorator, interface, wires, op, wire_ids, exp_fn, tol):
         """Test that the device state can be differentiated"""
+        # pylint: disable=too-many-arguments
         dev = qml.device("default.mixed", wires=wires)
 
         @decorator
         @qml.qnode(dev, interface=interface, diff_method="backprop")
         def circuit(a):
-            qml.RY(a, wires=wires[0])
+            qml.PauliX(wires[wire_ids[0]])
+            op(a, wires=[wires[idx] for idx in wire_ids])
             return qml.state()
 
         a = tf.Variable(0.54, trainable=True)
@@ -318,7 +407,7 @@ class TestPassthruIntegration:
             res = res[1][1] - res[0][0]
 
         grad = tape.gradient(res, a)
-        expected = np.sin(a)
+        expected = exp_fn(a)
 
         assert np.allclose(grad, expected, atol=tol, rtol=0)
 
@@ -432,6 +521,7 @@ class TestPassthruIntegration:
 
     def test_sample_backprop_error(self):
         """Test that sampling in backpropagation mode raises an error"""
+        # pylint: disable=unused-variable
         dev = qml.device("default.mixed", wires=1, shots=100)
 
         msg = "Backpropagation is only supported when shots=None"
@@ -568,6 +658,7 @@ class TestPassthruIntegration:
     def test_ragged_differentiation(self, decorator, interface, dev_name, diff_method, mode, tol):
         """Tests correct output shape and evaluation for a tape
         with prob and expval outputs"""
+        # pylint: disable=too-many-arguments
 
         dev = qml.device(dev_name, wires=2)
         x = tf.Variable(0.543, dtype=tf.float64)
@@ -661,7 +752,8 @@ class TestHighLevelIntegration:
         dev = qml.device("default.mixed", wires=2)
 
         obs_list = [qml.PauliX(0) @ qml.PauliY(1), qml.PauliZ(0), qml.PauliZ(0) @ qml.PauliZ(1)]
-        qnodes = qml.map(qml.templates.StronglyEntanglingLayers, obs_list, dev, interface="tf")
+        with pytest.warns(UserWarning, match="The map function is deprecated"):
+            qnodes = qml.map(qml.templates.StronglyEntanglingLayers, obs_list, dev, interface="tf")
 
         assert qnodes.interface == "tf"
 
@@ -674,7 +766,7 @@ class TestHighLevelIntegration:
             return tf.reduce_sum(qnodes(weights))
 
         with tf.GradientTape() as tape:
-            res = qnodes(weights)
+            res = cost(weights)
 
         grad = tape.gradient(res, weights)
 

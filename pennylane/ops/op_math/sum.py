@@ -295,6 +295,11 @@ class Sum(CompositeOp):
         return new_summands
 
     def simplify(self, cutoff=1.0e-12) -> "Sum":  # pylint: disable=arguments-differ
+        # try using pauli_rep:
+        if pr := self._pauli_rep:
+            pr.simplify()
+            return pr.operation(wire_order=self.wires)
+
         new_summands = self._simplify_summands(summands=self.operands).get_summands(cutoff=cutoff)
         if new_summands:
             return Sum(*new_summands) if len(new_summands) > 1 else new_summands[0]
@@ -316,19 +321,21 @@ class Sum(CompositeOp):
         if isinstance(op_list, tuple):
             op_list = list(op_list)
 
-        def _sort_key(op) -> bool:
-            """Sorting key.
+        def _sort_key(op: Operator) -> tuple:
+            """Sorting key used in the `sorted` python built-in function.
 
             Args:
                 op (.Operator): Operator.
 
             Returns:
-                int: Minimum wire value.
+                Tuple[int, int, str]: Tuple containing the minimum wire value, the number of wires
+                    and the string of the operator. This tuple is used to compare different operators
+                    in the sorting algorithm.
             """
             wires = op.wires
             if wire_map is not None:
                 wires = wires.map(wire_map)
-            return np.min(wires), len(wires)
+            return np.min(wires), len(wires), str(op)
 
         return sorted(op_list, key=_sort_key)
 

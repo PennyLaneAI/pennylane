@@ -46,7 +46,9 @@ def evolve(*args, **kwargs):  # pylint: disable=unused-argument
     Returns:
         .Evolution: evolution operator
 
-    .. seealso:: :class:`~.Evolution`
+    .. seealso::
+
+        :class:`~.Evolution`
 
     **Examples**
 
@@ -64,45 +66,116 @@ def evolve(*args, **kwargs):  # pylint: disable=unused-argument
         </html>
 
     Args:
-        op (.ParametrizedHamiltonian): operator to evolve
+        op (.ParametrizedHamiltonian): Hamiltonian to evolve
 
     Returns:
-        ~pennylane.ops.op_math.evolve.ParametrizedEvolution: evolution operator
+        .ParametrizedEvolution: time evolution :math:`U(t_0, t_1)` of the Hamiltonian
 
-    .. seealso:: :class:`.ParametrizedEvolution`
+
+    The function takes a :class:`.ParametrizedHamiltonian` and solves the time-dependent Schrodinger equation
+
+    .. math:: \frac{\partial}{\partial t} |\psi\rangle = -i H(t) |\psi\rangle
+
+    It returns a :class:`~.ParametrizedEvolution`, :math:`U(t_0, t_1)`, which is the solution to the time-dependent
+    Schrodinger equation for the :class:`~.ParametrizedHamiltonian`, such that
+
+    .. math:: |\psi(t_1)\rangle = U(t_0, t_1) |\psi(t_0)\rangle
+
+    The :class:`~.ParametrizedEvolution` class uses a numerical ordinary differential equation
+    solver (`here <https://github.com/google/jax/blob/main/jax/experimental/ode.py>`_).
+
+    .. seealso::
+
+        :class:`~.ParametrizedEvolution`
 
     **Examples**
 
-    When evolving a :class:`.ParametrizedHamiltonian` class, then a :class:`.ParametrizedEvolution`
+    When evolving a :class:`.ParametrizedHamiltonian`, a :class:`.ParametrizedEvolution`
     instance is returned:
 
-    >>> coeffs = [lambda p, t: p * t for _ in range(4)]
-    >>> ops = [qml.PauliX(i) for i in range(4)]
-    >>> H = qml.dot(coeffs, ops)
-    >>> qml.evolve(H)
+    .. code-block:: python3
+
+        coeffs = [lambda p, t: p * t for _ in range(4)]
+        ops = [qml.PauliX(i) for i in range(4)]
+
+        # ParametrizedHamiltonian
+        H = qml.dot(coeffs, ops)
+
+        # ParametrizedEvolution
+        ev = qml.evolve(H)
+
+    >>> ev
     ParametrizedEvolution(wires=[0, 1, 2, 3])
 
-    The :class:`.ParametrizedEvolution` instance can then be called to update the needed attributes
-    to compute the evolution of the :class:`.ParametrizedHamiltonian`:
+    The :class:`.ParametrizedEvolution` is an :class:`~.Operator`, but does not have a defined matrix unless it
+    is evaluated at set parameters. This is done by calling the :class:`.ParametrizedEvolution`, which has the call
+    signature ``(p, t)``:
 
-    >>> qml.evolve(H)(params=[1., 2., 3.], t=[4, 10], atol=1e-6, mxstep=1)
-    ParametrizedEvolution(wires=[0, 1, 2, 3])
+    >>>  qml.matrix(ev([1., 2., 3., 4.], t=[0, 4]))
+    Array([[ 0.04930558+0.j        ,  0.        -0.03259093j,
+         0.        +0.1052632j ,  0.06957878+0.j        ,
+         0.        -0.01482305j, -0.00979751+0.j        ,
+         0.03164552+0.j        ,  0.        -0.0209179j ,
+         0.        +0.33526757j,  0.22161038+0.j        ,
+         ...
+         ...
+         ...
+         0.        -0.03259093j,  0.04930566+0.j        ]],      dtype=complex64)
 
-    Please check the :class:`.ParametrizedEvolution` class for more information.
+    Additional options regarding how the matrix is calculated can be passed to the :class:`.ParametrizedEvolution`
+    along with the parameters, as keyword arguments. These options are:
+
+    - ``atol (float, optional)``: Absolute error tolerance
+    - ``rtol (float, optional)``: Relative error tolerance
+    - ``mxstep (int, optional)``: maximum number of steps to take for each time point
+    - ``hmax (float, optional)``: maximum step size
+
+    If not specified, they will default to predetermined values.
+
+    The :class:`~.ParametrizedEvolution` can be implemented in a QNode:
+
+    .. code-block:: python
+
+        import jax
+
+        dev = qml.device("default.qubit", wires=4)
+        @jax.jit
+        @qml.qnode(dev, interface="jax")
+        def circuit(params):
+            qml.evolve(H)(params, t=[0, 10])
+            return qml.expval(qml.PauliZ(0))
+
+    >>> params = [1., 2., 3., 4.]
+    >>> circuit(params)
+    Array(0.8627419, dtype=float32)
+
+    >>> jax.grad(circuit)(params)
+    [Array(50.690746, dtype=float32),
+    Array(-6.296886e-05, dtype=float32),
+    Array(-6.3341584e-05, dtype=float32),
+    Array(-7.052516e-05, dtype=float32)]
+
+    .. note::
+        In the example above, the decorator ``@jax.jit`` is used to compile this execution just-in-time. This means
+        the first execution will typically take a little longer with the benefit that all following executions
+        will be significantly faster, see the jax docs on jitting. JIT-compiling is optional, and one can remove
+        the decorator when only single executions are of interest.
+
+    Please check the :class:`.ParametrizedEvolution` class for more usage details.
     """
 
 
 # pylint: disable=missing-docstring
 @evolve.register
-def parametrized_hamiltonian(op: ParametrizedHamiltonian):
+def parametrized_evolution(op: ParametrizedHamiltonian):
     return ParametrizedEvolution(H=op)
 
 
 # pylint: disable=missing-docstring
 @evolve.register
-def evolution(op: Operator, coeff: float = 1):
+def evolution(op: Operator, coeff: float = 1, num_steps: int = None):
     with warnings.catch_warnings():
         # Ignore the warning raised in `Evolution`
         warnings.simplefilter("ignore")
-        ev = Evolution(op, -1 * coeff)
+        ev = Evolution(op, -1 * coeff, num_steps)
     return ev
