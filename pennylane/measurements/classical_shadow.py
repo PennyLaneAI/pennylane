@@ -305,6 +305,10 @@ class ClassicalShadowMP(MeasurementTransform):
         return qml.math.cast(qml.math.stack([outcomes, recipes]), dtype=np.int8)
 
     @property
+    def computational_basis(self):
+        return False
+
+    @property
     def numeric_type(self):
         return int
 
@@ -358,6 +362,10 @@ class ShadowExpvalMP(MeasurementTransform):
         bits, recipes = qml.classical_shadow(wires=self.wires, seed=self.seed).process(tape, device)
         shadow = qml.shadows.ClassicalShadow(bits, recipes, wire_map=self.wires.tolist())
         return shadow.expval(self.H, self.k)
+
+    @property
+    def computational_basis(self):
+        return False
 
     @property
     def numeric_type(self):
