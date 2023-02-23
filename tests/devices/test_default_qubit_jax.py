@@ -15,6 +15,7 @@ import pytest
 
 jax = pytest.importorskip("jax", minversion="0.2")
 jnp = jax.numpy
+import jaxlib
 import numpy as np
 from jax.config import config
 
@@ -22,6 +23,49 @@ import pennylane as qml
 from pennylane import DeviceError
 from pennylane.devices.default_qubit_jax import DefaultQubitJax
 from pennylane.pulse import ParametrizedHamiltonian
+
+
+@pytest.mark.parametrize(
+    "version, package, should_raise",
+    [
+        ("0.4.4", jax, True),
+        ("0.4.3", jax, False),
+        ("0.4.4", jaxlib, True),
+        ("0.4.3", jaxlib, False),
+    ],
+)
+def test_jax_version(version, package, should_raise, monkeypatch):
+
+    from pennylane.devices.default_qubit_jax import _validate_jax_version
+
+    with monkeypatch.context() as m:
+        m.setattr(package, "__version__", version)
+
+        if should_raise:
+            msg = "installation is 0.4.4"
+
+            with pytest.raises(RuntimeError, match=msg):
+                _validate_jax_version()
+
+            with pytest.raises(RuntimeError, match=msg):
+                dev = qml.device("default.qubit", wires=1)
+
+                @qml.qnode(dev, interface="jax")
+                def circuit():
+                    return None
+
+            with pytest.raises(RuntimeError, match=msg):
+                _ = qml.device("default.qubit.jax", wires=1)
+        else:
+            _validate_jax_version()
+
+            _ = qml.device("default.qubit.jax", wires=1)
+
+            dev = qml.device("default.qubit", wires=1)
+
+            @qml.qnode(dev, interface="jax")
+            def circuit():
+                return None
 
 
 @pytest.mark.jax
