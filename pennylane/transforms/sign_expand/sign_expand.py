@@ -324,13 +324,13 @@ def sign_expand(  # pylint: disable=too-many-arguments
     # make one tape per observable
     tapes = []
     for proj in projs:
-        with tape.__class__() as new_tape:
-            for op in tape.operations:
-                op.queue()
-            if tape.measurements[0].return_type == qml.measurements.Expectation:
-                qml.expval(qml.Hermitian(proj, wires=wires))
-            else:
-                qml.var(qml.Hermitian(proj, wires=wires))
+
+        if tape.measurements[0].return_type == qml.measurements.Expectation:
+            measurements = [qml.expval(qml.Hermitian(proj, wires=wires))]
+        else:
+            measurements = [qml.var(qml.Hermitian(proj, wires=wires))]
+
+        new_tape = qml.tape.QuantumScript(tape.operations, measurements)
 
         tapes.append(new_tape)
 
