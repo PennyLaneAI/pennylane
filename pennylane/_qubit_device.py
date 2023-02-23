@@ -150,7 +150,6 @@ def _check_gates_adjoint_hessian(tape, trainable_params):
         gen = op.generator()
         # We need to check for the generator being a Hamiltonian with a single operator that
         # squares to the identity
-        print(op)
         if (
             not isinstance(gen, qml.Hamiltonian)
             or len(gen.coeffs) != 1
