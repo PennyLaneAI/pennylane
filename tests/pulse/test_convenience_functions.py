@@ -14,6 +14,7 @@
 """
 Unit tests for the convenience functions used in pulsed programming.
 """
+# pylint: disable=import-outside-toplevel
 import inspect
 from functools import reduce
 
@@ -97,7 +98,7 @@ class TestRect:
     def test_rect_raises_invalid_windows(self, windows):
         """Test that the ``rect`` function raises a ValueError for ill-formatted windows."""
         with pytest.raises(ValueError, match="At least one provided window"):
-            c = qml.pulse.rect(x=10, windows=windows)
+            _ = qml.pulse.rect(x=10, windows=windows)
 
     def test_rect_returns_correct_value_multiple_windows(self):
         """Test that the ``rect`` function returns the correct value only when t is inside
