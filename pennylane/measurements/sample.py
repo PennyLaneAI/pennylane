@@ -150,7 +150,7 @@ class SampleMP(SampleMeasurement):
         return int if every_term_standard else float
 
     @property
-    def samples_computational_basis(self):
+    def computational_basis(self):
         return self.obs is None
 
     # pylint: disable=protected-access

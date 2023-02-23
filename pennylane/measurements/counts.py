@@ -180,7 +180,7 @@ class CountsMP(SampleMeasurement):
         return AllCounts if self.all_outcomes else Counts
 
     @property
-    def samples_computational_basis(self):
+    def computational_basis(self):
         return self.obs is None
 
     def process_samples(
