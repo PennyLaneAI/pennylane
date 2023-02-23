@@ -210,7 +210,7 @@ class ParametrizedEvolution(Operation):
 
         In ``circuit1``, the two Hamiltonians are evolved over the same time window, but inside different operators.
         In ``circuit2``, we add the two to form a single :class:`~.ParametrizedHamiltonian`. This will combine the
-        two so that the expected parameters will be ``params1 + params2`` (as an addition of ``list``s).
+        two so that the expected parameters will be ``params1 + params2`` (as an addition of ``list``).
         They can then be included inside a single :class:`~.ParametrizedEvolution`.
 
         The resulting evolutions of ``circuit1`` and ``circuit2`` are **not** identical:
