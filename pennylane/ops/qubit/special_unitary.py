@@ -590,7 +590,7 @@ class SpecialUnitary(Operation):
             The matrix exponential is not differentiable in Autograd. Therefore this function
             only supports JAX, Torch and Tensorflow.
 
-        .. seealso:: `~.SpecialUnitary.get_one_parameter_generators`
+        .. seealso:: :meth:`~.SpecialUnitary.get_one_parameter_generators`
 
         """
         num_wires = self.hyperparameters["num_wires"]
