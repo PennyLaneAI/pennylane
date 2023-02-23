@@ -233,7 +233,28 @@ def sign_expand(  # pylint: disable=too-many-arguments
 
         H = qml.PauliZ(0) + 0.5 * qml.PauliZ(2) + qml.PauliZ(1)
 
-    and a circuit of the form,
+    a device with auxiliary qubits,
+
+    .. code-block:: python3
+
+        dev = qml.device("default.qubit", wires=[0,1,2,'Hadamard','Target'])
+
+    and a circuit of the form, with the transform as decorator.
+
+    .. code-block:: python3
+
+        @qml.transforms.sign_expand
+        @qml.qnode(dev)
+        def circuit():
+            qml.Hadamard(wires=0)
+            qml.CNOT(wires=[0, 1])
+            qml.PauliX(wires=2)
+            return qml.expval(H)
+
+    >>> circuit()
+    -0.4999999999999999
+
+    You can also work directly on tapes:
 
     .. code-block:: python3
 
