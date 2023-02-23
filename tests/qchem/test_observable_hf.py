@@ -290,6 +290,12 @@ def test_qubit_observable(f_observable, q_observable):
             None,
         ),
         (
+            [1, 1, 1, 1],
+            # obtained with openfermion using: jordan_wigner(FermionOperator('1^ 1^ 1 1', 1))
+            ([0], [qml.Identity(1)]),
+            "physicist",
+        ),
+        (
             [3, 1, 3, 1],
             # obtained with openfermion using: jordan_wigner(FermionOperator('3^ 1^ 3 1', 1))
             # reformatted the original openfermion output
@@ -302,13 +308,13 @@ def test_qubit_observable(f_observable, q_observable):
         (
             [3, 1, 3, 1],
             # obtained with openfermion using: jordan_wigner(FermionOperator('3^ 1 3^ 1', 1))
-            0,
+            ([0], [qml.Identity(1)]),
             "chemist",
         ),
         (
             [1, 0, 1, 1],
             # obtained with openfermion using: jordan_wigner(FermionOperator('1^ 0 1^ 1', 1))
-            0,
+            ([0], [qml.Identity(0)]),
             "chemist",
         ),
         (
@@ -391,23 +397,4 @@ def test_qubit_observable(f_observable, q_observable):
 def test_jordan_wigner(f_obs, q_obs, notation):
     r"""Test that jordan_wigner returns the correct operator."""
     res = qchem.jordan_wigner(f_obs, notation=notation)
-    if q_obs == 0:
-        assert res == q_obs
-    else:
-        assert qml.Hamiltonian(res[0], res[1]).compare(qml.Hamiltonian(q_obs[0], q_obs[1]))
-
-
-@pytest.mark.parametrize(
-    ("f_obs", "q_obs"),
-    [
-        (
-            [1, 1, 1, 1],
-            # obtained with openfermion using: jordan_wigner(FermionOperator('1^ 1^ 1 1', 1))
-            0.0,
-        ),
-    ],
-)
-def test_jordan_wigner_zero_output(f_obs, q_obs):
-    r"""Test that jordan_wigner returns the correct operator."""
-    res = qchem.jordan_wigner(f_obs)
-    assert res == q_obs
+    assert qml.Hamiltonian(res[0], res[1]).compare(qml.Hamiltonian(q_obs[0], q_obs[1]))
