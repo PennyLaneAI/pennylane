@@ -61,7 +61,7 @@ class Device(abc.ABC):
     .. details::
         :title: Porting from the old interface
 
-        :meth:`~.Device.batch_execute` and :meth:`~.Device.execute` are now a single method, :meth:`~.Device.execute`
+        :meth:`~.Device.batch_execute` and :meth:`~pennylane.Device.execute` are now a single method, :meth:`~.Device.execute`
 
         :meth:`~.Device.batch_transform` and :meth:`~.Device.expand_fn` are now a single method, :meth:`~.Device.preprocess`
 
@@ -362,7 +362,7 @@ class Device(abc.ABC):
         Returns:
             Tuple: The jacobian for each trainable parameter
 
-        See also :meth:`~.supports_differentiation` and :meth:`~.execute_and_compute_derivatives`.
+        See also :meth:`~.supports_derivatives` and :meth:`~.execute_and_compute_derivatives`.
 
         **Execution Config:**
 
@@ -449,7 +449,7 @@ class Device(abc.ABC):
         tangents: Tuple[Number],
         execution_config: ExecutionConfig = DefaultExecutionConfig,
     ):
-        """Execute a batch of cricuits and compute their jacobian vector products.
+        """Execute a batch of circuits and compute their jacobian vector products.
 
         Args:
             circuits (Union[QuantumTape, Sequence[QuantumTape]]): circuit or batch of circuits
