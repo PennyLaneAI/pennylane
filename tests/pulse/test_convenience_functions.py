@@ -95,8 +95,7 @@ class TestRect:
 
     @pytest.mark.parametrize("windows", ([2, (4, 8)], (4, 8, 8), [(4, 9), 1], (4,), ([4],)))
     def test_rect_raises_invalid_windows(self, windows):
-        """Test that the ``rect`` function returns the correct value only when t is inside
-        the window."""
+        """Test that the ``rect`` function raises a ValueError for ill-formatted windows."""
         with pytest.raises(ValueError, match="At least one provided window"):
             c = qml.pulse.rect(x=10, windows=windows)
 
@@ -206,12 +205,12 @@ class TestIntegration:
             return qml.expval(qml.PauliZ(0) @ qml.PauliZ(1))
 
         @jax.jit
-        @qml.qnode(dev)
+        @qml.qnode(dev, interface="jax")
         def jitted_circuit(params):
             qml.evolve(H)(params=params, t=t)
             return qml.expval(qml.PauliZ(0) @ qml.PauliZ(1))
 
-        @qml.qnode(dev)
+        @qml.qnode(dev, interface="jax")
         def true_circuit(params):
             true_mat = reduce(lambda x, y: y @ x, generator(params))
             qml.QubitUnitary(U=true_mat, wires=[0, 1])
