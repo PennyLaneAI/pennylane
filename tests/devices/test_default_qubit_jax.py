@@ -25,6 +25,7 @@ from pennylane.devices.default_qubit_jax import DefaultQubitJax
 from pennylane.pulse import ParametrizedHamiltonian
 
 
+@pytest.mark.jax
 @pytest.mark.parametrize(
     "version, package, should_raise",
     [
