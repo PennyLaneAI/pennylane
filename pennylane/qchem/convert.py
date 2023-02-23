@@ -86,7 +86,6 @@ def _process_wires(wires, n_wires=None):
         wires = Wires(wires[:n_wires])
 
     elif isinstance(wires, dict):
-
         if all(isinstance(w, int) for w in wires.keys()):
             # Assuming keys are taken from consecutive int wires. Allows for partial mapping.
             n_wires = max(wires) + 1
@@ -227,7 +226,6 @@ def _pennylane_to_openfermion(coeffs, ops, wires=None):
 
     q_op = openfermion.QubitOperator()
     for coeff, op in zip(coeffs, ops):
-
         if not isinstance(op, qml.operation.Tensor):
             op = qml.operation.Tensor(op)
 

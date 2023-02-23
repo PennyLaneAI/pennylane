@@ -235,6 +235,7 @@ class TestCircuits:
         dev = qml.device("default.qubit", wires=2)
         qnode = qml.QNode(circuit, dev)
         spec = qnode_spectrum(qnode)(*args)
+        assert qnode.interface == "auto"
         assert spec.keys() == expected.keys()
         for outer_key in spec.keys():
             assert spec[outer_key].keys() == expected[outer_key].keys()
@@ -405,7 +406,7 @@ class TestAutograd:
         w = pnp.array([[-1, -2, -3], [-4, -5, -6]], dtype=float, requires_grad=True)
 
         dev = qml.device("default.qubit", wires=3)
-        qnode = qml.QNode(circuit, dev, interface="autograd")
+        qnode = qml.QNode(circuit, dev)
 
         res = qnode_spectrum(qnode, argnum=0)(x, w)
         assert res
@@ -416,7 +417,7 @@ class TestAutograd:
         """Test that an error is raised if non-linear
         preprocessing happens in a circuit."""
         dev = qml.device("default.qubit", wires=2)
-        qnode = qml.QNode(circuit, dev, interface="autograd")
+        qnode = qml.QNode(circuit, dev)
         with pytest.raises(ValueError, match="The Jacobian of the classical preprocessing"):
             qnode_spectrum(qnode)(*args)
 
@@ -432,7 +433,7 @@ class TestTorch:
         w = torch.tensor([[-1, -2, -3], [-4, -5, -6]], dtype=float)
 
         dev = qml.device("default.qubit", wires=3)
-        qnode = qml.QNode(circuit, dev, interface="torch")
+        qnode = qml.QNode(circuit, dev)
 
         with pytest.warns(UserWarning, match=r"is_independent"):
             res = qnode_spectrum(qnode, argnum=0)(x, w)
@@ -447,7 +448,7 @@ class TestTorch:
 
         args = tuple(torch.tensor(arg) for arg in args)
         dev = qml.device("default.qubit", wires=2)
-        qnode = qml.QNode(circuit, dev, interface="torch")
+        qnode = qml.QNode(circuit, dev)
         with pytest.raises(ValueError, match="The Jacobian of the classical preprocessing"):
             with pytest.warns(UserWarning, match=r"is_independent"):
                 qnode_spectrum(qnode)(*args)
@@ -461,7 +462,7 @@ class TestTensorflow:
         import tensorflow as tf
 
         dev = qml.device("default.qubit", wires=3)
-        qnode = qml.QNode(circuit, dev, interface="tf")
+        qnode = qml.QNode(circuit, dev)
 
         x = tf.Variable([1.0, 2.0, 3.0])
         w = tf.constant([[-1, -2, -3], [-4, -5, -6]], dtype=float)
@@ -478,7 +479,7 @@ class TestTensorflow:
 
         args = tuple(tf.Variable(arg, dtype=np.float64) for arg in args)
         dev = qml.device("default.qubit", wires=2)
-        qnode = qml.QNode(circuit, dev, interface="tf")
+        qnode = qml.QNode(circuit, dev)
         with pytest.raises(ValueError, match="The Jacobian of the classical preprocessing"):
             qnode_spectrum(qnode)(*args)
 
@@ -494,7 +495,7 @@ class TestJax:
         w = [[-1.0, -2.0, -3.0], [-4.0, -5.0, -6.0]]
 
         dev = qml.device("default.qubit", wires=3)
-        qnode = qml.QNode(circuit, dev, interface="jax")
+        qnode = qml.QNode(circuit, dev)
 
         res = qnode_spectrum(qnode, argnum=0)(x, w)
 
@@ -508,6 +509,6 @@ class TestJax:
         import jax
 
         dev = qml.device("default.qubit", wires=2)
-        qnode = qml.QNode(circuit, dev, interface="jax")
+        qnode = qml.QNode(circuit, dev)
         with pytest.raises(ValueError, match="The Jacobian of the classical preprocessing"):
             qnode_spectrum(qnode)(*args)

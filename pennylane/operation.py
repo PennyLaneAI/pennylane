@@ -221,10 +221,11 @@ import warnings
 from enum import IntEnum
 from typing import List
 
+import autoray
 import numpy as np
 from numpy.linalg import multi_dot
 from scipy.sparse import coo_matrix, eye, kron
-import autoray
+
 import pennylane as qml
 from pennylane.math import expand_matrix
 from pennylane.queuing import QueuingManager
@@ -355,7 +356,6 @@ def classproperty(func):
 
 
 def _process_data(op):
-
     # Use qml.math.real to take the real part. We may get complex inputs for
     # example when differentiating holomorphic functions with JAX: a complex
     # valued QNode (one that returns qml.state) requires complex typed inputs.
@@ -1363,12 +1363,7 @@ class Operator(abc.ABC):
         if not self.has_decomposition:
             raise DecompositionUndefinedError
 
-        decomp_fn = (
-            qml.adjoint(self.decomposition, lazy=False)
-            if getattr(self, "inverse", False)
-            else self.decomposition
-        )
-        qscript = qml.tape.make_qscript(decomp_fn)()
+        qscript = qml.tape.make_qscript(self.decomposition)()
 
         if not self.data:
             # original operation has no trainable parameters
@@ -1406,16 +1401,16 @@ class Operator(abc.ABC):
     def __add__(self, other):
         """The addition operation of Operator-Operator objects and Operator-scalar."""
         if isinstance(other, Operator):
-            return qml.op_sum(self, other)
+            return qml.sum(self, other)
         if other == 0:
             return self
         if isinstance(other, qml.pulse.ParametrizedHamiltonian):
             return other.__add__(self)
         backend = autoray.infer_backend(other)
-        if (backend == "builtins" and isinstance(other, numbers.Number)) or (
-            backend in SUPPORTED_INTERFACES and qml.math.shape(other) == ()
-        ):
-            return qml.op_sum(self, qml.s_prod(scalar=other, operator=qml.Identity(self.wires)))
+        if (
+            backend == "builtins" and isinstance(other, numbers.Number)
+        ) or backend in SUPPORTED_INTERFACES:
+            return qml.sum(self, qml.s_prod(scalar=other, operator=qml.Identity(self.wires)))
         return NotImplemented
 
     __radd__ = __add__
@@ -1425,9 +1420,9 @@ class Operator(abc.ABC):
         if callable(other):
             return qml.pulse.ParametrizedHamiltonian([other], [self])
         backend = autoray.infer_backend(other)
-        if (backend == "builtins" and isinstance(other, numbers.Number)) or (
-            backend in SUPPORTED_INTERFACES and qml.math.shape(other) == ()
-        ):
+        if (
+            backend == "builtins" and isinstance(other, numbers.Number)
+        ) or backend in SUPPORTED_INTERFACES:
             return qml.s_prod(scalar=other, operator=self)
         return NotImplemented
 
@@ -1453,7 +1448,10 @@ class Operator(abc.ABC):
 
     def __pow__(self, other):
         r"""The power operation of an Operator object."""
-        if isinstance(other, numbers.Number):
+        backend = autoray.infer_backend(other)
+        if (
+            backend == "builtins" and isinstance(other, numbers.Number)
+        ) or backend in SUPPORTED_INTERFACES:
             return qml.pow(self, z=other)
         return NotImplemented
 
@@ -1621,43 +1619,11 @@ class Operation(Operator):
         )
 
     @property
-    def inverse(self):
-        """Boolean determining if the inverse of the operation was requested."""
-        return False
-
-    def matrix(self, wire_order=None):
-        canonical_matrix = self.compute_matrix(*self.parameters, **self.hyperparameters)
-
-        if self.inverse:
-            canonical_matrix = qml.math.conj(qml.math.moveaxis(canonical_matrix, -2, -1))
-
-        return expand_matrix(canonical_matrix, wires=self.wires, wire_order=wire_order)
-
-    def eigvals(self):
-        op_eigvals = super().eigvals()
-
-        return qml.math.conj(op_eigvals) if self.inverse else op_eigvals
-
-    @property
     def base_name(self):
-        """If inverse is requested, this is the name of the original
-        operator to be inverted."""
+        """Holdover from when in-place inversion changed then name. To be removed."""
         return self.__class__.__name__
 
-    @property
-    def name(self):
-        """Name of the operator."""
-        return f"{self._name}.inv" if self.inverse else self._name
-
-    def label(self, decimals=None, base_label=None, cache=None):
-        if self.inverse:
-            base_label = base_label or self.__class__.__name__
-            base_label += "⁻¹"
-        return super().label(decimals=decimals, base_label=base_label, cache=cache)
-
     def __init__(self, *params, wires=None, do_queue=True, id=None):
-
-        self._inverse = False
         super().__init__(*params, wires=wires, do_queue=do_queue, id=id)
 
         # check the grad_recipe validity
@@ -1915,7 +1881,6 @@ class Tensor(Observable):
     has_matrix = True
 
     def __init__(self, *args):  # pylint: disable=super-init-not-called
-
         wires = [op.wires for op in args]
         if len(wires) != len(set(wires)):
             warnings.warn(
@@ -1927,6 +1892,7 @@ class Tensor(Observable):
         self.obs: List[Observable] = []
         self._args = args
         self._batch_size = None
+        self._pauli_rep = None
         self.queue(init=True)
 
     def label(self, decimals=None, base_label=None, cache=None):
@@ -1966,7 +1932,6 @@ class Tensor(Observable):
         constituents = self._args if init else self.obs
 
         for o in constituents:
-
             if init:
                 if isinstance(o, Tensor):
                     self.obs.extend(o.obs)
@@ -2037,6 +2002,28 @@ class Tensor(Observable):
             list[Any]: flattened list containing all dependent parameters
         """
         return sum((o.data for o in self.obs), [])
+
+    @data.setter
+    def data(self, new_data):
+        """Setter used to set the parameters of all constituent observables in the tensor product.
+
+        The ``new_data`` argument should contain a list of elements, where each element corresponds
+        to a list containing the parameters of each observable (in order). If an observable doesn't
+        have any parameter, an empty list must be used.
+
+        **Example:**
+
+        >>> op = qml.PauliX(0) @ qml.Hermitian(np.eye(2), wires=1)
+        >>> op.data
+        [array([[1., 0.],
+        [0., 1.]])]
+        >>> op.data = [[], [np.eye(2) * 5]]
+        >>> op.data
+        [array([[5., 0.],
+        [0., 5.]])]
+        """
+        for new_entry, op in zip(new_data, self.obs):
+            op.data = new_entry
 
     @property
     def num_params(self):

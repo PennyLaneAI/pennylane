@@ -53,9 +53,9 @@ OPENQASM_GATES = {
     "PauliZ": "z",
     "Hadamard": "h",
     "S": "s",
-    "S.inv": "sdg",
+    "Adjoint(S)": "sdg",
     "T": "t",
-    "T.inv": "tdg",
+    "Adjoint(T)": "tdg",
     "RX": "rx",
     "RY": "ry",
     "RZ": "rz",
@@ -713,7 +713,7 @@ class QuantumScript:
         Args:
             measurement_process (MeasurementProcess): the measurement process
                 associated with the single measurement
-            device (~.Device): a PennyLane device
+            device (pennylane.Device): a PennyLane device
 
         Returns:
             tuple: output shape
@@ -753,11 +753,9 @@ class QuantumScript:
         shot_vector = device._shot_vector
         if shot_vector is None:
             if isinstance(mps[0], (ExpectationMP, VarianceMP)):
-
                 shape = (len(mps),)
 
             elif isinstance(mps[0], ProbabilityMP):
-
                 wires_num_set = {len(meas.wires) for meas in mps}
                 same_num_wires = len(wires_num_set) == 1
                 if same_num_wires:
@@ -774,7 +772,6 @@ class QuantumScript:
                     shape = (sum(2 ** len(m.wires) for m in mps),)
 
             elif isinstance(mps[0], SampleMP):
-
                 dim = mps[0].shape(device)
                 shape = (len(mps),) + dim[1:]
 
@@ -803,7 +800,6 @@ class QuantumScript:
             shape = (num, len(mps))
 
         elif isinstance(mps[0], ProbabilityMP):
-
             wires_num_set = {len(meas.wires) for meas in mps}
             same_num_wires = len(wires_num_set) == 1
             if not same_num_wires:
@@ -842,7 +838,7 @@ class QuantumScript:
                 used for execution.
 
         Args:
-            device (.Device): the device that will be used for the script execution
+            device (pennylane.Device): the device that will be used for the script execution
 
         Raises:
             ValueError: raised for unsupported cases for example when the script contains
@@ -893,7 +889,7 @@ class QuantumScript:
             dependent on the device used for execution.
 
         Args:
-            device (.Device): the device that will be used for the script execution
+            device (pennylane.Device): the device that will be used for the script execution
 
         Returns:
             Union[tuple[int], tuple[tuple[int]]]: the output shape(s) of the quantum script result

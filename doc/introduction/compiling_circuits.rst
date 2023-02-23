@@ -34,7 +34,7 @@ RX(0.09999999999999964, wires=[0])
 RX(11.336370614359172, wires=[0])
 >>> qml.simplify(qml.ops.Pow(qml.RX(1, 0), 3))
 RX(3.0, wires=[0])
->>> qml.simplify(qml.op_sum(qml.PauliY(3), qml.PauliY(3)))
+>>> qml.simplify(qml.sum(qml.PauliY(3), qml.PauliY(3)))
 2*(PauliY(wires=[3]))
 >>> qml.simplify(qml.RX(1, 0) @ qml.RX(1, 0))
 RX(2.0, wires=[0])
@@ -53,19 +53,19 @@ Several simplifications steps are happening here. First of all, the nested produ
 
 .. code-block:: python
 
-    qml.prod(qml.PauliX(0), qml.op_sum(qml.RX(1, 0), qml.PauliX(0)), qml.RX(1, 0))
+    qml.prod(qml.PauliX(0), qml.sum(qml.RX(1, 0), qml.PauliX(0)), qml.RX(1, 0))
 
 Then the product of sums is transformed into a sum of products:
 
 .. code-block:: python
 
-    qml.op_sum(qml.prod(qml.PauliX(0), qml.RX(1, 0), qml.RX(1, 0)), qml.prod(qml.PauliX(0), qml.PauliX(0), qml.RX(1, 0)))
+    qml.sum(qml.prod(qml.PauliX(0), qml.RX(1, 0), qml.RX(1, 0)), qml.prod(qml.PauliX(0), qml.PauliX(0), qml.RX(1, 0)))
 
 And finally like terms in the obtained products are grouped together, removing all identities: 
 
 .. code-block:: python
 
-    qml.op_sum(qml.prod(qml.PauliX(0), qml.RX(2, 0)), qml.RX(1, 0))
+    qml.sum(qml.prod(qml.PauliX(0), qml.RX(2, 0)), qml.RX(1, 0))
 
 As mentioned earlier we can also simplify QNode objects to, for example, group rotation gates:
 

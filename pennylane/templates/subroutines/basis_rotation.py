@@ -20,6 +20,7 @@ from pennylane import numpy as np
 from pennylane.operation import Operation, AnyWires
 from pennylane.qchem.givens_decomposition import givens_decomposition
 
+
 # pylint: disable-msg=too-many-arguments
 class BasisRotation(Operation):
     r"""Implement a circuit that provides a unitary that can be used to do an exact single-body basis rotation.
@@ -99,7 +100,6 @@ class BasisRotation(Operation):
     grad_method = None
 
     def __init__(self, wires, unitary_matrix, check=False, do_queue=True, id=None):
-
         M, N = unitary_matrix.shape
         if M != N:
             raise ValueError(
@@ -163,7 +163,7 @@ class BasisRotation(Operation):
         for idx, phase in enumerate(phase_list):
             op_list.append(qml.PhaseShift(np.angle(phase), wires=wires[idx]))
 
-        for (grot_mat, indices) in givens_list:
+        for grot_mat, indices in givens_list:
             theta = np.arccos(np.real(grot_mat[1, 1]))
             phi = np.angle(grot_mat[0, 0])
 

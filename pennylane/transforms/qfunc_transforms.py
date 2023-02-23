@@ -135,7 +135,6 @@ class single_tape_transform:
     """
 
     def __init__(self, transform_fn):
-
         if not callable(transform_fn):
             raise ValueError(
                 f"The tape transform function to register, {transform_fn}, "
@@ -183,10 +182,10 @@ def _create_qfunc_internal_wrapper(fn, tape_transform, transform_args, transform
         tape = make_qscript(fn)(*args, **kwargs)
         tape = tape_transform(tape, *transform_args, **transform_kwargs)
 
-        if len(tape.measurements) == 1:
-            return tape.measurements[0]
-
-        return tape.measurements
+        num_measurements = len(tape.measurements)
+        if num_measurements == 0:
+            return None
+        return tape.measurements[0] if num_measurements == 1 else tape.measurements
 
     return internal_wrapper
 
@@ -237,12 +236,13 @@ def qfunc_transform(tape_transform):
         def qfunc(x):
             qml.Hadamard(wires=0)
             qml.CRX(x, wires=[0, 1])
+            return qml.expval(qml.PauliZ(1))
 
     >>> dev = qml.device("default.qubit", wires=2)
     >>> qnode = qml.QNode(qfunc, dev)
     >>> print(qml.draw(qnode)(2.5))
     0: ──H──────────────────╭Z─┤
-    1: ──RX(1.50)──RY(0.16)─╰●─┤
+    1: ──RX(1.50)──RY(0.16)─╰●─┤  <Z>
 
     The transform weights provided to a qfunc transform are fully differentiable,
     allowing the transform itself to be differentiated and trained. For more details,
