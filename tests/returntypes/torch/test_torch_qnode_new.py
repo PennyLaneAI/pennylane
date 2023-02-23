@@ -2264,7 +2264,7 @@ class TestReturn:
             qml.RX(x, wires=[0])
             qml.RY(y, wires=[1])
             qml.CNOT(wires=[0, 1])
-            return qml.expval(qml.PauliZ(0) @ qml.PauliX(1)), qml.probs(wires=[0, 1])
+            return qml.expval(qml.PauliZ(0) @ qml.PauliX(1)), qml.probs(wires=[0])
 
         def circuit_stack(x, y):
             return torch.hstack(circuit(x, y))
@@ -2279,16 +2279,16 @@ class TestReturn:
         assert isinstance(hess[0], tuple)
         assert len(hess[0]) == 2
         assert isinstance(hess[0][0], torch.Tensor)
-        assert tuple(hess[0][0].shape) == (5,)
+        assert tuple(hess[0][0].shape) == (3,)
         assert isinstance(hess[0][1], torch.Tensor)
-        assert tuple(hess[0][1].shape) == (5,)
+        assert tuple(hess[0][1].shape) == (3,)
 
         assert isinstance(hess[1], tuple)
         assert len(hess[1]) == 2
         assert isinstance(hess[1][0], torch.Tensor)
-        assert tuple(hess[1][0].shape) == (5,)
+        assert tuple(hess[1][0].shape) == (3,)
         assert isinstance(hess[1][1], torch.Tensor)
-        assert tuple(hess[1][1].shape) == (5,)
+        assert tuple(hess[1][1].shape) == (3,)
 
     def test_hessian_expval_probs_multiple_param_array(self, dev_name, diff_method, mode, shots):
         """The hessian of multiple measurements with a multiple param array return a single array."""
@@ -2308,7 +2308,7 @@ class TestReturn:
             qml.RX(x[0], wires=[0])
             qml.RY(x[1], wires=[1])
             qml.CNOT(wires=[0, 1])
-            return qml.expval(qml.PauliZ(0) @ qml.PauliX(1)), qml.probs(wires=[0, 1])
+            return qml.expval(qml.PauliZ(0) @ qml.PauliX(1)), qml.probs(wires=[0])
 
         def circuit_stack(x):
             return torch.hstack(circuit(x))
@@ -2318,7 +2318,7 @@ class TestReturn:
         hess = jacobian(jac_fn, par)
 
         assert isinstance(hess, torch.Tensor)
-        assert tuple(hess.shape) == (5, 2, 2)
+        assert tuple(hess.shape) == (3, 2, 2)
 
     def test_hessian_probs_var_multiple_params(self, dev_name, diff_method, mode, shots):
         """The hessian of multiple measurements with multiple params return a tuple of arrays."""
@@ -2339,7 +2339,7 @@ class TestReturn:
             qml.RX(x, wires=[0])
             qml.RY(y, wires=[1])
             qml.CNOT(wires=[0, 1])
-            return qml.var(qml.PauliZ(0) @ qml.PauliX(1)), qml.probs(wires=[0, 1])
+            return qml.var(qml.PauliZ(0) @ qml.PauliX(1)), qml.probs(wires=[0])
 
         def circuit_stack(x, y):
             return torch.hstack(circuit(x, y))
@@ -2354,16 +2354,16 @@ class TestReturn:
         assert isinstance(hess[0], tuple)
         assert len(hess[0]) == 2
         assert isinstance(hess[0][0], torch.Tensor)
-        assert tuple(hess[0][0].shape) == (5,)
+        assert tuple(hess[0][0].shape) == (3,)
         assert isinstance(hess[0][1], torch.Tensor)
-        assert tuple(hess[0][1].shape) == (5,)
+        assert tuple(hess[0][1].shape) == (3,)
 
         assert isinstance(hess[1], tuple)
         assert len(hess[1]) == 2
         assert isinstance(hess[1][0], torch.Tensor)
-        assert tuple(hess[1][0].shape) == (5,)
+        assert tuple(hess[1][0].shape) == (3,)
         assert isinstance(hess[1][1], torch.Tensor)
-        assert tuple(hess[1][1].shape) == (5,)
+        assert tuple(hess[1][1].shape) == (3,)
 
     def test_hessian_var_probs_multiple_param_array(self, dev_name, diff_method, mode, shots):
         """The hessian of multiple measurements with a multiple param array return a single array."""
@@ -2383,7 +2383,7 @@ class TestReturn:
             qml.RX(x[0], wires=[0])
             qml.RY(x[1], wires=[1])
             qml.CNOT(wires=[0, 1])
-            return qml.var(qml.PauliZ(0) @ qml.PauliX(1)), qml.probs(wires=[0, 1])
+            return qml.var(qml.PauliZ(0) @ qml.PauliX(1)), qml.probs(wires=[0])
 
         def circuit_stack(x):
             return torch.hstack(circuit(x))
@@ -2393,4 +2393,4 @@ class TestReturn:
         hess = jacobian(jac_fn, par)
 
         assert isinstance(hess, torch.Tensor)
-        assert tuple(hess.shape) == (5, 2, 2)
+        assert tuple(hess.shape) == (3, 2, 2)
