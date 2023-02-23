@@ -381,11 +381,15 @@ class TestExpansion:
             CountsMP(wires=["a", 1], all_outcomes=True),
             CountsMP(),
             CountsMP(wires=["a", 1]),
+            StateMP(),
+            VnEntropyMP(wires=["a", 1]),
+            MutualInfoMP(wires=[["a", 1], ["b", 2]]),
+            ProbabilityMP(wires=["a", 1]),
         ],
     )
-    def test_samples_computational_basis_true(self, m):
+    def test_computational_basis_true(self, m):
         """Test that measurements of Paulis report to have a decomposition."""
-        assert m.samples_computational_basis is True
+        assert m.computational_basis is True
 
     @pytest.mark.parametrize(
         "m",
@@ -393,19 +397,15 @@ class TestExpansion:
             ExpectationMP(obs=qml.PauliX(2)),
             VarianceMP(obs=qml.PauliX("a")),
             ProbabilityMP(obs=qml.PauliX("b")),
-            ProbabilityMP(wires=["a", 1]),
             SampleMP(obs=qml.PauliX("a")),
             CountsMP(obs=qml.PauliX("a")),
-            StateMP(),
-            VnEntropyMP(wires=["a", 1]),
-            MutualInfoMP(wires=[["a", 1], ["b", 2]]),
-            ClassicalShadowMP(wires=[["a", 1], ["b", 2]]),
             ShadowExpvalMP(H=qml.PauliX("a")),
+            ClassicalShadowMP(wires=[["a", 1], ["b", 2]]),
         ],
     )
-    def test_samples_computational_basis_false(self, m):
+    def test_computational_basis_false(self, m):
         """Test that measurements of Paulis report to have a decomposition."""
-        assert m.samples_computational_basis is False
+        assert m.computational_basis is False
 
 
 class TestDiagonalizingGates:
