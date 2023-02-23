@@ -126,7 +126,7 @@ class ParametrizedEvolution(Operation):
     Array(0.96632576, dtype=float32)
 
     >>> jax.grad(circuit)(params)
-    Array([2.3569832], dtype=float32)
+    [Array(2.3569832, dtype=float32)]
 
     .. note::
         In the example above, the decorator ``@jax.jit`` is used to compile this execution just-in-time. This means
@@ -228,7 +228,7 @@ class ParametrizedEvolution(Operation):
         without taking into account how the time evolution of ``H1`` affects the evolution of ``H2`` and vice versa!
 
         One can also provide a list of time values that the ODE solver will use to calculate the evolution of the
-        :class:`ParametrizedHamiltonian`. Keep in mind that the ODE solver uses an adaptive step size, thus
+        ``ParametrizedHamiltonian``. Keep in mind that the ODE solver uses an adaptive step size, thus
         it might use additional intermediate time values.
 
         .. code-block:: python

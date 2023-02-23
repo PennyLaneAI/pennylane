@@ -220,12 +220,12 @@ Now we can execute the evolution of this Hamiltonian in a QNode and compute its 
         qml.evolve(H)(params, t=[0, 10])
         return qml.expval(qml.PauliZ(0))
 
->>> params = jnp.array([1.2])
+>>> params = [1.2]
 >>> circuit(params)
 Array(0.96632576, dtype=float32)
 
 >>> jax.grad(circuit)(params)
-Array([2.3569832], dtype=float32)
+[Array(2.3569832, dtype=float32)]
 
 We can use the decorator ``jax.jit`` to compile this execution just-in-time. This means the first execution
 will typically take a little longer with the benefit that all following executions will be significantly faster.
