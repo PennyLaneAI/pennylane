@@ -364,7 +364,7 @@ class MeasurementProcess(ABC):
         return False if self.obs is None else self.obs.has_diagonalizing_gates
 
     @property
-    def measures_computational_basis(self):
+    def samples_computational_basis(self):
         r"""Bool: Whether or not the MeasurementProcess measures in the computational basis."""
         return self.obs is None
 

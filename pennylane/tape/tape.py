@@ -45,7 +45,7 @@ def _validate_computational_basis_sampling(measurements):
     non_comp_basis_sampling_obs = []
     comp_basis_sampling_obs = []
     for o in measurements:
-        if o.measures_computational_basis:
+        if o.samples_computational_basis:
             comp_basis_sampling_obs.append(o)
         else:
             non_comp_basis_sampling_obs.append(o)
@@ -146,7 +146,7 @@ def expand_tape(tape, depth=1, stop_at=None, expand_measurements=False):
     # qubit-wise commuting Pauli words. In this case, the tape is expanded with joint
     # rotations and the observables updated to the computational basis. Note that this
     # expansion acts on the original tape in place.
-    if tape.measures_computational_basis and len(tape.measurements) > 1:
+    if tape.samples_computational_basis and len(tape.measurements) > 1:
         _validate_computational_basis_sampling(tape.measurements)
 
     if tape._obs_sharing_wires:

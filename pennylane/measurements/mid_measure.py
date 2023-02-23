@@ -107,7 +107,7 @@ class MidMeasureMP(MeasurementProcess):
         return MidMeasure
 
     @property
-    def measures_computational_basis(self):
+    def samples_computational_basis(self):
         return False
 
     @property
