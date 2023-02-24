@@ -27,6 +27,7 @@ qubit_device_and_diff_method = [
     ["default.qubit", "adjoint", "forward"],
     ["default.qubit", "adjoint", "backward"],
     ["default.qubit", "spsa", "backward"],
+    ["default.qubit", "hadamard", "backward"],
 ]
 
 interface_and_qubit_device_and_diff_method = [
@@ -57,7 +58,12 @@ class TestQNode:
         if diff_method == "backprop":
             pytest.skip("Test does not support backprop")
 
-        dev = qml.device(dev_name, wires=1)
+        num_wires = 1
+
+        if diff_method == "hadamard":
+            num_wires = 2
+
+        dev = qml.device(dev_name, wires=num_wires)
 
         @qnode(dev, interface=interface, diff_method=diff_method, mode=mode)
         def circuit(a):
@@ -130,12 +136,16 @@ class TestQNode:
 
     def test_classical_processing(self, dev_name, diff_method, mode, interface, tol):
         """Test classical processing within the quantum tape"""
-        qml.disable_return()
         a = jax.numpy.array(0.1)
         b = jax.numpy.array(0.2)
         c = jax.numpy.array(0.3)
 
-        dev = qml.device(dev_name, wires=1)
+        num_wires = 1
+
+        if diff_method == "hadamard":
+            num_wires = 2
+
+        dev = qml.device(dev_name, wires=num_wires)
 
         @qnode(dev, diff_method=diff_method, interface=interface, mode=mode)
         def circuit(a, b, c):
@@ -157,7 +167,12 @@ class TestQNode:
         U = jax.numpy.array([[0, 1], [1, 0]])
         a = jax.numpy.array(0.1)
 
-        dev = qml.device(dev_name, wires=2)
+        num_wires = 2
+
+        if diff_method == "hadamard":
+            num_wires = 3
+
+        dev = qml.device(dev_name, wires=num_wires)
 
         @qnode(dev, diff_method=diff_method, interface=interface, mode=mode)
         def circuit(U, a):
@@ -191,7 +206,12 @@ class TestQNode:
                 tape = QuantumScript.from_queue(q_tape)
                 return tape
 
-        dev = qml.device(dev_name, wires=1)
+        num_wires = 1
+
+        if diff_method == "hadamard":
+            num_wires = 2
+
+        dev = qml.device(dev_name, wires=num_wires)
         a = jax.numpy.array(0.1)
         p = jax.numpy.array([0.1, 0.2, 0.3])
 
@@ -266,7 +286,12 @@ class TestVectorValuedQNode:
         a = np.array(0.1, requires_grad=True)
         b = np.array(0.2, requires_grad=True)
 
-        dev = qml.device(dev_name, wires=2)
+        num_wires = 2
+
+        if diff_method == "hadamard":
+            num_wires = 3
+
+        dev = qml.device(dev_name, wires=num_wires)
 
         @qnode(dev, diff_method=diff_method, interface=interface, mode=mode)
         def circuit(a, b):
@@ -324,7 +349,12 @@ class TestVectorValuedQNode:
         a = jax.numpy.array(0.1)
         b = jax.numpy.array(0.2)
 
-        dev = qml.device(dev_name, wires=2)
+        num_wires = 2
+
+        if diff_method == "hadamard":
+            num_wires = 3
+
+        dev = qml.device(dev_name, wires=num_wires)
 
         @qnode(dev, diff_method=diff_method, interface=interface, mode=mode)
         def circuit(a, b):
@@ -396,7 +426,12 @@ class TestVectorValuedQNode:
             np.random.seed(SEED_FOR_SPSA)
             tol = TOL_FOR_SPSA
 
-        dev = qml.device(dev_name, wires=2)
+        num_wires = 2
+
+        if diff_method == "hadamard":
+            num_wires = 3
+
+        dev = qml.device(dev_name, wires=num_wires)
         x = jax.numpy.array(0.543)
         y = jax.numpy.array(-0.654)
 
@@ -437,7 +472,12 @@ class TestVectorValuedQNode:
             np.random.seed(SEED_FOR_SPSA)
             tol = TOL_FOR_SPSA
 
-        dev = qml.device(dev_name, wires=3)
+        num_wires = 3
+
+        if diff_method == "hadamard":
+            num_wires = 4
+
+        dev = qml.device(dev_name, wires=num_wires)
         x = jax.numpy.array(0.543)
         y = jax.numpy.array(-0.654)
 
@@ -511,7 +551,12 @@ class TestVectorValuedQNode:
             np.random.seed(SEED_FOR_SPSA)
             tol = TOL_FOR_SPSA
 
-        dev = qml.device(dev_name, wires=2)
+        num_wires = 2
+
+        if diff_method == "hadamard":
+            num_wires = 3
+
+        dev = qml.device(dev_name, wires=num_wires)
         x = jax.numpy.array(0.543)
         y = jax.numpy.array(-0.654)
 
@@ -573,7 +618,13 @@ class TestVectorValuedQNode:
         elif diff_method == "spsa":
             tol = TOL_FOR_SPSA
 
-        dev = qml.device(dev_name, wires=2)
+        num_wires = 2
+
+        if diff_method == "hadamard":
+            num_wires = 3
+
+        dev = qml.device(dev_name, wires=num_wires)
+
         x = jax.numpy.array(0.543)
         y = jax.numpy.array(-0.654)
 
@@ -613,6 +664,8 @@ class TestVectorValuedQNode:
         with prob and variance outputs"""
         if diff_method == "adjoint":
             pytest.skip("Adjoint does not support probs")
+        elif diff_method == "hadamard":
+            pytest.skip("Hadamard does not support var")
         elif diff_method == "spsa":
             np.random.seed(SEED_FOR_SPSA)
             tol = TOL_FOR_SPSA
@@ -830,7 +883,12 @@ class TestQubitIntegration:
 
     def test_chained_qnodes(self, dev_name, diff_method, mode):
         """Test that the gradient of chained QNodes works without error"""
-        dev = qml.device(dev_name, wires=2)
+        num_wires = 2
+
+        if diff_method == "hadamard":
+            num_wires = 3
+
+        dev = qml.device(dev_name, wires=num_wires)
 
         class Template(qml.templates.StronglyEntanglingLayers):
             def expand(self):
@@ -885,7 +943,12 @@ class TestQubitIntegrationHigherOrder:
             np.random.seed(SEED_FOR_SPSA)
             tol = TOL_FOR_SPSA
 
-        dev = qml.device(dev_name, wires=1)
+        num_wires = 1
+
+        if diff_method == "hadamard":
+            num_wires = 3
+
+        dev = qml.device(dev_name, wires=num_wires)
 
         @qnode(
             dev,
@@ -931,7 +994,12 @@ class TestQubitIntegrationHigherOrder:
             gradient_kwargs = {"h": H_FOR_SPSA, "num_directions": 20}
             tol = TOL_FOR_SPSA
 
-        dev = qml.device(dev_name, wires=1)
+        num_wires = 1
+
+        if diff_method == "hadamard":
+            num_wires = 3
+
+        dev = qml.device(dev_name, wires=num_wires)
 
         @qnode(
             dev,
@@ -981,7 +1049,12 @@ class TestQubitIntegrationHigherOrder:
             gradient_kwargs = {"h": H_FOR_SPSA, "num_directions": 20}
             tol = TOL_FOR_SPSA
 
-        dev = qml.device(dev_name, wires=1)
+        num_wires = 1
+
+        if diff_method == "hadamard":
+            num_wires = 3
+
+        dev = qml.device(dev_name, wires=num_wires)
 
         @qnode(
             dev,
@@ -1042,7 +1115,12 @@ class TestQubitIntegrationHigherOrder:
             gradient_kwargs = {"h": H_FOR_SPSA, "num_directions": 20}
             tol = TOL_FOR_SPSA
 
-        dev = qml.device(dev_name, wires=1)
+        num_wires = 1
+
+        if diff_method == "hadamard":
+            num_wires = 3
+
+        dev = qml.device(dev_name, wires=num_wires)
 
         @qnode(
             dev,
@@ -1106,7 +1184,12 @@ class TestQubitIntegrationHigherOrder:
             gradient_kwargs = {"h": H_FOR_SPSA, "num_directions": 20}
             tol = TOL_FOR_SPSA
 
-        dev = qml.device(dev_name, wires=1)
+        num_wires = 1
+
+        if diff_method == "hadamard":
+            num_wires = 3
+
+        dev = qml.device(dev_name, wires=num_wires)
 
         @qnode(
             dev,
@@ -1169,7 +1252,12 @@ class TestQubitIntegrationHigherOrder:
         if diff_method == "adjoint":
             pytest.skip("Adjoint does not support states")
 
-        dev = qml.device(dev_name, wires=2)
+        num_wires = 2
+
+        if diff_method == "hadamard":
+            num_wires = 3
+
+        dev = qml.device(dev_name, wires=num_wires)
 
         x = jax.numpy.array(0.543)
         y = jax.numpy.array(-0.654)
@@ -1201,6 +1289,8 @@ class TestQubitIntegrationHigherOrder:
         gradient_kwargs = {}
         if diff_method == "adjoint":
             pytest.skip("Adjoint does not support projectors")
+        elif diff_method == "hadamard":
+            pytest.skip("Hadamard does not support var.")
         elif diff_method == "spsa":
             qml.math.random.seed(42)
             gradient_kwargs = {"h": H_FOR_SPSA}
@@ -1331,10 +1421,15 @@ class TestTapeExpansion:
     ):
         """Test that a *supported* operation with no gradient recipe is only
         expanded for parameter-shift and finite-differences when it is trainable."""
-        if diff_method not in ("parameter-shift", "finite-diff", "spsa"):
+        if diff_method not in ("parameter-shift", "finite-diff", "spsa", "hadamard"):
             pytest.skip("Only supports gradient transforms")
 
-        dev = qml.device(dev_name, wires=1)
+        num_wires = 1
+
+        if diff_method == "hadamard":
+            num_wires = 2
+
+        dev = qml.device(dev_name, wires=num_wires)
 
         class PhaseShift(qml.PhaseShift):
             grad_method = None
@@ -1377,6 +1472,8 @@ class TestTapeExpansion:
         gradient_kwargs = {}
         if diff_method == "adjoint":
             pytest.skip("The adjoint method does not yet support Hamiltonians")
+        elif diff_method == "hadamard":
+            pytest.skip("Hadamard does not yet support Hamiltonians.")
         elif diff_method == "spsa":
             qml.math.random.seed(42)
             gradient_kwargs = {"h": H_FOR_SPSA, "num_directions": 20}
@@ -1445,6 +1542,8 @@ class TestTapeExpansion:
         tol = 0.1
         if diff_method in ("adjoint", "backprop", "finite-diff"):
             pytest.skip("The adjoint and backprop methods do not yet support sampling")
+        elif diff_method == "hadamard":
+            pytest.skip("Hadamard does not yet support Hamiltonians.")
         elif diff_method == "spsa":
             gradient_kwargs = {"h": H_FOR_SPSA}
             np.random.seed(SEED_FOR_SPSA)
@@ -1521,7 +1620,12 @@ class TestReturn:
         if shots is not None and diff_method in ("backprop", "adjoint"):
             pytest.skip("Test does not support finite shots and adjoint/backprop")
 
-        dev = qml.device(dev_name, wires=1, shots=shots)
+        num_wires = 1
+
+        if diff_method == "hadamard":
+            num_wires = 2
+
+        dev = qml.device(dev_name, wires=num_wires, shots=shots)
 
         @qnode(dev, interface=interface, diff_method=diff_method, mode=mode)
         def circuit(a):
@@ -1543,7 +1647,12 @@ class TestReturn:
         if shots is not None and diff_method in ("backprop", "adjoint"):
             pytest.skip("Test does not support finite shots and adjoint/backprop")
 
-        dev = qml.device(dev_name, wires=1, shots=shots)
+        num_wires = 1
+
+        if diff_method == "hadamard":
+            num_wires = 2
+
+        dev = qml.device(dev_name, wires=num_wires, shots=shots)
 
         @qnode(dev, interface=interface, diff_method=diff_method, mode=mode)
         def circuit(a, b):
@@ -1568,7 +1677,12 @@ class TestReturn:
         if shots is not None and diff_method in ("backprop", "adjoint"):
             pytest.skip("Test does not support finite shots and adjoint/backprop")
 
-        dev = qml.device(dev_name, wires=1, shots=shots)
+        num_wires = 1
+
+        if diff_method == "hadamard":
+            num_wires = 2
+
+        dev = qml.device(dev_name, wires=num_wires, shots=shots)
 
         @qnode(dev, interface=interface, diff_method=diff_method, mode=mode)
         def circuit(a):
@@ -1595,7 +1709,12 @@ class TestReturn:
         if diff_method == "adjoint":
             pytest.skip("Test does not supports adjoint because of probabilities.")
 
-        dev = qml.device(dev_name, wires=2, shots=shots)
+        num_wires = 2
+
+        if diff_method == "hadamard":
+            num_wires = 3
+
+        dev = qml.device(dev_name, wires=num_wires, shots=shots)
 
         @qnode(dev, interface=interface, diff_method=diff_method, mode=mode)
         def circuit(a):
@@ -1621,7 +1740,12 @@ class TestReturn:
         if shots is not None and diff_method in ("backprop", "adjoint"):
             pytest.skip("Test does not support finite shots and adjoint/backprop")
 
-        dev = qml.device(dev_name, wires=2, shots=shots)
+        num_wires = 2
+
+        if diff_method == "hadamard":
+            num_wires = 3
+
+        dev = qml.device(dev_name, wires=num_wires, shots=shots)
 
         @qnode(dev, interface=interface, diff_method=diff_method, mode=mode)
         def circuit(a, b):
@@ -1653,7 +1777,12 @@ class TestReturn:
         if shots is not None and diff_method in ("backprop", "adjoint"):
             pytest.skip("Test does not support finite shots and adjoint/backprop")
 
-        dev = qml.device(dev_name, wires=2, shots=shots)
+        num_wires = 2
+
+        if diff_method == "hadamard":
+            num_wires = 3
+
+        dev = qml.device(dev_name, wires=num_wires, shots=shots)
 
         @qnode(dev, interface=interface, diff_method=diff_method, mode=mode)
         def circuit(a):
@@ -1674,7 +1803,13 @@ class TestReturn:
         """The hessian of multiple measurements with multiple params return a tuple of arrays."""
         if shots is not None and diff_method in ("backprop", "adjoint"):
             pytest.skip("Test does not support finite shots and adjoint/backprop")
-        dev = qml.device(dev_name, wires=2, shots=shots)
+
+        num_wires = 2
+
+        if diff_method == "hadamard":
+            num_wires = 3
+
+        dev = qml.device(dev_name, wires=num_wires, shots=shots)
 
         par_0 = jax.numpy.array(0.1)
         par_1 = jax.numpy.array(0.2)
@@ -1711,7 +1846,13 @@ class TestReturn:
         """The jacobian of multiple measurements with a multiple params array return a single array."""
         if shots is not None and diff_method in ("backprop", "adjoint"):
             pytest.skip("Test does not support finite shots and adjoint/backprop")
-        dev = qml.device(dev_name, wires=2, shots=shots)
+
+        num_wires = 2
+
+        if diff_method == "hadamard":
+            num_wires = 3
+
+        dev = qml.device(dev_name, wires=num_wires, shots=shots)
 
         @qnode(dev, interface=interface, diff_method=diff_method, mode=mode)
         def circuit(a):
@@ -1739,6 +1880,8 @@ class TestReturn:
         """The hessian of multiple measurements with multiple params return a tuple of arrays."""
         if diff_method == "adjoint":
             pytest.skip("Test does not supports adjoint because of var.")
+        elif diff_method == "hadamard":
+            pytest.skip("Test does not support Hadamard because of var.")
         if shots is not None and diff_method in ("backprop", "adjoint"):
             pytest.skip("Test does not support finite shots and adjoint/backprop")
 
@@ -1780,6 +1923,8 @@ class TestReturn:
         """The jacobian of multiple measurements with a multiple params array return a single array."""
         if diff_method == "adjoint":
             pytest.skip("Test does not supports adjoint because of var.")
+        elif diff_method == "hadamard":
+            pytest.skip("Test does not support Hadamard because of var.")
         if shots is not None and diff_method in ("backprop", "adjoint"):
             pytest.skip("Test does not support finite shots and adjoint/backprop")
 
@@ -1811,7 +1956,13 @@ class TestReturn:
         """The jacobian of multiple measurements with a single params return an array."""
         if shots is not None and diff_method in ("backprop", "adjoint"):
             pytest.skip("Test does not support finite shots and adjoint/backprop")
-        dev = qml.device(dev_name, wires=2, shots=shots)
+
+        num_wires = 2
+
+        if diff_method == "hadamard":
+            num_wires = 3
+
+        dev = qml.device(dev_name, wires=num_wires, shots=shots)
 
         if diff_method == "adjoint":
             pytest.skip("Test does not supports adjoint because of probabilities.")
@@ -1845,7 +1996,12 @@ class TestReturn:
         if shots is not None and diff_method in ("backprop", "adjoint"):
             pytest.skip("Test does not support finite shots and adjoint/backprop")
 
-        dev = qml.device(dev_name, wires=2, shots=shots)
+        num_wires = 2
+
+        if diff_method == "hadamard":
+            num_wires = 3
+
+        dev = qml.device(dev_name, wires=num_wires, shots=shots)
 
         @qnode(dev, interface=interface, diff_method=diff_method, mode=mode)
         def circuit(a, b):
@@ -1885,7 +2041,12 @@ class TestReturn:
         if shots is not None and diff_method in ("backprop", "adjoint"):
             pytest.skip("Test does not support finite shots and adjoint/backprop")
 
-        dev = qml.device(dev_name, wires=2, shots=shots)
+        num_wires = 2
+
+        if diff_method == "hadamard":
+            num_wires = 3
+
+        dev = qml.device(dev_name, wires=num_wires, shots=shots)
 
         @qnode(dev, interface=interface, diff_method=diff_method, mode=mode)
         def circuit(a):
@@ -1910,7 +2071,13 @@ class TestReturn:
         """The hessian of single a measurement with multiple params return a tuple of arrays."""
         if shots is not None and diff_method in ("backprop", "adjoint"):
             pytest.skip("Test does not support finite shots and adjoint/backprop")
-        dev = qml.device(dev_name, wires=2, shots=shots)
+
+        num_wires = 2
+
+        if diff_method == "hadamard":
+            num_wires = 4
+
+        dev = qml.device(dev_name, wires=num_wires, shots=shots)
 
         if diff_method == "adjoint":
             pytest.skip("Test does not supports adjoint because second order diff.")
@@ -1951,7 +2118,12 @@ class TestReturn:
         if shots is not None and diff_method in ("backprop", "adjoint"):
             pytest.skip("Test does not support finite shots and adjoint/backprop")
 
-        dev = qml.device(dev_name, wires=2, shots=shots)
+        num_wires = 2
+
+        if diff_method == "hadamard":
+            num_wires = 4
+
+        dev = qml.device(dev_name, wires=num_wires, shots=shots)
 
         params = jax.numpy.array([0.1, 0.2])
 
@@ -1971,6 +2143,8 @@ class TestReturn:
         """The hessian of single a measurement with multiple params return a tuple of arrays."""
         if diff_method == "adjoint":
             pytest.skip("Test does not supports adjoint because second order diff.")
+        elif diff_method == "hadamard":
+            pytest.skip("Test does not support Hadamard because of var.")
         if shots is not None and diff_method in ("backprop", "adjoint"):
             pytest.skip("Test does not support finite shots and adjoint/backprop")
         dev = qml.device(dev_name, wires=2, shots=shots)
@@ -2006,6 +2180,8 @@ class TestReturn:
         """The hessian of single measurement with a multiple params array return a single array."""
         if diff_method == "adjoint":
             pytest.skip("Test does not supports adjoint because second order diff.")
+        elif diff_method == "hadamard":
+            pytest.skip("Test does not support Hadamard because of var.")
         if shots is not None and diff_method in ("backprop", "adjoint"):
             pytest.skip("Test does not support finite shots and adjoint/backprop")
 
@@ -2029,9 +2205,17 @@ class TestReturn:
         self, dev_name, diff_method, mode, shots, interface
     ):
         """The hessian of multiple measurements with multiple params return a tuple of arrays."""
-        dev = qml.device(dev_name, wires=2, shots=shots)
+
+        num_wires = 2
+
+        if diff_method == "hadamard":
+            num_wires = 4
+
+        dev = qml.device(dev_name, wires=num_wires, shots=shots)
         if diff_method == "adjoint":
             pytest.skip("Test does not supports adjoint because second order diff.")
+        elif diff_method == "hadamard":
+            pytest.skip("Test does not supports diff of non commuting obs.")
 
         if shots is not None and diff_method in ("backprop", "adjoint"):
             pytest.skip("Test does not support finite shots and adjoint/backprop")
@@ -2044,7 +2228,7 @@ class TestReturn:
             qml.RX(x, wires=[0])
             qml.RY(y, wires=[1])
             qml.CNOT(wires=[0, 1])
-            return qml.expval(qml.PauliZ(0) @ qml.PauliX(1)), qml.probs(wires=[0, 1])
+            return qml.expval(qml.PauliZ(0) @ qml.PauliX(1)), qml.probs(wires=[0])
 
         hess = jax.hessian(circuit, argnums=[0, 1])(par_0, par_1)
 
@@ -2071,15 +2255,15 @@ class TestReturn:
         assert isinstance(hess[1][0], tuple)
         assert len(hess[1][0]) == 2
         assert isinstance(hess[1][0][0], jax.numpy.ndarray)
-        assert hess[1][0][0].shape == (4,)
+        assert hess[1][0][0].shape == (2,)
         assert isinstance(hess[1][0][1], jax.numpy.ndarray)
-        assert hess[1][0][1].shape == (4,)
+        assert hess[1][0][1].shape == (2,)
         assert isinstance(hess[1][1], tuple)
         assert len(hess[1][1]) == 2
         assert isinstance(hess[1][1][0], jax.numpy.ndarray)
-        assert hess[1][1][0].shape == (4,)
+        assert hess[1][1][0].shape == (2,)
         assert isinstance(hess[1][1][1], jax.numpy.ndarray)
-        assert hess[1][1][1].shape == (4,)
+        assert hess[1][1][1].shape == (2,)
 
     def test_hessian_expval_probs_multiple_param_array(
         self, dev_name, diff_method, mode, shots, interface
@@ -2087,10 +2271,17 @@ class TestReturn:
         """The hessian of multiple measurements with a multiple param array return a single array."""
         if diff_method == "adjoint":
             pytest.skip("Test does not supports adjoint because second order diff.")
+        elif diff_method == "hadamard":
+            pytest.skip("Test does not supports diff of non commuting obs.")
         if shots is not None and diff_method in ("backprop", "adjoint"):
             pytest.skip("Test does not support finite shots and adjoint/backprop")
 
-        dev = qml.device(dev_name, wires=2, shots=shots)
+        num_wires = 2
+
+        if diff_method == "hadamard":
+            num_wires = 4
+
+        dev = qml.device(dev_name, wires=num_wires, shots=shots)
 
         params = jax.numpy.array([0.1, 0.2])
 
@@ -2099,7 +2290,7 @@ class TestReturn:
             qml.RX(x[0], wires=[0])
             qml.RY(x[1], wires=[1])
             qml.CNOT(wires=[0, 1])
-            return qml.expval(qml.PauliZ(0) @ qml.PauliX(1)), qml.probs(wires=[0, 1])
+            return qml.expval(qml.PauliZ(0) @ qml.PauliX(1)), qml.probs(wires=[0])
 
         hess = jax.hessian(circuit)(params)
 
@@ -2110,12 +2301,14 @@ class TestReturn:
         assert hess[0].shape == (2, 2)
 
         assert isinstance(hess[1], jax.numpy.ndarray)
-        assert hess[1].shape == (4, 2, 2)
+        assert hess[1].shape == (2, 2, 2)
 
     def test_hessian_probs_var_multiple_params(self, dev_name, diff_method, mode, shots, interface):
         """The hessian of multiple measurements with multiple params return a tuple of arrays."""
         if diff_method == "adjoint":
             pytest.skip("Test does not supports adjoint because second order diff.")
+        elif diff_method == "hadamard":
+            pytest.skip("Test does not support Hadamard because of var.")
         if shots is not None and diff_method in ("backprop", "adjoint"):
             pytest.skip("Test does not support finite shots and adjoint/backprop")
 
@@ -2129,7 +2322,7 @@ class TestReturn:
             qml.RX(x, wires=[0])
             qml.RY(y, wires=[1])
             qml.CNOT(wires=[0, 1])
-            return qml.var(qml.PauliZ(0) @ qml.PauliX(1)), qml.probs(wires=[0, 1])
+            return qml.var(qml.PauliZ(0) @ qml.PauliX(1)), qml.probs(wires=[0])
 
         hess = jax.hessian(circuit, argnums=[0, 1])(par_0, par_1)
 
@@ -2156,15 +2349,15 @@ class TestReturn:
         assert isinstance(hess[1][0], tuple)
         assert len(hess[1][0]) == 2
         assert isinstance(hess[1][0][0], jax.numpy.ndarray)
-        assert hess[1][0][0].shape == (4,)
+        assert hess[1][0][0].shape == (2,)
         assert isinstance(hess[1][0][1], jax.numpy.ndarray)
-        assert hess[1][0][1].shape == (4,)
+        assert hess[1][0][1].shape == (2,)
         assert isinstance(hess[1][1], tuple)
         assert len(hess[1][1]) == 2
         assert isinstance(hess[1][1][0], jax.numpy.ndarray)
-        assert hess[1][1][0].shape == (4,)
+        assert hess[1][1][0].shape == (2,)
         assert isinstance(hess[1][1][1], jax.numpy.ndarray)
-        assert hess[1][1][1].shape == (4,)
+        assert hess[1][1][1].shape == (2,)
 
     def test_hessian_var_probs_multiple_param_array(
         self, dev_name, diff_method, mode, shots, interface
@@ -2172,6 +2365,8 @@ class TestReturn:
         """The hessian of multiple measurements with a multiple param array return a single array."""
         if diff_method == "adjoint":
             pytest.skip("Test does not supports adjoint because second order diff.")
+        elif diff_method == "hadamard":
+            pytest.skip("Test does not support Hadamard because of var.")
         if shots is not None and diff_method in ("backprop", "adjoint"):
             pytest.skip("Test does not support finite shots and adjoint/backprop")
 
@@ -2184,7 +2379,7 @@ class TestReturn:
             qml.RX(x[0], wires=[0])
             qml.RY(x[1], wires=[1])
             qml.CNOT(wires=[0, 1])
-            return qml.var(qml.PauliZ(0) @ qml.PauliX(1)), qml.probs(wires=[0, 1])
+            return qml.var(qml.PauliZ(0) @ qml.PauliX(1)), qml.probs(wires=[0])
 
         hess = jax.hessian(circuit)(params)
 
@@ -2195,4 +2390,4 @@ class TestReturn:
         assert hess[0].shape == (2, 2)
 
         assert isinstance(hess[1], jax.numpy.ndarray)
-        assert hess[1].shape == (4, 2, 2)
+        assert hess[1].shape == (2, 2, 2)

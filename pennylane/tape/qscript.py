@@ -312,7 +312,7 @@ class QuantumScript:
 
     @property
     def samples_computational_basis(self):
-        """Determines if any of the measurements do sampling/counting in the computational basis."""
+        """Determines if any of the measurements are in the computational basis."""
         return any(o.samples_computational_basis for o in self.measurements)
 
     @property
@@ -713,7 +713,7 @@ class QuantumScript:
         Args:
             measurement_process (MeasurementProcess): the measurement process
                 associated with the single measurement
-            device (~.Device): a PennyLane device
+            device (pennylane.Device): a PennyLane device
 
         Returns:
             tuple: output shape
@@ -838,7 +838,7 @@ class QuantumScript:
                 used for execution.
 
         Args:
-            device (.Device): the device that will be used for the script execution
+            device (pennylane.Device): the device that will be used for the script execution
 
         Raises:
             ValueError: raised for unsupported cases for example when the script contains
@@ -889,7 +889,7 @@ class QuantumScript:
             dependent on the device used for execution.
 
         Args:
-            device (.Device): the device that will be used for the script execution
+            device (pennylane.Device): the device that will be used for the script execution
 
         Returns:
             Union[tuple[int], tuple[tuple[int]]]: the output shape(s) of the quantum script result

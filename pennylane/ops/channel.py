@@ -495,7 +495,7 @@ class ResetError(Channel):
         if not np.is_abstract(p_0 + p_1) and not 0.0 <= p_0 + p_1 <= 1.0:
             raise ValueError("p_0 + p_1 must be in the interval [0,1]")
 
-        interface = np.get_interface([p_0, p_1])
+        interface = np.get_interface(p_0, p_1)
         p_0, p_1 = np.coerce([p_0, p_1], like=interface)
         K0 = np.sqrt(1 - p_0 - p_1 + np.eps) * np.convert_like(np.cast_like(np.eye(2), p_0), p_0)
         K1 = np.sqrt(p_0 + np.eps) * np.convert_like(

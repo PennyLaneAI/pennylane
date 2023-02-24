@@ -361,16 +361,15 @@ class TestValidation:
 
         qn = QNode(dummyfunc, dev, diff_method="device")
         assert qn.diff_method == "device"
-        assert qn.gradient_fn is None
+        assert qn.gradient_fn == "device"
 
         qn = QNode(dummyfunc, dev, interface="autograd", diff_method="device")
         assert qn.diff_method == "device"
         assert qn.gradient_fn == "device"
-        mock_device.assert_called_once()
 
         qn = QNode(dummyfunc, dev, diff_method="finite-diff")
         assert qn.diff_method == "finite-diff"
-        assert qn.gradient_fn is None
+        assert qn.gradient_fn is qml.gradients.finite_diff
 
         qn = QNode(dummyfunc, dev, interface="autograd", diff_method="finite-diff")
         assert qn.diff_method == "finite-diff"
@@ -378,15 +377,15 @@ class TestValidation:
 
         qn = QNode(dummyfunc, dev, diff_method="spsa")
         assert qn.diff_method == "spsa"
-        assert qn.gradient_fn is None
-
-        qn = QNode(dummyfunc, dev, interface="autograd", diff_method="spsa")
-        assert qn.diff_method == "spsa"
         assert qn.gradient_fn is qml.gradients.spsa_grad
+
+        qn = QNode(dummyfunc, dev, interface="autograd", diff_method="hadamard")
+        assert qn.diff_method == "hadamard"
+        assert qn.gradient_fn is qml.gradients.hadamard_grad
 
         qn = QNode(dummyfunc, dev, diff_method="parameter-shift")
         assert qn.diff_method == "parameter-shift"
-        assert qn.gradient_fn is None
+        assert qn.gradient_fn is qml.gradients.param_shift
 
         qn = QNode(dummyfunc, dev, interface="autograd", diff_method="parameter-shift")
         assert qn.diff_method == "parameter-shift"
@@ -673,6 +672,19 @@ class TestTapeConstruction:
             qml.RY(y, wires=1)
             qml.CNOT(wires=[0, 1])
             return qml.expval(qml.PauliZ(0)), 5
+
+        qn = QNode(func, dev)
+
+        with pytest.raises(
+            qml.QuantumFunctionError, match="must return either a single measurement"
+        ):
+            qn(5, 1)
+
+        def func(x, y):
+            qml.RX(x, wires=0)
+            qml.RY(y, wires=1)
+            qml.CNOT(wires=[0, 1])
+            return []
 
         qn = QNode(func, dev)
 
@@ -972,7 +984,7 @@ class TestIntegration:
         assert cache != {}
 
     @pytest.mark.autograd
-    @pytest.mark.parametrize("diff_method", ["parameter-shift", "finite-diff", "spsa"])
+    @pytest.mark.parametrize("diff_method", ["parameter-shift", "finite-diff", "spsa", "hadamard"])
     def test_single_expectation_value_with_argnum_one(self, diff_method, tol):
         """Tests correct output shape and evaluation for a QNode
         with a single expval output where only one parameter is chosen to
@@ -997,14 +1009,20 @@ class TestIntegration:
             qml.CNOT(wires=[0, 1])
             return qml.expval(qml.PauliZ(0) @ qml.PauliX(1))
 
-        res = qml.grad(circuit)(x, y)
-        assert len(res) == 2
+        if diff_method == "hadamard":
+            with pytest.raises(
+                ValueError, match="The hadamard gradient only supports the new return type."
+            ):
+                res = qml.grad(circuit)(x, y)
+        else:
+            res = qml.grad(circuit)(x, y)
+            assert len(res) == 2
 
-        expected = (0, np.cos(y) * np.cos(x))
-        res = res
-        expected = expected
+            expected = (0, np.cos(y) * np.cos(x))
+            res = res
+            expected = expected
 
-        assert np.allclose(res, expected, atol=tol, rtol=0)
+            assert np.allclose(res, expected, atol=tol, rtol=0)
 
     @pytest.mark.parametrize("first_par", np.linspace(0.15, np.pi - 0.3, 3))
     @pytest.mark.parametrize("sec_par", np.linspace(0.15, np.pi - 0.3, 3))
