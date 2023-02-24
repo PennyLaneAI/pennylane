@@ -53,6 +53,7 @@ def rydberg_interaction(register: list, wires=None, interaction_coeff: float = 8
     Returns:
         RydbergHamiltonian: Hamiltonian representing the atom interaction
     """
+    wires = wires or list(range(register))
 
     def rydberg_projector(wire: int) -> SProd:
         """Returns the projector into the Rydberg state for the given wire.
