@@ -278,7 +278,7 @@ class ParametrizedHamiltonian:
         """Return the operators defining the ``ParametrizedHamiltonian``.
 
         Returns:
-            Iterable[Operator]): observables in the Hamiltonian expression
+            Iterable[Operator]: observables in the Hamiltonian expression
         """
         return self.ops_fixed + self.ops_parametrized
 
