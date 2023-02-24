@@ -313,8 +313,6 @@ def _equal_measurements(
     atol=1e-9,
 ):
     """Determine whether two MeasurementProcess objects are equal"""
-    if op1.wires != op2.wires:
-        return False
 
     if op1.obs is not None and op2.obs is not None:
         return equal(
@@ -325,6 +323,9 @@ def _equal_measurements(
             rtol=rtol,
             atol=atol,
         )
+
+    if op1.wires != op2.wires:
+        return False
 
     if op1.obs is None and op2.obs is None:
         # only compare eigvals if both observables are None.

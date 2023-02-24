@@ -1204,6 +1204,17 @@ class TestMeasurementsEqual:
         assert not qml.equal(m1, m2)
         assert qml.equal(m1, m2, rtol=1e-2)
 
+    def test_observables_equal_but_wire_order_not(self):
+        """Test that when the wire orderings are not equal but the observables are, that
+        we still get True."""
+
+        x1 = qml.PauliX(1)
+        z0 = qml.PauliZ(0)
+
+        o1 = qml.prod(x1, z0)
+        o2 = qml.prod(z0, x1)
+        assert qml.equal(qml.expval(o1), qml.expval(o2))
+
 
 class TestObservablesComparisons:
     """Tests comparisons between Hamiltonians, Tensors and PauliX/Y/Z operators"""
