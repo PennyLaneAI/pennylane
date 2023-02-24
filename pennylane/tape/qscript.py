@@ -312,7 +312,7 @@ class QuantumScript:
 
     @property
     def samples_computational_basis(self):
-        """Determines if any of the measurements do sampling/counting in the computational basis."""
+        """Determines if any of the measurements are in the computational basis."""
         return any(o.samples_computational_basis for o in self.measurements)
 
     @property

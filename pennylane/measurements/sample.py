@@ -149,10 +149,6 @@ class SampleMP(SampleMeasurement):
         every_term_standard = all(o.__class__ in int_eigval_obs for o in tensor_terms)
         return int if every_term_standard else float
 
-    @property
-    def samples_computational_basis(self):
-        return self.obs is None
-
     # pylint: disable=protected-access
     def _shape_legacy(self, shots, num_wires):
         if shots.shot_vector is not None:
