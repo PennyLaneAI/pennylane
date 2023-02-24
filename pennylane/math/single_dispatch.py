@@ -181,7 +181,6 @@ def _take_autograd(tensor, indices, axis=None):
     return tensor[tuple(fancy_indices)]
 
 
-ar.register_function("autograd", "asarray", lambda x: _i("autograd").numpy.asarray(x))
 ar.register_function("autograd", "take", _take_autograd)
 ar.register_function("autograd", "eigvalsh", lambda x: _i("autograd").numpy.linalg.eigh(x)[0])
 ar.register_function(
