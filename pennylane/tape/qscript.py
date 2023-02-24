@@ -347,11 +347,12 @@ class QuantumScript:
         """
         rotation_gates = []
 
-        for observable in self.observables:
-            # some observables do not have diagonalizing gates,
-            # in which case we just don't append any
-            with contextlib.suppress(qml.operation.DiagGatesUndefinedError):
-                rotation_gates.extend(observable.diagonalizing_gates())
+        with qml.queuing.QueuingManager.stop_recording():
+            for observable in self.observables:
+                # some observables do not have diagonalizing gates,
+                # in which case we just don't append any
+                with contextlib.suppress(qml.operation.DiagGatesUndefinedError):
+                    rotation_gates.extend(observable.diagonalizing_gates())
         return rotation_gates
 
     ##### Update METHODS ###############

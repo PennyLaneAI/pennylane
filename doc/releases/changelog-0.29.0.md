@@ -140,8 +140,8 @@
 
 * The Hadamard test gradient tranform is now available via `qml.gradients.hadamard_grad`. The gradient transform
   `qml.gradients.hadamard_grad` is now registered as a differentiation method for `QNode`s.
-  [#3625](https://github.com/PennyLaneAI/pennylane/pull/3625)
-  [#3736](https://github.com/PennyLaneAI/pennylane/pull/3736)
+  [(#3625)](https://github.com/PennyLaneAI/pennylane/pull/3625)
+  [(#3736)](https://github.com/PennyLaneAI/pennylane/pull/3736)
 
   `qml.gradients.hadamard_grad` is a hardware-compatible transform that calculates the
   gradient of a quantum circuit using the Hadamard test. Note that the device requires an
@@ -179,7 +179,7 @@
 
 * The gradient transform `qml.gradients.spsa_grad` is now registered as a
   differentiation method for `QNode`s.
-  [#3440](https://github.com/PennyLaneAI/pennylane/pull/3440)
+  [(#3440)](https://github.com/PennyLaneAI/pennylane/pull/3440)
 
   The SPSA gradient transform can now also be used implicitly by marking a `QNode`
   as differentiable with SPSA. It can be selected via
@@ -702,11 +702,11 @@
   (Array(-0.09983341, dtype=float32, weak_type=True), Array(0.01983384, dtype=float32, weak_type=True))
   ```
 
-  It comes with the fact that the interface is determined during the `QNode` call instead of the
+  It comes with the catch that the interface is determined during the `QNode` call instead of the
   initialization. It means that the `gradient_fn` and `gradient_kwargs` are only defined on the QNode at the beginning
-  of the call. As well, without specifying the interface it is not possible to guarantee that the device will not be changed
-  during the call if you are using backprop(`default.qubit` to `default.qubit,jax`e.g.) whereas before it was happening at
-  initialization, therefore you should not try to track the device without specifying the interface.
+  of the call. Moreover, without specifying the interface it is not possible to guarantee that the device will not be changed
+  during the call if you are using backprop (`default.qubit` to `default.qubit,jax`e.g.), whereas before it was happening at
+  initialization. Therefore you should not try to track the device without specifying the interface.
 
 * The tape method `get_operation` can also now return the operation index in the tape, and it can be
   activated by setting the `return_op_index` to `True`: `get_operation(idx, return_op_index=True)`. It will become
@@ -735,7 +735,7 @@
   Instead, they can be accesses via `op.base.wires` or `op.target_wires`.
   [(#3450)](https://github.com/PennyLaneAI/pennylane/pull/3450)
 
-* The tape constructed by a QNode is no longer queued to surrounding contexts.
+* The tape constructed by a `QNode` is no longer queued to surrounding contexts.
   [(#3509)](https://github.com/PennyLaneAI/pennylane/pull/3509)
 
 * Nested operators like `Tensor`, `Hamiltonian`, and `Adjoint` now remove their owned operators
