@@ -35,17 +35,11 @@ except ImportError as e:  # pragma: no cover
 
 
 def _validate_jax_version():
-    import jaxlib  # pylint:disable=import-outside-toplevel
 
     if jax.__version__ == "0.4.4":
         raise RuntimeError(
             "The current JAX installation is 0.4.4. The JAX implementation for default.qubit requires "
             "version 0.4.3 or lower for JAX."
-        )
-    if jaxlib.__version__ == "0.4.4":
-        raise RuntimeError(
-            "The current jaxlib installation is 0.4.4. The JAX implementation for default.qubit "
-            "requires version 0.4.3 or lower for jaxlib."
         )
 
 
