@@ -459,7 +459,7 @@ class Device(abc.ABC):
         Returns:
             Tuple, Tuple: A numeric result of execution and of computing the jacobian vector product
 
-        See :meth:`~.Device.execute` and :meth:`~.Device.compute_jvp` for more information on each method.
+        .. seealso:: :meth:`~.Device.execute` and :meth:`~.Device.compute_jvp`
         """
         return self.execute(circuits, execution_config), self.compute_jvp(
             circuits, tangents, execution_config
@@ -535,7 +535,7 @@ class Device(abc.ABC):
         Returns:
             Tuple, Tuple: the result of executing the scripts and the numeric result of computing the vector jacobian product
 
-        See :meth:`~.Device.execute` and :meth:`~.Device.compute_vjp` for more information.
+        .. seealso:: :meth:`~.Device.execute` and :meth:`~.Device.compute_vjp`
         """
         return self.execute(circuits, execution_config), self.compute_vjp(
             circuits, cotangents, execution_config
