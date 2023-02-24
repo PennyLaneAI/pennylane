@@ -797,6 +797,13 @@
 * All `Operator`'s input parameters that are lists are cast into vanilla numpy arrays.
   [(#3659)](https://github.com/PennyLaneAI/pennylane/pull/3659)
 
+* `QubitDevice.expval` no longer permutes an observable's wire order before passing
+  it to `QubitDevice.probability`. The associated downstream changes for `default.qubit`
+  have been made, but this may still affect expectations for other devices that inherit
+  from `QubitDevice` and override `probability` (or any other helper functions that take
+  a wire order such as `marginal_prob`, `estimate_probability` or `analytic_probability`).
+  [(#3753)](https://github.com/PennyLaneAI/pennylane/pull/3753)
+
 <h3>Deprecations</h3>
 
 * `qml.utils.sparse_hamiltonian` function has been deprecated, and usage will now raise a warning.
@@ -882,6 +889,17 @@
 * Implementations of `qml.marginal_prob` (and subsequently, `qml.probs`) now return
   probabilities with the expected wire order.
   [(#3753)](https://github.com/PennyLaneAI/pennylane/pull/3753)
+
+  This bug affected most probabilistic measurement processes on devices that
+  inherit from `QubitDevice` when the measured wires are out of order with
+  respect to the device wires and 3 or more wires are measured. The assumption
+  was that marginal probabilities would be computed with the device's state
+  and wire order, then re-ordered according to the measurement process wire
+  order. Instead, the re-ordering went in the inverse direction (that is, from
+  measurement process wire order to device wire order). This is now fixed. Note
+  that this only occurred for 3 or more measured wires because this mapping is
+  identical otherwise. More details and discussion of this bug can be found in
+  [the original bug report](https://github.com/PennyLaneAI/pennylane/issues/3741).
 
 * Empty iterables can no longer be returned from QNodes.
   [(#3769)](https://github.com/PennyLaneAI/pennylane/pull/3769)
