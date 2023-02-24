@@ -21,7 +21,7 @@
 
 <h3>Bug fixes</h3>
 
-<h3>Testing and Continuous Integration/h3>
+<h3>Testing and Continuous Integration</h3>
 
 * The plugin test is now run for PennyLane Lightning.
   [(#3782)](https://github.com/PennyLaneAI/pennylane/pull/3782)
