@@ -17,7 +17,8 @@ Unit tests for the pennylane.drawer.utils` module.
 
 import pytest
 import pennylane as qml
-from pennylane.drawer.utils import default_wire_map, convert_wire_order
+from pennylane.drawer.utils import default_wire_map, convert_wire_order, unwrap_controls
+from pennylane.wires import Wires
 
 
 class TestDefaultWireMap:
@@ -93,3 +94,66 @@ class TestConvertWireOrder:
 
         wire_map = convert_wire_order(ops, wire_order, show_all_wires=True)
         assert wire_map == {"a": 0, "b": 1, "c": 2, "d": 3}
+
+
+class TestUnwrapControls:
+    """Tests the ``unwrap_controls`` utility function."""
+
+    # pylint:disable=too-few-public-methods
+
+    @pytest.mark.parametrize(
+        "op,expected_control_wires,expected_control_values",
+        [
+            (qml.PauliX(wires="a"), Wires([]), None),
+            (qml.CNOT(wires=["a", "b"]), Wires("a"), None),
+            (qml.ctrl(qml.PauliX(wires="b"), control="a"), Wires("a"), [True]),
+            (
+                qml.ctrl(qml.PauliX(wires="b"), control=["a", "c", "d"]),
+                Wires(["a", "c", "d"]),
+                [True, True, True],
+            ),
+            (
+                qml.ctrl(qml.PauliZ(wires="c"), control=["a", "d"], control_values=[True, False]),
+                Wires(["a", "d"]),
+                [True, False],
+            ),
+            (
+                qml.ctrl(
+                    qml.CRX(0.3, wires=["c", "e"]),
+                    control=["a", "b", "d"],
+                    control_values=[True, False, False],
+                ),
+                Wires(["a", "b", "d", "c"]),
+                [True, False, False, True],
+            ),
+            (
+                qml.ctrl(qml.CNOT(wires=["c", "d"]), control=["a", "b"]),
+                Wires(["a", "b", "c"]),
+                [True, True, True],
+            ),
+            (
+                qml.ctrl(qml.ctrl(qml.CNOT(wires=["c", "d"]), control=["a", "b"]), control=["e"]),
+                Wires(["e", "a", "b", "c"]),
+                [True, True, True, True],
+            ),
+            (
+                qml.ctrl(
+                    qml.ctrl(
+                        qml.CNOT(wires=["c", "d"]), control=["a", "b"], control_values=[False, True]
+                    ),
+                    control=["e"],
+                    control_values=[False],
+                ),
+                Wires(["e", "a", "b", "c"]),
+                [False, False, True, True],
+            ),
+        ],
+    )
+    def test_multi_defined_control_values(
+        self, op, expected_control_wires, expected_control_values
+    ):
+        """Test a multi-controlled single-qubit operation with defined control values."""
+        control_wires, control_values = unwrap_controls(op)
+
+        assert control_wires == expected_control_wires
+        assert control_values == expected_control_values

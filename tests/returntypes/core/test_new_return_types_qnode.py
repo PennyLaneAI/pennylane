@@ -185,6 +185,8 @@ class TestIntegrationSingleReturn:
     @pytest.mark.parametrize("op,wires", probs_data)
     def test_probs(self, op, wires, device):
         """Return a single prob."""
+        if device == "lightning.qubit":
+            pytest.skip("Lightning does not support probs with unordered wires.")
         dev = qml.device(device, wires=3)
 
         def circuit(x):
@@ -2261,18 +2263,18 @@ class TestIntegrationSameMeasurementShotVector:
 pauliz_w2 = qml.PauliZ(wires=2)
 proj_w2 = qml.Projector([1], wires=2)
 hermitian = qml.Hermitian(np.diag([1, 2]), wires=0)
-tensor_product = qml.PauliY(wires=2) @ qml.PauliX(wires=1)
+tensor_product = qml.PauliZ(wires=2) @ qml.PauliX(wires=1)
 
 # Expval/Var with Probs
 
 scalar_probs_multi = [
     # Expval
     (qml.expval(pauliz_w2), qml.probs(wires=[2, 0])),
-    (qml.expval(proj_w2), qml.probs(wires=[2, 0])),
+    (qml.expval(proj_w2), qml.probs(wires=[1, 0])),
     (qml.expval(tensor_product), qml.probs(wires=[2, 0])),
     # Var
     (qml.var(qml.PauliZ(wires=1)), qml.probs(wires=[0, 1])),
-    (qml.var(proj_w2), qml.probs(wires=[2, 0])),
+    (qml.var(proj_w2), qml.probs(wires=[1, 0])),
     (qml.var(tensor_product), qml.probs(wires=[2, 0])),
 ]
 

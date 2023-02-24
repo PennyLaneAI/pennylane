@@ -85,3 +85,6 @@ class ExecutionConfig:
             raise ValueError(
                 f"All gradient_keyword_arguments keys must be in {SUPPORTED_GRADIENT_KWARGS}, got unexpected values: {set(self.gradient_keyword_arguments) - set(SUPPORTED_GRADIENT_KWARGS)}"
             )
+
+
+DefaultExecutionConfig = ExecutionConfig()

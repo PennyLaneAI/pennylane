@@ -17,7 +17,9 @@
 Contains the drawing function.
 """
 from functools import wraps
+import warnings
 
+import pennylane as qml
 from .tape_mpl import tape_mpl
 from .tape_text import tape_text
 
@@ -31,10 +33,10 @@ def draw(
     show_matrices=False,
     expansion_strategy=None,
 ):
-    """Create a function that draws the given qnode.
+    """Create a function that draws the given qnode or quantum function.
 
     Args:
-        qnode (.QNode): the input QNode that is to be drawn.
+        qnode (.QNode or Callable): the input QNode or quantum function that is to be drawn.
         wire_order (Sequence[Any]): the order (from top to bottom) to print the wires of the circuit
         show_all_wires (bool): If True, all wires, including empty wires, are printed.
         decimals (int): How many decimal points to include when formatting operation parameters.
@@ -42,7 +44,7 @@ def draw(
         max_length (int): Maximum string width (columns) when printing the circuit
         show_matrices=False (bool): show matrix valued parameters below all circuit diagrams
         expansion_strategy (str): The strategy to use when circuit expansions or decompositions
-            are required.
+            are required. Note that this is ignored if the input is not a QNode.
 
             - ``gradient``: The QNode will attempt to decompose
               the internal circuit such that all circuit operations are supported by the gradient
@@ -54,7 +56,7 @@ def draw(
 
     Returns:
         A function that has the same argument signature as ``qnode``. When called,
-        the function will draw the QNode.
+        the function will draw the QNode/qfunc.
 
     **Example**
 
@@ -178,8 +180,61 @@ def draw(
 
         0: ──RX(0.90)─┤  <Z>
 
-    """
+    The function also accepts quantum functions rather than QNodes. This can be especially
+    helpful if you want to visualize only a part of a circuit that may not be convertible into
+    a QNode, such as a sub-function that does not return any measurements.
 
+    >>> def qfunc(x):
+    ...     qml.RX(x, wires=[0])
+    ...     qml.CNOT(wires=[0, 1])
+    >>> print(qml.draw(qfunc)(1.1))
+    0: ──RX(1.10)─╭●─┤
+    1: ───────────╰X─┤
+
+    """
+    if hasattr(qnode, "construct"):
+        return _draw_qnode(
+            qnode,
+            wire_order=wire_order,
+            show_all_wires=show_all_wires,
+            decimals=decimals,
+            max_length=max_length,
+            show_matrices=show_matrices,
+            expansion_strategy=expansion_strategy,
+        )
+
+    if expansion_strategy is not None:
+        warnings.warn(
+            "When the input to qml.draw is not a QNode, the expansion_strategy argument is ignored.",
+            UserWarning,
+        )
+
+    @wraps(qnode)
+    def wrapper(*args, **kwargs):
+        tape = qml.tape.make_qscript(qnode)(*args, **kwargs)
+        _wire_order = wire_order or tape.wires
+
+        return tape_text(
+            tape,
+            wire_order=_wire_order,
+            show_all_wires=show_all_wires,
+            decimals=decimals,
+            show_matrices=show_matrices,
+            max_length=max_length,
+        )
+
+    return wrapper
+
+
+def _draw_qnode(
+    qnode,
+    wire_order=None,
+    show_all_wires=False,
+    decimals=2,
+    max_length=100,
+    show_matrices=False,
+    expansion_strategy=None,
+):
     @wraps(qnode)
     def wrapper(*args, **kwargs):
         original_expansion_strategy = getattr(qnode, "expansion_strategy", None)
@@ -237,7 +292,7 @@ def draw_mpl(
     """Draw a qnode with matplotlib
 
     Args:
-        qnode (.QNode): the input QNode that is to be drawn.
+        qnode (.QNode or Callable): the input QNode/quantum function that is to be drawn.
 
     Keyword Args:
         wire_order (Sequence[Any]): the order (from top to bottom) to print the wires of the circuit
@@ -429,7 +484,49 @@ def draw_mpl(
                 :target: javascript:void(0);
 
     """
+    if hasattr(qnode, "construct"):
+        return _draw_mpl_qnode(
+            qnode,
+            wire_order=wire_order,
+            show_all_wires=show_all_wires,
+            decimals=decimals,
+            expansion_strategy=expansion_strategy,
+            style=style,
+            **kwargs,
+        )
 
+    if expansion_strategy is not None:
+        warnings.warn(
+            "When the input to qml.draw is not a QNode, the expansion_strategy argument is ignored.",
+            UserWarning,
+        )
+
+    @wraps(qnode)
+    def wrapper(*args, **kwargs):
+        tape = qml.tape.make_qscript(qnode)(*args, **kwargs)
+        _wire_order = wire_order or tape.wires
+
+        return tape_mpl(
+            tape,
+            wire_order=_wire_order,
+            show_all_wires=show_all_wires,
+            decimals=decimals,
+            style=style,
+            **kwargs,
+        )
+
+    return wrapper
+
+
+def _draw_mpl_qnode(
+    qnode,
+    wire_order=None,
+    show_all_wires=False,
+    decimals=None,
+    expansion_strategy=None,
+    style="black_white",
+    **kwargs,
+):
     @wraps(qnode)
     def wrapper(*args, **kwargs_qnode):
         original_expansion_strategy = getattr(qnode, "expansion_strategy", None)

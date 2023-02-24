@@ -970,6 +970,20 @@ class TestProbabilityIntegration:
 
         assert dev.analytic_probability() is None
 
+    def test_marginal_prob_wire_order(self):
+        """Tests that marginal_prob rearranges wires as expected."""
+        dev = qml.device("default.qutrit", wires=3)
+
+        @qml.qnode(dev)
+        def circuit():
+            qml.QutritUnitary(U_x_02, wires=[1])  # second wire ("1") set to 2-state
+            return qml.probs(wires=[2, 0, 1])  # third wire ("1") should be in 2-state here
+
+        probs = qml.math.reshape(circuit(), (3, 3, 3))
+        assert probs[0, 0, 2] == 1
+        probs[0, 0, 2] = 0
+        assert qml.math.allequal(probs, 0)
+
 
 class TestWiresIntegration:
     """Test that the device integrates with PennyLane's wire management."""
