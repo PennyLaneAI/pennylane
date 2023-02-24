@@ -178,13 +178,15 @@ class TestIntegrationSingleReturn:
         (None, [0]),
         (None, [0, 1]),
         (qml.PauliZ(0), None),
-        (qml.Hermitian(herm, wires=[0, 1]), None),
+        (qml.Hermitian(herm, wires=[1, 0]), None),
     ]
 
     @pytest.mark.parametrize("device", devices)
     @pytest.mark.parametrize("op,wires", probs_data)
     def test_probs(self, op, wires, device):
         """Return a single prob."""
+        if device == "lightning.qubit":
+            pytest.skip("Lightning does not support probs with unordered wires.")
         dev = qml.device(device, wires=3)
 
         def circuit(x):
