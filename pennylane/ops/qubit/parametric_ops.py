@@ -436,8 +436,8 @@ class PhaseShift(Operation):
         **Example**
 
         >>> qml.PhaseShift.compute_matrix(torch.tensor(0.5))
-        tensor([[0.9689-0.2474j, 0.0000+0.0000j],
-                [0.0000+0.0000j, 0.9689+0.2474j]])
+        tensor([[1.0000+0.0000j, 0.0000+0.0000j],
+                [0.0000+0.0000j, 0.8776+0.4794j]])
         """
         if qml.math.get_interface(phi) == "tensorflow":
             p = qml.math.exp(1j * qml.math.cast_like(phi, 1j))
@@ -1267,6 +1267,173 @@ class CPhaseShift10(Operation):
     @property
     def control_wires(self):
         return self.wires[0:1]
+
+
+class PCPhase(Operation):
+    r"""
+    A Projector Controlled Phase gate.
+
+    .. math:: \Pi_{\phi}(\phi, dim=2, wires=[0,1]) = \begin{bmatrix}
+                e^{i\phi} & 0 & 0 & 0 \\
+                0 & e^{i\phi} & 0 & 0 \\
+                0 & 0 & 1 & 0 \\
+                0 & 0 & 0 & 1
+            \end{bmatrix}.
+
+    Args:
+        phi (float): rotation angle :math:`\phi`
+        dim (int): the qubit subspace on which we apply the phase shift
+        wires (Any, Wires): the wire the operation acts on
+        do_queue (bool): Indicates whether the operator should be
+            immediately pushed into the Operator queue (optional)
+        id (str or None): String representing the operation (optional)
+
+    **Details:**
+
+    * Number of wires: AnyWires
+    * Number of parameters: 1
+    * Number of dimensions per parameter: (0,)
+    * Gradient recipe: (~ ADD THIS ~)
+
+    **Example:**
+
+    >>> pc_op = qml.PCPhase(1.23, dim=3, wires=[1,2])
+    >>> qml.matrix(pc_op)
+    array([[0.33423773+0.9424888j, 0.        +0.j       , 0.        +0.j       , 0.        +0.j       ],
+           [0.        +0.j       , 0.33423773+0.9424888j, 0.        +0.j       , 0.        +0.j       ],
+           [0.        +0.j       , 0.        +0.j       , 0.33423773+0.9424888j, 0.        +0.j       ],
+           [0.        +0.j       , 0.        +0.j       , 0.        +0.j       , 1.        +0.j       ]])
+    """
+    num_wires = AnyWires
+    num_params = 1
+    """int: Number of trainable parameters that the operator depends on."""
+    ndim_params = (0,)
+    """tuple[int]: Number of dimensions per trainable parameter that the operator depends on."""
+
+    basis = "Z"
+
+    def __init__(self, phi, dim, wires, do_queue=True, id=None):
+        super().__init__(phi, wires=wires, do_queue=do_queue, id=id)
+        self.hyperparameters["dimension"] = (dim, 2 ** len(wires))
+
+    @staticmethod
+    def compute_matrix(*params, **hyperparams):
+        """Get the matrix representation of Pi-controlled phase unitary."""
+        phi = params[0]
+        d, t = hyperparams["dimension"]
+
+        if qml.math.get_interface(phi) == "tensorflow":
+            p = qml.math.exp(1j * qml.math.cast_like(phi, 1j))
+            ones = qml.math.ones_like(p)
+            zeros = qml.math.zeros_like(p)
+
+            columns = []
+            for i in range(t):
+                columns.append(
+                    [p if j == i else zeros for j in range(t)]
+                    if i < d
+                    else [ones if j == i else zeros for j in range(t)]
+                )
+
+            return qml.math.stack(columns, axis=-2)
+
+        arg = 1j * phi
+        prefactors = qml.math.array([1 if index < d else 0 for index in range(t)], like=phi)
+
+        if qml.math.ndim(arg) == 0:
+            return qml.math.diag(qml.math.exp(arg * prefactors))
+
+        diags = qml.math.exp(qml.math.outer(arg, prefactors))
+        return diags[:, :, np.newaxis] * qml.math.cast_like(qml.math.eye(2, like=diags), diags)
+
+    @staticmethod
+    def compute_eigvals(*params, **hyperparams):
+        """Get the eigvals for the Pi-controlled phase unitary."""
+        phi = params[0]
+        d, t = hyperparams["dimension"]
+
+        if qml.math.get_interface(phi) == "tensorflow":
+            phase = qml.math.exp(1j * qml.math.cast_like(phi, 1j))
+            return stack_last(
+                [phase if index < d else qml.math.ones_like(phase) for index in range(t)]
+            )
+
+        arg = 1j * phi
+        prefactors = qml.math.array([1 if index < d else 0 for index in range(t)], like=phi)
+
+        if qml.math.ndim(phi) == 0:
+            product = arg * prefactors
+        else:
+            product = qml.math.outer(arg, prefactors)
+        return qml.math.exp(product)
+
+    @staticmethod
+    def compute_decomposition(*params, wires=None, **hyperparams):
+        r"""Representation of the operator as a product of other operators (static method).
+
+        .. math:: O = O_1 O_2 \dots O_n.
+
+        .. note::
+
+            Operations making up the decomposition should be queued within the
+            ``compute_decomposition`` method.
+
+        .. seealso:: :meth:`~.Operator.decomposition`.
+
+        Args:
+            params (list): trainable parameters of the operator, as stored in the ``parameters`` attribute
+            wires (Iterable[Any], Wires): wires that the operator acts on
+            hyperparams (dict): non-trainable hyper-parameters of the operator, as stored in the ``hyperparameters`` attribute
+
+        Returns:
+            list[Operator]: decomposition of the operator
+        """
+        phi = params[0]
+        k, n = hyperparams["dimension"]
+
+        def _get_base_ops(theta, wire):
+            return PauliX(wire) @ PhaseShift(theta, wire) @ PauliX(wire), PhaseShift(theta, wire)
+
+        def _get_op_from_binary_rep(binary_rep, theta, wires):
+            if len(binary_rep) == 1:
+                op = _get_base_ops(theta, wire=wires[0])[int(binary_rep)]
+            else:
+                base_op = _get_base_ops(theta, wire=wires[-1])[int(binary_rep[-1])]
+                op = qml.ctrl(
+                    base_op, control=wires[:-1], control_values=[int(i) for i in binary_rep[:-1]]
+                )
+            return op
+
+        n_log2 = int(np.log2(n))
+        binary_reps = [bin(_k)[2:].zfill(n_log2) for _k in range(k)]
+
+        return [_get_op_from_binary_rep(br, phi, wires=wires) for br in binary_reps]
+
+    def adjoint(self):
+        """Computes the adjoint of the operator."""
+        phi = self.parameters[0]
+        dim, _ = self.hyperparameters["dimension"]
+        return PCPhase(-1*phi, dim=dim, wires=self.wires)
+
+    def pow(self, z):
+        """Computes the operator raised to z."""
+        phi = self.parameters[0]
+        dim, _ = self.hyperparameters["dimension"]
+        return [PCPhase(phi * z, dim=dim, wires=self.wires)]
+
+    def simplify(self):
+        """Simplifies the operator if possible."""
+        phi = self.parameters[0] % (2 * np.pi)
+        dim, _ = self.hyperparameters["dimension"]
+
+        if _can_replace(phi, 0):
+            return qml.Identity(wires=self.wires)
+
+        return PCPhase(phi, dim=dim, wires=self.wires)
+
+    def label(self, decimals=None, base_label=None, cache=None):
+        """The label of the operator when displayed in a circuit."""
+        return super().label(decimals=decimals, base_label=base_label or "∏_ϕ", cache=cache)
 
 
 class Rot(Operation):
