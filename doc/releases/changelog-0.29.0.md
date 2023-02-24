@@ -155,7 +155,7 @@
 
 * The gradient transform `qml.gradients.spsa_grad` is now registered as a
   differentiation method for QNodes.
-  [#3440](https://github.com/PennyLaneAI/pennylane/pull/3440)
+  [(#3440)](https://github.com/PennyLaneAI/pennylane/pull/3440)
 
   The SPSA gradient transform can now be used implicitly by marking a QNode
   as differentiable with SPSA. It can be selected via
@@ -755,7 +755,7 @@
 
   The interface is determined during the QNode call instead of the
   initialization. It means that the `gradient_fn` and `gradient_kwargs` are only defined on the QNode at the beginning
-  of the call. On top of this, without specifying the interface it is not possible to guarantee that the device will not be changed
+  of the call. Moreover, without specifying the interface it is not possible to guarantee that the device will not be changed
   during the call if you are using backprop (such as `default.qubit` changing to `default.qubit,jax`) whereas before it was happening at
   initialization. Therefore, you should not try to track the device without specifying the interface.
 
