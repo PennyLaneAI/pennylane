@@ -35,7 +35,6 @@ except ImportError as e:  # pragma: no cover
 
 
 def _validate_jax_version():
-
     if jax.__version__ == "0.4.4":
         raise RuntimeError(
             "\nYour installed version of JAX is 0.4.4 but Pennylane is incompatible with it.\n\n"
