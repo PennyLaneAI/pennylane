@@ -20,29 +20,35 @@ from scipy.linalg import sqrtm, norm
 import pennylane as qml
 from pennylane.operation import Operation, AnyWires
 from pennylane.wires import Wires
-    
+
 
 class BlockEncode(Operation):
     """General Block Encoding"""
+
     num_params = 1
     num_wires = AnyWires
 
     def __init__(self, a, wires, do_queue=True, id=None):
         a = np.atleast_2d(a)
         wires = Wires(wires)
-        if np.sum(a.shape)<=2:
+        if np.sum(a.shape) <= 2:
             normalization = a if a > 1 else 1
-            subspace = (1, 1, 2**len(wires))
+            subspace = (1, 1, 2 ** len(wires))
         else:
-            normalization = np.max([norm(a @ np.conj(a).T, ord=np.inf), norm(np.conj(a).T @ a, ord=np.inf)])
-            subspace = (*a.shape, 2**len(wires))
+            normalization = np.max(
+                [norm(a @ np.conj(a).T, ord=np.inf), norm(np.conj(a).T @ a, ord=np.inf)]
+            )
+            subspace = (*a.shape, 2 ** len(wires))
 
         a = a / normalization if normalization > 1 else a
 
         if subspace[2] < (subspace[0] + subspace[1]):
-            raise qml.QuantumFunctionError(f"Block encoding an {subspace[0]} x {subspace[1]} matrix requires a hilbert soace"
-                                       f" of size atleast {subspace[0] + subspace[1]} x {subspace[0] + subspace[1]}."
-                                       f"Cannot be embedded in a {len(wires)} qubit system.")
+            raise qml.QuantumFunctionError(
+                f"Block encoding a {subspace[0]} x {subspace[1]} matrix"
+                f"requires a hilbert space of size at least "
+                f"{subspace[0] + subspace[1]} x {subspace[0] + subspace[1]}."
+                f" Cannot be embedded in a {len(wires)} qubit system."
+            )
 
         super().__init__(a, wires=wires, do_queue=do_queue, id=id)
         self.hyperparameters["norm"] = normalization
@@ -52,17 +58,21 @@ class BlockEncode(Operation):
     def compute_matrix(*params, **hyperparams):
         """Get the matrix representation of block encoded unitary."""
         a = params[0]
-        n,m,k = hyperparams["subspace"]
+        n, m, k = hyperparams["subspace"]
 
-        if isinstance(a,int) or isinstance(a,float):
-            u = np.block([[a,np.sqrt(1-a*np.conj(a))],
-                        [np.sqrt(1-a*np.conj(a)), -np.conj(a)]])
+        if isinstance(a, int) or isinstance(a, float):
+            u = np.block(
+                [[a, np.sqrt(1 - a * np.conj(a))], [np.sqrt(1 - a * np.conj(a)), -np.conj(a)]]
+            )
         else:
             d1, d2 = a.shape
-            u = np.block([[a, sqrtm(np.eye(d1) - a @ np.conj(a).T)],
-                        [sqrtm(np.eye(d2) - np.conj(a).T @ a), -np.conj(a).T]])        
-        if n+m < k:
+            u = np.block(
+                [
+                    [a, sqrtm(np.eye(d1) - a @ np.conj(a).T)],
+                    [sqrtm(np.eye(d2) - np.conj(a).T @ a), -np.conj(a).T],
+                ]
+            )
+        if n + m < k:
             r = k - (n + m)
-            u = np.block([[u, np.zeros((n+m, r))],
-                          [np.zeros((r, n+m)), np.eye(r)]])
+            u = np.block([[u, np.zeros((n + m, r))], [np.zeros((r, n + m)), np.eye(r)]])
         return u
