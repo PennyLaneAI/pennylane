@@ -54,7 +54,7 @@ def rydberg_interaction(register: list, wires=None, interaction_coeff: float = 8
     Returns:
         RydbergHamiltonian: Hamiltonian representing the atom interaction
     """
-    wires = wires or list(range(register))
+    wires = wires or list(range(len(register)))
 
     def rydberg_projector(wire: int) -> SProd:
         """Returns the projector into the Rydberg state for the given wire.
@@ -69,8 +69,8 @@ def rydberg_interaction(register: list, wires=None, interaction_coeff: float = 8
 
     coeffs = []
     observables = []
-    for idx, (pos1, wire1) in enumerate(zip(register[1:], wires[1:])):
-        for pos2, wire2 in zip(register[: idx + 1], wires[: idx + 1]):
+    for idx, (pos1, wire1) in enumerate(zip(register[:-1], wires[:-1])):
+        for pos2, wire2 in zip(register[(idx + 1) :], wires[(idx + 1) :]):
             atom_distance = np.linalg.norm(qml.math.array(pos2) - pos1)
             Vij = interaction_coeff / (abs(atom_distance) ** 6)  # van der Waals potential
             coeffs.append(Vij)
@@ -120,7 +120,7 @@ def rydberg_transition(rabi, detuning, phase, wires):
     detuning_observables = [qml.PauliZ(wire) for wire in wires]
     observables = rabi_observables + detuning_observables
 
-    # We convert the data into the `RydbergPulses` class
+    # We convert the pulse data into the `RydbergPulses` class
     pulses = RydbergPulses([rabi], [detuning], [phase], [wires])
     return RydbergHamiltonian(coeffs, observables, pulses=pulses)
 

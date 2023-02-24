@@ -19,7 +19,7 @@ import numpy as np
 import pytest
 
 import pennylane as qml
-from pennylane.pulse import RydbergHamiltonian
+from pennylane.pulse import RydbergHamiltonian, rydberg_interaction
 from pennylane.pulse.rydberg_hamiltonian import RydbergPulses
 from pennylane.wires import Wires
 
@@ -119,3 +119,27 @@ class TestRydbergHamiltonian:
             match="The wires of the laser fields are not present in the Rydberg ensemble",
         ):
             _ = Ht + Hd
+
+
+class TestRydbergInteraction:
+    """Unit tests for the ``rydberg_interaction`` function."""
+
+    def test_attributes_and_number_of_terms(self):
+        """Test that the attributes and the number of terms of the ``ParametrizedHamiltonian`` returned by
+        ``rydberg_interaction`` are correct."""
+        Hd = rydberg_interaction(register=atom_coordinates, wires=wires, interaction_coeff=1)
+
+        assert isinstance(Hd, RydbergHamiltonian)
+        assert Hd.interaction_coeff == 1
+        assert Hd.wires == Wires(wires)
+        assert qml.math.allequal(Hd.register, atom_coordinates)
+        N = len(wires)
+        num_combinations = N * (N - 1) / 2  # number of terms on the rydberg_interaction hamiltonian
+        assert len(Hd.ops) == num_combinations
+
+    def test_wires_is_none(self):
+        """Test that when wires is None the wires correspond to an increasing list of values with
+        the same length as the atom coordinates."""
+        Hd = rydberg_interaction(register=atom_coordinates)
+
+        assert Hd.wires == Wires(list(range(len(atom_coordinates))))
