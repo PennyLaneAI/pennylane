@@ -73,6 +73,7 @@ from pennylane.templates.tensornetworks import *
 from pennylane.templates.swapnetworks import *
 from pennylane.templates.state_preparations import *
 from pennylane.templates.subroutines import *
+from pennylane.templates.qsvt import *
 from pennylane import qaoa
 from pennylane.qnode import QNode, qnode
 from pennylane.return_types import enable_return, disable_return, active_return
