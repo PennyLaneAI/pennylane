@@ -260,7 +260,7 @@ def sign_expand(  # pylint: disable=too-many-arguments
 
             operations = [qml.Hadamard(wires=0), qml.CNOT(wires=[0, 1]), qml.PauliX(wires=2)]
             measurements = [qml.expval(H)]
-            tape = qml.tape.QuantumScript(operations, measurements)
+            tape = qml.tape.QuantumTape(operations, measurements)
 
     We can use the ``sign_expand`` transform to generate new tapes and a classical
     post-processing function for computing the expectation value of the Hamiltonian in these new decompositions
@@ -285,15 +285,15 @@ def sign_expand(  # pylint: disable=too-many-arguments
     -0.24999999999999994
 
 
-    As a last thing, as the paper is about variance minimizing one can also calculate the variance of the estimator by
-    changing the tape
+    Lastly, as the paper is about minimizing variance, one can also calculate the variance of the estimator by
+    changing the tape:
 
 
     .. code-block:: python3
 
             operations = [qml.Hadamard(wires=0), qml.CNOT(wires=[0, 1]), qml.PauliX(wires=2)]
             measurements = [qml.var(H)]
-            tape = qml.tape.QuantumScript(operations, measurements)
+            tape = qml.tape.QuantumTape(operations, measurements)
 
     >>> tapes, fn = qml.transforms.sign_expand(tape, circuit=True, J=20, delta=0)
     >>> dev = qml.device("default.qubit", wires=[0,1,2,'Hadamard','Target'])
