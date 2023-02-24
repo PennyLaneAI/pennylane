@@ -41,12 +41,11 @@ def pow(base, z=1, lazy=True, do_queue=True, id=None):
 
     Args:
         base (~.operation.Operator): the operator to be raised to a power
-        z (float): the exponent (``1`` by default)
+        z (float): the exponent (default value is 1)
 
     Keyword Args:
-        lazy (bool): In lazy mode, all operations are wrapped in a ``Pow`` class
+        lazy=True (bool): In lazy mode, all operations are wrapped in a ``Pow`` class
             and handled later. If ``lazy=False``, operation-specific simplifications are first attempted.
-            ``lazy=True`` by default.
         do_queue (bool): indicates whether the operator should be
             recorded when created in a tape context
         id (str): custom label given to an operator instance,

@@ -184,6 +184,7 @@ def paulix_ops(generators, num_qubits):
     Args:
         generators (list[Hamiltonian]): list of generators of symmetries, :math:`tau`s, for the Hamiltonian
         num_qubits (int): number of wires required to define the Hamiltonian
+
     Return:
         list[Observable]: list of single-qubit Pauli-X operators which will be used to build the
         Clifford operators :math:`U`.
