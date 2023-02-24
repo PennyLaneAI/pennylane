@@ -669,3 +669,51 @@ class TestProbs:
         )
 
         assert np.allclose(res, expected)
+
+    def test_non_commuting_probs_raises_error(self):
+        dev = qml.device("default.qubit", wires=5)
+
+        @qml.qnode(dev)
+        def circuit(x, y):
+            qml.RX(x, wires=[0])
+            qml.RY(y, wires=[1])
+            qml.CNOT(wires=[0, 1])
+            return qml.expval(qml.PauliX(0)), qml.probs(wires=[0, 1])
+
+        with pytest.raises(
+            qml.QuantumFunctionError, match="Only observables that are qubit-wise commuting"
+        ):
+            circuit(1, 2)
+
+    def test_commuting_probs_in_computational_basis(self):
+        """Test that `qml.probs` can be used in the computational basis with other commuting observables."""
+        dev = qml.device("default.qubit", wires=5)
+
+        @qml.qnode(dev)
+        def circuit(x, y):
+            qml.RX(x, wires=[0])
+            qml.RY(y, wires=[1])
+            qml.CNOT(wires=[0, 1])
+            return qml.expval(qml.PauliZ(0)), qml.probs(wires=[0, 1])
+
+        res = circuit(1, 2)
+
+        @qml.qnode(dev)
+        def circuit2(x, y):
+            qml.RX(x, wires=[0])
+            qml.RY(y, wires=[1])
+            qml.CNOT(wires=[0, 1])
+            return qml.expval(qml.PauliZ(0))
+
+        @qml.qnode(dev)
+        def circuit3(x, y):
+            qml.RX(x, wires=[0])
+            qml.RY(y, wires=[1])
+            qml.CNOT(wires=[0, 1])
+            return qml.probs(wires=[0, 1])
+
+        res2 = circuit2(1, 2)
+        res3 = circuit3(1, 2)
+
+        assert res[0] == res2
+        assert qml.math.allequal(res[1:], res3)
