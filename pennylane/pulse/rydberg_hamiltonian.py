@@ -203,6 +203,14 @@ class RydbergPulses:
         detuning: float
         wires: List[int]
 
+        def __eq__(self, other):
+            return (
+                self.rabi == other.rabi
+                and self.phase == other.phase
+                and self.detuning == other.detuning
+                and self.wires == other.wires
+            )
+
     rabis: List[float] = field(default_factory=[])
     detunings: List[float] = field(default_factory=[])
     phases: List[float] = field(default_factory=[])
@@ -224,6 +232,9 @@ class RydbergPulses:
             new_wires = self.wires + other.wires
             return RydbergPulses(new_rabis, new_detunings, new_phases, new_wires)
         return NotImplemented
+
+    def __eq__(self, other):
+        return all(p1 == p2 for p1, p2 in zip(self.pulses, other.pulses))
 
     def __iter__(self):
         return iter(self.pulses)

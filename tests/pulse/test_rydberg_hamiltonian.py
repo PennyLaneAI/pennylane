@@ -16,140 +16,57 @@
 Unit tests for the RydbergHamiltonian class.
 """
 import numpy as np
-import pytest
 
 import pennylane as qml
-from pennylane.ops import Sum
-from pennylane.pulse import ParametrizedHamiltonian, RydbergHamiltonian
+from pennylane.pulse import RydbergHamiltonian
+from pennylane.pulse.rydberg_hamiltonian import RydbergPulses
 from pennylane.wires import Wires
 
 atom_coordinates = [[0, 0], [0, 5], [5, 0], [10, 5], [5, 10], [10, 10]]
 wires = [1, 6, 9, 2, 4, 3]
 
 
-# pylint: disable=protected-access
-def test_initialization():
-    """Test the RydbergHamiltonian class is initialized correctly."""
-    rm = RydbergHamiltonian(coordinates=atom_coordinates, wires=wires)
-
-    assert qml.math.allequal(rm.coordinates, atom_coordinates)
-    assert rm.wires == Wires(wires)
-    assert isinstance(rm.driving_interaction, ParametrizedHamiltonian)
-    assert rm.driving_interaction.H_parametrized([], 0) == 0
-    assert rm.driving_interaction.H_fixed() == 0
-    assert rm._rydberg_interaction is None
-    assert rm.interaction_coeff == 862690 * np.pi
-    assert rm._local_drives == {"rabi": [], "detunings": [], "phases": [], "wires": []}
-    assert rm._global_drive is None
-
-
-class TestProperties:
+class TestRydbergHamiltonian:
     """Unit tests for the properties of the RydbergHamiltonian class."""
 
-    def test_rydberg_interaction(self):
-        """Test that the rydberg_interaction property returns a Hamiltonian class, and that it
-        contains the correct amount of coeffs and ops."""
-        rm = RydbergHamiltonian(coordinates=atom_coordinates, wires=wires)
+    # pylint: disable=protected-access
+    def test_initialization(self):
+        """Test the RydbergHamiltonian class is initialized correctly."""
+        rm = RydbergHamiltonian(coeffs=[], observables=[], register=atom_coordinates)
 
-        N = len(wires)
-        num_combinations = N * (N - 1) / 2  # number of terms on the rydberg_interaction hamiltonian
-        assert isinstance(rm.rydberg_interaction, Sum)
-        assert len(rm.rydberg_interaction.operands) == num_combinations
+        assert qml.math.allequal(rm.register, atom_coordinates)
+        assert isinstance(rm.pulses, RydbergPulses)
+        assert len(rm.pulses) == 0
+        assert rm.wires == Wires([])
+        assert rm.interaction_coeff == 862690 * np.pi
 
-    def test_driving_interaction(self):
-        """Test the driving_interaction property."""
-        rm = RydbergHamiltonian(coordinates=atom_coordinates, wires=wires)
-
-        assert isinstance(rm.driving_interaction, ParametrizedHamiltonian)
-        assert rm.driving_interaction.H_parametrized([], 0) == 0
-        assert rm.driving_interaction.H_fixed() == 0
-
-    def test_hamiltonian(self):
-        """Test the hamiltonian property."""
-        rm = RydbergHamiltonian(coordinates=atom_coordinates, wires=wires)
-
-        assert isinstance(rm.hamiltonian, ParametrizedHamiltonian)
-        assert rm.hamiltonian.H_parametrized([], 0) == 0
-        assert qml.equal(
-            qml.simplify(rm.hamiltonian.H_fixed()), qml.simplify(rm.rydberg_interaction)
+    def test_add(self):
+        """Test that the __add__ dunder method works correctly."""
+        rm1 = RydbergHamiltonian(
+            coeffs=[1],
+            observables=[qml.PauliX(0)],
+            register=atom_coordinates,
+            pulses=RydbergPulses([1], [2], [3], [4]),
+        )
+        rm2 = RydbergHamiltonian(
+            coeffs=[2],
+            observables=[qml.PauliY(1)],
+            pulses=RydbergPulses([5], [6], [7], [8]),
         )
 
-
-class TestMethods:
-    """Unit tests for the RydbergHamiltonian methods."""
-
-    def test_local_drive_updates_dictionaries(self):
-        """Test that the local_drive method returns a new instance and updates its internal dictionaries."""
-        rm = RydbergHamiltonian(atom_coordinates, wires)
-
-        assert rm._local_drives == {"rabi": [], "detunings": [], "phases": [], "wires": []}
-
-        new_rm = rm.local_drive(
-            rabi=[0, 1, 2], detunings=[3, 4, 5], phases=[6, 7, 8], wires=[1, 2, 3]
+        sum_rm = rm1 + rm2
+        assert isinstance(sum_rm, RydbergHamiltonian)
+        assert qml.math.allequal(sum_rm.coeffs, [1, 2])
+        assert all(
+            qml.equal(op1, op2) for op1, op2 in zip(sum_rm.ops, [qml.PauliX(0), qml.PauliY(1)])
         )
-
-        assert new_rm is not rm
-        assert rm._local_drives == {"rabi": [], "detunings": [], "phases": [], "wires": []}
-        assert new_rm._local_drives == {
-            "rabi": [0, 1, 2],
-            "detunings": [3, 4, 5],
-            "phases": [6, 7, 8],
-            "wires": [1, 2, 3],
-        }
-
-    def test_local_drive_updates_driving_hamiltonian(self):
-        """Test that the local_drive method returns a new instance and updates the driving term of the hamiltonian."""
-        rm = RydbergHamiltonian(coordinates=atom_coordinates, wires=wires)
-
-        assert isinstance(rm.driving_interaction, ParametrizedHamiltonian)
-        assert rm.driving_interaction([], 0) == 0
-
-        new_rm = rm.local_drive(rabi=[lambda p, t: 1], detunings=[0], phases=[0], wires=[3])
-
-        assert rm.driving_interaction([], 0) == 0
-        assert new_rm.driving_interaction([1], 1) != 0
-
-    def test_local_drive_wrong_lengths_raises_error(self):
-        """Test that the local_drive method raises an error when the inputs have different lengths."""
-        rm = RydbergHamiltonian(atom_coordinates, wires)
-
-        with pytest.raises(
-            ValueError, match="The lists containing the driving parameters must all have the same"
-        ):
-            rm.local_drive(rabi=[1, 2, 3], detunings=[0], phases=[0], wires=[1])
-
-    def test_local_drive_wrong_wires_raises_error(self):
-        """Test that the local_drive method raises an error when a wire value is not present in the
-        RydbergHamiltonian."""
-        rm = RydbergHamiltonian(atom_coordinates, wires)
-
-        with pytest.raises(
-            ValueError,
-            match="The wires list contains a wire value that is not present in the RydbergHamiltonian",
-        ):
-            rm.local_drive(rabi=[1, 2, 3], detunings=[0, 1, 2], phases=[0, -1, 0], wires=[1, 5, 0])
-
-    def test_global_drive_updates_dictionaries(self):
-        """Test that the global_drive method updates the internal dictionaries."""
-        rm = RydbergHamiltonian(atom_coordinates, wires)
-
-        assert rm._global_drive is None
-
-        new_rm = rm.global_drive(rabi=1, detuning=2, phase=3)
-
-        assert new_rm is not rm
-        assert rm._global_drive is None
-        assert new_rm._global_drive == (1, 2, 3)
-
-    def test_global_drive_updates_driving_hamiltonian(self):
-        """Test that the global_drive method updates the driving_interaction term of the Hamiltonian."""
-        rm = RydbergHamiltonian(coordinates=atom_coordinates, wires=wires)
-
-        assert isinstance(rm.driving_interaction, ParametrizedHamiltonian)
-        assert rm.driving_interaction([], 0) == 0
-
-        new_rm = rm.global_drive(rabi=1, detuning=2, phase=3)
-
-        assert new_rm is not rm
-        assert rm.driving_interaction([], 0) == 0
-        assert new_rm.driving_interaction([], 0) != 0
+        assert qml.math.allequal(sum_rm.register, atom_coordinates)
+        assert sum_rm.pulses == RydbergPulses([1, 5], [2, 6], [3, 7], [4, 8])
+        sum_rm2 = rm2 + rm1
+        assert isinstance(sum_rm2, RydbergHamiltonian)
+        assert qml.math.allequal(sum_rm2.coeffs, [2, 1])
+        assert all(
+            qml.equal(op1, op2) for op1, op2 in zip(sum_rm2.ops, [qml.PauliY(1), qml.PauliX(0)])
+        )
+        assert qml.math.allequal(sum_rm2.register, atom_coordinates)
+        assert sum_rm2.pulses == RydbergPulses([5, 1], [6, 2], [7, 3], [8, 4])
