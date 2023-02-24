@@ -232,14 +232,14 @@ class SparseHamiltonian(Observable):
     Sparse Hamiltonians can be constructed directly with a SciPy-compatible sparse matrix.
 
     Alternatively, you can construct your Hamiltonian as usual using :class:`~.Hamiltonian`, and then use
-    the utility function :func:`~.utils.sparse_hamiltonian` to construct the sparse matrix that serves as the input
+    :meth:`~.Hamiltonian.sparse_matrix` to construct the sparse matrix that serves as the input
     to ``SparseHamiltonian``:
 
     >>> wires = range(20)
     >>> coeffs = [1 for _ in wires]
     >>> observables = [qml.PauliZ(i) for i in wires]
     >>> H = qml.Hamiltonian(coeffs, observables)
-    >>> Hmat = qml.utils.sparse_hamiltonian(H)
+    >>> Hmat = H.sparse_matrix()
     >>> H_sparse = qml.SparseHamiltonian(Hmat, wires)
     """
     num_wires = AllWires

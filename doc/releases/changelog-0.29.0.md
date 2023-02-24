@@ -593,7 +593,7 @@
 * Implemented the XYX single-qubit unitary decomposition.
   [(#3628)](https://github.com/PennyLaneAI/pennylane/pull/3628)
 
-* `Sum` and `Prod` operations now have broadcasted operands.
+* `Sum` and `Prod` operations now support broadcasted operands.
   [(#3611)](https://github.com/PennyLaneAI/pennylane/pull/3611)
 
 * All dunder methods now return `NotImplemented`, allowing the right dunder method (e.g. `__radd__`)
@@ -745,7 +745,7 @@
   instead.
   [(#3701)](https://github.com/PennyLaneAI/pennylane/pull/3701)
 
-* `op.simplify()` for operators which are linear combinations of pauli words will use a builtin pauli representation 
+* `op.simplify()` for operators which are linear combinations of Pauli words will use a builtin Pauli representation 
   to more efficiently compute the simplification of the operator.
   [(#3481)](https://github.com/PennyLaneAI/pennylane/pull/3481)
 
@@ -780,6 +780,10 @@
 [(#3740)](https://github.com/PennyLaneAI/pennylane/pull/3740)
 
 <h3>Bug fixes</h3>
+
+* Fixed a bug where measuring ``qml.probs`` in the computational basis with non-commuting 
+  measurements returned incorrect results. Now an error is raised.
+  [(#3811)](https://github.com/PennyLaneAI/pennylane/pull/3811)
 
 * Fixed a bug in the drawer where nested controlled operations would output
   the label of the operation being controlled, rather than the control values.
