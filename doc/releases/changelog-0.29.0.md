@@ -138,7 +138,7 @@
 
 <h4>Always differentiable 📈</h4>
 
-* The Hadamard test gradient tranform is now available via `qml.gradients.hadamard_grad`. The gradient transform 
+* The Hadamard test gradient tranform is now available via `qml.gradients.hadamard_grad`. The gradient transform
   `qml.gradients.hadamard_grad` is now registered as a differentiation method for `QNode`s.
   [(#3625)](https://github.com/PennyLaneAI/pennylane/pull/3625)
   [(#3736)](https://github.com/PennyLaneAI/pennylane/pull/3736)
@@ -273,23 +273,27 @@
   [(#3573)](https://github.com/PennyLaneAI/pennylane/pull/3573)
 
   ```python
-  unitary = np.array([[ 0.73678+0.27511j, -0.5095 +0.10704j, -0.06847+0.32515j]
-                      [-0.21271+0.34938j, -0.38853+0.36497j,  0.61467-0.41317j]
+  unitary = np.array([[ 0.73678+0.27511j, -0.5095 +0.10704j, -0.06847+0.32515j],
+                      [-0.21271+0.34938j, -0.38853+0.36497j,  0.61467-0.41317j],
                       [ 0.41356-0.20765j, -0.00651-0.66689j,  0.32839-0.48293j]])
 
-  phase_mat, ordered_rotations = givens_decomposition(matrix)
+  phase_mat, ordered_rotations = givens_decomposition(unitary)
   ```
 
   ```pycon
   >>> phase_mat
-  [-0.20606284+0.97853876j -0.82993403+0.55786154j  0.56230707-0.82692851j]
+  tensor([-0.20604358+0.9785369j , -0.82993272+0.55786114j,
+          0.56230612-0.82692833j], requires_grad=True)
   >>> ordered_rotations
-  [(tensor([[-0.65088844-0.63936314j, -0.40933972-0.j],
-            [-0.29202076-0.28684994j,  0.91238204-0.j]], requires_grad=True), (0, 1)),
-    (tensor([[ 0.47970417-0.33309047j, -0.8117479 -0.j],
-            [ 0.66676972-0.46298251j,  0.584008  -0.j]], requires_grad=True), (1, 2)),
-    (tensor([[ 0.36147511+0.73779414j, -0.57008381-0.j],
-            [ 0.25082094+0.5119418j ,  0.82158655-0.j]], requires_grad=True), (0, 1))]
+  [(tensor([[-0.65087861-0.63937521j, -0.40933651-0.j        ],
+            [-0.29201359-0.28685265j,  0.91238348-0.j        ]], requires_grad=True),
+    (0, 1)),
+  (tensor([[ 0.47970366-0.33308926j, -0.8117487 -0.j        ],
+            [ 0.66677093-0.46298215j,  0.5840069 -0.j        ]], requires_grad=True),
+    (1, 2)),
+  (tensor([[ 0.36147547+0.73779454j, -0.57008306-0.j        ],
+            [ 0.2508207 +0.51194108j,  0.82158706-0.j        ]], requires_grad=True),
+    (0, 1))]
   ```
 
 * A new template called `qml.BasisRotation` has been added, which performs a basis transformation defined by a set of
@@ -315,10 +319,10 @@
   ```pycon
   >>> circ_unitary = qml.matrix(circuit)()
   >>> np.round(circ_unitary/circ_unitary[0][0], 3)
-  tensor([[ 1.   +0.j   ,  0.   +0.j   ,  0.   +0.j   ,  0.   +0.j   ],
-          [ 0.   +0.j   , -0.516-0.596j, -0.302-0.536j,  0.   +0.j   ],
-          [ 0.   +0.j   ,  0.35 +0.506j, -0.311-0.724j,  0.   +0.j   ],
-          [ 0.   +0.j   ,  0.   +0.j   ,  0.   +0.j   , -0.438+0.899j]])
+  tensor([[ 1.   -0.j   , -0.   +0.j   , -0.   +0.j   , -0.   +0.j   ],
+          [-0.   +0.j   , -0.516-0.596j, -0.302-0.536j, -0.   +0.j   ],
+          [-0.   +0.j   ,  0.35 +0.506j, -0.311-0.724j, -0.   +0.j   ],
+          [-0.   +0.j   , -0.   +0.j   , -0.   +0.j   , -0.438+0.899j]], requires_grad=True)
   ```
 
 * A new function called `load_basisset` has been added to extract `qchem` basis set data from the Basis Set Exchange
@@ -434,7 +438,6 @@
 
 * The gradient transforms work for the new return type system with non-trivial classical jacobians.
   [(#3776)](https://github.com/PennyLaneAI/pennylane/pull/3776)
-
 
 * The `default.mixed` device received a performance improvement for multi-qubit operations.
   This also allows to apply channels that act on more than seven qubits, which was not possible before.
@@ -647,7 +650,7 @@
 * `SProd.sparse_matrix` now supports interface-specific variables with a single element as the `scalar`.
   [(#3770)](https://github.com/PennyLaneAI/pennylane/pull/3770)
 
-* The `qchem.Molecule` class raises an error when the molecule has an odd number of electrons or 
+* The `qchem.Molecule` class raises an error when the molecule has an odd number of electrons or
   when the spin multiplicity is not 1.
   [(#3748)](https://github.com/PennyLaneAI/pennylane/pull/3748)
 
@@ -745,7 +748,7 @@
   instead.
   [(#3701)](https://github.com/PennyLaneAI/pennylane/pull/3701)
 
-* `op.simplify()` for operators which are linear combinations of Pauli words will use a builtin Pauli representation 
+* `op.simplify()` for operators which are linear combinations of Pauli words will use a builtin Pauli representation
   to more efficiently compute the simplification of the operator.
   [(#3481)](https://github.com/PennyLaneAI/pennylane/pull/3481)
 
@@ -781,7 +784,7 @@
 
 <h3>Bug fixes</h3>
 
-* Fixed a bug where measuring ``qml.probs`` in the computational basis with non-commuting 
+* Fixed a bug where measuring ``qml.probs`` in the computational basis with non-commuting
   measurements returned incorrect results. Now an error is raised.
   [(#3811)](https://github.com/PennyLaneAI/pennylane/pull/3811)
 
