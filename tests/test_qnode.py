@@ -1222,8 +1222,8 @@ class TestIntegration:
 
         @qml.qnode(dev)
         def qnode():
-            qml.PauliX(0)
-            return qml.expval(qml.PauliZ(0))
+            qml.PauliZ(0)
+            return qml.expval(qml.PauliX(0))
 
         with qml.queuing.AnnotatedQueue() as q:
             qnode()

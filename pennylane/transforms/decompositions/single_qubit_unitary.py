@@ -144,10 +144,10 @@ def xyx_decomposition(U, wire, return_global_phase=False):
                       [ 0.53396245-0.10177564j,  0.76279558-0.35024096j]])
     >>> decomp = xyx_decomposition(U, 0, return_global_phase=True)
     >>> decomp
-    [RX(0.45246583660683803, wires=[0]),
-     RY(1.3974974118006183, wires=[0]),
-     RX(-1.7210192479534632, wires=[0]),
-     (0.38469215914523336-0.9230449299422961j)*(Identity(wires=[0]))]
+    [RX(array(0.45246584), wires=[0]),
+    RY(array(1.39749741), wires=[0]),
+    RX(array(-1.72101925), wires=[0]),
+    (0.38469215914523336-0.9230449299422961j)*(Identity(wires=[0]))]
     """
 
     # Small number to add to denominators to avoid division by zero
