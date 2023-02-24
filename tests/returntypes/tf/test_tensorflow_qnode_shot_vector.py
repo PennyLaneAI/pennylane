@@ -406,7 +406,7 @@ class TestReturnShotVectorHessian:
             qml.RX(x, wires=[0])
             qml.RY(y, wires=[1])
             qml.CNOT(wires=[0, 1])
-            return qml.expval(qml.PauliZ(0) @ qml.PauliX(1)), qml.probs(wires=[1])
+            return qml.expval(qml.PauliZ(0) @ qml.PauliX(1)), qml.probs(wires=[0])
 
         with tf.GradientTape() as tape1:
             with tf.GradientTape(persistent=True) as tape2:
@@ -438,7 +438,7 @@ class TestReturnShotVectorHessian:
             qml.RX(x[0], wires=[0])
             qml.RY(x[1], wires=[1])
             qml.CNOT(wires=[0, 1])
-            return qml.expval(qml.PauliZ(0) @ qml.PauliX(1)), qml.probs(wires=[1])
+            return qml.expval(qml.PauliZ(0) @ qml.PauliX(1)), qml.probs(wires=[0])
 
         with tf.GradientTape() as tape1:
             with tf.GradientTape(persistent=True) as tape2:
