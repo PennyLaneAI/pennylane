@@ -185,6 +185,8 @@ class TestIntegrationSingleReturn:
     @pytest.mark.parametrize("op,wires", probs_data)
     def test_probs(self, op, wires, device):
         """Return a single prob."""
+        if device == "lightning.qubit":
+            pytest.skip("Lightning does not support probs with unordered wires.")
         dev = qml.device(device, wires=3)
 
         def circuit(x):
