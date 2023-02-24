@@ -264,7 +264,7 @@ class ClassicalShadowMP(MeasurementTransform):
 
         Args:
             tape (QuantumTape): the quantum tape to be processed
-            device (Device): the device used to process the quantum tape
+            device (pennylane.Device): the device used to process the quantum tape
 
         Returns:
             tensor_like[int]: A tensor with shape ``(2, T, n)``, where the first row represents
@@ -303,6 +303,10 @@ class ClassicalShadowMP(MeasurementTransform):
                 outcomes[t] = device.generate_samples()[0][mapped_wires]
 
         return qml.math.cast(qml.math.stack([outcomes, recipes]), dtype=np.int8)
+
+    @property
+    def samples_computational_basis(self):
+        return False
 
     @property
     def numeric_type(self):
@@ -358,6 +362,10 @@ class ShadowExpvalMP(MeasurementTransform):
         bits, recipes = qml.classical_shadow(wires=self.wires, seed=self.seed).process(tape, device)
         shadow = qml.shadows.ClassicalShadow(bits, recipes, wire_map=self.wires.tolist())
         return shadow.expval(self.H, self.k)
+
+    @property
+    def samples_computational_basis(self):
+        return False
 
     @property
     def numeric_type(self):

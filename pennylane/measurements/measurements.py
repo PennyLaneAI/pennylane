@@ -206,7 +206,7 @@ class MeasurementProcess(ABC):
         when using QNodes.
 
         Args:
-            device (.Device): a PennyLane device to use for determining the shape
+            device (pennylane.Device): a PennyLane device to use for determining the shape
 
         Returns:
             tuple: the output shape
@@ -236,7 +236,7 @@ class MeasurementProcess(ABC):
         number of wires the measurement acts on.
 
         Args:
-            device (.Device): a PennyLane device to use for determining the shape
+            device (pennylane.Device): a PennyLane device to use for determining the shape
 
         Returns:
             tuple: the output shape
@@ -263,7 +263,7 @@ class MeasurementProcess(ABC):
 
         Args:
             num_wires (int): the number of qubits/qumodes
-            device (.Device): a PennyLane device
+            device (pennylane.Device): a PennyLane device
 
         Returns:
             int: the number of basis states
@@ -365,10 +365,8 @@ class MeasurementProcess(ABC):
 
     @property
     def samples_computational_basis(self):
-        r"""Bool: Whether or not the MeasurementProcess returns samples in the computational basis or counts of
-        computational basis states.
-        """
-        return False
+        r"""Bool: Whether or not the MeasurementProcess measures in the computational basis."""
+        return self.obs is None
 
     def expand(self):
         """Expand the measurement of an observable to a unitary
@@ -584,7 +582,7 @@ class MeasurementTransform(MeasurementProcess):
     which should have the following arguments:
 
     * tape (QuantumTape): quantum tape to transform
-    * device (Device): device used to transform the quantum tape
+    * device (pennylane.Device): device used to transform the quantum tape
     """
 
     @abstractmethod
@@ -593,5 +591,5 @@ class MeasurementTransform(MeasurementProcess):
 
         Args:
             tape (QuantumTape): quantum tape to transform
-            device (Device): device used to transform the quantum tape
+            device (pennylane.Device): device used to transform the quantum tape
         """
