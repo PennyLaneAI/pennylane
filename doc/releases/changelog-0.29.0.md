@@ -661,6 +661,10 @@
   which allows for visualizing only part of a complete circuit/QNode.
   [(#3760)](https://github.com/PennyLaneAI/pennylane/pull/3760)
 
+* The string representation of a Measurement Process now includes the `_eigvals`
+  property if it is set.
+  [(#3820)](https://github.com/PennyLaneAI/pennylane/pull/3820)
+
 <h3>Breaking changes</h3>
 
 * The argument `mode` in execution is replaced by the boolean `grad_on_execution` in the new execution pipeline.
@@ -846,8 +850,10 @@
 
 * The keyword arguments for `qml.equal` now are used when comparing the observables of a 
   Measurement Process. The eigvals of measurements are only requested if both observables are `None`,
-  saving computational effort.  The string representation of a Measurement Process now includes the `_eigvals`
-  property if it is set. Only converts input to `qml.Hermitian` to a numpy array if the input is a list.
+  saving computational effort.
+  [(#3820)](https://github.com/PennyLaneAI/pennylane/pull/3820)
+
+* Only converts input to `qml.Hermitian` to a numpy array if the input is a list.
   [(#3820)](https://github.com/PennyLaneAI/pennylane/pull/3820)
 
 <h3>Contributors</h3>
