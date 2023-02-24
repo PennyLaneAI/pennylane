@@ -92,7 +92,7 @@ def pattern_matching_optimization(tape: QuantumTape, pattern_tapes, custom_quant
     2: ──Z─────╰Z─┤
 
     Note that with this pattern we also replace a ``pennylane.S``, ``pennylane.PauliZ`` sequence by
-    ``pennylane.Adjoint(pennylane.S)``. If one would like avoiding this, it possible to give a custom
+    ``Adjoint(S)``. If one would like avoiding this, it possible to give a custom
     quantum cost dictionary with a negative cost for ``pennylane.PauliZ``.
 
     >>> my_cost = {"PauliZ": -1 , "S": 1, "Adjoint(S)": 1}
