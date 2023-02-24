@@ -31,8 +31,6 @@ from pennylane.pulse import ParametrizedHamiltonian
     [
         ("0.4.4", jax, True),
         ("0.4.3", jax, False),
-        ("0.4.4", jaxlib, True),
-        ("0.4.3", jaxlib, False),
     ],
 )
 def test_jax_version(version, package, should_raise, monkeypatch):
@@ -42,7 +40,7 @@ def test_jax_version(version, package, should_raise, monkeypatch):
         m.setattr(package, "__version__", version)
 
         if should_raise:
-            msg = "installation is 0.4.4"
+            msg = "version of JAX is 0.4.4"
 
             with pytest.raises(RuntimeError, match=msg):
                 _validate_jax_version()
