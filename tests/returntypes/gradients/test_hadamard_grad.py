@@ -143,6 +143,22 @@ class TestHadamardGrad:
 
         assert np.allclose(res_hadamard, expected, atol=tol, rtol=0)
 
+    def test_control_rotations(self, tol):
+        """Test RX, CRX and CRY."""
+        dev = qml.device("default.qubit", wires=4)
+
+        with qml.queuing.AnnotatedQueue() as q:
+            qml.RX(0.1, wires=0)
+            qml.CRY(0.2, wires=[2, 0])
+            qml.CRX(0.3, wires=[0, 1])
+            qml.expval(qml.PauliX(0))
+
+        tape = qml.tape.QuantumScript.from_queue(q)
+        tape.trainable_params = {0, 1, 2}
+
+        res_hadamard, _ = grad_fn(tape, dev)
+        assert np.allclose(res_hadamard, np.zeros(3), atol=tol, rtol=0)
+
     @pytest.mark.parametrize("theta", np.linspace(-2 * np.pi, 2 * np.pi, 7))
     @pytest.mark.parametrize("G", [qml.CRX, qml.CRY, qml.CRZ])
     def test_controlled_rotation_gradient_multi(self, G, theta, tol):
