@@ -13,8 +13,9 @@
 # limitations under the License.
 """This module contains the classes/functions needed to simulate the evolution of ensembles of
 individual (trapped) rydberg atoms under the excitation of several laser fields."""
+import warnings
 from dataclasses import dataclass, field
-from typing import List
+from typing import Callable, List, Union
 
 import numpy as np
 
@@ -176,17 +177,25 @@ class RydbergHamiltonian(ParametrizedHamiltonian):
         super().__init__(coeffs, observables)
 
     def __add__(self, other):
-        if isinstance(other, RydbergHamiltonian):
-            # Update coeffs, obs and hardware attributes
-            if self.register is not None and other.register is not None:
-                raise ValueError("We cannot add two Hamiltonians with an interaction term!")
-            new_register = self.register or other.register
-            new_pulses = self.pulses + other.pulses
-            new_ops = self.ops + other.ops
-            new_coeffs = self.coeffs + other.coeffs
-            return RydbergHamiltonian(new_coeffs, new_ops, register=new_register, pulses=new_pulses)
+        if not isinstance(other, RydbergHamiltonian):
+            return super().__add__(other)
 
-        return super().__add__(other)
+        # Update coeffs, obs and hardware attributes
+        if self.register is not None:
+            if other.register is not None:
+                raise ValueError("We cannot add two Hamiltonians with an interaction term!")
+            if not other.wires.contains_wires(self.wires):
+                warnings.warn(
+                    "The wires of the laser fields are not present in the Rydberg ensemble."
+                )
+        elif other.register is not None and not self.wires.contains_wires(other.wires):
+            warnings.warn("The wires of the laser fields are not present in the Rydberg ensemble.")
+
+        new_register = self.register or other.register
+        new_pulses = self.pulses + other.pulses
+        new_ops = self.ops + other.ops
+        new_coeffs = self.coeffs + other.coeffs
+        return RydbergHamiltonian(new_coeffs, new_ops, register=new_register, pulses=new_pulses)
 
 
 @dataclass
@@ -211,8 +220,8 @@ class RydbergPulses:
                 and self.wires == other.wires
             )
 
-    rabis: List[float] = field(default_factory=[])
-    detunings: List[float] = field(default_factory=[])
+    rabis: List[Union[float, Callable]] = field(default_factory=[])
+    detunings: List[Union[float, Callable]] = field(default_factory=[])
     phases: List[float] = field(default_factory=[])
     wires: List[List[int]] = field(default_factory=[])
     pulses: List[RydbergPulse] = field(init=False)
@@ -221,7 +230,7 @@ class RydbergPulses:
         """Create the ``pulses`` list to be able to iterate over each pulse."""
         self.pulses = [
             self.RydbergPulse(r, d, p, w)
-            for r, d, p, w in zip(self.rabis, self.detunings, self.detunings, self.wires)
+            for r, d, p, w in zip(self.rabis, self.detunings, self.phases, self.wires)
         ]
 
     def __add__(self, other):
