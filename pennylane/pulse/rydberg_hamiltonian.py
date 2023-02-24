@@ -207,8 +207,8 @@ class RydbergPulses:
     class RydbergPulse:
         """Dataclass that contains the information of a single Rydberg pulse."""
 
-        rabi: float
-        phase: float
+        rabi: Union[float, Callable]
+        phase: Union[float, Callable]
         detuning: float
         wires: List[int]
 
@@ -220,10 +220,10 @@ class RydbergPulses:
                 and self.wires == other.wires
             )
 
-    rabis: List[Union[float, Callable]] = field(default_factory=[])
-    detunings: List[Union[float, Callable]] = field(default_factory=[])
-    phases: List[float] = field(default_factory=[])
-    wires: List[List[int]] = field(default_factory=[])
+    rabis: List[Union[float, Callable]] = field(default_factory=list)
+    detunings: List[Union[float, Callable]] = field(default_factory=list)
+    phases: List[float] = field(default_factory=list)
+    wires: List[List[int]] = field(default_factory=list)
     pulses: List[RydbergPulse] = field(init=False)
 
     def __post_init__(self):

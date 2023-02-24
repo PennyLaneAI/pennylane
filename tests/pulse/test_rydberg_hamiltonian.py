@@ -16,6 +16,7 @@
 Unit tests for the RydbergHamiltonian class.
 """
 import numpy as np
+import pytest
 
 import pennylane as qml
 from pennylane.pulse import RydbergHamiltonian
@@ -62,6 +63,20 @@ class TestRydbergHamiltonian:
         )
         assert qml.math.allequal(sum_rm.register, atom_coordinates)
         assert sum_rm.pulses == RydbergPulses([1, 5], [2, 6], [3, 7], [4, 8])
+
+    def test_radd(self):
+        """Test that the __radd__ dunder method works correctly."""
+        rm1 = RydbergHamiltonian(
+            coeffs=[1],
+            observables=[qml.PauliX(0)],
+            register=atom_coordinates,
+            pulses=RydbergPulses([1], [2], [3], [4]),
+        )
+        rm2 = RydbergHamiltonian(
+            coeffs=[2],
+            observables=[qml.PauliY(1)],
+            pulses=RydbergPulses([5], [6], [7], [8]),
+        )
         sum_rm2 = rm2 + rm1
         assert isinstance(sum_rm2, RydbergHamiltonian)
         assert qml.math.allequal(sum_rm2.coeffs, [2, 1])
@@ -70,3 +85,37 @@ class TestRydbergHamiltonian:
         )
         assert qml.math.allequal(sum_rm2.register, atom_coordinates)
         assert sum_rm2.pulses == RydbergPulses([5, 1], [6, 2], [7, 3], [8, 4])
+
+    def test_add_raises_error(self):
+        """Test that an error is raised if two RydbergHamiltonians with registers are added."""
+        rm1 = RydbergHamiltonian(
+            coeffs=[1],
+            observables=[qml.PauliX(0)],
+            register=atom_coordinates,
+            pulses=RydbergPulses([1], [2], [3], [4]),
+        )
+        with pytest.raises(
+            ValueError, match="We cannot add two Hamiltonians with an interaction term"
+        ):
+            _ = rm1 + rm1
+
+    def test_add_raises_warning(self):
+        """Test that an error is raised when adding two RydbergHamiltonians where one Hamiltonian
+        contains pulses on wires that are not present in the register."""
+        Hd = RydbergHamiltonian(coeffs=[1], observables=[qml.PauliX(0)], register=atom_coordinates)
+        Ht = RydbergHamiltonian(
+            coeffs=[2],
+            observables=[qml.PauliY(1)],
+            pulses=RydbergPulses(rabis=[0], detunings=[0], phases=[0], wires=[11]),
+        )
+        with pytest.warns(
+            UserWarning,
+            match="The wires of the laser fields are not present in the Rydberg ensemble",
+        ):
+            _ = Hd + Ht
+
+        with pytest.warns(
+            UserWarning,
+            match="The wires of the laser fields are not present in the Rydberg ensemble",
+        ):
+            _ = Ht + Hd
