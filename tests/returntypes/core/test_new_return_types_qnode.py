@@ -178,7 +178,7 @@ class TestIntegrationSingleReturn:
         (None, [0]),
         (None, [0, 1]),
         (qml.PauliZ(0), None),
-        (qml.Hermitian(herm, wires=[1, 0]), None),
+        (qml.Hermitian(herm, wires=[0, 1]), None),
     ]
 
     @pytest.mark.parametrize("device", devices)
