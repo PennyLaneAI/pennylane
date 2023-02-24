@@ -12,7 +12,9 @@
   [(#3586)](https://github.com/PennyLaneAI/pennylane/pull/3586)
   [(#3617)](https://github.com/PennyLaneAI/pennylane/pull/3617)
   [(#3645)](https://github.com/PennyLaneAI/pennylane/pull/3645)
+  [(#3652)](https://github.com/PennyLaneAI/pennylane/pull/3652)
   [(#3665)](https://github.com/PennyLaneAI/pennylane/pull/3665)
+  [(#3673)](https://github.com/PennyLaneAI/pennylane/pull/3673)
   [(#3706)](https://github.com/PennyLaneAI/pennylane/pull/3706)
   [(#3730)](https://github.com/PennyLaneAI/pennylane/pull/3730)
 
