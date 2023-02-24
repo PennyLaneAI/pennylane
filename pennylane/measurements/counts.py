@@ -42,7 +42,7 @@ def counts(op=None, wires=None, all_outcomes=False):
             outcomes (default), or whether it will display all possible outcomes for the system
 
     Returns:
-        CountsMP: measurement process instance
+        CountsMP: Measurement process instance
 
     Raises:
         ValueError: Cannot set wires if an observable is provided
@@ -105,7 +105,7 @@ def counts(op=None, wires=None, all_outcomes=False):
     Executing this QNode shows only the observed outcomes:
 
     >>> circuit()
-    {'01': 4}
+    {'10': 4}
 
     Passing all_outcomes=True will create a dictionary that displays all possible outcomes:
 
