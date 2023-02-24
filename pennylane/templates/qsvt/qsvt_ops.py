@@ -14,14 +14,13 @@
 """
 Contains core operations used in the Quantum Singular Value Transform framework.
 """
-import numpy as np
+from pennylane import numpy as np
 from scipy.linalg import sqrtm, norm
 
+import pennylane as qml
 from pennylane.operation import Operation, AnyWires
-from pennylane.ops.qubit.non_parametric_ops import PauliX
-from pennylane.ops import PhaseShift, ctrl
-from pennylane import QuantumFunctionError
-
+from pennylane.wires import Wires
+    
 
 class BlockEncode(Operation):
     """General Block Encoding"""
@@ -29,7 +28,9 @@ class BlockEncode(Operation):
     num_wires = AnyWires
 
     def __init__(self, a, wires, do_queue=True, id=None):
-        if isinstance(a, int) or isinstance(a, float):
+        a = np.atleast_2d(a)
+        wires = Wires(wires)
+        if np.sum(a.shape)<=2:
             normalization = a if a > 1 else 1
             subspace = (1, 1, 2**len(wires))
         else:
@@ -39,7 +40,7 @@ class BlockEncode(Operation):
         a = a / normalization if normalization > 1 else a
 
         if subspace[2] < (subspace[0] + subspace[1]):
-            raise QuantumFunctionError(f"Block encoding an {subspace[0]} x {subspace[1]} matrix requires a hilbert soace"
+            raise qml.QuantumFunctionError(f"Block encoding an {subspace[0]} x {subspace[1]} matrix requires a hilbert soace"
                                        f" of size atleast {subspace[0] + subspace[1]} x {subspace[0] + subspace[1]}."
                                        f"Cannot be embedded in a {len(wires)} qubit system.")
 
