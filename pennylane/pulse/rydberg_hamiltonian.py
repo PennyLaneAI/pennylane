@@ -13,231 +13,222 @@
 # limitations under the License.
 """This module contains the classes/functions needed to simulate the evolution of ensembles of
 individual (trapped) rydberg atoms under the excitation of several laser fields."""
-# pylint: disable=protected-access, too-many-instance-attributes
-from copy import copy, deepcopy
-from typing import Callable, Union
+from dataclasses import dataclass, field
+from typing import List
 
 import numpy as np
 
 import pennylane as qml
-from pennylane.ops import SProd, Sum
-from pennylane.wires import Wires
+from pennylane.ops import SProd
 
 from .parametrized_hamiltonian import ParametrizedHamiltonian
 
 
-class RydbergHamiltonian:
-    r"""Class representing the interaction of an ensemble of Rydberg atoms.
+def rydberg_interaction(register: list, wires=None, interaction_coeff: float = 862690 * np.pi):
+    r"""Returns a :class:`ParametrizedHamiltonian` representing the interaction of an ensemble of
+    Rydberg atoms due to the Rydberg blockade:
+
+    .. math::
+
+        \sum_{i<j} V_{ij} n_i n_j
+
+    where :math:`n_i` corresponds to the projector on the Rydberg state of the atom :math:`i`, and
+    :math:`V_{ij}` is the van der Waals potential:
+
+    .. math::
+
+        V_{ij} = \frac{C_6}{R_{ij}^6}
+
+    where :math:`R_{ij}` is the distance between the atoms :math:`i` and :math:`j`, and :math:`C_6`
+    is the Rydberg interaction constant, which defaults to :math:`862690 \times 2\pi MHz \times \mu m^6`.
 
     Args:
-        coordinates (list): List of coordinates (in micrometers) of each atom in the ensemble.
-        wires (list): List of wires for each atom in the ensemble. If ``None``, the wire values
-            correspond to the index of the atom in the list of qubit positions. Defaults to ``None``.
-        interaction (float): Rydberg interaction constant in units: :math:`MHz \times \mu m^6`.
+        register (list): list of coordinates of the Rydberg atoms
+        wires (list): List of wires containing the wire values for all the atoms. This list should
+            have the same length as ``qubit_positions``. If ``None``, each atom's wire value will
+            correspond to its index in the ``register`` list.
+        interaction_coeff (float): Rydberg interaction constant in units: :math:`MHz \times \mu m^6`.
             Defaults to :math:`862690 \times 2\pi MHz \times \mu m^6`.
 
     Returns:
-        RydbergEnsemble: class representing an ensemble of Rydberg atoms
+        RydbergHamiltonian: Hamiltonian representing the atom interaction
     """
 
+    def rydberg_projector(wire: int) -> SProd:
+        """Returns the projector into the Rydberg state for the given wire.
+
+        Args:
+            wire (int): _description_
+
+        Returns:
+            SProd: projector into the Rydberg state
+        """
+        return (1 - qml.PauliZ(wire)) / 2
+
+    coeffs = []
+    observables = []
+    for idx, (pos1, wire1) in enumerate(zip(register[1:], wires[1:])):
+        for pos2, wire2 in zip(register[: idx + 1], wires[: idx + 1]):
+            atom_distance = np.linalg.norm(qml.math.array(pos2) - pos1)
+            Vij = interaction_coeff / (abs(atom_distance) ** 6)  # van der Waals potential
+            coeffs.append(Vij)
+            observables.append(qml.prod(rydberg_projector(wire1), rydberg_projector(wire2)))
+
+    return RydbergHamiltonian(
+        coeffs, observables, register=register, interaction_coeff=interaction_coeff
+    )
+
+
+def rydberg_transition(rabi, detuning, phase, wires):
+    r"""Returns a :class:`ParametrizedHamiltonian` representing the action of a driving laser
+    field with the given rabi frequency, detuning and phase acting on the given wires:
+
+    .. math::
+
+        \hbar \frac{1}{2} \Omega(t) \sum_i (\cos(\phi)\sigma_i^x - \sin(\phi)\sigma_i^y) -
+        \frac{1}{2} \delta(t) \sum_i \sigma_i^z
+
+    where :math:`\Omega` and :math:`\delta` correspond to the rabi and detuning of the
+    laser, :math:`i` correspond to the wire index, and :math:`\sigma^\alpha` for
+    :math:`\alpha = x,y,z` are the Pauli matrices.
+
+    Args:
+        rabi (Union[float, Callable]): list of rabi frequencies and/or callables returning
+            frequency values (in MHz) of the corresponding driving laser fields
+        detunings (Union[float, Callable]): list of detunings and/or callables returning
+            detuning values (in MHz) of the corresponding driving laser fields
+        phases (Union[float, Callable]): list of phase values (in radiants) of the
+            corresponding driving laser fields
+        wires (Union[int, List[int]]): integer or list containing wire values that the laser field
+            acts on
+
+    Returns:
+        RydbergHamiltonian: Hamiltonian representing the action of the laser field on the
+            Rydberg atoms
+    """
+    if isinstance(wires, int):
+        wires = [wires]
+
+    # We compute the `coeffs` and `observables` of the laser field
+    coeffs = [rabi, detuning]
+    rabi_observables = [
+        qml.math.cos(phase) * qml.PauliX(wire) - qml.math.sin(phase) * qml.PauliY(wire)
+        for wire in wires
+    ]
+    detuning_observables = [qml.PauliZ(wire) for wire in wires]
+    observables = rabi_observables + detuning_observables
+
+    # We convert the data into the `RydbergPulses` class
+    pulses = RydbergPulses([rabi], [detuning], [phase], [wires])
+    return RydbergHamiltonian(coeffs, observables, pulses=pulses)
+
+
+class RydbergHamiltonian(ParametrizedHamiltonian):
+    r"""Class representing the Hamiltonian of an ensemble of Rydberg atoms under the action of
+    local and global laser fields:
+
+    .. math::
+
+        H = \hbar \frac{1}{2} \sum_i  \Omega_i(t) (\cos(\phi)\sigma_i^x - \sin(\phi)\sigma_i^y) -
+        \frac{1}{2} \sum_i \delta_i(t) \sigma_i^z + \sum_{i<j} V_{ij} n_i n_j
+
+    where :math:`\Omega_i` and :math:`\delta_i` correspond to the amplitude and detuning of the
+    laser applied to atom :math:`i`, and :math:`\sigma^\alpha` for :math:`\alpha = x,y,z` are
+    the Pauli matrices.
+
+    The last term of the sum corresponds to the interaction between the atoms of the ensemble
+    due to the Rydberg blockade. For more info, check :seealso:`rydberg_interaction`.
+
+    .. note::
+
+        :math:`\hbar` is set to 1.
+
+    Args:
+        coeffs (Union[float, callable]): coefficients of the Hamiltonian expression, which may be
+            constants or parametrized functions. All functions passed as ``coeffs`` must have two
+            arguments, the first one being the trainable parameters and the second one being time.
+        observables (Iterable[Observable]): observables in the Hamiltonian expression, of same
+            length as ``coeffs``
+
+    Keyword Args:
+        register (list): list of coordinates (in micrometers) of each atom in the ensemble
+        transition (list): information about the amplitude, phase, detuning and wires of the pulses
+        interaction_coeff (float): Rydberg interaction constant in units: :math:`MHz \times \mu m^6`.
+            Defaults to :math:`862690 \times 2\pi MHz \times \mu m^6`.
+
+    Returns:
+        RydbergHamiltonian: class representing the Hamiltonian of an ensemble of Rydberg atoms
+    """
+
+    # pylint: disable=too-many-arguments
     def __init__(
-        self, coordinates: list, wires: list = None, interaction_coeff: float = 862690 * np.pi
-    ) -> None:
-        wires = Wires(wires or range(len(coordinates)))
-        if len(coordinates) != len(wires):
-            raise ValueError("Coordinates and wires must have the same length.")
-        self.coordinates = coordinates
-        self.interaction_coeff = interaction_coeff
-        self.wires = wires
-        self._rydberg_interaction = None
-        self.driving_interaction = ParametrizedHamiltonian([], [])
-        # The following 2 dictionaries are only needed to be able to run these laser drivings in hardware
-        # Dictionary containing the information about the local driving fields
-        self._local_drives = {"rabi": [], "detunings": [], "phases": [], "wires": []}
-        # List of tuples containing the information about the global driving field
-        self._global_drive = None  # (rabi frequency, detuning, phase)
-
-    @property
-    def rydberg_interaction(self) -> Sum:
-        r"""Returns the hamiltonian of the interaction of the ensemble of atoms due to the Rydberg
-        blockade:
-
-        .. math::
-
-            \sum_{i<j} V_{ij} n_i n_j
-
-        where :math:`n_i` corresponds to the projector on the Rydberg state of the atom :math:`i`, and
-        :math:`V_{ij}` is the van der Waals potential:
-
-        .. math::
-
-            V_{ij} = \frac{C_6}{R_{ij}^6}
-
-        where :math:`R_{ij}` is the distance between the atoms :math:`i` and :math:`j`, and :math:`C_6`
-        is the Rydberg interaction constant, which can be set during initialization, and defaults
-        to :math:`862690 \times 2\pi MHz \times \mu m^6`.
-
-        Args:
-            qubit_positions (list): list of coordinates of the Rydberg atoms
-            separation (float): separation between the Rydberg atoms (in meters)
-            wires (list): List of wires containing the wire values for all the atoms. This list should
-                have the same length as ``qubit_positions``.
-
-        Returns:
-            Sum: hamiltonian of the interaction
-        """
-        if self._rydberg_interaction is None:
-
-            def rydberg_projector(wire: int) -> SProd:
-                """Returns the projector into the Rydberg state for the given wire.
-
-                Args:
-                    wire (int): _description_
-
-                Returns:
-                    SProd: projector into the Rydberg state
-                """
-                return (1 - qml.PauliZ(wire)) / 2
-
-            coeffs = []
-            ops = []
-            for idx, (pos1, wire1) in enumerate(zip(self.coordinates[1:], self.wires[1:])):
-                for pos2, wire2 in zip(self.coordinates[: idx + 1], self.wires[: idx + 1]):
-                    atom_distance = np.linalg.norm(qml.math.array(pos2) - pos1)
-                    Vij = self.interaction_coeff / (
-                        abs(atom_distance) ** 6
-                    )  # van der Waals potential
-                    coeffs.append(Vij)
-                    ops.append(qml.prod(rydberg_projector(wire1), rydberg_projector(wire2)))
-
-            self._rydberg_interaction = qml.dot(coeffs, ops)
-
-        return self._rydberg_interaction
-
-    def local_drive(self, rabi: list, detunings: list, phases: list, wires: list):
-        """Apply ``N = len(rabi)``  local driving laser fields with the given rabi frequencies,
-        detunings and phases acting on the given wires.
-
-        Args:
-            rabi (list): list of Rabi frequency values and/or callables returning frequency
-                values (in MHz) of each driving laser field
-            detunings (list): list of detuning values and/or callables returning detuning
-                values (in MHz) of each driving laser field
-            phases (list): list of phase values (in radiants) of each driving laser field
-            wires (list): list of wire values that each laser field acts on
-        """
-        lengths = [len(rabi), len(detunings), len(phases), len(wires)]
-        if len(set(lengths)) > 1:
-            raise ValueError(
-                "The lists containing the driving parameters must all have the same"
-                f"length. Got lengths: {lengths}"
-            )
-        if any(wire not in self.wires for wire in wires):
-            raise ValueError(
-                "The wires list contains a wire value that is not present in the RydbergHamiltonian."
-            )
-        # Update `_driving_interaction` Hamiltonian
-        ops = [
-            qml.math.cos(p) * qml.PauliX(w) - qml.math.sin(p) * qml.PauliY(w)
-            for p, w in zip(phases, wires)
-        ]
-        H1 = qml.dot(rabi, ops)
-        H2 = qml.dot(detunings, [qml.PauliZ(w) for w in wires])
-
-        # Create new instance
-        new_cls = copy(self)
-        # Update driving interaction term
-        new_cls.driving_interaction += 1 / 2 * H1 + 1 / 2 * H2
-        # Update dictionaries of applied pulses to allow translation into hardware
-        new_cls._local_drives["rabi"].extend(rabi)
-        new_cls._local_drives["detunings"].extend(detunings)
-        new_cls._local_drives["phases"].extend(phases)
-        new_cls._local_drives["wires"].extend(wires)
-        return new_cls
-
-    def global_drive(
-        self, rabi: Union[float, Callable], detuning: Union[float, Callable], phase: float
+        self,
+        coeffs,
+        observables,
+        register: list = None,
+        pulses: "RydbergPulses" = None,
+        interaction_coeff: float = 862690 * np.pi,
     ):
-        """Apply ``N = len(rabi)``  global driving laser fields with the given rabi frequencies,
-        detunings and phases acting on all wires.
+        self.register = register
+        self.pulses = RydbergPulses() if pulses is None else pulses
+        self.interaction_coeff = interaction_coeff
+        super().__init__(coeffs, observables)
 
-        Args:
-            rabi (Union[float, Callable]): rabi frequency or callable returning frequency values
-                (in MHz) of the global driving laser field
-            detuning (Union[float, Callable]): detuning or callable returning detuning values
-                (in MHz) of the global driving laser field
-            phase (Union[float, Callable]): phase value (in radiants) of the global driving laser field
-        """
-        # Update `_driving_interaction` Hamiltonian
-        ops = qml.sum(
-            *[
-                qml.math.cos(phase) * qml.PauliX(w) - qml.math.sin(phase) * qml.PauliY(w)
-                for w in self.wires
-            ]
-        )
-        H1 = rabi * ops
-        H2 = detuning * qml.sum(*[qml.PauliZ(w) for w in self.wires])
-        # Create new instance
-        new_cls = copy(self)
-        # Update driving interaction term
-        new_cls.driving_interaction += 1 / 2 * H1 + 1 / 2 * H2
-        # Update dictionaries of applied pulses to allow translation into hardware
-        new_cls._global_drive = (rabi, detuning, phase)
-        return new_cls
+    def __add__(self, other):
+        if isinstance(other, RydbergHamiltonian):
+            # Update coeffs, obs and hardware attributes
+            if self.register is not None and other.register is not None:
+                raise ValueError("We cannot add two Hamiltonians with an interaction term!")
+            new_register = self.register or other.register
+            new_pulses = self.pulses + other.pulses
+            new_ops = self.ops + other.ops
+            new_coeffs = self.coeffs + other.coeffs
+            return RydbergHamiltonian(new_coeffs, new_ops, register=new_register, pulses=new_pulses)
 
-    @property
-    def hamiltonian(self) -> ParametrizedHamiltonian:
-        r"""Returns a :class:`ParametrizedHamiltonian` describing the Hamiltonian of the array
-        of Rydberg atoms:
+        return super().__add__(other)
 
-        .. math::
 
-            H = \hbar \frac{1}{2} \sum_i  \Omega_i(t) (\cos(\phi)\sigma_i^x - \sin(\phi)\sigma_i^y) -
-            \frac{1}{2} \sum_i \delta_i(t) \sigma_i^z + \sum_{i<j} V_{ij} n_i n_j
+@dataclass
+class RydbergPulses:
+    """Convenience class that contains the information of a list of Rydberg pulses. This class
+    can be iterated over."""
 
-        where :math:`\Omega_i` and :math:`\delta_i` correspond to the amplitude and detuning of the
-        laser applied to atom :math:`i`, and :math:`\sigma^\alpha` for :math:`\alpha = x,y,z` are
-        the Pauli matrices.
+    @dataclass
+    class RydbergPulse:
+        """Dataclass that contains the information of a single Rydberg pulse."""
 
-        The last term of the sum corresponds to the interaction between the atoms of the ensemble
-        due to the Rydberg blockade. For more info, check :seealso:`rydberg_interaction`.
+        rabi: float
+        phase: float
+        detuning: float
+        wires: List[int]
 
-        .. note::
+    rabis: List[float] = field(default_factory=[])
+    detunings: List[float] = field(default_factory=[])
+    phases: List[float] = field(default_factory=[])
+    wires: List[List[int]] = field(default_factory=[])
+    pulses: List[RydbergPulse] = field(init=False)
 
-            :math:`\hbar` is set to 1.
+    def __post_init__(self):
+        """Create the ``pulses`` list to be able to iterate over each pulse."""
+        self.pulses = [
+            self.RydbergPulse(r, d, p, w)
+            for r, d, p, w in zip(self.rabis, self.detunings, self.detunings, self.wires)
+        ]
 
-        Returns:
-            ParametrizedHamiltonian: hamiltonian describing the evolution of the array of Rydberg atoms
-        """
-        return self.rydberg_interaction + self.driving_interaction
+    def __add__(self, other):
+        if isinstance(other, RydbergPulses):
+            new_rabis = self.rabis + other.rabis
+            new_detunings = self.detunings + other.detunings
+            new_phases = self.phases + other.phases
+            new_wires = self.wires + other.wires
+            return RydbergPulses(new_rabis, new_detunings, new_phases, new_wires)
+        return NotImplemented
 
-    @property
-    def ops(self):
-        """Return the operators of the Hamiltonian.
+    def __iter__(self):
+        return iter(self.pulses)
 
-        Returns:
-            Iterable[Observable]: observables in the Hamiltonian expression
-        """
-        return self.hamiltonian.ops
+    def __getitem__(self, key):
+        return self.pulses[key]
 
-    @property
-    def coeffs(self):
-        """Return the coefficients of the Hamiltonian.
-
-        Returns:
-            Iterable[float]: coefficients in the Hamiltonian expression
-        """
-        return self.hamiltonian.coeffs
-
-    def __call__(self, params, t):
-        return self.hamiltonian(params, t)
-
-    def __copy__(self):
-        new_cls = RydbergHamiltonian(
-            coordinates=self.coordinates, wires=self.wires, interaction_coeff=self.interaction_coeff
-        )
-        new_cls._rydberg_interaction = deepcopy(self._rydberg_interaction)
-        new_cls.driving_interaction = deepcopy(self.driving_interaction)
-        new_cls._global_drive = deepcopy(self._global_drive)
-        new_cls._local_drives = deepcopy(self._local_drives)
-        return new_cls
+    def __len__(self):
+        return len(self.pulses)
