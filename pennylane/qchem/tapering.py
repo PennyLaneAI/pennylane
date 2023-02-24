@@ -132,7 +132,7 @@ def symmetry_generators(h):
         h (Hamiltonian): Hamiltonian for which symmetries are to be generated to perform tapering
 
     Returns:
-        list[Hamiltonian]: list of generators of symmetries, taus, for the Hamiltonian
+        list[Hamiltonian]: list of generators of symmetries, :math:`tau`s, for the Hamiltonian
 
     **Example**
 

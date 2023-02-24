@@ -33,7 +33,7 @@ def var(op: Operator):
         op (Observable): a quantum observable object
 
     Returns:
-        VarianceMP: measurement process instance
+        VarianceMP: Measurement process instance
 
     **Example:**
 
