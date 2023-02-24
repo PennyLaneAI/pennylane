@@ -38,7 +38,6 @@ def test_jax_version(version, package, should_raise, monkeypatch):
 
     with monkeypatch.context() as m:
         m.setattr(package, "__version__", version)
-        print(jax.__version__)
 
         if should_raise:
             msg = "version of JAX is 0.4.4"
