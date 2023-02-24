@@ -43,7 +43,7 @@ def shadow_expval(H, k=1, seed=None, seed_recipes=True):
             Different seeds are still generated for different constructed tapes.
 
     Returns:
-        ShadowExpvalMP: measurement process instance
+        ShadowExpvalMP: Measurement process instance
 
     .. note::
 
@@ -74,7 +74,7 @@ def shadow_expval(H, k=1, seed=None, seed_recipes=True):
     >>> qml.grad(qnode)(x, H)
     -0.44999999999999984
 
-    In `shadow_expval`, we can pass a list of observables. Note that each qnode execution internally performs one quantum measurement, so be sure
+    In ``shadow_expval``, we can pass a list of observables. Note that each qnode execution internally performs one quantum measurement, so be sure
     to include all observables that you want to estimate from a single measurement in the same execution.
 
     >>> Hs = [H, qml.PauliX(0), qml.PauliY(0), qml.PauliZ(0)]
@@ -305,6 +305,10 @@ class ClassicalShadowMP(MeasurementTransform):
         return qml.math.cast(qml.math.stack([outcomes, recipes]), dtype=np.int8)
 
     @property
+    def samples_computational_basis(self):
+        return False
+
+    @property
     def numeric_type(self):
         return int
 
@@ -358,6 +362,10 @@ class ShadowExpvalMP(MeasurementTransform):
         bits, recipes = qml.classical_shadow(wires=self.wires, seed=self.seed).process(tape, device)
         shadow = qml.shadows.ClassicalShadow(bits, recipes, wire_map=self.wires.tolist())
         return shadow.expval(self.H, self.k)
+
+    @property
+    def samples_computational_basis(self):
+        return False
 
     @property
     def numeric_type(self):
