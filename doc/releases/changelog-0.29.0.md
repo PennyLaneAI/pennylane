@@ -841,6 +841,11 @@
 * Ensure that a `QNode` does not return an empty iterable.
   [(#3769)](https://github.com/PennyLaneAI/pennylane/pull/3769)
 
+* The keyword arguments for `qml.equal` now are used when comparing the observables of a 
+  Measurement Process. The eigvals of measurements are only requested if both observables are `None`,
+  saving computational effort.  The string representation of a Measurement Process now includes the `_eigvals`
+  property if it is set.
+
 <h3>Contributors</h3>
 
 This release contains contributions from (in alphabetical order):
