@@ -19,7 +19,7 @@ from functools import singledispatch
 
 from pennylane.operation import Operator
 from pennylane.ops import Evolution
-from pennylane.pulse import ParametrizedEvolution, ParametrizedHamiltonian, RydbergHamiltonian
+from pennylane.pulse import ParametrizedEvolution, ParametrizedHamiltonian
 
 
 @singledispatch
@@ -166,9 +166,8 @@ def evolve(*args, **kwargs):  # pylint: disable=unused-argument
 
 
 # pylint: disable=missing-docstring
-@evolve.register(ParametrizedHamiltonian)
-@evolve.register(RydbergHamiltonian)
-def parametrized_evolution(op):
+@evolve.register
+def parametrized_evolution(op: ParametrizedHamiltonian):
     return ParametrizedEvolution(H=op)
 
 
