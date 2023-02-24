@@ -905,7 +905,7 @@
 * `qml.math.ndim` has been redirected to `jnp.ndim` when using it on a `jax` tensor.
   [(#3730)](https://github.com/PennyLaneAI/pennylane/pull/3730)
 
-* Implementations of `qml.marginal_prob` (and subsequently, `qml.probs`) now return
+* Implementations of `marginal_prob` (and subsequently, `qml.probs`) now return
   probabilities with the expected wire order.
   [(#3753)](https://github.com/PennyLaneAI/pennylane/pull/3753)
 
