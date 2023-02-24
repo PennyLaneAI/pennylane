@@ -710,3 +710,11 @@ def test_chemist_transform(
         one_body_tensor=one_body_correction, spatial_basis=spatial_basis
     )
     assert np.allclose(chemist_one_body, one_body_correction)
+
+    chemist_one_body, chemist_two_body = qml.qchem.factorization._chemist_transform(
+        one_body_tensor=one_body_correction,
+        two_body_tensor=two_body_tensor,
+        spatial_basis=spatial_basis,
+    )
+
+    assert np.allclose(one_body_corr, one_body_correction)
