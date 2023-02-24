@@ -15,8 +15,8 @@ Pending deprecations
   instead. Using a list of observables in ``QubitDevice.statistics`` is deprecated. Please use a
   ``QuantumTape`` instead.
 
-  - Still accessible in v0.28
-  - Will be removed in v0.29
+  - Still accessible in v0.28, v0.29
+  - Will be removed in v0.30
 
 * The ``seed_recipes`` argument in ``qml.classical_shadow`` and ``qml.shadow_expval`` is deprecated.
   A new argument ``seed`` has been added, which defaults to ``None`` and can contain an integer with the 
