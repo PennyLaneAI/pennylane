@@ -179,6 +179,8 @@ class DefaultQubitJax(DefaultQubit):
     _ndim = staticmethod(jnp.ndim)
 
     def __init__(self, wires, *, shots=None, prng_key=None, analytic=None):
+        _validate_jax_version()
+
         if jax_config.read("jax_enable_x64"):
             c_dtype = jnp.complex128
             r_dtype = jnp.float64

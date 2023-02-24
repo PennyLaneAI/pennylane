@@ -45,6 +45,17 @@ def test_jax_version(version, package, should_raise, monkeypatch):
             with pytest.raises(RuntimeError, match=msg):
                 _validate_jax_version()
 
+            dev = qml.device("default.qubit", wires=1)
+
+            with pytest.raises(RuntimeError, match=msg):
+
+                @qml.qnode(dev, interface="jax", diff_method="backprop")
+                def circuit():
+                    return None
+
+            with pytest.raises(RuntimeError, match=msg):
+                dev = qml.device("default.qubit.jax", wires=1)
+
         else:
             _validate_jax_version()
 
