@@ -272,6 +272,9 @@ class TestProperties:
         expected = "probs(PauliZ(wires=['a']))"
         assert str(m) == expected
 
+        m = ProbabilityMP(eigvals=(1, 0), wires=qml.wires.Wires(0))
+        assert repr(m) == "probs(eigvals=[1 0], wires=[0])"
+
 
 class TestExpansion:
     """Test for measurement expansion"""
