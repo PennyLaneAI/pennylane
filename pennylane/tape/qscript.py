@@ -1083,9 +1083,6 @@ class QuantumScript:
         new_script._update()
         return new_script
 
-    # NOT MOVING OVER INV
-    # As it will be deprecated soon.
-
     def adjoint(self):
         """Create a quantum script that is the adjoint of this one.
 
