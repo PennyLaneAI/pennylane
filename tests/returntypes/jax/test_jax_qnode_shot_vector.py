@@ -603,7 +603,7 @@ class TestReturnWithShotVectors:
             qml.RX(x, wires=[0])
             qml.RY(y, wires=[1])
             qml.CNOT(wires=[0, 1])
-            return qml.expval(qml.PauliZ(0) @ qml.PauliX(1)), qml.probs(wires=[0, 1])
+            return qml.expval(qml.PauliZ(0) @ qml.PauliX(1)), qml.probs(wires=[0])
 
         hess = jax.hessian(circuit, argnums=[0, 1])(par_0, par_1)
 
@@ -635,15 +635,15 @@ class TestReturnWithShotVectors:
             assert isinstance(h[1][0], tuple)
             assert len(h[1][0]) == 2
             assert isinstance(h[1][0][0], jax.numpy.ndarray)
-            assert h[1][0][0].shape == (4,)
+            assert h[1][0][0].shape == (2,)
             assert isinstance(h[1][0][1], jax.numpy.ndarray)
-            assert h[1][0][1].shape == (4,)
+            assert h[1][0][1].shape == (2,)
             assert isinstance(h[1][1], tuple)
             assert len(h[1][1]) == 2
             assert isinstance(h[1][1][0], jax.numpy.ndarray)
-            assert h[1][1][0].shape == (4,)
+            assert h[1][1][0].shape == (2,)
             assert isinstance(h[1][1][1], jax.numpy.ndarray)
-            assert h[1][1][1].shape == (4,)
+            assert h[1][1][1].shape == (2,)
 
     def test_hessian_expval_probs_multiple_param_array(
         self, dev_name, diff_method, gradient_kwargs, shots, interface
@@ -661,7 +661,7 @@ class TestReturnWithShotVectors:
             qml.RX(x[0], wires=[0])
             qml.RY(x[1], wires=[1])
             qml.CNOT(wires=[0, 1])
-            return qml.expval(qml.PauliZ(0) @ qml.PauliX(1)), qml.probs(wires=[0, 1])
+            return qml.expval(qml.PauliZ(0) @ qml.PauliX(1)), qml.probs(wires=[0])
 
         hess = jax.hessian(circuit)(params)
 
@@ -677,7 +677,7 @@ class TestReturnWithShotVectors:
             assert h[0].shape == (2, 2)
 
             assert isinstance(h[1], jax.numpy.ndarray)
-            assert h[1].shape == (4, 2, 2)
+            assert h[1].shape == (2, 2, 2)
 
     def test_hessian_probs_var_multiple_params(
         self, dev_name, diff_method, gradient_kwargs, shots, interface
@@ -693,7 +693,7 @@ class TestReturnWithShotVectors:
             qml.RX(x, wires=[0])
             qml.RY(y, wires=[1])
             qml.CNOT(wires=[0, 1])
-            return qml.var(qml.PauliZ(0) @ qml.PauliX(1)), qml.probs(wires=[0, 1])
+            return qml.var(qml.PauliZ(0) @ qml.PauliX(1)), qml.probs(wires=[0])
 
         hess = jax.hessian(circuit, argnums=[0, 1])(par_0, par_1)
 
@@ -725,15 +725,15 @@ class TestReturnWithShotVectors:
             assert isinstance(h[1][0], tuple)
             assert len(h[1][0]) == 2
             assert isinstance(h[1][0][0], jax.numpy.ndarray)
-            assert h[1][0][0].shape == (4,)
+            assert h[1][0][0].shape == (2,)
             assert isinstance(h[1][0][1], jax.numpy.ndarray)
-            assert h[1][0][1].shape == (4,)
+            assert h[1][0][1].shape == (2,)
             assert isinstance(h[1][1], tuple)
             assert len(h[1][1]) == 2
             assert isinstance(h[1][1][0], jax.numpy.ndarray)
-            assert h[1][1][0].shape == (4,)
+            assert h[1][1][0].shape == (2,)
             assert isinstance(h[1][1][1], jax.numpy.ndarray)
-            assert h[1][1][1].shape == (4,)
+            assert h[1][1][1].shape == (2,)
 
     def test_hessian_var_probs_multiple_param_array(
         self, dev_name, diff_method, gradient_kwargs, shots, interface
@@ -748,7 +748,7 @@ class TestReturnWithShotVectors:
             qml.RX(x[0], wires=[0])
             qml.RY(x[1], wires=[1])
             qml.CNOT(wires=[0, 1])
-            return qml.var(qml.PauliZ(0) @ qml.PauliX(1)), qml.probs(wires=[0, 1])
+            return qml.var(qml.PauliZ(0) @ qml.PauliX(1)), qml.probs(wires=[0])
 
         hess = jax.hessian(circuit)(params)
 
@@ -764,7 +764,7 @@ class TestReturnWithShotVectors:
             assert h[0].shape == (2, 2)
 
             assert isinstance(h[1], jax.numpy.ndarray)
-            assert h[1].shape == (4, 2, 2)
+            assert h[1].shape == (2, 2, 2)
 
 
 shots = [(1, 20, 100), (1, (20, 1), 100), (1, (5, 4), 100)]

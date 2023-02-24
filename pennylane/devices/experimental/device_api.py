@@ -241,24 +241,24 @@ class Device(abc.ABC):
             stored shot information. In the future, this method will accept an ``ExecutionConfig`` instead.
 
             >>> tape = qml.tape.QuantumTape(measurements=qml.expval(qml.PauliZ(0))])
-            >>> qs.shape(dev)
+            >>> tape.shape(dev)
             ()
-            >>> dev.execute(qs)
+            >>> dev.execute(tape)
             array(1.0)
 
             If execute recieves a batch of scripts, then it should return a tuple of results:
 
-            >>> dev.execute([qs, qs])
+            >>> dev.execute([tape, tape])
             (array(1.0), array(1.0))
-            >>> dev.execute([qs])
+            >>> dev.execute([tape])
             (array(1.0),)
 
             If the script has multiple measurments, then the device should return a tuple of measurements.
 
-            >>> qs = qml.tape.QuantumTape(measurements=[qml.expval(qml.PauliZ(0)), qml.probs(wires=(0,1))])
-            >>> qs.shape(dev)
+            >>> tape = qml.tape.QuantumTape(measurements=[qml.expval(qml.PauliZ(0)), qml.probs(wires=(0,1))])
+            >>> tape.shape(dev)
             ((), (4,))
-            >>> dev.execute(qs)
+            >>> dev.execute(tape)
             (array(1.0), array([1., 0., 0., 0.]))
 
         """

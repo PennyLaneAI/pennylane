@@ -1049,6 +1049,22 @@ class TestApply:
 
         assert np.allclose(dev.state, target_rho, atol=tol, rtol=0)
 
+    @pytest.mark.parametrize("num_wires", [1, 2, 3])
+    def test_apply_specialunitary(self, tol, num_wires):
+        """Tests that a special unitary is correctly applied"""
+        np.random.seed(2514)
+        theta = np.random.random(4**num_wires - 1)
+
+        dev = qml.device("default.mixed", wires=num_wires)
+        dev.apply([qml.SpecialUnitary(theta, wires=list(range(num_wires)))])
+
+        mat = qml.SpecialUnitary.compute_matrix(theta, num_wires)
+        init_rho = np.zeros((2**num_wires, 2**num_wires))
+        init_rho[0, 0] = 1
+        target_rho = mat @ init_rho @ mat.conj().T
+
+        assert np.allclose(dev.state, target_rho, atol=tol, rtol=0)
+
     def test_apply_pauli_error(self, tol):
         """Tests that PauliError gate is correctly applied"""
         nr_wires = 3
