@@ -845,6 +845,7 @@
   Measurement Process. The eigvals of measurements are only requested if both observables are `None`,
   saving computational effort.  The string representation of a Measurement Process now includes the `_eigvals`
   property if it is set. Only converts input to `qml.Hermitian` to a numpy array if the input is a list.
+  [(#3820)](https://github.com/PennyLaneAI/pennylane/pull/3820)
 
 <h3>Contributors</h3>
 
