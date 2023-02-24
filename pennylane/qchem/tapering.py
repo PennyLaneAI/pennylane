@@ -132,7 +132,7 @@ def symmetry_generators(h):
         h (Hamiltonian): Hamiltonian for which symmetries are to be generated to perform tapering
 
     Returns:
-        list[Hamiltonian]: list of generators of symmetries, :math:`tau`s, for the Hamiltonian
+        list[Hamiltonian]: list of generators of symmetries, :math:`\tau`'s, for the Hamiltonian
 
     **Example**
 
@@ -182,7 +182,7 @@ def paulix_ops(generators, num_qubits):
     These are required to obtain the Clifford operators :math:`U` for the Hamiltonian :math:`H`.
 
     Args:
-        generators (list[Hamiltonian]): list of generators of symmetries, :math:`tau`s, for the Hamiltonian
+        generators (list[Hamiltonian]): list of generators of symmetries, :math:`\tau`'s, for the Hamiltonian
         num_qubits (int): number of wires required to define the Hamiltonian
 
     Return:
