@@ -362,7 +362,7 @@ class Device(abc.ABC):
         Returns:
             Tuple: The jacobian for each trainable parameter
 
-        See also :meth:`~.supports_derivatives` and :meth:`~.execute_and_compute_derivatives`.
+        .. seealso:: :meth:`~.supports_derivatives` and :meth:`~.execute_and_compute_derivatives`.
 
         **Execution Config:**
 
