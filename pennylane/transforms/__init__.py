@@ -149,6 +149,7 @@ more tapes as well as a classical processing function.
 
     ~transforms.broadcast_expand
     ~transforms.hamiltonian_expand
+    ~transforms.sign_expand
     ~transforms.sum_expand
 
 Decorators and utility functions
@@ -197,6 +198,7 @@ from .condition import cond, Conditional
 from .compile import compile
 from .decompositions import zyz_decomposition, xyx_decomposition, two_qubit_decomposition
 from .defer_measurements import defer_measurements
+from .sign_expand import sign_expand
 from .hamiltonian_expand import hamiltonian_expand, sum_expand
 from .split_non_commuting import split_non_commuting
 from .metric_tensor import metric_tensor
