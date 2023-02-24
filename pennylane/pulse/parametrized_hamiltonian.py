@@ -36,20 +36,19 @@ class ParametrizedHamiltonian:
         coeffs (Union[float, callable]): coefficients of the Hamiltonian expression, which may be
             constants or parametrized functions. All functions passed as ``coeffs`` must have two
             arguments, the first one being the trainable parameters and the second one being time.
-        observables (Iterable[Observable]): observables in the Hamiltonian expression, of same
+        observables (Iterable[Operator]): observables in the Hamiltonian expression, of same
             length as ``coeffs``
 
     A ``ParametrizedHamiltonian`` is a callable with the fixed signature ``H(params, t)``,
     with ``params`` being an iterable where each element corresponds to the parameters of each
-    scalar-valued function of the hamiltonian.
+    scalar-valued function of the Hamiltonian.
 
     Calling the ``ParametrizedHamiltonian`` returns an :class:`~.Operator` representing an instance of the
     Hamiltonian with the specified parameter values.
 
     .. seealso::
 
-        :func:`~.pennylane.evolve`
-        :class:`~.ParametrizedEvolution`
+        :func:`~.pennylane.evolve`, :class:`~.ParametrizedEvolution`
 
     .. note::
         The ``ParametrizedHamiltonian`` must be Hermitian at all times. This is not explicitly
@@ -91,7 +90,7 @@ class ParametrizedHamiltonian:
     parameters to obtain an :class:`~.Operator`:
 
     >>> H.H_fixed()
-    2*(PauliX(wires=[0]))
+    2.0*(PauliX(wires=[0]))
     >>> H.H_parametrized([[1.2, 2.3], 4.5], 0.5)
     (1.095316767692566*(PauliY(wires=[0]))) + (2.25*(PauliZ(wires=[0])))
 
@@ -139,10 +138,19 @@ class ParametrizedHamiltonian:
             ``coeffs = [lambda p, t: p for _ in range(3)]``.
 
             Do **not**, however, define the function as dependent on the value that is iterated over. That is, it is not
-            possible to define ``coeffs = [lambda p, t: p * t**i for i in range(3)]`` to create a list
-            ``coeffs = [(lambda p, t: p), (lambda p, t: p * t), (lambda p, t: p * t**2)]``. The value of ``i`` when
+            possible to define
+
+            ``coeffs = [lambda p, t: p * t**i for i in range(3)]``
+
+            to create a list
+
+            ``coeffs = [(lambda p, t: p), (lambda p, t: p * t), (lambda p, t: p * t**2)]``.
+
+            The value of ``i`` when
             creating the lambda functions is set to be the final value in the iteration, such that this will
-            produce three identical functions ``coeffs = [(lambda p, t: p * t**2)] * 3``.
+            produce three identical functions
+
+            ``coeffs = [(lambda p, t: p * t**2)] * 3``.
 
         We can visualize the behaviour in time of the parametrized coefficients for a given set of parameters. Here
         we look at the Hamiltonian created above:
@@ -152,11 +160,11 @@ class ParametrizedHamiltonian:
             import matplotlib.pyplot as plt
 
             times = jnp.linspace(0., 5., 1000)
-            fs = H.coeffs_parametrized
-            ops = H.ops_parametrized
+            fs = tuple(c for c in H.coeffs if callable(c))
             params = [[4.6, 2.3], 1.2]
 
-            fig, axs = plt.subplots(nrows=len(ops))
+            fig, axs = plt.subplots(nrows=len(fs))
+
             for n, f in enumerate(fs):
                 ax = axs[n]
                 ax.plot(times, f(params[n], times), label=f"p={params[n]}")
@@ -193,7 +201,7 @@ class ParametrizedHamiltonian:
 
         >>> H3 = H2 + H1
         >>> H3([4., [5., 6.], 2., 3.], t=1)
-        (5.0*(PauliY(wires=[0]))) + (-1.3970774412155151*(PauliX(wires=[1]))) + (0.9092974066734314*(PauliX(wires=[0]))) + (0.14112000167369843*(PauliY(wires=[1])))
+        (((5.0*(PauliY(wires=[0]))) + (-1.3970774909946293*(PauliX(wires=[1])))) + (0.9092974268256817*(PauliX(wires=[0])))) + (0.1411200080598672*(PauliY(wires=[1])))
 
     """
 
@@ -248,9 +256,10 @@ class ParametrizedHamiltonian:
             params(tensor_like): the parameters values used to evaluate the operators
             t(float): the time at which the operator is evaluated
 
-        Returns: an operator that is a ``Sum`` of ``~S_Prod`` operators (or a single
-        ``~SProd`` operator in the event that there is only one term in ``H_parametrized``)."""
-
+        Returns:
+            Operator: a ``Sum`` of ``SProd`` operators (or a single
+            ``SProd`` operator in the event that there is only one term in ``H_parametrized``).
+        """
         coeffs = [f(param, t) for f, param in zip(self.coeffs_parametrized, params)]
         return sum(qml.s_prod(c, o) for c, o in zip(coeffs, self.ops_parametrized)) if coeffs else 0
 
@@ -260,7 +269,7 @@ class ParametrizedHamiltonian:
         functions for the parametrized terms.
 
         Returns:
-            Iterable[float]): coefficients in the Hamiltonian expression
+            Iterable[float, Callable]): coefficients in the Hamiltonian expression
         """
         return self.coeffs_fixed + self.coeffs_parametrized
 
@@ -269,7 +278,7 @@ class ParametrizedHamiltonian:
         """Return the operators defining the ``ParametrizedHamiltonian``.
 
         Returns:
-            Iterable[Observable]): observables in the Hamiltonian expression
+            Iterable[Operator]: observables in the Hamiltonian expression
         """
         return self.ops_fixed + self.ops_parametrized
 

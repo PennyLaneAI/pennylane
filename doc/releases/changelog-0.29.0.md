@@ -362,14 +362,18 @@
 
   ```pycon
   >>> phase_mat
-  [-0.20606284+0.97853876j -0.82993403+0.55786154j  0.56230707-0.82692851j]
+  tensor([-0.20604358+0.9785369j , -0.82993272+0.55786114j,
+          0.56230612-0.82692833j], requires_grad=True)
   >>> ordered_rotations
-  [(tensor([[-0.65088844-0.63936314j, -0.40933972-0.j],
-            [-0.29202076-0.28684994j,  0.91238204-0.j]], requires_grad=True), (0, 1)),
-    (tensor([[ 0.47970417-0.33309047j, -0.8117479 -0.j],
-            [ 0.66676972-0.46298251j,  0.584008  -0.j]], requires_grad=True), (1, 2)),
-    (tensor([[ 0.36147511+0.73779414j, -0.57008381-0.j],
-            [ 0.25082094+0.5119418j ,  0.82158655-0.j]], requires_grad=True), (0, 1))]
+  [(tensor([[-0.65087861-0.63937521j, -0.40933651-0.j        ],
+            [-0.29201359-0.28685265j,  0.91238348-0.j        ]], requires_grad=True),
+    (0, 1)),
+  (tensor([[ 0.47970366-0.33308926j, -0.8117487 -0.j        ],
+            [ 0.66677093-0.46298215j,  0.5840069 -0.j        ]], requires_grad=True),
+    (1, 2)),
+  (tensor([[ 0.36147547+0.73779454j, -0.57008306-0.j        ],
+            [ 0.2508207 +0.51194108j,  0.82158706-0.j        ]], requires_grad=True),
+    (0, 1))]
   ```
 
 * A new template called `qml.BasisRotation` has been added, which performs a basis transformation defined by a set of
@@ -395,10 +399,10 @@
   ```pycon
   >>> circ_unitary = qml.matrix(circuit)()
   >>> np.round(circ_unitary/circ_unitary[0][0], 3)
-  tensor([[ 1.   +0.j   ,  0.   +0.j   ,  0.   +0.j   ,  0.   +0.j   ],
-          [ 0.   +0.j   , -0.516-0.596j, -0.302-0.536j,  0.   +0.j   ],
-          [ 0.   +0.j   ,  0.35 +0.506j, -0.311-0.724j,  0.   +0.j   ],
-          [ 0.   +0.j   ,  0.   +0.j   ,  0.   +0.j   , -0.438+0.899j]])
+  tensor([[ 1.   -0.j   , -0.   +0.j   , -0.   +0.j   , -0.   +0.j   ],
+          [-0.   +0.j   , -0.516-0.596j, -0.302-0.536j, -0.   +0.j   ],
+          [-0.   +0.j   ,  0.35 +0.506j, -0.311-0.724j, -0.   +0.j   ],
+          [-0.   +0.j   , -0.   +0.j   , -0.   +0.j   , -0.438+0.899j]], requires_grad=True)
   ```
 
 * A new function called `qml.load_basisset` has been added to extract `qml.qchem` basis set data from the Basis Set Exchange
@@ -602,6 +606,9 @@
 * A new tape transform called 'qml.sign_expand' has been added. It implements the optimal decomposition of a fast-forwardable Hamiltonian that minimizes the variance of its estimator in the Single-Qubit-Measurement from [arXiv:2207.09479](https://arxiv.org/abs/2207.09479).
   [(#2852)](https://github.com/PennyLaneAI/pennylane/pull/2852)
 
+* `Sum` and `Prod` operations now support broadcasted operands.
+  [(#3611)](https://github.com/PennyLaneAI/pennylane/pull/3611)
+
 <h4>Differentiability and interfaces</h4>
 
 * The `qml.math` module now also contains a submodule for
@@ -724,6 +731,10 @@
 * Lazy-loading in the `qml.Dataset.read()` method is more universally supported.
   [(#3605)](https://github.com/PennyLaneAI/pennylane/pull/3605)
 
+* The `qchem.Molecule` class raises an error when the molecule has an odd number of electrons or
+  when the spin multiplicity is not 1.
+  [(#3748)](https://github.com/PennyLaneAI/pennylane/pull/3748)
+
 * `qml.draw` and `qml.draw_mpl` have been updated to draw any quantum function,
   which allows for visualizing only part of a complete circuit/QNode.
   [(#3760)](https://github.com/PennyLaneAI/pennylane/pull/3760)
@@ -773,7 +784,7 @@
   Instead, they can be accesses via `op.base.wires` or `op.target_wires`.
   [(#3450)](https://github.com/PennyLaneAI/pennylane/pull/3450)
 
-* The tape constructed by a QNode is no longer queued to surrounding contexts.
+* The tape constructed by a `QNode` is no longer queued to surrounding contexts.
   [(#3509)](https://github.com/PennyLaneAI/pennylane/pull/3509)
 
 * Nested operators like `Tensor`, `Hamiltonian`, and `Adjoint` now remove their owned operators
@@ -790,7 +801,7 @@
   instead.
   [(#3701)](https://github.com/PennyLaneAI/pennylane/pull/3701)
 
-* `op.simplify()` for operators which are linear combinations of pauli words will use a builtin pauli representation 
+* `op.simplify()` for operators which are linear combinations of Pauli words will use a builtin Pauli representation
   to more efficiently compute the simplification of the operator.
   [(#3481)](https://github.com/PennyLaneAI/pennylane/pull/3481)
 
@@ -836,6 +847,10 @@
 [(#3740)](https://github.com/PennyLaneAI/pennylane/pull/3740)
 
 <h3>Bug fixes</h3>
+
+* Fixed a bug where measuring ``qml.probs`` in the computational basis with non-commuting
+  measurements returned incorrect results. Now an error is raised.
+  [(#3811)](https://github.com/PennyLaneAI/pennylane/pull/3811)
 
 * Fixed a bug in the drawer where nested controlled operations would output
   the label of the operation being controlled, rather than the control values.
