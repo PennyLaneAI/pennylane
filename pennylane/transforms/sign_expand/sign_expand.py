@@ -71,7 +71,7 @@ def evolve_under(ops, coeffs, time, controls):
     """
     ops_temp = []
     for op, coeff in zip(ops, coeffs):
-        pauli_word = qml.grouping.pauli_word_to_string(op)
+        pauli_word = qml.pauli.pauli_word_to_string(op)
         ops_temp.append(
             controlled_pauli_evolution(
                 coeff * time,
