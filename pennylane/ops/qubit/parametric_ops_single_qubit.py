@@ -23,6 +23,7 @@ import numpy as np
 import pennylane as qml
 from pennylane.operation import Operation
 from .non_parametric_ops import Hadamard, PauliX, PauliY, PauliZ
+from .parametric_ops_controlled import CRX, CRY, CRZ, ControlledPhaseShift, CRot
 
 stack_last = functools.partial(qml.math.stack, axis=-1)
 
@@ -116,7 +117,7 @@ class RX(Operation):
         return [RX(self.data[0] * z, wires=self.wires)]
 
     def _controlled(self, wire):
-        return qml.CRX(*self.parameters, wires=wire + self.wires)
+        return CRX(*self.parameters, wires=wire + self.wires)
 
     def simplify(self):
         theta = self.data[0] % (4 * np.pi)
@@ -213,7 +214,7 @@ class RY(Operation):
         return [RY(self.data[0] * z, wires=self.wires)]
 
     def _controlled(self, wire):
-        return qml.CRY(*self.parameters, wires=wire + self.wires)
+        return CRY(*self.parameters, wires=wire + self.wires)
 
     def simplify(self):
         theta = self.data[0] % (4 * np.pi)
@@ -350,7 +351,7 @@ class RZ(Operation):
         return [RZ(self.data[0] * z, wires=self.wires)]
 
     def _controlled(self, wire):
-        return qml.CRZ(*self.parameters, wires=wire + self.wires)
+        return CRZ(*self.parameters, wires=wire + self.wires)
 
     def simplify(self):
         theta = self.data[0] % (4 * np.pi)
@@ -516,7 +517,7 @@ class PhaseShift(Operation):
         return [PhaseShift(self.data[0] * z, wires=self.wires)]
 
     def _controlled(self, wire):
-        return qml.ControlledPhaseShift(*self.parameters, wires=wire + self.wires)
+        return ControlledPhaseShift(*self.parameters, wires=wire + self.wires)
 
     def simplify(self):
         phi = self.data[0] % (2 * np.pi)
@@ -672,7 +673,7 @@ class Rot(Operation):
         return Rot(-omega, -theta, -phi, wires=self.wires)
 
     def _controlled(self, wire):
-        return qml.CRot(*self.parameters, wires=wire + self.wires)
+        return CRot(*self.parameters, wires=wire + self.wires)
 
     def single_qubit_rot_angles(self):
         return self.data
@@ -691,11 +692,11 @@ class Rot(Operation):
         if _can_replace(p0, 0) and _can_replace(p1, 0) and _can_replace(p2, 0):
             return qml.Identity(wires=self.wires)
         if _can_replace(p0, np.pi / 2) and _can_replace(p2, 7 * np.pi / 2):
-            return qml.RX(p1, wires=self.wires)
+            return RX(p1, wires=self.wires)
         if _can_replace(p0, 0) and _can_replace(p2, 0):
-            return qml.RY(p1, wires=self.wires)
+            return RY(p1, wires=self.wires)
         if _can_replace(p1, 0):
-            return qml.RZ((p0 + p2) % (4 * np.pi), wires=self.wires)
+            return RZ((p0 + p2) % (4 * np.pi), wires=self.wires)
         if _can_replace(p0, np.pi) and _can_replace(p1, np.pi / 2) and _can_replace(p2, 0):
             return Hadamard(wires=self.wires)
 
@@ -954,11 +955,11 @@ class U2(Operation):
         phi, delta = [p % (2 * np.pi) for p in self.data]
 
         if _can_replace(delta, 0) and _can_replace(phi, 0):
-            return qml.RY(np.pi / 2, wires=wires)
+            return RY(np.pi / 2, wires=wires)
         if _can_replace(delta, np.pi / 2) and _can_replace(phi, 3 * np.pi / 2):
-            return qml.RX(np.pi / 2, wires=wires)
+            return RX(np.pi / 2, wires=wires)
         if _can_replace(delta, 3 * np.pi / 2) and _can_replace(phi, np.pi / 2):
-            return qml.RX(3 * np.pi / 2, wires=wires)
+            return RX(3 * np.pi / 2, wires=wires)
 
         return U2(phi, delta, wires=wires)
 
@@ -1122,14 +1123,14 @@ class U3(Operation):
         if _can_replace(p0, 0) and _can_replace(p1, 0) and _can_replace(p2, 0):
             return qml.Identity(wires=wires)
         if _can_replace(p0, 0) and not _can_replace(p1, 0) and _can_replace(p2, 0):
-            return qml.PhaseShift(p1, wires=wires)
+            return PhaseShift(p1, wires=wires)
         if (
             _can_replace(p2, np.pi / 2)
             and _can_replace(p1, 3 * np.pi / 2)
             and not _can_replace(p0, 0)
         ):
-            return qml.RX(p0, wires=wires)
+            return RX(p0, wires=wires)
         if not _can_replace(p0, 0) and _can_replace(p1, 0) and _can_replace(p2, 0):
-            return qml.RY(p0, wires=wires)
+            return RY(p0, wires=wires)
 
         return U3(p0, p1, p2, wires=wires)

@@ -24,7 +24,7 @@ from pennylane.operation import Operation
 from pennylane.wires import Wires
 
 from .non_parametric_ops import Hadamard, PauliX, PauliY, PauliZ
-from .parametric_ops_single_qubit import _can_replace, stack_last
+from .parametric_ops_single_qubit import _can_replace, stack_last, RY, RZ, PhaseShift
 
 
 class ControlledPhaseShift(Operation):
@@ -183,11 +183,11 @@ class ControlledPhaseShift(Operation):
 
         """
         decomp_ops = [
-            qml.PhaseShift(phi / 2, wires=wires[0]),
+            PhaseShift(phi / 2, wires=wires[0]),
             qml.CNOT(wires=wires),
-            qml.PhaseShift(-phi / 2, wires=wires[1]),
+            PhaseShift(-phi / 2, wires=wires[1]),
             qml.CNOT(wires=wires),
-            qml.PhaseShift(phi / 2, wires=wires[1]),
+            PhaseShift(phi / 2, wires=wires[1]),
         ]
         return decomp_ops
 
@@ -375,10 +375,10 @@ class CPhaseShift00(Operation):
         decomp_ops = [
             PauliX(wires[0]),
             PauliX(wires[1]),
-            qml.PhaseShift(phi / 2, wires=[wires[0]]),
-            qml.PhaseShift(phi / 2, wires=[wires[1]]),
+            PhaseShift(phi / 2, wires=[wires[0]]),
+            PhaseShift(phi / 2, wires=[wires[1]]),
             qml.CNOT(wires=wires),
-            qml.PhaseShift(-phi / 2, wires=[wires[1]]),
+            PhaseShift(-phi / 2, wires=[wires[1]]),
             qml.CNOT(wires=wires),
             PauliX(wires[1]),
             PauliX(wires[0]),
@@ -557,10 +557,10 @@ class CPhaseShift01(Operation):
         """
         decomp_ops = [
             PauliX(wires[0]),
-            qml.PhaseShift(phi / 2, wires=[wires[0]]),
-            qml.PhaseShift(phi / 2, wires=[wires[1]]),
+            PhaseShift(phi / 2, wires=[wires[0]]),
+            PhaseShift(phi / 2, wires=[wires[1]]),
             qml.CNOT(wires=wires),
-            qml.PhaseShift(-phi / 2, wires=[wires[1]]),
+            PhaseShift(-phi / 2, wires=[wires[1]]),
             qml.CNOT(wires=wires),
             PauliX(wires[0]),
         ]
@@ -737,10 +737,10 @@ class CPhaseShift10(Operation):
         """
         decomp_ops = [
             PauliX(wires[1]),
-            qml.PhaseShift(phi / 2, wires=[wires[0]]),
-            qml.PhaseShift(phi / 2, wires=[wires[1]]),
+            PhaseShift(phi / 2, wires=[wires[0]]),
+            PhaseShift(phi / 2, wires=[wires[1]]),
             qml.CNOT(wires=wires),
-            qml.PhaseShift(-phi / 2, wires=[wires[1]]),
+            PhaseShift(-phi / 2, wires=[wires[1]]),
             qml.CNOT(wires=wires),
             PauliX(wires[1]),
         ]
@@ -893,12 +893,12 @@ class CRX(Operation):
         """
         pi_half = qml.math.ones_like(phi) * (np.pi / 2)
         decomp_ops = [
-            qml.RZ(pi_half, wires=wires[1]),
-            qml.RY(phi / 2, wires=wires[1]),
+            RZ(pi_half, wires=wires[1]),
+            RY(phi / 2, wires=wires[1]),
             qml.CNOT(wires=wires),
-            qml.RY(-phi / 2, wires=wires[1]),
+            RY(-phi / 2, wires=wires[1]),
             qml.CNOT(wires=wires),
-            qml.RZ(-pi_half, wires=wires[1]),
+            RZ(-pi_half, wires=wires[1]),
         ]
         return decomp_ops
 
@@ -1055,9 +1055,9 @@ class CRY(Operation):
 
         """
         decomp_ops = [
-            qml.RY(phi / 2, wires=wires[1]),
+            RY(phi / 2, wires=wires[1]),
             qml.CNOT(wires=wires),
-            qml.RY(-phi / 2, wires=wires[1]),
+            RY(-phi / 2, wires=wires[1]),
             qml.CNOT(wires=wires),
         ]
         return decomp_ops
@@ -1251,9 +1251,9 @@ class CRZ(Operation):
 
         """
         decomp_ops = [
-            qml.PhaseShift(phi / 2, wires=wires[1]),
+            PhaseShift(phi / 2, wires=wires[1]),
             qml.CNOT(wires=wires),
-            qml.PhaseShift(-phi / 2, wires=wires[1]),
+            PhaseShift(-phi / 2, wires=wires[1]),
             qml.CNOT(wires=wires),
         ]
         return decomp_ops
@@ -1432,13 +1432,13 @@ class CRot(Operation):
 
         """
         decomp_ops = [
-            qml.RZ((phi - omega) / 2, wires=wires[1]),
+            RZ((phi - omega) / 2, wires=wires[1]),
             qml.CNOT(wires=wires),
-            qml.RZ(-(phi + omega) / 2, wires=wires[1]),
-            qml.RY(-theta / 2, wires=wires[1]),
+            RZ(-(phi + omega) / 2, wires=wires[1]),
+            RY(-theta / 2, wires=wires[1]),
             qml.CNOT(wires=wires),
-            qml.RY(theta / 2, wires=wires[1]),
-            qml.RZ(omega, wires=wires[1]),
+            RY(theta / 2, wires=wires[1]),
+            RZ(omega, wires=wires[1]),
         ]
         return decomp_ops
 
