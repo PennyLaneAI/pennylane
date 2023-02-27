@@ -997,6 +997,23 @@ class TestOperatorIntegration:
         assert isinstance(prod_op, SProd)
         assert prod_op.scalar is scalar
 
+    def test_divide_with_scalar(self):
+        """Test the __truediv__ dunder method with a scalar value."""
+        sprod_op = qml.RX(1, 0) / 4
+        final_op = qml.s_prod(scalar=1 / 4, operator=qml.RX(1, 0))
+        assert isinstance(sprod_op, qml.ops.SProd)
+        assert sprod_op.name == final_op.name
+        assert sprod_op.wires == final_op.wires
+        assert sprod_op.data == final_op.data
+        assert np.allclose(sprod_op.matrix(), final_op.matrix(), rtol=0)
+
+    def test_divide_with_scalar_tensor(self):
+        """Test the __truediv__ dunder method with a scalar tensor."""
+        scalar = pnp.array(5)
+        prod_op = qml.RX(1.23, 0) / scalar
+        assert isinstance(prod_op, SProd)
+        assert prod_op.scalar == 1 / scalar
+
     def test_dunder_method_with_new_class(self):
         """Test that when calling any Operator dunder method with a non-supported class that
         has its right dunder method defined, the class' right dunder method is called."""
