@@ -844,6 +844,9 @@
   
 <h3>Documentation</h3>
 
+* Make warning about vanilla version of NumPy for differentiation more prominent.
+  [(#3838)](https://github.com/PennyLaneAI/pennylane/pull/3838)
+
 * The documentation for `qml.operation` has been improved.
   [(#3664)](https://github.com/PennyLaneAI/pennylane/pull/3664)
 
