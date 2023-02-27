@@ -18,7 +18,7 @@
   [(#3706)](https://github.com/PennyLaneAI/pennylane/pull/3706)
   [(#3730)](https://github.com/PennyLaneAI/pennylane/pull/3730)
 
-  A time-dependent Hamiltonian can be created using `qml.ParametrizedHamiltonian`, which 
+  A time-dependent Hamiltonian can be created using `qml.pulse.ParametrizedHamiltonian`, which 
   holds information representing a linear combination of operators
   with parametrized coefficents and can be constructed as follows:
 
@@ -409,11 +409,11 @@
           [-0.   +0.j   , -0.   +0.j   , -0.   +0.j   , -0.438+0.899j]], requires_grad=True)
   ```
 
-* A new function called `qml.load_basisset` has been added to extract `qml.qchem` basis set data from the Basis Set Exchange
+* A new function called `qml.qchem.load_basisset` has been added to extract `qml.qchem` basis set data from the Basis Set Exchange
   library.
   [(#3363)](https://github.com/PennyLaneAI/pennylane/pull/3363)
 
-* A new function called `qml.max_entropy` has been added to compute the maximum entropy of a quantum state.
+* A new function called `qml.math.max_entropy` has been added to compute the maximum entropy of a quantum state.
   [(#3594)](https://github.com/PennyLaneAI/pennylane/pull/3594)
 
 * A new template called `qml.TwoLocalSwapNetwork` has been added that implements a canonical 2-complete linear (2-CCL) swap network
@@ -447,7 +447,7 @@
 
 <h4>Pulse programming</h4>
 
-* A new function called `qml.pwc` has been added as a convenience function for defining a `qml.ParametrizedHamiltonian`.
+* A new function called `qml.pulse.pwc` has been added as a convenience function for defining a `qml.pulse.ParametrizedHamiltonian`.
   This function can be used to create a callable coefficient by setting
   the timespan over which the function should be non-zero. The resulting callable
   can be passed an array of parameters and a time.
@@ -470,8 +470,8 @@
   DeviceArray(0., dtype=float32)
   ```
 
-* A new function called`qml.pwc_from_function` has been added as a decorator for defining a
-  `qml.ParametrizedHamiltonian`.
+* A new function called`qml.pulse.pwc_from_function` has been added as a decorator for defining a
+  `qml.pulse.ParametrizedHamiltonian`.
   This function can be used to decorate a function and create a piecewise constant
   approximation of it.
   [(#3645)](https://github.com/PennyLaneAI/pennylane/pull/3645)
@@ -543,7 +543,7 @@
 * The `qml.utils.sparse_hamiltonian` function has been moved to thee `~.Hamiltonian.sparse_matrix` method.
   [(#3585)](https://github.com/PennyLaneAI/pennylane/pull/3585)
 
-* The `qml.PauliSentence.operation()` method has been improved to avoid instantiating an `SProd` operator when
+* The `qml.pauli.PauliSentence.operation()` method has been improved to avoid instantiating an `SProd` operator when
   the coefficient is equal to 1.
   [(#3595)](https://github.com/PennyLaneAI/pennylane/pull/3595)
 
@@ -608,7 +608,7 @@
 * The `Sum._sort` method now takes into account the name of the operator when sorting.
   [(#3691)](https://github.com/PennyLaneAI/pennylane/pull/3691)
 
-* A new tape transform called 'qml.sign_expand' has been added. It implements the optimal decomposition of a fast-forwardable Hamiltonian that minimizes the variance of its estimator in the Single-Qubit-Measurement from [arXiv:2207.09479](https://arxiv.org/abs/2207.09479).
+* A new tape transform called `qml.transforms.sign_expand` has been added. It implements the optimal decomposition of a fast-forwardable Hamiltonian that minimizes the variance of its estimator in the Single-Qubit-Measurement from [arXiv:2207.09479](https://arxiv.org/abs/2207.09479).
   [(#2852)](https://github.com/PennyLaneAI/pennylane/pull/2852)
 
 * `Sum` and `Prod` operations now support broadcasted operands.
@@ -663,7 +663,7 @@
 * `qml.QuantumMonteCarlo` template is now JAX-JIT compatible when passing `jax.numpy` arrays to the template.
   [(#3734)](https://github.com/PennyLaneAI/pennylane/pull/3734)
 
-* `DefaultQubitJax` now supports evolving the state vector when executing `qml.ParametrizedEvolution`
+* `DefaultQubitJax` now supports evolving the state vector when executing `qml.pulse.ParametrizedEvolution`
   gates.
   [(#3743)](https://github.com/PennyLaneAI/pennylane/pull/3743)
 
@@ -733,7 +733,7 @@
 * Writing Hamiltonians to a file using the `qml.data` module has been improved by employing a condensed writing format.
   [(#3592)](https://github.com/PennyLaneAI/pennylane/pull/3592)
 
-* Lazy-loading in the `qml.Dataset.read()` method is more universally supported.
+* Lazy-loading in the `qml.data.Dataset.read()` method is more universally supported.
   [(#3605)](https://github.com/PennyLaneAI/pennylane/pull/3605)
 
 <h4>Other</h4>
@@ -830,7 +830,7 @@
 <h3>Deprecations</h3>
 
 * `qml.utils.sparse_hamiltonian` function has been deprecated, and usage will now raise a warning.
-  Instead, one should use the `~.Hamiltonian.sparse_matrix` method.
+  Instead, one should use the `qml.Hamiltonian.sparse_matrix` method.
   [(#3585)](https://github.com/PennyLaneAI/pennylane/pull/3585)
 
 * The `collections` module has been deprecated.
@@ -855,7 +855,7 @@
 * A hyperlink has been added in the text for a URL in the `qml.qchem.mol_data` docstring.
   [(#3644)](https://github.com/PennyLaneAI/pennylane/pull/3644)
 
-* A typo was corrected in the documentation for `qml.math.vn_entropy()`.
+* A typo was corrected in the documentation for `qml.math.vn_entropy`.
 [(#3740)](https://github.com/PennyLaneAI/pennylane/pull/3740)
 
 <h3>Bug fixes</h3>
@@ -891,7 +891,7 @@
 * A typo has been fixed in the calculation and error messages in `operation.py`
   [(#3536)](https://github.com/PennyLaneAI/pennylane/pull/3536)
 
-* `qml.Dataset.write()` now ensures that any lazy-loaded values are loaded before they are written to a file.
+* `qml.data.Dataset.write()` now ensures that any lazy-loaded values are loaded before they are written to a file.
   [(#3605)](https://github.com/PennyLaneAI/pennylane/pull/3605)
 
 * `Tensor._batch_size` is now set to `None` during initialization, copying and `map_wires`.
