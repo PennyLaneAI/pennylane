@@ -36,7 +36,7 @@ def vn_entropy(wires, log_base=None):
         log_base (float): Base for the logarithm.
 
     Returns:
-        VnEntropyMP: measurement process instance
+        VnEntropyMP: Measurement process instance
 
     **Example:**
 
