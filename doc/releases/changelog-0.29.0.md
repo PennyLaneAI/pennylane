@@ -764,7 +764,7 @@
   The interface is determined during the QNode call instead of the
   initialization. It means that the `gradient_fn` and `gradient_kwargs` are only defined on the QNode at the beginning
   of the call. Moreover, without specifying the interface it is not possible to guarantee that the device will not be changed
-  during the call if you are using backprop (such as `default.qubit` changing to `default.qubit,jax`) whereas before it was happening at
+  during the call if you are using backprop (such as `default.qubit` changing to `default.qubit.jax`) whereas before it was happening at
   initialization.
 
 * The tape method `get_operation` can also now return the operation index in the tape, and it can be
