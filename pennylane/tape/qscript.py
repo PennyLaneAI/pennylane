@@ -17,9 +17,9 @@ executed by a device.
 """
 # pylint: disable=too-many-instance-attributes, protected-access, too-many-public-methods
 
-import warnings
 import contextlib
 import copy
+import warnings
 from collections import Counter, defaultdict
 from typing import List, Union
 

@@ -28,12 +28,12 @@ def constant(scalar, time):
     """Returns the given ``scalar``, for use in defining a :class:`~.ParametrizedHamiltonian` with a
     trainable coefficient.
 
-    Creates a callable for defining a :class:`~.ParametrizedHamiltonian`.
-
     Args:
         scalar (float): the scalar to be returned
         time (float): Time. This argument is not used, but is required to match the call
             signature of :class:`~.ParametrizedHamiltonian`.
+    Returns:
+        float: The input ``scalar``.
 
     This function is mainly used to build a :class:`~.ParametrizedHamiltonian` that can be differentiated
     with respect to its time-independent term. It is an alias for ``lambda scalar, t: scalar``.
@@ -48,10 +48,10 @@ def constant(scalar, time):
 
     >>> params = [5]
     >>> H(params, t=8)
-    5.0*(PauliX(wires=[0]))
+    5*(PauliX(wires=[0]))
 
     >>> H(params, t=5)
-    5.0*(PauliX(wires=[0]))
+    5*(PauliX(wires=[0]))
 
     We can differentiate the parametrized Hamiltonian with respect to the constant parameter:
 
@@ -74,7 +74,7 @@ def constant(scalar, time):
     return scalar
 
 
-def rect(x: Union[float, Callable], windows: List[Tuple[float]] = None):
+def rect(x: Union[float, Callable], windows: Union[Tuple[float], List[Tuple[float]]] = None):
     """Takes a scalar or a scalar-valued function, x, and applies a rectangular window to it, such that the
     returned function is x inside the window and 0 outside it.
 
@@ -83,11 +83,11 @@ def rect(x: Union[float, Callable], windows: List[Tuple[float]] = None):
     Args:
         x (Union[float, Callable]): either a scalar, or a function that accepts two arguments: the trainable
             parameters and time
-        windows (Tuple[float, Tuple[float]]): List of tuples containing time windows where ``x`` is
+        windows (Union[Tuple[float], List[Tuple[float]]]): List of tuples containing time windows where ``x`` is
             evaluated. If ``None`` it is always evaluated. Defaults to ``None``.
 
     Returns:
-        A callable ``f(p, t)`` which evaluates the given function/scalar ``x`` inside the time windows defined in
+        callable: A callable ``f(p, t)`` which evaluates the given function/scalar ``x`` inside the time windows defined in
         ``windows``, and otherwise returns 0.
 
     .. note::
@@ -105,12 +105,15 @@ def rect(x: Union[float, Callable], windows: List[Tuple[float]] = None):
 
         p = jnp.array([1, 2, 3])
         time = jnp.linspace(0, 10, 1000)
+        windows = [(1, 7)]
 
         y1 = f(p, time)
-        y2 = [qml.pulse.rect(f, windows=[(1, 7)])(p, t) for t in time]
+        y2 = [qml.pulse.rect(f, windows=windows)(p, t) for t in time]
 
-        plt.plot(time, y1)
-        plt.plot(time, y2)
+        plt.plot(time, y1, label=f"polyval(p={p}, t)")
+        plt.plot(time, y2, label=f"rect(polyval, windows={windows})(p={p}, t)")
+        plt.legend()
+        plt.xlabel("t")
         plt.show()
 
     .. figure:: ../../_static/pulse/rect_example.png
@@ -159,6 +162,14 @@ def rect(x: Union[float, Callable], windows: List[Tuple[float]] = None):
             "Module jax is required for any pulse-related convenience function. "
             "You can install jax via: pip install jax"
         )
+    if windows is not None:
+        is_nested = any(hasattr(w, "__len__") for w in windows)
+        single_window = len(windows) == 2 and not is_nested
+        if single_window:
+            windows = [windows]
+        elif not all(hasattr(w, "__len__") and len(w) == 2 for w in windows):
+            raise ValueError("At least one provided window is not a two-element sequence.")
+
     if not callable(x):
 
         def _f(_, __):
@@ -179,18 +190,18 @@ def rect(x: Union[float, Callable], windows: List[Tuple[float]] = None):
 
 
 def pwc(timespan):
-    """Takes a timespan and returns a callable for creating a function that is piece-wise constant in time. The returned
+    """Takes a time span and returns a callable for creating a function that is piece-wise constant in time. The returned
     function takes arguments ``(p, t)``, where ``p`` is an array that defines the bin values for the function.
 
     Creates a callable for defining a :class:`~.ParametrizedHamiltonian`.
 
     Args:
-            timespan(Union[float, tuple(float, float)]: The timespan defining the region where the function is non-zero.
-              If an integer is provided, the timespan is defined as ``(0, timespan)``.
+        timespan(Union[float, tuple(float, float)]): The time span defining the region where the function is non-zero.
+            If an integer is provided, the time span is defined as ``(0, timespan)``.
 
     Returns:
-            func: a function that takes two arguments: an array of trainable parameters, and a ``float`` defining the
-            time at which the function is evaluated.
+        callable: a function that takes two arguments: an ``array`` of trainable parameters, and a ``float`` defining the
+        time at which the function is evaluated.
 
     The convenience function ``pwc`` essentially implements
 
@@ -204,7 +215,7 @@ def pwc(timespan):
     This function can be used to create a parametrized coefficient function that is piece-wise constant
     within the interval ``t``, and 0 outside it.
 
-    When creating the callable, only the timespan is passed. The number
+    When creating the callable, only the time span is passed. The number
     of bins and values for the parameters are set when ``params`` is passed to the callable. Each bin value is set by
     an element of the ``params`` array. The variable ``t`` is used to select the value of the parameter array
     corresponding to the specified time, based on the assigned binning.
@@ -213,8 +224,10 @@ def pwc(timespan):
 
         params = jnp.array([1, 2, 3, 4, 5])
         time = jnp.linspace(0, 10, 1000)
-        y = qml.pulse.pwc(timespan=(2, 7))(params, time)
-        plt.plot(time, y)
+        timespan=(2, 7)
+        y = qml.pulse.pwc(timespan)(params, time)
+        plt.plot(time, y, label=f"params={params},\ntimespan={timespan}")
+        plt.legend()
         plt.show()
 
     .. figure:: ../../_static/pulse/pwc_example.png
@@ -223,14 +236,15 @@ def pwc(timespan):
         :target: javascript:void(0);
 
     .. warning::
-        The final time in the timespan indicates the index at which the function output switches from params[-1] to 0.
-        As such, the final time in ``timespan`` returns 0:
+        The final time in the time span indicates the time at which the function output switches from params[-1] to 0.
+        As such, the above function returns ``5`` for a time slightly smaller than the final time in ``timespan``,
+        but it returns ``0`` for the final time itself:
 
-        >>> H(params=[[1, 2, 3, 4, 5]], t=6.999999)
-        15.0*(PauliX(wires=[0]))
+        >>> qml.pulse.pwc(timespan)(params, 6.999999)
+        Array(5., dtype=float32)
 
-        >>> H(params=[[1, 2, 3, 4, 5]], t=7)
-        0.0*(PauliX(wires=[0]))
+        >>> qml.pulse.pwc(timespan)(params, 7.)
+        Array(0., dtype=float32)
 
     **Example**
 
@@ -289,13 +303,13 @@ def pwc_from_function(timespan, num_bins):
     Creates a callable for defining a :class:`~.ParametrizedHamiltonian`.
 
     Args:
-            timespan(Union[float, tuple(float)]): The timespan defining the region where the function is non-zero.
-              If an integer is provided, the timespan is defined as ``(0, timespan)``.
-            num_bins(int): number of bins for time-binning the function
+        timespan(Union[float, tuple(float)]): The time span defining the region where the function is non-zero.
+            If a ``float`` is provided, the time span is defined as ``(0, timespan)``.
+        num_bins(int): number of bins for time-binning the function
 
     Returns:
-            a function that takes some smooth function ``f(params, t)`` and converts it to a
-            piece-wise constant function spanning time ``t`` in ``num_bins`` bins.
+        callable: a function that takes some smooth function ``f(params, t)`` and converts it to a
+        piece-wise constant function spanning time ``t`` in ``num_bins`` bins.
 
     **Example**
 
@@ -310,13 +324,13 @@ def pwc_from_function(timespan, num_bins):
         binned_function = qml.pulse.pwc_from_function(timespan, num_bins)(smooth_function)
 
     >>> binned_function([2, 4], 3), smooth_function([2, 4], 3)  # t = 3
-    (DeviceArray(10.666666, dtype=float32), DeviceArray(10, dtype=int32))
+    (Array(10.666667, dtype=float32), 10)
 
     >>> binned_function([2, 4], 3.2), smooth_function([2, 4], 3.2)  # t = 3.2
-    (DeviceArray(10.666666, dtype=float32), DeviceArray(10.4, dtype=float32))
+    (Array(10.666667, dtype=float32), 10.4)
 
     >>> binned_function([2, 4], 4.5), smooth_function([2, 4], 4.5)  # t = 4.5
-    (DeviceArray(12.888889, dtype=float32), DeviceArray(13., dtype=float32))
+    (Array(12.888889, dtype=float32), 13.0)
 
     The same effect can be achieved by decorating the smooth function:
 
@@ -329,7 +343,7 @@ def pwc_from_function(timespan, num_bins):
             return params[0] * t + params[1]
 
     >>> fn([2, 4], 3)
-    DeviceArray(10.666666, dtype=float32)
+    Array(10.666667, dtype=float32)
 
     """
     if not has_jax:
