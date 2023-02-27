@@ -11,15 +11,15 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
 """
 Unit tests for the RydbergHamiltonian class.
 """
+# pylint: disable=too-few-public-methods
 import numpy as np
 import pytest
 
 import pennylane as qml
-from pennylane.pulse import RydbergHamiltonian, rydberg_interaction
+from pennylane.pulse import RydbergHamiltonian, rydberg_interaction, rydberg_transition
 from pennylane.pulse.rydberg_hamiltonian import RydbergPulse
 from pennylane.wires import Wires
 
@@ -135,6 +135,7 @@ class TestRydbergInteraction:
         N = len(wires)
         num_combinations = N * (N - 1) / 2  # number of terms on the rydberg_interaction hamiltonian
         assert len(Hd.ops) == num_combinations
+        assert Hd.pulses == []
 
     def test_wires_is_none(self):
         """Test that when wires is None the wires correspond to an increasing list of values with
@@ -142,3 +143,40 @@ class TestRydbergInteraction:
         Hd = rydberg_interaction(register=atom_coordinates)
 
         assert Hd.wires == Wires(list(range(len(atom_coordinates))))
+
+
+class TestRydbergTransition:
+    """Unit tests for the ``rydberg_transition`` function."""
+
+    def test_attributes_and_number_of_terms(self):
+        """Test that the attributes and the number of terms of the ``ParametrizedHamiltonian`` returned by
+        ``rydberg_transition`` are correct."""
+        Hd = rydberg_transition(rabi=1, phase=2, detuning=3, wires=[1, 2])
+
+        assert isinstance(Hd, RydbergHamiltonian)
+        assert Hd.interaction_coeff == 862690 * np.pi
+        assert Hd.wires == Wires([1, 2])
+        assert Hd.register is None
+        assert len(Hd.ops) == 2  # rabi and detuning terms of the Hamiltonian
+        assert Hd.pulses == [RydbergPulse(1, 2, 3, [1, 2])]
+
+
+class TestRydbergPulse:
+    """Unit tests for the ``RydbergPulse`` class."""
+
+    def test_init(self):
+        """Test the initialization of the ``RydbergPulse`` class."""
+        p = RydbergPulse(rabi=4, phase=8, detuning=9, wires=[0, 4, 7])
+        assert p.rabi == 4
+        assert p.phase == 8
+        assert p.detuning == 9
+        assert p.wires == Wires([0, 4, 7])
+
+    def test_equal(self):
+        """Test the ``__eq__`` method of the ``RydbergPulse`` class."""
+        p1 = RydbergPulse(1, 2, 3, [0, 1])
+        p2 = RydbergPulse(1, 2, 3, 0)
+        p3 = RydbergPulse(1, 2, 3, [0, 1])
+        assert p1 != p2
+        assert p2 != p3
+        assert p1 == p3

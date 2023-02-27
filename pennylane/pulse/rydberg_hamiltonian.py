@@ -113,12 +113,12 @@ def rydberg_transition(rabi, detuning, phase, wires):
 
     # We compute the `coeffs` and `observables` of the laser field
     coeffs = [rabi, detuning]
-    rabi_observables = [
+    rabi_observable = sum(
         qml.math.cos(phase) * qml.PauliX(wire) - qml.math.sin(phase) * qml.PauliY(wire)
         for wire in wires
-    ]
-    detuning_observables = [qml.PauliZ(wire) for wire in wires]
-    observables = rabi_observables + detuning_observables
+    )
+    detuning_observable = sum(qml.PauliZ(wire) for wire in wires)
+    observables = [rabi_observable, detuning_observable]
 
     # We convert the pulse data into a list of ``RydbergPulse`` objects
     pulses = [RydbergPulse(rabi, phase, detuning, wires)]
