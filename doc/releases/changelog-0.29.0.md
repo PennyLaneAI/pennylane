@@ -611,9 +611,6 @@
 * A new tape transform called `qml.transforms.sign_expand` has been added. It implements the optimal decomposition of a fast-forwardable Hamiltonian that minimizes the variance of its estimator in the Single-Qubit-Measurement from [arXiv:2207.09479](https://arxiv.org/abs/2207.09479).
   [(#2852)](https://github.com/PennyLaneAI/pennylane/pull/2852)
 
-* `Sum` and `Prod` operations now support broadcasted operands.
-  [(#3611)](https://github.com/PennyLaneAI/pennylane/pull/3611)
-
 <h4>Differentiability and interfaces</h4>
 
 * The `qml.math` module now also contains a submodule for
@@ -670,11 +667,6 @@
 * `SProd.sparse_matrix` now supports interface-specific variables with a single element as the `scalar`.
   [(#3770)](https://github.com/PennyLaneAI/pennylane/pull/3770)
 
-* Validation has been added on gradient keyword arguments when initializing a QNode — if unexpected keyword arguments are passed,
-  a `UserWarning` is raised. A list of the current expected gradient function keyword arguments can be accessed via
-  `qml.gradients.SUPPORTED_GRADIENT_KWARGS`.
-  [(#3526)](https://github.com/PennyLaneAI/pennylane/pull/3526)
-
 * Added `argnum` argument to `metric_tensor`. By passing a sequence of indices referring to trainable tape parameters,
   the metric tensor is only computed with respect to these parameters. This reduces the number of tapes that have to
   be run.
@@ -714,19 +706,9 @@
 * `qml.BasisState` now implements the `StatePrep` interface.
   [(#3693)](https://github.com/PennyLaneAI/pennylane/pull/3693)
 
-* `qml.QubitStateVector` now implements the `StatePrep` interface.
-  [(#3685)](https://github.com/PennyLaneAI/pennylane/pull/3685)
-
-* `qml.BasisState` now implements the `StatePrep` interface.
-  [(#3693)](https://github.com/PennyLaneAI/pennylane/pull/3693)
-
 * New Abstract Base Class for devices `Device` is added to the `devices.experimental` submodule.
   This interface is still in experimental mode and not integrated with the rest of pennylane.
   [(#3602)](https://github.com/PennyLaneAI/pennylane/pull/3602)
-
-* The `apply_operation` single-dispatch function is added to `devices/qubit` that applies an operation
-  to a state and returns a new state.
-  [(#3637)](https://github.com/PennyLaneAI/pennylane/pull/3637)
 
 <h4>Other improvements</h4>
 
