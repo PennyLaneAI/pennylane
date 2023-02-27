@@ -46,7 +46,7 @@ def probs(wires=None, op=None):
             the computational basis
 
     Returns:
-        ProbabilityMP: measurement process instance
+        ProbabilityMP: Measurement process instance
 
     **Example:**
 
@@ -81,7 +81,6 @@ def probs(wires=None, op=None):
             return qml.probs(op=qml.Hermitian(H, wires=0))
 
     >>> circuit()
-
     array([0.14644661 0.85355339])
 
     The returned array is in lexicographic order, so corresponds
