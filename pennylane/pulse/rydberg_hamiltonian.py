@@ -145,6 +145,11 @@ class RydbergHamiltonian(ParametrizedHamiltonian):
 
         :math:`\hbar` is set to 1.
 
+    .. warning::
+
+        When adding a ``RydbergHamiltonian`` with a :class:`ParametrizedHamiltonian` all the
+        information needed to translate this class into hardware will be lost.
+
     Args:
         coeffs (Union[float, callable]): coefficients of the Hamiltonian expression, which may be
             constants or parametrized functions. All functions passed as ``coeffs`` must have two

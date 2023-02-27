@@ -24,7 +24,7 @@ from pennylane.pulse.rydberg_hamiltonian import RydbergPulse
 from pennylane.wires import Wires
 
 atom_coordinates = [[0, 0], [0, 5], [5, 0], [10, 5], [5, 10], [10, 10]]
-wires = [1, 6, 9, 2, 4, 3]
+wires = [1, 6, 0, 2, 4, 3]
 
 
 class TestRydbergHamiltonian:
@@ -120,6 +120,69 @@ class TestRydbergHamiltonian:
             _ = Ht + Hd
 
 
+def f1(p, t):
+    return p * np.sin(t) * (t - 1)
+
+
+def f2(p, t):
+    return p * np.cos(t**2)
+
+
+param = [1.2, 2.3]
+
+
+class TestInteractionWithOperators:
+    """Test that the interaction between a ``RydbergHamiltonian`` and other operators work as
+    expected."""
+
+    ops_with_coeffs = (
+        (qml.Hamiltonian([2], [qml.PauliZ(0)]), 2),
+        (qml.Hamiltonian([1.7], [qml.PauliZ(0)]), 1.7),
+        (qml.ops.SProd(3, qml.PauliZ(0)), 3),
+    )
+    ops = (
+        qml.PauliX(2),
+        qml.PauliX(2) @ qml.PauliX(3),
+        qml.CNOT([0, 1]),
+    )  # ToDo: maybe add more operators to test here?
+
+    @pytest.mark.parametrize("H, coeff", ops_with_coeffs)
+    def test_add_special_operators(self, H, coeff):
+        """Test that a Hamiltonian and SProd can be added to a RydbergHamiltonian, and
+        will be incorporated in the H_fixed term, with their coefficients included in H_coeffs_fixed.
+        """
+        R = rydberg_transition(rabi=f1, detuning=f2, phase=0, wires=[0, 1])
+        params = [1, 2]
+        # Adding on the right
+        new_pH = R + H
+        assert R.H_fixed() == 0
+        assert qml.equal(new_pH.H_fixed(), qml.s_prod(coeff, qml.PauliZ(0)))
+        assert new_pH.coeffs_fixed[0] == coeff
+        assert qml.math.allequal(new_pH(params, t=0.5).matrix(), qml.matrix(R(params, t=0.5) + H))
+        # Adding on the left
+        new_pH = H + R
+        assert R.H_fixed() == 0
+        assert qml.equal(new_pH.H_fixed(), qml.s_prod(coeff, qml.PauliZ(0)))
+        assert new_pH.coeffs_fixed[0] == coeff
+        assert qml.math.allequal(new_pH(params, t=0.5).matrix(), qml.matrix(R(params, t=0.5) + H))
+
+    @pytest.mark.parametrize("op", ops)
+    def test_add_other_operators(self, op):
+        """Test that a Hamiltonian, SProd, Tensor or Operator can be added to a
+        ParametrizedHamiltonian, and will be incorporated in the H_fixed term"""
+        R = rydberg_transition(rabi=f1, detuning=f2, phase=0, wires=[0, 1])
+
+        # Adding on the right
+        new_pH = R + op
+        assert R.H_fixed() == 0
+        assert qml.equal(new_pH.H_fixed(), qml.s_prod(1, op))
+
+        # Adding on the left
+        new_pH = op + R
+        assert R.H_fixed() == 0
+        assert qml.equal(new_pH.H_fixed(), qml.s_prod(1, op))
+
+
 class TestRydbergInteraction:
     """Unit tests for the ``rydberg_interaction`` function."""
 
@@ -180,3 +243,39 @@ class TestRydbergPulse:
         assert p1 != p2
         assert p2 != p3
         assert p1 == p3
+
+
+class TestIntegration:
+    """Integration tests for the ``RydbergHamiltonian`` class."""
+
+    @pytest.mark.jax
+    def test_jitted_qnode(self):
+        """Test that a ``RydbergHamiltonian`` class can be executed within a jitted qnode."""
+        import jax
+        import jax.numpy as jnp
+
+        Hd = rydberg_interaction(register=atom_coordinates, wires=wires)
+
+        def fa(p, t):
+            return jnp.polyval(p, t)
+
+        def fb(p, t):
+            return p[0] * jnp.sin(p[1] * t)
+
+        Ht = rydberg_transition(rabi=fa, detuning=fb, phase=0, wires=[1, 2])
+
+        dev = qml.device("default.qubit", wires=wires)
+
+        ts = jnp.array([0.0, 3.0])
+        H_obj = sum(qml.PauliZ(i) for i in range(2))
+
+        @jax.jit
+        @qml.qnode(dev, interface="jax")
+        def qnode(params):
+            qml.evolve(Hd + Ht)(params, ts)
+            return qml.expval(H_obj)
+
+        params = (jnp.ones(5), jnp.array([1.0, jnp.pi]))
+        res = qnode(params)
+
+        assert isinstance(res, jax.Array)
