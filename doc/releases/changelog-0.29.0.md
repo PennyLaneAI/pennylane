@@ -52,7 +52,8 @@
       return qml.expval(qml.PauliX(0) @ qml.PauliY(1))
   ```
 
-  Pulse-based circuits can be executed on the `default.qubit` simulator using JAX as an interface:
+  Pulse-based circuits can be executed and differentiated on the `default.qubit` simulator using JAX
+  as an interface:
 
   ```pycon
   >>> dev = qml.device("default.qubit", wires=2)
