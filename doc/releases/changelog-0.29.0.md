@@ -24,14 +24,14 @@
 
   ```python
   from jax import numpy as jnp
-  
+
   f1 = lambda p, t: p * jnp.sin(t) * (t - 1)
   f2 = lambda p, t: p[0] * jnp.cos(p[1]* t ** 2)
-  
+
   XX = qml.PauliX(0) @ qml.PauliX(1)
   YY = qml.PauliY(0) @ qml.PauliY(1)
   ZZ = qml.PauliZ(0) @ qml.PauliZ(1)
-  
+
   H =  2 * ZZ + f1 * XX + f2 * YY
   ```
 
