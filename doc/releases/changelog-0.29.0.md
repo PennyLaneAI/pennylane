@@ -4,7 +4,9 @@
 
 <h3>New features since last release</h3>
 
-* Added 'qml.sign_expand' tape tranforms which implements the optimal decomposition of a fast-forwardable Hamiltonian that minimizes the variance of its estimator in the Single-Qubit-Measurement from  arXiv:2207.09479
+* Added 'qml.sign_expand' tape tranforms which implements the optimal decomposition of a
+  fast-forwardable Hamiltonian that minimizes the variance of its estimator in the
+  Single-Qubit-Measurement from  arXiv:2207.09479
   [(#2852)](https://github.com/PennyLaneAI/pennylane/pull/2852)
 
 * The `qml.math` module now also contains a submodule for
@@ -31,6 +33,7 @@
 * A new operation `SpecialUnitary` was added, providing access to an arbitrary
   unitary gate via a parametrization in the Pauli basis.
   [(#3650)](https://github.com/PennyLaneAI/pennylane/pull/3650)
+  [(#3651)](https://github.com/PennyLaneAI/pennylane/pull/3651)
   [(#3674)](https://github.com/PennyLaneAI/pennylane/pull/3674)
 
   The new operation takes a single argument, a one-dimensional `tensor_like`
@@ -590,7 +593,7 @@
 * Implemented the XYX single-qubit unitary decomposition.
   [(#3628)](https://github.com/PennyLaneAI/pennylane/pull/3628)
 
-* `Sum` and `Prod` operations now have broadcasted operands.
+* `Sum` and `Prod` operations now support broadcasted operands.
   [(#3611)](https://github.com/PennyLaneAI/pennylane/pull/3611)
 
 * All dunder methods now return `NotImplemented`, allowing the right dunder method (e.g. `__radd__`)
@@ -742,7 +745,7 @@
   instead.
   [(#3701)](https://github.com/PennyLaneAI/pennylane/pull/3701)
 
-* `op.simplify()` for operators which are linear combinations of pauli words will use a builtin pauli representation 
+* `op.simplify()` for operators which are linear combinations of Pauli words will use a builtin Pauli representation 
   to more efficiently compute the simplification of the operator.
   [(#3481)](https://github.com/PennyLaneAI/pennylane/pull/3481)
 
@@ -777,6 +780,10 @@
 [(#3740)](https://github.com/PennyLaneAI/pennylane/pull/3740)
 
 <h3>Bug fixes</h3>
+
+* Fixed a bug where measuring ``qml.probs`` in the computational basis with non-commuting 
+  measurements returned incorrect results. Now an error is raised.
+  [(#3811)](https://github.com/PennyLaneAI/pennylane/pull/3811)
 
 * Fixed a bug in the drawer where nested controlled operations would output
   the label of the operation being controlled, rather than the control values.
