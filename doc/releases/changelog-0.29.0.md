@@ -22,7 +22,7 @@
   holds information representing a linear combination of operators
   with parametrized coefficents and can be constructed as follows:
 
-  ```pycon
+  ```python
   from jax import numpy as jnp
   
   f1 = lambda p, t: p * jnp.sin(t) * (t - 1)
