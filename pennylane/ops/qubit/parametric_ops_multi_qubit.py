@@ -858,7 +858,7 @@ class IsingZZ(Operation):
 
         **Example:**
 
-        >>> qml.IsingZZ.compute_decomposition(1.23, wires=[0,1])
+        >>> qml.IsingZZ.compute_decomposition(1.23, wires=[0, 1])
         [CNOT(wires=[0, 1]), RZ(1.23, wires=[1]), CNOT(wires=[0, 1])]
 
         """
