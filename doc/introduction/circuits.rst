@@ -95,8 +95,9 @@ the available options that can be passed to the device loader.
 
 .. note::
 
-    For example, check out the ``'lightning.qubit'`` `plugin <https://github.com/PennyLaneAI/pennylane-lightning>`_,
-    which is a fast state-vector simulator supporting GPUs.
+    For example, check out the ``'lightning.gpu'``
+    `plugin <https://docs.pennylane.ai/projects/lightning-gpu/en/latest/index.html>`_,
+    which is a fast state-vector simulator offloading to the NVIDIA cuQuantum SDK for GPU accelerated circuit simulation.
 
 .. note::
 
