@@ -728,15 +728,13 @@
   to a state and returns a new state.
   [(#3637)](https://github.com/PennyLaneAI/pennylane/pull/3637)
 
-<h4>Data</h4>
+<h4>Other improvements</h4>
 
 * Writing Hamiltonians to a file using the `qml.data` module has been improved by employing a condensed writing format.
   [(#3592)](https://github.com/PennyLaneAI/pennylane/pull/3592)
 
 * Lazy-loading in the `qml.data.Dataset.read()` method is more universally supported.
   [(#3605)](https://github.com/PennyLaneAI/pennylane/pull/3605)
-
-<h4>Other</h4>
 
 * The `qchem.Molecule` class raises an error when the molecule has an odd number of electrons or
   when the spin multiplicity is not 1.
