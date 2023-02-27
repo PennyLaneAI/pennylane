@@ -50,12 +50,6 @@ Pending deprecations
         some_qfunc(params)
         return qml.expval(Hamiltonian)
 
-* ``qml.transforms.make_tape`` has been deprecated, and usage will now raise a warning.
-  Instead, use ``qml.tape.make_qscript``.
-
-  - Deprecated in v0.28
-  - Will be removed in v0.29
-
 * The ``collections`` module has been deprecated.
 
   - Deprecated in v0.29
@@ -169,3 +163,8 @@ Completed deprecation cycles
   - Deprecated in v0.28
   - Removed in v0.29
 
+* ``qml.transforms.make_tape`` was previously deprecated, but there is no longer a plan to remove it.
+  It no longer raises a warning, and the functionality is unchanged.
+
+  - Deprecated in v0.28
+  - Un-deprecated in v0.29
