@@ -1530,7 +1530,7 @@ class Operation(Operator):
 
     # Attributes for compilation transforms
     basis = None
-    """str or None: The target operation for controlled gates.
+    """str or None: The basis of an operation, or for controlled gates, of the
     target operation. If not ``None``, should take a value of ``"X"``, ``"Y"``,
     or ``"Z"``.
 
