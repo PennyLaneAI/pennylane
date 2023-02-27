@@ -54,7 +54,7 @@ def exp(op, coeff=1, num_steps=None, id=None):
         id (str): id for the Exp operator. Default is None.
 
     Returns:
-       :class:`Exp`: A :class`~.operation.Operator` representing an operator exponential.
+       :class:`Exp`: A :class:`~.operation.Operator` representing an operator exponential.
 
     .. note::
 
