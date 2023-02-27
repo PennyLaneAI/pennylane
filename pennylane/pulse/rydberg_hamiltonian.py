@@ -66,7 +66,7 @@ def rydberg_interaction(register: list, wires=None, interaction_coeff: float = 8
         Returns:
             SProd: projector into the Rydberg state
         """
-        return (1 - qml.PauliZ(wire)) / 2
+        return qml.s_prod(1 / 2, (1 - qml.PauliZ(wire)))
 
     coeffs = []
     observables = []
@@ -96,12 +96,11 @@ def rydberg_transition(rabi, detuning, phase, wires):
     :math:`\alpha = x,y,z` are the Pauli matrices.
 
     Args:
-        rabi (Union[float, Callable]): list of rabi frequencies and/or callables returning
-            frequency values (in MHz) of the corresponding driving laser fields
-        detunings (Union[float, Callable]): list of detunings and/or callables returning
-            detuning values (in MHz) of the corresponding driving laser fields
-        phases (Union[float, Callable]): list of phase values (in radiants) of the
-            corresponding driving laser fields
+        rabi (Union[float, Callable]): float or callable returning the frequency (in MHz) of a laser
+            field
+        detuning (Union[float, Callable]): float or callable returning the detuning (in MHz) of a
+            laser field
+        phase (float): float containing the phase (in radiants) of the laser field
         wires (Union[int, List[int]]): integer or list containing wire values that the laser field
             acts on
 
@@ -201,7 +200,18 @@ class RydbergHamiltonian(ParametrizedHamiltonian):
 
 @dataclass
 class RydbergPulse:
-    """Dataclass that contains the information of a single Rydberg pulse."""
+    """Dataclass that contains the information of a single Rydberg pulse. This class is used
+    internally in PL to group into a single object all the data related to a single laser field.
+
+    Args:
+        rabi (Union[float, Callable]): float or callable returning the frequency (in MHz) of a laser
+            field
+        detuning (Union[float, Callable]): float or callable returning the detuning (in MHz) of a
+            laser field
+        phase (float): float containing the phase (in radiants) of the laser field
+        wires (Union[int, List[int]]): integer or list containing wire values that the laser field
+            acts on
+    """
 
     rabi: Union[float, Callable]
     phase: Union[float, Callable]
