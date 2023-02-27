@@ -443,7 +443,7 @@
   4: ─────────────────╰RY(0.81)─╰SWAP─────────────────╰RY(0.06)─╰SWAP─────────────────┤  State
   ```
 
-<h3>Improvements</h3>
+<h3>Improvements 🛠</h3>
 
 <h4>Pulse programming</h4>
 
@@ -748,7 +748,7 @@
   property if it is set.
   [(#3820)](https://github.com/PennyLaneAI/pennylane/pull/3820)
 
-<h3>Breaking changes</h3>
+<h3>Breaking changes 💔</h3>
 
 * The argument `mode` in execution has been replaced by the boolean `grad_on_execution` in the new execution pipeline.
   [(#3723)](https://github.com/PennyLaneAI/pennylane/pull/3723)
@@ -825,7 +825,7 @@
   a wire order such as `marginal_prob`, `estimate_probability` or `analytic_probability`).
   [(#3753)](https://github.com/PennyLaneAI/pennylane/pull/3753)
 
-<h3>Deprecations</h3>
+<h3>Deprecations 👋</h3>
 
 * `qml.utils.sparse_hamiltonian` function has been deprecated, and usage will now raise a warning.
   Instead, one should use the `qml.Hamiltonian.sparse_matrix` method.
@@ -845,7 +845,7 @@
 * Use of `qml.dot` with a `QNodeCollection` has been deprecated.
   [(#3586)](https://github.com/PennyLaneAI/pennylane/pull/3586)
 
-<h3>Documentation</h3>
+<h3>Documentation 📝</h3>
 
 * The documentation for `qml.operation` has been improved.
   [(#3664)](https://github.com/PennyLaneAI/pennylane/pull/3664)
@@ -859,7 +859,7 @@
 * A typo was corrected in the documentation for `qml.math.vn_entropy`.
 [(#3740)](https://github.com/PennyLaneAI/pennylane/pull/3740)
 
-<h3>Bug fixes</h3>
+<h3>Bug fixes 🐛</h3>
 
 * Fixed a bug where measuring ``qml.probs`` in the computational basis with non-commuting
   measurements returned incorrect results. Now an error is raised.
@@ -940,7 +940,7 @@
 * Only converts input to `qml.Hermitian` to a numpy array if the input is a list.
   [(#3820)](https://github.com/PennyLaneAI/pennylane/pull/3820)
 
-<h3>Contributors</h3>
+<h3>Contributors ✍</h3>
 
 This release contains contributions from (in alphabetical order):
 
