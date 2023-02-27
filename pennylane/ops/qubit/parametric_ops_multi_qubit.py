@@ -28,7 +28,7 @@ from pennylane.utils import pauli_eigs
 from pennylane.wires import Wires
 
 from .non_parametric_ops import Hadamard, PauliX, PauliY, PauliZ
-from .parametric_ops_single_qubit import _can_replace, stack_last
+from .parametric_ops_single_qubit import _can_replace, stack_last, RX, RY, RZ, PhaseShift
 
 
 class MultiRZ(Operation):
@@ -180,7 +180,7 @@ class MultiRZ(Operation):
 
         """
         ops = [qml.CNOT(wires=(w0, w1)) for w0, w1 in zip(wires[~0:0:-1], wires[~1::-1])]
-        ops.append(qml.RZ(theta, wires=wires[0]))
+        ops.append(RZ(theta, wires=wires[0]))
         ops += [qml.CNOT(wires=(w0, w1)) for w0, w1 in zip(wires[1:], wires[:~0])]
 
         return ops
@@ -255,7 +255,7 @@ class PauliRot(Operation):
 
     _PAULI_CONJUGATION_MATRICES = {
         "X": Hadamard.compute_matrix(),
-        "Y": qml.RX.compute_matrix(np.pi / 2),
+        "Y": RX.compute_matrix(np.pi / 2),
         "Z": np.array([[1, 0], [0, 1]]),
     }
 
@@ -491,7 +491,7 @@ class PauliRot(Operation):
             if gate == "X":
                 ops.append(Hadamard(wires=[wire]))
             elif gate == "Y":
-                ops.append(qml.RX(np.pi / 2, wires=[wire]))
+                ops.append(RX(np.pi / 2, wires=[wire]))
 
         ops.append(MultiRZ(theta, wires=list(active_wires)))
 
@@ -499,7 +499,7 @@ class PauliRot(Operation):
             if gate == "X":
                 ops.append(Hadamard(wires=[wire]))
             elif gate == "Y":
-                ops.append(qml.RX(-np.pi / 2, wires=[wire]))
+                ops.append(RX(-np.pi / 2, wires=[wire]))
         return ops
 
     def adjoint(self):
@@ -625,7 +625,7 @@ class IsingXX(Operation):
         """
         decomp_ops = [
             qml.CNOT(wires=wires),
-            qml.RX(phi, wires=[wires[0]]),
+            RX(phi, wires=[wires[0]]),
             qml.CNOT(wires=wires),
         ]
         return decomp_ops
@@ -720,7 +720,7 @@ class IsingYY(Operation):
         """
         return [
             qml.CY(wires=wires),
-            qml.RY(phi, wires=[wires[0]]),
+            RY(phi, wires=[wires[0]]),
             qml.CY(wires=wires),
         ]
 
@@ -864,7 +864,7 @@ class IsingZZ(Operation):
         """
         return [
             qml.CNOT(wires=wires),
-            qml.RZ(phi, wires=[wires[1]]),
+            RZ(phi, wires=[wires[1]]),
             qml.CNOT(wires=wires),
         ]
 
@@ -1052,8 +1052,8 @@ class IsingXY(Operation):
         return [
             Hadamard(wires=[wires[0]]),
             qml.CY(wires=wires),
-            qml.RY(phi / 2, wires=[wires[0]]),
-            qml.RX(-phi / 2, wires=[wires[1]]),
+            RY(phi / 2, wires=[wires[0]]),
+            RX(-phi / 2, wires=[wires[1]]),
             qml.CY(wires=wires),
             Hadamard(wires=[wires[0]]),
         ]
@@ -1222,7 +1222,7 @@ class PSWAP(Operation):
         return [
             qml.SWAP(wires=wires),
             qml.CNOT(wires=wires),
-            qml.PhaseShift(phi, wires=[wires[1]]),
+            PhaseShift(phi, wires=[wires[1]]),
             qml.CNOT(wires=wires),
         ]
 
