@@ -287,7 +287,7 @@ class DefaultQubit(QubitDevice):
         """
         raise NotImplementedError(
             f"The device {self.short_name} cannot execute a ParametrizedEvolution operation."
-            "Please use the jax  interface."
+            " Please use the jax interface."
         )
 
     def _apply_operation(self, state, operation):

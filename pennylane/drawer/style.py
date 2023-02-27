@@ -38,7 +38,7 @@ def _needs_mpl(func):
         if not _has_mpl:  # pragma: no cover
             raise ImportError(
                 "The drawer style module requires matplotlib."
-                "You can install matplotlib via \n\n   pip install matplotlib"
+                " You can install matplotlib via \n\n   pip install matplotlib"
             )
         func()
 
