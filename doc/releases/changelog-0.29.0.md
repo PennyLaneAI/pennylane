@@ -744,7 +744,7 @@
   instead.
   [(#3701)](https://github.com/PennyLaneAI/pennylane/pull/3701)
 
-* `op.simplify()` for operators which are linear combinations of Pauli words will use a builtin Pauli representation
+* `op.simplify()` for operators which are linear combinations of Pauli words will use a builtin Pauli representation 
   to more efficiently compute the simplification of the operator.
   [(#3481)](https://github.com/PennyLaneAI/pennylane/pull/3481)
 
@@ -785,7 +785,7 @@
 
 <h3>Bug fixes</h3>
 
-* Fixed a bug where measuring ``qml.probs`` in the computational basis with non-commuting
+* Fixed a bug where measuring ``qml.probs`` in the computational basis with non-commuting 
   measurements returned incorrect results. Now an error is raised.
   [(#3811)](https://github.com/PennyLaneAI/pennylane/pull/3811)
 
