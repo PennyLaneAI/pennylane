@@ -283,8 +283,7 @@
   In addition they support batching, for example for quantum kernel execution with shot vectors.
   [(#3742)](https://github.com/PennyLaneAI/pennylane/pull/3742)
 
-  In addition to the autodifferentiation support in JAX, Autograd, Tensorflow and PyTorch,
-  optional batching was added, allowing for the following:
+  This allows for the following:
   
   ```python
   dev = qml.device('default.qubit', wires=2, shots=(100, 100))
@@ -297,8 +296,6 @@
   kernel = lambda x1, x2: circuit(x1, x2)
   ```
 
-  Note that we extract the first probability vector entry for both
-  evaluations using 100 shots each.
   We can then compute the kernel matrix on a set of 4 (random) feature
   vectors `X` but using two sets of 100 shots each via
 
@@ -314,6 +311,8 @@
            [0.91, 0.8 , 1.  , 0.91],
            [0.92, 1.  , 0.91, 1.  ]]], requires_grad=True)
   ```
+
+  Note that we have extracted the first probability vector entry for each 100 shot evaluation.
 
 <h4>Smartly decompose Hamiltonian evolution 💯</h4>
 
