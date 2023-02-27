@@ -841,7 +841,7 @@
 * The use of `Evolution` directly has been deprecated. Users should use `qml.evolve` instead.
   This new function changes the sign of the given parameter.
   [(#3706)](https://github.com/PennyLaneAI/pennylane/pull/3706)
-  
+
 <h3>Documentation</h3>
 
 * The documentation for `qml.operation` has been improved.
