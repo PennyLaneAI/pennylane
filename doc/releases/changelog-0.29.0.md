@@ -280,7 +280,7 @@
   ```
 
 * The kernel matrix utility functions in `qml.kernels` are now autodifferentiation-compatible.
-  In addition they support batching, for example for quantum kernel execution with shot vectors.
+  In addition, they support batching, for example for quantum kernel execution with shot vectors.
   [(#3742)](https://github.com/PennyLaneAI/pennylane/pull/3742)
 
   This allows for the following:
@@ -312,7 +312,7 @@
            [0.92, 1.  , 0.91, 1.  ]]], requires_grad=True)
   ```
 
-  Note that we have extracted the first probability vector entry for each 100 shot evaluation.
+  Note that we have extracted the first probability vector entry for each 100-shot evaluation.
 
 <h4>Smartly decompose Hamiltonian evolution 💯</h4>
 
