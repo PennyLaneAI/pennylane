@@ -699,7 +699,7 @@
 
 * The `simulate` function is added to `devices/qubit` that turns a single quantum tape into a measurement result.
   The function only supports state based measurements with either no observables or observables with diagonalizing gates.
-  It supports simultanous measurement of non-commuting observables.
+  It supports simultaneous measurement of non-commuting observables.
   [(#3700)](https://github.com/PennyLaneAI/pennylane/pull/3700)
 
 * The `ExecutionConfig` data class has been added.
