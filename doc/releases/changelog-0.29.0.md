@@ -802,7 +802,7 @@
   [(#3282)](https://github.com/PennyLaneAI/pennylane/pull/3282)
 
 * `qml.qchem.scf`, `qml.RandomLayers.compute_decomposition`, and `qml.Wires.select_random` now use
-  local random number generators instead of global random number generators. This may lead to slighlty
+  local random number generators instead of global random number generators. This may lead to slightly
   different random numbers and an independence of the results from the global random number generation state.
   Please provide a seed to each individual function instead if you want controllable results.
   [(#3624)](https://github.com/PennyLaneAI/pennylane/pull/3624)
