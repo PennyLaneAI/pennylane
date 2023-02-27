@@ -470,7 +470,8 @@
   DeviceArray(0., dtype=float32)
   ```
 
-* A new function called`qml.pwc_from_function` as a decorator for defining a `qml.ParametrizedHamiltonian`.
+* A new function called`qml.pwc_from_function` has been added as a decorator for defining a
+  `qml.ParametrizedHamiltonian`.
   This function can be used to decorate a function and create a piecewise constant
   approximation of it.
   [(#3645)](https://github.com/PennyLaneAI/pennylane/pull/3645)
