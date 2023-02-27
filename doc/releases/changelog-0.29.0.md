@@ -111,7 +111,10 @@
   ```
 
   This operation can be differentiated with hardware-compatible methods like parameter shifts
-  and it supports parameter broadcasting/batching, but not both at the same time.
+  and it supports parameter broadcasting/batching, but not both at the same time. Learn more by
+  visiting the
+  [qml.SpecialUnitary](https://docs.pennylane.ai/en/stable/code/api/pennylane.SpecialUnitary.html)
+  documentation.
 
 <h4>Always differentiable 📈</h4>
 
