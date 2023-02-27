@@ -15,6 +15,11 @@
 
 <h3>Breaking changes</h3>
 
+* The `samples_computational_basis` method of the `MeasurementProcess` class has been renamed to
+  `measures_computational_basis`. This method now returns `True` if the measurement is measuring
+  on the computational basis.
+  [(#3812)](https://github.com/PennyLaneAI/pennylane/pull/3812)
+
 <h3>Deprecations</h3>
 
 <h3>Documentation</h3>

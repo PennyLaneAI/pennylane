@@ -138,7 +138,7 @@
 
 <h4>Always differentiable 📈</h4>
 
-* The Hadamard test gradient tranform is now available via `qml.gradients.hadamard_grad`. The gradient transform
+* The Hadamard test gradient tranform is now available via `qml.gradients.hadamard_grad`. The gradient transform 
   `qml.gradients.hadamard_grad` is now registered as a differentiation method for `QNode`s.
   [#3625](https://github.com/PennyLaneAI/pennylane/pull/3625)
   [#3736](https://github.com/PennyLaneAI/pennylane/pull/3736)
@@ -435,6 +435,7 @@
 * The gradient transforms work for the new return type system with non-trivial classical jacobians.
   [(#3776)](https://github.com/PennyLaneAI/pennylane/pull/3776)
 
+
 * The `default.mixed` device received a performance improvement for multi-qubit operations.
   This also allows to apply channels that act on more than seven qubits, which was not possible before.
   [(#3584)](https://github.com/PennyLaneAI/pennylane/pull/3584)
@@ -646,7 +647,7 @@
 * `SProd.sparse_matrix` now supports interface-specific variables with a single element as the `scalar`.
   [(#3770)](https://github.com/PennyLaneAI/pennylane/pull/3770)
 
-* The `qchem.Molecule` class raises an error when the molecule has an odd number of electrons or
+* The `qchem.Molecule` class raises an error when the molecule has an odd number of electrons or 
   when the spin multiplicity is not 1.
   [(#3748)](https://github.com/PennyLaneAI/pennylane/pull/3748)
 
@@ -747,11 +748,6 @@
 * `op.simplify()` for operators which are linear combinations of Pauli words will use a builtin Pauli representation 
   to more efficiently compute the simplification of the operator.
   [(#3481)](https://github.com/PennyLaneAI/pennylane/pull/3481)
-
-* The `samples_computational_basis` method of the `MeasurementProcess` class has been renamed to
-  `measures_computational_basis`. This method now returns `True` if the measurement is measuring
-  on the computational basis.
-  [(#3812)](https://github.com/PennyLaneAI/pennylane/pull/3812)
 
 <h3>Deprecations</h3>
 
