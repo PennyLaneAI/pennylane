@@ -14,13 +14,14 @@
 """This module contains the classes/functions needed to simulate the evolution of ensembles of
 individual (trapped) rydberg atoms under the excitation of several laser fields."""
 import warnings
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from typing import Callable, List, Union
 
 import numpy as np
 
 import pennylane as qml
 from pennylane.ops import SProd
+from pennylane.wires import Wires
 
 from .parametrized_hamiltonian import ParametrizedHamiltonian
 
@@ -120,8 +121,8 @@ def rydberg_transition(rabi, detuning, phase, wires):
     detuning_observables = [qml.PauliZ(wire) for wire in wires]
     observables = rabi_observables + detuning_observables
 
-    # We convert the pulse data into the `RydbergPulses` class
-    pulses = RydbergPulses([rabi], [detuning], [phase], [wires])
+    # We convert the pulse data into a list of ``RydbergPulse`` objects
+    pulses = [RydbergPulse(rabi, phase, detuning, wires)]
     return RydbergHamiltonian(coeffs, observables, pulses=pulses)
 
 
@@ -168,11 +169,11 @@ class RydbergHamiltonian(ParametrizedHamiltonian):
         coeffs,
         observables,
         register: list = None,
-        pulses: "RydbergPulses" = None,
+        pulses: List["RydbergPulse"] = None,
         interaction_coeff: float = 862690 * np.pi,
     ):
         self.register = register
-        self.pulses = RydbergPulses() if pulses is None else pulses
+        self.pulses = [] if pulses is None else pulses
         self.interaction_coeff = interaction_coeff
         super().__init__(coeffs, observables)
 
@@ -199,57 +200,21 @@ class RydbergHamiltonian(ParametrizedHamiltonian):
 
 
 @dataclass
-class RydbergPulses:
-    """Convenience class that contains the information of a list of Rydberg pulses. This class
-    can be iterated over."""
+class RydbergPulse:
+    """Dataclass that contains the information of a single Rydberg pulse."""
 
-    @dataclass
-    class RydbergPulse:
-        """Dataclass that contains the information of a single Rydberg pulse."""
-
-        rabi: Union[float, Callable]
-        phase: Union[float, Callable]
-        detuning: float
-        wires: List[int]
-
-        def __eq__(self, other):
-            return (
-                self.rabi == other.rabi
-                and self.phase == other.phase
-                and self.detuning == other.detuning
-                and self.wires == other.wires
-            )
-
-    rabis: List[Union[float, Callable]] = field(default_factory=list)
-    detunings: List[Union[float, Callable]] = field(default_factory=list)
-    phases: List[float] = field(default_factory=list)
-    wires: List[List[int]] = field(default_factory=list)
-    pulses: List[RydbergPulse] = field(init=False)
+    rabi: Union[float, Callable]
+    phase: Union[float, Callable]
+    detuning: float
+    wires: List[Wires]
 
     def __post_init__(self):
-        """Create the ``pulses`` list to be able to iterate over each pulse."""
-        self.pulses = [
-            self.RydbergPulse(r, d, p, w)
-            for r, d, p, w in zip(self.rabis, self.detunings, self.phases, self.wires)
-        ]
-
-    def __add__(self, other):
-        if isinstance(other, RydbergPulses):
-            new_rabis = self.rabis + other.rabis
-            new_detunings = self.detunings + other.detunings
-            new_phases = self.phases + other.phases
-            new_wires = self.wires + other.wires
-            return RydbergPulses(new_rabis, new_detunings, new_phases, new_wires)
-        return NotImplemented
+        self.wires = Wires(self.wires)
 
     def __eq__(self, other):
-        return all(p1 == p2 for p1, p2 in zip(self.pulses, other.pulses))
-
-    def __iter__(self):
-        return iter(self.pulses)
-
-    def __getitem__(self, key):
-        return self.pulses[key]
-
-    def __len__(self):
-        return len(self.pulses)
+        return (
+            self.rabi == other.rabi
+            and self.phase == other.phase
+            and self.detuning == other.detuning
+            and self.wires == other.wires
+        )

@@ -20,7 +20,7 @@ import pytest
 
 import pennylane as qml
 from pennylane.pulse import RydbergHamiltonian, rydberg_interaction
-from pennylane.pulse.rydberg_hamiltonian import RydbergPulses
+from pennylane.pulse.rydberg_hamiltonian import RydbergPulse
 from pennylane.wires import Wires
 
 atom_coordinates = [[0, 0], [0, 5], [5, 0], [10, 5], [5, 10], [10, 10]]
@@ -36,8 +36,7 @@ class TestRydbergHamiltonian:
         rm = RydbergHamiltonian(coeffs=[], observables=[], register=atom_coordinates)
 
         assert qml.math.allequal(rm.register, atom_coordinates)
-        assert isinstance(rm.pulses, RydbergPulses)
-        assert len(rm.pulses) == 0
+        assert rm.pulses == []
         assert rm.wires == Wires([])
         assert rm.interaction_coeff == 862690 * np.pi
 
@@ -47,12 +46,12 @@ class TestRydbergHamiltonian:
             coeffs=[1],
             observables=[qml.PauliX(0)],
             register=atom_coordinates,
-            pulses=RydbergPulses([1], [2], [3], [4]),
+            pulses=[RydbergPulse(1, 2, 3, 4)],
         )
         rm2 = RydbergHamiltonian(
             coeffs=[2],
             observables=[qml.PauliY(1)],
-            pulses=RydbergPulses([5], [6], [7], [8]),
+            pulses=[RydbergPulse(5, 6, 7, 8)],
         )
 
         sum_rm = rm1 + rm2
@@ -62,7 +61,7 @@ class TestRydbergHamiltonian:
             qml.equal(op1, op2) for op1, op2 in zip(sum_rm.ops, [qml.PauliX(0), qml.PauliY(1)])
         )
         assert qml.math.allequal(sum_rm.register, atom_coordinates)
-        assert sum_rm.pulses == RydbergPulses([1, 5], [2, 6], [3, 7], [4, 8])
+        assert sum_rm.pulses == [RydbergPulse(1, 2, 3, 4), RydbergPulse(5, 6, 7, 8)]
 
     def test_radd(self):
         """Test that the __radd__ dunder method works correctly."""
@@ -70,12 +69,12 @@ class TestRydbergHamiltonian:
             coeffs=[1],
             observables=[qml.PauliX(0)],
             register=atom_coordinates,
-            pulses=RydbergPulses([1], [2], [3], [4]),
+            pulses=[RydbergPulse(1, 2, 3, 4)],
         )
         rm2 = RydbergHamiltonian(
             coeffs=[2],
             observables=[qml.PauliY(1)],
-            pulses=RydbergPulses([5], [6], [7], [8]),
+            pulses=[RydbergPulse(5, 6, 7, 8)],
         )
         sum_rm2 = rm2 + rm1
         assert isinstance(sum_rm2, RydbergHamiltonian)
@@ -84,7 +83,7 @@ class TestRydbergHamiltonian:
             qml.equal(op1, op2) for op1, op2 in zip(sum_rm2.ops, [qml.PauliY(1), qml.PauliX(0)])
         )
         assert qml.math.allequal(sum_rm2.register, atom_coordinates)
-        assert sum_rm2.pulses == RydbergPulses([5, 1], [6, 2], [7, 3], [8, 4])
+        assert sum_rm2.pulses == [RydbergPulse(5, 6, 7, 8), RydbergPulse(1, 2, 3, 4)]
 
     def test_add_raises_error(self):
         """Test that an error is raised if two RydbergHamiltonians with registers are added."""
@@ -92,7 +91,7 @@ class TestRydbergHamiltonian:
             coeffs=[1],
             observables=[qml.PauliX(0)],
             register=atom_coordinates,
-            pulses=RydbergPulses([1], [2], [3], [4]),
+            pulses=[RydbergPulse(1, 2, 3, 4)],
         )
         with pytest.raises(
             ValueError, match="We cannot add two Hamiltonians with an interaction term"
@@ -106,7 +105,7 @@ class TestRydbergHamiltonian:
         Ht = RydbergHamiltonian(
             coeffs=[2],
             observables=[qml.PauliY(1)],
-            pulses=RydbergPulses(rabis=[0], detunings=[0], phases=[0], wires=[11]),
+            pulses=[RydbergPulse(1, 2, 3, 4)],
         )
         with pytest.warns(
             UserWarning,
