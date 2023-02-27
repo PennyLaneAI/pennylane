@@ -20,6 +20,10 @@
 * Added `Operation.__truediv__` dunder method to be able to divide operators.
   [(#3749)](https://github.com/PennyLaneAI/pennylane/pull/3749)
 
+* The `simulate` function added to `devices/qubit` now supports measuring expectation values of large observables such as
+  `qml.Hamiltonian`, `qml.SparseHamiltonian`, `qml.Sum`.
+  [(#3759)](https://github.com/PennyLaneAI/pennylane/pull/3759)
+
 <h3>Improvements</h3>
 
 * `AdaptiveOptimizer` is updated to use non-default user-defined qnode arguments.
@@ -46,5 +50,6 @@ This release contains contributions from (in alphabetical order):
 
 Utkarsh Azad
 Soran Jahangiri
+Mudit Pandey
 Matthew Silverman
 Jay Soni
