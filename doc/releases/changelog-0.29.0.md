@@ -829,6 +829,9 @@
 
 <h3>Documentation 📝</h3>
 
+* Revise note on GPU support in the [circuit introduction](https://docs.pennylane.ai/en/stable/introduction/circuits.html#defining-a-device).
+[(#3836)](https://github.com/PennyLaneAI/pennylane/pull/3836)
+
 * The documentation for `qml.operation` has been improved.
   [(#3664)](https://github.com/PennyLaneAI/pennylane/pull/3664)
 
