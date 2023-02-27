@@ -23,7 +23,6 @@ import numpy as np
 import pennylane as qml
 from pennylane.operation import Operation
 from .non_parametric_ops import Hadamard, PauliX, PauliY, PauliZ
-from .parametric_ops_controlled import CRX, CRY, CRZ, ControlledPhaseShift, CRot
 
 stack_last = functools.partial(qml.math.stack, axis=-1)
 
@@ -117,7 +116,7 @@ class RX(Operation):
         return [RX(self.data[0] * z, wires=self.wires)]
 
     def _controlled(self, wire):
-        return CRX(*self.parameters, wires=wire + self.wires)
+        return qml.CRX(*self.parameters, wires=wire + self.wires)
 
     def simplify(self):
         theta = self.data[0] % (4 * np.pi)
@@ -214,7 +213,7 @@ class RY(Operation):
         return [RY(self.data[0] * z, wires=self.wires)]
 
     def _controlled(self, wire):
-        return CRY(*self.parameters, wires=wire + self.wires)
+        return qml.CRY(*self.parameters, wires=wire + self.wires)
 
     def simplify(self):
         theta = self.data[0] % (4 * np.pi)
@@ -351,7 +350,7 @@ class RZ(Operation):
         return [RZ(self.data[0] * z, wires=self.wires)]
 
     def _controlled(self, wire):
-        return CRZ(*self.parameters, wires=wire + self.wires)
+        return qml.CRZ(*self.parameters, wires=wire + self.wires)
 
     def simplify(self):
         theta = self.data[0] % (4 * np.pi)
@@ -517,7 +516,7 @@ class PhaseShift(Operation):
         return [PhaseShift(self.data[0] * z, wires=self.wires)]
 
     def _controlled(self, wire):
-        return ControlledPhaseShift(*self.parameters, wires=wire + self.wires)
+        return qml.ControlledPhaseShift(*self.parameters, wires=wire + self.wires)
 
     def simplify(self):
         phi = self.data[0] % (2 * np.pi)
@@ -673,7 +672,7 @@ class Rot(Operation):
         return Rot(-omega, -theta, -phi, wires=self.wires)
 
     def _controlled(self, wire):
-        return CRot(*self.parameters, wires=wire + self.wires)
+        return qml.CRot(*self.parameters, wires=wire + self.wires)
 
     def single_qubit_rot_angles(self):
         return self.data
