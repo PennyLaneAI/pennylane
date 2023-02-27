@@ -27,12 +27,12 @@
   
   f1 = lambda p, t: p * jnp.sin(t) * (t - 1)
   f2 = lambda p, t: p[0] * jnp.cos(p[1]* t ** 2)
-
-  XX = qml.PauliX(1) @ qml.PauliX(1)
-  YY = qml.PauliY(0) @ qml.PauliY(0)
+  
+  XX = qml.PauliX(0) @ qml.PauliX(1)
+  YY = qml.PauliY(0) @ qml.PauliY(1)
   ZZ = qml.PauliZ(0) @ qml.PauliZ(1)
-
-  H =  2 * XX + f1 * YY + f2 * ZZ
+  
+  H =  2 * ZZ + f1 * XX + f2 * YY
   ```
 
   ```pycon
@@ -41,29 +41,28 @@
   >>> p1 = jnp.array(1.2)
   >>> p2 = jnp.array([2.3, 3.4])
   >>> H((p1, p2), t=0.5)
-  (2*(PauliX(wires=[1]) @ PauliX(wires=[1]))) + ((-0.2876553535461426*(PauliY(wires=[0]) @ PauliY(wires=[0]))) + (1.5179612636566162*(PauliZ(wires=[0]) @ PauliZ(wires=[1]))))
+  (2*(PauliZ(wires=[0]) @ PauliZ(wires=[1]))) + ((-0.2876553231625218*(PauliX(wires=[0]) @ PauliX(wires=[1]))) + (1.517961235535459*(PauliY(wires=[0]) @ PauliY(wires=[1]))))
   ```
 
   The time-dependent Hamiltonian can be used within a circuit with `qml.evolve`:
 
   ```python
   def pulse_circuit(params, time):
-      qml.Hadamard(0)
       qml.evolve(H)(params, time)
-      return qml.expval(qml.PauliX(0) @ qml.PauliZ(1))
+      return qml.expval(qml.PauliX(0) @ qml.PauliY(1))
   ```
 
   Pulse-based circuits can be executed on the `default.qubit` simulator using JAX as an interface:
 
   ```pycon
-  >>> dev = dev = qml.device("default.qubit", wires=2)
+  >>> dev = qml.device("default.qubit", wires=2)
   >>> qnode = qml.QNode(pulse_circuit, dev, interface="jax")
   >>> params = (p1, p2)
   >>> qnode(params, time=0.5)
-  Array(-0.5441851, dtype=float32)
+  Array(0.72153819, dtype=float64)
   >>> jax.grad(qnode)(params, time=0.5)
-  [Array(-0.0096471, dtype=float32),
-   Array([-0.7750168 ,  0.07650781], dtype=float32)]
+  (Array(-0.11324919, dtype=float64),
+   Array([-0.64399616,  0.06326374], dtype=float64))
   ```
 
   Check out the [qml.pulse](https://docs.pennylane.ai/en/stable/code/qml_pulse.html) documentation
