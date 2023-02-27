@@ -105,8 +105,7 @@ def rydberg_transition(rabi, detuning, phase, wires):
             acts on
 
     Returns:
-        RydbergHamiltonian: Hamiltonian representing the action of the laser field on the
-            Rydberg atoms
+        RydbergHamiltonian: Hamiltonian representing the action of the laser field on the Rydberg atoms
     """
     if isinstance(wires, int):
         wires = [wires]
