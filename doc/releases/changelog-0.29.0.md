@@ -166,11 +166,10 @@
   as differentiable with SPSA. It can be selected via
 
   ```pycon
-  >>> dev = qml.device("default.qubit", wires=2)
+  >>> dev = qml.device("default.qubit", wires=1)
   >>> @qml.qnode(dev, interface="jax", diff_method="spsa", h=0.05, num_directions=20)
   ... def circuit(x):
   ...     qml.RX(x, 0)
-  ...     qml.RX(x, 1)
   ...     return qml.expval(qml.PauliZ(0))
   >>> jax.jacobian(circuit)(jax.numpy.array(0.5))
   Array(-0.4792258, dtype=float32, weak_type=True)
