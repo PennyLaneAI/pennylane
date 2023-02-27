@@ -343,5 +343,4 @@ class ParametrizedHamiltonian:
             return ParametrizedHamiltonian(coeffs_fixed + coeffs_parametrized, ops)
         return NotImplemented
 
-    __radd__ = __add__
     __rmul__ = __mul__
