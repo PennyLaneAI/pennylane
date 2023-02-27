@@ -146,7 +146,7 @@
   autodifferentiation:
 
   ```pycon
-  >>> dev = qml.device("default.qubit", wires=3)
+  >>> dev = qml.device("default.qubit", wires=2)
   >>> @qml.qnode(dev, interface="jax", diff_method="hadamard")
   ... def circuit(params):
   ...     qml.RX(params[0], wires=0)
