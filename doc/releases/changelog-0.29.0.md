@@ -503,7 +503,7 @@
 
 <h4>Operations and batching</h4>
 
-* A new function called `qml.dot` has been added to compute the dot product between a vector and a list of operators.
+* The function `qml.dot` has been updated to compute the dot product between a vector and a list of operators.
   [(#3586)](https://github.com/PennyLaneAI/pennylane/pull/3586)
 
   ```pycon
@@ -843,7 +843,10 @@
 * The use of `Evolution` directly has been deprecated. Users should use `qml.evolve` instead.
   This new function changes the sign of the given parameter.
   [(#3706)](https://github.com/PennyLaneAI/pennylane/pull/3706)
-  
+
+* Use of `qml.dot` with a `QNodeCollection` has been deprecated.
+  [(#3586)](https://github.com/PennyLaneAI/pennylane/pull/3586)
+
 <h3>Documentation</h3>
 
 * The documentation for `qml.operation` has been improved.
