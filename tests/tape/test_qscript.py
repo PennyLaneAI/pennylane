@@ -20,8 +20,9 @@ Things left to unittest:
 * parameter stuff
 * qasm
 """
-from collections import defaultdict
 import copy
+from collections import defaultdict
+
 import pytest
 
 import pennylane as qml
@@ -140,7 +141,7 @@ class TestUpdate:
 
     @pytest.mark.parametrize("sample_ms", sample_measurements)
     def test_update_circuit_info_sampling(self, sample_ms):
-        qs = QuantumScript(measurements=[qml.expval(qml.PauliZ(0)), sample_ms])
+        qs = QuantumScript(measurements=[qml.expval(qml.PauliX(0)), sample_ms])
         assert qs.is_sampled is True
         assert qs.all_sampled is False
 
@@ -158,7 +159,7 @@ class TestUpdate:
     def test_update_circuit_info_no_sampling(self):
         """Test that all_sampled, is_sampled and measures_computational_basis properties are set to False if no sampling
         measurement process exists."""
-        qs = QuantumScript(measurements=[qml.expval(qml.PauliZ(0))])
+        qs = QuantumScript(measurements=[qml.expval(qml.PauliX(0))])
         assert qs.is_sampled is False
         assert qs.all_sampled is False
         assert qs.measures_computational_basis is False
@@ -168,7 +169,7 @@ class TestUpdate:
         qs = QuantumScript(measurements=[qml.sample()])
         assert qs.measures_computational_basis is True
 
-        qs._measurements = [qml.expval(qml.PauliZ(0))]
+        qs._measurements = [qml.expval(qml.PauliX(0))]
         assert qs.measures_computational_basis is False
 
     def test_update_par_info_update_trainable_params(self):

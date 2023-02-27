@@ -30,8 +30,16 @@ class TapeError(ValueError):
     """An error raised with a quantum tape."""
 
 
-def _err_msg_for_some_meas_not_qwc(measurements):
+def non_qwc_error_message(measurements):
     """Error message for the case when some operators measured on the same wire are not qubit-wise commuting."""
+    if any(isinstance(m, (ProbabilityMP, SampleMP, CountsMP)) for m in measurements):
+        return (
+            "Only observables that are qubit-wise commuting "
+            "Pauli words can be returned on the same wire.\n"
+            "Try removing all probability, sample and counts measurements "
+            "this will allow for splitting of execution and separate measurements "
+            "for each non-commuting observable."
+        )
     return (
         "Only observables that are qubit-wise commuting "
         "Pauli words can be returned on the same wire, "
@@ -74,7 +82,7 @@ def _validate_computational_basis_sampling(measurements):
             if obs.obs is not None and not qml.pauli.utils.are_pauli_words_qwc(
                 [obs.obs, pauliz_for_cb_obs]
             ):
-                raise qml.QuantumFunctionError(_err_msg_for_some_meas_not_qwc(measurements))
+                raise qml.QuantumFunctionError(non_qwc_error_message(measurements))
 
 
 # TODO: move this function to its own file and rename
@@ -155,20 +163,7 @@ def expand_tape(tape, depth=1, stop_at=None, expand_measurements=False):
                 rotations, diag_obs = qml.pauli.diagonalize_qwc_pauli_words(tape._obs_sharing_wires)
                 tape._obs_sharing_wires = diag_obs
             except (TypeError, ValueError) as e:
-                if any(
-                    isinstance(m, (ProbabilityMP, SampleMP, CountsMP)) for m in tape.measurements
-                ):
-                    raise qml.QuantumFunctionError(
-                        "Only observables that are qubit-wise commuting "
-                        "Pauli words can be returned on the same wire.\n"
-                        "Try removing all probability, sample and counts measurements "
-                        "this will allow for splitting of execution and separate measurements "
-                        "for each non-commuting observable."
-                    ) from e
-
-                raise qml.QuantumFunctionError(
-                    _err_msg_for_some_meas_not_qwc(tape.measurements)
-                ) from e
+                raise qml.QuantumFunctionError(non_qwc_error_message(tape.measurements)) from e
 
             tape._ops.extend(rotations)
 

@@ -657,9 +657,7 @@ class Device(abc.ABC):
         # pylint: disable=protected-access
 
         comp_basis_sampled_multi_measure = (
-            len(circuit.measurements) > 1
-            and circuit.measures_computational_basis
-            and self.shots is not None
+            len(circuit.measurements) > 1 and circuit.measures_computational_basis
         )
         obs_on_same_wire = len(circuit._obs_sharing_wires) > 0 or comp_basis_sampled_multi_measure
         obs_on_same_wire &= not any(
