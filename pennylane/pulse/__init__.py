@@ -56,6 +56,8 @@ Convenience Functions
     ~pwc
     ~pwc_from_function
     ~rect
+    ~rydberg_interaction
+    ~rydberg_transition
 
 
 Creating a parametrized Hamiltonian

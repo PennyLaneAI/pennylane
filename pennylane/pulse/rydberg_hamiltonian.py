@@ -139,7 +139,7 @@ class RydbergHamiltonian(ParametrizedHamiltonian):
     the Pauli matrices.
 
     The last term of the sum corresponds to the interaction between the atoms of the ensemble
-    due to the Rydberg blockade. For more info, check :seealso:`rydberg_interaction`.
+    due to the Rydberg blockade. For more info, check :func:`rydberg_interaction`.
 
     .. note::
 
