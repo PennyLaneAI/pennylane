@@ -34,4 +34,4 @@ from .sampling import sample_state
 from .preprocess import preprocess
 from .simulate import simulate
 
-from .default_qubit_2 import DefaultQubit2
+from ..experimental.default_qubit_2 import DefaultQubit2

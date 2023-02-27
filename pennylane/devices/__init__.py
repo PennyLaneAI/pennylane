@@ -50,6 +50,7 @@ accesssible from the ``pennylane.devices.experimental`` submodule.
 
     ExecutionConfig
     Device
+    DefaultQubit2
 
 """
 
