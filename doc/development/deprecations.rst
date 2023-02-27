@@ -15,21 +15,21 @@ Pending deprecations
   instead. Using a list of observables in ``QubitDevice.statistics`` is deprecated. Please use a
   ``QuantumTape`` instead.
 
-  - Still accessible in v0.28
-  - Will be removed in v0.29
+  - Still accessible in v0.28, v0.29
+  - Will be removed in v0.30
 
 * The ``seed_recipes`` argument in ``qml.classical_shadow`` and ``qml.shadow_expval`` is deprecated.
   A new argument ``seed`` has been added, which defaults to ``None`` and can contain an integer with the 
   wanted seed.
 
-  - Still accessible in v0.28
-  - Will be removed in v0.29
+  - Still accessible in v0.28, v0.29
+  - Will be removed in v0.30
 
 * The ``grouping`` module is deprecated. The functionality has been moved and
   reorganized in the new ``pauli`` module under ``pauli/utils.py`` or ``pauli/grouping/``.
 
-  - Still accessible in v0.27, v0.28
-  - Will be removed in v0.29
+  - Still accessible in v0.27, v0.28, v0.29
+  - Will be removed in v0.30
 
   The functions from ``grouping/pauli.py``, ``grouping/transformations.py`` and
   ``grouping/utils.py`` have been moved to ``pauli/utils.py``. The remaining functions
@@ -49,12 +49,6 @@ Pending deprecations
     def ansatz(params):
         some_qfunc(params)
         return qml.expval(Hamiltonian)
-
-* ``qml.transforms.make_tape`` has been deprecated, and usage will now raise a warning.
-  Instead, use ``qml.tape.make_qscript``.
-
-  - Deprecated in v0.28
-  - Will be removed in v0.29
 
 * The ``collections`` module has been deprecated.
 
@@ -169,3 +163,8 @@ Completed deprecation cycles
   - Deprecated in v0.28
   - Removed in v0.29
 
+* ``qml.transforms.make_tape`` was previously deprecated, but there is no longer a plan to remove it.
+  It no longer raises a warning, and the functionality is unchanged.
+
+  - Deprecated in v0.28
+  - Un-deprecated in v0.29
