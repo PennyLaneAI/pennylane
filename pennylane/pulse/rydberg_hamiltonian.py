@@ -150,6 +150,9 @@ class RydbergHamiltonian(ParametrizedHamiltonian):
         When adding a ``RydbergHamiltonian`` with a :class:`ParametrizedHamiltonian` all the
         information needed to translate this class into hardware will be lost.
 
+    .. seealso:: :class:`rydberg_interaction`, :class:`rydberg_transition`
+
+
     Args:
         coeffs (Union[float, callable]): coefficients of the Hamiltonian expression, which may be
             constants or parametrized functions. All functions passed as ``coeffs`` must have two

@@ -41,6 +41,7 @@ Time evolution classes
     :toctree: api
 
     ~ParametrizedHamiltonian
+    ~RydbergHamiltonian
     ~ParametrizedEvolution
 
 Convenience Functions
