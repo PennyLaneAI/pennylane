@@ -262,7 +262,7 @@ class TestIntegration:
         def fb(p, t):
             return p[0] * jnp.sin(p[1] * t)
 
-        Ht = rydberg_transition(rabi=fa, detuning=fb, phase=0, wires=[1, 2])
+        Ht = rydberg_transition(rabi=fa, detuning=fb, phase=0, wires=1)
 
         dev = qml.device("default.qubit", wires=wires)
 

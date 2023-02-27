@@ -273,6 +273,8 @@ class TestInteractionWithOperators:
         assert qml.equal(new_pH.H_fixed(), sum((qml.s_prod(1, op), pH_fixed)))
 
     def test_add_invalid_object_raises_error(self):
+        """Test that an error is raised when adding a ``ParametrizedHamiltonian`` with an invalid
+        object."""
         H = ParametrizedHamiltonian([f1, f2], [qml.PauliX(0), qml.PauliY(1)])
 
         class DummyObject:  # pylint: disable=too-few-public-methods
@@ -280,6 +282,33 @@ class TestInteractionWithOperators:
 
         with pytest.raises(TypeError, match="unsupported operand type"):
             _ = H + DummyObject()
+
+        with pytest.raises(TypeError, match="unsupported operand type"):
+            _ = DummyObject() + H
+
+    def test_multiply_with_scalar(self):
+        """Test the __mul__ dunder method with a scalar."""
+        H = ParametrizedHamiltonian([f1, f2], [qml.PauliX(0), qml.PauliY(1)])
+        new_H = 3 * H
+        expected_H = ParametrizedHamiltonian(
+            [lambda p, t: 3 * f1(p, t), lambda p, t: 3 * f2(p, t)], [qml.PauliX(0), qml.PauliY(1)]
+        )
+        assert new_H.H_fixed() == expected_H.H_fixed() == 0
+        assert qml.equal(new_H.H_parametrized([1, 2], t=4), expected_H.H_parametrized([1, 2], t=4))
+
+    def test_multiply_invalid_object_raises_error(self):
+        """Test that an error is raised when multiplying a ``ParametrizedHamiltonian`` with an invalid
+        object."""
+        H = ParametrizedHamiltonian([f1, f2], [qml.PauliX(0), qml.PauliY(1)])
+
+        class DummyObject:  # pylint: disable=too-few-public-methods
+            pass
+
+        with pytest.raises(TypeError, match="unsupported operand type"):
+            _ = H * DummyObject()
+
+        with pytest.raises(TypeError, match="unsupported operand type"):
+            _ = DummyObject() * H
 
     def test_adding_two_parametrized_hamiltonians(self):
         """Test that two ParametrizedHamiltonians can be added together and

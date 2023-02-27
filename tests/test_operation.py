@@ -1014,6 +1014,16 @@ class TestOperatorIntegration:
         assert isinstance(prod_op, SProd)
         assert prod_op.scalar == 1 / scalar
 
+    def test_divide_not_supported(self):
+        """Test that the division of an operator with an unknown object is not supported."""
+        obs = qml.PauliX(0)
+
+        class UnknownObject:
+            pass
+
+        with pytest.raises(TypeError, match="unsupported operand type"):
+            _ = obs / UnknownObject()
+
     def test_dunder_method_with_new_class(self):
         """Test that when calling any Operator dunder method with a non-supported class that
         has its right dunder method defined, the class' right dunder method is called."""
