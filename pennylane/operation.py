@@ -1919,8 +1919,8 @@ class Tensor(Observable):
         if base_label is not None:
             if len(base_label) != len(self.obs):
                 raise ValueError(
-                    "Tensor label requires ``base_label`` keyword to be same length"
-                    " as tensor components."
+                    "Tensor label requires ``base_label`` keyword to be same length "
+                    "as tensor components."
                 )
             return "@".join(
                 ob.label(decimals=decimals, base_label=lbl) for ob, lbl in zip(self.obs, base_label)

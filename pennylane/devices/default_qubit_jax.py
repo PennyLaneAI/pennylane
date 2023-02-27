@@ -38,7 +38,7 @@ def _validate_jax_version():
     if jax.__version__ == "0.4.4":
         raise RuntimeError(
             "\nYour installed version of JAX is 0.4.4 but Pennylane is incompatible with it.\n\n"
-            "You can either downgrade JAX to version 0.4.3 or update to a more recent version if available."
+            "You can either downgrade JAX to version 0.4.3 or update to a more recent version if available.\n"
             "If you downgrade, you will also need to downgrade JAXLIB to version 0.4.3 or earlier.\n"
             "If you are using pip to manage your packages, you can run the following command:\n\n"
             "\tpip install 'jax==0.4.3' 'jaxlib==0.4.3'\n\n"
