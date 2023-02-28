@@ -14,6 +14,7 @@
 """
 Unit tests for the convenience functions used in pulsed programming.
 """
+# pylint: disable=import-outside-toplevel
 import inspect
 from functools import reduce
 
@@ -80,10 +81,11 @@ class TestRect:
         assert callable(c)
         assert argspec.args == ["p", "t"]
 
-    def test_rect_returns_correct_value_single_window(self):
+    @pytest.mark.parametrize("windows", ([(4, 8)], (4, 8)))
+    def test_rect_returns_correct_value_single_window(self, windows):
         """Test that the ``rect`` function returns the correct value only when t is inside
         the window."""
-        c = qml.pulse.rect(x=10, windows=[(4, 8)])
+        c = qml.pulse.rect(x=10, windows=windows)
 
         times = np.arange(0, 10, step=1e-2)
         for t in times:
@@ -91,6 +93,12 @@ class TestRect:
                 assert c(p=1, t=t) == 10  # p is ignored
             else:
                 assert c(p=1, t=t) == 0
+
+    @pytest.mark.parametrize("windows", ([2, (4, 8)], (4, 8, 8), [(4, 9), 1], (4,), ([4],)))
+    def test_rect_raises_invalid_windows(self, windows):
+        """Test that the ``rect`` function raises a ValueError for ill-formatted windows."""
+        with pytest.raises(ValueError, match="At least one provided window"):
+            _ = qml.pulse.rect(x=10, windows=windows)
 
     def test_rect_returns_correct_value_multiple_windows(self):
         """Test that the ``rect`` function returns the correct value only when t is inside
@@ -192,18 +200,18 @@ class TestIntegration:
 
         dev = qml.device("default.qubit", wires=2)
 
-        @qml.qnode(dev)
+        @qml.qnode(dev, interface="jax")
         def circuit(params):
             qml.evolve(H)(params=params, t=t)
             return qml.expval(qml.PauliZ(0) @ qml.PauliZ(1))
 
         @jax.jit
-        @qml.qnode(dev)
+        @qml.qnode(dev, interface="jax")
         def jitted_circuit(params):
             qml.evolve(H)(params=params, t=t)
             return qml.expval(qml.PauliZ(0) @ qml.PauliZ(1))
 
-        @qml.qnode(dev)
+        @qml.qnode(dev, interface="jax")
         def true_circuit(params):
             true_mat = reduce(lambda x, y: y @ x, generator(params))
             qml.QubitUnitary(U=true_mat, wires=[0, 1])

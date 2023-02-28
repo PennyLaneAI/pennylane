@@ -88,6 +88,7 @@ def _hadamard_grad(
 
     This gradient transform can be applied directly to :class:`QNode <pennylane.QNode>` objects:
 
+    >>> qml.enable_return()
     >>> dev = qml.device("default.qubit", wires=2)
     >>> @qml.qnode(dev)
     ... def circuit(params):
@@ -127,6 +128,35 @@ def _hadamard_grad(
     >>> fn(qml.execute(gradient_tapes, dev, None))
     (array(-0.3875172), array(-0.18884787), array(-0.38355704))
 
+    This transform can be registered directly as the quantum gradient transform
+    to use during autodifferentiation:
+
+    >>> dev = qml.device("default.qubit", wires=3)
+    >>> @qml.qnode(dev, interface="jax", diff_method="hadamard")
+    ... def circuit(params):
+    ...     qml.RX(params[0], wires=0)
+    ...     qml.RY(params[1], wires=0)
+    ...     qml.RX(params[2], wires=0)
+    ...     return qml.expval(qml.PauliZ(0))
+    >>> params = jax.numpy.array([0.1, 0.2, 0.3])
+    >>> jax.jacobian(circuit)(params)
+    [-0.3875172  -0.18884787 -0.38355704]
+
+    If you use custom wires on your device, you need to pass an auxiliary wire.
+
+    >>> qml.enable_return()
+    >>> dev_wires = ("a", "c")
+    >>> dev = qml.device("default.qubit", wires=dev_wires)
+    >>> @qml.qnode(dev, interface="jax", diff_method="hadamard", aux_wire="c", device_wires=dev_wires)
+    >>> def circuit(params):
+    ...    qml.RX(params[0], wires="a")
+    ...    qml.RY(params[1], wires="a")
+    ...    qml.RX(params[2], wires="a")
+    ...    return qml.expval(qml.PauliZ("a"))
+    >>> params = jax.numpy.array([0.1, 0.2, 0.3])
+    >>> jax.jacobian(circuit)(params)
+    [-0.3875172  -0.18884787 -0.38355704]
+
     .. note::
 
         ``hadamard_grad`` will decompose the operations that are not in the list of supported operations.
@@ -148,6 +178,10 @@ def _hadamard_grad(
         The number of trainable parameters may increase due to the decomposition.
 
     """
+    if not qml.active_return():
+        raise ValueError(
+            "The hadamard gradient only supports the new return type. Use qml.enable_return() to turn it on."
+        )
     if any(isinstance(m, VarianceMP) for m in tape.measurements):
         raise ValueError(
             "Computing the gradient of variances with the Hadamard test gradient is not implemented."
@@ -268,11 +302,10 @@ def _expval_hadamard_grad(tape, argnum, aux_wire):
 
             new_tape = qml.tape.QuantumScript(ops=ops, measurements=measurements)
 
-            # Expand measurements only
-            # pylint: disable=invalid-unary-operand-type
-            new_tape = qml.tape.tape.expand_tape(
-                new_tape, stop_at=~qml.operation.is_measurement, expand_measurements=True
-            )
+            new_tape.expand()
+            # pylint: disable=protected-access
+            new_tape._update()
+
             num_tape += 1
 
             g_tapes.append(new_tape)
@@ -311,15 +344,17 @@ def _expval_hadamard_grad(tape, argnum, aux_wire):
                     res = qml.math.reshape(res, (2**num_wires_probs, 2))
                     final_res[idx] = qml.math.tensordot(res, projector, axes=[[1], [0]])
         grads = []
-
-        for idx, num_tape in enumerate(gradient_data):
+        idx = 0
+        for num_tape in gradient_data:
             if num_tape == 0:
                 grads.append(qml.math.zeros(()))
             elif num_tape == 1:
                 grads.append(final_res[idx])
+                idx += 1
             else:
                 axis = None if not multi_measurements else 0
                 grads.append(qml.math.sum(final_res[idx : idx + num_tape], axis=axis))
+                idx += num_tape
 
         if not multi_measurements and not multi_params:
             return grads[0]

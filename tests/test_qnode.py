@@ -379,9 +379,9 @@ class TestValidation:
         assert qn.diff_method == "spsa"
         assert qn.gradient_fn is qml.gradients.spsa_grad
 
-        qn = QNode(dummyfunc, dev, interface="autograd", diff_method="spsa")
-        assert qn.diff_method == "spsa"
-        assert qn.gradient_fn is qml.gradients.spsa_grad
+        qn = QNode(dummyfunc, dev, interface="autograd", diff_method="hadamard")
+        assert qn.diff_method == "hadamard"
+        assert qn.gradient_fn is qml.gradients.hadamard_grad
 
         qn = QNode(dummyfunc, dev, diff_method="parameter-shift")
         assert qn.diff_method == "parameter-shift"
@@ -560,9 +560,8 @@ class TestValidation:
         assert "Use diff_method instead" in str(w[0].message)
         assert "Use diff_method instead" in str(w[1].message)
 
-    def test_auto_interface_device_switched_warning(self):
-        """Test that checks that a warning is raised if the device is switched during the QNode call due to auto
-        interface."""
+    def test_auto_interface_tracker_device_switched(self):
+        """Test that checks that the tracker is switched to the new device."""
         dev = qml.device("default.qubit", wires=1)
 
         @qml.qnode(dev)
@@ -570,11 +569,17 @@ class TestValidation:
             qml.RX(params, wires=0)
             return qml.expval(qml.PauliZ(0))
 
-        with pytest.warns(
-            UserWarning,
-            match="The device was switched during the call of the QNode",
-        ):
+        with qml.Tracker(dev) as tracker:
             circuit(qml.numpy.array(0.1, requires_grad=True))
+
+        assert tracker.totals == {"executions": 1, "batches": 1, "batch_len": 1}
+        assert np.allclose(tracker.history.pop("results")[0], 0.99500417)
+        assert tracker.history == {
+            "executions": [1],
+            "shots": [None],
+            "batches": [1],
+            "batch_len": [1],
+        }
 
     def test_autograd_interface_device_switched_no_warnings(self):
         """Test that checks that no warning is raised for device switch when you define an interface."""
@@ -984,7 +989,7 @@ class TestIntegration:
         assert cache != {}
 
     @pytest.mark.autograd
-    @pytest.mark.parametrize("diff_method", ["parameter-shift", "finite-diff", "spsa"])
+    @pytest.mark.parametrize("diff_method", ["parameter-shift", "finite-diff", "spsa", "hadamard"])
     def test_single_expectation_value_with_argnum_one(self, diff_method, tol):
         """Tests correct output shape and evaluation for a QNode
         with a single expval output where only one parameter is chosen to
@@ -1009,14 +1014,20 @@ class TestIntegration:
             qml.CNOT(wires=[0, 1])
             return qml.expval(qml.PauliZ(0) @ qml.PauliX(1))
 
-        res = qml.grad(circuit)(x, y)
-        assert len(res) == 2
+        if diff_method == "hadamard":
+            with pytest.raises(
+                ValueError, match="The hadamard gradient only supports the new return type."
+            ):
+                res = qml.grad(circuit)(x, y)
+        else:
+            res = qml.grad(circuit)(x, y)
+            assert len(res) == 2
 
-        expected = (0, np.cos(y) * np.cos(x))
-        res = res
-        expected = expected
+            expected = (0, np.cos(y) * np.cos(x))
+            res = res
+            expected = expected
 
-        assert np.allclose(res, expected, atol=tol, rtol=0)
+            assert np.allclose(res, expected, atol=tol, rtol=0)
 
     @pytest.mark.parametrize("first_par", np.linspace(0.15, np.pi - 0.3, 3))
     @pytest.mark.parametrize("sec_par", np.linspace(0.15, np.pi - 0.3, 3))
@@ -1216,8 +1227,8 @@ class TestIntegration:
 
         @qml.qnode(dev)
         def qnode():
-            qml.PauliX(0)
-            return qml.expval(qml.PauliZ(0))
+            qml.PauliZ(0)
+            return qml.expval(qml.PauliX(0))
 
         with qml.queuing.AnnotatedQueue() as q:
             qnode()

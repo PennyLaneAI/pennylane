@@ -54,7 +54,7 @@ def exp(op, coeff=1, num_steps=None, id=None):
         id (str): id for the Exp operator. Default is None.
 
     Returns:
-       :class:`Exp`: A :class`~.operation.Operator` representing an operator exponential.
+       :class:`Exp`: A :class:`~.operation.Operator` representing an operator exponential.
 
     .. note::
 
@@ -224,9 +224,7 @@ class Exp(ScalarSymbolicOp, Operation):
 
     @property
     def _queue_category(self):
-        if self.base.is_hermitian and math.allequal(math.real(self.coeff), 0):
-            return "_ops"
-        return None
+        return "_ops"
 
     # pylint: disable=invalid-overridden-method, arguments-renamed
     @property
@@ -293,6 +291,13 @@ class Exp(ScalarSymbolicOp, Operation):
         if isinstance(base, SProd):
             return self._recursive_decomposition(base.base, base.scalar * coeff)
 
+        if self.num_steps is not None and isinstance(base, (Hamiltonian, Sum)):
+            # Apply trotter decomposition
+            coeffs = base.coeffs if isinstance(base, Hamiltonian) else [1] * len(base)
+            coeffs = [c * coeff for c in coeffs]
+            ops = base.ops if isinstance(base, Hamiltonian) else base.operands
+            return self._trotter_decomposition(ops, coeffs)
+
         for op_class in has_unitary_generator_types:
             # Check if the exponentiated operator is a generator of another operator
             if op_class.num_wires in {base.num_wires, AnyWires} and op_class is not qml.PauliRot:
@@ -308,14 +313,11 @@ class Exp(ScalarSymbolicOp, Operation):
             # Check if the exponential can be decomposed into a PauliRot gate
             return self._pauli_rot_decomposition(base, coeff)
 
-        if isinstance(base, (Hamiltonian, Sum)):
-            # Apply trotter decomposition
-            coeffs = base.coeffs if isinstance(base, Hamiltonian) else [1] * len(base)
-            coeffs = [c * coeff for c in coeffs]
-            ops = base.ops if isinstance(base, Hamiltonian) else base.operands
-            return self._trotter_decomposition(ops, coeffs)
-
-        raise DecompositionUndefinedError
+        raise DecompositionUndefinedError(
+            f"The decomposition of the {self} operator is not defined. "
+            "Please set a value to ``num_steps`` when instantiating the ``Exp`` operator "
+            "if a Suzuki-Trotter decomposition is required."
+        )
 
     @staticmethod
     def _pauli_rot_decomposition(base: Operator, coeff: complex):
@@ -350,13 +352,6 @@ class Exp(ScalarSymbolicOp, Operation):
         Returns:
             List[Operator]: a list of operators containing the decomposition
         """
-        if self.num_steps is None:
-            raise DecompositionUndefinedError(
-                "The number of steps is required to calculate the Suzuki-Trotter "
-                "decomposition of the exponential operator. Please specify a value "
-                "for ``num_steps`` when instantiating the operator."
-            )
-
         op_list = []
         for c, op in zip(coeffs, ops):
             c /= self.num_steps  # divide by trotter number
