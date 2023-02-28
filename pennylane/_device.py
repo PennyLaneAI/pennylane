@@ -655,13 +655,7 @@ class Device(abc.ABC):
             will natively support all operations.
         """
         # pylint: disable=protected-access
-
-        multi_measure_comp_basis_without_obs = len(circuit.measurements) > 1 and any(
-            m.measures_computational_basis and m.obs is None for m in circuit.measurements
-        )
-        obs_on_same_wire = (
-            len(circuit._obs_sharing_wires) > 0 or multi_measure_comp_basis_without_obs
-        )
+        obs_on_same_wire = len(circuit._obs_sharing_wires) > 0
         obs_on_same_wire &= not any(
             isinstance(o, qml.Hamiltonian) for o in circuit._obs_sharing_wires
         )

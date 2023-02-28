@@ -29,13 +29,14 @@ from pennylane.measurements import (
     CountsMP,
     ExpectationMP,
     MeasurementProcess,
+    MeasurementTransform,
     ProbabilityMP,
     SampleMP,
     ShadowExpvalMP,
     StateMP,
     VarianceMP,
 )
-from pennylane.operation import Observable, Operator
+from pennylane.operation import Observable, Operator, Tensor
 from pennylane.queuing import AnnotatedQueue, process_queue
 
 _empty_wires = qml.wires.Wires([])
@@ -431,7 +432,12 @@ class QuantumScript:
             _obs_sharing_wires_id (list[int]): Indices of the measurements that contain
                 the observables in _obs_sharing_wires
         """
-        obs_wires = [wire for m in self.measurements for wire in m.wires if m.obs is not None]
+        obs_wires = [
+            wire
+            for m in self.measurements
+            for wire in m.wires
+            if not isinstance(m, MeasurementTransform)
+        ]
         self._obs_sharing_wires = []
         self._obs_sharing_wires_id = []
 
@@ -440,8 +446,15 @@ class QuantumScript:
             repeated_wires = {w for w in obs_wires if c[w] > 1}
 
             for i, m in enumerate(self.measurements):
-                if m.obs is not None and len(set(m.wires) & repeated_wires) > 0:
-                    self._obs_sharing_wires.append(m.obs)
+                if len(set(m.wires) & repeated_wires) > 0:
+                    if m.obs is None:
+                        self._obs_sharing_wires.append(
+                            qml.PauliZ(m.wires)
+                            if len(m.wires) == 1
+                            else Tensor(*[qml.PauliZ(w) for w in m.wires])
+                        )
+                    else:
+                        self._obs_sharing_wires.append(m.obs)
                     self._obs_sharing_wires_id.append(i)
 
     def _update_batch_size(self):
