@@ -61,7 +61,7 @@ class Device(abc.ABC):
     .. details::
         :title: Porting from the old interface
 
-        :meth:`~.Device.batch_execute` and :meth:`~.Device.execute` are now a single method, :meth:`~.Device.execute`
+        :meth:`pennylane.Device.batch_execute` and :meth:`~pennylane.Device.execute` are now a single method, :meth:`~.Device.execute`
 
         :meth:`~.Device.batch_transform` and :meth:`~.Device.expand_fn` are now a single method, :meth:`~.Device.preprocess`
 
@@ -241,24 +241,24 @@ class Device(abc.ABC):
             stored shot information. In the future, this method will accept an ``ExecutionConfig`` instead.
 
             >>> tape = qml.tape.QuantumTape(measurements=qml.expval(qml.PauliZ(0))])
-            >>> qs.shape(dev)
+            >>> tape.shape(dev)
             ()
-            >>> dev.execute(qs)
+            >>> dev.execute(tape)
             array(1.0)
 
             If execute recieves a batch of scripts, then it should return a tuple of results:
 
-            >>> dev.execute([qs, qs])
+            >>> dev.execute([tape, tape])
             (array(1.0), array(1.0))
-            >>> dev.execute([qs])
+            >>> dev.execute([tape])
             (array(1.0),)
 
             If the script has multiple measurments, then the device should return a tuple of measurements.
 
-            >>> qs = qml.tape.QuantumTape(measurements=[qml.expval(qml.PauliZ(0)), qml.probs(wires=(0,1))])
-            >>> qs.shape(dev)
+            >>> tape = qml.tape.QuantumTape(measurements=[qml.expval(qml.PauliZ(0)), qml.probs(wires=(0,1))])
+            >>> tape.shape(dev)
             ((), (4,))
-            >>> dev.execute(qs)
+            >>> dev.execute(tape)
             (array(1.0), array([1., 0., 0., 0.]))
 
         """
@@ -362,7 +362,7 @@ class Device(abc.ABC):
         Returns:
             Tuple: The jacobian for each trainable parameter
 
-        See also :meth:`~.supports_differentiation` and :meth:`~.execute_and_compute_derivatives`.
+        .. seealso:: :meth:`~.supports_derivatives` and :meth:`~.execute_and_compute_derivatives`.
 
         **Execution Config:**
 
@@ -449,7 +449,7 @@ class Device(abc.ABC):
         tangents: Tuple[Number],
         execution_config: ExecutionConfig = DefaultExecutionConfig,
     ):
-        """Execute a batch of cricuits and compute their jacobian vector products.
+        """Execute a batch of circuits and compute their jacobian vector products.
 
         Args:
             circuits (Union[QuantumTape, Sequence[QuantumTape]]): circuit or batch of circuits
@@ -459,7 +459,7 @@ class Device(abc.ABC):
         Returns:
             Tuple, Tuple: A numeric result of execution and of computing the jacobian vector product
 
-        See :meth:`~.Device.execute` and :meth:`~.Device.compute_jvp` for more information on each method.
+        .. seealso:: :meth:`~.Device.execute` and :meth:`~.Device.compute_jvp`
         """
         return self.execute(circuits, execution_config), self.compute_jvp(
             circuits, tangents, execution_config
@@ -535,7 +535,7 @@ class Device(abc.ABC):
         Returns:
             Tuple, Tuple: the result of executing the scripts and the numeric result of computing the vector jacobian product
 
-        See :meth:`~.Device.execute` and :meth:`~.Device.compute_vjp` for more information.
+        .. seealso:: :meth:`~.Device.execute` and :meth:`~.Device.compute_vjp`
         """
         return self.execute(circuits, execution_config), self.compute_vjp(
             circuits, cotangents, execution_config

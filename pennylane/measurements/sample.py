@@ -36,11 +36,11 @@ def sample(op: Union[Observable, None] = None, wires=None):
 
     Args:
         op (Observable or None): a quantum observable object
-        wires (Sequence[int] or int or None): the wires we wish to sample from, ONLY set wires if
+        wires (Sequence[int] or int or None): the wires we wish to sample from; ONLY set wires if
             op is ``None``
 
     Returns:
-        SampleMP: measurement process instance
+        SampleMP: Measurement process instance
 
     Raises:
         ValueError: Cannot set wires if an observable is provided
@@ -148,10 +148,6 @@ class SampleMP(SampleMeasurement):
         tensor_terms = self.obs.obs if hasattr(self.obs, "obs") else [self.obs]
         every_term_standard = all(o.__class__ in int_eigval_obs for o in tensor_terms)
         return int if every_term_standard else float
-
-    @property
-    def samples_computational_basis(self):
-        return self.obs is None
 
     # pylint: disable=protected-access
     def shape(self, device=None):

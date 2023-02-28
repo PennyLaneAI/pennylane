@@ -20,6 +20,12 @@ import pennylane.numpy as np
 from pennylane.measurements import MeasurementValue, MeasurementValueError
 
 
+def test_samples_computational_basis():
+    """Test that samples_computational_basis is always false for mid circuit measurements."""
+    m = qml.measurements.MidMeasureMP(0)
+    assert not m.samples_computational_basis
+
+
 class TestMeasure:
     """Tests for the measure function"""
 

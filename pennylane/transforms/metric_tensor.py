@@ -63,8 +63,7 @@ def metric_tensor(
     Args:
         tape (pennylane.QNode or .QuantumTape): quantum tape or QNode to find the metric tensor of
         argnum (int or Sequence[int] or None): Trainable tape-parameter indices with respect to which
-
-            the metric tensor is computed. If `argnum=None`, the metric tensor with respect to all
+            the metric tensor is computed. If ``argnum=None``, the metric tensor with respect to all
             trainable parameters is returned. Excluding tape-parameter indices from this list reduces
             the computational cost and the corresponding metric-tensor elements will be set to 0.
 
@@ -229,7 +228,7 @@ def metric_tensor(
         The output tapes can then be evaluated and post-processed to retrieve
         the metric tensor:
 
-        >>> dev = qml.device("default.qubit", wires=2)
+        >>> dev = qml.device("default.qubit", wires=3)
         >>> fn(qml.execute(tapes, dev, None))
         array([[ 0.25      ,  0.        ,  0.42073549],
                [ 0.        ,  0.00415023, -0.26517488],
@@ -277,6 +276,7 @@ def metric_tensor(
             ...     qml.RZ(weights[3], wires=0)
             ...     return qml.expval(qml.PauliZ(0))
 
+            >>> weights = np.array([0.1, 0.2, 0.4, 0.5], requires_grad=True)
             >>> mt = qml.metric_tensor(circuit, argnum=(0, 2, 3))(weights)
             >>> print(mt)
             [[ 0.          0.          0.          0.        ]
