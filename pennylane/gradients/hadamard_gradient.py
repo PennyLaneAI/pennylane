@@ -354,7 +354,7 @@ def _expval_hadamard_grad(tape, argnum, aux_wire):
             else:
                 axis = None if not multi_measurements else 0
                 grads.append(qml.math.sum(final_res[idx : idx + num_tape], axis=axis))
-                idx += 1
+                idx += num_tape
 
         if not multi_measurements and not multi_params:
             return grads[0]
