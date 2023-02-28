@@ -26,7 +26,7 @@ from pennylane.wires import Wires
 from .parametrized_hamiltonian import ParametrizedHamiltonian
 
 
-def rydberg_interaction(register: list, wires=None, interaction_coeff: float = 862690 * np.pi):
+def rydberg_interaction(register: list, wires=None, interaction_coeff: float = 862690 * 2 * np.pi):
     r"""Returns a :class:`ParametrizedHamiltonian` representing the interaction of an ensemble of
     Rydberg atoms due to the Rydberg blockade:
 
@@ -100,7 +100,7 @@ def rydberg_transition(rabi, detuning, phase, wires):
             field
         detuning (Union[float, Callable]): float or callable returning the detuning (in MHz) of a
             laser field
-        phase (float): float containing the phase (in radiants) of the laser field
+        phase (float): float containing the phase (in radians) of the laser field
         wires (Union[int, List[int]]): integer or list containing wire values that the laser field
             acts on
 
@@ -216,7 +216,7 @@ class RydbergPulse:
             field
         detuning (Union[float, Callable]): float or callable returning the detuning (in MHz) of a
             laser field
-        phase (float): float containing the phase (in radiants) of the laser field
+        phase (float): float containing the phase (in radians) of the laser field
         wires (Union[int, List[int]]): integer or list containing wire values that the laser field
             acts on
     """
