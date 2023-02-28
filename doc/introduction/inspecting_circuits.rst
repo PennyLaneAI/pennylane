@@ -215,8 +215,8 @@ False
 False
 
 
-Anther way to construct the "causal" DAG of a circuit is to use the
-:func:`~pennylane.transforms.qcut.tape_to_graph` function used by the qcut module. This
+Another way to construct the "causal" DAG of a circuit is to use the
+:func:`~pennylane.transforms.qcut.tape_to_graph` function used by the ``qcut`` module. This
 function takes a quantum tape and creates a ``MultiDiGraph`` instance from the ``networkx`` python package.
 
 Using the above example, we get:
