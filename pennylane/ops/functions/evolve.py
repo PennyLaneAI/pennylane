@@ -140,7 +140,7 @@ def evolve(*args, **kwargs):  # pylint: disable=unused-argument
 
         dev = qml.device("default.qubit.jax", wires=4)
         @jax.jit
-        @qml.qnode(dev)
+        @qml.qnode(dev, interface="jax")
         def circuit(params):
             qml.evolve(H)(params, t=[0, 10])
             return qml.expval(qml.PauliZ(0))

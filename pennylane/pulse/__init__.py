@@ -215,7 +215,7 @@ Now we can execute the evolution of this Hamiltonian in a QNode and compute its 
     dev = qml.device("default.qubit.jax", wires=1)
 
     @jax.jit
-    @qml.qnode(dev)
+    @qml.qnode(dev, interface="jax")
     def circuit(params):
         qml.evolve(H)(params, t=[0, 10])
         return qml.expval(qml.PauliZ(0))

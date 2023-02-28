@@ -58,7 +58,7 @@ def constant(scalar, time):
     .. code-block:: python
 
         dev = qml.device("default.qubit.jax", wires=1)
-        @qml.qnode(dev)
+        @qml.qnode(dev, interface="jax")
         def circuit(params):
             qml.evolve(H)(params, t=2)
             return qml.expval(qml.PauliZ(0))
