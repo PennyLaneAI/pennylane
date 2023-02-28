@@ -222,8 +222,8 @@ class RydbergPulse:
     """
 
     rabi: Union[float, Callable]
-    phase: Union[float, Callable]
-    detuning: float
+    detuning: Union[float, Callable]
+    phase: float
     wires: List[Wires]
 
     def __post_init__(self):
