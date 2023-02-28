@@ -1042,6 +1042,7 @@ class TestJaxArgnums:
     interfaces = ["auto", "jax"]
 
     def test_single_expectation_value(self, argnums, interface, approx_order, strategy):
+        """Test for single expectation value."""
         import jax
         from jax.config import config
 
@@ -1075,6 +1076,7 @@ class TestJaxArgnums:
             assert np.allclose(res[1], expected_1)
 
     def test_multi_expectation_values(self, argnums, interface, approx_order, strategy):
+        """Test for multiple expectation values."""
         import jax
         from jax.config import config
 
@@ -1111,6 +1113,7 @@ class TestJaxArgnums:
             assert np.allclose(res[1][1], expected_1[1])
 
     def test_hessian(self, argnums, interface, approx_order, strategy):
+        """Test for hessian."""
         import jax
         from jax.config import config
 

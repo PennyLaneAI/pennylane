@@ -1078,3 +1078,137 @@ class TestHadamardTestGradDiff:
         res_hadamard = jax.jacobian(cost_h)(params)
         res_param_shift = jax.jacobian(cost_p)(params)
         assert np.allclose(res_hadamard, res_param_shift)
+
+
+@pytest.mark.parametrize("argnums", [[0], [1], [0, 1]])
+@pytest.mark.parametrize("interface", ["jax"])
+@pytest.mark.jax
+class TestJaxArgnums:
+    """Class to test the integration of argnums (Jax) and the hadamard grad transform."""
+
+    expected_jacs = []
+    interfaces = ["auto", "jax"]
+
+    def test_argnum_warning(self, argnums, interface):
+        """Test that giving argnum to Jax, raises a warning but still compute the correct values."""
+        import jax
+
+        dev = qml.device("default.qubit", wires=3)
+
+        @qml.qnode(dev, interface=interface)
+        def circuit(x, y):
+            qml.RX(x[0], wires=[0])
+            qml.RY(y, wires=[1])
+            qml.CNOT(wires=[0, 1])
+            return qml.expval(qml.PauliZ(0) @ qml.PauliX(1))
+
+        x = jax.numpy.array([0.543, 0.2])
+        y = jax.numpy.array(-0.654)
+
+        with pytest.warns(
+            UserWarning,
+            match="argnum is deprecated with the Jax interface. You should use argnums " "instead.",
+        ):
+            res = qml.gradients.hadamard_grad(circuit, argnum=argnums)(x, y)
+
+        expected_0 = np.array([-np.sin(y) * np.sin(x[0]), 0])
+        expected_1 = np.array(np.cos(y) * np.cos(x[0]))
+
+        if argnums == [0]:
+            assert np.allclose(res, expected_0)
+        if argnums == [1]:
+            assert np.allclose(res, expected_1)
+        if argnums == [0, 1]:
+            assert np.allclose(res[0], expected_0)
+            assert np.allclose(res[1], expected_1)
+
+    def test_single_expectation_value(self, argnums, interface):
+        """Test for single expectation value."""
+        import jax
+
+        dev = qml.device("default.qubit", wires=3)
+
+        @qml.qnode(dev, interface=interface)
+        def circuit(x, y):
+            qml.RX(x[0], wires=[0])
+            qml.RY(y, wires=[1])
+            qml.CNOT(wires=[0, 1])
+            return qml.expval(qml.PauliZ(0) @ qml.PauliX(1))
+
+        x = jax.numpy.array([0.543, 0.2])
+        y = jax.numpy.array(-0.654)
+
+        res = qml.gradients.hadamard_grad(circuit, argnums=argnums)(x, y)
+
+        expected_0 = np.array([-np.sin(y) * np.sin(x[0]), 0])
+        expected_1 = np.array(np.cos(y) * np.cos(x[0]))
+
+        if argnums == [0]:
+            assert np.allclose(res, expected_0)
+        if argnums == [1]:
+            assert np.allclose(res, expected_1)
+        if argnums == [0, 1]:
+            assert np.allclose(res[0], expected_0)
+            assert np.allclose(res[1], expected_1)
+
+    def test_multi_expectation_values(self, argnums, interface):
+        """Test for multiple expectation values."""
+        import jax
+
+        dev = qml.device("default.qubit", wires=3)
+
+        @qml.qnode(dev, interface=interface)
+        def circuit(x, y):
+            qml.RX(x[0], wires=[0])
+            qml.RY(y, wires=[1])
+            qml.CNOT(wires=[0, 1])
+            return qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliX(1))
+
+        x = jax.numpy.array([0.543, 0.2])
+        y = jax.numpy.array(-0.654)
+
+        res = qml.gradients.hadamard_grad(circuit, argnums=argnums)(x, y)
+
+        expected_0 = np.array([[-np.sin(x[0]), 0.0], [0.0, 0.0]])
+        expected_1 = np.array([0, np.cos(y)])
+
+        if argnums == [0]:
+            assert np.allclose(res[0], expected_0[0])
+            assert np.allclose(res[1], expected_0[1])
+        if argnums == [1]:
+            assert np.allclose(res, expected_1)
+        if argnums == [0, 1]:
+            assert np.allclose(res[0][0], expected_0[0])
+            assert np.allclose(res[0][1], expected_0[1])
+            assert np.allclose(res[1][0], expected_1[0])
+            assert np.allclose(res[1][1], expected_1[1])
+
+    def test_hessian(self, argnums, interface):
+        """Test for hessian."""
+        import jax
+
+        dev = qml.device("default.qubit", wires=4)
+
+        @qml.qnode(dev, interface=interface)
+        def circuit(x, y):
+            qml.RX(x[0], wires=[0])
+            qml.RY(x[1], wires=[1])
+            qml.RY(y, wires=[1])
+            qml.CNOT(wires=[0, 1])
+            return qml.expval(qml.PauliZ(0) @ qml.PauliX(1))
+
+        x = jax.numpy.array([0.543, -0.654])
+        y = jax.numpy.array(-0.123)
+
+        res = jax.jacobian(qml.gradients.hadamard_grad(circuit), argnums=argnums)(x, y)
+        res_expected = jax.hessian(circuit, argnums=argnums)(x, y)
+
+        if argnums == [0]:
+            assert np.allclose(res[0][0], res_expected[0][0][0])
+            assert np.allclose(res[1][0], res_expected[0][0][1])
+        else:
+            if len(argnums) != 1:
+                res = res[0]
+
+            for r, r_e in zip(res, res_expected[0]):
+                assert np.allclose(r, r_e)

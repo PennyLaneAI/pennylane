@@ -2811,6 +2811,7 @@ class TestJaxArgnums:
     interfaces = ["auto", "jax"]
 
     def test_single_expectation_value(self, argnums, interface):
+        """Test for single expectation value."""
         import jax
 
         dev = qml.device("default.qubit", wires=2)
@@ -2839,6 +2840,7 @@ class TestJaxArgnums:
             assert np.allclose(res[1], expected_1)
 
     def test_multi_expectation_values(self, argnums, interface):
+        """Test for multiple expectation values."""
         import jax
 
         dev = qml.device("default.qubit", wires=2)
@@ -2867,6 +2869,7 @@ class TestJaxArgnums:
             assert np.allclose(res[1], expected_1)
 
     def test_hessian(self, argnums, interface):
+        """Test for hessian."""
         import jax
 
         dev = qml.device("default.qubit", wires=2)

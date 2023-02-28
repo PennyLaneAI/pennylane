@@ -4330,7 +4330,41 @@ class TestJaxArgnums:
     expected_jacs = []
     interfaces = ["auto", "jax"]
 
+    def test_argnum_warning(self, argnums, interface):
+        """Test that giving argnum to Jax, raises a warning but still compute the correct values."""
+        import jax
+
+        dev = qml.device("default.qubit", wires=2)
+
+        @qml.qnode(dev, interface=interface)
+        def circuit(x, y):
+            qml.RX(x[0], wires=[0])
+            qml.RY(y, wires=[1])
+            qml.CNOT(wires=[0, 1])
+            return qml.expval(qml.PauliZ(0) @ qml.PauliX(1))
+
+        x = jax.numpy.array([0.543, 0.2])
+        y = jax.numpy.array(-0.654)
+
+        with pytest.warns(
+            UserWarning,
+            match="argnum is deprecated with the Jax interface. You should use argnums " "instead.",
+        ):
+            res = qml.gradients.param_shift(circuit, argnum=argnums)(x, y)
+
+        expected_0 = np.array([-np.sin(y) * np.sin(x[0]), 0])
+        expected_1 = np.array(np.cos(y) * np.cos(x[0]))
+
+        if argnums == [0]:
+            assert np.allclose(res, expected_0)
+        if argnums == [1]:
+            assert np.allclose(res, expected_1)
+        if argnums == [0, 1]:
+            assert np.allclose(res[0], expected_0)
+            assert np.allclose(res[1], expected_1)
+
     def test_single_expectation_value(self, argnums, interface):
+        """Test for single expectation value."""
         import jax
 
         dev = qml.device("default.qubit", wires=2)
@@ -4359,6 +4393,7 @@ class TestJaxArgnums:
             assert np.allclose(res[1], expected_1)
 
     def test_multi_expectation_values(self, argnums, interface):
+        """Test for multiple expectation values."""
         import jax
 
         dev = qml.device("default.qubit", wires=2)
@@ -4390,6 +4425,7 @@ class TestJaxArgnums:
             assert np.allclose(res[1][1], expected_1[1])
 
     def test_hessian(self, argnums, interface):
+        """Test for hessian."""
         import jax
 
         dev = qml.device("default.qubit", wires=2)
