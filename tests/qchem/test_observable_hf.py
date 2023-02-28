@@ -398,3 +398,18 @@ def test_jordan_wigner(f_obs, q_obs, notation):
     r"""Test that jordan_wigner returns the correct operator."""
     res = qchem.jordan_wigner(f_obs, notation=notation)
     assert qml.Hamiltonian(res[0], res[1]).compare(qml.Hamiltonian(q_obs[0], q_obs[1]))
+
+
+@pytest.mark.parametrize(
+    ("f_obs", "notation"),
+    [
+        (
+            [1, 1, 1, 1],
+            "random_notation",
+        ),
+    ],
+)
+def test_jordan_wigner_error(f_obs, notation):
+    r"""Test that an error is raised if a wrong/not-supported notation is used."""
+    with pytest.raises(ValueError, match="the only supported notations for the two-body terms are"):
+        qchem.jordan_wigner(f_obs, notation=notation)

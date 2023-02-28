@@ -155,11 +155,16 @@ def jordan_wigner(op, notation="physicist"):
             if op[0] == op[1] or op[2] == op[3]:
                 return [0], [qml.Identity(wires=[min(op)])]
             op = [(op[0], 1), (op[1], 1), (op[2], 0), (op[3], 0)]
-        if notation == "chemist":
+        elif notation == "chemist":
             if op[0] == op[2] or op[1] == op[3]:
                 if op[1] != op[2]:
                     return [0], [qml.Identity(wires=[min(op)])]
             op = [(op[0], 1), (op[1], 0), (op[2], 1), (op[3], 0)]
+        else:
+            raise ValueError(
+                f"Currently, the only supported notations for the two-body terms are 'physicist'"
+                f" and 'chemist', got notation = '{notation}'."
+            )
 
     q = [[(0, "I"), 1.0]]
     for l in op:
