@@ -91,7 +91,7 @@ def rydberg_transition(rabi, detuning, phase, wires):
 
     .. math::
 
-        \hbar \frac{1}{2} \Omega(t) \sum_i (\cos(\phi)\sigma_i^x - \sin(\phi)\sigma_i^y) -
+        \frac{1}{2} \Omega(t) \sum_i (\cos(\phi)\sigma_i^x - \sin(\phi)\sigma_i^y) -
         \frac{1}{2} \delta(t) \sum_i \sigma_i^z
 
     where :math:`\Omega`, :math:`\delta` and :math:`\phi` correspond to the rabi frequency, detuning
@@ -128,32 +128,27 @@ def rydberg_transition(rabi, detuning, phase, wires):
 
 
 class RydbergHamiltonian(ParametrizedHamiltonian):
-    r"""Class representing one or more terms of the Hamiltonian of an ensemble of Rydberg atoms under the action of
-    local and global laser fields:
+    r"""Internal class used to keep track of the needed information to translate a `RydbergHamiltonian`
+    into hardware.
+
+    This class contains the ``coeffs`` and the ``observables`` that represent one or more
+    terms of the Hamiltonian of an ensemble of Rydberg atoms under the action of local and global
+    laser fields:
 
     .. math::
 
-        H = \hbar \frac{1}{2} \sum_i  \Omega_i(t) (\cos(\phi_i)\sigma_i^x - \sin(\phi_i)\sigma_i^y) -
+        H = \frac{1}{2} \sum_i  \Omega_i(t) (\cos(\phi_i)\sigma_i^x - \sin(\phi_i)\sigma_i^y) -
         \frac{1}{2} \sum_i \delta_i(t) \sigma_i^z + \sum_{i<j} V_{ij} n_i n_j
 
-    where :math:`\Omega_i` and :math:`\delta_i` correspond to the amplitude and detuning of the
-    laser applied to atom :math:`i`, and :math:`\sigma^\alpha` for :math:`\alpha = x,y,z` are
-    the Pauli matrices.
-
-    The last term of the sum corresponds to the interaction between the atoms of the ensemble
-    due to the Rydberg blockade. For more info, check :func:`rydberg_interaction`.
-
-    .. note::
-
-        :math:`\hbar` is set to 1.
+    Additionally, it also contains two more attributes (``register`` and ``pulses``) that contain
+    the information that the hardware needs to execute this Hamiltonian.
 
     .. warning::
 
-        When adding a ``RydbergHamiltonian`` with a :class:`ParametrizedHamiltonian` all the
-        information needed to translate this class into hardware will be lost.
+        This class should NEVER be initialized directly! Please use the functions
+        :func:`rydberg_interaction` and :func:`rydberg_transition` instead.
 
     .. seealso:: :func:`rydberg_interaction`, :func:`rydberg_transition`, :class:`ParametrizedHamiltonian`
-
 
     Args:
         coeffs (Union[float, callable]): coefficients of the Hamiltonian expression, which may be
