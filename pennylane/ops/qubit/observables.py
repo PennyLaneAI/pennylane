@@ -67,7 +67,7 @@ class Hermitian(Observable):
     _eigs = {}
 
     def __init__(self, A, wires, do_queue=True, id=None):
-        A = qml.math.asarray(A)
+        A = np.array(A) if isinstance(A, list) else A
         if not qml.math.is_abstract(A):
             if isinstance(wires, Sequence) and not isinstance(wires, str):
                 if len(wires) == 0:

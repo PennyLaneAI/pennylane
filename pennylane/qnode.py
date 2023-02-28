@@ -821,7 +821,7 @@ class QNode:
             self.interface = qml.math.get_interface(*args, *list(kwargs.values()))
             if self.device is not self._original_device:
                 warnings.warn(
-                    "The device was switched during the call of the QNode, to avoid this behaviour define"
+                    "The device was switched during the call of the QNode, to avoid this behaviour define "
                     "an interface argument instead of auto."
                 )
 
