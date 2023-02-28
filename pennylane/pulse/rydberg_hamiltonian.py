@@ -161,7 +161,8 @@ class RydbergHamiltonian(ParametrizedHamiltonian):
 
     Keyword Args:
         register (list): list of coordinates (in micrometers) of each atom in the ensemble
-        transition (list): information about the amplitude, phase, detuning and wires of the pulses
+        pulses (list): list of ``RydbergPulse`` classes containing the information about the
+            amplitude, phase, detuning and wires of each pulse
         interaction_coeff (float): Rydberg interaction constant in units: :math:`MHz \times \mu m^6`.
             Defaults to :math:`862690 \times 2\pi MHz \times \mu m^6`.
 
