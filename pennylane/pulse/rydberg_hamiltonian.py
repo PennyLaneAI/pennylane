@@ -28,7 +28,7 @@ from .parametrized_hamiltonian import ParametrizedHamiltonian
 
 def rydberg_interaction(register: list, wires=None, interaction_coeff: float = 862690 * 2 * np.pi):
     r"""Returns a :class:`ParametrizedHamiltonian` representing the interaction of an ensemble of
-    Rydberg atoms due to the Rydberg blockade:
+    Rydberg atoms due to the Rydberg blockade
 
     .. math::
 
@@ -45,15 +45,15 @@ def rydberg_interaction(register: list, wires=None, interaction_coeff: float = 8
     is the Rydberg interaction constant, which defaults to :math:`862690 \times 2\pi MHz \times \mu m^6`.
 
     Args:
-        register (list): list of coordinates of the Rydberg atoms
+        register (list): list of coordinates of the Rydberg atoms (in micrometers)
         wires (list): List of wires containing the wire values for all the atoms. This list should
             have the same length as ``register``. If ``None``, each atom's wire value will
             correspond to its index in the ``register`` list.
-        interaction_coeff (float): Rydberg interaction constant in units: :math:`MHz \times \mu m^6`.
-            Defaults to :math:`862690 \times 2\pi MHz \times \mu m^6`.
+        interaction_coeff (float): Rydberg interaction constant in units: :math:`\text{MHz} \times \mu \text{m}^6`.
+            Defaults to :math:`862690 \times 2\pi \text{ MHz} \times \mu \text{m}^6`.
 
     Returns:
-        RydbergHamiltonian: Hamiltonian representing the atom interaction
+        RydbergHamiltonian: a :class:`~.ParametrizedHamiltonian` representing the atom interaction
     """
     wires = wires or list(range(len(register)))
 
@@ -84,7 +84,7 @@ def rydberg_interaction(register: list, wires=None, interaction_coeff: float = 8
 
 def rydberg_transition(rabi, detuning, phase, wires):
     r"""Returns a :class:`ParametrizedHamiltonian` representing the action of a driving laser
-    field with the given rabi frequency, detuning and phase acting on the given wires:
+    field with the given rabi frequency, detuning and phase acting on the given wires
 
     .. math::
 
@@ -125,12 +125,12 @@ def rydberg_transition(rabi, detuning, phase, wires):
 
 
 class RydbergHamiltonian(ParametrizedHamiltonian):
-    r"""Class representing the Hamiltonian of an ensemble of Rydberg atoms under the action of
+    r"""Class representing one or more terms of the Hamiltonian of an ensemble of Rydberg atoms under the action of
     local and global laser fields:
 
     .. math::
 
-        H = \hbar \frac{1}{2} \sum_i  \Omega_i(t) (\cos(\phi)\sigma_i^x - \sin(\phi)\sigma_i^y) -
+        H = \hbar \frac{1}{2} \sum_i  \Omega_i(t) (\cos(\phi_i)\sigma_i^x - \sin(\phi_i)\sigma_i^y) -
         \frac{1}{2} \sum_i \delta_i(t) \sigma_i^z + \sum_{i<j} V_{ij} n_i n_j
 
     where :math:`\Omega_i` and :math:`\delta_i` correspond to the amplitude and detuning of the
@@ -177,7 +177,7 @@ class RydbergHamiltonian(ParametrizedHamiltonian):
         observables,
         register: list = None,
         pulses: List["RydbergPulse"] = None,
-        interaction_coeff: float = 862690 * np.pi,
+        interaction_coeff: float = 862690 * 2 * np.pi,
     ):
         self.register = register
         self.pulses = [] if pulses is None else pulses
