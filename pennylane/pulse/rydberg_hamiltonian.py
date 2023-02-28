@@ -199,7 +199,7 @@ class RydbergHamiltonian(ParametrizedHamiltonian):
                 warnings.warn(
                     "The wires of the laser fields are not present in the Rydberg ensemble."
                 )
-        elif other.register is not None and not self.wires.contains_wires(other.wires):
+        elif other.register is not None and not other.wires.contains_wires(self.wires):
             warnings.warn("The wires of the laser fields are not present in the Rydberg ensemble.")
 
         new_register = self.register or other.register
