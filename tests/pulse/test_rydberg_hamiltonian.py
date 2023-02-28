@@ -189,6 +189,12 @@ class TestRydbergInteraction:
 
         assert Hd.wires == Wires(list(range(len(atom_coordinates))))
 
+    def test_coeffs(self):
+        """Test that the generated coefficients are correct."""
+        coords = [[0, 0], [0, 1], [1, 0]]
+        Hd = rydberg_interaction(coords, interaction_coeff=1)
+        assert Hd.coeffs == [1, 1, 1 / np.sqrt(2) ** 6]
+
     def test_different_lengths_raises_error(self):
         """Test that using different lengths for the wires and the register raises an error."""
         with pytest.raises(ValueError, match="The length of the wires and the register must match"):
