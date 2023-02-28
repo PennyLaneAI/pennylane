@@ -47,7 +47,7 @@ def rydberg_interaction(register: list, wires=None, interaction_coeff: float = 8
     Args:
         register (list): list of coordinates of the Rydberg atoms
         wires (list): List of wires containing the wire values for all the atoms. This list should
-            have the same length as ``qubit_positions``. If ``None``, each atom's wire value will
+            have the same length as ``register``. If ``None``, each atom's wire value will
             correspond to its index in the ``register`` list.
         interaction_coeff (float): Rydberg interaction constant in units: :math:`MHz \times \mu m^6`.
             Defaults to :math:`862690 \times 2\pi MHz \times \mu m^6`.
@@ -61,7 +61,7 @@ def rydberg_interaction(register: list, wires=None, interaction_coeff: float = 8
         """Returns the projector into the Rydberg state for the given wire.
 
         Args:
-            wire (int): _description_
+            wire (int): wire value
 
         Returns:
             SProd: projector into the Rydberg state
@@ -149,7 +149,7 @@ class RydbergHamiltonian(ParametrizedHamiltonian):
         When adding a ``RydbergHamiltonian`` with a :class:`ParametrizedHamiltonian` all the
         information needed to translate this class into hardware will be lost.
 
-    .. seealso:: :class:`rydberg_interaction`, :class:`rydberg_transition`
+    .. seealso:: :func:`rydberg_interaction`, :func:`rydberg_transition`, :class:`ParametrizedHamiltonian`
 
 
     Args:
