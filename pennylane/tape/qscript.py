@@ -567,7 +567,7 @@ class QuantumScript:
         if return_op_index:
             return self._get_operation(idx)
         warnings.warn(
-            "The get_operation will soon be updated to also return the index of the trainable operation in the tape."
+            "The get_operation will soon be updated to also return the index of the trainable operation in the tape. "
             "If you want to switch to the new behavior, you can pass `return_op_index=True`"
         )
 
