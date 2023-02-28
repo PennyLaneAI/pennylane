@@ -59,7 +59,7 @@ def test_no_device_derivatives():
     with pytest.raises(NotImplementedError):
         dev.compute_derivatives(qml.tape.QuantumScript())
 
-    with pytest.raises(NotADirectoryError):
+    with pytest.raises(NotImplementedError):
         dev.execute_and_compute_derivatives(qml.tape.QuantumScript())
 
 
