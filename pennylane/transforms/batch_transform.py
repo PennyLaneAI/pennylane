@@ -289,7 +289,6 @@ class batch_transform:
             argnums = kwargs.pop("argnums", None)
 
             if argnums:
-                tkwargs.pop("argnums", None)
                 tkwargs["argnums"] = argnums
 
             old_interface = qnode.interface
