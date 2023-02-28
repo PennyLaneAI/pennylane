@@ -53,7 +53,7 @@ def rydberg_interaction(register: list, wires=None, interaction_coeff: float = 8
             Defaults to :math:`862690 \times 2\pi MHz \times \mu m^6`.
 
     Returns:
-        RydbergHamiltonian: Hamiltonian representing the atom interaction
+        RydbergHamiltonian: a :class:`~.ParametrizedHamiltonian` representing the atom interaction
     """
     wires = wires or list(range(len(register)))
 
