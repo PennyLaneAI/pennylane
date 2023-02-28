@@ -1311,6 +1311,15 @@ class PCPhase(Operation):
     """tuple[int]: Number of dimensions per trainable parameter that the operator depends on."""
 
     basis = "Z"
+    grad_method = "A"
+    parameter_frequencies = [(1,)]
+
+    def generator(self):
+        r"""The hermitian matrix, which when exponentiated and scaled (i \phi), produces
+        the PCPhase unitary."""
+        dim, shape = self.hyperparameters["dimension"]
+        mat = np.diag([1 if index < dim else 0 for index in range(shape)])
+        return qml.Hermitian(mat, wires=self.wires)
 
     def __init__(self, phi, dim, wires, do_queue=True, id=None):
         super().__init__(phi, wires=wires, do_queue=do_queue, id=id)

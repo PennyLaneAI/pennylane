@@ -70,6 +70,7 @@ ops = {
     "RY",
     "RZ",
     "PhaseShift",
+    "PCPhase",
     "ControlledPhaseShift",
     "CPhaseShift00",
     "CPhaseShift01",

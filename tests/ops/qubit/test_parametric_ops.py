@@ -36,6 +36,7 @@ PARAMETRIZED_OPERATIONS = [
     qml.IsingXY(0.123, wires=[0, 1]),
     qml.Rot(0.123, 0.456, 0.789, wires=0),
     qml.PhaseShift(2.133, wires=0),
+    qml.PCPhase(1.23, dim=2, wires=[0,1]),
     qml.ControlledPhaseShift(1.777, wires=[0, 2]),
     qml.CPhase(1.777, wires=[0, 2]),
     qml.CPhaseShift00(1.777, wires=[0, 2]),
@@ -71,6 +72,7 @@ BROADCASTED_OPERATIONS = [
     qml.IsingZZ(np.array([0.142, -0.61, 2.3]), wires=[0, 1]),
     qml.Rot(np.array([0.142, -0.61, 2.3]), 0.456, 0.789, wires=0),
     qml.PhaseShift(np.array([2.12, 0.21, -6.2]), wires=0),
+    qml.PCPhase(np.array([1.23, 4.56, -7]), dim=3, wires=[0, 1]),
     qml.ControlledPhaseShift(np.array([1.777, -0.1, 5.29]), wires=[0, 2]),
     qml.CPhase(np.array([1.777, -0.1, 5.29]), wires=[0, 2]),
     qml.CPhaseShift00(np.array([1.777, -0.1, 5.29]), wires=[0, 2]),
@@ -723,6 +725,28 @@ class TestDecompositions:
         decomposed_matrix = multi_dot_broadcasted(mats)
 
         assert np.allclose(decomposed_matrix, op.matrix(), atol=tol, rtol=0)
+
+    def test_pc_phase_decomposition(self):
+        """"Test that the PCPhase decomposition produces the same unitary"""
+        op = qml.PCPhase(1.23, dim=5, wires=[0, 1, 2])
+        decomp_ops = op.decomposition()
+        decomp_op = qml.prod(*decomp_ops) if len(decomp_ops) >= 1 else decomp_ops[0]
+
+        expected_mat = qml.matrix(op)
+        decomp_mat = qml.matrix(decomp_op)
+        assert np.allclose(expected_mat, decomp_mat)
+
+    def test_pc_phase_decomposition_broadcasted(self):
+        """"Test that the broadcasted PCPhase decomposition produces the same unitary"""
+        op = qml.PCPhase([1.23, 4.56, 7.89], dim=5, wires=[0, 1, 2])
+        decomp_ops = op.decomposition()
+        decomp_op = qml.prod(*decomp_ops) if len(decomp_ops) >= 1 else decomp_ops[0]
+
+        expected_mats = qml.matrix(op)
+        decomp_mats = qml.matrix(decomp_op)
+
+        for expected_mat, decomp_mat in zip(expected_mats, decomp_mats):
+            assert np.allclose(expected_mat, decomp_mat)
 
     @pytest.mark.parametrize("phi", [-0.1, 0.2, 0.5])
     @pytest.mark.parametrize("cphase_op", [qml.ControlledPhaseShift, qml.CPhase])
