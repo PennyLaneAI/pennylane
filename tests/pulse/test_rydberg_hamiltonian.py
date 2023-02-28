@@ -207,6 +207,11 @@ class TestRydbergInteraction:
 
         assert Hd.wires == Wires(list(range(len(atom_coordinates))))
 
+    def test_different_lengths_raises_error(self):
+        """Test that using different lengths for the wires and the register raises an error."""
+        with pytest.raises(ValueError, match="The length of the wires and the register must match"):
+            _ = rydberg_interaction(register=atom_coordinates, wires=[0])
+
 
 class TestRydbergTransition:
     """Unit tests for the ``rydberg_transition`` function."""

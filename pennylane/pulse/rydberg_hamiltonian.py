@@ -55,7 +55,10 @@ def rydberg_interaction(register: list, wires=None, interaction_coeff: float = 8
     Returns:
         RydbergHamiltonian: a :class:`~.ParametrizedHamiltonian` representing the atom interaction
     """
-    wires = wires or list(range(len(register)))
+    if wires is None:
+        wires = list(range(len(register)))
+    elif len(wires) != len(register):
+        raise ValueError("The length of the wires and the register must match.")
 
     def rydberg_projector(wire: int) -> SProd:
         """Returns the projector into the Rydberg state for the given wire.
