@@ -196,7 +196,7 @@ class Dataset(ABC):
         >>> new_dataset = qml.data.Dataset(kw1 = 1, kw2 = '2', kw3 = [3])
         >>> new_dataset.read('./path/to/file/file_name.dat')
 
-        **Example using ``assign_to``**
+        Using the ``assign_to`` keyword argument:
 
         >>> new_dataset = qml.data.Dataset()
         >>> new_dataset.read('./path/to/file/single_state.dat', assign_to="state")
