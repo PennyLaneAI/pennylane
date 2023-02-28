@@ -38,7 +38,7 @@ class TestRydbergHamiltonian:
         assert qml.math.allequal(rm.register, atom_coordinates)
         assert rm.pulses == []
         assert rm.wires == Wires([])
-        assert rm.interaction_coeff == 862690 * np.pi
+        assert rm.interaction_coeff == 862690 * 2 * np.pi
 
     def test_add(self):
         """Test that the __add__ dunder method works correctly."""
@@ -217,7 +217,7 @@ class TestRydbergTransition:
         Hd = rydberg_transition(rabi=1, phase=2, detuning=3, wires=[1, 2])
 
         assert isinstance(Hd, RydbergHamiltonian)
-        assert Hd.interaction_coeff == 862690 * np.pi
+        assert Hd.interaction_coeff == 862690 * 2 * np.pi
         assert Hd.wires == Wires([1, 2])
         assert Hd.register is None
         assert len(Hd.ops) == 2  # rabi and detuning terms of the Hamiltonian
