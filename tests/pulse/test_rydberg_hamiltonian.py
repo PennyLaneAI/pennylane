@@ -101,12 +101,11 @@ class TestRydbergHamiltonian:
     def test_add_raises_warning(self):
         """Test that an error is raised when adding two RydbergHamiltonians where one Hamiltonian
         contains pulses on wires that are not present in the register."""
-        Hd = RydbergHamiltonian(coeffs=[1], observables=[qml.PauliX(0)], register=atom_coordinates)
-        Ht = RydbergHamiltonian(
-            coeffs=[2],
-            observables=[qml.PauliY(1)],
-            pulses=[RydbergPulse(1, 2, 3, 4)],
-        )
+        coords = [[0, 0], [0, 5], [5, 0]]
+
+        Hd = rydberg_interaction(register=coords, wires=[0, 1, 2])
+        Ht = rydberg_transition(2, 3, 4, wires=3)
+
         with pytest.warns(
             UserWarning,
             match="The wires of the laser fields are not present in the Rydberg ensemble",
