@@ -8,6 +8,10 @@
   state vector and a number of shots.
   [(#3720)](https://github.com/PennyLaneAI/pennylane/pull/3720)
 
+* The `simulate` function added to `devices/qubit` now supports measuring expectation values of large observables such as
+  `qml.Hamiltonian`, `qml.SparseHamiltonian`, `qml.Sum`.
+  [(#3759)](https://github.com/PennyLaneAI/pennylane/pull/3759)
+
 <h3>Improvements</h3>
 
 * The `qchem.jordan_wigner` function is extended to support more fermionic operator orders.
@@ -31,5 +35,6 @@ This release contains contributions from (in alphabetical order):
 
 Utkarsh Azad
 Soran Jahangiri
+Mudit Pandey
 Matthew Silverman
 Jay Soni

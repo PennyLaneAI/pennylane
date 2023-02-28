@@ -347,11 +347,12 @@ class QuantumScript:
         """
         rotation_gates = []
 
-        for observable in self.observables:
-            # some observables do not have diagonalizing gates,
-            # in which case we just don't append any
-            with contextlib.suppress(qml.operation.DiagGatesUndefinedError):
-                rotation_gates.extend(observable.diagonalizing_gates())
+        with qml.queuing.QueuingManager.stop_recording():
+            for observable in self.observables:
+                # some observables do not have diagonalizing gates,
+                # in which case we just don't append any
+                with contextlib.suppress(qml.operation.DiagGatesUndefinedError):
+                    rotation_gates.extend(observable.diagonalizing_gates())
         return rotation_gates
 
     ##### Update METHODS ###############
@@ -566,7 +567,7 @@ class QuantumScript:
         if return_op_index:
             return self._get_operation(idx)
         warnings.warn(
-            "The get_operation will soon be updated to also return the index of the trainable operation in the tape."
+            "The get_operation will soon be updated to also return the index of the trainable operation in the tape. "
             "If you want to switch to the new behavior, you can pass `return_op_index=True`"
         )
 
@@ -1081,9 +1082,6 @@ class QuantumScript:
         )
         new_script._update()
         return new_script
-
-    # NOT MOVING OVER INV
-    # As it will be deprecated soon.
 
     def adjoint(self):
         """Create a quantum script that is the adjoint of this one.
