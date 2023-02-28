@@ -116,7 +116,7 @@ class ParametrizedEvolution(Operation):
 
         dev = qml.device("default.qubit.jax", wires=1)
         @jax.jit
-        @qml.qnode(dev, interface="jax")
+        @qml.qnode(dev)
         def circuit(params):
             qml.evolve(H)(params, t=[0, 10])
             return qml.expval(qml.PauliZ(0))
@@ -197,7 +197,7 @@ class ParametrizedEvolution(Operation):
 
             dev = qml.device("default.qubit.jax", wires=3)
 
-            @qml.qnode(dev, interface="jax")
+            @qml.qnode(dev)
             def circuit1(params):
                 qml.evolve(H1)(params, t=[0, 10])
                 qml.evolve(H2)(params, t=[0, 10])

@@ -57,7 +57,7 @@
 
   ```pycon
   >>> dev = qml.device("default.qubit.jax", wires=2)
-  >>> qnode = qml.QNode(pulse_circuit, dev, interface="jax")
+  >>> qnode = qml.QNode(pulse_circuit, dev)
   >>> params = (p1, p2)
   >>> qnode(params, time=0.5)
   Array(0.72153819, dtype=float64)
