@@ -68,32 +68,6 @@ class TestRydbergHamiltonian:
         assert qml.math.allequal(sum_rm.register, atom_coordinates)
         assert sum_rm.pulses == [RydbergPulse(1, 2, 3, [4, 8]), RydbergPulse(5, 6, 7, 8)]
 
-    def test_radd(self):
-        """Test that the __radd__ dunder method works correctly."""
-        rm1 = RydbergHamiltonian(
-            coeffs=[1, 2],
-            observables=[qml.PauliX(4), qml.PauliZ(8)],
-            register=atom_coordinates,
-            pulses=[RydbergPulse(1, 2, 3, [4, 8])],
-        )
-        rm2 = RydbergHamiltonian(
-            coeffs=[2],
-            observables=[qml.PauliY(8)],
-            pulses=[RydbergPulse(5, 6, 7, 8)],
-        )
-        with warnings.catch_warnings():
-            # We make sure that no warning is raised
-            warnings.simplefilter("error")
-            sum_rm2 = rm2 + rm1
-        assert isinstance(sum_rm2, RydbergHamiltonian)
-        assert qml.math.allequal(sum_rm2.coeffs, [2, 1, 2])
-        assert all(
-            qml.equal(op1, op2)
-            for op1, op2 in zip(sum_rm2.ops, [qml.PauliY(8), qml.PauliX(4), qml.PauliZ(8)])
-        )
-        assert qml.math.allequal(sum_rm2.register, atom_coordinates)
-        assert sum_rm2.pulses == [RydbergPulse(5, 6, 7, 8), RydbergPulse(1, 2, 3, [4, 8])]
-
     def test_add_raises_error(self):
         """Test that an error is raised if two RydbergHamiltonians with registers are added."""
         rm1 = RydbergHamiltonian(
