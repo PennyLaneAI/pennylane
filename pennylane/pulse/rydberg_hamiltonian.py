@@ -26,7 +26,7 @@ from pennylane.wires import Wires
 from .parametrized_hamiltonian import ParametrizedHamiltonian
 
 
-def rydberg_interaction(register: list, wires=None, interaction_coeff: float = 862690 * np.pi):
+def rydberg_interaction(register: list, wires=None, interaction_coeff: float = 862690 * 2 * np.pi):
     r"""Returns a :class:`ParametrizedHamiltonian` representing the interaction of an ensemble of
     Rydberg atoms due to the Rydberg blockade:
 
