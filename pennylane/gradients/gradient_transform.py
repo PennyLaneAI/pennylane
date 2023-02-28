@@ -277,12 +277,15 @@ class gradient_transform(qml.batch_transform):
         # Here, we overwrite the QNode execution wrapper in order
         # to take into account that classical processing may be present
         # inside the QNode.
+        hybrid = tkwargs.pop("hybrid", self.hybrid)
         argnums = tkwargs.get("argnums", None)
 
         _wrapper = super().default_qnode_wrapper(qnode, targs, tkwargs)
         cjac_fn = qml.transforms.classical_jacobian(qnode, argnum=argnums, expand_fn=self.expand_fn)
 
-        def jacobian_wrapper(*args, **kwargs):  # pylint: disable=too-many-return-statements, too-many-branches
+        def jacobian_wrapper(
+            *args, **kwargs
+        ):  # pylint: disable=too-many-return-statements, too-many-branches
             if argnums is not None:
                 argnums_ = [argnums] if isinstance(argnums, int) else argnums
 
