@@ -20,7 +20,7 @@ from typing import Union, Callable, Tuple, Optional, Sequence
 from pennylane.tape import QuantumTape, QuantumScript
 
 from . import Device
-from ..execution_config import ExecutionConfig, DefaultExecutionConfig
+from .execution_config import ExecutionConfig, DefaultExecutionConfig
 from ..qubit.simulate import simulate
 from ..qubit.preprocess import preprocess
 
@@ -112,7 +112,9 @@ class DefaultQubit2(Device):
 
         """
         # backpropogation currently supported for all supported circuits
-        return execution_config.gradient_method == "backprop" and execution_config.shots is None
+        # will later need to add logic if backprop requested with finite shots
+        # do once device accepts finite shots
+        return execution_config.gradient_method == "backprop"
 
     def preprocess(
         self,
