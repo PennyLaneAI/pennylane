@@ -100,7 +100,7 @@ class QubitUnitary(Operation):
             )
         ):
             warnings.warn(
-                f"Operator {U}\n may not be unitary."
+                f"Operator {U}\n may not be unitary. "
                 "Verify unitarity of operation, or use a datatype with increased precision.",
                 UserWarning,
             )
