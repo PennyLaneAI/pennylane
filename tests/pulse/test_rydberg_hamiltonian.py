@@ -201,7 +201,7 @@ class TestRydbergTransition:
     def test_attributes_and_number_of_terms(self):
         """Test that the attributes and the number of terms of the ``ParametrizedHamiltonian`` returned by
         ``rydberg_transition`` are correct."""
-        Hd = rydberg_transition(rabi=1, phase=2, detuning=3, wires=[1, 2])
+        Hd = rydberg_transition(rabi=1, detuning=2, phase=3, wires=[1, 2])
 
         assert isinstance(Hd, RydbergHamiltonian)
         assert Hd.interaction_coeff == 862690 * 2 * np.pi

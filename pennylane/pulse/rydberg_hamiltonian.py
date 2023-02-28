@@ -123,7 +123,7 @@ def rydberg_transition(rabi, detuning, phase, wires):
     observables = [rabi_observable, detuning_observable]
 
     # We convert the pulse data into a list of ``RydbergPulse`` objects
-    pulses = [RydbergPulse(rabi, phase, detuning, wires)]
+    pulses = [RydbergPulse(rabi, detuning, phase, wires)]
     return RydbergHamiltonian(coeffs, observables, pulses=pulses)
 
 
