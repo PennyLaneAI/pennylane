@@ -45,7 +45,7 @@ def rydberg_interaction(register: list, wires=None, interaction_coeff: float = 8
     is the Rydberg interaction constant, which defaults to :math:`862690 \times 2\pi MHz \times \mu m^6`.
 
     Args:
-        register (list): list of coordinates of the Rydberg atoms
+        register (list): list of coordinates of the Rydberg atoms (in micrometers)
         wires (list): List of wires containing the wire values for all the atoms. This list should
             have the same length as ``register``. If ``None``, each atom's wire value will
             correspond to its index in the ``register`` list.
