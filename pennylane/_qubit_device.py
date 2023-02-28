@@ -760,8 +760,8 @@ class QubitDevice(Device):
             elif obs.return_type is State:
                 if len(measurements) > 1:
                     raise qml.QuantumFunctionError(
-                        "The state or density matrix cannot be returned in combination"
-                        " with other return types"
+                        "The state or density matrix cannot be returned in combination "
+                        "with other return types"
                     )
 
                 if self.shots is not None:
@@ -824,16 +824,16 @@ class QubitDevice(Device):
             elif obs.return_type is Shadow:
                 if len(measurements) > 1:
                     raise qml.QuantumFunctionError(
-                        "Classical shadows cannot be returned in combination"
-                        " with other return types"
+                        "Classical shadows cannot be returned in combination "
+                        "with other return types"
                     )
                 results.append(self.classical_shadow(obs, circuit))
 
             elif obs.return_type is ShadowExpval:
                 if len(measurements) > 1:
                     raise qml.QuantumFunctionError(
-                        "Classical shadows cannot be returned in combination"
-                        " with other return types"
+                        "Classical shadows cannot be returned in combination "
+                        "with other return types"
                     )
                 results.append(self.shadow_expval(obs, circuit=circuit))
 
@@ -976,8 +976,8 @@ class QubitDevice(Device):
             elif isinstance(m, StateMP):
                 if len(measurements) > 1:
                     raise qml.QuantumFunctionError(
-                        "The state or density matrix cannot be returned in combination"
-                        " with other return types"
+                        "The state or density matrix cannot be returned in combination "
+                        "with other return types"
                     )
 
                 if self.shots is not None:
@@ -1039,16 +1039,16 @@ class QubitDevice(Device):
             elif isinstance(m, ClassicalShadowMP):
                 if len(measurements) > 1:
                     raise qml.QuantumFunctionError(
-                        "Classical shadows cannot be returned in combination"
-                        " with other return types"
+                        "Classical shadows cannot be returned in combination "
+                        "with other return types"
                     )
                 result = self.classical_shadow(obs, circuit)
 
             elif isinstance(m, ShadowExpvalMP):
                 if len(measurements) > 1:
                     raise qml.QuantumFunctionError(
-                        "Classical shadows cannot be returned in combination"
-                        " with other return types"
+                        "Classical shadows cannot be returned in combination "
+                        "with other return types"
                     )
                 result = self.shadow_expval(obs, circuit=circuit)
 
@@ -1907,8 +1907,8 @@ class QubitDevice(Device):
 
         if self.shots is not None:
             warnings.warn(
-                "Requested adjoint differentiation to be computed with finite shots."
-                " The derivative is always exact when using the adjoint differentiation method.",
+                "Requested adjoint differentiation to be computed with finite shots. "
+                "The derivative is always exact when using the adjoint differentiation method.",
                 UserWarning,
             )
 

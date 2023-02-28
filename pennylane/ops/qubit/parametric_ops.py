@@ -1674,8 +1674,8 @@ class PauliRot(Operation):
 
         if not PauliRot._check_pauli_word(pauli_word):
             raise ValueError(
-                f'The given Pauli word "{pauli_word}" contains characters that are not allowed.'
-                " Allowed characters are I, X, Y and Z"
+                f'The given Pauli word "{pauli_word}" contains characters that are not allowed. '
+                "Allowed characters are I, X, Y and Z"
             )
 
         num_wires = 1 if isinstance(wires, int) else len(wires)
@@ -1760,8 +1760,8 @@ class PauliRot(Operation):
         """
         if not PauliRot._check_pauli_word(pauli_word):
             raise ValueError(
-                f'The given Pauli word "{pauli_word}" contains characters that are not allowed.'
-                " Allowed characters are I, X, Y and Z"
+                f'The given Pauli word "{pauli_word}" contains characters that are not allowed. '
+                "Allowed characters are I, X, Y and Z"
             )
 
         interface = qml.math.get_interface(theta)

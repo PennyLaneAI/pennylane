@@ -702,8 +702,8 @@ class QNode:
 
         if device.shots is not None:
             warnings.warn(
-                "Requested adjoint differentiation to be computed with finite shots."
-                " Adjoint differentiation always calculated exactly.",
+                "Requested adjoint differentiation to be computed with finite shots. "
+                "Adjoint differentiation always calculated exactly.",
                 UserWarning,
             )
         return "device", {"use_device_state": True, "method": "adjoint_jacobian"}, device
@@ -788,8 +788,8 @@ class QNode:
             # pylint: disable=no-member
             if isinstance(obj, qml.ops.qubit.SparseHamiltonian) and self.gradient_fn == "backprop":
                 raise qml.QuantumFunctionError(
-                    "SparseHamiltonian observable must be used with the parameter-shift"
-                    " differentiation method"
+                    "SparseHamiltonian observable must be used with the parameter-shift "
+                    "differentiation method"
                 )
 
         # Apply the deferred measurement principle if the device doesn't
