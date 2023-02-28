@@ -84,7 +84,7 @@ def rydberg_interaction(register: list, wires=None, interaction_coeff: float = 8
 
 def rydberg_transition(rabi, detuning, phase, wires):
     r"""Returns a :class:`ParametrizedHamiltonian` representing the action of a driving laser
-    field with the given rabi frequency, detuning and phase acting on the given wires:
+    field with the given rabi frequency, detuning and phase acting on the given wires
 
     .. math::
 
