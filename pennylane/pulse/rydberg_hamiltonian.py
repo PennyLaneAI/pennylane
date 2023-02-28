@@ -177,7 +177,7 @@ class RydbergHamiltonian(ParametrizedHamiltonian):
         observables,
         register: list = None,
         pulses: List["RydbergPulse"] = None,
-        interaction_coeff: float = 862690 * np.pi,
+        interaction_coeff: float = 862690 * 2 * np.pi,
     ):
         self.register = register
         self.pulses = [] if pulses is None else pulses
