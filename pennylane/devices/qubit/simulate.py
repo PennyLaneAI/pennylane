@@ -17,56 +17,10 @@ from typing import Union
 
 # pylint: disable=protected-access
 import pennylane as qml
-from pennylane.wires import Wires
-from pennylane.measurements import StateMeasurement, MeasurementProcess
-from pennylane.typing import TensorLike
 
 from .initialize_state import create_initial_state
 from .apply_operation import apply_operation
-
-
-def measure_state_diagonalizing_gates(
-    measurementprocess: StateMeasurement, state: TensorLike
-) -> TensorLike:
-    """Apply a measurement to state when the measurement process has an observable with diagonalizing gates.
-
-    Args:
-        measurementprocess (StateMeasurement): measurement to apply to the state
-        state (TensorLike): state to apply the measurement to
-
-    Returns:
-        TensorLike: the result of the measurement
-    """
-    total_indices = len(state.shape)
-    wires = Wires(range(total_indices))
-
-    for op in measurementprocess.obs.diagonalizing_gates():
-        state = apply_operation(op, state)
-
-    return measurementprocess.process_state(qml.math.flatten(state), wires)
-
-
-def measure(measurementprocess: MeasurementProcess, state: TensorLike) -> TensorLike:
-    """Apply a measurement process to a state.
-
-    Args:
-        measurementprocess (MeasurementProcess): measurement process to apply to the state
-        state (TensorLike): the state to measure
-
-    Returns:
-        Tensorlike: the result of the measurement
-    """
-    if isinstance(measurementprocess, StateMeasurement):
-        if measurementprocess.obs is None:
-            # no need to apply diagonalizing gates
-            total_indices = len(state.shape)
-            wires = Wires(range(total_indices))
-            return measurementprocess.process_state(qml.math.flatten(state), wires)
-
-        if measurementprocess.obs.has_diagonalizing_gates:
-            return measure_state_diagonalizing_gates(measurementprocess, state)
-
-    raise NotImplementedError
+from .measure import measure
 
 
 def simulate(circuit: qml.tape.QuantumScript) -> Union[tuple, TensorLike]:
