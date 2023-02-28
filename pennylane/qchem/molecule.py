@@ -81,9 +81,9 @@ class Molecule:
             "cc-pvdz",
         ]:
             raise ValueError(
-                "Currently, the only supported basis sets are 'sto-3g', '6-31g', '6-311g' and"
-                " 'cc-pvdz'. Please consider using `load_data=True` to download the basis set from"
-                " an external library that can be installed with: pip install basis-set-exchange."
+                "Currently, the only supported basis sets are 'sto-3g', '6-31g', '6-311g' and "
+                "'cc-pvdz'. Please consider using `load_data=True` to download the basis set from "
+                "an external library that can be installed with: pip install basis-set-exchange."
             )
 
         if set(symbols) - set(atomic_numbers):
@@ -103,8 +103,8 @@ class Molecule:
 
         if self.n_electrons % 2 == 1 or self.mult != 1:
             raise ValueError(
-                "Openshell systems are not supported. Change the charge or spin"
-                " multiplicity of the molecule."
+                "Openshell systems are not supported. Change the charge or spin "
+                "multiplicity of the molecule."
             )
 
         if l is None:

@@ -635,6 +635,6 @@ class ControlledOp(Controlled, operation.Operation):
             return [qml.gradients.eigvals_to_frequencies(processed_gen_eigvals)]
         raise operation.ParameterFrequenciesUndefinedError(
             f"Operation {self.name} does not have parameter frequencies defined, "
-            "and parameter frequencies can not be computed via generator for more than one"
+            "and parameter frequencies can not be computed via generator for more than one "
             "parameter."
         )
