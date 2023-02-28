@@ -130,7 +130,7 @@ class RydbergHamiltonian(ParametrizedHamiltonian):
 
     .. math::
 
-        H = \hbar \frac{1}{2} \sum_i  \Omega_i(t) (\cos(\phi)\sigma_i^x - \sin(\phi)\sigma_i^y) -
+        H = \hbar \frac{1}{2} \sum_i  \Omega_i(t) (\cos(\phi_i)\sigma_i^x - \sin(\phi_i)\sigma_i^y) -
         \frac{1}{2} \sum_i \delta_i(t) \sigma_i^z + \sum_{i<j} V_{ij} n_i n_j
 
     where :math:`\Omega_i` and :math:`\delta_i` correspond to the amplitude and detuning of the
