@@ -50,7 +50,7 @@ def rydberg_interaction(register: list, wires=None, interaction_coeff: float = 8
             have the same length as ``register``. If ``None``, each atom's wire value will
             correspond to its index in the ``register`` list.
         interaction_coeff (float): Rydberg interaction constant in units: :math:`\text{MHz} \times \mu \text{m}^6`.
-            Defaults to :math:`862690 \times 2\pi MHz \times \mu m^6`.
+            Defaults to :math:`862690 \times 2\pi \text{ MHz} \times \mu \text{m}^6`.
 
     Returns:
         RydbergHamiltonian: a :class:`~.ParametrizedHamiltonian` representing the atom interaction
