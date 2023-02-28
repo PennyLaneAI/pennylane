@@ -17,6 +17,7 @@ from typing import Union
 
 # pylint: disable=protected-access
 import pennylane as qml
+from pennylane.typing import TensorLike
 
 from .initialize_state import create_initial_state
 from .apply_operation import apply_operation
