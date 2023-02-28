@@ -125,7 +125,7 @@ def rydberg_transition(rabi, detuning, phase, wires):
 
 
 class RydbergHamiltonian(ParametrizedHamiltonian):
-    r"""Class representing the Hamiltonian of an ensemble of Rydberg atoms under the action of
+    r"""Class representing one or more terms of the Hamiltonian of an ensemble of Rydberg atoms under the action of
     local and global laser fields:
 
     .. math::
