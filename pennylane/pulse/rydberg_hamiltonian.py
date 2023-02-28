@@ -94,8 +94,8 @@ def rydberg_transition(rabi, detuning, phase, wires):
         \hbar \frac{1}{2} \Omega(t) \sum_i (\cos(\phi)\sigma_i^x - \sin(\phi)\sigma_i^y) -
         \frac{1}{2} \delta(t) \sum_i \sigma_i^z
 
-    where :math:`\Omega` and :math:`\delta` correspond to the rabi and detuning of the
-    laser, :math:`i` correspond to the wire index, and :math:`\sigma^\alpha` for
+    where :math:`\Omega`, :math:`\delta` and :math:`\phi` correspond to the rabi frequency, detuning
+    and phase of the laser, :math:`i` correspond to the wire index, and :math:`\sigma^\alpha` for
     :math:`\alpha = x,y,z` are the Pauli matrices.
 
     Args:
