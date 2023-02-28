@@ -215,7 +215,7 @@ class RydbergPulse:
             field
         detuning (Union[float, Callable]): float or callable returning the detuning (in MHz) of a
             laser field
-        phase (float): float containing the phase (in radiants) of the laser field
+        phase (float): float containing the phase (in radians) of the laser field
         wires (Union[int, List[int]]): integer or list containing wire values that the laser field
             acts on
     """
