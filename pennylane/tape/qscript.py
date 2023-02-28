@@ -347,11 +347,12 @@ class QuantumScript:
         """
         rotation_gates = []
 
-        for observable in self.observables:
-            # some observables do not have diagonalizing gates,
-            # in which case we just don't append any
-            with contextlib.suppress(qml.operation.DiagGatesUndefinedError):
-                rotation_gates.extend(observable.diagonalizing_gates())
+        with qml.queuing.QueuingManager.stop_recording():
+            for observable in self.observables:
+                # some observables do not have diagonalizing gates,
+                # in which case we just don't append any
+                with contextlib.suppress(qml.operation.DiagGatesUndefinedError):
+                    rotation_gates.extend(observable.diagonalizing_gates())
         return rotation_gates
 
     ##### Update METHODS ###############
@@ -1081,9 +1082,6 @@ class QuantumScript:
         )
         new_script._update()
         return new_script
-
-    # NOT MOVING OVER INV
-    # As it will be deprecated soon.
 
     def adjoint(self):
         """Create a quantum script that is the adjoint of this one.

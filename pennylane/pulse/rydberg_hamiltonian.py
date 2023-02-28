@@ -195,11 +195,11 @@ class RydbergHamiltonian(ParametrizedHamiltonian):
         if self.register is not None:
             if other.register is not None:
                 raise ValueError("We cannot add two Hamiltonians with an interaction term!")
-            if not other.wires.contains_wires(self.wires):
+            if not self.wires.contains_wires(other.wires):
                 warnings.warn(
                     "The wires of the laser fields are not present in the Rydberg ensemble."
                 )
-        elif other.register is not None and not self.wires.contains_wires(other.wires):
+        elif other.register is not None and not other.wires.contains_wires(self.wires):
             warnings.warn("The wires of the laser fields are not present in the Rydberg ensemble.")
 
         new_register = self.register or other.register
