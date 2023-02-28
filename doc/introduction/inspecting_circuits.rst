@@ -167,7 +167,7 @@ as well as a set of wire labels and constructs a DAG in which the :class:`~.Oper
 instances are the nodes, and each directed edge corresponds to a wire
 (or a group of wires) on which the "nodes" act subsequently.
 
-For example, thiscan be used to compute the effective depth of a circuit,
+For example, this can be used to compute the effective depth of a circuit,
 or to check whether two gates causally influence each other.
 
 .. code-block:: python
