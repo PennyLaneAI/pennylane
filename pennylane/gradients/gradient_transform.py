@@ -273,7 +273,7 @@ class gradient_transform(qml.batch_transform):
         self.hybrid = hybrid
         super().__init__(transform_fn, expand_fn=expand_fn, differentiable=differentiable)
 
-    def default_qnode_wrapper(self, qnode, targs, tkwargs):
+    def default_qnode_wrapper(self, qnode, targs, tkwargs):  # pylint: disable=too-many-statements
         # Here, we overwrite the QNode execution wrapper in order
         # to take into account that classical processing may be present
         # inside the QNode.
@@ -281,13 +281,18 @@ class gradient_transform(qml.batch_transform):
         argnums = tkwargs.get("argnums", None)
 
         _wrapper = super().default_qnode_wrapper(qnode, targs, tkwargs)
-        cjac_fn = qml.transforms.classical_jacobian(qnode, argnum=argnums, expand_fn=self.expand_fn)
 
         def jacobian_wrapper(
             *args, **kwargs
-        ):  # pylint: disable=too-many-return-statements, too-many-branches
-            if argnums is not None:
-                argnums_ = [argnums] if isinstance(argnums, int) else argnums
+        ):  # pylint: disable=too-many-return-statements, too-many-branches, too-many-statements
+            trainable_params = qml.math.get_trainable_indices(args)
+            argnums_ = None
+            if qml.math.get_interface(*args) == "jax" and not trainable_params:
+                if argnums is None and not qml.math.get_trainable_indices(args):
+                    argnums_ = [0]
+
+                if argnums is not None:
+                    argnums_ = [argnums] if isinstance(argnums, int) else argnums
 
                 params = qml.math.jax_argnums_to_tape_trainable(
                     qnode, argnums_, self.expand_fn, args, kwargs
@@ -295,7 +300,7 @@ class gradient_transform(qml.batch_transform):
                 argnums_ = qml.math.get_trainable_indices(params)
                 kwargs["argnums"] = argnums_
 
-            if not qml.math.get_trainable_indices(args) and not argnums:
+            if not trainable_params and argnums is None and argnums_ is None:
                 warnings.warn(
                     "Attempted to compute the gradient of a QNode with no trainable parameters. "
                     "If this is unintended, please add trainable parameters in accordance with "
@@ -312,12 +317,18 @@ class gradient_transform(qml.batch_transform):
 
             # Special case where we apply a Jax transform (jacobian e.g.) on the gradient transform and argnums are
             # defined on the outer transform and therefore on the args.
-            if argnums is None and qml.math.get_interface(*args) == "jax":
+            if argnums is None and argnums_ is None and qml.math.get_interface(*args) == "jax":
                 cjac = qml.transforms.classical_jacobian(
                     qnode, argnum=qml.math.get_trainable_indices(args), expand_fn=self.expand_fn
                 )(*args, **kwargs)
             else:
-                cjac = cjac_fn(*args, **kwargs)
+                if qml.math.get_interface(*args) == "jax":
+                    argnum_cjac = argnums if argnums is not None else [0]
+                else:
+                    argnum_cjac = None
+                cjac = qml.transforms.classical_jacobian(
+                    qnode, argnum=argnum_cjac, expand_fn=self.expand_fn
+                )(*args, **kwargs)
 
             if qml.active_return():
                 if isinstance(cjac, tuple) and len(cjac) == 1:
