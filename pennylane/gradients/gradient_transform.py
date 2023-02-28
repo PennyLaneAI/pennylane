@@ -288,7 +288,7 @@ class gradient_transform(qml.batch_transform):
             trainable_params = qml.math.get_trainable_indices(args)
             argnums_ = None
             if qml.math.get_interface(*args) == "jax" and not trainable_params:
-                if argnums is None and not qml.math.get_trainable_indices(args):
+                if argnums is None:
                     argnums_ = [0]
 
                 if argnums is not None:
