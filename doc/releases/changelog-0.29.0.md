@@ -52,11 +52,11 @@
       return qml.expval(qml.PauliX(0) @ qml.PauliY(1))
   ```
 
-  Pulse-based circuits can be executed and differentiated on the `default.qubit.jax` simulator using
-  JAX as an interface:
+  Pulse-based circuits can be executed and differentiated on the `default.qubit` simulator using JAX
+  as an interface:
 
   ```pycon
-  >>> dev = qml.device("default.qubit.jax", wires=2)
+  >>> dev = qml.device("default.qubit", wires=2)
   >>> qnode = qml.QNode(pulse_circuit, dev, interface="jax")
   >>> params = (p1, p2)
   >>> qnode(params, time=0.5)
@@ -848,6 +848,10 @@
 [(#3740)](https://github.com/PennyLaneAI/pennylane/pull/3740)
 
 <h3>Bug fixes 🐛</h3>
+
+* Fixed a bug where measuring ``qml.probs`` in the computational basis with non-commuting
+  measurements returned incorrect results. Now an error is raised.
+  [(#3811)](https://github.com/PennyLaneAI/pennylane/pull/3811)
 
 * Fixed a bug where measuring ``qml.probs`` in the computational basis with non-commuting
   measurements returned incorrect results. Now an error is raised.
