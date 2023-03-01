@@ -12,7 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Tests for default qubit 2."""
-
 import pytest
 
 import numpy as np
@@ -234,15 +233,16 @@ class TestBasicCircuit:
 
 
 class TestExecutingBatches:
-    def qs1(self, phi):
-        """Circuit1."""
+    @staticmethod
+    def f(phi):
+        """A function that executes a batch of scripts on DefaultQubit2 without preprocessing."""
         ops = [
             qml.PauliX("a"),
             qml.PauliX("b"),
-            qml.ctrl(qml.RX(phi, "target") ** 2, ("a", "b", -3), control_values=[1, 1, 0]),
+            qml.ctrl(qml.RX(phi, "target"), ("a", "b", -3), control_values=[1, 1, 0]),
         ]
 
-        return qml.tape.QuantumScript(
+        qs1 = qml.tape.QuantumScript(
             ops,
             [
                 qml.expval(qml.sum(qml.PauliY("target"), qml.PauliZ("b"))),
@@ -250,34 +250,130 @@ class TestExecutingBatches:
             ],
         )
 
-    def expected1(self, phi):
-        return (-np.sin(2 * phi) - 1, 3 * np.sin(2 * phi))
+        ops = [qml.Hadamard(0), qml.IsingXX(phi, wires=(0, 1))]
+        qs2 = qml.tape.QuantumScript(ops, [qml.probs(wires=(0, 1))])
+        return DefaultQubit2().execute((qs1, qs2))
 
-    def qs2(self, theta):
-        """Circuit 2."""
-        ops = [qml.Hadamard(0), qml.IsingXX(theta, wires=(0, 1))]
-        return qml.tape.QuantumScript(ops, [qml.density_matrix(1)])
+    @staticmethod
+    def expected(phi):
 
-    def expected2(self, theta):
-        return np.array(
-            [
-                [np.cos(theta / 2) ** 2, 0.5j * np.sin(theta)],
-                [-0.5j * np.sin(theta), np.sin(theta / 2) ** 2],
-            ]
-        )
+        out1 = (-qml.math.sin(phi) - 1, 3 * qml.math.cos(phi))
+
+        x1 = qml.math.cos(phi / 2) ** 2 / 2
+        x2 = qml.math.sin(phi / 2) ** 2 / 2
+        out2 = x1 * np.array([1, 0, 1, 0]) + x2 * np.array([0, 1, 0, 1])
+        return (out1, out2)
+
+    @staticmethod
+    def nested_compare(x1, x2):
+        assert len(x1) == len(x2)
+        assert len(x1[0]) == len(x2[0])
+        assert qml.math.allclose(x1[0][0], x2[0][0])
+        assert qml.math.allclose(x1[0][1], x2[0][1])
+        assert qml.math.allclose(x1[1], x2[1])
 
     def test_numpy(self):
+        """Test that results are expected when the parameter does not have a parameter."""
+        phi = 0.892
+        results = self.f(phi)
+        expected = self.expected(phi)
 
-        dev = DefaultQubit2()
-        phi = 0.123
-        theta = 0.623
+        self.nested_compare(results, expected)
 
-        results = dev.execute((self.qs1(phi), self.qs2(phi)))
-        assert len(results) == 2
+    @pytest.mark.autograd
+    def test_autograd(self):
+        """Test batches can be executed and have backprop derivatives in autograd."""
 
-        expected1 = self.expected1(phi)
-        assert qml.math.allclose(results[0][0], expected1[0])
-        assert qml.math.allclose(results[0][1], expected1[1])
+        phi = qml.numpy.array(-0.629)
+        results = self.f(phi)
+        expected = self.expected(phi)
 
-        expected2 = self.expected2(theta)
-        assert qml.math.allclose(results[1], expected2)
+        self.nested_compare(results, expected)
+
+        g0 = qml.jacobian(lambda x: qml.numpy.array(self.f(x)[0]))(phi)
+        g0_expected = qml.jacobian(lambda x: qml.numpy.array(self.expected(x)[0]))(phi)
+        assert qml.math.allclose(g0, g0_expected)
+
+        g1 = qml.jacobian(lambda x: qml.numpy.array(self.expected(x)[1]))(phi)
+        g1_expected = qml.jacobian(lambda x: qml.numpy.array(self.expected(x)[1]))(phi)
+        assert qml.math.allclose(g1, g1_expected)
+
+    @pytest.mark.jax
+    @pytest.mark.parametrize("use_jit", (True, False))
+    def test_jax(self, use_jit):
+        """Test batches can be executed and have backprop derivatives in jax."""
+        import jax
+
+        phi = jax.numpy.array(0.123)
+
+        f = jax.jit(self.f) if use_jit else self.f
+        results = f(phi)
+        expected = self.expected(phi)
+
+        self.nested_compare(results, expected)
+
+        g = jax.jacobian(f)(phi)
+        g_expected = jax.jacobian(self.expected)(phi)
+
+        self.nested_compare(g, g_expected)
+
+    @pytest.mark.torch
+    def test_torch(self):
+        """Test batches can be executed and have backprop derivatives in torch."""
+        import torch
+
+        x = torch.tensor(9.6243)
+
+        results = self.f(x)
+        expected = self.expected(x)
+
+        self.nested_compare(results, expected)
+
+        g1 = torch.autograd.functional.jacobian(lambda y: self.f(y)[0], x)
+        assert qml.math.allclose(g1[0], -qml.math.cos(x))
+        assert qml.math.allclose(g1[1], -3 * qml.math.sin(x))
+
+        g1 = torch.autograd.functional.jacobian(lambda y: self.f(y)[1], x)
+        temp = -0.5 * qml.math.cos(x / 2) * qml.math.sin(x / 2)
+        g3 = torch.tensor([temp, -temp, temp, -temp])
+        assert qml.math.allclose(g1, g3)
+
+    @pytest.mark.tf
+    def test_tf(self):
+        """Test batches can be executed and have backprop derivatives in tf."""
+
+        import tensorflow as tf
+
+        x = tf.Variable(5.2281)
+        with tf.GradientTape(persistent=True) as tape:
+            results = self.f(x)
+
+        expected = self.expected(x)
+        self.nested_compare(results, expected)
+
+        g00 = tape.gradient(results[0][0], x)
+        assert qml.math.allclose(g00, -qml.math.cos(x))
+        g01 = tape.gradient(results[0][1], x)
+        assert qml.math.allclose(g01, -3 * qml.math.sin(x))
+
+        g1 = tape.jacobian(results[1], x)
+        temp = -0.5 * qml.math.cos(x / 2) * qml.math.sin(x / 2)
+        g3 = tf.Variable([temp, -temp, temp, -temp])
+        assert qml.math.allclose(g1, g3)
+
+
+class TestPreprocessingIntegration:
+    """Tests preprocessing expands operations without matrices."""
+
+    def test_numpy(self):
+        """Test t"""
+
+        class MyTemplate(qml.operation.Operation):
+            num_wires = 2
+
+            def decomposition(self):
+                return [
+                    qml.RX(self.data[0], self.wires[0]),
+                    qml.RY(self.data[1], self.wires[1]),
+                    qml.CNOT(self.wires),
+                ]

@@ -477,7 +477,7 @@ class Device(abc.ABC):
         Default behaviour assumes this to be ``True`` if :meth:`~.compute_jvp` is overridden.
 
         """
-        return self.compute_jvp != Device.compute_jvp
+        return type(self).compute_jvp != Device.compute_jvp
 
     def compute_vjp(
         self,
@@ -552,4 +552,4 @@ class Device(abc.ABC):
 
         Default behaviour assumes this to be ``True`` if :meth:`~.compute_vjp` is overridden.
         """
-        return self.compute_vjp != Device.compute_vjp
+        return type(self).compute_vjp != Device.compute_vjp
