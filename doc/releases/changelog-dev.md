@@ -13,7 +13,7 @@
     Rydberg atoms.
   * A new `rydberg_interaction` function is added, which returns a `RydbergHamiltonian` containing
     the Hamiltonian of the interaction of all the Rydberg atoms.
-  * A new `rydberg_transition` function is added, which returns a `RydbergHamiltonian` containing
+  * A new `rydberg_drive` function is added, which returns a `RydbergHamiltonian` containing
     the Hamiltonian of the interaction between a driving laser field and a group of atoms.
   [(#3749)](https://github.com/PennyLaneAI/pennylane/pull/3749)
 

@@ -85,7 +85,7 @@ def rydberg_interaction(register: list, wires=None, interaction_coeff: float = 8
     )
 
 
-def rydberg_transition(rabi, detuning, phase, wires):
+def rydberg_drive(rabi, detuning, phase, wires):
     r"""Returns a :class:`ParametrizedHamiltonian` representing the action of a driving laser
     field with the given rabi frequency, detuning and phase acting on the given wires
 
@@ -146,9 +146,9 @@ class RydbergHamiltonian(ParametrizedHamiltonian):
     .. warning::
 
         This class should NEVER be initialized directly! Please use the functions
-        :func:`rydberg_interaction` and :func:`rydberg_transition` instead.
+        :func:`rydberg_interaction` and :func:`rydberg_drive` instead.
 
-    .. seealso:: :func:`rydberg_interaction`, :func:`rydberg_transition`, :class:`ParametrizedHamiltonian`
+    .. seealso:: :func:`rydberg_interaction`, :func:`rydberg_drive`, :class:`ParametrizedHamiltonian`
 
     Args:
         coeffs (Union[float, callable]): coefficients of the Hamiltonian expression, which may be

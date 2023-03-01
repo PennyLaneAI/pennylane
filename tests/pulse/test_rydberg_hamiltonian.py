@@ -21,7 +21,7 @@ import numpy as np
 import pytest
 
 import pennylane as qml
-from pennylane.pulse import RydbergHamiltonian, rydberg_interaction, rydberg_transition
+from pennylane.pulse import RydbergHamiltonian, rydberg_drive, rydberg_interaction
 from pennylane.pulse.rydberg_hamiltonian import RydbergPulse
 from pennylane.wires import Wires
 
@@ -87,7 +87,7 @@ class TestRydbergHamiltonian:
         coords = [[0, 0], [0, 5], [5, 0]]
 
         Hd = rydberg_interaction(register=coords, wires=[0, 1, 2])
-        Ht = rydberg_transition(2, 3, 4, wires=3)
+        Ht = rydberg_drive(2, 3, 4, wires=3)
 
         with pytest.warns(
             UserWarning,
@@ -133,7 +133,7 @@ class TestInteractionWithOperators:
         """Test that a Hamiltonian and SProd can be added to a RydbergHamiltonian, and
         will be incorporated in the H_fixed term, with their coefficients included in H_coeffs_fixed.
         """
-        R = rydberg_transition(rabi=f1, detuning=f2, phase=0, wires=[0, 1])
+        R = rydberg_drive(rabi=f1, detuning=f2, phase=0, wires=[0, 1])
         params = [1, 2]
         # Adding on the right
         new_pH = R + H
@@ -152,7 +152,7 @@ class TestInteractionWithOperators:
     def test_add_other_operators(self, op):
         """Test that a Hamiltonian, SProd, Tensor or Operator can be added to a
         ParametrizedHamiltonian, and will be incorporated in the H_fixed term"""
-        R = rydberg_transition(rabi=f1, detuning=f2, phase=0, wires=[0, 1])
+        R = rydberg_drive(rabi=f1, detuning=f2, phase=0, wires=[0, 1])
 
         # Adding on the right
         new_pH = R + op
@@ -202,12 +202,12 @@ class TestRydbergInteraction:
 
 
 class TestRydbergTransition:
-    """Unit tests for the ``rydberg_transition`` function."""
+    """Unit tests for the ``rydberg_drive`` function."""
 
     def test_attributes_and_number_of_terms(self):
         """Test that the attributes and the number of terms of the ``ParametrizedHamiltonian`` returned by
-        ``rydberg_transition`` are correct."""
-        Hd = rydberg_transition(rabi=1, detuning=2, phase=3, wires=[1, 2])
+        ``rydberg_drive`` are correct."""
+        Hd = rydberg_drive(rabi=1, detuning=2, phase=3, wires=[1, 2])
 
         assert isinstance(Hd, RydbergHamiltonian)
         assert Hd.interaction_coeff == 862690 * 2 * np.pi
@@ -255,7 +255,7 @@ class TestIntegration:
         def fb(p, t):
             return p[0] * jnp.sin(p[1] * t)
 
-        Ht = rydberg_transition(rabi=fa, detuning=fb, phase=0, wires=1)
+        Ht = rydberg_drive(rabi=fa, detuning=fb, phase=0, wires=1)
 
         dev = qml.device("default.qubit", wires=wires)
 
