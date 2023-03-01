@@ -677,7 +677,7 @@ class Hamiltonian(Observable):
 
     def __mul__(self, a):
         r"""The scalar multiplication operation between a scalar and a Hamiltonian."""
-        if isinstance(a, (int, float)):
+        if isinstance(a, (int, float, complex)):
             self_coeffs = copy(self.coeffs)
             coeffs = qml.math.multiply(a, self_coeffs)
             return qml.Hamiltonian(coeffs, self.ops.copy())

@@ -430,6 +430,12 @@ mul_hamiltonians = [
         qml.Hamiltonian((1.5, 0.5), (qml.PauliX(0), qml.PauliZ(1))),
         qml.Hamiltonian(np.array([4.5, 1.5]), np.array([qml.PauliX(0), qml.PauliZ(1)])),
     ),
+    # Support multiplication by complex scalar
+    (
+        0.1 + 0.2j,
+        qml.Hamiltonian([1, 2], [qml.PauliX(0), qml.PauliZ(1)]),
+        qml.Hamiltonian([0.1 + 0.2j, 0.2 + 0.4j], [qml.PauliX(0), qml.PauliZ(1)]),
+    ),
 ]
 
 matmul_hamiltonians = [
