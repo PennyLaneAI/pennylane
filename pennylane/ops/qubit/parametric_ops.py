@@ -1353,7 +1353,7 @@ class PCPhase(Operation):
             return qml.math.diag(qml.math.exp(arg * prefactors))
 
         diags = qml.math.exp(qml.math.outer(arg, prefactors))
-        return diags[:, :, np.newaxis] * qml.math.cast_like(qml.math.eye(2, like=diags), diags)
+        return qml.math.stack(qml.math.diag(d) for d in diags)
 
     @staticmethod
     def compute_eigvals(*params, **hyperparams):
@@ -1422,7 +1422,7 @@ class PCPhase(Operation):
         """Computes the adjoint of the operator."""
         phi = self.parameters[0]
         dim, _ = self.hyperparameters["dimension"]
-        return PCPhase(-1*phi, dim=dim, wires=self.wires)
+        return PCPhase(-1 * phi, dim=dim, wires=self.wires)
 
     def pow(self, z):
         """Computes the operator raised to z."""

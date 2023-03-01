@@ -36,7 +36,7 @@ PARAMETRIZED_OPERATIONS = [
     qml.IsingXY(0.123, wires=[0, 1]),
     qml.Rot(0.123, 0.456, 0.789, wires=0),
     qml.PhaseShift(2.133, wires=0),
-    qml.PCPhase(1.23, dim=2, wires=[0,1]),
+    qml.PCPhase(1.23, dim=2, wires=[0, 1]),
     qml.ControlledPhaseShift(1.777, wires=[0, 2]),
     qml.CPhase(1.777, wires=[0, 2]),
     qml.CPhaseShift00(1.777, wires=[0, 2]),
@@ -727,7 +727,7 @@ class TestDecompositions:
         assert np.allclose(decomposed_matrix, op.matrix(), atol=tol, rtol=0)
 
     def test_pc_phase_decomposition(self):
-        """"Test that the PCPhase decomposition produces the same unitary"""
+        """ "Test that the PCPhase decomposition produces the same unitary"""
         op = qml.PCPhase(1.23, dim=5, wires=[0, 1, 2])
         decomp_ops = op.decomposition()
         decomp_op = qml.prod(*decomp_ops) if len(decomp_ops) >= 1 else decomp_ops[0]
@@ -737,7 +737,7 @@ class TestDecompositions:
         assert np.allclose(expected_mat, decomp_mat)
 
     def test_pc_phase_decomposition_broadcasted(self):
-        """"Test that the broadcasted PCPhase decomposition produces the same unitary"""
+        """ "Test that the broadcasted PCPhase decomposition produces the same unitary"""
         op = qml.PCPhase([1.23, 4.56, 7.89], dim=5, wires=[0, 1, 2])
         decomp_ops = op.decomposition()
         decomp_op = qml.prod(*decomp_ops) if len(decomp_ops) >= 1 else decomp_ops[0]
@@ -950,6 +950,57 @@ class TestMatrix:
         # test identity for theta=pi
         assert np.allclose(qml.RZ.compute_matrix(np.pi), -1j * Z, atol=tol, rtol=0)
         assert np.allclose(qml.RZ(np.pi, wires=0).matrix(), -1j * Z, atol=tol, rtol=0)
+
+    @pytest.mark.parametrize("dim", range(3))
+    @pytest.mark.parametrize("wires", (range(2), range(3)))
+    @pytest.mark.parametrize("phi", np.linspace(-np.pi, np.pi, 10))
+    def test_pcphase(self, phi, dim, wires):
+        """Test that the PCPhase operator matrix looks correct."""
+        num_wires = len(wires)
+        op = qml.PCPhase(phi, dim=dim, wires=wires)
+
+        mat1 = qml.matrix(op)
+        mat2 = op.compute_matrix(*op.parameters, **op.hyperparameters)
+
+        expected_mat = np.diag(
+            [np.exp(1j * phi) if i < dim else 1.0 for i in range(2**num_wires)]
+        )
+        assert np.isclose(mat1, expected_mat)
+        assert np.isclose(mat2, expected_mat)
+
+    @pytest.mark.tf
+    def test_pcphase_tf(self):
+        # Add test
+        assert False
+
+    @pytest.mark.torch
+    def test_pcphase_torch(self):
+        # Add test
+        assert False
+
+    @pytest.mark.jax
+    def test_pcphase_jax(self):
+        # Add test
+        assert False
+
+    def test_pcphase_broadcasted(self):
+        """Test that the PCPhase matrix works with broadcasted parameters"""
+        dim = 2
+        size = 4
+        broadcasted_phi = [1.23, 4.56, -0.7]
+
+        op = qml.PCPhase(broadcasted_phi, dim=dim, wires=[0, 1])
+
+        mat1 = qml.matrix(op)
+        mat2 = op.compute_matrix(*op.parameters, **op.hyperparameters)
+
+        mats = [
+            np.diag([np.exp(1j * phi) if i < dim else 1.0 for i in range(size)])
+            for phi in broadcasted_phi
+        ]
+        expected_mat = np.array(mats)
+        assert np.isclose(mat1, expected_mat)
+        assert np.isclose(mat2, expected_mat)
 
     def test_isingxx(self, tol):
         """Test that the IsingXX operation is correct"""
@@ -1958,6 +2009,26 @@ class TestEigvals:
         expected = np.array([[1, np.exp(1j * p)] for p in phi])
         assert np.allclose(qml.PhaseShift.compute_eigvals(phi), expected, atol=tol, rtol=0)
 
+    def test_pcphase_eigvals(self):
+        """Test pcphase eigenvalues are correct"""
+
+        # test identity for theta=0
+        op = qml.PCPhase(0.0, dim=2, wires=[0, 1])
+        assert np.allclose(op.compute_eigvals(op.parameters, op.hyperparameters), np.ones(4))
+        assert np.allclose(op.eigvals(), np.ones(4))
+
+        # test arbitrary phase shift
+        phi = 0.5432
+        op = qml.PCPhase(phi, dim=2, wires=[0, 1])
+        expected = np.diag([np.exp(1j * phi), np.exp(1j * phi), 1.0, 1.0])
+        assert np.allclose(op.eigvals(), expected)
+
+        # test arbitrary broadcasted phase shift
+        phi = np.array([0.5, 0.4, 0.3])
+        op = qml.PCPhase(phi, dim=2, wires=[0, 1])
+        expected = np.array([[np.exp(1j * p), np.exp(1j * p), 1.0, 1.0] for p in phi])
+        assert np.allclose(op.eigvals(), expected)
+
     def test_crz_eigvals(self, tol):
         """Test controlled z rotation eigvals are correct"""
 
@@ -2642,6 +2713,27 @@ class TestGrad:
         expected = -1 / 2 * np.sin(par / 2), -1 / 2 * 1j * np.cos(par / 2)
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
+    @pytest.mark.parametrize("dev_name,diff_method,phi", configuration)
+    def test_pcphase_grad(self, dev_name, diff_method, phi):
+        """Test pcphase operator gradient"""
+        dev = qml.device(dev_name, wire=[0, 1])
+        expected_grad = 1j / 2 * (npp.exp(1j * phi) - npp.exp(-1j * phi))  # computed by hand
+
+        @qml.qnode(dev, diff_method=diff_method)
+        def circ(phi):
+            qml.Hadamard(wires=0)
+            qml.Hadamard(wires=1)
+
+            qml.PCPhase(phi, dim=2, wires=[0, 1])
+
+            qml.Hadamard(wires=0)
+            qml.Hadamard(wires=1)
+            return qml.expval(qml.PauliZ(wires=0))
+
+        phi = npp.array(phi, requires_grad=True)
+        computed_grad = qml.grad(circ)(phi)
+        assert np.isclose(computed_grad, expected_grad)
+
 
 class TestGenerator:
     @pytest.mark.parametrize(
@@ -2660,6 +2752,18 @@ class TestGenerator:
         assert coeff == 1.0
         assert gen.name == expected.name
         assert gen.wires == expected.wires
+
+    def test_pcphase_generator(self):
+        """Test the pcphase generator is the projector onto the subspace
+        we are applying the phase shift to."""
+        phi = 1.23
+        op = qml.PCPhase(phi, dim=2, wires=[0, 1])
+
+        expected_mat = np.diag([1.0, 1.0, 0.0, 0.0])
+
+        gen, coeff = qml.generator(op)
+        assert np.isclose(qml.matrix(gen), expected_mat)
+        assert np.isclose(coeff, phi)
 
 
 PAULI_ROT_PARAMETRIC_MATRIX_TEST_DATA = [
@@ -3296,6 +3400,7 @@ rotations = [
     qml.RY,
     qml.RZ,
     qml.PhaseShift,
+    qml.PCPhase,
     qml.ControlledPhaseShift,
     qml.Rot,
     qml.MultiRZ,
@@ -3747,6 +3852,12 @@ label_data = [
         "Rϕ\n(1)",
     ),
     (
+        qml.PCPhase(1.23, dim=2, wires=[0, 1]),
+        "∏_ϕ",
+        "∏_ϕ\n(1.23)",
+        "∏_ϕ\n(1)",
+    ),
+    (
         qml.ControlledPhaseShift(1.2345, wires=(0, 1)),
         "Rϕ",
         "Rϕ\n(1.23)",
@@ -3811,6 +3922,7 @@ label_data = [
 label_data_broadcasted = [
     (qml.RX(np.array([1.23, 4.56]), wires=0), "RX", "RX", "RX"),
     (qml.PauliRot(np.array([1.23, 4.5]), "XYZ", wires=(0, 1, 2)), "RXYZ", "RXYZ", "RXYZ"),
+    (qml.PCPhase(np.array([1.23, 4.56]), dim=2, wires=[0, 1]), "∏_ϕ", "∏_ϕ", "∏_ϕ"),
     (
         qml.U3(np.array([0.1, 0.2]), np.array([-0.1, -0.2]), np.array([1.2, -0.1]), wires=0),
         "U3",
@@ -3919,6 +4031,7 @@ pow_parametric_ops = (
     qml.RZ(3.456, wires=0),
     qml.PhaseShift(6.78, wires=0),
     qml.ControlledPhaseShift(0.234, wires=(0, 1)),
+    qml.PCPhase(6.78, dim=2, wires=[0, 1]),
     qml.MultiRZ(-0.4432, wires=(0, 1, 2)),
     qml.PauliRot(0.5, "X", wires=0),
     qml.CRX(-6.5432, wires=(0, 1)),
@@ -3935,6 +4048,7 @@ pow_parametric_ops = (
     qml.RZ(np.array([3.456]), wires=0),
     qml.PhaseShift(np.array([6.0, 7.0, 8.0]), wires=0),
     qml.ControlledPhaseShift(np.array([0.234]), wires=(0, 1)),
+    qml.PCPhase(np.array([6.0, 7.0, 8.0]), dim=2, wires=[0, 1]),
     qml.CPhaseShift00(np.array([0.234]), wires=(0, 1)),
     qml.CPhaseShift01(np.array([0.234]), wires=(0, 1)),
     qml.CPhaseShift10(np.array([0.234]), wires=(0, 1)),
