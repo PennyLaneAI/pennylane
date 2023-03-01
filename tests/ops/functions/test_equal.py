@@ -23,6 +23,7 @@ import pytest
 import pennylane as qml
 from pennylane import numpy as npp
 from pennylane.measurements import ExpectationMP
+from pennylane.measurements.probs import ProbabilityMP
 from pennylane.ops.op_math import SymbolicOp, Controlled
 
 PARAMETRIZED_OPERATIONS_1P_1W = [
@@ -1137,6 +1138,82 @@ class TestEqual:
     def test_not_equal_operator_measurement(self, op1, op2):
         """Test operator not equal to measurement"""
         assert not qml.equal(op1, op2)
+
+
+class TestMeasurementsEqual:
+    @pytest.mark.jax
+    def test_observables_different_interfaces(self):
+        """Check that the check_interface keyword is used when comparing observables."""
+
+        import jax
+
+        M1 = np.eye(2)
+        M2 = jax.numpy.eye(2)
+        ob1 = qml.Hermitian(M1, 0)
+        ob2 = qml.Hermitian(M2, 0)
+
+        assert not qml.equal(qml.expval(ob1), qml.expval(ob2), check_interface=True)
+        assert qml.equal(qml.expval(ob1), qml.expval(ob2), check_interface=False)
+
+    def test_observables_different_trainability(self):
+        """Check the check_trainability keyword argument affects comparisons of measurements."""
+        M1 = qml.numpy.eye(2, requires_grad=True)
+        M2 = qml.numpy.eye(2, requires_grad=False)
+
+        ob1 = qml.Hermitian(M1, 0)
+        ob2 = qml.Hermitian(M2, 0)
+
+        assert not qml.equal(qml.expval(ob1), qml.expval(ob2), check_trainability=True)
+        assert qml.equal(qml.expval(ob1), qml.expval(ob2), check_trainability=False)
+
+    def test_observables_atol(self):
+        """Check that the atol keyword argument affects comparisons of measurements."""
+        M1 = np.eye(2)
+        M2 = M1 + 1e-3
+
+        ob1 = qml.Hermitian(M1, 0)
+        ob2 = qml.Hermitian(M2, 0)
+
+        assert not qml.equal(qml.expval(ob1), qml.expval(ob2))
+        assert qml.equal(qml.expval(ob1), qml.expval(ob2), atol=1e-1)
+
+    def test_observables_rtol(self):
+        """Check rtol affects comparison of measurement observables."""
+        M1 = np.eye(2)
+        M2 = np.diag([1 + 1e-3, 1 - 1e-3])
+
+        ob1 = qml.Hermitian(M1, 0)
+        ob2 = qml.Hermitian(M2, 0)
+
+        assert not qml.equal(qml.expval(ob1), qml.expval(ob2))
+        assert qml.equal(qml.expval(ob1), qml.expval(ob2), rtol=1e-2)
+
+    def test_eigvals_atol(self):
+        """Check atol affects comparisons of eigenvalues."""
+        m1 = ProbabilityMP(eigvals=(1, 1e-3))
+        m2 = ProbabilityMP(eigvals=(1, 0))
+
+        assert not qml.equal(m1, m2)
+        assert qml.equal(m1, m2, atol=1e-2)
+
+    def test_eigvals_rtol(self):
+        """Check that rtol affects comparisons of eigenvalues."""
+        m1 = ProbabilityMP(eigvals=(1 + 1e-3, 0))
+        m2 = ProbabilityMP(eigvals=(1, 0))
+
+        assert not qml.equal(m1, m2)
+        assert qml.equal(m1, m2, rtol=1e-2)
+
+    def test_observables_equal_but_wire_order_not(self):
+        """Test that when the wire orderings are not equal but the observables are, that
+        we still get True."""
+
+        x1 = qml.PauliX(1)
+        z0 = qml.PauliZ(0)
+
+        o1 = qml.prod(x1, z0)
+        o2 = qml.prod(z0, x1)
+        assert qml.equal(qml.expval(o1), qml.expval(o2))
 
 
 class TestObservablesComparisons:

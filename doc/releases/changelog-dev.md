@@ -14,6 +14,10 @@
 
 <h3>Improvements</h3>
 
+* The `qchem.jordan_wigner` function is extended to support more fermionic operator orders.
+  [(#3754)](https://github.com/PennyLaneAI/pennylane/pull/3754)
+  [(#3751)](https://github.com/PennyLaneAI/pennylane/pull/3751)
+
 * `AdaptiveOptimizer` is updated to use non-default user-defined qnode arguments.
   [(#3765)](https://github.com/PennyLaneAI/pennylane/pull/3765)
 
@@ -23,6 +27,9 @@
 
 <h3>Documentation</h3>
 
+* A typo was corrected in the documentation for introduction to `inspecting_circuits` and `chemistry`.
+[(#3844)](https://github.com/PennyLaneAI/pennylane/pull/3844)
+
 <h3>Bug fixes</h3>
 
 <h3>Contributors</h3>
@@ -31,6 +38,7 @@ This release contains contributions from (in alphabetical order):
 
 Utkarsh Azad
 Soran Jahangiri
+Vincent Michaud-Rioux
 Mudit Pandey
 Matthew Silverman
 Jay Soni
