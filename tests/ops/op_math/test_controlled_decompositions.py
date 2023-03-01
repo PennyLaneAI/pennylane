@@ -20,7 +20,7 @@ import numpy as np
 import pennylane as qml
 from pennylane.ops import ctrl_decomp_zyz
 from pennylane.wires import Wires
-
+from pennylane.ops.op_math.controlled_decompositions import ctrl_decomp_bisect_od
 
 class TestControlledDecompositionZYZ:
     """tests for qml.ops.ctrl_decomp_zyz"""
@@ -151,3 +151,56 @@ class TestControlledDecompositionZYZ:
 
         assert len(decomp) == 5
         assert all(qml.equal(o, e) for o, e in zip(decomp, expected))
+
+class TestControlledBisectOD:
+    """tests for qml.ops.ctrl_decomp_bisect_od"""
+
+    def test_invalid_op_error(self):
+        """Tests that an error is raised when an invalid operation is passed"""
+        with pytest.raises(
+            ValueError, match="The target operation must be a single-qubit operation"
+        ):
+            _ = ctrl_decomp_bisect_od(qml.CNOT([0, 1]), [2])
+
+    su2_od_ops = [
+        qml.PauliX(0),
+        qml.PauliZ(0),
+    ]
+
+    od_ops = [
+        qml.Hadamard(0),
+    ]
+
+    @pytest.mark.parametrize("op", su2_od_ops + od_ops)
+    @pytest.mark.parametrize("control_wires", ([1, 2], [1, 2, 3]))
+    def test_decomposition_circuit(self, op, control_wires, tol):
+        """Tests that the controlled decomposition of a single-qubit operation
+        behaves as expected in a quantum circuit"""
+        dev = qml.device("default.qubit", wires=4)
+
+        @qml.qnode(dev)
+        def decomp_circuit():
+            qml.broadcast(unitary=qml.Hadamard, pattern="single", wires=control_wires)
+            ctrl_decomp_bisect_od(op, Wires(control_wires))
+            return qml.probs()
+
+        @qml.qnode(dev)
+        def expected_circuit():
+            qml.broadcast(unitary=qml.Hadamard, pattern="single", wires=control_wires)
+            qml.ctrl(op, control_wires)
+            return qml.probs()
+
+        res = decomp_circuit()
+        expected = expected_circuit()
+        assert np.allclose(res, expected, atol=tol, rtol=0)
+
+    @pytest.mark.parametrize("op", su2_od_ops)
+    @pytest.mark.parametrize("control_wires", ([1, 2], [1, 2, 3]))
+    def test_decomposition_matrix(self, op, control_wires, tol):
+        """Tests that the matrix representation of the controlled ZYZ decomposition
+        of a single-qubit operation is correct"""
+        expected_op = qml.ctrl(op, control_wires)
+        res = qml.matrix(ctrl_decomp_bisect_od, wire_order=control_wires + [0])(op, control_wires)
+        expected = expected_op.matrix()
+
+        assert np.allclose(expected, res, atol=tol, rtol=0)
