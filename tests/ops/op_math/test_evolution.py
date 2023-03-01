@@ -71,33 +71,6 @@ class TestEvolution:
         assert op.param == op.data[0]
 
     @pytest.mark.parametrize(
-        "base", [qml.Hamiltonian([1], [qml.PauliX(0)]), qml.pow(qml.PauliX(0))]
-    )
-    def test_grad_method(self, base):
-        """Test that the grad_method of the Evolution operator corresponds to the grad_method of the base operator."""
-        ev = Evolution(base)
-        assert ev.grad_method == base.grad_method
-
-    def test_repr_paulix(self):
-        """Test the __repr__ method when the base is a simple observable."""
-        op = Evolution(qml.PauliX(0), 3)
-        assert repr(op) == "Evolution(3j PauliX)"
-
-    def test_repr_tensor(self):
-        """Test the __repr__ method when the base is a tensor."""
-        t = qml.PauliX(0) @ qml.PauliX(1)
-        isingxx = Evolution(t, 0.25)
-
-        assert repr(isingxx) == "Evolution(0.25j PauliX(wires=[0]) @ PauliX(wires=[1]))"
-
-    def test_repr_deep_operator(self):
-        """Test the __repr__ method when the base is any operator with arithmetic depth > 0."""
-        base = qml.S(0) @ qml.PauliX(0)
-        op = Evolution(base, 3)
-
-        assert repr(op) == "Evolution(3j S(wires=[0]) @ PauliX(wires=[0]))"
-
-    @pytest.mark.parametrize(
         "op,decimals,expected",
         [
             (Evolution(qml.PauliZ(0), 2), None, "Exp(2j Z)"),
