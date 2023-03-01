@@ -853,9 +853,6 @@
   measurements returned incorrect results. Now an error is raised.
   [(#3811)](https://github.com/PennyLaneAI/pennylane/pull/3811)
 
-* Fixed a bug where calling `Evolution.generator` with `coeff` being a complex ArrayBox raised an error.
-  [(#3796)](https://github.com/PennyLaneAI/pennylane/pull/3796)
-
 * Fixed a bug in the drawer where nested controlled operations would output
   the label of the operation being controlled, rather than the control values.
   [(#3745)](https://github.com/PennyLaneAI/pennylane/pull/3745)

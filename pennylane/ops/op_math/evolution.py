@@ -91,13 +91,6 @@ class Evolution(Exp):
         """A real coefficient with ``1j`` factored out."""
         return self.data[0]
 
-    def __repr__(self):
-        return (
-            f"Evolution({self.coeff} {self.base})"
-            if self.base.arithmetic_depth > 0
-            else f"Evolution({self.coeff} {self.base.name})"
-        )
-
     @property
     def coeff(self):
         return 1j * self.data[0]
