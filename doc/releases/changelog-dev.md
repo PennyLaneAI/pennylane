@@ -12,6 +12,9 @@
   `qml.Hamiltonian`, `qml.SparseHamiltonian`, `qml.Sum`.
   [(#3759)](https://github.com/PennyLaneAI/pennylane/pull/3759)
 
+* The `apply_operation` function added to `devices/qubit` now supports broadcasting.
+  [(#3852)](https://github.com/PennyLaneAI/pennylane/pull/3852)
+
 <h3>Improvements</h3>
 
 * The `qchem.jordan_wigner` function is extended to support more fermionic operator orders.
