@@ -33,7 +33,7 @@ def state():
     number of wires defined for the device.
 
     Returns:
-        StateMP: measurement process instance
+        StateMP: Measurement process instance
 
     **Example:**
 
@@ -93,7 +93,7 @@ def density_matrix(wires):
         wires (Sequence[int] or int): the wires of the subsystem
 
     Returns:
-        StateMP: measurement process instance
+        StateMP: Measurement process instance
 
     **Example:**
 
