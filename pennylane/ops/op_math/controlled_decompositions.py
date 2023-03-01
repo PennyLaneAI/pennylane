@@ -17,7 +17,6 @@ This submodule defines functions to decompose controlled operations
 
 import numpy as np
 import numpy.linalg as npl
-import scipy.optimize as spo
 import pennylane as qml
 from pennylane.operation import Operator
 from pennylane.wires import Wires
@@ -33,10 +32,6 @@ def _param_su2(ar: float, ai: float, br: float, bi: float):
     return np.array([[complex(ar, ai), complex(-br, bi)],
                      [complex(br, bi), complex(ar, -ai)]])
 
-def _flatreals(x: np.ndarray):
-    x = x.flatten()
-    return np.concatenate((np.real(x), np.imag(x)))
-
 def _bisect_compute_a(u: np.ndarray):
     """
     Given the U matrix, compute the A matrix such that
@@ -44,25 +39,16 @@ def _bisect_compute_a(u: np.ndarray):
     where At is the adjoint of A
     and x is the Pauli X matrix.
     """
-    sx = np.array([[0, 1], [1, 0]]) # Pauli X matrix
-
-    def optfunc(x):
-        a = _param_su2(*x)
-        at = _matrix_adjoint(a)
-        expect_u = at @ sx @ a @ sx @ at @ sx @ a @ sx
-        return _flatreals((expect_u - u)[0])
-    
-    sol = spo.root(optfunc, [1, 0, 0, 0])
-
-    if not sol.success:
-        raise ValueError(f'Unable to compute A matrix for U matrix {u}')
-    
-    a = _param_su2(*sol.x)
-    
-    if not np.isclose(npl.det(a), 1):
-        raise AssertionError(f'A matrix is not SU(2): {a}')
-    
-    return a
+    x = np.real(u[0,1])
+    z = u[1,1]
+    zr = np.real(z)
+    zi = np.imag(z)
+    ar = np.sqrt((np.sqrt((zr+1)/2)+1)/2)
+    mul = 1/(2*np.sqrt((zr+1)*(np.sqrt((zr+1)/2)+1)))
+    ai = zi*mul
+    br = x*mul
+    bi = 0
+    return _param_su2(ar,ai,br,bi)
 
 def ctrl_decomp_zyz(target_operation: Operator, control_wires: Wires):
     """Decompose the controlled version of a target single-qubit operation
@@ -214,4 +200,54 @@ def ctrl_decomp_bisect_od(target_operation: Operator, control_wires: Wires):
 
     return [op_mcx1(), op_a(), op_mcx2(), op_at(), op_mcx1(), op_a(), op_mcx2(), op_at()]
 
+
+def ctrl_decomp_bisect_md(target_operation: Operator, control_wires: Wires):
+    """Decompose the controlled version of a target single-qubit operation
+
+    This function decomposes a controlled single-qubit target operation using the
+    decomposition defined in section 3.1 of
+    `Vale et al. (2023) <https://arxiv.org/abs/2302.06377>`_.
+
+    The target operation's matrix must have a real main-diagonal for this specialized method to work.
+
+    .. warning:: This method will add a global phase for target operations that do not
+        belong to the SU(2) group.
+
+    Args:
+        target_operation (~.operation.Operator): the target operation to decompose
+        control_wires (~.wires.Wires): the control wires of the operation
+
+    Returns:
+        list[Operation]: the decomposed operations
+
+    Raises:
+        ValueError: if ``target_operation`` is not a single-qubit operation
+            or its matrix does not have a real main-diagonal
+
+    """
+    from pennylane.transforms.decompositions.single_qubit_unitary import _convert_to_su2
+
+    if len(target_operation.wires) != 1:
+        raise ValueError(
+            "The target operation must be a single-qubit operation, instead "
+            f"got {target_operation.__class__.__name__}."
+        )
+
+    target_wire = target_operation.wires
+
+    u = target_operation.matrix()
+    u = _convert_to_su2(u)
+    u = np.array(u)
+
+    ui = np.imag(u)
+    if not np.isclose(ui[0,0], 0) or not np.isclose(ui[1,1], 0):
+        raise ValueError(f"Target operation's matrix must have real main-diagonal, but it is {u}")
     
+    sh = qml.Hadamard.compute_matrix()
+    mod_u = sh @ u @ sh
+    mod_op = qml.QubitUnitary(mod_u, target_wire)
+
+    inner = ctrl_decomp_bisect_od(mod_op, control_wires)
+    return [qml.Hadamard(target_wire)] + inner + [qml.Hadamard(target_wire)]
+
+

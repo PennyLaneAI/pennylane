@@ -38,7 +38,7 @@ def _convert_to_su2(U, return_global_phase=False):
     dets = math.linalg.det(U)
 
     exp_angles = math.cast_like(math.angle(dets), 1j) / 2
-    U_SU2 = math.cast_like(U, dets) * math.exp(1j * exp_angles)
+    U_SU2 = math.cast_like(U, dets) * math.exp(-1j * exp_angles)
     return (U_SU2, exp_angles) if return_global_phase else U_SU2
 
 
