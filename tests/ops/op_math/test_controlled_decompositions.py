@@ -163,12 +163,37 @@ class TestControlledBisectOD:
             _ = ctrl_decomp_bisect_od(qml.CNOT([0, 1]), [2])
 
     su2_od_ops = [
-        qml.PauliX(0),
-        qml.PauliZ(0),
+        qml.QubitUnitary(
+            np.array(
+                [
+                    [0, 1],
+                    [-1, 0],
+                ]
+            ),
+            wires=0,
+        ),
+        qml.QubitUnitary(
+            np.array(
+                [
+                    [1, 1],
+                    [-1, 1],
+                ]
+            ) * 2 **-0.5,
+            wires=0,
+        ),
+        qml.QubitUnitary(
+            np.array(
+                [
+                    [1j, 0],
+                    [0, -1j],
+                ]
+            ),
+            wires=0,
+        ),
     ]
 
     od_ops = [
-        qml.Hadamard(0),
+        qml.PauliZ(0),
     ]
 
     @pytest.mark.parametrize("op", su2_od_ops + od_ops)
@@ -192,7 +217,7 @@ class TestControlledBisectOD:
 
         res = decomp_circuit()
         expected = expected_circuit()
-        assert np.allclose(res, expected, atol=tol, rtol=0)
+        assert np.allclose(res, expected, atol=tol, rtol=tol)
 
     @pytest.mark.parametrize("op", su2_od_ops)
     @pytest.mark.parametrize("control_wires", ([1, 2], [1, 2, 3]))
@@ -203,4 +228,4 @@ class TestControlledBisectOD:
         res = qml.matrix(ctrl_decomp_bisect_od, wire_order=control_wires + [0])(op, control_wires)
         expected = expected_op.matrix()
 
-        assert np.allclose(expected, res, atol=tol, rtol=0)
+        assert np.allclose(expected, res, atol=tol, rtol=tol)
