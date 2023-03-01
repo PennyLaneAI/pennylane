@@ -965,23 +965,23 @@ class TestMatrix:
         expected_mat = np.diag(
             [np.exp(1j * phi) if i < dim else 1.0 for i in range(2**num_wires)]
         )
-        assert np.isclose(mat1, expected_mat)
-        assert np.isclose(mat2, expected_mat)
+        assert np.allclose(mat1, expected_mat)
+        assert np.allclose(mat2, expected_mat)
 
-    @pytest.mark.tf
-    def test_pcphase_tf(self):
-        # Add test
-        assert False
-
-    @pytest.mark.torch
-    def test_pcphase_torch(self):
-        # Add test
-        assert False
-
-    @pytest.mark.jax
-    def test_pcphase_jax(self):
-        # Add test
-        assert False
+    # @pytest.mark.tf
+    # def test_pcphase_tf(self):
+    #     # Add test
+    #     assert False
+    #
+    # @pytest.mark.torch
+    # def test_pcphase_torch(self):
+    #     # Add test
+    #     assert False
+    #
+    # @pytest.mark.jax
+    # def test_pcphase_jax(self):
+    #     # Add test
+    #     assert False
 
     def test_pcphase_broadcasted(self):
         """Test that the PCPhase matrix works with broadcasted parameters"""
@@ -999,8 +999,8 @@ class TestMatrix:
             for phi in broadcasted_phi
         ]
         expected_mat = np.array(mats)
-        assert np.isclose(mat1, expected_mat)
-        assert np.isclose(mat2, expected_mat)
+        assert np.allclose(mat1, expected_mat)
+        assert np.allclose(mat2, expected_mat)
 
     def test_isingxx(self, tol):
         """Test that the IsingXX operation is correct"""
@@ -2014,13 +2014,13 @@ class TestEigvals:
 
         # test identity for theta=0
         op = qml.PCPhase(0.0, dim=2, wires=[0, 1])
-        assert np.allclose(op.compute_eigvals(op.parameters, op.hyperparameters), np.ones(4))
+        assert np.allclose(op.compute_eigvals(*op.parameters, **op.hyperparameters), np.ones(4))
         assert np.allclose(op.eigvals(), np.ones(4))
 
         # test arbitrary phase shift
         phi = 0.5432
         op = qml.PCPhase(phi, dim=2, wires=[0, 1])
-        expected = np.diag([np.exp(1j * phi), np.exp(1j * phi), 1.0, 1.0])
+        expected = np.array([np.exp(1j * phi), np.exp(1j * phi), 1.0, 1.0])
         assert np.allclose(op.eigvals(), expected)
 
         # test arbitrary broadcasted phase shift
@@ -2716,7 +2716,7 @@ class TestGrad:
     @pytest.mark.parametrize("dev_name,diff_method,phi", configuration)
     def test_pcphase_grad(self, dev_name, diff_method, phi):
         """Test pcphase operator gradient"""
-        dev = qml.device(dev_name, wire=[0, 1])
+        dev = qml.device(dev_name, wires=[0, 1])
         expected_grad = 1j / 2 * (npp.exp(1j * phi) - npp.exp(-1j * phi))  # computed by hand
 
         @qml.qnode(dev, diff_method=diff_method)
@@ -2762,8 +2762,8 @@ class TestGenerator:
         expected_mat = np.diag([1.0, 1.0, 0.0, 0.0])
 
         gen, coeff = qml.generator(op)
-        assert np.isclose(qml.matrix(gen), expected_mat)
-        assert np.isclose(coeff, phi)
+        assert np.allclose(qml.matrix(gen), expected_mat)
+        assert np.isclose(coeff, 1.0)
 
 
 PAULI_ROT_PARAMETRIC_MATRIX_TEST_DATA = [
@@ -3438,7 +3438,13 @@ class TestSimplify:
         else:
             wires = [0, 1]
 
+        if op_class == qml.PCPhase:
+            return op_class(*params, dim=2, wires=wires)
         return op_class(*params, wires)
+
+    @staticmethod
+    def _get_params_wires(op):
+        return op.data, op.wires
 
     @pytest.mark.parametrize("op", rotations)
     def test_simplify_rotations(self, op):
@@ -3458,28 +3464,35 @@ class TestSimplify:
         dev = qml.device("default.qubit", wires=2)
 
         @qml.qnode(dev)
-        def circuit(simplify, wires, *params):
+        def circuit(simplify, wires, *params, **hyperparams):
             if simplify:
-                qml.simplify(op(*params, wires))
+                qml.simplify(op(*params, wires=wires, **hyperparams))
             else:
-                op(*params, wires)
+                op(*params, wires=wires, **hyperparams)
 
             return qml.expval(qml.PauliZ(0))
 
         unsimplified_op = self.get_unsimplified_op(op)
-        params, wires = unsimplified_op.data, unsimplified_op.wires
+        params, wires = self._get_params_wires(unsimplified_op)
+        hyperparams = {"dim": 2} if unsimplified_op.name == "PCPhase" else {}
 
         for i in range(params[0].shape[0]):
             parameters = [p[i] for p in params]
 
-            unsimplified_res = circuit(False, wires, *parameters)
-            simplified_res = circuit(True, wires, *parameters)
+            unsimplified_res = circuit(False, wires, *parameters, **hyperparams)
+            simplified_res = circuit(True, wires, *parameters, **hyperparams)
 
             unsimplified_grad = qml.grad(circuit, argnum=list(range(2, 2 + len(parameters))))(
-                False, wires, *parameters
+                False,
+                wires,
+                *parameters,
+                **hyperparams,
             )
             simplified_grad = qml.grad(circuit, argnum=list(range(2, 2 + len(parameters))))(
-                True, wires, *parameters
+                True,
+                wires,
+                *parameters,
+                **hyperparams,
             )
 
             assert qml.math.allclose(unsimplified_res, simplified_res)
@@ -3494,27 +3507,28 @@ class TestSimplify:
         dev = qml.device("default.qubit", wires=2)
 
         @qml.qnode(dev)
-        def circuit(simplify, wires, *params):
+        def circuit(simplify, wires, *params, **hyperparams):
             if simplify:
-                qml.simplify(op(*params, wires))
+                qml.simplify(op(*params, wires=wires, **hyperparams))
             else:
-                op(*params, wires)
+                op(*params, wires=wires, **hyperparams)
 
             return qml.expval(qml.PauliZ(0))
 
         unsimplified_op = self.get_unsimplified_op(op)
-        params, wires = unsimplified_op.data, unsimplified_op.wires
+        params, wires = self._get_params_wires(unsimplified_op)
+        hyperparams = {"dim": 2} if unsimplified_op.name == "PCPhase" else {}
 
         for i in range(params[0].shape[0]):
             parameters = [tf.Variable(p[i]) for p in params]
 
             with tf.GradientTape() as unsimplified_tape:
-                unsimplified_res = circuit(False, wires, *parameters)
+                unsimplified_res = circuit(False, wires, *parameters, **hyperparams)
 
             unsimplified_grad = unsimplified_tape.gradient(unsimplified_res, parameters)
 
             with tf.GradientTape() as simplified_tape:
-                simplified_res = circuit(False, wires, *parameters)
+                simplified_res = circuit(False, wires, *parameters, **hyperparams)
 
             simplified_grad = simplified_tape.gradient(simplified_res, parameters)
 
@@ -3533,27 +3547,28 @@ class TestSimplify:
 
         @tf.function
         @qml.qnode(dev)
-        def circuit(simplify, wires, *params):
+        def circuit(simplify, wires, *params, **hyperparams):
             if simplify:
-                qml.simplify(op(*params, wires))
+                qml.simplify(op(*params, wires=wires, **hyperparams))
             else:
-                op(*params, wires)
+                op(*params, wires=wires, **hyperparams)
 
             return qml.expval(qml.PauliZ(0))
 
         unsimplified_op = self.get_unsimplified_op(op)
-        params, wires = unsimplified_op.data, unsimplified_op.wires
+        params, wires = self._get_params_wires(unsimplified_op)
+        hyperparams = {"dim": 2} if unsimplified_op.name == "PCPhase" else {}
 
         for i in range(params[0].shape[0]):
             parameters = [tf.Variable(p[i]) for p in params]
 
             with tf.GradientTape() as unsimplified_tape:
-                unsimplified_res = circuit(False, wires, *parameters)
+                unsimplified_res = circuit(False, wires, *parameters, **hyperparams)
 
             unsimplified_grad = unsimplified_tape.gradient(unsimplified_res, parameters)
 
             with tf.GradientTape() as simplified_tape:
-                simplified_res = circuit(True, wires, *parameters)
+                simplified_res = circuit(True, wires, *parameters, **hyperparams)
 
             simplified_grad = simplified_tape.gradient(simplified_res, parameters)
 
@@ -3569,25 +3584,26 @@ class TestSimplify:
         dev = qml.device("default.qubit", wires=2)
 
         @qml.qnode(dev)
-        def circuit(simplify, wires, *params):
+        def circuit(simplify, wires, *params, **hyperparams):
             if simplify:
-                qml.simplify(op(*params, wires))
+                qml.simplify(op(*params, wires=wires, **hyperparams))
             else:
-                op(*params, wires)
+                op(*params, wires=wires, **hyperparams)
 
             return qml.expval(qml.PauliZ(0))
 
         unsimplified_op = self.get_unsimplified_op(op)
-        params, wires = unsimplified_op.data, unsimplified_op.wires
+        params, wires = self._get_params_wires(unsimplified_op)
+        hyperparams = {"dim": 2} if unsimplified_op.name == "PCPhase" else {}
 
         for i in range(params[0].shape[0]):
             parameters = [torch.tensor(p[i], requires_grad=True) for p in params]
 
-            unsimplified_res = circuit(False, wires, *parameters)
+            unsimplified_res = circuit(False, wires, *parameters, **hyperparams)
             unsimplified_res.backward()
             unsimplified_grad = [p.grad for p in parameters]
 
-            simplified_res = circuit(True, wires, *parameters)
+            simplified_res = circuit(True, wires, *parameters, **hyperparams)
             simplified_res.backward()
             simplified_grad = [p.grad for p in parameters]
 
@@ -3604,28 +3620,29 @@ class TestSimplify:
         dev = qml.device("default.qubit.jax", wires=2)
 
         @qml.qnode(dev)
-        def circuit(simplify, wires, *params):
+        def circuit(simplify, wires, *params, **hyperparams):
             if simplify:
-                qml.simplify(op(*params, wires))
+                qml.simplify(op(*params, wires=wires, **hyperparams))
             else:
-                op(*params, wires)
+                op(*params, wires=wires, **hyperparams)
 
             return qml.expval(qml.PauliZ(0))
 
         unsimplified_op = self.get_unsimplified_op(op)
-        params, wires = unsimplified_op.data, unsimplified_op.wires
+        params, wires = self._get_params_wires(unsimplified_op)
+        hyperparams = {"dim": 2} if unsimplified_op.name == "PCPhase" else {}
 
         for i in range(params[0].shape[0]):
             parameters = [jnp.array(p[i]) for p in params]
 
-            unsimplified_res = circuit(False, wires, *parameters)
-            simplified_res = circuit(True, wires, *parameters)
+            unsimplified_res = circuit(False, wires, *parameters, **hyperparams)
+            simplified_res = circuit(True, wires, *parameters, **hyperparams)
 
             unsimplified_grad = jax.grad(circuit, argnums=list(range(2, 2 + len(parameters))))(
-                False, wires, *parameters
+                False, wires, *parameters, **hyperparams
             )
             simplified_grad = jax.grad(circuit, argnums=list(range(2, 2 + len(parameters))))(
-                True, wires, *parameters
+                True, wires, *parameters, **hyperparams
             )
 
             assert qml.math.allclose(unsimplified_res, simplified_res, atol=1e-6)
@@ -3682,7 +3699,11 @@ class TestSimplify:
 
         num_wires = op.num_wires if op.num_wires is not qml.operation.AnyWires else 2
 
-        unsimplified_op = op(*([0] * op.num_params), wires=range(num_wires))
+        if op == qml.PCPhase:
+            unsimplified_op = op(*([0] * op.num_params), dim=2, wires=range(num_wires))
+        else:
+            unsimplified_op = op(*([0] * op.num_params), wires=range(num_wires))
+
         simplified_op = qml.simplify(unsimplified_op)
 
         if op != qml.PSWAP:

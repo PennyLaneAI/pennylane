@@ -1436,7 +1436,7 @@ class PCPhase(Operation):
         dim, _ = self.hyperparameters["dimension"]
 
         if _can_replace(phi, 0):
-            return qml.Identity(wires=self.wires)
+            return qml.Identity(wires=self.wires[0])
 
         return PCPhase(phi, dim=dim, wires=self.wires)
 
