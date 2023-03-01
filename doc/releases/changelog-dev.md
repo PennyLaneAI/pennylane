@@ -22,6 +22,7 @@
   [(#3765)](https://github.com/PennyLaneAI/pennylane/pull/3765)
 
 * Allow multiplication of Hamiltonians by complex scalars.
+  [(#3848)](https://github.com/PennyLaneAI/pennylane/pull/3848)
 
 <h3>Breaking changes</h3>
 
