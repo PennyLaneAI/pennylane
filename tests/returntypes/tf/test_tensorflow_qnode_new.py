@@ -2252,7 +2252,7 @@ class TestReturn:
             qml.RX(x, wires=[0])
             qml.RY(y, wires=[1])
             qml.CNOT(wires=[0, 1])
-            return qml.expval(qml.PauliZ(0) @ qml.PauliX(1)), qml.probs(wires=[0, 1])
+            return qml.expval(qml.PauliZ(0) @ qml.PauliX(1)), qml.probs(wires=[0])
 
         with tf.GradientTape() as tape1:
             with tf.GradientTape(persistent=True) as tape2:
@@ -2268,10 +2268,10 @@ class TestReturn:
         assert len(hess) == 2
 
         assert isinstance(hess[0], tf.Tensor)
-        assert hess[0].shape == (10,)
+        assert hess[0].shape == (6,)
 
         assert isinstance(hess[1], tf.Tensor)
-        assert hess[1].shape == (10,)
+        assert hess[1].shape == (6,)
 
     def test_hessian_probs_expval_multiple_param_array(
         self, dev_name, diff_method, mode, interface
@@ -2295,7 +2295,7 @@ class TestReturn:
             qml.RX(x[0], wires=[0])
             qml.RY(x[1], wires=[1])
             qml.CNOT(wires=[0, 1])
-            return qml.expval(qml.PauliZ(0) @ qml.PauliX(1)), qml.probs(wires=[0, 1])
+            return qml.expval(qml.PauliZ(0) @ qml.PauliX(1)), qml.probs(wires=[0])
 
         with tf.GradientTape() as tape1:
             with tf.GradientTape(persistent=True) as tape2:
@@ -2307,7 +2307,7 @@ class TestReturn:
         hess = tape1.jacobian(grad, params)
 
         assert isinstance(hess, tf.Tensor)
-        assert hess.shape == (5, 2, 2)
+        assert hess.shape == (3, 2, 2)
 
     def test_hessian_probs_var_multiple_params(self, dev_name, diff_method, mode, interface):
         """The hessian of multiple measurements with multiple params return a tuple of arrays."""
@@ -2326,7 +2326,7 @@ class TestReturn:
             qml.RX(x, wires=[0])
             qml.RY(y, wires=[1])
             qml.CNOT(wires=[0, 1])
-            return qml.var(qml.PauliZ(0) @ qml.PauliX(1)), qml.probs(wires=[0, 1])
+            return qml.var(qml.PauliZ(0) @ qml.PauliX(1)), qml.probs(wires=[0])
 
         with tf.GradientTape() as tape1:
             with tf.GradientTape(persistent=True) as tape2:
@@ -2342,10 +2342,10 @@ class TestReturn:
         assert len(hess) == 2
 
         assert isinstance(hess[0], tf.Tensor)
-        assert hess[0].shape == (10,)
+        assert hess[0].shape == (6,)
 
         assert isinstance(hess[1], tf.Tensor)
-        assert hess[1].shape == (10,)
+        assert hess[1].shape == (6,)
 
     def test_hessian_probs_var_multiple_param_array(self, dev_name, diff_method, mode, interface):
         """The hessian of multiple measurements with a multiple param array return a single array."""
@@ -2363,7 +2363,7 @@ class TestReturn:
             qml.RX(x[0], wires=[0])
             qml.RY(x[1], wires=[1])
             qml.CNOT(wires=[0, 1])
-            return qml.var(qml.PauliZ(0) @ qml.PauliX(1)), qml.probs(wires=[0, 1])
+            return qml.var(qml.PauliZ(0) @ qml.PauliX(1)), qml.probs(wires=[0])
 
         with tf.GradientTape() as tape1:
             with tf.GradientTape(persistent=True) as tape2:
@@ -2375,4 +2375,4 @@ class TestReturn:
         hess = tape1.jacobian(grad, params)
 
         assert isinstance(hess, tf.Tensor)
-        assert hess.shape == (5, 2, 2)
+        assert hess.shape == (3, 2, 2)

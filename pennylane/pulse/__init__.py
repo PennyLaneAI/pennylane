@@ -212,7 +212,7 @@ Now we can execute the evolution of this Hamiltonian in a QNode and compute its 
 
     import jax
 
-    dev = qml.device("default.qubit", wires=1)
+    dev = qml.device("default.qubit.jax", wires=1)
 
     @jax.jit
     @qml.qnode(dev, interface="jax")
@@ -225,7 +225,7 @@ Now we can execute the evolution of this Hamiltonian in a QNode and compute its 
 Array(0.96632576, dtype=float32)
 
 >>> jax.grad(circuit)(params)
-Array([2.3569832], dtype=float32)
+[Array(2.3569832, dtype=float32)]
 
 We can use the decorator ``jax.jit`` to compile this execution just-in-time. This means the first execution
 will typically take a little longer with the benefit that all following executions will be significantly faster.
@@ -233,8 +233,8 @@ JIT-compiling is optional, and one can remove the decorator when only single exe
 ``jax`` docs on jitting for more information.
 
 .. warning::
-    To find the simultaneous evolution of the two operators, so it is important that they are both included
-    in the same :func:`~.pennylane.evolve`. For two non-commuting :class:`~.ParametrizedHamiltonians`, applying
+    To find the simultaneous evolution of the two operators, it is important that they are included
+    in the same :func:`~.pennylane.evolve`. For two non-commuting :class:`~.ParametrizedHamiltonian`'s, applying
     ``qml.evolve(H1)(params, t=[0, 10])`` followed by ``qml.evolve(H2)(params, t=[0, 10])`` will **not**
     apply the two pulses simultaneously, despite the overlapping time window. Instead, they will be evolved
     over the same timespan, but without taking into account how the evolution of ``H1`` affects ``H2``.

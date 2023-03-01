@@ -196,10 +196,15 @@ def basis_rotation(one_electron, two_electron, tol_factor=1.0e-5):
     >>> core, one, two = qml.qchem.electron_integrals(mol)()
     >>> coeffs, ops, unitaries = basis_rotation(one, two, tol_factor=1.0e-5)
     >>> print(coeffs)
-    [array([-3.07829375,  1.92254344,  1.15575031]),
-     array([-9.73801723e-05,  5.59923133e-03,  9.57150297e-05, -5.59756619e-03]),
-     array([-0.09060523,  0.09060523]),
-     array([-0.68077716,  1.01246018, -0.66913628,  0.33745327])]
+    [array([ 0.84064649, -2.59579282,  0.84064649,  0.45724992,  0.45724992]),
+     array([ 9.57150297e-05,  5.60006390e-03,  9.57150297e-05,  2.75092558e-03,
+            -9.73801723e-05, -2.79878310e-03, -9.73801723e-05, -2.79878310e-03,
+            -2.79878310e-03, -2.79878310e-03,  2.84747318e-03]),
+     array([ 0.04530262, -0.04530262, -0.04530262, -0.04530262, -0.04530262,
+            0.09060523,  0.04530262]),
+     array([-0.66913628,  1.6874169 , -0.66913628,  0.16584151, -0.68077716,
+            0.16872663, -0.68077716,  0.16872663,  0.16872663,  0.16872663,
+            0.17166195])]
 
     .. details::
         :title: Theory
@@ -385,7 +390,7 @@ def _chemist_transform(one_body_tensor=None, two_body_tensor=None, spatial_basis
     chemist_two_body_coeffs, chemist_one_body_coeffs = None, None
 
     if one_body_tensor is not None:
-        chemist_one_body_coeffs = one_body_tensor
+        chemist_one_body_coeffs = one_body_tensor.copy()
 
     if two_body_tensor is not None:
         chemist_two_body_coeffs = np.swapaxes(two_body_tensor, 1, 3)
