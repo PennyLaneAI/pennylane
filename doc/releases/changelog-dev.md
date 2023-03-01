@@ -42,6 +42,9 @@
 
 <h3>Documentation</h3>
 
+* A typo was corrected in the documentation for introduction to `inspecting_circuits` and `chemistry`.
+[(#3844)](https://github.com/PennyLaneAI/pennylane/pull/3844)
+
 <h3>Bug fixes</h3>
 
 * Fixed bug where the coefficients where not ordered correctly when summing a `ParametrizedHamiltonian`
@@ -54,6 +57,7 @@ This release contains contributions from (in alphabetical order):
 
 Utkarsh Azad
 Soran Jahangiri
+Vincent Michaud-Rioux
 Mudit Pandey
 Matthew Silverman
 Jay Soni
