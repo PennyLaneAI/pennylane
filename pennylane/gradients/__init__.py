@@ -48,6 +48,7 @@ Gradient transforms
     param_shift_hessian
     spsa_grad
     hadamard_grad
+    stoch_pulse_grad
 
 Custom gradients
 ^^^^^^^^^^^^^^^^
@@ -331,7 +332,7 @@ from .vjp import compute_vjp, batch_vjp, vjp, compute_vjp_multi_new, compute_vjp
 from .jvp import batch_jvp, jvp, compute_jvp_multi, compute_jvp_single
 from .spsa_gradient import spsa_grad
 from .hadamard_gradient import hadamard_grad
-from .pulse_gradient import pulse_grad
+from .pulse_gradient import stoch_pulse_grad
 
 from .hamiltonian_grad import hamiltonian_grad
 from .general_shift_rules import (

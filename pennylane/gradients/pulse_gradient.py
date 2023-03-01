@@ -62,7 +62,7 @@ def split_evol_ops(op, word, key):
     before, after = copy(op), copy(op)
     # Extract time interval, split it, and set the intervals of the copies to the split intervals
     t0, t1 = op.t
-    tau = jax.random.uniform(key) * (t1 - t0)
+    tau = jax.random.uniform(key) * (t1 - t0) + t0
     before.t = jnp.array([t0, tau])
     after.t = jnp.array([tau, t1])
     # Create Pauli rotations to be inserted at tau
@@ -95,7 +95,7 @@ def split_evol_tapes(tape, split_evolve_ops, op_idx):
     return tapes
 
 
-def _pulse_grad(tape, argnum=None, num_samples=1, sampler_seed=None, shots=None, **kwargs):
+def _stoch_pulse_grad(tape, argnum=None, num_samples=1, sampler_seed=None, shots=None, **kwargs):
     r"""Compute the gradient of a quantum circuit composed of pulse sequences by applying the
     stochastic parameter shift rule.
 
@@ -107,7 +107,7 @@ def _pulse_grad(tape, argnum=None, num_samples=1, sampler_seed=None, shots=None,
     # pylint:disable=unused-argument
     if not has_jax:
         raise ImportError(
-            "Module jax is required for the ``pulse_grad`` gradient transform. "
+            "Module jax is required for the ``stoch_pulse_grad`` gradient transform. "
             "You can install jax via: pip install jax jaxlib"
         )
     if any(isinstance(m, VarianceMP) for m in tape.measurements):
@@ -127,7 +127,7 @@ def _pulse_grad(tape, argnum=None, num_samples=1, sampler_seed=None, shots=None,
     if argnum is None and not tape.trainable_params:
         return _no_trainable_grad_new(tape, shots)
 
-    gradient_analysis(tape, grad_fn=pulse_grad)
+    gradient_analysis(tape, grad_fn=stoch_pulse_grad)
     method = "analytic"
     diff_methods = grad_method_validation(method, tape)
 
@@ -139,13 +139,12 @@ def _pulse_grad(tape, argnum=None, num_samples=1, sampler_seed=None, shots=None,
     argnum = [i for i, dm in method_map.items() if dm == "A"]
 
     sampler_seed = sampler_seed or np.random.randint(18421)
-    print(sampler_seed)
     key = jax.random.PRNGKey(sampler_seed)
 
-    return _expval_pulse_grad(tape, argnum, num_samples, key, shots)
+    return _expval_stoch_pulse_grad(tape, argnum, num_samples, key, shots)
 
 
-def _expval_pulse_grad(tape, argnum, num_samples, key, shots):
+def _expval_stoch_pulse_grad(tape, argnum, num_samples, key, shots):
     r"""Compute the gradient of a quantum circuit composed of pulse sequences that measures
     an expectation value or probabilities, by applying the stochastic parameter shift rule.
     This function is adapted to the new return type system.
@@ -166,7 +165,7 @@ def _expval_pulse_grad(tape, argnum, num_samples, key, shots):
         op, op_idx, term_idx = tape.get_operation(idx, return_op_index=True)
         if not isinstance(op, ParametrizedEvolution):
             raise ValueError(
-                "pulse_grad does not support differentiating parameters of other operations than pulses."
+                "stoch_pulse_grad does not support differentiating parameters of other operations than pulses."
             )
 
         this_tapes = []
@@ -221,10 +220,10 @@ def _expval_pulse_grad(tape, argnum, num_samples, key, shots):
     return tapes, processing_fn
 
 
-def expand_invalid_trainable_pulse_grad(x, *args, **kwargs):
+def expand_invalid_trainable_stoch_pulse_grad(x, *args, **kwargs):
     """Do not expand anything."""
     # pylint:disable=unused-argument
     return x
 
 
-pulse_grad = gradient_transform(_pulse_grad, expand_fn=expand_invalid_trainable_pulse_grad)
+stoch_pulse_grad = gradient_transform(_stoch_pulse_grad, expand_fn=expand_invalid_trainable_stoch_pulse_grad)
