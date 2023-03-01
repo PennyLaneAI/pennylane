@@ -37,7 +37,13 @@ def expand_fn(
 
 @functools.partial(batch_transform, expand_fn=expand_fn)
 def metric_tensor(
-    tape, argnum=None, approx=None, allow_nonunitary=True, aux_wire=None, device_wires=None
+    tape,
+    argnum=None,
+    argnums=None,
+    approx=None,
+    allow_nonunitary=True,
+    aux_wire=None,
+    device_wires=None,
 ):  # pylint: disable=too-many-arguments
     r"""Returns a function that computes the metric tensor of a given QNode or quantum tape.
 
@@ -66,6 +72,10 @@ def metric_tensor(
             the metric tensor is computed. If ``argnum=None``, the metric tensor with respect to all
             trainable parameters is returned. Excluding tape-parameter indices from this list reduces
             the computational cost and the corresponding metric-tensor elements will be set to 0.
+        argnums (int or Sequence[int] or None): For the Jax interface, trainable tape-parameter indices with
+            respect to which the metric tensor is computed. If ``argnum=None``, the metric tensor with respect
+            to all trainable parameters is returned. Excluding tape-parameter indices from this list reduces
+            the computational cost.
 
         approx (str): Which approximation of the metric tensor to compute.
 
@@ -296,7 +306,8 @@ def metric_tensor(
             "chosen auto differentiation framework, or via the 'tape.trainable_params' property."
         )
         return [], lambda _: ()
-
+    if argnums:
+        argnum = argnums
     if argnum is None:
         argnum = tape.trainable_params
     elif isinstance(argnum, int):
@@ -383,19 +394,38 @@ def qnode_execution_wrapper(self, qnode, targs, tkwargs):
     mt_fn = self.default_qnode_wrapper(qnode, targs, tkwargs)
 
     def _expand_fn(tape):
-        # Currently does not support it
-        tkwargs.pop("argnums", None)
         return self.expand_fn(tape, *targs, **tkwargs)
 
     def wrapper(*args, **kwargs):
-        old_interface = qnode.interface
+        argnum = tkwargs.get("argnum", None)
+        argnums = tkwargs.get("argnums", None)
 
-        if old_interface == "auto":
-            qnode.interface = qml.math.get_interface(*args, *list(kwargs.values()))
+        interface = qml.math.get_interface(*args)
+        trainable_params = qml.math.get_trainable_indices(args)
 
-        cjac_fn = qml.transforms.classical_jacobian(qnode, expand_fn=_expand_fn)
+        if interface == "jax" and argnum:
+            warnings.warn(
+                "argnum is deprecated with the Jax interface. You should use argnums instead."
+            )
+            tkwargs.pop("argnum")
+            argnums = argnum
 
-        if not qml.math.get_trainable_indices(args):
+        argnums_ = None
+
+        if interface == "jax" and not trainable_params:
+            if argnums is None:
+                argnums_ = [0]
+
+            if argnums is not None:
+                argnums_ = [argnums] if isinstance(argnums, int) else argnums
+
+            params = qml.math.jax_argnums_to_tape_trainable(
+                qnode, argnums_, self.expand_fn, args, kwargs
+            )
+            argnums_ = qml.math.get_trainable_indices(params)
+            kwargs["argnums"] = argnums_
+
+        if not trainable_params and argnums is None and argnums_ is None:
             warnings.warn(
                 "Attempted to compute the metric tensor of a QNode with no trainable parameters. "
                 "If this is unintended, please add trainable parameters in accordance with the "
@@ -425,14 +455,24 @@ def qnode_execution_wrapper(self, qnode, targs, tkwargs):
             tkwargs["approx"] = "block-diag"
             return self(qnode, *targs, **tkwargs)(*args, **kwargs)
 
-        if old_interface == "auto":
-            qnode.interface = "auto"
-
         if not hybrid:
             return mt
 
         kwargs.pop("shots", False)
-        cjac = cjac_fn(*args, **kwargs)
+        # Special case where we apply a Jax transform (jacobian e.g.) on the gradient transform and argnums are
+        # defined on the outer transform and therefore on the args.
+        if argnums is None and argnums_ is None and qml.math.get_interface(*args) == "jax":
+            cjac = qml.transforms.classical_jacobian(
+                qnode, argnum=qml.math.get_trainable_indices(args), expand_fn=self.expand_fn
+            )(*args, **kwargs)
+        else:
+            if qml.math.get_interface(*args) == "jax":
+                argnum_cjac = argnums if argnums is not None else [0]
+            else:
+                argnum_cjac = None
+            cjac = qml.transforms.classical_jacobian(
+                qnode, argnum=argnum_cjac, expand_fn=self.expand_fn
+            )(*args, **kwargs)
 
         return _contract_metric_tensor_with_cjac(mt, cjac)
 
