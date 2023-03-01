@@ -89,7 +89,6 @@ def apply_operation_einsum(op: qml.operation.Operator, state, batch_dim=0):
     if len(mat.shape) != 2:
         # Add broadcasting dimension to shape
         new_mat_shape.insert(0, mat.shape[0])
-
     reshaped_mat = math.reshape(mat, new_mat_shape)
 
     return math.einsum(einsum_indices, reshaped_mat, state)
@@ -107,9 +106,21 @@ def apply_operation_tensordot(op: qml.operation.Operator, state, batch_dim=0):
         array[complex]: output_state
     """
     mat = op.matrix()
-    total_indices = len(state.shape)
+    total_indices = len(state.shape) - batch_dim
     num_indices = len(op.wires)
-    reshaped_mat = math.reshape(mat, [2] * (num_indices * 2))
+
+    new_mat_shape = [2] * (num_indices * 2)
+    if len(mat.shape) != 2:
+        if batch_dim:
+            raise NotImplementedError(
+                "Applying a broadcasted unitary to an already broadcasted state via "
+                "_apply_unitary is not supported. Broadcasting sizes are "
+                f"({mat.shape[0]}, {state.shape[0]})."
+            )
+        # Add broadcasting dimension to shape
+        new_mat_shape.insert(0, mat.shape[0])
+
+    reshaped_mat = math.reshape(mat, new_mat_shape)
     axes = (tuple(range(num_indices, 2 * num_indices)), tuple(op.wires))
 
     tdot = math.tensordot(reshaped_mat, state, axes=axes)
@@ -169,9 +180,10 @@ def apply_operation(op: qml.operation.Operator, state, batch_dim=0):
         [1., 0.]], requires_grad=True)
 
     """
-    if (len(op.wires) < EINSUM_OP_WIRECOUNT_PERF_THRESHOLD) and (
-        math.ndim(state) < EINSUM_STATE_WIRECOUNT_PERF_THRESHOLD
-    ):
+    if (
+        len(op.wires) < EINSUM_OP_WIRECOUNT_PERF_THRESHOLD
+        and math.ndim(state) < EINSUM_STATE_WIRECOUNT_PERF_THRESHOLD
+    ) or (op.matrix().shape != 2 and batch_dim):
         return apply_operation_einsum(op, state, batch_dim=batch_dim)
     return apply_operation_tensordot(op, state, batch_dim=batch_dim)
 
@@ -179,7 +191,7 @@ def apply_operation(op: qml.operation.Operator, state, batch_dim=0):
 @apply_operation.register
 def apply_paulix(op: qml.PauliX, state, batch_dim=0):
     """Apply :class:`pennylane.PauliX` operator to the quantum state"""
-    return math.roll(state, 1, op.wires[0])
+    return math.roll(state, 1, op.wires[0] + batch_dim)
 
 
 @apply_operation.register
@@ -190,7 +202,7 @@ def apply_pauliz(op: qml.PauliZ, state, batch_dim=0):
     sl_1 = _get_slice(1, op.wires[0], n_wires)
 
     state1 = math.multiply(state[sl_1], -1)
-    return math.stack([state[sl_0], state1], axis=op.wires[0])
+    return math.stack([state[sl_0], state1], axis=op.wires[0] + batch_dim)
 
 
 @apply_operation.register
@@ -203,7 +215,7 @@ def apply_phase(op: qml.PhaseShift, state, batch_dim=0):
     sl_1 = _get_slice(1, op.wires[0], n_wires)
 
     state1 = math.multiply(shift, state[sl_1])
-    return math.stack([state[sl_0], state1], axis=op.wires[0])
+    return math.stack([state[sl_0], state1], axis=op.wires[0] + batch_dim)
 
 
 @apply_operation.register
@@ -211,8 +223,8 @@ def apply_cnot(op: qml.CNOT, state, batch_dim=0):
     """Apply cnot gate to state."""
     target_axes = (op.wires[1] - 1) if op.wires[1] > op.wires[0] else (op.wires[1])
 
-    n_wires = math.ndim(state)
-    sl_0 = _get_slice(0, op.wires[0], n_wires)
-    sl_1 = _get_slice(1, op.wires[0], n_wires)
-    state_x = math.roll(state[sl_1], 1, target_axes)
-    return math.stack([state[sl_0], state_x], axis=op.wires[0])
+    n_dim = math.ndim(state)
+    sl_0 = _get_slice(0, op.wires[0] + batch_dim, n_dim)
+    sl_1 = _get_slice(1, op.wires[0] + batch_dim, n_dim)
+    state_x = math.roll(state[sl_1], 1, target_axes + batch_dim)
+    return math.stack([state[sl_0], state_x], axis=op.wires[0] + batch_dim)
