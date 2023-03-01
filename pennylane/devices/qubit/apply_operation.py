@@ -12,6 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Functions to apply an operation to a state vector."""
+# pylint: disable=unused-argument
+
 from functools import singledispatch
 from string import ascii_letters as alphabet
 
@@ -54,7 +56,7 @@ def _get_slice(index, axis, num_axes):
     return tuple(idx)
 
 
-def apply_operation_einsum(op: qml.operation.Operator, state):
+def apply_operation_einsum(op: qml.operation.Operator, state, batch_dim=0):
     """Apply ``Operator`` to ``state`` using ``einsum``. This is more efficent at lower qubit
     numbers.
 
@@ -67,7 +69,7 @@ def apply_operation_einsum(op: qml.operation.Operator, state):
     """
     mat = op.matrix()
 
-    total_indices = len(state.shape)
+    total_indices = len(state.shape) - batch_dim
     num_indices = len(op.wires)
 
     state_indices = alphabet[:total_indices]
@@ -79,14 +81,21 @@ def apply_operation_einsum(op: qml.operation.Operator, state):
     for old, new in zip(affected_indices, new_indices):
         new_state_indices = new_state_indices.replace(old, new)
 
-    einsum_indices = f"{new_indices}{affected_indices},{state_indices}->{new_state_indices}"
+    einsum_indices = (
+        f"...{new_indices}{affected_indices},...{state_indices}->...{new_state_indices}"
+    )
 
-    reshaped_mat = math.reshape(mat, [2] * (num_indices * 2))
+    new_mat_shape = [2] * (num_indices * 2)
+    if len(mat.shape) != 2:
+        # Add broadcasting dimension to shape
+        new_mat_shape.insert(0, mat.shape[0])
+
+    reshaped_mat = math.reshape(mat, new_mat_shape)
 
     return math.einsum(einsum_indices, reshaped_mat, state)
 
 
-def apply_operation_tensordot(op: qml.operation.Operator, state):
+def apply_operation_tensordot(op: qml.operation.Operator, state, batch_dim=0):
     """Apply ``Operator`` to ``state`` using ``math.tensordot``. This is more efficent at higher qubit
     numbers.
 
@@ -117,7 +126,7 @@ def apply_operation_tensordot(op: qml.operation.Operator, state):
 
 
 @singledispatch
-def apply_operation(op: qml.operation.Operator, state):
+def apply_operation(op: qml.operation.Operator, state, batch_dim=0):
     """Apply and operator to a given state.
 
     Args:
@@ -163,18 +172,18 @@ def apply_operation(op: qml.operation.Operator, state):
     if (len(op.wires) < EINSUM_OP_WIRECOUNT_PERF_THRESHOLD) and (
         math.ndim(state) < EINSUM_STATE_WIRECOUNT_PERF_THRESHOLD
     ):
-        return apply_operation_einsum(op, state)
-    return apply_operation_tensordot(op, state)
+        return apply_operation_einsum(op, state, batch_dim=batch_dim)
+    return apply_operation_tensordot(op, state, batch_dim=batch_dim)
 
 
 @apply_operation.register
-def apply_paulix(op: qml.PauliX, state):
+def apply_paulix(op: qml.PauliX, state, batch_dim=0):
     """Apply :class:`pennylane.PauliX` operator to the quantum state"""
     return math.roll(state, 1, op.wires[0])
 
 
 @apply_operation.register
-def apply_pauliz(op: qml.PauliZ, state):
+def apply_pauliz(op: qml.PauliZ, state, batch_dim=0):
     """Apply pauliz to state."""
     n_wires = math.ndim(state)
     sl_0 = _get_slice(0, op.wires[0], n_wires)
@@ -185,7 +194,7 @@ def apply_pauliz(op: qml.PauliZ, state):
 
 
 @apply_operation.register
-def apply_phase(op: qml.PhaseShift, state):
+def apply_phase(op: qml.PhaseShift, state, batch_dim=0):
     """Apply PhaseShift operator to state."""
     shift = math.exp(math.multiply(1j, op.data[0]))
 
@@ -198,7 +207,7 @@ def apply_phase(op: qml.PhaseShift, state):
 
 
 @apply_operation.register
-def apply_cnot(op: qml.CNOT, state):
+def apply_cnot(op: qml.CNOT, state, batch_dim=0):
     """Apply cnot gate to state."""
     target_axes = (op.wires[1] - 1) if op.wires[1] > op.wires[0] else (op.wires[1])
 
