@@ -1194,6 +1194,10 @@ class TestFullMetricTensor:
     @pytest.mark.parametrize("ansatz, params", zip(fubini_ansatze, fubini_params))
     @pytest.mark.parametrize("interface", ["auto", "jax"])
     def test_correct_output_jax(self, ansatz, params, interface):
+        from jax.config import config
+
+        config.update("jax_enable_x64", True)
+
         from jax import numpy as jnp
 
         expected = autodiff_metric_tensor(ansatz, self.num_wires)(*params)

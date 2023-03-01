@@ -393,10 +393,7 @@ def qnode_execution_wrapper(self, qnode, targs, tkwargs):
     tkwargs.setdefault("device_wires", qnode.device.wires)
     mt_fn = self.default_qnode_wrapper(qnode, targs, tkwargs)
 
-    def _expand_fn(tape):
-        return self.expand_fn(tape, *targs, **tkwargs)
-
-    def wrapper(*args, **kwargs):
+    def wrapper(*args, **kwargs):  # pylint: disable=too-many-branches
         argnum = tkwargs.get("argnum", None)
         argnums = tkwargs.get("argnums", None)
 
