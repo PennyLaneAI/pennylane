@@ -11,7 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""Unit tests for create_initial_state in devices/qubit."""
+"""Unit tests for simulate in devices/qubit."""
 
 import pytest
 
@@ -22,14 +22,7 @@ from pennylane.devices.qubit import simulate
 
 
 class TestCurrentlyUnsupportedCases:
-    def test_hamiltonian_observable(self):
-        """Test that measuring hamiltonians gives a NotImplementedError."""
-
-        H = qml.Hamiltonian([2.0], [qml.PauliX(0)])
-        qs = qml.tape.QuantumScript(measurements=[qml.expval(H)])
-        with pytest.raises(NotImplementedError):
-            simulate(qs)
-
+    # pylint: disable=too-few-public-methods
     def test_sample_based_observable(self):
         """Test sample-only measurements raise a notimplementedError."""
 
