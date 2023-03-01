@@ -114,7 +114,7 @@ class ParametrizedEvolution(Operation):
 
         import jax
 
-        dev = qml.device("default.qubit.jax", wires=1)
+        dev = qml.device("default.qubit", wires=1)
         @jax.jit
         @qml.qnode(dev, interface="jax")
         def circuit(params):
@@ -195,7 +195,7 @@ class ParametrizedEvolution(Operation):
 
         .. code-block:: python
 
-            dev = qml.device("default.qubit.jax", wires=3)
+            dev = qml.device("default.qubit", wires=3)
 
             @qml.qnode(dev, interface="jax")
             def circuit1(params):
