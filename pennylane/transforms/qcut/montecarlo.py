@@ -357,8 +357,8 @@ def cut_circuit_mc(
         ... )
         array(-4.)
 
-        Using the Monte Carlo approach of [Peng et. al](https://arxiv.org/abs/1904.00102), the
-        `cut_circuit_mc` transform also supports returning sample-based expectation values of
+        Using the Monte Carlo approach of `Peng et. al <https://arxiv.org/abs/1904.00102>`_, the
+        ``cut_circuit_mc`` transform also supports returning sample-based expectation values of
         observables that are diagonal in the computational basis, as shown below for a `ZZ` measurement
         on wires `0` and `2`:
 
