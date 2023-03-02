@@ -84,7 +84,7 @@ def _bisect_compute_a(u: np.ndarray):
 def _bisect_compute_b(u: np.ndarray):
     """
     Given the U matrix, compute the B matrix such that
-    H Bt x B x H
+    H Bt x B x H = U
     where Bt is the adjoint of B,
     H is the Hadamard matrix,
     and x is the Pauli X matrix.
@@ -351,12 +351,13 @@ def ctrl_decomp_bisect_general(target_operation: typing.Union[Operator, tuple[np
 
     sx = qml.PauliX.compute_matrix()
     sh = qml.Hadamard.compute_matrix()
+    sh_alt = sh[::-1,::-1]
     
     d, q = npl.eig(u)
     d = np.diag(d)
     q = _ensure_real_diagonal_q(q)
     b = _bisect_compute_b(q)
-    c1 = b @ sx @ sh
+    c1 = b @ sh_alt
     c2t = b @ sh
 
     mid = len(control_wires) // 2
