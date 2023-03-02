@@ -110,18 +110,14 @@ def apply_operation_tensordot(op: qml.operation.Operator, state, batch_dim=0):
     num_indices = len(op.wires)
 
     new_mat_shape = [2] * (num_indices * 2)
-    if len(mat.shape) != 2:
-        if batch_dim:
-            raise NotImplementedError(
-                "Applying a broadcasted unitary to an already broadcasted state via "
-                "_apply_unitary is not supported. Broadcasting sizes are "
-                f"({mat.shape[0]}, {state.shape[0]})."
-            )
+    if is_mat_batched := len(mat.shape) != 2:
         # Add broadcasting dimension to shape
         new_mat_shape.insert(0, mat.shape[0])
-
     reshaped_mat = math.reshape(mat, new_mat_shape)
-    axes = (tuple(range(num_indices, 2 * num_indices)), tuple(op.wires))
+
+    mat_axes = list(qml.math.arange(-num_indices, 0))
+    state_axes = [i + batch_dim for i in op.wires]
+    axes = (mat_axes, state_axes)
 
     tdot = math.tensordot(reshaped_mat, state, axes=axes)
 
@@ -131,8 +127,13 @@ def apply_operation_tensordot(op: qml.operation.Operator, state, batch_dim=0):
     # We'll need to invert this permutation to put the indices in the correct place
     unused_idxs = [i for i in range(total_indices) if i not in op.wires]
     perm = list(op.wires) + unused_idxs
-    inv_perm = math.argsort(perm)
+    if is_mat_batched:
+        perm = [i + 1 for i in perm]
+        perm.insert(0, 0)
+    if batch_dim:
+        perm.insert(num_indices, -1)
 
+    inv_perm = math.argsort(perm)
     return math.transpose(tdot, inv_perm)
 
 
