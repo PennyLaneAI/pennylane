@@ -66,13 +66,14 @@ class BlockEncode(Operation):
             )
         else:
             d1, d2 = a.shape
-            u = np.block(
-                [
-                    [a, sqrtm(np.eye(d1) - a @ np.conj(a).T)],
-                    [sqrtm(np.eye(d2) - np.conj(a).T @ a), -np.conj(a).T],
-                ]
-            )
+
+            col1 = qml.math.vstack([a, qml.math.sqrt_matrix(np.eye(d2) - np.conj(a).T @ a)])
+            col2 = qml.math.vstack([qml.math.sqrt_matrix(np.eye(d1) - a @ np.conj(a).T), -np.conj(a).T])
+
+            u = qml.math.hstack([col1, col2])
+
         if n + m < k:
             r = k - (n + m)
             u = np.block([[u, np.zeros((n + m, r))], [np.zeros((r, n + m)), np.eye(r)]])
+
         return u
