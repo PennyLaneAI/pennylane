@@ -492,11 +492,25 @@ class TestLoad:
             "qchem", molname="H2", basis="6-31G", bondlength="full", folder_path=str(tmp_path)
         )
         assert len(datasets) == 3
-        assert sorted([d.molecule for d in datasets]) == [
+        assert [d.molecule for d in datasets] == [
             "H2_6-31G_0.46_full",
-            "H2_6-31G_1.0_full",
             "H2_6-31G_1.16_full",
+            "H2_6-31G_1.0_full",
         ]
+
+    def test_stable_load_order(self, tmp_path):
+        """Test that the order of returned datasets is stable and sorted."""
+        lengths = [1.0, 1.16, 0.46]
+        path = str(tmp_path)
+        for _ in range(5):  # 5 subsequent calls to suggest stability
+            data = qml.data.load(
+                "qchem", molname="H2", basis="6-31G", bondlength=lengths, folder_path=path
+            )
+            assert [d.molecule for d in data] == [
+                "H2_6-31G_1.0_full",
+                "H2_6-31G_1.16_full",
+                "H2_6-31G_0.46_full",
+            ]
 
     @pytest.mark.parametrize(
         ("attributes", "fullfile"),
