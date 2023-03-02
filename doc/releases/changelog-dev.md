@@ -18,28 +18,32 @@
   well as multi-dimensional tape return types, like broadcasted `qml.probs`, for example.
   [(#3766)](https://github.com/PennyLaneAI/pennylane/pull/3766)
 
-* the `qchem.jordan_wigner` function is extended to support more fermionic operator orders.
-  [(#3754)](https://github.com/pennylaneai/pennylane/pull/3754)
-  [(#3751)](https://github.com/pennylaneai/pennylane/pull/3751)
+* The `qchem.jordan_wigner` function is extended to support more fermionic operator orders.
+  [(#3754)](https://github.com/PennyLaneAI/pennylane/pull/3754)
+  [(#3751)](https://github.com/PennyLaneAI/pennylane/pull/3751)
 
-* `adaptiveoptimizer` is updated to use non-default user-defined qnode arguments.
-  [(#3765)](https://github.com/pennylaneai/pennylane/pull/3765)
+* `AdaptiveOptimizer` is updated to use non-default user-defined qnode arguments.
+  [(#3765)](https://github.com/PennyLaneAI/pennylane/pull/3765)
 
-<h3>breaking changes</h3>
+<h3>Breaking changes</h3>
 
-<h3>deprecations</h3>
+<h3>Deprecations</h3>
 
-<h3>documentation</h3>
+<h3>Documentation</h3>
 
-<h3>bug fixes</h3>
+* A typo was corrected in the documentation for introduction to `inspecting_circuits` and `chemistry`.
+[(#3844)](https://github.com/PennyLaneAI/pennylane/pull/3844)
 
-<h3>contributors</h3>
+<h3>Bug fixes</h3>
 
-this release contains contributions from (in alphabetical order):
+<h3>Contributors</h3>
 
-utkarsh azad
-soran jahangiri
-mudit pandey
-matthew silverman
-jay soni
-david wierichs
+This release contains contributions from (in alphabetical order):
+
+Utkarsh Azad
+Soran Jahangiri
+Vincent Michaud-Rioux
+Mudit Pandey
+Matthew Silverman
+Jay Soni
+David Wierichs
