@@ -18,6 +18,7 @@ This submodule defines functions to decompose controlled operations
 import numpy as np
 import numpy.linalg as npl
 import pennylane as qml
+import typing
 from pennylane.operation import Operator
 from pennylane.wires import Wires
 from pennylane import math
@@ -166,7 +167,7 @@ def ctrl_decomp_zyz(target_operation: Operator, control_wires: Wires):
 
     return decomp
 
-def ctrl_decomp_bisect_od(target_operation: Operator, control_wires: Wires):
+def ctrl_decomp_bisect_od(target_operation: typing.Union[Operator, tuple[np.ndarray, Wires]], control_wires: Wires):
     """Decompose the controlled version of a target single-qubit operation
 
     This function decomposes a controlled single-qubit target operation using the
@@ -190,15 +191,19 @@ def ctrl_decomp_bisect_od(target_operation: Operator, control_wires: Wires):
             or its matrix does not have a real off-diagonal
 
     """
-    if len(target_operation.wires) != 1:
+    orig_target_operation = target_operation
+    if isinstance(target_operation, Operator):
+        target_operation = target_operation.matrix(), target_operation.wires
+
+    if len(target_operation[1]) != 1:
         raise ValueError(
             "The target operation must be a single-qubit operation, instead "
-            f"got {target_operation.__class__.__name__}."
+            f"got {orig_target_operation.__class__.__name__}."
         )
 
-    target_wire = target_operation.wires
+    target_wire = target_operation[1]
 
-    u = target_operation.matrix()
+    u = target_operation[0]
     u = _convert_to_su2(u)
     u = np.array(u)
 
@@ -222,7 +227,7 @@ def ctrl_decomp_bisect_od(target_operation: Operator, control_wires: Wires):
     return [op_mcx1(), op_a(), op_mcx2(), op_at(), op_mcx1(), op_a(), op_mcx2(), op_at()]
 
 
-def ctrl_decomp_bisect_md(target_operation: Operator, control_wires: Wires):
+def ctrl_decomp_bisect_md(target_operation: typing.Union[Operator, tuple[np.ndarray, Wires]], control_wires: Wires):
     """Decompose the controlled version of a target single-qubit operation
 
     This function decomposes a controlled single-qubit target operation using the
@@ -246,15 +251,19 @@ def ctrl_decomp_bisect_md(target_operation: Operator, control_wires: Wires):
             or its matrix does not have a real main-diagonal
 
     """
-    if len(target_operation.wires) != 1:
+    orig_target_operation = target_operation
+    if isinstance(target_operation, Operator):
+        target_operation = target_operation.matrix(), target_operation.wires
+
+    if len(target_operation[1]) != 1:
         raise ValueError(
             "The target operation must be a single-qubit operation, instead "
-            f"got {target_operation.__class__.__name__}."
+            f"got {orig_target_operation.__class__.__name__}."
         )
 
-    target_wire = target_operation.wires
+    target_wire = target_operation[1]
 
-    u = target_operation.matrix()
+    u = target_operation[0]
     u = _convert_to_su2(u)
     u = np.array(u)
 
@@ -264,9 +273,21 @@ def ctrl_decomp_bisect_md(target_operation: Operator, control_wires: Wires):
     
     sh = qml.Hadamard.compute_matrix()
     mod_u = sh @ u @ sh
-    mod_op = qml.QubitUnitary(mod_u, target_wire)
+    mod_op = mod_u, target_wire
 
-    inner = ctrl_decomp_bisect_od(mod_op, control_wires)
-    return [qml.Hadamard(target_wire)] + inner + [qml.Hadamard(target_wire)]
+    a = _bisect_compute_a(mod_u)
+
+    mid = len(control_wires) // 2
+    lk = control_wires[:mid]
+    rk = control_wires[mid:]
+
+    def mcx(_lk, _rk):
+        return qml.MultiControlledX(control_wires = _lk, wires = target_wire, work_wires = _rk)
+    op_mcx1 = lambda:mcx(lk,rk)
+    op_mcx2 = lambda:mcx(rk,lk)
+    op_a = lambda:qml.QubitUnitary(a, target_wire)
+    op_at = lambda:qml.adjoint(op_a())
+
+    return [qml.Hadamard(target_wire), op_mcx1(), op_a(), op_mcx2(), op_at(), op_mcx1(), op_a(), op_mcx2(), op_at(), qml.Hadamard(target_wire)]
 
 

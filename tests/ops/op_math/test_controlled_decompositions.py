@@ -20,7 +20,7 @@ import numpy as np
 import pennylane as qml
 from pennylane.ops import ctrl_decomp_zyz
 from pennylane.wires import Wires
-from pennylane.ops.op_math.controlled_decompositions import ctrl_decomp_bisect_od, ctrl_decomp_bisect_md
+from pennylane.ops.op_math.controlled_decompositions import ctrl_decomp_bisect_od, ctrl_decomp_bisect_md, _convert_to_su2
 
 class TestControlledDecompositionZYZ:
     """tests for qml.ops.ctrl_decomp_zyz"""
@@ -222,8 +222,10 @@ class TestControlledBisectOD:
     @pytest.mark.parametrize("op", su2_od_ops)
     @pytest.mark.parametrize("control_wires", ([1, 2], [1, 2, 3]))
     def test_decomposition_matrix(self, op, control_wires, tol):
-        """Tests that the matrix representation of the controlled ZYZ decomposition
+        """Tests that the matrix representation of the controlled decomposition
         of a single-qubit operation is correct"""
+        assert np.allclose(op.matrix(), _convert_to_su2(op.matrix()), atol=tol, rtol=tol)
+
         expected_op = qml.ctrl(op, control_wires)
         res = qml.matrix(ctrl_decomp_bisect_od, wire_order=control_wires + [0])(op, control_wires)
         expected = expected_op.matrix()
@@ -319,8 +321,10 @@ class TestControlledBisectMD:
     @pytest.mark.parametrize("op", su2_md_ops)
     @pytest.mark.parametrize("control_wires", ([1, 2], [1, 2, 3]))
     def test_decomposition_matrix(self, op, control_wires, tol):
-        """Tests that the matrix representation of the controlled ZYZ decomposition
+        """Tests that the matrix representation of the controlled decomposition
         of a single-qubit operation is correct"""
+        assert np.allclose(op.matrix(), _convert_to_su2(op.matrix()), atol=tol, rtol=tol)
+        
         expected_op = qml.ctrl(op, control_wires)
         res = qml.matrix(ctrl_decomp_bisect_md, wire_order=control_wires + [0])(op, control_wires)
         expected = expected_op.matrix()
