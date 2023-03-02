@@ -366,7 +366,7 @@ class TestPreprocessingIntegration:
     """Tests preprocessing expands operations without matrices."""
 
     def test_numpy(self):
-        """Test t"""
+        """Test integration between preprocessing and execution with numpy parameters."""
 
         class MyTemplate(qml.operation.Operation):
             num_wires = 2
@@ -377,3 +377,99 @@ class TestPreprocessingIntegration:
                     qml.RY(self.data[1], self.wires[1]),
                     qml.CNOT(self.wires),
                 ]
+
+        x = 0.928
+        y = -0.792
+        qscript = qml.tape.QuantumScript(
+            [MyTemplate(x, y, ("a", "b"))],
+            [qml.expval(qml.PauliY("a")), qml.expval(qml.PauliZ("a")), qml.expval(qml.PauliX("b"))],
+        )
+
+        dev = DefaultQubit2()
+
+        batch, post_procesing_fn = dev.preprocess(qscript)
+
+        assert len(batch) == 1
+        execute_circuit = batch[0]
+        assert qml.equal(execute_circuit[0], qml.RX(x, "a"))
+        assert qml.equal(execute_circuit[1], qml.RY(y, "b"))
+        assert qml.equal(execute_circuit[2], qml.CNOT(("a", "b")))
+        assert qml.equal(execute_circuit[3], qml.expval(qml.PauliY("a")))
+        assert qml.equal(execute_circuit[4], qml.expval(qml.PauliZ("a")))
+        assert qml.equal(execute_circuit[5], qml.expval(qml.PauliX("b")))
+
+        results = dev.execute(batch)
+        assert len(results) == 1
+        assert len(results[0]) == 3
+
+        processed_results = post_procesing_fn(results)
+        assert len(processed_results) == 3
+        assert qml.math.allclose(processed_results[0], -np.sin(x) * np.sin(y))
+        assert qml.math.allclose(processed_results[1], np.cos(x))
+        assert qml.math.allclose(processed_results[2], np.sin(y))
+
+
+class TestLargeObservables:
+    @pytest.mark.parametrize("use_hamiltonian", (False, True))
+    def test_numpy(self, use_hamiltonian):
+        """Tests the measurment of a large observable using numpy.
+        Has no entanglement in change for analytic results.
+        """
+
+        ops = [qml.RX(i + 0.5, wires=i) for i in range(10)]
+
+        H = 2.5 * qml.prod(*(qml.PauliZ(i) for i in range(10))) + 6.2 * qml.prod(
+            *(qml.PauliY(i) for i in range(10))
+        )
+
+        if use_hamiltonian:
+            H = H._pauli_rep.hamiltonian()
+
+        qs = qml.tape.QuantumScript(ops, [qml.expval(H)])
+
+        dev = DefaultQubit2()
+
+        batch, postprocessing_fn = dev.preprocess(qs)
+        assert len(batch) == 1
+        assert len(batch[0].operations) == 10
+        assert qml.equal(batch[0].measurements[0], qml.expval(H))
+
+        results = dev.execute(batch)
+        assert len(results) == 1
+
+        processed_results = postprocessing_fn(results)
+
+        expected_result = 2.5 * np.prod(np.cos([i + 0.5 for i in range(10)])) + 6.2 * np.prod(
+            np.sin([i + 0.5 for i in range(10)])
+        )
+        assert qml.math.allclose(processed_results, expected_result)
+
+    @pytest.mark.autograd
+    @pytest.mark.parametrize("use_hamiltonian", (False, True))
+    def test_autograd(self, use_hamiltonian):
+        def f(shift):
+            dev = DefaultQubit2()
+            ops = [qml.RX(0.1 + shift * i, wires=i) for i in range(10)]
+            H = 2.5 * qml.prod(*(qml.PauliZ(i) for i in range(10))) + 6.2 * qml.prod(
+                *(qml.PauliY(i) for i in range(10))
+            )
+            qs = qml.tape.QuantumScript(ops, [qml.expval(H)])
+            batch, postprocessing_fn = dev.preprocess(qs)
+            results = dev.execute(batch)
+            return postprocessing_fn(results)
+
+        def expected(shift):
+            phase = 0.1 + shift * np.array(range(10))
+            cosines = qml.math.cos(phase)
+            sineses = qml.math.sin(phase)
+            return 2.5 * qml.math.prod(cosines) + 6.2 * qml.math.prod(sineses)
+
+        x = qml.numpy.array(0.52)
+
+        result = f(x)
+        analytic_result = expected(x)
+        assert qml.math.allclose(result, analytic_result)
+
+        g = qml.grad(f)(x)
+        analytic_g = qml.grad(expected)(x)
+        assert qml.math.allclose(g, analytic_g)

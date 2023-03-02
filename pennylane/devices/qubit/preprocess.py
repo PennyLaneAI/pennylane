@@ -14,12 +14,16 @@
 
 """This module contains functions for preprocessing `QuantumTape` objects to ensure
 that they are supported for execution by a device."""
+# pylint: disable=protected-access
+from typing import Generator, Callable, Tuple
 
 import pennylane as qml
 
-from pennylane.operation import Observable, Tensor
-from pennylane.measurements import MidMeasureMP
+from pennylane.operation import Tensor
+from pennylane.measurements import MidMeasureMP, StateMeasurement
 from pennylane import DeviceError
+
+from ..experimental import ExecutionConfig, DefaultExecutionConfig
 
 # Update observable list. Current list is same as supported observables for
 # default.qubit.
@@ -40,30 +44,40 @@ _observables = {
     "Evolution",
 }
 
-
-def _stopping_condition(op):
-    """Specify whether or not an Operator object is supported by the device"""
-    return getattr(op, "has_matrix", False)
+### UTILITY FUNCTIONS FOR EXPANDING UNSUPPORTED OPERATIONS ###
 
 
-def _supports_observable(observable):
-    """Checks if an observable is supported by this device.
-
-    Args:
-        observable (type or str): observable to be checked
-
-    Returns:
-        bool: ``True`` iff supplied observable is supported
-    """
-    if isinstance(observable, type) and issubclass(observable, Observable):
-        observable = observable.__name__
-    if isinstance(observable, str):
-        return observable in _observables
-
-    return False
+def _accepted_operator(op: qml.operation.Operator) -> bool:
+    """Specify whether or not an Operator object is supported by the device."""
+    if op.name == "QFT" and len(op.wires) >= 6:
+        return False
+    if op.name == "GroverOperator" and len(op.wires) >= 13:
+        return False
+    return op.has_matrix
 
 
-def expand_fn(circuit, max_expansion=10):
+def _operator_decomposition_gen(
+    op: qml.operation.Operator,
+) -> Generator[qml.operation.Operator, None, None]:
+    """A generator that yields the next operation that is accepted by DefaultQubit2."""
+    if _accepted_operator(op):
+        yield op
+    else:
+        try:
+            decomp = op.decomposition()
+        except qml.operation.DecompositionUndefinedError as e:
+            raise DeviceError(
+                f"Operator {op} not supported on DefaultQubit2. Must provide either a matrix or a decomposition."
+            ) from e
+
+        for sub_op in decomp:
+            yield from _operator_decomposition_gen(sub_op)
+
+
+#######################
+
+
+def expand_fn(circuit: qml.tape.QuantumScript) -> qml.tape.QuantumScript:
     """Method for expanding or decomposing an input circuit.
 
     This method expands the tape if:
@@ -73,11 +87,6 @@ def expand_fn(circuit, max_expansion=10):
 
     Args:
         circuit (.QuantumTape): the circuit to expand.
-        max_expansion (int): The number of times the circuit should be
-            expanded. Expansion occurs when an operation or measurement is not
-            supported, and results in a gate decomposition. If any operations
-            in the decomposition remain unsupported by the device, another
-            expansion occurs.
 
     Returns:
         .QuantumTape: The expanded/decomposed circuit, such that the device
@@ -87,13 +96,30 @@ def expand_fn(circuit, max_expansion=10):
     if any(isinstance(o, MidMeasureMP) for o in circuit.operations):
         circuit = qml.defer_measurements(circuit)
 
-    if not all(_stopping_condition(op) for op in circuit.operations):
-        circuit = circuit.expand(depth=max_expansion, stop_at=_stopping_condition)
+    if len(circuit._prep) > 1:
+        raise DeviceError("DefaultQubit2 accepts at most one state prep operation.")
+
+    if not all(_accepted_operator(op) for op in circuit._ops):
+        new_ops = [final_op for op in circuit._ops for final_op in _operator_decomposition_gen(op)]
+        circuit = qml.tape.QuantumScript(new_ops, circuit.measurements, circuit._prep)
+
+    for observable in circuit.observables:
+        if isinstance(observable, Tensor) and any(
+            o.name not in _observables for o in observable.obs
+        ):
+            raise DeviceError(f"Observable {observable} not supported on DefaultQubit2")
+        if observable.name not in _observables:
+            raise DeviceError(f"Observable {observable} not supported on DefaultQubit2")
+
+    # change this once shots are supported
+    for m in circuit.measurements:
+        if not isinstance(m, StateMeasurement):
+            raise DeviceError(f"Measurement process {m} is only useable with finite shots.")
 
     return circuit
 
 
-def batch_transform(circuit):
+def batch_transform(circuit: qml.tape.QuantumScript) -> (Tuple[qml.tape.QuantumScript], Callable):
     """Apply a differentiable batch transform for preprocessing a circuit
     prior to execution.
 
@@ -133,63 +159,31 @@ def batch_transform(circuit):
     return tapes, batch_fn
 
 
-def check_validity(tape):
-    """Checks whether the operations and observables in queue are all supported by the device.
-
-    Args:
-        tape (.QuantumTape): tape from which to validate operations and observables
-
-    Raises:
-        DeviceError: if there are operations in the queue or observables that the device does
-            not support
-    """
-    for o in tape.operations:
-        operation_name = o.name
-
-        if not _stopping_condition(o):
-            raise DeviceError(f"Gate {operation_name} not supported on Python Device")
-
-    for o in tape.observables:
-        if isinstance(o, Tensor):
-            for i in o.obs:
-                if not _supports_observable(i.name):
-                    raise DeviceError(f"Observable {i.name} not supported on Python Device")
-        else:
-            observable_name = o.name
-
-            if not _supports_observable(observable_name):
-                raise DeviceError(f"Observable {observable_name} not supported on Python Device")
-
-
-def preprocess(tapes, execution_config=None, max_expansion=10):
+def preprocess(
+    circuits: Tuple[qml.tape.QuantumScript],
+    execution_config: ExecutionConfig = DefaultExecutionConfig,
+) -> (Tuple[qml.tape.QuantumScript], Callable):
     """Preprocess a batch of :class:`~.QuantumTape` objects to make them ready for execution.
 
     This function validates a batch of :class:`~.QuantumTape` objects by transforming and expanding
     them to ensure all operators and measurements are supported by the execution device.
 
     Args:
-        tapes (Sequence[QuantumTape]): Batch of tapes to be processed.
+        circuits (Sequence[QuantumTape]): Batch of tapes to be processed.
         execution_config (.ExecutionConfig): execution configuration with configurable
             options for the execution.
-        max_expansion (int): The number of times the circuit should be
-            expanded. Expansion occurs when an operation or measurement is not
-            supported, and results in a gate decomposition. If any operations
-            in the decomposition remain unsupported by the device, another
-            expansion occurs.
 
     Returns:
         Tuple[Sequence[.QuantumTape], callable]: Returns a tuple containing
         the sequence of circuits to be executed, and a post-processing function
         to be applied to the list of evaluated circuit results.
     """
-    if execution_config and execution_config.shots is not None:
+    if execution_config.shots is not None:
         # Finite shot support will be added later
         raise DeviceError("The Python Device does not support finite shots.")
 
-    for i, tape in enumerate(tapes):
-        tapes[i] = expand_fn(tape, max_expansion=max_expansion)
-        check_validity(tapes[i])
+    circuits = tuple(expand_fn(c) for c in circuits)
 
-    tapes, batch_fn = qml.transforms.map_batch_transform(batch_transform, tapes)
+    circuits, batch_fn = qml.transforms.map_batch_transform(batch_transform, circuits)
 
-    return tapes, batch_fn
+    return circuits, batch_fn
