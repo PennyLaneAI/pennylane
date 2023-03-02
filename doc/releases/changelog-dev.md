@@ -21,6 +21,8 @@
 * `AdaptiveOptimizer` is updated to use non-default user-defined qnode arguments.
   [(#3765)](https://github.com/PennyLaneAI/pennylane/pull/3765)
 
+* `pennylane.devices.qubit.preprocess` now allows circuits with non-commuting observables.
+
 <h3>Breaking changes</h3>
 
 <h3>Deprecations</h3>
