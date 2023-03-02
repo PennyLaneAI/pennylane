@@ -26,6 +26,7 @@
   [(#3765)](https://github.com/PennyLaneAI/pennylane/pull/3765)
 
 * `pennylane.devices.qubit.preprocess` now allows circuits with non-commuting observables.
+  [(#3857)](https://github.com/PennyLaneAI/pennylane/pull/3857)
 
 <h3>Breaking changes</h3>
 
