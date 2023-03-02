@@ -20,6 +20,29 @@ import numpy.linalg as npl
 import pennylane as qml
 from pennylane.operation import Operator
 from pennylane.wires import Wires
+from pennylane import math
+
+def _convert_to_su2(U, return_global_phase=False):
+    r"""Convert a 2x2 unitary matrix to :math:`SU(2)`.
+
+    Args:
+        U (array[complex]): A matrix, presumed to be :math:`2 \times 2` and unitary.
+        return_global_phase (bool): If `True`, the return will include
+        the global phase. If `False`, only the :math:`SU(2)` representative
+        is returned.
+
+    Returns:
+        array[complex]: A :math:`2 \times 2` matrix in :math:`SU(2)` that is
+        equivalent to U up to a global phase. If ``return_global_phase=True``,
+        a 2-element tuple is returned, with the first element being the
+        :math:`SU(2)` equivalent and the second, the global phase.
+    """
+    # Compute the determinants
+    dets = math.linalg.det(U)
+
+    exp_angles = math.cast_like(math.angle(dets), 1j) / 2
+    U_SU2 = math.cast_like(U, dets) * math.exp(-1j * exp_angles)
+    return (U_SU2, exp_angles) if return_global_phase else U_SU2
 
 def _matrix_adjoint(matrix: np.ndarray):
     return np.transpose(np.conj(matrix))
@@ -167,8 +190,6 @@ def ctrl_decomp_bisect_od(target_operation: Operator, control_wires: Wires):
             or its matrix does not have a real off-diagonal
 
     """
-    from pennylane.transforms.decompositions.single_qubit_unitary import _convert_to_su2
-
     if len(target_operation.wires) != 1:
         raise ValueError(
             "The target operation must be a single-qubit operation, instead "
@@ -225,8 +246,6 @@ def ctrl_decomp_bisect_md(target_operation: Operator, control_wires: Wires):
             or its matrix does not have a real main-diagonal
 
     """
-    from pennylane.transforms.decompositions.single_qubit_unitary import _convert_to_su2
-
     if len(target_operation.wires) != 1:
         raise ValueError(
             "The target operation must be a single-qubit operation, instead "
