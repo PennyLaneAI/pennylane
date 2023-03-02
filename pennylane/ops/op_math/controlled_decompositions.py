@@ -167,7 +167,7 @@ def ctrl_decomp_zyz(target_operation: Operator, control_wires: Wires):
 
     return decomp
 
-def ctrl_decomp_bisect_od(target_operation: typing.Union[Operator, tuple[np.ndarray, Wires]], control_wires: Wires):
+def ctrl_decomp_bisect_od(target_operation: typing.Union[Operator, tuple[np.ndarray, Wires]], control_wires: Wires, later: bool = False):
     """Decompose the controlled version of a target single-qubit operation
 
     This function decomposes a controlled single-qubit target operation using the
@@ -224,10 +224,13 @@ def ctrl_decomp_bisect_od(target_operation: typing.Union[Operator, tuple[np.ndar
     op_a = lambda:qml.QubitUnitary(a, target_wire)
     op_at = lambda:qml.adjoint(op_a())
 
-    return [op_mcx1(), op_a(), op_mcx2(), op_at(), op_mcx1(), op_a(), op_mcx2(), op_at()]
+    result = [op_mcx1, op_a, op_mcx2, op_at, op_mcx1, op_a, op_mcx2, op_at]
+    if not later:
+        result = [func() for func in result]
+    return result
 
 
-def ctrl_decomp_bisect_md(target_operation: typing.Union[Operator, tuple[np.ndarray, Wires]], control_wires: Wires):
+def ctrl_decomp_bisect_md(target_operation: typing.Union[Operator, tuple[np.ndarray, Wires]], control_wires: Wires, later: bool = False):
     """Decompose the controlled version of a target single-qubit operation
 
     This function decomposes a controlled single-qubit target operation using the
@@ -275,19 +278,11 @@ def ctrl_decomp_bisect_md(target_operation: typing.Union[Operator, tuple[np.ndar
     mod_u = sh @ u @ sh
     mod_op = mod_u, target_wire
 
-    a = _bisect_compute_a(mod_u)
-
-    mid = len(control_wires) // 2
-    lk = control_wires[:mid]
-    rk = control_wires[mid:]
-
-    def mcx(_lk, _rk):
-        return qml.MultiControlledX(control_wires = _lk, wires = target_wire, work_wires = _rk)
-    op_mcx1 = lambda:mcx(lk,rk)
-    op_mcx2 = lambda:mcx(rk,lk)
-    op_a = lambda:qml.QubitUnitary(a, target_wire)
-    op_at = lambda:qml.adjoint(op_a())
-
-    return [qml.Hadamard(target_wire), op_mcx1(), op_a(), op_mcx2(), op_at(), op_mcx1(), op_a(), op_mcx2(), op_at(), qml.Hadamard(target_wire)]
+    op_h = lambda:qml.Hadamard(target_wire)
+    inner = ctrl_decomp_bisect_od(mod_op, control_wires, later=True)
+    result = [op_h] + inner + [op_h]
+    if not later:
+        result = [func() for func in result]
+    return result
 
 
