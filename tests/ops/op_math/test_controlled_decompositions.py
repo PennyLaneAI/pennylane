@@ -20,9 +20,15 @@ import numpy as np
 import pennylane as qml
 from pennylane.ops import ctrl_decomp_zyz
 from pennylane.wires import Wires
-from pennylane.ops.op_math.controlled_decompositions import ctrl_decomp_bisect_od, ctrl_decomp_bisect_md, ctrl_decomp_bisect_general, _convert_to_su2
+from pennylane.ops.op_math.controlled_decompositions import (
+    ctrl_decomp_bisect_od,
+    ctrl_decomp_bisect_md,
+    ctrl_decomp_bisect_general,
+    _convert_to_su2,
+)
 
-cw5 = tuple(list(range(1, 1+n)) for n in range(2, 6))
+cw5 = tuple(list(range(1, 1 + n)) for n in range(2, 6))
+
 
 class TestControlledDecompositionZYZ:
     """tests for qml.ops.ctrl_decomp_zyz"""
@@ -154,6 +160,7 @@ class TestControlledDecompositionZYZ:
         assert len(decomp) == 5
         assert all(qml.equal(o, e) for o, e in zip(decomp, expected))
 
+
 class TestControlledBisectOD:
     """tests for qml.ops.ctrl_decomp_bisect_od"""
 
@@ -180,7 +187,8 @@ class TestControlledBisectOD:
                     [1, 1],
                     [-1, 1],
                 ]
-            ) * 2 **-0.5,
+            )
+            * 2**-0.5,
             wires=0,
         ),
         qml.QubitUnitary(
@@ -203,7 +211,7 @@ class TestControlledBisectOD:
     def test_decomposition_circuit(self, op, control_wires, tol):
         """Tests that the controlled decomposition of a single-qubit operation
         behaves as expected in a quantum circuit"""
-        dev = qml.device("default.qubit", wires=max(control_wires)+1)
+        dev = qml.device("default.qubit", wires=max(control_wires) + 1)
 
         @qml.qnode(dev)
         def decomp_circuit():
@@ -233,7 +241,6 @@ class TestControlledBisectOD:
         expected = expected_op.matrix()
 
         assert np.allclose(res, expected, atol=tol, rtol=tol)
-
 
 
 class TestControlledBisectMD:
@@ -271,7 +278,8 @@ class TestControlledBisectMD:
                     [1, 1],
                     [-1, 1],
                 ]
-            ) * 2 **-0.5,
+            )
+            * 2**-0.5,
             wires=0,
         ),
     ]
@@ -292,7 +300,8 @@ class TestControlledBisectMD:
                     [1j, 1j],
                     [-1j, 1j],
                 ]
-            ) * 2 **-0.5,
+            )
+            * 2**-0.5,
             wires=0,
         ),
     ]
@@ -302,7 +311,7 @@ class TestControlledBisectMD:
     def test_decomposition_circuit(self, op, control_wires, tol):
         """Tests that the controlled decomposition of a single-qubit operation
         behaves as expected in a quantum circuit"""
-        dev = qml.device("default.qubit", wires=max(control_wires)+1)
+        dev = qml.device("default.qubit", wires=max(control_wires) + 1)
 
         @qml.qnode(dev)
         def decomp_circuit():
@@ -326,7 +335,7 @@ class TestControlledBisectMD:
         """Tests that the matrix representation of the controlled decomposition
         of a single-qubit operation is correct"""
         assert np.allclose(op.matrix(), _convert_to_su2(op.matrix()), atol=tol, rtol=tol)
-        
+
         expected_op = qml.ctrl(op, control_wires)
         res = qml.matrix(ctrl_decomp_bisect_md, wire_order=control_wires + [0])(op, control_wires)
         expected = expected_op.matrix()
@@ -369,7 +378,8 @@ class TestControlledBisectGeneral:
                     [1j, 1j],
                     [1j, -1j],
                 ]
-            ) * 2 **-0.5,
+            )
+            * 2**-0.5,
             wires=0,
         ),
         qml.QubitUnitary(
@@ -378,16 +388,18 @@ class TestControlledBisectGeneral:
                     [1, 1],
                     [-1, 1],
                 ]
-            ) * 2 **-0.5,
+            )
+            * 2**-0.5,
             wires=0,
         ),
         qml.QubitUnitary(
             np.array(
                 [
-                    [1+2j, -3+4j],
-                    [3+4j, 1-2j],
+                    [1 + 2j, -3 + 4j],
+                    [3 + 4j, 1 - 2j],
                 ]
-            ) * 30 **-0.5,
+            )
+            * 30**-0.5,
             wires=0,
         ),
     ]
@@ -405,7 +417,7 @@ class TestControlledBisectGeneral:
     def test_decomposition_circuit(self, op, control_wires, tol):
         """Tests that the controlled decomposition of a single-qubit operation
         behaves as expected in a quantum circuit"""
-        dev = qml.device("default.qubit", wires=max(control_wires)+1)
+        dev = qml.device("default.qubit", wires=max(control_wires) + 1)
 
         @qml.qnode(dev)
         def decomp_circuit():
@@ -429,13 +441,15 @@ class TestControlledBisectGeneral:
         """Tests that the matrix representation of the controlled decomposition
         of a single-qubit operation is correct"""
         assert np.allclose(op.matrix(), _convert_to_su2(op.matrix()), atol=tol, rtol=tol)
-        
+
         expected_op = qml.ctrl(op, control_wires)
-        res = qml.matrix(ctrl_decomp_bisect_general, wire_order=control_wires + [0])(op, control_wires)
+        res = qml.matrix(ctrl_decomp_bisect_general, wire_order=control_wires + [0])(
+            op, control_wires
+        )
         expected = expected_op.matrix()
 
-        print('Expected:')
-        print(np.round(expected,2))
-        print('Result:')
-        print(np.round(res,2))
+        print("Expected:")
+        print(np.round(expected, 2))
+        print("Result:")
+        print(np.round(res, 2))
         assert np.allclose(res, expected, atol=tol, rtol=tol)

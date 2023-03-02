@@ -24,6 +24,7 @@ from pennylane.operation import Operator
 from pennylane.wires import Wires
 from pennylane import math
 
+
 def _convert_to_su2(U, return_global_phase=False):
     r"""Convert a 2x2 unitary matrix to :math:`SU(2)`.
 
@@ -46,6 +47,7 @@ def _convert_to_su2(U, return_global_phase=False):
     U_SU2 = math.cast_like(U, dets) * math.exp(-1j * exp_angles)
     return (U_SU2, exp_angles) if return_global_phase else U_SU2
 
+
 def _ensure_real_diagonal_q(q: np.ndarray):
     """
     Change the phases of Q so the main diagonal is real, and return the modified Q.
@@ -53,16 +55,18 @@ def _ensure_real_diagonal_q(q: np.ndarray):
     exp_angles = np.angle(np.diag(q))
     return q * np.exp(-1j * exp_angles).reshape((1, 2))
 
+
 def _matrix_adjoint(matrix: np.ndarray):
     return np.transpose(np.conj(matrix))
+
 
 def _param_su2(ar: float, ai: float, br: float, bi: float):
     """
     Create a matrix in the SU(2) form from complex parameters a, b.
     The resulting matrix is not guaranteed to be in SU(2), unless |a|^2 + |b|^2 = 1.
     """
-    return np.array([[complex(ar, ai), complex(-br, bi)],
-                     [complex(br, bi), complex(ar, -ai)]])
+    return np.array([[complex(ar, ai), complex(-br, bi)], [complex(br, bi), complex(ar, -ai)]])
+
 
 def _bisect_compute_a(u: np.ndarray):
     """
@@ -71,20 +75,22 @@ def _bisect_compute_a(u: np.ndarray):
     where At is the adjoint of A
     and x is the Pauli X matrix.
     """
-    x = np.real(u[0,1])
-    z = u[1,1]
+    x = np.real(u[0, 1])
+    z = u[1, 1]
     zr = np.real(z)
     zi = np.imag(z)
-    ar = np.sqrt((np.sqrt((zr+1)/2)+1)/2)
-    mul = 1/(2*np.sqrt((zr+1)*(np.sqrt((zr+1)/2)+1)))
-    ai = zi*mul
-    br = x*mul
+    ar = np.sqrt((np.sqrt((zr + 1) / 2) + 1) / 2)
+    mul = 1 / (2 * np.sqrt((zr + 1) * (np.sqrt((zr + 1) / 2) + 1)))
+    ai = zi * mul
+    br = x * mul
     bi = 0
-    return _param_su2(ar,ai,br,bi)
+    return _param_su2(ar, ai, br, bi)
+
 
 def _flatreals(x: np.ndarray):
     x = x.flatten()
     return np.concatenate((np.real(x), np.imag(x)))
+
 
 def _bisect_compute_b(u: np.ndarray):
     """
@@ -94,21 +100,22 @@ def _bisect_compute_b(u: np.ndarray):
     H is the Hadamard matrix,
     and x is the Pauli X matrix.
     """
-    sx = np.array([[0, 1], [1, 0]]) # Pauli X matrix
-    sh = np.array([[1, 1], [1, -1]]) * 2 ** -0.5 # Hadamard matrix
+    sx = np.array([[0, 1], [1, 0]])  # Pauli X matrix
+    sh = np.array([[1, 1], [1, -1]]) * 2**-0.5  # Hadamard matrix
 
     def optfunc(x):
         b = _param_su2(*x)
         bt = _matrix_adjoint(b)
         expect_u = sh @ bt @ sx @ b @ sx @ sh
         return _flatreals((expect_u - u)[0])
-    
+
     sol = spo.root(optfunc, [1, 0, 0, 0])
 
     if not sol.success:
-        raise ValueError(f'Unable to compute B matrix for U matrix {u}')
+        raise ValueError(f"Unable to compute B matrix for U matrix {u}")
 
     return _param_su2(*sol.x)
+
 
 def ctrl_decomp_zyz(target_operation: Operator, control_wires: Wires):
     """Decompose the controlled version of a target single-qubit operation
@@ -203,7 +210,12 @@ def ctrl_decomp_zyz(target_operation: Operator, control_wires: Wires):
 
     return decomp
 
-def ctrl_decomp_bisect_od(target_operation: typing.Union[Operator, tuple[np.ndarray, Wires]], control_wires: Wires, later: bool = False):
+
+def ctrl_decomp_bisect_od(
+    target_operation: typing.Union[Operator, tuple[np.ndarray, Wires]],
+    control_wires: Wires,
+    later: bool = False,
+):
     """Decompose the controlled version of a target single-qubit operation
 
     This function decomposes a controlled single-qubit target operation using the
@@ -244,9 +256,9 @@ def ctrl_decomp_bisect_od(target_operation: typing.Union[Operator, tuple[np.ndar
     u = np.array(u)
 
     ui = np.imag(u)
-    if not np.isclose(ui[1,0], 0) or not np.isclose(ui[0,1], 0):
+    if not np.isclose(ui[1, 0], 0) or not np.isclose(ui[0, 1], 0):
         raise ValueError(f"Target operation's matrix must have real off-diagonal, but it is {u}")
-    
+
     a = _bisect_compute_a(u)
 
     mid = len(control_wires) // 2
@@ -254,11 +266,12 @@ def ctrl_decomp_bisect_od(target_operation: typing.Union[Operator, tuple[np.ndar
     rk = control_wires[mid:]
 
     def mcx(_lk, _rk):
-        return qml.MultiControlledX(control_wires = _lk, wires = target_wire, work_wires = _rk)
-    op_mcx1 = lambda:mcx(lk,rk)
-    op_mcx2 = lambda:mcx(rk,lk)
-    op_a = lambda:qml.QubitUnitary(a, target_wire)
-    op_at = lambda:qml.adjoint(op_a())
+        return qml.MultiControlledX(control_wires=_lk, wires=target_wire, work_wires=_rk)
+
+    op_mcx1 = lambda: mcx(lk, rk)
+    op_mcx2 = lambda: mcx(rk, lk)
+    op_a = lambda: qml.QubitUnitary(a, target_wire)
+    op_at = lambda: qml.adjoint(op_a())
 
     result = [op_mcx1, op_a, op_mcx2, op_at, op_mcx1, op_a, op_mcx2, op_at]
     if not later:
@@ -266,7 +279,11 @@ def ctrl_decomp_bisect_od(target_operation: typing.Union[Operator, tuple[np.ndar
     return result
 
 
-def ctrl_decomp_bisect_md(target_operation: typing.Union[Operator, tuple[np.ndarray, Wires]], control_wires: Wires, later: bool = False):
+def ctrl_decomp_bisect_md(
+    target_operation: typing.Union[Operator, tuple[np.ndarray, Wires]],
+    control_wires: Wires,
+    later: bool = False,
+):
     """Decompose the controlled version of a target single-qubit operation
 
     This function decomposes a controlled single-qubit target operation using the
@@ -307,14 +324,14 @@ def ctrl_decomp_bisect_md(target_operation: typing.Union[Operator, tuple[np.ndar
     u = np.array(u)
 
     ui = np.imag(u)
-    if not np.isclose(ui[0,0], 0) or not np.isclose(ui[1,1], 0):
+    if not np.isclose(ui[0, 0], 0) or not np.isclose(ui[1, 1], 0):
         raise ValueError(f"Target operation's matrix must have real main-diagonal, but it is {u}")
-    
+
     sh = qml.Hadamard.compute_matrix()
     mod_u = sh @ u @ sh
     mod_op = mod_u, target_wire
 
-    op_h = lambda:qml.Hadamard(target_wire)
+    op_h = lambda: qml.Hadamard(target_wire)
     inner = ctrl_decomp_bisect_od(mod_op, control_wires, later=True)
     result = [op_h] + inner + [op_h]
     if not later:
@@ -322,7 +339,11 @@ def ctrl_decomp_bisect_md(target_operation: typing.Union[Operator, tuple[np.ndar
     return result
 
 
-def ctrl_decomp_bisect_general(target_operation: typing.Union[Operator, tuple[np.ndarray, Wires]], control_wires: Wires, later: bool = False):
+def ctrl_decomp_bisect_general(
+    target_operation: typing.Union[Operator, tuple[np.ndarray, Wires]],
+    control_wires: Wires,
+    later: bool = False,
+):
     """Decompose the controlled version of a target single-qubit operation
 
     This function decomposes a controlled single-qubit target operation using the
@@ -362,7 +383,7 @@ def ctrl_decomp_bisect_general(target_operation: typing.Union[Operator, tuple[np
     sx = qml.PauliX.compute_matrix()
     sh = qml.Hadamard.compute_matrix()
     sh_alt = sx @ sh @ sx
-    
+
     d, q = npl.eig(u)
     d = np.diag(d)
     q = _ensure_real_diagonal_q(q)
@@ -375,13 +396,14 @@ def ctrl_decomp_bisect_general(target_operation: typing.Union[Operator, tuple[np
     rk = control_wires[mid:]
 
     def mcx(_lk, _rk):
-        return qml.MultiControlledX(control_wires = _lk, wires = target_wire, work_wires = _rk)
-    op_mcx1 = lambda:mcx(lk,rk)
-    op_mcx2 = lambda:mcx(rk,lk)
-    op_c1 = lambda:qml.QubitUnitary(c1, target_wire)
-    op_c1t = lambda:qml.adjoint(op_c1())
-    op_c2t = lambda:qml.QubitUnitary(c2t, target_wire)
-    op_c2 = lambda:qml.adjoint(op_c2t())
+        return qml.MultiControlledX(control_wires=_lk, wires=target_wire, work_wires=_rk)
+
+    op_mcx1 = lambda: mcx(lk, rk)
+    op_mcx2 = lambda: mcx(rk, lk)
+    op_c1 = lambda: qml.QubitUnitary(c1, target_wire)
+    op_c1t = lambda: qml.adjoint(op_c1())
+    op_c2t = lambda: qml.QubitUnitary(c2t, target_wire)
+    op_c2 = lambda: qml.adjoint(op_c2t())
 
     inner = ctrl_decomp_bisect_od((d, target_wire), control_wires, later=True)
     result = [op_c2t, op_mcx2, op_c1t, op_mcx1] + inner + [op_mcx1, op_c1, op_mcx2, op_c2]
@@ -390,6 +412,3 @@ def ctrl_decomp_bisect_general(target_operation: typing.Union[Operator, tuple[np
     if not later:
         result = [func() for func in result]
     return result
-
-
-

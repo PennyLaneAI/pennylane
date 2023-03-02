@@ -30,7 +30,12 @@ from pennylane.operation import Operator
 from pennylane.wires import Wires
 
 from .symbolicop import SymbolicOp
-from .controlled_decompositions import ctrl_decomp_zyz
+from .controlled_decompositions import (
+    ctrl_decomp_zyz,
+    ctrl_decomp_bisect_od,
+    ctrl_decomp_bisect_md,
+    ctrl_decomp_bisect_general,
+)
 
 
 def ctrl(op, control, control_values=None, work_wires=None):
@@ -556,6 +561,18 @@ def _decompose_no_control_values(op: "operation.Operator") -> List["operation.Op
         if len(op.control_wires) == 2:
             return [qml.Toffoli(op.active_wires)]
         return [qml.MultiControlledX(wires=op.active_wires, work_wires=op.work_wires)]
+    if len(op.base.wires) == 1 and len(op.control_wires) >= 2:
+        # Bisect algorithms use CNOTs and single qubit unitary
+        u = op.base.matrix()
+        ui = np.imag(u)
+        if np.isclose(ui[1, 0], 0) and np.isclose(ui[0, 1], 0):
+            # Real off-diagonal specialized algorithm - 16n+O(1) CNOTs
+            return ctrl_decomp_bisect_od(op.base, op.control_wires)
+        if np.isclose(ui[0, 0], 0) and np.isclose(ui[1, 1], 0):
+            # Real main-diagonal specialized algorithm - 16n+O(1) CNOTs
+            return ctrl_decomp_bisect_md(op.base, op.control_wires)
+        # General algorithm - 20n+O(1) CNOTs
+        ctrl_decomp_bisect_general(op.base, op.control_wires)
     if len(op.base.wires) == 1 and getattr(op.base, "has_matrix", False):
         return ctrl_decomp_zyz(op.base, op.control_wires)
 
