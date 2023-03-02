@@ -34,11 +34,17 @@
 * The keyword argument `argnums` is now used for gradient transform using Jax, instead of `argnum`.
   [(#3697)](https://github.com/PennyLaneAI/pennylane/pull/3697)
 
+* The keyword argument `argnums` is now used for gradient transform using Jax, instead of `argnum`.
+  [(#3847)](https://github.com/PennyLaneAI/pennylane/pull/3847)
+
 <h3>Deprecations</h3>
 
 <h3>Documentation</h3>
 
 <h3>Bug fixes</h3>
+
+* The metric tensor transform is fully compatible with Jax and therefore users can provide multiple parameters.
+  [(#3847)](https://github.com/PennyLaneAI/pennylane/pull/3847)
 
 <h3>Contributors</h3>
 
