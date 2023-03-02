@@ -183,7 +183,7 @@ def apply_operation(op: qml.operation.Operator, state, batch_dim=0):
     if (
         len(op.wires) < EINSUM_OP_WIRECOUNT_PERF_THRESHOLD
         and math.ndim(state) < EINSUM_STATE_WIRECOUNT_PERF_THRESHOLD
-    ) or (op.matrix().shape != 2 and batch_dim):
+    ) or (op.batch_size and batch_dim):
         return apply_operation_einsum(op, state, batch_dim=batch_dim)
     return apply_operation_tensordot(op, state, batch_dim=batch_dim)
 
@@ -191,40 +191,46 @@ def apply_operation(op: qml.operation.Operator, state, batch_dim=0):
 @apply_operation.register
 def apply_paulix(op: qml.PauliX, state, batch_dim=0):
     """Apply :class:`pennylane.PauliX` operator to the quantum state"""
-    return math.roll(state, 1, op.wires[0] + batch_dim)
+    axis = op.wires[0] + batch_dim
+    return math.roll(state, 1, axis)
 
 
 @apply_operation.register
 def apply_pauliz(op: qml.PauliZ, state, batch_dim=0):
     """Apply pauliz to state."""
-    n_wires = math.ndim(state)
-    sl_0 = _get_slice(0, op.wires[0], n_wires)
-    sl_1 = _get_slice(1, op.wires[0], n_wires)
+    axis = op.wires[0] + batch_dim
+    n_dim = math.ndim(state)
+
+    sl_0 = _get_slice(0, axis, n_dim)
+    sl_1 = _get_slice(1, axis, n_dim)
 
     state1 = math.multiply(state[sl_1], -1)
-    return math.stack([state[sl_0], state1], axis=op.wires[0] + batch_dim)
+    return math.stack([state[sl_0], state1], axis=axis)
 
 
 @apply_operation.register
 def apply_phase(op: qml.PhaseShift, state, batch_dim=0):
     """Apply PhaseShift operator to state."""
     shift = math.exp(math.multiply(1j, op.data[0]))
+    axis = op.wires[0] + batch_dim
+    n_dim = math.ndim(state)
 
-    n_wires = math.ndim(state)
-    sl_0 = _get_slice(0, op.wires[0], n_wires)
-    sl_1 = _get_slice(1, op.wires[0], n_wires)
+    sl_0 = _get_slice(0, axis, n_dim)
+    sl_1 = _get_slice(1, axis, n_dim)
 
     state1 = math.multiply(shift, state[sl_1])
-    return math.stack([state[sl_0], state1], axis=op.wires[0] + batch_dim)
+    return math.stack([state[sl_0], state1], axis=axis)
 
 
 @apply_operation.register
 def apply_cnot(op: qml.CNOT, state, batch_dim=0):
     """Apply cnot gate to state."""
-    target_axes = (op.wires[1] - 1) if op.wires[1] > op.wires[0] else (op.wires[1])
-
+    target_axes = (op.wires[1] - 1 if op.wires[1] > op.wires[0] else op.wires[1]) + batch_dim
+    control_axes = op.wires[0] + batch_dim
     n_dim = math.ndim(state)
-    sl_0 = _get_slice(0, op.wires[0] + batch_dim, n_dim)
-    sl_1 = _get_slice(1, op.wires[0] + batch_dim, n_dim)
-    state_x = math.roll(state[sl_1], 1, target_axes + batch_dim)
-    return math.stack([state[sl_0], state_x], axis=op.wires[0] + batch_dim)
+
+    sl_0 = _get_slice(0, control_axes, n_dim)
+    sl_1 = _get_slice(1, control_axes, n_dim)
+
+    state_x = math.roll(state[sl_1], 1, target_axes)
+    return math.stack([state[sl_0], state_x], axis=control_axes)

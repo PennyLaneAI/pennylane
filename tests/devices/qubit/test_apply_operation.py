@@ -35,6 +35,9 @@ ml_frameworks_list = [
 ]
 
 
+methods = [apply_operation_einsum, apply_operation_tensordot, apply_operation]
+
+
 def test_custom_operator_with_matrix():
     """Test that apply_operation works with any operation that defines a matrix."""
 
@@ -59,9 +62,7 @@ def test_custom_operator_with_matrix():
 
 
 @pytest.mark.parametrize("ml_framework", ml_frameworks_list)
-@pytest.mark.parametrize(
-    "method", (apply_operation_einsum, apply_operation_tensordot, apply_operation)
-)
+@pytest.mark.parametrize("method", methods)
 @pytest.mark.parametrize("wire", (0, 1))
 class TestTwoQubitStateSpecialCases:
     """Test the special cases on a two qubit state.  Also tests the special cases for einsum and tensor application methods
@@ -322,6 +323,12 @@ class TestRXCalcGrad:
         phi_grad = tf.math.conj(grads[0])
 
         self.compare_expected_result(phi, state, new_state, phi_grad)
+
+
+@pytest.mark.parametrize("ml_framework", ml_frameworks_list)
+@pytest.mark.parametrize("method", methods)
+class TestBroadcasting:  # pylint: disable=too-few-public-methods
+    """Tests that broadcasted operations are applied correctly."""
 
 
 @pytest.mark.parametrize(
