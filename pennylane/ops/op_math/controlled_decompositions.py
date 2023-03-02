@@ -17,6 +17,7 @@ This submodule defines functions to decompose controlled operations
 
 import numpy as np
 import numpy.linalg as npl
+import scipy.optimize as spo
 import pennylane as qml
 import typing
 from pennylane.operation import Operator
@@ -81,6 +82,10 @@ def _bisect_compute_a(u: np.ndarray):
     bi = 0
     return _param_su2(ar,ai,br,bi)
 
+def _flatreals(x: np.ndarray):
+    x = x.flatten()
+    return np.concatenate((np.real(x), np.imag(x)))
+
 def _bisect_compute_b(u: np.ndarray):
     """
     Given the U matrix, compute the B matrix such that
@@ -89,16 +94,21 @@ def _bisect_compute_b(u: np.ndarray):
     H is the Hadamard matrix,
     and x is the Pauli X matrix.
     """
-    x = u[0,1]
-    zr = np.real(x)
-    zi = np.imag(x)
-    x = np.real(u[1,1])
-    ar = np.sqrt((zr+1)/2)
-    mul = 1/np.sqrt(2*(zr+1))
-    ai = zi*mul
-    br = x*mul
-    bi = 0
-    return _param_su2(ar,ai,br,bi)
+    sx = np.array([[0, 1], [1, 0]]) # Pauli X matrix
+    sh = np.array([[1, 1], [1, -1]]) * 2 ** -0.5 # Hadamard matrix
+
+    def optfunc(x):
+        b = _param_su2(*x)
+        bt = _matrix_adjoint(b)
+        expect_u = sh @ bt @ sx @ b @ sx @ sh
+        return _flatreals((expect_u - u)[0])
+    
+    sol = spo.root(optfunc, [1, 0, 0, 0])
+
+    if not sol.success:
+        raise ValueError(f'Unable to compute B matrix for U matrix {u}')
+
+    return _param_su2(*sol.x)
 
 def ctrl_decomp_zyz(target_operation: Operator, control_wires: Wires):
     """Decompose the controlled version of a target single-qubit operation
@@ -351,7 +361,7 @@ def ctrl_decomp_bisect_general(target_operation: typing.Union[Operator, tuple[np
 
     sx = qml.PauliX.compute_matrix()
     sh = qml.Hadamard.compute_matrix()
-    sh_alt = sh[::-1,::-1]
+    sh_alt = sx @ sh @ sx
     
     d, q = npl.eig(u)
     d = np.diag(d)
@@ -359,6 +369,9 @@ def ctrl_decomp_bisect_general(target_operation: typing.Union[Operator, tuple[np
     b = _bisect_compute_b(q)
     c1 = b @ sh_alt
     c2t = b @ sh
+    print(q)
+    print(d)
+    print(_matrix_adjoint(c2t) @ sx @ c1 @ sx)
 
     mid = len(control_wires) // 2
     lk = control_wires[:mid]
