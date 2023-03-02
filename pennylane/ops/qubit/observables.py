@@ -67,7 +67,7 @@ class Hermitian(Observable):
     _eigs = {}
 
     def __init__(self, A, wires, do_queue=True, id=None):
-        A = qml.math.asarray(A)
+        A = np.array(A) if isinstance(A, list) else A
         if not qml.math.is_abstract(A):
             if isinstance(wires, Sequence) and not isinstance(wires, str):
                 if len(wires) == 0:
@@ -222,7 +222,7 @@ class SparseHamiltonian(Observable):
     Args:
         H (csr_matrix): a sparse matrix in SciPy Compressed Sparse Row (CSR) format with
             dimension :math:`(2^n, 2^n)`, where :math:`n` is the number of wires
-        wires (Sequence[int] or int): the wire(s) the operation acts on
+        wires (Sequence[int]): the wire(s) the operation acts on
         do_queue (bool): Indicates whether the operator should be
             immediately pushed into the Operator queue (optional)
         id (str or None): String representing the operation (optional)
@@ -232,15 +232,15 @@ class SparseHamiltonian(Observable):
     Sparse Hamiltonians can be constructed directly with a SciPy-compatible sparse matrix.
 
     Alternatively, you can construct your Hamiltonian as usual using :class:`~.Hamiltonian`, and then use
-    the utility function :func:`~.utils.sparse_hamiltonian` to construct the sparse matrix that serves as the input
+    :meth:`~.Hamiltonian.sparse_matrix` to construct the sparse matrix that serves as the input
     to ``SparseHamiltonian``:
 
-    >>> wires = 20
-    >>> coeffs = [1 for _ in range(wires)]
-    >>> observables = [qml.PauliZ(i) for i in range(wires)]
+    >>> wires = range(20)
+    >>> coeffs = [1 for _ in wires]
+    >>> observables = [qml.PauliZ(i) for i in wires]
     >>> H = qml.Hamiltonian(coeffs, observables)
-    >>> Hmat = qml.utils.sparse_hamiltonian(H)
-    >>> H_sparse = qml.SparseHamiltonian(Hmat, wires=wires)
+    >>> Hmat = H.sparse_matrix()
+    >>> H_sparse = qml.SparseHamiltonian(Hmat, wires)
     """
     num_wires = AllWires
     num_params = 1

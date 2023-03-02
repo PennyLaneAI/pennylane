@@ -30,6 +30,7 @@ from pennylane.operation import Operator
 from pennylane.wires import Wires
 
 from .symbolicop import SymbolicOp
+from .controlled_decompositions import ctrl_decomp_zyz
 
 
 def ctrl(op, control, control_values=None, work_wires=None):
@@ -140,6 +141,8 @@ class Controlled(SymbolicOp):
             length as ``control_wires``. Defaults to ``True`` for all control wires.
             Provided values are converted to `Bool` internally.
         work_wires (Any): Any auxiliary wires that can be used in the decomposition
+        do_queue(bool):  indicates whether the operator should be
+            recorded when created in a tape context
 
     .. note::
         This class, ``Controlled``, denotes a controlled version of any individual operation.
@@ -232,7 +235,7 @@ class Controlled(SymbolicOp):
 
     # pylint: disable=unused-argument
     def __new__(cls, base, *_, **__):
-        """If base is an ``Operation``, then the a ``ControlledOp`` should be used instead."""
+        """If base is an ``Operation``, then a ``ControlledOp`` should be used instead."""
         if isinstance(base, operation.Operation):
             return object.__new__(ControlledOp)
         return object.__new__(Controlled)
@@ -252,7 +255,8 @@ class Controlled(SymbolicOp):
                     "Specifying control values as a string is deprecated. Please use Sequence[Bool]",
                     UserWarning,
                 )
-                control_values = [(x == "1") for x in control_values]
+                # All values not 0 are cast as true. Assumes a string of 1s and 0s.
+                control_values = [(x != "0") for x in control_values]
 
             control_values = (
                 [bool(control_values)]
@@ -308,7 +312,19 @@ class Controlled(SymbolicOp):
     # pylint: disable=arguments-renamed, invalid-overridden-method
     @property
     def has_matrix(self):
-        return self.base.has_matrix if self.base.batch_size is None else False
+        return self.base.has_matrix
+
+    # pylint: disable=protected-access
+    def _check_batching(self, params):
+        self.base._check_batching(params)
+
+    @property
+    def batch_size(self):
+        return self.base.batch_size
+
+    @property
+    def ndim_params(self):
+        return self.base.ndim_params
 
     # Properties on the control values ######################
     @property
@@ -353,7 +369,7 @@ class Controlled(SymbolicOp):
         new_control_wires = Wires([wire_map.get(wire, wire) for wire in self.control_wires])
         new_work_wires = Wires([wire_map.get(wire, wire) for wire in self.work_wires])
 
-        return Controlled(
+        return self.__class__(
             base=new_base,
             control_wires=new_control_wires,
             control_values=self.control_values,
@@ -374,10 +390,6 @@ class Controlled(SymbolicOp):
         return self.base.label(decimals=decimals, base_label=base_label, cache=cache)
 
     def matrix(self, wire_order=None):
-
-        if self.base.batch_size is not None:
-            raise qml.operation.MatrixUndefinedError
-
         base_matrix = self.base.matrix()
         interface = qmlmath.get_interface(base_matrix)
 
@@ -391,7 +403,13 @@ class Controlled(SymbolicOp):
         left_pad = qmlmath.cast_like(qmlmath.eye(padding_left, like=interface), 1j)
         right_pad = qmlmath.cast_like(qmlmath.eye(padding_right, like=interface), 1j)
 
-        canonical_matrix = qmlmath.block_diag([left_pad, base_matrix, right_pad])
+        shape = qml.math.shape(base_matrix)
+        if len(shape) == 3:  # stack if batching
+            canonical_matrix = qml.math.stack(
+                [qml.math.block_diag([left_pad, _U, right_pad]) for _U in base_matrix]
+            )
+        else:
+            canonical_matrix = qmlmath.block_diag([left_pad, base_matrix, right_pad])
 
         if wire_order is None or self.wires == Wires(wire_order):
             return qml.math.expand_matrix(
@@ -453,6 +471,8 @@ class Controlled(SymbolicOp):
             return True
         if isinstance(self.base, qml.PauliX):
             return True
+        if len(self.base.wires) == 1 and getattr(self.base, "has_matrix", False):
+            return True
         if self.base.has_decomposition:
             return True
 
@@ -489,27 +509,35 @@ class Controlled(SymbolicOp):
         return self.base.has_adjoint
 
     def adjoint(self):
-        return Controlled(
-            self.base.adjoint(), self.control_wires, self.control_values, self.work_wires
+        return self.__class__(
+            self.base.adjoint(),
+            self.control_wires,
+            control_values=self.control_values,
+            work_wires=self.work_wires,
         )
 
     def pow(self, z):
         base_pow = self.base.pow(z)
         return [
-            Controlled(op, self.control_wires, self.control_values, self.work_wires)
+            self.__class__(
+                op,
+                self.control_wires,
+                control_values=self.control_values,
+                work_wires=self.work_wires,
+            )
             for op in base_pow
         ]
 
     def simplify(self) -> "Controlled":
         if isinstance(self.base, Controlled):
             base = self.base.base.simplify()
-            return Controlled(
+            return self.__class__(
                 base,
                 control_wires=self.control_wires + self.base.control_wires,
                 control_values=self.control_values + self.base.control_values,
                 work_wires=self.work_wires + self.base.work_wires,
             )
-        return Controlled(
+        return self.__class__(
             base=self.base.simplify(),
             control_wires=self.control_wires,
             control_values=self.control_values,
@@ -519,7 +547,7 @@ class Controlled(SymbolicOp):
 
 # pylint: disable=protected-access
 def _decompose_no_control_values(op: "operation.Operator") -> List["operation.Operator"]:
-    """Provides a decomposition without considering control values.  Returns None if
+    """Provides a decomposition without considering control values. Returns None if
     no decomposition.
     """
     if len(op.control_wires) == 1 and hasattr(op.base, "_controlled"):
@@ -528,13 +556,13 @@ def _decompose_no_control_values(op: "operation.Operator") -> List["operation.Op
         if len(op.control_wires) == 2:
             return [qml.Toffoli(op.active_wires)]
         return [qml.MultiControlledX(wires=op.active_wires, work_wires=op.work_wires)]
+    if len(op.base.wires) == 1 and getattr(op.base, "has_matrix", False):
+        return ctrl_decomp_zyz(op.base, op.control_wires)
 
     if not op.base.has_decomposition:
         return None
 
-    # Need to use expand because of in-place inversion
-    # revert to decomposition once in-place inversion removed
-    base_decomp = op.base.expand().circuit
+    base_decomp = op.base.decomposition()
 
     return [Controlled(newop, op.control_wires, work_wires=op.work_wires) for newop in base_decomp]
 
@@ -565,22 +593,6 @@ class ControlledOp(Controlled, operation.Operation):
         if self.grad_recipe is None:
             # Make sure grad_recipe is an iterable of correct length instead of None
             self.grad_recipe = [None] * self.num_params
-
-    @property
-    def _inverse(self):
-        return False
-
-    @_inverse.setter
-    def _inverse(self, boolean):
-        self.base._inverse = boolean  # pylint: disable=protected-access
-        # refresh name as base_name got updated.
-        self._name = f"C({self.base.name})"
-
-    def inv(self):
-        self.base.inv()
-        # refresh name as base_name got updated.
-        self._name = f"C({self.base.name})"
-        return self
 
     @property
     def base_name(self):
@@ -623,6 +635,6 @@ class ControlledOp(Controlled, operation.Operation):
             return [qml.gradients.eigvals_to_frequencies(processed_gen_eigvals)]
         raise operation.ParameterFrequenciesUndefinedError(
             f"Operation {self.name} does not have parameter frequencies defined, "
-            "and parameter frequencies can not be computed via generator for more than one"
+            "and parameter frequencies can not be computed via generator for more than one "
             "parameter."
         )

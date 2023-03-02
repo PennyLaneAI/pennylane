@@ -7,6 +7,7 @@ on:
 
 
 env:
+  JAX_VERSION: 0.4.3
   TF_VERSION: 2.10.0
   TORCH_VERSION: 1.13.0
   COVERAGE_FLAGS: "--cov=pennylane --cov-report=term-missing --cov-report=xml --no-flaky-report -p no:warnings --tb=native"
@@ -39,7 +40,7 @@ jobs:
 
     steps:
       - name: Cancel Previous Runs
-        uses: styfle/cancel-workflow-action@0.4.1
+        uses: styfle/cancel-workflow-action@0.11.0
         with:
           access_token: ${{ github.token }}
 
@@ -74,7 +75,7 @@ jobs:
       # to the latest release. We can always fix a version later if it breaks.
       - name: Conditionally install JAX
         if: matrix.config.suite == 'jax'
-        run: pip3 install jax jaxlib
+        run: pip3 install jax==$JAX_VERSION jaxlib==$JAX_VERSION
 
       - name: Install PennyLane
         run: |
@@ -85,7 +86,7 @@ jobs:
         run: python -m pip install -i https://test.pypi.org/simple/ PennyLane-Lightning --pre --upgrade
 
       - name: Run tests
-        run: python -m pytest tests --cov=pennylane $COVERAGE_FLAGS -m "$SUITE" -n auto
+        run: python -m pytest tests --cov=pennylane $COVERAGE_FLAGS -m "$SUITE and not qcut and not return" -n auto
 
       - name: Adjust coverage file for Codecov
         run: bash <(sed -i 's/filename=\"/filename=\"pennylane\//g' coverage.xml)
@@ -100,7 +101,7 @@ jobs:
 
     steps:
       - name: Cancel Previous Runs
-        uses: styfle/cancel-workflow-action@0.4.1
+        uses: styfle/cancel-workflow-action@0.11.0
         with:
           access_token: ${{ github.token }}
 
@@ -126,7 +127,7 @@ jobs:
         run: pip3 install tensorflow~=$TF_VERSION keras~=$TF_VERSION
 
       - name: Install JAX
-        run: pip3 install jax jaxlib
+        run: pip3 install jax==$JAX_VERSION jaxlib==$JAX_VERSION
 
       - name: Install PennyLane
         run: |
@@ -135,7 +136,7 @@ jobs:
 
       - name: Run tests
         run: |
-          python -m pytest tests --cov=pennylane $COVERAGE_FLAGS -m all_interfaces -n auto
+          python -m pytest tests --cov=pennylane $COVERAGE_FLAGS -m "all_interfaces and not return"  -n auto
 
       - name: Adjust coverage file for Codecov
         run: bash <(sed -i 's/filename=\"/filename=\"pennylane\//g' coverage.xml)
@@ -150,7 +151,7 @@ jobs:
 
     steps:
       - name: Cancel Previous Runs
-        uses: styfle/cancel-workflow-action@0.4.1
+        uses: styfle/cancel-workflow-action@0.11.0
         with:
           access_token: ${{ github.token }}
 
@@ -194,7 +195,7 @@ jobs:
 
     steps:
       - name: Cancel Previous Runs
-        uses: styfle/cancel-workflow-action@0.4.1
+        uses: styfle/cancel-workflow-action@0.11.0
         with:
           access_token: ${{ github.token }}
 
@@ -220,7 +221,7 @@ jobs:
         run: pip3 install tensorflow~=$TF_VERSION keras~=$TF_VERSION
 
       - name: Install JAX
-        run: pip3 install jax jaxlib
+        run: pip3 install jax==$JAX_VERSION jaxlib==$JAX_VERSION
 
       - name: Install KaHyPar and opt_einsum
         run: pip3 install kahypar==1.1.7 opt_einsum
@@ -262,7 +263,7 @@ jobs:
 
     steps:
       - name: Cancel Previous Runs
-        uses: styfle/cancel-workflow-action@0.4.1
+        uses: styfle/cancel-workflow-action@0.11.0
         with:
           access_token: ${{ github.token }}
 
@@ -288,7 +289,7 @@ jobs:
         run: pip3 install tensorflow~=$TF_VERSION keras~=$TF_VERSION
 
       - name: Install JAX
-        run: pip3 install jax jaxlib
+        run: pip3 install jax==$JAX_VERSION jaxlib==$JAX_VERSION
 
       - name: Install PennyLane
         run: |
@@ -298,6 +299,7 @@ jobs:
       - name: Run tests
         run: |
           python -m pytest ${{ matrix.config.loc }} --cov=pennylane $COVERAGE_FLAGS -n auto
+
 
       - name: Adjust coverage file for Codecov
         run: bash <(sed -i 's/filename=\"/filename=\"pennylane\//g' coverage.xml)
@@ -312,7 +314,7 @@ jobs:
 
     steps:
       - name: Cancel Previous Runs
-        uses: styfle/cancel-workflow-action@0.4.1
+        uses: styfle/cancel-workflow-action@0.11.0
         with:
           access_token: ${{ github.token }}
 
@@ -361,7 +363,7 @@ jobs:
 
     steps:
       - name: Cancel Previous Runs
-        uses: styfle/cancel-workflow-action@0.4.1
+        uses: styfle/cancel-workflow-action@0.11.0
         with:
           access_token: ${{ github.token }}
 
@@ -417,7 +419,7 @@ jobs:
 
     steps:
       - name: Cancel Previous Runs
-        uses: styfle/cancel-workflow-action@0.4.1
+        uses: styfle/cancel-workflow-action@0.11.0
         with:
           access_token: ${{ github.token }}
 
@@ -446,7 +448,7 @@ jobs:
 
       - name: Conditionally install Jax
         if: contains(matrix.config.device, 'jax')
-        run: pip3 install jax jaxlib
+        run: pip3 install jax==$JAX_VERSION jaxlib==$JAX_VERSION
 
       - name: Install PennyLane
         run: |

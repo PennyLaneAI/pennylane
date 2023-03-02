@@ -26,7 +26,7 @@ def test_simple_circuit(mocker):
     dev = qml.device("default.qubit", wires=3)
 
     @qml.batch_params
-    @qml.qnode(dev)
+    @qml.qnode(dev, interface="autograd")
     def circuit(data, x, weights):
         qml.templates.AmplitudeEmbedding(data, wires=[0, 1, 2], normalize=True)
         qml.RX(x, wires=0)
@@ -50,7 +50,7 @@ def test_basic_entangler_layers(mocker):
     dev = qml.device("default.qubit", wires=2)
 
     @qml.batch_params
-    @qml.qnode(dev)
+    @qml.qnode(dev, interface="autograd")
     def circuit(weights):
         qml.templates.BasicEntanglerLayers(weights, wires=[0, 1])
         qml.RY(0.2, wires=1)
@@ -70,7 +70,7 @@ def test_angle_embedding(mocker):
     dev = qml.device("default.qubit", wires=3)
 
     @qml.batch_params
-    @qml.qnode(dev)
+    @qml.qnode(dev, interface="autograd")
     def circuit(data):
         qml.templates.AngleEmbedding(data, wires=[0, 1, 2])
         qml.RY(0.2, wires=1)
@@ -90,7 +90,7 @@ def test_mottonenstate_preparation(mocker):
     dev = qml.device("default.qubit", wires=3)
 
     @qml.batch_params
-    @qml.qnode(dev)
+    @qml.qnode(dev, interface="autograd")
     def circuit(data, weights):
         qml.templates.MottonenStatePreparation(data, wires=[0, 1, 2])
         qml.templates.StronglyEntanglingLayers(weights, wires=[0, 1, 2])
@@ -126,7 +126,7 @@ def test_basis_state_preparation(mocker):
     dev = qml.device("default.qubit", wires=4)
 
     @qml.batch_params
-    @qml.qnode(dev)
+    @qml.qnode(dev, interface="autograd")
     def circuit(data, weights):
         qml.templates.BasisStatePreparation(data, wires=[0, 1, 2, 3])
         qml.templates.StronglyEntanglingLayers(weights, wires=[0, 1, 2, 3])
@@ -183,7 +183,8 @@ def test_autograd(diff_method, tol):
 
 @pytest.mark.jax
 @pytest.mark.parametrize("diff_method", ["backprop", "adjoint", "parameter-shift"])
-def test_jax(diff_method, tol):
+@pytest.mark.parametrize("interface", ["jax"])
+def test_jax(diff_method, tol, interface):
     """Test derivatives when using JAX."""
     import jax
 
@@ -191,7 +192,7 @@ def test_jax(diff_method, tol):
     dev = qml.device("default.qubit", wires=2)
 
     @qml.batch_params
-    @qml.qnode(dev, interface="jax", diff_method=diff_method)
+    @qml.qnode(dev, interface=interface, diff_method=diff_method)
     def circuit(x):
         qml.RX(x, wires=0)
         qml.RY(0.1, wires=1)
@@ -211,7 +212,7 @@ def test_jax(diff_method, tol):
 
 @pytest.mark.jax
 @pytest.mark.parametrize("diff_method", ["adjoint", "parameter-shift"])
-@pytest.mark.parametrize("interface", ["jax", "jax-jit"])
+@pytest.mark.parametrize("interface", ["jax-jit"])
 def test_jax_jit(diff_method, interface, tol):
     """Test derivatives when using JAX and JIT."""
     import jax
@@ -241,14 +242,15 @@ def test_jax_jit(diff_method, interface, tol):
 
 @pytest.mark.torch
 @pytest.mark.parametrize("diff_method", ["backprop", "adjoint", "parameter-shift"])
-def test_torch(diff_method, tol):
+@pytest.mark.parametrize("interface", ["torch"])
+def test_torch(diff_method, tol, interface):
     """Test derivatives when using Torch"""
     import torch
 
     dev = qml.device("default.qubit", wires=2)
 
     @qml.batch_params
-    @qml.qnode(dev, interface="torch", diff_method=diff_method)
+    @qml.qnode(dev, interface=interface, diff_method=diff_method)
     def circuit(x):
         qml.RX(x, wires=0)
         qml.RY(0.1, wires=1)
@@ -271,14 +273,15 @@ def test_torch(diff_method, tol):
 
 @pytest.mark.tf
 @pytest.mark.parametrize("diff_method", ["backprop", "adjoint", "parameter-shift"])
-def test_tf(diff_method, tol):
+@pytest.mark.parametrize("interface", ["tf"])
+def test_tf(diff_method, tol, interface):
     """Test derivatives when using TF"""
     import tensorflow as tf
 
     dev = qml.device("default.qubit", wires=2)
 
     @qml.batch_params
-    @qml.qnode(dev, interface="tf", diff_method=diff_method)
+    @qml.qnode(dev, interface=interface, diff_method=diff_method)
     def circuit(x):
         qml.RX(x, wires=0)
         qml.RY(0.1, wires=1)
@@ -300,14 +303,15 @@ def test_tf(diff_method, tol):
 
 
 @pytest.mark.tf
-def test_tf_autograph(tol):
+@pytest.mark.parametrize("interface", ["auto", "tf"])
+def test_tf_autograph(tol, interface):
     """Test derivatives when using TF and autograph"""
     import tensorflow as tf
 
     dev = qml.device("default.qubit", wires=2)
 
     @qml.batch_params
-    @qml.qnode(dev, interface="tf", diff_method="backprop")
+    @qml.qnode(dev, interface=interface, diff_method="backprop")
     def circuit(x):
         qml.RX(x, wires=0)
         qml.RY(0.1, wires=1)
@@ -334,7 +338,7 @@ def test_all_operations(mocker):
     dev = qml.device("default.qubit", wires=3)
 
     @functools.partial(qml.batch_params, all_operations=True)
-    @qml.qnode(dev)
+    @qml.qnode(dev, interface="autograd")
     def circuit(x, weights):
         qml.RX(x, wires=0)
         qml.RY([0.2, 0.3, 0.3], wires=1)

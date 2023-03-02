@@ -107,6 +107,10 @@ class MidMeasureMP(MeasurementProcess):
         return MidMeasure
 
     @property
+    def samples_computational_basis(self):
+        return False
+
+    @property
     def _queue_category(self):
         return "_ops"
 

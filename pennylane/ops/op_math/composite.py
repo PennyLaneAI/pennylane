@@ -65,6 +65,17 @@ class CompositeOp(Operator):
         if do_queue:
             self.queue()
 
+        self._batch_size = self._check_and_compute_batch_size()
+
+    def _check_and_compute_batch_size(self):
+        batch_sizes = {op.batch_size for op in self if op.batch_size is not None}
+        if len(batch_sizes) > 1:
+            raise ValueError(
+                "Broadcasting was attempted but the broadcasted dimensions "
+                f"do not match: {batch_sizes}."
+            )
+        return batch_sizes.pop() if batch_sizes else None
+
     def __repr__(self):
         return f" {self._op_symbol} ".join(
             [f"({op})" if op.arithmetic_depth > 0 else f"{op}" for op in self]

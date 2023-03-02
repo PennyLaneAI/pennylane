@@ -12,9 +12,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Autoray registrations"""
+
 # pylint:disable=protected-access,import-outside-toplevel,wrong-import-position, disable=unnecessary-lambda
 from importlib import import_module
-import numbers
 
 import autoray as ar
 import numpy as np
@@ -209,6 +209,20 @@ ar.autoray._SUBMODULE_ALIASES["tensorflow", "isclose"] = "tensorflow.experimenta
 ar.autoray._SUBMODULE_ALIASES["tensorflow", "atleast_1d"] = "tensorflow.experimental.numpy"
 ar.autoray._SUBMODULE_ALIASES["tensorflow", "all"] = "tensorflow.experimental.numpy"
 
+tf_fft_functions = [
+    "fft",
+    "ifft",
+    "fft2",
+    "ifft2",
+]
+
+
+for fn in tf_fft_functions:
+    ar.autoray._SUBMODULE_ALIASES["tensorflow", "fft." + fn] = "tensorflow.signal"
+
+ar.autoray._FUNC_ALIASES["tensorflow", "fft.fft2"] = "fft2d"
+ar.autoray._FUNC_ALIASES["tensorflow", "fft.ifft2"] = "ifft2d"
+
 ar.autoray._FUNC_ALIASES["tensorflow", "arcsin"] = "asin"
 ar.autoray._FUNC_ALIASES["tensorflow", "arccos"] = "acos"
 ar.autoray._FUNC_ALIASES["tensorflow", "arctan"] = "atan"
@@ -235,6 +249,31 @@ ar.register_function(
 )
 
 
+def _ifft2_tf(a, s=None, axes=(-2, -1), norm=None):
+    if axes != (-2, -1):
+        raise ValueError(
+            "TensorFlow does not support passing axes; the ifft "
+            "will always be performed over the inner-most 2 dimensions."
+        )
+
+    if norm is not None:
+        raise ValueError("TensorFlow does not support the 'norm' keyword argument.")
+    if s is not None:
+        raise ValueError("TensorFlow does not support the 's' keyword argument.")
+
+    # TensorFlow only supports FFT of complex tensors
+    if a.dtype not in [_i("tf").complex64, _i("tf").complex128]:
+        if a.dtype is _i("tf").float64:
+            a = _i("tf").cast(a, dtype=_i("tf").complex128)
+        else:
+            a = _i("tf").cast(a, dtype=_i("tf").complex64)
+
+    return _i("tf").signal.ifft2d(input=a)
+
+
+ar.register_function("tensorflow", "fft.ifft2", _ifft2_tf)
+
+
 def _round_tf(tensor, decimals=0):
     """Implement a TensorFlow version of np.round"""
     tf = _i("tf")
@@ -255,27 +294,9 @@ def _ndim_tf(tensor):
 ar.register_function("tensorflow", "ndim", _ndim_tf)
 
 
-def _take_tf(tensor, indices, axis=None):
-    """Implement a TensorFlow version of np.take"""
+def _take_tf(tensor, indices, axis=None, **kwargs):
     tf = _i("tf")
-
-    if isinstance(indices, numbers.Number):
-        indices = [indices]
-
-    indices = tf.convert_to_tensor(indices)
-
-    if np.any(indices < 0):
-        # Unlike NumPy, TensorFlow doesn't support negative indices.
-        dim_length = tf.size(tensor).numpy() if axis is None else tf.shape(tensor)[axis]
-        indices = tf.where(indices >= 0, indices, indices + dim_length)
-
-    if axis is None:
-        # Unlike NumPy, if axis=None TensorFlow defaults to the first
-        # dimension rather than flattening the array.
-        data = tf.reshape(tensor, [-1])
-        return tf.gather(data, indices)
-
-    return tf.gather(tensor, indices, axis=axis)
+    return tf.experimental.numpy.take(tensor, indices, axis=axis, **kwargs)
 
 
 ar.register_function("tensorflow", "take", _take_tf)
@@ -421,7 +442,6 @@ ar.autoray._FUNC_ALIASES["torch", "unstack"] = "unbind"
 
 def _to_numpy_torch(x):
     if getattr(x, "is_conj", False) and x.is_conj():  # pragma: no cover
-
         # The following line is only covered if using Torch <v1.10.0
         x = x.resolve_conj()
 
@@ -461,6 +481,15 @@ ar.register_function("torch", "equal", lambda x, y: _i("torch").eq(x, y))
 
 ar.register_function(
     "torch",
+    "fft.ifft2",
+    lambda a, s=None, axes=(-2, -1), norm=None: _i("torch").fft.ifft2(
+        input=a, s=s, dim=axes, norm=norm
+    ),
+)
+
+
+ar.register_function(
+    "torch",
     "sqrt",
     lambda x: _i("torch").sqrt(
         x.to(_i("torch").float64) if x.dtype in (_i("torch").int64, _i("torch").int32) else x
@@ -481,7 +510,7 @@ def _round_torch(tensor, decimals=0):
 ar.register_function("torch", "round", _round_torch)
 
 
-def _take_torch(tensor, indices, axis=None):
+def _take_torch(tensor, indices, axis=None, **_):
     """Torch implementation of np.take"""
     torch = _i("torch")
 
@@ -514,7 +543,6 @@ def _coerce_types_torch(tensors):
     # Extract existing set devices, if any
     device_set = set(t.device for t in tensors if isinstance(t, torch.Tensor))
     if len(device_set) > 1:  # pragma: no cover
-
         # GPU specific case
         device_names = ", ".join(str(d) for d in device_set)
         raise RuntimeError(
@@ -616,7 +644,13 @@ def _ndim_torch(tensor):
     return tensor.dim()
 
 
+def _size_torch(tensor):
+    return tensor.numel()
+
+
 ar.register_function("torch", "ndim", _ndim_torch)
+ar.register_function("torch", "size", _size_torch)
+
 
 ar.register_function("torch", "eigvalsh", lambda x: _i("torch").linalg.eigvalsh(x))
 ar.register_function("torch", "entr", lambda x: _i("torch").sum(_i("torch").special.entr(x)))
@@ -656,14 +690,23 @@ ar.register_function("jax", "flatten", lambda x: x.flatten())
 ar.register_function(
     "jax",
     "take",
-    lambda x, indices, axis=None: _i("jax").numpy.take(
-        x, np.array(indices), axis=axis, mode="wrap"
+    lambda x, indices, axis=None, **kwargs: _i("jax").numpy.take(
+        x, np.array(indices), axis=axis, **kwargs
     ),
 )
 ar.register_function("jax", "coerce", lambda x: x)
 ar.register_function("jax", "to_numpy", _to_numpy_jax)
 ar.register_function("jax", "block_diag", lambda x: _i("jax").scipy.linalg.block_diag(*x))
 ar.register_function("jax", "gather", lambda x, indices: x[np.array(indices)])
+
+
+def _ndim_jax(x):
+    import jax.numpy as jnp
+
+    return jnp.ndim(x)
+
+
+ar.register_function("jax", "ndim", lambda x: _ndim_jax(x))
 
 
 def _scatter_jax(indices, array, new_dimensions):

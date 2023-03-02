@@ -46,6 +46,12 @@ multi_measurements = [
     ),
 ]
 
+warnings_matches = {
+    State: "Requested state or density matrix with finite shots",
+    VnEntropy: "Requested Von Neumann entropy with finite shots",
+    MutualInfo: "Requested mutual information with finite shots",
+}
+
 
 class TestMeasurementProcess:
     """Tests for the shape and numeric type of a measurement process"""
@@ -179,11 +185,9 @@ class TestOutputShape:
         ops = [qml.RY(a, 0), qml.RX(b, 0)]
         qs = QuantumScript(ops, [measurement])
 
-        if shots is not None and measurement.return_type is qml.measurements.State:
-            # this is allowed by the tape but raises a warning
-            with pytest.warns(
-                UserWarning, match="Requested state or density matrix with finite shots"
-            ):
+        w_match = warnings_matches.get(measurement.return_type, None)
+        if shots is not None and w_match is not None:
+            with pytest.warns(UserWarning, match=w_match):
                 res = qml.execute([qs], dev, gradient_fn=None)[0]
         else:
             # TODO: test gradient_fn is not None when the interface `execute` functions are implemented
@@ -468,7 +472,13 @@ class TestNumericType:
         ops = [qml.RY(a, 0), qml.RZ(b, 0)]
         qs = QuantumScript(ops, [ret])
 
-        result = qml.execute([qs], dev, gradient_fn=None)[0]
+        w_match = warnings_matches.get(ret.return_type, None)
+        if shots is not None and w_match is not None:
+            with pytest.warns(UserWarning, match=w_match):
+                result = qml.execute([qs], dev, gradient_fn=None)[0]
+        else:
+            result = qml.execute([qs], dev, gradient_fn=None)[0]
+
         if not isinstance(result, tuple):
             result = (result,)
 

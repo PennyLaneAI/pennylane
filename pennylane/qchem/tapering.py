@@ -53,9 +53,7 @@ def _reduced_row_echelon(binary_matrix):
     icol = 0
 
     for irow in range(shape[0]):
-
         while icol < shape[1] and not rref_mat[irow][icol]:
-
             # get the nonzero indices in the remainder of column icol
             non_zero_idx = rref_mat[irow:, icol].nonzero()[0]
 
@@ -71,7 +69,6 @@ def _reduced_row_echelon(binary_matrix):
                     rref_mat[irow, icol:].copy(),
                 )
         if icol < shape[1] and rref_mat[irow][icol]:
-
             # store remainder right hand side columns of the pivot row irow
             rpvt_cols = rref_mat[irow, icol:].copy()
 
@@ -135,7 +132,7 @@ def symmetry_generators(h):
         h (Hamiltonian): Hamiltonian for which symmetries are to be generated to perform tapering
 
     Returns:
-        list[Hamiltonian]: list of generators of symmetries, taus, for the Hamiltonian
+        list[Hamiltonian]: list of generators of symmetries, :math:`\tau`'s, for the Hamiltonian
 
     **Example**
 
@@ -185,8 +182,9 @@ def paulix_ops(generators, num_qubits):
     These are required to obtain the Clifford operators :math:`U` for the Hamiltonian :math:`H`.
 
     Args:
-        generators (list[Hamiltonian]): list of generators of symmetries, taus, for the Hamiltonian
+        generators (list[Hamiltonian]): list of generators of symmetries, :math:`\tau`'s, for the Hamiltonian
         num_qubits (int): number of wires required to define the Hamiltonian
+
     Return:
         list[Observable]: list of single-qubit Pauli-X operators which will be used to build the
         Clifford operators :math:`U`.

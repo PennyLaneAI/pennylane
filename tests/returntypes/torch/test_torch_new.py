@@ -58,9 +58,9 @@ class TestTorchExecuteUnitTests:
         for args in spy.call_args_list:
             assert args[1]["shift"] == [(np.pi / 4,)] * 2
 
-    def test_incorrect_mode(self, interface):
+    def test_incorrect_grad_on_execution(self, interface):
         """Test that an error is raised if a gradient transform
-        is used with mode=forward"""
+        is used with grad_on_execution=True"""
         a = torch.tensor([0.1, 0.2], requires_grad=True)
 
         dev = qml.device("default.qubit", wires=1)
@@ -73,12 +73,12 @@ class TestTorchExecuteUnitTests:
         tape = qml.tape.QuantumScript.from_queue(q)
 
         with pytest.raises(
-            ValueError, match="Gradient transforms cannot be used with mode='forward'"
+            ValueError, match="Gradient transforms cannot be used with grad_on_execution=True"
         ):
             execute([tape], dev, gradient_fn=param_shift, mode="forward", interface=interface)[0]
 
-    def test_forward_mode_reuse_state(self, interface, mocker):
-        """Test that forward mode uses the `device.execute_and_gradients` pathway
+    def test_grad_on_execution_reuse_state(self, interface, mocker):
+        """Test that grad_on_execution uses the `device.execute_and_gradients` pathway
         while reusing the quantum state."""
         dev = qml.device("default.qubit", wires=1)
         spy = mocker.spy(dev, "execute_and_gradients")
@@ -104,8 +104,8 @@ class TestTorchExecuteUnitTests:
         assert dev.num_executions == 1
         spy.assert_called()
 
-    def test_forward_mode(self, interface, mocker):
-        """Test that forward mode uses the `device.execute_and_gradients` pathway"""
+    def test_grad_on_execution(self, interface, mocker):
+        """Test that grad on execution uses the `device.execute_and_gradients` pathway"""
         dev = qml.device("default.qubit", wires=1)
         spy = mocker.spy(dev, "execute_and_gradients")
 
@@ -130,8 +130,8 @@ class TestTorchExecuteUnitTests:
         assert dev.num_executions == 2
         spy.assert_called()
 
-    def test_backward_mode(self, interface, mocker):
-        """Test that backward mode uses the `device.batch_execute` and `device.gradients` pathway"""
+    def test_no_grad_on_execution(self, interface, mocker):
+        """Test that no grad on execution uses the `device.batch_execute` and `device.gradients` pathway"""
         dev = qml.device("default.qubit", wires=1)
         spy_execute = mocker.spy(qml.devices.DefaultQubit, "batch_execute")
         spy_gradients = mocker.spy(qml.devices.DefaultQubit, "gradients")
@@ -304,9 +304,9 @@ class TestCaching:
         assert dev.num_executions == expected_runs_ideal
         assert expected_runs_ideal < expected_runs
 
-    def test_caching_adjoint_backward(self):
+    def test_caching_adjoint_no_grad_on_execution(self):
         """Test that caching reduces the number of adjoint evaluations
-        when mode=backward"""
+        when grad_on_execution=False"""
         dev = qml.device("default.qubit", wires=2)
         params = torch.tensor([0.1, 0.2, 0.3])
 

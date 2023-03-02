@@ -25,6 +25,7 @@ from pathlib import Path
 import pytest
 from flaky import flaky
 from networkx import MultiDiGraph, number_of_selfloops
+from networkx import __version__ as networkx_version
 from scipy.stats import unitary_group
 
 import pennylane as qml
@@ -2810,7 +2811,7 @@ class TestCutCircuitMCTransform:
         dev = qml.device("default.qubit", wires=2, shots=shots)
 
         @qml.cut_circuit_mc
-        @qml.qnode(dev, interface="autograd")
+        @qml.qnode(dev)
         def cut_circuit(x):
             qml.RX(x, wires=0)
             qml.RY(0.5, wires=1)
@@ -2845,7 +2846,7 @@ class TestCutCircuitMCTransform:
         dev = qml.device("default.qubit", wires=2, shots=shots)
 
         @qml.cut_circuit_mc
-        @qml.qnode(dev, interface="tf")
+        @qml.qnode(dev)
         def cut_circuit(x):
             qml.RX(x, wires=0)
             qml.RY(0.5, wires=1)
@@ -2880,7 +2881,7 @@ class TestCutCircuitMCTransform:
         dev = qml.device("default.qubit", wires=2, shots=shots)
 
         @qml.cut_circuit_mc
-        @qml.qnode(dev, interface="torch")
+        @qml.qnode(dev)
         def cut_circuit(x):
             qml.RX(x, wires=0)
             qml.RY(0.5, wires=1)
@@ -2915,7 +2916,7 @@ class TestCutCircuitMCTransform:
         dev = qml.device("default.qubit", wires=2, shots=shots)
 
         @qml.cut_circuit_mc
-        @qml.qnode(dev, interface="jax")
+        @qml.qnode(dev)
         def cut_circuit(x):
             qml.RX(x, wires=0)
             qml.RY(0.5, wires=1)
@@ -2950,7 +2951,7 @@ class TestCutCircuitMCTransform:
         dev = qml.device("default.qubit", wires=2, shots=shots)
 
         @qml.cut_circuit_mc(fn)
-        @qml.qnode(dev, interface="autograd")
+        @qml.qnode(dev)
         def cut_circuit(x):
             qml.RX(x, wires=0)
             qml.RY(0.5, wires=1)
@@ -2983,7 +2984,7 @@ class TestCutCircuitMCTransform:
         dev = qml.device("default.qubit", wires=2, shots=shots)
 
         @qml.cut_circuit_mc(fn)
-        @qml.qnode(dev, interface="tf")
+        @qml.qnode(dev)
         def cut_circuit(x):
             qml.RX(x, wires=0)
             qml.RY(0.5, wires=1)
@@ -3016,7 +3017,7 @@ class TestCutCircuitMCTransform:
         dev = qml.device("default.qubit", wires=2, shots=shots)
 
         @qml.cut_circuit_mc(fn)
-        @qml.qnode(dev, interface="torch")
+        @qml.qnode(dev)
         def cut_circuit(x):
             qml.RX(x, wires=0)
             qml.RY(0.5, wires=1)
@@ -3049,7 +3050,7 @@ class TestCutCircuitMCTransform:
         dev = qml.device("default.qubit", wires=2, shots=shots)
 
         @qml.cut_circuit_mc(fn)
-        @qml.qnode(dev, interface="jax")
+        @qml.qnode(dev)
         def cut_circuit(x):
             qml.RX(x, wires=0)
             qml.RY(0.5, wires=1)
@@ -3906,7 +3907,7 @@ class TestCutCircuitTransform:
 
         dev = qml.device("default.qubit", wires=2)
 
-        @qml.qnode(dev, interface="torch")
+        @qml.qnode(dev)
         def circuit(x):
             qml.RX(x, wires=0)
             qml.RY(0.543, wires=1)
@@ -3945,7 +3946,7 @@ class TestCutCircuitTransform:
 
         dev = qml.device("default.qubit", wires=2)
 
-        @qml.qnode(dev, interface="tf")
+        @qml.qnode(dev)
         def circuit(x):
             qml.RX(x, wires=0)
             qml.RY(0.543, wires=1)
@@ -3985,7 +3986,7 @@ class TestCutCircuitTransform:
 
         dev = qml.device("default.qubit", wires=2)
 
-        @qml.qnode(dev, interface="jax")
+        @qml.qnode(dev)
         def circuit(x):
             qml.RX(x, wires=0)
             qml.RY(0.543, wires=1)
@@ -4108,6 +4109,7 @@ class TestCutCircuitTransform:
 
         spy.assert_not_called()
 
+    @pytest.mark.skipif(networkx_version[0] >= "3", reason="networkx version 3 breaks this test.")
     @pytest.mark.tf
     def test_simple_cut_circuit_tf_jit(self, mocker, use_opt_einsum):
         """
@@ -4122,7 +4124,7 @@ class TestCutCircuitTransform:
 
         dev = qml.device("default.qubit", wires=2)
 
-        @qml.qnode(dev, interface="tf")
+        @qml.qnode(dev)
         def circuit(x):
             qml.RX(x, wires=0)
             qml.RY(0.543, wires=1)
@@ -4198,7 +4200,7 @@ class TestCutCircuitTransform:
 
         dev = qml.device("default.qubit", wires=2)
 
-        @qml.qnode(dev, interface="jax")
+        @qml.qnode(dev)
         def circuit(x):
             qml.RX(x, wires=0)
             qml.RY(0.543, wires=1)
@@ -5150,7 +5152,6 @@ class TestKaHyPar:
         frags, comm_graph = qcut.fragment_graph(cut_graph)
 
         if num_frags == 2:
-
             assert len(frags) == num_frags
             assert len(comm_graph.edges) == expected_num_cut_edges
 

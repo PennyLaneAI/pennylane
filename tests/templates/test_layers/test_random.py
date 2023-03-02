@@ -150,10 +150,10 @@ def circuit_template(weights):
 
 def circuit_decomposed(weights):
     # this structure is only true for a seed of 42 and 3 wires
-    qml.RX(weights[0, 0], wires=1)
-    qml.RX(weights[0][1], wires=0)
-    qml.CNOT(wires=[1, 0])
-    qml.RZ(weights[0, 2], wires=2)
+    qml.RY(weights[0, 0], wires=1)
+    qml.RX(weights[0][1], wires=2)
+    qml.CNOT(wires=[1, 2])
+    qml.RZ(weights[0, 2], wires=1)
     return qml.expval(qml.PauliZ(0))
 
 
@@ -169,16 +169,14 @@ class TestInterfaces:
 
         decomp = op.decomposition()
         expected = [
-            qml.RX(weights[0][0], wires=1),
-            qml.RX(weights[0][1], wires=0),
-            qml.CNOT(wires=[1, 0]),
-            qml.RZ(weights[0][2], wires=2),
+            qml.RY(weights[0][0], wires=1),
+            qml.RX(weights[0][1], wires=2),
+            qml.CNOT(wires=[1, 2]),
+            qml.RZ(weights[0][2], wires=1),
         ]
 
         for op1, op2 in zip(decomp, expected):
-            assert op1.name == op2.name
-            assert op1.data == op2.data
-            assert op1.wires == op2.wires
+            assert qml.equal(op1, op2)
 
     def test_autograd(self, tol):
         """Tests the autograd interface."""
@@ -214,8 +212,8 @@ class TestInterfaces:
 
         dev = qml.device("default.qubit", wires=3)
 
-        circuit = qml.QNode(circuit_template, dev, interface="jax")
-        circuit2 = qml.QNode(circuit_decomposed, dev, interface="jax")
+        circuit = qml.QNode(circuit_template, dev)
+        circuit2 = qml.QNode(circuit_decomposed, dev)
 
         res = circuit(weights)
         res2 = circuit2(weights)
@@ -239,8 +237,8 @@ class TestInterfaces:
 
         dev = qml.device("default.qubit", wires=3)
 
-        circuit = qml.QNode(circuit_template, dev, interface="tf")
-        circuit2 = qml.QNode(circuit_decomposed, dev, interface="tf")
+        circuit = qml.QNode(circuit_template, dev)
+        circuit2 = qml.QNode(circuit_decomposed, dev)
 
         res = circuit(weights)
         res2 = circuit2(weights)
@@ -266,8 +264,8 @@ class TestInterfaces:
 
         dev = qml.device("default.qubit", wires=3)
 
-        circuit = qml.QNode(circuit_template, dev, interface="torch")
-        circuit2 = qml.QNode(circuit_decomposed, dev, interface="torch")
+        circuit = qml.QNode(circuit_template, dev)
+        circuit2 = qml.QNode(circuit_decomposed, dev)
 
         res = circuit(weights)
         res2 = circuit2(weights)

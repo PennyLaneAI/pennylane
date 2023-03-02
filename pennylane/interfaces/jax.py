@@ -50,7 +50,6 @@ def get_jax_interface_name(tapes):
     """
     for t in tapes:
         for op in t:
-
             # Unwrap the observable from a MeasurementProcess
             op = op.obs if hasattr(op, "obs") else op
             if op is not None:
@@ -67,7 +66,7 @@ def execute(tapes, device, execute_fn, gradient_fn, gradient_kwargs, _n=1, max_d
 
     Args:
         tapes (Sequence[.QuantumTape]): batch of tapes to execute
-        device (.Device): Device to use to execute the batch of tapes.
+        device (pennylane.Device): Device to use to execute the batch of tapes.
             If the device does not provide a ``batch_execute`` method,
             by default the tapes will be executed in serial.
         execute_fn (callable): The execution function used to execute the tapes
@@ -135,7 +134,6 @@ def _validate_tapes(tapes):
         InterfaceUnsupportedError: if tapes that produce ragged outputs were provided
     """
     for t in tapes:
-
         measurement_types = [type(m) for m in t.measurements]
         set_of_measurement_types = set(measurement_types)
         probs_or_sample_measure = (
@@ -166,12 +164,6 @@ def _execute(
     """The main interface execution function where jacobians of the execute
     function are computed by the registered backward function."""
 
-    # Copy a given tape with operations and set parameters
-    def cp_tape(t, a):
-        tc = t.copy(copy_operations=True)
-        tc.set_parameters(a)
-        return tc
-
     def array_if_not_counts(tape, r):
         """Auxiliary function to convert the result of a tape to an array,
         unless the tape had Counts measurements that are represented with
@@ -180,7 +172,7 @@ def _execute(
 
     @jax.custom_vjp
     def wrapped_exec(params):
-        new_tapes = [cp_tape(t, a) for t, a in zip(tapes, params)]
+        new_tapes = [_copy_tape(t, a) for t, a in zip(tapes, params)]
         with qml.tape.Unwrap(*new_tapes):
             res, _ = execute_fn(new_tapes, **gradient_kwargs)
 
@@ -195,18 +187,12 @@ def _execute(
         return wrapped_exec(params), params
 
     def wrapped_exec_bwd(params, g):
-
         if isinstance(gradient_fn, qml.gradients.gradient_transform):
-            args = tuple(params) + (g,)
-
-            p = args[:-1]
-            dy = args[-1]
-
-            new_tapes = [cp_tape(t, a) for t, a in zip(tapes, p)]
+            new_tapes = [_copy_tape(t, a) for t, a in zip(tapes, params)]
             with qml.tape.Unwrap(*new_tapes):
                 vjp_tapes, processing_fn = qml.gradients.batch_vjp(
                     new_tapes,
-                    dy,
+                    g,
                     gradient_fn,
                     reduction="append",
                     gradient_kwargs=gradient_kwargs,
@@ -333,7 +319,6 @@ def _execute_fwd(
         return res, tuple([jacs, params])
 
     def wrapped_exec_bwd(params, g):
-
         # Use the jacobian that was computed on the forward pass
         jacs, params = params
 
@@ -376,7 +361,7 @@ def execute_new(tapes, device, execute_fn, gradient_fn, gradient_kwargs, _n=1, m
 
     Args:
         tapes (Sequence[.QuantumTape]): batch of tapes to execute
-        device (.Device): Device to use for the shots vectors.
+        device (pennylane.Device): Device to use for the shots vectors.
         execute_fn (callable): The execution function used to execute the tapes
             during the forward pass. This function must return a tuple ``(results, jacobians)``.
             If ``jacobians`` is an empty list, then ``gradient_fn`` is used to
@@ -461,28 +446,23 @@ def _execute_bwd_new(
         new_tapes = [_copy_tape(t, a) for t, a in zip(tapes, primals[0])]
 
         if isinstance(gradient_fn, qml.gradients.gradient_transform):
+            _args = (
+                new_tapes,
+                tangents[0],
+                gradient_fn,
+                device.shot_vector,
+            )
+            _kwargs = {
+                "reduction": "append",
+                "gradient_kwargs": gradient_kwargs,
+            }
             if _n == max_diff:
-
                 with qml.tape.Unwrap(*new_tapes):
-                    jvp_tapes, processing_fn = qml.gradients.batch_jvp(
-                        new_tapes,
-                        tangents[0],
-                        gradient_fn,
-                        device.shot_vector,
-                        reduction="append",
-                        gradient_kwargs=gradient_kwargs,
-                    )
+                    jvp_tapes, processing_fn = qml.gradients.batch_jvp(*_args, **_kwargs)
                     jvps = processing_fn(execute_fn(jvp_tapes)[0])
 
             else:
-                jvp_tapes, processing_fn = qml.gradients.batch_jvp(
-                    new_tapes,
-                    tangents[0],
-                    gradient_fn,
-                    device.shot_vector,
-                    reduction="append",
-                    gradient_kwargs=gradient_kwargs,
-                )
+                jvp_tapes, processing_fn = qml.gradients.batch_jvp(*_args, **_kwargs)
 
                 jvps = processing_fn(
                     execute_new(

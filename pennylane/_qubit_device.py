@@ -141,67 +141,6 @@ class QubitDevice(Device):
         """Data type preserving multiply operation"""
         return qmlmul(constant, array, dtype=array.dtype)
 
-    def _permute_wires(self, observable):
-        r"""Given an observable which acts on multiple wires, permute the wires to
-          be consistent with the device wire order.
-
-          Suppose we are given an observable :math:`\hat{O} = \Identity \otimes \Identity \otimes \hat{Z}`.
-          This observable can be represented in many ways:
-
-        .. code-block:: python
-
-              O_1 = qml.Identity(wires=0) @ qml.Identity(wires=1) @ qml.PauliZ(wires=2)
-              O_2 = qml.PauliZ(wires=2) @ qml.Identity(wires=0) @ qml.Identity(wires=1)
-
-          Notice that while the explicit tensor product matrix representation of :code:`O_1` and :code:`O_2` is
-          different, the underlying operator is identical due to the wire labelling (assuming the labels in
-          ascending order are {0,1,2}). If we wish to compute the expectation value of such an observable, we must
-          ensure it is identical in both cases. To facilitate this, we permute the wires in our state vector such
-          that they are consistent with this swapping of order in the tensor observable.
-
-        .. code-block:: python
-
-              >>> print(O_1.wires)
-              <Wires = [0, 1, 2]>
-              >>> print(O_2.wires)
-              <Wires = [2, 0, 1]>
-
-          We might naively think that we must permute our state vector to match the wire order of our tensor observable.
-          We must be careful and realize that the wire order of the terms in the tensor observable DOES NOT match the
-          permutation of the terms themselves. As an example we directly compare :code:`O_1` and :code:`O_2`:
-
-          The first term in :code:`O_1` (:code:`qml.Identity(wires=0)`) became the second term in :code:`O_2`.
-          By similar comparison we see that each term in the tensor product was shifted one position forward
-          (i.e 0 --> 1, 1 --> 2, 2 --> 0). The wires in our permuted quantum state should follow their respective
-          terms in the tensor product observable.
-
-          Thus, the correct wire ordering should be :code:`permuted_wires = <Wires = [1, 2, 0]>`. But if we had
-          taken the naive approach we would have permuted our state according to
-          :code:`permuted_wires = <Wires = [2, 0, 1]>` which is NOT correct.
-
-          This function uses the observable wires and the global device wire ordering in order to determine the
-          permutation of the wires in the observable required such that if our quantum state vector is
-          permuted accordingly then the amplitudes of the state will match the matrix representation of the observable.
-
-          Args:
-              observable (Observable): the observable whose wires are to be permuted.
-
-          Returns:
-              permuted_wires (Wires): permuted wires object
-        """
-        ordered_obs_wire_lst = self.order_wires(
-            observable.wires
-        ).tolist()  # order according to device wire order
-
-        mapped_wires = self.map_wires(observable.wires)
-        if isinstance(mapped_wires, Wires):
-            # by default this should be a Wires obj, but it is overwritten to list object in default.qubit
-            mapped_wires = mapped_wires.tolist()
-
-        permutation = np.argsort(mapped_wires)  # extract permutation via argsort
-
-        return Wires([ordered_obs_wire_lst[index] for index in permutation])
-
     observables = {
         "PauliX",
         "PauliY",
@@ -277,7 +216,6 @@ class QubitDevice(Device):
 
     @classmethod
     def capabilities(cls):
-
         capabilities = super().capabilities().copy()
         capabilities.update(
             model="qubit",
@@ -318,7 +256,6 @@ class QubitDevice(Device):
                 r = qml.math.squeeze(r)
 
             if counts_exist:
-
                 # This happens when at least one measurement type is Counts
                 for result_group in r:
                     if isinstance(result_group, list):
@@ -380,7 +317,6 @@ class QubitDevice(Device):
 
         # compute the required statistics
         if self._shot_vector is not None:
-
             results = self.shot_vec_statistics(circuit)
 
         else:
@@ -445,7 +381,6 @@ class QubitDevice(Device):
             results = self.statistics(circuit=circuit)
 
         if not circuit.is_sampled:
-
             if len(measurements) == 1:
                 if isinstance(measurements[0], StateMP):
                     # State: assumed to only be allowed if it's the only measurement
@@ -679,8 +614,7 @@ class QubitDevice(Device):
 
         Both arguments are provided as lists of PennyLane :class:`~.Operation`
         instances. Useful properties include :attr:`~.Operation.name`,
-        :attr:`~.Operation.wires`, and :attr:`~.Operation.parameters`,
-        and :attr:`~.Operation.inverse`:
+        :attr:`~.Operation.wires`, and :attr:`~.Operation.parameters`:
 
         >>> op = qml.RX(0.2, wires=[0])
         >>> op.name # returns the operation name
@@ -689,11 +623,6 @@ class QubitDevice(Device):
         <Wires = [0]>
         >>> op.parameters # returns a list of parameters
         [0.2]
-        >>> op.inverse # check if the operation should be inverted
-        False
-        >>> op = qml.RX(0.2, wires=[0]).inv
-        >>> op.inverse
-        True
 
         Args:
             operations (list[~.Operation]): operations to apply to the device
@@ -831,8 +760,8 @@ class QubitDevice(Device):
             elif obs.return_type is State:
                 if len(measurements) > 1:
                     raise qml.QuantumFunctionError(
-                        "The state or density matrix cannot be returned in combination"
-                        " with other return types"
+                        "The state or density matrix cannot be returned in combination "
+                        "with other return types"
                     )
 
                 if self.shots is not None:
@@ -895,16 +824,16 @@ class QubitDevice(Device):
             elif obs.return_type is Shadow:
                 if len(measurements) > 1:
                     raise qml.QuantumFunctionError(
-                        "Classical shadows cannot be returned in combination"
-                        " with other return types"
+                        "Classical shadows cannot be returned in combination "
+                        "with other return types"
                     )
                 results.append(self.classical_shadow(obs, circuit))
 
             elif obs.return_type is ShadowExpval:
                 if len(measurements) > 1:
                     raise qml.QuantumFunctionError(
-                        "Classical shadows cannot be returned in combination"
-                        " with other return types"
+                        "Classical shadows cannot be returned in combination "
+                        "with other return types"
                     )
                 results.append(self.shadow_expval(obs, circuit=circuit))
 
@@ -1047,8 +976,8 @@ class QubitDevice(Device):
             elif isinstance(m, StateMP):
                 if len(measurements) > 1:
                     raise qml.QuantumFunctionError(
-                        "The state or density matrix cannot be returned in combination"
-                        " with other return types"
+                        "The state or density matrix cannot be returned in combination "
+                        "with other return types"
                     )
 
                 if self.shots is not None:
@@ -1110,16 +1039,16 @@ class QubitDevice(Device):
             elif isinstance(m, ClassicalShadowMP):
                 if len(measurements) > 1:
                     raise qml.QuantumFunctionError(
-                        "Classical shadows cannot be returned in combination"
-                        " with other return types"
+                        "Classical shadows cannot be returned in combination "
+                        "with other return types"
                     )
                 result = self.classical_shadow(obs, circuit)
 
             elif isinstance(m, ShadowExpvalMP):
                 if len(measurements) > 1:
                     raise qml.QuantumFunctionError(
-                        "Classical shadows cannot be returned in combination"
-                        " with other return types"
+                        "Classical shadows cannot be returned in combination "
+                        "with other return types"
                     )
                 result = self.shadow_expval(obs, circuit=circuit)
 
@@ -1680,38 +1609,31 @@ class QubitDevice(Device):
         device_wires = self.map_wires(wires)
         inactive_device_wires = self.map_wires(inactive_wires)
 
-        # reshape the probability so that each axis corresponds to a wire
-        shape = [2] * self.num_wires
-        if batch_size is not None:
-            shape.insert(0, batch_size)
-        # prob now is reshaped to have self.num_wires+1 axes in the case of broadcasting
-        prob = self._reshape(prob, shape)
-
-        # sum over all inactive wires
         # hotfix to catch when default.qubit uses this method
         # since then device_wires is a list
         if isinstance(inactive_device_wires, Wires):
             inactive_device_wires = inactive_device_wires.labels
 
+        # reshape the probability so that each axis corresponds to a wire
+        shape = [2] * self.num_wires
+        desired_axes = np.argsort(np.argsort(device_wires))
+        flat_shape = (-1,)
         if batch_size is not None:
+            # prob now is reshaped to have self.num_wires+1 axes in the case of broadcasting
+            shape.insert(0, batch_size)
             inactive_device_wires = [idx + 1 for idx in inactive_device_wires]
-        flat_shape = (-1,) if batch_size is None else (batch_size, -1)
-        prob = self._reshape(self._reduce_sum(prob, inactive_device_wires), flat_shape)
+            desired_axes = np.insert(desired_axes + 1, 0, 0)
+            flat_shape = (batch_size, -1)
 
-        # The wires provided might not be in consecutive order (i.e., wires might be [2, 0]).
-        # If this is the case, we must permute the marginalized probability so that
-        # it corresponds to the orders of the wires passed.
-        num_wires = len(device_wires)
-        basis_states = self.generate_basis_states(num_wires)
-        basis_states = basis_states[:, np.argsort(np.argsort(device_wires))]
-
-        powers_of_two = 2 ** np.arange(len(device_wires))[::-1]
-        perm = basis_states @ powers_of_two
-        # The permutation happens on the last axis both with and without broadcasting
-        return self._gather(prob, perm, axis=1 if batch_size is not None else 0)
+        prob = self._reshape(prob, shape)
+        # sum over all inactive wires
+        prob = self._reduce_sum(prob, inactive_device_wires)
+        # rearrange wires to desired order
+        prob = self._transpose(prob, desired_axes)
+        # flatten and return probabilities
+        return self._reshape(prob, flat_shape)
 
     def expval(self, observable, shot_range=None, bin_size=None):
-
         if observable.name == "Projector":
             # branch specifically to handle the projector observable
             idx = int("".join(str(i) for i in observable.parameters[0]), 2)
@@ -1729,11 +1651,7 @@ class QubitDevice(Device):
                     f"Cannot compute analytic expectations of {observable.name}."
                 ) from e
 
-            # the probability vector must be permuted to account for the permuted
-            # wire order of the observable
-            permuted_wires = self._permute_wires(observable)
-
-            prob = self.probability(wires=permuted_wires)
+            prob = self.probability(wires=observable.wires)
             # In case of broadcasting, `prob` has two axes and this is a matrix-vector product
             return self._dot(prob, eigvals)
 
@@ -1746,7 +1664,6 @@ class QubitDevice(Device):
         return np.squeeze(np.mean(samples, axis=axis))
 
     def var(self, observable, shot_range=None, bin_size=None):
-
         if observable.name == "Projector":
             # branch specifically to handle the projector observable
             idx = int("".join(str(i) for i in observable.parameters[0]), 2)
@@ -1765,10 +1682,7 @@ class QubitDevice(Device):
                     f"Cannot compute analytic variance of {observable.name}."
                 ) from e
 
-            # the probability vector must be permuted to account for the permuted wire order of the observable
-            permuted_wires = self._permute_wires(observable)
-
-            prob = self.probability(wires=permuted_wires)
+            prob = self.probability(wires=observable.wires)
             # In case of broadcasting, `prob` has two axes and these are a matrix-vector products
             return self._dot(prob, (eigvals**2)) - self._dot(prob, eigvals) ** 2
 
@@ -1897,7 +1811,6 @@ class QubitDevice(Device):
                 samples = sub_samples
 
         else:
-
             # Replace the basis state in the computational basis with the correct eigenvalue.
             # Extract only the columns of the basis samples required based on ``wires``.
             samples = sub_samples[..., np.array(device_wires)]  # Add np.array here for Jax support.
@@ -1937,7 +1850,7 @@ class QubitDevice(Device):
         """Implements the adjoint method outlined in
         `Jones and Gacon <https://arxiv.org/abs/2009.02823>`__ to differentiate an input tape.
 
-        After a forward pass, the circuit is reversed by iteratively applying inverse (adjoint)
+        After a forward pass, the circuit is reversed by iteratively applying adjoint
         gates to scan backwards through the circuit.
 
         .. note::
@@ -1994,8 +1907,8 @@ class QubitDevice(Device):
 
         if self.shots is not None:
             warnings.warn(
-                "Requested adjoint differentiation to be computed with finite shots."
-                " The derivative is always exact when using the adjoint differentiation method.",
+                "Requested adjoint differentiation to be computed with finite shots. "
+                "The derivative is always exact when using the adjoint differentiation method.",
                 UserWarning,
             )
 
@@ -2016,7 +1929,7 @@ class QubitDevice(Device):
         expanded_ops = []
         for op in reversed(tape.operations):
             if op.num_params > 1:
-                if not isinstance(op, qml.Rot) or op.inverse:
+                if not isinstance(op, qml.Rot):
                     raise qml.QuantumFunctionError(
                         f"The {op.name} operation is not supported using "
                         'the "adjoint" differentiation method'
@@ -2047,7 +1960,6 @@ class QubitDevice(Device):
         param_number = len(tape.get_parameters(trainable_only=False, operations_only=True)) - 1
         trainable_param_number = len(trainable_params) - 1
         for op in expanded_ops:
-
             adj_op = qml.adjoint(op)
             ket = self._apply_operation(ket, adj_op)
 

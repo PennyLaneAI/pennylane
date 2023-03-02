@@ -104,7 +104,8 @@ class TestMetricTensor:
             qml.RY(np.array(1.0, requires_grad=True), wires=0)
             qml.CNOT(wires=[0, 1])
             qml.PhaseShift(np.array(1.0, requires_grad=True), wires=1)
-            return qml.expval(qml.PauliX(0)), qml.expval(qml.PauliX(1))
+            qml.expval(qml.PauliX(0))
+            qml.expval(qml.PauliX(1))
 
         tape = qml.tape.QuantumScript.from_queue(q)
         tapes, _ = qml.metric_tensor(tape, approx="block-diag")
@@ -123,12 +124,10 @@ class TestMetricTensor:
         assert isinstance(tapes[1].operations[3], qml.Hadamard)
 
         # third parameter subcircuit
-        assert len(tapes[2].operations) == 4
+        assert len(tapes[2].operations) == 3
         assert isinstance(tapes[2].operations[0], qml.RX)
         assert isinstance(tapes[2].operations[1], qml.RY)
         assert isinstance(tapes[2].operations[2], qml.CNOT)
-        # Phase shift generator
-        assert isinstance(tapes[2].operations[3], qml.QubitUnitary)
 
     def test_construct_subcircuit_layers(self):
         """Test correct subcircuits constructed
@@ -155,7 +154,9 @@ class TestMetricTensor:
             qml.RZ(params[7], wires=2)
             qml.CNOT(wires=[0, 1])
             qml.CNOT(wires=[1, 2])
-            return qml.expval(qml.PauliX(0)), qml.expval(qml.PauliX(1)), qml.expval(qml.PauliX(2))
+            qml.expval(qml.PauliX(0))
+            qml.expval(qml.PauliX(1))
+            qml.expval(qml.PauliX(2))
 
         tape = qml.tape.QuantumScript.from_queue(q)
         tapes, _ = qml.metric_tensor(tape, approx="block-diag")
@@ -315,7 +316,7 @@ class TestMetricTensor:
             x, y, z, h, g, f = params
             non_parametrized_layer(a, b, c)
             qml.RX(x, wires=0)
-            qml.RY(-y, wires=1).inv()
+            qml.adjoint(qml.RY)(-y, wires=1)
             qml.RZ(z, wires=2)
             non_parametrized_layer(a, b, c)
             qml.RY(f, wires=1)
@@ -579,6 +580,267 @@ class TestMetricTensor:
         G_expected = block_diag(G1, G3, G2)
         assert qml.math.allclose(G, G_expected, atol=tol, rtol=0)
 
+    @pytest.mark.autograd
+    @pytest.mark.parametrize("interface", ["autograd"])
+    def test_argnum_metric_tensor_autograd(self, tol, interface):
+        """Test that argnum successfully reduces the number of tapes and gives
+        the desired outcome."""
+        dev = qml.device("default.qubit.autograd", wires=3)
+
+        def circuit(weights):
+            qml.RX(weights[0], wires=0)
+            qml.RY(weights[1], wires=0)
+            qml.CNOT(wires=[0, 1])
+            qml.RZ(weights[2], wires=1)
+            qml.RZ(weights[3], wires=0)
+
+        weights = np.array([0.1, 0.2, 0.3, 0.5], requires_grad=True)
+
+        with qml.tape.QuantumTape() as tape:
+            circuit(weights)
+
+        tapes, proc_fn = qml.metric_tensor(tape)
+        res = qml.execute(tapes, dev, None)
+        mt = proc_fn(res)
+
+        tapes, proc_fn = qml.metric_tensor(tape, argnum=(0, 1, 3))
+        res = qml.execute(tapes, dev, None, interface=interface)
+        mt013 = proc_fn(res)
+        assert isinstance(mt013, np.ndarray)
+
+        assert len(tapes) == 6
+        assert mt.shape == mt013.shape
+        assert qml.math.allclose(mt[:2, :2], mt013[:2, :2], atol=tol, rtol=0)
+        assert qml.math.allclose(mt[3, 3], mt013[3, 3], atol=tol, rtol=0)
+        assert qml.math.allclose(0, mt013[2, :], atol=tol, rtol=0)
+        assert qml.math.allclose(0, mt013[:, 2], atol=tol, rtol=0)
+
+        tapes, proc_fn = qml.metric_tensor(tape, argnum=(2, 3))
+        res = qml.execute(tapes, dev, None, interface=interface)
+        mt23 = proc_fn(res)
+        assert isinstance(mt23, np.ndarray)
+
+        assert len(tapes) == 1
+        assert mt.shape == mt23.shape
+        assert qml.math.allclose(mt[2:, 2:], mt23[2:, 2:], atol=tol, rtol=0)
+        assert qml.math.allclose(0, mt23[:2, :], atol=tol, rtol=0)
+        assert qml.math.allclose(0, mt23[:, :2], atol=tol, rtol=0)
+
+        tapes, proc_fn = qml.metric_tensor(tape, argnum=0)
+        res = qml.execute(tapes, dev, None, interface=interface)
+        mt0 = proc_fn(res)
+        assert isinstance(mt0, np.ndarray)
+
+        assert len(tapes) == 1
+        assert mt.shape == mt0.shape
+        assert qml.math.allclose(mt[0, 0], mt0[0, 0], atol=tol, rtol=0)
+        assert qml.math.allclose(0, mt0[1:, :], atol=tol, rtol=0)
+        assert qml.math.allclose(0, mt0[:, 1:], atol=tol, rtol=0)
+
+    @pytest.mark.tf
+    @pytest.mark.parametrize("interface", ["tf"])
+    def test_argnum_metric_tensor_tf(self, tol, interface):
+        """Test that argnum successfully reduces the number of tapes and gives
+        the desired outcome."""
+        import tensorflow as tf
+
+        dev = qml.device("default.qubit.tf", wires=3)
+
+        def circuit(weights):
+            qml.RX(weights[0], wires=0)
+            qml.RY(weights[1], wires=0)
+            qml.CNOT(wires=[0, 1])
+            qml.RZ(weights[2], wires=1)
+            qml.RZ(weights[3], wires=0)
+
+        weights = tf.Variable([0.1, 0.2, 0.3, 0.5])
+
+        with qml.tape.QuantumTape() as tape:
+            circuit(weights)
+
+        tapes, proc_fn = qml.metric_tensor(tape)
+        res = qml.execute(tapes, dev, None)
+        mt = proc_fn(res)
+
+        tapes, proc_fn = qml.metric_tensor(tape, argnum=(0, 1, 3))
+        res = qml.execute(tapes, dev, None, interface=interface)
+        mt013 = proc_fn(res)
+        assert isinstance(mt013, tf.Tensor)
+
+        assert len(tapes) == 6
+        assert mt.shape == mt013.shape
+        assert qml.math.allclose(mt[:2, :2], mt013[:2, :2], atol=tol, rtol=0)
+        assert qml.math.allclose(mt[3, 3], mt013[3, 3], atol=tol, rtol=0)
+        assert qml.math.allclose(0, mt013[2, :], atol=tol, rtol=0)
+        assert qml.math.allclose(0, mt013[:, 2], atol=tol, rtol=0)
+
+        tapes, proc_fn = qml.metric_tensor(tape, argnum=(2, 3))
+        res = qml.execute(tapes, dev, None, interface=interface)
+        mt23 = proc_fn(res)
+        assert isinstance(mt23, tf.Tensor)
+
+        assert len(tapes) == 1
+        assert mt.shape == mt23.shape
+        assert qml.math.allclose(mt[2:, 2:], mt23[2:, 2:], atol=tol, rtol=0)
+        assert qml.math.allclose(0, mt23[:2, :], atol=tol, rtol=0)
+        assert qml.math.allclose(0, mt23[:, :2], atol=tol, rtol=0)
+
+        tapes, proc_fn = qml.metric_tensor(tape, argnum=0)
+        res = qml.execute(tapes, dev, None, interface=interface)
+        mt0 = proc_fn(res)
+        assert isinstance(mt0, tf.Tensor)
+
+        assert len(tapes) == 1
+        assert mt.shape == mt0.shape
+        assert qml.math.allclose(mt[0, 0], mt0[0, 0], atol=tol, rtol=0)
+        assert qml.math.allclose(0, mt0[1:, :], atol=tol, rtol=0)
+        assert qml.math.allclose(0, mt0[:, 1:], atol=tol, rtol=0)
+
+    @pytest.mark.torch
+    @pytest.mark.parametrize("interface", ["torch"])
+    def test_argnum_metric_tensor_torch(self, tol, interface):
+        """Test that argnum successfully reduces the number of tapes and gives
+        the desired outcome."""
+        import torch
+
+        dev = qml.device("default.qubit.torch", wires=3)
+
+        def circuit(weights):
+            qml.RX(weights[0], wires=0)
+            qml.RY(weights[1], wires=0)
+            qml.CNOT(wires=[0, 1])
+            qml.RZ(weights[2], wires=1)
+            qml.RZ(weights[3], wires=0)
+
+        weights = torch.tensor([0.1, 0.2, 0.3, 0.5], requires_grad=True)
+
+        with qml.tape.QuantumTape() as tape:
+            circuit(weights)
+
+        tapes, proc_fn = qml.metric_tensor(tape)
+        res = qml.execute(tapes, dev, None)
+        mt = proc_fn(res)
+
+        tapes, proc_fn = qml.metric_tensor(tape, argnum=(0, 1, 3))
+        res = qml.execute(tapes, dev, None, interface=interface)
+        mt013 = proc_fn(res)
+        assert isinstance(mt013, torch.Tensor)
+
+        assert len(tapes) == 6
+        assert mt.shape == mt013.shape
+        assert qml.math.allclose(mt[:2, :2], mt013[:2, :2], atol=tol, rtol=0)
+        assert qml.math.allclose(mt[3, 3], mt013[3, 3], atol=tol, rtol=0)
+        assert qml.math.allclose(0, mt013[2, :], atol=tol, rtol=0)
+        assert qml.math.allclose(0, mt013[:, 2], atol=tol, rtol=0)
+
+        tapes, proc_fn = qml.metric_tensor(tape, argnum=(2, 3))
+        res = qml.execute(tapes, dev, None, interface=interface)
+        mt23 = proc_fn(res)
+        assert isinstance(mt23, torch.Tensor)
+
+        assert len(tapes) == 1
+        assert mt.shape == mt23.shape
+        assert qml.math.allclose(mt[2:, 2:], mt23[2:, 2:], atol=tol, rtol=0)
+        assert qml.math.allclose(0, mt23[:2, :], atol=tol, rtol=0)
+        assert qml.math.allclose(0, mt23[:, :2], atol=tol, rtol=0)
+
+        tapes, proc_fn = qml.metric_tensor(tape, argnum=0)
+        res = qml.execute(tapes, dev, None, interface=interface)
+        mt0 = proc_fn(res)
+        assert isinstance(mt0, torch.Tensor)
+
+        assert len(tapes) == 1
+        assert mt.shape == mt0.shape
+        assert qml.math.allclose(mt[0, 0], mt0[0, 0], atol=tol, rtol=0)
+        assert qml.math.allclose(0, mt0[1:, :], atol=tol, rtol=0)
+        assert qml.math.allclose(0, mt0[:, 1:], atol=tol, rtol=0)
+
+    @pytest.mark.jax
+    @pytest.mark.parametrize("interface", ["jax"])
+    def test_argnum_metric_tensor_jax(self, tol, interface):
+        """Test that argnum successfully reduces the number of tapes and gives
+        the desired outcome."""
+        import jax
+
+        dev = qml.device("default.qubit.jax", wires=3)
+
+        def circuit(weights):
+            qml.RX(weights[0], wires=0)
+            qml.RY(weights[1], wires=0)
+            qml.CNOT(wires=[0, 1])
+            qml.RZ(weights[2], wires=1)
+            qml.RZ(weights[3], wires=0)
+
+        weights = jax.numpy.array([0.1, 0.2, 0.3, 0.5])
+
+        with qml.tape.QuantumTape() as tape:
+            circuit(weights)
+
+        tapes, proc_fn = qml.metric_tensor(tape)
+        res = qml.execute(tapes, dev, None)
+        mt = proc_fn(res)
+
+        tapes, proc_fn = qml.metric_tensor(tape, argnum=(0, 1, 3))
+        res = qml.execute(tapes, dev, None, interface=interface)
+        mt013 = proc_fn(res)
+        assert isinstance(mt013, jax.numpy.ndarray)
+
+        assert len(tapes) == 6
+        assert mt.shape == mt013.shape
+        assert qml.math.allclose(mt[:2, :2], mt013[:2, :2], atol=tol, rtol=0)
+        assert qml.math.allclose(mt[3, 3], mt013[3, 3], atol=tol, rtol=0)
+        assert qml.math.allclose(0, mt013[2, :], atol=tol, rtol=0)
+        assert qml.math.allclose(0, mt013[:, 2], atol=tol, rtol=0)
+
+        tapes, proc_fn = qml.metric_tensor(tape, argnum=(2, 3))
+        res = qml.execute(tapes, dev, None, interface=interface)
+        mt23 = proc_fn(res)
+        assert isinstance(mt23, jax.numpy.ndarray)
+
+        assert len(tapes) == 1
+        assert mt.shape == mt23.shape
+        assert qml.math.allclose(mt[2:, 2:], mt23[2:, 2:], atol=tol, rtol=0)
+        assert qml.math.allclose(0, mt23[:2, :], atol=tol, rtol=0)
+        assert qml.math.allclose(0, mt23[:, :2], atol=tol, rtol=0)
+
+        tapes, proc_fn = qml.metric_tensor(tape, argnum=0)
+        res = qml.execute(tapes, dev, None, interface=interface)
+        mt0 = proc_fn(res)
+        assert isinstance(mt0, jax.numpy.ndarray)
+
+        assert len(tapes) == 1
+        assert mt.shape == mt0.shape
+        assert qml.math.allclose(mt[0, 0], mt0[0, 0], atol=tol, rtol=0)
+        assert qml.math.allclose(0, mt0[1:, :], atol=tol, rtol=0)
+        assert qml.math.allclose(0, mt0[:, 1:], atol=tol, rtol=0)
+
+    def test_argnum_metric_tensor_errors(self):
+        """Test that argnum successfully reduces the number of tapes and gives
+        the desired outcome."""
+        dev = qml.device("default.qubit", wires=3)
+
+        def circuit(weights):
+            qml.RX(weights[0], wires=0)
+            qml.RY(weights[1], wires=0)
+            qml.CNOT(wires=[0, 1])
+            qml.RZ(weights[2], wires=1)
+            qml.RZ(weights[3], wires=0)
+
+        weights = np.array([0.1, 0.2, 0.3, 0.5], requires_grad=True)
+
+        with qml.tape.QuantumTape() as tape:
+            circuit(weights)
+
+        error_msg = (
+            "Some parameters specified in argnum are not in the "
+            "trainable parameters \[0, 1, 2, 3\] of the tape "
+            "and will be ignored. This may be caused by attempting to "
+            "differentiate with respect to parameters that are not marked "
+            "as trainable."
+        )
+        with pytest.raises(ValueError, match=error_msg):
+            tapes, proc_fn = qml.metric_tensor(tape, argnum=4)
+
     def test_multi_qubit_gates(self):
         """Test that a tape with Ising gates has the correct metric tensor tapes."""
 
@@ -604,14 +866,17 @@ class TestMetricTensor:
         ]
         assert [[type(op) for op in tape.operations] for tape in tapes] == expected_ops
 
+    interfaces = ["auto", "autograd"]
+
     @pytest.mark.autograd
-    def test_no_trainable_params_qnode_autograd(self):
+    @pytest.mark.parametrize("interface", interfaces)
+    def test_no_trainable_params_qnode_autograd(self, interface):
         """Test that the correct ouput and warning is generated in the absence of any trainable
         parameters"""
 
         dev = qml.device("default.qubit", wires=3)
 
-        @qml.qnode(dev, interface="autograd")
+        @qml.qnode(dev, interface=interface)
         def circuit(weights):
             qml.RX(weights[0], wires=0)
             qml.RY(weights[1], wires=0)
@@ -622,15 +887,18 @@ class TestMetricTensor:
             res = qml.metric_tensor(circuit)(weights)
 
         assert res == ()
+
+    interface = ["torch"]
 
     @pytest.mark.torch
-    def test_no_trainable_params_qnode_torch(self):
+    @pytest.mark.parametrize("interface", interfaces)
+    def test_no_trainable_params_qnode_torch(self, interface):
         """Test that the correct ouput and warning is generated in the absence of any trainable
         parameters"""
 
         dev = qml.device("default.qubit", wires=3)
 
-        @qml.qnode(dev, interface="torch")
+        @qml.qnode(dev, interface=interface)
         def circuit(weights):
             qml.RX(weights[0], wires=0)
             qml.RY(weights[1], wires=0)
@@ -641,15 +909,18 @@ class TestMetricTensor:
             res = qml.metric_tensor(circuit)(weights)
 
         assert res == ()
+
+    interface = ["tf"]
 
     @pytest.mark.tf
-    def test_no_trainable_params_qnode_tf(self):
+    @pytest.mark.parametrize("interface", interfaces)
+    def test_no_trainable_params_qnode_tf(self, interface):
         """Test that the correct ouput and warning is generated in the absence of any trainable
         parameters"""
 
         dev = qml.device("default.qubit", wires=3)
 
-        @qml.qnode(dev, interface="tf")
+        @qml.qnode(dev, interface=interface)
         def circuit(weights):
             qml.RX(weights[0], wires=0)
             qml.RY(weights[1], wires=0)
@@ -661,14 +932,17 @@ class TestMetricTensor:
 
         assert res == ()
 
+    interfaces = ["jax"]
+
     @pytest.mark.jax
-    def test_no_trainable_params_qnode_jax(self):
+    @pytest.mark.parametrize("interface", interfaces)
+    def test_no_trainable_params_qnode_jax(self, interface):
         """Test that the correct ouput and warning is generated in the absence of any trainable
         parameters"""
 
         dev = qml.device("default.qubit", wires=3)
 
-        @qml.qnode(dev, interface="jax")
+        @qml.qnode(dev, interface=interface)
         def circuit(weights):
             qml.RX(weights[0], wires=0)
             qml.RY(weights[1], wires=0)
@@ -703,7 +977,7 @@ class TestMetricTensor:
         assert res == ()
 
 
-fixed_pars = np.array([-0.2, 0.2, 0.5, 0.3, 0.7], requires_grad=False)
+fixed_pars = [-0.2, 0.2, 0.5, 0.3, 0.7]
 
 
 def fubini_ansatz0(params, wires=None):
@@ -736,8 +1010,8 @@ def fubini_ansatz2(params, wires=None):
     qml.RY(params0, wires=0)
     qml.RY(params0, wires=1)
     qml.CNOT(wires=[0, 1])
-    qml.RX(params1, wires=0).inv()
-    qml.RX(params1, wires=1).inv()
+    qml.adjoint(qml.RX)(params1, wires=0)
+    qml.adjoint(qml.RX(params1, wires=1))
 
 
 def fubini_ansatz3(params, wires=None):
@@ -748,7 +1022,7 @@ def fubini_ansatz3(params, wires=None):
     qml.RX(fixed_pars[3], wires=1)
     qml.CNOT(wires=[0, 1])
     qml.CNOT(wires=[1, 2])
-    qml.RX(params0, wires=0).inv()
+    qml.adjoint(qml.RX(params0, wires=0))
     qml.RX(params0, wires=1)
     qml.CNOT(wires=[0, 1])
     qml.CNOT(wires=[1, 2])
@@ -770,7 +1044,7 @@ def fubini_ansatz4(params00, params_rest, wires=None):
     qml.CNOT(wires=[0, 1])
     qml.CNOT(wires=[1, 2])
     qml.RY(fixed_pars[4], wires=0)
-    qml.RX(params00, wires=0)
+    qml.RX(params00, wires=0) ** 0.5
     qml.CNOT(wires=[0, 1])
     qml.RX(params01, wires=1)
     qml.RZ(params10, wires=1)
@@ -809,7 +1083,7 @@ def fubini_ansatz8(params, wires=None):
     qml.RZ(fixed_pars[0], wires=[1])
     qml.CNOT(wires=[0, 1])
     qml.RX(params0, wires=[0])
-    qml.RX(params0, wires=[1])
+    qml.IsingXX(params0, wires=[1, 0])
     qml.CNOT(wires=[0, 1])
     qml.RY(fixed_pars[4], wires=[1])
     qml.RY(params1, wires=[0])
@@ -902,22 +1176,26 @@ def autodiff_metric_tensor(ansatz, num_wires):
 
 
 class TestFullMetricTensor:
-
     num_wires = 3
+    interfaces = ["auto", "autograd"]
 
     @pytest.mark.autograd
     @pytest.mark.parametrize("ansatz, params", zip(fubini_ansatze, fubini_params))
-    def test_correct_output_autograd(self, ansatz, params):
+    @pytest.mark.parametrize("interface", interfaces)
+    def test_correct_output_autograd(self, ansatz, params, interface):
         expected = autodiff_metric_tensor(ansatz, self.num_wires)(*params)
         dev = qml.device("default.qubit.autograd", wires=self.num_wires + 1)
 
-        @qml.qnode(dev, interface="autograd")
+        @qml.qnode(dev, interface=interface)
         def circuit(*params):
             """Circuit with dummy output to create a QNode."""
             ansatz(*params, dev.wires[:-1])
             return qml.expval(qml.PauliZ(0))
 
         mt = qml.metric_tensor(circuit, approx=None)(*params)
+
+        if interface == "auto":
+            assert circuit.interface == "auto"
 
         if isinstance(mt, tuple):
             assert all(qml.math.allclose(_mt, _exp) for _mt, _exp in zip(mt, expected))
@@ -948,9 +1226,12 @@ class TestFullMetricTensor:
         else:
             assert qml.math.allclose(mt, expected)
 
+    interfaces = ["torch"]
+
     @pytest.mark.torch
     @pytest.mark.parametrize("ansatz, params", zip(fubini_ansatze, fubini_params))
-    def test_correct_output_torch(self, ansatz, params):
+    @pytest.mark.parametrize("interface", interfaces)
+    def test_correct_output_torch(self, ansatz, params, interface):
         import torch
 
         expected = autodiff_metric_tensor(ansatz, self.num_wires)(*params)
@@ -958,7 +1239,7 @@ class TestFullMetricTensor:
 
         params = tuple(torch.tensor(p, dtype=torch.float64, requires_grad=True) for p in params)
 
-        @qml.qnode(dev, interface="torch")
+        @qml.qnode(dev, interface=interface)
         def circuit(*params):
             """Circuit with dummy output to create a QNode."""
             ansatz(*params, dev.wires[:-1])
@@ -971,9 +1252,12 @@ class TestFullMetricTensor:
         else:
             assert qml.math.allclose(mt, expected)
 
+    interfaces = ["tf"]
+
     @pytest.mark.tf
     @pytest.mark.parametrize("ansatz, params", zip(fubini_ansatze, fubini_params))
-    def test_correct_output_tf(self, ansatz, params):
+    @pytest.mark.parametrize("interface", interfaces)
+    def test_correct_output_tf(self, ansatz, params, interface):
         import tensorflow as tf
 
         expected = autodiff_metric_tensor(ansatz, self.num_wires)(*params)
@@ -1081,6 +1365,7 @@ class TestDifferentiability:
     dev = qml.device("default.qubit", wires=3)
 
     @pytest.mark.autograd
+    @pytest.mark.filterwarnings("ignore:Attempted to compute the gradient")
     def test_autograd_diag(self, diff_method, tol, ansatz, weights, expected_diag_jac):
         """Test metric tensor differentiability in the autograd interface"""
         circuit = self.get_circuit(ansatz)
@@ -1108,10 +1393,11 @@ class TestDifferentiability:
             assert qml.math.allclose(jac, expected_diag_jac(*weights), atol=tol, rtol=0)
 
     @pytest.mark.autograd
+    @pytest.mark.filterwarnings("ignore:Attempted to compute the gradient")
     def test_autograd(self, diff_method, tol, ansatz, weights, expected_diag_jac):
         """Test metric tensor differentiability in the autograd interface"""
         circuit = self.get_circuit(ansatz)
-        qnode = qml.QNode(circuit, self.dev, interface="autograd", diff_method=diff_method)
+        qnode = qml.QNode(circuit, self.dev, diff_method=diff_method)
 
         def cost_full(*weights):
             return np.array(qml.metric_tensor(qnode, approx=None)(*weights))
@@ -1137,7 +1423,7 @@ class TestDifferentiability:
         from jax import numpy as jnp
 
         circuit = self.get_circuit(ansatz)
-        qnode = qml.QNode(circuit, self.dev, interface="jax", diff_method=diff_method)
+        qnode = qml.QNode(circuit, self.dev, diff_method=diff_method)
 
         def cost_diag(*weights):
             return jnp.diag(qml.metric_tensor(qnode, approx="block-diag")(*weights))
@@ -1171,7 +1457,7 @@ class TestDifferentiability:
         import tensorflow as tf
 
         circuit = self.get_circuit(ansatz)
-        qnode = qml.QNode(circuit, self.dev, interface="tf", diff_method=diff_method)
+        qnode = qml.QNode(circuit, self.dev, diff_method=diff_method)
 
         weights_t = tuple(tf.Variable(w) for w in weights)
         with tf.GradientTape() as tape:
@@ -1187,7 +1473,7 @@ class TestDifferentiability:
         import tensorflow as tf
 
         circuit = self.get_circuit(ansatz)
-        qnode = qml.QNode(circuit, self.dev, interface="tf", diff_method=diff_method)
+        qnode = qml.QNode(circuit, self.dev, diff_method=diff_method)
 
         weights_t = tuple(tf.Variable(w) for w in weights)
         with tf.GradientTape() as tape:
@@ -1204,7 +1490,7 @@ class TestDifferentiability:
         import torch
 
         circuit = self.get_circuit(ansatz)
-        qnode = qml.QNode(circuit, self.dev, interface="torch", diff_method=diff_method)
+        qnode = qml.QNode(circuit, self.dev, diff_method=diff_method)
 
         weights_t = tuple(torch.tensor(w, requires_grad=True) for w in weights)
 
@@ -1239,7 +1525,7 @@ class TestDifferentiability:
         import torch
 
         circuit = self.get_circuit(ansatz)
-        qnode = qml.QNode(circuit, self.dev, interface="torch", diff_method=diff_method)
+        qnode = qml.QNode(circuit, self.dev, diff_method=diff_method)
         weights_t = tuple(torch.tensor(w, requires_grad=True) for w in weights)
         qnode(*weights_t)
         cost_full = qml.metric_tensor(qnode, approx=None)
@@ -1324,6 +1610,7 @@ def test_error_not_available_aux_wire():
         qml.metric_tensor(circuit, aux_wire=404)(x)
 
 
+@pytest.mark.filterwarnings("ignore:An auxiliary wire is not available")
 def test_error_aux_wire_replaced():
     """Tests that even if an aux_wire is provided, it is superseded by a device
     wire if it does not exist itself on the device, so that the metric_tensor is

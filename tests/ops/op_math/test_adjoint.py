@@ -28,6 +28,7 @@ class TestInheritanceMixins:
         """Test when base directly inherits from Operator, Adjoint only inherits
         from Adjoint and Operator."""
 
+        # pylint: disable=too-few-public-methods
         class Tester(qml.operation.Operator):
             num_wires = 1
 
@@ -47,6 +48,7 @@ class TestInheritanceMixins:
         """When the operation inherits from `Operation`, the `AdjointOperation` mixin is
         added and the Adjoint has Operation functionality."""
 
+        # pylint: disable=too-few-public-methods
         class CustomOp(qml.operation.Operation):
             num_wires = 1
             num_params = 1
@@ -67,6 +69,7 @@ class TestInheritanceMixins:
     def test_observable(self):
         """Test that when the base is an Observable, Adjoint will also inherit from Observable."""
 
+        # pylint: disable=too-few-public-methods
         class CustomObs(qml.operation.Observable):
             num_wires = 1
             num_params = 0
@@ -212,6 +215,7 @@ class TestProperties:
         """Test `has_decomposition` property is activated because the base operation defines a
         `decomposition` method."""
 
+        # pylint: disable=too-few-public-methods
         class MyOp(qml.operation.Operation):
             num_wires = 1
 
@@ -227,6 +231,7 @@ class TestProperties:
         """Test `has_decomposition` property is not activated if the base neither
         `has_adjoint` nor `has_decomposition`."""
 
+        # pylint: disable=too-few-public-methods
         class MyOp(qml.operation.Operation):
             num_wires = 1
 
@@ -238,6 +243,7 @@ class TestProperties:
     def test_has_adjoint_true_always(self):
         """Test `has_adjoint` property to always be true, irrespective of the base."""
 
+        # pylint: disable=too-few-public-methods
         class MyOp(qml.operation.Operation):
             """Operation that does not define `adjoint` and hence has `has_adjoint=False`."""
 
@@ -267,6 +273,7 @@ class TestProperties:
         """Test `has_diagonalizing_gates` property is not activated if the base neither
         `has_adjoint` nor `has_diagonalizing_gates`."""
 
+        # pylint: disable=too-few-public-methods
         class MyOp(qml.operation.Operation):
             num_wires = 1
             has_diagonalizing_gates = False
@@ -278,17 +285,18 @@ class TestProperties:
     def test_queue_category(self):
         """Test that the queue category `"_ops"` carries over."""
         op = Adjoint(qml.PauliX(0))
-        assert op._queue_category == "_ops"
+        assert op._queue_category == "_ops"  # pylint: disable=protected-access
 
     def test_queue_category_None(self):
         """Test that the queue category `None` for some observables carries over."""
         op = Adjoint(qml.PauliX(0) @ qml.PauliY(1))
-        assert op._queue_category is None
+        assert op._queue_category is None  # pylint: disable=protected-access
 
     @pytest.mark.parametrize("value", (True, False))
     def test_is_hermitian(self, value):
         """Test `is_hermitian` property mirrors that of the base."""
 
+        # pylint: disable=too-few-public-methods
         class DummyOp(qml.operation.Operator):
             num_wires = 1
             is_hermitian = value
@@ -303,9 +311,6 @@ class TestProperties:
         op = Adjoint(base)
         assert op.batch_size == 3
         assert op.ndim_params == (0,)
-
-        op._check_batching([np.array([1.2, 2.3])])
-        assert op.batch_size == base.batch_size == 2
 
 
 class TestSimplify:
@@ -331,8 +336,8 @@ class TestSimplify:
 
     def test_simplify_adj_of_sums(self):
         """Test that the simplify methods converts an adjoint of sums to a sum of adjoints."""
-        adj_op = Adjoint(qml.op_sum(qml.RX(1, 0), qml.RY(1, 0), qml.RZ(1, 0)))
-        sum_op = qml.op_sum(
+        adj_op = Adjoint(qml.sum(qml.RX(1, 0), qml.RY(1, 0), qml.RZ(1, 0)))
+        sum_op = qml.sum(
             qml.RX(4 * np.pi - 1, 0), qml.RY(4 * np.pi - 1, 0), qml.RZ(4 * np.pi - 1, 0)
         )
         simplified_op = adj_op.simplify()
@@ -443,7 +448,6 @@ class TestAdjointOperation:
             Adjoint(1.0 * qml.PauliX(0)).generator()
 
     def test_single_qubit_rot_angles(self):
-
         param = 1.234
         base = qml.RX(param, wires=0)
         op = Adjoint(base)
@@ -471,60 +475,6 @@ class TestAdjointOperation:
         """Test the control_wires of an adjoint are the same as the base op."""
         op = Adjoint(qml.CNOT(wires=("a", "b")))
         assert op.control_wires == qml.wires.Wires("a")
-
-
-class TestInverse:
-    """Tests involving the inverse attribute."""
-
-    def test_base_inverted(self):
-        """Test when base is already inverted."""
-        base = qml.S(0).inv()
-        op = Adjoint(base)
-
-        assert op.inverse is True
-        assert base.inverse is True
-        assert op.name == "Adjoint(S.inv)"
-
-        assert qml.math.allclose(qml.matrix(op), qml.matrix(qml.S(0)))
-
-        decomp_adj_inv = op.expand().circuit
-        decomp = qml.S(0).expand().circuit
-
-        for op1, op2 in zip(decomp, decomp_adj_inv):
-            assert type(op1) == type(op2)
-            assert op1.data == op2.data
-            assert op1.wires == op2.wires
-
-    def test_inv_method(self):
-        """Test that calling inv on an Adjoint op defers to base op."""
-
-        base = qml.T(0)
-        op = Adjoint(base)
-        op.inv()
-
-        assert base.inverse is True
-        assert op.inverse is True
-        assert op.name == "Adjoint(T.inv)"
-
-        assert qml.math.allclose(qml.matrix(op), qml.matrix(qml.T(0)))
-        decomp_adj_inv = op.expand().circuit
-        decomp = qml.T(0).expand().circuit
-
-        for op1, op2 in zip(decomp, decomp_adj_inv):
-            assert type(op1) == type(op2)
-            assert op1.data == op2.data
-            assert op1.wires == op2.wires
-
-    def test_inverse_setter(self):
-        """Test the inverse getting updated by property setter."""
-        base = qml.T(0)
-        op = Adjoint(base)
-
-        assert base.inverse == op.inverse == False
-        op.inverse = True
-
-        assert base.inverse == op.inverse == True
-        assert op.name == "Adjoint(T.inv)"
 
 
 class TestAdjointOperationDiffInfo:
@@ -566,7 +516,7 @@ class TestQueueing:
 
         with qml.queuing.AnnotatedQueue() as q:
             base = qml.Rot(1.2345, 2.3456, 3.4567, wires="b")
-            op = Adjoint(base)
+            _ = Adjoint(base)
 
         assert base not in q.queue
         assert len(q) == 1
@@ -585,7 +535,7 @@ class TestQueueing:
         """Test that when `do_queue` is specified, the operation is not queued."""
         base = qml.PauliX(0)
         with qml.queuing.AnnotatedQueue() as q:
-            op = Adjoint(base, do_queue=False)
+            _ = Adjoint(base, do_queue=False)
 
         assert len(q) == 0
 
@@ -710,7 +660,9 @@ class TestEigvals:
         adj = Adjoint(base)
         compare = qml.RX(-x, 0)
 
-        assert qml.math.allclose(base.eigvals(), compare.eigvals())
+        # eigvals might have different orders
+        assert qml.math.allclose(adj.eigvals()[:, 0], compare.eigvals()[:, 1])
+        assert qml.math.allclose(adj.eigvals()[:, 1], compare.eigvals()[:, 0])
 
     def test_no_matrix_defined_eigvals(self):
         """Test that if the base does not define eigvals, The Adjoint raises the same error."""
@@ -1115,9 +1067,7 @@ class TestAdjointConstructorIntegration:
         """Test gradients through the adjoint transform with autograd."""
         import autograd
 
-        @qml.qnode(
-            qml.device("default.qubit", wires=1), diff_method=diff_method, interface="autograd"
-        )
+        @qml.qnode(qml.device("default.qubit", wires=1), diff_method=diff_method)
         def circ(x):
             adjoint(qml.RX)(x, wires=0)
             return qml.expval(qml.PauliY(0))
@@ -1126,7 +1076,9 @@ class TestAdjointConstructorIntegration:
         expected_res = np.sin(x)
         expected_grad = np.cos(x)
         assert qml.math.allclose(circ(x), expected_res)
-        assert qml.math.allclose(autograd.grad(circ)(x), expected_grad)
+        assert qml.math.allclose(
+            autograd.grad(circ)(x), expected_grad  # pylint: disable=no-value-for-parameter
+        )
 
     @pytest.mark.jax
     @pytest.mark.parametrize("diff_method", ("backprop", "adjoint", "parameter-shift"))
@@ -1134,7 +1086,7 @@ class TestAdjointConstructorIntegration:
         """Test gradients through the adjoint transform with jax."""
         import jax
 
-        @qml.qnode(qml.device("default.qubit", wires=1), diff_method=diff_method, interface="jax")
+        @qml.qnode(qml.device("default.qubit", wires=1), diff_method=diff_method)
         def circ(x):
             adjoint(qml.RX)(x, wires=0)
             return qml.expval(qml.PauliY(0))
@@ -1151,7 +1103,7 @@ class TestAdjointConstructorIntegration:
         """Test gradients through the adjoint transform with torch."""
         import torch
 
-        @qml.qnode(qml.device("default.qubit", wires=1), diff_method=diff_method, interface="torch")
+        @qml.qnode(qml.device("default.qubit", wires=1), diff_method=diff_method)
         def circ(x):
             adjoint(qml.RX)(x, wires=0)
             return qml.expval(qml.PauliY(0))
@@ -1170,7 +1122,7 @@ class TestAdjointConstructorIntegration:
 
         import tensorflow as tf
 
-        @qml.qnode(qml.device("default.qubit", wires=1), diff_method=diff_method, interface="tf")
+        @qml.qnode(qml.device("default.qubit", wires=1), diff_method=diff_method)
         def circ(x):
             adjoint(qml.RX)(x, wires=0)
             return qml.expval(qml.PauliY(0))

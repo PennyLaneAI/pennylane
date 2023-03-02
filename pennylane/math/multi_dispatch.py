@@ -16,14 +16,14 @@
 import functools
 from collections.abc import Sequence
 
-from autograd.numpy.numpy_boxes import ArrayBox
 import autoray as ar
-from autoray import numpy as np
 import numpy as onp
+from autograd.numpy.numpy_boxes import ArrayBox
+from autoray import numpy as np
 from numpy import ndarray
 
 from . import single_dispatch  # pylint:disable=unused-import
-from .utils import cast, get_interface, requires_grad
+from .utils import cast, cast_like, get_interface, requires_grad
 
 
 # pylint:disable=redefined-outer-name
@@ -71,7 +71,7 @@ def multi_dispatch(argnum=None, tensor_list=None):
 
 
     Args:
-        argnum (list[int]): A list of integers indicating indicating the indices
+        argnum (list[int]): A list of integers indicating the indices
             to dispatch (i.e., the arguments that are tensors handled by an interface).
             If ``None``, dispatch over all arguments.
         tensor_lists (list[int]): a list of integers indicating which indices
@@ -291,6 +291,18 @@ def diag(values, k=0, like=None):
         values = np.stack(np.coerce(values, like=like), like=like)
 
     return np.diag(values, k=k, like=like)
+
+
+@multi_dispatch(argnum=[0, 1])
+def matmul(tensor1, tensor2, like=None):
+    """Returns the matrix product of two tensors."""
+    if like == "torch":
+        if get_interface(tensor1) != "torch":
+            tensor1 = ar.numpy.asarray(tensor1, like="torch")
+        if get_interface(tensor2) != "torch":
+            tensor2 = ar.numpy.asarray(tensor2, like="torch")
+        tensor2 = cast_like(tensor2, tensor1)  # pylint: disable=arguments-out-of-order
+    return ar.numpy.matmul(tensor1, tensor2, like=like)
 
 
 @multi_dispatch(argnum=[0, 1])
@@ -853,3 +865,62 @@ def gammainc(m, t, like=None):
     import scipy
 
     return scipy.special.gammainc(m, t)
+
+
+@multi_dispatch()
+def detach(tensor, like=None):
+    """Detach a tensor from its trace and return just its numerical values.
+
+    Args:
+        tensor (tensor_like): Tensor to detach
+        like (str): Manually chosen interface to dispatch to.
+
+    Returns:
+        tensor_like: A tensor in the same interface as the input tensor but
+        with a stopped gradient.
+    """
+    if like == "jax":
+        import jax
+
+        return jax.lax.stop_gradient(tensor)
+
+    if like == "torch":
+        return tensor.detach()
+
+    if like == "tensorflow":
+        import tensorflow as tf
+
+        return tf.stop_gradient(tensor)
+
+    if like == "autograd":
+        return np.to_numpy(tensor)
+
+    return tensor
+
+
+@multi_dispatch(tensor_list=[1])
+def set_index(array, idx, val, like=None):
+    """Set the value at a specified index in an array.
+    Calls ``array[idx]=val`` and returns the updated array unless JAX.
+
+    Args:
+        array (tensor_like): array to be modified
+        idx (int, tuple): index to modify
+        val (int, float): value to set
+
+    Returns:
+        a new copy of the array with the specified index updated to ``val``.
+
+    Whether the original array is modified is interface-dependent.
+
+    .. note:: TensorFlow EagerTensor does not support item assignment
+    """
+    if like == "jax":
+        from jax import numpy as jnp
+
+        # ensure array is jax array (interface may be jax because of idx or val and not array)
+        jax_array = jnp.array(array)
+        return jax_array.at[idx].set(val)
+
+    array[idx] = val
+    return array
