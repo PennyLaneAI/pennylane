@@ -535,8 +535,13 @@ class QNodeExperimental:
 
         # TODO 0: Loop over the stacks
         # TODO 1: apply transform on tape
+        if self.transform_stack:
+            print(self.transform_stack[0])
+            print(self.tape)
+            tape, fn = self.transform_stack[0](tape=self.tape)
+            print(tape.circuit)
         res = qml.execute(
-            [self.tape],
+            [tape],
             device=self.device,
             gradient_fn=self.gradient_fn,
             interface=self.interface,
@@ -546,6 +551,8 @@ class QNodeExperimental:
         )
         res = res[0]
         # TODO 2: apply post processing on the res
+        if self.transform_stack:
+            res = fn(res)
 
         if old_interface == "auto":
             self.interface = "auto"

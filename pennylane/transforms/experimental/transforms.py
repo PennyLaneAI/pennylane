@@ -40,7 +40,7 @@ class transform:
                 "does not appear to be a valid Python function or callable."
             )
 
-        self._fn = fn
+        self.fn = fn
         # TODO check signature to force the fn style (batch_tape, fn) - > (batch_tape, fn)
         self._sig = inspect.signature(fn).parameters
         functools.update_wrapper(self, fn)
@@ -55,8 +55,9 @@ class transform:
 
         if isinstance(obj, qml.tape.QuantumTape):
             return self._fn(obj, *targs, **tkwargs)
-        elif isinstance(obj, qml.QNode):
-            return self.default_qnode_transform(obj, *targs, **tkwargs)
+        elif isinstance(obj, qml.QNodeExperimental):
+            print("hi")
+            return self.default_qnode_transform(obj, targs, tkwargs)
 
     def default_qnode_transform(self, qnode, targs, tkwargs):
         """Register a qnode transformation"""
