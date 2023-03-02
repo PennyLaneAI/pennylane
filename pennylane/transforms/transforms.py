@@ -31,8 +31,7 @@ def default_qnode_postprocessing():
 
 
 class transform:
-    r"""Convert a function that applies to op/tape into a QNode transform.
-    """
+    r"""Convert a function that applies to op/tape into a QNode transform."""
 
     def __init__(self, fn):
         if not callable(fn):
@@ -42,7 +41,7 @@ class transform:
             )
 
         self._fn = fn
-        # TODO check signature to force the fn style (batch_tape, fn) - > (batch_tape, fn) 
+        # TODO check signature to force the fn style (batch_tape, fn) - > (batch_tape, fn)
         self._sig = inspect.signature(fn).parameters
         functools.update_wrapper(self, fn)
 
@@ -60,10 +59,9 @@ class transform:
             return self.default_qnode_transform(obj, *targs, **tkwargs)
 
     def default_qnode_transform(self, qnode, targs, tkwargs):
-        """Register a qnode transformation
-        """
-        qnode.targ_stack = [targs]
-        qnode.tkwargs_stack = [tkwargs]
-        qnode.transform_stack = [self.fn]
-        qnode.post_processing_stack = [default_qnode_postprocessing]
+        """Register a qnode transformation"""
+        qnode.targ_stack.append(targs)
+        qnode.tkwargs_stack.append(tkwargs)
+        qnode.transform_stack.append(self.fn)
+        qnode.post_processing_stack.append(default_qnode_postprocessing)
         return qnode

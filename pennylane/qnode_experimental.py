@@ -30,328 +30,7 @@ from pennylane.tape import QuantumTape, make_qscript
 
 
 class QNodeExperimental:
-    """Represents a quantum node in the hybrid computational graph.
-
-    A *quantum node* contains a :ref:`quantum function <intro_vcirc_qfunc>`
-    (corresponding to a :ref:`variational circuit <glossary_variational_circuit>`)
-    and the computational device it is executed on.
-
-    The QNode calls the quantum function to construct a :class:`~.QuantumTape` instance representing
-    the quantum circuit.
-
-    Args:
-        func (callable): a quantum function
-        device (~.Device): a PennyLane-compatible device
-        interface (str): The interface that will be used for classical backpropagation.
-            This affects the types of objects that can be passed to/returned from the QNode. See
-            ``qml.interfaces.SUPPORTED_INTERFACES`` for a list of all accepted strings.
-
-            * ``"autograd"``: Allows autograd to backpropagate
-              through the QNode. The QNode accepts default Python types
-              (floats, ints, lists, tuples, dicts) as well as NumPy array arguments,
-              and returns NumPy arrays.
-
-            * ``"torch"``: Allows PyTorch to backpropagate
-              through the QNode. The QNode accepts and returns Torch tensors.
-
-            * ``"tf"``: Allows TensorFlow in eager mode to backpropagate
-              through the QNode. The QNode accepts and returns
-              TensorFlow ``tf.Variable`` and ``tf.tensor`` objects.
-
-            * ``"jax"``: Allows JAX to backpropagate
-              through the QNode. The QNode accepts and returns
-              JAX ``Array`` objects.
-
-            * ``None``: The QNode accepts default Python types
-              (floats, ints, lists, tuples, dicts) as well as NumPy array arguments,
-              and returns NumPy arrays. It does not connect to any
-              machine learning library automatically for backpropagation.
-
-            * ``"auto"``: The QNode automatically detects the interface from the input values of
-              the quantum function.
-
-        diff_method (str or .gradient_transform): The method of differentiation to use in the created QNode.
-            Can either be a :class:`~.gradient_transform`, which includes all quantum gradient
-            transforms in the :mod:`qml.gradients <.gradients>` module, or a string. The following
-            strings are allowed:
-
-            * ``"best"``: Best available method. Uses classical backpropagation or the
-              device directly to compute the gradient if supported, otherwise will use
-              the analytic parameter-shift rule where possible with finite-difference as a fallback.
-
-            * ``"device"``: Queries the device directly for the gradient.
-              Only allowed on devices that provide their own gradient computation.
-
-            * ``"backprop"``: Use classical backpropagation. Only allowed on
-              simulator devices that are classically end-to-end differentiable,
-              for example :class:`default.qubit <~.DefaultQubit>`. Note that
-              the returned QNode can only be used with the machine-learning
-              framework supported by the device.
-
-            * ``"adjoint"``: Uses an `adjoint method <https://arxiv.org/abs/2009.02823>`__ that
-              reverses through the circuit after a forward pass by iteratively applying the inverse
-              (adjoint) gate. Only allowed on supported simulator devices such as
-              :class:`default.qubit <~.DefaultQubit>`.
-
-            * ``"parameter-shift"``: Use the analytic parameter-shift
-              rule for all supported quantum operation arguments, with finite-difference
-              as a fallback.
-
-            * ``"hadamard"``: Use the analytic hadamard gradient test
-              rule for all supported quantum operation arguments. More info is in the documentation
-              :func:`qml.gradients.hadamard_grad <.gradients.hadamard_grad>`.
-
-
-            * ``"finite-diff"``: Uses numerical finite-differences for all quantum operation
-              arguments.
-
-            * ``"spsa"``: Uses a simultaneous perturbation of all operation arguments to approximate
-              the derivative.
-
-            * ``None``: QNode cannot be differentiated. Works the same as ``interface=None``.
-
-        expansion_strategy (str): The strategy to use when circuit expansions or decompositions
-            are required.
-
-            - ``gradient``: The QNode will attempt to decompose
-              the internal circuit such that all circuit operations are supported by the gradient
-              method. Further decompositions required for device execution are performed by the
-              device prior to circuit execution.
-
-            - ``device``: The QNode will attempt to decompose the internal circuit
-              such that all circuit operations are natively supported by the device.
-
-            The ``gradient`` strategy typically results in a reduction in quantum device evaluations
-            required during optimization, at the expense of an increase in classical preprocessing.
-        max_expansion (int): The number of times the internal circuit should be expanded when
-            executed on a device. Expansion occurs when an operation or measurement is not
-            supported, and results in a gate decomposition. If any operations in the decomposition
-            remain unsupported by the device, another expansion occurs.
-        mode (str): Whether the gradients should be computed on the forward
-            pass (``forward``) or the backward pass (``backward``). Only applies
-            if the device is queried for the gradient; gradient transform
-            functions available in ``qml.gradients`` are only supported on the backward
-            pass.
-        cache (bool or dict or Cache): Whether to cache evaluations. This can result in
-            a significant reduction in quantum evaluations during gradient computations.
-            If ``True``, a cache with corresponding ``cachesize`` is created for each batch
-            execution. If ``False``, no caching is used. You may also pass your own cache
-            to be used; this can be any object that implements the special methods
-            ``__getitem__()``, ``__setitem__()``, and ``__delitem__()``, such as a dictionary.
-        cachesize (int): The size of any auto-created caches. Only applies when ``cache=True``.
-        max_diff (int): If ``diff_method`` is a gradient transform, this option specifies
-            the maximum number of derivatives to support. Increasing this value allows
-            for higher order derivatives to be extracted, at the cost of additional
-            (classical) computational overhead during the backwards pass.
-
-    Keyword Args:
-        **kwargs: Any additional keyword arguments provided are passed to the differentiation
-            method. Please refer to the :mod:`qml.gradients <.gradients>` module for details
-            on supported options for your chosen gradient transform.
-
-    **Example**
-
-    QNodes can be created by decorating a quantum function:
-
-    >>> dev = qml.device("default.qubit", wires=1)
-    >>> @qml.qnode(dev)
-    ... def circuit(x):
-    ...     qml.RX(x, wires=0)
-    ...     return qml.expval(qml.PauliZ(0))
-
-    or by instantiating the class directly:
-
-    >>> def circuit(x):
-    ...     qml.RX(x, wires=0)
-    ...     return qml.expval(qml.PauliZ(0))
-    >>> dev = qml.device("default.qubit", wires=1)
-    >>> qnode = qml.QNode(circuit, dev)
-
-    .. details::
-        :title: Parameter broadcasting
-        :href: parameter-broadcasting
-
-        QNodes can be executed simultaneously for multiple parameter settings, which is called
-        *parameter broadcasting* or *parameter batching*.
-        We start with a simple example and briefly look at the scenarios in which broadcasting is
-        possible and useful. Finally we give rules and conventions regarding the usage of
-        broadcasting, together with some more complex examples.
-        Also see the :class:`~.pennylane.operation.Operator` documentation for implementation
-        details.
-
-        **Example**
-
-        Again consider the following ``circuit``:
-
-        >>> dev = qml.device("default.qubit", wires=1)
-        >>> @qml.qnode(dev)
-        ... def circuit(x):
-        ...     qml.RX(x, wires=0)
-        ...     return qml.expval(qml.PauliZ(0))
-
-        If we want to execute it at multiple values ``x``,
-        we may pass those as a one-dimensional array to the QNode:
-
-        >>> x = np.array([np.pi / 6, np.pi * 3 / 4, np.pi * 7 / 6])
-        >>> circuit(x)
-        tensor([ 0.8660254 , -0.70710678, -0.8660254 ], requires_grad=True)
-
-        The resulting array contains the QNode evaluations at the single values:
-
-        >>> [circuit(x_val) for x_val in x]
-        [tensor(0.8660254, requires_grad=True),
-         tensor(-0.70710678, requires_grad=True),
-         tensor(-0.8660254, requires_grad=True)]
-
-        In addition to the results being stacked into one ``tensor`` already, the broadcasted
-        execution actually is performed in one simulation of the quantum circuit, instead of
-        three sequential simulations.
-
-        **Benefits & Supported QNodes**
-
-        Parameter broadcasting can be useful to simplify the execution syntax with QNodes. More
-        importantly though, the simultaneous execution via broadcasting can be significantly
-        faster than iterating over parameters manually. If we compare the execution time for the
-        above QNode ``circuit`` between broadcasting and manual iteration for an input size of
-        ``100``, we find a speedup factor of about :math:`30`.
-        This speedup is a feature of classical simulators, but broadcasting may reduce
-        the communication overhead for quantum hardware devices as well.
-
-        A QNode supports broadcasting if all operators that receive broadcasted parameters do so.
-        (Operators that are used in the circuit but do not receive broadcasted inputs do not need
-        to support it.) A list of supporting operators is available in
-        :obj:`~.pennylane.ops.qubit.attributes.supports_broadcasting`.
-        Whether or not broadcasting delivers an increased performance will depend on whether the
-        used device is a classical simulator and natively supports this. The latter can be checked
-        with the capabilities of the device:
-
-        >>> dev.capabilities()["supports_broadcasting"]
-        True
-
-        If a device does not natively support broadcasting, it will execute broadcasted QNode calls
-        by expanding the input arguments into separate executions. That is, every device can
-        execute QNodes with broadcasting, but only supporting devices will benefit from it.
-
-        **Usage**
-
-        The first example above is rather simple. Broadcasting is possible in more complex
-        scenarios as well, for which it is useful to understand the concept in more detail.
-        The following rules and conventions apply:
-
-        *There is at most one broadcasting axis*
-
-        The broadcasted input has (exactly) one more axis than the operator(s) which receive(s)
-        it would usually expect. For example, most operators expect a single scalar input and the
-        *broadcasted* input correspondingly is a 1D array:
-
-        >>> x = np.array([1., 2., 3.])
-        >>> op = qml.RX(x, wires=0) # Additional axis of size 3.
-
-        An operator ``op`` that supports broadcasting indicates the expected number of
-        axes--or dimensions--in its attribute ``op.ndim_params``. This attribute is a tuple with
-        one integer per argument of ``op``. The batch size of a broadcasted operator is stored
-        in ``op.batch_size``:
-
-        >>> op.ndim_params # RX takes one scalar input.
-        (0,)
-        >>> op.batch_size # The broadcasting axis has size 3.
-        3
-
-        The broadcasting axis is always the leading axis of an argument passed to an operator:
-
-        >>> from scipy.stats import unitary_group
-        >>> U = np.stack([unitary_group.rvs(4) for _ in range(3)])
-        >>> U.shape # U stores three two-qubit unitaries, each of shape 4x4
-        (3, 4, 4)
-        >>> op = qml.QubitUnitary(U, wires=[0, 1])
-        >>> op.batch_size
-        3
-
-        Stacking multiple broadcasting axes is *not* supported.
-
-        *Multiple operators are broadcasted simultaneously*
-
-        It is possible to broadcast multiple parameters simultaneously. In this case, the batch
-        size of the broadcasting axes must match, and the parameters are combined like in Python's
-        ``zip`` function. Non-broadcasted parameters do not need
-        to be augmented manually but can simply be used as one would in individual QNode
-        executions:
-
-        .. code-block:: python
-
-            dev = qml.device("default.qubit", wires=4)
-            @qml.qnode(dev)
-            def circuit(x, y, U):
-                qml.QubitUnitary(U, wires=[0, 1, 2, 3])
-                qml.RX(x, wires=0)
-                qml.RY(y, wires=1)
-                qml.RX(x, wires=2)
-                qml.RY(y, wires=3)
-                return qml.expval(qml.PauliZ(0) @ qml.PauliX(1) @ qml.PauliZ(2) @ qml.PauliZ(3))
-
-
-            x = np.array([0.4, 2.1, -1.3])
-            y = 2.71
-            U = np.stack([unitary_group.rvs(16) for _ in range(3)])
-
-        This circuit takes three arguments, and the first two are used twice each. ``x`` and
-        ``U`` will lead to a batch size of ``3`` for the ``RX`` rotations and the multi-qubit
-        unitary, respectively. The input ``y`` is a ``float`` value and will be used together with
-        all three values in ``x`` and ``U``. We obtain three output values:
-
-        >>> circuit(x, y, U)
-        tensor([-0.06939911,  0.26051235, -0.20361048], requires_grad=True)
-
-        This is equivalent to iterating over all broadcasted arguments using ``zip``:
-
-        >>> [circuit(x_val, y, U_val) for x_val, U_val in zip(x, U)]
-        [tensor(-0.06939911, requires_grad=True),
-         tensor(0.26051235, requires_grad=True),
-         tensor(-0.20361048, requires_grad=True)]
-
-        In the same way it is possible to broadcast multiple arguments of a single operator,
-        for example:
-
-        >>> qml.Rot.ndim_params # Rot takes three scalar arguments
-        (0, 0, 0)
-        >>> x = np.array([0.4, 2.3, -0.1]) # Broadcast the first argument with size 3
-        >>> y = 1.6 # Do not broadcast the second argument
-        >>> z = np.array([1.2, -0.5, 2.5]) # Broadcast the third argument with size 3
-        >>> op = qml.Rot(x, y, z, wires=0)
-        >>> op.batch_size
-        3
-
-        *Broadcasting does not modify classical processing*
-
-        Note that classical processing in QNodes will happen *before* broadcasting is taken into
-        account. This means, that while *operators* always interpret the first axis as the
-        broadcasting axis, QNodes do not necessarily do so:
-
-        .. code-block:: python
-
-            @qml.qnode(dev)
-            def circuit_unpacking(x):
-                qml.RX(x[0], wires=0)
-                qml.RY(x[1], wires=1)
-                qml.RZ(x[2], wires=1)
-                return qml.expval(qml.PauliZ(0) @ qml.PauliX(1))
-
-            x = np.array([[1, 2], [3, 4], [5, 6]])
-
-        The prepared parameter ``x`` has shape ``(3, 2)``, corresponding to the three operations
-        and a batch size of ``2``:
-
-        >>> circuit_unpacking(x)
-        tensor([0.02162852, 0.30239696], requires_grad=True)
-
-        If we were to iterate manually over the parameter settings, we probably would put the
-        batching axis in ``x`` first. This is not the behaviour with parameter broadcasting
-        because it does not modify the unpacking step within the QNode, so that ``x`` is
-        unpacked *first* and the unpacked elements are expected to contain the
-        broadcasted parameters for each operator individually;
-        if we attempted to put the broadcasting axis of size ``2`` first, the
-        indexing of ``x`` would fail in the ``RZ`` rotation within the QNode.
-    """
+    """Represents a quantum node in the hybrid computational graph."""
 
     def __init__(
         self,
@@ -434,9 +113,14 @@ class QNodeExperimental:
         self._update_gradient_fn()
         functools.update_wrapper(self, func)
 
+        self.targ_stack = []
+        self.tkwargs_stack = []
+        self.transform_stack = []
+        self.post_processing_stack = []
+
     def __repr__(self):
         """String representation."""
-        detail = "<QNode: wires={}, device='{}', interface='{}', diff_method='{}'>"
+        detail = "<QNodeExperimental: wires={}, device='{}', interface='{}', diff_method='{}'>"
         return detail.format(
             self.device.num_wires,
             self.device.short_name,
@@ -518,19 +202,19 @@ class QNodeExperimental:
             ``gradient_kwargs``, and the device to use when calling the execute function.
         """
         if diff_method == "best":
-            return QNode.get_best_method(device, interface)
+            return QNodeExperimental.get_best_method(device, interface)
 
         if diff_method == "backprop":
-            return QNode._validate_backprop_method(device, interface)
+            return QNodeExperimental._validate_backprop_method(device, interface)
 
         if diff_method == "adjoint":
-            return QNode._validate_adjoint_method(device)
+            return QNodeExperimental._validate_adjoint_method(device)
 
         if diff_method == "device":
-            return QNode._validate_device_method(device)
+            return QNodeExperimental._validate_device_method(device)
 
         if diff_method == "parameter-shift":
-            return QNode._validate_parameter_shift(device)
+            return QNodeExperimental._validate_parameter_shift(device)
 
         if diff_method == "finite-diff":
             return qml.gradients.finite_diff, {}, device
@@ -581,13 +265,13 @@ class QNodeExperimental:
             ``gradient_kwargs``, and the device to use when calling the execute function.
         """
         try:
-            return QNode._validate_device_method(device)
+            return QNodeExperimental._validate_device_method(device)
         except qml.QuantumFunctionError:
             try:
-                return QNode._validate_backprop_method(device, interface)
+                return QNodeExperimental._validate_backprop_method(device, interface)
             except qml.QuantumFunctionError:
                 try:
-                    return QNode._validate_parameter_shift(device)
+                    return QNodeExperimental._validate_parameter_shift(device)
                 except qml.QuantumFunctionError:
                     return qml.gradients.finite_diff, {}, device
 
@@ -618,7 +302,7 @@ class QNodeExperimental:
         Returns:
             str: The gradient function to use in human-readable format.
         """
-        transform = QNode.get_best_method(device, interface)[0]
+        transform = QNodeExperimental.get_best_method(device, interface)[0]
 
         if transform is qml.gradients.finite_diff:
             return "finite-diff"
@@ -885,11 +569,13 @@ class QNodeExperimental:
 
         self._update_original_device()
 
-
         # TODO 3: Apply post QNode processing from transform
+
         return res
 
 
-qnode_experimental = lambda device, **kwargs: functools.partial(QNodeExperimental, device=device, **kwargs)
+qnode_experimental = lambda device, **kwargs: functools.partial(
+    QNodeExperimental, device=device, **kwargs
+)
 qnode_experimental.__doc__ = QNodeExperimental.__doc__
 qnode_experimental.__signature__ = inspect.signature(QNodeExperimental)
