@@ -19,6 +19,7 @@ accept a hermitian or an unitary matrix as a parameter.
 import warnings
 
 import numpy as np
+from pennylane import numpy as pnp
 from scipy.linalg import norm
 
 import pennylane as qml
@@ -334,6 +335,7 @@ class DiagonalQubitUnitary(Operation):
     def label(self, decimals=None, base_label=None, cache=None):
         return super().label(decimals=decimals, base_label=base_label or "U", cache=cache)
 
+
 class BlockEncode(Operation):
     """General Block Encoding"""
 
@@ -341,14 +343,14 @@ class BlockEncode(Operation):
     num_wires = AnyWires
 
     def __init__(self, a, wires, do_queue=True, id=None):
-        a = np.atleast_2d(a)
+        a = pnp.atleast_2d(a)
         wires = Wires(wires)
-        if np.sum(a.shape) <= 2:
+        if pnp.sum(a.shape) <= 2:
             normalization = a if a > 1 else 1
             subspace = (1, 1, 2 ** len(wires))
         else:
-            normalization = np.max(
-                [norm(a @ np.conj(a).T, ord=np.inf), norm(np.conj(a).T @ a, ord=np.inf)]
+            normalization = pnp.max(
+                [norm(a @ pnp.conj(a).T, ord=pnp.inf), norm(pnp.conj(a).T @ a, ord=pnp.inf)]
             )
             subspace = (*a.shape, 2 ** len(wires))
 
@@ -373,19 +375,21 @@ class BlockEncode(Operation):
         n, m, k = hyperparams["subspace"]
 
         if isinstance(a, int) or isinstance(a, float):
-            u = np.block(
-                [[a, np.sqrt(1 - a * np.conj(a))], [np.sqrt(1 - a * np.conj(a)), -np.conj(a)]]
+            u = pnp.block(
+                [[a, pnp.sqrt(1 - a * pnp.conj(a))], [pnp.sqrt(1 - a * pnp.conj(a)), -pnp.conj(a)]]
             )
         else:
             d1, d2 = a.shape
 
-            col1 = qml.math.vstack([a, qml.math.sqrt_matrix(np.eye(d2) - np.conj(a).T @ a)])
-            col2 = qml.math.vstack([qml.math.sqrt_matrix(np.eye(d1) - a @ np.conj(a).T), -np.conj(a).T])
+            col1 = qml.math.vstack([a, qml.math.sqrt_matrix(pnp.eye(d2) - pnp.conj(a).T @ a)])
+            col2 = qml.math.vstack(
+                [qml.math.sqrt_matrix(pnp.eye(d1) - a @ pnp.conj(a).T), -pnp.conj(a).T]
+            )
 
             u = qml.math.hstack([col1, col2])
 
         if n + m < k:
             r = k - (n + m)
-            u = np.block([[u, np.zeros((n + m, r))], [np.zeros((r, n + m)), np.eye(r)]])
+            u = pnp.block([[u, pnp.zeros((n + m, r))], [pnp.zeros((r, n + m)), pnp.eye(r)]])
 
         return u

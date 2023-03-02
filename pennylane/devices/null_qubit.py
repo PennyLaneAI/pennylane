@@ -47,6 +47,7 @@ class NullQubit(QubitDevice):
         "QubitStateVector",
         "QubitUnitary",
         "ControlledQubitUnitary",
+        "BlockEncode",
         "MultiControlledX",
         "DiagonalQubitUnitary",
         "PauliX",
