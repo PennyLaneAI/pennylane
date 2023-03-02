@@ -398,13 +398,11 @@ class BlockEncode(Operation):
 
         a = a / normalization if normalization > 1 else a
 
-        # if subspace[2] < (subspace[0] + subspace[1]):
-        if subspace[2] < np.max(subspace[0:-1])*2:
+        if subspace[2] < (subspace[0] + subspace[1]):
             raise ValueError(
                 f"Block encoding a {subspace[0]} x {subspace[1]} matrix"
                 f" requires a hilbert space of size at least "
-                # f"{subspace[0] + subspace[1]} x {subspace[0] + subspace[1]}."
-                f"{np.max(subspace[0:-1])*2} x {np.max(subspace[0:-1])*2}."
+                f"{subspace[0] + subspace[1]} x {subspace[0] + subspace[1]}."
                 f" Cannot be embedded in a {len(wires)} qubit system."
             )
 
@@ -418,18 +416,23 @@ class BlockEncode(Operation):
         a = params[0]
         n, m, k = hyperparams["subspace"]
 
-        if np.sum(qml.math.shape(qml.math.atleast_2d(a))) <= 2:
+        if isinstance(a, int) or isinstance(a, float):
             u = np.block(
                 [[a, np.sqrt(1 - a * np.conj(a))], [np.sqrt(1 - a * np.conj(a)), -np.conj(a)]]
             )
+
+            # col1 = qml.math.vstack([a, np.sqrt(1 - a * np.conj(a))])
+            # col2 = qml.math.vstack([np.sqrt(1 - a * np.conj(a)),-np.conj(a)])
+            # u = qml.math.hstack([col1, col2])
+
         else:
-            d1, d2 = qml.math.shape(a)
-            u = np.block(
-                [
-                    [a, sqrtm(np.eye(d1) - a @ np.conj(a).T)],
-                    [sqrtm(np.eye(d2) - np.conj(a).T @ a), -np.conj(a).T],
-                ]
-            )
+            d1, d2 = a.shape
+
+            col1 = qml.math.vstack([a, qml.math.sqrt_matrix(np.eye(d2) - np.conj(a).T @ a)])
+            col2 = qml.math.vstack([qml.math.sqrt_matrix(np.eye(d1) - a @ np.conj(a).T), -np.conj(a).T])
+
+            u = qml.math.hstack([col1, col2])
+
         if n + m < k:
             r = k - (n + m)
             u = np.block([[u, np.zeros((n + m, r))], [np.zeros((r, n + m)), np.eye(r)]])
