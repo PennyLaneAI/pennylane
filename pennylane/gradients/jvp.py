@@ -164,58 +164,6 @@ def compute_jvp_single(tangent, jac):
         :math:`\sum_i` ``tangent_size_i``.
 
     """
-    # There is a number of case distinctions in this code:
-    #  - The JVP may be for one (A) or multiple (B) parameters
-    #    Call the number of parameters k
-    #  - The number R of tape return type dimensions may be between 0 (i) and 3 (iv)
-    #    Call the return type dimensions r_j
-    #  - Each parameter may have an arbitrary number L_i>=0 of dimensions
-    #
-    # In the following, (a, b) denotes a tensor_like of shape (a, b) and [(a,), (b,)] /
-    # ((a,), (b,)) denotes a list / tuple of tensors with the indicated shapes, respectively.
-    # Ignore the case of no trainable parameters, as it is filtered out in advance.
-    #
-
-    # For scenario (A), the input shapes can be in
-    #   tangent:
-    #     - (1,)                         scalar parameter
-    #     - [()]                         scalar parameter
-    #     - (())                         scalar parameter
-    #     - [(l_1,..,l_{L_1})]           tensor parameter
-    #   jac:
-    #     - ()                           scalar return type and scalar parameter
-    #     - (r_1,..,r_R)                 tensor return type and scalar parameter
-    #     - (l_1,..,l_{L_1})             scalar return type and tensor parameter
-    #     - (r_1,..,r_R, l_1,..,l_{L_1}) tensor return type and tensor parameter
-    #
-    # In this scenario, the tangent is reshaped into a one-dimensional tensor with shape (prod_l,)
-    # and the Jacobian is reshaped to have the dimensions (r_1, ... r_R, prod_l).
-    # This is followed by a tensordot contraction over the prod_l axes.
-
-    # For scenario (B), the input shapes can be in
-    #   tangent:
-    #     - (k,)                                   k scalar parameters
-    #     - [(),..,()]                             k scalar parameters
-    #     - ((),..,())                             k scalar parameters
-    #     - [(l_1,..,l_{L_1}),..,(l_1,..,l_{L_k})] k mixed scalar and tensor parameters
-    #   jac:
-    #     - ((),..,())                             scalar return type and k scalar params
-    #     - ((r_1,..,r_R),..,(r_1,..,r_R))         tensor return type and k scalar params
-    #     - ((l_1,..,l_{L_1}),..,(l_1,..,l_{L_1})) scalar return type and k mixed params
-    #     - ((r_1,..,r_R, l_1,..,l_{L_1}),..,(r_1,..,r_R, l_1,..,l_{L_k}))
-    #                                              tensor return type and k mixed params
-    #
-    # Note that the return type dimensions always remain the same, whereas the
-    # dimensions of the tensor parameters may differ.
-    #
-    # In this scenario, another case separation is used: If any of the parameters is a
-    # tensor (i.e. not a scalar), all tangent entries are reshaped into one-dimensional
-    # tensors with shapes (prod_l_i,) and then stacked to one one-dimensional tensor.
-    # If there are no tensor parameters, the tangent is just stacked and reshaped.
-    # The Jacobians are reshaped to have the dimensions (r_1, ... r_R, prod_l_i)
-    # and then are concatenated along their last (potentially mismatching) axis.
-    # This is followed by a tensordot contraction over the axes of size sum_i prod_l_i.
-
     if jac is None:
         return None
     single_param = not isinstance(jac, tuple)

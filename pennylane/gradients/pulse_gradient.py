@@ -43,15 +43,16 @@ except ImportError:
     has_jax = False
 
 
-def split_evol_ops(op, word, key):
-    """Randomly split a ``ParametrizedEvolution`` with respect to time into two and insert
+def split_evol_ops(op, word, word_wires, key):
+    r"""Randomly split a ``ParametrizedEvolution`` with respect to time into two and insert
     a Pauli rotation about a given Pauli word by :math:`\pm\pi/2`, yielding two groups of
     three operations.
 
     Args:
-        op (ParametrizedEvolution): The operation to split up.
-        word (str): The Pauli word about which to rotate between the split up parts.
-        key (list[int]): The randomness seed to pass to the sampler for sampling the split-up point.
+        op (ParametrizedEvolution): operation to split up.
+        word (str): Pauli word about which to rotate between the split up parts.
+        word_wires (~.wires.Wires): wires on which the Pauli word acts
+        key (list[int]): randomness seed to pass to the sampler for sampling the split-up point.
 
     Returns:
         float: The sampled split-up time tau
@@ -63,12 +64,11 @@ def split_evol_ops(op, word, key):
     # Extract time interval, split it, and set the intervals of the copies to the split intervals
     t0, t1 = op.t
     tau = jax.random.uniform(key) * (t1 - t0) + t0
-    print(f"tau={tau}")
     before.t = jax.numpy.array([t0, tau])
     after.t = jax.numpy.array([tau, t1])
     # Create Pauli rotations to be inserted at tau
-    evolve_plus = qml.PauliRot(np.pi / 2, word, wires=op.wires)
-    evolve_minus = qml.PauliRot(-np.pi / 2, word, wires=op.wires)
+    evolve_plus = qml.PauliRot(np.pi / 2, word, wires=word_wires)
+    evolve_minus = qml.PauliRot(-np.pi / 2, word, wires=word_wires)
     # Construct gate sequences of split intervals and inserted Pauli rotations
     ops = ([before, evolve_plus, after], [before, evolve_minus, after])
     return tau, ops
@@ -148,13 +148,8 @@ def _stoch_pulse_grad(tape, argnum=None, num_samples=1, sampler_seed=None, shots
 def _expval_stoch_pulse_grad(tape, argnum, num_samples, key, shots):
     r"""Compute the gradient of a quantum circuit composed of pulse sequences that measures
     an expectation value or probabilities, by applying the stochastic parameter shift rule.
+    See the main function for the signature.
     This function is adapted to the new return type system.
-
-    Args:
-
-    Returns:
-
-
     """
     tapes = []
     gradient_data = []
@@ -171,16 +166,21 @@ def _expval_stoch_pulse_grad(tape, argnum, num_samples, key, shots):
 
         this_tapes = []
         coeff, ham = op.H.coeffs_parametrized[term_idx], op.H.ops_parametrized[term_idx]
+        if not qml.pauli.is_pauli_word(ham):
+            raise ValueError(
+                "stoch_pulse_grad currently only supports Pauli words as parametrized "
+                f"terms in ParametrizedHamiltonian. Got {ham}"
+            )
         word = qml.pauli.pauli_word_to_string(ham)
         cjac_fn = jax.jacobian(coeff, argnums=0)
         this_cjacs = []
         for _ in range(num_samples):
             key, _key = jax.random.split(key)
-            tau, split_evolve_ops = split_evol_ops(op, word, _key)
+            tau, split_evolve_ops = split_evol_ops(op, word, ham.wires, _key)
             this_cjacs.append(cjac_fn(op.data[term_idx], tau))
             this_tapes.extend(split_evol_tapes(tape, split_evolve_ops, op_idx))
-        print(this_cjacs)
-        gradient_data.append((len(this_tapes), qml.math.stack(this_cjacs)))
+        avg_prefactor = (op.t[1] - op.t[0]) / num_samples
+        gradient_data.append((len(this_tapes), qml.math.stack(this_cjacs), avg_prefactor))
         tapes.extend(this_tapes)
 
     def processing_fn(results):
@@ -192,15 +192,13 @@ def _expval_stoch_pulse_grad(tape, argnum, num_samples, key, shots):
             results = [qml.math.squeeze(res) for res in results]
         start = 0
         grads = []
-        for num_tapes, cjacs in gradient_data:
+        for num_tapes, cjacs, avg_prefactor in gradient_data:
             if num_tapes == 0:
                 raise NotImplementedError("not implemented.")
             res = results[start : start + num_tapes]
             start += num_tapes
-            diff = qml.math.array(res[::2]) - qml.math.array(res[1::2])
-            print(diff)
-            grads.append(qml.math.tensordot(diff, cjacs, axes=[[0], [0]]) / num_samples)
-            print(grads[-1])
+            diff = qml.math.stack(res[::2]) - qml.math.stack(res[1::2])
+            grads.append(qml.math.tensordot(diff, cjacs, axes=[[0], [0]]) * avg_prefactor)
 
         num_measurements = len(tape.measurements)
         single_measure = num_measurements == 1
@@ -230,4 +228,6 @@ def expand_invalid_trainable_stoch_pulse_grad(x, *args, **kwargs):
     return x
 
 
-stoch_pulse_grad = gradient_transform(_stoch_pulse_grad, expand_fn=expand_invalid_trainable_stoch_pulse_grad)
+stoch_pulse_grad = gradient_transform(
+    _stoch_pulse_grad, expand_fn=expand_invalid_trainable_stoch_pulse_grad
+)
