@@ -369,9 +369,6 @@ def ctrl_decomp_bisect_general(target_operation: typing.Union[Operator, tuple[np
     b = _bisect_compute_b(q)
     c1 = b @ sh_alt
     c2t = b @ sh
-    print(q)
-    print(d)
-    print(_matrix_adjoint(c2t) @ sx @ c1 @ sx)
 
     mid = len(control_wires) // 2
     lk = control_wires[:mid]
