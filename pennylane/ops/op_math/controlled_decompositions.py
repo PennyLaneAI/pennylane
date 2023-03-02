@@ -45,6 +45,13 @@ def _convert_to_su2(U, return_global_phase=False):
     U_SU2 = math.cast_like(U, dets) * math.exp(-1j * exp_angles)
     return (U_SU2, exp_angles) if return_global_phase else U_SU2
 
+def _ensure_real_diagonal_q(q: np.ndarray):
+    """
+    Change the phases of Q so the main diagonal is real, and return the modified Q.
+    """
+    exp_angles = np.angle(np.diag(q))
+    return q * np.exp(-1j * exp_angles).reshape((2, 1))
+
 def _matrix_adjoint(matrix: np.ndarray):
     return np.transpose(np.conj(matrix))
 
@@ -69,6 +76,25 @@ def _bisect_compute_a(u: np.ndarray):
     zi = np.imag(z)
     ar = np.sqrt((np.sqrt((zr+1)/2)+1)/2)
     mul = 1/(2*np.sqrt((zr+1)*(np.sqrt((zr+1)/2)+1)))
+    ai = zi*mul
+    br = x*mul
+    bi = 0
+    return _param_su2(ar,ai,br,bi)
+
+def _bisect_compute_b(u: np.ndarray):
+    """
+    Given the U matrix, compute the B matrix such that
+    H Bt x B x H
+    where Bt is the adjoint of B,
+    H is the Hadamard matrix,
+    and x is the Pauli X matrix.
+    """
+    x = u[0,1]
+    zr = np.real(x)
+    zi = np.imag(x)
+    x = np.real(u[1,1])
+    ar = np.sqrt((zr+1)/2)
+    mul = 1/np.sqrt(2*(zr+1))
     ai = zi*mul
     br = x*mul
     bi = 0
@@ -284,5 +310,75 @@ def ctrl_decomp_bisect_md(target_operation: typing.Union[Operator, tuple[np.ndar
     if not later:
         result = [func() for func in result]
     return result
+
+
+def ctrl_decomp_bisect_general(target_operation: typing.Union[Operator, tuple[np.ndarray, Wires]], control_wires: Wires, later: bool = False):
+    """Decompose the controlled version of a target single-qubit operation
+
+    This function decomposes a controlled single-qubit target operation using the
+    decomposition defined in section 3.1 of
+    `Vale et al. (2023) <https://arxiv.org/abs/2302.06377>`_.
+
+    .. warning:: This method will add a global phase for target operations that do not
+        belong to the SU(2) group.
+
+    Args:
+        target_operation (~.operation.Operator): the target operation to decompose
+        control_wires (~.wires.Wires): the control wires of the operation
+
+    Returns:
+        list[Operation]: the decomposed operations
+
+    Raises:
+        ValueError: if ``target_operation`` is not a single-qubit operation
+
+    """
+    orig_target_operation = target_operation
+    if isinstance(target_operation, Operator):
+        target_operation = target_operation.matrix(), target_operation.wires
+
+    if len(target_operation[1]) != 1:
+        raise ValueError(
+            "The target operation must be a single-qubit operation, instead "
+            f"got {orig_target_operation.__class__.__name__}."
+        )
+
+    target_wire = target_operation[1]
+
+    u = target_operation[0]
+    u = _convert_to_su2(u)
+    u = np.array(u)
+
+    sx = qml.PauliX.compute_matrix()
+    sh = qml.Hadamard.compute_matrix()
+    
+    d, q = npl.eig(u)
+    d = np.diag(d)
+    q = _ensure_real_diagonal_q(q)
+    b = _bisect_compute_b(q)
+    c1 = b @ sx @ sh
+    c2t = b @ sh
+
+    mid = len(control_wires) // 2
+    lk = control_wires[:mid]
+    rk = control_wires[mid:]
+
+    def mcx(_lk, _rk):
+        return qml.MultiControlledX(control_wires = _lk, wires = target_wire, work_wires = _rk)
+    op_mcx1 = lambda:mcx(lk,rk)
+    op_mcx2 = lambda:mcx(rk,lk)
+    op_c1 = lambda:qml.QubitUnitary(c1, target_wire)
+    op_c1t = lambda:qml.adjoint(op_c1())
+    op_c2t = lambda:qml.QubitUnitary(c2t, target_wire)
+    op_c2 = lambda:qml.adjoint(op_c2t())
+
+    inner = ctrl_decomp_bisect_od((d, target_wire), control_wires, later=True)
+    result = [op_c2t, op_mcx2, op_c1t, op_mcx1] + inner + [op_mcx1, op_c1, op_mcx2, op_c2]
+    # cancel out adjacent op_mcx1
+    result = result[:3] + result[5:]
+    if not later:
+        result = [func() for func in result]
+    return result
+
 
 
