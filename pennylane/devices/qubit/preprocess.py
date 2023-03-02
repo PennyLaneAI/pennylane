@@ -172,11 +172,6 @@ def preprocess(
         circuits (Sequence[QuantumTape]): Batch of tapes to be processed.
         execution_config (.ExecutionConfig): execution configuration with configurable
             options for the execution.
-        max_expansion (int): The number of times the circuit should be
-            expanded. Expansion occurs when an operation or measurement is not
-            supported, and results in a gate decomposition. If any operations
-            in the decomposition remain unsupported by the device, another
-            expansion occurs.
 
     Returns:
         Tuple[Sequence[.QuantumTape], callable]: Returns a tuple containing
