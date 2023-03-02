@@ -14,6 +14,10 @@
 
 <h3>Improvements</h3>
 
+* The custom JVP rules in PennyLane now also support non-scalar and mixed-shape tape parameters as
+  well as multi-dimensional tape return types, like broadcasted `qml.probs`, for example.
+  [(#3766)](https://github.com/PennyLaneAI/pennylane/pull/3766)
+
 * The `qchem.jordan_wigner` function is extended to support more fermionic operator orders.
   [(#3754)](https://github.com/PennyLaneAI/pennylane/pull/3754)
   [(#3751)](https://github.com/PennyLaneAI/pennylane/pull/3751)
@@ -44,3 +48,4 @@ Vincent Michaud-Rioux
 Mudit Pandey
 Matthew Silverman
 Jay Soni
+David Wierichs
