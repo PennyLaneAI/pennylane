@@ -92,6 +92,7 @@ ops = {
     "QubitDensityMatrix",
     "QubitUnitary",
     "SpecialUnitary",
+    "BlockEncode",
     "MultiControlledX",
     "IntegerComparator",
     "DiagonalQubitUnitary",
