@@ -434,4 +434,8 @@ class TestControlledBisectGeneral:
         res = qml.matrix(ctrl_decomp_bisect_general, wire_order=control_wires + [0])(op, control_wires)
         expected = expected_op.matrix()
 
+        print('Expected:')
+        print(np.round(expected,2))
+        print('Result:')
+        print(np.round(res,2))
         assert np.allclose(res, expected, atol=tol, rtol=tol)

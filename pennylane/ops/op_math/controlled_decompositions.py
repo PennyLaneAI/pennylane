@@ -51,7 +51,7 @@ def _ensure_real_diagonal_q(q: np.ndarray):
     Change the phases of Q so the main diagonal is real, and return the modified Q.
     """
     exp_angles = np.angle(np.diag(q))
-    return q * np.exp(-1j * exp_angles).reshape((2, 1))
+    return q * np.exp(-1j * exp_angles).reshape((1, 2))
 
 def _matrix_adjoint(matrix: np.ndarray):
     return np.transpose(np.conj(matrix))
