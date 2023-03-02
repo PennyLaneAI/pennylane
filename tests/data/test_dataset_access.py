@@ -314,6 +314,14 @@ class TestLoadHelpers:
                 [["full"], ["STO-3G"], ["0.50"]],
                 [],
             ),
+            (
+                {
+                    "H2": {"STO-3G": ["0.46", "0.48", "0.50"], "6-31G": ["0.46", "0.50"]},
+                    "HeH": {"STO-3G": ["0.50"]},
+                },
+                [["HeH", "H2"], ["STO-3G"], ["0.50", "0.46"]],
+                ["HeH/STO-3G/0.50", "H2/STO-3G/0.50", "H2/STO-3G/0.46"],
+            ),
         ],
     )
     def test_generate_folders(self, node, folders, output):
