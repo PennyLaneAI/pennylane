@@ -71,7 +71,7 @@ def insert(
     for more information).
 
     Args:
-        circuit (callable or QuantumTape or Device): the input circuit to be transformed, or a
+        circuit (callable or QuantumTape or pennylane.Device): the input circuit to be transformed, or a
             device
         op (callable or Type[Operation]): the single-qubit operation, or sequence of operations
             acting on a single qubit, to be inserted into the circuit
@@ -86,7 +86,7 @@ def insert(
             Default is ``False`` and the operation is inserted after.
 
     Returns:
-        callable or QuantumTape or Device: the updated version of the input circuit or an updated
+        callable or QuantumTape or pennylane.Device: the updated version of the input circuit or an updated
         device which will transform circuits before execution
 
     Raises:

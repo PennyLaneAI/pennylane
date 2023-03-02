@@ -21,7 +21,7 @@ provided by PennyLane alongside with the PennyLane library:
     import pennylane as qml
     from pennylane import numpy as np
 
-This is powered via `autograd <https://github.com/HIPS/autograd>`_, and enables
+This is powered via `Autograd <https://github.com/HIPS/autograd>`_, and enables
 automatic differentiation and backpropagation of classical computations using familiar
 NumPy functions and modules (such as ``np.sin``, ``np.cos``, ``np.exp``, ``np.linalg``,
 ``np.fft``), as well as standard Python constructs, such as ``if`` statements, and ``for``
@@ -57,6 +57,9 @@ It can now be used like any other Python/NumPy function:
 >>> theta = 0.2
 >>> circuit1(phi, theta)
 array([ 0.87758256,  0.68803733])
+
+The interface can also be automatically determined when the ``QNode`` is called. You do not need to pass the interface
+if you provide parameters.
 
 Via the QNode constructor
 ^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -286,21 +289,22 @@ the partial derivative of the first/second expectation value with respect to the
 Advanced Autograd usage
 -----------------------
 
-The PennyLane NumPy interface leverages the Python library `autograd
+The PennyLane NumPy interface leverages the Python library `Autograd
 <https://github.com/HIPS/autograd>`_ to enable automatic differentiation of NumPy code, and extends
 it to provide gradients of quantum circuit functions encapsulated in QNodes. In order to make NumPy
 code differentiable, Autograd provides a wrapped version of NumPy (exposed in PennyLane as
 :code:`pennylane.numpy`).
 
-As stated in other sections, using this interface, any hybrid computation should be coded using the
-wrapped version of NumPy provided by PennyLane. **If you accidentally import the vanilla version of
-NumPy, your code will not be automatically differentiable.**
+.. warning::
+    As stated in other sections, using this interface, any hybrid computation should be coded using the
+    wrapped version of NumPy provided by PennyLane. If you accidentally import the vanilla version of
+    NumPy, your code will not be automatically differentiable.
 
-Because of the way autograd wraps NumPy, the PennyLane NumPy interface allows standard NumPy
+Because of the way Autograd wraps NumPy, the PennyLane NumPy interface allows standard NumPy
 functions and basic Python control statements (``if`` statements, loops, etc.) for declaring
 differentiable classical computations.
 
-That being said, autograd's coverage of NumPy is not complete. It is best to consult the `autograd
+That being said, Autograd's coverage of NumPy is not complete. It is best to consult the `Autograd
 docs <https://github.com/HIPS/autograd/blob/master/docs/tutorial.md>`_ for a more complete overview
 of supported and unsupported features. We highlight a few of the major 'gotchas' here.
 

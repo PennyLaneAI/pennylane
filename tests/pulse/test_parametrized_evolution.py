@@ -25,6 +25,7 @@ import pennylane as qml
 from pennylane.operation import AnyWires
 from pennylane.ops import QubitUnitary
 from pennylane.pulse import ParametrizedEvolution, ParametrizedHamiltonian
+from pennylane.tape import QuantumTape
 
 
 class MyOp(qml.RX):  # pylint: disable=too-few-public-methods
@@ -89,7 +90,6 @@ class TestInitialization:
 
         assert ev.H is H
         assert qml.math.allequal(ev.t, [0, 2])
-        assert qml.math.allequal(ev.params, [1, 2])
 
         assert ev.wires == H.wires
         assert ev.num_wires == AnyWires
@@ -97,9 +97,9 @@ class TestInitialization:
         assert ev.id is None
         assert ev.queue_idx is None
 
-        assert ev.data == []
-        assert ev.parameters == []
-        assert ev.num_params == 0
+        assert qml.math.allequal(ev.data, [1, 2])
+        assert qml.math.allequal(ev.parameters, [1, 2])
+        assert ev.num_params == 2
 
     def test_odeint_kwargs(self):
         """Test the initialization with odeint kwargs."""
@@ -117,16 +117,33 @@ class TestInitialization:
         H = ParametrizedHamiltonian(coeffs, ops)
         ev = ParametrizedEvolution(H=H, mxstep=10)
 
-        assert ev.params is None
+        assert ev.parameters == []
+        assert ev.num_params == 0
         assert ev.t is None
         assert ev.odeint_kwargs == {"mxstep": 10}
         params = [1, 2, 3]
         t = 6
-        ev(params, t, atol=1e-6, rtol=1e-4)
+        new_ev = ev(params, t, atol=1e-6, rtol=1e-4)
 
-        assert qml.math.allequal(ev.params, params)
-        assert qml.math.allequal(ev.t, [0, 6])
-        assert ev.odeint_kwargs == {"mxstep": 10, "atol": 1e-6, "rtol": 1e-4}
+        assert new_ev is not ev
+        assert qml.math.allequal(new_ev.parameters, params)
+        assert new_ev.num_params == 3
+        assert qml.math.allequal(new_ev.t, [0, 6])
+        assert new_ev.odeint_kwargs == {"mxstep": 10, "atol": 1e-6, "rtol": 1e-4}
+
+    def test_update_attributes_inside_queuing_context(self):
+        """Make sure that updating a ``ParametrizedEvolution`` inside a queuing context, the initial
+        operator is removed from the queue."""
+        ops = [qml.PauliX(0), qml.PauliY(1)]
+        coeffs = [1, 2]
+        H = ParametrizedHamiltonian(coeffs, ops)
+
+        with QuantumTape() as tape:
+            op = qml.evolve(H)
+            op2 = op(params=[1, 2, 3], t=6)
+
+        assert len(tape) == 1
+        assert tape[0] is op2
 
     def test_list_of_times(self):
         """Test the initialization."""
@@ -142,12 +159,15 @@ class TestInitialization:
         assert qml.math.allclose(ev.t, t)
 
     def test_has_matrix_true(self):
-        """Test that a parametrized evolution always has ``has_matrix=True``."""
+        """Test that a parametrized evolution has ``has_matrix=True`` only when `t` and `params` are
+        defined."""
         ops = [qml.PauliX(0), qml.PauliY(1)]
         coeffs = [1, 2]
         H = ParametrizedHamiltonian(coeffs, ops)
-        ev = ParametrizedEvolution(H=H, params=[1, 2], t=2)
-        assert ev.has_matrix is True
+        ev = ParametrizedEvolution(H=H)
+        assert ev.has_matrix is False
+        new_ev = ev(params=[1, 2, 3], t=3)
+        assert new_ev.has_matrix is True
 
     def test_evolve_with_operator_without_matrix_raises_error(self):
         """Test that an error is raised when an ``ParametrizedEvolution`` operator is initialized with a
@@ -215,18 +235,18 @@ class TestIntegration:
 
         t = 4
 
-        @qml.qnode(dev, interface="jax")
+        @qml.qnode(dev)
         def circuit(params):
             ParametrizedEvolution(H=H, params=params, t=t)
             return qml.expval(qml.PauliX(0) @ qml.PauliX(1))
 
         @jax.jit
-        @qml.qnode(dev, interface="jax")
+        @qml.qnode(dev)
         def jitted_circuit(params):
             ParametrizedEvolution(H=H, params=params, t=t)
             return qml.expval(qml.PauliX(0) @ qml.PauliX(1))
 
-        @qml.qnode(dev, interface="jax")
+        @qml.qnode(dev)
         def true_circuit(params):
             true_mat = qml.math.expm(-1j * qml.matrix(H(params, t=t)) * t)
             QubitUnitary(U=true_mat, wires=[0, 1])
@@ -262,18 +282,18 @@ class TestIntegration:
             for ti in times:
                 yield jax.scipy.linalg.expm(-1j * time_step * qml.matrix(H(params, t=ti)))
 
-        @qml.qnode(dev, interface="jax")
+        @qml.qnode(dev)
         def circuit(params):
             ParametrizedEvolution(H=H, params=params, t=t)
             return qml.expval(qml.PauliZ(0) @ qml.PauliX(1))
 
         @jax.jit
-        @qml.qnode(dev, interface="jax")
+        @qml.qnode(dev)
         def jitted_circuit(params):
             ParametrizedEvolution(H=H, params=params, t=t)
             return qml.expval(qml.PauliZ(0) @ qml.PauliX(1))
 
-        @qml.qnode(dev, interface="jax")
+        @qml.qnode(dev)
         def true_circuit(params):
             true_mat = reduce(lambda x, y: y @ x, generator(params))
             QubitUnitary(U=true_mat, wires=[0, 1])
@@ -292,7 +312,8 @@ class TestIntegration:
 
     def test_two_commuting_parametrized_hamiltonians(self):
         """Test that the evolution of two parametrized hamiltonians that commute with each other
-        is equal to evolve the two hamiltonians simultaneously."""
+        is equal to evolve the two hamiltonians simultaneously. This test uses 8 wires for the device
+        to test the case where 2 * n < N (the matrix is evolved instead of the state)."""
         import jax
         import jax.numpy as jnp
 
@@ -313,7 +334,7 @@ class TestIntegration:
         ops = [qml.PauliX(0), qml.PauliX(2)]
         H2 = qml.dot(coeffs, ops)
 
-        dev = qml.device("default.qubit", wires=3)
+        dev = qml.device("default.qubit", wires=8)
 
         @jax.jit
         @qml.qnode(dev, interface="jax")
@@ -337,3 +358,34 @@ class TestIntegration:
             jax.grad(circuit2)(params2),
             atol=5e-4,
         )
+
+    def test_mixed_device(
+        self,
+    ):
+        """Test mixed device integration matches that of default qubit"""
+        import jax
+        import jax.numpy as jnp
+
+        mixed = qml.device("default.mixed", wires=range(3))
+        default = qml.device("default.qubit", wires=range(3))
+
+        coeff = [qml.pulse.pwc(5.0), qml.pulse.pwc(5.0)]
+        ops = [qml.PauliX(0) @ qml.PauliX(1), qml.PauliY(1) @ qml.PauliY(2)]
+        H_pulse = qml.dot(coeff, ops)
+
+        def circuit(x):
+            qml.pulse.ParametrizedEvolution(H_pulse, x, 5.0)
+            return qml.expval(qml.PauliZ(0))
+
+        qnode_def = qml.QNode(circuit, default, interface="jax")
+        qnode_mix = qml.QNode(circuit, mixed, interface="jax")
+
+        x = [jnp.arange(3, dtype=float)] * 2
+        res_def = qnode_def(x)
+        grad_def = jax.grad(qnode_def)(x)
+
+        res_mix = qnode_mix(x)
+        grad_mix = jax.grad(qnode_mix)(x)
+
+        assert qml.math.isclose(res_def, res_mix, atol=1e-4)
+        assert qml.math.allclose(grad_def, grad_mix, atol=1e-4)

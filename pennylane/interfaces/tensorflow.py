@@ -134,7 +134,7 @@ def execute(tapes, device, execute_fn, gradient_fn, gradient_kwargs, _n=1, max_d
 
     Args:
         tapes (Sequence[.QuantumTape]): batch of tapes to execute
-        device (.Device): Device to use to execute the batch of tapes.
+        device (pennylane.Device): Device to use to execute the batch of tapes.
             If the device does not provide a ``batch_execute`` method,
             by default the tapes will be executed in serial.
         execute_fn (callable): The execution function used to execute the tapes
@@ -168,7 +168,6 @@ def execute(tapes, device, execute_fn, gradient_fn, gradient_kwargs, _n=1, max_d
             gradient_kwargs,
             _n=_n,
             max_diff=max_diff,
-            mode=mode,
         )
 
     parameters = []
@@ -217,7 +216,7 @@ def execute(tapes, device, execute_fn, gradient_fn, gradient_kwargs, _n=1, max_d
             dy = [qml.math.T(d) for d in dy]
 
             if jacs:
-                # Jacobians were computed on the forward pass (mode="forward")
+                # Jacobians were computed on execution
                 # No additional quantum evaluations needed; simply compute the VJPs directly.
                 vjps = _compute_vjp(dy, jacs)
 
@@ -284,14 +283,12 @@ def execute(tapes, device, execute_fn, gradient_fn, gradient_kwargs, _n=1, max_d
     return _execute(*parameters)
 
 
-def _execute_new(
-    tapes, device, execute_fn, gradient_fn, gradient_kwargs, _n=1, max_diff=2, mode=None
-):
+def _execute_new(tapes, device, execute_fn, gradient_fn, gradient_kwargs, _n=1, max_diff=2):
     """Execute a batch of tapes with TensorFlow parameters on a device.
 
     Args:
         tapes (Sequence[.QuantumTape]): batch of tapes to execute
-        device (.Device): Device to use to execute the batch of tapes.
+        device (pennylane.Device): Device to use to execute the batch of tapes.
             If the device does not provide a ``batch_execute`` method,
             by default the tapes will be executed in serial.
         execute_fn (callable): The execution function used to execute the tapes
@@ -307,8 +304,6 @@ def _execute_new(
             the maximum number of derivatives to support. Increasing this value allows
             for higher order derivatives to be extracted, at the cost of additional
             (classical) computational overhead during the backwards pass.
-        mode (str): Whether the gradients should be computed on the forward
-            pass (``forward``) or the backward pass (``backward``).
 
     Returns:
         list[list[tf.Tensor]]: A nested list of tape results. Each element in
@@ -354,7 +349,7 @@ def _execute_new(
             dy = _res_restructured(dy, tapes, shots=device.shot_vector)
 
             if jacs:
-                # Jacobians were computed on the forward pass (mode="forward")
+                # Jacobians were computed on execution
                 # No additional quantum evaluations needed; simply compute the VJPs directly.
                 vjps = _compute_vjp_new(dy, jacs, multi_measurements, device.shot_vector)
 

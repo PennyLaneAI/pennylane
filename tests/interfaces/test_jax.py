@@ -64,7 +64,7 @@ def test_raise_version_error(package, version, should_raise, monkeypatch):
             execute([tape], dev, gradient_fn=param_shift, interface="jax-jit")
 
 
-@pytest.mark.parametrize("interface", ["jax-jit", "jax-python", "auto"])
+@pytest.mark.parametrize("interface", ["jax-jit", "jax-python"])
 class TestJaxExecuteUnitTests:
     """Unit tests for jax execution"""
 
@@ -132,12 +132,7 @@ class TestJaxExecuteUnitTests:
                 qml.expval(qml.PauliZ(0))
 
             tape = qml.tape.QuantumScript.from_queue(q)
-            return execute(
-                [tape],
-                device,
-                gradient_fn=param_shift,
-                interface="None",
-            )[0]
+            return execute([tape], device, gradient_fn=param_shift, interface="None")[0]
 
         with pytest.raises(ValueError, match="Unknown interface"):
             cost(a, device=dev)
@@ -231,7 +226,7 @@ class TestJaxExecuteUnitTests:
             )
 
 
-@pytest.mark.parametrize("interface", ["jax-jit", "jax-python", "auto"])
+@pytest.mark.parametrize("interface", ["jax-jit", "jax-python"])
 class TestCaching:
     """Test for caching behaviour"""
 
@@ -410,7 +405,7 @@ execute_kwargs = [
 
 
 @pytest.mark.parametrize("execute_kwargs", execute_kwargs)
-@pytest.mark.parametrize("interface", ["jax-jit", "jax-python", "auto"])
+@pytest.mark.parametrize("interface", ["jax-jit", "jax-python"])
 class TestJaxExecuteIntegration:
     """Test the jax interface execute function
     integrates well for both forward and backward execution"""

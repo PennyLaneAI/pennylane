@@ -30,6 +30,7 @@ from pennylane.operation import Operator
 from pennylane.wires import Wires
 
 from .symbolicop import SymbolicOp
+from .controlled_decompositions import ctrl_decomp_zyz
 
 
 def ctrl(op, control, control_values=None, work_wires=None):
@@ -470,6 +471,8 @@ class Controlled(SymbolicOp):
             return True
         if isinstance(self.base, qml.PauliX):
             return True
+        if len(self.base.wires) == 1 and getattr(self.base, "has_matrix", False):
+            return True
         if self.base.has_decomposition:
             return True
 
@@ -544,7 +547,7 @@ class Controlled(SymbolicOp):
 
 # pylint: disable=protected-access
 def _decompose_no_control_values(op: "operation.Operator") -> List["operation.Operator"]:
-    """Provides a decomposition without considering control values.  Returns None if
+    """Provides a decomposition without considering control values. Returns None if
     no decomposition.
     """
     if len(op.control_wires) == 1 and hasattr(op.base, "_controlled"):
@@ -553,13 +556,13 @@ def _decompose_no_control_values(op: "operation.Operator") -> List["operation.Op
         if len(op.control_wires) == 2:
             return [qml.Toffoli(op.active_wires)]
         return [qml.MultiControlledX(wires=op.active_wires, work_wires=op.work_wires)]
+    if len(op.base.wires) == 1 and getattr(op.base, "has_matrix", False):
+        return ctrl_decomp_zyz(op.base, op.control_wires)
 
     if not op.base.has_decomposition:
         return None
 
-    # Need to use expand because of in-place inversion
-    # revert to decomposition once in-place inversion removed
-    base_decomp = op.base.expand().circuit
+    base_decomp = op.base.decomposition()
 
     return [Controlled(newop, op.control_wires, work_wires=op.work_wires) for newop in base_decomp]
 
@@ -632,6 +635,6 @@ class ControlledOp(Controlled, operation.Operation):
             return [qml.gradients.eigvals_to_frequencies(processed_gen_eigvals)]
         raise operation.ParameterFrequenciesUndefinedError(
             f"Operation {self.name} does not have parameter frequencies defined, "
-            "and parameter frequencies can not be computed via generator for more than one"
+            "and parameter frequencies can not be computed via generator for more than one "
             "parameter."
         )

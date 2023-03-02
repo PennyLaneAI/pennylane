@@ -100,7 +100,7 @@ from pennylane.transforms import (
 )
 from pennylane.ops.functions import *
 from pennylane.optimize import *
-from pennylane.vqe import ExpvalCost, VQECost
+from pennylane.vqe import ExpvalCost
 from pennylane.debugging import snapshots
 from pennylane.shadows import ClassicalShadow
 import pennylane.data
@@ -210,7 +210,7 @@ def device(name, *args, **kwargs):
         def circuit():
            qml.Hadamard(wires='q11')
            qml.Hadamard(wires=['ancilla'])
-           qml.CNOT(wires=['q12', -1] )
+           qml.CNOT(wires=['q12', -1])
            ...
 
     Most devices accept a ``shots`` argument which specifies how many circuit executions
@@ -229,7 +229,7 @@ def device(name, *args, **kwargs):
 
     >>> circuit(0.8)  # 10 samples are returned
     [ 1  1  1 -1 -1  1  1  1  1  1]
-    >>> circuit(0.8, shots=3))  # default is overwritten for this call
+    >>> circuit(0.8, shots=3)   # default is overwritten for this call
     [1 1 1]
     >>> circuit(0.8)  # back to default of 10 samples
     [ 1  1  1 -1 -1  1  1  1  1  1]

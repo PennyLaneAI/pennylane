@@ -208,8 +208,8 @@ class TestDecomposeSingleQubitUnitaryTransform:
             qfunc(U)
             return qml.expval(qml.PauliX("a") @ qml.PauliZ("b"))
 
-        original_qnode = qml.QNode(test_qfunc, dev, interface="jax")
-        transformed_qnode = qml.QNode(unitary_to_rot(test_qfunc), dev, interface="jax")
+        original_qnode = qml.QNode(test_qfunc, dev)
+        transformed_qnode = qml.QNode(unitary_to_rot(test_qfunc), dev)
         jitted_qnode = jax.jit(transformed_qnode)
 
         original_result = original_qnode(U)
@@ -308,16 +308,12 @@ class TestQubitUnitaryDifferentiability:
 
         dev = qml.device("default.qubit", wires=["a", "b"])
 
-        original_qnode = qml.QNode(
-            original_qfunc_for_grad, dev, interface="torch", diff_method=diff_method
-        )
+        original_qnode = qml.QNode(original_qfunc_for_grad, dev, diff_method=diff_method)
         original_input = torch.tensor(rot_angles, dtype=torch.float64, requires_grad=True)
         original_result = original_qnode(original_input)
 
         transformed_qfunc = unitary_to_rot(qfunc_with_qubit_unitary)
-        transformed_qnode = qml.QNode(
-            transformed_qfunc, dev, interface="torch", diff_method=diff_method
-        )
+        transformed_qnode = qml.QNode(transformed_qfunc, dev, diff_method=diff_method)
         transformed_input = torch.tensor(rot_angles, dtype=torch.float64, requires_grad=True)
         transformed_result = transformed_qnode(transformed_input)
 
@@ -352,16 +348,12 @@ class TestQubitUnitaryDifferentiability:
 
         dev = qml.device("default.qubit", wires=["a", "b"])
 
-        original_qnode = qml.QNode(
-            original_qfunc_for_grad, dev, interface="tf", diff_method=diff_method
-        )
+        original_qnode = qml.QNode(original_qfunc_for_grad, dev, diff_method=diff_method)
         original_input = tf.Variable(rot_angles, dtype=tf.float64)
         original_result = original_qnode(original_input)
 
         transformed_qfunc = unitary_to_rot(qfunc_with_qubit_unitary)
-        transformed_qnode = qml.QNode(
-            transformed_qfunc, dev, interface="tf", diff_method=diff_method
-        )
+        transformed_qnode = qml.QNode(transformed_qfunc, dev, diff_method=diff_method)
         transformed_input = tf.Variable(rot_angles, dtype=tf.float64)
         transformed_result = transformed_qnode(transformed_input)
 
@@ -413,15 +405,11 @@ class TestQubitUnitaryDifferentiability:
 
         dev = qml.device("default.qubit", wires=["a", "b"])
 
-        original_qnode = qml.QNode(
-            original_qfunc_for_grad, dev, interface="jax", diff_method=diff_method
-        )
+        original_qnode = qml.QNode(original_qfunc_for_grad, dev, diff_method=diff_method)
         original_result = original_qnode(angles)
 
         transformed_qfunc = unitary_to_rot(qfunc_with_qubit_unitary)
-        transformed_qnode = qml.QNode(
-            transformed_qfunc, dev, interface="jax", diff_method=diff_method
-        )
+        transformed_qnode = qml.QNode(transformed_qfunc, dev, diff_method=diff_method)
         transformed_result = transformed_qnode(angles)
         assert qml.math.allclose(original_result, transformed_result)
 

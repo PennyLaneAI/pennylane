@@ -41,7 +41,7 @@ def pow(base, z=1, lazy=True, do_queue=True, id=None):
 
     Args:
         base (~.operation.Operator): the operator to be raised to a power
-        z=1 (float): the exponent
+        z (float): the exponent (default value is 1)
 
     Keyword Args:
         lazy=True (bool): In lazy mode, all operations are wrapped in a ``Pow`` class
@@ -125,10 +125,6 @@ class PowOperation(Operation):
     grad_method = None
 
     @property
-    def inverse(self):
-        return False
-
-    @property
     def base_name(self):
         return self._name
 
@@ -206,22 +202,15 @@ class Pow(ScalarSymbolicOp):
         return object.__new__(Pow)
 
     def __init__(self, base=None, z=1, do_queue=True, id=None):
-        # incorporate base inverse attribute into the exponent
-        if getattr(base, "inverse", False):
-            base.inverse = False
-            z *= -1
-
         self.hyperparameters["z"] = z
         self._name = f"{base.name}**{z}"
 
         super().__init__(base, scalar=z, do_queue=do_queue, id=id)
 
         if isinstance(self.z, int) and self.z > 0:
-            if (
-                base_pauli_rep := getattr(
-                    self.base, "_pauli_rep", None
-                )  # pylint: disable=protected-access
-            ) is not None:
+            if (base_pauli_rep := getattr(self.base, "_pauli_rep", None)) and (
+                self.batch_size is None
+            ):
                 pr = qml.pauli.PauliSentence({})
                 for _ in range(self.z):
                     pr = pr * base_pauli_rep
@@ -348,6 +337,11 @@ class Pow(ScalarSymbolicOp):
         return Pow(base=qml.adjoint(self.base), z=self.z)
 
     def simplify(self) -> Union["Pow", Identity]:
+        # try using pauli_rep:
+        if pr := self._pauli_rep:
+            pr.simplify()
+            return pr.operation(wire_order=self.wires)
+
         base = self.base.simplify()
         try:
             ops = base.pow(z=self.z)
