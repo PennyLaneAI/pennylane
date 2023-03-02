@@ -86,6 +86,13 @@ class Evolution(Exp):
         super().__init__(generator, coeff=1j * param, num_steps=num_steps, do_queue=do_queue, id=id)
         self._data = [param]
 
+    def __repr__(self):
+        return (
+            f"Evolution({self.coeff} {self.base})"
+            if self.base.arithmetic_depth > 0
+            else f"Evolution({self.coeff} {self.base.name})"
+        )
+
     @property
     def param(self):
         """A real coefficient with ``1j`` factored out."""
