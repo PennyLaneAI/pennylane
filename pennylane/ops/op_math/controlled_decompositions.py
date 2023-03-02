@@ -316,7 +316,7 @@ def ctrl_decomp_bisect_general(target_operation: typing.Union[Operator, tuple[np
     """Decompose the controlled version of a target single-qubit operation
 
     This function decomposes a controlled single-qubit target operation using the
-    decomposition defined in section 3.1 of
+    decomposition defined in section 3.2 of
     `Vale et al. (2023) <https://arxiv.org/abs/2302.06377>`_.
 
     .. warning:: This method will add a global phase for target operations that do not

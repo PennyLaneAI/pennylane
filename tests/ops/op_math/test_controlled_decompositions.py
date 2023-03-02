@@ -22,6 +22,8 @@ from pennylane.ops import ctrl_decomp_zyz
 from pennylane.wires import Wires
 from pennylane.ops.op_math.controlled_decompositions import ctrl_decomp_bisect_od, ctrl_decomp_bisect_md, ctrl_decomp_bisect_general, _convert_to_su2
 
+cw5 = tuple(list(range(1, 1+n)) for n in range(2, 6))
+
 class TestControlledDecompositionZYZ:
     """tests for qml.ops.ctrl_decomp_zyz"""
 
@@ -197,7 +199,7 @@ class TestControlledBisectOD:
     ]
 
     @pytest.mark.parametrize("op", su2_od_ops + od_ops)
-    @pytest.mark.parametrize("control_wires", ([1, 2], [1, 2, 3]))
+    @pytest.mark.parametrize("control_wires", cw5)
     def test_decomposition_circuit(self, op, control_wires, tol):
         """Tests that the controlled decomposition of a single-qubit operation
         behaves as expected in a quantum circuit"""
@@ -220,7 +222,7 @@ class TestControlledBisectOD:
         assert np.allclose(res, expected, atol=tol, rtol=tol)
 
     @pytest.mark.parametrize("op", su2_od_ops)
-    @pytest.mark.parametrize("control_wires", ([1, 2], [1, 2, 3]))
+    @pytest.mark.parametrize("control_wires", cw5)
     def test_decomposition_matrix(self, op, control_wires, tol):
         """Tests that the matrix representation of the controlled decomposition
         of a single-qubit operation is correct"""
@@ -230,7 +232,7 @@ class TestControlledBisectOD:
         res = qml.matrix(ctrl_decomp_bisect_od, wire_order=control_wires + [0])(op, control_wires)
         expected = expected_op.matrix()
 
-        assert np.allclose(expected, res, atol=tol, rtol=tol)
+        assert np.allclose(res, expected, atol=tol, rtol=tol)
 
 
 
@@ -296,7 +298,7 @@ class TestControlledBisectMD:
     ]
 
     @pytest.mark.parametrize("op", su2_md_ops + md_ops)
-    @pytest.mark.parametrize("control_wires", ([1, 2], [1, 2, 3]))
+    @pytest.mark.parametrize("control_wires", cw5)
     def test_decomposition_circuit(self, op, control_wires, tol):
         """Tests that the controlled decomposition of a single-qubit operation
         behaves as expected in a quantum circuit"""
@@ -319,7 +321,7 @@ class TestControlledBisectMD:
         assert np.allclose(res, expected, atol=tol, rtol=tol)
 
     @pytest.mark.parametrize("op", su2_md_ops)
-    @pytest.mark.parametrize("control_wires", ([1, 2], [1, 2, 3]))
+    @pytest.mark.parametrize("control_wires", cw5)
     def test_decomposition_matrix(self, op, control_wires, tol):
         """Tests that the matrix representation of the controlled decomposition
         of a single-qubit operation is correct"""
@@ -329,7 +331,7 @@ class TestControlledBisectMD:
         res = qml.matrix(ctrl_decomp_bisect_md, wire_order=control_wires + [0])(op, control_wires)
         expected = expected_op.matrix()
 
-        assert np.allclose(expected, res, atol=tol, rtol=tol)
+        assert np.allclose(res, expected, atol=tol, rtol=tol)
 
 
 class TestControlledBisectGeneral:
@@ -343,6 +345,24 @@ class TestControlledBisectGeneral:
             _ = ctrl_decomp_bisect_general(qml.CNOT([0, 1]), [2])
 
     su2_gen_ops = [
+        qml.QubitUnitary(
+            np.array(
+                [
+                    [0, 1],
+                    [-1, 0],
+                ]
+            ),
+            wires=0,
+        ),
+        qml.QubitUnitary(
+            np.array(
+                [
+                    [0, 1j],
+                    [1j, 0],
+                ]
+            ),
+            wires=0,
+        ),
         qml.QubitUnitary(
             np.array(
                 [
@@ -374,12 +394,14 @@ class TestControlledBisectGeneral:
 
     gen_ops = [
         qml.PauliX(0),
+        qml.PauliY(0),
         qml.PauliZ(0),
-        qml.Hadamard(0)
+        qml.Hadamard(0),
+        qml.Rot(0.123, 0.456, 0.789, wires=0),
     ]
 
     @pytest.mark.parametrize("op", su2_gen_ops + gen_ops)
-    @pytest.mark.parametrize("control_wires", ([1, 2], [1, 2, 3]))
+    @pytest.mark.parametrize("control_wires", cw5)
     def test_decomposition_circuit(self, op, control_wires, tol):
         """Tests that the controlled decomposition of a single-qubit operation
         behaves as expected in a quantum circuit"""
@@ -402,7 +424,7 @@ class TestControlledBisectGeneral:
         assert np.allclose(res, expected, atol=tol, rtol=tol)
 
     @pytest.mark.parametrize("op", su2_gen_ops)
-    @pytest.mark.parametrize("control_wires", ([1, 2], [1, 2, 3]))
+    @pytest.mark.parametrize("control_wires", cw5)
     def test_decomposition_matrix(self, op, control_wires, tol):
         """Tests that the matrix representation of the controlled decomposition
         of a single-qubit operation is correct"""
@@ -412,4 +434,4 @@ class TestControlledBisectGeneral:
         res = qml.matrix(ctrl_decomp_bisect_general, wire_order=control_wires + [0])(op, control_wires)
         expected = expected_op.matrix()
 
-        assert np.allclose(expected, res, atol=tol, rtol=tol)
+        assert np.allclose(res, expected, atol=tol, rtol=tol)
