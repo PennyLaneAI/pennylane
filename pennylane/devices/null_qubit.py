@@ -49,6 +49,7 @@ class NullQubit(QubitDevice):
         "ControlledQubitUnitary",
         "MultiControlledX",
         "DiagonalQubitUnitary",
+        "SpecialUnitary",
         "PauliX",
         "PauliY",
         "PauliZ",

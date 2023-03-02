@@ -107,7 +107,7 @@ def eigvals(op, k=1, which="SA"):
     if isinstance(op, qml.Hamiltonian):
         warnings.warn(
             "For Hamiltonians, the eigenvalues will be computed numerically. "
-            "This may be computationally intensive for a large number of wires."
+            "This may be computationally intensive for a large number of wires. "
             "Consider using a sparse representation of the Hamiltonian with qml.SparseHamiltonian.",
             UserWarning,
         )

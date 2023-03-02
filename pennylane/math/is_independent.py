@@ -373,9 +373,9 @@ def is_independent(
 
     if interface == "torch":
         warnings.warn(
-            "The function is_independent is only available numerically for the PyTorch interface."
-            " Make sure that sampling positions and evaluating the function at these positions"
-            " is a sufficient test, or change the interface."
+            "The function is_independent is only available numerically for the PyTorch interface. "
+            "Make sure that sampling positions and evaluating the function at these positions "
+            "is a sufficient test, or change the interface."
         )
 
     return _is_indep_numerical(func, interface, args, kwargs, num_pos, seed, atol, rtol, bounds)
