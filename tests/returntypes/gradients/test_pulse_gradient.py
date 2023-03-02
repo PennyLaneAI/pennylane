@@ -29,6 +29,7 @@ ham_single_q_const = qml.pulse.constant * qml.PauliY(0)
 ham_single_q_pwc = qml.pulse.pwc((2., 4.)) * qml.PauliZ(0)
 ham_two_q_pwc = qml.pulse.pwc((2., 4.)) * (qml.PauliZ(0) @ qml.PauliX(1))
 
+pytestmark = pytest.mark.jax
 
 def equal(op1, op2, check_t=True):
     """Helper function to check whether two operations are the same via qml.equal, optionally
@@ -46,7 +47,6 @@ split_evol_ops_test_cases = [
     (ham_single_q_pwc, [np.linspace(0, 1, 13)], (0.6, 1.2), "Y"),
     (ham_two_q_pwc, [np.linspace(0, 1, 13)], 3, "YX"),
 ]
-@pytest.mark.jax
 class TestSplitEvolOps:
     """Tests for the helper method split_evol_ops that samples a splitting time and splits up
     a ParametrizedEvolution operation at the sampled time, inserting a Pauli rotation about the
@@ -167,7 +167,6 @@ class TestSplitEvolTapes:
             assert qml.equal(t.operations[-1], ops[2])
 
 
-@pytest.mark.jax
 class TestStochPulseGradErrors:
     """Test errors raised by stoch_pulse_grad."""
 
@@ -250,4 +249,39 @@ class TestStochPulseGrad:
         assert isinstance(res, tuple) and len(res) == 2
         assert qml.math.allclose(res[0], np.zeros(2))
         assert qml.math.allclose(res[1], np.zeros((2, 4)))
+
+    @pytest.mark.parametrize("num_samples", [1, 3])
+    @pytest.mark.parametrize("t", [2., 3, (0.5, 0.6)])
+    def test_correct_grad_single_par(self, num_samples, t):
+        """Test that a tape with a single trainable
+        ParametrizedEvolution is differentiated correctly."""
+        import jax
+        jnp = jax.numpy
+        params = [jnp.array(0.24)]
+        op = qml.evolve(ham_single_q_const)(params, t)
+        tape = qml.tape.QuantumScript([op], [qml.expval(qml.PauliZ(0))])
+
+        dev = qml.device("default.qubit.jax", wires=1)
+        # Effective rotation parameter
+        p = params[0] * (t[1]-t[0] if isinstance(t, tuple) else t)
+        r = qml.execute([tape], dev, None)
+        assert qml.math.isclose(r, jnp.cos(2 * p))
+        tapes, fn = stoch_pulse_grad(tape, num_samples=num_samples)
+        res = fn(qml.execute(tapes, dev, None))
+        assert qml.math.isclose(res, -2 * jnp.sin(2 * p))
+
+        params = [jnp.array([0.24, 0.9, -0.1, 2.3, -0.245])]
+        op = qml.evolve(qml.pulse.pwc(t)*qml.PauliZ(0))(params, t)
+        tape = qml.tape.QuantumScript([qml.Hadamard(0), op], [qml.expval(qml.PauliX(0))])
+
+        dev = qml.device("default.qubit.jax", wires=1)
+        # Effective rotation parameter
+        p = jnp.mean(params[0]) * (t[1]-t[0] if isinstance(t, tuple) else t)
+        r = qml.execute([tape], dev, None)
+        assert qml.math.isclose(r, jnp.cos(2 * p))
+        tapes, fn = stoch_pulse_grad(tape, num_samples=num_samples)
+        res = fn(qml.execute(tapes, dev, None))
+        assert qml.math.allclose(res, -2 * jnp.sin(2 * p))
+
+
 

@@ -39,14 +39,14 @@ from .gradient_transform import (
 has_jax = True
 try:
     import jax
-    import jax.numpy as jnp
 except ImportError:
     has_jax = False
 
 
 def split_evol_ops(op, word, key):
-    """Create a randomly split-time evolution with inserted Pauli rotations between
-    the two split up parts.
+    """Randomly split a ``ParametrizedEvolution`` with respect to time into two and insert
+    a Pauli rotation about a given Pauli word by :math:`\pm\pi/2`, yielding two groups of
+    three operations.
 
     Args:
         op (ParametrizedEvolution): The operation to split up.
@@ -63,36 +63,37 @@ def split_evol_ops(op, word, key):
     # Extract time interval, split it, and set the intervals of the copies to the split intervals
     t0, t1 = op.t
     tau = jax.random.uniform(key) * (t1 - t0) + t0
-    before.t = jnp.array([t0, tau])
-    after.t = jnp.array([tau, t1])
+    print(f"tau={tau}")
+    before.t = jax.numpy.array([t0, tau])
+    after.t = jax.numpy.array([tau, t1])
     # Create Pauli rotations to be inserted at tau
-    evolve_plus = qml.PauliRot(jnp.pi / 2, word, wires=op.wires)
-    evolve_minus = qml.PauliRot(-jnp.pi / 2, word, wires=op.wires)
+    evolve_plus = qml.PauliRot(np.pi / 2, word, wires=op.wires)
+    evolve_minus = qml.PauliRot(-np.pi / 2, word, wires=op.wires)
     # Construct gate sequences of split intervals and inserted Pauli rotations
     ops = ([before, evolve_plus, after], [before, evolve_minus, after])
     return tau, ops
 
 
 def split_evol_tapes(tape, split_evolve_ops, op_idx):
-    """Make two tapes out of one by replacing the operation indicated by op_idx by its split-time
-    evolution, once using the positive Pauli rotation angle operations and once the negative
-    angle operations.
+    """Replace a marked ``ParametrizedEvolution`` in a given tape by provided operations, creating
+    one tape per group of operations.
 
     Args:
-        tape (QuantumTape): The original tape
+        tape (QuantumTape): original tape
         split_evolve_ops (tuple[list[qml.Operation]]): The time-split evolution operations as created by
-            ``split_evol_ops``.
-        op_idx (int): The operation index within the tape.
+            :func:`~.split_evol_ops`. For each group of operations, a new tape is created.
+        op_idx (int): index of the operation to replace within the tape
 
     Returns:
-        list[QuantumTape]: The two new tapes with split time evolutions and inserted Pauli rotations.
+        list[QuantumTape]: new tapes with replaced operation, one tape per group of operations in
+        ``split_evolve_ops``.
     """
-    tapes = []
-    for split in split_evolve_ops:
-        # Replace the indicated operation by its split-up variant
-        ops = tape.operations[:op_idx] + split + tape.operations[op_idx + 1 :]
-        tapes.append(qml.tape.QuantumScript(ops, tape.measurements))
-    return tapes
+    ops_pre = tape.operations[:op_idx]
+    ops_post = tape.operations[op_idx + 1 :]
+    return [
+        qml.tape.QuantumScript(ops_pre + split + ops_post, tape.measurements)
+        for split in split_evolve_ops
+    ]
 
 
 def _stoch_pulse_grad(tape, argnum=None, num_samples=1, sampler_seed=None, shots=None, **kwargs):
@@ -178,7 +179,8 @@ def _expval_stoch_pulse_grad(tape, argnum, num_samples, key, shots):
             tau, split_evolve_ops = split_evol_ops(op, word, _key)
             this_cjacs.append(cjac_fn(op.data[term_idx], tau))
             this_tapes.extend(split_evol_tapes(tape, split_evolve_ops, op_idx))
-        gradient_data.append((len(this_tapes), jnp.stack(this_cjacs)))
+        print(this_cjacs)
+        gradient_data.append((len(this_tapes), qml.math.stack(this_cjacs)))
         tapes.extend(this_tapes)
 
     def processing_fn(results):
@@ -187,7 +189,7 @@ def _expval_stoch_pulse_grad(tape, argnum, num_samples, key, shots):
             tape._qfunc_output, Sequence
         )
         if scalar_qfunc_output:
-            results = [jnp.squeeze(res) for res in results]
+            results = [qml.math.squeeze(res) for res in results]
         start = 0
         grads = []
         for num_tapes, cjacs in gradient_data:
@@ -195,8 +197,10 @@ def _expval_stoch_pulse_grad(tape, argnum, num_samples, key, shots):
                 raise NotImplementedError("not implemented.")
             res = results[start : start + num_tapes]
             start += num_tapes
-            diff = jnp.array(res[::2]) - jnp.array(res[1::2])
-            grads.append(jnp.tensordot(diff, cjacs, axes=[[0], [0]]) / num_samples)
+            diff = qml.math.array(res[::2]) - qml.math.array(res[1::2])
+            print(diff)
+            grads.append(qml.math.tensordot(diff, cjacs, axes=[[0], [0]]) / num_samples)
+            print(grads[-1])
 
         num_measurements = len(tape.measurements)
         single_measure = num_measurements == 1
