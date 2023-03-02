@@ -212,7 +212,7 @@ def ctrl_decomp_zyz(target_operation: Operator, control_wires: Wires):
 
 
 def ctrl_decomp_bisect_od(
-    target_operation: typing.Union[Operator, tying.Tuple[np.ndarray, Wires]],
+    target_operation: typing.Union[Operator, tuple[np.ndarray, Wires]],
     control_wires: Wires,
     later: bool = False,
 ):
@@ -280,7 +280,7 @@ def ctrl_decomp_bisect_od(
 
 
 def ctrl_decomp_bisect_md(
-    target_operation: typing.Union[Operator, tying.Tuple[np.ndarray, Wires]],
+    target_operation: typing.Union[Operator, tuple[np.ndarray, Wires]],
     control_wires: Wires,
     later: bool = False,
 ):
@@ -340,7 +340,7 @@ def ctrl_decomp_bisect_md(
 
 
 def ctrl_decomp_bisect_general(
-    target_operation: typing.Union[Operator, tying.Tuple[np.ndarray, Wires]],
+    target_operation: typing.Union[Operator, tuple[np.ndarray, Wires]],
     control_wires: Wires,
     later: bool = False,
 ):
