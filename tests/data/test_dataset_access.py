@@ -304,7 +304,7 @@ class TestLoadHelpers:
                     "HeH": {"STO-3G": ["0.50"]},
                 },
                 [["full"], ["full"], ["0.48", "0.50"]],
-                ["H2/6-31G/0.50", "H2/STO-3G/0.48", "H2/STO-3G/0.50", "HeH/STO-3G/0.50"],
+                ["H2/STO-3G/0.48", "H2/STO-3G/0.50", "H2/6-31G/0.50", "HeH/STO-3G/0.50"],
             ),
             (
                 {
@@ -318,7 +318,7 @@ class TestLoadHelpers:
     )
     def test_generate_folders(self, node, folders, output):
         """Test the _generate_folders helper function."""
-        assert sorted(qml.data.data_manager._generate_folders(node, folders)) == output
+        assert qml.data.data_manager._generate_folders(node, folders) == output
 
     @patch("concurrent.futures.ThreadPoolExecutor.submit", return_value=True)
     @patch("pennylane.data.data_manager.wait", return_value=MagicMock(done=[]))
