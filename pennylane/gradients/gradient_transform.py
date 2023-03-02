@@ -301,7 +301,7 @@ class gradient_transform(qml.batch_transform):
                 if argnums is None:
                     argnums_ = [0]
 
-                if argnums is not None:
+                else:
                     argnums_ = [argnums] if isinstance(argnums, int) else argnums
 
                 params = qml.math.jax_argnums_to_tape_trainable(
@@ -327,12 +327,14 @@ class gradient_transform(qml.batch_transform):
 
             # Special case where we apply a Jax transform (jacobian e.g.) on the gradient transform and argnums are
             # defined on the outer transform and therefore on the args.
-            if argnums is None and argnums_ is None and qml.math.get_interface(*args) == "jax":
+            if argnums is None and argnums_ is None and interface == "jax":
+
                 cjac = qml.transforms.classical_jacobian(
                     qnode, argnum=qml.math.get_trainable_indices(args), expand_fn=self.expand_fn
                 )(*args, **kwargs)
             else:
-                if qml.math.get_interface(*args) == "jax":
+                if interface == "jax":
+
                     argnum_cjac = argnums if argnums is not None else [0]
                 else:
                     argnum_cjac = None
