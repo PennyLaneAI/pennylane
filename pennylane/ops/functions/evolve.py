@@ -138,7 +138,7 @@ def evolve(*args, **kwargs):  # pylint: disable=unused-argument
 
         import jax
 
-        dev = qml.device("default.qubit", wires=4)
+        dev = qml.device("default.qubit.jax", wires=4)
         @jax.jit
         @qml.qnode(dev, interface="jax")
         def circuit(params):
