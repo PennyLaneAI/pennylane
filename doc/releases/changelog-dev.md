@@ -14,6 +14,10 @@
 
 <h3>Improvements</h3>
 
+* The custom JVP rules in PennyLane now also support non-scalar and mixed-shape tape parameters as
+  well as multi-dimensional tape return types, like broadcasted `qml.probs`, for example.
+  [(#3766)](https://github.com/PennyLaneAI/pennylane/pull/3766)
+
 * The `qchem.jordan_wigner` function is extended to support more fermionic operator orders.
   [(#3754)](https://github.com/PennyLaneAI/pennylane/pull/3754)
   [(#3751)](https://github.com/PennyLaneAI/pennylane/pull/3751)
@@ -38,6 +42,9 @@
 
 <h3>Documentation</h3>
 
+* A typo was corrected in the documentation for introduction to `inspecting_circuits` and `chemistry`.
+[(#3844)](https://github.com/PennyLaneAI/pennylane/pull/3844)
+
 <h3>Bug fixes</h3>
 
 <h3>Contributors</h3>
@@ -46,6 +53,7 @@ This release contains contributions from (in alphabetical order):
 
 Utkarsh Azad
 Soran Jahangiri
+Vincent Michaud-Rioux
 Romain Moyard
 Mudit Pandey
 Matthew Silverman
