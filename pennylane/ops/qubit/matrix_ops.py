@@ -19,6 +19,7 @@ accept a hermitian or an unitary matrix as a parameter.
 import warnings
 
 import numpy as np
+from scipy.linalg import sqrtm, norm
 
 import pennylane as qml
 from pennylane.operation import AnyWires, DecompositionUndefinedError, Operation
@@ -332,3 +333,136 @@ class DiagonalQubitUnitary(Operation):
 
     def label(self, decimals=None, base_label=None, cache=None):
         return super().label(decimals=decimals, base_label=base_label or "U", cache=cache)
+
+class BlockEncode(Operation):
+    r"""BlockEncode(a, wires)
+    Apply an arbitrary matrix, :math:`A`, encoded in the top left block of a unitary matrix.
+
+    .. math::
+
+        \begin{align}
+             U(A) &=
+             \begin{bmatrix}
+                A & \sqrt{I-AA^\dagger} \\
+                \sqrt{I-A^\dagger A} & -A^\dagger
+            \end{bmatrix}.
+        \end{align}
+
+    **Details:**
+
+    * Number of wires: Any (the operation can act on any number of wires)
+    * Number of parameters: 1
+    * Number of dimensions per parameter: (2,)
+    * Gradient recipe: None
+
+    Args:
+        a (array[complex]): general n-by-m matrix to be encoded
+        wires (Sequence[int] or int): the wire(s) the operation acts on
+        do_queue (bool): indicates whether the operator should be
+            recorded when created in a tape context
+        id (str): custom label given to an operator instance,
+            can be useful for some applications where the instance has to be identified
+
+    Raises:
+        ValueError: if the number of wires doesn't fit the dimensions of the matrix
+
+    **Example**
+
+    >>> dev = qml.device('default.qubit', wires=2)
+    >>> A = [[0.1,0.2],[0.3,0.4]]
+    >>> @qml.qnode(dev)
+    ... def example_circuit():
+    ...     qml.BlockEncode(A, wires=range(2))
+    ...     return qml.state()
+    ...     print(qml.matrix(example_circuit)())
+    [[ 0.1         0.2         0.97283788 -0.05988708]
+    [ 0.3         0.4        -0.05988708  0.86395228]
+    [ 0.94561648 -0.07621992 -0.1        -0.3       ]
+    [-0.07621992  0.89117368 -0.2        -0.4       ]]
+    """
+
+    num_params = 1
+    num_wires = AnyWires
+
+    def __init__(self, a, wires, do_queue=True, id=None):
+        a = np.atleast_2d(a)
+        wires = Wires(wires)
+        if np.sum(qml.math.shape(a)) <= 2:
+            normalization = a if a > 1 else 1
+            subspace = (1, 1, 2 ** len(wires))
+        else:
+            normalization = np.max(
+                [norm(a @ np.conj(a).T, ord=np.inf), norm(np.conj(a).T @ a, ord=np.inf)]
+            )
+            subspace = (*qml.math.shape(a), 2 ** len(wires))
+
+        a = a / normalization if normalization > 1 else a
+
+        # if subspace[2] < (subspace[0] + subspace[1]):
+        if subspace[2] < np.max(subspace[0:-1])*2:
+            raise ValueError(
+                f"Block encoding a {subspace[0]} x {subspace[1]} matrix"
+                f" requires a hilbert space of size at least "
+                # f"{subspace[0] + subspace[1]} x {subspace[0] + subspace[1]}."
+                f"{np.max(subspace[0:-1])*2} x {np.max(subspace[0:-1])*2}."
+                f" Cannot be embedded in a {len(wires)} qubit system."
+            )
+
+        super().__init__(a, wires=wires, do_queue=do_queue, id=id)
+        self.hyperparameters["norm"] = normalization
+        self.hyperparameters["subspace"] = subspace
+
+    @staticmethod
+    def compute_matrix(*params, **hyperparams):
+        """Get the matrix representation of block encoding unitary."""
+        a = params[0]
+        n, m, k = hyperparams["subspace"]
+
+        if np.sum(qml.math.shape(qml.math.atleast_2d(a))) <= 2:
+            u = np.block(
+                [[a, np.sqrt(1 - a * np.conj(a))], [np.sqrt(1 - a * np.conj(a)), -np.conj(a)]]
+            )
+        else:
+            d1, d2 = qml.math.shape(a)
+            u = np.block(
+                [
+                    [a, sqrtm(np.eye(d1) - a @ np.conj(a).T)],
+                    [sqrtm(np.eye(d2) - np.conj(a).T @ a), -np.conj(a).T],
+                ]
+            )
+        if n + m < k:
+            r = k - (n + m)
+            u = np.block([[u, np.zeros((n + m, r))], [np.zeros((r, n + m)), np.eye(r)]])
+        return u
+
+    # @staticmethod
+    # def compute_matrix(a,norm,subspace):
+    #     """Get the matrix representation of block encoding unitary."""
+    #     n, m, k = subspace
+
+    #     if np.sum(qml.math.shape(qml.math.atleast_2d(a))) <= 2:
+    #         u = a * np.diag([1, 0]) -np.conj(a)*np.diag([0,1]) + np.sqrt(1 - a * np.conj(a)) * np.fliplr(np.diag([1,0]))+ np.sqrt(1 - a * np.conj(a)) * np.fliplr(np.diag([0,1]))
+        
+    #     else:
+    #         d1, d2 = qml.math.shape(a)
+    #         # top = qml.math.hstack([a,sqrtm(np.eye(d1) - a @ np.conj(a).T)]) # -> object arrays are not supported
+    #         # u=qml.math.block_diag([a,-np.conj(np.transpose(a))]) # -> works
+    #         # u = qml.math.stack([a, -np.conj(np.transpose(a))]) # -> works
+
+    #         # bottom = qml.math.hstack([sqrtm(np.eye(d2) - np.conj(a).T @ a), -np.conj(a).T])
+    #         # u = qml.math.vstack([top,bottom])
+
+    #         # u = qml.math.block(
+    #         #     [
+    #         #         [a, sqrtm(np.eye(d1) - a @ np.conj(a).T)],
+    #         #         [sqrtm(np.eye(d2) - np.conj(a).T @ a), -np.conj(a).T],
+    #         #     ]
+    #         # )
+    #         # if d1 < d2:
+    #         #     qml.math.concatenate([a,np.zeros(d3))
+
+    #     # if n + m < k:
+    #     #     r = k - (n + m)
+    #     #     u = qml.math.block([[u, np.zeros((n + m, r))], [np.zeros((r, n + m)), np.eye(r)]])
+        
+    #     return a

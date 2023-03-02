@@ -633,3 +633,63 @@ control_data = [
 def test_control_wires(op, control_wires):
     """Test ``control_wires`` attribute for matrix operations."""
     assert op.control_wires == control_wires
+
+class TestBlockEncode:
+    @pytest.mark.parametrize(
+        ("input_matrix", "wires"),
+        [
+            (1, 1),
+            ([1], 1),
+            ([[1]],1),
+            (np.array(1), [1]),
+            (np.array([1]), 1),
+            (np.array([[1]]),1),
+            ([[1, 0], [0, 1]], [0, 1]),
+            (np.array([[1, 0], [0, 1]]), range(2)),
+            (np.identity(3), ["a", "b", "c"]),
+        ],
+    )
+    def test_accepts_various_types(self, input_matrix, wires):
+        op = qml.BlockEncode(input_matrix, wires)
+
+    @pytest.mark.parametrize(
+        ("input_matrix", "wires"),
+        [(1, 1), (1, 2), (1, [1]), (1, range(2)), (np.identity(2), ["a", "b"])],
+    )
+    def test_varied_wires(self, input_matrix, wires):
+        op = qml.BlockEncode(input_matrix, wires)
+
+    @pytest.mark.parametrize(
+        ("input_matrix", "wires", "msg"),
+        [
+            (
+                [[0, 1], [1, 0]],
+                1,
+                f"Block encoding a {2} x {2} matrix requires a hilbert space of size"
+                f" at least {4} x {4}. Cannot be embedded in a {1} qubit system.",
+            ),
+        ],
+    )
+    def test_correct_error_message(self, input_matrix, wires, msg):
+        with pytest.raises(ValueError, match=msg):
+            op = qml.BlockEncode(input_matrix, wires)
+
+    @pytest.mark.parametrize(
+        ("input_matrix", "wires", "output_matrix"),
+        [
+            (1, 0, [[ 1,  0],[ 0, -1]]),
+            (0.3, 0, [[0.3, 0.9539392],[0.9539392, -0.3]]),
+            ([[0.1,0.2],[0.3,0.4]], range(2), [[0.1,0.2,0.97283788,-0.05988708],
+                                               [0.3,0.4,-0.05988708,0.86395228],
+                                               [0.94561648,-0.07621992,-0.1,-0.3],
+                                               [-0.07621992,0.89117368,-0.2,-0.4]]),
+            # ([[0.1]], 0,),
+            # ([[1, 0], [0, 1]], range(2)),
+            # (np.array([[1, 0], [0, 1]]), range(2)),
+            # (np.identity(3), range(3)),
+        ],
+    )
+    def test_correct_output_matrix(self, input_matrix, wires, output_matrix):
+        assert np.allclose(qml.matrix(qml.BlockEncode)(input_matrix,wires),output_matrix)
+
+# class TestDifferentiability:
