@@ -78,7 +78,7 @@ class TestPrivateHelpers:
         assert res == expected
 
     @pytest.mark.parametrize("op", (qml.PauliX(0), qml.RX(1.2, wires=0), qml.QFT(wires=range(3))))
-    def test_operator_decomposition_gen_aceppted_operator(self, op):
+    def test_operator_decomposition_gen_accepted_operator(self, op):
         casted_to_list = list(_operator_decomposition_gen(op))
         assert len(casted_to_list) == 1
         assert casted_to_list[0] is op
@@ -154,7 +154,7 @@ class TestExpandFnValidation:
             expand_fn(qs)
 
     def test_only_state_based_measurements(self):
-        """Test taht a device error is raised if a measurement is not a state measurement."""
+        """Test that a device error is raised if a measurement is not a state measurement."""
         qs = QuantumScript([], [qml.expval(qml.PauliZ(0)), qml.sample()])
         with pytest.raises(DeviceError, match=r"Measurement process sample"):
             expand_fn(qs)
