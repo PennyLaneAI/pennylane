@@ -603,7 +603,6 @@ class TestStochPulseGradQNodeIntegration:
 
         params = [jnp.array(1.51), jnp.array(-0.371), jnp.array([0.2, 0.2, -0.4])]
         dev = qml.device("default.qubit.jax", wires=2)
-        T = 0.5
         ham = (
             qml.pulse.constant * qml.PauliX(0)
             + (lambda p, t: jnp.sin(p * t)) * qml.PauliZ(0)
@@ -639,6 +638,8 @@ class TestStochPulseGradQNodeIntegration:
 class TestStochPulseGradDiff:
     """Test that stoch_pulse_grad is differentiable."""
 
+    # pylint: disable=too-few-public-methods
+
     def test_jax(self):
         """Test that stoch_pulse_grad is differentiable with JAX."""
         import jax
@@ -664,33 +665,3 @@ class TestStochPulseGradDiff:
         exp_diff_of_grad = -4 * jnp.cos(2 * p) * T**2
         diff_of_grad = jax.grad(fun)(params)
         assert qml.math.isclose(diff_of_grad, exp_diff_of_grad)
-
-
-"""
-
-        import jax
-
-        jax.config.update("jax_enable_x64", True)
-        jnp = jax.numpy
-        params = [jnp.array(0.24)]
-
-        dev = qml.device("default.qubit.jax", wires=1)
-
-        @qml.qnode(dev, interface="jax")
-        def qnode(params):
-            qml.evolve(ham_single_q_const)(params, 0.4)
-            return qml.expval(qml.PauliZ(0))
-
-        tape = qml.tape.QuantumScript([op], [qml.expval(qml.PauliZ(0))])
-
-        # Effective rotation parameter
-        p = params[0] * (T[1] - T[0])
-        r = qml.execute([tape], dev, None)
-        assert qml.math.isclose(r, jnp.cos(2 * p), atol=1e-4)
-        tapes, fn = stoch_pulse_grad(tape, num_samples=num_samples)
-        assert len(tapes) == num_samples * 2
-
-        res = fn(qml.execute(tapes, dev, None))
-        assert qml.math.isclose(res, -2 * jnp.sin(2 * p) * (T[1] - T[0]))
-
-"""
