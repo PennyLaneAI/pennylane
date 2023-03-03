@@ -767,14 +767,17 @@ class TestOrbitalRotation:
     def test_orbital_rotation_decomp(self, phi):
         """Tests that the OrbitalRotation operation calculates the correct decomposition.
 
-        The decomposition is expressed in terms of two SingleExcitation gates.
+        The decomposition is expressed in terms of two SingleExcitation gates sandwich between FermionicExcitations gates.
         """
         op = qml.OrbitalRotation(phi, wires=[0, 1, 2, 3])
         decomposed_matrix = qml.matrix(
-            qml.SingleExcitation(phi, [0, 2]) @ qml.SingleExcitation(phi, [1, 3]),
+            qml.FermionicSWAP(np.pi, wires=[1, 2])
+            @ qml.SingleExcitation(phi, [0, 1])
+            @ qml.SingleExcitation(phi, [2, 3])
+            @ qml.FermionicSWAP(np.pi, wires=[1, 2]),
             wire_order=[0, 1, 2, 3],
         )
-        assert np.array_equal(decomposed_matrix, op.matrix())
+        assert np.allclose(decomposed_matrix, op.matrix())
 
     def test_adjoint(self):
         """Test adjoint method for adjoint op decomposition."""
@@ -806,6 +809,27 @@ class TestOrbitalRotation:
 
         assert np.allclose(res, expected)
 
+    @pytest.mark.parametrize("ref_state", [np.array([1, 1, 0, 0]), np.array([0, 1, 1, 0])])
+    @pytest.mark.parametrize("op", [qml.qchem.particle_number(4), qml.qchem.spin2(2, 4)])
+    @pytest.mark.parametrize("phi", [-0.1, 0.2, np.pi / 4])
+    def test_spin_particle_conservation(self, ref_state, op, phi):
+        """Test that the total spin and particle are conserved after orbital rotation operation"""
+
+        dev = qml.device("default.qubit", wires=4)
+
+        @qml.qnode(dev)
+        def circuit1():
+            qml.BasisState(ref_state, wires=[0, 1, 2, 3])
+            return qml.expval(op)
+
+        @qml.qnode(dev)
+        def circuit2(phi):
+            qml.BasisState(ref_state, wires=[0, 1, 2, 3])
+            qml.OrbitalRotation(phi, wires=[0, 1, 2, 3])
+            return qml.expval(op)
+
+        assert np.allclose(circuit1(), circuit2(phi))
+
     @pytest.mark.autograd
     def test_autograd(self):
         """Tests that operations are computed correctly using the
@@ -817,13 +841,13 @@ class TestOrbitalRotation:
                 0.0 + 0.0j,
                 0.0 + 0.0j,
                 0.0 + 0.0j,
+                -0.5 + 0.0j,
+                0.0 + 0.0j,
+                0.0 + 0.0j,
                 0.5 + 0.0j,
                 0.0 + 0.0j,
                 0.0 + 0.0j,
-                -0.5 + 0.0j,
-                0.0 + 0.0j,
-                0.0 + 0.0j,
-                -0.5 + 0.0j,
+                0.5 + 0.0j,
                 0.0 + 0.0j,
                 0.0 + 0.0j,
                 0.5 + 0.0j,
@@ -854,13 +878,13 @@ class TestOrbitalRotation:
                 0.0 + 0.0j,
                 0.0 + 0.0j,
                 0.0 + 0.0j,
+                -0.5 + 0.0j,
+                0.0 + 0.0j,
+                0.0 + 0.0j,
                 0.5 + 0.0j,
                 0.0 + 0.0j,
                 0.0 + 0.0j,
-                -0.5 + 0.0j,
-                0.0 + 0.0j,
-                0.0 + 0.0j,
-                -0.5 + 0.0j,
+                0.5 + 0.0j,
                 0.0 + 0.0j,
                 0.0 + 0.0j,
                 0.5 + 0.0j,
@@ -893,13 +917,13 @@ class TestOrbitalRotation:
                 0.0 + 0.0j,
                 0.0 + 0.0j,
                 0.0 + 0.0j,
+                -0.5 + 0.0j,
+                0.0 + 0.0j,
+                0.0 + 0.0j,
                 0.5 + 0.0j,
                 0.0 + 0.0j,
                 0.0 + 0.0j,
-                -0.5 + 0.0j,
-                0.0 + 0.0j,
-                0.0 + 0.0j,
-                -0.5 + 0.0j,
+                0.5 + 0.0j,
                 0.0 + 0.0j,
                 0.0 + 0.0j,
                 0.5 + 0.0j,
@@ -932,13 +956,13 @@ class TestOrbitalRotation:
                 0.0 + 0.0j,
                 0.0 + 0.0j,
                 0.0 + 0.0j,
+                -0.5 + 0.0j,
+                0.0 + 0.0j,
+                0.0 + 0.0j,
                 0.5 + 0.0j,
                 0.0 + 0.0j,
                 0.0 + 0.0j,
-                -0.5 + 0.0j,
-                0.0 + 0.0j,
-                0.0 + 0.0j,
-                -0.5 + 0.0j,
+                0.5 + 0.0j,
                 0.0 + 0.0j,
                 0.0 + 0.0j,
                 0.5 + 0.0j,

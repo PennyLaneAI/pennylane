@@ -946,26 +946,25 @@ class OrbitalRotation(Operation):
     def generator(self):
         w0, w1, w2, w3 = self.wires
         return 0.25 * (
-            qml.PauliX(w0) @ qml.PauliY(w2)
-            - qml.PauliY(w0) @ qml.PauliX(w2)
-            + qml.PauliX(w1) @ qml.PauliY(w3)
-            - qml.PauliY(w1) @ qml.PauliX(w3)
+            qml.PauliX(w0) @ qml.PauliZ(w1) @ qml.PauliY(w2)
+            - qml.PauliY(w0) @ qml.PauliZ(w1) @ qml.PauliX(w2)
+            + qml.PauliX(w1) @ qml.PauliZ(w2) @ qml.PauliY(w3)
+            - qml.PauliY(w1) @ qml.PauliZ(w2) @ qml.PauliX(w3)
         )
 
     def __init__(self, phi, wires, do_queue=True, id=None):
         super().__init__(phi, wires=wires, do_queue=do_queue, id=id)
 
     mask_s = np.zeros((16, 16))
-    mask_s[1, 4] = mask_s[2, 8] = mask_s[7, 13] = mask_s[11, 14] = -1
-    mask_s[4, 1] = mask_s[8, 2] = mask_s[13, 7] = mask_s[14, 11] = 1
+    mask_s[1, 4] = mask_s[2, 8] = mask_s[13, 7] = mask_s[14, 11] = -1
+    mask_s[4, 1] = mask_s[8, 2] = mask_s[7, 13] = mask_s[11, 14] = 1
 
     mask_cs = np.zeros((16, 16))
-    mask_cs[3, 6] = mask_cs[3, 9] = mask_cs[6, 12] = mask_cs[9, 12] = -1
-    mask_cs[6, 3] = mask_cs[9, 3] = mask_cs[12, 6] = mask_cs[12, 9] = 1
+    mask_cs[6, 3] = mask_cs[3, 9] = mask_cs[12, 6] = mask_cs[9, 12] = -1
+    mask_cs[3, 6] = mask_cs[9, 3] = mask_cs[6, 12] = mask_cs[12, 9] = 1
 
     mask_s2 = np.zeros((16, 16))
-    mask_s2[3, 12] = mask_s2[12, 3] = 1
-    mask_s2[6, 9] = mask_s2[9, 6] = -1
+    mask_s2[3, 12] = mask_s2[12, 3] = mask_s2[6, 9] = mask_s2[9, 6] = 1
 
     @staticmethod
     def compute_matrix(phi):  # pylint: disable=arguments-differ
@@ -1049,8 +1048,10 @@ class OrbitalRotation(Operation):
         """
 
         return [
-            qml.SingleExcitation(phi, wires=[wires[0], wires[2]]),
-            qml.SingleExcitation(phi, wires=[wires[1], wires[3]]),
+            qml.FermionicSWAP(np.pi, wires=[wires[1], wires[2]]),
+            qml.SingleExcitation(phi, wires=[wires[0], wires[1]]),
+            qml.SingleExcitation(phi, wires=[wires[2], wires[3]]),
+            qml.FermionicSWAP(np.pi, wires=[wires[1], wires[2]]),
         ]
 
     def adjoint(self):
