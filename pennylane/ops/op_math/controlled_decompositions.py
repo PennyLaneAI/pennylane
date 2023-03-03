@@ -17,7 +17,6 @@ This submodule defines functions to decompose controlled operations
 
 import numpy as np
 import numpy.linalg as npl
-import scipy.optimize as spo
 import pennylane as qml
 import typing
 from pennylane.operation import Operator
@@ -87,11 +86,6 @@ def _bisect_compute_a(u: np.ndarray):
     return _param_su2(ar, ai, br, bi)
 
 
-def _flatreals(x: np.ndarray):
-    x = x.flatten()
-    return np.concatenate((np.real(x), np.imag(x)))
-
-
 def _bisect_compute_b(u: np.ndarray):
     """
     Given the U matrix, compute the B matrix such that
@@ -100,21 +94,28 @@ def _bisect_compute_b(u: np.ndarray):
     H is the Hadamard matrix,
     and x is the Pauli X matrix.
     """
-    sx = np.array([[0, 1], [1, 0]])  # Pauli X matrix
-    sh = np.array([[1, 1], [1, -1]]) * 2**-0.5  # Hadamard matrix
-
-    def optfunc(x):
-        b = _param_su2(*x)
-        bt = _matrix_adjoint(b)
-        expect_u = sh @ bt @ sx @ b @ sx @ sh
-        return _flatreals((expect_u - u)[0])
-
-    sol = spo.root(optfunc, [1, 0, 0, 0])
-
-    if not sol.success:
-        raise ValueError(f"Unable to compute B matrix for U matrix {u}")
-
-    return _param_su2(*sol.x)
+    sqrt = np.sqrt
+    Abs = np.abs
+    w = np.real(u[0, 0])
+    s = np.real(u[1, 0])
+    t = np.imag(u[1, 0])
+    if np.isclose(s, 0) and np.isclose(t, 0):
+        b = 0
+        c = sqrt(w)
+        d = 0
+    elif np.isclose(s, 0):
+        b = 0
+        c = sqrt(2 - 2 * w) * (-w / 2 - 1 / 2) / t
+        d = sqrt(2 - 2 * w) / 2
+    elif np.isclose(t, 0):
+        b = (1 / 2 - w / 2) * sqrt(2 * w + 2) / s
+        c = sqrt(2 * w + 2) / 2
+        d = 0
+    else:
+        b = sqrt(2) * s * sqrt((1 - w) / (s**2 + t**2)) * Abs(t) / (2 * t)
+        c = sqrt(2) * sqrt((1 - w) / (s**2 + t**2)) * (w + 1) * Abs(t) / (2 * t)
+        d = -sqrt(2) * sqrt((1 - w) / (s**2 + t**2)) * Abs(t) / 2
+    return _param_su2(c, d, b, 0)
 
 
 def ctrl_decomp_zyz(target_operation: Operator, control_wires: Wires):

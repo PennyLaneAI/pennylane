@@ -561,7 +561,11 @@ def _decompose_no_control_values(op: "operation.Operator") -> List["operation.Op
         if len(op.control_wires) == 2:
             return [qml.Toffoli(op.active_wires)]
         return [qml.MultiControlledX(wires=op.active_wires, work_wires=op.work_wires)]
-    if len(op.base.wires) == 1 and len(op.control_wires) >= 2 and getattr(op.base, "has_matrix", False):
+    if (
+        len(op.base.wires) == 1
+        and len(op.control_wires) >= 2
+        and getattr(op.base, "has_matrix", False)
+    ):
         # Bisect algorithms use CNOTs and single qubit unitary
         u = op.base.matrix()
         ui = np.imag(u)
