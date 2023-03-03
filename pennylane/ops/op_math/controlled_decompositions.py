@@ -15,10 +15,10 @@
 This submodule defines functions to decompose controlled operations
 """
 
+import typing
 import numpy as np
 import numpy.linalg as npl
 import pennylane as qml
-import typing
 from pennylane.operation import Operator
 from pennylane.wires import Wires
 from pennylane import math
@@ -269,10 +269,17 @@ def ctrl_decomp_bisect_od(
     def mcx(_lk, _rk):
         return qml.MultiControlledX(control_wires=_lk, wires=target_wire, work_wires=_rk)
 
-    op_mcx1 = lambda: mcx(lk, rk)
-    op_mcx2 = lambda: mcx(rk, lk)
-    op_a = lambda: qml.QubitUnitary(a, target_wire)
-    op_at = lambda: qml.adjoint(op_a())
+    def op_mcx1():
+        return mcx(lk, rk)
+
+    def op_mcx2():
+        return mcx(rk, lk)
+
+    def op_a():
+        return qml.QubitUnitary(a, target_wire)
+
+    def op_at():
+        return qml.adjoint(op_a())
 
     result = [op_mcx1, op_a, op_mcx2, op_at, op_mcx1, op_a, op_mcx2, op_at]
     if not later:
@@ -332,7 +339,9 @@ def ctrl_decomp_bisect_md(
     mod_u = sh @ u @ sh
     mod_op = mod_u, target_wire
 
-    op_h = lambda: qml.Hadamard(target_wire)
+    def op_h():
+        return qml.Hadamard(target_wire)
+
     inner = ctrl_decomp_bisect_od(mod_op, control_wires, later=True)
     result = [op_h] + inner + [op_h]
     if not later:
@@ -399,12 +408,23 @@ def ctrl_decomp_bisect_general(
     def mcx(_lk, _rk):
         return qml.MultiControlledX(control_wires=_lk, wires=target_wire, work_wires=_rk)
 
-    op_mcx1 = lambda: mcx(lk, rk)
-    op_mcx2 = lambda: mcx(rk, lk)
-    op_c1 = lambda: qml.QubitUnitary(c1, target_wire)
-    op_c1t = lambda: qml.adjoint(op_c1())
-    op_c2t = lambda: qml.QubitUnitary(c2t, target_wire)
-    op_c2 = lambda: qml.adjoint(op_c2t())
+    def op_mcx1():
+        return mcx(lk, rk)
+
+    def op_mcx2():
+        return mcx(rk, lk)
+
+    def op_c1():
+        return qml.QubitUnitary(c1, target_wire)
+
+    def op_c1t():
+        return qml.adjoint(op_c1())
+
+    def op_c2t():
+        return qml.QubitUnitary(c2t, target_wire)
+
+    def op_c2():
+        return qml.adjoint(op_c2t())
 
     inner = ctrl_decomp_bisect_od((d, target_wire), control_wires, later=True)
     result = [op_c2t, op_mcx2, op_c1t, op_mcx1] + inner + [op_mcx1, op_c1, op_mcx2, op_c2]
@@ -413,3 +433,42 @@ def ctrl_decomp_bisect_general(
     if not later:
         result = [func() for func in result]
     return result
+
+
+def ctrl_decomp_bisect_auto(
+    target_operation: typing.Union[Operator, typing.Tuple[np.ndarray, Wires]],
+    control_wires: Wires,
+    later: bool = False,
+):
+    """Decompose the controlled version of a target single-qubit operation
+
+    Automatically selects the best algorithm based on the matrix (uses specialized more efficient
+    algorithms if the matrix has a certain form, otherwise falls back to the general algorithm).
+
+    .. warning:: This method will add a global phase for target operations that do not
+        belong to the SU(2) group.
+
+    Args:
+        target_operation (~.operation.Operator): the target operation to decompose
+        control_wires (~.wires.Wires): the control wires of the operation
+
+    Returns:
+        list[Operation]: the decomposed operations
+
+    Raises:
+        ValueError: if ``target_operation`` is not a single-qubit operation
+
+    """
+    if isinstance(target_operation, Operator):
+        target_operation = target_operation.matrix(), target_operation.wires
+
+    u = op.base.matrix()
+    ui = np.imag(u)
+    if np.isclose(ui[1, 0], 0) and np.isclose(ui[0, 1], 0):
+        # Real off-diagonal specialized algorithm - 16n+O(1) CNOTs
+        return ctrl_decomp_bisect_od(target_operation, control_wires, later=later)
+    if np.isclose(ui[0, 0], 0) and np.isclose(ui[1, 1], 0):
+        # Real main-diagonal specialized algorithm - 16n+O(1) CNOTs
+        return ctrl_decomp_bisect_md(target_operation, control_wires, later=later)
+    # General algorithm - 20n+O(1) CNOTs
+    return ctrl_decomp_bisect_general(target_operation, control_wires, later=later)

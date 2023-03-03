@@ -567,16 +567,7 @@ def _decompose_no_control_values(op: "operation.Operator") -> List["operation.Op
         and getattr(op.base, "has_matrix", False)
     ):
         # Bisect algorithms use CNOTs and single qubit unitary
-        u = op.base.matrix()
-        ui = np.imag(u)
-        if np.isclose(ui[1, 0], 0) and np.isclose(ui[0, 1], 0):
-            # Real off-diagonal specialized algorithm - 16n+O(1) CNOTs
-            return ctrl_decomp_bisect_od(op.base, op.control_wires)
-        if np.isclose(ui[0, 0], 0) and np.isclose(ui[1, 1], 0):
-            # Real main-diagonal specialized algorithm - 16n+O(1) CNOTs
-            return ctrl_decomp_bisect_md(op.base, op.control_wires)
-        # General algorithm - 20n+O(1) CNOTs
-        ctrl_decomp_bisect_general(op.base, op.control_wires)
+        return ctrl_decomp_bisect_auto(op.base, op.control_wires)
     if len(op.base.wires) == 1 and getattr(op.base, "has_matrix", False):
         return ctrl_decomp_zyz(op.base, op.control_wires)
 
