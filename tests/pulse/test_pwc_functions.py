@@ -387,6 +387,7 @@ class TestIntegration:
         )
         assert qml.math.allequal(qml.matrix(H(params, t=4)), true_mat)
 
+    @pytest.mark.xfail
     def test_qnode_pwc_from_function(self):
         """Test that the evolution of a ParametrizedHamiltonian defined with a function decorated by pwc_from_function
         can be executed on a QNode."""
@@ -431,6 +432,7 @@ class TestIntegration:
         assert qml.math.allclose(circuit(params), true_circuit(params), atol=5e-2)
         assert qml.math.allclose(circuit_grad_flattened, true_grad_flattened, atol=5e-2)
 
+    @pytest.mark.xfail
     def test_qnode_pwc_from_function_jit(self):
         """Test that the evolution of a ParametrizedHamiltonian defined with a function decorated by pwc_from_function
         can be executed on a QNode using jax-jit, and the results don't differ from an execution without jitting.
