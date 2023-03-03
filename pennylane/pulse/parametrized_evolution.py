@@ -301,7 +301,8 @@ class ParametrizedEvolution(Operation):
             self.t = jnp.array([0, t] if qml.math.ndim(t) == 0 else t, dtype=float)
         params = [] if params is None else params
 
-        # same as super method but without the batching check
+        wires = H.wires
+        # from here on down same as super().__init__ method but without the batching check
         # super().__init__(*params, wires=H.wires, do_queue=do_queue, id=id)
         self._name = self.__class__.__name__  #: str: name of the operator
         self._id = id
