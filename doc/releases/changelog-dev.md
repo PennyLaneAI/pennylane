@@ -25,6 +25,10 @@
 * `AdaptiveOptimizer` is updated to use non-default user-defined qnode arguments.
   [(#3765)](https://github.com/PennyLaneAI/pennylane/pull/3765)
 
+* 3 new decomposition algorithms are added for n-controlled operations with single-qubit target,
+  and are selected automatically when they produce a better result.
+  [(#3851)](https://github.com/PennyLaneAI/pennylane/pull/3851)
+
 <h3>Breaking changes</h3>
 
 <h3>Deprecations</h3>
@@ -43,6 +47,7 @@
 
 This release contains contributions from (in alphabetical order):
 
+Komi Amiko
 Utkarsh Azad
 Soran Jahangiri
 Vincent Michaud-Rioux
