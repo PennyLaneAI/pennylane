@@ -72,10 +72,6 @@ def metric_tensor(
             the metric tensor is computed. If ``argnum=None``, the metric tensor with respect to all
             trainable parameters is returned. Excluding tape-parameter indices from this list reduces
             the computational cost and the corresponding metric-tensor elements will be set to 0.
-        argnums (int or Sequence[int] or None): For the Jax interface, trainable tape-parameter indices with
-            respect to which the metric tensor is computed. If ``argnum=None``, the metric tensor with respect
-            to all trainable parameters is returned. Excluding tape-parameter indices from this list reduces
-            the computational cost.
 
         approx (str): Which approximation of the metric tensor to compute.
 
@@ -306,8 +302,7 @@ def metric_tensor(
             "chosen auto differentiation framework, or via the 'tape.trainable_params' property."
         )
         return [], lambda _: ()
-    if argnums:
-        argnum = argnums
+
     if argnum is None:
         argnum = tape.trainable_params
     elif isinstance(argnum, int):
