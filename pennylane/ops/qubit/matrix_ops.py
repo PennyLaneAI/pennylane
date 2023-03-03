@@ -337,7 +337,51 @@ class DiagonalQubitUnitary(Operation):
 
 
 class BlockEncode(Operation):
-    """General Block Encoding"""
+    r"""BlockEncode(a, wires)
+    Apply an arbitrary matrix, :math:`A`, encoded in the top left block of a unitary matrix.
+
+    .. math::
+
+        \begin{align}
+             U(A) &=
+             \begin{bmatrix}
+                A & \sqrt{I-AA^\dagger} \\
+                \sqrt{I-A^\dagger A} & -A^\dagger
+            \end{bmatrix}.
+        \end{align}
+
+    **Details:**
+
+    * Number of wires: Any (the operation can act on any number of wires)
+    * Number of parameters: 1
+    * Number of dimensions per parameter: (2,)
+    * Gradient recipe: None
+
+    Args:
+        a (array[complex]): general n-by-m matrix to be encoded
+        wires (Sequence[int] or int): the wire(s) the operation acts on
+        do_queue (bool): indicates whether the operator should be
+            recorded when created in a tape context
+        id (str): custom label given to an operator instance,
+            can be useful for some applications where the instance has to be identified
+
+    Raises:
+        ValueError: if the number of wires doesn't fit the dimensions of the matrix
+
+    **Example**
+
+    >>> dev = qml.device('default.qubit', wires=2)
+    >>> A = [[0.1,0.2],[0.3,0.4]]
+    >>> @qml.qnode(dev)
+    ... def example_circuit():
+    ...     qml.BlockEncode(A, wires=range(2))
+    ...     return qml.state()
+    ...     print(qml.matrix(example_circuit)())
+    [[ 0.1         0.2         0.97283788 -0.05988708]
+    [ 0.3         0.4        -0.05988708  0.86395228]
+    [ 0.94561648 -0.07621992 -0.1        -0.3       ]
+    [-0.07621992  0.89117368 -0.2        -0.4       ]]
+    """
 
     num_params = 1
     num_wires = AnyWires
@@ -357,8 +401,8 @@ class BlockEncode(Operation):
         a = a / normalization if normalization > 1 else a
 
         if subspace[2] < (subspace[0] + subspace[1]):
-            raise qml.QuantumFunctionError(
-                f"Block encoding a {subspace[0]} x {subspace[1]} matrix"
+            raise ValueError(
+                f"Block encoding a {subspace[0]} x {subspace[1]} matrix "
                 f"requires a hilbert space of size at least "
                 f"{subspace[0] + subspace[1]} x {subspace[0] + subspace[1]}."
                 f" Cannot be embedded in a {len(wires)} qubit system."
@@ -370,16 +414,42 @@ class BlockEncode(Operation):
 
     @staticmethod
     def compute_matrix(*params, **hyperparams):
-        """Get the matrix representation of block encoded unitary."""
+        r"""Representation of the operator as a canonical matrix in the computational basis (static method).
+
+        The canonical matrix is the textbook matrix representation that does not consider wires.
+        Implicitly, this assumes that the wires of the operator correspond to the global wire order.
+
+        .. seealso:: :meth:`~.BlockEncode.matrix`
+
+        Args:
+            params (list): trainable parameters of the operator, as stored in the ``parameters`` attribute
+            hyperparams (dict): non-trainable hyperparameters of the operator, as stored in the ``hyperparameters`` attribute
+
+
+        Returns:
+            tensor_like: canonical matrix
+
+        **Example**
+
+        >>> a = np.array([[0.1,0.2],[0.3,0.4]])
+        >>> a
+        tensor([[0.1, 0.2],
+                [0.3, 0.4]])
+        >>> qml.BlockEncode.compute_matrix(a,subspace=[2,2,4])
+        array([[ 0.1       ,  0.2       ,  0.97283788, -0.05988708],
+               [ 0.3       ,  0.4       , -0.05988708,  0.86395228],
+               [ 0.94561648, -0.07621992, -0.1       , -0.3       ],
+               [-0.07621992,  0.89117368, -0.2       , -0.4       ]])
+        """
         a = params[0]
         n, m, k = hyperparams["subspace"]
 
-        if isinstance(a, int) or isinstance(a, float):
-            u = pnp.block(
-                [[a, pnp.sqrt(1 - a * pnp.conj(a))], [pnp.sqrt(1 - a * pnp.conj(a)), -pnp.conj(a)]]
-            )
+        if qml.math.sum(qml.math.shape(a)) <= 2:
+            col1 = qml.math.vstack([a, pnp.sqrt(1 - a * pnp.conj(a))])
+            col2 = qml.math.vstack([pnp.sqrt(1 - a * pnp.conj(a)), -pnp.conj(a)])
+            u = qml.math.hstack([col1, col2])
         else:
-            d1, d2 = a.shape
+            d1, d2 = qml.math.shape(a)
 
             col1 = qml.math.vstack([a, qml.math.sqrt_matrix(pnp.eye(d2) - pnp.conj(a).T @ a)])
             col2 = qml.math.vstack(
@@ -390,6 +460,8 @@ class BlockEncode(Operation):
 
         if n + m < k:
             r = k - (n + m)
-            u = pnp.block([[u, pnp.zeros((n + m, r))], [pnp.zeros((r, n + m)), pnp.eye(r)]])
+            col1 = qml.math.vstack([u, pnp.zeros((r, n + m))])
+            col2 = qml.math.vstack([pnp.zeros((n + m, r)), pnp.eye(r)])
+            u = qml.math.hstack([col1, col2])
 
         return u

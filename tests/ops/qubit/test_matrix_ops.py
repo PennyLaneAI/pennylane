@@ -16,6 +16,7 @@ Unit tests for the qubit matrix-based operations.
 """
 # pylint: disable=import-outside-toplevel
 import numpy as np
+from pennylane import numpy as pnp
 import pytest
 from gate_data import H, I, S, T, X, Z
 
@@ -575,16 +576,17 @@ class TestUnitaryLabels:
 
         assert len(cache["matrices"]) == 3
 
+
 class TestBlockEncode:
     @pytest.mark.parametrize(
         ("input_matrix", "wires"),
         [
             (1, 1),
             ([1], 1),
-            ([[1]],1),
+            ([[1]], 1),
             (np.array(1), [1]),
             (np.array([1]), 1),
-            (np.array([[1]]),1),
+            (np.array([[1]]), 1),
             ([[1, 0], [0, 1]], [0, 1]),
             (np.array([[1, 0], [0, 1]]), range(2)),
             (np.identity(3), ["a", "b", "c"]),
@@ -618,22 +620,69 @@ class TestBlockEncode:
     @pytest.mark.parametrize(
         ("input_matrix", "wires", "output_matrix"),
         [
-            (1, 0, [[ 1,  0],[ 0, -1]]),
-            (0.3, 0, [[0.3, 0.9539392],[0.9539392, -0.3]]),
-            ([[0.1,0.2],[0.3,0.4]], range(2), [[0.1,0.2,0.97283788,-0.05988708],
-                                               [0.3,0.4,-0.05988708,0.86395228],
-                                               [0.94561648,-0.07621992,-0.1,-0.3],
-                                               [-0.07621992,0.89117368,-0.2,-0.4]]),
-            # ([[0.1]], 0,),
-            # ([[1, 0], [0, 1]], range(2)),
-            # (np.array([[1, 0], [0, 1]]), range(2)),
-            # (np.identity(3), range(3)),
+            (1, 0, [[1, 0], [0, -1]]),
+            (0.3, 0, [[0.3, 0.9539392], [0.9539392, -0.3]]),
+            (
+                [[0.1, 0.2], [0.3, 0.4]],
+                range(2),
+                [
+                    [0.1, 0.2, 0.97283788, -0.05988708],
+                    [0.3, 0.4, -0.05988708, 0.86395228],
+                    [0.94561648, -0.07621992, -0.1, -0.3],
+                    [-0.07621992, 0.89117368, -0.2, -0.4],
+                ],
+            ),
+            (
+                0.1,
+                range(2),
+                [[0.1, 0.99498744, 0, 0], [0.99498744, -0.1, 0, 0], [0, 0, 1, 0], [0, 0, 0, 1]],
+            ),
         ],
     )
     def test_correct_output_matrix(self, input_matrix, wires, output_matrix):
-        assert np.allclose(qml.matrix(qml.BlockEncode)(input_matrix,wires),output_matrix)
+        assert np.allclose(qml.matrix(qml.BlockEncode)(input_matrix, wires), output_matrix)
 
-    # def TestDifferentiability:
+    @pytest.mark.parametrize(
+        ("input_matrix", "wires"),
+        [
+            (1, 0),
+            (0.3, 0),
+            (np.array([[0.1, 0.2], [0.3, 0.4]]), range(2)),
+            (np.array([[0.1, 0.2, 0.3]]), range(2)),
+            (np.array([[0.1], [0.2], [0.3]]), range(2)),
+            (np.array([[0.1, 0.2], [0.3, 0.4], [0.5, 0.6]]), range(3)),
+            (np.array([[1, 2], [3, 4]]), range(2)),
+        ],
+    )
+    def test_unitary(self, input_matrix, wires):
+        mat = qml.matrix(qml.BlockEncode(input_matrix, wires))
+        assert np.allclose(np.eye(len(mat)), mat.dot(mat.T.conj()))
+
+    @pytest.mark.parametrize(
+        ("device_type", "wires", "input_matrix"),
+        [
+            ("default.qubit", range(1), pnp.array(0.3)),
+            ("default.qubit", range(2), pnp.diag([0.1, 0.2])),
+            ("default.qubit.autograd", range(1), pnp.array(0.5)),
+            ("default.qubit.autograd", range(2), pnp.diag([0.2, 0.3])),
+            ("default.qubit.tf", range(1), pnp.array(0.4)),
+            ("default.qubit.tf", range(2), pnp.diag([0.3, 0.5])),
+        ],
+    )
+    def test_differentiability(self, device_type, wires, input_matrix):
+        if device_type == "default.qubit.tf":
+            import tensorflow as tf
+
+            input_matrix = tf.Variable(input_matrix)
+
+        dev = qml.device(device_type, wires=wires)
+
+        @qml.qnode(dev)
+        def circuit(input_matrix):
+            qml.BlockEncode(input_matrix, wires=wires)
+            return qml.expval(qml.PauliZ(wires=0))
+
+        qml.grad(circuit)(input_matrix)
 
 
 class TestInterfaceMatricesLabel:
