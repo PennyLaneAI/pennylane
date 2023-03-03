@@ -353,7 +353,7 @@ class ParametrizedEvolution(Operation):
 
         # self._check_batching(params)
 
-        self.data = [np.array(p) if isinstance(p, list) else p for p in params]
+        self.data = [p for p in params]
 
         if do_queue:
             self.queue()
