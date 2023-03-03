@@ -19,7 +19,7 @@ from typing import Callable
 from scipy.sparse import csr_matrix
 
 from pennylane import math
-from pennylane.ops import Sum, prod
+from pennylane.ops import Sum
 from pennylane.measurements import StateMeasurement, MeasurementProcess, ExpectationMP
 from pennylane.typing import TensorLike
 from pennylane.wires import Wires
@@ -84,15 +84,14 @@ def state_hamiltonian_expval_backprop(
     Returns:
         TensorLike: the result of the measurement
     """
-    obs = measurementprocess.obs
-    if isinstance(obs, Sum):
-        terms_iterator = obs
-    else:
-        terms_iterator = [prod(*o.obs) * c for c, o in zip(*obs.terms())]
-
-    # Recursively call measure on each term, so that the best measurement method can
-    # be used for each term
-    return sum(measure(ExpectationMP(term), state) for term in terms_iterator)
+    if isinstance(measurementprocess.obs, Sum):
+        # Recursively call measure on each term, so that the best measurement method can
+        # be used for each term
+        return sum(measure(ExpectationMP(term), state) for term in measurementprocess.obs)
+    # else hamiltonian
+    return sum(
+        c * measure(ExpectationMP(t), state) for c, t in zip(*measurementprocess.obs.terms())
+    )
 
 
 def get_measurement_function(
