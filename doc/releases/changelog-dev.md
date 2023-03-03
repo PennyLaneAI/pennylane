@@ -36,6 +36,9 @@
 
 <h3>Bug fixes</h3>
 
+* Ensure that `qml.data.load` returns datasets in a stable and expected order.
+  [(#3856)](https://github.com/PennyLaneAI/pennylane/pull/3856)
+
 <h3>Contributors</h3>
 
 This release contains contributions from (in alphabetical order):
