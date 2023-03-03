@@ -12,9 +12,6 @@
   `qml.Hamiltonian`, `qml.SparseHamiltonian`, `qml.Sum`.
   [(#3759)](https://github.com/PennyLaneAI/pennylane/pull/3759)
 
-* The `apply_operation` function added to `devices/qubit` now supports broadcasting.
-  [(#3852)](https://github.com/PennyLaneAI/pennylane/pull/3852)
-
 <h3>Improvements</h3>
 
 * The custom JVP rules in PennyLane now also support non-scalar and mixed-shape tape parameters as
@@ -27,6 +24,12 @@
 
 * `AdaptiveOptimizer` is updated to use non-default user-defined qnode arguments.
   [(#3765)](https://github.com/PennyLaneAI/pennylane/pull/3765)
+
+* The `apply_operation` function added to `devices/qubit` now supports broadcasting.
+  [(#3852)](https://github.com/PennyLaneAI/pennylane/pull/3852)
+
+* `qml.QubitStateVector.state_vector` not supports broadcasting.
+  [(#3852)](https://github.com/PennyLaneAI/pennylane/pull/3852)
 
 <h3>Breaking changes</h3>
 
