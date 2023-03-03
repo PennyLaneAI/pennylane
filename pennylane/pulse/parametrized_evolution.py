@@ -36,6 +36,7 @@ try:
 except ImportError as e:
     has_jax = False
 
+
 class WiresEnum(IntEnum):
     """Integer enumeration class
     to represent the number of wires
@@ -52,6 +53,7 @@ subsystem. It is equivalent to an integer with value 0."""
 AnyWires = WiresEnum.AnyWires
 """IntEnum: An enumeration which represents any wires in the
 subsystem. It is equivalent to an integer with value -1."""
+
 
 class ParametrizedEvolution(Operation):
     r"""
@@ -277,7 +279,7 @@ class ParametrizedEvolution(Operation):
         t: Union[float, List[float]] = None,
         do_queue=True,
         id=None,
-        **odeint_kwargs
+        **odeint_kwargs,
     ):
         if not has_jax:
             raise ImportError(
@@ -298,7 +300,7 @@ class ParametrizedEvolution(Operation):
         params = [] if params is None else params
 
         # same as super method but without the batching check
-        #super().__init__(*params, wires=H.wires, do_queue=do_queue, id=id)
+        # super().__init__(*params, wires=H.wires, do_queue=do_queue, id=id)
         self._name = self.__class__.__name__  #: str: name of the operator
         self._id = id
         self.queue_idx = None  #: int, None: index of the Operator in the circuit queue, or None if not in a queue
@@ -346,7 +348,7 @@ class ParametrizedEvolution(Operation):
                 f"{len(self._wires)} wires given, {self.num_wires} expected."
             )
 
-        #self._check_batching(params)
+        # self._check_batching(params)
 
         self.data = [np.array(p) if isinstance(p, list) else p for p in params]
 
