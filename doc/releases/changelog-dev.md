@@ -31,11 +31,12 @@
 
 <h3>Breaking changes</h3>
 
-* Trainable parameters for the Jax interface are the parameters being `JVPTracer`, they are defined by setting
-  `argnums`.
+* Trainable parameters for the Jax interface are the parameters that are `JVPTracer`, defined by setting
+  `argnums`. Previously, all JAX tracers, including those used for JIT compilation, were interpreted to be trainable.
   [(#3697)](https://github.com/PennyLaneAI/pennylane/pull/3697)
 
 * The keyword argument `argnums` is now used for gradient transform using Jax, instead of `argnum`.
+  `argnum` is automatically converted to `argnums` when using JAX, and will no longer be supported in v0.31.
   [(#3697)](https://github.com/PennyLaneAI/pennylane/pull/3697)
 
 <h3>Deprecations</h3>
