@@ -71,9 +71,7 @@ def state_hamiltonian_expval(measurementprocess: ExpectationMP, state: TensorLik
     return math.real(math.squeeze(res))
 
 
-def state_hamiltonian_expval_backprop(
-    measurementprocess: ExpectationMP, state: TensorLike
-) -> TensorLike:
+def sum_of_terms_method(measurementprocess: ExpectationMP, state: TensorLike) -> TensorLike:
     """Measure the expecation value of the state when the measured observable is a ``Hamiltonian`` or ``Sum``
     and it must be backpropagation compatible.
 
@@ -95,12 +93,13 @@ def state_hamiltonian_expval_backprop(
 
 
 def get_measurement_function(
-    measurementprocess: MeasurementProcess, backprop_mode: bool = False
+    measurementprocess: MeasurementProcess, state: TensorLike
 ) -> Callable[[MeasurementProcess, TensorLike], TensorLike]:
     """Get the appropriate method for performing a measurement.
 
     Args:
         measurementprocess (MeasurementProcess): measurement process to apply to the state
+        state (TensorLike): the state to measure
 
     Returns:
         Callable: function that returns the measurement result
@@ -120,9 +119,8 @@ def get_measurement_function(
                 # and 8 or more wires as it's faster than using eigenvalues.
 
                 # need to work out thresholds for when its faster to use "backprop mode" measurements
-                return (
-                    state_hamiltonian_expval_backprop if backprop_mode else state_hamiltonian_expval
-                )
+                backprop_mode = math.get_interface(state) != "numpy"
+                return sum_of_terms_method if backprop_mode else state_hamiltonian_expval
 
         if measurementprocess.obs is None or measurementprocess.obs.has_diagonalizing_gates:
             return state_diagonalizing_gates
@@ -140,5 +138,4 @@ def measure(measurementprocess: MeasurementProcess, state: TensorLike) -> Tensor
     Returns:
         Tensorlike: the result of the measurement
     """
-    backprop_mode = math.get_interface(state) != "numpy"
-    return get_measurement_function(measurementprocess, backprop_mode)(measurementprocess, state)
+    return get_measurement_function(measurementprocess, state)(measurementprocess, state)
