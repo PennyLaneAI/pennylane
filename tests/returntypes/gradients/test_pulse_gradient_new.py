@@ -545,6 +545,7 @@ class TestStochPulseGrad:
         res_jit = jax.jit(fun)(params)
         assert qml.math.isclose(res, res_jit)
 
+
 @pytest.mark.jax
 class TestStochPulseGradQNodeIntegration:
     """Test that stoch_pulse_grad integrates correctly with QNodes."""
@@ -553,6 +554,7 @@ class TestStochPulseGradQNodeIntegration:
     def test_simple_qnode(self, num_samples):
         """Test that a simple qnode can be differentiated with stoch_pulse_grad."""
         import jax
+
         jnp = jax.numpy
         jax.config.update("jax_enable_x64", True)
         dev = qml.device("default.qubit.jax", wires=1)
@@ -575,6 +577,7 @@ class TestStochPulseGradQNodeIntegration:
     def test_simple_qnode_jit(self, num_samples):
         """Test that a simple qnode can be differentiated with stoch_pulse_grad."""
         import jax
+
         jnp = jax.numpy
         jax.config.update("jax_enable_x64", True)
         dev = qml.device("default.qubit.jax", wires=1)
@@ -594,6 +597,7 @@ class TestStochPulseGradQNodeIntegration:
     def test_advanced_qnode(self, num_samples):
         """Test that an advanced qnode can be differentiated with stoch_pulse_grad."""
         import jax
+
         jnp = jax.numpy
         jax.config.update("jax_enable_x64", True)
 
@@ -612,14 +616,23 @@ class TestStochPulseGradQNodeIntegration:
 
         num_samples = 20
         num_samples = 1000
-        qnode_pulse_grad = qml.QNode(ansatz, dev, interface="jax", diff_method=stoch_pulse_grad, num_samples=num_samples, sampler_seed=7123)
+        qnode_pulse_grad = qml.QNode(
+            ansatz,
+            dev,
+            interface="jax",
+            diff_method=stoch_pulse_grad,
+            num_samples=num_samples,
+            sampler_seed=7123,
+        )
         qnode_backprop = qml.QNode(ansatz, dev, interface="jax")
 
         grad_pulse_grad = jax.grad(qnode_pulse_grad)(params)
-        assert dev.num_executions==1+2*3*num_samples
+        assert dev.num_executions == 1 + 2 * 3 * num_samples
         grad_backprop = jax.grad(qnode_backprop)(params)
 
-        assert all(qml.math.allclose(r, e, rtol=0.4) for r, e in zip(grad_pulse_grad, grad_backprop))
+        assert all(
+            qml.math.allclose(r, e, rtol=0.4) for r, e in zip(grad_pulse_grad, grad_backprop)
+        )
 
 
 @pytest.mark.jax
@@ -629,6 +642,7 @@ class TestStochPulseGradDiff:
     def test_jax(self):
         """Test that stoch_pulse_grad is differentiable with JAX."""
         import jax
+
         jnp = jax.numpy
         jax.config.update("jax_enable_x64", True)
         dev = qml.device("default.qubit.jax", wires=1)
@@ -650,6 +664,7 @@ class TestStochPulseGradDiff:
         exp_diff_of_grad = -4 * jnp.cos(2 * p) * T**2
         diff_of_grad = jax.grad(fun)(params)
         assert qml.math.isclose(diff_of_grad, exp_diff_of_grad)
+
 
 """
 
