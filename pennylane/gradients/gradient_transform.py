@@ -327,18 +327,14 @@ class gradient_transform(qml.batch_transform):
 
             # Special case where we apply a Jax transform (jacobian e.g.) on the gradient transform and argnums are
             # defined on the outer transform and therefore on the args.
-            if argnums is None and argnums_ is None and interface == "jax":
-                cjac = qml.transforms.classical_jacobian(
-                    qnode, argnum=qml.math.get_trainable_indices(args), expand_fn=self.expand_fn
-                )(*args, **kwargs)
+            if interface == "jax":
+                argnum_cjac = trainable_params or argnums
             else:
-                if interface == "jax":
-                    argnum_cjac = argnums if argnums is not None else [0]
-                else:
-                    argnum_cjac = None
-                cjac = qml.transforms.classical_jacobian(
-                    qnode, argnum=argnum_cjac, expand_fn=self.expand_fn
-                )(*args, **kwargs)
+                argnum_cjac = None
+
+            cjac = qml.transforms.classical_jacobian(
+                qnode, argnum=argnum_cjac, expand_fn=self.expand_fn
+            )(*args, **kwargs)
 
             if qml.active_return():
                 if isinstance(cjac, tuple) and len(cjac) == 1:
