@@ -100,7 +100,15 @@ def expand_fn(circuit: qml.tape.QuantumScript) -> qml.tape.QuantumScript:
         raise DeviceError("DefaultQubit2 accepts at most one state prep operation.")
 
     if not all(_accepted_operator(op) for op in circuit._ops):
-        new_ops = [final_op for op in circuit._ops for final_op in _operator_decomposition_gen(op)]
+        try:
+            new_ops = [
+                final_op for op in circuit._ops for final_op in _operator_decomposition_gen(op)
+            ]
+        except RecursionError as e:
+            raise DeviceError(
+                "Reached recursion limit trying to decompose operations. "
+                "Operator decomposition may have entered an infinite loop."
+            ) from e
         circuit = qml.tape.QuantumScript(new_ops, circuit.measurements, circuit._prep)
 
     for observable in circuit.observables:

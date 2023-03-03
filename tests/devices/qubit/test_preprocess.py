@@ -166,6 +166,19 @@ class TestExpandFnValidation:
         )
         expand_fn(tape)
 
+    def test_infinite_decomposition_loop(self):
+        """Test that a device error is raised if decomposition enters an infinite loop."""
+
+        class InfiniteOp(qml.operation.Operation):
+            num_wires = 1
+
+            def decomposition(self):
+                return [InfiniteOp(self.wires)]
+
+        qs = qml.tape.QuantumScript([InfiniteOp(0)])
+        with pytest.raises(DeviceError, match=r"Reach recursion limit trying to decompose"):
+            expand_fn(qs)
+
 
 class TestExpandFnTransformations:
     def test_expand_fn_expand_unsupported_op(self):
