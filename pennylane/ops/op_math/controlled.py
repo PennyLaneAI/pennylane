@@ -556,8 +556,7 @@ def _decompose_no_control_values(op: "operation.Operator") -> List["operation.Op
     if len(op.control_wires) == 1 and hasattr(op.base, "_controlled"):
         return [op.base._controlled(op.control_wires[0])]
     if isinstance(op.base, qml.PauliX):
-        if len(op.control_wires) == 2:
-            return [qml.Toffoli(op.active_wires)]
+        # has some special case handling of its own for further decomposition
         return [qml.MultiControlledX(wires=op.active_wires, work_wires=op.work_wires)]
     if (
         len(op.base.wires) == 1
