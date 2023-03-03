@@ -212,7 +212,7 @@ Now we can execute the evolution of this Hamiltonian in a QNode and compute its 
 
     import jax
 
-    dev = qml.device("default.qubit", wires=1)
+    dev = qml.device("default.qubit.jax", wires=1)
 
     @jax.jit
     @qml.qnode(dev, interface="jax")
