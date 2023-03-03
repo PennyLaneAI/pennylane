@@ -519,3 +519,163 @@ class TestStochPulseGrad:
         exp_grad = jax.grad(qnode, argnums=(0, 1))(params_0, params_1)
         exp_grad = exp_grad[0] + exp_grad[1]
         assert all(qml.math.allclose(r, e, rtol=0.2) for r, e in zip(res, exp_grad))
+
+    def test_with_jit(self):
+        """Test that the stochastic parameter-shift rule works with JITting."""
+        import jax
+
+        jax.config.update("jax_enable_x64", True)
+        dev = qml.device("default.qubit.jax", wires=1)
+        jnp = jax.numpy
+        T = (0.2, 0.5)
+
+        def fun(params):
+            op = qml.evolve(ham_single_q_const)(params, T)
+            tape = qml.tape.QuantumScript([op], [qml.expval(qml.PauliZ(0))])
+            tapes, fn = stoch_pulse_grad(tape)
+            assert len(tapes) == 2
+            res = fn(qml.execute(tapes, dev, None))
+            return res
+
+        params = [jnp.array(0.24)]
+        # Effective rotation parameter
+        p = params[0] * (T[1] - T[0])
+        res = fun(params)
+        assert qml.math.isclose(res, -2 * jnp.sin(2 * p) * (T[1] - T[0]))
+        res_jit = jax.jit(fun)(params)
+        assert qml.math.isclose(res, res_jit)
+
+@pytest.mark.jax
+class TestStochPulseGradQNodeIntegration:
+    """Test that stoch_pulse_grad integrates correctly with QNodes."""
+
+    @pytest.mark.parametrize("num_samples", [1, 3])
+    def test_simple_qnode(self, num_samples):
+        """Test that a simple qnode can be differentiated with stoch_pulse_grad."""
+        import jax
+        jnp = jax.numpy
+        jax.config.update("jax_enable_x64", True)
+        dev = qml.device("default.qubit.jax", wires=1)
+        T = 0.5
+
+        @qml.qnode(dev, interface="jax", diff_method=stoch_pulse_grad, num_samples=num_samples)
+        def circuit(params):
+            qml.evolve(ham_single_q_const)(params, T)
+            return qml.expval(qml.PauliZ(0))
+
+        params = [jnp.array(0.4)]
+        grad = jax.grad(circuit)(params)
+        p = params[0] * T
+        exp_grad = -2 * jnp.sin(2 * p) * T
+        assert qml.math.isclose(grad, exp_grad)
+
+    # This test fails because of a leaked tracer which should be fixed once #3697 is merged
+    @pytest.mark.xfail
+    @pytest.mark.parametrize("num_samples", [1, 3])
+    def test_simple_qnode_jit(self, num_samples):
+        """Test that a simple qnode can be differentiated with stoch_pulse_grad."""
+        import jax
+        jnp = jax.numpy
+        jax.config.update("jax_enable_x64", True)
+        dev = qml.device("default.qubit.jax", wires=1)
+        T = 0.5
+
+        @qml.qnode(dev, interface="jax", diff_method=stoch_pulse_grad, num_samples=num_samples)
+        def circuit(params):
+            qml.evolve(ham_single_q_const)(params, T)
+            return qml.expval(qml.PauliZ(0))
+
+        params = [jnp.array(0.4)]
+        p = params[0] * T
+        exp_grad = -2 * jnp.sin(2 * p) * T
+        jit_grad = jax.jit(jax.grad(circuit))(params)
+        assert qml.math.isclose(jit_grad, exp_grad)
+
+    def test_advanced_qnode(self, num_samples):
+        """Test that an advanced qnode can be differentiated with stoch_pulse_grad."""
+        import jax
+        jnp = jax.numpy
+        jax.config.update("jax_enable_x64", True)
+
+        params = [jnp.array(1.51), jnp.array(-0.371), jnp.array([0.2, 0.2, -0.4])]
+        dev = qml.device("default.qubit.jax", wires=2)
+        T = 0.5
+        ham = (
+            qml.pulse.constant * qml.PauliX(0)
+            + (lambda p, t: jnp.sin(p * t)) * qml.PauliZ(0)
+            + jnp.polyval * (qml.PauliY(0) @ qml.PauliY(1))
+        )
+
+        def ansatz(params):
+            qml.evolve(ham)(params, 0.4)
+            return qml.expval(qml.PauliY(0) @ qml.PauliX(1))
+
+        num_samples = 20
+        num_samples = 1000
+        qnode_pulse_grad = qml.QNode(ansatz, dev, interface="jax", diff_method=stoch_pulse_grad, num_samples=num_samples, sampler_seed=7123)
+        qnode_backprop = qml.QNode(ansatz, dev, interface="jax")
+
+        grad_pulse_grad = jax.grad(qnode_pulse_grad)(params)
+        assert dev.num_executions==1+2*3*num_samples
+        grad_backprop = jax.grad(qnode_backprop)(params)
+
+        assert all(qml.math.allclose(r, e, rtol=0.4) for r, e in zip(grad_pulse_grad, grad_backprop))
+
+
+@pytest.mark.jax
+class TestStochPulseGradDiff:
+    """Test that stoch_pulse_grad is differentiable."""
+
+    def test_jax(self):
+        """Test that stoch_pulse_grad is differentiable with JAX."""
+        import jax
+        jnp = jax.numpy
+        jax.config.update("jax_enable_x64", True)
+        dev = qml.device("default.qubit.jax", wires=1)
+        T = 0.5
+
+        def fun(params):
+            op = qml.evolve(ham_single_q_const)(params, T)
+            tape = qml.tape.QuantumScript([op], [qml.expval(qml.PauliZ(0))])
+            tape.trainable_params = [0]
+            tapes, fn = stoch_pulse_grad(tape)
+            return fn(qml.execute(tapes, dev, None))
+
+        params = [jnp.array(0.4)]
+        p = params[0] * T
+        exp_grad = -2 * jnp.sin(2 * p) * T
+        grad = fun(params)
+        assert qml.math.isclose(grad, exp_grad)
+
+        exp_diff_of_grad = -4 * jnp.cos(2 * p) * T**2
+        diff_of_grad = jax.grad(fun)(params)
+        assert qml.math.isclose(diff_of_grad, exp_diff_of_grad)
+
+"""
+
+        import jax
+
+        jax.config.update("jax_enable_x64", True)
+        jnp = jax.numpy
+        params = [jnp.array(0.24)]
+
+        dev = qml.device("default.qubit.jax", wires=1)
+
+        @qml.qnode(dev, interface="jax")
+        def qnode(params):
+            qml.evolve(ham_single_q_const)(params, 0.4)
+            return qml.expval(qml.PauliZ(0))
+
+        tape = qml.tape.QuantumScript([op], [qml.expval(qml.PauliZ(0))])
+
+        # Effective rotation parameter
+        p = params[0] * (T[1] - T[0])
+        r = qml.execute([tape], dev, None)
+        assert qml.math.isclose(r, jnp.cos(2 * p), atol=1e-4)
+        tapes, fn = stoch_pulse_grad(tape, num_samples=num_samples)
+        assert len(tapes) == num_samples * 2
+
+        res = fn(qml.execute(tapes, dev, None))
+        assert qml.math.isclose(res, -2 * jnp.sin(2 * p) * (T[1] - T[0]))
+
+"""
