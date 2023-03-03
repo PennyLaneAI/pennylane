@@ -63,6 +63,8 @@ def apply_operation_einsum(op: qml.operation.Operator, state, batch_dim=0):
     Args:
         op (Operator): Operator to apply to the quantum state
         state (array[complex]): Input quantum state
+        batch_dim (int): Whether or not the state has a batch dimension. ``batch_dim`` should
+        be 0 if the state is unbatched, or 1 if the state is batched.
 
     Returns:
         array[complex]: output_state
@@ -101,6 +103,8 @@ def apply_operation_tensordot(op: qml.operation.Operator, state, batch_dim=0):
     Args:
         op (Operator): Operator to apply to the quantum state
         state (array[complex]): Input quantum state
+        batch_dim (int): Whether or not the state has a batch dimension. ``batch_dim`` should
+        be 0 if the state is unbatched, or 1 if the state is batched.
 
     Returns:
         array[complex]: output_state
@@ -144,6 +148,8 @@ def apply_operation(op: qml.operation.Operator, state, batch_dim=0):
     Args:
         op (Operator): The operation to apply to ``state``
         state (tensor_like): The starting state.
+        batch_dim (int): Whether or not the state has a batch dimension. ``batch_dim`` should
+        be 0 if the state is unbatched, or 1 if the state is batched.
 
     Returns:
         ndarray: output state
