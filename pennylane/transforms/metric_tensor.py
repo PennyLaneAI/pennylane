@@ -399,9 +399,8 @@ def qnode_execution_wrapper(self, qnode, targs, tkwargs):
 
         interface = qml.math.get_interface(*args)
         trainable_params = qml.math.get_trainable_indices(args)
-        print("hi", interface, argnum)
+
         if interface == "jax" and argnum is not None:
-            print("hi")
             warnings.warn(
                 "argnum is deprecated with the Jax interface. You should use argnums instead."
             )
@@ -459,18 +458,14 @@ def qnode_execution_wrapper(self, qnode, targs, tkwargs):
         kwargs.pop("shots", False)
         # Special case where we apply a Jax transform (jacobian e.g.) on the gradient transform and argnums are
         # defined on the outer transform and therefore on the args.
-        if argnums is None and argnums_ is None and interface == "jax":
-            cjac = qml.transforms.classical_jacobian(
-                qnode, argnum=qml.math.get_trainable_indices(args), expand_fn=self.expand_fn
-            )(*args, **kwargs)
+        if interface == "jax":
+            argnum_cjac = trainable_params or argnums
         else:
-            if interface == "jax":
-                argnum_cjac = argnums if argnums is not None else [0]
-            else:
-                argnum_cjac = None
-            cjac = qml.transforms.classical_jacobian(
-                qnode, argnum=argnum_cjac, expand_fn=self.expand_fn
-            )(*args, **kwargs)
+            argnum_cjac = None
+
+        cjac = qml.transforms.classical_jacobian(
+            qnode, argnum=argnum_cjac, expand_fn=self.expand_fn
+        )(*args, **kwargs)
 
         return _contract_metric_tensor_with_cjac(mt, cjac)
 
