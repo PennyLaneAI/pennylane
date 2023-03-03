@@ -536,7 +536,7 @@ class QNodeExperimental:
         # TODO 0: Loop over the stacks
         # TODO 1: apply transform on tape
         if self.transform_stack:
-            print(self.transform_stack[0])
+            print(self.transform_stack)
             print(self.tape)
             tape, fn = self.transform_stack[0](tape=self.tape)
             print(tape.circuit)

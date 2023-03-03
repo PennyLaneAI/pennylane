@@ -56,13 +56,13 @@ class transform:
         if isinstance(obj, qml.tape.QuantumTape):
             return self._fn(obj, *targs, **tkwargs)
         elif isinstance(obj, qml.QNodeExperimental):
-            print("hi")
             return self.default_qnode_transform(obj, targs, tkwargs)
 
     def default_qnode_transform(self, qnode, targs, tkwargs):
         """Register a qnode transformation"""
         qnode.targ_stack.append(targs)
         qnode.tkwargs_stack.append(tkwargs)
+        print("def", self.fn)
         qnode.transform_stack.append(self.fn)
         qnode.post_processing_stack.append(default_qnode_postprocessing)
         return qnode
