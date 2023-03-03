@@ -85,7 +85,7 @@ def rydberg_interaction(register: list, wires=None, interaction_coeff: float = 8
     )
 
 
-def rydberg_drive(rabi, detuning, phase, wires):
+def rydberg_drive(rabi, phase, detuning, wires):
     r"""Returns a :class:`ParametrizedHamiltonian` representing the action of a driving laser
     field with the given rabi frequency, detuning and phase acting on the given wires
 
@@ -101,9 +101,9 @@ def rydberg_drive(rabi, detuning, phase, wires):
     Args:
         rabi (Union[float, Callable]): float or callable returning the frequency (in MHz) of a laser
             field
+        phase (float): float containing the phase (in radians) of the laser field
         detuning (Union[float, Callable]): float or callable returning the detuning (in MHz) of a
             laser field
-        phase (float): float containing the phase (in radians) of the laser field
         wires (Union[int, List[int]]): integer or list containing wire values that the laser field
             acts on
 
@@ -114,17 +114,46 @@ def rydberg_drive(rabi, detuning, phase, wires):
         wires = [wires]
 
     # We compute the `coeffs` and `observables` of the laser field
-    coeffs = [rabi, detuning]
-    rabi_observable = sum(
-        qml.math.cos(phase) * qml.PauliX(wire) - qml.math.sin(phase) * qml.PauliY(wire)
-        for wire in wires
-    )
-    detuning_observable = sum(qml.PauliZ(wire) for wire in wires)
-    observables = [rabi_observable, detuning_observable]
+    coeffs = [
+        amplitude_and_phase(qml.math.cos, rabi, phase),
+        amplitude_and_phase(qml.math.sin, rabi, phase),
+        detuning,
+    ]
+
+    drive_terms_1 = sum(qml.PauliX(wire) for wire in wires)
+    drive_terms_2 = sum(-qml.PauliY(wire) for wire in wires)
+    drive_terms_3 = sum(qml.PauliZ(wire) for wire in wires)
+
+    observables = [drive_terms_1, drive_terms_2, drive_terms_3]
 
     # We convert the pulse data into a list of ``RydbergPulse`` objects
     pulses = [RydbergPulse(rabi, detuning, phase, wires)]
+
     return RydbergHamiltonian(coeffs, observables, pulses=pulses)
+
+
+def amplitude_and_phase(trig_fn, amp, phase):
+    """Wrapper function for combining amplitude and phase into a single callalbe
+    (or constant if neither amplitude nor phase are callalbe)."""
+
+    def callable_amp_and_phase(params, t):
+        return amp(params[0], t) * trig_fn(phase(params[1], t))
+
+    def callable_amp(params, t):
+        return amp(params, t) * trig_fn(phase)
+
+    def callable_phase(params, t):
+        return amp * trig_fn(phase(params, t))
+
+    if callable(amp):
+        if callable(phase):
+            return callable_amp_and_phase
+        return callable_amp
+
+    if callable(phase):
+        return callable_phase
+
+    return amp * trig_fn(phase)
 
 
 class RydbergHamiltonian(ParametrizedHamiltonian):
@@ -181,6 +210,43 @@ class RydbergHamiltonian(ParametrizedHamiltonian):
         self.pulses = [] if pulses is None else pulses
         self.interaction_coeff = interaction_coeff
         super().__init__(coeffs, observables)
+
+    def __call__(self, params, t):
+        params = self._reorder_parameters(params)
+        return super().__call__(params, t)
+
+    def _reorder_parameters(self, params):
+        """Takes `params`, and reorganizes it based on whether the Hamiltonian has
+        callable phase and/or callable amplitude.
+
+        Consolidates phase and amplitude parameters in the case that both are callable,
+        and duplicates phase and/or amplitude parameters if either are callables, since
+        they will be passed to two operators in the Hamiltonian"""
+
+        reordered_params = []
+
+        coeff_idx = 0
+        params_idx = 0
+
+        for i, coeff in enumerate(self.coeffs_parametrized):
+            if i == coeff_idx:
+                if coeff.__name__ == "callable_amp_and_phase":
+                    # add the joined parameters twice, and skip an index
+                    reordered_params.append([params[params_idx], params[params_idx + 1]])
+                    reordered_params.append([params[params_idx], params[params_idx + 1]])
+                    coeff_idx += 2
+                    params_idx += 2
+                elif coeff.__name__ in ["callable_amp", "callable_phase"]:
+                    reordered_params.append(params[params_idx])
+                    reordered_params.append(params[params_idx])
+                    coeff_idx += 2
+                    params_idx += 1
+                else:
+                    reordered_params.append(params[params_idx])
+                    coeff_idx += 1
+                    params_idx += 1
+
+        return reordered_params
 
     def __add__(self, other):
         if not isinstance(other, RydbergHamiltonian):
