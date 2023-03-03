@@ -189,7 +189,8 @@ class QubitStateVector(StatePrep):
 
     def state_vector(self, wire_order=None):
         num_op_wires = len(self.wires)
-        op_vector = math.reshape(self.parameters[0], (-1,) + (2,) * num_op_wires)
+        op_vector_shape = (-1,) + (2,) * num_op_wires if self.batch_size else (2,) * num_op_wires
+        op_vector = math.reshape(self.parameters[0], op_vector_shape)
 
         if wire_order is None or Wires(wire_order) == self.wires:
             return op_vector
