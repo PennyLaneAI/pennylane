@@ -39,7 +39,6 @@ def expand_fn(
 def metric_tensor(
     tape,
     argnum=None,
-    argnums=None,
     approx=None,
     allow_nonunitary=True,
     aux_wire=None,
