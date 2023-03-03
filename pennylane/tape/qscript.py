@@ -695,7 +695,9 @@ class QuantumScript:
 
         for idx, p in iterator:
             op = self._par_info[idx]["op"]
-            op.data[self._par_info[idx]["p_idx"]] = p
+            temp_data = op.data
+            temp_data.data[self._par_info[idx]["p_idx"]] = p
+            op.data = temp_data
             op._check_batching(op.data)
         self._update_batch_size()
         self._update_output_dim()
