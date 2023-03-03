@@ -25,6 +25,9 @@
 * `AdaptiveOptimizer` is updated to use non-default user-defined qnode arguments.
   [(#3765)](https://github.com/PennyLaneAI/pennylane/pull/3765)
 
+* Adds logic to `qml.devices.qubit.measure` to compute the expectation values of `Hamiltonian` and `Sum `
+  in a backpropagation compatible way.
+
 <h3>Breaking changes</h3>
 
 <h3>Deprecations</h3>
