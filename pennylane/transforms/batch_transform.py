@@ -324,7 +324,6 @@ class batch_transform:
         return _wrapper
 
     def __call__(self, *targs, **tkwargs):
-        print(f"called {self}")
         qnode = None
 
         if targs:

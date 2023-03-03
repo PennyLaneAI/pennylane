@@ -337,9 +337,14 @@ def _stoch_pulse_grad(tape, argnum=None, num_samples=1, sampler_seed=None, shots
         Therefore, it is important to implement pulses in the simplest way possible.
     """
     # pylint:disable=unused-argument
+    if not qml.active_return():
+        raise NotImplementedError(
+            "The stochastic pulse parameter-shift gradient only supports the new "
+            "return type. Use qml.enable_return() to turn it on."
+        )
     if not has_jax:
         raise ImportError(
-            "Module jax is required for the ``stoch_pulse_grad`` gradient transform. "
+            "Module jax is required for the stochastic pulse parameter-shift gradient transform. "
             "You can install jax via: pip install jax jaxlib"
         )
     if any(isinstance(m, VarianceMP) for m in tape.measurements):
@@ -368,7 +373,6 @@ def _stoch_pulse_grad(tape, argnum=None, num_samples=1, sampler_seed=None, shots
     if all(g == "0" for g in diff_methods):
         return _all_zero_grad_new(tape, shots)
 
-    print(argnum)
     method_map = choose_grad_methods(diff_methods, argnum)
 
     argnum = [i for i, dm in method_map.items() if dm == "A"]
