@@ -399,9 +399,7 @@ def qnode_execution_wrapper(self, qnode, targs, tkwargs):
 
         interface = qml.math.get_interface(*args)
         trainable_params = qml.math.get_trainable_indices(args)
-        print("hi", interface, argnum)
         if interface == "jax" and argnum is not None:
-            print("hi")
             warnings.warn(
                 "argnum is deprecated with the Jax interface. You should use argnums instead."
             )
@@ -414,7 +412,7 @@ def qnode_execution_wrapper(self, qnode, targs, tkwargs):
             if argnums is None:
                 argnums_ = [0]
 
-            if argnums is not None:
+            else:
                 argnums_ = [argnums] if isinstance(argnums, int) else argnums
 
             params = qml.math.jax_argnums_to_tape_trainable(

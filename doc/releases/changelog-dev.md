@@ -38,8 +38,6 @@
 * The keyword argument `argnums` is now used for gradient transform using Jax, instead of `argnum`.
   `argnum` is automatically converted to `argnums` when using JAX, and will no longer be supported in v0.31.
   [(#3697)](https://github.com/PennyLaneAI/pennylane/pull/3697)
-
-* The keyword argument `argnums` is now used for gradient transform using Jax, instead of `argnum`.
   [(#3847)](https://github.com/PennyLaneAI/pennylane/pull/3847)
 
 <h3>Deprecations</h3>
