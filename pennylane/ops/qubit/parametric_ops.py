@@ -1322,6 +1322,14 @@ class PCPhase(Operation):
         return qml.Hermitian(mat, wires=self.wires)
 
     def __init__(self, phi, dim, wires, do_queue=True, id=None):
+        wires = wires if isinstance(wires, Wires) else Wires(wires)
+
+        if not (isinstance(dim, int) and (dim <= 2 ** len(wires))):
+            raise ValueError(
+                f"The projected dimension {dim} must be an integer that is less then or equal to "
+                f"the max size of the matrix {2 ** len(wires)}. Try adding more wires."
+            )
+
         super().__init__(phi, wires=wires, do_queue=do_queue, id=id)
         self.hyperparameters["dimension"] = (dim, 2 ** len(wires))
 

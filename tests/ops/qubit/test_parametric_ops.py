@@ -154,6 +154,16 @@ class TestOperations:
         np.testing.assert_allclose(res2, I, atol=tol)
         assert op.wires == op_d.wires
 
+    def test_pcphase_raises_error(self):
+        """Test that the PCPhase operator raises an error when dim is incorrect."""
+        phi, dim = (1.23, 3)  # dimension too big
+        with pytest.raises(ValueError, match=f"The projected dimension {dim} "):
+            _ = qml.PCPhase(phi, dim=dim, wires=0)
+
+        phi, dim = (1.23, 1.5)  # non integer dimension
+        with pytest.raises(ValueError, match=f"The projected dimension {dim} "):
+            _ = qml.PCPhase(phi, dim=dim, wires=0)
+
 
 class TestParameterFrequencies:
     @pytest.mark.parametrize("op", PARAMETRIZED_OPERATIONS)
@@ -968,20 +978,68 @@ class TestMatrix:
         assert np.allclose(mat1, expected_mat)
         assert np.allclose(mat2, expected_mat)
 
-    # @pytest.mark.tf
-    # def test_pcphase_tf(self):
-    #     # Add test
-    #     assert False
-    #
-    # @pytest.mark.torch
-    # def test_pcphase_torch(self):
-    #     # Add test
-    #     assert False
-    #
-    # @pytest.mark.jax
-    # def test_pcphase_jax(self):
-    #     # Add test
-    #     assert False
+    @pytest.mark.tf
+    @pytest.mark.parametrize("dim", range(3))
+    @pytest.mark.parametrize("wires", (range(2), range(3)))
+    @pytest.mark.parametrize("phi", np.linspace(-np.pi, np.pi, 10))
+    def test_pcphase_tf(self, phi, dim, wires):
+        """Test that the PCPhase operator matrix looks correct for tf."""
+        import tensorflow as tf
+
+        num_wires = len(wires)
+        op = qml.PCPhase(tf.Variable(phi), dim=dim, wires=wires)
+
+        mat1 = qml.matrix(op)
+        mat2 = op.compute_matrix(*op.parameters, **op.hyperparameters)
+
+        expected_mat = tf.Variable(
+            np.diag([np.exp(1j * phi) if i < dim else 1.0 for i in range(2**num_wires)])
+        )
+
+        assert np.allclose(mat1, expected_mat)
+        assert np.allclose(mat2, expected_mat)
+
+    @pytest.mark.torch
+    @pytest.mark.parametrize("dim", range(3))
+    @pytest.mark.parametrize("wires", (range(2), range(3)))
+    @pytest.mark.parametrize("phi", np.linspace(-np.pi, np.pi, 10))
+    def test_pcphase_torch(self, phi, dim, wires):
+        import torch
+
+        num_wires = len(wires)
+        op = qml.PCPhase(torch.tensor(phi), dim=dim, wires=wires)
+
+        mat1 = qml.matrix(op)
+        mat2 = op.compute_matrix(*op.parameters, **op.hyperparameters)
+
+        expected_mat = torch.tensor(
+            np.diag([np.exp(1j * phi) if i < dim else 1.0 for i in range(2**num_wires)])
+        )
+
+        assert np.allclose(mat1, expected_mat)
+        assert np.allclose(mat2, expected_mat)
+
+    @pytest.mark.jax
+    @pytest.mark.parametrize("dim", range(3))
+    @pytest.mark.parametrize("wires", (range(2), range(3)))
+    @pytest.mark.parametrize("phi", np.linspace(-np.pi, np.pi, 10))
+    def test_pcphase_jax(self, phi, dim, wires):
+        import jax.numpy as jnp
+
+        phi = jnp.array(phi)
+
+        num_wires = len(wires)
+        op = qml.PCPhase(phi, dim=dim, wires=wires)
+
+        mat1 = qml.matrix(op)
+        mat2 = op.compute_matrix(*op.parameters, **op.hyperparameters)
+
+        expected_mat = jnp.diag(
+            jnp.array([jnp.exp(1j * phi) if i < dim else 1.0 for i in range(2**num_wires)])
+        )
+
+        assert np.allclose(mat1, expected_mat)
+        assert np.allclose(mat2, expected_mat)
 
     def test_pcphase_broadcasted(self):
         """Test that the PCPhase matrix works with broadcasted parameters"""
@@ -2716,8 +2774,11 @@ class TestGrad:
     @pytest.mark.parametrize("dev_name,diff_method,phi", configuration)
     def test_pcphase_grad(self, dev_name, diff_method, phi):
         """Test pcphase operator gradient"""
+        if diff_method in {"adjoint"}:
+            pytest.skip("PCPHase does not support adjoint diff")
+
         dev = qml.device(dev_name, wires=[0, 1])
-        expected_grad = 1j / 2 * (npp.exp(1j * phi) - npp.exp(-1j * phi))  # computed by hand
+        expected_grad = (1j / 2) * (npp.exp(1j * phi) - npp.exp(-1j * phi))  # computed by hand
 
         @qml.qnode(dev, diff_method=diff_method)
         def circ(phi):
@@ -2732,6 +2793,98 @@ class TestGrad:
 
         phi = npp.array(phi, requires_grad=True)
         computed_grad = qml.grad(circ)(phi)
+        assert np.isclose(computed_grad, expected_grad)
+
+    @pytest.mark.tf
+    @pytest.mark.parametrize("dev_name,diff_method,phi", configuration)
+    def test_pcphase_grad_tf(self, dev_name, diff_method, phi):
+        """Test pcphase operator gradient"""
+        if diff_method in {"adjoint"}:
+            pytest.skip("PCPHase does not support adjoint diff")
+
+        import tensorflow as tf
+
+        dev = qml.device(dev_name, wires=[0, 1])
+        expected_grad = tf.Variable(
+            (1j / 2) * (npp.exp(1j * phi) - npp.exp(-1j * phi))
+        )  # computed by hand
+        phi = tf.Variable(phi)
+
+        @qml.qnode(dev, diff_method=diff_method)
+        def circ(phi):
+            qml.Hadamard(wires=0)
+            qml.Hadamard(wires=1)
+
+            qml.PCPhase(phi, dim=2, wires=[0, 1])
+
+            qml.Hadamard(wires=0)
+            qml.Hadamard(wires=1)
+            return qml.expval(qml.PauliZ(wires=0))
+
+        with tf.GradientTape() as tape:
+            result = circ(phi)
+
+        computed_grad = tape.gradient(result, phi)
+        assert np.isclose(computed_grad, expected_grad)
+
+    @pytest.mark.torch
+    @pytest.mark.parametrize("dev_name,diff_method,phi", configuration)
+    def test_pcphase_grad_torch(self, dev_name, diff_method, phi):
+        """Test pcphase operator gradient"""
+        if diff_method in {"adjoint"}:
+            pytest.skip("PCPHase does not support adjoint diff")
+
+        import torch
+
+        dev = qml.device(dev_name, wires=[0, 1])
+        expected_grad = torch.tensor(
+            (1j / 2) * (npp.exp(1j * phi) - npp.exp(-1j * phi))
+        )  # computed by hand
+        phi = torch.tensor(phi, requires_grad=True)
+
+        @qml.qnode(dev, diff_method=diff_method)
+        def circ(phi):
+            qml.Hadamard(wires=0)
+            qml.Hadamard(wires=1)
+
+            qml.PCPhase(phi, dim=2, wires=[0, 1])
+
+            qml.Hadamard(wires=0)
+            qml.Hadamard(wires=1)
+            return qml.expval(qml.PauliZ(wires=0))
+
+        res = circ(phi)
+        res.backward()
+        assert np.isclose(phi.grad, expected_grad)
+
+    @pytest.mark.jax
+    @pytest.mark.parametrize("dev_name,diff_method,phi", configuration)
+    def test_pcphase_grad_jax(self, dev_name, diff_method, phi):
+        """Test pcphase operator gradient"""
+        if diff_method in {"adjoint"}:
+            pytest.skip("PCPHase does not support adjoint diff")
+
+        import jax
+        import jax.numpy as jnp
+
+        dev = qml.device(dev_name, wires=[0, 1])
+        expected_grad = jnp.array(
+            (1j / 2) * (npp.exp(1j * phi) - npp.exp(-1j * phi))
+        )  # computed by hand
+        phi = jnp.array(phi)
+
+        @qml.qnode(dev, diff_method=diff_method)
+        def circ(phi):
+            qml.Hadamard(wires=0)
+            qml.Hadamard(wires=1)
+
+            qml.PCPhase(phi, dim=2, wires=[0, 1])
+
+            qml.Hadamard(wires=0)
+            qml.Hadamard(wires=1)
+            return qml.expval(qml.PauliZ(wires=0))
+
+        computed_grad = jax.grad(circ, argnums=0)(phi)
         assert np.isclose(computed_grad, expected_grad)
 
 
