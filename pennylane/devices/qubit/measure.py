@@ -95,23 +95,6 @@ def state_hamiltonian_expval_backprop(
     return sum(measure(ExpectationMP(term), state) for term in terms_iterator)
 
 
-def state_measurement_process(
-    measurementprocess: StateMeasurement, state: TensorLike
-) -> TensorLike:
-    """Dispatcher to `StateMeasurement.process_state` for obtaining measurement outcomes
-
-    Args:
-        measurementprocess (StateMeasurement): measurement to apply to the state
-        state (TensorLike): state to apply the measurement to
-
-    Returns:
-        TensorLike: the result of the measurement
-    """
-    total_indices = len(state.shape)
-    wires = Wires(range(total_indices))
-    return measurementprocess.process_state(math.flatten(state), wires)
-
-
 def get_measurement_function(
     measurementprocess: MeasurementProcess, backprop_mode: bool = False
 ) -> Callable[[MeasurementProcess, TensorLike], TensorLike]:
@@ -124,9 +107,6 @@ def get_measurement_function(
         Callable: function that returns the measurement result
     """
     if isinstance(measurementprocess, StateMeasurement):
-        if measurementprocess.obs is None:
-            # no need to apply diagonalizing gates
-            return state_measurement_process
 
         if isinstance(measurementprocess, ExpectationMP):
             if measurementprocess.obs.name == "SparseHamiltonian":
@@ -139,11 +119,13 @@ def get_measurement_function(
             ):
                 # Use tensor contraction for `Sum` expectation values with non-commuting summands
                 # and 8 or more wires as it's faster than using eigenvalues.
+
+                # need to work out thresholds for when its faster to use "backprop mode" measurements
                 return (
                     state_hamiltonian_expval_backprop if backprop_mode else state_hamiltonian_expval
                 )
 
-        if measurementprocess.obs.has_diagonalizing_gates:
+        if measurementprocess.obs is None or measurementprocess.obs.has_diagonalizing_gates:
             return state_diagonalizing_gates
 
     raise NotImplementedError
