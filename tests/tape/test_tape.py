@@ -686,6 +686,19 @@ class TestParameters:
         return tape, params
 
     @pytest.fixture
+    def make_tape_symbolic(self):
+        params = [[], [0.432], 0.123, [[], [0.546]], []]
+
+        with QuantumTape() as tape:
+            qml.ctrl(qml.prod(qml.PauliX(1), qml.PhaseShift(0.432, 2)), control=0)
+            qml.CNOT(wires=[0, "a"])
+            qml.RX(0.123, wires=2)
+            qml.prod(qml.prod(qml.PauliX(1), qml.PhaseShift(0.546, 2)), qml.PauliZ("a"))
+            qml.expval(qml.PauliX(wires="a"))
+
+        return tape, params
+
+    @pytest.fixture
     def make_tape_with_hermitian(self):
         params = [0.432, 0.123, 0.546, 0.32, 0.76]
         hermitian = qml.numpy.eye(2, requires_grad=False)
@@ -780,6 +793,26 @@ class TestParameters:
         assert tape.get_parameters() == new_params
 
         new_params = [0.1, -0.2, 1, 5, 0]
+        tape.data = new_params
+
+        for pinfo, pval in zip(tape._par_info, new_params):
+            assert pinfo["op"].data[pinfo["p_idx"]] == pval
+
+        assert tape.get_parameters() == new_params
+
+    def test_setting_parameters_with_symbolic_ops(self, make_tape_symbolic):
+        """Test that parameters are correctly modified after construction"""
+        tape, params = make_tape_symbolic
+        new_params = [[], [-0.5], 1, [[], [2.34]], []]
+
+        tape.set_parameters(new_params)
+
+        for pinfo, pval in zip(tape._par_info, new_params):
+            assert pinfo["op"].data[pinfo["p_idx"]] == pval
+
+        assert tape.get_parameters() == new_params
+
+        new_params = [[], [15], -0.1, [[], [3.14]], []]
         tape.data = new_params
 
         for pinfo, pval in zip(tape._par_info, new_params):
