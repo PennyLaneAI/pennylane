@@ -1022,7 +1022,7 @@ class Operator(abc.ABC):
         """
         self._batch_size = None
         try:
-            ndims = tuple(len(p) for p in params)
+            ndims = tuple(qml.math.ndim(p) for p in params)
         except ValueError as e:
             # TODO:[dwierichs] When using tf.function with an input_signature that contains
             # an unknown-shaped input, ndim() will not be able to determine the number of

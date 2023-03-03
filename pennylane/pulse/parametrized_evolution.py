@@ -22,6 +22,7 @@ from typing import List, Union
 
 import pennylane as qml
 from pennylane.operation import AnyWires, Operation
+from pennylane.wires import Wires
 
 from .parametrized_hamiltonian import ParametrizedHamiltonian
 
@@ -35,6 +36,22 @@ try:
 except ImportError as e:
     has_jax = False
 
+class WiresEnum(IntEnum):
+    """Integer enumeration class
+    to represent the number of wires
+    an operation acts on"""
+
+    AnyWires = -1
+    AllWires = 0
+
+
+AllWires = WiresEnum.AllWires
+"""IntEnum: An enumeration which represents all wires in the
+subsystem. It is equivalent to an integer with value 0."""
+
+AnyWires = WiresEnum.AnyWires
+"""IntEnum: An enumeration which represents any wires in the
+subsystem. It is equivalent to an integer with value -1."""
 
 class ParametrizedEvolution(Operation):
     r"""
@@ -279,7 +296,62 @@ class ParametrizedEvolution(Operation):
         else:
             self.t = jnp.array([0, t] if qml.math.ndim(t) == 0 else t, dtype=float)
         params = [] if params is None else params
-        super().__init__(*params, wires=H.wires, do_queue=do_queue, id=id)
+
+        # same as super method but without the batching check
+        #super().__init__(*params, wires=H.wires, do_queue=do_queue, id=id)
+        self._name = self.__class__.__name__  #: str: name of the operator
+        self._id = id
+        self.queue_idx = None  #: int, None: index of the Operator in the circuit queue, or None if not in a queue
+        self._pauli_rep = None  # Union[PauliSentence, None]: Representation of the operator as a pauli sentence, if applicable
+
+        wires_from_args = False
+        if wires is None:
+            try:
+                wires = params[-1]
+                params = params[:-1]
+                wires_from_args = True
+            except IndexError as err:
+                raise ValueError(
+                    f"Must specify the wires that {type(self).__name__} acts on"
+                ) from err
+
+        self._num_params = len(params)
+
+        # Check if the expected number of parameters coincides with the one received.
+        # This is always true for the default `Operator.num_params` property, but
+        # subclasses may overwrite it to define a fixed expected value.
+        if len(params) != self.num_params:
+            if wires_from_args and len(params) == (self.num_params - 1):
+                raise ValueError(f"Must specify the wires that {type(self).__name__} acts on")
+            raise ValueError(
+                f"{self.name}: wrong number of parameters. "
+                f"{len(params)} parameters passed, {self.num_params} expected."
+            )
+
+        self._wires = wires if isinstance(wires, Wires) else Wires(wires)
+
+        # check that the number of wires given corresponds to required number
+        if self.num_wires in {AllWires, AnyWires}:
+            if (
+                not isinstance(self, (qml.Barrier, qml.Snapshot, qml.Hamiltonian))
+                and len(qml.wires.Wires(wires)) == 0
+            ):
+                raise ValueError(
+                    f"{self.name}: wrong number of wires. " f"At least one wire has to be given."
+                )
+
+        elif len(self._wires) != self.num_wires:
+            raise ValueError(
+                f"{self.name}: wrong number of wires. "
+                f"{len(self._wires)} wires given, {self.num_wires} expected."
+            )
+
+        #self._check_batching(params)
+
+        self.data = [np.array(p) if isinstance(p, list) else p for p in params]
+
+        if do_queue:
+            self.queue()
 
     def __call__(self, params, t, **odeint_kwargs):
         # Need to cast all elements inside params to `jnp.arrays` to make sure they are not cast
