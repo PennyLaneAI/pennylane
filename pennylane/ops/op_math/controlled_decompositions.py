@@ -51,12 +51,12 @@ def _ensure_real_diagonal_q(q: np.ndarray):
     """
     Change the phases of Q so the main diagonal is real, and return the modified Q.
     """
-    exp_angles = np.angle(np.diag(q))
-    return q * np.exp(-1j * exp_angles).reshape((1, 2))
+    exp_angles = math.angle(math.diag(q))
+    return q * math.exp(-1j * exp_angles).reshape((1, 2))
 
 
 def _matrix_adjoint(matrix: np.ndarray):
-    return np.transpose(np.conj(matrix))
+    return math.transpose(math.conj(matrix))
 
 
 def _param_su2(ar: float, ai: float, br: float, bi: float):
@@ -74,12 +74,12 @@ def _bisect_compute_a(u: np.ndarray):
     where At is the adjoint of A
     and x is the Pauli X matrix.
     """
-    x = np.real(u[0, 1])
+    x = math.real(u[0, 1])
     z = u[1, 1]
-    zr = np.real(z)
-    zi = np.imag(z)
-    ar = np.sqrt((np.sqrt((zr + 1) / 2) + 1) / 2)
-    mul = 1 / (2 * np.sqrt((zr + 1) * (np.sqrt((zr + 1) / 2) + 1)))
+    zr = math.real(z)
+    zi = math.imag(z)
+    ar = math.sqrt((math.sqrt((zr + 1) / 2) + 1) / 2)
+    mul = 1 / (2 * math.sqrt((zr + 1) * (math.sqrt((zr + 1) / 2) + 1)))
     ai = zi * mul
     br = x * mul
     bi = 0
@@ -94,20 +94,20 @@ def _bisect_compute_b(u: np.ndarray):
     H is the Hadamard matrix,
     and x is the Pauli X matrix.
     """
-    sqrt = np.sqrt
-    Abs = np.abs
-    w = np.real(u[0, 0])
-    s = np.real(u[1, 0])
-    t = np.imag(u[1, 0])
-    if np.isclose(s, 0) and np.isclose(t, 0):
+    sqrt = math.sqrt
+    Abs = math.abs
+    w = math.real(u[0, 0])
+    s = math.real(u[1, 0])
+    t = math.imag(u[1, 0])
+    if math.isclose(s, 0) and math.isclose(t, 0):
         b = 0
         c = sqrt(w)
         d = 0
-    elif np.isclose(s, 0):
+    elif math.isclose(s, 0):
         b = 0
         c = sqrt(2 - 2 * w) * (-w / 2 - 1 / 2) / t
         d = sqrt(2 - 2 * w) / 2
-    elif np.isclose(t, 0):
+    elif math.isclose(t, 0):
         b = (1 / 2 - w / 2) * sqrt(2 * w + 2) / s
         c = sqrt(2 * w + 2) / 2
         d = 0
