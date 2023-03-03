@@ -54,6 +54,31 @@ def rydberg_interaction(register: list, wires=None, interaction_coeff: float = 8
 
     Returns:
         RydbergHamiltonian: a :class:`~.ParametrizedHamiltonian` representing the atom interaction
+
+    **Example**
+
+    .. code-block:: python
+
+        atom_coordinates = [[0, 0], [0, 5], [5, 0], [10, 5], [5, 10], [10, 10]]
+        wires = [1, 5, 0, 2, 4, 3]
+        RH = qml.pulse.rydberg_interaction(atom_coordinates, wires=wires)
+
+    >>> RH
+    ParametrizedHamiltonian: terms=3
+
+    .. code-block:: python
+
+        dev = qml.device("default.qubit.jax", wires=6)
+
+        @qml.qnode(dev, interface="jax")
+        def circuit():
+            # Since the Hamiltonian is dependent only on the number and positions of Rydberg atoms, the evolution
+            # does not have any trainable parameters
+            qml.evolve(RH)([], t=[0, 10])
+            return qml.expval(qml.PauliZ(0))
+
+    >>> circuit()
+    Array(1., dtype=float32)
     """
     if wires is None:
         wires = list(range(len(register)))
@@ -109,6 +134,34 @@ def rydberg_drive(rabi, detuning, phase, wires):
 
     Returns:
         RydbergHamiltonian: Hamiltonian representing the action of the laser field on the Rydberg atoms
+
+    **Example**
+
+    .. code-block:: python
+
+        rabi = lambda p, t: p * jnp.sin(jnp.pi * t)
+        detuning = 3 * jnp.pi / 4
+        phase = jnp.pi / 2
+        RH = qml.pulse.rydberg_drive(rabi, detuning, phase, [0, 1, 2, 3])
+
+    >>> RH
+    ParametrizedHamiltonian: terms=2
+
+    .. code-block:: python
+
+        dev = qml.device("default.qubit.jax", wires=4)
+
+        @qml.qnode(dev, interface="jax")
+        def circuit(params):
+            qml.evolve(RH)(params, t=[0, 10])
+            return qml.expval(qml.PauliZ(0))
+
+    >>> params = [2.4]
+    >>> circuit(params)
+    Array(0.8614685, dtype=float32)
+
+    >>> jax.grad(circuit)(params)
+    [Array(2.0483875, dtype=float32)]
     """
     if isinstance(wires, int):
         wires = [wires]
