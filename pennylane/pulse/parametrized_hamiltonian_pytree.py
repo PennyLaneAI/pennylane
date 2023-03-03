@@ -23,6 +23,7 @@ from jax.tree_util import register_pytree_node_class
 import pennylane as qml
 
 from .parametrized_hamiltonian import ParametrizedHamiltonian
+from .rydberg_hamiltonian import RydbergHamiltonian
 
 
 @register_pytree_node_class
@@ -91,6 +92,85 @@ class ParametrizedHamiltonianPytree:
             JaxParametrizedOperator: a JaxParametrizedOperator instance
         """
         return cls(*matrices, param_coeffs)
+
+
+@register_pytree_node_class
+@dataclass
+class RydbergHamiltonianPytree(ParametrizedHamiltonianPytree):
+    """Jax pytree class that represents a ``RydbergHamiltonian``."""
+
+    # ToDo: could this just be a separate, single-dispatched method? then we don't have to duplicate here
+    @staticmethod
+    def from_hamiltonian(H: RydbergHamiltonian, *, dense: bool = False, wire_order=None):
+        """Convert a ``RydbergHamiltonian`` into a jax pytree object.
+
+        Args:
+            H (ParametrizedHamiltonian): parametrized Hamiltonian to convert
+            dense (bool, optional): Decide wether a dense/sparse matrix is used. Defaults to False.
+            wire_order (list, optional): Wire order of the returned ``JaxParametrizedOperator``.
+                Defaults to None.
+
+        Returns:
+            ParametrizedHamiltonianPytree: pytree object
+        """
+
+        make_array = jnp.array if dense else sparse.CSR.fromdense
+
+        if len(H.ops_fixed) > 0:
+            mat_fixed = make_array(qml.matrix(H.H_fixed(), wire_order=wire_order))
+        else:
+            mat_fixed = None
+
+        mats_parametrized = tuple(
+            make_array(qml.matrix(op, wire_order=wire_order)) for op in H.ops_parametrized
+        )
+        return RydbergHamiltonianPytree(mat_fixed, mats_parametrized, H.coeffs_parametrized)
+
+    def __call__(self, pars, t):
+        if self.mat_fixed is not None:
+            ops = (self.mat_fixed,)
+            coeffs = (1,)
+        else:
+            ops = ()
+            coeffs = ()
+
+        pars = self._reorder_parameters(pars)
+        coeffs = coeffs + tuple(f(p, t) for f, p in zip(self.coeffs_parametrized, pars))
+        return LazyDotPytree(coeffs, ops + self.mats_parametrized)
+
+    # Todo: this is identical to the function on RydbergHamlitonian could we just make that
+    #  a static method and use it here? Or have it in a utils file of some kind?
+    def _reorder_parameters(self, params):
+        """Takes `params`, and reorganizes it based on whether the Hamiltonian has
+        callable phase and/or callable amplitude.
+
+        Consolidates phase and amplitude parameters in the case that both are callable,
+        and duplicates phase and/or amplitude parameters if either are callables, since
+        they will be passed to two operators in the Hamiltonian"""
+
+        reordered_params = []
+
+        coeff_idx = 0
+        params_idx = 0
+
+        for i, coeff in enumerate(self.coeffs_parametrized):
+            if i == coeff_idx:
+                if coeff.__name__ == "callable_amp_and_phase":
+                    reordered_params.append([params[params_idx], params[params_idx + 1]])
+                    reordered_params.append([params[params_idx], params[params_idx + 1]])
+                    coeff_idx += 2
+                    params_idx += 2
+                elif coeff.__name__ in ["callable_amp", "callable_phase"]:
+                    reordered_params.append(params[params_idx])
+                    reordered_params.append(params[params_idx])
+                    coeff_idx += 2
+                    params_idx += 1
+                else:
+                    reordered_params.append(params[params_idx])
+                    coeff_idx += 1
+                    params_idx += 1
+
+        return reordered_params
 
 
 @register_pytree_node_class

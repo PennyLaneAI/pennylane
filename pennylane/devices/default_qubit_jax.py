@@ -28,7 +28,10 @@ try:
     from jax.config import config as jax_config
     from jax.experimental.ode import odeint
 
-    from pennylane.pulse.parametrized_hamiltonian_pytree import ParametrizedHamiltonianPytree
+    from pennylane.pulse.parametrized_hamiltonian_pytree import (
+        ParametrizedHamiltonianPytree,
+        RydbergHamiltonianPytree,
+    )
 
 except ImportError as e:  # pragma: no cover
     raise ImportError("default.qubit.jax device requires installing jax>0.3.20") from e
@@ -237,9 +240,14 @@ class DefaultQubitJax(DefaultQubit):
         state = self._flatten(state)
 
         with jax.ensure_compile_time_eval():
-            H_jax = ParametrizedHamiltonianPytree.from_hamiltonian(
-                operation.H, dense=len(operation.wires) < 3, wire_order=self.wires
-            )
+            if isinstance(operation.H, qml.pulse.RydbergHamiltonian):
+                H_jax = RydbergHamiltonianPytree.from_hamiltonian(
+                    operation.H, dense=len(operation.wires) < 3, wire_order=self.wires
+                )
+            else:
+                H_jax = ParametrizedHamiltonianPytree.from_hamiltonian(
+                    operation.H, dense=len(operation.wires) < 3, wire_order=self.wires
+                )
 
         def fun(y, t):
             """dy/dt = -i H(t) y"""
