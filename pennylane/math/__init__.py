@@ -50,6 +50,7 @@ from .multi_dispatch import (
     gammainc,
     get_trainable_indices,
     iscomplex,
+    jax_argnums_to_tape_trainable,
     kron,
     matmul,
     multi_dispatch,
@@ -61,7 +62,6 @@ from .multi_dispatch import (
     tensordot,
     unwrap,
     where,
-    jax_argnums_to_tape_trainable,
 )
 from .quantum import (
     cov_matrix,

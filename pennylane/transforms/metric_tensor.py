@@ -413,7 +413,7 @@ def qnode_execution_wrapper(self, qnode, targs, tkwargs):
             if argnums is None:
                 argnums_ = [0]
 
-            if argnums is not None:
+            else:
                 argnums_ = [argnums] if isinstance(argnums, int) else argnums
 
             params = qml.math.jax_argnums_to_tape_trainable(

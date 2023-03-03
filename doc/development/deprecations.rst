@@ -6,10 +6,10 @@ Deprecations
 Pending deprecations
 --------------------
 
-* The argument ``argnum`` for gradient transforms is replaced by ``argnums``.
+* The argument ``argnum`` for gradient transforms using the Jax interface is replaced by ``argnums``.
 
-  - Argnum is automatically changed to argnums for gradient tranform using Jax and a warning is raised in v0.30
-  - Argnums is the only option in for gradient tranform using Jax v0.31
+  - ``argnum`` is automatically changed to ``argnums`` for gradient transforms using JAX and a warning is raised in v0.30
+  - ``argnums`` is the only option for gradient transforms using JAX in v0.31
 
 
 * The ``get_operation`` tape method is updated to return the operation index as well, changing its signature.
