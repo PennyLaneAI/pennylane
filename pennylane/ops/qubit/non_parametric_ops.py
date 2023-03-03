@@ -56,6 +56,15 @@ class Hadamard(Observable, Operation):
 
     _queue_category = "_ops"
 
+    def __init__(self, *params, wires=None, do_queue=True, id=None):
+        super().__init__(*params, wires=wires, do_queue=do_queue, id=id)
+        self._pauli_rep = qml.pauli.PauliSentence(
+            {
+                qml.pauli.PauliWord({self.wires[0]: "X"}): INV_SQRT2,
+                qml.pauli.PauliWord({self.wires[0]: "Z"}): INV_SQRT2,
+            }
+        )
+
     def label(self, decimals=None, base_label=None, cache=None):
         return base_label or "H"
 
