@@ -210,20 +210,6 @@ def apply_pauliz(op: qml.PauliZ, state, batch_dim=0):
 
 
 @apply_operation.register
-def apply_phase(op: qml.PhaseShift, state, batch_dim=0):
-    """Apply PhaseShift operator to state."""
-    shift = math.exp(math.multiply(1j, op.data[0]))
-    axis = op.wires[0] + batch_dim
-    n_dim = math.ndim(state)
-
-    sl_0 = _get_slice(0, axis, n_dim)
-    sl_1 = _get_slice(1, axis, n_dim)
-
-    state1 = math.multiply(shift, state[sl_1])
-    return math.stack([state[sl_0], state1], axis=axis)
-
-
-@apply_operation.register
 def apply_cnot(op: qml.CNOT, state, batch_dim=0):
     """Apply cnot gate to state."""
     target_axes = (op.wires[1] - 1 if op.wires[1] > op.wires[0] else op.wires[1]) + batch_dim
