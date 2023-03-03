@@ -231,6 +231,8 @@ def ctrl_decomp_bisect_od(
     Args:
         target_operation (~.operation.Operator): the target operation to decompose
         control_wires (~.wires.Wires): the control wires of the operation
+        later (bool): whether to defer instantiation of operators; if True,
+        returns a list of functions instead which can each be called to generate the operator
 
     Returns:
         list[Operation]: the decomposed operations
@@ -306,6 +308,8 @@ def ctrl_decomp_bisect_md(
     Args:
         target_operation (~.operation.Operator): the target operation to decompose
         control_wires (~.wires.Wires): the control wires of the operation
+        later (bool): whether to defer instantiation of operators; if True,
+        returns a list of functions instead which can each be called to generate the operator
 
     Returns:
         list[Operation]: the decomposed operations
@@ -366,6 +370,8 @@ def ctrl_decomp_bisect_general(
     Args:
         target_operation (~.operation.Operator): the target operation to decompose
         control_wires (~.wires.Wires): the control wires of the operation
+        later (bool): whether to defer instantiation of operators; if True,
+        returns a list of functions instead which can each be called to generate the operator
 
     Returns:
         list[Operation]: the decomposed operations
@@ -451,6 +457,8 @@ def ctrl_decomp_bisect_auto(
     Args:
         target_operation (~.operation.Operator): the target operation to decompose
         control_wires (~.wires.Wires): the control wires of the operation
+        later (bool): whether to defer instantiation of operators; if True,
+        returns a list of functions instead which can each be called to generate the operator
 
     Returns:
         list[Operation]: the decomposed operations
@@ -462,7 +470,7 @@ def ctrl_decomp_bisect_auto(
     if isinstance(target_operation, Operator):
         target_operation = target_operation.matrix(), target_operation.wires
 
-    u = op.base.matrix()
+    u = target_operation[0]
     ui = np.imag(u)
     if np.isclose(ui[1, 0], 0) and np.isclose(ui[0, 1], 0):
         # Real off-diagonal specialized algorithm - 16n+O(1) CNOTs

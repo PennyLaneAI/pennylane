@@ -32,9 +32,7 @@ from pennylane.wires import Wires
 from .symbolicop import SymbolicOp
 from .controlled_decompositions import (
     ctrl_decomp_zyz,
-    ctrl_decomp_bisect_od,
-    ctrl_decomp_bisect_md,
-    ctrl_decomp_bisect_general,
+    ctrl_decomp_bisect_auto,
 )
 
 
