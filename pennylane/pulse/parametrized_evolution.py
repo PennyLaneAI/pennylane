@@ -26,6 +26,8 @@ from pennylane.wires import Wires
 
 from .parametrized_hamiltonian import ParametrizedHamiltonian
 
+from enum import IntEnum
+
 has_jax = True
 try:
     import jax
