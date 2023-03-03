@@ -25,13 +25,8 @@
 * `AdaptiveOptimizer` is updated to use non-default user-defined qnode arguments.
   [(#3765)](https://github.com/PennyLaneAI/pennylane/pull/3765)
 
-<<<<<<< HEAD
 * `pennylane.devices.qubit.preprocess` now allows circuits with non-commuting observables.
   [(#3857)](https://github.com/PennyLaneAI/pennylane/pull/3857)
-=======
-* Adds logic to `qml.devices.qubit.measure` to compute the expectation values of `Hamiltonian` and `Sum `
-  in a backpropagation compatible way.
->>>>>>> c16e042dbead75e36ba0b195d828361a5c7d54c2
 
 <h3>Breaking changes</h3>
 

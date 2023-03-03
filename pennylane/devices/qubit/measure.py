@@ -71,29 +71,6 @@ def state_hamiltonian_expval(measurementprocess: ExpectationMP, state: TensorLik
     return math.real(math.squeeze(res))
 
 
-def state_hamiltonian_expval_backprop(
-    measurementprocess: ExpectationMP, state: TensorLike
-) -> TensorLike:
-    """Measure the expecation value of the state when the measured observable is a ``Hamiltonian`` or ``Sum``
-    and it must be backpropagation compatible.
-
-    Args:
-        measurementprocess (ExpectationMP): measurement process to apply to the state
-        state (TensorLike): the state to measure
-
-    Returns:
-        TensorLike: the result of the measurement
-    """
-    if isinstance(measurementprocess.obs, Sum):
-        # Recursively call measure on each term, so that the best measurement method can
-        # be used for each term
-        return sum(measure(ExpectationMP(term), state) for term in measurementprocess.obs)
-    # else hamiltonian
-    return sum(
-        c * measure(ExpectationMP(t), state) for c, t in zip(*measurementprocess.obs.terms())
-    )
-
-
 def state_measurement_process(
     measurementprocess: StateMeasurement, state: TensorLike
 ) -> TensorLike:
@@ -112,7 +89,7 @@ def state_measurement_process(
 
 
 def get_measurement_function(
-    measurementprocess: MeasurementProcess, backprop_mode: bool = False
+    measurementprocess: MeasurementProcess,
 ) -> Callable[[MeasurementProcess, TensorLike], TensorLike]:
     """Get the appropriate method for performing a measurement.
 
@@ -127,20 +104,21 @@ def get_measurement_function(
             # no need to apply diagonalizing gates
             return state_measurement_process
 
-        if isinstance(measurementprocess, ExpectationMP):
-            if measurementprocess.obs.name == "SparseHamiltonian":
-                return state_hamiltonian_expval
+        if isinstance(measurementprocess, ExpectationMP) and measurementprocess.obs.name in (
+            "Hamiltonian",
+            "SparseHamiltonian",
+        ):
+            return state_hamiltonian_expval
 
-            if measurementprocess.obs.name == "Hamiltonian" or (
-                isinstance(measurementprocess.obs, Sum)
-                and measurementprocess.obs.has_overlapping_wires
-                and len(measurementprocess.obs.wires) > 7
-            ):
-                # Use tensor contraction for `Sum` expectation values with non-commuting summands
-                # and 8 or more wires as it's faster than using eigenvalues.
-                return (
-                    state_hamiltonian_expval_backprop if backprop_mode else state_hamiltonian_expval
-                )
+        if (
+            isinstance(measurementprocess, ExpectationMP)
+            and isinstance(measurementprocess.obs, Sum)
+            and measurementprocess.obs.has_overlapping_wires
+            and len(measurementprocess.obs.wires) > 7
+        ):
+            # Use tensor contraction for `Sum` expectation values with non-commuting summands
+            # and 8 or more wires as it's faster than using eigenvalues.
+            return state_hamiltonian_expval
 
         if measurementprocess.obs.has_diagonalizing_gates:
             return state_diagonalizing_gates
@@ -158,5 +136,4 @@ def measure(measurementprocess: MeasurementProcess, state: TensorLike) -> Tensor
     Returns:
         Tensorlike: the result of the measurement
     """
-    backprop_mode = math.get_interface(state) != "numpy"
-    return get_measurement_function(measurementprocess, backprop_mode)(measurementprocess, state)
+    return get_measurement_function(measurementprocess)(measurementprocess, state)
