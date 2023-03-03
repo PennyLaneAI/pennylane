@@ -2808,6 +2808,8 @@ class U2(Operation):
     parameter_frequencies = [(1,), (1,)]
 
     def __init__(self, phi, delta, wires, do_queue=True, id=None):
+        print(phi)
+        print(delta)
         super().__init__(phi, delta, wires=wires, do_queue=do_queue, id=id)
 
     @staticmethod
