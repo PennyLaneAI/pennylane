@@ -120,7 +120,7 @@ class TestSparse:
             match="SparseHamiltonian observable must be"
             " used with the parameter-shift differentiation method",
         ):
-            qml.grad(circuit, argnum=0)([0.5])
+            qml.grad(circuit, argnum=0)(0.5)
 
     @pytest.mark.parametrize("qubits, hamiltonian, expected_output", [(4, H_hydrogen, -0.18092703)])
     def test_sparse_gradient(self, qubits, hamiltonian, expected_output, tol):
