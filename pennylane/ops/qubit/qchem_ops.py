@@ -891,7 +891,7 @@ class OrbitalRotation(Operation):
         :width: 100%
         :target: javascript:void(0);
 
-    Here, :math:`G(\phi)` represents a single-excitation Givens rotation and :math:`fSWAP(\pi)`
+    Here, :math:`G(\phi)` represents a single-excitation Givens rotation and :math:`f\text{SWAP}(\pi)`
     represents the fermionic swap operator, implemented in PennyLane as the
     :class:`~.SingleExcitation` opertion and :class:`~.FermionicSWAP` operation, respectively.
 
@@ -986,6 +986,7 @@ class OrbitalRotation(Operation):
         # This matrix is the "sign flipped" version of that on p18 of https://arxiv.org/abs/2104.05695,
         # where the sign flip is to adjust for the opposite convention used by authors for naming wires.
         # Additionally, there was a typo in the sign of a matrix element "s" at [2, 8], which is fixed here.
+        # It has been further modifided for the decomposition consistent with interleaved JW ordering. 
 
         c = qml.math.cos(phi / 2)
         s = qml.math.sin(phi / 2)
