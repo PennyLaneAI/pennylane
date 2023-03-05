@@ -376,7 +376,7 @@ class BlockEncode(Operation):
     ... def example_circuit():
     ...     qml.BlockEncode(A, wires=range(2))
     ...     return qml.state()
-    ...     print(qml.matrix(example_circuit)())
+    >>> print(qml.matrix(example_circuit)())
     [[ 0.1         0.2         0.97283788 -0.05988708]
     [ 0.3         0.4        -0.05988708  0.86395228]
     [ 0.94561648 -0.07621992 -0.1        -0.3       ]
