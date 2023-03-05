@@ -729,7 +729,7 @@ class Operator(abc.ABC):
         if (
             wire_order is None
             or self.wires == Wires(wire_order)
-            or self.name in qml.ops.qubit.attributes.symmetric_over_all_wires
+            or (self.name in qml.ops.qubit.attributes.symmetric_over_all_wires and set(self.wires) == set(wire_order))
         ):  # pylint:disable=no-member
             return canonical_matrix
 
