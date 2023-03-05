@@ -35,8 +35,8 @@ def _i(name):
 
 # ------------------------------- Builtins -------------------------------- #
 
- ar.register_function("builtins", "ndim", lambda x: np.ndim(np.array(x)))
- ar.register_function("builtins", "shape", lambda x: np.array(x).shape)
+ar.register_function("builtins", "ndim", lambda x: np.ndim(np.array(x)))
+ar.register_function("builtins", "shape", lambda x: np.array(x).shape)
 
 # -------------------------------- SciPy --------------------------------- #
 # the following is required to ensure that SciPy sparse Hamiltonians passed to
