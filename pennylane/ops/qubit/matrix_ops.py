@@ -358,7 +358,7 @@ class BlockEncode(Operation):
     * Gradient recipe: None
 
     Args:
-        a (array[complex]): general n-by-m matrix to be encoded
+        A (array[complex]): a general :math:`(n\times m)`matrix to be encoded
         wires (Sequence[int] or int): the wire(s) the operation acts on
         do_queue (bool): indicates whether the operator should be
             recorded when created in a tape context
