@@ -886,13 +886,14 @@ class OrbitalRotation(Operation):
 
     with the same orbital operation applied in the :math:`\alpha` and :math:`\beta` spin orbitals.
 
-    .. figure:: ../../_static/qchem/orbital_rotation_decomposition_extended.png
+    .. figure:: ../../_static/qchem/orbital_rotation.jpeg
         :align: center
         :width: 100%
         :target: javascript:void(0);
 
-    Here, :math:`G(\phi)` represents a single-excitation Givens rotation, implemented in PennyLane
-    as the :class:`~.SingleExcitation` operation.
+    Here, :math:`G(\phi)` represents a single-excitation Givens rotation and :math:`fSWAP(\pi)`
+    represents the fermionic swap operator, implemented in PennyLane as the
+    :class:`~.SingleExcitation` opertion and :class:`~.FermionicSWAP` operation, respectively.
 
     **Details:**
 
@@ -923,7 +924,7 @@ class OrbitalRotation(Operation):
         >>> circuit(0.1)
         array([ 0.        +0.j,  0.        +0.j,  0.        +0.j,
                 0.00249792+0.j,  0.        +0.j,  0.        +0.j,
-               -0.04991671+0.j,  0.        +0.j,  0.        +0.j,
+                0.04991671+0.j,  0.        +0.j,  0.        +0.j,
                -0.04991671+0.j,  0.        +0.j,  0.        +0.j,
                 0.99750208+0.j,  0.        +0.j,  0.        +0.j,
                 0.        +0.j])
@@ -1043,7 +1044,8 @@ class OrbitalRotation(Operation):
         **Example:**
 
         >>> qml.OrbitalRotation.compute_decomposition(1.2, wires=[0, 1, 2, 3])
-        [SingleExcitation(1.2, wires=[0, 2]), SingleExcitation(1.2, wires=[1, 3])]
+        [qml.FermionicSWAP(np.pi, wires=[1, 2]), SingleExcitation(1.2, wires=[0, 2]),
+         SingleExcitation(1.2, wires=[1, 3]), qml.FermionicSWAP(np.pi, wires=[1, 2])]
 
         """
 
