@@ -356,11 +356,10 @@ def _execute_fwd_tuple(
         res, jacs = execute_wrapper(primals[0])
         multi_measurements = [len(tape.measurements) > 1 for tape in tapes]
 
-        if len(tapes) == 1:
-            jacs = [jacs]
+        jacs_ = [jacs] if len(tapes) == 1 else jacs
 
-        jvps = _compute_jvps(jacs, tangents[0], multi_measurements)
-        return res, jvps
+        jvps = _compute_jvps(jacs_, tangents[0], multi_measurements)
+        return (res, jacs), (jvps, jacs)
 
     res = execute_wrapper(params)
 

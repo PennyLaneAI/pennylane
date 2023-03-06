@@ -315,7 +315,7 @@ def _execute_with_fwd(
 
     def wrapped_exec_fwd(params):
         res, jacs = wrapped_exec(params)
-        return res, tuple([jacs, params])
+        return tuple([res, jacs]), tuple([jacs, params])
 
     def wrapped_exec_bwd(params, g):
         _raise_vector_valued_fwd(tapes)
