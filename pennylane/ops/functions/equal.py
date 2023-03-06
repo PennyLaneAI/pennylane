@@ -22,6 +22,7 @@ from pennylane.measurements import MeasurementProcess
 from pennylane.measurements.classical_shadow import ShadowExpvalMP
 from pennylane.measurements.mutual_info import MutualInfoMP
 from pennylane.measurements.vn_entropy import VnEntropyMP
+from pennylane.pulse.parametrized_evolution import ParametrizedEvolution
 from pennylane.operation import Observable, Operator, Tensor
 from pennylane.ops import Hamiltonian, Controlled, Pow, Adjoint, Exp, SProd, CompositeOp
 
@@ -300,6 +301,13 @@ def _equal_hamiltonian(op1: Hamiltonian, op2: Observable, **kwargs):
     if not isinstance(op2, Observable):
         return False
     return op1.compare(op2)
+
+
+@_equal.register
+def _equal_parametrized_evolution(op1: ParametrizedEvolution, op2: ParametrizedEvolution, **kwargs):
+    if not qml.math.allclose(op1.t, op2.t):
+        return False
+    return _equal_operators(op1, op2, **kwargs)
 
 
 @_equal.register
