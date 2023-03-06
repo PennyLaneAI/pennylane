@@ -14,6 +14,11 @@
 
 <h3>Improvements</h3>
 
+* The adjoint differentiation method now supports more operations, and does no longer decompose
+  some operations that may be differentiated directly. In addition, all new operations with a
+  generator are supported by the method.
+  [(#3874)](https://github.com/PennyLaneAI/pennylane/pull/3874)
+
 * The custom JVP rules in PennyLane now also support non-scalar and mixed-shape tape parameters as
   well as multi-dimensional tape return types, like broadcasted `qml.probs`, for example.
   [(#3766)](https://github.com/PennyLaneAI/pennylane/pull/3766)
