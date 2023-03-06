@@ -1493,9 +1493,24 @@ def test_diagonal_ctrl():
     )
 
 
-def test_qubit_unitary():
+@pytest.mark.parametrize(
+    "M",
+    [
+        qml.PauliX.compute_matrix(),
+        qml.PauliY.compute_matrix(),
+        qml.PauliZ.compute_matrix(),
+        qml.Hadamard.compute_matrix(),
+        np.array(
+            [
+                [1 + 2j, -3 + 4j],
+                [3 + 4j, 1 - 2j],
+            ]
+        )
+        * 30**-0.5,
+    ],
+)
+def test_qubit_unitary(M):
     """Test ctrl on QubitUnitary and ControlledQubitUnitary"""
-    M = np.array([[1.0, 1.0], [1.0, -1.0]]) / np.sqrt(2.0)
     with qml.queuing.AnnotatedQueue() as q_tape:
         ctrl(qml.QubitUnitary, 1)(M, wires=0)
 
@@ -1507,9 +1522,24 @@ def test_qubit_unitary():
     assert qml.equal(tape[0], expected)
 
 
-def test_controlledqubitunitary():
+@pytest.mark.parametrize(
+    "M",
+    [
+        qml.PauliX.compute_matrix(),
+        qml.PauliY.compute_matrix(),
+        qml.PauliZ.compute_matrix(),
+        qml.Hadamard.compute_matrix(),
+        np.array(
+            [
+                [1 + 2j, -3 + 4j],
+                [3 + 4j, 1 - 2j],
+            ]
+        )
+        * 30**-0.5,
+    ],
+)
+def test_controlledqubitunitary(M):
     """Test ctrl on ControlledQubitUnitary."""
-    M = np.array([[1.0, 1.0], [1.0, -1.0]]) / np.sqrt(2.0)
     with qml.queuing.AnnotatedQueue() as q_tape:
         ctrl(qml.ControlledQubitUnitary, 1)(M, control_wires=2, wires=0)
 

@@ -24,13 +24,42 @@ from pennylane.ops.op_math.controlled_decompositions import (
     ctrl_decomp_bisect_od,
     ctrl_decomp_bisect_md,
     ctrl_decomp_bisect_general,
+    ctrl_decomp_bisect_auto,
     _convert_to_su2,
     _bisect_compute_a,
     _bisect_compute_b,
     _matrix_adjoint,
 )
+from pennylane.ops.op_math.controlled import (
+    ControlledOp,
+)
 
 cw5 = tuple(list(range(1, 1 + n)) for n in range(2, 6))
+
+
+def equal_if_decomposed(lhs, rhs):
+    """
+    Test that 2 operators or operator sequences are the same if fully decomposed.
+    """
+    if not isinstance(lhs, list):
+        lhs = [lhs]
+    if not isinstance(rhs, list):
+        rhs = [rhs]
+    decomposable = (qml.MultiControlledX, ControlledOp)
+    # make copies
+    lhs = list(lhs)
+    rhs = list(rhs)
+    while len(lhs) != 0 and len(rhs) != 0:
+        if qml.equal(lhs[0], rhs[0]):
+            lhs.pop(0)
+            rhs.pop(0)
+        elif isinstance(lhs[0], decomposable):
+            lhs = lhs[0].decomposition() + lhs[1:]
+        elif isinstance(rhs[0], decomposable):
+            rhs = rhs[0].decomposition() + rhs[1:]
+        else:
+            return False
+    return len(lhs) == 0 and len(rhs) == 0
 
 
 class TestControlledDecompositionZYZ:
@@ -173,6 +202,8 @@ class TestControlledBisectOD:
             ValueError, match="The target operation must be a single-qubit operation"
         ):
             _ = ctrl_decomp_bisect_od(qml.CNOT([0, 1]), [2])
+        with pytest.raises(ValueError, match="Target operation's matrix must have real"):
+            _ = ctrl_decomp_bisect_od(qml.Hadamard(0), [1, 2])
 
     su2_od_ops = [
         qml.QubitUnitary(
@@ -300,6 +331,8 @@ class TestControlledBisectMD:
             ValueError, match="The target operation must be a single-qubit operation"
         ):
             _ = ctrl_decomp_bisect_md(qml.CNOT([0, 1]), [2])
+        with pytest.raises(ValueError, match="Target operation's matrix must have real"):
+            _ = ctrl_decomp_bisect_md(qml.Hadamard(0), [1, 2])
 
     su2_md_ops = [
         qml.QubitUnitary(
@@ -470,6 +503,14 @@ class TestControlledBisectGeneral:
         qml.Rot(0.123, 0.456, 0.789, wires=0),
     ]
 
+    gen_ops_best = [
+        ctrl_decomp_bisect_md,
+        ctrl_decomp_bisect_od,
+        ctrl_decomp_bisect_od,
+        ctrl_decomp_bisect_general,
+        ctrl_decomp_bisect_general,
+    ]
+
     @pytest.mark.parametrize("op", su2_gen_ops + gen_ops)
     @pytest.mark.parametrize("control_wires", cw5)
     def test_decomposition_circuit(self, op, control_wires, tol):
@@ -492,6 +533,17 @@ class TestControlledBisectGeneral:
         res = decomp_circuit()
         expected = expected_circuit()
         assert np.allclose(res, expected, atol=tol, rtol=tol)
+
+    @pytest.mark.parametrize("op", zip(gen_ops, gen_ops_best))
+    @pytest.mark.parametrize("control_wires", cw5)
+    def test_auto_select(self, op, control_wires):
+        """
+        Test that the auto selection is correct and optimal.
+        """
+        op, best = op
+        res = ctrl_decomp_bisect_auto(op, Wires(control_wires))
+        expected = best(op, Wires(control_wires))
+        assert equal_if_decomposed(res, expected)
 
     @pytest.mark.parametrize("op", su2_gen_ops)
     @pytest.mark.parametrize("control_wires", cw5)
