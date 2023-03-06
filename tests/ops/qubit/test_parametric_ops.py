@@ -737,7 +737,7 @@ class TestDecompositions:
         assert np.allclose(decomposed_matrix, op.matrix(), atol=tol, rtol=0)
 
     def test_pc_phase_decomposition(self):
-        """ "Test that the PCPhase decomposition produces the same unitary"""
+        """Test that the PCPhase decomposition produces the same unitary"""
         op = qml.PCPhase(1.23, dim=5, wires=[0, 1, 2])
         decomp_ops = op.decomposition()
         decomp_op = qml.prod(*decomp_ops) if len(decomp_ops) >= 1 else decomp_ops[0]
@@ -747,7 +747,7 @@ class TestDecompositions:
         assert np.allclose(expected_mat, decomp_mat)
 
     def test_pc_phase_decomposition_broadcasted(self):
-        """ "Test that the broadcasted PCPhase decomposition produces the same unitary"""
+        """Test that the broadcasted PCPhase decomposition produces the same unitary"""
         op = qml.PCPhase([1.23, 4.56, 7.89], dim=5, wires=[0, 1, 2])
         decomp_ops = op.decomposition()
         decomp_op = qml.prod(*decomp_ops) if len(decomp_ops) >= 1 else decomp_ops[0]

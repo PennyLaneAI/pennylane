@@ -1271,7 +1271,7 @@ class CPhaseShift10(Operation):
 
 class PCPhase(Operation):
     r"""
-    A Projector Controlled Phase gate.
+    A projector-controlled phase gate.
 
     .. math:: \Pi_{\phi}(\phi, dim=2, wires=[0,1]) = \begin{bmatrix}
                 e^{i\phi} & 0 & 0 & 0 \\
