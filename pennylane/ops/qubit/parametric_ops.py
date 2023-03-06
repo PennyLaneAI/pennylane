@@ -1314,7 +1314,7 @@ class PCPhase(Operation):
     parameter_frequencies = [(1,)]
 
     def generator(self):
-        r"""The hermitian matrix, which when exponentiated and scaled (i \phi), produces
+        r"""The hermitian matrix, which when exponentiated and scaled (i :math:`\phi`), produces
         the PCPhase unitary."""
         dim, shape = self.hyperparameters["dimension"]
         mat = np.diag([1 if index < dim else 0 for index in range(shape)])
