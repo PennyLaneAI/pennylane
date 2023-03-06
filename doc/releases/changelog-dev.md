@@ -25,11 +25,23 @@
 * `AdaptiveOptimizer` is updated to use non-default user-defined qnode arguments.
   [(#3765)](https://github.com/PennyLaneAI/pennylane/pull/3765)
 
+* When using Jax-jit with gradient transforms the trainable parameters are correctly set (instead of every parameter 
+  to be set as trainable), and therefore the derivatives are computed more efficiently.
+  [(#3697)](https://github.com/PennyLaneAI/pennylane/pull/3697)
+
 * 3 new decomposition algorithms are added for n-controlled operations with single-qubit target,
   and are selected automatically when they produce a better result.
   [(#3851)](https://github.com/PennyLaneAI/pennylane/pull/3851)
 
 <h3>Breaking changes</h3>
+
+* Trainable parameters for the Jax interface are the parameters that are `JVPTracer`, defined by setting
+  `argnums`. Previously, all JAX tracers, including those used for JIT compilation, were interpreted to be trainable.
+  [(#3697)](https://github.com/PennyLaneAI/pennylane/pull/3697)
+
+* The keyword argument `argnums` is now used for gradient transform using Jax, instead of `argnum`.
+  `argnum` is automatically converted to `argnums` when using JAX, and will no longer be supported in v0.31.
+  [(#3697)](https://github.com/PennyLaneAI/pennylane/pull/3697)
 
 <h3>Deprecations</h3>
 
@@ -55,6 +67,7 @@ Utkarsh Azad
 Soran Jahangiri
 Christina Lee
 Vincent Michaud-Rioux
+Romain Moyard
 Mudit Pandey
 Matthew Silverman
 Jay Soni
