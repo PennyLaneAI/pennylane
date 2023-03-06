@@ -176,7 +176,7 @@ class TestExpandFnValidation:
                 return [InfiniteOp(self.wires)]
 
         qs = qml.tape.QuantumScript([InfiniteOp(0)])
-        with pytest.raises(DeviceError, match=r"Reach recursion limit trying to decompose"):
+        with pytest.raises(DeviceError, match=r"Reached recursion limit trying to decompose"):
             expand_fn(qs)
 
 
