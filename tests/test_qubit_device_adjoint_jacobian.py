@@ -14,7 +14,7 @@
 """
 Tests for the ``adjoint_jacobian`` method of the :mod:`pennylane` :class:`QubitDevice` class.
 """
-#pylint: disable=import-outside-toplevel
+# pylint: disable=import-outside-toplevel
 import pytest
 
 import pennylane as qml
@@ -172,7 +172,9 @@ class TestAdjointJacobian:
 
         class MyOp(qml.operation.Operation):
             """Custom operation that only defines a generator and a matrix representation."""
+
             num_wires = 1
+
             def generator(self):
                 """Generator of MyOp, just a multiple of Pauli X."""
                 return qml.PauliX(self.wires) * 1.2
@@ -406,9 +408,8 @@ class TestAdjointJacobianQNode:
     thetas = np.linspace(-2 * np.pi, 2 * np.pi, 8)
 
     @pytest.mark.autograd
-    @pytest.mark.parametrize("reused_p", thetas**3 / 19)
-    @pytest.mark.parametrize("other_p", thetas**2 / 1)
-    def test_fanout_multiple_params(self, reused_p, other_p, tol, mocker, dev):
+    @pytest.mark.parametrize("all_p", list(zip(thetas**3 / 19, thetas**2 / 1)))
+    def test_fanout_multiple_params(self, all_p, tol, mocker, dev):
         """Tests that the correct gradient is computed for qnodes which
         use the same parameter in multiple gates."""
 
@@ -417,6 +418,7 @@ class TestAdjointJacobianQNode:
         def expZ(state):
             return np.abs(state[0]) ** 2 - np.abs(state[1]) ** 2
 
+        reused_p, other_p = all_p
         extra_param = np.array(0.31, requires_grad=False)
 
         @qnode(dev, diff_method="adjoint")
