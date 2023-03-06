@@ -47,7 +47,7 @@ def _convert_to_su2(U, return_global_phase=False):
     return (U_SU2, exp_angles) if return_global_phase else U_SU2
 
 
-def _ensure_real_diagonal_q(q: np.ndarray):
+def _ensure_real_diagonal_q(q: TensorLike) -> TensorLike:
     """
     Change the phases of Q so the main diagonal is real, and return the modified Q.
     """
