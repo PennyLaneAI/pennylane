@@ -451,6 +451,35 @@ class TestOperatorConstruction:
         assert MyOp.has_diagonalizing_gates is False
         assert MyOp(wires=0).has_diagonalizing_gates is False
 
+    def test_has_generator_true(self):
+        """Test `has_generator` property detects overriding of `generator` method."""
+
+        class MyOp(qml.operation.Operator):
+            num_wires = 1
+
+            @staticmethod
+            def generator():
+                return np.eye(2)
+
+        assert MyOp.has_generator is True
+        assert MyOp(wires=0).has_generator is True
+
+    def test_has_generator_false(self):
+        """Test `has_generator` property defaults to false if `generator` not overwritten."""
+
+        class MyOp(qml.operation.Operator):
+            num_wires = 1
+
+        assert MyOp.has_generator is False
+        assert MyOp(wires=0).has_generator is False
+
+    def test_has_generator_false_concrete_template(self):
+        """Test has_generator with a concrete operation (Rot)
+        that does not have a generator defined."""
+
+        op = qml.Rot(0.3, 0.2, 0.1, 0)
+        assert op.has_generator is False
+
     @pytest.mark.tf
     @pytest.mark.parametrize("jit_compile", [True, False])
     def test_with_tf_function(self, jit_compile):
