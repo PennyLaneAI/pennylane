@@ -155,7 +155,7 @@ class TestOperations:
         assert op.wires == op_d.wires
 
     @pytest.mark.parametrize("d", [1, 2, 3, 4])
-    @pytest.mark.parametrize("theta", [-np.pi, np.pi/2, -0.5, 0, 0.5, np.pi/2, np.pi])
+    @pytest.mark.parametrize("theta", [-np.pi, np.pi / 2, -0.5, 0, 0.5, np.pi / 2, np.pi])
     def test_pcphase_integration(self, theta, d):
         """Test that the PCPhase gate applied to a circuit produces the
         correct final state."""
@@ -171,7 +171,7 @@ class TestOperations:
             return qml.state()
 
         def _get_expected_state(phase, dim, size):
-            return np.array([np.exp(1j*phase) if i < dim else 1.0 for i in range(size)]) * 1/2
+            return np.array([np.exp(1j * phase) if i < dim else 1.0 for i in range(size)]) * 1 / 2
 
         assert np.allclose(circuit(theta, d), _get_expected_state(theta, d, 4))
 
