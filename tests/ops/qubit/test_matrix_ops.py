@@ -16,11 +16,12 @@ Unit tests for the qubit matrix-based operations.
 """
 # pylint: disable=import-outside-toplevel
 import numpy as np
-from pennylane import numpy as pnp
 import pytest
+
 from gate_data import H, I, S, T, X, Z
 
 import pennylane as qml
+from pennylane import numpy as pnp
 from pennylane.operation import DecompositionUndefinedError
 from pennylane.wires import Wires
 
@@ -593,14 +594,14 @@ class TestBlockEncode:
         ],
     )
     def test_accepts_various_types(self, input_matrix, wires):
-        op = qml.BlockEncode(input_matrix, wires)
+        qml.BlockEncode(input_matrix, wires)
 
     @pytest.mark.parametrize(
         ("input_matrix", "wires"),
         [(1, 1), (1, 2), (1, [1]), (1, range(2)), (np.identity(2), ["a", "b"])],
     )
     def test_varied_wires(self, input_matrix, wires):
-        op = qml.BlockEncode(input_matrix, wires)
+        qml.BlockEncode(input_matrix, wires)
 
     @pytest.mark.parametrize(
         ("input_matrix", "wires", "msg"),
@@ -608,14 +609,14 @@ class TestBlockEncode:
             (
                 [[0, 1], [1, 0]],
                 1,
-                f"Block encoding a {2} x {2} matrix requires a hilbert space of size"
-                f" at least {4} x {4}. Cannot be embedded in a {1} qubit system.",
+                f"Block encoding a ({2} x {2}) matrix requires a hilbert space of size"
+                f" at least ({4} x {4}). Cannot be embedded in a {1} qubit system.",
             ),
         ],
     )
     def test_correct_error_message(self, input_matrix, wires, msg):
         with pytest.raises(ValueError, match=msg):
-            op = qml.BlockEncode(input_matrix, wires)
+            qml.BlockEncode(input_matrix, wires)
 
     @pytest.mark.parametrize(
         ("input_matrix", "wires", "output_matrix"),

@@ -19,8 +19,8 @@ accept a hermitian or an unitary matrix as a parameter.
 import warnings
 
 import numpy as np
-from pennylane import numpy as pnp
 from scipy.linalg import norm
+from pennylane import numpy as pnp
 
 import pennylane as qml
 from pennylane.operation import AnyWires, DecompositionUndefinedError, Operation
@@ -402,9 +402,9 @@ class BlockEncode(Operation):
 
         if subspace[2] < (subspace[0] + subspace[1]):
             raise ValueError(
-                f"Block encoding a {subspace[0]} x {subspace[1]} matrix "
+                f"Block encoding a ({subspace[0]} x {subspace[1]}) matrix "
                 f"requires a hilbert space of size at least "
-                f"{subspace[0] + subspace[1]} x {subspace[0] + subspace[1]}."
+                f"({subspace[0] + subspace[1]} x {subspace[0] + subspace[1]})."
                 f" Cannot be embedded in a {len(wires)} qubit system."
             )
 
