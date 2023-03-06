@@ -373,6 +373,6 @@ class AdjointOperation(Operation):
     @property
     def has_generator(self):
         return self.base.has_generator
-    
+
     def generator(self):
         return -1.0 * self.base.generator()
