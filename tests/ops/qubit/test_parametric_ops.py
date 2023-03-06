@@ -2796,7 +2796,7 @@ class TestGrad:
     def test_pcphase_grad(self, dev_name, diff_method, phi):
         """Test pcphase operator gradient"""
         if diff_method in {"adjoint"}:
-            pytest.skip("PCPHase does not support adjoint diff")
+            pytest.skip("PCPhase does not support adjoint diff")
 
         dev = qml.device(dev_name, wires=[0, 1])
         expected_grad = (1j / 2) * (npp.exp(1j * phi) - npp.exp(-1j * phi))  # computed by hand
@@ -2821,7 +2821,7 @@ class TestGrad:
     def test_pcphase_grad_tf(self, dev_name, diff_method, phi):
         """Test pcphase operator gradient"""
         if diff_method in {"adjoint"}:
-            pytest.skip("PCPHase does not support adjoint diff")
+            pytest.skip("PCPhase does not support adjoint diff")
 
         import tensorflow as tf
 

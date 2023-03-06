@@ -529,7 +529,7 @@ class PCPhase(Operation):
     Args:
         phi (float): rotation angle :math:`\phi`
         dim (int): the qubit subspace on which we apply the phase shift
-        wires (Iterable[int, str], Wires): the wire the operation acts on
+        wires (Iterable[int, str], Wires): the wires the operation acts on
         do_queue (bool): Indicates whether the operator should be
             immediately pushed into the Operator queue (optional)
         id (str or None): String representing the operation (optional)
@@ -565,7 +565,7 @@ class PCPhase(Operation):
 
         if not (isinstance(dim, int) and (dim <= 2 ** len(wires))):
             raise ValueError(
-                f"The projected dimension {dim} must be an integer that is less then or equal to "
+                f"The projected dimension {dim} must be an integer that is less than or equal to "
                 f"the max size of the matrix {2 ** len(wires)}. Try adding more wires."
             )
 
