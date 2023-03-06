@@ -41,9 +41,9 @@ def _validate_jax_version():
             "You can either downgrade JAX to version 0.4.3 or update to a more recent version if available.\n"
             "If you downgrade, you will also need to downgrade JAXLIB to version 0.4.3 or earlier.\n"
             "If you are using pip to manage your packages, you can run the following command:\n\n"
-            "\tpip install 'jax' 'jaxlib' -U\n\n"
+            "\tpip install jax jaxlib -U\n\n"
             "If you are using conda to manage your packages, you can run the following command:\n\n"
-            "\tconda install 'jax' 'jaxlib' -U\n\n"
+            "\tconda install jax jaxlib -U\n\n"
             "If you still have problems, please open an issue at the following link:\n\n"
             "\thttps://github.com/PennyLaneAI/pennylane/issues\n"
         )
