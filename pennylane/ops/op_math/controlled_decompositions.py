@@ -56,10 +56,6 @@ def _convert_to_real_diagonal(q: TensorLike) -> TensorLike:
     return q * math.exp(-1j * exp_angles).reshape((1, 2))
 
 
-def _matrix_adjoint(matrix: np.ndarray):
-    return math.transpose(math.conj(matrix))
-
-
 def _param_su2(ar: float, ai: float, br: float, bi: float):
     """
     Create a matrix in the SU(2) form from complex parameters a, b.

@@ -28,13 +28,17 @@ from pennylane.ops.op_math.controlled_decompositions import (
     _convert_to_su2,
     _bisect_compute_a,
     _bisect_compute_b,
-    _matrix_adjoint,
 )
 from pennylane.ops.op_math.controlled import (
     ControlledOp,
 )
+from pennylane import math
 
 cw5 = tuple(list(range(1, 1 + n)) for n in range(2, 6))
+
+
+def _matrix_adjoint(matrix: np.ndarray):
+    return math.transpose(math.conj(matrix))
 
 
 def equal_if_decomposed(lhs, rhs):
