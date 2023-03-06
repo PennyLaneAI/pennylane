@@ -696,7 +696,9 @@ class QuantumScript:
         for idx, p in iterator:
             op = self._par_info[idx]["op"]
 
-            if isinstance(op, Tensor):  # the setter for tensor does not support the definition syntax
+            if isinstance(
+                op, Tensor
+            ):  # the setter for tensor does not support the definition syntax
                 op.data[self._par_info[idx]["p_idx"]] = p
             else:
                 temp_data = copy.copy(op.data)
