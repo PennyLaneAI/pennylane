@@ -22,6 +22,8 @@ import numpy as np
 import pennylane as qml
 from pennylane.ops import SProd
 from pennylane.wires import Wires
+from pennylane.operation import Operator
+from pennylane.ops.qubit.hamiltonian import Hamiltonian
 
 from .parametrized_hamiltonian import ParametrizedHamiltonian
 
@@ -249,25 +251,47 @@ class RydbergHamiltonian(ParametrizedHamiltonian):
         return reordered_params
 
     def __add__(self, other):
-        if not isinstance(other, RydbergHamiltonian):
-            return super().__add__(other)
-
-        # Update coeffs, obs and hardware attributes
-        if self.register is not None:
-            if other.register is not None:
-                raise ValueError("We cannot add two Hamiltonians with an interaction term!")
-            if not self.wires.contains_wires(other.wires):
+        if isinstance(other, RydbergHamiltonian):
+            # Update coeffs, obs and hardware attributes
+            if self.register is not None:
+                if other.register is not None:
+                    raise ValueError("We cannot add two Hamiltonians with an interaction term!")
+                if not self.wires.contains_wires(other.wires):
+                    warnings.warn(
+                        "The wires of the laser fields are not present in the Rydberg ensemble."
+                    )
+            elif other.register is not None and not other.wires.contains_wires(self.wires):
                 warnings.warn(
                     "The wires of the laser fields are not present in the Rydberg ensemble."
                 )
-        elif other.register is not None and not other.wires.contains_wires(self.wires):
-            warnings.warn("The wires of the laser fields are not present in the Rydberg ensemble.")
 
-        new_register = self.register or other.register
-        new_pulses = self.pulses + other.pulses
-        new_ops = self.ops + other.ops
-        new_coeffs = self.coeffs + other.coeffs
-        return RydbergHamiltonian(new_coeffs, new_ops, register=new_register, pulses=new_pulses)
+            new_register = self.register or other.register
+            new_pulses = self.pulses + other.pulses
+            new_ops = self.ops + other.ops
+            new_coeffs = self.coeffs + other.coeffs
+            return RydbergHamiltonian(new_coeffs, new_ops, register=new_register, pulses=new_pulses)
+
+        ops = self.ops.copy()
+        coeffs = self.coeffs.copy()
+        register = self.register
+        pulses = self.pulses
+
+        if isinstance(other, (Hamiltonian, ParametrizedHamiltonian)):
+            new_coeffs = coeffs + other.coeffs.copy()
+            new_ops = ops + other.ops.copy()
+            return RydbergHamiltonian(new_coeffs, new_ops, register=register, pulses=pulses)
+
+        if isinstance(other, qml.ops.SProd):  # pylint: disable=no-member
+            new_coeffs = coeffs + [other.scalar]
+            new_ops = ops + [other.base]
+            return RydbergHamiltonian(new_coeffs, new_ops, register=register, pulses=pulses)
+
+        if isinstance(other, Operator):
+            new_coeffs = coeffs + [1]
+            new_ops = ops + [other]
+            return RydbergHamiltonian(new_coeffs, new_ops, register=register, pulses=pulses)
+
+        return NotImplemented
 
 
 @dataclass
