@@ -471,6 +471,7 @@ def ctrl_decomp_bisect_auto(
         target_operation = target_operation.matrix(), target_operation.wires
 
     u = target_operation[0]
+    u = _convert_to_su2(u)
     ui = np.imag(u)
     if np.isclose(ui[1, 0], 0) and np.isclose(ui[0, 1], 0):
         # Real off-diagonal specialized algorithm - 16n+O(1) CNOTs
