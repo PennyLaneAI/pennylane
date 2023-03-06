@@ -114,7 +114,7 @@ def apply_operation_tensordot(op: qml.operation.Operator, state, batch_dim=0):
     num_indices = len(op.wires)
 
     new_mat_shape = [2] * (num_indices * 2)
-    if is_mat_batched := len(mat.shape) != 2:
+    if is_mat_batched := op.batch_size is not None:
         # Add broadcasting dimension to shape
         new_mat_shape.insert(0, mat.shape[0])
     reshaped_mat = math.reshape(mat, new_mat_shape)
