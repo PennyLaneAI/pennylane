@@ -499,6 +499,11 @@ class Controlled(SymbolicOp):
         d += [qml.PauliX(w) for w, val in zip(self.control_wires, self.control_values) if not val]
         return d
 
+    # pylint: disable=arguments-renamed, invalid-overridden-method
+    @property
+    def has_generator(self):
+        return self.base.has_generator
+
     def generator(self):
         sub_gen = self.base.generator()
         proj_tensor = operation.Tensor(*(qml.Projector([1], wires=w) for w in self.control_wires))
