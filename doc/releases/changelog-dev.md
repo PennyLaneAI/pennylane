@@ -40,7 +40,20 @@
 * Use `TensorLike` type in `Operator` dunder methods.
   [(#3749)](https://github.com/PennyLaneAI/pennylane/pull/3749)
 
+* When using Jax-jit with gradient transforms the trainable parameters are correctly set (instead of every parameter 
+  to be set as trainable), and therefore the derivatives are computed more efficiently.
+  [(#3697)](https://github.com/PennyLaneAI/pennylane/pull/3697)
+
+
 <h3>Breaking changes</h3>
+
+* Trainable parameters for the Jax interface are the parameters that are `JVPTracer`, defined by setting
+  `argnums`. Previously, all JAX tracers, including those used for JIT compilation, were interpreted to be trainable.
+  [(#3697)](https://github.com/PennyLaneAI/pennylane/pull/3697)
+
+* The keyword argument `argnums` is now used for gradient transform using Jax, instead of `argnum`.
+  `argnum` is automatically converted to `argnums` when using JAX, and will no longer be supported in v0.31.
+  [(#3697)](https://github.com/PennyLaneAI/pennylane/pull/3697)
 
 <h3>Deprecations</h3>
 
@@ -55,6 +68,9 @@
   with other operators.
   [(#3749)](https://github.com/PennyLaneAI/pennylane/pull/3749)
 
+* Registers `math.ndim` and `math.shape` for built-ins and autograd to accomodate Autoray 0.6.1.
+  [#3864](https://github.com/PennyLaneAI/pennylane/pull/3865)
+
 * Ensure that `qml.data.load` returns datasets in a stable and expected order.
   [(#3856)](https://github.com/PennyLaneAI/pennylane/pull/3856)
 
@@ -64,8 +80,10 @@ This release contains contributions from (in alphabetical order):
 
 Utkarsh Azad
 Soran Jahangiri
+Christina Lee
 Vincent Michaud-Rioux
 Albert Mitjans
+Romain Moyard
 Mudit Pandey
 Matthew Silverman
 Jay Soni
