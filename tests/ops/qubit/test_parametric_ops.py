@@ -998,6 +998,7 @@ class TestMatrix:
         )
         assert np.allclose(mat1, expected_mat)
         assert np.allclose(mat2, expected_mat)
+        assert qml.math.get_interface(mat1) == "numpy"
 
     @pytest.mark.tf
     @pytest.mark.parametrize("dim", range(3))
@@ -1019,6 +1020,7 @@ class TestMatrix:
 
         assert np.allclose(mat1, expected_mat)
         assert np.allclose(mat2, expected_mat)
+        assert qml.math.get_interface(mat1) == "tensorflow"
 
     @pytest.mark.torch
     @pytest.mark.parametrize("dim", range(3))
@@ -1039,6 +1041,7 @@ class TestMatrix:
 
         assert np.allclose(mat1, expected_mat)
         assert np.allclose(mat2, expected_mat)
+        assert qml.math.get_interface(mat1) == "torch"
 
     @pytest.mark.jax
     @pytest.mark.parametrize("dim", range(3))
@@ -1061,6 +1064,7 @@ class TestMatrix:
 
         assert np.allclose(mat1, expected_mat)
         assert np.allclose(mat2, expected_mat)
+        assert qml.math.get_interface(mat1) == "jax"
 
     def test_pcphase_broadcasted(self):
         """Test that the PCPhase matrix works with broadcasted parameters"""

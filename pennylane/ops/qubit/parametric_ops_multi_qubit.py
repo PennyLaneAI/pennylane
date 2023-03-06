@@ -513,12 +513,19 @@ class PCPhase(Operation):
     r"""
     A projector-controlled phase gate.
 
+    This gate applies a complex phase :math:`\phi` to first :math:`dim`
+    basis vectors of the input state. This is equivalent to applying a constant
+    phase shift to the subspace spanned by those vectors. Consider the 2 qubit
+    case where :math:`dim = 2`.
+
     .. math:: \Pi_{\phi}(\phi, dim=2, wires=[0,1]) = \begin{bmatrix}
                 e^{i\phi} & 0 & 0 & 0 \\
                 0 & e^{i\phi} & 0 & 0 \\
                 0 & 0 & 1 & 0 \\
                 0 & 0 & 0 & 1
             \end{bmatrix}.
+
+    This applies a phase shift to the subspace spanned by :math:`\lbrace | 00 \rangle , | 01 \rangle \rbrace`.
 
     **Details:**
 
@@ -590,8 +597,8 @@ class PCPhase(Operation):
                     if i < d
                     else [ones if j == i else zeros for j in range(t)]
                 )
-
-            return qml.math.stack(columns, axis=-2)
+            r = qml.math.stack(columns, like="tensorflow", axis=-2)
+            return r
 
         arg = 1j * phi
         prefactors = qml.math.array([1 if index < d else 0 for index in range(t)], like=phi)
