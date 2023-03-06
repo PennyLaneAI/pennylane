@@ -29,6 +29,9 @@
   to be set as trainable), and therefore the derivatives are computed more efficiently.
   [(#3697)](https://github.com/PennyLaneAI/pennylane/pull/3697)
 
+* Assign a `_pauli_rep` to the `Hadamard` operation.
+  [(#3864)](https://github.com/PennyLaneAI/pennylane/pull/3864)
+
 <h3>Breaking changes</h3>
 
 * Trainable parameters for the Jax interface are the parameters that are `JVPTracer`, defined by setting
