@@ -61,7 +61,7 @@ def _param_su2(ar: float, ai: float, br: float, bi: float):
     Create a matrix in the SU(2) form from complex parameters a, b.
     The resulting matrix is not guaranteed to be in SU(2), unless |a|^2 + |b|^2 = 1.
     """
-    return np.array([[complex(ar, ai), complex(-br, bi)], [complex(br, bi), complex(ar, -ai)]])
+    return np.array([[ar + 1j * ai, -br + 1j * bi], [br + 1j * bi, ar + 1j * -ai]])
 
 
 def _bisect_compute_a(u: np.ndarray):
