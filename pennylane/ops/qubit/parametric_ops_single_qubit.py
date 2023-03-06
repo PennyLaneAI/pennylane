@@ -32,7 +32,7 @@ def _can_replace(x, y):
     Convenience function that returns true if x is close to y and if
     x does not require grad
     """
-    return (not qml.math.requires_grad(x)) and qml.math.allclose(x, y)
+    return not qml.math.is_abstract(x) and not qml.math.requires_grad(x) and qml.math.allclose(x, y)
 
 
 class RX(Operation):
