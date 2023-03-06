@@ -22,6 +22,7 @@ import pennylane as qml
 from pennylane.operation import Operator
 from pennylane.wires import Wires
 from pennylane import math
+from pennylane.typing import TensorLike
 
 
 def _convert_to_su2(U, return_global_phase=False):
@@ -47,7 +48,7 @@ def _convert_to_su2(U, return_global_phase=False):
     return (U_SU2, exp_angles) if return_global_phase else U_SU2
 
 
-def _ensure_real_diagonal_q(q: TensorLike) -> TensorLike:
+def _convert_to_real_diagonal(q: TensorLike) -> TensorLike:
     """
     Change the phases of Q so the main diagonal is real, and return the modified Q.
     """
@@ -402,7 +403,7 @@ def ctrl_decomp_bisect_general(
 
     d, q = npl.eig(u)
     d = np.diag(d)
-    q = _ensure_real_diagonal_q(q)
+    q = _convert_to_real_diagonal(q)
     b = _bisect_compute_b(q)
     c1 = b @ sh_alt
     c2t = b @ sh
