@@ -893,7 +893,7 @@ class TestDifferentiation:
         op = Exp(qml.PauliX(0), 3)
         assert op.has_generator is False
 
-        op = Exp(qml.PauliX(0), 0.01+2j)
+        op = Exp(qml.PauliX(0), 0.01 + 2j)
         assert op.has_generator is False
 
     def test_real_component_coefficient_generator_undefined(self):
