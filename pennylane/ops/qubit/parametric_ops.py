@@ -1280,20 +1280,19 @@ class PCPhase(Operation):
                 0 & 0 & 0 & 1
             \end{bmatrix}.
 
-    Args:
-        phi (float): rotation angle :math:`\phi`
-        dim (int): the qubit subspace on which we apply the phase shift
-        wires (Any, Wires): the wire the operation acts on
-        do_queue (bool): Indicates whether the operator should be
-            immediately pushed into the Operator queue (optional)
-        id (str or None): String representing the operation (optional)
-
     **Details:**
 
     * Number of wires: AnyWires
     * Number of parameters: 1
     * Number of dimensions per parameter: (0,)
-    * Gradient recipe: (~ ADD THIS ~)
+
+    Args:
+        phi (float): rotation angle :math:`\phi`
+        dim (int): the qubit subspace on which we apply the phase shift
+        wires (Iterable[int, str], Wires): the wire the operation acts on
+        do_queue (bool): Indicates whether the operator should be
+            immediately pushed into the Operator queue (optional)
+        id (str or None): String representing the operation (optional)
 
     **Example:**
 
