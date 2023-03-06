@@ -1453,6 +1453,15 @@ op_pauli_rep = (
     (qml.PauliY(wires="a"), qml.pauli.PauliSentence({qml.pauli.PauliWord({"a": "Y"}): 1})),
     (qml.PauliZ(wires=4), qml.pauli.PauliSentence({qml.pauli.PauliWord({4: "Z"}): 1})),
     (qml.Identity(wires="target"), qml.pauli.PauliSentence({qml.pauli.PauliWord({}): 1})),
+    (
+        qml.Hadamard(wires=1),
+        qml.pauli.PauliSentence(
+            {
+                qml.pauli.PauliWord({1: "X"}): 1 / np.sqrt(2),
+                qml.pauli.PauliWord({1: "Z"}): 1 / np.sqrt(2),
+            }
+        ),
+    ),
 )
 
 
