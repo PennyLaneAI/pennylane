@@ -25,6 +25,9 @@ from pennylane.ops.op_math.controlled_decompositions import (
     ctrl_decomp_bisect_md,
     ctrl_decomp_bisect_general,
     _convert_to_su2,
+    _bisect_compute_a,
+    _bisect_compute_b,
+    _matrix_adjoint,
 )
 
 cw5 = tuple(list(range(1, 1 + n)) for n in range(2, 6))
@@ -242,6 +245,51 @@ class TestControlledBisectOD:
 
         assert np.allclose(res, expected, atol=tol, rtol=tol)
 
+    @pytest.mark.parametrize("op", su2_od_ops)
+    def test_decomposed_operators(self, op, tol):
+        """Tests that the operators in the decomposition match expectations."""
+        control_wires = [1, 2, 3, 4, 5]
+
+        su = op.matrix()
+        sx = qml.PauliX.compute_matrix()
+        op_seq = ctrl_decomp_bisect_od(op, Wires(control_wires))
+
+        assert len(op_seq) == 8
+
+        mcx1 = qml.MultiControlledX(
+            control_wires=Wires([1, 2, 3]), wires=Wires(0), work_wires=Wires([4, 5])
+        )
+        assert qml.equal(mcx1, op_seq[0])
+        assert qml.equal(mcx1, op_seq[4])
+
+        mcx2 = qml.MultiControlledX(
+            control_wires=Wires([4, 5]), wires=Wires(0), work_wires=Wires([1, 2, 3])
+        )
+        assert qml.equal(mcx2, op_seq[2])
+        assert qml.equal(mcx2, op_seq[6])
+
+        a = op_seq[1].matrix()
+        at = op_seq[3].matrix()
+        a2 = op_seq[5].matrix()
+        at2 = op_seq[7].matrix()
+        assert np.array_equal(a, a2)
+        assert np.array_equal(at, at2)
+
+        i2 = np.identity(2)
+        assert np.allclose(a @ at, i2, atol=tol, rtol=tol)
+        assert np.allclose(at @ a, i2, atol=tol, rtol=tol)
+
+        assert np.allclose(at @ sx @ a @ sx @ at @ sx @ a @ sx, su, atol=tol, rtol=tol)
+
+    @pytest.mark.parametrize("op", su2_od_ops)
+    def test_a_matrix(self, op, tol):
+        """Tests that the A matrix subroutine returns a correct A matrix."""
+        su = op.matrix()
+        sx = qml.PauliX.compute_matrix()
+        a = _bisect_compute_a(su)
+        at = _matrix_adjoint(a)
+        assert np.allclose(at @ sx @ a @ sx @ at @ sx @ a @ sx, su, atol=tol, rtol=tol)
+
 
 class TestControlledBisectMD:
     """tests for qml.ops.ctrl_decomp_bisect_md"""
@@ -341,6 +389,16 @@ class TestControlledBisectMD:
         expected = expected_op.matrix()
 
         assert np.allclose(res, expected, atol=tol, rtol=tol)
+
+    @pytest.mark.parametrize("op", su2_md_ops)
+    def test_b_matrix(self, op, tol):
+        """Tests that the B matrix subroutine returns a correct A matrix."""
+        su = op.matrix()
+        sx = qml.PauliX.compute_matrix()
+        sh = qml.Hadamard.compute_matrix()
+        b = _bisect_compute_b(su)
+        bt = _matrix_adjoint(b)
+        assert np.allclose(sh @ bt @ sx @ b @ sx @ sh, su, atol=tol, rtol=tol)
 
 
 class TestControlledBisectGeneral:
