@@ -28,7 +28,7 @@
 * The `apply_operation` function added to `devices/qubit` now supports broadcasting.
   [(#3852)](https://github.com/PennyLaneAI/pennylane/pull/3852)
 
-* `qml.QubitStateVector.state_vector` not supports broadcasting.
+* `qml.QubitStateVector.state_vector` now supports broadcasting.
   [(#3852)](https://github.com/PennyLaneAI/pennylane/pull/3852)
 
 * When using Jax-jit with gradient transforms the trainable parameters are correctly set (instead of every parameter 
