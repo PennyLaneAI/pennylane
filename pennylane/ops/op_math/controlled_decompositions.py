@@ -216,6 +216,8 @@ def ctrl_decomp_bisect_od(
 ):
     """Decompose the controlled version of a target single-qubit operation
 
+    Not backpropagation compatible (as currently implemented). Use only with numpy.
+
     This function decomposes a controlled single-qubit target operation using the
     decomposition defined in section 3.1 of
     `Vale et al. (2023) <https://arxiv.org/abs/2302.06377>`_.
@@ -293,6 +295,8 @@ def ctrl_decomp_bisect_md(
 ):
     """Decompose the controlled version of a target single-qubit operation
 
+    Not backpropagation compatible (as currently implemented). Use only with numpy.
+
     This function decomposes a controlled single-qubit target operation using the
     decomposition defined in section 3.1 of
     `Vale et al. (2023) <https://arxiv.org/abs/2302.06377>`_.
@@ -356,6 +360,8 @@ def ctrl_decomp_bisect_general(
     later: bool = False,
 ):
     """Decompose the controlled version of a target single-qubit operation
+
+    Not backpropagation compatible (as currently implemented). Use only with numpy.
 
     This function decomposes a controlled single-qubit target operation using the
     decomposition defined in section 3.2 of
@@ -444,6 +450,8 @@ def ctrl_decomp_bisect_auto(
     later: bool = False,
 ):
     """Decompose the controlled version of a target single-qubit operation
+
+    Not backpropagation compatible (as currently implemented). Use only with numpy.
 
     Automatically selects the best algorithm based on the matrix (uses specialized more efficient
     algorithms if the matrix has a certain form, otherwise falls back to the general algorithm).

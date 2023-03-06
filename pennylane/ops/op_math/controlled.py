@@ -562,6 +562,7 @@ def _decompose_no_control_values(op: "operation.Operator") -> List["operation.Op
         len(op.base.wires) == 1
         and len(op.control_wires) >= 2
         and getattr(op.base, "has_matrix", False)
+        and qmlmath.get_interface(*op.data) == "numpy"  # as implemented, not differentiable
     ):
         # Bisect algorithms use CNOTs and single qubit unitary
         return ctrl_decomp_bisect_auto(op.base, op.control_wires)
