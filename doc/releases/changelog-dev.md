@@ -14,6 +14,10 @@
 
 <h3>Improvements</h3>
 
+* The custom JVP rules in PennyLane now also support non-scalar and mixed-shape tape parameters as
+  well as multi-dimensional tape return types, like broadcasted `qml.probs`, for example.
+  [(#3766)](https://github.com/PennyLaneAI/pennylane/pull/3766)
+
 * The `qchem.jordan_wigner` function is extended to support more fermionic operator orders.
   [(#3754)](https://github.com/PennyLaneAI/pennylane/pull/3754)
   [(#3751)](https://github.com/PennyLaneAI/pennylane/pull/3751)
@@ -21,7 +25,19 @@
 * `AdaptiveOptimizer` is updated to use non-default user-defined qnode arguments.
   [(#3765)](https://github.com/PennyLaneAI/pennylane/pull/3765)
 
+* When using Jax-jit with gradient transforms the trainable parameters are correctly set (instead of every parameter 
+  to be set as trainable), and therefore the derivatives are computed more efficiently.
+  [(#3697)](https://github.com/PennyLaneAI/pennylane/pull/3697)
+
 <h3>Breaking changes</h3>
+
+* Trainable parameters for the Jax interface are the parameters that are `JVPTracer`, defined by setting
+  `argnums`. Previously, all JAX tracers, including those used for JIT compilation, were interpreted to be trainable.
+  [(#3697)](https://github.com/PennyLaneAI/pennylane/pull/3697)
+
+* The keyword argument `argnums` is now used for gradient transform using Jax, instead of `argnum`.
+  `argnum` is automatically converted to `argnums` when using JAX, and will no longer be supported in v0.31.
+  [(#3697)](https://github.com/PennyLaneAI/pennylane/pull/3697)
 
 <h3>Deprecations</h3>
 
@@ -32,13 +48,22 @@
 
 <h3>Bug fixes</h3>
 
+* Registers `math.ndim` and `math.shape` for built-ins and autograd to accomodate Autoray 0.6.1.
+  [#3864](https://github.com/PennyLaneAI/pennylane/pull/3865)
+
+* Ensure that `qml.data.load` returns datasets in a stable and expected order.
+  [(#3856)](https://github.com/PennyLaneAI/pennylane/pull/3856)
+
 <h3>Contributors</h3>
 
 This release contains contributions from (in alphabetical order):
 
 Utkarsh Azad
 Soran Jahangiri
+Christina Lee
 Vincent Michaud-Rioux
+Romain Moyard
 Mudit Pandey
 Matthew Silverman
 Jay Soni
+David Wierichs
