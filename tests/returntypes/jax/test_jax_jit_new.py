@@ -549,9 +549,7 @@ class TestJaxExecuteIntegration:
             res = qml.interfaces.execute([tape], dev, cache=cache, **execute_kwargs)[0]
             return res
 
-        cost = jax.jit(cost)
-
-        results = jax.grad(cost)(params, cache=None)
+        results = jax.jit(jax.grad(cost))(params, cache=None)
         for r, e in zip(results, expected_results):
             assert jax.numpy.allclose(r, e, atol=1e-7)
 
