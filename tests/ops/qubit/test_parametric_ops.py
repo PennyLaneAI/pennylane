@@ -154,6 +154,27 @@ class TestOperations:
         np.testing.assert_allclose(res2, I, atol=tol)
         assert op.wires == op_d.wires
 
+    @pytest.mark.parametrize("d", [1, 2, 3, 4])
+    @pytest.mark.parametrize("theta", [-np.pi, np.pi/2, -0.5, 0, 0.5, np.pi/2, np.pi])
+    def test_pcphase_integration(self, theta, d):
+        """Test that the PCPhase gate applied to a circuit produces the
+        correct final state."""
+        wires = [0, 1]
+        dev = qml.device("default.qubit", wires=wires)
+
+        @qml.qnode(dev)
+        def circuit(phase, dim):
+            for wire in wires:  # Construct equal superposition over all states
+                qml.Hadamard(wire)
+
+            qml.PCPhase(phase, dim=dim, wires=wires)  # Apply phase to the first dim entries
+            return qml.state()
+
+        def _get_expected_state(phase, dim, size):
+            return np.array([np.exp(1j*phase) if i < dim else 1.0 for i in range(size)]) * 1/2
+
+        assert np.allclose(circuit(theta, d), _get_expected_state(theta, d, 4))
+
     def test_pcphase_raises_error(self):
         """Test that the PCPhase operator raises an error when dim is incorrect."""
         phi, dim = (1.23, 3)  # dimension too big
@@ -965,7 +986,7 @@ class TestMatrix:
     @pytest.mark.parametrize("wires", (range(2), range(3)))
     @pytest.mark.parametrize("phi", np.linspace(-np.pi, np.pi, 10))
     def test_pcphase(self, phi, dim, wires):
-        """Test that the PCPhase operator matrix looks correct."""
+        """Test that the PCPhase operator matrix is correct."""
         num_wires = len(wires)
         op = qml.PCPhase(phi, dim=dim, wires=wires)
 
@@ -983,7 +1004,7 @@ class TestMatrix:
     @pytest.mark.parametrize("wires", (range(2), range(3)))
     @pytest.mark.parametrize("phi", np.linspace(-np.pi, np.pi, 10))
     def test_pcphase_tf(self, phi, dim, wires):
-        """Test that the PCPhase operator matrix looks correct for tf."""
+        """Test that the PCPhase operator matrix is correct for tf."""
         import tensorflow as tf
 
         num_wires = len(wires)
