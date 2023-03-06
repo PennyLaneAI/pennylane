@@ -99,14 +99,14 @@ def _bisect_compute_b(u: np.ndarray):
     w = math.real(u[0, 0])
     s = math.real(u[1, 0])
     t = math.imag(u[1, 0])
-    if math.isclose(s, 0) and math.isclose(t, 0):
+    if math.isclose(s, 0):
         b = 0
-        c = sqrt(w)
-        d = 0
-    elif math.isclose(s, 0):
-        b = 0
-        c = sqrt(2 - 2 * w) * (-w / 2 - 1 / 2) / t
-        d = sqrt(2 - 2 * w) / 2
+        if math.isclose(t, 0):
+            c = sqrt(w)
+            d = 0
+        else:
+            c = sqrt(2 - 2 * w) * (-w / 2 - 1 / 2) / t
+            d = sqrt(2 - 2 * w) / 2
     elif math.isclose(t, 0):
         b = (1 / 2 - w / 2) * sqrt(2 * w + 2) / s
         c = sqrt(2 * w + 2) / 2
