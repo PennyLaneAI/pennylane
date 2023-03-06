@@ -893,7 +893,9 @@ class OrbitalRotation(Operation):
 
     Here, :math:`G(\phi)` represents a single-excitation Givens rotation and :math:`f\text{SWAP}(\pi)`
     represents the fermionic swap operator, implemented in PennyLane as the
-    :class:`~.SingleExcitation` opertion and :class:`~.FermionicSWAP` operation, respectively.
+    :class:`~.SingleExcitation` opertion and :class:`~.FermionicSWAP` operation, respectively. This
+    implementation is a modified version of the one given in `Anselmetti et al. (2021) <https://doi.org/10.1088/1367-2630/ac2cb3>`__\ ,
+    and is consistent with the Jordan-Wigner mapping in interleaved ordering.
 
     **Details:**
 

@@ -729,6 +729,7 @@ class TestOrbitalRotation:
         return qml.expval(qml.PauliZ(0) @ qml.PauliZ(1) @ qml.PauliZ(3))
 
     def expected_grad_fn(self, phi):
+        # The following expression is obtained using the eight-parameter shift rule mentioned in arXiv:2107.12390.
         return 1.1 * (3 * np.sin(3 * phi / 2) - np.sin(phi / 2)) * 0.25 - 0.7 * np.sin(phi)
 
     @pytest.mark.parametrize("phi", [-0.1, 0.2, np.pi / 4])
@@ -767,7 +768,7 @@ class TestOrbitalRotation:
     def test_orbital_rotation_decomp(self, phi):
         """Tests that the OrbitalRotation operation calculates the correct decomposition.
 
-        The decomposition is expressed in terms of two SingleExcitation gates sandwich between FermionicExcitations gates.
+        The decomposition is expressed in terms of two SingleExcitation gates sandwiched between FermionicExcitations gates.
         """
         op = qml.OrbitalRotation(phi, wires=[0, 1, 2, 3])
         decomposed_matrix = qml.matrix(
