@@ -19,10 +19,9 @@ import numpy as np
 import pennylane as qml
 from pennylane.operation import Operation
 from pennylane.devices.qubit.preprocess import (
-    _stopping_condition,
-    _supports_observable,
+    _accepted_operator,
+    _operator_decomposition_gen,
     expand_fn,
-    check_validity,
     batch_transform,
     preprocess,
 )
@@ -59,9 +58,7 @@ class NoMatNoDecompOp(Operation):
         return False
 
 
-class TestHelpers:
-    """Unit tests for helper functions in qml.devices.qubit.preprocess"""
-
+class TestPrivateHelpers:
     @pytest.mark.parametrize(
         "op, expected",
         [
@@ -69,54 +66,121 @@ class TestHelpers:
             (qml.CRX(0.1, wires=[0, 1]), True),
             (qml.Snapshot(), False),
             (qml.Barrier(), False),
+            (qml.QFT(wires=range(5)), True),
+            (qml.QFT(wires=range(10)), False),
+            (qml.GroverOperator(wires=range(10)), True),
+            (qml.GroverOperator(wires=range(14)), False),
         ],
     )
-    def test_stopping_condition(self, op, expected):
-        """Test that _stopping_condition works correctly"""
-        res = _stopping_condition(op)
+    def test_accepted_operator(self, op, expected):
+        """Test that _accepted_operator works correctly"""
+        res = _accepted_operator(op)
         assert res == expected
 
-    @pytest.mark.parametrize(
-        "obs, expected",
-        [("Hamiltonian", True), (qml.Identity, True), ("QubitUnitary", False), (qml.RX, False)],
-    )
-    def test_supports_observable(self, obs, expected):
-        """Test that _supports_observable works correctly"""
-        res = _supports_observable(obs)
-        assert res == expected
+    @pytest.mark.parametrize("op", (qml.PauliX(0), qml.RX(1.2, wires=0), qml.QFT(wires=range(3))))
+    def test_operator_decomposition_gen_accepted_operator(self, op):
+        casted_to_list = list(_operator_decomposition_gen(op))
+        assert len(casted_to_list) == 1
+        assert casted_to_list[0] is op
 
-    def test_check_validity_invalid_op(self):
-        """Test that check_validity throws an error when an operation is invalid."""
-        tape = QuantumScript(ops=[qml.Barrier(0)], measurements=[qml.expval(qml.Hadamard(0))])
-        with pytest.raises(DeviceError, match="Gate Barrier not supported on Python Device"):
-            check_validity(tape)
+    def test_operator_decomposition_gen_decomposed_operators_single_nesting(self):
+        """Assert _operator_decomposition_gen turns into a list with the operators decomposition
+        when only a single layer of expansion is necessary."""
+        op = NoMatOp("a")
+        casted_to_list = list(_operator_decomposition_gen(op))
+        assert len(casted_to_list) == 2
+        assert qml.equal(casted_to_list[0], qml.PauliX("a"))
+        assert qml.equal(casted_to_list[1], qml.PauliY("a"))
 
-    def test_check_validity_invalid_observable(self):
-        """Test that check_validity throws an error when an observable is invalid."""
+    def test_operator_decomposition_gen_decomposed_operator_ragged_nesting(self):
+        """Test that _operator_decomposition_gen handles a decomposition that requires different depths of decomposition."""
+
+        class RaggedDecompositionOp(Operation):
+            num_wires = 1
+
+            def decomposition(self):
+                return [NoMatOp(self.wires), qml.S(self.wires), qml.adjoint(NoMatOp(self.wires))]
+
+        op = RaggedDecompositionOp("a")
+        final_decomp = list(_operator_decomposition_gen(op))
+        assert len(final_decomp) == 5
+        assert qml.equal(final_decomp[0], qml.PauliX("a"))
+        assert qml.equal(final_decomp[1], qml.PauliY("a"))
+        assert qml.equal(final_decomp[2], qml.S("a"))
+        assert qml.equal(final_decomp[3], qml.adjoint(qml.PauliY("a")))
+        assert qml.equal(final_decomp[4], qml.adjoint(qml.PauliX("a")))
+
+    def test_error_from_unsupported_operation(self):
+        """Test that a device error is raised if the operator cant be decomposed and doesn't have a matrix."""
+        op = NoMatNoDecompOp("a")
+        with pytest.raises(DeviceError, match=r"Operator NoMatNoDecompOp"):
+            tuple(_operator_decomposition_gen(op))
+
+
+class TestExpandFnValidation:
+    """Unit tests for helper functions in qml.devices.qubit.preprocess"""
+
+    def test_error_if_invalid_op(self):
+        """Test that expand_fn throws an error when an operation is does not define a matrix or decomposition."""
+        tape = QuantumScript(ops=[NoMatNoDecompOp(0)], measurements=[qml.expval(qml.Hadamard(0))])
+        with pytest.raises(DeviceError, match="Operator NoMatNoDecompOp"):
+            expand_fn(tape)
+
+    def test_expand_fn_invalid_observable(self):
+        """Test that expand_fn throws an error when an observable is invalid."""
         tape = QuantumScript(
             ops=[qml.PauliX(0)], measurements=[qml.expval(qml.GellMann(wires=0, index=1))]
         )
-        with pytest.raises(DeviceError, match="Observable GellMann not supported on Python Device"):
-            check_validity(tape)
+        with pytest.raises(DeviceError, match=r"Observable GellMann1"):
+            expand_fn(tape)
 
-    def test_check_validity_invalid_tensor_observable(self):
-        """Test that check_validity throws an error when a tensor includes invalid obserables"""
+    def test_expand_fn_invalid_tensor_observable(self):
+        """Test that expand_fn throws an error when a tensor includes invalid obserables"""
         tape = QuantumScript(
             ops=[qml.PauliX(0), qml.PauliY(1)],
             measurements=[
                 qml.expval(qml.GellMann(wires=0, index=1) @ qml.GellMann(wires=1, index=2))
             ],
         )
-        with pytest.raises(DeviceError, match="Observable GellMann not supported on Python Device"):
-            check_validity(tape)
+        with pytest.raises(DeviceError, match="Observable expval"):
+            expand_fn(tape)
 
-    def test_check_validity_passes(self):
-        """Test that check_validity doesn't throw any errors for a valid circuit"""
+    def test_state_prep_only_one(self):
+        """Test that a device error is raised if the script has multiple state prep ops."""
+        qs = QuantumScript(prep=[qml.BasisState([0], wires=0), qml.BasisState([1], wires=1)])
+        with pytest.raises(
+            DeviceError, match=r"DefaultQubit2 accepts at most one state prep operation."
+        ):
+            expand_fn(qs)
+
+    def test_only_state_based_measurements(self):
+        """Test that a device error is raised if a measurement is not a state measurement."""
+        qs = QuantumScript([], [qml.expval(qml.PauliZ(0)), qml.sample()])
+        with pytest.raises(DeviceError, match=r"Measurement process sample"):
+            expand_fn(qs)
+
+    def test_expand_fn_passes(self):
+        """Test that expand_fn doesn't throw any errors for a valid circuit"""
         tape = QuantumScript(
             ops=[qml.PauliX(0), qml.RZ(0.123, wires=0)], measurements=[qml.state()]
         )
-        check_validity(tape)
+        expand_fn(tape)
 
+    def test_infinite_decomposition_loop(self):
+        """Test that a device error is raised if decomposition enters an infinite loop."""
+
+        class InfiniteOp(qml.operation.Operation):
+            num_wires = 1
+
+            def decomposition(self):
+                return [InfiniteOp(self.wires)]
+
+        qs = qml.tape.QuantumScript([InfiniteOp(0)])
+        with pytest.raises(DeviceError, match=r"Reached recursion limit trying to decompose"):
+            expand_fn(qs)
+
+
+class TestExpandFnTransformations:
     def test_expand_fn_expand_unsupported_op(self):
         """Test that expand_fn expands the tape when unsupported operators are present"""
         ops = [qml.Hadamard(0), NoMatOp(1), qml.RZ(0.123, wires=1)]
@@ -156,6 +220,15 @@ class TestHelpers:
         for op, exp in zip(expanded_tape.circuit, ops + measurements):
             assert qml.equal(op, exp)
 
+    def test_expand_fn_non_commuting_measurements(self):
+        """Test that expand function can decompose operations even when non commuting measurements exist in the circuit."""
+
+        qs = QuantumScript([NoMatOp("a")], [qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliY(0))])
+        new_qs = expand_fn(qs)
+        assert new_qs.measurements == qs.measurements
+
+
+class TestBatchTransform:
     def test_batch_transform_no_batching(self):
         """Test that batch_transform does nothing when no batching is required."""
         ops = [qml.Hadamard(0), qml.CNOT([0, 1]), qml.RX(0.123, wires=1)]
@@ -294,5 +367,5 @@ class TestPreprocess:
             QuantumScript(ops=ops, measurements=measurements[1]),
         ]
 
-        with pytest.raises(qml.DeviceError, match="Gate NoMatNoDecompOp not supported"):
+        with pytest.raises(qml.DeviceError, match="Operator NoMatNoDecompOp"):
             _ = preprocess(tapes)
