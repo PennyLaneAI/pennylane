@@ -19,7 +19,8 @@ from inspect import isclass
 
 from pennylane.operation import Operator, Tensor
 
-from .parametric_ops import RX, RY, RZ, IsingXX, IsingXY, IsingYY, IsingZZ, MultiRZ, PauliRot
+from .parametric_ops_single_qubit import RX, RY, RZ
+from .parametric_ops_multi_qubit import IsingXX, IsingXY, IsingYY, IsingZZ, MultiRZ, PauliRot
 from .qchem_ops import (
     DoubleExcitation,
     DoubleExcitationMinus,
