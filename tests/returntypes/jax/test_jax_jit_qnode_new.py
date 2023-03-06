@@ -2667,7 +2667,6 @@ def test_jax_device_hessian_shots(hessian, diff_method, tol):
 
     dev = qml.device("default.qubit.jax", wires=num_wires, shots=10000)
 
-    @jax.jit
     @qml.qnode(dev, diff_method="parameter-shift", max_diff=2)
     def circuit(x):
         qml.RY(x[0], wires=0)

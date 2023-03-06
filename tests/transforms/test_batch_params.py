@@ -217,6 +217,7 @@ def test_jax_jit(diff_method, interface, tol):
     """Test derivatives when using JAX and JIT."""
     import jax
 
+    jax.config.update("jax_enable_x64", True)
     jnp = jax.numpy
     dev = qml.device("default.qubit", wires=2)
 
@@ -228,14 +229,13 @@ def test_jax_jit(diff_method, interface, tol):
         qml.CNOT(wires=[0, 1])
         return qml.expval(qml.PauliZ(0) @ qml.PauliX(1))
 
-    @jax.jit
     def cost(x):
         return jnp.sum(circuit(x))
 
     batch_size = 3
     x = jnp.linspace(0.1, 0.5, batch_size)
 
-    res = jax.grad(cost)(x)
+    res = jax.jit(jax.grad(cost))(x)
     expected = -np.sin(0.1) * np.sin(x)
     assert np.allclose(res, expected, atol=tol, rtol=0)
 
