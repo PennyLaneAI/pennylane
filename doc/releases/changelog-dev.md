@@ -27,6 +27,7 @@
 
 * Adds logic to `qml.devices.qubit.measure` to compute the expectation values of `Hamiltonian` and `Sum `
   in a backpropagation compatible way.
+  [(#3862)](https://github.com/PennyLaneAI/pennylane/pull/3862/)
 
 * When using Jax-jit with gradient transforms the trainable parameters are correctly set (instead of every parameter 
   to be set as trainable), and therefore the derivatives are computed more efficiently.

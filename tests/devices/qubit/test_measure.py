@@ -23,7 +23,7 @@ from pennylane.devices.qubit import simulate
 from pennylane.devices.qubit.measure import (
     measure,
     state_diagonalizing_gates,
-    state_hamiltonian_expval,
+    csr_dot_products,
     get_measurement_function,
     sum_of_terms_method,
 )
@@ -66,7 +66,7 @@ class TestMeasurementDispatch:
         """Check that the sparse expectation value method is used if the state is numpy."""
         H = qml.Hamiltonian([2], [qml.PauliX(0)])
         state = np.zeros(2)
-        assert get_measurement_function(qml.expval(H), state) is state_hamiltonian_expval
+        assert get_measurement_function(qml.expval(H), state) is csr_dot_products
 
     def test_hamiltonian_sum_of_terms_when_backprop(self):
         """Check that the sum of terms method is used when the state is trainable."""
@@ -81,7 +81,7 @@ class TestMeasurementDispatch:
             *(qml.PauliY(i) for i in range(8))
         )
         state = np.zeros(2)
-        assert get_measurement_function(qml.expval(S), state) is state_hamiltonian_expval
+        assert get_measurement_function(qml.expval(S), state) is csr_dot_products
 
     def test_sum_sum_of_terms_when_backprop(self):
         """Check that the sum of terms method is used when"""

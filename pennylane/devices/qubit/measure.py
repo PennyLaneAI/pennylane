@@ -47,7 +47,7 @@ def state_diagonalizing_gates(
     return measurementprocess.process_state(math.flatten(state), wires)
 
 
-def state_hamiltonian_expval(measurementprocess: ExpectationMP, state: TensorLike) -> TensorLike:
+def csr_dot_products(measurementprocess: ExpectationMP, state: TensorLike) -> TensorLike:
     """Measure the expectation value of the state when the measured observable is a ``Hamiltonian`` or
     ``SparseHamiltonian``.
 
@@ -108,7 +108,7 @@ def get_measurement_function(
 
         if isinstance(measurementprocess, ExpectationMP):
             if measurementprocess.obs.name == "SparseHamiltonian":
-                return state_hamiltonian_expval
+                return csr_dot_products
 
             if measurementprocess.obs.name == "Hamiltonian" or (
                 isinstance(measurementprocess.obs, Sum)
@@ -120,7 +120,7 @@ def get_measurement_function(
 
                 # need to work out thresholds for when its faster to use "backprop mode" measurements
                 backprop_mode = math.get_interface(state) != "numpy"
-                return sum_of_terms_method if backprop_mode else state_hamiltonian_expval
+                return sum_of_terms_method if backprop_mode else csr_dot_products
 
         if measurementprocess.obs is None or measurementprocess.obs.has_diagonalizing_gates:
             return state_diagonalizing_gates
