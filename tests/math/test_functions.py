@@ -1093,6 +1093,28 @@ class TestRequiresGrad:
         jax.grad(cost_fn, argnums=[0, 1])(t, s)
         assert res == [True, True]
 
+    @pytest.mark.slow
+    def test_jax_jit(self):
+        """JAX Arrays differentiability depends on the argnums argument with Jitting."""
+        res = None
+
+        def cost_fn(t, s):
+            nonlocal res
+            res = [fn.requires_grad(t), fn.requires_grad(s)]
+            return jnp.sum(t * s)
+
+        t = jnp.array([1.0, 2.0, 3.0])
+        s = jnp.array([-2.0, -3.0, -4.0])
+
+        jax.jit(jax.grad(cost_fn, argnums=0))(t, s)
+        assert res == [True, False]
+
+        jax.jit(jax.grad(cost_fn, argnums=1))(t, s)
+        assert res == [False, True]
+
+        jax.jit(jax.grad(cost_fn, argnums=[0, 1]))(t, s)
+        assert res == [True, True]
+
     def test_autograd(self):
         """Autograd arrays will simply return their requires_grad attribute"""
         t = np.array([1.0, 2.0], requires_grad=True)

@@ -157,17 +157,24 @@ class hessian_transform(qml.batch_transform):
         # Here, we overwrite the QNode execution wrapper in order to take into account
         # that classical processing may be present inside the QNode.
         hybrid = tkwargs.pop("hybrid", self.hybrid)
+        argnums = tkwargs.get("argnums", None)
 
         old_interface = qnode.interface
 
-        if old_interface == "auto":
-            qnode.interface = qml.math.get_interface(*targs, *list(tkwargs.values()))
-
         _wrapper = super().default_qnode_wrapper(qnode, targs, tkwargs)
-        cjac_fn = qml.transforms.classical_jacobian(qnode, expand_fn=self.expand_fn)
+        cjac_fn = qml.transforms.classical_jacobian(qnode, argnum=argnums, expand_fn=self.expand_fn)
 
-        def hessian_wrapper(*args, **kwargs):
-            if not qml.math.get_trainable_indices(args):
+        def hessian_wrapper(*args, **kwargs):  # pylint: disable=too-many-branches
+            if argnums is not None:
+                argnums_ = [argnums] if isinstance(argnums, int) else argnums
+
+                params = qml.math.jax_argnums_to_tape_trainable(
+                    qnode, argnums_, self.expand_fn, args, kwargs
+                )
+                argnums_ = qml.math.get_trainable_indices(params)
+                kwargs["argnums"] = argnums_
+
+            if not qml.math.get_trainable_indices(args) and not argnums:
                 warnings.warn(
                     "Attempted to compute the hessian of a QNode with no trainable parameters. "
                     "If this is unintended, please add trainable parameters in accordance with "
@@ -187,7 +194,13 @@ class hessian_transform(qml.batch_transform):
                 qhess = (qhess,)
 
             kwargs.pop("shots", False)
-            cjac = cjac_fn(*args, **kwargs)
+
+            if argnums is None and qml.math.get_interface(*args) == "jax":
+                cjac = qml.transforms.classical_jacobian(
+                    qnode, argnum=qml.math.get_trainable_indices(args), expand_fn=self.expand_fn
+                )(*args, **kwargs)
+            else:
+                cjac = cjac_fn(*args, **kwargs)
 
             has_single_arg = False
             if not isinstance(cjac, tuple):
