@@ -14,6 +14,7 @@
 """
 Tests for the ``adjoint_jacobian`` method of the :mod:`pennylane` :class:`QubitDevice` class.
 """
+#pylint: disable=import-outside-toplevel
 import pytest
 
 import pennylane as qml
@@ -26,6 +27,7 @@ class TestAdjointJacobian:
 
     @pytest.fixture
     def dev(self):
+        """Fixture that creates a two-qubit default qubit device."""
         return qml.device("default.qubit", wires=2)
 
     def test_not_expval(self, dev):
@@ -164,6 +166,35 @@ class TestAdjointJacobian:
         expected_jacobian = -np.diag(np.sin(params))
         assert np.allclose(dev_jacobian, expected_jacobian, atol=tol, rtol=0)
 
+    def test_custom_op_gradient(self, tol):
+        """Tests that the gradient of a custom operation that only provides a
+        matrix and a generator works."""
+
+        class MyOp(qml.operation.Operation):
+            """Custom operation that only defines a generator and a matrix representation."""
+            num_wires = 1
+            def generator(self):
+                """Generator of MyOp, just a multiple of Pauli X."""
+                return qml.PauliX(self.wires) * 1.2
+
+            @staticmethod
+            def compute_matrix(angle):
+                """Matrix representation of MyOp, just the same as a reparametrized RX."""
+                return qml.RX.compute_matrix(-2.4 * angle)
+
+        dev = qml.device("default.qubit", wires=3)
+        params = np.array([np.pi, np.pi / 2, np.pi / 3])
+
+        with qml.queuing.AnnotatedQueue() as q:
+            _ = [MyOp(p, w) for p, w in zip(params, [0, 1, 2])]
+            _ = [qml.expval(qml.PauliZ(idx)) for idx in range(3)]
+
+        tape = qml.tape.QuantumScript.from_queue(q)
+        # circuit jacobians
+        dev_jacobian = dev.adjoint_jacobian(tape)
+        expected_jacobian = 2.4 * np.diag(np.sin(-2.4 * params))
+        assert np.allclose(dev_jacobian, expected_jacobian, atol=tol, rtol=0)
+
     ops = {qml.RX, qml.RY, qml.RZ, qml.PhaseShift, qml.CRX, qml.CRY, qml.CRZ, qml.Rot}
 
     @pytest.mark.autograd
@@ -190,7 +221,8 @@ class TestAdjointJacobian:
         tape = qml.tape.QuantumScript(ops, measurements)
         tape.trainable_params = set(range(1, 1 + op.num_params))
 
-        grad_F = (lambda t, fn: fn(qml.execute(t, dev, None)))(*qml.gradients.finite_diff(tape))
+        tapes, fn = qml.gradients.finite_diff(tape)
+        grad_F = fn(qml.execute(tapes, dev, None))
         grad_D = dev.adjoint_jacobian(tape)
 
         assert np.allclose(grad_D, grad_F, atol=tol, rtol=0)
@@ -210,7 +242,8 @@ class TestAdjointJacobian:
         tape.trainable_params = {1, 2, 3}
 
         grad_D = dev.adjoint_jacobian(tape)
-        grad_F = (lambda t, fn: fn(qml.execute(t, dev, None)))(*qml.gradients.finite_diff(tape))
+        tapes, fn = qml.gradients.finite_diff(tape)
+        grad_F = fn(qml.execute(tapes, dev, None))
 
         # gradient has the correct shape and every element is nonzero
         assert grad_D.shape == (1, 3)
@@ -255,6 +288,7 @@ class TestAdjointJacobian:
         dM1 = dev.adjoint_jacobian(tape)
 
         qml.execute([tape], dev, None)
+        # pylint: disable=protected-access
         dM2 = dev.adjoint_jacobian(tape, starting_state=dev._pre_rotated_state)
 
         assert np.allclose(dM1, dM2, atol=tol, rtol=0)
@@ -290,7 +324,7 @@ class TestAdjointJacobian:
         ]
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
-    def test_trainable_hermitian_warns(self, tol):
+    def test_trainable_hermitian_warns(self):
         """Test attempting to compute the gradient of a tape that obtains the
         expectation value of a Hermitian operator emits a warning if the
         parameters to Hermitian are trainable."""
@@ -305,7 +339,7 @@ class TestAdjointJacobian:
         with pytest.warns(
             UserWarning, match="Differentiating with respect to the input parameters of Hermitian"
         ):
-            res = dev.adjoint_jacobian(tape)
+            _ = dev.adjoint_jacobian(tape)
 
 
 class TestAdjointJacobianQNode:
@@ -313,6 +347,7 @@ class TestAdjointJacobianQNode:
 
     @pytest.fixture
     def dev(self):
+        """Fixture that creates a two-qubit default qubit device."""
         return qml.device("default.qubit", wires=2)
 
     @pytest.mark.autograd
@@ -320,11 +355,6 @@ class TestAdjointJacobianQNode:
         """Tests that a warning is raised when computing the adjoint diff on a device with finite shots"""
 
         dev = qml.device("default.qubit", wires=1, shots=1)
-
-        @qml.qnode(dev, diff_method="adjoint")
-        def circ(x):
-            qml.RX(x, wires=0)
-            return qml.expval(qml.PauliZ(0))
 
         with pytest.warns(
             UserWarning, match="Requested adjoint differentiation to be computed with finite shots."
