@@ -14,6 +14,10 @@
 
 <h3>Improvements</h3>
 
+* `Operator` now has a `has_generator` attribute that returns whether or not the operator
+  has a generator defined. It is used in `qml.operation.has_gen`, improving its performance.
+  [(#3875)](https://github.com/PennyLaneAI/pennylane/pull/3875)
+
 * The custom JVP rules in PennyLane now also support non-scalar and mixed-shape tape parameters as
   well as multi-dimensional tape return types, like broadcasted `qml.probs`, for example.
   [(#3766)](https://github.com/PennyLaneAI/pennylane/pull/3766)
