@@ -304,7 +304,7 @@ class TestLoadHelpers:
                     "HeH": {"STO-3G": ["0.50"]},
                 },
                 [["full"], ["full"], ["0.48", "0.50"]],
-                ["H2/6-31G/0.50", "H2/STO-3G/0.48", "H2/STO-3G/0.50", "HeH/STO-3G/0.50"],
+                ["H2/STO-3G/0.48", "H2/STO-3G/0.50", "H2/6-31G/0.50", "HeH/STO-3G/0.50"],
             ),
             (
                 {
@@ -314,11 +314,19 @@ class TestLoadHelpers:
                 [["full"], ["STO-3G"], ["0.50"]],
                 [],
             ),
+            (
+                {
+                    "H2": {"STO-3G": ["0.46", "0.48", "0.50"], "6-31G": ["0.46", "0.50"]},
+                    "HeH": {"STO-3G": ["0.50"]},
+                },
+                [["HeH", "H2"], ["STO-3G"], ["0.50", "0.46"]],
+                ["HeH/STO-3G/0.50", "H2/STO-3G/0.50", "H2/STO-3G/0.46"],
+            ),
         ],
     )
     def test_generate_folders(self, node, folders, output):
         """Test the _generate_folders helper function."""
-        assert sorted(qml.data.data_manager._generate_folders(node, folders)) == output
+        assert qml.data.data_manager._generate_folders(node, folders) == output
 
     @patch("concurrent.futures.ThreadPoolExecutor.submit", return_value=True)
     @patch("pennylane.data.data_manager.wait", return_value=MagicMock(done=[]))
@@ -492,11 +500,25 @@ class TestLoad:
             "qchem", molname="H2", basis="6-31G", bondlength="full", folder_path=str(tmp_path)
         )
         assert len(datasets) == 3
-        assert sorted([d.molecule for d in datasets]) == [
+        assert [d.molecule for d in datasets] == [
             "H2_6-31G_0.46_full",
-            "H2_6-31G_1.0_full",
             "H2_6-31G_1.16_full",
+            "H2_6-31G_1.0_full",
         ]
+
+    def test_stable_load_order(self, tmp_path):
+        """Test that the order of returned datasets is stable and sorted."""
+        lengths = [1.0, 1.16, 0.46]
+        path = str(tmp_path)
+        for _ in range(5):  # 5 subsequent calls to suggest stability
+            data = qml.data.load(
+                "qchem", molname="H2", basis="6-31G", bondlength=lengths, folder_path=path
+            )
+            assert [d.molecule for d in data] == [
+                "H2_6-31G_1.0_full",
+                "H2_6-31G_1.16_full",
+                "H2_6-31G_0.46_full",
+            ]
 
     @pytest.mark.parametrize(
         ("attributes", "fullfile"),
