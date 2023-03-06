@@ -36,6 +36,9 @@
 
 <h3>Bug fixes</h3>
 
+* Registers `math.ndim` and `math.shape` for built-ins and autograd to accomodate Autoray 0.6.1.
+  [#3864](https://github.com/PennyLaneAI/pennylane/pull/3865)
+
 * Ensure that `qml.data.load` returns datasets in a stable and expected order.
   [(#3856)](https://github.com/PennyLaneAI/pennylane/pull/3856)
 
@@ -45,6 +48,7 @@ This release contains contributions from (in alphabetical order):
 
 Utkarsh Azad
 Soran Jahangiri
+Christina Lee
 Vincent Michaud-Rioux
 Mudit Pandey
 Matthew Silverman
