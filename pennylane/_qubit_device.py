@@ -1694,6 +1694,10 @@ class QubitDevice(Device):
         # TODO: do we need to squeeze here? Maybe remove with new return types
         return np.squeeze(np.var(samples, axis=axis))
 
+    def _sample_to_str(self, sample):
+        """Converts a bit-array to a string. For example, ``[0, 1]`` would become '01'."""
+        return "".join(map(str, sample))
+
     def _samples_to_counts(self, samples, obs, num_wires):
         """Groups the samples into a dictionary showing number of occurences for
         each possible outcome.
@@ -1743,24 +1747,32 @@ class QubitDevice(Device):
         """
 
         outcomes = []
+        batched_ndims = 2
+        shape = samples.shape
 
         if isinstance(obs, CountsMP):
             # convert samples and outcomes (if using) from arrays to str for dict keys
-            samples = ["".join([str(s.item()) for s in sample]) for sample in samples]
-
+            samples = np.apply_along_axis(self._sample_to_str, -1, samples)
+            batched_ndims = 3
             if obs.all_outcomes:
-                outcomes = self.generate_basis_states(num_wires)
-                outcomes = ["".join([str(o.item()) for o in outcome]) for outcome in outcomes]
+                outcomes = list(map(self._sample_to_str, self.generate_basis_states(num_wires)))
         elif obs.return_type is AllCounts:
             outcomes = qml.eigvals(obs)
 
-        # generate empty outcome dict, populate values with state counts
-        outcome_dict = {k: np.int64(0) for k in outcomes}
-        states, counts = np.unique(samples, return_counts=True)
-        for s, c in zip(states, counts):
-            outcome_dict[s] = c
+        batched = len(shape) == batched_ndims
+        if not batched:
+            samples = samples[None]
 
-        return outcome_dict
+        # generate empty outcome dict, populate values with state counts
+        base_dict = {k: np.int64(0) for k in outcomes}
+        outcome_dicts = [base_dict.copy() for _ in range(shape[0])]
+        results = [np.unique(batch, return_counts=True) for batch in samples]
+        for result, outcome_dict in zip(results, outcome_dicts):
+            states, counts = result
+            for state, count in zip(states, counts):
+                outcome_dict[state] = count
+
+        return outcome_dicts if batched else outcome_dicts[0]
 
     def sample(self, observable, shot_range=None, bin_size=None, counts=False):
         """Return samples of an observable.

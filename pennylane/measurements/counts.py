@@ -25,6 +25,11 @@ from pennylane.wires import Wires
 from .measurements import AllCounts, Counts, SampleMeasurement
 
 
+def _sample_to_str(sample):
+    """Converts a bit-array to a string. For example, ``[0, 1]`` would become '01'."""
+    return "".join(map(str, sample))
+
+
 def counts(op=None, wires=None, all_outcomes=False):
     r"""Sample from the supplied observable, with the number of shots
     determined from the ``dev.shots`` attribute of the corresponding device,
@@ -247,24 +252,35 @@ class CountsMP(SampleMeasurement):
         """
 
         outcomes = []
+        batched_ndims = 2
+        shape = qml.math.shape(samples)
 
         if self.obs is None:
             # convert samples and outcomes (if using) from arrays to str for dict keys
-            num_wires = len(self.wires) if len(self.wires) > 0 else qml.math.shape(samples)[-1]
-            samples = ["".join([str(s.item()) for s in sample]) for sample in samples]
+            samples = qml.math.apply_along_axis(_sample_to_str, -1, samples)
+            batched_ndims = 3
             if self.all_outcomes:
-                outcomes = qml.QubitDevice.generate_basis_states(num_wires)
-                outcomes = ["".join([str(o.item()) for o in outcome]) for outcome in outcomes]
+                num_wires = len(self.wires) if len(self.wires) > 0 else shape[-1]
+                outcomes = list(
+                    map(_sample_to_str, qml.QubitDevice.generate_basis_states(num_wires))
+                )
         elif self.all_outcomes:
             outcomes = qml.eigvals(self.obs)
 
-        # generate empty outcome dict, populate values with state counts
-        outcome_dict = {k: qml.math.int64(0) for k in outcomes}
-        states, _counts = qml.math.unique(samples, return_counts=True)
-        for s, c in zip(states, _counts):
-            outcome_dict[s] = c
+        batched = len(shape) == batched_ndims
+        if not batched:
+            samples = samples[None]
 
-        return outcome_dict
+        # generate empty outcome dict, populate values with state counts
+        base_dict = {k: qml.math.int64(0) for k in outcomes}
+        outcome_dicts = [base_dict.copy() for _ in range(shape[0])]
+        results = [qml.math.unique(batch, return_counts=True) for batch in samples]
+        for result, outcome_dict in zip(results, outcome_dicts):
+            states, _counts = result
+            for state, count in zip(states, _counts):
+                outcome_dict[state] = count
+
+        return outcome_dicts if batched else outcome_dicts[0]
 
     def __copy__(self):
         return self.__class__(
