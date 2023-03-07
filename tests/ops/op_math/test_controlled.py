@@ -1519,7 +1519,7 @@ def test_qubit_unitary(M):
 
     expected = qml.ControlledQubitUnitary(M, control_wires=1, wires=0)
 
-    assert qml.equal(tape[0], expected)
+    assert equal_if_decomposed(list(tape), expected)
 
 
 @pytest.mark.parametrize(

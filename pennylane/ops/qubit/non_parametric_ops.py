@@ -2464,7 +2464,13 @@ class MultiControlledX(Operation):
 
         gates = []
 
-        for i in range(len(work_wires)):
+        range_1 = range(len(work_wires))
+        range_2 = range(len(work_wires) - 1)
+
+        if self.hints.get("decomposition:reverse", False):
+            range_1, range_2 = range_2, range_1
+
+        for i in range_1:
             ctrl1 = control_wires_reversed[i]
             ctrl2 = work_wires_reversed[i]
             t = target_wire if i == 0 else work_wires_reversed[i - 1]
@@ -2472,13 +2478,13 @@ class MultiControlledX(Operation):
 
         gates.append(qml.Toffoli(wires=[*control_wires[:2], work_wires[0]]))
 
-        for i in reversed(range(len(work_wires))):
+        for i in reversed(range_1):
             ctrl1 = control_wires_reversed[i]
             ctrl2 = work_wires_reversed[i]
             t = target_wire if i == 0 else work_wires_reversed[i - 1]
             gates.append(qml.Toffoli(wires=[ctrl1, ctrl2, t]))
 
-        for i in range(len(work_wires) - 1):
+        for i in range_2:
             ctrl1 = control_wires_reversed[i + 1]
             ctrl2 = work_wires_reversed[i + 1]
             t = work_wires_reversed[i]
@@ -2486,7 +2492,7 @@ class MultiControlledX(Operation):
 
         gates.append(qml.Toffoli(wires=[*control_wires[:2], work_wires[0]]))
 
-        for i in reversed(range(len(work_wires) - 1)):
+        for i in reversed(range_2):
             ctrl1 = control_wires_reversed[i + 1]
             ctrl2 = work_wires_reversed[i + 1]
             t = work_wires_reversed[i]

@@ -30,6 +30,7 @@ from pennylane.ops.op_math.controlled_decompositions import (
     _bisect_compute_b,
 )
 from pennylane.ops.op_math.controlled import (
+    Controlled,
     ControlledOp,
 )
 from pennylane import math
@@ -53,7 +54,7 @@ def rq(func):
     return irq
 
 
-def equal_if_decomposed(lhs, rhs):
+def equal_if_decomposed(lhs, rhs, max_iterations=1000):
     """
     Test that 2 operators or operator sequences are the same if fully decomposed.
     """
@@ -65,7 +66,11 @@ def equal_if_decomposed(lhs, rhs):
     # make copies
     lhs = list(lhs)
     rhs = list(rhs)
+    iterations = 0
     while len(lhs) != 0 and len(rhs) != 0:
+        iterations += 1
+        if max_iterations is not None and iterations > max_iterations:
+            raise AssertionError(f"Max iterations {max_iterations} for equal_if_decomposed reached")
         if qml.equal(lhs[0], rhs[0]):
             lhs.pop(0)
             rhs.pop(0)
@@ -207,18 +212,28 @@ class TestControlledDecompositionZYZ:
 
         assert len(decomp) == 5
         assert all(qml.equal(o, e) for o, e in zip(decomp, expected))
-    
+
+    @pytest.mark.parametrize("test_expand", [False, True])
     def test_zyz_decomp_no_control_values(self, test_expand):
         """Test that the ZYZ decomposition is used for single qubit target operations
         when other decompositions aren't available."""
 
-        base = qml.RX(0.123, wires="a")
+        base = qml.QubitUnitary(
+            np.array(
+                [
+                    [1, 1],
+                    [-1, 1],
+                ]
+            )
+            * 2**-0.5,
+            wires="a",
+        )
         op = Controlled(base, (0,))
 
         assert op.has_decomposition
         decomp = op.expand().circuit if test_expand else op.decomposition()
         expected = qml.ops.ctrl_decomp_zyz(base, (0,))
-        assert qml.equal_if_decomposed(decomp, expected)
+        assert equal_if_decomposed(decomp, expected)
 
 
 class TestControlledBisectOD:

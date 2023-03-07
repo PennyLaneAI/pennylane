@@ -482,8 +482,10 @@ class Controlled(SymbolicOp):
         return False
 
     def decomposition(self):
+        ban_base_controlled = self.hints.get("decomposition:ban_base_controlled", False)
+
         if all(self.control_values):
-            decomp = _decompose_no_control_values(self)
+            decomp = _decompose_no_control_values(self, ban_base_controlled)
             if decomp is None:
                 raise qml.operation.DecompositionUndefinedError
             return decomp
@@ -491,7 +493,7 @@ class Controlled(SymbolicOp):
         # We need to add paulis to flip some control wires
         d = [qml.PauliX(w) for w, val in zip(self.control_wires, self.control_values) if not val]
 
-        decomp = _decompose_no_control_values(self)
+        decomp = _decompose_no_control_values(self, ban_base_controlled)
         if decomp is None:
             no_control_values = copy(self).queue()
             no_control_values.hyperparameters["control_values"] = [1] * len(self.control_wires)
@@ -549,12 +551,18 @@ class Controlled(SymbolicOp):
 
 
 # pylint: disable=protected-access
-def _decompose_no_control_values(op: "operation.Operator") -> List["operation.Operator"]:
+def _decompose_no_control_values(
+    op: "operation.Operator", ban_base_controlled: bool = False
+) -> List["operation.Operator"]:
     """Provides a decomposition without considering control values. Returns None if
     no decomposition.
     """
-    if len(op.control_wires) == 1 and hasattr(op.base, "_controlled"):
-        return [op.base._controlled(op.control_wires[0])]
+    if not ban_base_controlled and len(op.control_wires) == 1 and hasattr(op.base, "_controlled"):
+        result = [op.base._controlled(op.control_wires[0])]
+        # set decomposition hint to prevent cycle if
+        # op is asked to be decomposed again
+        result[0].hints["decomposition:ban_base_controlled"] = True
+        return result
     if isinstance(op.base, qml.PauliX):
         # has some special case handling of its own for further decomposition
         return [qml.MultiControlledX(wires=op.active_wires, work_wires=op.work_wires)]

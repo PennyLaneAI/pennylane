@@ -1152,6 +1152,16 @@ class Operator(abc.ABC):
         return self._hyperparameters
 
     @property
+    def hints(self):
+        """dict: Dictionary of non-trainable variables that don't affect what the operation does,
+        including user tags and compiler hints"""
+        # pylint: disable=attribute-defined-outside-init
+        if hasattr(self, "_hints"):
+            return self._hints
+        self._hints = {}
+        return self._hints
+
+    @property
     def is_hermitian(self):
         """This property determines if an operator is hermitian."""
         return False
