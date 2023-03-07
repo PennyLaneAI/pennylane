@@ -220,7 +220,7 @@ def _ctrl_decomp_bisect_od(
     Not backpropagation compatible (as currently implemented). Use only with numpy.
 
     This function decomposes a controlled single-qubit target operation using the
-    decomposition defined in section 3.1 of
+    decomposition defined in section 3.1, Theorem 1 of
     `Vale et al. (2023) <https://arxiv.org/abs/2302.06377>`_.
 
     The target operation's matrix must have a real off-diagonal for this specialized method to work.
@@ -271,7 +271,7 @@ def _ctrl_decomp_bisect_md(
     Not backpropagation compatible (as currently implemented). Use only with numpy.
 
     This function decomposes a controlled single-qubit target operation using the
-    decomposition defined in section 3.1 of
+    decomposition defined in section 3.1, Theorem 2 of
     `Vale et al. (2023) <https://arxiv.org/abs/2302.06377>`_.
 
     The target operation's matrix must have a real main-diagonal for this specialized method to work.
