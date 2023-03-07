@@ -247,16 +247,16 @@ def _ctrl_decomp_bisect_od(
     a = _bisect_compute_a(u)
 
     mid = (len(control_wires) + 1) // 2  # for odd n, make lk bigger
-    lk = control_wires[:mid]
-    rk = control_wires[mid:]
+    lower_controls = control_wires[:mid]
+    upper_controls = control_wires[mid:]
 
-    op_mcx1 = qml.MultiControlledX(control_wires=lk, wires=target_wire, work_wires=rk)
-    op_mcx2 = qml.MultiControlledX(control_wires=rk, wires=target_wire, work_wires=lk)
-    op_a = qml.QubitUnitary(a, target_wire)
-    op_at = qml.QubitUnitary(_matrix_adjoint(a), target_wire)
+    def component():
+            return [ qml.MultiControlledX(wires=lk+target_wire, work_wires=rk),
+            qml.QubitUnitary(a, target_wire),
+            qml.MultiControlledX(wires=rk+target_wire, work_wires=lk), 
+            qml.QubitUnitary(_matrix_adjoint(a), target_wire)]
 
-    result = [op_mcx1, op_a, op_mcx2, op_at] * 2
-    return result
+    return component() + component()
 
 
 def _ctrl_decomp_bisect_md(
@@ -296,11 +296,11 @@ def _ctrl_decomp_bisect_md(
     sh = qml.Hadamard.compute_matrix()
     mod_u = sh @ u @ sh
 
-    op_h = qml.Hadamard(target_wire)
+    decomposition = [qml.Hadamard(target_wire)]
+    decomposition +=  _ctrl_decomp_bisect_od(mod_u, target_wire, control_wires)
+    decomposition.append(qml.Hadamard(target_wire)
 
-    inner = _ctrl_decomp_bisect_od(mod_u, target_wire, control_wires)
-    result = [op_h] + inner + [op_h]
-    return result
+    return decomposition
 
 
 def _ctrl_decomp_bisect_general(
@@ -327,9 +327,9 @@ def _ctrl_decomp_bisect_general(
     Returns:
         list[Operation]: the decomposed operations
     """
-    sx = qml.PauliX.compute_matrix()
-    sh = qml.Hadamard.compute_matrix()
-    sh_alt = sx @ sh @ sx
+    x_matrix = qml.PauliX.compute_matrix()
+    h_matrix = qml.Hadamard.compute_matrix()
+    alternate_h_matrix = x_matrix @ h_matrix @ x_matrix
 
     d, q = npl.eig(u)
     d = np.diag(d)
@@ -342,18 +342,20 @@ def _ctrl_decomp_bisect_general(
     lk = control_wires[:mid]
     rk = control_wires[mid:]
 
-    op_mcx1 = qml.MultiControlledX(control_wires=lk, wires=target_wire, work_wires=rk)
-    op_mcx2 = qml.MultiControlledX(control_wires=rk, wires=target_wire, work_wires=lk)
-    op_c1 = qml.QubitUnitary(c1, target_wire)
-    op_c1t = qml.QubitUnitary(_matrix_adjoint(c1), target_wire)
-    op_c2t = qml.QubitUnitary(c2t, target_wire)
-    op_c2 = qml.QubitUnitary(_matrix_adjoint(c2t), target_wire)
+    component = [qml.QubitUnitary(c2t, target_wire),
+                qml.MultiControlledX(wires=rk+target_wire, work_wires=lk),
+                qml.adjoint(qml.QubitUnitary(c1, target_wire)),
+                qml.MultiControlledX(wires=lk+target_wire, work_wires=rk)]
 
-    inner = _ctrl_decomp_bisect_od(d, target_wire, control_wires)
-    result = [op_c2t, op_mcx2, op_c1t, op_mcx1] + inner + [op_mcx1, op_c1, op_mcx2, op_c2]
-    # cancel out adjacent op_mcx1
-    result = result[:3] + result[5:]
-    return result
+    od_decomp = _ctrl_decomp_bisect_od(d, target_wire, control_wires)
+
+    # cancel two identical multicontrolled x gates
+    qml.QueuingManager.remove(component[3])
+    qml.QueuingManager.remove(od_decomp[0])
+
+    adjoint_component =  [qml.adjoint(copy(op), lazy=False) for op in reversed(component)]
+
+    return component[0:3] + od_decomp[1:] + adjoint_compoent
 
 
 def ctrl_decomp_bisect(
@@ -381,18 +383,12 @@ def ctrl_decomp_bisect(
         ValueError: if ``target_operation`` is not a single-qubit operation
 
     """
-    if isinstance(target_operation, Operator):
-        report_as = type(target_operation).__name__
-        target_operation = target_operation.matrix(), target_operation.wires
-    else:
-        report_as = f"anonymous operator with {target_operation[1]} wires"
-
-    u, target_wire = target_operation
-
-    if len(target_operation[1]) != 1:
-        raise ValueError(
-            "The target operation must be a single-qubit operation, instead " f"got {report_as}."
-        )
+if len(target_operation.wires) > 1:
+    raise ValueError(
+        "The target operation must be a single-qubit operation, instead " f"got {target_operation}."
+    )
+target_matrix = target_operation.matrix()
+target_wire = target_operation.wires
 
     u = _convert_to_su2(u)
     ui = np.imag(u)
