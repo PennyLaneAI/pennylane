@@ -330,9 +330,9 @@ def _ctrl_decomp_bisect_general(
     Returns:
         list[Operation]: the decomposed operations
     """
-    sx = qml.PauliX.compute_matrix()
-    sh = qml.Hadamard.compute_matrix()
-    sh_alt = sx @ sh @ sx
+    x_matrix = qml.PauliX.compute_matrix()
+    h_matrix = qml.Hadamard.compute_matrix()
+    alternate_h_matrix = x_matrix @ h_matrix @ x_matrix
 
     d, q = npl.eig(u)
     d = np.diag(d)
