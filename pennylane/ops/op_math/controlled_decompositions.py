@@ -15,6 +15,7 @@
 This submodule defines functions to decompose controlled operations
 """
 
+from copy import copy
 import typing
 import numpy as np
 import numpy.linalg as npl
@@ -23,13 +24,14 @@ from pennylane.operation import Operator
 from pennylane.wires import Wires
 from pennylane import math
 from pennylane.typing import TensorLike
+from pennylane.transforms.decompositions.single_qubit_unitary import _convert_to_su2 as _convert_to_su2_batched
 
 
 def _matrix_adjoint(matrix: np.ndarray):
     return math.transpose(math.conj(matrix))
 
 
-def _convert_to_su2(U, return_global_phase=False):
+def _convert_to_su2(U):
     r"""Convert a 2x2 unitary matrix to :math:`SU(2)`.
 
     Args:
@@ -44,12 +46,7 @@ def _convert_to_su2(U, return_global_phase=False):
         a 2-element tuple is returned, with the first element being the
         :math:`SU(2)` equivalent and the second, the global phase.
     """
-    # Compute the determinants
-    dets = math.linalg.det(U)
-
-    exp_angles = math.cast_like(math.angle(dets), 1j) / 2
-    U_SU2 = math.cast_like(U, dets) * math.exp(-1j * exp_angles)
-    return (U_SU2, exp_angles) if return_global_phase else U_SU2
+    return _convert_to_su2_batched([U])[0]
 
 
 def _convert_to_real_diagonal(q: TensorLike) -> TensorLike:

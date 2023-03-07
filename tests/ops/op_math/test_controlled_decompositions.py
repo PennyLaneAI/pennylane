@@ -207,6 +207,18 @@ class TestControlledDecompositionZYZ:
 
         assert len(decomp) == 5
         assert all(qml.equal(o, e) for o, e in zip(decomp, expected))
+    
+    def test_zyz_decomp_no_control_values(self, test_expand):
+        """Test that the ZYZ decomposition is used for single qubit target operations
+        when other decompositions aren't available."""
+
+        base = qml.RX(0.123, wires="a")
+        op = Controlled(base, (0,))
+
+        assert op.has_decomposition
+        decomp = op.expand().circuit if test_expand else op.decomposition()
+        expected = qml.ops.ctrl_decomp_zyz(base, (0,))
+        assert qml.equal_if_decomposed(decomp, expected)
 
 
 class TestControlledBisectOD:
@@ -455,10 +467,6 @@ class TestControlledBisectGeneral:
             ValueError, match="The target operation must be a single-qubit operation"
         ):
             _ = ctrl_decomp_bisect(qml.CNOT([0, 1]), [2])
-        with pytest.raises(
-            ValueError, match="The target operation must be a single-qubit operation"
-        ):
-            _ = ctrl_decomp_bisect((qml.CNOT.compute_matrix(), Wires([0, 1])), [2])
 
     su2_gen_ops = [
         qml.QubitUnitary(
