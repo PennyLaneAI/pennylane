@@ -40,6 +40,7 @@
   [(#3697)](https://github.com/PennyLaneAI/pennylane/pull/3697)
 
 * Made `qml.OrbitalRotation` and consequently `qml.GateFabric` consistent with the interleaved Jordan-Wigner ordering.
+  Previously, they were consistent with the sequential Jordan-Wigner ordering.
   [(#3861)](https://github.com/PennyLaneAI/pennylane/pull/3861)
 
 <h3>Deprecations</h3>
