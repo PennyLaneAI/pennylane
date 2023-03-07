@@ -299,11 +299,11 @@ def _ctrl_decomp_bisect_md(
     sh = qml.Hadamard.compute_matrix()
     mod_u = sh @ u @ sh
 
-    op_h = qml.Hadamard(target_wire)
+    decomposition = [qml.Hadamard(target_wire)]
+    decomposition +=  _ctrl_decomp_bisect_od(mod_u, target_wire, control_wires)
+    decomposition.append(qml.Hadamard(target_wire)
 
-    inner = _ctrl_decomp_bisect_od(mod_u, target_wire, control_wires)
-    result = [op_h] + inner + [op_h]
-    return result
+    return decomposition
 
 
 def _ctrl_decomp_bisect_general(
