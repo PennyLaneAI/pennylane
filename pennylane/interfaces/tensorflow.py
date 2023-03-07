@@ -76,10 +76,14 @@ def _to_tensors(x):
     Convert a nested tuple structure of arrays into a nested tuple
     structure of TF tensors
     """
-    if not isinstance(x, tuple):
-        return tf.convert_to_tensor(x)
+    if isinstance(x, dict) or isinstance(x, list) and all(isinstance(i, dict) for i in x):
+        # qml.counts returns a dict (list of dicts when broadcasted), can't form a valid tensor
+        return x
 
-    return tuple(_to_tensors(x_) for x_ in x)
+    if isinstance(x, tuple):
+        return tuple(_to_tensors(x_) for x_ in x)
+
+    return tf.convert_to_tensor(x)
 
 
 def _res_restructured(res, tapes, shots=None):
@@ -100,7 +104,7 @@ def _res_restructured(res, tapes, shots=None):
             shot_res_nested.append(shot_res[0] if num_meas == 1 else shot_res)
             start += num_meas
 
-        res_nested.append(shot_res_nested[0] if not shot_vector else tuple(shot_res_nested))
+        res_nested.append(tuple(shot_res_nested) if shot_vector else shot_res_nested[0])
 
     return tuple(res_nested)
 
@@ -193,6 +197,11 @@ def execute(tapes, device, execute_fn, gradient_fn, gradient_kwargs, _n=1, max_d
         # convert output to TensorFlow tensors
 
         if any(isinstance(m, CountsMP) for m in tape.measurements):
+            if tape.batch_size:
+                raise ValueError(
+                    "Broadcasted circuits with counts return types are only support with "
+                    "the new return system. Use qml.enable_return() to turn it on."
+                )
             continue
 
         if isinstance(res[i], np.ndarray):
@@ -275,7 +284,7 @@ def execute(tapes, device, execute_fn, gradient_fn, gradient_kwargs, _n=1, max_d
                     with qml.tape.Unwrap(*tapes, params=params_unwrapped):
                         vjps = _compute_vjp(dy, gradient_fn(tapes, **gradient_kwargs))
 
-            variables = tfkwargs.get("variables", None)
+            variables = tfkwargs.get("variables")
             return (vjps, variables) if variables is not None else vjps
 
         return res, grad_fn
@@ -331,10 +340,8 @@ def _execute_new(tapes, device, execute_fn, gradient_fn, gradient_kwargs, _n=1, 
         res, jacs = execute_fn(tapes, **gradient_kwargs)
 
     for i, r in enumerate(res):
-        # skip in the case of counts
-        if not isinstance(r, dict):
-            # convert output to TensorFlow tensors
-            res[i] = _to_tensors(r)
+        # convert output to TensorFlow tensors
+        res[i] = _to_tensors(r)
 
     @tf.custom_gradient
     def _execute(*parameters):  # pylint:disable=unused-argument
@@ -415,7 +422,7 @@ def _execute_new(tapes, device, execute_fn, gradient_fn, gradient_kwargs, _n=1, 
             # filter out untrainable parameters if they happen to appear in the vjp
             vjps = [vjp for vjp in vjps if 0 not in qml.math.shape(vjp)]
 
-            variables = tfkwargs.get("variables", None)
+            variables = tfkwargs.get("variables")
             return (vjps, variables) if variables is not None else vjps
 
         return res, grad_fn
