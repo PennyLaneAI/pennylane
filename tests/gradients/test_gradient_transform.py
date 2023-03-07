@@ -642,7 +642,7 @@ class TestInterfaceIntegration:
 
         x_ = -0.654
         x = torch.tensor(x_, dtype=torch.float64, requires_grad=True)
-        res = circuit(x)[0]
+        res = circuit(x)
 
         expected = -2 * np.cos(x_) * np.sin(x_)
         assert np.allclose(res.detach(), expected, atol=tol, rtol=0)
