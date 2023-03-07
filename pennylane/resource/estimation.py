@@ -60,6 +60,16 @@ class CustomOperation(qml.DoubleExcitation):
         return resource
 
 
+class DoubleFactorization(qml.resource.DoubleFactorization):
+    def resources(self):
+        resource = Resource()
+        resource.num_wires = len(self.wires)
+        resource.num_gates = self.gates
+        resource.gate_types = {"T": resource.num_gates}
+        resource.depth = resource.num_gates
+        return resource
+
+
 def estimate_resources_tape(tape):
     r"""Return resource estimation for a quantum tape.
 
@@ -197,6 +207,55 @@ def estimate_resources_qnode(qnode):
                     resource.gate_types[d] += op_resource.gate_types[d]
                 # num_gates
                 resource.num_gates += sum(op_resource.gate_types.values())
+
+        return resource
+
+    return _estimate
+
+
+def estimate_resources_op(op):
+    r"""Return resource estimation for a custom operation.
+
+    Args:
+        op (Operation): custom operation
+
+    Returns:
+        qml.resource.Resource: resource information
+
+    .. details::
+        :title: Usage Details
+
+        The followng example shows estimating resource for the DoubleFactorization custom operation:
+
+        .. code-block:: python3
+
+            symbols  = ['O', 'H', 'H']
+            geometry = np.array([[0.00000000,  0.00000000,  0.28377432],
+                                 [0.00000000,  1.45278171, -1.00662237],
+                                 [0.00000000, -1.45278171, -1.00662237]], requires_grad = False)
+            mol = qml.qchem.Molecule(symbols, geometry, basis_name='sto-3g')
+            core, one, two = qml.qchem.electron_integrals(mol)()
+            op = DoubleFactorization(one, two)
+
+        >>> resources = estimate_resources_tape(tape)()
+        >>> print(resources)
+        wires: 290
+        gates: 103969925
+        depth: 0
+        shots: 0
+        gate_types:
+        {'T': 103969925}
+    """
+
+    def _estimate():
+        resource = Resource()
+        op_resource = op.resources()
+        resource.num_wires = op.resources().num_wires
+        # gate_types
+        for d in op_resource.gate_types:
+            resource.gate_types[d] += op_resource.gate_types[d]
+        # num_gates
+        resource.num_gates += sum(op_resource.gate_types.values())
 
         return resource
 
