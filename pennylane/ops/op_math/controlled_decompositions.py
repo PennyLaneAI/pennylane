@@ -250,8 +250,8 @@ def _ctrl_decomp_bisect_od(
     a = _bisect_compute_a(u)
 
     mid = (len(control_wires) + 1) // 2  # for odd n, make lk bigger
-    lk = control_wires[:mid]
-    rk = control_wires[mid:]
+    lower_controls = control_wires[:mid]
+    upper_controls = control_wires[mid:]
 
     def component():
             return [ qml.MultiControlledX(wires=lk+target_wire, work_wires=rk),
