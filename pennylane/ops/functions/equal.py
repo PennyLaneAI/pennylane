@@ -313,7 +313,9 @@ def _equal_parametrized_evolution(op1: ParametrizedEvolution, op2: ParametrizedE
     if not _equal_operators(op1, op2, **kwargs):
         return False
 
-    # ToDo: check op1.H.coeffs matches op2.H.coeffs
+    # check H.coeffs match
+    if not all(c1 == c2 for c1, c2 in zip(op1.H.coeffs, op2.H.coeffs)):
+        return False
 
     # check that all the base operators on op1.H and op2.H match
     return all(equal(o1, o2, **kwargs) for o1, o2 in zip(op1.H.ops, op2.H.ops))
