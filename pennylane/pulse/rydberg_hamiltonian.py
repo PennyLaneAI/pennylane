@@ -43,6 +43,12 @@ def rydberg_interaction(register: list, wires=None, interaction_coeff: float = 8
 
     where :math:`R_{ij}` is the distance between the atoms :math:`i` and :math:`j`, and :math:`C_6`
     is the Rydberg interaction constant, which defaults to :math:`862690 \times 2\pi MHz \times \mu m^6`.
+    This interaction term can be combined with a laser drive term to create a Hamiltonian describing a driven
+    Rydberg atom system.
+
+    .. seealso::
+
+        :func:`~.rydberg_drive`
 
     Args:
         register (list): list of coordinates of the Rydberg atoms (in micrometers)
@@ -57,14 +63,16 @@ def rydberg_interaction(register: list, wires=None, interaction_coeff: float = 8
 
     **Example**
 
+    We create a Hamiltonian describing the interaction among 6 Rydberg atoms due to the Rydberg blockade:
+
     .. code-block:: python
 
         atom_coordinates = [[0, 0], [0, 5], [5, 0], [10, 5], [5, 10], [10, 10]]
         wires = [1, 5, 0, 2, 4, 3]
-        RH = qml.pulse.rydberg_interaction(atom_coordinates, wires=wires)
+        H_i = qml.pulse.rydberg_interaction(atom_coordinates, wires=wires)
 
-    >>> RH
-    ParametrizedHamiltonian: terms=3
+    >>> H_i
+    ParametrizedHamiltonian: terms=15
 
     .. code-block:: python
 
@@ -72,13 +80,14 @@ def rydberg_interaction(register: list, wires=None, interaction_coeff: float = 8
 
         @qml.qnode(dev, interface="jax")
         def circuit():
-            # Since the Hamiltonian is dependent only on the number and positions of Rydberg atoms, the evolution
-            # does not have any trainable parameters
-            qml.evolve(RH)([], t=[0, 10])
+            qml.evolve(H_i)([], t=[0, 10])
             return qml.expval(qml.PauliZ(0))
 
     >>> circuit()
     Array(1., dtype=float32)
+
+    Since the Hamiltonian is dependent only on the number and positions of Rydberg atoms, the evolution
+    does not have any trainable parameters
     """
     if wires is None:
         wires = list(range(len(register)))
@@ -110,7 +119,7 @@ def rydberg_interaction(register: list, wires=None, interaction_coeff: float = 8
     )
 
 
-def rydberg_drive(rabi, detuning, phase, wires):
+def rydberg_drive(amplitude, detuning, phase, wires):
     r"""Returns a :class:`ParametrizedHamiltonian` representing the action of a driving laser
     field with the given rabi frequency, detuning and phase acting on the given wires
 
@@ -121,31 +130,46 @@ def rydberg_drive(rabi, detuning, phase, wires):
 
     where :math:`\Omega`, :math:`\delta` and :math:`\phi` correspond to the rabi frequency, detuning
     and phase of the laser, :math:`i` correspond to the wire index, and :math:`\sigma^\alpha` for
-    :math:`\alpha = x,y,z` are the Pauli matrices.
+    :math:`\alpha = x,y,z` are the Pauli matrices. This driving term can be combined with an interaction
+    term to create a Hamiltonian describing a driven Rydberg atom system.
 
     Args:
-        rabi (Union[float, Callable]): float or callable returning the frequency (in MHz) of a laser
-            field
+        amplitude (Union[float, Callable]): float or callable returning the amplitude (in MHz) of a
+            laser field
         detuning (Union[float, Callable]): float or callable returning the detuning (in MHz) of a
             laser field
         phase (float): float containing the phase (in radians) of the laser field
-        wires (Union[int, List[int]]): integer or list containing wire values that the laser field
-            acts on
+        wires (Union[int, List[int]]): integer or list containing wire values for the Rydberg atoms that
+            the laser field acts on
 
     Returns:
-        RydbergHamiltonian: Hamiltonian representing the action of the laser field on the Rydberg atoms
+        RydbergHamiltonian: a :class:`~.ParametrizedHamiltonian` representing the action of the laser field
+        on the Rydberg atoms.
+
+    .. seealso::
+
+        :func:`~.rydberg_interaction`, :class:`~.ParametrizedHamiltonian`, :class:`~.ParametrizedEvolution`
+        and :func:`~.evolve`
 
     **Example**
 
+    We create a Hamiltonian describing a laser acting on 4 wires (Rydberg atoms) with a fixed detuning and
+    phase, and a parametrized, time-dependent amplitude. Note that this Hamiltonian by itself is unphysical,
+    as a real system would also include a term for the interactions among the atoms due to the Rydberg blockade:
+
     .. code-block:: python
 
-        rabi = lambda p, t: p * jnp.sin(jnp.pi * t)
+        amplitude = lambda p, t: p * jnp.sin(jnp.pi * t)
         detuning = 3 * jnp.pi / 4
         phase = jnp.pi / 2
-        RH = qml.pulse.rydberg_drive(rabi, detuning, phase, [0, 1, 2, 3])
+        wires = [0, 1, 2, 3]
+        H_d = qml.pulse.rydberg_drive(amplitude, detuning, phase, wires)
 
-    >>> RH
+    >>> H_d
     ParametrizedHamiltonian: terms=2
+
+    The ``ParametrizedHamiltonian`` has only two terms because it is simplified such that each term
+    represents one of the summations in the Hamiltonian shown above.
 
     .. code-block:: python
 
@@ -153,30 +177,30 @@ def rydberg_drive(rabi, detuning, phase, wires):
 
         @qml.qnode(dev, interface="jax")
         def circuit(params):
-            qml.evolve(RH)(params, t=[0, 10])
+            qml.evolve(H_d)(params, t=[0, 10])
             return qml.expval(qml.PauliZ(0))
 
     >>> params = [2.4]
     >>> circuit(params)
-    Array(0.8614685, dtype=float32)
+    Array(0.8614427, dtype=float32)
 
     >>> jax.grad(circuit)(params)
-    [Array(2.0483875, dtype=float32)]
+    [Array(2.0483658, dtype=float32)]
     """
     if isinstance(wires, int):
         wires = [wires]
 
     # We compute the `coeffs` and `observables` of the laser field
-    coeffs = [rabi, detuning]
-    rabi_observable = sum(
+    coeffs = [amplitude, detuning]
+    amplitude_observable = sum(
         qml.math.cos(phase) * qml.PauliX(wire) - qml.math.sin(phase) * qml.PauliY(wire)
         for wire in wires
     )
     detuning_observable = sum(qml.PauliZ(wire) for wire in wires)
-    observables = [rabi_observable, detuning_observable]
+    observables = [amplitude_observable, detuning_observable]
 
     # We convert the pulse data into a list of ``RydbergPulse`` objects
-    pulses = [RydbergPulse(rabi, detuning, phase, wires)]
+    pulses = [RydbergPulse(amplitude, detuning, phase, wires)]
     return RydbergHamiltonian(coeffs, observables, pulses=pulses)
 
 
@@ -263,7 +287,7 @@ class RydbergPulse:
     internally in PL to group into a single object all the data related to a single laser field.
 
     Args:
-        rabi (Union[float, Callable]): float or callable returning the frequency (in MHz) of a laser
+        amplitude (Union[float, Callable]): float or callable returning the amplitude (in MHz) of a laser
             field
         detuning (Union[float, Callable]): float or callable returning the detuning (in MHz) of a
             laser field
@@ -272,7 +296,7 @@ class RydbergPulse:
             acts on
     """
 
-    rabi: Union[float, Callable]
+    amplitude: Union[float, Callable]
     detuning: Union[float, Callable]
     phase: float
     wires: List[Wires]
@@ -282,7 +306,7 @@ class RydbergPulse:
 
     def __eq__(self, other):
         return (
-            self.rabi == other.rabi
+            self.amplitude == other.amplitude
             and self.phase == other.phase
             and self.detuning == other.detuning
             and self.wires == other.wires
