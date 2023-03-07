@@ -580,28 +580,31 @@ class TestUnitaryLabels:
 
 class TestBlockEncode:
     @pytest.mark.parametrize(
-        ("input_matrix", "wires"),
+        ("input_matrix", "wires", "expected_hyperparameters"),
         [
-            (1, 1),
-            ([1], 1),
-            ([[1]], 1),
-            (np.array(1), [1]),
-            (np.array([1]), 1),
-            (np.array([[1]]), 1),
-            ([[1, 0], [0, 1]], [0, 1]),
-            (np.array([[1, 0], [0, 1]]), range(2)),
-            (np.identity(3), ["a", "b", "c"]),
+            (1, 1, {'norm': 1, 'subspace': (1, 1, 2)}),
+            ([1], 1, {'norm': 1, 'subspace': (1, 1, 2)}),
+            ([[1]], 1, {'norm': 1, 'subspace': (1, 1, 2)}),
+            (pnp.array(1), [1], {'norm': 1, 'subspace': (1, 1, 2)}),
+            (pnp.array([1]), 1, {'norm': 1, 'subspace': (1, 1, 2)}),
+            (pnp.array([[1]]), 1, {'norm': 1, 'subspace': (1, 1, 2)}),
+            ([[1, 0], [0, 1]], [0, 1], {'norm': 1.0, 'subspace': (2, 2, 4)}),
+            (pnp.array([[1, 0], [0, 1]]), range(2), {'norm': 1.0, 'subspace': (2, 2, 4)}),
+            (pnp.identity(3), ["a", "b", "c"], {'norm': 1.0, 'subspace': (3, 3, 8)})
         ],
     )
-    def test_accepts_various_types(self, input_matrix, wires):
-        qml.BlockEncode(input_matrix, wires)
+    def test_accepts_various_types(self, input_matrix, wires, expected_hyperparameters):
+        op = qml.BlockEncode(input_matrix, wires)
+        assert np.allclose(op.parameters, input_matrix)
+        assert op.hyperparameters['norm'] == expected_hyperparameters['norm']
+        assert op.hyperparameters['subspace'] == expected_hyperparameters['subspace']
 
     @pytest.mark.parametrize(
         ("input_matrix", "wires"),
         [(1, 1), (1, 2), (1, [1]), (1, range(2)), (np.identity(2), ["a", "b"])],
     )
     def test_varied_wires(self, input_matrix, wires):
-        qml.BlockEncode(input_matrix, wires)
+        assert qml.BlockEncode(input_matrix, wires).wires == Wires(wires)
 
     @pytest.mark.parametrize(
         ("input_matrix", "wires", "msg"),
@@ -614,7 +617,7 @@ class TestBlockEncode:
             ),
         ],
     )
-    def test_correct_error_message(self, input_matrix, wires, msg):
+    def test_error_raised_invalid_hilbert_space(self, input_matrix, wires, msg):
         with pytest.raises(ValueError, match=msg):
             qml.BlockEncode(input_matrix, wires)
 
@@ -659,18 +662,54 @@ class TestBlockEncode:
         mat = qml.matrix(qml.BlockEncode(input_matrix, wires))
         assert np.allclose(np.eye(len(mat)), mat.dot(mat.T.conj()))
 
+    # def test_blockencode_tf(self):
+    #     """Test that the BlockEncode operator matrix is correct for tf."""
+    # def test_blockencode_torch(self):
+    #     """Test that the BlockEncode operator matrix is correct for torch."""
+
+    @pytest.mark.jax
     @pytest.mark.parametrize(
-        ("device_type", "wires", "input_matrix"),
+        ("input_matrix", "wires", "output_matrix"),
         [
-            ("default.qubit", range(1), pnp.array(0.3)),
-            ("default.qubit", range(2), pnp.diag([0.1, 0.2])),
-            ("default.qubit.autograd", range(1), pnp.array(0.5)),
-            ("default.qubit.autograd", range(2), pnp.diag([0.2, 0.3])),
-            ("default.qubit.tf", range(1), pnp.array(0.4)),
-            ("default.qubit.tf", range(2), pnp.diag([0.3, 0.5])),
+            (1, 0, [[1, 0], [0, -1]]),
+            (0.3, 0, [[0.3, 0.9539392], [0.9539392, -0.3]]),
+            (
+                [[0.1, 0.2], [0.3, 0.4]],
+                range(2),
+                [
+                    [0.1, 0.2, 0.97283788, -0.05988708],
+                    [0.3, 0.4, -0.05988708, 0.86395228],
+                    [0.94561648, -0.07621992, -0.1, -0.3],
+                    [-0.07621992, 0.89117368, -0.2, -0.4],
+                ],
+            ),
+            (
+                0.1,
+                range(2),
+                [[0.1, 0.99498744, 0, 0], [0.99498744, -0.1, 0, 0], [0, 0, 1, 0], [0, 0, 0, 1]],
+            ),
         ],
     )
-    def test_differentiability(self, device_type, wires, input_matrix):
+    def test_blockencode_jax(self, input_matrix, wires, output_matrix):
+        """Test that the BlockEncode operator matrix is correct for jax."""
+        import jax.numpy as jnp
+        input_matrix = jnp.array(input_matrix)
+        assert np.allclose(qml.matrix(qml.BlockEncode)(input_matrix, wires), output_matrix)
+
+    
+
+    @pytest.mark.parametrize(
+        ("device_type", "wires", "input_matrix", "expected_result"), #expected_results calculated manually
+        [
+            ("default.qubit", range(1), pnp.array(0.3), 4*0.3),
+            ("default.qubit", range(2), pnp.diag([0.2, 0.3]), 4*pnp.diag([0.2,0])),
+            ("default.qubit.autograd", range(1), pnp.array(0.3), 4*0.3),
+            ("default.qubit.autograd", range(2), pnp.diag([0.2, 0.3]), 4*pnp.diag([0.2,0])),
+            ("default.qubit.tf", range(1), pnp.array(0.3), 4*0.3),
+            ("default.qubit.tf", range(2), pnp.diag([0.2, 0.3]), 4*pnp.diag([0.2,0])),
+        ],
+    )
+    def test_blockencode_grad(self, device_type, wires, input_matrix, expected_result):
         if device_type == "default.qubit.tf":
             import tensorflow as tf
 
@@ -683,7 +722,23 @@ class TestBlockEncode:
             qml.BlockEncode(input_matrix, wires=wires)
             return qml.expval(qml.PauliZ(wires=0))
 
-        qml.grad(circuit)(input_matrix)
+        assert np.allclose(qml.grad(circuit)(input_matrix),expected_result)
+
+    @pytest.mark.parametrize("dev_name,diffmethod,phi", configuration)
+    def test_blockencode_tf(self, device_type, wires, input_matrix, expected_result):
+        if device_type == "default.qubit.tf":
+            import tensorflow as tf
+
+            input_matrix = tf.Variable(input_matrix)
+
+        dev = qml.device(device_type, wires=wires)
+
+        @qml.qnode(dev)
+        def circuit(input_matrix):
+            qml.BlockEncode(input_matrix, wires=wires)
+            return qml.expval(qml.PauliZ(wires=0))
+
+        assert np.allclose(qml.grad(circuit)(input_matrix),expected_result)
 
 
 class TestInterfaceMatricesLabel:

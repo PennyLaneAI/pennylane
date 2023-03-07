@@ -378,27 +378,38 @@ class BlockEncode(Operation):
     ...     return qml.state()
     >>> print(qml.matrix(example_circuit)())
     [[ 0.1         0.2         0.97283788 -0.05988708]
-    [ 0.3         0.4        -0.05988708  0.86395228]
-    [ 0.94561648 -0.07621992 -0.1        -0.3       ]
-    [-0.07621992  0.89117368 -0.2        -0.4       ]]
+     [ 0.3         0.4        -0.05988708  0.86395228]
+     [ 0.94561648 -0.07621992 -0.1        -0.3       ]
+     [-0.07621992  0.89117368 -0.2        -0.4       ]]
+    >>> A = [[0.2, 0, 0.2],[-0.2, 0.2, 0]]
+    >>> op = qml.BlockEncode(A, wires=range(3))
+    >>> print(np.round(qml.matrix(op), 2))
+    [[ 0.2   0.    0.2   0.96  0.02  0.    0.    0.  ]
+     [-0.2   0.2   0.    0.02  0.96  0.    0.    0.  ]
+     [ 0.96  0.02 -0.02 -0.2   0.2   0.    0.    0.  ]
+     [ 0.02  0.98  0.   -0.   -0.2   0.    0.    0.  ]
+     [-0.02  0.    0.98 -0.2  -0.    0.    0.    0.  ]
+     [ 0.    0.    0.    0.    0.    1.    0.    0.  ]
+     [ 0.    0.    0.    0.    0.    0.    1.    0.  ]
+     [ 0.    0.    0.    0.    0.    0.    0.    1.  ]]
     """
 
     num_params = 1
     num_wires = AnyWires
 
-    def __init__(self, a, wires, do_queue=True, id=None):
-        a = pnp.atleast_2d(a)
+    def __init__(self, A, wires, do_queue=True, id=None):
+        A = pnp.atleast_2d(A)
         wires = Wires(wires)
-        if pnp.sum(a.shape) <= 2:
-            normalization = a if a > 1 else 1
+        if pnp.sum(A.shape) <= 2:
+            normalization = A if A > 1 else 1
             subspace = (1, 1, 2 ** len(wires))
         else:
             normalization = pnp.max(
-                [norm(a @ pnp.conj(a).T, ord=pnp.inf), norm(pnp.conj(a).T @ a, ord=pnp.inf)]
+                [norm(A @ pnp.conj(A).T, ord=pnp.inf), norm(pnp.conj(A).T @ A, ord=pnp.inf)]
             )
-            subspace = (*a.shape, 2 ** len(wires))
+            subspace = (*A.shape, 2 ** len(wires))
 
-        a = a / normalization if normalization > 1 else a
+        A = A / normalization if normalization > 1 else A
 
         if subspace[2] < (subspace[0] + subspace[1]):
             raise ValueError(
@@ -408,7 +419,7 @@ class BlockEncode(Operation):
                 f" Cannot be embedded in a {len(wires)} qubit system."
             )
 
-        super().__init__(a, wires=wires, do_queue=do_queue, id=id)
+        super().__init__(A, wires=wires, do_queue=do_queue, id=id)
         self.hyperparameters["norm"] = normalization
         self.hyperparameters["subspace"] = subspace
 
@@ -431,29 +442,31 @@ class BlockEncode(Operation):
 
         **Example**
 
-        >>> a = np.array([[0.1,0.2],[0.3,0.4]])
-        >>> a
+        >>> A = np.array([[0.1,0.2],[0.3,0.4]])
+        >>> A
         tensor([[0.1, 0.2],
                 [0.3, 0.4]])
-        >>> qml.BlockEncode.compute_matrix(a,subspace=[2,2,4])
+        >>> qml.BlockEncode.compute_matrix(A, subspace=[2,2,4])
         array([[ 0.1       ,  0.2       ,  0.97283788, -0.05988708],
                [ 0.3       ,  0.4       , -0.05988708,  0.86395228],
                [ 0.94561648, -0.07621992, -0.1       , -0.3       ],
                [-0.07621992,  0.89117368, -0.2       , -0.4       ]])
         """
-        a = params[0]
+        A = params[0]
         n, m, k = hyperparams["subspace"]
 
-        if qml.math.sum(qml.math.shape(a)) <= 2:
-            col1 = qml.math.vstack([a, pnp.sqrt(1 - a * pnp.conj(a))])
-            col2 = qml.math.vstack([pnp.sqrt(1 - a * pnp.conj(a)), -pnp.conj(a)])
+        # if qml.math.get_interface(a) ==
+
+        if qml.math.sum(qml.math.shape(A)) <= 2:
+            col1 = qml.math.vstack([A, pnp.sqrt(1 - A * pnp.conj(A))])
+            col2 = qml.math.vstack([pnp.sqrt(1 - A * pnp.conj(A)), -pnp.conj(A)])
             u = qml.math.hstack([col1, col2])
         else:
-            d1, d2 = qml.math.shape(a)
+            d1, d2 = qml.math.shape(A)
 
-            col1 = qml.math.vstack([a, qml.math.sqrt_matrix(pnp.eye(d2) - pnp.conj(a).T @ a)])
+            col1 = qml.math.vstack([A, qml.math.sqrt_matrix(pnp.eye(d2) - pnp.conj(A).T @ A)])
             col2 = qml.math.vstack(
-                [qml.math.sqrt_matrix(pnp.eye(d1) - a @ pnp.conj(a).T), -pnp.conj(a).T]
+                [qml.math.sqrt_matrix(pnp.eye(d1) - A @ pnp.conj(A).T), -pnp.conj(A).T]
             )
 
             u = qml.math.hstack([col1, col2])
