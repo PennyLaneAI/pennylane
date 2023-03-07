@@ -25,6 +25,9 @@
 * `AdaptiveOptimizer` is updated to use non-default user-defined qnode arguments.
   [(#3765)](https://github.com/PennyLaneAI/pennylane/pull/3765)
 
+* `pennylane.devices.qubit.preprocess` now allows circuits with non-commuting observables.
+  [(#3857)](https://github.com/PennyLaneAI/pennylane/pull/3857)
+
 * When using Jax-jit with gradient transforms the trainable parameters are correctly set (instead of every parameter 
   to be set as trainable), and therefore the derivatives are computed more efficiently.
   [(#3697)](https://github.com/PennyLaneAI/pennylane/pull/3697)
