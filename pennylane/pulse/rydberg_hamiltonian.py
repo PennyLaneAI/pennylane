@@ -205,7 +205,7 @@ def rydberg_drive(amplitude, detuning, phase, wires):
 
 
 class RydbergHamiltonian(ParametrizedHamiltonian):
-    r"""Internal class used to keep track of the needed information to translate a `RydbergHamiltonian`
+    r"""Internal class used to keep track of the required information to translate a ``ParametrizedHamiltonian``
     into hardware.
 
     This class contains the ``coeffs`` and the ``observables`` that represent one or more
