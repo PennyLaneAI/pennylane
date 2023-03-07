@@ -455,6 +455,10 @@ class TestControlledBisectGeneral:
             ValueError, match="The target operation must be a single-qubit operation"
         ):
             _ = ctrl_decomp_bisect(qml.CNOT([0, 1]), [2])
+        with pytest.raises(
+            ValueError, match="The target operation must be a single-qubit operation"
+        ):
+            _ = ctrl_decomp_bisect((qml.CNOT.compute_matrix(), Wires([0, 1])), [2])
 
     su2_gen_ops = [
         qml.QubitUnitary(
