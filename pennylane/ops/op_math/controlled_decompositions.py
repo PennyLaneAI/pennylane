@@ -384,18 +384,12 @@ def ctrl_decomp_bisect(
         ValueError: if ``target_operation`` is not a single-qubit operation
 
     """
-    if isinstance(target_operation, Operator):
-        report_as = type(target_operation).__name__
-        target_operation = target_operation.matrix(), target_operation.wires
-    else:
-        report_as = f"anonymous operator with {target_operation[1]} wires"
-
-    u, target_wire = target_operation
-
-    if len(target_operation[1]) != 1:
-        raise ValueError(
-            "The target operation must be a single-qubit operation, instead " f"got {report_as}."
-        )
+if len(target_operation.wires) > 1:
+    raise ValueError(
+        "The target operation must be a single-qubit operation, instead " f"got {target_operation}."
+    )
+target_matrix = target_operation.matrix()
+target_wire = target_operation.wires
 
     u = _convert_to_su2(u)
     ui = np.imag(u)
