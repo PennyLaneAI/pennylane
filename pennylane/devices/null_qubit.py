@@ -76,6 +76,7 @@ class NullQubit(QubitDevice):
         "CCZ",
         "CH",
         "PhaseShift",
+        "PCPhase",
         "ControlledPhaseShift",
         "CPhase",
         "RX",

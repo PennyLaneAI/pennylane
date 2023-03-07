@@ -58,6 +58,7 @@ ops = {
     "PauliY": qml.PauliY(wires=[0]),
     "PauliZ": qml.PauliZ(wires=[0]),
     "PhaseShift": qml.PhaseShift(0, wires=[0]),
+    "PCPhase": qml.PCPhase(0, 1, wires=[0, 1]),
     "ControlledPhaseShift": qml.ControlledPhaseShift(0, wires=[0, 1]),
     "CPhaseShift00": qml.CPhaseShift00(0, wires=[0, 1]),
     "CPhaseShift01": qml.CPhaseShift01(0, wires=[0, 1]),

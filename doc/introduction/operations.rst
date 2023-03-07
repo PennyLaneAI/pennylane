@@ -195,6 +195,7 @@ Parametrized gates
     ~pennylane.PhaseShift
     ~pennylane.ControlledPhaseShift
     ~pennylane.CPhase
+    ~pennylane.PCPhase
     ~pennylane.CPhaseShift00
     ~pennylane.CPhaseShift01
     ~pennylane.CPhaseShift10
