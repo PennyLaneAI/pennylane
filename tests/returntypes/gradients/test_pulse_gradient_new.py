@@ -24,12 +24,12 @@ import pennylane as qml
 from pennylane.gradients.pulse_gradient import split_evol_ops, split_evol_tapes, stoch_pulse_grad
 from pennylane.pulse import ParametrizedEvolution
 
+pytestmark = pytest.mark.jax
+
 ham_single_q_fixed = 0.4 * qml.PauliX(0)
 ham_single_q_const = qml.pulse.constant * qml.PauliY(0)
 ham_single_q_pwc = qml.pulse.pwc((2.0, 4.0)) * qml.PauliZ(0)
 ham_two_q_pwc = qml.pulse.pwc((2.0, 4.0)) * (qml.PauliZ(0) @ qml.PauliX(1))
-
-pytestmark = pytest.mark.jax
 
 
 def equal(op1, op2, check_t=True):
