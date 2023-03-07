@@ -464,6 +464,13 @@ class TestOperatorConstruction:
         assert MyOp.has_generator is True
         assert MyOp(wires=0).has_generator is True
 
+    def test_has_generator_true_concrete_op(self):
+        """Test has_generator with a concrete operation (RZ)
+        that does have a generator defined."""
+
+        op = qml.RZ(0.3, 0)
+        assert op.has_generator is True
+
     def test_has_generator_false(self):
         """Test `has_generator` property defaults to false if `generator` not overwritten."""
 
@@ -473,7 +480,7 @@ class TestOperatorConstruction:
         assert MyOp.has_generator is False
         assert MyOp(wires=0).has_generator is False
 
-    def test_has_generator_false_concrete_template(self):
+    def test_has_generator_false_concrete_op(self):
         """Test has_generator with a concrete operation (Rot)
         that does not have a generator defined."""
 
