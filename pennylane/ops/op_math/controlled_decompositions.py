@@ -16,7 +16,6 @@ This submodule defines functions to decompose controlled operations
 """
 
 from copy import copy
-import typing
 import numpy as np
 import numpy.linalg as npl
 import pennylane as qml
@@ -404,7 +403,7 @@ def ctrl_decomp_bisect(
     if np.isclose(target_matrix_imag[1, 0], 0) and np.isclose(target_matrix_imag[0, 1], 0):
         # Real off-diagonal specialized algorithm - 16n+O(1) CNOTs
         return _ctrl_decomp_bisect_od(target_matrix, target_wire, control_wires)
-    elif np.isclose(target_matrix_imag[0, 0], 0) and np.isclose(target_matrix_imag[1, 1], 0):
+    if np.isclose(target_matrix_imag[0, 0], 0) and np.isclose(target_matrix_imag[1, 1], 0):
         # Real main-diagonal specialized algorithm - 16n+O(1) CNOTs
         return _ctrl_decomp_bisect_md(target_matrix, target_wire, control_wires)
     # General algorithm - 20n+O(1) CNOTs
