@@ -757,11 +757,13 @@ class TestDecompositions:
 
         assert np.allclose(decomposed_matrix, op.matrix(), atol=tol, rtol=0)
 
-    def test_pc_phase_decomposition(self):
+    @pytest.mark.parametrize(
+        "op", (qml.PCPhase(1.23, dim=1, wires=[0]), qml.PCPhase(1.23, dim=5, wires=[0, 1, 2]))
+    )
+    def test_pc_phase_decomposition(self, op):
         """Test that the PCPhase decomposition produces the same unitary"""
-        op = qml.PCPhase(1.23, dim=5, wires=[0, 1, 2])
         decomp_ops = op.decomposition()
-        decomp_op = qml.prod(*decomp_ops) if len(decomp_ops) >= 1 else decomp_ops[0]
+        decomp_op = qml.prod(*decomp_ops) if len(decomp_ops) > 1 else decomp_ops[0]
 
         expected_mat = qml.matrix(op)
         decomp_mat = qml.matrix(decomp_op)
