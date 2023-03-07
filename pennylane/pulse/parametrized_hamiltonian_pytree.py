@@ -23,7 +23,7 @@ from jax.tree_util import register_pytree_node_class
 import pennylane as qml
 
 from .parametrized_hamiltonian import ParametrizedHamiltonian
-from .rydberg_hamiltonian import RydbergHamiltonian
+from .rydberg_hamiltonian import RydbergHamiltonian, _rydberg_reorder_parameters
 
 
 @register_pytree_node_class
@@ -107,39 +107,6 @@ class ParametrizedHamiltonianPytree:
             JaxParametrizedOperator: a JaxParametrizedOperator instance
         """
         return cls(*matrices, param_coeffs)
-
-
-def _rydberg_reorder_parameters(params, coeffs_parametrized):
-    """Takes `params`, and reorganizes it based on whether the Hamiltonian has
-    callable phase and/or callable amplitude.
-
-    Consolidates phase and amplitude parameters in the case that both are callable,
-    and duplicates phase and/or amplitude parameters if either are callables, since
-    they will be passed to two operators in the Hamiltonian"""
-
-    reordered_params = []
-
-    coeff_idx = 0
-    params_idx = 0
-
-    for i, coeff in enumerate(coeffs_parametrized):
-        if i == coeff_idx:
-            if coeff.__name__ == "callable_amp_and_phase":
-                reordered_params.append([params[params_idx], params[params_idx + 1]])
-                reordered_params.append([params[params_idx], params[params_idx + 1]])
-                coeff_idx += 2
-                params_idx += 2
-            elif coeff.__name__ in ["callable_amp", "callable_phase"]:
-                reordered_params.append(params[params_idx])
-                reordered_params.append(params[params_idx])
-                coeff_idx += 2
-                params_idx += 1
-            else:
-                reordered_params.append(params[params_idx])
-                coeff_idx += 1
-                params_idx += 1
-
-    return reordered_params
 
 
 @register_pytree_node_class
