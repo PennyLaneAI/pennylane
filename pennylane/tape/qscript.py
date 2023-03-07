@@ -1195,6 +1195,60 @@ class QuantumScript:
 
         return self._specs
 
+    @property
+    def specs_resource(self):
+        """Modified resource information about a quantum circuit.
+
+        This modified version returns a Resource object in addition to the standard information.
+
+        Returns:
+            dict[str, Union[defaultdict,int]]: dictionaries that contain quantum script specifications
+
+        **Example**
+
+        >>> prep = [qml.BasisState(np.array([1,1]), wires=(0,"a"))]
+        >>> ops = [qml.DoubleExcitation(0.1, wires=[0, 1, 2, 3])]
+        >>> qscript = QuantumScript(ops, [qml.expval(qml.PauliZ(0))], prep)
+
+        Asking for the specs produces a dictionary as shown below:
+
+        >>> qscript.specs_resource["resource"]
+        wires: 5
+        gates: 29
+        depth: 0
+        shots: 0
+        gate_types:
+        {'BasisStatePreparation': 1, 'CNOT': 14, 'Hadamard': 6, 'RY': 8}
+        """
+        if self._specs is None:
+
+            # recreate a tape to be used estimate_resources_tape() function
+            with qml.tape.QuantumTape() as tape_:
+                for op in self.circuit:
+                    qml.apply(op)
+
+            resource = qml.resource.estimate_resources_tape(tape_)()
+
+            self._specs = {
+                "resource": resource,
+                "gate_sizes": defaultdict(int),
+                "gate_types": defaultdict(int),
+            }
+
+            for op in self.operations:
+                # don't use op.num_wires to allow for flexible gate classes like QubitUnitary
+                self._specs["gate_sizes"][len(op.wires)] += 1
+                self._specs["gate_types"][op.name] += 1
+
+            self._specs["num_operations"] = len(self.operations)
+            self._specs["num_observables"] = len(self.observables)
+            self._specs["num_diagonalizing_gates"] = len(self.diagonalizing_gates)
+            self._specs["num_used_wires"] = self.num_wires
+            self._specs["depth"] = self.graph.get_depth()
+            self._specs["num_trainable_params"] = self.num_params
+
+        return self._specs
+
     # pylint: disable=too-many-arguments
     def draw(
         self,
