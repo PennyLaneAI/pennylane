@@ -345,18 +345,20 @@ def _ctrl_decomp_bisect_general(
     lk = control_wires[:mid]
     rk = control_wires[mid:]
 
-    op_mcx1 = qml.MultiControlledX(control_wires=lk, wires=target_wire, work_wires=rk)
-    op_mcx2 = qml.MultiControlledX(control_wires=rk, wires=target_wire, work_wires=lk)
-    op_c1 = qml.QubitUnitary(c1, target_wire)
-    op_c1t = qml.QubitUnitary(_matrix_adjoint(c1), target_wire)
-    op_c2t = qml.QubitUnitary(c2t, target_wire)
-    op_c2 = qml.QubitUnitary(_matrix_adjoint(c2t), target_wire)
+    component = [qml.QubitUnitary(c2t, target_wire),
+                qml.MultiControlledX(wires=rk+target_wire, work_wires=lk),
+                qml.adjoint(qml.QubitUnitary(c1, target_wire)),
+                qml.MultiControlledX(wires=lk+target_wire, work_wires=rk)]
 
-    inner = _ctrl_decomp_bisect_od(d, target_wire, control_wires)
-    result = [op_c2t, op_mcx2, op_c1t, op_mcx1] + inner + [op_mcx1, op_c1, op_mcx2, op_c2]
-    # cancel out adjacent op_mcx1
-    result = result[:3] + result[5:]
-    return result
+    od_decomp = _ctrl_decomp_bisect_od(d, target_wire, control_wires)
+
+    # cancel two identical multicontrolled x gates
+    qml.QueuingManager.remove(component[3])
+    qml.QueuingManager.remove(od_decomp[0])
+
+    adjoint_component =  [qml.adjoint(copy(op), lazy=False) for op in reversed(component)]
+
+    return component[0:3] + od_decomp[1:] + adjoint_compoent
 
 
 def ctrl_decomp_bisect(
