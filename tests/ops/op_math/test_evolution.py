@@ -49,12 +49,12 @@ class TestEvolution:
 
     def test_has_generator_true(self):
         """Test that has_generator returns True if the coefficient is purely imaginary."""
-        U = Evolution(qml.PauliX(0), 3j)
+        U = Evolution(qml.PauliX(0), 3)
         assert U.has_generator is True
 
     def test_has_generator_false(self):
         """Test that has_generator returns False if the coefficient is not purely imaginary."""
-        U = Evolution(qml.PauliX(0), 3)
+        U = Evolution(qml.PauliX(0), 3j)
         assert U.has_generator is False
 
         U = Evolution(qml.PauliX(0), 0.01 + 2j)
