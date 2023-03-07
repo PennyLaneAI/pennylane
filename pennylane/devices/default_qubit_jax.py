@@ -28,9 +28,7 @@ try:
     from jax.config import config as jax_config
     from jax.experimental.ode import odeint
 
-    from pennylane.pulse.parametrized_hamiltonian_pytree import (
-        ParametrizedHamiltonianPytree,
-    )
+    from pennylane.pulse.parametrized_hamiltonian_pytree import ParametrizedHamiltonianPytree
 
 except ImportError as e:  # pragma: no cover
     raise ImportError("default.qubit.jax device requires installing jax>0.3.20") from e
