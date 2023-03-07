@@ -135,27 +135,43 @@ def rydberg_drive(rabi, phase, detuning, wires):
 
 
 def amplitude_and_phase(trig_fn, amp, phase):
-    """Wrapper function for combining amplitude and phase into a single callalbe
-    (or constant if neither amplitude nor phase are callalbe)."""
+    """Wrapper function for combining amplitude and phase into a single callable
+    (or constant if neither amplitude nor phase are callable)."""
+    if not callable(amp) and not callable(phase):
+        return amp * trig_fn(phase)
+    return AmplitudeAndPhase(trig_fn, amp, phase)
 
-    def callable_amp_and_phase(params, t):
-        return amp(params[0], t) * trig_fn(phase(params[1], t))
 
-    def callable_amp(params, t):
-        return amp(params, t) * trig_fn(phase)
+# pylint:disable = too-few-public-methods
+class AmplitudeAndPhase:
+    """Class storing combined amplitude and phase callable if either or both
+    of amplitude nor phase are callable."""
 
-    def callable_phase(params, t):
-        return amp * trig_fn(phase(params, t))
+    def __init__(self, trig_fn, amp, phase):
 
-    if callable(amp):
-        if callable(phase):
-            return callable_amp_and_phase
-        return callable_amp
+        self.amp_is_callable = callable(amp)
+        self.phase_is_callable = callable(phase)
 
-    if callable(phase):
-        return callable_phase
+        def callable_amp_and_phase(params, t):
+            print(params)
+            return amp(params[0], t) * trig_fn(phase(params[1], t))
 
-    return amp * trig_fn(phase)
+        def callable_amp(params, t):
+            return amp(params, t) * trig_fn(phase)
+
+        def callable_phase(params, t):
+            return amp * trig_fn(phase(params, t))
+
+        if self.amp_is_callable:
+            if self.phase_is_callable:
+                self.func = callable_amp_and_phase
+            self.func = callable_amp
+
+        if self.phase_is_callable:
+            self.func = callable_phase
+
+    def __call__(self, params, t):
+        return self.func(params, t)
 
 
 class RydbergHamiltonian(ParametrizedHamiltonian):
@@ -215,6 +231,7 @@ class RydbergHamiltonian(ParametrizedHamiltonian):
 
     def __call__(self, params, t):
         params = self._reorder_parameters(params)
+        print(params)
         return super().__call__(params, t)
 
     def _reorder_parameters(self, params):
@@ -224,7 +241,7 @@ class RydbergHamiltonian(ParametrizedHamiltonian):
         Consolidates phase and amplitude parameters in the case that both are callable,
         and duplicates phase and/or amplitude parameters if either are callables, since
         they will be passed to two operators in the Hamiltonian"""
-
+        print(params)
         reordered_params = []
 
         coeff_idx = 0
@@ -232,21 +249,24 @@ class RydbergHamiltonian(ParametrizedHamiltonian):
 
         for i, coeff in enumerate(self.coeffs_parametrized):
             if i == coeff_idx:
-                if coeff.__name__ == "callable_amp_and_phase":
-                    # add the joined parameters twice, and skip an index
-                    reordered_params.append([params[params_idx], params[params_idx + 1]])
-                    reordered_params.append([params[params_idx], params[params_idx + 1]])
-                    coeff_idx += 2
-                    params_idx += 2
-                elif coeff.__name__ in ["callable_amp", "callable_phase"]:
-                    reordered_params.append(params[params_idx])
-                    reordered_params.append(params[params_idx])
-                    coeff_idx += 2
-                    params_idx += 1
+                if isinstance(coeff, AmplitudeAndPhase):
+                    if coeff.phase_is_callable and coeff.amp_is_callable:
+                        # add the joined parameters twice, and skip an index
+                        reordered_params.append([params[params_idx], params[params_idx + 1]])
+                        reordered_params.append([params[params_idx], params[params_idx + 1]])
+                        coeff_idx += 2
+                        params_idx += 2
+                    elif coeff.phase_is_callable or coeff.amp_is_callable:
+                        reordered_params.append(params[params_idx])
+                        reordered_params.append(params[params_idx])
+                        coeff_idx += 2
+                        params_idx += 1
                 else:
                     reordered_params.append(params[params_idx])
                     coeff_idx += 1
                     params_idx += 1
+
+        print(f"reordered_params: {reordered_params}")
 
         return reordered_params
 
