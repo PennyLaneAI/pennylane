@@ -253,13 +253,13 @@ def _ctrl_decomp_bisect_od(
     lk = control_wires[:mid]
     rk = control_wires[mid:]
 
-    op_mcx1 = qml.MultiControlledX(control_wires=lk, wires=target_wire, work_wires=rk)
-    op_mcx2 = qml.MultiControlledX(control_wires=rk, wires=target_wire, work_wires=lk)
-    op_a = qml.QubitUnitary(a, target_wire)
-    op_at = qml.QubitUnitary(_matrix_adjoint(a), target_wire)
+    def component():
+            return [ qml.MultiControlledX(wires=lk+target_wire, work_wires=rk),
+            qml.QubitUnitary(a, target_wire),
+            qml.MultiControlledX(wires=rk+target_wire, work_wires=lk), 
+            qml.QubitUnitary(_matrix_adjoint(a), target_wire)]
 
-    result = [op_mcx1, op_a, op_mcx2, op_at] * 2
-    return result
+    return component() + component()
 
 
 def _ctrl_decomp_bisect_md(
