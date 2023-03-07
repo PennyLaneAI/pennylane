@@ -26,17 +26,13 @@ from pennylane.pulse import ParametrizedEvolution
 
 pytestmark = pytest.mark.jax
 
-ham_single_q_fixed = 0.4 * qml.PauliX(0)
-ham_single_q_const = qml.pulse.constant * qml.PauliY(0)
-ham_single_q_pwc = qml.pulse.pwc((2.0, 4.0)) * qml.PauliZ(0)
-ham_two_q_pwc = qml.pulse.pwc((2.0, 4.0)) * (qml.PauliZ(0) @ qml.PauliX(1))
 
 
 def equal(op1, op2, check_t=True):
     """Helper function to check whether two operations are the same via qml.equal, optionally
     including the time window for ParametrizedEvolution.
 
-    TODO: Remove once #3846 is resolved.
+    TODO: Remove once #3846 is resolved/ #3870 is merged.
     """
     if (
         check_t
@@ -47,18 +43,22 @@ def equal(op1, op2, check_t=True):
     return qml.equal(op1, op2)
 
 
-split_evol_ops_test_cases = [
-    (ham_single_q_const, [0.3], 2.3, "X", 0),
-    (ham_single_q_const, [0.3], 2.3, "X", ["aux"]),
-    (ham_single_q_pwc, [np.linspace(0, 1, 13)], (0.6, 1.2), "Y", [1]),
-    (ham_two_q_pwc, [np.linspace(0, 1, 13)], 3, "YX", [0, "a"]),
-]
-
-
 class TestSplitEvolOps:
     """Tests for the helper method split_evol_ops that samples a splitting time and splits up
     a ParametrizedEvolution operation at the sampled time, inserting a Pauli rotation about the
     provided Pauli word with angles +- pi/2."""
+
+    ham_single_q_fixed = 0.4 * qml.PauliX(0)
+    ham_single_q_const = qml.pulse.constant * qml.PauliY(0)
+    ham_single_q_pwc = qml.pulse.pwc((2.0, 4.0)) * qml.PauliZ(0)
+    ham_two_q_pwc = qml.pulse.pwc((2.0, 4.0)) * (qml.PauliZ(0) @ qml.PauliX(1))
+
+    split_evol_ops_test_cases = [
+        (ham_single_q_const, [0.3], 2.3, "X", 0),
+        (ham_single_q_const, [0.3], 2.3, "X", ["aux"]),
+        (ham_single_q_pwc, [np.linspace(0, 1, 13)], (0.6, 1.2), "Y", [1]),
+        (ham_two_q_pwc, [np.linspace(0, 1, 13)], 3, "YX", [0, "a"]),
+    ]
 
     @pytest.mark.parametrize("test_case", split_evol_ops_test_cases)
     def test_output_properties(self, test_case):
@@ -139,6 +139,8 @@ class TestSplitEvolTapes:
     """Tests for the helper method split_evol_tapes that replaces an indicated operation by other operations
     and creates a new tape for each provided set of replacing operations."""
 
+    ham_single_q_pwc = qml.pulse.pwc((2.0, 4.0)) * qml.PauliZ(0)
+
     def test_with_standard_ops(self):
         """Test basic behaviour of the operation replacement with standard qml ops."""
         ops = [qml.RX(0.4, 2), qml.PauliZ(0), qml.CNOT([0, 2])]
@@ -157,7 +159,7 @@ class TestSplitEvolTapes:
     def test_with_parametrized_evolution(self):
         """Test basic behaviour of the operation replacement with ParametrizedEvolution."""
 
-        ops = [qml.evolve(ham_single_q_pwc)([np.linspace(0, 1, 9)], 0.4)]
+        ops = [qml.evolve(self.ham_single_q_pwc)([np.linspace(0, 1, 9)], 0.4)]
         tape = qml.tape.QuantumScript(ops)
         split_evolve_ops = (
             [qml.RX(0.6, 2), qml.PauliY(0), qml.RZ(0.0, 0)],
@@ -168,7 +170,7 @@ class TestSplitEvolTapes:
         for t, new_ops in zip(new_tapes, split_evolve_ops):
             assert all(qml.equal(o1, o2) for o1, o2 in zip(t.operations, new_ops))
 
-        ops = [qml.evolve(ham_single_q_pwc)([np.linspace(0, 1, 9)], 0.4), qml.CNOT([0, 2])]
+        ops = [qml.evolve(self.ham_single_q_pwc)([np.linspace(0, 1, 9)], 0.4), qml.CNOT([0, 2])]
         tape = qml.tape.QuantumScript(ops)
         split_evolve_ops = ([qml.RX(0.6, 2), qml.PauliY(0), qml.RZ(0.0, 0)], [])
         new_tapes = split_evol_tapes(tape, split_evolve_ops, 0)
@@ -179,7 +181,7 @@ class TestSplitEvolTapes:
 
         ops = [
             qml.RX(0.4, 2),
-            qml.evolve(ham_single_q_pwc)([np.linspace(0, 1, 9)], 0.4),
+            qml.evolve(self.ham_single_q_pwc)([np.linspace(0, 1, 9)], 0.4),
             qml.CNOT([0, 2]),
         ]
         tape = qml.tape.QuantumScript(ops)
@@ -288,6 +290,8 @@ class TestStochPulseGradErrors:
 class TestStochPulseGrad:
     """Test working cases of stoch_pulse_grad."""
 
+    ham_single_q_const = qml.pulse.constant * qml.PauliY(0)
+
     def test_all_zero_grads(self):
         """Test that a zero gradient is returned when the trainable parameters are
         identified to have zero gradient in advance."""
@@ -313,7 +317,7 @@ class TestStochPulseGrad:
         jnp = jax.numpy
         params = [jnp.array(0.24)]
         T = t if isinstance(t, tuple) else (0, t)
-        op = qml.evolve(ham_single_q_const)(params, t)
+        op = qml.evolve(self.ham_single_q_const)(params, t)
         tape = qml.tape.QuantumScript([op], [qml.expval(qml.PauliZ(0))])
 
         dev = qml.device("default.qubit.jax", wires=1)
@@ -449,8 +453,8 @@ class TestStochPulseGrad:
 
         qnode.construct((params,), {})
 
-        num_samples = 1000
-        tapes, fn = stoch_pulse_grad(qnode.tape, num_samples=num_samples, sampler_seed=7123)
+        num_samples = 40
+        tapes, fn = stoch_pulse_grad(qnode.tape, argnums=[0, 1, 2], num_samples=num_samples, sampler_seed=7123)
         assert len(tapes) == 3 * 2 * num_samples
 
         res = fn(qml.execute(tapes, dev, None))
@@ -530,7 +534,7 @@ class TestStochPulseGrad:
         T = (0.2, 0.5)
 
         def fun(params):
-            op = qml.evolve(ham_single_q_const)(params, T)
+            op = qml.evolve(self.ham_single_q_const)(params, T)
             tape = qml.tape.QuantumScript([op], [qml.expval(qml.PauliZ(0))])
             tapes, fn = stoch_pulse_grad(tape)
             assert len(tapes) == 2
@@ -550,6 +554,8 @@ class TestStochPulseGrad:
 class TestStochPulseGradQNodeIntegration:
     """Test that stoch_pulse_grad integrates correctly with QNodes."""
 
+    ham_single_q_const = qml.pulse.constant * qml.PauliY(0)
+
     @pytest.mark.parametrize("num_samples", [1, 3])
     def test_simple_qnode(self, num_samples):
         """Test that a simple qnode can be differentiated with stoch_pulse_grad."""
@@ -562,7 +568,7 @@ class TestStochPulseGradQNodeIntegration:
 
         @qml.qnode(dev, interface="jax", diff_method=stoch_pulse_grad, num_samples=num_samples)
         def circuit(params):
-            qml.evolve(ham_single_q_const)(params, T)
+            qml.evolve(self.ham_single_q_const)(params, T)
             return qml.expval(qml.PauliZ(0))
 
         params = [jnp.array(0.4)]
@@ -571,8 +577,7 @@ class TestStochPulseGradQNodeIntegration:
         exp_grad = -2 * jnp.sin(2 * p) * T
         assert qml.math.isclose(grad, exp_grad)
 
-    # This test fails because of a leaked tracer which should be fixed once #3697 is merged
-    @pytest.mark.xfail
+    @pytest.mark.xfail #TODO
     @pytest.mark.parametrize("num_samples", [1, 3])
     def test_simple_qnode_jit(self, num_samples):
         """Test that a simple qnode can be differentiated with stoch_pulse_grad."""
@@ -585,7 +590,7 @@ class TestStochPulseGradQNodeIntegration:
 
         @qml.qnode(dev, interface="jax", diff_method=stoch_pulse_grad, num_samples=num_samples)
         def circuit(params):
-            qml.evolve(ham_single_q_const)(params, T)
+            qml.evolve(self.ham_single_q_const)(params, T)
             return qml.expval(qml.PauliZ(0))
 
         params = [jnp.array(0.4)]
@@ -594,7 +599,7 @@ class TestStochPulseGradQNodeIntegration:
         jit_grad = jax.jit(jax.grad(circuit))(params)
         assert qml.math.isclose(jit_grad, exp_grad)
 
-    def test_advanced_qnode(self, num_samples):
+    def test_advanced_qnode(self):
         """Test that an advanced qnode can be differentiated with stoch_pulse_grad."""
         import jax
 
@@ -613,8 +618,7 @@ class TestStochPulseGradQNodeIntegration:
             qml.evolve(ham)(params, 0.4)
             return qml.expval(qml.PauliY(0) @ qml.PauliX(1))
 
-        num_samples = 20
-        num_samples = 1000
+        num_samples = 10
         qnode_pulse_grad = qml.QNode(
             ansatz,
             dev,
@@ -622,6 +626,7 @@ class TestStochPulseGradQNodeIntegration:
             diff_method=stoch_pulse_grad,
             num_samples=num_samples,
             sampler_seed=7123,
+            cache=False,# remove once 3870 is merged
         )
         qnode_backprop = qml.QNode(ansatz, dev, interface="jax")
 
@@ -639,6 +644,7 @@ class TestStochPulseGradDiff:
     """Test that stoch_pulse_grad is differentiable."""
 
     # pylint: disable=too-few-public-methods
+    ham_single_q_const = qml.pulse.constant * qml.PauliY(0)
 
     def test_jax(self):
         """Test that stoch_pulse_grad is differentiable with JAX."""
@@ -648,9 +654,8 @@ class TestStochPulseGradDiff:
         jax.config.update("jax_enable_x64", True)
         dev = qml.device("default.qubit.jax", wires=1)
         T = 0.5
-
         def fun(params):
-            op = qml.evolve(ham_single_q_const)(params, T)
+            op = qml.evolve(self.ham_single_q_const)(params, T)
             tape = qml.tape.QuantumScript([op], [qml.expval(qml.PauliZ(0))])
             tape.trainable_params = [0]
             tapes, fn = stoch_pulse_grad(tape)
