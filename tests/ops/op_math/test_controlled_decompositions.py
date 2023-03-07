@@ -21,10 +21,10 @@ import pennylane as qml
 from pennylane.ops import ctrl_decomp_zyz
 from pennylane.wires import Wires
 from pennylane.ops.op_math.controlled_decompositions import (
-    ctrl_decomp_bisect_od,
-    ctrl_decomp_bisect_md,
-    ctrl_decomp_bisect_general,
-    ctrl_decomp_bisect_auto,
+    _ctrl_decomp_bisect_od,
+    _ctrl_decomp_bisect_md,
+    _ctrl_decomp_bisect_general,
+    ctrl_decomp_bisect,
     _convert_to_su2,
     _bisect_compute_a,
     _bisect_compute_b,
@@ -39,6 +39,18 @@ cw5 = tuple(list(range(1, 1 + n)) for n in range(2, 6))
 
 def _matrix_adjoint(matrix: np.ndarray):
     return math.transpose(math.conj(matrix))
+
+
+def rq(func):
+    def irq(*args, **kwargs):
+        with qml.QueuingManager.stop_recording():
+            decomposition = func(*args, **kwargs)
+
+        if qml.QueuingManager.recording():
+            for iop in decomposition:
+                qml.apply(iop)
+
+    return irq
 
 
 def equal_if_decomposed(lhs, rhs):
@@ -198,16 +210,12 @@ class TestControlledDecompositionZYZ:
 
 
 class TestControlledBisectOD:
-    """tests for qml.ops.ctrl_decomp_bisect_od"""
+    """tests for qml.ops._ctrl_decomp_bisect_od"""
 
     def test_invalid_op_error(self):
         """Tests that an error is raised when an invalid operation is passed"""
-        with pytest.raises(
-            ValueError, match="The target operation must be a single-qubit operation"
-        ):
-            _ = ctrl_decomp_bisect_od(qml.CNOT([0, 1]), [2])
         with pytest.raises(ValueError, match="Target operation's matrix must have real"):
-            _ = ctrl_decomp_bisect_od(qml.Hadamard(0), [1, 2])
+            _ = _ctrl_decomp_bisect_od(_convert_to_su2(qml.Hadamard.compute_matrix()), 0, [1, 2])
 
     su2_od_ops = [
         qml.QubitUnitary(
@@ -254,7 +262,7 @@ class TestControlledBisectOD:
         @qml.qnode(dev)
         def decomp_circuit():
             qml.broadcast(unitary=qml.Hadamard, pattern="single", wires=control_wires)
-            ctrl_decomp_bisect_od(op, Wires(control_wires))
+            rq(_ctrl_decomp_bisect_od)(_convert_to_su2(op.matrix()), op.wires, Wires(control_wires))
             return qml.probs()
 
         @qml.qnode(dev)
@@ -275,7 +283,9 @@ class TestControlledBisectOD:
         assert np.allclose(op.matrix(), _convert_to_su2(op.matrix()), atol=tol, rtol=tol)
 
         expected_op = qml.ctrl(op, control_wires)
-        res = qml.matrix(ctrl_decomp_bisect_od, wire_order=control_wires + [0])(op, control_wires)
+        res = qml.matrix(rq(_ctrl_decomp_bisect_od), wire_order=control_wires + [0])(
+            op.matrix(), op.wires, Wires(control_wires)
+        )
         expected = expected_op.matrix()
 
         assert np.allclose(res, expected, atol=tol, rtol=tol)
@@ -287,7 +297,7 @@ class TestControlledBisectOD:
 
         su = op.matrix()
         sx = qml.PauliX.compute_matrix()
-        op_seq = ctrl_decomp_bisect_od(op, Wires(control_wires))
+        op_seq = _ctrl_decomp_bisect_od(op.matrix(), op.wires, Wires(control_wires))
 
         assert len(op_seq) == 8
 
@@ -327,16 +337,12 @@ class TestControlledBisectOD:
 
 
 class TestControlledBisectMD:
-    """tests for qml.ops.ctrl_decomp_bisect_md"""
+    """tests for qml.ops._ctrl_decomp_bisect_md"""
 
     def test_invalid_op_error(self):
         """Tests that an error is raised when an invalid operation is passed"""
-        with pytest.raises(
-            ValueError, match="The target operation must be a single-qubit operation"
-        ):
-            _ = ctrl_decomp_bisect_md(qml.CNOT([0, 1]), [2])
         with pytest.raises(ValueError, match="Target operation's matrix must have real"):
-            _ = ctrl_decomp_bisect_md(qml.Hadamard(0), [1, 2])
+            _ = _ctrl_decomp_bisect_md(_convert_to_su2(qml.Hadamard.compute_matrix()), 0, [1, 2])
 
     su2_md_ops = [
         qml.QubitUnitary(
@@ -401,7 +407,7 @@ class TestControlledBisectMD:
         @qml.qnode(dev)
         def decomp_circuit():
             qml.broadcast(unitary=qml.Hadamard, pattern="single", wires=control_wires)
-            ctrl_decomp_bisect_md(op, Wires(control_wires))
+            rq(_ctrl_decomp_bisect_md)(_convert_to_su2(op.matrix()), op.wires, Wires(control_wires))
             return qml.probs()
 
         @qml.qnode(dev)
@@ -422,7 +428,9 @@ class TestControlledBisectMD:
         assert np.allclose(op.matrix(), _convert_to_su2(op.matrix()), atol=tol, rtol=tol)
 
         expected_op = qml.ctrl(op, control_wires)
-        res = qml.matrix(ctrl_decomp_bisect_md, wire_order=control_wires + [0])(op, control_wires)
+        res = qml.matrix(rq(_ctrl_decomp_bisect_md), wire_order=control_wires + [0])(
+            op.matrix(), op.wires, control_wires
+        )
         expected = expected_op.matrix()
 
         assert np.allclose(res, expected, atol=tol, rtol=tol)
@@ -439,14 +447,14 @@ class TestControlledBisectMD:
 
 
 class TestControlledBisectGeneral:
-    """tests for qml.ops.ctrl_decomp_bisect_general"""
+    """tests for qml.ops._ctrl_decomp_bisect_general"""
 
     def test_invalid_op_error(self):
         """Tests that an error is raised when an invalid operation is passed"""
         with pytest.raises(
             ValueError, match="The target operation must be a single-qubit operation"
         ):
-            _ = ctrl_decomp_bisect_general(qml.CNOT([0, 1]), [2])
+            _ = ctrl_decomp_bisect(qml.CNOT([0, 1]), [2])
 
     su2_gen_ops = [
         qml.QubitUnitary(
@@ -508,16 +516,17 @@ class TestControlledBisectGeneral:
     ]
 
     gen_ops_best = [
-        ctrl_decomp_bisect_md,
-        ctrl_decomp_bisect_od,
-        ctrl_decomp_bisect_od,
-        ctrl_decomp_bisect_general,
-        ctrl_decomp_bisect_general,
+        _ctrl_decomp_bisect_md,
+        _ctrl_decomp_bisect_od,
+        _ctrl_decomp_bisect_od,
+        _ctrl_decomp_bisect_general,
+        _ctrl_decomp_bisect_general,
     ]
 
     @pytest.mark.parametrize("op", su2_gen_ops + gen_ops)
     @pytest.mark.parametrize("control_wires", cw5)
-    def test_decomposition_circuit(self, op, control_wires, tol):
+    @pytest.mark.parametrize("auto", [False, True])
+    def test_decomposition_circuit(self, op, control_wires, auto, tol):
         """Tests that the controlled decomposition of a single-qubit operation
         behaves as expected in a quantum circuit"""
         dev = qml.device("default.qubit", wires=max(control_wires) + 1)
@@ -525,7 +534,12 @@ class TestControlledBisectGeneral:
         @qml.qnode(dev)
         def decomp_circuit():
             qml.broadcast(unitary=qml.Hadamard, pattern="single", wires=control_wires)
-            ctrl_decomp_bisect_general(op, Wires(control_wires))
+            if auto:
+                ctrl_decomp_bisect(op, Wires(control_wires))
+            else:
+                rq(_ctrl_decomp_bisect_general)(
+                    _convert_to_su2(op.matrix()), op.wires, Wires(control_wires)
+                )
             return qml.probs()
 
         @qml.qnode(dev)
@@ -545,8 +559,8 @@ class TestControlledBisectGeneral:
         Test that the auto selection is correct and optimal.
         """
         op, best = op
-        res = ctrl_decomp_bisect_auto(op, Wires(control_wires))
-        expected = best(op, Wires(control_wires))
+        res = ctrl_decomp_bisect(op, Wires(control_wires))
+        expected = best(_convert_to_su2(op.matrix()), op.wires, Wires(control_wires))
         assert equal_if_decomposed(res, expected)
 
     @pytest.mark.parametrize("op", su2_gen_ops)
@@ -557,13 +571,9 @@ class TestControlledBisectGeneral:
         assert np.allclose(op.matrix(), _convert_to_su2(op.matrix()), atol=tol, rtol=tol)
 
         expected_op = qml.ctrl(op, control_wires)
-        res = qml.matrix(ctrl_decomp_bisect_general, wire_order=control_wires + [0])(
-            op, control_wires
+        res = qml.matrix(rq(_ctrl_decomp_bisect_general), wire_order=control_wires + [0])(
+            op.matrix(), op.wires, control_wires
         )
         expected = expected_op.matrix()
 
-        print("Expected:")
-        print(np.round(expected, 2))
-        print("Result:")
-        print(np.round(res, 2))
         assert np.allclose(res, expected, atol=tol, rtol=tol)

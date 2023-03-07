@@ -32,7 +32,7 @@ from pennylane.wires import Wires
 from .symbolicop import SymbolicOp
 from .controlled_decompositions import (
     ctrl_decomp_zyz,
-    ctrl_decomp_bisect_auto,
+    ctrl_decomp_bisect,
 )
 
 
@@ -565,7 +565,7 @@ def _decompose_no_control_values(op: "operation.Operator") -> List["operation.Op
         and qmlmath.get_interface(*op.data) == "numpy"  # as implemented, not differentiable
     ):
         # Bisect algorithms use CNOTs and single qubit unitary
-        return ctrl_decomp_bisect_auto(op.base, op.control_wires)
+        return ctrl_decomp_bisect(op.base, op.control_wires)
     if len(op.base.wires) == 1 and getattr(op.base, "has_matrix", False):
         return ctrl_decomp_zyz(op.base, op.control_wires)
 

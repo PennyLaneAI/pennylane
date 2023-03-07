@@ -25,6 +25,10 @@ from pennylane import math
 from pennylane.typing import TensorLike
 
 
+def _matrix_adjoint(matrix: np.ndarray):
+    return math.transpose(math.conj(matrix))
+
+
 def _convert_to_su2(U, return_global_phase=False):
     r"""Convert a 2x2 unitary matrix to :math:`SU(2)`.
 
@@ -209,10 +213,10 @@ def ctrl_decomp_zyz(target_operation: Operator, control_wires: Wires):
     return decomp
 
 
-def ctrl_decomp_bisect_od(
-    target_operation: typing.Union[Operator, typing.Tuple[np.ndarray, Wires]],
+def _ctrl_decomp_bisect_od(
+    u: np.ndarray,
+    target_wire: Wires,
     control_wires: Wires,
-    later: bool = False,
 ):
     """Decompose the controlled version of a target single-qubit operation
 
@@ -228,35 +232,17 @@ def ctrl_decomp_bisect_od(
         belong to the SU(2) group.
 
     Args:
-        target_operation (~.operation.Operator): the target operation to decompose
+        u (np.ndarray): the target operation's matrix
+        target_wire (~.wires.Wires): the target wire of the controlled operation
         control_wires (~.wires.Wires): the control wires of the operation
-        later (bool): whether to defer instantiation of operators; if True,
-        returns a list of functions instead which can each be called to generate the operator
 
     Returns:
         list[Operation]: the decomposed operations
 
     Raises:
-        ValueError: if ``target_operation`` is not a single-qubit operation
-            or its matrix does not have a real off-diagonal
+        ValueError: if ``u`` does not have a real off-diagonal
 
     """
-    orig_target_operation = target_operation
-    if isinstance(target_operation, Operator):
-        target_operation = target_operation.matrix(), target_operation.wires
-
-    if len(target_operation[1]) != 1:
-        raise ValueError(
-            "The target operation must be a single-qubit operation, instead "
-            f"got {orig_target_operation.__class__.__name__}."
-        )
-
-    target_wire = target_operation[1]
-
-    u = target_operation[0]
-    u = _convert_to_su2(u)
-    u = np.array(u)
-
     ui = np.imag(u)
     if not np.isclose(ui[1, 0], 0) or not np.isclose(ui[0, 1], 0):
         raise ValueError(f"Target operation's matrix must have real off-diagonal, but it is {u}")
@@ -267,31 +253,19 @@ def ctrl_decomp_bisect_od(
     lk = control_wires[:mid]
     rk = control_wires[mid:]
 
-    def mcx(_lk, _rk):
-        return qml.MultiControlledX(control_wires=_lk, wires=target_wire, work_wires=_rk)
+    op_mcx1 = qml.MultiControlledX(control_wires=lk, wires=target_wire, work_wires=rk)
+    op_mcx2 = qml.MultiControlledX(control_wires=rk, wires=target_wire, work_wires=lk)
+    op_a = qml.QubitUnitary(a, target_wire)
+    op_at = qml.QubitUnitary(_matrix_adjoint(a), target_wire)
 
-    def op_mcx1():
-        return mcx(lk, rk)
-
-    def op_mcx2():
-        return mcx(rk, lk)
-
-    def op_a():
-        return qml.QubitUnitary(a, target_wire)
-
-    def op_at():
-        return qml.adjoint(op_a())
-
-    result = [op_mcx1, op_a, op_mcx2, op_at, op_mcx1, op_a, op_mcx2, op_at]
-    if not later:
-        result = [func() for func in result]
+    result = [op_mcx1, op_a, op_mcx2, op_at] * 2
     return result
 
 
-def ctrl_decomp_bisect_md(
-    target_operation: typing.Union[Operator, typing.Tuple[np.ndarray, Wires]],
+def _ctrl_decomp_bisect_md(
+    u: np.ndarray,
+    target_wire: Wires,
     control_wires: Wires,
-    later: bool = False,
 ):
     """Decompose the controlled version of a target single-qubit operation
 
@@ -307,57 +281,35 @@ def ctrl_decomp_bisect_md(
         belong to the SU(2) group.
 
     Args:
-        target_operation (~.operation.Operator): the target operation to decompose
+        u (np.ndarray): the target operation's matrix
+        target_wire (~.wires.Wires): the target wire of the controlled operation
         control_wires (~.wires.Wires): the control wires of the operation
-        later (bool): whether to defer instantiation of operators; if True,
-        returns a list of functions instead which can each be called to generate the operator
 
     Returns:
         list[Operation]: the decomposed operations
 
     Raises:
-        ValueError: if ``target_operation`` is not a single-qubit operation
-            or its matrix does not have a real main-diagonal
+        ValueError: if ``u`` does not have a real main-diagonal
 
     """
-    orig_target_operation = target_operation
-    if isinstance(target_operation, Operator):
-        target_operation = target_operation.matrix(), target_operation.wires
-
-    if len(target_operation[1]) != 1:
-        raise ValueError(
-            "The target operation must be a single-qubit operation, instead "
-            f"got {orig_target_operation.__class__.__name__}."
-        )
-
-    target_wire = target_operation[1]
-
-    u = target_operation[0]
-    u = _convert_to_su2(u)
-    u = np.array(u)
-
     ui = np.imag(u)
     if not np.isclose(ui[0, 0], 0) or not np.isclose(ui[1, 1], 0):
         raise ValueError(f"Target operation's matrix must have real main-diagonal, but it is {u}")
 
     sh = qml.Hadamard.compute_matrix()
     mod_u = sh @ u @ sh
-    mod_op = mod_u, target_wire
 
-    def op_h():
-        return qml.Hadamard(target_wire)
+    op_h = qml.Hadamard(target_wire)
 
-    inner = ctrl_decomp_bisect_od(mod_op, control_wires, later=True)
+    inner = _ctrl_decomp_bisect_od(mod_u, target_wire, control_wires)
     result = [op_h] + inner + [op_h]
-    if not later:
-        result = [func() for func in result]
     return result
 
 
-def ctrl_decomp_bisect_general(
-    target_operation: typing.Union[Operator, typing.Tuple[np.ndarray, Wires]],
+def _ctrl_decomp_bisect_general(
+    u: np.ndarray,
+    target_wire: Wires,
     control_wires: Wires,
-    later: bool = False,
 ):
     """Decompose the controlled version of a target single-qubit operation
 
@@ -371,34 +323,13 @@ def ctrl_decomp_bisect_general(
         belong to the SU(2) group.
 
     Args:
-        target_operation (~.operation.Operator): the target operation to decompose
+        u (np.ndarray): the target operation's matrix
+        target_wire (~.wires.Wires): the target wire of the controlled operation
         control_wires (~.wires.Wires): the control wires of the operation
-        later (bool): whether to defer instantiation of operators; if True,
-        returns a list of functions instead which can each be called to generate the operator
 
     Returns:
         list[Operation]: the decomposed operations
-
-    Raises:
-        ValueError: if ``target_operation`` is not a single-qubit operation
-
     """
-    orig_target_operation = target_operation
-    if isinstance(target_operation, Operator):
-        target_operation = target_operation.matrix(), target_operation.wires
-
-    if len(target_operation[1]) != 1:
-        raise ValueError(
-            "The target operation must be a single-qubit operation, instead "
-            f"got {orig_target_operation.__class__.__name__}."
-        )
-
-    target_wire = target_operation[1]
-
-    u = target_operation[0]
-    u = _convert_to_su2(u)
-    u = np.array(u)
-
     sx = qml.PauliX.compute_matrix()
     sh = qml.Hadamard.compute_matrix()
     sh_alt = sx @ sh @ sx
@@ -414,40 +345,23 @@ def ctrl_decomp_bisect_general(
     lk = control_wires[:mid]
     rk = control_wires[mid:]
 
-    def mcx(_lk, _rk):
-        return qml.MultiControlledX(control_wires=_lk, wires=target_wire, work_wires=_rk)
+    op_mcx1 = qml.MultiControlledX(control_wires=lk, wires=target_wire, work_wires=rk)
+    op_mcx2 = qml.MultiControlledX(control_wires=rk, wires=target_wire, work_wires=lk)
+    op_c1 = qml.QubitUnitary(c1, target_wire)
+    op_c1t = qml.QubitUnitary(_matrix_adjoint(c1), target_wire)
+    op_c2t = qml.QubitUnitary(c2t, target_wire)
+    op_c2 = qml.QubitUnitary(_matrix_adjoint(c2t), target_wire)
 
-    def op_mcx1():
-        return mcx(lk, rk)
-
-    def op_mcx2():
-        return mcx(rk, lk)
-
-    def op_c1():
-        return qml.QubitUnitary(c1, target_wire)
-
-    def op_c1t():
-        return qml.adjoint(op_c1())
-
-    def op_c2t():
-        return qml.QubitUnitary(c2t, target_wire)
-
-    def op_c2():
-        return qml.adjoint(op_c2t())
-
-    inner = ctrl_decomp_bisect_od((d, target_wire), control_wires, later=True)
+    inner = _ctrl_decomp_bisect_od(d, target_wire, control_wires)
     result = [op_c2t, op_mcx2, op_c1t, op_mcx1] + inner + [op_mcx1, op_c1, op_mcx2, op_c2]
     # cancel out adjacent op_mcx1
     result = result[:3] + result[5:]
-    if not later:
-        result = [func() for func in result]
     return result
 
 
-def ctrl_decomp_bisect_auto(
+def ctrl_decomp_bisect(
     target_operation: typing.Union[Operator, typing.Tuple[np.ndarray, Wires]],
     control_wires: Wires,
-    later: bool = False,
 ):
     """Decompose the controlled version of a target single-qubit operation
 
@@ -462,8 +376,6 @@ def ctrl_decomp_bisect_auto(
     Args:
         target_operation (~.operation.Operator): the target operation to decompose
         control_wires (~.wires.Wires): the control wires of the operation
-        later (bool): whether to defer instantiation of operators; if True,
-        returns a list of functions instead which can each be called to generate the operator
 
     Returns:
         list[Operation]: the decomposed operations
@@ -473,16 +385,34 @@ def ctrl_decomp_bisect_auto(
 
     """
     if isinstance(target_operation, Operator):
+        report_as = type(target_operation).__name__
         target_operation = target_operation.matrix(), target_operation.wires
+    else:
+        report_as = f"anonymous operator with {target_operation[1]} wires"
 
-    u = target_operation[0]
+    u, target_wire = target_operation
+
+    if len(target_operation[1]) != 1:
+        raise ValueError(
+            "The target operation must be a single-qubit operation, instead " f"got {report_as}."
+        )
+
     u = _convert_to_su2(u)
     ui = np.imag(u)
-    if np.isclose(ui[1, 0], 0) and np.isclose(ui[0, 1], 0):
-        # Real off-diagonal specialized algorithm - 16n+O(1) CNOTs
-        return ctrl_decomp_bisect_od(target_operation, control_wires, later=later)
-    if np.isclose(ui[0, 0], 0) and np.isclose(ui[1, 1], 0):
-        # Real main-diagonal specialized algorithm - 16n+O(1) CNOTs
-        return ctrl_decomp_bisect_md(target_operation, control_wires, later=later)
-    # General algorithm - 20n+O(1) CNOTs
-    return ctrl_decomp_bisect_general(target_operation, control_wires, later=later)
+
+    with qml.QueuingManager.stop_recording():
+        if np.isclose(ui[1, 0], 0) and np.isclose(ui[0, 1], 0):
+            # Real off-diagonal specialized algorithm - 16n+O(1) CNOTs
+            result = _ctrl_decomp_bisect_od(u, target_wire, control_wires)
+        elif np.isclose(ui[0, 0], 0) and np.isclose(ui[1, 1], 0):
+            # Real main-diagonal specialized algorithm - 16n+O(1) CNOTs
+            result = _ctrl_decomp_bisect_md(u, target_wire, control_wires)
+        else:
+            # General algorithm - 20n+O(1) CNOTs
+            result = _ctrl_decomp_bisect_general(u, target_wire, control_wires)
+
+    if qml.QueuingManager.recording():
+        for op in result:
+            qml.apply(op)
+
+    return result
