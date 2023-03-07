@@ -65,6 +65,11 @@ from pennylane.tape import QuantumScript, QuantumTape
 from pennylane.wires import Wires
 
 
+def _sample_to_str(sample):
+    """Converts a bit-array to a string. For example, ``[0, 1]`` would become '01'."""
+    return "".join(map(str, sample))
+
+
 class QubitDevice(Device):
     """Abstract base class for PennyLane qubit devices.
 
@@ -1694,10 +1699,6 @@ class QubitDevice(Device):
         # TODO: do we need to squeeze here? Maybe remove with new return types
         return np.squeeze(np.var(samples, axis=axis))
 
-    def _sample_to_str(self, sample):
-        """Converts a bit-array to a string. For example, ``[0, 1]`` would become '01'."""
-        return "".join(map(str, sample))
-
     def _samples_to_counts(self, samples, obs, num_wires):
         """Groups the samples into a dictionary showing number of occurences for
         each possible outcome.
@@ -1752,10 +1753,10 @@ class QubitDevice(Device):
 
         if isinstance(obs, CountsMP):
             # convert samples and outcomes (if using) from arrays to str for dict keys
-            samples = np.apply_along_axis(self._sample_to_str, -1, samples)
+            samples = np.apply_along_axis(_sample_to_str, -1, samples)
             batched_ndims = 3
             if obs.all_outcomes:
-                outcomes = list(map(self._sample_to_str, self.generate_basis_states(num_wires)))
+                outcomes = list(map(_sample_to_str, self.generate_basis_states(num_wires)))
         elif obs.return_type is AllCounts:
             outcomes = qml.eigvals(obs)
 
