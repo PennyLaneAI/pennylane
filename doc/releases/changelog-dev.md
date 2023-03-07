@@ -39,6 +39,9 @@
   `argnum` is automatically converted to `argnums` when using JAX, and will no longer be supported in v0.31.
   [(#3697)](https://github.com/PennyLaneAI/pennylane/pull/3697)
 
+* Made `qml.OrbitalRotation` and consequently `qml.GateFabric` consistent with the interleaved Jordan-Wigner ordering.
+  [(#3861)](https://github.com/PennyLaneAI/pennylane/pull/3861)
+
 <h3>Deprecations</h3>
 
 <h3>Documentation</h3>
@@ -54,7 +57,7 @@
 * Ensure that `qml.data.load` returns datasets in a stable and expected order.
   [(#3856)](https://github.com/PennyLaneAI/pennylane/pull/3856)
 
-* Made `qml.OrbitalRotation` consistent with the interleaved Jordan-Wigner ordering.
+* Made `qml.OrbitalRotation` and consequently `qml.GateFabric` consistent with the interleaved Jordan-Wigner ordering.
   [(#3861)](https://github.com/PennyLaneAI/pennylane/pull/3861)
 
 <h3>Contributors</h3>
