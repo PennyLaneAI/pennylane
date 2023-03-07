@@ -35,6 +35,10 @@
 
 <h3>Breaking changes</h3>
 
+* An operation that implements a custom `generator` method, but does not always return a valid generator, also has
+  to implement a `has_generator` property that reflects in which scenarios a generator will be returned.
+  [(#3875)](https://github.com/PennyLaneAI/pennylane/pull/3875)
+ 
 * Trainable parameters for the Jax interface are the parameters that are `JVPTracer`, defined by setting
   `argnums`. Previously, all JAX tracers, including those used for JIT compilation, were interpreted to be trainable.
   [(#3697)](https://github.com/PennyLaneAI/pennylane/pull/3697)
