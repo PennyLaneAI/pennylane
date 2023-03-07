@@ -322,7 +322,6 @@ class TestDiffSingle:
 
         dev = qml.device("default.qubit", wires=2)
 
-        @jax.jit
         @qml.batch_input(argnum=0)
         @qml.qnode(dev, diff_method=diff_method, interface=interface)
         def circuit(input, x):
@@ -339,7 +338,7 @@ class TestDiffSingle:
         input = jnp.linspace(0.1, 0.5, batch_size)
         x = jnp.array(0.1)
 
-        res = jax.grad(cost, argnums=1)(input, x)
+        res = jax.jit(jax.grad(cost, argnums=1))(input, x)
         expected = -np.sin(0.1) * sum(np.sin(input))
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
@@ -560,7 +559,6 @@ class TestDiffMulti:
 
         dev = qml.device("default.qubit", wires=2)
 
-        @jax.jit
         @qml.batch_input(argnum=0)
         @qml.qnode(dev, diff_method=diff_method, interface=interface)
         def circuit(input, x):
@@ -593,7 +591,7 @@ class TestDiffMulti:
         for r, exp in zip(res, expected):
             assert qml.math.allclose(r, exp, atol=tol)
 
-        grad = jax.jacobian(circuit, argnums=1)(input, x)
+        grad = jax.jit(jax.jacobian(circuit, argnums=1))(input, x)
         expected = (
             -jnp.sin(input + x),
             qml.math.transpose(

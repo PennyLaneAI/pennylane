@@ -493,7 +493,7 @@ class TestDiffMulti:
         dev = qml.device("default.qubit", wires=2)
 
         @qml.batch_params(all_operations=True)
-        @qml.qnode(dev, diff_method=diff_method, interface=interface)
+        @qml.qnode(dev, diff_method=diff_method, interface=interface, cache=False)
         def circuit(x):
             qml.RY(x, wires=0)
             qml.CNOT(wires=[0, 1])
@@ -517,7 +517,8 @@ class TestDiffMulti:
         for r, exp in zip(res, expected):
             assert qml.math.allclose(r, exp, atol=tol)
 
-        grad = jax.jacobian(circuit)(x)
+        grad = jax.jit(jax.jacobian(circuit))(x)
+
         expected = (
             -np.sin(x) * np.eye(batch_size),
             qml.math.stack([-np.sin(x) / 2, np.zeros_like(x), np.zeros_like(x), np.sin(x) / 2])
