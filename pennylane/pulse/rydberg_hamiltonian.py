@@ -42,7 +42,7 @@ def rydberg_interaction(register: list, wires=None, interaction_coeff: float = 8
         V_{ij} = \frac{C_6}{R_{ij}^6}
 
     where :math:`R_{ij}` is the distance between the atoms :math:`i` and :math:`j`, and :math:`C_6`
-    is the Rydberg interaction constant, which defaults to :math:`862690 \times 2\pi MHz \times \mu m^6`.
+    is the Rydberg interaction constant, which defaults to :math:`862690 \times 2\pi \text{MHz} \times \mu m^6`.
     This interaction term can be combined with a laser drive term to create a Hamiltonian describing a driven
     Rydberg atom system.
 
@@ -238,8 +238,8 @@ class RydbergHamiltonian(ParametrizedHamiltonian):
         register (list): list of coordinates (in micrometers) of each atom in the ensemble
         pulses (list): list of ``RydbergPulse`` classes containing the information about the
             amplitude, phase, detuning and wires of each pulse
-        interaction_coeff (float): Rydberg interaction constant in units: :math:`MHz \times \mu m^6`.
-            Defaults to :math:`862690 \times 2\pi MHz \times \mu m^6`.
+        interaction_coeff (float): Rydberg interaction constant in units: :math:`\text{MHz} \times \mu m^6`.
+            Defaults to :math:`862690 \times 2\pi \text{MHz} \times \mu m^6`.
 
     Returns:
         RydbergHamiltonian: class representing the Hamiltonian of an ensemble of Rydberg atoms
