@@ -398,7 +398,7 @@ class BlockEncode(Operation):
     num_wires = AnyWires
 
     def __init__(self, A, wires, do_queue=True, id=None):
-        A = pnp.atleast_2d(A)
+        A = qml.math.atleast_2d(A)
         wires = Wires(wires)
         if pnp.sum(A.shape) <= 2:
             normalization = A if A > 1 else 1
@@ -455,26 +455,32 @@ class BlockEncode(Operation):
         A = params[0]
         n, m, k = hyperparams["subspace"]
 
-        # if qml.math.get_interface(a) ==
-
         if qml.math.sum(qml.math.shape(A)) <= 2:
-            col1 = qml.math.vstack([A, pnp.sqrt(1 - A * pnp.conj(A))])
-            col2 = qml.math.vstack([pnp.sqrt(1 - A * pnp.conj(A)), -pnp.conj(A)])
+            col1 = qml.math.vstack([A, qml.math.sqrt(1 - A * qml.math.conj(A))])
+            col2 = qml.math.vstack([qml.math.sqrt(1 - A * qml.math.conj(A)), -qml.math.conj(A)])
             u = qml.math.hstack([col1, col2])
         else:
             d1, d2 = qml.math.shape(A)
-
-            col1 = qml.math.vstack([A, qml.math.sqrt_matrix(pnp.eye(d2) - pnp.conj(A).T @ A)])
+            col1 = qml.math.vstack(
+                [
+                    A,
+                    qml.math.sqrt_matrix(
+                        qml.math.eye(d2, like=A) - qml.math.transpose(qml.math.conj(A)) @ A
+                    ),
+                ]
+            )
             col2 = qml.math.vstack(
-                [qml.math.sqrt_matrix(pnp.eye(d1) - A @ pnp.conj(A).T), -pnp.conj(A).T]
+                [
+                    qml.math.sqrt_matrix(qml.math.eye(d1, like=A) - A @ qml.math.conj(A).T),
+                    -qml.math.conj(A).T,
+                ]
             )
 
             u = qml.math.hstack([col1, col2])
 
         if n + m < k:
             r = k - (n + m)
-            col1 = qml.math.vstack([u, pnp.zeros((r, n + m))])
-            col2 = qml.math.vstack([pnp.zeros((n + m, r)), pnp.eye(r)])
+            col1 = qml.math.vstack([u, qml.math.zeros((r, n + m), like=A)])
+            col2 = qml.math.vstack([qml.math.zeros((n + m, r), like=A), qml.math.eye(r, like=A)])
             u = qml.math.hstack([col1, col2])
-
         return u
