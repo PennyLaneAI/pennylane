@@ -180,10 +180,10 @@ def rydberg_drive(amplitude, detuning, phase, wires):
 
     >>> params = [2.4]
     >>> circuit(params)
-    Array(0.97540593, dtype=float32)
+    Array(0.97137696, dtype=float32)
 
     >>> jax.grad(circuit)(params)
-    [Array(0.00377756, dtype=float32)]
+    [Array(0.10493923, dtype=float32)]
     """
     if isinstance(wires, int):
         wires = [wires]
@@ -237,7 +237,7 @@ class RydbergHamiltonian(ParametrizedHamiltonian):
         pulses (list): list of ``RydbergPulse`` classes containing the information about the
             amplitude, phase, detuning and wires of each pulse
         interaction_coeff (float): Rydberg interaction constant in units: :math:`\text{MHz} \times \mu m^6`.
-            Defaults to :math:`862690 \times 2\pi \text{MHz} \times \mu m^6`.
+            Defaults to :math:`862690 \text{MHz} \times \mu m^6`.
 
     Returns:
         RydbergHamiltonian: class representing the Hamiltonian of an ensemble of Rydberg atoms
@@ -250,7 +250,7 @@ class RydbergHamiltonian(ParametrizedHamiltonian):
         observables,
         register: list = None,
         pulses: List["RydbergPulse"] = None,
-        interaction_coeff: float = 862690 * 2 * np.pi,
+        interaction_coeff: float = 862690,
     ):
         self.register = register
         self.pulses = [] if pulses is None else pulses

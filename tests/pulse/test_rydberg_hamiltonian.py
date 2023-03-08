@@ -40,7 +40,7 @@ class TestRydbergHamiltonian:
         assert qml.math.allequal(rm.register, atom_coordinates)
         assert rm.pulses == []
         assert rm.wires == Wires([])
-        assert rm.interaction_coeff == 862690 * 2 * np.pi
+        assert rm.interaction_coeff == 862690
 
     def test_add(self):
         """Test that the __add__ dunder method works correctly."""
@@ -133,7 +133,7 @@ class TestInteractionWithOperators:
         """Test that a Hamiltonian and SProd can be added to a RydbergHamiltonian, and
         will be incorporated in the H_fixed term, with their coefficients included in H_coeffs_fixed.
         """
-        R = rydberg_drive(rabi=f1, detuning=f2, phase=0, wires=[0, 1])
+        R = rydberg_drive(amplitude=f1, detuning=f2, phase=0, wires=[0, 1])
         params = [1, 2]
         # Adding on the right
         new_pH = R + H
@@ -152,7 +152,7 @@ class TestInteractionWithOperators:
     def test_add_other_operators(self, op):
         """Test that a Hamiltonian, SProd, Tensor or Operator can be added to a
         ParametrizedHamiltonian, and will be incorporated in the H_fixed term"""
-        R = rydberg_drive(rabi=f1, detuning=f2, phase=0, wires=[0, 1])
+        R = rydberg_drive(amplitude=f1, detuning=f2, phase=0, wires=[0, 1])
 
         # Adding on the right
         new_pH = R + op
@@ -207,13 +207,13 @@ class TestRydbergTransition:
     def test_attributes_and_number_of_terms(self):
         """Test that the attributes and the number of terms of the ``ParametrizedHamiltonian`` returned by
         ``rydberg_drive`` are correct."""
-        Hd = rydberg_drive(rabi=1, detuning=2, phase=3, wires=[1, 2])
+        Hd = rydberg_drive(amplitude=1, detuning=2, phase=3, wires=[1, 2])
 
         assert isinstance(Hd, RydbergHamiltonian)
-        assert Hd.interaction_coeff == 862690 * 2 * np.pi
+        assert Hd.interaction_coeff == 862690
         assert Hd.wires == Wires([1, 2])
         assert Hd.register is None
-        assert len(Hd.ops) == 2  # rabi and detuning terms of the Hamiltonian
+        assert len(Hd.ops) == 2  # amplitude and detuning terms of the Hamiltonian
         assert Hd.pulses == [RydbergPulse(1, 2, 3, [1, 2])]
 
 
@@ -222,8 +222,8 @@ class TestRydbergPulse:
 
     def test_init(self):
         """Test the initialization of the ``RydbergPulse`` class."""
-        p = RydbergPulse(rabi=4, phase=8, detuning=9, wires=[0, 4, 7])
-        assert p.rabi == 4
+        p = RydbergPulse(amplitude=4, phase=8, detuning=9, wires=[0, 4, 7])
+        assert p.amplitude == 4
         assert p.phase == 8
         assert p.detuning == 9
         assert p.wires == Wires([0, 4, 7])
@@ -255,7 +255,7 @@ class TestIntegration:
         def fb(p, t):
             return p[0] * jnp.sin(p[1] * t)
 
-        Ht = rydberg_drive(rabi=fa, detuning=fb, phase=0, wires=1)
+        Ht = rydberg_drive(amplitude=fa, detuning=fb, phase=0, wires=1)
 
         dev = qml.device("default.qubit", wires=wires)
 
