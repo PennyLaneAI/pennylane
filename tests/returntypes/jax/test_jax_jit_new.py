@@ -39,7 +39,7 @@ from pennylane.interfaces.jax_jit import _execute_with_fwd
         ("0.4.5", jax, True),
     ],
 )
-def test_raise_version_error(self, package, version, should_raise, monkeypatch):
+def test_raise_version_error(package, version, should_raise, monkeypatch):
     """Test JAX version error"""
     a = jax.numpy.array([0.1, 0.2])
 
