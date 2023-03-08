@@ -40,7 +40,7 @@ from pennylane.wires import Wires
 # pylint: disable=expression-not-assigned
 
 
-def equal_if_decomposed(lhs, rhs):
+def equal_if_decomposed(lhs, rhs, max_iterations=1000):
     """
     Test that 2 operators or operator sequences are the same if fully decomposed.
     """
@@ -52,7 +52,11 @@ def equal_if_decomposed(lhs, rhs):
     # make copies
     lhs = list(lhs)
     rhs = list(rhs)
+    iterations = 0
     while len(lhs) != 0 and len(rhs) != 0:
+        iterations += 1
+        if max_iterations is not None and iterations > max_iterations:
+            raise AssertionError(f"Max iterations {max_iterations} for equal_if_decomposed reached")
         if qml.equal(lhs[0], rhs[0]):
             lhs.pop(0)
             rhs.pop(0)
@@ -1515,7 +1519,9 @@ def test_qubit_unitary(M):
         ctrl(qml.QubitUnitary, 1)(M, wires=0)
 
     tape = QuantumScript.from_queue(q_tape)
+    print(list(tape))
     tape = tape.expand(3, stop_at=lambda op: not isinstance(op, Controlled))
+    print(list(tape))
 
     expected = qml.ControlledQubitUnitary(M, control_wires=1, wires=0)
 

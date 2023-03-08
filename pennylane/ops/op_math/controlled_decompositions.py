@@ -356,9 +356,6 @@ def _ctrl_decomp_bisect_general(
     qml.QueuingManager.remove(component[3])
     qml.QueuingManager.remove(od_decomp[0])
 
-    # set hint on second MultiControlledX controlled by k2
-    od_decomp[2].hints["decomposition:reverse"] = True
-
     adjoint_component = [qml.adjoint(copy(op), lazy=False) for op in reversed(component)]
 
     return component[0:3] + od_decomp[1:] + adjoint_component
