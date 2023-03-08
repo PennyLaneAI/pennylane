@@ -171,8 +171,8 @@ def _execute(
         dictionaries. JAX NumPy arrays don't support dictionaries."""
         if any(isinstance(m, CountsMP) for m in tape.measurements):
             if tape.batch_size is not None:
-                raise ValueError(
-                    "Broadcasted circuits with counts return types are only support with "
+                raise InterfaceUnsupportedError(
+                    "Broadcasted circuits with counts return types are only supported with "
                     "the new return system. Use qml.enable_return() to turn it on."
                 )
             return r

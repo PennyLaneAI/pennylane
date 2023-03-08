@@ -24,6 +24,7 @@ from tensorflow.python.eager import context
 
 import pennylane as qml
 from pennylane._device import _get_num_copies
+from pennylane.interfaces import InterfaceUnsupportedError
 from pennylane.measurements import CountsMP
 
 
@@ -197,9 +198,9 @@ def execute(tapes, device, execute_fn, gradient_fn, gradient_kwargs, _n=1, max_d
         # convert output to TensorFlow tensors
 
         if any(isinstance(m, CountsMP) for m in tape.measurements):
-            if tape.batch_size:
-                raise ValueError(
-                    "Broadcasted circuits with counts return types are only support with "
+            if tape.batch_size is not None:
+                raise InterfaceUnsupportedError(
+                    "Broadcasted circuits with counts return types are only supported with "
                     "the new return system. Use qml.enable_return() to turn it on."
                 )
             continue

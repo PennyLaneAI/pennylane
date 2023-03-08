@@ -18,6 +18,7 @@ import numpy as np
 import pytest
 
 import pennylane as qml
+from pennylane.interfaces import InterfaceUnsupportedError
 from pennylane.measurements import AllCounts, Counts, CountsMP
 from pennylane.operation import Operator
 from pennylane.wires import Wires
@@ -152,6 +153,20 @@ class TestCounts:
         assert np.all([sum(s.values()) == n_sample for batch in sample for s in batch])
 
         custom_measurement_process(dev, spy)
+
+    @pytest.mark.parametrize("interface", ["jax", "tensorflow"])
+    def test_batched_counts_not_supported_old_return(self, interface):
+        """Test that counts with batching is not supporting in the old return system."""
+
+        @qml.qnode(qml.device("default.qubit", wires=2, shots=10), interface=interface)
+        def circuit():
+            qml.RX([0.54, 0.65], wires=0)
+            return qml.counts(qml.PauliZ(0))
+
+        with pytest.raises(
+            InterfaceUnsupportedError, match="Broadcasted circuits with counts return types"
+        ):
+            _ = circuit()
 
     def test_counts_combination(self, mocker):
         """Test the output of combining expval, var and counts"""
