@@ -56,22 +56,21 @@ def _get_slice(index, axis, num_axes):
     return tuple(idx)
 
 
-def apply_operation_einsum(op: qml.operation.Operator, state, batch_dim=0):
+def apply_operation_einsum(op: qml.operation.Operator, state, is_state_batched: bool = False):
     """Apply ``Operator`` to ``state`` using ``einsum``. This is more efficent at lower qubit
     numbers.
 
     Args:
         op (Operator): Operator to apply to the quantum state
         state (array[complex]): Input quantum state
-        batch_dim (int): Whether or not the state has a batch dimension. ``batch_dim`` should
-        be 0 if the state is unbatched, or 1 if the state is batched.
+        is_state_batched (bool): Boolean representing whether the state is batched or not
 
     Returns:
         array[complex]: output_state
     """
     mat = op.matrix()
 
-    total_indices = len(state.shape) - batch_dim
+    total_indices = len(state.shape) - is_state_batched
     num_indices = len(op.wires)
 
     state_indices = alphabet[:total_indices]
@@ -88,39 +87,38 @@ def apply_operation_einsum(op: qml.operation.Operator, state, batch_dim=0):
     )
 
     new_mat_shape = [2] * (num_indices * 2)
-    if len(mat.shape) != 2:
+    if op.batch_size is not None:
         # Add broadcasting dimension to shape
-        new_mat_shape.insert(0, mat.shape[0])
+        new_mat_shape = [mat.shape[0]] + new_mat_shape
     reshaped_mat = math.reshape(mat, new_mat_shape)
 
     return math.einsum(einsum_indices, reshaped_mat, state)
 
 
-def apply_operation_tensordot(op: qml.operation.Operator, state, batch_dim=0):
+def apply_operation_tensordot(op: qml.operation.Operator, state, is_state_batched: bool = False):
     """Apply ``Operator`` to ``state`` using ``math.tensordot``. This is more efficent at higher qubit
     numbers.
 
     Args:
         op (Operator): Operator to apply to the quantum state
         state (array[complex]): Input quantum state
-        batch_dim (int): Whether or not the state has a batch dimension. ``batch_dim`` should
-        be 0 if the state is unbatched, or 1 if the state is batched.
+        is_state_batched (bool): Boolean representing whether the state is batched or not
 
     Returns:
         array[complex]: output_state
     """
     mat = op.matrix()
-    total_indices = len(state.shape) - batch_dim
+    total_indices = len(state.shape) - is_state_batched
     num_indices = len(op.wires)
 
     new_mat_shape = [2] * (num_indices * 2)
     if is_mat_batched := op.batch_size is not None:
         # Add broadcasting dimension to shape
-        new_mat_shape.insert(0, mat.shape[0])
+        new_mat_shape = [mat.shape[0]] + new_mat_shape
     reshaped_mat = math.reshape(mat, new_mat_shape)
 
-    mat_axes = list(qml.math.arange(-num_indices, 0))
-    state_axes = [i + batch_dim for i in op.wires]
+    mat_axes = list(range(-num_indices, 0))
+    state_axes = [i + is_state_batched for i in op.wires]
     axes = (mat_axes, state_axes)
 
     tdot = math.tensordot(reshaped_mat, state, axes=axes)
@@ -132,9 +130,8 @@ def apply_operation_tensordot(op: qml.operation.Operator, state, batch_dim=0):
     unused_idxs = [i for i in range(total_indices) if i not in op.wires]
     perm = list(op.wires) + unused_idxs
     if is_mat_batched:
-        perm = [i + 1 for i in perm]
-        perm.insert(0, 0)
-    if batch_dim:
+        perm = [0] + [i + 1 for i in perm]
+    if is_state_batched:
         perm.insert(num_indices, -1)
 
     inv_perm = math.argsort(perm)
@@ -142,14 +139,13 @@ def apply_operation_tensordot(op: qml.operation.Operator, state, batch_dim=0):
 
 
 @singledispatch
-def apply_operation(op: qml.operation.Operator, state, batch_dim=0):
+def apply_operation(op: qml.operation.Operator, state, is_state_batched: bool = False):
     """Apply and operator to a given state.
 
     Args:
         op (Operator): The operation to apply to ``state``
         state (tensor_like): The starting state.
-        batch_dim (int): Whether or not the state has a batch dimension. ``batch_dim`` should
-        be 0 if the state is unbatched, or 1 if the state is batched.
+        is_state_batched (bool): Boolean representing whether the state is batched or not
 
     Returns:
         ndarray: output state
@@ -190,22 +186,22 @@ def apply_operation(op: qml.operation.Operator, state, batch_dim=0):
     if (
         len(op.wires) < EINSUM_OP_WIRECOUNT_PERF_THRESHOLD
         and math.ndim(state) < EINSUM_STATE_WIRECOUNT_PERF_THRESHOLD
-    ) or (op.batch_size and batch_dim):
-        return apply_operation_einsum(op, state, batch_dim=batch_dim)
-    return apply_operation_tensordot(op, state, batch_dim=batch_dim)
+    ) or (op.batch_size and is_state_batched):
+        return apply_operation_einsum(op, state, is_state_batched=is_state_batched)
+    return apply_operation_tensordot(op, state, is_state_batched=is_state_batched)
 
 
 @apply_operation.register
-def apply_paulix(op: qml.PauliX, state, batch_dim=0):
+def apply_paulix(op: qml.PauliX, state, is_state_batched: bool = False):
     """Apply :class:`pennylane.PauliX` operator to the quantum state"""
-    axis = op.wires[0] + batch_dim
+    axis = op.wires[0] + is_state_batched
     return math.roll(state, 1, axis)
 
 
 @apply_operation.register
-def apply_pauliz(op: qml.PauliZ, state, batch_dim=0):
+def apply_pauliz(op: qml.PauliZ, state, is_state_batched: bool = False):
     """Apply pauliz to state."""
-    axis = op.wires[0] + batch_dim
+    axis = op.wires[0] + is_state_batched
     n_dim = math.ndim(state)
 
     sl_0 = _get_slice(0, axis, n_dim)
@@ -216,10 +212,10 @@ def apply_pauliz(op: qml.PauliZ, state, batch_dim=0):
 
 
 @apply_operation.register
-def apply_cnot(op: qml.CNOT, state, batch_dim=0):
+def apply_cnot(op: qml.CNOT, state, is_state_batched: bool = False):
     """Apply cnot gate to state."""
-    target_axes = (op.wires[1] - 1 if op.wires[1] > op.wires[0] else op.wires[1]) + batch_dim
-    control_axes = op.wires[0] + batch_dim
+    target_axes = (op.wires[1] - 1 if op.wires[1] > op.wires[0] else op.wires[1]) + is_state_batched
+    control_axes = op.wires[0] + is_state_batched
     n_dim = math.ndim(state)
 
     sl_0 = _get_slice(0, control_axes, n_dim)

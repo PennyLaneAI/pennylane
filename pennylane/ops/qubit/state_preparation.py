@@ -206,7 +206,7 @@ class QubitStateVector(StatePrep):
         ket_shape = [2] * num_total_wires
         if self.batch_size:
             # Add broadcasted dimension to the shape of the state vector
-            ket_shape.insert(0, self.batch_size)
+            ket_shape = [self.batch_size] + ket_shape
 
         ket = np.zeros(ket_shape, dtype=np.complex128)
         ket[indices] = op_vector
@@ -218,8 +218,7 @@ class QubitStateVector(StatePrep):
             if self.batch_size:
                 # If the operation is broadcasted, the desired order must include the batch dimension
                 # as the first dimension.
-                desired_order = [d + 1 for d in desired_order]
-                desired_order.insert(0, 0)
+                desired_order = [0] + [d + 1 for d in desired_order]
 
             ket = ket.transpose(desired_order)
 

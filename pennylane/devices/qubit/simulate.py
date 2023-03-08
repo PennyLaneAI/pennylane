@@ -51,7 +51,6 @@ def simulate(circuit: qml.tape.QuantumScript) -> tuple:
     state = create_initial_state(circuit.wires, circuit._prep[0] if circuit._prep else None)
 
     for op in circuit._ops:
-        batched_state = qml.math.ndim(state) != len(circuit.wires)
-        state = apply_operation(op, state, batch_dim=int(batched_state))
+        state = apply_operation(op, state)
 
     return tuple(measure(mp, state) for mp in circuit.measurements)

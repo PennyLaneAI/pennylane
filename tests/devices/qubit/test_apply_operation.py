@@ -371,7 +371,7 @@ class TestBroadcasting:  # pylint: disable=too-few-public-methods
         """Tests that unbatched operations are applied correctly to a batched state."""
         state = np.ones((3, 2, 2, 2)) / np.sqrt(8)
 
-        res = method(op, qml.math.asarray(state, like=ml_framework), batch_dim=1)
+        res = method(op, qml.math.asarray(state, like=ml_framework), is_state_batched=True)
         missing_wires = 3 - len(op.wires)
         mat = op.matrix()
         expanded_mat = np.kron(np.eye(2**missing_wires), mat) if missing_wires else mat
@@ -388,7 +388,7 @@ class TestBroadcasting:  # pylint: disable=too-few-public-methods
 
         state = np.ones((3, 2, 2, 2)) / np.sqrt(8)
 
-        res = method(op, qml.math.asarray(state, like=ml_framework), batch_dim=1)
+        res = method(op, qml.math.asarray(state, like=ml_framework), is_state_batched=True)
         missing_wires = 3 - len(op.wires)
         mat = op.matrix()
         expanded_mat = [
