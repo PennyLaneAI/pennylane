@@ -372,7 +372,7 @@ class TestApply:
         """Test that an exception is raised if a state preparation is not the
         first operation in the circuit."""
         dev = DefaultQubitTF(wires=2)
-        state = np.array([0, 12])
+        state = np.array([0, 1])
 
         with pytest.raises(
             qml.DeviceError,
@@ -442,23 +442,6 @@ class TestApply:
 
         res = dev.state
         expected = CRot3(a, b, c) @ state
-        assert np.allclose(res, expected, atol=tol, rtol=0)
-
-    def test_inverse_operation(self, init_state, tol):
-        """Test that the inverse of an operation is correctly applied"""
-        dev = DefaultQubitTF(wires=1)
-        state = init_state(1)
-
-        a = 0.542
-        b = 1.3432
-        c = -0.654
-
-        queue = [qml.QubitStateVector(state, wires=[0])]
-        queue += [qml.Rot(a, b, c, wires=0).inv()]
-        dev.apply(queue)
-
-        res = dev.state
-        expected = np.linalg.inv(Rot3(a, b, c)) @ state
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
     @pytest.mark.parametrize("op,mat", two_qubit)
@@ -2082,26 +2065,6 @@ class TestPassthruIntegration:
             * (np.sin(lam) * np.sin(phi) - np.cos(theta) * np.cos(lam) * np.cos(phi))
         )
         assert np.allclose(res.numpy(), expected_grad, atol=tol, rtol=0)
-
-    def test_inverse_operation_jacobian_backprop(self, tol):
-        """Test that inverse operations work in backprop
-        mode"""
-        dev = qml.device("default.qubit.tf", wires=1)
-
-        @qml.qnode(dev, diff_method="backprop", interface="tf")
-        def circuit(param):
-            qml.RY(param, wires=0).inv()
-            return qml.expval(qml.PauliX(0))
-
-        x = tf.Variable(0.3)
-
-        with tf.GradientTape() as tape:
-            res = circuit(x)
-
-        assert np.allclose(res, -tf.sin(x), atol=tol, rtol=0)
-
-        grad = tape.gradient(res, x)
-        assert np.allclose(grad, -tf.cos(x), atol=tol, rtol=0)
 
     @pytest.mark.parametrize("interface", ["autograd", "torch"])
     def test_error_backprop_wrong_interface(self, interface, tol):

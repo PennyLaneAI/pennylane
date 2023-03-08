@@ -54,6 +54,7 @@ def httpserver_listen_address():
     return ("localhost", 8888)
 
 
+# pylint:disable=unused-argument
 def get_mock(url, timeout=1.0):
     """Return the foldermap or data_struct according to URL"""
     resp = MagicMock(ok=True)
@@ -70,6 +71,7 @@ def submit_download_mock(_self, _fetch_and_save, filename, dest_folder):
     qml.data.Dataset._write_file(content, os.path.join(dest_folder, filename))
 
 
+# pylint:disable=unused-argument
 def wait_mock_fixture(_futures, return_when=None):
     """Patch to avoid raising exceptions after collecting threads."""
     return MagicMock(done=[])
@@ -302,7 +304,7 @@ class TestLoadHelpers:
                     "HeH": {"STO-3G": ["0.50"]},
                 },
                 [["full"], ["full"], ["0.48", "0.50"]],
-                ["H2/6-31G/0.50", "H2/STO-3G/0.48", "H2/STO-3G/0.50", "HeH/STO-3G/0.50"],
+                ["H2/STO-3G/0.48", "H2/STO-3G/0.50", "H2/6-31G/0.50", "HeH/STO-3G/0.50"],
             ),
             (
                 {
@@ -312,11 +314,19 @@ class TestLoadHelpers:
                 [["full"], ["STO-3G"], ["0.50"]],
                 [],
             ),
+            (
+                {
+                    "H2": {"STO-3G": ["0.46", "0.48", "0.50"], "6-31G": ["0.46", "0.50"]},
+                    "HeH": {"STO-3G": ["0.50"]},
+                },
+                [["HeH", "H2"], ["STO-3G"], ["0.50", "0.46"]],
+                ["HeH/STO-3G/0.50", "H2/STO-3G/0.50", "H2/STO-3G/0.46"],
+            ),
         ],
     )
     def test_generate_folders(self, node, folders, output):
         """Test the _generate_folders helper function."""
-        assert sorted(qml.data.data_manager._generate_folders(node, folders)) == output
+        assert qml.data.data_manager._generate_folders(node, folders) == output
 
     @patch("concurrent.futures.ThreadPoolExecutor.submit", return_value=True)
     @patch("pennylane.data.data_manager.wait", return_value=MagicMock(done=[]))
@@ -482,9 +492,6 @@ class TestLoad:
         assert data.molecule == "H2_6-31G_0.46_molecule"
         assert data._dtype == "qchem"
         assert data._folder == os.path.join(dest, "datasets/qchem/H2/6-31G/0.46")
-        assert data._prefix == os.path.join(
-            dest, "datasets/qchem/H2/6-31G/0.46/H2_6-31G_0.46_{}.dat"
-        )
         assert data._fullfile is None
 
     def test_successful_load_many(self, tmp_path):
@@ -493,11 +500,25 @@ class TestLoad:
             "qchem", molname="H2", basis="6-31G", bondlength="full", folder_path=str(tmp_path)
         )
         assert len(datasets) == 3
-        assert sorted([d.molecule for d in datasets]) == [
+        assert [d.molecule for d in datasets] == [
             "H2_6-31G_0.46_full",
-            "H2_6-31G_1.0_full",
             "H2_6-31G_1.16_full",
+            "H2_6-31G_1.0_full",
         ]
+
+    def test_stable_load_order(self, tmp_path):
+        """Test that the order of returned datasets is stable and sorted."""
+        lengths = [1.0, 1.16, 0.46]
+        path = str(tmp_path)
+        for _ in range(5):  # 5 subsequent calls to suggest stability
+            data = qml.data.load(
+                "qchem", molname="H2", basis="6-31G", bondlength=lengths, folder_path=path
+            )
+            assert [d.molecule for d in data] == [
+                "H2_6-31G_1.0_full",
+                "H2_6-31G_1.16_full",
+                "H2_6-31G_0.46_full",
+            ]
 
     @pytest.mark.parametrize(
         ("attributes", "fullfile"),
@@ -605,7 +626,7 @@ class TestLoadInteractive:
     )
     def test_load_interactive_success(
         self, mock_input, mock_load, mock_sleep, side_effect, data_name, kwargs, sleep_call_count
-    ):
+    ):  # pylint:disable=too-many-arguments
         """Test that load_interactive succeeds."""
         mock_input.side_effect = side_effect
         assert isinstance(qml.data.load_interactive(), qml.data.Dataset)

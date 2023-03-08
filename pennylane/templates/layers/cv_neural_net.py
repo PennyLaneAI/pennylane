@@ -101,7 +101,6 @@ class CVNeuralNetLayers(Operation):
         do_queue=True,
         id=None,
     ):
-
         n_wires = len(wires)
         # n_if -> theta and phi shape for Interferometer
         n_if = n_wires * (n_wires - 1) // 2
@@ -201,7 +200,6 @@ class CVNeuralNetLayers(Operation):
         op_list = []
         n_layers = qml.math.shape(theta_1)[0]
         for m in range(n_layers):
-
             op_list.append(
                 qml.Interferometer(
                     theta=theta_1[m],

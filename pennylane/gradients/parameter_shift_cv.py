@@ -60,7 +60,6 @@ def _grad_method(tape, idx):
     best = []
 
     for m in tape.measurements:
-
         if isinstance(m, ProbabilityMP) or (m.obs.ev_order not in (1, 2)):
             # Higher-order observables (including probability) only support finite differences.
             best.append("F")
@@ -85,7 +84,6 @@ def _grad_method(tape, idx):
             best_method = "F"
 
         elif m.obs.ev_order == 2:
-
             if isinstance(m, ExpectationMP):
                 # If the observable is second-order, we must use the second-order
                 # CV parameter shift rule
@@ -435,7 +433,6 @@ def second_order_param_shift(tape, dev_wires, argnum=None, shifts=None, gradient
         iterator = enumerate(zip(shapes, gradient_values, obs_indices))
 
         for i, (shape, grad_value, obs_ind) in iterator:
-
             if shape == 0:
                 # parameter has zero gradient
                 isscalar = qml.math.ndim(results[0]) == 0
@@ -495,7 +492,7 @@ def param_shift_cv(
 
     Args:
         tape (.QuantumTape): quantum tape to differentiate
-        dev (.Device): device the parameter-shift method is to be computed on
+        dev (pennylane.Device): device the parameter-shift method is to be computed on
         argnum (int or list[int] or None): Trainable parameter indices to differentiate
             with respect to. If not provided, the derivative with respect to all
             trainable indices are returned.
@@ -505,6 +502,7 @@ def param_shift_cv(
             If unspecified, equidistant shifts are assumed.
         gradient_recipes (tuple(list[list[float]] or None)): List of gradient recipes
             for the parameter-shift method. One gradient recipe must be provided
+
             per trainable parameter.
 
             This is a tuple with one nested list per parameter. For

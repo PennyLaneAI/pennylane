@@ -6,34 +6,90 @@ Deprecations
 Pending deprecations
 --------------------
 
-* The ``observables`` argument in ``QubitDevice.statistics`` is deprecated. Please use ``circuit``
-  instead.
+* The argument ``argnum`` for gradient transforms using the Jax interface is replaced by ``argnums``.
 
-  - Still accessible in v0.28
-  - Will be removed in v0.29
+  - ``argnum`` is automatically changed to ``argnums`` for gradient transforms using JAX and a warning is raised in v0.30
+  - ``argnums`` is the only option for gradient transforms using JAX in v0.31
+
+
+* The ``get_operation`` tape method is updated to return the operation index as well, changing its signature.
+
+  - The new signature is available by changing the arg ``return_op_index`` to ``True`` in v0.29
+  - The old signature is replaced with the new one in v0.30
+
+* The ``observables`` argument in ``QubitDevice.statistics`` is deprecated. Please use ``circuit``
+  instead. Using a list of observables in ``QubitDevice.statistics`` is deprecated. Please use a
+  ``QuantumTape`` instead.
+
+  - Still accessible in v0.28, v0.29
+  - Will be removed in v0.30
 
 * The ``seed_recipes`` argument in ``qml.classical_shadow`` and ``qml.shadow_expval`` is deprecated.
   A new argument ``seed`` has been added, which defaults to ``None`` and can contain an integer with the 
   wanted seed.
 
-  - Still accessible in v0.28
-  - Will be removed in v0.29
+  - Still accessible in v0.28, v0.29
+  - Will be removed in v0.30
 
 * The ``grouping`` module is deprecated. The functionality has been moved and
   reorganized in the new ``pauli`` module under ``pauli/utils.py`` or ``pauli/grouping/``.
 
-  - Still accessible in v0.27, v0.28
-  - Will be removed in v0.29
+  - Still accessible in v0.27, v0.28, v0.29
+  - Will be removed in v0.30
 
   The functions from ``grouping/pauli.py``, ``grouping/transformations.py`` and
   ``grouping/utils.py`` have been moved to ``pauli/utils.py``. The remaining functions
   have been consolidated in the ``pauli/grouping/`` directory.
 
+* ``qml.ExpvalCost`` has been deprecated, and usage will now raise a warning.
+  
+  - Deprecated in v0.24
+  - Will be removed in v0.30
+
+  Instead, it is recommended to simply
+  pass Hamiltonians to the ``qml.expval`` function inside QNodes:
+
+  .. code-block:: python
+
+    @qml.qnode(dev)
+    def ansatz(params):
+        some_qfunc(params)
+        return qml.expval(Hamiltonian)
+
+* The ``collections`` module has been deprecated.
+
+  - Deprecated in v0.29
+  - Will be removed in v0.31
+
+* ``qml.op_sum``` is deprecated. Users should use ``qml.sum`` instead.
+
+  - Deprecated in v0.29.
+  - Will be removed in v0.31.
+
+* A warning has been added in ``Evolution`` redirecting users to ``qml.evolve``. This was added
+  because we want to change the behaviour of ``Evolution``, adding a ``-1`` to the given parameter.
+
+  - Deprecated in v0.29.
+  - Will be removed in v0.30.
+  
+* The ``qml.utils.sparse_hamiltonian`` function is deprecated. ``~.Hamiltonian.sparse_matrix`` should be used instead.
+
+  - Deprecated in v0.29
+  - Removed in v0.31
+
+Completed deprecation cycles
+----------------------------
+
+* ``qml.VQECost`` is removed. 
+
+   - Deprecated in 0.13
+   - Removed in 0.29
+
 * In-place inversion — ``op.inv()`` and ``op.inverse=value`` — is deprecated. Please
   use ``qml.adjoint`` or ``qml.pow`` instead. 
 
   - Still accessible in v0.27 and v0.28
-  - Will be removed in v0.29
+  - Removed in v0.29
 
   Don't use:
 
@@ -51,63 +107,6 @@ Pending deprecations
   PauliX(wires=[0])
   >>> qml.PauliX(0) ** -1
   PauliX(wires=[0])**-1
-
-* ``qml.ExpvalCost`` has been deprecated, and usage will now raise a warning.
-  
-  - Deprecated in v0.24
-  - Will be removed in v0.29
-
-  Instead, it is recommended to simply
-  pass Hamiltonians to the ``qml.expval`` function inside QNodes:
-
-  .. code-block:: python
-
-    @qml.qnode(dev)
-    def ansatz(params):
-        some_qfunc(params)
-        return qml.expval(Hamiltonian)
-
-* ``qml.transforms.measurement_grouping`` has been deprecated, and usage will now raise a warning.
-
-  - Deprecated in v0.28
-  - Will be removed in v0.29
-
-  Don't use:
-
-  .. code-block:: python
-
-    with qml.tape.QuantumTape() as tape:
-      qml.RX(0.1, wires=0)
-      qml.RX(0.2, wires=1)
-
-    obs = [qml.PauliZ(0), qml.PauliX(1)]
-    coeffs = [2.0, 1.0]
-
-    tapes, fn = qml.transforms.measurement_grouping(tape, obs, coeffs)
-
-  Instead, use:
-
-  .. code-block:: python
-
-    obs = [qml.PauliZ(0), qml.PauliX(1)]
-    coeffs = [2.0, 1.0]
-    H = qml.Hamiltonian(coeffs, obs)
-
-    with qml.tape.QuantumTape() as tape:
-      qml.RX(0.1, wires=0)
-      qml.RX(0.2, wires=1)
-      qml.expval(H)
-
-    tapes, fn = qml.transforms.hamiltonian_expand(tape)
-
-* ``qml.transforms.make_tape`` has been deprecated, and usage will now raise a warning.
-  Instead, use ``qml.tape.make_qscript``.
-
-  - Deprecated in v0.28
-  - Will be removed in v0.29
-
-Completed deprecation cycles
-----------------------------
 
 * The ``qml.utils.decompose_hamiltonian()`` method is removed. Please
   use ``qml.pauli_decompose()``.
@@ -163,3 +162,15 @@ Completed deprecation cycles
 
   - Deprecated in v0.22
   - Removed in v0.28
+
+* ``qml.transforms.measurement_grouping`` has been removed. Please use ``qml.transforms.hamiltonian_expand``
+  instead. 
+
+  - Deprecated in v0.28
+  - Removed in v0.29
+
+* ``qml.transforms.make_tape`` was previously deprecated, but there is no longer a plan to remove it.
+  It no longer raises a warning, and the functionality is unchanged.
+
+  - Deprecated in v0.28
+  - Un-deprecated in v0.29

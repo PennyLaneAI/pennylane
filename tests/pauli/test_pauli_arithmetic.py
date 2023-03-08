@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Unit Tests for the PauliWord and PauliSentence classes"""
+import pickle
 import pytest
 from copy import copy, deepcopy
 
@@ -218,6 +219,13 @@ class TestPauliWord:
         with pytest.raises(ValueError, match="Can't get the Hamiltonian for an empty PauliWord."):
             pw4.hamiltonian()
 
+    def test_pickling(self):
+        """Check that pauliwords can be pickled and unpickled."""
+        pw = PauliWord({2: "X", 3: "Y", 4: "Z"})
+        serialization = pickle.dumps(pw)
+        new_pw = pickle.loads(serialization)
+        assert pw == new_pw
+
 
 class TestPauliSentence:
     def test_missing(self):
@@ -423,7 +431,7 @@ class TestPauliSentence:
         (PauliSentence({PauliWord({0: X}): 1}), qml.s_prod(1, qml.PauliX(wires=0))),
         (
             ps1_hamiltonian,
-            qml.op_sum(
+            qml.sum(
                 1.23 * qml.prod(qml.PauliX(wires=1), qml.PauliY(wires=2)),
                 4 * qml.prod(qml.PauliX(wires="a"), qml.PauliX(wires="b"), qml.PauliZ(wires="c")),
                 -0.5 * qml.prod(qml.PauliZ(wires=0), qml.PauliZ(wires="b"), qml.PauliZ(wires="c")),
@@ -431,7 +439,7 @@ class TestPauliSentence:
         ),
         (
             ps2_hamiltonian,
-            qml.op_sum(
+            qml.sum(
                 -1.23 * qml.prod(qml.PauliX(wires=1), qml.PauliY(wires=2)),
                 -4 * qml.prod(qml.PauliX(wires="a"), qml.PauliX(wires="b"), qml.PauliZ(wires="c")),
                 0.5 * qml.prod(qml.PauliZ(wires=0), qml.PauliZ(wires="b"), qml.PauliZ(wires="c")),
@@ -462,7 +470,7 @@ class TestPauliSentence:
         """Test that a PauliSentence with an empty PauliWord can be cast to
         operation correctly."""
         full_ps_op = ps3.operation()
-        full_op = qml.op_sum(
+        full_op = qml.sum(
             -0.5 * qml.prod(qml.PauliZ(wires=0), qml.PauliZ(wires="b"), qml.PauliZ(wires="c")),
             qml.s_prod(1, qml.Identity(wires=[0, "b", "c"])),
         )
@@ -471,9 +479,12 @@ class TestPauliSentence:
             full_ps_op.operands[1],
             full_op.operands[1],
         )  # testing that the identity term is constructed well
-        assert ps_op.scalar == op.scalar
+        if op.scalar != 1:
+            assert ps_op.scalar == op.scalar
+            ps_base, op_base = (ps_op.base, op.base)
+        else:
+            ps_base, op_base = ps_op, op.base
 
-        ps_base, op_base = (ps_op.base, op.base)
         assert ps_base.name == op_base.name
         assert set(ps_base.wires) == set(op_base.wires)
         # in constructing the identity wires are cast from set -> list and the order is not preserved
@@ -481,7 +492,8 @@ class TestPauliSentence:
     def test_operation_empty(self):
         """Test that an empty PauliSentence with wire_order returns Identity."""
         op = ps5.operation(wire_order=[0, 1])
-        id = qml.Identity(wires=[0, 1])
+        id = qml.s_prod(0.0, qml.Identity(wires=[0, 1]))
+
         assert op.name == id.name
         assert op.wires == id.wires
 
@@ -492,6 +504,13 @@ class TestPauliSentence:
             ps4.operation()
         with pytest.raises(ValueError, match="Can't get the operation for an empty PauliSentence."):
             ps5.operation()
+
+    def test_operation_wire_order(self):
+        """Test that the wire_order parameter is used when the pauli representation is empty"""
+        op = ps5.operation(wire_order=["a", "b"])
+        id = qml.s_prod(0.0, qml.Identity(wires=["a", "b"]))
+
+        assert qml.equal(op, id)
 
     tup_ps_hamiltonian = (
         (PauliSentence({PauliWord({0: X}): 1}), 1 * qml.PauliX(wires=0)),
@@ -523,7 +542,7 @@ class TestPauliSentence:
     def test_hamiltonian_empty(self):
         """Test that an empty PauliSentence with wire_order returns Identity."""
         op = ps5.hamiltonian(wire_order=[0, 1])
-        id = 1 * qml.Identity(wires=[0, 1])
+        id = qml.Hamiltonian([], [])
         assert op.compare(id)
 
     def test_hamiltonian_empty_error(self):
@@ -533,3 +552,20 @@ class TestPauliSentence:
             ValueError, match="Can't get the Hamiltonian for an empty PauliSentence."
         ):
             ps5.hamiltonian()
+
+    def test_hamiltonian_wire_order(self):
+        """Test that the wire_order parameter is used when the pauli representation is empty"""
+        op = ps5.hamiltonian(wire_order=["a", "b"])
+        id = qml.Hamiltonian([], [])
+
+        assert qml.equal(op, id)
+
+    def test_pickling(self):
+        """Check that paulisentences can be pickled and unpickled."""
+        pw1 = PauliWord({2: "X", 3: "Y", 4: "Z"})
+        pw2 = PauliWord({2: "Y", 3: "Z"})
+        ps = PauliSentence({pw1: 1.5, pw2: -0.5})
+
+        serialization = pickle.dumps(ps)
+        new_ps = pickle.loads(serialization)
+        assert ps == new_ps

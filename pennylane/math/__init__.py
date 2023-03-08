@@ -33,68 +33,86 @@ The following frameworks are currently supported:
 """
 import autoray as ar
 
+from .is_independent import is_independent
+from .matrix_manipulation import expand_matrix, reduce_matrices
 from .multi_dispatch import (
-    multi_dispatch,
+    add,
     array,
     block_diag,
     concatenate,
+    detach,
     diag,
     dot,
     einsum,
+    expm,
     eye,
     frobenius_inner_product,
+    gammainc,
     get_trainable_indices,
+    iscomplex,
+    jax_argnums_to_tape_trainable,
+    kron,
+    matmul,
+    multi_dispatch,
     ones_like,
     scatter,
     scatter_element_add,
+    set_index,
     stack,
     tensordot,
     unwrap,
     where,
-    add,
-    iscomplex,
-    expm,
-    kron,
 )
-
-from .quantum import cov_matrix, marginal_prob
 from .quantum import (
-    reduced_dm,
-    vn_entropy,
-    purity,
-    mutual_info,
-    sqrt_matrix,
+    cov_matrix,
     fidelity,
+    marginal_prob,
+    mutual_info,
+    purity,
+    reduced_dm,
     relative_entropy,
+    sqrt_matrix,
+    vn_entropy,
+    max_entropy,
 )
-
 from .utils import (
     allclose,
     allequal,
     cast,
     cast_like,
-    in_backprop,
-    is_abstract,
     convert_like,
     get_interface,
+    in_backprop,
+    is_abstract,
     requires_grad,
 )
-
-from .is_independent import is_independent
-
-from .matrix_manipulation import expand_matrix, reduce_matrices
 
 sum = ar.numpy.sum
 toarray = ar.numpy.to_numpy
 T = ar.numpy.transpose
 
 
+class NumpyMimic(ar.autoray.NumpyMimic):
+    """Subclass of the Autoray NumpyMimic class in order to support
+    the NumPy fft submodule"""
+
+    # pylint: disable=too-few-public-methods
+
+    def __getattribute__(self, fn):
+        if fn == "fft":
+            return numpy_fft
+        return super().__getattribute__(fn)
+
+
+numpy_mimic = NumpyMimic()
+numpy_fft = ar.autoray.NumpyMimic("fft")
+
 # small constant for numerical stability that the user can modify
 eps = 1e-14
 
 
 def __getattr__(name):
-    return getattr(ar.numpy, name)
+    return getattr(numpy_mimic, name)
 
 
 __all__ = [
@@ -108,6 +126,7 @@ __all__ = [
     "concatenate",
     "convert_like",
     "cov_matrix",
+    "detach",
     "diag",
     "dot",
     "einsum",
@@ -120,6 +139,7 @@ __all__ = [
     "is_abstract",
     "is_independent",
     "marginal_prob",
+    "max_entropy",
     "mutual_info",
     "ones_like",
     "purity",

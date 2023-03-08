@@ -36,8 +36,8 @@ def pattern_matching_optimization(tape: QuantumTape, pattern_tapes, custom_quant
 
     Args:
         qfunc (function): A quantum function to be optimized.
-        pattern_tapes(list(.QuantumTape)): List of quantum tapes that implements the identity.
-        custom_quantum_cost (dict): Optional, quantum cost that overrides the default cost dictionnary.
+        pattern_tapes(list(.QuantumTape)): List of quantum tapes that implement the identity.
+        custom_quantum_cost (dict): Optional, quantum cost that overrides the default cost dictionary.
 
     Returns:
         function: the transformed quantum function
@@ -73,7 +73,7 @@ def pattern_matching_optimization(tape: QuantumTape, pattern_tapes, custom_quant
             qml.S(wires=0)
             qml.PauliZ(wires=0)
 
-    For optimizing the circuit given the given following template of CNOTs we apply the `pattern_matching`
+    For optimizing the circuit given the following template of CNOTs we apply the ``pattern_matching``
     transform.
 
     >>> dev = qml.device('default.qubit', wires=5)
@@ -91,9 +91,9 @@ def pattern_matching_optimization(tape: QuantumTape, pattern_tapes, custom_quant
     1: ──Z──╰Z─╭●─┤
     2: ──Z─────╰Z─┤
 
-    Note that with this pattern we also replace a ``pennylane.S``, ``pennylane.PauliZ`` sequence by ``pennylane.S``.
-    If one would like avoiding this, it possible to give a custom quantum cost dictionary with a negative cost for
-    ``pennylane.PauliZ``.
+    Note that with this pattern we also replace a ``pennylane.S``, ``pennylane.PauliZ`` sequence by
+    ``Adjoint(S)``. If one would like avoiding this, it possible to give a custom
+    quantum cost dictionary with a negative cost for ``pennylane.PauliZ``.
 
     >>> my_cost = {"PauliZ": -1 , "S": 1, "Adjoint(S)": 1}
     >>> optimized_qfunc = pattern_matching_optimization(pattern_tapes=[pattern], custom_quantum_cost=my_cost)(circuit)
@@ -214,7 +214,6 @@ def pattern_matching_optimization(tape: QuantumTape, pattern_tapes, custom_quant
                 with qml.queuing.AnnotatedQueue() as q_inside:
                     # Loop over all possible substitutions
                     for group in substitution.substitution_list:
-
                         circuit_sub = group.circuit_config
                         template_inverse = group.template_config
 
@@ -307,7 +306,7 @@ def pattern_matching(circuit_dag, pattern_dag):
 
     The matches are accessible by looping through the list outputted by ``qml.pattern_matching``. This output is a list
     of lists containing indices. Each list represents a match between a gate in the pattern with a gate in the circuit.
-    The first indices represent the gates in the pattern and the second indices provides indices for the gates in the
+    The first indices represent the gates in the pattern and the second indices provide indices for the gates in the
     circuit (by order of appearance).
 
     >>> for match_conf in all_max_matches:
@@ -823,7 +822,6 @@ class ForwardMatch:  # pylint: disable=too-many-instance-attributes,too-few-publ
 
         # While the list of matched nodes is not empty
         while self.matched_nodes_list:
-
             # Return first element of the matched_nodes_list and removes it from the list
             v_first, successors_to_visit = self._get_node_forward(0)
             self._remove_node_forward(0)
@@ -1105,7 +1103,6 @@ class BackwardMatch:  # pylint: disable=too-many-instance-attributes, too-few-pu
 
         # While the scenario stack is not empty.
         while self.matching_list.matching_scenarios_list:
-
             scenario = self.matching_list.pop_scenario()
 
             circuit_matched = scenario.circuit_matched
@@ -1159,7 +1156,6 @@ class BackwardMatch:  # pylint: disable=too-many-instance-attributes, too-few-pu
 
             # Loop over the pattern candidates.
             for pattern_id in candidates_indices:
-
                 node_pattern = self.pattern_dag.get_node(pattern_id)
                 wires2 = self.pattern_dag.get_node(pattern_id).wires
                 control_wires2 = self.pattern_dag.get_node(pattern_id).control_wires
@@ -1299,7 +1295,6 @@ class BackwardMatch:  # pylint: disable=too-many-instance-attributes, too-few-pu
                 # Third option: if blocking the succesors breaks a match, we consider
                 # also the possibility to block all predecessors (push the gate to the left).
                 if broken_matches and all(global_broken):
-
                     circuit_matched_block_p = circuit_matched.copy()
                     circuit_blocked_block_p = circuit_blocked.copy()
 
@@ -1325,7 +1320,6 @@ class BackwardMatch:  # pylint: disable=too-many-instance-attributes, too-few-pu
 
             # If there is no match then there are three options.
             if not global_match:
-
                 circuit_blocked[circuit_id] = True
 
                 following_matches = []
@@ -1340,7 +1334,6 @@ class BackwardMatch:  # pylint: disable=too-many-instance-attributes, too-few-pu
                 predecessors = self.circuit_dag.get_node(circuit_id).predecessors
 
                 if not predecessors or not following_matches:
-
                     matching_scenario = MatchingScenarios(
                         circuit_matched,
                         circuit_blocked,
@@ -1352,7 +1345,6 @@ class BackwardMatch:  # pylint: disable=too-many-instance-attributes, too-few-pu
                     self.matching_list.append_scenario(matching_scenario)
 
                 else:
-
                     circuit_matched_nomatch = circuit_matched.copy()
                     circuit_blocked_nomatch = circuit_blocked.copy()
 
@@ -1702,7 +1694,6 @@ class TemplateSubstitution:  # pylint: disable=too-few-public-methods
         """
 
         while self.match_stack:
-
             # Get the first match scenario of the list
             current = self.match_stack.pop(0)
 

@@ -1,81 +1,79 @@
 :orphan:
 
-# Release 0.29.0-dev (development release)
+# Release 0.30.0-dev (development release)
 
 <h3>New features since last release</h3>
 
-* The JAX-JIT interface now supports higher-order gradient computation with the new return types system.
-  [(#3498)](https://github.com/PennyLaneAI/pennylane/pull/3498)
+* The `sample_state` function is added to `devices/qubit` that returns a series of samples based on a given
+  state vector and a number of shots.
+  [(#3720)](https://github.com/PennyLaneAI/pennylane/pull/3720)
 
-  ```python
-  import pennylane as qml
-  import jax
-  from jax import numpy as jnp
-  
-  jax.config.update("jax_enable_x64", True)
-  
-  qml.enable_return()
-  
-  dev = qml.device("lightning.qubit", wires=2)
-  
-  @jax.jit
-  @qml.qnode(dev, interface="jax-jit", diff_method="parameter-shift", max_diff=2)
-  def circuit(a, b):
-      qml.RY(a, wires=0)
-      qml.RX(b, wires=1)
-      return qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliZ(1))
-  
-  a, b = jnp.array(1.0), jnp.array(2.0)
-  ```
-
-  ```pycon
-  >>> jax.hessian(circuit, argnums=[0, 1])(a, b)
-  (((DeviceArray(-0.54030231, dtype=float64, weak_type=True),
-     DeviceArray(1.76002563e-17, dtype=float64, weak_type=True)),
-    (DeviceArray(1.76002563e-17, dtype=float64, weak_type=True),
-     DeviceArray(1.11578284e-34, dtype=float64, weak_type=True))),
-   ((DeviceArray(2.77555756e-17, dtype=float64, weak_type=True),
-     DeviceArray(-4.54411427e-17, dtype=float64, weak_type=True)),
-    (DeviceArray(-1.76855671e-17, dtype=float64, weak_type=True),
-     DeviceArray(0.41614684, dtype=float64, weak_type=True))))
-  ```
+* The `simulate` function added to `devices/qubit` now supports measuring expectation values of large observables such as
+  `qml.Hamiltonian`, `qml.SparseHamiltonian`, `qml.Sum`.
+  [(#3759)](https://github.com/PennyLaneAI/pennylane/pull/3759)
 
 <h3>Improvements</h3>
 
-* Extended the `qml.equal` function to compare `Prod` and `Sum` operators.
-  [(#3516)](https://github.com/PennyLaneAI/pennylane/pull/3516)
+* The custom JVP rules in PennyLane now also support non-scalar and mixed-shape tape parameters as
+  well as multi-dimensional tape return types, like broadcasted `qml.probs`, for example.
+  [(#3766)](https://github.com/PennyLaneAI/pennylane/pull/3766)
 
+* The `qchem.jordan_wigner` function is extended to support more fermionic operator orders.
+  [(#3754)](https://github.com/PennyLaneAI/pennylane/pull/3754)
+  [(#3751)](https://github.com/PennyLaneAI/pennylane/pull/3751)
 
-* The `qml.generator` function now checks if the generator is hermitian, rather than whether it is a subclass of 
-  `Observable`, allowing it to return valid generators from `SymbolicOp` and `CompositeOp` classes.
- [(#3485)](https://github.com/PennyLaneAI/pennylane/pull/3485)
+* `AdaptiveOptimizer` is updated to use non-default user-defined qnode arguments.
+  [(#3765)](https://github.com/PennyLaneAI/pennylane/pull/3765)
 
-* Limit the `numpy` version to `<1.24`.
-  [(#3563)](https://github.com/PennyLaneAI/pennylane/pull/3563)
+* `pennylane.devices.qubit.preprocess` now allows circuits with non-commuting observables.
+  [(#3857)](https://github.com/PennyLaneAI/pennylane/pull/3857)
+
+* When using Jax-jit with gradient transforms the trainable parameters are correctly set (instead of every parameter 
+  to be set as trainable), and therefore the derivatives are computed more efficiently.
+  [(#3697)](https://github.com/PennyLaneAI/pennylane/pull/3697)
 
 <h3>Breaking changes</h3>
+
+* Trainable parameters for the Jax interface are the parameters that are `JVPTracer`, defined by setting
+  `argnums`. Previously, all JAX tracers, including those used for JIT compilation, were interpreted to be trainable.
+  [(#3697)](https://github.com/PennyLaneAI/pennylane/pull/3697)
+
+* The keyword argument `argnums` is now used for gradient transform using Jax, instead of `argnum`.
+  `argnum` is automatically converted to `argnums` when using JAX, and will no longer be supported in v0.31.
+  [(#3697)](https://github.com/PennyLaneAI/pennylane/pull/3697)
+
+* Made `qml.OrbitalRotation` and consequently `qml.GateFabric` consistent with the interleaved Jordan-Wigner ordering.
+  Previously, they were consistent with the sequential Jordan-Wigner ordering.
+  [(#3861)](https://github.com/PennyLaneAI/pennylane/pull/3861)
 
 <h3>Deprecations</h3>
 
 <h3>Documentation</h3>
 
+* A typo was corrected in the documentation for introduction to `inspecting_circuits` and `chemistry`.
+[(#3844)](https://github.com/PennyLaneAI/pennylane/pull/3844)
+
 <h3>Bug fixes</h3>
 
-* Child classes of `QuantumScript` now return their own type when using `SomeChildClass.from_queue`.
-  [(#3501)](https://github.com/PennyLaneAI/pennylane/pull/3501)
+* Registers `math.ndim` and `math.shape` for built-ins and autograd to accomodate Autoray 0.6.1.
+  [#3864](https://github.com/PennyLaneAI/pennylane/pull/3865)
+
+* Ensure that `qml.data.load` returns datasets in a stable and expected order.
+  [(#3856)](https://github.com/PennyLaneAI/pennylane/pull/3856)
+
+* Made `qml.OrbitalRotation` and consequently `qml.GateFabric` consistent with the interleaved Jordan-Wigner ordering.
+  [(#3861)](https://github.com/PennyLaneAI/pennylane/pull/3861)
 
 <h3>Contributors</h3>
 
-* Fixed typo in calculation error message and comment in operation.py
-  [(#3536)](https://github.com/PennyLaneAI/pennylane/pull/3536)
-
- <h3>Contributors</h3>
-
 This release contains contributions from (in alphabetical order):
 
-Ikko Ashimine
-Lillian M. A. Frederiksen
-Albert Mitjans Coma
+Utkarsh Azad
+Soran Jahangiri
+Christina Lee
+Vincent Michaud-Rioux
+Romain Moyard
+Mudit Pandey
 Matthew Silverman
-Antal Száva
-
+Jay Soni
+David Wierichs

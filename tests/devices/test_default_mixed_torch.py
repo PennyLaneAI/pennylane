@@ -14,13 +14,13 @@
 """
 Tests for the ``default.mixed`` device for the Torch interface.
 """
-import re
+# pylint: disable=protected-access, import-outside-toplevel
 import pytest
+import numpy as np
 
 import pennylane as qml
-from pennylane import numpy as np
+from pennylane import numpy as pnp
 from pennylane.devices.default_mixed import DefaultMixed
-from pennylane import DeviceError
 
 pytestmark = pytest.mark.torch
 
@@ -35,7 +35,7 @@ class TestQNodeIntegration:
         """Test that the plugin device loads correctly"""
         dev = qml.device("default.mixed", wires=2)
         assert dev.num_wires == 2
-        assert dev.shots == None
+        assert dev.shots is None
         assert dev.short_name == "default.mixed"
         assert dev.capabilities()["passthru_devices"]["torch"] == "default.mixed"
 
@@ -100,7 +100,7 @@ class TestDtypePreserved:
             qml.probs(wires=[2, 0]),
         ],
     )
-    def test_real_dtype(self, r_dtype, r_dtype_torch, measurement, tol):
+    def test_real_dtype(self, r_dtype, r_dtype_torch, measurement):
         """Test that the user-defined dtype of the device is preserved
         for QNodes with real-valued outputs"""
         p = torch.tensor(0.543)
@@ -128,7 +128,7 @@ class TestDtypePreserved:
         "measurement",
         [qml.state(), qml.density_matrix(wires=[1]), qml.density_matrix(wires=[2, 0])],
     )
-    def test_complex_dtype(self, c_dtype, c_dtype_torch, measurement, tol):
+    def test_complex_dtype(self, c_dtype, c_dtype_torch, measurement):
         """Test that the user-defined dtype of the device is preserved
         for QNodes with complex-valued outputs"""
         if c_dtype_torch == "torchc64":
@@ -196,6 +196,89 @@ class TestOps:
 
         assert torch.allclose(torch.reshape(dev._state, (8, 8)), state)
         spy.assert_called()
+
+
+class TestApplyChannelMethodChoice:
+    """Test that the right method between _apply_channel and _apply_channel_tensordot
+    is chosen."""
+
+    @pytest.mark.parametrize(
+        "op, exp_method, dev_wires",
+        [
+            (qml.RX(0.2, 0), "_apply_channel", 1),
+            (qml.RX(0.2, 0), "_apply_channel", 8),
+            (qml.CNOT([0, 1]), "_apply_channel", 3),
+            (qml.CNOT([0, 1]), "_apply_channel", 8),
+            (qml.MultiControlledX(wires=list(range(2))), "_apply_channel", 3),
+            (qml.MultiControlledX(wires=list(range(3))), "_apply_channel_tensordot", 3),
+            (qml.MultiControlledX(wires=list(range(8))), "_apply_channel_tensordot", 8),
+            (qml.PauliError("X", 0.5, 0), "_apply_channel", 2),
+            (qml.PauliError("XXX", 0.5, [0, 1, 2]), "_apply_channel", 4),
+            (
+                qml.PauliError("X" * 8, 0.5, list(range(8))),
+                "_apply_channel_tensordot",
+                8,
+            ),
+        ],
+    )
+    def test_with_numpy_state(self, mocker, op, exp_method, dev_wires):
+        """Test with a numpy array as device state."""
+
+        # Manually set the data of the operation to be torch data
+        # This is due to an import problem if these tests are skipped.
+        op.data = [d if isinstance(d, str) else torch.tensor(d) for d in op.data]
+        methods = ["_apply_channel", "_apply_channel_tensordot"]
+        del methods[methods.index(exp_method)]
+        unexp_method = methods[0]
+        spy_exp = mocker.spy(DefaultMixed, exp_method)
+        spy_unexp = mocker.spy(DefaultMixed, unexp_method)
+        dev = qml.device("default.mixed", wires=dev_wires)
+        state = np.zeros((2**dev_wires, 2**dev_wires))
+        state[0, 0] = 1.0
+        dev._state = np.array(state).reshape([2] * (2 * dev_wires))
+        dev._apply_operation(op)
+
+        spy_unexp.assert_not_called()
+        spy_exp.assert_called_once()
+
+    @pytest.mark.parametrize(
+        "op, exp_method, dev_wires",
+        [
+            (qml.RX(0.2, 0), "_apply_channel", 1),
+            (qml.RX(0.2, 0), "_apply_channel", 8),
+            (qml.CNOT([0, 1]), "_apply_channel", 3),
+            (qml.CNOT([0, 1]), "_apply_channel", 8),
+            (qml.MultiControlledX(wires=list(range(2))), "_apply_channel", 3),
+            (qml.MultiControlledX(wires=list(range(3))), "_apply_channel", 3),
+            (qml.MultiControlledX(wires=list(range(8))), "_apply_channel_tensordot", 8),
+            (qml.PauliError("X", 0.5, 0), "_apply_channel", 2),
+            (qml.PauliError("XXX", 0.5, [0, 1, 2]), "_apply_channel", 4),
+            (
+                qml.PauliError("X" * 8, 0.5, list(range(8))),
+                "_apply_channel_tensordot",
+                8,
+            ),
+        ],
+    )
+    def test_with_torch_state(self, mocker, op, exp_method, dev_wires):
+        """Test with a Torch array as device state."""
+
+        # Manually set the data of the operation to be torch data
+        # This is due to an import problem if these tests are skipped.
+        op.data = [d if isinstance(d, str) else torch.tensor(d) for d in op.data]
+        methods = ["_apply_channel", "_apply_channel_tensordot"]
+        del methods[methods.index(exp_method)]
+        unexp_method = methods[0]
+        spy_exp = mocker.spy(DefaultMixed, exp_method)
+        spy_unexp = mocker.spy(DefaultMixed, unexp_method)
+        dev = qml.device("default.mixed", wires=dev_wires)
+        state = np.zeros((2**dev_wires, 2**dev_wires))
+        state[0, 0] = 1.0
+        dev._state = torch.tensor(state).reshape([2] * (2 * dev_wires))
+        dev._apply_operation(op)
+
+        spy_unexp.assert_not_called()
+        spy_exp.assert_called_once()
 
 
 class TestPassthruIntegration:
@@ -270,7 +353,7 @@ class TestPassthruIntegration:
     def test_backprop_jacobian_agrees_parameter_shift(self, tol):
         """Test that jacobian of a QNode with an attached default.mixed.torch device
         gives the correct result with respect to the parameter-shift method"""
-        p = np.array([0.43316321, 0.2162158, 0.75110998, 0.94714242])
+        p = pnp.array([0.43316321, 0.2162158, 0.75110998, 0.94714242])
         p_torch = torch.tensor(p, dtype=torch.float64, requires_grad=True)
 
         def circuit(x):
@@ -287,23 +370,35 @@ class TestPassthruIntegration:
         circuit1 = qml.QNode(circuit, dev1, diff_method="backprop", interface="torch")
         circuit2 = qml.QNode(circuit, dev2, diff_method="parameter-shift")
 
-        assert circuit1.gradient_fn == "backprop"
-        assert circuit2.gradient_fn is qml.gradients.param_shift
-
         res = circuit1(p_torch)
         assert qml.math.allclose(res, circuit2(p), atol=tol, rtol=0)
+
+        assert circuit1.gradient_fn == "backprop"
+        assert circuit2.gradient_fn is qml.gradients.param_shift
 
         grad = torch.autograd.functional.jacobian(circuit1, p_torch)
         assert qml.math.allclose(grad, qml.jacobian(circuit2)(p), atol=tol, rtol=0)
 
+    @pytest.mark.parametrize(
+        "op, wire_ids, exp_fn",
+        [
+            (qml.RY, [0], lambda a: -torch.sin(a)),
+            (qml.AmplitudeDamping, [0], lambda a: -2.0),
+            (qml.DepolarizingChannel, [-1], lambda a: -4 / 3),
+            (lambda a, wires: qml.ResetError(p0=a, p1=0.1, wires=wires), [0], lambda a: -2.0),
+            (lambda a, wires: qml.ResetError(p0=0.1, p1=a, wires=wires), [0], lambda a: 0.0),
+        ],
+    )
     @pytest.mark.parametrize("wires", [[0], ["abc"]])
-    def test_state_differentiability(self, wires, tol):
+    def test_state_differentiability(self, wires, op, wire_ids, exp_fn, tol):
         """Test that the device state can be differentiated"""
+        # pylint: disable=too-many-arguments
         dev = qml.device("default.mixed", wires=wires)
 
         @qml.qnode(dev, diff_method="backprop", interface="torch")
         def circuit(a):
-            qml.RY(a, wires=wires[0])
+            qml.PauliX(wires[wire_ids[0]])
+            op(a, wires=[wires[idx] for idx in wire_ids])
             return qml.state()
 
         a = torch.tensor(0.54, dtype=torch.float64, requires_grad=True)
@@ -313,7 +408,7 @@ class TestPassthruIntegration:
         res = res[1][1] - res[0][0]
         res.backward()
 
-        expected = torch.sin(a)
+        expected = torch.tensor(exp_fn(a), dtype=torch.float64)
         assert torch.allclose(a.grad, expected, atol=tol, rtol=0)
 
     def test_state_vector_differentiability(self, tol):
@@ -414,6 +509,7 @@ class TestPassthruIntegration:
 
     def test_sample_backprop_error(self):
         """Test that sampling in backpropagation mode raises an error"""
+        # pylint: disable=unused-variable
         dev = qml.device("default.mixed", wires=1, shots=100)
 
         msg = "Backpropagation is only supported when shots=None"
@@ -622,7 +718,10 @@ class TestHighLevelIntegration:
         dev = qml.device("default.mixed", wires=2)
 
         obs_list = [qml.PauliX(0) @ qml.PauliY(1), qml.PauliZ(0), qml.PauliZ(0) @ qml.PauliZ(1)]
-        qnodes = qml.map(qml.templates.StronglyEntanglingLayers, obs_list, dev, interface="torch")
+        with pytest.warns(UserWarning, match="The map function is deprecated"):
+            qnodes = qml.map(
+                qml.templates.StronglyEntanglingLayers, obs_list, dev, interface="torch"
+            )
 
         assert qnodes.interface == "torch"
 

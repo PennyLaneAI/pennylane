@@ -206,7 +206,7 @@ class MeasurementProcess(ABC):
         when using QNodes.
 
         Args:
-            device (.Device): a PennyLane device to use for determining the shape
+            device (pennylane.Device): a PennyLane device to use for determining the shape
 
         Returns:
             tuple: the output shape
@@ -236,7 +236,7 @@ class MeasurementProcess(ABC):
         number of wires the measurement acts on.
 
         Args:
-            device (.Device): a PennyLane device to use for determining the shape
+            device (pennylane.Device): a PennyLane device to use for determining the shape
 
         Returns:
             tuple: the output shape
@@ -263,7 +263,7 @@ class MeasurementProcess(ABC):
 
         Args:
             num_wires (int): the number of qubits/qumodes
-            device (.Device): a PennyLane device
+            device (pennylane.Device): a PennyLane device
 
         Returns:
             int: the number of basis states
@@ -288,7 +288,9 @@ class MeasurementProcess(ABC):
     def __repr__(self):
         """Representation of this class."""
         if self.obs is None:
-            return f"{self.return_type.value}(wires={self.wires.tolist()})"
+            if self._eigvals is None:
+                return f"{self.return_type.value}(wires={self.wires.tolist()})"
+            return f"{self.return_type.value}(eigvals={self._eigvals}, wires={self.wires.tolist()})"
 
         # Todo: when tape is core the return type will always be taken from the MeasurementProcess
         if getattr(self.obs, "return_type", None) is None:
@@ -365,10 +367,8 @@ class MeasurementProcess(ABC):
 
     @property
     def samples_computational_basis(self):
-        r"""Bool: Whether or not the MeasurementProcess returns samples in the computational basis or counts of
-        computational basis states.
-        """
-        return False
+        r"""Bool: Whether or not the MeasurementProcess measures in the computational basis."""
+        return self.obs is None
 
     def expand(self):
         """Expand the measurement of an observable to a unitary
@@ -415,10 +415,8 @@ class MeasurementProcess(ABC):
     def queue(self, context=qml.QueuingManager):
         """Append the measurement process to an annotated queue."""
         if self.obs is not None:
-            context.update_info(self.obs, owner=self)
-            context.append(self, owns=self.obs)
-        else:
-            context.append(self)
+            context.remove(self.obs)
+        context.append(self)
 
         return self
 
@@ -478,60 +476,6 @@ class MeasurementProcess(ABC):
         else:
             new_measurement._wires = Wires([wire_map.get(wire, wire) for wire in self.wires])
         return new_measurement
-
-    def _permute_wires(self, wires: Wires):
-        r"""Given an observable which acts on multiple wires, permute the wires to
-          be consistent with the device wire order.
-
-          Suppose we are given an observable :math:`\hat{O} = \Identity \otimes \Identity \otimes \hat{Z}`.
-          This observable can be represented in many ways:
-
-        .. code-block:: python
-
-              O_1 = qml.Identity(wires=0) @ qml.Identity(wires=1) @ qml.PauliZ(wires=2)
-              O_2 = qml.PauliZ(wires=2) @ qml.Identity(wires=0) @ qml.Identity(wires=1)
-
-          Notice that while the explicit tensor product matrix representation of :code:`O_1` and :code:`O_2` is
-          different, the underlying operator is identical due to the wire labelling (assuming the labels in
-          ascending order are {0,1,2}). If we wish to compute the expectation value of such an observable, we must
-          ensure it is identical in both cases. To facilitate this, we permute the wires in our state vector such
-          that they are consistent with this swapping of order in the tensor observable.
-
-        .. code-block:: python
-
-              >>> print(O_1.wires)
-              <Wires = [0, 1, 2]>
-              >>> print(O_2.wires)
-              <Wires = [2, 0, 1]>
-
-          We might naively think that we must permute our state vector to match the wire order of our tensor observable.
-          We must be careful and realize that the wire order of the terms in the tensor observable DOES NOT match the
-          permutation of the terms themselves. As an example we directly compare :code:`O_1` and :code:`O_2`:
-
-          The first term in :code:`O_1` (:code:`qml.Identity(wires=0)`) became the second term in :code:`O_2`.
-          By similar comparison we see that each term in the tensor product was shifted one position forward
-          (i.e 0 --> 1, 1 --> 2, 2 --> 0). The wires in our permuted quantum state should follow their respective
-          terms in the tensor product observable.
-
-          Thus, the correct wire ordering should be :code:`permuted_wires = <Wires = [1, 2, 0]>`. But if we had
-          taken the naive approach we would have permuted our state according to
-          :code:`permuted_wires = <Wires = [2, 0, 1]>` which is NOT correct.
-
-          This function uses the observable wires and the global device wire ordering in order to determine the
-          permutation of the wires in the observable required such that if our quantum state vector is
-          permuted accordingly then the amplitudes of the state will match the matrix representation of the observable.
-
-          Args:
-              observable (Observable): the observable whose wires are to be permuted.
-
-          Returns:
-              permuted_wires (Wires): permuted wires object
-        """
-        wire_map = dict(zip(wires, range(len(wires))))
-        ordered_obs_wire_lst = sorted(self.wires.tolist(), key=lambda label: wire_map[label])
-        mapped_wires = [wire_map[w] for w in self.wires]
-        permutation = qml.math.argsort(mapped_wires)  # extract permutation via argsort
-        return Wires([ordered_obs_wire_lst[index] for index in permutation])
 
 
 class SampleMeasurement(MeasurementProcess):
@@ -640,7 +584,7 @@ class MeasurementTransform(MeasurementProcess):
     which should have the following arguments:
 
     * tape (QuantumTape): quantum tape to transform
-    * device (Device): device used to transform the quantum tape
+    * device (pennylane.Device): device used to transform the quantum tape
     """
 
     @abstractmethod
@@ -649,5 +593,5 @@ class MeasurementTransform(MeasurementProcess):
 
         Args:
             tape (QuantumTape): quantum tape to transform
-            device (Device): device used to transform the quantum tape
+            device (pennylane.Device): device used to transform the quantum tape
         """

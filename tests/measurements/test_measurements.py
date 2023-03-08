@@ -127,13 +127,10 @@ class TestStatisticsQueuing:
             A = op(0)
             stat_func(A)
 
-        assert q.queue[:-1] == [A]
-        meas_proc = q.queue[-1]
+        assert len(q.queue) == 1
+        meas_proc = q.queue[0]
         assert isinstance(meas_proc, MeasurementProcess)
         assert meas_proc.return_type == return_type
-
-        assert q.get_info(A) == {"owner": meas_proc}
-        assert q.get_info(meas_proc) == {"owns": (A)}
 
     def test_annotating_tensor_hermitian(self, stat_func, return_type):
         """Test that the return_type related info is updated for a measurement
@@ -145,13 +142,10 @@ class TestStatisticsQueuing:
             Herm = qml.Hermitian(mx, wires=[1])
             stat_func(Herm)
 
-        assert q.queue[:-1] == [Herm]
-        meas_proc = q.queue[-1]
+        assert len(q.queue) == 1
+        meas_proc = q.queue[0]
         assert isinstance(meas_proc, MeasurementProcess)
         assert meas_proc.return_type == return_type
-
-        assert q.get_info(Herm) == {"owner": meas_proc}
-        assert q.get_info(meas_proc) == {"owns": (Herm)}
 
     @pytest.mark.parametrize(
         "op1,op2",
@@ -171,14 +165,10 @@ class TestStatisticsQueuing:
             tensor_op = A @ B
             stat_func(tensor_op)
 
-        assert q.queue[:-1] == [A, B, tensor_op]
-        meas_proc = q.queue[-1]
+        assert len(q.queue) == 1
+        meas_proc = q.queue[0]
         assert isinstance(meas_proc, MeasurementProcess)
         assert meas_proc.return_type == return_type
-
-        assert q.get_info(A) == {"owner": tensor_op}
-        assert q.get_info(B) == {"owner": tensor_op}
-        assert q.get_info(tensor_op) == {"owns": (A, B), "owner": meas_proc}
 
     @pytest.mark.parametrize(
         "op1,op2",
@@ -199,14 +189,11 @@ class TestStatisticsQueuing:
             tensor_op = A @ B
             stat_func(tensor_op)
 
-        assert len(q) == 2
+        assert len(q.queue) == 1
 
-        assert q.queue[0] is tensor_op
-        meas_proc = q.queue[-1]
+        meas_proc = q.queue[0]
         assert isinstance(meas_proc, MeasurementProcess)
         assert meas_proc.return_type == return_type
-
-        assert q.get_info(tensor_op) == {"owns": (A, B), "owner": meas_proc}
 
     def test_not_an_observable(self, stat_func, return_type):
         """Test that a UserWarning is raised if the provided
@@ -284,6 +271,9 @@ class TestProperties:
         m = qml.probs(op=qml.PauliZ(wires="a"))
         expected = "probs(PauliZ(wires=['a']))"
         assert str(m) == expected
+
+        m = ProbabilityMP(eigvals=(1, 0), wires=qml.wires.Wires(0))
+        assert repr(m) == "probs(eigvals=[1 0], wires=[0])"
 
 
 class TestExpansion:
@@ -394,6 +384,10 @@ class TestExpansion:
             CountsMP(wires=["a", 1], all_outcomes=True),
             CountsMP(),
             CountsMP(wires=["a", 1]),
+            StateMP(),
+            VnEntropyMP(wires=["a", 1]),
+            MutualInfoMP(wires=[["a", 1], ["b", 2]]),
+            ProbabilityMP(wires=["a", 1]),
         ],
     )
     def test_samples_computational_basis_true(self, m):
@@ -406,14 +400,10 @@ class TestExpansion:
             ExpectationMP(obs=qml.PauliX(2)),
             VarianceMP(obs=qml.PauliX("a")),
             ProbabilityMP(obs=qml.PauliX("b")),
-            ProbabilityMP(wires=["a", 1]),
             SampleMP(obs=qml.PauliX("a")),
             CountsMP(obs=qml.PauliX("a")),
-            StateMP(),
-            VnEntropyMP(wires=["a", 1]),
-            MutualInfoMP(wires=[["a", 1], ["b", 2]]),
-            ClassicalShadowMP(wires=[["a", 1], ["b", 2]]),
             ShadowExpvalMP(H=qml.PauliX("a")),
+            ClassicalShadowMP(wires=[["a", 1], ["b", 2]]),
         ],
     )
     def test_samples_computational_basis_false(self, m):
@@ -545,7 +535,7 @@ class TestStateMeasurement:
 
         dev = qml.device("default.qubit", wires=2)
 
-        @qml.qnode(dev)
+        @qml.qnode(dev, interface="autograd")
         def circuit():
             return qml.state()
 

@@ -170,18 +170,30 @@ def _su2su2_to_tensor_products(U):
     # C1 C2^dag = a1 a2* I
     C12 = math.dot(C1, math.conj(math.T(C2)))
 
-    if not math.allclose(a1 * math.conj(a2), C12[0, 0]):
-        a2 *= -1
+    if not math.is_abstract(C12):
+        if not math.allclose(a1 * math.conj(a2), C12[0, 0]):
+            a2 *= -1
+    else:
+        sign_is_correct = math.allclose(a1 * math.conj(a2), C12[0, 0])
+        sign = (-1) ** (sign_is_correct + 1)  # True + 1 = 2, False + 1 = 1
+        a2 *= sign
 
     # Construct A
     A = math.stack([math.stack([a1, a2]), math.stack([-math.conj(a2), math.conj(a1)])])
 
     # Next, extract B. Can do from any of the C, just need to be careful in
     # case one of the elements of A is 0.
-    if not math.allclose(A[0, 0], 0.0, atol=1e-6):
-        B = C1 / math.cast_like(A[0, 0], 1j)
-    else:
-        B = C2 / math.cast_like(A[0, 1], 1j)
+    # We use B1 unless division by 0 would cause all elements to be inf.
+    use_B2 = math.allclose(A[0, 0], 0.0, atol=1e-6)
+    if not math.is_abstract(A):
+        B = C2 / math.cast_like(A[0, 1], 1j) if use_B2 else C1 / math.cast_like(A[0, 0], 1j)
+    elif qml.math.get_interface(A) == "jax":
+        B = qml.math.cond(
+            use_B2,
+            lambda x: C2 / math.cast_like(A[0, 1], 1j),
+            lambda x: C1 / math.cast_like(A[0, 0], 1j),
+            [0],  # arbitrary value for x
+        )
 
     return math.convert_like(A, U), math.convert_like(B, U)
 
@@ -428,8 +440,14 @@ def _decomposition_3_cnots(U, wires):
     gammaU = math.dot(u, math.T(u))
     evs, _ = math.linalg.eig(gammaU)
 
+    angles = [math.angle(ev) for ev in evs]
+
     # We will sort the angles so that results are consistent across interfaces.
-    angles = math.sort([math.angle(ev) for ev in evs])
+    # This step is skipped when using JAX-JIT, because it cannot sort without making the
+    # magnitude of the angles concrete. This does not impact the validity of the resulting
+    # decomposition, but may result in a different decompositions for jitting vs not.
+    if not qml.math.is_abstract(U):
+        angles = math.sort(angles)
 
     x, y, z = angles[0], angles[1], angles[2]
 
@@ -589,10 +607,13 @@ def two_qubit_decomposition(U, wires):
 
     # The next thing we will do is compute the number of CNOTs needed, as this affects
     # the form of the decomposition.
-    num_cnots = _compute_num_cnots(U)
+    if not qml.math.is_abstract(U):
+        num_cnots = _compute_num_cnots(U)
 
     with qml.QueuingManager.stop_recording():
-        if num_cnots == 0:
+        if qml.math.is_abstract(U):
+            decomp = _decomposition_3_cnots(U, wires)
+        elif num_cnots == 0:
             decomp = _decomposition_0_cnots(U, wires)
         elif num_cnots == 1:
             decomp = _decomposition_1_cnot(U, wires)

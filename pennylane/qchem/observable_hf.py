@@ -17,9 +17,8 @@ This module contains the functions needed for creating fermionic and qubit obser
 # pylint: disable= too-many-branches,
 from functools import reduce
 
-import autograd.numpy as anp
-
 import pennylane as qml
+from pennylane import numpy as np
 from pennylane.pauli.utils import _pauli_mult, simplify
 
 
@@ -43,24 +42,25 @@ def fermionic_observable(constant, one=None, two=None, cutoff=1.0e-12):
     >>> ops
     [[], [0, 0], [0, 2], [1, 1], [1, 3], [2, 0], [2, 2], [3, 1], [3, 3]]
     """
-    coeffs = anp.array([])
+    coeffs = qml.math.array([])
 
-    if constant != anp.array([0.0]):
-        coeffs = anp.concatenate((coeffs, constant))
+    if not qml.math.allclose(constant, 0.0):
+        coeffs = qml.math.concatenate((coeffs, constant))
         operators = [[]]
     else:
         operators = []
 
     if one is not None:
-        indices_one = anp.argwhere(abs(one) >= cutoff)
+        indices_one = qml.math.argwhere(abs(one) >= cutoff)
         # up-up + down-down terms
         operators_one = (indices_one * 2).tolist() + (indices_one * 2 + 1).tolist()
-        coeffs_one = anp.tile(one[abs(one) >= cutoff], 2)
-        coeffs = anp.concatenate((coeffs, coeffs_one))
+        coeffs_one = qml.math.tile(one[abs(one) >= cutoff], 2)
+        coeffs = qml.math.convert_like(coeffs, one)
+        coeffs = qml.math.concatenate((coeffs, coeffs_one))
         operators = operators + operators_one
 
     if two is not None:
-        indices_two = anp.argwhere(abs(two) >= cutoff)
+        indices_two = np.array(qml.math.argwhere(abs(two) >= cutoff))
         n = len(indices_two)
         operators_two = (
             [(indices_two[i] * 2).tolist() for i in range(n)]  # up-up-up-up
@@ -68,12 +68,14 @@ def fermionic_observable(constant, one=None, two=None, cutoff=1.0e-12):
             + [(indices_two[i] * 2 + [1, 0, 0, 1]).tolist() for i in range(n)]  # down-up-up-down
             + [(indices_two[i] * 2 + 1).tolist() for i in range(n)]  # down-down-down-down
         )
-        coeffs_two = anp.tile(two[abs(two) >= cutoff], 4) / 2
+        coeffs_two = qml.math.tile(two[abs(two) >= cutoff], 4) / 2
 
-        coeffs = anp.concatenate((coeffs, coeffs_two))
+        coeffs = qml.math.concatenate((coeffs, coeffs_two))
         operators = operators + operators_two
 
     indices_sort = [operators.index(i) for i in sorted(operators)]
+    if len(indices_sort) != 0:
+        indices_sort = qml.math.array(indices_sort)
 
     return coeffs[indices_sort], sorted(operators)
 
@@ -102,76 +104,83 @@ def qubit_observable(o_ferm, cutoff=1.0e-12):
     + ((1+0j)) [I0]
     """
     ops = []
-    coeffs = anp.array([])
+    coeffs = qml.math.array([])
 
     for n, t in enumerate(o_ferm[1]):
         if len(t) == 0:
             ops = ops + [qml.Identity(0)]
-            coeffs = anp.array([0.0])
+            coeffs = qml.math.array([0.0])
             coeffs = coeffs + o_ferm[0][n]
         else:
             op = jordan_wigner(t)
             if op != 0:
                 ops = ops + op[1]
-                coeffs = anp.concatenate([coeffs, anp.array(op[0]) * o_ferm[0][n]])
+                coeffs = qml.math.concatenate([coeffs, qml.math.array(op[0]) * o_ferm[0][n]])
 
     o_qubit = simplify(qml.Hamiltonian(coeffs, ops), cutoff=cutoff)
 
     return o_qubit
 
 
-def jordan_wigner(op):
+def jordan_wigner(op, notation="physicist"):
     r"""Convert a fermionic operator to a qubit operator using the Jordan-Wigner mapping.
 
     For instance, the one-body fermionic operator :math:`a_2^\dagger a_0` should be constructed as
-    [2, 0] and the two-body operator :math:`a_4^\dagger a_3^\dagger a_2 a_1` should be constructed
-    as [4, 3, 2, 1].
+    [2, 0]. The two-body operator :math:`a_4^\dagger a_3^\dagger a_2 a_1` should be constructed
+    as [4, 3, 2, 1] with ``notation='physicist'``. If ``notation`` is set to ``'chemist'``, the
+    two-body operator [4, 3, 2, 1] is constructed as :math:`a_4^\dagger a_3 a_2^\dagger a_1`.
 
     Args:
         op (list[int]): the fermionic operator
+        notation (str): notation specifying the order of the two-body fermionic operators
 
-    Returns
-        tuple(list[complex], list[list[int, str]]): list of coefficients and the qubit-operator terms
+    Returns:
+        tuple(list[complex], list[Operation]): list of coefficients and qubit operators
 
     **Example**
 
     >>> f  = [0, 0]
     >>> q = jordan_wigner(f)
-    >>> q
-    ([(0.5+0j), (-0.5+0j)], [Identity(wires=[0]), PauliZ(wires=[0])]) # corresponds to :math:`\frac{1}{2}(I_0 - Z_0)`
+    >>> q # corresponds to :math:`\frac{1}{2}(I_0 - Z_0)`
+    ([(0.5+0j), (-0.5+0j)], [Identity(wires=[0]), PauliZ(wires=[0])])
     """
     if len(op) == 1:
-        op = [((op[0], 1),)]
+        op = [(op[0], 1)]
 
     if len(op) == 2:
-        op = [((op[0], 1), (op[1], 0))]
+        op = [(op[0], 1), (op[1], 0)]
 
     if len(op) == 4:
-        op = [((op[0], 1), (op[1], 1), (op[2], 0), (op[3], 0))]
+        if notation == "physicist":
+            if op[0] == op[1] or op[2] == op[3]:
+                return [0], [qml.Identity(wires=[min(op)])]
+            op = [(op[0], 1), (op[1], 1), (op[2], 0), (op[3], 0)]
+        elif notation == "chemist":
+            if op[0] == op[2] or op[1] == op[3]:
+                if op[1] != op[2]:
+                    return [0], [qml.Identity(wires=[min(op)])]
+            op = [(op[0], 1), (op[1], 0), (op[2], 1), (op[3], 0)]
+        else:
+            raise ValueError(
+                f"Currently, the only supported notations for the two-body terms are 'physicist'"
+                f" and 'chemist', got notation = '{notation}'."
+            )
 
-        if op[0][0][0] == op[0][1][0] or op[0][2][0] == op[0][3][0]:
-            return 0
+    q = [[(0, "I"), 1.0]]
+    for l in op:
+        z = [(index, "Z") for index in range(l[0])]
+        x = z + [(l[0], "X"), 0.5]
+        if l[1]:
+            y = z + [(l[0], "Y"), -0.5j]
+        else:
+            y = z + [(l[0], "Y"), 0.5j]
 
-    for t in op:
-        for l in t:
-            z = [(index, "Z") for index in range(l[0])]
-            x = z + [(l[0], "X"), 0.5]
-
-            if l[1]:
-                y = z + [(l[0], "Y"), -0.5j]
-
-            else:
-                y = z + [(l[0], "Y"), 0.5j]
-
-            if t.index(l) == 0:
-                q = [x, y]
-            else:
-                m = []
-                for t1 in q:
-                    for t2 in [x, y]:
-                        q1, c1 = _pauli_mult(t1[:-1], t2[:-1])
-                        m.append(q1 + [c1 * t1[-1] * t2[-1]])
-                q = m
+        m = []
+        for t1 in q:
+            for t2 in [x, y]:
+                q1, c1 = _pauli_mult(t1[:-1], t2[:-1])
+                m.append(q1 + [c1 * t1[-1] * t2[-1]])
+        q = m
 
     c = [p[-1] for p in q]
     o = [p[:-1] for p in q]
@@ -184,7 +193,7 @@ def jordan_wigner(op):
                 c[k[0]] = c[k[0]] + c[j]
                 del c[j]
 
-    pauli_map = {"X": qml.PauliX, "Y": qml.PauliY, "Z": qml.PauliZ}
+    pauli_map = {"I": qml.Identity, "X": qml.PauliX, "Y": qml.PauliY, "Z": qml.PauliZ}
     for i, term in enumerate(o):
         if len(term) == 0:
             o[i] = qml.Identity(0)

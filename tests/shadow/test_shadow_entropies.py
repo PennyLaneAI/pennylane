@@ -149,7 +149,6 @@ class TestShadowEntropies:
         for alpha in [1, 2, 3]:
             for base in [2, np.exp(1)]:
                 for reduced_wires in [[0], [1]]:
-
                     entropy = shadow.entropy(wires=reduced_wires, base=base, alpha=alpha)
 
                     expected_entropy = expected_entropy_ising_xx(param, alpha) / np.log(base)

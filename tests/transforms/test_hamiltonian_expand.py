@@ -270,7 +270,7 @@ class TestHamiltonianExpand:
 
             tape = QuantumScript.from_queue(q)
             tapes, fn = hamiltonian_expand(tape)
-            res = fn(qml.execute(tapes, dev, qml.gradients.param_shift, interface="tf"))
+            res = fn(qml.execute(tapes, dev, qml.gradients.param_shift))
 
             assert np.isclose(res, output)
 
@@ -290,7 +290,7 @@ with AnnotatedQueue() as s_tape2:
     qml.Hadamard(1)
     qml.PauliZ(1)
     qml.PauliX(2)
-    S2 = qml.op_sum(
+    S2 = qml.sum(
         qml.prod(qml.PauliX(0), qml.PauliZ(2)),
         qml.s_prod(3, qml.PauliZ(2)),
         qml.s_prod(-2, qml.PauliX(0)),
@@ -301,7 +301,7 @@ with AnnotatedQueue() as s_tape2:
     qml.probs(op=qml.PauliZ(0))
     qml.expval(S2)
 
-S3 = qml.op_sum(
+S3 = qml.sum(
     qml.s_prod(1.5, qml.prod(qml.PauliZ(0), qml.PauliZ(1))), qml.s_prod(0.3, qml.PauliX(1))
 )
 
@@ -314,7 +314,7 @@ with AnnotatedQueue() as s_tape3:
     qml.probs(op=qml.PauliY(0))
 
 
-S4 = qml.op_sum(
+S4 = qml.sum(
     qml.prod(qml.PauliX(0), qml.PauliZ(2)),
     qml.s_prod(3, qml.PauliZ(2)),
     qml.s_prod(-2, qml.PauliX(0)),
@@ -395,7 +395,7 @@ class TestSumExpand:
 
     def test_grouping(self):
         """Test the grouping functionality"""
-        S = qml.op_sum(qml.PauliZ(0), qml.s_prod(2, qml.PauliX(1)), qml.s_prod(3, qml.PauliX(0)))
+        S = qml.sum(qml.PauliZ(0), qml.s_prod(2, qml.PauliX(1)), qml.s_prod(3, qml.PauliX(0)))
 
         with AnnotatedQueue() as q:
             qml.Hadamard(wires=0)
@@ -411,7 +411,7 @@ class TestSumExpand:
     def test_number_of_qscripts(self):
         """Tests the correct number of quantum scripts are produced."""
 
-        S = qml.op_sum(qml.PauliZ(0), qml.s_prod(2, qml.PauliX(1)), qml.s_prod(3, qml.PauliX(0)))
+        S = qml.sum(qml.PauliZ(0), qml.s_prod(2, qml.PauliX(1)), qml.s_prod(3, qml.PauliX(0)))
         qs = QuantumScript(measurements=[qml.expval(S)])
 
         tapes, fn = sum_expand(qs, group=False)
@@ -444,7 +444,7 @@ class TestSumExpand:
     @pytest.mark.autograd
     def test_sum_dif_autograd(self, tol):
         """Tests that the sum_expand tape transform is differentiable with the Autograd interface"""
-        S = qml.op_sum(
+        S = qml.sum(
             qml.s_prod(-0.2, qml.PauliX(1)),
             qml.s_prod(0.5, qml.prod(qml.PauliZ(1), qml.PauliY(2))),
             qml.s_prod(1, qml.PauliZ(0)),
@@ -496,7 +496,7 @@ class TestSumExpand:
 
         import tensorflow as tf
 
-        S = qml.op_sum(
+        S = qml.sum(
             qml.s_prod(-0.2, qml.PauliX(1)),
             qml.s_prod(0.5, qml.prod(qml.PauliZ(1), qml.PauliY(2))),
             qml.s_prod(1, qml.PauliZ(0)),
@@ -525,7 +525,7 @@ class TestSumExpand:
 
             qscript = QuantumScript.from_queue(q)
             tapes, fn = sum_expand(qscript)
-            res = fn(qml.execute(tapes, dev, qml.gradients.param_shift, interface="tf"))
+            res = fn(qml.execute(tapes, dev, qml.gradients.param_shift))
 
             assert np.isclose(res, output)
 
@@ -538,7 +538,7 @@ class TestSumExpand:
         import jax
         from jax import numpy as jnp
 
-        S = qml.op_sum(
+        S = qml.sum(
             qml.s_prod(-0.2, qml.PauliX(1)),
             qml.s_prod(0.5, qml.prod(qml.PauliZ(1), qml.PauliY(2))),
             qml.s_prod(1, qml.PauliZ(0)),
@@ -574,7 +574,7 @@ class TestSumExpand:
         def cost(x):
             qscript.set_parameters(x, trainable_only=False)
             tapes, fn = sum_expand(qscript)
-            res = qml.execute(tapes, dev, qml.gradients.param_shift, interface="jax")
+            res = qml.execute(tapes, dev, qml.gradients.param_shift)
             return fn(res)
 
         assert np.isclose(cost(var), output)

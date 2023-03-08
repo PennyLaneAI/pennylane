@@ -16,7 +16,6 @@ This submodule defines the symbolic operation that stands for the power of an op
 """
 import copy
 from typing import Union
-from warnings import warn
 
 from scipy.linalg import fractional_matrix_power
 
@@ -31,9 +30,8 @@ from pennylane.operation import (
 )
 from pennylane.ops.identity import Identity
 from pennylane.queuing import QueuingManager, apply
-from pennylane.wires import Wires
 
-from .symbolicop import SymbolicOp
+from .symbolicop import ScalarSymbolicOp, SymbolicOp
 
 _superscript = str.maketrans("0123456789.+-", "⁰¹²³⁴⁵⁶⁷⁸⁹⋅⁺⁻")
 
@@ -43,7 +41,7 @@ def pow(base, z=1, lazy=True, do_queue=True, id=None):
 
     Args:
         base (~.operation.Operator): the operator to be raised to a power
-        z=1 (float): the exponent
+        z (float): the exponent (default value is 1)
 
     Keyword Args:
         lazy=True (bool): In lazy mode, all operations are wrapped in a ``Pow`` class
@@ -55,6 +53,25 @@ def pow(base, z=1, lazy=True, do_queue=True, id=None):
 
     Returns:
         Operator
+
+    .. note::
+
+        This operator supports a batched base, a batched coefficient and a combination of both:
+
+        >>> op = qml.pow(qml.RX([1, 2, 3], wires=0), z=4)
+        >>> qml.matrix(op).shape
+        (3, 2, 2)
+        >>> op = qml.pow(qml.RX(1, wires=0), z=[1, 2, 3])
+        >>> qml.matrix(op).shape
+        (3, 2, 2)
+        >>> op = qml.pow(qml.RX([1, 2, 3], wires=0), z=[4, 5, 6])
+        >>> qml.matrix(op).shape
+        (3, 2, 2)
+
+        But it doesn't support batching of operators:
+
+        >>> op = qml.pow([qml.RX(1, wires=0), qml.RX(2, wires=0)], z=4)
+        AttributeError: 'list' object has no attribute 'name'
 
     .. seealso:: :class:`~.Pow`, :meth:`~.Operator.pow`.
 
@@ -81,16 +98,14 @@ def pow(base, z=1, lazy=True, do_queue=True, id=None):
 
     num_ops = len(pow_ops)
     if num_ops == 0:
-        # needs to be identity (not prod of identities) so device knows to skip
-        pow_op = qml.Identity(base.wires[0], id=id)
+        pow_op = qml.Identity(base.wires, id=id)
     elif num_ops == 1:
         pow_op = pow_ops[0]
     else:
         pow_op = qml.prod(*pow_ops)
 
     if do_queue:
-        QueuingManager.update_info(base, owner=pow_op)
-        QueuingManager.update_info(pow_op, owns=base)
+        QueuingManager.remove(base)
 
     return pow_op
 
@@ -108,24 +123,6 @@ class PowOperation(Operation):
 
     # until we add gradient support
     grad_method = None
-
-    def inv(self):
-        warn(
-            "In-place inversion with inv is deprecated. Please use qml.adjoint instead or qml.pow.",
-            UserWarning,
-        )
-        self.hyperparameters["z"] *= -1
-        self._name = f"{self.base.name}**{self.z}"
-        return self
-
-    @property
-    def inverse(self):
-        return False
-
-    @inverse.setter
-    def inverse(self, boolean):
-        if boolean is True:
-            raise NotImplementedError("The inverse can not be set for a power operator")
 
     @property
     def base_name(self):
@@ -145,7 +142,7 @@ class PowOperation(Operation):
         return self.base.control_wires
 
 
-class Pow(SymbolicOp):
+class Pow(ScalarSymbolicOp):
     """Symbolic operator denoting an operator raised to a power.
 
     Args:
@@ -205,23 +202,15 @@ class Pow(SymbolicOp):
         return object.__new__(Pow)
 
     def __init__(self, base=None, z=1, do_queue=True, id=None):
-
-        # incorporate base inverse attribute into the exponent
-        if getattr(base, "inverse", False):
-            base.inverse = False
-            z *= -1
-
         self.hyperparameters["z"] = z
         self._name = f"{base.name}**{z}"
 
-        super().__init__(base, do_queue=do_queue, id=id)
+        super().__init__(base, scalar=z, do_queue=do_queue, id=id)
 
         if isinstance(self.z, int) and self.z > 0:
-            if (
-                base_pauli_rep := getattr(
-                    self.base, "_pauli_rep", None
-                )  # pylint: disable=protected-access
-            ) is not None:
+            if (base_pauli_rep := getattr(self.base, "_pauli_rep", None)) and (
+                self.batch_size is None
+            ):
                 pr = qml.pauli.PauliSentence({})
                 for _ in range(self.z):
                     pr = pr * base_pauli_rep
@@ -244,10 +233,6 @@ class Pow(SymbolicOp):
         return self.hyperparameters["z"]
 
     @property
-    def batch_size(self):
-        return self.base.batch_size
-
-    @property
     def ndim_params(self):
         return self.base.ndim_params
 
@@ -258,21 +243,11 @@ class Pow(SymbolicOp):
             f"({base_label}){z_string}" if self.base.arithmetic_depth > 0 else base_label + z_string
         )
 
-    def matrix(self, wire_order=None):
-        if isinstance(self.base, qml.Hamiltonian):
-            base_matrix = qml.matrix(self.base)
-        else:
-            base_matrix = self.base.matrix()
-
-        if isinstance(self.z, int):
-            mat = qmlmath.linalg.matrix_power(base_matrix, self.z)
-        else:
-            mat = fractional_matrix_power(base_matrix, self.z)
-
-        if wire_order is None or self.wires == Wires(wire_order):
-            return mat
-
-        return qml.math.expand_matrix(mat, wires=self.wires, wire_order=wire_order)
+    @staticmethod
+    def _matrix(scalar, mat):
+        if isinstance(scalar, int):
+            return qmlmath.linalg.matrix_power(mat, scalar)
+        return fractional_matrix_power(mat, scalar)
 
     # pylint: disable=arguments-differ
     @staticmethod
@@ -362,6 +337,11 @@ class Pow(SymbolicOp):
         return Pow(base=qml.adjoint(self.base), z=self.z)
 
     def simplify(self) -> Union["Pow", Identity]:
+        # try using pauli_rep:
+        if pr := self._pauli_rep:
+            pr.simplify()
+            return pr.operation(wire_order=self.wires)
+
         base = self.base.simplify()
         try:
             ops = base.pow(z=self.z)
