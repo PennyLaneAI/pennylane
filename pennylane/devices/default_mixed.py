@@ -74,6 +74,7 @@ class DefaultMixed(QubitDevice):
         "QubitDensityMatrix",
         "QubitUnitary",
         "ControlledQubitUnitary",
+        "BlockEncode",
         "MultiControlledX",
         "DiagonalQubitUnitary",
         "SpecialUnitary",
