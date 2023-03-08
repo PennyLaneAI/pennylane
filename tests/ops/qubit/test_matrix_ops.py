@@ -814,6 +814,28 @@ class TestBlockEncode:
     #     return qml.expval(qml.PauliZ(wires=0))
 
     # assert np.allclose(qml.grad(circuit)(input_matrix),expected_result)
+    @pytest.mark.parametrize(
+        ("input_matrix", "wires", "output_value"),
+        [
+            (1, [0], 1),
+            ([[0.1, 0.2], [0.3, 0.4]], range(2), -0.8),
+            (
+                0.1,
+                range(2),
+                1,
+            ),
+        ],
+    )
+    def test_blockencode_integration(self, input_matrix, wires, output_value):
+        """Test that the BlockEncode gate applied to a circuit produces the correct final state."""
+        dev = qml.device("default.qubit", wires=wires)
+
+        @qml.qnode(dev)
+        def circuit(input_matrix):
+            qml.BlockEncode(input_matrix, wires=wires)
+            return qml.expval(qml.PauliZ(wires=0))
+
+        assert circuit(input_matrix) == output_value
 
 
 class TestInterfaceMatricesLabel:
