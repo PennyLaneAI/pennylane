@@ -311,9 +311,14 @@ class TestCounts:
     @pytest.mark.all_interfaces
     @pytest.mark.parametrize("wires, basis_state", [(None, "010"), ([2, 1], "01")])
     @pytest.mark.parametrize("interface", ["autograd", "jax", "tensorflow", "torch"])
-    def test_counts_no_op_finite_shots(self, interface, wires, basis_state, mocker):
+    @pytest.mark.parametrize("enable_return", [False, True])
+    def test_counts_no_op_finite_shots(
+        self, interface, wires, basis_state, enable_return, mocker
+    ):  # pylint:disable=too-many-arguments
         """Check all interfaces with computational basis state counts and
         finite shot"""
+        if enable_return:
+            qml.enable_return()
         n_shots = 10
         dev = qml.device("default.qubit", wires=3, shots=n_shots)
         spy = mocker.spy(qml.QubitDevice, "sample")
@@ -327,6 +332,8 @@ class TestCounts:
         assert res == {basis_state: n_shots}
 
         custom_measurement_process(dev, spy)
+        if enable_return:
+            qml.disable_return()
 
     @pytest.mark.all_interfaces
     @pytest.mark.parametrize(
