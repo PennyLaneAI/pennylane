@@ -32,15 +32,14 @@ from pennylane.interfaces.jax_jit import _execute_with_fwd
 @pytest.mark.parametrize(
     "version, package, should_raise",
     [
-        ("0.3.16", jax, True),
-        ("0.3.17", jax, False),
-        ("0.3.18", jax, False),
-        ("0.3.14", jax.lib, True),
-        ("0.3.15", jax.lib, False),
-        ("0.3.16", jax.lib, False),
+        ("0.4.1", jax, False),
+        ("0.4.2", jax, False),
+        ("0.4.3", jax, False),
+        ("0.4.4", jax, True),
+        ("0.4.5", jax, True),
     ],
 )
-def test_raise_version_error(package, version, should_raise, monkeypatch):
+def test_raise_version_error(self, package, version, should_raise, monkeypatch):
     """Test JAX version error"""
     a = jax.numpy.array([0.1, 0.2])
 
@@ -50,12 +49,11 @@ def test_raise_version_error(package, version, should_raise, monkeypatch):
         qml.expval(qml.PauliZ(0))
 
     tape = qml.tape.QuantumScript.from_queue(q)
-
     with monkeypatch.context() as m:
         m.setattr(package, "__version__", version)
 
         if should_raise:
-            msg = "requires version 0.3.17 or higher for JAX and 0.3.15 or higher JAX lib"
+            msg = "requires version between 0.4.1 and 0.4.3 "
             with pytest.raises(InterfaceUnsupportedError, match=msg):
                 execute([tape], dev, gradient_fn=param_shift, interface="jax-jit")
         else:

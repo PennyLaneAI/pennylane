@@ -12,7 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Unit tests for the JAX-Python interface"""
-import sys
 import pytest
 
 pytestmark = pytest.mark.jax
@@ -25,41 +24,11 @@ import numpy as np
 
 import pennylane as qml
 from pennylane.gradients import param_shift
-from pennylane.interfaces import execute, InterfaceUnsupportedError
+from pennylane.interfaces import execute
 
 
 class TestJaxExecuteUnitTests:
     """Unit tests for jax execution"""
-
-    @pytest.mark.parametrize(
-        "version, package, should_raise",
-        [
-            ("0.4.1", jax, False),
-            ("0.4.2", jax, False),
-            ("0.4.3", jax, False),
-            ("0.4.4", jax, True),
-            ("0.4.5", jax, True),
-        ],
-    )
-    def test_raise_version_error(self, package, version, should_raise, monkeypatch):
-        """Test JAX version error"""
-        a = jax.numpy.array([0.1, 0.2])
-
-        dev = qml.device("default.qubit", wires=1)
-
-        with qml.queuing.AnnotatedQueue() as q:
-            qml.expval(qml.PauliZ(0))
-
-        tape = qml.tape.QuantumScript.from_queue(q)
-        with monkeypatch.context() as m:
-            m.setattr(package, "__version__", version)
-
-            if should_raise:
-                msg = "requires version between 0.4.1 and 0.4.3 "
-                with pytest.raises(InterfaceUnsupportedError, match=msg):
-                    execute([tape], dev, gradient_fn=param_shift, interface="jax-jit")
-            else:
-                execute([tape], dev, gradient_fn=param_shift, interface="jax-jit")
 
     def test_import_error(self, mocker):
         """Test that an exception is caught on import error"""
