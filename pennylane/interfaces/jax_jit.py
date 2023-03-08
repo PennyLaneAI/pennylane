@@ -34,7 +34,7 @@ def _validate_jax_version():
     if semantic_version.match(">0.4.3", jax.__version__):
         msg = (
             "The JAX JIT interface of PennyLane requires version between 0.4.1 and 0.4.3 for JAX "
-            "and JAX lib. Please upgrade downgrade these packages."
+            "and JAX lib. Please downgrade these packages."
         )
         raise InterfaceUnsupportedError(msg)
 
