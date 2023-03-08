@@ -1520,7 +1520,6 @@ def test_qubit_unitary(M):
 
     tape = QuantumScript.from_queue(q_tape)
     tape = tape.expand(3, stop_at=lambda op: not isinstance(op, Controlled))
-    print(list(tape))
 
     expected = qml.ControlledQubitUnitary(M, control_wires=1, wires=0)
 
