@@ -225,7 +225,7 @@ class TestControlledDecompositionZYZ:
         )
         expected = qml.ops.ctrl_decomp_zyz(base, (0,))
         assert equal_list(decomp, expected)
-    
+
     @pytest.mark.parametrize("test_expand", [False, True])
     def test_zyz_decomp_control_values(self, test_expand):
         """Test that the ZYZ decomposition is used for single qubit target operations
@@ -603,12 +603,19 @@ class TestControlledBisectGeneral:
 
     @pytest.mark.parametrize("op", zip(gen_ops, gen_ops_best))
     @pytest.mark.parametrize("control_wires", cw5)
-    def test_auto_select(self, op, control_wires):
+    @pytest.mark.parametrize("all_the_way_from_ctrl", [False, True])
+    def test_auto_select(self, op, control_wires, all_the_way_from_ctrl):
         """
         Test that the auto selection is correct and optimal.
         """
         op, best = op
-        res = ctrl_decomp_bisect(op, Wires(control_wires))
+        if all_the_way_from_ctrl:
+            if isinstance(op, qml.PauliX):
+                # X has its own special case
+                pytest.skip()
+            res = qml.ctrl(op, control_wires).decomposition()
+        else:
+            res = ctrl_decomp_bisect(op, Wires(control_wires))
         expected = best(_convert_to_su2(op.matrix()), op.wires, Wires(control_wires))
         assert equal_list(res, expected)
 
