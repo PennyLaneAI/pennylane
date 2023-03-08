@@ -556,6 +556,7 @@ def _decompose_no_control_values(op: "operation.Operator") -> List["operation.Op
     if len(op.control_wires) == 1 and hasattr(op.base, "_controlled"):
         result = op.base._controlled(op.control_wires[0])
         # disallow decomposing to itself
+        # pylint: disable=unidiomatic-typecheck
         if type(result) != type(op):
             return [result]
         qml.QueuingManager.remove(result)
