@@ -330,7 +330,34 @@ class TestCounts:
         custom_measurement_process(dev, spy)
         qml.disable_return()
 
-    # test_batched_counts_and_expval_no_op_finite_shots
+    @pytest.mark.all_interfaces
+    @pytest.mark.parametrize(
+        "wires, basis_states", [(None, ("010", "000")), ([2, 1], ("01", "00"))]
+    )
+    @pytest.mark.parametrize("interface", ["autograd", "jax", "tensorflow", "torch"])
+    def test_batched_counts_and_expval_no_op_finite_shots(
+        self, interface, wires, basis_states, mocker
+    ):
+        """Check all interfaces with computational basis state counts and
+        finite shot"""
+        qml.enable_return()
+        n_shots = 10
+        dev = qml.device("default.qubit", wires=3, shots=n_shots)
+        spy = mocker.spy(qml.QubitDevice, "sample")
+
+        @qml.qnode(dev, interface=interface)
+        def circuit():
+            qml.pow(qml.PauliX(1), z=[1, 2])
+            return qml.counts(wires=wires), qml.expval(qml.PauliZ(0))
+
+        res = circuit()
+        assert isinstance(res, tuple) and len(res) == 2
+        assert res[0] == [{basis_state: n_shots} for basis_state in basis_states]
+        assert len(res[1]) == 2 and qml.math.allequal(res[1], 1)
+
+        custom_measurement_process(dev, spy)
+        qml.disable_return()
+
     @pytest.mark.all_interfaces
     @pytest.mark.parametrize("interface", ["autograd", "jax", "tensorflow", "torch"])
     def test_counts_operator_finite_shots(self, interface, mocker):
@@ -348,6 +375,47 @@ class TestCounts:
         assert res == {1: n_shots}
 
         custom_measurement_process(dev, spy)
+
+    @pytest.mark.all_interfaces
+    @pytest.mark.parametrize("interface", ["autograd", "jax", "tensorflow", "torch"])
+    def test_batched_counts_operator_finite_shots(self, interface, mocker):
+        """Check all interfaces with observable measurement counts, batching and finite shots"""
+        qml.enable_return()
+        n_shots = 10
+        dev = qml.device("default.qubit", wires=3, shots=n_shots)
+        spy = mocker.spy(qml.QubitDevice, "sample")
+
+        @qml.qnode(dev, interface=interface)
+        def circuit():
+            qml.pow(qml.PauliX(0), z=[1, 2])
+            return qml.counts(qml.PauliZ(0))
+
+        assert circuit() == [{-1: n_shots}, {1: n_shots}]
+
+        custom_measurement_process(dev, spy)
+        qml.disable_return()
+
+    @pytest.mark.all_interfaces
+    @pytest.mark.parametrize("interface", ["autograd", "jax", "tensorflow", "torch"])
+    def test_batched_counts_and_expval_operator_finite_shots(self, interface, mocker):
+        """Check all interfaces with observable measurement counts, batching and finite shots"""
+        qml.enable_return()
+        n_shots = 10
+        dev = qml.device("default.qubit", wires=3, shots=n_shots)
+        spy = mocker.spy(qml.QubitDevice, "sample")
+
+        @qml.qnode(dev, interface=interface)
+        def circuit():
+            qml.pow(qml.PauliX(0), z=[1, 2])
+            return qml.counts(qml.PauliZ(0)), qml.expval(qml.PauliZ(0))
+
+        res = circuit()
+        assert isinstance(res, tuple) and len(res) == 2
+        assert res[0] == [{-1: n_shots}, {1: n_shots}]
+        assert len(res[1]) == 2 and qml.math.allequal(res[1], [-1, 1])
+
+        custom_measurement_process(dev, spy)
+        qml.disable_return()
 
     @pytest.mark.all_interfaces
     @pytest.mark.parametrize("shot_vec", [(1, 10, 10), (1, 10, 1000)])
