@@ -17,15 +17,24 @@ to a PennyLane Device class.
 """
 
 # pylint: disable=too-many-arguments
+import semantic_version
 import jax
 import jax.numpy as jnp
 
 import pennylane as qml
 from pennylane.interfaces.jax import _compute_jvps
-from pennylane.interfaces.jax_jit import _numeric_type_to_dtype, _validate_jax_version
+from pennylane.interfaces.jax_jit import _numeric_type_to_dtype
+from pennylane.interfaces import InterfaceUnsupportedError
 
 dtype = jnp.float64
 
+def _validate_jax_version():
+    if semantic_version.match(">0.4.3", jax.__version__):
+        msg = (
+            "The new JAX JIT interface of PennyLane requires version between 0.4.1 and 0.4.3 for JAX "
+            "and JAX lib. Please upgrade downgrade these packages."
+        )
+        raise InterfaceUnsupportedError(msg)
 
 def _copy_tape(t, a):
     """Copy a given tape with operations and set parameters"""
@@ -134,6 +143,7 @@ def execute_tuple(tapes, device, execute_fn, gradient_fn, gradient_kwargs, _n=1,
         the returned list corresponds in order to the provided tapes.
     """
     # pylint: disable=unused-argument
+    _validate_jax_version()
 
     if any(
         m.return_type in (qml.measurements.Counts, qml.measurements.AllCounts)
@@ -143,8 +153,6 @@ def execute_tuple(tapes, device, execute_fn, gradient_fn, gradient_kwargs, _n=1,
         # Obtaining information about the shape of the Counts measurements is
         # not implemeneted and is required for the callback logic
         raise NotImplementedError("The JAX-JIT interface doesn't support qml.counts.")
-
-    _validate_jax_version()
 
     if _n == 1:
         for tape in tapes:
