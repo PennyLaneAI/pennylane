@@ -1570,7 +1570,8 @@ class TestSumComparisons:
         assert qml.equal(op1, op2) == res
 
 
-f1 = qml.pulse.pwc([0.3, 1.0])
+def f1(p, t):
+    return np.polyval(p, t)
 
 
 def f2(p, t):
