@@ -225,6 +225,33 @@ class TestControlledDecompositionZYZ:
         )
         expected = qml.ops.ctrl_decomp_zyz(base, (0,))
         assert equal_list(decomp, expected)
+    
+    @pytest.mark.parametrize("test_expand", [False, True])
+    def test_zyz_decomp_control_values(self, test_expand):
+        """Test that the ZYZ decomposition is used for single qubit target operations
+        when other decompositions aren't available and control values are present."""
+
+        base = qml.QubitUnitary(
+            np.array(
+                [
+                    [1, 1],
+                    [-1, 1],
+                ]
+            )
+            * 2**-0.5,
+            wires="a",
+        )
+        op = Controlled(base, (0,), control_values=[False])
+
+        assert op.has_decomposition
+        decomp = op.expand().circuit if test_expand else op.decomposition()
+        assert len(decomp) == 3
+        assert qml.equal(qml.PauliX(0), decomp[0])
+        assert qml.equal(qml.PauliX(0), decomp[-1])
+        decomp = decomp[1]
+        decomp = decomp.expand().circuit if test_expand else decomp.decomposition()
+        expected = qml.ops.ctrl_decomp_zyz(base, (0,))
+        assert equal_list(decomp, expected)
 
 
 class TestControlledBisectOD:
