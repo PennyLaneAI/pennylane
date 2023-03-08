@@ -64,6 +64,9 @@
 * Made `qml.OrbitalRotation` and consequently `qml.GateFabric` consistent with the interleaved Jordan-Wigner ordering.
   [(#3861)](https://github.com/PennyLaneAI/pennylane/pull/3861)
 
+* Fixed parameter broadcasting support with `qml.counts` in most cases, and introduced explicit errors otherwise.
+  [(#3876)](https://github.com/PennyLaneAI/pennylane/pull/3876)
+
 <h3>Contributors</h3>
 
 This release contains contributions from (in alphabetical order):
