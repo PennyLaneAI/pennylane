@@ -28,6 +28,7 @@ from pennylane.interfaces import InterfaceUnsupportedError
 
 dtype = jnp.float64
 
+
 def _validate_jax_version():
     if semantic_version.match(">0.4.3", jax.__version__):
         msg = (
@@ -35,6 +36,7 @@ def _validate_jax_version():
             "and JAX lib. Please upgrade downgrade these packages."
         )
         raise InterfaceUnsupportedError(msg)
+
 
 def _copy_tape(t, a):
     """Copy a given tape with operations and set parameters"""
