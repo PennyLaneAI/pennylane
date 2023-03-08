@@ -25,6 +25,30 @@ from pennylane import math
 from pennylane.typing import TensorLike
 
 
+def _convert_to_su2_batched(U, return_global_phase=False):
+    r"""Convert a 2x2 unitary matrix to :math:`SU(2)`. (batched operation)
+
+    Args:
+        U (array[complex]): A matrix with a batch dimension, presumed to be
+        of shape :math:`n \times 2 \times 2` and unitary for any positive integer n.
+        return_global_phase (bool): If `True`, the return will include
+        the global phase. If `False`, only the :math:`SU(2)` representative
+        is returned.
+
+    Returns:
+        array[complex]: A :math:`n \times 2 \times 2` matrix in :math:`SU(2)` that is
+        equivalent to U up to a global phase. If ``return_global_phase=True``,
+        a 2-element tuple is returned, with the first element being the
+        :math:`SU(2)` equivalent and the second, the global phase.
+    """
+    # Compute the determinants
+    dets = math.linalg.det(U)
+
+    exp_angles = math.cast_like(math.angle(dets), 1j) / 2
+    U_SU2 = math.cast_like(U, dets) * math.exp(-1j * exp_angles)[:, None, None]
+    return (U_SU2, exp_angles) if return_global_phase else U_SU2
+
+
 def _convert_to_su2(U):
     r"""Convert a 2x2 unitary matrix to :math:`SU(2)`.
 
@@ -40,11 +64,6 @@ def _convert_to_su2(U):
         a 2-element tuple is returned, with the first element being the
         :math:`SU(2)` equivalent and the second, the global phase.
     """
-    # must be lazy imported to prevent circular import
-    from pennylane.transforms.decompositions.single_qubit_unitary import (
-        _convert_to_su2 as _convert_to_su2_batched,
-    )
-
     return _convert_to_su2_batched([U])[0]
 
 
