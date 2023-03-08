@@ -469,8 +469,19 @@ class CircuitGraph:
                 self._operation_graph = self._graph.subgraph(
                     list(self._graph.nodes().index(node) for node in self.operations)
                 )
-                self._depth = rx.dag_longest_path_length(self._operation_graph) + 1
+                # Add a weight function to account for the depth of custom operations.
+                # This is a quick hack. A more robust treatments is needed.
+                self._depth = rx.dag_longest_path_length(self._operation_graph, self.weight_fn) + 1
         return self._depth
+
+    def weight_fn(self, i, j, c):
+        r"""Return the depth of a custom operation as the edge weight to compute the longest path in
+        the DAG."""
+        if hasattr(self.operations[i], "resources"):
+            w = self.operations[i].resources().depth
+            return w
+
+        return 1
 
     def has_path(self, a, b):
         """Checks if a path exists between the two given nodes.
