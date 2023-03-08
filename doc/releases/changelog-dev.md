@@ -29,9 +29,6 @@
   to be set as trainable), and therefore the derivatives are computed more efficiently.
   [(#3697)](https://github.com/PennyLaneAI/pennylane/pull/3697)
 
-* The `qml.equal` function now handles comparisons of `ParametrizedEvolution` operators.
-  [(#3870)](https://github.com/PennyLaneAI/pennylane/pull/3870)
-
 <h3>Breaking changes</h3>
 
 * Trainable parameters for the Jax interface are the parameters that are `JVPTracer`, defined by setting
@@ -56,6 +53,9 @@
 
 * Ensure that `qml.data.load` returns datasets in a stable and expected order.
   [(#3856)](https://github.com/PennyLaneAI/pennylane/pull/3856)
+
+* The `qml.equal` function now handles comparisons of `ParametrizedEvolution` operators.
+  [(#3870)](https://github.com/PennyLaneAI/pennylane/pull/3870)
 
 <h3>Contributors</h3>
 

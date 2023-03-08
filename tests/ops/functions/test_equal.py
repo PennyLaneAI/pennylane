@@ -1578,7 +1578,10 @@ def f2(p, t):
 
 
 class TestParametrizedEvolutionComparisons:
+    """Tests comparisons between ParametrizedEvolution operators"""
+
     def test_params_comparison(self):
+        """Test that params are compared for two ParametrizedEvolution ops"""
         coeffs = [3, f1, f2]
         ops = [qml.PauliX(0), qml.PauliY(1), qml.PauliZ(2)]
 
@@ -1596,6 +1599,7 @@ class TestParametrizedEvolutionComparisons:
         assert not qml.equal(ev1(params1, t), ev2(params2, t))
 
     def test_wires_comparison(self):
+        """Test that wires are compared for two ParametrizedEvolution ops"""
         coeffs = [3, f1, f2]
         ops1 = [qml.PauliX(0), qml.PauliY(1), qml.PauliZ(2)]
         ops2 = [qml.PauliX(1), qml.PauliY(2), qml.PauliZ(3)]
@@ -1614,6 +1618,7 @@ class TestParametrizedEvolutionComparisons:
         assert not qml.equal(ev1(params, t), ev3(params, t))
 
     def test_times_comparison(self):
+        """Test that times are compared for two ParametrizedEvolution ops"""
         coeffs = [3, f1, f2]
         ops = [qml.PauliX(0), qml.PauliY(1), qml.PauliZ(2)]
 
@@ -1630,6 +1635,7 @@ class TestParametrizedEvolutionComparisons:
         assert not qml.equal(ev1(params, t1), ev1(params, t2))
 
     def test_operator_comparison(self):
+        """Test that operators are compared for two ParametrizedEvolution ops"""
         coeffs = [3, f1, f2]
         ops1 = [qml.PauliX(0), qml.PauliY(1), qml.PauliZ(2)]
         ops2 = [qml.PauliZ(0), qml.PauliX(1), qml.PauliY(2)]
@@ -1648,6 +1654,7 @@ class TestParametrizedEvolutionComparisons:
         assert not qml.equal(ev1(params, t), ev3(params, t))
 
     def test_coefficients_comparison(self):
+        """Test that coefficients are compared for two ParametrizedEvolution ops"""
         coeffs1 = [3, f1, f2]
         coeffs2 = [3, 4, f2]
         ops = [qml.PauliX(0), qml.PauliY(1), qml.PauliZ(2)]
