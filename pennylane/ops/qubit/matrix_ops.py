@@ -400,7 +400,6 @@ class BlockEncode(Operation):
     num_wires = AnyWires
     """int: Number of wires that the operator acts on."""
 
-
     def __init__(self, A, wires, do_queue=True, id=None):
         A = qml.math.atleast_2d(A)
         wires = Wires(wires)
