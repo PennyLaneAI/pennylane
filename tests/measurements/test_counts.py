@@ -154,7 +154,13 @@ class TestCounts:
 
         custom_measurement_process(dev, spy)
 
-    @pytest.mark.parametrize("interface", ["jax", "tensorflow"])
+    @pytest.mark.parametrize(
+        "interface",
+        [
+            pytest.param("jax", marks=pytest.mark.jax),
+            pytest.param("tensorflow", marks=pytest.mark.tf),
+        ],
+    )
     def test_batched_counts_not_supported_old_return(self, interface):
         """Test that counts with batching is not supporting in the old return system."""
 
@@ -670,6 +676,21 @@ class TestCounts:
         assert len(res[0]) == 10
         assert res[1] == {"00": 10}
         assert res[2] == {"00": 10, "01": 0, "10": 0, "11": 0}
+        custom_measurement_process(dev, spy)
+
+    def test_batched_all_outcomes(self, mocker):
+        """Tests that all_outcomes=True works with broadcasting."""
+        n_shots = 10
+        dev = qml.device("default.qubit", wires=1, shots=n_shots)
+        spy = mocker.spy(qml.QubitDevice, "sample")
+
+        @qml.qnode(dev)
+        def circuit():
+            qml.pow(qml.PauliX(0), z=[1, 2])
+            return qml.counts(qml.PauliZ(0), all_outcomes=True)
+
+        assert all(circuit() == [{1: 0, -1: n_shots}, {1: n_shots, -1: 0}])
+
         custom_measurement_process(dev, spy)
 
     def test_counts_empty_wires(self):
