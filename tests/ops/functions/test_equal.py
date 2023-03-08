@@ -1578,6 +1578,7 @@ def f2(p, t):
     return p[0] * t**2 + p[1]
 
 
+@pytest.mark.jax
 class TestParametrizedEvolutionComparisons:
     """Tests comparisons between ParametrizedEvolution operators"""
 
