@@ -34,6 +34,9 @@
 
 <h3>Breaking changes</h3>
 
+* Both JIT interfaces are not compatible with Jax `>0.4.3`, we raise an error for those versions.
+  [(#3877)](https://github.com/PennyLaneAI/pennylane/pull/3877)
+
 * Trainable parameters for the Jax interface are the parameters that are `JVPTracer`, defined by setting
   `argnums`. Previously, all JAX tracers, including those used for JIT compilation, were interpreted to be trainable.
   [(#3697)](https://github.com/PennyLaneAI/pennylane/pull/3697)
