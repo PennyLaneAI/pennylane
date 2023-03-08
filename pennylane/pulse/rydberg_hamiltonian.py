@@ -20,13 +20,12 @@ from typing import Callable, List, Union
 import numpy as np
 
 import pennylane as qml
-from pennylane.ops import SProd
 from pennylane.wires import Wires
 
 from .parametrized_hamiltonian import ParametrizedHamiltonian
 
 
-def rydberg_interaction(register: list, wires=None, interaction_coeff: float = 862690 * 2 * np.pi):
+def rydberg_interaction(register: list, wires=None, interaction_coeff: float = 862690):
     r"""Returns a :class:`ParametrizedHamiltonian` representing the interaction of an ensemble of
     Rydberg atoms due to the Rydberg blockade
 
@@ -42,7 +41,7 @@ def rydberg_interaction(register: list, wires=None, interaction_coeff: float = 8
         V_{ij} = \frac{C_6}{R_{ij}^6}
 
     where :math:`R_{ij}` is the distance between the atoms :math:`i` and :math:`j`, and :math:`C_6`
-    is the Rydberg interaction constant, which defaults to :math:`862690 \times 2\pi \text{MHz} \times \mu m^6`.
+    is the Rydberg interaction constant, which defaults to :math:`862690 \text{MHz} \times \mu m^6`.
     This interaction term can be combined with a laser drive term to create a Hamiltonian describing a driven
     Rydberg atom system.
 
@@ -56,27 +55,30 @@ def rydberg_interaction(register: list, wires=None, interaction_coeff: float = 8
             have the same length as ``register``. If ``None``, each atom's wire value will
             correspond to its index in the ``register`` list.
         interaction_coeff (float): Rydberg interaction constant in units: :math:`\text{MHz} \times \mu \text{m}^6`.
-            Defaults to :math:`862690 \times 2\pi \text{ MHz} \times \mu \text{m}^6`.
+            Defaults to :math:`862690 \text{ MHz} \times \mu \text{m}^6`.
 
     Returns:
         RydbergHamiltonian: a :class:`~.ParametrizedHamiltonian` representing the atom interaction
 
     **Example**
 
-    We create a Hamiltonian describing the interaction among 6 Rydberg atoms due to the Rydberg blockade:
+    We create a Hamiltonian describing the interaction among 9 Rydberg atoms in a square lattice due to the
+    Rydberg blockade:
 
     .. code-block:: python
 
-        atom_coordinates = [[0, 0], [0, 5], [5, 0], [10, 5], [5, 10], [10, 10]]
-        wires = [1, 5, 0, 2, 4, 3]
+        atom_coordinates = [[0, 0], [0, 5], [0, 10], [5, 0], [5, 5], [5, 10], [10, 0], [10, 5], [10, 10]]
+        wires = [1, 5, 0, 2, 4, 3, 8, 6, 7]
         H_i = qml.pulse.rydberg_interaction(atom_coordinates, wires=wires)
 
     >>> H_i
-    ParametrizedHamiltonian: terms=15
+    ParametrizedHamiltonian: terms=36
+
+    For an N-atom system, the ``ParametrizedHamiltonian`` should have :math:`\frac{N(N-1)}{2}` terms.
 
     .. code-block:: python
 
-        dev = qml.device("default.qubit.jax", wires=6)
+        dev = qml.device("default.qubit.jax", wires=9)
 
         @qml.qnode(dev, interface="jax")
         def circuit():
@@ -94,17 +96,6 @@ def rydberg_interaction(register: list, wires=None, interaction_coeff: float = 8
     elif len(wires) != len(register):
         raise ValueError("The length of the wires and the register must match.")
 
-    def rydberg_projector(wire: int) -> SProd:
-        """Returns the projector into the Rydberg state for the given wire.
-
-        Args:
-            wire (int): wire value
-
-        Returns:
-            SProd: projector into the Rydberg state
-        """
-        return qml.s_prod(1 / 2, (1 - qml.PauliZ(wire)))
-
     coeffs = []
     observables = []
     for idx, (pos1, wire1) in enumerate(zip(register[:-1], wires[:-1])):
@@ -112,7 +103,8 @@ def rydberg_interaction(register: list, wires=None, interaction_coeff: float = 8
             atom_distance = np.linalg.norm(qml.math.array(pos2) - pos1)
             Vij = interaction_coeff / (abs(atom_distance) ** 6)  # van der Waals potential
             coeffs.append(Vij)
-            observables.append(qml.prod(rydberg_projector(wire1), rydberg_projector(wire2)))
+            observables.append(qml.prod(qml.Projector([1], wire1), qml.Projector([1], wire2)))
+            # Rydberg projectors
 
     return RydbergHamiltonian(
         coeffs, observables, register=register, interaction_coeff=interaction_coeff
@@ -154,8 +146,9 @@ def rydberg_drive(amplitude, detuning, phase, wires):
     **Example**
 
     We create a Hamiltonian describing a laser acting on 4 wires (Rydberg atoms) with a fixed detuning and
-    phase, and a parametrized, time-dependent amplitude. Note that this Hamiltonian by itself is unphysical,
-    as a real system would also include a term for the interactions among the atoms due to the Rydberg blockade:
+    phase, and a parametrized, time-dependent amplitude. The Hamiltonian includes an interaction term for
+    inter-atom interactions due to the Rydberg blockade, as well as the driving term for the laser driving
+    the atoms:
 
     .. code-block:: python
 
@@ -165,10 +158,15 @@ def rydberg_drive(amplitude, detuning, phase, wires):
         wires = [0, 1, 2, 3]
         H_d = qml.pulse.rydberg_drive(amplitude, detuning, phase, wires)
 
+        atom_coordinates = [[0, 0], [0, 4], [4, 0], [4, 4]]
+        H_i = qml.pulse.rydberg_interaction(atom_coordinates, wires)
+
     >>> H_d
     ParametrizedHamiltonian: terms=2
+    >>> H_i
+    ParametrizedHamiltonian: terms=6
 
-    The ``ParametrizedHamiltonian`` has only two terms because it is simplified such that each term
+    The driving Hamiltonian has only two terms because it is simplified such that each term
     represents one of the summations in the Hamiltonian shown above.
 
     .. code-block:: python
@@ -177,15 +175,15 @@ def rydberg_drive(amplitude, detuning, phase, wires):
 
         @qml.qnode(dev, interface="jax")
         def circuit(params):
-            qml.evolve(H_d)(params, t=[0, 10])
+            qml.evolve(H_d + H_i)(params, t=[0, 10])
             return qml.expval(qml.PauliZ(0))
 
     >>> params = [2.4]
     >>> circuit(params)
-    Array(0.8614427, dtype=float32)
+    Array(0.97540593, dtype=float32)
 
     >>> jax.grad(circuit)(params)
-    [Array(2.0483658, dtype=float32)]
+    [Array(0.00377756, dtype=float32)]
     """
     if isinstance(wires, int):
         wires = [wires]
