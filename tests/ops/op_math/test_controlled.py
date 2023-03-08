@@ -40,33 +40,12 @@ from pennylane.wires import Wires
 # pylint: disable=expression-not-assigned
 
 
-def equal_if_decomposed(lhs, rhs, max_iterations=1000):
-    """
-    Test that 2 operators or operator sequences are the same if fully decomposed.
-    """
+def equal_list(lhs, rhs):
     if not isinstance(lhs, list):
         lhs = [lhs]
     if not isinstance(rhs, list):
         rhs = [rhs]
-    decomposable = (qml.MultiControlledX, ControlledOp)
-    # make copies
-    lhs = list(lhs)
-    rhs = list(rhs)
-    iterations = 0
-    while len(lhs) != 0 and len(rhs) != 0:
-        iterations += 1
-        if max_iterations is not None and iterations > max_iterations:
-            raise AssertionError(f"Max iterations {max_iterations} for equal_if_decomposed reached")
-        if qml.equal(lhs[0], rhs[0]):
-            lhs.pop(0)
-            rhs.pop(0)
-        elif isinstance(lhs[0], decomposable):
-            lhs = lhs[0].decomposition() + lhs[1:]
-        elif isinstance(rhs[0], decomposable):
-            rhs = rhs[0].decomposition() + rhs[1:]
-        else:
-            return False
-    return len(lhs) == 0 and len(rhs) == 0
+    return len(lhs) == len(rhs) and all(qml.equal(l, r) for l, r in zip(lhs, rhs))
 
 
 base_num_control_mats = [
@@ -776,7 +755,7 @@ class TestHelperMethod:
         op = Controlled(qml.PauliX("c"), ("a", 2))
         decomp = _decompose_no_control_values(op)
         assert len(decomp) == 1
-        assert equal_if_decomposed(decomp, qml.Toffoli(("a", 2, "c")))
+        assert equal_list(decomp, qml.MultiControlledX(wires=("a", 2, "c")))
 
     def test_multicontrolledx(self):
         """Test case when PauliX has many controls."""
@@ -837,8 +816,8 @@ class TestDecomposition:
         op = Controlled(base, (0, 1), (True, False))
 
         decomp = op.expand().circuit if test_expand else op.decomposition()
-        expected = [qml.PauliX(1), qml.Toffoli((0, 1, 2)), qml.PauliX(1)]
-        assert equal_if_decomposed(decomp, expected)
+        expected = [qml.PauliX(1), qml.MultiControlledX(wires=(0, 1, 2)), qml.PauliX(1)]
+        assert equal_list(decomp, expected)
 
     def test_no_control_values_special_decomp(self, test_expand):
         """Test a case with no control values but a special decomposition."""
@@ -1425,7 +1404,7 @@ def test_multi_ctrl():
     op = tape.operations[0]
     assert isinstance(op, Controlled)
     new_tape = tape.expand(depth=1)
-    assert equal_if_decomposed(new_tape[0], qml.Toffoli(wires=[3, 7, 0]))
+    assert equal_list(new_tape[0], qml.MultiControlledX(wires=[3, 7, 0]))
 
 
 def test_ctrl_with_qnode():
@@ -1519,13 +1498,12 @@ def test_qubit_unitary(M):
         ctrl(qml.QubitUnitary, 1)(M, wires=0)
 
     tape = QuantumScript.from_queue(q_tape)
-    print(list(tape))
-    tape = tape.expand(3, stop_at=lambda op: not isinstance(op, Controlled))
-    print(list(tape))
-
     expected = qml.ControlledQubitUnitary(M, control_wires=1, wires=0)
+    assert equal_list(list(tape), expected)
 
-    assert equal_if_decomposed(list(tape), expected)
+    # causes decomposition into more basic operators
+    tape = tape.expand(3, stop_at=lambda op: not isinstance(op, Controlled))
+    assert not equal_list(list(tape), expected)
 
 
 @pytest.mark.parametrize(
@@ -1550,10 +1528,11 @@ def test_controlledqubitunitary(M):
         ctrl(qml.ControlledQubitUnitary, 1)(M, control_wires=2, wires=0)
 
     tape = QuantumScript.from_queue(q_tape)
+    # will immediately decompose according to selected decomposition algorithm
     tape = tape.expand(3, stop_at=lambda op: not isinstance(op, Controlled))
 
-    expected = qml.ControlledQubitUnitary(M, control_wires=[2, 1], wires=0)
-    assert equal_if_decomposed(list(tape), expected)
+    expected = qml.ControlledQubitUnitary(M, control_wires=[2, 1], wires=0).decomposition()
+    assert equal_list(list(tape), expected)
 
 
 def test_no_control_defined():
@@ -1759,7 +1738,7 @@ def test_multi_ctrl_values(ctrl_values):
         for i, j in enumerate(ctrl_val):
             if not bool(j):
                 exp_op.append(qml.PauliX(ctrl_wires[i]))
-        exp_op.append(qml.Toffoli(wires=[3, 7, 0]))
+        exp_op.append(qml.MultiControlledX(wires=[3, 7, 0]))
         for i, j in enumerate(ctrl_val):
             if not bool(j):
                 exp_op.append(qml.PauliX(ctrl_wires[i]))
@@ -1774,4 +1753,4 @@ def test_multi_ctrl_values(ctrl_values):
     op = tape.operations[0]
     assert isinstance(op, Controlled)
     new_tape = expand_tape(tape, 1)
-    assert equal_if_decomposed(list(new_tape), expected_ops(ctrl_values))
+    assert equal_list(list(new_tape), expected_ops(ctrl_values))

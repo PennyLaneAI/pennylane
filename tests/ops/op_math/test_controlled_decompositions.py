@@ -42,8 +42,8 @@ def _matrix_adjoint(matrix: np.ndarray):
     return math.transpose(math.conj(matrix))
 
 
-def rq(func):
-    def irq(*args, **kwargs):
+def record_from_list(func):
+    def irecord_from_list(*args, **kwargs):
         with qml.QueuingManager.stop_recording():
             decomposition = func(*args, **kwargs)
 
@@ -51,36 +51,15 @@ def rq(func):
             for iop in decomposition:
                 qml.apply(iop)
 
-    return irq
+    return irecord_from_list
 
 
-def equal_if_decomposed(lhs, rhs, max_iterations=1000):
-    """
-    Test that 2 operators or operator sequences are the same if fully decomposed.
-    """
+def equal_list(lhs, rhs):
     if not isinstance(lhs, list):
         lhs = [lhs]
     if not isinstance(rhs, list):
         rhs = [rhs]
-    decomposable = (qml.MultiControlledX, ControlledOp)
-    # make copies
-    lhs = list(lhs)
-    rhs = list(rhs)
-    iterations = 0
-    while len(lhs) != 0 and len(rhs) != 0:
-        iterations += 1
-        if max_iterations is not None and iterations > max_iterations:
-            raise AssertionError(f"Max iterations {max_iterations} for equal_if_decomposed reached")
-        if qml.equal(lhs[0], rhs[0]):
-            lhs.pop(0)
-            rhs.pop(0)
-        elif isinstance(lhs[0], decomposable):
-            lhs = lhs[0].decomposition() + lhs[1:]
-        elif isinstance(rhs[0], decomposable):
-            rhs = rhs[0].decomposition() + rhs[1:]
-        else:
-            return False
-    return len(lhs) == 0 and len(rhs) == 0
+    return len(lhs) == len(rhs) and all(qml.equal(l, r) for l, r in zip(lhs, rhs))
 
 
 class TestControlledDecompositionZYZ:
@@ -231,9 +210,11 @@ class TestControlledDecompositionZYZ:
         op = Controlled(base, (0,))
 
         assert op.has_decomposition
-        decomp = op.expand().circuit if test_expand else op.decomposition()
+        decomp = (
+            op.expand().expand().circuit if test_expand else op.decomposition()[0].decomposition()
+        )
         expected = qml.ops.ctrl_decomp_zyz(base, (0,))
-        assert equal_if_decomposed(decomp, expected)
+        assert equal_list(decomp, expected)
 
 
 class TestControlledBisectOD:
@@ -289,7 +270,9 @@ class TestControlledBisectOD:
         @qml.qnode(dev)
         def decomp_circuit():
             qml.broadcast(unitary=qml.Hadamard, pattern="single", wires=control_wires)
-            rq(_ctrl_decomp_bisect_od)(_convert_to_su2(op.matrix()), op.wires, Wires(control_wires))
+            record_from_list(_ctrl_decomp_bisect_od)(
+                _convert_to_su2(op.matrix()), op.wires, Wires(control_wires)
+            )
             return qml.probs()
 
         @qml.qnode(dev)
@@ -310,7 +293,7 @@ class TestControlledBisectOD:
         assert np.allclose(op.matrix(), _convert_to_su2(op.matrix()), atol=tol, rtol=tol)
 
         expected_op = qml.ctrl(op, control_wires)
-        res = qml.matrix(rq(_ctrl_decomp_bisect_od), wire_order=control_wires + [0])(
+        res = qml.matrix(record_from_list(_ctrl_decomp_bisect_od), wire_order=control_wires + [0])(
             op.matrix(), op.wires, Wires(control_wires)
         )
         expected = expected_op.matrix()
@@ -434,7 +417,9 @@ class TestControlledBisectMD:
         @qml.qnode(dev)
         def decomp_circuit():
             qml.broadcast(unitary=qml.Hadamard, pattern="single", wires=control_wires)
-            rq(_ctrl_decomp_bisect_md)(_convert_to_su2(op.matrix()), op.wires, Wires(control_wires))
+            record_from_list(_ctrl_decomp_bisect_md)(
+                _convert_to_su2(op.matrix()), op.wires, Wires(control_wires)
+            )
             return qml.probs()
 
         @qml.qnode(dev)
@@ -455,7 +440,7 @@ class TestControlledBisectMD:
         assert np.allclose(op.matrix(), _convert_to_su2(op.matrix()), atol=tol, rtol=tol)
 
         expected_op = qml.ctrl(op, control_wires)
-        res = qml.matrix(rq(_ctrl_decomp_bisect_md), wire_order=control_wires + [0])(
+        res = qml.matrix(record_from_list(_ctrl_decomp_bisect_md), wire_order=control_wires + [0])(
             op.matrix(), op.wires, control_wires
         )
         expected = expected_op.matrix()
@@ -564,7 +549,7 @@ class TestControlledBisectGeneral:
             if auto:
                 ctrl_decomp_bisect(op, Wires(control_wires))
             else:
-                rq(_ctrl_decomp_bisect_general)(
+                record_from_list(_ctrl_decomp_bisect_general)(
                     _convert_to_su2(op.matrix()), op.wires, Wires(control_wires)
                 )
             return qml.probs()
@@ -588,7 +573,7 @@ class TestControlledBisectGeneral:
         op, best = op
         res = ctrl_decomp_bisect(op, Wires(control_wires))
         expected = best(_convert_to_su2(op.matrix()), op.wires, Wires(control_wires))
-        assert equal_if_decomposed(res, expected)
+        assert equal_list(res, expected)
 
     @pytest.mark.parametrize("op", su2_gen_ops)
     @pytest.mark.parametrize("control_wires", cw5)
@@ -598,9 +583,9 @@ class TestControlledBisectGeneral:
         assert np.allclose(op.matrix(), _convert_to_su2(op.matrix()), atol=tol, rtol=tol)
 
         expected_op = qml.ctrl(op, control_wires)
-        res = qml.matrix(rq(_ctrl_decomp_bisect_general), wire_order=control_wires + [0])(
-            op.matrix(), op.wires, control_wires
-        )
+        res = qml.matrix(
+            record_from_list(_ctrl_decomp_bisect_general), wire_order=control_wires + [0]
+        )(op.matrix(), op.wires, control_wires)
         expected = expected_op.matrix()
 
         assert np.allclose(res, expected, atol=tol, rtol=tol)
