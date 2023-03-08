@@ -395,6 +395,8 @@ class BlockEncode(Operation):
     """
 
     num_params = 1
+    """int: Number of trainable parameters that the operator depends on."""
+
     num_wires = AnyWires
     """int: Number of wires that the operator acts on."""
 
