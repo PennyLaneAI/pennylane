@@ -43,6 +43,16 @@ def _matrix_adjoint(matrix: np.ndarray):
 
 
 def record_from_list(func):
+    """
+    Decorates a function to
+    - not record any operators instantiated during the function
+    - record the operators returned by the function, in order
+    - not return the return value
+
+    Not returning the return value is intentional, as the contexts where this is used
+    (qnode, matrix) only care about recorded operators and not the return value.
+    """
+
     def irecord_from_list(*args, **kwargs):
         with qml.QueuingManager.stop_recording():
             decomposition = func(*args, **kwargs)
