@@ -74,7 +74,7 @@ def rydberg_interaction(register: list, wires=None, interaction_coeff: float = 8
     >>> H_i
     ParametrizedHamiltonian: terms=36
 
-    For an N-atom system, the ``ParametrizedHamiltonian`` should have :math:`\frac{N(N-1)}{2}` terms.
+    As expected, we have :math:`\frac{N(N-1)}{2} = 36` terms for N=6 atoms.
 
     .. code-block:: python
 
