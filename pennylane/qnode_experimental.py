@@ -113,10 +113,7 @@ class QNodeExperimental:
         self._update_gradient_fn()
         functools.update_wrapper(self, func)
 
-        self.targ_stack = []
-        self.tkwargs_stack = []
-        self.transform_stack = []
-        self.post_processing_stack = []
+        self.transform_program = qml.transforms.experimental.TransformProgram()
 
     def __repr__(self):
         """String representation."""
@@ -533,26 +530,10 @@ class QNodeExperimental:
         )
         self._tape_cached = using_custom_cache and self.tape.hash in cache
 
-        # TODO 0: Loop over the stacks
-        # TODO 1: apply transform on tape
-        if self.transform_stack:
-            print(self.transform_stack)
-            print(self.tape)
-            tape, fn = self.transform_stack[0](tape=self.tape)
-            print(tape.circuit)
-        res = qml.execute(
-            [tape],
-            device=self.device,
-            gradient_fn=self.gradient_fn,
-            interface=self.interface,
-            gradient_kwargs=self.gradient_kwargs,
-            override_shots=override_shots,
-            **self.execute_kwargs,
+        res = qml.interfaces.execute_experimental(
+            [self.tape], device=self.device, transforms_program=self.transform_program
         )
         res = res[0]
-        # TODO 2: apply post processing on the res
-        if self.transform_stack:
-            res = fn(res)
 
         if old_interface == "auto":
             self.interface = "auto"

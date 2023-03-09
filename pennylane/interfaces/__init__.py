@@ -42,6 +42,7 @@ Supported interfaces
 
 """
 from .execution import cache_execute, execute, INTERFACE_MAP, SUPPORTED_INTERFACES
+from .execution_experimental import execute_experimental
 from .set_shots import set_shots
 
 

@@ -10,6 +10,7 @@ from pennylane.ops.qubit.attributes import (
 from pennylane.transforms.optimization.optimization_utils import find_next_gate
 from pennylane.transforms.experimental.transforms import transform
 
+
 def _ops_equal(op1, op2):
     """Checks if two operators are equal up to class, data, hyperparameters, and wires"""
     return (
