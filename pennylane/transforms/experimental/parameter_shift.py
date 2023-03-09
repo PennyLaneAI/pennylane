@@ -688,7 +688,6 @@ def param_shift_experimental(
     r"""Transform a QNode to compute the parameter-shift gradient of all gate
     parameters with respect to its inputs.
     """
-
     if any(isinstance(m, (StateMP, VnEntropyMP, MutualInfoMP)) for m in tape.measurements):
         raise ValueError(
             "Computing the gradient of circuits that return the state is not supported."

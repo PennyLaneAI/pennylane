@@ -58,17 +58,18 @@ class transform:
         elif isinstance(obj, qml.QNodeExperimental):
             return self.default_qnode_transform(obj, targs, tkwargs)
 
-    def default_qnode_transform(self, qnode, targs, tkwargs):
+    def default_qnode_transform(self, qnode, targs, tkwargs, expand_fn=None):
         """Register a qnode transformation"""
-        qnode.transform_queue.push(Transform(self.fn, targs, tkwargs, default_qnode_postprocessing))
+        qnode.transform_program.push(Transform(self.fn, targs, tkwargs, expand_fn, default_qnode_postprocessing))
         return qnode
 
 
 class Transform:
-    def __init__(self, fn, args, kwargs, qnode_processing):
+    def __init__(self, fn, args, kwargs, expand_fn, qnode_processing):
         self.transform_fn = fn
         self.targs = args
         self.tkwargs = kwargs
+        self.expand_fn = expand_fn
         self.qnode_processing = qnode_processing
 
 
@@ -80,7 +81,8 @@ class TransformProgram:
         self._transform_program.append(transform)
 
     def pop(self):
-        self._transform_program.pop()
+        transform = self._transform_program.pop(0)
+        return transform.transform_fn, transform.targs, transform.tkwargs, transform.expand_fn, transform.qnode_processing
 
     def dag(self):
         return 0

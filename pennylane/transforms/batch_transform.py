@@ -485,7 +485,6 @@ def map_batch_transform(transform, tapes):
     def processing_fn(res):
         count = 0
         final_results = []
-
         for idx, s in enumerate(tape_counts):
             # apply any batch transform post-processing
             new_res = batch_fns[idx](res[count : count + s])

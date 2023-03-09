@@ -106,4 +106,4 @@ def cancel_inverses(tape):
         # - neither of the flags are_self_inverses and are_inverses are true
         operations.append(current_gate)
         continue
-    return QuantumTape(operations, tape.measurements), lambda x: x
+    return [QuantumTape(operations, tape.measurements)], lambda x: x[0]
