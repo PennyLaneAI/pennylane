@@ -179,8 +179,8 @@ class TestSumOfTermsDifferentiability:
         return simulate(qs)[0]
 
     @staticmethod
-    def expected(scale, n_wires=10, offset=0.1):
-        phase = offset + scale * np.array(range(n_wires))
+    def expected(scale, n_wires=10, offset=0.1, like="numpy"):
+        phase = offset + scale * qml.math.asarray(range(n_wires), like=like)
         cosines = qml.math.cos(phase)
         sines = qml.math.sin(phase)
         return 2.5 * qml.math.prod(cosines) + 6.2 * qml.math.prod(sines)
@@ -222,7 +222,31 @@ class TestSumOfTermsDifferentiability:
         """Test that backpropagation derivatives work with torch with hamiltonians and large sums."""
         import torch
 
-        x = torch.tensor(-0.289)
+        x = torch.tensor(-0.289, requires_grad=True)
+        x2 = torch.tensor(-0.289, requires_grad=True)
         out = self.f(x, convert_to_hamiltonian=convert_to_hamiltonian)
-        expected_out = self.expected(x)
+        expected_out = self.expected(x2, like="torch")
         assert qml.math.allclose(out, expected_out)
+
+        out.backward()
+        expected_out.backward()
+        assert qml.math.allclose(x.grad, x2.grad)
+
+    @pytest.mark.tf
+    @pytest.mark.parametrize("convert_to_hamiltonian", (True, False))
+    def test_tf_backprop(self, convert_to_hamiltonian):
+        """Test that backpropagation derivatives work with tensorflow with hamiltonians and large sums."""
+        import tensorflow as tf
+
+        x = tf.Variable(0.5)
+
+        with tf.GradientTape() as tape1:
+            out = self.f(x, convert_to_hamiltonian=convert_to_hamiltonian)
+
+        with tf.GradientTape() as tape2:
+            expected_out = self.expected(x)
+
+        assert qml.math.allclose(out, expected_out)
+        g1 = tape1.gradient(out, x)
+        g2 = tape2.gradient(expected_out, x)
+        assert qml.math.allclose(g1, g2)
