@@ -15,8 +15,8 @@
 Tests for the ``adjoint_jacobian`` method of the :mod:`pennylane` :class:`QubitDevice` class.
 """
 # pylint: disable=import-outside-toplevel
-import pytest
 from itertools import product
+import pytest
 
 import pennylane as qml
 from pennylane import numpy as np
