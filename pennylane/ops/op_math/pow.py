@@ -316,6 +316,11 @@ class Pow(ScalarSymbolicOp):
         base_eigvals = self.base.eigvals()
         return [value**self.z for value in base_eigvals]
 
+    # pylint: disable=arguments-renamed, invalid-overridden-method
+    @property
+    def has_generator(self):
+        return self.base.has_generator
+
     def generator(self):
         r"""Generator of an operator that is in single-parameter-form.
 
