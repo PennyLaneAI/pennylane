@@ -42,7 +42,7 @@ def rydberg_interaction(register: list, wires=None, interaction_coeff: float = 8
 
     where :math:`R_{ij}` is the distance between the atoms :math:`i` and :math:`j`, and :math:`C_6`
     is the Rydberg interaction constant, which defaults to :math:`862690 \text{MHz} \times \mu m^6`.
-    This interaction term can be combined with a laser drive term to create a Hamiltonian describing a driven
+    This interaction term can be combined with laser drive terms (:func:`~.rydberg_drive`) to create a Hamiltonian describing a driven
     Rydberg atom system.
 
     .. seealso::
