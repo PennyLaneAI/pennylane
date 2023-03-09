@@ -408,6 +408,17 @@ def ctrl_decomp_bisect(
     Raises:
         ValueError: if ``target_operation`` is not a single-qubit operation
 
+    **Example:**
+
+    >>> op = qml.T(0)
+    >>> print(qml.draw(ctrl_decomp_bisect, wire_order=(0,1,2,3,4,5))(op, (1,2,3,4,5)))
+    0: ─╭X──U(M0)─╭X──U(M0)†─╭X──U(M0)─╭X──U(M0)†─┤  
+    1: ─├●────────│──────────├●────────│──────────┤  
+    2: ─├●────────│──────────├●────────│──────────┤  
+    3: ─╰●────────│──────────╰●────────│──────────┤  
+    4: ───────────├●───────────────────├●─────────┤  
+    5: ───────────╰●───────────────────╰●─────────┤ 
+    
     """
     if len(target_operation.wires) > 1:
         raise ValueError(
