@@ -11,9 +11,9 @@
 * Added the needed functions and classes to simulate an ensemble of Rydberg atoms:
   * A new internal `RydbergHamiltonian` class is added, which contains the Hamiltonian of an ensemble of
     Rydberg atoms.
-  * A new `rydberg_interaction` function is added, which returns a `RydbergHamiltonian` containing
+  * A new user-facing `rydberg_interaction` function is added, which returns a `RydbergHamiltonian` containing
     the Hamiltonian of the interaction of all the Rydberg atoms.
-  * A new `rydberg_drive` function is added, which returns a `RydbergHamiltonian` containing
+  * A new user-facing `rydberg_drive` function is added, which returns a `RydbergHamiltonian` containing
     the Hamiltonian of the interaction between a driving laser field and a group of atoms.
   [(#3749)](https://github.com/PennyLaneAI/pennylane/pull/3749)
 
