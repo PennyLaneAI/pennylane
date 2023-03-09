@@ -25,30 +25,6 @@ from pennylane import math
 from pennylane.typing import TensorLike
 
 
-def _convert_to_su2_batched(U, return_global_phase=False):
-    r"""Convert a 2x2 unitary matrix to :math:`SU(2)`. (batched operation)
-
-    Args:
-        U (array[complex]): A matrix with a batch dimension, presumed to be
-        of shape :math:`n \times 2 \times 2` and unitary for any positive integer n.
-        return_global_phase (bool): If `True`, the return will include
-        the global phase. If `False`, only the :math:`SU(2)` representative
-        is returned.
-
-    Returns:
-        array[complex]: A :math:`n \times 2 \times 2` matrix in :math:`SU(2)` that is
-        equivalent to U up to a global phase. If ``return_global_phase=True``,
-        a 2-element tuple is returned, with the first element being the
-        :math:`SU(2)` equivalent and the second, the global phase.
-    """
-    # Compute the determinants
-    dets = math.linalg.det(U)
-
-    exp_angles = math.cast_like(math.angle(dets), 1j) / 2
-    U_SU2 = math.cast_like(U, dets) * math.exp(-1j * exp_angles)[:, None, None]
-    return (U_SU2, exp_angles) if return_global_phase else U_SU2
-
-
 def _convert_to_su2(U):
     r"""Convert a 2x2 unitary matrix to :math:`SU(2)`.
 
@@ -64,7 +40,12 @@ def _convert_to_su2(U):
         a 2-element tuple is returned, with the first element being the
         :math:`SU(2)` equivalent and the second, the global phase.
     """
-    return _convert_to_su2_batched([U])[0]
+    # Compute the determinants
+    dets = math.linalg.det(U)
+
+    exp_angles = math.cast_like(math.angle(dets), 1j) / 2
+    U_SU2 = math.cast_like(U, dets) * math.exp(-1j * exp_angles)
+    return U_SU2
 
 
 def _convert_to_real_diagonal(q: TensorLike) -> TensorLike:
@@ -412,15 +393,31 @@ def ctrl_decomp_bisect(
 
     **Example:**
 
-    >>> op = qml.T(0)
+    >>> op = qml.T(0) # uses OD algorithm
     >>> print(qml.draw(ctrl_decomp_bisect, wire_order=(0,1,2,3,4,5))(op, (1,2,3,4,5)))
-    0: ─╭X──U(M0)─╭X──U(M0)†─╭X──U(M0)─╭X──U(M0)†─┤  
-    1: ─├●────────│──────────├●────────│──────────┤  
-    2: ─├●────────│──────────├●────────│──────────┤  
-    3: ─╰●────────│──────────╰●────────│──────────┤  
-    4: ───────────├●───────────────────├●─────────┤  
-    5: ───────────╰●───────────────────╰●─────────┤ 
-    
+    0: ─╭X──U(M0)─╭X──U(M0)†─╭X──U(M0)─╭X──U(M0)†─┤
+    1: ─├●────────│──────────├●────────│──────────┤
+    2: ─├●────────│──────────├●────────│──────────┤
+    3: ─╰●────────│──────────╰●────────│──────────┤
+    4: ───────────├●───────────────────├●─────────┤
+    5: ───────────╰●───────────────────╰●─────────┤
+    >>> op = qml.QubitUnitary([[0,1j],[1j,0]], 0) # uses MD algorithm
+    >>> print(qml.draw(ctrl_decomp_bisect, wire_order=(0,1,2,3,4,5))(op, (1,2,3,4,5)))
+    0: ──H─╭X──U(M0)─╭X──U(M0)†─╭X──U(M0)─╭X──U(M0)†──H─┤
+    1: ────├●────────│──────────├●────────│─────────────┤
+    2: ────├●────────│──────────├●────────│─────────────┤
+    3: ────╰●────────│──────────╰●────────│─────────────┤
+    4: ──────────────├●───────────────────├●────────────┤
+    5: ──────────────╰●───────────────────╰●────────────┤
+    >>> op = qml.Hadamard(0) # uses general algorithm
+    >>> print(qml.draw(ctrl_decomp_bisect, wire_order=(0,1,2,3,4,5))(op, (1,2,3,4,5)))
+    0: ──U(M0)─╭X──U(M1)†──U(M2)─╭X──U(M2)†─╭X──U(M2)─╭X──U(M2)†─╭X──U(M1)─╭X──U(M0)─┤
+    1: ────────│─────────────────│──────────├●────────│──────────├●────────│─────────┤
+    2: ────────│─────────────────│──────────├●────────│──────────├●────────│─────────┤
+    3: ────────│─────────────────│──────────╰●────────│──────────╰●────────│─────────┤
+    4: ────────├●────────────────├●───────────────────├●───────────────────├●────────┤
+    5: ────────╰●────────────────╰●───────────────────╰●───────────────────╰●────────┤
+
     """
     if len(target_operation.wires) > 1:
         raise ValueError(

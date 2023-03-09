@@ -560,7 +560,13 @@ def _decompose_no_control_values(op: "operation.Operator") -> List["operation.Op
         if type(result) != type(op):
             return [result]
         qml.QueuingManager.remove(result)
-    if isinstance(op.base, qml.PauliX):
+    if (
+        isinstance(op.base, qml.PauliX)
+        or len(op.base.wires) == 1
+        and getattr(op.base, "has_matrix", False)
+        and qmlmath.get_interface(*op.data) == "numpy"
+        and qmlmath.allclose(qml.PauliX.compute_matrix(), op.base.matrix())
+    ):
         # has some special case handling of its own for further decomposition
         return [qml.MultiControlledX(wires=op.active_wires, work_wires=op.work_wires)]
     if (
