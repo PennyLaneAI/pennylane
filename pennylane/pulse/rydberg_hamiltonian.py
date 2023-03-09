@@ -122,7 +122,8 @@ def rydberg_drive(amplitude, detuning, phase, wires):
     where :math:`\Omega`, :math:`\delta` and :math:`\phi` correspond to the rabi frequency, detuning
     and phase of the laser, :math:`i` correspond to the wire index, and :math:`\sigma^\alpha` for
     :math:`\alpha = x,y,z` are the Pauli matrices. This driving term can be combined with an interaction
-    term to create a Hamiltonian describing a driven Rydberg atom system.
+    term to create a Hamiltonian describing a driven Rydberg atom system. Multiple driving terms can be
+    combined by summing them (see example).
 
     Args:
         amplitude (Union[float, Callable]): float or callable returning the amplitude (in MHz) of a
