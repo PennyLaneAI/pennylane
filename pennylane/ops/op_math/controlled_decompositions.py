@@ -103,8 +103,12 @@ def _bisect_compute_b(u: np.ndarray):
     if math.isclose(s, 0):
         b = 0
         if math.isclose(t, 0):
-            c = sqrt(w)
-            d = 0
+            if w < 0:
+                c = 0
+                d = sqrt(-w)
+            else:
+                c = sqrt(w)
+                d = 0
         else:
             c = sqrt(2 - 2 * w) * (-w / 2 - 1 / 2) / t
             d = sqrt(2 - 2 * w) / 2
