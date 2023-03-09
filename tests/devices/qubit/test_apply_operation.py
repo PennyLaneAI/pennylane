@@ -378,3 +378,18 @@ class TestLargerOperations:
             state_v2 = method(d_op, state_v2)
 
         assert qml.math.allclose(state_v1, state_v2)
+
+
+@pytest.mark.tf
+@pytest.mark.parametrize("op", (qml.PauliZ(8), qml.CNOT((5, 6))))
+def test_tf_large_state(op):
+    """ "Tests that custom kernels that use slicing fall back to a different method when
+    the state has a large number of wires."""
+    import tensorflow as tf
+
+    state = np.zeros([2] * 10)
+    state = tf.Variable(state)
+    new_state = apply_operation(op, state)
+
+    # still all zeros.  Mostly just making sure error not raised
+    assert qml.math.allclose(state, new_state)

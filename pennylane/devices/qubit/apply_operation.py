@@ -12,6 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Functions to apply an operation to a state vector."""
+
+import contextlib
 from functools import singledispatch
 from string import ascii_letters as alphabet
 
@@ -180,7 +182,18 @@ def apply_pauliz(op: qml.PauliZ, state):
     sl_0 = _get_slice(0, op.wires[0], n_wires)
     sl_1 = _get_slice(1, op.wires[0], n_wires)
 
-    state1 = math.multiply(state[sl_1], -1)
+    try:
+        state1 = math.multiply(state[sl_1], -1)
+    except Exception as e:
+        # slicing fails with tensorflow and states with more than 8 wires.
+        # Instead of checking checking for this case all the time, we just fallback
+        # to apply_operation_tensordot when this error occurs
+        with contextlib.suppress(ImportError):
+            import tensorflow as tf  # pylint: disable=import-outside-toplevel
+
+            if isinstance(e, tf.errors.UnimplementedError):
+                return apply_operation_tensordot(op, state)
+        raise e
     return math.stack([state[sl_0], state1], axis=op.wires[0])
 
 
@@ -193,7 +206,18 @@ def apply_phase(op: qml.PhaseShift, state):
     sl_0 = _get_slice(0, op.wires[0], n_wires)
     sl_1 = _get_slice(1, op.wires[0], n_wires)
 
-    state1 = math.multiply(shift, state[sl_1])
+    try:
+        state1 = math.multiply(shift, state[sl_1])
+    except Exception as e:
+        # slicing fails with tensorflow and states with more than 8 wires.
+        # Instead of checking checking for this case all the time, we just fallback
+        # to apply_operation_tensordot when this error occurs
+        with contextlib.suppress(ImportError):
+            import tensorflow as tf  # pylint: disable=import-outside-toplevel
+
+            if isinstance(e, tf.errors.UnimplementedError):
+                return apply_operation_tensordot(op, state)
+        raise e
     return math.stack([state[sl_0], state1], axis=op.wires[0])
 
 
@@ -205,5 +229,16 @@ def apply_cnot(op: qml.CNOT, state):
     n_wires = math.ndim(state)
     sl_0 = _get_slice(0, op.wires[0], n_wires)
     sl_1 = _get_slice(1, op.wires[0], n_wires)
-    state_x = math.roll(state[sl_1], 1, target_axes)
+    try:
+        state_x = math.roll(state[sl_1], 1, target_axes)
+    except Exception as e:
+        # slicing fails with tensorflow and states with more than 8 wires.
+        # Instead of checking checking for this case all the time, we just fallback
+        # to apply_operation_tensordot when this error occurs
+        with contextlib.suppress(ImportError):
+            import tensorflow as tf  # pylint: disable=import-outside-toplevel
+
+            if isinstance(e, tf.errors.UnimplementedError):
+                return apply_operation_tensordot(op, state)
+        raise e
     return math.stack([state[sl_0], state_x], axis=op.wires[0])
