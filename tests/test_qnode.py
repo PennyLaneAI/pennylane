@@ -1016,7 +1016,8 @@ class TestIntegration:
 
         if diff_method == "hadamard":
             with pytest.raises(
-                NotImplementedError, match="The Hadamard gradient only supports the new return type."
+                NotImplementedError,
+                match="The Hadamard gradient only supports the new return type.",
             ):
                 res = qml.grad(circuit)(x, y)
         else:

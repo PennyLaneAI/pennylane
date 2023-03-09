@@ -61,17 +61,17 @@ def split_evol_ops(op, word, word_wires, key):
             inner lists. The first tuple entry contains the operations with positive Pauli rotation
             angle, the second entry the operations with negative Pauli rotation angle.
     """
-    before, after = copy(op), copy(op)
+    before_plus, after_plus, before_minus, after_minus = (copy(op) for _ in range(4))
     # Extract time interval, split it, and set the intervals of the copies to the split intervals
     t0, t1 = op.t
     tau = jax.random.uniform(key) * (t1 - t0) + t0
-    before.t = jax.numpy.array([t0, tau])
-    after.t = jax.numpy.array([tau, t1])
+    before_plus.t = before_minus.t = jax.numpy.array([t0, tau])
+    after_plus.t = after_minus.t = jax.numpy.array([tau, t1])
     # Create Pauli rotations to be inserted at tau
     evolve_plus = qml.PauliRot(np.pi / 2, word, wires=word_wires)
     evolve_minus = qml.PauliRot(-np.pi / 2, word, wires=word_wires)
     # Construct gate sequences of split intervals and inserted Pauli rotations
-    ops = ([before, evolve_plus, after], [before, evolve_minus, after])
+    ops = ([before_plus, evolve_plus, after_plus], [before_minus, evolve_minus, after_minus])
     return tau, ops
 
 

@@ -27,21 +27,6 @@ from pennylane.pulse import ParametrizedEvolution
 pytestmark = pytest.mark.jax
 
 
-def equal(op1, op2, check_t=True):
-    """Helper function to check whether two operations are the same via qml.equal, optionally
-    including the time window for ParametrizedEvolution.
-
-    TODO: Remove once #3846 is resolved/ #3870 is merged.
-    """
-    if (
-        check_t
-        and isinstance(op1, ParametrizedEvolution)
-        and isinstance(op2, ParametrizedEvolution)
-    ):
-        return qml.equal(op1, op2) and qml.math.allclose(op1.t, op2.t)
-    return qml.equal(op1, op2)
-
-
 class TestSplitEvolOps:
     """Tests for the helper method split_evol_ops that samples a splitting time and splits up
     a ParametrizedEvolution operation at the sampled time, inserting a Pauli rotation about the
@@ -79,7 +64,7 @@ class TestSplitEvolOps:
         assert qml.math.allclose(op.t, exp_time)
         output = split_evol_ops(op, word, word_wires, key)
         # Check that the original operation was not altered
-        assert equal(op, op_copy)
+        assert qml.equal(op, op_copy)
 
         # Check that tau and ops is returned
         assert isinstance(output, tuple) and len(output) == 2
@@ -95,19 +80,20 @@ class TestSplitEvolOps:
         for sign, _ops in zip([1, -1], ops):
             assert isinstance(_ops, list) and len(_ops) == 3
             # Check that the split-up time evolution is correct
-            assert equal(_ops[0], op, check_t=False)
             assert qml.math.allclose(_ops[0].t, [op.t[0], tau])
-            assert _ops[0].wires == op.wires
+            # Patch _ops[0] to have the same time as op, so that it should become the same as op
+            _ops[0].t = op.t
+            assert qml.equal(_ops[0], op)
 
-            assert equal(_ops[2], op, check_t=False)
             assert qml.math.allclose(_ops[2].t, [tau, op.t[1]])
-            assert _ops[2].wires == op.wires
+            # Patch _ops[2] to have the same time as op, so that it should become the same as op
+            _ops[2].t = op.t
+            assert qml.equal(_ops[2], op)
 
             # Check that the inserted Pauli rotation is correct
             assert isinstance(_ops[1], qml.PauliRot)
             assert qml.math.allclose(_ops[1].data, sign * np.pi / 2)
             assert _ops[1].hyperparameters["pauli_word"] == word
-            assert _ops[1].wires == qml.wires.Wires(word_wires)
 
     @pytest.mark.parametrize("test_case", split_evol_ops_test_cases)
     def test_randomness_key(self, test_case):
@@ -127,17 +113,17 @@ class TestSplitEvolOps:
         # Check same output for same key
         assert qml.math.isclose(tau_a_0, tau_a_1)
         assert all(
-            equal(o_0, o_1) for o_0, o_1 in zip(np.array(ops_a_0).flat, np.array(ops_a_1).flat)
+            qml.equal(o_0, o_1) for o_0, o_1 in zip(np.array(ops_a_0).flat, np.array(ops_a_1).flat)
         )
 
         # Check different output for different key
         assert not qml.math.isclose(tau_a_0, tau_b)
         assert not all(
-            equal(o_0, o_1) for o_0, o_1 in zip(np.array(ops_a_0).flat, np.array(ops_b).flat)
+            qml.equal(o_0, o_1) for o_0, o_1 in zip(np.array(ops_a_0).flat, np.array(ops_b).flat)
         )
         # Check positive and negative Pauli rotations are the same even for different keys
-        assert equal(ops_a_0[0][1], ops_b[0][1])
-        assert equal(ops_a_0[1][1], ops_b[1][1])
+        assert qml.equal(ops_a_0[0][1], ops_b[0][1])
+        assert qml.equal(ops_a_0[1][1], ops_b[1][1])
 
 
 class TestSplitEvolTapes:
@@ -624,10 +610,16 @@ class TestStochPulseGrad:
         tapes_b, fn_b = stoch_pulse_grad(tape, num_samples=2, sampler_seed=seed_b)
 
         for tape_a_0, tape_a_1, tape_b in zip(tapes_a_0, tapes_a_1, tapes_b):
-            assert all(equal(o0, o1) for o0, o1 in zip(tape_a_0, tape_a_1))
-            assert all(equal(o0, o1, check_t=False) for o0, o1 in zip(tape_a_0, tape_b))
-            assert not equal(tape_a_0[0], tape_b[0], check_t=True)
-            assert not equal(tape_a_0[2], tape_b[2], check_t=True)
+            for op_a_0, op_a_1, op_b in zip(tape_a_0, tape_a_1, tape_b):
+                if isinstance(op_a_0, qml.pulse.ParametrizedEvolution):
+                    # The a_0 and a_1 operators are equal
+                    assert qml.equal(op_a_0, op_a_1)
+                    # The a_0 and b operators differ in time but are equal otherwise
+                    assert not qml.equal(op_a_0, op_b)
+                    op_b.t = op_a_0.t
+                    assert qml.equal(op_a_0, op_b)
+                else:
+                    assert qml.equal(op_a_0, op_a_1) and qml.equal(op_a_0, op_b)
 
         dev = qml.device("default.qubit.jax", wires=1)
         res_a_0 = fn_a_0(qml.execute(tapes_a_0, dev, None))
