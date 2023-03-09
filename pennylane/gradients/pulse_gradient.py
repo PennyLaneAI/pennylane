@@ -499,7 +499,6 @@ def _expval_stoch_pulse_grad(tape, argnum, num_samples, key, shots):
         if single_measure and num_params == 1:
             return grads[0]
         len_shot_vec = _get_num_copies(shots) if shot_vector else None
-        print(grads)
         if single_measure and shot_vector:
             return _reorder_grad_axes_single_measure_shot_vector(grads, num_params, len_shot_vec)
         if not single_measure:
