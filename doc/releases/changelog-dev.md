@@ -9,7 +9,7 @@
   [(#3720)](https://github.com/PennyLaneAI/pennylane/pull/3720)
 
 * Added the needed functions and classes to simulate an ensemble of Rydberg atoms:
-  * A new `RydbergHamiltonian` class is added, which contains the Hamiltonian of an ensemble of
+  * A new internal `RydbergHamiltonian` class is added, which contains the Hamiltonian of an ensemble of
     Rydberg atoms.
   * A new `rydberg_interaction` function is added, which returns a `RydbergHamiltonian` containing
     the Hamiltonian of the interaction of all the Rydberg atoms.
