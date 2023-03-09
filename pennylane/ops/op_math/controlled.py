@@ -565,9 +565,7 @@ def _decompose_no_control_values(op: "operation.Operator") -> List["operation.Op
         if type(result) != type(op):
             return [result]
         qml.QueuingManager.remove(result)
-    if (
-        isinstance(op.base, qml.PauliX)
-    ):
+    if isinstance(op.base, qml.PauliX):
         # has some special case handling of its own for further decomposition
         return [qml.MultiControlledX(wires=op.active_wires, work_wires=op.work_wires)]
     if (
