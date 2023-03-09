@@ -394,6 +394,8 @@ def ctrl_decomp_bisect(
 
     Automatically selects the best algorithm based on the matrix (uses specialized more efficient
     algorithms if the matrix has a certain form, otherwise falls back to the general algorithm).
+    These algorithms are defined in section 3.1 and 3.2 of
+    `Vale et al. (2023) <https://arxiv.org/abs/2302.06377>`_.
 
     .. warning:: This method will add a global phase for target operations that do not
         belong to the SU(2) group.
