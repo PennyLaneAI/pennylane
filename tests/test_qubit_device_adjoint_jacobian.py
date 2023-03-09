@@ -16,6 +16,7 @@ Tests for the ``adjoint_jacobian`` method of the :mod:`pennylane` :class:`QubitD
 """
 # pylint: disable=import-outside-toplevel
 import pytest
+from itertools import product
 
 import pennylane as qml
 from pennylane import numpy as np
@@ -408,7 +409,7 @@ class TestAdjointJacobianQNode:
     thetas = np.linspace(-2 * np.pi, 2 * np.pi, 8)
 
     @pytest.mark.autograd
-    @pytest.mark.parametrize("all_p", list(zip(thetas**3 / 19, thetas**2 / 1)))
+    @pytest.mark.parametrize("all_p", list(product(thetas**3 / 19, thetas**2 / 1)))
     def test_fanout_multiple_params(self, all_p, tol, mocker, dev):
         """Tests that the correct gradient is computed for qnodes which
         use the same parameter in multiple gates."""
