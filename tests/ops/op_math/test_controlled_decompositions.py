@@ -31,7 +31,6 @@ from pennylane.ops.op_math.controlled_decompositions import (
 )
 from pennylane.ops.op_math.controlled import (
     Controlled,
-    ControlledOp,
 )
 from pennylane import math
 

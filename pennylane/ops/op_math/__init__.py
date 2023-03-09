@@ -68,6 +68,7 @@ Decompositions
     :toctree: api
 
     ~ctrl_decomp_zyz
+    ~ctrl_decomp_bisect
 
 """
 
