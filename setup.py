@@ -11,11 +11,18 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+"""Standard setuptools file to install PennyLane."""
 
+from platform import system
 from setuptools import setup, find_packages
 
-with open("pennylane/_version.py") as f:
+with open("pennylane/_version.py", "r", encoding="utf-8") as f:
     version = f.readlines()[-1].split()[-1].strip("\"'")
+
+with open("README.md", "r", encoding="utf-8") as f:
+    long_description = f.read()
+
+tensorflow_requires = "tensorflow-macos" if system() == "Darwin" else "tensorflow"
 
 requirements = [
     "numpy<1.24",
@@ -57,11 +64,17 @@ info = {
         "console_scripts": ["pl-device-test=pennylane.devices.tests:cli"],
     },
     "description": "PennyLane is a Python quantum machine learning library by Xanadu Inc.",
-    "long_description": open("README.md").read(),
+    "long_description": long_description,
     "long_description_content_type": "text/markdown",
     "provides": ["pennylane"],
     "install_requires": requirements,
-    "extras_require": {"kernels": ["cvxpy", "cvxopt"]},
+    "extras_require": {
+        "kernels": ["cvxpy", "cvxopt"],
+        "jax": ["jax==0.4.3", "jaxlib==0.4.3", "jaxopt==0.6"],
+        "tf": [f"{tensorflow_requires}==2.11.0"],
+        "autograd": ["autograd==1.5"],
+        "torch": ["torch==1.13.1"],
+    },
     "package_data": {"pennylane": ["devices/tests/pytest.ini"]},
     "include_package_data": True,
 }
