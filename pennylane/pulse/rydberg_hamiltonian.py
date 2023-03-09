@@ -166,8 +166,7 @@ def rydberg_drive(amplitude, detuning, phase, wires):
     >>> H_i
     ParametrizedHamiltonian: terms=6
 
-    The driving Hamiltonian has only two terms because it is simplified such that each term
-    represents one of the summations in the Hamiltonian shown above.
+    The two terms of the drive field correspond to the first and second sum, corresponding to the drive and the shift term.
 
     .. code-block:: python
 
