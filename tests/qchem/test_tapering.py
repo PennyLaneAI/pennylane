@@ -722,10 +722,10 @@ def test_inconsistent_taper_ops(operation, op_gen, message_match):
             qml.Hamiltonian(
                 (0.25, -0.25, 0.25, -0.25),
                 [
-                    qml.PauliX(wires=[0]) @ qml.PauliY(wires=[2]),
-                    qml.PauliY(wires=[0]) @ qml.PauliX(wires=[2]),
-                    qml.PauliX(wires=[1]) @ qml.PauliY(wires=[3]),
-                    qml.PauliY(wires=[1]) @ qml.PauliX(wires=[3]),
+                    qml.PauliX(wires=[0]) @ qml.PauliZ(wires=[1]) @ qml.PauliY(wires=[2]),
+                    qml.PauliY(wires=[0]) @ qml.PauliZ(wires=[1]) @ qml.PauliX(wires=[2]),
+                    qml.PauliX(wires=[1]) @ qml.PauliZ(wires=[2]) @ qml.PauliY(wires=[3]),
+                    qml.PauliY(wires=[1]) @ qml.PauliZ(wires=[2]) @ qml.PauliX(wires=[3]),
                 ],
             ),
         ),
@@ -826,10 +826,10 @@ def test_consistent_taper_ops(operation, op_gen):
             lambda wires: qml.Hamiltonian(
                 (0.25, -0.25, 0.25, -0.25),
                 [
-                    qml.PauliX(wires=wires[0]) @ qml.PauliY(wires=wires[2]),
-                    qml.PauliY(wires=wires[0]) @ qml.PauliX(wires=wires[2]),
-                    qml.PauliX(wires=wires[1]) @ qml.PauliY(wires=wires[3]),
-                    qml.PauliY(wires=wires[1]) @ qml.PauliX(wires=wires[3]),
+                    qml.PauliX(wires=[0]) @ qml.PauliZ(wires=[1]) @ qml.PauliY(wires=[2]),
+                    qml.PauliY(wires=[0]) @ qml.PauliZ(wires=[1]) @ qml.PauliX(wires=[2]),
+                    qml.PauliX(wires=[1]) @ qml.PauliZ(wires=[2]) @ qml.PauliY(wires=[3]),
+                    qml.PauliY(wires=[1]) @ qml.PauliZ(wires=[2]) @ qml.PauliX(wires=[3]),
                 ],
             ),
         ),

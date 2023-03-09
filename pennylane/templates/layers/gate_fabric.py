@@ -85,8 +85,8 @@ class GateFabric(Operation):
 
         .. code-block:: python
 
-            import numpy as np
             import pennylane as qml
+            from pennylane import numpy as np
 
             # Build the electronic Hamiltonian
             symbols = ["H", "H"]
@@ -104,7 +104,7 @@ class GateFabric(Operation):
             @qml.qnode(dev)
             def ansatz(weights):
                 qml.GateFabric(weights, wires=[0,1,2,3],
-                                            init_state=ref_state, include_pi=True)
+                            init_state=ref_state, include_pi=True)
                 return qml.expval(H)
 
             # Get the shape of the weights for this template
@@ -144,18 +144,15 @@ class GateFabric(Operation):
 
         .. code-block:: none
 
-            Step = 0,  Energy = -0.92629604 Ha
-            Step = 2,  Energy = -1.10724005 Ha
-            Step = 4,  Energy = -1.13307755 Ha
-            Step = 6,  Energy = -1.13587374 Ha
-            Step = 8,  Energy = -1.13615720 Ha
-            Step = 10,  Energy = -1.13618592 Ha
-            Step = 12,  Energy = -1.13618883 Ha
+            Step = 0,  Energy = -0.87007254 Ha
+            Step = 2,  Energy = -1.13107530 Ha
+            Step = 4,  Energy = -1.13611971 Ha
+            Step = 6,  Energy = -1.13618810 Ha
 
-            Final value of the ground-state energy = -1.13618883 Ha
+            Final value of the ground-state energy = -1.13618903 Ha
 
-            Optimal value of the circuit parameters = [[[ 0.58835515  0.40801101]]
-            [[ 0.83842218 -0.24228264]]]
+            Optimal value of the circuit parameters = [[[ 0.60328427  0.41850407]]
+            [[ 0.85581129 -0.24522642]]]
 
 
         **Parameter shape**

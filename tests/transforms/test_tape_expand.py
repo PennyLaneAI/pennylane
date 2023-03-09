@@ -149,6 +149,10 @@ class TestExpandMultipar:
         dev = qml.device("default.qubit", wires=3)
 
         class _CRX(qml.CRX):
+            @property
+            def has_generator(self):
+                return False
+
             def generator(self):
                 raise qml.operations.GeneratorUndefinedError()
 

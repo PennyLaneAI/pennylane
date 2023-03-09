@@ -23,13 +23,16 @@ at your own discretion.
 
     create_initial_state
     apply_operation
+    measure
     sample_state
     preprocess
     simulate
 """
 
-from .apply_operation import apply_operation
 from .initialize_state import create_initial_state
+from .apply_operation import apply_operation
+from .measure import measure
 from .sampling import sample_state
+
 from .preprocess import preprocess
 from .simulate import simulate

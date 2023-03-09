@@ -16,8 +16,12 @@
 
 * The adjoint differentiation method now supports more operations, and does no longer decompose
   some operations that may be differentiated directly. In addition, all new operations with a
-  generator are supported by the method.
+  generator are now supported by the method.
   [(#3874)](https://github.com/PennyLaneAI/pennylane/pull/3874)
+
+* `Operator` now has a `has_generator` attribute that returns whether or not the operator
+  has a generator defined. It is used in `qml.operation.has_gen`, improving its performance.
+  [(#3875)](https://github.com/PennyLaneAI/pennylane/pull/3875)
 
 * The custom JVP rules in PennyLane now also support non-scalar and mixed-shape tape parameters as
   well as multi-dimensional tape return types, like broadcasted `qml.probs`, for example.
@@ -30,12 +34,19 @@
 * `AdaptiveOptimizer` is updated to use non-default user-defined qnode arguments.
   [(#3765)](https://github.com/PennyLaneAI/pennylane/pull/3765)
 
+* `pennylane.devices.qubit.preprocess` now allows circuits with non-commuting observables.
+  [(#3857)](https://github.com/PennyLaneAI/pennylane/pull/3857)
+
 * When using Jax-jit with gradient transforms the trainable parameters are correctly set (instead of every parameter 
   to be set as trainable), and therefore the derivatives are computed more efficiently.
   [(#3697)](https://github.com/PennyLaneAI/pennylane/pull/3697)
 
 <h3>Breaking changes</h3>
 
+* An operation that implements a custom `generator` method, but does not always return a valid generator, also has
+  to implement a `has_generator` property that reflects in which scenarios a generator will be returned.
+  [(#3875)](https://github.com/PennyLaneAI/pennylane/pull/3875)
+ 
 * Trainable parameters for the Jax interface are the parameters that are `JVPTracer`, defined by setting
   `argnums`. Previously, all JAX tracers, including those used for JIT compilation, were interpreted to be trainable.
   [(#3697)](https://github.com/PennyLaneAI/pennylane/pull/3697)
@@ -43,6 +54,10 @@
 * The keyword argument `argnums` is now used for gradient transform using Jax, instead of `argnum`.
   `argnum` is automatically converted to `argnums` when using JAX, and will no longer be supported in v0.31.
   [(#3697)](https://github.com/PennyLaneAI/pennylane/pull/3697)
+
+* Made `qml.OrbitalRotation` and consequently `qml.GateFabric` consistent with the interleaved Jordan-Wigner ordering.
+  Previously, they were consistent with the sequential Jordan-Wigner ordering.
+  [(#3861)](https://github.com/PennyLaneAI/pennylane/pull/3861)
 
 <h3>Deprecations</h3>
 
@@ -58,6 +73,9 @@
 
 * Ensure that `qml.data.load` returns datasets in a stable and expected order.
   [(#3856)](https://github.com/PennyLaneAI/pennylane/pull/3856)
+
+* Made `qml.OrbitalRotation` and consequently `qml.GateFabric` consistent with the interleaved Jordan-Wigner ordering.
+  [(#3861)](https://github.com/PennyLaneAI/pennylane/pull/3861)
 
 <h3>Contributors</h3>
 
