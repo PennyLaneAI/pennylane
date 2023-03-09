@@ -146,7 +146,7 @@ def rydberg_drive(amplitude, detuning, phase, wires):
 
     We create a Hamiltonian describing a laser acting on 4 wires (Rydberg atoms) with a fixed detuning and
     phase, and a parametrized, time-dependent amplitude. The Hamiltonian includes an interaction term for
-    inter-atom interactions due to the Rydberg blockade, as well as the driving term for the laser driving
+    inter-atom interactions due to van der Waals forces, as well as the driving term for the laser driving
     the atoms:
 
     .. code-block:: python
