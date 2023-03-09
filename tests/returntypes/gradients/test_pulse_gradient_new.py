@@ -46,7 +46,8 @@ class TestSplitEvolOps:
     """Tests for the helper method split_evol_ops that samples a splitting time and splits up
     a ParametrizedEvolution operation at the sampled time, inserting a Pauli rotation about the
     provided Pauli word with angles +- pi/2."""
-    #pylint: disable=unnecessary-lambda-assignment
+
+    # pylint: disable=unnecessary-lambda-assignment
 
     # Need to wrap the Hamiltonians in a callable in order to use `qml.pulse` functions, as
     # the tests would otherwise fail when used without JAX.
