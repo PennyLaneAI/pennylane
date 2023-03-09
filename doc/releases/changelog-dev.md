@@ -34,6 +34,12 @@
 * `AdaptiveOptimizer` is updated to use non-default user-defined qnode arguments.
   [(#3765)](https://github.com/PennyLaneAI/pennylane/pull/3765)
 
+* The `apply_operation` function added to `devices/qubit` now supports broadcasting.
+  [(#3852)](https://github.com/PennyLaneAI/pennylane/pull/3852)
+
+* `qml.QubitStateVector.state_vector` now supports broadcasting.
+  [(#3852)](https://github.com/PennyLaneAI/pennylane/pull/3852)
+  
 * `pennylane.devices.qubit.preprocess` now allows circuits with non-commuting observables.
   [(#3857)](https://github.com/PennyLaneAI/pennylane/pull/3857)
 
@@ -74,14 +80,19 @@
 * Ensure that `qml.data.load` returns datasets in a stable and expected order.
   [(#3856)](https://github.com/PennyLaneAI/pennylane/pull/3856)
 
+* The `qml.equal` function now handles comparisons of `ParametrizedEvolution` operators.
+  [(#3870)](https://github.com/PennyLaneAI/pennylane/pull/3870)
+
 * Made `qml.OrbitalRotation` and consequently `qml.GateFabric` consistent with the interleaved Jordan-Wigner ordering.
   [(#3861)](https://github.com/PennyLaneAI/pennylane/pull/3861)
+
 
 <h3>Contributors</h3>
 
 This release contains contributions from (in alphabetical order):
 
 Utkarsh Azad
+Lillian M. A. Frederiksen
 Soran Jahangiri
 Christina Lee
 Vincent Michaud-Rioux
