@@ -22,7 +22,6 @@ import pennylane as qml
 from pennylane.operation import Operator
 from pennylane.wires import Wires
 from pennylane import math
-from pennylane.typing import TensorLike
 
 
 def _convert_to_su2(U):
