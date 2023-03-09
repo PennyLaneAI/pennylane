@@ -1245,10 +1245,7 @@ class TestFullMetricTensor:
             UserWarning,
             match="argnum is deprecated with the Jax interface. You should use argnums instead.",
         ):
-            if len(params) > 1:
-                mt = qml.metric_tensor(circuit, argnum=range(0, len(params)), approx=None)(*params)
-            else:
-                mt = qml.metric_tensor(circuit, argnum=[0], approx=None)(*params)
+            mt = qml.metric_tensor(circuit, argnum=range(len(params)), approx=None)(*params)
 
         if isinstance(mt, tuple):
             assert all(qml.math.allclose(_mt, _exp) for _mt, _exp in zip(mt, expected))
