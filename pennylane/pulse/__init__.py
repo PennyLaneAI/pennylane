@@ -29,7 +29,7 @@ The :mod:`~.pulse` module is written for ``jax`` and will not work with other ma
 typically encountered in PennyLane. It requires separate installation, see
 `jax.readthedocs.io <https://jax.readthedocs.io/en/latest/>`_.
 
-For a demo of the basic pulse functionality in PennyLane and running a ctrl-VQE example, see our demo on
+For a demonstration of the basic pulse functionality in PennyLane and running a ctrl-VQE example, see our demo on
 `differentiable pulse programming <https://pennylane.ai/qml/demos/tutorial_pulse_programming101.html>`_.
 
 Overview
