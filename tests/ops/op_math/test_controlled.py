@@ -417,6 +417,20 @@ class TestMiscMethods:
 
         assert qml.math.allclose(mat_eigvals, sort_eigs)
 
+    def test_has_generator_true(self):
+        """Test `has_generator` property carries over when base op defines generator."""
+        base = qml.RX(0.5, 0)
+        op = Controlled(base, ("b", "c"))
+
+        assert op.has_generator is True
+
+    def test_has_generator_false(self):
+        """Test `has_generator` property carries over when base op does not define a generator."""
+        base = qml.PauliX(0)
+        op = Controlled(base, ("b", "c"))
+
+        assert op.has_generator is False
+
     def test_generator(self):
         """Test that the generator is a tensor product of projectors and the base's generator."""
 

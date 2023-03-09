@@ -447,6 +447,11 @@ class Exp(ScalarSymbolicOp, Operation):
             return Exp(new_base.base, self.coeff * new_base.scalar)
         return Exp(new_base, self.coeff)
 
+    # pylint: disable=arguments-renamed, invalid-overridden-method
+    @property
+    def has_generator(self):
+        return self.base.is_hermitian and not np.real(self.coeff)
+
     def generator(self):
         r"""Generator of an operator that is in single-parameter-form.
 
