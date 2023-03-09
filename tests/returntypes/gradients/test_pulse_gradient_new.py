@@ -22,7 +22,6 @@ import numpy as np
 import pennylane as qml
 
 from pennylane.gradients.pulse_gradient import split_evol_ops, split_evol_tapes, stoch_pulse_grad
-from pennylane.pulse import ParametrizedEvolution
 
 pytestmark = pytest.mark.jax
 
