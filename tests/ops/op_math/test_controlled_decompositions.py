@@ -290,6 +290,24 @@ class TestControlledBisectOD:
             ),
             wires=0,
         ),
+        qml.QubitUnitary(
+            np.array(
+                [
+                    [1, 0],
+                    [0, 1],
+                ]
+            ),
+            wires=0,
+        ),
+        qml.QubitUnitary(
+            np.array(
+                [
+                    [-1, 0],
+                    [0, -1],
+                ]
+            ),
+            wires=0,
+        ),
     ]
 
     od_ops = [

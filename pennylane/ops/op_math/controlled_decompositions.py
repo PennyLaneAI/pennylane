@@ -94,6 +94,10 @@ def _bisect_compute_a(u: np.ndarray):
     z = u[1, 1]
     zr = math.real(z)
     zi = math.imag(z)
+    if math.isclose(zr, -1):
+        # special case [[-1, 0], [0, -1]]
+        # would cause divide by 0 with the other formula, so we use hardcoded solution
+        return np.array([[1, -1], [1, 1]]) * 2**-0.5
     ar = math.sqrt((math.sqrt((zr + 1) / 2) + 1) / 2)
     mul = 1 / (2 * math.sqrt((zr + 1) * (math.sqrt((zr + 1) / 2) + 1)))
     ai = zi * mul
