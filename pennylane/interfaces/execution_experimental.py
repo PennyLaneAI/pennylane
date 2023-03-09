@@ -93,9 +93,11 @@ def execute_experimental(
         tapes, t_process = qml.transforms.map_batch_transform(t_fn, tapes)
         tape_process_fn.append(t_process)
         qnode_process_fn.append(q_process)
+
     # Device expansion just before execution
     expand_fn = lambda tape: device.expand_fn(tape, max_expansion=10)
     tapes = [expand_fn(tape) for tape in tapes]
+
     # Execution tapes
     with qml.tape.Unwrap(*tapes):
         res = execute(tapes)
@@ -103,5 +105,6 @@ def execute_experimental(
     # Postprocessing
     for fn in tape_process_fn[::-1]:
         res = fn(res)
+
     return res
     # return res

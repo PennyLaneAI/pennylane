@@ -60,7 +60,9 @@ class transform:
 
     def default_qnode_transform(self, qnode, targs, tkwargs, expand_fn=None):
         """Register a qnode transformation"""
-        qnode.transform_program.push(Transform(self.fn, targs, tkwargs, expand_fn, default_qnode_postprocessing))
+        qnode.transform_program.push(
+            Transform(self.fn, targs, tkwargs, expand_fn, default_qnode_postprocessing)
+        )
         return qnode
 
 
@@ -82,7 +84,13 @@ class TransformProgram:
 
     def pop(self):
         transform = self._transform_program.pop(0)
-        return transform.transform_fn, transform.targs, transform.tkwargs, transform.expand_fn, transform.qnode_processing
+        return (
+            transform.transform_fn,
+            transform.targs,
+            transform.tkwargs,
+            transform.expand_fn,
+            transform.qnode_processing,
+        )
 
     def dag(self):
         return 0
