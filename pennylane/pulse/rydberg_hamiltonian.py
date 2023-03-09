@@ -42,8 +42,9 @@ def rydberg_interaction(register: list, wires=None, interaction_coeff: float = 8
 
     where :math:`R_{ij}` is the distance between the atoms :math:`i` and :math:`j`, and :math:`C_6`
     is the Rydberg interaction constant, which defaults to :math:`862690 \text{MHz} \times \mu m^6`.
-    This interaction term can be combined with laser drive terms (:func:`~.rydberg_drive`) to create a Hamiltonian describing a driven
-    Rydberg atom system.
+    The unit of time for the evolution of this Rydberg interaction term is in :math:`\mu \text{s}`.
+    This interaction term can be combined with laser drive terms (:func:`~.rydberg_drive`) to create
+    a Hamiltonian describing a driven Rydberg atom system.
 
     .. seealso::
 
@@ -55,14 +56,15 @@ def rydberg_interaction(register: list, wires=None, interaction_coeff: float = 8
             have the same length as ``register``. If ``None``, each atom's wire value will
             correspond to its index in the ``register`` list.
         interaction_coeff (float): Rydberg interaction constant in units: :math:`\text{MHz} \times \mu \text{m}^6`.
-            Defaults to :math:`862690 \text{ MHz} \times \mu \text{m}^6`. This value is based on an assumption that frequencies and energies in the Hamiltonian are provided in units of MHz.
+            Defaults to :math:`862690 \text{ MHz} \times \mu \text{m}^6`. This value is based on an assumption that
+            frequencies and energies in the Hamiltonian are provided in units of MHz.
 
     Returns:
         RydbergHamiltonian: a :class:`~.ParametrizedHamiltonian` representing the atom interaction
 
     **Example**
 
-    We create a Hamiltonian describing the van der Waals interaction among 9 Rydberg atoms in a square lattice.
+    We create a Hamiltonian describing the van der Waals interaction among 9 Rydberg atoms in a square lattice:
 
     .. code-block:: python
 
@@ -75,6 +77,10 @@ def rydberg_interaction(register: list, wires=None, interaction_coeff: float = 8
 
     As expected, we have :math:`\frac{N(N-1)}{2} = 36` terms for N=6 atoms.
 
+    The interaction term is dependent only on the number and positions of the Rydberg atoms. We can execute this
+    pulse program, which corresponds to all driving laser fields being turned off and therefore has no trainable
+    parameters. To add a driving laser field, see :func:`~.rydberg_drive`.
+
     .. code-block:: python
 
         dev = qml.device("default.qubit.jax", wires=9)
@@ -86,9 +92,6 @@ def rydberg_interaction(register: list, wires=None, interaction_coeff: float = 8
 
     >>> circuit()
     Array(1., dtype=float32)
-
-    Since the Hamiltonian is dependent only on the number and positions of Rydberg atoms, the evolution
-    does not have any trainable parameters
     """
     if wires is None:
         wires = list(range(len(register)))
@@ -121,9 +124,10 @@ def rydberg_drive(amplitude, detuning, phase, wires):
 
     where :math:`\Omega`, :math:`\delta` and :math:`\phi` correspond to the rabi frequency, detuning
     and phase of the laser, :math:`i` correspond to the wire index, and :math:`\sigma^\alpha` for
-    :math:`\alpha = x,y,z` are the Pauli matrices. This driving term can be combined with an interaction
-    term to create a Hamiltonian describing a driven Rydberg atom system. Multiple driving terms can be
-    combined by summing them (see example).
+    :math:`\alpha = x,y,z` are the Pauli matrices. The unit of time for the  evolution of this Rydberg
+    drive term is :math:`\mu \text{s}`. This driving term can be combined with an interaction term to
+    create a Hamiltonian describing a driven Rydberg atom system. Multiple driving terms can be combined
+    by summing them (see example).
 
     Args:
         amplitude (Union[float, Callable]): float or callable returning the amplitude (in MHz) of a
@@ -152,37 +156,63 @@ def rydberg_drive(amplitude, detuning, phase, wires):
 
     .. code-block:: python
 
+        atom_coordinates = [[0, 0], [0, 4], [4, 0], [4, 4]]
+        H_i = qml.pulse.rydberg_interaction(atom_coordinates, wires)
+
         amplitude = lambda p, t: p * jnp.sin(jnp.pi * t)
         detuning = 3 * jnp.pi / 4
         phase = jnp.pi / 2
         wires = [0, 1, 2, 3]
         H_d = qml.pulse.rydberg_drive(amplitude, detuning, phase, wires)
 
-        atom_coordinates = [[0, 0], [0, 4], [4, 0], [4, 4]]
-        H_i = qml.pulse.rydberg_interaction(atom_coordinates, wires)
-
-    >>> H_d
-    ParametrizedHamiltonian: terms=2
     >>> H_i
     ParametrizedHamiltonian: terms=6
+    >>> H_d
+    ParametrizedHamiltonian: terms=2
 
     The two terms of the drive field correspond to the first and second sum, corresponding to the drive and the shift term.
+    This drive term corresponds to a global drive that acts on all wires of the device.
 
     .. code-block:: python
 
-        dev = qml.device("default.qubit.jax", wires=4)
+        dev = qml.device("default.qubit.jax", wires=wires)
 
         @qml.qnode(dev, interface="jax")
         def circuit(params):
-            qml.evolve(H_d + H_i)(params, t=[0, 10])
+            qml.evolve(H_i + H_d)(params, t=[0, 10])
             return qml.expval(qml.PauliZ(0))
 
     >>> params = [2.4]
     >>> circuit(params)
     Array(0.97137696, dtype=float32)
-
     >>> jax.grad(circuit)(params)
     [Array(0.10493923, dtype=float32)]
+
+    We can also create a Hamiltonian with multiple local drives. The following circuit corresponds to the
+    evolution where an additional local drive acting on wires ``[0, 1]`` is added to the Hamiltonian:
+
+    ..code-block:: python
+
+        amplitude_local = lambda p, t: p[0] * jnp.sin(2 * jnp.pi * t) + p[1]
+        detuning_local = lambda p, t: p * jnp.exp(-0.25 * t)
+        phase_local = jnp.pi / 4
+        H_local = qml.pulse.rydberg_drive(amplitude_local, detuning_local, phase_local, [0, 1])
+
+        H = H_i + H_d + H_local
+
+        @jax.jit
+        @qml.qnode(dev, interface="jax")
+        def circuit_local(params):
+            qml.evolve(H)(params, t=[0, 10])
+            return qml.expval(qml.PauliZ(0))
+
+    >>> params = [2.4, [1.3, -2.0]]
+    >>> circuit_local(params)
+    Array(0.45782223, dtype=float64)
+    >>> jax.grad(circuit_local_drives)(params)
+    [Array(-0.33522988, dtype=float64),
+     [Array(0.40320718, dtype=float64, weak_type=True),
+      Array(-0.12003976, dtype=float64, weak_type=True)]]
     """
     if isinstance(wires, int):
         wires = [wires]

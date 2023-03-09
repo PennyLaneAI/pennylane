@@ -216,6 +216,31 @@ class TestRydbergDrive:
         assert len(Hd.ops) == 2  # amplitude and detuning terms of the Hamiltonian
         assert Hd.pulses == [RydbergPulse(1, 2, 3, [1, 2])]
 
+    def test_multiple_local_drives(self):
+        """Test that adding multiple drive terms behaves as expected"""
+
+        def fa(p, t):
+            return p[0] * np.sin(p[1] * t)
+
+        def fb(p, t):
+            return p[0] * np.sin(p[1] * t)
+
+        H1 = rydberg_drive(amplitude=fa, detuning=3, phase=1, wires=[0, 3])
+        H2 = rydberg_drive(amplitude=1, detuning=fb, phase=3, wires=[1, 2])
+        Hd = H1 + H2
+
+        assert isinstance(Hd, RydbergHamiltonian)
+        assert Hd.interaction_coeff == 862690
+        assert Hd.wires == Wires([0, 3, 1, 2])
+        assert Hd.register is None
+        assert len(Hd.ops) == 4  # amplitude and detuning terms of the Hamiltonian
+        # Callable coefficients are shifted to the end of the list.
+        assert Hd.coeffs[0:2] == [3, 1]
+        assert Hd.coeffs[2] is fa
+        assert Hd.coeffs[3] is fb
+        assert len(Hd.pulses) == 2
+        assert Hd.pulses == H1.pulses + H2.pulses
+
 
 class TestRydbergPulse:
     """Unit tests for the ``RydbergPulse`` class."""
@@ -269,6 +294,43 @@ class TestIntegration:
             return qml.expval(H_obj)
 
         params = (jnp.ones(5), jnp.array([1.0, jnp.pi]))
+        res = qnode(params)
+
+        assert isinstance(res, jax.Array)
+
+    @pytest.mark.jax
+    def test_jitted_qnode_multidrive(self):
+        """Test that a ``RydbergHamiltonian`` class with multiple drive terms can be
+        executed within a jitted qnode."""
+        import jax
+        import jax.numpy as jnp
+
+        Hd = rydberg_interaction(register=atom_coordinates, wires=wires)
+
+        def fa(p, t):
+            return jnp.polyval(p, t)
+
+        def fb(p, t):
+            return p[0] * jnp.sin(p[1] * t)
+
+        def fc(p, t):
+            return p[0] * jnp.sin(t) + jnp.cos(p[1] * t)
+
+        H1 = rydberg_drive(amplitude=fa, detuning=fb, phase=0, wires=1)
+        H2 = rydberg_drive(amplitude=fc, detuning=jnp.pi / 4, phase=3 * jnp.pi, wires=4)
+
+        dev = qml.device("default.qubit", wires=wires)
+
+        ts = jnp.array([0.0, 3.0])
+        H_obj = sum(qml.PauliZ(i) for i in range(2))
+
+        @jax.jit
+        @qml.qnode(dev, interface="jax")
+        def qnode(params):
+            qml.evolve(Hd + H1 + H2)(params, ts)
+            return qml.expval(H_obj)
+
+        params = (jnp.ones(5), jnp.array([1.0, jnp.pi]), jnp.array([jnp.pi / 2, 0.5]))
         res = qnode(params)
 
         assert isinstance(res, jax.Array)

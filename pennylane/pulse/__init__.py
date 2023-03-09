@@ -55,6 +55,15 @@ Convenience Functions
     ~pwc
     ~pwc_from_function
     ~rect
+
+Hardware Compatible Hamiltonians
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+.. currentmodule:: pennylane.pulse
+
+.. autosummary::
+    :toctree: api
+
     ~rydberg_interaction
     ~rydberg_drive
 
