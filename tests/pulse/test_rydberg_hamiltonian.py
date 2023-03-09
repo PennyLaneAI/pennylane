@@ -201,7 +201,7 @@ class TestRydbergInteraction:
             _ = rydberg_interaction(register=atom_coordinates, wires=[0])
 
 
-class TestRydbergTransition:
+class TestRydbergDrive:
     """Unit tests for the ``rydberg_drive`` function."""
 
     def test_attributes_and_number_of_terms(self):
