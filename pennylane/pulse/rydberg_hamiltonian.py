@@ -63,7 +63,6 @@ def rydberg_interaction(register: list, wires=None, interaction_coeff: float = 8
     **Example**
 
     We create a Hamiltonian describing the van der Waals interaction among 9 Rydberg atoms in a square lattice.
-    Rydberg blockade:
 
     .. code-block:: python
 
