@@ -211,7 +211,7 @@ def apply_pauliz(op: qml.PauliZ, state, is_state_batched: bool = False):
     sl_1 = _get_slice(1, axis, n_dim)
 
     try:
-        state1 = math.multiply(shift, state[sl_1])
+        state1 = math.multiply(-1, state[sl_1])
     except Exception as e:
         # slicing fails with tensorflow and states with more than 8 wires.
         # Instead of checking checking for this case all the time, we just fallback

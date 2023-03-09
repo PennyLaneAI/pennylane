@@ -83,6 +83,7 @@
   
 * `qml.devices.qubit.apply_operation` catches the `tf.errors.UnimplementedError` that occurs when `PauliZ` or `CNOT` gates
   are applied to a large (>8 wires) tensorflow state. When that occurs, the logic falls back to the tensordot logic instead.
+  [(#3884)](https://github.com/PennyLaneAI/pennylane/pull/3884/)
 
 <h3>Contributors</h3>
 
