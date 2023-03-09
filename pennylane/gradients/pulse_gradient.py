@@ -28,6 +28,7 @@ from .finite_difference import _all_zero_grad_new, _no_trainable_grad_new
 from .parameter_shift import (
     _reorder_grad_axes_multi_measure,
     _reorder_grad_axes_single_measure_shot_vector,
+    _make_zero_rep,
 )
 from .gradient_transform import (
     choose_grad_methods,
@@ -95,6 +96,42 @@ def split_evol_tapes(tape, split_evolve_ops, op_idx):
         qml.tape.QuantumScript(ops_pre + split + ops_post, tape.measurements)
         for split in split_evolve_ops
     ]
+
+
+def _parshift_and_integrate(results, cjacs, int_prefactor, single_measure, shot_vector):
+    """Apply the parameter-shift rule post-processing to tape results and contract
+    with classical Jacobians, effectively evaluating the numerical integral of the stochastic
+    parameter-shift rule.
+    This is a helper method for the new return type system.
+
+    Args:
+        results (list): Tape evaluation results, corresponding to the modified quantum
+            circuit result when using the applicable parameter shifts and the sample splitting
+            times. Results should be ordered such that the different shifted circuits for a given
+            splitting time are grouped together
+        cjacs (tensor_like): classical Jacobian evaluated at the splitting times
+        int_prefactor (float): prefactor of the numerical integration, corresponding to the size
+            of the time range divided by the number of splitting time samples
+        single_measure (bool):
+        shot_vector (bool):
+    Returns:
+        tensor_like or tuple[tensor_like] or tuple[tuple[tensor_like]]: Gradient entry
+    """
+
+    def _diff_and_contract(res_list, cjacs, int_prefactor):
+        diff = qml.math.stack(res_list)[::2] - qml.math.stack(res_list)[1::2]
+        return qml.math.tensordot(diff, cjacs, axes=[[0], [0]]) * int_prefactor
+
+    # If multiple measure xor shot_vector: One axis to pull out of the shift rule and integration
+    if not single_measure + shot_vector == 1:
+        return tuple(_diff_and_contract(r, cjacs, int_prefactor) for r in zip(*results))
+    if single_measure:
+        # Single measurement without shot vector
+        return _diff_and_contract(results, cjacs, int_prefactor)
+    # Multiple measurements with shot vector
+    return tuple(
+        tuple(_diff_and_contract(_r, cjacs, int_prefactor) for _r in zip(*r)) for r in zip(*results)
+    )
 
 
 def _stoch_pulse_grad(tape, argnum=None, num_samples=1, sampler_seed=None, shots=None):
@@ -433,23 +470,35 @@ def _expval_stoch_pulse_grad(tape, argnum, num_samples, key, shots):
         )
         if scalar_qfunc_output:
             results = [qml.math.squeeze(res) for res in results]
+
+        num_measurements = len(tape.measurements)
+        single_measure = num_measurements == 1
+        shot_vector = isinstance(shots, Sequence)
         start = 0
         grads = []
         for num_tapes, cjacs, avg_prefactor in gradient_data:
             if num_tapes == 0:
-                raise NotImplementedError("not implemented.")
+                grads.append(None)
+                continue
             res = results[start : start + num_tapes]
             start += num_tapes
-            diff = qml.math.stack(res[::2]) - qml.math.stack(res[1::2])
-            grads.append(qml.math.tensordot(diff, cjacs, axes=[[0], [0]]) * avg_prefactor)
+            # Apply the postprocessing of the parameter-shift rule and contract
+            # with classical Jacobian, effectively computing the integral approximation
+            g = _parshift_and_integrate(res, cjacs, avg_prefactor, single_measure, shot_vector)
+            grads.append(g)
 
-        num_measurements = len(tape.measurements)
-        single_measure = num_measurements == 1
+        # g will have been defined at least once (because otherwise all gradients would have
+        # been zero), providing a representative for a zero gradient to emulate its type/shape.
+        zero_rep = _make_zero_rep(g, single_measure, shot_vector)
+
+        # Fill in zero-valued gradients
+        grads = [zero_rep if g is None else g for g in grads]
+
         num_params = len(tape.trainable_params)
         if single_measure and num_params == 1:
             return grads[0]
-        shot_vector = isinstance(shots, Sequence)
         len_shot_vec = _get_num_copies(shots) if shot_vector else None
+        print(grads)
         if single_measure and shot_vector:
             return _reorder_grad_axes_single_measure_shot_vector(grads, num_params, len_shot_vec)
         if not single_measure:

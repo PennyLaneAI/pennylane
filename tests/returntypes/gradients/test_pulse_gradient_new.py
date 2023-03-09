@@ -27,7 +27,6 @@ from pennylane.pulse import ParametrizedEvolution
 pytestmark = pytest.mark.jax
 
 
-
 def equal(op1, op2, check_t=True):
     """Helper function to check whether two operations are the same via qml.equal, optionally
     including the time window for ParametrizedEvolution.
@@ -290,21 +289,66 @@ class TestStochPulseGradErrors:
 class TestStochPulseGrad:
     """Test working cases of stoch_pulse_grad."""
 
+    from jax import numpy as jnp
+
     ham_single_q_const = qml.pulse.constant * qml.PauliY(0)
 
-    def test_all_zero_grads(self):
-        """Test that a zero gradient is returned when the trainable parameters are
+    @staticmethod
+    def sine(p, t):
+        """Compute the sin function with parametrized amplitude and frequency at a given time."""
+        from jax import numpy as jnp
+
+        return p[0] * jnp.sin(p[1] * t)
+
+    @pytest.mark.parametrize(
+        "ops, exp_shapes",
+        (
+            ([qml.RX(0.4, 0), qml.RZ(0.9, 0)], [(2,), (2, 4)]),
+            ([qml.evolve(qml.pulse.constant * qml.PauliZ(0))([0.2], 0.1)], [(1,), (1, 4)]),
+            ([qml.evolve(qml.pulse.pwc * qml.PauliZ(0))([jnp.ones(3)], 0.1)], [(3,), (3, 4)]),
+            (
+                [qml.evolve(qml.pulse.pwc * qml.PauliZ(0))([jnp.ones(3)], 0.1), qml.RX(1.0, 2)],
+                [[(3,), (1,)], [(3, 4), (1, 4)]],
+            ),
+        ),
+    )
+    def test_all_zero_grads(self, ops, exp_shapes):
+        """Test that a zero gradient is returned when all trainable parameters are
         identified to have zero gradient in advance."""
         measurements = [qml.expval(qml.PauliZ("a")), qml.probs(["b", "c"])]
-        # No parameters at all
-        tape = qml.tape.QuantumScript([qml.RX(0.4, 0), qml.RZ(0.9, 0)], measurements=measurements)
+        tape = qml.tape.QuantumScript(ops, measurements=measurements)
         tapes, fn = stoch_pulse_grad(tape)
         assert not tapes
 
         res = fn([])
         assert isinstance(res, tuple) and len(res) == 2
-        assert qml.math.allclose(res[0], np.zeros(2))
-        assert qml.math.allclose(res[1], np.zeros((2, 4)))
+        for r, exp_shape in zip(res, exp_shapes):
+            if isinstance(exp_shape, list):
+                assert all(qml.math.allclose(_r, np.zeros(_sh)) for _r, _sh in zip(r, exp_shape))
+            else:
+                assert qml.math.allclose(r, np.zeros(exp_shape))
+
+    def test_some_zero_grads(self):
+        """Test that a zero gradient is returned for trainable parameters that are
+        identified to have a zero gradient in advance."""
+        import jax
+
+        jax.config.update("jax_enable_x64", True)
+        jnp = jax.numpy
+        ops = [
+            qml.evolve(qml.pulse.pwc(0.1) * qml.PauliX(w))([jnp.linspace(1.0, 2.0, 5)], 0.1)
+            for w in [1, 0]
+        ]
+        measurements = [qml.expval(qml.PauliZ(0)), qml.probs(wires=0)]
+        tape = qml.tape.QuantumScript(ops, measurements)
+        tapes, fn = stoch_pulse_grad(tape, num_samples=3)
+        assert len(tapes) == 2 * 3
+
+        dev = qml.device("default.qubit.jax", wires=2)
+        res = fn(qml.execute(tapes, dev, None))
+        assert isinstance(res, tuple) and len(res) == 2
+        assert qml.math.allclose(res[0][0], np.zeros(5))
+        assert qml.math.allclose(res[1][0], np.zeros((2, 5)))
 
     @pytest.mark.parametrize("num_samples", [1, 3])
     @pytest.mark.parametrize("t", [2.0, 3, (0.5, 0.6)])
@@ -332,9 +376,9 @@ class TestStochPulseGrad:
         assert qml.math.isclose(res, -2 * jnp.sin(2 * p) * (T[1] - T[0]))
 
     @pytest.mark.parametrize("t", [0.02, (0.5, 0.6)])
-    def test_sin_envelope_rx(self, t):
+    def test_sin_envelope_rx_expval(self, t):
         """Test that the derivative of a pulse with a sine wave envelope
-        is computed correctly."""
+        is computed correctly when returning an expectation value."""
         import jax
 
         jnp = jax.numpy
@@ -344,10 +388,7 @@ class TestStochPulseGrad:
         dev = qml.device("default.qubit.jax", wires=1)
         params = [jnp.array([2.3, -0.245])]
 
-        def sine(p, t):
-            return p[0] * jnp.sin(p[1] * t)
-
-        ham = sine * qml.PauliZ(0)
+        ham = self.sine * qml.PauliZ(0)
         op = qml.evolve(ham)(params, t)
         tape = qml.tape.QuantumScript([qml.Hadamard(0), op], [qml.expval(qml.PauliX(0))])
 
@@ -372,26 +413,22 @@ class TestStochPulseGrad:
         # classical Jacobian is being estimated with the Monte Carlo sampling -> coarse tolerance
         assert qml.math.allclose(res, exp_grad, atol=0.2)
 
-    # TODO
     @pytest.mark.parametrize("t", [0.02, (0.5, 0.6)])
-    def test_sin_envelope_rx_expval_probs(self, t):
+    def test_sin_envelope_rx_probs(self, t):
         """Test that the derivative of a pulse with a sine wave envelope
-        is computed correctly."""
+        is computed correctly when returning probabilities."""
         import jax
 
         jnp = jax.numpy
 
         T = t if isinstance(t, tuple) else (0, t)
 
-        dev = qml.device("default.qubit.jax", wires=2)
+        dev = qml.device("default.qubit.jax", wires=1)
         params = [jnp.array([2.3, -0.245])]
 
-        def sine(p, t):
-            return p[0] * jnp.sin(p[1] * t)
-
-        ham = sine * (qml.PauliZ(0) @ qml.PauliX(0))
+        ham = self.sine * qml.PauliX(0)
         op = qml.evolve(ham)(params, t)
-        tape = qml.tape.QuantumScript([qml.Hadamard(0), op], [qml.expval(qml.PauliX(0)), qml.probs(wires=1)])
+        tape = qml.tape.QuantumScript([op], [qml.probs(wires=0)])
 
         # Effective rotation parameter
         x, y = params[0]
@@ -404,15 +441,61 @@ class TestStochPulseGrad:
             ]
         )
         r = qml.execute([tape], dev, None)
-        assert qml.math.isclose(r, jnp.cos(2 * theta))
+        exp_probs = jnp.array([jnp.cos(theta) ** 2, jnp.sin(theta) ** 2])
+        assert qml.math.allclose(r, exp_probs)
 
         tapes, fn = stoch_pulse_grad(tape, num_samples=100)
         assert len(tapes) == 200
 
-        res = fn(qml.execute(tapes, dev, None))
-        exp_grad = -2 * jnp.sin(2 * theta) * theta_jac
+        jac = fn(qml.execute(tapes, dev, None))
+        probs_jac = jnp.array([-1, 1]) * (2 * jnp.sin(theta) * jnp.cos(theta))
+        exp_jac = jnp.tensordot(probs_jac, theta_jac, axes=0)
         # classical Jacobian is being estimated with the Monte Carlo sampling -> coarse tolerance
-        assert qml.math.allclose(res, exp_grad, atol=0.2)
+        assert qml.math.allclose(jac, exp_jac, atol=0.2)
+
+    @pytest.mark.parametrize("t", [0.02, (0.5, 0.6)])
+    def test_sin_envelope_rx_expval_probs(self, t):
+        """Test that the derivative of a pulse with a sine wave envelope
+        is computed correctly when returning expectation."""
+        import jax
+
+        jnp = jax.numpy
+
+        T = t if isinstance(t, tuple) else (0, t)
+
+        dev = qml.device("default.qubit.jax", wires=1)
+        params = [jnp.array([2.3, -0.245])]
+
+        ham = self.sine * qml.PauliX(0)
+        op = qml.evolve(ham)(params, t)
+        tape = qml.tape.QuantumScript([op], [qml.expval(qml.PauliZ(0)), qml.probs(wires=0)])
+
+        # Effective rotation parameter
+        x, y = params[0]
+        theta = -x / y * (jnp.cos(y * T[1]) - jnp.cos(y * T[0]))
+        theta_jac = jnp.array(
+            [
+                theta / x,
+                x / y**2 * (jnp.cos(y * T[1]) - jnp.cos(y * T[0]))
+                + x / y * (jnp.sin(y * T[1]) * T[1] - jnp.sin(y * T[0]) * T[0]),
+            ]
+        )
+        r = qml.execute([tape], dev, None)[0]
+        exp = (jnp.cos(2 * theta), jnp.array([jnp.cos(theta) ** 2, jnp.sin(theta) ** 2]))
+        assert isinstance(r, tuple) and len(r) == 2
+        assert qml.math.allclose(r[0], exp[0])
+        assert qml.math.allclose(r[1], exp[1])
+
+        tapes, fn = stoch_pulse_grad(tape, num_samples=100)
+        assert len(tapes) == 200
+
+        jac = fn(qml.execute(tapes, dev, None))
+        expval_jac = -2 * jnp.sin(2 * theta)
+        probs_jac = jnp.array([-1, 1]) * (2 * jnp.sin(theta) * jnp.cos(theta))
+        exp_jac = (expval_jac * theta_jac, jnp.tensordot(probs_jac, theta_jac, axes=0))
+        # classical Jacobian is being estimated with the Monte Carlo sampling -> coarse tolerance
+        for j, e in zip(jac, exp_jac):
+            assert qml.math.allclose(j, e, atol=0.2)
 
     @pytest.mark.parametrize("t", [0.02, (0.5, 0.6)])
     def test_pwc_envelope_rx(self, t):
@@ -496,7 +579,9 @@ class TestStochPulseGrad:
         qnode.construct((params,), {})
 
         num_samples = 100
-        tapes, fn = stoch_pulse_grad(qnode.tape, argnums=[0, 1, 2], num_samples=num_samples, sampler_seed=7123)
+        tapes, fn = stoch_pulse_grad(
+            qnode.tape, argnums=[0, 1, 2], num_samples=num_samples, sampler_seed=7123
+        )
         assert len(tapes) == 3 * 2 * num_samples
 
         res = fn(qml.execute(tapes, dev, None))
@@ -619,7 +704,8 @@ class TestStochPulseGradQNodeIntegration:
         exp_grad = -2 * jnp.sin(2 * p) * T
         assert qml.math.isclose(grad, exp_grad)
 
-    @pytest.mark.xfail # TODO: Make 
+    @pytest.mark.xfail  # TODO: ParametrizedEvolution + grad transform is currently not
+    # JIT-compatible, see #3881
     @pytest.mark.parametrize("num_samples", [1, 3])
     def test_simple_qnode_jit(self, num_samples):
         """Test that a simple qnode can be differentiated with stoch_pulse_grad."""
@@ -668,7 +754,7 @@ class TestStochPulseGradQNodeIntegration:
             diff_method=stoch_pulse_grad,
             num_samples=num_samples,
             sampler_seed=7123,
-            cache=False,# remove once 3870 is merged
+            cache=False,  # remove once 3870 is merged
         )
         qnode_backprop = qml.QNode(ansatz, dev, interface="jax")
 
@@ -696,6 +782,7 @@ class TestStochPulseGradDiff:
         jax.config.update("jax_enable_x64", True)
         dev = qml.device("default.qubit.jax", wires=1)
         T = 0.5
+
         def fun(params):
             op = qml.evolve(self.ham_single_q_const)(params, T)
             tape = qml.tape.QuantumScript([op], [qml.expval(qml.PauliZ(0))])

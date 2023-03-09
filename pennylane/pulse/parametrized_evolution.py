@@ -250,6 +250,7 @@ class ParametrizedEvolution(Operation):
 
     _name = "ParametrizedEvolution"
     num_wires = AnyWires
+    grad_method = "A"
 
     # pylint: disable=too-many-arguments
 
