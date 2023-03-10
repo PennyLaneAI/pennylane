@@ -297,7 +297,6 @@ class gradient_transform(qml.batch_transform):
                 tkwargs.pop("argnum")
                 argnums = argnum
 
-            argnums_ = None
             if interface == "jax" and not trainable_params:
                 if argnums is None:
                     argnums_ = [0]
@@ -311,7 +310,7 @@ class gradient_transform(qml.batch_transform):
                 argnums_ = qml.math.get_trainable_indices(params)
                 kwargs["argnums"] = argnums_
 
-            if not trainable_params and argnums is None and argnums_ is None:
+            elif not trainable_params:
                 warnings.warn(
                     "Attempted to compute the gradient of a QNode with no trainable parameters. "
                     "If this is unintended, please add trainable parameters in accordance with "
