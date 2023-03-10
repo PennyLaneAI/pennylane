@@ -14,8 +14,6 @@
 """Functions to apply an operation to a state vector."""
 # pylint: disable=unused-argument
 
-import contextlib
-
 from functools import singledispatch
 from string import ascii_letters as alphabet
 
@@ -207,22 +205,15 @@ def apply_pauliz(op: qml.PauliZ, state, is_state_batched: bool = False):
     axis = op.wires[0] + is_state_batched
     n_dim = math.ndim(state)
 
+    n_dim = math.ndim(state)
+    if n_dim >= 9 and math.get_interface(state) == "tensorflow":
+        return apply_operation_tensordot(op, state)
+
     sl_0 = _get_slice(0, axis, n_dim)
     sl_1 = _get_slice(1, axis, n_dim)
 
-    try:
-        # must be first state and then -1 because it breaks otherwise
-        state1 = math.multiply(state[sl_1], -1)
-    except Exception as e:
-        # slicing fails with tensorflow and states with more than 8 wires.
-        # Instead of checking checking for this case all the time, we just fallback
-        # to apply_operation_tensordot when this error occurs
-        with contextlib.suppress(ImportError):
-            import tensorflow as tf  # pylint: disable=import-outside-toplevel
-
-            if isinstance(e, tf.errors.UnimplementedError):
-                return apply_operation_tensordot(op, state)
-        raise e
+    # must be first state and then -1 because it breaks otherwise
+    state1 = math.multiply(state[sl_1], -1)
     return math.stack([state[sl_0], state1], axis=axis)
 
 
@@ -233,19 +224,12 @@ def apply_cnot(op: qml.CNOT, state, is_state_batched: bool = False):
     control_axes = op.wires[0] + is_state_batched
     n_dim = math.ndim(state)
 
+    n_dim = math.ndim(state)
+    if n_dim >= 9 and math.get_interface(state) == "tensorflow":
+        return apply_operation_tensordot(op, state)
+
     sl_0 = _get_slice(0, control_axes, n_dim)
     sl_1 = _get_slice(1, control_axes, n_dim)
 
-    try:
-        state_x = math.roll(state[sl_1], 1, target_axes)
-    except Exception as e:
-        # slicing fails with tensorflow and states with more than 8 wires.
-        # Instead of checking checking for this case all the time, we just fallback
-        # to apply_operation_tensordot when this error occurs
-        with contextlib.suppress(ImportError):
-            import tensorflow as tf  # pylint: disable=import-outside-toplevel
-
-            if isinstance(e, tf.errors.UnimplementedError):
-                return apply_operation_tensordot(op, state)
-        raise e
+    state_x = math.roll(state[sl_1], 1, target_axes)
     return math.stack([state[sl_0], state_x], axis=control_axes)
