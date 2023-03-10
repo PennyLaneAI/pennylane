@@ -205,7 +205,6 @@ def apply_pauliz(op: qml.PauliZ, state, is_state_batched: bool = False):
     axis = op.wires[0] + is_state_batched
     n_dim = math.ndim(state)
 
-    n_dim = math.ndim(state)
     if n_dim >= 9 and math.get_interface(state) == "tensorflow":
         return apply_operation_tensordot(op, state)
 
