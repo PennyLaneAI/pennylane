@@ -560,9 +560,8 @@ class TestValidation:
         assert "Use diff_method instead" in str(w[0].message)
         assert "Use diff_method instead" in str(w[1].message)
 
-    def test_auto_interface_device_switched_warning(self):
-        """Test that checks that a warning is raised if the device is switched during the QNode call due to auto
-        interface."""
+    def test_auto_interface_tracker_device_switched(self):
+        """Test that checks that the tracker is switched to the new device."""
         dev = qml.device("default.qubit", wires=1)
 
         @qml.qnode(dev)
@@ -570,11 +569,17 @@ class TestValidation:
             qml.RX(params, wires=0)
             return qml.expval(qml.PauliZ(0))
 
-        with pytest.warns(
-            UserWarning,
-            match="The device was switched during the call of the QNode",
-        ):
+        with qml.Tracker(dev) as tracker:
             circuit(qml.numpy.array(0.1, requires_grad=True))
+
+        assert tracker.totals == {"executions": 1, "batches": 1, "batch_len": 1}
+        assert np.allclose(tracker.history.pop("results")[0], 0.99500417)
+        assert tracker.history == {
+            "executions": [1],
+            "shots": [None],
+            "batches": [1],
+            "batch_len": [1],
+        }
 
     def test_autograd_interface_device_switched_no_warnings(self):
         """Test that checks that no warning is raised for device switch when you define an interface."""
@@ -1222,8 +1227,8 @@ class TestIntegration:
 
         @qml.qnode(dev)
         def qnode():
-            qml.PauliX(0)
-            return qml.expval(qml.PauliZ(0))
+            qml.PauliZ(0)
+            return qml.expval(qml.PauliX(0))
 
         with qml.queuing.AnnotatedQueue() as q:
             qnode()

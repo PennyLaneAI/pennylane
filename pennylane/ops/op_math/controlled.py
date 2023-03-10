@@ -499,6 +499,11 @@ class Controlled(SymbolicOp):
         d += [qml.PauliX(w) for w, val in zip(self.control_wires, self.control_values) if not val]
         return d
 
+    # pylint: disable=arguments-renamed, invalid-overridden-method
+    @property
+    def has_generator(self):
+        return self.base.has_generator
+
     def generator(self):
         sub_gen = self.base.generator()
         proj_tensor = operation.Tensor(*(qml.Projector([1], wires=w) for w in self.control_wires))
@@ -635,6 +640,6 @@ class ControlledOp(Controlled, operation.Operation):
             return [qml.gradients.eigvals_to_frequencies(processed_gen_eigvals)]
         raise operation.ParameterFrequenciesUndefinedError(
             f"Operation {self.name} does not have parameter frequencies defined, "
-            "and parameter frequencies can not be computed via generator for more than one"
+            "and parameter frequencies can not be computed via generator for more than one "
             "parameter."
         )

@@ -22,7 +22,7 @@ from itertools import product
 import numpy as np
 import pennylane as qml
 from pennylane.operation import AnyWires, Operation
-from pennylane.ops.qubit.parametric_ops import PauliRot
+from pennylane.ops.qubit.parametric_ops_multi_qubit import PauliRot
 
 _pauli_matrices = np.array(
     [[[1, 0], [0, 1]], [[0, 1], [1, 0]], [[0, -1j], [1j, 0]], [[1, 0], [0, -1]]]
@@ -590,7 +590,7 @@ class SpecialUnitary(Operation):
             The matrix exponential is not differentiable in Autograd. Therefore this function
             only supports JAX, Torch and Tensorflow.
 
-        .. seealso:: `~.SpecialUnitary.get_one_parameter_generators`
+        .. seealso:: :meth:`~.SpecialUnitary.get_one_parameter_generators`
 
         """
         num_wires = self.hyperparameters["num_wires"]

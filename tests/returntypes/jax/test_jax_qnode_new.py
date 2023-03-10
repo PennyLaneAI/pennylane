@@ -2228,7 +2228,7 @@ class TestReturn:
             qml.RX(x, wires=[0])
             qml.RY(y, wires=[1])
             qml.CNOT(wires=[0, 1])
-            return qml.expval(qml.PauliZ(0) @ qml.PauliX(1)), qml.probs(wires=[0, 1])
+            return qml.expval(qml.PauliZ(0) @ qml.PauliX(1)), qml.probs(wires=[0])
 
         hess = jax.hessian(circuit, argnums=[0, 1])(par_0, par_1)
 
@@ -2255,15 +2255,15 @@ class TestReturn:
         assert isinstance(hess[1][0], tuple)
         assert len(hess[1][0]) == 2
         assert isinstance(hess[1][0][0], jax.numpy.ndarray)
-        assert hess[1][0][0].shape == (4,)
+        assert hess[1][0][0].shape == (2,)
         assert isinstance(hess[1][0][1], jax.numpy.ndarray)
-        assert hess[1][0][1].shape == (4,)
+        assert hess[1][0][1].shape == (2,)
         assert isinstance(hess[1][1], tuple)
         assert len(hess[1][1]) == 2
         assert isinstance(hess[1][1][0], jax.numpy.ndarray)
-        assert hess[1][1][0].shape == (4,)
+        assert hess[1][1][0].shape == (2,)
         assert isinstance(hess[1][1][1], jax.numpy.ndarray)
-        assert hess[1][1][1].shape == (4,)
+        assert hess[1][1][1].shape == (2,)
 
     def test_hessian_expval_probs_multiple_param_array(
         self, dev_name, diff_method, mode, shots, interface
@@ -2290,7 +2290,7 @@ class TestReturn:
             qml.RX(x[0], wires=[0])
             qml.RY(x[1], wires=[1])
             qml.CNOT(wires=[0, 1])
-            return qml.expval(qml.PauliZ(0) @ qml.PauliX(1)), qml.probs(wires=[0, 1])
+            return qml.expval(qml.PauliZ(0) @ qml.PauliX(1)), qml.probs(wires=[0])
 
         hess = jax.hessian(circuit)(params)
 
@@ -2301,7 +2301,7 @@ class TestReturn:
         assert hess[0].shape == (2, 2)
 
         assert isinstance(hess[1], jax.numpy.ndarray)
-        assert hess[1].shape == (4, 2, 2)
+        assert hess[1].shape == (2, 2, 2)
 
     def test_hessian_probs_var_multiple_params(self, dev_name, diff_method, mode, shots, interface):
         """The hessian of multiple measurements with multiple params return a tuple of arrays."""
@@ -2322,7 +2322,7 @@ class TestReturn:
             qml.RX(x, wires=[0])
             qml.RY(y, wires=[1])
             qml.CNOT(wires=[0, 1])
-            return qml.var(qml.PauliZ(0) @ qml.PauliX(1)), qml.probs(wires=[0, 1])
+            return qml.var(qml.PauliZ(0) @ qml.PauliX(1)), qml.probs(wires=[0])
 
         hess = jax.hessian(circuit, argnums=[0, 1])(par_0, par_1)
 
@@ -2349,15 +2349,15 @@ class TestReturn:
         assert isinstance(hess[1][0], tuple)
         assert len(hess[1][0]) == 2
         assert isinstance(hess[1][0][0], jax.numpy.ndarray)
-        assert hess[1][0][0].shape == (4,)
+        assert hess[1][0][0].shape == (2,)
         assert isinstance(hess[1][0][1], jax.numpy.ndarray)
-        assert hess[1][0][1].shape == (4,)
+        assert hess[1][0][1].shape == (2,)
         assert isinstance(hess[1][1], tuple)
         assert len(hess[1][1]) == 2
         assert isinstance(hess[1][1][0], jax.numpy.ndarray)
-        assert hess[1][1][0].shape == (4,)
+        assert hess[1][1][0].shape == (2,)
         assert isinstance(hess[1][1][1], jax.numpy.ndarray)
-        assert hess[1][1][1].shape == (4,)
+        assert hess[1][1][1].shape == (2,)
 
     def test_hessian_var_probs_multiple_param_array(
         self, dev_name, diff_method, mode, shots, interface
@@ -2379,7 +2379,7 @@ class TestReturn:
             qml.RX(x[0], wires=[0])
             qml.RY(x[1], wires=[1])
             qml.CNOT(wires=[0, 1])
-            return qml.var(qml.PauliZ(0) @ qml.PauliX(1)), qml.probs(wires=[0, 1])
+            return qml.var(qml.PauliZ(0) @ qml.PauliX(1)), qml.probs(wires=[0])
 
         hess = jax.hessian(circuit)(params)
 
@@ -2390,4 +2390,4 @@ class TestReturn:
         assert hess[0].shape == (2, 2)
 
         assert isinstance(hess[1], jax.numpy.ndarray)
-        assert hess[1].shape == (4, 2, 2)
+        assert hess[1].shape == (2, 2, 2)
