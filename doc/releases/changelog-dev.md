@@ -64,6 +64,9 @@
 
 <h3>Breaking changes</h3>
 
+* Both JIT interfaces are not compatible with Jax `>0.4.3`, we raise an error for those versions.
+  [(#3877)](https://github.com/PennyLaneAI/pennylane/pull/3877)
+
 * An operation that implements a custom `generator` method, but does not always return a valid generator, also has
   to implement a `has_generator` property that reflects in which scenarios a generator will be returned.
   [(#3875)](https://github.com/PennyLaneAI/pennylane/pull/3875)
