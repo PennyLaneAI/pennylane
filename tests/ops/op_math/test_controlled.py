@@ -1418,7 +1418,7 @@ def test_multi_ctrl():
     op = tape.operations[0]
     assert isinstance(op, Controlled)
     new_tape = tape.expand(depth=1)
-    assert equal_list(new_tape[0], qml.MultiControlledX(wires=[3, 7, 0]))
+    assert qml.equal(new_tape[0], qml.MultiControlledX(wires=[3, 7, 0]))
 
 
 def test_ctrl_with_qnode():
