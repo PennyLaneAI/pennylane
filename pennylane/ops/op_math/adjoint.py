@@ -369,5 +369,10 @@ class AdjointOperation(Operation):
     def parameter_frequencies(self):
         return self.base.parameter_frequencies
 
+    # pylint: disable=arguments-renamed, invalid-overridden-method
+    @property
+    def has_generator(self):
+        return self.base.has_generator
+
     def generator(self):
         return -1.0 * self.base.generator()

@@ -650,7 +650,6 @@ def param_shift_hessian(tape, argnum=None, diagonal_shifts=None, off_diagonal_sh
             "chosen auto differentiation framework, or via the 'tape.trainable_params' property."
         )
         return [], lambda _: qml.math.zeros((tape.output_dim, 0, 0))
-
     bool_argnum = _process_argnum(argnum, tape)
 
     compare_diag_to = qml.math.sum(qml.math.diag(bool_argnum))

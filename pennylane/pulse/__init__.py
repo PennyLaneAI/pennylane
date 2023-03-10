@@ -29,6 +29,9 @@ The :mod:`~.pulse` module is written for ``jax`` and will not work with other ma
 typically encountered in PennyLane. It requires separate installation, see
 `jax.readthedocs.io <https://jax.readthedocs.io/en/latest/>`_.
 
+For a demonstration of the basic pulse functionality in PennyLane and running a ctrl-VQE example, see our demo on
+`differentiable pulse programming <https://pennylane.ai/qml/demos/tutorial_pulse_programming101.html>`_.
+
 Overview
 --------
 
@@ -55,6 +58,17 @@ Convenience Functions
     ~pwc
     ~pwc_from_function
     ~rect
+    ~rydberg_interaction
+    ~rydberg_drive
+
+Hardware Compatible Hamiltonians
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+.. currentmodule:: pennylane.pulse
+
+.. autosummary::
+    :toctree: api
+
     ~rydberg_interaction
     ~rydberg_drive
 
@@ -214,7 +228,7 @@ Now we can execute the evolution of this Hamiltonian in a QNode and compute its 
 
     import jax
 
-    dev = qml.device("default.qubit", wires=1)
+    dev = qml.device("default.qubit.jax", wires=1)
 
     @jax.jit
     @qml.qnode(dev, interface="jax")

@@ -524,6 +524,20 @@ class TestMiscMethods:
 
         assert qml.math.allclose(mat_eigvals, op.eigvals())
 
+    def test_has_generator_true(self):
+        """Test `has_generator` property carries over when base op defines generator."""
+        base = qml.RX(0.5, 0)
+        op = Pow(base, 0.3)
+
+        assert op.has_generator is True
+
+    def test_has_generator_false(self):
+        """Test `has_generator` property carries over when base op does not define a generator."""
+        base = qml.PauliX(0)
+        op = Pow(base, 0.3)
+
+        assert op.has_generator is False
+
     def test_generator(self):
         """Test that the generator is the base's generator multiplied by the power."""
         z = 2.5
