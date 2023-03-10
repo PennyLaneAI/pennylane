@@ -128,16 +128,7 @@ def _parshift_and_integrate(results, cjacs, int_prefactor, single_measure, shot_
     if single_measure:
         # Single measurement without shot vector
         return _diff_and_contract(results, cjacs, int_prefactor)
-    #print(f"First result: {results[0]}")
-    #print(f"classical Jacobians: {cjacs}")
-    #for r in zip(*results):
-        #print("_"*100)
-        #print(f"r={r}")
-        #for _r in zip(*r):
-            #print(f"_r={_r}")
-            #print(f"contraction: {_diff_and_contract(_r, cjacs, int_prefactor)}")
-            #print()
-    
+
     # Multiple measurements with shot vector
     return tuple(
         tuple(_diff_and_contract(_r, cjacs, int_prefactor) for _r in zip(*r)) for r in zip(*results)
