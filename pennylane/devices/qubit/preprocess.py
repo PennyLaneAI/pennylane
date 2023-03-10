@@ -73,7 +73,9 @@ def _operator_decomposition_gen(
         for sub_op in decomp:
             yield from _operator_decomposition_gen(sub_op)
 
+
 #######################
+
 
 def expand_fn(circuit: qml.tape.QuantumScript) -> qml.tape.QuantumScript:
     """Method for expanding or decomposing an input circuit.

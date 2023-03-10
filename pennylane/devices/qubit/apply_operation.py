@@ -201,12 +201,18 @@ def apply_paulix(op: qml.PauliX, state, is_state_batched: bool = False):
 @apply_operation.register
 def apply_pauliz(op: qml.PauliZ, state, is_state_batched: bool = False):
     """Apply pauliz to state."""
+
     axis = op.wires[0] + is_state_batched
     n_dim = math.ndim(state)
+
+    n_dim = math.ndim(state)
+    if n_dim >= 9 and math.get_interface(state) == "tensorflow":
+        return apply_operation_tensordot(op, state)
 
     sl_0 = _get_slice(0, axis, n_dim)
     sl_1 = _get_slice(1, axis, n_dim)
 
+    # must be first state and then -1 because it breaks otherwise
     state1 = math.multiply(state[sl_1], -1)
     return math.stack([state[sl_0], state1], axis=axis)
 
@@ -217,6 +223,10 @@ def apply_cnot(op: qml.CNOT, state, is_state_batched: bool = False):
     target_axes = (op.wires[1] - 1 if op.wires[1] > op.wires[0] else op.wires[1]) + is_state_batched
     control_axes = op.wires[0] + is_state_batched
     n_dim = math.ndim(state)
+
+    n_dim = math.ndim(state)
+    if n_dim >= 9 and math.get_interface(state) == "tensorflow":
+        return apply_operation_tensordot(op, state)
 
     sl_0 = _get_slice(0, control_axes, n_dim)
     sl_1 = _get_slice(1, control_axes, n_dim)

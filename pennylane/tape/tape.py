@@ -146,10 +146,10 @@ def expand_tape(tape, depth=1, stop_at=None, expand_measurements=False):
     # qubit-wise commuting Pauli words. In this case, the tape is expanded with joint
     # rotations and the observables updated to the computational basis. Note that this
     # expansion acts on the original tape in place.
-    if expand_measurements and tape.samples_computational_basis and len(tape.measurements) > 1:
+    if tape.samples_computational_basis and len(tape.measurements) > 1:
         _validate_computational_basis_sampling(tape.measurements)
 
-    if expand_measurements and tape._obs_sharing_wires:
+    if tape._obs_sharing_wires:
         with QueuingManager.stop_recording():  # stop recording operations to active context when computing qwc groupings
             try:
                 rotations, diag_obs = qml.pauli.diagonalize_qwc_pauli_words(tape._obs_sharing_wires)

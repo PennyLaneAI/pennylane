@@ -362,114 +362,146 @@ class TestExecutingBatches:
         assert qml.math.allclose(g1, g3)
 
 
-class TestPreprocessingIntegration:
-    """Tests preprocessing expands operations without matrices."""
+class TestSumOfTermsDifferentiability:
+    """Basically a copy of the `qubit.simulate` test but using the device instead."""
 
-    def test_numpy(self):
-        """Test integration between preprocessing and execution with numpy parameters."""
+    @staticmethod
+    def f(scale, n_wires=10, offset=0.1, convert_to_hamiltonian=False):
+        ops = [qml.RX(offset + scale * i, wires=i) for i in range(n_wires)]
 
-        class MyTemplate(qml.operation.Operation):
-            num_wires = 2
-
-            def decomposition(self):
-                return [
-                    qml.RX(self.data[0], self.wires[0]),
-                    qml.RY(self.data[1], self.wires[1]),
-                    qml.CNOT(self.wires),
-                ]
-
-        x = 0.928
-        y = -0.792
-        qscript = qml.tape.QuantumScript(
-            [MyTemplate(x, y, ("a", "b"))],
-            [qml.expval(qml.PauliY("a")), qml.expval(qml.PauliZ("a")), qml.expval(qml.PauliX("b"))],
-        )
-
-        dev = DefaultQubit2()
-
-        batch, post_procesing_fn = dev.preprocess(qscript)
-
-        assert len(batch) == 1
-        execute_circuit = batch[0]
-        assert qml.equal(execute_circuit[0], qml.RX(x, "a"))
-        assert qml.equal(execute_circuit[1], qml.RY(y, "b"))
-        assert qml.equal(execute_circuit[2], qml.CNOT(("a", "b")))
-        assert qml.equal(execute_circuit[3], qml.expval(qml.PauliY("a")))
-        assert qml.equal(execute_circuit[4], qml.expval(qml.PauliZ("a")))
-        assert qml.equal(execute_circuit[5], qml.expval(qml.PauliX("b")))
-
-        results = dev.execute(batch)
-        assert len(results) == 1
-        assert len(results[0]) == 3
-
-        processed_results = post_procesing_fn(results)
-        assert len(processed_results) == 3
-        assert qml.math.allclose(processed_results[0], -np.sin(x) * np.sin(y))
-        assert qml.math.allclose(processed_results[1], np.cos(x))
-        assert qml.math.allclose(processed_results[2], np.sin(y))
-
-
-class TestLargeObservables:
-    @pytest.mark.parametrize("use_hamiltonian", (False, True))
-    def test_numpy(self, use_hamiltonian):
-        """Tests the measurment of a large observable using numpy.
-        Has no entanglement in change for analytic results.
-        """
-
-        ops = [qml.RX(i + 0.5, wires=i) for i in range(10)]
-
-        H = 2.5 * qml.prod(*(qml.PauliZ(i) for i in range(10))) + 6.2 * qml.prod(
-            *(qml.PauliY(i) for i in range(10))
-        )
-
-        if use_hamiltonian:
-            H = H._pauli_rep.hamiltonian()
-
+        t1 = 2.5 * qml.prod(*(qml.PauliZ(i) for i in range(n_wires)))
+        t2 = 6.2 * qml.prod(*(qml.PauliY(i) for i in range(n_wires)))
+        H = t1 + t2
+        if convert_to_hamiltonian:
+            H = H._pauli_rep.hamiltonian()  # pylint: disable=protected-access
         qs = qml.tape.QuantumScript(ops, [qml.expval(H)])
+        return DefaultQubit2().execute(qs)
 
-        dev = DefaultQubit2()
-
-        batch, postprocessing_fn = dev.preprocess(qs)
-        assert len(batch) == 1
-        assert len(batch[0].operations) == 10
-        assert qml.equal(batch[0].measurements[0], qml.expval(H))
-
-        results = dev.execute(batch)
-        assert len(results) == 1
-
-        processed_results = postprocessing_fn(results)
-
-        expected_result = 2.5 * np.prod(np.cos([i + 0.5 for i in range(10)])) + 6.2 * np.prod(
-            np.sin([i + 0.5 for i in range(10)])
-        )
-        assert qml.math.allclose(processed_results, expected_result)
+    @staticmethod
+    def expected(scale, n_wires=10, offset=0.1, like="numpy"):
+        phase = offset + scale * qml.math.asarray(range(n_wires), like=like)
+        cosines = qml.math.cos(phase)
+        sines = qml.math.sin(phase)
+        return 2.5 * qml.math.prod(cosines) + 6.2 * qml.math.prod(sines)
 
     @pytest.mark.autograd
-    @pytest.mark.parametrize("use_hamiltonian", (False, True))
-    def test_autograd(self, use_hamiltonian):
-        def f(shift):
-            dev = DefaultQubit2()
-            ops = [qml.RX(0.1 + shift * i, wires=i) for i in range(10)]
-            H = 2.5 * qml.prod(*(qml.PauliZ(i) for i in range(10))) + 6.2 * qml.prod(
-                *(qml.PauliY(i) for i in range(10))
-            )
-            qs = qml.tape.QuantumScript(ops, [qml.expval(H)])
-            batch, postprocessing_fn = dev.preprocess(qs)
-            results = dev.execute(batch)
-            return postprocessing_fn(results)
-
-        def expected(shift):
-            phase = 0.1 + shift * np.array(range(10))
-            cosines = qml.math.cos(phase)
-            sineses = qml.math.sin(phase)
-            return 2.5 * qml.math.prod(cosines) + 6.2 * qml.math.prod(sineses)
-
+    @pytest.mark.parametrize("convert_to_hamiltonian", (True, False))
+    def test_autograd_backprop(self, convert_to_hamiltonian):
+        """Test that backpropagation derivatives work in autograd with hamiltonians and large sums."""
         x = qml.numpy.array(0.52)
+        out = self.f(x, convert_to_hamiltonian=convert_to_hamiltonian)
+        expected_out = self.expected(x)
+        assert qml.math.allclose(out, expected_out)
 
-        result = f(x)
-        analytic_result = expected(x)
-        assert qml.math.allclose(result, analytic_result)
+        g = qml.grad(self.f)(x, convert_to_hamiltonian=convert_to_hamiltonian)
+        expected_g = qml.grad(self.expected)(x)
+        assert qml.math.allclose(g, expected_g)
 
-        g = qml.grad(f)(x)
-        analytic_g = qml.grad(expected)(x)
-        assert qml.math.allclose(g, analytic_g)
+    @pytest.mark.jax
+    @pytest.mark.parametrize("use_jit", (True, False))
+    @pytest.mark.parametrize("convert_to_hamiltonian", (True, False))
+    def test_jax_backprop(self, convert_to_hamiltonian, use_jit):
+        """Test that backpropagation derivatives work with jax with hamiltonians and large sums."""
+        import jax
+
+        x = jax.numpy.array(0.52)
+        f = jax.jit(self.f, static_argnums=(1, 2, 3)) if use_jit else self.f
+
+        out = f(x, convert_to_hamiltonian=convert_to_hamiltonian)
+        expected_out = self.expected(x)
+        assert qml.math.allclose(out, expected_out, atol=1e-6)
+
+        g = jax.grad(f)(x, convert_to_hamiltonian=convert_to_hamiltonian)
+        expected_g = jax.grad(self.expected)(x)
+        assert qml.math.allclose(g, expected_g)
+
+    @pytest.mark.torch
+    @pytest.mark.parametrize("convert_to_hamiltonian", (True, False))
+    def test_torch_backprop(self, convert_to_hamiltonian):
+        """Test that backpropagation derivatives work with torch with hamiltonians and large sums."""
+        import torch
+
+        x = torch.tensor(-0.289, requires_grad=True)
+        x2 = torch.tensor(-0.289, requires_grad=True)
+        out = self.f(x, convert_to_hamiltonian=convert_to_hamiltonian)
+        expected_out = self.expected(x2, like="torch")
+        assert qml.math.allclose(out, expected_out)
+
+        out.backward()
+        expected_out.backward()
+        assert qml.math.allclose(x.grad, x2.grad)
+
+    @pytest.mark.tf
+    @pytest.mark.parametrize("convert_to_hamiltonian", (True, False))
+    def test_tf_backprop(self, convert_to_hamiltonian):
+        """Test that backpropagation derivatives work with tensorflow with hamiltonians and large sums."""
+        import tensorflow as tf
+
+        x = tf.Variable(0.5)
+
+        with tf.GradientTape() as tape1:
+            out = self.f(x, convert_to_hamiltonian=convert_to_hamiltonian)
+
+        with tf.GradientTape() as tape2:
+            expected_out = self.expected(x)
+
+        assert qml.math.allclose(out, expected_out)
+        g1 = tape1.gradient(out, x)
+        g2 = tape2.gradient(expected_out, x)
+        assert qml.math.allclose(g1, g2)
+
+
+def test_preprocessing_integration():
+    """Test integration between preprocessing and execution with numpy parameters."""
+
+    class MyTemplate(qml.operation.Operation):
+        num_wires = 2
+
+        def decomposition(self):
+            return [
+                qml.RX(self.data[0], self.wires[0]),
+                qml.RY(self.data[1], self.wires[1]),
+                qml.CNOT(self.wires),
+            ]
+
+    x = 0.928
+    y = -0.792
+    qscript = qml.tape.QuantumScript(
+        [MyTemplate(x, y, ("a", "b"))],
+        [qml.expval(qml.PauliY("a")), qml.expval(qml.PauliZ("a")), qml.expval(qml.PauliX("b"))],
+    )
+
+    dev = DefaultQubit2()
+
+    batch, post_procesing_fn = dev.preprocess(qscript)
+
+    assert len(batch) == 1
+    execute_circuit = batch[0]
+    assert qml.equal(execute_circuit[0], qml.RX(x, "a"))
+    assert qml.equal(execute_circuit[1], qml.RY(y, "b"))
+    assert qml.equal(execute_circuit[2], qml.CNOT(("a", "b")))
+    assert qml.equal(execute_circuit[3], qml.expval(qml.PauliY("a")))
+    assert qml.equal(execute_circuit[4], qml.expval(qml.PauliZ("a")))
+    assert qml.equal(execute_circuit[5], qml.expval(qml.PauliX("b")))
+
+    results = dev.execute(batch)
+    assert len(results) == 1
+    assert len(results[0]) == 3
+
+    processed_results = post_procesing_fn(results)
+    assert len(processed_results) == 3
+    assert qml.math.allclose(processed_results[0], -np.sin(x) * np.sin(y))
+    assert qml.math.allclose(processed_results[1], np.cos(x))
+    assert qml.math.allclose(processed_results[2], np.sin(y))
+
+
+def test_broadcasted_parameter():
+    """Test that DefaultQubit2 handles broadcasted parameters as expected."""
+    dev = DefaultQubit2()
+    x = np.array([0.536, 0.894])
+    qs = qml.tape.QuantumScript([qml.RX(x, 0)], [qml.expval(qml.PauliZ(0))])
+    batch, post_processing_fn = dev.preprocess(qs)
+    assert len(batch) == 2
+    results = dev.execute(batch)
+    processed_results = post_processing_fn(results)
+    assert qml.math.allclose(processed_results, np.cos(x))
