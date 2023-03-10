@@ -57,6 +57,9 @@
   to be set as trainable), and therefore the derivatives are computed more efficiently.
   [(#3697)](https://github.com/PennyLaneAI/pennylane/pull/3697)
 
+* `qml.SparseHamiltonian` now applies to any number of wires rather than all wires present in a circuit.
+  [(#3888)](https://github.com/PennyLaneAI/pennylane/pull/3888)
+
 
 <h3>Breaking changes</h3>
 
