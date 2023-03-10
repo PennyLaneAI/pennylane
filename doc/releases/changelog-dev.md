@@ -57,6 +57,9 @@
   to be set as trainable), and therefore the derivatives are computed more efficiently.
   [(#3697)](https://github.com/PennyLaneAI/pennylane/pull/3697)
 
+* Added `threshold` keyword argument to `qml.pulse.rydberg_interaction` to allow removal of negligible interactions from
+  Rydberg Hamiltonians.
+  [(#3889)](https://github.com/PennyLaneAI/pennylane/pull/3889)
 
 <h3>Breaking changes</h3>
 
