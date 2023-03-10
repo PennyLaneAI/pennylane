@@ -29,6 +29,12 @@
 * `AdaptiveOptimizer` is updated to use non-default user-defined qnode arguments.
   [(#3765)](https://github.com/PennyLaneAI/pennylane/pull/3765)
 
+* The `apply_operation` function added to `devices/qubit` now supports broadcasting.
+  [(#3852)](https://github.com/PennyLaneAI/pennylane/pull/3852)
+
+* `qml.QubitStateVector.state_vector` now supports broadcasting.
+  [(#3852)](https://github.com/PennyLaneAI/pennylane/pull/3852)
+  
 * `pennylane.devices.qubit.preprocess` now allows circuits with non-commuting observables.
   [(#3857)](https://github.com/PennyLaneAI/pennylane/pull/3857)
 
@@ -37,7 +43,8 @@
   [(#3697)](https://github.com/PennyLaneAI/pennylane/pull/3697)
 
 * 3 new decomposition algorithms are added for n-controlled operations with single-qubit target,
-  and are selected automatically when they produce a better result.
+  and are selected automatically when they produce a better result. They can be accessed via
+  `ops.op_math.ctrl_decomp_bisect`.
   [(#3851)](https://github.com/PennyLaneAI/pennylane/pull/3851)
 
 <h3>Breaking changes</h3>
@@ -53,6 +60,7 @@
 * The keyword argument `argnums` is now used for gradient transform using Jax, instead of `argnum`.
   `argnum` is automatically converted to `argnums` when using JAX, and will no longer be supported in v0.31.
   [(#3697)](https://github.com/PennyLaneAI/pennylane/pull/3697)
+  [(#3847)](https://github.com/PennyLaneAI/pennylane/pull/3847)
 
 * Made `qml.OrbitalRotation` and consequently `qml.GateFabric` consistent with the interleaved Jordan-Wigner ordering.
   Previously, they were consistent with the sequential Jordan-Wigner ordering.
@@ -67,14 +75,21 @@
 
 <h3>Bug fixes</h3>
 
+* The metric tensor transform is fully compatible with Jax and therefore users can provide multiple parameters.
+  [(#3847)](https://github.com/PennyLaneAI/pennylane/pull/3847)
+
 * Registers `math.ndim` and `math.shape` for built-ins and autograd to accomodate Autoray 0.6.1.
   [#3864](https://github.com/PennyLaneAI/pennylane/pull/3865)
 
 * Ensure that `qml.data.load` returns datasets in a stable and expected order.
   [(#3856)](https://github.com/PennyLaneAI/pennylane/pull/3856)
 
+* The `qml.equal` function now handles comparisons of `ParametrizedEvolution` operators.
+  [(#3870)](https://github.com/PennyLaneAI/pennylane/pull/3870)
+
 * Made `qml.OrbitalRotation` and consequently `qml.GateFabric` consistent with the interleaved Jordan-Wigner ordering.
   [(#3861)](https://github.com/PennyLaneAI/pennylane/pull/3861)
+
 
 <h3>Contributors</h3>
 
@@ -82,6 +97,7 @@ This release contains contributions from (in alphabetical order):
 
 Komi Amiko
 Utkarsh Azad
+Lillian M. A. Frederiksen
 Soran Jahangiri
 Christina Lee
 Vincent Michaud-Rioux
