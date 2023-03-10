@@ -289,6 +289,9 @@ class ParametrizedHamiltonian:
         ops = self.ops.copy()
         coeffs = self.coeffs.copy()
 
+        if isinstance(H, qml.pulse.RydbergHamiltonian):
+            return H.__radd__(self)
+
         if isinstance(H, (Hamiltonian, ParametrizedHamiltonian)):
             new_coeffs = coeffs + H.coeffs.copy()
             new_ops = ops + H.ops.copy()

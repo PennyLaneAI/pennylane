@@ -236,6 +236,30 @@ class RydbergHamiltonian(ParametrizedHamiltonian):
 
         return NotImplemented
 
+    def __radd__(self, other):
+        """Deals with the special case where a RydbergHamiltonian is added to a
+        ParametrizedHamiltonian. Ensures that this returs a RydbergHamiltonian where
+        the order of the parametrized coefficients and operators matches the order of
+        the hamiltonians, i.e. that
+
+        ParametrizedHamiltonian + RydbergHamiltonian
+
+        returns a RydbergHamiltonian where the call expects params = [params_PH] + [params_RH]
+        """
+        if isinstance(other, ParametrizedHamiltonian):
+
+            ops = self.ops.copy()
+            coeffs = self.coeffs.copy()
+
+            new_coeffs = other.coeffs.copy() + coeffs
+            new_ops = other.ops.copy() + ops
+
+            return RydbergHamiltonian(
+                new_coeffs, new_ops, register=self.register, pulses=self.pulses
+            )
+
+        return NotImplemented
+
 
 @dataclass
 class RydbergPulse:
