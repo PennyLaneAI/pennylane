@@ -26,7 +26,7 @@ from .parametrized_hamiltonian import ParametrizedHamiltonian
 
 
 def rydberg_interaction(
-    register: list, wires=None, interaction_coeff: float = 862690, threshold: float = None
+    register: list, wires=None, interaction_coeff: float = 862690, max_distance: float = np.inf
 ):
     r"""Returns a :class:`ParametrizedHamiltonian` representing the interaction of an ensemble of
     Rydberg atoms due to the Rydberg blockade
@@ -60,9 +60,8 @@ def rydberg_interaction(
         interaction_coeff (float): Rydberg interaction constant in units: :math:`\text{MHz} \times \mu \text{m}^6`.
             Defaults to :math:`862690 \text{ MHz} \times \mu \text{m}^6`. This value is based on an assumption that
             frequencies and energies in the Hamiltonian are provided in units of MHz.
-        threshold (float): Threshold for distance between Rydberg atoms beyond which their contribution to the interaction
-            term is negligible. For threshold :math:`\epsilon`, the van der Waals potential :math:`V_{ij}` between two atoms
-            :math:`i`, :math:`j` will be ignored if :math:`\frac{1}{R_{ij}^{6}} < \epsilon`.
+        max_distance (float): Threshold for distance between two Rydberg atoms beyond which their contribution to the
+            interaction term is considered negligible.
 
     Returns:
         RydbergHamiltonian: a :class:`~.ParametrizedHamiltonian` representing the atom interaction
@@ -108,9 +107,8 @@ def rydberg_interaction(
     for idx, (pos1, wire1) in enumerate(zip(register[:-1], wires[:-1])):
         for pos2, wire2 in zip(register[(idx + 1) :], wires[(idx + 1) :]):
             atom_distance = np.linalg.norm(qml.math.array(pos2) - pos1)
-            if threshold is not None and (1 / abs(atom_distance) ** 6) < threshold:
+            if atom_distance > max_distance:
                 continue
-
             Vij = interaction_coeff / (abs(atom_distance) ** 6)  # van der Waals potential
             coeffs.append(Vij)
             observables.append(qml.prod(qml.Projector([1], wire1), qml.Projector([1], wire2)))

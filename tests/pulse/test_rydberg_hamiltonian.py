@@ -233,17 +233,17 @@ class TestRydbergInteraction:
         with pytest.raises(ValueError, match="The length of the wires and the register must match"):
             _ = rydberg_interaction(register=atom_coordinates, wires=[0])
 
-    def test_threshold(self):
-        """Test that specifying a threshold affects the number of elements in the interaction term
+    def test_max_distance(self):
+        """Test that specifying a maximum distance affects the number of elements in the interaction term
         as expected."""
         # This threshold will remove interactions between atoms more than 5 micrometers away from each other
-        threshold = 6e-5
+        max_distance = 5
         coords = [[0, 0], [2.5, 0], [5, 0], [6, 6]]
         h_wires = [1, 0, 2, 3]
 
         # Set interaction_coeff to one for easier comparison
         H_res = rydberg_interaction(
-            register=coords, wires=h_wires, interaction_coeff=1, threshold=threshold
+            register=coords, wires=h_wires, interaction_coeff=1, max_distance=max_distance
         )
         H_exp = rydberg_interaction(register=coords[:3], wires=h_wires[:3], interaction_coeff=1)
 
