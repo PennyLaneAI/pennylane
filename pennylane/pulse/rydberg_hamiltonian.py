@@ -119,8 +119,8 @@ def rydberg_drive(amplitude, detuning, phase, wires):
 
     .. math::
 
-        \frac{1}{2} \Omega(t) \sum_i (\cos(\phi)\sigma_i^x - \sin(\phi)\sigma_i^y) -
-        \frac{1}{2} \delta(t) \sum_i \sigma_i^z
+        \frac{1}{2} \Omega(t) \sum_{i \in \text{wires}} (\cos(\phi)\sigma_i^x - \sin(\phi)\sigma_i^y) -
+        \frac{1}{2} \delta(t) \sum_{i \in \text{wires}} \sigma_i^z
 
     where :math:`\Omega`, :math:`\delta` and :math:`\phi` correspond to the rabi frequency, detuning
     and phase of the laser, :math:`i` correspond to the wire index, and :math:`\sigma^\alpha` for
