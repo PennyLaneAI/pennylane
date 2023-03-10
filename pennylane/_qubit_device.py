@@ -359,7 +359,6 @@ class QubitDevice(Device):
         Returns:
             array[float]: measured value(s)
         """
-        print(circuit.measurements)
         if qml.active_return():
             return self._execute_new(circuit, **kwargs)
 

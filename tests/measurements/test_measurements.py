@@ -265,15 +265,15 @@ class TestProperties:
     def test_repr(self):
         """Test the string representation of a MeasurementProcess."""
         m = qml.expval(op=qml.PauliZ(wires="a") @ qml.PauliZ(wires="b"))
-        expected = "expval(PauliZ(wires=['a']) @ PauliZ(wires=['b']))"
+        expected = "expval(PauliZ(wires=['a']) @ PauliZ(wires=['b']), shots=None)"
         assert str(m) == expected
 
         m = qml.probs(op=qml.PauliZ(wires="a"))
-        expected = "probs(PauliZ(wires=['a']))"
+        expected = "probs(PauliZ(wires=['a']), shots=None)"
         assert str(m) == expected
 
         m = ProbabilityMP(eigvals=(1, 0), wires=qml.wires.Wires(0))
-        assert repr(m) == "probs(eigvals=[1 0], wires=[0])"
+        assert repr(m) == "probs(eigvals=[1 0], wires=[0], shots=None)"
 
 
 class TestExpansion:
