@@ -176,7 +176,8 @@ def _stoch_pulse_grad(tape, argnum=None, num_samples=1, sampler_seed=None, shots
 
         This function requires the JAX interface and does not work with other autodiff interfaces
         commonly encountered with PennyLane. It additionally only supports the new return type
-        system, see :func:`enable_return`.
+        system, see :func:`~.enable_return`.
+        Finally, this transform is not JIT-compatible yet.
 
     .. note::
 
@@ -201,6 +202,8 @@ def _stoch_pulse_grad(tape, argnum=None, num_samples=1, sampler_seed=None, shots
 
     .. code-block:: python
 
+        from pennylane.gradients import stoch_pulse_grad
+
         dev = qml.device("default.qubit.jax", wires=2)
 
         def sin(p, t):
@@ -213,7 +216,7 @@ def _stoch_pulse_grad(tape, argnum=None, num_samples=1, sampler_seed=None, shots
             qml.evolve(H)(params, (0.2, 1.))
             return qml.expval(qml.PauliY(1))
 
-        qnode = qml.QNode(ansatz, dev, interface="jax", diff_method=qml.gradients.stoch_pulse_grad)
+        qnode = qml.QNode(ansatz, dev, interface="jax", diff_method=stoch_pulse_grad)
 
     The program takes the two parameters :math:`v_1, v_2` for the two trainable terms:
 
@@ -221,11 +224,11 @@ def _stoch_pulse_grad(tape, argnum=None, num_samples=1, sampler_seed=None, shots
     >>> qnode(params)
     Array(-0.83524704, dtype=float32)
 
-    And as we registered the differentiation method ``qml.gradients.stoch_pulse_grad``,
+    And as we registered the differentiation method :func:`~.stoch_pulse_grad`,
     we can compute its gradient in a hardware compatible manner:
 
     >>> jax.grad(qnode)(params)
-    [Array(0.21672192, dtype=float32), Array(-0.25133985, dtype=float32)] # results may differ
+    [Array(0.2167219, dtype=float32), Array(-0.25133985, dtype=float32)] # results may differ
 
     Note that the derivative is computed using a stochastic parameter-shift rule,
     which is based on a sampled approximation of an integral expression (see theoretical
@@ -270,7 +273,7 @@ def _stoch_pulse_grad(tape, argnum=None, num_samples=1, sampler_seed=None, shots
             \bra{\psi_0} U_{\boldsymbol{v}}(T, 0)^\dagger B U_{\boldsymbol{v}}(T, 0)\ket{\psi_0}.
 
         Here, we denoted the unitary evolution under :math:`H(\boldsymbol{v}, t)` from time
-        :math:`t_1` to :math:`t_2` as :math:`U_{\boldsymbol{v}(t_2, t_1)`.
+        :math:`t_1` to :math:`t_2` as :math:`U_{\boldsymbol{v}(t_2, t_1)}`.
         Then the derivative of :math:`C` with respect to a specific parameter :math:`v_k`
         is given by (see Eqn. (6) of `Leng et al. (2022) <https://arxiv.org/abs/2210.15812>`_)
 
@@ -279,11 +282,11 @@ def _stoch_pulse_grad(tape, argnum=None, num_samples=1, sampler_seed=None, shots
             \frac{\partial C}{\partial v_k}
             = \int_{0}^{T} \mathrm{d}\tau \sum_{j=1}^m
             \frac{\partial f_j}{\partial v_k}(\boldsymbol{v}, \tau)
-            (\delta_j C)(\boldsymbol{v}, \tau).
+            \widetilde{C_j}(\boldsymbol{v}, \tau).
 
         Here, the integral ranges over the duration of the pulse, the partial derivatives of
         the coefficient functions, :math:`\partial f_j / \partial v_k`, are computed classically,
-        and :math:`(\delta_j C)` is a linear combination of the results from modified pulse
+        and :math:`\widetilde{C_j}` is a linear combination of the results from modified pulse
         sequence executions based on generalized parameter-shift rules
         (see e.g. `Kyriienko and Elfving (2022) <https://arxiv.org/abs/2108.01218>`_ or
         `Wierichs et al. (2022) <https://doi.org/10.22331/q-2022-03-30-677>`_ for more details
@@ -295,7 +298,7 @@ def _stoch_pulse_grad(tape, argnum=None, num_samples=1, sampler_seed=None, shots
 
         .. math::
 
-            (\delta_j C)(\boldsymbol{v}, \tau)&=\sum_{\ell=1} y_\ell
+            \widetilde{C_j}(\boldsymbol{v}, \tau)&=\sum_{\ell=1} y_\ell
             \bra{\psi_{j}(\boldsymbol{v}, x_\ell, \tau)} B
             \ket{\psi_{j}(\boldsymbol{v}, x_\ell, \tau)} \\
             \ket{\psi_{j}(\boldsymbol{v}, x_\ell, \tau)}
@@ -323,25 +326,25 @@ def _stoch_pulse_grad(tape, argnum=None, num_samples=1, sampler_seed=None, shots
         .. math::
 
             \frac{\partial C}{\partial v_1}
-            &= \int_{0}^{T} \mathrm{d}\tau (\delta_1 C)((v_1, v_2), \tau)\\
+            &= \int_{0}^{T} \mathrm{d}\tau \ \widetilde{C_1}((v_1, v_2), \tau)\\
             \frac{\partial C}{\partial v_2}
-            &= \int_{0}^{T} \mathrm{d}\tau \cos(v_2 \tau) \tau (\delta_2 C)((v_1, v_2), \tau)\\
-            (\delta_j C)((v_1, v_2), \tau)&=
+            &= \int_{0}^{T} \mathrm{d}\tau \cos(v_2 \tau) \tau \ \widetilde{C_2}((v_1, v_2), \tau)\\
+            \widetilde{C_j}((v_1, v_2), \tau)&=
             \bra{\psi_{j}((v_1, v_2), \pi/4, \tau)} B
-            \ket{\psi_{j}((v_1, v_2), \pi/4, \tau)}-
-            \bra{\psi_{j}((v_1, v_2), -\pi/4, \tau)} B
+            \ket{\psi_{j}((v_1, v_2), \pi/4, \tau)}\\
+            &-\bra{\psi_{j}((v_1, v_2), -\pi/4, \tau)} B
             \ket{\psi_{j}((v_1, v_2), -\pi/4, \tau)} \\
-            \ket{\psi_{j}((v_1, v_2), \pm\pi/4, \tau)}
-            &= U_{(v_1, v_2)}(T, \tau) e^{\mp i \pi/4 H_j}U_{(v_1, v_2)}(\tau, 0)\ket{0}.
+            \ket{\psi_{j}((v_1, v_2), x, \tau)}
+            &= U_{(v_1, v_2)}(T, \tau) e^{-i x H_j}U_{(v_1, v_2)}(\tau, 0)\ket{0}.
 
         Here we used the partial derivatives
 
         .. math::
 
-            \frac{\partial f_1}{\partial v_1}((v_1, v_2) t) &= 1\\
-            \frac{\partial f_1}{\partial v_1}((v_1, v_2) t) &= \cos(v_2 t) t \\
-            \frac{\partial f_1}{\partial v_2}((v_1, v_2) t) =
-            \frac{\partial f_2}{\partial v_1}((v_1, v_2) t) &= 0
+            \frac{\partial f_1}{\partial v_1}((v_1, v_2), t) &= 1\\
+            \frac{\partial f_1}{\partial v_1}((v_1, v_2), t) &= \cos(v_2 t) t \\
+            \frac{\partial f_1}{\partial v_2}((v_1, v_2), t) =
+            \frac{\partial f_2}{\partial v_1}((v_1, v_2), t) &= 0
 
         and the fact that both :math:`H_1=Z\otimes Z` and :math:`H_2=I\otimes X`
         have two unique eigenvalues and therefore admit a two-term parameter-shift rule
@@ -351,7 +354,7 @@ def _stoch_pulse_grad(tape, argnum=None, num_samples=1, sampler_seed=None, shots
 
         .. math::
 
-            H((v_1, v_2), t) = v_1 * \sin(v_2 t) X
+            H((v_1, v_2), t) = v_1 \sin(v_2 t) X
 
         together with the observable :math:`B=Z`.
         You may already notice that this pulse can be rewritten as a :class:`~.RX` rotation,
