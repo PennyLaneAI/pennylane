@@ -60,8 +60,8 @@ def rydberg_interaction(
         interaction_coeff (float): Rydberg interaction constant in units: :math:`\text{MHz} \times \mu \text{m}^6`.
             Defaults to :math:`862690 \text{ MHz} \times \mu \text{m}^6`. This value is based on an assumption that
             frequencies and energies in the Hamiltonian are provided in units of MHz.
-        max_distance (float): Threshold for distance between two Rydberg atoms beyond which their contribution to the
-            interaction term is considered negligible.
+        max_distance (float): Threshold for distance in :math:`\mu \text{m}` between two Rydberg atoms beyond which their
+            contribution to the interaction term is considered negligible.
 
     Returns:
         RydbergHamiltonian: a :class:`~.ParametrizedHamiltonian` representing the atom interaction
