@@ -14,6 +14,10 @@
 
 <h3>Improvements</h3>
 
+* `Operator` now has a `has_generator` attribute that returns whether or not the operator
+  has a generator defined. It is used in `qml.operation.has_gen`, improving its performance.
+  [(#3875)](https://github.com/PennyLaneAI/pennylane/pull/3875)
+
 * The custom JVP rules in PennyLane now also support non-scalar and mixed-shape tape parameters as
   well as multi-dimensional tape return types, like broadcasted `qml.probs`, for example.
   [(#3766)](https://github.com/PennyLaneAI/pennylane/pull/3766)
@@ -25,6 +29,12 @@
 * `AdaptiveOptimizer` is updated to use non-default user-defined qnode arguments.
   [(#3765)](https://github.com/PennyLaneAI/pennylane/pull/3765)
 
+* The `apply_operation` function added to `devices/qubit` now supports broadcasting.
+  [(#3852)](https://github.com/PennyLaneAI/pennylane/pull/3852)
+
+* `qml.QubitStateVector.state_vector` now supports broadcasting.
+  [(#3852)](https://github.com/PennyLaneAI/pennylane/pull/3852)
+  
 * `pennylane.devices.qubit.preprocess` now allows circuits with non-commuting observables.
   [(#3857)](https://github.com/PennyLaneAI/pennylane/pull/3857)
 
@@ -34,6 +44,10 @@
 
 <h3>Breaking changes</h3>
 
+* An operation that implements a custom `generator` method, but does not always return a valid generator, also has
+  to implement a `has_generator` property that reflects in which scenarios a generator will be returned.
+  [(#3875)](https://github.com/PennyLaneAI/pennylane/pull/3875)
+ 
 * Trainable parameters for the Jax interface are the parameters that are `JVPTracer`, defined by setting
   `argnums`. Previously, all JAX tracers, including those used for JIT compilation, were interpreted to be trainable.
   [(#3697)](https://github.com/PennyLaneAI/pennylane/pull/3697)
@@ -61,14 +75,19 @@
 * Ensure that `qml.data.load` returns datasets in a stable and expected order.
   [(#3856)](https://github.com/PennyLaneAI/pennylane/pull/3856)
 
+* The `qml.equal` function now handles comparisons of `ParametrizedEvolution` operators.
+  [(#3870)](https://github.com/PennyLaneAI/pennylane/pull/3870)
+
 * Made `qml.OrbitalRotation` and consequently `qml.GateFabric` consistent with the interleaved Jordan-Wigner ordering.
   [(#3861)](https://github.com/PennyLaneAI/pennylane/pull/3861)
+
 
 <h3>Contributors</h3>
 
 This release contains contributions from (in alphabetical order):
 
 Utkarsh Azad
+Lillian M. A. Frederiksen
 Soran Jahangiri
 Christina Lee
 Vincent Michaud-Rioux
