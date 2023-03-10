@@ -217,7 +217,9 @@ class CountsMP(SampleMeasurement):
         for those not observed. See example.
 
         Args:
-            samples: samples in an array of dimension ``(shots,len(wires))``
+            samples: An array of samples, with the shape being ``(shots,len(wires))`` if an observable
+                is provided, with sample values being an array of 0s or 1s for each wire. Otherwise, it
+                has shape ``(shots,)``, with sample values being scalar eigenvalues of the observable
 
         Returns:
             dict: dictionary with format ``{'outcome': num_occurrences}``, including all
@@ -252,13 +254,15 @@ class CountsMP(SampleMeasurement):
         """
 
         outcomes = []
+
+        # if an observable was provided, batched samples will have shape (batch_size, shots)
         batched_ndims = 2
         shape = qml.math.shape(samples)
 
         if self.obs is None:
             # convert samples and outcomes (if using) from arrays to str for dict keys
             samples = qml.math.apply_along_axis(_sample_to_str, -1, samples)
-            batched_ndims = 3
+            batched_ndims = 3  # no observable was provided, batched samples will have shape (batch_size, shots, len(wires))
             if self.all_outcomes:
                 num_wires = len(self.wires) if len(self.wires) > 0 else shape[-1]
                 outcomes = list(

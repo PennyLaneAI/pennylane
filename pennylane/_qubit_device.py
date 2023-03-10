@@ -1711,7 +1711,9 @@ class QubitDevice(Device):
 
 
         Args:
-            samples: samples in an array of dimension ``(shots,len(wires))``
+            samples: An array of samples, with the shape being ``(shots,len(wires))`` if an observable
+                is provided, with sample values being an array of 0s or 1s for each wire. Otherwise, it
+                has shape ``(shots,)``, with sample values being scalar eigenvalues of the observable
             obs (Observable): the observable sampled
             num_wires (int): number of wires the sampled observable was performed on
 
@@ -1748,13 +1750,15 @@ class QubitDevice(Device):
         """
 
         outcomes = []
+
+        # if an observable was provided, batched samples will have shape (batch_size, shots)
         batched_ndims = 2
         shape = samples.shape
 
         if isinstance(obs, CountsMP):
             # convert samples and outcomes (if using) from arrays to str for dict keys
             samples = np.apply_along_axis(_sample_to_str, -1, samples)
-            batched_ndims = 3
+            batched_ndims = 3  # no observable was provided, batched samples will have shape (batch_size, shots, len(wires))
             if obs.all_outcomes:
                 outcomes = list(map(_sample_to_str, self.generate_basis_states(num_wires)))
         elif obs.return_type is AllCounts:
