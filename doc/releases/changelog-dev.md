@@ -61,6 +61,11 @@
   Rydberg Hamiltonians.
   [(#3889)](https://github.com/PennyLaneAI/pennylane/pull/3889)
 
+* 3 new decomposition algorithms are added for n-controlled operations with single-qubit target,
+  and are selected automatically when they produce a better result. They can be accessed via
+  `ops.op_math.ctrl_decomp_bisect`.
+  [(#3851)](https://github.com/PennyLaneAI/pennylane/pull/3851)
+
 <h3>Breaking changes</h3>
 
 * An operation that implements a custom `generator` method, but does not always return a valid generator, also has
@@ -113,6 +118,7 @@
 
 This release contains contributions from (in alphabetical order):
 
+Komi Amiko
 Utkarsh Azad
 Lillian M. A. Frederiksen
 Soran Jahangiri
