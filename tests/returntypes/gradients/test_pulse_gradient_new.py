@@ -35,6 +35,7 @@ def test_error_raised_if_jax_not_installed():
         with pytest.raises(ImportError, match="Module jax is required"):
             stoch_pulse_grad(tape)
 
+
 @pytest.mark.jax
 class TestSplitEvolOps:
     """Tests for the helper method split_evol_ops that samples a splitting time and splits up
@@ -725,7 +726,7 @@ class TestStochPulseGradQNodeIntegration:
         grad = jax.jacobian(circuit)(params)
         p = params[0] * T
         exp_grad = -2 * jnp.sin(2 * p) * T
-        assert qml.math.allclose(grad, exp_grad, atol=tol, rtol=0.)
+        assert qml.math.allclose(grad, exp_grad, atol=tol, rtol=0.0)
 
     @pytest.mark.parametrize("shots, tol", [(None, 1e-4), (100, 0.1), ([100, 99], 0.1)])
     @pytest.mark.parametrize("num_samples", [1, 3])
@@ -736,7 +737,7 @@ class TestStochPulseGradQNodeIntegration:
 
         jnp = jax.numpy
         jax.config.update("jax_enable_x64", True)
-        dev = qml.device("default.qubit.jax", wires=1)
+        dev = qml.device("default.qubit.jax", wires=1, shots=shots, prng_key=jax.random.PRNGKey(74))
         T = 0.2
         ham_single_q_const = qml.pulse.constant * qml.PauliY(0)
 
@@ -749,9 +750,9 @@ class TestStochPulseGradQNodeIntegration:
         jac = jax.jacobian(circuit)(params)
         p = params[0] * T
         exp_jac = jnp.array([-1, 1]) * jnp.sin(2 * p) * T
-        assert qml.math.allclose(jac, exp_jac, atol=tol, rtol=0.)
+        assert qml.math.allclose(jac, exp_jac, atol=tol, rtol=0.0)
 
-    @pytest.mark.parametrize("shots, tol", [(None, 1e-4), (100, 0.1), ([100, 99], 0.1)])
+    @pytest.mark.parametrize("shots, tol", [(None, 1e-4), (100, 0.1), ([100, 100], 0.1)])
     @pytest.mark.parametrize("num_samples", [1, 3])
     def test_simple_qnode_probs_expval(self, num_samples, shots, tol):
         """Test that a simple qnode that returns an probabilities
@@ -760,7 +761,7 @@ class TestStochPulseGradQNodeIntegration:
 
         jnp = jax.numpy
         jax.config.update("jax_enable_x64", True)
-        dev = qml.device("default.qubit.jax", wires=1)
+        dev = qml.device("default.qubit.jax", wires=1, shots=shots, prng_key=jax.random.PRNGKey(74))
         T = 0.2
         ham_single_q_const = qml.pulse.constant * qml.PauliY(0)
 
@@ -773,8 +774,13 @@ class TestStochPulseGradQNodeIntegration:
         jac = jax.jacobian(circuit)(params)
         p = params[0] * T
         exp_jac = (jnp.array([-1, 1]) * jnp.sin(2 * p) * T, -2 * jnp.sin(2 * p) * T)
-        for j, e in zip(jac, exp_jac):
-            assert qml.math.allclose(j, e, atol=tol, rtol=0.)
+        if hasattr(shots, "len"):
+            for j_shots, e_shots in zip(jac, exp_jac):
+                for j, e in zip(j_shots, e_shots):
+                    assert qml.math.allclose(j[0], e, atol=tol, rtol=0.0)
+        else:
+            for j, e in zip(jac, exp_jac):
+                assert qml.math.allclose(j[0], e, atol=tol, rtol=0.0)
 
     # TODO: ParametrizedEvolution + grad transform is currently not JIT-compatible, see #3881
     @pytest.mark.xfail
