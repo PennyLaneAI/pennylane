@@ -57,6 +57,10 @@
   to be set as trainable), and therefore the derivatives are computed more efficiently.
   [(#3697)](https://github.com/PennyLaneAI/pennylane/pull/3697)
 
+* 3 new decomposition algorithms are added for n-controlled operations with single-qubit target,
+  and are selected automatically when they produce a better result. They can be accessed via
+  `ops.op_math.ctrl_decomp_bisect`.
+  [(#3851)](https://github.com/PennyLaneAI/pennylane/pull/3851)
 
 <h3>Breaking changes</h3>
 
@@ -110,6 +114,7 @@
 
 This release contains contributions from (in alphabetical order):
 
+Komi Amiko
 Utkarsh Azad
 Lillian M. A. Frederiksen
 Soran Jahangiri
