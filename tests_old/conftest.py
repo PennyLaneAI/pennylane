@@ -35,11 +35,6 @@ class DummyDevice(DefaultGaussian):
     _operation_map = DefaultGaussian._operation_map.copy()
     _operation_map["Kerr"] = lambda *x, **y: np.identity(2)
 
-@pytest.fixture(autouse=True)
-def run_before_and_after_tests():
-    qml.enable_return()
-    yield
-    qml.disable_return()
 
 @pytest.fixture(scope="session")
 def tol():
