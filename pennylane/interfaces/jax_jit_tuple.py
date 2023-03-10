@@ -32,8 +32,12 @@ dtype = jnp.float64
 def _validate_jax_version():
     if semantic_version.match(">0.4.3", jax.__version__):
         msg = (
-            "The new JAX JIT interface of PennyLane requires version between 0.4.1 and 0.4.3 for JAX "
-            "and JAX lib. Please downgrade these packages."
+            "The new JAX JIT interface of PennyLane requires JAX and and JAX lib version below 0.4.4. "
+            "Please downgrade these packages."
+            "If you are using pip to manage your packages, you can run the following command:\n\n"
+            "\tpip install 'jax==0.4.3' 'jaxlib==0.4.3'\n\n"
+            "If you are using conda to manage your packages, you can run the following command:\n\n"
+            "\tconda install 'jax==0.4.3' 'jaxlib==0.4.3'\n\n"
         )
         raise InterfaceUnsupportedError(msg)
 
