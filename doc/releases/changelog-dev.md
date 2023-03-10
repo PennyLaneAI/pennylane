@@ -71,6 +71,7 @@
 * The keyword argument `argnums` is now used for gradient transform using Jax, instead of `argnum`.
   `argnum` is automatically converted to `argnums` when using JAX, and will no longer be supported in v0.31.
   [(#3697)](https://github.com/PennyLaneAI/pennylane/pull/3697)
+  [(#3847)](https://github.com/PennyLaneAI/pennylane/pull/3847)
 
 * Made `qml.OrbitalRotation` and consequently `qml.GateFabric` consistent with the interleaved Jordan-Wigner ordering.
   Previously, they were consistent with the sequential Jordan-Wigner ordering.
@@ -88,6 +89,9 @@
 * Fixed bug where the coefficients where not ordered correctly when summing a `ParametrizedHamiltonian`
   with other operators.
   [(#3749)](https://github.com/PennyLaneAI/pennylane/pull/3749)
+
+* The metric tensor transform is fully compatible with Jax and therefore users can provide multiple parameters.
+  [(#3847)](https://github.com/PennyLaneAI/pennylane/pull/3847)
 
 * Registers `math.ndim` and `math.shape` for built-ins and autograd to accomodate Autoray 0.6.1.
   [#3864](https://github.com/PennyLaneAI/pennylane/pull/3865)
