@@ -876,6 +876,26 @@ class TestDifferentiation:
         with pytest.raises(GeneratorUndefinedError):
             op.generator()
 
+    def test_has_generator_true(self):
+        """Test that has_generator returns True if the coefficient is
+        purely imaginary and the base is Hermitian."""
+        op = Exp(qml.PauliX(0), 1j)
+        assert op.has_generator is True
+
+    def test_base_not_hermitian_has_generator_false(self):
+        """Test that has_generator returns False if the coefficient is
+        purely imaginary but the base is not Hermitian."""
+        op = Exp(qml.RX(1.23, 0), 1j)
+        assert op.has_generator is False
+
+    def test_real_component_has_generator_false(self):
+        """Test that has_generator returns False if the coefficient is not purely imaginary."""
+        op = Exp(qml.PauliX(0), 3)
+        assert op.has_generator is False
+
+        op = Exp(qml.PauliX(0), 0.01 + 2j)
+        assert op.has_generator is False
+
     def test_real_component_coefficient_generator_undefined(self):
         """Test that Hermitian base operator but real coefficient raises GeneratorUndefinedError"""
         op = Exp(qml.PauliX(0), 1)
