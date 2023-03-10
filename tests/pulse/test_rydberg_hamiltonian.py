@@ -68,6 +68,39 @@ class TestRydbergHamiltonian:
         assert qml.math.allequal(sum_rm.register, atom_coordinates)
         assert sum_rm.pulses == [RydbergPulse(1, 2, 3, [4, 8]), RydbergPulse(5, 6, 7, 8)]
 
+    def test_add_parametrized_hamiltonian(self):
+        """Tests that adding a `RydbergHamiltonian` and `ParametrizedHamiltonian` works as
+        expected."""
+        coeffs = [2, 3]
+        ops = [qml.PauliZ(0), qml.PauliX(2)]
+        h_wires = [0, 2]
+
+        rh = RydbergHamiltonian(
+            coeffs=[coeffs[0]],
+            observables=[ops[0]],
+            pulses=[RydbergPulse(5, 6, 7, 8)],
+        )
+        ph = qml.pulse.ParametrizedHamiltonian(coeffs=[coeffs[1]], observables=[ops[1]])
+
+        res1 = rh + ph
+        res2 = ph + rh
+
+        assert res1.coeffs_fixed == coeffs
+        assert res1.coeffs_parametrized == []
+        assert all(qml.equal(op1, op2) for op1, op2 in zip(res1.ops_fixed, ops))
+        assert res1.ops_parametrized == []
+        assert res1.wires == qml.wires.Wires(h_wires)
+
+        coeffs.reverse()
+        ops.reverse()
+        h_wires.reverse()
+
+        assert res2.coeffs_fixed == coeffs
+        assert res2.coeffs_parametrized == []
+        assert all(qml.equal(op1, op2) for op1, op2 in zip(res2.ops_fixed, ops))
+        assert res2.ops_parametrized == []
+        assert res2.wires == qml.wires.Wires(h_wires)
+
     def test_add_raises_error(self):
         """Test that an error is raised if two RydbergHamiltonians with registers are added."""
         rm1 = RydbergHamiltonian(
@@ -220,14 +253,29 @@ class TestRydbergDrive:
         """Test that adding multiple drive terms behaves as expected"""
 
         def fa(p, t):
-            return p[0] * np.sin(p[1] * t)
+            return np.sin(p * t)
 
         def fb(p, t):
-            return p[0] * np.sin(p[1] * t)
+            return np.cos(p * t)
 
         H1 = rydberg_drive(amplitude=fa, detuning=3, phase=1, wires=[0, 3])
         H2 = rydberg_drive(amplitude=1, detuning=fb, phase=3, wires=[1, 2])
         Hd = H1 + H2
+
+        ops_expected = [
+            qml.Hamiltonian([1, 1], [qml.PauliZ(0), qml.PauliZ(3)]),
+            qml.Hamiltonian(
+                [np.cos(3), -np.sin(3), np.cos(3), -np.sin(3)],
+                [qml.PauliX(1), qml.PauliY(1), qml.PauliX(2), qml.PauliY(2)],
+            ),
+            qml.Hamiltonian(
+                [np.cos(1), -np.sin(1), np.cos(1), -np.sin(1)],
+                [qml.PauliX(0), qml.PauliY(0), qml.PauliX(3), qml.PauliY(3)],
+            ),
+            qml.Hamiltonian([1, 1], [qml.PauliZ(1), qml.PauliZ(2)]),
+        ]
+        coeffs_expected = [3, 1, fa, fb]
+        H_expected = qml.dot(coeffs_expected, ops_expected)
 
         assert isinstance(Hd, RydbergHamiltonian)
         assert Hd.interaction_coeff == 862690
@@ -240,6 +288,7 @@ class TestRydbergDrive:
         assert Hd.coeffs[3] is fb
         assert len(Hd.pulses) == 2
         assert Hd.pulses == H1.pulses + H2.pulses
+        assert qml.equal(Hd([0.5, -0.5], t=5), H_expected([0.5, -0.5], t=5))
 
 
 class TestRydbergPulse:

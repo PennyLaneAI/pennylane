@@ -191,7 +191,7 @@ def rydberg_drive(amplitude, detuning, phase, wires):
     We can also create a Hamiltonian with multiple local drives. The following circuit corresponds to the
     evolution where an additional local drive acting on wires ``[0, 1]`` is added to the Hamiltonian:
 
-    ..code-block:: python
+    .. code-block:: python
 
         amplitude_local = lambda p, t: p[0] * jnp.sin(2 * jnp.pi * t) + p[1]
         detuning_local = lambda p, t: p * jnp.exp(-0.25 * t)
