@@ -370,6 +370,7 @@ class MeasurementProcess(ABC):
         r"""Bool: Whether or not the MeasurementProcess measures in the computational basis."""
         return self.obs is None
 
+    # pylint: disable=no-member, attribute-defined-outside-init
     def expand(self):
         """Expand the measurement of an observable to a unitary
         rotation and a measurement in the computational basis.
@@ -408,7 +409,9 @@ class MeasurementProcess(ABC):
 
         with qml.queuing.AnnotatedQueue() as q:
             self.obs.diagonalizing_gates()
-            self.__class__(wires=self.obs.wires, eigvals=self.obs.eigvals())
+            new_mp = self.__class__(wires=self.obs.wires, eigvals=self.obs.eigvals())
+            if isinstance(self, SampleMeasurement):
+                new_mp.shots = self.shots
 
         return qml.tape.QuantumScript.from_queue(q)
 
@@ -457,7 +460,11 @@ class MeasurementProcess(ABC):
         Returns:
             .MeasurementProcess: A measurement process with a simplified observable.
         """
-        return self if self.obs is None else self.__class__(obs=self.obs.simplify())
+        if self.obs is None:
+            return self
+        new_mp = copy.copy(self)
+        new_mp.obs = self.obs.simplify()
+        return new_mp
 
     # pylint: disable=protected-access
     def map_wires(self, wire_map: dict):
@@ -510,6 +517,36 @@ class SampleMeasurement(MeasurementProcess):
     >>> circuit()
     tensor([1000,    0], requires_grad=True)
     """
+
+    # pylint: disable=too-many-arguments
+    def __init__(
+        self,
+        obs: Union[Observable, None] = None,
+        wires=None,
+        eigvals=None,
+        shots=None,
+        id=None,
+    ):
+        self.shots = shots
+        super().__init__(obs=obs, wires=wires, eigvals=eigvals, id=id)
+
+    def __repr__(self):
+        """Representation of this class."""
+        if self.obs is None:
+            if self._eigvals is None:
+                return f"{self.return_type.value}(wires={self.wires.tolist()}, shots={self.shots})"
+            return f"{self.return_type.value}(eigvals={self._eigvals}, wires={self.wires.tolist()}, shots={self.shots})"
+
+        # Todo: when tape is core the return type will always be taken from the MeasurementProcess
+        if getattr(self.obs, "return_type", None) is None:
+            return f"{self.return_type.value}({self.obs}, shots={self.shots})"
+
+        return f"({self.obs}, shots={self.shots})"
+
+    def __copy__(self):
+        new_mp = super().__copy__()
+        new_mp.shots = self.shots
+        return new_mp
 
     @abstractmethod
     def process_samples(

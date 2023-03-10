@@ -25,7 +25,7 @@ from pennylane.wires import Wires
 from .measurements import Expectation, SampleMeasurement, StateMeasurement
 
 
-def expval(op: Operator):
+def expval(op: Operator, shots=None):
     r"""Expectation value of the supplied observable.
 
     **Example:**
@@ -55,7 +55,7 @@ def expval(op: Operator):
     if not op.is_hermitian:
         warnings.warn(f"{op.name} might not be hermitian.")
 
-    return ExpectationMP(obs=op)
+    return ExpectationMP(obs=op, shots=shots)
 
 
 class ExpectationMP(SampleMeasurement, StateMeasurement):

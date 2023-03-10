@@ -158,8 +158,11 @@ def hamiltonian_expand(tape: QuantumTape, group=True):
         # observables in that grouping
         tapes = []
         for obs in obs_groupings:
-            new_tape = tape.__class__(tape._ops, (qml.expval(o) for o in obs), tape._prep)
-
+            new_tape = tape.__class__(
+                tape._ops,
+                (qml.expval(o, shots=tape.measurements[0].shots) for o in obs),
+                tape._prep,
+            )
             new_tape = new_tape.expand(stop_at=lambda obj: True)
             tapes.append(new_tape)
 
@@ -192,7 +195,9 @@ def hamiltonian_expand(tape: QuantumTape, group=True):
     tapes = []
     for o in hamiltonian.ops:
         # pylint: disable=protected-access
-        new_tape = tape.__class__(tape._ops, [qml.expval(o)], tape._prep)
+        new_tape = tape.__class__(
+            tape._ops, [qml.expval(o, shots=tape.measurements[0].shots)], tape._prep
+        )
         tapes.append(new_tape)
 
     # pylint: disable=function-redefined
@@ -315,7 +320,7 @@ def sum_expand(tape: QuantumTape, group=True):
                 if isinstance(summand, SProd):
                     coeff = summand.scalar
                     summand = summand.base
-                s_m = qml.expval(summand)
+                s_m = qml.expval(summand, shots=m.shots)
                 if s_m.hash not in measurements_dict:
                     measurements_dict[s_m.hash] = s_m
                     idxs_coeffs_dict[s_m.hash] = [(idx, coeff)]
@@ -326,7 +331,7 @@ def sum_expand(tape: QuantumTape, group=True):
         coeff = 1 if isinstance(m, ExpectationMP) else None
         if isinstance(obs, SProd) and isinstance(m, ExpectationMP):
             coeff = obs.scalar
-            m = qml.expval(obs.base)
+            m = qml.expval(obs.base, shots=m.shots)
 
         if m.hash not in measurements_dict:
             measurements_dict[m.hash] = m
