@@ -60,6 +60,10 @@
 * `qml.SparseHamiltonian` now applies to any number of wires rather than all wires present in a circuit.
   [(#3888)](https://github.com/PennyLaneAI/pennylane/pull/3888)
 
+* 3 new decomposition algorithms are added for n-controlled operations with single-qubit target,
+  and are selected automatically when they produce a better result. They can be accessed via
+  `ops.op_math.ctrl_decomp_bisect`.
+  [(#3851)](https://github.com/PennyLaneAI/pennylane/pull/3851)
 
 <h3>Breaking changes</h3>
 
@@ -113,6 +117,7 @@
 
 This release contains contributions from (in alphabetical order):
 
+Komi Amiko
 Utkarsh Azad
 Lillian M. A. Frederiksen
 Soran Jahangiri
