@@ -20,14 +20,12 @@ from typing import Callable, List, Union
 import numpy as np
 
 import pennylane as qml
-from pennylane.ops import SProd
 from pennylane.wires import Wires
 from pennylane.operation import Operator
 from pennylane.ops.qubit.hamiltonian import Hamiltonian
 
 
 from .parametrized_hamiltonian import ParametrizedHamiltonian
-
 
 
 def rydberg_interaction(register: list, wires=None, interaction_coeff: float = 862690):
@@ -223,8 +221,8 @@ def rydberg_drive(amplitude, phase, detuning, wires):
 
     # We compute the `coeffs` and `observables` of the laser field
     coeffs = [
-        amplitude_and_phase(qml.math.cos, rabi, phase),
-        amplitude_and_phase(qml.math.sin, rabi, phase),
+        amplitude_and_phase(qml.math.cos, amplitude, phase),
+        amplitude_and_phase(qml.math.sin, amplitude, phase),
         detuning,
     ]
 
@@ -367,7 +365,6 @@ class RydbergHamiltonian(ParametrizedHamiltonian):
         return NotImplemented
 
 
-
 @dataclass
 class RydbergPulse:
     """Dataclass that contains the information of a single Rydberg pulse. This class is used
@@ -398,6 +395,7 @@ class RydbergPulse:
             and self.detuning == other.detuning
             and self.wires == other.wires
         )
+
 
 def amplitude_and_phase(trig_fn, amp, phase):
     """Wrapper function for combining amplitude and phase into a single callable

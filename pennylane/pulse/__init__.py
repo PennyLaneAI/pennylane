@@ -58,8 +58,6 @@ Convenience Functions
     ~pwc
     ~pwc_from_function
     ~rect
-    ~rydberg_interaction
-    ~rydberg_drive
 
 Hardware Compatible Hamiltonians
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
