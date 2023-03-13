@@ -233,7 +233,7 @@ def rydberg_drive(amplitude, phase, detuning, wires):
     observables = [drive_terms_1, drive_terms_2, drive_terms_3]
 
     # We convert the pulse data into a list of ``RydbergPulse`` objects
-    pulses = [RydbergPulse(amplitude, detuning, phase, wires)]
+    pulses = [RydbergPulse(amplitude, phase, detuning, wires)]
 
     return RydbergHamiltonian(coeffs, observables, pulses=pulses)
 
@@ -351,7 +351,6 @@ class RydbergHamiltonian(ParametrizedHamiltonian):
         returns a RydbergHamiltonian where the call expects params = [params_PH] + [params_RH]
         """
         if isinstance(other, ParametrizedHamiltonian):
-
             ops = self.ops.copy()
             coeffs = self.coeffs.copy()
 
@@ -362,7 +361,7 @@ class RydbergHamiltonian(ParametrizedHamiltonian):
                 new_coeffs, new_ops, register=self.register, pulses=self.pulses
             )
 
-        return NotImplemented
+        return self.__add__(other)
 
 
 @dataclass
@@ -373,16 +372,16 @@ class RydbergPulse:
     Args:
         amplitude (Union[float, Callable]): float or callable returning the amplitude (in MHz) of a laser
             field
+        phase (Union[float, Callable]): float containing the phase (in radians) of the laser field
         detuning (Union[float, Callable]): float or callable returning the detuning (in MHz) of a
             laser field
-        phase (float): float containing the phase (in radians) of the laser field
         wires (Union[int, List[int]]): integer or list containing wire values that the laser field
             acts on
     """
 
     amplitude: Union[float, Callable]
+    phase: Union[float, Callable]
     detuning: Union[float, Callable]
-    phase: float
     wires: List[Wires]
 
     def __post_init__(self):
@@ -411,7 +410,6 @@ class AmplitudeAndPhase:
     of amplitude nor phase are callable."""
 
     def __init__(self, trig_fn, amp, phase):
-
         self.amp_is_callable = callable(amp)
         self.phase_is_callable = callable(phase)
 
