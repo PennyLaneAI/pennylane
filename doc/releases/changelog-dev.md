@@ -67,6 +67,9 @@
 
 <h3>Breaking changes</h3>
 
+* Both JIT interfaces are not compatible with Jax `>0.4.3`, we raise an error for those versions.
+  [(#3877)](https://github.com/PennyLaneAI/pennylane/pull/3877)
+
 * An operation that implements a custom `generator` method, but does not always return a valid generator, also has
   to implement a `has_generator` property that reflects in which scenarios a generator will be returned.
   [(#3875)](https://github.com/PennyLaneAI/pennylane/pull/3875)
@@ -111,7 +114,10 @@
 
 * Made `qml.OrbitalRotation` and consequently `qml.GateFabric` consistent with the interleaved Jordan-Wigner ordering.
   [(#3861)](https://github.com/PennyLaneAI/pennylane/pull/3861)
-
+  
+* `qml.devices.qubit.apply_operation` catches the `tf.errors.UnimplementedError` that occurs when `PauliZ` or `CNOT` gates
+  are applied to a large (>8 wires) tensorflow state. When that occurs, the logic falls back to the tensordot logic instead.
+  [(#3884)](https://github.com/PennyLaneAI/pennylane/pull/3884/)
 
 <h3>Contributors</h3>
 
