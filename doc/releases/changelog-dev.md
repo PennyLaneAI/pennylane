@@ -57,6 +57,10 @@
   to be set as trainable), and therefore the derivatives are computed more efficiently.
   [(#3697)](https://github.com/PennyLaneAI/pennylane/pull/3697)
 
+* Added `max_distance` keyword argument to `qml.pulse.rydberg_interaction` to allow removal of negligible contributions
+  from atoms beyond `max_distance`from each other.
+  [(#3889)](https://github.com/PennyLaneAI/pennylane/pull/3889)
+
 * 3 new decomposition algorithms are added for n-controlled operations with single-qubit target,
   and are selected automatically when they produce a better result. They can be accessed via
   `ops.op_math.ctrl_decomp_bisect`.
