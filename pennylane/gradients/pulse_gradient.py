@@ -44,7 +44,7 @@ except ImportError:
     has_jax = False
 
 
-def split_evol_ops(op, word, word_wires, key):
+def split_evol_ops(op, word, word_wires, key, num_samples=1):
     r"""Randomly split a ``ParametrizedEvolution`` with respect to time into two operations and
     insert a Pauli rotation using a given Pauli word and rotation angles :math:`\pm\pi/2`.
     This yields two groups of three operations each.
@@ -61,12 +61,24 @@ def split_evol_ops(op, word, word_wires, key):
             inner lists. The first tuple entry contains the operations with positive Pauli rotation
             angle, the second entry the operations with negative Pauli rotation angle.
     """
-    before_plus, after_plus, before_minus, after_minus = (copy(op) for _ in range(4))
+    if len(op.t) != 2:
+        raise ValueError("") # TODO
     # Extract time interval, split it, and set the intervals of the copies to the split intervals
     t0, t1 = op.t
-    tau = jax.random.uniform(key) * (t1 - t0) + t0
-    before_plus.t = before_minus.t = jax.numpy.array([t0, tau])
-    after_plus.t = after_minus.t = jax.numpy.array([tau, t1])
+    broadcast = num_samples > 1
+    if broadcast:
+        tau = jax.random.uniform(key, shape=(num_samples,)) * (t1 - t0) + t0
+        sorted_tau = jax.numpy.sort(tau)
+        # For the time evolution before we just need t_0, for the one after we need both t_0 and t_1
+        before_t = jax.numpy.concatenate([jax.numpy.array([t0]), sorted_tau])
+        after_t = jax.numpy.concatenate([before_t, jax.numpy.array([t1])])
+    else:
+        tau = jax.random.uniform(key) * (t1 - t0) + t0
+        before_t = jax.numpy.array([t0, tau])
+        after_t = jax.numpy.array([tau, t1])
+
+    before_plus, before_minus = (op(op.data, before_t, broadcast_t=broadcast, **op.odeint_kwargs) for _ in range(2))
+    after_plus, after_minus = (op(op.data, after_t, broadcast_t=broadcast, accum_to_t1=broadcast, **op.odeint_kwargs) for _ in range(2))
     # Create Pauli rotations to be inserted at tau
     evolve_plus = qml.PauliRot(np.pi / 2, word, wires=word_wires)
     evolve_minus = qml.PauliRot(-np.pi / 2, word, wires=word_wires)
@@ -98,7 +110,7 @@ def _split_evol_tapes(tape, split_evolve_ops, op_idx):
     ]
 
 
-def _parshift_and_integrate(results, cjacs, int_prefactor, single_measure, shot_vector):
+def _parshift_and_integrate(results, cjacs, int_prefactor, single_measure, shot_vector, use_broadcasting):
     """Apply the parameter-shift rule post-processing to tape results and contract
     with classical Jacobians, effectively evaluating the numerical integral of the stochastic
     parameter-shift rule.
@@ -118,9 +130,15 @@ def _parshift_and_integrate(results, cjacs, int_prefactor, single_measure, shot_
         tensor_like or tuple[tensor_like] or tuple[tuple[tensor_like]]: Gradient entry
     """
 
-    def _diff_and_contract(res_list, cjacs, int_prefactor):
-        diff = qml.math.stack(res_list)[::2] - qml.math.stack(res_list)[1::2]
-        return qml.math.tensordot(diff, cjacs, axes=[[0], [0]]) * int_prefactor
+    if use_broadcasting:
+        def _diff_and_contract(res_list, cjacs, int_prefactor):
+            # This one will not work yet with tuples.
+            diff = qml.math.stack(res_list)[0] - qml.math.stack(res_list)[1]
+            return qml.math.tensordot(diff, cjacs, axes=[[0], [0]]) * int_prefactor
+    else:
+        def _diff_and_contract(res_list, cjacs, int_prefactor):
+            diff = qml.math.stack(res_list)[::2] - qml.math.stack(res_list)[1::2]
+            return qml.math.tensordot(diff, cjacs, axes=[[0], [0]]) * int_prefactor
 
     # If multiple measure xor shot_vector: One axis to pull out of the shift rule and integration
     if not single_measure + shot_vector == 1:
@@ -135,7 +153,7 @@ def _parshift_and_integrate(results, cjacs, int_prefactor, single_measure, shot_
     )
 
 
-def _stoch_pulse_grad(tape, argnum=None, num_samples=1, sampler_seed=None, shots=None):
+def _stoch_pulse_grad(tape, argnum=None, num_samples=1, sampler_seed=None, shots=None, use_broadcasting=False):
     r"""Compute the gradient of a quantum circuit composed of pulse sequences by applying the
     stochastic parameter shift rule.
 
@@ -154,6 +172,7 @@ def _stoch_pulse_grad(tape, argnum=None, num_samples=1, sampler_seed=None, shots
             argument doesn't influence the shots used for tape execution, but provides information
             to the transform about the device shots and helps in determining if a shot sequence
             was used.
+        use_broadcasting # TODO docs
 
     Returns:
         function or tuple[list[QuantumTape], function]:
@@ -248,6 +267,8 @@ def _stoch_pulse_grad(tape, argnum=None, num_samples=1, sampler_seed=None, shots
     >>> jax.grad(qnode)(params)
     [Array(0.37935182, dtype=float32, weak_type=True),
      Array(-0.26384923, dtype=float32, weak_type=True)] # results do not vary
+
+    # TODO broadcasting example
 
     .. details::
         :title: Theoretical background
@@ -411,6 +432,9 @@ def _stoch_pulse_grad(tape, argnum=None, num_samples=1, sampler_seed=None, shots
     if argnum is None and not tape.trainable_params:
         return _no_trainable_grad_new(tape, shots)
 
+    if use_broadcasting and tape.batch_size is not None:
+        raise ValueError() # TODO add error and test
+
     gradient_analysis(tape, grad_fn=stoch_pulse_grad)
     method = "analytic"
     diff_methods = grad_method_validation(method, tape)
@@ -425,10 +449,10 @@ def _stoch_pulse_grad(tape, argnum=None, num_samples=1, sampler_seed=None, shots
     sampler_seed = sampler_seed or np.random.randint(18421)
     key = jax.random.PRNGKey(sampler_seed)
 
-    return _expval_stoch_pulse_grad(tape, argnum, num_samples, key, shots)
+    return _expval_stoch_pulse_grad(tape, argnum, num_samples, key, shots, use_broadcasting)
 
 
-def _expval_stoch_pulse_grad(tape, argnum, num_samples, key, shots):
+def _expval_stoch_pulse_grad(tape, argnum, num_samples, key, shots, use_broadcasting):
     r"""Compute the gradient of a quantum circuit composed of pulse sequences that measures
     an expectation value or probabilities, by applying the stochastic parameter shift rule.
     See the main function for the signature.
@@ -449,7 +473,6 @@ def _expval_stoch_pulse_grad(tape, argnum, num_samples, key, shots):
                 "other operations than pulses."
             )
 
-        this_tapes = []
         coeff, ham = op.H.coeffs_parametrized[term_idx], op.H.ops_parametrized[term_idx]
         if not qml.pauli.is_pauli_word(ham):
             raise ValueError(
@@ -458,12 +481,19 @@ def _expval_stoch_pulse_grad(tape, argnum, num_samples, key, shots):
             )
         word = qml.pauli.pauli_word_to_string(ham)
         cjac_fn = jax.jacobian(coeff, argnums=0)
-        this_cjacs = []
-        for _ in range(num_samples):
+        if use_broadcasting:
             key, _key = jax.random.split(key)
-            tau, split_evolve_ops = split_evol_ops(op, word, ham.wires, _key)
-            this_cjacs.append(cjac_fn(op.data[term_idx], tau))
-            this_tapes.extend(_split_evol_tapes(tape, split_evolve_ops, op_idx))
+            taus, split_evolve_ops = split_evol_ops(op, word, ham.wires, _key, num_samples)
+            this_cjacs = [cjac_fn(op.data[term_idx], tau) for tau in taus]
+            this_tapes = _split_evol_tapes(tape, split_evolve_ops, op_idx)
+        else:
+            this_cjacs = []
+            this_tapes = []
+            for _ in range(num_samples):
+                key, _key = jax.random.split(key)
+                tau, split_evolve_ops = split_evol_ops(op, word, ham.wires, _key)
+                this_cjacs.append(cjac_fn(op.data[term_idx], tau))
+                this_tapes.extend(_split_evol_tapes(tape, split_evolve_ops, op_idx))
         avg_prefactor = (op.t[1] - op.t[0]) / num_samples
         gradient_data.append((len(this_tapes), qml.math.stack(this_cjacs), avg_prefactor))
         tapes.extend(this_tapes)
@@ -489,7 +519,7 @@ def _expval_stoch_pulse_grad(tape, argnum, num_samples, key, shots):
             start += num_tapes
             # Apply the postprocessing of the parameter-shift rule and contract
             # with classical Jacobian, effectively computing the integral approximation
-            g = _parshift_and_integrate(res, cjacs, avg_prefactor, single_measure, shot_vector)
+            g = _parshift_and_integrate(res, cjacs, avg_prefactor, single_measure, shot_vector, use_broadcasting)
             grads.append(g)
 
         # g will have been defined at least once (because otherwise all gradients would have

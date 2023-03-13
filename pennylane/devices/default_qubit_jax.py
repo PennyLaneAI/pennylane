@@ -207,7 +207,7 @@ class DefaultQubitJax(DefaultQubit):
 
     def _apply_parametrized_evolution(self, state: TensorLike, operation: ParametrizedEvolution):
         # given that wires is a static value (it is not a tracer), we can use an if statement
-        if 2 * len(operation.wires) > self.num_wires:
+        if 2 * len(operation.wires) > self.num_wires and not operation.broadcast_t:
             # the device state vector contains less values than the operation matrix --> evolve state
             return self._evolve_state_vector_under_parametrized_evolution(state, operation)
         # the device state vector contains more/equal values than the operation matrix --> evolve matrix

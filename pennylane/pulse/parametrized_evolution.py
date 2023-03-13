@@ -22,6 +22,7 @@ from typing import List, Union
 
 import pennylane as qml
 from pennylane.operation import AnyWires, Operation
+from pennylane.typing import TensorLike
 
 from .parametrized_hamiltonian import ParametrizedHamiltonian
 
@@ -64,6 +65,7 @@ class ParametrizedEvolution(Operation):
             perform intermediate steps if necessary. It is recommended to just provide a start and end time.
             Note that such absolute times only have meaning within an instance of
             ``ParametrizedEvolution`` and will not affect other gates.
+            # TODO
         do_queue (bool): determines if the scalar product operator will be queued. Default is True.
         id (str or None): id for the scalar product operator. Default is None.
 
@@ -258,7 +260,9 @@ class ParametrizedEvolution(Operation):
         self,
         H: ParametrizedHamiltonian,
         params: list = None,
-        t: Union[float, List[float]] = None,
+        t: Union[float, List[float], List[TensorLike]] = None,
+        broadcast_t=False,
+        accum_to_t1=False,
         do_queue=True,
         id=None,
         **odeint_kwargs
@@ -279,10 +283,28 @@ class ParametrizedEvolution(Operation):
             self.t = None
         else:
             self.t = jnp.array([0, t] if qml.math.ndim(t) == 0 else t, dtype=float)
+        self.broadcast_t = broadcast_t # TODO: qml.equal
+        self.accum_to_t1 = accum_to_t1 # TODO: unification with broadcast_t, qml.equal
         params = [] if params is None else params
         super().__init__(*params, wires=H.wires, do_queue=do_queue, id=id)
+        self._check_time_batching()
 
-    def __call__(self, params, t, **odeint_kwargs):
+    def _check_time_batching(self):
+        """Check whether the time argument is broadcasted/batched.
+        If it is broadcasted and the parameters are broadcasted as well, raises an
+        error."""
+        if not self.broadcast_t:
+            return
+        if self._batch_size is not None:
+            # Parameters and time are both batched, which is not supported (yet)
+            raise ValueError("The parameters and the time argument of ParametrizedEvolution are both batched, which is not supported yet.")
+
+        shape = qml.math.shape(self.t)
+        #if shape[1] != 2:
+            #raise ValueError("When using time broadcasting with ParametrizedEvolution, it is not suported to use intermediate evaluation points in the ODE solver. Expected shape (batch_size, 2).")
+        self._batch_size = shape[0] - 1 - self.accum_to_t1
+
+    def __call__(self, params, t, broadcast_t=False, accum_to_t1=False, **odeint_kwargs):
         # Need to cast all elements inside params to `jnp.arrays` to make sure they are not cast
         # to `np.arrays` inside `Operator.__init__`
         params = [jnp.array(p) for p in params]
@@ -291,7 +313,7 @@ class ParametrizedEvolution(Operation):
             qml.QueuingManager.remove(self)
 
         return ParametrizedEvolution(
-            H=self.H, params=params, t=t, do_queue=True, id=self.id, **odeint_kwargs
+            H=self.H, params=params, t=t, broadcast_t=broadcast_t, accum_to_t1=accum_to_t1, do_queue=True, id=self.id, **odeint_kwargs
         )
 
     # pylint: disable=arguments-renamed, invalid-overridden-method
@@ -312,11 +334,16 @@ class ParametrizedEvolution(Operation):
             H_jax = ParametrizedHamiltonianPytree.from_hamiltonian(
                 self.H, dense=len(self.wires) < 3, wire_order=self.wires
             )
-
         def fun(y, t):
             """dy/dt = -i H(t) y"""
             return (-1j * H_jax(self.data, t=t)) @ y
 
-        result = odeint(fun, y0, self.t, **self.odeint_kwargs)
-        mat = result[-1]
+        mat = odeint(fun, y0, self.t, **self.odeint_kwargs)
+        if self.broadcast_t:
+            if self.accum_to_t1:
+                mat = qml.math.tensordot(mat[-1], qml.math.conj(mat), axes=[[1], [-1]])
+                mat = qml.math.moveaxis(mat, 0, -2)[:-1]
+            mat = mat[1:]
+        else:
+            mat = mat[-1]
         return qml.math.expand_matrix(mat, wires=self.wires, wire_order=wire_order)
