@@ -1783,6 +1783,10 @@ class QubitDevice(Device):
             Union[array[float], dict, list[dict]]: samples in an array of
             dimension ``(shots,)`` or counts
         """
+        # Check if counts are being returned while jitting
+        if qml.math.is_abstract(self._state):
+            if counts:
+                raise DeviceError("Can't JIT a quantum function that returns counts.")
 
         # translate to wire labels used by device
         device_wires = self.map_wires(observable.wires)
