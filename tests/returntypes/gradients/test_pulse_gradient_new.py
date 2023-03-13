@@ -652,7 +652,7 @@ class TestStochPulseGrad:
         jnp = jax.numpy
 
         ham_0 = qml.pulse.constant * qml.PauliX(0) + (lambda p, t: jnp.sin(p * t)) * qml.PauliY(0)
-        ham_1 = 0.3 * qml.PauliZ(0) + jnp.polyval * (qml.PauliY(0) @ qml.PauliY(1))
+        ham_1 = qml.dot([0.3, jnp.polyval], [qml.PauliZ(0), qml.PauliY(0) @ qml.PauliY(1)])
         params_0 = [jnp.array(1.51), jnp.array(-0.371)]
         params_1 = [jnp.array([0.2, 0.2, -0.4])]
         dev = qml.device("default.qubit.jax", wires=2)
