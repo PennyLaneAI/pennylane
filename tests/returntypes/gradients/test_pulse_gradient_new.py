@@ -21,13 +21,15 @@ import pytest
 import numpy as np
 import pennylane as qml
 
-from pennylane.gradients.pulse_gradient import split_evol_ops, split_evol_tapes, stoch_pulse_grad
+from pennylane.gradients.pulse_gradient import split_evol_ops, _split_evol_tapes, stoch_pulse_grad
 
 
 def test_error_raised_if_jax_not_installed():
     """Test that an error is raised if a convenience function is called without jax installed"""
     try:
-        import jax  # pylint: disable=unused-import
+        # Need to import a specific subpackage of JAX, because `import jax` would import the
+        # module `tests/returntypes/jax`.
+        from jax import random  # pylint: disable=unused-import
 
         pytest.skip()
     except ImportError:
@@ -138,8 +140,8 @@ class TestSplitEvolOps:
 
 @pytest.mark.jax
 class TestSplitEvolTapes:
-    """Tests for the helper method split_evol_tapes that replaces an indicated operation by other operations
-    and creates a new tape for each provided set of replacing operations."""
+    """Tests for the helper method _split_evol_tapes that replaces an indicated operation by
+    other operations and creates a new tape for each provided set of replacing operations."""
 
     def test_with_standard_ops(self):
         """Test basic behaviour of the operation replacement with standard qml ops."""
@@ -149,7 +151,7 @@ class TestSplitEvolTapes:
             [qml.RX(0.6, 2), qml.PauliY(0), qml.RZ(0.0, 0)],
             [qml.PauliX(0), qml.PauliZ(2)],
         )
-        new_tapes = split_evol_tapes(tape, split_evolve_ops, 1)
+        new_tapes = _split_evol_tapes(tape, split_evolve_ops, 1)
         assert len(new_tapes) == 2
         for t, new_ops in zip(new_tapes, split_evolve_ops):
             assert qml.equal(t.operations[0], ops[0])
@@ -166,7 +168,7 @@ class TestSplitEvolTapes:
             [qml.RX(0.6, 2), qml.PauliY(0), qml.RZ(0.0, 0)],
             [qml.PauliX(0), qml.PauliZ(2)],
         )
-        new_tapes = split_evol_tapes(tape, split_evolve_ops, 0)
+        new_tapes = _split_evol_tapes(tape, split_evolve_ops, 0)
         assert len(new_tapes) == 2
         for t, new_ops in zip(new_tapes, split_evolve_ops):
             assert all(qml.equal(o1, o2) for o1, o2 in zip(t.operations, new_ops))
@@ -174,7 +176,7 @@ class TestSplitEvolTapes:
         ops = [qml.evolve(ham_single_q_pwc)([np.linspace(0, 1, 9)], 0.4), qml.CNOT([0, 2])]
         tape = qml.tape.QuantumScript(ops)
         split_evolve_ops = ([qml.RX(0.6, 2), qml.PauliY(0), qml.RZ(0.0, 0)], [])
-        new_tapes = split_evol_tapes(tape, split_evolve_ops, 0)
+        new_tapes = _split_evol_tapes(tape, split_evolve_ops, 0)
         assert len(new_tapes) == 2
         for t, new_ops in zip(new_tapes, split_evolve_ops):
             assert all(qml.equal(o1, o2) for o1, o2 in zip(t.operations[:-1], new_ops))
@@ -190,7 +192,7 @@ class TestSplitEvolTapes:
             [qml.RX(0.6, 2), qml.PauliY(0), qml.RZ(0.0, 0)],
             [qml.PauliX(0), qml.PauliZ(2)],
         )
-        new_tapes = split_evol_tapes(tape, split_evolve_ops, 1)
+        new_tapes = _split_evol_tapes(tape, split_evolve_ops, 1)
         assert len(new_tapes) == 2
         for t, new_ops in zip(new_tapes, split_evolve_ops):
             assert qml.equal(t.operations[0], ops[0])
@@ -726,6 +728,36 @@ class TestStochPulseGradQNodeIntegration:
         grad = jax.jacobian(circuit)(params)
         p = params[0] * T
         exp_grad = -2 * jnp.sin(2 * p) * T
+        assert qml.math.allclose(grad, exp_grad, atol=tol, rtol=0.0)
+
+    @pytest.mark.parametrize("shots, tol", [(None, 1e-4), (100, 0.1), ([100, 99], 0.1)])
+    @pytest.mark.parametrize("num_samples", [1, 3])
+    def test_simple_qnode_expval_two_evolves(self, num_samples, shots, tol):
+        """Test that a simple qnode that returns an expectation value
+        can be differentiated with stoch_pulse_grad."""
+        import jax
+
+        jnp = jax.numpy
+        jax.config.update("jax_enable_x64", True)
+        dev = qml.device("default.qubit.jax", wires=1, shots=shots, prng_key=jax.random.PRNGKey(74))
+        T_x = 0.1
+        T_y = 0.2
+        ham_x = qml.pulse.constant * qml.PauliX(0)
+        ham_y = qml.pulse.constant * qml.PauliX(0)
+
+        @qml.qnode(dev, interface="jax", diff_method=stoch_pulse_grad, num_samples=num_samples)
+        def circuit(params):
+            qml.evolve(ham_x)(params[0], T_x)
+            qml.evolve(ham_y)(params[1], T_y)
+            return qml.expval(qml.PauliZ(0))
+
+        params = [[jnp.array(0.4)], [jnp.array(-0.1)]]
+        grad = jax.jacobian(circuit)(params)
+        p_x = params[0][0] * T_x
+        p_y = params[1][0] * T_y
+        exp_grad = [[-2 * jnp.sin(2 * (p_x + p_y)) * T_x], [-2 * jnp.sin(2 * (p_x + p_y)) * T_y]]
+        print(grad)
+        print(exp_grad)
         assert qml.math.allclose(grad, exp_grad, atol=tol, rtol=0.0)
 
     @pytest.mark.parametrize("shots, tol", [(None, 1e-4), (100, 0.1), ([100, 99], 0.1)])

@@ -46,12 +46,12 @@ except ImportError:
 
 def split_evol_ops(op, word, word_wires, key):
     r"""Randomly split a ``ParametrizedEvolution`` with respect to time into two and insert
-    a Pauli rotation about a given Pauli word by :math:`\pm\pi/2`, yielding two groups of
-    three operations.
+    a Pauli rotation using a given Pauli word and rotation angles :math:`\pm\pi/2`.
+    This yields two groups of three operations each.
 
     Args:
         op (ParametrizedEvolution): operation to split up.
-        word (str): Pauli word about which to rotate between the split up parts.
+        word (str): Pauli word with respect to which to rotate between the split up parts.
         word_wires (~.wires.Wires): wires on which the Pauli word acts
         key (list[int]): randomness seed to pass to the sampler for sampling the split-up point.
 
@@ -75,7 +75,7 @@ def split_evol_ops(op, word, word_wires, key):
     return tau, ops
 
 
-def split_evol_tapes(tape, split_evolve_ops, op_idx):
+def _split_evol_tapes(tape, split_evolve_ops, op_idx):
     """Replace a marked ``ParametrizedEvolution`` in a given tape by provided operations, creating
     one tape per group of operations.
 
@@ -463,7 +463,7 @@ def _expval_stoch_pulse_grad(tape, argnum, num_samples, key, shots):
             key, _key = jax.random.split(key)
             tau, split_evolve_ops = split_evol_ops(op, word, ham.wires, _key)
             this_cjacs.append(cjac_fn(op.data[term_idx], tau))
-            this_tapes.extend(split_evol_tapes(tape, split_evolve_ops, op_idx))
+            this_tapes.extend(_split_evol_tapes(tape, split_evolve_ops, op_idx))
         avg_prefactor = (op.t[1] - op.t[0]) / num_samples
         gradient_data.append((len(this_tapes), qml.math.stack(this_cjacs), avg_prefactor))
         tapes.extend(this_tapes)
