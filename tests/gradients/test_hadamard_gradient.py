@@ -19,7 +19,7 @@ import pennylane as qml
 
 
 def test_hadamard_grad_raises():
-    """Test that stoch_pulse_grad raises a NotImplementedError."""
+    """Test that hadamard_grad function raises a NotImplementedError."""
     tape = qml.tape.QuantumScript()
     with pytest.raises(NotImplementedError, match="The Hadamard gradient"):
         qml.gradients.hadamard_grad(tape)
