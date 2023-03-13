@@ -342,7 +342,7 @@ def _stoch_pulse_grad(tape, argnum=None, num_samples=1, sampler_seed=None, shots
         .. math::
 
             \frac{\partial f_1}{\partial v_1}((v_1, v_2), t) &= 1\\
-            \frac{\partial f_1}{\partial v_1}((v_1, v_2), t) &= \cos(v_2 t) t \\
+            \frac{\partial f_2}{\partial v_2}((v_1, v_2), t) &= \cos(v_2 t) t \\
             \frac{\partial f_1}{\partial v_2}((v_1, v_2), t) =
             \frac{\partial f_2}{\partial v_1}((v_1, v_2), t) &= 0
 
