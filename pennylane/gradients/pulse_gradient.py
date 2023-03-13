@@ -62,7 +62,7 @@ def split_evol_ops(op, word, word_wires, key, num_samples=1):
             angle, the second entry the operations with negative Pauli rotation angle.
     """
     if len(op.t) != 2:
-        raise ValueError("") # TODO
+        raise ValueError("")  # TODO
     # Extract time interval, split it, and set the intervals of the copies to the split intervals
     t0, t1 = op.t
     broadcast = num_samples > 1
@@ -77,8 +77,13 @@ def split_evol_ops(op, word, word_wires, key, num_samples=1):
         before_t = jax.numpy.array([t0, tau])
         after_t = jax.numpy.array([tau, t1])
 
-    before_plus, before_minus = (op(op.data, before_t, broadcast_t=broadcast, **op.odeint_kwargs) for _ in range(2))
-    after_plus, after_minus = (op(op.data, after_t, broadcast_t=broadcast, accum_to_t1=broadcast, **op.odeint_kwargs) for _ in range(2))
+    before_plus, before_minus = (
+        op(op.data, before_t, broadcast_t=broadcast, **op.odeint_kwargs) for _ in range(2)
+    )
+    after_plus, after_minus = (
+        op(op.data, after_t, broadcast_t=broadcast, accum_to_t1=broadcast, **op.odeint_kwargs)
+        for _ in range(2)
+    )
     # Create Pauli rotations to be inserted at tau
     evolve_plus = qml.PauliRot(np.pi / 2, word, wires=word_wires)
     evolve_minus = qml.PauliRot(-np.pi / 2, word, wires=word_wires)
@@ -110,7 +115,9 @@ def _split_evol_tapes(tape, split_evolve_ops, op_idx):
     ]
 
 
-def _parshift_and_integrate(results, cjacs, int_prefactor, single_measure, shot_vector, use_broadcasting):
+def _parshift_and_integrate(
+    results, cjacs, int_prefactor, single_measure, shot_vector, use_broadcasting
+):
     """Apply the parameter-shift rule post-processing to tape results and contract
     with classical Jacobians, effectively evaluating the numerical integral of the stochastic
     parameter-shift rule.
@@ -131,11 +138,14 @@ def _parshift_and_integrate(results, cjacs, int_prefactor, single_measure, shot_
     """
 
     if use_broadcasting:
+
         def _diff_and_contract(res_list, cjacs, int_prefactor):
             # This one will not work yet with tuples.
             diff = qml.math.stack(res_list)[0] - qml.math.stack(res_list)[1]
             return qml.math.tensordot(diff, cjacs, axes=[[0], [0]]) * int_prefactor
+
     else:
+
         def _diff_and_contract(res_list, cjacs, int_prefactor):
             diff = qml.math.stack(res_list)[::2] - qml.math.stack(res_list)[1::2]
             return qml.math.tensordot(diff, cjacs, axes=[[0], [0]]) * int_prefactor
@@ -153,7 +163,9 @@ def _parshift_and_integrate(results, cjacs, int_prefactor, single_measure, shot_
     )
 
 
-def _stoch_pulse_grad(tape, argnum=None, num_samples=1, sampler_seed=None, shots=None, use_broadcasting=False):
+def _stoch_pulse_grad(
+    tape, argnum=None, num_samples=1, sampler_seed=None, shots=None, use_broadcasting=False
+):
     r"""Compute the gradient of a quantum circuit composed of pulse sequences by applying the
     stochastic parameter shift rule.
 
@@ -433,7 +445,7 @@ def _stoch_pulse_grad(tape, argnum=None, num_samples=1, sampler_seed=None, shots
         return _no_trainable_grad_new(tape, shots)
 
     if use_broadcasting and tape.batch_size is not None:
-        raise ValueError() # TODO add error and test
+        raise ValueError()  # TODO add error and test
 
     gradient_analysis(tape, grad_fn=stoch_pulse_grad)
     method = "analytic"
@@ -519,7 +531,9 @@ def _expval_stoch_pulse_grad(tape, argnum, num_samples, key, shots, use_broadcas
             start += num_tapes
             # Apply the postprocessing of the parameter-shift rule and contract
             # with classical Jacobian, effectively computing the integral approximation
-            g = _parshift_and_integrate(res, cjacs, avg_prefactor, single_measure, shot_vector, use_broadcasting)
+            g = _parshift_and_integrate(
+                res, cjacs, avg_prefactor, single_measure, shot_vector, use_broadcasting
+            )
             grads.append(g)
 
         # g will have been defined at least once (because otherwise all gradients would have

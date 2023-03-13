@@ -283,8 +283,8 @@ class ParametrizedEvolution(Operation):
             self.t = None
         else:
             self.t = jnp.array([0, t] if qml.math.ndim(t) == 0 else t, dtype=float)
-        self.broadcast_t = broadcast_t # TODO: qml.equal
-        self.accum_to_t1 = accum_to_t1 # TODO: unification with broadcast_t, qml.equal
+        self.broadcast_t = broadcast_t  # TODO: qml.equal
+        self.accum_to_t1 = accum_to_t1  # TODO: unification with broadcast_t, qml.equal
         params = [] if params is None else params
         super().__init__(*params, wires=H.wires, do_queue=do_queue, id=id)
         self._check_time_batching()
@@ -297,11 +297,13 @@ class ParametrizedEvolution(Operation):
             return
         if self._batch_size is not None:
             # Parameters and time are both batched, which is not supported (yet)
-            raise ValueError("The parameters and the time argument of ParametrizedEvolution are both batched, which is not supported yet.")
+            raise ValueError(
+                "The parameters and the time argument of ParametrizedEvolution are both batched, which is not supported yet."
+            )
 
         shape = qml.math.shape(self.t)
-        #if shape[1] != 2:
-            #raise ValueError("When using time broadcasting with ParametrizedEvolution, it is not suported to use intermediate evaluation points in the ODE solver. Expected shape (batch_size, 2).")
+        # if shape[1] != 2:
+        # raise ValueError("When using time broadcasting with ParametrizedEvolution, it is not suported to use intermediate evaluation points in the ODE solver. Expected shape (batch_size, 2).")
         self._batch_size = shape[0] - 1 - self.accum_to_t1
 
     def __call__(self, params, t, broadcast_t=False, accum_to_t1=False, **odeint_kwargs):
@@ -313,7 +315,14 @@ class ParametrizedEvolution(Operation):
             qml.QueuingManager.remove(self)
 
         return ParametrizedEvolution(
-            H=self.H, params=params, t=t, broadcast_t=broadcast_t, accum_to_t1=accum_to_t1, do_queue=True, id=self.id, **odeint_kwargs
+            H=self.H,
+            params=params,
+            t=t,
+            broadcast_t=broadcast_t,
+            accum_to_t1=accum_to_t1,
+            do_queue=True,
+            id=self.id,
+            **odeint_kwargs
         )
 
     # pylint: disable=arguments-renamed, invalid-overridden-method
@@ -334,6 +343,7 @@ class ParametrizedEvolution(Operation):
             H_jax = ParametrizedHamiltonianPytree.from_hamiltonian(
                 self.H, dense=len(self.wires) < 3, wire_order=self.wires
             )
+
         def fun(y, t):
             """dy/dt = -i H(t) y"""
             return (-1j * H_jax(self.data, t=t)) @ y
