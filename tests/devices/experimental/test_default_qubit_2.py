@@ -256,7 +256,6 @@ class TestExecutingBatches:
 
     @staticmethod
     def expected(phi):
-
         out1 = (-qml.math.sin(phi) - 1, 3 * qml.math.cos(phi))
 
         x1 = qml.math.cos(phi / 2) ** 2 / 2
