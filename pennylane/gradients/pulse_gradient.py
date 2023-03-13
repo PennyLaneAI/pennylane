@@ -45,7 +45,7 @@ except ImportError:
 
 
 def split_evol_ops(op, word, word_wires, key):
-    r"""Randomly split a ``ParametrizedEvolution`` with respect to time into two and insert
+    r"""Randomly split a ``ParametrizedEvolution`` with respect to time into two operations and insert
     a Pauli rotation about a given Pauli word by :math:`\pm\pi/2`, yielding two groups of
     three operations.
 
