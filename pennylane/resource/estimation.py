@@ -260,3 +260,86 @@ def estimate_resources_op(op):
         return resource
 
     return _estimate
+
+
+def estimate_resources_batch(qnode):
+    r"""Return list of resource estimation objects for several batches of a qnode.
+
+    Args:
+        qnode (qml.QNode): quantum node
+
+    Returns:
+        list[qml.resource.Resource]: list of resource information objects
+
+    .. details::
+        :title: Usage Details
+
+        The followng example shows estimating resource for a VQE workflow with grouped Hamiltonian:
+
+        .. code-block:: python3
+
+            symbols  = ['H', 'H']
+            geometry = np.array([[0.0, 0.0, -0.69434785],
+                                 [0.0, 0.0,  0.69434785]], requires_grad = False)
+            electrons = 2
+            ham, qubits = qml.qchem.molecular_hamiltonian(symbols, geometry, grouping_type='qwc')
+            hf_state = qml.qchem.hf_state(electrons, qubits)
+
+            dev = qml.device('default.qubit', wires = 4, shots = None)
+            @qml.qnode(dev)
+            def circuit(params):
+                qml.BasisState(hf_state, wires = range(qubits))
+                qml.SingleExcitation(params[0], wires=[0, 1])
+                qml.DoubleExcitation(params[1],wires=[0, 1, 2, 3])
+                return qml.expval(ham)
+            params = np.array([0.1, 0.2])
+
+        >>> resources = estimate_resources_qnode(circuit)()
+        >>> print(resources)
+        [<Resource: wires=4, gates=36, depth=0, shots=None, gate_types=defaultdict(<class 'int'>, {'BasisStatePreparation': 1, 'CNOT': 16, 'CRY': 1, 'Hadamard': 6, 'RY': 10, 'RX': 2})>,
+         <Resource: wires=4, gates=32, depth=0, shots=None, gate_types=defaultdict(<class 'int'>, {'BasisStatePreparation': 1, 'CNOT': 16, 'CRY': 1, 'Hadamard': 6, 'RY': 8})>,
+         <Resource: wires=4, gates=32, depth=0, shots=None, gate_types=defaultdict(<class 'int'>, {'BasisStatePreparation': 1, 'CNOT': 16, 'CRY': 1, 'Hadamard': 6, 'RY': 8})>,
+         <Resource: wires=4, gates=32, depth=0, shots=None, gate_types=defaultdict(<class 'int'>, {'BasisStatePreparation': 1, 'CNOT': 16, 'CRY': 1, 'Hadamard': 6, 'RY': 8})>,
+         <Resource: wires=4, gates=32, depth=0, shots=None, gate_types=defaultdict(<class 'int'>, {'BasisStatePreparation': 1, 'CNOT': 16, 'CRY': 1, 'Hadamard': 6, 'RY': 8})>]
+    """
+
+    def _estimate(*params):
+
+        tape = qml.transforms.make_tape(qnode.func)(*params)
+
+        tapes = qnode.device.batch_transform(tape)[0]
+
+        resource_list = []
+
+        for tape in tapes:
+
+            resource = Resource()
+            resource.num_wires = len(tape.wires)
+            resource.shots = qnode.device.shots
+
+            for op in tape.operations:
+
+                if not hasattr(op, "resources"):
+                    try:
+                        decomp = op.decomposition()
+                        for d in decomp:
+                            # gate_types
+                            resource.gate_types[d.name] += 1
+                    except:
+                        # gate_types
+                        resource.gate_types[op.name] += 1
+
+                if hasattr(op, "resources"):
+                    op_resource = op.resources()
+                    # gate_types
+                    for d in op_resource.gate_types:
+                        resource.gate_types[d] += op_resource.gate_types[d]
+
+                # num_gates
+                resource.num_gates = sum(resource.gate_types.values())
+
+            resource_list.append(resource)
+
+        return resource_list
+
+    return _estimate
