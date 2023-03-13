@@ -137,13 +137,13 @@ def _parshift_and_integrate(results, cjacs, int_prefactor, single_measure, shot_
 
 def _stoch_pulse_grad(tape, argnum=None, num_samples=1, sampler_seed=None, shots=None):
     r"""Compute the gradient of a quantum circuit composed of pulse sequences by applying the
-    stochastic parameter shift rule. For a pulse-based cost function :math:`C(\boldsymbol{v}, T)` 
+    stochastic parameter shift rule. For a pulse-based cost function :math:`C(\boldsymbol{v}, T)`
     with variational parameters :math:`\boldsymbol{v}` and evolution time :math:`T`, it is given by
     (c.f. Eqn. (6) in `Leng et al. (2022) <https://arxiv.org/abs/2210.15812>`__ with altered
     notation):
-    
+
     .. math::
-        
+
         \frac{\partial C}{\partial v_k}
         = \int_{0}^{T} \mathrm{d}\tau \sum_{j=1}^m
         \frac{\partial f_j}{\partial v_k}(\boldsymbol{v}, \tau)
