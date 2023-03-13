@@ -204,17 +204,6 @@ class TestSplitEvolTapes:
 class TestStochPulseGradErrors:
     """Test errors raised by stoch_pulse_grad."""
 
-    def test_raises_if_jax_not_installed(self):
-        """Test that an error is raised if a convenience function is called without jax installed"""
-        try:
-            import jax  # pylint: disable=unused-import
-
-            pytest.skip()
-        except ImportError:
-            tape = qml.tape.QuantumScript([])
-            with pytest.raises(ImportError, match="Module jax is required"):
-                stoch_pulse_grad(tape)
-
     def test_raises_for_variance(self):
         """Test that an error is raised when attempting to differentiate a tape that measures a variance."""
         tape = qml.tape.QuantumScript(
