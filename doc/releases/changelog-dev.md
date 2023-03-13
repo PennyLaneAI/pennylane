@@ -8,6 +8,18 @@
   state vector and a number of shots.
   [(#3720)](https://github.com/PennyLaneAI/pennylane/pull/3720)
 
+* Added the needed functions and classes to simulate an ensemble of Rydberg atoms:
+  * A new internal `RydbergHamiltonian` class is added, which contains the Hamiltonian of an ensemble of
+    Rydberg atoms.
+  * A new user-facing `rydberg_interaction` function is added, which returns a `RydbergHamiltonian` containing
+    the Hamiltonian of the interaction of all the Rydberg atoms.
+  * A new user-facing `rydberg_drive` function is added, which returns a `RydbergHamiltonian` containing
+    the Hamiltonian of the interaction between a driving laser field and a group of atoms.
+  [(#3749)](https://github.com/PennyLaneAI/pennylane/pull/3749)
+
+* Added `Operation.__truediv__` dunder method to be able to divide operators.
+  [(#3749)](https://github.com/PennyLaneAI/pennylane/pull/3749)
+
 * The `simulate` function added to `devices/qubit` now supports measuring expectation values of large observables such as
   `qml.Hamiltonian`, `qml.SparseHamiltonian`, `qml.Sum`.
   [(#3759)](https://github.com/PennyLaneAI/pennylane/pull/3759)
@@ -29,6 +41,9 @@
 * `AdaptiveOptimizer` is updated to use non-default user-defined qnode arguments.
   [(#3765)](https://github.com/PennyLaneAI/pennylane/pull/3765)
 
+* Use `TensorLike` type in `Operator` dunder methods.
+  [(#3749)](https://github.com/PennyLaneAI/pennylane/pull/3749)
+
 * The `apply_operation` function added to `devices/qubit` now supports broadcasting.
   [(#3852)](https://github.com/PennyLaneAI/pennylane/pull/3852)
 
@@ -42,7 +57,15 @@
   to be set as trainable), and therefore the derivatives are computed more efficiently.
   [(#3697)](https://github.com/PennyLaneAI/pennylane/pull/3697)
 
+* 3 new decomposition algorithms are added for n-controlled operations with single-qubit target,
+  and are selected automatically when they produce a better result. They can be accessed via
+  `ops.op_math.ctrl_decomp_bisect`.
+  [(#3851)](https://github.com/PennyLaneAI/pennylane/pull/3851)
+
 <h3>Breaking changes</h3>
+
+* Both JIT interfaces are not compatible with Jax `>0.4.3`, we raise an error for those versions.
+  [(#3877)](https://github.com/PennyLaneAI/pennylane/pull/3877)
 
 * An operation that implements a custom `generator` method, but does not always return a valid generator, also has
   to implement a `has_generator` property that reflects in which scenarios a generator will be returned.
@@ -70,6 +93,10 @@
 
 <h3>Bug fixes</h3>
 
+* Fixed bug where the coefficients where not ordered correctly when summing a `ParametrizedHamiltonian`
+  with other operators.
+  [(#3749)](https://github.com/PennyLaneAI/pennylane/pull/3749)
+
 * The metric tensor transform is fully compatible with Jax and therefore users can provide multiple parameters.
   [(#3847)](https://github.com/PennyLaneAI/pennylane/pull/3847)
 
@@ -84,17 +111,22 @@
 
 * Made `qml.OrbitalRotation` and consequently `qml.GateFabric` consistent with the interleaved Jordan-Wigner ordering.
   [(#3861)](https://github.com/PennyLaneAI/pennylane/pull/3861)
-
+  
+* `qml.devices.qubit.apply_operation` catches the `tf.errors.UnimplementedError` that occurs when `PauliZ` or `CNOT` gates
+  are applied to a large (>8 wires) tensorflow state. When that occurs, the logic falls back to the tensordot logic instead.
+  [(#3884)](https://github.com/PennyLaneAI/pennylane/pull/3884/)
 
 <h3>Contributors</h3>
 
 This release contains contributions from (in alphabetical order):
 
+Komi Amiko
 Utkarsh Azad
 Lillian M. A. Frederiksen
 Soran Jahangiri
 Christina Lee
 Vincent Michaud-Rioux
+Albert Mitjans
 Romain Moyard
 Mudit Pandey
 Matthew Silverman
