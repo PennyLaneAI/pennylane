@@ -85,10 +85,6 @@ class DefaultQubit2(Device):
 
     """
 
-    def __init__(self) -> None:
-        # each instance should have its own Tracker.
-        super().__init__()
-
     @property
     def name(self):
         """The name of the device."""
