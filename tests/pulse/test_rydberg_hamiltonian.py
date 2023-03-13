@@ -22,7 +22,12 @@ import pytest
 
 import pennylane as qml
 from pennylane.pulse import RydbergHamiltonian, rydberg_drive, rydberg_interaction
-from pennylane.pulse.rydberg_hamiltonian import RydbergPulse
+from pennylane.pulse.rydberg_hamiltonian import (
+    RydbergPulse,
+    AmplitudeAndPhase,
+    amplitude_and_phase,
+    _rydberg_reorder_parameters,
+)
 from pennylane.wires import Wires
 
 atom_coordinates = [[0, 0], [0, 5], [5, 0], [10, 5], [5, 10], [10, 10]]
@@ -42,7 +47,7 @@ class TestRydbergHamiltonian:
         assert rm.wires == Wires([])
         assert rm.interaction_coeff == 862690
 
-    def test_add(self):
+    def test_add_rydberg_hamiltonian(self):
         """Test that the __add__ dunder method works correctly."""
         rm1 = RydbergHamiltonian(
             coeffs=[1, 2],
@@ -69,6 +74,7 @@ class TestRydbergHamiltonian:
         assert sum_rm.pulses == [RydbergPulse(1, 2, 3, [4, 8]), RydbergPulse(5, 6, 7, 8)]
 
     def test_add_parametrized_hamiltonian(self):
+        # ToDo: check returned object is a RydbergHamiltonian and can be called!
         """Tests that adding a `RydbergHamiltonian` and `ParametrizedHamiltonian` works as
         expected."""
         coeffs = [2, 3]
@@ -100,6 +106,12 @@ class TestRydbergHamiltonian:
         assert all(qml.equal(op1, op2) for op1, op2 in zip(res2.ops_fixed, ops))
         assert res2.ops_parametrized == []
         assert res2.wires == qml.wires.Wires(h_wires)
+
+    # def test_radd_parametrized_hamiltonian(self):
+    #     """Tests that adding a `RydbergHamiltonian` and `ParametrizedHamiltonian` works as
+    #     expected."""
+    #     # ToDo: check returned object is a RydbergHamiltonian and can be called!
+    #     pass
 
     def test_add_raises_error(self):
         """Test that an error is raised if two RydbergHamiltonians with registers are added."""
@@ -161,6 +173,7 @@ class TestInteractionWithOperators:
         qml.CNOT([0, 1]),
     )  # ToDo: maybe add more operators to test here?
 
+    # ToDo: check returned object is a RydbergHamiltonian and can be called!
     @pytest.mark.parametrize("H, coeff", ops_with_coeffs)
     def test_add_special_operators(self, H, coeff):
         """Test that a Hamiltonian and SProd can be added to a RydbergHamiltonian, and
@@ -241,13 +254,13 @@ class TestRydbergDrive:
         """Test that the attributes and the number of terms of the ``ParametrizedHamiltonian`` returned by
         ``rydberg_drive`` are correct."""
 
-        Hd = rydberg_drive(amplitude=1, detuning=2, phase=3, wires=[1, 2])
+        Hd = rydberg_drive(amplitude=1, phase=2, detuning=3, wires=[1, 2])
 
         assert isinstance(Hd, RydbergHamiltonian)
         assert Hd.interaction_coeff == 862690
         assert Hd.wires == Wires([1, 2])
         assert Hd.register is None
-        assert len(Hd.ops) == 2  # amplitude and detuning terms of the Hamiltonian
+        assert len(Hd.ops) == 3  # 2 amplitude/phase terms and one detuning term of the Hamiltonian
         assert Hd.pulses == [RydbergPulse(1, 2, 3, [1, 2])]
 
     def test_multiple_local_drives(self):
@@ -259,37 +272,252 @@ class TestRydbergDrive:
         def fb(p, t):
             return np.cos(p * t)
 
-        H1 = rydberg_drive(amplitude=fa, detuning=3, phase=1, wires=[0, 3])
-        H2 = rydberg_drive(amplitude=1, detuning=fb, phase=3, wires=[1, 2])
+        H1 = rydberg_drive(amplitude=fa, phase=1, detuning=3, wires=[0, 3])
+        H2 = rydberg_drive(amplitude=1, phase=3, detuning=fb, wires=[1, 2])
         Hd = H1 + H2
 
         ops_expected = [
             qml.Hamiltonian([1, 1], [qml.PauliZ(0), qml.PauliZ(3)]),
-            qml.Hamiltonian(
-                [np.cos(3), -np.sin(3), np.cos(3), -np.sin(3)],
-                [qml.PauliX(1), qml.PauliY(1), qml.PauliX(2), qml.PauliY(2)],
-            ),
-            qml.Hamiltonian(
-                [np.cos(1), -np.sin(1), np.cos(1), -np.sin(1)],
-                [qml.PauliX(0), qml.PauliY(0), qml.PauliX(3), qml.PauliY(3)],
-            ),
+            qml.Hamiltonian([1, 1], [qml.PauliX(1), qml.PauliX(2)]),
+            qml.sum(qml.s_prod(-1, qml.PauliY(1)), qml.s_prod(-1, qml.PauliY(2))),
+            qml.Hamiltonian([1, 1], [qml.PauliX(0), qml.PauliX(3)]),
+            qml.sum(qml.s_prod(-1, qml.PauliY(0)), qml.s_prod(-1, qml.PauliY(3))),
             qml.Hamiltonian([1, 1], [qml.PauliZ(1), qml.PauliZ(2)]),
         ]
-        coeffs_expected = [3, 1, fa, fb]
-        H_expected = qml.dot(coeffs_expected, ops_expected)
+        coeffs_expected = [
+            3,
+            np.cos(3),
+            np.sin(3),
+            AmplitudeAndPhase(np.cos, fa, 1),
+            AmplitudeAndPhase(np.sin, fa, 1),
+            fb,
+        ]
+        H_expected = RydbergHamiltonian(coeffs_expected, ops_expected)
 
+        # structure of Hamiltonian is as expected
         assert isinstance(Hd, RydbergHamiltonian)
         assert Hd.interaction_coeff == 862690
         assert Hd.wires == Wires([0, 3, 1, 2])
         assert Hd.register is None
-        assert len(Hd.ops) == 4  # amplitude and detuning terms of the Hamiltonian
+        assert len(Hd.ops) == 6  # 2 terms for amplitude/phase and one detuning for each drive
+
+        # coefficients are correct
         # Callable coefficients are shifted to the end of the list.
-        assert Hd.coeffs[0:2] == [3, 1]
-        assert Hd.coeffs[2] is fa
-        assert Hd.coeffs[3] is fb
+        assert Hd.coeffs[0:3] == [3, np.cos(3), np.sin(3)]
+        assert isinstance(Hd.coeffs[3], AmplitudeAndPhase)
+        assert isinstance(Hd.coeffs[4], AmplitudeAndPhase)
+        assert Hd.coeffs[5] is fb
+
+        # pulses were added correctly
         assert len(Hd.pulses) == 2
         assert Hd.pulses == H1.pulses + H2.pulses
+
+        # Hamiltonian is as expected
         assert qml.equal(Hd([0.5, -0.5], t=5), H_expected([0.5, -0.5], t=5))
+
+
+def callable_amp(p, t):
+    return np.polyval(p, t)
+
+
+def callable_phase(p, t):
+    return p[0] * np.sin(p[1] * t)
+
+
+def sine_func(p, t):
+    return np.sin(p * t)
+
+
+def cosine_fun(p, t):
+    return np.cos(p * t)
+
+
+class TestAmplitudeAndPhase:
+    """Test the AmplitudeAndPhase class that provides callable
+    phase/amplitude combinations"""
+
+    def test_amplitude_and_phase_no_callables(self):
+        """Test that when calling amplitude_and_phase, if neither are callable,
+        a float is returned instead of an AmplitudeAndPhase object"""
+        f = amplitude_and_phase(np.sin, 3, 4)
+        expected_result = 3 * np.sin(4)
+
+        assert isinstance(f, float)
+        assert f == expected_result
+
+    def test_amplitude_and_phase_callable_phase(self):
+        """Test that when calling amplitude_and_phase, if only phase is callable,
+        an AmplitudeAndPhase object with callable phase and fixed amplitude is
+        correctly created"""
+        f = amplitude_and_phase(np.sin, 2.7, callable_phase)
+
+        # attributes are correct
+        assert isinstance(f, AmplitudeAndPhase)
+        assert f.amp_is_callable is False
+        assert f.phase_is_callable is True
+        assert f.func.__name__ == "callable_phase"
+
+        # calling yields expected result
+        expected_result = 2.7 * np.sin(callable_phase([1.3, 2.5], 2))
+        assert f([1.3, 2.5], 2) == expected_result
+
+    def test_amplitude_and_phase_callable_amplitude(self):
+        """Test that when calling amplitude_and_phase, if only amplitude is callable,
+        an AmplitudeAndPhase object with callable amplitude and fixed phase is
+        correctly created"""
+        f = amplitude_and_phase(np.sin, callable_amp, 0.7)
+
+        # attributes are correct
+        assert isinstance(f, AmplitudeAndPhase)
+        assert f.amp_is_callable is True
+        assert f.phase_is_callable is False
+        assert f.func.__name__ == "callable_amp"
+
+        # calling yields expected result
+        expected_result = callable_amp([1.7], 2) * np.sin(0.7)
+        assert f([1.7], 2) == expected_result
+
+    def test_amplitude_and_phase_both_callable(self):
+        """Test that when calling amplitude_and_phase, if both are callable,
+        an AmplitudeAndPhase object with callable amplitude and phase is
+        correctly created"""
+        f = amplitude_and_phase(np.sin, callable_amp, callable_phase)
+
+        # attributes are correct
+        assert isinstance(f, AmplitudeAndPhase)
+        assert f.amp_is_callable is True
+        assert f.phase_is_callable is True
+        assert f.func.__name__ == "callable_amp_and_phase"
+
+        # calling yields expected result
+        expected_result = callable_amp([1.7], 2) * np.sin(callable_phase([1.3, 2.5], 2))
+        assert f([[1.7], [1.3, 2.5]], 2) == expected_result
+
+    def test_callable_phase_and_amplitude_hamiltonian(self):
+        """Test that using callable amplitude and phase in rydberg_drive
+        creates AmplitudeAndPhase callables, and the resulting Hamiltonian
+        can be called successfully"""
+
+        detuning = 2
+
+        Hd = rydberg_drive(sine_func, cosine_fun, detuning, wires=[0, 1])
+
+        assert len(Hd.coeffs) == 3
+        assert isinstance(Hd.coeffs[1], AmplitudeAndPhase)
+        assert isinstance(Hd.coeffs[2], AmplitudeAndPhase)
+        t = 1.7
+
+        evaluated_H = Hd([3.4, 5.6], t)
+
+        expected_H_fixed = qml.s_prod(
+            detuning, qml.Hamiltonian([1, 1], [qml.PauliZ(0), qml.PauliZ(1)])
+        )
+
+        c1 = np.sin(3.4 * t) * np.cos(np.cos(5.6 * t))
+        c2 = np.sin(3.4 * t) * np.sin(np.cos(5.6 * t))
+        expected_H_parametrized = qml.sum(
+            qml.s_prod(c1, qml.Hamiltonian([1, 1], [qml.PauliX(0), qml.PauliX(1)])),
+            qml.s_prod(c2, qml.sum(qml.s_prod(-1, qml.PauliY(0)), qml.s_prod(-1, qml.PauliY(1)))),
+        )
+
+        assert qml.equal(evaluated_H[0], expected_H_fixed)
+        assert qml.equal(evaluated_H[1], expected_H_parametrized)
+
+    def test_callable_phase_hamiltonian(self):
+        """Test that using callable phase in rydberg_drive creates AmplitudeAndPhase
+        callables, and the resulting Hamiltonian can be called"""
+
+        detuning = 2
+
+        Hd = rydberg_drive(7.2, sine_func, detuning, wires=[0, 1])
+
+        assert len(Hd.coeffs) == 3
+        assert isinstance(Hd.coeffs[1], AmplitudeAndPhase)
+        assert isinstance(Hd.coeffs[2], AmplitudeAndPhase)
+        t = 1.7
+
+        evaluated_H = Hd([5.6], t)
+
+        expected_H_fixed = qml.s_prod(
+            detuning, qml.Hamiltonian([1, 1], [qml.PauliZ(0), qml.PauliZ(1)])
+        )
+
+        c1 = 7.2 * np.cos(np.sin(5.6 * t))
+        c2 = 7.2 * np.sin(np.sin(5.6 * t))
+        expected_H_parametrized = qml.sum(
+            qml.s_prod(c1, qml.Hamiltonian([1, 1], [qml.PauliX(0), qml.PauliX(1)])),
+            qml.s_prod(c2, qml.sum(qml.s_prod(-1, qml.PauliY(0)), qml.s_prod(-1, qml.PauliY(1)))),
+        )
+
+        assert qml.equal(evaluated_H[0], expected_H_fixed)
+        assert qml.equal(evaluated_H[1], expected_H_parametrized)
+
+    def test_callable_amplitude_hamiltonian(self):
+        """Test that using callable amplitude in rydberg_drive creates AmplitudeAndPhase
+        callables, and the resulting Hamiltonian can be called"""
+
+        detuning = 2
+
+        Hd = rydberg_drive(sine_func, 4.3, detuning, wires=[0, 1])
+
+        assert len(Hd.coeffs) == 3
+        assert isinstance(Hd.coeffs[1], AmplitudeAndPhase)
+        assert isinstance(Hd.coeffs[2], AmplitudeAndPhase)
+        t = 1.7
+
+        evaluated_H = Hd([3.4], t)
+
+        expected_H_fixed = qml.s_prod(
+            detuning, qml.Hamiltonian([1, 1], [qml.PauliZ(0), qml.PauliZ(1)])
+        )
+
+        c1 = np.sin(3.4 * t) * np.cos(4.3)
+        c2 = np.sin(3.4 * t) * np.sin(4.3)
+        expected_H_parametrized = qml.sum(
+            qml.s_prod(c1, qml.Hamiltonian([1, 1], [qml.PauliX(0), qml.PauliX(1)])),
+            qml.s_prod(c2, qml.sum(qml.s_prod(-1, qml.PauliY(0)), qml.s_prod(-1, qml.PauliY(1)))),
+        )
+
+        assert qml.equal(evaluated_H[0], expected_H_fixed)
+        assert qml.equal(evaluated_H[1], expected_H_parametrized)
+
+    COEFFS_AND_PARAMS = [
+        (
+            [AmplitudeAndPhase(np.cos, f1, f2), AmplitudeAndPhase(np.sin, f1, f2), f2],
+            [1, 2, 3],
+            [[1, 2], [1, 2], 3],
+        ),
+        (
+            [AmplitudeAndPhase(np.cos, f1, 6.3), AmplitudeAndPhase(np.sin, f1, 6.3), f2],
+            [1, 3],
+            [1, 1, 3],
+        ),
+        (
+            [AmplitudeAndPhase(np.cos, 6.3, f1), AmplitudeAndPhase(np.sin, 6.3, f1), f2],
+            [1, 3],
+            [1, 1, 3],
+        ),
+        (
+            [f1, AmplitudeAndPhase(np.cos, f1, 5.7), AmplitudeAndPhase(np.sin, f1, 5.7), f2],
+            [1, 2, 3],
+            [1, 2, 2, 3],
+        ),
+        (
+            [f1, AmplitudeAndPhase(np.cos, f1, f1), AmplitudeAndPhase(np.sin, f1, f1), f2],
+            [2, [3, 5], 8, [13, 21]],
+            [2, [[3, 5], 8], [[3, 5], 8], [13, 21]],
+        ),
+        ([f1, f2, f1, f2], [1, 2, 3, 4], [1, 2, 3, 4]),
+    ]
+
+    @pytest.mark.parametrize("coeffs, params, expected_output", COEFFS_AND_PARAMS)
+    def test_rydberg_reorder_parameters_all(self, coeffs, params, expected_output):
+        """Tests that the function organizing the parameters to pass to the
+        RydbergHamiltonian works as expected when AmplitudeAndPhase callables
+        are included"""
+
+        assert _rydberg_reorder_parameters(params, coeffs) == expected_output
+
 
 class TestRydbergPulse:
     """Unit tests for the ``RydbergPulse`` class."""
