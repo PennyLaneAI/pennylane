@@ -111,10 +111,14 @@
 
 * Made `qml.OrbitalRotation` and consequently `qml.GateFabric` consistent with the interleaved Jordan-Wigner ordering.
   [(#3861)](https://github.com/PennyLaneAI/pennylane/pull/3861)
-  
+
 * `qml.devices.qubit.apply_operation` catches the `tf.errors.UnimplementedError` that occurs when `PauliZ` or `CNOT` gates
   are applied to a large (>8 wires) tensorflow state. When that occurs, the logic falls back to the tensordot logic instead.
   [(#3884)](https://github.com/PennyLaneAI/pennylane/pull/3884/)
+
+* An error is now raised if a `QNode` with Jax-jit in use returns `sample` while having trainable parameters or returns
+  `counts`.
+  [(#3892)](https://github.com/PennyLaneAI/pennylane/pull/3892)
 
 <h3>Contributors</h3>
 
