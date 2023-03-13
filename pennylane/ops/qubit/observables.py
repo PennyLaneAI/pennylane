@@ -209,10 +209,6 @@ class SparseHamiltonian(Observable):
         ``SparseHamiltonian`` observables can only be used to return expectation values.
         Variances and samples are not supported.
 
-    .. note::
-
-        Note that the ``SparseHamiltonian`` observable should not be used with a subset of wires.
-
     **Details:**
 
     * Number of wires: Any
