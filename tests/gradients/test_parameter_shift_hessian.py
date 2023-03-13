@@ -1328,7 +1328,7 @@ class TestInterfaces:
 
         expected = qml.jacobian(qml.jacobian(circuit))(x_np)
         circuit.interface = "jax"
-        hess = qml.gradients.param_shift_hessian(circuit)(x_jax)
+        hess = qml.gradients.param_shift_hessian(circuit, argnums=[0])(x_jax)
 
         assert np.allclose(expected, hess)
 

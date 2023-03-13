@@ -14,8 +14,12 @@
 """
 Unit tests for the :mod:`pennylane.devices.DefaultMixed` device.
 """
+# pylint: disable=protected-access
 
+import copy
 import pytest
+import numpy as np
+
 import pennylane as qml
 from pennylane import QubitStateVector, BasisState, DeviceError
 from pennylane.devices import DefaultMixed
@@ -26,32 +30,34 @@ from pennylane.ops import (
     PauliX,
     Hadamard,
     CNOT,
+    SWAP,
     ISWAP,
     AmplitudeDamping,
     DepolarizingChannel,
     ResetError,
     PauliError,
+    MultiControlledX,
 )
 from pennylane.wires import Wires
-
-import numpy as np
 
 INV_SQRT2 = 1 / np.sqrt(2)
 
 
-# functions for creating different states used in testing
 def basis_state(index, nr_wires):
+    """Generate the density matrix of the computational basis state
+    indicated by ``index``."""
     rho = np.zeros((2**nr_wires, 2**nr_wires), dtype=np.complex128)
     rho[index, index] = 1
     return rho
 
 
 def hadamard_state(nr_wires):
-    """Equal superposition state (Hadamard on all qubits)"""
+    """Generate the equal superposition state (Hadamard on all qubits)"""
     return np.ones((2**nr_wires, 2**nr_wires), dtype=np.complex128) / (2**nr_wires)
 
 
 def max_mixed_state(nr_wires):
+    """Generate the maximally mixed state."""
     return np.eye(2**nr_wires, dtype=np.complex128) / (2**nr_wires)
 
 
@@ -60,6 +66,15 @@ def root_state(nr_wires):
     dim = 2**nr_wires
     ket = [np.exp(1j * 2 * np.pi * n / dim) / np.sqrt(dim) for n in range(dim)]
     return np.outer(ket, np.conj(ket))
+
+
+def random_state(num_wires):
+    """Generate a random density matrix."""
+    shape = (2**num_wires, 2**num_wires)
+    state = np.random.random(shape) + 1j * np.random.random(shape)
+    state = state @ state.T.conj()
+    state /= np.trace(state)
+    return state
 
 
 @pytest.mark.parametrize("nr_wires", [1, 2, 3])
@@ -144,6 +159,7 @@ class TestReset:
     """Unit tests for the method `reset()`"""
 
     def test_reset_basis(self, nr_wires, tol):
+        """Test the reset after creating a basis state."""
         dev = qml.device("default.mixed", wires=nr_wires)
         dev._state = dev._create_basis_state(1)
         dev.reset()
@@ -168,6 +184,9 @@ class TestReset:
             ResetError(0.1, 0.5, wires=[0]),
             PauliError("X", 0.5, wires=0),
             PauliError("ZY", 0.3, wires=[1, 0]),
+            PauliX(0),
+            PauliZ(0),
+            Hadamard(0),
         ],
     )
     def test_reset_after_channel(self, nr_wires, op, tol):
@@ -175,16 +194,6 @@ class TestReset:
         wires"""
         dev = qml.device("default.mixed", wires=nr_wires)
         dev.apply([op])
-        dev.reset()
-
-        assert np.allclose(dev._state, dev._create_basis_state(0), atol=tol, rtol=0)
-
-    @pytest.mark.parametrize("op", [PauliX, PauliZ, Hadamard])
-    def test_reset_after_channel(self, nr_wires, op, tol):
-        """Tests that state is correctly reset after applying gates on the first
-        wire"""
-        dev = qml.device("default.mixed", wires=nr_wires)
-        dev.apply([op(wires=0)])
         dev.reset()
 
         assert np.allclose(dev._state, dev._create_basis_state(0), atol=tol, rtol=0)
@@ -330,6 +339,7 @@ class TestKrausOps:
         assert np.allclose(dev._get_kraus(ops[0]), ops[1], atol=tol, rtol=0)
 
 
+@pytest.mark.parametrize("apply_method", ["_apply_channel", "_apply_channel_tensordot"])
 class TestApplyChannel:
     """Unit tests for the method `_apply_channel()`"""
 
@@ -354,21 +364,14 @@ class TestApplyChannel:
     ]
 
     @pytest.mark.parametrize("x", x_apply_channel_init)
-    def test_channel_init(self, x, tol):
+    def test_channel_init(self, x, tol, apply_method):
         """Tests that channels are correctly applied to the default initial state"""
         nr_wires = x[0]
         op = x[1]
         target_state = np.reshape(x[2], [2] * 2 * nr_wires)
         dev = qml.device("default.mixed", wires=nr_wires)
         kraus = dev._get_kraus(op)
-        if (
-            op.name == "CNOT"
-            or op.name == "ISWAP"
-            or (isinstance(op, PauliError) and nr_wires == 2)
-        ):
-            dev._apply_channel(kraus, wires=Wires([0, 1]))
-        else:
-            dev._apply_channel(kraus, wires=Wires(0))
+        getattr(dev, apply_method)(kraus, wires=op.wires)
 
         assert np.allclose(dev._state, target_state, atol=tol, rtol=0)
 
@@ -397,7 +400,7 @@ class TestApplyChannel:
     ]
 
     @pytest.mark.parametrize("x", x_apply_channel_mixed)
-    def test_channel_mixed(self, x, tol):
+    def test_channel_mixed(self, x, tol, apply_method):
         """Tests that channels are correctly applied to the maximally mixed state"""
         nr_wires = x[0]
         op = x[1]
@@ -406,14 +409,7 @@ class TestApplyChannel:
         max_mixed = np.reshape(max_mixed_state(nr_wires), [2] * 2 * nr_wires)
         dev._state = max_mixed
         kraus = dev._get_kraus(op)
-        if (
-            op.name == "CNOT"
-            or op.name == "ISWAP"
-            or (isinstance(op, PauliError) and nr_wires == 2)
-        ):
-            dev._apply_channel(kraus, wires=Wires([0, 1]))
-        else:
-            dev._apply_channel(kraus, wires=Wires(0))
+        getattr(dev, apply_method)(kraus, wires=op.wires)
 
         assert np.allclose(dev._state, target_state, atol=tol, rtol=0)
 
@@ -479,7 +475,7 @@ class TestApplyChannel:
     ]
 
     @pytest.mark.parametrize("x", x_apply_channel_root)
-    def test_channel_root(self, x, tol):
+    def test_channel_root(self, x, tol, apply_method):
         """Tests that channels are correctly applied to root state"""
         nr_wires = x[0]
         op = x[1]
@@ -488,14 +484,44 @@ class TestApplyChannel:
         root = np.reshape(root_state(nr_wires), [2] * 2 * nr_wires)
         dev._state = root
         kraus = dev._get_kraus(op)
-        if (
-            op.name == "CNOT"
-            or op.name == "ISWAP"
-            or (isinstance(op, PauliError) and nr_wires == 2)
-        ):
-            dev._apply_channel(kraus, wires=Wires([0, 1]))
-        else:
-            dev._apply_channel(kraus, wires=Wires(0))
+        getattr(dev, apply_method)(kraus, wires=op.wires)
+        assert np.allclose(dev._state, target_state, atol=tol, rtol=0)
+
+    ops = [
+        PauliX(wires=0),
+        PauliX(wires=2),
+        Hadamard(wires=0),
+        CNOT(wires=[0, 1]),
+        ISWAP(wires=[0, 1]),
+        SWAP(wires=[2, 0]),
+        MultiControlledX(wires=[0, 1, 2]),
+        MultiControlledX(wires=[2, 0, 1]),
+        AmplitudeDamping(0.5, wires=0),
+        DepolarizingChannel(0.5, wires=0),
+        ResetError(0.1, 0.5, wires=0),
+        PauliError("Z", 0.3, wires=0),
+        PauliError("XY", 0.5, wires=[0, 1]),
+        PauliError("XZY", 0.1, wires=[0, 2, 1]),
+    ]
+
+    @pytest.mark.parametrize("op", ops)
+    @pytest.mark.parametrize("num_dev_wires", [1, 2, 3])
+    def test_channel_against_matmul(self, num_dev_wires, op, apply_method, tol):
+        """Test the application of a channel againt matrix multiplication."""
+        if num_dev_wires < max(op.wires) + 1:
+            pytest.skip("Need at least as many wires in the device as in the operation.")
+        np.random.seed(52)
+        dev = qml.device("default.mixed", wires=num_dev_wires)
+        init_state = random_state(num_dev_wires)
+        dev._state = qml.math.reshape(init_state, [2] * (2 * num_dev_wires))
+
+        kraus = dev._get_kraus(op)
+        full_kraus = [qml.math.expand_matrix(k, op.wires, wire_order=dev.wires) for k in kraus]
+
+        target_state = qml.math.sum([k @ init_state @ k.conj().T for k in full_kraus], axis=0)
+        target_state = qml.math.reshape(target_state, [2] * (2 * num_dev_wires))
+
+        getattr(dev, apply_method)(kraus, wires=op.wires)
 
         assert np.allclose(dev._state, target_state, atol=tol, rtol=0)
 
@@ -811,30 +837,48 @@ class TestApplyDensityMatrix:
 
 
 class TestApplyOperation:
-    """Unit tests for the method `_apply_operation()`. Since this just calls `_apply_channel()`
-    and `_apply_diagonal_unitary()`, we just check that the correct method is called"""
+    """Unit tests for the method `_apply_operation()`. Since this just calls `_apply_channel()`,
+    `_apply_diagonal_unitary()` or `_apply_channel_tensordot`, we just check
+    that the correct method is called"""
 
     def test_diag_apply_op(self, mocker):
         """Tests that when applying a diagonal gate, only `_apply_diagonal_unitary` is called,
         exactly once"""
         spy_channel = mocker.spy(DefaultMixed, "_apply_channel")
+        spy_channel_tensordot = mocker.spy(DefaultMixed, "_apply_channel_tensordot")
         spy_diag = mocker.spy(DefaultMixed, "_apply_diagonal_unitary")
         dev = qml.device("default.mixed", wires=1)
         dev._apply_operation(PauliZ(0))
 
         spy_channel.assert_not_called()
+        spy_channel_tensordot.assert_not_called()
         spy_diag.assert_called_once()
 
     def test_channel_apply_op(self, mocker):
         """Tests that when applying a non-diagonal gate, only `_apply_channel` is called,
         exactly once"""
         spy_channel = mocker.spy(DefaultMixed, "_apply_channel")
+        spy_channel_tensordot = mocker.spy(DefaultMixed, "_apply_channel_tensordot")
         spy_diag = mocker.spy(DefaultMixed, "_apply_diagonal_unitary")
         dev = qml.device("default.mixed", wires=1)
         dev._apply_operation(PauliX(0))
 
         spy_diag.assert_not_called()
+        spy_channel_tensordot.assert_not_called()
         spy_channel.assert_called_once()
+
+    def test_channel_apply_tensordot_op(self, mocker):
+        """Tests that when applying a non-diagonal gate on more than two qubits,
+        only `_apply_channel_tensordot` is called, exactly once"""
+        spy_channel = mocker.spy(DefaultMixed, "_apply_channel")
+        spy_channel_tensordot = mocker.spy(DefaultMixed, "_apply_channel_tensordot")
+        spy_diag = mocker.spy(DefaultMixed, "_apply_diagonal_unitary")
+        dev = qml.device("default.mixed", wires=3)
+        dev._apply_operation(MultiControlledX(wires=[0, 1, 2]))
+
+        spy_diag.assert_not_called()
+        spy_channel.assert_not_called()
+        spy_channel_tensordot.assert_called_once()
 
     def test_identity_skipped(self, mocker):
         """Test that applying the identity does not perform any additional computations."""
@@ -845,7 +889,7 @@ class TestApplyOperation:
         spy_diagonal_unitary = mocker.spy(dev, "_apply_diagonal_unitary")
         spy_apply_channel = mocker.spy(dev, "_apply_channel")
 
-        initialstate = dev.state.__copy__()
+        initialstate = copy.copy(dev.state)
 
         dev._apply_operation(op)
 
@@ -1002,6 +1046,22 @@ class TestApply:
         dev.apply([qml.QubitUnitary(U, wires=[0])])
         ket = np.array([np.cos(theta) + 0j, np.sin(theta) + 0j])
         target_rho = np.outer(ket, np.conj(ket))
+
+        assert np.allclose(dev.state, target_rho, atol=tol, rtol=0)
+
+    @pytest.mark.parametrize("num_wires", [1, 2, 3])
+    def test_apply_specialunitary(self, tol, num_wires):
+        """Tests that a special unitary is correctly applied"""
+        np.random.seed(2514)
+        theta = np.random.random(4**num_wires - 1)
+
+        dev = qml.device("default.mixed", wires=num_wires)
+        dev.apply([qml.SpecialUnitary(theta, wires=list(range(num_wires)))])
+
+        mat = qml.SpecialUnitary.compute_matrix(theta, num_wires)
+        init_rho = np.zeros((2**num_wires, 2**num_wires))
+        init_rho[0, 0] = 1
+        target_rho = mat @ init_rho @ mat.conj().T
 
         assert np.allclose(dev.state, target_rho, atol=tol, rtol=0)
 

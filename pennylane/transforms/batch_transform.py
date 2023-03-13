@@ -286,6 +286,11 @@ class batch_transform:
         def _wrapper(*args, **kwargs):
             shots = kwargs.pop("shots", False)
 
+            argnums = kwargs.pop("argnums", None)
+
+            if argnums:
+                tkwargs["argnums"] = argnums
+
             old_interface = qnode.interface
 
             if old_interface == "auto":
@@ -392,7 +397,7 @@ class batch_transform:
         wrapper.differentiable = self.differentiable
         return wrapper
 
-    def construct(self, tape, *args, **kwargs):
+    def construct(self, tape, *targs, **tkwargs):
         """Applies the batch tape transform to an input tape.
 
         Args:
@@ -404,12 +409,15 @@ class batch_transform:
             tuple[list[tapes], callable]: list of transformed tapes
             to execute and a post-processing function.
         """
-        expand = kwargs.pop("_expand", True)
+        expand = tkwargs.pop("_expand", True)
+        argnums = tkwargs.pop("argnums", None)
 
         if expand and self.expand_fn is not None:
-            tape = self.expand_fn(tape, *args, **kwargs)
+            tape = self.expand_fn(tape, *targs, **tkwargs)
 
-        tapes, processing_fn = self.transform_fn(tape, *args, **kwargs)
+        if argnums is not None:
+            tape.trainable_params = argnums
+        tapes, processing_fn = self.transform_fn(tape, *targs, **tkwargs)
 
         if processing_fn is None:
 

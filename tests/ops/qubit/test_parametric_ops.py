@@ -14,16 +14,21 @@
 """
 Unit tests for the available built-in parametric qubit operations.
 """
-from functools import reduce
-import pytest
 import copy
+from functools import reduce
+
 import numpy as np
-from pennylane import numpy as npp
+import pytest
+from gate_data import ControlledPhaseShift, CPhaseShift00, CPhaseShift01, CPhaseShift10, Z
 
 import pennylane as qml
+from pennylane import numpy as npp
+from pennylane.ops.qubit.parametric_ops import (
+    RX as old_loc_RX,
+    ControlledPhaseShift as old_loc_ControlledPhaseShift,
+    MultiRZ as old_loc_MultiRZ,
+)
 from pennylane.wires import Wires
-
-from gate_data import ControlledPhaseShift, CPhaseShift00, CPhaseShift01, CPhaseShift10, Z
 
 PARAMETRIZED_OPERATIONS = [
     qml.RX(0.123, wires=0),
@@ -3066,8 +3071,8 @@ class TestPauliRot:
         expected = qml.PauliZ("a") @ qml.PauliY(7)
 
         assert coeff == -0.5
-        assert gen.obs[0].name == expected.obs[0].name
-        assert gen.obs[1].wires == expected.obs[1].wires
+        assert gen.operands[0].name == expected.obs[0].name
+        assert gen.operands[1].wires == expected.obs[1].wires
 
 
 class TestMultiRZ:
@@ -3994,3 +3999,12 @@ control_value_data = [
 def test_control_values(op, control_values):
     """Test the ``control_values`` attribute for parametrized operations."""
     assert op.control_values == control_values
+
+
+def test_op_aliases_are_valid():
+    """Tests that ops in new files can still be accessed from the old parametric_ops module."""
+    assert (
+        qml.ops.qubit.parametric_ops_controlled.ControlledPhaseShift is old_loc_ControlledPhaseShift
+    )
+    assert qml.ops.qubit.parametric_ops_multi_qubit.MultiRZ is old_loc_MultiRZ
+    assert qml.ops.qubit.parametric_ops_single_qubit.RX is old_loc_RX

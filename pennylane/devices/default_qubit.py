@@ -286,8 +286,8 @@ class DefaultQubit(QubitDevice):
             operation (ParametrizedEvolution): operation to apply on the state
         """
         raise NotImplementedError(
-            f"The device {self.short_name} cannot execute a ParametrizedEvolution operation."
-            "Please use the jax  interface."
+            f"The device {self.short_name} cannot execute a ParametrizedEvolution operation. "
+            "Please use the jax interface."
         )
 
     def _apply_operation(self, state, operation):
@@ -600,10 +600,8 @@ class DefaultQubit(QubitDevice):
             else:
                 # Coefficients and the state are not trainable, we can be more
                 # efficient in how we compute the Hamiltonian sparse matrix.
-                if observable.name == "Hamiltonian":
-                    Hmat = qml.utils.sparse_hamiltonian(observable, wires=self.wires)
-                elif observable.name == "SparseHamiltonian":
-                    Hmat = observable.sparse_matrix()
+                if observable.name in {"Hamiltonian", "SparseHamiltonian"}:
+                    Hmat = observable.sparse_matrix(wire_order=self.wires)
 
                 state = qml.math.toarray(self.state)
                 if self._ndim(state) == 2:

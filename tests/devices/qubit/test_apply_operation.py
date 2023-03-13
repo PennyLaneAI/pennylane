@@ -17,6 +17,7 @@ Tests the apply_operation functions from devices/qubit
 import pytest
 
 import numpy as np
+from scipy.stats import unitary_group
 import pennylane as qml
 
 
@@ -33,6 +34,9 @@ ml_frameworks_list = [
     pytest.param("torch", marks=pytest.mark.torch),
     pytest.param("tensorflow", marks=pytest.mark.tf),
 ]
+
+
+methods = [apply_operation_einsum, apply_operation_tensordot, apply_operation]
 
 
 def test_custom_operator_with_matrix():
@@ -59,9 +63,7 @@ def test_custom_operator_with_matrix():
 
 
 @pytest.mark.parametrize("ml_framework", ml_frameworks_list)
-@pytest.mark.parametrize(
-    "method", (apply_operation_einsum, apply_operation_tensordot, apply_operation)
-)
+@pytest.mark.parametrize("method", methods)
 @pytest.mark.parametrize("wire", (0, 1))
 class TestTwoQubitStateSpecialCases:
     """Test the special cases on a two qubit state.  Also tests the special cases for einsum and tensor application methods
@@ -204,9 +206,7 @@ class TestTwoQubitStateSpecialCases:
         assert qml.math.allclose(initial1[0], new1[1])
 
 
-@pytest.mark.parametrize(
-    "method", (apply_operation_einsum, apply_operation_tensordot, apply_operation)
-)
+@pytest.mark.parametrize("method", methods)
 class TestRXCalcGrad:
     """Tests the application and differentiation of an RX gate in the different interfaces."""
 
@@ -324,9 +324,84 @@ class TestRXCalcGrad:
         self.compare_expected_result(phi, state, new_state, phi_grad)
 
 
-@pytest.mark.parametrize(
-    "method", (apply_operation_einsum, apply_operation_tensordot, apply_operation)
-)
+@pytest.mark.parametrize("ml_framework", ml_frameworks_list)
+@pytest.mark.parametrize("method", methods)
+class TestBroadcasting:  # pylint: disable=too-few-public-methods
+    """Tests that broadcasted operations are applied correctly."""
+
+    broadcasted_ops = [
+        qml.RX(np.array([np.pi, np.pi / 2, np.pi / 4]), wires=2),
+        qml.PhaseShift(np.array([np.pi, np.pi / 2, np.pi / 4]), wires=2),
+        qml.IsingXX(np.array([np.pi, np.pi / 2, np.pi / 4]), wires=[1, 2]),
+        qml.QubitUnitary(
+            np.array([unitary_group.rvs(8), unitary_group.rvs(8), unitary_group.rvs(8)]),
+            wires=[0, 1, 2],
+        ),
+    ]
+
+    unbroadcasted_ops = [
+        qml.PauliX(2),
+        qml.PauliZ(2),
+        qml.CNOT([1, 2]),
+        qml.RX(np.pi, wires=2),
+        qml.PhaseShift(np.pi / 2, wires=2),
+        qml.IsingXX(np.pi / 2, wires=[1, 2]),
+        qml.QubitUnitary(unitary_group.rvs(8), wires=[0, 1, 2]),
+    ]
+
+    @pytest.mark.parametrize("op", broadcasted_ops)
+    def test_broadcasted_op(self, op, method, ml_framework):
+        """Tests that batched operations are applied correctly to an unbatched state."""
+        state = np.ones((2, 2, 2)) / np.sqrt(8)
+
+        res = method(op, qml.math.asarray(state, like=ml_framework))
+        missing_wires = 3 - len(op.wires)
+        mat = op.matrix()
+        expanded_mat = [
+            np.kron(np.eye(2**missing_wires), mat[i]) if missing_wires else mat[i]
+            for i in range(3)
+        ]
+        expected = [(expanded_mat[i] @ state.flatten()).reshape((2, 2, 2)) for i in range(3)]
+
+        assert qml.math.get_interface(res) == ml_framework
+        assert qml.math.allclose(res, expected)
+
+    @pytest.mark.parametrize("op", unbroadcasted_ops)
+    def test_broadcasted_state(self, op, method, ml_framework):
+        """Tests that unbatched operations are applied correctly to a batched state."""
+        state = np.ones((3, 2, 2, 2)) / np.sqrt(8)
+
+        res = method(op, qml.math.asarray(state, like=ml_framework), is_state_batched=True)
+        missing_wires = 3 - len(op.wires)
+        mat = op.matrix()
+        expanded_mat = np.kron(np.eye(2**missing_wires), mat) if missing_wires else mat
+        expected = [(expanded_mat @ state[i].flatten()).reshape((2, 2, 2)) for i in range(3)]
+
+        assert qml.math.get_interface(res) == ml_framework
+        assert qml.math.allclose(res, expected)
+
+    @pytest.mark.parametrize("op", broadcasted_ops)
+    def test_broadcasted_op_broadcasted_state(self, op, method, ml_framework):
+        """Tests that batched operations are applied correctly to a batched state."""
+        if method is apply_operation_tensordot:
+            pytest.skip("Tensordot doesn't support batched operator and batched state.")
+
+        state = np.ones((3, 2, 2, 2)) / np.sqrt(8)
+
+        res = method(op, qml.math.asarray(state, like=ml_framework), is_state_batched=True)
+        missing_wires = 3 - len(op.wires)
+        mat = op.matrix()
+        expanded_mat = [
+            np.kron(np.eye(2**missing_wires), mat[i]) if missing_wires else mat[i]
+            for i in range(3)
+        ]
+        expected = [(expanded_mat[i] @ state[i].flatten()).reshape((2, 2, 2)) for i in range(3)]
+
+        assert qml.math.get_interface(res) == ml_framework
+        assert qml.math.allclose(res, expected)
+
+
+@pytest.mark.parametrize("method", methods)
 class TestLargerOperations:
     """Tests matrix applications on states and operations with larger numbers of wires."""
 
@@ -378,3 +453,18 @@ class TestLargerOperations:
             state_v2 = method(d_op, state_v2)
 
         assert qml.math.allclose(state_v1, state_v2)
+
+
+@pytest.mark.tf
+@pytest.mark.parametrize("op", (qml.PauliZ(8), qml.CNOT((5, 6))))
+def test_tf_large_state(op):
+    """ "Tests that custom kernels that use slicing fall back to a different method when
+    the state has a large number of wires."""
+    import tensorflow as tf
+
+    state = np.zeros([2] * 10)
+    state = tf.Variable(state)
+    new_state = apply_operation(op, state)
+
+    # still all zeros.  Mostly just making sure error not raised
+    assert qml.math.allclose(state, new_state)

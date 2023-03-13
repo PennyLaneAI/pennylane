@@ -189,29 +189,38 @@ class QubitStateVector(StatePrep):
 
     def state_vector(self, wire_order=None):
         num_op_wires = len(self.wires)
-        op_vector = math.reshape(self.parameters[0], (2,) * num_op_wires)
+        op_vector_shape = (-1,) + (2,) * num_op_wires if self.batch_size else (2,) * num_op_wires
+        op_vector = math.reshape(self.parameters[0], op_vector_shape)
 
         if wire_order is None or Wires(wire_order) == self.wires:
             return op_vector
 
-        if not Wires(wire_order).contains_wires(self.wires):
+        wire_order = Wires(wire_order)
+        if not wire_order.contains_wires(self.wires):
             raise WireError("Custom wire_order must contain all QubitStateVector wires")
 
         num_total_wires = len(wire_order)
-        indices = tuple([slice(None)] * num_op_wires + [0] * (num_total_wires - num_op_wires))
-        ket = np.zeros((2,) * num_total_wires, dtype=np.complex128)
+        indices = tuple(
+            [Ellipsis] + [slice(None)] * num_op_wires + [0] * (num_total_wires - num_op_wires)
+        )
+        ket_shape = [2] * num_total_wires
+        if self.batch_size:
+            # Add broadcasted dimension to the shape of the state vector
+            ket_shape = [self.batch_size] + ket_shape
+
+        ket = np.zeros(ket_shape, dtype=np.complex128)
         ket[indices] = op_vector
 
         # unless wire_order is [*self.wires, *rest_of_wire_order], need to rearrange
-        if (op_wires := list(self.wires)) != wire_order[:num_op_wires]:
-            new_wires = set(wire_order) - set(op_wires)
-            new_order = op_wires + list(new_wires)
-            for i, wire in enumerate(wire_order):
-                # after each loop iteration, the i'th axis will represent the correct wire
-                i_wire_pos = new_order.index(wire)
-                if i_wire_pos != i:
-                    ket = np.swapaxes(ket, i, i_wire_pos)
-                    new_order[i], new_order[i_wire_pos] = new_order[i_wire_pos], new_order[i]
+        if self.wires != wire_order[:num_op_wires]:
+            current_order = self.wires + list(Wires.unique_wires([wire_order, self.wires]))
+            desired_order = [current_order.index(w) for w in wire_order]
+            if self.batch_size:
+                # If the operation is broadcasted, the desired order must include the batch dimension
+                # as the first dimension.
+                desired_order = [0] + [d + 1 for d in desired_order]
+
+            ket = ket.transpose(desired_order)
 
         return math.convert_like(ket, op_vector)
 

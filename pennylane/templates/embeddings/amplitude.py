@@ -225,7 +225,7 @@ class AmplitudeEmbedding(Operation):
                     feature_set = feature_set / qml.math.sqrt(norm)
                 else:
                     raise ValueError(
-                        f"Features must be a vector of norm 1.0; got norm {norm}."
+                        f"Features must be a vector of norm 1.0; got norm {norm}. "
                         "Use 'normalize=True' to automatically normalize."
                     )
 
