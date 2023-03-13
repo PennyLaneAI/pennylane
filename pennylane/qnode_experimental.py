@@ -33,18 +33,19 @@ class QNodeExperimental:
     """Represents a quantum node in the hybrid computational graph."""
 
     def __init__(
-        self,
-        func,
-        device,
-        interface="auto",
-        diff_method="best",
-        expansion_strategy="gradient",
-        max_expansion=10,
-        mode="best",
-        cache=True,
-        cachesize=10000,
-        max_diff=1,
-        **gradient_kwargs,
+            self,
+            func,
+            device,
+            interface="auto",
+            diff_method="best",
+            expansion_strategy="gradient",
+            max_expansion=10,
+            mode="best",
+            cache=True,
+            cachesize=10000,
+            max_diff=1,
+            dag_only=False,
+            **gradient_kwargs,
     ):
         if interface not in SUPPORTED_INTERFACES:
             raise qml.QuantumFunctionError(
@@ -114,6 +115,7 @@ class QNodeExperimental:
         functools.update_wrapper(self, func)
 
         self.transform_program = qml.transforms.experimental.TransformProgram()
+        self.dag_only = dag_only
 
     def __repr__(self):
         """String representation."""
@@ -443,7 +445,7 @@ class QNodeExperimental:
             measurement_processes = self._qfunc_output
 
         if not measurement_processes or not all(
-            isinstance(m, qml.measurements.MeasurementProcess) for m in measurement_processes
+                isinstance(m, qml.measurements.MeasurementProcess) for m in measurement_processes
         ):
             raise qml.QuantumFunctionError(
                 "A quantum function must return either a single measurement, "
@@ -460,8 +462,8 @@ class QNodeExperimental:
 
         for obj in self.tape.operations + self.tape.observables:
             if (
-                getattr(obj, "num_wires", None) is qml.operation.WiresEnum.AllWires
-                and len(obj.wires) != self.device.num_wires
+                    getattr(obj, "num_wires", None) is qml.operation.WiresEnum.AllWires
+                    and len(obj.wires) != self.device.num_wires
             ):
                 # check here only if enough wires
                 raise qml.QuantumFunctionError(f"Operator {obj.name} must act on all wires")
@@ -524,16 +526,17 @@ class QNodeExperimental:
 
         cache = self.execute_kwargs.get("cache", False)
         using_custom_cache = (
-            hasattr(cache, "__getitem__")
-            and hasattr(cache, "__setitem__")
-            and hasattr(cache, "__delitem__")
+                hasattr(cache, "__getitem__")
+                and hasattr(cache, "__setitem__")
+                and hasattr(cache, "__delitem__")
         )
         self._tape_cached = using_custom_cache and self.tape.hash in cache
 
         res = qml.interfaces.execute_experimental(
-            [self.tape], device=self.device, transforms_program=self.transform_program
+            [self.tape], device=self.device, transforms_program=self.transform_program, dag=self.dag_only
         )
-        res = res[0]
+        if isinstance(res, (tuple, list)):
+            res = res[0]
 
         if old_interface == "auto":
             self.interface = "auto"

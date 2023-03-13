@@ -93,4 +93,10 @@ class TransformProgram:
         )
 
     def dag(self):
-        return 0
+        import networkx as nx
+        g = nx.MultiDiGraph()
+        for transf in self._transform_program:
+            g.add_node(transf)
+        for i in range(len(self._transform_program)-1):
+            g.add_edge(self._transform_program[i], self._transform_program[i+1])
+        return g

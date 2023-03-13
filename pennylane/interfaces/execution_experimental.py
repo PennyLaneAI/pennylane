@@ -79,6 +79,7 @@ def execute_experimental(
     tapes: Sequence[QuantumTape],
     device,
     transforms_program,
+    dag,
 ):
     """New function to execute a batch of tapes on a device in an autodifferentiable-compatible manner. More cases will be added,
     during the project. The current version is supporting forward execution for Numpy and does not support shot vectors.
@@ -87,24 +88,46 @@ def execute_experimental(
 
     tape_process_fn = []
     qnode_process_fn = []
-    # Apply transform queue and get a batch of tapes
-    while len(transforms_program._transform_program) != 0:
-        t_fn, targs, tkwargs, expand_fn, q_process = transforms_program.pop()
-        tapes, t_process = qml.transforms.map_batch_transform(t_fn, tapes)
-        tape_process_fn.append(t_process)
-        qnode_process_fn.append(q_process)
 
-    # Device expansion just before execution
-    expand_fn = lambda tape: device.expand_fn(tape, max_expansion=10)
-    tapes = [expand_fn(tape) for tape in tapes]
+    if dag is False:
+        # Apply transform queue and get a batch of tapes
+        while len(transforms_program._transform_program) != 0:
+            t_fn, targs, tkwargs, expand_fn, q_process = transforms_program.pop()
+            tapes, t_process = qml.transforms.map_batch_transform(t_fn, tapes)
+            tape_process_fn.append(t_process)
+            qnode_process_fn.append(q_process)
 
-    # Execution tapes
-    with qml.tape.Unwrap(*tapes):
-        res = execute(tapes)
+        # Device expansion just before execution
+        expand_fn = lambda tape: device.expand_fn(tape, max_expansion=10)
+        tapes = [expand_fn(tape) for tape in tapes]
 
-    # Postprocessing
-    for fn in tape_process_fn[::-1]:
-        res = fn(res)
+        # Execution tapes
+        with qml.tape.Unwrap(*tapes):
+            res = execute(tapes)
 
-    return res
-    # return res
+        # Postprocessing
+        for fn in tape_process_fn[::-1]:
+            res = fn(res)
+
+        return res# return res
+    else:
+        import networkx as nx
+        dag = nx.MultiDiGraph()
+        prev_tapes = tapes.copy()
+        for tape in tapes:
+            dag.add_node(tape)
+
+        while len(transforms_program._transform_program) != 0:
+            t_fn, targs, tkwargs, expand_fn, q_process = transforms_program.pop()
+            prev_num_group = len(tapes)
+            tapes, t_process = qml.transforms.map_batch_transform(t_fn, tapes)
+            num_groups = int(len(tapes) / prev_num_group)
+            for tape in tapes:
+                dag.add_node(tape)
+
+            for i in range(prev_num_group):
+                for j in range(num_groups):
+                    dag.add_edge(prev_tapes[i], tapes[j + num_groups * i])
+            prev_tapes = tapes.copy()
+
+        return dag
