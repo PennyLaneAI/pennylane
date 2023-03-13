@@ -279,8 +279,7 @@ def estimate_resources_batch(qnode):
         .. code-block:: python3
 
             symbols  = ['H', 'H']
-            geometry = np.array([[0.0, 0.0, -0.69434785],
-                                 [0.0, 0.0,  0.69434785]], requires_grad = False)
+            geometry = np.array([[0.0, 0.0, -0.69434785], [0.0, 0.0,  0.69434785]], requires_grad = False)
             electrons = 2
             ham, qubits = qml.qchem.molecular_hamiltonian(symbols, geometry, grouping_type='qwc')
             hf_state = qml.qchem.hf_state(electrons, qubits)
