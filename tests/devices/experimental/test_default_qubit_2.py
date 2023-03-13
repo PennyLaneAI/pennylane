@@ -100,7 +100,7 @@ class TestSupportsDerivatives:
         """Test that DefaultQubit2 says that it supports backpropagation."""
         dev = DefaultQubit2()
         config = ExecutionConfig(gradient_method="backprop")
-        assert dev.supports_derivatives(config) == True
+        assert dev.supports_derivatives(config) is True
 
         qs = qml.tape.QuantumScript([], [qml.state()])
         assert dev.supports_derivatives(config, qs)
@@ -453,6 +453,7 @@ class TestSumOfTermsDifferentiability:
 def test_preprocessing_integration():
     """Test integration between preprocessing and execution with numpy parameters."""
 
+    # pylint: disable=too-few-public-methods
     class MyTemplate(qml.operation.Operation):
         num_wires = 2
 
