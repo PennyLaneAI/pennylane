@@ -21,6 +21,9 @@ import numpy as np
 
 import pennylane as qml
 from pennylane.wires import Wires
+from pennylane.operation import Operator
+from pennylane.ops.qubit.hamiltonian import Hamiltonian
+
 
 from .parametrized_hamiltonian import ParametrizedHamiltonian
 
@@ -119,12 +122,11 @@ def rydberg_interaction(
     )
 
 
-def rydberg_drive(amplitude, detuning, phase, wires):
+def rydberg_drive(amplitude, phase, detuning, wires):
     r"""Returns a :class:`ParametrizedHamiltonian` representing the action of a driving laser
     field with the given rabi frequency, detuning and phase acting on the given wires
 
     .. math::
-
         \frac{1}{2} \Omega(t) \sum_{i \in \text{wires}} (\cos(\phi)\sigma_i^x - \sin(\phi)\sigma_i^y) -
         \frac{1}{2} \delta(t) \sum_{i \in \text{wires}} \sigma_i^z
 
@@ -138,9 +140,9 @@ def rydberg_drive(amplitude, detuning, phase, wires):
     Args:
         amplitude (Union[float, Callable]): float or callable returning the amplitude (in MHz) of a
             laser field
+        phase (Union[float, Callable]): float or callable returning the phase (in radians) of the laser field
         detuning (Union[float, Callable]): float or callable returning the detuning (in MHz) of a
             laser field
-        phase (float): float containing the phase (in radians) of the laser field
         wires (Union[int, List[int]]): integer or list containing wire values for the Rydberg atoms that
             the laser field acts on
 
@@ -166,10 +168,10 @@ def rydberg_drive(amplitude, detuning, phase, wires):
         H_i = qml.pulse.rydberg_interaction(atom_coordinates, wires)
 
         amplitude = lambda p, t: p * jnp.sin(jnp.pi * t)
-        detuning = 3 * jnp.pi / 4
         phase = jnp.pi / 2
+        detuning = 3 * jnp.pi / 4
         wires = [0, 1, 2, 3]
-        H_d = qml.pulse.rydberg_drive(amplitude, detuning, phase, wires)
+        H_d = qml.pulse.rydberg_drive(amplitude, phase, detuning, wires)
 
     >>> H_i
     ParametrizedHamiltonian: terms=6
@@ -200,9 +202,9 @@ def rydberg_drive(amplitude, detuning, phase, wires):
     .. code-block:: python
 
         amplitude_local = lambda p, t: p[0] * jnp.sin(2 * jnp.pi * t) + p[1]
-        detuning_local = lambda p, t: p * jnp.exp(-0.25 * t)
         phase_local = jnp.pi / 4
-        H_local = qml.pulse.rydberg_drive(amplitude_local, detuning_local, phase_local, [0, 1])
+        detuning_local = lambda p, t: p * jnp.exp(-0.25 * t)
+        H_local = qml.pulse.rydberg_drive(amplitude_local, phase_local, detuning_local, [0, 1])
 
         H = H_i + H_d + H_local
 
@@ -224,16 +226,21 @@ def rydberg_drive(amplitude, detuning, phase, wires):
         wires = [wires]
 
     # We compute the `coeffs` and `observables` of the laser field
-    coeffs = [amplitude, detuning]
-    amplitude_observable = sum(
-        qml.math.cos(phase) * qml.PauliX(wire) - qml.math.sin(phase) * qml.PauliY(wire)
-        for wire in wires
-    )
-    detuning_observable = sum(qml.PauliZ(wire) for wire in wires)
-    observables = [amplitude_observable, detuning_observable]
+    coeffs = [
+        amplitude_and_phase(qml.math.cos, amplitude, phase),
+        amplitude_and_phase(qml.math.sin, amplitude, phase),
+        detuning,
+    ]
+
+    drive_terms_1 = sum(qml.PauliX(wire) for wire in wires)
+    drive_terms_2 = sum(-qml.PauliY(wire) for wire in wires)
+    drive_terms_3 = sum(qml.PauliZ(wire) for wire in wires)
+
+    observables = [drive_terms_1, drive_terms_2, drive_terms_3]
 
     # We convert the pulse data into a list of ``RydbergPulse`` objects
-    pulses = [RydbergPulse(amplitude, detuning, phase, wires)]
+    pulses = [RydbergPulse(amplitude, phase, detuning, wires)]
+
     return RydbergHamiltonian(coeffs, observables, pulses=pulses)
 
 
@@ -292,26 +299,75 @@ class RydbergHamiltonian(ParametrizedHamiltonian):
         self.interaction_coeff = interaction_coeff
         super().__init__(coeffs, observables)
 
-    def __add__(self, other):
-        if not isinstance(other, RydbergHamiltonian):
-            return super().__add__(other)
+    def __call__(self, params, t):
+        params = _rydberg_reorder_parameters(params, self.coeffs_parametrized)
+        return super().__call__(params, t)
 
-        # Update coeffs, obs and hardware attributes
-        if self.register is not None:
-            if other.register is not None:
-                raise ValueError("We cannot add two Hamiltonians with an interaction term!")
-            if not self.wires.contains_wires(other.wires):
+    def __add__(self, other):
+        if isinstance(other, RydbergHamiltonian):
+            # Update coeffs, obs and hardware attributes
+            if self.register is not None:
+                if other.register is not None:
+                    raise ValueError("We cannot add two Hamiltonians with an interaction term!")
+                if not self.wires.contains_wires(other.wires):
+                    warnings.warn(
+                        "The wires of the laser fields are not present in the Rydberg ensemble."
+                    )
+            elif other.register is not None and not other.wires.contains_wires(self.wires):
                 warnings.warn(
                     "The wires of the laser fields are not present in the Rydberg ensemble."
                 )
-        elif other.register is not None and not other.wires.contains_wires(self.wires):
-            warnings.warn("The wires of the laser fields are not present in the Rydberg ensemble.")
 
-        new_register = self.register or other.register
-        new_pulses = self.pulses + other.pulses
-        new_ops = self.ops + other.ops
-        new_coeffs = self.coeffs + other.coeffs
-        return RydbergHamiltonian(new_coeffs, new_ops, register=new_register, pulses=new_pulses)
+            new_register = self.register or other.register
+            new_pulses = self.pulses + other.pulses
+            new_ops = self.ops + other.ops
+            new_coeffs = self.coeffs + other.coeffs
+            return RydbergHamiltonian(new_coeffs, new_ops, register=new_register, pulses=new_pulses)
+
+        ops = self.ops.copy()
+        coeffs = self.coeffs.copy()
+        register = self.register
+        pulses = self.pulses
+
+        if isinstance(other, (Hamiltonian, ParametrizedHamiltonian)):
+            new_coeffs = coeffs + other.coeffs.copy()
+            new_ops = ops + other.ops.copy()
+            return RydbergHamiltonian(new_coeffs, new_ops, register=register, pulses=pulses)
+
+        if isinstance(other, qml.ops.SProd):  # pylint: disable=no-member
+            new_coeffs = coeffs + [other.scalar]
+            new_ops = ops + [other.base]
+            return RydbergHamiltonian(new_coeffs, new_ops, register=register, pulses=pulses)
+
+        if isinstance(other, Operator):
+            new_coeffs = coeffs + [1]
+            new_ops = ops + [other]
+            return RydbergHamiltonian(new_coeffs, new_ops, register=register, pulses=pulses)
+
+        return NotImplemented
+
+    def __radd__(self, other):
+        """Deals with the special case where a RydbergHamiltonian is added to a
+        ParametrizedHamiltonian. Ensures that this returs a RydbergHamiltonian where
+        the order of the parametrized coefficients and operators matches the order of
+        the hamiltonians, i.e. that
+
+        ParametrizedHamiltonian + RydbergHamiltonian
+
+        returns a RydbergHamiltonian where the call expects params = [params_PH] + [params_RH]
+        """
+        if isinstance(other, ParametrizedHamiltonian):
+            ops = self.ops.copy()
+            coeffs = self.coeffs.copy()
+
+            new_coeffs = other.coeffs.copy() + coeffs
+            new_ops = other.ops.copy() + ops
+
+            return RydbergHamiltonian(
+                new_coeffs, new_ops, register=self.register, pulses=self.pulses
+            )
+
+        return self.__add__(other)
 
 
 @dataclass
@@ -322,16 +378,16 @@ class RydbergPulse:
     Args:
         amplitude (Union[float, Callable]): float or callable returning the amplitude (in MHz) of a laser
             field
+        phase (Union[float, Callable]): float containing the phase (in radians) of the laser field
         detuning (Union[float, Callable]): float or callable returning the detuning (in MHz) of a
             laser field
-        phase (float): float containing the phase (in radians) of the laser field
         wires (Union[int, List[int]]): integer or list containing wire values that the laser field
             acts on
     """
 
     amplitude: Union[float, Callable]
+    phase: Union[float, Callable]
     detuning: Union[float, Callable]
-    phase: float
     wires: List[Wires]
 
     def __post_init__(self):
@@ -344,3 +400,77 @@ class RydbergPulse:
             and self.detuning == other.detuning
             and self.wires == other.wires
         )
+
+
+def amplitude_and_phase(trig_fn, amp, phase):
+    """Wrapper function for combining amplitude and phase into a single callable
+    (or constant if neither amplitude nor phase are callable)."""
+    if not callable(amp) and not callable(phase):
+        return amp * trig_fn(phase)
+    return AmplitudeAndPhase(trig_fn, amp, phase)
+
+
+# pylint:disable = too-few-public-methods
+class AmplitudeAndPhase:
+    """Class storing combined amplitude and phase callable if either or both
+    of amplitude nor phase are callable."""
+
+    def __init__(self, trig_fn, amp, phase):
+        self.amp_is_callable = callable(amp)
+        self.phase_is_callable = callable(phase)
+
+        def callable_amp_and_phase(params, t):
+            return amp(params[0], t) * trig_fn(phase(params[1], t))
+
+        def callable_amp(params, t):
+            return amp(params, t) * trig_fn(phase)
+
+        def callable_phase(params, t):
+            return amp * trig_fn(phase(params, t))
+
+        if self.amp_is_callable and self.phase_is_callable:
+            self.func = callable_amp_and_phase
+
+        elif self.amp_is_callable:
+            self.func = callable_amp
+
+        elif self.phase_is_callable:
+            self.func = callable_phase
+
+    def __call__(self, params, t):
+        return self.func(params, t)
+
+
+def _rydberg_reorder_parameters(params, coeffs_parametrized):
+    """Takes `params`, and reorganizes it based on whether the Hamiltonian has
+    callable phase and/or callable amplitude.
+
+    Consolidates phase and amplitude parameters in the case that both are callable,
+    and duplicates phase and/or amplitude parameters if either are callables, since
+    they will be passed to two operators in the Hamiltonian"""
+
+    reordered_params = []
+
+    coeff_idx = 0
+    params_idx = 0
+
+    for i, coeff in enumerate(coeffs_parametrized):
+        if i == coeff_idx:
+            if isinstance(coeff, AmplitudeAndPhase):
+                if coeff.phase_is_callable and coeff.amp_is_callable:
+                    # add the joined parameters twice, and skip an index
+                    reordered_params.append([params[params_idx], params[params_idx + 1]])
+                    reordered_params.append([params[params_idx], params[params_idx + 1]])
+                    coeff_idx += 2
+                    params_idx += 2
+                elif coeff.phase_is_callable or coeff.amp_is_callable:
+                    reordered_params.append(params[params_idx])
+                    reordered_params.append(params[params_idx])
+                    coeff_idx += 2
+                    params_idx += 1
+            else:
+                reordered_params.append(params[params_idx])
+                coeff_idx += 1
+                params_idx += 1
+
+    return reordered_params

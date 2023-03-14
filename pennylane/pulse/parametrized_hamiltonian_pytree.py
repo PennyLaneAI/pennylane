@@ -23,6 +23,7 @@ from jax.tree_util import register_pytree_node_class
 import pennylane as qml
 
 from .parametrized_hamiltonian import ParametrizedHamiltonian
+from .rydberg_hamiltonian import RydbergHamiltonian, _rydberg_reorder_parameters
 
 
 @register_pytree_node_class
@@ -33,6 +34,7 @@ class ParametrizedHamiltonianPytree:
     mat_fixed: Optional[Union[jnp.ndarray, sparse.CSR]]
     mats_parametrized: Tuple[Union[jnp.ndarray, sparse.CSR], ...]
     coeffs_parametrized: Tuple[Callable]
+    reorder_fn: Callable
 
     @staticmethod
     def from_hamiltonian(H: ParametrizedHamiltonian, *, dense: bool = False, wire_order=None):
@@ -57,7 +59,18 @@ class ParametrizedHamiltonianPytree:
         mats_parametrized = tuple(
             make_array(qml.matrix(op, wire_order=wire_order)) for op in H.ops_parametrized
         )
-        return ParametrizedHamiltonianPytree(mat_fixed, mats_parametrized, H.coeffs_parametrized)
+
+        if isinstance(H, RydbergHamiltonian):
+            return ParametrizedHamiltonianPytree(
+                mat_fixed,
+                mats_parametrized,
+                H.coeffs_parametrized,
+                reorder_fn=_rydberg_reorder_parameters,
+            )
+
+        return ParametrizedHamiltonianPytree(
+            mat_fixed, mats_parametrized, H.coeffs_parametrized, reorder_fn=None
+        )
 
     def __call__(self, pars, t):
         if self.mat_fixed is not None:
@@ -66,6 +79,9 @@ class ParametrizedHamiltonianPytree:
         else:
             ops = ()
             coeffs = ()
+
+        if self.reorder_fn:
+            pars = self.reorder_fn(pars, self.coeffs_parametrized)
         coeffs = coeffs + tuple(f(p, t) for f, p in zip(self.coeffs_parametrized, pars))
         return LazyDotPytree(coeffs, ops + self.mats_parametrized)
 
