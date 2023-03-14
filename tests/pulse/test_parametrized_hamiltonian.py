@@ -57,6 +57,22 @@ class TestInitialization:
 
         assert qml.equal(H([1.2, 2.3], 3.4), expected_H([1.2, 2.3], 3.4))
 
+    def test_initialization_via_addition(self):
+        """Test that adding combinations of operators and numbers/callables initializes
+        a ParametrizedHamiltonian"""
+
+        XX = qml.PauliX(0) @ qml.PauliX(1)
+        YY = qml.PauliY(0) @ qml.PauliY(1)
+        ZZ = qml.PauliZ(0) @ qml.PauliZ(1)
+
+        H = 2 * XX + f1 * YY + f2 * ZZ
+
+        coeffs = [2, f1, f2]
+        ops = [XX, YY, ZZ]
+        expected_H = ParametrizedHamiltonian(coeffs, ops)
+
+        assert qml.equal(H([1.2, 2.3], 3.4), expected_H([1.2, 2.3], 3.4))
+
     def test_mismatched_coeffs_and_obs_raises_error(self):
         """Test that an error is raised if the length of the list of coefficients
         and the list of observables don't match"""
