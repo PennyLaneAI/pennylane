@@ -391,8 +391,8 @@ def _qcut_expand_fn(
 
     if not (auto_cutter is True or callable(auto_cutter)):
         raise ValueError(
-            "No WireCut operations found in the circuit. Consider increasing the max_depth value if"
-            " operations or nested tapes contain WireCut operations."
+            "No WireCut operations found in the circuit. Consider increasing the max_depth value if "
+            "operations or nested tapes contain WireCut operations."
         )
 
     return tape

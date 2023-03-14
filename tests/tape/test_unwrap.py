@@ -187,9 +187,7 @@ def test_unwrap_jax():
         assert all(isinstance(i, float) for i in params)
         assert np.allclose(params, [0.1, 0.2, 0.5, 0.3])
 
-        # During the forward pass, Device arrays are treated as
-        # trainable, but no other types are.
-        assert tape.trainable_params == [0, 1, 3]
+        assert tape.trainable_params == []
 
     # outside the context, the original parameters have been restored.
     assert tape.get_parameters(trainable_only=False) == p

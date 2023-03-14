@@ -41,7 +41,7 @@ def pow(base, z=1, lazy=True, do_queue=True, id=None):
 
     Args:
         base (~.operation.Operator): the operator to be raised to a power
-        z=1 (float): the exponent
+        z (float): the exponent (default value is 1)
 
     Keyword Args:
         lazy=True (bool): In lazy mode, all operations are wrapped in a ``Pow`` class
@@ -315,6 +315,11 @@ class Pow(ScalarSymbolicOp):
     def eigvals(self):
         base_eigvals = self.base.eigvals()
         return [value**self.z for value in base_eigvals]
+
+    # pylint: disable=arguments-renamed, invalid-overridden-method
+    @property
+    def has_generator(self):
+        return self.base.has_generator
 
     def generator(self):
         r"""Generator of an operator that is in single-parameter-form.

@@ -54,7 +54,7 @@ def exp(op, coeff=1, num_steps=None, id=None):
         id (str): id for the Exp operator. Default is None.
 
     Returns:
-       :class:`Exp`: A :class`~.operation.Operator` representing an operator exponential.
+       :class:`Exp`: A :class:`~.operation.Operator` representing an operator exponential.
 
     .. note::
 
@@ -446,6 +446,11 @@ class Exp(ScalarSymbolicOp, Operation):
         if isinstance(new_base, qml.ops.op_math.SProd):  # pylint: disable=no-member
             return Exp(new_base.base, self.coeff * new_base.scalar)
         return Exp(new_base, self.coeff)
+
+    # pylint: disable=arguments-renamed, invalid-overridden-method
+    @property
+    def has_generator(self):
+        return self.base.is_hermitian and not np.real(self.coeff)
 
     def generator(self):
         r"""Generator of an operator that is in single-parameter-form.

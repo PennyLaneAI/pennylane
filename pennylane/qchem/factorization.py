@@ -390,7 +390,7 @@ def _chemist_transform(one_body_tensor=None, two_body_tensor=None, spatial_basis
     chemist_two_body_coeffs, chemist_one_body_coeffs = None, None
 
     if one_body_tensor is not None:
-        chemist_one_body_coeffs = one_body_tensor
+        chemist_one_body_coeffs = one_body_tensor.copy()
 
     if two_body_tensor is not None:
         chemist_two_body_coeffs = np.swapaxes(two_body_tensor, 1, 3)
