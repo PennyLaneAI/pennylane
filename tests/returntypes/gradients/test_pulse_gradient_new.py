@@ -24,7 +24,7 @@ import pennylane as qml
 from pennylane.gradients.pulse_gradient import split_evol_ops, _split_evol_tapes, stoch_pulse_grad
 
 
-def test_error_raised_if_jax_not_installed():
+def test_stoch_pulse_grad_raises_without_jax_installed():
     """Test that an error is raised if a convenience function is called without jax installed"""
     try:
         # Need to import a specific subpackage of JAX, because `import jax` would import the
