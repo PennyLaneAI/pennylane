@@ -11,7 +11,7 @@
   Activating `return_intermediate` will result in `evol_op.matrix()` returning intermediate solutions
   to the Schrodinger equation. Activating `complementary` will make these intermediate solutions
   be the _remaining_ time evolution complementary to the output for `complementary=False`.
-  See the [documentation](https://docs.pennylane.ai/en/stable/code/api/pennylane.pulse.ParametrizedEvolution.html)
+  See the [docstring](https://docs.pennylane.ai/en/stable/code/api/pennylane.pulse.ParametrizedEvolution.html)
   for details.
  
 * The `sample_state` function is added to `devices/qubit` that returns a series of samples based on a given

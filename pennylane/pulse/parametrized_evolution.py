@@ -323,7 +323,7 @@ class ParametrizedEvolution(Operation):
         Note that now the broadcasting axis has size ``len(time) - 2`` because both
         the full time evolution :math:`U(t_1, t_2)` and the identity :math:`U(t_2, t_2)`
         are skipped.
-        
+
         For all but the last matrix in ``ev_mats``, there is a matrixin ``comp_ev_mats``
         that complements it to the full time evolution, which in turn is stored in the
         last matrix in ``ev_mats``:
