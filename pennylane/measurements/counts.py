@@ -191,8 +191,6 @@ class CountsMP(SampleMeasurement):
         shot_range: Tuple[int] = None,
         bin_size: int = None,
     ):
-        if qml.math.is_abstract(samples):
-            raise qml.QuantumFunctionError("Can't JIT a quantum function that returns counts.")
 
         samples = qml.sample(op=self.obs, wires=self._wires).process_samples(
             samples, wire_order, shot_range, bin_size
