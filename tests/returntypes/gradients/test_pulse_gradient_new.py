@@ -72,7 +72,7 @@ class TestSplitEvolOps:
         key = jax.random.PRNGKey(5324)
         op = qml.evolve(ham)(params, time)
         op_copy = copy.deepcopy(op)
-        exp_time = [0, time] if qml.math.ndim(time)==0 else time
+        exp_time = [0, time] if qml.math.ndim(time) == 0 else time
         assert qml.math.allclose(op.t, exp_time)
         output = split_evol_ops(op, word, word_wires, key)
         # Check that the original operation was not altered
@@ -708,7 +708,9 @@ class TestStochPulseGradQNodeIntegration:
         T = 0.2
         ham_single_q_const = qml.pulse.constant * qml.PauliY(0)
 
-        @qml.qnode(dev, interface="jax", diff_method=stoch_pulse_grad, num_split_times=num_split_times)
+        @qml.qnode(
+            dev, interface="jax", diff_method=stoch_pulse_grad, num_split_times=num_split_times
+        )
         def circuit(params):
             qml.evolve(ham_single_q_const)(params, T)
             return qml.expval(qml.PauliZ(0))
@@ -734,7 +736,9 @@ class TestStochPulseGradQNodeIntegration:
         ham_x = qml.pulse.constant * qml.PauliX(0)
         ham_y = qml.pulse.constant * qml.PauliX(0)
 
-        @qml.qnode(dev, interface="jax", diff_method=stoch_pulse_grad, num_split_times=num_split_times)
+        @qml.qnode(
+            dev, interface="jax", diff_method=stoch_pulse_grad, num_split_times=num_split_times
+        )
         def circuit(params):
             qml.evolve(ham_x)(params[0], T_x)
             qml.evolve(ham_y)(params[1], T_y)
@@ -762,7 +766,9 @@ class TestStochPulseGradQNodeIntegration:
         T = 0.2
         ham_single_q_const = qml.pulse.constant * qml.PauliY(0)
 
-        @qml.qnode(dev, interface="jax", diff_method=stoch_pulse_grad, num_split_times=num_split_times)
+        @qml.qnode(
+            dev, interface="jax", diff_method=stoch_pulse_grad, num_split_times=num_split_times
+        )
         def circuit(params):
             qml.evolve(ham_single_q_const)(params, T)
             return qml.probs(wires=0)
@@ -786,7 +792,9 @@ class TestStochPulseGradQNodeIntegration:
         T = 0.2
         ham_single_q_const = qml.pulse.constant * qml.PauliY(0)
 
-        @qml.qnode(dev, interface="jax", diff_method=stoch_pulse_grad, num_split_times=num_split_times)
+        @qml.qnode(
+            dev, interface="jax", diff_method=stoch_pulse_grad, num_split_times=num_split_times
+        )
         def circuit(params):
             qml.evolve(ham_single_q_const)(params, T)
             return qml.probs(wires=0), qml.expval(qml.PauliZ(0))
@@ -816,7 +824,9 @@ class TestStochPulseGradQNodeIntegration:
         T = 0.2
         ham_single_q_const = qml.pulse.constant * qml.PauliY(0)
 
-        @qml.qnode(dev, interface="jax", diff_method=stoch_pulse_grad, num_split_times=num_split_times)
+        @qml.qnode(
+            dev, interface="jax", diff_method=stoch_pulse_grad, num_split_times=num_split_times
+        )
         def circuit(params):
             qml.evolve(ham_single_q_const)(params, T)
             return qml.expval(qml.PauliZ(0))
