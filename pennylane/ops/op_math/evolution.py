@@ -116,6 +116,11 @@ class Evolution(Exp):
             return Evolution(new_base.base, self.param * new_base.scalar)
         return Evolution(new_base, self.param)
 
+    # pylint: disable=arguments-renamed, invalid-overridden-method
+    @property
+    def has_generator(self):
+        return not np.real(self.coeff)
+
     def generator(self):
         r"""Generator of an operator that is in single-parameter-form.
 
