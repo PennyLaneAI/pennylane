@@ -278,24 +278,23 @@ class ParametrizedEvolution(Operation):
             \{U(t_1, \tau_1), \dots, U(t_1, \tau_P), U(t_1, t_2)\}.
 
         While standard ODE solvers also return the initial condition, i.e. :math:`U(t_1, t_1)`,
-        this value is skipped in the output of ``ParametrizedEvolution.matrix``.
+        this value is skipped in the output of ``ParametrizedEvolution.matrix``. For a simple
+        time-dependent single-qubit Hamiltonian, this looks like the following:
 
         .. code-block:: python
 
-            ops = [qml.PauliZ(0), qml.PauliY(1), qml.PauliX(2)]
+            ops = [qml.PauliZ(0), qml.PauliY(0), qml.PauliX(0)]
             coeffs = [lambda p, t: p * jnp.sin(t) for _ in range(3)]
             H = qml.dot(coeffs, ops) # time-dependent parametrized Hamiltonian
 
-            param =
-            time =  # TODO
+            param = [jnp.array(0.2), jnp.array(0.1), jnp.array(-0.3)]
+            time = jnp.linspace(0.1, 0.4, 6) # Six time points from 0.1 to 0.4
 
-            evol_op = qml.evolve(H)(param, time)
+            ev = qml.evolve(H)(param, time, return_intermediate=True)
 
-        When using a ``ParametrizedEvolution`` with ``return_intermediate=True`` in a quantum
-        circuit, the operation will be considered to be broadcasted, and the circuit will
-        be computed for each of the partial time evolutions:
-
-        # TODO example
+        >>> ev_mats = ev.matrix()
+        >>> ev_mats.shape
+        (5, 2, 2)
 
         Note that the broadcasting axis has length ``len(time) - 1`` because the initial
         condition is skipped.
@@ -314,13 +313,27 @@ class ParametrizedEvolution(Operation):
 
         Note that this not only skips the last complementary evolution :math:`U(t_2, t_2)` but
         also the full evolution :math:`U(t_1, t_2)` that could be expected as a first entry.
-        Using the operation in a circuit again yields a broadcasted result:
+        Using the Hamiltonian from the example above:
 
-        # TODO example
+        >>> complementary_ev = ev(param, time, return_intermediate=True, complementary=True)
+        >>> comp_ev_mats = complementary_ev.matrix()
+        >>> comp_ev_mats.shape
+        (4, 2, 2)
 
         Note that now the broadcasting axis has size ``len(time) - 2`` because both
         the full time evolution :math:`U(t_1, t_2)` and the identity :math:`U(t_2, t_2)`
         are skipped.
+        
+        For all but the last matrix in ``ev_mats``, there is a matrixin ``comp_ev_mats``
+        that complements it to the full time evolution, which in turn is stored in the
+        last matrix in ``ev_mats``:
+
+        >>> for mat, c_mat in zip(ev_mats[:-1], comp_ev_mats):
+        ...     print(qml.math.allclose(c_mat @ mat, ev_mats[-1]))
+        True
+        True
+        True
+        True
 
     """
 
