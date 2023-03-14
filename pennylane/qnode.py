@@ -25,7 +25,7 @@ import autograd
 import pennylane as qml
 from pennylane import Device
 from pennylane.interfaces import INTERFACE_MAP, SUPPORTED_INTERFACES, set_shots
-from pennylane.measurements import ClassicalShadowMP, CountsMP, MidMeasureMP
+from pennylane.measurements import ClassicalShadowMP, CountsMP, MidMeasureMP, SampleMP
 from pennylane.tape import QuantumTape, make_qscript
 
 
@@ -753,6 +753,11 @@ class QNode:
 
         params = self.tape.get_parameters(trainable_only=False)
         self.tape.trainable_params = qml.math.get_trainable_indices(params)
+
+        if any(isinstance(m, SampleMP) for m in self.tape.measurements) and (
+            qml.math.is_abstract(args)
+        ):
+            raise qml.QuantumFunctionError("Can't JIT a quantum function that returns samples.")
 
         if isinstance(self._qfunc_output, qml.numpy.ndarray):
             measurement_processes = tuple(self.tape.measurements)
