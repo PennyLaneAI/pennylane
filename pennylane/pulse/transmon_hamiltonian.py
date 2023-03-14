@@ -11,8 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""This module contains the classes/functions needed to simulate the evolution of ensembles of
-individual (trapped) rydberg atoms under the excitation of several laser fields."""
+"""This module contains the classes/functions needed to simulate pulses with transmons"""
 import warnings
 from dataclasses import dataclass
 from typing import Callable, List, Union
@@ -25,7 +24,7 @@ from pennylane.wires import Wires
 from .parametrized_hamiltonian import ParametrizedHamiltonian
 
 
-def rydberg_interaction(register: list, wires=None, interaction_coeff: float = 862690):
+def transmon_interaction(register: list, wires=None, interaction_coeff: float = 862690):
     r"""Returns a :class:`ParametrizedHamiltonian` representing the interaction of an ensemble of
     Rydberg atoms due to the Rydberg blockade
 
@@ -95,9 +94,21 @@ def rydberg_interaction(register: list, wires=None, interaction_coeff: float = 8
         wires = list(range(len(register)))
     elif len(wires) != len(register):
         raise ValueError("The length of the wires and the register must match.")
+    
+    def a(wires):
+        return 0.5 * qml.PauliX(wires) + 0.5j * qml.PauliY(wires)
+
+    def ad(wires):
+        return 0.5 * qml.PauliX(wires) - 0.5j * qml.PauliY(wires)
 
     coeffs = []
     observables = []
+
+    register = [(0, 1), (2, 3), (4, 5)]
+    [ad(i) @ a(j) + ad(j) @ a(i) for (i, j) in register]
+    
+
+
     for idx, (pos1, wire1) in enumerate(zip(register[:-1], wires[:-1])):
         for pos2, wire2 in zip(register[(idx + 1) :], wires[(idx + 1) :]):
             atom_distance = np.linalg.norm(qml.math.array(pos2) - pos1)
@@ -106,12 +117,12 @@ def rydberg_interaction(register: list, wires=None, interaction_coeff: float = 8
             observables.append(qml.prod(qml.Projector([1], wire1), qml.Projector([1], wire2)))
             # Rydberg projectors
 
-    return RydbergHamiltonian(
+    return TransmonHamiltonian(
         coeffs, observables, register=register, interaction_coeff=interaction_coeff
     )
 
 
-def rydberg_drive(amplitude, detuning, phase, wires):
+def transmon_drive(amplitude, detuning, phase, wires):
     r"""Returns a :class:`ParametrizedHamiltonian` representing the action of a driving laser
     field with the given rabi frequency, detuning and phase acting on the given wires
 
@@ -198,11 +209,11 @@ def rydberg_drive(amplitude, detuning, phase, wires):
     observables = [amplitude_observable, detuning_observable]
 
     # We convert the pulse data into a list of ``RydbergPulse`` objects
-    pulses = [RydbergPulse(amplitude, detuning, phase, wires)]
-    return RydbergHamiltonian(coeffs, observables, pulses=pulses)
+    pulses = [TransmonPulse(amplitude, detuning, phase, wires)]
+    return TransmonHamiltonian(coeffs, observables, pulses=pulses)
 
 
-class RydbergHamiltonian(ParametrizedHamiltonian):
+class TransmonHamiltonian(ParametrizedHamiltonian):
     r"""Internal class used to keep track of the required information to translate a ``ParametrizedHamiltonian``
     into hardware.
 
@@ -249,7 +260,7 @@ class RydbergHamiltonian(ParametrizedHamiltonian):
         coeffs,
         observables,
         register: list = None,
-        pulses: List["RydbergPulse"] = None,
+        pulses: List["TransmonPulse"] = None,
         interaction_coeff: float = 862690,
     ):
         self.register = register
@@ -258,7 +269,7 @@ class RydbergHamiltonian(ParametrizedHamiltonian):
         super().__init__(coeffs, observables)
 
     def __add__(self, other):
-        if not isinstance(other, RydbergHamiltonian):
+        if not isinstance(other, TransmonHamiltonian):
             return super().__add__(other)
 
         # Update coeffs, obs and hardware attributes
@@ -276,11 +287,11 @@ class RydbergHamiltonian(ParametrizedHamiltonian):
         new_pulses = self.pulses + other.pulses
         new_ops = self.ops + other.ops
         new_coeffs = self.coeffs + other.coeffs
-        return RydbergHamiltonian(new_coeffs, new_ops, register=new_register, pulses=new_pulses)
+        return TransmonHamiltonian(new_coeffs, new_ops, register=new_register, pulses=new_pulses)
 
 
 @dataclass
-class RydbergPulse:
+class TransmonPulse:
     """Dataclass that contains the information of a single Rydberg pulse. This class is used
     internally in PL to group into a single object all the data related to a single laser field.
 
