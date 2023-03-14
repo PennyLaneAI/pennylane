@@ -101,6 +101,74 @@ class TestInitialization:
         assert qml.math.allequal(ev.parameters, [1, 2])
         assert ev.num_params == 2
 
+    @pytest.mark.parametrize("ret_intmdt, comp", ([False, False], [True, False], [True, True]))
+    def test_return_intermediate_and_complementary(self, ret_intmdt, comp):
+        """Test that the keyword arguments return_intermediate and complementary are taken into
+        account correctly at initialization and when calling. This includes testing
+        inheritance when calling without explicitly providing these kwargs."""
+        ops = [qml.PauliX(0), qml.PauliY(1)]
+        coeffs = [1, 2]
+        t = [0.1, 0.2, 0.9]  # avoid warning because of simple time argument+return_intermediate
+        H = ParametrizedHamiltonian(coeffs, ops)
+        ev = ParametrizedEvolution(
+            H=H, params=coeffs, t=t, return_intermediate=ret_intmdt, complementary=comp
+        )
+
+        assert ev.return_intermediate is ret_intmdt
+        assert ev.complementary is comp
+
+        new_ev = ev(coeffs, t=t)
+
+        assert new_ev.return_intermediate is ret_intmdt
+        assert new_ev.complementary is comp
+
+        for new_ret_intmdt, new_comp in ([False, False], [True, False], [True, True]):
+            new_ev = ev(coeffs, t=t, return_intermediate=new_ret_intmdt, complementary=new_comp)
+            assert new_ev.return_intermediate is new_ret_intmdt
+            assert new_ev.complementary is new_comp
+
+    @pytest.mark.parametrize("len_t", [3, 8])
+    def test_batch_size_with_return_intermediate(self, len_t):
+        """Test that the batch size is correctly set for intermediate time values."""
+        ops = [qml.PauliX(0), qml.PauliY(1)]
+        coeffs = [1, 2]
+        t = np.linspace(0, 1, len_t)
+        H = ParametrizedHamiltonian(coeffs, ops)
+        ev = ParametrizedEvolution(H=H, params=coeffs, t=t)
+        assert ev.batch_size is None
+        ev = ParametrizedEvolution(H=H, params=coeffs, t=t, return_intermediate=True)
+        assert ev.batch_size == len_t - 1
+        ev = ParametrizedEvolution(
+            H=H, params=coeffs, t=t, return_intermediate=True, complementary=True
+        )
+        assert ev.batch_size == len_t - 2
+
+    def test_warns_with_complementary_without_ret_intermediate(self):
+        """Test that a warning is raised if the keyword argument complementary is activated
+        without return_intermediate being activated."""
+        ops = [qml.PauliX(0), qml.PauliY(1)]
+        coeffs = [1, 2]
+        H = ParametrizedHamiltonian(coeffs, ops)
+        with pytest.warns(UserWarning, match="The keyword argument complementary"):
+            ev = ParametrizedEvolution(
+                H=H, params=[1, 2], t=2, return_intermediate=False, complementary=True
+            )
+
+        assert ev.return_intermediate is False
+        assert ev.complementary is True
+
+    @pytest.mark.parametrize("t", [0.5, [0.2, 0.9]])
+    def test_warns_with_ret_intermediate_with_simple_time(self, t):
+        """Test that a warning is raised if the keyword argument return_intermediate is activated
+        without providing intermediate times (but only a duration or only a start and end point)."""
+        ops = [qml.PauliX(0), qml.PauliY(1)]
+        coeffs = [1, 2]
+        H = ParametrizedHamiltonian(coeffs, ops)
+        with pytest.warns(UserWarning, match="Setting return_intermediate=True does not"):
+            ev = ParametrizedEvolution(H=H, params=[1, 2], t=t, return_intermediate=True)
+
+        assert ev.return_intermediate is True
+
     def test_odeint_kwargs(self):
         """Test the initialization with odeint kwargs."""
         ops = [qml.PauliX(0), qml.PauliY(1)]
@@ -111,7 +179,8 @@ class TestInitialization:
         assert ev.odeint_kwargs == {"mxstep": 10, "hmax": 1, "atol": 1e-3, "rtol": 1e-6}
 
     def test_update_attributes(self):
-        """Test that the ``ParametrizedEvolution`` attributes can be updated using the ``__call__`` method."""
+        """Test that the ``ParametrizedEvolution`` attributes can be updated
+        using the ``__call__`` method."""
         ops = [qml.PauliX(0), qml.PauliY(1)]
         coeffs = [1, 2]
         H = ParametrizedHamiltonian(coeffs, ops)
@@ -158,7 +227,7 @@ class TestInitialization:
         assert isinstance(ev.t, jnp.ndarray)
         assert qml.math.allclose(ev.t, t)
 
-    def test_has_matrix_true(self):
+    def test_has_matrix(self):
         """Test that a parametrized evolution has ``has_matrix=True`` only when `t` and `params` are
         defined."""
         ops = [qml.PauliX(0), qml.PauliY(1)]
@@ -217,6 +286,35 @@ class TestMatrix:
         true_mat = reduce(lambda x, y: y @ x, generator(params))
 
         assert qml.math.allclose(ev.matrix(), true_mat, atol=1e-2)
+
+    @pytest.mark.filterwarnings("ignore:Setting return_intermediate=True")
+    @pytest.mark.parametrize("comp", [False, True])
+    @pytest.mark.parametrize("len_t", [2, 6])
+    def test_return_intermediate_and_complementary(self, comp, len_t):
+        """Test that intermediate time evolution matrices are returned."""
+        from jax import numpy as jnp
+
+        H = time_independent_hamiltonian()
+        t = np.linspace(0.4, 0.7, len_t)
+        params = [1, 2]
+        ev = ParametrizedEvolution(
+            H=H, params=params, t=t, return_intermediate=True, complementary=comp
+        )
+        matrices = ev.matrix()
+        assert isinstance(matrices, jnp.ndarray)
+        expected_num_mat = len_t - 1 - comp
+        assert matrices.shape == (expected_num_mat, 4, 4)
+
+        if len_t > 2 and not comp:
+            # If len_t is 2 or smaller and comp=True, there are no matrices to be checked
+            durations = t[-1] - t[1:-1] if comp else t[1:] - t[0]
+            true_matrices = [
+                qml.math.expm(-1j * qml.matrix(H(params, t=t[-1])) * _t) for _t in durations
+            ]
+            print(*matrices, sep="\n")
+            print()
+            print(*true_matrices, sep="\n")
+            assert qml.math.allclose(matrices, true_matrices)
 
 
 @pytest.mark.jax
@@ -359,9 +457,7 @@ class TestIntegration:
             atol=5e-4,
         )
 
-    def test_mixed_device(
-        self,
-    ):
+    def test_mixed_device(self):
         """Test mixed device integration matches that of default qubit"""
         import jax
         import jax.numpy as jnp

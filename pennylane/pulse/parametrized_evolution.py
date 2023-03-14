@@ -19,6 +19,7 @@ This file contains the ``ParametrizedEvolution`` operator.
 """
 
 from typing import List, Union
+import warnings
 
 import pennylane as qml
 from pennylane.operation import AnyWires, Operation
@@ -61,9 +62,22 @@ class ParametrizedEvolution(Operation):
             the parameters of a scalar-valued function of the Hamiltonian being evolved.
         t (Union[float, List[float]]): If a float, it corresponds to the duration of the evolution.
             If a list of floats, the ODE solver will use all the provided time values, and
-            perform intermediate steps if necessary. It is recommended to just provide a start and end time.
-            Note that such absolute times only have meaning within an instance of
+            perform intermediate steps if necessary. It is recommended to just provide a start
+            and end time unless matrices of the time evolution at intermediate times needs
+            to be computed. Note that such absolute times only have meaning within an instance of
             ``ParametrizedEvolution`` and will not affect other gates.
+        return_intermediate (bool): Whether or not the ``matrix`` method returns all intermediate
+            solutions of the time evolution ODE at the times provided in ``t``. If ``False``
+            (the default), only the matrix for the full time evolution is returned. If ``True``,
+            all solutions after :math:`U(t_1, t_1)=1` are returned; when used in a circuit, this
+            results in ``ParametrizedEvolution`` being a broadcasted operation.
+        complementary (bool): Whether or not to compute the complementary time evolution when using
+            ``return_intermediate=True`` (ignored otherwise).
+            If ``False`` (the default), the usual solutions to the Schrodinger equation
+            :math:`\{U(t_1, t_1), U(t_1, \tau_1),\dots, U(t_1, \tau_P), U(t_1, t_2)\}` are computed,
+            where :math:`\tau_i` are the additional times provided in ``t``.
+            If ``True``, the remaining time evolution to :math:`t_2` is computed instead, returning
+            :math:`\{U(t_1, t_2), U(\tau_1, t_2),\dots, U(\tau_P, t_2), U(t_2, t_2)\}`.
         do_queue (bool): determines if the scalar product operator will be queued. Default is True.
         id (str or None): id for the scalar product operator. Default is None.
 
@@ -142,6 +156,11 @@ class ParametrizedEvolution(Operation):
         operators are executed simultaneously, but rather that both evaluate their respective
         scalar-valued functions using the same time window. See Usage Details.
 
+    .. note::
+
+        Using ``return_intermediate`` in a quantum circuit leads to broadcasted execution,
+        which can lead to unintended additional computational cost.
+        Also consider the usage details below.
 
     .. details::
         :title: Usage Details
@@ -246,6 +265,63 @@ class ParametrizedEvolution(Operation):
             -0.52277344], dtype=float32)
 
         Given that we used the same time window (``[0, 10]``), the results are the same as before.
+
+        **Computing intermediate time evolution**
+
+        As discussed above, the ODE solver will evaluate the Schrodinger equation at
+        intermediate times in any case. By passing additional time values explicitly in the time
+        window ``t`` and setting ``return_intermediate=True``, the ``matrix`` method will
+        return the matrices for the intermediate time evolutions as well:
+
+        .. math::
+
+            \{U(t_1, \tau_1), \dots, U(t_1, \tau_P), U(t_1, t_2)\}.
+
+        While standard ODE solvers also return the initial condition, i.e. :math:`U(t_1, t_1)`,
+        this value is skipped in the output of ``ParametrizedEvolution.matrix``.
+
+        .. code-block:: python
+
+            ops = [qml.PauliZ(0), qml.PauliY(1), qml.PauliX(2)]
+            coeffs = [lambda p, t: p * jnp.sin(t) for _ in range(3)]
+            H = qml.dot(coeffs, ops) # time-dependent parametrized Hamiltonian
+
+            param =
+            time =  # TODO
+
+            evol_op = qml.evolve(H)(param, time)
+
+        When using a ``ParametrizedEvolution`` with ``return_intermediate=True`` in a quantum
+        circuit, the operation will be considered to be broadcasted, and the circuit will
+        be computed for each of the partial time evolutions:
+
+        # TODO example
+
+        Note that the broadcasting axis has length ``len(time) - 1`` because the initial
+        condition is skipped.
+
+        **Computing complementary time evolution**
+
+        When using ``return_intermediate=True``, the partial time evolutions share the *initial*
+        time :math:`t_1`. For some applications, however, it may be useful to compute the
+        complementary time evolutions, i.e. the partial evolutions that share the *final* time
+        :math:`t_2`. This can be activated by setting ``complementary=True``, which will make
+        ``ParametrizedEvolution.matrix`` return the matrices
+
+        .. math::
+
+            \{U(\tau_1, t_2), \dots, U(\tau_P, t_2)\}.
+
+        Note that this not only skips the last complementary evolution :math:`U(t_2, t_2)` but
+        also the full evolution :math:`U(t_1, t_2)` that could be expected as a first entry.
+        Using the operation in a circuit again yields a broadcasted result:
+
+        # TODO example
+
+        Note that now the broadcasting axis has size ``len(time) - 2`` because both
+        the full time evolution :math:`U(t_1, t_2)` and the identity :math:`U(t_2, t_2)`
+        are skipped.
+
     """
 
     _name = "ParametrizedEvolution"
@@ -258,6 +334,8 @@ class ParametrizedEvolution(Operation):
         H: ParametrizedHamiltonian,
         params: list = None,
         t: Union[float, List[float]] = None,
+        return_intermediate: bool = False,
+        complementary: bool = False,
         do_queue=True,
         id=None,
         **odeint_kwargs
@@ -278,20 +356,51 @@ class ParametrizedEvolution(Operation):
             self.t = None
         else:
             self.t = jnp.array([0, t] if qml.math.ndim(t) == 0 else t, dtype=float)
+        if return_intermediate and len(self.t) == 2:
+            warnings.warn(
+                "Setting return_intermediate=True does not have any effect if the time argument contains a duration or start and end points only."
+            )
+        if complementary and not return_intermediate:
+            warnings.warn(
+                "The keyword argument complementary does not have any effect if return_intermediate is set to False."
+            )
+        self.return_intermediate = return_intermediate
+        self.complementary = complementary
         params = [] if params is None else params
         super().__init__(*params, wires=H.wires, do_queue=do_queue, id=id)
+        self._check_time_batching()
 
-    def __call__(self, params, t, **odeint_kwargs):
+    def __call__(self, params, t, return_intermediate=None, complementary=None, **odeint_kwargs):
         # Need to cast all elements inside params to `jnp.arrays` to make sure they are not cast
         # to `np.arrays` inside `Operator.__init__`
         params = [jnp.array(p) for p in params]
+        # Inherit return_intermediate and complementary from self if not provided.
+        _return_intermediate = (
+            self.return_intermediate if return_intermediate is None else return_intermediate
+        )
+        _complementary = self.complementary if complementary is None else complementary
         odeint_kwargs = {**self.odeint_kwargs, **odeint_kwargs}
         if qml.QueuingManager.recording():
             qml.QueuingManager.remove(self)
 
         return ParametrizedEvolution(
-            H=self.H, params=params, t=t, do_queue=True, id=self.id, **odeint_kwargs
+            H=self.H,
+            params=params,
+            t=t,
+            return_intermediate=_return_intermediate,
+            complementary=_complementary,
+            do_queue=True,
+            id=self.id,
+            **odeint_kwargs
         )
+
+    def _check_time_batching(self):
+        """Check whether the time argument is broadcasted/batched."""
+        if not self.return_intermediate:
+            return
+        # Subtract 1 because the identity is never returned by `matrix`. If `complementary=True`,
+        # subtract and additional 1 because the full time evolution is not being returned.
+        self._batch_size = self.t.shape[0] - 1 - self.complementary
 
     # pylint: disable=arguments-renamed, invalid-overridden-method
     @property
@@ -316,6 +425,16 @@ class ParametrizedEvolution(Operation):
             """dy/dt = -i H(t) y"""
             return (-1j * H_jax(self.data, t=t)) @ y
 
-        result = odeint(fun, y0, self.t, **self.odeint_kwargs)
-        mat = result[-1]
+        mat = odeint(fun, y0, self.t, **self.odeint_kwargs)
+        if self.return_intermediate:
+            # Skip U(t_1, t_1) for both activated and deactivated `complementary`
+            mat = mat[1:]
+            if self.complementary:
+                # Compute U(t_1, t_2)@U(t_1, tau_i)^\dagger, where i indexes the first axis of mat
+                # We skip the last entry of `mat`, because it would yield U(t_2, t_2), which we skip
+                mat = qml.math.tensordot(mat[-1], qml.math.conj(mat[:-1]), axes=[[1], [-1]])
+                # The previous line leaves the axis indexing the tau_i as second, so we move it up
+                mat = qml.math.moveaxis(mat, 1, 0)
+        else:
+            mat = mat[-1]
         return qml.math.expand_matrix(mat, wires=self.wires, wire_order=wire_order)
