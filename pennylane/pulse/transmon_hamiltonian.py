@@ -11,7 +11,8 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""This module contains the classes/functions needed to simulate pulses with transmons"""
+"""This module contains the classes/functions needed to simulate the evolution of ensembles of
+individual (trapped) transmon atoms under the excitation of several laser fields."""
 import warnings
 from dataclasses import dataclass
 from typing import Callable, List, Union
@@ -20,19 +21,31 @@ import numpy as np
 
 import pennylane as qml
 from pennylane.wires import Wires
+from pennylane.operation import Operator
+from pennylane.ops.qubit.hamiltonian import Hamiltonian
+from pennylane.typing import TensorLike
+
 
 from .parametrized_hamiltonian import ParametrizedHamiltonian
 
+def a(wires, d=2):
+    return 0.5 * qml.PauliX(wires) + 0.5j * qml.PauliY(wires)
 
-def transmon_interaction(register: list, wires=None, interaction_coeff: float = 862690):
+def ad(wires, d=2):
+    return 0.5 * qml.PauliX(wires) - 0.5j * qml.PauliY(wires)
+
+
+def transmon_interaction(
+    connections: list, omega: Union[float, list], delta: Union[float, list], g: Union[float, list], wires=None, d=2
+):
     r"""Returns a :class:`ParametrizedHamiltonian` representing the interaction of an ensemble of
-    Rydberg atoms due to the Rydberg blockade
+    Transmon atoms due to the Transmon blockade
 
     .. math::
 
         \sum_{i<j} V_{ij} n_i n_j
 
-    where :math:`n_i` corresponds to the projector on the Rydberg state of the atom :math:`i`, and
+    where :math:`n_i` corresponds to the projector on the Transmon state of the atom :math:`i`, and
     :math:`V_{ij}` is the van der Waals potential:
 
     .. math::
@@ -40,40 +53,47 @@ def transmon_interaction(register: list, wires=None, interaction_coeff: float = 
         V_{ij} = \frac{C_6}{R_{ij}^6}
 
     where :math:`R_{ij}` is the distance between the atoms :math:`i` and :math:`j`, and :math:`C_6`
-    is the Rydberg interaction constant, which defaults to :math:`862690 \text{MHz} \times \mu m^6`.
-    This interaction term can be combined with a laser drive term to create a Hamiltonian describing a driven
-    Rydberg atom system.
+    is the Transmon interaction constant, which defaults to :math:`862690 \text{MHz} \times \mu \text{m}^6`.
+    The unit of time for the evolution of this Transmon interaction term is in :math:`\mu \text{s}`.
+    This interaction term can be combined with laser drive terms (:func:`~.transmon_drive`) to create
+    a Hamiltonian describing a driven Transmon atom system.
 
     .. seealso::
 
-        :func:`~.rydberg_drive`
+        :func:`~.transmon_drive`
 
     Args:
-        register (list): list of coordinates of the Rydberg atoms (in micrometers)
+        connections (list): list of coordinates of the Transmon atoms (in micrometers)
         wires (list): List of wires containing the wire values for all the atoms. This list should
-            have the same length as ``register``. If ``None``, each atom's wire value will
-            correspond to its index in the ``register`` list.
-        interaction_coeff (float): Rydberg interaction constant in units: :math:`\text{MHz} \times \mu \text{m}^6`.
-            Defaults to :math:`862690 \text{ MHz} \times \mu \text{m}^6`.
+            have the same length as ``connections``. If ``None``, each atom's wire value will
+            correspond to its index in the ``connections`` list.
+        interaction_coeff (float): Transmon interaction constant in units: :math:`\text{MHz} \times \mu \text{m}^6`.
+            Defaults to :math:`862690 \text{ MHz} \times \mu \text{m}^6`. This value is based on an assumption that
+            frequencies and energies in the Hamiltonian are provided in units of MHz.
+        max_distance (float): Threshold for distance in :math:`\mu \text{m}` between two Transmon atoms beyond which their
+            contribution to the interaction term is removed from the Hamiltonian.
 
     Returns:
-        RydbergHamiltonian: a :class:`~.ParametrizedHamiltonian` representing the atom interaction
+        TransmonHamiltonian: a :class:`~.ParametrizedHamiltonian` representing the atom interaction
 
     **Example**
 
-    We create a Hamiltonian describing the interaction among 9 Rydberg atoms in a square lattice due to the
-    Rydberg blockade:
+    We create a Hamiltonian describing the van der Waals interaction among 9 Transmon atoms in a square lattice:
 
     .. code-block:: python
 
         atom_coordinates = [[0, 0], [0, 5], [0, 10], [5, 0], [5, 5], [5, 10], [10, 0], [10, 5], [10, 10]]
         wires = [1, 5, 0, 2, 4, 3, 8, 6, 7]
-        H_i = qml.pulse.rydberg_interaction(atom_coordinates, wires=wires)
+        H_i = qml.pulse.transmon_interaction(atom_coordinates, wires=wires)
 
     >>> H_i
     ParametrizedHamiltonian: terms=36
 
-    For an N-atom system, the ``ParametrizedHamiltonian`` should have :math:`\frac{N(N-1)}{2}` terms.
+    As expected, we have :math:`\frac{N(N-1)}{2} = 36` terms for N=6 atoms.
+
+    The interaction term is dependent only on the number and positions of the Transmon atoms. We can execute this
+    pulse program, which corresponds to all driving laser fields being turned off and therefore has no trainable
+    parameters. To add a driving laser field, see :func:`~.transmon_drive`.
 
     .. code-block:: python
 
@@ -86,130 +106,154 @@ def transmon_interaction(register: list, wires=None, interaction_coeff: float = 
 
     >>> circuit()
     Array(1., dtype=float32)
-
-    Since the Hamiltonian is dependent only on the number and positions of Rydberg atoms, the evolution
-    does not have any trainable parameters
     """
-    if wires is None:
-        wires = list(range(len(register)))
-    elif len(wires) != len(register):
-        raise ValueError("The length of the wires and the register must match.")
+    if wires is not None and all(i in wires for i in qml.math.unique(connections)):
+        raise ValueError(f"There are wires in connections {connections} that are not in the provided wires {wires}")
+
+    wires = wires or qml.math.unique(connections)
+
+    # TODO: cover all cases for coefficients being float, list of float or list of callables
+    if isinstance(omega, TensorLike):
+        if len(omega)==1:
+            omega = [omega for _ in wires]
+
+    # qubit term
+    coeffs = list(omega)
+    observables = [ad(i, d) @ a(i, d) for i in wires]
+
+    # anharmonicity term
+    coeffs += list(delta)
+    observables += [ad(i, d) @ ad(i, d) @ a(i, d) @ a(i, d) for i in wires]
+
+    # coupling term term
+    coeffs += list(g)
+    observables += [ad(i, d) @ a(j, d) + ad(j, d) @ a(i, d) for (i, j) in connections]
     
-    def a(wires):
-        return 0.5 * qml.PauliX(wires) + 0.5j * qml.PauliY(wires)
-
-    def ad(wires):
-        return 0.5 * qml.PauliX(wires) - 0.5j * qml.PauliY(wires)
-
-    coeffs = []
-    observables = []
-
-    register = [(0, 1), (2, 3), (4, 5)]
-    [ad(i) @ a(j) + ad(j) @ a(i) for (i, j) in register]
-    
-
-
-    for idx, (pos1, wire1) in enumerate(zip(register[:-1], wires[:-1])):
-        for pos2, wire2 in zip(register[(idx + 1) :], wires[(idx + 1) :]):
-            atom_distance = np.linalg.norm(qml.math.array(pos2) - pos1)
-            Vij = interaction_coeff / (abs(atom_distance) ** 6)  # van der Waals potential
-            coeffs.append(Vij)
-            observables.append(qml.prod(qml.Projector([1], wire1), qml.Projector([1], wire2)))
-            # Rydberg projectors
 
     return TransmonHamiltonian(
-        coeffs, observables, register=register, interaction_coeff=interaction_coeff
+        coeffs, observables, omega, delta, g, connections=connections
     )
 
 
-def transmon_drive(amplitude, detuning, phase, wires):
+def transmon_drive(amplitude, phase, detuning, wires):
     r"""Returns a :class:`ParametrizedHamiltonian` representing the action of a driving laser
     field with the given rabi frequency, detuning and phase acting on the given wires
 
     .. math::
-
-        \frac{1}{2} \Omega(t) \sum_i (\cos(\phi)\sigma_i^x - \sin(\phi)\sigma_i^y) -
-        \frac{1}{2} \delta(t) \sum_i \sigma_i^z
+        \frac{1}{2} \Omega(t) \sum_{i \in \text{wires}} (\cos(\phi)\sigma_i^x - \sin(\phi)\sigma_i^y) -
+        \frac{1}{2} \delta(t) \sum_{i \in \text{wires}} \sigma_i^z
 
     where :math:`\Omega`, :math:`\delta` and :math:`\phi` correspond to the rabi frequency, detuning
     and phase of the laser, :math:`i` correspond to the wire index, and :math:`\sigma^\alpha` for
-    :math:`\alpha = x,y,z` are the Pauli matrices. This driving term can be combined with an interaction
-    term to create a Hamiltonian describing a driven Rydberg atom system.
+    :math:`\alpha = x,y,z` are the Pauli matrices. The unit of time for the  evolution of this Transmon
+    drive term is :math:`\mu \text{s}`. This driving term can be combined with an interaction term to
+    create a Hamiltonian describing a driven Transmon atom system. Multiple driving terms can be combined
+    by summing them (see example).
 
     Args:
         amplitude (Union[float, Callable]): float or callable returning the amplitude (in MHz) of a
             laser field
+        phase (Union[float, Callable]): float or callable returning the phase (in radians) of the laser field
         detuning (Union[float, Callable]): float or callable returning the detuning (in MHz) of a
             laser field
-        phase (float): float containing the phase (in radians) of the laser field
-        wires (Union[int, List[int]]): integer or list containing wire values for the Rydberg atoms that
+        wires (Union[int, List[int]]): integer or list containing wire values for the Transmon atoms that
             the laser field acts on
 
     Returns:
-        RydbergHamiltonian: a :class:`~.ParametrizedHamiltonian` representing the action of the laser field
-        on the Rydberg atoms.
+        TransmonHamiltonian: a :class:`~.ParametrizedHamiltonian` representing the action of the laser field
+        on the Transmon atoms.
 
     .. seealso::
 
-        :func:`~.rydberg_interaction`, :class:`~.ParametrizedHamiltonian`, :class:`~.ParametrizedEvolution`
+        :func:`~.transmon_interaction`, :class:`~.ParametrizedHamiltonian`, :class:`~.ParametrizedEvolution`
         and :func:`~.evolve`
 
     **Example**
 
-    We create a Hamiltonian describing a laser acting on 4 wires (Rydberg atoms) with a fixed detuning and
+    We create a Hamiltonian describing a laser acting on 4 wires (Transmon atoms) with a fixed detuning and
     phase, and a parametrized, time-dependent amplitude. The Hamiltonian includes an interaction term for
-    inter-atom interactions due to the Rydberg blockade, as well as the driving term for the laser driving
+    inter-atom interactions due to van der Waals forces, as well as the driving term for the laser driving
     the atoms:
 
     .. code-block:: python
 
-        amplitude = lambda p, t: p * jnp.sin(jnp.pi * t)
-        detuning = 3 * jnp.pi / 4
-        phase = jnp.pi / 2
-        wires = [0, 1, 2, 3]
-        H_d = qml.pulse.rydberg_drive(amplitude, detuning, phase, wires)
-
         atom_coordinates = [[0, 0], [0, 4], [4, 0], [4, 4]]
-        H_i = qml.pulse.rydberg_interaction(atom_coordinates, wires)
+        H_i = qml.pulse.transmon_interaction(atom_coordinates, wires)
 
-    >>> H_d
-    ParametrizedHamiltonian: terms=2
+        amplitude = lambda p, t: p * jnp.sin(jnp.pi * t)
+        phase = jnp.pi / 2
+        detuning = 3 * jnp.pi / 4
+        wires = [0, 1, 2, 3]
+        H_d = qml.pulse.transmon_drive(amplitude, phase, detuning, wires)
+
     >>> H_i
     ParametrizedHamiltonian: terms=6
+    >>> H_d
+    ParametrizedHamiltonian: terms=2
 
-    The driving Hamiltonian has only two terms because it is simplified such that each term
-    represents one of the summations in the Hamiltonian shown above.
+    The two terms of the drive field correspond to the first and second sum, corresponding to the drive and the shift term.
+    This drive term corresponds to a global drive that acts on all wires of the device.
 
     .. code-block:: python
 
-        dev = qml.device("default.qubit.jax", wires=4)
+        dev = qml.device("default.qubit.jax", wires=wires)
 
         @qml.qnode(dev, interface="jax")
         def circuit(params):
-            qml.evolve(H_d + H_i)(params, t=[0, 10])
+            qml.evolve(H_i + H_d)(params, t=[0, 10])
             return qml.expval(qml.PauliZ(0))
 
     >>> params = [2.4]
     >>> circuit(params)
     Array(0.97137696, dtype=float32)
-
     >>> jax.grad(circuit)(params)
     [Array(0.10493923, dtype=float32)]
+
+    We can also create a Hamiltonian with multiple local drives. The following circuit corresponds to the
+    evolution where an additional local drive acting on wires ``[0, 1]`` is added to the Hamiltonian:
+
+    .. code-block:: python
+
+        amplitude_local = lambda p, t: p[0] * jnp.sin(2 * jnp.pi * t) + p[1]
+        phase_local = jnp.pi / 4
+        detuning_local = lambda p, t: p * jnp.exp(-0.25 * t)
+        H_local = qml.pulse.transmon_drive(amplitude_local, phase_local, detuning_local, [0, 1])
+
+        H = H_i + H_d + H_local
+
+        @jax.jit
+        @qml.qnode(dev, interface="jax")
+        def circuit_local(params):
+            qml.evolve(H)(params, t=[0, 10])
+            return qml.expval(qml.PauliZ(0))
+
+    >>> params = [2.4, [1.3, -2.0]]
+    >>> circuit_local(params)
+    Array(0.45782223, dtype=float64)
+    >>> jax.grad(circuit_local_drives)(params)
+    [Array(-0.33522988, dtype=float64),
+     [Array(0.40320718, dtype=float64, weak_type=True),
+      Array(-0.12003976, dtype=float64, weak_type=True)]]
     """
     if isinstance(wires, int):
         wires = [wires]
 
     # We compute the `coeffs` and `observables` of the laser field
-    coeffs = [amplitude, detuning]
-    amplitude_observable = sum(
-        qml.math.cos(phase) * qml.PauliX(wire) - qml.math.sin(phase) * qml.PauliY(wire)
-        for wire in wires
-    )
-    detuning_observable = sum(qml.PauliZ(wire) for wire in wires)
-    observables = [amplitude_observable, detuning_observable]
+    coeffs = [
+        amplitude_and_phase(qml.math.cos, amplitude, phase),
+        amplitude_and_phase(qml.math.sin, amplitude, phase),
+        detuning,
+    ]
 
-    # We convert the pulse data into a list of ``RydbergPulse`` objects
-    pulses = [TransmonPulse(amplitude, detuning, phase, wires)]
+    drive_terms_1 = sum(qml.PauliX(wire) for wire in wires)
+    drive_terms_2 = sum(-qml.PauliY(wire) for wire in wires)
+    drive_terms_3 = sum(qml.PauliZ(wire) for wire in wires)
+
+    observables = [drive_terms_1, drive_terms_2, drive_terms_3]
+
+    # We convert the pulse data into a list of ``TransmonPulse`` objects
+    pulses = [TransmonPulse(amplitude, phase, detuning, wires)]
+
     return TransmonHamiltonian(coeffs, observables, pulses=pulses)
 
 
@@ -218,7 +262,7 @@ class TransmonHamiltonian(ParametrizedHamiltonian):
     into hardware.
 
     This class contains the ``coeffs`` and the ``observables`` that represent one or more
-    terms of the Hamiltonian of an ensemble of Rydberg atoms under the action of local and global
+    terms of the Hamiltonian of an ensemble of Transmon atoms under the action of local and global
     laser fields:
 
     .. math::
@@ -226,15 +270,15 @@ class TransmonHamiltonian(ParametrizedHamiltonian):
         H = \frac{1}{2} \sum_i  \Omega_i(t) (\cos(\phi_i)\sigma_i^x - \sin(\phi_i)\sigma_i^y) -
         \frac{1}{2} \sum_i \delta_i(t) \sigma_i^z + \sum_{i<j} V_{ij} n_i n_j
 
-    Additionally, it also contains two more attributes (``register`` and ``pulses``) that contain
+    Additionally, it also contains two more attributes (``connections`` and ``pulses``) that contain
     the information that the hardware needs to execute this Hamiltonian.
 
     .. warning::
 
         This class should NEVER be initialized directly! Please use the functions
-        :func:`rydberg_interaction` and :func:`rydberg_drive` instead.
+        :func:`transmon_interaction` and :func:`transmon_drive` instead.
 
-    .. seealso:: :func:`rydberg_interaction`, :func:`rydberg_drive`, :class:`ParametrizedHamiltonian`
+    .. seealso:: :func:`transmon_interaction`, :func:`transmon_drive`, :class:`ParametrizedHamiltonian`
 
     Args:
         coeffs (Union[float, callable]): coefficients of the Hamiltonian expression, which may be
@@ -244,14 +288,14 @@ class TransmonHamiltonian(ParametrizedHamiltonian):
             length as ``coeffs``
 
     Keyword Args:
-        register (list): list of coordinates (in micrometers) of each atom in the ensemble
-        pulses (list): list of ``RydbergPulse`` classes containing the information about the
+        connections (list): list of coordinates (in micrometers) of each atom in the ensemble
+        pulses (list): list of ``TransmonPulse`` classes containing the information about the
             amplitude, phase, detuning and wires of each pulse
-        interaction_coeff (float): Rydberg interaction constant in units: :math:`\text{MHz} \times \mu m^6`.
+        interaction_coeff (float): Transmon interaction constant in units: :math:`\text{MHz} \times \mu m^6`.
             Defaults to :math:`862690 \text{MHz} \times \mu m^6`.
 
     Returns:
-        RydbergHamiltonian: class representing the Hamiltonian of an ensemble of Rydberg atoms
+        TransmonHamiltonian: class representing the Hamiltonian of an ensemble of Transmon atoms
     """
 
     # pylint: disable=too-many-arguments
@@ -259,55 +303,108 @@ class TransmonHamiltonian(ParametrizedHamiltonian):
         self,
         coeffs,
         observables,
-        register: list = None,
+        omega = None,
+        delta = None,
+        g = None,
+        connections: list = None,
         pulses: List["TransmonPulse"] = None,
-        interaction_coeff: float = 862690,
     ):
-        self.register = register
+        self.omega = omega
+        self.delta = delta,
+        self.g = g,
+        self.connections = connections
         self.pulses = [] if pulses is None else pulses
-        self.interaction_coeff = interaction_coeff
         super().__init__(coeffs, observables)
 
+    def __call__(self, params, t):
+        params = _transmon_reorder_parameters(params, self.coeffs_parametrized)
+        return super().__call__(params, t)
+
     def __add__(self, other):
-        if not isinstance(other, TransmonHamiltonian):
-            return super().__add__(other)
-
-        # Update coeffs, obs and hardware attributes
-        if self.register is not None:
-            if other.register is not None:
-                raise ValueError("We cannot add two Hamiltonians with an interaction term!")
-            if not self.wires.contains_wires(other.wires):
+        if isinstance(other, TransmonHamiltonian):
+            # Update coeffs, obs and hardware attributes
+            if self.connections is not None:
+                if other.connections is not None:
+                    raise ValueError("We cannot add two Hamiltonians with an interaction term!")
+                if not self.wires.contains_wires(other.wires):
+                    warnings.warn(
+                        "The wires of the laser fields are not present in the Transmon ensemble."
+                    )
+            elif other.connections is not None and not other.wires.contains_wires(self.wires):
                 warnings.warn(
-                    "The wires of the laser fields are not present in the Rydberg ensemble."
+                    "The wires of the laser fields are not present in the Transmon ensemble."
                 )
-        elif other.register is not None and not other.wires.contains_wires(self.wires):
-            warnings.warn("The wires of the laser fields are not present in the Rydberg ensemble.")
 
-        new_register = self.register or other.register
-        new_pulses = self.pulses + other.pulses
-        new_ops = self.ops + other.ops
-        new_coeffs = self.coeffs + other.coeffs
-        return TransmonHamiltonian(new_coeffs, new_ops, register=new_register, pulses=new_pulses)
+            new_connections = self.connections or other.connections
+            new_pulses = self.pulses + other.pulses
+            new_ops = self.ops + other.ops
+            new_coeffs = self.coeffs + other.coeffs
+            return TransmonHamiltonian(new_coeffs, new_ops, connections=new_connections, pulses=new_pulses)
+
+        ops = self.ops.copy()
+        coeffs = self.coeffs.copy()
+        connections = self.connections
+        pulses = self.pulses
+
+        if isinstance(other, (Hamiltonian, ParametrizedHamiltonian)):
+            new_coeffs = coeffs + other.coeffs.copy()
+            new_ops = ops + other.ops.copy()
+            return TransmonHamiltonian(new_coeffs, new_ops, connections=connections, pulses=pulses)
+
+        if isinstance(other, qml.ops.SProd):  # pylint: disable=no-member
+            new_coeffs = coeffs + [other.scalar]
+            new_ops = ops + [other.base]
+            return TransmonHamiltonian(new_coeffs, new_ops, connections=connections, pulses=pulses)
+
+        if isinstance(other, Operator):
+            new_coeffs = coeffs + [1]
+            new_ops = ops + [other]
+            return TransmonHamiltonian(new_coeffs, new_ops, connections=connections, pulses=pulses)
+
+        return NotImplemented
+
+    def __radd__(self, other):
+        """Deals with the special case where a TransmonHamiltonian is added to a
+        ParametrizedHamiltonian. Ensures that this returs a TransmonHamiltonian where
+        the order of the parametrized coefficients and operators matches the order of
+        the hamiltonians, i.e. that
+
+        ParametrizedHamiltonian + TransmonHamiltonian
+
+        returns a TransmonHamiltonian where the call expects params = [params_PH] + [params_RH]
+        """
+        if isinstance(other, ParametrizedHamiltonian):
+            ops = self.ops.copy()
+            coeffs = self.coeffs.copy()
+
+            new_coeffs = other.coeffs.copy() + coeffs
+            new_ops = other.ops.copy() + ops
+
+            return TransmonHamiltonian(
+                new_coeffs, new_ops, connections=self.connections, pulses=self.pulses
+            )
+
+        return self.__add__(other)
 
 
 @dataclass
 class TransmonPulse:
-    """Dataclass that contains the information of a single Rydberg pulse. This class is used
+    """Dataclass that contains the information of a single Transmon pulse. This class is used
     internally in PL to group into a single object all the data related to a single laser field.
 
     Args:
         amplitude (Union[float, Callable]): float or callable returning the amplitude (in MHz) of a laser
             field
+        phase (Union[float, Callable]): float containing the phase (in radians) of the laser field
         detuning (Union[float, Callable]): float or callable returning the detuning (in MHz) of a
             laser field
-        phase (float): float containing the phase (in radians) of the laser field
         wires (Union[int, List[int]]): integer or list containing wire values that the laser field
             acts on
     """
 
     amplitude: Union[float, Callable]
+    phase: Union[float, Callable]
     detuning: Union[float, Callable]
-    phase: float
     wires: List[Wires]
 
     def __post_init__(self):
@@ -320,3 +417,77 @@ class TransmonPulse:
             and self.detuning == other.detuning
             and self.wires == other.wires
         )
+
+
+def amplitude_and_phase(trig_fn, amp, phase):
+    """Wrapper function for combining amplitude and phase into a single callable
+    (or constant if neither amplitude nor phase are callable)."""
+    if not callable(amp) and not callable(phase):
+        return amp * trig_fn(phase)
+    return AmplitudeAndPhase(trig_fn, amp, phase)
+
+
+# pylint:disable = too-few-public-methods
+class AmplitudeAndPhase:
+    """Class storing combined amplitude and phase callable if either or both
+    of amplitude nor phase are callable."""
+
+    def __init__(self, trig_fn, amp, phase):
+        self.amp_is_callable = callable(amp)
+        self.phase_is_callable = callable(phase)
+
+        def callable_amp_and_phase(params, t):
+            return amp(params[0], t) * trig_fn(phase(params[1], t))
+
+        def callable_amp(params, t):
+            return amp(params, t) * trig_fn(phase)
+
+        def callable_phase(params, t):
+            return amp * trig_fn(phase(params, t))
+
+        if self.amp_is_callable and self.phase_is_callable:
+            self.func = callable_amp_and_phase
+
+        elif self.amp_is_callable:
+            self.func = callable_amp
+
+        elif self.phase_is_callable:
+            self.func = callable_phase
+
+    def __call__(self, params, t):
+        return self.func(params, t)
+
+
+def _transmon_reorder_parameters(params, coeffs_parametrized):
+    """Takes `params`, and reorganizes it based on whether the Hamiltonian has
+    callable phase and/or callable amplitude.
+
+    Consolidates phase and amplitude parameters in the case that both are callable,
+    and duplicates phase and/or amplitude parameters if either are callables, since
+    they will be passed to two operators in the Hamiltonian"""
+
+    reordered_params = []
+
+    coeff_idx = 0
+    params_idx = 0
+
+    for i, coeff in enumerate(coeffs_parametrized):
+        if i == coeff_idx:
+            if isinstance(coeff, AmplitudeAndPhase):
+                if coeff.phase_is_callable and coeff.amp_is_callable:
+                    # add the joined parameters twice, and skip an index
+                    reordered_params.append([params[params_idx], params[params_idx + 1]])
+                    reordered_params.append([params[params_idx], params[params_idx + 1]])
+                    coeff_idx += 2
+                    params_idx += 2
+                elif coeff.phase_is_callable or coeff.amp_is_callable:
+                    reordered_params.append(params[params_idx])
+                    reordered_params.append(params[params_idx])
+                    coeff_idx += 2
+                    params_idx += 1
+            else:
+                reordered_params.append(params[params_idx])
+                coeff_idx += 1
+                params_idx += 1
+
+    return reordered_params
