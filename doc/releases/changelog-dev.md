@@ -57,6 +57,10 @@
   to be set as trainable), and therefore the derivatives are computed more efficiently.
   [(#3697)](https://github.com/PennyLaneAI/pennylane/pull/3697)
 
+* `qml.SparseHamiltonian` can now be applied to any wires in a circuit rather than being restricted to all wires
+  in the circuit.
+  [(#3888)](https://github.com/PennyLaneAI/pennylane/pull/3888)
+
 * Added `max_distance` keyword argument to `qml.pulse.rydberg_interaction` to allow removal of negligible contributions
   from atoms beyond `max_distance`from each other.
   [(#3889)](https://github.com/PennyLaneAI/pennylane/pull/3889)
@@ -119,6 +123,9 @@
 * `qml.devices.qubit.apply_operation` catches the `tf.errors.UnimplementedError` that occurs when `PauliZ` or `CNOT` gates
   are applied to a large (>8 wires) tensorflow state. When that occurs, the logic falls back to the tensordot logic instead.
   [(#3884)](https://github.com/PennyLaneAI/pennylane/pull/3884/)
+
+* Fixed parameter broadcasting support with `qml.counts` in most cases, and introduced explicit errors otherwise.
+  [(#3876)](https://github.com/PennyLaneAI/pennylane/pull/3876)
 
 <h3>Contributors</h3>
 
