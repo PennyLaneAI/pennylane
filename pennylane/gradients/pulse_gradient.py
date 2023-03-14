@@ -167,7 +167,22 @@ def _stoch_pulse_grad(
     tape, argnum=None, num_samples=1, sampler_seed=None, shots=None, use_broadcasting=False
 ):
     r"""Compute the gradient of a quantum circuit composed of pulse sequences by applying the
-    stochastic parameter shift rule.
+    stochastic parameter shift rule. For a pulse-based cost function :math:`C(\boldsymbol{v}, T)`
+    with variational parameters :math:`\boldsymbol{v}` and evolution time :math:`T`, it is given by
+    (c.f. Eqn. (6) in `Leng et al. (2022) <https://arxiv.org/abs/2210.15812>`__ with altered
+    notation):
+
+    .. math::
+
+        \frac{\partial C}{\partial v_k}
+        = \int_{0}^{T} \mathrm{d}\tau \sum_{j=1}^m
+        \frac{\partial f_j}{\partial v_k}(\boldsymbol{v}, \tau)
+        \left[C_j^{(+)}(\boldsymbol, \tau) - C_j^{(-)}(\boldsymbol, \tau)\right]
+
+    Here, :math:`f_j` are the pulse envelopes that capture the time dependence of the pulse
+    Hamiltonian and :math:`C_j^{(\pm)}` are modified cost functions.
+    See below for a more detailed description. The above integral is estimated numerically by
+    the stochastic parameter-shift rule.
 
     Args:
         tape (pennylane.QNode or .QuantumTape): quantum tape or QNode to differentiate
@@ -374,10 +389,10 @@ def _stoch_pulse_grad(
 
         .. math::
 
-            \frac{\partial f_1}{\partial v_1}((v_1, v_2), t) &= 1\\
-            \frac{\partial f_1}{\partial v_1}((v_1, v_2), t) &= \cos(v_2 t) t \\
-            \frac{\partial f_1}{\partial v_2}((v_1, v_2), t) =
-            \frac{\partial f_2}{\partial v_1}((v_1, v_2), t) &= 0
+            \frac{\partial f_1}{\partial v_1}&= 1\\
+            \frac{\partial f_2}{\partial v_2}&= \cos(v_2 t) t \\
+            \frac{\partial f_1}{\partial v_2}=
+            \frac{\partial f_2}{\partial v_1}&= 0
 
         and the fact that both :math:`H_1=Z\otimes Z` and :math:`H_2=I\otimes X`
         have two unique eigenvalues and therefore admit a two-term parameter-shift rule
