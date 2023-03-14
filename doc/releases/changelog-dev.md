@@ -97,6 +97,10 @@
 
 <h3>Bug fixes</h3>
 
+* `MeasurementProcess.hash` now uses the hash property of the observable. `Sum.hash` and `Prod.hash` are slightly changed
+  to work with non-numeric wire labels.  `sum_expand` should now return correct results and not treat some products as the same
+  operation.
+
 * Fixed bug where the coefficients where not ordered correctly when summing a `ParametrizedHamiltonian`
   with other operators.
   [(#3749)](https://github.com/PennyLaneAI/pennylane/pull/3749)

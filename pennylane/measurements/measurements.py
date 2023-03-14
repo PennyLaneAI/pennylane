@@ -442,13 +442,9 @@ class MeasurementProcess(ABC):
                 self.__class__.__name__,
             )
         else:
-            fingerprint = (
-                str(self.obs.name),
-                tuple(self.wires.tolist()),
-                str(self.obs.data),
-                self.__class__.__name__,
-            )
+            fingerprint = (self.__class__.__name__, self.obs.hash)
 
+        print(fingerprint)
         return hash(fingerprint)
 
     def simplify(self):

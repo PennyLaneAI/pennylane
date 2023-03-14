@@ -334,6 +334,8 @@ def sum_expand(tape: QuantumTape, group=True):
         else:
             idxs_coeffs_dict[m.hash].append((idx, coeff))
 
+    print(measurements_dict)
+    print(idxs_coeffs_dict)
     # Cast the dictionaries into lists (we don't need the hashed anymore)
     measurements = list(measurements_dict.values())
     idxs_coeffs = list(idxs_coeffs_dict.values())
