@@ -44,7 +44,8 @@ class ClassicalShadow:
     One can in principle also reconstruct the global state :math:`\sum_t \rho^{(t)}/T`, though it is not advisable nor practical for larger systems due to its exponential scaling.
 
     .. note:: As per `arXiv:2103.07510 <https://arxiv.org/abs/2103.07510>`_, when computing multiple expectation values it is advisable to directly estimate the desired observables by simultaneously measuring
-        qubit-wise-commuting terms. One way of doing this in PennyLane is via :class:`~pennylane.Hamiltonian` and setting ``grouping_type="qwc"``.
+        qubit-wise-commuting terms. One way of doing this in PennyLane is via :class:`~pennylane.Hamiltonian` and setting ``grouping_type="qwc"``. For more details on this topic, see our demo
+        on `observing expectation values with classical shadows <https://pennylane.ai/qml/demos/tutorial_diffable_shadows.html>`_.
 
     Args:
         bits (tensor): recorded measurement outcomes in random Pauli bases.
