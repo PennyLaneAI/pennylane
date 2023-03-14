@@ -18,7 +18,7 @@ from functools import reduce
 
 import numpy as np
 
-# pylint: disable=unused-argument, too-few-public-methods
+# pylint: disable=unused-argument, too-few-public-methods, import-outside-toplevel
 import pytest
 
 import pennylane as qml
@@ -38,6 +38,7 @@ class MyOp(qml.RX):  # pylint: disable=too-few-public-methods
 
 
 def time_independent_hamiltonian():
+    """Create a time-independent two-qubit Hamiltonian."""
     ops = [qml.PauliX(0), qml.PauliZ(1), qml.PauliY(0), qml.PauliX(1)]
 
     def f1(params, t):
@@ -52,6 +53,7 @@ def time_independent_hamiltonian():
 
 
 def time_dependent_hamiltonian():
+    """Create a time-dependent two-qubit Hamiltonian that takes two scalar parameters."""
     import jax.numpy as jnp
 
     ops = [qml.PauliX(0), qml.PauliZ(1), qml.PauliY(0), qml.PauliX(1)]
