@@ -749,8 +749,6 @@ class TestStochPulseGradQNodeIntegration:
         p_x = params[0][0] * T_x
         p_y = params[1][0] * T_y
         exp_grad = [[-2 * jnp.sin(2 * (p_x + p_y)) * T_x], [-2 * jnp.sin(2 * (p_x + p_y)) * T_y]]
-        print(grad)
-        print(exp_grad)
         assert qml.math.allclose(grad, exp_grad, atol=tol, rtol=0.0)
 
     @pytest.mark.parametrize("shots, tol", [(None, 1e-4), (100, 0.1), ([100, 99], 0.1)])
