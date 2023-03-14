@@ -290,7 +290,7 @@ class ParametrizedHamiltonian:
         coeffs = self.coeffs.copy()
 
         if isinstance(H, (Hamiltonian, ParametrizedHamiltonian)):
-            # if Hamiltonian, coeffs array much be converted to list
+            # if Hamiltonian, coeffs array must be converted to list
             new_coeffs = coeffs + list(H.coeffs.copy())
             new_ops = ops + H.ops.copy()
             return ParametrizedHamiltonian(new_coeffs, new_ops)
@@ -315,7 +315,7 @@ class ParametrizedHamiltonian:
         coeffs = self.coeffs.copy()
 
         if isinstance(H, (Hamiltonian, ParametrizedHamiltonian)):
-            # if Hamiltonian, coeffs array much be converted to list
+            # if Hamiltonian, coeffs array must be converted to list
             new_coeffs = list(H.coeffs.copy()) + coeffs
             new_ops = H.ops.copy() + ops
             return ParametrizedHamiltonian(new_coeffs, new_ops)
