@@ -159,6 +159,7 @@ def rydberg_drive(amplitude, phase, detuning, wires):
     .. code-block:: python
 
         atom_coordinates = [[0, 0], [0, 4], [4, 0], [4, 4]]
+        wires = [1, 2, 3, 4]
         H_i = qml.pulse.rydberg_interaction(atom_coordinates, wires)
 
         amplitude = lambda p, t: p * jnp.sin(jnp.pi * t)
@@ -170,10 +171,14 @@ def rydberg_drive(amplitude, phase, detuning, wires):
     >>> H_i
     ParametrizedHamiltonian: terms=6
     >>> H_d
-    ParametrizedHamiltonian: terms=2
+    ParametrizedHamiltonian: terms=3
 
-    The two terms of the drive field correspond to the first and second sum, corresponding to the drive and the shift term.
-    This drive term corresponds to a global drive that acts on all wires of the device.
+    The first two terms of the drive Hamiltonian ``H_d`` correspond to the first sum (the sine and cosine terms),
+    describing drive between the ground and excited states. The third term corresponding to the shift term
+    due to detuning from resonance. This drive term corresponds to a global drive that acts on all 4 wires of
+    the device.
+
+    The full Hamiltonian can be evaluated:
 
     .. code-block:: python
 
@@ -196,8 +201,8 @@ def rydberg_drive(amplitude, phase, detuning, wires):
     .. code-block:: python
 
         amplitude_local = lambda p, t: p[0] * jnp.sin(2 * jnp.pi * t) + p[1]
-        phase_local = jnp.pi / 4
-        detuning_local = lambda p, t: p * jnp.exp(-0.25 * t)
+        phase_local = lambda p, t: p * jnp.exp(-0.25 * t)
+        detuning_local = jnp.pi / 4
         H_local = qml.pulse.rydberg_drive(amplitude_local, phase_local, detuning_local, [0, 1])
 
         H = H_i + H_d + H_local
