@@ -160,12 +160,6 @@ def execute_tuple(tapes, device, execute_fn, gradient_fn, gradient_kwargs, _n=1,
         # not implemeneted and is required for the callback logic
         raise NotImplementedError("The JAX-JIT interface doesn't support qml.counts.")
 
-    if _n == 1:
-        for tape in tapes:
-            # set the trainable parameters
-            params = tape.get_parameters(trainable_only=False)
-            tape.trainable_params = qml.math.get_trainable_indices(params)
-
     parameters = tuple(list(t.get_parameters(trainable_only=False)) for t in tapes)
 
     if gradient_fn is None:

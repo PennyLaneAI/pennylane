@@ -29,11 +29,6 @@ from pennylane.operation import (
 )
 
 
-def _update_trainable_params(tape):
-    params = tape.get_parameters(trainable_only=False)
-    tape.trainable_params = qml.math.get_trainable_indices(params)
-
-
 def create_expand_fn(depth, stop_at=None, device=None, docstring=None):
     """Create a function for expanding a tape to a given depth, and
     with a specific stopping criterion. This is a wrapper around
@@ -100,8 +95,6 @@ def create_expand_fn(depth, stop_at=None, device=None, docstring=None):
                 tape = tape.expand(depth=depth, stop_at=stop_at)
             else:
                 return tape
-
-            _update_trainable_params(tape)
 
         return tape
 

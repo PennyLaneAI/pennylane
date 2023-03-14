@@ -179,10 +179,7 @@ def execute(tapes, device, execute_fn, gradient_fn, gradient_kwargs, _n=1, max_d
     params_unwrapped = []
 
     for i, tape in enumerate(tapes):
-        # store the trainable parameters
         params = tape.get_parameters(trainable_only=False)
-        tape.trainable_params = qml.math.get_trainable_indices(params)
-
         parameters += [p for i, p in enumerate(params) if i in tape.trainable_params]
 
         # store all unwrapped parameters
@@ -325,10 +322,7 @@ def _execute_new(tapes, device, execute_fn, gradient_fn, gradient_kwargs, _n=1, 
     params_unwrapped = []
 
     for i, tape in enumerate(tapes):
-        # store the trainable parameters
         params = tape.get_parameters(trainable_only=False)
-        tape.trainable_params = qml.math.get_trainable_indices(params)
-
         parameters += [p for i, p in enumerate(params) if i in tape.trainable_params]
 
         # store all unwrapped parameters

@@ -93,10 +93,7 @@ def execute(tapes, device, execute_fn, gradient_fn, gradient_kwargs, _n=1, max_d
     output_types = []
 
     for tape in tapes:
-        # store the trainable parameters
         params = tape.get_parameters(trainable_only=False)
-        tape.trainable_params = qml.math.get_trainable_indices(params)
-
         parameters += [p for i, p in enumerate(params) if i in tape.trainable_params]
         all_params += params
         trainable += (np.array(list(tape.trainable_params)) + sum(lens)).tolist()
@@ -314,10 +311,7 @@ def _execute_new(
     num_shot_copies = _get_num_copies(device.shot_vector) if device.shot_vector else 1
 
     for tape in tapes:
-        # store the trainable parameters
         params = tape.get_parameters(trainable_only=False)
-        tape.trainable_params = qml.math.get_trainable_indices(params)
-
         parameters += [p for i, p in enumerate(params) if i in tape.trainable_params]
         all_params += params
         trainable += (np.array(list(tape.trainable_params)) + sum(lens)).tolist()

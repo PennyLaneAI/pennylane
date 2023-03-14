@@ -363,10 +363,6 @@ class QuantumScript:
         self._specs = None
         self._update_circuit_info()  # Updates wires, num_wires, is_sampled, all_sampled; O(ops+obs)
         self._update_par_info()  # Updates _par_info; O(ops+obs)
-
-        # The following line requires _par_info to be up to date
-        self._update_trainable_params()  # Updates the _trainable_params; O(1)
-
         self._update_observables()  # Updates _obs_sharing_wires and _obs_sharing_wires_id
         self._update_batch_size()  # Updates _batch_size; O(ops)
 
@@ -400,26 +396,25 @@ class QuantumScript:
             _par_info (list): Parameter information
         """
         self._par_info = []
+        trainable = []
         for idx, op in enumerate(self.operations):
+            total = len(self._par_info)
+            trainable += [i + total for i, d in enumerate(op.data) if qml.math.requires_grad(d)]
             self._par_info.extend(
                 {"op": op, "op_idx": idx, "p_idx": i} for i, d in enumerate(op.data)
             )
 
         for idx, m in enumerate(self.measurements):
             if m.obs is not None:
+                total = len(self._par_info)
+                trainable += [
+                    i + total for i, d in enumerate(m.obs.data) if qml.math.requires_grad(d)
+                ]
                 self._par_info.extend(
                     {"op": m.obs, "op_idx": idx, "p_idx": i} for i, d in enumerate(m.obs.data)
                 )
 
-    def _update_trainable_params(self):
-        """Set the trainable parameters
-
-        Sets:
-            _trainable_params (list[int]): Script parameter indices of trainable parameters
-
-        Call `_update_par_info` before `_update_trainable_params`
-        """
-        self._trainable_params = list(range(len(self._par_info)))
+        self._trainable_params = trainable
 
     def _update_observables(self):
         """Update information about observables, including the wires that are acted upon and
@@ -1024,7 +1019,9 @@ class QuantumScript:
         new_qscript.is_sampled = self.is_sampled
         new_qscript.all_sampled = self.all_sampled
         new_qscript._update_par_info()
-        new_qscript.trainable_params = self.trainable_params.copy()
+        new_qscript.trainable_params = (
+            self.trainable_params.copy()
+        )  # needed if copied while unwrapped
         new_qscript._obs_sharing_wires = self._obs_sharing_wires
         new_qscript._obs_sharing_wires_id = self._obs_sharing_wires_id
         new_qscript._batch_size = self.batch_size
