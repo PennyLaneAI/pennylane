@@ -636,6 +636,13 @@ def execute(
     if expand_fn == "device":
         expand_fn = lambda tape: device.expand_fn(tape, max_expansion=max_expansion)
 
+    # added to return resource information
+    if device.short_name == "null.qubit":
+        res = qml.interfaces.cache_execute(
+            batch_execute, cache, return_tuple=False, expand_fn=expand_fn
+        )(tapes)
+        return res
+
     if gradient_fn is None:
         # don't unwrap if it's an interface device
         if "passthru_interface" in device.capabilities():

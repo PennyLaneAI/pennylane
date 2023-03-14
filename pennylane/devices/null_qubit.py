@@ -23,6 +23,34 @@ from pennylane import numpy as np
 from .._version import __version__
 
 
+class Resource:
+    r"""Create a resource object for storing quantum resource information."""
+
+    def __init__(self):
+        self.num_wires = 0
+        self.num_gates = 0
+        self.gate_types = defaultdict(int)
+        self.depth = 0
+        self.shots = 0
+
+    def __str__(self):
+        keys = ["wires", "gates", "depth", "shots", "gate_types"]
+        vals = [self.num_wires, self.num_gates, self.depth, self.shots, self.gate_types]
+        items = "\n".join([str(i) for i in zip(keys, vals)])
+        items = items.replace("('", "")
+        items = items.replace("',", ":")
+        items = items.replace(")", "")
+        items = items.replace("defaultdict(<class 'int'>, ", "\n")
+        return items
+
+    def __repr__(self):
+        return f"<Resource: wires={self.num_wires}, gates={self.num_gates}, depth={self.depth}, shots={self.shots}, gate_types={self.gate_types}>"
+
+    def _ipython_display_(self):
+        """Displays __str__ in ipython instead of __repr__"""
+        print(str(self))
+
+
 # pylint: disable=unused-argument, no-self-use
 class NullQubit(QubitDevice):
     """Null qubit device for PennyLane. This device performs no operations involved in numerical calculations.
@@ -279,13 +307,43 @@ class NullQubit(QubitDevice):
         """Statistics of operation calls"""
         return self._operation_calls
 
-    def execute(self, circuit, **kwargs):
-        self.apply(circuit.operations, rotations=circuit.diagonalizing_gates, **kwargs)
+    # def execute(self, circuit, **kwargs):
+    #     self.apply(circuit.operations, rotations=circuit.diagonalizing_gates, **kwargs)
+    #
+    #     if self.tracker.active:
+    #         self.tracker.update(executions=1, shots=self._shots)
+    #         self.tracker.record()
+    #     return [0.0]
 
-        if self.tracker.active:
-            self.tracker.update(executions=1, shots=self._shots)
-            self.tracker.record()
-        return [0.0]
+    def execute(self, circuit, **kwargs):
+        r"""Return resource information instead of [0.0]"""
+
+        tape = circuit.copy()
+        resource = Resource()
+        resource.num_wires = len(tape.wires)
+        resource.shots = self.shots
+
+        for op in tape.operations:
+            if not hasattr(op, "resources"):
+                try:
+                    decomp = op.decomposition()
+                    for d in decomp:
+                        # gate_types
+                        resource.gate_types[d.name] += 1
+                except:
+                    # gate_types
+                    resource.gate_types[op.name] += 1
+
+            if hasattr(op, "resources"):
+                op_resource = op.resources()
+                # gate_types
+                for d in op_resource.gate_types:
+                    resource.gate_types[d] += op_resource.gate_types[d]
+
+            # num_gates
+            resource.num_gates = sum(resource.gate_types.values())
+
+        return [resource]
 
     def batch_execute(self, circuits, **kwargs):
         res = []
