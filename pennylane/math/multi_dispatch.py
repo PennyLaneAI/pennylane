@@ -410,28 +410,10 @@ def get_trainable_indices(values, like=None):
     Trainable: {0}
     tensor(0.0899685, requires_grad=True)
     """
-    trainable = requires_grad
     trainable_params = set()
 
-    if like == "jax":
-        import jax
-
-        if not any(isinstance(v, jax.core.Tracer) for v in values):
-            # No JAX tracing is occuring; treat all `Array` objects as trainable.
-
-            # pylint: disable=function-redefined,unused-argument
-            def trainable(p, **kwargs):
-                return isinstance(p, jax.Array)
-
-        else:
-            # JAX tracing is occuring; use the default behaviour (only traced arrays
-            # are treated as trainable). This is required to ensure that `jax.grad(func, argnums=...)
-            # works correctly, as the argnums argnument determines which parameters are
-            # traced arrays.
-            trainable = requires_grad
-
     for idx, p in enumerate(values):
-        if trainable(p, interface=like):
+        if requires_grad(p, interface=like):
             trainable_params.add(idx)
 
     return trainable_params
@@ -896,6 +878,37 @@ def detach(tensor, like=None):
         return np.to_numpy(tensor)
 
     return tensor
+
+
+def jax_argnums_to_tape_trainable(qnode, argnums, expand_fn, args, kwargs):
+    """This functions gets the tape parameters from the QNode construction given some argnums (only for Jax).
+    The tape parameters are transformed to JVPTracer if they are from argnums. This function imitates the behavior
+    of Jax in order to mark trainable parameters.
+
+    Args:
+        qnode(qml.QNode): the quantum node.
+        argnums(int, list[int]): the parameters that we want to set as trainable (on the QNode level).
+        expand_fn(callable): the function that is expanding the tape.
+
+    Return:
+        list[float, jax.JVPTracer]: List of parameters where the trainable one are `JVPTracer`.
+    """
+    import jax
+
+    with jax.core.new_main(jax.ad.JVPTrace) as main:
+        trace = jax.ad.JVPTrace(main, 0)
+
+    args_jvp = [
+        jax.ad.JVPTracer(trace, arg, jax.numpy.zeros(arg.shape)) if i in argnums else arg
+        for i, arg in enumerate(args)
+    ]
+
+    qnode.construct(args_jvp, kwargs)
+    tape = qnode.qtape
+    tape = expand_fn(tape)
+    params = tape.get_parameters(trainable_only=False)
+    del trace
+    return params
 
 
 @multi_dispatch(tensor_list=[1])

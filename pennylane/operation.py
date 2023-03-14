@@ -216,12 +216,10 @@ import abc
 import copy
 import functools
 import itertools
-import numbers
 import warnings
 from enum import IntEnum
 from typing import List
 
-import autoray
 import numpy as np
 from numpy.linalg import multi_dot
 from scipy.sparse import coo_matrix, eye, kron
@@ -229,6 +227,7 @@ from scipy.sparse import coo_matrix, eye, kron
 import pennylane as qml
 from pennylane.math import expand_matrix
 from pennylane.queuing import QueuingManager
+from pennylane.typing import TensorLike
 from pennylane.wires import Wires
 
 from .utils import pauli_eigs
@@ -1274,6 +1273,15 @@ class Operator(abc.ABC):
             *self.parameters, wires=self.wires, **self.hyperparameters
         )
 
+    # pylint: disable=no-self-argument, comparison-with-callable
+    @classproperty
+    def has_generator(cls):
+        r"""Bool: Whether or not the Operator returns a defined generator.
+
+        Note: Child classes may have this as an instance property instead of as a class property.
+        """
+        return cls.generator != Operator.generator
+
     def generator(self):  # pylint: disable=no-self-use
         r"""Generator of an operator that is in single-parameter-form.
 
@@ -1407,14 +1415,9 @@ class Operator(abc.ABC):
         """The addition operation of Operator-Operator objects and Operator-scalar."""
         if isinstance(other, Operator):
             return qml.sum(self, other)
-        if other == 0:
-            return self
-        if isinstance(other, qml.pulse.ParametrizedHamiltonian):
-            return other.__add__(self)
-        backend = autoray.infer_backend(other)
-        if (
-            backend == "builtins" and isinstance(other, numbers.Number)
-        ) or backend in SUPPORTED_INTERFACES:
+        if isinstance(other, TensorLike):
+            if qml.math.allequal(other, 0):
+                return self
             return qml.sum(self, qml.s_prod(scalar=other, operator=qml.Identity(self.wires)))
         return NotImplemented
 
@@ -1424,11 +1427,14 @@ class Operator(abc.ABC):
         """The scalar multiplication between scalars and Operators."""
         if callable(other):
             return qml.pulse.ParametrizedHamiltonian([other], [self])
-        backend = autoray.infer_backend(other)
-        if (
-            backend == "builtins" and isinstance(other, numbers.Number)
-        ) or backend in SUPPORTED_INTERFACES:
+        if isinstance(other, TensorLike):
             return qml.s_prod(scalar=other, operator=self)
+        return NotImplemented
+
+    def __truediv__(self, other):
+        """The division between an Operator and a number."""
+        if isinstance(other, TensorLike):
+            return self.__mul__(1 / other)
         return NotImplemented
 
     __rmul__ = __mul__
@@ -1439,8 +1445,8 @@ class Operator(abc.ABC):
 
     def __sub__(self, other):
         """The subtraction operation of Operator-Operator objects and Operator-scalar."""
-        if isinstance(other, (Operator, numbers.Number)):
-            return self + (-other)
+        if isinstance(other, (Operator, TensorLike)):
+            return self + (qml.math.multiply(-1, other))
         return NotImplemented
 
     def __rsub__(self, other):
@@ -1453,10 +1459,7 @@ class Operator(abc.ABC):
 
     def __pow__(self, other):
         r"""The power operation of an Operator object."""
-        backend = autoray.infer_backend(other)
-        if (
-            backend == "builtins" and isinstance(other, numbers.Number)
-        ) or backend in SUPPORTED_INTERFACES:
+        if isinstance(other, TensorLike):
             return qml.pow(self, z=other)
         return NotImplemented
 
@@ -2717,11 +2720,12 @@ def not_tape(obj):
 @qml.BooleanFn
 def has_gen(obj):
     """Returns ``True`` if an operator has a generator defined."""
+    if isinstance(obj, Operator):
+        return obj.has_generator
     try:
         obj.generator()
     except (AttributeError, OperatorPropertyUndefined, GeneratorUndefinedError):
         return False
-
     return True
 
 
@@ -2768,8 +2772,7 @@ def is_trainable(obj):
 
 @qml.BooleanFn
 def defines_diagonalizing_gates(obj):
-    """Returns ``True`` if an operator defines the diagonalizing
-    gates are defined.
+    """Returns ``True`` if an operator defines the diagonalizing gates.
 
     This helper function is useful if the property is to be checked in
     a queuing context, but the resulting gates must not be queued.

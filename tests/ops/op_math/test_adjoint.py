@@ -434,6 +434,20 @@ class TestAdjointOperation:
         op = Adjoint(base)
         assert op.base_name == adjoint_base_name
 
+    def test_has_generator_true(self):
+        """Test `has_generator` property carries over when base op defines generator."""
+        base = qml.RX(0.5, 0)
+        op = Adjoint(base)
+
+        assert op.has_generator is True
+
+    def test_has_generator_false(self):
+        """Test `has_generator` property carries over when base op does not define a generator."""
+        base = qml.PauliX(0)
+        op = Adjoint(base)
+
+        assert op.has_generator is False
+
     def test_generator(self):
         """Assert that the generator of an Adjoint is -1.0 times the base generator."""
         base = qml.RX(1.23, wires=0)
