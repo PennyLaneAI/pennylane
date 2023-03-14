@@ -135,7 +135,7 @@ def _parshift_and_integrate(results, cjacs, int_prefactor, single_measure, shot_
     )
 
 
-def _stoch_pulse_grad(tape, argnum=None, num_samples=1, sampler_seed=None, shots=None):
+def _stoch_pulse_grad(tape, argnum=None, num_split_times=1, sampler_seed=None, shots=None):
     r"""Compute the gradient of a quantum circuit composed of pulse sequences by applying the
     stochastic parameter shift rule. For a pulse-based cost function :math:`C(\boldsymbol{v}, T)`
     with variational parameters :math:`\boldsymbol{v}` and evolution time :math:`T`, it is given by
@@ -159,7 +159,7 @@ def _stoch_pulse_grad(tape, argnum=None, num_samples=1, sampler_seed=None, shots
         argnum (int or list[int] or None): Trainable tape parameter indices to differentiate
             with respect to. If not provided, the derivatives with respect to all
             trainable parameters are returned.
-        num_samples (int): number of time samples to use in the stochastic parameter-shift
+        num_split_times (int): number of time samples to use in the stochastic parameter-shift
             rule underlying the differentiation; also see details
         sample_seed (int): randomness seed to be used for the time samples in the stochastic
             parameter-shift rule
@@ -249,7 +249,7 @@ def _stoch_pulse_grad(tape, argnum=None, num_samples=1, sampler_seed=None, shots
     which is based on a sampled approximation of an integral expression (see theoretical
     background below). This makes the computed derivative an approximate quantity subject
     to statistical fluctuations with notable variance. The number of samples used to
-    approximate the integral can be chosen with ``num_samples``, the seed for the
+    approximate the integral can be chosen with ``num_split_times``, the seed for the
     sampling can be fixed with ``sampler_seed``:
 
     >>> qnode = qml.QNode(
@@ -257,7 +257,7 @@ def _stoch_pulse_grad(tape, argnum=None, num_samples=1, sampler_seed=None, shots
     ...     dev,
     ...     interface="jax",
     ...     diff_method=qml.gradients.stoch_pulse_grad,
-    ...     num_samples=20, # Use 20 samples for the approximation
+    ...     num_split_times=20, # Use 20 samples for the approximation
     ...     sampler_seed=18, # Fix randomness seed
     ... )
     >>> jax.grad(qnode)(params)
@@ -417,10 +417,10 @@ def _stoch_pulse_grad(tape, argnum=None, num_samples=1, sampler_seed=None, shots
             "Computing the gradient of circuits that return the state is not supported."
         )
 
-    if num_samples < 1:
+    if num_split_times < 1:
         raise ValueError(
             "Expected a positive number of samples for the stochastic pulse "
-            f"parameter-shift gradient, got {num_samples}."
+            f"parameter-shift gradient, got {num_split_times}."
         )
 
     if argnum is None and not tape.trainable_params:
@@ -440,10 +440,10 @@ def _stoch_pulse_grad(tape, argnum=None, num_samples=1, sampler_seed=None, shots
     sampler_seed = sampler_seed or np.random.randint(18421)
     key = jax.random.PRNGKey(sampler_seed)
 
-    return _expval_stoch_pulse_grad(tape, argnum, num_samples, key, shots)
+    return _expval_stoch_pulse_grad(tape, argnum, num_split_times, key, shots)
 
 
-def _expval_stoch_pulse_grad(tape, argnum, num_samples, key, shots):
+def _expval_stoch_pulse_grad(tape, argnum, num_split_times, key, shots):
     r"""Compute the gradient of a quantum circuit composed of pulse sequences that measures
     an expectation value or probabilities, by applying the stochastic parameter shift rule.
     See the main function for the signature.
@@ -474,12 +474,12 @@ def _expval_stoch_pulse_grad(tape, argnum, num_samples, key, shots):
         word = qml.pauli.pauli_word_to_string(ham)
         cjac_fn = jax.jacobian(coeff, argnums=0)
         this_cjacs = []
-        for _ in range(num_samples):
+        for _ in range(num_split_times):
             key, _key = jax.random.split(key)
             tau, split_evolve_ops = split_evol_ops(op, word, ham.wires, _key)
             this_cjacs.append(cjac_fn(op.data[term_idx], tau))
             this_tapes.extend(_split_evol_tapes(tape, split_evolve_ops, op_idx))
-        avg_prefactor = (op.t[1] - op.t[0]) / num_samples
+        avg_prefactor = (op.t[1] - op.t[0]) / num_split_times
         gradient_data.append((len(this_tapes), qml.math.stack(this_cjacs), avg_prefactor))
         tapes.extend(this_tapes)
 
