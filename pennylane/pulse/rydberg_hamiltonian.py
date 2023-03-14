@@ -165,7 +165,6 @@ def rydberg_drive(amplitude, phase, detuning, wires):
         amplitude = lambda p, t: p * jnp.sin(jnp.pi * t)
         phase = jnp.pi / 2
         detuning = 3 * jnp.pi / 4
-        wires = [0, 1, 2, 3]
         H_d = qml.pulse.rydberg_drive(amplitude, phase, detuning, wires)
 
     >>> H_i
@@ -216,7 +215,7 @@ def rydberg_drive(amplitude, phase, detuning, wires):
     >>> params = [2.4, [1.3, -2.0]]
     >>> circuit_local(params)
     Array(0.45782223, dtype=float64)
-    >>> jax.grad(circuit_local_drives)(params)
+    >>> jax.grad(circuit_local)(params)
     [Array(-0.33522988, dtype=float64),
      [Array(0.40320718, dtype=float64, weak_type=True),
       Array(-0.12003976, dtype=float64, weak_type=True)]]
