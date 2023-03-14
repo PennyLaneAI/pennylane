@@ -393,7 +393,7 @@ class QNode:
             if kwarg in ["gradient_fn", "grad_method"]:
                 warnings.warn(
                     f"It appears you may be trying to set the method of differentiation via the kwarg "
-                    f"{kwarg}. This is not supported in qnode and will defualt to backpropogation. Use "
+                    f"{kwarg}. This is not supported in qnode and will default to backpropogation. Use "
                     f"diff_method instead."
                 )
             elif kwarg not in qml.gradients.SUPPORTED_GRADIENT_KWARGS:
