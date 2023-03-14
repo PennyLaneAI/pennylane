@@ -173,7 +173,7 @@ def _stoch_pulse_grad(tape, argnum=None, num_split_times=1, sampler_seed=None, s
     the corresponding Hamiltonian term :math:`H_j` with a rotation angle of
     :math:`\pm\frac{\pi}{2}`.
 
-    See below for a more detailed description. The integral in the first equation above 
+    See below for a more detailed description. The integral in the first equation above
     is estimated numerically in the stochastic parameter-shift rule. For this, it samples
     split times :math:`\tau` and averages the modified cost functions and the Jacobians
     of the envelopes :math:`\partial f_j / \partial v_k` at the sampled times suitably.
