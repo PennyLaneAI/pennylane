@@ -15,9 +15,10 @@
 Contains the QSVT template and qsvt wrapper function.
 """
 import numpy as np
+from pennylane.ops import BlockEncode, PCPhase
 from pennylane.ops.op_math import adjoint
 from pennylane.operation import AnyWires, Operation
-from pennylane import BlockEncode, PCPhase
+
 
 def qsvt(A, phi_vect, wires):
     """Executes the operations to perform the qsvt protocol"""
@@ -43,6 +44,8 @@ def qsvt(A, phi_vect, wires):
 
         lst_operations.append(BlockEncode(A, wires=wires))
         lst_operations.append(PCPhase(phi_vect[0], r, wires=wires))
+
+    return lst_operations
 
 class QSVT(Operation):
     r"""Performs the 
@@ -72,8 +75,7 @@ class QSVT(Operation):
         wires (Iterable): the wires the template acts on.
 
     Raises:
-        QuantumFunctionError: if the ``target_wires`` and ``estimation_wires`` share a common
-            element, or if ``target_wires`` are specified for an operator unitary.
+        QuantumFunctionError: 
 
     .. details::
         :title: Usage Details
@@ -82,7 +84,17 @@ class QSVT(Operation):
 
         .. code-block:: python
 
-            import pennylane as qml
+            dev = qml.device('default.qubit', wires=2)
+            A = [[0.1]]
+            blckencode = qml.BlockEncode(A,wires=[0,1])
+            lst_phis = [qml.PCPhase(i+0.1,dim=1, wires=[0,1]) for i in range(3)]
+            @qml.qnode(dev)
+            def example_circuit(A):
+                qml.QSVT(blckencode,lst_phis,wires=[0,1])
+                return qml.expval(qml.PauliZ(wires=0))
+                
+            qml.matrix(example_circuit)(A)
+
             
         Continue any explanation here.
     """
@@ -93,7 +105,7 @@ class QSVT(Operation):
     num_wires = AnyWires
     """int: Number of wires that the operator acts on."""
 
-    ndim_params = (0, 2,)
+    ndim_params = (0, 1,)
     """tuple[int]: Number of dimensions per trainable parameter that the operator depends on."""
 
     grad_method = None
@@ -103,7 +115,7 @@ class QSVT(Operation):
         super().__init__(U_A, lst_projectors, wires=wires, do_queue=do_queue, id=id)
 
     @staticmethod
-    def compute_decomposition(self, U_A, lst_projectors, wires):
+    def compute_decomposition(U_A, lst_projectors, wires):
         r"""Representation of the operator as a product of other operators.
 
         .. math:: O = O_1 O_2 \dots O_n.
