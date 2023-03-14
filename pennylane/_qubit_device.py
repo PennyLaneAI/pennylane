@@ -1800,6 +1800,7 @@ class QubitDevice(Device):
             Union[array[float], dict, list[dict]]: samples in an array of
             dimension ``(shots,)`` or counts
         """
+
         # translate to wire labels used by device
         device_wires = self.map_wires(observable.wires)
         name = observable.name
