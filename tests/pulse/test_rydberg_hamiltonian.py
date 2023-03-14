@@ -34,6 +34,17 @@ atom_coordinates = [[0, 0], [0, 5], [5, 0], [10, 5], [5, 10], [10, 10]]
 wires = [1, 6, 0, 2, 4, 3]
 
 
+def f1(p, t):
+    return p * np.sin(t) * (t - 1)
+
+
+def f2(p, t):
+    return p * np.cos(t**2)
+
+
+param = [1.2, 2.3]
+
+
 class TestRydbergHamiltonian:
     """Unit tests for the properties of the RydbergHamiltonian class."""
 
@@ -74,7 +85,6 @@ class TestRydbergHamiltonian:
         assert sum_rm.pulses == [RydbergPulse(1, 2, 3, [4, 8]), RydbergPulse(5, 6, 7, 8)]
 
     def test_add_parametrized_hamiltonian(self):
-        # ToDo: check returned object is a RydbergHamiltonian and can be called!
         """Tests that adding a `RydbergHamiltonian` and `ParametrizedHamiltonian` works as
         expected."""
         coeffs = [2, 3]
@@ -91,6 +101,7 @@ class TestRydbergHamiltonian:
         res1 = rh + ph
         res2 = ph + rh
 
+        assert isinstance(res1, RydbergHamiltonian)
         assert res1.coeffs_fixed == coeffs
         assert res1.coeffs_parametrized == []
         assert all(qml.equal(op1, op2) for op1, op2 in zip(res1.ops_fixed, ops))
@@ -101,17 +112,12 @@ class TestRydbergHamiltonian:
         ops.reverse()
         h_wires.reverse()
 
+        assert isinstance(res2, RydbergHamiltonian)
         assert res2.coeffs_fixed == coeffs
         assert res2.coeffs_parametrized == []
         assert all(qml.equal(op1, op2) for op1, op2 in zip(res2.ops_fixed, ops))
         assert res2.ops_parametrized == []
         assert res2.wires == qml.wires.Wires(h_wires)
-
-    # def test_radd_parametrized_hamiltonian(self):
-    #     """Tests that adding a `RydbergHamiltonian` and `ParametrizedHamiltonian` works as
-    #     expected."""
-    #     # ToDo: check returned object is a RydbergHamiltonian and can be called!
-    #     pass
 
     def test_add_raises_error(self):
         """Test that an error is raised if two RydbergHamiltonians with registers are added."""
@@ -146,16 +152,59 @@ class TestRydbergHamiltonian:
         ):
             _ = Ht + Hd
 
+    def test_hamiltonian_callable_after_addition_right(self):
+        """Tests that if a ParametrizedHamiltonian is added onto a
+        RydbergHamiltonian with callable coefficients from the right, the
+        resulting object is a RydbergHamiltonian that can be called without
+        raising an error"""
 
-def f1(p, t):
-    return p * np.sin(t) * (t - 1)
+        def amp(p, t):
+            return p[0] * np.exp(-((t - p[1]) ** 2) / (2 * p[2] ** 2))
 
+        def phase(p, t):
+            return p * t
 
-def f2(p, t):
-    return p * np.cos(t**2)
+        def detuning(p, t):
+            return np.cos(t) * p
 
+        H_global = qml.pulse.rydberg_drive(amp, phase, detuning, wires=[0])
+        H_global += qml.pulse.rydberg_drive(amp, phase, detuning, wires=[0])
+        H_global += np.polyval * qml.PauliX(0)
 
-param = [1.2, 2.3]
+        # start with RydbergHamiltonians, then add ParametrizedHamiltonian
+        params = [np.array([1.2, 2.3, 3.4]), 4.5, 5.6]
+        params += [np.array([1.2, 2.3, 3.4]), 4.5, 5.6]
+        params += [np.ones(2)]
+
+        assert isinstance(H_global, RydbergHamiltonian)
+        H_global(params, 2)  # no error raised
+
+    def test_hamiltonian_callable_after_addition_left(self):
+        """Tests that if a ParametrizedHamiltonian is added onto a
+        RydbergHamiltonian with callable coefficients from the left, the
+        resulting object is a RydbergHamiltonian that can be called without
+        raising an error"""
+
+        def amp(p, t):
+            return p[0] * np.exp(-((t - p[1]) ** 2) / (2 * p[2] ** 2))
+
+        def phase(p, t):
+            return p * t
+
+        def detuning(p, t):
+            return np.cos(t) * p
+
+        # start with ParametrizedHamiltonian, add on RydbergHamiltonians
+        H_global = np.polyval * qml.PauliX(0)
+        H_global += qml.pulse.rydberg_drive(amp, phase, detuning, wires=[0])
+        H_global += qml.pulse.rydberg_drive(amp, phase, detuning, wires=[0])
+
+        params = [np.ones(2)]
+        params += [np.array([1.2, 2.3, 3.4]), 4.5, 5.6]
+        params += [np.array([1.2, 2.3, 3.4]), 4.5, 5.6]
+
+        assert isinstance(H_global, RydbergHamiltonian)
+        H_global(params, 2)  # no error raised
 
 
 class TestInteractionWithOperators:
@@ -171,9 +220,8 @@ class TestInteractionWithOperators:
         qml.PauliX(2),
         qml.PauliX(2) @ qml.PauliX(3),
         qml.CNOT([0, 1]),
-    )  # ToDo: maybe add more operators to test here?
+    )
 
-    # ToDo: check returned object is a RydbergHamiltonian and can be called!
     @pytest.mark.parametrize("H, coeff", ops_with_coeffs)
     def test_add_special_operators(self, H, coeff):
         """Test that a Hamiltonian and SProd can be added to a RydbergHamiltonian, and
@@ -183,12 +231,14 @@ class TestInteractionWithOperators:
         params = [1, 2]
         # Adding on the right
         new_pH = R + H
+        assert isinstance(new_pH, RydbergHamiltonian)
         assert R.H_fixed() == 0
         assert qml.equal(new_pH.H_fixed(), qml.s_prod(coeff, qml.PauliZ(0)))
         assert new_pH.coeffs_fixed[0] == coeff
         assert qml.math.allequal(new_pH(params, t=0.5).matrix(), qml.matrix(R(params, t=0.5) + H))
         # Adding on the left
         new_pH = H + R
+        assert isinstance(new_pH, RydbergHamiltonian)
         assert R.H_fixed() == 0
         assert qml.equal(new_pH.H_fixed(), qml.s_prod(coeff, qml.PauliZ(0)))
         assert new_pH.coeffs_fixed[0] == coeff
@@ -199,16 +249,21 @@ class TestInteractionWithOperators:
         """Test that a Hamiltonian, SProd, Tensor or Operator can be added to a
         ParametrizedHamiltonian, and will be incorporated in the H_fixed term"""
         R = rydberg_drive(amplitude=f1, phase=0, detuning=f2, wires=[0, 1])
+        params = [1, 2]
 
         # Adding on the right
         new_pH = R + op
+        assert isinstance(new_pH, RydbergHamiltonian)
         assert R.H_fixed() == 0
         assert qml.equal(new_pH.H_fixed(), qml.s_prod(1, op))
+        new_pH(params, 2)  # confirm calling does not raise error
 
         # Adding on the left
         new_pH = op + R
+        assert isinstance(new_pH, RydbergHamiltonian)
         assert R.H_fixed() == 0
         assert qml.equal(new_pH.H_fixed(), qml.s_prod(1, op))
+        new_pH(params, 2)  # confirm calling does not raise error
 
 
 class TestRydbergInteraction:
@@ -593,8 +648,8 @@ class TestIntegration:
         def fc(p, t):
             return p[0] * jnp.sin(t) + jnp.cos(p[1] * t)
 
-        H1 = rydberg_drive(amplitude=fa, detuning=fb, phase=0, wires=1)
-        H2 = rydberg_drive(amplitude=fc, detuning=jnp.pi / 4, phase=3 * jnp.pi, wires=4)
+        H1 = rydberg_drive(amplitude=fa, phase=0, detuning=fb, wires=1)
+        H2 = rydberg_drive(amplitude=fc, phase=3 * jnp.pi, detuning=jnp.pi / 4, wires=4)
 
         dev = qml.device("default.qubit", wires=wires)
 
@@ -605,6 +660,42 @@ class TestIntegration:
         @qml.qnode(dev, interface="jax")
         def qnode(params):
             qml.evolve(Hd + H1 + H2)(params, ts)
+            return qml.expval(H_obj)
+
+        params = (jnp.ones(5), jnp.array([1.0, jnp.pi]), jnp.array([jnp.pi / 2, 0.5]))
+        res = qnode(params)
+
+        assert isinstance(res, jax.Array)
+
+    @pytest.mark.jax
+    def test_jitted_qnode_all_coeffs_callable(self):
+        """Test that a ``RydbergHamiltonian`` class can be executed within a
+        jitted qnode when all coeffs are callable."""
+        import jax
+        import jax.numpy as jnp
+
+        H_drift = rydberg_interaction(register=atom_coordinates, wires=wires)
+
+        def fa(p, t):
+            return jnp.polyval(p, t)
+
+        def fb(p, t):
+            return p[0] * jnp.sin(p[1] * t)
+
+        def fc(p, t):
+            return p[0] * jnp.sin(t) + jnp.cos(p[1] * t)
+
+        H_drive = rydberg_drive(amplitude=fa, phase=fb, detuning=fc, wires=1)
+
+        dev = qml.device("default.qubit", wires=wires)
+
+        ts = jnp.array([0.0, 3.0])
+        H_obj = sum(qml.PauliZ(i) for i in range(2))
+
+        @jax.jit
+        @qml.qnode(dev, interface="jax")
+        def qnode(params):
+            qml.evolve(H_drift + H_drive)(params, ts)
             return qml.expval(H_obj)
 
         params = (jnp.ones(5), jnp.array([1.0, jnp.pi]), jnp.array([jnp.pi / 2, 0.5]))
