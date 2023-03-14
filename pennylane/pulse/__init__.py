@@ -260,3 +260,4 @@ from .convenience_functions import constant, pwc, pwc_from_function, rect
 from .parametrized_evolution import ParametrizedEvolution
 from .parametrized_hamiltonian import ParametrizedHamiltonian
 from .rydberg_hamiltonian import RydbergHamiltonian, rydberg_drive, rydberg_interaction
+from .transmon_hamiltonian import TransmonHamiltonian, transmon_drive, transmon_interaction

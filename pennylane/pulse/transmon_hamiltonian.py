@@ -28,15 +28,16 @@ from pennylane.typing import TensorLike
 
 from .parametrized_hamiltonian import ParametrizedHamiltonian
 
-def a(wires, d=2):
-    return 0.5 * qml.PauliX(wires) + 0.5j * qml.PauliY(wires)
+def a(wire, d=2):
+    return qml.s_prod(0.5, qml.PauliX(wire)) + qml.s_prod(0.5j, qml.PauliY(wire))
 
-def ad(wires, d=2):
-    return 0.5 * qml.PauliX(wires) - 0.5j * qml.PauliY(wires)
+def ad(wire, d=2):
+    return qml.s_prod(0.5, qml.PauliX(wire)) + qml.s_prod(-0.5j, qml.PauliY(wire))
+
 
 
 def transmon_interaction(
-    connections: list, omega: Union[float, list], delta: Union[float, list], g: Union[float, list], wires=None, d=2
+    connections: list, omega: Union[float, list], g: Union[float, list], delta=None, wires=None, d=2
 ):
     r"""Returns a :class:`ParametrizedHamiltonian` representing the interaction of an ensemble of
     Transmon atoms due to the Transmon blockade
@@ -107,27 +108,42 @@ def transmon_interaction(
     >>> circuit()
     Array(1., dtype=float32)
     """
-    if wires is not None and all(i in wires for i in qml.math.unique(connections)):
+    if wires is not None and not all(i in wires for i in qml.math.unique(connections)):
         raise ValueError(f"There are wires in connections {connections} that are not in the provided wires {wires}")
 
     wires = wires or qml.math.unique(connections)
+    n_wires = len(wires)
 
-    # TODO: cover all cases for coefficients being float, list of float or list of callables
-    if isinstance(omega, TensorLike):
-        if len(omega)==1:
-            omega = [omega for _ in wires]
+    # Prepare coefficients
+    # TODO: make coefficients callable / trainable. Currently not supported
+    if qml.math.ndim(omega)==0:
+        omega = [omega] * n_wires
+    if len(omega) != n_wires:
+        raise ValueError(f"Number of qubit frequencies omega = {omega} does not match the provided wires = {wires}")
+    
+    if qml.math.ndim(g)==0:
+        g = [g] * n_wires
+    if len(g) != len(connections):
+        raise ValueError(f"Number of coupling terms {g} does not match the provided connections = {connections}")
 
     # qubit term
     coeffs = list(omega)
     observables = [ad(i, d) @ a(i, d) for i in wires]
 
-    # anharmonicity term
-    coeffs += list(delta)
-    observables += [ad(i, d) @ ad(i, d) @ a(i, d) @ a(i, d) for i in wires]
-
     # coupling term term
     coeffs += list(g)
     observables += [ad(i, d) @ a(j, d) + ad(j, d) @ a(i, d) for (i, j) in connections]
+
+    if d>2:
+        if delta is None:
+            delta = [0.] * n_wires
+        if qml.math.ndim(delta)==0:
+            delta = [delta] * n_wires
+        if len(delta) != n_wires:
+            raise ValueError(f"Number of qubit anharmonicities delta = {delta} does not match the provided wires = {wires}")
+        # anharmonicity term
+        coeffs += list(delta)
+        observables += [ad(i, d) @ ad(i, d) @ a(i, d) @ a(i, d) for i in wires]
     
 
     return TransmonHamiltonian(
