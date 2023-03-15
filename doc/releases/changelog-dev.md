@@ -4,10 +4,6 @@
 
 <h3>New features since last release</h3>
 
-* The `sample_state` function is added to `devices/qubit` that returns a series of samples based on a given
-  state vector and a number of shots.
-  [(#3720)](https://github.com/PennyLaneAI/pennylane/pull/3720)
-
 * Added the needed functions and classes to simulate an ensemble of Rydberg atoms:
   * A new internal `RydbergHamiltonian` class is added, which contains the Hamiltonian of an ensemble of
     Rydberg atoms.
@@ -20,11 +16,25 @@
 * Added `Operation.__truediv__` dunder method to be able to divide operators.
   [(#3749)](https://github.com/PennyLaneAI/pennylane/pull/3749)
 
+<h3>Improvements 🛠</h3>
+
+<h4>Next generation device API</h4>
+
+* The `sample_state` function is added to `devices/qubit` that returns a series of samples based on a given
+  state vector and a number of shots.
+  [(#3720)](https://github.com/PennyLaneAI/pennylane/pull/3720)
+
 * The `simulate` function added to `devices/qubit` now supports measuring expectation values of large observables such as
   `qml.Hamiltonian`, `qml.SparseHamiltonian`, `qml.Sum`.
   [(#3759)](https://github.com/PennyLaneAI/pennylane/pull/3759)
 
-<h3>Improvements 🛠</h3>
+* The `apply_operation` function added to `devices/qubit` now supports broadcasting.
+  [(#3852)](https://github.com/PennyLaneAI/pennylane/pull/3852)
+
+* `pennylane.devices.qubit.preprocess` now allows circuits with non-commuting observables.
+  [(#3857)](https://github.com/PennyLaneAI/pennylane/pull/3857)
+
+<h4>Other improvements</h4>
 
 * `Operator` now has a `has_generator` attribute that returns whether or not the operator
   has a generator defined. It is used in `qml.operation.has_gen`, improving its performance.
@@ -44,14 +54,8 @@
 * Use `TensorLike` type in `Operator` dunder methods.
   [(#3749)](https://github.com/PennyLaneAI/pennylane/pull/3749)
 
-* The `apply_operation` function added to `devices/qubit` now supports broadcasting.
-  [(#3852)](https://github.com/PennyLaneAI/pennylane/pull/3852)
-
 * `qml.QubitStateVector.state_vector` now supports broadcasting.
   [(#3852)](https://github.com/PennyLaneAI/pennylane/pull/3852)
-  
-* `pennylane.devices.qubit.preprocess` now allows circuits with non-commuting observables.
-  [(#3857)](https://github.com/PennyLaneAI/pennylane/pull/3857)
 
 * When using Jax-jit with gradient transforms the trainable parameters are correctly set (instead of every parameter 
   to be set as trainable), and therefore the derivatives are computed more efficiently.
