@@ -66,18 +66,6 @@ class ParametrizedEvolution(Operation):
             and end time unless matrices of the time evolution at intermediate times needs
             to be computed. Note that such absolute times only have meaning within an instance of
             ``ParametrizedEvolution`` and will not affect other gates.
-        return_intermediate (bool): Whether or not the ``matrix`` method returns all intermediate
-            solutions of the time evolution ODE at the times provided in ``t``. If ``False``
-            (the default), only the matrix for the full time evolution is returned. If ``True``,
-            all solutions after :math:`U(t_1, t_1)=1` are returned; when used in a circuit, this
-            results in ``ParametrizedEvolution`` being a broadcasted operation.
-        complementary (bool): Whether or not to compute the complementary time evolution when using
-            ``return_intermediate=True`` (ignored otherwise).
-            If ``False`` (the default), the usual solutions to the Schrodinger equation
-            :math:`\{U(t_1, t_1), U(t_1, \tau_1),\dots, U(t_1, \tau_P), U(t_1, t_2)\}` are computed,
-            where :math:`\tau_i` are the additional times provided in ``t``.
-            If ``True``, the remaining time evolution to :math:`t_2` is computed instead, returning
-            :math:`\{U(t_1, t_2), U(\tau_1, t_2),\dots, U(\tau_P, t_2), U(t_2, t_2)\}`.
         do_queue (bool): determines if the scalar product operator will be queued. Default is True.
         id (str or None): id for the scalar product operator. Default is None.
 
@@ -90,6 +78,18 @@ class ParametrizedEvolution(Operation):
         mxstep (int, optional): maximum number of steps to take for each timepoint for the ODE solver. Defaults to
             ``jnp.inf``.
         hmax (float, optional): maximum step size allowed for the ODE solver. Defaults to ``jnp.inf``.
+        return_intermediate (bool): Whether or not the ``matrix`` method returns all intermediate
+            solutions of the time evolution ODE at the times provided in ``t``. If ``False``
+            (the default), only the matrix for the full time evolution is returned. If ``True``,
+            all solutions after :math:`U(t_1, t_1)=1` are returned; when used in a circuit, this
+            results in ``ParametrizedEvolution`` being a broadcasted operation.
+        complementary (bool): Whether or not to compute the complementary time evolution when using
+            ``return_intermediate=True`` (ignored otherwise).
+            If ``False`` (the default), the usual solutions to the Schrodinger equation
+            :math:`\{U(t_1, t_1), U(t_1, \tau_1),\dots, U(t_1, \tau_P), U(t_1, t_2)\}` are computed,
+            where :math:`\tau_i` are the additional times provided in ``t``.
+            If ``True``, the remaining time evolution to :math:`t_2` is computed instead, returning
+            :math:`\{U(t_1, t_2), U(\tau_1, t_2),\dots, U(\tau_P, t_2), U(t_2, t_2)\}`.
 
     .. warning::
         The :class:`~.ParametrizedHamiltonian` must be Hermitian at all times. This is not explicitly checked

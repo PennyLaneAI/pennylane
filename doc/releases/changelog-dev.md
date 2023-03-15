@@ -6,7 +6,7 @@
 
 * `ParametrizedEvolution` takes two new Boolean keyword arguments: `return_intermediate` and
   `complementary`. They allow computing intermediate time evolution matrices.
-  [(#37xx)](https://github.com/PennyLaneAI/pennylane/pull/37xx)
+  [(#3900)](https://github.com/PennyLaneAI/pennylane/pull/3900)
   
   Activating `return_intermediate` will result in `evol_op.matrix()` returning intermediate solutions
   to the Schrodinger equation. Activating `complementary` will make these intermediate solutions
