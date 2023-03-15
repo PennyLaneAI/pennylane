@@ -14,12 +14,11 @@
 """
 This module contains the qml.counts measurement.
 """
-import copy
 import warnings
-from typing import Sequence, Tuple, Union
+from typing import Sequence, Tuple, Optional
 
 import pennylane as qml
-from pennylane.operation import Observable
+from pennylane.operation import Operator
 from pennylane.wires import Wires
 
 from .measurements import AllCounts, Counts, SampleMeasurement
@@ -30,7 +29,7 @@ def _sample_to_str(sample):
     return "".join(map(str, sample))
 
 
-def counts(op=None, wires=None, all_outcomes=False):
+def counts(op=None, wires=None, all_outcomes=False) -> "CountsMP":
     r"""Sample from the supplied observable, with the number of shots
     determined from the ``dev.shots`` attribute of the corresponding device,
     returning the number of counts for each sample. If no observable is provided then basis state
@@ -155,7 +154,7 @@ class CountsMP(SampleMeasurement):
     Please refer to :func:`counts` for detailed documentation.
 
     Args:
-        obs (.Observable): The observable that is to be measured as part of the
+        obs (.perator): The observable that is to be measured as part of the
             measurement process. Not all measurement processes require observables (for
             example ``Probability``); this argument is optional.
         wires (.Wires): The wires the measurement process applies to.
@@ -171,14 +170,35 @@ class CountsMP(SampleMeasurement):
     # pylint: disable=too-many-arguments
     def __init__(
         self,
-        obs: Union[Observable, None] = None,
+        obs: Optional[Operator] = None,
         wires=None,
         eigvals=None,
-        id=None,
-        all_outcomes=False,
+        id: Optional[str] = None,
+        all_outcomes: bool = False,
     ):
         self.all_outcomes = all_outcomes
         super().__init__(obs, wires, eigvals, id)
+
+    def __repr__(self):
+        if self.obs is None:
+            if self._eigvals is None:
+                return f"CountsMP(wires={self.wires.tolist()}, all_outcomes={self.all_outcomes})"
+            return f"CountsMP(eigvals={self._eigvals}, wires={self.wires.tolist()}, all_outcomes={self.all_outcomes})"
+
+        return f"CountsMP({self.obs}, all_outcomes={self.all_outcomes})"
+
+    @property
+    def hash(self):
+        """int: returns an integer hash uniquely representing the measurement process"""
+        fingerprint = (
+            self.__class__.__name__,
+            getattr(self.obs, "hash", "None"),
+            str(self._eigvals),  # eigvals() could be expensive to compute for large observables
+            tuple(self.wires.tolist()),
+            self.all_outcomes,
+        )
+
+        return hash(fingerprint)
 
     @property
     def return_type(self):
@@ -285,11 +305,3 @@ class CountsMP(SampleMeasurement):
                 outcome_dict[state] = count
 
         return outcome_dicts if batched else outcome_dicts[0]
-
-    def __copy__(self):
-        return self.__class__(
-            obs=copy.copy(self.obs),
-            eigvals=self._eigvals,
-            wires=self._wires,
-            all_outcomes=self.all_outcomes,
-        )

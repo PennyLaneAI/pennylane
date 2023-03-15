@@ -21,12 +21,12 @@ import copy
 import functools
 from abc import ABC, abstractmethod
 from enum import Enum
-from typing import Sequence, Tuple, Union
+from typing import Sequence, Tuple, Optional
 
 import numpy as np
 
 import pennylane as qml
-from pennylane.operation import Observable
+from pennylane.operation import Operator
 from pennylane.wires import Wires
 
 # =============================================================================
@@ -49,6 +49,8 @@ class ObservableReturnTypes(Enum):
     MutualInfo = "mutualinfo"
     Shadow = "shadow"
     ShadowExpval = "shadowexpval"
+    Purity = "purity"
+    Custom = "Custom"
 
     def __repr__(self):
         """String representation of the return types."""
@@ -100,6 +102,9 @@ ShadowExpval = ObservableReturnTypes.ShadowExpval
 """Enum: An enumeration which represents returning the estimated expectation value
 from a classical shadow measurement"""
 
+Purity = ObservableReturnTypes.Purity
+"""Enum: An enumeration which represents returning the purity of the system prior ot measurement."""
+
 
 class MeasurementShapeError(ValueError):
     """An error raised when an unsupported operation is attempted with a
@@ -111,7 +116,7 @@ class MeasurementProcess(ABC):
     quantum variational circuit.
 
     Args:
-        obs (.Observable): The observable that is to be measured as part of the
+        obs (.Operator): The observable that is to be measured as part of the
             measurement process. Not all measurement processes require observables (for
             example ``Probability``); this argument is optional.
         wires (.Wires): The wires the measurement process applies to.
@@ -125,10 +130,10 @@ class MeasurementProcess(ABC):
     # pylint: disable=too-many-arguments
     def __init__(
         self,
-        obs: Union[Observable, None] = None,
+        obs: Optional[Operator] = None,
         wires=None,
         eigvals=None,
-        id=None,
+        id: Optional[str] = None,
     ):
         self.obs = obs
         self.id = id
@@ -166,13 +171,38 @@ class MeasurementProcess(ABC):
         # Queue the measurement process
         self.queue()
 
+    def __repr__(self):
+        """Representation of this class."""
+        if self.obs is None:
+            if self._eigvals is None:
+                return f"{self.return_type.value}(wires={self.wires.tolist()})"
+            return f"{self.return_type.value}(eigvals={self._eigvals}, wires={self.wires.tolist()})"
+
+        # Todo: when tape is core the return type will always be taken from the MeasurementProcess
+        if getattr(self.obs, "return_type", None) is None:
+            return f"{self.return_type.value}({self.obs})"
+
+        return f"{self.obs}"
+
+    def __copy__(self):
+        cls = self.__class__
+        copied_m = cls.__new__(cls)
+
+        for attr, value in vars(self).items():
+            setattr(copied_m, attr, value)
+
+        if self.obs is not None:
+            copied_m.obs = copy.copy(self.obs)
+
+        return copied_m
+
     @property
-    def return_type(self):
+    def return_type(self) -> Optional[ObservableReturnTypes]:
         """Measurement return type."""
         return None
 
     @property
-    def numeric_type(self):
+    def numeric_type(self) -> type:
         """The Python numeric type of the measurement result.
 
         Returns:
@@ -284,26 +314,6 @@ class MeasurementProcess(ABC):
             return self.expand().operations
         except qml.operation.DecompositionUndefinedError:
             return []
-
-    def __repr__(self):
-        """Representation of this class."""
-        if self.obs is None:
-            if self._eigvals is None:
-                return f"{self.return_type.value}(wires={self.wires.tolist()})"
-            return f"{self.return_type.value}(eigvals={self._eigvals}, wires={self.wires.tolist()})"
-
-        # Todo: when tape is core the return type will always be taken from the MeasurementProcess
-        if getattr(self.obs, "return_type", None) is None:
-            return f"{self.return_type.value}({self.obs})"
-
-        return f"{self.obs}"
-
-    def __copy__(self):
-        return self.__class__(
-            obs=copy.copy(self.obs),
-            wires=self._wires,
-            eigvals=self._eigvals,
-        )
 
     @property
     def wires(self):
@@ -433,18 +443,13 @@ class MeasurementProcess(ABC):
     @property
     def hash(self):
         """int: returns an integer hash uniquely representing the measurement process"""
+        fingerprint = (
+            self.__class__.__name__,
+            getattr(self.obs, "hash", "None"),
+            str(self._eigvals),  # eigvals() could be expensive to compute for large observables
+            tuple(self.wires.tolist()),
+        )
 
-        if self.obs is None:
-            fingerprint = (
-                str(self.name),
-                tuple(self.wires.tolist()),
-                str(self.data),
-                self.__class__.__name__,
-            )
-        else:
-            fingerprint = (self.__class__.__name__, self.obs.hash)
-
-        print(fingerprint)
         return hash(fingerprint)
 
     def simplify(self):
