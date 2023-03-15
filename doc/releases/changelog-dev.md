@@ -130,6 +130,10 @@
 * An error is now raised if a `QNode` with Jax-jit in use returns `counts` while having trainable parameters
   [(#3892)](https://github.com/PennyLaneAI/pennylane/pull/3892)
 
+* A correction is added to the reference values in `test_dipole_of` to account for small changes
+  (~2e-8) in the computed dipole moment values, resulting from the new [PySCF 2.2.0](https://github.com/pyscf/pyscf/releases/tag/v2.2.0) release.
+  [(#3908)](https://github.com/PennyLaneAI/pennylane/pull/3908)
+
 <h3>Contributors</h3>
 
 This release contains contributions from (in alphabetical order):
