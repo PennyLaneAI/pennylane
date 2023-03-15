@@ -39,75 +39,61 @@ def ad(wire, d=2):
 def transmon_interaction(
     connections: list, omega: Union[float, list], g: Union[float, list], delta=None, wires=None, d=2
 ):
-    r"""Returns a :class:`ParametrizedHamiltonian` representing the interaction of an ensemble of
-    Transmon atoms due to the Transmon blockade
+    r"""Returns a :class:`ParametrizedHamiltonian` representing the cQED Hamiltonian of a superconducting transmon system.
+
+    The Hamiltonian is given by
 
     .. math::
 
-        \sum_{i<j} V_{ij} n_i n_j
+        H = \sum_q \omega_q a^\dagger_q a_q + \sum_{(i, j) \in \mathcal{C}} g_{ij} \left(a^\dagger_i a_j + a_j^\dagger a_i \right)
+        + \sum_q \delta_q a^\dagger_q a^\dagger_q a_q a_q
 
-    where :math:`n_i` corresponds to the projector on the Transmon state of the atom :math:`i`, and
-    :math:`V_{ij}` is the van der Waals potential:
+    where :math:`[a^\dagger_p, a_q] = i \delta_{pq}` are bosonic creation and annihilation operators.
+    The first term describes the dressed qubit frequencies :math:`\omega_q`, the second term their coupling :math:`g_{ij}` and the last the anharmonicity :math:`\delta_q`,
+    which all can vary for different qubits. In practice, the bosonic operators are restricted to a finite dimension of the local Hilbert space (default ``d=2`` corresponds to qubits).
+    In that case, the anharmonicity is set to :math:`delta=0` and ignored.
 
-    .. math::
+    .. note:: Currently only supporting ``d=2`` with qudit support planned in the future.
 
-        V_{ij} = \frac{C_6}{R_{ij}^6}
-
-    where :math:`R_{ij}` is the distance between the atoms :math:`i` and :math:`j`, and :math:`C_6`
-    is the Transmon interaction constant, which defaults to :math:`862690 \text{MHz} \times \mu \text{m}^6`.
-    The unit of time for the evolution of this Transmon interaction term is in :math:`\mu \text{s}`.
-    This interaction term can be combined with laser drive terms (:func:`~.transmon_drive`) to create
-    a Hamiltonian describing a driven Transmon atom system.
+    TODO: resource / source for good values. 
 
     .. seealso::
 
         :func:`~.transmon_drive`
 
     Args:
-        connections (list): list of coordinates of the Transmon atoms (in micrometers)
-        wires (list): List of wires containing the wire values for all the atoms. This list should
-            have the same length as ``connections``. If ``None``, each atom's wire value will
-            correspond to its index in the ``connections`` list.
-        interaction_coeff (float): Transmon interaction constant in units: :math:`\text{MHz} \times \mu \text{m}^6`.
-            Defaults to :math:`862690 \text{ MHz} \times \mu \text{m}^6`. This value is based on an assumption that
-            frequencies and energies in the Hamiltonian are provided in units of MHz.
-        max_distance (float): Threshold for distance in :math:`\mu \text{m}` between two Transmon atoms beyond which their
-            contribution to the interaction term is removed from the Hamiltonian.
+        connections (list[tuple(int)]): List of connections ``(i, j)`` between qubits i and j.
+        omega (Union[float, list[float]]): List of dressed qubit frequencies in GHz.
+            When passing a single float all qubits are assumed to have that same frequency.
+        g (Union[float, list[float]]): List of coupling strengths in GHz. Needs to match the length of ``connections``.
+            When passing a single float all connections are assumed to have the same strength.
+        delta (Union[float, list[float]]): List of anharmonicities in GHz. Ignored when ``d=2``.
+            When passing a single float all qubits are assumed to have that same anharmonicity.
+        wires (list): Optional, defaults to the unique wires in ``connections`` when set to ``None``. When passing explicit ``wires``,
+            needs to at least contain all unique wires in ``connections`` and can be used to initiate additional, unconnected qubits.
+        d (int): Local Hilbert space dimension. Defaults to ``d=2`` and is currently the only supported value.
 
     Returns:
-        TransmonHamiltonian: a :class:`~.ParametrizedHamiltonian` representing the atom interaction
+        TransmonHamiltonian: a :class:`~.ParametrizedHamiltonian` representing the transmon interaction
 
     **Example**
 
-    We create a Hamiltonian describing the van der Waals interaction among 9 Transmon atoms in a square lattice:
+    We can set up the transmon interaction Hamiltonian with uniform coefficients by passing ``float`` values.
 
-    .. code-block:: python
+    .. code-block::
 
-        atom_coordinates = [[0, 0], [0, 5], [0, 10], [5, 0], [5, 5], [5, 10], [10, 0], [10, 5], [10, 10]]
-        wires = [1, 5, 0, 2, 4, 3, 8, 6, 7]
-        H_i = qml.pulse.transmon_interaction(atom_coordinates, wires=wires)
+        connections = [[0, 1], [1, 3], [2, 1], [4, 5]]
+        H = qml.pulse.transmon_interaction(connections, omega=0.5, g=1.)
 
-    >>> H_i
-    ParametrizedHamiltonian: terms=36
+    The resulting :class:`~.ParametrizedHamiltonian` consists of ``4`` coupling terms and ``6`` qubit terms.
 
-    As expected, we have :math:`\frac{N(N-1)}{2} = 36` terms for N=6 atoms.
+    >>> print(H)
+    ParametrizedHamiltonian: terms=10
 
-    The interaction term is dependent only on the number and positions of the Transmon atoms. We can execute this
-    pulse program, which corresponds to all driving laser fields being turned off and therefore has no trainable
-    parameters. To add a driving laser field, see :func:`~.transmon_drive`.
-
-    .. code-block:: python
-
-        dev = qml.device("default.qubit.jax", wires=9)
-
-        @qml.qnode(dev, interface="jax")
-        def circuit():
-            qml.evolve(H_i)([], t=[0, 10])
-            return qml.expval(qml.PauliZ(0))
-
-    >>> circuit()
-    Array(1., dtype=float32)
     """
+    if d!=2:
+        raise NotImplementedError("Currently only supporting qubits. Qutrits and qudits are planned in the future.")
+
     if wires is not None and not all(i in wires for i in qml.math.unique(connections)):
         raise ValueError(f"There are wires in connections {connections} that are not in the provided wires {wires}")
 
@@ -122,7 +108,7 @@ def transmon_interaction(
         raise ValueError(f"Number of qubit frequencies omega = {omega} does not match the provided wires = {wires}")
     
     if qml.math.ndim(g)==0:
-        g = [g] * n_wires
+        g = [g] * len(connections)
     if len(g) != len(connections):
         raise ValueError(f"Number of coupling terms {g} does not match the provided connections = {connections}")
 
@@ -134,16 +120,17 @@ def transmon_interaction(
     coeffs += list(g)
     observables += [ad(i, d) @ a(j, d) + ad(j, d) @ a(i, d) for (i, j) in connections]
 
-    if d>2:
-        if delta is None:
-            delta = [0.] * n_wires
-        if qml.math.ndim(delta)==0:
-            delta = [delta] * n_wires
-        if len(delta) != n_wires:
-            raise ValueError(f"Number of qubit anharmonicities delta = {delta} does not match the provided wires = {wires}")
-        # anharmonicity term
-        coeffs += list(delta)
-        observables += [ad(i, d) @ ad(i, d) @ a(i, d) @ a(i, d) for i in wires]
+    # TODO Qudit support. Currently not supported but will be in the future.
+    # if d>2:
+    #     if delta is None:
+    #         delta = [0.] * n_wires
+    #     if qml.math.ndim(delta)==0:
+    #         delta = [delta] * n_wires
+    #     if len(delta) != n_wires:
+    #         raise ValueError(f"Number of qubit anharmonicities delta = {delta} does not match the provided wires = {wires}")
+    #     # anharmonicity term
+    #     coeffs += list(delta)
+    #     observables += [ad(i, d) @ ad(i, d) @ a(i, d) @ a(i, d) for i in wires]
     
 
     return TransmonHamiltonian(

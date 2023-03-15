@@ -36,6 +36,7 @@ connections = [[0, 1], [1, 3], [2, 1], [4, 5]]
 wires = [0, 1, 2, 3, 4, 5]
 omega = 0.5 * np.arange(len(wires))
 g = 0.1 * np.arange(len(connections))
+delta = 0.3 * np.arange(len(wires))
 
 
 # class TestRydbergHamiltonian:
@@ -233,41 +234,43 @@ class TestTransmonInteraction:
         assert len(Hd.ops) == num_combinations
         assert Hd.pulses == []
 
-    # def test_wires_is_none(self):
-    #     """Test that when wires is None the wires correspond to an increasing list of values with
-    #     the same length as the atom coordinates."""
-    #     Hd = transmon_interaction(register=atom_coordinates)
+    def test_wires_is_none(self):
+        """Test that when wires is None the wires correspond to an increasing list of values with
+        the same as the unique connections."""
+        Hd = transmon_interaction(connections=connections, omega=0.3, g=0.3, delta=0.3)
 
-    #     assert Hd.wires == Wires(list(range(len(atom_coordinates))))
+        assert Hd.wires == Wires(np.unique(connections))
 
-    # def test_coeffs(self):
-    #     """Test that the generated coefficients are correct."""
-    #     coords = [[0, 0], [0, 1], [1, 0]]
-    #     Hd = transmon_interaction(coords, interaction_coeff=1)
-    #     assert Hd.coeffs == [1, 1, 1 / np.sqrt(2) ** 6]
+    def test_coeffs(self):
+        """Test that the generated coefficients are correct."""
+        Hd = qml.pulse.transmon_interaction(connections, omega, g, delta=delta, d=2)
+        assert all(Hd.coeffs == np.concatenate([omega, g]))
 
-    # def test_different_lengths_raises_error(self):
-    #     """Test that using different lengths for the wires and the register raises an error."""
-    #     with pytest.raises(ValueError, match="The length of the wires and the register must match"):
-    #         _ = transmon_interaction(register=atom_coordinates, wires=[0])
+    @pytest.mark.skip
+    def test_coeffs_d(self):
+        """Test that generated coefficients are correct for d>2"""
+        Hd2 = qml.pulse.transmon_interaction(connections, omega, g, delta=delta, d=3)
+        assert all(Hd2.coeffs == np.concatenate([omega, g, delta]))
 
-    # def test_max_distance(self):
-    #     """Test that specifying a maximum distance affects the number of elements in the interaction term
-    #     as expected."""
-    #     # This threshold will remove interactions between atoms more than 5 micrometers away from each other
-    #     max_distance = 5
-    #     coords = [[0, 0], [2.5, 0], [5, 0], [6, 6]]
-    #     h_wires = [1, 0, 2, 3]
+    def test_d_neq_2_raises_error(self):
+        """Test that setting d != 2 raises error"""
+        with pytest.raises(NotImplementedError, match="Currently only supporting qubits."):
+            _ = transmon_interaction(connections=connections, omega=0.1, g=0.2, d=3)
 
-    #     # Set interaction_coeff to one for easier comparison
-    #     H_res = transmon_interaction(
-    #         register=coords, wires=h_wires, interaction_coeff=1, max_distance=max_distance
-    #     )
-    #     H_exp = transmon_interaction(register=coords[:3], wires=h_wires[:3], interaction_coeff=1)
+    def test_different_lengths_raises_error(self):
+        """Test that using wires that are not fully contained by the connections raises an error"""
+        with pytest.raises(ValueError, match="There are wires in connections"):
+            _ = transmon_interaction(connections=connections, omega=0.1, g=0.2, wires=[0])
+    
+    def test_wrong_omega_len_raises_error(self):
+        """Test that providing list of omegas with wrong length raises error"""
+        with pytest.raises(ValueError, match="Number of qubit frequencies omega"):
+            _ = transmon_interaction(connections=connections, omega=[0.1, 0.2], g=0.2,)
 
-    #     # Only 3 of the interactions will be non-negligible
-    #     assert H_res.coeffs == [2.5**-6, 5**-6, 2.5**-6]
-    #     assert qml.equal(H_res([], t=5), H_exp([], t=5))
+    def test_wrong_g_len_raises_error(self):
+        """Test that providing list of g with wrong length raises error"""
+        with pytest.raises(ValueError, match="Number of coupling terms"):
+            _ = transmon_interaction(connections=connections, omega=0.1, g=[0.2, 0.2],)
 
 
 # class TestRydbergDrive:
