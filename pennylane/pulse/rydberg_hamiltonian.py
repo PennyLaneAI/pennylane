@@ -236,11 +236,11 @@ def rydberg_drive(amplitude, phase, detuning, wires):
         detuning,
     ]
 
-    drive_terms_1 = sum(qml.PauliX(wire) for wire in wires)
-    drive_terms_2 = sum(-qml.PauliY(wire) for wire in wires)
-    drive_terms_3 = sum(qml.PauliZ(wire) for wire in wires)
+    drive_x_term = sum(qml.PauliX(wire) for wire in wires)
+    drive_y_term = sum(-qml.PauliY(wire) for wire in wires)
+    detuning_term = sum(qml.PauliZ(wire) for wire in wires)
 
-    observables = [drive_terms_1, drive_terms_2, drive_terms_3]
+    observables = [drive_x_term, drive_y_term, detuning_term]
 
     # We convert the pulse data into a list of ``RydbergPulse`` objects
     pulses = [RydbergPulse(amplitude, phase, detuning, wires)]
