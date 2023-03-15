@@ -64,12 +64,12 @@ class TestRydbergHamiltonian:
             coeffs=[1, 2],
             observables=[qml.PauliX(4), qml.PauliZ(8)],
             register=atom_coordinates,
-            pulses=[RydbergPulse(1, 2, 3, [4, 8])],
+            pulses=[RydbergPulse(1, 2, 3, None, [4, 8])],
         )
         rm2 = RydbergHamiltonian(
             coeffs=[2],
             observables=[qml.PauliY(8)],
-            pulses=[RydbergPulse(5, 6, 7, 8)],
+            pulses=[RydbergPulse(5, 6, 7, None, 8)],
         )
         with warnings.catch_warnings():
             # We make sure that no warning is raised
@@ -82,7 +82,10 @@ class TestRydbergHamiltonian:
             for op1, op2 in zip(sum_rm.ops, [qml.PauliX(4), qml.PauliZ(8), qml.PauliY(8)])
         )
         assert qml.math.allequal(sum_rm.register, atom_coordinates)
-        assert sum_rm.pulses == [RydbergPulse(1, 2, 3, [4, 8]), RydbergPulse(5, 6, 7, 8)]
+        assert sum_rm.pulses == [
+            RydbergPulse(1, 2, 3, None, [4, 8]),
+            RydbergPulse(5, 6, 7, None, 8),
+        ]
 
     def test_add_parametrized_hamiltonian(self):
         """Tests that adding a `RydbergHamiltonian` and `ParametrizedHamiltonian` works as
@@ -94,7 +97,7 @@ class TestRydbergHamiltonian:
         rh = RydbergHamiltonian(
             coeffs=[coeffs[0]],
             observables=[ops[0]],
-            pulses=[RydbergPulse(5, 6, 7, 8)],
+            pulses=[RydbergPulse(5, 6, 7, None, 8)],
         )
         ph = qml.pulse.ParametrizedHamiltonian(coeffs=[coeffs[1]], observables=[ops[1]])
 
@@ -125,7 +128,7 @@ class TestRydbergHamiltonian:
             coeffs=[1],
             observables=[qml.PauliX(0)],
             register=atom_coordinates,
-            pulses=[RydbergPulse(1, 2, 3, 4)],
+            pulses=[RydbergPulse(1, 2, 3, None, 4)],
         )
         with pytest.raises(
             ValueError, match="We cannot add two Hamiltonians with an interaction term"
@@ -334,7 +337,7 @@ class TestRydbergDrive:
         assert Hd.wires == Wires([1, 2])
         assert Hd.register is None
         assert len(Hd.ops) == 3  # 2 amplitude/phase terms and one detuning term of the Hamiltonian
-        assert Hd.pulses == [RydbergPulse(1, 2, 3, [1, 2])]
+        assert Hd.pulses == [RydbergPulse(1, 2, 3, None, [1, 2])]
 
     def test_multiple_local_drives(self):
         """Test that adding multiple drive terms behaves as expected"""
@@ -350,12 +353,12 @@ class TestRydbergDrive:
         Hd = H1 + H2
 
         ops_expected = [
-            qml.Hamiltonian([1, 1], [qml.PauliZ(0), qml.PauliZ(3)]),
-            qml.Hamiltonian([1, 1], [qml.PauliX(1), qml.PauliX(2)]),
-            qml.sum(qml.s_prod(-1, qml.PauliY(1)), qml.s_prod(-1, qml.PauliY(2))),
-            qml.Hamiltonian([1, 1], [qml.PauliX(0), qml.PauliX(3)]),
-            qml.sum(qml.s_prod(-1, qml.PauliY(0)), qml.s_prod(-1, qml.PauliY(3))),
-            qml.Hamiltonian([1, 1], [qml.PauliZ(1), qml.PauliZ(2)]),
+            qml.Hamiltonian([-1, -1], [qml.PauliZ(0), qml.PauliZ(3)]),
+            qml.Hamiltonian([0.5, 0.5], [qml.PauliX(1), qml.PauliX(2)]),
+            qml.Hamiltonian([-0.5, -0.5], [qml.PauliY(1), qml.PauliY(2)]),
+            qml.Hamiltonian([0.5, 0.5], [qml.PauliX(0), qml.PauliX(3)]),
+            qml.Hamiltonian([-0.5, -0.5], [qml.PauliY(0), qml.PauliY(3)]),
+            qml.Hamiltonian([-1, -1], [qml.PauliZ(1), qml.PauliZ(2)]),
         ]
         coeffs_expected = [
             3,
@@ -483,14 +486,14 @@ class TestAmplitudeAndPhase:
         evaluated_H = Hd([3.4, 5.6], t)
 
         expected_H_fixed = qml.s_prod(
-            detuning, qml.Hamiltonian([1, 1], [qml.PauliZ(0), qml.PauliZ(1)])
+            detuning, qml.Hamiltonian([-1, -1], [qml.PauliZ(0), qml.PauliZ(1)])
         )
 
         c1 = np.sin(3.4 * t) * np.cos(np.cos(5.6 * t))
         c2 = np.sin(3.4 * t) * np.sin(np.cos(5.6 * t))
         expected_H_parametrized = qml.sum(
-            qml.s_prod(c1, qml.Hamiltonian([1, 1], [qml.PauliX(0), qml.PauliX(1)])),
-            qml.s_prod(c2, qml.sum(qml.s_prod(-1, qml.PauliY(0)), qml.s_prod(-1, qml.PauliY(1)))),
+            qml.s_prod(c1, qml.Hamiltonian([0.5, 0.5], [qml.PauliX(0), qml.PauliX(1)])),
+            qml.s_prod(c2, qml.Hamiltonian([-0.5, -0.5], [qml.PauliY(0), qml.PauliY(1)])),
         )
 
         assert qml.equal(evaluated_H[0], expected_H_fixed)
@@ -512,14 +515,14 @@ class TestAmplitudeAndPhase:
         evaluated_H = Hd([5.6], t)
 
         expected_H_fixed = qml.s_prod(
-            detuning, qml.Hamiltonian([1, 1], [qml.PauliZ(0), qml.PauliZ(1)])
+            detuning, qml.Hamiltonian([-1, -1], [qml.PauliZ(0), qml.PauliZ(1)])
         )
 
         c1 = 7.2 * np.cos(np.sin(5.6 * t))
         c2 = 7.2 * np.sin(np.sin(5.6 * t))
         expected_H_parametrized = qml.sum(
-            qml.s_prod(c1, qml.Hamiltonian([1, 1], [qml.PauliX(0), qml.PauliX(1)])),
-            qml.s_prod(c2, qml.sum(qml.s_prod(-1, qml.PauliY(0)), qml.s_prod(-1, qml.PauliY(1)))),
+            qml.s_prod(c1, qml.Hamiltonian([0.5, 0.5], [qml.PauliX(0), qml.PauliX(1)])),
+            qml.s_prod(c2, qml.Hamiltonian([-0.5, -0.5], [qml.PauliY(0), qml.PauliY(1)])),
         )
 
         assert qml.equal(evaluated_H[0], expected_H_fixed)
@@ -541,14 +544,14 @@ class TestAmplitudeAndPhase:
         evaluated_H = Hd([3.4], t)
 
         expected_H_fixed = qml.s_prod(
-            detuning, qml.Hamiltonian([1, 1], [qml.PauliZ(0), qml.PauliZ(1)])
+            detuning, qml.Hamiltonian([-1, -1], [qml.PauliZ(0), qml.PauliZ(1)])
         )
 
         c1 = np.sin(3.4 * t) * np.cos(4.3)
         c2 = np.sin(3.4 * t) * np.sin(4.3)
         expected_H_parametrized = qml.sum(
-            qml.s_prod(c1, qml.Hamiltonian([1, 1], [qml.PauliX(0), qml.PauliX(1)])),
-            qml.s_prod(c2, qml.sum(qml.s_prod(-1, qml.PauliY(0)), qml.s_prod(-1, qml.PauliY(1)))),
+            qml.s_prod(c1, qml.Hamiltonian([0.5, 0.5], [qml.PauliX(0), qml.PauliX(1)])),
+            qml.s_prod(c2, qml.Hamiltonian([-0.5, -0.5], [qml.PauliY(0), qml.PauliY(1)])),
         )
 
         assert qml.equal(evaluated_H[0], expected_H_fixed)
@@ -597,17 +600,18 @@ class TestRydbergPulse:
 
     def test_init(self):
         """Test the initialization of the ``RydbergPulse`` class."""
-        p = RydbergPulse(amplitude=4, detuning=9, phase=8, wires=[0, 4, 7])
+        p = RydbergPulse(amplitude=4, detuning=9, phase=8, pattern=[0, 0, 1], wires=[0, 4, 7])
         assert p.amplitude == 4
         assert p.phase == 8
         assert p.detuning == 9
+        assert p.pattern == [0, 0, 1]
         assert p.wires == Wires([0, 4, 7])
 
     def test_equal(self):
         """Test the ``__eq__`` method of the ``RydbergPulse`` class."""
-        p1 = RydbergPulse(1, 2, 3, [0, 1])
-        p2 = RydbergPulse(1, 2, 3, 0)
-        p3 = RydbergPulse(1, 2, 3, [0, 1])
+        p1 = RydbergPulse(1, 2, 3, None, [0, 1])
+        p2 = RydbergPulse(1, 2, 3, None, 0)
+        p3 = RydbergPulse(1, 2, 3, None, [0, 1])
         assert p1 != p2
         assert p2 != p3
         assert p1 == p3

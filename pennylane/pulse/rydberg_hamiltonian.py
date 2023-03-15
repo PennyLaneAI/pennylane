@@ -165,7 +165,7 @@ def rydberg_drive(amplitude, phase, detuning, wires):
     .. code-block:: python
 
         atom_coordinates = [[0, 0], [0, 4], [4, 0], [4, 4]]
-        wires = [1, 2, 3, 4]
+        wires = [0, 1, 2, 3]
         H_i = qml.pulse.rydberg_interaction(atom_coordinates, wires)
 
         amplitude = lambda p, t: p * jnp.sin(jnp.pi * t)
@@ -196,9 +196,9 @@ def rydberg_drive(amplitude, phase, detuning, wires):
 
     >>> params = [2.4]
     >>> circuit(params)
-    Array(0.97137696, dtype=float32)
+    Array(0.94301294, dtype=float64)
     >>> jax.grad(circuit)(params)
-    [Array(0.10493923, dtype=float32)]
+    [Array(0.59484969, dtype=float64)]
 
     We can also create a Hamiltonian with multiple local drives. The following circuit corresponds to the
     evolution where an additional local drive acting on wires ``[0, 1]`` is added to the Hamiltonian:
@@ -218,13 +218,14 @@ def rydberg_drive(amplitude, phase, detuning, wires):
             qml.evolve(H)(params, t=[0, 10])
             return qml.expval(qml.PauliZ(0))
 
-    >>> params = [2.4, [1.3, -2.0]]
+    >>> params = [2.4, [1.3, -2.0], -1.5]
     >>> circuit_local(params)
-    Array(0.45782223, dtype=float64)
+    Array(0.80238028, dtype=float64)
     >>> jax.grad(circuit_local)(params)
-    [Array(-0.33522988, dtype=float64),
-     [Array(0.40320718, dtype=float64, weak_type=True),
-      Array(-0.12003976, dtype=float64, weak_type=True)]]
+    [Array(-0.73273312, dtype=float64),
+     [Array(-0.45635171, dtype=float64, weak_type=True),
+      Array(0.76572817, dtype=float64, weak_type=True)],
+     Array(0.01027312, dtype=float64)]
     """
     if isinstance(wires, int):
         wires = [wires]
@@ -236,9 +237,9 @@ def rydberg_drive(amplitude, phase, detuning, wires):
         detuning,
     ]
 
-    drive_x_term = sum(qml.s_prod(0.5, qml.PauliX(wire)) for wire in wires)
-    drive_y_term = sum(qml.s_prod(-0.5, qml.PauliY(wire)) for wire in wires)
-    detuning_term = sum(qml.s_prod(-1, qml.PauliZ(wire)) for wire in wires)
+    drive_x_term = 0.5 * sum(qml.PauliX(wire) for wire in wires)
+    drive_y_term = -0.5 * sum(qml.PauliY(wire) for wire in wires)
+    detuning_term = -1.0 * sum(qml.PauliZ(wire) for wire in wires)
 
     observables = [drive_x_term, drive_y_term, detuning_term]
 
@@ -285,7 +286,7 @@ def rydberg_local_drive(detuning, pattern, wires):
     coeffs = [detuning]
 
     # Including -1 factor in each term to account for negative sign in front of the Hamiltonian
-    terms = [sum(qml.s_prod(-c, qml.PauliZ(wire)) for c, wire in zip(pattern, wires))]
+    terms = [sum(-c * qml.PauliZ(wire) for c, wire in zip(pattern, wires))]
 
     # We convert the pulse data into a list of ``RydbergPulse`` objects
     pulses = [RydbergPulse(0, 0, detuning, pattern, wires)]
