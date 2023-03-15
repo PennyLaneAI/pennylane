@@ -317,7 +317,7 @@ class KerasLayer(Layer):
             **{self.input_arg: x},
             **{k: 1.0 * w for k, w in self.qnode_weights.items()},
         }
-        return self.qnode(**kwargs)
+        return tf.stack(self.qnode(**kwargs))
 
     def compute_output_shape(self, input_shape):
         """Computes the output shape after passing data of shape ``input_shape`` through the
