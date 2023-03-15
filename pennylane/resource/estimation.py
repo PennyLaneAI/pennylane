@@ -13,6 +13,62 @@
 # limitations under the License.
 """
 This module contains the functions needed for resource estimation.
+
+Resource estimation transforms are created to computed resources for a custom operation, a tape, and
+a qnode. Code examples for using each of these transforms, which are currently separated for
+clarity, are provided in their docstring.
+
+Also, the `null.qubit` device and the `qml.execute` function are modified to return
+resource information to account for the cases where batches of tapes are created to be run on the
+device. The following example shows how to use the 'null.qubit' devise to obtain `Resource` objects
+for a circuit that contains some standard gates and a custom operation. The circuit computes the
+expectation value of a Hamiltonian with its terms grouped by the 'qwc' method.
+
+        .. code-block:: python3
+
+            import pennylane as qml
+            from pennylane import numpy as np
+            from pennylane.operation import Operation
+            from collections import defaultdict
+
+            symbols  = ['H', 'H']
+            geometry = np.array([[0.0, 0.0, -0.69434785],
+                                 [0.0, 0.0,  0.69434785]], requires_grad = False)
+            electrons = 2
+            ham, qubits = qml.qchem.molecular_hamiltonian(symbols, geometry, grouping_type='qwc')
+            hf_state = qml.qchem.hf_state(electrons, qubits)
+            singles, doubles = qml.qchem.excitations(electrons, qubits)
+            excitations = singles + doubles
+
+            class CustomOperation(Operation):
+                num_wires = 6
+                def resources(self):
+                    resource = Resource()
+                    resource.num_gates = 11
+                    resource.gate_types = {'T': 5, 'CNOT': 6}
+                    resource.depth = 11
+                    return resource
+
+            dev = qml.device('null.qubit', wires = 10, shots = 100)
+            @qml.qnode(dev, diff_method='parameter-shift')
+            def circuit(params):
+                qml.BasisState(np.array([1, 1, 0, 0, 0, 0, 0, 0, 0, 0]), wires = range(10))
+                qml.SingleExcitation(params[0], wires=[0, 1])
+                qml.DoubleExcitation(params[1],wires=[0, 1, 2, 3])
+                qml.DoubleExcitation(params[1],wires=[0, 1, 4, 5])
+                qml.DoubleExcitation(params[1],wires=[0, 1, 6, 7])
+                qml.DoubleExcitation(params[1],wires=[0, 1, 8, 9])
+                CustomOperation(wires=range(6))
+                return qml.expval(ham)
+            params = np.array([0.1, 0.2])
+
+            >>> resources = circuit(params).tolist()
+            >>> resources
+            [<Resource: wires=10, gates=136, depth=0, shots=100, gate_types=defaultdict(<class 'int'>, {'PhaseShift': 4, 'RX': 4, 'CNOT': 64, 'CRY': 1, 'Hadamard': 24, 'RY': 34, 'T': 5})>,
+             <Resource: wires=10, gates=132, depth=0, shots=100, gate_types=defaultdict(<class 'int'>, {'PhaseShift': 4, 'RX': 2, 'CNOT': 64, 'CRY': 1, 'Hadamard': 24, 'RY': 32, 'T': 5})>,
+             <Resource: wires=10, gates=132, depth=0, shots=100, gate_types=defaultdict(<class 'int'>, {'PhaseShift': 4, 'RX': 2, 'CNOT': 64, 'CRY': 1, 'Hadamard': 24, 'RY': 32, 'T': 5})>,
+             <Resource: wires=10, gates=132, depth=0, shots=100, gate_types=defaultdict(<class 'int'>, {'PhaseShift': 4, 'RX': 2, 'CNOT': 64, 'CRY': 1, 'Hadamard': 24, 'RY': 32, 'T': 5})>,
+             <Resource: wires=10, gates=132, depth=0, shots=100, gate_types=defaultdict(<class 'int'>, {'PhaseShift': 4, 'RX': 2, 'CNOT': 64, 'CRY': 1, 'Hadamard': 24, 'RY': 32, 'T': 5})>]
 """
 
 from collections import defaultdict
