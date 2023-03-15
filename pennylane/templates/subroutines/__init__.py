@@ -33,4 +33,4 @@ from .kupccgsd import kUpCCGSD
 from .hilbert_schmidt import HilbertSchmidt, LocalHilbertSchmidt
 from .flip_sign import FlipSign
 from .basis_rotation import BasisRotation
-from .qsvt import QSVT, qsvt, TestTemplate
+from .qsvt import QSVT, qsvt

@@ -22,7 +22,30 @@ from pennylane.operation import AnyWires, Operation
 
 
 def qsvt(A, phi_vect, wires):
-    """Executes the operations to perform the qsvt protocol"""
+    """Performs the 
+    `quantum singular value transformation <https://arxiv.org/abs/1806.01838>`__ circuit using
+    :class:`~.BlockEncode` and :class:`~.PCPhase`.
+
+    Args:
+        A (Array): the general :math:`(n \times m)` matrix to be encoded.
+        phi_vect (list[Float]): a list of angles by which to shift to obtain the desired polynomial.
+        wires (Iterable): the wires the template acts on.
+    
+    .. details::
+        :title: Usage Details
+
+        .. code-block:: python
+
+            dev = qml.device('default.qubit', wires=2)
+            A = [[0.1, 0.2], [0.3, 0.4]]
+            lst_phis = [0.1, 0.2, 0.3]
+            @qml.qnode(dev)
+            def example_circuit(A):
+                qml.qsvt(A, lst_phis, wires=[0,1])
+                return qml.expval(qml.PauliZ(wires=0))
+                
+            qml.draw(example_circuit)(A)
+    """
     d = len(phi_vect)
     c, r = A.shape
     phi_vect = np.flip(phi_vect)
@@ -134,7 +157,7 @@ class QSVT(Operation):
         Returns:
             list[.Operator]: decomposition of the operator
         """
-        
+
         op_list = []
         U_Aadj = U_A.__copy__()
         if len(lst_projectors)%2 ==0:
@@ -164,27 +187,6 @@ class QSVT(Operation):
 
         return op_list
 
-class TestTemplate(Operation):
-
-    num_params = 2
-    num_wires = AnyWires
-
-    def __init__(self, U_A, lstops, wires, do_queue=True, id=None):
-        super().__init__(U_A, lstops, wires=wires, do_queue=do_queue, id=id)
-
-    @staticmethod
-    def compute_decomposition(U_A,lstops,wires):
-        U_A_copy = U_A.__copy__()
-        op_list =[]
-        if len(lstops)%2 == 0:
-            for idx, op in enumerate(lstops):
-                if idx%2 ==0:
-                    qml.apply(U_A)
-                    op_list.append(U_A)
-                else:
-                    op_list.append(adjoint(U_A_copy))
-
-                qml.apply(op)
-                
-                op_list.append(op)
-        return op_list
+    def label(self, decimals=None, base_label=None, cache=None):
+        op_label = base_label or self.__class__.__name__
+        return op_label
