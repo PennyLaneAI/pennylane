@@ -278,7 +278,7 @@ class ParametrizedEvolution(Operation):
         if t is None:
             self.t = None
         else:
-            self.t = jnp.array([0, t] if qml.math.ndim(t) == 0 else t, dtype=float)
+            self.t = qml.math.array([0.0, t] if qml.math.ndim(t) == 0 else t, dtype=float)
         params = [] if params is None else params
         super().__init__(*params, wires=H.wires, do_queue=do_queue, id=id)
 

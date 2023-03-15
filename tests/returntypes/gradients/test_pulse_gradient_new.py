@@ -809,17 +809,16 @@ class TestStochPulseGradQNodeIntegration:
             for j, e in zip(jac, exp_jac):
                 assert qml.math.allclose(j[0], e, atol=tol, rtol=0.0)
 
-    # TODO: ParametrizedEvolution + grad transform is currently not JIT-compatible, see #3881
-    @pytest.mark.xfail
     @pytest.mark.parametrize("num_split_times", [1, 3])
-    def test_simple_qnode_jit(self, num_split_times):
+    @pytest.mark.parametrize("time_interface", ["python", "numpy", "JAX"])
+    def test_simple_qnode_jit(self, num_split_times, time_interface):
         """Test that a simple qnode can be differentiated with stoch_pulse_grad."""
         import jax
 
         jnp = jax.numpy
         jax.config.update("jax_enable_x64", True)
         dev = qml.device("default.qubit.jax", wires=1)
-        T = 0.2
+        T = {"python": 0.2, "numpy": np.array(0.2), "JAX": jnp.array(0.2)}[time_interface]
         ham_single_q_const = qml.pulse.constant * qml.PauliY(0)
 
         @qml.qnode(
@@ -835,6 +834,7 @@ class TestStochPulseGradQNodeIntegration:
         jit_grad = jax.jit(jax.grad(circuit))(params)
         assert qml.math.isclose(jit_grad, exp_grad)
 
+    @pytest.mark.slow
     def test_advanced_qnode(self):
         """Test that an advanced qnode can be differentiated with stoch_pulse_grad."""
         import jax
@@ -880,6 +880,7 @@ class TestStochPulseGradDiff:
     """Test that stoch_pulse_grad is differentiable."""
 
     # pylint: disable=too-few-public-methods
+    @pytest.mark.slow
     def test_jax(self):
         """Test that stoch_pulse_grad is differentiable with JAX."""
         import jax
