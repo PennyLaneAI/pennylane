@@ -124,6 +124,9 @@
   are applied to a large (>8 wires) tensorflow state. When that occurs, the logic falls back to the tensordot logic instead.
   [(#3884)](https://github.com/PennyLaneAI/pennylane/pull/3884/)
 
+* Fixed parameter broadcasting support with `qml.counts` in most cases, and introduced explicit errors otherwise.
+  [(#3876)](https://github.com/PennyLaneAI/pennylane/pull/3876)
+
 * An error is now raised if a `QNode` with Jax-jit in use returns `counts` while having trainable parameters
   [(#3892)](https://github.com/PennyLaneAI/pennylane/pull/3892)
 
