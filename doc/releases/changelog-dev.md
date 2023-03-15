@@ -4,6 +4,8 @@
 
 <h3>New features since last release</h3>
 
+<h4>Pulse programming</h4>
+
 * Added the needed functions and classes to simulate an ensemble of Rydberg atoms:
   * A new internal `RydbergHamiltonian` class is added, which contains the Hamiltonian of an ensemble of
     Rydberg atoms.
@@ -13,8 +15,9 @@
     the Hamiltonian of the interaction between a driving laser field and a group of atoms.
   [(#3749)](https://github.com/PennyLaneAI/pennylane/pull/3749)
 
-* Added `Operation.__truediv__` dunder method to be able to divide operators.
-  [(#3749)](https://github.com/PennyLaneAI/pennylane/pull/3749)
+* Added `max_distance` keyword argument to `qml.pulse.rydberg_interaction` to allow removal of negligible contributions
+  from atoms beyond `max_distance`from each other.
+  [(#3889)](https://github.com/PennyLaneAI/pennylane/pull/3889)
 
 <h3>Improvements 🛠</h3>
 
@@ -65,14 +68,13 @@
   in the circuit.
   [(#3888)](https://github.com/PennyLaneAI/pennylane/pull/3888)
 
-* Added `max_distance` keyword argument to `qml.pulse.rydberg_interaction` to allow removal of negligible contributions
-  from atoms beyond `max_distance`from each other.
-  [(#3889)](https://github.com/PennyLaneAI/pennylane/pull/3889)
-
 * 3 new decomposition algorithms are added for n-controlled operations with single-qubit target,
   and are selected automatically when they produce a better result. They can be accessed via
   `ops.op_math.ctrl_decomp_bisect`.
   [(#3851)](https://github.com/PennyLaneAI/pennylane/pull/3851)
+
+* Added `Operation.__truediv__` dunder method to be able to divide operators.
+  [(#3749)](https://github.com/PennyLaneAI/pennylane/pull/3749)
 
 <h3>Breaking changes 💔</h3>
 
