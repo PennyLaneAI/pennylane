@@ -50,7 +50,6 @@ class ObservableReturnTypes(Enum):
     Shadow = "shadow"
     ShadowExpval = "shadowexpval"
     Purity = "purity"
-    Custom = "Custom"
 
     def __repr__(self):
         """String representation of the return types."""
@@ -131,7 +130,7 @@ class MeasurementProcess(ABC):
     def __init__(
         self,
         obs: Optional[Operator] = None,
-        wires=None,
+        wires: Optional[Wires] = None,
         eigvals=None,
         id: Optional[str] = None,
     ):
@@ -170,31 +169,6 @@ class MeasurementProcess(ABC):
 
         # Queue the measurement process
         self.queue()
-
-    def __repr__(self):
-        """Representation of this class."""
-        if self.obs is None:
-            if self._eigvals is None:
-                return f"{self.return_type.value}(wires={self.wires.tolist()})"
-            return f"{self.return_type.value}(eigvals={self._eigvals}, wires={self.wires.tolist()})"
-
-        # Todo: when tape is core the return type will always be taken from the MeasurementProcess
-        if getattr(self.obs, "return_type", None) is None:
-            return f"{self.return_type.value}({self.obs})"
-
-        return f"{self.obs}"
-
-    def __copy__(self):
-        cls = self.__class__
-        copied_m = cls.__new__(cls)
-
-        for attr, value in vars(self).items():
-            setattr(copied_m, attr, value)
-
-        if self.obs is not None:
-            copied_m.obs = copy.copy(self.obs)
-
-        return copied_m
 
     @property
     def return_type(self) -> Optional[ObservableReturnTypes]:
@@ -314,6 +288,31 @@ class MeasurementProcess(ABC):
             return self.expand().operations
         except qml.operation.DecompositionUndefinedError:
             return []
+
+    def __repr__(self):
+        """Representation of this class."""
+        if self.obs is None:
+            if self._eigvals is None:
+                return f"{self.return_type.value}(wires={self.wires.tolist()})"
+            return f"{self.return_type.value}(eigvals={self._eigvals}, wires={self.wires.tolist()})"
+
+        # Todo: when tape is core the return type will always be taken from the MeasurementProcess
+        if getattr(self.obs, "return_type", None) is None:
+            return f"{self.return_type.value}({self.obs})"
+
+        return f"{self.obs}"
+
+    def __copy__(self):
+        cls = self.__class__
+        copied_m = cls.__new__(cls)
+
+        for attr, value in vars(self).items():
+            setattr(copied_m, attr, value)
+
+        if self.obs is not None:
+            copied_m.obs = copy.copy(self.obs)
+
+        return copied_m
 
     @property
     def wires(self):

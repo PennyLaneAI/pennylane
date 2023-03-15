@@ -120,7 +120,6 @@ class TestCounts:
 
 
 class TestCountsIntegration:
-
     # pylint:disable=too-many-public-methods
 
     def test_counts_dimension(self, mocker):

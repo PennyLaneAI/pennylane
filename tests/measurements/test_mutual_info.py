@@ -13,7 +13,6 @@
 # limitations under the License.
 """Unit tests for the mutual_info module"""
 import copy
-from re import M
 
 import numpy as np
 import pytest

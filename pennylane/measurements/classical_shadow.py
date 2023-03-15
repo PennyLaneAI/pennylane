@@ -17,7 +17,7 @@ This module contains the qml.classical_shadow measurement.
 import copy
 import warnings
 from collections.abc import Iterable
-from typing import Optional, Union
+from typing import Optional, Union, Sequence
 
 import numpy as np
 
@@ -231,7 +231,6 @@ class ClassicalShadowMP(MeasurementTransform):
 
     Args:
         wires (.Wires): The wires the measurement process applies to.
-            This can only be specified if an observable was not provided.
         seed (Union[int, None]): The seed used to generate the random measurements
         id (str): custom label given to a measurement instance, can be useful for some applications
             where the instance has to be identified
@@ -358,7 +357,7 @@ class ShadowExpvalMP(MeasurementTransform):
     Please refer to :func:`shadow_expval` for detailed documentation.
 
     Args:
-        H (Operator, Iterable[Operator]): Operator or list of Operators to compute the expectation value over.
+        H (Operator, Sequence[Operator]): Operator or list of Operators to compute the expectation value over.
         seed (Union[int, None]): The seed used to generate the random measurements
         k (int): Number of equal parts to split the shadow's measurements to compute the median of means.
             ``k=1`` corresponds to simply taking the mean over all measurements.
@@ -368,7 +367,7 @@ class ShadowExpvalMP(MeasurementTransform):
 
     def __init__(
         self,
-        H: Union[Operator, Iterable[Operator]],
+        H: Union[Operator, Sequence],
         seed: Optional[int] = None,
         k: int = 1,
         id: Optional[str] = None,
