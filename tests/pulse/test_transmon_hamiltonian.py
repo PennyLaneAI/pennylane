@@ -295,11 +295,11 @@ class TestTransmonDrive:
         assert isinstance(Hd, TransmonHamiltonian)
         assert Hd.wires == Wires([1, 2])
         assert Hd.connections is None
-        assert len(Hd.ops) == 2 # one for a and one of a^\dagger
+        assert len(Hd.ops) == 2  # one for a and one of a^\dagger
         assert Hd.pulses == [TransmonPulse(1, 2, [1, 2])]
 
     # odd behavior when adding two drives/TransmonHamiltonians
-    #@pytest.mark.xfail
+    # @pytest.mark.xfail
     def test_multiple_local_drives(self):
         """Test that adding multiple drive terms behaves as expected"""
 
@@ -313,15 +313,10 @@ class TestTransmonDrive:
         H2 = transmon_drive(amplitude=1, phase=3, wires=[1, 2])
         Hd = H1 + H2
 
-        ops_expected = [
-            a(1) + a(2),
-            ad(1) + ad(2),
-            a(0) + a(3),
-            ad(0) + ad(3)
-        ]
+        ops_expected = [a(1) + a(2), ad(1) + ad(2), a(0) + a(3), ad(0) + ad(3)]
         coeffs_expected = [
-            1. * qml.math.exp(1j*3.),
-            1. * qml.math.exp(-1j*3.),
+            1.0 * qml.math.exp(1j * 3.0),
+            1.0 * qml.math.exp(-1j * 3.0),
             AmplitudeAndPhase(1, fa, 1),
             AmplitudeAndPhase(-1, fa, 1),
         ]
@@ -329,7 +324,7 @@ class TestTransmonDrive:
 
         # structure of Hamiltonian is as expected
         assert isinstance(Hd, TransmonHamiltonian)
-        assert Hd.wires == Wires([1, 2, 0, 3]) #TODO: Why is the order reversed?
+        assert Hd.wires == Wires([1, 2, 0, 3])  # TODO: Why is the order reversed?
         assert Hd.connections is None
         assert len(Hd.ops) == 4  # 2 terms for amplitude/phase and one detuning for each drive
 
@@ -550,25 +545,24 @@ class TestTransmonDrive:
 #         assert _transmon_reorder_parameters(params, coeffs) == expected_output
 
 
-# class TestTransmonPulse:
-#     """Unit tests for the ``TransmonPulse`` class."""
+class TestTransmonPulse:
+    """Unit tests for the ``TransmonPulse`` class."""
 
-#     def test_init(self):
-#         """Test the initialization of the ``TransmonPulse`` class."""
-#         p = TransmonPulse(amplitude=4, detuning=9, phase=8, wires=[0, 4, 7])
-#         assert p.amplitude == 4
-#         assert p.phase == 8
-#         assert p.detuning == 9
-#         assert p.wires == Wires([0, 4, 7])
+    def test_init(self):
+        """Test the initialization of the ``TransmonPulse`` class."""
+        p = TransmonPulse(amplitude=4, phase=8, wires=[0, 4, 7])
+        assert p.amplitude == 4
+        assert p.phase == 8
+        assert p.wires == Wires([0, 4, 7])
 
-#     def test_equal(self):
-#         """Test the ``__eq__`` method of the ``TransmonPulse`` class."""
-#         p1 = TransmonPulse(1, 2, 3, [0, 1])
-#         p2 = TransmonPulse(1, 2, 3, 0)
-#         p3 = TransmonPulse(1, 2, 3, [0, 1])
-#         assert p1 != p2
-#         assert p2 != p3
-#         assert p1 == p3
+    def test_equal(self):
+        """Test the ``__eq__`` method of the ``TransmonPulse`` class."""
+        p1 = TransmonPulse(1, 2, [0, 1])
+        p2 = TransmonPulse(1, 2, 0)
+        p3 = TransmonPulse(1, 2, [0, 1])
+        assert p1 != p2
+        assert p2 != p3
+        assert p1 == p3
 
 
 # class TestIntegration:

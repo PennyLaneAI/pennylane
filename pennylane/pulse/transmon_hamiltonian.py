@@ -249,8 +249,8 @@ def transmon_drive(amplitude, phase, wires):
 
     # We compute the `coeffs` and `ops` of the laser field
     coeffs = [
-        _amplitude_and_phase(1., amplitude, phase),
-        _amplitude_and_phase(-1., amplitude, phase),
+        _amplitude_and_phase(1.0, amplitude, phase),
+        _amplitude_and_phase(-1.0, amplitude, phase),
     ]
 
     drive_terms_1 = sum(a(wire) for wire in wires)
@@ -263,11 +263,12 @@ def transmon_drive(amplitude, phase, wires):
 
     return TransmonHamiltonian(coeffs, ops, pulses=pulses)
 
+
 def _amplitude_and_phase(sign, amp, phase):
     """Wrapper function for combining amplitude and phase into a single callable
     (or constant if neither amplitude nor phase are callable)."""
     if not callable(amp) and not callable(phase):
-        return amp * qml.math.exp(sign*1j*phase)
+        return amp * qml.math.exp(sign * 1j * phase)
     return AmplitudeAndPhase(sign, amp, phase)
 
 
@@ -281,13 +282,13 @@ class AmplitudeAndPhase:
         self.phase_is_callable = callable(phase)
 
         def callable_amp_and_phase(params, t):
-            return amp(params[0], t) * qml.math.exp(sign*1j*phase(params[1], t))
+            return amp(params[0], t) * qml.math.exp(sign * 1j * phase(params[1], t))
 
         def callable_amp(params, t):
-            return amp(params, t) * qml.math.exp(sign*1j*phase)
+            return amp(params, t) * qml.math.exp(sign * 1j * phase)
 
         def callable_phase(params, t):
-            return amp * qml.math.exp(sign*1j*phase(params[1], t))
+            return amp * qml.math.exp(sign * 1j * phase(params[1], t))
 
         if self.amp_is_callable and self.phase_is_callable:
             self.func = callable_amp_and_phase
