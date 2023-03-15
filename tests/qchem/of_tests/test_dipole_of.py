@@ -190,31 +190,11 @@ ops_h2o.append(
 
 
 @pytest.mark.parametrize(
-    ("symbols", "coords", "charge", "core", "active", "mapping", "coeffs", "ops", "tol"),
+    ("symbols", "coords", "charge", "core", "active", "mapping", "coeffs", "ops"),
     [
-        (h2, x_h2, 0, None, None, "jordan_wigner", coeffs_h2, ops_h2, {"rtol": 0, "atol": 1e-8}),
-        (
-            h3p,
-            x_h3p,
-            1,
-            None,
-            None,
-            "jordan_wigner",
-            coeffs_h3p,
-            ops_h3p,
-            {"rtol": 0, "atol": 1e-8},
-        ),
-        (
-            h2o,
-            x_h2o,
-            0,
-            range(4),
-            [4, 5],
-            "bravyi_kitaev",
-            coeffs_h2o,
-            ops_h2o,
-            {"rtol": 0, "atol": 1e-7},
-        ),
+        (h2, x_h2, 0, None, None, "jordan_wigner", coeffs_h2, ops_h2),
+        (h3p, x_h3p, 1, None, None, "jordan_wigner", coeffs_h3p, ops_h3p),
+        (h2o, x_h2o, 0, range(4), [4, 5], "bravyi_kitaev", coeffs_h2o, ops_h2o),
     ],
 )
 def test_dipole_obs(symbols, coords, charge, core, active, mapping, coeffs, ops, tol, tmpdir):
