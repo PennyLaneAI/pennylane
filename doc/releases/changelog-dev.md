@@ -60,6 +60,10 @@
   to be set as trainable), and therefore the derivatives are computed more efficiently.
   [(#3697)](https://github.com/PennyLaneAI/pennylane/pull/3697)
 
+* `qml.SparseHamiltonian` can now be applied to any wires in a circuit rather than being restricted to all wires
+  in the circuit.
+  [(#3888)](https://github.com/PennyLaneAI/pennylane/pull/3888)
+
 * Added `max_distance` keyword argument to `qml.pulse.rydberg_interaction` to allow removal of negligible contributions
   from atoms beyond `max_distance`from each other.
   [(#3889)](https://github.com/PennyLaneAI/pennylane/pull/3889)
@@ -125,6 +129,10 @@
 
 * Fixed parameter broadcasting support with `qml.counts` in most cases, and introduced explicit errors otherwise.
   [(#3876)](https://github.com/PennyLaneAI/pennylane/pull/3876)
+
+* A correction is added to the reference values in `test_dipole_of` to account for small changes
+  (~2e-8) in the computed dipole moment values, resulting from the new [PySCF 2.2.0](https://github.com/pyscf/pyscf/releases/tag/v2.2.0) release.
+  [(#3908)](https://github.com/PennyLaneAI/pennylane/pull/3908)
 
 <h3>Contributors</h3>
 
