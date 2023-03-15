@@ -88,9 +88,11 @@ class TestFourierCoefficientSingleVariable:
         function are computed correctly"""
         degree = max(freq_dict.keys())
         partial_func = partial(fourier_function, freq_dict)
+        # Testing with a single degree provided as integer
         coeffs = coefficients(partial_func, 1, degree)
 
         assert np.allclose(coeffs, expected_coeffs)
+        # Testing with a single-entry sequence of degrees
         coeffs = coefficients(partial_func, 1, (degree,))
 
         assert np.allclose(coeffs, expected_coeffs)
