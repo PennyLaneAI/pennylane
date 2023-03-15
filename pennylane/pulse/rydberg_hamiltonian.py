@@ -53,7 +53,7 @@ def rydberg_interaction(
 
     .. seealso::
 
-        :func:`~.rydberg_drive`
+        :func:`~.rydberg_drive`, :func:`rydberg_local_shift`
 
     Args:
         register (list): list of coordinates of the Rydberg atoms (in micrometers)
@@ -152,8 +152,12 @@ def rydberg_drive(amplitude, phase, detuning, wires):
 
     .. seealso::
 
-        :func:`~.rydberg_interaction`, :class:`~.ParametrizedHamiltonian`, :class:`~.ParametrizedEvolution`
-        and :func:`~.evolve`
+        :func:`~.rydberg_interaction`, :func:`~.rydberg_local_shift`, :class:`~.ParametrizedHamiltonian`,
+        :class:`~.ParametrizedEvolution` and :func:`~.evolve`
+
+    .. note::
+
+        A local shifting field can be added using :func:`~.rydberg_local_shift`.
 
     **Example**
 
@@ -249,7 +253,7 @@ def rydberg_drive(amplitude, phase, detuning, wires):
     return RydbergHamiltonian(coeffs, observables, pulses=pulses)
 
 
-def rydberg_local_drive(detuning, pattern, wires):
+def rydberg_local_shift(detuning, pattern, wires):
     r"""Returns a :class:`ParametrizedHamiltonian` representing the action of a local driving laser
     with a given temporal and spatial detuning.
 
@@ -274,7 +278,9 @@ def rydberg_local_drive(detuning, pattern, wires):
         RydbergHamiltonian: a :class:`~.ParametrizedHamiltonian` representing the action of the laser field
         on the Rydberg atoms.
 
-    .. seealso:: :func:`~.rydberg_drive`, :func:`~.rydberg_interaction`
+    .. seealso::
+
+        :func:`~.rydberg_drive`, :func:`~.rydberg_interaction`
     """
     if isinstance(wires, int):
         wires = [wires]
