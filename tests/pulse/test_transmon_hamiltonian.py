@@ -216,14 +216,15 @@ delta = 0.3 * np.arange(len(wires))
 #         assert qml.equal(new_pH.H_fixed(), qml.s_prod(1, op))
 
 
-
 class TestTransmonInteraction:
     """Unit tests for the ``transmon_interaction`` function."""
 
     def test_attributes_and_number_of_terms(self):
         """Test that the attributes and the number of terms of the ``ParametrizedHamiltonian`` returned by
         ``transmon_interaction`` are correct."""
-        Hd = transmon_interaction(connections=connections, omega=omega, g=g, delta=None, wires=wires, d=2)
+        Hd = transmon_interaction(
+            connections=connections, omega=omega, g=g, delta=None, wires=wires, d=2
+        )
 
         assert isinstance(Hd, TransmonHamiltonian)
         assert all(Hd.omega == omega)
@@ -261,16 +262,24 @@ class TestTransmonInteraction:
         """Test that using wires that are not fully contained by the connections raises an error"""
         with pytest.raises(ValueError, match="There are wires in connections"):
             _ = transmon_interaction(connections=connections, omega=0.1, g=0.2, wires=[0])
-    
+
     def test_wrong_omega_len_raises_error(self):
         """Test that providing list of omegas with wrong length raises error"""
         with pytest.raises(ValueError, match="Number of qubit frequencies omega"):
-            _ = transmon_interaction(connections=connections, omega=[0.1, 0.2], g=0.2,)
+            _ = transmon_interaction(
+                connections=connections,
+                omega=[0.1, 0.2],
+                g=0.2,
+            )
 
     def test_wrong_g_len_raises_error(self):
         """Test that providing list of g with wrong length raises error"""
         with pytest.raises(ValueError, match="Number of coupling terms"):
-            _ = transmon_interaction(connections=connections, omega=0.1, g=[0.2, 0.2],)
+            _ = transmon_interaction(
+                connections=connections,
+                omega=0.1,
+                g=[0.2, 0.2],
+            )
 
 
 # class TestRydbergDrive:
