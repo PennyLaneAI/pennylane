@@ -128,7 +128,7 @@ def rydberg_drive(amplitude, phase, detuning, wires):
 
     .. math::
         \frac{1}{2} \Omega(t) \sum_{i \in \text{wires}} (\cos(\phi)\sigma_i^x - \sin(\phi)\sigma_i^y) -
-        \frac{1}{2} \delta(t) \sum_{i \in \text{wires}} \sigma_i^z
+        \delta(t) \sum_{i \in \text{wires}} \sigma_i^z
 
     where :math:`\Omega`, :math:`\delta` and :math:`\phi` correspond to the rabi frequency, detuning
     and phase of the laser, :math:`i` correspond to the wire index, and :math:`\sigma^\alpha` for
@@ -236,9 +236,9 @@ def rydberg_drive(amplitude, phase, detuning, wires):
         detuning,
     ]
 
-    drive_x_term = sum(qml.PauliX(wire) for wire in wires)
-    drive_y_term = sum(-qml.PauliY(wire) for wire in wires)
-    detuning_term = sum(qml.PauliZ(wire) for wire in wires)
+    drive_x_term = sum(qml.s_prod(0.5, qml.PauliX(wire)) for wire in wires)
+    drive_y_term = sum(qml.s_prod(-0.5, qml.PauliY(wire)) for wire in wires)
+    detuning_term = sum(qml.s_prod(-1, qml.PauliZ(wire)) for wire in wires)
 
     observables = [drive_x_term, drive_y_term, detuning_term]
 
@@ -253,7 +253,7 @@ def rydberg_local_drive(detuning, pattern, wires):
     with a given temporal and spatial detuning.
 
     .. math::
-        -\frac{1}{2} \delta(t) \sum_{i \in \text{wires}} h_i \sigma_i^z
+        -\delta(t) \sum_{i \in \text{wires}} h_i \sigma_i^z
 
     where :math:`\delta` is the temporal detuning, :math:`h_i` is the spatial detuning, or site coefficient
     between 0 and 1, of the laser, :math:`i` correspond to the wire index, and :math:`\sigma^\z` is the Pauli
@@ -284,7 +284,8 @@ def rydberg_local_drive(detuning, pattern, wires):
     # We compute the `coeffs` and `observables` of the laser field
     coeffs = [detuning]
 
-    terms = [sum(qml.s_prod(c, qml.PauliZ(wire)) for c, wire in zip(pattern, wires))]
+    # Including -1 factor in each term to account for negative sign in front of the Hamiltonian
+    terms = [sum(qml.s_prod(-c, qml.PauliZ(wire)) for c, wire in zip(pattern, wires))]
 
     # We convert the pulse data into a list of ``RydbergPulse`` objects
     pulses = [RydbergPulse(0, 0, detuning, pattern, wires)]
