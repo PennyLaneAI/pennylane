@@ -237,6 +237,7 @@ class TestInteractionWithOperators:
         (qml.Hamiltonian([2], [qml.PauliZ(0)]), 2),
         (qml.Hamiltonian([1.7], [qml.PauliZ(0)]), 1.7),
         (qml.ops.SProd(3, qml.PauliZ(0)), 3),
+        (2*qml.PauliZ(0), 2)
     )
     ops = (
         qml.PauliX(2),
