@@ -15,6 +15,7 @@
 Contains the QSVT template and qsvt wrapper function.
 """
 import numpy as np
+import pennylane as qml
 from pennylane.ops import BlockEncode, PCPhase
 from pennylane.ops.op_math import adjoint
 from pennylane.operation import AnyWires, Operation
@@ -105,8 +106,8 @@ class QSVT(Operation):
     num_wires = AnyWires
     """int: Number of wires that the operator acts on."""
 
-    ndim_params = (0, 1,)
-    """tuple[int]: Number of dimensions per trainable parameter that the operator depends on."""
+    # ndim_params = (0, 1,)
+    # """tuple[int]: Number of dimensions per trainable parameter that the operator depends on."""
 
     grad_method = None
     """Gradient computation method."""
@@ -133,30 +134,57 @@ class QSVT(Operation):
         Returns:
             list[.Operator]: decomposition of the operator
         """
-
+        
         op_list = []
-        #check 
-        #different if len(lst_projectrs) is odd or even:
-
+        U_Aadj = U_A.__copy__()
         if len(lst_projectors)%2 ==0:
             for idx, op in enumerate(lst_projectors):
                 if idx%2 == 0:
+                    qml.apply(U_A)
                     op_list.append(U_A)
                 else:
-                    op_list.append(adjoint(U_A))
+                    op_list.append(adjoint(U_Aadj))
+                qml.apply(op)
                 op_list.append(op)
 
         else:
             for idx, op in enumerate(lst_projectors[:-1]):
                 if idx%2 == 0:
+                    qml.apply(U_A)
                     op_list.append(U_A)
                 else:
-                    op_list.append(adjoint(U_A))
+                    op_list.append(adjoint(U_Aadj))
+                op.queue()
                 op_list.append(op)
 
+            qml.apply(U_A)
+            lst_projectors[-1].queue()
             op_list.append(U_A)
             op_list.append(lst_projectors[-1])
 
-
         return op_list
 
+class TestTemplate(Operation):
+
+    num_params = 2
+    num_wires = AnyWires
+
+    def __init__(self, U_A, lstops, wires, do_queue=True, id=None):
+        super().__init__(U_A, lstops, wires=wires, do_queue=do_queue, id=id)
+
+    @staticmethod
+    def compute_decomposition(U_A,lstops,wires):
+        U_A_copy = U_A.__copy__()
+        op_list =[]
+        if len(lstops)%2 == 0:
+            for idx, op in enumerate(lstops):
+                if idx%2 ==0:
+                    qml.apply(U_A)
+                    op_list.append(U_A)
+                else:
+                    op_list.append(adjoint(U_A_copy))
+
+                qml.apply(op)
+                
+                op_list.append(op)
+        return op_list
