@@ -97,9 +97,7 @@ def execute(tapes, device, execute_fn, gradient_fn, gradient_kwargs, _n=1, max_d
 
     if _n == 1:
         for tape in tapes:
-            # set the trainable parameters
-            params = tape.get_parameters(trainable_only=False)
-            tape.trainable_params = qml.math.get_trainable_indices(params)
+            tape.update_trainable_parameters()
 
     parameters = tuple(list(t.get_parameters()) for t in tapes)
 
@@ -388,11 +386,9 @@ def execute_new(tapes, device, execute_fn, gradient_fn, gradient_kwargs, _n=1, m
         list[list[float]]: A nested list of tape results. Each element in
         the returned list corresponds in order to the provided tapes.
     """
-    # Set the trainable parameters
     if _n == 1:
         for tape in tapes:
-            params = tape.get_parameters(trainable_only=False)
-            tape.trainable_params = qml.math.get_trainable_indices(params)
+            tape.update_trainable_parameters()
 
     parameters = tuple(list(t.get_parameters()) for t in tapes)
 
@@ -442,11 +438,7 @@ def _execute_bwd_new(
         with qml.tape.Unwrap(*new_tapes):
             res, _ = execute_fn(new_tapes, **gradient_kwargs)
 
-        if device.shot_vector:
-            res = _to_jax_shot_vector(res)
-        else:
-            res = _to_jax(res)
-
+        res = _to_jax_shot_vector(res) if device.shot_vector else _to_jax(res)
         return res
 
     @execute_wrapper.defjvp

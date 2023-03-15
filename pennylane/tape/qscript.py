@@ -402,17 +402,17 @@ class QuantumScript:
         self._par_info = []
         for idx, op in enumerate(self.operations):
             self._par_info.extend(
-                {"op": op, "op_idx": idx, "p_idx": i} for i, d in enumerate(op.data)
+                {"op": op, "op_idx": idx, "p_idx": i} for i, _ in enumerate(op.data)
             )
 
         for idx, m in enumerate(self.measurements):
             if m.obs is not None:
                 self._par_info.extend(
-                    {"op": m.obs, "op_idx": idx, "p_idx": i} for i, d in enumerate(m.obs.data)
+                    {"op": m.obs, "op_idx": idx, "p_idx": i} for i, _ in enumerate(m.obs.data)
                 )
 
     def _update_trainable_params(self):
-        """Set the trainable parameters
+        """Set all parameters to be trainable by default.
 
         Sets:
             _trainable_params (list[int]): Script parameter indices of trainable parameters
@@ -699,6 +699,21 @@ class QuantumScript:
             op._check_batching(op.data)
         self._update_batch_size()
         self._update_output_dim()
+
+    def update_trainable_parameters(self):
+        """Sets the trainable parameters of a tape according to math.requires_grad."""
+        total = 0
+        trainable = []
+        for op in self.operations:
+            trainable += [i + total for i, d in enumerate(op.data) if qml.math.requires_grad(d)]
+            total += len(op.data)
+        for m in self.measurements:
+            if m.obs is not None:
+                trainable += [
+                    i + total for i, d in enumerate(m.obs.data) if qml.math.requires_grad(d)
+                ]
+                total += len(m.obs.data)
+        self._trainable_params = trainable
 
     # ========================================================
     # MEASUREMENT SHAPE

@@ -401,6 +401,20 @@ class TestUpdate:
         qs = QuantumScript(ops, m)
         assert qs.output_dim == output_dim * factor
 
+    def test_update_trainable_parameters(self):
+        """Test update_trainable_parameters works as expected."""
+        qs = QuantumScript(
+            [
+                qml.RX(1.1, 0),
+                qml.RY(np.array(1.1), 1),
+                qml.Rot(0.1, np.array(0.2), 0.3, 0),
+            ],
+            [qml.expval(qml.Hermitian(np.array([[1, 0], [0, -1]]), 0))],
+        )
+        assert qs.trainable_params == list(range(6))
+        qs.update_trainable_parameters()
+        assert qs.trainable_params == [1, 3, 5]
+
 
 class TestIteration:
     """Test the capabilities related to iterating over quantum script."""

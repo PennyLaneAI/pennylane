@@ -79,10 +79,11 @@ def execute(tapes, device, execute_fn, gradient_fn, gradient_kwargs, _n=1, max_d
         for tape in tapes:
             # set the jitted parameters
             params = tape.get_parameters(trainable_only=False)
-            trainable_params = set()
-            for idx, p in enumerate(params):
-                if isinstance(p, jax.core.Tracer) or qml.math.requires_grad(p):
-                    trainable_params.add(idx)
+            trainable_params = {
+                idx
+                for idx, p in enumerate(params)
+                if isinstance(p, jax.core.Tracer) or qml.math.requires_grad(p)
+            }
             tape.trainable_params = trainable_params
 
     parameters = tuple(list(t.get_parameters()) for t in tapes)

@@ -38,10 +38,11 @@ def _flatten_nested_list(x):
     """
     Recursively flatten the list
     """
-    if not isinstance(x, (tuple, list)):
-        return [x]
-
-    return reduce(lambda a, y: a + _flatten_nested_list(y), x, [])
+    return (
+        reduce(lambda a, y: a + _flatten_nested_list(y), x, [])
+        if isinstance(x, (tuple, list))
+        else [x]
+    )
 
 
 def execute(tapes, device, execute_fn, gradient_fn, gradient_kwargs, _n=1, max_diff=2, mode=None):
@@ -261,7 +262,7 @@ def execute(tapes, device, execute_fn, gradient_fn, gradient_kwargs, _n=1, max_d
             vjps = iter(vjps)
             vjps = [next(vjps) if x in trainable else None for x in range(len(all_params))]
 
-            variables = tfkwargs.get("variables", None)
+            variables = tfkwargs.get("variables")
             return (vjps, variables) if variables is not None else vjps
 
         return res, grad_fn
@@ -520,7 +521,7 @@ def _execute_new(
             vjps = iter(vjps)
             vjps = [next(vjps) if x in trainable else None for x in range(len(all_params))]
 
-            variables = tfkwargs.get("variables", None)
+            variables = tfkwargs.get("variables")
             return (vjps, variables) if variables is not None else vjps
 
         return res, grad_fn

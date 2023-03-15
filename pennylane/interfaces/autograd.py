@@ -15,7 +15,7 @@
 This module contains functions for adding the Autograd interface
 to a PennyLane Device class.
 """
-# pylint: disable=too-many-arguments
+# pylint: disable=too-many-arguments,no-member
 from collections.abc import Sequence
 
 import autograd
@@ -66,14 +66,10 @@ def execute(tapes, device, execute_fn, gradient_fn, gradient_kwargs, _n=1, max_d
             mode=mode,
         )
 
-    # pylint: disable=unused-argument
     for tape in tapes:
-        # set the trainable parameters
-        params = tape.get_parameters(trainable_only=False)
-        tape.trainable_params = qml.math.get_trainable_indices(params)
+        tape.update_trainable_parameters()
 
     # pylint misidentifies autograd.builtins as a dict
-    # pylint: disable=no-member
     parameters = autograd.builtins.tuple(
         [autograd.builtins.list(t.get_parameters()) for t in tapes]
     )
@@ -287,7 +283,7 @@ autograd.extend.defvjp(_execute, vjp, argnums=[0])
 
 def _execute_new(
     tapes, device, execute_fn, gradient_fn, gradient_kwargs, _n=1, max_diff=2, mode=None
-):
+):  # pylint: disable=unused-argument
     """Execute a batch of tapes with Autograd parameters on a device.
 
     Args:
@@ -315,14 +311,10 @@ def _execute_new(
         list[list[float]]: A nested list of tape results. Each element in
         the returned list corresponds in order to the provided tapes.
     """
-    # pylint: disable=unused-argument
     for tape in tapes:
-        # set the trainable parameters
-        params = tape.get_parameters(trainable_only=False)
-        tape.trainable_params = qml.math.get_trainable_indices(params)
+        tape.update_trainable_parameters()
 
     # pylint misidentifies autograd.builtins as a dict
-    # pylint: disable=no-member
     parameters = autograd.builtins.tuple(
         [autograd.builtins.list(t.get_parameters()) for t in tapes]
     )
