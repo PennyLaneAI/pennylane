@@ -417,7 +417,7 @@ def amplitude_and_phase(trig_fn, amp, phase):
 # pylint:disable = too-few-public-methods
 class AmplitudeAndPhase:
     """Class storing combined amplitude and phase callable if either or both
-    of amplitude nor phase are callable."""
+    of amplitude or phase are callable."""
 
     def __init__(self, trig_fn, amp, phase):
         self.amp_is_callable = callable(amp)
