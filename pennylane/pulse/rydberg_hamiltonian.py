@@ -254,17 +254,17 @@ def rydberg_drive(amplitude, phase, detuning, wires):
 
 
 def rydberg_local_shift(detuning, pattern, wires):
-    r"""Returns a :class:`ParametrizedHamiltonian` representing the action of a local driving laser
+    r"""Returns a :class:`ParametrizedHamiltonian` representing the action of a local shifting laser
     with a given temporal and spatial detuning.
 
     .. math::
         -\delta(t) \sum_{i \in \text{wires}} h_i \sigma_i^z
 
     where :math:`\delta` is the temporal detuning, :math:`h_i` is the spatial detuning, or site coefficient
-    between 0 and 1, of the laser, :math:`i` correspond to the wire index, and :math:`\sigma^\z` is the Pauli
-    Z matrix. The unit of time for the evolution of this local Rydberg drive term is :math:`\mu \text{s}`. This
-    local drive term can be combined with an interaction and global drive term to create a Hamiltonian describing
-    a driven Rydberg atom system. Multiple driving terms can be combined by summing them (see example).
+    between 0 and 1, of the laser, :math:`i` correspond to the wire index, and :math:`\sigma^z` is the Pauli
+    Z matrix. The unit of time for the evolution of this local Rydberg shift term is :math:`\mu \text{s}`. This
+    local shift term can be combined with an interaction and global drive term to create a Hamiltonian describing
+    a driven Rydberg atom system. Multiple shifting terms can be combined by summing them (see example).
 
     Args:
         detuning (Union[float, Callable]): float or callable returning the detuning (in MHz) of a
