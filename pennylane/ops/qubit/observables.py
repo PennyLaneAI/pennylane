@@ -23,7 +23,7 @@ import numpy as np
 from scipy.sparse import csr_matrix
 
 import pennylane as qml
-from pennylane.operation import AllWires, AnyWires, Observable
+from pennylane.operation import AnyWires, Observable
 from pennylane.wires import Wires
 
 from .matrix_ops import QubitUnitary
@@ -209,13 +209,9 @@ class SparseHamiltonian(Observable):
         ``SparseHamiltonian`` observables can only be used to return expectation values.
         Variances and samples are not supported.
 
-    .. note::
-
-        Note that the ``SparseHamiltonian`` observable should not be used with a subset of wires.
-
     **Details:**
 
-    * Number of wires: All
+    * Number of wires: Any
     * Number of parameters: 1
     * Gradient recipe: None
 
@@ -242,7 +238,7 @@ class SparseHamiltonian(Observable):
     >>> Hmat = H.sparse_matrix()
     >>> H_sparse = qml.SparseHamiltonian(Hmat, wires)
     """
-    num_wires = AllWires
+    num_wires = AnyWires
     num_params = 1
     """int: Number of trainable parameters that the operator depends on."""
 
