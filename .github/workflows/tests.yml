@@ -260,6 +260,7 @@ jobs:
           - { loc: "tests/returntypes/finitediff", suite: 'finitediff'}
           - { loc: "tests/returntypes/core", suite: 'core'}
           - { loc: "tests/returntypes/optimizers", suite: 'optimizers'}
+          - { loc: "tests/returntypes/qnn", suite: 'qnn'
 
     steps:
       - name: Cancel Previous Runs
