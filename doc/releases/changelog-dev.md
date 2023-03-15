@@ -15,7 +15,10 @@
     the Hamiltonian of the interaction of all the Rydberg atoms.
   * A new user-facing `rydberg_drive` function is added, which returns a `RydbergHamiltonian` containing
     the Hamiltonian of the interaction between a driving laser field and a group of atoms.
+  * A new user-facing `rydberg_local_drive` function is added, which returns a `RydbergHamiltonian` containing
+    the Hamiltonian of the interaction between a local subset of atoms and a driving laser.
   [(#3749)](https://github.com/PennyLaneAI/pennylane/pull/3749)
+  [(#3911)](https://github.com/PennyLaneAI/pennylane/pull/3911)
 
 * Added `Operation.__truediv__` dunder method to be able to divide operators.
   [(#3749)](https://github.com/PennyLaneAI/pennylane/pull/3749)
