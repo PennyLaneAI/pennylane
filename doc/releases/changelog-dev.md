@@ -102,8 +102,7 @@
 <h3>Bug fixes</h3>
 
 * Fixed bug where the coefficients where not ordered correctly when summing a `ParametrizedHamiltonian`
-  with other operators. Fixed a bug introduced by this fix where `Hamiltonian` and `ParametrizedHamiltonian` 
-  could not be added together.
+  with other operators.
   [(#3749)](https://github.com/PennyLaneAI/pennylane/pull/3749)
   [(#3902)](https://github.com/PennyLaneAI/pennylane/pull/3902)
 
