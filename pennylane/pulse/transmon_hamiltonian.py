@@ -144,7 +144,7 @@ def transmon_interaction(
     return TransmonHamiltonian(coeffs, observables, omega, delta, g, connections=connections)
 
 
-def transmon_drive(amplitude, phase, detuning, wires):
+def transmon_drive(amplitude, phase, wires):
     r"""Returns a :class:`ParametrizedHamiltonian` representing the action of a driving laser
     field with the given rabi frequency, detuning and phase acting on the given wires
 
@@ -247,23 +247,59 @@ def transmon_drive(amplitude, phase, detuning, wires):
     if isinstance(wires, int):
         wires = [wires]
 
-    # We compute the `coeffs` and `observables` of the laser field
+    # We compute the `coeffs` and `ops` of the laser field
     coeffs = [
-        amplitude_and_phase(qml.math.cos, amplitude, phase),
-        amplitude_and_phase(qml.math.sin, amplitude, phase),
-        detuning,
+        _amplitude_and_phase(1., amplitude, phase),
+        _amplitude_and_phase(-1., amplitude, phase),
     ]
 
-    drive_terms_1 = sum(qml.PauliX(wire) for wire in wires)
-    drive_terms_2 = sum(-qml.PauliY(wire) for wire in wires)
-    drive_terms_3 = sum(qml.PauliZ(wire) for wire in wires)
+    drive_terms_1 = sum(a(wire) for wire in wires)
+    drive_terms_2 = sum(ad(wire) for wire in wires)
 
-    observables = [drive_terms_1, drive_terms_2, drive_terms_3]
+    ops = [drive_terms_1, drive_terms_2]
 
     # We convert the pulse data into a list of ``TransmonPulse`` objects
-    pulses = [TransmonPulse(amplitude, phase, detuning, wires)]
+    pulses = [TransmonPulse(amplitude, phase, wires)]
 
-    return TransmonHamiltonian(coeffs, observables, pulses=pulses)
+    return TransmonHamiltonian(coeffs, ops, pulses=pulses)
+
+def _amplitude_and_phase(sign, amp, phase):
+    """Wrapper function for combining amplitude and phase into a single callable
+    (or constant if neither amplitude nor phase are callable)."""
+    if not callable(amp) and not callable(phase):
+        return amp * qml.math.exp(sign*1j*phase)
+    return AmplitudeAndPhase(sign, amp, phase)
+
+
+# pylint:disable = too-few-public-methods
+class AmplitudeAndPhase:
+    """Class storing combined amplitude and phase callable if either or both
+    of amplitude nor phase are callable."""
+
+    def __init__(self, sign, amp, phase):
+        self.amp_is_callable = callable(amp)
+        self.phase_is_callable = callable(phase)
+
+        def callable_amp_and_phase(params, t):
+            return amp(params[0], t) * qml.math.exp(sign*1j*phase(params[1], t))
+
+        def callable_amp(params, t):
+            return amp(params, t) * qml.math.exp(sign*1j*phase)
+
+        def callable_phase(params, t):
+            return amp * qml.math.exp(sign*1j*phase(params[1], t))
+
+        if self.amp_is_callable and self.phase_is_callable:
+            self.func = callable_amp_and_phase
+
+        elif self.amp_is_callable:
+            self.func = callable_amp
+
+        elif self.phase_is_callable:
+            self.func = callable_phase
+
+    def __call__(self, params, t):
+        return self.func(params, t)
 
 
 class TransmonHamiltonian(ParametrizedHamiltonian):
@@ -415,7 +451,6 @@ class TransmonPulse:
 
     amplitude: Union[float, Callable]
     phase: Union[float, Callable]
-    detuning: Union[float, Callable]
     wires: List[Wires]
 
     def __post_init__(self):
@@ -425,48 +460,8 @@ class TransmonPulse:
         return (
             self.amplitude == other.amplitude
             and self.phase == other.phase
-            and self.detuning == other.detuning
             and self.wires == other.wires
         )
-
-
-def amplitude_and_phase(trig_fn, amp, phase):
-    """Wrapper function for combining amplitude and phase into a single callable
-    (or constant if neither amplitude nor phase are callable)."""
-    if not callable(amp) and not callable(phase):
-        return amp * trig_fn(phase)
-    return AmplitudeAndPhase(trig_fn, amp, phase)
-
-
-# pylint:disable = too-few-public-methods
-class AmplitudeAndPhase:
-    """Class storing combined amplitude and phase callable if either or both
-    of amplitude nor phase are callable."""
-
-    def __init__(self, trig_fn, amp, phase):
-        self.amp_is_callable = callable(amp)
-        self.phase_is_callable = callable(phase)
-
-        def callable_amp_and_phase(params, t):
-            return amp(params[0], t) * trig_fn(phase(params[1], t))
-
-        def callable_amp(params, t):
-            return amp(params, t) * trig_fn(phase)
-
-        def callable_phase(params, t):
-            return amp * trig_fn(phase(params, t))
-
-        if self.amp_is_callable and self.phase_is_callable:
-            self.func = callable_amp_and_phase
-
-        elif self.amp_is_callable:
-            self.func = callable_amp
-
-        elif self.phase_is_callable:
-            self.func = callable_phase
-
-    def __call__(self, params, t):
-        return self.func(params, t)
 
 
 def _transmon_reorder_parameters(params, coeffs_parametrized):

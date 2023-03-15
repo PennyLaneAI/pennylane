@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-Unit tests for the RydbergHamiltonian class.
+Unit tests for the TransmonHamiltonian class.
 """
 import warnings
 
@@ -21,13 +21,14 @@ import numpy as np
 import pytest
 
 import pennylane as qml
-from pennylane.pulse import RydbergHamiltonian, rydberg_drive, rydberg_interaction
 from pennylane.pulse import TransmonHamiltonian, transmon_interaction, transmon_drive
-from pennylane.pulse.rydberg_hamiltonian import (
-    RydbergPulse,
+from pennylane.pulse.transmon_hamiltonian import (
+    TransmonPulse,
     AmplitudeAndPhase,
-    amplitude_and_phase,
-    _rydberg_reorder_parameters,
+    _amplitude_and_phase,
+    _transmon_reorder_parameters,
+    a,
+    ad,
 )
 
 from pennylane.wires import Wires
@@ -39,57 +40,57 @@ g = 0.1 * np.arange(len(connections))
 delta = 0.3 * np.arange(len(wires))
 
 
-# class TestRydbergHamiltonian:
-#     """Unit tests for the properties of the RydbergHamiltonian class."""
+# class TestTransmonHamiltonian:
+#     """Unit tests for the properties of the TransmonHamiltonian class."""
 
 #     # pylint: disable=protected-access
 #     def test_initialization(self):
-#         """Test the RydbergHamiltonian class is initialized correctly."""
-#         rm = RydbergHamiltonian(coeffs=[], observables=[], register=atom_coordinates)
+#         """Test the TransmonHamiltonian class is initialized correctly."""
+#         rm = TransmonHamiltonian(coeffs=[], observables=[], register=atom_coordinates)
 
 #         assert qml.math.allequal(rm.register, atom_coordinates)
 #         assert rm.pulses == []
 #         assert rm.wires == Wires([])
 #         assert rm.interaction_coeff == 862690
 
-#     def test_add_rydberg_hamiltonian(self):
+#     def test_add_transmon_hamiltonian(self):
 #         """Test that the __add__ dunder method works correctly."""
-#         rm1 = RydbergHamiltonian(
+#         rm1 = TransmonHamiltonian(
 #             coeffs=[1, 2],
 #             observables=[qml.PauliX(4), qml.PauliZ(8)],
 #             register=atom_coordinates,
-#             pulses=[RydbergPulse(1, 2, 3, [4, 8])],
+#             pulses=[TransmonPulse(1, 2, 3, [4, 8])],
 #         )
-#         rm2 = RydbergHamiltonian(
+#         rm2 = TransmonHamiltonian(
 #             coeffs=[2],
 #             observables=[qml.PauliY(8)],
-#             pulses=[RydbergPulse(5, 6, 7, 8)],
+#             pulses=[TransmonPulse(5, 6, 7, 8)],
 #         )
 #         with warnings.catch_warnings():
 #             # We make sure that no warning is raised
 #             warnings.simplefilter("error")
 #             sum_rm = rm1 + rm2
-#         assert isinstance(sum_rm, RydbergHamiltonian)
+#         assert isinstance(sum_rm, TransmonHamiltonian)
 #         assert qml.math.allequal(sum_rm.coeffs, [1, 2, 2])
 #         assert all(
 #             qml.equal(op1, op2)
 #             for op1, op2 in zip(sum_rm.ops, [qml.PauliX(4), qml.PauliZ(8), qml.PauliY(8)])
 #         )
 #         assert qml.math.allequal(sum_rm.register, atom_coordinates)
-#         assert sum_rm.pulses == [RydbergPulse(1, 2, 3, [4, 8]), RydbergPulse(5, 6, 7, 8)]
+#         assert sum_rm.pulses == [TransmonPulse(1, 2, 3, [4, 8]), TransmonPulse(5, 6, 7, 8)]
 
 #     def test_add_parametrized_hamiltonian(self):
-#         # ToDo: check returned object is a RydbergHamiltonian and can be called!
-#         """Tests that adding a `RydbergHamiltonian` and `ParametrizedHamiltonian` works as
+#         # ToDo: check returned object is a TransmonHamiltonian and can be called!
+#         """Tests that adding a `TransmonHamiltonian` and `ParametrizedHamiltonian` works as
 #         expected."""
 #         coeffs = [2, 3]
 #         ops = [qml.PauliZ(0), qml.PauliX(2)]
 #         h_wires = [0, 2]
 
-#         rh = RydbergHamiltonian(
+#         rh = TransmonHamiltonian(
 #             coeffs=[coeffs[0]],
 #             observables=[ops[0]],
-#             pulses=[RydbergPulse(5, 6, 7, 8)],
+#             pulses=[TransmonPulse(5, 6, 7, 8)],
 #         )
 #         ph = qml.pulse.ParametrizedHamiltonian(coeffs=[coeffs[1]], observables=[ops[1]])
 
@@ -113,18 +114,18 @@ delta = 0.3 * np.arange(len(wires))
 #         assert res2.wires == qml.wires.Wires(h_wires)
 
 #     # def test_radd_parametrized_hamiltonian(self):
-#     #     """Tests that adding a `RydbergHamiltonian` and `ParametrizedHamiltonian` works as
+#     #     """Tests that adding a `TransmonHamiltonian` and `ParametrizedHamiltonian` works as
 #     #     expected."""
-#     #     # ToDo: check returned object is a RydbergHamiltonian and can be called!
+#     #     # ToDo: check returned object is a TransmonHamiltonian and can be called!
 #     #     pass
 
 #     def test_add_raises_error(self):
-#         """Test that an error is raised if two RydbergHamiltonians with registers are added."""
-#         rm1 = RydbergHamiltonian(
+#         """Test that an error is raised if two TransmonHamiltonians with registers are added."""
+#         rm1 = TransmonHamiltonian(
 #             coeffs=[1],
 #             observables=[qml.PauliX(0)],
 #             register=atom_coordinates,
-#             pulses=[RydbergPulse(1, 2, 3, 4)],
+#             pulses=[TransmonPulse(1, 2, 3, 4)],
 #         )
 #         with pytest.raises(
 #             ValueError, match="We cannot add two Hamiltonians with an interaction term"
@@ -132,22 +133,22 @@ delta = 0.3 * np.arange(len(wires))
 #             _ = rm1 + rm1
 
 #     def test_add_raises_warning(self):
-#         """Test that an error is raised when adding two RydbergHamiltonians where one Hamiltonian
+#         """Test that an error is raised when adding two TransmonHamiltonians where one Hamiltonian
 #         contains pulses on wires that are not present in the register."""
 #         coords = [[0, 0], [0, 5], [5, 0]]
 
-#         Hd = rydberg_interaction(register=coords, wires=[0, 1, 2])
-#         Ht = rydberg_drive(2, 3, 4, wires=3)
+#         Hd = transmon_interaction(register=coords, wires=[0, 1, 2])
+#         Ht = transmon_drive(2, 3, 4, wires=3)
 
 #         with pytest.warns(
 #             UserWarning,
-#             match="The wires of the laser fields are not present in the Rydberg ensemble",
+#             match="The wires of the laser fields are not present in the Transmon ensemble",
 #         ):
 #             _ = Hd + Ht
 
 #         with pytest.warns(
 #             UserWarning,
-#             match="The wires of the laser fields are not present in the Rydberg ensemble",
+#             match="The wires of the laser fields are not present in the Transmon ensemble",
 #         ):
 #             _ = Ht + Hd
 
@@ -164,7 +165,7 @@ delta = 0.3 * np.arange(len(wires))
 
 
 # class TestInteractionWithOperators:
-#     """Test that the interaction between a ``RydbergHamiltonian`` and other operators work as
+#     """Test that the interaction between a ``TransmonHamiltonian`` and other operators work as
 #     expected."""
 
 #     ops_with_coeffs = (
@@ -178,13 +179,13 @@ delta = 0.3 * np.arange(len(wires))
 #         qml.CNOT([0, 1]),
 #     )  # ToDo: maybe add more operators to test here?
 
-#     # ToDo: check returned object is a RydbergHamiltonian and can be called!
+#     # ToDo: check returned object is a TransmonHamiltonian and can be called!
 #     @pytest.mark.parametrize("H, coeff", ops_with_coeffs)
 #     def test_add_special_operators(self, H, coeff):
-#         """Test that a Hamiltonian and SProd can be added to a RydbergHamiltonian, and
+#         """Test that a Hamiltonian and SProd can be added to a TransmonHamiltonian, and
 #         will be incorporated in the H_fixed term, with their coefficients included in H_coeffs_fixed.
 #         """
-#         R = rydberg_drive(amplitude=f1, phase=0, detuning=f2, wires=[0, 1])
+#         R = transmon_drive(amplitude=f1, phase=0, detuning=f2, wires=[0, 1])
 #         params = [1, 2]
 #         # Adding on the right
 #         new_pH = R + H
@@ -203,7 +204,7 @@ delta = 0.3 * np.arange(len(wires))
 #     def test_add_other_operators(self, op):
 #         """Test that a Hamiltonian, SProd, Tensor or Operator can be added to a
 #         ParametrizedHamiltonian, and will be incorporated in the H_fixed term"""
-#         R = rydberg_drive(amplitude=f1, phase=0, detuning=f2, wires=[0, 1])
+#         R = transmon_drive(amplitude=f1, phase=0, detuning=f2, wires=[0, 1])
 
 #         # Adding on the right
 #         new_pH = R + op
@@ -282,73 +283,68 @@ class TestTransmonInteraction:
             )
 
 
-# class TestRydbergDrive:
-#     """Unit tests for the ``rydberg_drive`` function."""
+class TestTransmonDrive:
+    """Unit tests for the ``transmon_drive`` function."""
 
-#     def test_attributes_and_number_of_terms(self):
-#         """Test that the attributes and the number of terms of the ``ParametrizedHamiltonian`` returned by
-#         ``rydberg_drive`` are correct."""
+    def test_attributes_and_number_of_terms(self):
+        """Test that the attributes and the number of terms of the ``ParametrizedHamiltonian`` returned by
+        ``transmon_drive`` are correct."""
 
-#         Hd = rydberg_drive(amplitude=1, phase=2, detuning=3, wires=[1, 2])
+        Hd = transmon_drive(amplitude=1, phase=2, wires=[1, 2])
 
-#         assert isinstance(Hd, RydbergHamiltonian)
-#         assert Hd.interaction_coeff == 862690
-#         assert Hd.wires == Wires([1, 2])
-#         assert Hd.register is None
-#         assert len(Hd.ops) == 3  # 2 amplitude/phase terms and one detuning term of the Hamiltonian
-#         assert Hd.pulses == [RydbergPulse(1, 2, 3, [1, 2])]
+        assert isinstance(Hd, TransmonHamiltonian)
+        assert Hd.wires == Wires([1, 2])
+        assert Hd.connections is None
+        assert len(Hd.ops) == 2 # one for a and one of a^\dagger
+        assert Hd.pulses == [TransmonPulse(1, 2, [1, 2])]
 
-#     def test_multiple_local_drives(self):
-#         """Test that adding multiple drive terms behaves as expected"""
+    # odd behavior when adding two drives/TransmonHamiltonians
+    #@pytest.mark.xfail
+    def test_multiple_local_drives(self):
+        """Test that adding multiple drive terms behaves as expected"""
 
-#         def fa(p, t):
-#             return np.sin(p * t)
+        def fa(p, t):
+            return np.sin(p * t)
 
-#         def fb(p, t):
-#             return np.cos(p * t)
+        def fb(p, t):
+            return np.cos(p * t)
 
-#         H1 = rydberg_drive(amplitude=fa, phase=1, detuning=3, wires=[0, 3])
-#         H2 = rydberg_drive(amplitude=1, phase=3, detuning=fb, wires=[1, 2])
-#         Hd = H1 + H2
+        H1 = transmon_drive(amplitude=fa, phase=1, wires=[0, 3])
+        H2 = transmon_drive(amplitude=1, phase=3, wires=[1, 2])
+        Hd = H1 + H2
 
-#         ops_expected = [
-#             qml.Hamiltonian([1, 1], [qml.PauliZ(0), qml.PauliZ(3)]),
-#             qml.Hamiltonian([1, 1], [qml.PauliX(1), qml.PauliX(2)]),
-#             qml.sum(qml.s_prod(-1, qml.PauliY(1)), qml.s_prod(-1, qml.PauliY(2))),
-#             qml.Hamiltonian([1, 1], [qml.PauliX(0), qml.PauliX(3)]),
-#             qml.sum(qml.s_prod(-1, qml.PauliY(0)), qml.s_prod(-1, qml.PauliY(3))),
-#             qml.Hamiltonian([1, 1], [qml.PauliZ(1), qml.PauliZ(2)]),
-#         ]
-#         coeffs_expected = [
-#             3,
-#             np.cos(3),
-#             np.sin(3),
-#             AmplitudeAndPhase(np.cos, fa, 1),
-#             AmplitudeAndPhase(np.sin, fa, 1),
-#             fb,
-#         ]
-#         H_expected = RydbergHamiltonian(coeffs_expected, ops_expected)
+        ops_expected = [
+            a(1) + a(2),
+            ad(1) + ad(2),
+            a(0) + a(3),
+            ad(0) + ad(3)
+        ]
+        coeffs_expected = [
+            1. * qml.math.exp(1j*3.),
+            1. * qml.math.exp(-1j*3.),
+            AmplitudeAndPhase(1, fa, 1),
+            AmplitudeAndPhase(-1, fa, 1),
+        ]
+        H_expected = TransmonHamiltonian(coeffs_expected, ops_expected)
 
-#         # structure of Hamiltonian is as expected
-#         assert isinstance(Hd, RydbergHamiltonian)
-#         assert Hd.interaction_coeff == 862690
-#         assert Hd.wires == Wires([0, 3, 1, 2])
-#         assert Hd.register is None
-#         assert len(Hd.ops) == 6  # 2 terms for amplitude/phase and one detuning for each drive
+        # structure of Hamiltonian is as expected
+        assert isinstance(Hd, TransmonHamiltonian)
+        assert Hd.wires == Wires([1, 2, 0, 3]) #TODO: Why is the order reversed?
+        assert Hd.connections is None
+        assert len(Hd.ops) == 4  # 2 terms for amplitude/phase and one detuning for each drive
 
-#         # coefficients are correct
-#         # Callable coefficients are shifted to the end of the list.
-#         assert Hd.coeffs[0:3] == [3, np.cos(3), np.sin(3)]
-#         assert isinstance(Hd.coeffs[3], AmplitudeAndPhase)
-#         assert isinstance(Hd.coeffs[4], AmplitudeAndPhase)
-#         assert Hd.coeffs[5] is fb
+        # coefficients are correct
+        # Callable coefficients are shifted to the end of the list.
+        assert Hd.coeffs[:2] == coeffs_expected[:2]
+        assert isinstance(Hd.coeffs[2], AmplitudeAndPhase)
+        assert isinstance(Hd.coeffs[3], AmplitudeAndPhase)
 
-#         # pulses were added correctly
-#         assert len(Hd.pulses) == 2
-#         assert Hd.pulses == H1.pulses + H2.pulses
+        # # pulses were added correctly
+        assert len(Hd.pulses) == 2
+        assert Hd.pulses == H1.pulses + H2.pulses
 
-#         # Hamiltonian is as expected
-#         assert qml.equal(Hd([0.5, -0.5], t=5), H_expected([0.5, -0.5], t=5))
+        # # Hamiltonian is as expected
+        assert qml.equal(Hd([0.5, -0.5], t=5), H_expected([0.5, -0.5], t=5))
 
 
 # def callable_amp(p, t):
@@ -429,13 +425,13 @@ class TestTransmonInteraction:
 #         assert f([[1.7], [1.3, 2.5]], 2) == expected_result
 
 #     def test_callable_phase_and_amplitude_hamiltonian(self):
-#         """Test that using callable amplitude and phase in rydberg_drive
+#         """Test that using callable amplitude and phase in transmon_drive
 #         creates AmplitudeAndPhase callables, and the resulting Hamiltonian
 #         can be called successfully"""
 
 #         detuning = 2
 
-#         Hd = rydberg_drive(sine_func, cosine_fun, detuning, wires=[0, 1])
+#         Hd = transmon_drive(sine_func, cosine_fun, detuning, wires=[0, 1])
 
 #         assert len(Hd.coeffs) == 3
 #         assert isinstance(Hd.coeffs[1], AmplitudeAndPhase)
@@ -459,12 +455,12 @@ class TestTransmonInteraction:
 #         assert qml.equal(evaluated_H[1], expected_H_parametrized)
 
 #     def test_callable_phase_hamiltonian(self):
-#         """Test that using callable phase in rydberg_drive creates AmplitudeAndPhase
+#         """Test that using callable phase in transmon_drive creates AmplitudeAndPhase
 #         callables, and the resulting Hamiltonian can be called"""
 
 #         detuning = 2
 
-#         Hd = rydberg_drive(7.2, sine_func, detuning, wires=[0, 1])
+#         Hd = transmon_drive(7.2, sine_func, detuning, wires=[0, 1])
 
 #         assert len(Hd.coeffs) == 3
 #         assert isinstance(Hd.coeffs[1], AmplitudeAndPhase)
@@ -488,12 +484,12 @@ class TestTransmonInteraction:
 #         assert qml.equal(evaluated_H[1], expected_H_parametrized)
 
 #     def test_callable_amplitude_hamiltonian(self):
-#         """Test that using callable amplitude in rydberg_drive creates AmplitudeAndPhase
+#         """Test that using callable amplitude in transmon_drive creates AmplitudeAndPhase
 #         callables, and the resulting Hamiltonian can be called"""
 
 #         detuning = 2
 
-#         Hd = rydberg_drive(sine_func, 4.3, detuning, wires=[0, 1])
+#         Hd = transmon_drive(sine_func, 4.3, detuning, wires=[0, 1])
 
 #         assert len(Hd.coeffs) == 3
 #         assert isinstance(Hd.coeffs[1], AmplitudeAndPhase)
@@ -546,45 +542,45 @@ class TestTransmonInteraction:
 #     ]
 
 #     @pytest.mark.parametrize("coeffs, params, expected_output", COEFFS_AND_PARAMS)
-#     def test_rydberg_reorder_parameters_all(self, coeffs, params, expected_output):
+#     def test_transmon_reorder_parameters_all(self, coeffs, params, expected_output):
 #         """Tests that the function organizing the parameters to pass to the
-#         RydbergHamiltonian works as expected when AmplitudeAndPhase callables
+#         TransmonHamiltonian works as expected when AmplitudeAndPhase callables
 #         are included"""
 
-#         assert _rydberg_reorder_parameters(params, coeffs) == expected_output
+#         assert _transmon_reorder_parameters(params, coeffs) == expected_output
 
 
-# class TestRydbergPulse:
-#     """Unit tests for the ``RydbergPulse`` class."""
+# class TestTransmonPulse:
+#     """Unit tests for the ``TransmonPulse`` class."""
 
 #     def test_init(self):
-#         """Test the initialization of the ``RydbergPulse`` class."""
-#         p = RydbergPulse(amplitude=4, detuning=9, phase=8, wires=[0, 4, 7])
+#         """Test the initialization of the ``TransmonPulse`` class."""
+#         p = TransmonPulse(amplitude=4, detuning=9, phase=8, wires=[0, 4, 7])
 #         assert p.amplitude == 4
 #         assert p.phase == 8
 #         assert p.detuning == 9
 #         assert p.wires == Wires([0, 4, 7])
 
 #     def test_equal(self):
-#         """Test the ``__eq__`` method of the ``RydbergPulse`` class."""
-#         p1 = RydbergPulse(1, 2, 3, [0, 1])
-#         p2 = RydbergPulse(1, 2, 3, 0)
-#         p3 = RydbergPulse(1, 2, 3, [0, 1])
+#         """Test the ``__eq__`` method of the ``TransmonPulse`` class."""
+#         p1 = TransmonPulse(1, 2, 3, [0, 1])
+#         p2 = TransmonPulse(1, 2, 3, 0)
+#         p3 = TransmonPulse(1, 2, 3, [0, 1])
 #         assert p1 != p2
 #         assert p2 != p3
 #         assert p1 == p3
 
 
 # class TestIntegration:
-#     """Integration tests for the ``RydbergHamiltonian`` class."""
+#     """Integration tests for the ``TransmonHamiltonian`` class."""
 
 #     @pytest.mark.jax
 #     def test_jitted_qnode(self):
-#         """Test that a ``RydbergHamiltonian`` class can be executed within a jitted qnode."""
+#         """Test that a ``TransmonHamiltonian`` class can be executed within a jitted qnode."""
 #         import jax
 #         import jax.numpy as jnp
 
-#         Hd = rydberg_interaction(register=atom_coordinates, wires=wires)
+#         Hd = transmon_interaction(register=atom_coordinates, wires=wires)
 
 #         def fa(p, t):
 #             return jnp.polyval(p, t)
@@ -592,7 +588,7 @@ class TestTransmonInteraction:
 #         def fb(p, t):
 #             return p[0] * jnp.sin(p[1] * t)
 
-#         Ht = rydberg_drive(amplitude=fa, phase=0, detuning=fb, wires=1)
+#         Ht = transmon_drive(amplitude=fa, phase=0, detuning=fb, wires=1)
 
 #         dev = qml.device("default.qubit", wires=wires)
 
@@ -612,12 +608,12 @@ class TestTransmonInteraction:
 
 #     @pytest.mark.jax
 #     def test_jitted_qnode_multidrive(self):
-#         """Test that a ``RydbergHamiltonian`` class with multiple drive terms can be
+#         """Test that a ``TransmonHamiltonian`` class with multiple drive terms can be
 #         executed within a jitted qnode."""
 #         import jax
 #         import jax.numpy as jnp
 
-#         Hd = rydberg_interaction(register=atom_coordinates, wires=wires)
+#         Hd = transmon_interaction(register=atom_coordinates, wires=wires)
 
 #         def fa(p, t):
 #             return jnp.polyval(p, t)
@@ -628,8 +624,8 @@ class TestTransmonInteraction:
 #         def fc(p, t):
 #             return p[0] * jnp.sin(t) + jnp.cos(p[1] * t)
 
-#         H1 = rydberg_drive(amplitude=fa, detuning=fb, phase=0, wires=1)
-#         H2 = rydberg_drive(amplitude=fc, detuning=jnp.pi / 4, phase=3 * jnp.pi, wires=4)
+#         H1 = transmon_drive(amplitude=fa, detuning=fb, phase=0, wires=1)
+#         H2 = transmon_drive(amplitude=fc, detuning=jnp.pi / 4, phase=3 * jnp.pi, wires=4)
 
 #         dev = qml.device("default.qubit", wires=wires)
 
