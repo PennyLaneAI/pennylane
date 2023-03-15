@@ -68,6 +68,7 @@ Decompositions
     :toctree: api
 
     ~ctrl_decomp_zyz
+    ~ctrl_decomp_bisect
 
 """
 
@@ -82,7 +83,7 @@ from .prod import Prod, prod
 from .sprod import SProd, s_prod
 from .sum import Sum, op_sum, sum
 from .symbolicop import ScalarSymbolicOp, SymbolicOp
-from .controlled_decompositions import ctrl_decomp_zyz
+from .controlled_decompositions import ctrl_decomp_zyz, ctrl_decomp_bisect
 
 controlled_qubit_ops = {
     "ControlledQubitUnitary",

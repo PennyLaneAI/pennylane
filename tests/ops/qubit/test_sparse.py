@@ -138,6 +138,28 @@ class TestSparse:
 
         assert np.allclose(qml.grad(circuit, argnum=0)(0.0), expected_output, atol=tol, rtol=0)
 
+    def test_sparse_no_all_wires_error(self, tol):
+        """Tests that SparseHamiltonian can be used as expected when the operator wires don't cover
+        all device wires."""
+        dev = qml.device("default.qubit", wires=6, shots=None)
+
+        hamiltonian = qml.SparseHamiltonian(csr_matrix(H_hydrogen), wires=range(4))
+
+        @qml.qnode(dev, diff_method="parameter-shift")
+        def circuit():
+            qml.PauliX(0)
+            qml.PauliX(1)
+            qml.PauliZ(1)
+            return qml.expval(hamiltonian)
+
+        expected_state = np.zeros((64, 1))
+        expected_state[48, 0] = -1
+
+        expected = (
+            expected_state.conj().T @ qml.matrix(hamiltonian, wire_order=range(6)) @ expected_state
+        )
+        assert np.allclose(circuit(), expected, atol=tol, rtol=0)
+
     @pytest.mark.parametrize(
         "qubits, operations, hamiltonian, expected_output",
         [
