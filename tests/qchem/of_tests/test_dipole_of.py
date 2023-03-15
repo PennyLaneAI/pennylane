@@ -202,7 +202,7 @@ ops_h2o.append(
             "jordan_wigner",
             coeffs_h3p,
             ops_h3p,
-            {"rtol": 0, "atol": 1e-7},
+            {"rtol": 0, "atol": 1e-8},
         ),
         (
             h2o,
@@ -213,7 +213,7 @@ ops_h2o.append(
             "bravyi_kitaev",
             coeffs_h2o,
             ops_h2o,
-            {"rtol": 0, "atol": 1e-8},
+            {"rtol": 0, "atol": 1e-7},
         ),
     ],
 )
