@@ -35,7 +35,7 @@ from pennylane.measurements import (
     StateMP,
     VarianceMP,
 )
-from pennylane.operation import Observable, Operator
+from pennylane.operation import Observable, Operator, Tensor
 from pennylane.queuing import AnnotatedQueue, process_queue
 
 _empty_wires = qml.wires.Wires([])
@@ -695,7 +695,14 @@ class QuantumScript:
 
         for idx, p in iterator:
             op = self._par_info[idx]["op"]
-            op.data[self._par_info[idx]["p_idx"]] = p
+            if isinstance(
+                op, Tensor
+            ):  # the setter for tensor does not support the definition syntax
+                op.data[self._par_info[idx]["p_idx"]] = p
+            else:
+                temp_data = copy.copy(op.data)
+                temp_data[self._par_info[idx]["p_idx"]] = p
+                op.data = temp_data
             op._check_batching(op.data)
         self._update_batch_size()
         self._update_output_dim()

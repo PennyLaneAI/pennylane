@@ -401,6 +401,35 @@ class TestUpdate:
         qs = QuantumScript(ops, m)
         assert qs.output_dim == output_dim * factor
 
+    def test_setting_parameters_with_symbolic_ops(self):
+        """Test that parameters are correctly modified after construction"""
+        tape = QuantumScript(
+            [
+                qml.ctrl(qml.prod(qml.PauliX(1), qml.PhaseShift(0.432, 2)), control=0),
+                qml.CNOT(wires=[0, "a"]),
+                qml.RX(0.123, wires=2),
+                qml.prod(qml.prod(qml.PauliX(1), qml.PhaseShift(0.546, 2)), qml.PauliZ("a")),
+            ],
+            [qml.expval(qml.PauliX(wires="a"))],
+        )
+        params = [[], [0.432], 0.123, [[], [0.546]], []]
+        new_params = [[], [-0.5], 1, [[], [2.34]], []]
+
+        tape.set_parameters(new_params)
+
+        for pinfo, pval in zip(tape._par_info, new_params):
+            assert pinfo["op"].data[pinfo["p_idx"]] == pval
+
+        assert tape.get_parameters() == new_params
+
+        new_params = [[], [15], -0.1, [[], [3.14]], []]
+        tape.data = new_params
+
+        for pinfo, pval in zip(tape._par_info, new_params):
+            assert pinfo["op"].data[pinfo["p_idx"]] == pval
+
+        assert tape.get_parameters() == new_params
+
 
 class TestIteration:
     """Test the capabilities related to iterating over quantum script."""
