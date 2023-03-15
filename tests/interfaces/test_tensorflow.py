@@ -475,6 +475,8 @@ class TestTensorFlowExecuteIntegration:
             qml.expval(qml.PauliY(1))
 
         tape = qml.tape.QuantumScript.from_queue(q)
+        # must explicitly define trainable_params, tape defined outside tf.GradientTape context
+        tape.trainable_params = [0, 1]
         with tf.GradientTape() as t:
             tape.set_parameters([a, b])
             assert tape.trainable_params == [0, 1]

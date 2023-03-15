@@ -478,7 +478,7 @@ class TestJaxExecuteIntegration:
             qml.expval(qml.PauliZ(0))
 
         tape = qml.tape.QuantumScript.from_queue(q)
-        assert tape.trainable_params == [0, 1]
+        assert tape.trainable_params == []
 
         def cost(a, b):
             # An explicit call to _update() is required here to update the
@@ -488,6 +488,7 @@ class TestJaxExecuteIntegration:
             # number of provided parameters fails in the tape: (len(params) !=
             # required_length) and the tape produces incorrect results.
             tape._update()
+            tape.trainable_params = [0, 1]
             tape.set_parameters([a, b])
             return execute([tape], dev, interface=interface, **execute_kwargs)[0][0]
 

@@ -19,7 +19,7 @@ import numpy as np
 import pytest
 
 import pennylane as qml
-from pennylane import CircuitGraph
+from pennylane import CircuitGraph, numpy as qnp
 from pennylane.measurements import (
     MeasurementProcess,
     MeasurementShapeError,
@@ -234,7 +234,7 @@ class TestConstruction:
 
     def test_state_preparation(self):
         """Test that state preparations are correctly processed"""
-        params = [np.array([1, 0, 1, 0]) / np.sqrt(2), 1]
+        params = [qnp.array([1, 0, 1, 0]) / qnp.sqrt(2), qnp.array(1)]
 
         with QuantumTape() as tape:
             A = qml.QubitStateVector(params[0], wires=[0, 1])
@@ -278,7 +278,7 @@ class TestConstruction:
         """Test the string representation"""
 
         with QuantumTape() as tape:
-            qml.RX(0.432, wires=0)
+            qml.RX(qnp.array(0.432), wires=0)
 
         s = tape.__repr__()
         expected = "<QuantumTape: wires=[0], params=1>"
@@ -335,23 +335,21 @@ class TestConstruction:
         batch_size, when creating and when using `set_parameters`."""
 
         # Test with tape construction
-        with qml.queuing.AnnotatedQueue() as q:
+        with QuantumTape() as tape:
             qml.RX(x, wires=0)
             qml.Rot(*rot, wires=1)
             qml.apply(qml.expval(qml.PauliZ(0)))
             qml.apply(qml.expval(qml.PauliX(1)))
 
-        tape = qml.tape.QuantumScript.from_queue(q)
         assert tape.batch_size == exp_batch_size
 
         # Test with set_parameters
-        with qml.queuing.AnnotatedQueue() as q:
-            qml.RX(0.2, wires=0)
-            qml.Rot(1.0, 0.2, -0.3, wires=1)
+        with QuantumTape() as tape:
+            qml.RX(qnp.array(0.2), wires=0)
+            qml.Rot(*qnp.array([1.0, 0.2, -0.3]), wires=1)
             qml.apply(qml.expval(qml.PauliZ(0)))
             qml.apply(qml.expval(qml.PauliX(1)))
 
-        tape = qml.tape.QuantumScript.from_queue(q)
         assert tape.batch_size is None
 
         tape.set_parameters([x] + rot)
@@ -371,19 +369,19 @@ class TestConstruction:
         with pytest.raises(
             ValueError, match="batch sizes of the quantum script operations do not match."
         ):
-            with qml.queuing.AnnotatedQueue() as q:
+            with QuantumTape() as tape:
                 qml.RX(x, wires=0)
                 qml.Rot(*rot, wires=1)
                 qml.RX(y, wires=1)
                 qml.apply(qml.expval(qml.PauliZ(0)))
 
-            tape = qml.tape.QuantumScript.from_queue(q)
-        with qml.queuing.AnnotatedQueue() as q:
+        with QuantumTape() as tape:
             qml.RX(0.2, wires=0)
             qml.Rot(1.0, 0.2, -0.3, wires=1)
             qml.RX(0.2, wires=1)
             qml.apply(qml.expval(qml.PauliZ(0)))
-        tape = qml.tape.QuantumScript.from_queue(q)
+
+        tape.trainable_params = range(5)
         with pytest.raises(
             ValueError, match="batch sizes of the quantum script operations do not match."
         ):
@@ -528,7 +526,7 @@ class TestResourceEstimation:
 
     @pytest.fixture
     def make_tape(self):
-        params = [0.432, 0.123, 0.546, 0.32, 0.76]
+        params = qnp.array([0.432, 0.123, 0.546, 0.32, 0.76])
 
         with QuantumTape() as tape:
             qml.RX(params[0], wires=0)
@@ -542,7 +540,7 @@ class TestResourceEstimation:
 
     @pytest.fixture
     def make_extendible_tape(self):
-        params = [0.432, 0.123, 0.546, 0.32, 0.76]
+        params = qnp.array([0.432, 0.123, 0.546, 0.32, 0.76])
 
         with QuantumTape() as tape:
             qml.RX(params[0], wires=0)
@@ -603,7 +601,7 @@ class TestResourceEstimation:
 
         with tape as tape:
             qml.CNOT(wires=[0, 1])
-            qml.RZ(0.1, wires=3)
+            qml.RZ(qnp.array(0.1), wires=3)
             qml.expval(qml.PauliX(wires="a"))
             qml.probs(wires=[0, "a"])
 
@@ -673,7 +671,7 @@ class TestParameters:
 
     @pytest.fixture
     def make_tape(self):
-        params = [0.432, 0.123, 0.546, 0.32, 0.76]
+        params = qnp.array([0.432, 0.123, 0.546, 0.32, 0.76])
 
         with QuantumTape() as tape:
             qml.RX(params[0], wires=0)
@@ -687,8 +685,8 @@ class TestParameters:
 
     @pytest.fixture
     def make_tape_with_hermitian(self):
-        params = [0.432, 0.123, 0.546, 0.32, 0.76]
-        hermitian = qml.numpy.eye(2, requires_grad=False)
+        params = qnp.array([0.432, 0.123, 0.546, 0.32, 0.76])
+        hermitian = qnp.eye(2, requires_grad=False)
 
         with QuantumTape() as tape:
             qml.RX(params[0], wires=0)
@@ -704,21 +702,17 @@ class TestParameters:
         tape, params = make_tape
         assert tape.num_params == len(params)
         assert tape.trainable_params == list(range(len(params)))
-        assert tape.get_parameters() == params
+        assert all(tape.get_parameters() == params)
 
-    @pytest.mark.parametrize("operations_only", [False, True])
-    def test_parameter_processing_operations_only(self, make_tape_with_hermitian, operations_only):
+    def test_parameter_processing_operations_only(self, make_tape_with_hermitian):
         """Test the operations_only flag for getting the parameters on a tape with
         qml.Hermitian is measured"""
         tape, circuit_params, hermitian = make_tape_with_hermitian
-        num_all_params = len(circuit_params) + 1  # + 1 for hermitian
+        num_all_params = len(circuit_params)
         assert tape.num_params == num_all_params
         assert tape.trainable_params == list(range(num_all_params))
-        assert (
-            tape.get_parameters(operations_only=operations_only) == circuit_params
-            if operations_only
-            else circuit_params + [hermitian]
-        )
+        for operations_only in [True, False]:
+            assert all(tape.get_parameters(operations_only=operations_only) == circuit_params)
 
     def test_set_trainable_params(self, make_tape):
         """Test that setting trainable parameters works as expected"""
@@ -751,7 +745,7 @@ class TestParameters:
         assert tape._trainable_params == list(trainable)
         assert tape.num_params == 3
         assert tape.get_parameters() == [params[i] for i in tape.trainable_params]
-        assert tape.get_parameters(trainable_only=False) == params
+        assert all(tape.get_parameters(trainable_only=False) == params)
 
     def test_set_trainable_params_error(self, make_tape):
         """Test that exceptions are raised if incorrect parameters
@@ -856,8 +850,9 @@ class TestParameters:
 
     def test_array_parameter(self):
         """Test that array parameters integrate properly"""
-        a = np.array([1, 1, 0, 0]) / np.sqrt(2)
-        params = [a, 0.32, 0.76, 1.0]
+        a = qnp.array([1, 1, 0, 0]) / qnp.sqrt(2)
+        phi, theta, omega = qnp.array([0.32, 0.76, 1.0])
+        params = [a, phi, theta, omega]
 
         with QuantumTape() as tape:
             op = qml.QubitStateVector(params[0], wires=[0, 1])
@@ -875,8 +870,9 @@ class TestParameters:
 
     def test_measurement_parameter(self):
         """Test that measurement parameters integrate properly"""
-        H = np.array([[1, 0], [0, -1]])
-        params = [0.32, 0.76, 1.0, H]
+        H = qnp.array([[1, 0], [0, -1]])
+        phi, theta, omega = qnp.array([0.32, 0.76, 1.0])
+        params = [phi, theta, omega, H]
 
         with QuantumTape() as tape:
             qml.Rot(params[0], params[1], params[2], wires=0)
@@ -927,8 +923,9 @@ class TestExpand:
 
     def test_decomposition(self):
         """Test expanding a tape with operations that have decompositions"""
+        phi, theta, omega = qnp.array([0.1, 0.2, 0.3])
         with QuantumTape() as tape:
-            qml.Rot(0.1, 0.2, 0.3, wires=0)
+            qml.Rot(phi, theta, omega, wires=0)
 
         new_tape = tape.expand()
 
@@ -979,15 +976,14 @@ class TestExpand:
         assert new_tape.operations[1].name == "RX"
         assert new_tape.operations[2].name == "PhaseShift"
 
-        assert new_tape.num_params == 3
-        assert new_tape.get_parameters() == [np.pi / 2, np.pi, np.pi / 2]
+        assert new_tape.get_parameters(trainable_only=False) == [np.pi / 2, np.pi, np.pi / 2]
 
     def test_nested_tape(self):
         """Test that a nested tape properly expands"""
         with QuantumTape() as tape1:
             with QuantumTape() as tape2:
-                op1 = qml.RX(0.543, wires=0)
-                op2 = qml.RY(0.1, wires=0)
+                op1 = qml.RX(qnp.array(0.543), wires=0)
+                op2 = qml.RY(qnp.array(0.1), wires=0)
 
         assert tape1.num_params == 2
         assert tape1.operations == [tape2]
@@ -1231,7 +1227,7 @@ class TestExecution:
     def test_execute_parameters(self, tol):
         """Test execution works when parameters are both passed and not passed."""
         dev = qml.device("default.qubit", wires=2)
-        params = [0.1, 0.2]
+        params = qnp.array([0.1, 0.2])
 
         with QuantumTape() as tape:
             qml.RX(params[0], wires=[0])
@@ -1244,7 +1240,7 @@ class TestExecution:
 
         # test execution with no parameters
         res1 = dev.execute(tape)
-        assert tape.get_parameters() == params
+        assert all(tape.get_parameters() == params)
 
         # test setting parameters
         tape.set_parameters(params=[0.5, 0.6])
@@ -1468,8 +1464,8 @@ class TestTapeCopying:
         """Test that shallow copying of a tape results in all
         contained data being shared between the original tape and the copy"""
         with QuantumTape() as tape:
-            qml.BasisState(np.array([1, 0]), wires=[0, 1])
-            qml.RY(0.5, wires=[1])
+            qml.BasisState(qnp.array([1, 0]), wires=[0, 1])
+            qml.RY(qnp.array(0.5), wires=[1])
             qml.CNOT(wires=[0, 1])
             qml.expval(qml.PauliZ(0) @ qml.PauliY(1))
 
@@ -1515,8 +1511,8 @@ class TestTapeCopying:
         parameters to be set independently"""
 
         with QuantumTape() as tape:
-            qml.BasisState(np.array([1, 0]), wires=[0, 1])
-            qml.RY(0.5, wires=[1])
+            qml.BasisState(qnp.array([1, 0]), wires=[0, 1])
+            qml.RY(qnp.array(0.5), wires=[1])
             qml.CNOT(wires=[0, 1])
             qml.expval(qml.PauliZ(0) @ qml.PauliY(1))
 
@@ -1627,8 +1623,8 @@ class TestHashing:
             qml.expval(qml.PauliZ(0) @ qml.PauliX(1))
 
         with qml.tape.QuantumTape() as tape2:
-            qml.RX(np.array(a), wires=[0])
-            qml.RY(np.array(b), wires=[1])
+            qml.RX(qnp.array(a, requires_grad=False), wires=[0])
+            qml.RY(qnp.array(b, requires_grad=False), wires=[1])
             qml.CNOT(wires=[0, 1])
             qml.expval(qml.PauliZ(0) @ qml.PauliX(1))
 
@@ -2392,7 +2388,7 @@ class TestTapeDraw:
         """Test show_matrices keyword argument."""
 
         with QuantumTape() as tape:
-            qml.QubitUnitary(qml.numpy.eye(2), wires=0)
+            qml.QubitUnitary(qnp.eye(2), wires=0)
 
         assert tape.draw() == qml.drawer.tape_text(tape)
         assert tape.draw(show_matrices=True) == qml.drawer.tape_text(tape, show_matrices=True)
