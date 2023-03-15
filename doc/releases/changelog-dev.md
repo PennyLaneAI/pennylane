@@ -24,7 +24,7 @@
   `qml.Hamiltonian`, `qml.SparseHamiltonian`, `qml.Sum`.
   [(#3759)](https://github.com/PennyLaneAI/pennylane/pull/3759)
 
-<h3>Improvements</h3>
+<h3>Improvements 🛠</h3>
 
 * `Operator` now has a `has_generator` attribute that returns whether or not the operator
   has a generator defined. It is used in `qml.operation.has_gen`, improving its performance.
@@ -70,7 +70,7 @@
   `ops.op_math.ctrl_decomp_bisect`.
   [(#3851)](https://github.com/PennyLaneAI/pennylane/pull/3851)
 
-<h3>Breaking changes</h3>
+<h3>Breaking changes 💔</h3>
 
 * Both JIT interfaces are not compatible with Jax `>0.4.3`, we raise an error for those versions.
   [(#3877)](https://github.com/PennyLaneAI/pennylane/pull/3877)
@@ -92,14 +92,14 @@
   Previously, they were consistent with the sequential Jordan-Wigner ordering.
   [(#3861)](https://github.com/PennyLaneAI/pennylane/pull/3861)
 
-<h3>Deprecations</h3>
+<h3>Deprecations 👋</h3>
 
-<h3>Documentation</h3>
+<h3>Documentation 📝</h3>
 
 * A typo was corrected in the documentation for introduction to `inspecting_circuits` and `chemistry`.
 [(#3844)](https://github.com/PennyLaneAI/pennylane/pull/3844)
 
-<h3>Bug fixes</h3>
+<h3>Bug fixes 🐛</h3>
 
 * Fixed bug where the coefficients where not ordered correctly when summing a `ParametrizedHamiltonian`
   with other operators.
@@ -127,7 +127,7 @@
 * Fixed parameter broadcasting support with `qml.counts` in most cases, and introduced explicit errors otherwise.
   [(#3876)](https://github.com/PennyLaneAI/pennylane/pull/3876)
 
-<h3>Contributors</h3>
+<h3>Contributors ✍</h3>
 
 This release contains contributions from (in alphabetical order):
 
