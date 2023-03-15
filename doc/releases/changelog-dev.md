@@ -131,15 +131,15 @@
 
 This release contains contributions from (in alphabetical order):
 
-Komi Amiko
-Utkarsh Azad
-Lillian M. A. Frederiksen
-Soran Jahangiri
-Christina Lee
-Vincent Michaud-Rioux
-Albert Mitjans
-Romain Moyard
-Mudit Pandey
-Matthew Silverman
-Jay Soni
-David Wierichs
+Komi Amiko,
+Utkarsh Azad,
+Lillian M. A. Frederiksen,
+Soran Jahangiri,
+Christina Lee,
+Vincent Michaud-Rioux,
+Albert Mitjans,
+Romain Moyard,
+Mudit Pandey,
+Matthew Silverman,
+Jay Soni,
+David Wierichs.
