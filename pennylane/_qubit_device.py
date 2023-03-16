@@ -370,12 +370,7 @@ class QubitDevice(Device):
         self.check_validity(circuit.operations, circuit.observables)
 
         # apply all circuit operations
-        rotations = (
-            []
-            if self.capabilities().get("supports_non_diagonal_measurement", False)
-            else circuit.diagonalizing_gates
-        )
-        self.apply(circuit.operations, rotations=rotations, **kwargs)
+        self.apply(circuit.operations, rotations=circuit.diagonalizing_gates, **kwargs)
 
         # generate computational basis samples
         if self.shots is not None or circuit.is_sampled:
