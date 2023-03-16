@@ -31,8 +31,8 @@ qubit_device_and_diff_method = [
 ]
 
 interface_and_qubit_device_and_diff_method = [
-                                                 ["auto"] + inner_list for inner_list in qubit_device_and_diff_method
-                                             ] + [["jax"] + inner_list for inner_list in qubit_device_and_diff_method]
+    ["auto"] + inner_list for inner_list in qubit_device_and_diff_method
+] + [["jax"] + inner_list for inner_list in qubit_device_and_diff_method]
 
 pytestmark = pytest.mark.jax
 
@@ -150,7 +150,7 @@ class TestQNode:
         def circuit(a, b, c):
             qml.RY(a * c, wires=0)
             qml.RZ(b, wires=0)
-            qml.RX(c + c ** 2 + jax.numpy.sin(a), wires=0)
+            qml.RX(c + c**2 + jax.numpy.sin(a), wires=0)
             return qml.expval(qml.PauliZ(0))
 
         res = jax.grad(circuit, argnums=[0, 2])(a, b, c)
@@ -222,7 +222,7 @@ class TestQNode:
 
         res = circuit(a, p)
         expected = np.cos(a) * np.cos(p[1]) * np.sin(p[0]) + np.sin(a) * (
-                np.cos(p[2]) * np.sin(p[1]) + np.cos(p[0]) * np.cos(p[1]) * np.sin(p[2])
+            np.cos(p[2]) * np.sin(p[1]) + np.cos(p[0]) * np.cos(p[1]) * np.sin(p[2])
         )
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
@@ -1103,7 +1103,7 @@ class TestQubitIntegrationHigherOrder:
             assert np.allclose(hess, expected_hess, atol=tol, rtol=0)
 
     def test_hessian_vector_valued_postprocessing(
-            self, dev_name, diff_method, interface, mode, tol
+        self, dev_name, diff_method, interface, mode, tol
     ):
         """Test hessian calculation of a vector valued QNode with post-processing"""
         gradient_kwargs = {}
@@ -1172,7 +1172,7 @@ class TestQubitIntegrationHigherOrder:
             assert np.allclose(hess, expected_hess, atol=tol, rtol=0)
 
     def test_hessian_vector_valued_separate_args(
-            self, dev_name, diff_method, mode, interface, mocker, tol
+        self, dev_name, diff_method, mode, interface, mocker, tol
     ):
         """Test hessian calculation of a vector valued QNode that has separate input arguments"""
         gradient_kwargs = {}
@@ -1337,8 +1337,11 @@ class TestCV:
         """Test diff method with the new return types raises an error."""
         dev = qml.device("default.gaussian", wires=1)
 
-        with pytest.raises(ValueError,
-                           match="The gradient of circuits using CV devices only works with the old return types. Use"):
+        with pytest.raises(
+            ValueError,
+            match="The gradient of circuits using CV devices only works with the old return types. Use",
+        ):
+
             @qnode(dev, interface=interface, diff_method=diff_method, **kwargs)
             def circuit(r, phi):
                 qml.Squeezing(r, 0, wires=0)
@@ -1373,7 +1376,7 @@ class TestTapeExpansion:
 
     @pytest.mark.parametrize("max_diff", [1, 2])
     def test_gradient_expansion_trainable_only(
-            self, dev_name, diff_method, mode, max_diff, interface, mocker
+        self, dev_name, diff_method, mode, max_diff, interface, mocker
     ):
         """Test that a *supported* operation with no gradient recipe is only
         expanded for parameter-shift and finite-differences when it is trainable."""
@@ -1420,7 +1423,7 @@ class TestTapeExpansion:
 
     @pytest.mark.parametrize("max_diff", [1, 2])
     def test_hamiltonian_expansion_analytic(
-            self, dev_name, diff_method, mode, max_diff, interface, mocker, tol
+        self, dev_name, diff_method, mode, max_diff, interface, mocker, tol
     ):
         """Test that the Hamiltonian is not expanded if there
         are non-commuting groups and the number of shots is None
@@ -1489,7 +1492,7 @@ class TestTapeExpansion:
 
     @pytest.mark.parametrize("max_diff", [1, 2])
     def test_hamiltonian_expansion_finite_shots(
-            self, dev_name, diff_method, mode, interface, max_diff, mocker
+        self, dev_name, diff_method, mode, interface, max_diff, mocker
     ):
         """Test that the Hamiltonian is expanded if there
         are non-commuting groups and the number of shots is finite
@@ -1597,7 +1600,7 @@ class TestReturn:
         assert grad.shape == ()
 
     def test_grad_single_measurement_multiple_param(
-            self, dev_name, diff_method, mode, shots, interface
+        self, dev_name, diff_method, mode, shots, interface
     ):
         """For one measurement and multiple param, the gradient is a tuple of arrays."""
         if shots is not None and diff_method in ("backprop", "adjoint"):
@@ -1627,7 +1630,7 @@ class TestReturn:
         assert grad[1].shape == ()
 
     def test_grad_single_measurement_multiple_param_array(
-            self, dev_name, diff_method, mode, shots, interface
+        self, dev_name, diff_method, mode, shots, interface
     ):
         """For one measurement and multiple param as a single array params, the gradient is an array."""
         if shots is not None and diff_method in ("backprop", "adjoint"):
@@ -1655,7 +1658,7 @@ class TestReturn:
 
     @pytest.mark.parametrize("jacobian", jacobian_fn)
     def test_jacobian_single_measurement_param_probs(
-            self, dev_name, diff_method, mode, jacobian, shots, interface
+        self, dev_name, diff_method, mode, jacobian, shots, interface
     ):
         """For a multi dimensional measurement (probs), check that a single array is returned with the correct
         dimension"""
@@ -1687,7 +1690,7 @@ class TestReturn:
 
     @pytest.mark.parametrize("jacobian", jacobian_fn)
     def test_jacobian_single_measurement_probs_multiple_param(
-            self, dev_name, diff_method, mode, jacobian, shots, interface
+        self, dev_name, diff_method, mode, jacobian, shots, interface
     ):
         """For a multi dimensional measurement (probs), check that a single tuple is returned containing arrays with
         the correct dimension"""
@@ -1724,7 +1727,7 @@ class TestReturn:
 
     @pytest.mark.parametrize("jacobian", jacobian_fn)
     def test_jacobian_single_measurement_probs_multiple_param_single_array(
-            self, dev_name, diff_method, mode, jacobian, shots, interface
+        self, dev_name, diff_method, mode, jacobian, shots, interface
     ):
         """For a multi dimensional measurement (probs), check that a single tuple is returned containing arrays with
         the correct dimension"""
@@ -1754,7 +1757,7 @@ class TestReturn:
 
     @pytest.mark.parametrize("jacobian", jacobian_fn)
     def test_jacobian_expval_expval_multiple_params(
-            self, dev_name, diff_method, mode, jacobian, shots, interface
+        self, dev_name, diff_method, mode, jacobian, shots, interface
     ):
         """The hessian of multiple measurements with multiple params return a tuple of arrays."""
         if shots is not None and diff_method in ("backprop", "adjoint"):
@@ -1797,7 +1800,7 @@ class TestReturn:
 
     @pytest.mark.parametrize("jacobian", jacobian_fn)
     def test_jacobian_expval_expval_multiple_params_array(
-            self, dev_name, diff_method, mode, jacobian, shots, interface
+        self, dev_name, diff_method, mode, jacobian, shots, interface
     ):
         """The jacobian of multiple measurements with a multiple params array return a single array."""
         if shots is not None and diff_method in ("backprop", "adjoint"):
@@ -1831,7 +1834,7 @@ class TestReturn:
 
     @pytest.mark.parametrize("jacobian", jacobian_fn)
     def test_jacobian_var_var_multiple_params(
-            self, dev_name, diff_method, mode, jacobian, shots, interface
+        self, dev_name, diff_method, mode, jacobian, shots, interface
     ):
         """The hessian of multiple measurements with multiple params return a tuple of arrays."""
         if diff_method == "adjoint":
@@ -1874,7 +1877,7 @@ class TestReturn:
 
     @pytest.mark.parametrize("jacobian", jacobian_fn)
     def test_jacobian_var_var_multiple_params_array(
-            self, dev_name, diff_method, mode, jacobian, shots, interface
+        self, dev_name, diff_method, mode, jacobian, shots, interface
     ):
         """The jacobian of multiple measurements with a multiple params array return a single array."""
         if diff_method == "adjoint":
@@ -1907,7 +1910,7 @@ class TestReturn:
 
     @pytest.mark.parametrize("jacobian", jacobian_fn)
     def test_jacobian_multiple_measurement_single_param(
-            self, dev_name, diff_method, mode, jacobian, shots, interface
+        self, dev_name, diff_method, mode, jacobian, shots, interface
     ):
         """The jacobian of multiple measurements with a single params return an array."""
         if shots is not None and diff_method in ("backprop", "adjoint"):
@@ -1944,7 +1947,7 @@ class TestReturn:
 
     @pytest.mark.parametrize("jacobian", jacobian_fn)
     def test_jacobian_multiple_measurement_multiple_param(
-            self, dev_name, diff_method, mode, jacobian, shots, interface
+        self, dev_name, diff_method, mode, jacobian, shots, interface
     ):
         """The jacobian of multiple measurements with a multiple params return a tuple of arrays."""
         if diff_method == "adjoint":
@@ -1989,7 +1992,7 @@ class TestReturn:
 
     @pytest.mark.parametrize("jacobian", jacobian_fn)
     def test_jacobian_multiple_measurement_multiple_param_array(
-            self, dev_name, diff_method, mode, jacobian, shots, interface
+        self, dev_name, diff_method, mode, jacobian, shots, interface
     ):
         """The jacobian of multiple measurements with a multiple params array return a single array."""
         if diff_method == "adjoint":
@@ -2066,7 +2069,7 @@ class TestReturn:
         assert hess[1][1].shape == ()
 
     def test_hessian_expval_multiple_param_array(
-            self, dev_name, diff_method, mode, shots, interface
+        self, dev_name, diff_method, mode, shots, interface
     ):
         """The hessian of single measurement with a multiple params array return a single array."""
         if diff_method == "adjoint":
@@ -2158,7 +2161,7 @@ class TestReturn:
         assert hess.shape == (2, 2)
 
     def test_hessian_probs_expval_multiple_params(
-            self, dev_name, diff_method, mode, shots, interface
+        self, dev_name, diff_method, mode, shots, interface
     ):
         """The hessian of multiple measurements with multiple params return a tuple of arrays."""
 
@@ -2222,7 +2225,7 @@ class TestReturn:
         assert hess[1][1][1].shape == (2,)
 
     def test_hessian_expval_probs_multiple_param_array(
-            self, dev_name, diff_method, mode, shots, interface
+        self, dev_name, diff_method, mode, shots, interface
     ):
         """The hessian of multiple measurements with a multiple param array return a single array."""
         if diff_method == "adjoint":
@@ -2316,7 +2319,7 @@ class TestReturn:
         assert hess[1][1][1].shape == (2,)
 
     def test_hessian_var_probs_multiple_param_array(
-            self, dev_name, diff_method, mode, shots, interface
+        self, dev_name, diff_method, mode, shots, interface
     ):
         """The hessian of multiple measurements with a multiple param array return a single array."""
         if diff_method == "adjoint":

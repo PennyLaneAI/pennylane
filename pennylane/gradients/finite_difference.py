@@ -181,7 +181,6 @@ def _all_zero_grad_new(tape, shots=None):
     list_zeros = []
 
     for m in tape.measurements:
-        # TODO: Update shape for CV variables
         if isinstance(m, ProbabilityMP):
             shape = 2 ** len(m.wires)
         else:
@@ -422,7 +421,6 @@ def _finite_diff_new(
         r0 = f0 or results[0]
 
         output_dims = []
-        # TODO: Update shape for CV variables
         for m in tape.measurements:
             if isinstance(m, ProbabilityMP):
                 output_dims.append(2 ** len(m.wires))
