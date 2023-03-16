@@ -36,6 +36,16 @@
 
 <h3>Improvements</h3>
 
+* The `coefficients` function and the `visualize` submodule of the `qml.fourier` module
+  now allow assigning different degrees for different parameters of the input function.
+  [(#3005)](https://github.com/PennyLaneAI/pennylane/pull/3005)
+
+  The arguments `degree` and `filter_threshold` to `qml.fourier.coefficients` previously were
+  expected to be integers, and now can be a sequences of integers with one integer per function
+  parameter (i.e. `len(degree)==n_inputs`), resulting in a returned array with shape
+  `(2*degrees[0]+1,..., 2*degrees[-1]+1)`.
+  The functions in `qml.fourier.visualize` accordingly accept such arrays of coefficients.
+
 * `Operator` now has a `has_generator` attribute that returns whether or not the operator
   has a generator defined. It is used in `qml.operation.has_gen`, improving its performance.
   [(#3875)](https://github.com/PennyLaneAI/pennylane/pull/3875)
@@ -136,6 +146,10 @@
 
 * Fixed parameter broadcasting support with `qml.counts` in most cases, and introduced explicit errors otherwise.
   [(#3876)](https://github.com/PennyLaneAI/pennylane/pull/3876)
+
+* A correction is added to the reference values in `test_dipole_of` to account for small changes
+  (~2e-8) in the computed dipole moment values, resulting from the new [PySCF 2.2.0](https://github.com/pyscf/pyscf/releases/tag/v2.2.0) release.
+  [(#3908)](https://github.com/PennyLaneAI/pennylane/pull/3908)
 
 <h3>Contributors</h3>
 
