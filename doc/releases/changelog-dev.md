@@ -63,11 +63,11 @@
 
 * `qml.QubitStateVector.state_vector` now supports broadcasting.
   [(#3852)](https://github.com/PennyLaneAI/pennylane/pull/3852)
-  
+
 * `pennylane.devices.qubit.preprocess` now allows circuits with non-commuting observables.
   [(#3857)](https://github.com/PennyLaneAI/pennylane/pull/3857)
 
-* When using Jax-jit with gradient transforms the trainable parameters are correctly set (instead of every parameter 
+* When using Jax-jit with gradient transforms the trainable parameters are correctly set (instead of every parameter
   to be set as trainable), and therefore the derivatives are computed more efficiently.
   [(#3697)](https://github.com/PennyLaneAI/pennylane/pull/3697)
 
@@ -86,13 +86,16 @@
 
 <h3>Breaking changes</h3>
 
+* All drawing methods changed their default value for the keyword argument `show_matrices` to `True`.
+  [(#3920)](https://github.com/PennyLaneAI/pennylane/pull/3920)
+
 * Both JIT interfaces are not compatible with Jax `>0.4.3`, we raise an error for those versions.
   [(#3877)](https://github.com/PennyLaneAI/pennylane/pull/3877)
 
 * An operation that implements a custom `generator` method, but does not always return a valid generator, also has
   to implement a `has_generator` property that reflects in which scenarios a generator will be returned.
   [(#3875)](https://github.com/PennyLaneAI/pennylane/pull/3875)
- 
+
 * Trainable parameters for the Jax interface are the parameters that are `JVPTracer`, defined by setting
   `argnums`. Previously, all JAX tracers, including those used for JIT compilation, were interpreted to be trainable.
   [(#3697)](https://github.com/PennyLaneAI/pennylane/pull/3697)
