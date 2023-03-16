@@ -398,7 +398,7 @@ class TestKerasLayer:
         c, w = get_circuit
 
         @qml.qnode(qml.device("default.qubit", wires=n_qubits), interface="tf")
-        def c_default(w1, w2, w3, w4, w5, w6, w7, inputs=None):
+        def c_default(w1, w2, w3, w4, w5, w6, w7, inputs=None):  # pylint: disable=too-many-arguments
             """Version of the circuit with inputs as a default argument"""
             qml.templates.AngleEmbedding(inputs, wires=list(range(n_qubits)))
             qml.templates.StronglyEntanglingLayers(w1, wires=list(range(n_qubits)))
@@ -425,7 +425,7 @@ class TestKerasLayer:
     @pytest.mark.parametrize("middle_dim", [2, 5, 8])
     def test_call_broadcast(
         self, get_circuit, output_dim, middle_dim, batch_size, n_qubits
-    ):  # pylint: disable=no-self-use
+    ):  # pylint: disable=no-self-use,too-many-arguments
         """Test if the call() method performs correctly when the inputs argument has an arbitrary shape (that can
         correctly be broadcast over), i.e., for input of shape (batch_size, dn, ... , d0) it outputs with shape
         (batch_size, dn, ... , d1, output_dim). Also tests if gradients are still backpropagated correctly.
@@ -506,7 +506,7 @@ class TestKerasLayer:
         spy.assert_not_called()
 
     @pytest.mark.parametrize("n_qubits, output_dim", indices_up_to(1))
-    def test_compute_output_shape(self, get_circuit, output_dim):  # pylint: disable=no-self-use
+    def test_compute_output_shape_2(self, get_circuit, output_dim):  # pylint: disable=no-self-use
         """Test that the compute_output_shape method returns the expected shape"""
         c, w = get_circuit
         layer = KerasLayer(c, w, output_dim)
@@ -540,7 +540,7 @@ class TestKerasLayerIntegration:
     @pytest.mark.parametrize("batch_size", [2])
     def test_train_model(
         self, model, batch_size, n_qubits, output_dim
-    ):  # pylint: disable=no-self-use
+    ):  # pylint: disable=no-self-use,redefined-outer-name
         """Test if a model can train using the KerasLayer. The model is composed of two
         KerasLayers sandwiched between Dense neural network layers, and the dataset is simply
         input and output vectors of zeros."""
@@ -553,7 +553,7 @@ class TestKerasLayerIntegration:
         model.fit(x, y, batch_size=batch_size, verbose=0)
 
     @pytest.mark.parametrize("n_qubits, output_dim", indices_up_to(2))
-    def test_model_gradients(self, model, output_dim, n_qubits):  # pylint: disable=no-self-use
+    def test_model_gradients(self, model, output_dim, n_qubits):  # pylint: disable=no-self-use,redefined-outer-name
         """Test if a gradient can be calculated with respect to all of the trainable variables in
         the model"""
         x = tf.zeros((2, n_qubits))
@@ -564,10 +564,10 @@ class TestKerasLayerIntegration:
             loss = tf.keras.losses.mean_squared_error(out, y)
 
         gradients = tape.gradient(loss, model.trainable_variables)
-        assert all([g.dtype == tf.keras.backend.floatx() for g in gradients])
+        assert all(g.dtype == tf.keras.backend.floatx() for g in gradients)
 
     @pytest.mark.parametrize("n_qubits, output_dim", indices_up_to(2))
-    def test_model_save_weights(self, model, n_qubits, tmpdir):  # pylint: disable=no-self-use
+    def test_model_save_weights(self, model, n_qubits, tmpdir):  # pylint: disable=no-self-use,redefined-outer-name
         """Test if the model can be successfully saved and reloaded using the get_weights()
         method"""
         prediction = model.predict(np.ones((1, n_qubits)))
@@ -594,7 +594,7 @@ class TestKerasLayerIntegrationDM:
     @pytest.mark.parametrize("batch_size", [2])
     def test_train_model_dm(
         self, model_dm, batch_size, n_qubits, output_dim
-    ):  # pylint: disable=no-self-use
+    ):  # pylint: disable=no-self-use,redefined-outer-name
         """Test if a model can train using the KerasLayer when QNode returns a density_matrix().
         The model is composed of two KerasLayers sandwiched between Dense neural network layers,
         and the dataset is simply input and output vectors of zeros."""
@@ -608,7 +608,7 @@ class TestKerasLayerIntegrationDM:
     @pytest.mark.parametrize("n_qubits, output_dim", indices_up_to_dm(2))
     def test_model_gradients_dm(
         self, model_dm, output_dim, n_qubits
-    ):  # pylint: disable=no-self-use
+    ):  # pylint: disable=no-self-use,redefined-outer-name
         """Test if a gradient can be calculated with respect to all of the trainable variables in
         the model."""
         x = tf.zeros((2, n_qubits))
@@ -619,10 +619,10 @@ class TestKerasLayerIntegrationDM:
             loss = tf.keras.losses.mean_squared_error(out, y)
 
         gradients = tape.gradient(loss, model_dm.trainable_variables)
-        assert all([g.dtype == tf.keras.backend.floatx() for g in gradients])
+        assert all(g.dtype == tf.keras.backend.floatx() for g in gradients)
 
     @pytest.mark.parametrize("n_qubits, output_dim", indices_up_to_dm(2))
-    def test_model_save_weights_dm(self, model_dm, n_qubits, tmpdir):  # pylint: disable=no-self-use
+    def test_model_save_weights_dm(self, model_dm, n_qubits, tmpdir):  # pylint: disable=no-self-use,redefined-outer-name
         """Test if the model_dm can be successfully saved and reloaded using the get_weights()
         method"""
 
@@ -643,7 +643,7 @@ class TestKerasLayerIntegrationDM:
 def test_no_attribute():
     """Test that the qnn module raises an AttributeError if accessing an unavailable attribute"""
     with pytest.raises(AttributeError, match="module 'pennylane.qnn' has no attribute 'random'"):
-        qml.qnn.random
+        qml.qnn.random  # pylint: disable=pointless-statement
 
 
 @pytest.mark.tf
@@ -660,6 +660,5 @@ def test_batch_input():
 
     KerasLayer.set_input_argument("x")
     layer = KerasLayer(circuit, weight_shapes={"weights": (2,)}, output_dim=(2,), batch_idx=0)
-    conf = layer.get_config()
     layer.build((None, 2))
     assert layer(np.random.uniform(0, 1, (10, 4))).shape == (10, 2)
