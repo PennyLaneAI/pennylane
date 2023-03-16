@@ -22,6 +22,7 @@ It implements the necessary :class:`~pennylane._device.Device` methods as well a
 Gaussian-based quantum circuit architecture.
 """
 # pylint: disable=attribute-defined-outside-init,too-many-arguments
+import warnings
 import math
 import cmath
 import numpy as np
@@ -686,6 +687,10 @@ class DefaultGaussian(Device):
     _circuits = {}
 
     def __init__(self, wires, *, shots=None, hbar=2, analytic=None):
+        warnings.warn(
+            "The Gaussian device is deprecated and will be removed once the new device API is default.",
+            UserWarning,
+        )
         super().__init__(wires, shots, analytic=analytic)
         self.eng = None
         self.hbar = hbar

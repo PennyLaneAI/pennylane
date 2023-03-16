@@ -473,7 +473,6 @@ def second_order_param_shift(tape, dev_wires, argnum=None, shifts=None, gradient
     return gradient_tapes, processing_fn
 
 
-# TODO: integration of CV devices with new return types
 # pylint: disable=unused-argument
 @gradient_transform
 def param_shift_cv(
@@ -651,6 +650,17 @@ def param_shift_cv(
         >>> fn(qml.execute(gradient_tapes, dev, None))
         array([[-0.32487113, -0.4054074 , -0.87049853,  0.4054074 ]])
     """
+    warnings.warn(
+        "The parameter shift gradient for CV devices is deprecated and will be removed once the new device API is "
+        "default.",
+        UserWarning,
+    )
+    if qml.active_return():
+        raise ValueError(
+            "The parameter shift gradient for CV devices only work with the old return types. Use \n\n"
+            "\tqml.disable_return()\n\n"
+            "at the beginning of your program."
+        )
 
     # perform gradient method validation
     if any(isinstance(m, StateMP) for m in tape.measurements):

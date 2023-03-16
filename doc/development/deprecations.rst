@@ -6,6 +6,9 @@ Deprecations
 Pending deprecations
 --------------------
 
+* The ``default.gaussian`` and ``parameter_shift_cv`` are deprecated and will be removed once we the new device API
+  becomes default.
+
 * The argument ``argnum`` for gradient transforms using the Jax interface is replaced by ``argnums``.
 
   - ``argnum`` is automatically changed to ``argnums`` for gradient transforms using JAX and a warning is raised in v0.30
