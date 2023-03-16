@@ -81,7 +81,7 @@
   [(#3851)](https://github.com/PennyLaneAI/pennylane/pull/3851)
 
 * Changed `Operator.num_wires` from an abstract value to `AnyWires`.
-  [(#3918)](https://github.com/PennyLaneAI/pennylane/pull/3918)
+  [(#3919)](https://github.com/PennyLaneAI/pennylane/pull/3919)
 
 <h3>Breaking changes</h3>
 
