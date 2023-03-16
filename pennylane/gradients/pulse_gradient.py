@@ -122,14 +122,16 @@ def _parshift_and_integrate(results, cjacs, int_prefactor, single_measure, shot_
         diff = qml.math.stack(res_list)[::2] - qml.math.stack(res_list)[1::2]
         return qml.math.tensordot(diff, cjacs, axes=[[0], [0]]) * int_prefactor
 
-    # If multiple measure xor shot_vector: One axis to pull out of the shift rule and integration
-    if not single_measure + shot_vector == 1:
-        return tuple(_diff_and_contract(r, cjacs, int_prefactor) for r in zip(*results))
-    if single_measure:
-        # Single measurement without shot vector
+    # There is a single measurement and shots setting
+    if single_measure and not shot_vector:
         return _diff_and_contract(results, cjacs, int_prefactor)
 
-    # Multiple measurements with shot vector
+    # There are multiple measurements or a shot vector (but not both):
+    # One axis to pull out of the shift rule and integration
+    if single_measure or not shot_vector:
+        return tuple(_diff_and_contract(r, cjacs, int_prefactor) for r in zip(*results))
+
+    # Multiple measurements and shot vector: Two axes to pull out
     return tuple(
         tuple(_diff_and_contract(_r, cjacs, int_prefactor) for _r in zip(*r)) for r in zip(*results)
     )
@@ -496,7 +498,7 @@ def _expval_stoch_pulse_grad(tape, argnum, num_split_times, key, shots):
                 f"terms in ParametrizedHamiltonian. Got {ham}"
             )
         word = qml.pauli.pauli_word_to_string(ham)
-        cjac_fn = jax.jacobian(coeff, argnums=0)
+        cjac_fn = jax.jacobian(coeff)
         this_cjacs = []
         for _ in range(num_split_times):
             key, _key = jax.random.split(key)
