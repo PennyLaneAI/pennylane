@@ -391,6 +391,33 @@ class TestRydbergDrive:
         # Hamiltonian is as expected
         assert qml.equal(Hd([0.5, -0.5], t=5), H_expected([0.5, -0.5], t=5))
 
+    def test_no_detuning(self):
+        """Test that when detuning not specified, the drive term is correctly defined."""
+
+        def f(p, t):
+            return np.cos(p * t)
+
+        Hd = rydberg_drive(amplitude=f, phase=1, wires=[0, 3])
+
+        ops_expected = [
+            qml.Hamiltonian([0.5, 0.5], [qml.PauliX(0), qml.PauliX(3)]),
+            qml.Hamiltonian([-0.5, -0.5], [qml.PauliY(0), qml.PauliY(3)]),
+        ]
+        coeffs_expected = [
+            AmplitudeAndPhase(np.cos, f, 1),
+            AmplitudeAndPhase(np.sin, f, 1),
+        ]
+        H_expected = RydbergHamiltonian(coeffs_expected, ops_expected)
+
+        assert qml.equal(Hd([0.1], 10), H_expected([0.1], 10))
+        assert isinstance(Hd, RydbergHamiltonian)
+        assert Hd.interaction_coeff == 862690
+        assert Hd.wires == Wires([0, 3])
+        assert Hd.register is None
+        assert all(isinstance(coeff, AmplitudeAndPhase) for coeff in Hd.coeffs)
+        assert len(Hd.coeffs) == 2
+        assert all(qml.equal(op, op_expected) for op, op_expected in zip(Hd.ops, ops_expected))
+
 
 def callable_amp(p, t):
     return np.polyval(p, t)
