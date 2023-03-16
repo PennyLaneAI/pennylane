@@ -611,7 +611,7 @@ def test_vjp_is_unwrapped_for_param_shift():
 
     device = qml.device("default.qubit", wires=nqubits)
 
-    class DummyOp(qml.operation.Operation):
+    class DummyOp(qml.operation.Operation):  # pylint: disable=too-few-public-methods
         """Dummy operation."""
 
         num_wires = 1
@@ -620,11 +620,8 @@ def test_vjp_is_unwrapped_for_param_shift():
         @staticmethod
         def compute_matrix(
             *params,
-        ):  # pylint: disable=arguments-differ,inconsistent-return-statements
+        ):  # pylint: disable=arguments-differ
             z = params[0]
-
-            if np.all(z == 0):
-                return
             return np.diag([z, z])
 
     device.operations.add("DummyOp")
