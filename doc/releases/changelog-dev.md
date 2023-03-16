@@ -26,6 +26,10 @@
 
 <h3>Improvements</h3>
 
+* All drawing methods changed their default value for the keyword argument `show_matrices`
+  to `True`. This allows quick insights into broadcasted tapes for example.
+  [(#3920)](https://github.com/PennyLaneAI/pennylane/pull/3920)
+
 * The `coefficients` function and the `visualize` submodule of the `qml.fourier` module
   now allow assigning different degrees for different parameters of the input function.
   [(#3005)](https://github.com/PennyLaneAI/pennylane/pull/3005)
