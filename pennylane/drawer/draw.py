@@ -30,7 +30,7 @@ def draw(
     show_all_wires=False,
     decimals=2,
     max_length=100,
-    show_matrices=False,
+    show_matrices=True,
     expansion_strategy=None,
 ):
     """Create a function that draws the given qnode or quantum function.
@@ -100,8 +100,8 @@ def draw(
     >>> print(qml.draw(circuit2)("x"))
     0: ──RX(x)─┤  <Z>
 
-    When requested with ``show_matrices=True``, matrix valued parameters are printed below the
-    circuit:
+    When requested with ``show_matrices=True`` (the default), matrix valued parameters
+    are printed below the circuit. For ``show_matrices=False``, they are not printed:
 
     >>> @qml.qnode(qml.device('default.qubit', wires=2))
     ... def circuit3():
@@ -119,6 +119,9 @@ def draw(
     [-0. -1. -0. -0.]
     [-0. -0. -1. -0.]
     [-0. -0. -0. -1.]]
+    >>> print(qml.draw(circuit3, show_matrices=False)())
+    0: ──U(M0)─╭U(M1)─┤
+    1: ────────╰U(M1)─┤  <𝓗(M0)>
 
     The ``max_length`` keyword warps long circuits:
 
@@ -232,7 +235,7 @@ def _draw_qnode(
     show_all_wires=False,
     decimals=2,
     max_length=100,
-    show_matrices=False,
+    show_matrices=True,
     expansion_strategy=None,
 ):
     @wraps(qnode)

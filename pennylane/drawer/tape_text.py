@@ -101,7 +101,7 @@ def tape_text(
     show_all_wires=False,
     decimals=None,
     max_length=100,
-    show_matrices=False,
+    show_matrices=True,
     cache=None,
 ):
     """Text based diagram for a Quantum Tape.
@@ -116,7 +116,7 @@ def tape_text(
             Default ``None`` will omit parameters from operation labels.
         max_length (Int) : Maximum length of a individual line.  After this length, the diagram will
             begin anew beneath the previous lines.
-        show_matrices=False (bool): show matrix valued parameters below all circuit diagrams
+        show_matrices=True (bool): show matrix valued parameters below all circuit diagrams
         cache (dict): Used to store information between recursive calls. Necessary keys are ``'tape_offset'``
             and ``'matrices'``.
 
@@ -204,7 +204,7 @@ def tape_text(
 
     Matrix valued parameters are always denoted by ``M`` followed by an integer corresponding to
     unique matrices.  The list of unique matrices can be printed at the end of the diagram by
-    selecting ``show_matrices=True``:
+    selecting ``show_matrices=True`` (the default):
 
     .. code-block:: python
 
