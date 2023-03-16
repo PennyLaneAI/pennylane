@@ -140,6 +140,7 @@ class TestBroadcastExpand:
     def test_jax(self, params, size, obs, exp_fn, use_jit, gradient_fn):
         """Test that the expansion works with jax and is differentiable."""
         import jax
+
         jax.config.update("jax_enable_x64", True)
 
         params = tuple(jax.numpy.array(p) for p in params)
@@ -201,7 +202,9 @@ class TestBroadcastExpand:
         """Test that the expansion works with torch and is differentiable."""
         import torch
 
-        torch_params = tuple(torch.tensor(p, requires_grad=True, dtype=torch.float64) for p in params)
+        torch_params = tuple(
+            torch.tensor(p, requires_grad=True, dtype=torch.float64) for p in params
+        )
         params = tuple(pnp.array(p, requires_grad=True) for p in params)
         # Need a special Torch device for gradient method "backprop"
         dev_type = ".torch" if gradient_fn == "backprop" else ""
