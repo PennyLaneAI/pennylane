@@ -702,6 +702,7 @@ class Operator(abc.ABC):
         """
         return cls.compute_matrix != Operator.compute_matrix
 
+    # pylint:disable=no-member
     def matrix(self, wire_order=None):
         r"""Representation of the operator as a matrix in the computational basis.
 
@@ -724,12 +725,14 @@ class Operator(abc.ABC):
         """
         canonical_matrix = self.compute_matrix(*self.parameters, **self.hyperparameters)
 
-        # Linting check disabled as static analysis can misidentify qml.ops as the set instance qml.ops.qubit.ops
         if (
             wire_order is None
             or self.wires == Wires(wire_order)
-            or (self.name in qml.ops.qubit.attributes.symmetric_over_all_wires and set(self.wires) == set(wire_order))
-        ):  # pylint:disable=no-member
+            or (
+                self.name in qml.ops.qubit.attributes.symmetric_over_all_wires
+                and set(self.wires) == set(wire_order)
+            )
+        ):
             return canonical_matrix
 
         return expand_matrix(canonical_matrix, wires=self.wires, wire_order=wire_order)
