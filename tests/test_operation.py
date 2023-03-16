@@ -71,6 +71,14 @@ class TestOperatorConstruction:
         with pytest.raises(qml.wires.WireError, match="Wires must be unique"):
             DummyOp(0.5, wires=[1, 1], do_queue=False)
 
+    def test_num_wires_default_any_wires(self):
+        """Test that num_wires is `AnyWires` by default."""
+
+        class DummyOp(qml.operation.Operator):
+            r"""Dummy custom operator"""
+
+        assert DummyOp.num_wires == qml.operation.AnyWires
+
     def test_incorrect_num_params(self):
         """Test that an exception is raised if called with wrong number of parameters"""
 
