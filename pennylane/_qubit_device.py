@@ -64,6 +64,60 @@ from pennylane.operation import operation_derivative
 from pennylane.tape import QuantumScript, QuantumTape
 from pennylane.wires import Wires
 
+class Resource:
+    r"""Create a resource object for storing quantum resource information."""
+    def __init__(self):
+        self.num_wires = 0
+        self.num_gates = 0
+        self.gate_types = defaultdict(int)
+        self.depth = 0
+        self.shots = 0
+
+    def __str__(self):
+        keys = ['wires', 'gates', 'depth', 'shots', 'gate_types']
+        vals = [self.num_wires, self.num_gates, self.depth, self.shots, self.gate_types]
+        items = "\n".join([str(i) for i in zip(keys, vals)])
+        items = items.replace('(\'', '')
+        items = items.replace('\',', ':')
+        items = items.replace(')', '')
+        items = items.replace('defaultdict(<class \'int\'>, ', '\n')
+        return items
+
+    def __repr__(self):
+        return f"<Resource: wires={self.num_wires}, gates={self.num_gates}, depth={self.depth}, shots={self.shots}, gate_types={self.gate_types}>"
+
+    def _ipython_display_(self):
+        """Displays __str__ in ipython instead of __repr__"""
+        print(str(self))
+
+def resource_estimation_tape(tape, shots):
+    tape = tape.copy()
+    resource = Resource()
+    resource.num_wires = len(tape.wires)
+    resource.shots = shots
+
+    for op in tape.operations:
+
+        if not hasattr(op, 'resources'):
+            try:
+                decomp = op.decomposition()
+                for d in decomp:
+                    # gate_types
+                    resource.gate_types[d.name] += 1
+            except:
+                # gate_types
+                resource.gate_types[op.name] += 1
+
+        if hasattr(op, 'resources'):
+            op_resource = op.resources()
+            # gate_types
+            for d in op_resource.gate_types:
+                resource.gate_types[d] += op_resource.gate_types[d]
+
+        # num_gates
+        resource.num_gates = sum(resource.gate_types.values())
+    return resource
+
 
 class QubitDevice(Device):
     """Abstract base class for PennyLane qubit devices.
@@ -547,6 +601,7 @@ class QubitDevice(Device):
         # once it has the same signature in the execute() method
 
         results = []
+        res_ = []
         for circuit in circuits:
             # we need to reset the device here, else it will
             # not start the next computation in the zero state
@@ -555,8 +610,11 @@ class QubitDevice(Device):
             res = self._execute_new(circuit)
             results.append(res)
 
+            resource = resource_estimation_tape(circuit, self.shots)
+            res_.append(resource)
+
         if self.tracker.active:
-            self.tracker.update(batches=1, batch_len=len(circuits))
+            self.tracker.update(batches=1, batch_len=len(circuits), resources=res_)
             self.tracker.record()
 
         return results
@@ -582,6 +640,7 @@ class QubitDevice(Device):
             return self._batch_execute_new(circuits=circuits)
 
         results = []
+        res_ = []
         for circuit in circuits:
             # we need to reset the device here, else it will
             # not start the next computation in the zero state
@@ -591,8 +650,11 @@ class QubitDevice(Device):
             res = self.execute(circuit)
             results.append(res)
 
+            resource = resource_estimation_tape(circuit, self.shots)
+            res_.append(resource)
+
         if self.tracker.active:
-            self.tracker.update(batches=1, batch_len=len(circuits))
+            self.tracker.update(batches=1, batch_len=len(circuits), resources=res_)
             self.tracker.record()
 
         return results
