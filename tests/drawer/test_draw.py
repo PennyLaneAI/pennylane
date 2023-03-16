@@ -153,6 +153,8 @@ class TestDecimals:
 
 
 class TestMatrixParameters:
+    """Test that tapes containing matrix-valued parameters are drawn correctly."""
+
     def test_matrix_parameters(self):
         """Test matrix valued parameters remembered and printed out upon request."""
 
@@ -167,7 +169,7 @@ class TestMatrixParameters:
             "1: ─╰QubitStateVector(M0)────────┤         "
         )
 
-        assert draw(matrices_circuit)() == expected1
+        assert draw(matrices_circuit, show_matrices=False)() == expected1
 
         expected2 = (
             "0: ─╭QubitStateVector(M0)──U(M1)─┤  <𝓗(M1)>\n"
@@ -176,7 +178,7 @@ class TestMatrixParameters:
             "M1 = \n[[1. 0.]\n [0. 1.]]"
         )
 
-        assert draw(matrices_circuit, show_matrices=True)() == expected2
+        assert draw(matrices_circuit)() == expected2
 
     def test_matrix_parameters_batch_transform(self):
         """Test matrix parameters only printed once after a batch transform."""

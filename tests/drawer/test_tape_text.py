@@ -252,7 +252,10 @@ class TestMaxLength:
 
 
 single_op_tests_data = [
-    (qml.MultiControlledX([0, 1, 2], 3, "010"), "0: ─╭○─┤  \n1: ─├●─┤  \n2: ─├○─┤  \n3: ─╰X─┤  "),
+    (
+        qml.MultiControlledX(wires=[0, 1, 2, 3], control_values="010"),
+        "0: ─╭○─┤  \n1: ─├●─┤  \n2: ─├○─┤  \n3: ─╰X─┤  ",
+    ),
     (
         qml.ops.op_math.Controlled(qml.PauliY(3), (0, 1, 2), [0, 1, 0]),
         "0: ─╭○─┤  \n1: ─├●─┤  \n2: ─├○─┤  \n3: ─╰Y─┤  ",
@@ -328,7 +331,9 @@ def test_single_ops(op, expected):
         qml.apply(op)
 
     tape = qml.tape.QuantumScript.from_queue(q_tape)
-    assert tape_text(tape, decimals=2) == expected
+    print(tape_text(tape, decimals=2, show_matrices=False))
+    print(expected)
+    assert tape_text(tape, decimals=2, show_matrices=False) == expected
 
 
 class TestLayering:
@@ -380,18 +385,8 @@ tape_matrices = qml.tape.QuantumScript(
 class TestShowMatrices:
     """Test the handling of matrix-valued parameters."""
 
-    def test_default_no_matrix_parameters(self):
+    def test_default_shows_matrix_parameters(self):
         """Test matrices numbered but not included by default."""
-
-        expected = (
-            "0: ─╭QubitStateVector(M0)──U(M1)─┤  <𝓗(M1)>\n"
-            "1: ─╰QubitStateVector(M0)────────┤         "
-        )
-
-        assert tape_text(tape_matrices) == expected
-
-    def test_show_matrices(self):
-        """Test matrices included when requested."""
 
         expected = (
             "0: ─╭QubitStateVector(M0)──U(M1)─┤  <𝓗(M1)>\n"
@@ -400,7 +395,17 @@ class TestShowMatrices:
             "M1 = \n[[1. 0.]\n [0. 1.]]"
         )
 
-        assert tape_text(tape_matrices, show_matrices=True) == expected
+        assert tape_text(tape_matrices) == expected
+
+    def test_do_not_show_matrices(self):
+        """Test matrices included when requested."""
+
+        expected = (
+            "0: ─╭QubitStateVector(M0)──U(M1)─┤  <𝓗(M1)>\n"
+            "1: ─╰QubitStateVector(M0)────────┤         "
+        )
+
+        assert tape_text(tape_matrices, show_matrices=False) == expected
 
     def test_matrix_parameters_provided_cache(self):
         """Providing an existing matrix cache determines numbering order of matrices.
