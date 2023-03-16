@@ -69,6 +69,34 @@ expectation value of a Hamiltonian with its terms grouped by the 'qwc' method.
              <Resource: wires=10, gates=132, depth=0, shots=100, gate_types=defaultdict(<class 'int'>, {'PhaseShift': 4, 'RX': 2, 'CNOT': 64, 'CRY': 1, 'Hadamard': 24, 'RY': 32, 'T': 5})>,
              <Resource: wires=10, gates=132, depth=0, shots=100, gate_types=defaultdict(<class 'int'>, {'PhaseShift': 4, 'RX': 2, 'CNOT': 64, 'CRY': 1, 'Hadamard': 24, 'RY': 32, 'T': 5})>,
              <Resource: wires=10, gates=132, depth=0, shots=100, gate_types=defaultdict(<class 'int'>, {'PhaseShift': 4, 'RX': 2, 'CNOT': 64, 'CRY': 1, 'Hadamard': 24, 'RY': 32, 'T': 5})>]
+
+The resource information can be also collected in the device tracker. The `batch_execute` and
+`_batch_execute_new` functions in `_qubit_device` are modified to add resource information to
+tracker. This example shows how to access resource information:
+
+        .. code-block:: python3
+
+            dev = qml.device('default.qubit', wires = 10, shots = None)
+            @qml.qnode(dev, diff_method='parameter-shift')
+            def circuit(params):
+                qml.BasisState(np.array([1, 1, 0, 0, 0, 0, 0, 0, 0, 0]), wires = range(10))
+                qml.SingleExcitation(params[0], wires=[0, 1])
+                qml.DoubleExcitation(params[1],wires=[0, 1, 2, 3])
+                qml.DoubleExcitation(params[1],wires=[0, 1, 4, 5])
+                qml.DoubleExcitation(params[1],wires=[0, 1, 6, 7])
+                qml.DoubleExcitation(params[1],wires=[0, 1, 8, 9])
+                # CustomOperation(wires=range(6))
+                return qml.expval(ham)
+            params = np.array([0.1, 0.2])
+
+            >>> with qml.Tracker(dev) as tracker:
+            ...    qml.grad(circuit)(params)
+            >>> tracker.history['resources']
+             [[<Resource: wires=10, gates=125, depth=0, shots=None, gate_types=defaultdict(<class 'int'>, {'PhaseShift': 4, 'RX': 4, 'CNOT': 58, 'CRY': 1, 'Hadamard': 24, 'RY': 34})>,
+             ...
+
+
+
 """
 
 from collections import defaultdict
