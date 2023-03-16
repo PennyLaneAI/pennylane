@@ -103,7 +103,7 @@ def broadcast_expand(tape):
                 unbatched_params.append(qml.math.unstack(p))
             else:
                 unbatched_params.append([p] * num_tapes)
-            if qml.math.is_abstract(p):
+            if not has_abstract_param and qml.math.is_abstract(p):
                 has_abstract_param = True
 
     output_tapes = []
