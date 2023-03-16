@@ -377,10 +377,10 @@ class ParametrizedEvolution(Operation):
             warnings.warn(
                 "The keyword argument complementary does not have any effect if return_intermediate is set to False."
             )
-        self.return_intermediate = return_intermediate
-        self.complementary = complementary
         params = [] if params is None else params
         super().__init__(*params, wires=H.wires, do_queue=do_queue, id=id)
+        self.hyperparameters["return_intermediate"] = return_intermediate
+        self.hyperparameters["complementary"] = complementary
         self._check_time_batching()
 
     def __call__(self, params, t, return_intermediate=None, complementary=None, **odeint_kwargs):
@@ -388,10 +388,10 @@ class ParametrizedEvolution(Operation):
         # to `np.arrays` inside `Operator.__init__`
         params = [jnp.array(p) for p in params]
         # Inherit return_intermediate and complementary from self if not provided.
-        _return_intermediate = (
-            self.return_intermediate if return_intermediate is None else return_intermediate
-        )
-        _complementary = self.complementary if complementary is None else complementary
+        if return_intermediate is None:
+            return_intermediate = self.hyperparameters["return_intermediate"]
+        if complementary is None:
+            complementary = self.hyperparameters["complementary"]
         odeint_kwargs = {**self.odeint_kwargs, **odeint_kwargs}
         if qml.QueuingManager.recording():
             qml.QueuingManager.remove(self)
@@ -400,8 +400,8 @@ class ParametrizedEvolution(Operation):
             H=self.H,
             params=params,
             t=t,
-            return_intermediate=_return_intermediate,
-            complementary=_complementary,
+            return_intermediate=return_intermediate,
+            complementary=complementary,
             do_queue=True,
             id=self.id,
             **odeint_kwargs
@@ -409,11 +409,11 @@ class ParametrizedEvolution(Operation):
 
     def _check_time_batching(self):
         """Check whether the time argument is broadcasted/batched."""
-        if not self.return_intermediate:
+        if not self.hyperparameters["return_intermediate"]:
             return
         # Subtract 1 because the identity is never returned by `matrix`. If `complementary=True`,
         # subtract and additional 1 because the full time evolution is not being returned.
-        self._batch_size = self.t.shape[0] - 1 - self.complementary
+        self._batch_size = self.t.shape[0] - 1 - self.hyperparameters["complementary"]
 
     # pylint: disable=arguments-renamed, invalid-overridden-method
     @property
@@ -439,10 +439,10 @@ class ParametrizedEvolution(Operation):
             return (-1j * H_jax(self.data, t=t)) @ y
 
         mat = odeint(fun, y0, self.t, **self.odeint_kwargs)
-        if self.return_intermediate:
+        if self.hyperparameters["return_intermediate"]:
             # Skip U(t_1, t_1) for both activated and deactivated `complementary`
             mat = mat[1:]
-            if self.complementary:
+            if self.hyperparameters["complementary"]:
                 # Compute U(t_1, t_2)@U(t_1, tau_i)^\dagger, where i indexes the first axis of mat
                 # We skip the last entry of `mat`, because it would yield U(t_2, t_2), which we skip
                 mat = qml.math.tensordot(mat[-1], qml.math.conj(mat[:-1]), axes=[[1], [-1]])

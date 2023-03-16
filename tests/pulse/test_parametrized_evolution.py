@@ -116,18 +116,18 @@ class TestInitialization:
             H=H, params=coeffs, t=t, return_intermediate=ret_intmdt, complementary=comp
         )
 
-        assert ev.return_intermediate is ret_intmdt
-        assert ev.complementary is comp
+        assert ev.hyperparameters["return_intermediate"] is ret_intmdt
+        assert ev.hyperparameters["complementary"] is comp
 
         new_ev = ev(coeffs, t=t)
 
-        assert new_ev.return_intermediate is ret_intmdt
-        assert new_ev.complementary is comp
+        assert new_ev.hyperparameters["return_intermediate"] is ret_intmdt
+        assert new_ev.hyperparameters["complementary"] is comp
 
         for new_ret_intmdt, new_comp in ([False, False], [True, False], [True, True]):
             new_ev = ev(coeffs, t=t, return_intermediate=new_ret_intmdt, complementary=new_comp)
-            assert new_ev.return_intermediate is new_ret_intmdt
-            assert new_ev.complementary is new_comp
+            assert new_ev.hyperparameters["return_intermediate"] is new_ret_intmdt
+            assert new_ev.hyperparameters["complementary"] is new_comp
 
     @pytest.mark.parametrize("len_t", [3, 8])
     def test_batch_size_with_return_intermediate(self, len_t):
@@ -156,8 +156,8 @@ class TestInitialization:
                 H=H, params=[1, 2], t=2, return_intermediate=False, complementary=True
             )
 
-        assert ev.return_intermediate is False
-        assert ev.complementary is True
+        assert ev.hyperparameters["return_intermediate"] is False
+        assert ev.hyperparameters["complementary"] is True
 
     @pytest.mark.parametrize("t", [0.5, [0.2, 0.9]])
     def test_warns_with_ret_intermediate_with_simple_time(self, t):
@@ -169,7 +169,7 @@ class TestInitialization:
         with pytest.warns(UserWarning, match="Setting return_intermediate=True does not"):
             ev = ParametrizedEvolution(H=H, params=[1, 2], t=t, return_intermediate=True)
 
-        assert ev.return_intermediate is True
+        assert ev.hyperparameters["return_intermediate"] is True
 
     def test_odeint_kwargs(self):
         """Test the initialization with odeint kwargs."""
@@ -313,9 +313,6 @@ class TestMatrix:
             true_matrices = [
                 qml.math.expm(-1j * qml.matrix(H(params, t=t[-1])) * _t) for _t in durations
             ]
-            print(*matrices, sep="\n")
-            print()
-            print(*true_matrices, sep="\n")
             assert qml.math.allclose(matrices, true_matrices)
 
 
@@ -464,6 +461,7 @@ class TestIntegration:
         import jax
         import jax.numpy as jnp
 
+        jax.config.update("jax_enable_x64", True)
         mixed = qml.device("default.mixed", wires=range(3))
         default = qml.device("default.qubit", wires=range(3))
 
