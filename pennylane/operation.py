@@ -368,6 +368,7 @@ def _process_data(op):
 
     return str(data)
 
+
 class Operator(abc.ABC):
     r"""Base class representing quantum operators.
 
