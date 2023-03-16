@@ -101,6 +101,9 @@
 
 <h3>Bug fixes</h3>
 
+* Fixed a bug where caching together with JIT compilation and broadcasted tapes yielded wrong results
+  [(#3917)](https://github.com/PennyLaneAI/pennylane/pull/3917)
+
 * Fixed bug where the coefficients where not ordered correctly when summing a `ParametrizedHamiltonian`
   with other operators.
   [(#3749)](https://github.com/PennyLaneAI/pennylane/pull/3749)
