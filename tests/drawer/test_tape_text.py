@@ -331,8 +331,6 @@ def test_single_ops(op, expected):
         qml.apply(op)
 
     tape = qml.tape.QuantumScript.from_queue(q_tape)
-    print(tape_text(tape, decimals=2, show_matrices=False))
-    print(expected)
     assert tape_text(tape, decimals=2, show_matrices=False) == expected
 
 
