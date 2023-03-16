@@ -32,10 +32,6 @@ class RZ_broadcasted(qml.RZ):
     compute_decomposition = staticmethod(lambda theta, wires=None: qml.RZ(theta, wires=wires))
 
 
-dev = qml.device("default.qubit", wires=2)
-"""Defines the device used for all tests"""
-
-
 def make_tape(x, y, z, obs):
     """Construct a tape with three parametrized, two unparametrized
     operations and expvals of provided observables."""
@@ -95,6 +91,7 @@ class TestBroadcastExpand:
     @pytest.mark.parametrize("obs, exp_fn", observables_and_exp_fns)
     def test_expansion(self, params, size, obs, exp_fn):
         """Test that the expansion works as expected."""
+        dev = qml.device("default.qubit", wires=2)
         tape = make_tape(*params, obs)
         assert tape.batch_size == size
 
@@ -115,14 +112,18 @@ class TestBroadcastExpand:
     @pytest.mark.filterwarnings("ignore:Output seems independent of input")
     @pytest.mark.parametrize("params, size", parameters_and_size)
     @pytest.mark.parametrize("obs, exp_fn", observables_and_exp_fns)
-    def test_autograd(self, params, size, obs, exp_fn):
+    @pytest.mark.parametrize("gradient_fn", [qml.gradients.param_shift, "backprop"])
+    def test_autograd(self, params, size, obs, exp_fn, gradient_fn):
         """Test that the expansion works with autograd and is differentiable."""
         params = tuple(pnp.array(p, requires_grad=True) for p in params)
+        # Need a special Autograd device for gradient method "backprop"
+        dev_type = ".autograd" if gradient_fn == "backprop" else ""
+        dev = qml.device(f"default.qubit{dev_type}", wires=2)
 
         def cost(*params):
             tape = make_tape(*params, obs)
             tapes, fn = qml.transforms.broadcast_expand(tape)
-            return fn(qml.execute(tapes, dev, qml.gradients.param_shift))
+            return fn(qml.execute(tapes, dev, gradient_fn))
 
         assert qml.math.allclose(cost(*params), exp_fn(*params))
 
@@ -135,17 +136,21 @@ class TestBroadcastExpand:
     @pytest.mark.parametrize("params, size", parameters_and_size)
     @pytest.mark.parametrize("obs, exp_fn", observables_and_exp_fns)
     @pytest.mark.parametrize("use_jit", [True, False])
-    def test_jax(self, params, size, obs, exp_fn, use_jit):
+    @pytest.mark.parametrize("gradient_fn", [qml.gradients.param_shift, "backprop"])
+    def test_jax(self, params, size, obs, exp_fn, use_jit, gradient_fn):
         """Test that the expansion works with jax and is differentiable."""
         import jax
         jax.config.update("jax_enable_x64", True)
 
         params = tuple(jax.numpy.array(p) for p in params)
+        # Need a special JAX device for gradient method "backprop"
+        dev_type = ".jax" if gradient_fn == "backprop" else ""
+        dev = qml.device(f"default.qubit{dev_type}", wires=2)
 
         def cost(*params):
             tape = make_tape(*params, obs)
             tapes, fn = qml.transforms.broadcast_expand(tape)
-            return fn(qml.execute(tapes, dev, "backprop"))
+            return fn(qml.execute(tapes, dev, gradient_fn))
 
         if use_jit:
             cost = jax.jit(cost)
@@ -157,6 +162,7 @@ class TestBroadcastExpand:
 
         assert all(qml.math.allclose(_jac, e_jac) for _jac, e_jac in zip(jac, exp_jac))
 
+    @pytest.mark.slow
     @pytest.mark.tf
     @pytest.mark.parametrize("params, size", parameters_and_size)
     @pytest.mark.parametrize("obs, exp_fn", observables_and_exp_fns)
@@ -165,11 +171,12 @@ class TestBroadcastExpand:
         import tensorflow as tf
 
         params = tuple(tf.Variable(p, dtype=tf.float64) for p in params)
+        dev = qml.device("default.qubit", wires=2)
 
         def cost(*params):
             tape = make_tape(*params, obs)
             tapes, fn = qml.transforms.broadcast_expand(tape)
-            return fn(qml.execute(tapes, dev, qml.gradients.param_shift))
+            return fn(qml.execute(tapes, dev, qml.gradient.param_shift))
 
         with tf.GradientTape(persistent=True) as t:
             out = cost(*params)
@@ -189,17 +196,21 @@ class TestBroadcastExpand:
     @pytest.mark.filterwarnings("ignore:Output seems independent of input")
     @pytest.mark.parametrize("params, size", parameters_and_size)
     @pytest.mark.parametrize("obs, exp_fn", observables_and_exp_fns)
-    def test_torch(self, params, size, obs, exp_fn):
+    @pytest.mark.parametrize("gradient_fn", [qml.gradients.param_shift, "backprop"])
+    def test_torch(self, params, size, obs, exp_fn, gradient_fn):
         """Test that the expansion works with torch and is differentiable."""
         import torch
 
-        torch_params = tuple(torch.tensor(p, requires_grad=True) for p in params)
+        torch_params = tuple(torch.tensor(p, requires_grad=True, dtype=torch.float64) for p in params)
         params = tuple(pnp.array(p, requires_grad=True) for p in params)
+        # Need a special Torch device for gradient method "backprop"
+        dev_type = ".torch" if gradient_fn == "backprop" else ""
+        dev = qml.device(f"default.qubit{dev_type}", wires=2)
 
         def cost(*params):
             tape = make_tape(*params, obs)
             tapes, fn = qml.transforms.broadcast_expand(tape)
-            return fn(qml.execute(tapes, dev, qml.gradients.param_shift))
+            return fn(qml.execute(tapes, dev, gradient_fn))
 
         assert qml.math.allclose(cost(*torch_params), exp_fn(*params))
 
