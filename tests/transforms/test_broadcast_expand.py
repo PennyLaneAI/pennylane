@@ -134,16 +134,21 @@ class TestBroadcastExpand:
     @pytest.mark.jax
     @pytest.mark.parametrize("params, size", parameters_and_size)
     @pytest.mark.parametrize("obs, exp_fn", observables_and_exp_fns)
-    def test_jax(self, params, size, obs, exp_fn):
+    @pytest.mark.parametrize("use_jit", [True, False])
+    def test_jax(self, params, size, obs, exp_fn, use_jit):
         """Test that the expansion works with jax and is differentiable."""
         import jax
+        jax.config.update("jax_enable_x64", True)
 
         params = tuple(jax.numpy.array(p) for p in params)
 
         def cost(*params):
             tape = make_tape(*params, obs)
             tapes, fn = qml.transforms.broadcast_expand(tape)
-            return fn(qml.execute(tapes, dev, qml.gradients.param_shift))
+            return fn(qml.execute(tapes, dev, "backprop"))
+
+        if use_jit:
+            cost = jax.jit(cost)
 
         assert qml.math.allclose(cost(*params), exp_fn(*params))
 

@@ -652,6 +652,8 @@ def execute(
         return batch_fn(res)
 
     if gradient_fn == "backprop" or interface is None:
+        #if interface == "jax":
+            #cache = False if getattr(tapes[0], "has_abstract_pars", False) else cache
         return batch_fn(
             qml.interfaces.cache_execute(
                 batch_execute, cache, return_tuple=False, expand_fn=expand_fn

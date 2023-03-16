@@ -90,11 +90,11 @@ def broadcast_expand(tape):
     >>> fn(qml.execute(tapes, qml.device("default.qubit", wires=1), None))
     array([0.98006658, 0.82533561, 0.54030231])
     """
-
     num_tapes = tape.batch_size
     if num_tapes is None:
         raise ValueError("The provided tape is not broadcasted.")
 
+    has_abstract_pars = False
     # Note that these unbatched_params will have shape (#params, num_tapes)
     unbatched_params = []
     for op in tape.operations + tape.observables:
@@ -103,11 +103,15 @@ def broadcast_expand(tape):
                 unbatched_params.append(qml.math.unstack(p))
             else:
                 unbatched_params.append([p] * num_tapes)
+            if qml.math.is_abstract(p):
+                has_abstract_pars = True
 
     output_tapes = []
     for p in zip(*unbatched_params):
         new_tape = tape.copy(copy_operations=True)
         new_tape.set_parameters(p, trainable_only=False)
         output_tapes.append(new_tape)
+
+    output_tapes[0].has_abstract_pars = has_abstract_pars
 
     return output_tapes, lambda x: qml.math.squeeze(qml.math.stack(x))
