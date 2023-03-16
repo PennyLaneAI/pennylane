@@ -398,7 +398,9 @@ class TestKerasLayer:
         c, w = get_circuit
 
         @qml.qnode(qml.device("default.qubit", wires=n_qubits), interface="tf")
-        def c_default(w1, w2, w3, w4, w5, w6, w7, inputs=None):  # pylint: disable=too-many-arguments
+        def c_default(
+            w1, w2, w3, w4, w5, w6, w7, inputs=None
+        ):  # pylint: disable=too-many-arguments
             """Version of the circuit with inputs as a default argument"""
             qml.templates.AngleEmbedding(inputs, wires=list(range(n_qubits)))
             qml.templates.StronglyEntanglingLayers(w1, wires=list(range(n_qubits)))
@@ -553,7 +555,9 @@ class TestKerasLayerIntegration:
         model.fit(x, y, batch_size=batch_size, verbose=0)
 
     @pytest.mark.parametrize("n_qubits, output_dim", indices_up_to(2))
-    def test_model_gradients(self, model, output_dim, n_qubits):  # pylint: disable=no-self-use,redefined-outer-name
+    def test_model_gradients(
+        self, model, output_dim, n_qubits
+    ):  # pylint: disable=no-self-use,redefined-outer-name
         """Test if a gradient can be calculated with respect to all of the trainable variables in
         the model"""
         x = tf.zeros((2, n_qubits))
@@ -567,7 +571,9 @@ class TestKerasLayerIntegration:
         assert all(g.dtype == tf.keras.backend.floatx() for g in gradients)
 
     @pytest.mark.parametrize("n_qubits, output_dim", indices_up_to(2))
-    def test_model_save_weights(self, model, n_qubits, tmpdir):  # pylint: disable=no-self-use,redefined-outer-name
+    def test_model_save_weights(
+        self, model, n_qubits, tmpdir
+    ):  # pylint: disable=no-self-use,redefined-outer-name
         """Test if the model can be successfully saved and reloaded using the get_weights()
         method"""
         prediction = model.predict(np.ones((1, n_qubits)))
@@ -622,7 +628,9 @@ class TestKerasLayerIntegrationDM:
         assert all(g.dtype == tf.keras.backend.floatx() for g in gradients)
 
     @pytest.mark.parametrize("n_qubits, output_dim", indices_up_to_dm(2))
-    def test_model_save_weights_dm(self, model_dm, n_qubits, tmpdir):  # pylint: disable=no-self-use,redefined-outer-name
+    def test_model_save_weights_dm(
+        self, model_dm, n_qubits, tmpdir
+    ):  # pylint: disable=no-self-use,redefined-outer-name
         """Test if the model_dm can be successfully saved and reloaded using the get_weights()
         method"""
 
