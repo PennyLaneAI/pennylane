@@ -239,7 +239,7 @@ def _coefficients_no_filter(f, degree, use_broadcasting):
     k = 2 * degree + 1
 
     # create generator for indices nvec = (n1, ..., nN), ranging from (-d1,...,-dN) to (d1,...,dN)
-    n_ranges = [np.array(range(-d, d + 1)) for d in degree]
+    n_ranges = [np.arange(-d, d + 1) for d in degree]
     nvecs = product(*(n_ranges[:-1] if use_broadcasting else n_ranges))
 
     # here we will collect the discretized values of function f
@@ -252,7 +252,7 @@ def _coefficients_no_filter(f, degree, use_broadcasting):
         # This would yield to a ragged array, so we do not cast `nvec` to an array but manually
         # iterate over the first axis of `spacing` and `nvec`.
         if use_broadcasting:
-            nvec = tuple([*nvec, n_ranges[-1]])
+            nvec = (*nvec, n_ranges[-1])
             sampling_point = [s * n for s, n in zip(spacing, nvec)]
         else:
             sampling_point = spacing * np.array(nvec)
