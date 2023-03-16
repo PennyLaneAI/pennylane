@@ -355,18 +355,22 @@ def classproperty(func):
 
 
 def _process_data(op):
-    data = [id(d) if qml.math.is_abstract(d) else d for d in op.data]
+    def _mod_and_round(x, mod_val):
+        if mod_val is None:
+            return x
+        return qml.math.round(qml.math.real(x) % mod_val, 10)
 
     # Use qml.math.real to take the real part. We may get complex inputs for
     # example when differentiating holomorphic functions with JAX: a complex
     # valued QNode (one that returns qml.state) requires complex typed inputs.
     if op.name in ("RX", "RY", "RZ", "PhaseShift", "Rot"):
-        return str([qml.math.round(qml.math.real(d) % (2 * np.pi), 10) for d in data])
+        mod_val = 2 * np.pi
+    elif op.name in ("CRX", "CRY", "CRZ", "CRot"):
+        mod_val = 4 * np.pi
+    else:
+        mod_val = None
 
-    if op.name in ("CRX", "CRY", "CRZ", "CRot"):
-        return str([qml.math.round(qml.math.real(d) % (4 * np.pi), 10) for d in data])
-
-    return str(data)
+    return str([id(d) if qml.math.is_abstract(d) else _mod_and_round(d, mod_val) for d in op.data])
 
 
 class Operator(abc.ABC):
