@@ -69,7 +69,6 @@ Hardware Compatible Hamiltonians
 
     ~rydberg_interaction
     ~rydberg_drive
-    ~rydberg_local_shift
 
 
 Creating a parametrized Hamiltonian
@@ -264,5 +263,4 @@ from .rydberg_hamiltonian import (
     RydbergHamiltonian,
     rydberg_drive,
     rydberg_interaction,
-    rydberg_local_shift,
 )

@@ -122,7 +122,7 @@ def rydberg_interaction(
     )
 
 
-def rydberg_drive(amplitude, phase, detuning, wires):
+def rydberg_drive(amplitude, phase, wires, detuning=None):
     r"""Returns a :class:`ParametrizedHamiltonian` representing the action of a driving laser
     field with the given rabi frequency, detuning and phase acting on the given wires
 
@@ -141,10 +141,10 @@ def rydberg_drive(amplitude, phase, detuning, wires):
         amplitude (Union[float, Callable]): float or callable returning the amplitude (in MHz) of a
             laser field
         phase (Union[float, Callable]): float or callable returning the phase (in radians) of the laser field
-        detuning (Union[float, Callable]): float or callable returning the detuning (in MHz) of a
-            laser field
         wires (Union[int, List[int]]): integer or list containing wire values for the Rydberg atoms that
             the laser field acts on
+        detuning (Union[float, Callable]): float or callable returning the detuning (in MHz) of a
+            laser field
 
     Returns:
         RydbergHamiltonian: a :class:`~.ParametrizedHamiltonian` representing the action of the laser field
@@ -175,7 +175,7 @@ def rydberg_drive(amplitude, phase, detuning, wires):
         amplitude = lambda p, t: p * jnp.sin(jnp.pi * t)
         phase = jnp.pi / 2
         detuning = 3 * jnp.pi / 4
-        H_d = qml.pulse.rydberg_drive(amplitude, phase, detuning, wires)
+        H_d = qml.pulse.rydberg_drive(amplitude, phase, wires, detuning)
 
     >>> H_i
     ParametrizedHamiltonian: terms=6
@@ -212,7 +212,7 @@ def rydberg_drive(amplitude, phase, detuning, wires):
         amplitude_local = lambda p, t: p[0] * jnp.sin(2 * jnp.pi * t) + p[1]
         phase_local = lambda p, t: p * jnp.exp(-0.25 * t)
         detuning_local = jnp.pi / 4
-        H_local = qml.pulse.rydberg_drive(amplitude_local, phase_local, detuning_local, [0, 1])
+        H_local = qml.pulse.rydberg_drive(amplitude_local, phase_local, [0, 1], detuning_local)
 
         H = H_i + H_d + H_local
 
@@ -238,66 +238,22 @@ def rydberg_drive(amplitude, phase, detuning, wires):
     coeffs = [
         amplitude_and_phase(qml.math.cos, amplitude, phase),
         amplitude_and_phase(qml.math.sin, amplitude, phase),
-        detuning,
     ]
 
     drive_x_term = 0.5 * sum(qml.PauliX(wire) for wire in wires)
     drive_y_term = -0.5 * sum(qml.PauliY(wire) for wire in wires)
-    detuning_term = -1.0 * sum(qml.PauliZ(wire) for wire in wires)
 
-    observables = [drive_x_term, drive_y_term, detuning_term]
+    observables = [drive_x_term, drive_y_term]
+
+    if detuning is not None and detuning != 0:
+        detuning_term = -1.0 * sum(qml.PauliZ(wire) for wire in wires)
+        coeffs.append(detuning)
+        observables.append(detuning_term)
 
     # We convert the pulse data into a list of ``RydbergPulse`` objects
-    pulses = [RydbergPulse(amplitude, phase, detuning, None, wires)]
+    pulses = [RydbergPulse(amplitude, phase, detuning, wires)]
 
     return RydbergHamiltonian(coeffs, observables, pulses=pulses)
-
-
-def rydberg_local_shift(detuning, pattern, wires):
-    r"""Returns a :class:`ParametrizedHamiltonian` representing the action of a local shifting laser
-    with a given temporal and spatial detuning.
-
-    .. math::
-        -\delta(t) \sum_{i \in \text{wires}} h_i \sigma_i^z
-
-    where :math:`\delta` is the temporal detuning, :math:`h_i` is the spatial detuning, or site coefficient
-    between 0 and 1, of the laser, :math:`i` correspond to the wire index, and :math:`\sigma^z` is the Pauli
-    Z matrix. The unit of time for the evolution of this local Rydberg shift term is :math:`\mu \text{s}`. This
-    local shift term can be combined with an interaction and global drive term to create a Hamiltonian describing
-    a driven Rydberg atom system. Multiple shifting terms can be combined by summing them (see example).
-
-    Args:
-        detuning (Union[float, Callable]): float or callable returning the detuning (in MHz) of a
-            laser field
-        pattern (List[float]): list containing the spatial detuning factor between 0 and 1 corresponding to each
-            Rydberg atom being locally driven
-        wires (Union[int, List[int]]): integer or list containing wire values for the Rydberg atoms that
-            the laser field acts on
-
-    Returns:
-        RydbergHamiltonian: a :class:`~.ParametrizedHamiltonian` representing the action of the laser field
-        on the Rydberg atoms.
-
-    .. seealso::
-
-        :func:`~.rydberg_drive`, :func:`~.rydberg_interaction`
-    """
-    if isinstance(wires, int):
-        wires = [wires]
-
-    if len(pattern) != len(wires):
-        raise ValueError("The number of site coefficients must be the same as the number of wires.")
-
-    # We compute the `coeffs` and `observables` of the laser field
-    coeffs = [detuning]
-
-    # Including -1 factor in each term to account for negative sign in front of the Hamiltonian
-    terms = [sum(-c * qml.PauliZ(wire) for c, wire in zip(pattern, wires))]
-
-    # We convert the pulse data into a list of ``RydbergPulse`` objects
-    pulses = [RydbergPulse(0, 0, detuning, pattern, wires)]
-
-    return RydbergHamiltonian(coeffs, terms, pulses=pulses)
 
 
 class RydbergHamiltonian(ParametrizedHamiltonian):
@@ -437,8 +393,6 @@ class RydbergPulse:
         phase (Union[float, Callable]): float containing the phase (in radians) of the laser field
         detuning (Union[float, Callable]): float or callable returning the detuning (in MHz) of a
             laser field
-        pattern (List[float]): list containing the spatial detuning factor between 0 and 1 corresponding to each
-            Rydberg atom being locally driven
         wires (Union[int, List[int]]): integer or list containing wire values that the laser field
             acts on
     """
@@ -446,7 +400,6 @@ class RydbergPulse:
     amplitude: Union[float, Callable]
     phase: Union[float, Callable]
     detuning: Union[float, Callable]
-    pattern: List[float]
     wires: List[Wires]
 
     def __post_init__(self):
@@ -457,7 +410,6 @@ class RydbergPulse:
             self.amplitude == other.amplitude
             and self.phase == other.phase
             and self.detuning == other.detuning
-            and self.pattern == other.pattern
             and self.wires == other.wires
         )
 
