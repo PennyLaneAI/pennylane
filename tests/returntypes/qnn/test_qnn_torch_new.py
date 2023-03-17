@@ -476,8 +476,8 @@ class TestTorchLayer:  # pylint: disable=too-many-public-methods
         c, w = get_circuit
         layer = TorchLayer(c, w)
 
-        assert layer.__str__() == "<Quantum Torch Layer: func=circuit>"
-        assert layer.__repr__() == "<Quantum Torch Layer: func=circuit>"
+        assert str(layer) == "<Quantum Torch Layer: func=circuit>"
+        assert repr(layer) == "<Quantum Torch Layer: func=circuit>"
 
     @pytest.mark.parametrize("n_qubits, output_dim", indices_up_to(1))
     def test_gradients(self, get_circuit, n_qubits):  # pylint: disable=no-self-use

@@ -5,6 +5,7 @@ tests/drawer/test_draw_mpl.py
 tests/drawer/test_drawer_utils.py
 tests/measurements/test_counts.py
 tests/measurements/test_probs.py
+tests/measurements/test_shots.py
 tests/qchem/test_givens_rotations.py
 tests/templates/test_subroutines/test_basis_rotation.py
 tests/ops/op_math/test_controlled_ops.py
@@ -31,7 +32,6 @@ tests/ops/qubit/test_state_prep.py
 tests/devices/qubit/**
 tests/test_typing.py
 tests/test_operation.py
-tests/test_shots.py
 tests/pulse/**
 tests/math/test_init.py
 tests/math/test_functions.py

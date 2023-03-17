@@ -217,6 +217,7 @@ from .mutual_info import MutualInfoMP, mutual_info
 from .purity import PurityMP, purity
 from .probs import ProbabilityMP, probs
 from .sample import SampleMP, sample
+from .shots import ShotAPI, ShotTuple
 from .state import StateMP, density_matrix, state
 from .var import VarianceMP, var
 from .vn_entropy import VnEntropyMP, vn_entropy

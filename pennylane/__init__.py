@@ -32,7 +32,6 @@ import pennylane.kernels
 import pennylane.math
 import pennylane.operation
 import pennylane.qnn
-import pennylane.shots
 import pennylane.templates
 import pennylane.pauli
 from pennylane.pauli import pauli_decompose
@@ -64,6 +63,8 @@ from pennylane.measurements import (
     mutual_info,
     classical_shadow,
     shadow_expval,
+    ShotAPI,
+    ShotTuple,
 )
 from pennylane.ops import *
 from pennylane.ops import adjoint, ctrl, exp, sum, pow, prod, s_prod, op_sum

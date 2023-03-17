@@ -17,7 +17,7 @@ Unit tests for :mod:`pennylane.shots`.
 
 import pytest
 
-from pennylane.shots import ShotAPI, ShotTuple
+from pennylane.measurements import ShotAPI, ShotTuple
 
 
 class TestShotAPI:
