@@ -173,7 +173,6 @@ class SampleMP(SampleMeasurement):
         return (1, device.shots) if self.obs is not None else (1, device.shots, len_wires)
 
     def _shape_new(self, device=None):
-
         num_wires = len(self.wires) if len(self.wires) > 0 else len(device.wires)
 
         def _single_int_shape(shot_val, num_wires):
