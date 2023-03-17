@@ -85,6 +85,17 @@
   `ops.op_math.ctrl_decomp_bisect`.
   [(#3851)](https://github.com/PennyLaneAI/pennylane/pull/3851)
 
+* Do not run `qml.transforms.sum_expand` in `Device.batch_transform` if the device supports Sum observables.
+  [(#3915)](https://github.com/PennyLaneAI/pennylane/pull/3915)
+
+* `CompositeOp` now overrides `Operator._check_batching`, providing a significant performance improvement.
+  `Hamiltonian` also overrides this method and does nothing, because it does not support batching.
+  [(#3915)](https://github.com/PennyLaneAI/pennylane/pull/3915)
+
+* If a `Sum` operator has a pre-computed Pauli representation, `is_hermitian` now checks that all coefficients
+  are real, providing a significant performance improvement.
+  [(#3915)](https://github.com/PennyLaneAI/pennylane/pull/3915)
+
 <h3>Breaking changes</h3>
 
 * Both JIT interfaces are not compatible with Jax `>0.4.3`, we raise an error for those versions.
