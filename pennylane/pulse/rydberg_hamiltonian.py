@@ -53,7 +53,7 @@ def rydberg_interaction(
 
     .. seealso::
 
-        :func:`~.rydberg_drive`, :func:`rydberg_local_shift`
+        :func:`~.rydberg_drive`
 
     Args:
         register (list): list of coordinates of the Rydberg atoms (in micrometers)
