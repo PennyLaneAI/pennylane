@@ -19,54 +19,71 @@ import pytest
 
 from pennylane.measurements import Shots, ShotCopies
 
+ERROR_MSG = "Shots must be a single non-negative integer, a tuple"
 
-class TestShots:
+
+class TestShotsConstruction:
     """Tests the Shots class."""
 
-    def test_None_construction(self):
+    def test_copy(self):
+        """Tests that creating a Shots from another Shots instance returns the same instance."""
+        x = Shots(123)
+        y = Shots(x)
+        assert y is x
+        assert y._frozen  # pylint:disable=protected-access
+
+    def test_None(self):
         """Tests the constructor when shots is None."""
         shots = Shots(None)
-        assert shots.shot_list == []
-        assert shots.shot_vector == []
-        assert shots.total_shots == 0
+        assert shots.shot_vector == ()
+        assert shots.total_shots is None
 
-    def test_int_construction(self):
+    def test_int(self):
         """Tests the constructor when shots is an int."""
         shots = Shots(100)
-        assert shots.shot_list == [100]
-        assert shots.shot_vector == [ShotCopies(100, 1)]
+        assert shots.shot_vector == (ShotCopies(100, 1),)
         assert shots.total_shots == 100
 
+    def test_tuple(self):
+        """Tests the constructor when shots is a tuple."""
+        shots = Shots((5, 6))
+        assert shots.shot_vector == (ShotCopies(5, 6),)
+        assert shots.total_shots == 30
+        assert isinstance(shots.shot_vector, tuple)
+
+    def test_sequence_all_tuple(self):
+        """Tests that a sequence of tuples is allowed."""
+        shots = Shots([(1, 2), (1, 5), (3, 4)])
+        assert shots.shot_vector == (ShotCopies(1, 7), ShotCopies(3, 4))
+        assert shots.total_shots == 19
+        assert isinstance(shots.shot_vector, tuple)
+
     @pytest.mark.parametrize(
-        "shot_list,expected",
+        "shot_list,expected,total",
         [
             (
                 [1, 3, 3, 4, 4, 4, 3],
-                [ShotCopies(1, 1), ShotCopies(3, 2), ShotCopies(4, 3), ShotCopies(3, 1)],
+                (ShotCopies(1, 1), ShotCopies(3, 2), ShotCopies(4, 3), ShotCopies(3, 1)),
+                22,
             ),
-            ([5, 5, 5], [ShotCopies(5, 3)]),
+            ([5, 5, 5], (ShotCopies(5, 3),), 15),
+            ([1, (4, 2)], (ShotCopies(1, 1), ShotCopies(4, 2)), 9),
         ],
     )
-    def test_sequence_construction(self, shot_list, expected):
+    def test_sequence(self, shot_list, expected, total):
         """Tests the constructor when shots is a Sequence[int]."""
         shots = Shots(shot_list)
-        assert shots.shot_list == shot_list
         assert shots.shot_vector == expected
-        assert shots.total_shots == sum(shot_list)
+        assert shots.total_shots == total
 
-    @pytest.mark.parametrize("shot_arg", ["123", [1.1, 2], [-1, 2], [1, (4, 2)], 1.5])
-    def test_other_construction_fails(self, shot_arg):
+    @pytest.mark.parametrize("shot_arg", ["123", [1.1, 2], [-1, 2], 1.5, (1, 2, 3)])
+    def test_other_fails(self, shot_arg):
         """Tests that all other values for shots is not allowed."""
-        with pytest.raises(
-            ValueError,
-            match="Shots must be a single non-negative integer or a sequence of non-negative integers.",
-        ):
+        with pytest.raises(ValueError, match=ERROR_MSG):
             _ = Shots(shot_arg)
 
     def test_zero_shots_fails(self):
-        with pytest.raises(
-            ValueError, match="The specified number of shots needs to be at least 1. Got 0."
-        ):
+        with pytest.raises(ValueError, match=ERROR_MSG):
             _ = Shots(0)
 
     def test_Shots_frozen_after_init(self):
