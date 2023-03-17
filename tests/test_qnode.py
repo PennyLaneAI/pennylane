@@ -813,6 +813,43 @@ class TestTapeConstruction:
         qnode = QNode(circuit, dev)
         assert np.allclose(qnode(0.5), np.cos(0.5), atol=tol, rtol=0)
 
+    @pytest.mark.jax
+    def test_jit_counts_raises_error(self):
+        """Test that returning counts in a quantum function with trainable parameters while
+        jitting raises an error."""
+        import jax
+
+        dev = qml.device("default.qubit", wires=2, shots=5)
+
+        def circuit1(param):
+            qml.Hadamard(0)
+            qml.RX(param, wires=1)
+            qml.CNOT([1, 0])
+            return qml.counts()
+
+        qnode = qml.QNode(circuit1, dev)
+        jitted_qnode1 = jax.jit(qnode)
+
+        with pytest.raises(
+            qml.QuantumFunctionError, match="Can't JIT a quantum function that returns counts."
+        ):
+            jitted_qnode1(0.123)
+
+        # Test with qnode decorator syntax
+        @qml.qnode(dev)
+        def circuit2(param):
+            qml.Hadamard(0)
+            qml.RX(param, wires=1)
+            qml.CNOT([1, 0])
+            return qml.counts()
+
+        jitted_qnode2 = jax.jit(circuit2)
+
+        with pytest.raises(
+            qml.QuantumFunctionError, match="Can't JIT a quantum function that returns counts."
+        ):
+            jitted_qnode2(0.123)
+
 
 class TestDecorator:
     """Unit tests for the decorator"""
