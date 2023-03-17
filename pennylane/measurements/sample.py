@@ -169,7 +169,7 @@ class SampleMP(SampleMeasurement):
             return tuple(
                 (shot_val,) if shot_val != 1 else tuple() for shot_val in device._raw_shot_sequence
             )
-        len_wires = len(device.wires)
+        len_wires = len(self.wires) if len(self.wires) > 0 else len(device.wires)
         return (1, device.shots) if self.obs is not None else (1, device.shots, len_wires)
 
     def _shape_new(self, device=None):
@@ -178,19 +178,25 @@ class SampleMP(SampleMeasurement):
                 "The device argument is required to obtain the shape of the measurement "
                 f"{self.__class__.__name__}."
             )
+
+        num_wires = len(self.wires) if len(self.wires) > 0 else len(device.wires)
+
         if device.shot_vector is not None:
             if self.obs is None:
                 return tuple(
-                    (shot_val, len(device.wires)) if shot_val != 1 else (len(device.wires),)
+                    (shot_val, num_wires) if shot_val != 1 else (num_wires,)
                     for shot_val in device._raw_shot_sequence
                 )
             return tuple(
                 (shot_val,) if shot_val != 1 else tuple() for shot_val in device._raw_shot_sequence
             )
-        if self.obs is None:
-            len_wires = len(device.wires)
-            return (device.shots, len_wires) if device.shots != 1 else (len_wires,)
-        return (device.shots,) if device.shots != 1 else ()
+
+        shape = []
+        if device.shots != 1:
+            shape.append(device.shots)
+        if num_wires > 1:
+            shape.append(num_wires)
+        return tuple(shape)
 
     def process_samples(
         self,
