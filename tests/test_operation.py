@@ -78,6 +78,7 @@ class TestOperatorConstruction:
             r"""Dummy custom operator"""
 
         assert DummyOp.num_wires == qml.operation.AnyWires
+        assert Operator.num_wires == qml.operation.AnyWires
 
     def test_incorrect_num_params(self):
         """Test that an exception is raised if called with wrong number of parameters"""
