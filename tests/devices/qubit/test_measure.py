@@ -58,7 +58,7 @@ class TestMeasurementDispatch:
         ),
     )
     def test_diagonalizing_gates(self, m):
-        """Test that the state_diagonalizing gates are used when an observable has diagonalizing gates 
+        """Test that the state_diagonalizing gates are used when an observable has diagonalizing gates
         and allows the measurement to be efficiently computed with them."""
         assert get_measurement_function(m, state=1) is state_diagonalizing_gates
 
