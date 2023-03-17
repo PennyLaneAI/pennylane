@@ -26,7 +26,7 @@ def test_name():
 
 
 def test_no_jvp_functionality():
-    """Test that jvp is not support on DefaultQubit2."""
+    """Test that jvp is not supported on DefaultQubit2."""
     dev = DefaultQubit2()
 
     assert not dev.supports_jvp(ExecutionConfig())
@@ -39,7 +39,7 @@ def test_no_jvp_functionality():
 
 
 def test_no_vjp_functionality():
-    """Test that vjp is not support on DefaultQubit2."""
+    """Test that vjp is not supported on DefaultQubit2."""
     dev = DefaultQubit2()
 
     assert not dev.supports_vjp(ExecutionConfig())
@@ -116,7 +116,7 @@ class TestSupportsDerivatives:
 
 
 class TestBasicCircuit:
-    """Tests a basic circuit with one rx gate and two simple expectation values."""
+    """Tests a basic circuit with one RX gate and two simple expectation values."""
 
     def test_basic_circuit_numpy(self):
         """Test execution with a basic circuit."""
@@ -158,7 +158,7 @@ class TestBasicCircuit:
     @pytest.mark.jax
     @pytest.mark.parametrize("use_jit", (True, False))
     def test_jax_results_and_backprop(self, use_jit):
-        """Tests exeuction and gradients with jax."""
+        """Tests execution and gradients with jax."""
         import jax
 
         phi = jax.numpy.array(0.678)

@@ -40,7 +40,7 @@ class TestCurrentlyUnsupportedCases:
 
 
 class TestMeasurementDispatch:
-    """Test tahat get_measurement_function dispatchs to the correct place."""
+    """Test that get_measurement_function dispatches to the correct place."""
 
     def test_state_no_obs(self):
         """Test that the correct internal function is used for a measurement process with no observables."""
@@ -58,8 +58,8 @@ class TestMeasurementDispatch:
         ),
     )
     def test_diagonalizing_gates(self, m):
-        """Test that the state_diagonalizing gates are used when there's an observable has diagonalizing
-        gates and allows the measurement to be efficiently computed with them."""
+        """Test that the state_diagonalizing gates are used when an observable has diagonalizing gates 
+        and allows the measurement to be efficiently computed with them."""
         assert get_measurement_function(m, state=1) is state_diagonalizing_gates
 
     def test_hamiltonian_sparse_method(self):

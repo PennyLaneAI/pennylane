@@ -72,7 +72,7 @@ def csr_dot_products(measurementprocess: ExpectationMP, state: TensorLike) -> Te
 
 
 def sum_of_terms_method(measurementprocess: ExpectationMP, state: TensorLike) -> TensorLike:
-    """Measure the expecation value of the state when the measured observable is a ``Hamiltonian`` or ``Sum``
+    """Measure the expectation value of the state when the measured observable is a ``Hamiltonian`` or ``Sum``
     and it must be backpropagation compatible.
 
     Args:
