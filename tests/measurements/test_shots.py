@@ -17,24 +17,24 @@ Unit tests for :mod:`pennylane.shots`.
 
 import pytest
 
-from pennylane.measurements import ShotAPI, ShotTuple
+from pennylane.measurements import Shots, ShotCopies
 
 
-class TestShotAPI:
-    """Tests the ShotAPI class."""
+class TestShots:
+    """Tests the Shots class."""
 
     def test_None_construction(self):
         """Tests the constructor when shots is None."""
-        shots = ShotAPI(None)
+        shots = Shots(None)
         assert shots.shot_list == []
         assert shots.shot_vector == []
         assert shots.total_shots == 0
 
     def test_int_construction(self):
         """Tests the constructor when shots is an int."""
-        shots = ShotAPI(100)
+        shots = Shots(100)
         assert shots.shot_list == [100]
-        assert shots.shot_vector == [ShotTuple(100, 1)]
+        assert shots.shot_vector == [ShotCopies(100, 1)]
         assert shots.total_shots == 100
 
     @pytest.mark.parametrize(
@@ -42,14 +42,14 @@ class TestShotAPI:
         [
             (
                 [1, 3, 3, 4, 4, 4, 3],
-                [ShotTuple(1, 1), ShotTuple(3, 2), ShotTuple(4, 3), ShotTuple(3, 1)],
+                [ShotCopies(1, 1), ShotCopies(3, 2), ShotCopies(4, 3), ShotCopies(3, 1)],
             ),
-            ([5, 5, 5], [ShotTuple(5, 3)]),
+            ([5, 5, 5], [ShotCopies(5, 3)]),
         ],
     )
     def test_sequence_construction(self, shot_list, expected):
         """Tests the constructor when shots is a Sequence[int]."""
-        shots = ShotAPI(shot_list)
+        shots = Shots(shot_list)
         assert shots.shot_list == shot_list
         assert shots.shot_vector == expected
         assert shots.total_shots == sum(shot_list)
@@ -61,21 +61,21 @@ class TestShotAPI:
             ValueError,
             match="Shots must be a single non-negative integer or a sequence of non-negative integers.",
         ):
-            _ = ShotAPI(shot_arg)
+            _ = Shots(shot_arg)
 
     def test_zero_shots_fails(self):
         with pytest.raises(
             ValueError, match="The specified number of shots needs to be at least 1. Got 0."
         ):
-            _ = ShotAPI(0)
+            _ = Shots(0)
 
-    def test_ShotAPI_frozen_after_init(self):
-        """Tests that ShotAPI instances are frozen after creation."""
-        shots = ShotAPI(10)
-        with pytest.raises(AttributeError, match="ShotAPI is an immutable class"):
+    def test_Shots_frozen_after_init(self):
+        """Tests that Shots instances are frozen after creation."""
+        shots = Shots(10)
+        with pytest.raises(AttributeError, match="Shots is an immutable class"):
             shots.total_shots = 20
 
     @pytest.mark.parametrize("shots,expected", [(100, False), ([1, 2], True), [[100], False]])
     def test_has_partitioned_shots(self, shots, expected):
         """Tests the has_partitioned_shots method."""
-        assert ShotAPI(shots).has_partitioned_shots is expected
+        assert Shots(shots).has_partitioned_shots is expected

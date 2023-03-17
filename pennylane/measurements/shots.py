@@ -10,17 +10,18 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""This module contains the ShotAPI class to hold shot-related information."""
+"""This module contains the Shots class to hold shot-related information."""
 
 from collections import namedtuple
 from collections.abc import Sequence
 from typing import List
 import numpy as np
 
-ShotTuple = namedtuple("ShotTuple", ["shots", "copies"])
+ShotCopies = namedtuple("ShotCopies", ["shots", "copies"])
+"""A namedtuple that represents a shot quantity being repeated some number of times."""
 
 
-class ShotAPI:
+class Shots:
     """A data class that stores shot information needed in order to execute tapes."""
 
     # pylint:disable=too-few-public-methods
@@ -28,8 +29,8 @@ class ShotAPI:
     total_shots: int = 0
     """The total number of shots to be executed."""
 
-    shot_vector: List[ShotTuple] = []
-    """The list of ShotTuples to be executed. Each element is of the form (shots, copies)."""
+    shot_vector: List[ShotCopies] = []
+    """The list of ShotCopiess to be executed. Each element is of the form (shots, copies)."""
 
     shot_list: List[int] = []
     """The sequence of shot counts to be executed."""
@@ -53,7 +54,7 @@ class ShotAPI:
             raise ValueError(f"The specified number of shots needs to be at least 1. Got {shots}.")
         self.total_shots = shots
         self.shot_list = [shots]
-        self.shot_vector = [ShotTuple(shots, 1)]
+        self.shot_vector = [ShotCopies(shots, 1)]
 
     def __list_init__(self, shots: Sequence):
         """Process the shot sequence, to determine the total
@@ -63,7 +64,7 @@ class ShotAPI:
             shot_list (Sequence[int]): sequence of non-negative shot integers
 
         Returns:
-            tuple[int, list[.ShotTuple[int]]]: A tuple containing the total number
+            tuple[int, list[.ShotCopies[int]]]: A tuple containing the total number
             of shots, as well as a list of shot tuples.
 
         **Example**
@@ -71,14 +72,14 @@ class ShotAPI:
         >>> shot_list = [3, 1, 2, 2, 2, 2, 6, 1, 1, 5, 12, 10, 10]
         >>> _process_shot_sequence(shot_list)
         (57,
-        [ShotTuple(shots=3, copies=1),
-        ShotTuple(shots=1, copies=1),
-        ShotTuple(shots=2, copies=4),
-        ShotTuple(shots=6, copies=1),
-        ShotTuple(shots=1, copies=2),
-        ShotTuple(shots=5, copies=1),
-        ShotTuple(shots=12, copies=1),
-        ShotTuple(shots=10, copies=2)])
+        [ShotCopies(shots=3, copies=1),
+        ShotCopies(shots=1, copies=1),
+        ShotCopies(shots=2, copies=4),
+        ShotCopies(shots=6, copies=1),
+        ShotCopies(shots=1, copies=2),
+        ShotCopies(shots=5, copies=1),
+        ShotCopies(shots=12, copies=1),
+        ShotCopies(shots=10, copies=2)])
 
         The total number of shots (57), and a sparse representation of the shot
         sequence is returned, where tuples indicate the number of times a shot
@@ -90,18 +91,18 @@ class ShotAPI:
         self.shot_list = shots
         if len(set(shots)) == 1:
             # All shots are identical, only require a single shot tuple
-            self.shot_vector = [ShotTuple(shots=shots[0], copies=len(shots))]
+            self.shot_vector = [ShotCopies(shots=shots[0], copies=len(shots))]
             self.total_shots = shots[0] * len(shots)
         else:
             # Iterate through the shots, and group consecutive identical shots
             split_at_repeated = np.split(shots, np.diff(shots).nonzero()[0] + 1)
-            self.shot_vector = [ShotTuple(shots=i[0], copies=len(i)) for i in split_at_repeated]
+            self.shot_vector = [ShotCopies(shots=i[0], copies=len(i)) for i in split_at_repeated]
             self.total_shots = int(np.sum(np.prod(self.shot_vector, axis=1)))
 
     def __setattr__(self, name, value):
         if self._frozen:
             raise AttributeError(
-                "ShotAPI is an immutable class. Consider creating a new instance if you need different shot values."
+                "Shots is an immutable class. Consider creating a new instance if you need different shot values."
             )
         return super().__setattr__(name, value)
 
@@ -113,6 +114,3 @@ class ShotAPI:
             bool: whether or not shots are partitioned
         """
         return len(self.shot_list) > 1
-
-
-# TODO: should the set_shots contextmanager move here?
