@@ -23,7 +23,7 @@ from pennylane.gradients import param_shift_cv
     "gradient_recipes",
     [None, ([[1 / np.sqrt(2), 1, np.pi / 4], [-1 / np.sqrt(2), 1, -np.pi / 4]],)],
 )
-def test_error(gradient_recipes, tol):
+def test_error(gradient_recipes):
     """Test the gradient raises an error with the new return type."""
     dev = qml.device("default.gaussian", wires=2, hbar=2)
 
