@@ -245,7 +245,7 @@ def rydberg_drive(amplitude, phase, wires, detuning=None):
 
     observables = [drive_x_term, drive_y_term]
 
-    if detuning is not None and detuning != 0:
+    if detuning is not None and not qml.math.isclose(detuning, 0.):
         detuning_term = -1.0 * sum(qml.PauliZ(wire) for wire in wires)
         coeffs.append(detuning)
         observables.append(detuning_term)
