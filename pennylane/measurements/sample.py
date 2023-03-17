@@ -151,13 +151,13 @@ class SampleMP(SampleMeasurement):
 
     # pylint: disable=protected-access
     def shape(self, device=None):
-        if qml.active_return():
-            return self._shape_new(device)
         if device is None:
             raise MeasurementShapeError(
                 "The device argument is required to obtain the shape of the measurement "
                 f"{self.__class__.__name__}."
             )
+        if qml.active_return():
+            return self._shape_new(device)
         if device.shot_vector is not None:
             if self.obs is None:
                 # TODO: revisit when qml.sample without an observable fully
@@ -173,30 +173,22 @@ class SampleMP(SampleMeasurement):
         return (1, device.shots) if self.obs is not None else (1, device.shots, len_wires)
 
     def _shape_new(self, device=None):
-        if device is None:
-            raise MeasurementShapeError(
-                "The device argument is required to obtain the shape of the measurement "
-                f"{self.__class__.__name__}."
-            )
 
         num_wires = len(self.wires) if len(self.wires) > 0 else len(device.wires)
 
-        if device.shot_vector is not None:
-            if self.obs is None:
-                return tuple(
-                    (shot_val, num_wires) if shot_val != 1 else (num_wires,)
-                    for shot_val in device._raw_shot_sequence
-                )
-            return tuple(
-                (shot_val,) if shot_val != 1 else tuple() for shot_val in device._raw_shot_sequence
-            )
+        def _single_int_shape(shot_val, num_wires):
+            inner_shape = []
+            if shot_val != 1:
+                inner_shape.append(shot_val)
+            if num_wires != 1:
+                inner_shape.append(num_wires)
+            return tuple(inner_shape)
 
-        shape = []
-        if device.shots != 1:
-            shape.append(device.shots)
-        if num_wires > 1:
-            shape.append(num_wires)
-        return tuple(shape)
+        if device.shot_vector is None:
+            return _single_int_shape(device.shots, num_wires)
+        return tuple(
+            _single_int_shape(shot_val, num_wires) for shot_val in device._raw_shot_sequence
+        )
 
     def process_samples(
         self,

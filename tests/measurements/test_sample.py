@@ -57,9 +57,11 @@ class TestSample:
             qml.RX(0.54, wires=0)
             return qml.sample(qml.PauliZ(0)), qml.sample(qml.PauliX(1))
 
-        sample = circuit()
+        output = circuit()
 
-        assert np.array_equal(sample.shape, (2, n_sample))
+        assert np.array_equal(ouput.shape, (2, n_sample))
+        assert circuit._qfunc_output[0].shape(dev) == (1, n_sample)
+        assert circuit._qfunc_output[1].shape(dev) == (1, n_sample)
 
         custom_measurement_process(dev, spy)
 
@@ -81,6 +83,7 @@ class TestSample:
 
         assert len(result) == 3
         assert np.array_equal(result[0].shape, (n_sample,))
+        assert circuit._qfunc_output[0].shape(dev) == (1, n_sample)
         assert isinstance(result[1], np.ndarray)
         assert isinstance(result[2], np.ndarray)
 
@@ -96,13 +99,13 @@ class TestSample:
         @qml.qnode(dev)
         def circuit():
             qml.RX(0.54, wires=0)
-
             return qml.sample(qml.PauliZ(0))
 
         result = circuit()
 
         assert isinstance(result, np.ndarray)
         assert np.array_equal(result.shape, (n_sample,))
+        assert circuit._qfunc_output[0].shape(dev) == (1, n_sample)
 
         custom_measurement_process(dev, spy)
 
@@ -117,6 +120,10 @@ class TestSample:
         @qml.qnode(dev)
         def circuit():
             return qml.sample(qml.PauliZ(0)), qml.sample(qml.PauliZ(1)), qml.sample(qml.PauliZ(2))
+
+        assert circuit._qfunc_output[0].shape(dev) == (1, n_sample)
+        assert circuit._qfunc_output[1].shape(dev) == (1, n_sample)
+        assert circuit._qfunc_output[2].shape(dev) == (1, n_sample)
 
         result = circuit()
 
@@ -319,6 +326,13 @@ class TestSample:
         expected = (1, shots) if obs is not None else (1, shots, 3)
         assert res.shape(dev) == expected
 
+    def test_shape_wires(self):
+        """Test that the shape is correct when wires are provided."""
+        shots = 10
+        dev = qml.device("default.qubit", wires=3, shots=shots)
+        mp = qml.sample(wires=(0, 1))
+        assert mp.shape(dev) == (1, shots, 2)
+
     @pytest.mark.parametrize(
         "obs",
         [qml.PauliZ(0), qml.Hermitian(np.diag([1, 2]), 0), qml.Hermitian(np.diag([1.0, 2.0]), 0)],
@@ -331,7 +345,7 @@ class TestSample:
         expected = ((), (2,), (3,))
         assert res.shape(dev) == expected
 
-    def test_shape_shot_vector_no_obs(self):
+    def test_shape_shot_vector_obs(self):
         """Test that the shape is correct with the shot vector and no observable too."""
         shot_vec = (2, 2)
         dev = qml.device("default.qubit", wires=3, shots=shot_vec)
@@ -374,3 +388,25 @@ class TestSample:
 
         with pytest.raises(EigvalsUndefinedError, match="Cannot compute samples of"):
             qml.sample(op=DummyOp(0)).process_samples(samples=np.array([[1, 0]]), wire_order=[0])
+
+
+@pytest.mark.jax
+def test_jitting_with_sampling_on_subset_of_wires(self):
+    """Test case covering bug in Issue #3904.  Sampling should be jit-able
+    when sampling occurs on a subset of wires. The bug was occuring due an improperly
+    set shape method."""
+    import jax
+
+    jax.config.update("jax_enable_x64", True)
+
+    dev = qml.device("default.qubit", wires=3, shots=5)
+
+    @qml.qnode(dev, interface="jax")
+    def circuit(x):
+        qml.RX(x, wires=0)
+        return qml.sample(wires=(0, 1))
+
+    results = jax.jit(circuit)(jax.numpy.array(0.123, dtype=jax.numpy.float64))
+
+    assert results.shape == (5, 2)
+    assert circuit._qfunc_output.shape(dev) == (1, 5, 2)
