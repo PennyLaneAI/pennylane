@@ -26,6 +26,25 @@
 
 <h3>Improvements</h3>
 
+* Keras and Torch NN modules are now compatible with the new return type system.
+  [(#3913)](https://github.com/PennyLaneAI/pennylane/pull/3913)
+  [(#3914)](https://github.com/PennyLaneAI/pennylane/pull/3914)
+
+* The adjoint differentiation method now supports more operations, and does no longer decompose
+  some operations that may be differentiated directly. In addition, all new operations with a
+  generator are now supported by the method.
+  [(#3874)](https://github.com/PennyLaneAI/pennylane/pull/3874)
+
+* The `coefficients` function and the `visualize` submodule of the `qml.fourier` module
+  now allow assigning different degrees for different parameters of the input function.
+  [(#3005)](https://github.com/PennyLaneAI/pennylane/pull/3005)
+
+  The arguments `degree` and `filter_threshold` to `qml.fourier.coefficients` previously were
+  expected to be integers, and now can be a sequences of integers with one integer per function
+  parameter (i.e. `len(degree)==n_inputs`), resulting in a returned array with shape
+  `(2*degrees[0]+1,..., 2*degrees[-1]+1)`.
+  The functions in `qml.fourier.visualize` accordingly accept such arrays of coefficients.
+
 * `Operator` now has a `has_generator` attribute that returns whether or not the operator
   has a generator defined. It is used in `qml.operation.has_gen`, improving its performance.
   [(#3875)](https://github.com/PennyLaneAI/pennylane/pull/3875)
@@ -40,6 +59,10 @@
 
 * `AdaptiveOptimizer` is updated to use non-default user-defined qnode arguments.
   [(#3765)](https://github.com/PennyLaneAI/pennylane/pull/3765)
+
+* Adds logic to `qml.devices.qubit.measure` to compute the expectation values of `Hamiltonian` and `Sum `
+  in a backpropagation compatible way.
+  [(#3862)](https://github.com/PennyLaneAI/pennylane/pull/3862/)
 
 * Use `TensorLike` type in `Operator` dunder methods.
   [(#3749)](https://github.com/PennyLaneAI/pennylane/pull/3749)
@@ -119,13 +142,16 @@
 
 * Made `qml.OrbitalRotation` and consequently `qml.GateFabric` consistent with the interleaved Jordan-Wigner ordering.
   [(#3861)](https://github.com/PennyLaneAI/pennylane/pull/3861)
-  
+
 * `qml.devices.qubit.apply_operation` catches the `tf.errors.UnimplementedError` that occurs when `PauliZ` or `CNOT` gates
   are applied to a large (>8 wires) tensorflow state. When that occurs, the logic falls back to the tensordot logic instead.
   [(#3884)](https://github.com/PennyLaneAI/pennylane/pull/3884/)
 
 * Fixed parameter broadcasting support with `qml.counts` in most cases, and introduced explicit errors otherwise.
   [(#3876)](https://github.com/PennyLaneAI/pennylane/pull/3876)
+
+* An error is now raised if a `QNode` with Jax-jit in use returns `counts` while having trainable parameters
+  [(#3892)](https://github.com/PennyLaneAI/pennylane/pull/3892)
 
 * A correction is added to the reference values in `test_dipole_of` to account for small changes
   (~2e-8) in the computed dipole moment values, resulting from the new [PySCF 2.2.0](https://github.com/pyscf/pyscf/releases/tag/v2.2.0) release.
