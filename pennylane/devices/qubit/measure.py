@@ -19,7 +19,7 @@ from typing import Callable
 from scipy.sparse import csr_matrix
 
 from pennylane import math
-from pennylane.ops import Sum
+from pennylane.ops import Sum, Hamiltonian
 from pennylane.measurements import StateMeasurement, MeasurementProcess, ExpectationMP
 from pennylane.typing import TensorLike
 from pennylane.wires import Wires
@@ -48,8 +48,8 @@ def state_diagonalizing_gates(
 
 
 def csr_dot_products(measurementprocess: ExpectationMP, state: TensorLike) -> TensorLike:
-    """Measure the expectation value of the state when the measured observable is a ``Hamiltonian`` or
-    ``SparseHamiltonian``.
+    """Measure the expectation value of an observable using dot products between ``scipy.csr_matrix``
+    representations.
 
     Args:
         measurementprocess (ExpectationMP): measurement process to apply to the state
@@ -60,11 +60,11 @@ def csr_dot_products(measurementprocess: ExpectationMP, state: TensorLike) -> Te
     """
     total_wires = len(state.shape)
     Hmat = measurementprocess.obs.sparse_matrix(wire_order=list(range(total_wires)))
-    _state = math.toarray(state).flatten()
+    state = math.toarray(state).flatten()
 
     # Find the expectation value using the <\psi|H|\psi> matrix contraction
-    bra = csr_matrix(math.conj(_state))
-    ket = csr_matrix(_state[..., None])
+    bra = csr_matrix(math.conj(state))
+    ket = csr_matrix(state[..., None])
     new_ket = csr_matrix.dot(Hmat, ket)
     res = csr_matrix.dot(bra, new_ket).toarray()[0]
 
@@ -72,7 +72,7 @@ def csr_dot_products(measurementprocess: ExpectationMP, state: TensorLike) -> Te
 
 
 def sum_of_terms_method(measurementprocess: ExpectationMP, state: TensorLike) -> TensorLike:
-    """Measure the expectation value of the state when the measured observable is a ``Hamiltonian`` or ``Sum``
+    """Measure the expecation value of the state when the measured observable is a ``Hamiltonian`` or ``Sum``
     and it must be backpropagation compatible.
 
     Args:
@@ -109,7 +109,7 @@ def get_measurement_function(
             if measurementprocess.obs.name == "SparseHamiltonian":
                 return csr_dot_products
 
-            if measurementprocess.obs.name == "Hamiltonian" or (
+            if isinstance(measurementprocess.obs, Hamiltonian) or (
                 isinstance(measurementprocess.obs, Sum)
                 and measurementprocess.obs.has_overlapping_wires
                 and len(measurementprocess.obs.wires) > 7

@@ -40,7 +40,7 @@ class TestCurrentlyUnsupportedCases:
 
 
 class TestMeasurementDispatch:
-    """Test that get_measurement_function dispatches to the correct place."""
+    """Test that get_measurement_function dispatchs to the correct place."""
 
     def test_state_no_obs(self):
         """Test that the correct internal function is used for a measurement process with no observables."""
@@ -58,8 +58,8 @@ class TestMeasurementDispatch:
         ),
     )
     def test_diagonalizing_gates(self, m):
-        """Test that the state_diagonalizing gates are used when an observable has diagonalizing gates
-        and allows the measurement to be efficiently computed with them."""
+        """Test that the state_diagonalizing gates are used when there's an observable has diagonalizing
+        gates and allows the measurement to be efficiently computed with them."""
         assert get_measurement_function(m, state=1) is state_diagonalizing_gates
 
     def test_hamiltonian_sparse_method(self):
@@ -204,13 +204,16 @@ class TestSumOfTermsDifferentiability:
     def test_jax_backprop(self, convert_to_hamiltonian, use_jit):
         """Test that backpropagation derivatives work with jax with hamiltonians and large sums."""
         import jax
+        from jax.config import config
 
-        x = jax.numpy.array(0.52)
+        config.update("jax_enable_x64", True)  # otherwise output is too noisy
+
+        x = jax.numpy.array(0.52, dtype=jax.numpy.float64)
         f = jax.jit(self.f, static_argnums=(1, 2, 3)) if use_jit else self.f
 
         out = f(x, convert_to_hamiltonian=convert_to_hamiltonian)
         expected_out = self.expected(x)
-        assert qml.math.allclose(out, expected_out, atol=1e-6)
+        assert qml.math.allclose(out, expected_out)
 
         g = jax.grad(f)(x, convert_to_hamiltonian=convert_to_hamiltonian)
         expected_g = jax.grad(self.expected)(x)

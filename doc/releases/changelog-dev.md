@@ -26,6 +26,10 @@
 
 <h3>Improvements</h3>
 
+* Keras and Torch NN modules are now compatible with the new return type system.
+  [(#3913)](https://github.com/PennyLaneAI/pennylane/pull/3913)
+  [(#3914)](https://github.com/PennyLaneAI/pennylane/pull/3914)
+
 * The adjoint differentiation method now supports more operations, and does no longer decompose
   some operations that may be differentiated directly. In addition, all new operations with a
   generator are now supported by the method.
@@ -55,6 +59,10 @@
 
 * `AdaptiveOptimizer` is updated to use non-default user-defined qnode arguments.
   [(#3765)](https://github.com/PennyLaneAI/pennylane/pull/3765)
+
+* Adds logic to `qml.devices.qubit.measure` to compute the expectation values of `Hamiltonian` and `Sum `
+  in a backpropagation compatible way.
+  [(#3862)](https://github.com/PennyLaneAI/pennylane/pull/3862/)
 
 * Use `TensorLike` type in `Operator` dunder methods.
   [(#3749)](https://github.com/PennyLaneAI/pennylane/pull/3749)
