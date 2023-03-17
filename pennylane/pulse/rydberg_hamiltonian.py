@@ -229,9 +229,12 @@ def rydberg_drive(amplitude, phase, wires, detuning=None):
     """
     if isinstance(wires, int):
         wires = [wires]
+    trivial_detuning = detuning is None or (
+        not callable(detuning) and qml.math.isclose(detuning, 0.0)
+    )
 
     if not callable(amplitude) and qml.math.isclose(amplitude, 0.0):
-        if trivial_detuning := detuning is None or qml.math.isclose(detuning, 0.0):
+        if trivial_detuning:
             raise ValueError("The global drive must have a non-trivial amplitude.")
 
         coeffs = []
