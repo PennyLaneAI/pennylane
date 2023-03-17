@@ -167,7 +167,7 @@ as well as a set of wire labels and constructs a DAG in which the :class:`~.Oper
 instances are the nodes, and each directed edge corresponds to a wire
 (or a group of wires) on which the "nodes" act subsequently.
 
-For example, thiscan be used to compute the effective depth of a circuit,
+For example, this can be used to compute the effective depth of a circuit,
 or to check whether two gates causally influence each other.
 
 .. code-block:: python
@@ -215,8 +215,8 @@ False
 False
 
 
-Anther way to construct the "causal" DAG of a circuit is to use the
-:func:`~pennylane.transforms.qcut.tape_to_graph` function used by the qcut module. This
+Another way to construct the "causal" DAG of a circuit is to use the
+:func:`~pennylane.transforms.qcut.tape_to_graph` function used by the ``qcut`` module. This
 function takes a quantum tape and creates a ``MultiDiGraph`` instance from the ``networkx`` python package.
 
 Using the above example, we get:

@@ -71,7 +71,7 @@ def multi_dispatch(argnum=None, tensor_list=None):
 
 
     Args:
-        argnum (list[int]): A list of integers indicating indicating the indices
+        argnum (list[int]): A list of integers indicating the indices
             to dispatch (i.e., the arguments that are tensors handled by an interface).
             If ``None``, dispatch over all arguments.
         tensor_lists (list[int]): a list of integers indicating which indices
@@ -410,28 +410,10 @@ def get_trainable_indices(values, like=None):
     Trainable: {0}
     tensor(0.0899685, requires_grad=True)
     """
-    trainable = requires_grad
     trainable_params = set()
 
-    if like == "jax":
-        import jax
-
-        if not any(isinstance(v, jax.core.Tracer) for v in values):
-            # No JAX tracing is occuring; treat all `Array` objects as trainable.
-
-            # pylint: disable=function-redefined,unused-argument
-            def trainable(p, **kwargs):
-                return isinstance(p, jax.Array)
-
-        else:
-            # JAX tracing is occuring; use the default behaviour (only traced arrays
-            # are treated as trainable). This is required to ensure that `jax.grad(func, argnums=...)
-            # works correctly, as the argnums argnument determines which parameters are
-            # traced arrays.
-            trainable = requires_grad
-
     for idx, p in enumerate(values):
-        if trainable(p, interface=like):
+        if requires_grad(p, interface=like):
             trainable_params.add(idx)
 
     return trainable_params
@@ -865,3 +847,93 @@ def gammainc(m, t, like=None):
     import scipy
 
     return scipy.special.gammainc(m, t)
+
+
+@multi_dispatch()
+def detach(tensor, like=None):
+    """Detach a tensor from its trace and return just its numerical values.
+
+    Args:
+        tensor (tensor_like): Tensor to detach
+        like (str): Manually chosen interface to dispatch to.
+
+    Returns:
+        tensor_like: A tensor in the same interface as the input tensor but
+        with a stopped gradient.
+    """
+    if like == "jax":
+        import jax
+
+        return jax.lax.stop_gradient(tensor)
+
+    if like == "torch":
+        return tensor.detach()
+
+    if like == "tensorflow":
+        import tensorflow as tf
+
+        return tf.stop_gradient(tensor)
+
+    if like == "autograd":
+        return np.to_numpy(tensor)
+
+    return tensor
+
+
+def jax_argnums_to_tape_trainable(qnode, argnums, expand_fn, args, kwargs):
+    """This functions gets the tape parameters from the QNode construction given some argnums (only for Jax).
+    The tape parameters are transformed to JVPTracer if they are from argnums. This function imitates the behavior
+    of Jax in order to mark trainable parameters.
+
+    Args:
+        qnode(qml.QNode): the quantum node.
+        argnums(int, list[int]): the parameters that we want to set as trainable (on the QNode level).
+        expand_fn(callable): the function that is expanding the tape.
+
+    Return:
+        list[float, jax.JVPTracer]: List of parameters where the trainable one are `JVPTracer`.
+    """
+    import jax
+
+    with jax.core.new_main(jax.ad.JVPTrace) as main:
+        trace = jax.ad.JVPTrace(main, 0)
+
+    args_jvp = [
+        jax.ad.JVPTracer(trace, arg, jax.numpy.zeros(arg.shape)) if i in argnums else arg
+        for i, arg in enumerate(args)
+    ]
+
+    qnode.construct(args_jvp, kwargs)
+    tape = qnode.qtape
+    tape = expand_fn(tape)
+    params = tape.get_parameters(trainable_only=False)
+    del trace
+    return params
+
+
+@multi_dispatch(tensor_list=[1])
+def set_index(array, idx, val, like=None):
+    """Set the value at a specified index in an array.
+    Calls ``array[idx]=val`` and returns the updated array unless JAX.
+
+    Args:
+        array (tensor_like): array to be modified
+        idx (int, tuple): index to modify
+        val (int, float): value to set
+
+    Returns:
+        a new copy of the array with the specified index updated to ``val``.
+
+    Whether the original array is modified is interface-dependent.
+
+    .. note:: TensorFlow EagerTensor does not support item assignment
+    """
+    if like == "jax":
+        from jax import numpy as jnp
+
+        # ensure array is jax array (interface may be jax because of idx or val and not array)
+        jax_array = jnp.array(array)
+        return jax_array.at[idx].set(val)
+
+    array[idx] = val
+    return array

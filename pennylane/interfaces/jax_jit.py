@@ -31,12 +31,14 @@ dtype = jnp.float64
 
 
 def _validate_jax_version():
-    if semantic_version.match("<0.3.17", jax.__version__) or semantic_version.match(
-        "<0.3.15", jax.lib.__version__
-    ):
+    if semantic_version.match(">0.4.3", jax.__version__):
         msg = (
-            "The JAX JIT interface of PennyLane requires version 0.3.17 or higher for JAX "
-            "and 0.3.15 or higher JAX lib. Please upgrade these packages."
+            "The JAX JIT interface of PennyLane requires JAX and and JAX lib version below 0.4.4. "
+            "Please downgrade these packages."
+            "If you are using pip to manage your packages, you can run the following command:\n\n"
+            "\tpip install 'jax==0.4.3' 'jaxlib==0.4.3'\n\n"
+            "If you are using conda to manage your packages, you can run the following command:\n\n"
+            "\tconda install 'jax==0.4.3' 'jaxlib==0.4.3'\n\n"
         )
         raise InterfaceUnsupportedError(msg)
 
@@ -46,7 +48,7 @@ def execute(tapes, device, execute_fn, gradient_fn, gradient_kwargs, _n=1, max_d
 
     Args:
         tapes (Sequence[.QuantumTape]): batch of tapes to execute
-        device (.Device): Device to use to execute the batch of tapes.
+        device (pennylane.Device): Device to use to execute the batch of tapes.
             If the device does not provide a ``batch_execute`` method,
             by default the tapes will be executed in serial.
         execute_fn (callable): The execution function used to execute the tapes
@@ -73,10 +75,15 @@ def execute(tapes, device, execute_fn, gradient_fn, gradient_kwargs, _n=1, max_d
     if max_diff > 1:
         raise InterfaceUnsupportedError("The JAX interface only supports first order derivatives.")
 
-    for tape in tapes:
-        # set the trainable parameters
-        params = tape.get_parameters(trainable_only=False)
-        tape.trainable_params = qml.math.get_trainable_indices(params)
+    if _n == 1:
+        for tape in tapes:
+            # set the jitted parameters
+            params = tape.get_parameters(trainable_only=False)
+            trainable_params = set()
+            for idx, p in enumerate(params):
+                if isinstance(p, jax.core.Tracer) or qml.math.requires_grad(p):
+                    trainable_params.add(idx)
+            tape.trainable_params = trainable_params
 
     parameters = tuple(list(t.get_parameters()) for t in tapes)
 
@@ -189,7 +196,6 @@ def _execute(
         return wrapped_exec(params), params
 
     def wrapped_exec_bwd(params, g):
-
         if isinstance(gradient_fn, qml.gradients.gradient_transform):
             for t in tapes:
                 multi_probs = (
@@ -319,7 +325,6 @@ def _execute_with_fwd(
         return res, tuple([jacs, params])
 
     def wrapped_exec_bwd(params, g):
-
         _raise_vector_valued_fwd(tapes)
 
         # Use the jacobian that was computed on the forward pass

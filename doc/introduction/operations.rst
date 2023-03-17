@@ -253,6 +253,7 @@ Gates constructed from a matrix
     ~pennylane.QubitUnitary
     ~pennylane.ControlledQubitUnitary
     ~pennylane.DiagonalQubitUnitary
+    ~pennylane.SpecialUnitary
 
 :html:`</div>`
 
@@ -472,3 +473,24 @@ Qutrit Observables
 
 :html:`</div>`
 
+.. _intro_ref_ops_pulse:
+
+Pulse-level operators
+---------------------
+
+If you would like to learn more about the implementation of pulse-level control in PennyLane, see the
+:mod:`~.pulse` module documentation.
+
+
+Pulse operator
+^^^^^^^^^^^^^^
+
+:html:`<div class="summary-table">`
+
+.. autosummary::
+    :nosignatures:
+
+    ~pennylane.pulse.ParametrizedEvolution
+    ~pennylane.pulse.ParametrizedHamiltonian
+
+:html:`</div>`

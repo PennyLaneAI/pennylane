@@ -493,13 +493,14 @@ class TestDifferentiableZNE:
         assert qml.math.allclose(grad, grad_ideal, atol=1e-2)
 
     @pytest.mark.jax
-    def test_diffability_jax(self):
+    @pytest.mark.parametrize("interface", ["auto", "jax"])
+    def test_diffability_jax(self, interface):
         """Testing that the mitigated qnode can be differentiated and returns the correct gradient in jax"""
         import jax
         import jax.numpy as jnp
 
-        qnode_noisy = qml.QNode(qfunc, dev_noisy, interface="jax")
-        qnode_ideal = qml.QNode(qfunc, dev_ideal, interface="jax")
+        qnode_noisy = qml.QNode(qfunc, dev_noisy, interface=interface)
+        qnode_ideal = qml.QNode(qfunc, dev_ideal, interface=interface)
 
         scale_factors = [1.0, 2.0, 3.0]
 
@@ -520,13 +521,14 @@ class TestDifferentiableZNE:
         assert qml.math.allclose(grad, grad_ideal, atol=1e-2)
 
     @pytest.mark.jax
-    def test_diffability_jaxjit(self):
+    @pytest.mark.parametrize("interface", ["auto", "jax", "jax-jit"])
+    def test_diffability_jaxjit(self, interface):
         """Testing that the mitigated qnode can be differentiated and returns the correct gradient in jax-jit"""
         import jax
         import jax.numpy as jnp
 
-        qnode_noisy = qml.QNode(qfunc, dev_noisy, interface="jax-jit")
-        qnode_ideal = qml.QNode(qfunc, dev_ideal, interface="jax-jit")
+        qnode_noisy = qml.QNode(qfunc, dev_noisy, interface=interface)
+        qnode_ideal = qml.QNode(qfunc, dev_ideal, interface=interface)
 
         scale_factors = [1.0, 2.0, 3.0]
 
@@ -547,12 +549,13 @@ class TestDifferentiableZNE:
         assert qml.math.allclose(grad, grad_ideal, atol=1e-2)
 
     @pytest.mark.torch
-    def test_diffability_torch(self):
+    @pytest.mark.parametrize("interface", ["auto", "torch"])
+    def test_diffability_torch(self, interface):
         """Testing that the mitigated qnode can be differentiated and returns the correct gradient in torch"""
         import torch
 
-        qnode_noisy = qml.QNode(qfunc, dev_noisy, interface="torch")
-        qnode_ideal = qml.QNode(qfunc, dev_ideal, interface="torch")
+        qnode_noisy = qml.QNode(qfunc, dev_noisy, interface=interface)
+        qnode_ideal = qml.QNode(qfunc, dev_ideal, interface=interface)
 
         scale_factors = [1.0, 2.0, 3.0]
 
@@ -575,12 +578,13 @@ class TestDifferentiableZNE:
         assert qml.math.allclose(grad, grad_ideal, atol=1e-2)
 
     @pytest.mark.tf
-    def test_diffability_tf(self):
+    @pytest.mark.parametrize("interface", ["auto", "tf"])
+    def test_diffability_tf(self, interface):
         """Testing that the mitigated qnode can be differentiated and returns the correct gradient in tf"""
         import tensorflow as tf
 
-        qnode_noisy = qml.QNode(qfunc, dev_noisy, interface="tf")
-        qnode_ideal = qml.QNode(qfunc, dev_ideal, interface="tf")
+        qnode_noisy = qml.QNode(qfunc, dev_noisy, interface=interface)
+        qnode_ideal = qml.QNode(qfunc, dev_ideal, interface=interface)
 
         scale_factors = [1.0, 2.0, 3.0]
 
@@ -627,14 +631,15 @@ class TestDifferentiableZNE:
         assert qml.math.allclose(grad, grad_ideal, atol=1e-2)
 
     @pytest.mark.jax
-    def test_diffability_jax_multi(self):
+    @pytest.mark.parametrize("interface", ["auto", "jax"])
+    def test_diffability_jax_multi(self, interface):
         """Testing that the mitigated qnode can be differentiated and returns
         the correct gradient in jax for multiple measurements"""
         import jax
         import jax.numpy as jnp
 
-        qnode_noisy = qml.QNode(qfunc_multi, dev_noisy, interface="jax")
-        qnode_ideal = qml.QNode(qfunc_multi, dev_ideal, interface="jax")
+        qnode_noisy = qml.QNode(qfunc_multi, dev_noisy, interface=interface)
+        qnode_ideal = qml.QNode(qfunc_multi, dev_ideal, interface=interface)
 
         scale_factors = [1.0, 2.0, 3.0]
 
@@ -655,14 +660,15 @@ class TestDifferentiableZNE:
         assert qml.math.allclose(grad, grad_ideal, atol=1e-2)
 
     @pytest.mark.jax
-    def test_diffability_jaxjit_multi(self):
+    @pytest.mark.parametrize("interface", ["auto", "jax", "jax-jit"])
+    def test_diffability_jaxjit_multi(self, interface):
         """Testing that the mitigated qnode can be differentiated and
         returns the correct gradient in jax-jit for multiple measurements"""
         import jax
         import jax.numpy as jnp
 
-        qnode_noisy = qml.QNode(qfunc_multi, dev_noisy, interface="jax-jit")
-        qnode_ideal = qml.QNode(qfunc_multi, dev_ideal, interface="jax-jit")
+        qnode_noisy = qml.QNode(qfunc_multi, dev_noisy, interface=interface)
+        qnode_ideal = qml.QNode(qfunc_multi, dev_ideal, interface=interface)
 
         scale_factors = [1.0, 2.0, 3.0]
 
@@ -683,13 +689,14 @@ class TestDifferentiableZNE:
         assert qml.math.allclose(grad, grad_ideal, atol=1e-2)
 
     @pytest.mark.torch
-    def test_diffability_torch_multi(self):
+    @pytest.mark.parametrize("interface", ["auto", "torch"])
+    def test_diffability_torch_multi(self, interface):
         """Testing that the mitigated qnode can be differentiated and returns
         the correct gradient in torch for multiple measurements"""
         import torch
 
-        qnode_noisy = qml.QNode(qfunc_multi, dev_noisy, interface="torch")
-        qnode_ideal = qml.QNode(qfunc_multi, dev_ideal, interface="torch")
+        qnode_noisy = qml.QNode(qfunc_multi, dev_noisy, interface=interface)
+        qnode_ideal = qml.QNode(qfunc_multi, dev_ideal, interface=interface)
 
         scale_factors = [1.0, 2.0, 3.0]
 

@@ -59,6 +59,20 @@ class TestProbsToUnitary:
         assert np.allclose(unitary @ unitary.T, np.eye(len(unitary)))
         assert np.allclose(unitary.T @ unitary, np.eye(len(unitary)))
 
+    @pytest.mark.jax
+    @pytest.mark.parametrize("p", ps)
+    def test_fixed_examples_jax_jit(self, p):
+        """Test if the correct unitary is returned for fixed input examples using JAX-JIT.
+        A correct unitary has its first column equal to the square root of the distribution
+        and satisfies U @ U.T = U.T @ U = I."""
+        import jax
+        from jax import numpy as jnp
+
+        unitary = jax.jit(probs_to_unitary)(jnp.array(p))
+        assert jnp.allclose(np.sqrt(p), unitary[:, 0])
+        assert jnp.allclose(unitary @ unitary.T, np.eye(len(unitary)), atol=1e-7)
+        assert jnp.allclose(unitary.T @ unitary, np.eye(len(unitary)), atol=1e-7)
+
 
 class TestFuncToUnitary:
     """Tests for the func_to_unitary function"""
@@ -90,6 +104,30 @@ class TestFuncToUnitary:
 
         assert np.allclose(r @ r.T, np.eye(2 * M))
         assert np.allclose(r.T @ r, np.eye(2 * M))
+
+    @pytest.mark.jax
+    def test_example_jax_jit(self):
+        """Test for a fixed example using JAX-JIT if the returned unitary maps input states to the
+        expected output state as well as if the unitary satisfies U @ U.T = U.T @ U = I."""
+        import jax
+        from jax import numpy as jnp
+
+        M = 8
+        func = lambda i: jnp.sin(i) ** 2
+
+        r = func_to_unitary(jax.jit(func), M)
+
+        for i in range(M):
+            # The control qubit is the last qubit, so we have to look at every other term
+            # using [::2].
+            output_state = r[::2][i]
+            output_0 = output_state[::2]
+            output_1 = output_state[1::2]
+            assert np.allclose(output_0[i], np.sqrt(1 - func(i)))
+            assert np.allclose(output_1[i], np.sqrt(func(i)))
+
+        assert np.allclose(r @ r.T, np.eye(2 * M), atol=1e-7)
+        assert np.allclose(r.T @ r, np.eye(2 * M), atol=1e-7)
 
     def test_example_with_pl(self):
         """Test for a fixed example if the returned unitary behaves as expected
@@ -325,6 +363,56 @@ class TestQuantumMonteCarlo:
             assert err1 >= err2
 
         assert np.allclose(estimates[-1], exact, rtol=1e-3)
+
+    @pytest.mark.jax
+    def test_expected_value_jax_jit(self):
+        """Test that the QuantumMonteCarlo template can correctly estimate the expectation value
+        following the example in the usage details using JAX-JIT"""
+        import jax
+        from jax import numpy as jnp
+
+        m = 5
+        M = 2**m
+
+        xmax = jnp.pi
+        xs = jnp.linspace(-xmax, xmax, M)
+
+        probs = jnp.array([norm().pdf(x) for x in xs])
+        probs /= jnp.sum(probs)
+
+        func = lambda i: jnp.cos(xs[i]) ** 2
+
+        estimates = []
+
+        for n in range(4, 11):
+            N = 2**n
+
+            target_wires = range(m + 1)
+            estimation_wires = range(m + 1, n + m + 1)
+
+            dev = qml.device("default.qubit", wires=(n + m + 1))
+
+            @jax.jit
+            @qml.qnode(dev, interface="jax")
+            def circuit():
+                qml.QuantumMonteCarlo(
+                    probs, func, target_wires=target_wires, estimation_wires=estimation_wires
+                )
+                return qml.probs(estimation_wires)
+
+            phase_estimated = jnp.argmax(circuit()[: int(N / 2)]) / N
+            mu_estimated = (1 - jnp.cos(np.pi * phase_estimated)) / 2
+            estimates.append(mu_estimated)
+
+        exact = 0.432332358381693654
+
+        # Check that the error is monotonically decreasing
+        for i in range(len(estimates) - 1):
+            err1 = jnp.abs(estimates[i] - exact)
+            err2 = jnp.abs(estimates[i + 1] - exact)
+            assert err1 >= err2
+
+        assert jnp.allclose(estimates[-1], exact, rtol=1e-3)
 
     def test_expected_value_custom_wires(self):
         """Test that the QuantumMonteCarlo template can correctly estimate the expectation value

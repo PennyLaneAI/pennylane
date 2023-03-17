@@ -53,9 +53,9 @@ OPENQASM_GATES = {
     "PauliZ": "z",
     "Hadamard": "h",
     "S": "s",
-    "S.inv": "sdg",
+    "Adjoint(S)": "sdg",
     "T": "t",
-    "T.inv": "tdg",
+    "Adjoint(T)": "tdg",
     "RX": "rx",
     "RY": "ry",
     "RZ": "rz",
@@ -312,7 +312,7 @@ class QuantumScript:
 
     @property
     def samples_computational_basis(self):
-        """Determines if any of the measurements do sampling/counting in the computational basis."""
+        """Determines if any of the measurements are in the computational basis."""
         return any(o.samples_computational_basis for o in self.measurements)
 
     @property
@@ -347,11 +347,12 @@ class QuantumScript:
         """
         rotation_gates = []
 
-        for observable in self.observables:
-            # some observables do not have diagonalizing gates,
-            # in which case we just don't append any
-            with contextlib.suppress(qml.operation.DiagGatesUndefinedError):
-                rotation_gates.extend(observable.diagonalizing_gates())
+        with qml.queuing.QueuingManager.stop_recording():
+            for observable in self.observables:
+                # some observables do not have diagonalizing gates,
+                # in which case we just don't append any
+                with contextlib.suppress(qml.operation.DiagGatesUndefinedError):
+                    rotation_gates.extend(observable.diagonalizing_gates())
         return rotation_gates
 
     ##### Update METHODS ###############
@@ -566,7 +567,7 @@ class QuantumScript:
         if return_op_index:
             return self._get_operation(idx)
         warnings.warn(
-            "The get_operation will soon be updated to also return the index of the trainable operation in the tape."
+            "The get_operation will soon be updated to also return the index of the trainable operation in the tape. "
             "If you want to switch to the new behavior, you can pass `return_op_index=True`"
         )
 
@@ -713,7 +714,7 @@ class QuantumScript:
         Args:
             measurement_process (MeasurementProcess): the measurement process
                 associated with the single measurement
-            device (~.Device): a PennyLane device
+            device (pennylane.Device): a PennyLane device
 
         Returns:
             tuple: output shape
@@ -753,11 +754,9 @@ class QuantumScript:
         shot_vector = device._shot_vector
         if shot_vector is None:
             if isinstance(mps[0], (ExpectationMP, VarianceMP)):
-
                 shape = (len(mps),)
 
             elif isinstance(mps[0], ProbabilityMP):
-
                 wires_num_set = {len(meas.wires) for meas in mps}
                 same_num_wires = len(wires_num_set) == 1
                 if same_num_wires:
@@ -774,7 +773,6 @@ class QuantumScript:
                     shape = (sum(2 ** len(m.wires) for m in mps),)
 
             elif isinstance(mps[0], SampleMP):
-
                 dim = mps[0].shape(device)
                 shape = (len(mps),) + dim[1:]
 
@@ -803,7 +801,6 @@ class QuantumScript:
             shape = (num, len(mps))
 
         elif isinstance(mps[0], ProbabilityMP):
-
             wires_num_set = {len(meas.wires) for meas in mps}
             same_num_wires = len(wires_num_set) == 1
             if not same_num_wires:
@@ -842,7 +839,7 @@ class QuantumScript:
                 used for execution.
 
         Args:
-            device (.Device): the device that will be used for the script execution
+            device (pennylane.Device): the device that will be used for the script execution
 
         Raises:
             ValueError: raised for unsupported cases for example when the script contains
@@ -893,7 +890,7 @@ class QuantumScript:
             dependent on the device used for execution.
 
         Args:
-            device (.Device): the device that will be used for the script execution
+            device (pennylane.Device): the device that will be used for the script execution
 
         Returns:
             Union[tuple[int], tuple[tuple[int]]]: the output shape(s) of the quantum script result
@@ -1085,9 +1082,6 @@ class QuantumScript:
         )
         new_script._update()
         return new_script
-
-    # NOT MOVING OVER INV
-    # As it will be deprecated soon.
 
     def adjoint(self):
         """Create a quantum script that is the adjoint of this one.

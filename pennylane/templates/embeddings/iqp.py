@@ -167,7 +167,6 @@ class IQPEmbedding(Operation):
     grad_method = None
 
     def __init__(self, features, wires, n_repeats=1, pattern=None, do_queue=True, id=None):
-
         shape = qml.math.shape(features)
 
         if len(shape) not in {1, 2}:
@@ -237,7 +236,6 @@ class IQPEmbedding(Operation):
             features = qml.math.T(features)
 
         for _ in range(n_repeats):
-
             for i in range(len(wires)):  # pylint: disable=consider-using-enumerate
                 op_list.append(qml.Hadamard(wires=wires[i]))
                 op_list.append(qml.RZ(features[i], wires=wires[i]))

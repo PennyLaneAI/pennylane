@@ -407,7 +407,6 @@ class TestIteration:
 
     @pytest.fixture
     def make_qs(self):
-
         ops = [
             qml.RX(0.432, wires=0),
             qml.Rot(0.543, 0, 0.23, wires=0),
@@ -440,7 +439,6 @@ class TestIteration:
                 counter += 1
 
             except StopIteration:
-
                 # StopIteration is raised by next when there are no more
                 # elements to iterate over
                 iterating = False
@@ -977,3 +975,16 @@ class TestFromQueue:
             x = qml.PauliZ(0)
 
         assert child.from_queue(q).operations == [x]
+
+    def test_diagonalizing_gates_not_queued(self):
+        """Test that diagonalizing gates don't get added to an active queue when
+        requested."""
+        qscript = QuantumScript(ops=[qml.PauliZ(0)], measurements=[qml.expval(qml.PauliX(0))])
+
+        with qml.queuing.AnnotatedQueue() as q:
+            diag_ops = qscript.diagonalizing_gates
+
+        assert len(diag_ops) == 1
+        # Hadamard is the diagonalizing gate for PauliX
+        assert qml.equal(diag_ops[0], qml.Hadamard(0))
+        assert q.queue == []

@@ -146,7 +146,6 @@ def scf(mol, n_steps=50, tol=1e-8):
         p = mol_density_matrix(n_electron, coeffs)
 
         for _ in range(n_steps):
-
             j = qml.math.einsum("pqrs,rs->pq", rep_tensor, p)
             k = qml.math.einsum("psqr,rs->pq", rep_tensor, p)
 

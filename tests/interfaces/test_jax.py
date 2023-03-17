@@ -35,12 +35,11 @@ from pennylane.interfaces.jax_jit import _execute_with_fwd
 @pytest.mark.parametrize(
     "version, package, should_raise",
     [
-        ("0.3.16", jax, True),
-        ("0.3.17", jax, False),
-        ("0.3.18", jax, False),
-        ("0.3.14", jax.lib, True),
-        ("0.3.15", jax.lib, False),
-        ("0.3.16", jax.lib, False),
+        ("0.4.1", jax, False),
+        ("0.4.2", jax, False),
+        ("0.4.3", jax, False),
+        ("0.4.4", jax, True),
+        ("0.4.5", jax, True),
     ],
 )
 def test_raise_version_error(package, version, should_raise, monkeypatch):
@@ -57,14 +56,14 @@ def test_raise_version_error(package, version, should_raise, monkeypatch):
         m.setattr(package, "__version__", version)
 
         if should_raise:
-            msg = "requires version 0.3.17 or higher for JAX and 0.3.15 or higher JAX lib"
+            msg = "The JAX JIT interface of PennyLane requires JAX"
             with pytest.raises(InterfaceUnsupportedError, match=msg):
                 execute([tape], dev, gradient_fn=param_shift, interface="jax-jit")
         else:
             execute([tape], dev, gradient_fn=param_shift, interface="jax-jit")
 
 
-@pytest.mark.parametrize("interface", ["jax-jit", "jax-python", "auto"])
+@pytest.mark.parametrize("interface", ["jax-jit", "jax-python"])
 class TestJaxExecuteUnitTests:
     """Unit tests for jax execution"""
 
@@ -111,11 +110,7 @@ class TestJaxExecuteUnitTests:
 
             tape = qml.tape.QuantumScript.from_queue(q)
             return execute(
-                [tape],
-                device,
-                gradient_fn=param_shift,
-                mode="forward",
-                interface=interface,
+                [tape], device, gradient_fn=param_shift, mode="forward", interface=interface
             )[0]
 
         with pytest.raises(
@@ -136,12 +131,7 @@ class TestJaxExecuteUnitTests:
                 qml.expval(qml.PauliZ(0))
 
             tape = qml.tape.QuantumScript.from_queue(q)
-            return execute(
-                [tape],
-                device,
-                gradient_fn=param_shift,
-                interface="None",
-            )[0]
+            return execute([tape], device, gradient_fn=param_shift, interface="None")[0]
 
         with pytest.raises(ValueError, match="Unknown interface"):
             cost(a, device=dev)
@@ -235,7 +225,7 @@ class TestJaxExecuteUnitTests:
             )
 
 
-@pytest.mark.parametrize("interface", ["jax-jit", "jax-python", "auto"])
+@pytest.mark.parametrize("interface", ["jax-jit", "jax-python"])
 class TestCaching:
     """Test for caching behaviour"""
 
@@ -252,11 +242,7 @@ class TestCaching:
 
             tape = qml.tape.QuantumScript.from_queue(q)
             return execute(
-                [tape],
-                dev,
-                gradient_fn=param_shift,
-                cachesize=cachesize,
-                interface=interface,
+                [tape], dev, gradient_fn=param_shift, cachesize=cachesize, interface=interface
             )[0][0]
 
         params = jnp.array([0.1, 0.2])
@@ -279,7 +265,7 @@ class TestCaching:
                 qml.expval(qml.PauliZ(0))
 
             tape = qml.tape.QuantumScript.from_queue(q)
-            return execute([tape], dev, gradient_fn=param_shift, cache=cache, interface=interface,)[
+            return execute([tape], dev, gradient_fn=param_shift, cache=cache, interface=interface)[
                 0
             ][0]
 
@@ -312,11 +298,7 @@ class TestCaching:
 
             tape2 = qml.tape.QuantumScript.from_queue(q2)
             res = execute(
-                [tape1, tape2],
-                dev,
-                gradient_fn=param_shift,
-                cache=cache,
-                interface=interface,
+                [tape1, tape2], dev, gradient_fn=param_shift, cache=cache, interface=interface
             )
             return res[0][0]
 
@@ -338,7 +320,7 @@ class TestCaching:
                 qml.expval(qml.PauliZ(0))
 
             tape = qml.tape.QuantumScript.from_queue(q)
-            return execute([tape], dev, gradient_fn=param_shift, cache=cache, interface=interface,)[
+            return execute([tape], dev, gradient_fn=param_shift, cache=cache, interface=interface)[
                 0
             ][0]
 
@@ -422,7 +404,7 @@ execute_kwargs = [
 
 
 @pytest.mark.parametrize("execute_kwargs", execute_kwargs)
-@pytest.mark.parametrize("interface", ["jax-jit", "jax-python", "auto"])
+@pytest.mark.parametrize("interface", ["jax-jit", "jax-python"])
 class TestJaxExecuteIntegration:
     """Test the jax interface execute function
     integrates well for both forward and backward execution"""
@@ -499,7 +481,6 @@ class TestJaxExecuteIntegration:
         assert tape.trainable_params == [0, 1]
 
         def cost(a, b):
-
             # An explicit call to _update() is required here to update the
             # trainable parameters in between tape executions.
             # This is different from how the autograd interface works.

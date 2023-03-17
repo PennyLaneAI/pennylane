@@ -25,13 +25,15 @@ from pennylane.ops.op_math.controlled import ControlledOp
 from pennylane.ops.op_math.pow import Pow, PowOperation
 
 
+# pylint: disable=too-few-public-methods
 class TempOperator(qml.operation.Operator):
     """Dummy operator"""
 
     num_wires = 1
 
 
-def pow_using_dunder_method(base, z, do_queue=True, id=None):
+# pylint: disable=unused-argument
+def pow_using_dunder_method(base, z, do_queue=False, id=None):
     """Helper function which computes the base raised to the power invoking the __pow__ dunder
     method."""
     return base**z
@@ -66,10 +68,11 @@ class TestConstructor:
         """Test that when the simplification method returns a list of multiple operators,
         pow returns a list of multiple operators."""
 
+        # pylint: disable=too-few-public-methods
         class Temp(qml.operation.Operator):
             num_wires = 1
 
-            def pow(self, z):
+            def pow(self, z):  # pylint: disable=unused-argument
                 return [qml.S(0), qml.T(0)]
 
         new_op = qml.pow(Temp(0), 2, lazy=False)
@@ -83,7 +86,7 @@ class TestConstructor:
 
         with qml.queuing.AnnotatedQueue() as q:
             original_op = qml.PauliX(0)
-            new_op = qml.pow(original_op, 0.5, lazy=False)
+            _ = qml.pow(original_op, 0.5, lazy=False)
 
         assert original_op not in q.queue
 
@@ -333,28 +336,41 @@ class TestProperties:
     def test_queue_category(self, power_method):
         """Test that the queue category `"_ops"` carries over."""
         op: Pow = power_method(base=qml.PauliX(0), z=3.5)
-        assert op._queue_category == "_ops"
+        assert op._queue_category == "_ops"  # pylint: disable=protected-access
 
     def test_queue_category_None(self, power_method):
         """Test that the queue category `None` for some observables carries over."""
         op: Pow = power_method(base=qml.PauliX(0) @ qml.PauliY(1), z=-1.1)
-        assert op._queue_category is None
+        assert op._queue_category is None  # pylint: disable=protected-access
 
     def test_batching_properties(self, power_method):
-        """Test that Pow batching behavior mirrors that of the base."""
+        """Test the batching properties and methods."""
 
-        class DummyOp(qml.operation.Operator):
-            ndim_params = (0, 2)
-            num_wires = 1
-
-        param1 = [0.3] * 3
-        param2 = [[[0.3, 1.2]]] * 3
-
-        base = DummyOp(param1, param2, wires=0)
-        op: Pow = power_method(base=base, z=3)
-
-        assert op.ndim_params == (0, 2)
+        # base is batched
+        base = qml.RX(np.array([1.2, 2.3, 3.4]), 0)
+        op = power_method(base, z=1)
+        assert op.ndim_params == base.ndim_params
         assert op.batch_size == 3
+
+        # coeff is batched
+        base = qml.RX(1, 0)
+        op = power_method(base, z=np.array([1.2, 2.3, 3.4]))
+        assert op.ndim_params == base.ndim_params
+        assert op.batch_size == 3
+
+        # both are batched
+        base = qml.RX(np.array([1.2, 2.3, 3.4]), 0)
+        op = power_method(base, z=np.array([1.2, 2.3, 3.4]))
+        assert op.ndim_params == base.ndim_params
+        assert op.batch_size == 3
+
+    def test_different_batch_sizes_raises_error(self, power_method):
+        """Test that using different batch sizes for base and scalar raises an error."""
+        base = qml.RX(np.array([1.2, 2.3, 3.4]), 0)
+        with pytest.raises(
+            ValueError, match="Broadcasting was attempted but the broadcasted dimensions"
+        ):
+            _ = power_method(base, np.array([0.1, 1.2, 2.3, 3.4]))
 
     op_pauli_reps = (
         (qml.PauliZ(wires=0), 1, qml.pauli.PauliSentence({qml.pauli.PauliWord({0: "Z"}): 1})),
@@ -366,7 +382,7 @@ class TestProperties:
     def test_pauli_rep(self, base, exp, rep, power_method):
         """Test the pauli rep is produced as expected."""
         op = power_method(base, exp)
-        assert op._pauli_rep == rep
+        assert op._pauli_rep == rep  # pylint: disable=protected-access
 
     def test_pauli_rep_is_none_for_bad_exponents(self, power_method):
         """Test that the _pauli_rep is None if the exponent is not positive or non integer."""
@@ -375,13 +391,13 @@ class TestProperties:
 
         for exponent in exponents:
             op = power_method(base, z=exponent)
-            assert op._pauli_rep is None
+            assert op._pauli_rep is None  # pylint: disable=protected-access
 
     def test_pauli_rep_none_if_base_pauli_rep_none(self, power_method):
         """Test that None is produced if the base op does not have a pauli rep"""
         base = qml.RX(1.23, wires=0)
         op = power_method(base, z=2)
-        assert op._pauli_rep is None
+        assert op._pauli_rep is None  # pylint: disable=protected-access
 
 
 class TestSimplify:
@@ -508,6 +524,20 @@ class TestMiscMethods:
 
         assert qml.math.allclose(mat_eigvals, op.eigvals())
 
+    def test_has_generator_true(self):
+        """Test `has_generator` property carries over when base op defines generator."""
+        base = qml.RX(0.5, 0)
+        op = Pow(base, 0.3)
+
+        assert op.has_generator is True
+
+    def test_has_generator_false(self):
+        """Test `has_generator` property carries over when base op does not define a generator."""
+        base = qml.PauliX(0)
+        op = Pow(base, 0.3)
+
+        assert op.has_generator is False
+
     def test_generator(self):
         """Test that the generator is the base's generator multiplied by the power."""
         z = 2.5
@@ -577,13 +607,80 @@ class TestQueueing:
         """Test that when `do_queue` is specified, the operation is not queued."""
         base = qml.PauliX(0)
         with qml.queuing.AnnotatedQueue() as q:
-            op = Pow(base, 4.5, do_queue=False)
+            _ = Pow(base, 4.5, do_queue=False)
 
         assert len(q) == 0
 
 
 class TestMatrix:
     """Test the matrix method for the power operator."""
+
+    def test_base_batching_support(self):
+        """Test that Pow matrix has base batching support."""
+        x = np.array([-1, -2, -3])
+        op = Pow(qml.RX(x, 0), z=3)
+        mat = op.matrix()
+        true_mat = qml.math.stack([Pow(qml.RX(i, 0), z=3).matrix() for i in x])
+        assert qml.math.allclose(mat, true_mat)
+        assert mat.shape == (3, 2, 2)
+
+    def test_coeff_batching_support(self):
+        """Test that Pow matrix has coeff batching support."""
+        x = np.array([-1, -2, -3])
+        op = Pow(qml.PauliX(0), z=x)
+        mat = op.matrix()
+        true_mat = qml.math.stack([Pow(qml.PauliX(0), i).matrix() for i in x])
+        assert qml.math.allclose(mat, true_mat)
+        assert mat.shape == (3, 2, 2)
+
+    def test_base_and_coeff_batching_support(self):
+        """Test that Pow matrix has base and coeff batching support."""
+        x = np.array([-1, -2, -3])
+        y = np.array([1, 2, 3])
+        op = Pow(qml.RX(x, 0), z=y)
+        mat = op.matrix()
+        true_mat = qml.math.stack([Pow(qml.RX(i, 0), j).matrix() for i, j in zip(x, y)])
+        assert qml.math.allclose(mat, true_mat)
+        assert mat.shape == (3, 2, 2)
+
+    @pytest.mark.jax
+    def test_batching_jax(self):
+        """Test that Pow matrix has batching support with the jax interface."""
+        import jax.numpy as jnp
+
+        x = jnp.array([-1, -2, -3])
+        y = jnp.array([1, 2, 3])
+        op = Pow(qml.RX(x, 0), y)
+        mat = op.matrix()
+        true_mat = qml.math.stack([Pow(qml.RX(i, 0), j).matrix() for i, j in zip(x, y)])
+        assert qml.math.allclose(mat, true_mat)
+        assert mat.shape == (3, 2, 2)
+
+    @pytest.mark.torch
+    def test_batching_torch(self):
+        """Test that Pow matrix has batching support with the torch interface."""
+        import torch
+
+        x = torch.tensor([-1, -2, -3])
+        y = torch.tensor([1, 2, 3])
+        op = Pow(qml.RX(x, 0), y)
+        mat = op.matrix()
+        true_mat = qml.math.stack([Pow(qml.RX(i, 0), j).matrix() for i, j in zip(x, y)])
+        assert qml.math.allclose(mat, true_mat)
+        assert mat.shape == (3, 2, 2)
+
+    @pytest.mark.tf
+    def test_batching_tf(self):
+        """Test that Pow matrix has batching support with the tensorflow interface."""
+        import tensorflow as tf
+
+        x = tf.constant([-1.0, -2.0, -3.0])
+        y = tf.constant([1.0, 2.0, 3.0])
+        op = Pow(qml.RX(x, 0), y)
+        mat = op.matrix()
+        true_mat = qml.math.stack([Pow(qml.RX(i, 0), j).matrix() for i, j in zip(x, y)])
+        assert qml.math.allclose(mat, true_mat)
+        assert mat.shape == (3, 2, 2)
 
     def check_matrix(self, param, z):
         """Interface-independent helper function that checks that the matrix of a power op

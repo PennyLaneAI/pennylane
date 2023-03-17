@@ -64,7 +64,15 @@ wire_specs_list = [
     # (["a", "b"], ["a", "b"], "a", ["a", "b"]),
 ]
 
-diff_methods = ["device", "backprop", "adjoint", "parameter-shift", "finite-diff", "spsa"]
+diff_methods = [
+    "device",
+    "backprop",
+    "adjoint",
+    "parameter-shift",
+    "finite-diff",
+    "spsa",
+    "hadamard",
+]
 return_types = [
     "StateCost",  # scalar cost function of the state
     "StateVector",  # the state directly
@@ -277,13 +285,15 @@ class TestSupportedConfs:
         with pytest.raises(QuantumFunctionError, match=msg):
             circuit = get_qnode(None, "backprop", return_type, None, wire_specs)
 
-    @pytest.mark.parametrize("diff_method", ["adjoint", "parameter-shift", "finite-diff", "spsa"])
+    @pytest.mark.parametrize(
+        "diff_method", ["adjoint", "parameter-shift", "finite-diff", "spsa", "hadamard"]
+    )
     @pytest.mark.parametrize("return_type", return_types)
     @pytest.mark.parametrize("shots", shots_list)
     @pytest.mark.parametrize("wire_specs", wire_specs_list)
     def test_none_all(self, diff_method, return_type, shots, wire_specs):
         """Test interface=None and diff_method in [adjoint, parameter-shift,
-        finite-diff, spsa] has a working forward pass"""
+        finite-diff, spsa, hadamard] has a working forward pass"""
         warn_msg = (
             "Requested adjoint differentiation to be computed with finite shots. "
             "Adjoint differentiation always calculated exactly."
@@ -406,11 +416,9 @@ class TestSupportedConfs:
             circuit = get_qnode(interface, "parameter-shift", return_type, shots, wire_specs)
             x = get_variable(interface, wire_specs, complex=complex)
             if shots is not None:
-
                 with pytest.warns(UserWarning, match="the returned result is analytic"):
                     grad = compute_gradient(x, interface, circuit, return_type, complex=complex)
             else:
-
                 grad = compute_gradient(x, interface, circuit, return_type, complex=complex)
 
     @pytest.mark.parametrize("interface", diff_interfaces)
@@ -429,7 +437,6 @@ class TestSupportedConfs:
         circuit = get_qnode(interface, diff_method, return_type, shots, wire_specs)
         x = get_variable(interface, wire_specs)
         if shots is not None and return_type in (VnEntropy, MutualInfo):
-
             with pytest.warns(UserWarning, match="unaffected by sampling"):
                 grad = compute_gradient(x, interface, circuit, return_type)
         else:
@@ -455,7 +462,6 @@ class TestSupportedConfs:
             x = get_variable(interface, wire_specs, complex=complex)
 
             if shots is not None:
-
                 with pytest.warns(UserWarning, match="unaffected by sampling"):
                     grad = compute_gradient(x, interface, circuit, return_type, complex=complex)
             else:
@@ -463,7 +469,7 @@ class TestSupportedConfs:
 
     @pytest.mark.parametrize("interface", diff_interfaces)
     @pytest.mark.parametrize(
-        "diff_method", ["backprop", "adjoint", "parameter-shift", "finite-diff", "spsa"]
+        "diff_method", ["backprop", "adjoint", "parameter-shift", "finite-diff", "spsa", "hadamard"]
     )
     @pytest.mark.parametrize("wire_specs", wire_specs_list)
     def test_all_sample_none_shots(self, interface, diff_method, wire_specs):
@@ -485,7 +491,6 @@ class TestSupportedConfs:
     def test_all_sample_finite_shots(self, interface, diff_method, wire_specs):
         """Test sample measurement works for all interfaces and diff_methods
         when shots>0 (but the results may be incorrect)"""
-
         # the only exception is JAX, which fails due to a dtype mismatch
         if interface == "jax":
             msg = "jacrev requires real-valued outputs .*"
@@ -522,3 +527,41 @@ class TestSupportedConfs:
         circuit = get_qnode(interface, "backprop", "StateVector", None, wire_specs)
         x = get_variable(interface, wire_specs, complex=True)
         grad = compute_gradient(x, interface, circuit, "StateVector", complex=True)
+
+    wire_specs_list = [
+        (2, [0], 0, 0),
+        (3, [0, 1], 0, [0, 1]),
+    ]
+
+    @pytest.mark.parametrize("interface", diff_interfaces)
+    @pytest.mark.parametrize(
+        "return_type",
+        [Probability, Expectation, "Hermitian", "Projector", Variance, VnEntropy, MutualInfo],
+    )
+    @pytest.mark.parametrize("shots", shots_list)
+    @pytest.mark.parametrize("wire_specs", wire_specs_list)
+    @pytest.mark.parametrize("diff_method", ["hadamard"])
+    def test_all_hadamard_nonstate_non_var(
+        self, interface, return_type, shots, wire_specs, diff_method
+    ):
+        """Test diff_method "hadamard" works for all interfaces and
+        return_types except State, DensityMatrix and Var"""
+        qml.enable_return()
+        # correctness is already tested in other test files
+        circuit = get_qnode(interface, diff_method, return_type, shots, wire_specs)
+        x = get_variable(interface, wire_specs)
+        if return_type in (VnEntropy, MutualInfo):
+            with pytest.raises(
+                ValueError,
+                match="Computing the gradient of circuits that return the state is not supported.",
+            ):
+                grad = compute_gradient(x, interface, circuit, return_type)
+        elif return_type == Variance:
+            with pytest.raises(
+                ValueError,
+                match="Computing the gradient of variances with the Hadamard test gradient is not implemented.",
+            ):
+                grad = compute_gradient(x, interface, circuit, return_type)
+        else:
+            grad = compute_gradient(x, interface, circuit, return_type)
+        qml.disable_return()

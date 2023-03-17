@@ -14,6 +14,7 @@
 """
 Unit tests for the convenience functions used in pulsed programming.
 """
+# pylint: disable=import-outside-toplevel
 import inspect
 from functools import reduce
 
@@ -26,8 +27,13 @@ from pennylane.pulse import ParametrizedHamiltonian
 
 def test_error_raised_if_jax_not_installed():
     """Test that an error is raised if a convenience function is called without jax installed"""
-    with pytest.raises(ImportError, match="Module jax is required"):
-        qml.pulse.rect(x=10, windows=[(2, 8)])
+    try:
+        import jax  # pylint: disable=unused-import
+
+        pytest.skip()
+    except ImportError:
+        with pytest.raises(ImportError, match="Module jax is required"):
+            qml.pulse.rect(x=10, windows=[(2, 8)])
 
 
 @pytest.mark.jax
@@ -75,10 +81,11 @@ class TestRect:
         assert callable(c)
         assert argspec.args == ["p", "t"]
 
-    def test_rect_returns_correct_value_single_window(self):
+    @pytest.mark.parametrize("windows", ([(4, 8)], (4, 8)))
+    def test_rect_returns_correct_value_single_window(self, windows):
         """Test that the ``rect`` function returns the correct value only when t is inside
         the window."""
-        c = qml.pulse.rect(x=10, windows=[(4, 8)])
+        c = qml.pulse.rect(x=10, windows=windows)
 
         times = np.arange(0, 10, step=1e-2)
         for t in times:
@@ -86,6 +93,12 @@ class TestRect:
                 assert c(p=1, t=t) == 10  # p is ignored
             else:
                 assert c(p=1, t=t) == 0
+
+    @pytest.mark.parametrize("windows", ([2, (4, 8)], (4, 8, 8), [(4, 9), 1], (4,), ([4],)))
+    def test_rect_raises_invalid_windows(self, windows):
+        """Test that the ``rect`` function raises a ValueError for ill-formatted windows."""
+        with pytest.raises(ValueError, match="At least one provided window"):
+            _ = qml.pulse.rect(x=10, windows=windows)
 
     def test_rect_returns_correct_value_multiple_windows(self):
         """Test that the ``rect`` function returns the correct value only when t is inside

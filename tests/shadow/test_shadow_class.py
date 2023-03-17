@@ -490,4 +490,4 @@ class TestPauliExpval:
 
         actual = pauli_expval(bits, recipes, np.array([word]))
         assert actual.shape == (self.multi_bits.shape[0], 1)
-        assert np.all(actual[:, 0] == expected)
+        assert qml.math.allclose(actual[:, 0], expected)

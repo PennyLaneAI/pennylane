@@ -204,7 +204,7 @@ def execute(tapes, device, execute_fn, gradient_fn, gradient_kwargs, _n=1, max_d
 
     Args:
         tapes (Sequence[.QuantumTape]): batch of tapes to execute
-        device (.Device): Device to use to execute the batch of tapes.
+        device (pennylane.Device): Device to use to execute the batch of tapes.
             If the device does not provide a ``batch_execute`` method,
             by default the tapes will be executed in serial.
         execute_fn (callable): The execution function used to execute the tapes
@@ -246,15 +246,15 @@ def execute(tapes, device, execute_fn, gradient_fn, gradient_kwargs, _n=1, max_d
         tape.trainable_params = qml.math.get_trainable_indices(params)
         parameters.extend(tape.get_parameters())
 
-    kwargs = dict(
-        tapes=tapes,
-        device=device,
-        execute_fn=execute_fn,
-        gradient_fn=gradient_fn,
-        gradient_kwargs=gradient_kwargs,
-        _n=_n,
-        max_diff=max_diff,
-    )
+    kwargs = {
+        "tapes": tapes,
+        "device": device,
+        "execute_fn": execute_fn,
+        "gradient_fn": gradient_fn,
+        "gradient_kwargs": gradient_kwargs,
+        "_n": _n,
+        "max_diff": max_diff,
+    }
     return ExecuteTapes.apply(kwargs, *parameters)
 
 
@@ -363,7 +363,6 @@ class ExecuteTapesNew(torch.autograd.Function):
                 break
 
         for i, r in enumerate(res):
-
             res[i] = _res_to_torch(r, ctx)
 
             # In place change of the numpy array Jacobians to Torch objects
@@ -488,15 +487,15 @@ def _execute_new(tapes, device, execute_fn, gradient_fn, gradient_kwargs, _n=1, 
         tape.trainable_params = qml.math.get_trainable_indices(params)
         parameters.extend(tape.get_parameters())
 
-    kwargs = dict(
-        tapes=tapes,
-        device=device,
-        execute_fn=execute_fn,
-        gradient_fn=gradient_fn,
-        gradient_kwargs=gradient_kwargs,
-        _n=_n,
-        max_diff=max_diff,
-    )
+    kwargs = {
+        "tapes": tapes,
+        "device": device,
+        "execute_fn": execute_fn,
+        "gradient_fn": gradient_fn,
+        "gradient_kwargs": gradient_kwargs,
+        "_n": _n,
+        "max_diff": max_diff,
+    }
 
     return ExecuteTapesNew.apply(kwargs, *parameters)
 
@@ -506,12 +505,15 @@ def _res_to_torch(r, ctx):
     if isinstance(r, (list, tuple)):
         res = []
         for t in r:
-            if isinstance(t, dict):
+            if isinstance(t, dict) or isinstance(t, list) and all(isinstance(i, dict) for i in t):
+                # count result, single or broadcasted
                 res.append(t)
             else:
                 res.append(torch.as_tensor(t, device=ctx.torch_device))
         if isinstance(r, tuple):
             res = tuple(res)
+    elif isinstance(r, dict):
+        res = r
     else:
         res = torch.as_tensor(r, device=ctx.torch_device)
 
@@ -521,13 +523,12 @@ def _res_to_torch(r, ctx):
 def _jac_to_torch(i, ctx):
     """Convert Jacobian from unwrapped execution to torch in the given ctx."""
     if ctx.jacs:
-        jacobians = []
-
         multi_m = len(ctx.tapes[i].measurements) > 1
         multi_p = len(ctx.tapes[i].trainable_params) > 1
 
         # Multiple measurements and parameters: Jacobian is a tuple of tuple
         if multi_p and multi_m:
+            jacobians = []
             for jacobian in ctx.jacs[i]:
                 inside_nested_jacobian = [
                     torch.as_tensor(j, device=ctx.torch_device) for j in jacobian

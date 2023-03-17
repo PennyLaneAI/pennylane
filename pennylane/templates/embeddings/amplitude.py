@@ -122,7 +122,6 @@ class AmplitudeEmbedding(Operation):
     grad_method = None
 
     def __init__(self, features, wires, pad_with=None, normalize=False, do_queue=True, id=None):
-
         wires = Wires(wires)
         self.pad_with = pad_with
         self.normalize = normalize
@@ -226,7 +225,7 @@ class AmplitudeEmbedding(Operation):
                     feature_set = feature_set / qml.math.sqrt(norm)
                 else:
                     raise ValueError(
-                        f"Features must be a vector of norm 1.0; got norm {norm}."
+                        f"Features must be a vector of norm 1.0; got norm {norm}. "
                         "Use 'normalize=True' to automatically normalize."
                     )
 

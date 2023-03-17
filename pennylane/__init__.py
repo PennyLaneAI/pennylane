@@ -88,7 +88,6 @@ from pennylane.transforms import (
     compile,
     cond,
     defer_measurements,
-    measurement_grouping,
     metric_tensor,
     specs,
     qfunc_transform,
@@ -102,7 +101,7 @@ from pennylane.transforms import (
 )
 from pennylane.ops.functions import *
 from pennylane.optimize import *
-from pennylane.vqe import ExpvalCost, VQECost
+from pennylane.vqe import ExpvalCost
 from pennylane.debugging import snapshots
 from pennylane.shadows import ClassicalShadow
 import pennylane.data
@@ -113,7 +112,6 @@ from .collections import QNodeCollection, map
 import pennylane.gradients  # pylint:disable=wrong-import-order
 import pennylane.qinfo  # pylint:disable=wrong-import-order
 from pennylane.interfaces import execute  # pylint:disable=wrong-import-order
-
 
 # Look for an existing configuration file
 default_config = Configuration("config.toml")
@@ -213,7 +211,7 @@ def device(name, *args, **kwargs):
         def circuit():
            qml.Hadamard(wires='q11')
            qml.Hadamard(wires=['ancilla'])
-           qml.CNOT(wires=['q12', -1] )
+           qml.CNOT(wires=['q12', -1])
            ...
 
     Most devices accept a ``shots`` argument which specifies how many circuit executions
@@ -232,7 +230,7 @@ def device(name, *args, **kwargs):
 
     >>> circuit(0.8)  # 10 samples are returned
     [ 1  1  1 -1 -1  1  1  1  1  1]
-    >>> circuit(0.8, shots=3))  # default is overwritten for this call
+    >>> circuit(0.8, shots=3)   # default is overwritten for this call
     [1 1 1]
     >>> circuit(0.8)  # back to default of 10 samples
     [ 1  1  1 -1 -1  1  1  1  1  1]

@@ -106,7 +106,6 @@ def map_wires(
         return input.__class__(ops=ops, measurements=measurements, prep=prep)
 
     if callable(input):
-
         func = input.func if isinstance(input, QNode) else input
 
         @wraps(func)

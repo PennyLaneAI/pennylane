@@ -232,11 +232,11 @@ def get_interface(*values):
     if "torch" in interfaces:
         return "torch"
 
-    if "autograd" in interfaces:
-        return "autograd"
-
     if "jax" in interfaces:
         return "jax"
+
+    if "autograd" in interfaces:
+        return "autograd"
 
     return "numpy"
 
@@ -474,7 +474,7 @@ def requires_grad(tensor, interface=None):
     if interface == "jax":
         import jax
 
-        return isinstance(tensor, jax.core.Tracer)
+        return isinstance(tensor, jax.interpreters.ad.JVPTracer)
 
     raise ValueError(f"Argument {tensor} is an unknown object")
 
