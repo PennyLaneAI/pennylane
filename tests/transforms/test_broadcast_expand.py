@@ -229,7 +229,5 @@ class TestBroadcastExpand:
 
         jac = torch.autograd.functional.jacobian(cost, torch_params)
         exp_jac = qml.jacobian(exp_fn)(*params)
-        print(jac)
-        print(exp_jac)
 
         assert all(qml.math.allclose(_jac, e_jac, atol=1e-7) for _jac, e_jac in zip(jac, exp_jac))
