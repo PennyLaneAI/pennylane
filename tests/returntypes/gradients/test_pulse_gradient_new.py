@@ -24,7 +24,6 @@ import pennylane as qml
 from pennylane.gradients.pulse_gradient import split_evol_ops, _split_evol_tapes, stoch_pulse_grad
 
 
-
 @pytest.mark.jax
 class TestSplitEvolOps:
     """Tests for the helper method split_evol_ops that samples a splitting time and splits up

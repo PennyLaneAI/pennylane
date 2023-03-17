@@ -14,9 +14,11 @@
 """Tests for the gradients.pulse_gradient module.
 Note that the module is implemented for the new return type system
 so that this test suite just tests for correctly raised errors."""
+# pylint:disable=import-outside-toplevel
 import pytest
 import pennylane as qml
 from pennylane.gradients.pulse_gradient import stoch_pulse_grad
+
 
 @pytest.mark.jax
 def test_stoch_pulse_grad_raises():
@@ -24,6 +26,7 @@ def test_stoch_pulse_grad_raises():
     tape = qml.tape.QuantumScript()
     with pytest.raises(NotImplementedError, match="The stochastic pulse parameter-shift"):
         qml.gradients.stoch_pulse_grad(tape)
+
 
 def test_stoch_pulse_grad_raises_without_jax_installed():
     """Test that an error is raised if a stoch_pulse_grad is called without jax installed"""
@@ -35,4 +38,3 @@ def test_stoch_pulse_grad_raises_without_jax_installed():
         tape = qml.tape.QuantumScript([], [])
         with pytest.raises(ImportError, match="Module jax is required"):
             stoch_pulse_grad(tape)
-
