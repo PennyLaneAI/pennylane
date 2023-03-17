@@ -57,8 +57,23 @@
   to be set as trainable), and therefore the derivatives are computed more efficiently.
   [(#3697)](https://github.com/PennyLaneAI/pennylane/pull/3697)
 
+* `qml.SparseHamiltonian` can now be applied to any wires in a circuit rather than being restricted to all wires
+  in the circuit.
+  [(#3888)](https://github.com/PennyLaneAI/pennylane/pull/3888)
+
+* Added `max_distance` keyword argument to `qml.pulse.rydberg_interaction` to allow removal of negligible contributions
+  from atoms beyond `max_distance`from each other.
+  [(#3889)](https://github.com/PennyLaneAI/pennylane/pull/3889)
+
+* 3 new decomposition algorithms are added for n-controlled operations with single-qubit target,
+  and are selected automatically when they produce a better result. They can be accessed via
+  `ops.op_math.ctrl_decomp_bisect`.
+  [(#3851)](https://github.com/PennyLaneAI/pennylane/pull/3851)
 
 <h3>Breaking changes</h3>
+
+* Both JIT interfaces are not compatible with Jax `>0.4.3`, we raise an error for those versions.
+  [(#3877)](https://github.com/PennyLaneAI/pennylane/pull/3877)
 
 * An operation that implements a custom `generator` method, but does not always return a valid generator, also has
   to implement a `has_generator` property that reflects in which scenarios a generator will be returned.
@@ -104,12 +119,19 @@
 
 * Made `qml.OrbitalRotation` and consequently `qml.GateFabric` consistent with the interleaved Jordan-Wigner ordering.
   [(#3861)](https://github.com/PennyLaneAI/pennylane/pull/3861)
+  
+* `qml.devices.qubit.apply_operation` catches the `tf.errors.UnimplementedError` that occurs when `PauliZ` or `CNOT` gates
+  are applied to a large (>8 wires) tensorflow state. When that occurs, the logic falls back to the tensordot logic instead.
+  [(#3884)](https://github.com/PennyLaneAI/pennylane/pull/3884/)
 
+* Fixed parameter broadcasting support with `qml.counts` in most cases, and introduced explicit errors otherwise.
+  [(#3876)](https://github.com/PennyLaneAI/pennylane/pull/3876)
 
 <h3>Contributors</h3>
 
 This release contains contributions from (in alphabetical order):
 
+Komi Amiko
 Utkarsh Azad
 Lillian M. A. Frederiksen
 Soran Jahangiri

@@ -28,7 +28,9 @@ from pennylane.ops.qubit.hamiltonian import Hamiltonian
 from .parametrized_hamiltonian import ParametrizedHamiltonian
 
 
-def rydberg_interaction(register: list, wires=None, interaction_coeff: float = 862690):
+def rydberg_interaction(
+    register: list, wires=None, interaction_coeff: float = 862690, max_distance: float = np.inf
+):
     r"""Returns a :class:`ParametrizedHamiltonian` representing the interaction of an ensemble of
     Rydberg atoms due to the Rydberg blockade
 
@@ -61,6 +63,8 @@ def rydberg_interaction(register: list, wires=None, interaction_coeff: float = 8
         interaction_coeff (float): Rydberg interaction constant in units: :math:`\text{MHz} \times \mu \text{m}^6`.
             Defaults to :math:`862690 \text{ MHz} \times \mu \text{m}^6`. This value is based on an assumption that
             frequencies and energies in the Hamiltonian are provided in units of MHz.
+        max_distance (float): Threshold for distance in :math:`\mu \text{m}` between two Rydberg atoms beyond which their
+            contribution to the interaction term is removed from the Hamiltonian.
 
     Returns:
         RydbergHamiltonian: a :class:`~.ParametrizedHamiltonian` representing the atom interaction
@@ -106,6 +110,8 @@ def rydberg_interaction(register: list, wires=None, interaction_coeff: float = 8
     for idx, (pos1, wire1) in enumerate(zip(register[:-1], wires[:-1])):
         for pos2, wire2 in zip(register[(idx + 1) :], wires[(idx + 1) :]):
             atom_distance = np.linalg.norm(qml.math.array(pos2) - pos1)
+            if atom_distance > max_distance:
+                continue
             Vij = interaction_coeff / (abs(atom_distance) ** 6)  # van der Waals potential
             coeffs.append(Vij)
             observables.append(qml.prod(qml.Projector([1], wire1), qml.Projector([1], wire2)))
@@ -159,21 +165,25 @@ def rydberg_drive(amplitude, phase, detuning, wires):
     .. code-block:: python
 
         atom_coordinates = [[0, 0], [0, 4], [4, 0], [4, 4]]
+        wires = [1, 2, 3, 4]
         H_i = qml.pulse.rydberg_interaction(atom_coordinates, wires)
 
         amplitude = lambda p, t: p * jnp.sin(jnp.pi * t)
         phase = jnp.pi / 2
         detuning = 3 * jnp.pi / 4
-        wires = [0, 1, 2, 3]
         H_d = qml.pulse.rydberg_drive(amplitude, phase, detuning, wires)
 
     >>> H_i
     ParametrizedHamiltonian: terms=6
     >>> H_d
-    ParametrizedHamiltonian: terms=2
+    ParametrizedHamiltonian: terms=3
 
-    The two terms of the drive field correspond to the first and second sum, corresponding to the drive and the shift term.
-    This drive term corresponds to a global drive that acts on all wires of the device.
+    The first two terms of the drive Hamiltonian ``H_d`` correspond to the first sum (the sine and cosine terms),
+    describing drive between the ground and excited states. The third term corresponding to the shift term
+    due to detuning from resonance. This drive term corresponds to a global drive that acts on all 4 wires of
+    the device.
+
+    The full Hamiltonian can be evaluated:
 
     .. code-block:: python
 
@@ -196,8 +206,8 @@ def rydberg_drive(amplitude, phase, detuning, wires):
     .. code-block:: python
 
         amplitude_local = lambda p, t: p[0] * jnp.sin(2 * jnp.pi * t) + p[1]
-        phase_local = jnp.pi / 4
-        detuning_local = lambda p, t: p * jnp.exp(-0.25 * t)
+        phase_local = lambda p, t: p * jnp.exp(-0.25 * t)
+        detuning_local = jnp.pi / 4
         H_local = qml.pulse.rydberg_drive(amplitude_local, phase_local, detuning_local, [0, 1])
 
         H = H_i + H_d + H_local
@@ -211,7 +221,7 @@ def rydberg_drive(amplitude, phase, detuning, wires):
     >>> params = [2.4, [1.3, -2.0]]
     >>> circuit_local(params)
     Array(0.45782223, dtype=float64)
-    >>> jax.grad(circuit_local_drives)(params)
+    >>> jax.grad(circuit_local)(params)
     [Array(-0.33522988, dtype=float64),
      [Array(0.40320718, dtype=float64, weak_type=True),
       Array(-0.12003976, dtype=float64, weak_type=True)]]
@@ -226,11 +236,11 @@ def rydberg_drive(amplitude, phase, detuning, wires):
         detuning,
     ]
 
-    drive_terms_1 = sum(qml.PauliX(wire) for wire in wires)
-    drive_terms_2 = sum(-qml.PauliY(wire) for wire in wires)
-    drive_terms_3 = sum(qml.PauliZ(wire) for wire in wires)
+    drive_x_term = sum(qml.PauliX(wire) for wire in wires)
+    drive_y_term = sum(-qml.PauliY(wire) for wire in wires)
+    detuning_term = sum(qml.PauliZ(wire) for wire in wires)
 
-    observables = [drive_terms_1, drive_terms_2, drive_terms_3]
+    observables = [drive_x_term, drive_y_term, detuning_term]
 
     # We convert the pulse data into a list of ``RydbergPulse`` objects
     pulses = [RydbergPulse(amplitude, phase, detuning, wires)]
@@ -407,7 +417,7 @@ def amplitude_and_phase(trig_fn, amp, phase):
 # pylint:disable = too-few-public-methods
 class AmplitudeAndPhase:
     """Class storing combined amplitude and phase callable if either or both
-    of amplitude nor phase are callable."""
+    of amplitude or phase are callable."""
 
     def __init__(self, trig_fn, amp, phase):
         self.amp_is_callable = callable(amp)

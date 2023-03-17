@@ -65,6 +65,11 @@ from pennylane.tape import QuantumScript, QuantumTape
 from pennylane.wires import Wires
 
 
+def _sample_to_str(sample):
+    """Converts a bit-array to a string. For example, ``[0, 1]`` would become '01'."""
+    return "".join(map(str, sample))
+
+
 class QubitDevice(Device):
     """Abstract base class for PennyLane qubit devices.
 
@@ -1706,7 +1711,9 @@ class QubitDevice(Device):
 
 
         Args:
-            samples: samples in an array of dimension ``(shots,len(wires))``
+            samples: An array of samples, with the shape being ``(shots,len(wires))`` if an observable
+                is provided, with sample values being an array of 0s or 1s for each wire. Otherwise, it
+                has shape ``(shots,)``, with sample values being scalar eigenvalues of the observable
             obs (Observable): the observable sampled
             num_wires (int): number of wires the sampled observable was performed on
 
@@ -1744,23 +1751,33 @@ class QubitDevice(Device):
 
         outcomes = []
 
+        # if an observable was provided, batched samples will have shape (batch_size, shots)
+        batched_ndims = 2
+        shape = samples.shape
+
         if isinstance(obs, CountsMP):
             # convert samples and outcomes (if using) from arrays to str for dict keys
-            samples = ["".join([str(s.item()) for s in sample]) for sample in samples]
-
+            samples = np.apply_along_axis(_sample_to_str, -1, samples)
+            batched_ndims = 3  # no observable was provided, batched samples will have shape (batch_size, shots, len(wires))
             if obs.all_outcomes:
-                outcomes = self.generate_basis_states(num_wires)
-                outcomes = ["".join([str(o.item()) for o in outcome]) for outcome in outcomes]
+                outcomes = list(map(_sample_to_str, self.generate_basis_states(num_wires)))
         elif obs.return_type is AllCounts:
             outcomes = qml.eigvals(obs)
 
-        # generate empty outcome dict, populate values with state counts
-        outcome_dict = {k: np.int64(0) for k in outcomes}
-        states, counts = np.unique(samples, return_counts=True)
-        for s, c in zip(states, counts):
-            outcome_dict[s] = c
+        batched = len(shape) == batched_ndims
+        if not batched:
+            samples = samples[None]
 
-        return outcome_dict
+        # generate empty outcome dict, populate values with state counts
+        base_dict = {k: np.int64(0) for k in outcomes}
+        outcome_dicts = [base_dict.copy() for _ in range(shape[0])]
+        results = [np.unique(batch, return_counts=True) for batch in samples]
+        for result, outcome_dict in zip(results, outcome_dicts):
+            states, counts = result
+            for state, count in zip(states, counts):
+                outcome_dict[state] = count
+
+        return outcome_dicts if batched else outcome_dicts[0]
 
     def sample(self, observable, shot_range=None, bin_size=None, counts=False):
         """Return samples of an observable.
