@@ -30,6 +30,11 @@
   to `True`. This allows quick insights into broadcasted tapes for example.
   [(#3920)](https://github.com/PennyLaneAI/pennylane/pull/3920)
 
+* The adjoint differentiation method now supports more operations, and does no longer decompose
+  some operations that may be differentiated directly. In addition, all new operations with a
+  generator are now supported by the method.
+  [(#3874)](https://github.com/PennyLaneAI/pennylane/pull/3874)
+
 * The `coefficients` function and the `visualize` submodule of the `qml.fourier` module
   now allow assigning different degrees for different parameters of the input function.
   [(#3005)](https://github.com/PennyLaneAI/pennylane/pull/3005)
