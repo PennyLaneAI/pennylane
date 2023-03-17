@@ -48,7 +48,7 @@ def state_diagonalizing_gates(
 
 
 def csr_dot_products(measurementprocess: ExpectationMP, state: TensorLike) -> TensorLike:
-    """Measure the expectation value of an ovservable using dot products between ``scipy.csr_matrix``
+    """Measure the expectation value of an observable using dot products between ``scipy.csr_matrix``
     representations.
 
     Args:
