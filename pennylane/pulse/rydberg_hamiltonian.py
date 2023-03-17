@@ -152,12 +152,8 @@ def rydberg_drive(amplitude, phase, wires, detuning=None):
 
     .. seealso::
 
-        :func:`~.rydberg_interaction`, :func:`~.rydberg_local_shift`, :class:`~.ParametrizedHamiltonian`,
-        :class:`~.ParametrizedEvolution` and :func:`~.evolve`
-
-    .. note::
-
-        A local shifting field can be added using :func:`~.rydberg_local_shift`.
+        :func:`~.rydberg_interaction`, :class:`~.ParametrizedHamiltonian`, :class:`~.ParametrizedEvolution`
+        and :func:`~.evolve`
 
     **Example**
 
@@ -234,18 +230,26 @@ def rydberg_drive(amplitude, phase, wires, detuning=None):
     if isinstance(wires, int):
         wires = [wires]
 
-    # We compute the `coeffs` and `observables` of the laser field
-    coeffs = [
-        amplitude_and_phase(qml.math.cos, amplitude, phase),
-        amplitude_and_phase(qml.math.sin, amplitude, phase),
-    ]
+    if not callable(amplitude) and qml.math.isclose(amplitude, 0.0):
+        if trivial_detuning := detuning is None or qml.math.isclose(detuning, 0.0):
+            raise ValueError("The global drive must have a non-trivial amplitude.")
 
-    drive_x_term = 0.5 * sum(qml.PauliX(wire) for wire in wires)
-    drive_y_term = -0.5 * sum(qml.PauliY(wire) for wire in wires)
+        coeffs = []
+        observables = []
 
-    observables = [drive_x_term, drive_y_term]
+    else:
+        # We compute the `coeffs` and `observables` of the laser field
+        coeffs = [
+            amplitude_and_phase(qml.math.cos, amplitude, phase),
+            amplitude_and_phase(qml.math.sin, amplitude, phase),
+        ]
 
-    if detuning is not None and not qml.math.isclose(detuning, 0.):
+        drive_x_term = 0.5 * sum(qml.PauliX(wire) for wire in wires)
+        drive_y_term = -0.5 * sum(qml.PauliY(wire) for wire in wires)
+
+        observables = [drive_x_term, drive_y_term]
+
+    if not trivial_detuning:
         detuning_term = -1.0 * sum(qml.PauliZ(wire) for wire in wires)
         coeffs.append(detuning)
         observables.append(detuning_term)

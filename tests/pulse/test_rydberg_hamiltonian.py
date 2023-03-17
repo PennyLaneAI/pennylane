@@ -391,6 +391,30 @@ class TestRydbergDrive:
         # Hamiltonian is as expected
         assert qml.equal(Hd([0.5, -0.5], t=5), H_expected([0.5, -0.5], t=5))
 
+    def test_no_amplitude(self):
+        """Test that when amplitude is not specified, the drive term is correctly defined."""
+
+        def f(p, t):
+            return np.cos(p * t)
+
+        Hd = rydberg_drive(amplitude=0, phase=1, wires=[0, 3], detuning=f)
+
+        ops_expected = [
+            qml.Hamiltonian([-1, -1], [qml.PauliZ(0), qml.PauliZ(3)]),
+        ]
+        coeffs_expected = [f]
+        H_expected = RydbergHamiltonian(coeffs_expected, ops_expected)
+
+        assert qml.equal(Hd([0.1], 10), H_expected([0.1], 10))
+        assert isinstance(Hd, RydbergHamiltonian)
+        assert Hd.interaction_coeff == 862690
+        assert Hd.wires == Wires([0, 3])
+        assert Hd.register is None
+        assert len(Hd.coeffs) == 1
+        assert Hd.coeffs[0] is f
+        assert len(Hd.ops) == 1
+        assert qml.equal(Hd.ops[0], ops_expected[0])
+
     def test_no_detuning(self):
         """Test that when detuning not specified, the drive term is correctly defined."""
 
@@ -417,6 +441,11 @@ class TestRydbergDrive:
         assert all(isinstance(coeff, AmplitudeAndPhase) for coeff in Hd.coeffs)
         assert len(Hd.coeffs) == 2
         assert all(qml.equal(op, op_expected) for op, op_expected in zip(Hd.ops, ops_expected))
+
+    def test_no_amplitude_no_detuning(self):
+        """Test that the correct error is raised if both amplitude and detuning are trivial."""
+        with pytest.raises(ValueError, match="The global drive must have a non-trivial amplitude."):
+            _ = rydberg_drive(0, np.pi, wires=[0])
 
 
 def callable_amp(p, t):
