@@ -399,9 +399,7 @@ class TestRydbergDrive:
 
         Hd = rydberg_drive(amplitude=0, phase=1, wires=[0, 3], detuning=f)
 
-        ops_expected = [
-            qml.Hamiltonian([-1, -1], [qml.PauliZ(0), qml.PauliZ(3)]),
-        ]
+        ops_expected = [qml.Hamiltonian([-1, -1], [qml.PauliZ(0), qml.PauliZ(3)])]
         coeffs_expected = [f]
         H_expected = RydbergHamiltonian(coeffs_expected, ops_expected)
 
