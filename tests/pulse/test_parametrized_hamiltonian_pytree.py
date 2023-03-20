@@ -25,7 +25,6 @@ try:
         ParametrizedHamiltonianPytree,
     )
     from pennylane.pulse.rydberg_hamiltonian import (
-        rydberg_drive,
         _rydberg_reorder_parameters,
         amplitude_and_phase,
     )
@@ -44,7 +43,9 @@ def f2(p, t):
 
 PH = qml.dot([1, 2, f1, f2], [qml.PauliX(0), qml.PauliY(1), qml.PauliZ(2), qml.Hadamard(3)])
 
-RH = rydberg_drive(amplitude=f1, phase=f2, detuning=1, wires=[0, 1, 2])
+RH = qml.pulse.rydberg_hamiltonian.rydberg_drive(
+    amplitude=f1, phase=f2, detuning=1, wires=[0, 1, 2]
+)
 
 # Hamiltonians and the parameters for the individual coefficients
 HAMILTONIANS_WITH_COEFF_PARAMETERS = [
