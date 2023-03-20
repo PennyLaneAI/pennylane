@@ -326,12 +326,7 @@ class PulseHamiltonian(ParametrizedHamiltonian):
     """
 
     # pylint: disable=too-many-arguments
-    def __init__(
-        self,
-        coeffs,
-        ops,
-        **kwargs
-    ):
+    def __init__(self, coeffs, ops, **kwargs):
         self.settings = dict(**kwargs)
         super().__init__(coeffs, ops)
 
