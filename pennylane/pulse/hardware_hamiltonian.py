@@ -26,6 +26,7 @@ from pennylane.ops.qubit.hamiltonian import Hamiltonian
 
 from .parametrized_hamiltonian import ParametrizedHamiltonian
 
+
 def drive(amplitude, phase, detuning, wires):
     r"""Returns a :class:`ParametrizedHamiltonian` representing the action of a driving laser
     field with the given rabi frequency, detuning and phase acting on the given wires
@@ -230,7 +231,9 @@ class HardwareHamiltonian(ParametrizedHamiltonian):
             new_pulses = self.pulses + other.pulses
             new_ops = self.ops + other.ops
             new_coeffs = self.coeffs + other.coeffs
-            return HardwareHamiltonian(new_coeffs, new_ops, register=new_register, pulses=new_pulses)
+            return HardwareHamiltonian(
+                new_coeffs, new_ops, register=new_register, pulses=new_pulses
+            )
 
         ops = self.ops.copy()
         coeffs = self.coeffs.copy()

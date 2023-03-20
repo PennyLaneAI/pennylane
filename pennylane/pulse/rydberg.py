@@ -28,6 +28,7 @@ from .hardware_hamiltonian import HardwareHamiltonian
 
 from .parametrized_hamiltonian import ParametrizedHamiltonian
 
+
 def rydberg_interaction(
     register: list, wires=None, interaction_coeff: float = 862690, max_distance: float = np.inf
 ):
