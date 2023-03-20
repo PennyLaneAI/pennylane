@@ -122,6 +122,7 @@ class CompositeOp(Operator):
 
     @property
     def num_wires(self):
+        """Number of wires the operator acts on."""
         return len(self.wires)
 
     @property
