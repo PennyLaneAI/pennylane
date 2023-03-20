@@ -24,8 +24,6 @@ from pennylane.operation import Operator
 from pennylane.ops.qubit.hamiltonian import Hamiltonian
 from pennylane.typing import TensorLike
 
-asd = "asd"
-
 from .parametrized_hamiltonian import ParametrizedHamiltonian
 
 
