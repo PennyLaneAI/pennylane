@@ -60,6 +60,10 @@
 * `AdaptiveOptimizer` is updated to use non-default user-defined qnode arguments.
   [(#3765)](https://github.com/PennyLaneAI/pennylane/pull/3765)
 
+* Adds logic to `qml.devices.qubit.measure` to compute the expectation values of `Hamiltonian` and `Sum `
+  in a backpropagation compatible way.
+  [(#3862)](https://github.com/PennyLaneAI/pennylane/pull/3862/)
+
 * Use `TensorLike` type in `Operator` dunder methods.
   [(#3749)](https://github.com/PennyLaneAI/pennylane/pull/3749)
 
@@ -88,6 +92,9 @@
   and are selected automatically when they produce a better result. They can be accessed via
   `ops.op_math.ctrl_decomp_bisect`.
   [(#3851)](https://github.com/PennyLaneAI/pennylane/pull/3851)
+
+* Changed `Operator.num_wires` from an abstract value to `AnyWires`.
+  [(#3919)](https://github.com/PennyLaneAI/pennylane/pull/3919)
 
 <h3>Breaking changes</h3>
 
