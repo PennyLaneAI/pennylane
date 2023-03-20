@@ -202,7 +202,7 @@ class TestExpval:
         assert m._eigvals is copied_m._eigvals
 
     def test_standard_obs(self):
-        """Check that"""
+        """Check that the hash of an expectation value of an observable can distinguish different observables."""
 
         o1 = qml.prod(qml.PauliX(0), qml.PauliY(1))
         o2 = qml.prod(qml.PauliX(0), qml.PauliZ(1))

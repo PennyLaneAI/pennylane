@@ -90,7 +90,7 @@ class TestCounts:
         ):
             qml.counts(qml.PauliZ(0), wires=[0, 1])
 
-    def test_not_an_observable(self):
+    def test_observable_might_not_be_hermitian(self):
         """Test that a UserWarning is raised if the provided
         argument might not be hermitian."""
 
