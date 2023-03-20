@@ -723,8 +723,12 @@ class TestIntegration:
         def fc(p, t):
             return p[0] * jnp.sin(t) + jnp.cos(p[1] * t)
 
-        H1 = rydberg_drive(amplitude=fa, phase=0, detuning=fb, wires=1)
-        H2 = rydberg_drive(amplitude=fc, phase=3 * jnp.pi, detuning=jnp.pi / 4, wires=4)
+        def fd(p, t):
+            return p * jnp.cos(t)
+
+        H1 = rydberg_drive(amplitude=fa, phase=0, detuning=fb, wires=wires)
+        H2 = rydberg_drive(amplitude=fc, phase=3 * jnp.pi, detuning=0, wires=4)
+        H3 = rydberg_drive(amplitude=0, phase=0, detuning=fd, wires=[3, 0])
 
         dev = qml.device("default.qubit", wires=wires)
 
@@ -734,10 +738,15 @@ class TestIntegration:
         @jax.jit
         @qml.qnode(dev, interface="jax")
         def qnode(params):
-            qml.evolve(Hd + H1 + H2)(params, ts)
+            qml.evolve(Hd + H1 + H2 + H3)(params, ts)
             return qml.expval(H_obj)
 
-        params = (jnp.ones(5), jnp.array([1.0, jnp.pi]), jnp.array([jnp.pi / 2, 0.5]))
+        params = (
+            jnp.ones(5),
+            jnp.array([1.0, jnp.pi]),
+            jnp.array([jnp.pi / 2, 0.5]),
+            jnp.array(-0.5),
+        )
         res = qnode(params)
 
         assert isinstance(res, jax.Array)
