@@ -57,7 +57,19 @@ class transform:
             return self._fn(obj, *targs, **tkwargs)
         elif isinstance(obj, qml.QNodeExperimental):
             return self.default_qnode_transform(obj, targs, tkwargs)
+        elif callable(obj):
+            return self.default_qfunc_transform(obj, targs, tkwargs)
 
+    def default_qfunc_transform(self, qfunc, targs, tkwargs):
+        """Register a qnode transformation"""
+
+        def wrap(*args, **kwargs):
+            tape = qml.tape.make_qscript(qfunc)(*args, **kwargs)
+            new_tape, _ = self.fn(tape, *targs, **tkwargs)
+
+            for op in new_tape[0].circuit:
+                qml.apply(op)
+        return wrap
     def default_qnode_transform(self, qnode, targs, tkwargs, expand_fn=None):
         """Register a qnode transformation"""
         qnode.transform_program.push(
