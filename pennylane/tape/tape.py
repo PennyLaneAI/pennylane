@@ -16,7 +16,6 @@ This module contains the base quantum tape.
 """
 # pylint: disable=too-many-instance-attributes,protected-access,too-many-branches,too-many-public-methods, too-many-arguments
 import copy
-from threading import RLock
 
 import pennylane as qml
 from pennylane.measurements import CountsMP, ProbabilityMP, SampleMP
@@ -340,9 +339,6 @@ class QuantumTape(QuantumScript, AnnotatedQueue):
     This is useful for when you want to transform a tape first before applying it.
     """
 
-    _lock = RLock()
-    """threading.RLock: Used to synchronize appending to/popping from global QueueingContext."""
-
     def __init__(
         self, ops=None, measurements=None, prep=None, name=None, do_queue=True, _update=True
     ):
@@ -350,27 +346,9 @@ class QuantumTape(QuantumScript, AnnotatedQueue):
         AnnotatedQueue.__init__(self)
         QuantumScript.__init__(self, ops, measurements, prep, name=name, _update=_update)
 
-    def __enter__(self):
-        QuantumTape._lock.acquire()
-        try:
-            if self.do_queue:
-                QueuingManager.append(self)
-            return AnnotatedQueue.__enter__(self)
-        except Exception as _:
-            QuantumTape._lock.release()
-            raise
-
     def __exit__(self, exception_type, exception_value, traceback):
-        try:
-            AnnotatedQueue.__exit__(self, exception_type, exception_value, traceback)
-            # After other optimizations in #2963, #2986 and follow-up work, we should check whether
-            # calling `_process_queue` only if there is no `exception_type` saves time. This would
-            # be done via the following:
-            # if exception_type is None:
-            #    self._process_queue()
-            self._process_queue()
-        finally:
-            QuantumTape._lock.release()
+        AnnotatedQueue.__exit__(self, exception_type, exception_value, traceback)
+        self._process_queue()
 
     # ========================================================
     # construction methods
