@@ -346,8 +346,6 @@ class AnnotatedQueue(OrderedDict):
             AnnotatedQueue: this instance
         """
         AnnotatedQueue._lock.acquire()
-        if getattr(self, "do_queue", False):
-            QueuingManager.append(self)
         QueuingManager.add_active_queue(self)
 
         return self
