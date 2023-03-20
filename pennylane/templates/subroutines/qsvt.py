@@ -16,13 +16,14 @@ Contains the QSVT template and qsvt wrapper function.
 """
 import numpy as np
 import pennylane as qml
+from pennylane.queuing import QueuingManager
 from pennylane.ops import BlockEncode, PCPhase
 from pennylane.ops.op_math import adjoint
 from pennylane.operation import AnyWires, Operation
 
 
 def qsvt(A, phi_vect, wires):
-    """Performs the 
+    """Performs the
     `quantum singular value transformation <https://arxiv.org/abs/1806.01838>`__ circuit using
     :class:`~.BlockEncode` and :class:`~.PCPhase`.
 
@@ -30,7 +31,7 @@ def qsvt(A, phi_vect, wires):
         A (Array): the general :math:`(n \times m)` matrix to be encoded.
         phi_vect (list[Float]): a list of angles by which to shift to obtain the desired polynomial.
         wires (Iterable): the wires the template acts on.
-    
+
     .. details::
         :title: Usage Details
 
@@ -43,33 +44,21 @@ def qsvt(A, phi_vect, wires):
             def example_circuit(A):
                 qml.qsvt(A, lst_phis, wires=[0,1])
                 return qml.expval(qml.PauliZ(wires=0))
-                
+
             qml.draw(example_circuit)(A)
     """
-    d = len(phi_vect)
-    c, r = A.shape
-    phi_vect = np.flip(phi_vect)
+    c, r = qml.math.shape(A)
 
-    lst_operations = []
+    U_A = qml.BlockEncode(A, wires=wires, do_queue=False)
+    lst_projectors = []
+    for idx, phi in enumerate(phi_vect):
+        if idx % 2 == 0:
+            lst_projectors.append(PCPhase(phi, dim=r, wires=wires, do_queue=False))
+        else:
+            lst_projectors.append(PCPhase(phi, dim=c, wires=wires, do_queue=False))
 
-    if d % 2 == 0:
-        for i in range(1, d//2 + 1):
-            lst_operations.append(BlockEncode(A, wires=wires))
-            lst_operations.append(PCPhase(phi_vect[2 * i - 1], r, wires=wires))
-            lst_operations.append(adjoint(BlockEncode(A, wires=wires)))
-            lst_operations.append(PCPhase(phi_vect[2*i - 2], c, wires=wires))
+    return QSVT(U_A, lst_projectors, wires=wires)
 
-    else:
-        for i in range(1, (d-1) // 2 + 1):
-            lst_operations.append(BlockEncode(A, wires=wires))
-            lst_operations.append(PCPhase(phi_vect[2 * i], r, wires=wires))
-            lst_operations.append(adjoint(BlockEncode(A, wires=wires)))
-            lst_operations.append(PCPhase(phi_vect[2*i - 1], c, wires=wires))
-
-        lst_operations.append(BlockEncode(A, wires=wires))
-        lst_operations.append(PCPhase(phi_vect[0], r, wires=wires))
-
-    return lst_operations
 
 class QSVT(Operation):
     r"""Performs the 
@@ -92,7 +81,7 @@ class QSVT(Operation):
     of alternating block encoding and controlled phase shift operations.
 
     Args:
-        U_A (Operator or Callable): the block encoding circuit, specified as a :class:`~.Operator` 
+        U_A (Operator): the block encoding circuit, specified as a :class:`~.Operator` 
             or quantum function.
         lst_projectors (list[Operator] or list[Callable]): a list of projector-controlled phase
             shifts that implement the desired polynomial.
@@ -123,9 +112,6 @@ class QSVT(Operation):
         Continue any explanation here.
     """
 
-    num_params = 2
-    """int: Number of trainable parameters that the operator depends on."""
-
     num_wires = AnyWires
     """int: Number of wires that the operator acts on."""
 
@@ -134,12 +120,20 @@ class QSVT(Operation):
 
     grad_method = None
     """Gradient computation method."""
-    
+
     def __init__(self, U_A, lst_projectors, wires, do_queue=True, id=None):
-        super().__init__(U_A, lst_projectors, wires=wires, do_queue=do_queue, id=id)
+        if not isinstance(U_A, qml.operation.Operator):
+            raise ValueError("Input block encoding must be an Operator")
+
+        self._hyperparameters = {
+            "U_A": U_A,
+            "lst_projectors": lst_projectors,
+        }
+
+        super().__init__(wires=wires, do_queue=do_queue, id=id)
 
     @staticmethod
-    def compute_decomposition(U_A, lst_projectors, wires):
+    def compute_decomposition(U_A, lst_projectors, wires, **hyperparameters):
         r"""Representation of the operator as a product of other operators.
 
         .. math:: O = O_1 O_2 \dots O_n.
@@ -148,7 +142,7 @@ class QSVT(Operation):
         .. seealso:: :meth:`~.QSVT.decomposition`.
 
         Args:
-            U_A (Operator or Callable): the block encoding circuit, specified as a :class:`~.Operator` 
+            U_A (Operator or Callable): the block encoding circuit, specified as a :class:`~.Operator`
                 or quantum function.
             lst_projectors (list[Operator] or list[Callable]): a list of projector-controlled phase
                 shift circuits that implement the desired polynomial.
@@ -160,10 +154,10 @@ class QSVT(Operation):
 
         op_list = []
         U_Aadj = U_A.__copy__()
-        if len(lst_projectors)%2 ==0:
+        if len(lst_projectors) % 2 == 0:
             for idx, op in enumerate(lst_projectors):
-                if idx%2 == 0:
-                    qml.apply(U_A)
+                if idx % 2 == 0:
+                    qml.apply(U_A) if idx > 0 else U_A.queue()
                     op_list.append(U_A)
                 else:
                     op_list.append(adjoint(U_Aadj))
@@ -172,8 +166,8 @@ class QSVT(Operation):
 
         else:
             for idx, op in enumerate(lst_projectors[:-1]):
-                if idx%2 == 0:
-                    qml.apply(U_A)
+                if idx % 2 == 0:
+                    qml.apply(U_A) if idx > 0 else U_A.queue()
                     op_list.append(U_A)
                 else:
                     op_list.append(adjoint(U_Aadj))
@@ -190,3 +184,10 @@ class QSVT(Operation):
     def label(self, decimals=None, base_label=None, cache=None):
         op_label = base_label or self.__class__.__name__
         return op_label
+
+    def queue(self, context=QueuingManager):
+        context.remove(self._hyperparameters["U_A"])
+        for op in self._hyperparameters["lst_projectors"]:
+            context.remove(op)
+        context.append(self)
+        return self
