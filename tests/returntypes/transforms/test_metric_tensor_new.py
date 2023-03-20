@@ -1191,7 +1191,6 @@ class TestFullMetricTensor:
         else:
             assert qml.math.allclose(mt, expected)
 
-    @pytest.mark.jax
     @pytest.mark.parametrize("ansatz, params", zip(fubini_ansatze, fubini_params))
     @pytest.mark.parametrize("interface", ["auto", "jax"])
     def test_correct_output_jax(self, ansatz, params, interface):
@@ -1222,7 +1221,6 @@ class TestFullMetricTensor:
         else:
             assert qml.math.allclose(mt, expected)
 
-    @pytest.mark.jax
     @pytest.mark.parametrize("ansatz, params", zip(fubini_ansatze, fubini_params))
     @pytest.mark.parametrize("interface", ["auto", "jax"])
     def test_correct_output_jax_argnum_warning(self, ansatz, params, interface):

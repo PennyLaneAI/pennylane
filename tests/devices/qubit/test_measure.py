@@ -23,9 +23,9 @@ from pennylane.devices.qubit import simulate
 from pennylane.devices.qubit.measure import (
     measure,
     state_diagonalizing_gates,
-    csr_dot_products,
+    state_hamiltonian_expval,
+    state_measurement_process,
     get_measurement_function,
-    sum_of_terms_method,
 )
 
 
@@ -37,59 +37,6 @@ class TestCurrentlyUnsupportedCases:
         state = 0.5 * np.ones((2, 2))
         with pytest.raises(NotImplementedError):
             _ = measure(qml.sample(wires=0), state)
-
-
-class TestMeasurementDispatch:
-    """Test tahat get_measurement_function dispatchs to the correct place."""
-
-    def test_state_no_obs(self):
-        """Test that the correct internal function is used for a measurement process with no observables."""
-        # Test a case where state_measurement_process is used
-        mp1 = qml.state()
-        assert get_measurement_function(mp1, state=1) == state_diagonalizing_gates
-
-    @pytest.mark.parametrize(
-        "m",
-        (
-            qml.var(qml.PauliZ(0)),
-            qml.expval(qml.sum(qml.PauliZ(0), qml.PauliX(0))),
-            qml.expval(qml.sum(*(qml.PauliX(i) for i in range(15)))),
-            qml.expval(qml.prod(qml.PauliX(0), qml.PauliY(1), qml.PauliZ(10))),
-        ),
-    )
-    def test_diagonalizing_gates(self, m):
-        """Test that the state_diagonalizing gates are used when there's an observable has diagonalizing
-        gates and allows the measurement to be efficiently computed with them."""
-        assert get_measurement_function(m, state=1) is state_diagonalizing_gates
-
-    def test_hamiltonian_sparse_method(self):
-        """Check that the sparse expectation value method is used if the state is numpy."""
-        H = qml.Hamiltonian([2], [qml.PauliX(0)])
-        state = np.zeros(2)
-        assert get_measurement_function(qml.expval(H), state) is csr_dot_products
-
-    def test_hamiltonian_sum_of_terms_when_backprop(self):
-        """Check that the sum of terms method is used when the state is trainable."""
-        H = qml.Hamiltonian([2], [qml.PauliX(0)])
-        state = qml.numpy.zeros(2)
-        assert get_measurement_function(qml.expval(H), state) is sum_of_terms_method
-
-    def test_sum_sparse_method_when_large_and_nonoverlapping(self):
-        """Check that the sparse expectation value method is used if the state is numpy and
-        the Sum is large with overlapping wires."""
-        S = qml.prod(*(qml.PauliX(i) for i in range(8))) + qml.prod(
-            *(qml.PauliY(i) for i in range(8))
-        )
-        state = np.zeros(2)
-        assert get_measurement_function(qml.expval(S), state) is csr_dot_products
-
-    def test_sum_sum_of_terms_when_backprop(self):
-        """Check that the sum of terms method is used when"""
-        S = qml.prod(*(qml.PauliX(i) for i in range(8))) + qml.prod(
-            *(qml.PauliY(i) for i in range(8))
-        )
-        state = qml.numpy.zeros(2)
-        assert get_measurement_function(qml.expval(S), state) is sum_of_terms_method
 
 
 class TestMeasurements:
@@ -164,92 +111,22 @@ class TestMeasurements:
         res = simulate(qs)
         assert np.allclose(res, expected)
 
+    def test_correct_measurement_used(self):
+        """Test that the correct internal function is used for a given measurement process."""
+        # Test a case where state_measurement_process is used
+        mp1 = qml.state()
+        assert get_measurement_function(mp1) == state_measurement_process
 
-class TestSumOfTermsDifferentiability:
-    @staticmethod
-    def f(scale, n_wires=10, offset=0.1, convert_to_hamiltonian=False):
-        ops = [qml.RX(offset + scale * i, wires=i) for i in range(n_wires)]
+        # Test cases where state_diagonalizing_gates is used
+        mp2 = qml.var(qml.PauliZ(0))
+        assert get_measurement_function(mp2) == state_diagonalizing_gates
+        mp3 = qml.expval(qml.sum(qml.PauliZ(0), qml.PauliX(0)))
+        assert get_measurement_function(mp3) == state_diagonalizing_gates
+        mp4 = qml.expval(qml.sum(*(qml.PauliZ(i) for i in range(8))))
+        assert get_measurement_function(mp4) == state_diagonalizing_gates
 
-        t1 = 2.5 * qml.prod(*(qml.PauliZ(i) for i in range(n_wires)))
-        t2 = 6.2 * qml.prod(*(qml.PauliY(i) for i in range(n_wires)))
-        H = t1 + t2
-        if convert_to_hamiltonian:
-            H = H._pauli_rep.hamiltonian()  # pylint: disable=protected-access
-        qs = qml.tape.QuantumScript(ops, [qml.expval(H)])
-        return simulate(qs)[0]
-
-    @staticmethod
-    def expected(scale, n_wires=10, offset=0.1, like="numpy"):
-        phase = offset + scale * qml.math.asarray(range(n_wires), like=like)
-        cosines = qml.math.cos(phase)
-        sines = qml.math.sin(phase)
-        return 2.5 * qml.math.prod(cosines) + 6.2 * qml.math.prod(sines)
-
-    @pytest.mark.autograd
-    @pytest.mark.parametrize("convert_to_hamiltonian", (True, False))
-    def test_autograd_backprop(self, convert_to_hamiltonian):
-        """Test that backpropagation derivatives work in autograd with hamiltonians and large sums."""
-        x = qml.numpy.array(0.52)
-        out = self.f(x, convert_to_hamiltonian=convert_to_hamiltonian)
-        expected_out = self.expected(x)
-        assert qml.math.allclose(out, expected_out)
-
-        g = qml.grad(self.f)(x, convert_to_hamiltonian=convert_to_hamiltonian)
-        expected_g = qml.grad(self.expected)(x)
-        assert qml.math.allclose(g, expected_g)
-
-    @pytest.mark.jax
-    @pytest.mark.parametrize("use_jit", (True, False))
-    @pytest.mark.parametrize("convert_to_hamiltonian", (True, False))
-    def test_jax_backprop(self, convert_to_hamiltonian, use_jit):
-        """Test that backpropagation derivatives work with jax with hamiltonians and large sums."""
-        import jax
-        from jax.config import config
-
-        config.update("jax_enable_x64", True)  # otherwise output is too noisy
-
-        x = jax.numpy.array(0.52, dtype=jax.numpy.float64)
-        f = jax.jit(self.f, static_argnums=(1, 2, 3)) if use_jit else self.f
-
-        out = f(x, convert_to_hamiltonian=convert_to_hamiltonian)
-        expected_out = self.expected(x)
-        assert qml.math.allclose(out, expected_out)
-
-        g = jax.grad(f)(x, convert_to_hamiltonian=convert_to_hamiltonian)
-        expected_g = jax.grad(self.expected)(x)
-        assert qml.math.allclose(g, expected_g)
-
-    @pytest.mark.torch
-    @pytest.mark.parametrize("convert_to_hamiltonian", (True, False))
-    def test_torch_backprop(self, convert_to_hamiltonian):
-        """Test that backpropagation derivatives work with torch with hamiltonians and large sums."""
-        import torch
-
-        x = torch.tensor(-0.289, requires_grad=True)
-        x2 = torch.tensor(-0.289, requires_grad=True)
-        out = self.f(x, convert_to_hamiltonian=convert_to_hamiltonian)
-        expected_out = self.expected(x2, like="torch")
-        assert qml.math.allclose(out, expected_out)
-
-        out.backward()
-        expected_out.backward()
-        assert qml.math.allclose(x.grad, x2.grad)
-
-    @pytest.mark.tf
-    @pytest.mark.parametrize("convert_to_hamiltonian", (True, False))
-    def test_tf_backprop(self, convert_to_hamiltonian):
-        """Test that backpropagation derivatives work with tensorflow with hamiltonians and large sums."""
-        import tensorflow as tf
-
-        x = tf.Variable(0.5)
-
-        with tf.GradientTape() as tape1:
-            out = self.f(x, convert_to_hamiltonian=convert_to_hamiltonian)
-
-        with tf.GradientTape() as tape2:
-            expected_out = self.expected(x)
-
-        assert qml.math.allclose(out, expected_out)
-        g1 = tape1.gradient(out, x)
-        g2 = tape2.gradient(expected_out, x)
-        assert qml.math.allclose(g1, g2)
+        # Test cases where state_hamiltonian_expval is used
+        mp5 = qml.expval(qml.Hamiltonian([], []))
+        assert get_measurement_function(mp5) is state_hamiltonian_expval
+        mp6 = qml.expval(qml.sum(*(qml.prod(qml.PauliY(i), qml.PauliZ(i + 1)) for i in range(7))))
+        assert get_measurement_function(mp6) is state_hamiltonian_expval

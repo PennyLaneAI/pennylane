@@ -82,7 +82,6 @@ class TestParametrizedHamiltonianPytree:
         assert flat_tree == (
             (H_pytree.mat_fixed, H_pytree.mats_parametrized),
             H_pytree.coeffs_parametrized,
-            None,
         )
 
     def test_unflatten_method(self):
@@ -93,12 +92,11 @@ class TestParametrizedHamiltonianPytree:
 
         flat_tree = H_pytree.tree_flatten()
 
-        new_H_pytree = H_pytree.tree_unflatten(flat_tree[1], flat_tree[0], flat_tree[2])
+        new_H_pytree = H_pytree.tree_unflatten(flat_tree[1], flat_tree[0])
 
         assert new_H_pytree.mat_fixed == H_pytree.mat_fixed
         assert new_H_pytree.mats_parametrized == H_pytree.mats_parametrized
         assert new_H_pytree.coeffs_parametrized == H_pytree.coeffs_parametrized
-        assert new_H_pytree.reorder_fn == H_pytree.reorder_fn
 
 
 @pytest.mark.jax

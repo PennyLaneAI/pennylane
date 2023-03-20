@@ -76,7 +76,8 @@ def _adjoint_jacobian_expansion(
         non_trainable = ~qml.operation.is_trainable
 
     stop_at = ~qml.operation.is_measurement & (
-        non_trainable | qml.operation.has_gen  # pylint: disable=unsupported-binary-operation
+        non_trainable  # pylint: disable=unsupported-binary-operation
+        | qml.operation.has_unitary_gen
     )
     for i, tape in enumerate(tapes):
         if any(not stop_at(op) for op in tape.operations):

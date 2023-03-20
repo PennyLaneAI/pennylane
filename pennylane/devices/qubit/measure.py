@@ -19,7 +19,7 @@ from typing import Callable
 from scipy.sparse import csr_matrix
 
 from pennylane import math
-from pennylane.ops import Sum, Hamiltonian
+from pennylane.ops import Sum
 from pennylane.measurements import StateMeasurement, MeasurementProcess, ExpectationMP
 from pennylane.typing import TensorLike
 from pennylane.wires import Wires
@@ -47,9 +47,9 @@ def state_diagonalizing_gates(
     return measurementprocess.process_state(math.flatten(state), wires)
 
 
-def csr_dot_products(measurementprocess: ExpectationMP, state: TensorLike) -> TensorLike:
-    """Measure the expectation value of an observable using dot products between ``scipy.csr_matrix``
-    representations.
+def state_hamiltonian_expval(measurementprocess: ExpectationMP, state: TensorLike) -> TensorLike:
+    """Measure the expectation value of the state when the measured observable is a ``Hamiltonian`` or
+    ``SparseHamiltonian``.
 
     Args:
         measurementprocess (ExpectationMP): measurement process to apply to the state
@@ -60,68 +60,67 @@ def csr_dot_products(measurementprocess: ExpectationMP, state: TensorLike) -> Te
     """
     total_wires = len(state.shape)
     Hmat = measurementprocess.obs.sparse_matrix(wire_order=list(range(total_wires)))
-    state = math.toarray(state).flatten()
+    _state = math.toarray(state).flatten()
 
     # Find the expectation value using the <\psi|H|\psi> matrix contraction
-    bra = csr_matrix(math.conj(state))
-    ket = csr_matrix(state[..., None])
+    bra = csr_matrix(math.conj(_state))
+    ket = csr_matrix(_state[..., None])
     new_ket = csr_matrix.dot(Hmat, ket)
     res = csr_matrix.dot(bra, new_ket).toarray()[0]
 
     return math.real(math.squeeze(res))
 
 
-def sum_of_terms_method(measurementprocess: ExpectationMP, state: TensorLike) -> TensorLike:
-    """Measure the expecation value of the state when the measured observable is a ``Hamiltonian`` or ``Sum``
-    and it must be backpropagation compatible.
+def state_measurement_process(
+    measurementprocess: StateMeasurement, state: TensorLike
+) -> TensorLike:
+    """Dispatcher to `StateMeasurement.process_state` for obtaining measurement outcomes
 
     Args:
-        measurementprocess (ExpectationMP): measurement process to apply to the state
-        state (TensorLike): the state to measure
+        measurementprocess (StateMeasurement): measurement to apply to the state
+        state (TensorLike): state to apply the measurement to
 
     Returns:
         TensorLike: the result of the measurement
     """
-    if isinstance(measurementprocess.obs, Sum):
-        # Recursively call measure on each term, so that the best measurement method can
-        # be used for each term
-        return sum(measure(ExpectationMP(term), state) for term in measurementprocess.obs)
-    # else hamiltonian
-    return sum(
-        c * measure(ExpectationMP(t), state) for c, t in zip(*measurementprocess.obs.terms())
-    )
+    total_indices = len(state.shape)
+    wires = Wires(range(total_indices))
+    return measurementprocess.process_state(math.flatten(state), wires)
 
 
 def get_measurement_function(
-    measurementprocess: MeasurementProcess, state: TensorLike
+    measurementprocess: MeasurementProcess,
 ) -> Callable[[MeasurementProcess, TensorLike], TensorLike]:
     """Get the appropriate method for performing a measurement.
 
     Args:
         measurementprocess (MeasurementProcess): measurement process to apply to the state
-        state (TensorLike): the state to measure
 
     Returns:
         Callable: function that returns the measurement result
     """
     if isinstance(measurementprocess, StateMeasurement):
-        if isinstance(measurementprocess, ExpectationMP):
-            if measurementprocess.obs.name == "SparseHamiltonian":
-                return csr_dot_products
+        if measurementprocess.obs is None:
+            # no need to apply diagonalizing gates
+            return state_measurement_process
 
-            if isinstance(measurementprocess.obs, Hamiltonian) or (
-                isinstance(measurementprocess.obs, Sum)
-                and measurementprocess.obs.has_overlapping_wires
-                and len(measurementprocess.obs.wires) > 7
-            ):
-                # Use tensor contraction for `Sum` expectation values with non-commuting summands
-                # and 8 or more wires as it's faster than using eigenvalues.
+        if isinstance(measurementprocess, ExpectationMP) and measurementprocess.obs.name in (
+            "Hamiltonian",
+            "SparseHamiltonian",
+        ):
+            return state_hamiltonian_expval
 
-                # need to work out thresholds for when its faster to use "backprop mode" measurements
-                backprop_mode = math.get_interface(state) != "numpy"
-                return sum_of_terms_method if backprop_mode else csr_dot_products
+        if (
+            isinstance(measurementprocess, ExpectationMP)
+            and isinstance(measurementprocess.obs, Sum)
+            and measurementprocess.obs.has_overlapping_wires
+            and len(measurementprocess.obs.wires) > 7
+        ):
+            # Use tensor contraction for `Sum` expectation values with non-commuting summands
+            # and 8 or more wires as it's faster than using eigenvalues.
+            return state_hamiltonian_expval
 
-        if measurementprocess.obs is None or measurementprocess.obs.has_diagonalizing_gates:
+        if measurementprocess.obs.has_diagonalizing_gates:
             return state_diagonalizing_gates
 
     raise NotImplementedError
@@ -137,4 +136,4 @@ def measure(measurementprocess: MeasurementProcess, state: TensorLike) -> Tensor
     Returns:
         Tensorlike: the result of the measurement
     """
-    return get_measurement_function(measurementprocess, state)(measurementprocess, state)
+    return get_measurement_function(measurementprocess)(measurementprocess, state)

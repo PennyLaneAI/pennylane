@@ -103,7 +103,6 @@ class SymbolicOp(Operator):
 
     @property
     def num_wires(self):
-        """Number of wires the operator acts on."""
         return len(self.wires)
 
     # pylint: disable=arguments-renamed, invalid-overridden-method

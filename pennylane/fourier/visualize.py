@@ -27,7 +27,7 @@ except (ModuleNotFoundError, ImportError) as e:  # pragma: no cover
         "You can install matplolib via \n\n   pip install matplotlib"
     ) from e
 
-from .utils import format_nvec
+from .utils import to_dict, format_nvec
 
 
 def _validate_coefficients(coeffs, n_inputs, can_be_list=True):
@@ -68,12 +68,20 @@ def _validate_coefficients(coeffs, n_inputs, can_be_list=True):
             f"Received coefficients of {len(coeffs.shape)}-dimensional function."
         )
 
-    # Size of each sample dimension must be 2d_i + 1 where d_i is the i-th degree
-    dims = coeffs.shape[1:] if can_be_list else coeffs.shape
-    if any((dim - 1) % 2 for dim in dims):
+    # Shape in all dimensions of a single set of coefficients must be the same
+    shape_set = set(coeffs.shape[1:]) if can_be_list else set(coeffs.shape)
+    if len(shape_set) != 1:
         raise ValueError(
-            "Shape of input coefficients must be 2d_i + 1, where d_i is the largest frequency "
-            f"in the i-th input. Coefficient array with shape {coeffs.shape} is invalid."
+            "All dimensions of coefficient array must be the same. "
+            f"Received array with dimensions {coeffs.shape}"
+        )
+
+    # Size of each sample dimension must be 2d + 1 where d is the degree
+    shape_dim = coeffs.shape[1] if can_be_list else coeffs.shape[0]
+    if (shape_dim - 1) % 2 != 0:
+        raise ValueError(
+            "Shape of input coefficients must be 2d + 1, where d is the largest frequency. "
+            f"Coefficient array with shape {coeffs.shape} is invalid."
         )
 
     # Return the coefficients; we may have switched to a numpy array or added a needed extra dimension
@@ -90,15 +98,14 @@ def _extract_data_and_labels(coeffs):
         (list(str), dict[str, array[complex]): The set of frequency labels, and a data
             dictionary split into real and imaginary parts.
     """
-    # extract the x ticks: create generator for indices nvec = (n1, ..., nN),
-    # ranging from (-d1,...,-dN) to (d1,...,dN).
-    nvecs = list(product(*(np.array(range(-(d // 2), d // 2 + 1)) for d in coeffs[0].shape)))
+    # extract the x ticks
+    nvecs = list(to_dict(coeffs[0]).keys())
     nvecs_formatted = [format_nvec(nvec) for nvec in nvecs]
 
-    # extract flattened data by real part and imaginary part, and respecting negative indices
+    # make data
     data = {}
-    data["real"] = np.array([[c[nvec] for nvec in nvecs] for c in coeffs.real])
-    data["imag"] = np.array([[c[nvec] for nvec in nvecs] for c in coeffs.imag])
+    data["real"] = np.array([[c[nvec].real for nvec in nvecs] for c in coeffs])
+    data["imag"] = np.array([[c[nvec].imag for nvec in nvecs] for c in coeffs])
 
     return nvecs_formatted, data
 

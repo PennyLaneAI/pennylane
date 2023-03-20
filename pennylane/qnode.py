@@ -393,7 +393,7 @@ class QNode:
             if kwarg in ["gradient_fn", "grad_method"]:
                 warnings.warn(
                     f"It appears you may be trying to set the method of differentiation via the kwarg "
-                    f"{kwarg}. This is not supported in qnode and will default to backpropogation. Use "
+                    f"{kwarg}. This is not supported in qnode and will defualt to backpropogation. Use "
                     f"diff_method instead."
                 )
             elif kwarg not in qml.gradients.SUPPORTED_GRADIENT_KWARGS:
@@ -753,11 +753,6 @@ class QNode:
 
         params = self.tape.get_parameters(trainable_only=False)
         self.tape.trainable_params = qml.math.get_trainable_indices(params)
-
-        if any(isinstance(m, CountsMP) for m in self.tape.measurements) and any(
-            qml.math.is_abstract(a) for a in args
-        ):
-            raise qml.QuantumFunctionError("Can't JIT a quantum function that returns counts.")
 
         if isinstance(self._qfunc_output, qml.numpy.ndarray):
             measurement_processes = tuple(self.tape.measurements)
