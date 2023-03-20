@@ -13,9 +13,9 @@
 """This module contains the Shots class to hold shot-related information."""
 
 from collections import namedtuple
-from collections.abc import Sequence
+from collections.abc import Sequence as SequenceType
 from functools import singledispatchmethod
-from typing import Tuple, Union
+from typing import Sequence, Tuple, Union
 import numpy as np
 
 ShotCopies = namedtuple("ShotCopies", ["shots", "copies"])
@@ -87,7 +87,7 @@ class Shots:
         self._frozen = True
 
     @__init__.register
-    def __list_init__(self, shots: Sequence):  # pylint:disable=inconsistent-return-statements
+    def __list_init__(self, shots: SequenceType):  # pylint:disable=inconsistent-return-statements
         if not all(valid_int(s) or valid_tuple(s) for s in shots):
             raise self._SHOT_ERROR
         if all(valid_tuple(s) for s in shots):
@@ -121,7 +121,7 @@ class Shots:
         self.total_shots = total_shots + current_shots * current_count
         self._frozen = True
 
-    def __mixed_init__(self, shots: Sequence[Union[int, tuple[int, int]]]):
+    def __mixed_init__(self, shots: Sequence[Union[int, Tuple[int, int]]]):
         return self.__all_tuple_init__([s if isinstance(s, tuple) else (s, 1) for s in shots])
 
     @property
