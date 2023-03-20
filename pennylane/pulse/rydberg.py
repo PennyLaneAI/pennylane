@@ -12,21 +12,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """This module contains the classes/functions specific for simulation of neutral rydberg atom hardware systems"""
-import warnings
-from dataclasses import dataclass
-from typing import Callable, List, Union
-
 import numpy as np
 
 import pennylane as qml
-from pennylane.wires import Wires
-from pennylane.operation import Operator
-from pennylane.ops.qubit.hamiltonian import Hamiltonian
-from pennylane.typing import TensorLike
 from .hardware_hamiltonian import HardwareHamiltonian
 
-
-from .parametrized_hamiltonian import ParametrizedHamiltonian
 
 def rydberg_interaction(
     register: list, wires=None, interaction_coeff: float = 862690, max_distance: float = np.inf

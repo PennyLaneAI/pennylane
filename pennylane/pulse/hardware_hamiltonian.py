@@ -16,8 +16,6 @@ import warnings
 from dataclasses import dataclass
 from typing import Callable, List, Union
 
-import numpy as np
-
 import pennylane as qml
 from pennylane.wires import Wires
 from pennylane.operation import Operator
@@ -25,6 +23,7 @@ from pennylane.ops.qubit.hamiltonian import Hamiltonian
 
 
 from .parametrized_hamiltonian import ParametrizedHamiltonian
+
 
 def drive(amplitude, phase, detuning, wires):
     r"""Returns a :class:`ParametrizedHamiltonian` representing the action of a driving laser
@@ -230,7 +229,9 @@ class HardwareHamiltonian(ParametrizedHamiltonian):
             new_pulses = self.pulses + other.pulses
             new_ops = self.ops + other.ops
             new_coeffs = self.coeffs + other.coeffs
-            return HardwareHamiltonian(new_coeffs, new_ops, register=new_register, pulses=new_pulses)
+            return HardwareHamiltonian(
+                new_coeffs, new_ops, register=new_register, pulses=new_pulses
+            )
 
         ops = self.ops.copy()
         coeffs = self.coeffs.copy()
