@@ -122,7 +122,7 @@ def rydberg_interaction(
     )
 
 
-def rydberg_drive(amplitude, phase, wires, detuning=None):
+def rydberg_drive(amplitude, phase, detuning, wires):
     r"""Returns a :class:`ParametrizedHamiltonian` representing the action of a driving laser
     field with the given rabi frequency, detuning and phase acting on the given wires
 
@@ -141,10 +141,10 @@ def rydberg_drive(amplitude, phase, wires, detuning=None):
         amplitude (Union[float, Callable]): float or callable returning the amplitude (in MHz) of a
             laser field
         phase (Union[float, Callable]): float or callable returning the phase (in radians) of the laser field
-        wires (Union[int, List[int]]): integer or list containing wire values for the Rydberg atoms that
-            the laser field acts on
         detuning (Union[float, Callable]): float or callable returning the detuning (in MHz) of a
             laser field
+        wires (Union[int, List[int]]): integer or list containing wire values for the Rydberg atoms that
+            the laser field acts on
 
     Returns:
         RydbergHamiltonian: a :class:`~.ParametrizedHamiltonian` representing the action of the laser field
@@ -171,7 +171,7 @@ def rydberg_drive(amplitude, phase, wires, detuning=None):
         amplitude = lambda p, t: p * jnp.sin(jnp.pi * t)
         phase = jnp.pi / 2
         detuning = 3 * jnp.pi / 4
-        H_d = qml.pulse.rydberg_drive(amplitude, phase, wires, detuning)
+        H_d = qml.pulse.rydberg_drive(amplitude, phase, detuning, wires)
 
     >>> H_i
     ParametrizedHamiltonian: terms=6
@@ -208,7 +208,7 @@ def rydberg_drive(amplitude, phase, wires, detuning=None):
         amplitude_local = lambda p, t: p[0] * jnp.sin(2 * jnp.pi * t) + p[1]
         phase_local = lambda p, t: p * jnp.exp(-0.25 * t)
         detuning_local = jnp.pi / 4
-        H_local = qml.pulse.rydberg_drive(amplitude_local, phase_local, [0, 1], detuning_local)
+        H_local = qml.pulse.rydberg_drive(amplitude_local, phase_local, detuning_local, [0, 1])
 
         H = H_i + H_d + H_local
 
@@ -229,9 +229,7 @@ def rydberg_drive(amplitude, phase, wires, detuning=None):
     """
     if isinstance(wires, int):
         wires = [wires]
-    trivial_detuning = detuning is None or (
-        not callable(detuning) and qml.math.isclose(detuning, 0.0)
-    )
+    trivial_detuning = not callable(detuning) and qml.math.isclose(detuning, 0.0)
 
     if not callable(amplitude) and qml.math.isclose(amplitude, 0.0):
         if trivial_detuning:

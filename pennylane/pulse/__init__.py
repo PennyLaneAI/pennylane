@@ -259,8 +259,4 @@ JIT-compiling is optional, and one can remove the decorator when only single exe
 from .convenience_functions import constant, pwc, pwc_from_function, rect
 from .parametrized_evolution import ParametrizedEvolution
 from .parametrized_hamiltonian import ParametrizedHamiltonian
-from .rydberg_hamiltonian import (
-    RydbergHamiltonian,
-    rydberg_drive,
-    rydberg_interaction,
-)
+from .rydberg_hamiltonian import RydbergHamiltonian, rydberg_drive, rydberg_interaction

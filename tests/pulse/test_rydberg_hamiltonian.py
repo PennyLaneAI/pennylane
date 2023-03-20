@@ -141,7 +141,7 @@ class TestRydbergHamiltonian:
         coords = [[0, 0], [0, 5], [5, 0]]
 
         Hd = rydberg_interaction(register=coords, wires=[0, 1, 2])
-        Ht = rydberg_drive(2, 3, wires=3, detuning=4)
+        Ht = rydberg_drive(2, 3, 4, wires=3)
 
         with pytest.warns(
             UserWarning,
@@ -170,8 +170,8 @@ class TestRydbergHamiltonian:
         def detuning(p, t):
             return np.cos(t) * p
 
-        H_global = qml.pulse.rydberg_drive(amp, phase, wires=[0], detuning=detuning)
-        H_global += qml.pulse.rydberg_drive(amp, phase, wires=[0], detuning=detuning)
+        H_global = qml.pulse.rydberg_drive(amp, phase, detuning, wires=[0])
+        H_global += qml.pulse.rydberg_drive(amp, phase, detuning, wires=[0])
         H_global += np.polyval * qml.PauliX(0)
 
         # start with RydbergHamiltonians, then add ParametrizedHamiltonian
@@ -199,8 +199,8 @@ class TestRydbergHamiltonian:
 
         # start with ParametrizedHamiltonian, add on RydbergHamiltonians
         H_global = np.polyval * qml.PauliX(0)
-        H_global += qml.pulse.rydberg_drive(amp, phase, wires=[0], detuning=detuning)
-        H_global += qml.pulse.rydberg_drive(amp, phase, wires=[0], detuning=detuning)
+        H_global += qml.pulse.rydberg_drive(amp, phase, detuning, wires=[0])
+        H_global += qml.pulse.rydberg_drive(amp, phase, detuning, wires=[0])
 
         params = [np.ones(2)]
         params += [np.array([1.2, 2.3, 3.4]), 4.5, 5.6]
@@ -230,7 +230,7 @@ class TestInteractionWithOperators:
         """Test that a Hamiltonian and SProd can be added to a RydbergHamiltonian, and
         will be incorporated in the H_fixed term, with their coefficients included in H_coeffs_fixed.
         """
-        R = rydberg_drive(amplitude=f1, phase=0, wires=[0, 1], detuning=f2)
+        R = rydberg_drive(amplitude=f1, phase=0, detuning=f2, wires=[0, 1])
         params = [1, 2]
         # Adding on the right
         new_pH = R + H
@@ -251,7 +251,7 @@ class TestInteractionWithOperators:
     def test_add_other_operators(self, op):
         """Test that a Hamiltonian, SProd, Tensor or Operator can be added to a
         ParametrizedHamiltonian, and will be incorporated in the H_fixed term"""
-        R = rydberg_drive(amplitude=f1, phase=0, wires=[0, 1], detuning=f2)
+        R = rydberg_drive(amplitude=f1, phase=0, detuning=f2, wires=[0, 1])
         params = [1, 2]
 
         # Adding on the right
@@ -330,7 +330,7 @@ class TestRydbergDrive:
         """Test that the attributes and the number of terms of the ``ParametrizedHamiltonian`` returned by
         ``rydberg_drive`` are correct."""
 
-        Hd = rydberg_drive(amplitude=1, phase=2, wires=[1, 2], detuning=3)
+        Hd = rydberg_drive(amplitude=1, phase=2, detuning=3, wires=[1, 2])
 
         assert isinstance(Hd, RydbergHamiltonian)
         assert Hd.interaction_coeff == 862690
@@ -348,8 +348,8 @@ class TestRydbergDrive:
         def fb(p, t):
             return np.cos(p * t)
 
-        H1 = rydberg_drive(amplitude=fa, phase=1, wires=[0, 3], detuning=3)
-        H2 = rydberg_drive(amplitude=1, phase=3, wires=[1, 2], detuning=fb)
+        H1 = rydberg_drive(amplitude=fa, phase=1, detuning=3, wires=[0, 3])
+        H2 = rydberg_drive(amplitude=1, phase=3, detuning=fb, wires=[1, 2])
         Hd = H1 + H2
 
         ops_expected = [
@@ -397,7 +397,7 @@ class TestRydbergDrive:
         def f(p, t):
             return np.cos(p * t)
 
-        Hd = rydberg_drive(amplitude=0, phase=1, wires=[0, 3], detuning=f)
+        Hd = rydberg_drive(amplitude=0, phase=1, detuning=f, wires=[0, 3])
 
         ops_expected = [qml.Hamiltonian([-1, -1], [qml.PauliZ(0), qml.PauliZ(3)])]
         coeffs_expected = [f]
@@ -419,7 +419,7 @@ class TestRydbergDrive:
         def f(p, t):
             return np.cos(p * t)
 
-        Hd = rydberg_drive(amplitude=f, phase=1, wires=[0, 3])
+        Hd = rydberg_drive(amplitude=f, phase=1, detuning=0, wires=[0, 3])
 
         ops_expected = [
             qml.Hamiltonian([0.5, 0.5], [qml.PauliX(0), qml.PauliX(3)]),
@@ -443,7 +443,7 @@ class TestRydbergDrive:
     def test_no_amplitude_no_detuning(self):
         """Test that the correct error is raised if both amplitude and detuning are trivial."""
         with pytest.raises(ValueError, match="The global drive must have a non-trivial amplitude."):
-            _ = rydberg_drive(0, np.pi, wires=[0])
+            _ = rydberg_drive(0, np.pi, 0, wires=[0])
 
 
 def callable_amp(p, t):
@@ -530,7 +530,7 @@ class TestAmplitudeAndPhase:
 
         detuning = 2
 
-        Hd = rydberg_drive(sine_func, cosine_fun, wires=[0, 1], detuning=detuning)
+        Hd = rydberg_drive(sine_func, cosine_fun, detuning=detuning, wires=[0, 1])
 
         assert len(Hd.coeffs) == 3
         assert isinstance(Hd.coeffs[1], AmplitudeAndPhase)
@@ -559,7 +559,7 @@ class TestAmplitudeAndPhase:
 
         detuning = 2
 
-        Hd = rydberg_drive(7.2, sine_func, wires=[0, 1], detuning=detuning)
+        Hd = rydberg_drive(7.2, sine_func, detuning=detuning, wires=[0, 1])
 
         assert len(Hd.coeffs) == 3
         assert isinstance(Hd.coeffs[1], AmplitudeAndPhase)
@@ -588,7 +588,7 @@ class TestAmplitudeAndPhase:
 
         detuning = 2
 
-        Hd = rydberg_drive(sine_func, 4.3, wires=[0, 1], detuning=detuning)
+        Hd = rydberg_drive(sine_func, 4.3, detuning=detuning, wires=[0, 1])
 
         assert len(Hd.coeffs) == 3
         assert isinstance(Hd.coeffs[1], AmplitudeAndPhase)
@@ -687,7 +687,7 @@ class TestIntegration:
         def fb(p, t):
             return p[0] * jnp.sin(p[1] * t)
 
-        Ht = rydberg_drive(amplitude=fa, phase=0, wires=1, detuning=fb)
+        Ht = rydberg_drive(amplitude=fa, phase=0, detuning=fb, wires=1)
 
         dev = qml.device("default.qubit", wires=wires)
 
@@ -723,8 +723,8 @@ class TestIntegration:
         def fc(p, t):
             return p[0] * jnp.sin(t) + jnp.cos(p[1] * t)
 
-        H1 = rydberg_drive(amplitude=fa, phase=0, wires=1, detuning=fb)
-        H2 = rydberg_drive(amplitude=fc, phase=3 * jnp.pi, wires=4, detuning=jnp.pi / 4)
+        H1 = rydberg_drive(amplitude=fa, phase=0, detuning=fb, wires=1)
+        H2 = rydberg_drive(amplitude=fc, phase=3 * jnp.pi, detuning=jnp.pi / 4, wires=4)
 
         dev = qml.device("default.qubit", wires=wires)
 
@@ -760,7 +760,7 @@ class TestIntegration:
         def fc(p, t):
             return p[0] * jnp.sin(t) + jnp.cos(p[1] * t)
 
-        H_drive = rydberg_drive(amplitude=fa, phase=fb, wires=1, detuning=fc)
+        H_drive = rydberg_drive(amplitude=fa, phase=fb, detuning=fc, wires=1)
 
         dev = qml.device("default.qubit", wires=wires)
 
