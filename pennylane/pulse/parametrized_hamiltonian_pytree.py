@@ -93,20 +93,23 @@ class ParametrizedHamiltonianPytree:
         """
         matrices = (self.mat_fixed, self.mats_parametrized)
         param_coeffs = self.coeffs_parametrized
-        return (matrices, param_coeffs)
+        reorder_fn = self.reorder_fn
+        return (matrices, param_coeffs, reorder_fn)
 
     @classmethod
-    def tree_unflatten(cls, param_coeffs: tuple, matrices: tuple):
+    def tree_unflatten(cls, param_coeffs: tuple, matrices: tuple, reorder_fn: callable):
         """Function used by ``jax`` to unflatten the JaxParametrizedOperator.
 
         Args:
             param_coeffs (tuple): tuple containing the parametrized coefficients of the class
             matrices (tuple): tuple containing the matrices of the class
+            reorder_fn(callable): callable or None indicating how parameters should be
+                re-orderd to pass to the __call__ method
 
         Returns:
             JaxParametrizedOperator: a JaxParametrizedOperator instance
         """
-        return cls(*matrices, param_coeffs)
+        return cls(*matrices, param_coeffs, reorder_fn)
 
 
 @register_pytree_node_class
