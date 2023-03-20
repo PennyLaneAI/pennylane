@@ -94,6 +94,9 @@
   `ops.op_math.ctrl_decomp_bisect`.
   [(#3851)](https://github.com/PennyLaneAI/pennylane/pull/3851)
 
+* Changed `Operator.num_wires` from an abstract value to `AnyWires`.
+  [(#3919)](https://github.com/PennyLaneAI/pennylane/pull/3919)
+
 <h3>Breaking changes</h3>
 
 * Both JIT interfaces are not compatible with Jax `>0.4.3`, we raise an error for those versions.
