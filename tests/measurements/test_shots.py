@@ -19,7 +19,7 @@ import pytest
 
 from pennylane.measurements import Shots, ShotCopies
 
-ERROR_MSG = "Shots must be a single non-negative integer, a tuple"
+ERROR_MSG = "Shots must be a single positive integer, a tuple"
 
 
 class TestShotsConstruction:
@@ -68,6 +68,12 @@ class TestShotsConstruction:
             ),
             ([5, 5, 5], (ShotCopies(5, 3),), 15),
             ([1, (4, 2)], (ShotCopies(1, 1), ShotCopies(4, 2)), 9),
+            ((5,), (ShotCopies(5, 1),), 5),
+            ((5, 6, 7), (ShotCopies(5, 1), ShotCopies(6, 1), ShotCopies(7, 1)), 18),
+            (((5, 6)), (ShotCopies(5, 6),), 30),
+            (((5, 6), 7), (ShotCopies(5, 6), ShotCopies(7, 1)), 37),
+            ((5, (6, 7)), (ShotCopies(5, 1), ShotCopies(6, 7)), 47),
+            (((5, 6), (7, 8)), (ShotCopies(5, 6), ShotCopies(7, 8)), 86),
         ],
     )
     def test_sequence(self, shot_list, expected, total):
@@ -76,7 +82,7 @@ class TestShotsConstruction:
         assert shots.shot_vector == expected
         assert shots.total_shots == total
 
-    @pytest.mark.parametrize("shot_arg", ["123", [1.1, 2], [-1, 2], 1.5, (1, 2, 3)])
+    @pytest.mark.parametrize("shot_arg", ["123", [1.1, 2], [-1, 2], 1.5, (1.1, 2)])
     def test_other_fails(self, shot_arg):
         """Tests that all other values for shots is not allowed."""
         with pytest.raises(ValueError, match=ERROR_MSG):

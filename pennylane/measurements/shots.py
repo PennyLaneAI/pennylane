@@ -11,7 +11,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """This module contains the Shots class to hold shot-related information."""
-
+# pylint:disable=inconsistent-return-statements
 from collections import namedtuple
 from collections.abc import Sequence as SequenceType
 from functools import singledispatchmethod
@@ -23,7 +23,7 @@ ShotCopies = namedtuple("ShotCopies", ["shots", "copies"])
 
 
 def valid_int(s):
-    """Returns True if s is an non-negative integer."""
+    """Returns True if s is a positive integer."""
     return isinstance(s, int) and s > 0
 
 
@@ -33,7 +33,32 @@ def valid_tuple(s):
 
 
 class Shots:
-    """A data class that stores shot information."""
+    """
+    A data class that stores shot information.
+
+    Args:
+        shots (Union[None, int, Tuple[int, int], Sequence[int, Tuple[int, int]]]): Raw shot information
+
+    Defining shots enables users to specify circuit executions, and the Shots class standardizes
+    the internal representation of shots. There are three ways to specify shot values:
+
+    * A positive integer
+    * A tuple consisting of a pair of positive integers of the form ``(shots, copies)``
+    * A list of multiple shot values matching one or both of the above value types
+
+    The tuple-pair of the form ``(shots, copies)`` is represented internally by a namedtuple called
+    ``ShotCopies``. The first value is the number of shots to execute, and the second value is the
+    number of times to repeat a circuit with that number of shots.
+
+    The ``Shots`` class exposes two properties:
+
+    * ``total_shots``, the total number of shots to be executed
+    * ``shot_vector``, the list of ``ShotCopies`` to be executed
+
+    Instances of this class are static. If an instance is passed to the constructor, that same
+    instance is returned. If an instance is constructed with a ``None`` value, ``total_shots``
+    will be ``None``, and this will suggest analytic execution.
+    """
 
     total_shots: int = None
     """The total number of shots to be executed."""
@@ -42,7 +67,7 @@ class Shots:
     """The list of ShotCopies to be executed. Each element is of the form (shots, copies)."""
 
     _SHOT_ERROR = ValueError(
-        "Shots must be a single non-negative integer, a tuple pair of the form (shots, counts), or a sequence of these types."
+        "Shots must be a single positive integer, a tuple pair of the form (shots, copies), or a sequence of these types."
     )
 
     _frozen = False
@@ -79,7 +104,11 @@ class Shots:
 
     @__init__.register
     def __tuple_init__(self, shots: tuple):
-        if len(shots) != 2:
+        # re-dispatch for non-pair tuples: (shots,), (shots1, shots2, ...)
+        # re-dispatch for non-ShotCopies: ((s1, c1), s2), (s1, (s2, c2)), ((s1, c1), (s2, c2))
+        if len(shots) != 2 or valid_tuple(shots[0]) or valid_tuple(shots[1]):
+            return self.__list_init__(shots)
+        if not valid_tuple(shots):
             raise self._SHOT_ERROR
         shots, copies = shots
         self.total_shots = shots * copies
@@ -87,7 +116,7 @@ class Shots:
         self._frozen = True
 
     @__init__.register
-    def __list_init__(self, shots: SequenceType):  # pylint:disable=inconsistent-return-statements
+    def __list_init__(self, shots: SequenceType):
         if not all(valid_int(s) or valid_tuple(s) for s in shots):
             raise self._SHOT_ERROR
         if all(valid_tuple(s) for s in shots):
@@ -109,16 +138,16 @@ class Shots:
     def __all_tuple_init__(self, shots: Sequence[Tuple]):
         res = []
         total_shots = 0
-        current_shots, current_count = shots[0]
+        current_shots, current_copies = shots[0]
         for s in shots[1:]:
             if s[0] == current_shots:
-                current_count += s[1]
+                current_copies += s[1]
             else:
-                res.append(ShotCopies(current_shots, current_count))
-                total_shots += current_shots * current_count
-                current_shots, current_count = s
-        self.shot_vector = tuple(res + [ShotCopies(current_shots, current_count)])
-        self.total_shots = total_shots + current_shots * current_count
+                res.append(ShotCopies(current_shots, current_copies))
+                total_shots += current_shots * current_copies
+                current_shots, current_copies = s
+        self.shot_vector = tuple(res + [ShotCopies(current_shots, current_copies)])
+        self.total_shots = total_shots + current_shots * current_copies
         self._frozen = True
 
     def __mixed_init__(self, shots: Sequence[Union[int, Tuple[int, int]]]):

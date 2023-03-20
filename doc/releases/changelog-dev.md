@@ -24,6 +24,9 @@
   `qml.Hamiltonian`, `qml.SparseHamiltonian`, `qml.Sum`.
   [(#3759)](https://github.com/PennyLaneAI/pennylane/pull/3759)
 
+* Added a `Shots` class to the `measurements` module to hold shot-related data.
+  [(#3682)](https://github.com/PennyLaneAI/pennylane/pull/3682)
+
 <h3>Improvements</h3>
 
 * Keras and Torch NN modules are now compatible with the new return type system.

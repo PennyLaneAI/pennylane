@@ -63,8 +63,6 @@ from pennylane.measurements import (
     mutual_info,
     classical_shadow,
     shadow_expval,
-    Shots,
-    ShotCopies,
 )
 from pennylane.ops import *
 from pennylane.ops import adjoint, ctrl, exp, sum, pow, prod, s_prod, op_sum
