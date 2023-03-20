@@ -14,13 +14,10 @@
 """
 Unit tests for the ParametrizedEvolution class
 """
+# pylint: disable=unused-argument,too-few-public-methods,import-outside-toplevel
 from functools import reduce
-
 import numpy as np
-
-# pylint: disable=unused-argument, too-few-public-methods
 import pytest
-
 import pennylane as qml
 from pennylane.operation import AnyWires
 from pennylane.ops import QubitUnitary
@@ -38,6 +35,7 @@ class MyOp(qml.RX):  # pylint: disable=too-few-public-methods
 
 
 def time_independent_hamiltonian():
+    """Create a time-independent Hamiltonian on two qubits."""
     ops = [qml.PauliX(0), qml.PauliZ(1), qml.PauliY(0), qml.PauliX(1)]
 
     def f1(params, t):
@@ -52,6 +50,7 @@ def time_independent_hamiltonian():
 
 
 def time_dependent_hamiltonian():
+    """Create a time-dependent Hamiltonian on two qubits."""
     import jax.numpy as jnp
 
     ops = [qml.PauliX(0), qml.PauliZ(1), qml.PauliY(0), qml.PauliX(1)]
@@ -145,17 +144,23 @@ class TestInitialization:
         assert len(tape) == 1
         assert tape[0] is op2
 
-    def test_list_of_times(self):
+    @pytest.mark.parametrize("time_interface", ["jax", "python", "numpy"])
+    def test_list_of_times(self, time_interface):
         """Test the initialization."""
         import jax.numpy as jnp
 
         ops = [qml.PauliX(0), qml.PauliY(1)]
         coeffs = [1, 2]
         H = ParametrizedHamiltonian(coeffs, ops)
-        t = np.arange(0, 10, 0.01)
+        t = {
+            "jax": jnp.arange(0, 10, 0.01),
+            "python": list(np.arange(0, 10, 0.01)),
+            "numpy": np.arange(0, 10, 0.01),
+        }[time_interface]
         ev = ParametrizedEvolution(H=H, params=[1, 2], t=t)
+        exp_time_type = {"jax": jnp.ndarray, "python": qml.numpy.ndarray, "numpy": np.ndarray}
 
-        assert isinstance(ev.t, jnp.ndarray)
+        assert isinstance(ev.t, exp_time_type[time_interface])
         assert qml.math.allclose(ev.t, t)
 
     def test_has_matrix_true(self):
