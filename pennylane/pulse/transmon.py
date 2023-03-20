@@ -11,8 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""This module contains the classes/functions needed to simulate the evolution of ensembles of
-individual (trapped) transmon atoms under the excitation of several laser fields."""
+"""This module contains the classes/functions specific for simulation of superconducting transmon hardware systems"""
 import warnings
 from dataclasses import dataclass
 from typing import Callable, List, Union
@@ -261,7 +260,7 @@ def transmon_drive(amplitude, phase, wires):
     # We convert the pulse data into a list of ``TransmonPulse`` objects
     pulses = [TransmonPulse(amplitude, phase, wires)]
 
-    return TransmonHamiltonian(coeffs, ops, pulses=pulses)
+    return PulseHamiltonian(coeffs, ops, pulses=pulses)
 
 
 def _amplitude_and_phase(sign, amp, phase):
@@ -303,42 +302,25 @@ class AmplitudeAndPhase:
         return self.func(params, t)
 
 
-class TransmonHamiltonian(ParametrizedHamiltonian):
+class PulseHamiltonian(ParametrizedHamiltonian):
     r"""Internal class used to keep track of the required information to translate a ``ParametrizedHamiltonian``
     into hardware.
 
-    This class contains the ``coeffs`` and the ``observables`` that represent one or more
-    terms of the Hamiltonian of an ensemble of Transmon atoms under the action of local and global
-    laser fields:
+    The basic problem this class is solving is that physically relevant parameters get obfuscated when passed
+    to a ``ParametrizedHamiltonian`` via ``coeffs`` and the ``observables`. This class specifically keeps
+    track of those parameters in a ``settings`` dictionary.
 
-    .. math::
-
-        H = \frac{1}{2} \sum_i  \Omega_i(t) (\cos(\phi_i)\sigma_i^x - \sin(\phi_i)\sigma_i^y) -
-        \frac{1}{2} \sum_i \delta_i(t) \sigma_i^z + \sum_{i<j} V_{ij} n_i n_j
-
-    Additionally, it also contains two more attributes (``connections`` and ``pulses``) that contain
-    the information that the hardware needs to execute this Hamiltonian.
-
-    .. warning::
-
-        This class should NEVER be initialized directly! Please use the functions
-        :func:`transmon_interaction` and :func:`transmon_drive` instead.
-
-    .. seealso:: :func:`transmon_interaction`, :func:`transmon_drive`, :class:`ParametrizedHamiltonian`
+    .. seealso:: :class:`ParametrizedHamiltonian`
 
     Args:
         coeffs (Union[float, callable]): coefficients of the Hamiltonian expression, which may be
             constants or parametrized functions. All functions passed as ``coeffs`` must have two
             arguments, the first one being the trainable parameters and the second one being time.
-        observables (Iterable[Observable]): observables in the Hamiltonian expression, of same
+        ops (Iterable[Observable]): observables in the Hamiltonian expression, of same
             length as ``coeffs``
 
     Keyword Args:
-        connections (list): list of coordinates (in micrometers) of each atom in the ensemble
-        pulses (list): list of ``TransmonPulse`` classes containing the information about the
-            amplitude, phase, detuning and wires of each pulse
-        interaction_coeff (float): Transmon interaction constant in units: :math:`\text{MHz} \times \mu m^6`.
-            Defaults to :math:`862690 \text{MHz} \times \mu m^6`.
+        Any: Physically relevant parameters for pulse drives, such as amplitude, frequency and phase of pulse drives.
 
     Returns:
         TransmonHamiltonian: class representing the Hamiltonian of an ensemble of Transmon atoms
@@ -348,26 +330,18 @@ class TransmonHamiltonian(ParametrizedHamiltonian):
     def __init__(
         self,
         coeffs,
-        observables,
-        omega=None,
-        delta=None,
-        g=None,
-        connections: list = None,
-        pulses: List["TransmonPulse"] = None,
+        ops,
+        **kwargs
     ):
-        self.omega = omega
-        self.delta = (delta,)
-        self.g = (g,)
-        self.connections = connections
-        self.pulses = [] if pulses is None else pulses
-        super().__init__(coeffs, observables)
+        self.settings = dict(**kwargs)
+        super().__init__(coeffs, ops)
 
     def __call__(self, params, t):
         params = _transmon_reorder_parameters(params, self.coeffs_parametrized)
         return super().__call__(params, t)
 
     def __add__(self, other):
-        if isinstance(other, TransmonHamiltonian):
+        if isinstance(other, PulseHamiltonian):
             # Update coeffs, obs and hardware attributes
             if self.connections is not None:
                 if other.connections is not None:

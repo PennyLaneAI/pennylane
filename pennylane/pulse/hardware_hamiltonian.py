@@ -11,8 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""This module contains the classes/functions needed to simulate the evolution of ensembles of
-individual (trapped) rydberg atoms under the excitation of several laser fields."""
+"""This module contains the classes/functions needed to simulate and execute pulse programs for real hardware"""
 import warnings
 from dataclasses import dataclass
 from typing import Callable, List, Union
@@ -27,102 +26,7 @@ from pennylane.ops.qubit.hamiltonian import Hamiltonian
 
 from .parametrized_hamiltonian import ParametrizedHamiltonian
 
-
-def rydberg_interaction(
-    register: list, wires=None, interaction_coeff: float = 862690, max_distance: float = np.inf
-):
-    r"""Returns a :class:`ParametrizedHamiltonian` representing the interaction of an ensemble of
-    Rydberg atoms due to the Rydberg blockade
-
-    .. math::
-
-        \sum_{i<j} V_{ij} n_i n_j
-
-    where :math:`n_i` corresponds to the projector on the Rydberg state of the atom :math:`i`, and
-    :math:`V_{ij}` is the van der Waals potential:
-
-    .. math::
-
-        V_{ij} = \frac{C_6}{R_{ij}^6}
-
-    where :math:`R_{ij}` is the distance between the atoms :math:`i` and :math:`j`, and :math:`C_6`
-    is the Rydberg interaction constant, which defaults to :math:`862690 \text{MHz} \times \mu \text{m}^6`.
-    The unit of time for the evolution of this Rydberg interaction term is in :math:`\mu \text{s}`.
-    This interaction term can be combined with laser drive terms (:func:`~.rydberg_drive`) to create
-    a Hamiltonian describing a driven Rydberg atom system.
-
-    .. seealso::
-
-        :func:`~.rydberg_drive`
-
-    Args:
-        register (list): list of coordinates of the Rydberg atoms (in micrometers)
-        wires (list): List of wires containing the wire values for all the atoms. This list should
-            have the same length as ``register``. If ``None``, each atom's wire value will
-            correspond to its index in the ``register`` list.
-        interaction_coeff (float): Rydberg interaction constant in units: :math:`\text{MHz} \times \mu \text{m}^6`.
-            Defaults to :math:`862690 \text{ MHz} \times \mu \text{m}^6`. This value is based on an assumption that
-            frequencies and energies in the Hamiltonian are provided in units of MHz.
-        max_distance (float): Threshold for distance in :math:`\mu \text{m}` between two Rydberg atoms beyond which their
-            contribution to the interaction term is removed from the Hamiltonian.
-
-    Returns:
-        RydbergHamiltonian: a :class:`~.ParametrizedHamiltonian` representing the atom interaction
-
-    **Example**
-
-    We create a Hamiltonian describing the van der Waals interaction among 9 Rydberg atoms in a square lattice:
-
-    .. code-block:: python
-
-        atom_coordinates = [[0, 0], [0, 5], [0, 10], [5, 0], [5, 5], [5, 10], [10, 0], [10, 5], [10, 10]]
-        wires = [1, 5, 0, 2, 4, 3, 8, 6, 7]
-        H_i = qml.pulse.rydberg_interaction(atom_coordinates, wires=wires)
-
-    >>> H_i
-    ParametrizedHamiltonian: terms=36
-
-    As expected, we have :math:`\frac{N(N-1)}{2} = 36` terms for N=6 atoms.
-
-    The interaction term is dependent only on the number and positions of the Rydberg atoms. We can execute this
-    pulse program, which corresponds to all driving laser fields being turned off and therefore has no trainable
-    parameters. To add a driving laser field, see :func:`~.rydberg_drive`.
-
-    .. code-block:: python
-
-        dev = qml.device("default.qubit.jax", wires=9)
-
-        @qml.qnode(dev, interface="jax")
-        def circuit():
-            qml.evolve(H_i)([], t=[0, 10])
-            return qml.expval(qml.PauliZ(0))
-
-    >>> circuit()
-    Array(1., dtype=float32)
-    """
-    if wires is None:
-        wires = list(range(len(register)))
-    elif len(wires) != len(register):
-        raise ValueError("The length of the wires and the register must match.")
-
-    coeffs = []
-    observables = []
-    for idx, (pos1, wire1) in enumerate(zip(register[:-1], wires[:-1])):
-        for pos2, wire2 in zip(register[(idx + 1) :], wires[(idx + 1) :]):
-            atom_distance = np.linalg.norm(qml.math.array(pos2) - pos1)
-            if atom_distance > max_distance:
-                continue
-            Vij = interaction_coeff / (abs(atom_distance) ** 6)  # van der Waals potential
-            coeffs.append(Vij)
-            observables.append(qml.prod(qml.Projector([1], wire1), qml.Projector([1], wire2)))
-            # Rydberg projectors
-
-    return RydbergHamiltonian(
-        coeffs, observables, register=register, interaction_coeff=interaction_coeff
-    )
-
-
-def rydberg_drive(amplitude, phase, detuning, wires):
+def drive(amplitude, phase, detuning, wires):
     r"""Returns a :class:`ParametrizedHamiltonian` representing the action of a driving laser
     field with the given rabi frequency, detuning and phase acting on the given wires
 
@@ -147,7 +51,7 @@ def rydberg_drive(amplitude, phase, detuning, wires):
             the laser field acts on
 
     Returns:
-        RydbergHamiltonian: a :class:`~.ParametrizedHamiltonian` representing the action of the laser field
+        HardwareHamiltonian: a :class:`~.ParametrizedHamiltonian` representing the action of the laser field
         on the Rydberg atoms.
 
     .. seealso::
@@ -171,7 +75,7 @@ def rydberg_drive(amplitude, phase, detuning, wires):
         amplitude = lambda p, t: p * jnp.sin(jnp.pi * t)
         phase = jnp.pi / 2
         detuning = 3 * jnp.pi / 4
-        H_d = qml.pulse.rydberg_drive(amplitude, phase, detuning, wires)
+        H_d = qml.pulse.drive(amplitude, phase, detuning, wires)
 
     >>> H_i
     ParametrizedHamiltonian: terms=6
@@ -208,7 +112,7 @@ def rydberg_drive(amplitude, phase, detuning, wires):
         amplitude_local = lambda p, t: p[0] * jnp.sin(2 * jnp.pi * t) + p[1]
         phase_local = lambda p, t: p * jnp.exp(-0.25 * t)
         detuning_local = jnp.pi / 4
-        H_local = qml.pulse.rydberg_drive(amplitude_local, phase_local, detuning_local, [0, 1])
+        H_local = qml.pulse.drive(amplitude_local, phase_local, detuning_local, [0, 1])
 
         H = H_i + H_d + H_local
 
@@ -242,18 +146,18 @@ def rydberg_drive(amplitude, phase, detuning, wires):
 
     observables = [drive_x_term, drive_y_term, detuning_term]
 
-    # We convert the pulse data into a list of ``RydbergPulse`` objects
-    pulses = [RydbergPulse(amplitude, phase, detuning, wires)]
+    # We convert the pulse data into a list of ``HardwarePulse`` objects
+    pulses = [HardwarePulse(amplitude, phase, detuning, wires)]
 
-    return RydbergHamiltonian(coeffs, observables, pulses=pulses)
+    return HardwareHamiltonian(coeffs, observables, pulses=pulses)
 
 
-class RydbergHamiltonian(ParametrizedHamiltonian):
+class HardwareHamiltonian(ParametrizedHamiltonian):
     r"""Internal class used to keep track of the required information to translate a ``ParametrizedHamiltonian``
     into hardware.
 
     This class contains the ``coeffs`` and the ``observables`` that represent one or more
-    terms of the Hamiltonian of an ensemble of Rydberg atoms under the action of local and global
+    terms of the Hamiltonian of an ensemble of Hardware atoms under the action of local and global
     laser fields:
 
     .. math::
@@ -267,9 +171,9 @@ class RydbergHamiltonian(ParametrizedHamiltonian):
     .. warning::
 
         This class should NEVER be initialized directly! Please use the functions
-        :func:`rydberg_interaction` and :func:`rydberg_drive` instead.
+        :func:`rydberg_interaction` and :func:`drive` instead.
 
-    .. seealso:: :func:`rydberg_interaction`, :func:`rydberg_drive`, :class:`ParametrizedHamiltonian`
+    .. seealso:: :func:`rydberg_interaction`, :func:`drive`, :class:`ParametrizedHamiltonian`
 
     Args:
         coeffs (Union[float, callable]): coefficients of the Hamiltonian expression, which may be
@@ -280,13 +184,13 @@ class RydbergHamiltonian(ParametrizedHamiltonian):
 
     Keyword Args:
         register (list): list of coordinates (in micrometers) of each atom in the ensemble
-        pulses (list): list of ``RydbergPulse`` classes containing the information about the
+        pulses (list): list of ``HardwarePulse`` classes containing the information about the
             amplitude, phase, detuning and wires of each pulse
-        interaction_coeff (float): Rydberg interaction constant in units: :math:`\text{MHz} \times \mu m^6`.
+        interaction_coeff (float): Hardware interaction constant in units: :math:`\text{MHz} \times \mu m^6`.
             Defaults to :math:`862690 \text{MHz} \times \mu m^6`.
 
     Returns:
-        RydbergHamiltonian: class representing the Hamiltonian of an ensemble of Rydberg atoms
+        HardwareHamiltonian: class representing the Hamiltonian of an ensemble of Rydberg atoms
     """
 
     # pylint: disable=too-many-arguments
@@ -295,7 +199,7 @@ class RydbergHamiltonian(ParametrizedHamiltonian):
         coeffs,
         observables,
         register: list = None,
-        pulses: List["RydbergPulse"] = None,
+        pulses: List["HardwarePulse"] = None,
         interaction_coeff: float = 862690,
     ):
         self.register = register
@@ -304,11 +208,11 @@ class RydbergHamiltonian(ParametrizedHamiltonian):
         super().__init__(coeffs, observables)
 
     def __call__(self, params, t):
-        params = _rydberg_reorder_parameters(params, self.coeffs_parametrized)
+        params = _reorder_parameters(params, self.coeffs_parametrized)
         return super().__call__(params, t)
 
     def __add__(self, other):
-        if isinstance(other, RydbergHamiltonian):
+        if isinstance(other, HardwareHamiltonian):
             # Update coeffs, obs and hardware attributes
             if self.register is not None:
                 if other.register is not None:
@@ -326,7 +230,7 @@ class RydbergHamiltonian(ParametrizedHamiltonian):
             new_pulses = self.pulses + other.pulses
             new_ops = self.ops + other.ops
             new_coeffs = self.coeffs + other.coeffs
-            return RydbergHamiltonian(new_coeffs, new_ops, register=new_register, pulses=new_pulses)
+            return HardwareHamiltonian(new_coeffs, new_ops, register=new_register, pulses=new_pulses)
 
         ops = self.ops.copy()
         coeffs = self.coeffs.copy()
@@ -336,29 +240,29 @@ class RydbergHamiltonian(ParametrizedHamiltonian):
         if isinstance(other, (Hamiltonian, ParametrizedHamiltonian)):
             new_coeffs = coeffs + other.coeffs.copy()
             new_ops = ops + other.ops.copy()
-            return RydbergHamiltonian(new_coeffs, new_ops, register=register, pulses=pulses)
+            return HardwareHamiltonian(new_coeffs, new_ops, register=register, pulses=pulses)
 
         if isinstance(other, qml.ops.SProd):  # pylint: disable=no-member
             new_coeffs = coeffs + [other.scalar]
             new_ops = ops + [other.base]
-            return RydbergHamiltonian(new_coeffs, new_ops, register=register, pulses=pulses)
+            return HardwareHamiltonian(new_coeffs, new_ops, register=register, pulses=pulses)
 
         if isinstance(other, Operator):
             new_coeffs = coeffs + [1]
             new_ops = ops + [other]
-            return RydbergHamiltonian(new_coeffs, new_ops, register=register, pulses=pulses)
+            return HardwareHamiltonian(new_coeffs, new_ops, register=register, pulses=pulses)
 
         return NotImplemented
 
     def __radd__(self, other):
-        """Deals with the special case where a RydbergHamiltonian is added to a
-        ParametrizedHamiltonian. Ensures that this returs a RydbergHamiltonian where
+        """Deals with the special case where a HardwareHamiltonian is added to a
+        ParametrizedHamiltonian. Ensures that this returs a HardwareHamiltonian where
         the order of the parametrized coefficients and operators matches the order of
         the hamiltonians, i.e. that
 
-        ParametrizedHamiltonian + RydbergHamiltonian
+        ParametrizedHamiltonian + HardwareHamiltonian
 
-        returns a RydbergHamiltonian where the call expects params = [params_PH] + [params_RH]
+        returns a HardwareHamiltonian where the call expects params = [params_PH] + [params_RH]
         """
         if isinstance(other, ParametrizedHamiltonian):
             ops = self.ops.copy()
@@ -367,7 +271,7 @@ class RydbergHamiltonian(ParametrizedHamiltonian):
             new_coeffs = other.coeffs.copy() + coeffs
             new_ops = other.ops.copy() + ops
 
-            return RydbergHamiltonian(
+            return HardwareHamiltonian(
                 new_coeffs, new_ops, register=self.register, pulses=self.pulses
             )
 
@@ -375,8 +279,8 @@ class RydbergHamiltonian(ParametrizedHamiltonian):
 
 
 @dataclass
-class RydbergPulse:
-    """Dataclass that contains the information of a single Rydberg pulse. This class is used
+class HardwarePulse:
+    """Dataclass that contains the information of a single Hardware pulse. This class is used
     internally in PL to group into a single object all the data related to a single laser field.
 
     Args:
@@ -445,7 +349,7 @@ class AmplitudeAndPhase:
         return self.func(params, t)
 
 
-def _rydberg_reorder_parameters(params, coeffs_parametrized):
+def _reorder_parameters(params, coeffs_parametrized):
     """Takes `params`, and reorganizes it based on whether the Hamiltonian has
     callable phase and/or callable amplitude.
 

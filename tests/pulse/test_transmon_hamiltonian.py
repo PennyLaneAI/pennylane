@@ -22,7 +22,7 @@ import pytest
 
 import pennylane as qml
 from pennylane.pulse import TransmonHamiltonian, transmon_interaction, transmon_drive
-from pennylane.pulse.transmon_hamiltonian import (
+from Xanadu.pennylane.pennylane.pulse.transmon import (
     TransmonPulse,
     AmplitudeAndPhase,
     _amplitude_and_phase,
