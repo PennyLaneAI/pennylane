@@ -14,7 +14,7 @@
 """
 This module contains the qml.state measurement.
 """
-from typing import Sequence
+from typing import Sequence, Optional
 
 import pennylane as qml
 from pennylane.wires import Wires
@@ -22,7 +22,7 @@ from pennylane.wires import Wires
 from .measurements import MeasurementShapeError, State, StateMeasurement
 
 
-def state():
+def state() -> "StateMP":
     r"""Quantum state in the computational basis.
 
     This function accepts no observables and instead instructs the QNode to return its state. A
@@ -81,7 +81,7 @@ def state():
     return StateMP()
 
 
-def density_matrix(wires):
+def density_matrix(wires) -> "StateMP":
     r"""Quantum density matrix in the computational basis.
 
     This function accepts no observables and instead instructs the QNode to return its density
@@ -131,16 +131,14 @@ class StateMP(StateMeasurement):
     Please refer to :func:`state` and :func:`density_matrix` for detailed documentation.
 
     Args:
-        obs (.Observable): The observable that is to be measured as part of the
-            measurement process. Not all measurement processes require observables (for
-            example ``Probability``); this argument is optional.
         wires (.Wires): The wires the measurement process applies to.
-            This can only be specified if an observable was not provided.
-        eigvals (array): A flat array representing the eigenvalues of the measurement.
             This can only be specified if an observable was not provided.
         id (str): custom label given to a measurement instance, can be useful for some applications
             where the instance has to be identified
     """
+
+    def __init__(self, wires: Optional[Wires] = None, id: Optional[str] = None):
+        super().__init__(wires=wires, id=id)
 
     @property
     def return_type(self):

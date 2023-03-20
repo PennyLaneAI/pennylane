@@ -15,11 +15,9 @@
 """
 This module contains the qml.mutual_info measurement.
 """
-import copy
-from typing import Sequence
+from typing import Sequence, Optional
 
 import pennylane as qml
-from pennylane.operation import Operator
 from pennylane.wires import Wires
 
 from .measurements import MutualInfo, StateMeasurement
@@ -93,13 +91,7 @@ class MutualInfoMP(StateMeasurement):
     Please refer to :func:`mutual_info` for detailed documentation.
 
     Args:
-        obs (.Observable): The observable that is to be measured as part of the
-            measurement process. Not all measurement processes require observables (for
-            example ``Probability``); this argument is optional.
-        wires (.Wires): The wires the measurement process applies to.
-            This can only be specified if an observable was not provided.
-        eigvals (array): A flat array representing the eigenvalues of the measurement.
-            This can only be specified if an observable was not provided.
+        wires (Sequence[.Wires]): The wires the measurement process applies to.
         id (str): custom label given to a measurement instance, can be useful for some applications
             where the instance has to be identified
         log_base (float): base for the logarithm
@@ -109,14 +101,27 @@ class MutualInfoMP(StateMeasurement):
     # pylint: disable=too-many-arguments
     def __init__(
         self,
-        obs: Operator = None,
-        wires=None,
-        eigvals=None,
-        id=None,
-        log_base=None,
+        wires: Optional[Sequence[Wires]] = None,
+        id: Optional[str] = None,
+        log_base: Optional[float] = None,
     ):
         self.log_base = log_base
-        super().__init__(obs=obs, wires=wires, eigvals=eigvals, id=id)
+        super().__init__(wires=wires, id=id)
+
+    def __repr__(self):
+        return f"MutualInfo(wires0={self.raw_wires[0].tolist()}, wires1={self.raw_wires[1].tolist()}, log_base={self.log_base})"
+
+    @property
+    def hash(self):
+        """int: returns an integer hash uniquely representing the measurement process"""
+        fingerprint = (
+            self.__class__.__name__,
+            tuple(self.raw_wires[0].tolist()),
+            tuple(self.raw_wires[1].tolist()),
+            self.log_base,
+        )
+
+        return hash(fingerprint)
 
     @property
     def return_type(self):
@@ -147,12 +152,4 @@ class MutualInfoMP(StateMeasurement):
             indices1=list(self._wires[1]),
             c_dtype=state.dtype,
             base=self.log_base,
-        )
-
-    def __copy__(self):
-        return self.__class__(
-            obs=copy.copy(self.obs),
-            wires=self._wires,
-            eigvals=self._eigvals,
-            log_base=self.log_base,
         )
