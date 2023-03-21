@@ -13,6 +13,7 @@
 # limitations under the License.
 """Functions to apply adjoint jacobian differentiation"""
 
+import warnings
 import numpy as np
 
 import pennylane as qml
@@ -117,8 +118,19 @@ def adjoint_jacobian(
 
     trainable_params = []
     for k in tape.trainable_params:
-        # TODO: Add check for trainable params on observable
-        trainable_params.append(k)
+        # pylint: disable=protected-access
+        if hasattr(tape._par_info[k]["op"], "return_type"):
+            warnings.warn(
+                "Differentiating with respect to the input parameters of "
+                f"{tape._par_info[k]['op'].name} is not supported with the "
+                "adjoint differentiation method. Gradients are computed "
+                "only with regards to the trainable parameters of the circuit.\n\n Mark "
+                "the parameters of the measured observables as non-trainable "
+                "to silence this warning.",
+                UserWarning,
+            )
+        else:
+            trainable_params.append(k)
 
     jac = np.zeros((len(tape.observables), len(trainable_params)))
 

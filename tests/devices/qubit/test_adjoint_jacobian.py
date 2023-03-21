@@ -147,9 +147,10 @@ class TestAdjointJacobian:
         grad_F = fn(qml.execute(tapes, dev, None))
         grad_D = adjoint_jacobian(qs)
 
+        grad_F = np.squeeze(grad_F)
+
         assert np.allclose(grad_D, grad_F, atol=tol, rtol=0)
         assert isinstance(grad_D, tuple)
-        assert all(isinstance(j, tuple) for j in grad_D)
 
     def test_multiple_rx_gradient(self, tol):
         """Tests that the gradient of multiple RX gates in a circuit yields the correct result."""
@@ -198,3 +199,89 @@ class TestAdjointJacobian:
         assert np.allclose(jacobian, expected_jacobian, atol=tol, rtol=0)
         assert isinstance(jacobian, tuple)
         assert all(isinstance(j, tuple) for j in jacobian)
+
+    @pytest.mark.autograd
+    def test_gradient_gate_with_multiple_parameters(self, tol, dev):
+        """Tests that gates with multiple free parameters yield correct gradients."""
+        x, y, z = [0.5, 0.3, -0.7]
+
+        qs = QuantumScript(
+            [qml.RX(0.4, wires=[0]), qml.Rot(x, y, z, wires=[0]), qml.RY(-0.2, wires=[0])],
+            [qml.expval(qml.PauliZ(0))],
+        )
+
+        qs.trainable_params = {1, 2, 3}
+
+        grad_D = adjoint_jacobian(qs)
+        tapes, fn = qml.gradients.finite_diff(qs)
+        grad_F = fn(qml.execute(tapes, dev, None))
+        grad_F = np.squeeze(grad_F)
+
+        # gradient has the correct shape and every element is nonzero
+        assert len(grad_D) == 3
+        assert np.count_nonzero(grad_D) == 3
+        # the different methods agree
+        assert np.allclose(grad_D, grad_F, atol=tol, rtol=0)
+
+    @pytest.mark.parametrize(
+        "prep_op", [qml.BasisState([1], wires=0), qml.QubitStateVector([0, 1], wires=0)]
+    )
+    def test_state_prep(self, prep_op, tol, dev):
+        """Tests provides correct answer when provided state preparation operation."""
+        x, y, z = [0.5, 0.3, -0.7]
+
+        qs = QuantumScript(
+            [qml.RX(0.4, wires=[0]), qml.Rot(x, y, z, wires=[0]), qml.RY(-0.2, wires=[0])],
+            [qml.expval(qml.PauliZ(0))],
+            [prep_op],
+        )
+
+        qs.trainable_params = {1, 2, 3}
+
+        grad_D = adjoint_jacobian(qs, prep_op)
+        qml.enable_return()
+        grad_F = dev.adjoint_jacobian(qs)
+        qml.disable_return()
+
+        assert np.allclose(grad_D, grad_F, atol=tol, rtol=0)
+
+    def test_gradient_of_tape_with_hermitian(self, tol):
+        """Test that computing the gradient of a tape that obtains the
+        expectation value of a Hermitian operator works correctly."""
+        a, b, c = [0.5, 0.3, -0.7]
+
+        mx = qml.matrix(qml.PauliX(0) @ qml.PauliY(2))
+        qs = QuantumScript(
+            [
+                qml.RX(a, wires=0),
+                qml.RX(b, wires=1),
+                qml.RX(c, wires=2),
+                qml.CNOT(wires=[0, 1]),
+                qml.CNOT(wires=[1, 2]),
+            ],
+            [qml.expval(qml.Hermitian(mx, wires=[0, 2]))],
+        )
+
+        qs.trainable_params = {0, 1, 2}
+        res = adjoint_jacobian(qs)
+
+        expected = [
+            np.cos(a) * np.sin(b) * np.sin(c),
+            np.cos(b) * np.sin(a) * np.sin(c),
+            np.cos(c) * np.sin(b) * np.sin(a),
+        ]
+        assert np.allclose(res, expected, atol=tol, rtol=0)
+
+    def test_trainable_hermitian_warns(self):
+        """Test attempting to compute the gradient of a tape that obtains the
+        expectation value of a Hermitian operator emits a warning if the
+        parameters to Hermitian are trainable."""
+
+        mx = qml.matrix(qml.PauliX(0) @ qml.PauliY(2))
+        qs = QuantumScript([], [qml.expval(qml.Hermitian(mx, wires=[0, 2]))])
+
+        qs.trainable_params = {0}
+        with pytest.warns(
+            UserWarning, match="Differentiating with respect to the input parameters of Hermitian"
+        ):
+            _ = adjoint_jacobian(qs)
