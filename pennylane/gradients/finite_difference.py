@@ -180,17 +180,17 @@ def _all_zero_grad_new(tape, shots=None):
     """Auxiliary function to return zeros for the all-zero gradient case."""
     list_zeros = []
 
+    par_shapes = [qml.math.shape(p) for p in tape.get_parameters()]
     for m in tape.measurements:
         if isinstance(m, ProbabilityMP):
-            shape = 2 ** len(m.wires)
+            shape = (2 ** len(m.wires),)
         else:
             shape = ()
 
         if len(tape.trainable_params) == 1:
-            sub_list_zeros = qml.math.zeros(shape)
+            sub_list_zeros = qml.math.zeros(par_shapes[0] + shape)
         else:
-            sub_list_zeros = [qml.math.zeros(shape) for _ in range(len(tape.trainable_params))]
-            sub_list_zeros = tuple(sub_list_zeros)
+            sub_list_zeros = tuple(qml.math.zeros(sh + shape) for sh in par_shapes)
 
         list_zeros.append(sub_list_zeros)
 

@@ -95,7 +95,7 @@ def test_numeric_type_unrecognized_error():
         qml.QuantumFunctionError,
         match="The numeric type of the measurement NotValidMeasurement is not defined",
     ):
-        mp.numeric_type()
+        mp.numeric_type
 
 
 def test_shape_unrecognized_error():
@@ -214,10 +214,6 @@ class TestStatisticsQueuing:
 
 class TestProperties:
     """Test for the properties"""
-
-    def test_return_type(self):
-        """Test MeasurementProcess ``return_type`` property is None."""
-        assert MeasurementProcess().return_type is None
 
     def test_wires_match_observable(self):
         """Test that the wires of the measurement process
