@@ -24,7 +24,6 @@ KerasLayer = qml.qnn.keras.KerasLayer
 tf = pytest.importorskip("tensorflow", minversion="2")
 
 
-
 @pytest.fixture
 def model(get_circuit, n_qubits, output_dim):
     """Fixture for creating a hybrid Keras model. The model is composed of KerasLayers sandwiched
