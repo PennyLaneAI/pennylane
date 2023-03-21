@@ -40,7 +40,7 @@ class TestCurrentlyUnsupportedCases:
 
 
 class TestMeasurementDispatch:
-    """Test tahat get_measurement_function dispatchs to the correct place."""
+    """Test that get_measurement_function dispatchs to the correct place."""
 
     def test_state_no_obs(self):
         """Test that the correct internal function is used for a measurement process with no observables."""
@@ -176,7 +176,7 @@ class TestSumOfTermsDifferentiability:
         if convert_to_hamiltonian:
             H = H._pauli_rep.hamiltonian()  # pylint: disable=protected-access
         qs = qml.tape.QuantumScript(ops, [qml.expval(H)])
-        return simulate(qs)[0]
+        return simulate(qs)
 
     @staticmethod
     def expected(scale, n_wires=10, offset=0.1, like="numpy"):

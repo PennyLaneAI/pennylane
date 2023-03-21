@@ -161,6 +161,7 @@
 * Fixed bug where the coefficients where not ordered correctly when summing a `ParametrizedHamiltonian`
   with other operators.
   [(#3749)](https://github.com/PennyLaneAI/pennylane/pull/3749)
+  [(#3902)](https://github.com/PennyLaneAI/pennylane/pull/3902)
 
 * The metric tensor transform is fully compatible with Jax and therefore users can provide multiple parameters.
   [(#3847)](https://github.com/PennyLaneAI/pennylane/pull/3847)
