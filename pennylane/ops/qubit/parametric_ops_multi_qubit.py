@@ -617,9 +617,8 @@ class PCPhase(Operation):
 
         if qml.math.get_interface(phi) == "tensorflow":
             phase = qml.math.exp(1j * qml.math.cast_like(phi, 1j))
-            return stack_last(
-                [phase if index < d else qml.math.ones_like(phase) for index in range(t)]
-            )
+            minus_phase = qml.math.exp(-1j * qml.math.cast_like(phi, 1j))
+            return stack_last([phase if index < d else minus_phase for index in range(t)])
 
         arg = 1j * phi
         prefactors = qml.math.array([1 if index < d else -1 for index in range(t)], like=phi)
