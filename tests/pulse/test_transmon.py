@@ -22,9 +22,11 @@ import pytest
 
 import pennylane as qml
 from pennylane.pulse import HardwareHamiltonian, transmon_interaction, drive
-from pennylane.pulse.transmon import (
-    TransmonPulse,
+from pennylane.pulse.hardware_hamiltonian import (
+    HardwarePulse,
     AmplitudeAndPhase,
+)
+from pennylane.pulse.transmon import (
     a,
     ad,
 )
