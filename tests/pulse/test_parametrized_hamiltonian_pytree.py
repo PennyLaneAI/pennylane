@@ -27,7 +27,7 @@ try:
     from pennylane.pulse.hardware_hamiltonian import (
         _reorder_parameters,
         amplitude_and_phase,
-        rydberg_drive,
+        drive,
     )
 except ImportError:
     pass
@@ -46,11 +46,7 @@ def f2(p, t):
 
 PH = qml.dot([1, 2, f1, f2], [qml.PauliX(0), qml.PauliY(1), qml.PauliZ(2), qml.Hadamard(3)])
 
-<<<<<<< HEAD
-RH = qml.pulse.hardware_hamiltonian.drive(amplitude=f1, phase=f2, detuning=1, wires=[0, 1, 2])
-=======
-RH = rydberg_drive(amplitude=f1, phase=f2, detuning=1, wires=[0, 1, 2])
->>>>>>> 0e09c2171d129d494176a174f2f4f93e6e596d67
+RH = drive(amplitude=f1, phase=f2, detuning=1, wires=[0, 1, 2])
 
 # Hamiltonians and the parameters for the individual coefficients
 HAMILTONIANS_WITH_COEFF_PARAMETERS = [
