@@ -637,16 +637,23 @@ class TestIntegration:
         ts = jnp.array([0.0, 3.0])
         H_obj = sum(qml.PauliZ(i) for i in range(2))
 
-        @jax.jit
         @qml.qnode(dev, interface="jax")
         def qnode(params):
             qml.evolve(Hd + Ht)(params, ts)
             return qml.expval(H_obj)
 
+        @jax.jit
+        @qml.qnode(dev, interface="jax")
+        def qnode_jit(params):
+            qml.evolve(Hd + Ht)(params, ts)
+            return qml.expval(H_obj)
+
         params = (jnp.ones(5), jnp.array([1.0, jnp.pi]))
         res = qnode(params)
+        res_jit = qnode_jit(params)
 
         assert isinstance(res, jax.Array)
+        assert res == res_jit
 
     @pytest.mark.jax
     def test_jitted_qnode_multidrive(self):
@@ -674,16 +681,23 @@ class TestIntegration:
         ts = jnp.array([0.0, 3.0])
         H_obj = sum(qml.PauliZ(i) for i in range(2))
 
-        @jax.jit
         @qml.qnode(dev, interface="jax")
         def qnode(params):
             qml.evolve(Hd + H1 + H2)(params, ts)
             return qml.expval(H_obj)
 
+        @jax.jit
+        @qml.qnode(dev, interface="jax")
+        def qnode_jit(params):
+            qml.evolve(Hd + H1 + H2)(params, ts)
+            return qml.expval(H_obj)
+
         params = (jnp.ones(5), jnp.array([1.0, jnp.pi]), jnp.array([jnp.pi / 2, 0.5]))
         res = qnode(params)
+        res_jit = qnode_jit(params)
 
         assert isinstance(res, jax.Array)
+        assert res == res_jit
 
     @pytest.mark.jax
     def test_jitted_qnode_all_coeffs_callable(self):
@@ -710,13 +724,20 @@ class TestIntegration:
         ts = jnp.array([0.0, 3.0])
         H_obj = sum(qml.PauliZ(i) for i in range(2))
 
-        @jax.jit
         @qml.qnode(dev, interface="jax")
         def qnode(params):
             qml.evolve(H_drift + H_drive)(params, ts)
             return qml.expval(H_obj)
 
+        @jax.jit
+        @qml.qnode(dev, interface="jax")
+        def qnode_jit(params):
+            qml.evolve(H_drift + H_drive)(params, ts)
+            return qml.expval(H_obj)
+
         params = (jnp.ones(5), jnp.array([1.0, jnp.pi]), jnp.array([jnp.pi / 2, 0.5]))
         res = qnode(params)
+        res_jit = qnode_jit(params)
 
         assert isinstance(res, jax.Array)
+        assert res == res_jit
