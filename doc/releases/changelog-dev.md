@@ -60,6 +60,10 @@
 * `AdaptiveOptimizer` is updated to use non-default user-defined qnode arguments.
   [(#3765)](https://github.com/PennyLaneAI/pennylane/pull/3765)
 
+* Adds logic to `qml.devices.qubit.measure` to compute the expectation values of `Hamiltonian` and `Sum `
+  in a backpropagation compatible way.
+  [(#3862)](https://github.com/PennyLaneAI/pennylane/pull/3862/)
+
 * Use `TensorLike` type in `Operator` dunder methods.
   [(#3749)](https://github.com/PennyLaneAI/pennylane/pull/3749)
 
@@ -89,6 +93,12 @@
   `ops.op_math.ctrl_decomp_bisect`.
   [(#3851)](https://github.com/PennyLaneAI/pennylane/pull/3851)
 
+* `repr` for `MutualInfoMP` now displays the distribution of the wires between the two subsystems.
+  [(#3898)](https://github.com/PennyLaneAI/pennylane/pull/3898)
+
+* Changed `Operator.num_wires` from an abstract value to `AnyWires`.
+  [(#3919)](https://github.com/PennyLaneAI/pennylane/pull/3919)
+
 <h3>Breaking changes</h3>
 
 * Both JIT interfaces are not compatible with Jax `>0.4.3`, we raise an error for those versions.
@@ -111,6 +121,10 @@
   Previously, they were consistent with the sequential Jordan-Wigner ordering.
   [(#3861)](https://github.com/PennyLaneAI/pennylane/pull/3861)
 
+* Some `MeasurementProcess` classes can now only be instantiated with arguments that they will actually use.
+  For example, you can no longer create `StateMP(qml.PauliX(0))` or `PurityMP(eigvals=(-1,1), wires=Wires(0))`.
+  [(#3898)](https://github.com/PennyLaneAI/pennylane/pull/3898)
+
 <h3>Deprecations</h3>
 
 <h3>Documentation</h3>
@@ -119,6 +133,19 @@
 [(#3844)](https://github.com/PennyLaneAI/pennylane/pull/3844)
 
 <h3>Bug fixes</h3>
+
+* `MeasurementProcess.hash` now uses the hash property of the observable. The property now depends on all
+  properties that affect the behaviour of the object, such as `VnEntropyMP.log_base` or the distribution of wires between
+  the two subsystems in `MutualInfoMP`.
+  [(#3898)](https://github.com/PennyLaneAI/pennylane/pull/3898)
+
+* The enum `measurements.Purity` is added so that `PurityMP.return_type` is defined. `str` and `repr` for `PurityMP` are now defined.
+  [(#3898)](https://github.com/PennyLaneAI/pennylane/pull/3898)
+
+* `Sum.hash` and `Prod.hash` are slightly changed
+  to work with non-numeric wire labels.  `sum_expand` should now return correct results and not treat some products as the same
+  operation.
+  [(#3898)](https://github.com/PennyLaneAI/pennylane/pull/3898)
 
 * Fixed bug where the coefficients where not ordered correctly when summing a `ParametrizedHamiltonian`
   with other operators.
