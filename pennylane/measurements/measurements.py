@@ -21,12 +21,12 @@ import copy
 import functools
 from abc import ABC, abstractmethod
 from enum import Enum
-from typing import Sequence, Tuple, Union
+from typing import Sequence, Tuple, Optional
 
 import numpy as np
 
 import pennylane as qml
-from pennylane.operation import Observable
+from pennylane.operation import Operator
 from pennylane.wires import Wires
 
 # =============================================================================
@@ -49,6 +49,7 @@ class ObservableReturnTypes(Enum):
     MutualInfo = "mutualinfo"
     Shadow = "shadow"
     ShadowExpval = "shadowexpval"
+    Purity = "purity"
 
     def __repr__(self):
         """String representation of the return types."""
@@ -100,6 +101,9 @@ ShadowExpval = ObservableReturnTypes.ShadowExpval
 """Enum: An enumeration which represents returning the estimated expectation value
 from a classical shadow measurement"""
 
+Purity = ObservableReturnTypes.Purity
+"""Enum: An enumeration which represents returning the purity of the system prior ot measurement."""
+
 
 class MeasurementShapeError(ValueError):
     """An error raised when an unsupported operation is attempted with a
@@ -111,7 +115,7 @@ class MeasurementProcess(ABC):
     quantum variational circuit.
 
     Args:
-        obs (.Observable): The observable that is to be measured as part of the
+        obs (.Operator): The observable that is to be measured as part of the
             measurement process. Not all measurement processes require observables (for
             example ``Probability``); this argument is optional.
         wires (.Wires): The wires the measurement process applies to.
@@ -125,10 +129,10 @@ class MeasurementProcess(ABC):
     # pylint: disable=too-many-arguments
     def __init__(
         self,
-        obs: Union[Observable, None] = None,
-        wires=None,
+        obs: Optional[Operator] = None,
+        wires: Optional[Wires] = None,
         eigvals=None,
-        id=None,
+        id: Optional[str] = None,
     ):
         self.obs = obs
         self.id = id
@@ -167,12 +171,12 @@ class MeasurementProcess(ABC):
         self.queue()
 
     @property
-    def return_type(self):
+    def return_type(self) -> Optional[ObservableReturnTypes]:
         """Measurement return type."""
         return None
 
     @property
-    def numeric_type(self):
+    def numeric_type(self) -> type:
         """The Python numeric type of the measurement result.
 
         Returns:
@@ -299,11 +303,16 @@ class MeasurementProcess(ABC):
         return f"{self.obs}"
 
     def __copy__(self):
-        return self.__class__(
-            obs=copy.copy(self.obs),
-            wires=self._wires,
-            eigvals=self._eigvals,
-        )
+        cls = self.__class__
+        copied_m = cls.__new__(cls)
+
+        for attr, value in vars(self).items():
+            setattr(copied_m, attr, value)
+
+        if self.obs is not None:
+            copied_m.obs = copy.copy(self.obs)
+
+        return copied_m
 
     @property
     def wires(self):
@@ -433,21 +442,12 @@ class MeasurementProcess(ABC):
     @property
     def hash(self):
         """int: returns an integer hash uniquely representing the measurement process"""
-
-        if self.obs is None:
-            fingerprint = (
-                str(self.name),
-                tuple(self.wires.tolist()),
-                str(self.data),
-                self.__class__.__name__,
-            )
-        else:
-            fingerprint = (
-                str(self.obs.name),
-                tuple(self.wires.tolist()),
-                str(self.obs.data),
-                self.__class__.__name__,
-            )
+        fingerprint = (
+            self.__class__.__name__,
+            getattr(self.obs, "hash", "None"),
+            str(self._eigvals),  # eigvals() could be expensive to compute for large observables
+            tuple(self.wires.tolist()),
+        )
 
         return hash(fingerprint)
 
