@@ -352,12 +352,19 @@ class TestExtractStatistics:
                 dev.statistics()
 
     @pytest.mark.parametrize(
-        "measurement", [ExpectationMP, VarianceMP, SampleMP, ProbabilityMP, StateMP]
+        "measurement",
+        [
+            ExpectationMP(obs=qml.PauliX(0)),
+            VarianceMP(obs=qml.PauliX(0)),
+            SampleMP(obs=qml.PauliX(0)),
+            ProbabilityMP(obs=qml.PauliX(0)),
+            StateMP(),
+        ],
     )
     def test_results_created(self, mock_qubit_device_extract_stats, monkeypatch, measurement):
         """Tests that the statistics method simply builds a results list without any side-effects"""
 
-        qscript = QuantumScript(measurements=[measurement(obs=qml.PauliX(0))])
+        qscript = QuantumScript(measurements=[measurement])
 
         with monkeypatch.context() as m:
             dev = mock_qubit_device_extract_stats()
