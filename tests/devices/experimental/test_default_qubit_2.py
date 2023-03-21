@@ -26,7 +26,7 @@ def test_name():
 
 
 def test_no_jvp_functionality():
-    """Test that jvp is not support on DefaultQubit2."""
+    """Test that jvp is not supported on DefaultQubit2."""
     dev = DefaultQubit2()
 
     assert not dev.supports_jvp(ExecutionConfig())
@@ -39,7 +39,7 @@ def test_no_jvp_functionality():
 
 
 def test_no_vjp_functionality():
-    """Test that vjp is not support on DefaultQubit2."""
+    """Test that vjp is not supported on DefaultQubit2."""
     dev = DefaultQubit2()
 
     assert not dev.supports_vjp(ExecutionConfig())
@@ -100,7 +100,7 @@ class TestSupportsDerivatives:
         """Test that DefaultQubit2 says that it supports backpropagation."""
         dev = DefaultQubit2()
         config = ExecutionConfig(gradient_method="backprop")
-        assert dev.supports_derivatives(config) == True
+        assert dev.supports_derivatives(config) is True
 
         qs = qml.tape.QuantumScript([], [qml.state()])
         assert dev.supports_derivatives(config, qs)
@@ -116,7 +116,7 @@ class TestSupportsDerivatives:
 
 
 class TestBasicCircuit:
-    """Tests a basic circuit with one rx gate and two simple expectation values."""
+    """Tests a basic circuit with one RX gate and two simple expectation values."""
 
     def test_basic_circuit_numpy(self):
         """Test execution with a basic circuit."""
@@ -158,7 +158,7 @@ class TestBasicCircuit:
     @pytest.mark.jax
     @pytest.mark.parametrize("use_jit", (True, False))
     def test_jax_results_and_backprop(self, use_jit):
-        """Tests exeuction and gradients with jax."""
+        """Tests execution and gradients with jax."""
         import jax
 
         phi = jax.numpy.array(0.678)
@@ -256,7 +256,6 @@ class TestExecutingBatches:
 
     @staticmethod
     def expected(phi):
-
         out1 = (-qml.math.sin(phi) - 1, 3 * qml.math.cos(phi))
 
         x1 = qml.math.cos(phi / 2) ** 2 / 2
@@ -403,8 +402,11 @@ class TestSumOfTermsDifferentiability:
     def test_jax_backprop(self, convert_to_hamiltonian, use_jit):
         """Test that backpropagation derivatives work with jax with hamiltonians and large sums."""
         import jax
+        from jax.config import config
 
-        x = jax.numpy.array(0.52)
+        config.update("jax_enable_x64", True)  # otherwise output is too noisy
+
+        x = jax.numpy.array(0.52, dtype=jax.numpy.float64)
         f = jax.jit(self.f, static_argnums=(1, 2, 3)) if use_jit else self.f
 
         out = f(x, convert_to_hamiltonian=convert_to_hamiltonian)
@@ -451,48 +453,100 @@ class TestSumOfTermsDifferentiability:
         assert qml.math.allclose(g1, g2)
 
 
-def test_preprocessing_integration():
-    """Test integration between preprocessing and execution with numpy parameters."""
+class TestPreprocessingIntegration:
+    def test_preproces_single_circuit(self):
+        """Test integration between preprocessing and execution with numpy parameters."""
 
-    class MyTemplate(qml.operation.Operation):
-        num_wires = 2
+        # pylint: disable=too-few-public-methods
+        class MyTemplate(qml.operation.Operation):
+            num_wires = 2
 
-        def decomposition(self):
-            return [
-                qml.RX(self.data[0], self.wires[0]),
-                qml.RY(self.data[1], self.wires[1]),
-                qml.CNOT(self.wires),
-            ]
+            def decomposition(self):
+                return [
+                    qml.RX(self.data[0], self.wires[0]),
+                    qml.RY(self.data[1], self.wires[1]),
+                    qml.CNOT(self.wires),
+                ]
 
-    x = 0.928
-    y = -0.792
-    qscript = qml.tape.QuantumScript(
-        [MyTemplate(x, y, ("a", "b"))],
-        [qml.expval(qml.PauliY("a")), qml.expval(qml.PauliZ("a")), qml.expval(qml.PauliX("b"))],
-    )
+        x = 0.928
+        y = -0.792
+        qscript = qml.tape.QuantumScript(
+            [MyTemplate(x, y, ("a", "b"))],
+            [qml.expval(qml.PauliY("a")), qml.expval(qml.PauliZ("a")), qml.expval(qml.PauliX("b"))],
+        )
 
-    dev = DefaultQubit2()
+        dev = DefaultQubit2()
 
-    batch, post_procesing_fn = dev.preprocess(qscript)
+        batch, post_procesing_fn = dev.preprocess(qscript)
 
-    assert len(batch) == 1
-    execute_circuit = batch[0]
-    assert qml.equal(execute_circuit[0], qml.RX(x, "a"))
-    assert qml.equal(execute_circuit[1], qml.RY(y, "b"))
-    assert qml.equal(execute_circuit[2], qml.CNOT(("a", "b")))
-    assert qml.equal(execute_circuit[3], qml.expval(qml.PauliY("a")))
-    assert qml.equal(execute_circuit[4], qml.expval(qml.PauliZ("a")))
-    assert qml.equal(execute_circuit[5], qml.expval(qml.PauliX("b")))
+        assert len(batch) == 1
+        execute_circuit = batch[0]
+        assert qml.equal(execute_circuit[0], qml.RX(x, "a"))
+        assert qml.equal(execute_circuit[1], qml.RY(y, "b"))
+        assert qml.equal(execute_circuit[2], qml.CNOT(("a", "b")))
+        assert qml.equal(execute_circuit[3], qml.expval(qml.PauliY("a")))
+        assert qml.equal(execute_circuit[4], qml.expval(qml.PauliZ("a")))
+        assert qml.equal(execute_circuit[5], qml.expval(qml.PauliX("b")))
 
-    results = dev.execute(batch)
-    assert len(results) == 1
-    assert len(results[0]) == 3
+        results = dev.execute(batch)
+        assert len(results) == 1
+        assert len(results[0]) == 3
 
-    processed_results = post_procesing_fn(results)
-    assert len(processed_results) == 3
-    assert qml.math.allclose(processed_results[0], -np.sin(x) * np.sin(y))
-    assert qml.math.allclose(processed_results[1], np.cos(x))
-    assert qml.math.allclose(processed_results[2], np.sin(y))
+        processed_results = post_procesing_fn(results)
+        assert len(processed_results) == 3
+        assert qml.math.allclose(processed_results[0], -np.sin(x) * np.sin(y))
+        assert qml.math.allclose(processed_results[1], np.cos(x))
+        assert qml.math.allclose(processed_results[2], np.sin(y))
+
+    def test_preprocess_batch_circuit(self):
+        """Test preprocess integrates with default qubit when we start with a batch of circuits."""
+
+        # pylint: disable=too-few-public-methods
+        class CustomIsingXX(qml.operation.Operation):
+            num_wires = 2
+
+            def decomposition(self):
+                return [qml.IsingXX(self.data[0], self.wires)]
+
+        x = 0.692
+
+        measurements1 = [qml.density_matrix("a"), qml.vn_entropy("a")]
+        qs1 = qml.tape.QuantumScript([CustomIsingXX(x, ("a", "b"))], measurements1)
+
+        y = -0.923
+
+        with qml.queuing.AnnotatedQueue() as q:
+            qml.PauliX(wires=1)
+            m_0 = qml.measure(1)
+            qml.cond(m_0, qml.RY)(y, wires=0)
+            qml.expval(qml.PauliZ(0))
+
+        qs2 = qml.tape.QuantumScript.from_queue(q)
+
+        initial_batch = [qs1, qs2]
+
+        dev = DefaultQubit2()
+        batch, post_processing_fn = dev.preprocess(initial_batch)
+
+        results = dev.execute(batch)
+        processed_results = post_processing_fn(results)
+
+        assert len(processed_results) == 2
+        assert len(processed_results[0]) == 2
+
+        expected_density_mat = np.array([[np.cos(x / 2) ** 2, 0], [0, np.sin(x / 2) ** 2]])
+        assert qml.math.allclose(processed_results[0][0], expected_density_mat)
+
+        eig_1 = (1 + np.sqrt(1 - 4 * np.cos(x / 2) ** 2 * np.sin(x / 2) ** 2)) / 2
+        eig_2 = (1 - np.sqrt(1 - 4 * np.cos(x / 2) ** 2 * np.sin(x / 2) ** 2)) / 2
+        eigs = [eig_1, eig_2]
+        eigs = [eig for eig in eigs if eig > 0]
+
+        expected_entropy = -np.sum(eigs * np.log(eigs))
+        assert qml.math.allclose(processed_results[0][1], expected_entropy)
+
+        expected_expval = np.cos(y)
+        assert qml.math.allclose(expected_expval, processed_results[1])
 
 
 def test_broadcasted_parameter():

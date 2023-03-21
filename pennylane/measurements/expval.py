@@ -64,7 +64,7 @@ class ExpectationMP(SampleMeasurement, StateMeasurement):
     Please refer to :func:`expval` for detailed documentation.
 
     Args:
-        obs (.Observable): The observable that is to be measured as part of the
+        obs (.Operator): The observable that is to be measured as part of the
             measurement process. Not all measurement processes require observables (for
             example ``Probability``); this argument is optional.
         wires (.Wires): The wires the measurement process applies to.

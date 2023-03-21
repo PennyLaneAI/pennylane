@@ -61,7 +61,7 @@ class DefaultQubit2(Device):
     0.1339705146860149,
     -0.03780669772690448]
 
-    This device currently supports backpropogation derivatives:
+    This device currently supports backpropagation derivatives:
 
     >>> from pennylane.devices import ExecutionConfig
     >>> dev.supports_derivatives(ExecutionConfig(gradient_method="backprop"))
@@ -85,10 +85,6 @@ class DefaultQubit2(Device):
 
     """
 
-    def __init__(self) -> None:
-        # each instance should have its own Tracker.
-        super().__init__()
-
     @property
     def name(self):
         """The name of the device."""
@@ -101,17 +97,17 @@ class DefaultQubit2(Device):
     ) -> bool:
         """Check whether or not derivatives are available for a given configuration and circuit.
 
-        ``DefaultQubit2`` supports backpropogation derivatives with analytic results.
+        ``DefaultQubit2`` supports backpropagation derivatives with analytic results.
 
         Args:
-            execution_config (ExecutionConfig): The configuration of the desired derivative calcualtion
+            execution_config (ExecutionConfig): The configuration of the desired derivative calculation
             circuit (QuantumTape): An optional circuit to check derivatives support for.
 
         Returns:
             Bool: Whether or not a derivative can be calculated provided the given information
 
         """
-        # backpropogation currently supported for all supported circuits
+        # backpropagation currently supported for all supported circuits
         # will later need to add logic if backprop requested with finite shots
         # do once device accepts finite shots
         return execution_config.gradient_method == "backprop"
@@ -126,7 +122,7 @@ class DefaultQubit2(Device):
         Args:
             circuits (Union[QuantumTape, Sequence[QuantumTape]]): The circuit or a batch of circuits to preprocess
                 before execution on the device
-            execution_config (Union[ExecutionConfig, Sequence[ExecutionConfig]]): A datastructure describing the parameters needed to fully describe
+            execution_config (Union[ExecutionConfig, Sequence[ExecutionConfig]]): A data structure describing the parameters needed to fully describe
                 the execution. Includes such information as shots.
 
         Returns:

@@ -131,7 +131,7 @@ class Device(abc.ABC):
             self.tracker.record()
     """
 
-    def __init__(self, *args, **kwargs) -> None:
+    def __init__(self) -> None:
         # each instance should have its own Tracker.
         self.tracker = Tracker()
 
