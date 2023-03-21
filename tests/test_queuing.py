@@ -14,6 +14,7 @@
 """
 Unit tests for the :mod:`pennylane` :class:`QueuingManager` class.
 """
+from multiprocessing.dummy import Pool as ThreadPool
 import pytest
 import numpy as np
 import pennylane as qml
@@ -280,6 +281,25 @@ class TestAnnotatedQueue:
             tensor_op = qml.operation.Tensor(A, B)
 
         assert q.queue == [tensor_op]
+
+    def test_parallel_queues_are_isolated(self):
+        """Tests that parallel queues do not queue each other's constituents."""
+        q1 = AnnotatedQueue()
+        q2 = AnnotatedQueue()
+        n = 10000
+
+        def queue_pauli(arg):
+            q, pauli = arg
+            with q:
+                for _ in range(n):
+                    pauli(0)
+
+        args = [(q1, qml.PauliX), (q2, qml.PauliY)]
+        ThreadPool(2).map(queue_pauli, args)
+        assert len(q1) == n
+        assert len(q2) == n
+        for queue, expected_op in args:
+            assert all(isinstance(op, expected_op) for op in queue.queue)
 
 
 test_observables = [
