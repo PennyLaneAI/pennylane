@@ -657,12 +657,14 @@ class PCPhase(Operation):
         def _get_op_from_binary_rep(binary_rep, theta, wires):
             if len(binary_rep) == 1:
                 op = (
-                    PhaseShift(theta, wires[0]) if int(binary_rep)
+                    PhaseShift(theta, wires[0])
+                    if int(binary_rep)
                     else PauliX(wires[0]) @ PhaseShift(theta, wires[0]) @ PauliX(wires[0])
                 )
             else:
                 base_op = (
-                    PhaseShift(theta, wires[-1]) if int(binary_rep[-1])
+                    PhaseShift(theta, wires[-1])
+                    if int(binary_rep[-1])
                     else PauliX(wires[-1]) @ PhaseShift(theta, wires[-1]) @ PauliX(wires[-1])
                 )
                 op = qml.ctrl(
@@ -674,8 +676,12 @@ class PCPhase(Operation):
         positive_binary_reps = [bin(_k)[2:].zfill(n_log2) for _k in range(k)]
         negative_binary_reps = [bin(_k)[2:].zfill(n_log2) for _k in range(k, n)]
 
-        positive_ops = [_get_op_from_binary_rep(br, phi, wires=wires) for br in positive_binary_reps]
-        negative_ops = [_get_op_from_binary_rep(br, -1*phi, wires=wires) for br in negative_binary_reps]
+        positive_ops = [
+            _get_op_from_binary_rep(br, phi, wires=wires) for br in positive_binary_reps
+        ]
+        negative_ops = [
+            _get_op_from_binary_rep(br, -1 * phi, wires=wires) for br in negative_binary_reps
+        ]
 
         return positive_ops + negative_ops
 
