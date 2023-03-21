@@ -61,6 +61,9 @@ class BasisState(StatePrep):
     num_params = 1
     """int: Number of trainable parameters that the operator depends on."""
 
+    ndim_params = (1,)
+    """int: Number of dimensions per trainable parameter of the operator."""
+
     @staticmethod
     def compute_decomposition(n, wires):
         r"""Representation of the operator as a product of other operators (static method). :
