@@ -423,7 +423,7 @@ def _stoch_pulse_grad(tape, argnum=None, num_split_times=1, sampler_seed=None, s
         Therefore, it is important to implement pulses in the simplest way possible.
     """
     # pylint:disable=unused-argument
-    if not has_jax:
+    if not has_jax:  # pragma: no cover
         raise ImportError(
             "Module jax is required for the stochastic pulse parameter-shift gradient transform. "
             "You can install jax via: pip install jax jaxlib"

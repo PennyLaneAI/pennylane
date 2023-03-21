@@ -422,7 +422,8 @@ def _swappable_ops(op1, op2, wire_map: dict = None) -> bool:
         wires2 = wires2.map(wire_map)
     wires1 = set(wires1)
     wires2 = set(wires2)
-    return False if wires1 & wires2 else wires1.pop() > wires2.pop()
+    # compare strings of wire labels so that we can compare arbitrary wire labels like 0 and "a"
+    return False if wires1 & wires2 else str(wires1.pop()) > str(wires2.pop())
 
 
 class _ProductFactorsGrouping:
