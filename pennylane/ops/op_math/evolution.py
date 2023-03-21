@@ -119,7 +119,7 @@ class Evolution(Exp):
     # pylint: disable=arguments-renamed, invalid-overridden-method
     @property
     def has_generator(self):
-        return not np.real(self.coeff)
+        return not qml.math.real(self.coeff)
 
     def generator(self):
         r"""Generator of an operator that is in single-parameter-form.
