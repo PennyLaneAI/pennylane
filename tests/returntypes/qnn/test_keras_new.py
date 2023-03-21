@@ -23,7 +23,6 @@ KerasLayer = qml.qnn.keras.KerasLayer
 
 tf = pytest.importorskip("tensorflow", minversion="2")
 
-# pylint: disable=unnecessary-dunder-call
 
 
 @pytest.fixture
