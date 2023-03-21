@@ -36,9 +36,7 @@ def _dot_product_real(bra, ket, num_wires):
     return qml.math.real(qml.math.sum(qml.math.conj(bra) * ket, axis=sum_axes))
 
 
-def adjoint_jacobian(
-    tape: QuantumTape, prep_operation: qml.operation.StatePrep = None
-):  # pylint: disable=too-many-statements
+def adjoint_jacobian(tape: QuantumTape):  # pylint: disable=too-many-statements
     """Implements the adjoint method outlined in
     `Jones and Gacon <https://arxiv.org/abs/2009.02823>`__ to differentiate an input tape.
 
@@ -48,9 +46,6 @@ def adjoint_jacobian(
     .. note::
         The adjoint differentiation method has the following restrictions:
 
-        * As it requires knowledge of the statevector, only statevector simulator devices can be
-          used.
-
         * Only expectation values are supported as measurements.
 
         * Does not work for parametrized observables like :class:`~.Hamiltonian`,
@@ -58,7 +53,6 @@ def adjoint_jacobian(
 
     Args:
         tape (.QuantumTape): circuit that the function takes the gradient of
-        prep_operation (.StatePrep): state preparation operation applied for state initialization
 
     Returns:
         array or tuple[array]: the derivative of the tape with respect to trainable parameters.
@@ -91,6 +85,7 @@ def adjoint_jacobian(
         tape = qml.map_wires(tape, wire_map)
 
     # Initialization of state
+    prep_operation = None if len(tape._prep) == 0 else tape._prep[0]
     ket = create_initial_state(
         wires=tape.wires, prep_operation=prep_operation
     )  #  ket(0) if prep_operation is None, else

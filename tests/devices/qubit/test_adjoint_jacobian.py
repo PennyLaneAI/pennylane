@@ -82,7 +82,7 @@ class TestAdjointJacobian:
 
         qs.trainable_params = {1}
 
-        calculated_val = adjoint_jacobian(qs, prep_op)
+        calculated_val = adjoint_jacobian(qs)
 
         # compare to finite differences
         dev_single_qubit = qml.device("default.qubit", wires=1)
@@ -109,7 +109,7 @@ class TestAdjointJacobian:
 
         qs.trainable_params = {1, 2, 3}
 
-        calculated_val = adjoint_jacobian(qs, prep_op)
+        calculated_val = adjoint_jacobian(qs)
 
         # compare to finite differences
         dev_single_qubit = qml.device("default.qubit", wires=1)
@@ -238,7 +238,7 @@ class TestAdjointJacobian:
 
         qs.trainable_params = {1, 2, 3}
 
-        grad_D = adjoint_jacobian(qs, prep_op)
+        grad_D = adjoint_jacobian(qs)
         qml.enable_return()
         grad_F = dev.adjoint_jacobian(qs)
         qml.disable_return()
