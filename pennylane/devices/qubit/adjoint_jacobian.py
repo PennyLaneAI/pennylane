@@ -28,6 +28,13 @@ from .initialize_state import create_initial_state
 # pylint: disable=protected-access, too-many-branches
 
 
+def _dot_product_real(bra, ket, num_wires):
+    """Helper for calculating the inner product for adjoint differentiation."""
+    # broadcasted inner product not summing over first dimension of the bra tensor
+    sum_axes = tuple(range(1, num_wires + 1))
+    return qml.math.real(qml.math.sum(qml.math.conj(bra) * ket, axis=sum_axes))
+
+
 def adjoint_jacobian(
     tape: QuantumTape, prep_operation: qml.operation.StatePrep = None
 ):  # pylint: disable=too-many-statements
@@ -60,10 +67,6 @@ def adjoint_jacobian(
         QuantumFunctionError: if the input tape has measurements that are not expectation values
             or contains a multi-parameter operation aside from :class:`~.Rot`
     """
-    # broadcasted inner product not summing over first dimension of the bra tensor
-    sum_axes = tuple(range(1, len(tape.wires) + 1))
-    # pylint: disable=unnecessary-lambda-assignment
-    dot_product_real = lambda b, k: qml.math.real(qml.math.sum(qml.math.conj(b) * k, axis=sum_axes))
 
     # Check validity of measurements
     for m in tape.measurements:
@@ -73,7 +76,7 @@ def adjoint_jacobian(
                 f" measurement {m.__class__.__name__}"
             )
 
-        if m.obs.name in {"Hamiltonian", "Sum"}:
+        if m.obs.name in {"Hamiltonian"}:
             raise qml.QuantumFunctionError(
                 f"Adjoint differentiation method does not support observable {m.obs.name}."
             )
@@ -81,15 +84,21 @@ def adjoint_jacobian(
         if not hasattr(m.obs, "base_name"):
             m.obs.base_name = None  # This is needed for when the observable is a tensor product
 
+    # Map wires if custom wire labels used
+    if set(tape.wires) != set(range(tape.num_wires)):
+        wire_map = {w: i for i, w in enumerate(tape.wires)}
+        tape = qml.map_wires(tape, wire_map)
+
     # Initialization of state
     ket = create_initial_state(
         wires=tape.wires, prep_operation=prep_operation
     )  #  ket(0) if prep_operation is None, else
     for op in tape.operations:
-        ket = apply_operation(op, ket)
+        if op.name not in ("QubitStateVector", "BasisState", "Snapshot"):
+            ket = apply_operation(op, ket)
 
     n_obs = len(tape.observables)
-    bras = np.empty([n_obs] + [2] * tape.wires, dtype=np.complex128)
+    bras = np.empty([n_obs] + [2] * len(tape.wires), dtype=np.complex128)
     for kk in range(n_obs):
         bras[kk, ...] = apply_operation(tape.observables[kk], ket)
 
@@ -123,7 +132,9 @@ def adjoint_jacobian(
             if param_number in trainable_params:
                 d_op_matrix = operation_derivative(op)
                 ket_temp = apply_operation(qml.QubitUnitary(d_op_matrix, wires=op.wires), ket)
-                jac[:, trainable_param_number] = 2 * dot_product_real(bras, ket_temp)
+                jac[:, trainable_param_number] = 2 * _dot_product_real(
+                    bras, ket_temp, len(tape.wires)
+                )
 
                 trainable_param_number -= 1
             param_number -= 1
@@ -131,10 +142,7 @@ def adjoint_jacobian(
         for kk in range(n_obs):
             bras[kk, ...] = apply_operation(adj_op, bras[kk, ...])
 
-    if not qml.active_return():
-        return jac
-
-    # Post-process the Jacobian matrix for the new return types
+    # Post-process the Jacobian matrix for the new return
     jac = np.squeeze(jac)
 
     if jac.ndim == 0:

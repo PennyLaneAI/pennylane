@@ -14,6 +14,7 @@
 """
 Tests for the pennylane.qnn.torch module.
 """
+# pylint: disable=unnecessary-dunder-call
 from unittest import mock
 import math
 import numpy as np
