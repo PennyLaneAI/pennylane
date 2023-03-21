@@ -206,6 +206,7 @@ class TestHardwareHamiltonian:
         assert isinstance(H_global, HardwareHamiltonian)
         H_global(params, 2)  # no error raised
 
+
 # pylint: disable=no-member
 class TestInteractionWithOperators:
     """Test that the interaction between a ``HardwareHamiltonian`` and other operators work as
