@@ -224,15 +224,16 @@ class MERA(Operation):
             list[.Operator]: decomposition of the operator
         """
         op_list = []
+        block_gen = qml.tape.make_qscript(block)
         if block.__code__.co_argcount > 2:
             for idx, w in enumerate(ind_gates):
-                op_list += qml.tape.make_qscript(block)(*weights[idx], wires=w)
+                op_list += block_gen(*weights[idx], wires=w)
         elif block.__code__.co_argcount == 2:
             for idx, w in enumerate(ind_gates):
-                op_list += qml.tape.make_qscript(block)(weights[idx], wires=w)
+                op_list += block_gen(weights[idx], wires=w)
         else:
             for w in ind_gates:
-                op_list += qml.tape.make_qscript(block)(wires=w)
+                op_list += block_gen(wires=w)
 
         return [qml.apply(op) for op in op_list] if qml.QueuingManager.recording() else op_list
 

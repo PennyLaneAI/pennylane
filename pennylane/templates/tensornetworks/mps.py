@@ -177,8 +177,9 @@ class MPS(Operation):
             list[.Operator]: decomposition of the operator
         """
         decomp = []
+        block_gen = qml.tape.make_qscript(block)
         for idx, w in enumerate(ind_gates):
-            decomp += qml.tape.make_qscript(block)(weights=weights[idx][:], wires=w.tolist())
+            decomp += block_gen(weights=weights[idx][:], wires=w.tolist())
         return [qml.apply(op) for op in decomp] if qml.QueuingManager.recording() else decomp
 
     @staticmethod
