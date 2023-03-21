@@ -149,6 +149,7 @@ more tapes as well as a classical processing function.
 
     ~transforms.broadcast_expand
     ~transforms.hamiltonian_expand
+    ~transforms.sign_expand
     ~transforms.sum_expand
 
 Decorators and utility functions
@@ -169,6 +170,7 @@ to help build custom QNode, quantum function, and tape transforms:
     ~transforms.create_expand_fn
     ~transforms.create_decomp_expand_fn
     ~transforms.expand_invalid_trainable
+    ~transforms.expand_invalid_trainable_hadamard_gradient
     ~transforms.expand_multipar
     ~transforms.expand_trainable_multipar
     ~transforms.expand_nonunitary_gen
@@ -196,6 +198,7 @@ from .condition import cond, Conditional
 from .compile import compile
 from .decompositions import zyz_decomposition, xyx_decomposition, two_qubit_decomposition
 from .defer_measurements import defer_measurements
+from .sign_expand import sign_expand
 from .hamiltonian_expand import hamiltonian_expand, sum_expand
 from .split_non_commuting import split_non_commuting
 from .metric_tensor import metric_tensor
@@ -224,6 +227,7 @@ from .commutation_dag import (
 )
 from .tape_expand import (
     expand_invalid_trainable,
+    expand_invalid_trainable_hadamard_gradient,
     expand_multipar,
     expand_nonunitary_gen,
     expand_trainable_multipar,

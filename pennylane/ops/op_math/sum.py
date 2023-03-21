@@ -61,13 +61,13 @@ def sum(*summands, do_queue=True, id=None, lazy=True):
 
         This operator supports batched operands:
 
-        >>> op = qml.op_sum(qml.RX(np.array([1, 2, 3]), wires=0), qml.PauliX(1))
+        >>> op = qml.sum(qml.RX(np.array([1, 2, 3]), wires=0), qml.PauliX(1))
         >>> op.matrix().shape
         (3, 4, 4)
 
         But it doesn't support batching of operators:
 
-        >>> op = qml.op_sum(np.array([qml.RX(0.4, 0), qml.RZ(0.3, 0)]), qml.PauliZ(0))
+        >>> op = qml.sum(np.array([qml.RX(0.4, 0), qml.RZ(0.3, 0)]), qml.PauliZ(0))
         AttributeError: 'numpy.ndarray' object has no attribute 'wires'
 
     .. seealso:: :class:`~.ops.op_math.Sum`
@@ -177,6 +177,11 @@ class Sum(CompositeOp):
 
     _op_symbol = "+"
     _math_op = math.sum
+
+    @property
+    def hash(self):
+        # Since addition is always commutative, we do not need to sort
+        return hash(("Sum", frozenset(o.hash for o in self.operands)))
 
     @property
     def is_hermitian(self):
@@ -295,6 +300,11 @@ class Sum(CompositeOp):
         return new_summands
 
     def simplify(self, cutoff=1.0e-12) -> "Sum":  # pylint: disable=arguments-differ
+        # try using pauli_rep:
+        if pr := self._pauli_rep:
+            pr.simplify()
+            return pr.operation(wire_order=self.wires)
+
         new_summands = self._simplify_summands(summands=self.operands).get_summands(cutoff=cutoff)
         if new_summands:
             return Sum(*new_summands) if len(new_summands) > 1 else new_summands[0]
@@ -316,19 +326,21 @@ class Sum(CompositeOp):
         if isinstance(op_list, tuple):
             op_list = list(op_list)
 
-        def _sort_key(op) -> bool:
-            """Sorting key.
+        def _sort_key(op: Operator) -> tuple:
+            """Sorting key used in the `sorted` python built-in function.
 
             Args:
                 op (.Operator): Operator.
 
             Returns:
-                int: Minimum wire value.
+                Tuple[int, int, str]: Tuple containing the minimum wire value, the number of wires
+                    and the string of the operator. This tuple is used to compare different operators
+                    in the sorting algorithm.
             """
             wires = op.wires
             if wire_map is not None:
                 wires = wires.map(wire_map)
-            return np.min(wires), len(wires)
+            return np.min(wires), len(wires), str(op)
 
         return sorted(op_list, key=_sort_key)
 

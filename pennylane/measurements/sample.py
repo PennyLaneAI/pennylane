@@ -16,16 +16,16 @@ This module contains the qml.sample measurement.
 """
 import functools
 import warnings
-from typing import Sequence, Tuple, Union
+from typing import Sequence, Tuple, Optional
 
 import pennylane as qml
-from pennylane.operation import Observable
+from pennylane.operation import Operator
 from pennylane.wires import Wires
 
 from .measurements import MeasurementShapeError, Sample, SampleMeasurement
 
 
-def sample(op: Union[Observable, None] = None, wires=None):
+def sample(op: Optional[Operator] = None, wires=None) -> "SampleMP":
     r"""Sample from the supplied observable, with the number of shots
     determined from the ``dev.shots`` attribute of the corresponding device,
     returning raw samples. If no observable is provided then basis state samples are returned
@@ -36,11 +36,11 @@ def sample(op: Union[Observable, None] = None, wires=None):
 
     Args:
         op (Observable or None): a quantum observable object
-        wires (Sequence[int] or int or None): the wires we wish to sample from, ONLY set wires if
+        wires (Sequence[int] or int or None): the wires we wish to sample from; ONLY set wires if
             op is ``None``
 
     Returns:
-        SampleMP: measurement process instance
+        SampleMP: Measurement process instance
 
     Raises:
         ValueError: Cannot set wires if an observable is provided
@@ -121,7 +121,7 @@ class SampleMP(SampleMeasurement):
     Please refer to :func:`sample` for detailed documentation.
 
     Args:
-        obs (.Observable): The observable that is to be measured as part of the
+        obs (.Operator): The observable that is to be measured as part of the
             measurement process. Not all measurement processes require observables (for
             example ``Probability``); this argument is optional.
         wires (.Wires): The wires the measurement process applies to.
@@ -148,10 +148,6 @@ class SampleMP(SampleMeasurement):
         tensor_terms = self.obs.obs if hasattr(self.obs, "obs") else [self.obs]
         every_term_standard = all(o.__class__ in int_eigval_obs for o in tensor_terms)
         return int if every_term_standard else float
-
-    @property
-    def samples_computational_basis(self):
-        return self.obs is None
 
     # pylint: disable=protected-access
     def shape(self, device=None):

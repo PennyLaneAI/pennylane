@@ -45,7 +45,7 @@ def create_expand_fn(depth, stop_at=None, device=None, docstring=None):
             ``stop_at(obj)``, where ``obj`` is a *queueable* PennyLane object such as
             :class:`~.Operation` or :class:`~.MeasurementProcess`. It must return a
             boolean, indicating if the expansion should stop at this object.
-        device (.Device): Ensure that the expanded tape only uses native gates of the
+        device (pennylane.Device): Ensure that the expanded tape only uses native gates of the
             given device.
         docstring (str): docstring for the generated expansion function
 
@@ -161,7 +161,6 @@ expand_trainable_multipar = create_expand_fn(
     docstring=_expand_trainable_multipar_doc,
 )
 
-
 _expand_nonunitary_gen_doc = """Expand out a tape so that all its parametrized
 operations have a unitary generator.
 
@@ -185,7 +184,6 @@ expand_nonunitary_gen = create_expand_fn(
     docstring=_expand_nonunitary_gen_doc,
 )
 
-
 _expand_invalid_trainable_doc = """Expand out a tape so that it supports differentiation
 of requested operations.
 
@@ -207,6 +205,55 @@ expand_invalid_trainable = create_expand_fn(
     depth=10,
     stop_at=not_tape | is_measurement | (~is_trainable) | has_grad_method,
     docstring=_expand_invalid_trainable_doc,
+)
+
+_expand_invalid_trainable_doc_hadamard = """Expand out a tape so that it supports differentiation
+of requested operations with the Hadamard test gradient.
+
+This is achieved by decomposing all trainable operations that
+are not in the Hadamard compatible list until all resulting operations
+are in the list up to maximum depth ``depth``. Note that this
+might not be possible, in which case the gradient rule will fail to apply.
+
+Args:
+    tape (.QuantumTape): the input tape to expand
+    depth (int) : the maximum expansion depth
+    **kwargs: additional keyword arguments are ignored
+
+Returns:
+    .QuantumTape: the expanded tape
+"""
+
+
+@qml.BooleanFn
+def _is_hadamard_grad_compatible(obj):
+    """Check if the operation is compatible with Hadamard gradient transform."""
+    return obj.name in hadamard_comp_list
+
+
+hadamard_comp_list = [
+    "RX",
+    "RY",
+    "RZ",
+    "Rot",
+    "PhaseShift",
+    "U1",
+    "CRX",
+    "CRY",
+    "CRZ",
+    "IsingXX",
+    "IsingYY",
+    "IsingZZ",
+]
+
+
+expand_invalid_trainable_hadamard_gradient = create_expand_fn(
+    depth=10,
+    stop_at=not_tape
+    | is_measurement
+    | (~is_trainable)
+    | (_is_hadamard_grad_compatible & has_grad_method),
+    docstring=_expand_invalid_trainable_doc_hadamard,
 )
 
 
@@ -253,7 +300,7 @@ def create_decomp_expand_fn(custom_decomps, dev, decomp_depth=10):
     Args:
         custom_decomps (Dict[Union(str, qml.operation.Operation), Callable]): Custom
             decompositions to be applied by the device at runtime.
-        dev (qml.Device): A quantum device.
+        dev (pennylane.Device): A quantum device.
         decomp_depth: The maximum depth of the expansion.
 
     Returns:
@@ -308,7 +355,7 @@ def set_decomposition(custom_decomps, dev, decomp_depth=10):
     Args:
         custom_decomps (Dict[Union(str, qml.operation.Operation), Callable]): Custom
             decompositions to be applied by the device at runtime.
-        dev (qml.Device): A quantum device.
+        dev (pennylane.Device): A quantum device.
         decomp_depth: The maximum depth of the expansion.
 
     **Example**

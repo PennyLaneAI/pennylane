@@ -21,26 +21,7 @@ import warnings
 import numpy as np
 
 import pennylane as qml
-
-
-def _generator_observable(gen, op):
-    """Return the generator as type :class:`~.Hermitian`,
-    :class:`~.SparseHamiltonian`, or :class:`~.Hamiltonian`,
-    as provided by the original gate.
-    """
-    if isinstance(gen, (qml.Hermitian, qml.SparseHamiltonian)):
-        if not op.inverse:
-            return gen
-
-        param = gen.parameters[0]
-        wires = gen.wires
-
-        return gen.__class__(-param, wires=wires)
-
-    if op.inverse:
-        gen = -1.0 * gen
-
-    return gen
+from pennylane.ops import Hamiltonian, SProd, Sum
 
 
 def _generator_hamiltonian(gen, op):
@@ -62,13 +43,10 @@ def _generator_hamiltonian(gen, op):
     elif isinstance(gen, qml.operation.Observable):
         H = 1.0 * gen
 
-    if op.inverse:
-        H = -1.0 * H
-
     return H
 
 
-def _generator_prefactor(gen, op):
+def _generator_prefactor(gen):
     r"""Return the generator as ```(obs, prefactor)`` representing
     :math:`G=p \hat{O}`, where
 
@@ -78,25 +56,27 @@ def _generator_prefactor(gen, op):
       of Pauli words.
     """
 
-    obs = gen
     prefactor = 1.0
 
-    if isinstance(gen, qml.operation.Observable):
-        # convert to a qml.Hamiltonian
-        gen = 1.0 * gen
+    if isinstance(gen, Hamiltonian):
+        gen = qml.dot(gen.coeffs, gen.ops)  # convert to Sum
 
-        if len(gen.ops) == 1:
-            # case where the Hamiltonian is a single Pauli word
-            obs = gen.ops[0]
-            prefactor = gen.coeffs[0]
-        else:
-            obs = gen
-            prefactor = 1.0
+    if isinstance(gen, Sum):
+        ops = [o.base if isinstance(o, SProd) else o for o in gen]
+        coeffs = [o.scalar if isinstance(o, SProd) else 1 for o in gen]
+        abs_coeffs = list(qml.math.abs(coeffs))
+        if qml.math.allequal(coeffs[0], coeffs):
+            # case where the Hamiltonian coefficients are all the same
+            return qml.sum(*ops), coeffs[0]
+        if qml.math.allequal(abs_coeffs[0], abs_coeffs):
+            # absolute value of coefficients is the same
+            prefactor = abs_coeffs[0]
+            coeffs = [c / prefactor for c in coeffs]
+            return qml.dot(coeffs, ops), prefactor
+    elif isinstance(gen, SProd):
+        return gen.base, gen.scalar
 
-    if op.inverse:
-        prefactor *= -1.0
-
-    return obs, prefactor
+    return gen, prefactor
 
 
 def _generator_backcompatibility(op):
@@ -173,7 +153,7 @@ def generator(op, format="prefactor"):
     be altered:
 
     >>> op = qml.RX(0.2, wires=0)
-    >>> qml.generator(op, format="prefactor")  # output will always be (prefactor, obs)
+    >>> qml.generator(op, format="prefactor")  # output will always be (obs, prefactor)
     (PauliX(wires=[0]), -0.5)
     >>> qml.generator(op, format="hamiltonian")  # output will always be a Hamiltonian
     <Hamiltonian: terms=1, wires=[0]>
@@ -197,12 +177,12 @@ def generator(op, format="prefactor"):
         )
 
     if format == "prefactor":
-        return _generator_prefactor(gen, op)
+        return _generator_prefactor(gen)
 
     if format == "hamiltonian":
         return _generator_hamiltonian(gen, op)
 
     if format == "observable":
-        return _generator_observable(gen, op)
+        return gen
 
     raise ValueError("format must be one of ('prefactor', 'hamiltonian', 'observable')")

@@ -427,7 +427,7 @@ class TestSPSAOptimizer:
         def circuit(params):
             qml.StronglyEntanglingLayers(params, wires=list(range(n_wires)))
 
-        @qml.qnode(dev, interface="tf")
+        @qml.qnode(dev)
         def cost(params):
             circuit(params)
             return qml.probs(wires=[0, 1, 2, 3])

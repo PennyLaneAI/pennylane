@@ -216,18 +216,18 @@ import abc
 import copy
 import functools
 import itertools
-import numbers
 import warnings
 from enum import IntEnum
 from typing import List
 
-import autoray
 import numpy as np
 from numpy.linalg import multi_dot
 from scipy.sparse import coo_matrix, eye, kron
+
 import pennylane as qml
 from pennylane.math import expand_matrix
 from pennylane.queuing import QueuingManager
+from pennylane.typing import TensorLike
 from pennylane.wires import Wires
 
 from .utils import pauli_eigs
@@ -842,10 +842,8 @@ class Operator(abc.ABC):
         """
         raise TermsUndefinedError
 
-    @property
-    @abc.abstractmethod
-    def num_wires(self):
-        """Number of wires the operator acts on."""
+    num_wires = AnyWires
+    """Number of wires the operator acts on."""
 
     @property
     def name(self):
@@ -1273,6 +1271,15 @@ class Operator(abc.ABC):
             *self.parameters, wires=self.wires, **self.hyperparameters
         )
 
+    # pylint: disable=no-self-argument, comparison-with-callable
+    @classproperty
+    def has_generator(cls):
+        r"""Bool: Whether or not the Operator returns a defined generator.
+
+        Note: Child classes may have this as an instance property instead of as a class property.
+        """
+        return cls.generator != Operator.generator
+
     def generator(self):  # pylint: disable=no-self-use
         r"""Generator of an operator that is in single-parameter-form.
 
@@ -1369,8 +1376,6 @@ class Operator(abc.ABC):
 
         with QueuingManager.stop_recording():
             qscript = qml.tape.QuantumScript(self.decomposition())
-            if getattr(self, "inverse", False):
-                qscript = qscript.adjoint()
 
         if not self.data:
             # original operation has no trainable parameters
@@ -1409,14 +1414,9 @@ class Operator(abc.ABC):
         """The addition operation of Operator-Operator objects and Operator-scalar."""
         if isinstance(other, Operator):
             return qml.sum(self, other)
-        if other == 0:
-            return self
-        if isinstance(other, qml.pulse.ParametrizedHamiltonian):
-            return other.__add__(self)
-        backend = autoray.infer_backend(other)
-        if (
-            backend == "builtins" and isinstance(other, numbers.Number)
-        ) or backend in SUPPORTED_INTERFACES:
+        if isinstance(other, TensorLike):
+            if qml.math.allequal(other, 0):
+                return self
             return qml.sum(self, qml.s_prod(scalar=other, operator=qml.Identity(self.wires)))
         return NotImplemented
 
@@ -1426,11 +1426,14 @@ class Operator(abc.ABC):
         """The scalar multiplication between scalars and Operators."""
         if callable(other):
             return qml.pulse.ParametrizedHamiltonian([other], [self])
-        backend = autoray.infer_backend(other)
-        if (
-            backend == "builtins" and isinstance(other, numbers.Number)
-        ) or backend in SUPPORTED_INTERFACES:
+        if isinstance(other, TensorLike):
             return qml.s_prod(scalar=other, operator=self)
+        return NotImplemented
+
+    def __truediv__(self, other):
+        """The division between an Operator and a number."""
+        if isinstance(other, TensorLike):
+            return self.__mul__(1 / other)
         return NotImplemented
 
     __rmul__ = __mul__
@@ -1441,8 +1444,8 @@ class Operator(abc.ABC):
 
     def __sub__(self, other):
         """The subtraction operation of Operator-Operator objects and Operator-scalar."""
-        if isinstance(other, (Operator, numbers.Number)):
-            return self + (-other)
+        if isinstance(other, (Operator, TensorLike)):
+            return self + (qml.math.multiply(-1, other))
         return NotImplemented
 
     def __rsub__(self, other):
@@ -1455,10 +1458,7 @@ class Operator(abc.ABC):
 
     def __pow__(self, other):
         r"""The power operation of an Operator object."""
-        backend = autoray.infer_backend(other)
-        if (
-            backend == "builtins" and isinstance(other, numbers.Number)
-        ) or backend in SUPPORTED_INTERFACES:
+        if isinstance(other, TensorLike):
             return qml.pow(self, z=other)
         return NotImplemented
 
@@ -1537,7 +1537,7 @@ class Operation(Operator):
 
     # Attributes for compilation transforms
     basis = None
-    """str or None: The target operation for controlled gates.
+    """str or None: The basis of an operation, or for controlled gates, of the
     target operation. If not ``None``, should take a value of ``"X"``, ``"Y"``,
     or ``"Z"``.
 
@@ -1626,42 +1626,11 @@ class Operation(Operator):
         )
 
     @property
-    def inverse(self):
-        """Boolean determining if the inverse of the operation was requested."""
-        return False
-
-    def matrix(self, wire_order=None):
-        canonical_matrix = self.compute_matrix(*self.parameters, **self.hyperparameters)
-
-        if self.inverse:
-            canonical_matrix = qml.math.conj(qml.math.moveaxis(canonical_matrix, -2, -1))
-
-        return expand_matrix(canonical_matrix, wires=self.wires, wire_order=wire_order)
-
-    def eigvals(self):
-        op_eigvals = super().eigvals()
-
-        return qml.math.conj(op_eigvals) if self.inverse else op_eigvals
-
-    @property
     def base_name(self):
-        """If inverse is requested, this is the name of the original
-        operator to be inverted."""
+        """Holdover from when in-place inversion changed then name. To be removed."""
         return self.__class__.__name__
 
-    @property
-    def name(self):
-        """Name of the operator."""
-        return f"{self._name}.inv" if self.inverse else self._name
-
-    def label(self, decimals=None, base_label=None, cache=None):
-        if self.inverse:
-            base_label = base_label or self.__class__.__name__
-            base_label += "⁻¹"
-        return super().label(decimals=decimals, base_label=base_label, cache=cache)
-
     def __init__(self, *params, wires=None, do_queue=True, id=None):
-        self._inverse = False
         super().__init__(*params, wires=wires, do_queue=do_queue, id=id)
 
         # check the grad_recipe validity
@@ -1930,6 +1899,7 @@ class Tensor(Observable):
         self.obs: List[Observable] = []
         self._args = args
         self._batch_size = None
+        self._pauli_rep = None
         self.queue(init=True)
 
     def label(self, decimals=None, base_label=None, cache=None):
@@ -1956,8 +1926,8 @@ class Tensor(Observable):
         if base_label is not None:
             if len(base_label) != len(self.obs):
                 raise ValueError(
-                    "Tensor label requires ``base_label`` keyword to be same length"
-                    " as tensor components."
+                    "Tensor label requires ``base_label`` keyword to be same length "
+                    "as tensor components."
                 )
             return "@".join(
                 ob.label(decimals=decimals, base_label=lbl) for ob, lbl in zip(self.obs, base_label)
@@ -2039,6 +2009,28 @@ class Tensor(Observable):
             list[Any]: flattened list containing all dependent parameters
         """
         return sum((o.data for o in self.obs), [])
+
+    @data.setter
+    def data(self, new_data):
+        """Setter used to set the parameters of all constituent observables in the tensor product.
+
+        The ``new_data`` argument should contain a list of elements, where each element corresponds
+        to a list containing the parameters of each observable (in order). If an observable doesn't
+        have any parameter, an empty list must be used.
+
+        **Example:**
+
+        >>> op = qml.PauliX(0) @ qml.Hermitian(np.eye(2), wires=1)
+        >>> op.data
+        [array([[1., 0.],
+        [0., 1.]])]
+        >>> op.data = [[], [np.eye(2) * 5]]
+        >>> op.data
+        [array([[5., 0.],
+        [0., 5.]])]
+        """
+        for new_entry, op in zip(new_data, self.obs):
+            op.data = new_entry
 
     @property
     def num_params(self):
@@ -2727,11 +2719,12 @@ def not_tape(obj):
 @qml.BooleanFn
 def has_gen(obj):
     """Returns ``True`` if an operator has a generator defined."""
+    if isinstance(obj, Operator):
+        return obj.has_generator
     try:
         obj.generator()
     except (AttributeError, OperatorPropertyUndefined, GeneratorUndefinedError):
         return False
-
     return True
 
 
@@ -2778,8 +2771,7 @@ def is_trainable(obj):
 
 @qml.BooleanFn
 def defines_diagonalizing_gates(obj):
-    """Returns ``True`` if an operator defines the diagonalizing
-    gates are defined.
+    """Returns ``True`` if an operator defines the diagonalizing gates.
 
     This helper function is useful if the property is to be checked in
     a queuing context, but the resulting gates must not be queued.

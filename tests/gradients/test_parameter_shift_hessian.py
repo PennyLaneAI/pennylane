@@ -247,6 +247,7 @@ class TestParameterShiftHessian:
         expected = qml.jacobian(qml.grad(circuit))(x)
         hessian = qml.gradients.param_shift_hessian(circuit)(x)
 
+        assert circuit.interface == "auto"
         assert np.allclose(expected, hessian)
 
     def test_fixed_params(self):
@@ -1327,7 +1328,7 @@ class TestInterfaces:
 
         expected = qml.jacobian(qml.jacobian(circuit))(x_np)
         circuit.interface = "jax"
-        hess = qml.gradients.param_shift_hessian(circuit)(x_jax)
+        hess = qml.gradients.param_shift_hessian(circuit, argnums=[0])(x_jax)
 
         assert np.allclose(expected, hess)
 

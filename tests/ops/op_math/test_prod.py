@@ -133,6 +133,18 @@ class TestInitialization:
         assert prod_op.parameters == [[], [0.23]]
         assert prod_op.num_params == 1
 
+    def test_hash(self):
+        """Testing some situations for the hash property."""
+        # same hash if different order but can be permuted to right order
+        op1 = qml.prod(qml.PauliX(0), qml.PauliY("a"))
+        op2 = qml.prod(qml.PauliY("a"), qml.PauliX(0))
+        assert op1.hash == op2.hash
+
+        # test not the same hash if different order and cant be exchanged to correct order
+        op3 = qml.prod(qml.PauliX("a"), qml.PauliY("a"), qml.PauliX(1))
+        op4 = qml.prod(qml.PauliY("a"), qml.PauliX("a"), qml.PauliX(1))
+        assert op3.hash != op4.hash
+
     @pytest.mark.parametrize("ops_lst", ops)
     def test_terms(self, ops_lst):
         """Test that terms are initialized correctly."""
@@ -924,7 +936,7 @@ class TestSimplify:
         assert isinstance(simplified_op, qml.ops.Sum)
         for s1, s2 in zip(final_op.operands, simplified_op.operands):
             assert s1.name == s2.name
-            assert s1.wires == s2.wires
+            assert s1.wires.toset() == s2.wires.toset()
             assert s1.data == s2.data
             assert s1.arithmetic_depth == s2.arithmetic_depth
 
@@ -1043,6 +1055,49 @@ class TestSimplify:
         """Test that grouping is implemented when an only-visual barrier is present."""
         prod_op = qml.prod(qml.S(0), qml.Barrier(0, only_visual=True), qml.S(0)).simplify()
         assert qml.equal(prod_op.simplify(), qml.PauliZ(0))
+
+    @pytest.mark.jax
+    def test_simplify_pauli_rep_jax(self):
+        """Test that simplifying operators with a valid pauli representation works with jax interface."""
+        import jax.numpy as jnp
+
+        c1, c2, c3 = jnp.array(1.23), jnp.array(2.0), jnp.array(2.46j)
+
+        op = prod(qml.s_prod(c1, qml.PauliX(0)), qml.s_prod(c2, prod(qml.PauliY(0), qml.PauliZ(1))))
+        result = qml.s_prod(c3, prod(qml.PauliZ(0), qml.PauliZ(1)))
+        simplified_op = op.simplify()
+
+        assert qml.equal(simplified_op, result)
+
+    @pytest.mark.tf
+    def test_simplify_pauli_rep_tf(self):
+        """Test that simplifying operators with a valid pauli representation works with tf interface."""
+        import tensorflow as tf
+
+        c1, c2, c3 = tf.Variable(1.23), tf.Variable(2.0), tf.Variable(2.46j)
+
+        op = prod(qml.s_prod(c1, qml.PauliX(0)), qml.s_prod(c2, prod(qml.PauliY(0), qml.PauliZ(1))))
+        result = qml.s_prod(c3, prod(qml.PauliZ(0), qml.PauliZ(1)))
+        simplified_op = op.simplify()
+
+        assert isinstance(simplified_op, type(result))
+        assert result.wires.toset() == simplified_op.wires.toset()
+        assert result.arithmetic_depth == simplified_op.arithmetic_depth
+        assert qnp.isclose(result.data[0], simplified_op.data[0])
+        assert result.data[1:] == simplified_op.data[1:]
+
+    @pytest.mark.torch
+    def test_simplify_pauli_rep_torch(self):
+        """Test that simplifying operators with a valid pauli representation works with torch interface."""
+        import torch
+
+        c1, c2, c3 = torch.tensor(1.23), torch.tensor(2.0), torch.tensor(2.46j)
+
+        op = prod(qml.s_prod(c1, qml.PauliX(0)), qml.s_prod(c2, prod(qml.PauliY(0), qml.PauliZ(1))))
+        result = qml.s_prod(c3, prod(qml.PauliZ(0), qml.PauliZ(1)))
+        simplified_op = op.simplify()
+
+        assert qml.equal(simplified_op, result)
 
 
 class TestWrapperFunc:

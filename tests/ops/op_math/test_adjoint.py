@@ -434,6 +434,20 @@ class TestAdjointOperation:
         op = Adjoint(base)
         assert op.base_name == adjoint_base_name
 
+    def test_has_generator_true(self):
+        """Test `has_generator` property carries over when base op defines generator."""
+        base = qml.RX(0.5, 0)
+        op = Adjoint(base)
+
+        assert op.has_generator is True
+
+    def test_has_generator_false(self):
+        """Test `has_generator` property carries over when base op does not define a generator."""
+        base = qml.PauliX(0)
+        op = Adjoint(base)
+
+        assert op.has_generator is False
+
     def test_generator(self):
         """Assert that the generator of an Adjoint is -1.0 times the base generator."""
         base = qml.RX(1.23, wires=0)
@@ -1067,9 +1081,7 @@ class TestAdjointConstructorIntegration:
         """Test gradients through the adjoint transform with autograd."""
         import autograd
 
-        @qml.qnode(
-            qml.device("default.qubit", wires=1), diff_method=diff_method, interface="autograd"
-        )
+        @qml.qnode(qml.device("default.qubit", wires=1), diff_method=diff_method)
         def circ(x):
             adjoint(qml.RX)(x, wires=0)
             return qml.expval(qml.PauliY(0))
@@ -1088,7 +1100,7 @@ class TestAdjointConstructorIntegration:
         """Test gradients through the adjoint transform with jax."""
         import jax
 
-        @qml.qnode(qml.device("default.qubit", wires=1), diff_method=diff_method, interface="jax")
+        @qml.qnode(qml.device("default.qubit", wires=1), diff_method=diff_method)
         def circ(x):
             adjoint(qml.RX)(x, wires=0)
             return qml.expval(qml.PauliY(0))
@@ -1105,7 +1117,7 @@ class TestAdjointConstructorIntegration:
         """Test gradients through the adjoint transform with torch."""
         import torch
 
-        @qml.qnode(qml.device("default.qubit", wires=1), diff_method=diff_method, interface="torch")
+        @qml.qnode(qml.device("default.qubit", wires=1), diff_method=diff_method)
         def circ(x):
             adjoint(qml.RX)(x, wires=0)
             return qml.expval(qml.PauliY(0))
@@ -1124,7 +1136,7 @@ class TestAdjointConstructorIntegration:
 
         import tensorflow as tf
 
-        @qml.qnode(qml.device("default.qubit", wires=1), diff_method=diff_method, interface="tf")
+        @qml.qnode(qml.device("default.qubit", wires=1), diff_method=diff_method)
         def circ(x):
             adjoint(qml.RX)(x, wires=0)
             return qml.expval(qml.PauliY(0))

@@ -25,7 +25,9 @@ from pennylane.circuit_graph import LayerData
 from .batch_transform import batch_transform
 
 
-def expand_fn(tape, approx=None, allow_nonunitary=True, aux_wire=None, device_wires=None):
+def expand_fn(
+    tape, argnum=None, approx=None, allow_nonunitary=True, aux_wire=None, device_wires=None
+):
     """Set the metric tensor based on whether non-unitary gates are allowed."""
     # pylint: disable=unused-argument,too-many-arguments
     if not allow_nonunitary and approx is None:  # pragma: no cover
@@ -34,7 +36,14 @@ def expand_fn(tape, approx=None, allow_nonunitary=True, aux_wire=None, device_wi
 
 
 @functools.partial(batch_transform, expand_fn=expand_fn)
-def metric_tensor(tape, approx=None, allow_nonunitary=True, aux_wire=None, device_wires=None):
+def metric_tensor(
+    tape,
+    argnum=None,
+    approx=None,
+    allow_nonunitary=True,
+    aux_wire=None,
+    device_wires=None,
+):  # pylint: disable=too-many-arguments
     r"""Returns a function that computes the metric tensor of a given QNode or quantum tape.
 
     The metric tensor convention we employ here has the following form:
@@ -58,6 +67,11 @@ def metric_tensor(tape, approx=None, allow_nonunitary=True, aux_wire=None, devic
 
     Args:
         tape (pennylane.QNode or .QuantumTape): quantum tape or QNode to find the metric tensor of
+        argnum (int or Sequence[int] or None): Trainable tape-parameter indices with respect to which
+            the metric tensor is computed. If ``argnum=None``, the metric tensor with respect to all
+            trainable parameters is returned. Excluding tape-parameter indices from this list reduces
+            the computational cost and the corresponding metric-tensor elements will be set to 0.
+
         approx (str): Which approximation of the metric tensor to compute.
 
             - If ``None``, the full metric tensor is computed
@@ -219,7 +233,7 @@ def metric_tensor(tape, approx=None, allow_nonunitary=True, aux_wire=None, devic
         The output tapes can then be evaluated and post-processed to retrieve
         the metric tensor:
 
-        >>> dev = qml.device("default.qubit", wires=2)
+        >>> dev = qml.device("default.qubit", wires=3)
         >>> fn(qml.execute(tapes, dev, None))
         array([[ 0.25      ,  0.        ,  0.42073549],
                [ 0.        ,  0.00415023, -0.26517488],
@@ -243,6 +257,42 @@ def metric_tensor(tape, approx=None, allow_nonunitary=True, aux_wire=None, devic
 
         This means that in total only the tapes for the first terms of the off block-diagonal
         are required in addition to the circuits for the block diagonal.
+
+        .. warning::
+
+            The ``argnum`` argument can be used to restrict the parameters which are taken into account
+            for computing the metric tensor.
+            When the metric tensor of a QNode is computed, the ordering of the parameters has to be
+            specified as they appear in the corresponding QuantumTape.
+
+        **Example**
+
+        Consider the following QNode in which parameters are used out of order:
+
+        .. code-block:: python
+
+            >>> dev = qml.device("default.qubit", wires=3)
+            >>> @qml.qnode(dev, interface="autograd")
+            >>> def circuit(weights):  # , extra_weight):
+            ...     qml.RX(weights[1], wires=0)
+            ...     qml.RY(weights[0], wires=0)
+            ...     qml.CNOT(wires=[0, 1])
+            ...     qml.RZ(weights[2], wires=1)
+            ...     qml.RZ(weights[3], wires=0)
+            ...     return qml.expval(qml.PauliZ(0))
+
+            >>> weights = np.array([0.1, 0.2, 0.4, 0.5], requires_grad=True)
+            >>> mt = qml.metric_tensor(circuit, argnum=(0, 2, 3))(weights)
+            >>> print(mt)
+            [[ 0.          0.          0.          0.        ]
+            [ 0.          0.25       -0.02495835 -0.02495835]
+            [ 0.         -0.02495835  0.01226071  0.01226071]
+            [ 0.         -0.02495835  0.01226071  0.01226071]]
+
+        Because the 0-th element of ``weights`` appears second in the QNode and therefore in the
+        underlying tape, it is the 1st tape parameter.
+        By setting ``argnum = (0, 2, 3)`` we exclude the 0-th element of ``weights`` from the computation
+        of the metric tensor and not the 1st element, as one might expect.
     """
     if not tape.trainable_params:
         warnings.warn(
@@ -252,14 +302,27 @@ def metric_tensor(tape, approx=None, allow_nonunitary=True, aux_wire=None, devic
         )
         return [], lambda _: ()
 
+    if argnum is None:
+        argnum = tape.trainable_params
+    elif isinstance(argnum, int):
+        argnum = [argnum]
+    if any(i not in tape.trainable_params for i in argnum):
+        raise ValueError(
+            "Some parameters specified in argnum are not in the "
+            f"trainable parameters {tape.trainable_params} of the tape "
+            "and will be ignored. This may be caused by attempting to "
+            "differentiate with respect to parameters that are not marked "
+            "as trainable."
+        )
+
     # pylint: disable=too-many-arguments
     if approx in {"diag", "block-diag"}:
         # Only require covariance matrix based transform
         diag_approx = approx == "diag"
-        return _metric_tensor_cov_matrix(tape, diag_approx)[:2]
+        return _metric_tensor_cov_matrix(tape, argnum, diag_approx)[:2]
 
     if approx is None:
-        return _metric_tensor_hadamard(tape, allow_nonunitary, aux_wire, device_wires)
+        return _metric_tensor_hadamard(tape, argnum, allow_nonunitary, aux_wire, device_wires)
 
     raise ValueError(
         f"Unknown value {approx} for keyword argument approx. "
@@ -324,13 +387,34 @@ def qnode_execution_wrapper(self, qnode, targs, tkwargs):
     tkwargs.setdefault("device_wires", qnode.device.wires)
     mt_fn = self.default_qnode_wrapper(qnode, targs, tkwargs)
 
-    def _expand_fn(tape):
-        return self.expand_fn(tape, *targs, **tkwargs)
+    def wrapper(*args, **kwargs):  # pylint: disable=too-many-branches
+        argnum = tkwargs.get("argnum", None)
+        argnums = tkwargs.get("argnums", None)
 
-    cjac_fn = qml.transforms.classical_jacobian(qnode, expand_fn=_expand_fn)
+        interface = qml.math.get_interface(*args)
+        trainable_params = qml.math.get_trainable_indices(args)
 
-    def wrapper(*args, **kwargs):
-        if not qml.math.get_trainable_indices(args):
+        if interface == "jax" and argnum is not None:
+            warnings.warn(
+                "argnum is deprecated with the Jax interface. You should use argnums instead."
+            )
+            tkwargs.pop("argnum")
+            argnums = argnum
+
+        if interface == "jax" and not trainable_params:
+            if argnums is None:
+                argnums_ = [0]
+
+            else:
+                argnums_ = [argnums] if isinstance(argnums, int) else argnums
+
+            params = qml.math.jax_argnums_to_tape_trainable(
+                qnode, argnums_, self.expand_fn, args, kwargs
+            )
+            argnums_ = qml.math.get_trainable_indices(params)
+            kwargs["argnums"] = argnums_
+
+        elif not trainable_params:
             warnings.warn(
                 "Attempted to compute the metric tensor of a QNode with no trainable parameters. "
                 "If this is unintended, please add trainable parameters in accordance with the "
@@ -364,19 +448,30 @@ def qnode_execution_wrapper(self, qnode, targs, tkwargs):
             return mt
 
         kwargs.pop("shots", False)
-        cjac = cjac_fn(*args, **kwargs)
+        # Special case where we apply a Jax transform (jacobian e.g.) on the gradient transform and argnums are
+        # defined on the outer transform and therefore on the args.
+        if interface == "jax":
+            argnum_cjac = trainable_params or argnums
+        else:
+            argnum_cjac = None
+
+        cjac = qml.transforms.classical_jacobian(
+            qnode, argnum=argnum_cjac, expand_fn=self.expand_fn
+        )(*args, **kwargs)
 
         return _contract_metric_tensor_with_cjac(mt, cjac)
 
     return wrapper
 
 
-def _metric_tensor_cov_matrix(tape, diag_approx):
+def _metric_tensor_cov_matrix(tape, argnum, diag_approx):  # pylint: disable=too-many-statements
     r"""This is the metric tensor method for the block diagonal, using
     the covariance matrix of the generators of each layer.
 
     Args:
         tape (pennylane.QNode or .QuantumTape): quantum tape or QNode to find the metric tensor of
+        argnum (list[int]): Trainable tape-parameter indices with respect to which the metric tensor
+            is computed.
         diag_approx (bool): if True, use the diagonal approximation. If ``False`` , a
             block-diagonal approximation of the metric tensor is computed.
     Returns:
@@ -388,6 +483,12 @@ def _metric_tensor_cov_matrix(tape, diag_approx):
             corresponding to one tape in the first return value
         list[list[float]]: Coefficients to scale the results for each observable, one inner list
             corresponding to one tape in the first return value
+        list[list[bool]]: Each inner list corresponds to one tape and therefore also one parametrized
+            layer and its elements determine whether a trainable parameter in that layer is
+            contained in ``argnum``.
+        list[None, int]: Id list representing the layer for each parameter.
+        list[None, int]: Id list representing the observables for each parameter.
+
 
     This method assumes the ``generator`` of all parametrized operations with respect to
     which the tensor is computed to be Hermitian. This is the case for unitary single-parameter
@@ -400,27 +501,52 @@ def _metric_tensor_cov_matrix(tape, diag_approx):
     obs_list = []
     coeffs_list = []
     params_list = []
+    in_argnum_list = []
+    layers_ids = []
+    obs_ids = []
 
+    i = 0
     for queue, curr_ops, param_idx, _ in graph.iterate_parametrized_layers():
         params_list.append(param_idx)
-        coeffs_list.append([])
-        obs_list.append([])
+        in_argnum_list.append([p in argnum for p in param_idx])
+
+        if not any(in_argnum_list[-1]):
+            layers_ids.extend([None] * len(in_argnum_list[-1]))
+            obs_ids.extend([None] * len(in_argnum_list[-1]))
+            # no tape needs to be created for this block
+            continue
+
+        layer_coeffs, layer_obs = [], []
 
         # for each operation in the layer, get the generator
-        for op in curr_ops:
-            obs, s = qml.generator(op)
-            obs_list[-1].append(obs)
-            coeffs_list[-1].append(s)
+        j = 0
+        for p, op in zip(param_idx, curr_ops):
+            layers_ids.append(i)
+            if p in argnum:
+                obs, s = qml.generator(op)
+                layer_obs.append(obs)
+                layer_coeffs.append(s)
+                obs_ids.append(j)
+                j = j + 1
+            else:
+                obs_ids.append(None)
+        i = i + 1
+
+        coeffs_list.append(layer_coeffs)
+        obs_list.append(layer_obs)
 
         # Create a quantum tape with all operations
         # prior to the parametrized layer, and the rotations
         # to measure in the basis of the parametrized layer generators.
         with qml.queuing.AnnotatedQueue() as layer_q:
             for op in queue:
+                # TODO: Maybe there are gates that do not affect the
+                # generators of interest and thus need not be applied.
                 qml.apply(op)
 
-            for o in obs_list[-1]:
-                o.diagonalizing_gates()
+            for o, param_in_argnum in zip(layer_obs, in_argnum_list[-1]):
+                if param_in_argnum:
+                    o.diagonalizing_gates()
 
             qml.probs(wires=tape.wires)
 
@@ -429,18 +555,45 @@ def _metric_tensor_cov_matrix(tape, diag_approx):
 
     def processing_fn(probs):
         gs = []
+        probs_idx = 0
 
-        for prob, obs, coeffs in zip(probs, obs_list, coeffs_list):
-            # calculate the covariance matrix of this layer
-            scale = qml.math.convert_like(qml.math.outer(coeffs, coeffs), prob)
-            scale = qml.math.cast_like(scale, prob)
-            g = scale * qml.math.cov_matrix(prob, obs, wires=tape.wires, diag_approx=diag_approx)
+        for params_in_argnum in in_argnum_list:
+            if not any(params_in_argnum):
+                # there is no tape and no probs associated to this layer
+                dim = len(params_in_argnum)
+                gs.append(qml.math.zeros((dim, dim)))
+                continue
+
+            coeffs = coeffs_list[probs_idx]
+            obs = obs_list[probs_idx]
+            p = probs[probs_idx]
+
+            scale = qml.math.convert_like(qml.math.outer(coeffs, coeffs), p)
+            scale = qml.math.cast_like(scale, p)
+            g = scale * qml.math.cov_matrix(p, obs, wires=tape.wires, diag_approx=diag_approx)
+            for i, in_argnum in enumerate(params_in_argnum):
+                # fill in rows and columns of zeros where a parameter was not in argnum
+                if not in_argnum:
+                    dim = g.shape[0]
+                    g = qml.math.concatenate((g[:i], qml.math.zeros((1, dim)), g[i:]))
+                    g = qml.math.concatenate(
+                        (g[:, :i], qml.math.zeros((dim + 1, 1)), g[:, i:]), axis=1
+                    )
             gs.append(g)
+            probs_idx += 1
 
         # create the block diagonal metric tensor
         return qml.math.block_diag(gs)
 
-    return metric_tensor_tapes, processing_fn, obs_list, coeffs_list
+    return (
+        metric_tensor_tapes,
+        processing_fn,
+        obs_list,
+        coeffs_list,
+        in_argnum_list,
+        layers_ids,
+        obs_ids,
+    )
 
 
 @functools.lru_cache()
@@ -545,13 +698,17 @@ def _get_first_term_tapes(layer_i, layer_j, allow_nonunitary, aux_wire):
     return tapes, ids
 
 
-def _metric_tensor_hadamard(tape, allow_nonunitary, aux_wire, device_wires):
+def _metric_tensor_hadamard(
+    tape, argnum, allow_nonunitary, aux_wire, device_wires
+):  # pylint: disable=too-many-statements
     r"""Generate the quantum tapes that execute the Hadamard tests
     to compute the first term of off block-diagonal metric entries
     and combine them with the covariance matrix-based block-diagonal tapes.
 
     Args:
         tape (pennylane.QNode or .QuantumTape): quantum tape or QNode to find the metric tensor of
+        argnum (list[int]): Trainable tape-parameter indices with respect to which the metric tensor
+            is computed.
         allow_nonunitary (bool): Whether non-unitary operations are allowed in circuits
             created by the transform. Only relevant if ``approx`` is ``None``
             Should be set to ``True`` if possible to reduce cost.
@@ -568,21 +725,38 @@ def _metric_tensor_hadamard(tape, allow_nonunitary, aux_wire, device_wires):
     """
     # Get tapes and processing function for the block-diagonal metric tensor,
     # as well as the generator observables and generator coefficients for each diff'ed operation
-    diag_tapes, diag_proc_fn, obs_list, coeffs = _metric_tensor_cov_matrix(tape, diag_approx=False)
+    (
+        diag_tapes,
+        diag_proc_fn,
+        obs_list,
+        coeffs_list,
+        in_argnum_list,
+        layer_ids,
+        obs_ids,
+    ) = _metric_tensor_cov_matrix(tape, argnum, diag_approx=False)
 
     # Obtain layers of parametrized operations and account for the discrepancy between trainable
     # and non-trainable parameter indices
     graph = tape.graph
     par_idx_to_trainable_idx = {idx: i for i, idx in enumerate(sorted(tape.trainable_params))}
-    layers = [
-        LayerData(
-            layer.pre_ops,
-            layer.ops,
-            tuple(par_idx_to_trainable_idx[idx] for idx in layer[2]),
-            layer.post_ops,
-        )
-        for layer in graph.iterate_parametrized_layers()
-    ]
+    layers = []
+
+    for layer, in_argnum in zip(graph.iterate_parametrized_layers(), in_argnum_list):
+        if not any(in_argnum):
+            # no tapes need to be constructed for this layer
+            continue
+
+        pre_ops, ops, param_idx, post_ops = layer
+        new_ops = []
+        new_param_idx = []
+
+        for o, idx, param_in_argnum in zip(ops, param_idx, in_argnum):
+            if param_in_argnum:
+                new_ops.append(o)
+                new_param_idx.append(par_idx_to_trainable_idx[idx])
+
+        layers.append(LayerData(pre_ops, new_ops, new_param_idx, post_ops))
+
     if len(layers) <= 1:
         return diag_tapes, diag_proc_fn
 
@@ -605,7 +779,12 @@ def _metric_tensor_hadamard(tape, allow_nonunitary, aux_wire, device_wires):
     # Combine block-diagonal and off block-diagonal tapes
     tapes = diag_tapes + first_term_tapes
     # prepare off block-diagonal mask
-    mask = 1 - qml.math.block_diag([qml.math.ones((bsize, bsize)) for bsize in block_sizes])
+    blocks = []
+    for in_argnum in in_argnum_list:
+        d = len(in_argnum)
+        blocks.append(qml.math.ones((d, d)))
+    mask = 1 - qml.math.block_diag(blocks)
+
     # Required for slicing in processing_fn
     num_diag_tapes = len(diag_tapes)
 
@@ -634,14 +813,15 @@ def _metric_tensor_hadamard(tape, allow_nonunitary, aux_wire, device_wires):
 
         # Second terms of off block-diagonal metric tensor
         expvals = qml.math.zeros_like(first_term[0])
-        idx = 0
-        for prob, obs in zip(diag_res, obs_list):
-            for o in obs:
+
+        for i, (layer_i, obs_i) in enumerate(zip(layer_ids, obs_ids)):
+            if layer_i is not None and obs_i is not None:
+                prob = diag_res[layer_i]
+                o = obs_list[layer_i][obs_i]
                 l = qml.math.cast(o.eigvals(), dtype=np.float64)
                 w = tape.wires.indices(o.wires)
                 p = qml.math.marginal_prob(prob, w)
-                expvals = qml.math.scatter_element_add(expvals, (idx,), qml.math.dot(l, p))
-                idx += 1
+                expvals = qml.math.scatter_element_add(expvals, (i,), qml.math.dot(l, p))
 
         # Construct <\partial_i\psi|\psi><\psi|\partial_j\psi> and mask it
         second_term = qml.math.tensordot(expvals, expvals, axes=0) * mask
@@ -650,8 +830,16 @@ def _metric_tensor_hadamard(tape, allow_nonunitary, aux_wire, device_wires):
         off_diag_mt = first_term - second_term
 
         # Rescale first and second term
-        _coeffs = qml.math.hstack(coeffs)
-        scale = qml.math.convert_like(qml.math.tensordot(_coeffs, _coeffs, axes=0), results[0])
+        coeffs_gen = (c for c in qml.math.hstack(coeffs_list))
+        # flattened coeffs_list but also with 0s where parameters are not in argnum
+        extended_coeffs_list = [
+            next(coeffs_gen) if param_in_argnum else 0.0
+            for param_in_argnum in qml.math.hstack(in_argnum_list)
+        ]
+
+        scale = qml.math.convert_like(
+            qml.math.tensordot(extended_coeffs_list, extended_coeffs_list, axes=0), results[0]
+        )
         off_diag_mt = scale * off_diag_mt
 
         # Combine block-diagonal and off block-diagonal

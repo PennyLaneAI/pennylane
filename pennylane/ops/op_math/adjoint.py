@@ -336,13 +336,6 @@ class AdjointOperation(Operation):
     class can be removed.
     """
 
-    # This inverse behavior only needs to temporarily patch behavior until in-place inversion is
-    # removed.
-
-    @property
-    def _inverse(self):
-        return self.base._inverse  # pylint: disable=protected-access
-
     @property
     def base_name(self):
         return self._name
@@ -376,6 +369,11 @@ class AdjointOperation(Operation):
     @property
     def parameter_frequencies(self):
         return self.base.parameter_frequencies
+
+    # pylint: disable=arguments-renamed, invalid-overridden-method
+    @property
+    def has_generator(self):
+        return self.base.has_generator
 
     def generator(self):
         return -1.0 * self.base.generator()

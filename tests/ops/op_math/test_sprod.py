@@ -27,6 +27,7 @@ from pennylane.operation import AnyWires, DecompositionUndefinedError, MatrixUnd
 from pennylane.ops.op_math.sprod import SProd, s_prod
 from pennylane.wires import Wires
 
+
 scalars = (1, 1.23, 0.0, 1 + 2j)  # int, float, zero, and complex cases accounted for
 
 no_mat_ops = (
@@ -411,44 +412,6 @@ class TestMatrix:
         true_mat = 42 * U
         assert np.allclose(mat, true_mat)
 
-    sparse_ops = (
-        qml.Identity(wires=0),
-        qml.PauliX(wires=0),
-        qml.PauliY(wires=0),
-        qml.PauliZ(wires=0),
-        qml.Hadamard(wires=0),
-    )
-
-    @pytest.mark.parametrize("op", sparse_ops)
-    def test_sparse_matrix(self, op):
-        """Test the sparse_matrix representation of scaled ops."""
-        scalar = 1 + 2j
-        sprod_op = SProd(scalar, op)
-        sparse_matrix = sprod_op.sparse_matrix()
-        sparse_matrix.sort_indices()
-
-        expected_sparse_matrix = scalar * op.matrix()
-        expected_sparse_matrix = csr_matrix(expected_sparse_matrix)
-        expected_sparse_matrix.sort_indices()
-
-        assert isinstance(sparse_matrix, type(expected_sparse_matrix))
-        assert all(sparse_matrix.data == expected_sparse_matrix.data)
-        assert all(sparse_matrix.indices == expected_sparse_matrix.indices)
-
-    def test_sparse_matrix_sparse_hamiltonian(self):
-        """Test the sparse_matrix representation of scaled ops."""
-        scalar = 1.23
-        op = qml.Hadamard(wires=0)
-        sparse_ham = qml.SparseHamiltonian(csr_matrix(op.matrix()), wires=0)
-
-        sprod_op = SProd(scalar, sparse_ham)
-        sparse_matrix = sprod_op.sparse_matrix()
-
-        expected_sparse_matrix = scalar * op.matrix()
-        expected_sparse_matrix = csr_matrix(expected_sparse_matrix)
-
-        assert np.allclose(sparse_matrix.todense(), expected_sparse_matrix.todense())
-
     def test_sprod_hamiltonian(self):
         """Test that a hamiltonian object can be scaled."""
         U = qml.Hamiltonian([0.5], [qml.PauliX(wires=0)])
@@ -510,6 +473,102 @@ class TestMatrix:
         assert isinstance(mat, tf.Tensor)
         assert mat.dtype == true_mat.dtype
         assert np.allclose(mat, true_mat)
+
+
+class TestSparseMatrix:
+    sparse_ops = (
+        qml.Identity(wires=0),
+        qml.PauliX(wires=0),
+        qml.PauliY(wires=0),
+        qml.PauliZ(wires=0),
+        qml.Hadamard(wires=0),
+    )
+
+    @pytest.mark.parametrize("scalar", scalars)
+    @pytest.mark.parametrize("op", sparse_ops)
+    def test_sparse_matrix(self, scalar, op):
+        """Test the sparse_matrix representation of scaled ops."""
+        sprod_op = SProd(scalar, op)
+        sparse_matrix = sprod_op.sparse_matrix()
+        sparse_matrix.sort_indices()
+
+        expected_sparse_matrix = csr_matrix(op.matrix()).multiply(scalar)
+        expected_sparse_matrix.sort_indices()
+
+        assert isinstance(sparse_matrix, type(expected_sparse_matrix))
+        assert all(sparse_matrix.data == expected_sparse_matrix.data)
+        assert all(sparse_matrix.indices == expected_sparse_matrix.indices)
+
+    @pytest.mark.jax
+    @pytest.mark.parametrize("scalar", scalars)
+    @pytest.mark.parametrize("op", sparse_ops)
+    def test_sparse_matrix_jax_scalar(self, scalar, op):
+        """Test the sparse_matrix representation of scaled ops when scalar is a jax array."""
+        import jax.numpy as jnp
+
+        scalar = jnp.array(scalar)
+        sprod_op = SProd(scalar, op)
+        sparse_matrix = sprod_op.sparse_matrix()
+        sparse_matrix.sort_indices()
+
+        expected_sparse_matrix = csr_matrix(op.matrix()).multiply(scalar)
+        expected_sparse_matrix.sort_indices()
+
+        assert isinstance(sparse_matrix, type(expected_sparse_matrix))
+        assert all(sparse_matrix.data == expected_sparse_matrix.data)
+        assert all(sparse_matrix.indices == expected_sparse_matrix.indices)
+
+    @pytest.mark.torch
+    @pytest.mark.parametrize("scalar", scalars)
+    @pytest.mark.parametrize("op", sparse_ops)
+    def test_sparse_matrix_torch_scalar(self, scalar, op):
+        """Test the sparse_matrix representation of scaled ops when scalar is a torch tensor."""
+        import torch
+
+        scalar = torch.tensor(scalar)
+        sprod_op = SProd(scalar, op)
+        sparse_matrix = sprod_op.sparse_matrix()
+        sparse_matrix.sort_indices()
+
+        expected_sparse_matrix = csr_matrix(op.matrix()).multiply(scalar)
+        expected_sparse_matrix.sort_indices()
+
+        assert isinstance(sparse_matrix, type(expected_sparse_matrix))
+        assert all(sparse_matrix.data == expected_sparse_matrix.data)
+        assert all(sparse_matrix.indices == expected_sparse_matrix.indices)
+
+    @pytest.mark.tf
+    @pytest.mark.parametrize("scalar", scalars)
+    @pytest.mark.parametrize("op", sparse_ops)
+    def test_sparse_matrix_tf_scalar(self, scalar, op):
+        """Test the sparse_matrix representation of scaled ops when scalar is a tf Variable."""
+        import tensorflow as tf
+
+        scalar = tf.Variable(scalar)
+        sprod_op = SProd(scalar, op)
+        sparse_matrix = sprod_op.sparse_matrix()
+        sparse_matrix.sort_indices()
+
+        expected_sparse_matrix = csr_matrix(op.matrix()).multiply(scalar)
+        expected_sparse_matrix.sort_indices()
+
+        assert isinstance(sparse_matrix, type(expected_sparse_matrix))
+        assert all(sparse_matrix.data == expected_sparse_matrix.data)
+        assert all(sparse_matrix.indices == expected_sparse_matrix.indices)
+
+    def test_sparse_matrix_sparse_hamiltonian(self):
+        """Test the sparse_matrix representation of scaled ops."""
+        scalar = 1.23
+        op = qml.Hadamard(wires=0)
+        sparse_ham = qml.SparseHamiltonian(csr_matrix(op.matrix()), wires=0)
+
+        sprod_op = SProd(scalar, sparse_ham)
+        sparse_matrix = sprod_op.sparse_matrix()
+
+        expected_sparse_matrix = scalar * op.matrix()
+        expected_sparse_matrix = csr_matrix(expected_sparse_matrix)
+
+        assert np.allclose(sparse_matrix.todense(), expected_sparse_matrix.todense())
 
 
 class TestProperties:
@@ -721,6 +780,49 @@ class TestSimplify:
         assert simplified_op.data == final_op.data
         assert simplified_op.arithmetic_depth == final_op.arithmetic_depth
 
+    @pytest.mark.jax
+    def test_simplify_pauli_rep_jax(self):
+        """Test that simplifying operators with a valid pauli representation works with jax interface."""
+        import jax.numpy as jnp
+
+        c1, c2, c3 = jnp.array(1.23), jnp.array(2.0), jnp.array(2.46)
+
+        op = s_prod(c1, s_prod(c2, qml.PauliX(0)))
+        result = s_prod(c3, qml.PauliX(0))
+        simplified_op = op.simplify()
+
+        assert qml.equal(simplified_op, result)
+
+    @pytest.mark.tf
+    def test_simplify_pauli_rep_tf(self):
+        """Test that simplifying operators with a valid pauli representation works with tf interface."""
+        import tensorflow as tf
+
+        c1, c2, c3 = tf.Variable(1.23), tf.Variable(2.0), tf.Variable(2.46)
+
+        op = s_prod(c1, s_prod(c2, qml.PauliX(0)))
+        result = s_prod(c3, qml.PauliX(0))
+        simplified_op = op.simplify()
+
+        assert isinstance(simplified_op, type(result))
+        assert result.wires == simplified_op.wires
+        assert result.arithmetic_depth == simplified_op.arithmetic_depth
+        assert qnp.isclose(result.data[0], simplified_op.data[0])
+        assert result.data[1:] == simplified_op.data[1:]
+
+    @pytest.mark.torch
+    def test_simplify_pauli_rep_torch(self):
+        """Test that simplifying operators with a valid pauli representation works with torch interface."""
+        import torch
+
+        c1, c2, c3 = torch.tensor(1.23), torch.tensor(2.0), torch.tensor(2.46)
+
+        op = s_prod(c1, s_prod(c2, qml.PauliX(0)))
+        result = s_prod(c3, qml.PauliX(0))
+        simplified_op = op.simplify()
+
+        assert qml.equal(simplified_op, result)
+
 
 class TestWrapperFunc:
     @pytest.mark.parametrize("op_scalar_tup", ops)
@@ -904,7 +1006,7 @@ class TestIntegration:
 
         dev = qml.device("default.qubit", wires=1)
 
-        @qml.qnode(dev, interface="torch", diff_method=diff_method)
+        @qml.qnode(dev, diff_method=diff_method)
         def circuit(s):
             return qml.expval(qml.s_prod(s, qml.PauliZ(0)))
 
@@ -922,7 +1024,7 @@ class TestIntegration:
 
         dev = qml.device("default.qubit", wires=1)
 
-        @qml.qnode(dev, interface="jax", diff_method=diff_method)
+        @qml.qnode(dev, diff_method=diff_method)
         def circuit(s):
             return qml.expval(qml.s_prod(s, qml.PauliZ(0)))
 
@@ -937,7 +1039,7 @@ class TestIntegration:
 
         dev = qml.device("default.qubit", wires=5)
 
-        @qml.qnode(dev, interface="tensorflow", diff_method=diff_method)
+        @qml.qnode(dev, diff_method=diff_method)
         def circuit(s):
             return qml.expval(qml.s_prod(s, qml.PauliZ(0)))
 

@@ -16,7 +16,21 @@ This file contains a number of attributes that may be held by operators,
 and lists all operators satisfying those criteria.
 """
 from inspect import isclass
+
 from pennylane.operation import Operator, Tensor
+
+from .parametric_ops_single_qubit import RX, RY, RZ
+from .parametric_ops_multi_qubit import IsingXX, IsingXY, IsingYY, IsingZZ, MultiRZ, PauliRot
+from .qchem_ops import (
+    DoubleExcitation,
+    DoubleExcitationMinus,
+    DoubleExcitationPlus,
+    FermionicSWAP,
+    OrbitalRotation,
+    SingleExcitation,
+    SingleExcitationMinus,
+    SingleExcitationPlus,
+)
 
 
 class Attribute(set):
@@ -134,8 +148,10 @@ has_unitary_generator = Attribute(
         "IsingYY",
         "IsingXY",
         "IsingZZ",
+        "SingleExcitation",
         "SingleExcitationMinus",
         "SingleExcitationPlus",
+        "DoubleExcitation",
         "DoubleExcitationMinus",
         "DoubleExcitationPlus",
         "OrbitalRotation",
@@ -151,6 +167,26 @@ which is not unitary. This attribute is used for decompositions in algorithms
 using the Hadamard test like ``qml.metric_tensor`` when used without
 approximation.
 """
+
+has_unitary_generator_types = [
+    RX,
+    RY,
+    RZ,
+    IsingXX,
+    IsingYY,
+    IsingXY,
+    IsingZZ,
+    SingleExcitation,
+    SingleExcitationMinus,
+    SingleExcitationPlus,
+    DoubleExcitation,
+    DoubleExcitationMinus,
+    DoubleExcitationPlus,
+    OrbitalRotation,
+    MultiRZ,
+    PauliRot,  # keep generic operators (with AnyWires) at the end
+    FermionicSWAP,
+]
 
 self_inverses = Attribute(
     ["Hadamard", "PauliX", "PauliY", "PauliZ", "CNOT", "CZ", "CY", "CH", "SWAP", "Toffoli", "CCZ"]
@@ -207,6 +243,7 @@ supports_broadcasting = Attribute(
         "QubitUnitary",
         "ControlledQubitUnitary",
         "DiagonalQubitUnitary",
+        "SpecialUnitary",
         "RX",
         "RY",
         "RZ",

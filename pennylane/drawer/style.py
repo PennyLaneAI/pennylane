@@ -37,7 +37,7 @@ def _needs_mpl(func):
     def wrapper():
         if not _has_mpl:  # pragma: no cover
             raise ImportError(
-                "The drawer style module requires matplotlib."
+                "The drawer style module requires matplotlib. "
                 "You can install matplotlib via \n\n   pip install matplotlib"
             )
         func()
@@ -179,6 +179,10 @@ def use_style(style: str):
     * ``'default'``
     * ``'black_white'``
     * ``'black_white_dark'``
+    * ``'sketch'``
+    * ``'sketch_dark'``
+    * ``'solarized_light'``
+    * ``'solarized_dark'``
 
     **Example**:
 

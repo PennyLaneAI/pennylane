@@ -95,7 +95,7 @@ def test_numeric_type_unrecognized_error():
         qml.QuantumFunctionError,
         match="The numeric type of the measurement NotValidMeasurement is not defined",
     ):
-        mp.numeric_type()
+        mp.numeric_type
 
 
 def test_shape_unrecognized_error():
@@ -215,10 +215,6 @@ class TestStatisticsQueuing:
 class TestProperties:
     """Test for the properties"""
 
-    def test_return_type(self):
-        """Test MeasurementProcess ``return_type`` property is None."""
-        assert MeasurementProcess().return_type is None
-
     def test_wires_match_observable(self):
         """Test that the wires of the measurement process
         match an internal observable"""
@@ -271,6 +267,9 @@ class TestProperties:
         m = qml.probs(op=qml.PauliZ(wires="a"))
         expected = "probs(PauliZ(wires=['a']))"
         assert str(m) == expected
+
+        m = ProbabilityMP(eigvals=(1, 0), wires=qml.wires.Wires(0))
+        assert repr(m) == "probs(eigvals=[1 0], wires=[0])"
 
 
 class TestExpansion:
@@ -381,6 +380,10 @@ class TestExpansion:
             CountsMP(wires=["a", 1], all_outcomes=True),
             CountsMP(),
             CountsMP(wires=["a", 1]),
+            StateMP(),
+            VnEntropyMP(wires=["a", 1]),
+            MutualInfoMP(wires=[["a", 1], ["b", 2]]),
+            ProbabilityMP(wires=["a", 1]),
         ],
     )
     def test_samples_computational_basis_true(self, m):
@@ -393,14 +396,10 @@ class TestExpansion:
             ExpectationMP(obs=qml.PauliX(2)),
             VarianceMP(obs=qml.PauliX("a")),
             ProbabilityMP(obs=qml.PauliX("b")),
-            ProbabilityMP(wires=["a", 1]),
             SampleMP(obs=qml.PauliX("a")),
             CountsMP(obs=qml.PauliX("a")),
-            StateMP(),
-            VnEntropyMP(wires=["a", 1]),
-            MutualInfoMP(wires=[["a", 1], ["b", 2]]),
-            ClassicalShadowMP(wires=[["a", 1], ["b", 2]]),
             ShadowExpvalMP(H=qml.PauliX("a")),
+            ClassicalShadowMP(wires=[["a", 1], ["b", 2]]),
         ],
     )
     def test_samples_computational_basis_false(self, m):
@@ -532,7 +531,7 @@ class TestStateMeasurement:
 
         dev = qml.device("default.qubit", wires=2)
 
-        @qml.qnode(dev)
+        @qml.qnode(dev, interface="autograd")
         def circuit():
             return qml.state()
 
