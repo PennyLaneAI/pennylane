@@ -374,6 +374,19 @@ SUM_OUTPUTS = [
 class TestSumExpand:
     """Tests for the sum_expand transform"""
 
+    def test_observables_on_same_wires(self):
+        """Test that even if the observables are on the same wires, if they are different operations, they are separated.
+        This is testing for a case that gave rise to a bug that occured due to a problem in MeasurementProcess.hash.
+        """
+        obs1 = qml.prod(qml.PauliX(0), qml.PauliX(1))
+        obs2 = qml.prod(qml.PauliX(0), qml.PauliY(1))
+
+        circuit = QuantumScript(measurements=[qml.expval(obs1), qml.expval(obs2)])
+        batch, post_processing_fn = sum_expand(circuit)
+        assert len(batch) == 2
+        assert qml.equal(batch[0][0], qml.expval(obs1))
+        assert qml.equal(batch[1][0], qml.expval(obs2))
+
     @pytest.mark.parametrize(("qscript", "output"), zip(SUM_QSCRIPTS, SUM_OUTPUTS))
     def test_sums(self, qscript, output):
         """Tests that the sum_expand transform returns the correct value"""
