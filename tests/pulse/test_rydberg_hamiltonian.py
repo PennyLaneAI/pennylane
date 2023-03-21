@@ -448,7 +448,7 @@ class TestRydbergDrive:
 
     def test_no_amplitude_no_detuning(self):
         """Test that the correct error is raised if both amplitude and detuning are trivial."""
-        with pytest.raises(ValueError, match="The global drive must have a non-trivial amplitude."):
+        with pytest.raises(ValueError, match="Expected non-zero value for at least one of either"):
             _ = rydberg_drive(0, np.pi, 0, wires=[0])
 
 
@@ -546,14 +546,14 @@ class TestAmplitudeAndPhase:
         evaluated_H = Hd([3.4, 5.6], t)
 
         expected_H_fixed = qml.s_prod(
-            detuning, qml.Hamiltonian([1, 1], [qml.PauliZ(0), qml.PauliZ(1)])
+            detuning, qml.Hamiltonian([-1, -1], [qml.PauliZ(0), qml.PauliZ(1)])
         )
 
         c1 = np.sin(3.4 * t) * np.cos(np.cos(5.6 * t))
         c2 = np.sin(3.4 * t) * np.sin(np.cos(5.6 * t))
         expected_H_parametrized = qml.sum(
-            qml.s_prod(c1, qml.Hamiltonian([1, 1], [qml.PauliX(0), qml.PauliX(1)])),
-            qml.s_prod(c2, qml.sum(qml.s_prod(-1, qml.PauliY(0)), qml.s_prod(-1, qml.PauliY(1)))),
+            qml.s_prod(c1, qml.Hamiltonian([0.5, 0.5], [qml.PauliX(0), qml.PauliX(1)])),
+            qml.s_prod(c2, qml.Hamiltonian([-0.5, -0.5], [qml.PauliY(0), qml.PauliY(1)])),
         )
 
         assert qml.equal(evaluated_H[0], expected_H_fixed)
@@ -575,14 +575,14 @@ class TestAmplitudeAndPhase:
         evaluated_H = Hd([5.6], t)
 
         expected_H_fixed = qml.s_prod(
-            detuning, qml.Hamiltonian([1, 1], [qml.PauliZ(0), qml.PauliZ(1)])
+            detuning, qml.Hamiltonian([-1, -1], [qml.PauliZ(0), qml.PauliZ(1)])
         )
 
         c1 = 7.2 * np.cos(np.sin(5.6 * t))
         c2 = 7.2 * np.sin(np.sin(5.6 * t))
         expected_H_parametrized = qml.sum(
-            qml.s_prod(c1, qml.Hamiltonian([1, 1], [qml.PauliX(0), qml.PauliX(1)])),
-            qml.s_prod(c2, qml.sum(qml.s_prod(-1, qml.PauliY(0)), qml.s_prod(-1, qml.PauliY(1)))),
+            qml.s_prod(c1, qml.Hamiltonian([0.5, 0.5], [qml.PauliX(0), qml.PauliX(1)])),
+            qml.s_prod(c2, qml.Hamiltonian([-0.5, -0.5], [qml.PauliY(0), qml.PauliY(1)])),
         )
 
         assert qml.equal(evaluated_H[0], expected_H_fixed)
@@ -604,14 +604,14 @@ class TestAmplitudeAndPhase:
         evaluated_H = Hd([3.4], t)
 
         expected_H_fixed = qml.s_prod(
-            detuning, qml.Hamiltonian([1, 1], [qml.PauliZ(0), qml.PauliZ(1)])
+            detuning, qml.Hamiltonian([-1, -1], [qml.PauliZ(0), qml.PauliZ(1)])
         )
 
         c1 = np.sin(3.4 * t) * np.cos(4.3)
         c2 = np.sin(3.4 * t) * np.sin(4.3)
         expected_H_parametrized = qml.sum(
-            qml.s_prod(c1, qml.Hamiltonian([1, 1], [qml.PauliX(0), qml.PauliX(1)])),
-            qml.s_prod(c2, qml.sum(qml.s_prod(-1, qml.PauliY(0)), qml.s_prod(-1, qml.PauliY(1)))),
+            qml.s_prod(c1, qml.Hamiltonian([0.5, 0.5], [qml.PauliX(0), qml.PauliX(1)])),
+            qml.s_prod(c2, qml.Hamiltonian([-0.5, -0.5], [qml.PauliY(0), qml.PauliY(1)])),
         )
 
         assert qml.equal(evaluated_H[0], expected_H_fixed)
