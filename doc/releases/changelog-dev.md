@@ -110,6 +110,9 @@
   are real, providing a significant performance improvement.
   [(#3915)](https://github.com/PennyLaneAI/pennylane/pull/3915)
 
+* Update various Operators and templates to ensure their decompositions only return lists of Operators.
+  [(#3243)](https://github.com/PennyLaneAI/pennylane/pull/3243)
+
 <h3>Breaking changes</h3>
 
 * Both JIT interfaces are not compatible with Jax `>0.4.3`, we raise an error for those versions.
