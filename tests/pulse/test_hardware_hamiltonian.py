@@ -16,10 +16,6 @@ Unit tests for the HardwareHamiltonian class.
 """
 import warnings
 
-# pylint: disable=too-few-public-methods
-import numpy as np
-import pytest
-
 import pennylane as qml
 from pennylane.pulse import HardwareHamiltonian, drive, rydberg_interaction
 from pennylane.pulse.hardware_hamiltonian import (
@@ -29,6 +25,10 @@ from pennylane.pulse.hardware_hamiltonian import (
     _reorder_parameters,
 )
 from pennylane.wires import Wires
+
+# pylint: disable=too-few-public-methods
+import pytest
+import numpy as np
 
 atom_coordinates = [[0, 0], [0, 5], [5, 0], [10, 5], [5, 10], [10, 10]]
 wires = [1, 6, 0, 2, 4, 3]
