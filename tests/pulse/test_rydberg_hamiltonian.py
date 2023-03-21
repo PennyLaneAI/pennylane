@@ -266,6 +266,11 @@ class TestInteractionWithOperators:
         assert qml.equal(new_pH.H_fixed(), qml.s_prod(1, op))
         new_pH(params, 2)  # confirm calling does not raise error
 
+    def test_unknown_type_raises_error(self):
+        R = rydberg_drive(amplitude=f1, phase=0, detuning=f2, wires=[0, 1])
+        with pytest.raises(TypeError, match="unsupported operand type"):
+            R += 3
+
 
 class TestRydbergInteraction:
     """Unit tests for the ``rydberg_interaction`` function."""
