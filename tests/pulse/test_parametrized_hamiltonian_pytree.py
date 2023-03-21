@@ -31,7 +31,10 @@ try:
     )
     import jax.numpy as jnp
 except ImportError:
-    pytestmark = pytest.mark.skip
+    pass
+
+# if this fails, test file will be skipped
+jnp = pytest.importorskip("jax.numpy")
 
 
 def f1(p, t):

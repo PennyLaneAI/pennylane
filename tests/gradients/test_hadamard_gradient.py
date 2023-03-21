@@ -1,4 +1,4 @@
-# Copyright 2018-2021 Xanadu Quantum Technologies Inc.
+# Copyright 2018-2023 Xanadu Quantum Technologies Inc.
 
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -11,10 +11,15 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""This experimental directory contains the next generation interface
-for PennyLane devices.
+"""Tests for the gradients.hadamard_test module.
+Note that the module is implemented for the new return type system
+so that this test suite just tests for correctly raised errors."""
+import pytest
+import pennylane as qml
 
-"""
-from .execution_config import ExecutionConfig, DefaultExecutionConfig
-from .device_api import Device
-from .default_qubit_2 import DefaultQubit2
+
+def test_hadamard_grad_raises():
+    """Test that hadamard_grad function raises a NotImplementedError."""
+    tape = qml.tape.QuantumScript()
+    with pytest.raises(NotImplementedError, match="The Hadamard gradient"):
+        qml.gradients.hadamard_grad(tape)
