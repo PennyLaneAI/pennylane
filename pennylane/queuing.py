@@ -166,13 +166,14 @@ use the :meth:`~.QueuingManager.stop_recording` context or specify `do_queue=Fal
 import copy
 from collections import OrderedDict
 from contextlib import contextmanager
+from threading import local
 
 
 class QueuingError(Exception):
     """Exception that is raised when there is a queuing error"""
 
 
-class QueuingManager:
+class QueuingManagerClass(local):
     """Singleton global entry point for managing active recording contexts.
 
     This class consists purely of class methods. It both maintains a list of
@@ -199,32 +200,28 @@ class QueuingManager:
 
     """
 
-    _active_contexts = []
-    """The stack of contexts that are currently active."""
+    def __init__(self):
+        self._active_contexts = []  # The stack of contexts that are currently active.
+        super().__init__()
 
-    @classmethod
-    def add_active_queue(cls, queue):
+    def add_active_queue(self, queue):
         """Makes a queue the currently active recording context."""
-        cls._active_contexts.append(queue)
+        self._active_contexts.append(queue)
 
-    @classmethod
-    def remove_active_queue(cls):
+    def remove_active_queue(self):
         """Ends recording on the currently active recording queue."""
-        return cls._active_contexts.pop()
+        return self._active_contexts.pop()
 
-    @classmethod
-    def recording(cls):
+    def recording(self):
         """Whether a queuing context is active and recording operations"""
-        return bool(cls._active_contexts)
+        return bool(self._active_contexts)
 
-    @classmethod
-    def active_context(cls):
+    def active_context(self):
         """Returns the currently active queuing context."""
-        return cls._active_contexts[-1] if cls.recording() else None
+        return self._active_contexts[-1] if self.recording() else None
 
-    @classmethod
     @contextmanager
-    def stop_recording(cls):
+    def stop_recording(self):
         """A context manager and decorator to ensure that contained logic is non-recordable
         or non-queueable within a QNode or quantum tape context.
 
@@ -279,47 +276,43 @@ class QueuingManager:
         0: ──RZ(3.00)─┤  <Z>
 
         """
-        previously_active_contexts = cls._active_contexts
-        cls._active_contexts = []
+        previously_active_contexts = self._active_contexts
+        self._active_contexts = []
         try:
             yield
         except Exception as e:
-            cls._active_contexts = previously_active_contexts
+            self._active_contexts = previously_active_contexts
             raise e
-        cls._active_contexts = previously_active_contexts
+        self._active_contexts = previously_active_contexts
 
-    @classmethod
-    def append(cls, obj, **kwargs):
+    def append(self, obj, **kwargs):
         """Append an object to the queue(s).
 
         Args:
             obj: the object to be appended
         """
-        if cls.recording():
-            cls.active_context().append(obj, **kwargs)
+        if self.recording():
+            self.active_context().append(obj, **kwargs)
 
-    @classmethod
-    def remove(cls, obj):
+    def remove(self, obj):
         """Remove an object from the queue(s) if it is in the queue(s).
 
         Args:
             obj: the object to be removed
         """
-        if cls.recording():
-            cls.active_context().remove(obj)
+        if self.recording():
+            self.active_context().remove(obj)
 
-    @classmethod
-    def update_info(cls, obj, **kwargs):
+    def update_info(self, obj, **kwargs):
         """Updates information of an object in the active queue if it is already in the queue.
 
         Args:
             obj: the object with metadata to be updated
         """
-        if cls.recording():
-            cls.active_context().update_info(obj, **kwargs)
+        if self.recording():
+            self.active_context().update_info(obj, **kwargs)
 
-    @classmethod
-    def get_info(cls, obj):
+    def get_info(self, obj):
         """Retrieves information of an object in the active queue.
 
         Args:
@@ -328,7 +321,10 @@ class QueuingManager:
         Returns:
             object metadata
         """
-        return cls.active_context().get_info(obj) if cls.recording() else None
+        return self.active_context().get_info(obj) if self.recording() else None
+
+
+QueuingManager = QueuingManagerClass()
 
 
 class AnnotatedQueue(OrderedDict):
