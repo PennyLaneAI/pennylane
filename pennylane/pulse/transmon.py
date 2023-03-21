@@ -16,14 +16,11 @@ import warnings
 from dataclasses import dataclass
 from typing import Callable, List, Union
 
-import numpy as np
-
 import pennylane as qml
 from pennylane.wires import Wires
 from pennylane.operation import Operator
 from pennylane.ops.qubit.hamiltonian import Hamiltonian
-from pennylane.typing import TensorLike
-
+from pennylane.pulse import HardwareHamiltonian
 from .parametrized_hamiltonian import ParametrizedHamiltonian
 
 
@@ -73,7 +70,7 @@ def transmon_interaction(
         d (int): Local Hilbert space dimension. Defaults to ``d=2`` and is currently the only supported value.
 
     Returns:
-        TransmonHamiltonian: a :class:`~.ParametrizedHamiltonian` representing the transmon interaction
+        HardwareHamiltonian: a :class:`~.ParametrizedHamiltonian` representing the transmon interaction
 
     **Example**
 
@@ -139,7 +136,7 @@ def transmon_interaction(
     #     coeffs += list(delta)
     #     observables += [ad(i, d) @ ad(i, d) @ a(i, d) @ a(i, d) for i in wires]
 
-    return TransmonHamiltonian(coeffs, observables, omega, delta, g, connections=connections)
+    return HardwareHamiltonian(coeffs, observables, omega, delta, g, connections=connections)
 
 
 def transmon_drive(amplitude, phase, wires):
@@ -152,9 +149,9 @@ def transmon_drive(amplitude, phase, wires):
 
     where :math:`\Omega`, :math:`\delta` and :math:`\phi` correspond to the rabi frequency, detuning
     and phase of the laser, :math:`i` correspond to the wire index, and :math:`\sigma^\alpha` for
-    :math:`\alpha = x,y,z` are the Pauli matrices. The unit of time for the  evolution of this Transmon
+    :math:`\alpha = x,y,z` are the Pauli matrices. The unit of time for the  evolution of this Hardware
     drive term is :math:`\mu \text{s}`. This driving term can be combined with an interaction term to
-    create a Hamiltonian describing a driven Transmon atom system. Multiple driving terms can be combined
+    create a Hamiltonian describing a driven Hardware atom system. Multiple driving terms can be combined
     by summing them (see example).
 
     Args:
@@ -163,12 +160,12 @@ def transmon_drive(amplitude, phase, wires):
         phase (Union[float, Callable]): float or callable returning the phase (in radians) of the laser field
         detuning (Union[float, Callable]): float or callable returning the detuning (in MHz) of a
             laser field
-        wires (Union[int, List[int]]): integer or list containing wire values for the Transmon atoms that
+        wires (Union[int, List[int]]): integer or list containing wire values for the Hardware atoms that
             the laser field acts on
 
     Returns:
-        TransmonHamiltonian: a :class:`~.ParametrizedHamiltonian` representing the action of the laser field
-        on the Transmon atoms.
+        HardwareHamiltonian: a :class:`~.ParametrizedHamiltonian` representing the action of the laser field
+        on the Hardware atoms.
 
     .. seealso::
 
@@ -177,7 +174,7 @@ def transmon_drive(amplitude, phase, wires):
 
     **Example**
 
-    We create a Hamiltonian describing a laser acting on 4 wires (Transmon atoms) with a fixed detuning and
+    We create a Hamiltonian describing a laser acting on 4 wires (Hardware atoms) with a fixed detuning and
     phase, and a parametrized, time-dependent amplitude. The Hamiltonian includes an interaction term for
     inter-atom interactions due to van der Waals forces, as well as the driving term for the laser driving
     the atoms:
@@ -256,8 +253,8 @@ def transmon_drive(amplitude, phase, wires):
 
     ops = [drive_terms_1, drive_terms_2]
 
-    # We convert the pulse data into a list of ``TransmonPulse`` objects
-    pulses = [TransmonPulse(amplitude, phase, wires)]
+    # We convert the pulse data into a list of ``HardwarePulse`` objects
+    pulses = [HardwarePulse(amplitude, phase, wires)]
 
     return PulseHamiltonian(coeffs, ops, pulses=pulses)
 
@@ -322,7 +319,7 @@ class PulseHamiltonian(ParametrizedHamiltonian):
         Any: Physically relevant parameters for pulse drives, such as amplitude, frequency and phase of pulse drives.
 
     Returns:
-        TransmonHamiltonian: class representing the Hamiltonian of an ensemble of Transmon atoms
+        HardwareHamiltonian: class representing the Hamiltonian of an ensemble of Hardware atoms
     """
 
     # pylint: disable=too-many-arguments
@@ -342,18 +339,18 @@ class PulseHamiltonian(ParametrizedHamiltonian):
                     raise ValueError("We cannot add two Hamiltonians with an interaction term!")
                 if not self.wires.contains_wires(other.wires):
                     warnings.warn(
-                        "The wires of the laser fields are not present in the Transmon ensemble."
+                        "The wires of the laser fields are not present in the Hardware ensemble."
                     )
             elif other.connections is not None and not other.wires.contains_wires(self.wires):
                 warnings.warn(
-                    "The wires of the laser fields are not present in the Transmon ensemble."
+                    "The wires of the laser fields are not present in the Hardware ensemble."
                 )
 
             new_connections = self.connections or other.connections
             new_pulses = self.pulses + other.pulses
             new_ops = self.ops + other.ops
             new_coeffs = self.coeffs + other.coeffs
-            return TransmonHamiltonian(
+            return HardwareHamiltonian(
                 new_coeffs, new_ops, connections=new_connections, pulses=new_pulses
             )
 
@@ -365,29 +362,29 @@ class PulseHamiltonian(ParametrizedHamiltonian):
         if isinstance(other, (Hamiltonian, ParametrizedHamiltonian)):
             new_coeffs = coeffs + other.coeffs.copy()
             new_ops = ops + other.ops.copy()
-            return TransmonHamiltonian(new_coeffs, new_ops, connections=connections, pulses=pulses)
+            return HardwareHamiltonian(new_coeffs, new_ops, connections=connections, pulses=pulses)
 
         if isinstance(other, qml.ops.SProd):  # pylint: disable=no-member
             new_coeffs = coeffs + [other.scalar]
             new_ops = ops + [other.base]
-            return TransmonHamiltonian(new_coeffs, new_ops, connections=connections, pulses=pulses)
+            return HardwareHamiltonian(new_coeffs, new_ops, connections=connections, pulses=pulses)
 
         if isinstance(other, Operator):
             new_coeffs = coeffs + [1]
             new_ops = ops + [other]
-            return TransmonHamiltonian(new_coeffs, new_ops, connections=connections, pulses=pulses)
+            return HardwareHamiltonian(new_coeffs, new_ops, connections=connections, pulses=pulses)
 
         return NotImplemented
 
     def __radd__(self, other):
-        """Deals with the special case where a TransmonHamiltonian is added to a
-        ParametrizedHamiltonian. Ensures that this returs a TransmonHamiltonian where
+        """Deals with the special case where a HardwareHamiltonian is added to a
+        ParametrizedHamiltonian. Ensures that this returs a HardwareHamiltonian where
         the order of the parametrized coefficients and operators matches the order of
         the hamiltonians, i.e. that
 
-        ParametrizedHamiltonian + TransmonHamiltonian
+        ParametrizedHamiltonian + HardwareHamiltonian
 
-        returns a TransmonHamiltonian where the call expects params = [params_PH] + [params_RH]
+        returns a HardwareHamiltonian where the call expects params = [params_PH] + [params_RH]
         """
         if isinstance(other, ParametrizedHamiltonian):
             ops = self.ops.copy()
@@ -396,7 +393,7 @@ class PulseHamiltonian(ParametrizedHamiltonian):
             new_coeffs = other.coeffs.copy() + coeffs
             new_ops = other.ops.copy() + ops
 
-            return TransmonHamiltonian(
+            return HardwareHamiltonian(
                 new_coeffs, new_ops, connections=self.connections, pulses=self.pulses
             )
 
@@ -404,8 +401,8 @@ class PulseHamiltonian(ParametrizedHamiltonian):
 
 
 @dataclass
-class TransmonPulse:
-    """Dataclass that contains the information of a single Transmon pulse. This class is used
+class HardwarePulse:
+    """Dataclass that contains the information of a single Hardware pulse. This class is used
     internally in PL to group into a single object all the data related to a single laser field.
 
     Args:
