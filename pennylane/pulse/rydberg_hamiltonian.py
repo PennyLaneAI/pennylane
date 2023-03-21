@@ -334,7 +334,7 @@ class RydbergHamiltonian(ParametrizedHamiltonian):
         pulses = self.pulses
 
         if isinstance(other, (Hamiltonian, ParametrizedHamiltonian)):
-            new_coeffs = coeffs + other.coeffs.copy()
+            new_coeffs = coeffs + list(other.coeffs.copy())
             new_ops = ops + other.ops.copy()
             return RydbergHamiltonian(new_coeffs, new_ops, register=register, pulses=pulses)
 
@@ -352,7 +352,7 @@ class RydbergHamiltonian(ParametrizedHamiltonian):
 
     def __radd__(self, other):
         """Deals with the special case where a RydbergHamiltonian is added to a
-        ParametrizedHamiltonian. Ensures that this returs a RydbergHamiltonian where
+        ParametrizedHamiltonian. Ensures that this returns a RydbergHamiltonian where
         the order of the parametrized coefficients and operators matches the order of
         the hamiltonians, i.e. that
 
