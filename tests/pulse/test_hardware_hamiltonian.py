@@ -206,7 +206,7 @@ class TestHardwareHamiltonian:
         assert isinstance(H_global, HardwareHamiltonian)
         H_global(params, 2)  # no error raised
 
-
+# pylint: disable=no-member
 class TestInteractionWithOperators:
     """Test that the interaction between a ``HardwareHamiltonian`` and other operators work as
     expected."""
@@ -267,7 +267,7 @@ class TestInteractionWithOperators:
         new_pH(params, 2)  # confirm calling does not raise error
 
     def test_unknown_type_raises_error(self):
-        R = rydberg_drive(amplitude=f1, phase=0, detuning=f2, wires=[0, 1])
+        R = drive(amplitude=f1, phase=0, detuning=f2, wires=[0, 1])
         with pytest.raises(TypeError, match="unsupported operand type"):
             R += 3
 
