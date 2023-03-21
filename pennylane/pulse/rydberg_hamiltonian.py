@@ -179,7 +179,7 @@ def rydberg_drive(amplitude, phase, detuning, wires):
     ParametrizedHamiltonian: terms=3
 
     The first two terms of the drive Hamiltonian ``H_d`` correspond to the first sum (the sine and cosine terms),
-    describing drive between the ground and excited states. The third term corresponding to the shift term
+    describing drive between the ground and excited states. The third term corresponds to the shift term
     due to detuning from resonance. This drive term corresponds to a global drive that acts on all 4 wires of
     the device.
 
