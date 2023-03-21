@@ -59,7 +59,7 @@ class TestSample:
 
         output = circuit()
 
-        assert np.array_equal(ouput.shape, (2, n_sample))
+        assert np.array_equal(output.shape, (2, n_sample))
         assert circuit._qfunc_output[0].shape(dev) == (1, n_sample)
         assert circuit._qfunc_output[1].shape(dev) == (1, n_sample)
 
@@ -105,7 +105,7 @@ class TestSample:
 
         assert isinstance(result, np.ndarray)
         assert np.array_equal(result.shape, (n_sample,))
-        assert circuit._qfunc_output[0].shape(dev) == (1, n_sample)
+        assert circuit._qfunc_output.shape(dev) == (1, n_sample)
 
         custom_measurement_process(dev, spy)
 
@@ -121,11 +121,11 @@ class TestSample:
         def circuit():
             return qml.sample(qml.PauliZ(0)), qml.sample(qml.PauliZ(1)), qml.sample(qml.PauliZ(2))
 
+        result = circuit()
+
         assert circuit._qfunc_output[0].shape(dev) == (1, n_sample)
         assert circuit._qfunc_output[1].shape(dev) == (1, n_sample)
         assert circuit._qfunc_output[2].shape(dev) == (1, n_sample)
-
-        result = circuit()
 
         # If all the dimensions are equal the result will end up to be a proper rectangular array
         assert isinstance(result, np.ndarray)
@@ -391,7 +391,7 @@ class TestSample:
 
 
 @pytest.mark.jax
-def test_jitting_with_sampling_on_subset_of_wires(self):
+def test_jitting_with_sampling_on_subset_of_wires():
     """Test case covering bug in Issue #3904.  Sampling should be jit-able
     when sampling occurs on a subset of wires. The bug was occuring due an improperly
     set shape method."""
