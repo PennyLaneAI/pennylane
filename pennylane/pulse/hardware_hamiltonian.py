@@ -239,7 +239,7 @@ class HardwareHamiltonian(ParametrizedHamiltonian):
         pulses = self.pulses
 
         if isinstance(other, (Hamiltonian, ParametrizedHamiltonian)):
-            new_coeffs = coeffs + other.coeffs.copy()
+            new_coeffs = coeffs + list(other.coeffs.copy())
             new_ops = ops + other.ops.copy()
             return HardwareHamiltonian(new_coeffs, new_ops, register=register, pulses=pulses)
 
@@ -256,8 +256,13 @@ class HardwareHamiltonian(ParametrizedHamiltonian):
         return NotImplemented
 
     def __radd__(self, other):
+<<<<<<< HEAD:pennylane/pulse/hardware_hamiltonian.py
         """Deals with the special case where a HardwareHamiltonian is added to a
         ParametrizedHamiltonian. Ensures that this returs a HardwareHamiltonian where
+=======
+        """Deals with the special case where a RydbergHamiltonian is added to a
+        ParametrizedHamiltonian. Ensures that this returns a RydbergHamiltonian where
+>>>>>>> 0e09c2171d129d494176a174f2f4f93e6e596d67:pennylane/pulse/rydberg_hamiltonian.py
         the order of the parametrized coefficients and operators matches the order of
         the hamiltonians, i.e. that
 

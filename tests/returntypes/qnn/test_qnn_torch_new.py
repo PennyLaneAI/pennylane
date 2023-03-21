@@ -24,8 +24,6 @@ from pennylane.qnn.torch import TorchLayer
 
 torch = pytest.importorskip("torch")
 
-# pylint: disable=unnecessary-dunder-call
-
 
 def indices_up_to(n_max):
     """Returns an iterator over the number of qubits and output dimension, up to value n_max.

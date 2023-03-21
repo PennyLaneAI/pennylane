@@ -214,6 +214,7 @@ class TestInteractionWithOperators:
     ops_with_coeffs = (
         (qml.Hamiltonian([2], [qml.PauliZ(0)]), 2),
         (qml.Hamiltonian([1.7], [qml.PauliZ(0)]), 1.7),
+        (3 * qml.PauliZ(0), 3),
         (qml.ops.SProd(3, qml.PauliZ(0)), 3),
     )
     ops = (
