@@ -25,11 +25,10 @@ try:
         ParametrizedHamiltonianPytree,
     )
     from pennylane.pulse.rydberg_hamiltonian import (
-        rydberg_drive,
         _rydberg_reorder_parameters,
         amplitude_and_phase,
+        rydberg_drive,
     )
-    import jax.numpy as jnp
 except ImportError:
     pass
 
