@@ -160,7 +160,7 @@ class QubitDevice(Device):
     }
 
     observables_to_not_diagonalize = ()
-    """Observables whose diagonalizing gates are not used when evaluating a circuit."""
+    """Tuple of Observables whose diagonalizing gates are not used when evaluating a circuit."""
 
     measurement_map = defaultdict(lambda: "")  # e.g. {SampleMP: "sample"}
     """Mapping used to override the logic of measurement processes. The dictionary maps a
