@@ -17,8 +17,8 @@ Unit tests for the HardwareHamiltonian class.
 import warnings
 
 # pylint: disable=too-few-public-methods
-import numpy as np
 import pytest
+import numpy as np
 
 import pennylane as qml
 from pennylane.pulse import HardwareHamiltonian, drive, rydberg_interaction
@@ -207,6 +207,7 @@ class TestHardwareHamiltonian:
         H_global(params, 2)  # no error raised
 
 
+# pylint: disable=no-member
 class TestInteractionWithOperators:
     """Test that the interaction between a ``HardwareHamiltonian`` and other operators work as
     expected."""
@@ -214,6 +215,7 @@ class TestInteractionWithOperators:
     ops_with_coeffs = (
         (qml.Hamiltonian([2], [qml.PauliZ(0)]), 2),
         (qml.Hamiltonian([1.7], [qml.PauliZ(0)]), 1.7),
+        (3 * qml.PauliZ(0), 3),
         (qml.ops.SProd(3, qml.PauliZ(0)), 3),
     )
     ops = (
@@ -264,6 +266,11 @@ class TestInteractionWithOperators:
         assert R.H_fixed() == 0
         assert qml.equal(new_pH.H_fixed(), qml.s_prod(1, op))
         new_pH(params, 2)  # confirm calling does not raise error
+
+    def test_unknown_type_raises_error(self):
+        R = drive(amplitude=f1, phase=0, detuning=f2, wires=[0, 1])
+        with pytest.raises(TypeError, match="unsupported operand type"):
+            R += 3
 
 
 class TestRydbergInteraction:

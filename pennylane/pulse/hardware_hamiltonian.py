@@ -239,7 +239,7 @@ class HardwareHamiltonian(ParametrizedHamiltonian):
         pulses = self.pulses
 
         if isinstance(other, (Hamiltonian, ParametrizedHamiltonian)):
-            new_coeffs = coeffs + other.coeffs.copy()
+            new_coeffs = coeffs + list(other.coeffs.copy())
             new_ops = ops + other.ops.copy()
             return HardwareHamiltonian(new_coeffs, new_ops, register=register, pulses=pulses)
 
