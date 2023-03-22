@@ -82,7 +82,10 @@ class TestHardwareHamiltonian:
             for op1, op2 in zip(sum_rm.ops, [qml.PauliX(4), qml.PauliZ(8), qml.PauliY(8)])
         )
         assert qml.math.allequal(sum_rm.register, atom_coordinates)
-        assert sum_rm.pulses == [HardwarePulse(1, 2, 3, [4, 8]), HardwarePulse(5, 6, 7, 8)]
+        assert sum_rm.pulses == [
+            HardwarePulse(1, 2, 3, [4, 8]),
+            HardwarePulse(5, 6, 7, 8),
+        ]
 
     def test_add_parametrized_hamiltonian(self):
         """Tests that adding a `HardwareHamiltonian` and `ParametrizedHamiltonian` works as
@@ -357,12 +360,12 @@ class TestRydbergDrive:
         Hd = H1 + H2
 
         ops_expected = [
-            qml.Hamiltonian([1, 1], [qml.PauliZ(0), qml.PauliZ(3)]),
-            qml.Hamiltonian([1, 1], [qml.PauliX(1), qml.PauliX(2)]),
-            qml.sum(qml.s_prod(-1, qml.PauliY(1)), qml.s_prod(-1, qml.PauliY(2))),
-            qml.Hamiltonian([1, 1], [qml.PauliX(0), qml.PauliX(3)]),
-            qml.sum(qml.s_prod(-1, qml.PauliY(0)), qml.s_prod(-1, qml.PauliY(3))),
-            qml.Hamiltonian([1, 1], [qml.PauliZ(1), qml.PauliZ(2)]),
+            qml.Hamiltonian([-1, -1], [qml.PauliZ(0), qml.PauliZ(3)]),
+            qml.Hamiltonian([0.5, 0.5], [qml.PauliX(1), qml.PauliX(2)]),
+            qml.Hamiltonian([-0.5, -0.5], [qml.PauliY(1), qml.PauliY(2)]),
+            qml.Hamiltonian([0.5, 0.5], [qml.PauliX(0), qml.PauliX(3)]),
+            qml.Hamiltonian([-0.5, -0.5], [qml.PauliY(0), qml.PauliY(3)]),
+            qml.Hamiltonian([-1, -1], [qml.PauliZ(1), qml.PauliZ(2)]),
         ]
         coeffs_expected = [
             3,
@@ -394,6 +397,60 @@ class TestRydbergDrive:
 
         # Hamiltonian is as expected
         assert qml.equal(Hd([0.5, -0.5], t=5), H_expected([0.5, -0.5], t=5))
+
+    def test_no_amplitude(self):
+        """Test that when amplitude is not specified, the drive term is correctly defined."""
+
+        def f(p, t):
+            return np.cos(p * t)
+
+        Hd = rydberg_drive(amplitude=0, phase=1, detuning=f, wires=[0, 3])
+
+        ops_expected = [qml.Hamiltonian([-1, -1], [qml.PauliZ(0), qml.PauliZ(3)])]
+        coeffs_expected = [f]
+        H_expected = RydbergHamiltonian(coeffs_expected, ops_expected)
+
+        assert qml.equal(Hd([0.1], 10), H_expected([0.1], 10))
+        assert isinstance(Hd, RydbergHamiltonian)
+        assert Hd.interaction_coeff == 862690
+        assert Hd.wires == Wires([0, 3])
+        assert Hd.register is None
+        assert len(Hd.coeffs) == 1
+        assert Hd.coeffs[0] is f
+        assert len(Hd.ops) == 1
+        assert qml.equal(Hd.ops[0], ops_expected[0])
+
+    def test_no_detuning(self):
+        """Test that when detuning not specified, the drive term is correctly defined."""
+
+        def f(p, t):
+            return np.cos(p * t)
+
+        Hd = rydberg_drive(amplitude=f, phase=1, detuning=0, wires=[0, 3])
+
+        ops_expected = [
+            qml.Hamiltonian([0.5, 0.5], [qml.PauliX(0), qml.PauliX(3)]),
+            qml.Hamiltonian([-0.5, -0.5], [qml.PauliY(0), qml.PauliY(3)]),
+        ]
+        coeffs_expected = [
+            AmplitudeAndPhase(np.cos, f, 1),
+            AmplitudeAndPhase(np.sin, f, 1),
+        ]
+        H_expected = RydbergHamiltonian(coeffs_expected, ops_expected)
+
+        assert qml.equal(Hd([0.1], 10), H_expected([0.1], 10))
+        assert isinstance(Hd, RydbergHamiltonian)
+        assert Hd.interaction_coeff == 862690
+        assert Hd.wires == Wires([0, 3])
+        assert Hd.register is None
+        assert all(isinstance(coeff, AmplitudeAndPhase) for coeff in Hd.coeffs)
+        assert len(Hd.coeffs) == 2
+        assert all(qml.equal(op, op_expected) for op, op_expected in zip(Hd.ops, ops_expected))
+
+    def test_no_amplitude_no_detuning(self):
+        """Test that the correct error is raised if both amplitude and detuning are trivial."""
+        with pytest.raises(ValueError, match="Expected non-zero value for at least one of either"):
+            _ = rydberg_drive(0, np.pi, 0, wires=[0])
 
 
 def callable_amp(p, t):
@@ -490,14 +547,14 @@ class TestAmplitudeAndPhase:
         evaluated_H = Hd([3.4, 5.6], t)
 
         expected_H_fixed = qml.s_prod(
-            detuning, qml.Hamiltonian([1, 1], [qml.PauliZ(0), qml.PauliZ(1)])
+            detuning, qml.Hamiltonian([-1, -1], [qml.PauliZ(0), qml.PauliZ(1)])
         )
 
         c1 = np.sin(3.4 * t) * np.cos(np.cos(5.6 * t))
         c2 = np.sin(3.4 * t) * np.sin(np.cos(5.6 * t))
         expected_H_parametrized = qml.sum(
-            qml.s_prod(c1, qml.Hamiltonian([1, 1], [qml.PauliX(0), qml.PauliX(1)])),
-            qml.s_prod(c2, qml.sum(qml.s_prod(-1, qml.PauliY(0)), qml.s_prod(-1, qml.PauliY(1)))),
+            qml.s_prod(c1, qml.Hamiltonian([0.5, 0.5], [qml.PauliX(0), qml.PauliX(1)])),
+            qml.s_prod(c2, qml.Hamiltonian([-0.5, -0.5], [qml.PauliY(0), qml.PauliY(1)])),
         )
 
         assert qml.equal(evaluated_H[0], expected_H_fixed)
@@ -519,14 +576,14 @@ class TestAmplitudeAndPhase:
         evaluated_H = Hd([5.6], t)
 
         expected_H_fixed = qml.s_prod(
-            detuning, qml.Hamiltonian([1, 1], [qml.PauliZ(0), qml.PauliZ(1)])
+            detuning, qml.Hamiltonian([-1, -1], [qml.PauliZ(0), qml.PauliZ(1)])
         )
 
         c1 = 7.2 * np.cos(np.sin(5.6 * t))
         c2 = 7.2 * np.sin(np.sin(5.6 * t))
         expected_H_parametrized = qml.sum(
-            qml.s_prod(c1, qml.Hamiltonian([1, 1], [qml.PauliX(0), qml.PauliX(1)])),
-            qml.s_prod(c2, qml.sum(qml.s_prod(-1, qml.PauliY(0)), qml.s_prod(-1, qml.PauliY(1)))),
+            qml.s_prod(c1, qml.Hamiltonian([0.5, 0.5], [qml.PauliX(0), qml.PauliX(1)])),
+            qml.s_prod(c2, qml.Hamiltonian([-0.5, -0.5], [qml.PauliY(0), qml.PauliY(1)])),
         )
 
         assert qml.equal(evaluated_H[0], expected_H_fixed)
@@ -548,14 +605,14 @@ class TestAmplitudeAndPhase:
         evaluated_H = Hd([3.4], t)
 
         expected_H_fixed = qml.s_prod(
-            detuning, qml.Hamiltonian([1, 1], [qml.PauliZ(0), qml.PauliZ(1)])
+            detuning, qml.Hamiltonian([-1, -1], [qml.PauliZ(0), qml.PauliZ(1)])
         )
 
         c1 = np.sin(3.4 * t) * np.cos(4.3)
         c2 = np.sin(3.4 * t) * np.sin(4.3)
         expected_H_parametrized = qml.sum(
-            qml.s_prod(c1, qml.Hamiltonian([1, 1], [qml.PauliX(0), qml.PauliX(1)])),
-            qml.s_prod(c2, qml.sum(qml.s_prod(-1, qml.PauliY(0)), qml.s_prod(-1, qml.PauliY(1)))),
+            qml.s_prod(c1, qml.Hamiltonian([0.5, 0.5], [qml.PauliX(0), qml.PauliX(1)])),
+            qml.s_prod(c2, qml.Hamiltonian([-0.5, -0.5], [qml.PauliY(0), qml.PauliY(1)])),
         )
 
         assert qml.equal(evaluated_H[0], expected_H_fixed)
@@ -680,8 +737,12 @@ class TestIntegration:
         def fc(p, t):
             return p[0] * jnp.sin(t) + jnp.cos(p[1] * t)
 
-        H1 = drive(amplitude=fa, phase=0, detuning=fb, wires=1)
-        H2 = drive(amplitude=fc, phase=3 * jnp.pi, detuning=jnp.pi / 4, wires=4)
+        def fd(p, t):
+            return p * jnp.cos(t)
+
+        H1 = drive(amplitude=fa, phase=0, detuning=fb, wires=wires)
+        H2 = drive(amplitude=fc, phase=3 * jnp.pi, detuning=0, wires=4)
+        H3 = drive(amplitude=0, phase=0, detuning=fd, wires=[3, 0])
 
         dev = qml.device("default.qubit", wires=wires)
 
@@ -690,16 +751,21 @@ class TestIntegration:
 
         @qml.qnode(dev, interface="jax")
         def qnode(params):
-            qml.evolve(Hd + H1 + H2)(params, ts)
+            qml.evolve(Hd + H1 + H2 + H3)(params, ts)
             return qml.expval(H_obj)
 
         @jax.jit
         @qml.qnode(dev, interface="jax")
         def qnode_jit(params):
-            qml.evolve(Hd + H1 + H2)(params, ts)
+            qml.evolve(Hd + H1 + H2 + H3)(params, ts)
             return qml.expval(H_obj)
 
-        params = (jnp.ones(5), jnp.array([1.0, jnp.pi]), jnp.array([jnp.pi / 2, 0.5]))
+        params = (
+            jnp.ones(5),
+            jnp.array([1.0, jnp.pi]),
+            jnp.array([jnp.pi / 2, 0.5]),
+            jnp.array(-0.5),
+        )
         res = qnode(params)
         res_jit = qnode_jit(params)
 
