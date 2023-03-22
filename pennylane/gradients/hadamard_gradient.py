@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-This module contains functions for computing the parameter-shift gradient
+This module contains functions for computing the Hadamard-test gradient
 of a qubit-based quantum tape.
 """
 import pennylane as qml
@@ -45,6 +45,10 @@ def _hadamard_grad(
         argnum (int or list[int] or None): Trainable tape parameter indices to differentiate
             with respect to. If not provided, the derivatives with respect to all
             trainable parameters are returned.
+        shots (None, int, list[int]): Argument used by the new return type system (see :func:`~.enable_return` for more
+            information); it represents the device shots that will be used to execute the tapes outputted by this transform.
+            Note that this argument doesn't influence the shots used for tape execution, but provides information to the
+            transform about the device shots and helps in determining if a shot sequence was used.
         aux_wire (pennylane.wires.Wires): Auxiliary wire to be used for the Hadamard tests. If ``None`` (the default),
             a suitable wire is inferred from the wires used in the original circuit and ``device_wires``.
         device_wires (pennylane.wires.Wires): Wires of the device that are going to be used for the
@@ -179,8 +183,8 @@ def _hadamard_grad(
 
     """
     if not qml.active_return():
-        raise ValueError(
-            "The hadamard gradient only supports the new return type. Use qml.enable_return() to turn it on."
+        raise NotImplementedError(
+            "The Hadamard gradient only supports the new return type. Use qml.enable_return() to turn it on."
         )
     if any(isinstance(m, VarianceMP) for m in tape.measurements):
         raise ValueError(
