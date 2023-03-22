@@ -90,8 +90,8 @@ def drive(amplitude, phase, detuning, wires):
     >>> H_d
     ParametrizedHamiltonian: terms=3
 
-    The first two terms of the drive Hamiltonian ``H_d`` correspond to the first sum (the sine and cosine terms),
-    describing drive between the ground and excited states. The third term corresponding to the shift term
+    The first two terms of the drive Hamiltonian ``H_d`` correspond to the two terms :math:`e^{i \phi(t)} \sigma^+_j + e^{-i \phi(t)} \sigma^-_j`,
+    describing a drive between the ground and excited states. The third term corresponding to the shift term
     due to detuning from resonance. This drive term corresponds to a global drive that acts on all 4 wires of
     the device.
 
