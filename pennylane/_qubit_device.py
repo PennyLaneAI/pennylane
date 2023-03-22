@@ -159,6 +159,9 @@ class QubitDevice(Device):
         "Prod",
     }
 
+    observables_to_not_diagonalize = {}
+    """Observables whose diagonalizing gates are not used when evaluating a circuit."""
+
     measurement_map = defaultdict(lambda: "")  # e.g. {SampleMP: "sample"}
     """Mapping used to override the logic of measurement processes. The dictionary maps a
     measurement class to a string containing the name of a device's method that overrides the
@@ -314,7 +317,11 @@ class QubitDevice(Device):
         self.check_validity(circuit.operations, circuit.observables)
 
         # apply all circuit operations
-        self.apply(circuit.operations, rotations=circuit.diagonalizing_gates(), **kwargs)
+        self.apply(
+            circuit.operations,
+            rotations=circuit.diagonalizing_gates(skip=self.observables_to_not_diagonalize),
+            **kwargs,
+        )
 
         # generate computational basis samples
         if self.shots is not None:
@@ -370,7 +377,11 @@ class QubitDevice(Device):
         self.check_validity(circuit.operations, circuit.observables)
 
         # apply all circuit operations
-        self.apply(circuit.operations, rotations=circuit.diagonalizing_gates(), **kwargs)
+        self.apply(
+            circuit.operations,
+            rotations=circuit.diagonalizing_gates(skip=self.observables_to_not_diagonalize),
+            **kwargs,
+        )
 
         # generate computational basis samples
         if self.shots is not None or circuit.is_sampled:

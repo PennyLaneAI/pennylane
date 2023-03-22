@@ -173,6 +173,8 @@ class DefaultQubit(QubitDevice):
         "Evolution",
     }
 
+    observables_to_not_diagonalize = {"Sum", "Hamiltonian"}
+
     def __init__(
         self, wires, *, r_dtype=np.float64, c_dtype=np.complex128, shots=None, analytic=None
     ):

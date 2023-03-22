@@ -337,17 +337,22 @@ class QuantumScript:
         """The (inferred) output dimension of the quantum script."""
         return self._output_dim
 
-    def diagonalizing_gates(self):
+    def diagonalizing_gates(self, skip=None):
         """Returns the gates that diagonalize the measured wires such that they
         are in the eigenbasis of the circuit observables.
 
+        Args:
+            skip (Optional[set[str]]): The names of observables that do not need diagonalizing
         Returns:
             List[~.Operation]: the operations that diagonalize the observables
         """
         rotation_gates = []
+        obs_to_skip = skip or set()
 
         with qml.queuing.QueuingManager.stop_recording():
             for observable in self.observables:
+                if observable.name in obs_to_skip:
+                    continue
                 # some observables do not have diagonalizing gates,
                 # in which case we just don't append any
                 with contextlib.suppress(qml.operation.DiagGatesUndefinedError):
