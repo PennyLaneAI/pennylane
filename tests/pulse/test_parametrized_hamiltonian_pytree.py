@@ -24,8 +24,16 @@ try:
         LazyDotPytree,
         ParametrizedHamiltonianPytree,
     )
+    from pennylane.pulse.rydberg_hamiltonian import (
+        _rydberg_reorder_parameters,
+        amplitude_and_phase,
+        rydberg_drive,
+    )
 except ImportError:
-    pytestmark = pytest.mark.skip
+    pass
+
+# if this fails, test file will be skipped
+jnp = pytest.importorskip("jax.numpy")
 
 
 def f1(p, t):
@@ -33,19 +41,31 @@ def f1(p, t):
 
 
 def f2(p, t):
-    return p * np.cos(t**2)
+    return np.cos(p * t**2)
 
 
-params = [1.2, 2.3]
+PH = qml.dot([1, 2, f1, f2], [qml.PauliX(0), qml.PauliY(1), qml.PauliZ(2), qml.Hadamard(3)])
 
-H = qml.dot([1, 2, f1, f2], [qml.PauliX(0), qml.PauliY(1), qml.PauliZ(2), qml.Hadamard(3)])
+RH = rydberg_drive(amplitude=f1, phase=f2, detuning=1, wires=[0, 1, 2])
+
+# Hamiltonians and the parameters for the individual coefficients
+HAMILTONIANS_WITH_COEFF_PARAMETERS = [
+    (PH, None, [f1, f2], [1.2, 2.3]),
+    (
+        RH,
+        _rydberg_reorder_parameters,
+        [amplitude_and_phase(jnp.cos, f1, f2), amplitude_and_phase(jnp.sin, f1, f2)],
+        [[1.2, 2.3], [1.2, 2.3]],
+    ),
+]
 
 
 @pytest.mark.jax
 class TestParametrizedHamiltonianPytree:
     """Unit tests for the ParametrizedHamiltonianPytree class."""
 
-    def test_attributes(self):
+    @pytest.mark.parametrize("H, fn, coeffs, params", HAMILTONIANS_WITH_COEFF_PARAMETERS)
+    def test_attributes(self, H, fn, coeffs, params):
         """Test that the attributes of the ParametrizedHamiltonianPytree class are initialized
         correctly."""
         from jax.experimental import sparse
@@ -56,21 +76,46 @@ class TestParametrizedHamiltonianPytree:
 
         assert isinstance(H_pytree.mat_fixed, sparse.CSR)
         assert isinstance(H_pytree.mats_parametrized, tuple)
-        assert H_pytree.coeffs_parametrized == [f1, f2]
+        assert qml.math.allclose(
+            [c(p, 2) for c, p in zip(H_pytree.coeffs_parametrized, params)],
+            [c(p, 2) for c, p in zip(coeffs, params)],
+            atol=1e-7,
+        )
+        assert H_pytree.reorder_fn == fn
 
-    def test_call_method(self):
+    def test_call_method_parametrized_hamiltonian(self):
         """Test that the call method works correctly."""
         H_pytree = ParametrizedHamiltonianPytree.from_hamiltonian(
-            H, dense=False, wire_order=[2, 3, 1, 0]
+            PH, dense=False, wire_order=[2, 3, 1, 0]
         )
-
+        params = [1.2, 2.3]
         time = 4
         res = H_pytree(params, t=time)
 
         assert isinstance(res, LazyDotPytree)
         assert qml.math.allclose(res.coeffs, (1, f1(params[0], time), f2(params[1], time)))
 
-    def test_flatten_method(self):
+    def test_call_method_rydberg_hamiltonian(self):
+        """Test that the call method works correctly."""
+        H_pytree = ParametrizedHamiltonianPytree.from_hamiltonian(
+            RH, dense=False, wire_order=[2, 3, 1, 0]
+        )
+        params = [1.2, 2.3]
+        time = 4
+        res = H_pytree(params, t=time)
+
+        assert isinstance(res, LazyDotPytree)
+        assert qml.math.allclose(
+            res.coeffs,
+            (
+                1,
+                amplitude_and_phase(jnp.cos, f1, f2)(params, time),
+                amplitude_and_phase(jnp.sin, f1, f2)(params, time),
+            ),
+        )
+
+    @pytest.mark.parametrize("H, fn", [(PH, None), (RH, _rydberg_reorder_parameters)])
+    def test_flatten_method(self, H, fn):
         """Test the tree_flatten method."""
         H_pytree = ParametrizedHamiltonianPytree.from_hamiltonian(
             H, dense=False, wire_order=[2, 3, 1, 0]
@@ -82,9 +127,11 @@ class TestParametrizedHamiltonianPytree:
         assert flat_tree == (
             (H_pytree.mat_fixed, H_pytree.mats_parametrized),
             H_pytree.coeffs_parametrized,
+            fn,
         )
 
-    def test_unflatten_method(self):
+    @pytest.mark.parametrize("H, fn", [(PH, None), (RH, _rydberg_reorder_parameters)])
+    def test_unflatten_method(self, H, fn):
         """Test the tree_unflatten method."""
         H_pytree = ParametrizedHamiltonianPytree.from_hamiltonian(
             H, dense=False, wire_order=[2, 3, 1, 0]
@@ -92,11 +139,12 @@ class TestParametrizedHamiltonianPytree:
 
         flat_tree = H_pytree.tree_flatten()
 
-        new_H_pytree = H_pytree.tree_unflatten(flat_tree[1], flat_tree[0])
+        new_H_pytree = H_pytree.tree_unflatten(flat_tree[1], flat_tree[0], flat_tree[2])
 
         assert new_H_pytree.mat_fixed == H_pytree.mat_fixed
         assert new_H_pytree.mats_parametrized == H_pytree.mats_parametrized
         assert new_H_pytree.coeffs_parametrized == H_pytree.coeffs_parametrized
+        assert new_H_pytree.reorder_fn == fn
 
 
 @pytest.mark.jax
@@ -126,7 +174,6 @@ class TestLazyDotPytree:
 
     def test_rmul(self):
         """Test the __rmul__ method"""
-        import jax.numpy as jnp
 
         coeffs = [1, 2, 3]
         ops = [qml.PauliX(0), qml.PauliY(0), qml.PauliZ(0)]
