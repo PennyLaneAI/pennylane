@@ -50,7 +50,7 @@ def drive(amplitude, phase, detuning, wires):
 
     Note that to avoid nummerical problems due to using both very large and very small numbers, it is advisable to match
     the order of magnitudes of frequency and time arguments. For example, when frequencies are of order MHz (microwave pulses for superconducting systems),
-    then one can ommit the factor :math:`10^6` and just treat the times passed to the constructed :class:`ParametrizedHamiltonian` in :math:`\mu s = 10^{-6}s`
+    then one can ommit the explicit factor :math:`10^6` by treating the times passed to the constructed :class:`ParametrizedHamiltonian` in :math:`\mu s = 10^{-6}s`
     to be able to use numerical units of order :math:`\mathcal{O}(1)`. We further elaborate on that in the examples below.
 
     Args:
