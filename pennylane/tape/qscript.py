@@ -348,7 +348,7 @@ class QuantumScript:
             List[~.Operation]: the operations that diagonalize the observables
         """
         rotation_gates = []
-        obs_to_skip = skip or set()
+        obs_to_skip = skip or ()
 
         with qml.queuing.QueuingManager.stop_recording():
             for observable in self.observables:
