@@ -128,7 +128,7 @@ def rydberg_drive(amplitude, phase, detuning, wires):
 
     .. math::
         \frac{1}{2} \Omega(t) \sum_{i \in \text{wires}} (\cos(\phi)\sigma_i^x - \sin(\phi)\sigma_i^y) -
-        \frac{1}{2} \delta(t) \sum_{i \in \text{wires}} \sigma_i^z
+        \delta(t) \sum_{i \in \text{wires}} \sigma_i^z
 
     where :math:`\Omega`, :math:`\delta` and :math:`\phi` correspond to the rabi frequency, detuning
     and phase of the laser, :math:`i` correspond to the wire index, and :math:`\sigma^\alpha` for
@@ -165,7 +165,7 @@ def rydberg_drive(amplitude, phase, detuning, wires):
     .. code-block:: python
 
         atom_coordinates = [[0, 0], [0, 4], [4, 0], [4, 4]]
-        wires = [1, 2, 3, 4]
+        wires = [0, 1, 2, 3]
         H_i = qml.pulse.rydberg_interaction(atom_coordinates, wires)
 
         amplitude = lambda p, t: p * jnp.sin(jnp.pi * t)
@@ -179,7 +179,7 @@ def rydberg_drive(amplitude, phase, detuning, wires):
     ParametrizedHamiltonian: terms=3
 
     The first two terms of the drive Hamiltonian ``H_d`` correspond to the first sum (the sine and cosine terms),
-    describing drive between the ground and excited states. The third term corresponds to the shift term
+    describing drive between the ground and excited states. The third term corresponding to the shift term
     due to detuning from resonance. This drive term corresponds to a global drive that acts on all 4 wires of
     the device.
 
@@ -196,9 +196,9 @@ def rydberg_drive(amplitude, phase, detuning, wires):
 
     >>> params = [2.4]
     >>> circuit(params)
-    Array(0.97137696, dtype=float32)
+    Array(0.94301294, dtype=float64)
     >>> jax.grad(circuit)(params)
-    [Array(0.10493923, dtype=float32)]
+    [Array(0.59484969, dtype=float64)]
 
     We can also create a Hamiltonian with multiple local drives. The following circuit corresponds to the
     evolution where an additional local drive acting on wires ``[0, 1]`` is added to the Hamiltonian:
@@ -218,29 +218,44 @@ def rydberg_drive(amplitude, phase, detuning, wires):
             qml.evolve(H)(params, t=[0, 10])
             return qml.expval(qml.PauliZ(0))
 
-    >>> params = [2.4, [1.3, -2.0]]
+    >>> params = [2.4, [1.3, -2.0], -1.5]
     >>> circuit_local(params)
-    Array(0.45782223, dtype=float64)
+    Array(0.80238028, dtype=float64)
     >>> jax.grad(circuit_local)(params)
-    [Array(-0.33522988, dtype=float64),
-     [Array(0.40320718, dtype=float64, weak_type=True),
-      Array(-0.12003976, dtype=float64, weak_type=True)]]
+    [Array(-0.73273312, dtype=float64),
+     [Array(-0.45635171, dtype=float64, weak_type=True),
+      Array(0.76572817, dtype=float64, weak_type=True)],
+     Array(0.01027312, dtype=float64)]
     """
     if isinstance(wires, int):
         wires = [wires]
+    trivial_detuning = not callable(detuning) and qml.math.isclose(detuning, 0.0)
 
-    # We compute the `coeffs` and `observables` of the laser field
-    coeffs = [
-        amplitude_and_phase(qml.math.cos, amplitude, phase),
-        amplitude_and_phase(qml.math.sin, amplitude, phase),
-        detuning,
-    ]
+    if not callable(amplitude) and qml.math.isclose(amplitude, 0.0):
+        if trivial_detuning:
+            raise ValueError(
+                f"Expected non-zero value for at least one of either amplitude or detuning, but received amplitude={amplitude} and detuning={detuning}. All terms are zero."
+            )
 
-    drive_x_term = sum(qml.PauliX(wire) for wire in wires)
-    drive_y_term = sum(-qml.PauliY(wire) for wire in wires)
-    detuning_term = sum(qml.PauliZ(wire) for wire in wires)
+        coeffs = []
+        observables = []
 
-    observables = [drive_x_term, drive_y_term, detuning_term]
+    else:
+        # We compute the `coeffs` and `observables` of the laser field
+        coeffs = [
+            amplitude_and_phase(qml.math.cos, amplitude, phase),
+            amplitude_and_phase(qml.math.sin, amplitude, phase),
+        ]
+
+        drive_x_term = 0.5 * sum(qml.PauliX(wire) for wire in wires)
+        drive_y_term = -0.5 * sum(qml.PauliY(wire) for wire in wires)
+
+        observables = [drive_x_term, drive_y_term]
+
+    if not trivial_detuning:
+        detuning_term = -1.0 * sum(qml.PauliZ(wire) for wire in wires)
+        coeffs.append(detuning)
+        observables.append(detuning_term)
 
     # We convert the pulse data into a list of ``RydbergPulse`` objects
     pulses = [RydbergPulse(amplitude, phase, detuning, wires)]
