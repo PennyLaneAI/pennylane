@@ -404,14 +404,14 @@ class TestRydbergDrive:
         def f(p, t):
             return np.cos(p * t)
 
-        Hd = rydberg_drive(amplitude=0, phase=1, detuning=f, wires=[0, 3])
+        Hd = drive(amplitude=0, phase=1, detuning=f, wires=[0, 3])
 
         ops_expected = [qml.Hamiltonian([-1, -1], [qml.PauliZ(0), qml.PauliZ(3)])]
         coeffs_expected = [f]
-        H_expected = RydbergHamiltonian(coeffs_expected, ops_expected)
+        H_expected = HardwareHamiltonian(coeffs_expected, ops_expected)
 
         assert qml.equal(Hd([0.1], 10), H_expected([0.1], 10))
-        assert isinstance(Hd, RydbergHamiltonian)
+        assert isinstance(Hd, HardwareHamiltonian)
         assert Hd.interaction_coeff == 862690
         assert Hd.wires == Wires([0, 3])
         assert Hd.register is None
@@ -426,7 +426,7 @@ class TestRydbergDrive:
         def f(p, t):
             return np.cos(p * t)
 
-        Hd = rydberg_drive(amplitude=f, phase=1, detuning=0, wires=[0, 3])
+        Hd = drive(amplitude=f, phase=1, detuning=0, wires=[0, 3])
 
         ops_expected = [
             qml.Hamiltonian([0.5, 0.5], [qml.PauliX(0), qml.PauliX(3)]),
@@ -436,10 +436,10 @@ class TestRydbergDrive:
             AmplitudeAndPhase(np.cos, f, 1),
             AmplitudeAndPhase(np.sin, f, 1),
         ]
-        H_expected = RydbergHamiltonian(coeffs_expected, ops_expected)
+        H_expected = HardwareHamiltonian(coeffs_expected, ops_expected)
 
         assert qml.equal(Hd([0.1], 10), H_expected([0.1], 10))
-        assert isinstance(Hd, RydbergHamiltonian)
+        assert isinstance(Hd, HardwareHamiltonian)
         assert Hd.interaction_coeff == 862690
         assert Hd.wires == Wires([0, 3])
         assert Hd.register is None
@@ -450,7 +450,7 @@ class TestRydbergDrive:
     def test_no_amplitude_no_detuning(self):
         """Test that the correct error is raised if both amplitude and detuning are trivial."""
         with pytest.raises(ValueError, match="Expected non-zero value for at least one of either"):
-            _ = rydberg_drive(0, np.pi, 0, wires=[0])
+            _ = drive(0, np.pi, 0, wires=[0])
 
 
 def callable_amp(p, t):

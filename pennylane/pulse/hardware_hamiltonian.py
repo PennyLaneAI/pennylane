@@ -222,6 +222,7 @@ def drive(amplitude, phase, detuning, wires):
     if isinstance(wires, int):
         wires = [wires]
 
+    # TODO: use sigma+ and sigma- (not necessary as terms are the same)
     # We compute the `coeffs` and `observables` of the electromagnetic field
     coeffs = [
         amplitude_and_phase(qml.math.cos, amplitude, phase),
