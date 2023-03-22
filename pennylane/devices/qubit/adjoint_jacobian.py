@@ -48,8 +48,9 @@ def adjoint_jacobian(tape: QuantumTape):  # pylint: disable=too-many-statements
 
         * Only expectation values are supported as measurements.
 
-        * Does not work for parametrized observables like :class:`~.Hamiltonian`,
-          :class:`~.Sum` or :class:`~.Hermitian`.
+        * Cannot differentiate with respect to observables.
+
+        * Observable being measured must have a matrix.
 
     Args:
         tape (.QuantumTape): circuit that the function takes the gradient of
@@ -90,13 +91,13 @@ def adjoint_jacobian(tape: QuantumTape):  # pylint: disable=too-many-statements
         wires=tape.wires, prep_operation=prep_operation
     )  #  ket(0) if prep_operation is None, else
     for op in tape.operations:
-        if op.name not in ("QubitStateVector", "BasisState", "Snapshot"):
+        if not isinstance(op, (qml.operation.StatePrep, qml.Snapshot)):
             ket = apply_operation(op, ket)
 
     n_obs = len(tape.observables)
     bras = np.empty([n_obs] + [2] * len(tape.wires), dtype=np.complex128)
-    for kk in range(n_obs):
-        bras[kk, ...] = apply_operation(tape.observables[kk], ket)
+    for kk, obs in enumerate(tape.observables):
+        bras[kk, ...] = apply_operation(obs, ket)
 
     expanded_ops = []
     for op in reversed(tape.operations):
@@ -108,7 +109,7 @@ def adjoint_jacobian(tape: QuantumTape):  # pylint: disable=too-many-statements
                 )
             ops = op.decomposition()
             expanded_ops.extend(reversed(ops))
-        elif op.name not in ("QubitStateVector", "BasisState", "Snapshot"):
+        elif not isinstance(op, (qml.operation.StatePrep, qml.Snapshot)):
             expanded_ops.append(op)
 
     trainable_params = []
