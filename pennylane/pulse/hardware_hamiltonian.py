@@ -36,7 +36,7 @@ def drive(amplitude, phase, detuning, wires):
         \frac{1}{2} \Omega(t) \sum_{j \in \text{wires}} \left(e^{i \phi(t)} \sigma^+_j + e^{-i \phi(t)} \sigma^-_j \right) -
         \frac{1}{2} \Delta(t) \sum_{j \in \text{wires}} \sigma^z_j
 
-    where :math:`\Omega`, :math:`\phi` and :math:`\delta` correspond to the rabi frequency, phase and detuning of the electromagnetic
+    where :math:`\Omega`, :math:`\phi` and :math:`\Delta` correspond to the amplitude, phase and detuning of the electromagnetic
     driving field and :math:`i` corresponds to the wire index. We are describing the Hamiltonian in terms of ladder operators
     :math:`\sigma^\pm = \frac{1}{2}(\sigma_x \pm i \sigma_y)`.
     Note that the detuning :math:`\Delta := \omega_q - \nu` is defined as the difference between the qubit frequency :math:`\omega_q`
@@ -156,7 +156,7 @@ def drive(amplitude, phase, detuning, wires):
             H = - \frac{1}{2} \Omega(t) \sum_{j \in \text{wires}} \left(e^{i (\phi(t) + \nu t)} \sigma^+_j + e^{-i (\phi(t) + \nu t)} \sigma^-_j \right)
             - \frac{1}{2} \omega_q \sum_{j \in \text{wires}} \sigma^z_j,
 
-        with Rabi frequency :math:`\Omega`, phase :math:`\phi` and drive frequency :math:`\nu` of the electromagnetic field, as well as the qubit frequency :math:`\omega_q`.
+        with amplitude :math:`\Omega`, phase :math:`\phi` and drive frequency :math:`\nu` of the electromagnetic field, as well as the qubit frequency :math:`\omega_q`.
         We can move to the rotating frame of the driving field by applying :math:`U = e^{-i\nu t \sigma^z / 2}` which yields the new Hamiltonian
 
         .. math::
