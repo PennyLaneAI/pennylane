@@ -24,15 +24,18 @@ from pennylane.ops.qubit.hamiltonian import Hamiltonian
 
 from .parametrized_hamiltonian import ParametrizedHamiltonian
 
+
 # TODO: introduce proper creation and annihilation operators in PennyLane
 # pylint: disable=unused-argument
 def a(wire, d=2):
     """Creation operator"""
     return qml.s_prod(0.5, qml.PauliX(wire)) + qml.s_prod(0.5j, qml.PauliY(wire))
 
+
 def ad(wire, d=2):
     """Annihilation operator"""
     return qml.s_prod(0.5, qml.PauliX(wire)) + qml.s_prod(-0.5j, qml.PauliY(wire))
+
 
 def drive(amplitude, phase, detuning, wires):
     r"""Constructs a :class:`ParametrizedHamiltonian` representing the action of a driving electromagnetic
