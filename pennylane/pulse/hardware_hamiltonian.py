@@ -24,11 +24,14 @@ from pennylane.ops.qubit.hamiltonian import Hamiltonian
 
 from .parametrized_hamiltonian import ParametrizedHamiltonian
 
-# TODO: introduce proper creation and annihilation operators
+# TODO: introduce proper creation and annihilation operators in PennyLane
+# pylint: disable=unused-argument
 def a(wire, d=2):
+    """Creation operator"""
     return qml.s_prod(0.5, qml.PauliX(wire)) + qml.s_prod(0.5j, qml.PauliY(wire))
 
 def ad(wire, d=2):
+    """Annihilation operator"""
     return qml.s_prod(0.5, qml.PauliX(wire)) + qml.s_prod(-0.5j, qml.PauliY(wire))
 
 def drive(amplitude, phase, detuning, wires):
@@ -134,7 +137,7 @@ def drive(amplitude, phase, detuning, wires):
         def circuit_local(params):
             qml.evolve(H)(params, t=[0, 10])
             return qml.expval(qml.PauliZ(0))
-        
+
         p_global = 2.4
         p_amp = [1.3, -2.0]
         p_phase = 0.5
@@ -148,7 +151,7 @@ def drive(amplitude, phase, detuning, wires):
      [Array(0.27030772, dtype=float64, weak_type=True),
       Array(-0.55805872, dtype=float64, weak_type=True)],
      Array(0.27385566, dtype=float64))
-    
+
     .. details::
         :title: Theoretical background
         :href: theory
@@ -158,14 +161,14 @@ def drive(amplitude, phase, detuning, wires):
         .. math::
             H = - \frac{1}{2} \Omega(t) \sum_{j \in \text{wires}} \left(e^{i (\phi(t) + \nu t)} \sigma^+_j + e^{-i (\phi(t) + \nu t)} \sigma^-_j \right)
             - \frac{1}{2} \omega_q \sum_{j \in \text{wires}} \sigma^z_j,
-        
+
         with Rabi frequency :math:`\Omega`, phase :math:`\phi` and drive frequency :math:`\nu` of the electromagnetic field, as well as the qubit frequency :math:`\omega_q`.
         We can move to the rotating frame of the driving field by applying :math:`U = e^{-i\nu t \sigma^z / 2}` which yields the new Hamiltonian
 
         .. math::
             H = - \frac{1}{2} \Omega(t) \sum_{j \in \text{wires}} \left(e^{i \phi(t)} \sigma^+_j + e^{-i \phi(t)} \sigma^-_j \right)
             - \frac{1}{2} (\omega_q - \nu) \sum_{j \in \text{wires}} \sigma^z_j
-        
+
         We can define :math:`\Delta = \omega_q - \nu` to arrive at the definition above. Note that a potential anharmonicity term, as is common for transmon systems,
         is unaffected by this transformation. (TODO link transmon anharmonicity constructor)
 
