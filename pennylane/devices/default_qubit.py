@@ -173,7 +173,7 @@ class DefaultQubit(QubitDevice):
         "Evolution",
     }
 
-    observables_to_not_diagonalize = {"Sum", "Hamiltonian"}
+    observables_to_not_diagonalize = (qml.ops.Sum, qml.Hamiltonian)  # pylint:disable=no-member
 
     def __init__(
         self, wires, *, r_dtype=np.float64, c_dtype=np.complex128, shots=None, analytic=None

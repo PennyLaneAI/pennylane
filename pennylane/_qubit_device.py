@@ -159,7 +159,7 @@ class QubitDevice(Device):
         "Prod",
     }
 
-    observables_to_not_diagonalize = {}
+    observables_to_not_diagonalize = ()
     """Observables whose diagonalizing gates are not used when evaluating a circuit."""
 
     measurement_map = defaultdict(lambda: "")  # e.g. {SampleMP: "sample"}

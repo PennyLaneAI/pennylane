@@ -342,7 +342,8 @@ class QuantumScript:
         are in the eigenbasis of the circuit observables.
 
         Args:
-            skip (Optional[set[str]]): The names of observables that do not need diagonalizing
+            skip (Optional[tuple[type]]): The types of observables that do not need diagonalizing
+
         Returns:
             List[~.Operation]: the operations that diagonalize the observables
         """
@@ -351,7 +352,7 @@ class QuantumScript:
 
         with qml.queuing.QueuingManager.stop_recording():
             for observable in self.observables:
-                if observable.name in obs_to_skip:
+                if isinstance(observable, obs_to_skip):
                     continue
                 # some observables do not have diagonalizing gates,
                 # in which case we just don't append any
