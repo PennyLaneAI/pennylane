@@ -71,9 +71,9 @@ info = {
     "extras_require": {
         "kernels": ["cvxpy", "cvxopt"],
         "jax": ["jax>=0.4.1,<0.4.4", "jaxlib>=0.4.1,<0.4.4", "jaxopt==0.6"],
-        "tf": [f"{tensorflow_requires}==2.11.0"],
-        "autograd": ["autograd==1.5"],
-        "torch": ["torch==1.13.1"],
+        "tf": [tensorflow_requires],
+        "autograd": ["autograd"],
+        "torch": ["torch"],
     },
     "package_data": {"pennylane": ["devices/tests/pytest.ini"]},
     "include_package_data": True,
