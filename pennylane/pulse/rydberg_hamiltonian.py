@@ -233,7 +233,9 @@ def rydberg_drive(amplitude, phase, detuning, wires):
 
     if not callable(amplitude) and qml.math.isclose(amplitude, 0.0):
         if trivial_detuning:
-            raise ValueError(f"Expected non-zero value for at least one of either amplitude or detuning, but received amplitude={amplitude} and detuning={detuning}. All terms are zero.")
+            raise ValueError(
+                f"Expected non-zero value for at least one of either amplitude or detuning, but received amplitude={amplitude} and detuning={detuning}. All terms are zero."
+            )
 
         coeffs = []
         observables = []
