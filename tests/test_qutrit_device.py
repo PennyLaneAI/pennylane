@@ -1226,3 +1226,21 @@ class TestUnimplemented:
 
         with pytest.raises(qml.QuantumFunctionError, match="Unsupported return type"):
             dev.mutual_info(0, 1, log_base=3)
+
+    def test_classical_shadow(self, mock_qutrit_device):
+        """Test that classical_shadow is unimplemented"""
+        dev = mock_qutrit_device()
+        qs = qml.tape.QuantumScript()
+        obs = qml.GellMann(1, 1)
+
+        with pytest.raises(qml.QuantumFunctionError, match="Unsupported return type"):
+            dev.classical_shadow(obs, qs)
+
+    def test_shadow_expval(self, mock_qutrit_device):
+        """Test that shadow_expval is unimplemented"""
+        dev = mock_qutrit_device()
+        qs = qml.tape.QuantumScript()
+        obs = qml.GellMann(1, 1)
+
+        with pytest.raises(qml.QuantumFunctionError, match="Unsupported return type"):
+            dev.shadow_expval(obs, qs)
