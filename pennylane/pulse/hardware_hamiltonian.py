@@ -108,7 +108,7 @@ def drive(amplitude, phase, detuning, wires):
 
     The full Hamiltonian can be evaluated:
 
-    .. code-block:: python
+    .. code-block:: python3
 
         dev = qml.device("default.qubit.jax", wires=wires)
 
@@ -126,7 +126,7 @@ def drive(amplitude, phase, detuning, wires):
     We can also create a Hamiltonian with multiple local drives. The following circuit corresponds to the
     evolution where an additional local drive that changes in time is acting on wires ``[0, 1]`` is added to the Hamiltonian:
 
-    .. code-block:: python
+    .. code-block:: python3
 
         amplitude_local = lambda p, t: p[0] * jnp.sin(2 * jnp.pi * t) + p[1]
         phase_local = lambda p, t: p * jnp.exp(-0.25 * t)
@@ -176,7 +176,46 @@ def drive(amplitude, phase, detuning, wires):
         is unaffected by this transformation. (TODO link transmon anharmonicity constructor)
 
     .. details::
-        Text 123
+        **Neutral Atom Rydberg systems**
+        
+        In neutral atom systems for quantum computation and quantum simulation, a Rydberg transition is driven by an optical laser (frequency in MHz).
+        The interaction between different atoms is given by the :func:`rydberg_interaction`, for which we pass the atom's coordinates (in µm).
+
+        .. code-block:: python3
+
+            atom_coordinates = [[0, 0], [0, 4], [4, 0], [4, 4]]
+            wires = [1, 2, 3, 4]
+            assert len(wires) == len(atom_coordinates)
+            H_i = qml.pulse.rydberg_interaction(atom_coordinates, wires)
+
+        We can now simulate driving those atoms with a periodic amplitude for a duration of :math:`10 \mu s`. 
+        The total Hamiltonian of that evolution is given by
+
+        .. math::
+            \frac{1}{2} p \sin(\pi t) \sum_{j \in \text{wires}} \left(e^{i \pi/2} \sigma^+_j + e^{-i \pi/2} \sigma^-_j \right) -
+            \frac{1}{2} \frac{3 \pi}{4} \sum_{j \in \text{wires}} \sigma^z_j + \sum_{k<\ell} V_{k \ell} n_k n_\ell
+
+        and can be executed and differentiated via the following code.
+
+        .. code-block:: python3
+
+            amplitude = lambda p, t: p * jnp.sin(jnp.pi * t)
+            phase = jnp.pi / 2
+            detuning = 3 * jnp.pi / 4
+            H_d = qml.pulse.rydberg_drive(amplitude, phase, detuning, wires)
+
+            dev = qml.device("default.qubit.jax", wires=wires)
+
+            @qml.qnode(dev, interface="jax")
+            def circuit(params):
+                qml.evolve(H_i + H_d)(params, t=[0, 10])
+                return qml.expval(qml.PauliZ(0))
+
+        >>> params = [2.4]
+        >>> circuit(params)
+        Array(0.97137696, dtype=float32)
+        >>> jax.grad(circuit)(params)
+        [Array(0.10493923, dtype=float32)]
 
     """
     if isinstance(wires, int):
