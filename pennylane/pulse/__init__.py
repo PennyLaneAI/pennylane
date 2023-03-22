@@ -68,7 +68,7 @@ Hardware Compatible Hamiltonians
     :toctree: api
 
     ~rydberg_interaction
-    ~rydberg_drive
+    ~drive
 
 
 Creating a parametrized Hamiltonian

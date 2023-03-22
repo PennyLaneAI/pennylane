@@ -24,34 +24,47 @@ from pennylane.ops.qubit.hamiltonian import Hamiltonian
 
 from .parametrized_hamiltonian import ParametrizedHamiltonian
 
+# TODO: introduce proper creation and annihilation operators
+def a(wire, d=2):
+    return qml.s_prod(0.5, qml.PauliX(wire)) + qml.s_prod(0.5j, qml.PauliY(wire))
+
+def ad(wire, d=2):
+    return qml.s_prod(0.5, qml.PauliX(wire)) + qml.s_prod(-0.5j, qml.PauliY(wire))
 
 def drive(amplitude, phase, detuning, wires):
-    r"""Returns a :class:`ParametrizedHamiltonian` representing the action of a driving laser
-    field with the given rabi frequency, detuning and phase acting on the given wires
+    r"""Constructs a :class:`ParametrizedHamiltonian` representing the action of a driving electromagnetic
+    field with a qubit.
 
     .. math::
-        \frac{1}{2} \Omega(t) \sum_{i \in \text{wires}} (\cos(\phi)\sigma_i^x - \sin(\phi)\sigma_i^y) -
-        \frac{1}{2} \delta(t) \sum_{i \in \text{wires}} \sigma_i^z
+        \frac{1}{2} \Omega(t) \sum_{j \in \text{wires}} \left(e^{i \phi(t)} \sigma^+_j + e^{-i \phi(t)} \sigma^-_j \right) -
+        \frac{1}{2} \Delta(t) \sum_{j \in \text{wires}} \sigma^z_j
 
-    where :math:`\Omega`, :math:`\delta` and :math:`\phi` correspond to the rabi frequency, detuning
-    and phase of the laser, :math:`i` correspond to the wire index, and :math:`\sigma^\alpha` for
-    :math:`\alpha = x,y,z` are the Pauli matrices. The unit of time for the  evolution of this Rydberg
-    drive term is :math:`\mu \text{s}`. This driving term can be combined with an interaction term to
-    create a Hamiltonian describing a driven Rydberg atom system. Multiple driving terms can be combined
-    by summing them (see example).
+    where :math:`\Omega`, :math:`\phi` and :math:`\delta` correspond to the rabi frequency, phase and detuning of the electromagnetic
+    driving field and :math:`i` corresponds to the wire index. We are describing the Hamiltonian in terms of ladder operators
+    :math:`\sigma^\pm = \frac{1}{2}(\sigma_x \pm i \sigma_y)`.
+    Note that the detuning :math:`\Delta := \omega_q - \nu` is defined as the difference between the qubit frequency :math:`\omega_q`
+    and the electromagntic field driving frequency :math:`\nu`. For more details, see the theoretical background section below.
+
+    Common hardware systems are superconducting qubits and neutral atoms. The electromagnetic field of the drive is realized by microwave
+    and laser fields, respectively, operating at very differnt wavelengths.
+
+    Note that to avoid nummerical problems due to using both very large and very small numbers, it is advisable to match
+    the order of magnitudes of frequency and time arguments. For example, when frequencies are of order MHz (microwave pulses for superconducting systems),
+    then one can ommit the factor :math:`10^6` and just treat the times passed to the constructed :class:`ParametrizedHamiltonian` in :math:`\mu s = 10^{-6}s`
+    to be able to use numerical units of order :math:`\mathcal{O}(1)`. We further elaborate on that in the examples below.
 
     Args:
-        amplitude (Union[float, Callable]): float or callable returning the amplitude (in MHz) of a
-            laser field
-        phase (Union[float, Callable]): float or callable returning the phase (in radians) of the laser field
-        detuning (Union[float, Callable]): float or callable returning the detuning (in MHz) of a
-            laser field
-        wires (Union[int, List[int]]): integer or list containing wire values for the Rydberg atoms that
-            the laser field acts on
+        amplitude (Union[float, Callable]): float or callable returning the amplitude of a
+            electromagnetic field
+        phase (Union[float, Callable]): float or callable returning the phase (in radians) of the electromagnetic field
+        detuning (Union[float, Callable]): float or callable returning the detuning of a
+            electromagnetic field
+        wires (Union[int, List[int]]): integer or list containing wire values for the qubits that
+            the electromagnetic field acts on
 
     Returns:
-        HardwareHamiltonian: a :class:`~.ParametrizedHamiltonian` representing the action of the laser field
-        on the Rydberg atoms.
+        HardwareHamiltonian: a :class:`~.ParametrizedHamiltonian` representing the action of the electromagnetic field
+        on the qubits.
 
     .. seealso::
 
@@ -60,24 +73,25 @@ def drive(amplitude, phase, detuning, wires):
 
     **Example**
 
-    We create a Hamiltonian describing a laser acting on 4 wires (Rydberg atoms) with a fixed detuning and
-    phase, and a parametrized, time-dependent amplitude. The Hamiltonian includes an interaction term for
-    inter-atom interactions due to van der Waals forces, as well as the driving term for the laser driving
-    the atoms:
+    We create a Hamiltonian describing a electromagnetic field acting on 4 qubits with a fixed detuning and
+    phase, as well as a parametrized, time-dependent amplitude. The Hamiltonian includes an interaction term for
+    inter-qubit interactions.
 
     .. code-block:: python
 
-        atom_coordinates = [[0, 0], [0, 4], [4, 0], [4, 4]]
-        wires = [1, 2, 3, 4]
-        H_i = qml.pulse.rydberg_interaction(atom_coordinates, wires)
+        wires = [0, 1, 2, 3]
+        H_int = sum([qml.PauliX(i) @ qml.PauliX(i+1) for i in wires])
 
         amplitude = lambda p, t: p * jnp.sin(jnp.pi * t)
         phase = jnp.pi / 2
         detuning = 3 * jnp.pi / 4
         H_d = qml.pulse.drive(amplitude, phase, detuning, wires)
 
-    >>> H_i
-    ParametrizedHamiltonian: terms=6
+    >>> H_int
+    (1) [X0 X1]
+    + (1) [X1 X2]
+    + (1) [X2 X3]
+    + (1) [X3 X0]
     >>> H_d
     ParametrizedHamiltonian: terms=3
 
@@ -94,17 +108,17 @@ def drive(amplitude, phase, detuning, wires):
 
         @qml.qnode(dev, interface="jax")
         def circuit(params):
-            qml.evolve(H_i + H_d)(params, t=[0, 10])
+            qml.evolve(H_int + H_d)(params, t=[0, 10])
             return qml.expval(qml.PauliZ(0))
 
     >>> params = [2.4]
     >>> circuit(params)
-    Array(0.97137696, dtype=float32)
+    Array(0.70218135, dtype=float64)
     >>> jax.grad(circuit)(params)
-    [Array(0.10493923, dtype=float32)]
+    [Array(3.14449753, dtype=float64)]
 
     We can also create a Hamiltonian with multiple local drives. The following circuit corresponds to the
-    evolution where an additional local drive acting on wires ``[0, 1]`` is added to the Hamiltonian:
+    evolution where an additional local drive that changes in time is acting on wires ``[0, 1]`` is added to the Hamiltonian:
 
     .. code-block:: python
 
@@ -113,26 +127,56 @@ def drive(amplitude, phase, detuning, wires):
         detuning_local = jnp.pi / 4
         H_local = qml.pulse.drive(amplitude_local, phase_local, detuning_local, [0, 1])
 
-        H = H_i + H_d + H_local
+        H = H_int + H_d + H_local
 
         @jax.jit
         @qml.qnode(dev, interface="jax")
         def circuit_local(params):
             qml.evolve(H)(params, t=[0, 10])
             return qml.expval(qml.PauliZ(0))
+        
+        p_global = 2.4
+        p_amp = [1.3, -2.0]
+        p_phase = 0.5
+        params = (p_global, p_amp, p_phase)
+        circuit_local(params)
 
-    >>> params = [2.4, [1.3, -2.0]]
     >>> circuit_local(params)
-    Array(0.45782223, dtype=float64)
+    Array(0.6126627, dtype=float64)
     >>> jax.grad(circuit_local)(params)
-    [Array(-0.33522988, dtype=float64),
-     [Array(0.40320718, dtype=float64, weak_type=True),
-      Array(-0.12003976, dtype=float64, weak_type=True)]]
+    (Array(-0.30482848, dtype=float64),
+     [Array(0.27030772, dtype=float64, weak_type=True),
+      Array(-0.55805872, dtype=float64, weak_type=True)],
+     Array(0.27385566, dtype=float64))
+    
+    .. details::
+        :title: Theoretical background
+        :href: theory
+
+        Depending on the community and field it is often common to write the driving field Hamiltonian as
+
+        .. math::
+            H = - \frac{1}{2} \Omega(t) \sum_{j \in \text{wires}} \left(e^{i (\phi(t) + \nu t)} \sigma^+_j + e^{-i (\phi(t) + \nu t)} \sigma^-_j \right)
+            - \frac{1}{2} \omega_q \sum_{j \in \text{wires}} \sigma^z_j,
+        
+        with Rabi frequency :math:`\Omega`, phase :math:`\phi` and drive frequency :math:`\nu` of the electromagnetic field, as well as the qubit frequency :math:`\omega_q`.
+        We can move to the rotating frame of the driving field by applying :math:`U = e^{-i\nu t \sigma^z / 2}` which yields the new Hamiltonian
+
+        .. math::
+            H = - \frac{1}{2} \Omega(t) \sum_{j \in \text{wires}} \left(e^{i \phi(t)} \sigma^+_j + e^{-i \phi(t)} \sigma^-_j \right)
+            - \frac{1}{2} (\omega_q - \nu) \sum_{j \in \text{wires}} \sigma^z_j
+        
+        We can define :math:`\Delta = \omega_q - \nu` to arrive at the definition above. Note that a potential anharmonicity term, as is common for transmon systems,
+        is unaffected by this transformation. (TODO link transmon anharmonicity constructor)
+
+    .. details::
+        Text 123
+
     """
     if isinstance(wires, int):
         wires = [wires]
 
-    # We compute the `coeffs` and `observables` of the laser field
+    # We compute the `coeffs` and `observables` of the electromagnetic field
     coeffs = [
         amplitude_and_phase(qml.math.cos, amplitude, phase),
         amplitude_and_phase(qml.math.sin, amplitude, phase),
@@ -157,7 +201,7 @@ class HardwareHamiltonian(ParametrizedHamiltonian):
 
     This class contains the ``coeffs`` and the ``observables`` that represent one or more
     terms of the Hamiltonian of an ensemble of Hardware atoms under the action of local and global
-    laser fields:
+    electromagnetic fields:
 
     .. math::
 
@@ -218,11 +262,11 @@ class HardwareHamiltonian(ParametrizedHamiltonian):
                     raise ValueError("We cannot add two Hamiltonians with an interaction term!")
                 if not self.wires.contains_wires(other.wires):
                     warnings.warn(
-                        "The wires of the laser fields are not present in the Rydberg ensemble."
+                        "The wires of the electromagnetic fields are not present in the Rydberg ensemble."
                     )
             elif other.register is not None and not other.wires.contains_wires(self.wires):
                 warnings.warn(
-                    "The wires of the laser fields are not present in the Rydberg ensemble."
+                    "The wires of the electromagnetic fields are not present in the Rydberg ensemble."
                 )
 
             new_register = self.register or other.register
@@ -282,15 +326,15 @@ class HardwareHamiltonian(ParametrizedHamiltonian):
 @dataclass
 class HardwarePulse:
     """Dataclass that contains the information of a single Hardware pulse. This class is used
-    internally in PL to group into a single object all the data related to a single laser field.
+    internally in PL to group into a single object all the data related to a single electromagnetic field.
 
     Args:
-        amplitude (Union[float, Callable]): float or callable returning the amplitude (in MHz) of a laser
+        amplitude (Union[float, Callable]): float or callable returning the amplitude (in MHz) of a electromagnetic
             field
-        phase (Union[float, Callable]): float containing the phase (in radians) of the laser field
+        phase (Union[float, Callable]): float containing the phase (in radians) of the electromagnetic field
         detuning (Union[float, Callable]): float or callable returning the detuning (in MHz) of a
-            laser field
-        wires (Union[int, List[int]]): integer or list containing wire values that the laser field
+            electromagnetic field
+        wires (Union[int, List[int]]): integer or list containing wire values that the electromagnetic field
             acts on
     """
 

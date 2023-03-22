@@ -21,7 +21,7 @@ from .hardware_hamiltonian import HardwareHamiltonian
 def rydberg_interaction(
     register: list, wires=None, interaction_coeff: float = 862690, max_distance: float = np.inf
 ):
-    r"""Returns a :class:`ParametrizedHamiltonian` representing the interaction of an ensemble of
+    r"""Returns a :class:`HardwareHamiltonian` representing the interaction of an ensemble of
     Rydberg atoms due to the Rydberg blockade
     .. math::
         \sum_{i<j} V_{ij} n_i n_j
