@@ -210,9 +210,6 @@ def drive(amplitude, phase, detuning, wires):
     """
     if isinstance(wires, int):
         wires = [wires]
-
-    if isinstance(wires, int):
-        wires = [wires]
     trivial_detuning = not callable(detuning) and qml.math.isclose(detuning, 0.0)
 
     if not callable(amplitude) and qml.math.isclose(amplitude, 0.0):
