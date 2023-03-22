@@ -268,15 +268,14 @@ class Pow(ScalarSymbolicOp):
             return False
         return True
 
-    @staticmethod
-    def compute_decomposition(*params, wires, z, base):
+    def decomposition(self):
         try:
-            return base.pow(z)
+            return self.base.pow(self.z)
         except PowUndefinedError as e:
-            if isinstance(z, int) and z > 0:
+            if isinstance(self.z, int) and self.z > 0:
                 if QueuingManager.recording():
-                    return [apply(base) for _ in range(z)]
-                return [copy.copy(base) for _ in range(z)]
+                    return [apply(self.base) for _ in range(self.z)]
+                return [copy.copy(self.base) for _ in range(self.z)]
             # TODO: consider: what if z is an int and less than 0?
             # do we want Pow(base, -1) to be a "more fundamental" op
             raise DecompositionUndefinedError from e
