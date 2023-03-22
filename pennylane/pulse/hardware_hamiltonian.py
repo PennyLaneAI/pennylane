@@ -151,15 +151,15 @@ def drive(amplitude, phase, detuning, wires):
         Depending on the community and field it is often common to write the driving field Hamiltonian as
 
         .. math::
-            H = - \frac{1}{2} \Omega(t) \sum_{j \in \text{wires}} \left(e^{i (\phi(t) + \nu t)} \sigma^+_j + e^{-i (\phi(t) + \nu t)} \sigma^-_j \right)
-            - \frac{1}{2} \omega_q \sum_{j \in \text{wires}} \sigma^z_j,
+            H = \frac{1}{2} \Omega(t) \sum_{j \in \text{wires}} \left(e^{i (\phi(t) + \nu t)} \sigma^+_j + e^{-i (\phi(t) + \nu t)} \sigma^-_j \right)
+            + \frac{1}{2} \omega_q \sum_{j \in \text{wires}} \sigma^z_j,
 
         with amplitude :math:`\Omega`, phase :math:`\phi` and drive frequency :math:`\nu` of the electromagnetic field, as well as the qubit frequency :math:`\omega_q`.
         We can move to the rotating frame of the driving field by applying :math:`U = e^{-i\nu t \sigma^z / 2}` which yields the new Hamiltonian
 
         .. math::
-            H = - \frac{1}{2} \Omega(t) \sum_{j \in \text{wires}} \left(e^{i \phi(t)} \sigma^+_j + e^{-i \phi(t)} \sigma^-_j \right)
-            - \frac{1}{2} (\omega_q - \nu) \sum_{j \in \text{wires}} \sigma^z_j
+            H = \frac{1}{2} \Omega(t) \sum_{j \in \text{wires}} \left(e^{i \phi(t)} \sigma^+_j + e^{-i \phi(t)} \sigma^-_j \right)
+            + \frac{1}{2} (\omega_q - \nu) \sum_{j \in \text{wires}} \sigma^z_j
 
         We can define :math:`\Delta = \omega_q - \nu` to arrive at the definition above. Note that a potential anharmonicity term, as is common for transmon systems,
         is unaffected by this transformation. (TODO link transmon anharmonicity constructor)
