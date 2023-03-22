@@ -982,7 +982,7 @@ class TestFromQueue:
         qscript = QuantumScript(ops=[qml.PauliZ(0)], measurements=[qml.expval(qml.PauliX(0))])
 
         with qml.queuing.AnnotatedQueue() as q:
-            diag_ops = qscript.diagonalizing_gates
+            diag_ops = qscript.diagonalizing_gates()
 
         assert len(diag_ops) == 1
         # Hadamard is the diagonalizing gate for PauliX

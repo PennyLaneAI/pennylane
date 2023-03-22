@@ -337,7 +337,6 @@ class QuantumScript:
         """The (inferred) output dimension of the quantum script."""
         return self._output_dim
 
-    @property
     def diagonalizing_gates(self):
         """Returns the gates that diagonalize the measured wires such that they
         are in the eigenbasis of the circuit observables.
@@ -1188,7 +1187,7 @@ class QuantumScript:
 
             self._specs["num_operations"] = len(self.operations)
             self._specs["num_observables"] = len(self.observables)
-            self._specs["num_diagonalizing_gates"] = len(self.diagonalizing_gates)
+            self._specs["num_diagonalizing_gates"] = len(self.diagonalizing_gates())
             self._specs["num_used_wires"] = self.num_wires
             self._specs["depth"] = self.graph.get_depth()
             self._specs["num_trainable_params"] = self.num_params
@@ -1271,7 +1270,7 @@ class QuantumScript:
         if rotations:
             # if requested, append diagonalizing gates corresponding
             # to circuit observables
-            operations += self.diagonalizing_gates
+            operations += self.diagonalizing_gates()
 
         # decompose the queue
         # pylint: disable=no-member

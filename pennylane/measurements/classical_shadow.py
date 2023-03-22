@@ -314,7 +314,7 @@ class ClassicalShadowMP(MeasurementTransform):
                 ]
 
                 device.reset()
-                device.apply(tape.operations, rotations=tape.diagonalizing_gates + rotations)
+                device.apply(tape.operations, rotations=tape.diagonalizing_gates() + rotations)
 
                 outcomes[t] = device.generate_samples()[0][mapped_wires]
 

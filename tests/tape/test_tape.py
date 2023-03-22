@@ -185,7 +185,7 @@ class TestConstruction:
         obs_rotations = [o.diagonalizing_gates() for o in obs]
         obs_rotations = [item for sublist in obs_rotations for item in sublist]
 
-        for o1, o2 in zip(tape.diagonalizing_gates, obs_rotations):
+        for o1, o2 in zip(tape.diagonalizing_gates(), obs_rotations):
             assert isinstance(o1, o2.__class__)
             assert o1.wires == o2.wires
 

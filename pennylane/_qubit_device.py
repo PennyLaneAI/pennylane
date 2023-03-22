@@ -314,7 +314,7 @@ class QubitDevice(Device):
         self.check_validity(circuit.operations, circuit.observables)
 
         # apply all circuit operations
-        self.apply(circuit.operations, rotations=circuit.diagonalizing_gates, **kwargs)
+        self.apply(circuit.operations, rotations=circuit.diagonalizing_gates(), **kwargs)
 
         # generate computational basis samples
         if self.shots is not None:
@@ -370,7 +370,7 @@ class QubitDevice(Device):
         self.check_validity(circuit.operations, circuit.observables)
 
         # apply all circuit operations
-        self.apply(circuit.operations, rotations=circuit.diagonalizing_gates, **kwargs)
+        self.apply(circuit.operations, rotations=circuit.diagonalizing_gates(), **kwargs)
 
         # generate computational basis samples
         if self.shots is not None or circuit.is_sampled:
@@ -1394,7 +1394,7 @@ class QubitDevice(Device):
                 ]
 
                 self.reset()
-                self.apply(circuit.operations, rotations=circuit.diagonalizing_gates + rotations)
+                self.apply(circuit.operations, rotations=circuit.diagonalizing_gates() + rotations)
 
                 outcomes[t] = self.generate_samples()[0][mapped_wires]
 

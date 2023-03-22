@@ -249,7 +249,7 @@ class TestToQasmUnitTests:
 
         assert res == expected
 
-        ops2 = circuit.operations + circuit.diagonalizing_gates
+        ops2 = circuit.operations + circuit.diagonalizing_gates()
 
         with qml.queuing.AnnotatedQueue() as q2:
             [o.queue() for o in ops2]
