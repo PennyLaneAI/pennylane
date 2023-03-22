@@ -35,7 +35,7 @@ def drive(amplitude, phase, detuning, wires):
         \frac{1}{2} \Delta(t) \sum_{j \in \text{wires}} \sigma^z_j
 
     where :math:`\Omega`, :math:`\phi` and :math:`\Delta` correspond to the amplitude, phase and detuning of the electromagnetic
-    driving field and :math:`i` corresponds to the wire index. We are describing the Hamiltonian in terms of ladder operators
+    driving field and :math:`j` corresponds to the wire index. We are describing the Hamiltonian in terms of ladder operators
     :math:`\sigma^\pm = \frac{1}{2}(\sigma_x \pm i \sigma_y)`.
     Note that the detuning :math:`\Delta := \omega_q - \nu` is defined as the difference between the qubit frequency :math:`\omega_q`
     and the electromagntic field driving frequency :math:`\nu`. For more details, see the theoretical background section below.
