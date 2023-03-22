@@ -70,7 +70,7 @@ info = {
     "install_requires": requirements,
     "extras_require": {
         "kernels": ["cvxpy", "cvxopt"],
-        "jax": ["jax==0.4.3", "jaxlib==0.4.3", "jaxopt==0.6"],
+        "jax": ["jax>=0.4.1,<0.4.4", "jaxlib>=0.4.1,<0.4.4", "jaxopt==0.6"],
         "tf": [f"{tensorflow_requires}==2.11.0"],
         "autograd": ["autograd==1.5"],
         "torch": ["torch==1.13.1"],
