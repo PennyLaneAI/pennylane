@@ -517,6 +517,15 @@ class QNode:
             tuple[str or .gradient_transform, dict, .Device: Tuple containing the ``gradient_fn``,
             ``gradient_kwargs``, and the device to use when calling the execute function.
         """
+        model = device.capabilities().get("model", None)
+
+        if qml.active_return() and model == "cv" and diff_method is not None:
+            raise ValueError(
+                "The gradient of circuits using CV devices only works with the old return types. Use \n\n"
+                "\tqml.disable_return()\n\n"
+                "at the beginning of your program."
+            )
+
         if diff_method == "best":
             return QNode.get_best_method(device, interface)
 

@@ -1390,78 +1390,33 @@ class TestQubitIntegration:
         assert np.allclose(jac, expected, atol=tol, rtol=0)
 
 
-@pytest.mark.xfail(reason="CV variable needs to be update for the new return types.")
 @pytest.mark.parametrize(
     "diff_method,kwargs",
     [
         ["finite-diff", {}],
-        ["spsa", {"num_directions": 100, "h": 0.05}],
+        ["spsa", {"num_directions": 100, "h": H_FOR_SPSA}],
         ("parameter-shift", {}),
         ("parameter-shift", {"force_order2": True}),
     ],
 )
+@pytest.mark.parametrize("interface", ["autograd"])
 class TestCV:
     """Tests for CV integration"""
 
-    def test_first_order_observable(self, diff_method, kwargs, tol):
-        """Test variance of a first order CV observable"""
+    def test_raise_error_qnode(self, diff_method, kwargs, interface, tol):
+        """Test diff method with the new return types raises an error."""
         dev = qml.device("default.gaussian", wires=1)
-        if diff_method == "spsa":
-            tol = TOL_FOR_SPSA
-        elif diff_method == "hadamard":
-            pytest.skip("Hadamard gradient does not support variances.")
 
-        r = np.array(0.543, requires_grad=True)
-        phi = np.array(-0.654, requires_grad=True)
+        with pytest.raises(
+            ValueError,
+            match="The gradient of circuits using CV devices only works with the old return types. Use",
+        ):
 
-        @qnode(dev, diff_method=diff_method, **kwargs)
-        def circuit(r, phi):
-            qml.Squeezing(r, 0, wires=0)
-            qml.Rotation(phi, wires=0)
-            return qml.var(qml.X(0))
-
-        res = circuit(r, phi)
-        expected = np.exp(2 * r) * np.sin(phi) ** 2 + np.exp(-2 * r) * np.cos(phi) ** 2
-        assert np.allclose(res, expected, atol=tol, rtol=0)
-
-        # circuit jacobians
-        res = qml.jacobian(circuit)(r, phi)
-        expected = np.array(
-            [
-                [
-                    2 * np.exp(2 * r) * np.sin(phi) ** 2 - 2 * np.exp(-2 * r) * np.cos(phi) ** 2,
-                    2 * np.sinh(2 * r) * np.sin(2 * phi),
-                ]
-            ]
-        )
-        assert np.allclose(res, expected, atol=tol, rtol=0)
-
-    def test_second_order_observable(self, diff_method, kwargs, tol):
-        """Test variance of a second order CV expectation value"""
-        dev = qml.device("default.gaussian", wires=1)
-        if diff_method == "spsa":
-            tol = TOL_FOR_SPSA
-        elif diff_method == "hadamard":
-            pytest.skip("Hadamard gradient does not support variances.")
-
-        n = np.array(0.12, requires_grad=True)
-        a = np.array(0.765, requires_grad=True)
-
-        @qnode(dev, diff_method=diff_method, **kwargs)
-        def circuit(n, a):
-            qml.ThermalState(n, wires=0)
-            qml.Displacement(a, 0, wires=0)
-            return qml.var(qml.NumberOperator(0))
-
-        res = circuit(n, a)
-        expected = n**2 + n + np.abs(a) ** 2 * (1 + 2 * n)
-        assert np.allclose(res, expected, atol=tol, rtol=0)
-
-        # circuit jacobians
-        res = qml.jacobian(circuit)(n, a)
-        expected = np.array([[2 * a**2 + 2 * n + 1, 2 * a * (2 * n + 1)]])
-        assert np.allclose(res, expected, atol=tol, rtol=0)
-
+            @qnode(dev, interface=interface, diff_method=diff_method, **kwargs)
+            def circuit(r, phi):
+                qml.Squeezing(r, 0, wires=0)
+                qml.Rotation(phi, wires=0)
+                return qml.var(qml.X(0))
 
 def test_adjoint_reuse_device_state(mocker):
     """Tests that the autograd interface reuses the device state for adjoint differentiation"""
