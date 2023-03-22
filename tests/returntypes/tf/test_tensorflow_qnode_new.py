@@ -1135,6 +1135,7 @@ class TestCV:
                 qml.Rotation(phi, wires=0)
                 return qml.var(qml.X(0))
 
+
 @pytest.mark.parametrize(
     "interface,dev_name,diff_method,mode", interface_and_qubit_device_and_diff_method
 )

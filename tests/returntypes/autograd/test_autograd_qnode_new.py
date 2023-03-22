@@ -1418,6 +1418,7 @@ class TestCV:
                 qml.Rotation(phi, wires=0)
                 return qml.var(qml.X(0))
 
+
 def test_adjoint_reuse_device_state(mocker):
     """Tests that the autograd interface reuses the device state for adjoint differentiation"""
     dev = qml.device("default.qubit", wires=1)

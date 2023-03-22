@@ -1193,6 +1193,7 @@ class TestCV:
                 qml.Rotation(phi, wires=0)
                 return qml.var(qml.X(0))
 
+
 @pytest.mark.parametrize("dev_name,diff_method,mode", qubit_device_and_diff_method)
 class TestTapeExpansion:
     """Test that tape expansion within the QNode integrates correctly

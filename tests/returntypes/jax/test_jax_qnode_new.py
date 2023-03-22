@@ -1349,6 +1349,7 @@ class TestCV:
                 qml.Rotation(phi, wires=0)
                 return qml.var(qml.X(0))
 
+
 @pytest.mark.parametrize("interface", ["auto", "jax", "jax-python"])
 def test_adjoint_reuse_device_state(mocker, interface):
     """Tests that the jax interface reuses the device state for adjoint differentiation"""
