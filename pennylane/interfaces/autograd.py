@@ -462,7 +462,6 @@ def _vjp_new(
 
                 # Generate and execute the required gradient tapes
                 if _n == max_diff:
-
                     with qml.tape.Unwrap(*tapes):
                         vjp_tapes, processing_fn = qml.gradients.batch_vjp(
                             tapes,

@@ -36,7 +36,9 @@ tests/math/test_functions.py
 tests/gradients/test_spsa_gradient.py
 tests/gradients/test_hadamard_gradient.py
 tests/gradients/test_pulse_gradient.py
+tests/returntypes/autograd/test_autograd_default_qubit_2.py
 tests/returntypes/core/test_new_counts.py
+tests/returntypes/core/test_execute_default_qubit_2.py
 tests/returntypes/gradients/test_spsa_gradient_new.py
 tests/returntypes/gradients/test_spsa_gradient_shot_vec_new.py
 tests/returntypes/gradients/test_jvp.py
