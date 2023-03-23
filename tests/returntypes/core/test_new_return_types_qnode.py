@@ -20,7 +20,18 @@ import pytest
 import pennylane as qml
 
 wires = [2, 3, 4]
-devices = ["default.qubit", "lightning.qubit", "default.mixed"]
+devices = ["default.qubit", "lightning.qubit", "default.mixed", "default.qutrit"]
+
+
+def qubit_ansatz(x):
+    qml.Hadamard(wires=[0])
+    qml.CRX(x, wires=[0, 1])
+
+
+def qutrit_ansatz(x):
+    qml.THadamard(wires=[0])
+    mat = np.exp(1j * x) * np.eye(9)
+    qml.QutritUnitary(mat, wires=[0, 1])
 
 
 class TestIntegrationSingleReturn:
@@ -32,8 +43,7 @@ class TestIntegrationSingleReturn:
         dev = qml.device("default.qubit", wires=wires)
 
         def circuit(x):
-            qml.Hadamard(wires=[0])
-            qml.CRX(x, wires=[0, 1])
+            qubit_ansatz(x)
             return qml.state()
 
         qnode = qml.QNode(circuit, dev, diff_method=None)
@@ -48,8 +58,7 @@ class TestIntegrationSingleReturn:
         dev = qml.device("default.mixed", wires=wires)
 
         def circuit(x):
-            qml.Hadamard(wires=[0])
-            qml.CRX(x, wires=[0, 1])
+            qubit_ansatz(x)
             return qml.state()
 
         qnode = qml.QNode(circuit, dev, diff_method=None)
@@ -63,27 +72,30 @@ class TestIntegrationSingleReturn:
     def test_density_matrix(self, d_wires, device):
         """Return density matrix with default.qubit."""
         dev = qml.device(device, wires=4)
+        func = qutrit_ansatz if device == "default.qutrit" else qubit_ansatz
 
         def circuit(x):
-            qml.Hadamard(wires=[0])
-            qml.CRX(x, wires=[0, 1])
+            func(x)
             return qml.density_matrix(wires=range(0, d_wires))
 
         qnode = qml.QNode(circuit, dev, diff_method=None)
         res = qnode(0.5)
 
-        assert res.shape == (2**d_wires, 2**d_wires)
+        dim = 3 if device == "default.qutrit" else 2
+        assert res.shape == (dim**d_wires, dim**d_wires)
         assert isinstance(res, np.ndarray)
 
     @pytest.mark.parametrize("device", devices)
     def test_expval(self, device):
         """Return a single expval."""
         dev = qml.device(device, wires=2)
+        func = qutrit_ansatz if device == "default.qutrit" else qubit_ansatz
 
         def circuit(x):
-            qml.Hadamard(wires=[0])
-            qml.CRX(x, wires=[0, 1])
-            return qml.expval(qml.PauliZ(wires=1))
+            func(x)
+            return qml.expval(
+                qml.PauliZ(wires=1) if device != "default.qutrit" else qml.GellMann(1, 3)
+            )
 
         qnode = qml.QNode(circuit, dev, diff_method=None)
         res = qnode(0.5)
@@ -95,11 +107,13 @@ class TestIntegrationSingleReturn:
     def test_var(self, device):
         """Return a single var."""
         dev = qml.device(device, wires=2)
+        func = qutrit_ansatz if device == "default.qutrit" else qubit_ansatz
 
         def circuit(x):
-            qml.Hadamard(wires=[0])
-            qml.CRX(x, wires=[0, 1])
-            return qml.var(qml.PauliZ(wires=1))
+            func(x)
+            return qml.var(
+                qml.PauliZ(wires=1) if device != "default.qutrit" else qml.GellMann(1, 3)
+            )
 
         qnode = qml.QNode(circuit, dev, diff_method=None)
         res = qnode(0.5)
@@ -110,11 +124,13 @@ class TestIntegrationSingleReturn:
     @pytest.mark.parametrize("device", devices)
     def test_vn_entropy(self, device):
         """Return a single vn entropy."""
+        if device == "default.qutrit":
+            pytest.skip("DefaultQutrit does not support VnEntropy.")
+
         dev = qml.device(device, wires=2)
 
         def circuit(x):
-            qml.Hadamard(wires=[0])
-            qml.CRX(x, wires=[0, 1])
+            qubit_ansatz(x)
             return qml.vn_entropy(wires=0)
 
         qnode = qml.QNode(circuit, dev, diff_method=None)
@@ -131,8 +147,7 @@ class TestIntegrationSingleReturn:
 
         @qml.qnode(device=dev)
         def circuit(x):
-            qml.Hadamard(wires=[0])
-            qml.CRX(x, wires=[0, 1])
+            qubit_ansatz(x)
             return qml.mutual_info(wires0=[0], wires1=[1])
 
         with pytest.raises(
@@ -143,11 +158,13 @@ class TestIntegrationSingleReturn:
     @pytest.mark.parametrize("device", devices)
     def test_mutual_info(self, device):
         """Return a single mutual information."""
+        if device == "default.qutrit":
+            pytest.skip("DefaultQutrit does not support MutualInfo.")
+
         dev = qml.device(device, wires=2)
 
         def circuit(x):
-            qml.Hadamard(wires=[0])
-            qml.CRX(x, wires=[0, 1])
+            qubit_ansatz(x)
             return qml.mutual_info(wires0=[0], wires1=[1])
 
         qnode = qml.QNode(circuit, dev, diff_method=None)
@@ -164,8 +181,7 @@ class TestIntegrationSingleReturn:
 
         @qml.qnode(device=dev)
         def circuit(x):
-            qml.Hadamard(wires=[0])
-            qml.CRX(x, wires=[0, 1])
+            qubit_ansatz(x)
             return qml.mutual_info(wires0=[0], wires1=[1])
 
         with pytest.raises(
@@ -175,6 +191,8 @@ class TestIntegrationSingleReturn:
 
     herm = np.diag([1, 2, 3, 4])
     probs_data = [
+        (qml.GellMann(0, 3), None),
+        (qml.THermitian(np.eye(9), wires=[1, 0]), None),
         (None, [0]),
         (None, [0, 1]),
         (qml.PauliZ(0), None),
@@ -182,16 +200,17 @@ class TestIntegrationSingleReturn:
     ]
 
     @pytest.mark.parametrize("device", devices)
-    @pytest.mark.parametrize("op,wires", probs_data)
+    @pytest.mark.parametrize("op,wires", probs_data[2:])
     def test_probs(self, op, wires, device):
         """Return a single prob."""
-        if device == "lightning.qubit":
-            pytest.skip("Lightning does not support probs with unordered wires.")
+        if device == "lightning.qubit" or device == "default.qutrit":
+            pytest.skip(
+                "Skip Lightning (wire reordering unsupported) and Qutrit (unsuported observables)."
+            )
         dev = qml.device(device, wires=3)
 
         def circuit(x):
-            qml.Hadamard(wires=[0])
-            qml.CRX(x, wires=[0, 1])
+            qubit_ansatz(x)
             return qml.probs(op=op, wires=wires)
 
         qnode = qml.QNode(circuit, dev, diff_method=None)
@@ -203,17 +222,47 @@ class TestIntegrationSingleReturn:
         assert res.shape == (2 ** len(wires),)
         assert isinstance(res, np.ndarray)
 
+    @pytest.mark.parametrize("op,wires", probs_data[:4])
+    def test_probs_qutrit(self, op, wires):
+        """Return a single prob."""
+        dev = qml.device("default.qutrit", wires=3)
+
+        def circuit(x):
+            qutrit_ansatz(x)
+            return qml.probs(op=op, wires=wires)
+
+        qnode = qml.QNode(circuit, dev, diff_method=None)
+        res = qnode(0.5)
+
+        if wires is None:
+            wires = op.wires
+
+        assert res.shape == (3 ** len(wires),)
+        assert isinstance(res, np.ndarray)
+
     @pytest.mark.parametrize("device", devices)
     @pytest.mark.parametrize(
-        "measurement", [qml.sample(qml.PauliZ(0)), qml.sample(wires=[0]), qml.sample(wires=[0, 1])]
+        "measurement",
+        [
+            qml.sample(qml.PauliZ(0)),
+            qml.sample(wires=[0]),
+            qml.sample(wires=[0, 1]),
+            qml.sample(qml.GellMann(0, 3)),
+        ],
     )
     def test_sample(self, measurement, device, shots=100):
         """Test the sample measurement."""
+        if device == "default.qutrit":
+            if isinstance(measurement.obs, qml.PauliZ):
+                pytest.skip("DefaultQutrit doesn't support qubit observables.")
+        elif isinstance(measurement.obs, qml.GellMann):
+            pytest.skip("DefaultQubit doesn't support qutrit observables.")
+
         dev = qml.device(device, wires=2, shots=shots)
+        func = qutrit_ansatz if device == "default.qutrit" else qubit_ansatz
 
         def circuit(x):
-            qml.Hadamard(wires=[0])
-            qml.CRX(x, wires=[0, 1])
+            func(x)
             return qml.apply(measurement)
 
         qnode = qml.QNode(circuit, dev, diff_method=None)
@@ -224,19 +273,31 @@ class TestIntegrationSingleReturn:
         if measurement.wires.tolist() != [0, 1]:
             assert res.shape == (shots,)
         else:
-            assert res.shape == (shots, 2)
+            assert res.shape == (shots, 2) if device != "default.qutrit" else (shots, 3)
 
     @pytest.mark.parametrize("device", devices)
     @pytest.mark.parametrize(
-        "measurement", [qml.counts(qml.PauliZ(0)), qml.counts(wires=[0]), qml.counts(wires=[0, 1])]
+        "measurement",
+        [
+            qml.counts(qml.PauliZ(0)),
+            qml.counts(wires=[0]),
+            qml.counts(wires=[0, 1]),
+            qml.counts(qml.GellMann(0, 3)),
+        ],
     )
     def test_counts(self, measurement, device, shots=100):
         """Test the counts measurement."""
+        if device == "default.qutrit":
+            if isinstance(measurement.obs, qml.PauliZ):
+                pytest.skip("DefaultQutrit doesn't support qubit observables.")
+        elif isinstance(measurement.obs, qml.GellMann):
+            pytest.skip("DefaultQubit doesn't support qutrit observables.")
+
         dev = qml.device(device, wires=2, shots=shots)
+        func = qutrit_ansatz if device == "default.qutrit" else qubit_ansatz
 
         def circuit(x):
-            qml.Hadamard(wires=[0])
-            qml.CRX(x, wires=[0, 1])
+            func(x)
             return qml.apply(measurement)
 
         qnode = qml.QNode(circuit, dev, diff_method=None)
@@ -923,7 +984,7 @@ class TestIntegrationSingleReturnJax:
 
 wires = [([0], [1]), ([1], [0]), ([0], [0]), ([1], [1])]
 
-devices = ["default.qubit", "lightning.qubit", "default.mixed"]
+devices = ["default.qubit", "lightning.qubit", "default.mixed", "default.qutrit"]
 
 
 class TestIntegrationMultipleReturns:
@@ -936,10 +997,17 @@ class TestIntegrationMultipleReturns:
         """Return multiple expvals."""
         dev = qml.device(device, wires=2)
 
+        obs1 = (
+            qml.Projector([0], wires=0)
+            if device != "default.qutrit"
+            else qml.THermitian(np.eye(3), wires=0)
+        )
+        obs2 = qml.PauliZ(wires=1) if device != "default.qutrit" else qml.GellMann(1, 3)
+        func = qutrit_ansatz if device == "default.qutrit" else qubit_ansatz
+
         def circuit(x):
-            qml.Hadamard(wires=[0])
-            qml.CRX(x, wires=[0, 1])
-            return qml.expval(qml.Projector([0], wires=0)), qml.expval(qml.PauliZ(wires=1))
+            func(x)
+            return qml.expval(obs1), qml.expval(obs2)
 
         qnode = qml.QNode(circuit, dev, diff_method=None)
         res = qnode(0.5)
@@ -958,10 +1026,17 @@ class TestIntegrationMultipleReturns:
         """Return multiple vars."""
         dev = qml.device(device, wires=2)
 
+        obs1 = (
+            qml.Projector([0], wires=0)
+            if device != "default.qutrit"
+            else qml.THermitian(np.eye(3), wires=0)
+        )
+        obs2 = qml.PauliZ(wires=1) if device != "default.qutrit" else qml.GellMann(1, 3)
+        func = qutrit_ansatz if device == "default.qutrit" else qubit_ansatz
+
         def circuit(x):
-            qml.Hadamard(wires=[0])
-            qml.CRX(x, wires=[0, 1])
-            return qml.var(qml.PauliZ(wires=0)), qml.var(qml.Hermitian([[1, 0], [0, 1]], wires=1))
+            func(x)
+            return qml.var(obs1), qml.var(obs2)
 
         qnode = qml.QNode(circuit, dev, diff_method=None)
         res = qnode(0.5)
@@ -977,6 +1052,10 @@ class TestIntegrationMultipleReturns:
 
     # op1, wires1, op2, wires2
     multi_probs_data = [
+        (qml.GellMann(0, 3), None, qml.GellMann(1, 3), None),
+        (None, [0], qml.GellMann(1, 3), None),
+        (qml.GellMann(0, 3), None, None, [1]),
+        (qml.GellMann(1, 3), None, qml.GellMann(0, 3), None),
         (None, [0], None, [0]),
         (None, [0], None, [0, 1]),
         (None, [0, 1], None, [0]),
@@ -988,14 +1067,16 @@ class TestIntegrationMultipleReturns:
     ]
 
     @pytest.mark.parametrize("device", devices)
-    @pytest.mark.parametrize("op1,wires1,op2,wires2", multi_probs_data)
+    @pytest.mark.parametrize("op1,wires1,op2,wires2", multi_probs_data[4:])
     def test_multiple_prob(self, op1, op2, wires1, wires2, device):
         """Return multiple probs."""
+        if device == "default.qutrit":
+            pytest.skip("Separate test for DefaultQutrit.")
+
         dev = qml.device(device, wires=2)
 
         def circuit(x):
-            qml.Hadamard(wires=[0])
-            qml.CRX(x, wires=[0, 1])
+            qubit_ansatz(x)
             return qml.probs(op=op1, wires=wires1), qml.probs(op=op2, wires=wires2)
 
         qnode = qml.QNode(circuit, dev, diff_method=None)
@@ -1016,16 +1097,45 @@ class TestIntegrationMultipleReturns:
         assert isinstance(res[1], np.ndarray)
         assert res[1].shape == (2 ** len(wires2),)
 
+    @pytest.mark.parametrize("op1,wires1,op2,wires2", multi_probs_data[:8])
+    def test_multiple_prob_qutrit(self, op1, op2, wires1, wires2):
+        """Return multiple probs."""
+        dev = qml.device("default.qutrit", wires=2)
+
+        def circuit(x):
+            qutrit_ansatz(x)
+            return qml.probs(op=op1, wires=wires1), qml.probs(op=op2, wires=wires2)
+
+        qnode = qml.QNode(circuit, dev, diff_method=None)
+        res = qnode(0.5)
+
+        assert isinstance(res, tuple)
+        assert len(res) == 2
+
+        if wires1 is None:
+            wires1 = op1.wires
+
+        if wires2 is None:
+            wires2 = op2.wires
+
+        assert isinstance(res[0], np.ndarray)
+        assert res[0].shape == (3 ** len(wires1),)
+
+        assert isinstance(res[1], np.ndarray)
+        assert res[1].shape == (3 ** len(wires2),)
+
     @pytest.mark.parametrize("device", devices)
-    @pytest.mark.parametrize("op1,wires1,op2,wires2", multi_probs_data)
+    @pytest.mark.parametrize("op1,wires1,op2,wires2", multi_probs_data[4:])
     @pytest.mark.parametrize("wires3, wires4", wires)
     def test_mix_meas(self, op1, wires1, op2, wires2, wires3, wires4, device):
         """Return multiple different measurements."""
+        if device == "default.qutrit":
+            pytest.skip("Different test for DefaultQutrit.")
+
         dev = qml.device(device, wires=2)
 
         def circuit(x):
-            qml.Hadamard(wires=[0])
-            qml.CRX(x, wires=[0, 1])
+            qubit_ansatz(x)
             return (
                 qml.probs(op=op1, wires=wires1),
                 qml.vn_entropy(wires=wires3),
@@ -1057,16 +1167,67 @@ class TestIntegrationMultipleReturns:
         assert isinstance(res[3], np.ndarray)
         assert res[3].shape == ()
 
-    @pytest.mark.parametrize("device", devices)
-    @pytest.mark.parametrize("measurement", [qml.sample(qml.PauliZ(0)), qml.sample(wires=[0])])
-    def test_expval_sample(self, measurement, device, shots=100):
-        """Test the expval and sample measurements together."""
-        dev = qml.device(device, wires=2, shots=shots)
+    @pytest.mark.parametrize("op1,wires1,op2,wires2", multi_probs_data[:8])
+    @pytest.mark.parametrize("wires3, wires4", wires)
+    def test_mix_meas_qutrit(self, op1, wires1, op2, wires2, wires3, wires4):
+        """Return multiple different measurements."""
+        pytest.skip("Non-commuting observables don't work correctly for qutrits yet.")
+
+        dev = qml.device("default.qutrit", wires=2)
 
         def circuit(x):
-            qml.Hadamard(wires=[0])
-            qml.CRX(x, wires=[0, 1])
-            return qml.expval(qml.PauliX(1)), qml.apply(measurement)
+            qutrit_ansatz(x)
+            return (
+                qml.probs(op=op1, wires=wires1),
+                qml.var(qml.GellMann(wires3, 3)),
+                qml.probs(op=op2, wires=wires2),
+                qml.expval(qml.GellMann(wires4, 3)),
+            )
+
+        qnode = qml.QNode(circuit, dev, diff_method=None)
+        res = qnode(0.5)
+
+        if wires1 is None:
+            wires1 = op1.wires
+
+        if wires2 is None:
+            wires2 = op2.wires
+
+        assert isinstance(res, tuple)
+        assert len(res) == 4
+
+        assert isinstance(res[0], np.ndarray)
+        assert res[0].shape == (3 ** len(wires1),)
+
+        assert isinstance(res[1], np.ndarray)
+        assert res[1].shape == ()
+
+        assert isinstance(res[2], np.ndarray)
+        assert res[2].shape == (3 ** len(wires2),)
+
+        assert isinstance(res[3], np.ndarray)
+        assert res[3].shape == ()
+
+    @pytest.mark.parametrize("device", devices)
+    @pytest.mark.parametrize(
+        "measurement",
+        [qml.sample(qml.PauliZ(0)), qml.sample(wires=[0]), qml.sample(qml.GellMann(0, 3))],
+    )
+    def test_expval_sample(self, measurement, device, shots=100):
+        """Test the expval and sample measurements together."""
+        if device == "default.qutrit":
+            if isinstance(measurement.obs, qml.PauliZ):
+                pytest.skip("DefaultQutrit doesn't support qubit observables.")
+        elif isinstance(measurement.obs, qml.GellMann):
+            pytest.skip("DefaultQubit doesn't support qutrit observables.")
+
+        dev = qml.device(device, wires=2, shots=shots)
+        func = qubit_ansatz if device != "default.qutrit" else qutrit_ansatz
+        obs = qml.PauliZ(1) if device != "default.qutrit" else qml.GellMann(1, 3)
+
+        def circuit(x):
+            func(x)
+            return qml.expval(obs), qml.apply(measurement)
 
         qnode = qml.QNode(circuit, dev, diff_method=None)
         res = qnode(0.5)
@@ -1080,15 +1241,25 @@ class TestIntegrationMultipleReturns:
         assert res[1].shape == (shots,)
 
     @pytest.mark.parametrize("device", devices)
-    @pytest.mark.parametrize("measurement", [qml.counts(qml.PauliZ(0)), qml.counts(wires=[0])])
+    @pytest.mark.parametrize(
+        "measurement",
+        [qml.counts(qml.PauliZ(0)), qml.counts(wires=[0]), qml.counts(qml.GellMann(0, 3))],
+    )
     def test_expval_counts(self, measurement, device, shots=100):
         """Test the expval and counts measurements together."""
+        if device == "default.qutrit":
+            if isinstance(measurement.obs, qml.PauliZ):
+                pytest.skip("DefaultQutrit doesn't support qubit observables.")
+        elif isinstance(measurement.obs, qml.GellMann):
+            pytest.skip("DefaultQubit doesn't support qutrit observables.")
+
         dev = qml.device(device, wires=2, shots=shots)
+        func = qubit_ansatz if device != "default.qutrit" else qutrit_ansatz
+        obs = qml.PauliZ(1) if device != "default.qutrit" else qml.GellMann(1, 3)
 
         def circuit(x):
-            qml.Hadamard(wires=[0])
-            qml.CRX(x, wires=[0, 1])
-            return qml.expval(qml.PauliX(1)), qml.apply(measurement)
+            func(x)
+            return qml.expval(obs), qml.apply(measurement)
 
         qnode = qml.QNode(circuit, dev, diff_method=None)
         res = qnode(0.5)
@@ -1108,11 +1279,12 @@ class TestIntegrationMultipleReturns:
     def test_list_one_expval(self, wires, device):
         """Return a comprehension list of one expvals."""
         dev = qml.device(device, wires=wires)
+        func = qubit_ansatz if device != "default.qutrit" else qutrit_ansatz
+        obs = qml.PauliZ(0) if device != "default.qutrit" else qml.GellMann(0, 3)
 
         def circuit(x):
-            qml.Hadamard(wires=[0])
-            qml.CRX(x, wires=[0, 1])
-            return [qml.expval(qml.PauliZ(wires=0))]
+            func(x)
+            return [qml.expval(obs)]
 
         qnode = qml.QNode(circuit, dev, diff_method=None)
         res = qnode(0.5)
@@ -1130,11 +1302,15 @@ class TestIntegrationMultipleReturns:
     def test_list_multiple_expval(self, wires, device, shot_vector):
         """Return a comprehension list of multiple expvals."""
         dev = qml.device(device, wires=wires, shots=shot_vector)
+        func = qubit_ansatz if device != "default.qutrit" else qutrit_ansatz
+        obs = qml.PauliZ if device != "default.qutrit" else qml.GellMann
 
         def circuit(x):
-            qml.Hadamard(wires=[0])
-            qml.CRX(x, wires=[0, 1])
-            return [qml.expval(qml.PauliZ(wires=i)) for i in range(0, wires)]
+            func(x)
+            return [
+                qml.expval(obs(wires=i) if device != "default.qutrit" else obs(wires=i, index=3))
+                for i in range(0, wires)
+            ]
 
         qnode = qml.QNode(circuit, dev, diff_method=None)
         res = qnode(0.5)
@@ -1158,33 +1334,40 @@ class TestIntegrationMultipleReturns:
     @pytest.mark.parametrize("device", devices)
     def test_array_multiple(self, device):
         """Return PennyLane array of multiple measurements"""
+        if device == "default.qutrit":
+            pytest.skip("Non-commuting observables don't work correctly for qutrits yet.")
+
         dev = qml.device(device, wires=2)
+        func = qubit_ansatz if device != "default.qutrit" else qutrit_ansatz
+        obs = qml.PauliZ(1) if device != "default.qutrit" else qml.GellMann(1, 3)
 
         def circuit(x):
-            qml.Hadamard(wires=[0])
-            qml.CRX(x, wires=[0, 1])
-            return qml.numpy.array([qml.expval(qml.PauliZ(wires=0)), qml.probs(wires=[0, 1])])
+            func(x)
+            return qml.numpy.array([qml.expval(obs), qml.probs(wires=[0, 1])])
 
         qnode = qml.QNode(circuit, dev, diff_method=None)
         res = qnode(0.5)
 
         assert isinstance(res, qml.numpy.ndarray)
         assert res[0].shape == ()
-        assert res[1].shape == (4,)
+        assert res[1].shape == (4,) if device != "default.qutrit" else (9,)
 
     @pytest.mark.parametrize("device", devices)
     @pytest.mark.parametrize("comp_basis_sampling", [qml.sample(), qml.counts()])
     def test_sample_counts_no_obs(self, device, comp_basis_sampling):
         """Measuring qml.sample()/qml.counts() works with other measurements even with the same wire being measured."""
+        if device == "default.qutrit":
+            pytest.skip("Non-commuting observables don't work correctly for qutrits yet.")
+
         shot_num = 1000
         num_wires = 2
         dev = qml.device(device, wires=num_wires, shots=shot_num)
+        func = qubit_ansatz if device != "default.qutrit" else qutrit_ansatz
+        obs = qml.PauliZ(1) if device != "default.qutrit" else qml.GellMann(1, 3)
 
-        @qml.qnode(dev, diff_method=None)
         def circuit(x):
-            qml.Hadamard(wires=[0])
-            qml.CRX(x, wires=[0, 1])
-            return qml.apply(comp_basis_sampling), qml.expval(qml.PauliZ(0)), qml.probs(wires=[0])
+            func(x)
+            return qml.apply(comp_basis_sampling), qml.expval(obs), qml.probs(wires=[0])
 
         qnode = qml.QNode(circuit, dev, diff_method=None)
         res = qnode(0.5)
