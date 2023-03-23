@@ -71,7 +71,7 @@ def test_error_raised_on_call_if_jax_not_installed():
         import jax  # pylint: disable=unused-import
 
         pytest.skip()
-    except ImportError:
+    except ModuleNotFoundError:
         with pytest.raises(ImportError, match="Module jax is required"):
             ParametrizedEvolution(H=ParametrizedHamiltonian([1], [qml.PauliX(0)]))([], 2)
 
@@ -82,7 +82,7 @@ def test_error_raised_for_matrix_method_if_jax_not_installed():
         import jax  # pylint: disable=unused-import
 
         pytest.skip()
-    except ImportError:
+    except ModuleNotFoundError:
         with pytest.raises(ImportError, match="Module jax is required"):
             ParametrizedEvolution(
                 H=ParametrizedHamiltonian([1], [qml.PauliX(0)]), params=[], t=2
