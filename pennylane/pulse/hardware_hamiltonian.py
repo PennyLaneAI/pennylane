@@ -304,13 +304,9 @@ class HardwareHamiltonian(ParametrizedHamiltonian):
                 if other.register is not None:
                     raise ValueError("We cannot add two Hamiltonians with an interaction term!")
                 if not self.wires.contains_wires(other.wires):
-                    warnings.warn(
-                        "The wires of the drive fields are not present in the ensemble."
-                    )
+                    warnings.warn("The wires of the drive fields are not present in the ensemble.")
             elif other.register is not None and not other.wires.contains_wires(self.wires):
-                warnings.warn(
-                    "The wires of the drive fields are not present in the ensemble."
-                )
+                warnings.warn("The wires of the drive fields are not present in the ensemble.")
 
             new_register = self.register or other.register
             new_pulses = self.pulses + other.pulses
