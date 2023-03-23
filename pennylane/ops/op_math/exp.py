@@ -306,7 +306,9 @@ class Exp(ScalarSymbolicOp, Operation):
                 new_g = qml.map_wires(g, dict(zip(g.wires, base.wires)))
 
                 if qml.equal(base, new_g) and math.real(coeff) == 0:
-                    coeff *= -1j / c  # cancel the coefficients added by the generator
+                    coeff = math.real(
+                        -1j / c * coeff
+                    )  # cancel the coefficients added by the generator
                     return [op_class(coeff, g.wires)]
 
         if qml.pauli.is_pauli_word(base) and math.real(coeff) == 0:
@@ -330,7 +332,9 @@ class Exp(ScalarSymbolicOp, Operation):
         Returns:
             List[Operator]: list containing the PauliRot operator
         """
-        coeff = 2j * coeff  # need to cancel the coefficients added by PauliRot and Ising gates
+        coeff = math.real(
+            2j * coeff
+        )  # need to cancel the coefficients added by PauliRot and Ising gates
         pauli_word = qml.pauli.pauli_word_to_string(base)
         if pauli_word == "I" * base.num_wires:
             return []
