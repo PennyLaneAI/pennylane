@@ -45,9 +45,9 @@ def custom_measurement_process(device, spy):
 class TestSample:
     """Tests for the sample function"""
 
-    def test_sample_dimension(self, mocker):
+    @pytest.mark.parametrize("n_sample", (1, 10))
+    def test_sample_dimension(self, mocker, n_sample):
         """Test that the sample function outputs samples of the right size"""
-        n_sample = 10
 
         dev = qml.device("default.qubit", wires=2, shots=n_sample)
         spy = mocker.spy(qml.QubitDevice, "sample")
@@ -326,12 +326,12 @@ class TestSample:
         expected = (1, shots) if obs is not None else (1, shots, 3)
         assert res.shape(dev) == expected
 
-    def test_shape_wires(self):
+    @pytest.mark.parametrize("n_samples", (1, 10))
+    def test_shape_wires(self, n_samples):
         """Test that the shape is correct when wires are provided."""
-        shots = 10
-        dev = qml.device("default.qubit", wires=3, shots=shots)
+        dev = qml.device("default.qubit", wires=3, shots=n_samples)
         mp = qml.sample(wires=(0, 1))
-        assert mp.shape(dev) == (1, shots, 2)
+        assert mp.shape(dev) == (1, n_samples, 2)
 
     @pytest.mark.parametrize(
         "obs",
@@ -346,7 +346,7 @@ class TestSample:
         assert res.shape(dev) == expected
 
     def test_shape_shot_vector_obs(self):
-        """Test that the shape is correct with the shot vector and no observable too."""
+        """Test that the shape is correct with the shot vector and a observable too."""
         shot_vec = (2, 2)
         dev = qml.device("default.qubit", wires=3, shots=shot_vec)
 
@@ -391,7 +391,8 @@ class TestSample:
 
 
 @pytest.mark.jax
-def test_jitting_with_sampling_on_subset_of_wires():
+@pytest.mark.parametrize("samples", (1, 10))
+def test_jitting_with_sampling_on_subset_of_wires(samples):
     """Test case covering bug in Issue #3904.  Sampling should be jit-able
     when sampling occurs on a subset of wires. The bug was occuring due an improperly
     set shape method."""
@@ -399,7 +400,7 @@ def test_jitting_with_sampling_on_subset_of_wires():
 
     jax.config.update("jax_enable_x64", True)
 
-    dev = qml.device("default.qubit", wires=3, shots=5)
+    dev = qml.device("default.qubit", wires=3, shots=samples)
 
     @qml.qnode(dev, interface="jax")
     def circuit(x):
@@ -408,5 +409,6 @@ def test_jitting_with_sampling_on_subset_of_wires():
 
     results = jax.jit(circuit)(jax.numpy.array(0.123, dtype=jax.numpy.float64))
 
-    assert results.shape == (5, 2)
-    assert circuit._qfunc_output.shape(dev) == (1, 5, 2)
+    expected = (2,) if samples == 1 else (samples, 2)
+    assert results.shape == expected
+    assert circuit._qfunc_output.shape(dev) == (1, samples, 2)

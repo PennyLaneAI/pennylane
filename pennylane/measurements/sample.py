@@ -151,13 +151,13 @@ class SampleMP(SampleMeasurement):
 
     # pylint: disable=protected-access
     def shape(self, device=None):
+        if qml.active_return():
+            return self._shape_new(device)
         if device is None:
             raise MeasurementShapeError(
                 "The device argument is required to obtain the shape of the measurement "
                 f"{self.__class__.__name__}."
             )
-        if qml.active_return():
-            return self._shape_new(device)
         if device.shot_vector is not None:
             if self.obs is None:
                 # TODO: revisit when qml.sample without an observable fully
@@ -173,9 +173,15 @@ class SampleMP(SampleMeasurement):
         return (1, device.shots) if self.obs is not None else (1, device.shots, len_wires)
 
     def _shape_new(self, device=None):
+        if device is None:
+            raise MeasurementShapeError(
+                "The device argument is required to obtain the shape of the measurement "
+                f"{self.__class__.__name__}."
+            )
         num_wires = len(self.wires) if len(self.wires) > 0 else len(device.wires)
 
         def _single_int_shape(shot_val, num_wires):
+            # singleton dimensions, whether in shot val or num_wires are squeezed away
             inner_shape = []
             if shot_val != 1:
                 inner_shape.append(shot_val)
