@@ -83,7 +83,7 @@ def test_error_raised_for_matrix_method_if_jax_not_installed():
 
         pytest.skip()
     except ModuleNotFoundError:
-        with pytest.raises(ImportError, match="Module jax is required"):
+        with pytest.raises(ImportError, match="Sanity check"):
             ParametrizedEvolution(
                 H=ParametrizedHamiltonian([1], [qml.PauliX(0)]), params=[], t=2
             ).matrix()
