@@ -80,7 +80,7 @@ def test_sample_state_custom_rng():
 def test_approximate_probs_from_samples(init_state):
     """Tests that the generated samples are approximately as expected."""
     n = 4
-    shots = 10000
+    shots = 20000
     state = init_state(n)
 
     flat_state = state.flatten()
@@ -101,6 +101,7 @@ def test_entangled_qubit_samples_always_match():
     assert any(samples[:, 0])  # ...and some are |11>!
 
 
+@pytest.mark.slow
 @pytest.mark.parametrize("num_wires", [13, 14, 15, 16])
 def test_sample_state_many_wires(num_wires):
     """Tests that sample_state works as expected with many wires, and with re-ordering."""
