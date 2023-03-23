@@ -1192,10 +1192,13 @@ class TestFullMetricTensor:
             assert qml.math.allclose(mt, expected)
 
     @pytest.mark.jax
-    @pytest.mark.skip(reason="JAX does not support the forward pass metric tensor.")
     @pytest.mark.parametrize("ansatz, params", zip(fubini_ansatze, fubini_params))
     @pytest.mark.parametrize("interface", ["auto", "jax"])
     def test_correct_output_jax(self, ansatz, params, interface):
+        from jax.config import config
+
+        config.update("jax_enable_x64", True)
+
         from jax import numpy as jnp
 
         expected = autodiff_metric_tensor(ansatz, self.num_wires)(*params)
@@ -1209,7 +1212,42 @@ class TestFullMetricTensor:
             ansatz(*params, dev.wires[:-1])
             return qml.expval(qml.PauliZ(0))
 
-        mt = qml.metric_tensor(circuit, approx=None)(*params)
+        if len(params) > 1:
+            mt = qml.metric_tensor(circuit, argnums=range(0, len(params)), approx=None)(*params)
+        else:
+            mt = qml.metric_tensor(circuit, approx=None)(*params)
+
+        if isinstance(mt, tuple):
+            assert all(qml.math.allclose(_mt, _exp) for _mt, _exp in zip(mt, expected))
+        else:
+            assert qml.math.allclose(mt, expected)
+
+    @pytest.mark.jax
+    @pytest.mark.parametrize("ansatz, params", zip(fubini_ansatze, fubini_params))
+    @pytest.mark.parametrize("interface", ["auto", "jax"])
+    def test_correct_output_jax_argnum_warning(self, ansatz, params, interface):
+        from jax.config import config
+
+        config.update("jax_enable_x64", True)
+
+        from jax import numpy as jnp
+
+        expected = autodiff_metric_tensor(ansatz, self.num_wires)(*params)
+        dev = qml.device("default.qubit.jax", wires=self.num_wires + 1)
+
+        params = tuple(jnp.array(p) for p in params)
+
+        @qml.qnode(dev, interface=interface)
+        def circuit(*params):
+            """Circuit with dummy output to create a QNode."""
+            ansatz(*params, dev.wires[:-1])
+            return qml.expval(qml.PauliZ(0))
+
+        with pytest.warns(
+            UserWarning,
+            match="argnum is deprecated with the Jax interface. You should use argnums instead.",
+        ):
+            mt = qml.metric_tensor(circuit, argnum=range(len(params)), approx=None)(*params)
 
         if isinstance(mt, tuple):
             assert all(qml.math.allclose(_mt, _exp) for _mt, _exp in zip(mt, expected))

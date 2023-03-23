@@ -12,7 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Unit tests for the JAX-Python interface"""
-import sys
 import pytest
 
 pytestmark = pytest.mark.jax
@@ -25,7 +24,7 @@ import numpy as np
 
 import pennylane as qml
 from pennylane.gradients import param_shift
-from pennylane.interfaces import execute, InterfaceUnsupportedError
+from pennylane.interfaces import execute
 
 
 class TestJaxExecuteUnitTests:
