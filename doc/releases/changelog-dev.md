@@ -111,6 +111,12 @@
   are real, providing a significant performance improvement.
   [(#3915)](https://github.com/PennyLaneAI/pennylane/pull/3915)
 
+* Added explicit errors to `QutritDevice` if `classical_shadow` or `shadow_expval` are measured.
+  [(#3934)](https://github.com/PennyLaneAI/pennylane/pull/3934)
+
+* `DefaultQutrit` supports the new return system.
+  [(#3934)](https://github.com/PennyLaneAI/pennylane/pull/3934)
+
 <h3>Breaking changes</h3>
 
 * Both JIT interfaces are not compatible with Jax `>0.4.3`, we raise an error for those versions.
