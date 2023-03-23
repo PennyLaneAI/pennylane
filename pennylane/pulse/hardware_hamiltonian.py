@@ -31,8 +31,8 @@ def drive(amplitude, phase, detuning, wires):
     field with a qubit.
 
     .. math::
-        \frac{1}{2} \Omega(t) \sum_{j \in \text{wires}} \left(e^{i \phi(t)} \sigma^+_j + e^{-i \phi(t)} \sigma^-_j \right) -
-        \frac{1}{2} \Delta(t) \sum_{j \in \text{wires}} \sigma^z_j
+        \frac{1}{2} \sum_{j \in \text{wires}} \Omega(t) \left(e^{i \phi(t)} \sigma^+_j + e^{-i \phi(t)} \sigma^-_j \right) -
+        \Delta(t) \sigma^z_j
 
     where :math:`\Omega`, :math:`\phi` and :math:`\Delta` correspond to the amplitude, phase and detuning of the electromagnetic
     driving field and :math:`j` corresponds to the wire index. We are describing the Hamiltonian in terms of ladder operators
