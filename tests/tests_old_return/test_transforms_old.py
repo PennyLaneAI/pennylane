@@ -282,28 +282,28 @@ class TestParameterShiftRule:
         assert res.shape == (5, 2)
 
         expected = (
-                np.array(
+            np.array(
+                [
+                    [-2 * np.sin(x), 0],
                     [
-                        [-2 * np.sin(x), 0],
-                        [
-                            -(np.cos(y / 2) ** 2 * np.sin(x)),
-                            -(np.cos(x / 2) ** 2 * np.sin(y)),
-                        ],
-                        [
-                            -(np.sin(x) * np.sin(y / 2) ** 2),
-                            (np.cos(x / 2) ** 2 * np.sin(y)),
-                        ],
-                        [
-                            (np.sin(x) * np.sin(y / 2) ** 2),
-                            (np.sin(x / 2) ** 2 * np.sin(y)),
-                        ],
-                        [
-                            (np.cos(y / 2) ** 2 * np.sin(x)),
-                            -(np.sin(x / 2) ** 2 * np.sin(y)),
-                        ],
-                    ]
-                )
-                / 2
+                        -(np.cos(y / 2) ** 2 * np.sin(x)),
+                        -(np.cos(x / 2) ** 2 * np.sin(y)),
+                    ],
+                    [
+                        -(np.sin(x) * np.sin(y / 2) ** 2),
+                        (np.cos(x / 2) ** 2 * np.sin(y)),
+                    ],
+                    [
+                        (np.sin(x) * np.sin(y / 2) ** 2),
+                        (np.sin(x / 2) ** 2 * np.sin(y)),
+                    ],
+                    [
+                        (np.cos(y / 2) ** 2 * np.sin(x)),
+                        -(np.sin(x / 2) ** 2 * np.sin(y)),
+                    ],
+                ]
+            )
+            / 2
         )
 
         assert np.allclose(res, expected, atol=tol, rtol=0)
@@ -1176,28 +1176,28 @@ class TestSpsaGradientIntegration:
         res *= 2
 
         expected = (
-                np.array(
+            np.array(
+                [
+                    [-2 * np.sin(x), 0],
                     [
-                        [-2 * np.sin(x), 0],
-                        [
-                            -(np.cos(y / 2) ** 2 * np.sin(x)),
-                            -(np.cos(x / 2) ** 2 * np.sin(y)),
-                        ],
-                        [
-                            -(np.sin(x) * np.sin(y / 2) ** 2),
-                            (np.cos(x / 2) ** 2 * np.sin(y)),
-                        ],
-                        [
-                            (np.sin(x) * np.sin(y / 2) ** 2),
-                            (np.sin(x / 2) ** 2 * np.sin(y)),
-                        ],
-                        [
-                            (np.cos(y / 2) ** 2 * np.sin(x)),
-                            -(np.sin(x / 2) ** 2 * np.sin(y)),
-                        ],
-                    ]
-                )
-                / 2
+                        -(np.cos(y / 2) ** 2 * np.sin(x)),
+                        -(np.cos(x / 2) ** 2 * np.sin(y)),
+                    ],
+                    [
+                        -(np.sin(x) * np.sin(y / 2) ** 2),
+                        (np.cos(x / 2) ** 2 * np.sin(y)),
+                    ],
+                    [
+                        (np.sin(x) * np.sin(y / 2) ** 2),
+                        (np.sin(x / 2) ** 2 * np.sin(y)),
+                    ],
+                    [
+                        (np.cos(y / 2) ** 2 * np.sin(x)),
+                        -(np.sin(x / 2) ** 2 * np.sin(y)),
+                    ],
+                ]
+            )
+            / 2
         )
 
         assert np.allclose(res, expected, atol=tol, rtol=0)
@@ -1532,10 +1532,10 @@ class TestFisherIntegration:
         assert np.allclose(res, n_wires * onp.ones((n_params, n_params)))
 
     def test_quantum_fisher_info(
-            self,
+        self,
     ):
         """Integration test of quantum fisher information matrix CFIM. This is just calling ``qml.metric_tensor`` or
-        ``qml.adjoint_metric_tensor`` and multiplying by a factor of 4 """
+        ``qml.adjoint_metric_tensor`` and multiplying by a factor of 4"""
 
         n_wires = 2
 
