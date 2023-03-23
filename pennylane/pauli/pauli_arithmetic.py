@@ -228,7 +228,11 @@ class PauliWord(dict):
         return factors[0] if len(factors) == 1 else prod(*factors)
 
     def hamiltonian(self, wire_order=None, get_as_tensor=False):
-        """Return :class:`~pennylane.Hamiltonian` representing the PauliWord"""
+        """Return :class:`~pennylane.Hamiltonian` representing the PauliWord.
+
+        If `get_as_tensor` is set to True, then return the PauliWord as an instance
+        of :class:`~pennylane.Tensor` (or :class:`~pennylane.Identity` if emtpy).
+        """
         if len(self) == 0:
             if wire_order in (None, [], wires.Wires([])):
                 raise ValueError("Can't get the Hamiltonian for an empty PauliWord.")

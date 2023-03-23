@@ -195,23 +195,30 @@ class TestPauliWord:
             pw4.operation()
 
     tup_pw_hamiltonian = (
-        (PauliWord({0: X}), 1 * qml.PauliX(wires=0)),
-        (pw1, 1 * qml.PauliX(wires=1) @ qml.PauliY(wires=2)),
-        (pw2, 1 * qml.PauliX(wires="a") @ qml.PauliX(wires="b") @ qml.PauliZ(wires="c")),
-        (pw3, 1 * qml.PauliZ(wires=0) @ qml.PauliZ(wires="b") @ qml.PauliZ(wires="c")),
+        (PauliWord({0: X}), 1 * qml.PauliX(wires=0), qml.PauliX(wires=0)),
+        (pw1, 1 * qml.PauliX(wires=1) @ qml.PauliY(wires=2), qml.PauliX(wires=1) @ qml.PauliY(wires=2)),
+        (pw2, 1 * qml.PauliX(wires="a") @ qml.PauliX(wires="b") @ qml.PauliZ(wires="c"), qml.PauliX(wires="a") @ qml.PauliX(wires="b") @ qml.PauliZ(wires="c")),
+        (pw3, 1 * qml.PauliZ(wires=0) @ qml.PauliZ(wires="b") @ qml.PauliZ(wires="c"), qml.PauliZ(wires=0) @ qml.PauliZ(wires="b") @ qml.PauliZ(wires="c")),
     )
 
-    @pytest.mark.parametrize("pw, h", tup_pw_hamiltonian)
-    def test_hamiltonian(self, pw, h):
+    @pytest.mark.parametrize("pw, h, op", tup_pw_hamiltonian)
+    def test_hamiltonian(self, pw, h, op):
         """Test that a PauliWord can be cast to a Hamiltonian."""
         pw_h = pw.hamiltonian()
         assert pw_h.compare(h)
+
+        pw_op = pw.hamiltonian(get_as_tensor=True)
+        assert qml.equal(pw_op, op)
 
     def test_hamiltonian_empty(self):
         """Test that an empty PauliWord with wire_order returns Identity Hamiltonian."""
         op = PauliWord({}).hamiltonian(wire_order=[0, 1])
         id = 1 * qml.Identity(wires=[0, 1])
         assert op.compare(id)
+
+        op = PauliWord({}).hamiltonian(wire_order=[0, 1], get_as_tensor=True)
+        id_op = qml.Identity(wires=[0, 1])
+        assert qml.equal(op, id_op)
 
     def test_hamiltonian_empty_error(self):
         """Test that a ValueError is raised if an empty PauliWord is
