@@ -261,3 +261,4 @@ from .parametrized_evolution import ParametrizedEvolution
 from .parametrized_hamiltonian import ParametrizedHamiltonian
 from .hardware_hamiltonian import HardwareHamiltonian, drive
 from .rydberg import rydberg_interaction
+from .transmon import transmon_interaction
