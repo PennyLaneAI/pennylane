@@ -112,10 +112,11 @@ def expand_fn(circuit: qml.tape.QuantumScript) -> qml.tape.QuantumScript:
         circuit = qml.tape.QuantumScript(new_ops, circuit.measurements, circuit._prep)
 
     for observable in circuit.observables:
-        if isinstance(observable, Tensor):
-            if any(o.name not in _observables for o in observable.obs):
-                raise DeviceError(f"Observable {observable} not supported on DefaultQubit2")
-        elif observable.name not in _observables:
+        if isinstance(observable, Tensor) and any(
+            o.name not in _observables for o in observable.obs
+        ):
+            raise DeviceError(f"Observable {observable} not supported on DefaultQubit2")
+        if observable.name not in _observables:
             raise DeviceError(f"Observable {observable} not supported on DefaultQubit2")
 
     # change this once shots are supported
