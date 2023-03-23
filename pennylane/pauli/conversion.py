@@ -161,22 +161,22 @@ def pauli_sentence(op):
 
 @pauli_sentence.register
 def _(op: PauliX):
-    return PauliSentence({PauliWord({op.wires[0]: X}): 1.0+0.0j})
+    return PauliSentence({PauliWord({op.wires[0]: X}): 1.0 + 0.0j})
 
 
 @pauli_sentence.register
 def _(op: PauliY):
-    return PauliSentence({PauliWord({op.wires[0]: Y}): 1.0+0.0j})
+    return PauliSentence({PauliWord({op.wires[0]: Y}): 1.0 + 0.0j})
 
 
 @pauli_sentence.register
 def _(op: PauliZ):
-    return PauliSentence({PauliWord({op.wires[0]: Z}): 1.0+0.0j})
+    return PauliSentence({PauliWord({op.wires[0]: Z}): 1.0 + 0.0j})
 
 
 @pauli_sentence.register
 def _(op: Identity):  # pylint:disable=unused-argument
-    return PauliSentence({PauliWord({}): 1.0+0.0j})
+    return PauliSentence({PauliWord({}): 1.0 + 0.0j})
 
 
 @pauli_sentence.register

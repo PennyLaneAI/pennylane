@@ -387,7 +387,8 @@ class PauliSentence(dict):
         wire_order = list(wire_order)
 
         return Hamiltonian(
-            list(self.values()), [pw.operation(wire_order=wire_order, get_as_tensor=True) for pw in self]
+            list(self.values()),
+            [pw.operation(wire_order=wire_order, get_as_tensor=True) for pw in self],
         )
 
     def simplify(self, tol=1e-8):
