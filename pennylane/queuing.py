@@ -162,7 +162,7 @@ use the :meth:`~.QueuingManager.stop_recording` context or specify `do_queue=Fal
 []
 
 """
-
+# pylint:disable=protected-access
 import copy
 from collections import OrderedDict
 from contextlib import contextmanager
@@ -199,28 +199,31 @@ class QueuingManager:
 
     """
 
-    _active_contexts = []
+    _active_context = None
     """The stack of contexts that are currently active."""
 
     @classmethod
     def add_active_queue(cls, queue):
         """Makes a queue the currently active recording context."""
-        cls._active_contexts.append(queue)
+        queue._previous_context = cls._active_context
+        cls._active_context = queue
 
     @classmethod
     def remove_active_queue(cls):
         """Ends recording on the currently active recording queue."""
-        return cls._active_contexts.pop()
+        current = cls._active_context
+        cls._active_context = current._previous_context
+        del current._previous_context
 
     @classmethod
     def recording(cls):
         """Whether a queuing context is active and recording operations"""
-        return bool(cls._active_contexts)
+        return cls._active_context is not None
 
     @classmethod
     def active_context(cls):
         """Returns the currently active queuing context."""
-        return cls._active_contexts[-1] if cls.recording() else None
+        return cls._active_context
 
     @classmethod
     @contextmanager
@@ -279,14 +282,14 @@ class QueuingManager:
         0: ──RZ(3.00)─┤  <Z>
 
         """
-        previously_active_contexts = cls._active_contexts
-        cls._active_contexts = []
+        active_context = cls._active_context
+        cls._active_context = None
         try:
             yield
         except Exception as e:
-            cls._active_contexts = previously_active_contexts
+            cls._active_context = active_context
             raise e
-        cls._active_contexts = previously_active_contexts
+        cls._active_context = active_context
 
     @classmethod
     def append(cls, obj, **kwargs):
@@ -296,7 +299,7 @@ class QueuingManager:
             obj: the object to be appended
         """
         if cls.recording():
-            cls.active_context().append(obj, **kwargs)
+            cls._active_context.append(obj, **kwargs)
 
     @classmethod
     def remove(cls, obj):
@@ -306,29 +309,7 @@ class QueuingManager:
             obj: the object to be removed
         """
         if cls.recording():
-            cls.active_context().remove(obj)
-
-    @classmethod
-    def update_info(cls, obj, **kwargs):
-        """Updates information of an object in the active queue if it is already in the queue.
-
-        Args:
-            obj: the object with metadata to be updated
-        """
-        if cls.recording():
-            cls.active_context().update_info(obj, **kwargs)
-
-    @classmethod
-    def get_info(cls, obj):
-        """Retrieves information of an object in the active queue.
-
-        Args:
-            obj: the object with metadata to be retrieved
-
-        Returns:
-            object metadata
-        """
-        return cls.active_context().get_info(obj) if cls.recording() else None
+            cls._active_context.remove(obj)
 
 
 class AnnotatedQueue(OrderedDict):
