@@ -11,8 +11,8 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""This module contains the classes/functions needed to simulate the evolution of ensembles of
-individual (trapped) rydberg atoms under the excitation of several laser fields."""
+"""This module contains the classes/functions needed to simulate and execute the evolution of real
+Hardware Hamiltonians"""
 import warnings
 from dataclasses import dataclass
 from typing import Callable, List, Union
@@ -225,7 +225,7 @@ def drive(amplitude, phase, detuning, wires):
     # TODO: use sigma+ and sigma- (not necessary as terms are the same)
     # We compute the `coeffs` and `observables` of the electromagnetic field
     else:
-        # We compute the `coeffs` and `observables` of the laser field
+        # We compute the `coeffs` and `observables` of the EM field
         coeffs = [
             amplitude_and_phase(qml.math.cos, amplitude, phase),
             amplitude_and_phase(qml.math.sin, amplitude, phase),
@@ -251,17 +251,8 @@ class HardwareHamiltonian(ParametrizedHamiltonian):
     r"""Internal class used to keep track of the required information to translate a ``ParametrizedHamiltonian``
     into hardware.
 
-    This class contains the ``coeffs`` and the ``observables`` that represent one or more
-    terms of the Hamiltonian of an ensemble of Rydberg atoms under the action of local and global
-    laser fields:
-
-    .. math::
-
-        H = \frac{1}{2} \sum_i  \Omega_i(t) (\cos(\phi_i)\sigma_i^x - \sin(\phi_i)\sigma_i^y) -
-        \frac{1}{2} \sum_i \delta_i(t) \sigma_i^z + \sum_{i<j} V_{ij} n_i n_j
-
-    Additionally, it also contains two more attributes (``register`` and ``pulses``) that contain
-    the information that the hardware needs to execute this Hamiltonian.
+    This class contains the ``coeffs`` and the ``observables`` to construct the :class:`ParametrizedHamiltonian`,
+    but on top of that also contains attributes that store parameteres relevant for real hardware execution.
 
     .. warning::
 
@@ -285,7 +276,7 @@ class HardwareHamiltonian(ParametrizedHamiltonian):
             Defaults to :math:`862690 \text{MHz} \times \mu m^6`.
 
     Returns:
-        HardwareHamiltonian: class representing the Hamiltonian of an ensemble of Rydberg atoms
+        HardwareHamiltonian: class representing the Hamiltonian of Rydberg or Transmon device.
     """
 
     # pylint: disable=too-many-arguments
@@ -314,11 +305,11 @@ class HardwareHamiltonian(ParametrizedHamiltonian):
                     raise ValueError("We cannot add two Hamiltonians with an interaction term!")
                 if not self.wires.contains_wires(other.wires):
                     warnings.warn(
-                        "The wires of the laser fields are not present in the Rydberg ensemble."
+                        "The wires of the drive fields are not present in the ensemble."
                     )
             elif other.register is not None and not other.wires.contains_wires(self.wires):
                 warnings.warn(
-                    "The wires of the laser fields are not present in the Rydberg ensemble."
+                    "The wires of the drive fields are not present in the ensemble."
                 )
 
             new_register = self.register or other.register
@@ -377,16 +368,16 @@ class HardwareHamiltonian(ParametrizedHamiltonian):
 
 @dataclass
 class HardwarePulse:
-    """Dataclass that contains the information of a single Rydberg pulse. This class is used
-    internally in PL to group into a single object all the data related to a single laser field.
+    """Dataclass that contains the information of a single drive pulse. This class is used
+    internally in PL to group into a single object all the data related to a single EM field.
 
     Args:
-        amplitude (Union[float, Callable]): float or callable returning the amplitude (in MHz) of a laser
+        amplitude (Union[float, Callable]): float or callable returning the amplitude of an EM
             field
-        phase (Union[float, Callable]): float containing the phase (in radians) of the laser field
-        detuning (Union[float, Callable]): float or callable returning the detuning (in MHz) of a
-            laser field
-        wires (Union[int, List[int]]): integer or list containing wire values that the laser field
+        phase (Union[float, Callable]): float containing the phase (in radians) of the EM field
+        detuning (Union[float, Callable]): float or callable returning the detuning of a
+            EM field
+        wires (Union[int, List[int]]): integer or list containing wire values that the EM field
             acts on
     """
 
