@@ -1038,10 +1038,10 @@ class DefaultQubit(QubitDevice):
 
         return self._cast(self._stack([outcomes, recipes]), dtype=np.int8)
 
-    def get_diagonalizing_gates(self, circuit: qml.tape.QuantumTape):
+    def _get_diagonalizing_gates(self, circuit: qml.tape.QuantumTape):
         meas_filtered = [
             m
             for m in circuit.measurements
             if m.obs is None or not isinstance(m.obs, qml.Hamiltonian)
         ]
-        return super().get_diagonalizing_gates(qml.tape.QuantumScript(measurements=meas_filtered))
+        return super()._get_diagonalizing_gates(qml.tape.QuantumScript(measurements=meas_filtered))

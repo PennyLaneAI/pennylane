@@ -314,7 +314,7 @@ class QubitDevice(Device):
         self.check_validity(circuit.operations, circuit.observables)
 
         # apply all circuit operations
-        self.apply(circuit.operations, rotations=self.get_diagonalizing_gates(circuit), **kwargs)
+        self.apply(circuit.operations, rotations=self._get_diagonalizing_gates(circuit), **kwargs)
 
         # generate computational basis samples
         if self.shots is not None:
@@ -370,7 +370,7 @@ class QubitDevice(Device):
         self.check_validity(circuit.operations, circuit.observables)
 
         # apply all circuit operations
-        self.apply(circuit.operations, rotations=self.get_diagonalizing_gates(circuit), **kwargs)
+        self.apply(circuit.operations, rotations=self._get_diagonalizing_gates(circuit), **kwargs)
 
         # generate computational basis samples
         if self.shots is not None or circuit.is_sampled:
@@ -1395,7 +1395,7 @@ class QubitDevice(Device):
 
                 self.reset()
                 self.apply(
-                    circuit.operations, rotations=self.get_diagonalizing_gates(circuit) + rotations
+                    circuit.operations, rotations=self._get_diagonalizing_gates(circuit) + rotations
                 )
 
                 outcomes[t] = self.generate_samples()[0][mapped_wires]
@@ -2014,7 +2014,7 @@ class QubitDevice(Device):
         # must be 2-dimensional
         return tuple(tuple(np.array(j_) for j_ in j) for j in jac)
 
-    def get_diagonalizing_gates(self, circuit: QuantumTape):  # pylint:disable=no-self-use
+    def _get_diagonalizing_gates(self, circuit: QuantumTape):  # pylint:disable=no-self-use
         """Returns the gates that diagonalize the measured wires such that they
         are in the eigenbasis of the circuit observables.
 

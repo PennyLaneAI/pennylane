@@ -280,7 +280,7 @@ class NullQubit(QubitDevice):
         return self._operation_calls
 
     def execute(self, circuit, **kwargs):
-        self.apply(circuit.operations, rotations=self.get_diagonalizing_gates(circuit), **kwargs)
+        self.apply(circuit.operations, rotations=self._get_diagonalizing_gates(circuit), **kwargs)
 
         if self.tracker.active:
             self.tracker.update(executions=1, shots=self._shots)
