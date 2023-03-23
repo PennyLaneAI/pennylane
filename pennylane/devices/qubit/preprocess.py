@@ -16,11 +16,12 @@
 that they are supported for execution by a device."""
 # pylint: disable=protected-access
 from typing import Generator, Callable, Tuple
+import warnings
 
 import pennylane as qml
 
 from pennylane.operation import Tensor
-from pennylane.measurements import MidMeasureMP, StateMeasurement
+from pennylane.measurements import MidMeasureMP, StateMeasurement, ExpectationMP
 from pennylane import DeviceError
 
 from ..experimental import ExecutionConfig, DefaultExecutionConfig
@@ -77,6 +78,76 @@ def _operator_decomposition_gen(
 #######################
 
 
+def validate_and_expand_adjoint(
+    circuit: qml.tape.QuantumScript,
+) -> qml.tape.QuantumScript:  # pylint: disable=protected-access
+    """Function for validating that the operations and observables present in the input circuit
+    are valid for adjoint differentiation.
+
+    Args:
+        circuit(.QuantumTape): the tape to validate
+
+    Returns:
+        .QuantumTape: The expanded tape, such that it is supported by adjoint differentiation
+
+    Raises:
+        QuantumFunctionError: if the circuit is invalid for adjoint differentiation
+    """
+    # Check validity of measurements
+    measurements = []
+    for m in circuit.measurements:
+        if not isinstance(m, ExpectationMP):
+            raise qml.QuantumFunctionError(
+                "Adjoint differentiation method does not support"
+                f" measurement {m.__class__.__name__}"
+            )
+
+        if m.obs.name in {"Hamiltonian"}:
+            raise qml.QuantumFunctionError(
+                f"Adjoint differentiation method does not support observable {m.obs.name}."
+            )
+
+        if not hasattr(m.obs, "base_name"):
+            m.obs.base_name = None  # This is needed for when the observable is a tensor product
+
+        measurements.append(m)
+
+    expanded_ops = []
+    for op in circuit._ops:
+        if op.num_params > 1:
+            if not isinstance(op, qml.Rot):
+                raise qml.QuantumFunctionError(
+                    f"The {op.name} operation is not supported using "
+                    'the "adjoint" differentiation method'
+                )
+            ops = op.decomposition()
+            expanded_ops.extend(ops)
+        elif not isinstance(op, (qml.operation.StatePrep, qml.Snapshot)):
+            expanded_ops.append(op)
+
+    prep = [circuit._prep[0]] if len(circuit._prep) != 0 else None
+
+    trainable_params = []
+    for k in circuit.trainable_params:
+        if hasattr(circuit._par_info[k]["op"], "return_type"):
+            warnings.warn(
+                "Differentiating with respect to the input parameters of "
+                f"{circuit._par_info[k]['op'].name} is not supported with the "
+                "adjoint differentiation method. Gradients are computed "
+                "only with regards to the trainable parameters of the circuit.\n\n Mark "
+                "the parameters of the measured observables as non-trainable "
+                "to silence this warning.",
+                UserWarning,
+            )
+        else:
+            trainable_params.append(k)
+
+    expanded_tape = qml.tape.QuantumScript(expanded_ops, measurements, prep)
+    expanded_tape.trainable_params = trainable_params
+
+    return expanded_tape
+
+
 def expand_fn(circuit: qml.tape.QuantumScript) -> qml.tape.QuantumScript:
     """Method for expanding or decomposing an input circuit.
 
@@ -127,7 +198,9 @@ def expand_fn(circuit: qml.tape.QuantumScript) -> qml.tape.QuantumScript:
     return circuit
 
 
-def batch_transform(circuit: qml.tape.QuantumScript) -> (Tuple[qml.tape.QuantumScript], Callable):
+def batch_transform(
+    circuit: qml.tape.QuantumScript,
+) -> Tuple[Tuple[qml.tape.QuantumScript], Callable]:
     """Apply a differentiable batch transform for preprocessing a circuit
     prior to execution.
 
@@ -170,7 +243,7 @@ def batch_transform(circuit: qml.tape.QuantumScript) -> (Tuple[qml.tape.QuantumS
 def preprocess(
     circuits: Tuple[qml.tape.QuantumScript],
     execution_config: ExecutionConfig = DefaultExecutionConfig,
-) -> (Tuple[qml.tape.QuantumScript], Callable):
+) -> Tuple[Tuple[qml.tape.QuantumScript], Callable]:
     """Preprocess a batch of :class:`~.QuantumTape` objects to make them ready for execution.
 
     This function validates a batch of :class:`~.QuantumTape` objects by transforming and expanding

@@ -13,18 +13,16 @@
 # limitations under the License.
 """Functions to apply adjoint jacobian differentiation"""
 
-import warnings
 import numpy as np
 
 import pennylane as qml
 
 from pennylane.operation import operation_derivative
 from pennylane.tape import QuantumTape
-from pennylane.measurements import ExpectationMP
 
 from .apply_operation import apply_operation
-
 from .initialize_state import create_initial_state
+from .preprocess import validate_and_expand_adjoint
 
 # pylint: disable=protected-access, too-many-branches
 
@@ -64,21 +62,7 @@ def adjoint_jacobian(tape: QuantumTape):  # pylint: disable=too-many-statements
             or contains a multi-parameter operation aside from :class:`~.Rot`
     """
 
-    # Check validity of measurements
-    for m in tape.measurements:
-        if not isinstance(m, ExpectationMP):
-            raise qml.QuantumFunctionError(
-                "Adjoint differentiation method does not support"
-                f" measurement {m.__class__.__name__}"
-            )
-
-        if m.obs.name in {"Hamiltonian"}:
-            raise qml.QuantumFunctionError(
-                f"Adjoint differentiation method does not support observable {m.obs.name}."
-            )
-
-        if not hasattr(m.obs, "base_name"):
-            m.obs.base_name = None  # This is needed for when the observable is a tensor product
+    tape = validate_and_expand_adjoint(tape)
 
     # Map wires if custom wire labels used
     if set(tape.wires) != set(range(tape.num_wires)):
@@ -91,53 +75,23 @@ def adjoint_jacobian(tape: QuantumTape):  # pylint: disable=too-many-statements
         wires=tape.wires, prep_operation=prep_operation
     )  #  ket(0) if prep_operation is None, else
     for op in tape.operations:
-        if not isinstance(op, (qml.operation.StatePrep, qml.Snapshot)):
-            ket = apply_operation(op, ket)
+        ket = apply_operation(op, ket)
 
     n_obs = len(tape.observables)
     bras = np.empty([n_obs] + [2] * len(tape.wires), dtype=np.complex128)
     for kk, obs in enumerate(tape.observables):
         bras[kk, ...] = apply_operation(obs, ket)
 
-    expanded_ops = []
-    for op in reversed(tape.operations):
-        if op.num_params > 1:
-            if not isinstance(op, qml.Rot):
-                raise qml.QuantumFunctionError(
-                    f"The {op.name} operation is not supported using "
-                    'the "adjoint" differentiation method'
-                )
-            ops = op.decomposition()
-            expanded_ops.extend(reversed(ops))
-        elif not isinstance(op, (qml.operation.StatePrep, qml.Snapshot)):
-            expanded_ops.append(op)
-
-    trainable_params = []
-    for k in tape.trainable_params:
-        # pylint: disable=protected-access
-        if hasattr(tape._par_info[k]["op"], "return_type"):
-            warnings.warn(
-                "Differentiating with respect to the input parameters of "
-                f"{tape._par_info[k]['op'].name} is not supported with the "
-                "adjoint differentiation method. Gradients are computed "
-                "only with regards to the trainable parameters of the circuit.\n\n Mark "
-                "the parameters of the measured observables as non-trainable "
-                "to silence this warning.",
-                UserWarning,
-            )
-        else:
-            trainable_params.append(k)
-
-    jac = np.zeros((len(tape.observables), len(trainable_params)))
+    jac = np.zeros((len(tape.observables), len(tape.trainable_params)))
 
     param_number = len(tape.get_parameters(trainable_only=False, operations_only=True)) - 1
-    trainable_param_number = len(trainable_params) - 1
-    for op in expanded_ops:
+    trainable_param_number = len(tape.trainable_params) - 1
+    for op in reversed(tape._ops):
         adj_op = qml.adjoint(op)
         ket = apply_operation(adj_op, ket)
 
         if op.grad_method is not None:
-            if param_number in trainable_params:
+            if param_number in tape.trainable_params:
                 d_op_matrix = operation_derivative(op)
                 ket_temp = apply_operation(qml.QubitUnitary(d_op_matrix, wires=op.wires), ket)
                 jac[:, trainable_param_number] = 2 * _dot_product_real(
