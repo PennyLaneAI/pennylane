@@ -27,7 +27,7 @@ import inspect
 import warnings
 from contextlib import _GeneratorContextManager
 from functools import wraps, partial
-from typing import Callable, Sequence
+from typing import Callable, Sequence, Optional, Union
 
 from cachetools import LRUCache
 
@@ -137,7 +137,9 @@ def cache_execute(fn: Callable, cache, pass_kwargs=False, return_tuple=True, exp
         if cache is None or (isinstance(cache, bool) and not cache):
             # No caching. Simply execute the execution function
             # and return the results.
-            res = fn(tapes, **kwargs)
+
+            # must convert to list as new device interface returns tuples
+            res = list(fn(tapes, **kwargs))
             return (res, []) if return_tuple else res
 
         execution_tapes = {}
@@ -202,6 +204,8 @@ def cache_execute(fn: Callable, cache, pass_kwargs=False, return_tuple=True, exp
         else:
             # execute all unique tapes that do not exist in the cache
             res = fn(execution_tapes.values(), **kwargs)
+            # convert to list as new device interface returns a tuple
+            res = list(res)
 
         final_res = []
 
@@ -229,7 +233,7 @@ def cache_execute(fn: Callable, cache, pass_kwargs=False, return_tuple=True, exp
 def _execute_new(
     tapes: Sequence[QuantumTape],
     device,
-    gradient_fn: Callable = None,
+    gradient_fn: Optional[Union[Callable, str]] = None,
     interface="auto",
     grad_on_execution="best",
     gradient_kwargs=None,
@@ -237,7 +241,7 @@ def _execute_new(
     cachesize=10000,
     max_diff=1,
     override_shots: int = False,
-    expand_fn="device",
+    expand_fn="device",  # type: ignore
     max_expansion=10,
     device_batch_transform=True,
 ):
@@ -341,6 +345,9 @@ def _execute_new(
            [ 0.01983384, -0.97517033,  0.        ],
            [ 0.        ,  0.        , -0.95533649]])
     """
+    new_device_interface = isinstance(device, qml.devices.experimental.Device)
+    config = qml.devices.experimental.ExecutionConfig(interface=interface)
+
     if interface == "auto":
         params = []
         for tape in tapes:
@@ -349,7 +356,14 @@ def _execute_new(
 
     gradient_kwargs = gradient_kwargs or {}
 
-    if device_batch_transform:
+    if new_device_interface:
+        if not device_batch_transform:
+            warnings.warn(
+                "device batch transforms cannot be turned off with the new device interface.",
+                UserWarning,
+            )
+        tapes, batch_fn = device.preprocess(tapes, config)
+    elif device_batch_transform:
         dev_batch_transform = set_shots(device, override_shots)(device.batch_transform)
         tapes, batch_fn = qml.transforms.map_batch_transform(dev_batch_transform, tapes)
     else:
@@ -360,12 +374,31 @@ def _execute_new(
         cache = LRUCache(maxsize=cachesize)
         setattr(cache, "_persistent_cache", False)
 
-    batch_execute = set_shots(device, override_shots)(device.batch_execute)
+    if new_device_interface:
+        batch_execute = device.execute
+    else:
+        batch_execute = set_shots(device, override_shots)(device.batch_execute)
 
     if expand_fn == "device":
-        expand_fn = lambda tape: device.expand_fn(tape, max_expansion=max_expansion)
+        if new_device_interface:
+
+            def expand_fn(tape):  # pylint: disable=function-redefined
+                """A blank expansion function since the new device handles expansion in preprocessing."""
+                return tape
+
+        else:
+
+            def expand_fn(tape):  # pylint: disable=function-redefined
+                """A wrapper around the device ``expand_fn``."""
+                return device.expand_fn(tape, max_expansion=max_expansion)
 
     if gradient_fn is None:
+        if new_device_interface:
+            cached_execution = cache_execute(
+                device.execute, cache, return_tuple=False, pass_kwargs=True
+            )
+            results = cached_execution(tapes, execution_config=config)
+            return batch_fn(results)
         # don't unwrap if it's an interface device
         if "passthru_interface" in device.capabilities() or device.short_name == "default.mixed":
             return batch_fn(
@@ -381,6 +414,12 @@ def _execute_new(
         return batch_fn(res)
 
     if gradient_fn == "backprop" or interface is None:
+        if new_device_interface:
+            cached_execution = cache_execute(
+                device.execute, cache, return_tuple=False, pass_kwargs=True
+            )
+            results = cached_execution(tapes, execution_config=config)
+            return batch_fn(results)
         return batch_fn(
             qml.interfaces.cache_execute(
                 batch_execute, cache, return_tuple=False, expand_fn=expand_fn
@@ -609,6 +648,9 @@ def execute(
             max_expansion=max_expansion,
             device_batch_transform=device_batch_transform,
         )
+
+    if isinstance(device, qml.devices.experimental.Device):
+        raise ValueError("New device interface only works with return types enabled.")
 
     if interface == "auto":
         params = []

@@ -16,6 +16,7 @@
   * A new user-facing `rydberg_drive` function is added, which returns a `RydbergHamiltonian` containing
     the Hamiltonian of the interaction between a driving laser field and a group of atoms.
   [(#3749)](https://github.com/PennyLaneAI/pennylane/pull/3749)
+  [(#3911)](https://github.com/PennyLaneAI/pennylane/pull/3911)
 
 * Added `Operation.__truediv__` dunder method to be able to divide operators.
   [(#3749)](https://github.com/PennyLaneAI/pennylane/pull/3749)
@@ -99,6 +100,17 @@
 * Changed `Operator.num_wires` from an abstract value to `AnyWires`.
   [(#3919)](https://github.com/PennyLaneAI/pennylane/pull/3919)
 
+* Do not run `qml.transforms.sum_expand` in `Device.batch_transform` if the device supports Sum observables.
+  [(#3915)](https://github.com/PennyLaneAI/pennylane/pull/3915)
+
+* `CompositeOp` now overrides `Operator._check_batching`, providing a significant performance improvement.
+  `Hamiltonian` also overrides this method and does nothing, because it does not support batching.
+  [(#3915)](https://github.com/PennyLaneAI/pennylane/pull/3915)
+
+* If a `Sum` operator has a pre-computed Pauli representation, `is_hermitian` now checks that all coefficients
+  are real, providing a significant performance improvement.
+  [(#3915)](https://github.com/PennyLaneAI/pennylane/pull/3915)
+
 <h3>Breaking changes</h3>
 
 * Both JIT interfaces are not compatible with Jax `>0.4.3`, we raise an error for those versions.
@@ -124,6 +136,9 @@
 * Some `MeasurementProcess` classes can now only be instantiated with arguments that they will actually use.
   For example, you can no longer create `StateMP(qml.PauliX(0))` or `PurityMP(eigvals=(-1,1), wires=Wires(0))`.
   [(#3898)](https://github.com/PennyLaneAI/pennylane/pull/3898)
+
+* Integrates the `devices.experimental.DefaultQubit2` with `qml.execute` for the autograd interface.
+  [(#3903)](https://github.com/PennyLaneAI/pennylane/pull/3903)
 
 <h3>Deprecations</h3>
 
