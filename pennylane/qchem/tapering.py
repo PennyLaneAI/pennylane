@@ -216,40 +216,6 @@ def paulix_ops(generators, num_qubits):
     return paulixops
 
 
-# def _observable_mult(obs_a, obs_b):
-#     r"""Multiply two PennyLane observables together.
-#
-#     Each observable should be a linear combination of Pauli words, e.g.,
-#     :math:`\sum_{k=0}^{N} c_k P_k`, and represented as a PennyLane Hamiltonian.
-#
-#     Args:
-#         obs_a (Hamiltonian): first observable
-#         obs_b (Hamiltonian): second observable
-#
-#     Returns:
-#         qml.Hamiltonian: Observable expressed as a PennyLane Hamiltonian
-#
-#     **Example**
-#
-#     >>> c = np.array([0.5, 0.5])
-#     >>> obs_a = qml.Hamiltonian(c, [qml.PauliX(0) @ qml.PauliY(1), qml.PauliX(0) @ qml.PauliZ(1)])
-#     >>> obs_b = qml.Hamiltonian(c, [qml.PauliX(0) @ qml.PauliX(1), qml.PauliZ(0) @ qml.PauliZ(1)])
-#     >>> print(_observable_mult(obs_a, obs_b))
-#       (-0.25j) [Z1]
-#     + (-0.25j) [Y0]
-#     + ( 0.25j) [Y1]
-#     + ((0.25+0j)) [Y0 X1]
-#     """
-#     o = []
-#     c = []
-#     for i in range(len(obs_a.terms()[0])):
-#         for j in range(len(obs_b.terms()[0])):
-#             op, phase = qml.pauli.pauli_mult_with_phase(obs_a.terms()[1][i], obs_b.terms()[1][j])
-#             o.append(op)
-#             c.append(phase * obs_a.terms()[0][i] * obs_b.terms()[0][j])
-#     return simplify(qml.Hamiltonian(qml.math.stack(c), o))
-
-
 def clifford(generators, paulixops):
     r"""Compute a Clifford operator from a set of generators and Pauli-X operators.
 
