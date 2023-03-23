@@ -161,8 +161,9 @@ def drive(amplitude, phase, detuning, wires):
             H = \frac{1}{2} \Omega(t) \sum_{j \in \text{wires}} \left(e^{i \phi(t)} \sigma^+_j + e^{-i \phi(t)} \sigma^-_j \right)
             - \frac{1}{2} (\nu - \omega_q) \sum_{j \in \text{wires}} \sigma^z_j
 
-        We can define :math:`\Delta = \nu - \omega_q` to arrive at the definition above. Note that a potential anharmonicity term, as is common for transmon systems,
-        is unaffected by this transformation. (TODO link transmon anharmonicity constructor)
+        We can define :math:`\Delta = \nu - \omega_q` to arrive at the definition above. Note that a potential anharmonicity term,
+        as is common for transmon systems when taking into account higher energy levels,
+        is unaffected by this transformation.
 
     .. details::
         **Neutral Atom Rydberg systems**
