@@ -373,7 +373,7 @@ class QNode:
                 f"one of {SUPPORTED_INTERFACES}."
             )
 
-        if not isinstance(device, (Device, qml.devices.experimental.Device)):
+        if not isinstance(device, Device):
             raise qml.QuantumFunctionError(
                 "Invalid device. Device must be a valid PennyLane device."
             )
@@ -464,20 +464,6 @@ class QNode:
             self._interface = None
             self.gradient_fn = None
             self.gradient_kwargs = {}
-            return
-        if self.diff_method == "backprop" and isinstance(
-            self.device, qml.devices.experimental.Device
-        ):
-            config = qml.devices.experimental.ExecutionConfig(
-                gradient_method=self.diff_method,
-                gradient_keyword_arguments=self.gradient_kwargs,
-                interface=self.interface,
-            )
-            if not self.device.supports_derivatives(config):
-                raise qml.QuantumFunctionError(
-                    f"The {self.device.short_name} device does not support native computations with "
-                    "autodifferentiation frameworks."
-                )
             return
         if self.interface == "auto" and self.diff_method in ["backprop", "best"]:
             if self.diff_method == "backprop":
@@ -645,13 +631,6 @@ class QNode:
 
     @staticmethod
     def _validate_backprop_method(device, interface):
-        if isinstance(device, qml.devices.experimental.Device):
-            config = qml.devices.experimental.ExecutionConfig(
-                interface=interface, gradient_method="backprop"
-            )
-            if not device.supports_derivatives(config):
-                raise qml.QuantumFunctionError(f"Backpropagation not supported on {device}.")
-            return "backprop", {}, device
         if device.shots is not None:
             raise qml.QuantumFunctionError("Backpropagation is only supported when shots=None.")
 
@@ -742,9 +721,6 @@ class QNode:
 
     @staticmethod
     def _validate_parameter_shift(device):
-        if isinstance(device, qml.devices.experimental.Device):
-            # assume they are all qubit based for the moment
-            return qml.gradients.param_shift, {}, device
         model = device.capabilities().get("model", None)
 
         if model == "qubit":

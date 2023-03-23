@@ -125,6 +125,9 @@
   For example, you can no longer create `StateMP(qml.PauliX(0))` or `PurityMP(eigvals=(-1,1), wires=Wires(0))`.
   [(#3898)](https://github.com/PennyLaneAI/pennylane/pull/3898)
 
+* Integrates the `devices.experimental.DefaultQubit2` with `qml.execute` for the autograd interface.
+  [(#3903)](https://github.com/PennyLaneAI/pennylane/pull/3903)
+
 <h3>Deprecations</h3>
 
 <h3>Documentation</h3>

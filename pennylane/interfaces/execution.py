@@ -27,7 +27,7 @@ import inspect
 import warnings
 from contextlib import _GeneratorContextManager
 from functools import wraps, partial
-from typing import Callable, Sequence
+from typing import Callable, Sequence, Optional, Union
 
 from cachetools import LRUCache
 
@@ -233,7 +233,7 @@ def cache_execute(fn: Callable, cache, pass_kwargs=False, return_tuple=True, exp
 def _execute_new(
     tapes: Sequence[QuantumTape],
     device,
-    gradient_fn: Callable = None,
+    gradient_fn: Optional[Union[Callable, str]] = None,
     interface="auto",
     grad_on_execution="best",
     gradient_kwargs=None,
@@ -357,6 +357,11 @@ def _execute_new(
     gradient_kwargs = gradient_kwargs or {}
 
     if new_device_interface:
+        if not device_batch_transform:
+            warnings.warn(
+                "device batch transforms cannot be turned off with the new device interface.",
+                UserWarning,
+            )
         tapes, batch_fn = device.preprocess(tapes, config)
     elif device_batch_transform:
         dev_batch_transform = set_shots(device, override_shots)(device.batch_transform)
@@ -389,7 +394,10 @@ def _execute_new(
 
     if gradient_fn is None:
         if new_device_interface:
-            results = device.execute(tapes, config)
+            cached_execution = cache_execute(
+                device.execute, cache, return_tuple=False, pass_kwargs=True
+            )
+            results = cached_execution(tapes, execution_config=config)
             return batch_fn(results)
         # don't unwrap if it's an interface device
         if "passthru_interface" in device.capabilities() or device.short_name == "default.mixed":
@@ -407,7 +415,10 @@ def _execute_new(
 
     if gradient_fn == "backprop" or interface is None:
         if new_device_interface:
-            results = device.execute(tapes, config)
+            cached_execution = cache_execute(
+                device.execute, cache, return_tuple=False, pass_kwargs=True
+            )
+            results = cached_execution(tapes, execution_config=config)
             return batch_fn(results)
         return batch_fn(
             qml.interfaces.cache_execute(
