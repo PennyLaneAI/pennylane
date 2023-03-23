@@ -222,7 +222,7 @@ def drive(amplitude, phase, detuning, wires):
         coeffs = []
         observables = []
 
-    # TODO: use sigma+ and sigma- (not necessary as terms are the same)
+    # TODO: use sigma+ and sigma- (not necessary as terms are the same, but for consistency)
     # We compute the `coeffs` and `observables` of the electromagnetic field
     else:
         # We compute the `coeffs` and `observables` of the EM field
