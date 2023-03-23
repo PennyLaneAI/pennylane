@@ -90,9 +90,9 @@ def drive(amplitude, phase, detuning, wires):
     >>> H_d
     ParametrizedHamiltonian: terms=3
 
-    The first two terms of the drive Hamiltonian ``H_d`` correspond to the two terms :math:`e^{i \phi(t)} \sigma^+_j + e^{-i \phi(t)} \sigma^-_j`,
+    The first two terms of the drive Hamiltonian ``H_d`` correspond to the two terms :math:`\Omega e^{i \phi(t)} \sigma^+_j + \Omega e^{-i \phi(t)} \sigma^-_j`,
     describing a drive between the ground and excited states. The third term corresponding to the shift term
-    due to detuning from resonance. This drive term corresponds to a global drive that acts on all 4 wires of
+    due to detuning from resonance. In this case, the drive term corresponds to a global drive, as it acts on all 4 wires of
     the device.
 
     The full Hamiltonian can be evaluated:
@@ -169,7 +169,7 @@ def drive(amplitude, phase, detuning, wires):
 
         In neutral atom systems for quantum computation and quantum simulation, a Rydberg transition is driven by an optical laser (frequency in MHz).
         The interaction between different atoms is given by the :func:`rydberg_interaction`, for which we pass the atomic coordinates (in µm),
-        here arrange in a square of length :math:`4\my m`.
+        here arrange in a square of length :math:`4 \mu m`.
 
         .. code-block:: python3
 
@@ -178,7 +178,7 @@ def drive(amplitude, phase, detuning, wires):
             assert len(wires) == len(atom_coordinates)
             H_i = qml.pulse.rydberg_interaction(atom_coordinates, wires)
 
-        We can now simulate driving those atoms with an oscillating amplitude $\Omega$ that is trainable, for a duration of :math:`10 \mu s`.
+        We can now simulate driving those atoms with an oscillating amplitude :math:`\Omega` that is trainable, for a duration of :math:`10 \mu s`.
         The total Hamiltonian of that evolution is given by
 
         .. math::
