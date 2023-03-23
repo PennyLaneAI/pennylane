@@ -53,8 +53,6 @@ def custom_measurement_process(device, spy):
 class TestCounts:
     """Tests for the counts function"""
 
-    # pylint:disable=too-many-public-methods
-
     def test_counts_properties(self):
         """Test that the properties are correct."""
         meas1 = qml.counts(wires=0)
@@ -66,15 +64,13 @@ class TestCounts:
 
     def test_queue(self):
         """Test that the right measurement class is queued."""
-        dev = qml.device("default.qubit", wires=2, shots=1000)
 
-        @qml.qnode(dev)
-        def circuit():
-            return qml.counts(wires=0)
+        with qml.queuing.AnnotatedQueue() as q:
+            op = qml.PauliX(0)
+            m = qml.counts(op)
 
-        circuit()
-
-        assert isinstance(circuit.tape[0], CountsMP)
+        assert q.queue[0] is m
+        assert isinstance(m, CountsMP)
 
     def test_copy(self):
         """Test that the ``__copy__`` method also copies the ``all_outcomes`` information."""
@@ -86,35 +82,45 @@ class TestCounts:
     def test_providing_observable_and_wires(self):
         """Test that a ValueError is raised if both an observable is provided and wires are
         specified"""
-        dev = qml.device("default.qubit", wires=2)
-
-        @qml.qnode(dev)
-        def circuit():
-            qml.Hadamard(wires=0)
-            return qml.counts(qml.PauliZ(0), wires=[0, 1])
 
         with pytest.raises(
             ValueError,
             match="Cannot specify the wires to sample if an observable is provided."
             " The wires to sample will be determined directly from the observable.",
         ):
-            _ = circuit()
+            qml.counts(qml.PauliZ(0), wires=[0, 1])
 
-    def test_not_an_observable(self, mocker):
+    def test_observable_might_not_be_hermitian(self):
         """Test that a UserWarning is raised if the provided
         argument might not be hermitian."""
-        dev = qml.device("default.qubit", wires=2, shots=10)
-        spy = mocker.spy(qml.QubitDevice, "sample")
-
-        @qml.qnode(dev)
-        def circuit():
-            qml.RX(0.52, wires=0)
-            return qml.counts(qml.prod(qml.PauliX(0), qml.PauliZ(0)))
 
         with pytest.warns(UserWarning, match="Prod might not be hermitian."):
-            _ = circuit()
+            qml.counts(qml.prod(qml.PauliX(0), qml.PauliZ(0)))
 
-        custom_measurement_process(dev, spy)
+    def test_hash(self):
+        """Test that the hash property includes the all_outcomes property."""
+        m1 = qml.counts(all_outcomes=True)
+        m2 = qml.counts(all_outcomes=False)
+
+        assert m1.hash != m2.hash
+
+        m3 = CountsMP(eigvals=[0.5, -0.5], wires=qml.wires.Wires(0), all_outcomes=True)
+        assert m3.hash != m1.hash
+
+    def test_repr(self):
+        """Test that the repr includes the all_outcomes property."""
+        m1 = CountsMP(wires=Wires(0), all_outcomes=True)
+        assert repr(m1) == "CountsMP(wires=[0], all_outcomes=True)"
+
+        m2 = CountsMP(obs=qml.PauliX(0), all_outcomes=True)
+        assert repr(m2) == "CountsMP(PauliX(wires=[0]), all_outcomes=True)"
+
+        m3 = CountsMP(eigvals=(-1, 1), all_outcomes=False)
+        assert repr(m3) == "CountsMP(eigvals=[-1  1], wires=[], all_outcomes=False)"
+
+
+class TestCountsIntegration:
+    # pylint:disable=too-many-public-methods
 
     def test_counts_dimension(self, mocker):
         """Test that the counts function outputs counts of the right size"""
