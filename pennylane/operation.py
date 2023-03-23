@@ -850,10 +850,8 @@ class Operator(abc.ABC):
         """
         raise TermsUndefinedError
 
-    @property
-    @abc.abstractmethod
-    def num_wires(self):
-        """Number of wires the operator acts on."""
+    num_wires = AnyWires
+    """Number of wires the operator acts on."""
 
     @property
     def name(self):

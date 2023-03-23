@@ -474,6 +474,15 @@ class TestMatrix:
 class TestProperties:
     """Test class properties."""
 
+    def test_hash(self):
+        """Test the hash property is independent of order."""
+        op1 = Sum(qml.PauliX("a"), qml.PauliY("b"))
+        op2 = Sum(qml.PauliY("b"), qml.PauliX("a"))
+        assert op1.hash == op2.hash
+
+        op3 = Sum(qml.PauliX("a"), qml.PauliY("b"), qml.PauliZ(-1))
+        assert op3.hash != op1.hash
+
     @pytest.mark.parametrize("sum_method", [sum_using_dunder_method, qml.sum])
     @pytest.mark.parametrize("ops_lst", ops)
     def test_is_hermitian(self, ops_lst, sum_method):
