@@ -217,7 +217,7 @@ class PauliWord(dict):
 
         return reduce(kron, (matrix_map[self[w]] for w in wire_order))
 
-    def operation(self, wire_order=None):
+    def operation(self, wire_order=None, get_as_tensor=False):
         """Returns a native PennyLane :class:`~pennylane.operation.Operation` representing the PauliWord."""
         if len(self) == 0:
             if wire_order in (None, [], wires.Wires([])):
@@ -225,25 +225,19 @@ class PauliWord(dict):
             return Identity(wires=wire_order)
 
         factors = [op_map[op](wire) for wire, op in self.items()]
+
+        if get_as_tensor:
+            return factors[0] if len(factors) == 1 else Tensor(*factors)
         return factors[0] if len(factors) == 1 else prod(*factors)
 
-    def hamiltonian(self, wire_order=None, get_as_tensor=False):
-        """Return :class:`~pennylane.Hamiltonian` representing the PauliWord.
-
-        If `get_as_tensor` is set to True, then return the PauliWord as an instance
-        of :class:`~pennylane.Tensor` (or :class:`~pennylane.Identity` if emtpy).
-        """
+    def hamiltonian(self, wire_order=None):
+        """Return :class:`~pennylane.Hamiltonian` representing the PauliWord."""
         if len(self) == 0:
             if wire_order in (None, [], wires.Wires([])):
                 raise ValueError("Can't get the Hamiltonian for an empty PauliWord.")
-            if get_as_tensor:
-                return Identity(wires=wire_order)
             return Hamiltonian([1], [Identity(wires=wire_order)])
 
         obs = [op_map[op](wire) for wire, op in self.items()]
-        if get_as_tensor:
-            return obs[0] if len(obs) == 1 else Tensor(*obs)
-
         return Hamiltonian([1], [obs[0] if len(obs) == 1 else Tensor(*obs)])
 
 
@@ -393,7 +387,7 @@ class PauliSentence(dict):
         wire_order = list(wire_order)
 
         return Hamiltonian(
-            list(self.values()), [pw.hamiltonian(wire_order=wire_order, get_as_tensor=True) for pw in self]
+            list(self.values()), [pw.operation(wire_order=wire_order, get_as_tensor=True) for pw in self]
         )
 
     def simplify(self, tol=1e-8):
