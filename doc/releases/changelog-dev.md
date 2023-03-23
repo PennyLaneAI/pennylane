@@ -14,7 +14,7 @@
   * A new user-facing `rydberg_interaction` function is added, which returns a `RydbergHamiltonian` containing
     the Hamiltonian of the interaction of all the Rydberg atoms.
   * A new user-facing `drive` function is added, which returns a `HardwareHamiltonian` containing
-    the Hamiltonian of the interaction between a driving laser field and a group of qubits.
+    the Hamiltonian of the interaction between a driving electro-magnetic field and a group of qubits.
   [(#3749)](https://github.com/PennyLaneAI/pennylane/pull/3749)
   [(#3911)](https://github.com/PennyLaneAI/pennylane/pull/3911)
   [(#3930)](https://github.com/PennyLaneAI/pennylane/pull/3930)
