@@ -66,7 +66,9 @@ def time_dependent_hamiltonian():
     return ParametrizedHamiltonian(coeffs, ops)
 
 
-@pytest.mark.skipif(importlib.util.find_spec("jax") is not None)
+@pytest.mark.skipif(
+    importlib.util.find_spec("jax") is not None, reason="should only pass when jax is not installed"
+)
 def test_error_raised_on_call_if_jax_not_installed():
     """Test that an error is raised if an ``Evolve`` operator is instantiated without jax installed"""
     # try:
@@ -78,7 +80,9 @@ def test_error_raised_on_call_if_jax_not_installed():
         ParametrizedEvolution(H=ParametrizedHamiltonian([1], [qml.PauliX(0)]))([], 2)
 
 
-@pytest.mark.skipif(importlib.util.find_spec("jax") is not None)
+@pytest.mark.skipif(
+    importlib.util.find_spec("jax") is not None, reason="should only pass when jax is not installed"
+)
 def test_error_raised_for_matrix_method_if_jax_not_installed():
     """Test that an error is raised if an ``Evolve`` operator is instantiated without jax installed"""
     # try:
