@@ -33,45 +33,58 @@ from .parametrized_hamiltonian import ParametrizedHamiltonian
 def drive(amplitude, phase, detuning, wires):
     r"""Constructs a :class:`ParametrizedHamiltonian` representing the action of a driving electromagnetic
     field with a qubit.
+
     .. math::
         \frac{1}{2} \sum_{j \in \text{wires}} \Omega(t) \left(e^{i \phi(t)} \sigma^+_j + e^{-i \phi(t)} \sigma^-_j \right) -
         \Delta(t) \sigma^z_j
+
     where :math:`\Omega`, :math:`\phi` and :math:`\Delta` correspond to the amplitude, phase and detuning of the electromagnetic
     driving field and :math:`j` corresponds to the wire index. We are describing the Hamiltonian in terms of ladder operators
     :math:`\sigma^\pm = \frac{1}{2}(\sigma_x \pm i \sigma_y)`.
+
     Note that the detuning :math:`\Delta := \omega_q - \nu` is defined as the difference between the qubit frequency :math:`\omega_q`
     and the electromagntic field driving frequency :math:`\nu`. For more details, see the theoretical background section below.
+
     Common hardware systems are superconducting qubits and neutral atoms. The electromagnetic field of the drive is realized by microwave
     and laser fields, respectively, operating at very differnt wavelengths.
+
     Note that to avoid nummerical problems due to using both very large and very small numbers, it is advisable to match
     the order of magnitudes of frequency and time arguments. For example, when frequencies are of order MHz (microwave pulses for superconducting systems),
     then one can ommit the explicit factor :math:`10^6` by treating the times passed to the constructed :class:`ParametrizedHamiltonian` in :math:`\mu s = 10^{-6}s`
     to be able to use numerical units of order :math:`\mathcal{O}(1)`. We further elaborate on that in the examples below.
+
     Args:
-        amplitude (Union[float, Callable]): float or callable returning the amplitude of a
+        amplitude (Union[float, Callable]): float or callable returning the amplitude of an
             electromagnetic field
         phase (Union[float, Callable]): float or callable returning the phase (in radians) of the electromagnetic field
-        detuning (Union[float, Callable]): float or callable returning the detuning of a
+        detuning (Union[float, Callable]): float or callable returning the detuning of an
             electromagnetic field
         wires (Union[int, List[int]]): integer or list containing wire values for the qubits that
             the electromagnetic field acts on
+
     Returns:
         HardwareHamiltonian: a :class:`~.ParametrizedHamiltonian` representing the action of the electromagnetic field
         on the qubits.
+
     .. seealso::
         :func:`~.rydberg_interaction`, :class:`~.ParametrizedHamiltonian`, :class:`~.ParametrizedEvolution`
         and :func:`~.evolve`
+
     **Example**
+
     We create a Hamiltonian describing a electromagnetic field acting on 4 qubits with a fixed detuning and
     phase, as well as a parametrized, time-dependent amplitude. The Hamiltonian includes an interaction term for
     inter-qubit interactions.
-    .. code-block:: python
+
+    .. code-block:: python3
+
         wires = [0, 1, 2, 3]
-        H_int = sum([qml.PauliX(i) @ qml.PauliX(i+1) for i in wires])
+        H_int = sum([qml.PauliX(i) @ qml.PauliX((i+1)%len(wires)) for i in wires])
         amplitude = lambda p, t: p * jnp.sin(jnp.pi * t)
         phase = jnp.pi / 2
         detuning = 3 * jnp.pi / 4
         H_d = qml.pulse.drive(amplitude, phase, detuning, wires)
+
     >>> H_int
     (1) [X0 X1]
     + (1) [X1 X2]
@@ -79,93 +92,125 @@ def drive(amplitude, phase, detuning, wires):
     + (1) [X3 X0]
     >>> H_d
     ParametrizedHamiltonian: terms=3
+
     The first two terms of the drive Hamiltonian ``H_d`` correspond to the two terms :math:`\Omega e^{i \phi(t)} \sigma^+_j + \Omega e^{-i \phi(t)} \sigma^-_j`,
     describing a drive between the ground and excited states. The third term corresponding to the shift term
     due to detuning from resonance. In this case, the drive term corresponds to a global drive, as it acts on all 4 wires of
     the device.
+
     The full Hamiltonian can be evaluated:
+
     .. code-block:: python3
+
         dev = qml.device("default.qubit.jax", wires=wires)
         @qml.qnode(dev, interface="jax")
         def circuit(params):
             qml.evolve(H_int + H_d)(params, t=[0, 10])
             return qml.expval(qml.PauliZ(0))
+
+
     >>> params = [2.4]
     >>> circuit(params)
-    Array(0.70218135, dtype=float64)
+    Array(0.77627534, dtype=float64)
     >>> jax.grad(circuit)(params)
-    [Array(3.14449753, dtype=float64)]
+    [Array(-0.0159532, dtype=float64)]
+
     We can also create a Hamiltonian with multiple local drives. The following circuit corresponds to the
     evolution where an additional local drive that changes in time is acting on wires ``[0, 1]`` is added to the Hamiltonian:
+
     .. code-block:: python3
+
         amplitude_local = lambda p, t: p[0] * jnp.sin(2 * jnp.pi * t) + p[1]
         phase_local = lambda p, t: p * jnp.exp(-0.25 * t)
         detuning_local = jnp.pi / 4
+
         H_local = qml.pulse.drive(amplitude_local, phase_local, detuning_local, [0, 1])
         H = H_int + H_d + H_local
+
         @jax.jit
         @qml.qnode(dev, interface="jax")
         def circuit_local(params):
             qml.evolve(H)(params, t=[0, 10])
             return qml.expval(qml.PauliZ(0))
+
         p_global = 2.4
         p_amp = [1.3, -2.0]
         p_phase = 0.5
         params = (p_global, p_amp, p_phase)
-        circuit_local(params)
+
     >>> circuit_local(params)
-    Array(0.6126627, dtype=float64)
+    Array(0.4494223, dtype=float64)
     >>> jax.grad(circuit_local)(params)
-    (Array(-0.30482848, dtype=float64),
-     [Array(0.27030772, dtype=float64, weak_type=True),
-      Array(-0.55805872, dtype=float64, weak_type=True)],
-     Array(0.27385566, dtype=float64))
+    (Array(0.17258209, dtype=float64),
+     [Array(-0.39050511, dtype=float64, weak_type=True),
+      Array(-0.15865324, dtype=float64, weak_type=True)],
+     Array(-0.16458317, dtype=float64))
+
     .. details::
+
         :title: Theoretical background
         :href: theory
+
         Depending on the community and field it is often common to write the driving field Hamiltonian as
+
         .. math::
             H = \frac{1}{2} \Omega(t) \sum_{j \in \text{wires}} \left(e^{i (\phi(t) + \nu t)} \sigma^+_j + e^{-i (\phi(t) + \nu t)} \sigma^-_j \right)
             + \frac{1}{2} \omega_q \sum_{j \in \text{wires}} \sigma^z_j,
+
         with amplitude :math:`\Omega`, phase :math:`\phi` and drive frequency :math:`\nu` of the electromagnetic field, as well as the qubit frequency :math:`\omega_q`.
         We can move to the rotating frame of the driving field by applying :math:`U = e^{-i\nu t \sigma^z / 2}` which yields the new Hamiltonian
+
         .. math::
             H = \frac{1}{2} \Omega(t) \sum_{j \in \text{wires}} \left(e^{i \phi(t)} \sigma^+_j + e^{-i \phi(t)} \sigma^-_j \right)
             - \frac{1}{2} (\nu - \omega_q) \sum_{j \in \text{wires}} \sigma^z_j
+
         We can define :math:`\Delta = \nu - \omega_q` to arrive at the definition above. Note that a potential anharmonicity term,
         as is common for transmon systems when taking into account higher energy levels,
         is unaffected by this transformation.
+
     .. details::
+
         **Neutral Atom Rydberg systems**
+
         In neutral atom systems for quantum computation and quantum simulation, a Rydberg transition is driven by an optical laser (frequency in MHz).
         The interaction between different atoms is given by the :func:`rydberg_interaction`, for which we pass the atomic coordinates (in µm),
         here arrange in a square of length :math:`4 \mu m`.
+
         .. code-block:: python3
+
             atom_coordinates = [[0, 0], [0, 4], [4, 0], [4, 4]]
             wires = [1, 2, 3, 4]
             assert len(wires) == len(atom_coordinates)
             H_i = qml.pulse.rydberg_interaction(atom_coordinates, wires)
+
         We can now simulate driving those atoms with an oscillating amplitude :math:`\Omega` that is trainable, for a duration of :math:`10 \mu s`.
         The total Hamiltonian of that evolution is given by
+
         .. math::
             \frac{1}{2} p \sin(\pi t) \sum_{j \in \text{wires}} \left(e^{i \pi/2} \sigma^+_j + e^{-i \pi/2} \sigma^-_j \right) -
             \frac{1}{2} \frac{3 \pi}{4} \sum_{j \in \text{wires}} \sigma^z_j + \sum_{k<\ell} V_{k \ell} n_k n_\ell
+
         and can be executed and differentiated via the following code.
+
         .. code-block:: python3
+
             amplitude = lambda p, t: p * jnp.sin(jnp.pi * t)
             phase = jnp.pi / 2
             detuning = 3 * jnp.pi / 4
+
             H_d = qml.pulse.rydberg_drive(amplitude, phase, detuning, wires)
+
             dev = qml.device("default.qubit.jax", wires=wires)
             @qml.qnode(dev, interface="jax")
             def circuit(params):
                 qml.evolve(H_i + H_d)(params, t=[0, 10])
                 return qml.expval(qml.PauliZ(0))
+
         >>> params = [2.4]
         >>> circuit(params)
-        Array(0.97137696, dtype=float32)
+        Array(0.94301294, dtype=float64)
         >>> jax.grad(circuit)(params)
-        [Array(0.10493923, dtype=float32)]
+        [Array(0.59484969, dtype=float64)]
     """
     if isinstance(wires, int):
         wires = [wires]
