@@ -251,6 +251,9 @@ def var_param_shift(tape, dev_wires, argnum=None, shifts=None, gradient_recipes=
     gradient_tapes.extend(pdA2_tapes)
 
     def processing_fn(results):
+        if qml.active_return():
+            results = [qml.math.expand_dims(r, axis=0) for r in results]
+
         # HOTFIX: Apply the same squeezing as in qml.QNode to make the transform output consistent.
         # pylint: disable=protected-access
         if tape._qfunc_output is not None and not isinstance(tape._qfunc_output, Sequence):
@@ -418,6 +421,9 @@ def second_order_param_shift(tape, dev_wires, argnum=None, shifts=None, gradient
         gradient_values.append(None)
 
     def processing_fn(results):
+        if qml.active_return():
+            results = [qml.math.expand_dims(r, axis=0) for r in results]
+
         # HOTFIX: Apply the same squeezing as in qml.QNode to make the transform output consistent.
         # pylint: disable=protected-access
         if tape._qfunc_output is not None and not isinstance(tape._qfunc_output, Sequence):
@@ -651,6 +657,10 @@ def param_shift_cv(
         >>> fn(qml.execute(gradient_tapes, dev, None))
         array([[-0.32487113, -0.4054074 , -0.87049853,  0.4054074 ]])
     """
+    if qml.active_return() and len(tape.measurements) > 1:
+        raise ValueError(
+            "Computing the gradient of CV circuits that return more than one measurement is not possible."
+        )
 
     # perform gradient method validation
     if any(isinstance(m, StateMP) for m in tape.measurements):
@@ -757,6 +767,19 @@ def param_shift_cv(
             grads.append(f(results[start : start + s]))
             start += s
 
-        return sum(grads)
+        # For expval param shift with multiple params
+        if qml.active_return():
+            if isinstance(grads[0], tuple):
+                return grads[0]
+
+        jacobian = sum(grads)
+
+        if qml.active_return():
+            if jacobian.shape != ():
+                if jacobian.shape[0] == 1:
+                    jacobian = jacobian[0]
+                if len(argnum) > 1:
+                    jacobian = tuple(j for j in jacobian)
+        return jacobian
 
     return gradient_tapes, processing_fn

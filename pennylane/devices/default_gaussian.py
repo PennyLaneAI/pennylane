@@ -888,3 +888,25 @@ class DefaultGaussian(Device):
     @property
     def observables(self):
         return set(self._observable_map.keys())
+
+    def batch_execute(self, circuits):
+        if not qml.active_return():
+            return super().batch_execute(circuits)
+        results = []
+        for circuit in circuits:
+            if len(circuit.measurements) > 1:
+                raise qml.QuantumFunctionError(
+                    "Default gaussian only support single measurements."
+                )
+            # we need to reset the device here, else it will
+            # not start the next computation in the zero state
+            self.reset()
+
+            res = self.execute(circuit.operations, circuit.observables)
+            res = qml.math.squeeze(res)
+            results.append(res)
+
+        if self.tracker.active:
+            self.tracker.update(batches=1, batch_len=len(circuits))
+            self.tracker.record()
+        return results

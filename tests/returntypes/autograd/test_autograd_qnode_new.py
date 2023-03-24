@@ -1390,7 +1390,6 @@ class TestQubitIntegration:
         assert np.allclose(jac, expected, atol=tol, rtol=0)
 
 
-@pytest.mark.xfail(reason="CV variable needs to be update for the new return types.")
 @pytest.mark.parametrize(
     "diff_method,kwargs",
     [
