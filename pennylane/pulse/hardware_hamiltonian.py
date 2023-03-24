@@ -49,7 +49,7 @@ def drive(amplitude, phase, detuning, wires):
     to be able to use numerical units of order :math:`\mathcal{O}(1)`. We further elaborate on that in the examples below.
 
     Args:
-        amplitude (Union[float, Callable]): float or callable returning the amplitude of a
+        amplitude (Union[float, Callable]): float or callable returning the amplitude of an
             electromagnetic field
         phase (Union[float, Callable]): float or callable returning the phase (in radians) of the electromagnetic field
         detuning (Union[float, Callable]): float or callable returning the detuning of a
