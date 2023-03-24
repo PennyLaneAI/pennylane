@@ -119,3 +119,12 @@ class TestRydbergSettings:
         assert settings01.interaction_coeff == 2.0
         assert settings10.register == register0
         assert settings10.interaction_coeff == 2.0
+
+    def test_raises_error_two_interaction_terms(self,):
+        """Raises error when attempting to add two non-trivial RydbergSettings"""
+        settings0 = RydbergSettings(register0)
+        settings1 = RydbergSettings(register1)
+        with pytest.raises(
+            ValueError, match="Cannot add two"
+        ):
+            settings0 + settings1
