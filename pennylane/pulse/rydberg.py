@@ -126,7 +126,7 @@ class RydbergSettings:
     """
 
     register: list
-    interaction_coeff: float = 0.
+    interaction_coeff: float = 0.0
 
     def __eq__(self, other):
         return (

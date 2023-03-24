@@ -25,6 +25,7 @@ from pennylane.typing import TensorLike
 
 
 from .parametrized_hamiltonian import ParametrizedHamiltonian
+
 # from .transmon import TransmonSettings
 # from .rydberg import RydbergSettings
 
@@ -288,7 +289,7 @@ class HardwareHamiltonian(ParametrizedHamiltonian):
         coeffs,
         observables,
         pulses: List["HardwarePulse"] = None,
-        settings: Union["RydbergSettings","TransmonSettings"] = None,
+        settings: Union["RydbergSettings", "TransmonSettings"] = None,
     ):
         self.settings = settings
         self.pulses = [] if pulses is None else pulses
@@ -300,7 +301,6 @@ class HardwareHamiltonian(ParametrizedHamiltonian):
 
     def __add__(self, other):
         if isinstance(other, HardwareHamiltonian):
-
             new_register = self.settings + other.settings
             new_pulses = self.pulses + other.pulses
             new_ops = self.ops + other.ops
