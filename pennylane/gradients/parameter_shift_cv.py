@@ -251,9 +251,6 @@ def var_param_shift(tape, dev_wires, argnum=None, shifts=None, gradient_recipes=
     gradient_tapes.extend(pdA2_tapes)
 
     def processing_fn(results):
-        if qml.active_return():
-            results = [qml.math.expand_dims(r, axis=0) for r in results]
-
         # HOTFIX: Apply the same squeezing as in qml.QNode to make the transform output consistent.
         # pylint: disable=protected-access
         if tape._qfunc_output is not None and not isinstance(tape._qfunc_output, Sequence):
@@ -421,9 +418,6 @@ def second_order_param_shift(tape, dev_wires, argnum=None, shifts=None, gradient
         gradient_values.append(None)
 
     def processing_fn(results):
-        if qml.active_return():
-            results = [qml.math.expand_dims(r, axis=0) for r in results]
-
         # HOTFIX: Apply the same squeezing as in qml.QNode to make the transform output consistent.
         # pylint: disable=protected-access
         if tape._qfunc_output is not None and not isinstance(tape._qfunc_output, Sequence):
@@ -473,7 +467,6 @@ def second_order_param_shift(tape, dev_wires, argnum=None, shifts=None, gradient
             g = qml.math.convert_like(g, results[0])
             if hasattr(g, "dtype") and g.dtype is np.dtype("object"):
                 grads[i] = qml.math.hstack(g)
-
         return qml.math.T(qml.math.stack(grads))
 
     return gradient_tapes, processing_fn
