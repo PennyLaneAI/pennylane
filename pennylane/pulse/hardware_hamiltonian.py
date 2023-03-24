@@ -168,9 +168,9 @@ def drive(amplitude, phase, detuning, wires):
     .. details::
         **Neutral Atom Rydberg systems**
 
-        In neutral atom systems for quantum computation and quantum simulation, a Rydberg transition is driven by an optical laser (frequency in MHz).
+        In neutral atom systems for quantum computation and quantum simulation, a Rydberg transition is driven by an optical laser that is close to the transition's resonant frequency (with a potential detuning with regards to the resonant frequency on the order of MHz).
         The interaction between different atoms is given by the :func:`rydberg_interaction`, for which we pass the atomic coordinates (in µm),
-        here arrange in a square of length :math:`4 \mu m`.
+        here arranged in a square of length :math:`4 \mu m`.
 
         .. code-block:: python3
 
@@ -200,13 +200,13 @@ def drive(amplitude, phase, detuning, wires):
             @qml.qnode(dev, interface="jax")
             def circuit(params):
                 qml.evolve(H_i + H_d)(params, t=[0, 10])
-                return qml.expval(qml.PauliZ(0))
+                return qml.expval(qml.PauliZ(1))
 
         >>> params = [2.4]
         >>> circuit(params)
-        Array(0.97137696, dtype=float32)
+        Array(0.94296294, dtype=float32)
         >>> jax.grad(circuit)(params)
-        [Array(0.10493923, dtype=float32)]
+        [Array(0.5952485, dtype=float32)]
 
     """
     if isinstance(wires, int):
