@@ -80,3 +80,43 @@ class TestRydbergInteraction:
         # Only 3 of the interactions will be non-negligible
         assert H_res.coeffs == [2.5**-6, 5**-6, 2.5**-6]
         assert qml.equal(H_res([], t=5), H_exp([], t=5))
+
+
+# For rydberg settings test
+register0 = [[0., 1.], [0., 2.]]
+register1 = [[2., .3], [1., 4.], [.5, .4]]
+
+
+class TestRydbergSettings:
+    """Unit tests for TransmonSettings dataclass"""
+
+    def test_init(self):
+        """Test the initialization of the ``RydbergSettings`` class."""
+        settings = RydbergSettings(register0)
+        assert settings.register == register0
+        assert settings.interaction_coeff == 0.
+
+    def test_equal(self):
+        """Test the ``__eq__`` method of the ``RydbergSettings`` class."""
+        settings0 = RydbergSettings(register0)
+        settings1 = RydbergSettings(register1, interaction_coeff=2.)
+        settings2 = RydbergSettings(register0, interaction_coeff=0.)
+        assert settings0 != settings1
+        assert settings1 != settings2
+        assert settings0 == settings2
+
+    def test_add_two_settings(
+        self,
+    ):
+        """Test that two RydbergSettings are correctly added"""
+
+
+        settings0 = RydbergSettings(register0, interaction_coeff=2.)
+        settings1 = None
+
+        settings01 = settings0 + settings1
+        settings10 = settings1 + settings0
+        assert settings01.register == register0
+        assert settings01.interaction_coeff == 2.
+        assert settings10.register == register0
+        assert settings10.interaction_coeff == 2.

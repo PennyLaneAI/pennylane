@@ -51,12 +51,11 @@ class TestHardwareHamiltonian:
     # pylint: disable=protected-access
     def test_initialization(self):
         """Test the HardwareHamiltonian class is initialized correctly."""
-        rm = HardwareHamiltonian(coeffs=[], observables=[], register=atom_coordinates)
+        rm = HardwareHamiltonian(coeffs=[], observables=[])
 
-        assert qml.math.allequal(rm.register, atom_coordinates)
         assert rm.pulses == []
         assert rm.wires == Wires([])
-        assert rm.interaction_coeff == 862690
+        assert rm.settings == None
 
     def test_add_rydberg_hamiltonian(self):
         """Test that the __add__ dunder method works correctly."""

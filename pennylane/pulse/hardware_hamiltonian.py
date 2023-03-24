@@ -25,7 +25,6 @@ from pennylane.typing import TensorLike
 
 
 from .parametrized_hamiltonian import ParametrizedHamiltonian
-
 # from .transmon import TransmonSettings
 # from .rydberg import RydbergSettings
 
@@ -289,7 +288,7 @@ class HardwareHamiltonian(ParametrizedHamiltonian):
         coeffs,
         observables,
         pulses: List["HardwarePulse"] = None,
-        settings: Union["RydbergSettings", "TransmonSettings"] = None,
+        settings: Union["RydbergSettings","TransmonSettings"] = None,
     ):
         self.settings = settings
         self.pulses = [] if pulses is None else pulses
@@ -301,16 +300,8 @@ class HardwareHamiltonian(ParametrizedHamiltonian):
 
     def __add__(self, other):
         if isinstance(other, HardwareHamiltonian):
-            # Update coeffs, obs and hardware attributes
-            if self.register is not None:
-                if other.register is not None:
-                    raise ValueError("We cannot add two Hamiltonians with an interaction term!")
-                if not self.wires.contains_wires(other.wires):
-                    warnings.warn("The wires of the drive fields are not present in the ensemble.")
-            elif other.register is not None and not other.wires.contains_wires(self.wires):
-                warnings.warn("The wires of the drive fields are not present in the ensemble.")
 
-            new_register = self.register or other.register
+            new_register = self.settings + other.settings
             new_pulses = self.pulses + other.pulses
             new_ops = self.ops + other.ops
             new_coeffs = self.coeffs + other.coeffs
