@@ -29,6 +29,7 @@ from pennylane.pulse.hardware_hamiltonian import (
 from pennylane.pulse.transmon import (
     a,
     ad,
+    TransmonSettings
 )
 
 from pennylane.wires import Wires
@@ -106,60 +107,56 @@ class TestTransmonInteraction:
             )
 
 
-# class TestTransmonDrive:
-#     """Unit tests for the ``transmon_drive`` function."""
+# For transmon settings test
+connections0 = [[0, 1], [0, 2]]
+omega0 = [1., 2., 3.]
+g0 = [0.5, 0.3]
 
-#     def test_attributes_and_number_of_terms(self):
-#         """Test that the attributes and the number of terms of the ``ParametrizedHamiltonian`` returned by
-#         ``transmon_drive`` are correct."""
 
-#         Hd = transmon_drive(amplitude=1, phase=2, wires=[1, 2])
+connections1 = [[2, 3], [1, 4], [5, 4]]
+omega1 = [4., 5., 6.]
+g1 = [0.1, 0.2, 0.3]
 
-#         assert isinstance(Hd, HardwareHamiltonian)
-#         assert Hd.wires == Wires([1, 2])
-#         assert Hd.connections is None
-#         assert len(Hd.ops) == 2  # one for a and one of a^\dagger
-#         assert Hd.pulses == [TransmonPulse(1, 2, [1, 2])]
 
-#     # odd behavior when adding two drives/HardwareHamiltonians
-#     # @pytest.mark.xfail
-#     def test_multiple_local_drives(self):
-#         """Test that adding multiple drive terms behaves as expected"""
 
-#         def fa(p, t):
-#             return np.sin(p * t)
+class TestTransmonSettings:
+    """Unit tests for TransmonSettings dataclass"""
 
-#         def fb(p, t):
-#             return np.cos(p * t)
+    def test_init(self):
+        """Test the initialization of the ``HardwarePulse`` class."""
+        settings = TransmonSettings(connections0, omega0, g0)
+        assert settings.connections == connections0
+        assert settings.omega == omega0
+        assert settings.g == g0
+        assert settings.delta == None
 
-#         H1 = transmon_drive(amplitude=fa, phase=1, wires=[0, 3])
-#         H2 = transmon_drive(amplitude=1, phase=3, wires=[1, 2])
-#         Hd = H1 + H2
+    def test_equal(self):
+        """Test the ``__eq__`` method of the ``HardwarePulse`` class."""
+        settings0 = TransmonSettings(connections0, omega0, g0)
+        settings1 = TransmonSettings(connections1, omega1, g1)
+        settings2 = TransmonSettings(connections0, omega0, g0, delta=None)
+        assert settings0 != settings1
+        assert settings1 != settings2
+        assert settings0 == settings2
 
-#         ops_expected = [a(1) + a(2), ad(1) + ad(2), a(0) + a(3), ad(0) + ad(3)]
-#         coeffs_expected = [
-#             1.0 * qml.math.exp(1j * 3.0),
-#             1.0 * qml.math.exp(-1j * 3.0),
-#             AmplitudeAndPhase(1, fa, 1),
-#             AmplitudeAndPhase(-1, fa, 1),
-#         ]
-#         H_expected = HardwareHamiltonian(coeffs_expected, ops_expected)
+    def test_add_two_settings(self,):
+        """Test that two settings are correctly added"""
+        settings0 = TransmonSettings(connections0, omega0, g0)
+        settings1 = TransmonSettings(connections1, omega1, g1)
+        settings = settings0 + settings1
+        assert settings.connections == connections0 + connections1
+        assert settings.omega == omega0 + omega1
+        assert settings.g == g0 + g1
 
-#         # structure of Hamiltonian is as expected
-#         assert isinstance(Hd, HardwareHamiltonian)
-#         assert Hd.wires == Wires([1, 2, 0, 3])  # TODO: Why is the order reversed?
-#         assert Hd.connections is None
-#         assert len(Hd.ops) == 4  # 2 terms for amplitude/phase and one detuning for each drive
+    def test_add_two_settings_with_one_delta_None(self,):
+        """Test that two settings are correctly added when one has non-trivial delta"""
+        delta = [1.]*len(omega0)
+        settings0 = TransmonSettings(connections0, omega0, g0, delta=delta0)
+        settings1 = TransmonSettings(connections1, omega1, g1)
 
-#         # coefficients are correct
-#         # Callable coefficients are shifted to the end of the list.
-#         assert Hd.coeffs[:2] == coeffs_expected[:2]
-#         assert isinstance(Hd.coeffs[2], AmplitudeAndPhase)
-#         assert isinstance(Hd.coeffs[3], AmplitudeAndPhase)
+        settings01 = settings0 + settings1
+        assert settings01.delta == delta + [0.] * len(omega1)
 
-#         # # pulses were added correctly
-#         assert len(Hd.pulses) == 2
-#         assert Hd.pulses == H1.pulses + H2.pulses
+        settings10 = settings1 + settings0
+        assert settings10.delta == [0.] * len(omega0) + delta
 
-#         # # Hamiltonian is as expected
-#         assert qml.equal(Hd([0.5, -0.5], t=5), H_expected([0.5, -0.5], t=5))

@@ -170,9 +170,9 @@ class TransmonSettings:
             if self.delta is None and other.delta is None:
                 new_delta = None
             elif self.delta is None and not other.delta is None:
-                new_delta = other.delta
+                new_delta = [0.] * len(self.omega) + list(other.delta)
             elif self.delta is not None and other.delta is None:
-                new_delta = self.delta
+                new_delta = list(self.delta) + [0.] * len(other.omega)
             elif self.delta is not None and other.delta is not None:
                 new_delta = list(self.delta) + list(other.delta)
 
