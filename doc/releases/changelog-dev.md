@@ -26,6 +26,10 @@
   `qml.Hamiltonian`, `qml.SparseHamiltonian`, `qml.Sum`.
   [(#3759)](https://github.com/PennyLaneAI/pennylane/pull/3759)
 
+* `QubitDevice` now defines the private `_get_diagonalizing_gates(circuit)` method and uses it when executing circuits.
+  This allows devices that inherit from `QubitDevice` to override and customize their definition of diagonalizing gates.
+  [(#3938)](https://github.com/PennyLaneAI/pennylane/pull/3938)
+
 <h3>Improvements</h3>
 
 * Keras and Torch NN modules are now compatible with the new return type system.
