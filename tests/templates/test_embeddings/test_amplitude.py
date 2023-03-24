@@ -51,18 +51,18 @@ class TestDecomposition:
         """Checks the queue for the default settings."""
 
         op = qml.AmplitudeEmbedding(features=FEATURES[0], wires=range(2))
-        tape = op.expand()
+        decomp = op.decomposition()
 
-        assert len(tape.operations) == 1
-        assert tape.operations[0].name == "QubitStateVector"
-        assert tape.batch_size is None
+        assert len(decomp) == 1
+        assert decomp[0].name == "QubitStateVector"
+        assert decomp[0].batch_size is None
 
     def test_expansion_broadcasted(self):
         """Checks the queue for the default settings."""
 
         op = qml.AmplitudeEmbedding(features=BROADCASTED_FEATURES[0], wires=range(2))
         assert op.batch_size == 3
-        tape = op.expand()
+        tape = qml.tape.QuantumScript(op.decomposition())
 
         assert len(tape.operations) == 1
         assert tape.operations[0].name == "QubitStateVector"

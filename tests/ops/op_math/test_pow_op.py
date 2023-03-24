@@ -819,10 +819,10 @@ class TestDecompositionExpand:
         """Test that the expand method uses a shortcut if it is defined for that exponent and base."""
         base = qml.PauliX(0)
         op = Pow(base, 0.5)
-        expansion_tape = op.expand()
+        decomp = op.decomposition()
 
-        assert len(expansion_tape) == 1
-        assert isinstance(expansion_tape[0], qml.SX)
+        assert len(decomp) == 1
+        assert isinstance(decomp[0], qml.SX)
 
     def test_positive_integer_exponent(self):
         """Test that decomposition repeats base operator z times if z is a positive integer
@@ -843,11 +843,11 @@ class TestDecompositionExpand:
 
         base = qml.SX(0)
         op = Pow(base, 3)
-        expansion_tape = op.expand()
+        decomp = op.decomposition()
 
-        assert len(expansion_tape) == 3
+        assert len(decomp) == 3
 
-        for op in expansion_tape:
+        for op in decomp:
             assert isinstance(op, qml.SX)
             assert op.wires == qml.wires.Wires(0)
 

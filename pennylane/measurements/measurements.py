@@ -283,11 +283,9 @@ class MeasurementProcess(ABC):
         Returns:
             List[.Operation]: the operations that diagonalize the observables
         """
-        try:
-            # pylint: disable=no-member
-            return self.expand().operations
-        except qml.operation.DecompositionUndefinedError:
+        if self.obs is None:
             return []
+        return qml.tape.make_qscript(self.obs.diagonalizing_gates)().operations
 
     def __repr__(self):
         """Representation of this class."""

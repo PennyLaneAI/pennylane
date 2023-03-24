@@ -718,10 +718,10 @@ class TestDecompositionExpand:
         """Test expansion when base has decomposition but no custom adjoint."""
 
         base = qml.SX(0)
-        base_tape = base.expand()
-        tape = Adjoint(base).expand()
+        base_decomp = base.decomposition()
+        decomp = Adjoint(base).decomposition()
 
-        for base_op, adj_op in zip(reversed(base_tape), tape):
+        for base_op, adj_op in zip(reversed(base_decomp), decomp):
             assert isinstance(adj_op, Adjoint)
             assert base_op.__class__ == adj_op.base.__class__
             assert qml.math.allclose(adj_op.data, base_op.data)

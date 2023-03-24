@@ -164,7 +164,8 @@ def tape_text(
         rng = np.random.default_rng(seed=42)
         shape = qml.StronglyEntanglingLayers.shape(n_wires=5, n_layers=5)
         params = rng.random(shape)
-        tape2 = qml.StronglyEntanglingLayers(params, wires=range(5)).expand()
+        decomp = qml.StronglyEntanglingLayers(params, wires=range(5)).decomposition()
+        tape2 = qml.tape.QuantumTape(decomp)
         print(qml.drawer.tape_text(tape2, max_length=60))
 
 

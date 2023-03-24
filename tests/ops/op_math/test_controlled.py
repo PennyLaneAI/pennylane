@@ -786,7 +786,7 @@ class TestHelperMethod:
         decomp = _decompose_no_control_values(op)
         assert len(decomp) == 3
 
-        target_decomp = target.expand().circuit
+        target_decomp = target.decomposition()
         for op1, target in zip(decomp, target_decomp):
             assert isinstance(op1, Controlled)
             assert op1.control_wires == (3, 4)
@@ -799,11 +799,10 @@ class TestHelperMethod:
         assert _decompose_no_control_values(op) is None
 
 
-@pytest.mark.parametrize("test_expand", (False, True))
 class TestDecomposition:
     """Test controlled's decomposition method."""
 
-    def test_control_values_no_special_decomp(self, test_expand):
+    def test_control_values_no_special_decomp(self):
         """Test decomposition applies PauliX gates to flip any control-on-zero wires."""
 
         control_wires = (0, 1, 2)
@@ -812,7 +811,7 @@ class TestDecomposition:
         base = TempOperator("a")
         op = Controlled(base, control_wires, control_values)
 
-        decomp = op.expand().circuit if test_expand else op.decomposition()
+        decomp = op.decomposition()
 
         assert qml.equal(decomp[0], qml.PauliX(1))
         assert qml.equal(decomp[1], qml.PauliX(2))
@@ -823,37 +822,37 @@ class TestDecomposition:
         assert qml.equal(decomp[3], qml.PauliX(1))
         assert qml.equal(decomp[4], qml.PauliX(2))
 
-    def test_control_values_special_decomp(self, test_expand):
+    def test_control_values_special_decomp(self):
         """Test decomposition when needs control_values flips and special decomp exists."""
 
         base = qml.PauliX(2)
         op = Controlled(base, (0, 1), (True, False))
 
-        decomp = op.expand().circuit if test_expand else op.decomposition()
+        decomp = op.decomposition()
         expected = [qml.PauliX(1), qml.MultiControlledX(wires=(0, 1, 2)), qml.PauliX(1)]
         assert equal_list(decomp, expected)
 
-    def test_no_control_values_special_decomp(self, test_expand):
+    def test_no_control_values_special_decomp(self):
         """Test a case with no control values but a special decomposition."""
         base = qml.RX(1.0, 2)
         op = Controlled(base, 1)
-        decomp = op.expand().circuit if test_expand else op.decomposition()
+        decomp = op.decomposition()
         assert len(decomp) == 1
         assert qml.equal(decomp[0], qml.CRX(1.0, (1, 2)))
 
-    def test_no_control_values_target_decomposition(self, test_expand):
+    def test_no_control_values_target_decomposition(self):
         """Tests a case with no control values and no special decomposition but
         the ability to decompose the target."""
         base = qml.IsingXX(1.23, wires=(0, 1))
         op = Controlled(base, "a")
 
-        decomp = op.expand().circuit if test_expand else op.decomposition()
+        decomp = op.decomposition()
         base_decomp = base.decomposition()
         for cop, base_op in zip(decomp, base_decomp):
             assert isinstance(cop, Controlled)
             assert qml.equal(cop.base, base_op)
 
-    def test_no_control_values_no_special_decomp(self, test_expand):
+    def test_no_control_values_no_special_decomp(self):
         """Test if all control_values are true and no special decomposition exists,
         the method raises a DecompositionUndefinedError."""
 
@@ -861,8 +860,7 @@ class TestDecomposition:
         op = Controlled(base, (0, 1, 2))
 
         with pytest.raises(DecompositionUndefinedError):
-            # pylint: disable=unused-variable
-            decomp = op.expand().circuit if test_expand else op.decomposition()
+            op.decomposition()
 
 
 class TestArithmetic:

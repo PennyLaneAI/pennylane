@@ -14,16 +14,16 @@
 """
 This module contains the base quantum tape.
 """
-# pylint: disable=too-many-instance-attributes,protected-access,too-many-branches,too-many-public-methods, too-many-arguments
+# pylint: disable=too-many-instance-attributes,protected-access,too-many-branches,too-many-public-methods,too-many-arguments,too-many-statements
 import copy
 from threading import RLock
 
 import pennylane as qml
 from pennylane.measurements import CountsMP, ProbabilityMP, SampleMP
-from pennylane.operation import DecompositionUndefinedError, Operator
+from pennylane.operation import Operator
 from pennylane.queuing import AnnotatedQueue, QueuingManager, process_queue
 
-from .qscript import QuantumScript
+from .qscript import QuantumScript, make_qscript
 
 
 class TapeError(ValueError):
@@ -195,15 +195,30 @@ def expand_tape(tape, depth=1, stop_at=None, expand_measurements=False):
                 new_queue.append(obj)
                 continue
 
-            if isinstance(obj, (Operator, qml.measurements.MeasurementProcess)):
-                # Object is an operation; query it for its expansion
-                try:
-                    obj = obj.expand()
-                except DecompositionUndefinedError:
-                    # Object does not define an expansion; treat this as
-                    # a stopping condition.
+            if isinstance(obj, Operator):
+                if not obj.has_decomposition:
+                    # Object does not define an expansion; treat this as a stopping condition.
                     new_queue.append(obj)
                     continue
+
+                decomp = make_qscript(obj.decomposition)()
+
+                if not obj.data:  # original operation has no trainable parameters
+                    decomp.trainable_params = {}
+
+                obj = decomp
+
+            elif isinstance(obj, qml.measurements.MeasurementProcess):
+                if obj.obs is None:
+                    # Object does not define an expansion; treat this as a stopping condition.
+                    new_queue.append(obj)
+                    continue
+
+                with AnnotatedQueue() as q:
+                    obj.obs.diagonalizing_gates()
+                    obj.__class__(wires=obj.obs.wires, eigvals=obj.obs.eigvals())
+
+                obj = QuantumScript.from_queue(q)
 
             # recursively expand out the newly created tape
             expanded_tape = expand_tape(obj, stop_at=stop_at, depth=depth - 1)

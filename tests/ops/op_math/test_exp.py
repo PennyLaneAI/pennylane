@@ -510,9 +510,9 @@ class TestDecomposition:
         """Tests that the sequence of gates implemented in the trotter decomposition is correct"""
 
         op = qml.exp(hamiltonian, coeff=-1j * time, num_steps=steps)
-        queue = op.expand().operations
+        decomp = op.decomposition()
 
-        for expected_gate, gate in zip(expected_queue, queue):
+        for expected_gate, gate in zip(expected_queue, decomp):
             prep = [gate.parameters, gate.wires]
             target = [expected_gate.parameters, expected_gate.wires]
 

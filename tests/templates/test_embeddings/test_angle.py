@@ -28,10 +28,10 @@ class TestDecomposition:
         """Checks the queue for the default settings."""
 
         op = qml.AngleEmbedding(features=features, wires=range(4))
-        tape = op.expand()
+        decomp = op.decomposition()
 
-        assert len(tape.operations) == len(features)
-        for gate in tape.operations:
+        assert len(decomp) == len(features)
+        for gate in decomp:
             assert gate.name == "RX"
             assert gate.parameters[0] == 1
 
@@ -42,10 +42,10 @@ class TestDecomposition:
 
         op = qml.AngleEmbedding(features=features, wires=range(4))
         assert op.batch_size == 5
-        tape = op.expand()
+        decomp = op.decomposition()
 
-        assert len(tape.operations) == 3
-        for gate in tape.operations:
+        assert len(decomp) == 3
+        for gate in decomp:
             assert gate.name == "RX"
             assert gate.batch_size == 5
             assert qml.math.allclose(gate.parameters[0], np.ones(5))
@@ -55,14 +55,11 @@ class TestDecomposition:
         """Checks the queue for the specified rotation settings."""
 
         op = qml.AngleEmbedding(features=[1, 1, 1], wires=range(4), rotation=rotation)
-        tape = op.expand()
+        decomp = op.decomposition()
 
-        for gate in tape.operations:
-            assert gate.name == "R" + rotation
+        assert all(gate.name == f"R{rotation}" for gate in decomp)
 
-    def test_state(
-        self,
-    ):
+    def test_state(self):
         """Checks the state produced using the rotation='X' strategy."""
 
         features = [np.pi / 2, np.pi / 2, np.pi / 4, 0]
