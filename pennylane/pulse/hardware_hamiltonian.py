@@ -67,6 +67,7 @@ def drive(amplitude, phase, detuning, wires):
         on the qubits.
 
     .. seealso::
+
         :func:`~.rydberg_interaction`, :class:`~.ParametrizedHamiltonian`, :class:`~.ParametrizedEvolution`
         and :func:`~.evolve`
 
@@ -80,6 +81,7 @@ def drive(amplitude, phase, detuning, wires):
 
         wires = [0, 1, 2, 3]
         H_int = sum([qml.PauliX(i) @ qml.PauliX((i+1)%len(wires)) for i in wires])
+
         amplitude = lambda p, t: p * jnp.sin(jnp.pi * t)
         phase = jnp.pi / 2
         detuning = 3 * jnp.pi / 4
@@ -103,11 +105,11 @@ def drive(amplitude, phase, detuning, wires):
     .. code-block:: python3
 
         dev = qml.device("default.qubit.jax", wires=wires)
+
         @qml.qnode(dev, interface="jax")
         def circuit(params):
             qml.evolve(H_int + H_d)(params, t=[0, 10])
             return qml.expval(qml.PauliZ(0))
-
 
     >>> params = [2.4]
     >>> circuit(params)
@@ -123,8 +125,8 @@ def drive(amplitude, phase, detuning, wires):
         amplitude_local = lambda p, t: p[0] * jnp.sin(2 * jnp.pi * t) + p[1]
         phase_local = lambda p, t: p * jnp.exp(-0.25 * t)
         detuning_local = jnp.pi / 4
-
         H_local = qml.pulse.drive(amplitude_local, phase_local, detuning_local, [0, 1])
+
         H = H_int + H_d + H_local
 
         @jax.jit
@@ -147,7 +149,6 @@ def drive(amplitude, phase, detuning, wires):
      Array(-0.16458317, dtype=float64))
 
     .. details::
-
         :title: Theoretical background
         :href: theory
 
@@ -169,12 +170,11 @@ def drive(amplitude, phase, detuning, wires):
         is unaffected by this transformation.
 
     .. details::
-
         **Neutral Atom Rydberg systems**
 
-        In neutral atom systems for quantum computation and quantum simulation, a Rydberg transition is driven by an optical laser (frequency in MHz).
+        In neutral atom systems for quantum computation and quantum simulation, a Rydberg transition is driven by an optical laser that is close to the transition's resonant frequency (with a potential detuning with regards to the resonant frequency on the order of MHz).
         The interaction between different atoms is given by the :func:`rydberg_interaction`, for which we pass the atomic coordinates (in µm),
-        here arrange in a square of length :math:`4 \mu m`.
+        here arranged in a square of length :math:`4 \mu m`.
 
         .. code-block:: python3
 
@@ -198,13 +198,13 @@ def drive(amplitude, phase, detuning, wires):
             phase = jnp.pi / 2
             detuning = 3 * jnp.pi / 4
 
-            H_d = qml.pulse.rydberg_drive(amplitude, phase, detuning, wires)
+            H_d = qml.pulse.drive(amplitude, phase, detuning, wires)
 
             dev = qml.device("default.qubit.jax", wires=wires)
             @qml.qnode(dev, interface="jax")
             def circuit(params):
                 qml.evolve(H_i + H_d)(params, t=[0, 10])
-                return qml.expval(qml.PauliZ(0))
+                return qml.expval(qml.PauliZ(1))
 
         >>> params = [2.4]
         >>> circuit(params)
