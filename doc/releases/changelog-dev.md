@@ -197,6 +197,9 @@
   (~2e-8) in the computed dipole moment values, resulting from the new [PySCF 2.2.0](https://github.com/pyscf/pyscf/releases/tag/v2.2.0) release.
   [(#3908)](https://github.com/PennyLaneAI/pennylane/pull/3908)
 
+* `SampleMP.shape` is now correct when sampling only occurs on a subset of the device wires.
+  [(#3921)](https://github.com/PennyLaneAI/pennylane/pull/3921)
+
 <h3>Contributors</h3>
 
 This release contains contributions from (in alphabetical order):
