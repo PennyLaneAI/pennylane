@@ -514,18 +514,20 @@ class PCPhase(Operation):
     A projector-controlled phase gate.
 
     This gate applies a complex phase :math:`\phi` to first :math:`dim`
-    basis vectors of the input state. This is equivalent to applying a constant
-    phase shift to the subspace spanned by those vectors. Consider the 2 qubit
+    basis vectors of the input state while applying a complex phase :math:`- \phi`
+    to the remaining basis vectors. This is equivalent to applying a constant
+    phase shift to the subspace spanned by those :math:`dim` vectors. Consider the 2 qubit
     case where :math:`dim = 2`.
 
     .. math:: \Pi_{\phi}(\phi, dim=2, wires=[0,1]) = \begin{bmatrix}
                 e^{i\phi} & 0 & 0 & 0 \\
                 0 & e^{i\phi} & 0 & 0 \\
-                0 & 0 & 1 & 0 \\
-                0 & 0 & 0 & 1
+                0 & 0 & e^{-i\phi} & 0 \\
+                0 & 0 & 0 & e^{-i\phi}
             \end{bmatrix}.
 
-    This applies a phase shift to the subspace spanned by :math:`\lbrace | 00 \rangle , | 01 \rangle \rbrace`.
+    This is effectively applying a :math:`2*\phi` phase shift to the subspace spanned by
+    :math:`\lbrace | 00 \rangle , | 01 \rangle \rbrace` excluding global phase.
 
     **Details:**
 
@@ -548,7 +550,7 @@ class PCPhase(Operation):
     array([[0.33423773+0.9424888j, 0.        +0.j       , 0.        +0.j       , 0.        +0.j       ],
            [0.        +0.j       , 0.33423773+0.9424888j, 0.        +0.j       , 0.        +0.j       ],
            [0.        +0.j       , 0.        +0.j       , 0.33423773+0.9424888j, 0.        +0.j       ],
-           [0.        +0.j       , 0.        +0.j       , 0.        +0.j       , 1.        +0.j       ]])
+           [0.        +0.j       , 0.        +0.j       , 0.        +0.j       , 0.33423773-0.9424888j]])
     """
     num_wires = AnyWires
     num_params = 1
