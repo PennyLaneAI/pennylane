@@ -149,6 +149,9 @@
 
 <h3>Bug fixes</h3>
 
+* Fixed a bug where calling `Evolution.generator` with `coeff` being a complex ArrayBox raised an error.
+  [(#3796)](https://github.com/PennyLaneAI/pennylane/pull/3796)
+  
 * `MeasurementProcess.hash` now uses the hash property of the observable. The property now depends on all
   properties that affect the behaviour of the object, such as `VnEntropyMP.log_base` or the distribution of wires between
   the two subsystems in `MutualInfoMP`.
@@ -161,7 +164,7 @@
   to work with non-numeric wire labels.  `sum_expand` should now return correct results and not treat some products as the same
   operation.
   [(#3898)](https://github.com/PennyLaneAI/pennylane/pull/3898)
-
+  
 * Fixed bug where the coefficients where not ordered correctly when summing a `ParametrizedHamiltonian`
   with other operators.
   [(#3749)](https://github.com/PennyLaneAI/pennylane/pull/3749)
