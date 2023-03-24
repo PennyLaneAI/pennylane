@@ -123,7 +123,10 @@ def rect(x: Union[float, Callable], windows: Union[Tuple[float], List[Tuple[floa
             :width: 60%
             :target: javascript:void(0);
 
-    This can be used to create a :class:`~.ParametrizedHamiltonian` in the following way:
+    Note that in order to efficiently create ``y2``, we broadcasted ``windowed_f`` over the
+    time argument using `jax.vmap <https://jax.readthedocs.io/en/latest/_autosummary/jax.vmap.html>`_.
+
+    ``rect`` can be used to create a :class:`~.ParametrizedHamiltonian` in the following way:
 
     >>> H = qml.pulse.rect(jnp.polyval, windows=[(1, 7)]) * qml.PauliX(0)
 
