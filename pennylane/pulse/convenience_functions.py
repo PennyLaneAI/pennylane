@@ -93,7 +93,7 @@ def rect(x: Union[float, Callable], windows: Union[Tuple[float], List[Tuple[floa
     .. note::
         If ``x`` is a function, it must accept two arguments: the trainable parameters and time. The primary use
         of ``rect`` is for numerical simulations via :class:`ParametrizedEvolution`, which assumes ``t`` to be a single scalar
-        argument. If you need to efficiently compute multiple times, you need to broadcast over ``t`` via 
+        argument. If you need to efficiently compute multiple times, you need to broadcast over ``t`` via
         `jax.vmap <https://jax.readthedocs.io/en/latest/_autosummary/jax.vmap.html>`_ (see examples below).
 
     **Example**
