@@ -75,7 +75,7 @@ def drive(amplitude, phase, detuning, wires):
     .. code-block:: python
 
         wires = [0, 1, 2, 3]
-        H_int = sum([qml.PauliX(i) @ qml.PauliX(i+1) for i in wires])
+        H_int = sum([qml.PauliX(i) @ qml.PauliX((i+1)%len(wires)) for i in wires])
 
         amplitude = lambda p, t: p * jnp.sin(jnp.pi * t)
         phase = jnp.pi / 2
@@ -108,9 +108,9 @@ def drive(amplitude, phase, detuning, wires):
 
     >>> params = [2.4]
     >>> circuit(params)
-    Array(0.70218135, dtype=float64)
+    Array(0.77627534, dtype=float64)
     >>> jax.grad(circuit)(params)
-    [Array(3.14449753, dtype=float64)]
+    [Array(-0.0159532, dtype=float64)]
 
     We can also create a Hamiltonian with multiple local drives. The following circuit corresponds to the
     evolution where an additional local drive that changes in time is acting on wires ``[0, 1]`` is added to the Hamiltonian:
@@ -134,15 +134,14 @@ def drive(amplitude, phase, detuning, wires):
         p_amp = [1.3, -2.0]
         p_phase = 0.5
         params = (p_global, p_amp, p_phase)
-        circuit_local(params)
 
     >>> circuit_local(params)
-    Array(0.6126627, dtype=float64)
+    Array(0.4494223, dtype=float64)
     >>> jax.grad(circuit_local)(params)
-    (Array(-0.30482848, dtype=float64),
-     [Array(0.27030772, dtype=float64, weak_type=True),
-      Array(-0.55805872, dtype=float64, weak_type=True)],
-     Array(0.27385566, dtype=float64))
+    (Array(0.17258209, dtype=float64),
+     [Array(-0.39050511, dtype=float64, weak_type=True),
+      Array(-0.15865324, dtype=float64, weak_type=True)],
+     Array(-0.16458317, dtype=float64))
 
     .. details::
         :title: Theoretical background
@@ -193,7 +192,7 @@ def drive(amplitude, phase, detuning, wires):
             amplitude = lambda p, t: p * jnp.sin(jnp.pi * t)
             phase = jnp.pi / 2
             detuning = 3 * jnp.pi / 4
-            H_d = qml.pulse.rydberg_drive(amplitude, phase, detuning, wires)
+            H_d = qml.pulse.drive(amplitude, phase, detuning, wires)
 
             dev = qml.device("default.qubit.jax", wires=wires)
 
@@ -204,9 +203,9 @@ def drive(amplitude, phase, detuning, wires):
 
         >>> params = [2.4]
         >>> circuit(params)
-        Array(0.94296294, dtype=float32)
+        Array(0.94301294, dtype=float64)
         >>> jax.grad(circuit)(params)
-        [Array(0.5952485, dtype=float32)]
+        [Array(0.59484969, dtype=float64)]
 
     """
     if isinstance(wires, int):
