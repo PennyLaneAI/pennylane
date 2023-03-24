@@ -129,13 +129,13 @@ class TestHardwareHamiltonian:
 
         with pytest.warns(
             UserWarning,
-            match="The wires of the drive fields are not present in the ensemble.",
+            match="The wires of the laser fields are not present in the Rydberg ensemble",
         ):
             _ = Hd + Ht
 
         with pytest.warns(
             UserWarning,
-            match="The wires of the drive fields are not present in the ensemble.",
+            match="The wires of the laser fields are not present in the Rydberg ensemble",
         ):
             _ = Ht + Hd
 
