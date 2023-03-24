@@ -23,7 +23,7 @@ from jax.tree_util import register_pytree_node_class
 import pennylane as qml
 
 from .parametrized_hamiltonian import ParametrizedHamiltonian
-from .rydberg_hamiltonian import RydbergHamiltonian, _rydberg_reorder_parameters
+from .hardware_hamiltonian import HardwareHamiltonian, _reorder_parameters
 
 
 @register_pytree_node_class
@@ -60,12 +60,12 @@ class ParametrizedHamiltonianPytree:
             make_array(qml.matrix(op, wire_order=wire_order)) for op in H.ops_parametrized
         )
 
-        if isinstance(H, RydbergHamiltonian):
+        if isinstance(H, HardwareHamiltonian):
             return ParametrizedHamiltonianPytree(
                 mat_fixed,
                 mats_parametrized,
                 H.coeffs_parametrized,
-                reorder_fn=_rydberg_reorder_parameters,
+                reorder_fn=_reorder_parameters,
             )
 
         return ParametrizedHamiltonianPytree(
