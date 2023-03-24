@@ -11,7 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""Unit tests for create_initial_state in devices/qubit."""
+"""Unit tests for simulate in devices/qubit."""
 
 import pytest
 
@@ -22,14 +22,7 @@ from pennylane.devices.qubit import simulate
 
 
 class TestCurrentlyUnsupportedCases:
-    def test_hamiltonian_observable(self):
-        """Test that measuring hamiltonians gives a NotImplementedError."""
-
-        H = qml.Hamiltonian([2.0], [qml.PauliX(0)])
-        qs = qml.tape.QuantumScript(measurements=[qml.expval(H)])
-        with pytest.raises(NotImplementedError):
-            simulate(qs)
-
+    # pylint: disable=too-few-public-methods
     def test_sample_based_observable(self):
         """Test sample-only measurements raise a notimplementedError."""
 
@@ -52,7 +45,7 @@ def test_custom_operation():
     qs = qml.tape.QuantumScript([MyOperator(0)], [qml.expval(qml.PauliZ(0))])
 
     result = simulate(qs)
-    assert qml.math.allclose(result[0], -1.0)
+    assert qml.math.allclose(result, -1.0)
 
 
 # pylint: disable=too-few-public-methods
@@ -64,7 +57,7 @@ class TestStatePrep:
         qs = qml.tape.QuantumScript(
             measurements=[qml.probs(wires=(0, 1, 2))], prep=[qml.BasisState([0, 1], wires=(0, 1))]
         )
-        probs = simulate(qs)[0]
+        probs = simulate(qs)
         expected = np.zeros(8)
         expected[2] = 1.0
         assert qml.math.allclose(probs, expected)
@@ -427,7 +420,7 @@ class TestQInfoMeasurements:
 
         def f(x, m_ind, real=True):
             qs = qml.tape.QuantumScript([qml.IsingXX(x, wires=(0, 1))], [self.measurements[m_ind]])
-            out = simulate(qs)[0]
+            out = simulate(qs)
             return qml.math.real(out) if real else qml.math.imag(out)
 
         expected_grads = self.expected_grad(phi)

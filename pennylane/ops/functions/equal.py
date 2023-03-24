@@ -22,6 +22,7 @@ from pennylane.measurements import MeasurementProcess
 from pennylane.measurements.classical_shadow import ShadowExpvalMP
 from pennylane.measurements.mutual_info import MutualInfoMP
 from pennylane.measurements.vn_entropy import VnEntropyMP
+from pennylane.pulse.parametrized_evolution import ParametrizedEvolution
 from pennylane.operation import Observable, Operator, Tensor
 from pennylane.ops import Hamiltonian, Controlled, Pow, Adjoint, Exp, SProd, CompositeOp
 
@@ -173,7 +174,6 @@ def _equal_operators(
     atol=1e-9,
 ):
     """Default function to determine whether two Operator objects are equal."""
-
     if not isinstance(
         op2, type(op1)
     ):  # clarifies cases involving PauliX/Y/Z (Observable/Operation)
@@ -304,26 +304,64 @@ def _equal_hamiltonian(op1: Hamiltonian, op2: Observable, **kwargs):
 
 
 @_equal.register
+def _equal_parametrized_evolution(op1: ParametrizedEvolution, op2: ParametrizedEvolution, **kwargs):
+    # check times match
+    if not qml.math.allclose(op1.t, op2.t):
+        return False
+
+    # check parameters passed to operator match
+    if not _equal_operators(op1, op2, **kwargs):
+        return False
+
+    # check H.coeffs match
+    if not all(c1 == c2 for c1, c2 in zip(op1.H.coeffs, op2.H.coeffs)):
+        return False
+
+    # check that all the base operators on op1.H and op2.H match
+    return all(equal(o1, o2, **kwargs) for o1, o2 in zip(op1.H.ops, op2.H.ops))
+
+
+@_equal.register
 # pylint: disable=unused-argument
-def _equal_measurements(op1: MeasurementProcess, op2: MeasurementProcess, **kwargs):
+def _equal_measurements(
+    op1: MeasurementProcess,
+    op2: MeasurementProcess,
+    check_interface=True,
+    check_trainability=True,
+    rtol=1e-5,
+    atol=1e-9,
+):
     """Determine whether two MeasurementProcess objects are equal"""
 
     if op1.obs is not None and op2.obs is not None:
-        observables_match = equal(op1.obs, op2.obs)
-    # check obs equality when either one is None (False) or both are None (True)
-    else:
-        observables_match = op1.obs == op2.obs
-    wires_match = op1.wires == op2.wires
-    eigvals_match = qml.math.allequal(op1.eigvals(), op2.eigvals())
+        return equal(
+            op1.obs,
+            op2.obs,
+            check_interface=check_interface,
+            check_trainability=check_trainability,
+            rtol=rtol,
+            atol=atol,
+        )
 
-    return observables_match and wires_match and eigvals_match
+    if op1.wires != op2.wires:
+        return False
+
+    if op1.obs is None and op2.obs is None:
+        # only compare eigvals if both observables are None.
+        # Can be expensive to compute for large observables
+        if op1.eigvals() is not None and op2.eigvals() is not None:
+            return qml.math.allclose(op1.eigvals(), op2.eigvals(), rtol=rtol, atol=atol)
+
+        return op1.eigvals() is None and op2.eigvals() is None
+
+    return False
 
 
 @_equal.register
 # pylint: disable=unused-argument
 def _(op1: VnEntropyMP, op2: VnEntropyMP, **kwargs):
     """Determine whether two MeasurementProcess objects are equal"""
-    eq_m = _equal_measurements(op1, op2)
+    eq_m = _equal_measurements(op1, op2, **kwargs)
     log_base_match = op1.log_base == op2.log_base
     return eq_m and log_base_match
 
@@ -332,7 +370,7 @@ def _(op1: VnEntropyMP, op2: VnEntropyMP, **kwargs):
 # pylint: disable=unused-argument
 def _(op1: MutualInfoMP, op2: MutualInfoMP, **kwargs):
     """Determine whether two MeasurementProcess objects are equal"""
-    eq_m = _equal_measurements(op1, op2)
+    eq_m = _equal_measurements(op1, op2, **kwargs)
     log_base_match = op1.log_base == op2.log_base
     return eq_m and log_base_match
 

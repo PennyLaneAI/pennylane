@@ -1074,7 +1074,7 @@ class TestExpand:
             # expands into RY on wire b
             qml.expval(qml.PauliZ("a") @ qml.Hadamard("b"))
             # expands into QubitUnitary on wire 0
-            qml.var(qml.Hermitian(np.array([[1, 2], [2, 4]]), wires=[0]))
+            qml.var(qml.Hermitian(np.array([[1, 2], [2, 4]]), wires=[1]))
 
         new_tape = tape.expand(expand_measurements=True)
 

@@ -325,7 +325,12 @@ class TorchLayer(Module):
             **{self.input_arg: x},
             **{arg: weight.to(x) for arg, weight in self.qnode_weights.items()},
         }
-        return self.qnode(**kwargs).type(x.dtype)
+        res = self.qnode(**kwargs)
+
+        if isinstance(res, torch.Tensor):
+            return res.type(x.dtype)
+
+        return torch.hstack(res).type(x.dtype)
 
     def _init_weights(
         self,

@@ -14,13 +14,10 @@
 """
 Unit tests for the ParametrizedEvolution class
 """
+# pylint: disable=unused-argument,too-few-public-methods,import-outside-toplevel
 from functools import reduce
-
 import numpy as np
-
-# pylint: disable=unused-argument, too-few-public-methods
 import pytest
-
 import pennylane as qml
 from pennylane.operation import AnyWires
 from pennylane.ops import QubitUnitary
@@ -38,6 +35,7 @@ class MyOp(qml.RX):  # pylint: disable=too-few-public-methods
 
 
 def time_independent_hamiltonian():
+    """Create a time-independent Hamiltonian on two qubits."""
     ops = [qml.PauliX(0), qml.PauliZ(1), qml.PauliY(0), qml.PauliX(1)]
 
     def f1(params, t):
@@ -52,6 +50,7 @@ def time_independent_hamiltonian():
 
 
 def time_dependent_hamiltonian():
+    """Create a time-dependent Hamiltonian on two qubits."""
     import jax.numpy as jnp
 
     ops = [qml.PauliX(0), qml.PauliZ(1), qml.PauliY(0), qml.PauliX(1)]
@@ -66,15 +65,18 @@ def time_dependent_hamiltonian():
     return ParametrizedHamiltonian(coeffs, ops)
 
 
-def test_error_raised_if_jax_not_installed():
+def test_error_raised_on_call_if_jax_not_installed():
     """Test that an error is raised if an ``Evolve`` operator is instantiated without jax installed"""
-    try:
-        import jax  # pylint: disable=unused-import
+    with pytest.raises(ImportError, match="Module jax is required"):
+        ParametrizedEvolution(H=ParametrizedHamiltonian([1], [qml.PauliX(0)]))([], 2)
 
-        pytest.skip()
-    except ImportError:
-        with pytest.raises(ImportError, match="Module jax is required"):
-            ParametrizedEvolution(H=ParametrizedHamiltonian([1], [qml.PauliX(0)]))
+
+def test_error_raised_for_matrix_method_if_jax_not_installed():
+    """Test that an error is raised if an ``Evolve`` operator is instantiated without jax installed"""
+    with pytest.raises(ImportError, match="Module jax is required"):
+        ParametrizedEvolution(
+            H=ParametrizedHamiltonian([1], [qml.PauliX(0)]), params=[], t=2
+        ).matrix()
 
 
 @pytest.mark.jax
@@ -145,17 +147,23 @@ class TestInitialization:
         assert len(tape) == 1
         assert tape[0] is op2
 
-    def test_list_of_times(self):
+    @pytest.mark.parametrize("time_interface", ["jax", "python", "numpy"])
+    def test_list_of_times(self, time_interface):
         """Test the initialization."""
         import jax.numpy as jnp
 
         ops = [qml.PauliX(0), qml.PauliY(1)]
         coeffs = [1, 2]
         H = ParametrizedHamiltonian(coeffs, ops)
-        t = np.arange(0, 10, 0.01)
+        t = {
+            "jax": jnp.arange(0, 10, 0.01),
+            "python": list(np.arange(0, 10, 0.01)),
+            "numpy": np.arange(0, 10, 0.01),
+        }[time_interface]
         ev = ParametrizedEvolution(H=H, params=[1, 2], t=t)
+        exp_time_type = {"jax": jnp.ndarray, "python": qml.numpy.ndarray, "numpy": np.ndarray}
 
-        assert isinstance(ev.t, jnp.ndarray)
+        assert isinstance(ev.t, exp_time_type[time_interface])
         assert qml.math.allclose(ev.t, t)
 
     def test_has_matrix_true(self):
@@ -358,3 +366,34 @@ class TestIntegration:
             jax.grad(circuit2)(params2),
             atol=5e-4,
         )
+
+    def test_mixed_device(
+        self,
+    ):
+        """Test mixed device integration matches that of default qubit"""
+        import jax
+        import jax.numpy as jnp
+
+        mixed = qml.device("default.mixed", wires=range(3))
+        default = qml.device("default.qubit", wires=range(3))
+
+        coeff = [qml.pulse.pwc(5.0), qml.pulse.pwc(5.0)]
+        ops = [qml.PauliX(0) @ qml.PauliX(1), qml.PauliY(1) @ qml.PauliY(2)]
+        H_pulse = qml.dot(coeff, ops)
+
+        def circuit(x):
+            qml.pulse.ParametrizedEvolution(H_pulse, x, 5.0)
+            return qml.expval(qml.PauliZ(0))
+
+        qnode_def = qml.QNode(circuit, default, interface="jax")
+        qnode_mix = qml.QNode(circuit, mixed, interface="jax")
+
+        x = [jnp.arange(3, dtype=float)] * 2
+        res_def = qnode_def(x)
+        grad_def = jax.grad(qnode_def)(x)
+
+        res_mix = qnode_mix(x)
+        grad_mix = jax.grad(qnode_mix)(x)
+
+        assert qml.math.isclose(res_def, res_mix, atol=1e-4)
+        assert qml.math.allclose(grad_def, grad_mix, atol=1e-4)

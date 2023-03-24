@@ -41,7 +41,7 @@ def pow(base, z=1, lazy=True, do_queue=True, id=None):
 
     Args:
         base (~.operation.Operator): the operator to be raised to a power
-        z=1 (float): the exponent
+        z (float): the exponent (default value is 1)
 
     Keyword Args:
         lazy=True (bool): In lazy mode, all operations are wrapped in a ``Pow`` class
@@ -208,11 +208,9 @@ class Pow(ScalarSymbolicOp):
         super().__init__(base, scalar=z, do_queue=do_queue, id=id)
 
         if isinstance(self.z, int) and self.z > 0:
-            if (
-                base_pauli_rep := getattr(
-                    self.base, "_pauli_rep", None
-                )  # pylint: disable=protected-access
-            ) is not None:
+            if (base_pauli_rep := getattr(self.base, "_pauli_rep", None)) and (
+                self.batch_size is None
+            ):
                 pr = qml.pauli.PauliSentence({})
                 for _ in range(self.z):
                     pr = pr * base_pauli_rep
@@ -331,6 +329,11 @@ class Pow(ScalarSymbolicOp):
         base_eigvals = self.base.eigvals()
         return [value**self.z for value in base_eigvals]
 
+    # pylint: disable=arguments-renamed, invalid-overridden-method
+    @property
+    def has_generator(self):
+        return self.base.has_generator
+
     def generator(self):
         r"""Generator of an operator that is in single-parameter-form.
 
@@ -352,6 +355,11 @@ class Pow(ScalarSymbolicOp):
         return Pow(base=qml.adjoint(self.base), z=self.z)
 
     def simplify(self) -> Union["Pow", Identity]:
+        # try using pauli_rep:
+        if pr := self._pauli_rep:
+            pr.simplify()
+            return pr.operation(wire_order=self.wires)
+
         base = self.base.simplify()
         try:
             ops = base.pow(z=self.z)
