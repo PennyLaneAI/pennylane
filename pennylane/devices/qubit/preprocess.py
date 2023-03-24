@@ -117,7 +117,7 @@ def validate_and_expand_adjoint(
         if op.num_params > 1:
             if not isinstance(op, qml.Rot):
                 raise qml.QuantumFunctionError(
-                    f"The {op.name} operation is not supported using "
+                    f"The {op} operation is not supported using "
                     'the "adjoint" differentiation method'
                 )
             ops = op.decomposition()
