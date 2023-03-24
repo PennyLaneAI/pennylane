@@ -377,3 +377,57 @@ class TestPreprocess:
 
         with pytest.raises(qml.DeviceError, match="Operator NoMatNoDecompOp"):
             _ = preprocess(tapes)
+
+    @pytest.mark.parametrize(
+        "ops, measurement, message",
+        [
+            (
+                [qml.RX(0.1, wires=0)],
+                [qml.probs(wires=[0, 1, 2])],
+                "does not support measurement ProbabilityMP",
+            ),
+            (
+                [qml.RX(0.1, wires=0)],
+                [qml.expval(qml.Hamiltonian([1], [qml.PauliZ(0)]))],
+                "does not support observable Hamiltonian",
+            ),
+            (
+                [qml.U2(0.1, 0.2, wires=0)],
+                [qml.expval(qml.PauliZ(0))],
+                "The U2 operation is not supported",
+            ),
+        ],
+    )
+    def test_preprocess_invalid_tape_adjoint(self, ops, measurement, message):
+        """Test that preprocessing fails if adjoint differentiation is requested and an
+        invalid tape is used"""
+        qs = QuantumScript(ops, measurement)
+        execution_config = qml.devices.experimental.ExecutionConfig(gradient_method="adjoint")
+
+        with pytest.raises(qml.QuantumFunctionError, match=message):
+            _ = preprocess([qs], execution_config)
+
+    def test_preprocess_tape_for_adjoint(self):
+        """Test that a tape is expanded correctly if adjoint differentiation is requested"""
+        qs = QuantumScript(
+            [qml.Rot(0.1, 0.2, 0.3, wires=0), qml.CNOT([0, 1])], [qml.expval(qml.PauliZ(1))]
+        )
+        execution_config = qml.devices.experimental.ExecutionConfig(gradient_method="adjoint")
+
+        expanded_tapes, _ = preprocess([qs], execution_config)
+
+        assert len(expanded_tapes) == 1
+        expanded_qs = expanded_tapes[0]
+
+        expected_qs = QuantumScript(
+            [qml.RZ(0.1, wires=0), qml.RY(0.2, wires=0), qml.RZ(0.3, wires=0), qml.CNOT([0, 1])],
+            [qml.expval(qml.PauliZ(1))],
+        )
+
+        assert all(
+            qml.equal(o1, o2) for o1, o2 in zip(expanded_qs.operations, expected_qs.operations)
+        )
+        assert all(
+            qml.equal(o1, o2) for o1, o2 in zip(expanded_qs.measurements, expected_qs.measurements)
+        )
+        assert expanded_qs.trainable_params == expected_qs.trainable_params

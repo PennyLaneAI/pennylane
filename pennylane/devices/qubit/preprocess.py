@@ -98,17 +98,14 @@ def validate_and_expand_adjoint(
     for m in circuit.measurements:
         if not isinstance(m, ExpectationMP):
             raise qml.QuantumFunctionError(
-                "Adjoint differentiation method does not support"
-                f" measurement {m.__class__.__name__}"
+                "Adjoint differentiation method does not support "
+                f"measurement {m.__class__.__name__}."
             )
 
-        if m.obs.name in {"Hamiltonian"}:
+        if not m.obs.has_matrix:
             raise qml.QuantumFunctionError(
                 f"Adjoint differentiation method does not support observable {m.obs.name}."
             )
-
-        if not hasattr(m.obs, "base_name"):
-            m.obs.base_name = None  # This is needed for when the observable is a tensor product
 
         measurements.append(m)
 

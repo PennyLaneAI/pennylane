@@ -20,13 +20,14 @@ import pennylane.numpy as np
 from pennylane.devices.qubit.preprocess import validate_and_expand_adjoint
 
 
+@pytest.fixture
+def dev():
+    """Fixture that creates a two-qubit default qubit device for comparisions."""
+    return qml.device("default.qubit", wires=2)
+
+
 class TestAdjointTapeValidation:
     """Unit tests for validate_and_expand_adjoint"""
-
-    @pytest.fixture
-    def dev(self):
-        """Fixture that creates a two-qubit default qubit device for comparisions."""
-        return qml.device("default.qubit", wires=2)
 
     def test_not_expval(self):
         """Test if a QuantumFunctionError is raised for a tape with measurements that are not
@@ -82,6 +83,49 @@ class TestAdjointTapeValidation:
             UserWarning, match="Differentiating with respect to the input parameters of Hermitian"
         ):
             _ = validate_and_expand_adjoint(qs)
+
+    @pytest.mark.parametrize("G", [qml.RX, qml.RY, qml.RZ])
+    def test_valid_tape_no_expand(self, G):
+        """Test that a tape that is valid doesn't raise errors and is not expanded"""
+        prep_op = qml.QubitStateVector(
+            np.array([1.0, -1.0], requires_grad=False) / np.sqrt(2), wires=0
+        )
+        qs = QuantumScript(
+            ops=[G(np.pi, wires=[0])], measurements=[qml.expval(qml.PauliZ(0))], prep=[prep_op]
+        )
+
+        qs.trainable_params = {1}
+        qs_valid = validate_and_expand_adjoint(qs)
+
+        assert all(qml.equal(o1, o2) for o1, o2 in zip(qs.operations, qs_valid.operations))
+        assert all(qml.equal(o1, o2) for o1, o2 in zip(qs.measurements, qs_valid.measurements))
+        assert qs.trainable_params == qs_valid.trainable_params
+
+    def test_valid_tape_with_expansion(self):
+        """Test that a tape that is valid with operations that need to be expanded doesn't raise errors
+        and is expanded"""
+        prep_op = qml.QubitStateVector(
+            np.array([1.0, -1.0], requires_grad=False) / np.sqrt(2), wires=0
+        )
+        qs = QuantumScript(
+            ops=[qml.Rot(0.1, 0.2, 0.3, wires=[0])],
+            measurements=[qml.expval(qml.PauliZ(0))],
+            prep=[prep_op],
+        )
+
+        qs.trainable_params = {1, 2, 3}
+        qs_valid = validate_and_expand_adjoint(qs)
+
+        expected_ops = [
+            prep_op,
+            qml.RZ(0.1, wires=[0]),
+            qml.RY(0.2, wires=[0]),
+            qml.RZ(0.3, wires=[0]),
+        ]
+
+        assert all(qml.equal(o1, o2) for o1, o2 in zip(qs_valid.operations, expected_ops))
+        assert all(qml.equal(o1, o2) for o1, o2 in zip(qs.measurements, qs_valid.measurements))
+        assert qs.trainable_params == qs_valid.trainable_params
 
 
 class TestAdjointJacobian:
@@ -287,6 +331,34 @@ class TestAdjointJacobian:
                 qml.CNOT(wires=[1, 2]),
             ],
             [qml.expval(qml.Hermitian(mx, wires=[0, 2]))],
+        )
+
+        qs.trainable_params = {0, 1, 2}
+        qs_valid = validate_and_expand_adjoint(qs)
+
+        res = adjoint_jacobian(qs_valid)
+
+        expected = [
+            np.cos(a) * np.sin(b) * np.sin(c),
+            np.cos(b) * np.sin(a) * np.sin(c),
+            np.cos(c) * np.sin(b) * np.sin(a),
+        ]
+        assert np.allclose(res, expected, atol=tol, rtol=0)
+
+    def test_gradient_of_tape_with_tensor(self, tol):
+        """Test that computing the gradient of a tape that obtains the
+        expectation value of a Tensor operator works correctly."""
+        a, b, c = [0.5, 0.3, -0.7]
+
+        qs = QuantumScript(
+            [
+                qml.RX(a, wires=0),
+                qml.RX(b, wires=1),
+                qml.RX(c, wires=2),
+                qml.CNOT(wires=[0, 1]),
+                qml.CNOT(wires=[1, 2]),
+            ],
+            [qml.expval(qml.PauliX(0) @ qml.PauliY(2))],
         )
 
         qs.trainable_params = {0, 1, 2}

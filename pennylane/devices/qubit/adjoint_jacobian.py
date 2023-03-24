@@ -71,7 +71,7 @@ def adjoint_jacobian(tape: QuantumTape):  # pylint: disable=too-many-statements
     ket = create_initial_state(
         wires=tape.wires, prep_operation=prep_operation
     )  #  ket(0) if prep_operation is None, else
-    for op in tape.operations:
+    for op in tape._ops:
         ket = apply_operation(op, ket)
 
     n_obs = len(tape.observables)
