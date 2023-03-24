@@ -377,12 +377,7 @@ class PauliSentence(dict):
         return summands[0] if len(summands) == 1 else qml.sum(*summands)
 
     def hamiltonian(self, wire_order=None):
-        """Returns a native PennyLane :class:`~pennylane.Hamiltonian` representing the PauliSentence.
-
-        .. warning::
-            Any complex components of the coefficients will be set to real as a PennyLane hamiltonian cannot have
-            complex coefficients!
-        """
+        """Returns a native PennyLane :class:`~pennylane.Hamiltonian` representing the PauliSentence."""
         if len(self) == 0:
             if wire_order in (None, [], wires.Wires([])):
                 raise ValueError("Can't get the Hamiltonian for an empty PauliSentence.")
@@ -391,13 +386,8 @@ class PauliSentence(dict):
         wire_order = wire_order or self.wires
         wire_order = list(wire_order)
 
-        if any(math.iscomplex(coeff) for coeff in self.values()):
-            raise ValueError(
-                "Can't get a Hamiltonian for a PauliSentence with non-zero complex coefficients"
-            )
-
         return Hamiltonian(
-            math.real(list(self.values())),
+            list(self.values()),
             [pw.operation(wire_order=wire_order, get_as_tensor=True) for pw in self],
         )
 
