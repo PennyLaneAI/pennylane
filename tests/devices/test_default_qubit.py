@@ -2335,6 +2335,24 @@ class TestHamiltonianSupport:
         ):
             dev.expval(H)
 
+    def test_Hamiltonian_filtered_from_rotations(self, mocker):
+        """Tests that the device does not attempt to get rotations for Hamiltonians."""
+        dev = qml.device("default.qubit", wires=2, shots=10)
+        H = qml.Hamiltonian([0.1, 0.2], [qml.PauliX(0), qml.PauliZ(1)])
+
+        spy = mocker.spy(qml.QubitDevice, "_get_diagonalizing_gates")
+        qs = qml.tape.QuantumScript([qml.RX(1, 0)], [qml.expval(qml.PauliX(0)), qml.expval(H)])
+        rotations = dev._get_diagonalizing_gates(qs)
+
+        assert len(rotations) == 1
+        assert qml.equal(rotations[0], qml.Hadamard(0))
+
+        call_args = spy.call_args.args[1]  # 0 is self (the device)
+        assert isinstance(call_args, qml.tape.QuantumScript)
+        assert len(call_args.operations) == 0
+        assert len(call_args.measurements) == 1
+        assert qml.equal(call_args.measurements[0], qml.expval(qml.PauliX(0)))
+
 
 class TestGetBatchSize:
     """Tests for the helper method ``_get_batch_size`` of ``QubitDevice``."""

@@ -24,7 +24,7 @@ import contextlib
 import itertools
 import warnings
 from collections import defaultdict
-from typing import Union
+from typing import Union, List
 
 import numpy as np
 
@@ -60,7 +60,7 @@ from pennylane.measurements import (
     VnEntropy,
     VnEntropyMP,
 )
-from pennylane.operation import operation_derivative
+from pennylane.operation import operation_derivative, Operation
 from pennylane.tape import QuantumScript, QuantumTape
 from pennylane.wires import Wires
 
@@ -303,7 +303,7 @@ class QubitDevice(Device):
         the ``QNode`` hash that can be used later for parametric compilation.
 
         Args:
-            circuit (~.tapes.QuantumTape): circuit to execute on the device
+            circuit (~.tape.QuantumTape): circuit to execute on the device
 
         Raises:
             QuantumFunctionError: if the value of :attr:`~.Observable.return_type` is not supported
@@ -314,7 +314,7 @@ class QubitDevice(Device):
         self.check_validity(circuit.operations, circuit.observables)
 
         # apply all circuit operations
-        self.apply(circuit.operations, rotations=circuit.diagonalizing_gates, **kwargs)
+        self.apply(circuit.operations, rotations=self._get_diagonalizing_gates(circuit), **kwargs)
 
         # generate computational basis samples
         if self.shots is not None:
@@ -356,7 +356,7 @@ class QubitDevice(Device):
         the ``QNode`` hash that can be used later for parametric compilation.
 
         Args:
-            circuit (~.tapes.QuantumTape): circuit to execute on the device
+            circuit (~.tape.QuantumTape): circuit to execute on the device
 
         Raises:
             QuantumFunctionError: if the value of :attr:`~.Observable.return_type` is not supported
@@ -370,7 +370,7 @@ class QubitDevice(Device):
         self.check_validity(circuit.operations, circuit.observables)
 
         # apply all circuit operations
-        self.apply(circuit.operations, rotations=circuit.diagonalizing_gates, **kwargs)
+        self.apply(circuit.operations, rotations=self._get_diagonalizing_gates(circuit), **kwargs)
 
         # generate computational basis samples
         if self.shots is not None or circuit.is_sampled:
@@ -428,7 +428,7 @@ class QubitDevice(Device):
         vector are contained in a tuple.
 
         Args:
-            circuit (~.tapes.QuantumTape): circuit to execute on the device
+            circuit (~.tape.QuantumTape): circuit to execute on the device
 
         Raises:
             QuantumFunctionError: if the value of :attr:`~.Observable.return_type` is not supported
@@ -543,7 +543,7 @@ class QubitDevice(Device):
         circuits on a backend, for example using parallel and/or asynchronous executions.
 
         Args:
-            circuits (list[.tapes.QuantumTape]): circuits to execute on the device
+            circuits (list[~.tape.QuantumTape]): circuits to execute on the device
 
         Returns:
             list[array[float]]: list of measured value(s)
@@ -576,7 +576,7 @@ class QubitDevice(Device):
         circuits on a backend, for example using parallel and/or asynchronous executions.
 
         Args:
-            circuits (list[.tapes.QuantumTape]): circuits to execute on the device
+            circuits (list[~.tape.QuantumTape]): circuits to execute on the device
 
         Returns:
             list[array[float]]: list of measured value(s)
@@ -1357,7 +1357,7 @@ class QubitDevice(Device):
 
         Args:
             obs (~.pennylane.measurements.ClassicalShadowMP): The classical shadow measurement process
-            circuit (~.tapes.QuantumTape): The quantum tape that is being executed
+            circuit (~.tape.QuantumTape): The quantum tape that is being executed
 
         Returns:
             tensor_like[int]: A tensor with shape ``(2, T, n)``, where the first row represents
@@ -1394,7 +1394,9 @@ class QubitDevice(Device):
                 ]
 
                 self.reset()
-                self.apply(circuit.operations, rotations=circuit.diagonalizing_gates + rotations)
+                self.apply(
+                    circuit.operations, rotations=self._get_diagonalizing_gates(circuit) + rotations
+                )
 
                 outcomes[t] = self.generate_samples()[0][mapped_wires]
 
@@ -1408,7 +1410,7 @@ class QubitDevice(Device):
         Args:
             obs (~.pennylane.measurements.ClassicalShadowMP): The classical shadow expectation
                 value measurement process
-            circuit (~.tapes.QuantumTape): The quantum tape that is being executed
+            circuit (~.tape.QuantumTape): The quantum tape that is being executed
 
         Returns:
             float: expectation value estimate.
@@ -2011,3 +2013,20 @@ class QubitDevice(Device):
 
         # must be 2-dimensional
         return tuple(tuple(np.array(j_) for j_ in j) for j in jac)
+
+    def _get_diagonalizing_gates(self, circuit: QuantumTape) -> List[Operation]:
+        """Returns the gates that diagonalize the measured wires such that they
+        are in the eigenbasis of the circuit observables.
+
+        Note that this exists as a method of the Device class to enable child classes to
+        override the implementation if necessary (for example, to skip computing rotation
+        gates for a measurement that doesn't need them).
+
+        Args:
+            circuit (~.tape.QuantumTape): The circuit containing observables that may need diagonalizing
+
+        Returns:
+            List[~.Operation]: the operations that diagonalize the observables
+        """
+        # pylint:disable=no-self-use
+        return circuit.diagonalizing_gates
