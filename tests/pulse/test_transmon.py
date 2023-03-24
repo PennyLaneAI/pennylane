@@ -50,11 +50,11 @@ class TestTransmonInteraction:
         Hd = transmon_interaction(
             connections=connections, omega=omega, g=g, delta=None, wires=wires, d=2
         )
+        settings = TransmonSettings(connections, omega, g)
 
         assert isinstance(Hd, HardwareHamiltonian)
-        assert all(Hd.omega == omega)
+        assert Hd.settings == settings
         assert Hd.wires == Wires(wires)
-        assert qml.math.allequal(Hd.connections, connections)
 
         num_combinations = len(wires) + len(connections)
         assert len(Hd.ops) == num_combinations
@@ -151,7 +151,7 @@ class TestTransmonSettings:
     def test_add_two_settings_with_one_delta_None(self,):
         """Test that two settings are correctly added when one has non-trivial delta"""
         delta = [1.]*len(omega0)
-        settings0 = TransmonSettings(connections0, omega0, g0, delta=delta0)
+        settings0 = TransmonSettings(connections0, omega0, g0, delta=delta)
         settings1 = TransmonSettings(connections1, omega1, g1)
 
         settings01 = settings0 + settings1

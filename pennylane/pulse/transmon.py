@@ -19,12 +19,14 @@ import pennylane as qml
 from pennylane.pulse import HardwareHamiltonian
 from pennylane.typing import TensorLike
 
-
+# pylint: disable=unused-argument
 def a(wire, d=2):
+    """creation operator"""
     return qml.s_prod(0.5, qml.PauliX(wire)) + qml.s_prod(0.5j, qml.PauliY(wire))
 
 
 def ad(wire, d=2):
+    """annihilation operator"""
     return qml.s_prod(0.5, qml.PauliX(wire)) + qml.s_prod(-0.5j, qml.PauliY(wire))
 
 
@@ -132,9 +134,10 @@ def transmon_interaction(
     #     coeffs += list(delta)
     #     observables += [ad(i, d) @ ad(i, d) @ a(i, d) @ a(i, d) for i in wires]
 
-    settings = TransmonSettings(connections, omega, delta, g)
+    settings = TransmonSettings(connections, omega, g, delta=delta)
 
     return HardwareHamiltonian(coeffs, observables, settings=settings)
+
 
 @dataclass
 class TransmonSettings:
@@ -145,7 +148,7 @@ class TransmonSettings:
             omega (Union[float, Callable]):
             delta (Union[float, Callable]):
             g (Union[list, TensorLike, Callable]):
-    
+
     """
 
     connections: List
@@ -154,25 +157,31 @@ class TransmonSettings:
     delta: Union[float, Callable] = None
 
     def __eq__(self, other):
+        if self.delta is None and other.delta is None:
+            same_delta = True
+        elif self.delta is not None and other.delta is not None:
+            same_delta = all(self.delta == other.delta)
+        else:
+            same_delta = False
+
         return (
-            self.connections == other.connections
-            and self.omega == other.omega
-            and self.g == other.g
-            and self.delta == other.delta
+            qml.math.all(self.connections == other.connections)
+            and qml.math.all(self.omega == other.omega)
+            and qml.math.all(self.g == other.g)
+            and same_delta
         )
-    
+
     def __add__(self, other):
         if other is not None:
-
             new_connections = list(self.connections) + list(other.connections)
             new_omega = list(self.omega) + list(other.omega)
             new_g = list(self.g) + list(other.g)
             if self.delta is None and other.delta is None:
                 new_delta = None
             elif self.delta is None and not other.delta is None:
-                new_delta = [0.] * len(self.omega) + list(other.delta)
+                new_delta = [0.0] * len(self.omega) + list(other.delta)
             elif self.delta is not None and other.delta is None:
-                new_delta = list(self.delta) + [0.] * len(other.omega)
+                new_delta = list(self.delta) + [0.0] * len(other.omega)
             elif self.delta is not None and other.delta is not None:
                 new_delta = list(self.delta) + list(other.delta)
 

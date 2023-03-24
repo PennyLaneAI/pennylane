@@ -115,6 +115,7 @@ def rydberg_interaction(
         coeffs, observables, register=register, interaction_coeff=interaction_coeff
     )
 
+
 @dataclass
 class RydbergSettings:
     """Dataclass that contains the information of a Rydberg setup.
@@ -128,7 +129,4 @@ class RydbergSettings:
     interaction_coeff: float
 
     def __eq__(self, other):
-        return (
-            self.register == other.register
-            and self.interaction_coeff == other.interaction_coeff
-        )
+        return self.register == other.register and self.interaction_coeff == other.interaction_coeff
