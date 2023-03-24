@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-Unit tests for the RydbergHamiltonian class.
+Unit tests for the HardwareHamiltonian class.
 """
 import warnings
 
@@ -21,12 +21,12 @@ import numpy as np
 import pytest
 
 import pennylane as qml
-from pennylane.pulse import RydbergHamiltonian, rydberg_drive, rydberg_interaction
-from pennylane.pulse.rydberg_hamiltonian import (
-    RydbergPulse,
+from pennylane.pulse import HardwareHamiltonian, drive, rydberg_interaction
+from pennylane.pulse.hardware_hamiltonian import (
+    HardwarePulse,
     AmplitudeAndPhase,
     amplitude_and_phase,
-    _rydberg_reorder_parameters,
+    _reorder_parameters,
 )
 from pennylane.wires import Wires
 
@@ -45,13 +45,13 @@ def f2(p, t):
 param = [1.2, 2.3]
 
 
-class TestRydbergHamiltonian:
-    """Unit tests for the properties of the RydbergHamiltonian class."""
+class TestHardwareHamiltonian:
+    """Unit tests for the properties of the HardwareHamiltonian class."""
 
     # pylint: disable=protected-access
     def test_initialization(self):
-        """Test the RydbergHamiltonian class is initialized correctly."""
-        rm = RydbergHamiltonian(coeffs=[], observables=[], register=atom_coordinates)
+        """Test the HardwareHamiltonian class is initialized correctly."""
+        rm = HardwareHamiltonian(coeffs=[], observables=[], register=atom_coordinates)
 
         assert qml.math.allequal(rm.register, atom_coordinates)
         assert rm.pulses == []
@@ -60,22 +60,22 @@ class TestRydbergHamiltonian:
 
     def test_add_rydberg_hamiltonian(self):
         """Test that the __add__ dunder method works correctly."""
-        rm1 = RydbergHamiltonian(
+        rm1 = HardwareHamiltonian(
             coeffs=[1, 2],
             observables=[qml.PauliX(4), qml.PauliZ(8)],
             register=atom_coordinates,
-            pulses=[RydbergPulse(1, 2, 3, [4, 8])],
+            pulses=[HardwarePulse(1, 2, 3, [4, 8])],
         )
-        rm2 = RydbergHamiltonian(
+        rm2 = HardwareHamiltonian(
             coeffs=[2],
             observables=[qml.PauliY(8)],
-            pulses=[RydbergPulse(5, 6, 7, 8)],
+            pulses=[HardwarePulse(5, 6, 7, 8)],
         )
         with warnings.catch_warnings():
             # We make sure that no warning is raised
             warnings.simplefilter("error")
             sum_rm = rm1 + rm2
-        assert isinstance(sum_rm, RydbergHamiltonian)
+        assert isinstance(sum_rm, HardwareHamiltonian)
         assert qml.math.allequal(sum_rm.coeffs, [1, 2, 2])
         assert all(
             qml.equal(op1, op2)
@@ -83,28 +83,28 @@ class TestRydbergHamiltonian:
         )
         assert qml.math.allequal(sum_rm.register, atom_coordinates)
         assert sum_rm.pulses == [
-            RydbergPulse(1, 2, 3, [4, 8]),
-            RydbergPulse(5, 6, 7, 8),
+            HardwarePulse(1, 2, 3, [4, 8]),
+            HardwarePulse(5, 6, 7, 8),
         ]
 
     def test_add_parametrized_hamiltonian(self):
-        """Tests that adding a `RydbergHamiltonian` and `ParametrizedHamiltonian` works as
+        """Tests that adding a `HardwareHamiltonian` and `ParametrizedHamiltonian` works as
         expected."""
         coeffs = [2, 3]
         ops = [qml.PauliZ(0), qml.PauliX(2)]
         h_wires = [0, 2]
 
-        rh = RydbergHamiltonian(
+        rh = HardwareHamiltonian(
             coeffs=[coeffs[0]],
             observables=[ops[0]],
-            pulses=[RydbergPulse(5, 6, 7, 8)],
+            pulses=[HardwarePulse(5, 6, 7, 8)],
         )
         ph = qml.pulse.ParametrizedHamiltonian(coeffs=[coeffs[1]], observables=[ops[1]])
 
         res1 = rh + ph
         res2 = ph + rh
 
-        assert isinstance(res1, RydbergHamiltonian)
+        assert isinstance(res1, HardwareHamiltonian)
         assert res1.coeffs_fixed == coeffs
         assert res1.coeffs_parametrized == []
         assert all(qml.equal(op1, op2) for op1, op2 in zip(res1.ops_fixed, ops))
@@ -115,7 +115,7 @@ class TestRydbergHamiltonian:
         ops.reverse()
         h_wires.reverse()
 
-        assert isinstance(res2, RydbergHamiltonian)
+        assert isinstance(res2, HardwareHamiltonian)
         assert res2.coeffs_fixed == coeffs
         assert res2.coeffs_parametrized == []
         assert all(qml.equal(op1, op2) for op1, op2 in zip(res2.ops_fixed, ops))
@@ -123,12 +123,12 @@ class TestRydbergHamiltonian:
         assert res2.wires == qml.wires.Wires(h_wires)
 
     def test_add_raises_error(self):
-        """Test that an error is raised if two RydbergHamiltonians with registers are added."""
-        rm1 = RydbergHamiltonian(
+        """Test that an error is raised if two HardwareHamiltonians with registers are added."""
+        rm1 = HardwareHamiltonian(
             coeffs=[1],
             observables=[qml.PauliX(0)],
             register=atom_coordinates,
-            pulses=[RydbergPulse(1, 2, 3, 4)],
+            pulses=[HardwarePulse(1, 2, 3, 4)],
         )
         with pytest.raises(
             ValueError, match="We cannot add two Hamiltonians with an interaction term"
@@ -136,29 +136,29 @@ class TestRydbergHamiltonian:
             _ = rm1 + rm1
 
     def test_add_raises_warning(self):
-        """Test that an error is raised when adding two RydbergHamiltonians where one Hamiltonian
+        """Test that an error is raised when adding two HardwareHamiltonians where one Hamiltonian
         contains pulses on wires that are not present in the register."""
         coords = [[0, 0], [0, 5], [5, 0]]
 
         Hd = rydberg_interaction(register=coords, wires=[0, 1, 2])
-        Ht = rydberg_drive(2, 3, 4, wires=3)
+        Ht = drive(2, 3, 4, wires=3)
 
         with pytest.warns(
             UserWarning,
-            match="The wires of the laser fields are not present in the Rydberg ensemble",
+            match="The wires of the drive fields are not present in the ensemble.",
         ):
             _ = Hd + Ht
 
         with pytest.warns(
             UserWarning,
-            match="The wires of the laser fields are not present in the Rydberg ensemble",
+            match="The wires of the drive fields are not present in the ensemble.",
         ):
             _ = Ht + Hd
 
     def test_hamiltonian_callable_after_addition_right(self):
         """Tests that if a ParametrizedHamiltonian is added onto a
-        RydbergHamiltonian with callable coefficients from the right, the
-        resulting object is a RydbergHamiltonian that can be called without
+        HardwareHamiltonian with callable coefficients from the right, the
+        resulting object is a HardwareHamiltonian that can be called without
         raising an error"""
 
         def amp(p, t):
@@ -170,22 +170,22 @@ class TestRydbergHamiltonian:
         def detuning(p, t):
             return np.cos(t) * p
 
-        H_global = qml.pulse.rydberg_drive(amp, phase, detuning, wires=[0])
-        H_global += qml.pulse.rydberg_drive(amp, phase, detuning, wires=[0])
+        H_global = qml.pulse.drive(amp, phase, detuning, wires=[0])
+        H_global += qml.pulse.drive(amp, phase, detuning, wires=[0])
         H_global += np.polyval * qml.PauliX(0)
 
-        # start with RydbergHamiltonians, then add ParametrizedHamiltonian
+        # start with HardwareHamiltonians, then add ParametrizedHamiltonian
         params = [np.array([1.2, 2.3, 3.4]), 4.5, 5.6]
         params += [np.array([1.2, 2.3, 3.4]), 4.5, 5.6]
         params += [np.ones(2)]
 
-        assert isinstance(H_global, RydbergHamiltonian)
+        assert isinstance(H_global, HardwareHamiltonian)
         H_global(params, 2)  # no error raised
 
     def test_hamiltonian_callable_after_addition_left(self):
         """Tests that if a ParametrizedHamiltonian is added onto a
-        RydbergHamiltonian with callable coefficients from the left, the
-        resulting object is a RydbergHamiltonian that can be called without
+        HardwareHamiltonian with callable coefficients from the left, the
+        resulting object is a HardwareHamiltonian that can be called without
         raising an error"""
 
         def amp(p, t):
@@ -197,21 +197,21 @@ class TestRydbergHamiltonian:
         def detuning(p, t):
             return np.cos(t) * p
 
-        # start with ParametrizedHamiltonian, add on RydbergHamiltonians
+        # start with ParametrizedHamiltonian, add on HardwareHamiltonians
         H_global = np.polyval * qml.PauliX(0)
-        H_global += qml.pulse.rydberg_drive(amp, phase, detuning, wires=[0])
-        H_global += qml.pulse.rydberg_drive(amp, phase, detuning, wires=[0])
+        H_global += qml.pulse.drive(amp, phase, detuning, wires=[0])
+        H_global += qml.pulse.drive(amp, phase, detuning, wires=[0])
 
         params = [np.ones(2)]
         params += [np.array([1.2, 2.3, 3.4]), 4.5, 5.6]
         params += [np.array([1.2, 2.3, 3.4]), 4.5, 5.6]
 
-        assert isinstance(H_global, RydbergHamiltonian)
+        assert isinstance(H_global, HardwareHamiltonian)
         H_global(params, 2)  # no error raised
 
 
 class TestInteractionWithOperators:
-    """Test that the interaction between a ``RydbergHamiltonian`` and other operators work as
+    """Test that the interaction between a ``HardwareHamiltonian`` and other operators work as
     expected."""
 
     ops_with_coeffs = (
@@ -228,21 +228,21 @@ class TestInteractionWithOperators:
 
     @pytest.mark.parametrize("H, coeff", ops_with_coeffs)
     def test_add_special_operators(self, H, coeff):
-        """Test that a Hamiltonian and SProd can be added to a RydbergHamiltonian, and
+        """Test that a Hamiltonian and SProd can be added to a HardwareHamiltonian, and
         will be incorporated in the H_fixed term, with their coefficients included in H_coeffs_fixed.
         """
-        R = rydberg_drive(amplitude=f1, phase=0, detuning=f2, wires=[0, 1])
+        R = drive(amplitude=f1, phase=0, detuning=f2, wires=[0, 1])
         params = [1, 2]
         # Adding on the right
         new_pH = R + H
-        assert isinstance(new_pH, RydbergHamiltonian)
+        assert isinstance(new_pH, HardwareHamiltonian)
         assert R.H_fixed() == 0
         assert qml.equal(new_pH.H_fixed(), qml.s_prod(coeff, qml.PauliZ(0)))
         assert new_pH.coeffs_fixed[0] == coeff
         assert qml.math.allequal(new_pH(params, t=0.5).matrix(), qml.matrix(R(params, t=0.5) + H))
         # Adding on the left
         new_pH = H + R
-        assert isinstance(new_pH, RydbergHamiltonian)
+        assert isinstance(new_pH, HardwareHamiltonian)
         assert R.H_fixed() == 0
         assert qml.equal(new_pH.H_fixed(), qml.s_prod(coeff, qml.PauliZ(0)))
         assert new_pH.coeffs_fixed[0] == coeff
@@ -252,98 +252,44 @@ class TestInteractionWithOperators:
     def test_add_other_operators(self, op):
         """Test that a Hamiltonian, SProd, Tensor or Operator can be added to a
         ParametrizedHamiltonian, and will be incorporated in the H_fixed term"""
-        R = rydberg_drive(amplitude=f1, phase=0, detuning=f2, wires=[0, 1])
+        R = drive(amplitude=f1, phase=0, detuning=f2, wires=[0, 1])
         params = [1, 2]
 
         # Adding on the right
         new_pH = R + op
-        assert isinstance(new_pH, RydbergHamiltonian)
+        assert isinstance(new_pH, HardwareHamiltonian)
         assert R.H_fixed() == 0
         assert qml.equal(new_pH.H_fixed(), qml.s_prod(1, op))
         new_pH(params, 2)  # confirm calling does not raise error
 
         # Adding on the left
         new_pH = op + R
-        assert isinstance(new_pH, RydbergHamiltonian)
+        assert isinstance(new_pH, HardwareHamiltonian)
         assert R.H_fixed() == 0
         assert qml.equal(new_pH.H_fixed(), qml.s_prod(1, op))
         new_pH(params, 2)  # confirm calling does not raise error
 
     def test_unknown_type_raises_error(self):
-        R = rydberg_drive(amplitude=f1, phase=0, detuning=f2, wires=[0, 1])
+        R = drive(amplitude=f1, phase=0, detuning=f2, wires=[0, 1])
         with pytest.raises(TypeError, match="unsupported operand type"):
             R += 3
 
 
-class TestRydbergInteraction:
-    """Unit tests for the ``rydberg_interaction`` function."""
+class TestDrive:
+    """Unit tests for the ``drive`` function."""
 
     def test_attributes_and_number_of_terms(self):
         """Test that the attributes and the number of terms of the ``ParametrizedHamiltonian`` returned by
-        ``rydberg_interaction`` are correct."""
-        Hd = rydberg_interaction(register=atom_coordinates, wires=wires, interaction_coeff=1)
+        ``drive`` are correct."""
 
-        assert isinstance(Hd, RydbergHamiltonian)
-        assert Hd.interaction_coeff == 1
-        assert Hd.wires == Wires(wires)
-        assert qml.math.allequal(Hd.register, atom_coordinates)
-        N = len(wires)
-        num_combinations = N * (N - 1) / 2  # number of terms on the rydberg_interaction hamiltonian
-        assert len(Hd.ops) == num_combinations
-        assert Hd.pulses == []
+        Hd = drive(amplitude=1, phase=2, detuning=3, wires=[1, 2])
 
-    def test_wires_is_none(self):
-        """Test that when wires is None the wires correspond to an increasing list of values with
-        the same length as the atom coordinates."""
-        Hd = rydberg_interaction(register=atom_coordinates)
-
-        assert Hd.wires == Wires(list(range(len(atom_coordinates))))
-
-    def test_coeffs(self):
-        """Test that the generated coefficients are correct."""
-        coords = [[0, 0], [0, 1], [1, 0]]
-        Hd = rydberg_interaction(coords, interaction_coeff=1)
-        assert Hd.coeffs == [1, 1, 1 / np.sqrt(2) ** 6]
-
-    def test_different_lengths_raises_error(self):
-        """Test that using different lengths for the wires and the register raises an error."""
-        with pytest.raises(ValueError, match="The length of the wires and the register must match"):
-            _ = rydberg_interaction(register=atom_coordinates, wires=[0])
-
-    def test_max_distance(self):
-        """Test that specifying a maximum distance affects the number of elements in the interaction term
-        as expected."""
-        # This threshold will remove interactions between atoms more than 5 micrometers away from each other
-        max_distance = 5
-        coords = [[0, 0], [2.5, 0], [5, 0], [6, 6]]
-        h_wires = [1, 0, 2, 3]
-
-        # Set interaction_coeff to one for easier comparison
-        H_res = rydberg_interaction(
-            register=coords, wires=h_wires, interaction_coeff=1, max_distance=max_distance
-        )
-        H_exp = rydberg_interaction(register=coords[:3], wires=h_wires[:3], interaction_coeff=1)
-
-        # Only 3 of the interactions will be non-negligible
-        assert H_res.coeffs == [2.5**-6, 5**-6, 2.5**-6]
-        assert qml.equal(H_res([], t=5), H_exp([], t=5))
-
-
-class TestRydbergDrive:
-    """Unit tests for the ``rydberg_drive`` function."""
-
-    def test_attributes_and_number_of_terms(self):
-        """Test that the attributes and the number of terms of the ``ParametrizedHamiltonian`` returned by
-        ``rydberg_drive`` are correct."""
-
-        Hd = rydberg_drive(amplitude=1, phase=2, detuning=3, wires=[1, 2])
-
-        assert isinstance(Hd, RydbergHamiltonian)
+        assert isinstance(Hd, HardwareHamiltonian)
         assert Hd.interaction_coeff == 862690
         assert Hd.wires == Wires([1, 2])
         assert Hd.register is None
         assert len(Hd.ops) == 3  # 2 amplitude/phase terms and one detuning term of the Hamiltonian
-        assert Hd.pulses == [RydbergPulse(1, 2, 3, [1, 2])]
+        assert Hd.pulses == [HardwarePulse(1, 2, 3, [1, 2])]
 
     def test_multiple_local_drives(self):
         """Test that adding multiple drive terms behaves as expected"""
@@ -354,8 +300,8 @@ class TestRydbergDrive:
         def fb(p, t):
             return np.cos(p * t)
 
-        H1 = rydberg_drive(amplitude=fa, phase=1, detuning=3, wires=[0, 3])
-        H2 = rydberg_drive(amplitude=1, phase=3, detuning=fb, wires=[1, 2])
+        H1 = drive(amplitude=fa, phase=1, detuning=3, wires=[0, 3])
+        H2 = drive(amplitude=1, phase=3, detuning=fb, wires=[1, 2])
         Hd = H1 + H2
 
         ops_expected = [
@@ -374,10 +320,10 @@ class TestRydbergDrive:
             AmplitudeAndPhase(np.sin, fa, 1),
             fb,
         ]
-        H_expected = RydbergHamiltonian(coeffs_expected, ops_expected)
+        H_expected = HardwareHamiltonian(coeffs_expected, ops_expected)
 
         # structure of Hamiltonian is as expected
-        assert isinstance(Hd, RydbergHamiltonian)
+        assert isinstance(Hd, HardwareHamiltonian)
         assert Hd.interaction_coeff == 862690
         assert Hd.wires == Wires([0, 3, 1, 2])
         assert Hd.register is None
@@ -403,14 +349,14 @@ class TestRydbergDrive:
         def f(p, t):
             return np.cos(p * t)
 
-        Hd = rydberg_drive(amplitude=0, phase=1, detuning=f, wires=[0, 3])
+        Hd = drive(amplitude=0, phase=1, detuning=f, wires=[0, 3])
 
         ops_expected = [qml.Hamiltonian([-1, -1], [qml.PauliZ(0), qml.PauliZ(3)])]
         coeffs_expected = [f]
-        H_expected = RydbergHamiltonian(coeffs_expected, ops_expected)
+        H_expected = HardwareHamiltonian(coeffs_expected, ops_expected)
 
         assert qml.equal(Hd([0.1], 10), H_expected([0.1], 10))
-        assert isinstance(Hd, RydbergHamiltonian)
+        assert isinstance(Hd, HardwareHamiltonian)
         assert Hd.interaction_coeff == 862690
         assert Hd.wires == Wires([0, 3])
         assert Hd.register is None
@@ -425,7 +371,7 @@ class TestRydbergDrive:
         def f(p, t):
             return np.cos(p * t)
 
-        Hd = rydberg_drive(amplitude=f, phase=1, detuning=0, wires=[0, 3])
+        Hd = drive(amplitude=f, phase=1, detuning=0, wires=[0, 3])
 
         ops_expected = [
             qml.Hamiltonian([0.5, 0.5], [qml.PauliX(0), qml.PauliX(3)]),
@@ -435,10 +381,10 @@ class TestRydbergDrive:
             AmplitudeAndPhase(np.cos, f, 1),
             AmplitudeAndPhase(np.sin, f, 1),
         ]
-        H_expected = RydbergHamiltonian(coeffs_expected, ops_expected)
+        H_expected = HardwareHamiltonian(coeffs_expected, ops_expected)
 
         assert qml.equal(Hd([0.1], 10), H_expected([0.1], 10))
-        assert isinstance(Hd, RydbergHamiltonian)
+        assert isinstance(Hd, HardwareHamiltonian)
         assert Hd.interaction_coeff == 862690
         assert Hd.wires == Wires([0, 3])
         assert Hd.register is None
@@ -449,7 +395,7 @@ class TestRydbergDrive:
     def test_no_amplitude_no_detuning(self):
         """Test that the correct error is raised if both amplitude and detuning are trivial."""
         with pytest.raises(ValueError, match="Expected non-zero value for at least one of either"):
-            _ = rydberg_drive(0, np.pi, 0, wires=[0])
+            _ = drive(0, np.pi, 0, wires=[0])
 
 
 def callable_amp(p, t):
@@ -530,13 +476,13 @@ class TestAmplitudeAndPhase:
         assert f([[1.7], [1.3, 2.5]], 2) == expected_result
 
     def test_callable_phase_and_amplitude_hamiltonian(self):
-        """Test that using callable amplitude and phase in rydberg_drive
+        """Test that using callable amplitude and phase in drive
         creates AmplitudeAndPhase callables, and the resulting Hamiltonian
         can be called successfully"""
 
         detuning = 2
 
-        Hd = rydberg_drive(sine_func, cosine_fun, detuning, wires=[0, 1])
+        Hd = drive(sine_func, cosine_fun, detuning, wires=[0, 1])
 
         assert len(Hd.coeffs) == 3
         assert isinstance(Hd.coeffs[1], AmplitudeAndPhase)
@@ -560,12 +506,12 @@ class TestAmplitudeAndPhase:
         assert qml.equal(evaluated_H[1], expected_H_parametrized)
 
     def test_callable_phase_hamiltonian(self):
-        """Test that using callable phase in rydberg_drive creates AmplitudeAndPhase
+        """Test that using callable phase in drive creates AmplitudeAndPhase
         callables, and the resulting Hamiltonian can be called"""
 
         detuning = 2
 
-        Hd = rydberg_drive(7.2, sine_func, detuning, wires=[0, 1])
+        Hd = drive(7.2, sine_func, detuning, wires=[0, 1])
 
         assert len(Hd.coeffs) == 3
         assert isinstance(Hd.coeffs[1], AmplitudeAndPhase)
@@ -589,12 +535,12 @@ class TestAmplitudeAndPhase:
         assert qml.equal(evaluated_H[1], expected_H_parametrized)
 
     def test_callable_amplitude_hamiltonian(self):
-        """Test that using callable amplitude in rydberg_drive creates AmplitudeAndPhase
+        """Test that using callable amplitude in drive creates AmplitudeAndPhase
         callables, and the resulting Hamiltonian can be called"""
 
         detuning = 2
 
-        Hd = rydberg_drive(sine_func, 4.3, detuning, wires=[0, 1])
+        Hd = drive(sine_func, 4.3, detuning, wires=[0, 1])
 
         assert len(Hd.coeffs) == 3
         assert isinstance(Hd.coeffs[1], AmplitudeAndPhase)
@@ -647,41 +593,41 @@ class TestAmplitudeAndPhase:
     ]
 
     @pytest.mark.parametrize("coeffs, params, expected_output", COEFFS_AND_PARAMS)
-    def test_rydberg_reorder_parameters_all(self, coeffs, params, expected_output):
+    def test_reorder_parameters_all(self, coeffs, params, expected_output):
         """Tests that the function organizing the parameters to pass to the
-        RydbergHamiltonian works as expected when AmplitudeAndPhase callables
+        HardwareHamiltonian works as expected when AmplitudeAndPhase callables
         are included"""
 
-        assert _rydberg_reorder_parameters(params, coeffs) == expected_output
+        assert _reorder_parameters(params, coeffs) == expected_output
 
 
-class TestRydbergPulse:
-    """Unit tests for the ``RydbergPulse`` class."""
+class TestHardwarePulse:
+    """Unit tests for the ``HardwarePulse`` class."""
 
     def test_init(self):
-        """Test the initialization of the ``RydbergPulse`` class."""
-        p = RydbergPulse(amplitude=4, detuning=9, phase=8, wires=[0, 4, 7])
+        """Test the initialization of the ``HardwarePulse`` class."""
+        p = HardwarePulse(amplitude=4, detuning=9, phase=8, wires=[0, 4, 7])
         assert p.amplitude == 4
         assert p.phase == 8
         assert p.detuning == 9
         assert p.wires == Wires([0, 4, 7])
 
     def test_equal(self):
-        """Test the ``__eq__`` method of the ``RydbergPulse`` class."""
-        p1 = RydbergPulse(1, 2, 3, [0, 1])
-        p2 = RydbergPulse(1, 2, 3, 0)
-        p3 = RydbergPulse(1, 2, 3, [0, 1])
+        """Test the ``__eq__`` method of the ``HardwarePulse`` class."""
+        p1 = HardwarePulse(1, 2, 3, [0, 1])
+        p2 = HardwarePulse(1, 2, 3, 0)
+        p3 = HardwarePulse(1, 2, 3, [0, 1])
         assert p1 != p2
         assert p2 != p3
         assert p1 == p3
 
 
 class TestIntegration:
-    """Integration tests for the ``RydbergHamiltonian`` class."""
+    """Integration tests for the ``HardwareHamiltonian`` class."""
 
     @pytest.mark.jax
     def test_jitted_qnode(self):
-        """Test that a ``RydbergHamiltonian`` class can be executed within a jitted qnode."""
+        """Test that a ``HardwareHamiltonian`` class can be executed within a jitted qnode."""
         import jax
         import jax.numpy as jnp
 
@@ -693,7 +639,7 @@ class TestIntegration:
         def fb(p, t):
             return p[0] * jnp.sin(p[1] * t)
 
-        Ht = rydberg_drive(amplitude=fa, phase=0, detuning=fb, wires=1)
+        Ht = drive(amplitude=fa, phase=0, detuning=fb, wires=1)
 
         dev = qml.device("default.qubit", wires=wires)
 
@@ -720,7 +666,7 @@ class TestIntegration:
 
     @pytest.mark.jax
     def test_jitted_qnode_multidrive(self):
-        """Test that a ``RydbergHamiltonian`` class with multiple drive terms can be
+        """Test that a ``HardwareHamiltonian`` class with multiple drive terms can be
         executed within a jitted qnode."""
         import jax
         import jax.numpy as jnp
@@ -739,9 +685,9 @@ class TestIntegration:
         def fd(p, t):
             return p * jnp.cos(t)
 
-        H1 = rydberg_drive(amplitude=fa, phase=0, detuning=fb, wires=wires)
-        H2 = rydberg_drive(amplitude=fc, phase=3 * jnp.pi, detuning=0, wires=4)
-        H3 = rydberg_drive(amplitude=0, phase=0, detuning=fd, wires=[3, 0])
+        H1 = drive(amplitude=fa, phase=0, detuning=fb, wires=wires)
+        H2 = drive(amplitude=fc, phase=3 * jnp.pi, detuning=0, wires=4)
+        H3 = drive(amplitude=0, phase=0, detuning=fd, wires=[3, 0])
 
         dev = qml.device("default.qubit", wires=wires)
 
@@ -773,7 +719,7 @@ class TestIntegration:
 
     @pytest.mark.jax
     def test_jitted_qnode_all_coeffs_callable(self):
-        """Test that a ``RydbergHamiltonian`` class can be executed within a
+        """Test that a ``HardwareHamiltonian`` class can be executed within a
         jitted qnode when all coeffs are callable."""
         import jax
         import jax.numpy as jnp
@@ -789,7 +735,7 @@ class TestIntegration:
         def fc(p, t):
             return p[0] * jnp.sin(t) + jnp.cos(p[1] * t)
 
-        H_drive = rydberg_drive(amplitude=fa, phase=fb, detuning=fc, wires=1)
+        H_drive = drive(amplitude=fa, phase=fb, detuning=fc, wires=1)
 
         dev = qml.device("default.qubit", wires=wires)
 
