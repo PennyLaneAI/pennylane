@@ -281,6 +281,20 @@ class TestQubitUnitary:
         assert isinstance(decomp2[0], expected_gate)
         assert np.allclose(decomp2[0].parameters, expected_params, atol=1e-7)
 
+    @pytest.mark.parametrize(
+        "shape,wires,result",
+        [
+            ((2, 2), [0], True),
+            ((4, 4), [0, 1], True),
+            ((3, 2, 2), [0], True),
+            ((3, 4, 4), [0, 1], False),
+            ((8, 8), [0, 1, 2], False),
+        ],
+    )
+    def test_qubit_unitary_has_decomposition(self, shape, wires, result):
+        """Tests the QubitUnitary.has_decomposition property."""
+        assert qml.QubitUnitary(np.ones(shape), wires=wires).has_decomposition is result
+
     def test_broadcasted_two_qubit_qubit_unitary_decomposition_raises_error(self):
         """Tests that broadcasted QubitUnitary decompositions are not supported."""
         U = qml.IsingYY.compute_matrix(np.array([1.2, 2.3, 3.4]))

@@ -131,6 +131,12 @@ class QubitUnitary(Operation):
         """
         return U
 
+    # pylint: disable=arguments-renamed, invalid-overridden-method
+    @property
+    def has_decomposition(self):
+        shape = qml.math.shape(self.data[0])
+        return shape == (4, 4) or shape[-2:] == (2, 2)
+
     @staticmethod
     def compute_decomposition(U, wires):
         r"""Representation of the operator as a product of other operators (static method).
