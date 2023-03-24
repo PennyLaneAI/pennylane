@@ -195,12 +195,12 @@ class TestQNode:
             tol = TOL_FOR_SPSA
 
         class U3(qml.U3):
-            def expand(self):
-                theta, phi, lam = self.data
-                wires = self.wires
-                return QuantumScript(
-                    [qml.Rot(lam, theta, -lam, wires=wires), qml.PhaseShift(phi + lam, wires=wires)]
-                )
+            @staticmethod
+            def compute_decomposition(theta, phi, delta, wires):
+                return [
+                    qml.Rot(delta, theta, -delta, wires=wires),
+                    qml.PhaseShift(phi + delta, wires=wires),
+                ]
 
         num_wires = 1
 
@@ -920,10 +920,13 @@ class TestQubitIntegration:
         dev = qml.device(dev_name, wires=num_wires)
 
         class Template(qml.templates.StronglyEntanglingLayers):
-            def expand(self):
-                return QuantumScript(
-                    [qml.templates.StronglyEntanglingLayers(*self.parameters, self.wires)]
-                )
+            @staticmethod
+            def compute_decomposition(weights, wires, ranges, imprimitive):
+                return [
+                    qml.templates.StronglyEntanglingLayers(
+                        weights, wires, ranges=ranges, imprimitive=imprimitive
+                    )
+                ]
 
         @qnode(dev, interface=interface, diff_method=diff_method, mode=mode)
         def circuit1(weights):
@@ -1460,8 +1463,9 @@ class TestTapeExpansion:
         class PhaseShift(qml.PhaseShift):
             grad_method = None
 
-            def expand(self):
-                return QuantumScript([qml.RY(3 * self.data[0], wires=self.wires)])
+            @staticmethod
+            def compute_decomposition(phi, wires):
+                return [qml.RY(3 * phi, wires=wires)]
 
         @qnode(dev, diff_method=diff_method, mode=mode, max_diff=max_diff, interface=interface)
         def circuit(x, y):

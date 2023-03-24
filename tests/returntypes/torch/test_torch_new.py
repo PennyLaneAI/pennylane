@@ -706,15 +706,12 @@ class TestTorchExecuteIntegration:
         is differentiable"""
 
         class U3(qml.U3):
-            def expand(self):
-                tape = qml.tape.QuantumTape()
-                theta, phi, lam = self.data
-                wires = self.wires
-                tape._ops += [
-                    qml.Rot(lam, theta, -lam, wires=wires),
-                    qml.PhaseShift(phi + lam, wires=wires),
+            @staticmethod
+            def compute_decomposition(theta, phi, delta, wires):
+                return [
+                    qml.Rot(delta, theta, -delta, wires=wires),
+                    qml.PhaseShift(phi + delta, wires=wires),
                 ]
-                return tape
 
         dev = qml.device("default.qubit", wires=1)
         a = np.array(0.1)

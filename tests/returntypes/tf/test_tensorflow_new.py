@@ -599,15 +599,12 @@ class TestTensorFlowExecuteIntegration:
         is differentiable"""
 
         class U3(qml.U3):
-            def expand(self):
-                theta, phi, lam = self.data
-                wires = self.wires
-                return qml.tape.QuantumScript(
-                    [
-                        qml.Rot(lam, theta, -lam, wires=wires),
-                        qml.PhaseShift(phi + lam, wires=wires),
-                    ]
-                )
+            @staticmethod
+            def compute_decomposition(theta, phi, delta, wires):
+                return [
+                    qml.Rot(delta, theta, -delta, wires=wires),
+                    qml.PhaseShift(phi + delta, wires=wires),
+                ]
 
         dev = qml.device("default.qubit", wires=1)
         a = np.array(0.1)

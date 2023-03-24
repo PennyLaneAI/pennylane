@@ -416,16 +416,12 @@ class TestQNode:
             tol = TOL_FOR_SPSA
 
         class U3(qml.U3):
-            def expand(self):
-                theta, phi, lam = self.data
-                wires = self.wires
-
-                with qml.queuing.AnnotatedQueue() as q_tape:
-                    qml.Rot(lam, theta, -lam, wires=wires)
-                    qml.PhaseShift(phi + lam, wires=wires)
-
-                tape = QuantumScript.from_queue(q_tape)
-                return tape
+            @staticmethod
+            def compute_decomposition(theta, phi, delta, wires):
+                return [
+                    qml.Rot(delta, theta, -delta, wires=wires),
+                    qml.PhaseShift(phi + delta, wires=wires),
+                ]
 
         dev = qml.device(dev_name, wires=1)
         a = np.array(0.1, requires_grad=False)
@@ -741,11 +737,13 @@ class TestQubitIntegration:
         dev = qml.device(dev_name, wires=2)
 
         class Template(qml.templates.StronglyEntanglingLayers):
-            def expand(self):
-                with qml.queuing.AnnotatedQueue() as q:
-                    qml.templates.StronglyEntanglingLayers(*self.parameters, self.wires)
-                tape = QuantumScript.from_queue(q)
-                return tape
+            @staticmethod
+            def compute_decomposition(weights, wires, ranges, imprimitive):
+                return [
+                    qml.templates.StronglyEntanglingLayers(
+                        weights, wires, ranges=ranges, imprimitive=imprimitive
+                    )
+                ]
 
         @qnode(dev, interface=interface, diff_method=diff_method)
         def circuit1(weights):
@@ -1340,11 +1338,9 @@ class TestTapeExpansion:
         class PhaseShift(qml.PhaseShift):
             grad_method = None
 
-            def expand(self):
-                with qml.queuing.AnnotatedQueue() as q:
-                    qml.RY(3 * self.data[0], wires=self.wires)
-                tape = QuantumScript.from_queue(q)
-                return tape
+            @staticmethod
+            def compute_decomposition(y, wires=None):
+                return [qml.RY(3 * y, wires=wires)]
 
         @qnode(dev, diff_method=diff_method, mode=mode, max_diff=max_diff)
         def circuit(x, y):
