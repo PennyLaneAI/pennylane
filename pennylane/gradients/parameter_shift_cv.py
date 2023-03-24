@@ -763,7 +763,7 @@ def param_shift_cv(
         # For expval param shift with multiple params
         if qml.active_return():
             if isinstance(grads[0], tuple):
-                return grads[0]
+                grads = [qml.math.stack(g) for g in grads]
 
         jacobian = sum(grads)
 
