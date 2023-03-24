@@ -13,7 +13,11 @@
     Rydberg atoms.
   * A new user-facing `rydberg_interaction` function is added, which returns a `RydbergHamiltonian` containing
     the Hamiltonian of the interaction of all the Rydberg atoms.
+<<<<<<< HEAD
   * A new user-facing `drive` function is added, which returns a `HardwareHamiltonian` containing
+=======
+  * A new user-facing `drive` function is added, which returns a `ParametrizedHamiltonian` (`HardwareHamiltonian`) containing
+>>>>>>> 340f1c8d2241d0f5947af87dd4565ea555dcbcbd
     the Hamiltonian of the interaction between a driving electro-magnetic field and a group of qubits.
   [(#3749)](https://github.com/PennyLaneAI/pennylane/pull/3749)
   [(#3911)](https://github.com/PennyLaneAI/pennylane/pull/3911)
@@ -147,6 +151,9 @@
 
 <h3>Bug fixes</h3>
 
+* Fixed a bug where calling `Evolution.generator` with `coeff` being a complex ArrayBox raised an error.
+  [(#3796)](https://github.com/PennyLaneAI/pennylane/pull/3796)
+  
 * `MeasurementProcess.hash` now uses the hash property of the observable. The property now depends on all
   properties that affect the behaviour of the object, such as `VnEntropyMP.log_base` or the distribution of wires between
   the two subsystems in `MutualInfoMP`.
@@ -159,7 +166,7 @@
   to work with non-numeric wire labels.  `sum_expand` should now return correct results and not treat some products as the same
   operation.
   [(#3898)](https://github.com/PennyLaneAI/pennylane/pull/3898)
-
+  
 * Fixed bug where the coefficients where not ordered correctly when summing a `ParametrizedHamiltonian`
   with other operators.
   [(#3749)](https://github.com/PennyLaneAI/pennylane/pull/3749)
@@ -193,6 +200,9 @@
 * A correction is added to the reference values in `test_dipole_of` to account for small changes
   (~2e-8) in the computed dipole moment values, resulting from the new [PySCF 2.2.0](https://github.com/pyscf/pyscf/releases/tag/v2.2.0) release.
   [(#3908)](https://github.com/PennyLaneAI/pennylane/pull/3908)
+
+* `SampleMP.shape` is now correct when sampling only occurs on a subset of the device wires.
+  [(#3921)](https://github.com/PennyLaneAI/pennylane/pull/3921)
 
 <h3>Contributors</h3>
 

@@ -21,13 +21,9 @@ import pennylane as qml
 from pennylane.wires import Wires
 from pennylane.operation import Operator
 from pennylane.ops.qubit.hamiltonian import Hamiltonian
-from pennylane.typing import TensorLike
 
 
 from .parametrized_hamiltonian import ParametrizedHamiltonian
-
-# from .transmon import TransmonSettings
-# from .rydberg import RydbergSettings
 
 
 def drive(amplitude, phase, detuning, wires):
@@ -53,10 +49,10 @@ def drive(amplitude, phase, detuning, wires):
     to be able to use numerical units of order :math:`\mathcal{O}(1)`. We further elaborate on that in the examples below.
 
     Args:
-        amplitude (Union[float, Callable]): float or callable returning the amplitude of a
+        amplitude (Union[float, Callable]): float or callable returning the amplitude of an
             electromagnetic field
         phase (Union[float, Callable]): float or callable returning the phase (in radians) of the electromagnetic field
-        detuning (Union[float, Callable]): float or callable returning the detuning of a
+        detuning (Union[float, Callable]): float or callable returning the detuning of an
             electromagnetic field
         wires (Union[int, List[int]]): integer or list containing wire values for the qubits that
             the electromagnetic field acts on
@@ -79,7 +75,7 @@ def drive(amplitude, phase, detuning, wires):
     .. code-block:: python
 
         wires = [0, 1, 2, 3]
-        H_int = sum([qml.PauliX(i) @ qml.PauliX(i+1) for i in wires])
+        H_int = sum([qml.PauliX(i) @ qml.PauliX((i+1)%len(wires)) for i in wires])
 
         amplitude = lambda p, t: p * jnp.sin(jnp.pi * t)
         phase = jnp.pi / 2
@@ -112,9 +108,9 @@ def drive(amplitude, phase, detuning, wires):
 
     >>> params = [2.4]
     >>> circuit(params)
-    Array(0.70218135, dtype=float64)
+    Array(0.77627534, dtype=float64)
     >>> jax.grad(circuit)(params)
-    [Array(3.14449753, dtype=float64)]
+    [Array(-0.0159532, dtype=float64)]
 
     We can also create a Hamiltonian with multiple local drives. The following circuit corresponds to the
     evolution where an additional local drive that changes in time is acting on wires ``[0, 1]`` is added to the Hamiltonian:
@@ -138,15 +134,14 @@ def drive(amplitude, phase, detuning, wires):
         p_amp = [1.3, -2.0]
         p_phase = 0.5
         params = (p_global, p_amp, p_phase)
-        circuit_local(params)
 
     >>> circuit_local(params)
-    Array(0.6126627, dtype=float64)
+    Array(0.4494223, dtype=float64)
     >>> jax.grad(circuit_local)(params)
-    (Array(-0.30482848, dtype=float64),
-     [Array(0.27030772, dtype=float64, weak_type=True),
-      Array(-0.55805872, dtype=float64, weak_type=True)],
-     Array(0.27385566, dtype=float64))
+    (Array(0.17258209, dtype=float64),
+     [Array(-0.39050511, dtype=float64, weak_type=True),
+      Array(-0.15865324, dtype=float64, weak_type=True)],
+     Array(-0.16458317, dtype=float64))
 
     .. details::
         :title: Theoretical background
@@ -172,9 +167,9 @@ def drive(amplitude, phase, detuning, wires):
     .. details::
         **Neutral Atom Rydberg systems**
 
-        In neutral atom systems for quantum computation and quantum simulation, a Rydberg transition is driven by an optical laser (frequency in MHz).
+        In neutral atom systems for quantum computation and quantum simulation, a Rydberg transition is driven by an optical laser that is close to the transition's resonant frequency (with a potential detuning with regards to the resonant frequency on the order of MHz).
         The interaction between different atoms is given by the :func:`rydberg_interaction`, for which we pass the atomic coordinates (in µm),
-        here arrange in a square of length :math:`4 \mu m`.
+        here arranged in a square of length :math:`4 \mu m`.
 
         .. code-block:: python3
 
@@ -197,20 +192,20 @@ def drive(amplitude, phase, detuning, wires):
             amplitude = lambda p, t: p * jnp.sin(jnp.pi * t)
             phase = jnp.pi / 2
             detuning = 3 * jnp.pi / 4
-            H_d = qml.pulse.rydberg_drive(amplitude, phase, detuning, wires)
+            H_d = qml.pulse.drive(amplitude, phase, detuning, wires)
 
             dev = qml.device("default.qubit.jax", wires=wires)
 
             @qml.qnode(dev, interface="jax")
             def circuit(params):
                 qml.evolve(H_i + H_d)(params, t=[0, 10])
-                return qml.expval(qml.PauliZ(0))
+                return qml.expval(qml.PauliZ(1))
 
         >>> params = [2.4]
         >>> circuit(params)
-        Array(0.97137696, dtype=float32)
+        Array(0.94301294, dtype=float64)
         >>> jax.grad(circuit)(params)
-        [Array(0.10493923, dtype=float32)]
+        [Array(0.59484969, dtype=float64)]
 
     """
     if isinstance(wires, int):
@@ -288,11 +283,13 @@ class HardwareHamiltonian(ParametrizedHamiltonian):
         self,
         coeffs,
         observables,
+        register: list = None,
         pulses: List["HardwarePulse"] = None,
-        settings: Union["RydbergSettings", "TransmonSettings"] = None,
+        interaction_coeff: float = 862690,
     ):
-        self.settings = settings
+        self.register = register
         self.pulses = [] if pulses is None else pulses
+        self.interaction_coeff = interaction_coeff
         super().__init__(coeffs, observables)
 
     def __call__(self, params, t):
@@ -301,36 +298,42 @@ class HardwareHamiltonian(ParametrizedHamiltonian):
 
     def __add__(self, other):
         if isinstance(other, HardwareHamiltonian):
-            if self.settings is None and other.settings is None:
-                new_settings = None
-            else:
-                new_settings = self.settings + other.settings
+            # Update coeffs, obs and hardware attributes
+            if self.register is not None:
+                if other.register is not None:
+                    raise ValueError("We cannot add two Hamiltonians with an interaction term!")
+                if not self.wires.contains_wires(other.wires):
+                    warnings.warn("The wires of the drive fields are not present in the ensemble.")
+            elif other.register is not None and not other.wires.contains_wires(self.wires):
+                warnings.warn("The wires of the drive fields are not present in the ensemble.")
+
+            new_register = self.register or other.register
             new_pulses = self.pulses + other.pulses
             new_ops = self.ops + other.ops
             new_coeffs = self.coeffs + other.coeffs
             return HardwareHamiltonian(
-                new_coeffs, new_ops, settings=new_settings, pulses=new_pulses
+                new_coeffs, new_ops, register=new_register, pulses=new_pulses
             )
 
         ops = self.ops.copy()
         coeffs = self.coeffs.copy()
-        settings = self.settings
+        register = self.register
         pulses = self.pulses
 
         if isinstance(other, (Hamiltonian, ParametrizedHamiltonian)):
             new_coeffs = coeffs + list(other.coeffs.copy())
             new_ops = ops + other.ops.copy()
-            return HardwareHamiltonian(new_coeffs, new_ops, settings=settings, pulses=pulses)
+            return HardwareHamiltonian(new_coeffs, new_ops, register=register, pulses=pulses)
 
         if isinstance(other, qml.ops.SProd):  # pylint: disable=no-member
             new_coeffs = coeffs + [other.scalar]
             new_ops = ops + [other.base]
-            return HardwareHamiltonian(new_coeffs, new_ops, settings=settings, pulses=pulses)
+            return HardwareHamiltonian(new_coeffs, new_ops, register=register, pulses=pulses)
 
         if isinstance(other, Operator):
             new_coeffs = coeffs + [1]
             new_ops = ops + [other]
-            return HardwareHamiltonian(new_coeffs, new_ops, settings=settings, pulses=pulses)
+            return HardwareHamiltonian(new_coeffs, new_ops, register=register, pulses=pulses)
 
         return NotImplemented
 
@@ -352,7 +355,7 @@ class HardwareHamiltonian(ParametrizedHamiltonian):
             new_ops = other.ops.copy() + ops
 
             return HardwareHamiltonian(
-                new_coeffs, new_ops, settings=self.settings, pulses=self.pulses
+                new_coeffs, new_ops, register=self.register, pulses=self.pulses
             )
 
         return self.__add__(other)
