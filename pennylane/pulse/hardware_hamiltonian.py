@@ -13,7 +13,7 @@
 # limitations under the License.
 """This module contains the classes/functions needed to simulate and execute the evolution of real
 Hardware Hamiltonians"""
-import warnings
+
 from dataclasses import dataclass
 from typing import Callable, List, Union
 
