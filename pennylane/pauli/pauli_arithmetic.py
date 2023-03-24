@@ -20,7 +20,6 @@ import numpy as np
 from scipy import sparse
 
 import pennylane as qml
-import pennylane.numpy as npp
 from pennylane import math, wires
 from pennylane.operation import Tensor
 from pennylane.ops import Hamiltonian, Identity, PauliX, PauliY, PauliZ, prod, s_prod
@@ -392,13 +391,13 @@ class PauliSentence(dict):
         wire_order = wire_order or self.wires
         wire_order = list(wire_order)
 
-        if any(npp.iscomplex(coeff) for coeff in self.values()):
+        if any(math.iscomplex(coeff) for coeff in self.values()):
             raise ValueError(
                 "Can't get a Hamiltonian for a PauliSentence with non-zero complex coefficients"
             )
 
         return Hamiltonian(
-            npp.real(list(self.values())),
+            math.real(list(self.values())),
             [pw.operation(wire_order=wire_order, get_as_tensor=True) for pw in self],
         )
 
