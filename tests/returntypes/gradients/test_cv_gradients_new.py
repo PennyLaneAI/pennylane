@@ -49,6 +49,7 @@ def gaussian_dev():
 @pytest.fixture(scope="module")
 def grad_fn_R(gaussian_dev):
     """Gradient with autograd."""
+
     @qml.qnode(gaussian_dev)
     def circuit(y):
         qml.Displacement(alpha, 0.0, wires=[0])
@@ -61,6 +62,7 @@ def grad_fn_R(gaussian_dev):
 @pytest.fixture(scope="module")
 def grad_fn_BS(gaussian_dev):
     """Gradient with autograd."""
+
     @qml.qnode(gaussian_dev)
     def circuit(y):
         qml.Displacement(alpha, 0.0, wires=[0])
@@ -73,6 +75,7 @@ def grad_fn_BS(gaussian_dev):
 @pytest.fixture(scope="module")
 def grad_fn_D(gaussian_dev):
     """Gradient with autograd."""
+
     @qml.qnode(gaussian_dev)
     def circuit(r, phi):
         qml.Displacement(r, phi, wires=[0])
@@ -84,6 +87,7 @@ def grad_fn_D(gaussian_dev):
 @pytest.fixture(scope="module")
 def grad_fn_S(gaussian_dev):
     """Gradient with autograd."""
+
     @qml.qnode(gaussian_dev)
     def circuit(y):
         qml.Displacement(alpha, 0.0, wires=[0])
@@ -96,6 +100,7 @@ def grad_fn_S(gaussian_dev):
 @pytest.fixture(scope="module")
 def grad_fn_S_Fock(gaussian_dev):
     """Gradient with autograd."""
+
     @qml.qnode(gaussian_dev)
     def circuit(y):
         qml.Squeezing(y, 0.0, wires=[0])

@@ -895,9 +895,7 @@ class DefaultGaussian(Device):
         results = []
         for circuit in circuits:
             if len(circuit.measurements) > 1:
-                raise qml.QuantumFunctionError(
-                    "Default gaussian only support single measurements."
-                )
+                raise qml.QuantumFunctionError("Default gaussian only support single measurements.")
             # we need to reset the device here, else it will
             # not start the next computation in the zero state
             self.reset()
