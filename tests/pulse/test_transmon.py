@@ -26,11 +26,7 @@ from pennylane.pulse.hardware_hamiltonian import (
     HardwarePulse,
     AmplitudeAndPhase,
 )
-from pennylane.pulse.transmon import (
-    a,
-    ad,
-    TransmonSettings
-)
+from pennylane.pulse.transmon import a, ad, TransmonSettings
 
 from pennylane.wires import Wires
 
@@ -109,14 +105,13 @@ class TestTransmonInteraction:
 
 # For transmon settings test
 connections0 = [[0, 1], [0, 2]]
-omega0 = [1., 2., 3.]
+omega0 = [1.0, 2.0, 3.0]
 g0 = [0.5, 0.3]
 
 
 connections1 = [[2, 3], [1, 4], [5, 4]]
-omega1 = [4., 5., 6.]
+omega1 = [4.0, 5.0, 6.0]
 g1 = [0.1, 0.2, 0.3]
-
 
 
 class TestTransmonSettings:
@@ -139,7 +134,9 @@ class TestTransmonSettings:
         assert settings1 != settings2
         assert settings0 == settings2
 
-    def test_add_two_settings(self,):
+    def test_add_two_settings(
+        self,
+    ):
         """Test that two settings are correctly added"""
         settings0 = TransmonSettings(connections0, omega0, g0)
         settings1 = TransmonSettings(connections1, omega1, g1)
@@ -148,15 +145,16 @@ class TestTransmonSettings:
         assert settings.omega == omega0 + omega1
         assert settings.g == g0 + g1
 
-    def test_add_two_settings_with_one_delta_None(self,):
+    def test_add_two_settings_with_one_delta_None(
+        self,
+    ):
         """Test that two settings are correctly added when one has non-trivial delta"""
-        delta = [1.]*len(omega0)
+        delta = [1.0] * len(omega0)
         settings0 = TransmonSettings(connections0, omega0, g0, delta=delta)
         settings1 = TransmonSettings(connections1, omega1, g1)
 
         settings01 = settings0 + settings1
-        assert settings01.delta == delta + [0.] * len(omega1)
+        assert settings01.delta == delta + [0.0] * len(omega1)
 
         settings10 = settings1 + settings0
-        assert settings10.delta == [0.] * len(omega0) + delta
-
+        assert settings10.delta == [0.0] * len(omega0) + delta

@@ -19,6 +19,7 @@ import pennylane as qml
 from pennylane.pulse import HardwareHamiltonian
 from pennylane.typing import TensorLike
 
+
 # pylint: disable=unused-argument
 def a(wire, d=2):
     """creation operator"""
