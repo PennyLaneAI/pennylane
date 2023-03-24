@@ -1233,7 +1233,7 @@ class TestUnimplemented:
         qs = qml.tape.QuantumScript()
         obs = qml.GellMann(1, 1)
 
-        with pytest.raises(qml.QuantumFunctionError, match="Unsupported return type"):
+        with pytest.raises(qml.QuantumFunctionError, match="Qutrit devices don't support"):
             dev.classical_shadow(obs, qs)
 
     def test_shadow_expval(self, mock_qutrit_device):
@@ -1242,5 +1242,5 @@ class TestUnimplemented:
         qs = qml.tape.QuantumScript()
         obs = qml.GellMann(1, 1)
 
-        with pytest.raises(qml.QuantumFunctionError, match="Unsupported return type"):
+        with pytest.raises(qml.QuantumFunctionError, match="Qutrit devices don't support"):
             dev.shadow_expval(obs, qs)

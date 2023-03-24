@@ -223,7 +223,7 @@ class QutritDevice(QubitDevice):  # pylint: disable=too-many-public-methods
         """
         # TODO: Add support for ClassicalShadowMP
         raise qml.QuantumFunctionError(
-            "Unsupported return type specified for observable classical shadow"
+            "Qutrit devices don't support classical shadow measurements."
         )
 
     def shadow_expval(self, obs, circuit):
@@ -243,7 +243,7 @@ class QutritDevice(QubitDevice):  # pylint: disable=too-many-public-methods
         """
         # TODO: Add support for ShadowExpvalMP
         raise qml.QuantumFunctionError(
-            "Unsupported return type specified for observable shadow expectation values"
+            "Qutrit devices don't support shadow expectation value measurements."
         )
 
     def estimate_probability(self, wires=None, shot_range=None, bin_size=None):

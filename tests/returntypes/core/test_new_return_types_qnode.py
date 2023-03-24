@@ -191,8 +191,6 @@ class TestIntegrationSingleReturn:
 
     herm = np.diag([1, 2, 3, 4])
     probs_data = [
-        (qml.GellMann(0, 3), None),
-        (qml.THermitian(np.eye(9), wires=[1, 0]), None),
         (None, [0]),
         (None, [0, 1]),
         (qml.PauliZ(0), None),
@@ -200,7 +198,7 @@ class TestIntegrationSingleReturn:
     ]
 
     @pytest.mark.parametrize("device", devices)
-    @pytest.mark.parametrize("op,wires", probs_data[2:])
+    @pytest.mark.parametrize("op,wires", probs_data)
     def test_probs(self, op, wires, device):
         """Return a single prob."""
         if device == "lightning.qubit" or device == "default.qutrit":
@@ -222,7 +220,14 @@ class TestIntegrationSingleReturn:
         assert res.shape == (2 ** len(wires),)
         assert isinstance(res, np.ndarray)
 
-    @pytest.mark.parametrize("op,wires", probs_data[:4])
+    probs_data_qutrit = [
+        (qml.GellMann(0, 3), None),
+        (qml.THermitian(np.eye(9), wires=[1, 0]), None),
+        (None, [0]),
+        (None, [0, 1]),
+    ]
+
+    @pytest.mark.parametrize("op,wires", probs_data_qutrit)
     def test_probs_qutrit(self, op, wires):
         """Return a single prob."""
         dev = qml.device("default.qutrit", wires=3)
@@ -1052,10 +1057,6 @@ class TestIntegrationMultipleReturns:
 
     # op1, wires1, op2, wires2
     multi_probs_data = [
-        (qml.GellMann(0, 3), None, qml.GellMann(1, 3), None),
-        (None, [0], qml.GellMann(1, 3), None),
-        (qml.GellMann(0, 3), None, None, [1]),
-        (qml.GellMann(1, 3), None, qml.GellMann(0, 3), None),
         (None, [0], None, [0]),
         (None, [0], None, [0, 1]),
         (None, [0, 1], None, [0]),
@@ -1067,7 +1068,7 @@ class TestIntegrationMultipleReturns:
     ]
 
     @pytest.mark.parametrize("device", devices)
-    @pytest.mark.parametrize("op1,wires1,op2,wires2", multi_probs_data[4:])
+    @pytest.mark.parametrize("op1,wires1,op2,wires2", multi_probs_data)
     def test_multiple_prob(self, op1, op2, wires1, wires2, device):
         """Return multiple probs."""
         if device == "default.qutrit":
@@ -1097,7 +1098,18 @@ class TestIntegrationMultipleReturns:
         assert isinstance(res[1], np.ndarray)
         assert res[1].shape == (2 ** len(wires2),)
 
-    @pytest.mark.parametrize("op1,wires1,op2,wires2", multi_probs_data[:8])
+    multi_probs_data_qutrit = [
+        (qml.GellMann(0, 3), None, qml.GellMann(1, 3), None),
+        (None, [0], qml.GellMann(1, 3), None),
+        (qml.GellMann(0, 3), None, None, [1]),
+        (qml.GellMann(1, 3), None, qml.GellMann(0, 3), None),
+        (None, [0], None, [0]),
+        (None, [0], None, [0, 1]),
+        (None, [0, 1], None, [0]),
+        (None, [0, 1], None, [0, 1]),
+    ]
+
+    @pytest.mark.parametrize("op1,wires1,op2,wires2", multi_probs_data_qutrit)
     def test_multiple_prob_qutrit(self, op1, op2, wires1, wires2):
         """Return multiple probs."""
         dev = qml.device("default.qutrit", wires=2)
@@ -1125,7 +1137,7 @@ class TestIntegrationMultipleReturns:
         assert res[1].shape == (3 ** len(wires2),)
 
     @pytest.mark.parametrize("device", devices)
-    @pytest.mark.parametrize("op1,wires1,op2,wires2", multi_probs_data[4:])
+    @pytest.mark.parametrize("op1,wires1,op2,wires2", multi_probs_data)
     @pytest.mark.parametrize("wires3, wires4", wires)
     def test_mix_meas(self, op1, wires1, op2, wires2, wires3, wires4, device):
         """Return multiple different measurements."""
@@ -1167,7 +1179,7 @@ class TestIntegrationMultipleReturns:
         assert isinstance(res[3], np.ndarray)
         assert res[3].shape == ()
 
-    @pytest.mark.parametrize("op1,wires1,op2,wires2", multi_probs_data[:8])
+    @pytest.mark.parametrize("op1,wires1,op2,wires2", multi_probs_data_qutrit)
     @pytest.mark.parametrize("wires3, wires4", wires)
     def test_mix_meas_qutrit(self, op1, wires1, op2, wires2, wires3, wires4):
         """Return multiple different measurements."""
