@@ -397,7 +397,8 @@ class PauliSentence(dict):
             )
 
         return Hamiltonian(
-            math.real(list(self.values())),
+            # math.real(list(self.values())),
+            list(self.values()),
             [pw.operation(wire_order=wire_order, get_as_tensor=True) for pw in self],
         )
 
