@@ -221,7 +221,7 @@ class QutritDevice(QubitDevice):  # pylint: disable=too-many-public-methods
         Raises:
             QuantumFunctionError: Classical shadow is currently unsupported on :class:`~.QutritDevice`
         """
-        # TODO: Add support for ClassicalShadowMO
+        # TODO: Add support for ClassicalShadowMP
         raise qml.QuantumFunctionError(
             "Unsupported return type specified for observable classical shadow"
         )
