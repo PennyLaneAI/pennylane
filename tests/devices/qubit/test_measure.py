@@ -19,6 +19,7 @@ import numpy as np
 from scipy.sparse import csr_matrix
 
 import pennylane as qml
+from pennylane import math
 from pennylane.devices.qubit import simulate
 from pennylane.devices.qubit.measure import (
     measure,
@@ -175,6 +176,8 @@ class TestSumOfTermsDifferentiability:
         H = t1 + t2
         if convert_to_hamiltonian:
             H = H._pauli_rep.hamiltonian()  # pylint: disable=protected-access
+            H = qml.Hamiltonian(math.real(H.coeffs), H.ops)
+
         qs = qml.tape.QuantumScript(ops, [qml.expval(H)])
         return simulate(qs)
 
