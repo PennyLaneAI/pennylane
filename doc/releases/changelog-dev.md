@@ -13,11 +13,7 @@
     Rydberg atoms.
   * A new user-facing `rydberg_interaction` function is added, which returns a `RydbergHamiltonian` containing
     the Hamiltonian of the interaction of all the Rydberg atoms.
-<<<<<<< HEAD
-  * A new user-facing `drive` function is added, which returns a `HardwareHamiltonian` containing
-=======
   * A new user-facing `drive` function is added, which returns a `ParametrizedHamiltonian` (`HardwareHamiltonian`) containing
->>>>>>> 340f1c8d2241d0f5947af87dd4565ea555dcbcbd
     the Hamiltonian of the interaction between a driving electro-magnetic field and a group of qubits.
   [(#3749)](https://github.com/PennyLaneAI/pennylane/pull/3749)
   [(#3911)](https://github.com/PennyLaneAI/pennylane/pull/3911)
