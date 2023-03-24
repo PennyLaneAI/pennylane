@@ -22,6 +22,7 @@ import pennylane as qml
 from pennylane.pulse import HardwareHamiltonian, rydberg_interaction
 
 from pennylane.wires import Wires
+from pennylane.pulse.rydberg import RydbergSettings
 
 atom_coordinates = [[0, 0], [0, 5], [5, 0], [10, 5], [5, 10], [10, 10]]
 wires = [1, 6, 0, 2, 4, 3]
@@ -34,15 +35,15 @@ class TestRydbergInteraction:
         """Test that the attributes and the number of terms of the ``ParametrizedHamiltonian`` returned by
         ``rydberg_interaction`` are correct."""
         Hd = rydberg_interaction(register=atom_coordinates, wires=wires, interaction_coeff=1)
+        settings = RydbergSettings(atom_coordinates, 1)
 
         assert isinstance(Hd, HardwareHamiltonian)
-        assert Hd.interaction_coeff == 1
         assert Hd.wires == Wires(wires)
-        assert qml.math.allequal(Hd.register, atom_coordinates)
         N = len(wires)
         num_combinations = N * (N - 1) / 2  # number of terms on the rydberg_interaction hamiltonian
         assert len(Hd.ops) == num_combinations
         assert Hd.pulses == []
+        assert Hd.settings == settings
 
     def test_wires_is_none(self):
         """Test that when wires is None the wires correspond to an increasing list of values with

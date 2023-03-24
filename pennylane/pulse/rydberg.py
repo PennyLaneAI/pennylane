@@ -111,10 +111,11 @@ def rydberg_interaction(
             observables.append(qml.prod(qml.Projector([1], wire1), qml.Projector([1], wire2)))
             # Rydberg projectors
 
-    return HardwareHamiltonian(
-        coeffs, observables, register=register, interaction_coeff=interaction_coeff
-    )
+    settings = RydbergSettings(register, interaction_coeff)
 
+    return HardwareHamiltonian(
+        coeffs, observables, settings=settings
+    )
 
 @dataclass
 class RydbergSettings:
@@ -129,4 +130,22 @@ class RydbergSettings:
     interaction_coeff: float
 
     def __eq__(self, other):
-        return self.register == other.register and self.interaction_coeff == other.interaction_coeff
+        return qml.math.all(self.register == other.register) and self.interaction_coeff == other.interaction_coeff
+
+    def __add__(self, other):
+        if other is not None:
+            new_connections = list(self.connections) + list(other.connections)
+            new_omega = list(self.omega) + list(other.omega)
+            new_g = list(self.g) + list(other.g)
+            if self.delta is None and other.delta is None:
+                new_delta = None
+            elif self.delta is None and not other.delta is None:
+                new_delta = [0.0] * len(self.omega) + list(other.delta)
+            elif self.delta is not None and other.delta is None:
+                new_delta = list(self.delta) + [0.0] * len(other.omega)
+            elif self.delta is not None and other.delta is not None:
+                new_delta = list(self.delta) + list(other.delta)
+
+            return TransmonSettings(new_connections, new_omega, new_g, delta=new_delta)
+
+        return self

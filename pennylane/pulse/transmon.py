@@ -142,7 +142,9 @@ def transmon_interaction(
 
 @dataclass
 class TransmonSettings:
-    """Dataclass that contains the information of a Rydberg setup.
+    """Dataclass that contains the information of a Transmon setup.
+
+    .. see-also:: :func:`transmon_interaction`
 
     Args:
             connections (List): List `[[idx_q0, idx_q1], ..]` of connected qubits (wires)
