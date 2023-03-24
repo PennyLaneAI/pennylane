@@ -22,7 +22,6 @@ from pennylane.tape import QuantumTape
 
 from .apply_operation import apply_operation
 from .initialize_state import create_initial_state
-from .preprocess import validate_and_expand_adjoint
 
 # pylint: disable=protected-access, too-many-branches
 
@@ -61,8 +60,6 @@ def adjoint_jacobian(tape: QuantumTape):  # pylint: disable=too-many-statements
         QuantumFunctionError: if the input tape has measurements that are not expectation values
             or contains a multi-parameter operation aside from :class:`~.Rot`
     """
-
-    tape = validate_and_expand_adjoint(tape)
 
     # Map wires if custom wire labels used
     if set(tape.wires) != set(range(tape.num_wires)):

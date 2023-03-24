@@ -17,10 +17,11 @@ import pennylane as qml
 from pennylane.devices.qubit import adjoint_jacobian
 from pennylane.tape import QuantumScript
 import pennylane.numpy as np
+from pennylane.devices.qubit.preprocess import validate_and_expand_adjoint
 
 
-class TestAdjointJacobian:
-    """Unit tests for adjoint_jacobian"""
+class TestAdjointTapeValidation:
+    """Unit tests for validate_and_expand_adjoint"""
 
     @pytest.fixture
     def dev(self):
@@ -38,7 +39,7 @@ class TestAdjointJacobian:
             qml.QuantumFunctionError,
             match="Adjoint differentiation method does not support measurement",
         ):
-            adjoint_jacobian(qs)
+            validate_and_expand_adjoint(qs)
 
     def test_unsupported_op(self):
         """Test if a QuantumFunctionError is raised for an unsupported operation, i.e.,
@@ -49,7 +50,7 @@ class TestAdjointJacobian:
         with pytest.raises(
             qml.QuantumFunctionError, match="The U2 operation is not supported using"
         ):
-            adjoint_jacobian(qs)
+            validate_and_expand_adjoint(qs)
 
     @pytest.mark.parametrize(
         "obs",
@@ -65,7 +66,26 @@ class TestAdjointJacobian:
             qml.QuantumFunctionError,
             match="Adjoint differentiation method does not support observable",
         ):
-            adjoint_jacobian(qs)
+            validate_and_expand_adjoint(qs)
+
+    def test_trainable_hermitian_warns(self):
+        """Test attempting to compute the gradient of a tape that obtains the
+        expectation value of a Hermitian operator emits a warning if the
+        parameters to Hermitian are trainable."""
+
+        mx = qml.matrix(qml.PauliX(0) @ qml.PauliY(2))
+        qs = QuantumScript([], [qml.expval(qml.Hermitian(mx, wires=[0, 2]))])
+
+        qs.trainable_params = {0}
+
+        with pytest.warns(
+            UserWarning, match="Differentiating with respect to the input parameters of Hermitian"
+        ):
+            _ = validate_and_expand_adjoint(qs)
+
+
+class TestAdjointJacobian:
+    """Tests for adjoint_jacobian"""
 
     @pytest.mark.autograd
     @pytest.mark.parametrize("theta", np.linspace(-2 * np.pi, 2 * np.pi, 7))
@@ -81,8 +101,9 @@ class TestAdjointJacobian:
         )
 
         qs.trainable_params = {1}
+        qs_valid = validate_and_expand_adjoint(qs)
 
-        calculated_val = adjoint_jacobian(qs)
+        calculated_val = adjoint_jacobian(qs_valid)
 
         # compare to finite differences
         dev_single_qubit = qml.device("default.qubit", wires=1)
@@ -108,8 +129,9 @@ class TestAdjointJacobian:
         )
 
         qs.trainable_params = {1, 2, 3}
+        qs_valid = validate_and_expand_adjoint(qs)
 
-        calculated_val = adjoint_jacobian(qs)
+        calculated_val = adjoint_jacobian(qs_valid)
 
         # compare to finite differences
         dev_single_qubit = qml.device("default.qubit", wires=1)
@@ -142,10 +164,11 @@ class TestAdjointJacobian:
 
         qs = QuantumScript(ops, measurements)
         qs.trainable_params = set(range(1, 1 + op.num_params))
+        qs_valid = validate_and_expand_adjoint(qs)
 
         tapes, fn = qml.gradients.finite_diff(qs)
         grad_F = fn(qml.execute(tapes, dev, None))
-        grad_D = adjoint_jacobian(qs)
+        grad_D = adjoint_jacobian(qs_valid)
 
         grad_F = np.squeeze(grad_F)
 
@@ -160,9 +183,10 @@ class TestAdjointJacobian:
             [qml.RX(params[0], wires=0), qml.RX(params[1], wires=1), qml.RX(params[2], wires=2)],
             [qml.expval(qml.PauliZ(idx)) for idx in range(3)],
         )
+        qs_valid = validate_and_expand_adjoint(qs)
 
         # circuit jacobians
-        jacobian = adjoint_jacobian(qs)
+        jacobian = adjoint_jacobian(qs_valid)
         expected_jacobian = -np.diag(np.sin(params))
         assert np.allclose(jacobian, expected_jacobian, atol=tol, rtol=0)
         assert isinstance(jacobian, tuple)
@@ -192,9 +216,10 @@ class TestAdjointJacobian:
             [MyOp(p, w) for p, w in zip(params, [0, 1, 2])],
             [qml.expval(qml.PauliZ(idx)) for idx in range(3)],
         )
+        qs_valid = validate_and_expand_adjoint(qs)
 
         # circuit jacobians
-        jacobian = adjoint_jacobian(qs)
+        jacobian = adjoint_jacobian(qs_valid)
         expected_jacobian = 2.4 * np.diag(np.sin(-2.4 * params))
         assert np.allclose(jacobian, expected_jacobian, atol=tol, rtol=0)
         assert isinstance(jacobian, tuple)
@@ -211,8 +236,9 @@ class TestAdjointJacobian:
         )
 
         qs.trainable_params = {1, 2, 3}
+        qs_valid = validate_and_expand_adjoint(qs)
 
-        grad_D = adjoint_jacobian(qs)
+        grad_D = adjoint_jacobian(qs_valid)
         tapes, fn = qml.gradients.finite_diff(qs)
         grad_F = fn(qml.execute(tapes, dev, None))
         grad_F = np.squeeze(grad_F)
@@ -237,8 +263,9 @@ class TestAdjointJacobian:
         )
 
         qs.trainable_params = {1, 2, 3}
+        qs_valid = validate_and_expand_adjoint(qs)
 
-        grad_D = adjoint_jacobian(qs)
+        grad_D = adjoint_jacobian(qs_valid)
         qml.enable_return()
         grad_F = dev.adjoint_jacobian(qs)
         qml.disable_return()
@@ -263,7 +290,9 @@ class TestAdjointJacobian:
         )
 
         qs.trainable_params = {0, 1, 2}
-        res = adjoint_jacobian(qs)
+        qs_valid = validate_and_expand_adjoint(qs)
+
+        res = adjoint_jacobian(qs_valid)
 
         expected = [
             np.cos(a) * np.sin(b) * np.sin(c),
@@ -271,17 +300,3 @@ class TestAdjointJacobian:
             np.cos(c) * np.sin(b) * np.sin(a),
         ]
         assert np.allclose(res, expected, atol=tol, rtol=0)
-
-    def test_trainable_hermitian_warns(self):
-        """Test attempting to compute the gradient of a tape that obtains the
-        expectation value of a Hermitian operator emits a warning if the
-        parameters to Hermitian are trainable."""
-
-        mx = qml.matrix(qml.PauliX(0) @ qml.PauliY(2))
-        qs = QuantumScript([], [qml.expval(qml.Hermitian(mx, wires=[0, 2]))])
-
-        qs.trainable_params = {0}
-        with pytest.warns(
-            UserWarning, match="Differentiating with respect to the input parameters of Hermitian"
-        ):
-            _ = adjoint_jacobian(qs)

@@ -122,7 +122,7 @@ def validate_and_expand_adjoint(
                 )
             ops = op.decomposition()
             expanded_ops.extend(ops)
-        elif not isinstance(op, (qml.operation.StatePrep, qml.Snapshot)):
+        elif not isinstance(op, qml.operation.StatePrep):
             expanded_ops.append(op)
 
     prep = [circuit._prep[0]] if len(circuit._prep) != 0 else None
@@ -263,6 +263,8 @@ def preprocess(
         raise DeviceError("The Python Device does not support finite shots.")
 
     circuits = tuple(expand_fn(c) for c in circuits)
+    if execution_config.gradient_method == "adjoint":
+        circuits = tuple(validate_and_expand_adjoint(c) for c in circuits)
 
     circuits, batch_fn = qml.transforms.map_batch_transform(batch_transform, circuits)
 
