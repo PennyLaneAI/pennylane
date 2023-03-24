@@ -393,7 +393,9 @@ class PauliSentence(dict):
         wire_order = list(wire_order)
 
         if any(npp.iscomplex(coeff) for coeff in self.values()):
-            raise ValueError("Can't get a Hamiltonian for a PauliSentence with non-zero complex coefficients")
+            raise ValueError(
+                "Can't get a Hamiltonian for a PauliSentence with non-zero complex coefficients"
+            )
 
         return Hamiltonian(
             npp.real(list(self.values())),

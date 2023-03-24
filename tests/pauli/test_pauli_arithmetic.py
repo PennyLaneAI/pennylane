@@ -570,7 +570,7 @@ class TestPauliSentence:
         will raise an error."""
 
         with pytest.raises(ValueError, match="Can't get a Hamiltonian"):
-            ps = PauliSentence({pw1: 1.0+0.j, pw2: 1.0j})
+            ps = PauliSentence({pw1: 1.0 + 0.0j, pw2: 1.0j})
             ps.hamiltonian()
 
     def test_pickling(self):
