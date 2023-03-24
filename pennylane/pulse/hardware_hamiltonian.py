@@ -301,12 +301,15 @@ class HardwareHamiltonian(ParametrizedHamiltonian):
 
     def __add__(self, other):
         if isinstance(other, HardwareHamiltonian):
-            new_register = self.settings + other.settings
+            if self.settings is None and other.settings is None:
+                new_settings = None
+            else:
+                new_settings = self.settings + other.settings
             new_pulses = self.pulses + other.pulses
             new_ops = self.ops + other.ops
             new_coeffs = self.coeffs + other.coeffs
             return HardwareHamiltonian(
-                new_coeffs, new_ops, register=new_register, pulses=new_pulses
+                new_coeffs, new_ops, settings=new_settings, pulses=new_pulses
             )
 
         ops = self.ops.copy()
