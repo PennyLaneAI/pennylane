@@ -311,6 +311,25 @@ class QueuingManager:
         if cls.recording():
             cls._active_context.remove(obj)
 
+    @classmethod
+    def update_info(cls, obj, **kwargs):
+        """Updates information of an object in the active queue if it is already in the queue.
+        Args:
+            obj: the object with metadata to be updated
+        """
+        if cls.recording():
+            cls._active_context.update_info(obj, **kwargs)
+
+    @classmethod
+    def get_info(cls, obj):
+        """Retrieves information of an object in the active queue.
+        Args:
+            obj: the object with metadata to be retrieved
+        Returns:
+            object metadata
+        """
+        return cls._active_context.get_info(obj) if cls.recording() else None
+
 
 class AnnotatedQueue(OrderedDict):
     """Lightweight class that maintains a basic queue of operations, in addition
