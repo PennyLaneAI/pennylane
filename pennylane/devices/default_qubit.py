@@ -21,12 +21,14 @@ simulation of a qubit-based quantum circuit architecture.
 import functools
 import itertools
 from string import ascii_letters as ABC
+from typing import List
 
 import numpy as np
 from scipy.sparse import csr_matrix
 
 import pennylane as qml
 from pennylane import BasisState, DeviceError, QubitDevice, QubitStateVector, Snapshot
+from pennylane.operation import Operation
 from pennylane.ops.qubit.attributes import diagonal_in_z_basis
 from pennylane.pulse import ParametrizedEvolution
 from pennylane.typing import TensorLike
@@ -1037,7 +1039,7 @@ class DefaultQubit(QubitDevice):
 
         return self._cast(self._stack([outcomes, recipes]), dtype=np.int8)
 
-    def _get_diagonalizing_gates(self, circuit: qml.tape.QuantumTape):
+    def _get_diagonalizing_gates(self, circuit: qml.tape.QuantumTape) -> List[Operation]:
         meas_filtered = [
             m
             for m in circuit.measurements

@@ -24,7 +24,7 @@ import contextlib
 import itertools
 import warnings
 from collections import defaultdict
-from typing import Union
+from typing import Union, List
 
 import numpy as np
 
@@ -60,7 +60,7 @@ from pennylane.measurements import (
     VnEntropy,
     VnEntropyMP,
 )
-from pennylane.operation import operation_derivative
+from pennylane.operation import operation_derivative, Operation
 from pennylane.tape import QuantumScript, QuantumTape
 from pennylane.wires import Wires
 
@@ -2014,7 +2014,7 @@ class QubitDevice(Device):
         # must be 2-dimensional
         return tuple(tuple(np.array(j_) for j_ in j) for j in jac)
 
-    def _get_diagonalizing_gates(self, circuit: QuantumTape):  # pylint:disable=no-self-use
+    def _get_diagonalizing_gates(self, circuit: QuantumTape) -> List[Operation]:
         """Returns the gates that diagonalize the measured wires such that they
         are in the eigenbasis of the circuit observables.
 
@@ -2028,12 +2028,5 @@ class QubitDevice(Device):
         Returns:
             List[~.Operation]: the operations that diagonalize the observables
         """
-        rotation_gates = []
-
-        with qml.queuing.QueuingManager.stop_recording():
-            for observable in circuit.observables:
-                # some observables do not have diagonalizing gates,
-                # in which case we just don't append any
-                with contextlib.suppress(qml.operation.DiagGatesUndefinedError):
-                    rotation_gates.extend(observable.diagonalizing_gates())
-        return rotation_gates
+        # pylint:disable=no-self-use
+        return circuit.diagonalizing_gates
