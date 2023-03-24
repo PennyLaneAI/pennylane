@@ -107,8 +107,10 @@ def rect(x: Union[float, Callable], windows: Union[Tuple[float], List[Tuple[floa
         time = jnp.linspace(0, 10, 1000)
         windows = [(1, 7)]
 
+        windowed_f = qml.pulse.rect(f, windows=windows)
+
         y1 = f(p, time)
-        y2 = [qml.pulse.rect(f, windows=windows)(p, t) for t in time]
+        y2 = jax.vmap(windowed_f, (None, 0))(p, time)
 
         plt.plot(time, y1, label=f"polyval(p={p}, t)")
         plt.plot(time, y2, label=f"rect(polyval, windows={windows})(p={p}, t)")
