@@ -54,7 +54,7 @@ def transmon_interaction(
 
     .. seealso::
 
-        :func:`~.transmon_drive`
+        :func:`~.drive`
 
     Args:
         connections (list[tuple(int)]): List of connections ``(i, j)`` between qubits i and j.
