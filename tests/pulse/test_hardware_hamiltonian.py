@@ -62,7 +62,6 @@ class TestHardwareHamiltonian:
         rm1 = HardwareHamiltonian(
             coeffs=[1, 2],
             observables=[qml.PauliX(4), qml.PauliZ(8)],
-            register=atom_coordinates,
             pulses=[HardwarePulse(1, 2, 3, [4, 8])],
         )
         rm2 = HardwareHamiltonian(

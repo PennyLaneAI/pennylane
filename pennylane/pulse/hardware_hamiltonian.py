@@ -311,23 +311,23 @@ class HardwareHamiltonian(ParametrizedHamiltonian):
 
         ops = self.ops.copy()
         coeffs = self.coeffs.copy()
-        register = self.register
+        settings = self.settings
         pulses = self.pulses
 
         if isinstance(other, (Hamiltonian, ParametrizedHamiltonian)):
             new_coeffs = coeffs + list(other.coeffs.copy())
             new_ops = ops + other.ops.copy()
-            return HardwareHamiltonian(new_coeffs, new_ops, register=register, pulses=pulses)
+            return HardwareHamiltonian(new_coeffs, new_ops, settings=settings, pulses=pulses)
 
         if isinstance(other, qml.ops.SProd):  # pylint: disable=no-member
             new_coeffs = coeffs + [other.scalar]
             new_ops = ops + [other.base]
-            return HardwareHamiltonian(new_coeffs, new_ops, register=register, pulses=pulses)
+            return HardwareHamiltonian(new_coeffs, new_ops, settings=settings, pulses=pulses)
 
         if isinstance(other, Operator):
             new_coeffs = coeffs + [1]
             new_ops = ops + [other]
-            return HardwareHamiltonian(new_coeffs, new_ops, register=register, pulses=pulses)
+            return HardwareHamiltonian(new_coeffs, new_ops, settings=settings, pulses=pulses)
 
         return NotImplemented
 
@@ -349,7 +349,7 @@ class HardwareHamiltonian(ParametrizedHamiltonian):
             new_ops = other.ops.copy() + ops
 
             return HardwareHamiltonian(
-                new_coeffs, new_ops, register=self.register, pulses=self.pulses
+                new_coeffs, new_ops, settings=self.settings, pulses=self.pulses
             )
 
         return self.__add__(other)
