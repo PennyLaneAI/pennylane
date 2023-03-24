@@ -21,9 +21,12 @@ import pennylane as qml
 from pennylane.wires import Wires
 from pennylane.operation import Operator
 from pennylane.ops.qubit.hamiltonian import Hamiltonian
+from pennylane.typing import TensorLike
 
 
 from .parametrized_hamiltonian import ParametrizedHamiltonian
+# from .transmon import TransmonSettings
+# from .rydberg import RydbergSettings
 
 
 def drive(amplitude, phase, detuning, wires):
@@ -284,13 +287,11 @@ class HardwareHamiltonian(ParametrizedHamiltonian):
         self,
         coeffs,
         observables,
-        register: list = None,
         pulses: List["HardwarePulse"] = None,
-        interaction_coeff: float = 862690,
+        settings: Union["RydbergSettings","TransmonSettings"] = None,
     ):
-        self.register = register
+        self.settings = settings
         self.pulses = [] if pulses is None else pulses
-        self.interaction_coeff = interaction_coeff
         super().__init__(coeffs, observables)
 
     def __call__(self, params, t):

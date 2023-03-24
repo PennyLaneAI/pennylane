@@ -15,8 +15,10 @@
 individual (trapped) rydberg atoms under the excitation of several laser fields."""
 
 import numpy as np
-
 import pennylane as qml
+
+from dataclasses import dataclass
+
 from pennylane.pulse import HardwareHamiltonian
 
 
@@ -112,3 +114,21 @@ def rydberg_interaction(
     return HardwareHamiltonian(
         coeffs, observables, register=register, interaction_coeff=interaction_coeff
     )
+
+@dataclass
+class RydbergSettings:
+    """Dataclass that contains the information of a Rydberg setup.
+
+    Args:
+        register (list): coordinates of atoms
+        interaction_coeff (float): interaction coefficient C6 from C6/(Rij)**6 term in :func:`rydberg_interaction`
+    """
+
+    register: list
+    interaction_coeff: float
+
+    def __eq__(self, other):
+        return (
+            self.register == other.register
+            and self.interaction_coeff == other.interaction_coeff
+        )
