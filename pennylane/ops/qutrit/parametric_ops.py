@@ -232,15 +232,11 @@ class TRY(Operation):
     grad_method = "A"
     parameter_frequencies = [(0.5, 1)]
 
-    def generator(self):
-        if self.subspace == (0, 1):
-            index = 2
-        elif self.subspace == (0, 2):
-            index = 5
-        else:
-            index = 7
+    # Internal dictionary to map subpsaces to Gell-Mann observable for the generator
+    _index_dict = {(0, 1): 2, (0, 2): 5, (1, 2): 7}
 
-        return -0.5 * qml.GellMannObs(index, wires=self.wires)
+    def generator(self):
+        return -0.5 * qml.GellMann(self.wires, index=self._index_dict[self.subspace])
 
     def __init__(
         self, phi, wires, subspace=[0, 1], do_queue=True, id=None
@@ -266,7 +262,7 @@ class TRY(Operation):
 
     @staticmethod
     def compute_matrix(
-        theta, subspace=[0, 1]
+        theta, subspace=(0, 1)
     ):  # pylint: disable=arguments-differ,dangerous-default-value
         r"""Representation of the operator as a canonical matrix in the computational basis (static method).
 
@@ -289,7 +285,6 @@ class TRY(Operation):
                 [ 0.0000+0.j,  1.0000+0.j,  0.0000+0.j],
                 [ 0.2474+0.j,  0.0000+0.j,  0.9689+0.j]])
         """
-        subspace = tuple(sorted(subspace))
         c = qml.math.cos(theta / 2)
         s = qml.math.sin(theta / 2)
 
@@ -301,15 +296,20 @@ class TRY(Operation):
         c = (1 + 0j) * c
         s = (1 + 0j) * s
 
+        shape = qml.math.shape(theta)
+        is_broadcasted = len(shape) != 0 and shape[0] > 1
+        # Construct identity matrices and cast to complex type
         mat = (
             qml.math.tensordot([1] * qml.math.shape(theta)[0], qml.math.eye(3), axes=0)
-            if len(qml.math.shape(theta)) != 0 and qml.math.shape(theta)[0] > 1
+            if is_broadcasted
             else qml.math.eye(3)
         )
         mat = qml.math.cast_like(mat, s)
         slices = tuple(itertools.product(subspace, subspace))
-        slices = [(Ellipsis, *s) for s in slices]
+        if is_broadcasted:
+            slices = [(Ellipsis, *s) for s in slices]
 
+        # Put rotation terms in the appropriate indices using the slices
         mat[slices[0]] = mat[slices[3]] = c
         mat[slices[1]] = -s
         mat[slices[2]] = s
