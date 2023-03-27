@@ -24,10 +24,10 @@ try:
         LazyDotPytree,
         ParametrizedHamiltonianPytree,
     )
-    from pennylane.pulse.rydberg_hamiltonian import (
-        _rydberg_reorder_parameters,
+    from pennylane.pulse.hardware_hamiltonian import (
+        _reorder_parameters,
         amplitude_and_phase,
-        rydberg_drive,
+        drive,
     )
 except ImportError:
     pass
@@ -46,14 +46,14 @@ def f2(p, t):
 
 PH = qml.dot([1, 2, f1, f2], [qml.PauliX(0), qml.PauliY(1), qml.PauliZ(2), qml.Hadamard(3)])
 
-RH = rydberg_drive(amplitude=f1, phase=f2, detuning=1, wires=[0, 1, 2])
+RH = drive(amplitude=f1, phase=f2, detuning=1, wires=[0, 1, 2])
 
 # Hamiltonians and the parameters for the individual coefficients
 HAMILTONIANS_WITH_COEFF_PARAMETERS = [
     (PH, None, [f1, f2], [1.2, 2.3]),
     (
         RH,
-        _rydberg_reorder_parameters,
+        _reorder_parameters,
         [amplitude_and_phase(jnp.cos, f1, f2), amplitude_and_phase(jnp.sin, f1, f2)],
         [[1.2, 2.3], [1.2, 2.3]],
     ),
@@ -114,7 +114,7 @@ class TestParametrizedHamiltonianPytree:
             ),
         )
 
-    @pytest.mark.parametrize("H, fn", [(PH, None), (RH, _rydberg_reorder_parameters)])
+    @pytest.mark.parametrize("H, fn", [(PH, None), (RH, _reorder_parameters)])
     def test_flatten_method(self, H, fn):
         """Test the tree_flatten method."""
         H_pytree = ParametrizedHamiltonianPytree.from_hamiltonian(
@@ -130,7 +130,7 @@ class TestParametrizedHamiltonianPytree:
             fn,
         )
 
-    @pytest.mark.parametrize("H, fn", [(PH, None), (RH, _rydberg_reorder_parameters)])
+    @pytest.mark.parametrize("H, fn", [(PH, None), (RH, _reorder_parameters)])
     def test_unflatten_method(self, H, fn):
         """Test the tree_unflatten method."""
         H_pytree = ParametrizedHamiltonianPytree.from_hamiltonian(
