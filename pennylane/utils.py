@@ -38,7 +38,7 @@ def sparse_hamiltonian(H, wires=None):
             computed
         wires (Iterable): Wire labels that indicate the order of wires according to which the matrix
         level (int): Number of levels per qudit for which the Hamiltonian has been constructed
-            is constructed. If not profided, ``H.wires`` is used.
+            is constructed. If not provided, ``H.wires`` is used.
 
     Returns:
         csr_matrix: a sparse matrix in scipy Compressed Sparse Row (CSR) format with dimension
