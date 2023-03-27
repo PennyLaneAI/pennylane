@@ -68,12 +68,11 @@ class TestSparse:
     """Tests the sparse_hamiltonian function"""
 
     @pytest.mark.parametrize(
-        ("coeffs", "obs", "level", "wires", "ref_matrix"),
+        ("coeffs", "obs", "wires", "ref_matrix"),
         [
             (
                 [1, -0.45],
                 [qml.PauliZ(0) @ qml.PauliZ(1), qml.PauliY(0) @ qml.PauliZ(1)],
-                2,
                 None,
                 np.array(
                     [
@@ -87,7 +86,6 @@ class TestSparse:
             (
                 [0.1],
                 [qml.PauliZ("b") @ qml.PauliX("a")],
-                2,
                 ["a", "c", "b"],
                 np.array(
                     [
@@ -182,7 +180,6 @@ class TestSparse:
                     qml.PauliY(0) @ qml.PauliZ(1),
                 ],
                 None,
-                None,
                 np.array(
                     [
                         [0.21 + 0.0j, 0.0 + 0.0j, -0.78 - 0.52j, 0.0 + 0.0j],
@@ -192,40 +189,13 @@ class TestSparse:
                     ]
                 ),
             ),
-            (
-                [0.5, 0.2, 2],
-                [
-                    qml.GellMann(0, index=1) @ qml.GellMann(1, index=4),
-                    qml.GellMann(1, index=2),
-                    qml.GellMann(0, index=3),
-                ],
-                3,
-                None,
-                np.array(
-                    [
-                        [2, -0.2j, 0, 0, 0, 0.5, 0, 0, 0],
-                        [0.2j, 2, 0, 0, 0, 0, 0, 0, 0],
-                        [0, 0, 2, 0.5, 0, 0, 0, 0, 0],
-                        [0, 0, 0.5, -2, -0.2j, 0, 0, 0, 0],
-                        [0, 0, 0, 0.2j, -2, 0, 0, 0, 0],
-                        [0.5, 0, 0, 0, 0, -2, 0, 0, 0],
-                        [0, 0, 0, 0, 0, 0, 0, -0.2j, 0],
-                        [0, 0, 0, 0, 0, 0, 0.2j, 0, 0],
-                        [0, 0, 0, 0, 0, 0, 0, 0, 0],
-                    ]
-                ),
-            ),
         ],
     )
-    def test_sparse_matrix(self, coeffs, obs, level, wires, ref_matrix):
+    def test_sparse_matrix(self, coeffs, obs, wires, ref_matrix):
         """Tests that sparse_hamiltonian returns a correct sparse matrix"""
         H = qml.Hamiltonian(coeffs, obs)
 
-        sparse_matrix = (
-            qml.utils.sparse_hamiltonian(H, wires)
-            if level is None
-            else qml.utils.sparse_hamiltonian(H, wires, level=level)
-        )
+        sparse_matrix = qml.utils.sparse_hamiltonian(H, wires)
 
         assert np.allclose(sparse_matrix.toarray(), ref_matrix)
 
