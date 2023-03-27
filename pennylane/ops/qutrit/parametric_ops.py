@@ -236,7 +236,7 @@ class TRY(Operation):
     _index_dict = {(0, 1): 2, (0, 2): 5, (1, 2): 7}
 
     def generator(self):
-        return -0.5 * qml.GellMann(self.wires, index=self._index_dict[self.subspace])
+        return qml.s_prod(-0.5, qml.GellMann(self.wires, index=self._index_dict[self.subspace]))
 
     def __init__(
         self, phi, wires, subspace=[0, 1], do_queue=True, id=None
