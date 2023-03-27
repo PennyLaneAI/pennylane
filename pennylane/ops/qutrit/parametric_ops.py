@@ -156,7 +156,6 @@ class TRX(Operation):
             else qml.math.eye(3)
         )
         mat = qml.math.cast_like(mat, js)
-        mat = qml.math.convert_like(mat, theta)
 
         # Create slices that determine the indices at which the rotation terms of the matrix should be
         slices = tuple(itertools.product(subspace, subspace))
@@ -167,7 +166,7 @@ class TRX(Operation):
         mat[slices[0]] = mat[slices[3]] = c
         mat[slices[1]] = mat[slices[2]] = js
 
-        return mat
+        return qml.math.convert_like(mat, theta)
 
     def adjoint(self):
         return TRX(-self.data[0], wires=self.wires, subspace=self.subspace)
@@ -308,7 +307,6 @@ class TRY(Operation):
             else qml.math.eye(3)
         )
         mat = qml.math.cast_like(mat, s)
-        mat = qml.math.convert_like(mat, theta)
 
         slices = tuple(itertools.product(subspace, subspace))
         if is_broadcasted:
@@ -319,7 +317,7 @@ class TRY(Operation):
         mat[slices[1]] = -s
         mat[slices[2]] = s
 
-        return mat
+        return qml.math.convert_like(mat, theta)
 
     def adjoint(self):
         return TRY(-self.data[0], wires=self.wires, subspace=self.subspace)
@@ -445,9 +443,9 @@ class TRZ(Operation):
                 [0.0000+0.0000j, 1.0000+0.0000j, 0.0000+0.0000j],
                 [0.0000+0.0000j, 0.0000+0.0000j, 0.9689+0.2474j]])
         """
-        p = qml.math.exp(-0.5j * theta)
         if qml.math.get_interface(theta) == "tensorflow":
-            p = qml.math.cast_like(p, 1j)
+            theta = qml.math.cast_like(theta, 1j)
+        p = qml.math.exp(-1j * theta / 2)
 
         shape = qml.math.shape(theta)
         is_broadcasted = len(shape) != 0 and shape[0] > 1
@@ -458,7 +456,6 @@ class TRZ(Operation):
             else qml.math.eye(3)
         )
         mat = qml.math.cast_like(mat, p)
-        mat = qml.math.convert_like(mat, theta)
 
         slices = [(i, i) for i in subspace]
         if is_broadcasted:
@@ -467,7 +464,7 @@ class TRZ(Operation):
         mat[slices[0]] = p
         mat[slices[1]] = qml.math.conj(p)
 
-        return mat
+        return qml.math.convert_like(mat, theta)
 
     def adjoint(self):
         return TRZ(-self.data[0], wires=self.wires, subspace=self.subspace)
