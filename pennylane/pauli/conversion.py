@@ -161,22 +161,22 @@ def pauli_sentence(op):
 
 @pauli_sentence.register
 def _(op: PauliX):
-    return PauliSentence({PauliWord({op.wires[0]: X}): 1.0 + 0.0j})
+    return PauliSentence({PauliWord({op.wires[0]: X}): 1.0})
 
 
 @pauli_sentence.register
 def _(op: PauliY):
-    return PauliSentence({PauliWord({op.wires[0]: Y}): 1.0 + 0.0j})
+    return PauliSentence({PauliWord({op.wires[0]: Y}): 1.0})
 
 
 @pauli_sentence.register
 def _(op: PauliZ):
-    return PauliSentence({PauliWord({op.wires[0]: Z}): 1.0 + 0.0j})
+    return PauliSentence({PauliWord({op.wires[0]: Z}): 1.0})
 
 
 @pauli_sentence.register
 def _(op: Identity):  # pylint:disable=unused-argument
-    return PauliSentence({PauliWord({}): 1.0 + 0.0j})
+    return PauliSentence({PauliWord({}): 1.0})
 
 
 @pauli_sentence.register
@@ -198,7 +198,7 @@ def _(op: Prod):
 def _(op: SProd):
     ps = pauli_sentence(op.base)
     for pw, coeff in ps.items():
-        ps[pw] = complex(coeff * op.scalar)
+        ps[pw] = coeff * op.scalar
     return ps
 
 
@@ -211,7 +211,7 @@ def _(op: Hamiltonian):
     for coeff, term in zip(*op.terms()):
         ps = pauli_sentence(term)
         for pw, sub_coeff in ps.items():
-            ps[pw] = complex(coeff * sub_coeff)
+            ps[pw] = coeff * sub_coeff
         summands.append(ps)
 
     return reduce(lambda a, b: a + b, summands)

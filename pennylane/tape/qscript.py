@@ -35,7 +35,7 @@ from pennylane.measurements import (
     StateMP,
     VarianceMP,
 )
-from pennylane.operation import Observable, Operator
+from pennylane.operation import Observable, Operator, Operation
 from pennylane.queuing import AnnotatedQueue, process_queue
 
 _empty_wires = qml.wires.Wires([])
@@ -338,7 +338,7 @@ class QuantumScript:
         return self._output_dim
 
     @property
-    def diagonalizing_gates(self):
+    def diagonalizing_gates(self) -> List[Operation]:
         """Returns the gates that diagonalize the measured wires such that they
         are in the eigenbasis of the circuit observables.
 

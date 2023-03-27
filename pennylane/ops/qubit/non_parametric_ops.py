@@ -204,9 +204,7 @@ class PauliX(Observable, Operation):
 
     def __init__(self, *params, wires=None, do_queue=True, id=None):
         super().__init__(*params, wires=wires, do_queue=do_queue, id=id)
-        self._pauli_rep = qml.pauli.PauliSentence(
-            {qml.pauli.PauliWord({self.wires[0]: "X"}): 1.0 + 0.0j}
-        )
+        self._pauli_rep = qml.pauli.PauliSentence({qml.pauli.PauliWord({self.wires[0]: "X"}): 1.0})
 
     def label(self, decimals=None, base_label=None, cache=None):
         return base_label or "X"
@@ -361,9 +359,7 @@ class PauliY(Observable, Operation):
 
     def __init__(self, *params, wires=None, do_queue=True, id=None):
         super().__init__(*params, wires=wires, do_queue=do_queue, id=id)
-        self._pauli_rep = qml.pauli.PauliSentence(
-            {qml.pauli.PauliWord({self.wires[0]: "Y"}): 1.0 + 0.0j}
-        )
+        self._pauli_rep = qml.pauli.PauliSentence({qml.pauli.PauliWord({self.wires[0]: "Y"}): 1.0})
 
     def label(self, decimals=None, base_label=None, cache=None):
         return base_label or "Y"
@@ -515,9 +511,7 @@ class PauliZ(Observable, Operation):
 
     def __init__(self, *params, wires=None, do_queue=True, id=None):
         super().__init__(*params, wires=wires, do_queue=do_queue, id=id)
-        self._pauli_rep = qml.pauli.PauliSentence(
-            {qml.pauli.PauliWord({self.wires[0]: "Z"}): 1.0 + 0.0j}
-        )
+        self._pauli_rep = qml.pauli.PauliSentence({qml.pauli.PauliWord({self.wires[0]: "Z"}): 1.0})
 
     def label(self, decimals=None, base_label=None, cache=None):
         return base_label or "Z"

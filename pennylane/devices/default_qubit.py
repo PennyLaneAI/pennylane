@@ -21,12 +21,14 @@ simulation of a qubit-based quantum circuit architecture.
 import functools
 import itertools
 from string import ascii_letters as ABC
+from typing import List
 
 import numpy as np
 from scipy.sparse import csr_matrix
 
 import pennylane as qml
 from pennylane import BasisState, DeviceError, QubitDevice, QubitStateVector, Snapshot
+from pennylane.operation import Operation
 from pennylane.ops.qubit.attributes import diagonal_in_z_basis
 from pennylane.pulse import ParametrizedEvolution
 from pennylane.typing import TensorLike
@@ -948,7 +950,7 @@ class DefaultQubit(QubitDevice):
 
         Args:
             obs (~.pennylane.measurements.ClassicalShadowMP): The classical shadow measurement process
-            circuit (~.tapes.QuantumTape): The quantum tape that is being executed
+            circuit (~.tape.QuantumTape): The quantum tape that is being executed
 
         Returns:
             tensor_like[int]: A tensor with shape ``(2, T, n)``, where the first row represents
@@ -1036,3 +1038,11 @@ class DefaultQubit(QubitDevice):
             stacked_state /= norms
 
         return self._cast(self._stack([outcomes, recipes]), dtype=np.int8)
+
+    def _get_diagonalizing_gates(self, circuit: qml.tape.QuantumTape) -> List[Operation]:
+        meas_filtered = [
+            m
+            for m in circuit.measurements
+            if m.obs is None or not isinstance(m.obs, qml.Hamiltonian)
+        ]
+        return super()._get_diagonalizing_gates(qml.tape.QuantumScript(measurements=meas_filtered))
