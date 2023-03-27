@@ -37,13 +37,10 @@ def sparse_hamiltonian(H, wires=None):
         H (~.Hamiltonian): Hamiltonian operator for which the matrix representation should be
             computed
         wires (Iterable): Wire labels that indicate the order of wires according to which the matrix
-        level (int): Number of levels per qudit for which the Hamiltonian has been constructed
-            is constructed. If not provided, ``H.wires`` is used.
 
     Returns:
         csr_matrix: a sparse matrix in scipy Compressed Sparse Row (CSR) format with dimension
-        :math:`(d^n, d^n)`, where :math:`n` is the number of wires, and :math:`d` is the
-        number of levels in the quantum system.
+        :math:`(2^n, 2^n)`, where :math:`n` is the number of wires
 
     **Example:**
 
