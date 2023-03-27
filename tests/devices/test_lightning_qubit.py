@@ -88,7 +88,7 @@ class TestDtypePreserved:
             qml.expval(qml.PauliY(0)),
             qml.var(qml.PauliY(0)),
             qml.probs(wires=[1]),
-            qml.probs(wires=[2, 0]),
+            qml.probs(wires=[0, 2]),
         ],
     )
     def test_real_dtype(self, qubit_device_3_wires, r_dtype, measurement, tol):

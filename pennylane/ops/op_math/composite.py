@@ -65,16 +65,16 @@ class CompositeOp(Operator):
         if do_queue:
             self.queue()
 
-        self._batch_size = self._check_and_compute_batch_size()
+        self._check_batching(None)  # unused param
 
-    def _check_and_compute_batch_size(self):
+    def _check_batching(self, _):
         batch_sizes = {op.batch_size for op in self if op.batch_size is not None}
         if len(batch_sizes) > 1:
             raise ValueError(
                 "Broadcasting was attempted but the broadcasted dimensions "
                 f"do not match: {batch_sizes}."
             )
-        return batch_sizes.pop() if batch_sizes else None
+        self._batch_size = batch_sizes.pop() if batch_sizes else None
 
     def __repr__(self):
         return f" {self._op_symbol} ".join(
@@ -122,6 +122,7 @@ class CompositeOp(Operator):
 
     @property
     def num_wires(self):
+        """Number of wires the operator acts on."""
         return len(self.wires)
 
     @property

@@ -197,7 +197,11 @@ def _generate_folders(node, folders):
     """
 
     next_folders = folders[1:]
-    folders = set(node) if folders[0] == ["full"] else set(folders[0]).intersection(set(node))
+    if folders[0] == ["full"]:
+        folders = node
+    else:
+        values_for_this_node = set(folders[0]).intersection(set(node))
+        folders = [f for f in folders[0] if f in values_for_this_node]
     return (
         [
             os.path.join(folder, child)

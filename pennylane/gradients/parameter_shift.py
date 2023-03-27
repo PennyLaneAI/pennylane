@@ -440,6 +440,23 @@ def _reorder_grad_axes_multi_measure(
     return new_grad
 
 
+def _make_zero_rep(g, single_measure, shot_vector):
+    """Create a zero-valued gradient entry adapted to the measurements and shot_vector
+    of a gradient computation, where g is a previously computed non-zero gradient entry."""
+    if single_measure and not shot_vector:
+        zero_rep = qml.math.zeros_like(g)
+    elif single_measure:
+        zero_rep = tuple(qml.math.zeros_like(shot_comp_g) for shot_comp_g in g)
+    elif not shot_vector:
+        zero_rep = tuple(qml.math.zeros_like(meas_g) for meas_g in g)
+    else:
+        zero_rep = tuple(
+            tuple(qml.math.zeros_like(grad_component) for grad_component in shot_comp_g)
+            for shot_comp_g in g
+        )
+    return zero_rep
+
+
 def _expval_param_shift_tuple(
     tape, argnum=None, shifts=None, gradient_recipes=None, f0=None, broadcast=False, shots=None
 ):
@@ -552,20 +569,10 @@ def _expval_param_shift_tuple(
 
         # g will have been defined at least once (because otherwise all gradients would have
         # been zero), providing a representative for a zero gradient to emulate its type/shape.
-        if single_measure and not shot_vector:
-            zero_rep = qml.math.zeros_like(g)
-        elif single_measure:
-            zero_rep = tuple(qml.math.zeros_like(shot_comp_g) for shot_comp_g in g)
-        elif not shot_vector:
-            zero_rep = tuple(qml.math.zeros_like(meas_g) for meas_g in g)
-        else:
-            zero_rep = tuple(
-                tuple(qml.math.zeros_like(grad_component) for grad_component in shot_comp_g)
-                for shot_comp_g in g
-            )
+        zero_rep = _make_zero_rep(g, single_measure, shot_vector)
 
         # Fill in zero-valued gradients
-        grads = [g if g is not None else zero_rep for i, g in enumerate(grads)]
+        grads = [zero_rep if g is None else g for g in grads]
 
         if single_measure and single_param:
             return grads[0]
@@ -1598,11 +1605,11 @@ def _param_shift_new(
             res = fn(results)
         except (ValueError, TypeError) as e:
             raise e.__class__(
-                "The processing function of the gradient transform ran into errors"
-                " while the new return type system was turned on. Make sure to"
-                " pass the device shots to the param_shift gradient transform"
-                " using the shots argument or disable the new return type"
-                " system by calling the qml.disable_return function."
+                "The processing function of the gradient transform ran into errors "
+                "while the new return type system was turned on. Make sure to "
+                "pass the device shots to the param_shift gradient transform "
+                "using the shots argument or disable the new return type "
+                "system by calling the qml.disable_return function."
             ) from e
         return res
 
@@ -1624,7 +1631,7 @@ def param_shift(
     parameters with respect to its inputs.
 
     Args:
-        qnode (pennylane.QNode or .QuantumTape): quantum tape or QNode to differentiate
+        tape (pennylane.QNode or .QuantumTape): quantum tape or QNode to differentiate
         argnum (int or list[int] or None): Trainable parameter indices to differentiate
             with respect to. If not provided, the derivative with respect to all
             trainable indices are returned.

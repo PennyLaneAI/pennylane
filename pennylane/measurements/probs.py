@@ -23,7 +23,7 @@ from pennylane.wires import Wires
 from .measurements import MeasurementShapeError, Probability, SampleMeasurement, StateMeasurement
 
 
-def probs(wires=None, op=None):
+def probs(wires=None, op=None) -> "ProbabilityMP":
     r"""Probability of each computational basis state.
 
     This measurement function accepts either a wire specification or
@@ -46,7 +46,7 @@ def probs(wires=None, op=None):
             the computational basis
 
     Returns:
-        ProbabilityMP: measurement process instance
+        ProbabilityMP: Measurement process instance
 
     **Example:**
 
@@ -81,7 +81,6 @@ def probs(wires=None, op=None):
             return qml.probs(op=qml.Hermitian(H, wires=0))
 
     >>> circuit()
-
     array([0.14644661 0.85355339])
 
     The returned array is in lexicographic order, so corresponds
@@ -111,7 +110,7 @@ def probs(wires=None, op=None):
                 "Cannot specify the wires to probs if an observable is "
                 "provided. The wires for probs will be determined directly from the observable."
             )
-        wires = qml.wires.Wires(wires)
+        wires = Wires(wires)
     return ProbabilityMP(obs=op, wires=wires)
 
 
@@ -121,7 +120,7 @@ class ProbabilityMP(SampleMeasurement, StateMeasurement):
     Please refer to :func:`probs` for detailed documentation.
 
     Args:
-        obs (.Observable): The observable that is to be measured as part of the
+        obs (.Operator): The observable that is to be measured as part of the
             measurement process. Not all measurement processes require observables (for
             example ``Probability``); this argument is optional.
         wires (.Wires): The wires the measurement process applies to.
