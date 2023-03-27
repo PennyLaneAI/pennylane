@@ -296,7 +296,7 @@ class PauliSentence(dict):
         for pw1 in self:
             for pw2 in other:
                 prod_pw, coeff = pw1 * pw2
-                final_ps[prod_pw] += coeff * self[pw1] * other[pw2]
+                final_ps[prod_pw] = final_ps[prod_pw] + coeff * self[pw1] * other[pw2]
 
         return final_ps
 
