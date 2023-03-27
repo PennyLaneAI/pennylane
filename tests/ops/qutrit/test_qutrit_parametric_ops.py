@@ -108,7 +108,7 @@ class TestParameterFrequencies:
             mat = gen.matrix()
         except (AttributeError, qml.operation.MatrixUndefinedError):
             if isinstance(gen, qml.Hamiltonian):
-                mat = qml.utils.sparse_hamiltonian(gen, level=3).toarray()
+                mat = qml.utils.sparse_hamiltonian(gen).toarray()
             elif isinstance(gen, qml.SparseHamiltonian):
                 mat = gen.sparse_matrix().toarray()
             else:
@@ -131,6 +131,9 @@ matrix_data = [
     (qml.TRY, 0, [0, 1], np.eye(3)),
     (qml.TRY, 0, [1, 2], np.eye(3)),
     (qml.TRY, 0, [0, 2], np.eye(3)),
+    (qml.TRZ, 0, [0, 1], np.eye(3)),
+    (qml.TRZ, 0, [1, 2], np.eye(3)),
+    (qml.TRZ, 0, [0, 2], np.eye(3)),
     (
         qml.TRX,
         np.pi / 2,
@@ -167,12 +170,33 @@ matrix_data = [
         [0, 2],
         np.array([[1, 0, -1], [0, np.sqrt(2), 0], [1, 0, 1]]) / np.sqrt(2),
     ),
+    (
+        qml.TRZ,
+        np.pi / 2,
+        [0, 1],
+        np.diag(np.exp([-1j * np.pi / 4, 1j * np.pi / 4, 0])),
+    ),
+    (
+        qml.TRZ,
+        np.pi / 2,
+        [1, 2],
+        np.diag(np.exp([0, -1j * np.pi / 4, 1j * np.pi / 4])),
+    ),
+    (
+        qml.TRZ,
+        np.pi / 2,
+        [0, 2],
+        np.diag(np.exp([-1j * np.pi / 4, 0, 1j * np.pi / 4])),
+    ),
     (qml.TRX, np.pi, [0, 1], -1j * np.array([[0, 1, 0], [1, 0, 0], [0, 0, 1j]])),
     (qml.TRX, np.pi, [1, 2], -1j * np.array([[1j, 0, 0], [0, 0, 1], [0, 1, 0]])),
     (qml.TRX, np.pi, [0, 2], -1j * np.array([[0, 0, 1], [0, 1j, 0], [1, 0, 0]])),
     (qml.TRY, np.pi, [0, 1], np.array([[0, -1, 0], [1, 0, 0], [0, 0, 1]])),
     (qml.TRY, np.pi, [1, 2], np.array([[1, 0, 0], [0, 0, -1], [0, 1, 0]])),
     (qml.TRY, np.pi, [0, 2], np.array([[0, 0, -1], [0, 1, 0], [1, 0, 0]])),
+    (qml.TRZ, np.pi, [0, 1], -1j * np.diag([1, -1, 1j])),
+    (qml.TRZ, np.pi, [1, 2], -1j * np.diag([1j, 1, -1])),
+    (qml.TRZ, np.pi, [0, 2], -1j * np.diag([1, 1j, -1])),
     (
         qml.TRX,
         np.array([np.pi / 2] * 2),
@@ -221,107 +245,25 @@ matrix_data = [
             [1, 1], np.array([[1, 0, -1], [0, np.sqrt(2), 0], [1, 0, 1]]) / np.sqrt(2), axes=0
         ),
     ),
+    (
+        qml.TRZ,
+        np.array([np.pi / 2] * 2),
+        [0, 1],
+        np.tensordot([1, 1], np.diag(np.exp([-1j * np.pi / 4, 1j * np.pi / 4, 0])), axes=0),
+    ),
+    (
+        qml.TRZ,
+        np.array([np.pi / 2] * 2),
+        [1, 2],
+        np.tensordot([1, 1], np.diag(np.exp([0, -1j * np.pi / 4, 1j * np.pi / 4])), axes=0),
+    ),
+    (
+        qml.TRZ,
+        np.array([np.pi / 2] * 2),
+        [0, 2],
+        np.tensordot([1, 1], np.diag(np.exp([-1j * np.pi / 4, 0, 1j * np.pi / 4])), axes=0),
+    ),
 ]
-
-    def test_trz(self, tol):
-        """Test z rotation is correct"""
-
-        # test identity for theta=0
-        expected = np.eye(3)
-        assert np.allclose(qml.TRZ.compute_matrix(0, subspace=[0, 1]), expected, atol=tol, rtol=0)
-        assert np.allclose(qml.TRZ.compute_matrix(0, subspace=[1, 2]), expected, atol=tol, rtol=0)
-        assert np.allclose(qml.TRZ.compute_matrix(0, subspace=[0, 2]), expected, atol=tol, rtol=0)
-        assert np.allclose(
-            qml.TRZ(0, wires=0, subspace=[0, 1]).matrix(), expected, atol=tol, rtol=0
-        )
-        assert np.allclose(
-            qml.TRZ(0, wires=0, subspace=[1, 2]).matrix(), expected, atol=tol, rtol=0
-        )
-        assert np.allclose(
-            qml.TRZ(0, wires=0, subspace=[0, 2]).matrix(), expected, atol=tol, rtol=0
-        )
-
-        # test identity for theta=pi/2
-        expected = np.diag(np.exp([-1j * np.pi / 4, 1j * np.pi / 4, 0]))
-        assert np.allclose(
-            qml.TRZ.compute_matrix(np.pi / 2, subspace=[0, 1]), expected, atol=tol, rtol=0
-        )
-        assert np.allclose(
-            qml.TRZ(np.pi / 2, wires=0, subspace=[0, 1]).matrix(), expected, atol=tol, rtol=0
-        )
-
-        expected = np.diag(np.exp([0, -1j * np.pi / 4, 1j * np.pi / 4]))
-        assert np.allclose(
-            qml.TRZ.compute_matrix(np.pi / 2, subspace=[1, 2]), expected, atol=tol, rtol=0
-        )
-        assert np.allclose(
-            qml.TRZ(np.pi / 2, wires=0, subspace=[1, 2]).matrix(), expected, atol=tol, rtol=0
-        )
-
-        expected = np.diag(np.exp([-1j * np.pi / 4, 0, 1j * np.pi / 4]))
-        assert np.allclose(
-            qml.TRZ.compute_matrix(np.pi / 2, subspace=[0, 2]), expected, atol=tol, rtol=0
-        )
-        assert np.allclose(
-            qml.TRZ(np.pi / 2, wires=0, subspace=[0, 2]).matrix(), expected, atol=tol, rtol=0
-        )
-
-        # test identity for broadcasted theta=pi/2
-        pi_half = np.array([np.pi / 2, np.pi / 2])
-        expected = np.tensordot(
-            [1, 1], np.diag(np.exp([-1j * np.pi / 4, 1j * np.pi / 4, 0])), axes=0
-        )
-        assert np.allclose(
-            qml.TRZ.compute_matrix(pi_half, subspace=[0, 1]), expected, atol=tol, rtol=0
-        )
-        assert np.allclose(
-            qml.TRZ(pi_half, wires=0, subspace=[0, 1]).matrix(), expected, atol=tol, rtol=0
-        )
-
-        expected = np.tensordot(
-            [1, 1], np.diag(np.exp([0, -1j * np.pi / 4, 1j * np.pi / 4])), axes=0
-        )
-        assert np.allclose(
-            qml.TRZ.compute_matrix(pi_half, subspace=[1, 2]), expected, atol=tol, rtol=0
-        )
-        assert np.allclose(
-            qml.TRZ(pi_half, wires=0, subspace=[1, 2]).matrix(), expected, atol=tol, rtol=0
-        )
-
-        expected = np.tensordot(
-            [1, 1], np.diag(np.exp([-1j * np.pi / 4, 0, 1j * np.pi / 4])), axes=0
-        )
-        assert np.allclose(
-            qml.TRZ.compute_matrix(pi_half, subspace=[0, 2]), expected, atol=tol, rtol=0
-        )
-        assert np.allclose(
-            qml.TRZ(pi_half, wires=0, subspace=[0, 2]).matrix(), expected, atol=tol, rtol=0
-        )
-
-        # test identity for theta=pi
-        expected = -1j * np.diag([1, -1, 1j])
-        assert np.allclose(
-            qml.TRZ.compute_matrix(np.pi, subspace=[0, 1]), expected, atol=tol, rtol=0
-        )
-        assert np.allclose(
-            qml.TRZ(np.pi, wires=0, subspace=[0, 1]).matrix(), expected, atol=tol, rtol=0
-        )
-
-        expected = -1j * np.diag([1j, 1, -1])
-        assert np.allclose(
-            qml.TRZ.compute_matrix(np.pi, subspace=[1, 2]), expected, atol=tol, rtol=0
-        )
-        assert np.allclose(
-            qml.TRZ(np.pi, wires=0, subspace=[1, 2]).matrix(), expected, atol=tol, rtol=0
-        )
-
-        expected = -1j * np.diag([1, 1j, -1])
-        assert np.allclose(
-            qml.TRZ.compute_matrix(np.pi, subspace=[0, 2]), expected, atol=tol, rtol=0
-        )
-        assert np.allclose(
-            qml.TRZ(np.pi, wires=0, subspace=[0, 2]).matrix(), expected, atol=tol, rtol=0
-        )
 
 
 class TestMatrix:
@@ -499,6 +441,7 @@ def test_subspace_errors(op, subspace, err_msg):
     [
         (qml.TRX, qml.GellMann(0, 3), lambda phi: -np.sin(phi)),
         (qml.TRY, qml.GellMann(0, 8), lambda phi: 0 * phi),
+        (qml.TRZ, qml.GellMann(0, 3), lambda phi: 0 * phi),
     ],
 )
 class TestGrad:
