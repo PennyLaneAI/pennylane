@@ -295,15 +295,12 @@ class TestQutritUnitary:
         assert np.allclose(res_static, expected)
         assert np.allclose(res_dynamic, expected)
 
-    @pytest.mark.parametrize("inverse", (True, False))
-    def test_controlled(self, inverse):
+    def test_controlled(self):
         """Test QutritUnitary's controlled method."""
         U = U_thadamard_01
         base = qml.QutritUnitary(U, wires=0)
-        base.inverse = inverse
 
         expected = qml.ControlledQutritUnitary(U, control_wires="a", wires=0)
-        expected.inverse = inverse
 
         out = base._controlled("a")
         assert qml.equal(out, expected)
@@ -532,7 +529,7 @@ class TestControlledQutritUnitary:
 
         assert pow_ops[0].hyperparameters["u_wires"] == op.hyperparameters["u_wires"]
         assert pow_ops[0].control_wires == op.control_wires
-        assert pow_ops[0].hyperparameters["control_values"] == op.hyperparameters["control_values"]
+        assert pow_ops[0].control_values == op.control_values
 
         op_mat_to_pow = qml.math.linalg.matrix_power(op.data[0], n)
         assert qml.math.allclose(pow_ops[0].data[0], op_mat_to_pow)
@@ -547,7 +544,7 @@ class TestControlledQutritUnitary:
             axes=0,
         )
 
-        op = qml.ControlledQubitUnitary(
+        op = qml.ControlledQutritUnitary(
             U1, control_wires=("b", "c"), wires="a", control_values="01"
         )
 
@@ -556,7 +553,7 @@ class TestControlledQutritUnitary:
 
         assert pow_ops[0].hyperparameters["u_wires"] == op.hyperparameters["u_wires"]
         assert pow_ops[0].control_wires == op.control_wires
-        assert pow_ops[0].hyperparameters["control_values"] == op.hyperparameters["control_values"]
+        assert pow_ops[0].control_values == op.control_values
 
         op_mat_to_pow = qml.math.linalg.matrix_power(op.data[0], n)
         assert qml.math.allclose(pow_ops[0].data[0], op_mat_to_pow)
@@ -580,16 +577,13 @@ class TestControlledQutritUnitary:
         with pytest.raises(qml.operation.PowUndefinedError):
             op.pow(0.12)
 
-    @pytest.mark.parametrize("inverse", (True, False))
-    def test_controlled(self, inverse):
+    def test_controlled(self):
         """Test the _controlled method for ControlledQutritUnitary."""
 
         U = TSWAP
 
         original = qml.ControlledQutritUnitary(U, control_wires=(0, 1), wires=[4, 2])
-        original.inverse = inverse
         expected = qml.ControlledQutritUnitary(U, control_wires=(0, 1, "a"), wires=[4, 2])
-        expected.inverse = inverse
 
         out = original._controlled("a")
         assert qml.equal(out, expected)
@@ -597,11 +591,9 @@ class TestControlledQutritUnitary:
         original = qml.ControlledQutritUnitary(
             U, control_wires=(0, 1), wires=[4, 2], control_values="01"
         )
-        original.inverse = inverse
         expected = qml.ControlledQutritUnitary(
             U, control_wires=(0, 1, "a"), wires=[4, 2], control_values="012"
         )
-        expected.inverse = inverse
 
         out = original._controlled("a")
         assert qml.equal(out, expected)
@@ -619,7 +611,7 @@ class TestControlledQutritUnitary:
 
         assert adjoint_op.hyperparameters["u_wires"] == op.hyperparameters["u_wires"]
         assert adjoint_op.control_wires == op.control_wires
-        assert adjoint_op.hyperparameters["control_values"] == op.hyperparameters["control_values"]
+        assert adjoint_op.control_values == op.control_values
 
         adjoint_mat = op.data[0].T.conj()
         assert qml.math.allclose(adjoint_op.data[0], adjoint_mat)

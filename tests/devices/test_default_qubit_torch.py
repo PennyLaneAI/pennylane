@@ -33,6 +33,7 @@ from gate_data import (
     CNOT,
     CSWAP,
     CZ,
+    CH,
     SWAP,
     ControlledPhaseShift,
     CRot3,
@@ -49,6 +50,7 @@ from gate_data import (
     MultiRZ1,
     MultiRZ2,
     OrbitalRotation,
+    FermionicSWAP,
     Rot3,
     Rotx,
     Roty,
@@ -60,6 +62,7 @@ from gate_data import (
     SingleExcitationPlus,
     T,
     Toffoli,
+    CCZ,
     X,
     Y,
     Z,
@@ -108,7 +111,7 @@ single_qubit_param = [
     (qml.RZ, Rotz),
     (qml.MultiRZ, MultiRZ1),
 ]
-two_qubit = [(qml.CZ, CZ), (qml.CNOT, CNOT), (qml.SWAP, SWAP)]
+two_qubit = [(qml.CZ, CZ), (qml.CNOT, CNOT), (qml.SWAP, SWAP), (qml.CH, CH)]
 two_qubit_param = [
     (qml.CRX, CRotx),
     (qml.CRY, CRoty),
@@ -121,8 +124,9 @@ two_qubit_param = [
     (qml.SingleExcitation, SingleExcitation),
     (qml.SingleExcitationPlus, SingleExcitationPlus),
     (qml.SingleExcitationMinus, SingleExcitationMinus),
+    (qml.FermionicSWAP, FermionicSWAP),
 ]
-three_qubit = [(qml.Toffoli, Toffoli), (qml.CSWAP, CSWAP)]
+three_qubit = [(qml.Toffoli, Toffoli), (qml.CSWAP, CSWAP), (qml.CCZ, CCZ)]
 four_qubit_param = [
     (qml.DoubleExcitation, DoubleExcitation),
     (qml.DoubleExcitationPlus, DoubleExcitationPlus),
@@ -331,7 +335,7 @@ class TestApply:
         """Test that an exception is raised if a state preparation is not the
         first operation in the circuit."""
         dev = device(wires=2, torch_device=torch_device)
-        state = torch.tensor([0, 12])
+        state = torch.tensor([0, 1])
 
         with pytest.raises(
             qml.DeviceError,
@@ -373,26 +377,6 @@ class TestApply:
         expected = torch.matmul(op_mat, state)
         assert torch.allclose(res, expected, atol=tol, rtol=0)
 
-    @pytest.mark.parametrize("theta", [0.5432, -0.232])
-    @pytest.mark.parametrize("op,func", single_qubit_param)
-    def test_single_qubit_parameters_inverse(
-        self, device, torch_device, init_state, op, func, theta, tol
-    ):
-        """Test parametrized single qubit operations"""
-        dev = device(wires=1, torch_device=torch_device)
-        state = init_state(1, torch_device=torch_device)
-
-        par = torch.tensor(theta, dtype=torch.complex128, device=torch_device)
-        queue = [qml.QubitStateVector(state, wires=[0])]
-        queue += [op(par, wires=0).inv()]
-        dev.apply(queue)
-
-        res = dev.state
-        op_mat = torch.tensor(func(theta), dtype=torch.complex128, device=torch_device)
-        op_mat = torch.transpose(torch.conj(op_mat), 0, 1)
-        expected = torch.matmul(op_mat, state)
-        assert torch.allclose(res, expected, atol=tol, rtol=0)
-
     def test_rotation(self, device, torch_device, init_state, tol):
         """Test three axis rotation gate"""
         dev = device(wires=1, torch_device=torch_device)
@@ -427,25 +411,6 @@ class TestApply:
         res = dev.state
         op_mat = torch.tensor(CRot3(a, b, c), dtype=torch.complex128, device=torch_device)
         expected = op_mat @ state
-        assert torch.allclose(res, expected, atol=tol, rtol=0)
-
-    def test_inverse_operation(self, device, torch_device, init_state, tol):
-        """Test that the inverse of an operation is correctly applied"""
-        """Test three axis rotation gate"""
-        dev = device(wires=1, torch_device=torch_device)
-        state = init_state(1, torch_device=torch_device)
-
-        a = torch.tensor(0.542, dtype=torch.complex128, device=torch_device)
-        b = torch.tensor(1.3432, dtype=torch.complex128, device=torch_device)
-        c = torch.tensor(-0.654, dtype=torch.complex128, device=torch_device)
-
-        queue = [qml.QubitStateVector(state, wires=[0])]
-        queue += [qml.Rot(a, b, c, wires=0).inv()]
-        dev.apply(queue)
-
-        res = dev.state
-        op_mat = torch.tensor(Rot3(a, b, c), dtype=torch.complex128, device=torch_device)
-        expected = torch.linalg.inv(op_mat) @ state
         assert torch.allclose(res, expected, atol=tol, rtol=0)
 
     @pytest.mark.parametrize("op,mat", two_qubit)
@@ -493,25 +458,6 @@ class TestApply:
 
         res = dev.state
         expected = torch.diag(diag) @ state
-        assert torch.allclose(res, expected, atol=tol, rtol=0)
-
-    def test_diagonal_qubit_unitary_inverse(self, device, torch_device, init_state, tol):
-        """Tests application of a diagonal qubit unitary"""
-        dev = device(wires=1, torch_device=torch_device)
-        state = init_state(1, torch_device=torch_device)
-
-        diag = torch.tensor(
-            [-1.0 + 1j, 1.0 + 1j], requires_grad=True, dtype=torch.complex128, device=torch_device
-        ) / math.sqrt(2)
-
-        queue = [
-            qml.QubitStateVector(state, wires=0),
-            qml.DiagonalQubitUnitary(diag, wires=0).inv(),
-        ]
-        dev.apply(queue)
-
-        res = dev.state
-        expected = torch.diag(diag).conj() @ state
         assert torch.allclose(res, expected, atol=tol, rtol=0)
 
     @pytest.mark.parametrize("op, mat", three_qubit)
@@ -1066,10 +1012,11 @@ class TestExpval:
 
         par1 = theta.to(device=torch_device)
         par2 = phi.to(device=torch_device)
-        with qml.tape.QuantumTape() as tape:
+        with qml.queuing.AnnotatedQueue() as q:
             queue = [gate(par1, wires=0), gate(par2, wires=1), qml.CNOT(wires=[0, 1])]
             observables = [qml.expval(obs(wires=[i])) for i in range(2)]
 
+        tape = qml.tape.QuantumScript.from_queue(q)
         res = dev.execute(tape)
 
         expected_res = expected(theta, phi, torch_device)
@@ -1089,10 +1036,11 @@ class TestExpval:
 
         par1 = theta.to(device=torch_device)
         par2 = phi.to(device=torch_device)
-        with qml.tape.QuantumTape() as tape:
+        with qml.queuing.AnnotatedQueue() as q:
             queue = [qml.RY(par1, wires=0), qml.RY(par2, wires=1), qml.CNOT(wires=[0, 1])]
             observables = [qml.expval(qml.Hermitian(Hermitian_mat, wires=[i])) for i in range(2)]
 
+        tape = qml.tape.QuantumScript.from_queue(q)
         res = dev.execute(tape)
 
         a = Hermitian_mat[0, 0]
@@ -1142,10 +1090,11 @@ class TestExpval:
 
         theta = theta.to(device=torch_device)
         phi = phi.to(device=torch_device)
-        with qml.tape.QuantumTape() as tape:
+        with qml.queuing.AnnotatedQueue() as q:
             queue = [qml.RY(theta, wires=0), qml.RY(phi, wires=1), qml.CNOT(wires=[0, 1])]
             observables = [qml.expval(qml.Hermitian(Hermit_mat2, wires=[0, 1]))]
 
+        tape = qml.tape.QuantumScript.from_queue(q)
         res = dev.execute(tape)
 
         # below is the analytic expectation value for this circuit with arbitrary
@@ -1433,10 +1382,11 @@ class TestVar:
         phi = phi.to(device=torch_device)
 
         # test correct variance for <Z> of a rotated state
-        with qml.tape.QuantumTape() as tape:
+        with qml.queuing.AnnotatedQueue() as q:
             queue = [qml.RX(theta, wires=0), qml.RY(phi, wires=0)]
             observables = [qml.var(qml.PauliZ(wires=[0]))]
 
+        tape = qml.tape.QuantumScript.from_queue(q)
         res = dev.execute(tape)
         expected = 0.25 * (
             3 - torch.cos(2 * theta) - 2 * torch.cos(theta) ** 2 * torch.cos(2 * phi)
@@ -1453,10 +1403,11 @@ class TestVar:
         # test correct variance for <H> of a rotated state
         H = torch.tensor([[4, -1 + 6j], [-1 - 6j, 2]], dtype=torch.complex128, device=torch_device)
 
-        with qml.tape.QuantumTape() as tape:
+        with qml.queuing.AnnotatedQueue() as q:
             queue = [qml.RX(phi, wires=0), qml.RY(theta, wires=0)]
             observables = [qml.var(qml.Hermitian(H, wires=[0]))]
 
+        tape = qml.tape.QuantumScript.from_queue(q)
         res = dev.execute(tape)
         expected = 0.5 * (
             2 * torch.sin(2 * theta) * torch.cos(phi) ** 2
@@ -2246,26 +2197,6 @@ class TestPassthruIntegration:
         )
         assert torch.allclose(params.grad, expected_grad, atol=tol, rtol=0)
 
-    def test_inverse_operation_jacobian_backprop(self, device, torch_device, tol):
-        """Test that inverse operations work in backprop
-        mode"""
-        dev = qml.device("default.qubit.torch", wires=1)
-
-        @qml.qnode(dev, diff_method="backprop", interface="torch")
-        def circuit(param):
-            qml.RY(param, wires=0).inv()
-            return qml.expval(qml.PauliX(0))
-
-        x = torch.tensor(0.3, requires_grad=True, dtype=torch.float64)
-
-        res = circuit(x)
-        res.backward()
-
-        assert torch.allclose(res, -torch.sin(x), atol=tol, rtol=0)
-
-        grad = x.grad
-        assert torch.allclose(grad, -torch.cos(x), atol=tol, rtol=0)
-
     @pytest.mark.parametrize("interface", ["autograd", "torch"])
     def test_error_backprop_wrong_interface(self, torch_device, interface, tol):
         """Tests that an error is raised if diff_method='backprop' but not using
@@ -2278,9 +2209,9 @@ class TestPassthruIntegration:
 
         with pytest.raises(Exception) as e:
             assert qml.qnode(dev, diff_method="autograd", interface=interface)(circuit)
-        assert (
-            str(e.value)
-            == "Differentiation method autograd not recognized. Allowed options are ('best', 'parameter-shift', 'backprop', 'finite-diff', 'device', 'adjoint')."
+        assert str(e.value) == (
+            "Differentiation method autograd not recognized. Allowed options are ('best', "
+            "'parameter-shift', 'backprop', 'finite-diff', 'device', 'adjoint', 'spsa', 'hadamard')."
         )
 
 

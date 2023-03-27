@@ -111,7 +111,7 @@ The circuit parameter can be optimized using the interface of choice.
 .. note::
 
     For more details on VQE and the quantum chemistry functionality available in
-    :mod:`~pennylane.qchem`, check out the PennyLane quantum chemistry tutorials.
+    :mod:`~pennylane.qchem`, check out the PennyLane `quantum chemistry tutorials <https://pennylane.ai/qml/demos_quantum-chemistry.html>`_.
 
 
 Quantum chemistry functions and classes
@@ -201,7 +201,6 @@ Differentiable observables
     ~pennylane.qchem.jordan_wigner
     ~pennylane.qchem.molecular_hamiltonian
     ~pennylane.qchem.qubit_observable
-    ~pennylane.qchem.simplify
 
 :html:`</div>`
 
@@ -253,8 +252,10 @@ Utility functions
     ~pennylane.qchem.excitations
     ~pennylane.qchem.excitations_to_wires
     ~pennylane.qchem.factorize
+    ~pennylane.qchem.givens_decomposition
     ~pennylane.qchem.hf_state
     ~pennylane.import_operator
+    ~pennylane.qchem.mol_data
     ~pennylane.qchem.read_structure
 
 :html:`</div>`

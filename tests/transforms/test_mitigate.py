@@ -21,7 +21,7 @@ from packaging import version
 
 import pennylane as qml
 from pennylane import numpy as np
-from pennylane.tape import QuantumTape
+from pennylane.tape import QuantumScript
 from pennylane.transforms import (
     mitigate_with_zne,
     poly_extrapolate,
@@ -29,7 +29,7 @@ from pennylane.transforms import (
     fold_global,
 )
 
-with QuantumTape() as tape:
+with qml.queuing.AnnotatedQueue() as q_tape:
     qml.BasisState([1], wires=0)
     qml.RX(0.9, wires=0)
     qml.RY(0.4, wires=1)
@@ -38,12 +38,16 @@ with QuantumTape() as tape:
     qml.RX(0.6, wires=1)
     qml.expval(qml.PauliZ(0) @ qml.PauliZ(1))
 
-with QuantumTape() as tape_base:
+tape = QuantumScript.from_queue(q_tape)
+with qml.queuing.AnnotatedQueue() as q_tape_base:
     qml.RX(0.9, wires=0)
     qml.RY(0.4, wires=1)
     qml.CNOT(wires=[0, 1])
     qml.RY(0.5, wires=0)
     qml.RX(0.6, wires=1)
+
+
+tape_base = QuantumScript.from_queue(q_tape_base)
 
 
 def same_tape(tape1, tape2):
@@ -359,6 +363,23 @@ grad_ideal_0 = [-np.sqrt(2) / 2, -np.sqrt(2)]
 class TestDifferentiableZNE:
     """Testing differentiable ZNE"""
 
+    @pytest.mark.parametrize("lambda_", [1.0, 1.5, 1.7, 2.0, 2.5])
+    @pytest.mark.parametrize("num_ops", [4, 8, 9, 12, 16])
+    def test_correct_number_of_operators(self, lambda_, num_ops):
+        """Test the output corresponds to the right number of operators according to Sec. II A 1) in  https://arxiv.org/abs/2005.10921"""
+        x = 0.5
+        circuit = qml.tape.QuantumScript([qml.RX(x, wires=0) for i in range(num_ops)])
+        assert len(circuit._ops) == num_ops
+
+        folded, _ = qml.transforms.fold_global(circuit, lambda_)
+
+        n, s = divmod(lambda_ - 1, 2)
+
+        s = int(round(s * num_ops / 2))
+
+        exp_total_new = num_ops * (2 * n + 1) + 2 * s
+        assert len(folded[0]._ops) == exp_total_new
+
     def test_global_fold_constant_result(self):
         """Ensuring that the folded circuits always yields the same results."""
 
@@ -381,7 +402,8 @@ class TestDifferentiableZNE:
             return qml.expval(qml.PauliZ(0))
 
         res = [
-            fold_global(circuit, scale_factor=scale_factor)(w1, w2) for scale_factor in range(1, 5)
+            fold_global(circuit, scale_factor=scale_factor)(w1, w2)
+            for scale_factor in [1, 1.5, 2.0, 2.5, 3]
         ]
         # res = [qml.execute([folded], dev, None) for folded in folded_qnodes]
         assert np.allclose(res, 1)
@@ -421,8 +443,8 @@ class TestDifferentiableZNE:
         import jax
         import jax.numpy as jnp
 
-        qnode_noisy = qml.QNode(qfunc, dev_noisy, interface="jax-jit")
-        qnode_ideal = qml.QNode(qfunc, dev_ideal, interface="jax-jit")
+        qnode_noisy = qml.QNode(qfunc, dev_noisy)
+        qnode_ideal = qml.QNode(qfunc, dev_ideal)
 
         scale_factors = [1.0, 2.0, 3.0]
 
@@ -448,8 +470,8 @@ class TestDifferentiableZNE:
         import jax
         import jax.numpy as jnp
 
-        qnode_noisy = qml.QNode(qfunc, dev_noisy, interface="jax-jit")
-        qnode_ideal = qml.QNode(qfunc, dev_ideal, interface="jax-jit")
+        qnode_noisy = qml.QNode(qfunc, dev_noisy)
+        qnode_ideal = qml.QNode(qfunc, dev_ideal)
 
         scale_factors = [1.0, 2.0, 3.0]
 
@@ -474,8 +496,8 @@ class TestDifferentiableZNE:
         """Testing that the mitigated qnode can be differentiated and returns the correct gradient in torch"""
         import torch
 
-        qnode_noisy = qml.QNode(qfunc, dev_noisy, interface="torch")
-        qnode_ideal = qml.QNode(qfunc, dev_ideal, interface="torch")
+        qnode_noisy = qml.QNode(qfunc, dev_noisy)
+        qnode_ideal = qml.QNode(qfunc, dev_ideal)
 
         scale_factors = [1.0, 2.0, 3.0]
 
@@ -502,8 +524,8 @@ class TestDifferentiableZNE:
         """Testing that the mitigated qnode can be differentiated and returns the correct gradient in tf"""
         import tensorflow as tf
 
-        qnode_noisy = qml.QNode(qfunc, dev_noisy, interface="tf")
-        qnode_ideal = qml.QNode(qfunc, dev_ideal, interface="tf")
+        qnode_noisy = qml.QNode(qfunc, dev_noisy)
+        qnode_ideal = qml.QNode(qfunc, dev_ideal)
 
         scale_factors = [1.0, 2.0, 3.0]
 

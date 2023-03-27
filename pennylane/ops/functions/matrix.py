@@ -86,8 +86,8 @@ def matrix(op, *, wire_order=None):
         [ 0.+0.j,  0.+0.38268343j,  0.+0.j,  -0.92387953+0.j]])
 
         Note that since ``wire_order`` was not specified, the default order ``[1, 0]`` for ``circuit``
-        was used, and the unitary matrix corresponds to the operation :math:`Z\otimes R_X(\theta)`. To
-        obtain the matrix for :math:`R_X(\theta)\otimes Z`, specify ``wire_order=[0, 1]`` in the
+        was used, and the unitary matrix corresponds to the operation :math:`R_X(\theta)\otimes Z`. To
+        obtain the matrix for :math:`Z\otimes R_X(\theta)`, specify ``wire_order=[0, 1]`` in the
         function call:
 
         >>> matrix = qml.matrix(circuit, wire_order=[0, 1])
@@ -122,7 +122,7 @@ def matrix(op, *, wire_order=None):
         op = 1.0 * op  # convert to a Hamiltonian
 
     if isinstance(op, qml.Hamiltonian):
-        return qml.utils.sparse_hamiltonian(op, wires=wire_order).toarray()
+        return op.sparse_matrix(wire_order=wire_order).toarray()
 
     return op.matrix(wire_order=wire_order)
 
@@ -130,15 +130,20 @@ def matrix(op, *, wire_order=None):
 @matrix.tape_transform
 def _matrix(tape, wire_order=None):
     """Defines how matrix works if applied to a tape containing multiple operations."""
+    if not tape.wires:
+        raise qml.operation.MatrixUndefinedError
     params = tape.get_parameters(trainable_only=False)
     interface = qml.math.get_interface(*params)
 
     wire_order = wire_order or tape.wires
 
     # initialize the unitary matrix
-    result = qml.math.eye(2 ** len(wire_order), like=interface)
+    if len(tape.operations) == 0:
+        result = qml.math.eye(2 ** len(wire_order), like=interface)
+    else:
+        result = matrix(tape.operations[0], wire_order=wire_order)
 
-    for op in tape.operations:
+    for op in tape.operations[1:]:
         U = matrix(op, wire_order=wire_order)
         # Coerce the matrices U and result and use matrix multiplication. Broadcasted axes
         # are handled correctly automatically by ``matmul`` (See e.g. NumPy documentation)

@@ -133,6 +133,18 @@ class TestInitialization:
         assert prod_op.parameters == [[], [0.23]]
         assert prod_op.num_params == 1
 
+    def test_hash(self):
+        """Testing some situations for the hash property."""
+        # same hash if different order but can be permuted to right order
+        op1 = qml.prod(qml.PauliX(0), qml.PauliY("a"))
+        op2 = qml.prod(qml.PauliY("a"), qml.PauliX(0))
+        assert op1.hash == op2.hash
+
+        # test not the same hash if different order and cant be exchanged to correct order
+        op3 = qml.prod(qml.PauliX("a"), qml.PauliY("a"), qml.PauliX(1))
+        op4 = qml.prod(qml.PauliY("a"), qml.PauliX("a"), qml.PauliX(1))
+        assert op3.hash != op4.hash
+
     @pytest.mark.parametrize("ops_lst", ops)
     def test_terms(self, ops_lst):
         """Test that terms are initialized correctly."""
@@ -177,9 +189,10 @@ class TestInitialization:
         of the provided factors on a tape."""
         prod_op = prod(*ops_lst)
         true_decomposition = list(ops_lst[::-1])  # reversed list of factors
-        with qml.tape.QuantumTape() as tape:
+        with qml.queuing.AnnotatedQueue() as q:
             prod_op.decomposition()
 
+        tape = qml.tape.QuantumScript.from_queue(q)
         for op1, op2 in zip(tape.operations, true_decomposition):
             assert qml.equal(op1, op2)
 
@@ -480,6 +493,45 @@ class TestMatrix:
         ]
         assert np.allclose(mat, true_mat)
 
+    def test_matrix_all_batched(self):
+        """Test that Prod matrix has batching support when all operands are batched."""
+        x = qml.numpy.array([0.1, 0.2, 0.3])
+        y = qml.numpy.array([0.4, 0.5, 0.6])
+        op = prod(qml.RX(x, wires=0), qml.RY(y, wires=2), qml.PauliZ(1))
+        mat = op.matrix()
+        sum_list = [
+            prod(qml.RX(i, wires=0), qml.RY(j, wires=2), qml.PauliZ(1)) for i, j in zip(x, y)
+        ]
+        compare = qml.math.stack([s.matrix() for s in sum_list])
+        assert qml.math.allclose(mat, compare)
+        assert mat.shape == (3, 8, 8)
+
+    def test_matrix_not_all_batched(self):
+        """Test that Prod matrix has batching support when all operands are not batched."""
+        x = qml.numpy.array([0.1, 0.2, 0.3])
+        y = 0.5
+        z = qml.numpy.array([0.4, 0.5, 0.6])
+        op = prod(
+            qml.RX(x, wires=0),
+            qml.RY(y, wires=2),
+            qml.RZ(z, wires=1),
+            qml.prod(qml.PauliX(2), qml.PauliY(3)),
+        )
+        mat = op.matrix()
+        batched_y = [y for _ in x]
+        sum_list = [
+            prod(
+                qml.RX(i, wires=0),
+                qml.RY(j, wires=2),
+                qml.RZ(k, wires=1),
+                qml.prod(qml.PauliX(2), qml.PauliY(3)),
+            )
+            for i, j, k in zip(x, batched_y, z)
+        ]
+        compare = qml.math.stack([s.matrix() for s in sum_list])
+        assert qml.math.allclose(mat, compare)
+        assert mat.shape == (3, 16, 16)
+
     # Add interface tests for each interface !
 
     @pytest.mark.jax
@@ -678,12 +730,7 @@ class TestProperties:
             """Dummy op with None queue category"""
 
             _queue_category = None
-
-            def __init__(self, wires):
-                self._wires = qml.wires.Wires([wires])
-
-            def num_wires(self):
-                return len(self.wires)
+            num_wires = 1
 
         prod_op = prod(qml.Identity(wires=0), DummyOp(wires=0))
         assert prod_op._queue_category is None
@@ -696,7 +743,7 @@ class TestProperties:
         eig_vals = eig_decomp["eigval"]
 
         true_eigvecs = qnp.tensor(
-            [  # the eigvecs ordered according to eigvals ordered smallest --> largest
+            [
                 [0.0, 0.0, 1.0, 0.0],
                 [1.0, 0.0, 0.0, 0.0],
                 [0.0, 1.0, 0.0, 0.0],
@@ -727,6 +774,63 @@ class TestProperties:
         """Test that the diagonalizing gates are correct."""
         diag_prod_op = Prod(qml.PauliZ(wires=0), qml.PauliZ(wires=1))
         assert diag_prod_op.diagonalizing_gates() == []
+
+    op_pauli_reps = (
+        (
+            qml.prod(qml.PauliX(wires=0), qml.PauliY(wires=1), qml.PauliZ(wires="a")),
+            qml.pauli.PauliSentence({qml.pauli.PauliWord({0: "X", 1: "Y", "a": "Z"}): 1}),
+        ),
+        (
+            qml.prod(qml.PauliX(wires=0), qml.PauliX(wires=0)),
+            qml.pauli.PauliSentence({qml.pauli.PauliWord({}): 1}),
+        ),
+        (
+            qml.prod(
+                qml.PauliX(wires=0),
+                qml.PauliY(wires=0),
+                qml.PauliZ(wires="a"),
+                qml.PauliZ(wires="a"),
+            ),
+            qml.pauli.PauliSentence({qml.pauli.PauliWord({0: "Z"}): 1j}),
+        ),
+    )
+
+    @pytest.mark.parametrize("op, rep", op_pauli_reps)
+    def test_pauli_rep(self, op, rep):
+        """Test that the pauli rep gives the expected result."""
+        assert op._pauli_rep == rep
+
+    def test_pauli_rep_none(self):
+        """Test that None is produced if any of the terms don't have a _pauli_rep property."""
+        op = qml.prod(qml.PauliX(wires=0), qml.RX(1.23, wires=1))
+        assert op._pauli_rep is None
+
+    op_pauli_reps_nested = (
+        (
+            qml.prod(
+                qml.pow(qml.prod(qml.PauliX(wires=0), qml.PauliY(wires=1)), z=3),
+                qml.pow(qml.prod(qml.PauliY(wires=0), qml.PauliZ(wires=2)), z=5),
+            ),
+            qml.pauli.PauliSentence({qml.pauli.PauliWord({0: "Z", 1: "Y", 2: "Z"}): 1j}),
+        ),  # prod + pow
+        (
+            qml.prod(
+                qml.s_prod(
+                    -2j,
+                    qml.prod(
+                        qml.s_prod(0.5, qml.PauliX(wires=0)), qml.s_prod(2, qml.PauliZ(wires=1))
+                    ),
+                ),
+                qml.s_prod(3, qml.PauliY(wires=0)),
+            ),
+            qml.pauli.PauliSentence({qml.pauli.PauliWord({0: "Z", 1: "Z"}): 6}),
+        ),  # prod + s_prod
+    )
+
+    @pytest.mark.parametrize("op, rep", op_pauli_reps_nested)
+    def test_pauli_rep_nested(self, op, rep):
+        """Test that the pauli rep gives the expected result."""
+        assert op._pauli_rep == rep
 
 
 class TestSimplify:
@@ -771,7 +875,7 @@ class TestSimplify:
     def test_simplify_method_product_of_sums(self):
         """Test the simplify method with a product of sums."""
         prod_op = Prod(qml.PauliX(0) + qml.RX(1, 0), qml.PauliX(1) + qml.RX(1, 1), qml.Identity(3))
-        final_op = qml.op_sum(
+        final_op = qml.sum(
             Prod(qml.PauliX(0), qml.PauliX(1)),
             qml.PauliX(0) @ qml.RX(1, 1),
             qml.PauliX(1) @ qml.RX(1, 0),
@@ -817,7 +921,7 @@ class TestSimplify:
             qml.Identity(0),
         )
         mod_angle = -1 % (4 * np.pi)
-        final_op = qml.op_sum(
+        final_op = qml.sum(
             qml.Identity(0),
             5 * Prod(qml.PauliX(0), qml.RX(1, 1)),
             5 * Prod(qml.PauliX(0), qml.PauliX(1)),
@@ -832,7 +936,7 @@ class TestSimplify:
         assert isinstance(simplified_op, qml.ops.Sum)
         for s1, s2 in zip(final_op.operands, simplified_op.operands):
             assert s1.name == s2.name
-            assert s1.wires == s2.wires
+            assert s1.wires.toset() == s2.wires.toset()
             assert s1.data == s2.data
             assert s1.arithmetic_depth == s2.arithmetic_depth
 
@@ -856,9 +960,9 @@ class TestSimplify:
     def test_simplify_method_with_pauli_words(self):
         """Test that the simplify method groups pauli words."""
         prod_op = qml.prod(
-            qml.op_sum(qml.PauliX(0), qml.PauliX(1)), qml.PauliZ(1), qml.PauliX(0), qml.PauliY(1)
+            qml.sum(qml.PauliX(0), qml.PauliX(1)), qml.PauliZ(1), qml.PauliX(0), qml.PauliY(1)
         )
-        final_op = qml.op_sum(qml.s_prod(0 - 1j, qml.PauliX(1)), qml.s_prod(0 - 1j, qml.PauliX(0)))
+        final_op = qml.sum(qml.s_prod(0 - 1j, qml.PauliX(1)), qml.s_prod(0 - 1j, qml.PauliX(0)))
         simplified_op = prod_op.simplify()
 
         # TODO: Use qml.equal when supported for nested operators
@@ -908,9 +1012,9 @@ class TestSimplify:
     def test_grouping_with_product_of_sum(self):
         """Test that grouping works with product of a sum"""
         prod_op = qml.prod(
-            qml.PauliX(0), qml.op_sum(qml.PauliY(0), qml.Identity(0)), qml.PauliZ(0), qml.PauliX(0)
+            qml.PauliX(0), qml.sum(qml.PauliY(0), qml.Identity(0)), qml.PauliZ(0), qml.PauliX(0)
         )
-        final_op = qml.op_sum(qml.s_prod(1j, qml.PauliX(0)), qml.s_prod(-1, qml.PauliZ(0)))
+        final_op = qml.sum(qml.s_prod(1j, qml.PauliX(0)), qml.s_prod(-1, qml.PauliZ(0)))
         simplified_op = prod_op.simplify()
 
         assert isinstance(simplified_op, qml.ops.Sum)
@@ -923,7 +1027,7 @@ class TestSimplify:
     def test_grouping_with_product_of_sums(self):
         """Test that grouping works with product of two sums"""
         prod_op = qml.prod(qml.S(0) + qml.T(1), qml.S(0) + qml.T(1))
-        final_op = qml.op_sum(
+        final_op = qml.sum(
             qml.PauliZ(wires=[0]),
             2 * qml.prod(qml.S(wires=[0]), qml.T(wires=[1])),
             qml.S(wires=[1]),
@@ -952,6 +1056,49 @@ class TestSimplify:
         prod_op = qml.prod(qml.S(0), qml.Barrier(0, only_visual=True), qml.S(0)).simplify()
         assert qml.equal(prod_op.simplify(), qml.PauliZ(0))
 
+    @pytest.mark.jax
+    def test_simplify_pauli_rep_jax(self):
+        """Test that simplifying operators with a valid pauli representation works with jax interface."""
+        import jax.numpy as jnp
+
+        c1, c2, c3 = jnp.array(1.23), jnp.array(2.0), jnp.array(2.46j)
+
+        op = prod(qml.s_prod(c1, qml.PauliX(0)), qml.s_prod(c2, prod(qml.PauliY(0), qml.PauliZ(1))))
+        result = qml.s_prod(c3, prod(qml.PauliZ(0), qml.PauliZ(1)))
+        simplified_op = op.simplify()
+
+        assert qml.equal(simplified_op, result)
+
+    @pytest.mark.tf
+    def test_simplify_pauli_rep_tf(self):
+        """Test that simplifying operators with a valid pauli representation works with tf interface."""
+        import tensorflow as tf
+
+        c1, c2, c3 = tf.Variable(1.23), tf.Variable(2.0), tf.Variable(2.46j)
+
+        op = prod(qml.s_prod(c1, qml.PauliX(0)), qml.s_prod(c2, prod(qml.PauliY(0), qml.PauliZ(1))))
+        result = qml.s_prod(c3, prod(qml.PauliZ(0), qml.PauliZ(1)))
+        simplified_op = op.simplify()
+
+        assert isinstance(simplified_op, type(result))
+        assert result.wires.toset() == simplified_op.wires.toset()
+        assert result.arithmetic_depth == simplified_op.arithmetic_depth
+        assert qnp.isclose(result.data[0], simplified_op.data[0])
+        assert result.data[1:] == simplified_op.data[1:]
+
+    @pytest.mark.torch
+    def test_simplify_pauli_rep_torch(self):
+        """Test that simplifying operators with a valid pauli representation works with torch interface."""
+        import torch
+
+        c1, c2, c3 = torch.tensor(1.23), torch.tensor(2.0), torch.tensor(2.46j)
+
+        op = prod(qml.s_prod(c1, qml.PauliX(0)), qml.s_prod(c2, prod(qml.PauliY(0), qml.PauliZ(1))))
+        result = qml.s_prod(c3, prod(qml.PauliZ(0), qml.PauliZ(1)))
+        simplified_op = op.simplify()
+
+        assert qml.equal(simplified_op, result)
+
 
 class TestWrapperFunc:
     """Test wrapper function."""
@@ -972,6 +1119,30 @@ class TestWrapperFunc:
         assert prod_class_op.id == prod_func_op.id
         assert prod_class_op.wires == prod_func_op.wires
         assert prod_class_op.parameters == prod_func_op.parameters
+
+    def test_lazy_mode(self):
+        """Test that by default, the operator is simply wrapped in `Prod`, even if a simplification exists."""
+        op = prod(qml.S(0), Prod(qml.S(1), qml.T(1)))
+
+        assert isinstance(op, Prod)
+        assert len(op) == 2
+
+    def test_non_lazy_mode(self):
+        """Test the lazy=False keyword."""
+        op = prod(qml.S(0), Prod(qml.S(1), qml.T(1)), lazy=False)
+
+        assert isinstance(op, Prod)
+        assert len(op) == 3
+
+    def test_nonlazy_mode_queueing(self):
+        """Test that if a simpification is accomplished, the metadata for the original op
+        and the new simplified op is updated."""
+        with qml.queuing.AnnotatedQueue() as q:
+            prod1 = prod(qml.S(1), qml.T(1))
+            prod2 = prod(qml.S(0), prod1, lazy=False)
+
+        assert len(q) == 1
+        assert q.queue[0] is prod2
 
 
 class TestIntegration:
@@ -1110,7 +1281,7 @@ class TestIntegration:
     def test_batched_operation(self):
         """Test that prod with batching gives expected results."""
         x = qml.numpy.array([1.0, 2.0, 3.0])
-        y = qml.numpy.array(0.5)
+        y = qml.numpy.array([4.0, 5.0, 6.0])
 
         dev = qml.device("default.qubit", wires=1)
 

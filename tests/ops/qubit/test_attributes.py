@@ -21,6 +21,7 @@ from scipy.stats import unitary_group
 import pennylane as qml
 
 from pennylane.ops.qubit.attributes import Attribute
+from pennylane.ops import Controlled
 
 # Dummy attribute
 new_attribute = Attribute(["PauliX", "PauliY", "PauliZ", "Hadamard", "RZ"])
@@ -108,6 +109,7 @@ single_scalar_multi_wire_ops = [
     "DoubleExcitationPlus",
     "DoubleExcitationMinus",
     "OrbitalRotation",
+    "FermionicSWAP",
 ]
 
 two_scalar_single_wire_ops = [
@@ -129,6 +131,7 @@ separately_tested_ops = [
     "QubitUnitary",
     "ControlledQubitUnitary",
     "DiagonalQubitUnitary",
+    "SpecialUnitary",
     "PauliRot",
     "MultiRZ",
     "QubitStateVector",
@@ -285,14 +288,12 @@ class TestSupportsBroadcasting:
         op = qml.ControlledQubitUnitary(U, wires=wires, control_wires=[1, "10"])
 
         mat1 = op.matrix()
-        mat2 = qml.ControlledQubitUnitary.compute_matrix(U, u_wires=wires, control_wires=[1, "10"])
         single_mats = [
             qml.ControlledQubitUnitary(_U, wires=wires, control_wires=[1, "10"]).matrix()
             for _U in U
         ]
 
         assert qml.math.allclose(mat1, single_mats)
-        assert qml.math.allclose(mat2, single_mats)
 
     def test_diagonal_qubit_unitary(self):
         """Test that DiagonalQubitUnitary, which is marked as supporting parameter broadcasting,
@@ -305,6 +306,21 @@ class TestSupportsBroadcasting:
         mat1 = op.matrix()
         mat2 = qml.DiagonalQubitUnitary.compute_matrix(diag)
         single_mats = [qml.DiagonalQubitUnitary(d, wires=wires).matrix() for d in diag]
+
+        assert qml.math.allclose(mat1, single_mats)
+        assert qml.math.allclose(mat2, single_mats)
+
+    def test_special_unitary(self):
+        """Test that SpecialUnitary, which is marked as supporting parameter broadcasting,
+        actually does support broadcasting."""
+        theta = np.array([[0.2, -0.1, 0.2], [0, 1, 0], [0.4, 0.2, 0.9], [0, 0, 0]])
+        wires = ["a"]
+
+        op = qml.SpecialUnitary(theta, wires=wires)
+
+        mat1 = op.matrix()
+        mat2 = qml.SpecialUnitary.compute_matrix(theta, 1)
+        single_mats = [qml.SpecialUnitary(t, wires=wires).matrix() for t in theta]
 
         assert qml.math.allclose(mat1, single_mats)
         assert qml.math.allclose(mat2, single_mats)

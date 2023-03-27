@@ -25,22 +25,23 @@ from functools import lru_cache
 import numpy as np
 
 import pennylane as qml
-from pennylane.operation import (
-    Operation,
-    Observable,
-    Tensor,
-)
 from pennylane.measurements import (
+    CountsMP,
+    Expectation,
+    ExpectationMP,
+    MidMeasureMP,
+    Probability,
+    ProbabilityMP,
     Sample,
+    SampleMP,
+    ShadowExpvalMP,
     State,
     Variance,
-    Expectation,
-    Probability,
-    MidMeasure,
-    ShadowExpval,
 )
-from pennylane.wires import Wires, WireError
-
+from pennylane.operation import Observable, Operation, Tensor
+from pennylane.ops import Hamiltonian, Sum
+from pennylane.tape import QuantumScript, QuantumTape
+from pennylane.wires import WireError, Wires
 
 ShotTuple = namedtuple("ShotTuple", ["shots", "copies"])
 """tuple[int, int]: Represents copies of a shot number."""
@@ -76,7 +77,6 @@ def _process_shot_sequence(shot_list):
     integer is repeated.
     """
     if all(isinstance(s, int) for s in shot_list):
-
         if len(set(shot_list)) == 1:
             # All shots are identical, only require a single shot tuple
             shot_vector = [ShotTuple(shots=shot_list[0], copies=len(shot_list))]
@@ -96,6 +96,15 @@ def _process_shot_sequence(shot_list):
 
     total_shots = int(np.sum(np.prod(shot_vector, axis=1)))
     return total_shots, shot_vector
+
+
+def _get_num_copies(shot_vector):
+    """Helper function to determine the number of copies from a shot vector Sequence(int) or Sequence(ShotTuple)."""
+    if any(isinstance(shot_comp, ShotTuple) for shot_comp in shot_vector):
+        len_shot_vec = sum(shot_v.copies for shot_v in shot_vector)
+    else:
+        len_shot_vec = len(shot_vector)
+    return len_shot_vec
 
 
 class DeviceError(Exception):
@@ -124,7 +133,6 @@ class Device(abc.ABC):
     _asarray = staticmethod(np.asarray)
 
     def __init__(self, wires=1, shots=1000, *, analytic=None):
-
         self.shots = shots
 
         if analytic is not None:
@@ -215,9 +223,7 @@ class Device(abc.ABC):
     @property
     def analytic(self):
         """Whether shots is None or not. Kept for backwards compatability."""
-        if self._shots is None:
-            return True
-        return False
+        return self._shots is None
 
     @property
     def wires(self):
@@ -394,7 +400,6 @@ class Device(abc.ABC):
             def capabilities(cls):
                 capabilities = super().capabilities().copy()
                 capabilities.update(
-                    supports_inverse_operations=False,
                     supports_a_new_capability=True,
                 )
                 return capabilities
@@ -454,7 +459,6 @@ class Device(abc.ABC):
             self.pre_measure()
 
             for obs in observables:
-
                 if isinstance(obs, Tensor):
                     wires = [ob.wires for ob in obs.obs]
                 else:
@@ -490,7 +494,7 @@ class Device(abc.ABC):
             self._num_executions += 1
 
             if self.tracker.active:
-                self.tracker.update(executions=1, shots=self._shots)
+                self.tracker.update(executions=1, shots=self._shots, results=self._asarray(results))
                 self.tracker.record()
 
             # Ensures that a combination with sample does not put
@@ -596,8 +600,7 @@ class Device(abc.ABC):
         function accepts a queuable object (including a PennyLane operation
         and observable) and returns ``True`` if supported by the device."""
         return qml.BooleanFn(
-            lambda obj: not isinstance(obj, qml.tape.QuantumTape)
-            and self.supports_operation(obj.name)
+            lambda obj: not isinstance(obj, QuantumScript) and self.supports_operation(obj.name)
         )
 
     def custom_expand(self, fn):
@@ -652,7 +655,11 @@ class Device(abc.ABC):
             will natively support all operations.
         """
         # pylint: disable=protected-access
-        obs_on_same_wire = len(circuit._obs_sharing_wires) > 0
+
+        comp_basis_sampled_multi_measure = (
+            len(circuit.measurements) > 1 and circuit.samples_computational_basis
+        )
+        obs_on_same_wire = len(circuit._obs_sharing_wires) > 0 or comp_basis_sampled_multi_measure
         obs_on_same_wire &= not any(
             isinstance(o, qml.Hamiltonian) for o in circuit._obs_sharing_wires
         )
@@ -683,11 +690,12 @@ class Device(abc.ABC):
             will natively support all operations.
         """
         if self.custom_expand_fn is not None:
+            # pylint:disable=not-callable
             return self.custom_expand_fn(circuit, max_expansion=max_expansion)
 
         return self.default_expand_fn(circuit, max_expansion=max_expansion)
 
-    def batch_transform(self, circuit):
+    def batch_transform(self, circuit: QuantumTape):
         """Apply a differentiable batch transform for preprocessing a circuit
         prior to execution. This method is called directly by the QNode, and
         should be overwritten if the device requires a transform that
@@ -714,44 +722,44 @@ class Device(abc.ABC):
             to be applied to the list of evaluated circuit results.
         """
         supports_hamiltonian = self.supports_observable("Hamiltonian")
+        supports_sum = self.supports_observable("Sum")
         finite_shots = self.shots is not None
         grouping_known = all(
             obs.grouping_indices is not None
             for obs in circuit.observables
-            if obs.name == "Hamiltonian"
+            if isinstance(obs, Hamiltonian)
+        )
+        # device property present in braket plugin
+        use_grouping = getattr(self, "use_grouping", True)
+
+        hamiltonian_in_obs = any(isinstance(obs, Hamiltonian) for obs in circuit.observables)
+        expval_sum_in_obs = any(
+            isinstance(m.obs, Sum) and isinstance(m, ExpectationMP) for m in circuit.measurements
         )
 
-        hamiltonian_in_obs = "Hamiltonian" in [obs.name for obs in circuit.observables]
+        is_shadow = any(isinstance(m, ShadowExpvalMP) for m in circuit.measurements)
 
-        return_types = [m.return_type for m in circuit.observables]
+        hamiltonian_unusable = not supports_hamiltonian or (finite_shots and not is_shadow)
 
-        is_shadow = ShadowExpval in return_types
-
-        if hamiltonian_in_obs and (
-            (not supports_hamiltonian or (finite_shots and not is_shadow)) or grouping_known
-        ):
+        if hamiltonian_in_obs and (hamiltonian_unusable or (use_grouping and grouping_known)):
             # If the observable contains a Hamiltonian and the device does not
             # support Hamiltonians, or if the simulation uses finite shots, or
             # if the Hamiltonian explicitly specifies an observable grouping,
             # split tape into multiple tapes of diagonalizable known observables.
             try:
                 circuits, hamiltonian_fn = qml.transforms.hamiltonian_expand(circuit, group=False)
-
             except ValueError as e:
                 raise ValueError(
                     "Can only return the expectation of a single Hamiltonian observable"
                 ) from e
+        elif expval_sum_in_obs and not is_shadow and not supports_sum:
+            circuits, hamiltonian_fn = qml.transforms.sum_expand(circuit)
+
         elif (
             len(circuit._obs_sharing_wires) > 0
             and not hamiltonian_in_obs
             and all(
-                t not in return_types
-                for t in [
-                    qml.measurements.Sample,
-                    qml.measurements.Probability,
-                    qml.measurements.Counts,
-                    qml.measurements.AllCounts,
-                ]
+                not isinstance(m, (SampleMP, ProbabilityMP, CountsMP)) for m in circuit.measurements
             )
         ):
             # Check for case of non-commuting terms and that there are no Hamiltonians
@@ -863,8 +871,9 @@ class Device(abc.ABC):
         quantum library requires that;
         all operations and method calls (including :meth:`apply` and :meth:`expval`)
         are then evaluated within the context of this context manager (see the
-        source of :meth:`.Device.execute` for more details).
+        source of :meth:`execute` for more details).
         """
+
         # pylint: disable=no-self-use
         class MockContext:  # pylint: disable=too-few-public-methods
             """Mock class as a default for the with statement in execute()."""
@@ -887,20 +896,11 @@ class Device(abc.ABC):
             ValueError: if `operation` is not a :class:`~.Operation` class or string
 
         Returns:
-            bool: ``True`` iff supplied operation is supported
+            bool: ``True`` if supplied operation is supported
         """
         if isinstance(operation, type) and issubclass(operation, Operation):
             return operation.__name__ in self.operations
         if isinstance(operation, str):
-
-            if operation.endswith(".inv"):
-                in_ops = operation[:-4] in self.operations
-                # TODO: update when all capabilities keys changed to "supports_inverse_operations"
-                supports_inv = self.capabilities().get(
-                    "supports_inverse_operations", False
-                ) or self.capabilities().get("inverse_operations", False)
-                return in_ops and supports_inv
-
             return operation in self.operations
 
         raise ValueError(
@@ -923,11 +923,6 @@ class Device(abc.ABC):
         if isinstance(observable, type) and issubclass(observable, Observable):
             return observable.__name__ in self.observables
         if isinstance(observable, str):
-
-            # This check regards observables that are also operations
-            if observable.endswith(".inv"):
-                return self.supports_operation(observable[:-4])
-
             return observable in self.observables
 
         raise ValueError(
@@ -936,7 +931,6 @@ class Device(abc.ABC):
 
     def check_validity(self, queue, observables):
         """Checks whether the operations and observables in queue are all supported by the device.
-        Includes checks for inverse operations.
 
         Args:
             queue (Iterable[~.operation.Operation]): quantum operation objects which are intended
@@ -950,10 +944,9 @@ class Device(abc.ABC):
         """
 
         for o in queue:
-
             operation_name = o.name
 
-            if getattr(o, "return_type", None) == MidMeasure and not self.capabilities().get(
+            if isinstance(o, MidMeasureMP) and not self.capabilities().get(
                 "supports_mid_measure", False
             ):
                 raise DeviceError(
@@ -961,17 +954,6 @@ class Device(abc.ABC):
                     "Apply the @qml.defer_measurements decorator to your quantum function to "
                     "simulate the application of mid-circuit measurements on this device."
                 )
-
-            if getattr(o, "inverse", False):
-                # TODO: update when all capabilities keys changed to "supports_inverse_operations"
-                supports_inv = self.capabilities().get(
-                    "supports_inverse_operations", False
-                ) or self.capabilities().get("inverse_operations", False)
-                if not supports_inv:
-                    raise DeviceError(
-                        f"The inverse of gates are not supported on device {self.short_name}"
-                    )
-                operation_name = o.base_name
 
             if not self.stopping_condition(o):
                 raise DeviceError(
@@ -999,17 +981,6 @@ class Device(abc.ABC):
                         )
             else:
                 observable_name = o.name
-
-                if issubclass(o.__class__, Operation) and o.inverse:
-                    # TODO: update when all capabilities keys changed to "supports_inverse_operations"
-                    supports_inv = self.capabilities().get(
-                        "supports_inverse_operations", False
-                    ) or self.capabilities().get("inverse_operations", False)
-                    if not supports_inv:
-                        raise DeviceError(
-                            f"The inverse of gates are not supported on device {self.short_name}"
-                        )
-                    observable_name = o.base_name
 
                 if not self.supports_observable(observable_name):
                     raise DeviceError(

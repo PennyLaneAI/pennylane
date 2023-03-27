@@ -435,21 +435,23 @@ op_1 = (
     + openfermion.QubitOperator("Y0 X1", 2)
     + openfermion.QubitOperator("Z0 Y1", 2.3e-08j)
 )
-op_2 = openfermion.QubitOperator("Z0 Y1", 2.23e-10j)
+op_2 = openfermion.QubitOperator("Z0 Y1", 2.3e-6j)
 
 
 @pytest.mark.parametrize(
     ("qubit_op", "tol"),
     [
         (op_1, 1e08),
-        (op_2, 1e06),
+        (op_2, 1e010),
     ],
 )
 def test_exception_import_operator(qubit_op, tol):
-    r"""Test that an error is raised if the QubitOperator contains complex coefficients.
-    Currently the Hamiltonian class does not support complex coefficients.
+    r"""Test that a warning is raised if the QubitOperator contains complex coefficients.
+    Currently, the Hamiltonian class does not support complex coefficients.
     """
-    with pytest.raises(TypeError, match="The coefficients entering the QubitOperator must be real"):
+    with pytest.warns(
+        UserWarning, match="The coefficients entering the QubitOperator must be real"
+    ):
         qml.qchem.convert.import_operator(qubit_op, "openfermion", tol=tol)
 
 

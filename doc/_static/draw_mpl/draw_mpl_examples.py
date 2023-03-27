@@ -93,7 +93,7 @@ def rcparams(circuit):
     plt.rcParams["lines.linewidth"] = 5
     plt.rcParams["figure.facecolor"] = "ghostwhite"
 
-    fig, ax = qml.draw_mpl(circuit)(1.2345, 1.2345)
+    fig, ax = qml.draw_mpl(circuit, style=None)(1.2345, 1.2345)
 
     plt.savefig(folder / "rcparams.png")
     plt.close()
@@ -102,18 +102,16 @@ def rcparams(circuit):
 
 def use_style(circuit):
 
-    qml.drawer.use_style("black_white")
+    fig, ax = qml.draw_mpl(circuit, style='sketch')(1.2345, 1.2345)
 
-    fig, ax = qml.draw_mpl(circuit)(1.2345, 1.2345)
-
-    plt.savefig(folder / "black_white_style.png")
+    plt.savefig(folder / "sketch_style.png")
     plt.close()
     plt.style.use("default")
 
 
 def wires_labels(circuit):
     fig, ax = draw_mpl(
-        circuit, wire_options={"color": "black", "linewidth": 5}, label_options={"size": 20}
+        circuit, wire_options={"color": "teal", "linewidth": 5}, label_options={"size": 20}
     )(1.2345, 1.2345)
     plt.savefig(folder / "wires_labels.png")
     plt.close()

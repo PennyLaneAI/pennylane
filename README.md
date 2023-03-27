@@ -1,7 +1,7 @@
 <p align="center">
   <!-- Tests (GitHub actions) -->
   <a href="https://github.com/PennyLaneAI/pennylane/actions?query=workflow%3ATests">
-    <img src="https://img.shields.io/github/workflow/status/PennyLaneAI/pennylane/Tests/master?logo=github&style=flat-square" />
+    <img src="https://img.shields.io/github/actions/workflow/status/PennyLaneAI/PennyLane/tests.yml?branch=master&style=flat-square" />
   </a>
   <!-- CodeCov -->
   <a href="https://codecov.io/gh/PennyLaneAI/pennylane">
@@ -59,7 +59,7 @@
 
 ## Installation
 
-PennyLane requires Python version 3.7 and above. Installation of PennyLane, as well as all
+PennyLane requires Python version 3.8 and above. Installation of PennyLane, as well as all
 dependencies, can be done using pip:
 
 ```console
@@ -70,7 +70,7 @@ python -m pip install pennylane
 
 **Docker** support exists for building using **CPU** and **GPU** (Nvidia CUDA
 11.1+) images. [See a more detailed description
-here](https://pennylane.readthedocs.io/en/stable/development/guide/installation.html#installation).
+here](https://pennylane.readthedocs.io/en/stable/development/guide/installation.html#docker).
 
 ## Getting started
 
@@ -111,7 +111,7 @@ guide](https://pennylane.ai/qml/demos_submission.html).
 Seeing is believing! Check out [our videos](https://pennylane.ai/qml/videos.html) to learn about
 PennyLane, quantum computing concepts, and more. 
 
-<a href="https://pennylane.ai/qml/videos.html)">
+<a href="https://pennylane.ai/qml/videos.html">
   <img src="https://raw.githubusercontent.com/PennyLaneAI/pennylane/master/doc/_static/readme/videos.png" width="900px">
 </a>
 

@@ -1,6 +1,6 @@
 :orphan:
 
-# Release 0.26.0 (current release)
+# Release 0.26.0
 
 <h3>New features since last release</h3>
 
@@ -510,7 +510,7 @@
   [(#2979)](https://github.com/PennyLaneAI/pennylane/pull/2979)
 
 * Fixed a bug where printing `qml.Hamiltonian` with complex coefficients raises `TypeError` in some cases.
-  [(#3005)](https://github.com/PennyLaneAI/pennylane/pull/3004)
+  [(#3004)](https://github.com/PennyLaneAI/pennylane/pull/3004)
 
 * Added a more descriptive error message when measuring non-commuting observables at the end of a circuit with
   `probs`, `samples`, `counts` and `allcounts`.

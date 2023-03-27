@@ -243,19 +243,21 @@ def test_qubit_observable(f_observable, q_observable):
 
 
 @pytest.mark.parametrize(
-    ("f_obs", "q_obs"),
+    ("f_obs", "q_obs", "notation"),
     [
         (
             [0],
             # trivial case of a creation operator, 0^ -> (X_0 - iY_0) / 2
             # reformatted the original openfermion output: (0.5+0j) [] + (-0.5+0j) [Z0]
             ([(0.5 + 0j), (0.0 - 0.5j)], [qml.PauliX(0), qml.PauliY(0)]),
+            None,
         ),
         (
             [0, 0],
             # obtained with openfermion using: jordan_wigner(FermionOperator('0^ 0', 1))
             # reformatted the original openfermion output: (0.5+0j) [] + (-0.5+0j) [Z0]
             ([(0.5 + 0j), (-0.5 + 0j)], [qml.Identity(0), qml.PauliZ(0)]),
+            None,
         ),
         (
             [3, 0],
@@ -270,6 +272,7 @@ def test_qubit_observable(f_observable, q_observable):
                     qml.PauliY(0) @ qml.PauliZ(1) @ qml.PauliZ(2) @ qml.PauliY(3),
                 ],
             ),
+            None,
         ),
         (
             [1, 4],
@@ -284,6 +287,13 @@ def test_qubit_observable(f_observable, q_observable):
                     qml.PauliY(1) @ qml.PauliZ(2) @ qml.PauliZ(3) @ qml.PauliY(4),
                 ],
             ),
+            None,
+        ),
+        (
+            [1, 1, 1, 1],
+            # obtained with openfermion using: jordan_wigner(FermionOperator('1^ 1^ 1 1', 1))
+            ([0], [qml.Identity(1)]),
+            "physicist",
         ),
         (
             [3, 1, 3, 1],
@@ -293,89 +303,113 @@ def test_qubit_observable(f_observable, q_observable):
                 [(-0.25 + 0j), (0.25 + 0j), (-0.25 + 0j), (0.25 + 0j)],
                 [qml.Identity(0), qml.PauliZ(1), qml.PauliZ(1) @ qml.PauliZ(3), qml.PauliZ(3)],
             ),
+            "physicist",
+        ),
+        (
+            [3, 1, 3, 1],
+            # obtained with openfermion using: jordan_wigner(FermionOperator('3^ 1 3^ 1', 1))
+            ([0], [qml.Identity(1)]),
+            "chemist",
+        ),
+        (
+            [1, 0, 1, 1],
+            # obtained with openfermion using: jordan_wigner(FermionOperator('1^ 0 1^ 1', 1))
+            ([0], [qml.Identity(0)]),
+            "chemist",
+        ),
+        (
+            [1, 1, 0, 0],
+            # obtained with openfermion using: jordan_wigner(FermionOperator('1^ 1 0^ 0', 1))
+            (
+                [(0.25 + 0j), (-0.25 + 0j), (0.25 + 0j), (-0.25 + 0j)],
+                [qml.Identity(0), qml.PauliZ(0), qml.PauliZ(0) @ qml.PauliZ(1), qml.PauliZ(1)],
+            ),
+            "chemist",
+        ),
+        (
+            [5, 5, 5, 5],
+            # obtained with openfermion using: jordan_wigner(FermionOperator('5^ 5 5^ 5', 1))
+            (
+                [(0.5 + 0j), (-0.5 + 0j)],
+                [qml.Identity(0), qml.PauliZ(5)],
+            ),
+            "chemist",
+        ),
+        (
+            [3, 3, 3, 1],
+            # obtained with openfermion using: jordan_wigner(FermionOperator('3^ 3 3^ 1', 1))
+            (
+                [(0.25 + 0j), (-0.25j), (0.25j), (0.25 + 0j)],
+                [
+                    qml.PauliX(1) @ qml.PauliZ(2) @ qml.PauliX(3),
+                    qml.PauliX(1) @ qml.PauliZ(2) @ qml.PauliY(3),
+                    qml.PauliY(1) @ qml.PauliZ(2) @ qml.PauliX(3),
+                    qml.PauliY(1) @ qml.PauliZ(2) @ qml.PauliY(3),
+                ],
+            ),
+            "chemist",
+        ),
+        (
+            [3, 0, 2, 1],
+            # obtained with openfermion using: jordan_wigner(FermionOperator('3^ 0 2^ 1', 1))
+            (
+                [
+                    (-0.0625 + 0j),
+                    0.0625j,
+                    0.0625j,
+                    (0.0625 + 0j),
+                    -0.0625j,
+                    (-0.0625 + 0j),
+                    (-0.0625 + 0j),
+                    0.0625j,
+                    -0.0625j,
+                    (-0.0625 + 0j),
+                    (-0.0625 + 0j),
+                    0.0625j,
+                    (0.0625 + 0j),
+                    -0.0625j,
+                    -0.0625j,
+                    (-0.0625 + 0j),
+                ],
+                [
+                    qml.PauliX(0) @ qml.PauliX(1) @ qml.PauliX(2) @ qml.PauliX(3),
+                    qml.PauliX(0) @ qml.PauliX(1) @ qml.PauliX(2) @ qml.PauliY(3),
+                    qml.PauliX(0) @ qml.PauliX(1) @ qml.PauliY(2) @ qml.PauliX(3),
+                    qml.PauliX(0) @ qml.PauliX(1) @ qml.PauliY(2) @ qml.PauliY(3),
+                    qml.PauliX(0) @ qml.PauliY(1) @ qml.PauliX(2) @ qml.PauliX(3),
+                    qml.PauliX(0) @ qml.PauliY(1) @ qml.PauliX(2) @ qml.PauliY(3),
+                    qml.PauliX(0) @ qml.PauliY(1) @ qml.PauliY(2) @ qml.PauliX(3),
+                    qml.PauliX(0) @ qml.PauliY(1) @ qml.PauliY(2) @ qml.PauliY(3),
+                    qml.PauliY(0) @ qml.PauliX(1) @ qml.PauliX(2) @ qml.PauliX(3),
+                    qml.PauliY(0) @ qml.PauliX(1) @ qml.PauliX(2) @ qml.PauliY(3),
+                    qml.PauliY(0) @ qml.PauliX(1) @ qml.PauliY(2) @ qml.PauliX(3),
+                    qml.PauliY(0) @ qml.PauliX(1) @ qml.PauliY(2) @ qml.PauliY(3),
+                    qml.PauliY(0) @ qml.PauliY(1) @ qml.PauliX(2) @ qml.PauliX(3),
+                    qml.PauliY(0) @ qml.PauliY(1) @ qml.PauliX(2) @ qml.PauliY(3),
+                    qml.PauliY(0) @ qml.PauliY(1) @ qml.PauliY(2) @ qml.PauliX(3),
+                    qml.PauliY(0) @ qml.PauliY(1) @ qml.PauliY(2) @ qml.PauliY(3),
+                ],
+            ),
+            "chemist",
         ),
     ],
 )
-def test_jordan_wigner(f_obs, q_obs):
+def test_jordan_wigner(f_obs, q_obs, notation):
     r"""Test that jordan_wigner returns the correct operator."""
-    res = qchem.jordan_wigner(f_obs)
+    res = qchem.jordan_wigner(f_obs, notation=notation)
     assert qml.Hamiltonian(res[0], res[1]).compare(qml.Hamiltonian(q_obs[0], q_obs[1]))
 
 
 @pytest.mark.parametrize(
-    ("f_obs", "q_obs"),
+    ("f_obs", "notation"),
     [
         (
             [1, 1, 1, 1],
-            # obtained with openfermion using: jordan_wigner(FermionOperator('1^ 1^ 1 1', 1))
-            0.0,
+            "random_notation",
         ),
     ],
 )
-def test_jordan_wigner_zero_output(f_obs, q_obs):
-    r"""Test that jordan_wigner returns the correct operator."""
-    res = qchem.jordan_wigner(f_obs)
-    assert res == q_obs
-
-
-@pytest.mark.parametrize(
-    ("p1", "p2", "p_ref"),
-    [
-        (
-            [(0, "X"), (1, "Y")],  # X_0 @ Y_1
-            [(0, "X"), (2, "Y")],  # X_0 @ Y_2
-            ([(2, "Y"), (1, "Y")], 1.0),  # X_0 @ Y_1 @ X_0 @ Y_2
-        ),
-    ],
-)
-def test_pauli_mult(p1, p2, p_ref):
-    r"""Test that _pauli_mult returns the correct operator."""
-    result = qchem.observable_hf._pauli_mult(p1, p2)
-
-    assert result == p_ref
-
-
-@pytest.mark.parametrize(
-    ("hamiltonian", "result"),
-    [
-        (
-            qml.Hamiltonian(
-                np.array([0.5, 0.5]), [qml.PauliX(0) @ qml.PauliY(1), qml.PauliX(0) @ qml.PauliY(1)]
-            ),
-            qml.Hamiltonian(np.array([1.0]), [qml.PauliX(0) @ qml.PauliY(1)]),
-        ),
-        (
-            qml.Hamiltonian(
-                np.array([0.5, -0.5]),
-                [qml.PauliX(0) @ qml.PauliY(1), qml.PauliX(0) @ qml.PauliY(1)],
-            ),
-            qml.Hamiltonian([], []),
-        ),
-        (
-            qml.Hamiltonian(
-                np.array([0.0, -0.5]),
-                [qml.PauliX(0) @ qml.PauliY(1), qml.PauliX(0) @ qml.PauliZ(1)],
-            ),
-            qml.Hamiltonian(np.array([-0.5]), [qml.PauliX(0) @ qml.PauliZ(1)]),
-        ),
-        (
-            qml.Hamiltonian(
-                np.array([0.25, 0.25, 0.25, -0.25]),
-                [
-                    qml.PauliX(0) @ qml.PauliY(1),
-                    qml.PauliX(0) @ qml.PauliZ(1),
-                    qml.PauliX(0) @ qml.PauliY(1),
-                    qml.PauliX(0) @ qml.PauliY(1),
-                ],
-            ),
-            qml.Hamiltonian(
-                np.array([0.25, 0.25]),
-                [qml.PauliX(0) @ qml.PauliY(1), qml.PauliX(0) @ qml.PauliZ(1)],
-            ),
-        ),
-    ],
-)
-def test_simplify(hamiltonian, result):
-    r"""Test that simplify returns the correct hamiltonian."""
-    h = qchem.simplify(hamiltonian)
-    assert h.compare(result)
+def test_jordan_wigner_error(f_obs, notation):
+    r"""Test that an error is raised if a wrong/not-supported notation is used."""
+    with pytest.raises(ValueError, match="the only supported notations for the two-body terms are"):
+        qchem.jordan_wigner(f_obs, notation=notation)

@@ -14,13 +14,13 @@
 """
 Tests for the ``default.mixed`` device for the JAX interface
 """
-import re
+# pylint: disable=protected-access
 import pytest
 
+import numpy as np
 import pennylane as qml
-from pennylane import numpy as np
+from pennylane import numpy as pnp
 from pennylane.devices.default_mixed import DefaultMixed
-from pennylane import DeviceError
 
 pytestmark = pytest.mark.jax
 
@@ -40,7 +40,7 @@ class TestQNodeIntegration:
         """Test that the plugin device loads correctly"""
         dev = qml.device("default.mixed", wires=2)
         assert dev.num_wires == 2
-        assert dev.shots == None
+        assert dev.shots is None
         assert dev.short_name == "default.mixed"
         assert dev.capabilities()["passthru_devices"]["jax"] == "default.mixed"
 
@@ -102,7 +102,7 @@ class TestDtypePreserved:
             qml.probs(wires=[2, 0]),
         ],
     )
-    def test_real_dtype(self, enable_x64, r_dtype, measurement, tol):
+    def test_real_dtype(self, enable_x64, r_dtype, measurement):
         """Test that the user-defined dtype of the device is preserved
         for QNodes with real-valued outputs"""
         config.config.update("jax_enable_x64", enable_x64)
@@ -123,7 +123,7 @@ class TestDtypePreserved:
         "measurement",
         [qml.state(), qml.density_matrix(wires=[1]), qml.density_matrix(wires=[2, 0])],
     )
-    def test_complex_dtype(self, enable_x64, c_dtype, measurement, tol):
+    def test_complex_dtype(self, enable_x64, c_dtype, measurement):
         """Test that the user-defined dtype of the device is preserved
         for QNodes with complex-valued outputs"""
         config.config.update("jax_enable_x64", enable_x64)
@@ -188,6 +188,83 @@ class TestOps:
 
         assert np.all(jnp.reshape(dev._state, (8, 8)) == state)
         spy.assert_called()
+
+
+class TestApplyChannelMethodChoice:
+    """Test that the right method between _apply_channel and _apply_channel_tensordot
+    is chosen."""
+
+    @pytest.mark.parametrize(
+        "op, exp_method, dev_wires",
+        [
+            (qml.RX(jnp.array(0.2), 0), "_apply_channel", 1),
+            (qml.RX(jnp.array(0.2), 0), "_apply_channel", 8),
+            (qml.CNOT([0, 1]), "_apply_channel", 3),
+            (qml.CNOT([0, 1]), "_apply_channel", 8),
+            (qml.MultiControlledX(wires=list(range(2))), "_apply_channel", 3),
+            (qml.MultiControlledX(wires=list(range(3))), "_apply_channel_tensordot", 3),
+            (qml.MultiControlledX(wires=list(range(8))), "_apply_channel_tensordot", 8),
+            (qml.PauliError("X", jnp.array(0.5), 0), "_apply_channel", 2),
+            (qml.PauliError("XXX", jnp.array(0.5), [0, 1, 2]), "_apply_channel", 4),
+            (
+                qml.PauliError("X" * 8, jnp.array(0.5), list(range(8))),
+                "_apply_channel_tensordot",
+                8,
+            ),
+        ],
+    )
+    def test_with_numpy_state(self, mocker, op, exp_method, dev_wires):
+        """Test with a numpy array as device state."""
+
+        methods = ["_apply_channel", "_apply_channel_tensordot"]
+        del methods[methods.index(exp_method)]
+        unexp_method = methods[0]
+        spy_exp = mocker.spy(DefaultMixed, exp_method)
+        spy_unexp = mocker.spy(DefaultMixed, unexp_method)
+        dev = qml.device("default.mixed", wires=dev_wires)
+        state = np.zeros((2**dev_wires, 2**dev_wires))
+        state[0, 0] = 1.0
+        dev._state = np.array(state).reshape([2] * (2 * dev_wires))
+        dev._apply_operation(op)
+
+        spy_unexp.assert_not_called()
+        spy_exp.assert_called_once()
+
+    @pytest.mark.parametrize(
+        "op, exp_method, dev_wires",
+        [
+            (qml.RX(jnp.array(0.2), 0), "_apply_channel", 1),
+            (qml.RX(jnp.array(0.2), 0), "_apply_channel", 8),
+            (qml.CNOT([0, 1]), "_apply_channel", 3),
+            (qml.CNOT([0, 1]), "_apply_channel", 8),
+            (qml.MultiControlledX(wires=list(range(2))), "_apply_channel", 3),
+            (qml.MultiControlledX(wires=list(range(3))), "_apply_channel", 3),
+            (qml.MultiControlledX(wires=list(range(8))), "_apply_channel_tensordot", 8),
+            (qml.PauliError("X", jnp.array(0.5), 0), "_apply_channel", 2),
+            (qml.PauliError("XXX", jnp.array(0.5), [0, 1, 2]), "_apply_channel", 4),
+            (
+                qml.PauliError("X" * 8, jnp.array(0.5), list(range(8))),
+                "_apply_channel_tensordot",
+                8,
+            ),
+        ],
+    )
+    def test_with_jax_state(self, mocker, op, exp_method, dev_wires):
+        """Test with a JAX array as device state."""
+
+        methods = ["_apply_channel", "_apply_channel_tensordot"]
+        del methods[methods.index(exp_method)]
+        unexp_method = methods[0]
+        spy_exp = mocker.spy(DefaultMixed, exp_method)
+        spy_unexp = mocker.spy(DefaultMixed, unexp_method)
+        dev = qml.device("default.mixed", wires=dev_wires)
+        state = np.zeros((2**dev_wires, 2**dev_wires))
+        state[0, 0] = 1.0
+        dev._state = jnp.array(state).reshape([2] * (2 * dev_wires))
+        dev._apply_operation(op)
+
+        spy_unexp.assert_not_called()
+        spy_exp.assert_called_once()
 
 
 class TestPassthruIntegration:
@@ -264,7 +341,7 @@ class TestPassthruIntegration:
     def test_backprop_jacobian_agrees_parameter_shift(self, jacobian_fn, decorator, tol):
         """Test that jacobian of a QNode with an attached default.mixed device with JAX
         gives the correct result with respect to the parameter-shift method"""
-        p = np.array([0.43316321, 0.2162158, 0.75110998, 0.94714242])
+        p = pnp.array([0.43316321, 0.2162158, 0.75110998, 0.94714242])
         p_jax = jnp.array(p)
 
         def circuit(x):
@@ -281,23 +358,37 @@ class TestPassthruIntegration:
         circuit1 = qml.QNode(circuit, dev1, diff_method="backprop", interface="jax")
         circuit2 = qml.QNode(circuit, dev2, diff_method="parameter-shift")
 
-        assert circuit1.gradient_fn == "backprop"
-        assert circuit2.gradient_fn is qml.gradients.param_shift
-
         res = decorator(circuit1)(p_jax)
         assert np.allclose(res, circuit2(p), atol=tol, rtol=0)
+
+        assert circuit1.gradient_fn == "backprop"
+        assert circuit2.gradient_fn is qml.gradients.param_shift
 
         res = decorator(jacobian_fn(circuit1, 0))(p_jax)
         assert np.allclose(res, qml.jacobian(circuit2)(p), atol=tol, rtol=0)
 
+    @pytest.mark.parametrize(
+        "op, wire_ids, exp_fn",
+        [
+            (qml.RY, [0], lambda a: -jnp.sin(a)),
+            (qml.AmplitudeDamping, [0], lambda a: -2),
+            (qml.DepolarizingChannel, [-1], lambda a: -4 / 3),
+            (lambda a, wires: qml.ResetError(p0=a, p1=0.1, wires=wires), [0], lambda a: -2),
+            (lambda a, wires: qml.ResetError(p0=0.1, p1=a, wires=wires), [0], lambda a: 0),
+        ],
+    )
     @pytest.mark.parametrize("decorator", decorators)
-    def test_state_differentiability(self, decorator, tol):
+    def test_state_differentiability(self, decorator, op, wire_ids, exp_fn, tol):
         """Test that the device state can be differentiated"""
+        # pylint: disable=too-many-arguments
+        config.config.update("jax_enable_x64", True)
+
         dev = qml.device("default.mixed", wires=1)
 
         @qml.qnode(dev, interface="jax", diff_method="backprop")
         def circuit(a):
-            qml.RY(a, wires=0)
+            qml.PauliX(dev.wires[wire_ids[0]])
+            op(a, wires=[dev.wires[idx] for idx in wire_ids])
             return qml.state()
 
         a = jnp.array(0.54)
@@ -307,7 +398,7 @@ class TestPassthruIntegration:
             return res[1][1] - res[0][0]
 
         grad = decorator(jax.grad(cost))(a)
-        expected = np.sin(a)
+        expected = exp_fn(a)
 
         assert np.allclose(grad, expected, atol=tol, rtol=0)
 
@@ -414,6 +505,7 @@ class TestPassthruIntegration:
 
     def test_sample_backprop_error(self):
         """Test that sampling in backpropagation mode raises an error"""
+        # pylint: disable=unused-variable
         dev = qml.device("default.mixed", wires=1, shots=100)
 
         msg = "Backpropagation is only supported when shots=None"
@@ -575,7 +667,7 @@ class TestPassthruIntegration:
             # TODO: https://github.com/PennyLaneAI/pennylane/issues/2762
             pytest.xfail("Parameter broadcasting currently not supported for JAX jit")
 
-        @qml.batch_params
+        @qml.batch_params(all_operations=True)
         @qml.qnode(dev, diff_method="backprop", interface="jax")
         def circuit(a, b):
             qml.RX(a, wires=0)
@@ -622,13 +714,14 @@ class TestHighLevelIntegration:
         dev = qml.device("default.mixed", wires=2)
 
         obs_list = [qml.PauliX(0) @ qml.PauliY(1), qml.PauliZ(0), qml.PauliZ(0) @ qml.PauliZ(1)]
-        qnodes = qml.map(
-            qml.templates.StronglyEntanglingLayers,
-            obs_list,
-            dev,
-            interface="jax",
-            diff_method="backprop",
-        )
+        with pytest.warns(UserWarning, match="The map function is deprecated"):
+            qnodes = qml.map(
+                qml.templates.StronglyEntanglingLayers,
+                obs_list,
+                dev,
+                interface="jax",
+                diff_method="backprop",
+            )
 
         assert qnodes.interface == "jax"
 

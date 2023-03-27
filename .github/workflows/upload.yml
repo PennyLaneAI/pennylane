@@ -4,8 +4,9 @@ on:
     types: [published]
 
 env:
-  TF_VERSION: 2.6.0
-  TORCH_VERSION: 1.10.0+cpu
+  JAX_VERSION: 0.4.3
+  TF_VERSION: 2.10.0
+  TORCH_VERSION: 1.13.0
 
 
 jobs:
@@ -16,26 +17,27 @@ jobs:
     strategy:
       matrix:
         config:
-          - { python-version: 3.7, suite: 'torch' }
-          - { python-version: 3.7, suite: 'tf' }
-          - { python-version: 3.8, suite: 'tf' }
-          - { python-version: 3.8, suite: 'torch' }
-          - { python-version: 3.8, suite: 'jax' }
-          - { python-version: 3.7, suite: 'autograd' }
-          - { python-version: 3.8, suite: 'autograd' }
-          - { python-version: 3.9, suite: 'autograd' }
-          - { python-version: '3.10', suite: 'autograd' }
-          - { python-version: 3.7, suite: 'core' }
-          - { python-version: 3.8, suite: 'core' }
-          - { python-version: 3.9, suite: 'core' }
-          - { python-version: '3.10', suite: 'core' }
+          - {python-version: 3.8, suite: 'tf'}
+          - {python-version: '3.10', suite: 'tf'}
+          - {python-version: 3.8, suite: 'torch'}
+          - {python-version: '3.11', suite: 'torch'}
+          - {python-version: 3.8, suite: 'jax'}
+          - {python-version: '3.11', suite: 'jax'}
+          - {python-version: 3.8, suite: 'autograd'}
+          - {python-version: 3.9, suite: 'autograd'}
+          - {python-version: '3.10', suite: 'autograd'}
+          - {python-version: '3.11', suite: 'autograd'}
+          - {python-version: 3.8, suite: 'core'}
+          - {python-version: 3.9, suite: 'core'}
+          - {python-version: '3.10', suite: 'core'}
+          - {python-version: '3.11', suite: 'core'}
 
     env:
       SUITE: ${{ matrix.config.suite }}
 
     steps:
       - name: Cancel Previous Runs
-        uses: styfle/cancel-workflow-action@0.4.1
+        uses: styfle/cancel-workflow-action@0.11.0
         with:
           access_token: ${{ github.token }}
 
@@ -66,7 +68,7 @@ jobs:
       # to the latest release. We can always fix a version later if it breaks.
       - name: Conditionally install JAX
         if: matrix.config.suite == 'jax'
-        run: pip3 install jax jaxlib
+        run: pip3 install jax==$JAX_VERSION jaxlib==$JAX_VERSION
 
       - name: Install PennyLane
         run: |
@@ -84,7 +86,7 @@ jobs:
 
     steps:
       - name: Cancel Previous Runs
-        uses: styfle/cancel-workflow-action@0.4.1
+        uses: styfle/cancel-workflow-action@0.11.0
         with:
           access_token: ${{ github.token }}
 
@@ -126,7 +128,7 @@ jobs:
 
     steps:
       - name: Cancel Previous Runs
-        uses: styfle/cancel-workflow-action@0.4.1
+        uses: styfle/cancel-workflow-action@0.11.0
         with:
           access_token: ${{ github.token }}
 
@@ -152,7 +154,7 @@ jobs:
         run: pip3 install tensorflow~=$TF_VERSION keras~=$TF_VERSION
 
       - name: Install JAX
-        run: pip3 install jax jaxlib
+        run: pip3 install jax==$JAX_VERSION jaxlib==$JAX_VERSION
 
       - name: Install KaHyPar
         run: pip3 install kahypar==1.1.7
@@ -171,7 +173,7 @@ jobs:
 
     steps:
       - name: Cancel Previous Runs
-        uses: styfle/cancel-workflow-action@0.4.1
+        uses: styfle/cancel-workflow-action@0.11.0
         with:
           access_token: ${{ github.token }}
 
@@ -204,13 +206,66 @@ jobs:
         run: |
           python -m pytest tests -m qchem -n auto
 
-  # Testing the new return types suite
-  return-tests:
+  data-tests:
     runs-on: ubuntu-latest
 
     steps:
       - name: Cancel Previous Runs
-        uses: styfle/cancel-workflow-action@0.4.1
+        uses: styfle/cancel-workflow-action@0.11.0
+        with:
+          access_token: ${{ github.token }}
+
+      - uses: actions/checkout@v2
+        with:
+          fetch-depth: 1
+
+      - name: Set up Python
+        uses: actions/setup-python@v2
+        with:
+          python-version: '3.10'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip && pip install wheel --upgrade
+          pip install -r requirements-ci.txt --upgrade
+          pip install -r requirements-dev.txt --upgrade
+
+      - name: Install zstd
+        run: pip3 install zstd
+
+      - name: Install dill
+        run: pip3 install dill
+
+      - name: Install PennyLane
+        run: |
+          python setup.py bdist_wheel
+          pip install dist/PennyLane*.whl
+
+      - name: Run tests
+        run: |
+          python -m pytest tests -m data -n auto
+
+  # Testing the new return types suite
+  return-tests:
+    runs-on: ubuntu-latest
+
+    strategy:
+      matrix:
+        config:
+          - { loc: "tests/returntypes/jax"}
+          - { loc: "tests/returntypes/tf"}
+          - { loc: "tests/returntypes/torch"}
+          - { loc: "tests/returntypes/autograd"}
+          - { loc: "tests/returntypes/gradients"}
+          - { loc: "tests/returntypes/transforms"}
+          - { loc: "tests/returntypes/paramshift"}
+          - { loc: "tests/returntypes/finitediff"}
+          - { loc: "tests/returntypes/core"}
+          - { loc: "tests/returntypes/optimizers"}
+
+    steps:
+      - name: Cancel Previous Runs
+        uses: styfle/cancel-workflow-action@0.11.0
         with:
           access_token: ${{ github.token }}
 
@@ -236,7 +291,7 @@ jobs:
         run: pip3 install tensorflow~=$TF_VERSION keras~=$TF_VERSION
 
       - name: Install JAX
-        run: pip3 install jax jaxlib
+        run: pip3 install jax==$JAX_VERSION jaxlib==$JAX_VERSION
 
       - name: Install PennyLane
         run: |
@@ -245,7 +300,7 @@ jobs:
 
       - name: Run tests
         run: |
-          python -m pytest tests/returntypes -n auto
+          python -m pytest ${{ matrix.config.loc }} -n auto
 
   device-tests:
     runs-on: ubuntu-latest
@@ -261,7 +316,7 @@ jobs:
 
     steps:
       - name: Cancel Previous Runs
-        uses: styfle/cancel-workflow-action@0.4.1
+        uses: styfle/cancel-workflow-action@0.11.0
         with:
           access_token: ${{ github.token }}
 
@@ -290,7 +345,7 @@ jobs:
 
       - name: Conditionally install Jax
         if: contains(matrix.config.device, 'jax')
-        run: pip3 install jax jaxlib
+        run: pip3 install jax==$JAX_VERSION jaxlib==$JAX_VERSION
 
       - name: Install PennyLane
         run: |
@@ -306,7 +361,7 @@ jobs:
   upload:
     runs-on: ubuntu-latest
     # Make sure that the PennyLane is not released unless the tests are passing.
-    needs: [core-and-interface-tests, all-interfaces-tests, qcut-tests, qchem-tests, return-tests, device-tests]
+    needs: [core-and-interface-tests, all-interfaces-tests, qcut-tests, qchem-tests, return-tests, data-tests, device-tests]
     steps:
       - uses: actions/checkout@v2
         with:

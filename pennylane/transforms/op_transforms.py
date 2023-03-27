@@ -209,7 +209,7 @@ class op_transform:
             # is the object we wish to transform
             obj, *targs = targs
 
-        if isinstance(obj, (qml.operation.Operator, qml.tape.QuantumTape)) or callable(obj):
+        if isinstance(obj, (qml.operation.Operator, qml.tape.QuantumScript)) or callable(obj):
             return self._create_wrapper(obj, *targs, **tkwargs)
 
         # Input is not an operator nor a QNode nor a quantum tape nor a qfunc.
@@ -258,7 +258,6 @@ class op_transform:
             return self._fn(obj, *args, **kwargs)
 
         except Exception as e1:  # pylint: disable=broad-except
-
             try:
                 # attempt to decompose the operation and call
                 # the tape transform function if defined
@@ -297,7 +296,6 @@ class op_transform:
             raise OperationTransformError(
                 "This transform does not support tapes or QNodes with multiple operations."
             )
-
         return self._tape_fn(obj, *args, **kwargs)
 
     @property
@@ -411,7 +409,7 @@ class op_transform:
 
             wrapper = self.fn(obj, *targs, **tkwargs)
 
-        elif isinstance(obj, qml.tape.QuantumTape):
+        elif isinstance(obj, qml.tape.QuantumScript):
             # Input is a quantum tape. Get the quantum tape.
             tape, verified_wire_order = self._make_tape(obj, wire_order)
 
@@ -482,7 +480,7 @@ class op_transform:
             tape = obj.qtape
             wires = obj.device.wires
 
-        elif isinstance(obj, qml.tape.QuantumTape):
+        elif isinstance(obj, qml.tape.QuantumScript):
             # user passed a tape
             tape = obj
             wires = tape.wires
@@ -495,7 +493,7 @@ class op_transform:
 
         elif callable(obj):
             # user passed something that is callable but not a tape or QNode.
-            tape = qml.transforms.make_tape(obj)(*args, **kwargs)
+            tape = qml.tape.make_qscript(obj)(*args, **kwargs)
             wires = tape.wires
 
             # raise exception if it is not a quantum function

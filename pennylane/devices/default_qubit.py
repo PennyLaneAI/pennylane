@@ -18,17 +18,22 @@ It implements the necessary :class:`~pennylane._device.Device` methods as well a
 :mod:`qubit operations <pennylane.ops.qubit>`, and provides a very simple pure state
 simulation of a qubit-based quantum circuit architecture.
 """
-import itertools
 import functools
+import itertools
 from string import ascii_letters as ABC
+from typing import List
 
 import numpy as np
 from scipy.sparse import csr_matrix
 
 import pennylane as qml
-from pennylane import QubitDevice, DeviceError, QubitStateVector, BasisState, Snapshot
+from pennylane import BasisState, DeviceError, QubitDevice, QubitStateVector, Snapshot
+from pennylane.operation import Operation
 from pennylane.ops.qubit.attributes import diagonal_in_z_basis
+from pennylane.pulse import ParametrizedEvolution
+from pennylane.typing import TensorLike
 from pennylane.wires import WireError
+
 from .._version import __version__
 
 ABC_ARRAY = np.array(list(ABC))
@@ -95,6 +100,7 @@ class DefaultQubit(QubitDevice):
         "QubitUnitary",
         "ControlledQubitUnitary",
         "MultiControlledX",
+        "IntegerComparator",
         "DiagonalQubitUnitary",
         "PauliX",
         "PauliY",
@@ -117,10 +123,15 @@ class DefaultQubit(QubitDevice):
         "SQISW",
         "CSWAP",
         "Toffoli",
+        "CCZ",
         "CY",
         "CZ",
+        "CH",
         "PhaseShift",
         "ControlledPhaseShift",
+        "CPhaseShift00",
+        "CPhaseShift01",
+        "CPhaseShift10",
         "CPhase",
         "RX",
         "RY",
@@ -161,6 +172,7 @@ class DefaultQubit(QubitDevice):
         "SProd",
         "Prod",
         "Exp",
+        "Evolution",
     }
 
     def __init__(
@@ -191,9 +203,13 @@ class DefaultQubit(QubitDevice):
     @property
     def stopping_condition(self):
         def accepts_obj(obj):
+            if obj.name == "QFT" and len(obj.wires) >= 6:
+                return False
+            if obj.name == "GroverOperator" and len(obj.wires) >= 13:
+                return False
             if getattr(obj, "has_matrix", False):
                 # pow operations dont work with backprop or adjoint without decomposition
-                # use class name string so we don't need to use isisntance check
+                # use class name string so we don't need to use isinstance check
                 return not (obj.__class__.__name__ == "Pow" and qml.operation.is_trainable(obj))
             return obj.name in self.observables.union(self.operations)
 
@@ -235,7 +251,6 @@ class DefaultQubit(QubitDevice):
 
         # apply the circuit operations
         for i, operation in enumerate(operations):
-
             if i > 0 and isinstance(operation, (QubitStateVector, BasisState)):
                 raise DeviceError(
                     f"Operation {operation.name} cannot be used after other Operations have already been applied "
@@ -253,6 +268,8 @@ class DefaultQubit(QubitDevice):
                         self._debugger.snapshots[operation.tag] = state_vector
                     else:
                         self._debugger.snapshots[len(self._debugger.snapshots)] = state_vector
+            elif isinstance(operation, ParametrizedEvolution):
+                self._state = self._apply_parametrized_evolution(self._state, operation)
             else:
                 self._state = self._apply_operation(self._state, operation)
 
@@ -262,6 +279,18 @@ class DefaultQubit(QubitDevice):
         # apply the circuit rotations
         for operation in rotations:
             self._state = self._apply_operation(self._state, operation)
+
+    def _apply_parametrized_evolution(self, state: TensorLike, operation: ParametrizedEvolution):
+        """Applies a parametrized evolution to the input state.
+
+        Args:
+            state (array[complex]): input state
+            operation (ParametrizedEvolution): operation to apply on the state
+        """
+        raise NotImplementedError(
+            f"The device {self.short_name} cannot execute a ParametrizedEvolution operation. "
+            "Please use the jax interface."
+        )
 
     def _apply_operation(self, state, operation):
         """Applies operations to the input state.
@@ -280,7 +309,7 @@ class DefaultQubit(QubitDevice):
         if operation.__class__.__name__ in self._apply_ops:
             shift = int(self._ndim(state) > self.num_wires)
             axes = [ax + shift for ax in self.wires.indices(wires)]
-            return self._apply_ops[operation.base_name](state, axes, inverse=operation.inverse)
+            return self._apply_ops[operation.base_name](state, axes)
 
         matrix = self._asarray(self._get_unitary_matrix(operation), dtype=self.C_DTYPE)
 
@@ -525,82 +554,79 @@ class DefaultQubit(QubitDevice):
         # intercept other Hamiltonians
         # TODO: Ideally, this logic should not live in the Device, but be moved
         # to a component that can be re-used by devices as needed.
-        if observable.name in ("Hamiltonian", "SparseHamiltonian"):
-            assert self.shots is None, f"{observable.name} must be used with shots=None"
+        if observable.name not in ("Hamiltonian", "SparseHamiltonian"):
+            return super().expval(observable, shot_range=shot_range, bin_size=bin_size)
 
-            backprop_mode = (
-                not isinstance(self.state, np.ndarray)
-                or any(not isinstance(d, (float, np.ndarray)) for d in observable.data)
-            ) and observable.name == "Hamiltonian"
+        assert self.shots is None, f"{observable.name} must be used with shots=None"
 
-            if backprop_mode:
-                # TODO[dwierichs]: This branch is not adapted to broadcasting yet
-                if self._ndim(self.state) == 2:
-                    raise NotImplementedError(
-                        "Expectation values of Hamiltonians for interface!=None are "
-                        "not supported together with parameter broadcasting yet"
-                    )
-                # We must compute the expectation value assuming that the Hamiltonian
-                # coefficients *and* the quantum states are tensor objects.
+        self.map_wires(observable.wires)
+        backprop_mode = (
+            not isinstance(self.state, np.ndarray)
+            or any(not isinstance(d, (float, np.ndarray)) for d in observable.data)
+        ) and observable.name == "Hamiltonian"
 
-                # Compute  <psi| H |psi> via sum_i coeff_i * <psi| PauliWord |psi> using a sparse
-                # representation of the Pauliword
-                res = qml.math.cast(qml.math.convert_like(0.0, observable.data), dtype=complex)
-                interface = qml.math.get_interface(self.state)
+        if backprop_mode:
+            # TODO[dwierichs]: This branch is not adapted to broadcasting yet
+            if self._ndim(self.state) == 2:
+                raise NotImplementedError(
+                    "Expectation values of Hamiltonians for interface!=None are "
+                    "not supported together with parameter broadcasting yet"
+                )
+            # We must compute the expectation value assuming that the Hamiltonian
+            # coefficients *and* the quantum states are tensor objects.
 
-                # Note: it is important that we use the Hamiltonian's data and not the coeffs
-                # attribute. This is because the .data attribute may be 'unwrapped' as required by
-                # the interfaces, whereas the .coeff attribute will always be the same input dtype
-                # that the user provided.
-                for op, coeff in zip(observable.ops, observable.data):
+            # Compute  <psi| H |psi> via sum_i coeff_i * <psi| PauliWord |psi> using a sparse
+            # representation of the Pauliword
+            res = qml.math.cast(qml.math.convert_like(0.0, observable.data), dtype=complex)
+            interface = qml.math.get_interface(self.state)
 
-                    # extract a scipy.sparse.coo_matrix representation of this Pauli word
-                    coo = qml.operation.Tensor(op).sparse_matrix(wires=self.wires, format="coo")
-                    Hmat = qml.math.cast(qml.math.convert_like(coo.data, self.state), self.C_DTYPE)
+            # Note: it is important that we use the Hamiltonian's data and not the coeffs
+            # attribute. This is because the .data attribute may be 'unwrapped' as required by
+            # the interfaces, whereas the .coeff attribute will always be the same input dtype
+            # that the user provided.
+            for op, coeff in zip(observable.ops, observable.data):
+                # extract a scipy.sparse.coo_matrix representation of this Pauli word
+                coo = qml.operation.Tensor(op).sparse_matrix(wires=self.wires, format="coo")
+                Hmat = qml.math.cast(qml.math.convert_like(coo.data, self.state), self.C_DTYPE)
 
-                    product = (
-                        self._gather(self._conj(self.state), coo.row)
-                        * Hmat
-                        * self._gather(self.state, coo.col)
-                    )
-                    c = qml.math.convert_like(coeff, product)
+                product = (
+                    self._gather(self._conj(self.state), coo.row)
+                    * Hmat
+                    * self._gather(self.state, coo.col)
+                )
+                c = qml.math.convert_like(coeff, product)
 
-                    if interface == "tensorflow":
-                        c = qml.math.cast(c, "complex128")
+                if interface == "tensorflow":
+                    c = qml.math.cast(c, "complex128")
 
-                    res = qml.math.convert_like(res, product) + qml.math.sum(c * product)
+                res = qml.math.convert_like(res, product) + qml.math.sum(c * product)
 
+        else:
+            # Coefficients and the state are not trainable, we can be more
+            # efficient in how we compute the Hamiltonian sparse matrix.
+            Hmat = observable.sparse_matrix(wire_order=self.wires)
+
+            state = qml.math.toarray(self.state)
+            if self._ndim(state) == 2:
+                res = qml.math.array(
+                    [
+                        csr_matrix.dot(
+                            csr_matrix(self._conj(_state)),
+                            csr_matrix.dot(Hmat, csr_matrix(_state[..., None])),
+                        ).toarray()[0]
+                        for _state in state
+                    ]
+                )
             else:
-                # Coefficients and the state are not trainable, we can be more
-                # efficient in how we compute the Hamiltonian sparse matrix.
-                if observable.name == "Hamiltonian":
-                    Hmat = qml.utils.sparse_hamiltonian(observable, wires=self.wires)
-                elif observable.name == "SparseHamiltonian":
-                    Hmat = observable.sparse_matrix()
+                res = csr_matrix.dot(
+                    csr_matrix(self._conj(state)),
+                    csr_matrix.dot(Hmat, csr_matrix(state[..., None])),
+                ).toarray()[0]
 
-                state = qml.math.toarray(self.state)
-                if self._ndim(state) == 2:
-                    res = qml.math.array(
-                        [
-                            csr_matrix.dot(
-                                csr_matrix(self._conj(_state)),
-                                csr_matrix.dot(Hmat, csr_matrix(_state[..., None])),
-                            ).toarray()[0]
-                            for _state in state
-                        ]
-                    )
-                else:
-                    res = csr_matrix.dot(
-                        csr_matrix(self._conj(state)),
-                        csr_matrix.dot(Hmat, csr_matrix(state[..., None])),
-                    ).toarray()[0]
+        if observable.name == "Hamiltonian":
+            res = qml.math.squeeze(res)
 
-            if observable.name == "Hamiltonian":
-                res = qml.math.squeeze(res)
-
-            return self._real(res)
-
-        return super().expval(observable, shot_range=shot_range, bin_size=bin_size)
+        return self._real(res)
 
     def _get_unitary_matrix(self, unitary):  # pylint: disable=no-self-use
         """Return the matrix representing a unitary operation.
@@ -679,14 +705,6 @@ class DefaultQubit(QubitDevice):
         output_shape = [2] * self.num_wires
         if batch_size is not None:
             output_shape.insert(0, batch_size)
-
-        if not (state.shape in [(dim,), (batch_size, dim)]):
-            raise ValueError("State vector must have shape (2**wires,) or (batch_size, 2**wires).")
-
-        if not qml.math.is_abstract(state):
-            norm = qml.math.linalg.norm(state, axis=-1, ord=2)
-            if not qml.math.allclose(norm, 1.0, atol=tolerance):
-                raise ValueError("Sum of amplitudes-squared does not equal one.")
 
         if len(device_wires) == self.num_wires and sorted(device_wires) == device_wires:
             # Initialize the entire device state with the input state
@@ -888,7 +906,6 @@ class DefaultQubit(QubitDevice):
         self._pre_rotated_state = self._state
 
     def analytic_probability(self, wires=None):
-
         if self._state is None:
             return None
 
@@ -929,11 +946,11 @@ class DefaultQubit(QubitDevice):
             thus the classical shadow measurement for this device supports at most 52
             qubits.
 
-        .. seealso:: :func:`~.classical_shadow`
+        .. seealso:: :func:`~pennylane.classical_shadow`
 
         Args:
-            obs (~.pennylane.measurements.ShadowMeasurementProcess): The classical shadow measurement process
-            circuit (~.tapes.QuantumTape): The quantum tape that is being executed
+            obs (~.pennylane.measurements.ClassicalShadowMP): The classical shadow measurement process
+            circuit (~.tape.QuantumTape): The quantum tape that is being executed
 
         Returns:
             tensor_like[int]: A tensor with shape ``(2, T, n)``, where the first row represents
@@ -947,13 +964,10 @@ class DefaultQubit(QubitDevice):
         device_qubits = len(self.wires)
         mapped_wires = np.array(self.map_wires(wires))
 
-        if seed is not None:
-            # seed the random measurement generation so that recipes
-            # are the same for different executions with the same seed
-            rng = np.random.RandomState(seed)
-            recipes = rng.randint(0, 3, size=(n_snapshots, n_qubits))
-        else:
-            recipes = np.random.randint(0, 3, size=(n_snapshots, n_qubits))
+        # seed the random measurement generation so that recipes
+        # are the same for different executions with the same seed
+        rng = np.random.RandomState(seed)
+        recipes = rng.randint(0, 3, size=(n_snapshots, n_qubits))
 
         obs_list = self._stack(
             [
@@ -997,7 +1011,6 @@ class DefaultQubit(QubitDevice):
         stacked_state = self._stack([transposed_state for _ in range(n_snapshots)])
 
         for i in range(n_qubits):
-
             # trace out every qubit except the first
             first_qubit_state = self._einsum(
                 f"{ABC[device_qubits - i + 1]}{ABC[:device_qubits - i]},{ABC[device_qubits - i + 1]}{ABC[device_qubits - i]}{ABC[1:device_qubits - i]}"
@@ -1025,3 +1038,11 @@ class DefaultQubit(QubitDevice):
             stacked_state /= norms
 
         return self._cast(self._stack([outcomes, recipes]), dtype=np.int8)
+
+    def _get_diagonalizing_gates(self, circuit: qml.tape.QuantumTape) -> List[Operation]:
+        meas_filtered = [
+            m
+            for m in circuit.measurements
+            if m.obs is None or not isinstance(m.obs, qml.Hamiltonian)
+        ]
+        return super()._get_diagonalizing_gates(qml.tape.QuantumScript(measurements=meas_filtered))

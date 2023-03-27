@@ -413,12 +413,12 @@ class TestPassthruIntegration:
         circuit1 = qml.QNode(circuit, dev1, diff_method="backprop", interface="autograd")
         circuit2 = qml.QNode(circuit, dev2, diff_method="parameter-shift")
 
-        assert circuit1.gradient_fn == "backprop"
-        assert circuit2.gradient_fn is qml.gradients.param_shift
-
         res = circuit1(p)
 
         assert np.allclose(res, circuit2(p), atol=tol, rtol=0)
+
+        assert circuit1.gradient_fn == "backprop"
+        assert circuit2.gradient_fn is qml.gradients.param_shift
 
         grad_fn = qml.jacobian(circuit1, 0)
         res = grad_fn(p)
@@ -773,23 +773,6 @@ class TestOps:
         res = qml.jacobian(circuit)(param)
         assert np.allclose(res, np.zeros(wires**2))
 
-    def test_inverse_operation_jacobian_backprop(self, tol):
-        """Test that inverse operations work in backprop
-        mode"""
-        dev = qml.device("default.qubit.autograd", wires=1)
-
-        @qml.qnode(dev, diff_method="backprop")
-        def circuit(param):
-            qml.RY(param, wires=0).inv()
-            return qml.expval(qml.PauliX(0))
-
-        x = np.array(0.3, requires_grad=True)
-        res = circuit(x)
-        assert np.allclose(res, -np.sin(x), atol=tol, rtol=0)
-
-        grad = qml.grad(circuit)(x)
-        assert np.allclose(grad, -np.cos(x), atol=tol, rtol=0)
-
     def test_full_subsystem(self, mocker):
         """Test applying a state vector to the full subsystem"""
         dev = DefaultQubitAutograd(wires=["a", "b", "c"])
@@ -835,23 +818,6 @@ class TestOpsBroadcasted:
         param = np.array([0.3, 0.9, -4.3], requires_grad=True)
         res = qml.jacobian(circuit)(param)
         assert np.allclose(res, np.zeros((3, wires**2, 3)))
-
-    def test_inverse_operation_jacobian_backprop_broadcasted(self, tol):
-        """Test that inverse operations work in backprop
-        mode"""
-        dev = qml.device("default.qubit.autograd", wires=1)
-
-        @qml.qnode(dev, diff_method="backprop")
-        def circuit(param):
-            qml.RY(param, wires=0).inv()
-            return qml.expval(qml.PauliX(0))
-
-        x = np.array([0.3, 0.9, -4.3], requires_grad=True)
-        res = circuit(x)
-        assert np.allclose(res, -np.sin(x), atol=tol, rtol=0)
-
-        grad = qml.jacobian(circuit)(x)
-        assert np.allclose(grad, -np.diag(np.cos(x)), atol=tol, rtol=0)
 
     def test_full_subsystem_broadcasted(self, mocker):
         """Test applying a state vector to the full subsystem"""

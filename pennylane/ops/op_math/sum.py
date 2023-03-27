@@ -15,7 +15,10 @@
 This file contains the implementation of the Sum class which contains logic for
 computing the sum of operations.
 """
+import itertools
+import warnings
 from copy import copy
+from functools import reduce
 from typing import List
 
 import numpy as np
@@ -23,11 +26,22 @@ import numpy as np
 import pennylane as qml
 from pennylane import math
 from pennylane.operation import Operator
+from pennylane.ops.qubit import Hamiltonian
+from pennylane.queuing import QueuingManager
 
 from .composite import CompositeOp
 
 
-def op_sum(*summands, do_queue=True, id=None):
+def op_sum(*summands, do_queue=True, id=None, lazy=True):
+    """This function is deprecated and will be removed soon. Please use :func:`sum` instead."""
+    warnings.warn(
+        "The `op_sum` function is deprecated and will be removed soon. Please use `sum` instead.",
+        UserWarning,
+    )
+    return sum(*summands, do_queue=do_queue, id=id, lazy=lazy)
+
+
+def sum(*summands, do_queue=True, id=None, lazy=True):
     r"""Construct an operator which is the sum of the given operators.
 
     Args:
@@ -37,22 +51,52 @@ def op_sum(*summands, do_queue=True, id=None):
         do_queue (bool): determines if the sum operator will be queued (currently not supported).
             Default is True.
         id (str or None): id for the Sum operator. Default is None.
+        lazy=True (bool): If ``lazy=False``, a simplification will be performed such that when any
+            of the operators is already a sum operator, its operands (summands) will be used instead.
 
     Returns:
         ~ops.op_math.Sum: The operator representing the sum of summands.
+
+    .. note::
+
+        This operator supports batched operands:
+
+        >>> op = qml.sum(qml.RX(np.array([1, 2, 3]), wires=0), qml.PauliX(1))
+        >>> op.matrix().shape
+        (3, 4, 4)
+
+        But it doesn't support batching of operators:
+
+        >>> op = qml.sum(np.array([qml.RX(0.4, 0), qml.RZ(0.3, 0)]), qml.PauliZ(0))
+        AttributeError: 'numpy.ndarray' object has no attribute 'wires'
 
     .. seealso:: :class:`~.ops.op_math.Sum`
 
     **Example**
 
-    >>> summed_op = op_sum(qml.PauliX(0), qml.PauliZ(0))
+    >>> summed_op = qml.sum(qml.PauliX(0), qml.PauliZ(0))
     >>> summed_op
     PauliX(wires=[0]) + PauliZ(wires=[0])
     >>> summed_op.matrix()
     array([[ 1,  1],
            [ 1, -1]])
     """
-    return Sum(*summands, do_queue=do_queue, id=id)
+    if len(summands) == 1 and isinstance(summands[0], qml.QNodeCollection):
+        return qml.collections.sum(summands[0])
+    if lazy:
+        return Sum(*summands, do_queue=do_queue, id=id)
+
+    summands_simp = Sum(
+        *itertools.chain.from_iterable([op if isinstance(op, Sum) else [op] for op in summands]),
+        do_queue=do_queue,
+        id=id,
+    )
+
+    if do_queue:
+        for op in summands:
+            QueuingManager.remove(op)
+
+    return summands_simp
 
 
 class Sum(CompositeOp):
@@ -68,7 +112,18 @@ class Sum(CompositeOp):
     .. note::
         Currently this operator can not be queued in a circuit as an operation, only measured terminally.
 
-    .. seealso:: :func:`~.ops.op_math.op_sum`
+    .. note::
+
+        This operator supports batched operands:
+        >>> op = qml.sum(qml.RX(np.array([1, 2, 3]), wires=0), qml.PauliX(1))
+        >>> op.matrix().shape
+        (3, 4, 4)
+
+        But it doesn't support batching of operators:
+        >>> op = qml.sum(np.array([qml.RX(0.4, 0), qml.RZ(0.3, 0)]), qml.PauliZ(0))
+        AttributeError: 'numpy.ndarray' object has no attribute 'wires'
+
+    .. seealso:: :func:`~.ops.op_math.sum`
 
     **Example**
 
@@ -107,7 +162,7 @@ class Sum(CompositeOp):
             sum_op = Sum(qml.PauliX(0), qml.PauliZ(1))
             dev = qml.device("default.qubit", wires=2)
 
-            @qml.qnode(dev, grad_method="best")
+            @qml.qnode(dev, diff_method="best")
             def circuit(weights):
                 qml.RX(weights[0], wires=0)
                 qml.RY(weights[1], wires=1)
@@ -121,11 +176,21 @@ class Sum(CompositeOp):
     """
 
     _op_symbol = "+"
+    _math_op = math.sum
+
+    @property
+    def hash(self):
+        # Since addition is always commutative, we do not need to sort
+        return hash(("Sum", frozenset(o.hash for o in self.operands)))
 
     @property
     def is_hermitian(self):
         """If all of the terms in the sum are hermitian, then the Sum is hermitian."""
-        return all(s.is_hermitian for s in self)
+        return (
+            all(s.is_hermitian for s in self)
+            if self._pauli_rep is None
+            else not any(qml.math.iscomplex(val) for val in self._pauli_rep.values())
+        )
 
     def terms(self):
         r"""Representation of the operator as a linear combination of other operators.
@@ -134,30 +199,11 @@ class Sum(CompositeOp):
 
         A ``TermsUndefinedError`` is raised if no representation by terms is defined.
 
-        .. seealso:: :meth:`~.Operator.compute_terms`
-
         Returns:
             tuple[list[tensor_like or float], list[.Operation]]: list of coefficients :math:`c_i`
             and list of operations :math:`O_i`
         """
         return [1.0] * len(self), list(self)
-
-    def eigvals(self):
-        r"""Return the eigenvalues of the specified operator.
-
-        This method uses pre-stored eigenvalues for standard observables where
-        possible and stores the corresponding eigenvectors from the eigendecomposition.
-
-        Returns:
-            array: array containing the eigenvalues of the operator
-        """
-        if self.has_overlapping_wires:
-            return self.eigendecomposition["eigval"]
-        eigvals = [
-            qml.utils.expand_vector(summand.eigvals(), list(summand.wires), list(self.wires))
-            for summand in self
-        ]
-        return qml.math.sum(eigvals, axis=0)
 
     def matrix(self, wire_order=None):
         r"""Representation of the operator as a matrix in the computational basis.
@@ -180,25 +226,21 @@ class Sum(CompositeOp):
         Returns:
             tensor_like: matrix representation
         """
-        mats_and_wires_gen = (
-            (qml.matrix(op) if isinstance(op, qml.Hamiltonian) else op.matrix(), op.wires)
+        gen = (
+            (qml.matrix(op) if isinstance(op, Hamiltonian) else op.matrix(), op.wires)
             for op in self
         )
 
-        reduced_mat, sum_wires = math.reduce_matrices(
-            mats_and_wires_gen=mats_and_wires_gen, reduce_func=math.add
-        )
+        reduced_mat, sum_wires = math.reduce_matrices(gen, reduce_func=math.add)
 
         wire_order = wire_order or self.wires
 
         return math.expand_matrix(reduced_mat, sum_wires, wire_order=wire_order)
 
     def sparse_matrix(self, wire_order=None):
-        mats_and_wires_gen = ((op.sparse_matrix(), op.wires) for op in self)
+        gen = ((op.sparse_matrix(), op.wires) for op in self)
 
-        reduced_mat, sum_wires = math.reduce_matrices(
-            mats_and_wires_gen=mats_and_wires_gen, reduce_func=math.add
-        )
+        reduced_mat, sum_wires = math.reduce_matrices(gen, reduce_func=math.add)
 
         wire_order = wire_order or self.wires
 
@@ -221,6 +263,16 @@ class Sum(CompositeOp):
 
     def adjoint(self):
         return Sum(*(qml.adjoint(summand) for summand in self))
+
+    def _build_pauli_rep(self):
+        """PauliSentence representation of the Sum of operations."""
+        if all(
+            operand_pauli_reps := [
+                op._pauli_rep for op in self.operands  # pylint: disable=protected-access
+            ]
+        ):
+            return reduce((lambda a, b: a + b), operand_pauli_reps)
+        return None
 
     @classmethod
     def _simplify_summands(cls, summands: List[Operator]):
@@ -252,6 +304,11 @@ class Sum(CompositeOp):
         return new_summands
 
     def simplify(self, cutoff=1.0e-12) -> "Sum":  # pylint: disable=arguments-differ
+        # try using pauli_rep:
+        if pr := self._pauli_rep:
+            pr.simplify()
+            return pr.operation(wire_order=self.wires)
+
         new_summands = self._simplify_summands(summands=self.operands).get_summands(cutoff=cutoff)
         if new_summands:
             return Sum(*new_summands) if len(new_summands) > 1 else new_summands[0]
@@ -273,19 +330,21 @@ class Sum(CompositeOp):
         if isinstance(op_list, tuple):
             op_list = list(op_list)
 
-        def _sort_key(op) -> bool:
-            """Sorting key.
+        def _sort_key(op: Operator) -> tuple:
+            """Sorting key used in the `sorted` python built-in function.
 
             Args:
                 op (.Operator): Operator.
 
             Returns:
-                int: Minimum wire value.
+                Tuple[int, int, str]: Tuple containing the minimum wire value, the number of wires
+                    and the string of the operator. This tuple is used to compare different operators
+                    in the sorting algorithm.
             """
             wires = op.wires
             if wire_map is not None:
                 wires = wires.map(wire_map)
-            return np.min(wires), len(wires)
+            return np.min(wires), len(wires), str(op)
 
         return sorted(op_list, key=_sort_key)
 

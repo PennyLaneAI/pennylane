@@ -25,9 +25,6 @@ import pennylane as qml
 import pennylane.utils as pu
 import scipy.sparse
 
-from pennylane import Identity, PauliX, PauliY, PauliZ
-from pennylane.operation import Tensor
-
 
 flat_dummy_array = np.linspace(-1, 1, 64)
 test_shapes = [
@@ -67,83 +64,16 @@ U_toffoli = np.diag([1 for i in range(8)])
 U_toffoli[6:8, 6:8] = np.array([[0, 1], [1, 0]])
 
 
-test_hamiltonians = [
-    np.array([[2.5, -0.5], [-0.5, 2.5]]),
-    np.array(np.diag([0, 0, 0, 1])),
-    np.array([[-2, -2 + 1j, -2, -2], [-2 - 1j, 0, 0, -1], [-2, 0, -2, -1], [-2, -1, -1, 0]]),
-]
-
-
-class TestDecomposition:
-    """Tests the decompose_hamiltonian function"""
-
-    @pytest.mark.parametrize("hamiltonian", [np.ones((3, 3)), np.ones((4, 2)), np.ones((2, 4))])
-    def test_wrong_shape(self, hamiltonian):
-        """Tests that an exception is raised if the Hamiltonian does not have
-        the correct shape"""
-        with pytest.raises(
-            ValueError,
-            match="The Hamiltonian should have shape",
-        ):
-            pu.decompose_hamiltonian(hamiltonian)
-
-    def test_not_hermitian(self):
-        """Tests that an exception is raised if the Hamiltonian is not Hermitian, i.e.
-        equal to its own conjugate transpose"""
-        with pytest.raises(ValueError, match="The Hamiltonian is not Hermitian"):
-            pu.decompose_hamiltonian(np.array([[1, 2], [3, 4]]))
-
-    def test_hide_identity_true(self):
-        """Tests that there are no Identity observables in the tensor products
-        when hide_identity=True"""
-        H = np.array(np.diag([0, 0, 0, 1]))
-        coeff, obs_list = pu.decompose_hamiltonian(H, hide_identity=True)
-        tensors = filter(lambda obs: isinstance(obs, Tensor), obs_list)
-
-        for tensor in tensors:
-            all_identities = all(isinstance(o, Identity) for o in tensor.obs)
-            no_identities = not any(isinstance(o, Identity) for o in tensor.obs)
-            assert all_identities or no_identities
-
-    @pytest.mark.parametrize("hide_identity", [True, False])
-    @pytest.mark.parametrize("hamiltonian", test_hamiltonians)
-    def test_observable_types(self, hamiltonian, hide_identity):
-        """Tests that the Hamiltonian decomposes into a linear combination of tensors,
-        the identity matrix, and Pauli matrices."""
-        allowed_obs = (Tensor, Identity, PauliX, PauliY, PauliZ)
-
-        decomposed_coeff, decomposed_obs = pu.decompose_hamiltonian(hamiltonian, hide_identity)
-        assert all([isinstance(o, allowed_obs) for o in decomposed_obs])
-
-    @pytest.mark.parametrize("hamiltonian", test_hamiltonians)
-    def test_result_length(self, hamiltonian):
-        """Tests that tensors are composed of a number of terms equal to the number
-        of qubits."""
-        decomposed_coeff, decomposed_obs = pu.decompose_hamiltonian(hamiltonian)
-        n = int(np.log2(len(hamiltonian)))
-
-        tensors = filter(lambda obs: isinstance(obs, Tensor), decomposed_obs)
-        assert all(len(tensor.obs) == n for tensor in tensors)
-
-    @pytest.mark.parametrize("hamiltonian", test_hamiltonians)
-    def test_decomposition(self, hamiltonian):
-        """Tests that decompose_hamiltonian successfully decomposes Hamiltonians into a
-        linear combination of Pauli matrices"""
-        decomposed_coeff, decomposed_obs = pu.decompose_hamiltonian(hamiltonian)
-
-        linear_comb = sum([decomposed_coeff[i] * o.matrix() for i, o in enumerate(decomposed_obs)])
-        assert np.allclose(hamiltonian, linear_comb)
-
-
 class TestSparse:
     """Tests the sparse_hamiltonian function"""
 
     @pytest.mark.parametrize(
-        ("coeffs", "obs", "wires", "ref_matrix"),
+        ("coeffs", "obs", "level", "wires", "ref_matrix"),
         [
             (
                 [1, -0.45],
                 [qml.PauliZ(0) @ qml.PauliZ(1), qml.PauliY(0) @ qml.PauliZ(1)],
+                2,
                 None,
                 np.array(
                     [
@@ -157,6 +87,7 @@ class TestSparse:
             (
                 [0.1],
                 [qml.PauliZ("b") @ qml.PauliX("a")],
+                2,
                 ["a", "c", "b"],
                 np.array(
                     [
@@ -251,6 +182,7 @@ class TestSparse:
                     qml.PauliY(0) @ qml.PauliZ(1),
                 ],
                 None,
+                None,
                 np.array(
                     [
                         [0.21 + 0.0j, 0.0 + 0.0j, -0.78 - 0.52j, 0.0 + 0.0j],
@@ -263,10 +195,11 @@ class TestSparse:
             (
                 [0.5, 0.2, 2],
                 [
-                    qml.GellMannObs(1, wires=0) @ qml.GellMannObs(4, wires=1),
-                    qml.GellMannObs(2, wires=1),
-                    qml.GellMannObs(3, wires=0),
+                    qml.GellMann(0, index=1) @ qml.GellMann(1, index=4),
+                    qml.GellMann(1, index=2),
+                    qml.GellMann(0, index=3),
                 ],
+                3,
                 None,
                 np.array(
                     [
@@ -284,17 +217,27 @@ class TestSparse:
             ),
         ],
     )
-    def test_sparse_matrix(self, coeffs, obs, wires, ref_matrix):
+    def test_sparse_matrix(self, coeffs, obs, level, wires, ref_matrix):
         """Tests that sparse_hamiltonian returns a correct sparse matrix"""
         H = qml.Hamiltonian(coeffs, obs)
 
         sparse_matrix = (
             qml.utils.sparse_hamiltonian(H, wires)
-            if ref_matrix.shape[0] % 2 == 0
-            else qml.utils.sparse_hamiltonian(H, wires, dim=3)
+            if level is None
+            else qml.utils.sparse_hamiltonian(H, wires, level=level)
         )
 
         assert np.allclose(sparse_matrix.toarray(), ref_matrix)
+
+    def test_warning(self):
+        """Tests that a warning is raised if sparse_hamiltonian function is called"""
+
+        coeffs = [0.2, -0.543]
+        obs = [qml.PauliX(0) @ qml.PauliZ(1), qml.PauliZ(0) @ qml.Hadamard(2)]
+        H = qml.Hamiltonian(coeffs, obs)
+
+        with pytest.warns(UserWarning, match="sparse_hamiltonian is deprecated"):
+            qml.utils.sparse_hamiltonian(H)
 
     def test_sparse_format(self):
         """Tests that sparse_hamiltonian returns a scipy.sparse.csr_matrix object"""

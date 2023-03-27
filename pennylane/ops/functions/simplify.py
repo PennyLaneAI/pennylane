@@ -23,7 +23,7 @@ from pennylane.measurements import MeasurementProcess
 from pennylane.operation import Operator
 from pennylane.qnode import QNode
 from pennylane.queuing import QueuingManager
-from pennylane.tape import QuantumTape
+from pennylane.tape import QuantumScript, make_qscript, QuantumTape
 
 
 def simplify(input: Union[Operator, MeasurementProcess, QuantumTape, QNode, Callable]):
@@ -85,29 +85,26 @@ def simplify(input: Union[Operator, MeasurementProcess, QuantumTape, QNode, Call
         if QueuingManager.recording():
             with QueuingManager.stop_recording():
                 new_op = copy(input.simplify())
-            QueuingManager.update_info(input, owner=new_op)
+            QueuingManager.remove(input)
             return qml.apply(new_op)
         return input.simplify()
 
-    if isinstance(input, QuantumTape):
-        with QuantumTape() as new_tape:
-            for op in list(input):
-                _ = qml.simplify(op)
-
-        return new_tape
+    if isinstance(input, QuantumScript):
+        # pylint: disable=protected-access
+        return input.__class__(
+            [op.simplify() for op in input._ops],
+            [m.simplify() for m in input.measurements],
+            [op.simplify() for op in input._prep],
+        )
 
     if callable(input):
+        old_qfunc = input.func if isinstance(input, QNode) else input
 
-        func = input.func if isinstance(input, QNode) else input
-
-        @wraps(func)
+        @wraps(old_qfunc)
         def qfunc(*args, **kwargs):
-            tape = QuantumTape()
-            with QueuingManager.stop_recording(), tape:
-                func(*args, **kwargs)
-
-            _ = [qml.simplify(op) for op in tape.operations]
-            m = tuple(qml.simplify(m) for m in tape.measurements)
+            qs = make_qscript(old_qfunc)(*args, **kwargs)
+            _ = [qml.simplify(op) for op in qs.operations]
+            m = tuple(qml.simplify(m) for m in qs.measurements)
             return m[0] if len(m) == 1 else m
 
         if isinstance(input, QNode):

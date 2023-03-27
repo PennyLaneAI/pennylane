@@ -16,6 +16,7 @@ This module contains the :class:`Wires` class, which takes care of wire bookkeep
 """
 import functools
 from collections.abc import Iterable, Sequence
+import itertools
 
 import numpy as np
 
@@ -347,10 +348,9 @@ class Wires(Sequence):
         if n_samples > len(self._labels):
             raise WireError(f"Cannot sample {n_samples} wires from {len(self._labels)} wires.")
 
-        if seed is not None:
-            np.random.seed(seed)
+        rng = np.random.default_rng(seed)
 
-        indices = np.random.choice(len(self._labels), size=n_samples, replace=False)
+        indices = rng.choice(len(self._labels), size=n_samples, replace=False)
         subset = tuple(self[i] for i in indices)
         return Wires(subset, _override=True)
 
@@ -419,7 +419,7 @@ class Wires(Sequence):
         converted_wires = (
             wires if isinstance(wires, Wires) else Wires(wires) for wires in list_of_wires
         )
-        all_wires_list = sum((w.tolist() for w in converted_wires), [])
+        all_wires_list = itertools.chain(*(w.labels for w in converted_wires))
         combined = list(dict.fromkeys(all_wires_list))
 
         if sort:

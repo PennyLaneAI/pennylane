@@ -18,11 +18,8 @@ core parameterized gates for qutrits.
 """
 import itertools
 
-import numpy as np
-
 import pennylane as qml
 from pennylane.operation import Operation
-from pennylane.ops.qutrit.observables import THermitian
 
 
 class TRX(Operation):
@@ -36,9 +33,12 @@ class TRX(Operation):
     The construction of this operator is based on section 3 of
     `Di et al. (2012) <https://arxiv.org/abs/1105.5485>`_.
 
-    .. math:: TR_x^{jk}(\phi) = \exp(-i\phi\sigma_x^{jk}/2),
-                \sigma_x^{jk} = |j\rangle\langle k| + |k\rangle\langle j|,
-                j, k \in \{0, 1, 2\}, j \neq k
+    .. math:: TRX^{jk}(\phi) = \exp(-i\phi\sigma_x^{jk}/2),
+
+    where :math:`\sigma_x^{jk} = |j\rangle\langle k| + |k\rangle\langle j|;`
+    :math:`j, k \in \{0, 1, 2\}, j < k`.
+
+    .. seealso:: :class:`~.RX`
 
     **Details:**
 
@@ -84,41 +84,36 @@ class TRX(Operation):
     grad_method = "A"
     parameter_frequencies = [(0.5, 1)]
 
-    def generator(self):
-        if self.subspace == (0, 1):
-            index = 1
-        elif self.subspace == (0, 2):
-            index = 4
-        else:
-            index = 6
+    # Internal dictionary to map subpsaces to Gell-Mann observable for the generator
+    _index_dict = {(0, 1): 1, (0, 2): 4, (1, 2): 6}
 
-        return -0.5 * qml.GellMannObs(index, wires=self.wires)
+    def generator(self):
+        return -0.5 * qml.GellMann(self.wires, index=self._index_dict[self.subspace])
 
     def __init__(
         self, phi, wires, subspace=[0, 1], do_queue=True, id=None
     ):  # pylint: disable=dangerous-default-value
-        self._subspace = subspace
+        self._subspace = self.validate_subspace(subspace)
         self._hyperparameters = {
-            "subspace": self.subspace,
+            "subspace": self._subspace,
         }
         super().__init__(phi, wires=wires, do_queue=do_queue, id=id)
 
     @property
     def subspace(self):
-        """The single-qutrit basis states which the operator acts on
+        """The single-qutrit basis states the operator acts on.
 
-        This property returns the 2D subspace on which the operator acts. This subspace
-        determines which two single-qutrit basis states the operator acts on. The remaining
-        basis state is not affected by the operator.
+        The subspace defines which two basis states the opreation acts on. The basis state
+        not included in the subspace remains unaffected.
 
         Returns:
-            tuple[int]: subspace on which operator acts
+            tuple[int]: subspace on which the operator acts
         """
-        return tuple(sorted(self._subspace))
+        return self._subspace
 
     @staticmethod
     def compute_matrix(
-        theta, subspace=[0, 1]
+        theta, subspace=(0, 1)
     ):  # pylint: disable=arguments-differ,dangerous-default-value
         r"""Representation of the operator as a canonical matrix in the computational basis (static method).
 
@@ -129,7 +124,7 @@ class TRX(Operation):
 
         Args:
             theta (tensor_like or float): rotation angle
-            subspace (Sequence[int]): the 2D subspace on which to apply operation
+            subspace (Sequence[int]): the 2D subspace on which to apply the operation
 
         Returns:
             tensor_like: canonical matrix
@@ -141,7 +136,6 @@ class TRX(Operation):
                 [0.0000+0.0000j, 1.0000+0.0000j, 0.0000+0.0000j],
                 [0.0000-0.2474j, 0.0000+0.0000j, 0.9689+0.0000j]])
         """
-        subspace = tuple(sorted(subspace))
         c = qml.math.cos(theta / 2)
         s = qml.math.sin(theta / 2)
 
@@ -153,15 +147,21 @@ class TRX(Operation):
         c = (1 + 0j) * c
         js = -1j * s
 
+        shape = qml.math.shape(theta)
+        is_broadcasted = len(shape) != 0 and shape[0] > 1
+        # Construct identity matrices and cast to complex type
         mat = (
             qml.math.tensordot([1] * qml.math.shape(theta)[0], qml.math.eye(3), axes=0)
-            if len(qml.math.shape(theta)) != 0 and qml.math.shape(theta)[0] > 1
+            if is_broadcasted
             else qml.math.eye(3)
         )
         mat = qml.math.cast_like(mat, js)
+        # Create slices that determine the indices at which the rotation terms of the matrix should be
         slices = tuple(itertools.product(subspace, subspace))
-        slices = [(Ellipsis, *s) for s in slices]
+        if is_broadcasted:
+            slices = [(Ellipsis, *s) for s in slices]
 
+        # Put rotation terms in the appropriate indices using the slices
         mat[slices[0]] = mat[slices[3]] = c
         mat[slices[1]] = mat[slices[2]] = js
         return qml.math.convert_like(mat, theta)

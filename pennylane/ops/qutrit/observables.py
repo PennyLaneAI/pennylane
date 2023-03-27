@@ -69,6 +69,8 @@ class THermitian(Hermitian):
 
     """
 
+    # Qutrit case
+    _num_basis_states = 3
     _eigs = {}
 
     # This method is overridden to update the docstring.
@@ -214,7 +216,10 @@ class GellMann(Observable):
         super().__init__(wires=wires, do_queue=do_queue, id=id)
 
     def label(self, decimals=None, base_label=None, cache=None):
-        return base_label or "GellMann(" + str(self.hyperparameters["index"]) + ")"
+        return base_label or f"GellMann({self.hyperparameters['index']})"
+
+    def __repr__(self):
+        return f"GellMann{self.hyperparameters['index']}(wires=[{self.wires[0]}])"
 
     _eigvecs = {
         1: np.array(
@@ -284,7 +289,7 @@ class GellMann(Observable):
     def compute_eigvals(index):  # pylint: disable=arguments-differ
         r"""Eigenvalues of the operator in the computational basis (static method).
 
-        If :attr:`diagonalizing_gates` are specified and implement a unitary :math:`U`,
+        If :attr:`diagonalizing_gates` are specified and implement a unitary :math:`U^{\dagger}`,
         the operator can be reconstructed as
 
         .. math:: O = U \Sigma U^{\dagger},
@@ -320,7 +325,7 @@ class GellMann(Observable):
 
         Given the eigendecomposition :math:`O = U \Sigma U^{\dagger}` where
         :math:`\Sigma` is a diagonal matrix containing the eigenvalues,
-        the sequence of diagonalizing gates implements the unitary :math:`U`.
+        the sequence of diagonalizing gates implements the unitary :math:`U^{\dagger}`.
 
         The diagonalizing gates rotate the state into the eigenbasis
         of the operator.
