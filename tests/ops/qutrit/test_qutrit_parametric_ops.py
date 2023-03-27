@@ -95,16 +95,7 @@ class TestParameterFrequencies:
             pytest.skip(f"Operation {op.name} does not have a generator defined to test against.")
 
         gen = op.generator()
-
-        try:
-            mat = gen.matrix()
-        except (AttributeError, qml.operation.MatrixUndefinedError):
-            if isinstance(gen, qml.Hamiltonian):
-                mat = qml.utils.sparse_hamiltonian(gen, level=3).toarray()
-            elif isinstance(gen, qml.SparseHamiltonian):
-                mat = gen.sparse_matrix().toarray()
-            else:
-                pytest.skip(f"Operation {op.name}'s generator does not define a matrix.")
+        mat = gen.matrix()
 
         gen_eigvals = np.round(np.linalg.eigvalsh(mat), 8)
         freqs_from_gen = qml.gradients.eigvals_to_frequencies(tuple(gen_eigvals))
