@@ -19,7 +19,7 @@ import pennylane as qml
 from pennylane.measurements import Expectation, Probability, Sample, Variance, State
 
 from .drawable_layers import drawable_layers
-from .utils import convert_wire_order
+from .utils import convert_wire_order, unwrap_controls
 
 
 def _add_grouping_symbols(op, layer_str, wire_map):
@@ -45,8 +45,8 @@ def _add_op(op, layer_str, wire_map, decimals, cache):
     """Updates ``layer_str`` with ``op`` operation."""
     layer_str = _add_grouping_symbols(op, layer_str, wire_map)
 
-    control_wires = op.control_wires
-    control_values = op.hyperparameters.get("control_values", None)
+    control_wires, control_values = unwrap_controls(op)
+
     if control_values:
         for w, val in zip(control_wires, control_values):
             layer_str[wire_map[w]] += "●" if _bool_control_value(val) else "○"
@@ -305,12 +305,11 @@ def tape_text(
     enders = [True, False]  # add "─┤" after all operations
 
     for layers, add, filler, ender in zip(layers_list, add_list, fillers, enders):
-
         for layer in layers:
             layer_str = [filler] * n_wires
 
             for op in layer:
-                if isinstance(op, qml.tape.QuantumTape):
+                if isinstance(op, qml.tape.QuantumScript):
                     layer_str = _add_grouping_symbols(op, layer_str, wire_map)
                     label = f"Tape:{cache['tape_offset']+len(tape_cache)}"
                     for w in op.wires:

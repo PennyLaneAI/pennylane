@@ -35,7 +35,7 @@ class TestUndoSwaps:
 
         transformed_qfunc = undo_swaps(qfunc)
 
-        tape = qml.transforms.make_tape(transformed_qfunc)()
+        tape = qml.tape.make_qscript(transformed_qfunc)()
         res = qml.device("default.qubit", wires=2).execute(tape)
         assert len(tape.operations) == 2
         assert np.allclose(res[0][0], 0.5)
@@ -51,7 +51,7 @@ class TestUndoSwaps:
 
         transformed_qfunc = undo_swaps(qfunc)
 
-        tape = qml.transforms.make_tape(transformed_qfunc)()
+        tape = qml.tape.make_qscript(transformed_qfunc)()
         res = qml.device("default.qubit", wires=2).execute(tape)
         assert len(tape.operations) == 2
         assert np.allclose(res[0][2], 1.0)
@@ -74,10 +74,10 @@ class TestUndoSwaps:
 
         transformed_qfunc = undo_swaps(qfunc1)
 
-        tape1 = qml.transforms.make_tape(transformed_qfunc)()
+        tape1 = qml.tape.make_qscript(transformed_qfunc)()
         res1 = qml.device("default.qubit", wires=3).execute(tape1)
 
-        tape2 = qml.transforms.make_tape(qfunc2)()
+        tape2 = qml.tape.make_qscript(qfunc2)()
         res2 = qml.device("default.qubit", wires=3).execute(tape2)
 
         assert np.allclose(res1, res2)
@@ -101,16 +101,15 @@ class TestUndoSwaps:
 
         transformed_qfunc = undo_swaps(qfunc1)
 
-        tape1 = qml.transforms.make_tape(transformed_qfunc)()
+        tape1 = qml.tape.make_qscript(transformed_qfunc)()
         res1 = qml.device("default.qubit", wires=3).execute(tape1)
 
-        tape2 = qml.transforms.make_tape(qfunc2)()
+        tape2 = qml.tape.make_qscript(qfunc2)()
         res2 = qml.device("default.qubit", wires=3).execute(tape2)
 
         assert np.allclose(res1, res2)
 
     def test_decorator(self):
-
         dev = qml.device("default.qubit", wires=3)
 
         @qml.qnode(dev)
@@ -129,6 +128,7 @@ class TestUndoSwaps:
 
 # Example QNode and device for interface testing
 dev = qml.device("default.qubit", wires=3)
+
 
 # Test each of single-qubit, two-qubit, and Rot gates
 def qfunc(theta):
@@ -179,8 +179,8 @@ class TestUndoSwapsInterfaces:
         """Test QNode and gradient in torch interface."""
         import torch
 
-        original_qnode = qml.QNode(qfunc, dev, interface="torch")
-        transformed_qnode = qml.QNode(transformed_qfunc, dev, interface="torch")
+        original_qnode = qml.QNode(qfunc, dev)
+        transformed_qnode = qml.QNode(transformed_qfunc, dev)
 
         original_input = torch.tensor([0.1, 0.2], requires_grad=True)
         transformed_input = torch.tensor([0.1, 0.2], requires_grad=True)
@@ -206,8 +206,8 @@ class TestUndoSwapsInterfaces:
         """Test QNode and gradient in tensorflow interface."""
         import tensorflow as tf
 
-        original_qnode = qml.QNode(qfunc, dev, interface="tf")
-        transformed_qnode = qml.QNode(transformed_qfunc, dev, interface="tf")
+        original_qnode = qml.QNode(qfunc, dev)
+        transformed_qnode = qml.QNode(transformed_qfunc, dev)
 
         original_input = tf.Variable([0.1, 0.2])
         transformed_input = tf.Variable([0.1, 0.2])
@@ -244,8 +244,8 @@ class TestUndoSwapsInterfaces:
         remember = config.read("jax_enable_x64")
         config.update("jax_enable_x64", True)
 
-        original_qnode = qml.QNode(qfunc, dev, interface="jax")
-        transformed_qnode = qml.QNode(transformed_qfunc, dev, interface="jax")
+        original_qnode = qml.QNode(qfunc, dev)
+        transformed_qnode = qml.QNode(transformed_qfunc, dev)
 
         input = jnp.array([0.1, 0.2], dtype=jnp.float64)
 

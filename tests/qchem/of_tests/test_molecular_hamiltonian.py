@@ -50,12 +50,13 @@ coordinates = np.array(
         "nact_els",
         "nact_orbs",
         "mapping",
+        "grouping_type",
     ),
     [
-        (0, 1, "pyscf", 2, 2, "jordan_WIGNER"),
-        (1, 2, "pyscf", 3, 4, "BRAVYI_kitaev"),
-        (-1, 2, "pyscf", 1, 2, "jordan_WIGNER"),
-        (2, 1, "pyscf", 2, 2, "BRAVYI_kitaev"),
+        (0, 1, "pyscf", 2, 2, "jordan_WIGNER", None),
+        (1, 2, "pyscf", 3, 4, "BRAVYI_kitaev", None),
+        (-1, 2, "pyscf", 1, 2, "jordan_WIGNER", "qwc"),
+        (2, 1, "pyscf", 2, 2, "BRAVYI_kitaev", "commuting"),
     ],
 )
 def test_building_hamiltonian(
@@ -65,6 +66,7 @@ def test_building_hamiltonian(
     nact_els,
     nact_orbs,
     mapping,
+    grouping_type,
     tmpdir,
 ):
     r"""Test that the generated Hamiltonian `built_hamiltonian` is an instance of the PennyLane
@@ -80,6 +82,7 @@ def test_building_hamiltonian(
         active_electrons=nact_els,
         active_orbitals=nact_orbs,
         mapping=mapping,
+        grouping_type=grouping_type,
         outpath=tmpdir.strpath,
     )
 
@@ -194,7 +197,7 @@ def test_differentiable_hamiltonian(symbols, geometry, h_ref_data):
     h_args = qchem.molecular_hamiltonian(symbols, geometry, method="dhf", args=args)[0]
 
     geometry.requires_grad = False
-    h_noargs = qchem.molecular_hamiltonian(symbols, geometry, method="dhf")[0]
+    h_noargs = qchem.molecular_hamiltonian(symbols, geometry, method="dhf", grouping_type="qwc")[0]
 
     h_ref = Hamiltonian(h_ref_data[0], h_ref_data[1])
 

@@ -76,7 +76,7 @@ def rcparams(tape):
     plt.rcParams["lines.linewidth"] = 5
     plt.rcParams["figure.facecolor"] = "ghostwhite"
 
-    fig, ax = tape_mpl(tape)
+    fig, ax = tape_mpl(tape, style=None)
 
     plt.savefig(folder / "rcparams.png")
     plt.close()
@@ -85,11 +85,9 @@ def rcparams(tape):
 
 def use_style(tape):
 
-    qml.drawer.use_style("black_white")
+    fig, ax = tape_mpl(tape, style='sketch')
 
-    fig, ax = tape_mpl(tape)
-
-    plt.savefig(folder / "black_white_style.png")
+    plt.savefig(folder / "sketch_style.png")
     plt.close()
     plt.style.use("default")
 
@@ -97,7 +95,7 @@ def use_style(tape):
 def wires_and_labels(tape):
 
     fig, ax = tape_mpl(
-        tape, wire_options={"color": "black", "linewidth": 5}, label_options={"size": 20}
+        tape, wire_options={"color": "teal", "linewidth": 5}, label_options={"size": 20}
     )
 
     plt.savefig(folder / "wires_labels.png")

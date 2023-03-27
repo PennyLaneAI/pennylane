@@ -35,6 +35,21 @@ class TestDecomposition:
             assert gate.name == "RX"
             assert gate.parameters[0] == 1
 
+    def test_expansion_broadcasted(self):
+        """Checks the queue for the default settings."""
+
+        features = np.ones((5, 3))
+
+        op = qml.AngleEmbedding(features=features, wires=range(4))
+        assert op.batch_size == 5
+        tape = op.expand()
+
+        assert len(tape.operations) == 3
+        for gate in tape.operations:
+            assert gate.name == "RX"
+            assert gate.batch_size == 5
+            assert qml.math.allclose(gate.parameters[0], np.ones(5))
+
     @pytest.mark.parametrize("rotation", ["X", "Y", "Z"])
     def test_rotations(self, rotation):
         """Checks the queue for the specified rotation settings."""
@@ -214,8 +229,8 @@ class TestInterfaces:
 
         dev = qml.device("default.qubit", wires=3)
 
-        circuit = qml.QNode(circuit_template, dev, interface="jax")
-        circuit2 = qml.QNode(circuit_decomposed, dev, interface="jax")
+        circuit = qml.QNode(circuit_template, dev)
+        circuit2 = qml.QNode(circuit_decomposed, dev)
 
         res = circuit(features)
         res2 = circuit2(features)
@@ -239,8 +254,8 @@ class TestInterfaces:
 
         dev = qml.device("default.qubit", wires=3)
 
-        circuit = qml.QNode(circuit_template, dev, interface="tf")
-        circuit2 = qml.QNode(circuit_decomposed, dev, interface="tf")
+        circuit = qml.QNode(circuit_template, dev)
+        circuit2 = qml.QNode(circuit_decomposed, dev)
 
         res = circuit(features)
         res2 = circuit2(features)
@@ -266,8 +281,8 @@ class TestInterfaces:
 
         dev = qml.device("default.qubit", wires=3)
 
-        circuit = qml.QNode(circuit_template, dev, interface="torch")
-        circuit2 = qml.QNode(circuit_decomposed, dev, interface="torch")
+        circuit = qml.QNode(circuit_template, dev)
+        circuit2 = qml.QNode(circuit_decomposed, dev)
 
         res = circuit(features)
         res2 = circuit2(features)

@@ -14,6 +14,7 @@
 """This module contains functions to construct many-body observables with ``OpenFermion-PySCF``.
 """
 # pylint: disable=too-many-arguments, too-few-public-methods, too-many-branches, unused-variable
+# pylint: disable=consider-using-generator
 import os
 
 import numpy as np
@@ -39,7 +40,6 @@ def _import_of():
 
 
 def observable(fermion_ops, init_term=0, mapping="jordan_wigner", wires=None):
-
     r"""Builds the fermionic many-body observable whose expectation value can be
     measured in PennyLane.
 
@@ -413,7 +413,6 @@ def two_particle(matrix_elements, core=None, active=None, cutoff=1.0e-12):
     if core:
         for alpha in active:
             for beta in active:
-
                 element = 2 * np.sum(
                     matrix_elements[np.array(core), alpha, beta, np.array(core)]
                 ) - np.sum(matrix_elements[np.array(core), alpha, np.array(core), beta])
@@ -810,6 +809,10 @@ def molecular_hamiltonian(
     alpha=None,
     coeff=None,
     args=None,
+    grouping_type=None,
+    grouping_method="rlf",
+    load_data=False,
+    convert_tol=1e012,
 ):  # pylint:disable=too-many-arguments
     r"""Generate the qubit Hamiltonian of a molecule.
 
@@ -849,7 +852,7 @@ def molecular_hamiltonian(
         method (str): Quantum chemistry method used to solve the
             mean field electronic structure problem. Available options are ``method="dhf"``
             to specify the built-in differentiable Hartree-Fock solver, or ``method="pyscf"``
-            to use the OpenFermion-PySCF plugin (this requires that ``openfermionpyscf`` be installed).
+            to use the OpenFermion-PySCF plugin (this requires ``openfermionpyscf`` to be installed).
         active_electrons (int): Number of active electrons. If not specified, all electrons
             are considered to be active.
         active_orbitals (int): Number of active orbitals. If not specified, all orbitals
@@ -864,6 +867,13 @@ def molecular_hamiltonian(
         alpha (array[float]): exponents of the primitive Gaussian functions
         coeff (array[float]): coefficients of the contracted Gaussian functions
         args (array[array[float]]): initial values of the differentiable parameters
+        grouping_type (str): method to group commuting observables
+        grouping_method (str): the graph coloring heuristic to use in solving minimum clique cover
+            for grouping
+        load_data (bool): flag to load data from the basis-set-exchange library
+        convert_tol (float): Tolerance in `machine epsilon <https://numpy.org/doc/stable/reference/generated/numpy.real_if_close.html>`_
+            for the imaginary part of the Hamiltonian coefficients created by openfermion.
+            Coefficients with imaginary part less than 2.22e-16*tol are considered to be real.
 
     Returns:
         tuple[pennylane.Hamiltonian, int]: the fermionic-to-qubit transformed Hamiltonian
@@ -916,6 +926,7 @@ def molecular_hamiltonian(
             charge=charge,
             mult=mult,
             basis_name=basis,
+            load_data=load_data,
             alpha=alpha,
             coeff=coeff,
         )
@@ -924,11 +935,16 @@ def molecular_hamiltonian(
         )
         if args is None:
             h = qml.qchem.diff_hamiltonian(mol, core=core, active=active)()
-            return qml.Hamiltonian(qml.numpy.real(h.coeffs, requires_grad=False), h.ops), 2 * len(
-                active
-            )
+            return qml.Hamiltonian(
+                qml.numpy.real(h.coeffs, requires_grad=False),
+                h.ops,
+                grouping_type=grouping_type,
+                method=grouping_method,
+            ), 2 * len(active)
         h = qml.qchem.diff_hamiltonian(mol, core=core, active=active)(*args)
-        return qml.Hamiltonian(qml.numpy.real(h.coeffs), h.ops), 2 * len(active)
+        return qml.Hamiltonian(
+            qml.numpy.real(h.coeffs), h.ops, grouping_type=grouping_type, method=grouping_method
+        ), 2 * len(active)
 
     openfermion, _ = _import_of()
 
@@ -942,4 +958,9 @@ def molecular_hamiltonian(
 
     h_of, qubits = (decompose(hf_file, mapping, core, active), 2 * len(active))
 
-    return qml.qchem.convert.import_operator(h_of, wires=wires), qubits
+    h_pl = qml.qchem.convert.import_operator(h_of, wires=wires, tol=convert_tol)
+
+    return (
+        qml.Hamiltonian(h_pl.coeffs, h_pl.ops, grouping_type=grouping_type, method=grouping_method),
+        qubits,
+    )

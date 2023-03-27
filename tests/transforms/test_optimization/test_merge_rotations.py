@@ -41,7 +41,7 @@ class TestMergeRotations:
 
         transformed_qfunc = merge_rotations()(qfunc)
 
-        ops = qml.transforms.make_tape(transformed_qfunc)().operations
+        ops = qml.tape.make_qscript(transformed_qfunc)().operations
 
         assert len(ops) == len(expected_ops)
 
@@ -67,7 +67,7 @@ class TestMergeRotations:
 
         transformed_qfunc = merge_rotations()(qfunc)
 
-        ops = qml.transforms.make_tape(transformed_qfunc)().operations
+        ops = qml.tape.make_qscript(transformed_qfunc)().operations
 
         assert len(ops) == len(expected_ops)
 
@@ -85,7 +85,7 @@ class TestMergeRotations:
         # Try with default tolerance; these ops should still be applied
         transformed_qfunc = merge_rotations()(qfunc)
 
-        ops = qml.transforms.make_tape(transformed_qfunc)().operations
+        ops = qml.tape.make_qscript(transformed_qfunc)().operations
 
         assert len(ops) == 1
         assert ops[0].name == "RZ"
@@ -93,7 +93,7 @@ class TestMergeRotations:
 
         # Now try with higher tolerance threshold; the ops should cancel
         transformed_qfunc = merge_rotations(atol=1e-5)(qfunc)
-        ops = qml.transforms.make_tape(transformed_qfunc)().operations
+        ops = qml.tape.make_qscript(transformed_qfunc)().operations
         assert len(ops) == 0
 
     @pytest.mark.parametrize(
@@ -114,7 +114,7 @@ class TestMergeRotations:
 
         transformed_qfunc = merge_rotations()(qfunc)
 
-        ops = qml.transforms.make_tape(transformed_qfunc)().operations
+        ops = qml.tape.make_qscript(transformed_qfunc)().operations
 
         assert len(ops) == len(expected_ops)
 
@@ -142,7 +142,7 @@ class TestMergeRotations:
 
         transformed_qfunc = merge_rotations()(qfunc)
 
-        ops = qml.transforms.make_tape(transformed_qfunc)().operations
+        ops = qml.tape.make_qscript(transformed_qfunc)().operations
 
         assert len(ops) == len(expected_ops)
 
@@ -164,7 +164,7 @@ class TestMergeRotations:
 
         transformed_qfunc = merge_rotations(include_gates=["RX", "CRX"])(qfunc)
 
-        ops = qml.transforms.make_tape(transformed_qfunc)().operations
+        ops = qml.tape.make_qscript(transformed_qfunc)().operations
 
         names_expected = ["CRX", "RY", "RY", "RX", "RZ"]
         wires_expected = [Wires([0, 1]), Wires("a"), Wires("a"), Wires(2), Wires(2)]
@@ -185,7 +185,7 @@ class TestMergeRotations:
 
         transformed_qfunc = merge_rotations()(qfunc)
 
-        ops = qml.transforms.make_tape(transformed_qfunc)().operations
+        ops = qml.tape.make_qscript(transformed_qfunc)().operations
 
         names_expected = ["RX", "Hadamard", "RX"]
         wires_expected = [Wires(0)] * 3
@@ -205,7 +205,7 @@ class TestMergeRotations:
 
         transformed_qfunc = merge_rotations()(qfunc)
 
-        ops = qml.transforms.make_tape(transformed_qfunc)().operations
+        ops = qml.tape.make_qscript(transformed_qfunc)().operations
 
         names_expected = ["RX", "CNOT", "RX"]
         wires_expected = [Wires(0), Wires([0, 1]), Wires(0)]
@@ -230,7 +230,7 @@ class TestMergeRotations:
 
         transformed_qfunc = merge_rotations()(qfunc)
 
-        ops = qml.transforms.make_tape(transformed_qfunc)().operations
+        ops = qml.tape.make_qscript(transformed_qfunc)().operations
 
         assert len(ops) == len(expected_ops)
 
@@ -248,7 +248,7 @@ class TestMergeRotations:
 
         transformed_qfunc = merge_rotations()(qfunc)
 
-        ops = qml.transforms.make_tape(transformed_qfunc)().operations
+        ops = qml.tape.make_qscript(transformed_qfunc)().operations
 
         names_expected = ["CRX", "CRX"]
         wires_expected = [Wires(["w1", "w2"]), Wires(["w2", "w1"])]
@@ -260,6 +260,7 @@ class TestMergeRotations:
 
 # Example QNode and device for interface testing
 dev = qml.device("default.qubit", wires=3)
+
 
 # Test each of single-qubit, two-qubit, and Rot gates
 def qfunc(theta):
@@ -320,8 +321,8 @@ class TestMergeRotationsInterfaces:
         """Test QNode and gradient in torch interface."""
         import torch
 
-        original_qnode = qml.QNode(qfunc, dev, interface="torch")
-        transformed_qnode = qml.QNode(transformed_qfunc, dev, interface="torch")
+        original_qnode = qml.QNode(qfunc, dev)
+        transformed_qnode = qml.QNode(transformed_qfunc, dev)
 
         original_input = torch.tensor([0.1, 0.2, 0.3, 0.4], requires_grad=True)
         transformed_input = torch.tensor([0.1, 0.2, 0.3, 0.4], requires_grad=True)
@@ -347,8 +348,8 @@ class TestMergeRotationsInterfaces:
         """Test QNode and gradient in tensorflow interface."""
         import tensorflow as tf
 
-        original_qnode = qml.QNode(qfunc, dev, interface="tf")
-        transformed_qnode = qml.QNode(transformed_qfunc, dev, interface="tf")
+        original_qnode = qml.QNode(qfunc, dev)
+        transformed_qnode = qml.QNode(transformed_qfunc, dev)
 
         original_input = tf.Variable([0.1, 0.2, 0.3, 0.4])
         transformed_input = tf.Variable([0.1, 0.2, 0.3, 0.4])
@@ -384,8 +385,8 @@ class TestMergeRotationsInterfaces:
         remember = config.read("jax_enable_x64")
         config.update("jax_enable_x64", True)
 
-        original_qnode = qml.QNode(qfunc, dev, interface="jax")
-        transformed_qnode = qml.QNode(transformed_qfunc, dev, interface="jax")
+        original_qnode = qml.QNode(qfunc, dev)
+        transformed_qnode = qml.QNode(transformed_qfunc, dev)
 
         input = jnp.array([0.1, 0.2, 0.3, 0.4], dtype=jnp.float64)
 

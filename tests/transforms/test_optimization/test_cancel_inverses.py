@@ -32,33 +32,7 @@ class TestCancelInverses:
 
         transformed_qfunc = cancel_inverses(qfunc)
 
-        new_tape = qml.transforms.make_tape(transformed_qfunc)()
-
-        assert len(new_tape.operations) == 0
-
-    def test_one_qubit_cancel_followed_inverse(self):
-        """Test that a single-qubit circuit with adjacent inverse gate cancels."""
-
-        def qfunc():
-            qml.S(wires=0)
-            qml.S(wires=0).inv()
-
-        transformed_qfunc = cancel_inverses(qfunc)
-
-        new_tape = qml.transforms.make_tape(transformed_qfunc)()
-
-        assert len(new_tape.operations) == 0
-
-    def test_one_qubit_cancel_preceded_inverse(self):
-        """Test that a single-qubit circuit with adjacent inverse gate cancels."""
-
-        def qfunc():
-            qml.S(wires=0).inv()
-            qml.S(wires=0)
-
-        transformed_qfunc = cancel_inverses(qfunc)
-
-        new_tape = qml.transforms.make_tape(transformed_qfunc)()
+        new_tape = qml.tape.make_qscript(transformed_qfunc)()
 
         assert len(new_tape.operations) == 0
 
@@ -71,7 +45,7 @@ class TestCancelInverses:
 
         transformed_qfunc = cancel_inverses(qfunc)
 
-        new_tape = qml.transforms.make_tape(transformed_qfunc)()
+        new_tape = qml.tape.make_qscript(transformed_qfunc)()
 
         assert len(new_tape.operations) == 0
 
@@ -84,7 +58,7 @@ class TestCancelInverses:
 
         transformed_qfunc = cancel_inverses(qfunc)
 
-        new_tape = qml.transforms.make_tape(transformed_qfunc)()
+        new_tape = qml.tape.make_qscript(transformed_qfunc)()
 
         assert len(new_tape.operations) == 0
 
@@ -98,7 +72,7 @@ class TestCancelInverses:
 
         transformed_qfunc = cancel_inverses(qfunc)
 
-        ops = qml.transforms.make_tape(transformed_qfunc)().operations
+        ops = qml.tape.make_qscript(transformed_qfunc)().operations
 
         names_expected = ["Hadamard", "RZ", "Hadamard"]
         wires_expected = [Wires(0)] * 3
@@ -113,7 +87,7 @@ class TestCancelInverses:
 
         transformed_qfunc = cancel_inverses(qfunc)
 
-        ops = qml.transforms.make_tape(transformed_qfunc)().operations
+        ops = qml.tape.make_qscript(transformed_qfunc)().operations
 
         names_expected = ["Hadamard"] * 2
         wires_expected = [Wires(0), Wires(1)]
@@ -131,7 +105,7 @@ class TestCancelInverses:
 
         transformed_qfunc = cancel_inverses(qfunc)
 
-        ops = qml.transforms.make_tape(transformed_qfunc)().operations
+        ops = qml.tape.make_qscript(transformed_qfunc)().operations
 
         names_expected = ["Hadamard", "CNOT", "RZ"]
         wires_expected = [Wires(0), Wires([0, 2]), Wires(2)]
@@ -149,7 +123,7 @@ class TestCancelInverses:
 
         transformed_qfunc = cancel_inverses(qfunc)
 
-        ops = qml.transforms.make_tape(transformed_qfunc)().operations
+        ops = qml.tape.make_qscript(transformed_qfunc)().operations
 
         names_expected = ["Hadamard", "PauliX", "CNOT", "RZ", "PauliX"]
         wires_expected = [Wires(0), Wires(1), Wires([0, 1]), Wires(2), Wires(1)]
@@ -169,7 +143,7 @@ class TestCancelInverses:
 
         transformed_qfunc = cancel_inverses(qfunc)
 
-        ops = qml.transforms.make_tape(transformed_qfunc)().operations
+        ops = qml.tape.make_qscript(transformed_qfunc)().operations
 
         names_expected = ["Toffoli"] * 3
         wires_expected = [Wires(["a", "b", "c"]), Wires(["a", "c", "b"]), Wires(["a", "c", "d"])]
@@ -184,7 +158,7 @@ class TestCancelInverses:
 
         transformed_qfunc = cancel_inverses(qfunc)
 
-        ops = qml.transforms.make_tape(transformed_qfunc)().operations
+        ops = qml.tape.make_qscript(transformed_qfunc)().operations
 
         assert len(ops) == 0
 
@@ -197,7 +171,7 @@ class TestCancelInverses:
 
         transformed_qfunc = cancel_inverses(qfunc)
 
-        ops = qml.transforms.make_tape(transformed_qfunc)().operations
+        ops = qml.tape.make_qscript(transformed_qfunc)().operations
 
         names_expected = ["CNOT"] * 2
         wires_expected = [Wires([0, 1]), Wires([1, 0])]
@@ -212,7 +186,7 @@ class TestCancelInverses:
 
         transformed_qfunc = cancel_inverses(qfunc)
 
-        ops = qml.transforms.make_tape(transformed_qfunc)().operations
+        ops = qml.tape.make_qscript(transformed_qfunc)().operations
 
         assert len(ops) == 0
 
@@ -271,8 +245,8 @@ class TestCancelInversesInterfaces:
         """Test QNode and gradient in torch interface."""
         import torch
 
-        original_qnode = qml.QNode(qfunc, dev, interface="torch")
-        transformed_qnode = qml.QNode(transformed_qfunc, dev, interface="torch")
+        original_qnode = qml.QNode(qfunc, dev)
+        transformed_qnode = qml.QNode(transformed_qfunc, dev)
 
         original_input = torch.tensor([0.1, 0.2], requires_grad=True)
         transformed_input = torch.tensor([0.1, 0.2], requires_grad=True)
@@ -298,8 +272,8 @@ class TestCancelInversesInterfaces:
         """Test QNode and gradient in tensorflow interface."""
         import tensorflow as tf
 
-        original_qnode = qml.QNode(qfunc, dev, interface="tf")
-        transformed_qnode = qml.QNode(transformed_qfunc, dev, interface="tf")
+        original_qnode = qml.QNode(qfunc, dev)
+        transformed_qnode = qml.QNode(transformed_qfunc, dev)
 
         original_input = tf.Variable([0.1, 0.2])
         transformed_input = tf.Variable([0.1, 0.2])
@@ -337,8 +311,8 @@ class TestCancelInversesInterfaces:
         remember = config.read("jax_enable_x64")
         config.update("jax_enable_x64", True)
 
-        original_qnode = qml.QNode(qfunc, dev, interface="jax")
-        transformed_qnode = qml.QNode(transformed_qfunc, dev, interface="jax")
+        original_qnode = qml.QNode(qfunc, dev)
+        transformed_qnode = qml.QNode(transformed_qfunc, dev)
 
         input = jnp.array([0.1, 0.2], dtype=jnp.float64)
 

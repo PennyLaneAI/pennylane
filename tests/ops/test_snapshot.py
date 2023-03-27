@@ -13,6 +13,7 @@
 # limitations under the License.
 """Unit tests for the Snapshot operation."""
 from pennylane import Snapshot
+import pennylane as qml
 
 
 def test_decomposition():
@@ -24,8 +25,8 @@ def test_decomposition():
 
 def test_label_method():
     """Test the label method for the Snapshot operation."""
-    assert Snapshot().label() == "|S|"
-    assert Snapshot("my_label").label() == "|S|"
+    assert Snapshot().label() == "|Snap|"
+    assert Snapshot("my_label").label() == "|Snap|"
 
 
 def test_control():
@@ -38,3 +39,9 @@ def test_adjoint():
     """Test the adjoint method for the Snapshot operation."""
     assert isinstance(Snapshot().adjoint(), Snapshot)
     assert Snapshot("my_label").adjoint().tag == Snapshot("my_label").tag
+
+
+def test_snapshot_no_empty_wire_list_error():
+    """Test that Snapshot does not raise an empty wire error."""
+    snapshot = qml.Snapshot()
+    assert isinstance(snapshot, qml.Snapshot)

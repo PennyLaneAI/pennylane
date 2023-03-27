@@ -16,8 +16,8 @@ Unit tests for the :mod:`pauli_group`  functions in ``grouping/pauli.py``.
 """
 import pytest
 
-from pennylane import Identity, PauliX, PauliY, PauliZ
-from pennylane.grouping import is_commuting, string_to_pauli_word
+from pennylane import Identity, PauliX, PauliY, PauliZ, is_commuting
+from pennylane.grouping import string_to_pauli_word
 from pennylane.grouping.pauli import (
     partition_pauli_group,
     pauli_group,

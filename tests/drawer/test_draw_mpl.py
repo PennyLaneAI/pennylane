@@ -49,7 +49,7 @@ def test_standard_use():
     fig, ax = qml.draw_mpl(circuit1)(1.23, 2.34)
 
     assert isinstance(fig, mpl.figure.Figure)
-    assert isinstance(ax, mpl.axes._axes.Axes)
+    assert isinstance(ax, mpl.axes._axes.Axes)  # pylint:disable=protected-access
 
     # proxy for whether correct things were drawn
     assert len(ax.patches) == 7  # two boxes, 2 circles for CNOT, 3 patches for measure
@@ -79,7 +79,7 @@ def test_expansion_strategy(strategy, initial_strategy, n_lines):
         qml.Permute([2, 0, 1], wires=(0, 1, 2))
         return qml.expval(qml.PauliZ(0))
 
-    fig, ax = qml.draw_mpl(circuit, expansion_strategy=strategy)()
+    _, ax = qml.draw_mpl(circuit, expansion_strategy=strategy)()
 
     assert len(ax.lines) == n_lines
     assert circuit.expansion_strategy == initial_strategy
@@ -114,7 +114,7 @@ class TestKwargs:
             1.23, 2.34
         )
 
-        for l in ax.texts[0:3]:  # three labels
+        for l in ax.texts[:3]:  # three labels
             assert l.get_color() == "purple"
             assert l.get_fontsize() == 20
         plt.close()
@@ -138,6 +138,37 @@ class TestKwargs:
 
         assert len(ax.patches) == n_patches
         plt.close()
+
+    def test_black_white_is_default_style(self):
+        """Test that if no style is specified, the black_white style is the default for mpl_draw,
+        rather than general matplotlib settings."""
+
+        _, ax = qml.draw_mpl(circuit1)(1.234, 1.234)
+
+        assert ax.get_facecolor() == (1.0, 1.0, 1.0, 1.0)
+        assert ax.patches[4].get_facecolor() == (1.0, 1.0, 1.0, 1.0)
+        assert ax.patches[4].get_edgecolor() == (0.0, 0.0, 0.0, 1.0)
+
+    def test_style(self):
+        """Test style is set by keyword argument."""
+
+        _, ax = qml.draw_mpl(circuit1, style="sketch")(1.234, 1.234)
+
+        assert ax.get_facecolor() == (
+            0.8392156862745098,
+            0.9607843137254902,
+            0.8862745098039215,
+            1.0,
+        )
+        assert ax.patches[0].get_edgecolor() == (0.0, 0.0, 0.0, 1.0)
+        assert ax.patches[0].get_facecolor() == (1.0, 0.9333333333333333, 0.8313725490196079, 1.0)
+        assert ax.patches[2].get_facecolor() == (0.0, 0.0, 0.0, 1.0)
+        assert ax.patches[3].get_facecolor() == (
+            0.8392156862745098,
+            0.9607843137254902,
+            0.8862745098039215,
+            1.0,
+        )
 
 
 class TestWireBehaviour:
@@ -199,7 +230,7 @@ class TestWireBehaviour:
 
         _, ax = qml.draw_mpl(circuit1, wire_options={"color": "black", "linewidth": 4})(1.23, 2.34)
 
-        for w in ax.lines[0:3]:  # three wires
+        for w in ax.lines[:3]:  # three wires
             assert w.get_color() == "black"
             assert w.get_linewidth() == 4
 
@@ -210,38 +241,95 @@ class TestMPLIntegration:
     """Test using matplotlib styling to modify look of graphic."""
 
     def test_rcparams(self):
-        """Test setting rcParams modifies style."""
+        """Test setting rcParams modifies style for draw_mpl(circuit, style=None)."""
 
         rgba_red = (1, 0, 0, 1)
         rgba_green = (0, 1, 0, 1)
         plt.rcParams["patch.facecolor"] = rgba_red
         plt.rcParams["lines.color"] = rgba_green
 
-        _, ax = qml.draw_mpl(circuit1)(1.23, 2.34)
+        _, ax = qml.draw_mpl(circuit1, style=None)(1.23, 2.34)
 
         assert ax.patches[0].get_facecolor() == rgba_red
         assert ax.patches[1].get_facecolor() == rgba_red
 
-        for l in ax.lines[0:-1]:  # final is fancy arrow, has different styling
+        for l in ax.lines[:-1]:  # final is fancy arrow, has different styling
             assert l.get_color() == rgba_green
 
         plt.style.use("default")
         plt.close()
 
-    def test_style(self):
-        """Test matplotlib styles impact figure styling."""
+    def test_style_with_matplotlib(self):
+        """Test matplotlib styles impact figure styling for draw_mpl(circuit, style=None)."""
 
         plt.style.use("fivethirtyeight")
 
-        _, ax = qml.draw_mpl(circuit1)(1.23, 2.34)
+        _, ax = qml.draw_mpl(circuit1, style=None)(1.23, 2.34)
 
         expected_facecolor = mpl.colors.to_rgba(plt.rcParams["patch.facecolor"])
         assert ax.patches[0].get_facecolor() == expected_facecolor
         assert ax.patches[1].get_facecolor() == expected_facecolor
 
         expected_linecolor = mpl.colors.to_rgba(plt.rcParams["lines.color"])
-        for l in ax.lines[0:-1]:  # final is fancy arrow, has different styling
+        for l in ax.lines[:-1]:  # final is fancy arrow, has different styling
             assert mpl.colors.to_rgba(l.get_color()) == expected_linecolor
 
         plt.style.use("default")
         plt.close()
+
+    def test_style_restores_settings(self):
+        """Test that selecting style as draw_mpl(circuit, style=None) does not modify the users
+        general matplotlib plotting settings"""
+
+        initial_facecolor = mpl.rcParams["axes.facecolor"]
+        initial_patch_facecolor = mpl.rcParams["patch.facecolor"]
+        initial_patch_edgecolor = mpl.rcParams["patch.edgecolor"]
+
+        # confirm settings were updated for the draw_mpl plot
+        _, ax = qml.draw_mpl(circuit1, style="sketch")(1.234, 1.234)
+        assert ax.get_facecolor() == (
+            0.8392156862745098,
+            0.9607843137254902,
+            0.8862745098039215,
+            1.0,
+        )
+        assert ax.patches[3].get_facecolor() == (
+            0.8392156862745098,
+            0.9607843137254902,
+            0.8862745098039215,
+            1.0,
+        )
+        assert ax.patches[3].get_edgecolor() == (0.0, 0.0, 0.0, 1.0)
+
+        # confirm general matplotlib settings were reset after plotting
+        assert mpl.rcParams["axes.facecolor"] == initial_facecolor
+        assert mpl.rcParams["patch.facecolor"] == initial_patch_facecolor
+        assert mpl.rcParams["patch.edgecolor"] == initial_patch_edgecolor
+
+
+def test_draw_mpl_supports_qfuncs():
+    """Test that draw_mpl works with non-QNode quantum functions."""
+
+    def qfunc(x):
+        qml.RX(x, 0)
+
+    fig, ax = qml.draw_mpl(qfunc)(1.1)
+
+    assert isinstance(fig, mpl.figure.Figure)
+    assert isinstance(ax, mpl.axes._axes.Axes)  # pylint:disable=protected-access
+    assert len(ax.patches) == 1
+    assert len(ax.lines) == 1
+    assert len(ax.texts) == 2
+    assert ax.texts[0].get_text() == "0"
+    assert ax.texts[1].get_text() == "RX"
+    plt.close()
+
+
+def test_draw_mpl_with_qfunc_warns_with_expansion_strategy():
+    """Test that draw warns the user about expansion_strategy being ignored."""
+
+    def qfunc():
+        qml.PauliZ(0)
+
+    with pytest.warns(UserWarning, match="the expansion_strategy argument is ignored"):
+        _ = qml.draw_mpl(qfunc, expansion_strategy="gradient")

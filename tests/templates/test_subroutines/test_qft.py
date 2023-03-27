@@ -25,12 +25,11 @@ import pennylane as qml
 class TestQFT:
     """Tests for the qft operations"""
 
-    @pytest.mark.parametrize("inverse", [True, False])
-    def test_QFT(self, inverse):
+    def test_QFT(self):
         """Test if the QFT matrix is equal to a manually-calculated version for 3 qubits"""
-        op = qml.QFT(wires=range(3)).inv() if inverse else qml.QFT(wires=range(3))
+        op = qml.QFT(wires=range(3))
         res = op.matrix()
-        exp = QFT.conj().T if inverse else QFT
+        exp = QFT
         assert np.allclose(res, exp)
 
     @pytest.mark.parametrize("n_qubits", range(2, 6))
@@ -53,7 +52,7 @@ class TestQFT:
 
         assert np.allclose(reconstructed_unitary, expected_unitary)
 
-    @pytest.mark.parametrize("n_qubits", range(2, 6))
+    @pytest.mark.parametrize("n_qubits", range(2, 10))
     def test_QFT_adjoint_identity(self, n_qubits, tol):
         """Test if using the qml.adjoint transform the resulting operation is
         the inverse of QFT."""

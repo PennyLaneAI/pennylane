@@ -35,6 +35,7 @@ ops = {
     "TClock",
     "TAdd",
     "TSWAP",
+    "THadamard",
     "TRX",
     "TRY",
     "TRZ",
@@ -42,7 +43,7 @@ ops = {
 
 obs = {
     "THermitian",
-    "GellMannObs",
+    "GellMann",
 }
 
 __all__ = list(ops | obs)

@@ -21,15 +21,27 @@ from scipy.stats import unitary_group
 
 import pennylane as qml
 from pennylane.wires import Wires
-from tests.ops.qubit.test_non_parametric_ops import NON_PARAMETRIZED_OPERATIONS
 
-from gate_data import TSHIFT, TCLOCK, TADD, TSWAP
+from gate_data import OMEGA, TSHIFT, TCLOCK, TADD, TSWAP, TH
 
 NON_PARAMETRIZED_OPERATIONS = [
-    (qml.TShift, TSHIFT),
-    (qml.TClock, TCLOCK),
-    (qml.TAdd, TADD),
-    (qml.TSWAP, TSWAP),
+    (qml.TShift, TSHIFT, None),
+    (qml.TClock, TCLOCK, None),
+    (qml.TAdd, TADD, None),
+    (qml.TSWAP, TSWAP, None),
+    (qml.THadamard, TH, None),
+    (qml.THadamard, np.array([[1, 1, 0], [1, -1, 0], [0, 0, np.sqrt(2)]]) / np.sqrt(2), [0, 1]),
+    (qml.THadamard, np.array([[1, 0, 1], [0, np.sqrt(2), 0], [1, 0, -1]]) / np.sqrt(2), [0, 2]),
+    (qml.THadamard, np.array([[np.sqrt(2), 0, 0], [0, 1, 1], [0, 1, -1]]) / np.sqrt(2), [1, 2]),
+]
+
+subspace_error_data = [
+    ([1, 1], "Elements of subspace list must be unique."),
+    ([1, 2, 3], "The subspace must be a sequence with"),
+    ([3, 1], "Elements of the subspace must be 0, 1, or 2."),
+    ([3, 3], "Elements of the subspace must be 0, 1, or 2."),
+    ([1], "The subspace must be a sequence with"),
+    (0, "The subspace must be a sequence with two unique"),
 ]
 
 
@@ -37,25 +49,43 @@ NON_PARAMETRIZED_OPERATIONS = [
 
 
 class TestOperations:
-    @pytest.mark.parametrize("op_cls, mat", NON_PARAMETRIZED_OPERATIONS)
-    def test_nonparametrized_op_copy(self, op_cls, mat, tol):
+    @pytest.mark.parametrize("op_cls, mat, subspace", NON_PARAMETRIZED_OPERATIONS)
+    def test_nonparametrized_op_copy(self, op_cls, mat, subspace, tol):
         """Tests that copied nonparametrized ops function as expected"""
-        op = op_cls(wires=range(op_cls.num_wires))
+        op = (
+            op_cls(wires=range(op_cls.num_wires))
+            if subspace is None
+            else op_cls(wires=range(op_cls.num_wires), subspace=subspace)
+        )
         copied_op = copy.copy(op)
         np.testing.assert_allclose(op.matrix(), copied_op.matrix(), atol=tol)
 
-        op._inverse = True
-        copied_op2 = copy.copy(op)
-        np.testing.assert_allclose(op.matrix(), copied_op2.matrix(), atol=tol)
-
-    @pytest.mark.parametrize("ops, mat", NON_PARAMETRIZED_OPERATIONS)
-    def test_matrices(self, ops, mat, tol):
+    @pytest.mark.parametrize("ops, mat, subspace", NON_PARAMETRIZED_OPERATIONS)
+    def test_matrices(self, ops, mat, subspace, tol):
         """Test matrices of non-parametrized operations are correct"""
-        op = ops(wires=range(ops.num_wires))
-        res_static = op.compute_matrix()
+        op = (
+            ops(wires=range(ops.num_wires))
+            if subspace is None
+            else ops(wires=range(ops.num_wires), subspace=subspace)
+        )
+        res_static = (
+            op.compute_matrix() if subspace is None else op.compute_matrix(subspace=subspace)
+        )
         res_dynamic = op.matrix()
         assert np.allclose(res_static, mat, atol=tol, rtol=0)
         assert np.allclose(res_dynamic, mat, atol=tol, rtol=0)
+
+    @pytest.mark.parametrize("subspace, err_msg", subspace_error_data)
+    @pytest.mark.parametrize("op_cls", [qml.THadamard])
+    def test_subspace_op_errors(self, op_cls, subspace, err_msg):
+        """Test that the correct errors are raised when subspace is incorrectly defined"""
+
+        with pytest.raises(ValueError, match=err_msg):
+            op = op_cls(wires=range(op_cls.num_wires), subspace=subspace)
+            op.matrix()
+
+        with pytest.raises(ValueError, match=err_msg):
+            op_cls.compute_matrix(subspace=subspace)
 
 
 class TestEigenval:
@@ -80,6 +110,13 @@ class TestEigenval:
         res = op.eigvals()
         assert np.allclose(res, exp)
 
+    def test_tswap_eigenval(self):
+        """Tests that the TSWAP eigenvalue matches the numpy eigenvalues of the TSWAP matrix"""
+        op = qml.TSWAP(wires=[0, 1])
+        exp = np.linalg.eigvals(op.matrix())
+        res = op.eigvals()
+        assert np.allclose(res, exp)
+
 
 period_three_ops = [
     qml.TShift(wires=0),
@@ -87,62 +124,96 @@ period_three_ops = [
     qml.TAdd(wires=[0, 1]),
 ]
 
+period_two_ops = [
+    qml.TSWAP(wires=[0, 1]),
+    qml.THadamard(wires=0, subspace=[0, 1]),
+    qml.THadamard(wires=0, subspace=[0, 2]),
+    qml.THadamard(wires=0, subspace=[1, 2]),
+]
+
+no_pow_method_ops = [
+    qml.THadamard(wires=0, subspace=None),
+]
+
 
 class TestPowMethod:
-    @pytest.mark.parametrize("op", period_three_ops)
-    @pytest.mark.parametrize("n", (-5, -2, 1, 4, 7))
-    def test_period_three_1_mod_3(self, op, n):
-        """Tests that ops raised to an integer power == 1 mod 3 are the same as the original op"""
-        assert op.pow(n)[0].__class__ is op.__class__
+    """Tests for the pow method of non-parametric qutrit operations."""
 
     @pytest.mark.parametrize("op", period_three_ops)
-    @pytest.mark.parametrize("n", (-4, -1, 2, 5, 8))
-    def test_period_three_2_mod_3(self, op, n):
-        """Tests that ops raised to an integer power == 2 mod 3 are the adjoint of the original op"""
-        op_pow = op.pow(n)[0]
-        assert op_pow.__class__ is op.__class__
-        assert np.allclose(op.matrix().conj().T, op_pow.matrix())
-        assert op_pow.inverse == True
+    @pytest.mark.parametrize("offset", (-6, -3, 0, 3, 6))
+    def test_period_three_ops_pow_multiple_of_3(self, op, offset):
+        """Tests that ops with period == 3 return an empty list when raised to a
+        power that's a multiple of 3."""
+
+        assert len(op.pow(0 + offset)) == 0
 
     @pytest.mark.parametrize("op", period_three_ops)
-    @pytest.mark.parametrize("n", (-6, -3, 0, 3, 6))
-    def test_period_three_0_mod_3(self, op, n):
-        """Tests that ops raised to an integer power == 0 mod 3 are empty lists"""
-        assert len(op.pow(n)) == 0
+    @pytest.mark.parametrize("offset", (-6, -3, 0, 3, 6))
+    def test_period_three_ops_pow_offset_1(self, op, offset):
+        """Tests that ops with a period == 3 return a queued copy of themselves when
+        raised to a power that is 1+multiple of three.
+        """
+        # When raising to power == 1 mod 3
+        with qml.queuing.AnnotatedQueue() as q:
+            op_pow_1 = op.pow(1 + offset)[0]
+
+        assert q.queue[0] is op_pow_1
+        assert qml.equal(op_pow_1, op)
 
     @pytest.mark.parametrize("op", period_three_ops)
-    def test_period_three_noninteger_power(self, op):
-        """Test that ops with a period of 3 raised to a non-integer power raise an error."""
+    @pytest.mark.parametrize("offset", (0, 3))
+    def test_period_three_ops_pow_offset_2(self, op, offset):
+        """Tests that ops with a period ==3 raise a PowUndefinedError when raised
+        to a power that is 2+multiple of three."""
+
+        # When raising to power == 2 mod 3
+        with pytest.raises(qml.operation.PowUndefinedError):
+            op_pow_2 = op.pow(2 + offset)
+
+    @pytest.mark.parametrize("op", period_three_ops + period_two_ops)
+    def test_period_two_three_noninteger_power(self, op):
+        """Test that ops with a period of 2 or 3 raised to a non-integer power raise an error"""
         with pytest.raises(qml.operation.PowUndefinedError):
             op.pow(1.234)
 
     @pytest.mark.parametrize("offset", [0, 2, -2, 4, -4])
-    def test_tswap_pow(self, offset):
-        """Test powers of the TSWAP operator"""
-        op = qml.TSWAP(wires=[0, 1])
+    @pytest.mark.parametrize("op", period_two_ops)
+    def test_period_two_pow(self, offset, op):
+        """Tests that ops with period == 2 behave correctly when raised to various
+        integer powers"""
 
         assert len(op.pow(0 + offset)) == 0
-        assert op.pow(1 + offset)[0].__class__ is qml.TSWAP
+        assert qml.equal(op.pow(1 + offset)[0], op)
 
-        with pytest.raises(qml.operation.PowUndefinedError):
-            op.pow(1.234)  # Expect error raised for non-integer power
+    @pytest.mark.parametrize("op", no_pow_method_ops)
+    def test_no_pow_ops(self, op):
+        assert len(op.pow(0)) == 0
+
+        op_pow = op.pow(1)
+        assert len(op_pow) == 1
+        assert op_pow[0].__class__ == op.__class__
+
+        pows = [0.1, 2, -2, -2.5]
+
+        for pow in pows:
+            with pytest.raises(qml.operation.PowUndefinedError):
+                op.pow(pow)
 
 
 label_data = [
-    (qml.TShift(0), "TShift", "TShift⁻¹"),
-    (qml.TClock(0), "TClock", "TClock⁻¹"),
-    (qml.TAdd([0, 1]), "TAdd", "TAdd⁻¹"),
-    (qml.TSWAP([0, 1]), "TSWAP", "TSWAP"),
+    (qml.TShift(0), "TShift"),
+    (qml.TClock(0), "TClock"),
+    (qml.TAdd([0, 1]), "TAdd"),
+    (qml.TSWAP([0, 1]), "TSWAP"),
+    (qml.THadamard(0), "TH"),
+    (qml.THadamard(0, subspace=[0, 1]), "TH"),
 ]
 
 
-@pytest.mark.parametrize("op, label1, label2", label_data)
-def test_label_method(op, label1, label2):
-    assert op.label() == label1
-    assert op.label(decimals=2) == label1
-
-    op.inv()
-    assert op.label() == label2
+@pytest.mark.parametrize("op, label", label_data)
+def test_label_method(op, label):
+    assert op.label() == label
+    assert op.label(decimals=2) == label
 
 
 control_data = [
@@ -150,6 +221,7 @@ control_data = [
     (qml.TClock(0), Wires([])),
     (qml.TAdd([0, 1]), Wires([0])),
     (qml.TSWAP([0, 1]), Wires([])),
+    (qml.THadamard(wires=0), Wires([])),
 ]
 
 
@@ -160,30 +232,35 @@ def test_control_wires(op, control_wires):
     assert op.control_wires == control_wires
 
 
-adjoint_ops = [  # ops that are not their own inverses
+no_adjoint_ops = [  # ops that are not their own inverses
     qml.TShift(wires=0),
     qml.TClock(wires=0),
     qml.TAdd(wires=[0, 1]),
+    qml.THadamard(wires=0, subspace=None),
 ]
 
-involution_ops = [
-    qml.TSWAP([0, 1]),
-]  # ops that are their own inverses
+involution_ops = [  # ops that are their own inverses
+    qml.TSWAP(wires=[0, 1]),
+    qml.THadamard(wires=0, subspace=[0, 1]),
+    qml.THadamard(wires=0, subspace=[0, 2]),
+    qml.THadamard(wires=0, subspace=[1, 2]),
+]
 
 
-@pytest.mark.parametrize("op", adjoint_ops)
+@pytest.mark.parametrize("op", no_adjoint_ops)
 def test_adjoint_method(op, tol):
-    adj_op = copy.copy(op)
-    adj_op = adj_op.adjoint()
+    """Assert that ops that are not their own inverses do not have a defined adjoint."""
+    assert not op.has_adjoint
 
-    assert adj_op.name == op.name + ".inv"
-    assert np.allclose(adj_op.matrix(), op.matrix().conj().T)
+    with pytest.raises(qml.operation.AdjointUndefinedError):
+        op.adjoint()
 
 
 @pytest.mark.parametrize("op", involution_ops)
 def test_adjoint_method_involution(op, tol):
-    adj_op = copy.copy(op)
-    adj_op = adj_op.adjoint()
+    """Assert that involution ops are their own adjoint."""
+    assert op.has_adjoint
 
-    assert adj_op.name == op.name
-    assert np.allclose(adj_op.matrix(), op.matrix())
+    adj_op = op.adjoint()
+    assert qml.equal(adj_op, op)
+    assert adj_op is not op

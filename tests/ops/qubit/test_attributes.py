@@ -21,6 +21,7 @@ from scipy.stats import unitary_group
 import pennylane as qml
 
 from pennylane.ops.qubit.attributes import Attribute
+from pennylane.ops import Controlled
 
 # Dummy attribute
 new_attribute = Attribute(["PauliX", "PauliY", "PauliZ", "Hadamard", "RZ"])
@@ -108,6 +109,7 @@ single_scalar_multi_wire_ops = [
     "DoubleExcitationPlus",
     "DoubleExcitationMinus",
     "OrbitalRotation",
+    "FermionicSWAP",
 ]
 
 two_scalar_single_wire_ops = [
@@ -129,8 +131,14 @@ separately_tested_ops = [
     "QubitUnitary",
     "ControlledQubitUnitary",
     "DiagonalQubitUnitary",
+    "SpecialUnitary",
     "PauliRot",
     "MultiRZ",
+    "QubitStateVector",
+    "AmplitudeEmbedding",
+    "AngleEmbedding",
+    "IQPEmbedding",
+    "QAOAEmbedding",
 ]
 
 
@@ -280,14 +288,12 @@ class TestSupportsBroadcasting:
         op = qml.ControlledQubitUnitary(U, wires=wires, control_wires=[1, "10"])
 
         mat1 = op.matrix()
-        mat2 = qml.ControlledQubitUnitary.compute_matrix(U, u_wires=wires, control_wires=[1, "10"])
         single_mats = [
             qml.ControlledQubitUnitary(_U, wires=wires, control_wires=[1, "10"]).matrix()
             for _U in U
         ]
 
         assert qml.math.allclose(mat1, single_mats)
-        assert qml.math.allclose(mat2, single_mats)
 
     def test_diagonal_qubit_unitary(self):
         """Test that DiagonalQubitUnitary, which is marked as supporting parameter broadcasting,
@@ -300,6 +306,21 @@ class TestSupportsBroadcasting:
         mat1 = op.matrix()
         mat2 = qml.DiagonalQubitUnitary.compute_matrix(diag)
         single_mats = [qml.DiagonalQubitUnitary(d, wires=wires).matrix() for d in diag]
+
+        assert qml.math.allclose(mat1, single_mats)
+        assert qml.math.allclose(mat2, single_mats)
+
+    def test_special_unitary(self):
+        """Test that SpecialUnitary, which is marked as supporting parameter broadcasting,
+        actually does support broadcasting."""
+        theta = np.array([[0.2, -0.1, 0.2], [0, 1, 0], [0.4, 0.2, 0.9], [0, 0, 0]])
+        wires = ["a"]
+
+        op = qml.SpecialUnitary(theta, wires=wires)
+
+        mat1 = op.matrix()
+        mat2 = qml.SpecialUnitary.compute_matrix(theta, 1)
+        single_mats = [qml.SpecialUnitary(t, wires=wires).matrix() for t in theta]
 
         assert qml.math.allclose(mat1, single_mats)
         assert qml.math.allclose(mat2, single_mats)
@@ -335,3 +356,98 @@ class TestSupportsBroadcasting:
 
         assert qml.math.allclose(mat1, single_mats)
         assert qml.math.allclose(mat2, single_mats)
+
+    @pytest.mark.parametrize(
+        "state_, num_wires",
+        [([1.0, 0.0], 1), ([0.5, -0.5j, 0.5, -0.5], 2), (np.ones(8) / np.sqrt(8), 3)],
+    )
+    def test_qubit_state_vector(self, state_, num_wires):
+        """Test that QubitStateVector, which is marked as supporting parameter broadcasting,
+        actually does support broadcasting."""
+
+        state = np.array([state_])
+        op = qml.QubitStateVector(state, wires=list(range(num_wires)))
+        assert op.batch_size == 1
+        qml.QubitStateVector.compute_decomposition(state, list(range(num_wires)))
+        op.decomposition()
+
+        state = np.array([state_] * 3)
+        op = qml.QubitStateVector(state, wires=list(range(num_wires)))
+        assert op.batch_size == 3
+        qml.QubitStateVector.compute_decomposition(state, list(range(num_wires)))
+        op.decomposition()
+
+    @pytest.mark.parametrize(
+        "state, num_wires",
+        [([1.0, 0.0], 1), ([0.5, -0.5j, 0.5, -0.5], 2), (np.ones(8) / np.sqrt(8), 3)],
+    )
+    def test_amplitude_embedding(self, state, num_wires):
+        """Test that AmplitudeEmbedding, which is marked as supporting parameter broadcasting,
+        actually does support broadcasting."""
+
+        features = np.array([state])
+        op = qml.AmplitudeEmbedding(features, wires=list(range(num_wires)))
+        assert op.batch_size == 1
+        qml.AmplitudeEmbedding.compute_decomposition(features, list(range(num_wires)))
+        op.decomposition()
+
+        features = np.array([state] * 3)
+        op = qml.AmplitudeEmbedding(features, wires=list(range(num_wires)))
+        assert op.batch_size == 3
+        qml.AmplitudeEmbedding.compute_decomposition(features, list(range(num_wires)))
+        op.decomposition()
+
+    @pytest.mark.parametrize(
+        "angles, num_wires",
+        [
+            (np.array([[0.5], [2.1]]), 1),
+            (np.array([[0.5, -0.5], [0.2, 1.5]]), 2),
+            (np.ones((2, 5)), 5),
+        ],
+    )
+    def test_angle_embedding(self, angles, num_wires):
+        """Test that AngleEmbedding, which is marked as supporting parameter broadcasting,
+        actually does support broadcasting."""
+
+        op = qml.AngleEmbedding(angles, wires=list(range(num_wires)))
+        assert op.batch_size == 2
+        qml.AngleEmbedding.compute_decomposition(angles, list(range(num_wires)), rotation=qml.RX)
+        op.decomposition()
+
+    @pytest.mark.parametrize(
+        "features, num_wires",
+        [
+            (np.array([[0.5], [2.1]]), 1),
+            (np.array([[0.5, -0.5], [0.2, 1.5]]), 2),
+            (np.ones((2, 5)), 5),
+        ],
+    )
+    def test_iqp_embedding(self, features, num_wires):
+        """Test that IQPEmbedding, which is marked as supporting parameter broadcasting,
+        actually does support broadcasting."""
+
+        op = qml.IQPEmbedding(features, wires=list(range(num_wires)))
+        assert op.batch_size == 2
+        qml.IQPEmbedding.compute_decomposition(
+            features, list(range(num_wires)), n_repeats=2, pattern=op.hyperparameters["pattern"]
+        )
+        op.decomposition()
+
+    @pytest.mark.parametrize(
+        "features, weights, num_wires, batch_size",
+        [
+            (np.array([[0.5], [2.1]]), np.array([[0.61], [0.3]]), 1, 2),
+            (np.array([[0.5, -0.5], [0.2, 1.5]]), np.ones((2, 4, 3)), 2, 2),
+            (np.array([0.5, -0.5, 0.2]), np.ones((3, 2, 6)), 3, 3),
+        ],
+    )
+    def test_qaoa_embedding(self, features, weights, num_wires, batch_size):
+        """Test that QAOAEmbedding, which is marked as supporting parameter broadcasting,
+        actually does support broadcasting."""
+
+        op = qml.QAOAEmbedding(features, weights, wires=list(range(num_wires)))
+        assert op.batch_size == batch_size
+        qml.QAOAEmbedding.compute_decomposition(
+            features, weights, wires=list(range(num_wires)), local_field=qml.RY
+        )
+        op.decomposition()

@@ -30,9 +30,16 @@ def broadcast_expand(tape):
         tape (.QuantumTape): Broadcasted tape to be expanded
 
     Returns:
-        tuple[list[.QuantumTape], function]: Returns a tuple containing a list of
-        quantum tapes that produce one of the results of the broadcasted tape each,
-        and a function that stacks and squeezes the tape execution results.
+        function or tuple[list[.QuantumTape], function]:
+
+        - If the input is a QNode, an object resembling the (broadcasted) input QNode
+          that computes the QNode output serially with multiple circuit evaluations and
+          stacks (and squeezes) the results into one batch of results.
+
+        - If the input is a tape, a tuple containing a list of generated tapes, together with
+          a post-processing function. The number of tapes matches the broadcasting dimension
+          of the input tape, and the results from the evaluated tapes are stacked and squeezed
+          together in the post-processing function.
 
     This expansion function is used internally whenever a device does not
     support broadcasting.

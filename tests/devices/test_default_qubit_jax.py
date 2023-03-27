@@ -15,12 +15,57 @@ import pytest
 
 jax = pytest.importorskip("jax", minversion="0.2")
 jnp = jax.numpy
+import jaxlib
 import numpy as np
 from jax.config import config
 
 import pennylane as qml
 from pennylane import DeviceError
 from pennylane.devices.default_qubit_jax import DefaultQubitJax
+from pennylane.pulse import ParametrizedHamiltonian
+
+
+@pytest.mark.jax
+@pytest.mark.parametrize(
+    "version, package, should_raise",
+    [
+        ("0.4.4", jax, True),
+        ("0.4.3", jax, False),
+    ],
+)
+def test_jax_version(version, package, should_raise, monkeypatch):
+    from pennylane.devices.default_qubit_jax import _validate_jax_version
+
+    with monkeypatch.context() as m:
+        m.setattr(package, "__version__", version)
+
+        if should_raise:
+            msg = "version of JAX is 0.4.4"
+
+            with pytest.raises(RuntimeError, match=msg):
+                _validate_jax_version()
+
+            dev = qml.device("default.qubit", wires=1)
+
+            with pytest.raises(RuntimeError, match=msg):
+
+                @qml.qnode(dev, interface="jax", diff_method="backprop")
+                def circuit():
+                    return None
+
+            with pytest.raises(RuntimeError, match=msg):
+                dev = qml.device("default.qubit.jax", wires=1)
+
+        else:
+            _validate_jax_version()
+
+            _ = qml.device("default.qubit.jax", wires=1)
+
+            dev = qml.device("default.qubit", wires=1)
+
+            @qml.qnode(dev, interface="jax")
+            def circuit():
+                return None
 
 
 @pytest.mark.jax
@@ -52,7 +97,6 @@ class TestQNodeIntegration:
             "supports_tensor_observables": True,
             "returns_probs": True,
             "returns_state": True,
-            "supports_reversible_diff": False,
             "supports_inverse_operations": True,
             "supports_analytic_computation": True,
             "supports_broadcasting": True,
@@ -71,7 +115,6 @@ class TestQNodeIntegration:
 
         dev = DefaultQubitJax(wires=1)
         cap = dev.capabilities()
-        assert cap["supports_reversible_diff"] == False
         assert cap["passthru_interface"] == "jax"
 
     def test_load_device(self):
@@ -513,6 +556,54 @@ class TestQNodeIntegration:
             return qml.sample(qml.PauliZ(wires=0))
 
         circuit()  # Just don't crash.
+
+    @pytest.mark.parametrize("phi", np.pi * np.array([1e-8, 1 / 8, 1 / 4, 1 / 2, 1]))
+    def test_parametrized_evolution_state_vector(self, phi, mocker):
+        """Test that when executing a ParametrizedEvolution with ``num_wires >= device.num_wires/2``
+        the `_evolve_state_vector_under_parametrized_evolution` method is used."""
+        dev = qml.device("default.qubit.jax", wires=1)
+        H = ParametrizedHamiltonian([1], [qml.PauliX(0)])
+        spy = mocker.spy(dev, "_evolve_state_vector_under_parametrized_evolution")
+
+        @jax.jit
+        @qml.qnode(dev, interface="jax")
+        def circuit():
+            qml.evolve(H)(params=[], t=phi / 2)
+            return qml.expval(qml.PauliZ(0))
+
+        @qml.qnode(dev)
+        def true_circuit():
+            qml.RX(phi, 0)
+            return qml.expval(qml.PauliZ(0))
+
+        res = circuit()
+        spy.assert_called_once()
+        assert qml.math.allclose(res, true_circuit(), atol=1e-6)
+
+    @pytest.mark.parametrize("phi", np.pi * np.array([1e-8, 1 / 8, 1 / 4, 1 / 2, 1]))
+    def test_parametrized_evolution_matrix(self, phi, mocker):
+        """Test that when executing a ParametrizedEvolution with ``num_wires < device.num_wires/2``
+        the `_apply_operation` method is used."""
+        dev = qml.device("default.qubit.jax", wires=3)
+        H = ParametrizedHamiltonian([1], [qml.PauliX(0)])
+        spy = mocker.spy(dev, "_evolve_state_vector_under_parametrized_evolution")
+        spy2 = mocker.spy(dev, "_apply_operation")
+
+        @jax.jit
+        @qml.qnode(dev, interface="jax")
+        def circuit():
+            qml.evolve(H)(params=[], t=phi / 2)  # corresponds to a PauliX gate
+            return qml.expval(qml.PauliZ(0))
+
+        @qml.qnode(dev)
+        def true_circuit():
+            qml.RX(phi, 0)
+            return qml.expval(qml.PauliZ(0))
+
+        res = circuit()
+        spy.assert_not_called()
+        spy2.assert_called_once()
+        assert qml.math.allclose(res, true_circuit(), atol=1e-6)
 
 
 @pytest.mark.jax
@@ -1041,23 +1132,6 @@ class TestOps:
         res = jacobian_transform(circuit)(param)
         assert jnp.allclose(res, jnp.zeros(wires**2))
 
-    def test_inverse_operation_jacobian_backprop(self, tol):
-        """Test that inverse operations work in backprop
-        mode"""
-        dev = qml.device("default.qubit.jax", wires=1)
-
-        @qml.qnode(dev, diff_method="backprop", interface="jax")
-        def circuit(param):
-            qml.RY(param, wires=0).inv()
-            return qml.expval(qml.PauliX(0))
-
-        x = 0.3
-        res = circuit(x)
-        assert np.allclose(res, -np.sin(x), atol=tol, rtol=0)
-
-        grad = jax.grad(lambda a: circuit(a).reshape(()))(x)
-        assert np.allclose(grad, -np.cos(x), atol=tol, rtol=0)
-
     def test_full_subsystem(self, mocker):
         """Test applying a state vector to the full subsystem"""
         dev = DefaultQubitJax(wires=["a", "b", "c"])
@@ -1084,6 +1158,30 @@ class TestOps:
         assert jnp.all(res == state)
         spy.assert_called()
 
+    def test_parametrized_evolution(self):
+        """Test applying a ParametrizedEvolution to a subset of wires of the full subsystem"""
+        dev = DefaultQubitJax(wires=["a", "b", "c"])
+        state = jnp.array([[[1.0, 0.0], [0.0, 0.0]], [[0.0, 0.0], [0.0, 0.0]]], dtype=complex)
+        expected_res = jnp.array(
+            [[[0.0, 0.0], [0.0, 0.0]], [[1.0, 0.0], [0.0, 0.0]]], dtype=complex
+        )
+        # ev corresponds to a PauliX gate
+        ev = qml.evolve(ParametrizedHamiltonian([1], [qml.PauliX("a")]))(params=[], t=np.pi / 2)
+        res = qml.math.abs(dev._apply_parametrized_evolution(state=state, operation=ev))
+
+        assert qml.math.allclose(res, expected_res, atol=1e-5)
+
+    def test_parametrized_evolution_raises_error(self):
+        """Test applying a ParametrizedEvolution without params or t specified raises an error."""
+        dev = DefaultQubitJax(wires=["a"])
+        state = jnp.array([[[1.0, 0.0], [0.0, 0.0]], [[0.0, 0.0], [0.0, 0.0]]], dtype=complex)
+        ev = qml.evolve(ParametrizedHamiltonian([1], [qml.PauliX("a")]))
+        with pytest.raises(
+            ValueError,
+            match="The parameters and the time window are required to execute a ParametrizedEvolution",
+        ):
+            dev._apply_parametrized_evolution(state=state, operation=ev)
+
 
 @pytest.mark.jax
 class TestOpsBroadcasted:
@@ -1104,23 +1202,6 @@ class TestOpsBroadcasted:
         param = jnp.array([0.3, 0.9, -4.3])
         res = jacobian_transform(circuit)(param)
         assert jnp.allclose(res, jnp.zeros((3, wires**2, 3)))
-
-    def test_inverse_operation_jacobian_backprop_broadcasted(self, tol):
-        """Test that inverse operations work in backprop
-        mode"""
-        dev = qml.device("default.qubit.jax", wires=1)
-
-        @qml.qnode(dev, diff_method="backprop", interface="jax")
-        def circuit(param):
-            qml.RY(param, wires=0).inv()
-            return qml.expval(qml.PauliX(0))
-
-        x = jnp.array([0.3, 0.9, -4.3])
-        res = circuit(x)
-        assert jnp.allclose(res, -jnp.sin(x), atol=tol, rtol=0)
-
-        grad = jax.jacobian(circuit)(x)
-        assert jnp.allclose(grad, -jnp.diag(jnp.cos(x)), atol=tol, rtol=0)
 
     def test_full_subsystem_broadcasted(self, mocker):
         """Test applying a state vector to the full subsystem"""

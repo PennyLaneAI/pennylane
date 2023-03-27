@@ -14,7 +14,6 @@ Mixer Hamiltonians
 
 .. automodapi:: pennylane.qaoa.mixers
     :no-heading:
-    :no-inheritance-diagram:
     :no-inherited-members:
 
 Cost Hamiltonians
@@ -22,7 +21,6 @@ Cost Hamiltonians
 
 .. automodapi:: pennylane.qaoa.cost
     :no-heading:
-    :no-inheritance-diagram:
     :no-inherited-members:
 
 QAOA Layers
@@ -30,7 +28,6 @@ QAOA Layers
 
 .. automodapi:: pennylane.qaoa.layers
     :no-heading:
-    :no-inheritance-diagram:
     :no-inherited-members:
 
 Cycle Optimization

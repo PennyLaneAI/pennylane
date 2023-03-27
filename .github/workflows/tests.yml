@@ -7,8 +7,9 @@ on:
 
 
 env:
-  TF_VERSION: 2.6.0
-  TORCH_VERSION: 1.10.0+cpu
+  JAX_VERSION: 0.4.3
+  TF_VERSION: 2.10.0
+  TORCH_VERSION: 2.0.0
   COVERAGE_FLAGS: "--cov=pennylane --cov-report=term-missing --cov-report=xml --no-flaky-report -p no:warnings --tb=native"
 
 
@@ -19,26 +20,27 @@ jobs:
     strategy:
       matrix:
         config:
-          - {python-version: 3.7, suite: 'torch'}
-          - {python-version: 3.7, suite: 'tf'}
           - {python-version: 3.8, suite: 'tf'}
+          - {python-version: '3.10', suite: 'tf'}
           - {python-version: 3.8, suite: 'torch'}
+          - {python-version: '3.11', suite: 'torch'}
           - {python-version: 3.8, suite: 'jax'}
-          - {python-version: 3.7, suite: 'autograd'}
+          - {python-version: '3.11', suite: 'jax'}
           - {python-version: 3.8, suite: 'autograd'}
           - {python-version: 3.9, suite: 'autograd'}
           - {python-version: '3.10', suite: 'autograd'}
-          - {python-version: 3.7, suite: 'core'}
+          - {python-version: '3.11', suite: 'autograd'}
           - {python-version: 3.8, suite: 'core'}
           - {python-version: 3.9, suite: 'core'}
           - {python-version: '3.10', suite: 'core'}
+          - {python-version: '3.11', suite: 'core'}
 
     env:
       SUITE: ${{ matrix.config.suite }}
 
     steps:
       - name: Cancel Previous Runs
-        uses: styfle/cancel-workflow-action@0.4.1
+        uses: styfle/cancel-workflow-action@0.11.0
         with:
           access_token: ${{ github.token }}
 
@@ -56,6 +58,10 @@ jobs:
           python -m pip install --upgrade pip && pip install wheel --upgrade
           pip install -r requirements-ci.txt --upgrade
           pip install -r requirements-dev.txt --upgrade
+        
+      - name: Conditionally install cvxpy and cvxopt
+        if: matrix.config.python-version != '3.11'
+        run: python -m pip install cvxpy cvxopt
 
       - name: Conditionally install PyTorch
         if: matrix.config.suite == 'torch'
@@ -69,7 +75,7 @@ jobs:
       # to the latest release. We can always fix a version later if it breaks.
       - name: Conditionally install JAX
         if: matrix.config.suite == 'jax'
-        run: pip3 install jax jaxlib
+        run: pip3 install jax==$JAX_VERSION jaxlib==$JAX_VERSION
 
       - name: Install PennyLane
         run: |
@@ -80,7 +86,7 @@ jobs:
         run: python -m pip install -i https://test.pypi.org/simple/ PennyLane-Lightning --pre --upgrade
 
       - name: Run tests
-        run: python -m pytest tests --cov=pennylane $COVERAGE_FLAGS -m "$SUITE" -n auto
+        run: python -m pytest tests --cov=pennylane $COVERAGE_FLAGS -m "$SUITE and not qcut and not return" -n auto
 
       - name: Adjust coverage file for Codecov
         run: bash <(sed -i 's/filename=\"/filename=\"pennylane\//g' coverage.xml)
@@ -95,7 +101,7 @@ jobs:
 
     steps:
       - name: Cancel Previous Runs
-        uses: styfle/cancel-workflow-action@0.4.1
+        uses: styfle/cancel-workflow-action@0.11.0
         with:
           access_token: ${{ github.token }}
 
@@ -121,7 +127,7 @@ jobs:
         run: pip3 install tensorflow~=$TF_VERSION keras~=$TF_VERSION
 
       - name: Install JAX
-        run: pip3 install jax jaxlib
+        run: pip3 install jax==$JAX_VERSION jaxlib==$JAX_VERSION
 
       - name: Install PennyLane
         run: |
@@ -130,7 +136,7 @@ jobs:
 
       - name: Run tests
         run: |
-          python -m pytest tests --cov=pennylane $COVERAGE_FLAGS -m all_interfaces -n auto
+          python -m pytest tests --cov=pennylane $COVERAGE_FLAGS -m "all_interfaces and not return"  -n auto
 
       - name: Adjust coverage file for Codecov
         run: bash <(sed -i 's/filename=\"/filename=\"pennylane\//g' coverage.xml)
@@ -140,12 +146,56 @@ jobs:
           name: all-interfaces-coverage
           path: ./coverage.xml
 
+  zx-tests:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Cancel Previous Runs
+        uses: styfle/cancel-workflow-action@0.11.0
+        with:
+          access_token: ${{ github.token }}
+
+      - uses: actions/checkout@v2
+        with:
+          fetch-depth: 2
+
+      - name: Set up Python
+        uses: actions/setup-python@v2
+        with:
+          python-version: 3.9
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip && pip install wheel --upgrade
+          pip install -r requirements-ci.txt --upgrade
+          pip install -r requirements-dev.txt --upgrade
+
+      - name: Install PyZx
+        run: pip3 install git+https://github.com/Quantomatic/pyzx.git@master
+
+      - name: Install PennyLane
+        run: |
+          python setup.py bdist_wheel
+          pip install dist/PennyLane*.whl
+
+      - name: Run tests
+        run: |
+          python -m pytest tests --cov=pennylane $COVERAGE_FLAGS -m zx -n auto
+
+      - name: Adjust coverage file for Codecov
+        run: bash <(sed -i 's/filename=\"/filename=\"pennylane\//g' coverage.xml)
+
+      - uses: actions/upload-artifact@v2
+        with:
+          name: zx-coverage
+          path: ./coverage.xml
+
   qcut-tests:
     runs-on: ubuntu-latest
 
     steps:
       - name: Cancel Previous Runs
-        uses: styfle/cancel-workflow-action@0.4.1
+        uses: styfle/cancel-workflow-action@0.11.0
         with:
           access_token: ${{ github.token }}
 
@@ -171,10 +221,10 @@ jobs:
         run: pip3 install tensorflow~=$TF_VERSION keras~=$TF_VERSION
 
       - name: Install JAX
-        run: pip3 install jax jaxlib
+        run: pip3 install jax==$JAX_VERSION jaxlib==$JAX_VERSION
 
-      - name: Install KaHyPar
-        run: pip3 install kahypar==1.1.7
+      - name: Install KaHyPar and opt_einsum
+        run: pip3 install kahypar==1.1.7 opt_einsum
 
       - name: Install PennyLane
         run: |
@@ -197,9 +247,24 @@ jobs:
   return-tests:
     runs-on: ubuntu-latest
 
+    strategy:
+      matrix:
+        config:
+          - { loc: "tests/returntypes/jax", suite: 'jax'}
+          - { loc: "tests/returntypes/tf", suite: 'tf'}
+          - { loc: "tests/returntypes/torch", suite: 'torch'}
+          - { loc: "tests/returntypes/autograd", suite: 'autograd'}
+          - { loc: "tests/returntypes/gradients", suite: 'gradients'}
+          - { loc: "tests/returntypes/transforms", suite: 'transforms'}
+          - { loc: "tests/returntypes/paramshift", suite: 'paramshift'}
+          - { loc: "tests/returntypes/finitediff", suite: 'finitediff'}
+          - { loc: "tests/returntypes/core", suite: 'core'}
+          - { loc: "tests/returntypes/optimizers", suite: 'optimizers'}
+          - { loc: "tests/returntypes/qnn", suite: 'qnn'}
+
     steps:
       - name: Cancel Previous Runs
-        uses: styfle/cancel-workflow-action@0.4.1
+        uses: styfle/cancel-workflow-action@0.11.0
         with:
           access_token: ${{ github.token }}
 
@@ -225,7 +290,7 @@ jobs:
         run: pip3 install tensorflow~=$TF_VERSION keras~=$TF_VERSION
 
       - name: Install JAX
-        run: pip3 install jax jaxlib
+        run: pip3 install jax==$JAX_VERSION jaxlib==$JAX_VERSION
 
       - name: Install PennyLane
         run: |
@@ -234,14 +299,15 @@ jobs:
 
       - name: Run tests
         run: |
-          python -m pytest tests/returntypes --cov=pennylane $COVERAGE_FLAGS -n auto
+          python -m pytest ${{ matrix.config.loc }} --cov=pennylane $COVERAGE_FLAGS -n auto
+
 
       - name: Adjust coverage file for Codecov
         run: bash <(sed -i 's/filename=\"/filename=\"pennylane\//g' coverage.xml)
 
       - uses: actions/upload-artifact@v2
         with:
-          name: return-coverage
+          name: return-coverage-${{ matrix.config.suite }}
           path: ./coverage.xml
 
   qchem-tests:
@@ -249,7 +315,7 @@ jobs:
 
     steps:
       - name: Cancel Previous Runs
-        uses: styfle/cancel-workflow-action@0.4.1
+        uses: styfle/cancel-workflow-action@0.11.0
         with:
           access_token: ${{ github.token }}
 
@@ -273,6 +339,9 @@ jobs:
       - name: Install openfermionpyscf
         run: pip3 install openfermionpyscf
 
+      - name: Install basis-set-exchange
+        run: pip3 install basis-set-exchange
+
       - name: Install PennyLane
         run: |
           python setup.py bdist_wheel
@@ -290,6 +359,53 @@ jobs:
           name: qchem-coverage
           path: ./coverage.xml
 
+  data-tests:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Cancel Previous Runs
+        uses: styfle/cancel-workflow-action@0.11.0
+        with:
+          access_token: ${{ github.token }}
+
+      - uses: actions/checkout@v2
+        with:
+          fetch-depth: 1
+
+      - name: Set up Python
+        uses: actions/setup-python@v2
+        with:
+          python-version: '3.10'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip && pip install wheel --upgrade
+          pip install -r requirements-ci.txt --upgrade
+          pip install -r requirements-dev.txt --upgrade
+
+      - name: Install zstd
+        run: pip3 install zstd
+
+      - name: Install dill
+        run: pip3 install dill
+
+      - name: Install PennyLane
+        run: |
+          python setup.py bdist_wheel
+          pip install dist/PennyLane*.whl
+
+      - name: Run tests
+        run: |
+          python -m pytest tests --cov=pennylane $COVERAGE_FLAGS -m data -n auto
+
+      - name: Adjust coverage file for Codecov
+        run: bash <(sed -i 's/filename=\"/filename=\"pennylane\//g' coverage.xml)
+
+      - uses: actions/upload-artifact@v2
+        with:
+          name: data-coverage
+          path: ./coverage.xml
+
   device-tests:
     runs-on: ubuntu-latest
 
@@ -304,7 +420,7 @@ jobs:
 
     steps:
       - name: Cancel Previous Runs
-        uses: styfle/cancel-workflow-action@0.4.1
+        uses: styfle/cancel-workflow-action@0.11.0
         with:
           access_token: ${{ github.token }}
 
@@ -333,7 +449,7 @@ jobs:
 
       - name: Conditionally install Jax
         if: contains(matrix.config.device, 'jax')
-        run: pip3 install jax jaxlib
+        run: pip3 install jax==$JAX_VERSION jaxlib==$JAX_VERSION
 
       - name: Install PennyLane
         run: |
@@ -356,7 +472,7 @@ jobs:
           path: ./coverage.xml
 
   upload-to-codecov:
-      needs: [core-and-interface-tests, all-interfaces-tests, qcut-tests, return-tests, qchem-tests, device-tests]
+      needs: [core-and-interface-tests, all-interfaces-tests, qcut-tests, return-tests, qchem-tests, data-tests, device-tests, zx-tests]
       runs-on: ubuntu-latest
       steps:
         - name: Checkout
@@ -365,3 +481,5 @@ jobs:
           uses: actions/download-artifact@v2
         - name: Upload to Codecov
           uses: codecov/codecov-action@v3
+          with:
+            token: ${{ secrets.CODECOV_TOKEN }}

@@ -71,7 +71,7 @@ def insert(
     for more information).
 
     Args:
-        circuit (callable or QuantumTape or Device): the input circuit to be transformed, or a
+        circuit (callable or QuantumTape or pennylane.Device): the input circuit to be transformed, or a
             device
         op (callable or Type[Operation]): the single-qubit operation, or sequence of operations
             acting on a single qubit, to be inserted into the circuit
@@ -86,10 +86,11 @@ def insert(
             Default is ``False`` and the operation is inserted after.
 
     Returns:
-        callable or QuantumTape or Device: the updated version of the input circuit or an updated
+        callable or QuantumTape or pennylane.Device: the updated version of the input circuit or an updated
         device which will transform circuits before execution
 
     Raises:
+        QuantumFunctionError: if some observables in the tape are not qubit-wise commuting
         ValueError: if a single operation acting on multiple wires is passed to ``op``
         ValueError: if the requested ``position`` argument is not ``'start'``, ``'end'`` or
             ``'all'`` OR PennyLane Operation
@@ -210,9 +211,15 @@ def insert(
     """
     # decompose templates and their adjoints (which fixes a bug in the tutorial_error_mitigation demo)
     # TODO: change this to be cleaner and more robust
-    circuit = circuit.expand(
-        stop_at=lambda op: not hasattr(qml.templates, op.name) and not isinstance(op, Adjoint)
-    )
+    try:
+        circuit = circuit.expand(
+            stop_at=lambda op: not hasattr(qml.templates, op.name) and not isinstance(op, Adjoint)
+        )
+    except qml.QuantumFunctionError as e:
+        raise qml.QuantumFunctionError(
+            "The insert transform cannot transform a circuit measuring non-commuting observables. "
+            "Consider wrapping the gates in their own function and transforming only that function."
+        ) from e
 
     if not isinstance(op, FunctionType) and op.num_wires != 1:
         raise ValueError("Only single-qubit operations can be inserted into the circuit")

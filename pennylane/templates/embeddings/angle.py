@@ -74,7 +74,6 @@ class AngleEmbedding(Operation):
     grad_method = None
 
     def __init__(self, features, wires, rotation="X", do_queue=True, id=None):
-
         if rotation not in ROT:
             raise ValueError(f"Rotation option {rotation} not recognized.")
 
@@ -93,6 +92,10 @@ class AngleEmbedding(Operation):
     @property
     def num_params(self):
         return 1
+
+    @property
+    def ndim_params(self):
+        return (1,)
 
     @staticmethod
     def compute_decomposition(features, wires, rotation):  # pylint: disable=arguments-differ
@@ -119,7 +122,9 @@ class AngleEmbedding(Operation):
         [RX(tensor(1.), wires=['a']),
          RX(tensor(2.), wires=['b'])]
         """
-        batched = len(qml.math.shape(features)) > 1
-        features = features.T if batched else features
+        batched = qml.math.ndim(features) > 1
+        # We will iterate over the first axis of `features` together with iterating over the wires.
+        # If the leading dimension is a batch dimension, exchange the wire and batching axes.
+        features = qml.math.T(features) if batched else features
 
         return [rotation(features[i], wires=wires[i]) for i in range(len(wires))]

@@ -161,7 +161,6 @@ class CommutingEvolution(Operation):
         return qml.ApproxTimeEvolution(hamiltonian, time, 1)
 
     def adjoint(self):
-
         hamiltonian = qml.Hamiltonian(self.parameters[1:], self.hyperparameters["hamiltonian"].ops)
         time = self.parameters[0]
         frequencies = self.hyperparameters["frequencies"]

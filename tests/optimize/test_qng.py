@@ -255,7 +255,7 @@ class TestOptimize:
         # check final cost
         assert np.allclose(cost_fn(theta), -1.41421356, atol=tol, rtol=0)
 
-    def test_single_qubit_vqe_using_vqecost(self, tol, recwarn):
+    def test_single_qubit_vqe_using_expvalcost(self, tol, recwarn):
         """Test single-qubit VQE using ExpvalCost
         has the correct QNG value every step, the correct parameter updates,
         and correct cost after 200 steps"""

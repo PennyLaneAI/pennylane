@@ -16,9 +16,9 @@ Contains the adjoint_metric_tensor.
 """
 import warnings
 from itertools import chain
-from pennylane import numpy as np
 
 import pennylane as qml
+from pennylane import numpy as np
 
 # pylint: disable=protected-access
 from pennylane.transforms.metric_tensor import _contract_metric_tensor_with_cjac
@@ -51,11 +51,8 @@ def _apply_operations(state, op, device, invert=False):
         device._apply_basis_state(op.parameters[0], op.wires)
         return device._state
 
-    if invert:
-        op.inv()
-    state = device._apply_operation(state, op)
-    if invert:
-        op.inv()
+    apply_op = qml.adjoint(op) if invert else op
+    state = device._apply_operation(state, apply_op)
 
     return state
 
@@ -159,7 +156,7 @@ def adjoint_metric_tensor(circuit, device=None, hybrid=True):
     The drawback of the adjoint method is that it is only available on simulators and without
     shot simulations.
     """
-    if isinstance(circuit, qml.tape.QuantumTape):
+    if isinstance(circuit, qml.tape.QuantumScript):
         return _adjoint_metric_tensor_tape(circuit, device)
     if isinstance(circuit, (qml.QNode, qml.ExpvalCost)):
         return _adjoint_metric_tensor_qnode(circuit, device, hybrid)
@@ -268,16 +265,23 @@ def _adjoint_metric_tensor_qnode(qnode, device, hybrid):
                     "will be used to evaluate the metric tensor with the adjoint method.",
                     UserWarning,
                 )
-            qnode = qnode.qnodes.qnodes[0]
+            qnode = qnode.qnodes[0]
         device = qnode.device
 
-    cjac_fn = qml.transforms.classical_jacobian(
-        qnode, expand_fn=qml.transforms.expand_trainable_multipar
-    )
-
     def wrapper(*args, **kwargs):
+        old_interface = qnode.interface
+        if old_interface == "auto":
+            qnode.interface = qml.math.get_interface(*args, *list(kwargs.values()))
+
+        cjac_fn = qml.transforms.classical_jacobian(
+            qnode, expand_fn=qml.transforms.expand_trainable_multipar
+        )
+
         qnode.construct(args, kwargs)
         mt = _adjoint_metric_tensor_tape(qnode.qtape, device)
+
+        if old_interface == "auto":
+            qnode.interface = "auto"
 
         if not hybrid:
             return mt

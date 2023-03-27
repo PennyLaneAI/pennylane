@@ -14,8 +14,8 @@
 """
 Unit tests for the :mod:`pennylane.collection` submodule.
 """
-import pytest
 import numpy as np
+import pytest
 
 import pennylane as qml
 
@@ -44,6 +44,62 @@ def qnodes(interface):
     return qnode1, qnode2
 
 
+def catch_warn_dot(x, y):
+    """Computes the dot and catches the initial deprecation warning."""
+
+    with pytest.warns(UserWarning, match="is deprecated"):
+        res = qml.dot(x, y)
+    return res
+
+
+def catch_warn_apply(func, qnode_collection):
+    """Computes the apply and catches the initial deprecation warning."""
+
+    with pytest.warns(UserWarning, match="is deprecated"):
+        res = qml.collections.apply(func, qnode_collection)
+    return res
+
+
+def catch_warn_sum(x):
+    """Computes the sum and catches the initial deprecation warning."""
+
+    with pytest.warns(UserWarning, match="is deprecated"):
+        res = qml.sum(x)
+    return res
+
+
+def catch_warn_map(
+    template,
+    observables,
+    device,
+    measure="expval",
+    interface="autograd",
+    diff_method="best",
+    **kwargs
+):
+    """Computes the map and catches the initial deprecation warning."""
+
+    with pytest.warns(UserWarning, match="is deprecated"):
+        res = qml.map(
+            template,
+            observables,
+            device,
+            measure=measure,
+            interface=interface,
+            diff_method=diff_method,
+            **kwargs
+        )
+    return res
+
+
+def catch_warn_QNodeCollection(qnodes):
+    """Computes the apply and catches the initial deprecation warning."""
+
+    with pytest.warns(UserWarning, match="is deprecated"):
+        res = qml.QNodeCollection(qnodes)
+    return res
+
+
 class TestMap:
     """Test for mapping ansatz over observables or devices,
     to return a QNode collection"""
@@ -52,7 +108,7 @@ class TestMap:
         """Test that an exception is correctly called if a
         template is not callable"""
         with pytest.raises(ValueError, match="template is not a callable"):
-            qml.map(5, 0, 0)
+            catch_warn_map(5, 0, 0)
 
     def test_mapping_over_observables(self):
         """Test that mapping over a list of observables produces
@@ -62,7 +118,7 @@ class TestMap:
         obs_list = [qml.PauliX(0), qml.PauliY(0)]
         template = lambda x, wires: qml.RX(x, wires=0)
 
-        qc = qml.map(template, obs_list, dev)
+        qc = catch_warn_map(template, obs_list, dev)
 
         assert len(qc) == 2
 
@@ -87,7 +143,7 @@ class TestMap:
         obs_list = (qml.PauliX(0), qml.PauliY(0))
         template = lambda x, wires: qml.RX(x, wires=0)
 
-        qc = qml.map(template, obs_list, dev)
+        qc = catch_warn_map(template, obs_list, dev)
 
         assert len(qc) == 2
 
@@ -112,7 +168,7 @@ class TestMap:
         obs_list = [qml.PauliX(0), qml.PauliY(0)]
         template = lambda x, wires: qml.RX(x, wires=0)
 
-        qc = qml.map(template, obs_list, dev_list)
+        qc = catch_warn_map(template, obs_list, dev_list)
 
         assert len(qc) == 2
 
@@ -140,7 +196,7 @@ class TestMap:
         obs_list = [qml.PauliX(0), qml.PauliY(0)]
         template = lambda x, wires: qml.RX(x, wires=0)
 
-        qc = qml.map(template, obs_list, dev, measure=["expval", "var"])
+        qc = catch_warn_map(template, obs_list, dev, measure=["expval", "var"])
 
         assert len(qc) == 2
 
@@ -167,7 +223,7 @@ class TestMap:
         template = lambda x, wires: qml.RX(x, wires=0)
 
         with pytest.raises(ValueError, match="Some or all observables are not valid"):
-            qml.map(template, obs_list, dev, measure=["expval", "var"])
+            catch_warn_map(template, obs_list, dev, measure=["expval", "var"])
 
     def test_passing_kwargs(self):
         """Test that the step size and order used for the finite differences
@@ -178,7 +234,7 @@ class TestMap:
         obs_list = [qml.PauliX(0), qml.PauliY(0)]
         template = lambda x, wires: qml.RX(x, wires=0)
 
-        qc = qml.map(template, obs_list, dev, measure=["expval", "var"], h=123, order=2)
+        qc = catch_warn_map(template, obs_list, dev, measure=["expval", "var"], h=123, order=2)
 
         qc(1)
 
@@ -200,8 +256,8 @@ class TestApply:
     def test_apply_summation_autograd(self, tol):
         """Test that summation can be applied using autograd"""
         qnode1, qnode2 = qnodes("autograd")
-        qc = qml.QNodeCollection([qnode1, qnode2])
-        cost = qml.collections.apply(np.sum, qc)
+        qc = catch_warn_QNodeCollection([qnode1, qnode2])
+        cost = catch_warn_apply(np.sum, qc)
 
         params = [0.5643, -0.45]
         res = cost(params)
@@ -215,8 +271,8 @@ class TestApply:
         import torch
 
         qnode1, qnode2 = qnodes("torch")
-        qc = qml.QNodeCollection([qnode1, qnode2])
-        cost = qml.collections.apply(torch.sum, qc)
+        qc = catch_warn_QNodeCollection([qnode1, qnode2])
+        cost = catch_warn_apply(torch.sum, qc)
 
         params = [0.5643, -0.45]
         res = cost(params)
@@ -230,8 +286,8 @@ class TestApply:
         import tensorflow as tf
 
         qnode1, qnode2 = qnodes("tf")
-        qc = qml.QNodeCollection([qnode1, qnode2])
-        cost = qml.collections.apply(tf.reduce_sum, qc)
+        qc = catch_warn_QNodeCollection([qnode1, qnode2])
+        cost = catch_warn_apply(tf.reduce_sum, qc)
 
         params = [0.5643, -0.45]
         res = cost(params)
@@ -245,8 +301,8 @@ class TestApply:
         import jax.numpy as jnp
 
         qnode1, qnode2 = qnodes("jax")
-        qc = qml.QNodeCollection([qnode1, qnode2])
-        cost = qml.collections.apply(jnp.sum, qc)
+        qc = catch_warn_QNodeCollection([qnode1, qnode2])
+        cost = catch_warn_apply(jnp.sum, qc)
 
         params = [0.5643, -0.45]
         res = cost(params)
@@ -258,12 +314,12 @@ class TestApply:
     def test_nested_apply_autograd(self, tol):
         """Test that nested apply can be done using autograd"""
         qnode1, qnode2 = qnodes("autograd")
-        qc = qml.QNodeCollection([qnode1, qnode2])
+        qc = catch_warn_QNodeCollection([qnode1, qnode2])
 
         sinfn = np.sin
         sfn = np.sum
 
-        cost = qml.collections.apply(sfn, qml.collections.apply(sinfn, qc))
+        cost = catch_warn_apply(sfn, catch_warn_apply(sinfn, qc))
 
         params = [0.5643, -0.45]
         res = cost(params)
@@ -277,12 +333,12 @@ class TestApply:
         import torch
 
         qnode1, qnode2 = qnodes("torch")
-        qc = qml.QNodeCollection([qnode1, qnode2])
+        qc = catch_warn_QNodeCollection([qnode1, qnode2])
 
         sinfn = torch.sin
         sfn = torch.sum
 
-        cost = qml.collections.apply(sfn, qml.collections.apply(sinfn, qc))
+        cost = catch_warn_apply(sfn, catch_warn_apply(sinfn, qc))
 
         params = [0.5643, -0.45]
         res = cost(params)
@@ -296,12 +352,12 @@ class TestApply:
         import tensorflow as tf
 
         qnode1, qnode2 = qnodes("tf")
-        qc = qml.QNodeCollection([qnode1, qnode2])
+        qc = catch_warn_QNodeCollection([qnode1, qnode2])
 
         sinfn = tf.sin
         sfn = tf.reduce_sum
 
-        cost = qml.collections.apply(sfn, qml.collections.apply(sinfn, qc))
+        cost = catch_warn_apply(sfn, catch_warn_apply(sinfn, qc))
 
         params = [0.5643, -0.45]
         res = cost(params)
@@ -315,12 +371,12 @@ class TestApply:
         import jax.numpy as jnp
 
         qnode1, qnode2 = qnodes("jax")
-        qc = qml.QNodeCollection([qnode1, qnode2])
+        qc = catch_warn_QNodeCollection([qnode1, qnode2])
 
         sinfn = jnp.sin
         sfn = jnp.sum
 
-        cost = qml.collections.apply(sfn, qml.collections.apply(sinfn, qc))
+        cost = catch_warn_apply(sfn, catch_warn_apply(sinfn, qc))
 
         params = [0.5643, -0.45]
         res = cost(params)
@@ -335,8 +391,8 @@ class TestSum:
     def test_apply_summation_vanilla(self, tol):
         """Test that summation can be applied"""
         qnode1, qnode2 = qnodes(None)
-        qc = qml.QNodeCollection([qnode1, qnode2])
-        cost = qml.sum(qc)
+        qc = catch_warn_QNodeCollection([qnode1, qnode2])
+        cost = catch_warn_sum(qc)
 
         params = [0.5643, -0.45]
         res = cost(params)
@@ -348,8 +404,8 @@ class TestSum:
     def test_apply_summation_autograd(self, tol):
         """Test that summation can be applied with autograd"""
         qnode1, qnode2 = qnodes("autograd")
-        qc = qml.QNodeCollection([qnode1, qnode2])
-        cost = qml.sum(qc)
+        qc = catch_warn_QNodeCollection([qnode1, qnode2])
+        cost = catch_warn_sum(qc)
 
         params = [0.5643, -0.45]
         res = cost(params)
@@ -361,8 +417,8 @@ class TestSum:
     def test_apply_summation_torch(self, tol):
         """Test that summation can be applied with torch"""
         qnode1, qnode2 = qnodes("torch")
-        qc = qml.QNodeCollection([qnode1, qnode2])
-        cost = qml.sum(qc)
+        qc = catch_warn_QNodeCollection([qnode1, qnode2])
+        cost = catch_warn_sum(qc)
 
         params = [0.5643, -0.45]
         res = cost(params)
@@ -377,8 +433,8 @@ class TestSum:
     def test_apply_summation_tf(self, tol):
         """Test that summation can be applied with tf"""
         qnode1, qnode2 = qnodes("tf")
-        qc = qml.QNodeCollection([qnode1, qnode2])
-        cost = qml.sum(qc)
+        qc = catch_warn_QNodeCollection([qnode1, qnode2])
+        cost = catch_warn_sum(qc)
 
         params = [0.5643, -0.45]
         res = cost(params)
@@ -393,8 +449,8 @@ class TestSum:
     def test_apply_summation_jax(self, tol):
         """Test that summation can be applied with jax"""
         qnode1, qnode2 = qnodes("jax")
-        qc = qml.QNodeCollection([qnode1, qnode2])
-        cost = qml.sum(qc)
+        qc = catch_warn_QNodeCollection([qnode1, qnode2])
+        cost = catch_warn_sum(qc)
 
         params = [0.5643, -0.45]
         res = cost(params)
@@ -412,9 +468,9 @@ class TestSum:
             return qml.expval(qml.PauliZ(0))
 
         qnodes = [qml.QNode(circuit, dev) for i in range(4)]
-        qc = qml.QNodeCollection(qnodes)
+        qc = catch_warn_QNodeCollection(qnodes)
         with pytest.raises(ValueError, match="Unknown interface invalid"):
-            qml.sum(qc)
+            catch_warn_sum(qc)
 
 
 class TestDot:
@@ -424,11 +480,11 @@ class TestDot:
         """Test that the dot product of tensor.qnodes can be applied"""
 
         qnode1, qnode2 = qnodes(None)
-        qc = qml.QNodeCollection([qnode1, qnode2])
+        qc = catch_warn_QNodeCollection([qnode1, qnode2])
         coeffs = [0.5, -0.1]
 
         # test the dot product of tensor, qnodes
-        cost = qml.dot(coeffs, qc)
+        cost = catch_warn_dot(coeffs, qc)
 
         params = [0.5643, -0.45]
         res = cost(params)
@@ -443,11 +499,11 @@ class TestDot:
         """Test that the dot product of tensor.qnodes can be applied using autograd"""
 
         qnode1, qnode2 = qnodes("autograd")
-        qc = qml.QNodeCollection([qnode1, qnode2])
+        qc = catch_warn_QNodeCollection([qnode1, qnode2])
         coeffs = [0.5, -0.1]
 
         # test the dot product of tensor, qnodes
-        cost = qml.dot(coeffs, qc)
+        cost = catch_warn_dot(coeffs, qc)
 
         params = [0.5643, -0.45]
         res = cost(params)
@@ -463,13 +519,13 @@ class TestDot:
         import torch
 
         qnode1, qnode2 = qnodes("torch")
-        qc = qml.QNodeCollection([qnode1, qnode2])
+        qc = catch_warn_QNodeCollection([qnode1, qnode2])
         coeffs = [0.5, -0.1]
 
         coeffs = torch.tensor(coeffs, dtype=torch.float64)
 
         # test the dot product of tensor, qnodes
-        cost = qml.dot(coeffs, qc)
+        cost = catch_warn_dot(coeffs, qc)
 
         params = [0.5643, -0.45]
         res = cost(params)
@@ -489,13 +545,13 @@ class TestDot:
         import tensorflow as tf
 
         qnode1, qnode2 = qnodes("tf")
-        qc = qml.QNodeCollection([qnode1, qnode2])
+        qc = catch_warn_QNodeCollection([qnode1, qnode2])
         coeffs = [0.5, -0.1]
 
         coeffs = tf.cast(coeffs, dtype=tf.float64)
 
         # test the dot product of tensor, qnodes
-        cost = qml.dot(coeffs, qc)
+        cost = catch_warn_dot(coeffs, qc)
 
         params = [0.5643, -0.45]
         res = cost(params)
@@ -514,11 +570,11 @@ class TestDot:
         """Test that the dot product of tensor.qnodes can be applied using all interfaces"""
 
         qnode1, qnode2 = qnodes("jax")
-        qc = qml.QNodeCollection([qnode1, qnode2])
+        qc = catch_warn_QNodeCollection([qnode1, qnode2])
         coeffs = [0.5, -0.1]
 
         # test the dot product of tensor, qnodes
-        cost = qml.dot(coeffs, qc)
+        cost = catch_warn_dot(coeffs, qc)
 
         params = [0.5643, -0.45]
         res = cost(params)
@@ -532,11 +588,11 @@ class TestDot:
         """Test that the dot product of qnodes.qnodes can be applied"""
 
         qnode1, qnode2 = qnodes(None)
-        qc1 = qml.QNodeCollection([qnode1, qnode2])
-        qc2 = qml.QNodeCollection([qnode1, qnode2])
+        qc1 = catch_warn_QNodeCollection([qnode1, qnode2])
+        qc2 = catch_warn_QNodeCollection([qnode1, qnode2])
 
         # test the dot product of qnodes, qnodes
-        cost = qml.dot(qc1, qc2)
+        cost = catch_warn_dot(qc1, qc2)
 
         params = [0.5643, -0.45]
         res = cost(params)
@@ -552,11 +608,11 @@ class TestDot:
         """Test that the dot product of qnodes.qnodes can be applied using autograd"""
 
         qnode1, qnode2 = qnodes("autograd")
-        qc1 = qml.QNodeCollection([qnode1, qnode2])
-        qc2 = qml.QNodeCollection([qnode1, qnode2])
+        qc1 = catch_warn_QNodeCollection([qnode1, qnode2])
+        qc2 = catch_warn_QNodeCollection([qnode1, qnode2])
 
         # test the dot product of qnodes, qnodes
-        cost = qml.dot(qc1, qc2)
+        cost = catch_warn_dot(qc1, qc2)
 
         params = [0.5643, -0.45]
         res = cost(params)
@@ -571,11 +627,11 @@ class TestDot:
     def test_dot_product_qnodes_qnodes_torch(self):
         """Test that the dot product of qnodes.qnodes can be applied using torch"""
         qnode1, qnode2 = qnodes("torch")
-        qc1 = qml.QNodeCollection([qnode1, qnode2])
-        qc2 = qml.QNodeCollection([qnode1, qnode2])
+        qc1 = catch_warn_QNodeCollection([qnode1, qnode2])
+        qc2 = catch_warn_QNodeCollection([qnode1, qnode2])
 
         # test the dot product of qnodes, qnodes
-        cost = qml.dot(qc1, qc2)
+        cost = catch_warn_dot(qc1, qc2)
 
         params = [0.5643, -0.45]
         res = cost(params)
@@ -594,11 +650,11 @@ class TestDot:
     def test_dot_product_qnodes_qnodes_tf(self):
         """Test that the dot product of qnodes.qnodes can be applied using tf"""
         qnode1, qnode2 = qnodes("tf")
-        qc1 = qml.QNodeCollection([qnode1, qnode2])
-        qc2 = qml.QNodeCollection([qnode1, qnode2])
+        qc1 = catch_warn_QNodeCollection([qnode1, qnode2])
+        qc2 = catch_warn_QNodeCollection([qnode1, qnode2])
 
         # test the dot product of qnodes, qnodes
-        cost = qml.dot(qc1, qc2)
+        cost = catch_warn_dot(qc1, qc2)
 
         params = [0.5643, -0.45]
         res = cost(params)
@@ -618,11 +674,11 @@ class TestDot:
         """Test that the dot product of qnodes.qnodes can be applied using jax"""
 
         qnode1, qnode2 = qnodes("jax")
-        qc1 = qml.QNodeCollection([qnode1, qnode2])
-        qc2 = qml.QNodeCollection([qnode1, qnode2])
+        qc1 = catch_warn_QNodeCollection([qnode1, qnode2])
+        qc2 = catch_warn_QNodeCollection([qnode1, qnode2])
 
         # test the dot product of qnodes, qnodes
-        cost = qml.dot(qc1, qc2)
+        cost = catch_warn_dot(qc1, qc2)
 
         params = [0.5643, -0.45]
         res = cost(params)
@@ -637,11 +693,11 @@ class TestDot:
         """Test that the dot product of qnodes.tensor can be applied"""
 
         qnode1, _ = qnodes(None)
-        qc = qml.QNodeCollection([qnode1])
+        qc = catch_warn_QNodeCollection([qnode1])
         coeffs = [0.5, -0.1]
 
         # test the dot product of qnodes, tensor
-        cost = qml.dot(qc, coeffs)
+        cost = catch_warn_dot(qc, coeffs)
 
         params = [0.5643, -0.45]
         res = cost(params)
@@ -655,11 +711,11 @@ class TestDot:
         """Test that the dot product of qnodes.tensor can be applied using autograd"""
 
         qnode1, _ = qnodes("autograd")
-        qc = qml.QNodeCollection([qnode1])
+        qc = catch_warn_QNodeCollection([qnode1])
         coeffs = [0.5, -0.1]
 
         # test the dot product of qnodes, tensor
-        cost = qml.dot(qc, coeffs)
+        cost = catch_warn_dot(qc, coeffs)
 
         params = [0.5643, -0.45]
         res = cost(params)
@@ -674,12 +730,12 @@ class TestDot:
         import torch
 
         qnode1, _ = qnodes("torch")
-        qc = qml.QNodeCollection([qnode1])
+        qc = catch_warn_QNodeCollection([qnode1])
         coeffs = [0.5, -0.1]
 
         coeffs = torch.tensor(coeffs, dtype=torch.float64)
         # test the dot product of qnodes, tensor
-        cost = qml.dot(qc, coeffs)
+        cost = catch_warn_dot(qc, coeffs)
 
         params = [0.5643, -0.45]
         res = cost(params)
@@ -698,12 +754,12 @@ class TestDot:
         import tensorflow as tf
 
         qnode1, _ = qnodes("tf")
-        qc = qml.QNodeCollection([qnode1])
+        qc = catch_warn_QNodeCollection([qnode1])
         coeffs = [0.5, -0.1]
 
         coeffs = tf.Variable(coeffs, dtype=tf.float64)
         # test the dot product of qnodes, tensor
-        cost = qml.dot(qc, coeffs)
+        cost = catch_warn_dot(qc, coeffs)
 
         params = [0.5643, -0.45]
         res = cost(params)
@@ -721,11 +777,11 @@ class TestDot:
         """Test that the dot product of qnodes.tensor can be applied using jax"""
 
         qnode1, _ = qnodes("jax")
-        qc = qml.QNodeCollection([qnode1])
+        qc = catch_warn_QNodeCollection([qnode1])
         coeffs = [0.5, -0.1]
 
         # test the dot product of qnodes, tensor
-        cost = qml.dot(qc, coeffs)
+        cost = catch_warn_dot(qc, coeffs)
 
         params = [0.5643, -0.45]
         res = cost(params)
@@ -749,9 +805,9 @@ class TestDot:
             qml.RX(x, wires=0)
             return qml.expval(qml.PauliZ(0))
 
-        qc = qml.QNodeCollection([circuit1, circuit2])
+        qc = catch_warn_QNodeCollection([circuit1, circuit2])
         with pytest.raises(ValueError, match="Unknown interface invalid"):
-            qml.dot([1, 2], qc)
+            catch_warn_dot([1, 2], qc)
 
     def test_mismatching_interface(self, monkeypatch):
         """Test exception raised if the interfaces don't match"""
@@ -767,12 +823,12 @@ class TestDot:
             qml.RX(x, wires=0)
             return qml.expval(qml.PauliZ(0))
 
-        qc1 = qml.QNodeCollection([circuit1])
-        qc2 = qml.QNodeCollection([circuit2])
+        qc1 = catch_warn_QNodeCollection([circuit1])
+        qc2 = catch_warn_QNodeCollection([circuit2])
         with pytest.raises(ValueError, match="have non-matching interfaces"):
-            qml.dot(qc1, qc2)
+            catch_warn_dot(qc1, qc2)
 
     def test_no_qnodes(self):
         """Test exception raised if no qnodes are provided as arguments"""
         with pytest.raises(ValueError, match="At least one argument must be a QNodeCollection"):
-            qml.dot([1, 2], [3, 4])
+            qml.collections.dot([1, 2], [3, 4])

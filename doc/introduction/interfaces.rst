@@ -130,7 +130,7 @@ NumPy
 
 When using the standard NumPy framework, PennyLane offers some built-in optimizers.
 Some of these are specific to quantum optimization, such as the :class:`~.QNGOptimizer`, :class:`~.LieAlgebraOptimizer`
-:class:`~.RotosolveOptimizer`, :class:`~.RotoselectOptimizer`, and :class:`~.ShotAdaptiveOptimizer`.
+:class:`~.RotosolveOptimizer`, :class:`~.RotoselectOptimizer`, :class:`~.ShotAdaptiveOptimizer`, and :class:`~.QNSPSAOptimizer`.
 
 :html:`<div class="summary-table">`
 
@@ -139,6 +139,7 @@ Some of these are specific to quantum optimization, such as the :class:`~.QNGOpt
 
     ~pennylane.AdagradOptimizer
     ~pennylane.AdamOptimizer
+    ~pennylane.AdaptiveOptimizer
     ~pennylane.GradientDescentOptimizer
     ~pennylane.LieAlgebraOptimizer
     ~pennylane.MomentumOptimizer
@@ -149,6 +150,7 @@ Some of these are specific to quantum optimization, such as the :class:`~.QNGOpt
     ~pennylane.RotoselectOptimizer
     ~pennylane.ShotAdaptiveOptimizer
     ~pennylane.SPSAOptimizer
+    ~pennylane.QNSPSAOptimizer
 
 :html:`</div>`
 
@@ -233,6 +235,8 @@ parameters.
 
 * ``"finite-diff"``: Use numerical finite-differences for all quantum operation arguments.
 
+* ``"hadamard"``: Use hadamard tests on the generators for all compatible quantum operations arguments.
+
 
 Device gradients
 ~~~~~~~~~~~~~~~~
@@ -292,6 +296,58 @@ support gradients of QNodes.
 For more details on available gradient transforms, as well as learning how to define your own
 gradient transform, please see the :mod:`qml.gradients <pennylane.gradients>` documentation.
 
+
+Differentiating gradient transforms and higher-order derivatives
+----------------------------------------------------------------
+
+Gradient transforms are themselves differentiable, allowing higher-order
+gradients to be computed:
+
+.. code-block:: python
+
+    dev = qml.device("default.qubit", wires=2)
+
+    @qml.qnode(dev)
+    def circuit(weights):
+        qml.RX(weights[0], wires=0)
+        qml.RY(weights[1], wires=1)
+        qml.CNOT(wires=[0, 1])
+        qml.RX(weights[2], wires=1)
+        return qml.expval(qml.PauliZ(1))
+
+>>> weights = np.array([0.1, 0.2, 0.3], requires_grad=True)
+>>> circuit(weights)
+tensor(0.9316158, requires_grad=True)
+>>> qml.gradients.param_shift(circuit)(weights)  # gradient
+array([[-0.09347337, -0.18884787, -0.28818254]])
+>>> qml.jacobian(qml.gradients.param_shift(circuit))(weights)  # hessian
+array([[[-0.9316158 ,  0.01894799,  0.0289147 ],
+        [ 0.01894799, -0.9316158 ,  0.05841749],
+        [ 0.0289147 ,  0.05841749, -0.9316158 ]]])
+
+Another way to compute higher-order derivatives is by passing the ``max_diff`` and
+``diff_method`` arguments to the QNode and by successive differentiation:
+
+.. code-block:: python
+
+    @qml.qnode(dev, diff_method="parameter-shift", max_diff=2)
+    def circuit(weights):
+        qml.RX(weights[0], wires=0)
+        qml.RY(weights[1], wires=1)
+        qml.CNOT(wires=[0, 1])
+        qml.RX(weights[2], wires=1)
+        return qml.expval(qml.PauliZ(1))
+
+>>> weights = np.array([0.1, 0.2, 0.3], requires_grad=True)
+>>> qml.jacobian(qml.jacobian(circuit))(weights)  # hessian
+array([[-0.9316158 ,  0.01894799,  0.0289147 ],
+       [ 0.01894799, -0.9316158 ,  0.05841749],
+       [ 0.0289147 ,  0.05841749, -0.9316158 ]])
+
+Note that the ``max_diff`` argument only applies to gradient transforms and that its default value is ``1``; failing to
+set its value correctly may yield incorrect results for higher-order derivatives. Also, passing
+``diff_method="parameter-shift"`` is equivalent to passing ``diff_method=qml.gradients.param_shift``.
+
 Supported configurations
 ------------------------
 
@@ -338,11 +394,15 @@ At the moment, it takes into account the following parameters:
 +                  +------------------------------+--------------+---------------+--------------+--------------+---------------+----------------+----------------+-------------+-------------+-------------+
 |                  | ``"backprop"``               |    :rd:`1`   |      :rd:`1`  |   :rd:`1`    | :rd:`1`      |  :rd:`1`      | :rd:`1`        | :rd:`1`        | :rd:`1`     | :rd:`1`     | :rd:`1`     |
 +                  +------------------------------+--------------+---------------+--------------+--------------+---------------+----------------+----------------+-------------+-------------+-------------+
-|                  | ``"adjoint"``                |    :rd:`2`   |     :rd:`2`   |    :rd:`2`   | :rd:`2`      | :rd:`2`       |   :rd:`2`      | :rd:`2`        |:rd:`2`      |:rd:`2`      |:rd:`2`      |
+|                  | ``"adjoint"``                |    :rd:`2`   |     :rd:`2`   |    :rd:`2`   | :rd:`2`      | :rd:`2`       |   :rd:`2`      | :rd:`2`        | :rd:`2`     | :rd:`2`     | :rd:`2`     |
 +                  +------------------------------+--------------+---------------+--------------+--------------+---------------+----------------+----------------+-------------+-------------+-------------+
-|                  | ``"parameter-shift"``        |    :rd:`2`   |     :rd:`2`   |    :rd:`2`   | :rd:`2`      | :rd:`2`       |   :rd:`2`      | :rd:`2`        |:rd:`2`      |:rd:`2`      |:rd:`2`      |
+|                  | ``"parameter-shift"``        |    :rd:`2`   |     :rd:`2`   |    :rd:`2`   | :rd:`2`      | :rd:`2`       |   :rd:`2`      | :rd:`2`        | :rd:`2`     | :rd:`2`     | :rd:`2`     |
 +                  +------------------------------+--------------+---------------+--------------+--------------+---------------+----------------+----------------+-------------+-------------+-------------+
-|                  | ``"finite-diff"``            |    :rd:`2`   |     :rd:`2`   |    :rd:`2`   | :rd:`2`      | :rd:`2`       |   :rd:`2`      | :rd:`2`        |:rd:`2`      |:rd:`2`      |:rd:`2`      |
+|                  | ``"finite-diff"``            |    :rd:`2`   |     :rd:`2`   |    :rd:`2`   | :rd:`2`      | :rd:`2`       |   :rd:`2`      | :rd:`2`        | :rd:`2`     | :rd:`2`     | :rd:`2`     |
++                  +------------------------------+--------------+---------------+--------------+--------------+---------------+----------------+----------------+-------------+-------------+-------------+
+|                  | ``"spsa"``                   |    :rd:`2`   |     :rd:`2`   |    :rd:`2`   | :rd:`2`      | :rd:`2`       |   :rd:`2`      | :rd:`2`        | :rd:`2`     | :rd:`2`     | :rd:`2`     |
++                  +------------------------------+--------------+---------------+--------------+--------------+---------------+----------------+----------------+-------------+-------------+-------------+
+|                  | ``"hadamard"``               |    :rd:`2`   |     :rd:`2`   |    :rd:`2`   | :rd:`2`      | :rd:`2`       |   :rd:`2`      | :rd:`2`        | :rd:`2`     | :rd:`2`     | :rd:`2`     |
 +------------------+------------------------------+--------------+---------------+--------------+--------------+---------------+----------------+----------------+-------------+-------------+-------------+
 | ``"autograd"``   | ``"device"``                 |  :rd:`3`     |      :rd:`3`  |    :rd:`3`   | :rd:`3`      |   :rd:`3`     |  :rd:`3`       |   :rd:`3`      | :rd:`3`     | :rd:`3`     | :rd:`3`     |
 +                  +------------------------------+--------------+---------------+--------------+--------------+---------------+----------------+----------------+-------------+-------------+-------------+
@@ -353,6 +413,10 @@ At the moment, it takes into account the following parameters:
 |                  | ``"parameter-shift"``        |   :rd:`10`   |    :rd:`10`   |   :gr:`8`    |  :rd:`9`     |   :gr:`8`     |   :gr:`8`      | :gr:`8`        |   :gr:`8`   |   :rd:`10`  |   :rd:`10`  |
 +                  +------------------------------+--------------+---------------+--------------+--------------+---------------+----------------+----------------+-------------+-------------+-------------+
 |                  | ``"finite-diff"``            |   :rd:`10`   |    :rd:`10`   |   :gr:`8`    |  :rd:`9`     |   :gr:`8`     |   :gr:`8`      | :gr:`8`        |   :gr:`8`   |   :gr:`8`   |   :gr:`8`   |
++                  +------------------------------+--------------+---------------+--------------+--------------+---------------+----------------+----------------+-------------+-------------+-------------+
+|                  | ``"spsa"``                   |   :rd:`10`   |    :rd:`10`   |   :gr:`8`    |  :rd:`9`     |   :gr:`8`     |   :gr:`8`      | :gr:`8`        |   :gr:`8`   |   :gr:`8`   |   :gr:`8`   |
++                  +------------------------------+--------------+---------------+--------------+--------------+---------------+----------------+----------------+-------------+-------------+-------------+
+|                  | ``"hadamard"``               |   :rd:`10`   |    :rd:`10`   |   :gr:`8`    |  :rd:`9`     |   :gr:`8`     |   :gr:`8`      | :gr:`8`        |   :rd:`11`  |   :rd:`10`  |   :rd:`10`  |
 +------------------+------------------------------+--------------+---------------+--------------+--------------+---------------+----------------+----------------+-------------+-------------+-------------+
 | ``"jax"``        | ``"device"``                 |  :rd:`3`     |      :rd:`3`  |    :rd:`3`   | :rd:`3`      |   :rd:`3`     |  :rd:`3`       |   :rd:`3`      | :rd:`3`     | :rd:`3`     | :rd:`3`     |
 +                  +------------------------------+--------------+---------------+--------------+--------------+---------------+----------------+----------------+-------------+-------------+-------------+
@@ -363,6 +427,10 @@ At the moment, it takes into account the following parameters:
 |                  | ``"parameter-shift"``        |   :rd:`10`   |    :rd:`10`   |   :gr:`8`    |  :rd:`9`     |   :gr:`8`     |   :gr:`8`      | :gr:`8`        |   :gr:`8`   |   :rd:`10`  |   :rd:`10`  |
 +                  +------------------------------+--------------+---------------+--------------+--------------+---------------+----------------+----------------+-------------+-------------+-------------+
 |                  | ``"finite-diff"``            |   :rd:`10`   |    :rd:`10`   |   :gr:`8`    |  :rd:`9`     |   :gr:`8`     |   :gr:`8`      | :gr:`8`        |   :gr:`8`   |   :gr:`8`   |   :gr:`8`   |
++                  +------------------------------+--------------+---------------+--------------+--------------+---------------+----------------+----------------+-------------+-------------+-------------+
+|                  | ``"spsa"``                   |   :rd:`10`   |    :rd:`10`   |   :gr:`8`    |  :rd:`9`     |   :gr:`8`     |   :gr:`8`      | :gr:`8`        |   :gr:`8`   |   :gr:`8`   |   :gr:`8`   |
++                  +------------------------------+--------------+---------------+--------------+--------------+---------------+----------------+----------------+-------------+-------------+-------------+
+|                  | ``"hadamard"``               |   :rd:`10`   |    :rd:`10`   |   :gr:`8`    |  :rd:`9`     |   :gr:`8`     |   :gr:`8`      | :gr:`8`        |   :rd:`11`  |   :rd:`10`  |   :rd:`10`  |
 +------------------+------------------------------+--------------+---------------+--------------+--------------+---------------+----------------+----------------+-------------+-------------+-------------+
 | ``"tf"``         | ``"device"``                 |  :rd:`3`     |      :rd:`3`  |    :rd:`3`   | :rd:`3`      |   :rd:`3`     |  :rd:`3`       |   :rd:`3`      | :rd:`3`     | :rd:`3`     | :rd:`3`     |
 +                  +------------------------------+--------------+---------------+--------------+--------------+---------------+----------------+----------------+-------------+-------------+-------------+
@@ -373,6 +441,10 @@ At the moment, it takes into account the following parameters:
 |                  | ``"parameter-shift"``        |   :rd:`10`   |    :rd:`10`   |   :gr:`8`    |  :rd:`9`     |   :gr:`8`     |   :gr:`8`      | :gr:`8`        |   :gr:`8`   |   :rd:`10`  |   :rd:`10`  |
 +                  +------------------------------+--------------+---------------+--------------+--------------+---------------+----------------+----------------+-------------+-------------+-------------+
 |                  | ``"finite-diff"``            |   :rd:`10`   |    :rd:`10`   |   :gr:`8`    |  :rd:`9`     |   :gr:`8`     |   :gr:`8`      | :gr:`8`        |   :gr:`8`   |   :gr:`8`   |   :gr:`8`   |
++                  +------------------------------+--------------+---------------+--------------+--------------+---------------+----------------+----------------+-------------+-------------+-------------+
+|                  | ``"spsa"``                   |   :rd:`10`   |    :rd:`10`   |   :gr:`8`    |  :rd:`9`     |   :gr:`8`     |   :gr:`8`      | :gr:`8`        |   :gr:`8`   |   :gr:`8`   |   :gr:`8`   |
++                  +------------------------------+--------------+---------------+--------------+--------------+---------------+----------------+----------------+-------------+-------------+-------------+
+|                  | ``"hadamard"``               |   :rd:`10`   |    :rd:`10`   |   :gr:`8`    |  :rd:`9`     |   :gr:`8`     |   :gr:`8`      | :gr:`8`        |   :rd:`11`  |   :rd:`10`  |   :rd:`10`  |
 +------------------+------------------------------+--------------+---------------+--------------+--------------+---------------+----------------+----------------+-------------+-------------+-------------+
 | ``"torch"``      | ``"device"``                 |  :rd:`3`     |      :rd:`3`  |    :rd:`3`   | :rd:`3`      |   :rd:`3`     |  :rd:`3`       |   :rd:`3`      | :rd:`3`     | :rd:`3`     | :rd:`3`     |
 +                  +------------------------------+--------------+---------------+--------------+--------------+---------------+----------------+----------------+-------------+-------------+-------------+
@@ -383,6 +455,10 @@ At the moment, it takes into account the following parameters:
 |                  | ``"parameter-shift"``        |   :rd:`10`   |    :rd:`10`   |   :gr:`8`    |  :rd:`9`     |   :gr:`8`     |   :gr:`8`      | :gr:`8`        |   :gr:`8`   |   :rd:`10`  |   :rd:`10`  |
 +                  +------------------------------+--------------+---------------+--------------+--------------+---------------+----------------+----------------+-------------+-------------+-------------+
 |                  | ``"finite-diff"``            |   :rd:`10`   |    :rd:`10`   |   :gr:`8`    |  :rd:`9`     |   :gr:`8`     |   :gr:`8`      | :gr:`8`        |   :gr:`8`   |   :gr:`8`   |   :gr:`8`   |
++                  +------------------------------+--------------+---------------+--------------+--------------+---------------+----------------+----------------+-------------+-------------+-------------+
+|                  | ``"spsa"``                   |   :rd:`10`   |    :rd:`10`   |   :gr:`8`    |  :rd:`9`     |   :gr:`8`     |   :gr:`8`      | :gr:`8`        |   :gr:`8`   |   :gr:`8`   |   :gr:`8`   |
++                  +------------------------------+--------------+---------------+--------------+--------------+---------------+----------------+----------------+-------------+-------------+-------------+
+|                  | ``"hadamard"``               |   :rd:`10`   |    :rd:`10`   |   :gr:`8`    |  :rd:`9`     |   :gr:`8`     |   :gr:`8`      | :gr:`8`        |   :rd:`11`  |   :rd:`10`  |   :rd:`10`  |
 +------------------+------------------------------+--------------+---------------+--------------+--------------+---------------+----------------+----------------+-------------+-------------+-------------+
 
 1. Not supported. Gradients are not computed even though ``diff_method`` is provided. Fails with error.
@@ -404,6 +480,7 @@ At the moment, it takes into account the following parameters:
 9. Not supported. The discretization of the output caused by wave function collapse is
    not differentiable. The forward pass is still supported. See :ref:`Sample gradients <Sample gradients>` for details.
 10. Not supported. "We just don't have the theory yet."
+11. Not implemented.
 
 :html:`</div>`
 

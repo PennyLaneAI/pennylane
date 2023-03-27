@@ -25,10 +25,12 @@ class TestCreateExpandFn:
 
     crit_0 = (~qml.operation.is_trainable) | (qml.operation.has_gen & qml.operation.is_trainable)
     doc_0 = "Test docstring."
-    with qml.tape.QuantumTape() as tape:
+    with qml.queuing.AnnotatedQueue() as q:
         qml.RX(0.2, wires=0)
         qml.RY(qml.numpy.array(2.1, requires_grad=True), wires=1)
         qml.Rot(*qml.numpy.array([0.5, 0.2, -0.1], requires_grad=True), wires=0)
+
+    tape = qml.tape.QuantumScript.from_queue(q)
 
     def test_create_expand_fn(self):
         """Test creation of expand_fn."""
@@ -63,10 +65,11 @@ class TestCreateExpandFn:
         dev = qml.device("default.qubit", wires=1)
         expand_fn = qml.transforms.create_expand_fn(device=dev, depth=10, stop_at=self.crit_0)
 
-        with qml.tape.QuantumTape() as tape:
+        with qml.queuing.AnnotatedQueue() as q:
             qml.U1(0.2, wires=0)
             qml.Rot(*qml.numpy.array([0.5, 0.2, -0.1], requires_grad=True), wires=0)
 
+        tape = qml.tape.QuantumScript.from_queue(q)
         new_tape = expand_fn(tape)
 
         assert new_tape.operations[0].name == "U1"
@@ -78,10 +81,11 @@ class TestCreateExpandFn:
         dev = qml.device("default.qubit", wires=1)
         expand_fn = qml.transforms.create_expand_fn(device=dev, depth=10)
 
-        with qml.tape.QuantumTape() as tape:
+        with qml.queuing.AnnotatedQueue() as q:
             qml.U1(0.2, wires=0)
             qml.Rot(*qml.numpy.array([0.5, 0.2, -0.1], requires_grad=True), wires=0)
 
+        tape = qml.tape.QuantumScript.from_queue(q)
         new_tape = expand_fn(tape)
 
         assert len(new_tape.operations) == 2
@@ -92,7 +96,7 @@ class TestCreateExpandFn:
         """Test that passing a depth simply expands to that depth"""
         dev = qml.device("default.qubit", wires=0)
 
-        with qml.tape.QuantumTape() as tape:
+        with qml.queuing.AnnotatedQueue() as q:
             qml.RX(0.2, wires=0)
             qml.RY(qml.numpy.array(2.1, requires_grad=True), wires=1)
             qml.Rot(*qml.numpy.array([0.5, 0.2, -0.1], requires_grad=True), wires=0)
@@ -100,6 +104,7 @@ class TestCreateExpandFn:
                 qml.numpy.ones([2, 2, 3], requires_grad=True), wires=[0, 1]
             )
 
+        tape = qml.tape.QuantumScript.from_queue(q)
         expand_fn = qml.transforms.create_expand_fn(depth=0)
         new_tape = expand_fn(tape)
         assert new_tape is tape
@@ -127,11 +132,12 @@ class TestExpandMultipar:
             def decomposition(theta, wires):
                 raise NotImplementedError()
 
-        with qml.tape.QuantumTape() as tape:
+        with qml.queuing.AnnotatedQueue() as q:
             qml.RX(1.5, wires=0)
             qml.Rot(-2.1, 0.2, -0.418, wires=1)
             _CRX(1.5, wires=[0, 2])
 
+        tape = qml.tape.QuantumScript.from_queue(q)
         new_tape = qml.transforms.expand_multipar(tape)
         new_ops = new_tape.operations
 
@@ -143,16 +149,21 @@ class TestExpandMultipar:
         dev = qml.device("default.qubit", wires=3)
 
         class _CRX(qml.CRX):
+            @property
+            def has_generator(self):
+                return False
+
             def generator(self):
                 raise qml.operations.GeneratorUndefinedError()
 
-        with qml.tape.QuantumTape() as tape:
+        with qml.queuing.AnnotatedQueue() as q:
             qml.RX(1.5, wires=0)
             qml.RZ(-2.1, wires=1)
             qml.RY(0.2, wires=1)
             qml.RZ(-0.418, wires=1)
             _CRX(1.5, wires=[0, 2])
 
+        tape = qml.tape.QuantumScript.from_queue(q)
         new_tape = qml.transforms.expand_multipar(tape)
         new_ops = new_tape.operations
         expected = ["RX", "RZ", "RY", "RZ", "RZ", "RY", "CNOT", "RY", "CNOT", "RZ"]
@@ -165,12 +176,13 @@ class TestExpandNonunitaryGen:
     def test_do_not_expand(self):
         """Test that a tape with single-parameter operations with
         unitary generators and non-parametric operations is not touched."""
-        with qml.tape.QuantumTape() as tape:
+        with qml.queuing.AnnotatedQueue() as q:
             qml.RX(0.2, wires=0)
             qml.Hadamard(0)
             qml.PauliRot(0.9, "XY", wires=[0, 1])
             qml.SingleExcitationPlus(-1.2, wires=[1, 0])
 
+        tape = qml.tape.QuantumScript.from_queue(q)
         new_tape = qml.transforms.expand_nonunitary_gen(tape)
 
         assert tape.operations == new_tape.operations
@@ -178,12 +190,13 @@ class TestExpandNonunitaryGen:
     def test_expand_multi_par(self):
         """Test that a tape with single-parameter operations with
         unitary generators and non-parametric operations is not touched."""
-        with qml.tape.QuantumTape() as tape:
+        with qml.queuing.AnnotatedQueue() as q:
             qml.RX(0.2, wires=0)
             qml.Hadamard(0)
             qml.Rot(0.9, 1.2, -0.6, wires=0)
             qml.SingleExcitationPlus(-1.2, wires=[1, 0])
 
+        tape = qml.tape.QuantumScript.from_queue(q)
         new_tape = qml.transforms.expand_nonunitary_gen(tape)
         expanded = [
             qml.RZ(0.9, wires=0),
@@ -205,12 +218,13 @@ class TestExpandNonunitaryGen:
             def generator(self):
                 return None
 
-        with qml.tape.QuantumTape() as tape:
+        with qml.queuing.AnnotatedQueue() as q:
             qml.RX(0.2, wires=0)
             qml.Hadamard(0)
             _PhaseShift(2.1, wires=1)
             qml.SingleExcitationPlus(-1.2, wires=[1, 0])
 
+        tape = qml.tape.QuantumScript.from_queue(q)
         new_tape = qml.transforms.expand_nonunitary_gen(tape)
         assert tape.operations[:2] == new_tape.operations[:2]
         exp_op = new_tape.operations[2]
@@ -221,12 +235,13 @@ class TestExpandNonunitaryGen:
         """Test that a tape with single-parameter operations with
         unitary generators and non-parametric operations is not touched."""
 
-        with qml.tape.QuantumTape() as tape:
+        with qml.queuing.AnnotatedQueue() as q:
             qml.RX(0.2, wires=0)
             qml.Hadamard(0)
             qml.PhaseShift(2.1, wires=1)
             qml.SingleExcitationPlus(-1.2, wires=[1, 0])
 
+        tape = qml.tape.QuantumScript.from_queue(q)
         new_tape = qml.transforms.expand_nonunitary_gen(tape)
 
         assert tape.operations[:2] == new_tape.operations[:2]
@@ -244,12 +259,13 @@ class TestExpandInvalidTrainable:
         x = qml.numpy.array(0.2, requires_grad=True)
         y = qml.numpy.array(0.1, requires_grad=True)
 
-        with qml.tape.QuantumTape() as tape:
+        with qml.queuing.AnnotatedQueue() as q:
             qml.RX(x, wires=0)
             qml.RY(y, wires=1)
             qml.CNOT(wires=[0, 1])
             qml.expval(qml.PauliZ(0))
 
+        tape = qml.tape.QuantumScript.from_queue(q)
         spy = mocker.spy(tape, "expand")
         new_tape = qml.transforms.expand_invalid_trainable(tape)
 
@@ -265,12 +281,13 @@ class TestExpandInvalidTrainable:
         class NonDiffPhaseShift(qml.PhaseShift):
             grad_method = None
 
-        with qml.tape.QuantumTape() as tape:
+        with qml.queuing.AnnotatedQueue() as q:
             NonDiffPhaseShift(x, wires=0)
             qml.RY(y, wires=1)
             qml.CNOT(wires=[0, 1])
             qml.expval(qml.PauliZ(0))
 
+        tape = qml.tape.QuantumScript.from_queue(q)
         spy = mocker.spy(tape, "expand")
         new_tape = qml.transforms.expand_invalid_trainable(tape)
 
@@ -291,12 +308,13 @@ class TestExpandInvalidTrainable:
         class NonDiffPhaseShift(qml.PhaseShift):
             grad_method = None
 
-        with qml.tape.QuantumTape() as tape:
+        with qml.queuing.AnnotatedQueue() as q:
             NonDiffPhaseShift(x, wires=0)
             qml.RY(y, wires=1)
             qml.CNOT(wires=[0, 1])
             qml.expval(qml.PauliZ(0))
 
+        tape = qml.tape.QuantumScript.from_queue(q)
         params = tape.get_parameters(trainable_only=False)
         tape.trainable_params = qml.math.get_trainable_indices(params)
         assert tape.trainable_params == [1]
@@ -316,12 +334,13 @@ class TestExpandInvalidTrainable:
         class NonDiffPhaseShift(qml.PhaseShift):
             grad_method = "F"
 
-        with qml.tape.QuantumTape() as tape:
+        with qml.queuing.AnnotatedQueue() as q:
             NonDiffPhaseShift(x, wires=0)
             qml.RY(y, wires=1)
             qml.CNOT(wires=[0, 1])
             qml.expval(qml.PauliZ(0))
 
+        tape = qml.tape.QuantumScript.from_queue(q)
         spy = mocker.spy(tape, "expand")
         new_tape = qml.transforms.expand_invalid_trainable(tape)
 
@@ -668,28 +687,32 @@ class TestCreateCustomDecompExpandFn:
         assert decomp_ops[1].wires == Wires("a")
 
     def test_custom_decomp_with_control(self):
-        """Test that applying a controlled version of a gate results in the
-        controlled version of a decomposition."""
+        """Test that decomposing a controlled version of a gate uses the custom decomposition
+        for the base gate."""
 
+        class CustomOp(qml.operation.Operation):
+            num_wires = 1
+
+            @staticmethod
+            def compute_decomposition(wire):
+                return [qml.S(wire)]
+
+        custom_decomps = {CustomOp: lambda wires: [qml.T(wires), qml.T(wires)]}
+        decomp_dev = qml.device("default.qubit", wires=2, custom_decomps=custom_decomps)
+
+        @qml.qnode(decomp_dev, expansion_strategy="device")
         def circuit():
-            qml.ctrl(qml.Hadamard, control=0)(wires=1)
+            qml.ctrl(CustomOp, control=1)(0)
             return qml.expval(qml.PauliZ(0))
 
-        custom_decomps = {qml.Hadamard: custom_hadamard}
-        decomp_dev = qml.device("default.qubit", wires=2, custom_decomps=custom_decomps)
-        decomp_qnode = qml.QNode(circuit, decomp_dev, expansion_strategy="device")
-        _ = decomp_qnode()
-        decomp_ops = decomp_qnode.qtape.operations
+        circuit.construct(tuple(), {})
+        decomp_ops = circuit.tape.operations
 
         assert len(decomp_ops) == 2
 
-        assert decomp_ops[0].name == "CRZ"
-        assert np.isclose(decomp_ops[0].parameters[0], np.pi)
-        assert decomp_ops[0].wires == Wires([0, 1])
-
-        assert decomp_ops[1].name == "CRY"
-        assert np.isclose(decomp_ops[1].parameters[0], np.pi / 2)
-        assert decomp_ops[1].wires == Wires([0, 1])
+        for op in decomp_ops:
+            assert isinstance(op, qml.ops.op_math.Controlled)
+            assert qml.equal(op.base, qml.T(0))
 
     def test_custom_decomp_in_separate_context(self):
         """Test that the set_decomposition context manager works."""
@@ -732,7 +755,6 @@ class TestCreateCustomDecompExpandFn:
         correct method under the hood and produces expected results."""
         res = []
         for i in range(2):
-
             custom_decomps = {"MultiRZ": qml.MultiRZ.compute_decomposition}
             dev = qml.device("lightning.qubit", wires=2, custom_decomps=custom_decomps)
 

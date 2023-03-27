@@ -23,10 +23,11 @@ from .openfermion_obs import (
     decompose,
     molecular_hamiltonian,
 )
+from .basis_data import load_basisset
 from .basis_set import BasisFunction, atom_basis_data, mol_basis_data
 from .convert import import_operator
 from .dipole import dipole_integrals, fermionic_dipole, dipole_moment
-from .factorization import factorize
+from .factorization import basis_rotation, factorize
 from .hamiltonian import electron_integrals, fermionic_hamiltonian, diff_hamiltonian
 from .hartree_fock import scf, nuclear_energy, hf_energy
 from .integrals import (
@@ -55,10 +56,17 @@ from .matrices import (
     core_matrix,
 )
 from .molecule import Molecule
-from .observable_hf import fermionic_observable, qubit_observable, jordan_wigner, simplify
+from .observable_hf import fermionic_observable, qubit_observable, jordan_wigner
 from .number import particle_number
 from .spin import spin2, spinz
-from .structure import read_structure, active_space, excitations, hf_state, excitations_to_wires
+from .structure import (
+    read_structure,
+    active_space,
+    excitations,
+    hf_state,
+    excitations_to_wires,
+    mol_data,
+)
 from .tapering import (
     clifford,
     paulix_ops,
@@ -66,4 +74,8 @@ from .tapering import (
     optimal_sector,
     taper,
     taper_hf,
+    taper_operation,
+)
+from .givens_decomposition import (
+    givens_decomposition,
 )

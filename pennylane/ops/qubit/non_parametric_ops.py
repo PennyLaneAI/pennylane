@@ -18,7 +18,12 @@ not depend on any parameters.
 # pylint:disable=abstract-method,arguments-differ,protected-access,invalid-overridden-method, no-member
 import cmath
 import warnings
+from copy import copy
+from functools import lru_cache
+
 import numpy as np
+
+from scipy import sparse
 from scipy.linalg import block_diag
 
 import pennylane as qml
@@ -55,6 +60,7 @@ class Hadamard(Observable, Operation):
         return base_label or "H"
 
     @staticmethod
+    @lru_cache()
     def compute_matrix():  # pylint: disable=arguments-differ
         r"""Representation of the operator as a canonical matrix in the computational basis (static method).
 
@@ -75,10 +81,15 @@ class Hadamard(Observable, Operation):
         return np.array([[INV_SQRT2, INV_SQRT2], [INV_SQRT2, -INV_SQRT2]])
 
     @staticmethod
+    @lru_cache()
+    def compute_sparse_matrix():  # pylint: disable=arguments-differ
+        return sparse.csr_matrix([[INV_SQRT2, INV_SQRT2], [INV_SQRT2, -INV_SQRT2]])
+
+    @staticmethod
     def compute_eigvals():  # pylint: disable=arguments-differ
         r"""Eigenvalues of the operator in the computational basis (static method).
 
-        If :attr:`diagonalizing_gates` are specified and implement a unitary :math:`U`,
+        If :attr:`diagonalizing_gates` are specified and implement a unitary :math:`U^{\dagger}`,
         the operator can be reconstructed as
 
         .. math:: O = U \Sigma U^{\dagger},
@@ -105,7 +116,7 @@ class Hadamard(Observable, Operation):
 
         Given the eigendecomposition :math:`O = U \Sigma U^{\dagger}` where
         :math:`\Sigma` is a diagonal matrix containing the eigenvalues,
-        the sequence of diagonalizing gates implements the unitary :math:`U`.
+        the sequence of diagonalizing gates implements the unitary :math:`U^{\dagger}`.
 
         The diagonalizing gates rotate the state into the eigenbasis
         of the operator.
@@ -153,6 +164,9 @@ class Hadamard(Observable, Operation):
         ]
         return decomp_ops
 
+    def _controlled(self, wire):
+        return CH(wires=Wires(wire) + self.wires)
+
     def adjoint(self):
         return Hadamard(wires=self.wires)
 
@@ -188,10 +202,15 @@ class PauliX(Observable, Operation):
 
     _queue_category = "_ops"
 
+    def __init__(self, *params, wires=None, do_queue=True, id=None):
+        super().__init__(*params, wires=wires, do_queue=do_queue, id=id)
+        self._pauli_rep = qml.pauli.PauliSentence({qml.pauli.PauliWord({self.wires[0]: "X"}): 1.0})
+
     def label(self, decimals=None, base_label=None, cache=None):
         return base_label or "X"
 
     @staticmethod
+    @lru_cache()
     def compute_matrix():  # pylint: disable=arguments-differ
         r"""Representation of the operator as a canonical matrix in the computational basis (static method).
 
@@ -213,10 +232,15 @@ class PauliX(Observable, Operation):
         return np.array([[0, 1], [1, 0]])
 
     @staticmethod
+    @lru_cache()
+    def compute_sparse_matrix():  # pylint: disable=arguments-differ
+        return sparse.csr_matrix([[0, 1], [1, 0]])
+
+    @staticmethod
     def compute_eigvals():  # pylint: disable=arguments-differ
         r"""Eigenvalues of the operator in the computational basis (static method).
 
-        If :attr:`diagonalizing_gates` are specified and implement a unitary :math:`U`,
+        If :attr:`diagonalizing_gates` are specified and implement a unitary :math:`U^{\dagger}`,
         the operator can be reconstructed as
 
         .. math:: O = U \Sigma U^{\dagger},
@@ -243,7 +267,7 @@ class PauliX(Observable, Operation):
 
         Given the eigendecomposition :math:`O = U \Sigma U^{\dagger}` where
         :math:`\Sigma` is a diagonal matrix containing the eigenvalues,
-        the sequence of diagonalizing gates implements the unitary :math:`U`.
+        the sequence of diagonalizing gates implements the unitary :math:`U^{\dagger}`.
 
         The diagonalizing gates rotate the state into the eigenbasis
         of the operator.
@@ -302,7 +326,7 @@ class PauliX(Observable, Operation):
         return super().pow(z_mod2)
 
     def _controlled(self, wire):
-        CNOT(wires=Wires(wire) + self.wires)
+        return CNOT(wires=Wires(wire) + self.wires)
 
     def single_qubit_rot_angles(self):
         # X = RZ(-\pi/2) RY(\pi) RZ(\pi/2)
@@ -333,10 +357,15 @@ class PauliY(Observable, Operation):
 
     _queue_category = "_ops"
 
+    def __init__(self, *params, wires=None, do_queue=True, id=None):
+        super().__init__(*params, wires=wires, do_queue=do_queue, id=id)
+        self._pauli_rep = qml.pauli.PauliSentence({qml.pauli.PauliWord({self.wires[0]: "Y"}): 1.0})
+
     def label(self, decimals=None, base_label=None, cache=None):
         return base_label or "Y"
 
     @staticmethod
+    @lru_cache()
     def compute_matrix():  # pylint: disable=arguments-differ
         r"""Representation of the operator as a canonical matrix in the computational basis (static method).
 
@@ -357,10 +386,15 @@ class PauliY(Observable, Operation):
         return np.array([[0, -1j], [1j, 0]])
 
     @staticmethod
+    @lru_cache()
+    def compute_sparse_matrix():  # pylint: disable=arguments-differ
+        return sparse.csr_matrix([[0, -1j], [1j, 0]])
+
+    @staticmethod
     def compute_eigvals():  # pylint: disable=arguments-differ
         r"""Eigenvalues of the operator in the computational basis (static method).
 
-        If :attr:`diagonalizing_gates` are specified and implement a unitary :math:`U`,
+        If :attr:`diagonalizing_gates` are specified and implement a unitary :math:`U^{\dagger}`,
         the operator can be reconstructed as
 
         .. math:: O = U \Sigma U^{\dagger},
@@ -387,7 +421,7 @@ class PauliY(Observable, Operation):
 
         Given the eigendecomposition :math:`O = U \Sigma U^{\dagger}` where
         :math:`\Sigma` is a diagonal matrix containing the eigenvalues,
-        the sequence of diagonalizing gates implements the unitary :math:`U`.
+        the sequence of diagonalizing gates implements the unitary :math:`U^{\dagger}`.
 
         The diagonalizing gates rotate the state into the eigenbasis
         of the operator.
@@ -446,7 +480,7 @@ class PauliY(Observable, Operation):
         return super().pow(z % 2)
 
     def _controlled(self, wire):
-        CY(wires=Wires(wire) + self.wires)
+        return CY(wires=Wires(wire) + self.wires)
 
     def single_qubit_rot_angles(self):
         # Y = RZ(0) RY(\pi) RZ(0)
@@ -475,10 +509,15 @@ class PauliZ(Observable, Operation):
 
     _queue_category = "_ops"
 
+    def __init__(self, *params, wires=None, do_queue=True, id=None):
+        super().__init__(*params, wires=wires, do_queue=do_queue, id=id)
+        self._pauli_rep = qml.pauli.PauliSentence({qml.pauli.PauliWord({self.wires[0]: "Z"}): 1.0})
+
     def label(self, decimals=None, base_label=None, cache=None):
         return base_label or "Z"
 
     @staticmethod
+    @lru_cache()
     def compute_matrix():  # pylint: disable=arguments-differ
         r"""Representation of the operator as a canonical matrix in the computational basis (static method).
 
@@ -499,10 +538,15 @@ class PauliZ(Observable, Operation):
         return np.array([[1, 0], [0, -1]])
 
     @staticmethod
+    @lru_cache()
+    def compute_sparse_matrix():  # pylint: disable=arguments-differ
+        return sparse.csr_matrix([[1, 0], [0, -1]])
+
+    @staticmethod
     def compute_eigvals():  # pylint: disable=arguments-differ
         r"""Eigenvalues of the operator in the computational basis (static method).
 
-        If :attr:`diagonalizing_gates` are specified and implement a unitary :math:`U`,
+        If :attr:`diagonalizing_gates` are specified and implement a unitary :math:`U^{\dagger}`,
         the operator can be reconstructed as
 
         .. math:: O = U \Sigma U^{\dagger},
@@ -529,7 +573,7 @@ class PauliZ(Observable, Operation):
 
         Given the eigendecomposition :math:`O = U \Sigma U^{\dagger}` where
         :math:`\Sigma` is a diagonal matrix containing the eigenvalues,
-        the sequence of diagonalizing gates implements the unitary :math:`U`.
+        the sequence of diagonalizing gates implements the unitary :math:`U^{\dagger}`.
 
         The diagonalizing gates rotate the state into the eigenbasis
         of the operator.
@@ -579,7 +623,7 @@ class PauliZ(Observable, Operation):
         if z_mod2 == 0:
             return []
         if z_mod2 == 1:
-            return [self.__copy__()]
+            return [copy(self)]
 
         if abs(z_mod2 - 0.5) < 1e-6:
             return [S(wires=self.wires)]
@@ -589,7 +633,7 @@ class PauliZ(Observable, Operation):
         return [qml.PhaseShift(np.pi * z_mod2, wires=self.wires)]
 
     def _controlled(self, wire):
-        CZ(wires=Wires(wire) + self.wires)
+        return CZ(wires=wire + self.wires)
 
     def single_qubit_rot_angles(self):
         # Z = RZ(\pi) RY(0) RZ(0)
@@ -620,6 +664,7 @@ class S(Operation):
     basis = "Z"
 
     @staticmethod
+    @lru_cache()
     def compute_matrix():  # pylint: disable=arguments-differ
         r"""Representation of the operator as a canonical matrix in the computational basis (static method).
 
@@ -643,7 +688,7 @@ class S(Operation):
     def compute_eigvals():  # pylint: disable=arguments-differ
         r"""Eigenvalues of the operator in the computational basis (static method).
 
-        If :attr:`diagonalizing_gates` are specified and implement a unitary :math:`U`,
+        If :attr:`diagonalizing_gates` are specified and implement a unitary :math:`U^{\dagger}`,
         the operator can be reconstructed as
 
         .. math:: O = U \Sigma U^{\dagger},
@@ -692,7 +737,7 @@ class S(Operation):
         pow_map = {
             0: lambda op: [],
             0.5: lambda op: [T(wires=op.wires)],
-            1: lambda op: [op.__copy__()],
+            1: lambda op: [copy(op)],
             2: lambda op: [PauliZ(wires=op.wires)],
         }
         return pow_map.get(z_mod4, lambda op: [qml.PhaseShift(np.pi * z_mod4 / 2, wires=op.wires)])(
@@ -728,6 +773,7 @@ class T(Operation):
     basis = "Z"
 
     @staticmethod
+    @lru_cache()
     def compute_matrix():  # pylint: disable=arguments-differ
         r"""Representation of the operator as a canonical matrix in the computational basis (static method).
 
@@ -751,7 +797,7 @@ class T(Operation):
     def compute_eigvals():  # pylint: disable=arguments-differ
         r"""Eigenvalues of the operator in the computational basis (static method).
 
-        If :attr:`diagonalizing_gates` are specified and implement a unitary :math:`U`,
+        If :attr:`diagonalizing_gates` are specified and implement a unitary :math:`U^{\dagger}`,
         the operator can be reconstructed as
 
         .. math:: O = U \Sigma U^{\dagger},
@@ -799,7 +845,7 @@ class T(Operation):
         z_mod8 = z % 8
         pow_map = {
             0: lambda op: [],
-            1: lambda op: [op.__copy__()],
+            1: lambda op: [copy(op)],
             2: lambda op: [S(wires=op.wires)],
             4: lambda op: [PauliZ(wires=op.wires)],
         }
@@ -836,6 +882,7 @@ class SX(Operation):
     basis = "X"
 
     @staticmethod
+    @lru_cache()
     def compute_matrix():  # pylint: disable=arguments-differ
         r"""Representation of the operator as a canonical matrix in the computational basis (static method).
 
@@ -859,7 +906,7 @@ class SX(Operation):
     def compute_eigvals():  # pylint: disable=arguments-differ
         r"""Eigenvalues of the operator in the computational basis (static method).
 
-        If :attr:`diagonalizing_gates` are specified and implement a unitary :math:`U`,
+        If :attr:`diagonalizing_gates` are specified and implement a unitary :math:`U^{\dagger}`,
         the operator can be reconstructed as
 
         .. math:: O = U \Sigma U^{\dagger},
@@ -955,6 +1002,7 @@ class CNOT(Operation):
         return base_label or "X"
 
     @staticmethod
+    @lru_cache()
     def compute_matrix():  # pylint: disable=arguments-differ
         r"""Representation of the operator as a canonical matrix in the computational basis (static method).
 
@@ -984,11 +1032,15 @@ class CNOT(Operation):
         return super().pow(z % 2)
 
     def _controlled(self, wire):
-        Toffoli(wires=Wires(wire) + self.wires)
+        return Toffoli(wires=wire + self.wires)
 
     @property
     def control_wires(self):
         return Wires(self.wires[0])
+
+    @property
+    def is_hermitian(self):
+        return True
 
 
 class CZ(Operation):
@@ -1022,6 +1074,7 @@ class CZ(Operation):
         return base_label or "Z"
 
     @staticmethod
+    @lru_cache()
     def compute_matrix():  # pylint: disable=arguments-differ
         r"""Representation of the operator as a canonical matrix in the computational basis (static method).
 
@@ -1047,7 +1100,7 @@ class CZ(Operation):
     def compute_eigvals():  # pylint: disable=arguments-differ
         r"""Eigenvalues of the operator in the computational basis (static method).
 
-        If :attr:`diagonalizing_gates` are specified and implement a unitary :math:`U`,
+        If :attr:`diagonalizing_gates` are specified and implement a unitary :math:`U^{\dagger}`,
         the operator can be reconstructed as
 
         .. math:: O = U \Sigma U^{\dagger},
@@ -1075,9 +1128,16 @@ class CZ(Operation):
     def pow(self, z):
         return super().pow(z % 2)
 
+    def _controlled(self, wire):
+        return CCZ(wires=wire + self.wires)
+
     @property
     def control_wires(self):
         return Wires(self.wires[0])
+
+    @property
+    def is_hermitian(self):
+        return True
 
 
 class CY(Operation):
@@ -1111,6 +1171,7 @@ class CY(Operation):
         return base_label or "Y"
 
     @staticmethod
+    @lru_cache()
     def compute_matrix():  # pylint: disable=arguments-differ
         r"""Representation of the operator as a canonical matrix in the computational basis (static method).
 
@@ -1174,6 +1235,114 @@ class CY(Operation):
     def control_wires(self):
         return Wires(self.wires[0])
 
+    @property
+    def is_hermitian(self):
+        return True
+
+
+class CH(Operation):
+    r"""CH(wires)
+    The controlled-Hadamard operator
+
+    .. math:: CH = \begin{bmatrix}
+            1 & 0 & 0 & 0 \\
+            0 & 1 & 0 & 0 \\
+            0 & 0 & \frac{1}{\sqrt{2}} & \frac{1}{\sqrt{2}} \\
+            0 & 0 & \frac{1}{\sqrt{2}} & -\frac{1}{\sqrt{2}}
+        \end{bmatrix}.
+
+    .. note:: The first wire provided corresponds to the **control qubit**.
+
+    **Details:**
+
+    * Number of wires: 2
+    * Number of parameters: 0
+
+    Args:
+        wires (Sequence[int]): the wires the operation acts on
+    """
+    num_wires = 2
+    num_params = 0
+    """int: Number of trainable parameters that the operator depends on."""
+
+    basis = "Hadamard"
+
+    def label(self, decimals=None, base_label=None, cache=None):
+        return base_label or "H"
+
+    @staticmethod
+    @lru_cache()
+    def compute_matrix():  # pylint: disable=arguments-differ
+        r"""Representation of the operator as a canonical matrix in the computational basis (static method).
+
+        The canonical matrix is the textbook matrix representation that does not consider wires.
+        Implicitly, this assumes that the wires of the operator correspond to the global wire order.
+
+        .. seealso:: :meth:`~.CH.matrix`
+
+
+        Returns:
+            ndarray: matrix
+
+        **Example**
+
+        >>> print(qml.CH.compute_matrix())
+        [[ 1.          0.          0.          0.        ]
+         [ 0.          1.          0.          0.        ]
+         [ 0.          0.          0.70710678  0.70710678]
+         [ 0.          0.          0.70710678 -0.70710678]]
+        """
+        return np.array(
+            [
+                [1, 0, 0, 0],
+                [0, 1, 0, 0],
+                [0, 0, INV_SQRT2, INV_SQRT2],
+                [0, 0, INV_SQRT2, -INV_SQRT2],
+            ]
+        )
+
+    @staticmethod
+    def compute_decomposition(wires):
+        r"""Representation of the operator as a product of other operators (static method).
+
+
+        .. math:: O = O_1 O_2 \dots O_n.
+
+
+        .. seealso:: :meth:`~.CH.decomposition`.
+
+        Args:
+            wires (Iterable, Wires): wires that the operator acts on
+
+        Returns:
+            list[Operator]: decomposition into lower level operations
+
+        **Example:**
+
+        >>> print(qml.CH.compute_decomposition([0, 1]))
+        [qml.RY(-0.78539816339, wires=[1]), CZ(wires=[0, 1]), qml.RY(0.78539816339, wires=[1])]
+
+        """
+        return [
+            qml.RY(-np.pi / 4, wires=wires[1]),
+            qml.CZ(wires=wires),
+            qml.RY(+np.pi / 4, wires=wires[1]),
+        ]
+
+    def adjoint(self):
+        return CH(wires=self.wires)
+
+    def pow(self, z):
+        return super().pow(z % 2)
+
+    @property
+    def control_wires(self):
+        return Wires(self.wires[0])
+
+    @property
+    def is_hermitian(self):
+        return True
+
 
 class SWAP(Operation):
     r"""SWAP(wires)
@@ -1199,6 +1368,7 @@ class SWAP(Operation):
     """int: Number of trainable parameters that the operator depends on."""
 
     @staticmethod
+    @lru_cache()
     def compute_matrix():  # pylint: disable=arguments-differ
         r"""Representation of the operator as a canonical matrix in the computational basis (static method).
 
@@ -1255,7 +1425,11 @@ class SWAP(Operation):
         return SWAP(wires=self.wires)
 
     def _controlled(self, wire):
-        CSWAP(wires=wire + self.wires)
+        return CSWAP(wires=wire + self.wires)
+
+    @property
+    def is_hermitian(self):
+        return True
 
 
 class ECR(Operation):
@@ -1319,7 +1493,7 @@ class ECR(Operation):
     def compute_eigvals():
         r"""Eigenvalues of the operator in the computational basis (static method).
 
-        If :attr:`diagonalizing_gates` are specified and implement a unitary :math:`U`,
+        If :attr:`diagonalizing_gates` are specified and implement a unitary :math:`U^{\dagger}`,
         the operator can be reconstructed as
 
         .. math:: O = U \Sigma U^{\dagger},
@@ -1411,6 +1585,7 @@ class ISWAP(Operation):
     """int: Number of trainable parameters that the operator depends on."""
 
     @staticmethod
+    @lru_cache()
     def compute_matrix():  # pylint: disable=arguments-differ
         r"""Representation of the operator as a canonical matrix in the computational basis (static method).
 
@@ -1436,7 +1611,7 @@ class ISWAP(Operation):
     def compute_eigvals():  # pylint: disable=arguments-differ
         r"""Eigenvalues of the operator in the computational basis (static method).
 
-        If :attr:`diagonalizing_gates` are specified and implement a unitary :math:`U`,
+        If :attr:`diagonalizing_gates` are specified and implement a unitary :math:`U^{\dagger}`,
         the operator can be reconstructed as
 
         .. math:: O = U \Sigma U^{\dagger},
@@ -1525,6 +1700,7 @@ class SISWAP(Operation):
     """int: Number of trainable parameters that the operator depends on."""
 
     @staticmethod
+    @lru_cache()
     def compute_matrix():  # pylint: disable=arguments-differ
         r"""Representation of the operator as a canonical matrix in the computational basis (static method).
 
@@ -1558,7 +1734,7 @@ class SISWAP(Operation):
     def compute_eigvals():  # pylint: disable=arguments-differ
         r"""Eigenvalues of the operator in the computational basis (static method).
 
-        If :attr:`diagonalizing_gates` are specified and implement a unitary :math:`U`,
+        If :attr:`diagonalizing_gates` are specified and implement a unitary :math:`U^{\dagger}`,
         the operator can be reconstructed as
 
         .. math:: O = U \Sigma U^{\dagger},
@@ -1670,6 +1846,7 @@ class CSWAP(Operation):
         return base_label or "SWAP"
 
     @staticmethod
+    @lru_cache()
     def compute_matrix():  # pylint: disable=arguments-differ
         r"""Representation of the operator as a canonical matrix in the computational basis (static method).
 
@@ -1744,6 +1921,152 @@ class CSWAP(Operation):
     def control_wires(self):
         return Wires(self.wires[0])
 
+    @property
+    def is_hermitian(self):
+        return True
+
+
+class CCZ(Operation):
+    r"""CCZ(wires)
+    CCZ (controlled-controlled-Z) gate.
+
+    .. math::
+
+        CCZ =
+        \begin{pmatrix}
+        1 & 0 & 0 & 0 & 0 & 0 & 0 & 0\\
+        0 & 1 & 0 & 0 & 0 & 0 & 0 & 0\\
+        0 & 0 & 1 & 0 & 0 & 0 & 0 & 0\\
+        0 & 0 & 0 & 1 & 0 & 0 & 0 & 0\\
+        0 & 0 & 0 & 0 & 1 & 0 & 0 & 0\\
+        0 & 0 & 0 & 0 & 0 & 1 & 0 & 0\\
+        0 & 0 & 0 & 0 & 0 & 0 & 1 & 0\\
+        0 & 0 & 0 & 0 & 0 & 0 & 0 & -1
+        \end{pmatrix}
+
+    **Details:**
+
+    * Number of wires: 3
+    * Number of parameters: 0
+
+    Args:
+        wires (Sequence[int]): the subsystem the gate acts on
+    """
+    num_wires = 3
+    num_params = 0
+    """int: Number of trainable parameters that the operator depends on."""
+
+    basis = "Z"
+
+    def label(self, decimals=None, base_label=None, cache=None):
+        return base_label or "Z"
+
+    @staticmethod
+    @lru_cache()
+    def compute_matrix():  # pylint: disable=arguments-differ
+        r"""Representation of the operator as a canonical matrix in the computational basis (static method).
+
+        The canonical matrix is the textbook matrix representation that does not consider wires.
+        Implicitly, this assumes that the wires of the operator correspond to the global wire order.
+
+        .. seealso:: :meth:`~.CCZ.matrix`
+
+
+        Returns:
+            ndarray: matrix
+
+        **Example**
+
+        >>> print(qml.CCZ.compute_matrix())
+        [[1 0 0 0 0 0 0 0]
+         [0 1 0 0 0 0 0 0]
+         [0 0 1 0 0 0 0 0]
+         [0 0 0 1 0 0 0 0]
+         [0 0 0 0 1 0 0 0]
+         [0 0 0 0 0 1 0 0]
+         [0 0 0 0 0 0 1 0]
+         [0 0 0 0 0 0 0 -1]]
+        """
+        return np.array(
+            [
+                [1, 0, 0, 0, 0, 0, 0, 0],
+                [0, 1, 0, 0, 0, 0, 0, 0],
+                [0, 0, 1, 0, 0, 0, 0, 0],
+                [0, 0, 0, 1, 0, 0, 0, 0],
+                [0, 0, 0, 0, 1, 0, 0, 0],
+                [0, 0, 0, 0, 0, 1, 0, 0],
+                [0, 0, 0, 0, 0, 0, 1, 0],
+                [0, 0, 0, 0, 0, 0, 0, -1],
+            ]
+        )
+
+    @staticmethod
+    def compute_decomposition(wires):
+        r"""Representation of the operator as a product of other operators (static method).
+
+        .. math:: O = O_1 O_2 \dots O_n.
+
+
+        .. seealso:: :meth:`~.Toffoli.decomposition`.
+
+        Args:
+            wires (Iterable, Wires): wires that the operator acts on
+
+        Returns:
+            list[Operator]: decomposition into lower level operations
+
+        **Example:**
+
+        >>> qml.CCZ.compute_decomposition((0,1,2))
+        [CNOT(wires=[1, 2]),
+        Adjoint(T)(wires=[2]),
+        CNOT(wires=[0, 2]),
+        T(wires=[2]),
+        CNOT(wires=[1, 2]),
+        Adjoint(T)(wires=[2]),
+        CNOT(wires=[0, 2]),
+        T(wires=[2]),
+        T(wires=[1]),
+        CNOT(wires=[0, 1]),
+        Hadamard(wires=[2]),
+        T(wires=[0]),
+        Adjoint(T)(wires=[1]),
+        CNOT(wires=[0, 1]),
+        Hadamard(wires=[2]),]
+
+        """
+        return [
+            CNOT(wires=[wires[1], wires[2]]),
+            qml.adjoint(T(wires=wires[2])),
+            CNOT(wires=[wires[0], wires[2]]),
+            T(wires=wires[2]),
+            CNOT(wires=[wires[1], wires[2]]),
+            qml.adjoint(T(wires=wires[2])),
+            CNOT(wires=[wires[0], wires[2]]),
+            T(wires=wires[2]),
+            T(wires=wires[1]),
+            CNOT(wires=[wires[0], wires[1]]),
+            Hadamard(wires=wires[2]),
+            T(wires=wires[0]),
+            qml.adjoint(T(wires=wires[1])),
+            CNOT(wires=[wires[0], wires[1]]),
+            Hadamard(wires=[2]),
+        ]
+
+    def adjoint(self):
+        return CCZ(wires=self.wires)
+
+    def pow(self, z):
+        return super().pow(z % 2)
+
+    @property
+    def control_wires(self):
+        return Wires(self.wires[:2])
+
+    @property
+    def is_hermitian(self):
+        return True
+
 
 class Toffoli(Operation):
     r"""Toffoli(wires)
@@ -1781,6 +2104,7 @@ class Toffoli(Operation):
         return base_label or "X"
 
     @staticmethod
+    @lru_cache()
     def compute_matrix():  # pylint: disable=arguments-differ
         r"""Representation of the operator as a canonical matrix in the computational basis (static method).
 
@@ -1835,42 +2159,41 @@ class Toffoli(Operation):
 
         **Example:**
 
-        >>> print(qml.Toffoli.compute_decomposition((0,1,2)))
+        >>> qml.Toffoli.compute_decomposition((0,1,2))
         [Hadamard(wires=[2]),
         CNOT(wires=[1, 2]),
-        T.inv(wires=[2]),
+        Adjoint(T)(wires=[2]),
         CNOT(wires=[0, 2]),
         T(wires=[2]),
         CNOT(wires=[1, 2]),
-        T.inv(wires=[2]),
+        Adjoint(T)(wires=[2]),
         CNOT(wires=[0, 2]),
         T(wires=[2]),
         T(wires=[1]),
         CNOT(wires=[0, 1]),
         Hadamard(wires=[2]),
         T(wires=[0]),
-        T.inv(wires=[1]),
+        Adjoint(T)(wires=[1]),
         CNOT(wires=[0, 1])]
 
         """
-        decomp_ops = [
+        return [
             Hadamard(wires=wires[2]),
             CNOT(wires=[wires[1], wires[2]]),
-            T(wires=wires[2]).inv(),
+            qml.adjoint(T(wires=wires[2])),
             CNOT(wires=[wires[0], wires[2]]),
             T(wires=wires[2]),
             CNOT(wires=[wires[1], wires[2]]),
-            T(wires=wires[2]).inv(),
+            qml.adjoint(T(wires=wires[2])),
             CNOT(wires=[wires[0], wires[2]]),
             T(wires=wires[2]),
             T(wires=wires[1]),
             CNOT(wires=[wires[0], wires[1]]),
             Hadamard(wires=wires[2]),
             T(wires=wires[0]),
-            T(wires=wires[1]).inv(),
+            qml.adjoint(T(wires=wires[1])),
             CNOT(wires=[wires[0], wires[1]]),
         ]
-        return decomp_ops
 
     def adjoint(self):
         return Toffoli(wires=self.wires)
@@ -1881,6 +2204,10 @@ class Toffoli(Operation):
     @property
     def control_wires(self):
         return Wires(self.wires[:2])
+
+    @property
+    def is_hermitian(self):
+        return True
 
 
 class MultiControlledX(Operation):
@@ -1981,8 +2308,12 @@ class MultiControlledX(Operation):
         self.hyperparameters["control_wires"] = control_wires
         self.hyperparameters["work_wires"] = work_wires
         self.hyperparameters["control_values"] = control_values
+        self.total_wires = total_wires
 
-        super().__init__(wires=total_wires, do_queue=do_queue)
+        super().__init__(wires=self.total_wires, do_queue=do_queue)
+
+    def __repr__(self):
+        return f'MultiControlledX(wires={list(self.total_wires._labels)}, control_values="{self.hyperparameters["control_values"]}")'
 
     def label(self, decimals=None, base_label=None, cache=None):
         return base_label or "X"
@@ -2100,7 +2431,6 @@ class MultiControlledX(Operation):
         if len(control_wires) == 1:
             decomp = [qml.CNOT(wires=[control_wires[0], target_wire])]
         elif len(control_wires) == 2:
-
             decomp = [qml.Toffoli(wires=[*control_wires, target_wire])]
         else:
             num_work_wires_needed = len(control_wires) - 2
@@ -2195,6 +2525,10 @@ class MultiControlledX(Operation):
 
         return gates
 
+    @property
+    def is_hermitian(self):
+        return True
+
 
 class Barrier(Operation):
     r"""Barrier(wires)
@@ -2250,13 +2584,20 @@ class Barrier(Operation):
         return "||"
 
     def _controlled(self, _):
-        return Barrier(wires=self.wires)
+        return copy(self).queue()
 
     def adjoint(self):
-        return Barrier(wires=self.wires)
+        return copy(self)
 
     def pow(self, z):
-        return [self.__copy__()]
+        return [copy(self)]
+
+    def simplify(self):
+        if self.only_visual:
+            if len(self.wires) == 1:
+                return qml.Identity(self.wires[0])
+            return qml.prod(*(qml.Identity(w) for w in self.wires))
+        return self
 
 
 class WireCut(Operation):
@@ -2315,4 +2656,4 @@ class WireCut(Operation):
         return WireCut(wires=self.wires)
 
     def pow(self, z):
-        return [self.__copy__()]
+        return [copy(self)]

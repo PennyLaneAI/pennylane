@@ -19,7 +19,7 @@ from typing import Type
 
 from pennylane.measurements import MeasurementValue
 from pennylane.operation import AnyWires, Operation
-from pennylane.transforms import make_tape
+from pennylane.tape import make_qscript
 
 
 class ConditionalTransformError(ValueError):
@@ -251,24 +251,24 @@ def cond(condition, true_fn, false_fn=None):
             # We assume that the callable is a quantum function
 
             # 1. Apply true_fn conditionally
-            tape = make_tape(true_fn)(*args, **kwargs)
+            qscript = make_qscript(true_fn)(*args, **kwargs)
 
-            if tape.measurements:
+            if qscript.measurements:
                 raise ConditionalTransformError(with_meas_err)
 
-            for op in tape.operations:
+            for op in qscript.operations:
                 Conditional(condition, op)
 
             if false_fn is not None:
                 # 2. Apply false_fn conditionally
-                else_tape = make_tape(false_fn)(*args, **kwargs)
+                else_qscript = make_qscript(false_fn)(*args, **kwargs)
 
-                if else_tape.measurements:
+                if else_qscript.measurements:
                     raise ConditionalTransformError(with_meas_err)
 
                 inverted_condition = ~condition
 
-                for op in else_tape.operations:
+                for op in else_qscript.operations:
                     Conditional(inverted_condition, op)
 
     else:
