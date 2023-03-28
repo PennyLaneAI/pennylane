@@ -40,6 +40,7 @@ from .utils import (
 
 from .conversion import (
     pauli_decompose,
+    pauli_decompose_fast,
     pauli_sentence,
 )
 
