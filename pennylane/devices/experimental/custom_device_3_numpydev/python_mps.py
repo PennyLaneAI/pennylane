@@ -330,3 +330,43 @@ def update_site(state, i, U_site, chi_max, eps):
     psi.Ss[j] = Sj  # vC
     psi.Bs[j] = Bj  # vC j vR
     return psi
+
+# MPO convention b1 s'2 s2 b2
+def construct_MPO(op):
+    if len(op.wires) != 2:
+        raise ValueError(f"Can only use true 2-site operators. Recevied op with wires {op.wires}")
+    # construct 2-site decomposition
+    M2 = qml.matrix(op)
+    M2 = M2.reshape((2, 2, 2, 2)) # s'1 s'2 s1 s2
+    M2 = M2.transpose([0,2,1,3])  # s'1 s1 s'2 s2
+    M2 = M2.reshape((4, 4))
+    Q, R = np.linalg.qr(M2) # (s'1 s1) b1 |b1 (s'2 s2)
+
+    Q = Q.reshape((2, 2, 4))   # s'1 s1 b1
+    Q = Q[np.newaxis]          # b0 s'1 s1 b1
+
+    R = R.reshape((4, 2, 2))   # b1 s'2 s2
+    R = R[:, :, :, np.newaxis]  # b1 s'2 s2 b2
+
+    # construct multi-site MPO with idendities in the middle
+    ID = np.eye(4*2).reshape((4, 2, 4, 2)) # b1 s'2 b2 s2
+    ID = ID.transpose([0, 1, 3, 2])        # b1 s'2 s2 b2
+    Ws = [Q] + [ID] * (op.wires[1] - op.wires[0] - 1) + [R]
+    return Ws
+
+def contract_MPO_MPS(Ws, Bs):
+    # contract physical indices and obtain transfer matrices
+    transfers = []
+
+    for B, W in zip(Bs, Ws):
+        DL, _, _,  DR = W.shape # b1 s'2 s2 b2
+        chiL, _ , chiR = B.shape # a1 s2 a2
+        transfer = np.tensordot(B, W, axes = [[1], [2]]) # a1 [s2] a2 | b1 s'2 [s2] b2 >> a1 a2 b1 s'2 b2
+        transfer = transfer.transpose([0, 2, 3, 1, 4]) # a1 b1 s'2 a2 b2
+
+        # combine two virtual indices into one
+        # I.e. there currently is no approximation
+        transfer = transfer.reshape((DL*chiL, 2, DR*chiR)) # a1 s2 a2
+        transfers.append(transfer)
+
+    return transfers
