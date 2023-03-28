@@ -1,0 +1,22 @@
+# Seaborn colorblind palette
+axes.prop_cycle: cycler('color', ['70CEFF', 'FF87EB', 'FFE096', 'D7A2F6', 'FDC9DE', 'E1EBA8', 'C6FDD9', 'B5F2ED'])
+
+patch.linewidth: 0.5
+patch.facecolor: white
+patch.edgecolor: BCBABA
+patch.antialiased: True
+
+axes.facecolor: white
+axes.edgecolor: BCBABA
+axes.linewidth: 1
+axes.grid: True
+axes.titlesize: x-large
+axes.labelcolor: BCBABA
+
+xtick.color: black
+xtick.direction: out
+ytick.color: black
+ytick.direction: out
+
+grid.color: F0EEEF
+grid.linestyle: :
