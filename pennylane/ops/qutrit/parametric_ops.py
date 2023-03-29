@@ -399,9 +399,9 @@ class TRZ(Operation):
     def __init__(
         self, phi, wires, subspace=[0, 1], do_queue=True, id=None
     ):  # pylint: disable=dangerous-default-value
-        self._subspace = subspace
+        self._subspace = self.validate_subspace(subspace)
         self._hyperparameters = {
-            "subspace": self.subspace,
+            "subspace": self._subspace,
         }
         super().__init__(phi, wires=wires, do_queue=do_queue, id=id)
 
