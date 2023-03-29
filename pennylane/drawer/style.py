@@ -130,6 +130,24 @@ def _sketch():
     plt.rcParams["font.weight"] = "bold"
     plt.rcParams["path.sketch"] = (1, 100, 2)
 
+@_needs_mpl
+def _pennylane():
+    """Apply the PennyLane style to matplotlib's configuration. This function
+    modifies ``plt.rcParams``.
+    """
+    almost_black = "#151515"
+    plt.rcParams["figure.facecolor"] = "#FFF8E5"
+    plt.rcParams["savefig.facecolor"] = "white"
+    plt.rcParams["axes.facecolor"] = "#FFB5F1"
+    plt.rcParams["patch.facecolor"] = "#D5F0FD"
+    plt.rcParams["patch.edgecolor"] = almost_black
+    plt.rcParams["patch.linewidth"] = 2.0
+    plt.rcParams["patch.force_edgecolor"] = True
+    plt.rcParams["lines.color"] = "black"
+    plt.rcParams["text.color"] = "black"
+    plt.rcParams["font.family"] = ["Quicksand", "sans-serif"]
+    plt.rcParams["font.weight"] = "bold"
+    plt.rcParams["path.sketch"] = (1, 250, 1)
 
 @_needs_mpl
 def _sketch_dark():
@@ -154,6 +172,7 @@ _styles_map = {
     "black_white": _black_white,
     "black_white_dark": _black_white_dark,
     "sketch": _sketch,
+    "pennylane": _pennylane,
     "sketch_dark": _sketch_dark,
     "solarized_light": _solarized_light,
     "solarized_dark": _solarized_dark,
