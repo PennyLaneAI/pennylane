@@ -352,7 +352,6 @@ class TestPauliSentence:
         assert simplified_product == res
         assert ps1 == copy_ps1
         assert ps2 == copy_ps2
-        # assert False
 
     tup_ps_add = (  # computed by hand
         (ps1, ps1, PauliSentence({pw1: 2.46, pw2: 8j, pw3: -1})),
