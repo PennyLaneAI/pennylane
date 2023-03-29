@@ -330,12 +330,12 @@ class TestPauliSentence:
             PauliSentence(
                 {PauliWord({0: "Z"}): np.array(1.0), PauliWord({0: "Z", 1: "X"}): np.array(1.0)}
             ),
+            PauliSentence({PauliWord({1: "Z"}): np.array(1.0), PauliWord({1: "Y"}): np.array(1.0)}),
             PauliSentence(
-                {PauliWord({1: "Z"}): np.array(1.0), PauliWord({1: "Y"}): np.array(1.0)}
-            ),
-            PauliSentence(
-                {PauliWord({0: "Z", 1: "Z"}): np.array(1.0+1.0j),
-                 PauliWord({0: "Z", 1: "Y"}): np.array(1.0-1.0j)}
+                {
+                    PauliWord({0: "Z", 1: "Z"}): np.array(1.0 + 1.0j),
+                    PauliWord({0: "Z", 1: "Y"}): np.array(1.0 - 1.0j),
+                }
             ),
         ),
     )
