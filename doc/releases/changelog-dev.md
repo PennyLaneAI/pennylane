@@ -118,6 +118,9 @@
   are real, providing a significant performance improvement.
   [(#3915)](https://github.com/PennyLaneAI/pennylane/pull/3915)
 
+  * The type of `n_electrons` in `qml.qchem.Molecule` is set to `int`.
+  [(#3885)](https://github.com/PennyLaneAI/pennylane/pull/3885)
+
 * Added explicit errors to `QutritDevice` if `classical_shadow` or `shadow_expval` are measured.
   [(#3934)](https://github.com/PennyLaneAI/pennylane/pull/3934)
 

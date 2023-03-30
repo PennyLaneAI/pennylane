@@ -326,6 +326,18 @@ class TestPauliSentence:
         (ps4, ps3, ps3),
         (ps1, ps5, ps1),
         (ps5, ps1, ps1),
+        (
+            PauliSentence(
+                {PauliWord({0: "Z"}): np.array(1.0), PauliWord({0: "Z", 1: "X"}): np.array(1.0)}
+            ),
+            PauliSentence({PauliWord({1: "Z"}): np.array(1.0), PauliWord({1: "Y"}): np.array(1.0)}),
+            PauliSentence(
+                {
+                    PauliWord({0: "Z", 1: "Z"}): np.array(1.0 + 1.0j),
+                    PauliWord({0: "Z", 1: "Y"}): np.array(1.0 - 1.0j),
+                }
+            ),
+        ),
     )
 
     @pytest.mark.parametrize("ps1, ps2, res", tup_ps_mult)
