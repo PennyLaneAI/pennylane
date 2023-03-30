@@ -165,6 +165,32 @@ class SimpleMPS:
         result = np.tensordot(theta.conj(), op_theta, [[0, 1, 2], [1, 0, 2]])
         # [vL*] [i*] [vR*], [i] [vL] [vR]
         return np.real_if_close(result)
+    
+    def expval_string(self, pstring):
+        """Compute expectation value of Pauli string"""
+        wires = pstring.wires
+        res = []
+        for i in wires:
+            res.append(self.site_expectation_value(qml.matrix(pstring.obs[i]), i))
+        return np.prod(res)
+    
+    def expval(self, Hs):
+        """Compute expval of either a list of operators or a Hamiltonian"""
+        if isinstance(Hs, list):
+            res = []
+            for ob in Hs:
+                r = self.expval_string(ob)
+                res.append(r)
+            return res
+        if isinstance(Hs, qml.Hamiltonian):
+            res = []
+            for ob in Hs.ops:
+                r = self.expval_string(ob)
+                res.append(r)
+            result = np.dot(Hs.coeffs, res)
+            return result
+
+
 
     def bond_expectation_value(self, op, i):
         """Calculate expectation values of a local operator at each bond."""
