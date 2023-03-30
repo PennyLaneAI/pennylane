@@ -24,7 +24,7 @@ import scipy
 
 import pennylane as qml
 from pennylane import numpy as np
-from pennylane.pauli import simplify
+from pennylane.pauli import simplify, pauli_sentence
 from pennylane.pauli.utils import _binary_matrix
 from pennylane.qchem.observable_hf import jordan_wigner
 from pennylane.wires import Wires
@@ -216,40 +216,6 @@ def paulix_ops(generators, num_qubits):
     return paulixops
 
 
-def _observable_mult(obs_a, obs_b):
-    r"""Multiply two PennyLane observables together.
-
-    Each observable should be a linear combination of Pauli words, e.g.,
-    :math:`\sum_{k=0}^{N} c_k P_k`, and represented as a PennyLane Hamiltonian.
-
-    Args:
-        obs_a (Hamiltonian): first observable
-        obs_b (Hamiltonian): second observable
-
-    Returns:
-        qml.Hamiltonian: Observable expressed as a PennyLane Hamiltonian
-
-    **Example**
-
-    >>> c = np.array([0.5, 0.5])
-    >>> obs_a = qml.Hamiltonian(c, [qml.PauliX(0) @ qml.PauliY(1), qml.PauliX(0) @ qml.PauliZ(1)])
-    >>> obs_b = qml.Hamiltonian(c, [qml.PauliX(0) @ qml.PauliX(1), qml.PauliZ(0) @ qml.PauliZ(1)])
-    >>> print(_observable_mult(obs_a, obs_b))
-      (-0.25j) [Z1]
-    + (-0.25j) [Y0]
-    + ( 0.25j) [Y1]
-    + ((0.25+0j)) [Y0 X1]
-    """
-    o = []
-    c = []
-    for i in range(len(obs_a.terms()[0])):
-        for j in range(len(obs_b.terms()[0])):
-            op, phase = qml.pauli.pauli_mult_with_phase(obs_a.terms()[1][i], obs_b.terms()[1][j])
-            o.append(op)
-            c.append(phase * obs_a.terms()[0][i] * obs_b.terms()[0][j])
-    return simplify(qml.Hamiltonian(qml.math.stack(c), o))
-
-
 def clifford(generators, paulixops):
     r"""Compute a Clifford operator from a set of generators and Pauli-X operators.
 
@@ -283,11 +249,10 @@ def clifford(generators, paulixops):
     """
     cliff = []
     for i, t in enumerate(generators):
-        cliff.append(1 / 2**0.5 * (paulixops[i] + t))
+        cliff.append(pauli_sentence(1 / 2**0.5 * (paulixops[i] + t)))
 
-    u = functools.reduce(lambda i, j: _observable_mult(i, j), cliff)
-
-    return u
+    u = functools.reduce(lambda p, q: p * q, cliff)
+    return u.hamiltonian()
 
 
 def taper(h, generators, paulixops, paulix_sector):
@@ -322,7 +287,12 @@ def taper(h, generators, paulixops, paulix_sector):
     + ((0.7959678503869626+0j)) [Z0]
     """
     u = clifford(generators, paulixops)
-    h = _observable_mult(_observable_mult(u, h), u)
+
+    # cast to pauli sentence
+    ps_u = pauli_sentence(u)
+    ps_h = pauli_sentence(h)
+
+    h = (ps_u * ps_h * ps_u).hamiltonian()  # cast back to hamiltonian
 
     val = np.ones(len(h.terms()[0])) * complex(1.0)
 
@@ -475,7 +445,9 @@ def taper_hf(generators, paulixops, paulix_sector, num_electrons, num_wires):
             op_term = qml.Hamiltonian([1.0], [qml.Identity(idx)])
         fermop_terms.append(op_term)
 
-    ferm_op = functools.reduce(lambda i, j: _observable_mult(i, j), fermop_terms)
+    fermop_terms_as_ps = [pauli_sentence(term) for term in fermop_terms]
+    ferm_ps = functools.reduce(lambda i, j: i * j, fermop_terms_as_ps)
+    ferm_op = ferm_ps.hamiltonian()
 
     # taper the HF observable using the symmetries obtained from the molecular hamiltonian
     fermop_taper = taper(ferm_op, generators, paulixops, paulix_sector)
