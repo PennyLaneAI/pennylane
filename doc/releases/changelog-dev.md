@@ -28,6 +28,9 @@
 
 <h3>Improvements</h3>
 
+* Update Pauli arithmetic to more efficiently convert to a Hamiltonian.
+  [(#3939)](https://github.com/PennyLaneAI/pennylane/pull/3939)
+
 * Keras and Torch NN modules are now compatible with the new return type system.
   [(#3913)](https://github.com/PennyLaneAI/pennylane/pull/3913)
   [(#3914)](https://github.com/PennyLaneAI/pennylane/pull/3914)
