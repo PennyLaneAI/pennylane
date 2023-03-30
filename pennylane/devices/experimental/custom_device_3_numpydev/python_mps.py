@@ -185,6 +185,41 @@ class SimpleMPS:
             result.append(-np.sum(S2 * np.log(S2)))
         return np.array(result)
 
+    def right_normalize(self,test=False):
+        """
+        returns a right_normalized version of the random_MPS() object
+        
+        new version using QR
+        """
+        #Pseudo Code
+        #get M[L]
+        #reshape M[L] to Psi
+        #SVD of PSI
+        #reshape V^h to B[L], save S[L], multiply M[L-1] U S = Mt[L-1]
+        #repeat procedure
+        Ms = self.Ms
+        L,d,chi = self.L,self.d,self.chi
+        Bs = []
+        for i in range(L-1,-1,-1):
+            chi1,d,chi2 = Ms[i].shape # a_i-1, sigma_i, s_i
+            m = Ms[i].reshape(chi1,d*chi2)
+            Q,R = qr(m.conjugate().transpose(), mode='reduced') #in numpy.linalg.qr 'reduced' is standard whilst not in scipy version
+            B = Q.conjugate().transpose().reshape(min(m.shape),d,chi2) #  s_i-1, sigma_i , s_i
+            Bs.append(B)
+            # problem gefunden, ich speicher ja nirgends B ab
+            
+            # update next M matrix to M-tilde = M U S
+            # in order not to overwrite the first matrix again when hitting i=0 use
+            if i>0: 
+                Ms[i-1] = np.tensordot(Ms[i-1],R.conjugate().transpose(),1) #  a_L-2 sigma_L-1 [a_L-1] , [a_L-1] s_L-1
+            if test:
+                # check if right-normalization is fulfilled, should give identity matrices
+                print(np.real_if_close(np.tensordot(B,B.conjugate(),axes=([2,1],[2,1])))) # s_i-1 [sigma]  [a_i], s_i-1 [sigma] [a_i]
+        #return Ms
+        # or update
+        self.Ms = Bs[::-1]
+        self.normstat = 'right-norm'
+
     # def correlation_length(self):
     #     """Diagonalize transfer matrix to obtain the correlation length."""
     #     from scipy.sparse.linalg import eigs
@@ -263,6 +298,7 @@ def split_truncate_theta(theta, chi_max, eps):
     chivL, dL, dR, chivR = theta.shape
     theta = np.reshape(theta, [chivL * dL, dR * chivR])
     X, Y, Z = svd(theta, full_matrices=False) #TODO switch to qml.math.svd
+    # print(f"singular values before truncating: {Y}")
     # truncate
     chivC = min(chi_max, np.sum(Y > eps))
     assert chivC >= 1
@@ -270,6 +306,7 @@ def split_truncate_theta(theta, chi_max, eps):
     X, Y, Z = X[:, piv], Y[piv], Z[piv, :]
     # renormalize
     S = Y / np.linalg.norm(Y)  # == Y/sqrt(sum(Y**2))
+    # print(f"singular values after truncating: {S}")
     # split legs of X and Z
     A = np.reshape(X, [chivL, dL, chivC])
     B = np.reshape(Z, [chivC, dR, chivR])
@@ -277,7 +314,7 @@ def split_truncate_theta(theta, chi_max, eps):
 
 def update_bond(state, i, U_bond, chi_max, eps):
     """Apply `U_bond` acting on i,j=(i+1) to `psi`."""
-    psi = state.copy() # This is currently necessary for gradients but probably overkill!
+    psi = state.copy() # This is currently necessary for gradients but probably overkill
     j = (i + 1) % psi.L
     # construct theta matrix
     theta = psi.get_theta2(i)  # vL i j vR
@@ -292,21 +329,6 @@ def update_bond(state, i, U_bond, chi_max, eps):
     psi.Ss[j] = Sj  # vC
     psi.Bs[j] = Bj  # vC j vR
     return psi
-
-# def update_site(psi, i, U_site, chi_max, eps):
-#     """Apply `U_site` acting on site i to `psi`"""
-#     # Conctract Theta and U
-#     # restore B-form by left-multiplying inverse singular values
-#     theta = psi.get_theta1(i)
-#     Utheta = np.tensordot(U_site, theta, axes=([1], [1]))  # i [i*], vL [i] vR
-#     Utheta = np.transpose(Utheta, [1, 0, 2])  # i vL vR >> vL i vR
-
-#     # no truncation (unsure atm)
-
-#     # put back into B form
-#     Gi = np.tensordot(np.diag(psi.Ss[i]**(-1)), Utheta, axes=(1, 0))  # vL [vL*], [vL] i vC
-#     psi.Bs[i] = np.tensordot(Gi, np.diag(psi.Ss[(i+1) %psi.L]), axes=(2, 0))  # vL i [vC], [vC] vC
-#     return psi
 
 def update_site(state, i, U_site, chi_max, eps):
     """Apply `U_site` acting on site i to `psi`"""
@@ -331,8 +353,9 @@ def update_site(state, i, U_site, chi_max, eps):
     psi.Bs[j] = Bj  # vC j vR
     return psi
 
-# MPO convention b1 s'2 s2 b2
 def construct_MPO(op):
+    """MPO convention b1 s'2 s2 b2 (virtual left, physical out, physical in, virtual right)"""
+    max_i, min_i = qml.math.max(op.wires.tolist()), qml.math.min(op.wires.tolist())
     if len(op.wires) != 2:
         raise ValueError(f"Can only use true 2-site operators. Recevied op with wires {op.wires}")
     # construct 2-site decomposition
@@ -343,30 +366,64 @@ def construct_MPO(op):
     Q, R = np.linalg.qr(M2) # (s'1 s1) b1 |b1 (s'2 s2)
 
     Q = Q.reshape((2, 2, 4))   # s'1 s1 b1
-    Q = Q[np.newaxis]          # b0 s'1 s1 b1
+    Q = Q[np.newaxis]          # 1 s'1 s1 b1   # trivial axis but to stick to convention
 
     R = R.reshape((4, 2, 2))   # b1 s'2 s2
-    R = R[:, :, :, np.newaxis]  # b1 s'2 s2 b2
+    R = R[:, :, :, np.newaxis]  # b1 s'2 s2 1  # trivial axis but to stick to convention
 
     # construct multi-site MPO with idendities in the middle
     ID = np.eye(4*2).reshape((4, 2, 4, 2)) # b1 s'2 b2 s2
     ID = ID.transpose([0, 1, 3, 2])        # b1 s'2 s2 b2
-    Ws = [Q] + [ID] * (op.wires[1] - op.wires[0] - 1) + [R]
+    Ws = [Q] + [ID] * (max_i - min_i - 1) + [R]
     return Ws
 
-def contract_MPO_MPS(Ws, Bs):
-    # contract physical indices and obtain transfer matrices
-    transfers = []
+def contract_MPO_MPS(op, psi, chi_max, eps):
+    """Contract and MPO and MPS to obtain a new MPS in canonical form
+    
+    Only contracting on non-trivial sites (and all sites in between).
+    """
+    # Code consists of 3 steps 
+    # 1. Construct MPO
+    # 2. update all non-trivial sites with the four-legged W operator 
+    # 3. restore canonical form by right-normalizing and keeping singular values#
+    Ws = construct_MPO(op)
+    sub_wires = op.wires.tolist()
+    max_i, min_i = qml.math.max(sub_wires), qml.math.min(sub_wires)
+    sub_wires_full = np.arange(min_i, max_i+1)
 
-    for B, W in zip(Bs, Ws):
+    Bs = psi.Bs.copy()
+    Ss = psi.Ss.copy()
+
+    # contract physical indices and obtain transfer matrices
+    sub_Bs = Bs[min_i:max_i+1]
+
+    Ws = construct_MPO(op)
+
+    # 2. update sites between min_i and max_i site
+    # contract physical indices
+    # Note that the Ws in-between are identities, so there might be room for improvement
+    for B, W, i in zip(sub_Bs, Ws, sub_wires_full):
         DL, _, _,  DR = W.shape # b1 s'2 s2 b2
         chiL, _ , chiR = B.shape # a1 s2 a2
-        transfer = np.tensordot(B, W, axes = [[1], [2]]) # a1 [s2] a2 | b1 s'2 [s2] b2 >> a1 a2 b1 s'2 b2
-        transfer = transfer.transpose([0, 2, 3, 1, 4]) # a1 b1 s'2 a2 b2
+        newM = np.tensordot(B, W, axes = [[1], [2]]) # a1 [s2] a2 | b1 s'2 [s2] b2 >> a1 a2 b1 s'2 b2
+        newM = newM.transpose([0, 2, 3, 1, 4]) # a1 b1 s'2 a2 b2
 
         # combine two virtual indices into one
         # I.e. there currently is no approximation
-        transfer = transfer.reshape((DL*chiL, 2, DR*chiR)) # a1 s2 a2
-        transfers.append(transfer)
+        newM = newM.reshape((DL*chiL, 2, DR*chiR)) # a1 s2 a2
+        Bs[i] = newM
 
-    return transfers
+    # 3. Bring back into right-canonical form and truncate bonds
+    # I'm not sure this is actually necessary
+    # let alone efficiently done here
+    for i in range(max_i, min_i-1, -1):
+        print(i-1, i)
+        # print(Bs[i-1].shape, Bs[i].shape)
+        theta = np.tensordot(Bs[i-1], Bs[i], axes=[[-1],[0]]) # newM | A_from_before (naming might be confusing)
+        A, S, B = split_truncate_theta(theta, chi_max, eps)             # >> A S B
+        Bs[i] = B
+        Ss[i] = S
+        if i != min_i:
+            Bs[i-1] = np.tensordot(A, np.diag(S), axes=1)
+
+    return SimpleMPS(Bs, Ss)
