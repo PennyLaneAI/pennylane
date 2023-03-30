@@ -62,8 +62,11 @@ class NumpyMPSSimulator:
         if len(wires) == 1:
             return update_site(state, i=operation.wires[0], U_site=matrix, chi_max=chi_max, eps=eps)
         if len(wires) == 2:
-            U_bond = matrix.reshape((2, 2, 2, 2))
-            return update_bond(state, i=operation.wires[0], U_bond=U_bond, chi_max=chi_max, eps=eps)
+            if qml.math.diff(wires) == 1:
+                U_bond = matrix.reshape((2, 2, 2, 2))
+                return update_bond(state, i=operation.wires[0], U_bond=U_bond, chi_max=chi_max, eps=eps)
+            else:
+                return contract_MPO_MPS(operation, state, chi_max, eps)
         raise NotImplementedError
 
     @classmethod

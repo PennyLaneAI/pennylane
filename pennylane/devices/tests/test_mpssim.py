@@ -18,7 +18,9 @@ import pennylane.numpy as np
 import pennylane as qml
 from tenpy.linalg.svd_robust import svd
 from pennylane.devices.experimental.custom_device_3_numpydev.python_mps import SimpleMPS, construct_MPO, contract_MPO_MPS
+from pennylane.devices.experimental import TestDevicePythonSim, TestDeviceMPSSim
 
+# utility function for testing
 def vec_to_mps(psi):
     """Returns a right-canonical mps form of an input state vector psi"""
     L = int(np.log(len(psi))/np.log(2))
@@ -46,10 +48,26 @@ def mps_to_vec(psi):
     (of any form, does not need to be right- or left canonical)
     """
     Bs = psi.Bs
+    L = psi.L
     M = Bs[-1]
-    for i in range(1, 3):
+    for i in range(1, L):
         M = np.tensordot(Bs[-i-1], M, axes=[[-1], [0]])
     return M.flatten()
+
+@pytest.mark.parametrize("L", np.arange(3, 10, 2))
+def test_unit_test_vec_to_mps_odd(L):
+    """Unit test for the sizes of the mps created by vec_to_mps"""
+    basis = np.eye(2**L)
+    psi = sum([(i+1 + 1j * i) * basis[i] for i in range(len(basis))])
+    psi_vec = psi / np.linalg.norm(psi)
+
+    psi_mps = vec_to_mps(psi_vec)
+    sizes = [_.shape for _ in psi_mps.Bs]
+
+    target_sizes = [(2**i, 2, 2**(i+1)) for i in range(L//2)]
+    target_sizes += [(2**(L//2), 2, 2**(L//2))]
+    target_sizes += [(2**(i+1), 2, 2**i) for i in range(L//2)][::-1]
+    assert qml.math.allclose(target_sizes, sizes)
 
 
 def test_MPO_MPS_contraction_yields_same_result():
@@ -69,3 +87,113 @@ def test_MPO_MPS_contraction_yields_same_result():
     new_psi_vec = mps_to_vec(new_psi)
     overlap = np.abs(new_psi_vec.conj().T @ qml.matrix(op, wire_order=range(3)) @ psi_vec)
     assert qml.math.isclose(overlap, 1)
+
+
+class TestIntegrationStateVector:
+    def test_init(self,):
+        """Test that the 0000 state is correctly initialized and matches that of the state vector simulator"""
+        dev = TestDeviceMPSSim()
+        dev_check = TestDevicePythonSim()
+        a = [0.1, 0.2, 0.3]
+        ops = [qml.Identity(0), qml.Identity(1), qml.Identity(2)]
+        measurement = qml.state()
+        qs = qml.tape.QuantumScript(ops, [measurement])
+        res_mps, res_vec = dev.execute(qs), dev_check.execute(qs)
+        assert qml.math.allclose(mps_to_vec(res_mps), res_vec)
+    
+    @pytest.mark.parametrize("L", np.arange(2, 6))
+    def test_single_qubit_gates_state(self, L):
+        """Test that single qubit gates are correctly applied"""
+        dev = TestDeviceMPSSim()
+        dev_check = TestDevicePythonSim()
+
+        a = np.arange(1, L+1)
+        b = np.arange(1, L+1)
+        ops = [qml.RY(a[i], i) for i in range(L)]
+        ops += [qml.RX(b[i], i) for i in range(L)]
+        measurement = qml.state()
+        qs = qml.tape.QuantumScript(ops, [measurement])
+        res_mps, res_vec = dev.execute(qs), dev_check.execute(qs)
+        assert qml.math.allclose(mps_to_vec(res_mps), res_vec)
+
+    @pytest.mark.parametrize("L", np.arange(2, 6))
+    def test_local_qubit_gates_state(self, L):
+        """Test that states are correct for circuits with local 2-qubit gates"""
+        dev = TestDeviceMPSSim()
+        dev_check = TestDevicePythonSim()
+
+        a = np.arange(1, L+1)
+        b = np.arange(1, L+1)
+        ops = [qml.RY(a[i], i) for i in range(L)]
+        ops += [qml.CNOT((i , i+1)) for i in range(L-1)]
+        ops += [qml.RX(b[i], i) for i in range(L)]
+        measurement = qml.state()
+        qs = qml.tape.QuantumScript(ops, [measurement])
+        res_mps, res_vec = dev.execute(qs), dev_check.execute(qs)
+        assert qml.math.allclose(mps_to_vec(res_mps), res_vec)
+
+    @pytest.mark.parametrize("L", np.arange(2, 6))
+    def test_long_range_gates_state(self, L):
+        """Test that states are correct for circuits with long-range 2-qubit gates"""
+        dev = TestDeviceMPSSim()
+        dev_check = TestDevicePythonSim()
+
+        a = np.arange(1, L+1)
+        b = np.arange(1, L+1)
+        ops = [qml.RY(a[i], i) for i in range(L)]
+        ops += [qml.CNOT((i , i+1)) for i in range(L-1)]
+        ops += [qml.RX(b[i], i) for i in range(L)]
+        measurement = qml.state()
+        qs = qml.tape.QuantumScript(ops, [measurement])
+        res_mps, res_vec = dev.execute(qs), dev_check.execute(qs)
+        assert qml.math.allclose(mps_to_vec(res_mps), res_vec)
+
+
+class TestIntegrationExpval:
+    
+    @pytest.mark.parametrize("L", np.arange(2, 6))
+    def test_single_qubit_gates_expval(self, L):
+        """Test that single qubit gates are correctly applied"""
+        dev = TestDeviceMPSSim()
+        dev_check = TestDevicePythonSim()
+
+        a = np.arange(1, L+1)
+        b = np.arange(1, L+1)
+        ops = [qml.RY(a[i], i) for i in range(L)]
+        ops += [qml.RX(b[i], i) for i in range(L)]
+        measurement = qml.expval(qml.PauliX(2) @ qml.PauliX(3))
+        qs = qml.tape.QuantumScript(ops, [measurement])
+        res_mps, res_vec = dev.execute(qs), dev_check.execute(qs)
+        assert qml.math.allclose(res_mps, res_vec)
+
+    @pytest.mark.parametrize("L", np.arange(2, 6))
+    def test_local_qubit_gates_expval(self, L):
+        """Test that expvals are correct for circuits with local 2-qubit gates"""
+        dev = TestDeviceMPSSim()
+        dev_check = TestDevicePythonSim()
+
+        a = np.arange(1, L+1)
+        b = np.arange(1, L+1)
+        ops = [qml.RY(a[i], i) for i in range(L)]
+        ops += [qml.CNOT((i , i+1)) for i in range(L-1)]
+        ops += [qml.RX(b[i], i) for i in range(L)]
+        measurement = qml.expval(qml.PauliX(2) @ qml.PauliX(3))
+        qs = qml.tape.QuantumScript(ops, [measurement])
+        res_mps, res_vec = dev.execute(qs), dev_check.execute(qs)
+        assert qml.math.allclose(res_mps, res_vec)
+
+    @pytest.mark.parametrize("L", np.arange(2, 6))
+    def test_long_range_gates_expval(self, L):
+        """Test that expvals are correct for circuits with long-range 2-qubit gates"""
+        dev = TestDeviceMPSSim()
+        dev_check = TestDevicePythonSim()
+
+        a = np.arange(1, L+1)
+        b = np.arange(1, L+1)
+        ops = [qml.RY(a[i], i) for i in range(L)]
+        ops += [qml.CNOT((i , i+1)) for i in range(L-1)]
+        ops += [qml.RX(b[i], i) for i in range(L)]
+        measurement = qml.expval(qml.PauliX(2) @ qml.PauliX(3))
+        qs = qml.tape.QuantumScript(ops, [measurement])
+        res_mps, res_vec = dev.execute(qs), dev_check.execute(qs)
+        assert qml.math.allclose(res_mps, res_vec)
