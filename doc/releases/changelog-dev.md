@@ -28,6 +28,9 @@
 
 <h3>Improvements</h3>
 
+* Improve the efficiency of `tapering()`, `tapering_hf()` and `clifford()`.
+  [(3942)](https://github.com/PennyLaneAI/pennylane/pull/3942)
+
 * Update Pauli arithmetic to more efficiently convert to a Hamiltonian.
   [(#3939)](https://github.com/PennyLaneAI/pennylane/pull/3939)
 
