@@ -417,7 +417,6 @@ def contract_MPO_MPS(op, psi, chi_max, eps):
     # I'm not sure this is actually necessary
     # let alone efficiently done here
     for i in range(max_i, min_i-1, -1):
-        print(i-1, i)
         # print(Bs[i-1].shape, Bs[i].shape)
         theta = np.tensordot(Bs[i-1], Bs[i], axes=[[-1],[0]]) # newM | A_from_before (naming might be confusing)
         A, S, B = split_truncate_theta(theta, chi_max, eps)             # >> A S B
