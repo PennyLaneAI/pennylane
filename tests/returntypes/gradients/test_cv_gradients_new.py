@@ -185,7 +185,6 @@ class TestCVGradient:
 
         grad_F = qml.gradients.finite_diff(q)(par)
         grad_A2 = qml.gradients.param_shift_cv(q, dev=gaussian_dev, force_order2=True)(par)
-        print(grad_F, grad_A2)
         if O.ev_order == 1:
             grad_A = qml.gradients.param_shift_cv(q, dev=gaussian_dev)(par)
             # the different methods agree
