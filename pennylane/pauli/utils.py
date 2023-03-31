@@ -1194,7 +1194,7 @@ def diagonalize_pauli_word(pauli_word):
 
 def diagonalize_qwc_pauli_words(
     qwc_grouping,
-):  # pylint: disable=too-many-branches, isinstance-second-argument-not-valid-type
+):  # pylint: disable=too-many-branches, isinstance-second-argument-not-valid-type, protected-access
     """Diagonalizes a list of mutually qubit-wise commutative Pauli words.
 
     Args:
@@ -1226,6 +1226,23 @@ def diagonalize_qwc_pauli_words(
 
     if not are_pauli_words_qwc(qwc_grouping):
         raise ValueError("The list of Pauli words are not qubit-wise commuting.")
+
+    if all(getattr(o, "_pauli_rep", None) is not None for o in qwc_grouping):
+        basis_word = {}
+        for o in qwc_grouping:
+            if len(o._pauli_rep) > 1:
+                raise NotImplementedError
+            basis_word.update(next(iter(o._pauli_rep)))
+        basis_word = qml.pauli.PauliWord(basis_word)
+
+        diagonal_terms = []
+        for o in qwc_grouping:
+            _, coeff = next(iter(o._pauli_rep.items()))
+            ops = [qml.PauliZ(w) for w in o.wires]
+            op = ops[0] if len(ops) == 1 else qml.prod(*ops)
+            diagonal_terms.append(qml.s_prod(coeff, op))
+
+        return basis_word.operation().diagonalizing_gates(), diagonal_terms
 
     if not all(isinstance(op, (Tensor, PauliX, PauliY, PauliZ, Identity)) for op in qwc_grouping):
         raise ValueError("This function only supports Tensor products of pauli ops.")
