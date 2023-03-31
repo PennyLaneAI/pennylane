@@ -82,7 +82,7 @@ class Molecule:
                 "6-311g",
                 "cc-pvdz",
             ]
-            and load_data == False
+            and load_data is False
         ):
             raise ValueError(
                 "Currently, the only supported basis sets are 'sto-3g', '6-31g', '6-311g' and "
