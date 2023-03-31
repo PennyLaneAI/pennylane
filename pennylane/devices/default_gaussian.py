@@ -890,7 +890,7 @@ class DefaultGaussian(Device):
         return set(self._observable_map.keys())
 
     # pylint: disable=arguments-differ
-    def execute(self, operations, observables, parameters=None, **kwargs):
+    def execute(self, operations, observables):
         if qml.active_return():
             if len(observables) > 1:
                 raise qml.QuantumFunctionError("Default gaussian only support single measurements.")
