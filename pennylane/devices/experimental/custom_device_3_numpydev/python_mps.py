@@ -174,8 +174,8 @@ class SimpleMPS:
         """Compute expectation value of Pauli string"""
         wires = pstring.wires
         res = []
-        for i in wires:
-            res.append(self.site_expectation_value(qml.matrix(pstring.obs[i]), i))
+        for pick, i in enumerate(wires):
+            res.append(self.site_expectation_value(qml.matrix(pstring.obs[pick]), i))
         return np.prod(res)
     
     def expval(self, Hs):
@@ -195,8 +195,6 @@ class SimpleMPS:
             res = self.expval(Hs.ops)
             result = np.dot(Hs.coeffs, res)
             return result
-
-
 
     def bond_expectation_value(self, op, i):
         """Calculate expectation values of a local operator at each bond."""

@@ -20,11 +20,11 @@ class TestDeviceMPSSim(AbstractDevice):
         super().__init__(dev_config, *args, **kwargs)
         self.tracker = Tracker()
 
-    def execute(self, qscript: Union[QuantumScript, List[QuantumScript]], execution_config=None, chi_max=20):
+    def execute(self, qscript: Union[QuantumScript, List[QuantumScript]], execution_config=None, chi_max=20, eps=1e-15):
         if isinstance(qscript, QuantumScript):
             interface = qml.math.get_interface(*qscript.get_parameters(trainable_only=False))
             simulator = NumpyMPSSimulator()
-            results = simulator.execute(qscript, chi_max=chi_max)
+            results = simulator.execute(qscript, chi_max=chi_max, eps=eps)
 
             if self.tracker.active:
                 self.tracker.update(executions=1, results=results)
