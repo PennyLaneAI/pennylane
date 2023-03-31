@@ -889,7 +889,7 @@ class DefaultGaussian(Device):
     def observables(self):
         return set(self._observable_map.keys())
 
-    def execute(self, operations, observables):
+    def execute(self, operations, observables, parameters=None, **kwargs):
         if qml.active_return():
             if len(observables) > 1:
                 raise qml.QuantumFunctionError("Default gaussian only support single measurements.")
