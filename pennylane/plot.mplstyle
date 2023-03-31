@@ -1,4 +1,4 @@
-# Seaborn colorblind palette
+# PennyLane plot palette
 axes.prop_cycle: cycler('color', ['70CEFF', 'FF87EB', 'FFE096', 'D7A2F6', 'FDC9DE', 'E1EBA8', 'C6FDD9', 'B5F2ED'])
 
 patch.linewidth: 0.5
@@ -20,3 +20,6 @@ ytick.direction: out
 
 grid.color: F0EEEF
 grid.linestyle: :
+
+font.family: Quicksand, sans-serif
+font.weight: bold
