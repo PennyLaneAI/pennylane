@@ -43,6 +43,7 @@ tests/returntypes/gradients/test_jvp.py
 tests/returntypes/gradients/test_hadamard_gradient_new.py
 tests/returntypes/gradients/test_pulse_gradient_new.py
 tests/returntypes/gradients/test_cv_gradients_new.py
+tests/returntypes/paramshift/test_parameter_shift_cv_new.py
 tests/returntypes/qnn/conftest.py
 tests/returntypes/qnn/test_keras_new.py
 tests/returntypes/qnn/test_qnn_torch_new.py

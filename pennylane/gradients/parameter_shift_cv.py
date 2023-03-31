@@ -264,6 +264,7 @@ def var_param_shift(tape, dev_wires, argnum=None, shifts=None, gradient_recipes=
 
         # return d(var(A))/dp = d<A^2>/dp -2 * <A> * d<A>/dp for the variances (mask==True)
         # d<A>/dp for plain expectations (mask==False)
+        pdA = qml.math.stack(pdA)
         return qml.math.where(mask, pdA2 - 2 * f0 * pdA, pdA)
 
     return gradient_tapes, processing_fn
