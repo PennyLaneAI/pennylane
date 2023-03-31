@@ -28,6 +28,12 @@
 
 <h3>Improvements</h3>
 
+* Improve the efficiency of `tapering()`, `tapering_hf()` and `clifford()`.
+  [(3942)](https://github.com/PennyLaneAI/pennylane/pull/3942)
+
+* Update Pauli arithmetic to more efficiently convert to a Hamiltonian.
+  [(#3939)](https://github.com/PennyLaneAI/pennylane/pull/3939)
+
 * Keras and Torch NN modules are now compatible with the new return type system.
   [(#3913)](https://github.com/PennyLaneAI/pennylane/pull/3913)
   [(#3914)](https://github.com/PennyLaneAI/pennylane/pull/3914)
@@ -111,6 +117,19 @@
 * If a `Sum` operator has a pre-computed Pauli representation, `is_hermitian` now checks that all coefficients
   are real, providing a significant performance improvement.
   [(#3915)](https://github.com/PennyLaneAI/pennylane/pull/3915)
+
+  * The type of `n_electrons` in `qml.qchem.Molecule` is set to `int`.
+  [(#3885)](https://github.com/PennyLaneAI/pennylane/pull/3885)
+
+* Added explicit errors to `QutritDevice` if `classical_shadow` or `shadow_expval` are measured.
+  [(#3934)](https://github.com/PennyLaneAI/pennylane/pull/3934)
+
+* `DefaultQutrit` supports the new return system.
+  [(#3934)](https://github.com/PennyLaneAI/pennylane/pull/3934)
+
+* `QubitDevice` now defines the private `_get_diagonalizing_gates(circuit)` method and uses it when executing circuits.
+  This allows devices that inherit from `QubitDevice` to override and customize their definition of diagonalizing gates.
+  [(#3938)](https://github.com/PennyLaneAI/pennylane/pull/3938)
 
 <h3>Breaking changes</h3>
 
