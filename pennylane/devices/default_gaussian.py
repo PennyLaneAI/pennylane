@@ -889,6 +889,7 @@ class DefaultGaussian(Device):
     def observables(self):
         return set(self._observable_map.keys())
 
+    # pylint: disable=arguments-differ
     def execute(self, operations, observables, parameters=None, **kwargs):
         if qml.active_return():
             if len(observables) > 1:
