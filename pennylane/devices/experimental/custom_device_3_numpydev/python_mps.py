@@ -75,10 +75,14 @@ class NumpyMPSSimulator:
         if not measurementprocess.return_type == qml.measurements.State:
             wires = measurementprocess.wires
             i = wires[0]
-            op = qml.matrix(measurementprocess.obs)
-            if len(wires) == 1:
+            obs = measurementprocess.obs
+            if isinstance(obs, qml.Hamiltonian):
+                return state.expval(obs)
+            elif len(wires) == 1:
+                op = qml.matrix(obs)
                 return state.site_expectation_value(op, i)
             elif len(wires) == 2:
+                op = qml.matrix(obs)
                 op = op.reshape((2, 2, 2, 2))
                 return state.bond_expectation_value(op, i)
             elif len(wires) > 2:
@@ -179,14 +183,16 @@ class SimpleMPS:
         if isinstance(Hs, list):
             res = []
             for ob in Hs:
-                r = self.expval_string(ob)
+                if isinstance(ob, qml.operation.Tensor):
+                    r = self.expval_string(ob)
+                elif len(ob.wires.tolist()) == 1:
+                    r = self.site_expectation_value(qml.matrix(ob), ob.wires.tolist()[0])
+                else:
+                    raise NotImplementedError()
                 res.append(r)
             return res
         if isinstance(Hs, qml.Hamiltonian):
-            res = []
-            for ob in Hs.ops:
-                r = self.expval_string(ob)
-                res.append(r)
+            res = self.expval(Hs.ops)
             result = np.dot(Hs.coeffs, res)
             return result
 
