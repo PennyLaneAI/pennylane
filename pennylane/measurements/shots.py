@@ -103,19 +103,6 @@ class Shots:
         self._frozen = True
 
     @__init__.register
-    def __tuple_init__(self, shots: tuple):
-        # re-dispatch for non-pair tuples: (shots,), (shots1, shots2, ...)
-        # re-dispatch for non-ShotCopies: ((s1, c1), s2), (s1, (s2, c2)), ((s1, c1), (s2, c2))
-        if len(shots) != 2 or valid_tuple(shots[0]) or valid_tuple(shots[1]):
-            return self.__list_init__(shots)
-        if not valid_tuple(shots):
-            raise self._SHOT_ERROR
-        shots, copies = shots
-        self.total_shots = shots * copies
-        self.shot_vector = (ShotCopies(shots, copies),)
-        self._frozen = True
-
-    @__init__.register
     def __list_init__(self, shots: SequenceType):
         if not all(valid_int(s) or valid_tuple(s) for s in shots):
             raise self._SHOT_ERROR

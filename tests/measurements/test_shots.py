@@ -47,8 +47,8 @@ class TestShotsConstruction:
     def test_tuple(self):
         """Tests the constructor when shots is a tuple."""
         shots = Shots((5, 6))
-        assert shots.shot_vector == (ShotCopies(5, 6),)
-        assert shots.total_shots == 30
+        assert shots.shot_vector == (ShotCopies(5, 1), ShotCopies(6, 1))
+        assert shots.total_shots == 11
         assert isinstance(shots.shot_vector, tuple)
 
     def test_sequence_all_tuple(self):
@@ -70,7 +70,8 @@ class TestShotsConstruction:
             ([1, (4, 2)], (ShotCopies(1, 1), ShotCopies(4, 2)), 9),
             ((5,), (ShotCopies(5, 1),), 5),
             ((5, 6, 7), (ShotCopies(5, 1), ShotCopies(6, 1), ShotCopies(7, 1)), 18),
-            (((5, 6)), (ShotCopies(5, 6),), 30),
+            (((5, 6)), (ShotCopies(5, 1), ShotCopies(6, 1)), 11),
+            (((5, 6),), (ShotCopies(5, 6),), 30),
             (((5, 6), 7), (ShotCopies(5, 6), ShotCopies(7, 1)), 37),
             ((5, (6, 7)), (ShotCopies(5, 1), ShotCopies(6, 7)), 47),
             (((5, 6), (7, 8)), (ShotCopies(5, 6), ShotCopies(7, 8)), 86),
