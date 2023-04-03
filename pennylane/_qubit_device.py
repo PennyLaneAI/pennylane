@@ -317,7 +317,7 @@ class QubitDevice(Device):
         self.apply(circuit.operations, rotations=self._get_diagonalizing_gates(circuit), **kwargs)
 
         # generate computational basis samples
-        if self.shots is not None:
+        if self.shots is not None or circuit.is_sampled:
             self._samples = self.generate_samples()
 
         # compute the required statistics
