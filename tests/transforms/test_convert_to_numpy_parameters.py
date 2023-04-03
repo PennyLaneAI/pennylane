@@ -17,7 +17,7 @@ import pytest
 import numpy as np
 
 import pennylane as qml
-from pennylane.devices.preprocessing import convert_to_numpy_parameters
+from pennylane.transforms import convert_to_numpy_parameters
 
 
 ml_frameworks_list = [

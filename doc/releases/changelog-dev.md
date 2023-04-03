@@ -134,6 +134,10 @@
   This allows devices that inherit from `QubitDevice` to override and customize their definition of diagonalizing gates.
   [(#3938)](https://github.com/PennyLaneAI/pennylane/pull/3938)
 
+* `qml.transforms.convert_to_numpy_parameters` is added to convert a circuit with interface-specific parameters to one
+  with only numpy parameters. This transform is designed to replace `qml.tape.Unwrap`.
+  [(#3899)](https://github.com/PennyLaneAI/pennylane/pull/3899)
+
 <h3>Breaking changes</h3>
 
 * Both JIT interfaces are not compatible with Jax `>0.4.3`, we raise an error for those versions.
