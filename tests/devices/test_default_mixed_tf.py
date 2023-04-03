@@ -747,32 +747,6 @@ class TestHighLevelIntegration:
         assert isinstance(grad, tf.Tensor)
         assert grad.shape == weights.shape
 
-    def test_qnode_collection_integration(self):
-        """Test that a PassthruQNode default.mixed.tf works with QNodeCollections."""
-        dev = qml.device("default.mixed", wires=2)
-
-        obs_list = [qml.PauliX(0) @ qml.PauliY(1), qml.PauliZ(0), qml.PauliZ(0) @ qml.PauliZ(1)]
-        with pytest.warns(UserWarning, match="The map function is deprecated"):
-            qnodes = qml.map(qml.templates.StronglyEntanglingLayers, obs_list, dev, interface="tf")
-
-        assert qnodes.interface == "tf"
-
-        weights = tf.Variable(
-            np.random.random(qml.templates.StronglyEntanglingLayers.shape(n_layers=2, n_wires=2))
-        )
-
-        @tf.function
-        def cost(weights):
-            return tf.reduce_sum(qnodes(weights))
-
-        with tf.GradientTape() as tape:
-            res = cost(weights)
-
-        grad = tape.gradient(res, weights)
-
-        assert isinstance(grad, tf.Tensor)
-        assert grad.shape == weights.shape
-
     def test_tf_function_channel_ops(self):
         """Test that tf.function works for a QNode with channel ops"""
         dev = qml.device("default.mixed", wires=1)
