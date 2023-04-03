@@ -60,7 +60,6 @@ class CompositeOp(Operator):
         self._hash = None
         self._has_overlapping_wires = None
         self._overlapping_ops = None
-        self._data = None
         self._pauli_rep = self._build_pauli_rep()
 
         if do_queue:
@@ -113,12 +112,10 @@ class CompositeOp(Operator):
     @property
     def data(self):
         """Create data property"""
-        if self._data is None:
-            data = []
-            for op in self:
-                data.extend(op.data)
-            self._data = data
-        return self._data
+        data = []
+        for op in self:
+            data.extend(op.data)
+        return data
 
     @data.setter
     def data(self, new_data):
@@ -127,7 +124,6 @@ class CompositeOp(Operator):
             if op.num_params > 0:
                 op.data = new_data[: op.num_params]
                 new_data = new_data[op.num_params :]
-        self._data = new_data
 
     @property
     def num_wires(self):
