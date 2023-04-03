@@ -13,10 +13,11 @@
     Rydberg atoms.
   * A new user-facing `rydberg_interaction` function is added, which returns a `RydbergHamiltonian` containing
     the Hamiltonian of the interaction of all the Rydberg atoms.
-  * A new user-facing `rydberg_drive` function is added, which returns a `RydbergHamiltonian` containing
-    the Hamiltonian of the interaction between a driving laser field and a group of atoms.
+  * A new user-facing `drive` function is added, which returns a `ParametrizedHamiltonian` (`HardwareHamiltonian`) containing
+    the Hamiltonian of the interaction between a driving electro-magnetic field and a group of qubits.
   [(#3749)](https://github.com/PennyLaneAI/pennylane/pull/3749)
   [(#3911)](https://github.com/PennyLaneAI/pennylane/pull/3911)
+  [(#3930)](https://github.com/PennyLaneAI/pennylane/pull/3930)
 
 * Added `Operation.__truediv__` dunder method to be able to divide operators.
   [(#3749)](https://github.com/PennyLaneAI/pennylane/pull/3749)
@@ -26,6 +27,15 @@
   [(#3759)](https://github.com/PennyLaneAI/pennylane/pull/3759)
 
 <h3>Improvements</h3>
+
+* The default gaussian device and parameter shift cv support the new return system but only for single measurement.
+  [(3946)](https://github.com/PennyLaneAI/pennylane/pull/3946)
+
+* Improve the efficiency of `tapering()`, `tapering_hf()` and `clifford()`.
+  [(3942)](https://github.com/PennyLaneAI/pennylane/pull/3942)
+
+* Update Pauli arithmetic to more efficiently convert to a Hamiltonian.
+  [(#3939)](https://github.com/PennyLaneAI/pennylane/pull/3939)
 
 * Keras and Torch NN modules are now compatible with the new return type system.
   [(#3913)](https://github.com/PennyLaneAI/pennylane/pull/3913)
@@ -111,6 +121,19 @@
   are real, providing a significant performance improvement.
   [(#3915)](https://github.com/PennyLaneAI/pennylane/pull/3915)
 
+  * The type of `n_electrons` in `qml.qchem.Molecule` is set to `int`.
+  [(#3885)](https://github.com/PennyLaneAI/pennylane/pull/3885)
+
+* Added explicit errors to `QutritDevice` if `classical_shadow` or `shadow_expval` are measured.
+  [(#3934)](https://github.com/PennyLaneAI/pennylane/pull/3934)
+
+* `DefaultQutrit` supports the new return system.
+  [(#3934)](https://github.com/PennyLaneAI/pennylane/pull/3934)
+
+* `QubitDevice` now defines the private `_get_diagonalizing_gates(circuit)` method and uses it when executing circuits.
+  This allows devices that inherit from `QubitDevice` to override and customize their definition of diagonalizing gates.
+  [(#3938)](https://github.com/PennyLaneAI/pennylane/pull/3938)
+
 <h3>Breaking changes</h3>
 
 * Both JIT interfaces are not compatible with Jax `>0.4.3`, we raise an error for those versions.
@@ -146,6 +169,9 @@
 
 <h3>Bug fixes</h3>
 
+* Fixed a bug where calling `Evolution.generator` with `coeff` being a complex ArrayBox raised an error.
+  [(#3796)](https://github.com/PennyLaneAI/pennylane/pull/3796)
+  
 * `MeasurementProcess.hash` now uses the hash property of the observable. The property now depends on all
   properties that affect the behaviour of the object, such as `VnEntropyMP.log_base` or the distribution of wires between
   the two subsystems in `MutualInfoMP`.
@@ -158,7 +184,7 @@
   to work with non-numeric wire labels.  `sum_expand` should now return correct results and not treat some products as the same
   operation.
   [(#3898)](https://github.com/PennyLaneAI/pennylane/pull/3898)
-
+  
 * Fixed bug where the coefficients where not ordered correctly when summing a `ParametrizedHamiltonian`
   with other operators.
   [(#3749)](https://github.com/PennyLaneAI/pennylane/pull/3749)
@@ -192,6 +218,9 @@
 * A correction is added to the reference values in `test_dipole_of` to account for small changes
   (~2e-8) in the computed dipole moment values, resulting from the new [PySCF 2.2.0](https://github.com/pyscf/pyscf/releases/tag/v2.2.0) release.
   [(#3908)](https://github.com/PennyLaneAI/pennylane/pull/3908)
+
+* `SampleMP.shape` is now correct when sampling only occurs on a subset of the device wires.
+  [(#3921)](https://github.com/PennyLaneAI/pennylane/pull/3921)
 
 <h3>Contributors</h3>
 
