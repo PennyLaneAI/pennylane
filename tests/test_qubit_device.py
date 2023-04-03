@@ -1231,6 +1231,14 @@ class TestExecution:
             node_3(0.432, 0.12)
         assert dev_1.num_executions == num_evals_1 + num_evals_3
 
+    def test_get_diagonalizing_gates(self, mock_qubit_device):
+        """Test the private _get_diagonalizing_gates helper method."""
+        circuit = qml.tape.QuantumScript([qml.RX(1, 0)], [qml.probs(), qml.expval(qml.PauliX(0))])
+        dev = mock_qubit_device(wires=1)
+        rotations = dev._get_diagonalizing_gates(circuit)
+        assert len(rotations) == 1
+        assert qml.equal(rotations[0], qml.Hadamard(0))
+
 
 class TestExecutionBroadcasted:
     """Tests for the execute method with broadcasted parameters"""
