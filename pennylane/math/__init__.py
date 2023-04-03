@@ -74,6 +74,7 @@ from .quantum import (
     sqrt_matrix,
     vn_entropy,
     max_entropy,
+    min_entropy,
 )
 from .utils import (
     allclose,
