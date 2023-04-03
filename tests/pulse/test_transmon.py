@@ -22,11 +22,7 @@ import pytest
 
 import pennylane as qml
 from pennylane.pulse import HardwareHamiltonian, transmon_interaction, drive
-from pennylane.pulse.hardware_hamiltonian import (
-    HardwarePulse,
-    AmplitudeAndPhase,
-)
-from pennylane.pulse.transmon import a, ad, TransmonSettings
+from pennylane.pulse.transmon import TransmonSettings
 
 from pennylane.wires import Wires
 
@@ -128,7 +124,7 @@ class TestTransmonSettings:
         assert settings.anharmonicity == None
 
     def test_equal(self):
-        """Test the ``__eq__`` method of the ``HardwarePulse`` class."""
+        """Test the ``__eq__`` method of the ``TransmonSettings`` class."""
         settings0 = TransmonSettings(connections0, omega0, g0)
         settings1 = TransmonSettings(connections1, omega1, g1)
         settings2 = TransmonSettings(connections0, omega0, g0, anharmonicity=None)
