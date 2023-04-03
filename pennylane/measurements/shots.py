@@ -100,7 +100,7 @@ class Shots:
     (1210, (ShotCopies(shots=10, copies=1), ShotCopies(shots=100, copies=4), ShotCopies(shots=200, copies=4)))
 
     One should also note that specifying a single tuple of length 2 is considered two different
-    shot values, and _not_ a tuple-pair representing shots and copies to avoid special behaviour
+    shot values, and *not* a tuple-pair representing shots and copies to avoid special behaviour
     depending on the iterable type:
 
     >>> shots = Shots((100, 2))
@@ -112,7 +112,7 @@ class Shots:
     """The total number of shots to be executed."""
 
     shot_vector: Tuple[ShotCopies] = None
-    """The tuple of ShotCopies to be executed. Each element is of the form (shots, copies)."""
+    """The tuple of :class:`~ShotCopies` to be executed. Each element is of the form ``(shots, copies)``."""
 
     _SHOT_ERROR = ValueError(
         "Shots must be a single positive integer, a tuple pair of the form (shots, copies), or a sequence of these types."
@@ -166,7 +166,9 @@ class Shots:
 
     @property
     def has_partitioned_shots(self):
-        """Checks if this instance represents multiple shot quantities, or the same shot quantity repeated multiple times.
+        """
+        Evaluates to True if this instance represents either multiple shot
+        quantities, or the same shot quantity repeated multiple times.
 
         Returns:
             bool: whether or not shots are partitioned
