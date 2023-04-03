@@ -14,14 +14,12 @@
 """
 Unit tests for the HardwareHamiltonian class.
 """
-import warnings
-
-# pylint: disable=too-few-public-methods
+# pylint: disable=too-few-public-methods,redefined-outer-name
 import numpy as np
 import pytest
 
 import pennylane as qml
-from pennylane.pulse import HardwareHamiltonian, transmon_interaction, drive
+from pennylane.pulse import HardwareHamiltonian, transmon_interaction
 from pennylane.pulse.transmon import TransmonSettings
 
 from pennylane.wires import Wires
@@ -121,7 +119,7 @@ class TestTransmonSettings:
         assert settings.connections == connections0
         assert settings.omega == omega0
         assert settings.g == g0
-        assert settings.anharmonicity == None
+        assert settings.anharmonicity is None
 
     def test_equal(self):
         """Test the ``__eq__`` method of the ``TransmonSettings`` class."""
