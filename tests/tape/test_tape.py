@@ -15,6 +15,7 @@
 import copy
 from collections import defaultdict
 
+from multiprocessing.dummy import Pool as ThreadPool
 import numpy as np
 import pytest
 
@@ -388,6 +389,25 @@ class TestConstruction:
             ValueError, match="batch sizes of the quantum script operations do not match."
         ):
             tape.set_parameters([x] + rot + [y])
+
+    def test_parallel_tapes_are_isolated(self):
+        """Tests that parallel tapes do not queue each other's constituents."""
+        t1 = QuantumTape()
+        t2 = QuantumTape()
+        n = 10000
+
+        def queue_pauli(arg):
+            q, pauli = arg
+            with q:
+                for _ in range(n):
+                    pauli(0)
+
+        args = [(t1, qml.PauliX), (t2, qml.PauliY)]
+        ThreadPool(2).map(queue_pauli, args)
+        assert len(t1) == n
+        assert len(t2) == n
+        for tape, expected_op in args:
+            assert all(isinstance(op, expected_op) for op in tape.queue)
 
 
 class TestIteration:
