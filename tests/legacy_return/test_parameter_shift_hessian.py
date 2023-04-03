@@ -228,538 +228,7 @@ class TestGenerateOffDiagTapes:
 
 class TestParameterShiftHessian:
     """Test the general functionality of the param_shift_hessian method
-    on the tape level"""
-
-    def test_single_expval(self):
-        """Test that the correct hessian is calculated for a tape with single RX operator
-        and single expectation value output"""
-        dev = qml.device("default.qubit", wires=2)
-
-        x = np.array(0.1, requires_grad=True)
-
-        with qml.queuing.AnnotatedQueue() as q:
-            qml.RY(x, wires=0)
-            qml.CNOT(wires=[0, 1])
-            qml.expval(qml.PauliZ(0))
-
-        tape = qml.tape.QuantumScript.from_queue(q)
-        expected = -np.cos(x)
-
-        tapes, fn = qml.gradients.param_shift_hessian(tape)
-        hessian = fn(qml.execute(tapes, dev, gradient_fn=None))
-
-        assert isinstance(hessian, np.ndarray)
-        assert hessian.shape == ()
-        assert np.allclose(expected, hessian)
-
-    def test_single_probs(self):
-        """Test that the correct hessian is calculated for a tape with single RX operator
-        and single probability output"""
-        dev = qml.device("default.qubit", wires=2)
-
-        x = np.array(0.1, requires_grad=True)
-
-        with qml.queuing.AnnotatedQueue() as q:
-            qml.RY(x, wires=0)
-            qml.CNOT(wires=[0, 1])
-            qml.probs(wires=[0, 1])
-
-        tape = qml.tape.QuantumScript.from_queue(q)
-        expected = 0.5 * np.cos(x) * np.array([-1, 0, 0, 1])
-
-        tapes, fn = qml.gradients.param_shift_hessian(tape)
-        hessian = fn(qml.execute(tapes, dev, gradient_fn=None))
-
-        assert isinstance(hessian, np.ndarray)
-        assert hessian.shape == (4,)
-        assert np.allclose(expected, hessian)
-
-    def test_multi_expval(self):
-        """Test that the correct hessian is calculated for a tape with single RX operator
-        and multiple expval outputs"""
-        dev = qml.device("default.qubit", wires=2)
-
-        x = np.array(0.1, requires_grad=True)
-
-        with qml.queuing.AnnotatedQueue() as q:
-            qml.RY(x, wires=0)
-            qml.CNOT(wires=[0, 1])
-            qml.expval(qml.PauliZ(0))
-            qml.expval(qml.Hadamard(1))
-
-        tape = qml.tape.QuantumScript.from_queue(q)
-        expected = (-np.cos(x), -np.cos(x) / np.sqrt(2))
-
-        tapes, fn = qml.gradients.param_shift_hessian(tape)
-        hessian = fn(qml.execute(tapes, dev, gradient_fn=None))
-
-        assert isinstance(hessian, tuple)
-        assert len(hessian) == 2
-
-        for hess, exp in zip(hessian, expected):
-            assert isinstance(hess, np.ndarray)
-            assert hess.shape == ()
-            assert np.allclose(hess, exp)
-
-    def test_multi_expval_probs(self):
-        """Test that the correct hessian is calculated for a tape with single RX operator
-        and both expval and probability outputs"""
-        dev = qml.device("default.qubit", wires=2)
-
-        x = np.array(0.1, requires_grad=True)
-
-        with qml.queuing.AnnotatedQueue() as q:
-            qml.RY(x, wires=0)
-            qml.CNOT(wires=[0, 1])
-            qml.expval(qml.PauliZ(0))
-            qml.probs(wires=[0, 1])
-
-        tape = qml.tape.QuantumScript.from_queue(q)
-        expected = (-np.cos(x), 0.5 * np.cos(x) * np.array([-1, 0, 0, 1]))
-
-        tapes, fn = qml.gradients.param_shift_hessian(tape)
-        hessian = fn(qml.execute(tapes, dev, gradient_fn=None))
-
-        assert isinstance(hessian, tuple)
-        assert len(hessian) == 2
-
-        for hess, exp in zip(hessian, expected):
-            assert isinstance(hess, np.ndarray)
-            assert hess.shape == exp.shape
-            assert np.allclose(hess, exp)
-
-    def test_multi_probs(self):
-        """Test that the correct hessian is calculated for a tape with single RX operator
-        and multiple probability outputs"""
-        dev = qml.device("default.qubit", wires=2)
-
-        x = np.array(0.1, requires_grad=True)
-
-        with qml.queuing.AnnotatedQueue() as q:
-            qml.RY(x, wires=0)
-            qml.CNOT(wires=[0, 1])
-            qml.probs(wires=[0])
-            qml.probs(wires=[0, 1])
-
-        tape = qml.tape.QuantumScript.from_queue(q)
-        expected = (0.5 * np.cos(x) * np.array([-1, 1]), 0.5 * np.cos(x) * np.array([-1, 0, 0, 1]))
-
-        tapes, fn = qml.gradients.param_shift_hessian(tape)
-        hessian = fn(qml.execute(tapes, dev, gradient_fn=None))
-
-        assert isinstance(hessian, tuple)
-        assert len(hessian) == 2
-
-        for hess, exp in zip(hessian, expected):
-            assert isinstance(hess, np.ndarray)
-            assert hess.shape == exp.shape
-            assert np.allclose(hess, exp)
-
-    def test_single_expval_multi_params(self):
-        """Test that the correct hessian is calculated for a tape with multiple operators
-        and single expectation value output"""
-        dev = qml.device("default.qubit", wires=2)
-
-        x = np.array([0.1, 0.4], requires_grad=True)
-
-        with qml.queuing.AnnotatedQueue() as q:
-            qml.RY(x[0], wires=0)
-            qml.RY(x[1], wires=1)
-            qml.CNOT(wires=[0, 1])
-            qml.expval(qml.PauliZ(0))
-
-        tape = qml.tape.QuantumScript.from_queue(q)
-        expected = ((-np.cos(x[0]), 0), (0, 0))
-
-        tapes, fn = qml.gradients.param_shift_hessian(tape)
-        hessian = fn(qml.execute(tapes, dev, gradient_fn=None))
-
-        assert isinstance(hessian, tuple)
-        assert len(hessian) == 2
-        assert all(isinstance(hess, tuple) for hess in hessian)
-        assert all(len(hess) == 2 for hess in hessian)
-        assert all(
-            all(isinstance(h, np.ndarray) and h.shape == () for h in hess) for hess in hessian
-        )
-
-        assert np.allclose(hessian, expected)
-
-    def test_single_probs_multi_params(self):
-        """Test that the correct hessian is calculated for a tape with multiple operators
-        and single probability output"""
-        dev = qml.device("default.qubit", wires=2)
-
-        x = np.array([0.1, 0.4], requires_grad=True)
-
-        with qml.queuing.AnnotatedQueue() as q:
-            qml.RY(x[0], wires=0)
-            qml.RY(x[1], wires=1)
-            qml.CNOT(wires=[0, 1])
-            qml.probs(wires=[0, 1])
-
-        tape = qml.tape.QuantumScript.from_queue(q)
-        a = [
-            np.cos(x[0] / 2) ** 2,
-            np.sin(x[0] / 2) ** 2,
-            np.cos(x[1] / 2) ** 2,
-            np.sin(x[1] / 2) ** 2,
-        ]
-        expected = (
-            (
-                0.5 * np.cos(x[0]) * np.array([-a[2], -a[3], a[3], a[2]]),
-                0.25 * np.sin(x[0]) * np.sin(x[1]) * np.array([1, -1, 1, -1]),
-            ),
-            (
-                0.25 * np.sin(x[0]) * np.sin(x[1]) * np.array([1, -1, 1, -1]),
-                0.5 * np.cos(x[1]) * np.array([-a[0], a[0], a[1], -a[1]]),
-            ),
-        )
-
-        tapes, fn = qml.gradients.param_shift_hessian(tape)
-        hessian = fn(qml.execute(tapes, dev, gradient_fn=None))
-
-        assert isinstance(hessian, tuple)
-        assert len(hessian) == 2
-        assert all(isinstance(hess, tuple) for hess in hessian)
-        assert all(len(hess) == 2 for hess in hessian)
-        assert all(
-            all(isinstance(h, np.ndarray) and h.shape == (4,) for h in hess) for hess in hessian
-        )
-
-        assert np.allclose(hessian, expected)
-
-    def test_multi_expval_multi_params(self):
-        """Test that the correct hessian is calculated for a tape with multiple operators
-        and multiple expval outputs"""
-        dev = qml.device("default.qubit", wires=2)
-
-        x = np.array([0.1, 0.4], requires_grad=True)
-
-        with qml.queuing.AnnotatedQueue() as q:
-            qml.RY(x[0], wires=0)
-            qml.RY(x[1], wires=1)
-            qml.CNOT(wires=[0, 1])
-            qml.expval(qml.PauliZ(0))
-            qml.expval(qml.Hadamard(1))
-
-        tape = qml.tape.QuantumScript.from_queue(q)
-        expected = (
-            ((-np.cos(x[0]), 0), (0, 0)),
-            (
-                (
-                    -np.cos(x[0]) * np.cos(x[1]) / np.sqrt(2),
-                    np.sin(x[0]) * np.sin(x[1]) / np.sqrt(2),
-                ),
-                (
-                    np.sin(x[0]) * np.sin(x[1]) / np.sqrt(2),
-                    (-np.sin(x[1]) - np.cos(x[0]) * np.cos(x[1])) / np.sqrt(2),
-                ),
-            ),
-        )
-
-        tapes, fn = qml.gradients.param_shift_hessian(tape)
-        hessian = fn(qml.execute(tapes, dev, gradient_fn=None))
-
-        assert isinstance(hessian, tuple)
-        assert len(hessian) == 2
-
-        for hess, exp in zip(hessian, expected):
-            assert isinstance(hess, tuple)
-            assert len(hess) == 2
-            assert all(isinstance(h, tuple) for h in hess)
-            assert all(len(h) == 2 for h in hess)
-            assert all(all(isinstance(h_, np.ndarray) and h_.shape == () for h_ in h) for h in hess)
-            assert np.allclose(hess, exp)
-
-    def test_multi_expval_probs_multi_params(self):
-        """Test that the correct hessian is calculated for a tape with multiple operators
-        and both expval and probability outputs"""
-        dev = qml.device("default.qubit", wires=2)
-
-        x = np.array([0.1, 0.4], requires_grad=True)
-
-        with qml.queuing.AnnotatedQueue() as q:
-            qml.RY(x[0], wires=0)
-            qml.RY(x[1], wires=1)
-            qml.CNOT(wires=[0, 1])
-            qml.expval(qml.PauliZ(0))
-            qml.probs(wires=[0, 1])
-
-        tape = qml.tape.QuantumScript.from_queue(q)
-        a = [
-            np.cos(x[0] / 2) ** 2,
-            np.sin(x[0] / 2) ** 2,
-            np.cos(x[1] / 2) ** 2,
-            np.sin(x[1] / 2) ** 2,
-        ]
-        expected = (
-            ((-np.cos(x[0]), 0), (0, 0)),
-            (
-                (
-                    0.5 * np.cos(x[0]) * np.array([-a[2], -a[3], a[3], a[2]]),
-                    0.25 * np.sin(x[0]) * np.sin(x[1]) * np.array([1, -1, 1, -1]),
-                ),
-                (
-                    0.25 * np.sin(x[0]) * np.sin(x[1]) * np.array([1, -1, 1, -1]),
-                    0.5 * np.cos(x[1]) * np.array([-a[0], a[0], a[1], -a[1]]),
-                ),
-            ),
-        )
-
-        tapes, fn = qml.gradients.param_shift_hessian(tape)
-        hessian = fn(qml.execute(tapes, dev, gradient_fn=None))
-
-        assert isinstance(hessian, tuple)
-        assert len(hessian) == 2
-
-        for hess, exp in zip(hessian, expected):
-            assert isinstance(hess, tuple)
-            assert len(hess) == 2
-            assert all(isinstance(h, tuple) for h in hess)
-            assert all(len(h) == 2 for h in hess)
-            assert all(
-                all(isinstance(h_, np.ndarray) and h_.shape == exp[0][0].shape for h_ in h)
-                for h in hess
-            )
-            assert np.allclose(hess, exp)
-
-    def test_multi_probs_multi_params(self):
-        """Test that the correct hessian is calculated for a tape with multiple operators
-        and multiple probability outputs"""
-        dev = qml.device("default.qubit", wires=2)
-
-        x = np.array([0.1, 0.4], requires_grad=True)
-
-        with qml.queuing.AnnotatedQueue() as q:
-            qml.RY(x[0], wires=0)
-            qml.RY(x[1], wires=1)
-            qml.CNOT(wires=[0, 1])
-            qml.probs(wires=[1])
-            qml.probs(wires=[0, 1])
-
-        tape = qml.tape.QuantumScript.from_queue(q)
-        a = [
-            np.cos(x[0] / 2) ** 2,
-            np.sin(x[0] / 2) ** 2,
-            np.cos(x[1] / 2) ** 2,
-            np.sin(x[1] / 2) ** 2,
-        ]
-        expected = (
-            (
-                (
-                    0.5 * np.cos(x[0]) * np.cos(x[1]) * np.array([-1, 1]),
-                    0.5 * np.sin(x[0]) * np.sin(x[1]) * np.array([1, -1]),
-                ),
-                (
-                    0.5 * np.sin(x[0]) * np.sin(x[1]) * np.array([1, -1]),
-                    0.5 * np.cos(x[0]) * np.cos(x[1]) * np.array([-1, 1]),
-                ),
-            ),
-            (
-                (
-                    0.5 * np.cos(x[0]) * np.array([-a[2], -a[3], a[3], a[2]]),
-                    0.25 * np.sin(x[0]) * np.sin(x[1]) * np.array([1, -1, 1, -1]),
-                ),
-                (
-                    0.25 * np.sin(x[0]) * np.sin(x[1]) * np.array([1, -1, 1, -1]),
-                    0.5 * np.cos(x[1]) * np.array([-a[0], a[0], a[1], -a[1]]),
-                ),
-            ),
-        )
-
-        tapes, fn = qml.gradients.param_shift_hessian(tape)
-        hessian = fn(qml.execute(tapes, dev, gradient_fn=None))
-
-        assert isinstance(hessian, tuple)
-        assert len(hessian) == 2
-
-        for hess, exp in zip(hessian, expected):
-            assert isinstance(hess, tuple)
-            assert len(hess) == 2
-            assert all(isinstance(h, tuple) for h in hess)
-            assert all(len(h) == 2 for h in hess)
-            assert all(
-                all(isinstance(h_, np.ndarray) and h_.shape == exp[0][0].shape for h_ in h)
-                for h in hess
-            )
-            assert np.allclose(hess, exp)
-
-    def test_multi_params_argnum(self):
-        """Test that the correct hessian is calculated for a tape with multiple operators
-        but not all parameters trainable"""
-        dev = qml.device("default.qubit", wires=2)
-
-        x = np.array([0.1, 0.4, 0.7], requires_grad=True)
-
-        with qml.queuing.AnnotatedQueue() as q:
-            qml.RY(x[0], wires=0)
-            qml.RY(x[1], wires=1)
-            qml.RY(x[2], wires=0)
-            qml.CNOT(wires=[0, 1])
-            qml.expval(qml.PauliZ(0))
-
-        tape = qml.tape.QuantumScript.from_queue(q)
-        expected = ((0, 0, 0), (0, 0, 0), (0, 0, -np.cos(x[2] + x[0])))
-
-        tapes, fn = qml.gradients.param_shift_hessian(tape, argnum=(1, 2))
-        hessian = fn(qml.execute(tapes, dev, gradient_fn=None))
-
-        assert isinstance(hessian, tuple)
-        assert len(hessian) == 3
-        assert all(isinstance(hess, tuple) for hess in hessian)
-        assert all(len(hess) == 3 for hess in hessian)
-        assert all(
-            all(isinstance(h, np.ndarray) and h.shape == () for h in hess) for hess in hessian
-        )
-
-        assert np.allclose(hessian, expected)
-
-    def test_state_error(self):
-        """Test that an error is raised when computing the gradient of a tape
-        that returns state"""
-        dev = qml.device("default.qubit", wires=2)
-
-        x = np.array(0.1, requires_grad=True)
-
-        with qml.queuing.AnnotatedQueue() as q:
-            qml.RY(x, wires=0)
-            qml.CNOT(wires=[0, 1])
-            qml.state()
-
-        tape = qml.tape.QuantumScript.from_queue(q)
-        msg = "Computing the Hessian of circuits that return the state is not supported"
-        with pytest.raises(ValueError, match=msg):
-            tapes, fn = qml.gradients.param_shift_hessian(tape)
-
-    def test_variance_error(self):
-        """Test that an error is raised when computing the gradient of a tape
-        that returns variance"""
-        dev = qml.device("default.qubit", wires=2)
-
-        x = np.array(0.1, requires_grad=True)
-
-        with qml.queuing.AnnotatedQueue() as q:
-            qml.RY(x, wires=0)
-            qml.CNOT(wires=[0, 1])
-            qml.var(qml.PauliZ(0))
-
-        tape = qml.tape.QuantumScript.from_queue(q)
-        msg = "Computing the Hessian of circuits that return variances is currently not supported"
-        with pytest.raises(ValueError, match=msg):
-            tapes, fn = qml.gradients.param_shift_hessian(tape)
-
-    @pytest.mark.parametrize("num_measurements", [1, 2])
-    def test_no_trainable_params(self, num_measurements):
-        """Test that the correct output and warning is generated in the absence of any trainable
-        parameters"""
-        dev = qml.device("default.qubit", wires=2)
-
-        weights = [0.1, 0.2]
-        with qml.queuing.AnnotatedQueue() as q:
-            qml.RX(weights[0], wires=0)
-            qml.RY(weights[1], wires=0)
-            for _ in range(num_measurements):
-                qml.expval(qml.PauliZ(0) @ qml.PauliZ(1))
-
-        tape = qml.tape.QuantumScript.from_queue(q)
-        tape.trainable_params = []
-
-        msg = "Attempted to compute the hessian of a tape with no trainable parameters"
-        with pytest.warns(UserWarning, match=msg):
-            tapes, fn = qml.gradients.param_shift_hessian(tape)
-
-        res = fn(qml.execute(tapes, dev, None))
-
-        if num_measurements == 1:
-            res = (res,)
-
-        assert tapes == []
-        assert isinstance(res, tuple)
-        assert len(res) == num_measurements
-        assert all(isinstance(r, np.ndarray) and r.shape == (0,) for r in res)
-
-    @pytest.mark.parametrize("num_measurements", [1, 2])
-    def test_all_zero_grads(self, num_measurements):
-        """Test that the transform works correctly when the diff method for every parameter is
-        identified to be 0, and that no tapes were generated."""
-        dev = qml.device("default.qubit", wires=2)
-
-        class DummyOp(qml.CRZ):
-            grad_method = "0"
-
-        x = np.array(0.1, requires_grad=True)
-
-        with qml.queuing.AnnotatedQueue() as q:
-            DummyOp(x, wires=[0, 1])
-            for _ in range(num_measurements):
-                qml.probs(wires=[0, 1])
-
-        tape = qml.tape.QuantumScript.from_queue(q)
-        tapes, fn = qml.gradients.param_shift_hessian(tape)
-        res = fn(qml.execute(tapes, dev, None))
-
-        if num_measurements == 1:
-            res = (res,)
-
-        assert tapes == []
-        assert isinstance(res, tuple)
-        assert len(res) == num_measurements
-        assert all(
-            isinstance(r, np.ndarray) and np.allclose(r, np.array([0, 0, 0, 0])) for r in res
-        )
-
-    def test_error_unsupported_op(self):
-        """Test that the correct error is thrown for unsupported operations"""
-
-        dev = qml.device("default.qubit", wires=2)
-
-        class DummyOp(qml.CRZ):
-            grad_method = "F"
-
-        x = np.array([0.1, 0.2, 0.3], requires_grad=True)
-
-        with qml.queuing.AnnotatedQueue() as q:
-            qml.RX(x[0], wires=0)
-            qml.RY(x[1], wires=0)
-            DummyOp(x[2], wires=[0, 1])
-            qml.probs(wires=1)
-
-        tape = qml.tape.QuantumScript.from_queue(q)
-        msg = "The parameter-shift Hessian currently does not support the operations"
-        with pytest.raises(ValueError, match=msg):
-            qml.gradients.param_shift_hessian(tape, argnum=[0, 1, 2])(x)
-
-    @pytest.mark.parametrize("argnum", [None, (0,)])
-    def test_error_wrong_diagonal_shifts(self, argnum):
-        """Test that an error is raised if the number of diagonal shifts does
-        not match the required number (`len(trainable_params)` or `len(argnum)`)."""
-
-        with qml.queuing.AnnotatedQueue() as q:
-            qml.RX(0.4, wires=0)
-            qml.CRY(0.9, wires=[0, 1])
-
-        tape = qml.tape.QuantumScript.from_queue(q)
-        with pytest.raises(ValueError, match="sets of shift values for diagonal entries"):
-            qml.gradients.param_shift_hessian(tape, argnum=argnum, diagonal_shifts=[])
-
-    @pytest.mark.parametrize("argnum", [None, (0, 1)])
-    def test_error_wrong_offdiagonal_shifts(self, argnum):
-        """Test that an error is raised if the number of offdiagonal shifts does
-        not match the required number (`len(trainable_params)` or `len(argnum)`)."""
-
-        with qml.queuing.AnnotatedQueue() as q:
-            qml.RX(0.4, wires=0)
-            qml.CRY(0.9, wires=[0, 1])
-            qml.RX(-0.4, wires=0)
-
-        tape = qml.tape.QuantumScript.from_queue(q)
-        with pytest.raises(ValueError, match="sets of shift values for off-diagonal entries"):
-            qml.gradients.param_shift_hessian(tape, argnum=argnum, off_diagonal_shifts=[])
-
-
-class TestParameterShiftHessianQNode:
-    """Test the general functionality of the param_shift_hessian method
-    with QNodes on the default interface (autograd)"""
+    on the default interface (autograd)"""
 
     def test_single_two_term_gate(self):
         """Test that the correct hessian is calculated for a QNode with single RX operator
@@ -778,6 +247,7 @@ class TestParameterShiftHessianQNode:
         expected = qml.jacobian(qml.grad(circuit))(x)
         hessian = qml.gradients.param_shift_hessian(circuit)(x)
 
+        assert circuit.interface == "auto"
         assert np.allclose(expected, hessian)
 
     def test_fixed_params(self):
@@ -947,7 +417,7 @@ class TestParameterShiftHessianQNode:
         expected = qml.jacobian(qml.jacobian(circuit))(x)
         hessian = qml.gradients.param_shift_hessian(circuit)(x)
 
-        assert np.allclose(qml.math.transpose(expected, (2, 1, 0)), hessian)
+        assert np.allclose(expected, hessian)
 
     def test_quantum_hessian_shape_vector_input_vector_output(self):
         """Test that the purely "quantum" hessian has the correct shape (1d -> 1d)"""
@@ -964,7 +434,7 @@ class TestParameterShiftHessianQNode:
             return qml.probs(wires=[0, 1])
 
         x = np.array([0.1, 0.2, 0.3], requires_grad=True)
-        shape = (6, 6, 4)  # (num_gate_args, num_gate_args, num_output_vals)
+        shape = (4, 6, 6)  # (num_output_vals, num_gate_args, num_gate_args)
 
         hessian = qml.gradients.param_shift_hessian(circuit, hybrid=False)(x)
 
@@ -989,7 +459,7 @@ class TestParameterShiftHessianQNode:
         expected = qml.jacobian(qml.jacobian(circuit))(x)
         hessian = qml.gradients.param_shift_hessian(circuit)(x)
 
-        assert np.allclose(qml.math.transpose(expected, (2, 1, 0)), hessian)
+        assert np.allclose(expected, hessian)
 
     def test_multiple_two_term_gates_classical_processing(self):
         """Test that the correct hessian is calculated when manipulating parameters (1d -> 1d)"""
@@ -1009,7 +479,7 @@ class TestParameterShiftHessianQNode:
         expected = qml.jacobian(qml.jacobian(circuit))(x)
         hessian = qml.gradients.param_shift_hessian(circuit)(x)
 
-        assert np.allclose(qml.math.transpose(expected, (2, 1, 0)), hessian)
+        assert np.allclose(expected, hessian)
 
     def test_multiple_two_term_gates_matrix_output(self):
         """Test that the correct hessian is calculated for higher dimensional QNode outputs
@@ -1017,22 +487,19 @@ class TestParameterShiftHessianQNode:
 
         dev = qml.device("default.qubit", wires=2)
 
-        @qml.qnode(dev, max_diff=2)
+        @qml.qnode(dev, diff_method="parameter-shift", max_diff=2)
         def circuit(x):
             qml.RX(x[0], wires=0)
             qml.RY(x[1], wires=0)
             qml.CNOT(wires=[0, 1])
             return qml.probs(wires=0), qml.probs(wires=1)
 
-        def cost(x):
-            return qml.math.stack(circuit(x))
-
         x = np.ones([2], requires_grad=True)
 
-        expected = qml.jacobian(qml.jacobian(cost))(x)
+        expected = qml.jacobian(qml.jacobian(circuit))(x)
         hessian = qml.gradients.param_shift_hessian(circuit)(x)
 
-        assert np.allclose(qml.math.transpose(expected, (0, 3, 2, 1)), hessian)
+        assert np.allclose(expected, hessian)
 
     def test_multiple_two_term_gates_matrix_input(self):
         """Test that the correct hessian is calculated for higher dimensional cl. jacobians
@@ -1040,7 +507,7 @@ class TestParameterShiftHessianQNode:
 
         dev = qml.device("default.qubit", wires=2)
 
-        @qml.qnode(dev, max_diff=2)
+        @qml.qnode(dev, diff_method="parameter-shift", max_diff=2)
         def circuit(x):
             qml.RX(x[0, 0], wires=0)
             qml.RY(x[0, 1], wires=0)
@@ -1049,21 +516,18 @@ class TestParameterShiftHessianQNode:
             qml.RY(x[0, 0], wires=0)
             return qml.probs(wires=0), qml.probs(wires=1)
 
-        def cost(x):
-            return qml.math.stack(circuit(x))
-
         x = np.ones([1, 3], requires_grad=True)
 
-        expected = qml.jacobian(qml.jacobian(cost))(x)
+        expected = qml.jacobian(qml.jacobian(circuit))(x)
         hessian = qml.gradients.param_shift_hessian(circuit)(x)
 
-        assert np.allclose(qml.math.transpose(expected, (0, 2, 3, 4, 5, 1)), hessian)
+        assert np.allclose(expected, hessian)
 
     def test_multiple_qnode_arguments_scalar(self):
         """Test that the correct Hessian is calculated with multiple QNode arguments (0D->1D)"""
         dev = qml.device("default.qubit", wires=2)
 
-        @qml.qnode(dev, max_diff=2)
+        @qml.qnode(dev, diff_method="parameter-shift", max_diff=2)
         def circuit(x, y, z):
             qml.RX(x, wires=0)
             qml.RY(y, wires=1)
@@ -1090,7 +554,7 @@ class TestParameterShiftHessianQNode:
         """Test that the correct Hessian is calculated with multiple QNode arguments (1D->1D)"""
         dev = qml.device("default.qubit", wires=2)
 
-        @qml.qnode(dev, max_diff=2)
+        @qml.qnode(dev, diff_method="parameter-shift", max_diff=2)
         def circuit(x, y, z):
             qml.RX(x[0], wires=1)
             qml.RY(y[0], wires=0)
@@ -1112,7 +576,7 @@ class TestParameterShiftHessianQNode:
         circuit.interface = "autograd"
         hessian = qml.gradients.param_shift_hessian(circuit)(x, y, z)
 
-        assert np.allclose(qml.math.transpose(expected, (0, 2, 3, 1)), hessian)
+        assert np.allclose(expected, hessian)
 
     def test_multiple_qnode_arguments_matrix(self):
         """Test that the correct Hessian is calculated with multiple QNode arguments (2D->1D)"""
@@ -1140,14 +604,14 @@ class TestParameterShiftHessianQNode:
         circuit.interface = "autograd"
         hessian = qml.gradients.param_shift_hessian(circuit)(x, y, z)
 
-        assert np.allclose(qml.math.transpose(expected, (0, 2, 3, 4, 5, 1)), hessian)
+        assert np.allclose(expected, hessian)
 
     def test_multiple_qnode_arguments_mixed(self):
         """Test that the correct Hessian is calculated with multiple mixed-shape QNode arguments"""
 
         dev = qml.device("default.qubit", wires=2)
 
-        @qml.qnode(dev, max_diff=2)
+        @qml.qnode(dev, max_diff=2, diff_method="parameter-shift")
         def circuit(x, y, z):
             qml.RX(x, wires=0)
             qml.RY(z[0] + z[1], wires=0)
@@ -1156,21 +620,16 @@ class TestParameterShiftHessianQNode:
             qml.CRY(y[0, 1], wires=[0, 1])
             return qml.probs(wires=0), qml.probs(wires=1)
 
-        def cost(x, y, z):
-            return qml.math.stack(circuit(x, y, z))
-
         x = np.array(0.1, requires_grad=True)
         y = np.array([[0.5, 0.6], [0.2, 0.1]], requires_grad=True)
         z = np.array([0.3, 0.4], requires_grad=True)
 
         expected = tuple(
-            qml.jacobian(qml.jacobian(cost, argnum=i), argnum=i)(x, y, z) for i in range(3)
+            qml.jacobian(qml.jacobian(circuit, argnum=i), argnum=i)(x, y, z) for i in range(3)
         )
         hessian = qml.gradients.param_shift_hessian(circuit)(x, y, z)
 
-        assert np.allclose(expected[0], hessian[0])
-        assert np.allclose(qml.math.transpose(expected[1], (0, 2, 3, 4, 5, 1)), hessian[1])
-        assert np.allclose(qml.math.transpose(expected[2], (0, 2, 3, 1)), hessian[2])
+        assert all(np.allclose(expected[i], hessian[i]) for i in range(3))
 
     def test_with_channel(self):
         """Test that the Hessian is correctly computed for circuits
@@ -1178,7 +637,7 @@ class TestParameterShiftHessianQNode:
 
         dev = qml.device("default.mixed", wires=2)
 
-        @qml.qnode(dev, max_diff=2)
+        @qml.qnode(dev, max_diff=2, diff_method="parameter-shift")
         def circuit(x):
             qml.RX(x[1], wires=0)
             qml.RY(x[0], wires=0)
@@ -1191,14 +650,14 @@ class TestParameterShiftHessianQNode:
         expected = qml.jacobian(qml.jacobian(circuit))(x)
         hessian = qml.gradients.param_shift_hessian(circuit)(x)
 
-        assert np.allclose(qml.math.transpose(expected, (2, 1, 0)), hessian)
+        assert np.allclose(expected, hessian)
 
     def test_hessian_transform_is_differentiable(self):
         """Test that the 3rd derivate can be calculated via auto-differentiation (1d -> 1d)"""
 
         dev = qml.device("default.qubit", wires=2)
 
-        @qml.qnode(dev, max_diff=3)
+        @qml.qnode(dev, max_diff=3, diff_method="parameter-shift")
         def circuit(x):
             qml.RX(x[1], wires=0)
             qml.RY(x[0], wires=0)
@@ -1208,15 +667,9 @@ class TestParameterShiftHessianQNode:
         x = np.array([0.1, 0.2], requires_grad=True)
 
         expected = qml.jacobian(qml.jacobian(qml.jacobian(circuit)))(x)
+        derivative = qml.jacobian(qml.gradients.param_shift_hessian(circuit))(x)
 
-        def cost_fn(x):
-            hess = qml.gradients.param_shift_hessian(circuit)(x)
-            hess = qml.math.stack([qml.math.stack(row) for row in hess])
-            return hess
-
-        derivative = qml.jacobian(cost_fn)(x)
-
-        assert np.allclose(qml.math.transpose(expected, (1, 2, 0, 3)), derivative)
+        assert np.allclose(expected, derivative)
 
     # Some bounds on the efficiency (device executions) of the hessian for 2-term shift rules:
     # - < jacobian(jacobian())
@@ -1224,7 +677,6 @@ class TestParameterShiftHessianQNode:
     # - <= 3^m                    see arXiv:2008.06517 p. 4
     # here d=2 is the derivative order, m is the number of variational parameters (w.r.t. gate args)
 
-    @pytest.mark.xfail(reason="Update tracker for new return types")
     def test_fewer_device_invocations_scalar_input(self):
         """Test that the hessian invokes less hardware executions than double differentiation
         (0d -> 0d)"""
@@ -1250,7 +702,6 @@ class TestParameterShiftHessianQNode:
         assert hessian_qruns <= 2**2 * 1  # 1 = (1+2-1)C(2)
         assert hessian_qruns <= 3**1
 
-    @pytest.mark.xfail(reason="Update tracker for new return types")
     def test_fewer_device_invocations_vector_input(self):
         """Test that the hessian invokes less hardware executions than double differentiation
         (1d -> 0d)"""
@@ -1277,7 +728,6 @@ class TestParameterShiftHessianQNode:
         assert hessian_qruns <= 2**2 * 3  # 3 = (2+2-1)C(2)
         assert hessian_qruns <= 3**2
 
-    @pytest.mark.xfail(reason="Update tracker for new return types")
     def test_fewer_device_invocations_vector_output(self):
         """Test that the hessian invokes less hardware executions than double differentiation
         (1d -> 1d)"""
@@ -1328,6 +778,30 @@ class TestParameterShiftHessianQNode:
             match=r"The analytic gradient method cannot be used with the parameter\(s\)",
         ):
             qml.gradients.param_shift_hessian(circuit)(x)
+
+    def test_error_unsupported_operation_with_argnum(self):
+        """Test that the correct error is thrown for unsupported operations when
+        argnum is given."""
+
+        dev = qml.device("default.qubit", wires=2)
+
+        class DummyOp(qml.CRZ):
+            grad_method = "F"
+
+        @qml.qnode(dev, max_diff=2, diff_method="parameter-shift")
+        def circuit(x):
+            qml.RX(x[0], wires=0)
+            qml.RY(x[1], wires=0)
+            DummyOp(x[2], wires=[0, 1])
+            return qml.probs(wires=1)
+
+        x = np.array([0.1, 0.2, 0.3], requires_grad=True)
+
+        with pytest.raises(
+            ValueError,
+            match="The parameter-shift Hessian currently does not support",
+        ):
+            qml.gradients.param_shift_hessian(circuit, argnum=[0, 2])(x)
 
     def test_error_unsupported_variance_measurement(self):
         """Test that the correct error is thrown for variance measurements"""
@@ -1466,6 +940,29 @@ class TestParameterShiftHessianQNode:
 
         assert res == ()
 
+    def test_no_trainable_params_tape(self):
+        """Test that the correct ouput and warning is generated in the absence of any trainable
+        parameters"""
+        dev = qml.device("default.qubit", wires=2)
+
+        weights = [0.1, 0.2]
+        with qml.queuing.AnnotatedQueue() as q:
+            qml.RX(weights[0], wires=0)
+            qml.RY(weights[1], wires=0)
+            qml.expval(qml.PauliZ(0) @ qml.PauliZ(1))
+
+        tape = qml.tape.QuantumScript.from_queue(q)
+        # TODO: remove once #2155 is resolved
+        tape.trainable_params = []
+
+        with pytest.warns(UserWarning, match="hessian of a tape with no trainable parameters"):
+            h_tapes, post_processing = qml.gradients.param_shift_hessian(tape)
+        res = post_processing(qml.execute(h_tapes, dev, None))
+
+        assert h_tapes == []
+        assert isinstance(res, np.ndarray)
+        assert res.shape == (1, 0, 0)
+
     def test_all_zero_diff_methods(self):
         """Test that the transform works correctly when the diff method for every parameter is
         identified to be 0, and that no tapes were generated."""
@@ -1479,17 +976,16 @@ class TestParameterShiftHessianQNode:
         params = np.array([0.5, 0.5, 0.5], requires_grad=True)
 
         result = qml.gradients.param_shift_hessian(circuit)(params)
-        assert np.allclose(result, np.zeros((3, 3, 4)), atol=0, rtol=0)
+        assert np.allclose(result, np.zeros((4, 3, 3)), atol=0, rtol=0)
 
         tapes, _ = qml.gradients.param_shift_hessian(circuit.tape)
         assert tapes == []
 
-    @pytest.mark.xfail(reason="Update tracker for new return types")
     def test_f0_argument(self):
         """Test that we can provide the results of a QNode to save on quantum invocations"""
         dev = qml.device("default.qubit", wires=2)
 
-        @qml.qnode(dev, max_diff=2)
+        @qml.qnode(dev, diff_method="parameter-shift", max_diff=2)
         def circuit(x):
             qml.RX(x[0], wires=0)
             qml.RY(x[1], wires=0)
@@ -1541,9 +1037,10 @@ class TestParameterShiftHessianQNode:
         circuits = [qml.QNode(cost, dev) for cost in (cost1, cost2, cost3, cost4, cost5, cost6)]
 
         transform = [qml.math.shape(qml.gradients.param_shift_hessian(c)(x)) for c in circuits]
-        expected = [(3, 3), (3, 3), (2, 3, 3), (3, 3, 4), (3, 3, 4), (2, 3, 3, 4)]
+        qnode = [qml.math.shape(c(x)) + (3, 3) for c in circuits]
+        expected = [(3, 3), (1, 3, 3), (2, 3, 3), (4, 3, 3), (1, 4, 3, 3), (2, 4, 3, 3)]
 
-        assert all(t == e for t, e in zip(transform, expected))
+        assert all(t == q == e for t, q, e in zip(transform, qnode, expected))
 
 
 class TestParamShiftHessianWithKwargs:
@@ -1561,7 +1058,7 @@ class TestParamShiftHessianWithKwargs:
         """Test that diagonal shifts are used and yield the correct Hessian."""
         dev = qml.device("default.qubit", wires=2)
 
-        @qml.qnode(dev, max_diff=2)
+        @qml.qnode(dev, max_diff=2, diff_method="parameter-shift")
         def circuit(x):
             qml.RX(x[0], wires=0)
             qml.RY(x[1], wires=0)
@@ -1570,7 +1067,7 @@ class TestParamShiftHessianWithKwargs:
 
         x = np.array([0.6, -0.2], requires_grad=True)
 
-        expected = qml.math.transpose(qml.jacobian(qml.jacobian(circuit))(x), (1, 2, 0))
+        expected = qml.jacobian(qml.jacobian(circuit))(x)
         circuit(x)
         tapes, fn = qml.gradients.param_shift_hessian(
             circuit.qtape, diagonal_shifts=diagonal_shifts
@@ -1605,7 +1102,7 @@ class TestParamShiftHessianWithKwargs:
         """Test that off-diagonal shifts are used and yield the correct Hessian."""
         dev = qml.device("default.qubit", wires=2)
 
-        @qml.qnode(dev, max_diff=2)
+        @qml.qnode(dev, max_diff=2, diff_method="parameter-shift")
         def circuit(x):
             qml.RX(x[0], wires=0)
             qml.CRY(x[1], wires=[0, 1])
@@ -1614,7 +1111,7 @@ class TestParamShiftHessianWithKwargs:
 
         x = np.array([0.6, -0.2], requires_grad=True)
 
-        expected = qml.math.transpose(qml.jacobian(qml.jacobian(circuit))(x), (1, 2, 0))
+        expected = qml.jacobian(qml.jacobian(circuit))(x)
         circuit(x)
         tapes, fn = qml.gradients.param_shift_hessian(
             circuit.qtape, off_diagonal_shifts=off_diagonal_shifts
@@ -1684,7 +1181,7 @@ class TestParamShiftHessianWithKwargs:
         """Test that providing an argnum to indicated differentiable parameters works."""
         dev = qml.device("default.qubit", wires=2)
 
-        @qml.qnode(dev, max_diff=2)
+        @qml.qnode(dev, max_diff=2, diff_method="parameter-shift")
         def circuit(par):
             qml.RX(par[0], wires=0)
             qml.CRY(par[1], wires=[0, 1])
@@ -1696,9 +1193,7 @@ class TestParamShiftHessianWithKwargs:
 
         expected = qml.jacobian(qml.jacobian(circuit))(par)
         # Set non-argnum argument entries to 0
-        expected = qml.math.transpose(
-            expected * qml.math.array(argnum, dtype=float)[None], (1, 2, 0)
-        )
+        expected = expected * qml.math.array(argnum, dtype=float)[None]
         hessian = qml.gradients.param_shift_hessian(circuit, argnum=argnum)(par)
         assert np.allclose(hessian, expected)
 
@@ -1734,11 +1229,37 @@ class TestParamShiftHessianWithKwargs:
         )(*xy)
         assert np.allclose(hessian, expected.T)
 
+    @pytest.mark.parametrize("argnum", [None, (0,)])
+    def test_error_wrong_diagonal_shifts(self, argnum):
+        """Test that an error is raised if the number of diagonal shifts does
+        not match the required number (`len(trainable_params)` or `len(argnum)`)."""
+
+        with qml.queuing.AnnotatedQueue() as q:
+            qml.RX(0.4, wires=0)
+            qml.CRY(0.9, wires=[0, 1])
+
+        tape = qml.tape.QuantumScript.from_queue(q)
+        with pytest.raises(ValueError, match="sets of shift values for diagonal entries"):
+            qml.gradients.param_shift_hessian(tape, argnum=argnum, diagonal_shifts=[])
+
+    @pytest.mark.parametrize("argnum", [None, (0, 1)])
+    def test_error_wrong_offdiagonal_shifts(self, argnum):
+        """Test that an error is raised if the number of offdiagonal shifts does
+        not match the required number (`len(trainable_params)` or `len(argnum)`)."""
+
+        with qml.queuing.AnnotatedQueue() as q:
+            qml.RX(0.4, wires=0)
+            qml.CRY(0.9, wires=[0, 1])
+            qml.RX(-0.4, wires=0)
+
+        tape = qml.tape.QuantumScript.from_queue(q)
+        with pytest.raises(ValueError, match="sets of shift values for off-diagonal entries"):
+            qml.gradients.param_shift_hessian(tape, argnum=argnum, off_diagonal_shifts=[])
+
 
 class TestInterfaces:
     """Test the param_shift_hessian method on different interfaces"""
 
-    @pytest.mark.skip("Requires Torch integration for new return types")
     @pytest.mark.torch
     def test_hessian_transform_with_torch(self):
         """Test that the Hessian transform can be used with Torch (1d -> 1d)"""
@@ -1762,7 +1283,6 @@ class TestInterfaces:
 
         assert np.allclose(expected, hess.detach())
 
-    @pytest.mark.skip("Requires Torch integration for new return types")
     @pytest.mark.torch
     def test_hessian_transform_is_differentiable_torch(self):
         """Test that the 3rd derivate can be calculated via auto-differentiation in Torch
@@ -1810,7 +1330,7 @@ class TestInterfaces:
         circuit.interface = "jax"
         hess = qml.gradients.param_shift_hessian(circuit, argnums=[0])(x_jax)
 
-        assert np.allclose(qml.math.transpose(expected, (1, 2, 0)), hess)
+        assert np.allclose(expected, hess)
 
     @pytest.mark.jax
     @pytest.mark.slow
@@ -1832,16 +1352,10 @@ class TestInterfaces:
         x_jax = jax.numpy.array([0.1, 0.2])
 
         expected = qml.jacobian(qml.jacobian(qml.jacobian(circuit)))(x)
-
-        def cost_fn(x):
-            hess = qml.gradients.param_shift_hessian(circuit)(x)
-            hess = qml.math.stack([qml.math.stack(row) for row in hess])
-            return hess
-
         circuit.interface = "jax"
-        jax_deriv = jax.jacobian(cost_fn)(x_jax)
+        jax_deriv = jax.jacobian(qml.gradients.param_shift_hessian(circuit))(x_jax)
 
-        assert np.allclose(qml.math.transpose(expected, (1, 2, 0, 3)), jax_deriv)
+        assert np.allclose(expected, jax_deriv)
 
     @pytest.mark.tf
     @pytest.mark.slow
@@ -1851,7 +1365,7 @@ class TestInterfaces:
 
         dev = qml.device("default.qubit", wires=2)
 
-        @qml.qnode(dev, max_diff=2)
+        @qml.qnode(dev, diff_method="parameter-shift", max_diff=2)
         def circuit(x):
             qml.RX(x[1], wires=0)
             qml.RY(x[0], wires=0)
@@ -1864,9 +1378,9 @@ class TestInterfaces:
         expected = qml.jacobian(qml.jacobian(circuit))(x_np)
         circuit.interface = "tf"
         with tf.GradientTape():
-            hess = qml.gradients.param_shift_hessian(circuit)(x_tf)
+            hess = qml.gradients.param_shift_hessian(circuit)(x_tf)[0]
 
-        assert np.allclose(qml.math.transpose(expected, (1, 2, 0)), hess)
+        assert np.allclose(expected, hess)
 
     @pytest.mark.tf
     @pytest.mark.slow
@@ -1877,7 +1391,7 @@ class TestInterfaces:
 
         dev = qml.device("default.qubit", wires=2)
 
-        @qml.qnode(dev, max_diff=3)
+        @qml.qnode(dev, diff_method="parameter-shift", max_diff=3)
         def circuit(x):
             qml.RX(x[1], wires=0)
             qml.RY(x[0], wires=0)
@@ -1891,8 +1405,6 @@ class TestInterfaces:
         circuit.interface = "tf"
         with tf.GradientTape() as tf_tape:
             hessian = qml.gradients.param_shift_hessian(circuit)(x_tf)[0]
-            hessian = qml.math.stack([qml.math.stack(row) for row in hessian])
-
         tensorflow_deriv = tf_tape.jacobian(hessian, x_tf)
 
-        assert np.allclose(qml.math.transpose(expected, (1, 2, 0, 3)), tensorflow_deriv)
+        assert np.allclose(expected, tensorflow_deriv)
