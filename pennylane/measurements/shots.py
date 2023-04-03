@@ -47,13 +47,13 @@ class Shots:
     * A sequence consisting of either positive integers or a tuple-pair of positive integers of the form ``(shots, copies)``
 
     The tuple-pair of the form ``(shots, copies)`` is represented internally by a namedtuple called
-    ``ShotCopies``. The first value is the number of shots to execute, and the second value is the
+    :class:`~ShotCopies`. The first value is the number of shots to execute, and the second value is the
     number of times to repeat a circuit with that number of shots.
 
     The ``Shots`` class exposes two properties:
 
     * ``total_shots``, the total number of shots to be executed
-    * ``shot_vector``, the list of ``ShotCopies`` to be executed
+    * ``shot_vector``, the list of :class:`~ShotCopies` to be executed
 
     Instances of this class are static. If an instance is passed to the constructor, that same
     instance is returned. If an instance is constructed with a ``None`` value, ``total_shots``
