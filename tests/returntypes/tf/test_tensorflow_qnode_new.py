@@ -1107,7 +1107,6 @@ class TestQubitIntegration:
         assert np.allclose(grad, expected, atol=tol, rtol=0)
 
 
-@pytest.mark.xfail(reason="TODO: CV devices for new return types.")
 @pytest.mark.parametrize(
     "diff_method,kwargs",
     [
@@ -1129,7 +1128,7 @@ class TestCV:
         r = tf.Variable(0.543, dtype=tf.float64)
         phi = tf.Variable(-0.654, dtype=tf.float64)
 
-        @qnode(dev, interface=interface, diff_method=diff_method, **kwargs)
+        @qnode(dev, diff_method=diff_method, **kwargs)
         def circuit(r, phi):
             qml.Squeezing(r, 0, wires=0)
             qml.Rotation(phi, wires=0)
@@ -1158,7 +1157,7 @@ class TestCV:
         n = tf.Variable(0.12, dtype=tf.float64)
         a = tf.Variable(0.765, dtype=tf.float64)
 
-        @qnode(dev, interface=interface, diff_method=diff_method, **kwargs)
+        @qnode(dev, diff_method=diff_method, **kwargs)
         def circuit(n, a):
             qml.ThermalState(n, wires=0)
             qml.Displacement(a, 0, wires=0)
