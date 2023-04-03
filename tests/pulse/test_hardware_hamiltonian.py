@@ -28,6 +28,8 @@ from pennylane.pulse.hardware_hamiltonian import (
     amplitude_and_phase,
     _reorder_parameters,
 )
+from pennylane.pulse.transmon import TransmonSettings
+from pennylane.pulse.rydberg import RydbergSettings
 from pennylane.wires import Wires
 
 atom_coordinates = [[0, 0], [0, 5], [5, 0], [10, 5], [5, 10], [10, 10]]
@@ -45,6 +47,16 @@ def f2(p, t):
 param = [1.2, 2.3]
 
 
+connections = [[0, 1], [1, 3], [2, 1], [4, 5]]
+wires = [0, 1, 2, 3, 4, 5]
+omega = 0.5 * np.arange(len(wires))
+g = 0.1 * np.arange(len(connections))
+delta = 0.3 * np.arange(len(wires))
+transmon_settings = TransmonSettings(connections, omega, g, delta=None)
+
+atom_coordinates = [[0, 0], [0, 5], [5, 0], [10, 5], [5, 10], [10, 10]]
+rydberg_settings = RydbergSettings(atom_coordinates, 1)
+
 class TestHardwareHamiltonian:
     """Unit tests for the properties of the HardwareHamiltonian class."""
 
@@ -57,12 +69,18 @@ class TestHardwareHamiltonian:
         assert rm.wires == Wires([])
         assert rm.settings == None
 
-    def test_add_hardware_hamiltonian(self):
+    @pytest.mark.parametrize("settings", [
+        None,
+        transmon_settings,
+        rydberg_settings,
+    ])
+    def test_add_hardware_hamiltonian(self, settings):
         """Test that the __add__ dunder method works correctly."""
         rm1 = HardwareHamiltonian(
             coeffs=[1, 2],
             observables=[qml.PauliX(4), qml.PauliZ(8)],
             pulses=[HardwarePulse(1, 2, 3, [4, 8])],
+            settings=settings
         )
         rm2 = HardwareHamiltonian(
             coeffs=[2],
@@ -82,6 +100,7 @@ class TestHardwareHamiltonian:
             HardwarePulse(1, 2, 3, [4, 8]),
             HardwarePulse(5, 6, 7, 8),
         ]
+        assert sum_rm.settings == settings
 
     def test_add_parametrized_hamiltonian(self):
         """Tests that adding a `HardwareHamiltonian` and `ParametrizedHamiltonian` works as
