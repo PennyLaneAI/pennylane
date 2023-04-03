@@ -36,19 +36,17 @@ def drive(amplitude, phase, wires):
     .. math::
         \frac{1}{2} \sum_{j \in \text{wires}} \Omega(t) \left(e^{i \phi(t)} \sigma^+_j + e^{-i \phi(t)} \sigma^-_j \right)
 
-    where :math:`\Omega`, :math:`\phi` and :math:`\Delta` correspond to the amplitude, phase and detuning of the electromagnetic
-    driving field and :math:`j` corresponds to the wire index. We are describing the Hamiltonian in terms of ladder operators
-    :math:`\sigma^\pm = \frac{1}{2}(\sigma_x \pm i \sigma_y)`.
+    where :math:`\Omega` and :math:`\phi` correspond to the amplitude and phase of the
+    electromagnetic driving field and :math:`j` corresponds to the wire index. We are describing the Hamiltonian 
+    in terms of ladder operators :math:`\sigma^\pm = \frac{1}{2}(\sigma_x \pm i \sigma_y)`.
 
-    Note that the detuning :math:`\Delta := \omega_q - \nu` is defined as the difference between the qubit frequency :math:`\omega_q`
-    and the electromagntic field driving frequency :math:`\nu`. For more details, see the theoretical background section below.
-
-    Common hardware systems are superconducting qubits and neutral atoms. The electromagnetic field of the drive is realized by microwave
-    and laser fields, respectively, operating at very differnt wavelengths.
+    Common hardware systems are superconducting qubits and neutral atoms. The electromagnetic field of the drive is
+    realized by microwave and laser fields, respectively, operating at very differnt wavelengths.
 
     Note that to avoid nummerical problems due to using both very large and very small numbers, it is advisable to match
-    the order of magnitudes of frequency and time arguments. For example, when frequencies are of order MHz (microwave pulses for superconducting systems),
-    then one can ommit the explicit factor :math:`10^6` by treating the times passed to the constructed :class:`ParametrizedHamiltonian` in :math:`\mu s = 10^{-6}s`
+    the order of magnitudes of frequency and time arguments. For example, when frequencies are of order
+    MHz (microwave pulses for superconducting systems), then one can ommit the explicit factor :math:`10^6`
+    by treating the times passed to the constructed :class:`ParametrizedHamiltonian` in :math:`\mu s = 10^{-6}s`
     to be able to use numerical units of order :math:`\mathcal{O}(1)`. We further elaborate on that in the examples below.
 
     Args:
@@ -81,7 +79,7 @@ def drive(amplitude, phase, wires):
         amplitude = lambda p, t: p * jnp.sin(jnp.pi * t)
         phase = jnp.pi / 2
         detuning = 3 * jnp.pi / 4
-        H_d = qml.pulse.drive(amplitude, phase, detuning, wires)
+        H_d = qml.pulse.drive(amplitude, phase, wires)
 
     >>> H_int
     (1) [X0 X1]
@@ -89,11 +87,12 @@ def drive(amplitude, phase, wires):
     + (1) [X2 X3]
     + (1) [X3 X0]
     >>> H_d
-    ParametrizedHamiltonian: terms=3
+    ParametrizedHamiltonian: terms=2
 
-    The first two terms of the drive Hamiltonian ``H_d`` correspond to the two terms :math:`\Omega e^{i \phi(t)} \sigma^+_j + \Omega e^{-i \phi(t)} \sigma^-_j`,
-    describing a drive between the ground and excited states. The third term corresponding to the shift term
-    due to detuning from resonance. In this case, the drive term corresponds to a global drive, as it acts on all 4 wires of
+    The first two terms of the drive Hamiltonian ``H_d`` correspond to the two terms 
+    :math:`\Omega e^{i \phi(t)} \sigma^+_j + \Omega e^{-i \phi(t)} \sigma^-_j`,
+    describing a drive between the ground and excited states. 
+    In this case, the drive term corresponds to a global drive, as it acts on all 4 wires of
     the device.
 
     The full Hamiltonian can be evaluated:
@@ -109,9 +108,9 @@ def drive(amplitude, phase, wires):
 
     >>> params = [2.4]
     >>> circuit(params)
-    Array(0.77627534, dtype=float64)
+    Array(0.32495208, dtype=float64)
     >>> jax.grad(circuit)(params)
-    [Array(-0.0159532, dtype=float64)]
+    [Array(1.31956098, dtype=float64)]
 
     We can also create a Hamiltonian with multiple local drives. The following circuit corresponds to the
     evolution where an additional local drive that changes in time is acting on wires ``[0, 1]`` is added to the Hamiltonian:
@@ -120,8 +119,7 @@ def drive(amplitude, phase, wires):
 
         amplitude_local = lambda p, t: p[0] * jnp.sin(2 * jnp.pi * t) + p[1]
         phase_local = lambda p, t: p * jnp.exp(-0.25 * t)
-        detuning_local = jnp.pi / 4
-        H_local = qml.pulse.drive(amplitude_local, phase_local, detuning_local, [0, 1])
+        H_local = qml.pulse.drive(amplitude_local, phase_local, [0, 1])
 
         H = H_int + H_d + H_local
 
@@ -137,12 +135,12 @@ def drive(amplitude, phase, wires):
         params = (p_global, p_amp, p_phase)
 
     >>> circuit_local(params)
-    Array(0.4494223, dtype=float64)
+    Array(-0.5334795, dtype=float64)
     >>> jax.grad(circuit_local)(params)
-    (Array(0.17258209, dtype=float64),
-     [Array(-0.39050511, dtype=float64, weak_type=True),
-      Array(-0.15865324, dtype=float64, weak_type=True)],
-     Array(-0.16458317, dtype=float64))
+    (Array(0.01654573, dtype=float64),
+     [Array(-0.04422795, dtype=float64, weak_type=True),
+      Array(-0.51375441, dtype=float64, weak_type=True)],
+     Array(0.21901967, dtype=float64))
 
     .. details::
         :title: Theoretical background
@@ -161,9 +159,11 @@ def drive(amplitude, phase, wires):
             H = \frac{1}{2} \Omega(t) \sum_{j \in \text{wires}} \left(e^{i \phi(t)} \sigma^+_j + e^{-i \phi(t)} \sigma^-_j \right)
             - \frac{1}{2} (\nu - \omega_q) \sum_{j \in \text{wires}} \sigma^z_j
 
-        We can define :math:`\Delta = \nu - \omega_q` to arrive at the definition above. Note that a potential anharmonicity term,
-        as is common for transmon systems when taking into account higher energy levels,
-        is unaffected by this transformation.
+        The latter formulation is more common in neutral atom systems where we define the detuning from the atomic energy gap
+        as :math:`\Delta = \nu - \omega_q`. This is because here all atoms have the same energy gap, whereas for superconducting
+        qubits that is typically not the case.
+        Note that a potential anharmonicity term, as is common for transmon systems when taking into account higher energy
+        levels, is unaffected by this transformation.
 
     .. details::
         **Neutral Atom Rydberg systems**
