@@ -46,7 +46,7 @@ class TestTransmonInteraction:
         Hd = transmon_interaction(
             connections=connections, omega=omega, g=g, delta=None, wires=wires, d=2
         )
-        settings = TransmonSettings(connections, omega, g, delta=[0.]*len(wires))
+        settings = TransmonSettings(connections, omega, g, delta=[0.0] * len(wires))
 
         assert isinstance(Hd, HardwareHamiltonian)
         assert Hd.settings == settings

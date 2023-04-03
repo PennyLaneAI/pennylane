@@ -101,7 +101,7 @@ def transmon_interaction(
 
     # Prepare coefficients
     if delta is None:
-        delta = [0.] * n_wires
+        delta = [0.0] * n_wires
     # TODO: make coefficients callable / trainable. Currently not supported
     if qml.math.ndim(omega) == 0:
         omega = [omega] * n_wires
@@ -162,7 +162,6 @@ class TransmonSettings:
     delta: Union[float, Callable] = None
 
     def __eq__(self, other):
-
         return (
             qml.math.all(self.connections == other.connections)
             and qml.math.all(self.omega == other.omega)
