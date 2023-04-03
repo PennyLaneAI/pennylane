@@ -217,18 +217,16 @@ def drive(amplitude, phase, wires):
         )
 
     # TODO: use sigma+ and sigma- (not necessary as terms are the same, but for consistency)
-    # We compute the `coeffs` and `observables` of the electromagnetic field
-    else:
-        # We compute the `coeffs` and `observables` of the EM field
-        coeffs = [
-            amplitude_and_phase(qml.math.cos, amplitude, phase),
-            amplitude_and_phase(qml.math.sin, amplitude, phase),
-        ]
+    # We compute the `coeffs` and `observables` of the EM field
+    coeffs = [
+        amplitude_and_phase(qml.math.cos, amplitude, phase),
+        amplitude_and_phase(qml.math.sin, amplitude, phase),
+    ]
 
-        drive_x_term = 0.5 * sum(qml.PauliX(wire) for wire in wires)
-        drive_y_term = -0.5 * sum(qml.PauliY(wire) for wire in wires)
+    drive_x_term = 0.5 * sum(qml.PauliX(wire) for wire in wires)
+    drive_y_term = -0.5 * sum(qml.PauliY(wire) for wire in wires)
 
-        observables = [drive_x_term, drive_y_term]
+    observables = [drive_x_term, drive_y_term]
 
     # We convert the pulse data into a list of ``HardwarePulse`` objects
     frequency = None

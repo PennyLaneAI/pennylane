@@ -605,10 +605,9 @@ class TestIntegration:
         def fc(p, t):
             return p[0] * jnp.sin(t) + jnp.cos(p[1] * t)
 
-
         H1 = drive(amplitude=fa, phase=0, wires=wires)
         H2 = drive(amplitude=fc, phase=3 * jnp.pi, wires=4)
-        H3 = drive(amplitude=1., phase=0, wires=[3, 0])
+        H3 = drive(amplitude=1.0, phase=0, wires=[3, 0])
 
         dev = qml.device("default.qubit", wires=wires)
 
