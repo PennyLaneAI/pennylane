@@ -356,7 +356,7 @@ class TestPassthruIntegration:
         dev2 = qml.device("default.mixed", wires=3)
 
         circuit1 = qml.QNode(circuit, dev1, diff_method="backprop", interface="jax")
-        circuit2 = qml.QNode(circuit, dev2, diff_method="parameter-shift")
+        circuit2 = qml.QNode(circuit, dev2, diff_method="parameter-shift", interface="jax")
 
         res = decorator(circuit1)(p_jax)
         assert np.allclose(res, circuit2(p), atol=tol, rtol=0)
@@ -365,7 +365,7 @@ class TestPassthruIntegration:
         assert circuit2.gradient_fn is qml.gradients.param_shift
 
         res = decorator(jacobian_fn(circuit1, 0))(p_jax)
-        assert np.allclose(res, qml.jacobian(circuit2)(p), atol=tol, rtol=0)
+        assert np.allclose(res, jax.jacobian(circuit2)(p), atol=tol, rtol=0)
 
     @pytest.mark.parametrize(
         "op, wire_ids, exp_fn",
@@ -707,32 +707,6 @@ class TestHighLevelIntegration:
         weights = jnp.array(np.random.random(shape))
 
         grad = jax.grad(circuit)(weights)
-        assert grad.shape == weights.shape
-
-    def test_qnode_collection_integration(self):
-        """Test that a PassthruQNode default.mixed with JAX works with QNodeCollections."""
-        dev = qml.device("default.mixed", wires=2)
-
-        obs_list = [qml.PauliX(0) @ qml.PauliY(1), qml.PauliZ(0), qml.PauliZ(0) @ qml.PauliZ(1)]
-        with pytest.warns(UserWarning, match="The map function is deprecated"):
-            qnodes = qml.map(
-                qml.templates.StronglyEntanglingLayers,
-                obs_list,
-                dev,
-                interface="jax",
-                diff_method="backprop",
-            )
-
-        assert qnodes.interface == "jax"
-
-        weights = jnp.array(
-            np.random.random(qml.templates.StronglyEntanglingLayers.shape(n_layers=2, n_wires=2))
-        )
-
-        def cost(weights):
-            return jnp.sum(qnodes(weights))
-
-        grad = jax.grad(cost)(weights)
         assert grad.shape == weights.shape
 
     def test_vmap_channel_ops(self):
