@@ -514,18 +514,20 @@ class PCPhase(Operation):
     A projector-controlled phase gate.
 
     This gate applies a complex phase :math:`\phi` to first :math:`dim`
-    basis vectors of the input state. This is equivalent to applying a constant
-    phase shift to the subspace spanned by those vectors. Consider the 2 qubit
+    basis vectors of the input state while applying a complex phase :math:`- \phi`
+    to the remaining basis vectors. This is equivalent to applying a constant
+    phase shift to the subspace spanned by those :math:`dim` vectors. Consider the 2 qubit
     case where :math:`dim = 2`.
 
     .. math:: \Pi_{\phi}(\phi, dim=2, wires=[0,1]) = \begin{bmatrix}
                 e^{i\phi} & 0 & 0 & 0 \\
                 0 & e^{i\phi} & 0 & 0 \\
-                0 & 0 & 1 & 0 \\
-                0 & 0 & 0 & 1
+                0 & 0 & e^{-i\phi} & 0 \\
+                0 & 0 & 0 & e^{-i\phi}
             \end{bmatrix}.
 
-    This applies a phase shift to the subspace spanned by :math:`\lbrace | 00 \rangle , | 01 \rangle \rbrace`.
+    This is effectively applying a :math:`2*\phi` phase shift to the subspace spanned by
+    :math:`\lbrace | 00 \rangle , | 01 \rangle \rbrace` excluding global phase.
 
     **Details:**
 
@@ -548,7 +550,7 @@ class PCPhase(Operation):
     array([[0.33423773+0.9424888j, 0.        +0.j       , 0.        +0.j       , 0.        +0.j       ],
            [0.        +0.j       , 0.33423773+0.9424888j, 0.        +0.j       , 0.        +0.j       ],
            [0.        +0.j       , 0.        +0.j       , 0.33423773+0.9424888j, 0.        +0.j       ],
-           [0.        +0.j       , 0.        +0.j       , 0.        +0.j       , 1.        +0.j       ]])
+           [0.        +0.j       , 0.        +0.j       , 0.        +0.j       , 0.33423773-0.9424888j]])
     """
     num_wires = AnyWires
     num_params = 1
@@ -558,13 +560,13 @@ class PCPhase(Operation):
 
     basis = "Z"
     grad_method = "A"
-    parameter_frequencies = [(1,)]
+    parameter_frequencies = [(2,)]
 
     def generator(self):
-        r"""The hermitian matrix, which when exponentiated and scaled (i :math:`\phi`), produces
+        r"""The Hermitian matrix, which, when exponentiated and scaled (i :math:`\phi`), produces
         the PCPhase unitary."""
         dim, shape = self.hyperparameters["dimension"]
-        mat = np.diag([1 if index < dim else 0 for index in range(shape)])
+        mat = np.diag([1 if index < dim else -1 for index in range(shape)])
         return qml.Hermitian(mat, wires=self.wires)
 
     def __init__(self, phi, dim, wires, do_queue=True, id=None):
@@ -587,7 +589,7 @@ class PCPhase(Operation):
 
         if qml.math.get_interface(phi) == "tensorflow":
             p = qml.math.exp(1j * qml.math.cast_like(phi, 1j))
-            ones = qml.math.ones_like(p)
+            minus_p = qml.math.exp(-1j * qml.math.cast_like(phi, 1j))
             zeros = qml.math.zeros_like(p)
 
             columns = []
@@ -595,13 +597,13 @@ class PCPhase(Operation):
                 columns.append(
                     [p if j == i else zeros for j in range(t)]
                     if i < d
-                    else [ones if j == i else zeros for j in range(t)]
+                    else [minus_p if j == i else zeros for j in range(t)]
                 )
             r = qml.math.stack(columns, like="tensorflow", axis=-2)
             return r
 
         arg = 1j * phi
-        prefactors = qml.math.array([1 if index < d else 0 for index in range(t)], like=phi)
+        prefactors = qml.math.array([1 if index < d else -1 for index in range(t)], like=phi)
 
         if qml.math.ndim(arg) == 0:
             return qml.math.diag(qml.math.exp(arg * prefactors))
@@ -617,12 +619,11 @@ class PCPhase(Operation):
 
         if qml.math.get_interface(phi) == "tensorflow":
             phase = qml.math.exp(1j * qml.math.cast_like(phi, 1j))
-            return stack_last(
-                [phase if index < d else qml.math.ones_like(phase) for index in range(t)]
-            )
+            minus_phase = qml.math.exp(-1j * qml.math.cast_like(phi, 1j))
+            return stack_last([phase if index < d else minus_phase for index in range(t)])
 
         arg = 1j * phi
-        prefactors = qml.math.array([1 if index < d else 0 for index in range(t)], like=phi)
+        prefactors = qml.math.array([1 if index < d else -1 for index in range(t)], like=phi)
 
         if qml.math.ndim(phi) == 0:
             product = arg * prefactors
@@ -654,23 +655,36 @@ class PCPhase(Operation):
         phi = params[0]
         k, n = hyperparams["dimension"]
 
-        def _get_base_ops(theta, wire):
-            return PauliX(wire) @ PhaseShift(theta, wire) @ PauliX(wire), PhaseShift(theta, wire)
-
         def _get_op_from_binary_rep(binary_rep, theta, wires):
             if len(binary_rep) == 1:
-                op = _get_base_ops(theta, wire=wires[0])[int(binary_rep)]
+                op = (
+                    PhaseShift(theta, wires[0])
+                    if int(binary_rep)
+                    else PauliX(wires[0]) @ PhaseShift(theta, wires[0]) @ PauliX(wires[0])
+                )
             else:
-                base_op = _get_base_ops(theta, wire=wires[-1])[int(binary_rep[-1])]
+                base_op = (
+                    PhaseShift(theta, wires[-1])
+                    if int(binary_rep[-1])
+                    else PauliX(wires[-1]) @ PhaseShift(theta, wires[-1]) @ PauliX(wires[-1])
+                )
                 op = qml.ctrl(
                     base_op, control=wires[:-1], control_values=[int(i) for i in binary_rep[:-1]]
                 )
             return op
 
         n_log2 = int(np.log2(n))
-        binary_reps = [bin(_k)[2:].zfill(n_log2) for _k in range(k)]
+        positive_binary_reps = [bin(_k)[2:].zfill(n_log2) for _k in range(k)]
+        negative_binary_reps = [bin(_k)[2:].zfill(n_log2) for _k in range(k, n)]
 
-        return [_get_op_from_binary_rep(br, phi, wires=wires) for br in binary_reps]
+        positive_ops = [
+            _get_op_from_binary_rep(br, phi, wires=wires) for br in positive_binary_reps
+        ]
+        negative_ops = [
+            _get_op_from_binary_rep(br, -1 * phi, wires=wires) for br in negative_binary_reps
+        ]
+
+        return positive_ops + negative_ops
 
     def adjoint(self):
         """Computes the adjoint of the operator."""
