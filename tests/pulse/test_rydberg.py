@@ -120,6 +120,7 @@ class TestRydbergSettings:
         assert settings10.register == register0
         assert settings10.interaction_coeff == 2.0
 
+    #pylint: disable=unused-variable
     def test_raises_error_two_interaction_terms(
         self,
     ):
