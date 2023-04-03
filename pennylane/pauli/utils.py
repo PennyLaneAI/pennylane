@@ -92,6 +92,8 @@ def is_pauli_word(observable):
     >>> is_pauli_word(4 * qml.PauliX(0) @ qml.PauliZ(0))
     True
     """
+    if getattr(observable, "_pauli_rep", None):
+        return len(observable._pauli_rep) == 1
     pauli_word_names = ["Identity", "PauliX", "PauliY", "PauliZ"]
     if isinstance(observable, Tensor):
         return set(observable.name).issubset(pauli_word_names)
@@ -138,6 +140,8 @@ def are_identical_pauli_words(pauli_1, pauli_2):
     >>> are_identical_pauli_words(qml.PauliZ(0) @ qml.PauliZ(1), qml.PauliZ(0) @ qml.PauliX(3))
     False
     """
+    if getattr(pauli_1, "_pauli_rep", None) and getattr(pauli_2, "_pauli_rep", None):
+        return pauli_1._pauli_rep == pauli_2._pauli_rep
 
     if not (is_pauli_word(pauli_1) and is_pauli_word(pauli_2)):
         raise TypeError(f"Expected Pauli word observables, instead got {pauli_1} and {pauli_2}.")
