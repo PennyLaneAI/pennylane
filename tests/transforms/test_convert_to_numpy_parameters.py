@@ -18,6 +18,10 @@ import numpy as np
 
 import pennylane as qml
 from pennylane.transforms import convert_to_numpy_parameters
+from pennylane.transforms.convert_to_numpy_parameters import (
+    _convert_op_to_numpy_data,
+    _convert_measurement_to_numpy_data,
+)
 
 
 ml_frameworks_list = [
@@ -29,7 +33,7 @@ ml_frameworks_list = [
 
 
 @pytest.mark.parametrize("framework", ml_frameworks_list)
-def test_convert_autograd_arrays_to_numpy(framework):
+def test_convert_arrays_to_numpy(framework):
     """Tests that convert_to_numpy_parameters works with autograd arrays."""
 
     x = qml.math.asarray(np.array(1.234), like=framework)
@@ -54,3 +58,31 @@ def test_convert_autograd_arrays_to_numpy(framework):
     for ind in (0, 1, 2, 6):
         assert qml.equal(new_qs[ind], qs[ind], check_interface=False, check_trainability=False)
         assert qml.math.get_interface(*new_qs[ind].data) == "numpy"
+
+
+@pytest.mark.autograd
+def test_unwraps_arithmetic_op():
+    """Should currently fail. We will need to flatten composite op data to get this to work."""
+    op1 = qml.s_prod(qml.numpy.array(2.0), qml.PauliX(0))
+    op2 = qml.s_prod(qml.numpy.array(3.0), qml.PauliY(0))
+
+    sum_op = qml.sum(op1, op2)
+
+    unwrapped_op = _convert_op_to_numpy_data(sum_op)
+    assert qml.math.get_interface(unwrapped_op[0].data[0][0]) == "numpy"
+    assert qml.math.get_interface(unwrapped_op[1].data[0][0]) == "numpy"
+
+
+@pytest.mark.autograd
+def test_unwraps_arithmetic_op_measurement():
+    """Should currently fail. We will need to flatten composite op data to get this to work."""
+    op1 = qml.s_prod(qml.numpy.array(2.0), qml.PauliX(0))
+    op2 = qml.s_prod(qml.numpy.array(3.0), qml.PauliY(0))
+
+    sum_op = qml.sum(op1, op2)
+    m = qml.expval(sum_op)
+
+    unwrapped_m = _convert_measurement_to_numpy_data(m)
+    unwrapped_op = unwrapped_m.obs
+    assert qml.math.get_interface(unwrapped_op[0].data[0][0]) == "numpy"
+    assert qml.math.get_interface(unwrapped_op[1].data[0][0]) == "numpy"
