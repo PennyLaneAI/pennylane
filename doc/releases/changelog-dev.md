@@ -169,6 +169,10 @@
 
 <h3>Bug fixes</h3>
 
+* Fixed a bug where the time parameter of `ParametrizedEvolution` as function argument would break
+  JIT compiling for some inputs.
+  [(#3962)](https://github.com/PennyLaneAI/pennylane/pull/3962)
+
 * Fixed a bug where calling `Evolution.generator` with `coeff` being a complex ArrayBox raised an error.
   [(#3796)](https://github.com/PennyLaneAI/pennylane/pull/3796)
   
