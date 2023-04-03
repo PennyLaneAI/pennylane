@@ -61,7 +61,7 @@ class Shots:
     """The total number of shots to be executed."""
 
     shot_vector: Tuple[ShotCopies] = None
-    """The list of ShotCopies to be executed. Each element is of the form (shots, copies)."""
+    """The tuple of ShotCopies to be executed. Each element is of the form (shots, copies)."""
 
     _SHOT_ERROR = ValueError(
         "Shots must be a single positive integer, a tuple pair of the form (shots, copies), or a sequence of these types."
