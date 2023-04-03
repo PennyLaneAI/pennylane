@@ -181,6 +181,11 @@ class TestPauliWord:
             assert pw_op.name == op.name
             assert pw_op.wires == op.wires
 
+        if isinstance(op, qml.ops.Prod):
+            pw_tensor_op = pw.operation(get_as_tensor=True)
+            expected_tensor_op = qml.operation.Tensor(*op.operands)
+            assert qml.equal(pw_tensor_op, expected_tensor_op)
+
     def test_operation_empty(self):
         """Test that an empty PauliWord with wire_order returns Identity."""
         op = PauliWord({}).operation(wire_order=[0, 1])
@@ -321,6 +326,18 @@ class TestPauliSentence:
         (ps4, ps3, ps3),
         (ps1, ps5, ps1),
         (ps5, ps1, ps1),
+        (
+            PauliSentence(
+                {PauliWord({0: "Z"}): np.array(1.0), PauliWord({0: "Z", 1: "X"}): np.array(1.0)}
+            ),
+            PauliSentence({PauliWord({1: "Z"}): np.array(1.0), PauliWord({1: "Y"}): np.array(1.0)}),
+            PauliSentence(
+                {
+                    PauliWord({0: "Z", 1: "Z"}): np.array(1.0 + 1.0j),
+                    PauliWord({0: "Z", 1: "Y"}): np.array(1.0 - 1.0j),
+                }
+            ),
+        ),
     )
 
     @pytest.mark.parametrize("ps1, ps2, res", tup_ps_mult)

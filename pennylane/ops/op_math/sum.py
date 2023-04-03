@@ -186,7 +186,11 @@ class Sum(CompositeOp):
     @property
     def is_hermitian(self):
         """If all of the terms in the sum are hermitian, then the Sum is hermitian."""
-        return all(s.is_hermitian for s in self)
+        return (
+            all(s.is_hermitian for s in self)
+            if self._pauli_rep is None
+            else not any(qml.math.iscomplex(val) for val in self._pauli_rep.values())
+        )
 
     def terms(self):
         r"""Representation of the operator as a linear combination of other operators.

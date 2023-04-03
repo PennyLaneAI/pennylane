@@ -1,5 +1,5 @@
 tests/data/**
-tests/devices/test_execution_config.py
+tests/devices/experimental/**
 tests/drawer/test_tape_mpl.py
 tests/drawer/test_draw_mpl.py
 tests/drawer/test_drawer_utils.py
@@ -43,6 +43,7 @@ tests/returntypes/gradients/test_spsa_gradient_shot_vec_new.py
 tests/returntypes/gradients/test_jvp.py
 tests/returntypes/gradients/test_hadamard_gradient_new.py
 tests/returntypes/gradients/test_pulse_gradient_new.py
+tests/returntypes/gradients/test_cv_gradients_new.py
 tests/returntypes/qnn/conftest.py
 tests/returntypes/qnn/test_keras_new.py
 tests/returntypes/qnn/test_qnn_torch_new.py
@@ -54,3 +55,4 @@ tests/devices/test_default_mixed_torch.py
 tests/devices/test_default_mixed_tf.py
 tests/devices/test_null_qubit.py
 tests/fourier/test_coefficients.py
+tests/test_qutrit_device.py
