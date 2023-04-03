@@ -127,4 +127,4 @@ class TestRydbergSettings:
         settings0 = RydbergSettings(register0)
         settings1 = RydbergSettings(register1)
         with pytest.raises(ValueError, match="Cannot add two"):
-            settings0 + settings1
+            res = settings0 + settings1

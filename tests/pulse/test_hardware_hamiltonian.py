@@ -68,7 +68,7 @@ class TestHardwareHamiltonian:
 
         assert rm.pulses == []
         assert rm.wires == Wires([])
-        assert rm.settings == None
+        assert rm.settings is None
 
     @pytest.mark.parametrize(
         "settings",
@@ -174,9 +174,6 @@ class TestHardwareHamiltonian:
         def phase(p, t):
             return p * t
 
-        def detuning(p, t):
-            return np.cos(t) * p
-
         H_global = qml.pulse.drive(amp, phase, wires=[0])
         H_global += qml.pulse.drive(amp, phase, wires=[0])
         H_global += np.polyval * qml.PauliX(0)
@@ -200,9 +197,6 @@ class TestHardwareHamiltonian:
 
         def phase(p, t):
             return p * t
-
-        def detuning(p, t):
-            return np.cos(t) * p
 
         # start with ParametrizedHamiltonian, add on HardwareHamiltonians
         H_global = np.polyval * qml.PauliX(0)
@@ -427,8 +421,6 @@ class TestAmplitudeAndPhase:
         creates AmplitudeAndPhase callables, and the resulting Hamiltonian
         can be called successfully"""
 
-        detuning = 2
-
         Hd = drive(sine_func, cosine_fun, wires=[0, 1])
 
         assert len(Hd.coeffs) == 2
@@ -471,8 +463,6 @@ class TestAmplitudeAndPhase:
     def test_callable_amplitude_hamiltonian(self):
         """Test that using callable amplitude in drive creates AmplitudeAndPhase
         callables, and the resulting Hamiltonian can be called"""
-
-        detuning = 2
 
         Hd = drive(sine_func, 4.3, wires=[0, 1])
 
