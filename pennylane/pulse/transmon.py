@@ -100,6 +100,8 @@ def transmon_interaction(
     n_wires = len(wires)
 
     # Prepare coefficients
+    if delta is None:
+        delta = [0.] * n_wires
     # TODO: make coefficients callable / trainable. Currently not supported
     if qml.math.ndim(omega) == 0:
         omega = [omega] * n_wires
@@ -148,9 +150,9 @@ class TransmonSettings:
 
     Args:
             connections (List): List `[[idx_q0, idx_q1], ..]` of connected qubits (wires)
-            omega (Union[float, Callable]):
-            delta (Union[float, Callable]):
-            g (Union[list, TensorLike, Callable]):
+            omega (List[float, Callable]):
+            delta (List[float, Callable]):
+            g (List[list, TensorLike, Callable]):
 
     """
 
@@ -160,18 +162,12 @@ class TransmonSettings:
     delta: Union[float, Callable] = None
 
     def __eq__(self, other):
-        if self.delta is None and other.delta is None:
-            same_delta = True
-        elif self.delta is not None and other.delta is not None:
-            same_delta = all(self.delta == other.delta)
-        else:
-            same_delta = False
 
         return (
             qml.math.all(self.connections == other.connections)
             and qml.math.all(self.omega == other.omega)
             and qml.math.all(self.g == other.g)
-            and same_delta
+            and qml.math.all(self.delta == other.delta)
         )
 
     def __add__(self, other):
