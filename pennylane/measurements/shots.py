@@ -13,10 +13,7 @@
 """This module contains the Shots class to hold shot-related information."""
 # pylint:disable=inconsistent-return-statements
 from collections import namedtuple
-from collections.abc import Sequence as SequenceType
-from functools import singledispatchmethod
-from typing import Sequence, Tuple, Union
-import numpy as np
+from typing import Sequence, Tuple
 
 ShotCopies = namedtuple("ShotCopies", ["shots", "copies"])
 """A namedtuple that represents a shot quantity being repeated some number of times."""
@@ -82,44 +79,24 @@ class Shots:
             )
         return super().__setattr__(name, value)
 
-    @singledispatchmethod
     def __init__(self, shots):
-        if isinstance(shots, self.__class__):
+        if shots is None:
+            self.total_shots = None
+            self.shot_vector = ()
+        elif isinstance(shots, int):
+            if shots < 1:
+                raise self._SHOT_ERROR
+            self.total_shots = shots
+            self.shot_vector = (ShotCopies(shots, 1),)
+        elif isinstance(shots, Sequence):
+            if not all(valid_int(s) or valid_tuple(s) for s in shots):
+                raise self._SHOT_ERROR
+            self.__all_tuple_init__([s if isinstance(s, tuple) else (s, 1) for s in shots])
+        elif isinstance(shots, self.__class__):
             return  # self already _is_ shots as defined by __new__
-        raise self._SHOT_ERROR
-
-    @__init__.register
-    def __int_init__(self, shots: int):
-        if shots < 1:
+        else:
             raise self._SHOT_ERROR
-        self.total_shots = shots
-        self.shot_vector = (ShotCopies(shots, 1),)
-        self._frozen = True
 
-    @__init__.register
-    def __None_init__(self, shots: type(None)):  # pylint:disable=unused-argument
-        self.total_shots = None
-        self.shot_vector = ()
-        self._frozen = True
-
-    @__init__.register
-    def __list_init__(self, shots: SequenceType):
-        if not all(valid_int(s) or valid_tuple(s) for s in shots):
-            raise self._SHOT_ERROR
-        if all(valid_tuple(s) for s in shots):
-            return self.__all_tuple_init__(shots)
-        if any(valid_tuple(s) for s in shots):
-            return self.__mixed_init__(shots)
-
-        if len(set(shots)) == 1:
-            # All shots are identical, only require a single shot tuple
-            self.shot_vector = (ShotCopies(shots=shots[0], copies=len(shots)),)
-            self.total_shots = shots[0] * len(shots)
-            return
-        # Iterate through the shots, and group consecutive identical shots
-        split_at_repeated = np.split(shots, np.diff(shots).nonzero()[0] + 1)
-        self.shot_vector = tuple(ShotCopies(shots=i[0], copies=len(i)) for i in split_at_repeated)
-        self.total_shots = int(np.sum(np.prod(self.shot_vector, axis=1)))
         self._frozen = True
 
     def __all_tuple_init__(self, shots: Sequence[Tuple]):
@@ -135,10 +112,6 @@ class Shots:
                 current_shots, current_copies = s
         self.shot_vector = tuple(res + [ShotCopies(current_shots, current_copies)])
         self.total_shots = total_shots + current_shots * current_copies
-        self._frozen = True
-
-    def __mixed_init__(self, shots: Sequence[Union[int, Tuple[int, int]]]):
-        return self.__all_tuple_init__([s if isinstance(s, tuple) else (s, 1) for s in shots])
 
     @property
     def has_partitioned_shots(self):
