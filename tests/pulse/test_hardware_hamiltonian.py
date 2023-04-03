@@ -177,13 +177,13 @@ class TestHardwareHamiltonian:
         def detuning(p, t):
             return np.cos(t) * p
 
-        H_global = qml.pulse.drive(amp, phase, detuning, wires=[0])
-        H_global += qml.pulse.drive(amp, phase, detuning, wires=[0])
+        H_global = qml.pulse.drive(amp, phase, wires=[0])
+        H_global += qml.pulse.drive(amp, phase, wires=[0])
         H_global += np.polyval * qml.PauliX(0)
 
         # start with HardwareHamiltonians, then add ParametrizedHamiltonian
-        params = [np.array([1.2, 2.3, 3.4]), 4.5, 5.6]
-        params += [np.array([1.2, 2.3, 3.4]), 4.5, 5.6]
+        params = [np.array([1.2, 2.3, 3.4]), 4.5]
+        params += [np.array([1.2, 2.3, 3.4]), 4.5]
         params += [np.ones(2)]
 
         assert isinstance(H_global, HardwareHamiltonian)
@@ -206,12 +206,12 @@ class TestHardwareHamiltonian:
 
         # start with ParametrizedHamiltonian, add on HardwareHamiltonians
         H_global = np.polyval * qml.PauliX(0)
-        H_global += qml.pulse.drive(amp, phase, detuning, wires=[0])
-        H_global += qml.pulse.drive(amp, phase, detuning, wires=[0])
+        H_global += qml.pulse.drive(amp, phase, wires=[0])
+        H_global += qml.pulse.drive(amp, phase, wires=[0])
 
         params = [np.ones(2)]
-        params += [np.array([1.2, 2.3, 3.4]), 4.5, 5.6]
-        params += [np.array([1.2, 2.3, 3.4]), 4.5, 5.6]
+        params += [np.array([1.2, 2.3, 3.4]), 4.5]
+        params += [np.array([1.2, 2.3, 3.4]), 4.5]
 
         assert isinstance(H_global, HardwareHamiltonian)
         H_global(params, 2)  # no error raised
@@ -238,7 +238,7 @@ class TestInteractionWithOperators:
         """Test that a Hamiltonian and SProd can be added to a HardwareHamiltonian, and
         will be incorporated in the H_fixed term, with their coefficients included in H_coeffs_fixed.
         """
-        R = drive(amplitude=f1, phase=0, detuning=f2, wires=[0, 1])
+        R = drive(amplitude=f1, phase=0, wires=[0, 1])
         params = [1, 2]
         # Adding on the right
         new_pH = R + H
@@ -259,8 +259,8 @@ class TestInteractionWithOperators:
     def test_add_other_operators(self, op):
         """Test that a Hamiltonian, SProd, Tensor or Operator can be added to a
         ParametrizedHamiltonian, and will be incorporated in the H_fixed term"""
-        R = drive(amplitude=f1, phase=0, detuning=f2, wires=[0, 1])
-        params = [1, 2]
+        R = drive(amplitude=f1, phase=0, wires=[0, 1])
+        params = [1]
 
         # Adding on the right
         new_pH = R + op
@@ -277,7 +277,7 @@ class TestInteractionWithOperators:
         new_pH(params, 2)  # confirm calling does not raise error
 
     def test_unknown_type_raises_error(self):
-        R = drive(amplitude=f1, phase=0, detuning=f2, wires=[0, 1])
+        R = drive(amplitude=f1, phase=0, wires=[0, 1])
         with pytest.raises(TypeError, match="unsupported operand type"):
             R += 3
 
@@ -289,12 +289,12 @@ class TestDrive:
         """Test that the attributes and the number of terms of the ``ParametrizedHamiltonian`` returned by
         ``drive`` are correct."""
 
-        Hd = drive(amplitude=1, phase=2, detuning=3, wires=[1, 2])
+        Hd = drive(amplitude=1, phase=2, wires=[1, 2])
 
         assert isinstance(Hd, HardwareHamiltonian)
         assert Hd.wires == Wires([1, 2])
-        assert len(Hd.ops) == 3  # 2 amplitude/phase terms and one detuning term of the Hamiltonian
-        assert Hd.pulses == [HardwarePulse(1, 2, 3, [1, 2])]
+        assert len(Hd.ops) == 2  # 2 amplitude/phase terms
+        assert Hd.pulses == [HardwarePulse(1, 2, None, [1, 2])]
 
     def test_multiple_local_drives(self):
         """Test that adding multiple drive terms behaves as expected"""
@@ -302,43 +302,35 @@ class TestDrive:
         def fa(p, t):
             return np.sin(p * t)
 
-        def fb(p, t):
-            return np.cos(p * t)
-
-        H1 = drive(amplitude=fa, phase=1, detuning=3, wires=[0, 3])
-        H2 = drive(amplitude=1, phase=3, detuning=fb, wires=[1, 2])
+        H1 = drive(amplitude=fa, phase=1, wires=[0, 3])
+        H2 = drive(amplitude=1, phase=3, wires=[1, 2])
         Hd = H1 + H2
 
         ops_expected = [
-            qml.Hamiltonian([-1, -1], [qml.PauliZ(0), qml.PauliZ(3)]),
             qml.Hamiltonian([0.5, 0.5], [qml.PauliX(1), qml.PauliX(2)]),
             qml.Hamiltonian([-0.5, -0.5], [qml.PauliY(1), qml.PauliY(2)]),
             qml.Hamiltonian([0.5, 0.5], [qml.PauliX(0), qml.PauliX(3)]),
             qml.Hamiltonian([-0.5, -0.5], [qml.PauliY(0), qml.PauliY(3)]),
-            qml.Hamiltonian([-1, -1], [qml.PauliZ(1), qml.PauliZ(2)]),
         ]
         coeffs_expected = [
-            3,
             np.cos(3),
             np.sin(3),
             AmplitudeAndPhase(np.cos, fa, 1),
             AmplitudeAndPhase(np.sin, fa, 1),
-            fb,
         ]
         H_expected = HardwareHamiltonian(coeffs_expected, ops_expected)
 
         # structure of Hamiltonian is as expected
         assert isinstance(Hd, HardwareHamiltonian)
-        assert Hd.wires == Wires([0, 3, 1, 2])
+        assert Hd.wires == Wires([1, 2, 0, 3])
         assert Hd.settings is None
-        assert len(Hd.ops) == 6  # 2 terms for amplitude/phase and one detuning for each drive
+        assert len(Hd.ops) == 4  # 2 terms for amplitude/phase
 
         # coefficients are correct
         # Callable coefficients are shifted to the end of the list.
-        assert Hd.coeffs[0:3] == [3, np.cos(3), np.sin(3)]
+        assert Hd.coeffs[:2] == [np.cos(3), np.sin(3)]
+        assert isinstance(Hd.coeffs[2], AmplitudeAndPhase)
         assert isinstance(Hd.coeffs[3], AmplitudeAndPhase)
-        assert isinstance(Hd.coeffs[4], AmplitudeAndPhase)
-        assert Hd.coeffs[5] is fb
 
         # pulses were added correctly
         assert len(Hd.pulses) == 2
@@ -347,57 +339,10 @@ class TestDrive:
         # Hamiltonian is as expected
         assert qml.equal(Hd([0.5, -0.5], t=5), H_expected([0.5, -0.5], t=5))
 
-    def test_no_amplitude(self):
-        """Test that when amplitude is not specified, the drive term is correctly defined."""
-
-        def f(p, t):
-            return np.cos(p * t)
-
-        Hd = drive(amplitude=0, phase=1, detuning=f, wires=[0, 3])
-
-        ops_expected = [qml.Hamiltonian([-1, -1], [qml.PauliZ(0), qml.PauliZ(3)])]
-        coeffs_expected = [f]
-        H_expected = HardwareHamiltonian(coeffs_expected, ops_expected)
-
-        assert qml.equal(Hd([0.1], 10), H_expected([0.1], 10))
-        assert isinstance(Hd, HardwareHamiltonian)
-        assert Hd.wires == Wires([0, 3])
-        assert Hd.settings is None
-        assert len(Hd.coeffs) == 1
-        assert Hd.coeffs[0] is f
-        assert len(Hd.ops) == 1
-        assert qml.equal(Hd.ops[0], ops_expected[0])
-
-    def test_no_detuning(self):
-        """Test that when detuning not specified, the drive term is correctly defined."""
-
-        def f(p, t):
-            return np.cos(p * t)
-
-        Hd = drive(amplitude=f, phase=1, detuning=0, wires=[0, 3])
-
-        ops_expected = [
-            qml.Hamiltonian([0.5, 0.5], [qml.PauliX(0), qml.PauliX(3)]),
-            qml.Hamiltonian([-0.5, -0.5], [qml.PauliY(0), qml.PauliY(3)]),
-        ]
-        coeffs_expected = [
-            AmplitudeAndPhase(np.cos, f, 1),
-            AmplitudeAndPhase(np.sin, f, 1),
-        ]
-        H_expected = HardwareHamiltonian(coeffs_expected, ops_expected)
-
-        assert qml.equal(Hd([0.1], 10), H_expected([0.1], 10))
-        assert isinstance(Hd, HardwareHamiltonian)
-        assert Hd.wires == Wires([0, 3])
-        assert Hd.settings is None
-        assert all(isinstance(coeff, AmplitudeAndPhase) for coeff in Hd.coeffs)
-        assert len(Hd.coeffs) == 2
-        assert all(qml.equal(op, op_expected) for op, op_expected in zip(Hd.ops, ops_expected))
-
     def test_no_amplitude_no_detuning(self):
         """Test that the correct error is raised if both amplitude and detuning are trivial."""
-        with pytest.raises(ValueError, match="Expected non-zero value for at least one of either"):
-            _ = drive(0, np.pi, 0, wires=[0])
+        with pytest.raises(ValueError, match="Expected non-zero value or callable"):
+            _ = drive(0, np.pi, wires=[0])
 
 
 def callable_amp(p, t):
@@ -484,18 +429,14 @@ class TestAmplitudeAndPhase:
 
         detuning = 2
 
-        Hd = drive(sine_func, cosine_fun, detuning, wires=[0, 1])
+        Hd = drive(sine_func, cosine_fun, wires=[0, 1])
 
-        assert len(Hd.coeffs) == 3
+        assert len(Hd.coeffs) == 2
+        assert isinstance(Hd.coeffs[0], AmplitudeAndPhase)
         assert isinstance(Hd.coeffs[1], AmplitudeAndPhase)
-        assert isinstance(Hd.coeffs[2], AmplitudeAndPhase)
         t = 1.7
 
         evaluated_H = Hd([3.4, 5.6], t)
-
-        expected_H_fixed = qml.s_prod(
-            detuning, qml.Hamiltonian([-1, -1], [qml.PauliZ(0), qml.PauliZ(1)])
-        )
 
         c1 = np.sin(3.4 * t) * np.cos(np.cos(5.6 * t))
         c2 = np.sin(3.4 * t) * np.sin(np.cos(5.6 * t))
@@ -503,28 +444,20 @@ class TestAmplitudeAndPhase:
             qml.s_prod(c1, qml.Hamiltonian([0.5, 0.5], [qml.PauliX(0), qml.PauliX(1)])),
             qml.s_prod(c2, qml.Hamiltonian([-0.5, -0.5], [qml.PauliY(0), qml.PauliY(1)])),
         )
-
-        assert qml.equal(evaluated_H[0], expected_H_fixed)
-        assert qml.equal(evaluated_H[1], expected_H_parametrized)
+        assert qml.equal(evaluated_H, expected_H_parametrized)
 
     def test_callable_phase_hamiltonian(self):
         """Test that using callable phase in drive creates AmplitudeAndPhase
         callables, and the resulting Hamiltonian can be called"""
 
-        detuning = 2
+        Hd = drive(7.2, sine_func, wires=[0, 1])
 
-        Hd = drive(7.2, sine_func, detuning, wires=[0, 1])
-
-        assert len(Hd.coeffs) == 3
+        assert len(Hd.coeffs) == 2
+        assert isinstance(Hd.coeffs[0], AmplitudeAndPhase)
         assert isinstance(Hd.coeffs[1], AmplitudeAndPhase)
-        assert isinstance(Hd.coeffs[2], AmplitudeAndPhase)
         t = 1.7
 
         evaluated_H = Hd([5.6], t)
-
-        expected_H_fixed = qml.s_prod(
-            detuning, qml.Hamiltonian([-1, -1], [qml.PauliZ(0), qml.PauliZ(1)])
-        )
 
         c1 = 7.2 * np.cos(np.sin(5.6 * t))
         c2 = 7.2 * np.sin(np.sin(5.6 * t))
@@ -533,8 +466,7 @@ class TestAmplitudeAndPhase:
             qml.s_prod(c2, qml.Hamiltonian([-0.5, -0.5], [qml.PauliY(0), qml.PauliY(1)])),
         )
 
-        assert qml.equal(evaluated_H[0], expected_H_fixed)
-        assert qml.equal(evaluated_H[1], expected_H_parametrized)
+        assert qml.equal(evaluated_H, expected_H_parametrized)
 
     def test_callable_amplitude_hamiltonian(self):
         """Test that using callable amplitude in drive creates AmplitudeAndPhase
@@ -542,18 +474,14 @@ class TestAmplitudeAndPhase:
 
         detuning = 2
 
-        Hd = drive(sine_func, 4.3, detuning, wires=[0, 1])
+        Hd = drive(sine_func, 4.3, wires=[0, 1])
 
-        assert len(Hd.coeffs) == 3
+        assert len(Hd.coeffs) == 2
+        assert isinstance(Hd.coeffs[0], AmplitudeAndPhase)
         assert isinstance(Hd.coeffs[1], AmplitudeAndPhase)
-        assert isinstance(Hd.coeffs[2], AmplitudeAndPhase)
         t = 1.7
 
         evaluated_H = Hd([3.4], t)
-
-        expected_H_fixed = qml.s_prod(
-            detuning, qml.Hamiltonian([-1, -1], [qml.PauliZ(0), qml.PauliZ(1)])
-        )
 
         c1 = np.sin(3.4 * t) * np.cos(4.3)
         c2 = np.sin(3.4 * t) * np.sin(4.3)
@@ -562,8 +490,7 @@ class TestAmplitudeAndPhase:
             qml.s_prod(c2, qml.Hamiltonian([-0.5, -0.5], [qml.PauliY(0), qml.PauliY(1)])),
         )
 
-        assert qml.equal(evaluated_H[0], expected_H_fixed)
-        assert qml.equal(evaluated_H[1], expected_H_parametrized)
+        assert qml.equal(evaluated_H, expected_H_parametrized)
 
     COEFFS_AND_PARAMS = [
         (
@@ -608,10 +535,10 @@ class TestHardwarePulse:
 
     def test_init(self):
         """Test the initialization of the ``HardwarePulse`` class."""
-        p = HardwarePulse(amplitude=4, detuning=9, phase=8, wires=[0, 4, 7])
+        p = HardwarePulse(amplitude=4, phase=8, frequency=3, wires=[0, 4, 7])
         assert p.amplitude == 4
         assert p.phase == 8
-        assert p.detuning == 9
+        assert p.frequency == 3
         assert p.wires == Wires([0, 4, 7])
 
     def test_equal(self):
@@ -638,10 +565,7 @@ class TestIntegration:
         def fa(p, t):
             return jnp.polyval(p, t)
 
-        def fb(p, t):
-            return p[0] * jnp.sin(p[1] * t)
-
-        Ht = drive(amplitude=fa, phase=0, detuning=fb, wires=1)
+        Ht = drive(amplitude=fa, phase=0, wires=1)
 
         dev = qml.device("default.qubit", wires=wires)
 
@@ -659,7 +583,7 @@ class TestIntegration:
             qml.evolve(Hd + Ht)(params, ts)
             return qml.expval(H_obj)
 
-        params = (jnp.ones(5), jnp.array([1.0, jnp.pi]))
+        params = (jnp.ones(5), jnp.array([1.0]))
         res = qnode(params)
         res_jit = qnode_jit(params)
 
@@ -678,18 +602,13 @@ class TestIntegration:
         def fa(p, t):
             return jnp.polyval(p, t)
 
-        def fb(p, t):
-            return p[0] * jnp.sin(p[1] * t)
-
         def fc(p, t):
             return p[0] * jnp.sin(t) + jnp.cos(p[1] * t)
 
-        def fd(p, t):
-            return p * jnp.cos(t)
 
-        H1 = drive(amplitude=fa, phase=0, detuning=fb, wires=wires)
-        H2 = drive(amplitude=fc, phase=3 * jnp.pi, detuning=0, wires=4)
-        H3 = drive(amplitude=0, phase=0, detuning=fd, wires=[3, 0])
+        H1 = drive(amplitude=fa, phase=0, wires=wires)
+        H2 = drive(amplitude=fc, phase=3 * jnp.pi, wires=4)
+        H3 = drive(amplitude=1., phase=0, wires=[3, 0])
 
         dev = qml.device("default.qubit", wires=wires)
 
@@ -708,10 +627,8 @@ class TestIntegration:
             return qml.expval(H_obj)
 
         params = (
-            jnp.ones(5),
             jnp.array([1.0, jnp.pi]),
             jnp.array([jnp.pi / 2, 0.5]),
-            jnp.array(-0.5),
         )
         res = qnode(params)
         res_jit = qnode_jit(params)
@@ -734,10 +651,7 @@ class TestIntegration:
         def fb(p, t):
             return p[0] * jnp.sin(p[1] * t)
 
-        def fc(p, t):
-            return p[0] * jnp.sin(t) + jnp.cos(p[1] * t)
-
-        H_drive = drive(amplitude=fa, phase=fb, detuning=fc, wires=1)
+        H_drive = drive(amplitude=fa, phase=fb, wires=1)
 
         dev = qml.device("default.qubit", wires=wires)
 
@@ -755,7 +669,7 @@ class TestIntegration:
             qml.evolve(H_drift + H_drive)(params, ts)
             return qml.expval(H_obj)
 
-        params = (jnp.ones(5), jnp.array([1.0, jnp.pi]), jnp.array([jnp.pi / 2, 0.5]))
+        params = (jnp.ones(5), jnp.array([1.0, jnp.pi]))
         res = qnode(params)
         res_jit = qnode_jit(params)
 

@@ -29,13 +29,12 @@ from .parametrized_hamiltonian import ParametrizedHamiltonian
 # from .rydberg import RydbergSettings
 
 
-def drive(amplitude, phase, detuning, wires):
+def drive(amplitude, phase, wires):
     r"""Constructs a :class:`ParametrizedHamiltonian` representing the action of a driving electromagnetic
     field with a qubit.
 
     .. math::
-        \frac{1}{2} \sum_{j \in \text{wires}} \Omega(t) \left(e^{i \phi(t)} \sigma^+_j + e^{-i \phi(t)} \sigma^-_j \right) -
-        \Delta(t) \sigma^z_j
+        \frac{1}{2} \sum_{j \in \text{wires}} \Omega(t) \left(e^{i \phi(t)} \sigma^+_j + e^{-i \phi(t)} \sigma^-_j \right)
 
     where :math:`\Omega`, :math:`\phi` and :math:`\Delta` correspond to the amplitude, phase and detuning of the electromagnetic
     driving field and :math:`j` corresponds to the wire index. We are describing the Hamiltonian in terms of ladder operators
@@ -56,8 +55,6 @@ def drive(amplitude, phase, detuning, wires):
         amplitude (Union[float, Callable]): float or callable returning the amplitude of an
             electromagnetic field
         phase (Union[float, Callable]): float or callable returning the phase (in radians) of the electromagnetic field
-        detuning (Union[float, Callable]): float or callable returning the detuning of an
-            electromagnetic field
         wires (Union[int, List[int]]): integer or list containing wire values for the qubits that
             the electromagnetic field acts on
 
@@ -213,16 +210,11 @@ def drive(amplitude, phase, detuning, wires):
     """
     if isinstance(wires, int):
         wires = [wires]
-    trivial_detuning = not callable(detuning) and qml.math.isclose(detuning, 0.0)
 
     if not callable(amplitude) and qml.math.isclose(amplitude, 0.0):
-        if trivial_detuning:
-            raise ValueError(
-                f"Expected non-zero value for at least one of either amplitude or detuning, but received amplitude={amplitude} and detuning={detuning}. All terms are zero."
-            )
-
-        coeffs = []
-        observables = []
+        raise ValueError(
+            f"Expected non-zero value or callable for amplitude, but received amplitude={amplitude}. All terms are zero."
+        )
 
     # TODO: use sigma+ and sigma- (not necessary as terms are the same, but for consistency)
     # We compute the `coeffs` and `observables` of the electromagnetic field
@@ -238,13 +230,9 @@ def drive(amplitude, phase, detuning, wires):
 
         observables = [drive_x_term, drive_y_term]
 
-    if not trivial_detuning:
-        detuning_term = -1.0 * sum(qml.PauliZ(wire) for wire in wires)
-        coeffs.append(detuning)
-        observables.append(detuning_term)
-
     # We convert the pulse data into a list of ``HardwarePulse`` objects
-    pulses = [HardwarePulse(amplitude, phase, detuning, wires)]
+    frequency = None
+    pulses = [HardwarePulse(amplitude, phase, frequency, wires)]
 
     return HardwareHamiltonian(coeffs, observables, pulses=pulses)
 
@@ -363,7 +351,7 @@ class HardwarePulse:
 
     amplitude: Union[float, Callable]
     phase: Union[float, Callable]
-    detuning: Union[float, Callable]
+    frequency: Union[float, Callable]
     wires: List[Wires]
 
     def __post_init__(self):
@@ -373,7 +361,7 @@ class HardwarePulse:
         return (
             self.amplitude == other.amplitude
             and self.phase == other.phase
-            and self.detuning == other.detuning
+            and self.frequency == other.frequency
             and self.wires == other.wires
         )
 
