@@ -169,7 +169,7 @@ class SampleMP(SampleMeasurement):
             return tuple(
                 (shot_val,) if shot_val != 1 else tuple() for shot_val in device._raw_shot_sequence
             )
-        len_wires = len(device.wires)
+        len_wires = len(self.wires) if len(self.wires) > 0 else len(device.wires)
         return (1, device.shots) if self.obs is not None else (1, device.shots, len_wires)
 
     def _shape_new(self, device=None):
@@ -178,19 +178,22 @@ class SampleMP(SampleMeasurement):
                 "The device argument is required to obtain the shape of the measurement "
                 f"{self.__class__.__name__}."
             )
-        if device.shot_vector is not None:
-            if self.obs is None:
-                return tuple(
-                    (shot_val, len(device.wires)) if shot_val != 1 else (len(device.wires),)
-                    for shot_val in device._raw_shot_sequence
-                )
-            return tuple(
-                (shot_val,) if shot_val != 1 else tuple() for shot_val in device._raw_shot_sequence
-            )
-        if self.obs is None:
-            len_wires = len(device.wires)
-            return (device.shots, len_wires) if device.shots != 1 else (len_wires,)
-        return (device.shots,) if device.shots != 1 else ()
+        num_wires = len(self.wires) if len(self.wires) > 0 else len(device.wires)
+
+        def _single_int_shape(shot_val, num_wires):
+            # singleton dimensions, whether in shot val or num_wires are squeezed away
+            inner_shape = []
+            if shot_val != 1:
+                inner_shape.append(shot_val)
+            if num_wires != 1:
+                inner_shape.append(num_wires)
+            return tuple(inner_shape)
+
+        if device.shot_vector is None:
+            return _single_int_shape(device.shots, num_wires)
+        return tuple(
+            _single_int_shape(shot_val, num_wires) for shot_val in device._raw_shot_sequence
+        )
 
     def process_samples(
         self,
