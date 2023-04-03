@@ -82,9 +82,9 @@ class TestCounts:
         specified"""
 
         with pytest.raises(
-                ValueError,
-                match="Cannot specify the wires to sample if an observable is provided."
-                      " The wires to sample will be determined directly from the observable.",
+            ValueError,
+            match="Cannot specify the wires to sample if an observable is provided."
+            " The wires to sample will be determined directly from the observable.",
         ):
             qml.counts(qml.PauliZ(0), wires=[0, 1])
 
@@ -336,7 +336,7 @@ class TestCountsIntegration:
     @pytest.mark.parametrize("wires, basis_state", [(None, "010"), ([2, 1], "01")])
     @pytest.mark.parametrize("interface", ["autograd", "jax", "tensorflow", "torch"])
     def test_counts_binned(
-            self, shot_vec, interface, wires, basis_state, mocker
+        self, shot_vec, interface, wires, basis_state, mocker
     ):  # pylint:disable=too-many-arguments
         """Check all interfaces with computational basis state counts and
         different shot vectors"""
@@ -452,8 +452,9 @@ class TestCountsIntegration:
         dev = qml.device("default.qubit", wires=3, shots=shots)
         spy = mocker.spy(qml.QubitDevice, "sample")
 
-        if isinstance(shots, tuple) and interface=="torch":
+        if isinstance(shots, tuple) and interface == "torch":
             pytest.skip("Torch needs to be updated for shot vectors.")
+
         @qml.qnode(dev, interface=interface)
         def circuit():
             qml.PauliX(0)
@@ -465,12 +466,10 @@ class TestCountsIntegration:
         num_shot_bins = 1 if isinstance(shots, int) else len(shots)
 
         if num_shot_bins == 1:
-
             counts_term_indices = [i * 2 for i in range(num_shot_bins)]
             for ind in counts_term_indices:
                 assert isinstance(res[ind], dict)
         else:
-
             assert len(res) == 2
 
             assert isinstance(res[0], tuple)

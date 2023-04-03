@@ -56,9 +56,9 @@ class TestInitialization:
     @pytest.mark.parametrize(
         "ops",
         (
-                [qml.S(0)],
-                (qml.S(0),),
-                (qml.S(i) for i in [0]),
+            [qml.S(0)],
+            (qml.S(0),),
+            (qml.S(i) for i in [0]),
         ),
     )
     def test_provide_ops(self, ops):
@@ -71,9 +71,9 @@ class TestInitialization:
     @pytest.mark.parametrize(
         "m",
         (
-                [qml.state()],
-                (qml.state(),),
-                (qml.state() for _ in range(1)),
+            [qml.state()],
+            (qml.state(),),
+            (qml.state() for _ in range(1)),
         ),
     )
     def test_provide_measurements(self, m):
@@ -86,9 +86,9 @@ class TestInitialization:
     @pytest.mark.parametrize(
         "prep",
         (
-                [qml.BasisState([1, 1], wires=(0, 1))],
-                (qml.BasisState([1, 1], wires=(0, 1)),),
-                (qml.BasisState([1, 1], wires=(0, 1)) for _ in range(1)),
+            [qml.BasisState([1, 1], wires=(0, 1))],
+            (qml.BasisState([1, 1], wires=(0, 1)),),
+            (qml.BasisState([1, 1], wires=(0, 1)) for _ in range(1)),
         ),
     )
     def test_provided_state_prep(self, prep):
@@ -203,57 +203,57 @@ class TestUpdate:
         qs = QuantumScript(ops, m)
 
         with pytest.warns(
-                UserWarning,
-                match="The get_operation will soon be updated to also return the index of the trainable operation in the tape.",
+            UserWarning,
+            match="The get_operation will soon be updated to also return the index of the trainable operation in the tape.",
         ):
             op_0, p_id_0 = qs.get_operation(0)
             assert op_0 == ops[0] and p_id_0 == 0
 
         with pytest.warns(
-                UserWarning,
-                match="The get_operation will soon be updated to also return the index of the trainable operation in the tape.",
+            UserWarning,
+            match="The get_operation will soon be updated to also return the index of the trainable operation in the tape.",
         ):
             op_1, p_id_1 = qs.get_operation(1)
             assert op_1 == ops[1] and p_id_1 == 0
 
         with pytest.warns(
-                UserWarning,
-                match="The get_operation will soon be updated to also return the index of the trainable operation in the tape.",
+            UserWarning,
+            match="The get_operation will soon be updated to also return the index of the trainable operation in the tape.",
         ):
             op_2, p_id_2 = qs.get_operation(2)
             assert op_2 == ops[1] and p_id_2 == 1
 
         with pytest.warns(
-                UserWarning,
-                match="The get_operation will soon be updated to also return the index of the trainable operation in the tape.",
+            UserWarning,
+            match="The get_operation will soon be updated to also return the index of the trainable operation in the tape.",
         ):
             op_3, p_id_3 = qs.get_operation(3)
             assert op_3 == ops[1] and p_id_3 == 2
 
         with pytest.warns(
-                UserWarning,
-                match="The get_operation will soon be updated to also return the index of the trainable operation in the tape.",
+            UserWarning,
+            match="The get_operation will soon be updated to also return the index of the trainable operation in the tape.",
         ):
             op_4, p_id_4 = qs.get_operation(4)
             assert op_4 == ops[3] and p_id_4 == 0
 
         with pytest.warns(
-                UserWarning,
-                match="The get_operation will soon be updated to also return the index of the trainable operation in the tape.",
+            UserWarning,
+            match="The get_operation will soon be updated to also return the index of the trainable operation in the tape.",
         ):
             op_5, p_id_5 = qs.get_operation(5)
             assert op_5 == ops[4] and p_id_5 == 0
 
         with pytest.warns(
-                UserWarning,
-                match="The get_operation will soon be updated to also return the index of the trainable operation in the tape.",
+            UserWarning,
+            match="The get_operation will soon be updated to also return the index of the trainable operation in the tape.",
         ):
             op_6, p_id_6 = qs.get_operation(6)
             assert op_6 == ops[4] and p_id_6 == 1
 
         with pytest.warns(
-                UserWarning,
-                match="The get_operation will soon be updated to also return the index of the trainable operation in the tape.",
+            UserWarning,
+            match="The get_operation will soon be updated to also return the index of the trainable operation in the tape.",
         ):
             _, p_id_0 = qs.get_operation(7)
             assert p_id_0 == 0
@@ -374,7 +374,7 @@ class TestUpdate:
         ops = [qml.RX(x, wires=0), qml.Rot(*rot, 1), qml.RX(y, wires=1)]
 
         with pytest.raises(
-                ValueError, match="batch sizes of the quantum script operations do not match."
+            ValueError, match="batch sizes of the quantum script operations do not match."
         ):
             qs = QuantumScript(ops)
 
@@ -1298,8 +1298,8 @@ class TestOutputShape:
             pytest.skip("Sample doesn't support analytic computations.")
 
         if (
-                measurement.return_type in {State, MutualInfo, VnEntropy}
-                and measurement.wires is not None
+            measurement.return_type in {State, MutualInfo, VnEntropy}
+            and measurement.wires is not None
         ):
             pytest.skip("Density matrix does not support parameter broadcasting")
 
