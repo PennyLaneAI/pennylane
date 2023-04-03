@@ -33,7 +33,7 @@ def ad(wire, d=2):
 
 # pylint: disable=too-many-arguments
 def transmon_interaction(
-    connections: list, omega: Union[float, list], g: Union[float, list], delta=None, wires=None, d=2
+    omega: Union[float, list], connections: list, g: Union[float, list], anharmonicity=None, wires=None, d=2
 ):
     r"""Returns a :class:`ParametrizedHamiltonian` representing the cQED Hamiltonian of a superconducting transmon system.
 
@@ -41,13 +41,16 @@ def transmon_interaction(
 
     .. math::
 
-        H = \sum_q \omega_q a^\dagger_q a_q + \sum_{(i, j) \in \mathcal{C}} g_{ij} \left(a^\dagger_i a_j + a_j^\dagger a_i \right)
-        + \sum_q \delta_q a^\dagger_q a^\dagger_q a_q a_q
+        H = \sum_q \omega_q a^\dagger_q a_q
+        + \sum_{(i, j) \in \mathcal{C}} g_{ij} \left(a^\dagger_i a_j + a_j^\dagger a_i \right)
+        + \sum_q \alpha_q a^\dagger_q a^\dagger_q a_q a_q
 
-    where :math:`[a^\dagger_p, a_q] = i \delta_{pq}` are bosonic creation and annihilation operators.
-    The first term describes the dressed qubit frequencies :math:`\omega_q`, the second term their coupling :math:`g_{ij}` and the last the anharmonicity :math:`\delta_q`,
-    which all can vary for different qubits. In practice, the bosonic operators are restricted to a finite dimension of the local Hilbert space (default ``d=2`` corresponds to qubits).
-    In that case, the anharmonicity is set to :math:`delta=0` and ignored.
+    where :math:`[a^\dagger_p, a_q] = i \alpha_{pq}` are bosonic creation and annihilation operators.
+    The first term describes the dressed qubit frequencies :math:`\omega_q`, the second term their
+    coupling :math:`g_{ij}` and the last the anharmonicity :math:`\alpha_q`, which all can vary for
+    different qubits. In practice, the bosonic operators are restricted to a finite dimension of the
+    local Hilbert space (default ``d=2`` corresponds to qubits).
+    In that case, the anharmonicity is set to :math:`\anharmonicity=0` and ignored.
 
     .. note:: Currently only supporting ``d=2`` with qudit support planned in the future.
 
@@ -63,7 +66,7 @@ def transmon_interaction(
             When passing a single float all qubits are assumed to have that same frequency.
         g (Union[float, list[float]]): List of coupling strengths in GHz. Needs to match the length of ``connections``.
             When passing a single float all connections are assumed to have the same strength.
-        delta (Union[float, list[float]]): List of anharmonicities in GHz. Ignored when ``d=2``.
+        anharmonicity (Union[float, list[float]]): List of anharmonicities in GHz. Ignored when ``d=2``.
             When passing a single float all qubits are assumed to have that same anharmonicity.
         wires (list): Optional, defaults to the unique wires in ``connections`` when set to ``None``. When passing explicit ``wires``,
             needs to at least contain all unique wires in ``connections`` and can be used to initiate additional, unconnected qubits.
@@ -101,8 +104,8 @@ def transmon_interaction(
     n_wires = len(wires)
 
     # Prepare coefficients
-    if delta is None:
-        delta = [0.0] * n_wires
+    if anharmonicity is None:
+        anharmonicity = [0.0] * n_wires
     # TODO: make coefficients callable / trainable. Currently not supported
     if qml.math.ndim(omega) == 0:
         omega = [omega] * n_wires
@@ -128,17 +131,17 @@ def transmon_interaction(
 
     # TODO Qudit support. Currently not supported but will be in the future.
     # if d>2:
-    #     if delta is None:
-    #         delta = [0.] * n_wires
-    #     if qml.math.ndim(delta)==0:
-    #         delta = [delta] * n_wires
-    #     if len(delta) != n_wires:
-    #         raise ValueError(f"Number of qubit anharmonicities delta = {delta} does not match the provided wires = {wires}")
+    #     if anharmonicity is None:
+    #         anharmonicity = [0.] * n_wires
+    #     if qml.math.ndim(anharmonicity)==0:
+    #         anharmonicity = [anharmonicity] * n_wires
+    #     if len(anharmonicity) != n_wires:
+    #         raise ValueError(f"Number of qubit anharmonicities anharmonicity = {anharmonicity} does not match the provided wires = {wires}")
     #     # anharmonicity term
-    #     coeffs += list(delta)
+    #     coeffs += list(anharmonicity)
     #     observables += [ad(i, d) @ ad(i, d) @ a(i, d) @ a(i, d) for i in wires]
 
-    settings = TransmonSettings(connections, omega, g, delta=delta)
+    settings = TransmonSettings(connections, omega, g, anharmonicity=anharmonicity)
 
     return HardwareHamiltonian(coeffs, observables, settings=settings)
 
@@ -152,7 +155,7 @@ class TransmonSettings:
     Args:
             connections (List): List `[[idx_q0, idx_q1], ..]` of connected qubits (wires)
             omega (List[float, Callable]):
-            delta (List[float, Callable]):
+            anharmonicity (List[float, Callable]):
             g (List[list, TensorLike, Callable]):
 
     """
@@ -160,14 +163,14 @@ class TransmonSettings:
     connections: List
     omega: Union[float, Callable]
     g: Union[list, TensorLike, Callable]
-    delta: Union[float, Callable] = None
+    anharmonicity: Union[float, Callable] = None
 
     def __eq__(self, other):
         return (
             qml.math.all(self.connections == other.connections)
             and qml.math.all(self.omega == other.omega)
             and qml.math.all(self.g == other.g)
-            and qml.math.all(self.delta == other.delta)
+            and qml.math.all(self.anharmonicity == other.anharmonicity)
         )
 
     def __add__(self, other):
@@ -175,15 +178,15 @@ class TransmonSettings:
             new_connections = list(self.connections) + list(other.connections)
             new_omega = list(self.omega) + list(other.omega)
             new_g = list(self.g) + list(other.g)
-            if self.delta is None and other.delta is None:
+            if self.anharmonicity is None and other.anharmonicity is None:
                 new_delta = None
-            elif self.delta is None and not other.delta is None:
-                new_delta = [0.0] * len(self.omega) + list(other.delta)
-            elif self.delta is not None and other.delta is None:
-                new_delta = list(self.delta) + [0.0] * len(other.omega)
-            elif self.delta is not None and other.delta is not None:
-                new_delta = list(self.delta) + list(other.delta)
+            elif self.anharmonicity is None and not other.anharmonicity is None:
+                new_delta = [0.0] * len(self.omega) + list(other.anharmonicity)
+            elif self.anharmonicity is not None and other.anharmonicity is None:
+                new_delta = list(self.anharmonicity) + [0.0] * len(other.omega)
+            elif self.anharmonicity is not None and other.anharmonicity is not None:
+                new_delta = list(self.anharmonicity) + list(other.anharmonicity)
 
-            return TransmonSettings(new_connections, new_omega, new_g, delta=new_delta)
+            return TransmonSettings(new_connections, new_omega, new_g, anharmonicity=new_delta)
 
         return self

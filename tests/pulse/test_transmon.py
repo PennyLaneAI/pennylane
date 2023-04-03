@@ -34,7 +34,7 @@ connections = [[0, 1], [1, 3], [2, 1], [4, 5]]
 wires = [0, 1, 2, 3, 4, 5]
 omega = 0.5 * np.arange(len(wires))
 g = 0.1 * np.arange(len(connections))
-delta = 0.3 * np.arange(len(wires))
+anharmonicity = 0.3 * np.arange(len(wires))
 
 
 class TestTransmonInteraction:
@@ -44,9 +44,9 @@ class TestTransmonInteraction:
         """Test that the attributes and the number of terms of the ``ParametrizedHamiltonian`` returned by
         ``transmon_interaction`` are correct."""
         Hd = transmon_interaction(
-            connections=connections, omega=omega, g=g, delta=None, wires=wires, d=2
+            connections=connections, omega=omega, g=g, anharmonicity=None, wires=wires, d=2
         )
-        settings = TransmonSettings(connections, omega, g, delta=[0.0] * len(wires))
+        settings = TransmonSettings(connections, omega, g, anharmonicity=[0.0] * len(wires))
 
         assert isinstance(Hd, HardwareHamiltonian)
         assert Hd.settings == settings
@@ -59,20 +59,20 @@ class TestTransmonInteraction:
     def test_wires_is_none(self):
         """Test that when wires is None the wires correspond to an increasing list of values with
         the same as the unique connections."""
-        Hd = transmon_interaction(connections=connections, omega=0.3, g=0.3, delta=0.3)
+        Hd = transmon_interaction(connections=connections, omega=0.3, g=0.3, anharmonicity=0.3)
 
         assert Hd.wires == Wires(np.unique(connections))
 
     def test_coeffs(self):
         """Test that the generated coefficients are correct."""
-        Hd = qml.pulse.transmon_interaction(connections, omega, g, delta=delta, d=2)
+        Hd = qml.pulse.transmon_interaction(omega, connections, g, anharmonicity=anharmonicity, d=2)
         assert all(Hd.coeffs == np.concatenate([omega, g]))
 
     @pytest.mark.skip
     def test_coeffs_d(self):
         """Test that generated coefficients are correct for d>2"""
-        Hd2 = qml.pulse.transmon_interaction(connections, omega, g, delta=delta, d=3)
-        assert all(Hd2.coeffs == np.concatenate([omega, g, delta]))
+        Hd2 = qml.pulse.transmon_interaction(connections, omega, g, anharmonicity=anharmonicity, d=3)
+        assert all(Hd2.coeffs == np.concatenate([omega, g, anharmonicity]))
 
     def test_d_neq_2_raises_error(self):
         """Test that setting d != 2 raises error"""
@@ -123,13 +123,13 @@ class TestTransmonSettings:
         assert settings.connections == connections0
         assert settings.omega == omega0
         assert settings.g == g0
-        assert settings.delta == None
+        assert settings.anharmonicity == None
 
     def test_equal(self):
         """Test the ``__eq__`` method of the ``HardwarePulse`` class."""
         settings0 = TransmonSettings(connections0, omega0, g0)
         settings1 = TransmonSettings(connections1, omega1, g1)
-        settings2 = TransmonSettings(connections0, omega0, g0, delta=None)
+        settings2 = TransmonSettings(connections0, omega0, g0, anharmonicity=None)
         assert settings0 != settings1
         assert settings1 != settings2
         assert settings0 == settings2
@@ -145,16 +145,16 @@ class TestTransmonSettings:
         assert settings.omega == omega0 + omega1
         assert settings.g == g0 + g1
 
-    def test_add_two_settings_with_one_delta_None(
+    def test_add_two_settings_with_one_anharmonicity_None(
         self,
     ):
-        """Test that two settings are correctly added when one has non-trivial delta"""
-        delta = [1.0] * len(omega0)
-        settings0 = TransmonSettings(connections0, omega0, g0, delta=delta)
+        """Test that two settings are correctly added when one has non-trivial anharmonicity"""
+        anharmonicity = [1.0] * len(omega0)
+        settings0 = TransmonSettings(connections0, omega0, g0, anharmonicity=anharmonicity)
         settings1 = TransmonSettings(connections1, omega1, g1)
 
         settings01 = settings0 + settings1
-        assert settings01.delta == delta + [0.0] * len(omega1)
+        assert settings01.anharmonicity == anharmonicity + [0.0] * len(omega1)
 
         settings10 = settings1 + settings0
-        assert settings10.delta == [0.0] * len(omega0) + delta
+        assert settings10.anharmonicity == [0.0] * len(omega0) + anharmonicity
