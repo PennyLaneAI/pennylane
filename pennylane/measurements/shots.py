@@ -53,11 +53,11 @@ class Shots:
     The ``Shots`` class exposes two properties:
 
     * ``total_shots``, the total number of shots to be executed
-    * ``shot_vector``, the list of :class:`~ShotCopies` to be executed
+    * ``shot_vector``, the tuple of :class:`~ShotCopies` to be executed
 
     Instances of this class are static. If an instance is passed to the constructor, that same
     instance is returned. If an instance is constructed with a ``None`` value, ``total_shots``
-    will be ``None``, and this will suggest analytic execution.
+    will be ``None``.  This indicates analytic execution.
 
     **Examples**
 
