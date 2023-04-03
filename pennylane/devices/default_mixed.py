@@ -151,21 +151,23 @@ class DefaultMixed(QubitDevice):
         if not hasattr(array, "__len__"):
             return np.asarray(array, dtype=dtype)
 
-        if not isinstance(array, (list, tuple)):
-            if qnp.shape(array) == ():
-                return array
+        if not qml.active_return():
+            # check if the array is ragged
+            first_shape = qnp.shape(array[0])
+            is_ragged = any(qnp.shape(array[i]) != first_shape for i in range(len(array)))
 
-        # check if the array is ragged
-        first_shape = qnp.shape(array[0])
-        is_ragged = any(qnp.shape(array[i]) != first_shape for i in range(len(array)))
+            if not is_ragged:
+                res = qnp.stack(array)
+                if dtype is not None:
+                    res = qnp.cast(res, dtype=dtype)
 
-        if not is_ragged:
-            res = qnp.stack(array)
-            if dtype is not None:
-                res = qnp.cast(res, dtype=dtype)
-
-        if is_ragged or res.dtype is np.dtype("O"):
-            return qnp.cast(qnp.flatten(qnp.hstack(array)), dtype=dtype)
+            if is_ragged or res.dtype is np.dtype("O"):
+                return qnp.cast(qnp.flatten(qnp.hstack(array)), dtype=dtype)
+        else:
+            if isinstance(array, tuple):
+                res = tuple(qnp.cast(ar, dtype=dtype) for ar in array)
+            else:
+                res = qnp.cast(array, dtype=dtype)
 
         return res
 

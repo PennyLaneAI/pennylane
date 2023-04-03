@@ -361,11 +361,14 @@ class TestPassthruIntegration:
         dev1 = qml.device("default.mixed", wires=3)
         dev2 = qml.device("default.mixed", wires=3)
 
+        def cost(x):
+            return qml.math.stack(circuit(x))
+
         circuit1 = decorator(qml.QNode(circuit, dev1, diff_method="backprop", interface=interface))
-        circuit2 = qml.QNode(circuit, dev2, diff_method="parameter-shift")
+        circuit2 = qml.QNode(cost, dev2, diff_method="parameter-shift")
 
         with tf.GradientTape() as tape:
-            res = circuit1(p_tf)
+            res = tf.experimental.numpy.hstack(circuit1(p_tf))
 
         assert np.allclose(res, circuit2(p), atol=tol, rtol=0)
 
@@ -673,7 +676,7 @@ class TestPassthruIntegration:
             return [qml.expval(qml.PauliZ(0)), qml.probs(wires=[1])]
 
         with tf.GradientTape() as tape:
-            res = circuit(x, y)
+            res = tf.experimental.numpy.hstack(circuit(x, y))
 
         expected = np.array(
             [
