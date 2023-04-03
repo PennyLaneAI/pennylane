@@ -12,8 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Tests for the gradients.parameter_shift_cv module."""
-# pylint: disable=protected-access, no-self-use, import-outside-toplevel, not-callable, no-value-for-parameter
-
 import pytest
 
 import pennylane as qml
@@ -291,7 +289,7 @@ class TestParameterShiftLogic:
 
         dev = qml.device("default.gaussian", wires=2)
 
-        @qml.qnode(device=dev, interface="autograd")
+        @qml.qnode(dev, interface="autograd")
         def circuit(weights):
             qml.Displacement(weights[0], 0.0, wires=[0])
             qml.Rotation(weights[1], wires=[0])
@@ -348,7 +346,7 @@ class TestParameterShiftLogic:
 
         dev = qml.device("default.gaussian", wires=2)
 
-        @qml.qnode(device=dev, interface="jax")
+        @qml.qnode(dev, interface="jax")
         def circuit(weights):
             qml.Displacement(weights[0], 0.0, wires=[0])
             qml.Rotation(weights[1], wires=[0])
@@ -437,7 +435,7 @@ class TestParameterShiftLogic:
         2-dimensional parameters"""
         spy = mocker.spy(qml.gradients.parameter_shift_cv, "second_order_param_shift")
 
-        def _mock_transform_observable(obs, Z, device_wires):  # pylint: disable=unused-argument
+        def _mock_transform_observable(obs, Z, device_wires):
             """A mock version of the _transform_observable internal function
             such that an operator ``transformed_obs`` of two-dimensions is
             returned. This function is created such that when definining ``A =
@@ -469,7 +467,7 @@ class TestParameterShiftLogic:
         qml.gradients.param_shift_cv(tape, dev, force_order2=True)
         spy.assert_called()
 
-    def test_no_poly_xp_support(self, mocker, monkeypatch):
+    def test_no_poly_xp_support(self, mocker, monkeypatch, caplog):
         """Test that if a device does not support PolyXP
         and the second-order parameter-shift rule is required,
         we fallback to finite differences."""
@@ -491,7 +489,7 @@ class TestParameterShiftLogic:
 
         spy_second_order.assert_not_called()
 
-    def test_no_poly_xp_support_variance(self, mocker, monkeypatch):
+    def test_no_poly_xp_support_variance(self, mocker, monkeypatch, caplog):
         """Test that if a device does not support PolyXP
         and the variance parameter-shift rule is required,
         we fallback to finite differences."""
@@ -758,7 +756,7 @@ class TestExpectationQuantumGradients:
 
         assert np.allclose(grad_A2, expected, atol=tol, rtol=0)
 
-    def test_multiple_second_order_observables(self):
+    def test_multiple_second_order_observables(self, mocker, tol):
         """Test that the gradient of a circuit with multiple
         second order observables is correct"""
 
@@ -775,11 +773,30 @@ class TestExpectationQuantumGradients:
             qml.expval(qml.NumberOperator(1))  # second order
 
         tape = qml.tape.QuantumScript.from_queue(q)
+        spy2 = mocker.spy(qml.gradients.parameter_shift_cv, "second_order_param_shift")
+        tapes, fn = param_shift_cv(tape, dev)
+        grad_A2 = fn(dev.batch_execute(tapes))
+        spy2.assert_called()
 
-        with pytest.raises(
-            ValueError, match="Computing the gradient of CV circuits that return more"
-        ):
-            param_shift_cv(tape, dev)
+        # check against the known analytic formula
+
+        def expected_grad(r, p):
+            return np.array(
+                [
+                    np.cosh(2 * r[1]) * np.sinh(2 * r[0])
+                    + np.cos(p[0] - p[1]) * np.cosh(2 * r[0]) * np.sinh(2 * r[1]),
+                    -0.5 * np.sin(p[0] - p[1]) * np.sinh(2 * r[0]) * np.sinh(2 * r[1]),
+                    np.cos(p[0] - p[1]) * np.cosh(2 * r[1]) * np.sinh(2 * r[0])
+                    + np.cosh(2 * r[0]) * np.sinh(2 * r[1]),
+                    0.5 * np.sin(p[0] - p[1]) * np.sinh(2 * r[0]) * np.sinh(2 * r[1]),
+                ]
+            )
+
+        expected = np.zeros([2, 8])
+        expected[0, :4] = expected_grad(r[:2], p[:2])
+        expected[1, 4:] = expected_grad(r[2:], p[2:])
+
+        assert np.allclose(grad_A2, expected, atol=tol, rtol=0)
 
     @pytest.mark.parametrize("obs", [qml.P, qml.Identity])
     @pytest.mark.parametrize(
@@ -801,6 +818,7 @@ class TestExpectationQuantumGradients:
 
         tape = qml.tape.QuantumScript.from_queue(q)
         dev = qml.device("default.gaussian", wires=2)
+        res = qml.execute([tape], dev, None)
 
         tape.trainable_params = set(range(2, 2 + op.num_params))
 
@@ -964,7 +982,7 @@ class TestVarianceQuantumGradients:
         expected = np.array([[2 * a**2 + 2 * n + 1, 2 * a * (2 * n + 1)]])
         assert np.allclose(grad_F, expected, atol=tol, rtol=0)
 
-    def test_expval_and_variance(self):
+    def test_expval_and_variance(self, tol):
         """Test that the gradient works for a combination of CV expectation
         values and variances"""
         dev = qml.device("default.gaussian", wires=3)
@@ -985,10 +1003,14 @@ class TestVarianceQuantumGradients:
         tape = qml.tape.QuantumScript.from_queue(q)
         tape.trainable_params = {2, 4}
 
-        with pytest.raises(
-            ValueError, match="Computing the gradient of CV circuits that return more"
-        ):
-            param_shift_cv(tape, dev)
+        # jacobians must match
+        tapes, fn = qml.gradients.finite_diff(tape)
+        grad_F = fn(dev.batch_execute(tapes))
+
+        tapes, fn = param_shift_cv(tape, dev)
+        grad_A = fn(dev.batch_execute(tapes))
+
+        assert np.allclose(grad_A, grad_F, atol=tol, rtol=0)
 
     def test_error_analytic_second_order(self):
         """Test exception raised if attempting to use a second
@@ -1005,14 +1027,12 @@ class TestVarianceQuantumGradients:
         with pytest.raises(ValueError, match=r"cannot be used with the parameter\(s\) \{0\}"):
             param_shift_cv(tape, dev, fallback_fn=None)
 
-    def test_error_unsupported_grad_recipe(self):
+    def test_error_unsupported_grad_recipe(self, monkeypatch):
         """Test exception raised if attempting to use the second order rule for
         computing the gradient analytically of an expectation value that
         contains an operation with more than two terms in the gradient recipe"""
 
         class DummyOp(qml.operation.CVOperation):
-            """Dummy op"""
-
             num_wires = 1
             par_domain = "R"
             grad_method = "A"
@@ -1056,6 +1076,7 @@ class TestVarianceQuantumGradients:
 
         tape = qml.tape.QuantumScript.from_queue(q)
         dev = qml.device("default.gaussian", wires=2)
+        res = qml.execute([tape], dev, None)
 
         tape.trainable_params = set(range(2, 2 + op.num_params))
 
@@ -1127,26 +1148,27 @@ class TestParamShiftInterfaces:
     @pytest.mark.autograd
     def test_autograd_gradient(self, tol):
         """Tests that the output of the parameter-shift CV transform
-        can be differentiated using autograd."""
+        can be differentiated using autograd, yielding second derivatives."""
         dev = qml.device("default.gaussian", wires=1)
 
         r = 0.12
         phi = 0.105
 
-        @qml.qnode(device=dev, interface="autograd", max_diff=2)
         def cost_fn(x):
-            qml.Squeezing(x[0], 0, wires=0)
-            qml.Rotation(x[1], wires=0)
-            return qml.var(qml.X(wires=[0]))
+            with qml.queuing.AnnotatedQueue() as q:
+                qml.Squeezing(x[0], 0, wires=0)
+                qml.Rotation(x[1], wires=0)
+                qml.var(qml.X(wires=[0]))
+
+            tape = qml.tape.QuantumScript.from_queue(q)
+            tapes, fn = param_shift_cv(tape, dev)
+            jac = fn(qml.execute(tapes, dev, param_shift_cv, gradient_kwargs={"dev": dev}))
+            return jac[0, 2]
 
         params = np.array([r, phi], requires_grad=True)
-
         grad = qml.jacobian(cost_fn)(params)
         expected = np.array(
-            [
-                2 * np.exp(2 * r) * np.sin(phi) ** 2 - 2 * np.exp(-2 * r) * np.cos(phi) ** 2,
-                2 * np.sinh(2 * r) * np.sin(2 * phi),
-            ]
+            [4 * np.cosh(2 * r) * np.sin(2 * phi), 4 * np.cos(2 * phi) * np.sinh(2 * r)]
         )
         assert np.allclose(grad, expected, atol=tol, rtol=0)
 
@@ -1173,7 +1195,7 @@ class TestParamShiftInterfaces:
                     tapes, dev, param_shift_cv, gradient_kwargs={"dev": dev}, interface="tf"
                 )
             )
-            res = jac[1]
+            res = jac[0, 1]
 
         r, phi = 1.0 * params
 
@@ -1220,16 +1242,14 @@ class TestParamShiftInterfaces:
                 2 * np.sinh(2 * r) * np.sin(2 * phi),
             ]
         )
-        assert np.allclose(jac[0].detach().numpy(), expected[0], atol=tol, rtol=0)
-        assert np.allclose(jac[1].detach().numpy(), expected[1], atol=tol, rtol=0)
+        assert np.allclose(jac.detach().numpy(), expected, atol=tol, rtol=0)
 
-        cost = jac[1]
+        cost = jac[0, 1]
         cost.backward()
         hess = params.grad
         expected = np.array(
             [4 * np.cosh(2 * r) * np.sin(2 * phi), 4 * np.cos(2 * phi) * np.sinh(2 * r)]
         )
-
         assert np.allclose(hess.detach().numpy(), expected, atol=0.1, rtol=0)
 
     @pytest.mark.jax
@@ -1242,13 +1262,13 @@ class TestParamShiftInterfaces:
 
         config.update("jax_enable_x64", True)
 
-        dev = qml.device("default.gaussian", wires=1)
+        dev = qml.device("default.gaussian", wires=2)
         params = jnp.array([0.543, -0.654])
 
         def cost_fn(x):
             with qml.queuing.AnnotatedQueue() as q:
-                qml.Squeezing(x[0], 0, wires=0)
-                qml.Rotation(x[1], wires=0)
+                qml.Squeezing(params[0], 0, wires=0)
+                qml.Rotation(params[1], wires=0)
                 qml.var(qml.X(wires=[0]))
 
             tape = qml.tape.QuantumScript.from_queue(q)
@@ -1269,13 +1289,18 @@ class TestParamShiftInterfaces:
                 2 * np.sinh(2 * r) * np.sin(2 * phi),
             ]
         )
-
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
+        pytest.xfail("The CV Operation methods have not been updated to support autodiff")
+
         res = jax.jacobian(cost_fn)(params)
-
         expected = np.array(
-            [4 * np.cosh(2 * r) * np.sin(2 * phi), 4 * np.cos(2 * phi) * np.sinh(2 * r)]
+            [
+                [
+                    4 * np.exp(-2 * r) * (np.cos(phi) ** 2 + np.exp(4 * r) * np.sin(phi) ** 2),
+                    4 * np.cosh(2 * r) * np.sin(2 * phi),
+                ],
+                [4 * np.cosh(2 * r) * np.sin(2 * phi), 4 * np.cos(2 * phi) * np.sinh(2 * r)],
+            ]
         )
-
-        assert np.allclose(res[1], expected, atol=tol, rtol=0)
+        assert np.allclose(res, expected, atol=tol, rtol=0)
