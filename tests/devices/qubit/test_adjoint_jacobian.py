@@ -20,12 +20,6 @@ import pennylane.numpy as np
 from pennylane.devices.qubit.preprocess import validate_and_expand_adjoint
 
 
-@pytest.fixture
-def dev():
-    """Fixture that creates a two-qubit default qubit device for comparisions."""
-    return qml.device("default.qubit", wires=2)
-
-
 class TestAdjointTapeValidation:
     """Unit tests for validate_and_expand_adjoint"""
 
@@ -49,7 +43,8 @@ class TestAdjointTapeValidation:
         qs = QuantumScript([qml.U2(0.1, 0.2, wires=[0])], [qml.expval(qml.PauliZ(2))])
 
         with pytest.raises(
-            qml.QuantumFunctionError, match="The U2 operation is not supported using"
+            qml.QuantumFunctionError,
+            match='operation is not supported using the "adjoint" differentiation method',
         ):
             validate_and_expand_adjoint(qs)
 
@@ -130,6 +125,11 @@ class TestAdjointTapeValidation:
 
 class TestAdjointJacobian:
     """Tests for adjoint_jacobian"""
+
+    @pytest.fixture
+    def dev(self):
+        """Fixture that creates a two-qubit default qubit device for comparisions."""
+        return qml.device("default.qubit", wires=2)
 
     @pytest.mark.autograd
     @pytest.mark.parametrize("theta", np.linspace(-2 * np.pi, 2 * np.pi, 7))
