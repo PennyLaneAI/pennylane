@@ -26,7 +26,6 @@ from pennylane import numpy as np
 from pennylane.pauli.utils import _binary_matrix
 from pennylane.qchem.tapering import (
     _kernel,
-    _observable_mult,
     _reduced_row_echelon,
     clifford,
     optimal_sector,
@@ -227,34 +226,6 @@ def test_symmetry_generators(symbols, geometry, num_qubits, res_generators):
 
     for g1, g2 in zip(generators, res_generators):
         assert g1.compare(g2)
-
-
-@pytest.mark.parametrize(
-    ("obs_a", "obs_b", "result"),
-    [
-        (
-            qml.Hamiltonian(np.array([-1.0]), [qml.PauliX(0) @ qml.PauliY(1) @ qml.PauliX(2)]),
-            qml.Hamiltonian(np.array([-1.0]), [qml.PauliX(0) @ qml.PauliY(1) @ qml.PauliX(2)]),
-            qml.Hamiltonian(np.array([1.0]), [qml.Identity(0)]),
-        ),
-        (
-            qml.Hamiltonian(
-                np.array([0.5, 0.5]), [qml.PauliX(0) @ qml.PauliY(1), qml.PauliX(0) @ qml.PauliZ(1)]
-            ),
-            qml.Hamiltonian(
-                np.array([0.5, 0.5]), [qml.PauliX(0) @ qml.PauliX(1), qml.PauliZ(0) @ qml.PauliZ(1)]
-            ),
-            qml.Hamiltonian(
-                np.array([-0.25j, 0.25j, -0.25j, 0.25]),
-                [qml.PauliY(0), qml.PauliY(1), qml.PauliZ(1), qml.PauliY(0) @ qml.PauliX(1)],
-            ),
-        ),
-    ],
-)
-def test_observable_mult(obs_a, obs_b, result):
-    r"""Test that observable_mult returns the correct result."""
-    o = _observable_mult(obs_a, obs_b)
-    assert o.compare(result)
 
 
 @pytest.mark.parametrize(
