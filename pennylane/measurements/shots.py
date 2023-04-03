@@ -16,7 +16,10 @@ from collections import namedtuple
 from typing import Sequence, Tuple
 
 ShotCopies = namedtuple("ShotCopies", ["shots", "copies"])
-"""A namedtuple that represents a shot quantity being repeated some number of times."""
+"""A namedtuple that represents a shot quantity being repeated some number of times.
+
+For example, ``ShotCopies(shots=10, copies=2)`` indicates two executions with 10 shots each for 20 shots total.
+"""
 
 
 def valid_int(s):
