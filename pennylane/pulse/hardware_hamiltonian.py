@@ -21,7 +21,6 @@ import pennylane as qml
 from pennylane.wires import Wires
 from pennylane.operation import Operator
 from pennylane.ops.qubit.hamiltonian import Hamiltonian
-from pennylane.typing import TensorLike
 
 
 from .parametrized_hamiltonian import ParametrizedHamiltonian

@@ -31,6 +31,7 @@ def ad(wire, d=2):
     return qml.s_prod(0.5, qml.PauliX(wire)) + qml.s_prod(-0.5j, qml.PauliY(wire))
 
 
+# pylint: disable=too-many-arguments
 def transmon_interaction(
     connections: list, omega: Union[float, list], g: Union[float, list], delta=None, wires=None, d=2
 ):
