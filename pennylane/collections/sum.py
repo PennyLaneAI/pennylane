@@ -18,6 +18,7 @@ Contains the sum function, for summing QNode collections.
 
 import warnings
 
+import pennylane as qml
 from .apply import apply
 
 
@@ -54,6 +55,9 @@ def sum(x):
         "The sum function of the collections module is deprecated and it will be removed soon.",
         UserWarning,
     )
+
+    if qml.active_return():
+        raise qml.QuantumFunctionError("QNodeCollections does not support the new return system.")
 
     if hasattr(x, "interface") and x.interface is not None:
         if x.interface == "tf":

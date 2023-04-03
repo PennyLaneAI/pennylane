@@ -225,8 +225,7 @@ def pytest_collection_modifyitems(items, config):
         markers = {mark.name for mark in item.iter_markers()}
         if (
             not any(
-                elem
-                in ["autograd", "torch", "tf", "jax", "qchem", "qcut", "all_interfaces"]
+                elem in ["autograd", "torch", "tf", "jax", "qchem", "qcut", "all_interfaces"]
                 for elem in markers
             )
             or not markers
