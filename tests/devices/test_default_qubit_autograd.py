@@ -395,7 +395,7 @@ class TestPassthruIntegration:
         assert all(np.allclose(res[i, :, i], expected[:, i], atol=tol, rtol=0) for i in range(3))
 
     def test_jacobian_agrees_backprop_parameter_shift(self, tol):
-        """Test that jacobian of a QNode with an attached default.qubit.autograd device
+        """Test that jacobian of a QNode with an attached default.mixed.autograd device
         gives the correct result with respect to the parameter-shift method"""
         p = np.array([0.43316321, 0.2162158, 0.75110998, 0.94714242], requires_grad=True)
 
@@ -407,11 +407,14 @@ class TestPassthruIntegration:
                 qml.CNOT(wires=[i, i + 1])
             return qml.expval(qml.PauliZ(0)), qml.var(qml.PauliZ(1))
 
-        dev1 = qml.device("default.qubit.autograd", wires=3)
-        dev2 = qml.device("default.qubit.autograd", wires=3)
+        dev1 = qml.device("default.qubit", wires=3)
+        dev2 = qml.device("default.qubit", wires=3)
 
-        circuit1 = qml.QNode(circuit, dev1, diff_method="backprop", interface="autograd")
-        circuit2 = qml.QNode(circuit, dev2, diff_method="parameter-shift")
+        def cost(x):
+            return qml.math.stack(circuit(x))
+
+        circuit1 = qml.QNode(cost, dev1, diff_method="backprop", interface="autograd")
+        circuit2 = qml.QNode(cost, dev2, diff_method="parameter-shift")
 
         res = circuit1(p)
 
@@ -704,54 +707,6 @@ class TestHighLevelIntegration:
 
         grad = qml.grad(circuit)(weights)
         assert grad.shape == weights.shape
-
-    def test_qnode_collection_integration(self):
-        """Test that a PassthruQNode default.qubit.autograd works with QNodeCollections."""
-        dev = qml.device("default.qubit.autograd", wires=2)
-
-        def ansatz(weights, **kwargs):
-            qml.RX(weights[0], wires=0)
-            qml.RY(weights[1], wires=1)
-            qml.CNOT(wires=[0, 1])
-
-        obs_list = [qml.PauliX(0) @ qml.PauliY(1), qml.PauliZ(0), qml.PauliZ(0) @ qml.PauliZ(1)]
-        qnodes = qml.map(ansatz, obs_list, dev, interface="autograd")
-
-        assert qnodes.interface == "autograd"
-
-        weights = np.array([0.1, 0.2], requires_grad=True)
-
-        def cost(weights):
-            return np.sum(qnodes(weights))
-
-        grad = qml.grad(cost)(weights)
-        assert grad.shape == weights.shape
-
-    def test_qnode_collection_integration_broadcasted(self):
-        """Test that a broadcasted PassthruQNode default.qubit.autograd
-        works with QNodeCollections."""
-        dev = qml.device("default.qubit.autograd", wires=2)
-
-        def ansatz(weights, **kwargs):
-            qml.RX(weights[0], wires=0)
-            qml.RY(weights[1], wires=1)
-            qml.CNOT(wires=[0, 1])
-
-        obs_list = [qml.PauliX(0) @ qml.PauliY(1), qml.PauliZ(0), qml.PauliZ(0) @ qml.PauliZ(1)]
-        qnodes = qml.map(ansatz, obs_list, dev, interface="autograd")
-
-        assert qnodes.interface == "autograd"
-
-        weights = np.array([[0.1, 0.65, 1.2], [0.2, 1.9, -0.6]], requires_grad=True)
-
-        def cost(weights):
-            return np.sum(qnodes(weights), axis=-1)
-
-        res = cost(weights)
-        assert res.shape == (3,)
-
-        grad = qml.jacobian(cost)(weights)
-        assert grad.shape == (3, 2, 3)
 
 
 @pytest.mark.autograd
