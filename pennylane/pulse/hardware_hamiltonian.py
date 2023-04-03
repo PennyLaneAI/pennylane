@@ -251,9 +251,9 @@ class HardwareHamiltonian(ParametrizedHamiltonian):
         observables (Iterable[Observable]): observables in the Hamiltonian expression, of same
             length as ``coeffs``
     Keyword Args:
-        register (list): list of coordinates (in micrometers) of each atom in the ensemble
-        pulses (list): list of ``HardwarePulse`` classes containing the information about the
-            amplitude, phase, detuning and wires of each pulse
+        settings Union[RydbergSettings, TransmonSettings]: Dataclass containing the hardware specific settings. Default is ``None``.
+        pulses (list[HardwarePulse]): list of ``HardwarePulse`` dataclasses containing the information about the
+            amplitude, phase, drive frequency and wires of each pulse
         interaction_coeff (float): Rydberg interaction constant in units: :math:`\text{MHz} \times \mu m^6`.
             Defaults to :math:`862690 \text{MHz} \times \mu m^6`.
     Returns:
@@ -341,8 +341,10 @@ class HardwarePulse:
         amplitude (Union[float, Callable]): float or callable returning the amplitude of an EM
             field
         phase (Union[float, Callable]): float containing the phase (in radians) of the EM field
-        detuning (Union[float, Callable]): float or callable returning the detuning of a
-            EM field
+        frequency (Union[float, Callable]): float or callable returning the frequency of a
+            EM field. In the case of superconducting transmon systems this is the drive frequency.
+            In the case of neutral atom rydberg systems this is the detuning between the drive frequency
+            and energy gap.
         wires (Union[int, List[int]]): integer or list containing wire values that the EM field
             acts on
     """
