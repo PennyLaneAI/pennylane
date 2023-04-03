@@ -37,7 +37,7 @@ def drive(amplitude, phase, wires):
         \frac{1}{2} \sum_{j \in \text{wires}} \Omega(t) \left(e^{i \phi(t)} \sigma^+_j + e^{-i \phi(t)} \sigma^-_j \right)
 
     where :math:`\Omega` and :math:`\phi` correspond to the amplitude and phase of the
-    electromagnetic driving field and :math:`j` corresponds to the wire index. We are describing the Hamiltonian 
+    electromagnetic driving field and :math:`j` corresponds to the wire index. We are describing the Hamiltonian
     in terms of ladder operators :math:`\sigma^\pm = \frac{1}{2}(\sigma_x \pm i \sigma_y)`.
 
     Common hardware systems are superconducting qubits and neutral atoms. The electromagnetic field of the drive is
@@ -89,9 +89,9 @@ def drive(amplitude, phase, wires):
     >>> H_d
     ParametrizedHamiltonian: terms=2
 
-    The first two terms of the drive Hamiltonian ``H_d`` correspond to the two terms 
+    The first two terms of the drive Hamiltonian ``H_d`` correspond to the two terms
     :math:`\Omega e^{i \phi(t)} \sigma^+_j + \Omega e^{-i \phi(t)} \sigma^-_j`,
-    describing a drive between the ground and excited states. 
+    describing a drive between the ground and excited states.
     In this case, the drive term corresponds to a global drive, as it acts on all 4 wires of
     the device.
 
