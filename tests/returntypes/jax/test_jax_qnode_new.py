@@ -1321,8 +1321,6 @@ class TestQubitIntegrationHigherOrder:
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
 
-# TODO: Add CV test when return types and custom diff are compatible
-@pytest.mark.xfail(reason="CV variables with new return types.")
 @pytest.mark.parametrize(
     "diff_method,kwargs",
     [
