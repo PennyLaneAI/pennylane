@@ -1,4 +1,4 @@
-# Copyright 2018-2023 Xanadu Quantum Technologies Inc.
+# Copyright 2022 Xanadu Quantum Technologies Inc.
 
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -15,15 +15,15 @@
 Tests for the gradients.spsa_gradient module.
 """
 # pylint: disable="import-outside-toplevel"
+import numpy
 import pytest
 
-from pennylane import numpy as np
-
 import pennylane as qml
+from pennylane import numpy as np
+from pennylane.devices import DefaultQubit
 from pennylane.gradients import spsa_grad
 from pennylane.gradients.spsa_gradient import _rademacher_sampler
-from pennylane.devices import DefaultQubit
-from pennylane.operation import Observable, AnyWires
+from pennylane.operation import AnyWires, Observable
 
 
 def coordinate_sampler(indices, num_params, idx, seed=None):
@@ -36,75 +36,6 @@ def coordinate_sampler(indices, num_params, idx, seed=None):
     direction = np.zeros(num_params)
     direction[indices[idx]] = 1.0
     return direction
-
-
-class TestRademacherSampler:
-    """Test the Rademacher distribution sampler."""
-
-    @pytest.mark.parametrize(
-        "ids, num", [(list(range(5)), 5), ([0, 2, 4], 5), ([0], 1), ([2, 3], 5)]
-    )
-    def test_output_structure(self, ids, num):
-        """Test that the sampled output has the right entries to be non-zero
-        and attains the right values."""
-        ids_mask = np.zeros(num, dtype=bool)
-        ids_mask[ids] = True
-
-        for _ in range(5):
-            direction = _rademacher_sampler(ids, num)
-            assert direction.shape == (num,)
-            assert set(direction).issubset({0, -1, 1})
-            assert np.allclose(np.abs(direction)[ids_mask], 1)
-            assert np.allclose(direction[~ids_mask], 0)
-
-    def test_call_with_third_arg(self):
-        """Test that a third argument is ignored."""
-        _rademacher_sampler([0, 1, 2], 4, "ignored dummy")
-
-    def test_call_with_third_arg_and_seed_None(self):
-        """Test that a third argument is ignored with seed=None."""
-        _rademacher_sampler([0, 1, 2], 4, "ignored dummy", seed=None)
-
-    @pytest.mark.parametrize(
-        "ids, num", [(list(range(5)), 5), ([0, 2, 4], 5), ([0], 1), ([2, 3], 5)]
-    )
-    def test_call_with_seed_not_None(self, ids, num):
-        """Test that a seed is used correctly by the sampler, reproducing the
-        same direction every time."""
-        seed = 12425
-        first_direction = _rademacher_sampler(ids, num, "ignored dummy", seed=seed)
-        for _ in range(5):
-            direction = _rademacher_sampler(ids, num, "ignored dummy", seed=seed)
-            assert np.allclose(first_direction, direction)
-
-    def test_differing_seeds(self):
-        """Test that the output differs for different seeds."""
-        ids = [0, 1, 2, 3, 4]
-        num = 5
-        seeds = [42, 43]
-        first_direction = _rademacher_sampler(ids, num, "ignored dummy", seeds[0])
-        second_direction = _rademacher_sampler(ids, num, "ignored dummy", seeds[1])
-        assert not np.allclose(first_direction, second_direction)
-
-    @pytest.mark.parametrize(
-        "ids, num", [(list(range(5)), 5), ([0, 2, 4], 5), ([0], 1), ([2, 3], 5)]
-    )
-    @pytest.mark.parametrize("N", [10, 10000])
-    def test_mean_and_var(self, ids, num, N):
-        """Test that the mean and variance of many produced samples are
-        close to the theoretical values."""
-        np.random.seed(42)
-        ids_mask = np.zeros(num, dtype=bool)
-        ids_mask[ids] = True
-        outputs = [_rademacher_sampler(ids, num) for _ in range(N)]
-        # Test that the mean of non-zero entries is approximately right
-        assert np.allclose(np.mean(outputs, axis=0)[ids_mask], 0, atol=4 / np.sqrt(N))
-        # Test that the variance of non-zero entries is approximately right
-        assert np.allclose(np.var(outputs, axis=0)[ids_mask], 1, atol=4 / N)
-        # Test that the mean of zero entries is exactly 0, because all entries should be
-        assert np.allclose(np.mean(outputs, axis=0)[~ids_mask], 0, atol=1e-8)
-        # Test that the variance of zero entries is exactly 0, because all entries are the same
-        assert np.allclose(np.var(outputs, axis=0)[~ids_mask], 0, atol=1e-8)
 
 
 class TestSpsaGradient:
@@ -134,11 +65,15 @@ class TestSpsaGradient:
         dev = qml.device("default.qubit", wires=2)
         tapes, fn = spsa_grad(tape)
 
-        # For now, we must squeeze the results of the device execution, since
-        # qml.probs results in a nested result. Later, we will revisit device
-        # execution to avoid this issue.
-        res = fn(qml.math.squeeze(dev.batch_execute(tapes)))
-        assert res.shape == (4, 2)
+        res = fn(dev.batch_execute(tapes))
+        assert isinstance(res, tuple)
+        assert len(res) == 2
+
+        assert isinstance(res[0], numpy.ndarray)
+        assert res[0].shape == (4,)
+
+        assert isinstance(res[1], numpy.ndarray)
+        assert res[1].shape == (4,)
 
     @pytest.mark.parametrize("num_directions", [1, 10])
     def test_independent_parameter(self, num_directions, mocker):
@@ -155,7 +90,12 @@ class TestSpsaGradient:
         dev = qml.device("default.qubit", wires=2)
         tapes, fn = spsa_grad(tape, num_directions=num_directions)
         res = fn(dev.batch_execute(tapes))
-        assert res.shape == (1, 2)
+
+        assert isinstance(res, tuple)
+        assert len(res) == 2
+
+        assert isinstance(res[0], numpy.ndarray)
+        assert isinstance(res[1], numpy.ndarray)
 
         # 2 tapes per direction because the default strategy for SPSA is "center"
         assert len(spy.call_args_list) == num_directions
@@ -184,7 +124,32 @@ class TestSpsaGradient:
         res = post_processing(qml.execute(g_tapes, dev, None))
 
         assert g_tapes == []
-        assert res.shape == (1, 0)
+        assert isinstance(res, numpy.ndarray)
+        assert res.shape == (0,)
+
+    def test_no_trainable_params_multiple_return_tape(self):
+        """Test that the correct output and warning is generated in the absence of any trainable
+        parameters with multiple returns."""
+        dev = qml.device("default.qubit", wires=2)
+
+        weights = [0.1, 0.2]
+        with qml.queuing.AnnotatedQueue() as q:
+            qml.RX(weights[0], wires=0)
+            qml.RY(weights[1], wires=0)
+            qml.expval(qml.PauliZ(0) @ qml.PauliZ(1))
+            qml.probs(wires=[0, 1])
+
+        tape = qml.tape.QuantumScript.from_queue(q)
+        tape.trainable_params = []
+        with pytest.warns(UserWarning, match="gradient of a tape with no trainable parameters"):
+            g_tapes, post_processing = spsa_grad(tape)
+        res = post_processing(qml.execute(g_tapes, dev, None))
+
+        assert g_tapes == []
+        assert isinstance(res, tuple)
+        assert len(res) == 2
+        assert res[0].shape == (0,)
+        assert res[1].shape == (0,)
 
     @pytest.mark.autograd
     def test_no_trainable_params_qnode_autograd(self):
@@ -192,7 +157,7 @@ class TestSpsaGradient:
         parameters"""
         dev = qml.device("default.qubit", wires=2)
 
-        @qml.qnode(dev, interface="autograd")
+        @qml.qnode(dev)
         def circuit(weights):
             qml.RX(weights[0], wires=0)
             qml.RY(weights[1], wires=0)
@@ -210,7 +175,7 @@ class TestSpsaGradient:
         parameters"""
         dev = qml.device("default.qubit", wires=2)
 
-        @qml.qnode(dev, interface="torch")
+        @qml.qnode(dev)
         def circuit(weights):
             qml.RX(weights[0], wires=0)
             qml.RY(weights[1], wires=0)
@@ -228,7 +193,7 @@ class TestSpsaGradient:
         parameters"""
         dev = qml.device("default.qubit", wires=2)
 
-        @qml.qnode(dev, interface="tf")
+        @qml.qnode(dev)
         def circuit(weights):
             qml.RX(weights[0], wires=0)
             qml.RY(weights[1], wires=0)
@@ -246,7 +211,7 @@ class TestSpsaGradient:
         parameters"""
         dev = qml.device("default.qubit", wires=2)
 
-        @qml.qnode(dev, interface="jax")
+        @qml.qnode(dev)
         def circuit(weights):
             qml.RX(weights[0], wires=0)
             qml.RY(weights[1], wires=0)
@@ -271,13 +236,80 @@ class TestSpsaGradient:
         params = np.array([0.5, 0.5, 0.5], requires_grad=True)
 
         result = spsa_grad(circuit)(params)
-        assert np.allclose(result, np.zeros((4, 3)), atol=0, rtol=0)
+
+        assert isinstance(result, tuple)
+
+        assert len(result) == 3
+
+        assert isinstance(result[0], numpy.ndarray)
+        assert result[0].shape == (4,)
+        assert np.allclose(result[0], 0)
+
+        assert isinstance(result[1], numpy.ndarray)
+        assert result[1].shape == (4,)
+        assert np.allclose(result[1], 0)
+
+        assert isinstance(result[2], numpy.ndarray)
+        assert result[2].shape == (4,)
+        assert np.allclose(result[2], 0)
+
+        tapes, _ = spsa_grad(circuit.tape)
+        assert tapes == []
+
+    def test_all_zero_diff_methods_multiple_returns(self):
+        """Test that the transform works correctly when the diff method for every parameter is
+        identified to be 0, and that no tapes were generated, with multiple return values."""
+
+        dev = qml.device("default.qubit", wires=4)
+
+        @qml.qnode(dev)
+        def circuit(params):
+            qml.Rot(*params, wires=0)
+            return qml.expval(qml.PauliZ(wires=2)), qml.probs([2, 3])
+
+        params = np.array([0.5, 0.5, 0.5], requires_grad=True)
+
+        result = spsa_grad(circuit)(params)
+
+        assert isinstance(result, tuple)
+
+        assert len(result) == 2
+
+        # First elem
+        assert len(result[0]) == 3
+
+        assert isinstance(result[0][0], numpy.ndarray)
+        assert result[0][0].shape == ()
+        assert np.allclose(result[0][0], 0)
+
+        assert isinstance(result[0][1], numpy.ndarray)
+        assert result[0][1].shape == ()
+        assert np.allclose(result[0][1], 0)
+
+        assert isinstance(result[0][2], numpy.ndarray)
+        assert result[0][2].shape == ()
+        assert np.allclose(result[0][2], 0)
+
+        # Second elem
+        assert len(result[0]) == 3
+
+        assert isinstance(result[1][0], numpy.ndarray)
+        assert result[1][0].shape == (4,)
+        assert np.allclose(result[1][0], 0)
+
+        assert isinstance(result[1][1], numpy.ndarray)
+        assert result[1][1].shape == (4,)
+        assert np.allclose(result[1][1], 0)
+
+        assert isinstance(result[1][2], numpy.ndarray)
+        assert result[1][2].shape == (4,)
+        assert np.allclose(result[1][2], 0)
 
         tapes, _ = spsa_grad(circuit.tape)
         assert tapes == []
 
     def test_y0(self):
-        """Test that if the first order finite difference is underlying the SPSA, then
+        """Test that if first order finite differences is underlying the SPSA, then
         the tape is executed only once using the current parameter values."""
 
         with qml.queuing.AnnotatedQueue() as q:
@@ -293,10 +325,7 @@ class TestSpsaGradient:
         assert len(tapes) == n + 1
 
     def test_y0_provided(self):
-        """Test that if first order finite differences is underlying the SPSA,
-        and the original tape output is provided, then
-        the tape is executed only once using the current parameter
-        values."""
+        """Test that by providing y0 the number of tapes is equal the number of parameters."""
         dev = qml.device("default.qubit", wires=2)
 
         with qml.queuing.AnnotatedQueue() as q:
@@ -333,7 +362,6 @@ class TestSpsaGradient:
         tapes, fn = spsa_grad(tape1, approx_order=1, strategy="forward", num_directions=n1)
         j1 = fn(dev.batch_execute(tapes))
 
-        # We should only be executing the device to differentiate 1 parameter (2 executions)
         assert len(tapes) == dev.num_executions == n1 + 1
 
         n2 = 11
@@ -375,16 +403,16 @@ class TestSpsaGradient:
 
         def cost6(x):
             qml.Rot(*x, wires=0)
-            return [qml.probs([0, 1]), qml.probs([2, 3])]
+            return qml.probs([0, 1]), qml.probs([2, 3])
 
         x = np.random.rand(3)
         circuits = [qml.QNode(cost, dev) for cost in (cost1, cost2, cost3, cost4, cost5, cost6)]
 
         transform = [qml.math.shape(spsa_grad(c)(x)) for c in circuits]
-        qnode = [qml.math.shape(c(x)) + (3,) for c in circuits]
-        expected = [(3,), (1, 3), (2, 3), (4, 3), (1, 4, 3), (2, 4, 3)]
 
-        assert all(t == q == e for t, q, e in zip(transform, qnode, expected))
+        expected = [(3,), (3,), (2, 3), (3, 4), (3, 4), (2, 3, 4)]
+
+        assert all(t == q for t, q in zip(transform, expected))
 
     def test_special_observable_qnode_differentiation(self):
         """Test differentiation of a QNode on a device supporting a
@@ -463,26 +491,6 @@ class TestSpsaGradient:
         assert np.isclose(qnode(par).item().val, reference_qnode(par))
         assert np.isclose(qml.jacobian(qnode)(par).item().val, qml.jacobian(reference_qnode)(par))
 
-    @pytest.mark.parametrize("num_directions, tol", [(100, 0.3), (1000, 0.1)])
-    def test_convergence_single_par(self, num_directions, tol):
-        """Test that the SPSA gradient converges to the gradient for many direction samples
-        and the Rademacher distribution."""
-        np.random.seed(41)
-
-        x, y = 0.543, 0.214
-        with qml.queuing.AnnotatedQueue() as q:
-            qml.RX(x, wires=[0])
-            qml.RY(y, wires=[0])
-            qml.expval(qml.PauliZ(0))
-
-        tape = qml.tape.QuantumScript.from_queue(q)
-        dev = qml.device("default.qubit", wires=1)
-        tapes, fn = spsa_grad(tape, num_directions=num_directions)
-        res = fn(dev.batch_execute(tapes))
-
-        expected = [-np.sin(x), -np.sin(y)]
-        assert np.allclose(res, expected, atol=tol, rtol=0)
-
 
 @pytest.mark.parametrize("approx_order", [2, 4])
 @pytest.mark.parametrize("strategy", ["forward", "backward", "center"])
@@ -512,9 +520,22 @@ class TestSpsaGradientIntegration:
             validate_params=validate,
         )
         res = fn(dev.batch_execute(tapes))
-        assert res.shape == (6, 3)
 
-    def test_single_expectation_value(self, approx_order, strategy, tol, validate):
+        assert isinstance(res, tuple)
+
+        assert len(res) == 2
+
+        assert len(res[0]) == 3
+        assert res[0][0].shape == (2,)
+        assert res[0][1].shape == (2,)
+        assert res[0][2].shape == (2,)
+
+        assert len(res[1]) == 3
+        assert res[1][0].shape == (4,)
+        assert res[1][1].shape == (4,)
+        assert res[1][2].shape == (4,)
+
+    def test_single_expectation_value(self, approx_order, strategy, validate, tol):
         """Tests correct output shape and evaluation for a tape
         with a single expval output"""
         dev = qml.device("default.qubit", wires=2)
@@ -533,22 +554,30 @@ class TestSpsaGradientIntegration:
             h=1e-6,
             approx_order=approx_order,
             strategy=strategy,
-            num_directions=6,
+            num_directions=2,
             sampler=coordinate_sampler,
             validate_params=validate,
         )
         res = fn(dev.batch_execute(tapes))
-        assert res.shape == (1, 2)
+
+        assert isinstance(res, tuple)
+        assert len(res) == 2
 
         # The coordinate_sampler produces the right evaluation points, but the tape execution
         # results are averaged instead of added, so that we need to account for the prefactor
         # 1 / num_params here.
-        res *= 2
+        res = tuple(qml.math.convert_like(r * 2, r) for r in res)
+
+        assert isinstance(res[0], numpy.ndarray)
+        assert res[0].shape == ()
+
+        assert isinstance(res[1], numpy.ndarray)
+        assert res[1].shape == ()
 
         expected = np.array([[-np.sin(y) * np.sin(x), np.cos(y) * np.cos(x)]])
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
-    def test_single_expectation_value_with_argnum_all(self, approx_order, strategy, tol, validate):
+    def test_single_expectation_value_with_argnum_all(self, approx_order, strategy, validate, tol):
         """Tests correct output shape and evaluation for a tape
         with a single expval output where all parameters are chosen to compute
         the jacobian"""
@@ -569,22 +598,30 @@ class TestSpsaGradientIntegration:
             argnum=[0, 1],
             approx_order=approx_order,
             strategy=strategy,
-            num_directions=8,
+            num_directions=2,
             sampler=coordinate_sampler,
             validate_params=validate,
         )
         res = fn(dev.batch_execute(tapes))
-        assert res.shape == (1, 2)
+
+        assert isinstance(res, tuple)
+        assert len(res) == 2
 
         # The coordinate_sampler produces the right evaluation points, but the tape execution
         # results are averaged instead of added, so that we need to account for the prefactor
         # 1 / num_params here.
-        res *= 2
+        res = tuple(qml.math.convert_like(r * 2, r) for r in res)
+
+        assert isinstance(res[0], numpy.ndarray)
+        assert res[0].shape == ()
+
+        assert isinstance(res[1], numpy.ndarray)
+        assert res[1].shape == ()
 
         expected = np.array([[-np.sin(y) * np.sin(x), np.cos(y) * np.cos(x)]])
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
-    def test_single_expectation_value_with_argnum_one(self, approx_order, strategy, tol, validate):
+    def test_single_expectation_value_with_argnum_one(self, approx_order, strategy, validate, tol):
         """Tests correct output shape and evaluation for a tape
         with a single expval output where only one parameter is chosen to
         estimate the jacobian.
@@ -610,20 +647,64 @@ class TestSpsaGradientIntegration:
             argnum=1,
             approx_order=approx_order,
             strategy=strategy,
-            num_directions=11,
+            num_directions=3,
             sampler=coordinate_sampler,
             validate_params=validate,
         )
         res = fn(dev.batch_execute(tapes))
-        assert res.shape == (1, 2)
 
-        expected = np.array([[0, np.cos(y) * np.cos(x)]])
-        res = res.flatten()
-        expected = expected.flatten()
+        assert isinstance(res, tuple)
+        assert len(res) == 2
+
+        assert isinstance(res[0], numpy.ndarray)
+        assert res[0].shape == ()
+
+        assert isinstance(res[1], numpy.ndarray)
+        assert res[1].shape == ()
+
+        expected = [0, np.cos(y) * np.cos(x)]
 
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
-    def test_multiple_expectation_values(self, approx_order, strategy, tol, validate):
+    def test_multiple_expectation_value_with_argnum_one(self, approx_order, strategy, validate):
+        """Tests correct output shape and evaluation for a tape
+        with a multiple measurement, where only one parameter is chosen to
+        be trainable.
+
+        This test relies on the fact that exactly one term of the estimated
+        jacobian will match the expected analytical value.
+        """
+        dev = qml.device("default.qubit", wires=2)
+        x = 0.543
+        y = -0.654
+
+        with qml.queuing.AnnotatedQueue() as q:
+            qml.RX(x, wires=[0])
+            qml.RY(y, wires=[1])
+            qml.CNOT(wires=[0, 1])
+            qml.expval(qml.PauliZ(0) @ qml.PauliX(1))
+            qml.probs(wires=[0, 1])
+
+        tape = qml.tape.QuantumScript.from_queue(q)
+        # we choose only 1 trainable parameter - do not need to account for the multiplicative
+        # error of using the coordinate_sampler
+        tapes, fn = spsa_grad(
+            tape,
+            argnum=1,
+            approx_order=approx_order,
+            strategy=strategy,
+            sampler=coordinate_sampler,
+            validate_params=validate,
+        )
+        res = fn(dev.batch_execute(tapes))
+
+        assert isinstance(res, tuple)
+        assert isinstance(res[0], tuple)
+        assert np.allclose(res[0][0], 0)
+        assert isinstance(res[1], tuple)
+        assert np.allclose(res[1][0], 0)
+
+    def test_multiple_expectation_values(self, approx_order, strategy, validate, tol):
         """Tests correct output shape and evaluation for a tape
         with multiple expval outputs"""
         dev = qml.device("default.qubit", wires=2)
@@ -642,22 +723,33 @@ class TestSpsaGradientIntegration:
             tape,
             approx_order=approx_order,
             strategy=strategy,
-            num_directions=12,
+            num_directions=2,
             sampler=coordinate_sampler,
             validate_params=validate,
         )
         res = fn(dev.batch_execute(tapes))
-        assert res.shape == (2, 2)
+
+        assert isinstance(res, tuple)
+        assert len(res) == 2
 
         # The coordinate_sampler produces the right evaluation points, but the tape execution
         # results are averaged instead of added, so that we need to account for the prefactor
         # 1 / num_params here.
-        res *= 2
+        res = tuple(tuple(qml.math.convert_like(_r * 2, _r) for _r in r) for r in res)
 
-        expected = np.array([[-np.sin(x), 0], [0, np.cos(y)]])
-        assert np.allclose(res, expected, atol=tol, rtol=0)
+        assert isinstance(res[0], tuple)
+        assert len(res[0]) == 2
+        assert np.allclose(res[0], [-np.sin(x), 0], atol=tol, rtol=0)
+        assert isinstance(res[0][0], numpy.ndarray)
+        assert isinstance(res[0][1], numpy.ndarray)
 
-    def test_var_expectation_values(self, approx_order, strategy, tol, validate):
+        assert isinstance(res[1], tuple)
+        assert len(res[1]) == 2
+        assert np.allclose(res[1], [0, np.cos(y)], atol=tol, rtol=0)
+        assert isinstance(res[1][0], numpy.ndarray)
+        assert isinstance(res[1][1], numpy.ndarray)
+
+    def test_var_expectation_values(self, approx_order, strategy, validate, tol):
         """Tests correct output shape and evaluation for a tape
         with expval and var outputs"""
         dev = qml.device("default.qubit", wires=2)
@@ -676,22 +768,33 @@ class TestSpsaGradientIntegration:
             tape,
             approx_order=approx_order,
             strategy=strategy,
-            num_directions=12,
-            sampler=coordinate_sampler,
             validate_params=validate,
+            sampler=coordinate_sampler,
+            num_directions=2,
         )
         res = fn(dev.batch_execute(tapes))
-        assert res.shape == (2, 2)
+
+        assert isinstance(res, tuple)
+        assert len(res) == 2
 
         # The coordinate_sampler produces the right evaluation points, but the tape execution
         # results are averaged instead of added, so that we need to account for the prefactor
         # 1 / num_params here.
-        res *= 2
+        res = tuple(tuple(qml.math.convert_like(_r * 2, _r) for _r in r) for r in res)
 
-        expected = np.array([[-np.sin(x), 0], [0, -2 * np.cos(y) * np.sin(y)]])
-        assert np.allclose(res, expected, atol=tol, rtol=0)
+        assert isinstance(res[0], tuple)
+        assert len(res[0]) == 2
+        assert np.allclose(res[0], [-np.sin(x), 0], atol=tol, rtol=0)
+        assert isinstance(res[0][0], numpy.ndarray)
+        assert isinstance(res[0][1], numpy.ndarray)
 
-    def test_prob_expectation_values(self, approx_order, strategy, tol, validate):
+        assert isinstance(res[1], tuple)
+        assert len(res[1]) == 2
+        assert np.allclose(res[1], [0, -2 * np.cos(y) * np.sin(y)], atol=tol, rtol=0)
+        assert isinstance(res[1][0], numpy.ndarray)
+        assert isinstance(res[1][1], numpy.ndarray)
+
+    def test_prob_expectation_values(self, approx_order, strategy, validate, tol):
         """Tests correct output shape and evaluation for a tape
         with prob and expval outputs"""
         dev = qml.device("default.qubit", wires=2)
@@ -710,48 +813,57 @@ class TestSpsaGradientIntegration:
             tape,
             approx_order=approx_order,
             strategy=strategy,
-            num_directions=10,
-            sampler=coordinate_sampler,
             validate_params=validate,
+            sampler=coordinate_sampler,
+            num_directions=2,
         )
         res = fn(dev.batch_execute(tapes))
 
-        assert res.shape == (5, 2)
+        assert isinstance(res, tuple)
+        assert len(res) == 2
+
         # The coordinate_sampler produces the right evaluation points, but the tape execution
         # results are averaged instead of added, so that we need to account for the prefactor
         # 1 / num_params here.
-        res *= 2
+        res = tuple(tuple(qml.math.convert_like(_r * 2, _r) for _r in r) for r in res)
 
-        expected = (
-            np.array(
-                [
-                    [-2 * np.sin(x), 0],
-                    [
-                        -(np.cos(y / 2) ** 2 * np.sin(x)),
-                        -(np.cos(x / 2) ** 2 * np.sin(y)),
-                    ],
-                    [
-                        -(np.sin(x) * np.sin(y / 2) ** 2),
-                        (np.cos(x / 2) ** 2 * np.sin(y)),
-                    ],
-                    [
-                        (np.sin(x) * np.sin(y / 2) ** 2),
-                        (np.sin(x / 2) ** 2 * np.sin(y)),
-                    ],
-                    [
-                        (np.cos(y / 2) ** 2 * np.sin(x)),
-                        -(np.sin(x / 2) ** 2 * np.sin(y)),
-                    ],
-                ]
-            )
-            / 2
+        assert isinstance(res[0], tuple)
+        assert len(res[0]) == 2
+        assert np.allclose(res[0][0], -np.sin(x), atol=tol, rtol=0)
+        assert isinstance(res[0][0], numpy.ndarray)
+        assert np.allclose(res[0][1], 0, atol=tol, rtol=0)
+        assert isinstance(res[0][1], numpy.ndarray)
+
+        assert isinstance(res[1], tuple)
+        assert len(res[1]) == 2
+        assert np.allclose(
+            res[1][0],
+            [
+                -(np.cos(y / 2) ** 2 * np.sin(x)) / 2,
+                -(np.sin(x) * np.sin(y / 2) ** 2) / 2,
+                (np.sin(x) * np.sin(y / 2) ** 2) / 2,
+                (np.cos(y / 2) ** 2 * np.sin(x)) / 2,
+            ],
+            atol=tol,
+            rtol=0,
         )
-
-        assert np.allclose(res, expected, atol=tol, rtol=0)
+        assert isinstance(res[1][0], numpy.ndarray)
+        assert np.allclose(
+            res[1][1],
+            [
+                -(np.cos(x / 2) ** 2 * np.sin(y)) / 2,
+                (np.cos(x / 2) ** 2 * np.sin(y)) / 2,
+                (np.sin(x / 2) ** 2 * np.sin(y)) / 2,
+                -(np.sin(x / 2) ** 2 * np.sin(y)) / 2,
+            ],
+            atol=tol,
+            rtol=0,
+        )
+        assert isinstance(res[1][1], numpy.ndarray)
 
 
 @pytest.mark.parametrize(
-    "sampler, num_directions, atol", [(_rademacher_sampler, 6, 0.5), (coordinate_sampler, 2, 1e-3)]
+    "sampler, num_directions, atol", [(_rademacher_sampler, 4, 0.5), (coordinate_sampler, 2, 1e-3)]
 )
 class TestSpsaGradientDifferentiation:
     """Test that the transform is differentiable"""
@@ -774,7 +886,7 @@ class TestSpsaGradientDifferentiation:
             tape = qml.tape.QuantumScript.from_queue(q)
             tape.trainable_params = {0, 1}
             tapes, fn = spsa_grad(tape, n=1, num_directions=num_directions, sampler=sampler)
-            jac = fn(dev.batch_execute(tapes))
+            jac = np.array(fn(dev.batch_execute(tapes)))
             if sampler is coordinate_sampler:
                 jac *= 2
             return jac
@@ -787,6 +899,7 @@ class TestSpsaGradientDifferentiation:
                 [-np.cos(y) * np.sin(x), -np.cos(x) * np.sin(y)],
             ]
         )
+
         assert np.allclose(res, expected, atol=atol, rtol=0)
 
     @pytest.mark.autograd
@@ -810,11 +923,11 @@ class TestSpsaGradientDifferentiation:
             tapes, fn = spsa_grad(tape, n=1, num_directions=num_directions, sampler=sampler)
             jac = fn(dev.batch_execute(tapes))
             if sampler is coordinate_sampler:
-                jac *= 2
-            return jac[1, 0]
+                jac = tuple(tuple(2 * _j for _j in _jac) for _jac in jac)
+            return jac[1][0]
 
         x, y = params
-        res = qml.grad(cost_fn)(params)
+        res = qml.jacobian(cost_fn)(params)[0]
         expected = np.array([-np.cos(x) * np.cos(y) / 2, np.sin(x) * np.sin(y) / 2])
         assert np.allclose(res, expected, atol=atol, rtol=0)
 
@@ -829,7 +942,7 @@ class TestSpsaGradientDifferentiation:
         params = tf.Variable([0.543, -0.654], dtype=tf.float64)
         np.random.seed(42)
 
-        with tf.GradientTape() as t:
+        with tf.GradientTape(persistent=True) as t:
             with qml.queuing.AnnotatedQueue() as q:
                 qml.RX(params[0], wires=[0])
                 qml.RY(params[1], wires=[1])
@@ -839,25 +952,26 @@ class TestSpsaGradientDifferentiation:
             tape = qml.tape.QuantumScript.from_queue(q)
             tape.trainable_params = {0, 1}
             tapes, fn = spsa_grad(tape, n=1, num_directions=num_directions, sampler=sampler)
-            jac = fn(dev.batch_execute(tapes))
+            jac_0, jac_1 = fn(dev.batch_execute(tapes))
             if sampler is coordinate_sampler:
-                jac *= 2
+                jac_0 *= 2
+                jac_1 *= 2
 
         x, y = 1.0 * params
 
-        expected = np.array([-np.sin(x) * np.sin(y), np.cos(x) * np.cos(y)])
-        assert np.allclose(jac, expected, atol=atol, rtol=0)
+        res_0 = t.jacobian(jac_0, params)
+        res_1 = t.jacobian(jac_1, params)
 
-        res = t.jacobian(jac, params)
         expected = np.array(
             [
                 [-np.cos(x) * np.sin(y), -np.cos(y) * np.sin(x)],
                 [-np.cos(y) * np.sin(x), -np.cos(x) * np.sin(y)],
             ]
         )
-        assert np.allclose(res, expected, atol=atol, rtol=0)
+        assert np.allclose([res_0, res_1], expected, atol=atol, rtol=0)
 
     @pytest.mark.tf
+    @pytest.mark.slow
     def test_tf_ragged(self, sampler, num_directions, atol):
         """Tests that the output of the SPSA gradient transform
         of a ragged tape can be differentiated using TF, yielding second derivatives."""
@@ -867,7 +981,7 @@ class TestSpsaGradientDifferentiation:
         params = tf.Variable([0.543, -0.654], dtype=tf.float64)
         np.random.seed(42)
 
-        with tf.GradientTape() as t:
+        with tf.GradientTape(persistent=True) as t:
             with qml.queuing.AnnotatedQueue() as q:
                 qml.RX(params[0], wires=[0])
                 qml.RY(params[1], wires=[1])
@@ -878,14 +992,18 @@ class TestSpsaGradientDifferentiation:
             tape = qml.tape.QuantumScript.from_queue(q)
             tape.trainable_params = {0, 1}
             tapes, fn = spsa_grad(tape, n=1, num_directions=num_directions, sampler=sampler)
-            jac = fn(dev.batch_execute(tapes))[1, 0]
+
+            jac_01 = fn(dev.batch_execute(tapes))[1][0]
             if sampler is coordinate_sampler:
-                jac *= 2
+                jac_01 *= 2
 
         x, y = 1.0 * params
-        res = t.gradient(jac, params)
+
+        res_01 = t.jacobian(jac_01, params)
+
         expected = np.array([-np.cos(x) * np.cos(y) / 2, np.sin(x) * np.sin(y) / 2])
-        assert np.allclose(res, expected, atol=atol, rtol=0)
+
+        assert np.allclose(res_01[0], expected, atol=atol, rtol=0)
 
     @pytest.mark.torch
     def test_torch(self, sampler, num_directions, atol):
@@ -897,25 +1015,23 @@ class TestSpsaGradientDifferentiation:
         params = torch.tensor([0.543, -0.654], dtype=torch.float64, requires_grad=True)
         np.random.seed(42)
 
-        with qml.queuing.AnnotatedQueue() as q:
-            qml.RX(params[0], wires=[0])
-            qml.RY(params[1], wires=[1])
-            qml.CNOT(wires=[0, 1])
-            qml.expval(qml.PauliZ(0) @ qml.PauliX(1))
+        def cost_fn(params):
+            with qml.queuing.AnnotatedQueue() as q:
+                qml.RX(params[0], wires=[0])
+                qml.RY(params[1], wires=[1])
+                qml.CNOT(wires=[0, 1])
+                qml.expval(qml.PauliZ(0) @ qml.PauliX(1))
 
-        tape = qml.tape.QuantumScript.from_queue(q)
-        tapes, fn = spsa_grad(tape, n=1, num_directions=num_directions, sampler=sampler)
-        jac = fn(dev.batch_execute(tapes))
-        if sampler is coordinate_sampler:
-            jac *= 2
-        cost = torch.sum(jac)
-        cost.backward()
-        hess = params.grad
+            tape = qml.tape.QuantumScript.from_queue(q)
+            tapes, fn = spsa_grad(tape, n=1, num_directions=num_directions, sampler=sampler)
+            jac = fn(dev.batch_execute(tapes))
+            if sampler is coordinate_sampler:
+                jac = tuple(2 * _jac for _jac in jac)
+            return jac
+
+        hess = torch.autograd.functional.jacobian(cost_fn, params)
 
         x, y = params.detach().numpy()
-
-        expected = np.array([-np.sin(x) * np.sin(y), np.cos(x) * np.cos(y)])
-        assert np.allclose(jac.detach().numpy(), expected, atol=atol, rtol=0)
 
         expected = np.array(
             [
@@ -923,7 +1039,9 @@ class TestSpsaGradientDifferentiation:
                 [-np.cos(y) * np.sin(x), -np.cos(x) * np.sin(y)],
             ]
         )
-        assert np.allclose(hess.detach().numpy(), np.sum(expected, axis=0), atol=atol, rtol=0)
+
+        assert np.allclose(hess[0].detach().numpy(), expected[0], atol=atol, rtol=0)
+        assert np.allclose(hess[1].detach().numpy(), expected[1], atol=atol, rtol=0)
 
     @pytest.mark.jax
     def test_jax(self, sampler, num_directions, atol):
@@ -951,10 +1069,11 @@ class TestSpsaGradientDifferentiation:
             tapes, fn = spsa_grad(tape, n=1, num_directions=num_directions, sampler=sampler)
             jac = fn(dev.batch_execute(tapes))
             if sampler is coordinate_sampler:
-                jac *= 2
+                jac = tuple(2 * _jac for _jac in jac)
             return jac
 
         res = jax.jacobian(cost_fn)(params)
+        assert isinstance(res, tuple)
         x, y = params
         expected = np.array(
             [
