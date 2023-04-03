@@ -71,7 +71,9 @@ class TestTransmonInteraction:
     @pytest.mark.skip
     def test_coeffs_d(self):
         """Test that generated coefficients are correct for d>2"""
-        Hd2 = qml.pulse.transmon_interaction(connections, omega, g, anharmonicity=anharmonicity, d=3)
+        Hd2 = qml.pulse.transmon_interaction(
+            connections, omega, g, anharmonicity=anharmonicity, d=3
+        )
         assert all(Hd2.coeffs == np.concatenate([omega, g, anharmonicity]))
 
     def test_d_neq_2_raises_error(self):

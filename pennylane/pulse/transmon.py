@@ -33,7 +33,12 @@ def ad(wire, d=2):
 
 # pylint: disable=too-many-arguments
 def transmon_interaction(
-    omega: Union[float, list], connections: list, g: Union[float, list], anharmonicity=None, wires=None, d=2
+    omega: Union[float, list],
+    connections: list,
+    g: Union[float, list],
+    anharmonicity=None,
+    wires=None,
+    d=2,
 ):
     r"""Returns a :class:`ParametrizedHamiltonian` representing the cQED Hamiltonian of a superconducting transmon system.
 
