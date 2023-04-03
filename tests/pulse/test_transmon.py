@@ -118,7 +118,7 @@ class TestTransmonSettings:
     """Unit tests for TransmonSettings dataclass"""
 
     def test_init(self):
-        """Test the initialization of the ``HardwarePulse`` class."""
+        """Test the initialization of the ``TransmonSettings`` class."""
         settings = TransmonSettings(connections0, omega0, g0)
         assert settings.connections == connections0
         assert settings.omega == omega0
