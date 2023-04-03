@@ -1004,11 +1004,10 @@ class QubitDevice(Device):
                         "Returning the Von Neumann entropy is not supported when using custom wire labels"
                     )
 
-                # TODO: qml.execute shot vec support required with new return types
-                # if self._shot_vector is not None:
-                #     raise NotImplementedError(
-                #         "Returning the Von Neumann entropy is not supported with shot vectors."
-                #     )
+                if self._shot_vector is not None:
+                    raise NotImplementedError(
+                        "Returning the Von Neumann entropy is not supported with shot vectors."
+                    )
 
                 if self.shots is not None:
                     warnings.warn(
@@ -1025,11 +1024,10 @@ class QubitDevice(Device):
                         "Returning the mutual information is not supported when using custom wire labels"
                     )
 
-                # TODO: qml.execute shot vec support required with new return types
-                # if self._shot_vector is not None:
-                #     raise NotImplementedError(
-                #         "Returning the mutual information is not supported with shot vectors."
-                #     )
+                if self._shot_vector is not None:
+                    raise NotImplementedError(
+                        "Returning the mutual information is not supported with shot vectors."
+                    )
 
                 if self.shots is not None:
                     warnings.warn(

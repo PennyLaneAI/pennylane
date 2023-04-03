@@ -64,7 +64,7 @@ class TestPurityUnitTest:
         m = PurityMP(wires=qml.wires.Wires(0))
         assert m.numeric_type is float
 
-    @pytest.mark.parametrize("shots, shape", [(None, (1,)), (10, (1,)), ((1, 10), (2,))])
+    @pytest.mark.parametrize("shots, shape", [(None, ()), (10, ()), ((1, 10), ((), ()))])
     def test_shape(self, shots, shape):
         """Test the ``shape`` method."""
         meas = qml.purity(wires=0)
