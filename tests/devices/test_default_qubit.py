@@ -2066,15 +2066,14 @@ class TestApplyOps:
     @pytest.mark.jax
     def test_apply_parametrized_evolution_raises_error(self):
         """Test that applying a ParametrizedEvolution raises an error."""
-        ev_dev = qml.device("default.qubit", wires=1)
         param_ev = qml.evolve(ParametrizedHamiltonian([1], [qml.PauliX(0)]))
         with pytest.raises(
             NotImplementedError,
             match="The device default.qubit cannot execute a ParametrizedEvolution operation",
         ):
-            ev_dev._apply_parametrized_evolution(state=self.state, operation=param_ev)
+            self.dev._apply_parametrized_evolution(state=self.state, operation=param_ev)
 
-        @qml.qnode(ev_dev)
+        @qml.qnode(self.dev)
         def circuit():
             qml.apply(param_ev)
             return qml.expval(qml.PauliZ(0))
@@ -2085,7 +2084,7 @@ class TestApplyOps:
         ):
             circuit()
 
-        ev_dev.operations.add("ParametrizedEvolution")
+        self.dev.operations.add("ParametrizedEvolution")
         with pytest.raises(
             NotImplementedError,
             match="The device default.qubit.autograd cannot execute a ParametrizedEvolution operation",
