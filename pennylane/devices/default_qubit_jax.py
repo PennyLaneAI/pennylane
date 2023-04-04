@@ -11,9 +11,10 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""This module contains an jax implementation of the :class:`~.DefaultQubit`
+"""This module contains a jax implementation of the :class:`~.DefaultQubit`
 reference plugin.
 """
+# pylint: disable=ungrouped-imports
 import numpy as np
 
 import pennylane as qml
@@ -27,8 +28,25 @@ try:
     from jax.config import config as jax_config
     from jax.experimental.ode import odeint
 
+    from pennylane.pulse.parametrized_hamiltonian_pytree import ParametrizedHamiltonianPytree
+
 except ImportError as e:  # pragma: no cover
-    raise ImportError("default.qubit.jax device requires installing jax>0.2.0") from e
+    raise ImportError("default.qubit.jax device requires installing jax>0.3.20") from e
+
+
+def _validate_jax_version():
+    if jax.__version__ == "0.4.4":
+        raise RuntimeError(
+            "\nYour installed version of JAX is 0.4.4 but Pennylane is incompatible with it.\n\n"
+            "You can either downgrade JAX to version 0.4.3 or update to a more recent version if available.\n"
+            "If you downgrade, you will also need to downgrade JAXLIB to version 0.4.3 or earlier.\n"
+            "If you are using pip to manage your packages, you can run the following command:\n\n"
+            "\tpip install 'jax==0.4.3' 'jaxlib==0.4.3'\n\n"
+            "If you are using conda to manage your packages, you can run the following command:\n\n"
+            "\tconda install 'jax==0.4.3' 'jaxlib==0.4.3'\n\n"
+            "If you still have problems, please open an issue at the following link:\n\n"
+            "\thttps://github.com/PennyLaneAI/pennylane/issues\n"
+        )
 
 
 class DefaultQubitJax(DefaultQubit):
@@ -115,7 +133,7 @@ class DefaultQubitJax(DefaultQubit):
             a = keyed_circuit(key1)
             b = keyed_circuit(key2) # b will be different samples now.
 
-        Check out out the `JAX random documentation <https://jax.readthedocs.io/en/latest/jax.random.html>`__
+        Check out the `JAX random documentation <https://jax.readthedocs.io/en/latest/jax.random.html>`__
         for more information.
 
     Args:
@@ -127,10 +145,14 @@ class DefaultQubitJax(DefaultQubit):
             and variances analytically. In non-analytic mode, the ``diff_method="backprop"``
             QNode differentiation method is not supported and it is recommended to consider
             switching device to ``default.qubit`` and using ``diff_method="parameter-shift"``.
+            Or keeping ``default.qubit.jax`` but switching to
+            ``diff_method=qml.gradient.stoch_pulse_grad`` for pulse programming.
         prng_key (Optional[jax.random.PRNGKey]): An optional ``jax.random.PRNGKey``. This is the key to the
             pseudo random number generator. If None, a random key will be generated.
 
     """
+
+    _validate_jax_version()
 
     name = "Default qubit (jax) PennyLane plugin"
     short_name = "default.qubit.jax"
@@ -159,6 +181,8 @@ class DefaultQubitJax(DefaultQubit):
     _ndim = staticmethod(jnp.ndim)
 
     def __init__(self, wires, *, shots=None, prng_key=None, analytic=None):
+        _validate_jax_version()
+
         if jax_config.read("jax_enable_x64"):
             c_dtype = jnp.complex128
             r_dtype = jnp.float64
@@ -214,9 +238,14 @@ class DefaultQubitJax(DefaultQubit):
 
         state = self._flatten(state)
 
+        with jax.ensure_compile_time_eval():
+            H_jax = ParametrizedHamiltonianPytree.from_hamiltonian(
+                operation.H, dense=len(operation.wires) < 3, wire_order=self.wires
+            )
+
         def fun(y, t):
             """dy/dt = -i H(t) y"""
-            return -1j * qml.matrix(operation.H(operation.data, t=t), wire_order=self.wires) @ y
+            return (-1j * H_jax(operation.data, t=t)) @ y
 
         result = odeint(fun, state, operation.t, **operation.odeint_kwargs)
         return self._reshape(result[-1], [2] * self.num_wires)

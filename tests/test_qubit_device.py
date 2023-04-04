@@ -352,12 +352,19 @@ class TestExtractStatistics:
                 dev.statistics()
 
     @pytest.mark.parametrize(
-        "measurement", [ExpectationMP, VarianceMP, SampleMP, ProbabilityMP, StateMP]
+        "measurement",
+        [
+            ExpectationMP(obs=qml.PauliX(0)),
+            VarianceMP(obs=qml.PauliX(0)),
+            SampleMP(obs=qml.PauliX(0)),
+            ProbabilityMP(obs=qml.PauliX(0)),
+            StateMP(),
+        ],
     )
     def test_results_created(self, mock_qubit_device_extract_stats, monkeypatch, measurement):
         """Tests that the statistics method simply builds a results list without any side-effects"""
 
-        qscript = QuantumScript(measurements=[measurement(obs=qml.PauliX(0))])
+        qscript = QuantumScript(measurements=[measurement])
 
         with monkeypatch.context() as m:
             dev = mock_qubit_device_extract_stats()
@@ -1043,6 +1050,16 @@ class TestMarginalProb:
             np.array([0.3970422, 0.28090525, 0.11116351, 0.21088904]),
             [2, 0],
         ),
+        (
+            np.array([0.05, 0.07, 0.11, 0.13, 0.17, 0.19, 0.23, 0.05]),
+            np.array([0.05, 0.11, 0.17, 0.23, 0.07, 0.13, 0.19, 0.05]),
+            [2, 0, 1],
+        ),
+        (
+            np.arange(1, 17) / 136,
+            np.array([3, 11, 19, 27, 7, 15, 23, 31]) / 136,
+            [2, 0, 1],
+        ),
     ]
 
     @pytest.mark.parametrize("probs, marginals, wires", marginal_test_data)
@@ -1084,6 +1101,22 @@ class TestMarginalProb:
             ),
             np.array([[0.38, 0.27, 0.1, 0.25], [0.18, 0.47, 0.08, 0.27]]),
             [2, 0],
+            3,
+        ),
+        (
+            np.array(
+                [
+                    [0.05, 0.07, 0.11, 0.13, 0.17, 0.19, 0.23, 0.05],
+                    np.arange(1, 9) / 36,
+                ]
+            ),
+            np.array(
+                [
+                    [0.05, 0.11, 0.17, 0.23, 0.07, 0.13, 0.19, 0.05],
+                    np.array([1, 3, 5, 7, 2, 4, 6, 8]) / 36,
+                ],
+            ),
+            [2, 0, 1],
             3,
         ),
     ]
@@ -1197,6 +1230,14 @@ class TestExecution:
         for _ in range(num_evals_3):
             node_3(0.432, 0.12)
         assert dev_1.num_executions == num_evals_1 + num_evals_3
+
+    def test_get_diagonalizing_gates(self, mock_qubit_device):
+        """Test the private _get_diagonalizing_gates helper method."""
+        circuit = qml.tape.QuantumScript([qml.RX(1, 0)], [qml.probs(), qml.expval(qml.PauliX(0))])
+        dev = mock_qubit_device(wires=1)
+        rotations = dev._get_diagonalizing_gates(circuit)
+        assert len(rotations) == 1
+        assert qml.equal(rotations[0], qml.Hadamard(0))
 
 
 class TestExecutionBroadcasted:

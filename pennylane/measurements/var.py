@@ -26,14 +26,14 @@ from pennylane.wires import Wires
 from .measurements import SampleMeasurement, StateMeasurement, Variance
 
 
-def var(op: Operator):
+def var(op: Operator) -> "VarianceMP":
     r"""Variance of the supplied observable.
 
     Args:
-        op (Observable): a quantum observable object
+        op (Operator): a quantum observable object
 
     Returns:
-        VarianceMP: measurement process instance
+        VarianceMP: Measurement process instance
 
     **Example:**
 
@@ -64,7 +64,7 @@ class VarianceMP(SampleMeasurement, StateMeasurement):
     Please refer to :func:`var` for detailed documentation.
 
     Args:
-        obs (.Observable): The observable that is to be measured as part of the
+        obs (.Operator): The observable that is to be measured as part of the
             measurement process. Not all measurement processes require observables (for
             example ``Probability``); this argument is optional.
         wires (.Wires): The wires the measurement process applies to.

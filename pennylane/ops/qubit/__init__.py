@@ -33,7 +33,9 @@ from .arithmetic_ops import *
 from .matrix_ops import *
 from .non_parametric_ops import *
 from .observables import *
-from .parametric_ops import *
+from .parametric_ops_single_qubit import *
+from .parametric_ops_multi_qubit import *
+from .parametric_ops_controlled import *
 from .qchem_ops import *
 from .state_preparation import *
 from .special_unitary import SpecialUnitary
