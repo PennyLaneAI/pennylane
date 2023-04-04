@@ -810,14 +810,14 @@ class TestStochPulseGradQNodeIntegration:
         @qml.qnode(
             dev, interface="jax", diff_method=stoch_pulse_grad, num_split_times=num_split_times
         )
-        def circuit(params):
+        def circuit(params, T=T):
             qml.evolve(ham_single_q_const)(params, T)
             return qml.expval(qml.PauliZ(0))
 
         params = [jnp.array(0.4)]
         p = params[0] * T
         exp_grad = -2 * jnp.sin(2 * p) * T
-        jit_grad = jax.jit(jax.grad(circuit))(params)
+        jit_grad = jax.jit(jax.grad(circuit))(params, T=T)
         assert qml.math.isclose(jit_grad, exp_grad)
 
     @pytest.mark.slow
