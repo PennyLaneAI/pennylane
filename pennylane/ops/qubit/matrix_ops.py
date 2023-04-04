@@ -19,7 +19,8 @@ accept a hermitian or an unitary matrix as a parameter.
 import warnings
 
 import numpy as np
-from scipy.linalg import sqrtm, norm
+from scipy.linalg import norm
+from pennylane import numpy as pnp
 
 import pennylane as qml
 from pennylane.operation import AnyWires, DecompositionUndefinedError, Operation
@@ -334,6 +335,7 @@ class DiagonalQubitUnitary(Operation):
     def label(self, decimals=None, base_label=None, cache=None):
         return super().label(decimals=decimals, base_label=base_label or "U", cache=cache)
 
+
 class BlockEncode(Operation):
     r"""BlockEncode(a, wires)
     Apply an arbitrary matrix, :math:`A`, encoded in the top left block of a unitary matrix.
@@ -356,7 +358,7 @@ class BlockEncode(Operation):
     * Gradient recipe: None
 
     Args:
-        a (array[complex]): general n-by-m matrix to be encoded
+        A (array[complex]): a general :math:`(n \times m)` matrix to be encoded
         wires (Sequence[int] or int): the wire(s) the operation acts on
         do_queue (bool): indicates whether the operator should be
             recorded when created in a tape context
@@ -374,98 +376,135 @@ class BlockEncode(Operation):
     ... def example_circuit():
     ...     qml.BlockEncode(A, wires=range(2))
     ...     return qml.state()
-    ...     print(qml.matrix(example_circuit)())
+    >>> print(qml.matrix(example_circuit)())
     [[ 0.1         0.2         0.97283788 -0.05988708]
-    [ 0.3         0.4        -0.05988708  0.86395228]
-    [ 0.94561648 -0.07621992 -0.1        -0.3       ]
-    [-0.07621992  0.89117368 -0.2        -0.4       ]]
+     [ 0.3         0.4        -0.05988708  0.86395228]
+     [ 0.94561648 -0.07621992 -0.1        -0.3       ]
+     [-0.07621992  0.89117368 -0.2        -0.4       ]]
+    >>> A = [[0.2, 0, 0.2],[-0.2, 0.2, 0]]
+    >>> op = qml.BlockEncode(A, wires=range(3))
+    >>> print(np.round(qml.matrix(op), 2))
+    [[ 0.2   0.    0.2   0.96  0.02  0.    0.    0.  ]
+     [-0.2   0.2   0.    0.02  0.96  0.    0.    0.  ]
+     [ 0.96  0.02 -0.02 -0.2   0.2   0.    0.    0.  ]
+     [ 0.02  0.98  0.   -0.   -0.2   0.    0.    0.  ]
+     [-0.02  0.    0.98 -0.2  -0.    0.    0.    0.  ]
+     [ 0.    0.    0.    0.    0.    1.    0.    0.  ]
+     [ 0.    0.    0.    0.    0.    0.    1.    0.  ]
+     [ 0.    0.    0.    0.    0.    0.    0.    1.  ]]
     """
 
     num_params = 1
-    num_wires = AnyWires
+    """int: Number of trainable parameters that the operator depends on."""
 
-    def __init__(self, a, wires, do_queue=True, id=None):
-        a = np.atleast_2d(a)
+    num_wires = AnyWires
+    """int: Number of wires that the operator acts on."""
+
+    ndim_params = (2,)
+    """tuple[int]: Number of dimensions per trainable parameter that the operator depends on."""
+
+    grad_method = None
+    """Gradient computation method."""
+
+    def __init__(self, A, wires, do_queue=True, id=None):
+        # A = qml.math.atleast_2d(A)
+        if qml.math.shape(A) == () or qml.math.shape(A) == (1,):
+            A = qml.math.reshape(A, [1,1])
+
         wires = Wires(wires)
-        if np.sum(qml.math.shape(a)) <= 2:
-            normalization = a if a > 1 else 1
+        if pnp.sum(qml.math.shape(A)) <= 2:
+            normalization = A if A > 1 else 1
             subspace = (1, 1, 2 ** len(wires))
         else:
-            normalization = np.max(
-                [norm(a @ np.conj(a).T, ord=np.inf), norm(np.conj(a).T @ a, ord=np.inf)]
+            normalization = pnp.max(
+                [norm(A @ qml.math.transpose(qml.math.conj(A)), ord=pnp.inf), norm(qml.math.transpose(qml.math.conj(A)) @ A, ord=pnp.inf)]
             )
-            subspace = (*qml.math.shape(a), 2 ** len(wires))
+            subspace = (*qml.math.shape(A), 2 ** len(wires))
 
-        a = a / normalization if normalization > 1 else a
+        A = A / normalization if normalization > 1 else A
 
         if subspace[2] < (subspace[0] + subspace[1]):
             raise ValueError(
-                f"Block encoding a {subspace[0]} x {subspace[1]} matrix"
-                f" requires a hilbert space of size at least "
-                f"{subspace[0] + subspace[1]} x {subspace[0] + subspace[1]}."
+                f"Block encoding a ({subspace[0]} x {subspace[1]}) matrix "
+                f"requires a hilbert space of size at least "
+                f"({subspace[0] + subspace[1]} x {subspace[0] + subspace[1]})."
                 f" Cannot be embedded in a {len(wires)} qubit system."
             )
 
-        super().__init__(a, wires=wires, do_queue=do_queue, id=id)
+        super().__init__(A, wires=wires, do_queue=do_queue, id=id)
         self.hyperparameters["norm"] = normalization
         self.hyperparameters["subspace"] = subspace
 
     @staticmethod
     def compute_matrix(*params, **hyperparams):
-        """Get the matrix representation of block encoding unitary."""
-        a = params[0]
+        r"""Representation of the operator as a canonical matrix in the computational basis (static method).
+
+        The canonical matrix is the textbook matrix representation that does not consider wires.
+        Implicitly, this assumes that the wires of the operator correspond to the global wire order.
+
+        .. seealso:: :meth:`~.BlockEncode.matrix`
+
+        Args:
+            params (list): trainable parameters of the operator, as stored in the ``parameters`` attribute
+            hyperparams (dict): non-trainable hyperparameters of the operator, as stored in the ``hyperparameters`` attribute
+
+
+        Returns:
+            tensor_like: canonical matrix
+
+        **Example**
+
+        >>> A = np.array([[0.1,0.2],[0.3,0.4]])
+        >>> A
+        tensor([[0.1, 0.2],
+                [0.3, 0.4]])
+        >>> qml.BlockEncode.compute_matrix(A, subspace=[2,2,4])
+        array([[ 0.1       ,  0.2       ,  0.97283788, -0.05988708],
+               [ 0.3       ,  0.4       , -0.05988708,  0.86395228],
+               [ 0.94561648, -0.07621992, -0.1       , -0.3       ],
+               [-0.07621992,  0.89117368, -0.2       , -0.4       ]])
+        """
+        A = params[0]
         n, m, k = hyperparams["subspace"]
 
-        if isinstance(a, int) or isinstance(a, float):
-            u = np.block(
-                [[a, np.sqrt(1 - a * np.conj(a))], [np.sqrt(1 - a * np.conj(a)), -np.conj(a)]]
-            )
+        # if qml.math.get_interface(A) == "tensorflow":
+        #     print(A)
+        #     A = qml.math.cast_like(A, 1j)
+        #     print(A)
 
-            # col1 = qml.math.vstack([a, np.sqrt(1 - a * np.conj(a))])
-            # col2 = qml.math.vstack([np.sqrt(1 - a * np.conj(a)),-np.conj(a)])
-            # u = qml.math.hstack([col1, col2])
-
+        if qml.math.sum(qml.math.shape(A)) <= 2:
+            col1 = qml.math.vstack([A, qml.math.sqrt(1 - A * qml.math.conj(A))])
+            col2 = qml.math.vstack([qml.math.sqrt(1 - A * qml.math.conj(A)), -qml.math.conj(A)])
+            u = qml.math.hstack([col1, col2])
         else:
-            d1, d2 = a.shape
-
-            col1 = qml.math.vstack([a, qml.math.sqrt_matrix(np.eye(d2) - np.conj(a).T @ a)])
-            col2 = qml.math.vstack([qml.math.sqrt_matrix(np.eye(d1) - a @ np.conj(a).T), -np.conj(a).T])
+            d1, d2 = qml.math.shape(A)
+            col1 = qml.math.vstack(
+                [
+                    A,
+                    qml.math.sqrt_matrix(
+                        qml.math.eye(d2, like=A) - qml.math.transpose(qml.math.conj(A)) @ A
+                    ),
+                ]
+            )
+            col2 = qml.math.vstack(
+                [
+                    qml.math.sqrt_matrix(qml.math.eye(d1, like=A) - A @ qml.math.transpose(qml.math.conj(A))),
+                    -qml.math.transpose(qml.math.conj(A)),
+                ]
+            )
 
             u = qml.math.hstack([col1, col2])
 
         if n + m < k:
             r = k - (n + m)
-            u = np.block([[u, np.zeros((n + m, r))], [np.zeros((r, n + m)), np.eye(r)]])
+            col1 = qml.math.vstack([u, qml.math.zeros((r, n + m), like=A)])
+            col2 = qml.math.vstack([qml.math.zeros((n + m, r), like=A), qml.math.eye(r, like=A)])
+            u = qml.math.hstack([col1, col2])
         return u
-
-    # @staticmethod
-    # def compute_matrix(a,norm,subspace):
-    #     """Get the matrix representation of block encoding unitary."""
-    #     n, m, k = subspace
-
-    #     if np.sum(qml.math.shape(qml.math.atleast_2d(a))) <= 2:
-    #         u = a * np.diag([1, 0]) -np.conj(a)*np.diag([0,1]) + np.sqrt(1 - a * np.conj(a)) * np.fliplr(np.diag([1,0]))+ np.sqrt(1 - a * np.conj(a)) * np.fliplr(np.diag([0,1]))
-        
-    #     else:
-    #         d1, d2 = qml.math.shape(a)
-    #         # top = qml.math.hstack([a,sqrtm(np.eye(d1) - a @ np.conj(a).T)]) # -> object arrays are not supported
-    #         # u=qml.math.block_diag([a,-np.conj(np.transpose(a))]) # -> works
-    #         # u = qml.math.stack([a, -np.conj(np.transpose(a))]) # -> works
-
-    #         # bottom = qml.math.hstack([sqrtm(np.eye(d2) - np.conj(a).T @ a), -np.conj(a).T])
-    #         # u = qml.math.vstack([top,bottom])
-
-    #         # u = qml.math.block(
-    #         #     [
-    #         #         [a, sqrtm(np.eye(d1) - a @ np.conj(a).T)],
-    #         #         [sqrtm(np.eye(d2) - np.conj(a).T @ a), -np.conj(a).T],
-    #         #     ]
-    #         # )
-    #         # if d1 < d2:
-    #         #     qml.math.concatenate([a,np.zeros(d3))
-
-    #     # if n + m < k:
-    #     #     r = k - (n + m)
-    #     #     u = qml.math.block([[u, np.zeros((n + m, r))], [np.zeros((r, n + m)), np.eye(r)]])
-        
-    #     return a
+    
+    def adjoint(self):
+        A = self.parameters[0]
+        return BlockEncode(qml.math.transpose(qml.math.conj(A)),wires=self.wires)
+    
+    def label(self, decimals=None, base_label=None, cache=None):
+        return super().label(decimals=decimals, base_label=base_label or "BlockEncode", cache=cache)
