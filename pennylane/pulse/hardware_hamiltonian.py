@@ -41,7 +41,7 @@ def drive(amplitude, phase, wires):
     in terms of ladder operators :math:`\sigma^\pm = \frac{1}{2}(\sigma_x \pm i \sigma_y)`.
 
     Common hardware systems are superconducting qubits and neutral atoms. The electromagnetic field of the drive is
-    realized by microwave and laser fields, respectively, operating at very differnt wavelengths.
+    realized by microwave and laser fields, respectively, operating at very different wavelengths.
 
     Note that to avoid nummerical problems due to using both very large and very small numbers, it is advisable to match
     the order of magnitudes of frequency and time arguments. For example, when frequencies are of order
@@ -78,7 +78,6 @@ def drive(amplitude, phase, wires):
 
         amplitude = lambda p, t: p * jnp.sin(jnp.pi * t)
         phase = jnp.pi / 2
-        detuning = 3 * jnp.pi / 4
         H_d = qml.pulse.drive(amplitude, phase, wires)
 
     >>> H_int
@@ -192,9 +191,8 @@ def drive(amplitude, phase, wires):
 
             amplitude = lambda p, t: p * jnp.sin(jnp.pi * t)
             phase = jnp.pi / 2
-            detuning = 3 * jnp.pi / 4
 
-            H_d = qml.pulse.drive(amplitude, phase, detuning, wires)
+            H_d = qml.pulse.drive(amplitude, phase, wires)
 
             dev = qml.device("default.qubit.jax", wires=wires)
             @qml.qnode(dev, interface="jax")
@@ -204,9 +202,9 @@ def drive(amplitude, phase, wires):
 
         >>> params = [2.4]
         >>> circuit(params)
-        Array(0.94301294, dtype=float64)
+        Array(0.96893251, dtype=float64)
         >>> jax.grad(circuit)(params)
-        [Array(0.59484969, dtype=float64)]
+        [Array(-0.0355582, dtype=float64)]
     """
     if isinstance(wires, int):
         wires = [wires]
@@ -254,8 +252,6 @@ class HardwareHamiltonian(ParametrizedHamiltonian):
         settings Union[RydbergSettings, TransmonSettings]: Dataclass containing the hardware specific settings. Default is ``None``.
         pulses (list[HardwarePulse]): list of ``HardwarePulse`` dataclasses containing the information about the
             amplitude, phase, drive frequency and wires of each pulse
-        interaction_coeff (float): Rydberg interaction constant in units: :math:`\text{MHz} \times \mu m^6`.
-            Defaults to :math:`862690 \text{MHz} \times \mu m^6`.
     Returns:
         HardwareHamiltonian: class representing the Hamiltonian of Rydberg or Transmon device.
     """
