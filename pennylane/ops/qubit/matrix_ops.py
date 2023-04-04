@@ -478,18 +478,15 @@ class BlockEncode(Operation):
         shape_a = qml.math.shape(A)
 
         if qml.math.sum(shape_a) <= 2:
-            A_star = qml.math.conj(A)
-            col1 = qml.math.vstack([A, qml.math.sqrt(1 - A * A_star)])
-            col2 = qml.math.vstack([qml.math.sqrt(1 - A * A_star), -A_star])
+            col1 = qml.math.vstack([A, qml.math.sqrt(1 - A * qml.math.conj(A))])
+            col2 = qml.math.vstack([qml.math.sqrt(1 - A * qml.math.conj(A)), -qml.math.conj(A)])
             u = qml.math.hstack([col1, col2])
         else:
-            A_dag = qml.math.transpose(qml.math.conj(A))
             d1, d2 = shape_a
-            col1 = qml.math.vstack([A, qml.math.sqrt_matrix(qml.math.eye(d2, like=A) - A_dag @ A)])
+            col1 = qml.math.vstack([A, qml.math.sqrt_matrix(qml.math.eye(d2, like=A) - qml.math.transpose(qml.math.conj(A)) @ A)])
             col2 = qml.math.vstack(
-                [qml.math.sqrt_matrix(qml.math.eye(d1, like=A) - A @ A_dag), -A_dag]
+                [qml.math.sqrt_matrix(qml.math.eye(d1, like=A) - A @ qml.math.transpose(qml.math.conj(A))), -qml.math.transpose(qml.math.conj(A))]
             )
-
             u = qml.math.hstack([col1, col2])
 
         if n + m < k:
