@@ -315,96 +315,6 @@ class TestCountsIntegration:
         assert all(circuit() == [{"1": 10}, {"0": 10}])
         custom_measurement_process(dev, spy)
 
-    @pytest.mark.all_interfaces
-    @pytest.mark.parametrize("wires, basis_state", [(None, "010"), ([2, 1], "01")])
-    @pytest.mark.parametrize("interface", ["autograd", "jax", "tensorflow", "torch"])
-    def test_counts_no_op_finite_shots(self, interface, wires, basis_state, mocker):
-        """Check all interfaces with computational basis state counts and
-        finite shot"""
-        n_shots = 10
-        dev = qml.device("default.qubit", wires=3, shots=n_shots)
-        spy = mocker.spy(qml.QubitDevice, "sample")
-
-        @qml.qnode(dev, interface=interface)
-        def circuit():
-            qml.PauliX(1)
-            return qml.counts(wires=wires)
-
-        res = circuit()
-        assert res == {basis_state: n_shots}
-
-        custom_measurement_process(dev, spy)
-
-    @pytest.mark.all_interfaces
-    @pytest.mark.parametrize("interface", ["autograd", "jax", "tensorflow", "torch"])
-    def test_counts_operator_finite_shots(self, interface, mocker):
-        """Check all interfaces with observable measurement counts and finite
-        shot"""
-        n_shots = 10
-        dev = qml.device("default.qubit", wires=3, shots=n_shots)
-        spy = mocker.spy(qml.QubitDevice, "sample")
-
-        @qml.qnode(dev, interface=interface)
-        def circuit():
-            return qml.counts(qml.PauliZ(0))
-
-        res = circuit()
-        assert res == {1: n_shots}
-
-        custom_measurement_process(dev, spy)
-
-    @pytest.mark.all_interfaces
-    @pytest.mark.parametrize("shot_vec", [(1, 10, 10), (1, 10, 1000)])
-    @pytest.mark.parametrize("wires, basis_state", [(None, "010"), ([2, 1], "01")])
-    @pytest.mark.parametrize("interface", ["autograd", "jax", "tensorflow", "torch"])
-    def test_counts_binned(
-        self, shot_vec, interface, wires, basis_state, mocker
-    ):  # pylint:disable=too-many-arguments
-        """Check all interfaces with computational basis state counts and
-        different shot vectors"""
-        dev = qml.device("default.qubit", wires=3, shots=shot_vec)
-        spy = mocker.spy(qml.QubitDevice, "sample")
-
-        @qml.qnode(dev, interface=interface)
-        def circuit():
-            qml.PauliX(1)
-            return qml.counts(wires=wires)
-
-        res = circuit()
-
-        assert isinstance(res, tuple)
-        assert res[0] == {basis_state: shot_vec[0]}
-        assert res[1] == {basis_state: shot_vec[1]}
-        assert res[2] == {basis_state: shot_vec[2]}
-        assert len(res) == len(shot_vec)
-        assert sum(sum(res_bin.values()) for res_bin in res) == sum(shot_vec)
-
-        custom_measurement_process(dev, spy)
-
-    @pytest.mark.all_interfaces
-    @pytest.mark.parametrize("shot_vec", [(1, 10, 10), (1, 10, 1000)])
-    @pytest.mark.parametrize("interface", ["autograd", "jax", "tensorflow", "torch"])
-    def test_counts_operator_binned(self, shot_vec, interface, mocker):
-        """Check all interfaces with observable measurement counts and different
-        shot vectors"""
-        dev = qml.device("default.qubit", wires=3, shots=shot_vec)
-        spy = mocker.spy(qml.QubitDevice, "sample")
-
-        @qml.qnode(dev, interface=interface)
-        def circuit():
-            return qml.counts(qml.PauliZ(0))
-
-        res = circuit()
-
-        assert isinstance(res, tuple)
-        assert res[0] == {1: shot_vec[0]}
-        assert res[1] == {1: shot_vec[1]}
-        assert res[2] == {1: shot_vec[2]}
-        assert len(res) == len(shot_vec)
-        assert sum(sum(res_bin.values()) for res_bin in res) == sum(shot_vec)
-
-        custom_measurement_process(dev, spy)
-
     @pytest.mark.parametrize("shot_vec", [(1, 10, 10), (1, 10, 1000)])
     def test_counts_binned_4_wires(self, shot_vec, mocker):
         """Check the autograd interface with computational basis state counts and
@@ -463,40 +373,6 @@ class TestCountsIntegration:
         qml.probs(wires=[1, 0]),
         qml.sample(wires=1),
     ]
-
-    @pytest.mark.all_interfaces
-    @pytest.mark.parametrize("interface", ["autograd", "jax", "tensorflow", "torch"])
-    @pytest.mark.parametrize("meas2", meas2)
-    @pytest.mark.parametrize("shots", [1000, (1, 10)])
-    @pytest.mark.filterwarnings("ignore:Creating an ndarray from ragged nested sequences")
-    def test_counts_observable_finite_shots_old(self, interface, meas2, shots, mocker):
-        """Check all interfaces with observable measurement counts and finite
-        shot"""
-
-        if interface == "jax" and meas2.return_type in (
-            qml.measurements.Probability,
-            qml.measurements.Sample,
-        ):
-            reason = "Using the JAX interface, sample and probability measurements cannot be mixed with other measurement types."
-            pytest.skip(reason)
-
-        dev = qml.device("default.qubit", wires=3, shots=shots)
-        spy = mocker.spy(qml.QubitDevice, "sample")
-
-        @qml.qnode(dev, interface=interface)
-        def circuit():
-            qml.PauliX(0)
-            return qml.counts(wires=0), qml.apply(meas2)
-
-        res = circuit()
-        assert isinstance(res, tuple)
-
-        num_shot_bins = 1 if isinstance(shots, int) else len(shots)
-        counts_term_indices = [i * 2 for i in range(num_shot_bins)]
-        for ind in counts_term_indices:
-            assert isinstance(res[ind], dict)
-
-        custom_measurement_process(dev, spy)
 
     def test_all_outcomes_kwarg_providing_observable(self, mocker):
         """Test that the dictionary keys *all* eigenvalues of the observable,

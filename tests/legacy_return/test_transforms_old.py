@@ -165,24 +165,6 @@ class TestStateForward:
                 )
 
 
-@pytest.mark.all_interfaces
-class TestStateForwardInterfaces:
-    """Test that state reconstruction works for all interfaces"""
-
-    @pytest.mark.parametrize("interface", ["autograd", "jax", "tf", "torch"])
-    @pytest.mark.parametrize("diffable", [True, False])
-    def test_qft_state(self, interface, diffable):
-        """Test that the state reconstruction is correct for a QFT state"""
-        circuit = qft_circuit(3, interface=interface)
-        circuit = qml.shadows.shadow_state(wires=[0, 1, 2], diffable=diffable)(circuit)
-
-        actual = circuit()
-        expected = np.exp(np.arange(8) * 2j * np.pi / 8) / np.sqrt(8)
-        expected = np.outer(expected, np.conj(expected))
-
-        assert qml.math.allclose(actual, expected, atol=1e-1)
-
-
 class TestStateBackward:
     """Test that the gradient of the state reconstruction is correct"""
 

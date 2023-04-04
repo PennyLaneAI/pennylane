@@ -500,18 +500,6 @@ class TestKerasLayer:
         assert output_shape.as_list() == [None, 1]
 
 
-@pytest.mark.all_interfaces
-@pytest.mark.parametrize("interface", ["autograd", "torch", "tf"])
-@pytest.mark.parametrize("n_qubits, output_dim", indices_up_to(1))
-@pytest.mark.usefixtures("get_circuit")
-def test_interface_conversion(get_circuit, output_dim):
-    """Test if input QNodes with all types of interface are converted internally to the TensorFlow
-    interface"""
-    c, w = get_circuit
-    layer = KerasLayer(c, w, output_dim)
-    assert layer.qnode.interface == "tf"
-
-
 @pytest.mark.tf
 @pytest.mark.parametrize("interface", ["tf"])
 @pytest.mark.usefixtures("get_circuit", "model")

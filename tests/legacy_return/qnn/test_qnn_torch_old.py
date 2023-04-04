@@ -489,18 +489,6 @@ class TestTorchLayer:
         assert len(weights) == len(list(layer.parameters()))
 
 
-@pytest.mark.all_interfaces
-@pytest.mark.parametrize("interface", ["autograd", "torch", "tf"])
-@pytest.mark.parametrize("n_qubits, output_dim", indices_up_to(1))
-@pytest.mark.usefixtures("get_circuit")  # this fixture is in tests/qnn/conftest.py
-def test_interface_conversion(get_circuit):
-    """Test if input QNodes with all types of interface are converted internally to the PyTorch
-    interface"""
-    c, w = get_circuit
-    layer = TorchLayer(c, w)
-    assert layer.qnode.interface == "torch"
-
-
 @pytest.mark.torch
 @pytest.mark.parametrize("interface", ["torch"])
 @pytest.mark.usefixtures("get_circuit", "module")
