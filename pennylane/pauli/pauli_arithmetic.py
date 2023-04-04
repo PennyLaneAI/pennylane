@@ -217,7 +217,7 @@ class PauliWord(dict):
 
         return reduce(kron, (matrix_map[self[w]] for w in wire_order))
 
-    def operation(self, wire_order=None):
+    def operation(self, wire_order=None, get_as_tensor=False):
         """Returns a native PennyLane :class:`~pennylane.operation.Operation` representing the PauliWord."""
         if len(self) == 0:
             if wire_order in (None, [], wires.Wires([])):
@@ -225,10 +225,13 @@ class PauliWord(dict):
             return Identity(wires=wire_order)
 
         factors = [op_map[op](wire) for wire, op in self.items()]
+
+        if get_as_tensor:
+            return factors[0] if len(factors) == 1 else Tensor(*factors)
         return factors[0] if len(factors) == 1 else prod(*factors)
 
     def hamiltonian(self, wire_order=None):
-        """Return :class:`~pennylane.Hamiltonian` representing the PauliWord"""
+        """Return :class:`~pennylane.Hamiltonian` representing the PauliWord."""
         if len(self) == 0:
             if wire_order in (None, [], wires.Wires([])):
                 raise ValueError("Can't get the Hamiltonian for an empty PauliWord.")
@@ -293,7 +296,7 @@ class PauliSentence(dict):
         for pw1 in self:
             for pw2 in other:
                 prod_pw, coeff = pw1 * pw2
-                final_ps[prod_pw] += coeff * self[pw1] * other[pw2]
+                final_ps[prod_pw] = final_ps[prod_pw] + coeff * self[pw1] * other[pw2]
 
         return final_ps
 
@@ -364,11 +367,12 @@ class PauliSentence(dict):
         if len(self) == 0:
             if wire_order in (None, [], wires.Wires([])):
                 raise ValueError("Can't get the operation for an empty PauliSentence.")
-            return Identity(wires=wire_order)
+            return qml.s_prod(0, Identity(wires=wire_order))
 
         summands = []
+        wire_order = wire_order or self.wires
         for pw, coeff in self.items():
-            pw_op = pw.operation(wire_order=list(self.wires))
+            pw_op = pw.operation(wire_order=list(wire_order))
             summands.append(pw_op if coeff == 1 else s_prod(coeff, pw_op))
         return summands[0] if len(summands) == 1 else qml.sum(*summands)
 
@@ -377,10 +381,14 @@ class PauliSentence(dict):
         if len(self) == 0:
             if wire_order in (None, [], wires.Wires([])):
                 raise ValueError("Can't get the Hamiltonian for an empty PauliSentence.")
-            return Hamiltonian([1], [Identity(wires=wire_order)])
+            return Hamiltonian([], [])
 
-        return sum(
-            coeff * pw.hamiltonian(wire_order=list(self.wires)) for pw, coeff in self.items()
+        wire_order = wire_order or self.wires
+        wire_order = list(wire_order)
+
+        return Hamiltonian(
+            list(self.values()),
+            [pw.operation(wire_order=wire_order, get_as_tensor=True) for pw in self],
         )
 
     def simplify(self, tol=1e-8):

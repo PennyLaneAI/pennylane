@@ -353,6 +353,11 @@ class Prod(CompositeOp):
         return new_factors.global_phase, new_factors.factors
 
     def simplify(self) -> Union["Prod", Sum]:
+        # try using pauli_rep:
+        if pr := self._pauli_rep:
+            pr.simplify()
+            return pr.operation(wire_order=self.wires)
+
         global_phase, factors = self._simplify_factors(factors=self.operands)
 
         factors = list(itertools.product(*factors))
@@ -417,7 +422,8 @@ def _swappable_ops(op1, op2, wire_map: dict = None) -> bool:
         wires2 = wires2.map(wire_map)
     wires1 = set(wires1)
     wires2 = set(wires2)
-    return False if wires1 & wires2 else wires1.pop() > wires2.pop()
+    # compare strings of wire labels so that we can compare arbitrary wire labels like 0 and "a"
+    return False if wires1 & wires2 else str(wires1.pop()) > str(wires2.pop())
 
 
 class _ProductFactorsGrouping:

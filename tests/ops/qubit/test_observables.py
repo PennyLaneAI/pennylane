@@ -148,6 +148,13 @@ class TestSimpleObservables:
 class TestHermitian:
     """Test the Hermitian observable"""
 
+    def test_preserves_autograd_trainability(self):
+        """Asserts that the provided matrix is not internally converted to a vanilla numpy array."""
+        a = qml.numpy.eye(2, requires_grad=True)
+        op = qml.Hermitian(a, 0)
+        assert op.data[0] is a
+        assert qml.math.requires_grad(op.data[0])
+
     def test_hermitian_creation_exceptions(self):
         """Tests that the hermitian matrix method raises the proper errors."""
         H = np.array([[1, 1], [1, -1]]) / np.sqrt(2)
