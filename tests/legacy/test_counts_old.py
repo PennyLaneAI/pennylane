@@ -225,6 +225,7 @@ class TestCountsIntegration:
         result = circuit()
 
         assert len(result) == 3
+
     def test_single_wire_counts(self, mocker):
         """Test the return type and shape of sampling counts from a single wire"""
         n_sample = 10
