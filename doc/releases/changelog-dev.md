@@ -28,6 +28,9 @@
 
 <h3>Improvements</h3>
 
+* The default gaussian device and parameter shift cv support the new return system but only for single measurement.
+  [(3946)](https://github.com/PennyLaneAI/pennylane/pull/3946)
+
 * Improve the efficiency of `tapering()`, `tapering_hf()` and `clifford()`.
   [(3942)](https://github.com/PennyLaneAI/pennylane/pull/3942)
 

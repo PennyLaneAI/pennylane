@@ -1165,8 +1165,6 @@ class TestQubitIntegration:
         assert np.allclose(weights.grad.detach(), expected, atol=tol, rtol=0)
 
 
-# TODO: Add CV to the new return type system
-@pytest.mark.xfail
 @pytest.mark.parametrize(
     "diff_method,kwargs",
     [
