@@ -67,7 +67,11 @@ class TestVar:
         rtol = 0 if shots is None else 0.05
 
         assert np.allclose(res, expected, atol=atol, rtol=rtol)
-        assert res.dtype == r_dtype
+        if isinstance(res, tuple):
+            assert res[0].dtype == r_dtype
+            assert res[1].dtype == r_dtype
+        else:
+            assert res.dtype == r_dtype
 
         custom_measurement_process(dev, spy)
 

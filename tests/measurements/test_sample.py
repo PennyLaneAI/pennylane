@@ -60,9 +60,9 @@ class TestSample:
 
         output = circuit()
 
-        assert np.array_equal(output.shape, (2, n_sample))
-        assert circuit._qfunc_output[0].shape(dev) == (1, n_sample)
-        assert circuit._qfunc_output[1].shape(dev) == (1, n_sample)
+        assert len(output) == 2
+        assert circuit._qfunc_output[0].shape(dev) == ((n_sample,) if not n_sample == 1 else ())
+        assert circuit._qfunc_output[1].shape(dev) == ((n_sample,) if not n_sample == 1 else ())
 
         custom_measurement_process(dev, spy)
 
@@ -84,7 +84,7 @@ class TestSample:
 
         assert len(result) == 3
         assert np.array_equal(result[0].shape, (n_sample,))
-        assert circuit._qfunc_output[0].shape(dev) == (1, n_sample)
+        assert circuit._qfunc_output[0].shape(dev) == (n_sample,)
         assert isinstance(result[1], np.ndarray)
         assert isinstance(result[2], np.ndarray)
 
@@ -106,7 +106,7 @@ class TestSample:
 
         assert isinstance(result, np.ndarray)
         assert np.array_equal(result.shape, (n_sample,))
-        assert circuit._qfunc_output.shape(dev) == (1, n_sample)
+        assert circuit._qfunc_output.shape(dev) == (n_sample,)
 
         custom_measurement_process(dev, spy)
 
@@ -124,14 +124,14 @@ class TestSample:
 
         result = circuit()
 
-        assert circuit._qfunc_output[0].shape(dev) == (1, n_sample)
-        assert circuit._qfunc_output[1].shape(dev) == (1, n_sample)
-        assert circuit._qfunc_output[2].shape(dev) == (1, n_sample)
+        assert circuit._qfunc_output[0].shape(dev) == (n_sample,)
+        assert circuit._qfunc_output[1].shape(dev) == (n_sample,)
+        assert circuit._qfunc_output[2].shape(dev) == (n_sample,)
 
         # If all the dimensions are equal the result will end up to be a proper rectangular array
-        assert isinstance(result, np.ndarray)
-        assert np.array_equal(result.shape, (3, n_sample))
-        assert result.dtype == np.dtype("int")
+        assert isinstance(result, tuple)
+        assert len(result) == 3
+        assert result[0].dtype == np.dtype("int")
 
         custom_measurement_process(dev, spy)
 
@@ -344,7 +344,7 @@ class TestSample:
         """Test that the shape is correct when wires are provided."""
         dev = qml.device("default.qubit", wires=3, shots=n_samples)
         mp = qml.sample(wires=(0, 1))
-        assert mp.shape(dev) == (1, n_samples, 2)
+        assert mp.shape(dev) == (n_samples, 2) if n_samples != 1 else (2,)
 
     @pytest.mark.parametrize(
         "obs",
@@ -441,4 +441,4 @@ def test_jitting_with_sampling_on_subset_of_wires(samples):
 
     expected = (2,) if samples == 1 else (samples, 2)
     assert results.shape == expected
-    assert circuit._qfunc_output.shape(dev) == (1, samples, 2)
+    assert circuit._qfunc_output.shape(dev) == (samples, 2) if samples != 1 else (2,)
