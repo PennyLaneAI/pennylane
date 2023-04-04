@@ -1206,6 +1206,6 @@ def _compute_min_entropy(density_matrix, base):
 
     evs, _ = qml.math.linalg.eigh(density_matrix)
     evs = qml.math.real(evs)
-    minimum_entropy = - qml.math.log(qml.math.max(evs)) / div_base
+    minimum_entropy = qml.math.log(qml.math.max(evs)) / div_base
 
     return minimum_entropy

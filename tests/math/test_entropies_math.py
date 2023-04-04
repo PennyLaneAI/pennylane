@@ -674,3 +674,4 @@ class TestMinEntropy:
 
         for grad, result in zip(gradient, expected_results):
             assert qml.math.allclose(grad, result)
+            
