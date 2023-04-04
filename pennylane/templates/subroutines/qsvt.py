@@ -20,9 +20,11 @@ from pennylane.queuing import QueuingManager
 from pennylane.ops import BlockEncode, PCPhase
 from pennylane.ops.op_math import adjoint
 from pennylane.operation import AnyWires, Operation
+from pennylane import numpy as np
+import copy
 
 
-def qsvt(A, angles, wires):
+def qsvt(A, angles, wires, convention=None):
     r"""Performs the
     `quantum singular value transformation <https://arxiv.org/abs/1806.01838>`__ using
     :class:`~.BlockEncode` and :class:`~.PCPhase`.
@@ -31,6 +33,8 @@ def qsvt(A, angles, wires):
         A (tensor_like): the general :math:`(n \times m)` matrix to be encoded.
         angles (tensor_like): a list of angles by which to shift to obtain the desired polynomial.
         wires (Iterable): the wires the template acts on.
+        convenction (string): can be set to "Wx" to convert quantum signal processing angles to QSVT
+        angles
 
     .. details::
         :title: Usage Details
@@ -63,6 +67,20 @@ def qsvt(A, angles, wires):
 
     UA = BlockEncode(A, wires=wires, do_queue=False)
     projectors = []
+
+    if convention == "Wx":
+        angles = _qsp_to_qsvt(angles)
+        global_phase = (len(angles) - 1) % 4
+
+        if global_phase == 1:
+            qml.exp(qml.Identity(wires=wires), 1j * (3 * np.pi / 2))
+
+        elif global_phase == 2:
+            qml.exp(qml.Identity(wires=wires), 1j * np.pi)
+
+        elif global_phase == 3:
+            qml.exp(qml.Identity(wires=wires), 1j * np.pi / 2)
+
     for idx, phi in enumerate(angles):
         if idx % 2 == 0:
             projectors.append(PCPhase(phi, dim=r, wires=wires, do_queue=False))
@@ -176,14 +194,20 @@ class QSVT(Operation):
         op_list = []
         UA_adj = UA.__copy__()
 
-        for idx, op in enumerate(projectors):
+        for idx, op in enumerate(projectors[:-1]):
+            qml.apply(op)
+            op_list.append(op)
+
             if idx % 2 == 0:
                 qml.apply(UA)
                 op_list.append(UA)
+
             else:
                 op_list.append(adjoint(UA_adj))
-            qml.apply(op)
-            op_list.append(op)
+
+        qml.apply(projectors[-1])
+        op_list.append(projectors[-1])
+
         return op_list
 
     def label(self, decimals=None, base_label=None, cache=None):
@@ -196,3 +220,14 @@ class QSVT(Operation):
             context.remove(op)
         context.append(self)
         return self
+
+
+def _qsp_to_qsvt(angles):
+    r"""Converts qsp angles to qsvt angles."""
+    new_angles = copy.copy(angles)
+    new_angles[0] += 3 * np.pi / 4
+    new_angles[-1] -= np.pi / 4
+
+    for i, phi in enumerate(new_angles[1:-1]):
+        new_angles[i + 1] = phi + np.pi / 2
+    return new_angles
