@@ -79,12 +79,13 @@ jobs:
           name: core-interfaces-coverage-${{ matrix.config.suite }}-${{ matrix.config.python-version }}
           path: ./coverage.xml
 
-  tf-min-version-tests:
+  tf-tests:
     runs-on: ubuntu-latest
 
     continue-on-error: true
     strategy:
       matrix:
+        python-version: [3.8, '3.10']
         group: [1, 2, 3, 4]
 
     env:
@@ -103,7 +104,7 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v2
         with:
-          python-version: 3.8
+          python-version: ${{ matrix.python-version }}
 
       - name: Install dependencies
         run: |
@@ -128,67 +129,16 @@ jobs:
 
       - uses: actions/upload-artifact@v2
         with:
-          name: core-interfaces-coverage-tf-3.8
+          name: core-interfaces-coverage-tf-${{ matrix.python-version }}
           path: ./coverage.xml
 
-  tf-max-version-tests:
+  jax-tests:
     runs-on: ubuntu-latest
 
     continue-on-error: true
     strategy:
       matrix:
-        group: [1, 2, 3, 4]
-
-    env:
-      SUITE: 'tf'
-
-    steps:
-      - name: Cancel Previous Runs
-        uses: styfle/cancel-workflow-action@0.11.0
-        with:
-          access_token: ${{ github.token }}
-
-      - uses: actions/checkout@v2
-        with:
-          fetch-depth: 2
-
-      - name: Set up Python
-        uses: actions/setup-python@v2
-        with:
-          python-version: '3.10'
-
-      - name: Install dependencies
-        run: |
-          python -m pip install --upgrade pip && pip install wheel --upgrade
-          pip install pytest-split cvxpy cvxopt tensorflow~=$TF_VERSION keras~=$TF_VERSION
-          pip install -r requirements-ci.txt --upgrade
-          pip install -r requirements-dev.txt --upgrade
-
-      - name: Install PennyLane
-        run: |
-          python setup.py bdist_wheel
-          pip install dist/PennyLane*.whl
-
-      - name: Install Lightning-master
-        run: python -m pip install -i https://test.pypi.org/simple/ PennyLane-Lightning --pre --upgrade
-
-      - name: Run tests
-        run: python -m pytest tests --cov=pennylane $COVERAGE_FLAGS --splits 4 --group ${{ matrix.group }} -m "$SUITE and not qcut and not return" -n auto
-
-      - name: Adjust coverage file for Codecov
-        run: bash <(sed -i 's/filename=\"/filename=\"pennylane\//g' coverage.xml)
-
-      - uses: actions/upload-artifact@v2
-        with:
-          name: core-interfaces-coverage-tf-3.10
-          path: ./coverage.xml
-
-  jax-min-version-tests:
-    runs-on: ubuntu-latest
-
-    continue-on-error: true
-    strategy:
-      matrix:
+        python-version: [3.8, '3.11']
         group: [1, 2, 3, 4]
 
     env:
@@ -207,59 +157,7 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v2
         with:
-          python-version: 3.8
-
-      - name: Install dependencies
-        run: |
-          python -m pip install --upgrade pip && pip install wheel --upgrade
-          pip install pytest-split cvxpy cvxopt jax==$JAX_VERSION jaxlib==$JAX_VERSION
-          pip install -r requirements-ci.txt --upgrade
-          pip install -r requirements-dev.txt --upgrade
-
-      - name: Install PennyLane
-        run: |
-          python setup.py bdist_wheel
-          pip install dist/PennyLane*.whl
-
-      - name: Install Lightning-master
-        run: python -m pip install -i https://test.pypi.org/simple/ PennyLane-Lightning --pre --upgrade
-
-      - name: Run tests
-        run: python -m pytest tests --cov=pennylane $COVERAGE_FLAGS --splits 4 --group ${{ matrix.group }} -m "$SUITE and not qcut and not return" -n auto
-
-      - name: Adjust coverage file for Codecov
-        run: bash <(sed -i 's/filename=\"/filename=\"pennylane\//g' coverage.xml)
-
-      - uses: actions/upload-artifact@v2
-        with:
-          name: core-interfaces-coverage-jax-3.8
-          path: ./coverage.xml
-
-  jax-max-version-tests:
-    runs-on: ubuntu-latest
-
-    continue-on-error: true
-    strategy:
-      matrix:
-        group: [1, 2, 3, 4]
-
-    env:
-      SUITE: 'jax'
-
-    steps:
-      - name: Cancel Previous Runs
-        uses: styfle/cancel-workflow-action@0.11.0
-        with:
-          access_token: ${{ github.token }}
-
-      - uses: actions/checkout@v2
-        with:
-          fetch-depth: 2
-
-      - name: Set up Python
-        uses: actions/setup-python@v2
-        with:
-          python-version: '3.11'
+          python-version: ${{ matrix.python-version }}
 
       - name: Install dependencies
         run: |
@@ -268,6 +166,10 @@ jobs:
           pip install -r requirements-ci.txt --upgrade
           pip install -r requirements-dev.txt --upgrade
 
+      - name: Conditionally install cvxpy and cvxopt
+        if: matrix.python-version != '3.11'
+        run: python -m pip install cvxpy cvxopt
+
       - name: Install PennyLane
         run: |
           python setup.py bdist_wheel
@@ -284,15 +186,16 @@ jobs:
 
       - uses: actions/upload-artifact@v2
         with:
-          name: core-interfaces-coverage-jax-3.11
+          name: core-interfaces-coverage-jax-${{ matrix.python-version }}
           path: ./coverage.xml
 
-  core-3-8-tests:
+  core-tests:
     runs-on: ubuntu-latest
 
     continue-on-error: true
     strategy:
       matrix:
+        python-version: [3.8, 3.9, '3.10', '3.11']
         group: [1, 2, 3, 4]
 
     env:
@@ -311,163 +214,7 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v2
         with:
-          python-version: 3.8
-
-      - name: Install dependencies
-        run: |
-          python -m pip install --upgrade pip && pip install wheel --upgrade
-          pip install pytest-split cvxpy cvxopt
-          pip install -r requirements-ci.txt --upgrade
-          pip install -r requirements-dev.txt --upgrade
-
-      - name: Install PennyLane
-        run: |
-          python setup.py bdist_wheel
-          pip install dist/PennyLane*.whl
-
-      - name: Install Lightning-master
-        run: python -m pip install -i https://test.pypi.org/simple/ PennyLane-Lightning --pre --upgrade
-
-      - name: Run tests
-        run: python -m pytest tests --cov=pennylane $COVERAGE_FLAGS --splits 4 --group ${{ matrix.group }} -m "$SUITE and not qcut and not return" -n auto
-
-      - name: Adjust coverage file for Codecov
-        run: bash <(sed -i 's/filename=\"/filename=\"pennylane\//g' coverage.xml)
-
-      - uses: actions/upload-artifact@v2
-        with:
-          name: core-interfaces-coverage-core-3.8
-          path: ./coverage.xml
-
-  core-3-9-tests:
-    runs-on: ubuntu-latest
-
-    continue-on-error: true
-    strategy:
-      matrix:
-        group: [1, 2, 3, 4]
-
-    env:
-      SUITE: 'core'
-
-    steps:
-      - name: Cancel Previous Runs
-        uses: styfle/cancel-workflow-action@0.11.0
-        with:
-          access_token: ${{ github.token }}
-
-      - uses: actions/checkout@v2
-        with:
-          fetch-depth: 2
-
-      - name: Set up Python
-        uses: actions/setup-python@v2
-        with:
-          python-version: 3.9
-
-      - name: Install dependencies
-        run: |
-          python -m pip install --upgrade pip && pip install wheel --upgrade
-          pip install pytest-split cvxpy cvxopt
-          pip install -r requirements-ci.txt --upgrade
-          pip install -r requirements-dev.txt --upgrade
-
-      - name: Install PennyLane
-        run: |
-          python setup.py bdist_wheel
-          pip install dist/PennyLane*.whl
-
-      - name: Install Lightning-master
-        run: python -m pip install -i https://test.pypi.org/simple/ PennyLane-Lightning --pre --upgrade
-
-      - name: Run tests
-        run: python -m pytest tests --cov=pennylane $COVERAGE_FLAGS --splits 4 --group ${{ matrix.group }} -m "$SUITE and not qcut and not return" -n auto
-
-      - name: Adjust coverage file for Codecov
-        run: bash <(sed -i 's/filename=\"/filename=\"pennylane\//g' coverage.xml)
-
-      - uses: actions/upload-artifact@v2
-        with:
-          name: core-interfaces-coverage-core-3.9
-          path: ./coverage.xml
-
-  core-3-10-tests:
-    runs-on: ubuntu-latest
-
-    continue-on-error: true
-    strategy:
-      matrix:
-        group: [1, 2, 3, 4]
-
-    env:
-      SUITE: 'core'
-
-    steps:
-      - name: Cancel Previous Runs
-        uses: styfle/cancel-workflow-action@0.11.0
-        with:
-          access_token: ${{ github.token }}
-
-      - uses: actions/checkout@v2
-        with:
-          fetch-depth: 2
-
-      - name: Set up Python
-        uses: actions/setup-python@v2
-        with:
-          python-version: '3.10'
-
-      - name: Install dependencies
-        run: |
-          python -m pip install --upgrade pip && pip install wheel --upgrade
-          pip install pytest-split cvxpy cvxopt
-          pip install -r requirements-ci.txt --upgrade
-          pip install -r requirements-dev.txt --upgrade
-
-      - name: Install PennyLane
-        run: |
-          python setup.py bdist_wheel
-          pip install dist/PennyLane*.whl
-
-      - name: Install Lightning-master
-        run: python -m pip install -i https://test.pypi.org/simple/ PennyLane-Lightning --pre --upgrade
-
-      - name: Run tests
-        run: python -m pytest tests --cov=pennylane $COVERAGE_FLAGS --splits 4 --group ${{ matrix.group }} -m "$SUITE and not qcut and not return" -n auto
-
-      - name: Adjust coverage file for Codecov
-        run: bash <(sed -i 's/filename=\"/filename=\"pennylane\//g' coverage.xml)
-
-      - uses: actions/upload-artifact@v2
-        with:
-          name: core-interfaces-coverage-core-3.10
-          path: ./coverage.xml
-
-  core-3-11-tests:
-    runs-on: ubuntu-latest
-
-    continue-on-error: true
-    strategy:
-      matrix:
-        group: [1, 2, 3, 4]
-
-    env:
-      SUITE: 'core'
-
-    steps:
-      - name: Cancel Previous Runs
-        uses: styfle/cancel-workflow-action@0.11.0
-        with:
-          access_token: ${{ github.token }}
-
-      - uses: actions/checkout@v2
-        with:
-          fetch-depth: 2
-
-      - name: Set up Python
-        uses: actions/setup-python@v2
-        with:
-          python-version: '3.11'
+          python-version: ${{ matrix.python-version }}
 
       - name: Install dependencies
         run: |
@@ -476,6 +223,10 @@ jobs:
           pip install -r requirements-ci.txt --upgrade
           pip install -r requirements-dev.txt --upgrade
 
+      - name: Conditionally install cvxpy and cvxopt
+        if: matrix.python-version != '3.11'
+        run: python -m pip install cvxpy cvxopt
+
       - name: Install PennyLane
         run: |
           python setup.py bdist_wheel
@@ -492,7 +243,7 @@ jobs:
 
       - uses: actions/upload-artifact@v2
         with:
-          name: core-interfaces-coverage-core-3.11
+          name: core-interfaces-coverage-core-${{ matrix.python-version }}
           path: ./coverage.xml
 
   all-interfaces-tests:
