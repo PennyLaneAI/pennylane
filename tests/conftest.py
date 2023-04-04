@@ -221,8 +221,11 @@ def pytest_collection_modifyitems(items, config):
         if "legacy" in rel_path.parts:
             mark = getattr(pytest.mark, "legacy")
             item.add_marker(mark)
-        if "gradients" in rel_path.parts:
-            mark = getattr(pytest.mark, "gradients")
+        if "finite_diff" in rel_path.parts:
+            mark = getattr(pytest.mark, "finite-diff")
+            item.add_marker(mark)
+        if "parameter_shift" in rel_path.parts:
+            mark = getattr(pytest.mark, "param-shift")
             item.add_marker(mark)
 
     # Tests that do not have a specific suite marker are marked `core`
@@ -240,7 +243,8 @@ def pytest_collection_modifyitems(items, config):
                     "qcut",
                     "all_interfaces",
                     "legacy",
-                    "gradients",
+                    "finite-diff",
+                    "param-shift",
                 ]
                 for elem in markers
             )
