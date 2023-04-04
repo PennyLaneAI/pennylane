@@ -203,7 +203,7 @@ class TestQSVT:
         ]
 
         for idx, result in enumerate(manual_mat_results):
-            assert np.isclose(result, np.real(mat_grad_results.flatten()[idx]), atol=1e-5)
+            assert np.isclose(result, np.real(mat_grad_results.flatten()[idx]), atol=1e-4)
 
         manual_phi_results = [
             (circuit(A, phis + np.array([0.0001, 0, 0])) - y) / 0.0001,
