@@ -196,6 +196,7 @@ class DefaultQubitJax(DefaultQubit):
         del self._apply_ops["PauliY"]
         del self._apply_ops["Hadamard"]
         del self._apply_ops["CZ"]
+        self.operations = self.operations.copy()
         self.operations.add("ParametrizedEvolution")
         self._prng_key = prng_key
 
