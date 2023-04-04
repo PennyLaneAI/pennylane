@@ -205,6 +205,26 @@ class TestCountsIntegration:
 
         custom_measurement_process(dev, spy)
 
+    @pytest.mark.torch
+    def test_counts_torch(self):
+        """Test the output of combining expval, var and counts"""
+        n_sample = 10
+
+        dev = qml.device("default.qubit", wires=3, shots=3)
+
+        @qml.qnode(dev, diff_method="parameter-shift", interface="torch")
+        def circuit():
+            qml.RX(0.54, wires=0)
+
+            return (
+                qml.counts(qml.PauliZ(0)),
+                qml.expval(qml.PauliX(1)),
+                qml.var(qml.PauliY(2)),
+            )
+
+        result = circuit()
+
+        assert len(result) == 3
     def test_single_wire_counts(self, mocker):
         """Test the return type and shape of sampling counts from a single wire"""
         n_sample = 10
