@@ -249,9 +249,8 @@ class ShotAdaptiveOptimizer(GradientDescentOptimizer):
                 if qml.active_return():
 
                     def cost(*args, **kwargs):
-                        return qml.math.stack(
-                            h(*args, **kwargs)
-                        )  # pylint: disable=cell-var-from-loop
+                        # pylint: disable=cell-var-from-loop
+                        return qml.math.stack(h(*args, **kwargs))
 
                 else:
                     cost = h

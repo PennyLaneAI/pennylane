@@ -18,7 +18,6 @@ Contains the sum function, for summing QNode collections.
 
 import warnings
 
-import pennylane as qml
 from .apply import apply
 
 
