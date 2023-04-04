@@ -49,8 +49,8 @@ connections = [[0, 1], [1, 3], [2, 1], [4, 5]]
 wires = [0, 1, 2, 3, 4, 5]
 omega = 0.5 * np.arange(len(wires))
 g = 0.1 * np.arange(len(connections))
-delta = 0.3 * np.arange(len(wires))
-transmon_settings = TransmonSettings(connections, omega, g, delta=None)
+anharmonicity = 0.3 * np.arange(len(wires))
+transmon_settings = TransmonSettings(connections, omega, g, anharmonicity=None)
 
 atom_coordinates = [[0, 0], [0, 5], [5, 0], [10, 5], [5, 10], [10, 10]]
 rydberg_settings = RydbergSettings(atom_coordinates, 1)
