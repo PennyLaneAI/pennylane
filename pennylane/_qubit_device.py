@@ -239,7 +239,7 @@ class QubitDevice(Device):
         """
         self._samples = None
 
-    def _collect_shotvector_results(self, circuit, counts_exist):
+    def _collect_shotvector_results(self, circuit, counts_exist):  # pragma: no cover
         """Obtain and process statistics when using a shot vector.
         This routine is part of the ``execute()`` method."""
 
