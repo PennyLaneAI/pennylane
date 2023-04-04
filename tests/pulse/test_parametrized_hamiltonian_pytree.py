@@ -68,7 +68,6 @@ class TestParametrizedHamiltonianPytree:
     def test_attributes(self, H, fn, coeffs, params):
         """Test that the attributes of the ParametrizedHamiltonianPytree class are initialized
         correctly."""
-        from jax.experimental import sparse
 
         H_pytree = ParametrizedHamiltonianPytree.from_hamiltonian(
             H, dense=False, wire_order=[2, 3, 1, 0]
