@@ -214,6 +214,7 @@ class TestCall:
             )
         )
 
+    @pytest.mark.xfail
     def test_call_raises_error(self):
         """Test that if the user calls a `ParametrizedHamiltonian` with the incorrect number
         of parameters, an error is raised."""

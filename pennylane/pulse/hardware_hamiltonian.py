@@ -406,9 +406,10 @@ class AmplitudeAndPhase:
     """Class storing combined amplitude and phase callable if either or both
     of amplitude or phase are callable."""
 
-    def __init__(self, trig_fn, amp, phase):
+    def __init__(self, trig_fn, amp, phase, freq=None):
         self.amp_is_callable = callable(amp)
         self.phase_is_callable = callable(phase)
+        self.freq_is_callable = callable(freq)
 
         def callable_amp_and_phase(params, t):
             return amp(params[0], t) * trig_fn(phase(params[1], t))

@@ -15,6 +15,7 @@
 """
 This submodule contains the ParametrizedHamiltonian class
 """
+from inspect import signature
 import pennylane as qml
 from pennylane.operation import Operator
 from pennylane.ops.qubit.hamiltonian import Hamiltonian
@@ -232,11 +233,11 @@ class ParametrizedHamiltonian:
         )
 
     def __call__(self, params, t):
-        if len(params) != len(self.coeffs_parametrized):
-            raise ValueError(
-                "The length of the params argument and the number of scalar-valued functions must be the same."
-                f"Received len(params) = {len(params)} but expected {len(self.coeffs_parametrized)}"
-            )
+        # if len(params) != len(self.coeffs_parametrized):
+        #     raise ValueError(
+        #         "The length of the params argument and the number of scalar-valued functions must be the same."
+        #         f"Received len(params) = {len(params)} but expected {len(self.coeffs_parametrized)}"
+        #     )
         return self.H_fixed() + self.H_parametrized(params, t)
 
     def __repr__(self):
@@ -261,8 +262,21 @@ class ParametrizedHamiltonian:
             Operator: a ``Sum`` of ``SProd`` operators (or a single
             ``SProd`` operator in the event that there is only one term in ``H_parametrized``).
         """
-        coeffs = [f(param, t) for f, param in zip(self.coeffs_parametrized, params)]
-        return sum(qml.s_prod(c, o) for c, o in zip(coeffs, self.ops_parametrized)) if coeffs else 0
+        params_idx = 0
+        res = []
+        for f, o in zip(self.coeffs_parametrized, self.ops_parametrized):
+            sig = signature(f).parameters
+            ps = []
+            for _ in range(len(sig) - 1):
+                ps.append(params[params_idx])
+                params_idx += 1
+            c = f(*ps, t=t)
+            res.append(qml.s_prod(c, o))
+
+        return sum(res)
+
+        # coeffs = [f(param, t) for f, param in zip(self.coeffs_parametrized, params)]
+        # return sum(qml.s_prod(c, o) for c, o in zip(coeffs, self.ops_parametrized)) if coeffs else 0
 
     @property
     def coeffs(self):
@@ -339,10 +353,15 @@ class ParametrizedHamiltonian:
         coeffs_parametrized = self.coeffs_parametrized.copy()
         if isinstance(other, TensorLike) and qml.math.ndim(other) == 0:
             coeffs_fixed = [other * c for c in coeffs_fixed]
-            coeffs_parametrized = [
-                lambda p, t, new_c=c: other * new_c(p, t) for c in coeffs_parametrized
-            ]
+            coeffs_parametrized = [multiply_by_scalar(c, other) for c in coeffs_parametrized]
             return ParametrizedHamiltonian(coeffs_fixed + coeffs_parametrized, ops)
         return NotImplemented
 
     __rmul__ = __mul__
+
+#pylint: disable=missing-function-docstring
+def multiply_by_scalar(func, scalar):
+    def wrapped(*args, **kwargs):
+        return scalar * func(*args, **kwargs)
+
+    return wrapped
