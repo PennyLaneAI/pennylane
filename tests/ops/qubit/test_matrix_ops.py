@@ -851,27 +851,18 @@ class TestBlockEncode:
         [
             (1, 0),
             (0.3, 0),
-            (
-                0.1,
-                range(2)
-                
-            ),
+            (0.1, range(2)),
             (
                 [[0.1, 0.2], [0.3, 0.4]],
                 range(2),
             ),
-            (
-                [[0.1, 0.2, 0.3], 
-                 [0.3, 0.4, 0.2], 
-                 [0.1, 0.2, 0.3]],
-                range(3)
-            ),
+            ([[0.1, 0.2, 0.3], [0.3, 0.4, 0.2], [0.1, 0.2, 0.3]], range(3)),
         ],
     )
     def test_adjoint(self, input_matrix, wires):
         mat = qml.matrix(qml.BlockEncode(input_matrix, wires))
         adj = qml.matrix(qml.adjoint(qml.BlockEncode(input_matrix, wires)))
-        assert np.allclose(np.eye(len(mat)),mat@adj)
+        assert np.allclose(np.eye(len(mat)), mat @ adj)
 
     @pytest.mark.parametrize(
         ("input_matrix", "wires", "output_value"),

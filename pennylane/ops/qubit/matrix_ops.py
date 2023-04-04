@@ -338,7 +338,13 @@ class DiagonalQubitUnitary(Operation):
 
 class BlockEncode(Operation):
     r"""BlockEncode(a, wires)
-    Apply an arbitrary matrix, :math:`A`, encoded in the top left block of a unitary matrix.
+    Construct a unitary :math:`U(A)` for an arbitrary matrix, :math:`A`,
+    such that it is encoded in the top left block of the unitary matrix.
+
+    .. note::
+        If :math:`A` has norm greater than 1, we normalize it to ensure
+        :math:`U(A)` is unitary. The normalization constant can be
+        accessed through :code:`op.hyperparameters["norm"]`.
 
     .. math::
 
@@ -407,18 +413,22 @@ class BlockEncode(Operation):
     """Gradient computation method."""
 
     def __init__(self, A, wires, do_queue=True, id=None):
-        if qml.math.shape(A) == () or all(x == 1 for x in qml.math.shape(A)):
-            A = qml.math.reshape(A, [1,1])
+        shape_a = qml.math.shape(A)
+        if shape_a == () or all(x == 1 for x in shape_a):
+            A = qml.math.reshape(A, [1, 1])
 
         wires = Wires(wires)
-        if pnp.sum(qml.math.shape(A)) <= 2:
+        if pnp.sum(shape_a) <= 2:
             normalization = A if A > 1 else 1
             subspace = (1, 1, 2 ** len(wires))
         else:
             normalization = pnp.max(
-                [norm(A @ qml.math.transpose(qml.math.conj(A)), ord=pnp.inf), norm(qml.math.transpose(qml.math.conj(A)) @ A, ord=pnp.inf)]
+                [
+                    norm(A @ qml.math.transpose(qml.math.conj(A)), ord=pnp.inf),
+                    norm(qml.math.transpose(qml.math.conj(A)) @ A, ord=pnp.inf),
+                ]
             )
-            subspace = (*qml.math.shape(A), 2 ** len(wires))
+            subspace = (*shape_a, 2 ** len(wires))
 
         A = A / normalization if normalization > 1 else A
 
@@ -465,31 +475,19 @@ class BlockEncode(Operation):
         """
         A = params[0]
         n, m, k = hyperparams["subspace"]
+        shape_a = qml.math.shape(A)
 
-        # if qml.math.get_interface(A) == "tensorflow":
-        #     print(A)
-        #     A = qml.math.cast_like(A, 1j)
-        #     print(A)
-
-        if qml.math.sum(qml.math.shape(A)) <= 2:
-            col1 = qml.math.vstack([A, qml.math.sqrt(1 - A * qml.math.conj(A))])
-            col2 = qml.math.vstack([qml.math.sqrt(1 - A * qml.math.conj(A)), -qml.math.conj(A)])
+        if qml.math.sum(shape_a) <= 2:
+            A_star = qml.math.conj(A)
+            col1 = qml.math.vstack([A, qml.math.sqrt(1 - A * A_star)])
+            col2 = qml.math.vstack([qml.math.sqrt(1 - A * A_star), -A_star])
             u = qml.math.hstack([col1, col2])
         else:
-            d1, d2 = qml.math.shape(A)
-            col1 = qml.math.vstack(
-                [
-                    A,
-                    qml.math.sqrt_matrix(
-                        qml.math.eye(d2, like=A) - qml.math.transpose(qml.math.conj(A)) @ A
-                    ),
-                ]
-            )
+            A_dag = qml.math.transpose(qml.math.conj(A))
+            d1, d2 = shape_a
+            col1 = qml.math.vstack([A, qml.math.sqrt_matrix(qml.math.eye(d2, like=A) - A_dag @ A)])
             col2 = qml.math.vstack(
-                [
-                    qml.math.sqrt_matrix(qml.math.eye(d1, like=A) - A @ qml.math.transpose(qml.math.conj(A))),
-                    -qml.math.transpose(qml.math.conj(A)),
-                ]
+                [qml.math.sqrt_matrix(qml.math.eye(d1, like=A) - A @ A_dag), -A_dag]
             )
 
             u = qml.math.hstack([col1, col2])
@@ -500,10 +498,10 @@ class BlockEncode(Operation):
             col2 = qml.math.vstack([qml.math.zeros((n + m, r), like=A), qml.math.eye(r, like=A)])
             u = qml.math.hstack([col1, col2])
         return u
-    
+
     def adjoint(self):
         A = self.parameters[0]
-        return BlockEncode(qml.math.transpose(qml.math.conj(A)),wires=self.wires)
-    
+        return BlockEncode(qml.math.transpose(qml.math.conj(A)), wires=self.wires)
+
     def label(self, decimals=None, base_label=None, cache=None):
         return super().label(decimals=decimals, base_label=base_label or "BlockEncode", cache=cache)
