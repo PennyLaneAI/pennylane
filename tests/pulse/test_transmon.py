@@ -115,17 +115,17 @@ class TestTransmonSettings:
 
     def test_init(self):
         """Test the initialization of the ``TransmonSettings`` class."""
-        settings = TransmonSettings(connections0, omega0, g0)
+        settings = TransmonSettings(connections0, omega0, g0, [0.0] * len(omega0))
         assert settings.connections == connections0
         assert settings.omega == omega0
         assert settings.g == g0
-        assert settings.anharmonicity is None
+        assert settings.anharmonicity == [0.0] * len(omega0)
 
     def test_equal(self):
         """Test the ``__eq__`` method of the ``TransmonSettings`` class."""
-        settings0 = TransmonSettings(connections0, omega0, g0)
-        settings1 = TransmonSettings(connections1, omega1, g1)
-        settings2 = TransmonSettings(connections0, omega0, g0, anharmonicity=None)
+        settings0 = TransmonSettings(connections0, omega0, g0, [0.0] * len(omega0))
+        settings1 = TransmonSettings(connections1, omega1, g1, [0.0] * len(omega1))
+        settings2 = TransmonSettings(connections0, omega0, g0, [0.0] * len(omega0))
         assert settings0 != settings1
         assert settings1 != settings2
         assert settings0 == settings2
@@ -134,8 +134,8 @@ class TestTransmonSettings:
         self,
     ):
         """Test that two settings are correctly added"""
-        settings0 = TransmonSettings(connections0, omega0, g0)
-        settings1 = TransmonSettings(connections1, omega1, g1)
+        settings0 = TransmonSettings(connections0, omega0, g0, [0.0] * len(omega0))
+        settings1 = TransmonSettings(connections1, omega1, g1, [0.0] * len(omega1))
         settings = settings0 + settings1
         assert settings.connections == connections0 + connections1
         assert settings.omega == omega0 + omega1
@@ -147,7 +147,7 @@ class TestTransmonSettings:
         """Test that two settings are correctly added when one has non-trivial anharmonicity"""
         anharmonicity = [1.0] * len(omega0)
         settings0 = TransmonSettings(connections0, omega0, g0, anharmonicity=anharmonicity)
-        settings1 = TransmonSettings(connections1, omega1, g1)
+        settings1 = TransmonSettings(connections1, omega1, g1, [0.0] * len(omega1))
 
         settings01 = settings0 + settings1
         assert settings01.anharmonicity == anharmonicity + [0.0] * len(omega1)

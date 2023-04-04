@@ -168,7 +168,7 @@ class TransmonSettings:
     connections: List
     omega: Union[float, Callable]
     g: Union[list, TensorLike, Callable]
-    anharmonicity: Union[float, Callable] = None
+    anharmonicity: Union[float, Callable]
 
     def __eq__(self, other):
         return (
@@ -183,15 +183,7 @@ class TransmonSettings:
             new_connections = list(self.connections) + list(other.connections)
             new_omega = list(self.omega) + list(other.omega)
             new_g = list(self.g) + list(other.g)
-            if self.anharmonicity is None and other.anharmonicity is None:
-                new_delta = None
-            elif self.anharmonicity is None and not other.anharmonicity is None:
-                new_delta = [0.0] * len(self.omega) + list(other.anharmonicity)
-            elif self.anharmonicity is not None and other.anharmonicity is None:
-                new_delta = list(self.anharmonicity) + [0.0] * len(other.omega)
-            elif self.anharmonicity is not None and other.anharmonicity is not None:
-                new_delta = list(self.anharmonicity) + list(other.anharmonicity)
-
-            return TransmonSettings(new_connections, new_omega, new_g, anharmonicity=new_delta)
+            new_anh = list(self.anharmonicity) + list(other.anharmonicity)
+            return TransmonSettings(new_connections, new_omega, new_g, anharmonicity=new_anh)
 
         return self
