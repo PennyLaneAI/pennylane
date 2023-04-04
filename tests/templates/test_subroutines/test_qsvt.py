@@ -24,32 +24,46 @@ class TestQSVT:
     """Test the qml.QSVT template."""
 
     @pytest.mark.parametrize(
-        ("U_A", "lst_projectors", "wires", "expected_output"),
+        ("U_A", "lst_projectors", "wires", "operations"),
         [
             (
                 qml.BlockEncode([[0.1, 0.2], [0.3, 0.4]], wires=[0, 1]),
                 [qml.PCPhase(0.5, dim=2, wires=[0, 1]), qml.PCPhase(0.5, dim=2, wires=[0, 1])],
                 [0, 1],
-                -0.0687454719487044,
+                [
+                    qml.PCPhase(0.5, dim=2, wires=[0, 1]),
+                    qml.BlockEncode([[0.1, 0.2], [0.3, 0.4]], wires=[0, 1]),
+                    qml.PCPhase(0.5, dim=2, wires=[0, 1]),
+                ],
             ),
             (
                 qml.BlockEncode([[0.3, 0.1], [0.2, 0.9]], wires=[0, 1]),
                 [qml.PCPhase(0.5, dim=2, wires=[0, 1]), qml.PCPhase(0.3, dim=2, wires=[0, 1])],
                 [0, 1],
-                -0.14289392236365794,
+                [
+                    qml.PCPhase(0.5, dim=2, wires=[0, 1]),
+                    qml.BlockEncode([[0.3, 0.1], [0.2, 0.9]], wires=[0, 1]),
+                    qml.PCPhase(0.3, dim=2, wires=[0, 1]),
+                ],
             ),
         ],
     )
-    def test_output(self, U_A, lst_projectors, wires, expected_output):
+    def test_output(self, U_A, lst_projectors, wires, operations):
         """Test that qml.QSVT produces the intended measurements."""
         dev = qml.device("default.qubit", wires=len(wires))
 
         @qml.qnode(dev)
         def circuit():
             qml.QSVT(U_A, lst_projectors, wires)
-            return qml.expval(qml.PauliY(wires=0))
+            return qml.expval(qml.PauliZ(wires=0))
 
-        assert np.isclose(circuit(), expected_output)
+        @qml.qnode(dev)
+        def circuit_correct():
+            for op in operations:
+                qml.apply(op)
+            return qml.expval(qml.PauliZ(wires=0))
+
+        assert np.isclose(circuit(), circuit_correct())
 
     @pytest.mark.parametrize(
         ("U_A", "lst_projectors", "wires", "results"),
@@ -154,26 +168,51 @@ class TestQSVT:
             assert val.parameters == results[idx].parameters
 
     @pytest.mark.parametrize(
-        ("UA", "A", "projectors", "phis", "wires", "output"),
+        ("A", "phis", "wires"),
         [
             (
-                qml.BlockEncode([[0.2, 0.2], [0.1, 0.1]], wires=[0, 1]),
-                [[0.2, 0.2], [0.1, 0.1]],
-                [qml.PCPhase(0.2, dim=2, wires=[0, 1])],
-                [0.2],
+                [[0.1, 0.2], [0.3, 0.4]],
+                [0.1, 0.2, 0.3],
                 [0, 1],
-                0.1,
             )
         ],
     )
-    def test_qsvt_grad(self, UA, A, projectors, phis, wires, output):
+    def test_qsvt_grad(self, A, phis, wires):
+        """Test that qml.grad results are the same as finite difference results"""
+
+        @qml.qnode(qml.device("default.qubit", wires=2))
         def circuit(A, phis):
-            with qml.queuing.QueuingManager.stop_recording():
-                UA = qml.BlockEncode(A)
-            qml.QSVT(UA(A), [projectors], wires=wires)
+            qml.QSVT(
+                qml.BlockEncode(A, wires=[0, 1]),
+                [qml.PCPhase(phi, 2, wires=[0, 1]) for phi in phis],
+                wires=wires,
+            )
             return qml.expval(qml.PauliZ(wires=0))
 
-        qml.grad(circuit)()
+        A = np.array([[0.1j, 0.2], [0.3, 0.4]], dtype=complex, requires_grad=True)
+        phis = np.array([0.1, 0.2, 0.3], requires_grad=True)
+        y = circuit(A, phis)
+
+        mat_grad_results, phi_grad_results = qml.grad(circuit)(A, phis)
+
+        manual_mat_results = [
+            (circuit(A + np.array([[0.0001, 0], [0, 0]]), phis) - y) / 0.0001,
+            (circuit(A + np.array([[0, 0.0001], [0, 0]]), phis) - y) / 0.0001,
+            (circuit(A + np.array([[0, 0], [0.0001, 0]]), phis) - y) / 0.0001,
+            (circuit(A + np.array([[0, 0], [0, 0.0001]]), phis) - y) / 0.0001,
+        ]
+
+        for idx, result in enumerate(manual_mat_results):
+            assert np.isclose(result, np.real(mat_grad_results.flatten()[idx]), atol=1e-5)
+
+        manual_phi_results = [
+            (circuit(A, phis + np.array([0.0001, 0, 0])) - y) / 0.0001,
+            (circuit(A, phis + np.array([0, 0.0001, 0])) - y) / 0.0001,
+            (circuit(A, phis + np.array([0, 0, 0.0001])) - y) / 0.0001,
+        ]
+
+        for idx, result in enumerate(manual_phi_results):
+            assert np.isclose(result, np.real(phi_grad_results[idx]), atol=1e-4)
 
 
 class Testqsvt:
@@ -262,8 +301,8 @@ class Testqsvt:
 
         default_matrix = qml.matrix(qml.qsvt(input_matrix, angles, wires))
 
-        input_matrix = torch.tensor(input_matrix)
-        angles = torch.tensor(angles)
+        input_matrix = torch.tensor(input_matrix, dtype=float)
+        angles = torch.tensor(angles, dtype=float)
 
         op = qml.qsvt(input_matrix, angles, wires)
 
