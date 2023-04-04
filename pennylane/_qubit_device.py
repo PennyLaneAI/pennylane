@@ -239,7 +239,7 @@ class QubitDevice(Device):
         """
         self._samples = None
 
-    def _collect_shotvector_results(self, circuit, counts_exist):
+    def _collect_shotvector_results(self, circuit, counts_exist):  # pragma: no cover
         """Obtain and process statistics when using a shot vector.
         This routine is part of the ``execute()`` method."""
 
@@ -317,7 +317,7 @@ class QubitDevice(Device):
         self.apply(circuit.operations, rotations=self._get_diagonalizing_gates(circuit), **kwargs)
 
         # generate computational basis samples
-        if self.shots is not None:
+        if self.shots is not None or circuit.is_sampled:
             self._samples = self.generate_samples()
 
         # compute the required statistics
@@ -656,7 +656,7 @@ class QubitDevice(Device):
     # pylint: disable=too-many-statements
     def statistics(
         self, observables=None, shot_range=None, bin_size=None, circuit: QuantumTape = None
-    ):
+    ):  # pragma: no cover
         """Process measurement results from circuit execution and return statistics.
 
         This includes returning expectation values, variance, samples, probabilities, states, and
@@ -1004,11 +1004,10 @@ class QubitDevice(Device):
                         "Returning the Von Neumann entropy is not supported when using custom wire labels"
                     )
 
-                # TODO: qml.execute shot vec support required with new return types
-                # if self._shot_vector is not None:
-                #     raise NotImplementedError(
-                #         "Returning the Von Neumann entropy is not supported with shot vectors."
-                #     )
+                if self._shot_vector is not None:
+                    raise NotImplementedError(
+                        "Returning the Von Neumann entropy is not supported with shot vectors."
+                    )
 
                 if self.shots is not None:
                     warnings.warn(
@@ -1025,11 +1024,10 @@ class QubitDevice(Device):
                         "Returning the mutual information is not supported when using custom wire labels"
                     )
 
-                # TODO: qml.execute shot vec support required with new return types
-                # if self._shot_vector is not None:
-                #     raise NotImplementedError(
-                #         "Returning the mutual information is not supported with shot vectors."
-                #     )
+                if self._shot_vector is not None:
+                    raise NotImplementedError(
+                        "Returning the mutual information is not supported with shot vectors."
+                    )
 
                 if self.shots is not None:
                     warnings.warn(

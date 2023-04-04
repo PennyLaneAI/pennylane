@@ -70,9 +70,13 @@ class TestExpval:
 
         atol = tol if shots is None else 0.05
         rtol = 0 if shots is None else 0.05
-
         assert np.allclose(res, expected, atol=atol, rtol=rtol)
-        assert res.dtype == r_dtype
+
+        if isinstance(res, tuple):
+            assert res[0].dtype == r_dtype
+            assert res[1].dtype == r_dtype
+        else:
+            assert res.dtype == r_dtype
 
         custom_measurement_process(new_dev, spy)
 
@@ -127,7 +131,7 @@ class TestExpval:
     def test_shape(self, obs):
         """Test that the shape is correct."""
         res = qml.expval(obs)
-        assert res.shape() == (1,)
+        assert res.shape() == ()
 
     @pytest.mark.parametrize(
         "obs",
@@ -138,7 +142,7 @@ class TestExpval:
         res = qml.expval(obs)
         shot_vector = (1, 2, 3)
         dev = qml.device("default.qubit", wires=3, shots=shot_vector)
-        assert res.shape(dev) == (len(shot_vector),)
+        assert res.shape(dev) == ((), (), ())
 
     @pytest.mark.parametrize("shots", [None, 1000, [1000, 10000]])
     def test_projector_expval(self, shots, mocker):

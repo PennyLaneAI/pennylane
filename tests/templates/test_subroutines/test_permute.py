@@ -32,7 +32,7 @@ class TestDecomposition:
             qml.Permute([0, 1, 2, 3], wires=dev.wires)
             return qml.expval(qml.PauliZ(0))
 
-        spy = mocker.spy(identity_permutation.device, "execute")
+        spy = mocker.spy(identity_permutation.device, "_execute_new")
         identity_permutation()
 
         # expand the Permute operation
@@ -72,7 +72,7 @@ class TestDecomposition:
             qml.Permute(permutation_order, wires=dev.wires)
             return qml.expval(qml.PauliZ(0))
 
-        spy = mocker.spy(two_cycle.device, "execute")
+        spy = mocker.spy(two_cycle.device, "_execute_new")
         two_cycle()
 
         tape = spy.call_args[0][0]
@@ -126,7 +126,7 @@ class TestDecomposition:
             qml.Permute(permutation_order, wires=dev.wires)
             return qml.expval(qml.PauliZ(0))
 
-        spy = mocker.spy(cycle.device, "execute")
+        spy = mocker.spy(cycle.device, "_execute_new")
         cycle()
 
         tape = spy.call_args[0][0]
@@ -176,7 +176,7 @@ class TestDecomposition:
             qml.Permute(permutation_order, wires=dev.wires)
             return qml.expval(qml.PauliZ(0))
 
-        spy = mocker.spy(arbitrary_perm.device, "execute")
+        spy = mocker.spy(arbitrary_perm.device, "_execute_new")
         arbitrary_perm()
 
         tape = spy.call_args[0][0]
@@ -236,7 +236,7 @@ class TestDecomposition:
             qml.Permute(permutation_order, wires=wire_subset)
             return qml.expval(qml.PauliZ(0))
 
-        spy = mocker.spy(subset_perm.device, "execute")
+        spy = mocker.spy(subset_perm.device, "_execute_new")
         subset_perm()
 
         tape = spy.call_args[0][0]
