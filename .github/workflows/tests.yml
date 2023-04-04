@@ -103,7 +103,7 @@ jobs:
     continue-on-error: true
     strategy:
       matrix:
-        group: [0, 1, 2, 3]
+        group: [1, 2, 3, 4]
         config:
           - {python-version: 3.8, suite: 'tf'}
           - {python-version: '3.10', suite: 'tf'}
