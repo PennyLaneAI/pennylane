@@ -221,6 +221,9 @@ def pytest_collection_modifyitems(items, config):
         if "legacy" in rel_path.parts:
             mark = getattr(pytest.mark, "legacy")
             item.add_marker(mark)
+        if "gradients" in rel_path.parts:
+            mark = getattr(pytest.mark, "gradients")
+            item.add_marker(mark)
 
     # Tests that do not have a specific suite marker are marked `core`
     for item in items:
@@ -228,7 +231,17 @@ def pytest_collection_modifyitems(items, config):
         if (
             not any(
                 elem
-                in ["autograd", "torch", "tf", "jax", "qchem", "qcut", "all_interfaces", "legacy"]
+                in [
+                    "autograd",
+                    "torch",
+                    "tf",
+                    "jax",
+                    "qchem",
+                    "qcut",
+                    "all_interfaces",
+                    "legacy",
+                    "gradients",
+                ]
                 for elem in markers
             )
             or not markers
