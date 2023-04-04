@@ -509,7 +509,10 @@ def _res_to_torch(r, ctx):
                 # count result, single or broadcasted
                 res.append(t)
             else:
-                res.append(torch.as_tensor(t, device=ctx.torch_device))
+                if isinstance(t, tuple):
+                    res.append(tuple([torch.as_tensor(el, device=ctx.torch_device) for el in t]))
+                else:
+                    res.append(torch.as_tensor(t, device=ctx.torch_device))
         if isinstance(r, tuple):
             res = tuple(res)
     elif isinstance(r, dict):
