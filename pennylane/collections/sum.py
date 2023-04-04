@@ -56,9 +56,6 @@ def sum(x):
         UserWarning,
     )
 
-    if qml.active_return():
-        raise qml.QuantumFunctionError("QNodeCollections does not support the new return system.")
-
     if hasattr(x, "interface") and x.interface is not None:
         if x.interface == "tf":
             import tensorflow as tf

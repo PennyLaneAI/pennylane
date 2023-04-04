@@ -614,7 +614,6 @@ class TestPassthruIntegration:
         )
         assert np.allclose(res, expected_grad, atol=tol, rtol=0)
 
-    @pytest.mark.xfail(reason="Line 230 in QubitDevice: results = self._asarray(results) fails")
     @pytest.mark.parametrize(
         "dev_name,diff_method,mode",
         [
@@ -636,7 +635,7 @@ class TestPassthruIntegration:
             qml.RX(x, wires=[0])
             qml.RY(y, wires=[1])
             qml.CNOT(wires=[0, 1])
-            return [qml.expval(qml.PauliZ(0)), qml.probs(wires=[1])]
+            return qml.expval(qml.PauliZ(0)), qml.probs(wires=[1])
 
         res = circuit(x, y)
         expected = np.array(
@@ -646,16 +645,20 @@ class TestPassthruIntegration:
                 (1 - np.cos(x) * np.cos(y)) / 2,
             ]
         )
-        assert np.allclose(res, expected, atol=tol, rtol=0)
+
+        assert np.allclose(qml.math.hstack(res), expected, atol=tol, rtol=0)
 
         res = jax.jacobian(circuit, (0, 1))(x, y)
+
         expected = np.array(
             [
                 [-np.sin(x), -np.sin(x) * np.cos(y) / 2, np.cos(y) * np.sin(x) / 2],
                 [0, -np.cos(x) * np.sin(y) / 2, np.cos(x) * np.sin(y) / 2],
             ]
         )
-        assert np.allclose(res, expected, atol=tol, rtol=0)
+
+        assert np.allclose(qml.math.hstack([res[0][0], res[1][0]]), expected[0], atol=tol, rtol=0)
+        assert np.allclose(qml.math.hstack([res[0][1], res[1][1]]), expected[1], atol=tol, rtol=0)
 
     @pytest.mark.parametrize("jacobian_fn", [jax.jacfwd, jax.jacrev])
     @pytest.mark.parametrize("decorator", decorators)

@@ -164,10 +164,7 @@ class DefaultMixed(QubitDevice):
             if is_ragged or res.dtype is np.dtype("O"):
                 return qnp.cast(qnp.flatten(qnp.hstack(array)), dtype=dtype)
         else:
-            if isinstance(array, tuple):
-                res = tuple(qnp.cast(ar, dtype=dtype) for ar in array)
-            else:
-                res = qnp.cast(array, dtype=dtype)
+            res = qnp.cast(array, dtype=dtype)
 
         return res
 
