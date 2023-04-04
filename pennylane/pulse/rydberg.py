@@ -17,7 +17,7 @@ from dataclasses import dataclass
 import numpy as np
 import pennylane as qml
 
-from pennylane.pulse import HardwareHamiltonian
+from pennylane.pulse import HardwareHamiltonian, HardwarePulse, drive
 
 
 def rydberg_interaction(
@@ -112,6 +112,147 @@ def rydberg_interaction(
     settings = RydbergSettings(register, interaction_coeff)
 
     return HardwareHamiltonian(coeffs, observables, settings=settings)
+
+
+def rydberg_drive(amplitude, phase, detuning, wires):
+    r"""Returns a :class:`ParametrizedHamiltonian` representing the action of a driving laser
+    field with the given rabi frequency, detuning and phase acting on the given wires
+
+    .. math::
+
+        \frac{1}{2} \Omega(t) \sum_{i \in \text{wires}} (\cos(\phi)\sigma_i^x - \sin(\phi)\sigma_i^y) -
+        \delta(t) \sum_{i \in \text{wires}} \sigma_i^z
+
+    where :math:`\Omega`, :math:`\delta` and :math:`\phi` correspond to the rabi frequency, detuning
+    and phase of the laser, :math:`i` correspond to the wire index, and :math:`\sigma^\alpha` for
+    :math:`\alpha = x,y,z` are the Pauli matrices. The unit of time for the  evolution of this Rydberg
+    drive term is :math:`\mu \text{s}`. This driving term can be combined with an interaction term to
+    create a Hamiltonian describing a driven Rydberg atom system. Multiple driving terms can be combined
+    by summing them (see example).
+
+    Args:
+        amplitude (Union[float, Callable]): float or callable returning the amplitude (in MHz) of a
+            laser field
+        detuning (Union[float, Callable]): float or callable returning the detuning (in MHz) of a
+            laser field
+        phase (float): float containing the phase (in radians) of the laser field
+        wires (Union[int, List[int]]): integer or list containing wire values for the Rydberg atoms that
+            the laser field acts on
+
+    Returns:
+        RydbergHamiltonian: a :class:`~.ParametrizedHamiltonian` representing the action of the laser field
+        on the Rydberg atoms.
+
+    .. seealso::
+
+        :func:`~.rydberg_interaction`, :class:`~.ParametrizedHamiltonian`, :class:`~.ParametrizedEvolution`
+        and :func:`~.evolve`
+
+    **Example**
+
+    We create a Hamiltonian describing a laser acting on 4 wires (Rydberg atoms) with a fixed detuning and
+    phase, and a parametrized, time-dependent amplitude. The Hamiltonian includes an interaction term for
+    inter-atom interactions due to van der Waals forces, as well as the driving term for the laser driving
+    the atoms:
+
+    .. code-block:: python
+
+        atom_coordinates = [[0, 0], [0, 4], [4, 0], [4, 4]]
+        wires = [0, 1, 2, 3]
+        H_i = qml.pulse.rydberg_interaction(atom_coordinates, wires)
+
+        amplitude = lambda p, t: p * jnp.sin(jnp.pi * t)
+        detuning = 3 * jnp.pi / 4
+        phase = jnp.pi / 2
+        H_d = qml.pulse.rydberg_drive(amplitude, detuning, phase, wires)
+
+    >>> H_i
+    ParametrizedHamiltonian: terms=6
+    >>> H_d
+    ParametrizedHamiltonian: terms=3
+
+    The first two terms of the drive Hamiltonian ``H_d`` correspond to the first sum (the sine and cosine terms),
+    describing drive between the ground and excited states. The third term corresponds to the shift term
+    due to detuning from resonance. This drive term corresponds to a global drive that acts on all 4 wires of
+    the device.
+
+    The full Hamiltonian can be evaluated:
+
+    .. code-block:: python
+
+        dev = qml.device("default.qubit.jax", wires=wires)
+        @qml.qnode(dev, interface="jax")
+        def circuit(params):
+            qml.evolve(H_i + H_d)(params, t=[0, 10])
+            return qml.expval(qml.PauliZ(0))
+
+    >>> params = [2.4]
+    >>> circuit(params)
+    Array(0.94301294, dtype=float64)
+    >>> jax.grad(circuit)(params)
+    [Array(0.59484969, dtype=float64)]
+
+    We can also create a Hamiltonian with multiple local drives. The following circuit corresponds to the
+    evolution where an additional local drive acting on wires ``[0, 1]`` is added to the Hamiltonian:
+
+    .. code-block:: python
+
+        amplitude_local = lambda p, t: p[0] * jnp.sin(2 * jnp.pi * t) + p[1]
+        detuning_local = lambda p, t: p * jnp.exp(-0.25 * t)
+        phase_local = jnp.pi / 4
+        H_local = qml.pulse.rydberg_drive(amplitude_local, detuning_local, phase_local, [0, 1])
+
+        H = H_i + H_d + H_local
+
+        @jax.jit
+        @qml.qnode(dev, interface="jax")
+        def circuit_local(params):
+            qml.evolve(H)(params, t=[0, 10])
+            return qml.expval(qml.PauliZ(0))
+
+    >>> params = [2.4, [1.3, -2.0], -1.5]
+    >>> circuit_local(params)
+    Array(0.80238028, dtype=float64)
+    >>> jax.grad(circuit_local)(params)
+    [Array(-0.73273312, dtype=float64),
+     [Array(-0.45635171, dtype=float64, weak_type=True),
+      Array(0.76572817, dtype=float64, weak_type=True)],
+     Array(0.01027312, dtype=float64)]
+    """
+    if isinstance(wires, int):
+        wires = [wires]
+    trivial_detuning = not callable(detuning) and qml.math.isclose(detuning, 0.0)
+
+    if not callable(amplitude) and qml.math.isclose(amplitude, 0.0):
+        if trivial_detuning:
+            raise ValueError(
+                "Expected non-zero value for at least one of either amplitude or detuning, but "
+                f"received amplitude={amplitude} and detuning={detuning}. All terms are zero."
+            )
+
+        amplitude_term = None
+
+    else:
+        amplitude_term = drive(amplitude, phase, wires)
+
+    detuning_term = None
+
+    if not trivial_detuning:
+        detuning_obs = [-1.0 * sum(qml.PauliZ(wire) for wire in wires)]
+        detuning_coeffs = [detuning]
+        detuning_term = HardwareHamiltonian(detuning_coeffs, detuning_obs)
+
+    pulses = [HardwarePulse(amplitude, phase, detuning, wires)]
+
+    if amplitude_term and detuning_term:
+        drive_term = amplitude_term + detuning_term
+    elif amplitude_term:
+        drive_term = amplitude_term
+    else:
+        drive_term = detuning_term
+
+    drive_term.pulses = pulses
+    return drive_term
 
 
 @dataclass
