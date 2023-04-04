@@ -359,7 +359,8 @@ class ParametrizedHamiltonian:
 
     __rmul__ = __mul__
 
-#pylint: disable=missing-function-docstring
+
+# pylint: disable=missing-function-docstring
 def multiply_by_scalar(func, scalar):
     def wrapped(*args, **kwargs):
         return scalar * func(*args, **kwargs)
