@@ -165,11 +165,10 @@ def hamiltonian_expand(tape: QuantumTape, group=True):
 
         def processing_fn(res_groupings):
             if qml.active_return():
+                # pylint: disable=no-member
                 res_groupings = [
                     qml.math.stack(r)
-                    if isinstance(
-                        r, (tuple, qml.numpy.builtins.SequenceBox)
-                    )  # pylint: disable=no-member
+                    if isinstance(r, (tuple, qml.numpy.builtins.SequenceBox))
                     else r
                     for r in res_groupings
                 ]

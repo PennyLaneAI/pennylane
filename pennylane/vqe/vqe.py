@@ -210,11 +210,10 @@ class ExpvalCost:
 
                 def cost_fn(*args, **kwargs):
                     res = [q(*args, **kwargs) for q in self.qnodes]
+                    # pylint: disable=no-member
                     res = [
                         qml.math.stack(r)
-                        if isinstance(
-                            r, (tuple, qml.numpy.builtins.SequenceBox)
-                        )  # pylint: disable=no-member
+                        if isinstance(r, (tuple, qml.numpy.builtins.SequenceBox))
                         else r
                         for r in res
                     ]
