@@ -1,7 +1,23 @@
+# Copyright 2018-2023 Xanadu Quantum Technologies Inc.
+
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+
+#     http://www.apache.org/licenses/LICENSE-2.0
+
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 import pytest
 
 import numpy as np
 import pennylane as qml
+
+from pennylane.measurements import PurityMP
 
 
 def expected_purity_ising_xx(param):
@@ -35,19 +51,18 @@ def expected_purity_grad_ising_xx(param):
     return grad_expected_purity
 
 
-class TestPurity:
+class TestPurityUnitTest:
     """Tests for purity measurements"""
 
-    devices = ["default.qubit", "lightning.qubit", "default.mixed"]
-    grad_supported_devices = ["default.qubit", "default.mixed"]
-    mix_supported_devices = ["default.mixed"]
+    def test_return_type(self):
+        """Test that the return type is defined and the purity enum."""
+        m = PurityMP(wires=qml.wires.Wires((0, 1)))
+        assert m.return_type is qml.measurements.Purity
 
-    diff_methods = ["backprop", "finite-diff"]
-
-    parameters = np.linspace(0, 2 * np.pi, 3)
-    probs = np.array([0.001, 0.01, 0.1, 0.2])
-
-    wires_list = [([0], True), ([1], True), ([0, 1], False)]
+    def test_numeric_type(self):
+        """Test that the numeric type of PurityMP is float."""
+        m = PurityMP(wires=qml.wires.Wires(0))
+        assert m.numeric_type is float
 
     @pytest.mark.parametrize("shots, shape", [(None, (1,)), (10, (1,)), ((1, 10), (2,))])
     def test_shape(self, shots, shape):
@@ -64,6 +79,21 @@ class TestPurity:
         dev = qml.device("default.qubit", wires=1, shots=shots)
         assert meas.shape(dev) == shape
         qml.disable_return()
+
+
+class TestPurityIntegration:
+    """Test the purity meausrement with qnodes and devices."""
+
+    devices = ["default.qubit", "lightning.qubit", "default.mixed"]
+    grad_supported_devices = ["default.qubit", "default.mixed"]
+    mix_supported_devices = ["default.mixed"]
+
+    diff_methods = ["backprop", "finite-diff"]
+
+    parameters = np.linspace(0, 2 * np.pi, 3)
+    probs = np.array([0.001, 0.01, 0.1, 0.2])
+
+    wires_list = [([0], True), ([1], True), ([0, 1], False)]
 
     @pytest.mark.parametrize("device", devices)
     @pytest.mark.parametrize("param", parameters)

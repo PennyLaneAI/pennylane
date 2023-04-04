@@ -465,7 +465,7 @@ class TestSupportsBroadcasting:
         mat2 = op.compute_matrix(*op.parameters, **op.hyperparameters)
 
         mats = [
-            np.diag([np.exp(1j * phi) if i < dim else 1.0 for i in range(size)])
+            np.diag([np.exp(1j * phi) if i < dim else np.exp(-1j * phi) for i in range(size)])
             for phi in broadcasted_phi
         ]
         expected_mat = np.array(mats)

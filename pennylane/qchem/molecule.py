@@ -99,7 +99,7 @@ class Molecule:
 
         self.nuclear_charges = [atomic_numbers[s] for s in self.symbols]
 
-        self.n_electrons = sum(np.array(self.nuclear_charges)) - self.charge
+        self.n_electrons = sum(self.nuclear_charges) - self.charge
 
         if self.n_electrons % 2 == 1 or self.mult != 1:
             raise ValueError(

@@ -23,6 +23,11 @@ from gate_data import ControlledPhaseShift, CPhaseShift00, CPhaseShift01, CPhase
 
 import pennylane as qml
 from pennylane import numpy as npp
+from pennylane.ops.qubit.parametric_ops import (
+    RX as old_loc_RX,
+    ControlledPhaseShift as old_loc_ControlledPhaseShift,
+    MultiRZ as old_loc_MultiRZ,
+)
 from pennylane.wires import Wires
 
 PARAMETRIZED_OPERATIONS = [
@@ -171,7 +176,13 @@ class TestOperations:
             return qml.state()
 
         def _get_expected_state(phase, dim, size):
-            return np.array([np.exp(1j * phase) if i < dim else 1.0 for i in range(size)]) * 1 / 2
+            return (
+                np.array(
+                    [np.exp(1j * phase) if i < dim else np.exp(-1j * phase) for i in range(size)]
+                )
+                * 1
+                / 2
+            )
 
         assert np.allclose(circuit(theta, d), _get_expected_state(theta, d, 4))
 
@@ -996,7 +1007,7 @@ class TestMatrix:
         mat2 = op.compute_matrix(*op.parameters, **op.hyperparameters)
 
         expected_mat = np.diag(
-            [np.exp(1j * phi) if i < dim else 1.0 for i in range(2**num_wires)]
+            [np.exp(1j * phi) if i < dim else np.exp(-1j * phi) for i in range(2**num_wires)]
         )
         assert np.allclose(mat1, expected_mat)
         assert np.allclose(mat2, expected_mat)
@@ -1017,7 +1028,9 @@ class TestMatrix:
         mat2 = op.compute_matrix(*op.parameters, **op.hyperparameters)
 
         expected_mat = tf.Variable(
-            np.diag([np.exp(1j * phi) if i < dim else 1.0 for i in range(2**num_wires)])
+            np.diag(
+                [np.exp(1j * phi) if i < dim else np.exp(-1j * phi) for i in range(2**num_wires)]
+            )
         )
 
         assert np.allclose(mat1, expected_mat)
@@ -1038,7 +1051,9 @@ class TestMatrix:
         mat2 = op.compute_matrix(*op.parameters, **op.hyperparameters)
 
         expected_mat = torch.tensor(
-            np.diag([np.exp(1j * phi) if i < dim else 1.0 for i in range(2**num_wires)])
+            np.diag(
+                [np.exp(1j * phi) if i < dim else np.exp(-1j * phi) for i in range(2**num_wires)]
+            )
         )
 
         assert np.allclose(mat1, expected_mat)
@@ -1061,7 +1076,9 @@ class TestMatrix:
         mat2 = op.compute_matrix(*op.parameters, **op.hyperparameters)
 
         expected_mat = jnp.diag(
-            jnp.array([jnp.exp(1j * phi) if i < dim else 1.0 for i in range(2**num_wires)])
+            jnp.array(
+                [jnp.exp(1j * phi) if i < dim else np.exp(-1j * phi) for i in range(2**num_wires)]
+            )
         )
 
         assert np.allclose(mat1, expected_mat)
@@ -1080,7 +1097,7 @@ class TestMatrix:
         mat2 = op.compute_matrix(*op.parameters, **op.hyperparameters)
 
         mats = [
-            np.diag([np.exp(1j * phi) if i < dim else 1.0 for i in range(size)])
+            np.diag([np.exp(1j * phi) if i < dim else np.exp(-1j * phi) for i in range(size)])
             for phi in broadcasted_phi
         ]
         expected_mat = np.array(mats)
@@ -2105,13 +2122,17 @@ class TestEigvals:
         # test arbitrary phase shift
         phi = 0.5432
         op = qml.PCPhase(phi, dim=2, wires=[0, 1])
-        expected = np.array([np.exp(1j * phi), np.exp(1j * phi), 1.0, 1.0])
+        expected = np.array(
+            [np.exp(1j * phi), np.exp(1j * phi), np.exp(-1j * phi), np.exp(-1j * phi)]
+        )
         assert np.allclose(op.eigvals(), expected)
 
         # test arbitrary broadcasted phase shift
         phi = np.array([0.5, 0.4, 0.3])
         op = qml.PCPhase(phi, dim=2, wires=[0, 1])
-        expected = np.array([[np.exp(1j * p), np.exp(1j * p), 1.0, 1.0] for p in phi])
+        expected = np.array(
+            [[np.exp(1j * p), np.exp(1j * p), np.exp(-1j * p), np.exp(-1j * p)] for p in phi]
+        )
         assert np.allclose(op.eigvals(), expected)
 
     def test_crz_eigvals(self, tol):
@@ -2805,7 +2826,7 @@ class TestGrad:
             pytest.skip("PCPhase does not support adjoint diff")
 
         dev = qml.device(dev_name, wires=[0, 1])
-        expected_grad = (1j / 2) * (npp.exp(1j * phi) - npp.exp(-1j * phi))  # computed by hand
+        expected_grad = -4 * npp.cos(phi) * npp.sin(phi)  # computed by hand
 
         @qml.qnode(dev, diff_method=diff_method)
         def circ(phi):
@@ -2832,9 +2853,7 @@ class TestGrad:
         import tensorflow as tf
 
         dev = qml.device(dev_name, wires=[0, 1])
-        expected_grad = tf.Variable(
-            (1j / 2) * (npp.exp(1j * phi) - npp.exp(-1j * phi))
-        )  # computed by hand
+        expected_grad = tf.Variable(-4 * npp.cos(phi) * npp.sin(phi))  # computed by hand
         phi = tf.Variable(phi)
 
         @qml.qnode(dev, diff_method=diff_method)
@@ -2864,9 +2883,7 @@ class TestGrad:
         import torch
 
         dev = qml.device(dev_name, wires=[0, 1])
-        expected_grad = torch.tensor(
-            (1j / 2) * (npp.exp(1j * phi) - npp.exp(-1j * phi))
-        )  # computed by hand
+        expected_grad = torch.tensor(-4 * npp.cos(phi) * npp.sin(phi))  # computed by hand
         phi = torch.tensor(phi, requires_grad=True)
 
         @qml.qnode(dev, diff_method=diff_method)
@@ -2895,9 +2912,7 @@ class TestGrad:
         import jax.numpy as jnp
 
         dev = qml.device(dev_name, wires=[0, 1])
-        expected_grad = jnp.array(
-            (1j / 2) * (npp.exp(1j * phi) - npp.exp(-1j * phi))
-        )  # computed by hand
+        expected_grad = jnp.array(-4 * npp.cos(phi) * npp.sin(phi))  # computed by hand
         phi = jnp.array(phi)
 
         @qml.qnode(dev, diff_method=diff_method)
@@ -2939,7 +2954,7 @@ class TestGenerator:
         phi = 1.23
         op = qml.PCPhase(phi, dim=2, wires=[0, 1])
 
-        expected_mat = np.diag([1.0, 1.0, 0.0, 0.0])
+        expected_mat = np.diag([1.0, 1.0, -1.0, -1.0])
 
         gen, coeff = qml.generator(op)
         assert np.allclose(qml.matrix(gen), expected_mat)
@@ -4333,3 +4348,12 @@ control_value_data = [
 def test_control_values(op, control_values):
     """Test the ``control_values`` attribute for parametrized operations."""
     assert op.control_values == control_values
+
+
+def test_op_aliases_are_valid():
+    """Tests that ops in new files can still be accessed from the old parametric_ops module."""
+    assert (
+        qml.ops.qubit.parametric_ops_controlled.ControlledPhaseShift is old_loc_ControlledPhaseShift
+    )
+    assert qml.ops.qubit.parametric_ops_multi_qubit.MultiRZ is old_loc_MultiRZ
+    assert qml.ops.qubit.parametric_ops_single_qubit.RX is old_loc_RX
