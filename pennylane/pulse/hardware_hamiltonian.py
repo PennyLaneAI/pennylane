@@ -88,7 +88,7 @@ def drive(amplitude, phase, wires):
     >>> H_d
     ParametrizedHamiltonian: terms=2
 
-    The first two terms of the drive Hamiltonian ``H_d`` correspond to the two terms
+    The terms of the drive Hamiltonian ``H_d`` correspond to the two terms
     :math:`\Omega e^{i \phi(t)} \sigma^+_j + \Omega e^{-i \phi(t)} \sigma^-_j`,
     describing a drive between the ground and excited states.
     In this case, the drive term corresponds to a global drive, as it acts on all 4 wires of

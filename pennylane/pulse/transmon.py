@@ -20,6 +20,7 @@ from pennylane.pulse import HardwareHamiltonian
 from pennylane.typing import TensorLike
 
 
+# TODO ladder operators once there is qudit support
 # pylint: disable=unused-argument
 def a(wire, d=2):
     """creation operator"""
