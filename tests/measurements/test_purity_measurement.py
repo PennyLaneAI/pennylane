@@ -65,20 +65,11 @@ class TestPurityUnitTest:
         assert m.numeric_type is float
 
     @pytest.mark.parametrize("shots, shape", [(None, ()), (10, ()), ((1, 10), ((), ()))])
-    def test_shape(self, shots, shape):
-        """Test the ``shape`` method."""
-        meas = qml.purity(wires=0)
-        dev = qml.device("default.qubit", wires=1, shots=shots)
-        assert meas.shape(dev) == shape
-
-    @pytest.mark.parametrize("shots, shape", [(None, ()), (10, ()), ((1, 10), ((), ()))])
     def test_shape_new(self, shots, shape):
         """Test the ``shape_new`` method."""
-        qml.enable_return()
         meas = qml.purity(wires=0)
         dev = qml.device("default.qubit", wires=1, shots=shots)
         assert meas.shape(dev) == shape
-        qml.disable_return()
 
 
 class TestPurityIntegration:

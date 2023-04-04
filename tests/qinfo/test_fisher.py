@@ -424,8 +424,6 @@ class TestDiffCFIM:
         """Testing diffability with an analytic example for autograd. The CFIM of this single qubit is constant, so the gradient should be zero."""
         dev = qml.device("default.qubit", wires=1)
 
-        # qml.disable_return()
-
         @qml.qnode(dev)
         def circ(params):
             qml.RY(params, wires=0)

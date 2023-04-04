@@ -531,7 +531,6 @@ class TestSupportedConfs:
     ):
         """Test diff_method "hadamard" works for all interfaces and
         return_types except State, DensityMatrix and Var"""
-        qml.enable_return()
         # correctness is already tested in other test files
         circuit = get_qnode(interface, diff_method, return_type, shots, wire_specs)
         x = get_variable(interface, wire_specs)
@@ -549,4 +548,3 @@ class TestSupportedConfs:
                 grad = compute_gradient(x, interface, circuit, return_type)
         else:
             grad = compute_gradient(x, interface, circuit, return_type)
-        qml.disable_return()
