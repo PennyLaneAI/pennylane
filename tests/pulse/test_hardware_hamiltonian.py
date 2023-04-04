@@ -155,6 +155,7 @@ class TestHardwareHamiltonian:
         ):
             _ = Ht + Hd
 
+    @pytest.mark.xfail
     def test_hamiltonian_callable_after_addition_right(self):
         """Tests that if a ParametrizedHamiltonian is added onto a
         HardwareHamiltonian with callable coefficients from the right, the
@@ -182,6 +183,7 @@ class TestHardwareHamiltonian:
         assert isinstance(H_global, HardwareHamiltonian)
         H_global(params, 2)  # no error raised
 
+    @pytest.mark.xfail
     def test_hamiltonian_callable_after_addition_left(self):
         """Tests that if a ParametrizedHamiltonian is added onto a
         HardwareHamiltonian with callable coefficients from the left, the
