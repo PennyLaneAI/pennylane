@@ -1140,6 +1140,10 @@ class TestOutputShape:
         shape of a QNode for a single measurement."""
         if shots is None and measurement.return_type is qml.measurements.Sample:
             pytest.skip("Sample doesn't support analytic computations.")
+        if isinstance(shots, tuple) and isinstance(
+            measurement, (qml.measurements.MutualInfoMP, qml.measurements.VnEntropyMP)
+        ):
+            pytest.skip("Shot vectors and entropies not supported.")
 
         dev = qml.device("default.qubit", wires=3, shots=shots)
 
@@ -1431,6 +1435,10 @@ class TestNumericType:
         """Test that most measurements output floating point values and that
         the tape output domain correctly identifies this."""
         dev = qml.device("default.qubit", wires=3, shots=shots)
+        if isinstance(shots, tuple) and isinstance(
+            ret, (qml.measurements.MutualInfoMP, qml.measurements.VnEntropyMP)
+        ):
+            pytest.skip("Shot vectors and entropies not supported.")
 
         a, b = 0.3, 0.2
         ops = [qml.RY(a, 0), qml.RZ(b, 0)]
