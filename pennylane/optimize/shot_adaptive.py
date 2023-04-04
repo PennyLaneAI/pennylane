@@ -248,10 +248,10 @@ class ShotAdaptiveOptimizer(GradientDescentOptimizer):
             for i in argnums:
 
                 def cost(*args, **kwargs):
-                    return qml.math.stack(h(*args, **kwargs))
+                    return qml.math.stack(h(*args, **kwargs))  # pylint: disable=cell-var-from-loop
 
                 j = qml.jacobian(cost, argnum=i)(*args, **kwargs)
-                print(j.shape, s)
+
                 if s == 1 and not qml.active_return():
                     j = np.expand_dims(j, 0)
                 # Divide each term by the probability per shot. This is

@@ -167,7 +167,9 @@ def hamiltonian_expand(tape: QuantumTape, group=True):
             if qml.active_return():
                 res_groupings = [
                     qml.math.stack(r)
-                    if isinstance(r, (tuple, qml.numpy.builtins.SequenceBox))
+                    if isinstance(
+                        r, (tuple, qml.numpy.builtins.SequenceBox)
+                    )  # pylint: disable=no-member
                     else r
                     for r in res_groupings
                 ]
@@ -180,9 +182,8 @@ def hamiltonian_expand(tape: QuantumTape, group=True):
                     dot_products.append(r_group * c_group)
                 else:
                     dot_products.append(qml.math.dot(r_group, c_group))
-            # dot_products = qml.math.stack([qml.math.squeeze(dot_product) for dot_product in dot_products])
             summed_dot_products = qml.math.sum(qml.math.stack(dot_products), axis=0)
-            # r_g = res_groupings[0] if not isinstance(res_groupings[0], tuple) else res_groupings[0][0]
+
             return qml.math.convert_like(summed_dot_products, res_groupings[0])
 
         return tapes, processing_fn

@@ -510,7 +510,7 @@ def _res_to_torch(r, ctx):
                 res.append(t)
             else:
                 if isinstance(t, tuple):
-                    res.append(tuple([torch.as_tensor(el, device=ctx.torch_device) for el in t]))
+                    res.append(tuple(torch.as_tensor(el, device=ctx.torch_device) for el in t))
                 else:
                     res.append(torch.as_tensor(t, device=ctx.torch_device))
         if isinstance(r, tuple):

@@ -469,7 +469,7 @@ class TestCountsIntegration:
     @pytest.mark.parametrize("meas2", meas2)
     @pytest.mark.parametrize("shots", [1000, (1, 10)])
     @pytest.mark.filterwarnings("ignore:Creating an ndarray from ragged nested sequences")
-    def test_counts_observable_finite_shots(self, interface, meas2, shots, mocker):
+    def test_counts_observable_finite_shots_old(self, interface, meas2, shots, mocker):
         """Check all interfaces with observable measurement counts and finite
         shot"""
 
