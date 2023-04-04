@@ -299,10 +299,13 @@ class TestGradientTransformIntegration:
             qml.CNOT(wires=[0, 1])
             return qml.expval(qml.PauliZ(0)), qml.var(qml.PauliX(1))
 
+        def cost(w):
+            return qml.math.stack(circuit(w))
+
         w = np.array([-0.654, 0.543], requires_grad=True)
         res = qml.gradients.param_shift(circuit)(w)
 
-        expected = qml.jacobian(circuit)(w)
+        expected = qml.jacobian(cost)(w)
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
     def test_multiple_tensor_arguments(self, tol):
@@ -502,7 +505,8 @@ class TestGradientTransformIntegration:
 
         # when executed with hybrid=False, only the quantum jacobian is returned
         res = qml.gradients.param_shift(circuit, hybrid=False)(w)
-        assert res.shape == (4, 2)
+        assert res[0].shape == (4,)
+        assert res[1].shape == (4,)
 
         @qml.qnode(dev)
         def circuit(weights):
@@ -513,7 +517,9 @@ class TestGradientTransformIntegration:
 
         w = np.array([0.543**2, -0.654], requires_grad=True)
         expected = qml.jacobian(circuit)(w)
-        assert np.allclose(res, expected, atol=tol, rtol=0)
+
+        assert np.allclose(res[0], expected.T[0], atol=tol, rtol=0)
+        assert np.allclose(res[1], expected.T[1], atol=tol, rtol=0)
 
     @pytest.mark.parametrize("strategy", ["gradient", "device"])
     def test_template_integration(self, strategy, tol):
