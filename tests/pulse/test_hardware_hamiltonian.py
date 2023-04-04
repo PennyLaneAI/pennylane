@@ -146,7 +146,7 @@ class TestHardwareHamiltonian:
         coords = [[0, 0], [0, 5], [5, 0]]
 
         Hd = rydberg_interaction(register=coords, wires=[0, 1, 2])
-        Ht = drive(2, 3, 4, wires=3)
+        Ht = drive(2, 3, wires=3)
 
         with pytest.warns(
             UserWarning,
