@@ -36,16 +36,6 @@ tests/math/test_functions.py
 tests/gradients/test_spsa_gradient.py
 tests/gradients/test_hadamard_gradient.py
 tests/gradients/test_pulse_gradient.py
-tests/returntypes/core/test_new_counts.py
-tests/returntypes/gradients/test_spsa_gradient_new.py
-tests/returntypes/gradients/test_spsa_gradient_shot_vec_new.py
-tests/returntypes/gradients/test_jvp.py
-tests/returntypes/gradients/test_hadamard_gradient_new.py
-tests/returntypes/gradients/test_pulse_gradient_new.py
-tests/returntypes/gradients/test_cv_gradients_new.py
-tests/returntypes/qnn/conftest.py
-tests/returntypes/qnn/test_keras_new.py
-tests/returntypes/qnn/test_qnn_torch_new.py
 tests/kernels/**
 tests/devices/test_default_mixed.py
 tests/devices/test_default_mixed_autograd.py
