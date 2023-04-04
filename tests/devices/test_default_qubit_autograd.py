@@ -395,7 +395,7 @@ class TestPassthruIntegration:
         assert all(np.allclose(res[i, :, i], expected[:, i], atol=tol, rtol=0) for i in range(3))
 
     def test_jacobian_agrees_backprop_parameter_shift(self, tol):
-        """Test that jacobian of a QNode with an attached default.mixed.autograd device
+        """Test that jacobian of a QNode with an attached default.qubit.autograd device
         gives the correct result with respect to the parameter-shift method"""
         p = np.array([0.43316321, 0.2162158, 0.75110998, 0.94714242], requires_grad=True)
 
