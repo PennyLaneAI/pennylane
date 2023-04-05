@@ -17,7 +17,6 @@ Unit tests for the dot function
 import pytest
 
 import pennylane as qml
-from pennylane.collections import QNodeCollection
 from pennylane.ops import Hamiltonian, Prod, SProd, Sum
 from pennylane.pauli.pauli_arithmetic import PauliSentence
 
