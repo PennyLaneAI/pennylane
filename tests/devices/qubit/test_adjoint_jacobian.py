@@ -126,10 +126,6 @@ class TestAdjointTapeValidation:
 class TestAdjointJacobian:
     """Tests for adjoint_jacobian"""
 
-    @pytest.fixture
-    def dev(self):
-        """Fixture that creates a two-qubit default qubit device for comparisions."""
-        return qml.device("default.qubit", wires=2)
 
     @pytest.mark.autograd
     @pytest.mark.parametrize("theta", np.linspace(-2 * np.pi, 2 * np.pi, 7))
