@@ -196,17 +196,20 @@ def drive(amplitude, phase, wires):
 
             H_d = qml.pulse.drive(amplitude, phase, wires)
 
+            # detuning term
+            H_z = qml.dot([-3*np.pi/2/4]*len(wires), [qml.PauliZ(i) for i in wires])
+
             dev = qml.device("default.qubit.jax", wires=wires)
             @qml.qnode(dev, interface="jax")
             def circuit(params):
-                qml.evolve(H_i + H_d)(params, t=[0, 10])
+                qml.evolve(H_i + H_z + H_d)(params, t=[0, 10])
                 return qml.expval(qml.PauliZ(1))
 
         >>> params = [2.4]
         >>> circuit(params)
-        Array(0.96893251, dtype=float64)
+        Array(0.6962041, dtype=float64)
         >>> jax.grad(circuit)(params)
-        [Array(-0.0355582, dtype=float64)]
+        [Array(1.75825695, dtype=float64)]
     """
     if isinstance(wires, int):
         wires = [wires]
