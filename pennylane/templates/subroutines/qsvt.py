@@ -72,7 +72,8 @@ def qsvt(A, angles, wires, convention=None):
         angles = _qsp_to_qsvt(angles)
         global_phase = (len(angles) - 1) % 4
 
-        if global_phase == 1:
+        if global_phase:
+            qml.exp(qml.Identity(wires=wires), 0.5j * np.pi *  (4 - global_phase))
             qml.exp(qml.Identity(wires=wires), 1j * (3 * np.pi / 2))
 
         elif global_phase == 2:
