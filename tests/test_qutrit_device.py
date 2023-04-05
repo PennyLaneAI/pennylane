@@ -986,7 +986,7 @@ class TestBatchExecution:
         """Tests that the device's execute method is called the correct number of times."""
 
         dev = mock_qutrit_device(wires=2)
-        spy = mocker.spy(QutritDevice, "_execute_new")
+        spy = mocker.spy(QutritDevice, "execute")
 
         tapes = [self.tape1] * n_tapes
         dev.batch_execute(tapes)

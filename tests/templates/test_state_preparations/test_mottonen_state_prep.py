@@ -251,7 +251,7 @@ class TestDecomposition:
             return qml.expval(qml.PauliX(wires=0))
 
         # when the RZ cascade is skipped, CNOT gates should only be those required for RY cascade
-        spy = mocker.spy(circuit.device, "_execute_new")
+        spy = mocker.spy(circuit.device, "execute")
         circuit(state_vector)
         tape = spy.call_args[0][0]
 

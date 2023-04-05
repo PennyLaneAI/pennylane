@@ -313,6 +313,11 @@ class batch_transform:
             if old_interface == "auto":
                 qnode.interface = "auto"
 
+            if "mode" in execute_kwargs:
+                mode = execute_kwargs.pop("mode")
+                if not qml.active_return():
+                    execute_kwargs["grad_on_execution"] == "forward" if mode != "best" else "best"
+
             res = qml.execute(
                 tapes,
                 device=qnode.device,
