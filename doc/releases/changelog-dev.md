@@ -10,7 +10,7 @@
 
 * Added the needed functions and classes to simulate an ensemble of Rydberg atoms/transmons:
   * A new internal `HardwareHamiltonian` class is added, which contains the Hamiltonian of an ensemble of Rydberg atoms/transmons.
-  * A new user-facing `rydberg_interaction` function is added, which returns a `HardwareHamiltonian` containing
+  * A new user-facing `rydberg_interaction` function is added, which returns a `ParametrizedHamiltonian` (`HardwareHamiltonian`) containing
     the Hamiltonian of the interaction of all the Rydberg atoms.
   * A new user-facing `transmon_interaction` function is added, constructing
     the Hamiltonian that describes the cqed interactions of transmon systems.
