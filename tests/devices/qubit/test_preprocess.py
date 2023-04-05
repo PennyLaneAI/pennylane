@@ -24,6 +24,7 @@ from pennylane.devices.qubit.preprocess import (
     expand_fn,
     batch_transform,
     preprocess,
+    validate_and_expand_adjoint,
 )
 from pennylane.measurements import MidMeasureMP, MeasurementValue
 from pennylane.tape import QuantumScript
@@ -271,6 +272,109 @@ class TestBatchTransform:
 
         input = ([[1, 2]], [[3, 4]])
         assert np.array_equal(batch_fn(input), np.array([[1, 2], [3, 4]]))
+
+
+class TestAdjointDiffTapeValidation:
+    """Unit tests for validate_and_expand_adjoint"""
+
+    def test_not_expval(self):
+        """Test if a QuantumFunctionError is raised for a tape with measurements that are not
+        expectation values"""
+
+        measurements = [qml.expval(qml.PauliZ(0)), qml.var(qml.PauliX(3)), qml.sample()]
+        qs = QuantumScript(ops=[], measurements=measurements)
+
+        with pytest.raises(
+            qml.QuantumFunctionError,
+            match="Adjoint differentiation method does not support measurement",
+        ):
+            validate_and_expand_adjoint(qs)
+
+    def test_unsupported_op(self):
+        """Test if a QuantumFunctionError is raised for an unsupported operation, i.e.,
+        multi-parameter operations that are not qml.Rot"""
+
+        qs = QuantumScript([qml.U2(0.1, 0.2, wires=[0])], [qml.expval(qml.PauliZ(2))])
+
+        with pytest.raises(
+            qml.QuantumFunctionError,
+            match='operation is not supported using the "adjoint" differentiation method',
+        ):
+            validate_and_expand_adjoint(qs)
+
+    @pytest.mark.parametrize(
+        "obs",
+        [
+            qml.Hamiltonian([2, 0.5], [qml.PauliZ(0), qml.PauliY(1)]),
+        ],
+    )
+    def test_unsupported_obs(self, obs):
+        """Test that the correct error is raised if a Hamiltonian or Sum measurement is differentiated"""
+        qs = QuantumScript([qml.RX(0.5, wires=1)], [qml.expval(obs)])
+
+        with pytest.raises(
+            qml.QuantumFunctionError,
+            match="Adjoint differentiation method does not support observable",
+        ):
+            validate_and_expand_adjoint(qs)
+
+    def test_trainable_hermitian_warns(self):
+        """Test attempting to compute the gradient of a tape that obtains the
+        expectation value of a Hermitian operator emits a warning if the
+        parameters to Hermitian are trainable."""
+
+        mx = qml.matrix(qml.PauliX(0) @ qml.PauliY(2))
+        qs = QuantumScript([], [qml.expval(qml.Hermitian(mx, wires=[0, 2]))])
+
+        qs.trainable_params = {0}
+
+        with pytest.warns(
+            UserWarning, match="Differentiating with respect to the input parameters of Hermitian"
+        ):
+            _ = validate_and_expand_adjoint(qs)
+
+    @pytest.mark.parametrize("G", [qml.RX, qml.RY, qml.RZ])
+    def test_valid_tape_no_expand(self, G):
+        """Test that a tape that is valid doesn't raise errors and is not expanded"""
+        prep_op = qml.QubitStateVector(
+            np.array([1.0, -1.0], requires_grad=False) / np.sqrt(2), wires=0
+        )
+        qs = QuantumScript(
+            ops=[G(np.pi, wires=[0])], measurements=[qml.expval(qml.PauliZ(0))], prep=[prep_op]
+        )
+
+        qs.trainable_params = {1}
+        qs_valid = validate_and_expand_adjoint(qs)
+
+        assert all(qml.equal(o1, o2) for o1, o2 in zip(qs.operations, qs_valid.operations))
+        assert all(qml.equal(o1, o2) for o1, o2 in zip(qs.measurements, qs_valid.measurements))
+        assert qs.trainable_params == qs_valid.trainable_params
+
+    def test_valid_tape_with_expansion(self):
+        """Test that a tape that is valid with operations that need to be expanded doesn't raise errors
+        and is expanded"""
+        prep_op = qml.QubitStateVector(
+            np.array([1.0, -1.0], requires_grad=False) / np.sqrt(2), wires=0
+        )
+        qs = QuantumScript(
+            ops=[qml.Rot(0.1, 0.2, 0.3, wires=[0])],
+            measurements=[qml.expval(qml.PauliZ(0))],
+            prep=[prep_op],
+        )
+
+        qs.trainable_params = {1, 2, 3}
+        qs_valid = validate_and_expand_adjoint(qs)
+
+        expected_ops = [
+            prep_op,
+            qml.RZ(0.1, wires=[0]),
+            qml.RY(0.2, wires=[0]),
+            qml.RZ(0.3, wires=[0]),
+        ]
+
+        assert all(qml.equal(o1, o2) for o1, o2 in zip(qs_valid.operations, expected_ops))
+        assert all(qml.equal(o1, o2) for o1, o2 in zip(qs.measurements, qs_valid.measurements))
+        assert qs.trainable_params == qs_valid.trainable_params
 
 
 class TestPreprocess:

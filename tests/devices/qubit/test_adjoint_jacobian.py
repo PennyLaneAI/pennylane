@@ -20,109 +20,6 @@ import pennylane.numpy as np
 from pennylane.devices.qubit.preprocess import validate_and_expand_adjoint
 
 
-class TestAdjointTapeValidation:
-    """Unit tests for validate_and_expand_adjoint"""
-
-    def test_not_expval(self):
-        """Test if a QuantumFunctionError is raised for a tape with measurements that are not
-        expectation values"""
-
-        measurements = [qml.expval(qml.PauliZ(0)), qml.var(qml.PauliX(3)), qml.sample()]
-        qs = QuantumScript(ops=[], measurements=measurements)
-
-        with pytest.raises(
-            qml.QuantumFunctionError,
-            match="Adjoint differentiation method does not support measurement",
-        ):
-            validate_and_expand_adjoint(qs)
-
-    def test_unsupported_op(self):
-        """Test if a QuantumFunctionError is raised for an unsupported operation, i.e.,
-        multi-parameter operations that are not qml.Rot"""
-
-        qs = QuantumScript([qml.U2(0.1, 0.2, wires=[0])], [qml.expval(qml.PauliZ(2))])
-
-        with pytest.raises(
-            qml.QuantumFunctionError,
-            match='operation is not supported using the "adjoint" differentiation method',
-        ):
-            validate_and_expand_adjoint(qs)
-
-    @pytest.mark.parametrize(
-        "obs",
-        [
-            qml.Hamiltonian([2, 0.5], [qml.PauliZ(0), qml.PauliY(1)]),
-        ],
-    )
-    def test_unsupported_obs(self, obs):
-        """Test that the correct error is raised if a Hamiltonian or Sum measurement is differentiated"""
-        qs = QuantumScript([qml.RX(0.5, wires=1)], [qml.expval(obs)])
-
-        with pytest.raises(
-            qml.QuantumFunctionError,
-            match="Adjoint differentiation method does not support observable",
-        ):
-            validate_and_expand_adjoint(qs)
-
-    def test_trainable_hermitian_warns(self):
-        """Test attempting to compute the gradient of a tape that obtains the
-        expectation value of a Hermitian operator emits a warning if the
-        parameters to Hermitian are trainable."""
-
-        mx = qml.matrix(qml.PauliX(0) @ qml.PauliY(2))
-        qs = QuantumScript([], [qml.expval(qml.Hermitian(mx, wires=[0, 2]))])
-
-        qs.trainable_params = {0}
-
-        with pytest.warns(
-            UserWarning, match="Differentiating with respect to the input parameters of Hermitian"
-        ):
-            _ = validate_and_expand_adjoint(qs)
-
-    @pytest.mark.parametrize("G", [qml.RX, qml.RY, qml.RZ])
-    def test_valid_tape_no_expand(self, G):
-        """Test that a tape that is valid doesn't raise errors and is not expanded"""
-        prep_op = qml.QubitStateVector(
-            np.array([1.0, -1.0], requires_grad=False) / np.sqrt(2), wires=0
-        )
-        qs = QuantumScript(
-            ops=[G(np.pi, wires=[0])], measurements=[qml.expval(qml.PauliZ(0))], prep=[prep_op]
-        )
-
-        qs.trainable_params = {1}
-        qs_valid = validate_and_expand_adjoint(qs)
-
-        assert all(qml.equal(o1, o2) for o1, o2 in zip(qs.operations, qs_valid.operations))
-        assert all(qml.equal(o1, o2) for o1, o2 in zip(qs.measurements, qs_valid.measurements))
-        assert qs.trainable_params == qs_valid.trainable_params
-
-    def test_valid_tape_with_expansion(self):
-        """Test that a tape that is valid with operations that need to be expanded doesn't raise errors
-        and is expanded"""
-        prep_op = qml.QubitStateVector(
-            np.array([1.0, -1.0], requires_grad=False) / np.sqrt(2), wires=0
-        )
-        qs = QuantumScript(
-            ops=[qml.Rot(0.1, 0.2, 0.3, wires=[0])],
-            measurements=[qml.expval(qml.PauliZ(0))],
-            prep=[prep_op],
-        )
-
-        qs.trainable_params = {1, 2, 3}
-        qs_valid = validate_and_expand_adjoint(qs)
-
-        expected_ops = [
-            prep_op,
-            qml.RZ(0.1, wires=[0]),
-            qml.RY(0.2, wires=[0]),
-            qml.RZ(0.3, wires=[0]),
-        ]
-
-        assert all(qml.equal(o1, o2) for o1, o2 in zip(qs_valid.operations, expected_ops))
-        assert all(qml.equal(o1, o2) for o1, o2 in zip(qs.measurements, qs_valid.measurements))
-        assert qs.trainable_params == qs_valid.trainable_params
-
-
 class TestAdjointJacobian:
     """Tests for adjoint_jacobian"""
 
@@ -186,7 +83,7 @@ class TestAdjointJacobian:
     @pytest.mark.parametrize(
         "op", [qml.RX(0.4, wires=0), qml.CRZ(1.0, wires=[0, 1]), qml.Rot(0.2, -0.1, 0.2, wires=0)]
     )
-    def test_gradients(self, op, obs, tol, dev):
+    def test_gradients(self, op, obs, tol):
         """Tests that the gradients of circuits match between the finite difference and device
         methods."""
 
@@ -211,7 +108,7 @@ class TestAdjointJacobian:
         numeric_val = fn(results)
         grad_D = adjoint_jacobian(qs_valid)
 
-        grad_F = np.squeeze(grad_F)
+        grad_F = np.squeeze(numeric_val)
 
         assert np.allclose(grad_D, grad_F, atol=tol, rtol=0)
         assert isinstance(grad_D, tuple)
@@ -247,7 +144,7 @@ class TestAdjointJacobian:
                 return qml.PauliX(self.wires) * 1.2
 
             @staticmethod
-            def compute_matrix(angle):
+            def compute_matrix(angle):  # pylint: disable=arguments-differ
                 """Matrix representation of MyOp, just the same as a reparametrized RX."""
                 return qml.RX.compute_matrix(-2.4 * angle)
 
@@ -267,7 +164,7 @@ class TestAdjointJacobian:
         assert all(isinstance(j, tuple) for j in jacobian)
 
     @pytest.mark.autograd
-    def test_gradient_gate_with_multiple_parameters(self, tol, dev):
+    def test_gradient_gate_with_multiple_parameters(self, tol):
         """Tests that gates with multiple free parameters yield correct gradients."""
         x, y, z = [0.5, 0.3, -0.7]
 
@@ -294,7 +191,7 @@ class TestAdjointJacobian:
     @pytest.mark.parametrize(
         "prep_op", [qml.BasisState([1], wires=0), qml.QubitStateVector([0, 1], wires=0)]
     )
-    def test_state_prep(self, prep_op, tol, dev):
+    def test_state_prep(self, prep_op, tol):
         """Tests provides correct answer when provided state preparation operation."""
         x, y, z = [0.5, 0.3, -0.7]
 
