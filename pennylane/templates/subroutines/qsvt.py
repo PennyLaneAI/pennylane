@@ -31,7 +31,7 @@ def qsvt(A, angles, wires, convention=None):
 
     Args:
         A (tensor_like): the general :math:`(n \times m)` matrix to be encoded.
-        angles (tensor_like): a list of angles by which to shift to obtain the desired polynomial.
+        angles (tensor_like): a list of angles by which to shift to obtain the desired polynomial
         wires (Iterable): the wires the template acts on
         convention (string): can be set to "Wx" to convert quantum signal processing angles to QSVT
         angles
