@@ -415,7 +415,7 @@ class BlockEncode(Operation):
             normalization = A if A > 1 else 1
             subspace = (1, 1, 2 ** len(wires))
         else:
-            normalization = pnp.max(
+            normalization = qml.math.max(
                 [
                     norm(A @ qml.math.transpose(qml.math.conj(A)), ord=pnp.inf),
                     norm(qml.math.transpose(qml.math.conj(A)) @ A, ord=pnp.inf),
