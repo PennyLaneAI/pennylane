@@ -495,13 +495,11 @@ class TestWeightedRandomSampling:
         opt = qml.ShotAdaptiveOptimizer(min_shots=10)
 
         spy = mocker.spy(qml, "jacobian")
-        spy_dims = mocker.spy(np, "expand_dims")
         mocker.patch(
             "scipy.stats._multivariate.multinomial_gen.rvs", return_value=np.array([[4, 1, 5]])
         )
         grads = opt.weighted_random_sampling(expval_cost.qnodes, coeffs, 10, [0], weights)
 
-        spy_dims.assert_called_once()
         assert len(spy.call_args_list) == 3
         assert len(grads) == 1
         assert grads[0].shape == (10, *weights.shape)

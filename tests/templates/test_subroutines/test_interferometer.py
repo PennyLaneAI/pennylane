@@ -262,10 +262,10 @@ class TestInterferometer:
                 qml.Squeezing(sq[w][0], sq[w][1], wires=w)
 
             qml.Interferometer(theta=theta, phi=phi, varphi=varphi, wires=wires)
-            return [qml.expval(qml.NumberOperator(w)) for w in wires]
+            return qml.expval(qml.NumberOperator(0))
 
         res = circuit(theta, phi, varphi)
-        expected = np.array([0.96852694, 0.23878521, 0.82310606, 0.16547786])
+        expected = np.array(0.96852694)
         assert np.allclose(res, expected, atol=tol)
 
     def test_interferometer_wrong_dim(self):

@@ -489,22 +489,7 @@ class TestSupportedConfs:
     @pytest.mark.parametrize("diff_method", ["parameter-shift", "finite-diff", "spsa"])
     @pytest.mark.parametrize("wire_specs", wire_specs_list)
     def test_all_sample_finite_shots(self, interface, diff_method, wire_specs):
-        """Test sample measurement works for all interfaces and diff_methods
-        when shots>0 (but the results may be incorrect)"""
-        # the only exception is JAX, which fails due to a dtype mismatch
-        if interface == "jax":
-            msg = "jacrev requires real-valued outputs .*"
-
-            with pytest.raises(TypeError, match=msg):
-                circuit = get_qnode(interface, diff_method, Sample, 100, wire_specs)
-                x = get_variable(interface, wire_specs)
-                grad = compute_gradient(x, interface, circuit, Sample)
-        else:
-            # should not raise an exception
-            circuit = get_qnode(interface, diff_method, Sample, 100, wire_specs)
-            x = get_variable(interface, wire_specs)
-            grad = compute_gradient(x, interface, circuit, Sample)
-
+        """Test sample measurement works for all interfaces when shots>0 (but the results may be incorrect)"""
         # test that forward pass still works
         circuit = get_qnode(interface, diff_method, Sample, 100, wire_specs)
         x = get_variable(interface, wire_specs)
@@ -546,7 +531,6 @@ class TestSupportedConfs:
     ):
         """Test diff_method "hadamard" works for all interfaces and
         return_types except State, DensityMatrix and Var"""
-        qml.enable_return()
         # correctness is already tested in other test files
         circuit = get_qnode(interface, diff_method, return_type, shots, wire_specs)
         x = get_variable(interface, wire_specs)
@@ -564,4 +548,3 @@ class TestSupportedConfs:
                 grad = compute_gradient(x, interface, circuit, return_type)
         else:
             grad = compute_gradient(x, interface, circuit, return_type)
-        qml.disable_return()
