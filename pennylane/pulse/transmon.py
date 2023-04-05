@@ -51,12 +51,12 @@ def transmon_interaction(
         + \sum_{(i, j) \in \mathcal{C}} g_{ij} \left(a^\dagger_i a_j + a_j^\dagger a_i \right)
         + \sum_q \alpha_q a^\dagger_q a^\dagger_q a_q a_q
 
-    where :math:`[a^\dagger_p, a_q] = i \alpha_{pq}` are bosonic creation and annihilation operators.
+    where :math:`[a^\dagger_p, a_q] = i \delta_{pq}` are bosonic creation and annihilation operators.
     The first term describes the dressed qubit frequencies :math:`\omega_q`, the second term their
     coupling :math:`g_{ij}` and the last the anharmonicity :math:`\alpha_q`, which all can vary for
     different qubits. In practice, the bosonic operators are restricted to a finite dimension of the
     local Hilbert space (default ``d=2`` corresponds to qubits).
-    In that case, the anharmonicity is set to :math:`\anharmonicity=0` and ignored.
+    In that case, the anharmonicity is set to :math:`\alpha=0` and ignored.
 
     .. note:: Currently only supporting ``d=2`` with qudit support planned in the future.
 
@@ -88,12 +88,21 @@ def transmon_interaction(
     .. code-block::
 
         connections = [[0, 1], [1, 3], [2, 1], [4, 5]]
-        H = qml.pulse.transmon_interaction(connections, omega=0.5, g=1.)
+        H = qml.pulse.transmon_interaction(omega=0.5, connections=connections, g=1.)
 
-    The resulting :class:`~.ParametrizedHamiltonian` consists of ``4`` coupling terms and ``6`` qubit terms.
+    The resulting :class:`~.ParametrizedHamiltonian` consists of ``4`` coupling terms and ``6`` qubits
+    because there are six different wire indices in ``connections``.
 
     >>> print(H)
     ParametrizedHamiltonian: terms=10
+
+    We can also provide individual values for each of the qubit energies and connections.
+
+    .. code-block::
+
+        omega = [0.5, 0.4, 0.3, 0.2, 0.1, 0.]
+        g = [1., 2., 3., 4.]
+        H = qml.pulse.transmon_interaction(omega=omega, connections=connections, g=g)
 
     """
     if d != 2:
