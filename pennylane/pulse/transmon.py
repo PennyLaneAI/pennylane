@@ -58,7 +58,7 @@ def transmon_interaction(
     local Hilbert space (default ``d=2`` corresponds to qubits).
     In that case, the anharmonicity is set to :math:`\alpha=0` and ignored.
 
-    The values of :math:`\omega` typically are around :math:`5 \times 2\pi \text{GHz}`, the coupling strength 
+    The values of :math:`\omega` typically are around :math:`5 \times 2\pi \text{GHz}`, the coupling strength
     :math:`\alpha` typically varies betwewen :math:`[0.001, 0.1] \times 2\pi \text{GHz}`. For some example parameters,
     see e.g. `arXiv:1804.04073 <https://arxiv.org/abs/1804.04073>`_,
     `arXiv:2203.06818 <https://arxiv.org/abs/2203.06818>`_, or `arXiv:2210.15812 <https://arxiv.org/abs/2210.15812>`_.
