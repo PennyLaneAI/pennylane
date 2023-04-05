@@ -211,7 +211,8 @@ class TestAdjointJacobian:
         qs_valid = validate_and_expand_adjoint(qs)
 
         tapes, fn = qml.gradients.finite_diff(qs)
-        grad_F = fn(qml.execute(tapes, dev, None))
+        results = tuple(qml.devices.qubit.simulate(t) for t in tapes)
+        numeric_val = fn(results)
         grad_D = adjoint_jacobian(qs_valid)
 
         grad_F = np.squeeze(grad_F)
