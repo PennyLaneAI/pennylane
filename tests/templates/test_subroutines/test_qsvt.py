@@ -157,7 +157,7 @@ class TestQSVT:
         ],
     )
     def test_queuing_callables(self, quantum_function, phi_func, A, phis, results):
-        """Test that qml.QSVT queues operations correctly when a function is called inside the qnode"""
+        """Test that qml.QSVT queues operations correctly when a function is called"""
 
         with qml.tape.QuantumTape() as tape:
             qml.QSVT(quantum_function(A), phi_func(phis), wires=[0, 1])
