@@ -150,9 +150,9 @@ class TestAdjointJacobian:
         calculated_val = adjoint_jacobian(qs_valid)
 
         # compare to finite differences
-        dev_single_qubit = qml.device("default.qubit", wires=1)
         tapes, fn = qml.gradients.finite_diff(qs)
-        numeric_val = fn(qml.execute(tapes, dev_single_qubit, None))
+        results = tuple(qml.devices.qubit.simulate(t) for t in tapes)
+        numeric_val = fn(results)
         assert np.allclose(calculated_val, numeric_val, atol=tol, rtol=0)
         assert isinstance(calculated_val, np.ndarray)
 
