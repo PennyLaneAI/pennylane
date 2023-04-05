@@ -124,7 +124,7 @@ def rydberg_drive(amplitude, phase, detuning, wires):
         \delta(t) \sum_{i \in \text{wires}} \sigma_i^z
 
     where :math:`\Omega`, :math:`\delta` and :math:`\phi` correspond to the rabi frequency, detuning
-    and phase of the laser, :math:`i` correspond to the wire index, and :math:`\sigma^\alpha` for
+    and phase of the laser, :math:`i` corresponds to the wire index, and :math:`\sigma^\alpha` for
     :math:`\alpha = x,y,z` are the Pauli matrices. The unit of time for the  evolution of this Rydberg
     drive term is :math:`\mu \text{s}`. This driving term can be combined with an interaction term to
     create a Hamiltonian describing a driven Rydberg atom system. Multiple driving terms can be combined
