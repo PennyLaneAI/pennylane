@@ -69,6 +69,7 @@ Hardware Compatible Hamiltonians
 
     ~rydberg_interaction
     ~transmon_interaction
+    ~rydberg_drive
     ~drive
 
 

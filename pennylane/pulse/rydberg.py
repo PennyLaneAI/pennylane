@@ -18,6 +18,7 @@ import numpy as np
 import pennylane as qml
 
 from pennylane.pulse import HardwareHamiltonian, HardwarePulse, drive
+from pennylane.wires import Wires
 
 
 def rydberg_interaction(
@@ -116,19 +117,20 @@ def rydberg_interaction(
 
 def rydberg_drive(amplitude, phase, detuning, wires):
     r"""Returns a :class:`ParametrizedHamiltonian` representing the action of a driving laser
-    field with the given rabi frequency, detuning and phase acting on the given wires
+    field with the given amplitude, detuning and phase acting on the given wires
 
     .. math::
 
         \frac{1}{2} \Omega(t) \sum_{i \in \text{wires}} (\cos(\phi)\sigma_i^x - \sin(\phi)\sigma_i^y) -
         \delta(t) \sum_{i \in \text{wires}} \sigma_i^z
 
-    where :math:`\Omega`, :math:`\delta` and :math:`\phi` correspond to the rabi frequency, detuning
-    and phase of the laser, :math:`i` corresponds to the wire index, and :math:`\sigma^\alpha` for
-    :math:`\alpha = x,y,z` are the Pauli matrices. The unit of time for the  evolution of this Rydberg
-    drive term is :math:`\mu \text{s}`. This driving term can be combined with an interaction term to
-    create a Hamiltonian describing a driven Rydberg atom system. Multiple driving terms can be combined
-    by summing them (see example).
+    where :math:`\Omega`, :math:`\delta` and :math:`\phi` correspond to the amplitude, detuning
+    and phase of the laser, :math:`i` correspond to the wire index, and :math:`\sigma^\alpha` for
+    :math:`\alpha = x,y,z` are the Pauli matrices. For hardware upload, time is expected to be in units
+    of :math:`\mu \text{s}`, and the frequency in units of :math:`MHz`. It is recommended to also follow
+    this convention for simultation, as it avoids numerical problems due to using very large and very small
+    number. This driving term can be combined with an interaction term to create a Hamiltonian describing a
+    driven Rydberg atom system. Multiple driving terms can be combined by summing them (see example).
 
     Args:
         amplitude (Union[float, Callable]): float or callable returning the amplitude (in MHz) of a
@@ -140,8 +142,7 @@ def rydberg_drive(amplitude, phase, detuning, wires):
             the laser field acts on
 
     Returns:
-        RydbergHamiltonian: a :class:`~.ParametrizedHamiltonian` representing the action of the laser field
-        on the Rydberg atoms.
+        `ParametrizedHamiltonian`: representing the action of the laser field on the Rydberg atoms.
 
     .. seealso::
 
@@ -219,8 +220,7 @@ def rydberg_drive(amplitude, phase, detuning, wires):
       Array(0.76572817, dtype=float64, weak_type=True)],
      Array(0.01027312, dtype=float64)]
     """
-    if isinstance(wires, int):
-        wires = [wires]
+    wires = Wires(wires)
     trivial_detuning = not callable(detuning) and qml.math.isclose(detuning, 0.0)
 
     if not callable(amplitude) and qml.math.isclose(amplitude, 0.0):
@@ -230,28 +230,22 @@ def rydberg_drive(amplitude, phase, detuning, wires):
                 f"received amplitude={amplitude} and detuning={detuning}. All terms are zero."
             )
 
-        amplitude_term = None
+        amplitude_term = HardwareHamiltonian([], [])
 
     else:
         amplitude_term = drive(amplitude, phase, wires)
 
-    detuning_term = None
-
+    detuning_obs, detuning_coeffs = [], []
     if not trivial_detuning:
-        detuning_obs = [-1.0 * sum(qml.PauliZ(wire) for wire in wires)]
-        detuning_coeffs = [detuning]
-        detuning_term = HardwareHamiltonian(detuning_coeffs, detuning_obs)
+        detuning_obs.append(-1.0 * sum(qml.PauliZ(wire) for wire in wires))
+        detuning_coeffs.append(detuning)
 
+    detuning_term = HardwareHamiltonian(detuning_coeffs, detuning_obs)
     pulses = [HardwarePulse(amplitude, phase, detuning, wires)]
 
-    if amplitude_term and detuning_term:
-        drive_term = amplitude_term + detuning_term
-    elif amplitude_term:
-        drive_term = amplitude_term
-    else:
-        drive_term = detuning_term
-
+    drive_term = amplitude_term + detuning_term
     drive_term.pulses = pulses
+
     return drive_term
 
 

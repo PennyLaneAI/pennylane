@@ -214,11 +214,6 @@ def drive(amplitude, phase, wires):
     if isinstance(wires, int):
         wires = [wires]
 
-    if not callable(amplitude) and qml.math.isclose(amplitude, 0.0):
-        raise ValueError(
-            f"Expected non-zero value or callable for amplitude, but received amplitude={amplitude}. All terms are zero."
-        )
-
     # TODO: use sigma+ and sigma- (not necessary as terms are the same, but for consistency)
     # We compute the `coeffs` and `observables` of the EM field
     coeffs = [
