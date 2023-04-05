@@ -1058,6 +1058,9 @@ class QubitDevice(Device):
                     f"Unsupported return type specified for observable {obs.name}"
                 )
 
+            else:
+                result = None
+
             # 2. Post-process statistics results (if need be)
             if isinstance(
                 m,
@@ -1088,7 +1091,8 @@ class QubitDevice(Device):
                 result = qml.math.squeeze(result)
 
             # 3. Append to final list
-            results.append(result)
+            if result is not None:
+                results.append(result)
 
         return results
 
