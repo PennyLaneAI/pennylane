@@ -536,6 +536,7 @@ def finite_diff(
     return gradient_tapes, processing_fn
 
 
+# pylint: disable=unused-argument
 @gradient_transform
 def _finite_diff_legacy(
     tape,

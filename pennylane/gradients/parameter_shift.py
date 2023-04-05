@@ -604,6 +604,7 @@ def expval_param_shift(
     return gradient_tapes, processing_fn
 
 
+# pylint: disable=unused-argument
 def _expval_param_shift_legacy(
     tape, argnum=None, shifts=None, gradient_recipes=None, f0=None, broadcast=False, shots=None
 ):
@@ -1039,6 +1040,7 @@ def var_param_shift(
     return gradient_tapes, processing_fn
 
 
+# pylint: disable=unused-argument
 def _var_param_shift_legacy(
     tape, argnum, shifts=None, gradient_recipes=None, f0=None, broadcast=False, shots=None
 ):
@@ -1074,8 +1076,6 @@ def _var_param_shift_legacy(
         function to be applied to the results of the evaluated tapes
         in order to obtain the Jacobian matrix.
     """
-    if qml.active_return():
-        return _var_param_shift_tuple(tape, argnum, shifts, gradient_recipes, f0, broadcast, shots)
 
     argnum = argnum or tape.trainable_params
 
@@ -1630,6 +1630,7 @@ def param_shift(
     return gradient_tapes, proc_with_validation
 
 
+# pylint: disable=unused-argument
 @gradient_transform
 def _param_shift_legacy(
     tape,
