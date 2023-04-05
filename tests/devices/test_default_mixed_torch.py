@@ -696,7 +696,6 @@ class TestPassthruIntegration:
         assert qml.math.allclose(torch.diagonal(res_b), expected_b, atol=tol, rtol=0)
 
 
-
 def test_template_integration():
     """Test that a PassthruQNode default.mixed.torch works with templates."""
     dev = qml.device("default.mixed", wires=2)
