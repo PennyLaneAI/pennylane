@@ -39,8 +39,8 @@ def drive(amplitude, phase, wires):
     where :math:`\Omega` and :math:`\phi` correspond to the amplitude and phase of the
     electromagnetic driving field and :math:`j` corresponds to the wire index. We are describing the Hamiltonian
     in terms of ladder operators :math:`\sigma^\pm = \frac{1}{2}(\sigma_x \pm i \sigma_y)`. Note that it is common
-    to describe the exponent of the phase factor as :math:`\exp(i(\phi(t) + \nu t))`, where `\nu` is the drive frequency,
-    see theoretical background.
+    to describe the exponent of the phase factor as :math:`\exp(i(\phi(t) + \nu t))`, where :math:`\nu` is the
+    drive frequency (see theoretical background below).
 
     Common hardware systems are superconducting qubits and neutral atoms. The electromagnetic field of the drive is
     realized by microwave and laser fields, respectively, operating at very different wavelengths.
