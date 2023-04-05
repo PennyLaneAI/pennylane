@@ -62,7 +62,7 @@ def _rademacher_sampler(indices, num_params, *args, seed=None):
 
 
 @gradient_transform
-def _spsa_grad_new(
+def spsa_grad(
     tape,
     argnum=None,
     h=1e-5,
@@ -264,6 +264,22 @@ def _spsa_grad_new(
         Note that the stochastic approximation and the fluctuations from the shot noise
         of the device accumulate, leading to a very coarse-grained estimate for the gradient.
     """
+    if not qml.active_return():
+        return _spsa_grad_legacy(
+            tape,
+            argnum=argnum,
+            h=h,
+            approx_order=approx_order,
+            n=n,
+            strategy=strategy,
+            f0=f0,
+            validate_params=validate_params,
+            shots=shots,
+            num_directions=num_directions,
+            sampler=sampler,
+            sampler_seed=sampler_seed,
+        )
+
     if argnum is None and not tape.trainable_params:
         return _no_trainable_grad_new(tape, shots)
 
@@ -372,7 +388,7 @@ def _spsa_grad_new(
 
 
 @gradient_transform
-def spsa_grad(
+def _spsa_grad_legacy(
     tape,
     argnum=None,
     h=1e-5,
@@ -537,21 +553,6 @@ def spsa_grad(
         array([[-0.95992212, -0.95992212, -0.95992212],
                [ 1.73191645,  1.73191645,  1.73191645]])
     """
-    if qml.active_return():
-        return _spsa_grad_new(
-            tape,
-            argnum=argnum,
-            h=h,
-            approx_order=approx_order,
-            n=n,
-            strategy=strategy,
-            f0=f0,
-            validate_params=validate_params,
-            shots=shots,
-            num_directions=num_directions,
-            sampler=sampler,
-            sampler_seed=sampler_seed,
-        )
 
     if argnum is None and not tape.trainable_params:
         warnings.warn(

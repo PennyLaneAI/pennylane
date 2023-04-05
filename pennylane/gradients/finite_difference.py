@@ -208,7 +208,7 @@ def _all_zero_grad_new(tape, shots=None):
 
 
 @gradient_transform
-def _finite_diff_new(
+def finite_diff(
     tape,
     argnum=None,
     h=1e-7,
@@ -368,12 +368,24 @@ def _finite_diff_new(
 
         The outermost tuple contains results corresponding to each element of the shot vector.
     """
+    if not qml.active_return():
+        return _finite_diff_legacy(
+            tape,
+            argnum=argnum,
+            h=h,
+            approx_order=approx_order,
+            n=n,
+            strategy=strategy,
+            f0=f0,
+            validate_params=validate_params,
+            shots=shots,
+        )
     if argnum is None and not tape.trainable_params:
         return _no_trainable_grad_new(tape, shots)
 
     if validate_params:
         if "grad_method" not in tape._par_info[0]:
-            gradient_analysis(tape, grad_fn=_finite_diff_new)
+            gradient_analysis(tape, grad_fn=finite_diff)
         diff_methods = grad_method_validation("numeric", tape)
     else:
         diff_methods = ["F" for i in tape.trainable_params]
@@ -525,7 +537,7 @@ def _finite_diff_new(
 
 
 @gradient_transform
-def finite_diff(
+def _finite_diff_legacy(
     tape,
     argnum=None,
     h=1e-7,
@@ -641,18 +653,6 @@ def finite_diff(
         [[-0.38751721 -0.18884787 -0.38355704]
          [ 0.69916862  0.34072424  0.69202359]]
     """
-    if qml.active_return():
-        return _finite_diff_new(
-            tape,
-            argnum=argnum,
-            h=h,
-            approx_order=approx_order,
-            n=n,
-            strategy=strategy,
-            f0=f0,
-            validate_params=validate_params,
-            shots=shots,
-        )
 
     if argnum is None and not tape.trainable_params:
         warnings.warn(
