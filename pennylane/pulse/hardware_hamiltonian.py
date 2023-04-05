@@ -226,11 +226,7 @@ def drive(amplitude, phase, wires):
 
     observables = [drive_x_term, drive_y_term]
 
-    # We convert the pulse data into a list of ``HardwarePulse`` objects
-    frequency = None
-    pulses = [HardwarePulse(amplitude, phase, frequency, wires)]
-
-    return HardwareHamiltonian(coeffs, observables, pulses=pulses)
+    return HardwareHamiltonian(coeffs, observables)
 
 
 class HardwareHamiltonian(ParametrizedHamiltonian):
@@ -278,7 +274,9 @@ class HardwareHamiltonian(ParametrizedHamiltonian):
                 new_settings = None
             else:
                 new_settings = self.settings + other.settings
+
             new_pulses = self.pulses + other.pulses
+
             new_ops = self.ops + other.ops
             new_coeffs = self.coeffs + other.coeffs
             return HardwareHamiltonian(

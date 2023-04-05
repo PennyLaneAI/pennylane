@@ -287,7 +287,6 @@ class TestDrive:
         assert isinstance(Hd, HardwareHamiltonian)
         assert Hd.wires == Wires([1, 2])
         assert len(Hd.ops) == 2  # 2 amplitude/phase terms
-        assert Hd.pulses == [HardwarePulse(1, 2, None, [1, 2])]
 
     def test_multiple_local_drives(self):
         """Test that adding multiple drive terms behaves as expected"""
@@ -326,8 +325,7 @@ class TestDrive:
         assert isinstance(Hd.coeffs[3], AmplitudeAndPhase)
 
         # pulses were added correctly
-        assert len(Hd.pulses) == 2
-        assert Hd.pulses == H1.pulses + H2.pulses
+        assert Hd.pulses == []
 
         # Hamiltonian is as expected
         assert qml.equal(Hd([0.5, -0.5], t=5), H_expected([0.5, -0.5], t=5))
