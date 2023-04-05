@@ -394,7 +394,7 @@ class TestPreprocess:
             (
                 [qml.U2(0.1, 0.2, wires=0)],
                 [qml.expval(qml.PauliZ(0))],
-                'operation is not supported using the "adjoint" method',
+                'operation is not supported using the "adjoint" differentiation method',
             ),
         ],
     )
