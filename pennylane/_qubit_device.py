@@ -284,10 +284,8 @@ class QubitDevice(Device):
 
         return results
 
-    def _execute_new(self, circuit, **kwargs):
-        """New execute (update of return type) function, it executes a queue of quantum operations on the device and
-        then measure the given observables. More case will be added in future PRs, for the moment it only supports
-        measurements without shots.
+    def execute(self, circuit, **kwargs):
+        """It executes a queue of quantum operations on the device and then measure the given observables.
 
         For plugin developers: instead of overwriting this, consider
         implementing a suitable subset of
@@ -311,6 +309,9 @@ class QubitDevice(Device):
         Returns:
             array[float]: measured value(s)
         """
+        if not qml.active_return():
+            return self._execute_legacy(circuit, **kwargs)
+
         self.check_validity(circuit.operations, circuit.observables)
 
         # apply all circuit operations
@@ -338,7 +339,7 @@ class QubitDevice(Device):
 
         return results
 
-    def execute(self, circuit: QuantumTape, **kwargs):
+    def _execute_legacy(self, circuit: QuantumTape, **kwargs):
         """Execute a queue of quantum operations on the device and then
         measure the given observables.
 
@@ -364,8 +365,6 @@ class QubitDevice(Device):
         Returns:
             array[float]: measured value(s)
         """
-        if qml.active_return():
-            return self._execute_new(circuit, **kwargs)
 
         self.check_validity(circuit.operations, circuit.observables)
 
@@ -532,9 +531,8 @@ class QubitDevice(Device):
 
         return new_r
 
-    def _batch_execute_new(self, circuits):
-        """Temporary batch execute function, waiting for QNode execution of the new return types. Execute a batch of
-        quantum circuits on the device.
+    def _batch_execute_legacy(self, circuits):
+        """Execute a batch of quantum circuits on the device.
 
         The circuits are represented by tapes, and they are executed one-by-one using the
         device's ``execute`` method. The results are collected in a list.
@@ -548,16 +546,13 @@ class QubitDevice(Device):
         Returns:
             list[array[float]]: list of measured value(s)
         """
-        # TODO: This method and the tests can be globally implemented by Device
-        # once it has the same signature in the execute() method
-
         results = []
         for circuit in circuits:
             # we need to reset the device here, else it will
             # not start the next computation in the zero state
             self.reset()
 
-            res = self._execute_new(circuit)
+            res = self._execute_legacy(circuit)
             results.append(res)
 
         if self.tracker.active:
@@ -581,10 +576,8 @@ class QubitDevice(Device):
         Returns:
             list[array[float]]: list of measured value(s)
         """
-        # TODO: This method and the tests can be globally implemented by Device
-        # once it has the same signature in the execute() method
-        if qml.active_return():
-            return self._batch_execute_new(circuits=circuits)
+        if not qml.active_return():
+            return self._batch_execute_legacy(circuits=circuits)
 
         results = []
         for circuit in circuits:
@@ -592,7 +585,6 @@ class QubitDevice(Device):
             # not start the next computation in the zero state
             self.reset()
 
-            # TODO: Insert control on value here
             res = self.execute(circuit)
             results.append(res)
 
