@@ -69,8 +69,7 @@ def test_unwraps_arithmetic_op():
     sum_op = qml.sum(op1, op2)
 
     unwrapped_op = _convert_op_to_numpy_data(sum_op)
-    assert qml.math.get_interface(unwrapped_op[0].data[0][0]) == "numpy"
-    assert qml.math.get_interface(unwrapped_op[1].data[0][0]) == "numpy"
+    assert qml.math.get_interface(unwrapped_op.data) == "numpy"
 
 
 @pytest.mark.autograd
@@ -84,5 +83,5 @@ def test_unwraps_arithmetic_op_measurement():
 
     unwrapped_m = _convert_measurement_to_numpy_data(m)
     unwrapped_op = unwrapped_m.obs
-    assert qml.math.get_interface(unwrapped_op[0].data[0][0]) == "numpy"
-    assert qml.math.get_interface(unwrapped_op[1].data[0][0]) == "numpy"
+    assert qml.math.get_interface(unwrapped_op.data) == "numpy"
+    assert qml.math.get_interface(unwrapped_op.data) == "numpy"
