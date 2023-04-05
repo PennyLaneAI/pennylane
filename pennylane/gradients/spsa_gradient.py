@@ -63,18 +63,18 @@ def _rademacher_sampler(indices, num_params, *args, seed=None):
 
 @gradient_transform
 def spsa_grad(
-        tape,
-        argnum=None,
-        h=1e-5,
-        approx_order=2,
-        n=1,
-        strategy="center",
-        f0=None,
-        validate_params=True,
-        shots=None,
-        num_directions=1,
-        sampler=_rademacher_sampler,
-        sampler_seed=None,
+    tape,
+    argnum=None,
+    h=1e-5,
+    approx_order=2,
+    n=1,
+    strategy="center",
+    f0=None,
+    validate_params=True,
+    shots=None,
+    num_directions=1,
+    sampler=_rademacher_sampler,
+    sampler_seed=None,
 ):
     r"""Transform a QNode to compute the SPSA gradient of all gate
     parameters with respect to its inputs. This estimator shifts all parameters
@@ -323,7 +323,7 @@ def spsa_grad(
         )
         # Use only the non-zero part of `direction` for the shifts, to skip redundant zero shifts
         _shifts = qml.math.tensordot(h * shifts, direction[indices], axes=0)
-        all_coeffs.append(qml.math.tensordot(coeffs / h ** n, inv_direction, axes=0))
+        all_coeffs.append(qml.math.tensordot(coeffs / h**n, inv_direction, axes=0))
         g_tapes = generate_multishifted_tapes(tape, indices, _shifts)
         gradient_tapes.extend(g_tapes)
 
@@ -336,13 +336,13 @@ def spsa_grad(
         if num_measurements == 1:
             grads = 0
             for rep, _coeffs in enumerate(all_coeffs):
-                res = results[rep * tapes_per_grad: (rep + 1) * tapes_per_grad]
+                res = results[rep * tapes_per_grad : (rep + 1) * tapes_per_grad]
                 if r0 is not None:
                     res.insert(0, r0)
                 res = qml.math.stack(res)
                 grads = (
-                        qml.math.tensordot(qml.math.convert_like(_coeffs, res), res, axes=[[0], [0]])
-                        + grads
+                    qml.math.tensordot(qml.math.convert_like(_coeffs, res), res, axes=[[0], [0]])
+                    + grads
                 )
             grads = grads * (1 / num_directions)
             if num_trainable_params == 1:
@@ -353,13 +353,13 @@ def spsa_grad(
         for i in range(num_measurements):
             grad = 0
             for rep, _coeffs in enumerate(all_coeffs):
-                res = [r[i] for r in results[rep * tapes_per_grad: (rep + 1) * tapes_per_grad]]
+                res = [r[i] for r in results[rep * tapes_per_grad : (rep + 1) * tapes_per_grad]]
                 if r0 is not None:
                     res.insert(0, r0[i])
                 res = qml.math.stack(res)
                 grad = (
-                        qml.math.tensordot(qml.math.convert_like(_coeffs, res), res, axes=[[0], [0]])
-                        + grad
+                    qml.math.tensordot(qml.math.convert_like(_coeffs, res), res, axes=[[0], [0]])
+                    + grad
                 )
             grad = grad / num_directions
             grads.append(tuple(qml.math.convert_like(g, grad) for g in grad))
@@ -390,18 +390,18 @@ def spsa_grad(
 # pylint: disable=unused-argument
 @gradient_transform
 def _spsa_grad_legacy(
-        tape,
-        argnum=None,
-        h=1e-5,
-        approx_order=2,
-        n=1,
-        strategy="center",
-        f0=None,
-        validate_params=True,
-        shots=None,
-        num_directions=1,
-        sampler=_rademacher_sampler,
-        sampler_seed=None,
+    tape,
+    argnum=None,
+    h=1e-5,
+    approx_order=2,
+    n=1,
+    strategy="center",
+    f0=None,
+    validate_params=True,
+    shots=None,
+    num_directions=1,
+    sampler=_rademacher_sampler,
+    sampler_seed=None,
 ):
     r"""Transform a QNode to compute the SPSA gradient of all gate
     parameters with respect to its inputs. This estimator shifts all parameters
@@ -617,13 +617,13 @@ def _spsa_grad_legacy(
 
         grads = 0
         for rep, _coeffs in enumerate(all_coeffs):
-            res = results[rep * tapes_per_grad: (rep + 1) * tapes_per_grad]
+            res = results[rep * tapes_per_grad : (rep + 1) * tapes_per_grad]
             if r0 is not None:
                 res.insert(0, r0)
             res = qml.math.stack(res)
             grads = (
-                    qml.math.tensordot(res, qml.math.convert_like(_coeffs, res), axes=[[0], [0]])
-                    + grads
+                qml.math.tensordot(res, qml.math.convert_like(_coeffs, res), axes=[[0], [0]])
+                + grads
             )
 
         grads = grads * (1 / num_directions)
@@ -632,9 +632,9 @@ def _spsa_grad_legacy(
         # the device stacks multiple measurement arrays, even if not the same
         # size, resulting in a ragged array. (-> new return type system)
         if (
-                hasattr(grads, "dtype")
-                and grads.dtype is np.dtype("object")
-                and qml.math.ndim(grads[0]) > 0
+            hasattr(grads, "dtype")
+            and grads.dtype is np.dtype("object")
+            and qml.math.ndim(grads[0]) > 0
         ):
             grads = qml.math.moveaxis(
                 qml.math.array([qml.math.hstack(gs) for gs in zip(*grads)]), 0, -1
