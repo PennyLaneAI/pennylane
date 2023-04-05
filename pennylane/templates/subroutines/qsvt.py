@@ -174,7 +174,6 @@ class QSVT(Operation):
 
         Args:
             UA (Operator): the block encoding circuit, specified as a :class:`~.Operator`
-                or quantum function.
             projectors (list[Operator]): a list of projector-controlled phase
                 shift circuits that implement the desired polynomial.
             wires (Iterable): wires that the template acts on
