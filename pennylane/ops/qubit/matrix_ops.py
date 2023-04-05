@@ -407,7 +407,6 @@ class BlockEncode(Operation):
     """Gradient computation method."""
 
     def __init__(self, A, wires, do_queue=True, id=None):
-        # A = qml.math.atleast_2d(A)
         if qml.math.shape(A) == () or qml.math.shape(A) == (1,):
             A = qml.math.reshape(A, [1, 1])
 
