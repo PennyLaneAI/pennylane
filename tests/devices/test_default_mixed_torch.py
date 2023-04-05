@@ -696,23 +696,21 @@ class TestPassthruIntegration:
         assert qml.math.allclose(torch.diagonal(res_b), expected_b, atol=tol, rtol=0)
 
 
-class TestHighLevelIntegration:
-    """Tests for integration with higher level components of PennyLane."""
 
-    def test_template_integration(self):
-        """Test that a PassthruQNode default.mixed.torch works with templates."""
-        dev = qml.device("default.mixed", wires=2)
+def test_template_integration():
+    """Test that a PassthruQNode default.mixed.torch works with templates."""
+    dev = qml.device("default.mixed", wires=2)
 
-        @qml.qnode(dev, interface="torch", diff_method="backprop")
-        def circuit(weights):
-            qml.templates.StronglyEntanglingLayers(weights, wires=[0, 1])
-            return qml.expval(qml.PauliZ(0))
+    @qml.qnode(dev, interface="torch", diff_method="backprop")
+    def circuit(weights):
+        qml.templates.StronglyEntanglingLayers(weights, wires=[0, 1])
+        return qml.expval(qml.PauliZ(0))
 
-        shape = qml.templates.StronglyEntanglingLayers.shape(n_layers=2, n_wires=2)
-        weights = torch.tensor(np.random.random(shape), dtype=torch.float64, requires_grad=True)
+    shape = qml.templates.StronglyEntanglingLayers.shape(n_layers=2, n_wires=2)
+    weights = torch.tensor(np.random.random(shape), dtype=torch.float64, requires_grad=True)
 
-        res = circuit(weights)
-        res.backward()
+    res = circuit(weights)
+    res.backward()
 
-        assert isinstance(weights.grad, torch.Tensor)
-        assert weights.grad.shape == weights.shape
+    assert isinstance(weights.grad, torch.Tensor)
+    assert weights.grad.shape == weights.shape
