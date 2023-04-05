@@ -23,7 +23,6 @@ from pennylane.devices.qubit.preprocess import validate_and_expand_adjoint
 class TestAdjointJacobian:
     """Tests for adjoint_jacobian"""
 
-
     @pytest.mark.autograd
     @pytest.mark.parametrize("theta", np.linspace(-2 * np.pi, 2 * np.pi, 7))
     @pytest.mark.parametrize("G", [qml.RX, qml.RY, qml.RZ])
