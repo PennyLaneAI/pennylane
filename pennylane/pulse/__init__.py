@@ -68,6 +68,7 @@ Hardware Compatible Hamiltonians
     :toctree: api
 
     ~rydberg_interaction
+    ~transmon_interaction
     ~drive
 
 

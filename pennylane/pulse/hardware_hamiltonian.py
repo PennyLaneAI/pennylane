@@ -38,7 +38,9 @@ def drive(amplitude, phase, wires):
 
     where :math:`\Omega` and :math:`\phi` correspond to the amplitude and phase of the
     electromagnetic driving field and :math:`j` corresponds to the wire index. We are describing the Hamiltonian
-    in terms of ladder operators :math:`\sigma^\pm = \frac{1}{2}(\sigma_x \pm i \sigma_y)`.
+    in terms of ladder operators :math:`\sigma^\pm = \frac{1}{2}(\sigma_x \pm i \sigma_y)`. Note that it is common
+    to describe the exponent of the phase factor as :math:`\exp(i(\phi(t) + \nu t))`, where :math:`\nu` is the
+    drive frequency (see theoretical background below).
 
     Common hardware systems are superconducting qubits and neutral atoms. The electromagnetic field of the drive is
     realized by microwave and laser fields, respectively, operating at very different wavelengths.
@@ -194,17 +196,20 @@ def drive(amplitude, phase, wires):
 
             H_d = qml.pulse.drive(amplitude, phase, wires)
 
+            # detuning term
+            H_z = qml.dot([-3*np.pi/2/4]*len(wires), [qml.PauliZ(i) for i in wires])
+
             dev = qml.device("default.qubit.jax", wires=wires)
             @qml.qnode(dev, interface="jax")
             def circuit(params):
-                qml.evolve(H_i + H_d)(params, t=[0, 10])
+                qml.evolve(H_i + H_z + H_d)(params, t=[0, 10])
                 return qml.expval(qml.PauliZ(1))
 
         >>> params = [2.4]
         >>> circuit(params)
-        Array(0.96893251, dtype=float64)
+        Array(0.6962041, dtype=float64)
         >>> jax.grad(circuit)(params)
-        [Array(-0.0355582, dtype=float64)]
+        [Array(1.75825695, dtype=float64)]
     """
     if isinstance(wires, int):
         wires = [wires]
@@ -226,11 +231,7 @@ def drive(amplitude, phase, wires):
 
     observables = [drive_x_term, drive_y_term]
 
-    # We convert the pulse data into a list of ``HardwarePulse`` objects
-    frequency = None
-    pulses = [HardwarePulse(amplitude, phase, frequency, wires)]
-
-    return HardwareHamiltonian(coeffs, observables, pulses=pulses)
+    return HardwareHamiltonian(coeffs, observables)
 
 
 class HardwareHamiltonian(ParametrizedHamiltonian):
@@ -278,7 +279,9 @@ class HardwareHamiltonian(ParametrizedHamiltonian):
                 new_settings = None
             else:
                 new_settings = self.settings + other.settings
+
             new_pulses = self.pulses + other.pulses
+
             new_ops = self.ops + other.ops
             new_coeffs = self.coeffs + other.coeffs
             return HardwareHamiltonian(

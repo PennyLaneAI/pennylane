@@ -53,9 +53,9 @@ class TestTransmonInteraction:
     def test_wires_is_none(self):
         """Test that when wires is None the wires correspond to an increasing list of values with
         the same as the unique connections."""
-        Hd = transmon_interaction(connections=connections, omega=0.3, g=0.3, anharmonicity=0.3)
+        Hd = transmon_interaction(connections=connections, omega=[0.3], g=0.3, anharmonicity=0.3)
 
-        assert Hd.wires == Wires(np.unique(connections))
+        assert Hd.wires == Wires.all_wires(connections + [0])
 
     def test_coeffs(self):
         """Test that the generated coefficients are correct."""
@@ -73,28 +73,28 @@ class TestTransmonInteraction:
     def test_d_neq_2_raises_error(self):
         """Test that setting d != 2 raises error"""
         with pytest.raises(NotImplementedError, match="Currently only supporting qubits."):
-            _ = transmon_interaction(connections=connections, omega=0.1, g=0.2, d=3)
+            _ = transmon_interaction(connections=connections, omega=[0.1], g=0.2, d=3)
 
-    def test_different_lengths_raises_error(self):
-        """Test that using wires that are not fully contained by the connections raises an error"""
-        with pytest.raises(ValueError, match="There are wires in connections"):
-            _ = transmon_interaction(connections=connections, omega=0.1, g=0.2, wires=[0])
+    def test_float_omega_with_no_explicit_wires(self):
+        """Test that raises warning when omega is float and wires not explicit"""
+        with pytest.raises(ValueError, match="Cannot instantiate wires automatically."):
+            _ = transmon_interaction(connections=connections, omega=0.1, g=0.2)
 
-    def test_wrong_omega_len_raises_error(self):
-        """Test that providing list of omegas with wrong length raises error"""
-        with pytest.raises(ValueError, match="Number of qubit frequencies omega"):
-            _ = transmon_interaction(
-                connections=connections,
-                omega=[0.1, 0.2],
-                g=0.2,
-            )
+    # def test_wrong_omega_len_raises_error(self):
+    #     """Test that providing list of omegas with wrong length raises error"""
+    #     with pytest.raises(ValueError, match="Number of qubit frequencies omega"):
+    #         _ = transmon_interaction(
+    #             connections=connections,
+    #             omega=[0.1, 0.2],
+    #             g=0.2,
+    #         )
 
     def test_wrong_g_len_raises_error(self):
         """Test that providing list of g with wrong length raises error"""
         with pytest.raises(ValueError, match="Number of coupling terms"):
             _ = transmon_interaction(
                 connections=connections,
-                omega=0.1,
+                omega=[0.1],
                 g=[0.2, 0.2],
             )
 

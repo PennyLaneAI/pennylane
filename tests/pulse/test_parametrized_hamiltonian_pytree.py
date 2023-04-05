@@ -47,6 +47,7 @@ def f2(p, t):
 PH = qml.dot([1, f1, f2], [qml.PauliX(0), qml.PauliY(1), qml.Hadamard(3)])
 
 RH = drive(amplitude=f1, phase=f2, wires=[0, 1, 2])
+RH += qml.dot([1.0], [qml.PauliZ(0)])
 
 # Hamiltonians and the parameters for the individual coefficients
 HAMILTONIANS_WITH_COEFF_PARAMETERS = [
@@ -64,20 +65,21 @@ HAMILTONIANS_WITH_COEFF_PARAMETERS = [
 class TestParametrizedHamiltonianPytree:
     """Unit tests for the ParametrizedHamiltonianPytree class."""
 
-    @pytest.mark.parametrize("H, fn, coeffs, params", HAMILTONIANS_WITH_COEFF_PARAMETERS)
-    def test_attributes(self, H, fn, coeffs, params):
+    @pytest.mark.parametrize("H, fn, coeffs_callable, params", HAMILTONIANS_WITH_COEFF_PARAMETERS)
+    def test_attributes(self, H, fn, coeffs_callable, params):
         """Test that the attributes of the ParametrizedHamiltonianPytree class are initialized
         correctly."""
+        from jax.experimental import sparse
 
         H_pytree = ParametrizedHamiltonianPytree.from_hamiltonian(
             H, dense=False, wire_order=[2, 3, 1, 0]
         )
 
-        # assert isinstance(H_pytree.mat_fixed, sparse.CSR)
+        assert isinstance(H_pytree.mat_fixed, sparse.CSR)
         assert isinstance(H_pytree.mats_parametrized, tuple)
         assert qml.math.allclose(
             [c(p, 2) for c, p in zip(H_pytree.coeffs_parametrized, params)],
-            [c(p, 2) for c, p in zip(coeffs, params)],
+            [c(p, 2) for c, p in zip(coeffs_callable, params)],
             atol=1e-7,
         )
         assert H_pytree.reorder_fn == fn
@@ -107,6 +109,7 @@ class TestParametrizedHamiltonianPytree:
         assert qml.math.allclose(
             res.coeffs,
             (
+                1.0,
                 amplitude_and_phase(jnp.cos, f1, f2)(params, time),
                 amplitude_and_phase(jnp.sin, f1, f2)(params, time),
             ),
