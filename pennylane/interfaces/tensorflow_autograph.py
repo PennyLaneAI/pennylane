@@ -44,7 +44,9 @@ def _flatten_nested_list(x):
     return reduce(lambda a, y: a + _flatten_nested_list(y), x, [])
 
 
-def execute(tapes, device, execute_fn, gradient_fn, gradient_kwargs, _n=1, max_diff=2, mode=None):
+def _execute_legacy(
+    tapes, device, execute_fn, gradient_fn, gradient_kwargs, _n=1, max_diff=2, mode=None
+):
     """Execute a batch of tapes with TensorFlow parameters on a device.
 
     Args:
@@ -72,19 +74,6 @@ def execute(tapes, device, execute_fn, gradient_fn, gradient_kwargs, _n=1, max_d
         list[list[tf.Tensor]]: A nested list of tape results. Each element in
         the returned list corresponds in order to the provided tapes.
     """
-    if qml.active_return():
-        grad_on_execution = mode in ["forward"]
-
-        return _execute_new(
-            tapes,
-            device,
-            execute_fn,
-            gradient_fn,
-            gradient_kwargs,
-            _n=_n,
-            max_diff=max_diff,
-            grad_on_execution=grad_on_execution,
-        )
 
     all_params = []
     parameters = []
@@ -216,7 +205,7 @@ def execute(tapes, device, execute_fn, gradient_fn, gradient_kwargs, _n=1, max_d
                         # This recursion, coupled with the fact that the gradient transforms
                         # are differentiable, allows for arbitrary order differentiation.
                         vjps = processing_fn(
-                            execute(
+                            _execute_legacy(
                                 vjp_tapes,
                                 device,
                                 execute_fn,
@@ -269,7 +258,7 @@ def execute(tapes, device, execute_fn, gradient_fn, gradient_kwargs, _n=1, max_d
     return _execute(*all_params)
 
 
-def _execute_new(
+def execute(
     tapes,
     device,
     execute_fn,
@@ -305,6 +294,20 @@ def _execute_new(
         list[list[tf.Tensor]]: A nested list of tape results. Each element in
         the returned list corresponds in order to the provided tapes.
     """
+    if not qml.active_return():
+        mode = "forward" if grad_on_execution else "backward"
+
+        return _execute_legacy(
+            tapes,
+            device,
+            execute_fn,
+            gradient_fn,
+            gradient_kwargs,
+            _n=_n,
+            max_diff=max_diff,
+            mode=mode,
+        )
+    print(grad_on_execution)
     all_params = []
     parameters = []
     lens = []
@@ -334,7 +337,6 @@ def _execute_new(
                 o_types.append(tf.float64)
 
         output_types.extend(o_types * num_shot_copies)
-
     total_measurements = sum(len(tape.measurements) for tape in tapes)
 
     if grad_on_execution:
@@ -467,7 +469,6 @@ def _execute_new(
                         # This is where the magic happens. Note that we call ``execute``.
                         # This recursion, coupled with the fact that the gradient transforms
                         # are differentiable, allows for arbitrary order differentiation.
-                        mode = "forward" if grad_on_execution else "backward"
 
                         vjps = processing_fn(
                             execute(
@@ -478,7 +479,7 @@ def _execute_new(
                                 gradient_kwargs,
                                 _n=_n + 1,
                                 max_diff=max_diff,
-                                mode=mode,
+                                grad_on_execution=grad_on_execution,
                             ),
                             nums=output_sizes,
                         )

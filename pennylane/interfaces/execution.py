@@ -61,7 +61,7 @@ SUPPORTED_INTERFACES = list(INTERFACE_MAP)
 
 
 def _adjoint_jacobian_expansion(
-    tapes: Sequence[QuantumTape], mode: str, interface: str, max_expansion: int
+    tapes: Sequence[QuantumTape], grad_on_execution: bool, interface: str, max_expansion: int
 ):
     """Performs adjoint jacobian specific expansion.  Expands so that every
     trainable operation has a generator.
@@ -69,7 +69,7 @@ def _adjoint_jacobian_expansion(
     TODO: Let the device specify any gradient-specific expansion logic.  This
     function will be removed once the device-support pipeline is improved.
     """
-    if mode == "forward" and INTERFACE_MAP[interface] == "jax":
+    if grad_on_execution and INTERFACE_MAP[interface] == "jax":
         # qml.math.is_trainable doesn't work with jax on the forward pass
         non_trainable = qml.operation.has_nopar
     else:
@@ -469,10 +469,7 @@ def execute(
             if not tf.executing_eagerly() or "autograph" in interface:
                 from .tensorflow_autograph import execute as _execute
 
-                # TODO: Remove when old interface is deprecated
-                _mode = "forward" if _grad_on_execution else "backward"
-
-                _execute = partial(_execute, mode=_mode)
+                _execute = partial(_execute, grad_on_execution=_grad_on_execution)
 
             else:
                 from .tensorflow import execute as _execute
@@ -715,7 +712,8 @@ def _execute_legacy(
             if not tf.executing_eagerly() or "autograph" in interface:
                 from .tensorflow_autograph import execute as _execute
 
-                _execute = partial(_execute, mode=_mode)
+                _grad_on_execution = True if _mode == "forward" else False
+                _execute = partial(_execute, grad_on_execution=_grad_on_execution)
             else:
                 from .tensorflow import execute as _execute
         elif mapped_interface == "torch":
@@ -746,12 +744,12 @@ def _get_jax_execute_fn(interface: str, tapes: Sequence[QuantumTape]):
 
     if interface == "jax-jit":
         if qml.active_return():
-            from .jax_jit_tuple import execute_tuple as _execute
+            from .jax_jit_tuple import execute as _execute
         else:
-            from .jax_jit import execute as _execute
+            from .jax_jit import execute_legacy as _execute
     else:
         if qml.active_return():
-            from .jax import execute_new as _execute
-        else:
             from .jax import execute as _execute
+        else:
+            from .jax import execute_legacy as _execute
     return _execute

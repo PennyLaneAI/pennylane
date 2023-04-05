@@ -316,7 +316,7 @@ class batch_transform:
             if "mode" in execute_kwargs:
                 mode = execute_kwargs.pop("mode")
                 if not qml.active_return():
-                    execute_kwargs["grad_on_execution"] == "forward" if mode != "best" else "best"
+                    execute_kwargs["grad_on_execution"] = "forward" if mode != "best" else "best"
 
             res = qml.execute(
                 tapes,

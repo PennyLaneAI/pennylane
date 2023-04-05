@@ -863,7 +863,7 @@ class QNode:
         if qml.active_return():
             if "mode" in self.execute_kwargs:
                 self.execute_kwargs.pop("mode")
-
+            # pylint: disable=unexpected-keyword-arg
             res = qml.execute(
                 [self.tape],
                 device=self.device,
@@ -901,7 +901,14 @@ class QNode:
             return res
         if "mode" in self.execute_kwargs:
             mode = self.execute_kwargs.pop("mode")
-            self.execute_kwargs["grad_on_execution"] == "forward" if mode != "best" else "best"
+            if mode == "forward":
+                grad_on_execution = True
+            elif mode == "backward":
+                grad_on_execution = False
+            else:
+                grad_on_execution = "best"
+            self.execute_kwargs["grad_on_execution"] = grad_on_execution
+        # pylint: disable=unexpected-keyword-arg
         res = qml.execute(
             [self.tape],
             device=self.device,

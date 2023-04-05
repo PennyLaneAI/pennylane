@@ -134,7 +134,9 @@ def _jac_restructured(jacs, tapes):
     return tuple(jacs_nested)
 
 
-def execute(tapes, device, execute_fn, gradient_fn, gradient_kwargs, _n=1, max_diff=2, mode=None):
+def _execute_legacy(
+    tapes, device, execute_fn, gradient_fn, gradient_kwargs, _n=1, max_diff=2, mode=None
+):
     """Execute a batch of tapes with TensorFlow parameters on a device.
 
     Args:
@@ -163,17 +165,6 @@ def execute(tapes, device, execute_fn, gradient_fn, gradient_kwargs, _n=1, max_d
         the returned list corresponds in order to the provided tapes.
     """
     # pylint: disable=unused-argument
-
-    if qml.active_return():
-        return _execute_new(
-            tapes,
-            device,
-            execute_fn,
-            gradient_fn,
-            gradient_kwargs,
-            _n=_n,
-            max_diff=max_diff,
-        )
 
     parameters = []
     params_unwrapped = []
@@ -293,7 +284,7 @@ def execute(tapes, device, execute_fn, gradient_fn, gradient_kwargs, _n=1, max_d
     return _execute(*parameters)
 
 
-def _execute_new(tapes, device, execute_fn, gradient_fn, gradient_kwargs, _n=1, max_diff=2):
+def execute(tapes, device, execute_fn, gradient_fn, gradient_kwargs, _n=1, max_diff=2):
     """Execute a batch of tapes with TensorFlow parameters on a device.
 
     Args:
@@ -319,6 +310,16 @@ def _execute_new(tapes, device, execute_fn, gradient_fn, gradient_kwargs, _n=1, 
         list[list[tf.Tensor]]: A nested list of tape results. Each element in
         the returned list corresponds in order to the provided tapes.
     """
+    if not qml.active_return():
+        return _execute_legacy(
+            tapes,
+            device,
+            execute_fn,
+            gradient_fn,
+            gradient_kwargs,
+            _n=_n,
+            max_diff=max_diff,
+        )
     # pylint: disable=unused-argument
 
     parameters = []
