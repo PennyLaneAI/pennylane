@@ -38,7 +38,7 @@ def _compute_vjp(dy, jacs, device=None):
     return vjps
 
 
-class ExecuteTapes(torch.autograd.Function):
+class ExecuteTapesLegacy(torch.autograd.Function):
     """The signature of this ``torch.autograd.Function`` is designed to
     work around Torch restrictions.
 
@@ -196,7 +196,9 @@ class ExecuteTapes(torch.autograd.Function):
         return (None,) + tuple(vjps)
 
 
-def execute(tapes, device, execute_fn, gradient_fn, gradient_kwargs, _n=1, max_diff=2, mode=None):
+def _execute_legacy(
+    tapes, device, execute_fn, gradient_fn, gradient_kwargs, _n=1, max_diff=2, mode=None
+):
     """Execute a batch of tapes with Torch parameters on a device.
 
     This function may be called recursively, if ``gradient_fn`` is a differentiable
@@ -227,17 +229,6 @@ def execute(tapes, device, execute_fn, gradient_fn, gradient_kwargs, _n=1, max_d
         list[list[torch.Tensor]]: A nested list of tape results. Each element in
         the returned list corresponds in order to the provided tapes.
     """
-    # pylint: disable=unused-argument
-    if qml.active_return():
-        return _execute_new(
-            tapes,
-            device,
-            execute_fn,
-            gradient_fn,
-            gradient_kwargs,
-            _n=_n,
-            max_diff=max_diff,
-        )
 
     parameters = []
     for tape in tapes:
@@ -255,7 +246,7 @@ def execute(tapes, device, execute_fn, gradient_fn, gradient_kwargs, _n=1, max_d
         "_n": _n,
         "max_diff": max_diff,
     }
-    return ExecuteTapes.apply(kwargs, *parameters)
+    return ExecuteTapesLegacy.apply(kwargs, *parameters)
 
 
 def pytreeify(cls):
@@ -306,7 +297,7 @@ def _compute_vjps_new(dys, jacs, multi_measurements):
 
 
 @pytreeify
-class ExecuteTapesNew(torch.autograd.Function):
+class ExecuteTapes(torch.autograd.Function):
     """The signature of this ``torch.autograd.Function`` is designed to
     work around Torch restrictions.
 
@@ -452,7 +443,7 @@ class ExecuteTapesNew(torch.autograd.Function):
         return (None,) + tuple(vjps)
 
 
-def _execute_new(tapes, device, execute_fn, gradient_fn, gradient_kwargs, _n=1, max_diff=1):
+def execute(tapes, device, execute_fn, gradient_fn, gradient_kwargs, _n=1, max_diff=1):
     """Execute a batch of tapes with Torch parameters on a device.
     This function may be called recursively, if ``gradient_fn`` is a differentiable
     transform, and ``_n < max_diff``.
@@ -480,6 +471,17 @@ def _execute_new(tapes, device, execute_fn, gradient_fn, gradient_kwargs, _n=1, 
         the returned list corresponds in order to the provided tapes.
     """
     # pylint: disable=unused-argument
+    if not qml.active_return():
+        return _execute_legacy(
+            tapes,
+            device,
+            execute_fn,
+            gradient_fn,
+            gradient_kwargs,
+            _n=_n,
+            max_diff=max_diff,
+        )
+    # pylint: disable=unused-argument
     parameters = []
     for tape in tapes:
         # set the trainable parameters
@@ -497,7 +499,7 @@ def _execute_new(tapes, device, execute_fn, gradient_fn, gradient_kwargs, _n=1, 
         "max_diff": max_diff,
     }
 
-    return ExecuteTapesNew.apply(kwargs, *parameters)
+    return ExecuteTapes.apply(kwargs, *parameters)
 
 
 def _res_to_torch(r, ctx):

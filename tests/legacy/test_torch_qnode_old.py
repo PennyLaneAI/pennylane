@@ -21,7 +21,7 @@ torch = pytest.importorskip("torch", minversion="1.3")
 from torch.autograd.functional import hessian, jacobian
 
 import pennylane as qml
-from pennylane import QNode, qnode
+from pennylane import qnode
 from pennylane.tape import QuantumScript
 
 qubit_device_and_diff_method = [
