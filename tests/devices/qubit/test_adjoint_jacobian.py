@@ -285,7 +285,8 @@ class TestAdjointJacobian:
 
         grad_D = adjoint_jacobian(qs_valid)
         tapes, fn = qml.gradients.finite_diff(qs)
-        grad_F = fn(qml.execute(tapes, dev, None))
+        results = tuple(qml.devices.qubit.simulate(t) for t in tapes)
+        grad_F = fn(results)
         grad_F = np.squeeze(grad_F)
 
         # gradient has the correct shape and every element is nonzero
