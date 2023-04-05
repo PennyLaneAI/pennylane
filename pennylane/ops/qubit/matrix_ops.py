@@ -470,10 +470,6 @@ class BlockEncode(Operation):
         A = params[0]
         n, m, k = hyperparams["subspace"]
 
-        # if qml.math.get_interface(A) == "tensorflow":
-        #     print(A)
-        #     A = qml.math.cast_like(A, 1j)
-        #     print(A)
 
         if qml.math.sum(qml.math.shape(A)) <= 2:
             col1 = qml.math.vstack([A, qml.math.sqrt(1 - A * qml.math.conj(A))])
