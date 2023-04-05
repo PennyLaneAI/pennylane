@@ -18,11 +18,9 @@ Unit tests for the qubit matrix-based operations.
 import numpy as np
 import pytest
 
-
 from gate_data import H, I, S, T, X, Z
 
 import pennylane as qml
-from pennylane import numpy as pnp
 from pennylane import numpy as pnp
 from pennylane.operation import DecompositionUndefinedError
 from pennylane.wires import Wires
@@ -634,11 +632,6 @@ class TestBlockEncode:
             (1, 0, [[1, 0], [0, -1]]),
             (0.3, 0, [[0.3, 0.9539392], [0.9539392, -0.3]]),
             (
-                0.1,
-                range(2),
-                [[0.1, 0.99498744, 0, 0], [0.99498744, -0.1, 0, 0], [0, 0, 1, 0], [0, 0, 0, 1]],
-            ),
-            (
                 [[0.1, 0.2], [0.3, 0.4]],
                 range(2),
                 [
@@ -649,20 +642,9 @@ class TestBlockEncode:
                 ],
             ),
             (
-                [[0.1, 0.2, 0.3], [0.3, 0.4, 0.2], [0.1, 0.2, 0.3]],
-                range(3),
-                [
-                    [
-                        [0.1, 0.2, 0.3, 0.91808609, -0.1020198, -0.08191391, 0.0, 0.0],
-                        [0.3, 0.4, 0.2, -0.1020198, 0.83017102, -0.1020198, 0.0, 0.0],
-                        [0.1, 0.2, 0.3, -0.08191391, -0.1020198, 0.91808609, 0.0, 0.0],
-                        [0.93589192, -0.09400608, -0.07258899, -0.1, -0.3, -0.1, 0.0, 0.0],
-                        [-0.09400608, 0.85841586, -0.11952016, -0.2, -0.4, -0.2, 0.0, 0.0],
-                        [-0.07258899, -0.11952016, 0.87203542, -0.3, -0.2, -0.3, 0.0, 0.0],
-                        [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0],
-                        [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0],
-                    ],
-                ],
+                0.1,
+                range(2),
+                [[0.1, 0.99498744, 0, 0], [0.99498744, -0.1, 0, 0], [0, 0, 1, 0], [0, 0, 0, 1]],
             ),
         ],
     )
@@ -832,25 +814,6 @@ class TestBlockEncode:
     #     return qml.expval(qml.PauliZ(wires=0))
 
     # assert np.allclose(qml.grad(circuit)(input_matrix),expected_result)
-
-    @pytest.mark.parametrize(
-        ("input_matrix", "wires"),
-        [
-            (1, 0),
-            (0.3, 0),
-            (0.1, range(2)),
-            (
-                [[0.1, 0.2], [0.3, 0.4]],
-                range(2),
-            ),
-            ([[0.1, 0.2, 0.3], [0.3, 0.4, 0.2], [0.1, 0.2, 0.3]], range(3)),
-        ],
-    )
-    def test_adjoint(self, input_matrix, wires):
-        mat = qml.matrix(qml.BlockEncode(input_matrix, wires))
-        adj = qml.matrix(qml.adjoint(qml.BlockEncode(input_matrix, wires)))
-        assert np.allclose(np.eye(len(mat)), mat @ adj)
-
     @pytest.mark.parametrize(
         ("input_matrix", "wires", "output_value"),
         [

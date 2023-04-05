@@ -15,13 +15,13 @@
 Contains the QSVT template and qsvt wrapper function.
 """
 # pylint: disable=too-many-arguments
+import copy
 import pennylane as qml
 from pennylane.queuing import QueuingManager
 from pennylane.ops import BlockEncode, PCPhase
 from pennylane.ops.op_math import adjoint
 from pennylane.operation import AnyWires, Operation
 from pennylane import numpy as np
-import copy
 
 
 def qsvt(A, angles, wires, convention=None):
@@ -73,7 +73,7 @@ def qsvt(A, angles, wires, convention=None):
         global_phase = (len(angles) - 1) % 4
 
         if global_phase:
-            qml.exp(qml.Identity(wires=wires), 0.5j * np.pi *  (4 - global_phase))
+            qml.exp(qml.Identity(wires=wires), 0.5j * np.pi * (4 - global_phase))
             qml.exp(qml.Identity(wires=wires), 1j * (3 * np.pi / 2))
 
         elif global_phase == 2:

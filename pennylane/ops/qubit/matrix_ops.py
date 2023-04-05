@@ -400,28 +400,17 @@ class BlockEncode(Operation):
     num_wires = AnyWires
     """int: Number of wires that the operator acts on."""
 
-    ndim_params = (2,)
-    """tuple[int]: Number of dimensions per trainable parameter that the operator depends on."""
-
-    grad_method = None
-    """Gradient computation method."""
-
     def __init__(self, A, wires, do_queue=True, id=None):
-        if qml.math.shape(A) == () or qml.math.shape(A) == (1,):
-            A = qml.math.reshape(A, [1, 1])
-
+        A = qml.math.atleast_2d(A)
         wires = Wires(wires)
-        if pnp.sum(qml.math.shape(A)) <= 2:
+        if pnp.sum(A.shape) <= 2:
             normalization = A if A > 1 else 1
             subspace = (1, 1, 2 ** len(wires))
         else:
-            normalization = qml.math.max(
-                [
-                    norm(A @ qml.math.transpose(qml.math.conj(A)), ord=pnp.inf),
-                    norm(qml.math.transpose(qml.math.conj(A)) @ A, ord=pnp.inf),
-                ]
+            normalization = pnp.max(
+                [norm(A @ pnp.conj(A).T, ord=pnp.inf), norm(pnp.conj(A).T @ A, ord=pnp.inf)]
             )
-            subspace = (*qml.math.shape(A), 2 ** len(wires))
+            subspace = (*A.shape, 2 ** len(wires))
 
         A = A / normalization if normalization > 1 else A
 
@@ -469,7 +458,6 @@ class BlockEncode(Operation):
         A = params[0]
         n, m, k = hyperparams["subspace"]
 
-
         if qml.math.sum(qml.math.shape(A)) <= 2:
             col1 = qml.math.vstack([A, qml.math.sqrt(1 - A * qml.math.conj(A))])
             col2 = qml.math.vstack([qml.math.sqrt(1 - A * qml.math.conj(A)), -qml.math.conj(A)])
@@ -486,10 +474,8 @@ class BlockEncode(Operation):
             )
             col2 = qml.math.vstack(
                 [
-                    qml.math.sqrt_matrix(
-                        qml.math.eye(d1, like=A) - A @ qml.math.transpose(qml.math.conj(A))
-                    ),
-                    -qml.math.transpose(qml.math.conj(A)),
+                    qml.math.sqrt_matrix(qml.math.eye(d1, like=A) - A @ qml.math.conj(A).T),
+                    -qml.math.conj(A).T,
                 ]
             )
 
@@ -501,10 +487,3 @@ class BlockEncode(Operation):
             col2 = qml.math.vstack([qml.math.zeros((n + m, r), like=A), qml.math.eye(r, like=A)])
             u = qml.math.hstack([col1, col2])
         return u
-
-    def adjoint(self):
-        A = self.parameters[0]
-        return BlockEncode(qml.math.transpose(qml.math.conj(A)), wires=self.wires)
-
-    def label(self, decimals=None, base_label=None, cache=None):
-        return super().label(decimals=decimals, base_label=base_label or "BlockEncode", cache=cache)
