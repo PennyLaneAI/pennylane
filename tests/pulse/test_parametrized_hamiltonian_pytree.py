@@ -47,7 +47,7 @@ def f2(p, t):
 PH = qml.dot([1, f1, f2], [qml.PauliX(0), qml.PauliY(1), qml.Hadamard(3)])
 
 RH = drive(amplitude=f1, phase=f2, wires=[0, 1, 2])
-RH += qml.dot([1.], [qml.PauliZ(0)])
+RH += qml.dot([1.0], [qml.PauliZ(0)])
 
 # Hamiltonians and the parameters for the individual coefficients
 HAMILTONIANS_WITH_COEFF_PARAMETERS = [
@@ -109,7 +109,7 @@ class TestParametrizedHamiltonianPytree:
         assert qml.math.allclose(
             res.coeffs,
             (
-                1.,
+                1.0,
                 amplitude_and_phase(jnp.cos, f1, f2)(params, time),
                 amplitude_and_phase(jnp.sin, f1, f2)(params, time),
             ),
