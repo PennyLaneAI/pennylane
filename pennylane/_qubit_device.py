@@ -252,7 +252,7 @@ class QubitDevice(Device):
 
         for shot_tuple in self._shot_vector:
             s2 = s1 + np.prod(shot_tuple)
-            r = self.statistics(circuit, shot_range=[s1, s2], bin_size=shot_tuple.shots)
+            r = self._statistics_legacy(circuit, shot_range=[s1, s2], bin_size=shot_tuple.shots)
 
             if qml.math.get_interface(*r) == "jax":  # pylint: disable=protected-access
                 r = r[0]
@@ -326,7 +326,7 @@ class QubitDevice(Device):
             results = self.shot_vec_statistics(circuit)
 
         else:
-            results = self._statistics_new(circuit)
+            results = self.statistics(circuit)
             single_measurement = len(circuit.measurements) == 1
 
             results = results[0] if single_measurement else tuple(results)
@@ -382,7 +382,7 @@ class QubitDevice(Device):
         if not self.analytic and self._shot_vector is not None:
             results = self._collect_shotvector_results(circuit, counts_exist)
         else:
-            results = self.statistics(circuit=circuit)
+            results = self._statistics_legacy(circuit=circuit)
 
         if not circuit.is_sampled:
             if len(measurements) == 1:
@@ -421,7 +421,7 @@ class QubitDevice(Device):
         """Process measurement results from circuit execution using a device
         with a shot vector and return statistics.
 
-        This is an auxiliary method of execute_new and uses statistics_new.
+        This is an auxiliary method of execute and uses statistics.
 
         When using shot vectors, measurement results for each item of the shot
         vector are contained in a tuple.
@@ -444,7 +444,7 @@ class QubitDevice(Device):
 
         for shot_tuple in self._shot_vector:
             s2 = s1 + np.prod(shot_tuple)
-            r = self._statistics_new(circuit, shot_range=[s1, s2], bin_size=shot_tuple.shots)
+            r = self.statistics(circuit, shot_range=[s1, s2], bin_size=shot_tuple.shots)
 
             # This will likely be required:
             # if qml.math.get_interface(*r) == "jax":  # pylint: disable=protected-access
@@ -646,7 +646,7 @@ class QubitDevice(Device):
         return Wires.all_wires(list_of_wires)
 
     # pylint: disable=too-many-statements
-    def statistics(
+    def _statistics_legacy(
         self, observables=None, shot_range=None, bin_size=None, circuit: QuantumTape = None
     ):  # pragma: no cover
         """Process measurement results from circuit execution and return statistics.
@@ -890,7 +890,7 @@ class QubitDevice(Device):
             samples=self._samples, wire_order=self.wires, shot_range=shot_range, bin_size=bin_size
         )
 
-    def _statistics_new(self, circuit: QuantumTape, shot_range=None, bin_size=None):
+    def statistics(self, circuit: QuantumTape, shot_range=None, bin_size=None):
         """Process measurement results from circuit execution and return statistics.
 
         This includes returning expectation values, variance, samples, probabilities, states, and
