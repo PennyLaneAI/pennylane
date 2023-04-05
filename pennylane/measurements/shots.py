@@ -106,6 +106,10 @@ class Shots:
     >>> shots = Shots((100, 2))
     >>> shots.total_shots, shots.shot_vector
     (102, (ShotCopies(shots=100, copies=1), ShotCopies(shots=2, copies=1)))
+
+    >>> shots = Shots(((100, 2),))
+    >>> shots.total_shots, shots.shot_vector
+    (200, (ShotCopies(shots=100, copies=2),))
     """
 
     total_shots: int = None
@@ -173,4 +177,4 @@ class Shots:
         Returns:
             bool: whether or not shots are partitioned
         """
-        return len(self.shot_vector) > 1 or self.shot_vector[0].copies > 1
+        return self.total_shots and (len(self.shot_vector) > 1 or self.shot_vector[0].copies > 1)
