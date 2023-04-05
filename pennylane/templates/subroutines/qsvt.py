@@ -28,6 +28,8 @@ def qsvt(A, angles, wires, convention=None):
     r"""Performs the
     `quantum singular value transformation <https://arxiv.org/abs/1806.01838>`__ using
     :class:`~.BlockEncode` and :class:`~.PCPhase`.
+    See also `A Grand Unification of Quantum Algorithms <https://arxiv.org/pdf/2105.02859.pdf>`__ and
+    :class:`~.QSVT`__.
 
     Args:
         A (tensor_like): the general :math:`(n \times m)` matrix to be encoded
@@ -36,29 +38,23 @@ def qsvt(A, angles, wires, convention=None):
         convention (string): can be set to "Wx" to convert quantum signal processing angles to QSVT
         angles
 
-    .. details::
-        :title: Usage Details
+    **Example**
 
-        .. code-block:: python
+    >>> dev = qml.device("default.qubit", wires=2)
+    >>> A = [[0.1, 0.2], [0.3, 0.4]]
+    >>> angles = [0.1, 0.2, 0.3]
 
-            dev = qml.device("default.qubit", wires=2)
-            A = [[0.1, 0.2], [0.3, 0.4]]
-            angles = [0.1, 0.2, 0.3]
+    >>> @qml.qnode(dev)
+    >>> def example_circuit(A):
+    ...     qml.qsvt(A, angles, wires=[0, 1])
+    ...     return qml.expval(qml.PauliZ(wires=0))
 
-            @qml.qnode(dev)
-            def example_circuit(A):
-                qml.qsvt(A, angles, wires=[0, 1])
-                return qml.expval(qml.PauliZ(wires=0))
-
-            print(qml.draw(example_circuit)(A))
-
-            0: ─╭QSVT─┤  <Z>
-            1: ─╰QSVT─┤
-
-            print(qml.draw(example_circuit, expansion_strategy="device")(A))
-
-            0: ─╭BlockEncode(M0)─╭∏_ϕ(0.10)─╭BlockEncode(M0)†─╭∏_ϕ(0.20)─╭BlockEncode(M0)─╭∏_ϕ(0.30)─┤  <Z>
-            1: ─╰BlockEncode(M0)─╰∏_ϕ(0.10)─╰BlockEncode(M0)†─╰∏_ϕ(0.20)─╰BlockEncode(M0)─╰∏_ϕ(0.30)─┤
+    >>> print(qml.draw(example_circuit)(A))
+    0: ─╭QSVT─┤  <Z>
+    1: ─╰QSVT─┤
+    >>> print(qml.draw(example_circuit, expansion_strategy="device")(A))
+    0: ─╭BlockEncode(M0)─╭∏_ϕ(0.10)─╭BlockEncode(M0)†─╭∏_ϕ(0.20)─╭BlockEncode(M0)─╭∏_ϕ(0.30)─┤  <Z>
+    1: ─╰BlockEncode(M0)─╰∏_ϕ(0.10)─╰BlockEncode(M0)†─╰∏_ϕ(0.20)─╰BlockEncode(M0)─╰∏_ϕ(0.30)─┤
     """
     if qml.math.shape(A) == () or qml.math.shape(A) == (1,):
         A = qml.math.reshape(A, [1, 1])
@@ -113,7 +109,6 @@ class QSVT(Operation):
 
     Args:
         UA (Operator): the block encoding circuit, specified as an :class:`~.Operator`
-            or quantum function
         projectors (Sequence[Operator]): a list of projector-controlled phase
             shifts that implement the desired polynomial.
         wires (Iterable): the wires the template acts on.
@@ -121,27 +116,23 @@ class QSVT(Operation):
     Raises:
         ValueError: if the input block encoding is not an operator.
 
-    .. details::
-        :title: Usage Details
+    **Example**
 
-        .. code-block:: python
+    >>> dev = qml.device("default.qubit", wires=2)
+    >>> A = [[0.1]]
+    >>> blckencode = qml.BlockEncode(A, wires=[0, 1])
+    >>> lst_phis = [qml.PCPhase(i + 0.1, dim=1, wires=[0, 1]) for i in range(3)]
 
-            dev = qml.device("default.qubit", wires=2)
-            A = [[0.1]]
-            blckencode = qml.BlockEncode(A, wires=[0, 1])
-            lst_phis = [qml.PCPhase(i + 0.1, dim=1, wires=[0, 1]) for i in range(3)]
+    >>> @qml.qnode(dev)
+    >>> def example_circuit(A):
+    ...     qml.QSVT(blckencode, lst_phis, wires=[0, 1])
+    ...     return qml.expval(qml.PauliZ(wires=0))
 
-            @qml.qnode(dev)
-            def example_circuit(A):
-                qml.QSVT(blckencode, lst_phis, wires=[0, 1])
-                return qml.expval(qml.PauliZ(wires=0))
-
-            print(qml.matrix(example_circuit)(A))
-
-            [[-0.11-0.01j -0.58+0.8j   0.  +0.j    0.  +0.j  ]
-             [ 0.45+0.89j -0.11-0.01j  0.  +0.j    0.  +0.j  ]
-             [ 0.  +0.j    0.  +0.j    1.  +0.j    0.  +0.j  ]
-             [ 0.  +0.j    0.  +0.j    0.  +0.j    1.  +0.j  ]]
+    >>> print(qml.matrix(example_circuit)(A))
+    [[-0.11-0.01j -0.58+0.8j   0.  +0.j    0.  +0.j  ]
+        [ 0.45+0.89j -0.11-0.01j  0.  +0.j    0.  +0.j  ]
+        [ 0.  +0.j    0.  +0.j    1.  +0.j    0.  +0.j  ]
+        [ 0.  +0.j    0.  +0.j    0.  +0.j    1.  +0.j  ]]
     """
 
     num_wires = AnyWires
