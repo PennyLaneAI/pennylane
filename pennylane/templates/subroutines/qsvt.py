@@ -121,11 +121,11 @@ class QSVT(Operation):
     >>> dev = qml.device("default.qubit", wires=2)
     >>> A = [[0.1]]
     >>> blckencode = qml.BlockEncode(A, wires=[0, 1])
-    >>> lst_phis = [qml.PCPhase(i + 0.1, dim=1, wires=[0, 1]) for i in range(3)]
+    >>> angles = [qml.PCPhase(i + 0.1, dim=1, wires=[0, 1]) for i in range(3)]
 
     >>> @qml.qnode(dev)
     >>> def example_circuit(A):
-    ...     qml.QSVT(blckencode, lst_phis, wires=[0, 1])
+    ...     qml.QSVT(blckencode, angles, wires=[0, 1])
     ...     return qml.expval(qml.PauliZ(wires=0))
 
     >>> print(qml.matrix(example_circuit)(A))
