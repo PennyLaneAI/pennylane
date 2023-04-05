@@ -112,7 +112,7 @@ class QSVT(Operation):
 
     Args:
         UA (Operator): the block encoding circuit, specified as an :class:`~.Operator`
-            or quantum function.
+            or quantum function
         projectors (Sequence[Operator]): a list of projector-controlled phase
             shifts that implement the desired polynomial.
         wires (Iterable): the wires the template acts on.
