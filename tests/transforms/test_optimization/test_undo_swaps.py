@@ -38,7 +38,7 @@ class TestUndoSwaps:
         tape = qml.tape.make_qscript(transformed_qfunc)()
         res = qml.device("default.qubit", wires=2).execute(tape)
         assert len(tape.operations) == 2
-        assert np.allclose(res[0][0], 0.5)
+        assert np.allclose(res[0], 0.5)
 
     def test_two_qubits_gates_transform(self):
         """Test that a two-qubit gate changes correctly with a SWAP."""
@@ -54,7 +54,7 @@ class TestUndoSwaps:
         tape = qml.tape.make_qscript(transformed_qfunc)()
         res = qml.device("default.qubit", wires=2).execute(tape)
         assert len(tape.operations) == 2
-        assert np.allclose(res[0][2], 1.0)
+        assert np.allclose(res[2], 1.0)
 
     def test_templates_transform(self):
         """Test that a template changes correctly with a SWAP."""
