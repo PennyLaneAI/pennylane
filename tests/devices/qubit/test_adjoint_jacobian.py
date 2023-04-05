@@ -308,9 +308,9 @@ class TestAdjointJacobian:
         qs_valid = validate_and_expand_adjoint(qs)
 
         grad_D = adjoint_jacobian(qs_valid)
-        qml.enable_return()
-        grad_F = dev.adjoint_jacobian(qs)
-        qml.disable_return()
+        tapes, fn = qml.gradients.finite_diff(qs)
+        results = tuple(qml.devices.qubit.simulate(t) for t in tapes)
+        grad_F = fn(results)
 
         assert np.allclose(grad_D, grad_F, atol=tol, rtol=0)
 
