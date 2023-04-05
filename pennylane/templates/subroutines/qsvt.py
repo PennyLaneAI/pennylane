@@ -36,7 +36,6 @@ def qsvt(A, angles, wires, convention=None):
         angles (tensor_like): a list of angles by which to shift to obtain the desired polynomial
         wires (Iterable): the wires the template acts on
         convention (string): can be set to "Wx" to convert quantum signal processing angles to QSVT
-        angles
 
     **Example**
 
@@ -154,7 +153,7 @@ class QSVT(Operation):
 
     @staticmethod
     def compute_decomposition(
-        UA, projectors, wires, **hyperparameters
+        UA, projectors, **hyperparameters
     ):  # pylint: disable=arguments-differ
         r"""Representation of the operator as a product of other operators.
 
