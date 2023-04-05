@@ -700,10 +700,6 @@ class TestBlockEncode:
         with pytest.raises(ValueError, match=msg):
             op = qml.BlockEncode(input_matrix, wires)
 
-    # TODO: add tensorflow support
-    # def test_blockencode_tf(self):
-    #     """Test that the BlockEncode operator matrix is correct for tf."""
-
     @pytest.mark.torch
     @pytest.mark.parametrize(
         ("input_matrix", "wires", "output_matrix"),
@@ -790,61 +786,6 @@ class TestBlockEncode:
             return qml.expval(qml.PauliZ(wires=0))
 
         assert np.allclose(qml.grad(circuit)(input_matrix), expected_result)
-
-    # TODO: add jax tests
-    # @pytest.mark.jax
-    # @pytest.mark.parametrize(
-    #     (
-    #         "device_type",
-    #         "wires",
-    #         "input_matrix",
-    #         "expected_result",
-    #     ),  # expected_results calculated manually
-    #     [
-    #         ("default.qubit.autograd", range(1), pnp.array(0.3), 4 * 0.3),
-    #         ("default.qubit.autograd", range(2), pnp.diag([0.2, 0.3]), 4 * pnp.diag([0.2, 0])),
-    #     ],
-    # )
-    # def test_blockencode_grad_jax(self, device_type, wires, input_matrix, expected_result):
-    #     """Test that block encode is differentiable when using jax."""
-    #     import jax
-    #     import jax.numpy as jnp
-
-    #     input_matrix = jnp.array(input_matrix)
-    #     expected_result = jnp.array(expected_result)
-
-    #     dev = qml.device(device_type, wires=wires)
-
-    #     @qml.qnode(dev)
-    #     def circuit(input_matrix):
-    #         qml.BlockEncode(input_matrix, wires=wires)
-    #         return qml.expval(qml.PauliZ(wires=0))
-
-    #     grad = jax.grad(circuit, argnums=0)(input_matrix)
-    #     assert np.allclose(grad, expected_result)
-
-    # TODO: add tensorflow support
-    # @pytest.mark.parametrize(
-    #     ("device_type", "wires", "input_matrix", "expected_result"), #expected_results calculated manually
-    #     [
-    #         ("default.qubit.tf", range(1), pnp.array(0.3), 4*0.3),
-    #         ("default.qubit.tf", range(2), pnp.diag([0.2, 0.3]), 4*pnp.diag([0.2,0])),
-    #     ],
-    # )
-    # def test_blockencode_tf(self, device_type, wires, input_matrix, expected_result):
-
-    #     import tensorflow as tf
-
-    #     input_matrix = tf.Variable(input_matrix)
-
-    # dev = qml.device(device_type, wires=wires)
-
-    # @qml.qnode(dev)
-    # def circuit(input_matrix):
-    #     qml.BlockEncode(input_matrix, wires=wires)
-    #     return qml.expval(qml.PauliZ(wires=0))
-
-    # assert np.allclose(qml.grad(circuit)(input_matrix),expected_result)
 
     @pytest.mark.parametrize(
         ("input_matrix", "wires"),
