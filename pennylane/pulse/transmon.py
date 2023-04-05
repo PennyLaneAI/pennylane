@@ -71,15 +71,16 @@ def transmon_interaction(
         :func:`~.drive`
 
     Args:
-        connections (list[tuple(int)]): List of connections ``(i, j)`` between qubits i and j.
         omega (Union[float, list[float]]): List of dressed qubit frequencies in GHz.
             When passing a single float all qubits are assumed to have that same frequency.
+        connections (list[tuple(int)]): List of connections ``(i, j)`` between qubits i and j.
         g (Union[float, list[float]]): List of coupling strengths in GHz. Needs to match the length of ``connections``.
             When passing a single float need explicit ``wires``.
         anharmonicity (Union[float, list[float]]): List of anharmonicities in GHz. Ignored when ``d=2``.
             When passing a single float all qubits are assumed to have that same anharmonicity.
-        wires (list): Optional, defaults to the unique wires in ``connections`` when set to ``None``. When passing explicit ``wires``,
-            needs to at least contain all unique wires in ``connections`` and can be used to initiate additional, unconnected qubits.
+        wires (list): Optional, defaults to ``range(len(omega))`` when set to ``None``. When passing explicit ``wires``,
+            needs to be of the same length as omega. Note that there can be additional wires in the resulting operator from
+            the ``connections``, which are treated independently.
         d (int): Local Hilbert space dimension. Defaults to ``d=2`` and is currently the only supported value.
 
     Returns:
