@@ -171,7 +171,7 @@ class TestOperations:
                 lambda self, x, **kwargs: call_history.extend(x + kwargs.get("rotations", [])),
             )
             m.setattr(QutritDevice, "analytic_probability", lambda *args: None)
-            m.setattr(QutritDevice, "statistics", lambda self, *args, **kwargs: 0)
+            m.setattr(QutritDevice, "statistics", lambda self, *args, **kwargs: [0])
             dev = mock_qutrit_device()
             dev.execute(tape)
 
@@ -228,7 +228,7 @@ class TestOperations:
 
         with monkeypatch.context() as m:
             m.setattr(QutritDevice, "apply", lambda self, x, **kwargs: call_history.update(kwargs))
-            m.setattr(QutritDevice, "statistics", lambda self, *args, **kwargs: 0)
+            m.setattr(QutritDevice, "statistics", lambda self, *args, **kwargs: [0])
             dev = mock_qutrit_device()
             dev.execute(tape, hash=tape.graph.hash)
 
