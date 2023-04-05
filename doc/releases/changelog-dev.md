@@ -134,6 +134,9 @@
   This allows devices that inherit from `QubitDevice` to override and customize their definition of diagonalizing gates.
   [(#3938)](https://github.com/PennyLaneAI/pennylane/pull/3938)
 
+* Composite and `SProd` operator data is now flat.
+  [(#3958)](https://github.com/PennyLaneAI/pennylane/pull/3958)
+
 <h3>Breaking changes</h3>
 
 * Both JIT interfaces are not compatible with Jax `>0.4.3`, we raise an error for those versions.
