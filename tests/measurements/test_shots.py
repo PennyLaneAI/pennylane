@@ -99,7 +99,9 @@ class TestShotsConstruction:
         with pytest.raises(AttributeError, match="Shots is an immutable class"):
             shots.total_shots = 20
 
-    @pytest.mark.parametrize("shots,expected", [(None, False), (100, False), ([1, 2], True), [[100], False]])
+    @pytest.mark.parametrize(
+        "shots,expected", [(None, False), (100, False), ([1, 2], True), [[100], False]]
+    )
     def test_has_partitioned_shots(self, shots, expected):
         """Tests the has_partitioned_shots method."""
         assert Shots(shots).has_partitioned_shots is expected

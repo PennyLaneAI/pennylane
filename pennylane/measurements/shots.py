@@ -177,4 +177,6 @@ class Shots:
         Returns:
             bool: whether or not shots are partitioned
         """
-        return self.total_shots and (len(self.shot_vector) > 1 or self.shot_vector[0].copies > 1)
+        if self.total_shots is None:
+            return False
+        return len(self.shot_vector) > 1 or self.shot_vector[0].copies > 1
