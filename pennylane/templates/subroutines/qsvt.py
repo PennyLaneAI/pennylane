@@ -114,7 +114,7 @@ class QSVT(Operation):
         wires (Iterable): the wires the template acts on
 
     Raises:
-        ValueError: if the input block encoding is not an operator.
+        ValueError: if the input block encoding is not an operator
 
     **Example**
 
