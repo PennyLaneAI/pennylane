@@ -16,6 +16,7 @@
 import pytest
 
 import numpy as np
+import pennylane.numpy as pnp
 import pennylane as qml
 from pennylane.operation import Operation
 from pennylane.devices.qubit.preprocess import (
@@ -285,7 +286,7 @@ class TestAdjointDiffTapeValidation:
         qs = QuantumScript(ops=[], measurements=measurements)
 
         with pytest.raises(
-            qml.QuantumFunctionError,
+            DeviceError,
             match="Adjoint differentiation method does not support measurement",
         ):
             validate_and_expand_adjoint(qs)
@@ -297,7 +298,7 @@ class TestAdjointDiffTapeValidation:
         qs = QuantumScript([qml.U2(0.1, 0.2, wires=[0])], [qml.expval(qml.PauliZ(2))])
 
         with pytest.raises(
-            qml.QuantumFunctionError,
+            DeviceError,
             match='operation is not supported using the "adjoint" differentiation method',
         ):
             validate_and_expand_adjoint(qs)
@@ -313,7 +314,7 @@ class TestAdjointDiffTapeValidation:
         qs = QuantumScript([qml.RX(0.5, wires=1)], [qml.expval(obs)])
 
         with pytest.raises(
-            qml.QuantumFunctionError,
+            DeviceError,
             match="Adjoint differentiation method does not support observable",
         ):
             validate_and_expand_adjoint(qs)
@@ -337,7 +338,7 @@ class TestAdjointDiffTapeValidation:
     def test_valid_tape_no_expand(self, G):
         """Test that a tape that is valid doesn't raise errors and is not expanded"""
         prep_op = qml.QubitStateVector(
-            np.array([1.0, -1.0], requires_grad=False) / np.sqrt(2), wires=0
+            pnp.array([1.0, -1.0], requires_grad=False) / np.sqrt(2), wires=0
         )
         qs = QuantumScript(
             ops=[G(np.pi, wires=[0])], measurements=[qml.expval(qml.PauliZ(0))], prep=[prep_op]
@@ -354,7 +355,7 @@ class TestAdjointDiffTapeValidation:
         """Test that a tape that is valid with operations that need to be expanded doesn't raise errors
         and is expanded"""
         prep_op = qml.QubitStateVector(
-            np.array([1.0, -1.0], requires_grad=False) / np.sqrt(2), wires=0
+            pnp.array([1.0, -1.0], requires_grad=False) / np.sqrt(2), wires=0
         )
         qs = QuantumScript(
             ops=[qml.Rot(0.1, 0.2, 0.3, wires=[0])],
@@ -508,7 +509,7 @@ class TestPreprocess:
         qs = QuantumScript(ops, measurement)
         execution_config = qml.devices.experimental.ExecutionConfig(gradient_method="adjoint")
 
-        with pytest.raises(qml.QuantumFunctionError, match=message):
+        with pytest.raises(DeviceError, match=message):
             _ = preprocess([qs], execution_config)
 
     def test_preprocess_tape_for_adjoint(self):

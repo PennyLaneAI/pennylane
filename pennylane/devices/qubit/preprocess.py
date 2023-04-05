@@ -97,13 +97,13 @@ def validate_and_expand_adjoint(
     measurements = []
     for m in circuit.measurements:
         if not isinstance(m, ExpectationMP):
-            raise qml.QuantumFunctionError(
+            raise DeviceError(
                 "Adjoint differentiation method does not support "
                 f"measurement {m.__class__.__name__}."
             )
 
         if not m.obs.has_matrix:
-            raise qml.QuantumFunctionError(
+            raise DeviceError(
                 f"Adjoint differentiation method does not support observable {m.obs.name}."
             )
 
@@ -113,7 +113,7 @@ def validate_and_expand_adjoint(
     for op in circuit._ops:
         if op.num_params > 1:
             if not isinstance(op, qml.Rot):
-                raise qml.QuantumFunctionError(
+                raise DeviceError(
                     f"The {op} operation is not supported using "
                     'the "adjoint" differentiation method.'
                 )
