@@ -483,9 +483,21 @@ class BlockEncode(Operation):
             u = qml.math.hstack([col1, col2])
         else:
             d1, d2 = shape_a
-            col1 = qml.math.vstack([A, qml.math.sqrt_matrix(qml.math.eye(d2, like=A) - qml.math.transpose(qml.math.conj(A)) @ A)])
+            col1 = qml.math.vstack(
+                [
+                    A,
+                    qml.math.sqrt_matrix(
+                        qml.math.eye(d2, like=A) - qml.math.transpose(qml.math.conj(A)) @ A
+                    ),
+                ]
+            )
             col2 = qml.math.vstack(
-                [qml.math.sqrt_matrix(qml.math.eye(d1, like=A) - A @ qml.math.transpose(qml.math.conj(A))), -qml.math.transpose(qml.math.conj(A))]
+                [
+                    qml.math.sqrt_matrix(
+                        qml.math.eye(d1, like=A) - A @ qml.math.transpose(qml.math.conj(A))
+                    ),
+                    -qml.math.transpose(qml.math.conj(A)),
+                ]
             )
             u = qml.math.hstack([col1, col2])
 
