@@ -196,9 +196,7 @@ class ExecuteTapesLegacy(torch.autograd.Function):
         return (None,) + tuple(vjps)
 
 
-def _execute_legacy(
-    tapes, device, execute_fn, gradient_fn, gradient_kwargs, _n=1, max_diff=2, mode=None
-):
+def _execute_legacy(tapes, device, execute_fn, gradient_fn, gradient_kwargs, _n=1, max_diff=2):
     """Execute a batch of tapes with Torch parameters on a device.
 
     This function may be called recursively, if ``gradient_fn`` is a differentiable
@@ -222,8 +220,6 @@ def _execute_legacy(
             the maximum order of derivatives to support. Increasing this value allows
             for higher order derivatives to be extracted, at the cost of additional
             (classical) computational overhead during the backwards pass.
-        mode (str): Whether the gradients should be computed on the forward
-            pass (``forward``) or the backward pass (``backward``).
 
     Returns:
         list[list[torch.Tensor]]: A nested list of tape results. Each element in

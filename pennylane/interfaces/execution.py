@@ -712,7 +712,7 @@ def _execute_legacy(
             if not tf.executing_eagerly() or "autograph" in interface:
                 from .tensorflow_autograph import execute as _execute
 
-                _grad_on_execution = True if _mode == "forward" else False
+                _grad_on_execution = _mode in ["forward"]
                 _execute = partial(_execute, grad_on_execution=_grad_on_execution)
             else:
                 from .tensorflow import execute as _execute
