@@ -75,7 +75,7 @@ def transmon_interaction(
         omega (Union[float, list[float]]): List of dressed qubit frequencies in GHz.
             When passing a single float all qubits are assumed to have that same frequency.
         g (Union[float, list[float]]): List of coupling strengths in GHz. Needs to match the length of ``connections``.
-            When passing a single float all connections are assumed to have the same strength.
+            When passing a single float need explicit ``wires``.
         anharmonicity (Union[float, list[float]]): List of anharmonicities in GHz. Ignored when ``d=2``.
             When passing a single float all qubits are assumed to have that same anharmonicity.
         wires (list): Optional, defaults to the unique wires in ``connections`` when set to ``None``. When passing explicit ``wires``,
@@ -114,12 +114,14 @@ def transmon_interaction(
             "Currently only supporting qubits. Qutrits and qudits are planned in the future."
         )
 
-    if wires is not None and not all(i in wires for i in qml.math.unique(connections)):
+    if wires is None and qml.math.ndim(omega) == 0:
         raise ValueError(
-            f"There are wires in connections {connections} that are not in the provided wires {wires}"
+            f"Cannot instantiate wires automatically. Either need specific wires or a list of omega."
+            f"Received wires {wires} and omega of type {type(omega)}"
         )
 
-    wires = wires or qml.math.unique(connections)
+    wires = wires or list(range(len(omega)))
+
     n_wires = len(wires)
 
     # Prepare coefficients
