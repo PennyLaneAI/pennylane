@@ -22,12 +22,6 @@ from pennylane.ops import Hamiltonian, Prod, SProd, Sum
 from pennylane.pauli.pauli_arithmetic import PauliSentence
 
 
-def test_dot_qnode_collection_raises_warning():
-    """Test that a deprecation warning is raised when using qml.dot for a QNodeCollection."""
-    with pytest.warns(UserWarning, match="is deprecated"):
-        qml.dot([], QNodeCollection())
-
-
 class TestDotSum:
     """Unittests for the dot function when ``pauli=False``."""
 
