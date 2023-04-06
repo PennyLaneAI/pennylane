@@ -316,9 +316,9 @@ class batch_transform:
             if "mode" in execute_kwargs:
                 mode = execute_kwargs.pop("mode")
                 if not qml.active_return():
-                    if mode == "forward":
+                    if mode == "forward":  # pragma: no cover
                         grad_on_execution = True
-                    elif mode == "backward":
+                    elif mode == "backward":  # pragma: no cover
                         grad_on_execution = False
                     else:
                         grad_on_execution = "best"

@@ -34,7 +34,7 @@ qubit_device_and_diff_method = [
 interface_qubit_device_and_diff_method = [
     ["autograd", "default.qubit", "finite-diff", False],
     ["autograd", "default.qubit", "parameter-shift", False],
-    ["autograd", "default.qubit", "backprop", False],
+    ["autograd", "default.qubit", "backprop", True],
     ["autograd", "default.qubit", "adjoint", True],
     ["autograd", "default.qubit", "adjoint", False],
     ["autograd", "default.qubit", "spsa", False],
@@ -1752,7 +1752,7 @@ class TestSample:
     """Tests for the sample integration"""
 
     def test_backprop_error(self):
-        """Test that sampling in backpropagation grad_on_execution raises an error"""
+        """Test that sampling in backpropagation mode raises an error"""
         dev = qml.device("default.qubit", wires=2)
 
         @qnode(dev, diff_method="backprop")
