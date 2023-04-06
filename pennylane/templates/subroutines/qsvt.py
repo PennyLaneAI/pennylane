@@ -78,10 +78,8 @@ def qsvt(A, angles, wires, convention=None):
             qml.exp(qml.Identity(wires=wires), 1j * np.pi / 2)
 
     for idx, phi in enumerate(angles):
-        if not idx % 2:
-            projectors.append(PCPhase(phi, dim=r, wires=wires, do_queue=False))
-        else:
-            projectors.append(PCPhase(phi, dim=c, wires=wires, do_queue=False))
+        dim = c if idx % 2 else r
+        projectors.append(PCPhase(phi, dim=dim, wires=wires, do_queue=False))
 
     return QSVT(UA, projectors, wires=wires)
 
