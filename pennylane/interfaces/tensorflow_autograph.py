@@ -307,7 +307,7 @@ def execute(
             max_diff=max_diff,
             mode=mode,
         )
-    print(grad_on_execution)
+
     all_params = []
     parameters = []
     lens = []
