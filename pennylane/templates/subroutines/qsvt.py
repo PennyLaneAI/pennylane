@@ -105,13 +105,6 @@ def qsvt(A, angles, wires, convention=None):
 
         if global_phase:
             qml.exp(qml.Identity(wires=wires), 0.5j * np.pi * (4 - global_phase))
-            qml.exp(qml.Identity(wires=wires), 1j * (3 * np.pi / 2))
-
-        elif global_phase == 2:
-            qml.exp(qml.Identity(wires=wires), 1j * np.pi)
-
-        elif global_phase == 3:
-            qml.exp(qml.Identity(wires=wires), 1j * np.pi / 2)
 
     for idx, phi in enumerate(angles):
         dim = c if idx % 2 else r
@@ -278,7 +271,7 @@ class QSVT(Operation):
 
 def _qsp_to_qsvt(angles):
     r"""Converts qsp angles to qsvt angles."""
-    new_angles = copy.copy(angles)
+    new_angles = qml.math.array(copy.copy(angles))
     new_angles[0] += 3 * np.pi / 4
     new_angles[-1] -= np.pi / 4
 
