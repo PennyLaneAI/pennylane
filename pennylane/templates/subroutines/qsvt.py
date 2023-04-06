@@ -44,7 +44,7 @@ def qsvt(A, angles, wires, convention=None):
     >>> angles = [0.1, 0.2, 0.3]
 
     >>> @qml.qnode(dev)
-    >>> def example_circuit(A):
+    ... def example_circuit(A):
     ...     qml.qsvt(A, angles, wires=[0, 1])
     ...     return qml.expval(qml.PauliZ(wires=0))
 
