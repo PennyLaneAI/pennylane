@@ -79,8 +79,8 @@ def _operator_decomposition_gen(
 
 
 def validate_and_expand_adjoint(
-    circuit: qml.tape.QuantumScript,
-) -> qml.tape.QuantumScript:  # pylint: disable=protected-access
+    circuit: qml.tape.QuantumTape,
+) -> qml.tape.QuantumTape:  # pylint: disable=protected-access
     """Function for validating that the operations and observables present in the input circuit
     are valid for adjoint differentiation.
 
