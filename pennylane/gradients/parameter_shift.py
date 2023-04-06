@@ -184,6 +184,7 @@ def _multi_meas_grad(res, coeffs, r0, unshifted_coeff, num_measurements):
 def _evaluate_gradient(tape, res, data, r0, shots):
     """Use shifted tape evaluations and parameter-shift rule coefficients to evaluate
     a gradient result. If res is an empty list, ``r0`` and ``data[3]``, which is the
+    coefficient for the unshifted term, must be given and not None.
     """
 
     _, coeffs, fn, unshifted_coeff, _ = data
@@ -626,8 +627,8 @@ def _expval_param_shift_legacy(
         broadcast (bool): Whether or not to use parameter broadcasting to create the
             a single broadcasted tape per operation instead of one tape per shift angle.
         shots (None, int, list[int]): The device shots that will be used to execute the tapes
-                outputted by this transform. Note that this argument doesn't influence the shots used for tape
-                execution, but provides information to the transform about the shots.
+            outputted by this transform. Note that this argument doesn't influence the shots used for tape
+            execution, but provides information to the transform about the shots.
 
     Returns:
         tuple[list[QuantumTape], function]: A tuple containing a
@@ -957,8 +958,8 @@ def var_param_shift(
         broadcast (bool): Whether or not to use parameter broadcasting to create the
             a single broadcasted tape per operation instead of one tape per shift angle.
         shots (None, int, list[int]): The device shots that will be used to execute the tapes
-                outputted by this transform. Note that this argument doesn't influence the shots used for tape
-                execution, but provides information to the transform about the shots.
+            outputted by this transform. Note that this argument doesn't influence the shots used for tape
+            execution, but provides information to the transform about the shots.
 
     Returns:
         tuple[list[QuantumTape], function]: A tuple containing a
@@ -1060,8 +1061,8 @@ def _var_param_shift_legacy(
         broadcast (bool): Whether or not to use parameter broadcasting to create the
             a single broadcasted tape per operation instead of one tape per shift angle.
         shots (None, int, list[int]): The device shots that will be used to execute the tapes
-                outputted by this transform. Note that this argument doesn't influence the shots used for tape
-                execution, but provides information to the transform about the shots.
+            outputted by this transform. Note that this argument doesn't influence the shots used for tape
+            execution, but provides information to the transform about the shots.
 
     Returns:
         tuple[list[QuantumTape], function]: A tuple containing a
@@ -1666,8 +1667,8 @@ def _param_shift_legacy(
         broadcast (bool): Whether or not to use parameter broadcasting to create the
             a single broadcasted tape per operation instead of one tape per shift angle.
         shots (None, int, list[int]): The device shots that will be used to execute the tapes
-                outputted by this transform. Note that this argument doesn't influence the shots used for tape
-                execution, but provides information to the transform about the shots.
+            outputted by this transform. Note that this argument doesn't influence the shots used for tape
+            execution, but provides information to the transform about the shots.
 
     Returns:
         function or tuple[list[QuantumTape], function]:
