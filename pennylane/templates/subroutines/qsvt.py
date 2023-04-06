@@ -96,7 +96,7 @@ class QSVT(Operation):
     .. math::
 
         \begin{align}
-             U_{QSVT}(A, \phi) &=
+             U_{QSVT}(A, \vec{\phi}) &=
              \begin{bmatrix}
                 Poly^{SV}(A) & \cdot \\
                 \cdot & \cdot
