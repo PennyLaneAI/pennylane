@@ -14,6 +14,7 @@
 """
 Tests for the pennylane.qnn.keras module.
 """
+# pylint: disable=unnecessary-dunder-call
 import numpy as np
 import pytest
 

@@ -8,6 +8,10 @@
   state vector and a number of shots.
   [(#3720)](https://github.com/PennyLaneAI/pennylane/pull/3720)
 
+* Adjoint differentiation support for the new qubit state-vector device has been added via
+  `adjoint_jacobian` in `devices/qubit`.
+  [(#3790)](https://github.com/PennyLaneAI/pennylane/pull/3790)
+
 * Added the needed functions and classes to simulate an ensemble of Rydberg atoms:
   * A new internal `RydbergHamiltonian` class is added, which contains the Hamiltonian of an ensemble of
     Rydberg atoms.
@@ -168,7 +172,7 @@
 <h3>Documentation</h3>
 
 * A typo was corrected in the documentation for introduction to `inspecting_circuits` and `chemistry`.
-[(#3844)](https://github.com/PennyLaneAI/pennylane/pull/3844)
+  [(#3844)](https://github.com/PennyLaneAI/pennylane/pull/3844)
 
 <h3>Bug fixes</h3>
 
