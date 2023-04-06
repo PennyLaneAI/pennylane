@@ -166,6 +166,9 @@
   For example, you can no longer create `StateMP(qml.PauliX(0))` or `PurityMP(eigvals=(-1,1), wires=Wires(0))`.
   [(#3898)](https://github.com/PennyLaneAI/pennylane/pull/3898)
 
+* Composite and `SProd` operator data is now flat.
+  [(#3958)](https://github.com/PennyLaneAI/pennylane/pull/3958)
+
 <h3>Deprecations</h3>
 
 <h3>Documentation</h3>
