@@ -56,9 +56,6 @@ def adjoint_jacobian(tape: QuantumTape):  # pylint: disable=too-many-statements
         array or tuple[array]: the derivative of the tape with respect to trainable parameters.
         Dimensions are ``(len(observables), len(trainable_params))``.
 
-    Raises:
-        QuantumFunctionError: if the input tape has measurements that are not expectation values
-            or contains a multi-parameter operation aside from :class:`~.Rot`
     """
 
     # Map wires if custom wire labels used
