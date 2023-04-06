@@ -17,6 +17,7 @@ Unit tests for the HardwareHamiltonian class.
 # pylint: disable=too-few-public-methods,redefined-outer-name
 import numpy as np
 import pytest
+import jax.numpy as jnp
 
 import pennylane as qml
 from pennylane.pulse import HardwareHamiltonian, transmon_interaction
@@ -78,6 +79,18 @@ class TestTransmonInteraction:
         assert H.coeffs[:10] == [1.0] * 10
         assert all(H.coeffs[10:] == g)
         for o1, o2 in zip(H.ops[:10], [ad(i, 2) @ a(i, 2) for i in wires]):
+            assert qml.equal(o1, o2)
+
+    def test_single_callable_omega_with_explicit_wires(self):
+        """Test that a single callable omega with explicit wires yields the correct Hamiltonian"""
+        wires = range(10)
+        H = qml.pulse.transmon_interaction(
+            omega=jnp.polyval, connections=connections, g=g, wires=wires
+        )
+
+        assert H.coeffs[4:] == [jnp.polyval] * 10
+        assert all(H.coeffs[:4] == g)
+        for o1, o2 in zip(H.ops[4:], [ad(i, 2) @ a(i, 2) for i in wires]):
             assert qml.equal(o1, o2)
 
     def test_d_neq_2_raises_error(self):
