@@ -14,9 +14,25 @@
 """
 Tests for the QSVT template and qsvt wrapper function.
 """
+# pylint: disable=too-many-arguments, import-outside-toplevel, no-self-use
 import pytest
 import pennylane as qml
 from pennylane import numpy as np
+
+
+def qfunc(A):
+    """Used to test queuing in the next test."""
+    return qml.RX(A[0][0], wires=0)
+
+
+def qfunc2(A):
+    """Used to test queuing in the next test."""
+    return qml.prod(qml.PauliX(wires=0), qml.RZ(A[0][0], wires=0))
+
+
+def lst_phis(phis):
+    """Used to test queuing in the next test."""
+    return [qml.PCPhase(i, 2, wires=[0, 1]) for i in phis]
 
 
 class TestQSVT:
@@ -117,18 +133,6 @@ class TestQSVT:
             assert val.name == results[idx].name
             assert val.parameters == results[idx].parameters
 
-    def qfunc(A):
-        """Used to test queuing in the next test."""
-        return qml.PauliX(wires=0)
-
-    def qfunc2(A):
-        """Used to test queuing in the next test."""
-        return qml.prod(qml.PauliX(wires=0), qml.RZ(A[0][0], wires=0))
-
-    def lst_phis(phis):
-        """Used to test queuing in the next test."""
-        return [qml.PCPhase(i, 2, wires=[0, 1]) for i in phis]
-
     @pytest.mark.parametrize(
         ("quantum_function", "phi_func", "A", "phis", "results"),
         [
@@ -139,7 +143,7 @@ class TestQSVT:
                 np.array([0.2, 0.3]),
                 [
                     qml.PCPhase(0.2, dim=2, wires=[0]),
-                    qml.PauliX(wires=[0]),
+                    qml.RX(0.1, wires=[0]),
                     qml.PCPhase(0.3, dim=2, wires=[0]),
                 ],
             ),
@@ -166,6 +170,75 @@ class TestQSVT:
             assert val.name == results[idx].name
             assert val.parameters == results[idx].parameters
 
+    @pytest.mark.torch
+    @pytest.mark.parametrize(
+        ("input_matrix", "angles", "wires"),
+        [([[0.1, 0.2], [0.3, 0.4]], [0.1, 0.2], [0, 1])],
+    )
+    def test_QSVT_torch(self, input_matrix, angles, wires):
+        """Test that the qsvt function matrix is correct for torch."""
+        import torch
+
+        default_matrix = qml.matrix(qml.qsvt(input_matrix, angles, wires))
+
+        input_matrix = torch.tensor(input_matrix, dtype=float)
+        angles = torch.tensor(angles, dtype=float)
+
+        op = qml.QSVT(
+            qml.BlockEncode(input_matrix, wires),
+            [qml.PCPhase(phi, 2, wires) for phi in angles],
+            wires,
+        )
+
+        assert np.allclose(qml.matrix(op), default_matrix)
+        assert qml.math.get_interface(qml.matrix(op)) == "torch"
+
+    @pytest.mark.jax
+    @pytest.mark.parametrize(
+        ("input_matrix", "angles", "wires"),
+        [([[0.1, 0.2], [0.3, 0.4]], [0.1, 0.2], [0, 1])],
+    )
+    def test_QSVT_jax(self, input_matrix, angles, wires):
+        """Test that the qsvt function matrix is correct for jax."""
+        import jax.numpy as jnp
+
+        default_matrix = qml.matrix(qml.qsvt(input_matrix, angles, wires))
+
+        input_matrix = jnp.array(input_matrix)
+        angles = jnp.array(angles)
+
+        op = qml.QSVT(
+            qml.BlockEncode(input_matrix, wires),
+            [qml.PCPhase(phi, 2, wires) for phi in angles],
+            wires,
+        )
+
+        assert np.allclose(qml.matrix(op), default_matrix)
+        assert qml.math.get_interface(qml.matrix(op)) == "jax"
+
+    @pytest.mark.tf
+    @pytest.mark.parametrize(
+        ("input_matrix", "angles", "wires"),
+        [([[0.1, 0.2], [0.3, 0.4]], [0.1, 0.2], [0, 1])],
+    )
+    def test_QSVT_tensorflow(self, input_matrix, angles, wires):
+        """Test that the qsvt function matrix is correct for tensorflow."""
+        import tensorflow as tf
+
+        default_matrix = qml.matrix(qml.qsvt(input_matrix, angles, wires))
+
+        input_matrix = tf.Variable(input_matrix)
+        angles = tf.Variable(angles)
+
+        op = qml.QSVT(
+            qml.BlockEncode(input_matrix, wires),
+            [qml.PCPhase(phi, 2, wires) for phi in angles],
+            wires,
+        )
+
+        assert np.allclose(qml.matrix(op), default_matrix)
+        assert qml.math.get_interface(qml.matrix(op)) == "tensorflow"
+
     @pytest.mark.parametrize(
         ("A", "phis", "wires"),
         [
@@ -176,7 +249,7 @@ class TestQSVT:
             )
         ],
     )
-    def test_qsvt_grad(self, A, phis, wires):
+    def test_QSVT_grad(self, A, phis, wires):
         """Test that qml.grad results are the same as finite difference results"""
 
         @qml.qnode(qml.device("default.qubit", wires=2))
@@ -194,24 +267,26 @@ class TestQSVT:
 
         mat_grad_results, phi_grad_results = qml.grad(circuit)(A, phis)
 
+        diff = 1e-8
+
         manual_mat_results = [
-            (circuit(A + np.array([[0.0001, 0], [0, 0]]), phis) - y) / 0.0001,
-            (circuit(A + np.array([[0, 0.0001], [0, 0]]), phis) - y) / 0.0001,
-            (circuit(A + np.array([[0, 0], [0.0001, 0]]), phis) - y) / 0.0001,
-            (circuit(A + np.array([[0, 0], [0, 0.0001]]), phis) - y) / 0.0001,
+            (circuit(A + np.array([[diff, 0], [0, 0]]), phis) - y) / diff,
+            (circuit(A + np.array([[0, diff], [0, 0]]), phis) - y) / diff,
+            (circuit(A + np.array([[0, 0], [diff, 0]]), phis) - y) / diff,
+            (circuit(A + np.array([[0, 0], [0, diff]]), phis) - y) / diff,
         ]
 
         for idx, result in enumerate(manual_mat_results):
-            assert np.isclose(result, np.real(mat_grad_results.flatten()[idx]), atol=1e-4)
+            assert np.isclose(result, np.real(mat_grad_results.flatten()[idx]), atol=1e-6)
 
         manual_phi_results = [
-            (circuit(A, phis + np.array([0.0001, 0, 0])) - y) / 0.0001,
-            (circuit(A, phis + np.array([0, 0.0001, 0])) - y) / 0.0001,
-            (circuit(A, phis + np.array([0, 0, 0.0001])) - y) / 0.0001,
+            (circuit(A, phis + np.array([diff, 0, 0])) - y) / diff,
+            (circuit(A, phis + np.array([0, diff, 0])) - y) / diff,
+            (circuit(A, phis + np.array([0, 0, diff])) - y) / diff,
         ]
 
         for idx, result in enumerate(manual_phi_results):
-            assert np.isclose(result, np.real(phi_grad_results[idx]), atol=1e-4)
+            assert np.isclose(result, np.real(phi_grad_results[idx]), atol=1e-6)
 
 
 class Testqsvt:
@@ -313,7 +388,7 @@ class Testqsvt:
         ("input_matrix", "angles", "wires"),
         [([[0.1, 0.2], [0.3, 0.4]], [0.1, 0.2], [0, 1])],
     )
-    def test_blockencode_jax(self, input_matrix, angles, wires):
+    def test_qsvt_jax(self, input_matrix, angles, wires):
         """Test that the qsvt function matrix is correct for jax."""
         import jax.numpy as jnp
 
@@ -326,3 +401,71 @@ class Testqsvt:
 
         assert np.allclose(qml.matrix(op), default_matrix)
         assert qml.math.get_interface(qml.matrix(op)) == "jax"
+
+    @pytest.mark.tf
+    @pytest.mark.parametrize(
+        ("input_matrix", "angles", "wires"),
+        [([[0.1, 0.2], [0.3, 0.4]], [0.1, 0.2], [0, 1])],
+    )
+    def test_qsvt_tensorflow(self, input_matrix, angles, wires):
+        """Test that the qsvt function matrix is correct for tensorflow."""
+        import tensorflow as tf
+
+        default_matrix = qml.matrix(qml.qsvt(input_matrix, angles, wires))
+
+        input_matrix = tf.Variable(input_matrix)
+        angles = tf.Variable(angles)
+
+        op = qml.qsvt(input_matrix, angles, wires)
+
+        assert np.allclose(qml.matrix(op), default_matrix)
+        assert qml.math.get_interface(qml.matrix(op)) == "tensorflow"
+
+    @pytest.mark.parametrize(
+        ("A", "phis", "wires"),
+        [
+            (
+                [[0.1, 0.2], [0.3, 0.4]],
+                [0.1, 0.2, 0.3],
+                [0, 1],
+            )
+        ],
+    )
+    def test_qsvt_grad(self, A, phis, wires):
+        """Test that qml.grad results are the same as finite difference results"""
+
+        @qml.qnode(qml.device("default.qubit", wires=2))
+        def circuit(A, phis):
+            qml.qsvt(
+                A,
+                phis,
+                wires=wires,
+            )
+            return qml.expval(qml.PauliZ(wires=0))
+
+        A = np.array([[0.1j, 0.2], [0.3, 0.4]], dtype=complex, requires_grad=True)
+        phis = np.array([0.1, 0.2, 0.3], requires_grad=True)
+        y = circuit(A, phis)
+
+        mat_grad_results, phi_grad_results = qml.grad(circuit)(A, phis)
+
+        diff = 1e-8
+
+        manual_mat_results = [
+            (circuit(A + np.array([[diff, 0], [0, 0]]), phis) - y) / diff,
+            (circuit(A + np.array([[0, diff], [0, 0]]), phis) - y) / diff,
+            (circuit(A + np.array([[0, 0], [diff, 0]]), phis) - y) / diff,
+            (circuit(A + np.array([[0, 0], [0, diff]]), phis) - y) / diff,
+        ]
+
+        for idx, result in enumerate(manual_mat_results):
+            assert np.isclose(result, np.real(mat_grad_results.flatten()[idx]), atol=1e-6)
+
+        manual_phi_results = [
+            (circuit(A, phis + np.array([diff, 0, 0])) - y) / diff,
+            (circuit(A, phis + np.array([0, diff, 0])) - y) / diff,
+            (circuit(A, phis + np.array([0, 0, diff])) - y) / diff,
+        ]
+
+        for idx, result in enumerate(manual_phi_results):
+            assert np.isclose(result, np.real(phi_grad_results[idx]), atol=1e-6)
