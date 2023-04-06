@@ -29,13 +29,49 @@ def qsvt(A, angles, wires, convention=None):
     `quantum singular value transformation <https://arxiv.org/abs/1806.01838>`__ using
     :class:`~.BlockEncode` and :class:`~.PCPhase`.
     See also `A Grand Unification of Quantum Algorithms <https://arxiv.org/pdf/2105.02859.pdf>`__ and
-    :class:`~.QSVT`__.
+    :class:`~.QSVT`.
+
+    Given a matrix :math:`A`, and a list of angles :math:`\phi`, this template applies a circuit 
+    for the quantum singular value transformation as follows.
+    
+    When the number of projector-controlled phase shifts is even (:math:`d` is odd), the effect of
+    the QSVT circuit is:
+
+    .. math::
+
+        U_{QSVT} = \Pi_{\phi_1}U\left[\prod^{(d-1)/2}_{k=1}\Pi_{\phi_{2k}}U^\dagger
+        \Pi_{\phi_{2k+1}}U\right]\Pi_{\phi_{d+1}}.
+
+        
+    And when the number of projector-controlled phase shifts is odd (:math:`d` is even):
+
+    .. math::
+
+        U_{QSVT} = \left[\prod^{d/2}_{k=1}\Pi_{\phi_{2k-1}}U^\dagger\Pi_{\phi_{2k}}U\right]
+        \Pi_{\phi_{d+1}}.
+
+    Here, :math:`U` implements a block encoding of :math:`A` via :class:`~.BlockEncode` and
+    :math:`\Pi_\phi` implements a projector-controlled phase shift via :class:`~.PCPhase`.
+
+    This circuit has the effect of applying a polynomial transformation to the singular values of
+    the block encoded matrix:  
+
+    .. math::
+
+        \begin{align}
+             U_{QSVT}(A, \phi) &=
+             \begin{bmatrix}
+                Poly^{SV}(A) & \cdot \\
+                \cdot & \cdot
+            \end{bmatrix}.
+        \end{align}
 
     Args:
         A (tensor_like): the general :math:`(n \times m)` matrix to be encoded
         angles (tensor_like): a list of angles by which to shift to obtain the desired polynomial
         wires (Iterable): the wires the template acts on
-        convention (string): can be set to "Wx" to convert quantum signal processing angles to QSVT
+        convention (string): can be set to "Wx" to convert quantum signal processing angles in the
+            "Wx" convention to QSVT angles.
 
     **Example**
 
@@ -90,8 +126,29 @@ class QSVT(Operation):
     r"""Implements the
     `quantum singular value transformation <https://arxiv.org/abs/1806.01838>`__ circuit.
 
-    Given a circuit :math:`U(A)`, which block encodes the matrix :math:`A`, and a list of projector-controlled
-    phase shifts, this template applies the circuit for quantum singular value transformation.
+    Given an operation :math:`U`, which block encodes the matrix :math:`A`, and a list of
+    projector-controlled phase shift operations :math:`\Pi_\phi`, this template applies a circuit 
+    for the quantum singular value transformation. The circuit applies the input block encoding
+    and projector-controlled phase shifts in the following ways.
+    
+    When the number of projector-controlled phase shifts is even (:math:`d` is odd), the effect of
+    the QSVT circuit is:
+
+    .. math::
+
+        U_{QSVT} = \Pi_{\phi_1}U\left[\prod^{(d-1)/2}_{k=1}\Pi_{\phi_{2k}}U^\dagger
+        \Pi_{\phi_{2k+1}}U\right]\Pi_{\phi_{d+1}}.
+
+        
+    And when the number of projector-controleld phase shifts is odd (:math:`d` is even):
+
+    .. math::
+
+        U_{QSVT} = \left[\prod^{d/2}_{k=1}\Pi_{\phi_{2k-1}}U^\dagger\Pi_{\phi_{2k}}U\right]
+        \Pi_{\phi_{d+1}}
+
+    This circuit has the effect of applying a polynomial transformation to the singular values of
+    the block encoded matrix:  
 
     .. math::
 
@@ -102,9 +159,6 @@ class QSVT(Operation):
                 \cdot & \cdot
             \end{bmatrix}.
         \end{align}
-
-    This circuit can be used to perform the standard quantum singular value transformation algorithm, consisting
-    of alternating block encoding and controlled phase shift operations.
 
     Args:
         UA (Operator): the block encoding circuit, specified as an :class:`~.Operator`
@@ -218,6 +272,5 @@ def _qsp_to_qsvt(angles):
     new_angles[0] += 3 * np.pi / 4
     new_angles[-1] -= np.pi / 4
 
-    for i, phi in enumerate(new_angles[1:-1]):
-        new_angles[i + 1] = phi + np.pi / 2
+    new_angles[1:-1] += np.pi / 2
     return new_angles
