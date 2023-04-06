@@ -373,10 +373,10 @@ def _execute_new(
                     batch_execute, cache, return_tuple=False, expand_fn=expand_fn
                 )(tapes)
             )
-        with qml.tape.Unwrap(*tapes):
-            res = qml.interfaces.cache_execute(
-                batch_execute, cache, return_tuple=False, expand_fn=expand_fn
-            )(tapes)
+        unwrapped_tapes = [qml.transforms.convert_to_numpy_parameters(t) for t in tapes]
+        res = qml.interfaces.cache_execute(
+            batch_execute, cache, return_tuple=False, expand_fn=expand_fn
+        )(unwrapped_tapes)
 
         return batch_fn(res)
 
@@ -643,10 +643,10 @@ def execute(
                     batch_execute, cache, return_tuple=False, expand_fn=expand_fn
                 )(tapes)
             )
-        with qml.tape.Unwrap(*tapes):
-            res = qml.interfaces.cache_execute(
-                batch_execute, cache, return_tuple=False, expand_fn=expand_fn
-            )(tapes)
+        unwrapped_tapes = [qml.transforms.convert_to_numpy_parameters(t) for t in tapes]
+        res = qml.interfaces.cache_execute(
+            batch_execute, cache, return_tuple=False, expand_fn=expand_fn
+        )(unwrapped_tapes)
 
         return batch_fn(res)
 

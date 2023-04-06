@@ -81,4 +81,6 @@ def convert_to_numpy_parameters(circuit: QuantumScript) -> QuantumScript:
     new_prep = (_convert_op_to_numpy_data(op) for op in circuit._prep)
     new_ops = (_convert_op_to_numpy_data(op) for op in circuit._ops)
     new_meausurements = (_convert_measurement_to_numpy_data(m) for m in circuit.measurements)
-    return qml.tape.QuantumScript(new_ops, new_meausurements, new_prep)
+    new_circuit = qml.tape.QuantumScript(new_ops, new_meausurements, new_prep)
+    new_circuit.trainable_params = circuit.trainable_params.copy()
+    return new_circuit
