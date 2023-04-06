@@ -90,7 +90,7 @@ class TestTransmonInteraction:
             )
 
     def test_omega_and_wires_dont_match(self):
-        """"""
+        """That that providing missmatching omega and wires raises error"""
         with pytest.raises(ValueError, match="Number of qubit frequencies omega"):
             _ = transmon_interaction(omega=[1, 2, 3], wires=[0, 1], connections=[], g=[])
 
