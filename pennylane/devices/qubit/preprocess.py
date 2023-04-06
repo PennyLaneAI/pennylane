@@ -122,7 +122,7 @@ def validate_and_expand_adjoint(
         elif not isinstance(op, qml.operation.StatePrep):
             expanded_ops.append(op)
 
-    prep = [circuit._prep[0]] if len(circuit._prep) != 0 else None
+    prep = circuit._prep[:1]
 
     trainable_params = []
     for k in circuit.trainable_params:
