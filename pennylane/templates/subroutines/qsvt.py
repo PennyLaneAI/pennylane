@@ -37,10 +37,10 @@ def qsvt(A, angles, wires, convention=None):
     .. math::
 
         U_{QSVT} = \Pi_{\phi_1}U\left[\prod^{(d-1)/2}_{k=1}\Pi_{\phi_{2k}}U^\dagger
-        \Pi_{\phi_{2k+1}}U\right]\Pi_{\phi_{d+1}}.
+        \Pi_{\phi_{2k+1}}U\right]\Pi_{\phi_{d+1}},
 
 
-    And when the number of angles is odd (:math:`d` is even):
+    and when the number of angles is odd (:math:`d` is even):
 
     .. math::
 
@@ -125,7 +125,7 @@ class QSVT(Operation):
     `quantum singular value transformation <https://arxiv.org/abs/1806.01838>`__ circuit.
 
     Given an :class:`~.Operator` :math:`U`, which block encodes the matrix :math:`A`, and a list of
-    projector-controlled phase shift operations :math:`\vec{\Pi_\phi}`, this template applies a
+    projector-controlled phase shift operations :math:`\vec{\Pi}_\phi`, this template applies a
     circuit for the quantum singular value transformation as follows.
 
     When the number of projector-controlled phase shifts is even (:math:`d` is odd), the QSVT
