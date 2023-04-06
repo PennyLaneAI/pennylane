@@ -138,6 +138,7 @@
   [(#3938)](https://github.com/PennyLaneAI/pennylane/pull/3938)
 
 * `retworkx` has been renamed to `rustworkx` to accomodate the change in name for the package.
+  [(#3975)](https://github.com/PennyLaneAI/pennylane/pull/3975)
 
 <h3>Breaking changes</h3>
 
