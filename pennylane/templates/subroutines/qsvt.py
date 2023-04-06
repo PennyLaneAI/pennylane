@@ -123,7 +123,7 @@ class QSVT(Operation):
     >>> angles = [qml.PCPhase(i + 0.1, dim=1, wires=[0, 1]) for i in range(3)]
 
     >>> @qml.qnode(dev)
-    >>> def example_circuit(A):
+    ... def example_circuit(A):
     ...     qml.QSVT(block_encode, angles, wires=[0, 1])
     ...     return qml.expval(qml.PauliZ(wires=0))
 
