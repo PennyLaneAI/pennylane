@@ -116,7 +116,7 @@ class QSVT(Operation):
     **Example**
 
     >>> dev = qml.device("default.qubit", wires=2)
-    >>> A = [[0.1]]
+    >>> A = np.array([[0.1]])
     >>> block_encode = qml.BlockEncode(A, wires=[0, 1])
     >>> angles = [qml.PCPhase(i + 0.1, dim=1, wires=[0, 1]) for i in range(3)]
 
