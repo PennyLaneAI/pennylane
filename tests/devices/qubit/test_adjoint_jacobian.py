@@ -23,6 +23,22 @@ from pennylane.devices.qubit.preprocess import validate_and_expand_adjoint
 class TestAdjointJacobian:
     """Tests for adjoint_jacobian"""
 
+    def test_custom_wire_labels(self, tol):
+        """Test that adjoint_jacbonian works as expected when custom wire labels are used."""
+        qs = QuantumScript(
+            [qml.RX(0.123, wires="a"), qml.RY(0.456, wires="b")], [qml.expval(qml.PauliX("a"))]
+        )
+        qs.trainable_params = {0, 1}
+
+        qs_valid = validate_and_expand_adjoint(qs)
+
+        calculated_val = adjoint_jacobian(qs_valid)
+
+        tapes, fn = qml.gradients.finite_diff(qs)
+        results = tuple(qml.devices.qubit.simulate(t) for t in tapes)
+        numeric_val = fn(results)
+        assert np.allclose(calculated_val, numeric_val, atol=tol, rtol=0)
+
     @pytest.mark.autograd
     @pytest.mark.parametrize("theta", np.linspace(-2 * np.pi, 2 * np.pi, 7))
     @pytest.mark.parametrize("G", [qml.RX, qml.RY, qml.RZ])
