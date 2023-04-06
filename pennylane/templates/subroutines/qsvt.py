@@ -28,7 +28,7 @@ def qsvt(A, angles, wires, convention=None):
     r"""Performs the
     `quantum singular value transformation <https://arxiv.org/abs/1806.01838>`__ using
     :class:`~.BlockEncode` and :class:`~.PCPhase`.
-    See also `A Grand Unification of Quantum Algorithms <https://arxiv.org/pdf/2105.02859.pdf>`__ and
+    .. seealso::  `A Grand Unification of Quantum Algorithms <https://arxiv.org/pdf/2105.02859.pdf>`__ and
     :class:`~.QSVT`.
 
     Given a matrix :math:`A`, and a list of angles :math:`\phi`, this template applies a circuit 
@@ -76,11 +76,11 @@ def qsvt(A, angles, wires, convention=None):
     **Example**
 
     >>> dev = qml.device("default.qubit", wires=2)
-    >>> A = [[0.1, 0.2], [0.3, 0.4]]
-    >>> angles = [0.1, 0.2, 0.3]
+    >>> A = np.array([[0.1, 0.2], [0.3, 0.4]])
+    >>> angles = np.array([0.1, 0.2, 0.3])
 
     >>> @qml.qnode(dev)
-    >>> def example_circuit(A):
+    ... def example_circuit(A):
     ...     qml.qsvt(A, angles, wires=[0, 1])
     ...     return qml.expval(qml.PauliZ(wires=0))
 
@@ -114,10 +114,8 @@ def qsvt(A, angles, wires, convention=None):
             qml.exp(qml.Identity(wires=wires), 1j * np.pi / 2)
 
     for idx, phi in enumerate(angles):
-        if not idx % 2:
-            projectors.append(PCPhase(phi, dim=r, wires=wires, do_queue=False))
-        else:
-            projectors.append(PCPhase(phi, dim=c, wires=wires, do_queue=False))
+        dim = c if idx % 2 else r
+        projectors.append(PCPhase(phi, dim=dim, wires=wires, do_queue=False))
 
     return QSVT(UA, projectors, wires=wires)
 
@@ -127,7 +125,7 @@ class QSVT(Operation):
     `quantum singular value transformation <https://arxiv.org/abs/1806.01838>`__ circuit.
 
     Given an operation :math:`U`, which block encodes the matrix :math:`A`, and a list of
-    projector-controlled phase shift operations :math:`\Pi_\phi`, this template applies a circuit 
+    projector-controlled phase shift operations :math:`\vec{\Pi_\phi}` :math:`\vec{\phi}`, this template applies a circuit 
     for the quantum singular value transformation. The circuit applies the input block encoding
     and projector-controlled phase shifts in the following ways.
     
@@ -153,7 +151,7 @@ class QSVT(Operation):
     .. math::
 
         \begin{align}
-             U_{QSVT}(A, \phi) &=
+             U_{QSVT}(A, \vec{\phi}) &=
              \begin{bmatrix}
                 Poly^{SV}(A) & \cdot \\
                 \cdot & \cdot
@@ -161,7 +159,7 @@ class QSVT(Operation):
         \end{align}
 
     Args:
-        UA (Operator): the block encoding circuit, specified as an :class:`~.Operator`
+        UA (Operator): the block encoding circuit, specified as an :class:`~.Operator`, like :func:`~.BlockEncode`
         projectors (Sequence[Operator]): a list of projector-controlled phase
             shifts that implement the desired polynomial
         wires (Iterable): the wires the template acts on
@@ -172,13 +170,13 @@ class QSVT(Operation):
     **Example**
 
     >>> dev = qml.device("default.qubit", wires=2)
-    >>> A = [[0.1]]
-    >>> blckencode = qml.BlockEncode(A, wires=[0, 1])
+    >>> A = np.array([[0.1]])
+    >>> block_encode = qml.BlockEncode(A, wires=[0, 1])
     >>> angles = [qml.PCPhase(i + 0.1, dim=1, wires=[0, 1]) for i in range(3)]
 
     >>> @qml.qnode(dev)
-    >>> def example_circuit(A):
-    ...     qml.QSVT(blckencode, angles, wires=[0, 1])
+    ... def example_circuit(A):
+    ...     qml.QSVT(block_encode, angles, wires=[0, 1])
     ...     return qml.expval(qml.PauliZ(wires=0))
 
     >>> print(qml.matrix(example_circuit)(A))
