@@ -528,9 +528,9 @@ def _compute_vjps_autograd(jacs, dy, multi_measurements, shots):
         shot_vjps = []
         for d, j in zip(dy_, jac_):
             if multi:
-                shot_vjps.append(qml.gradients.compute_vjp_multi_new(d, j))
+                shot_vjps.append(qml.gradients.compute_vjp_multi(d, j))
             else:
-                shot_vjps.append(qml.gradients.compute_vjp_single_new(d, j))
+                shot_vjps.append(qml.gradients.compute_vjp_single(d, j))
 
         vjps.append(qml.math.sum(qml.math.stack(shot_vjps), axis=0))
 

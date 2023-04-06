@@ -1731,12 +1731,12 @@ class TestSample:
 
 
 qubit_device_and_diff_method_and_grad_on_execution = [
-    ["default.qubit", "backprop", "forward"],
-    ["default.qubit", "finite-diff", "backward"],
-    ["default.qubit", "parameter-shift", "backward"],
-    ["default.qubit", "adjoint", "forward"],
-    ["default.qubit", "adjoint", "backward"],
-    ["default.qubit", "hadamard", "backward"],
+    ["default.qubit", "backprop", True],
+    ["default.qubit", "finite-diff", False],
+    ["default.qubit", "parameter-shift", False],
+    ["default.qubit", "adjoint", True],
+    ["default.qubit", "adjoint", True],
+    ["default.qubit", "hadamard", True],
 ]
 
 

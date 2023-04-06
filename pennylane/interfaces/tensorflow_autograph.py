@@ -27,7 +27,7 @@ from pennylane.measurements import SampleMP, StateMP
 
 from .tensorflow import (
     _compute_vjp,
-    _compute_vjp_new,
+    _compute_vjp_legacy,
     _jac_restructured,
     _res_restructured,
     _to_tensors,
@@ -155,7 +155,7 @@ def _execute_legacy(
                 # No additional quantum evaluations needed; simply compute the VJPs directly.
                 len_dy = len(dy)
                 vjps = tf.numpy_function(
-                    func=lambda *args: _compute_vjp(args[:len_dy], args[len_dy:]),
+                    func=lambda *args: _compute_vjp_legacy(args[:len_dy], args[len_dy:]),
                     inp=dy + jacs,
                     Tout=[tf.float64] * len(parameters),
                 )
@@ -237,7 +237,7 @@ def _execute_legacy(
                         params_unwrapped = _nest_params(all_params)
 
                         with qml.tape.Unwrap(*tapes, params=params_unwrapped):
-                            vjps = _compute_vjp(dy, gradient_fn(tapes, **gradient_kwargs))
+                            vjps = _compute_vjp_legacy(dy, gradient_fn(tapes, **gradient_kwargs))
 
                         return vjps
 
@@ -411,7 +411,7 @@ def execute(
                     dy = _res_restructured(dy, tapes, shots=device.shot_vector)
                     jacs = _jac_restructured(jacs, tapes)
 
-                    return _compute_vjp_new(dy, jacs, multi_measurements, device.shot_vector)
+                    return _compute_vjp(dy, jacs, multi_measurements, device.shot_vector)
 
                 vjps = tf.numpy_function(
                     func=_backward,
@@ -506,7 +506,7 @@ def execute(
                         with qml.tape.Unwrap(*tapes, params=params_unwrapped):
                             jac = gradient_fn(tapes, **gradient_kwargs)
 
-                        vjps = _compute_vjp_new(dy, jac, multi_measurements, device.shot_vector)
+                        vjps = _compute_vjp(dy, jac, multi_measurements, device.shot_vector)
                         return vjps
 
                     vjps = tf.numpy_function(
