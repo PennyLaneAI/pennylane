@@ -151,14 +151,14 @@ def drive(amplitude, phase, wires):
 
         .. math::
             H = \frac{1}{2} \Omega(t) \sum_{j \in \text{wires}} \left(e^{i (\phi(t) + \nu t)} \sigma^+_j + e^{-i (\phi(t) + \nu t)} \sigma^-_j \right)
-            + \frac{1}{2} \omega_q \sum_{j \in \text{wires}} \sigma^z_j,
+            + \omega_q \sum_{j \in \text{wires}} \sigma^z_j,
 
         with amplitude :math:`\Omega`, phase :math:`\phi` and drive frequency :math:`\nu` of the electromagnetic field, as well as the qubit frequency :math:`\omega_q`.
-        We can move to the rotating frame of the driving field by applying :math:`U = e^{-i\nu t \sigma^z / 2}` which yields the new Hamiltonian
+        We can move to the rotating frame of the driving field by applying :math:`U = e^{-i\nu t \sigma^z}` which yields the new Hamiltonian
 
         .. math::
             H = \frac{1}{2} \Omega(t) \sum_{j \in \text{wires}} \left(e^{i \phi(t)} \sigma^+_j + e^{-i \phi(t)} \sigma^-_j \right)
-            - \frac{1}{2} (\nu - \omega_q) \sum_{j \in \text{wires}} \sigma^z_j
+            - (\nu - \omega_q) \sum_{j \in \text{wires}} \sigma^z_j
 
         The latter formulation is more common in neutral atom systems where we define the detuning from the atomic energy gap
         as :math:`\Delta = \nu - \omega_q`. This is because here all atoms have the same energy gap, whereas for superconducting
@@ -181,13 +181,6 @@ def drive(amplitude, phase, wires):
             H_i = qml.pulse.rydberg_interaction(atom_coordinates, wires)
 
         We can now simulate driving those atoms with an oscillating amplitude :math:`\Omega` that is trainable, for a duration of :math:`10 \mu s`.
-        The total Hamiltonian of that evolution is given by
-
-        .. math::
-            \frac{1}{2} p \sin(\pi t) \sum_{j \in \text{wires}} \left(e^{i \pi/2} \sigma^+_j + e^{-i \pi/2} \sigma^-_j \right) -
-            \frac{1}{2} \frac{3 \pi}{4} \sum_{j \in \text{wires}} \sigma^z_j + \sum_{k<\ell} V_{k \ell} n_k n_\ell
-
-        and can be executed and differentiated via the following code.
 
         .. code-block:: python3
 
@@ -197,7 +190,18 @@ def drive(amplitude, phase, wires):
             H_d = qml.pulse.drive(amplitude, phase, wires)
 
             # detuning term
-            H_z = qml.dot([-3*np.pi/2/4]*len(wires), [qml.PauliZ(i) for i in wires])
+            H_z = qml.dot([-3*np.pi/4]*len(wires), [qml.PauliZ(i) for i in wires])
+
+
+        The total Hamiltonian of that evolution is given by
+
+        .. math::
+            \frac{1}{2} p \sin(\pi t) \sum_{j \in \text{wires}} \left(e^{i \pi/2} \sigma^+_j + e^{-i \pi/2} \sigma^-_j \right) -
+            \frac{3 \pi}{4} \sum_{j \in \text{wires}} \sigma^z_j + \sum_{k<\ell} V_{k \ell} n_k n_\ell
+
+        and can be executed and differentiated via the following code.
+
+        .. code-block:: python3
 
             dev = qml.device("default.qubit.jax", wires=wires)
             @qml.qnode(dev, interface="jax")
