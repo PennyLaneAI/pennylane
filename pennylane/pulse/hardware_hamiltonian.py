@@ -211,8 +211,7 @@ def drive(amplitude, phase, wires):
         >>> jax.grad(circuit)(params)
         [Array(1.75825695, dtype=float64)]
     """
-    if isinstance(wires, int):
-        wires = [wires]
+    wires = Wires(wires)
 
     # TODO: use sigma+ and sigma- (not necessary as terms are the same, but for consistency)
     # We compute the `coeffs` and `observables` of the EM field

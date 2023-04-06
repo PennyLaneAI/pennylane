@@ -116,8 +116,7 @@ def rydberg_interaction(
 
 
 def rydberg_drive(amplitude, phase, detuning, wires):
-    r"""Returns a :class:`ParametrizedHamiltonian` representing the action of a driving laser
-    field with the given amplitude, detuning and phase acting on the given wires
+    r"""Returns a :class:`ParametrizedHamiltonian` representing the action of a driving laser field
 
     .. math::
 
@@ -135,9 +134,9 @@ def rydberg_drive(amplitude, phase, detuning, wires):
     Args:
         amplitude (Union[float, Callable]): float or callable returning the amplitude (in MHz) of a
             laser field
+        phase (Union[float, Callable]): float containing the phase (in radians) of the laser field
         detuning (Union[float, Callable]): float or callable returning the detuning (in MHz) of a
             laser field
-        phase (Union[float, Callable]): float containing the phase (in radians) of the laser field
         wires (Union[int, List[int]]): integer or list containing wire values for the Rydberg atoms that
             the laser field acts on
 
@@ -163,9 +162,9 @@ def rydberg_drive(amplitude, phase, detuning, wires):
         H_i = qml.pulse.rydberg_interaction(atom_coordinates, wires)
 
         amplitude = lambda p, t: p * jnp.sin(jnp.pi * t)
-        detuning = 3 * jnp.pi / 4
         phase = jnp.pi / 2
-        H_d = qml.pulse.rydberg_drive(amplitude, detuning, phase, wires)
+        detuning = 3 * jnp.pi / 4
+        H_d = qml.pulse.rydberg_drive(amplitude, phase, detuning, wires)
 
     >>> H_i
     ParametrizedHamiltonian: terms=6
@@ -177,7 +176,7 @@ def rydberg_drive(amplitude, phase, detuning, wires):
     due to detuning from resonance. This drive term corresponds to a global drive that acts on all 4 wires of
     the device.
 
-    The full Hamiltonian can be evaluated:
+    The full Hamiltonian evolution and expectation value measurement can be executed in a ``QNode``:
 
     .. code-block:: python
 
@@ -193,17 +192,23 @@ def rydberg_drive(amplitude, phase, detuning, wires):
     >>> jax.grad(circuit)(params)
     [Array(0.59484969, dtype=float64)]
 
-    We can also create a Hamiltonian with multiple local drives. The following circuit corresponds to the
-    evolution where an additional local drive acting on wires ``[0, 1]`` is added to the Hamiltonian:
+    We can also create a Hamiltonian with local drives. The following circuit corresponds to the
+    evolution where additional local drives acting on wires ``0`` and ``1`` respectively are added to the
+    Hamiltonian:
 
     .. code-block:: python
 
-        amplitude_local = lambda p, t: p[0] * jnp.sin(2 * jnp.pi * t) + p[1]
-        detuning_local = lambda p, t: p * jnp.exp(-0.25 * t)
-        phase_local = jnp.pi / 4
-        H_local = qml.pulse.rydberg_drive(amplitude_local, detuning_local, phase_local, [0, 1])
+        amplitude_local_0 = lambda p, t: p[0] * jnp.sin(2 * jnp.pi * t) + p[1]
+        phase_local_0 = jnp.pi / 4
+        detuning_local_0 = lambda p, t: p * jnp.exp(-0.25 * t)
+        H_local_0 = qml.pulse.rydberg_drive(amplitude_local_0, phase_local_0, detuning_local_0, [0])
 
-        H = H_i + H_d + H_local
+        amplitude_local_1 = lambda p, t: jnp.cos(jnp.pi * t) + p
+        phase_local_1 = jnp.pi
+        detuning_local_1 = lambda p, t: jnp.sin(jnp.pi * t) + p
+        H_local_1 = qml.pulse.rydberg_drive(amplitude_local_1, phase_local_1, detuning_local_1, [1])
+
+        H = H_i + H_d + H_local_0 + H_local_1
 
         @jax.jit
         @qml.qnode(dev, interface="jax")
@@ -211,14 +216,21 @@ def rydberg_drive(amplitude, phase, detuning, wires):
             qml.evolve(H)(params, t=[0, 10])
             return qml.expval(qml.PauliZ(0))
 
-    >>> params = [2.4, [1.3, -2.0], -1.5]
+    >>> p_global = 2.4
+    >>> p_local_amp_0 = [1.3, -2.0]
+    >>> p_local_det_0 = -1.5
+    >>> p_local_amp_1 = -0.9
+    >>> p_local_det_1 = 3.1
+    >>> params = [p_global, p_local_amp_0, p_local_det_0, p_local_amp_1, p_local_det_1]
     >>> circuit_local(params)
-    Array(0.80238028, dtype=float64)
+    Array(0.6464017, dtype=float64)
     >>> jax.grad(circuit_local)(params)
-    [Array(-0.73273312, dtype=float64),
-     [Array(-0.45635171, dtype=float64, weak_type=True),
-      Array(0.76572817, dtype=float64, weak_type=True)],
-     Array(0.01027312, dtype=float64)]
+    [Array(-1.47216703, dtype=float64),
+     [Array(0.25855072, dtype=float64, weak_type=True),
+      Array(0.1453378, dtype=float64, weak_type=True)],
+     Array(0.18329746, dtype=float64),
+     Array(0.05901987, dtype=float64),
+     Array(-0.23426886, dtype=float64)]
     """
     wires = Wires(wires)
     trivial_detuning = not callable(detuning) and qml.math.isclose(detuning, 0.0)
