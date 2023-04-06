@@ -14,7 +14,7 @@
   * A new user-facing `rydberg_interaction` function is added, which returns a `RydbergHamiltonian` containing
     the Hamiltonian of the interaction of all the Rydberg atoms.
   * A new user-facing `transmon_interaction` function is added, constructing
-    the Hamiltonian that describes the cqed interactions of transmon systems.
+    the Hamiltonian that describes the cQED interactions of transmon systems.
   * A new user-facing `drive` function is added, which returns a `ParametrizedHamiltonian` (`HardwareHamiltonian`) containing
     the Hamiltonian of the interaction between a driving electro-magnetic field and a group of qubits.
   [(#3749)](https://github.com/PennyLaneAI/pennylane/pull/3749)
