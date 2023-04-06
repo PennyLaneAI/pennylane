@@ -40,8 +40,8 @@ def qsvt(A, angles, wires, convention=None):
     **Example**
 
     >>> dev = qml.device("default.qubit", wires=2)
-    >>> A = [[0.1, 0.2], [0.3, 0.4]]
-    >>> angles = [0.1, 0.2, 0.3]
+    >>> A = np.array([[0.1, 0.2], [0.3, 0.4]])
+    >>> angles = np.array([0.1, 0.2, 0.3])
 
     >>> @qml.qnode(dev)
     ... def example_circuit(A):
