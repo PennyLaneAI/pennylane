@@ -91,7 +91,7 @@ class QSVT(Operation):
     `quantum singular value transformation <https://arxiv.org/abs/1806.01838>`__ circuit.
 
     Given a circuit :math:`U(A)`, which block encodes the matrix :math:`A`, and a list of projector-controlled
-    phase shifts, this template applies the circuit for quantum singular value transformation.
+    phase shifts :math:`\vec{\phi}`, this template applies the circuit for quantum singular value transformation.
 
     .. math::
 
