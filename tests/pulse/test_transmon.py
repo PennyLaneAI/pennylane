@@ -88,6 +88,11 @@ class TestTransmonInteraction:
                 omega=[0.1],
                 g=[0.2, 0.2],
             )
+    
+    def test_omega_and_wires_dont_match(self):
+        """"""
+        with pytest.raises(ValueError, match="Number of qubit frequencies omega"):
+            _ = transmon_interaction(omega=[1, 2, 3], wires=[0, 1], connections=[], g=[])
 
 
 # For transmon settings test
