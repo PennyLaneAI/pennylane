@@ -350,7 +350,11 @@ class gradient_transform(qml.batch_transform):
                             return qjac
 
                 multi_meas = len(qnode.tape.measurements) > 1
-                multi_params = isinstance(cjac, tuple) or len(qnode.tape.trainable_params) > 1
+
+                if multi_meas:
+                    multi_params = isinstance(cjac, tuple) or isinstance(qjac[0], tuple)
+                else:
+                    multi_params = isinstance(cjac, tuple) or isinstance(qjac, tuple)
 
                 if not multi_params and not multi_meas:
                     if qjac.shape == ():
