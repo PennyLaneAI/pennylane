@@ -19,7 +19,7 @@ accept a hermitian or an unitary matrix as a parameter.
 import warnings
 
 import numpy as np
-from scipy.linalg import norm
+from pennylane.math import norm, cast, eye, zeros, transpose, conj, sqrt, sqrt_matrix
 from pennylane import numpy as pnp
 
 import pennylane as qml
@@ -422,11 +422,9 @@ class BlockEncode(Operation):
             normalization = A if A > 1 else 1
             subspace = (1, 1, 2 ** len(wires))
         else:
-            normalization = pnp.max(
-                [
-                    norm(A @ qml.math.transpose(qml.math.conj(A)), ord=pnp.inf),
-                    norm(qml.math.transpose(qml.math.conj(A)) @ A, ord=pnp.inf),
-                ]
+            normalization = max(
+                norm(A @ qml.math.transpose(qml.math.conj(A)), ord=pnp.inf),
+                norm(qml.math.transpose(qml.math.conj(A)) @ A, ord=pnp.inf),
             )
             subspace = (*shape_a, 2 ** len(wires))
 
@@ -477,35 +475,39 @@ class BlockEncode(Operation):
         n, m, k = hyperparams["subspace"]
         shape_a = qml.math.shape(A)
 
+        def _stack(lst, h=False, like=None):
+            if like == "tensorflow":
+                axis = 1 if h else 0
+                return qml.math.concat(lst, like=like, axis=axis)
+            return qml.math.hstack(lst) if h else qml.math.vstack(lst)
+
+        interface = qml.math.get_interface(A)
+
         if qml.math.sum(shape_a) <= 2:
-            col1 = qml.math.vstack([A, qml.math.sqrt(1 - A * qml.math.conj(A))])
-            col2 = qml.math.vstack([qml.math.sqrt(1 - A * qml.math.conj(A)), -qml.math.conj(A)])
-            u = qml.math.hstack([col1, col2])
+            col1 = _stack([A, sqrt(1 - A * conj(A))], like=interface)
+            col2 = _stack([sqrt(1 - A * conj(A)), -conj(A)], like=interface)
+            u = _stack([col1, col2], h=True, like=interface)
         else:
             d1, d2 = shape_a
-            col1 = qml.math.vstack(
-                [
-                    A,
-                    qml.math.sqrt_matrix(
-                        qml.math.eye(d2, like=A) - qml.math.transpose(qml.math.conj(A)) @ A
-                    ),
-                ]
+            col1 = _stack(
+                [A, sqrt_matrix(cast(eye(d2, like=A), A.dtype) - qml.math.transpose(conj(A)) @ A)],
+                like=interface,
             )
-            col2 = qml.math.vstack(
+            col2 = _stack(
                 [
-                    qml.math.sqrt_matrix(
-                        qml.math.eye(d1, like=A) - A @ qml.math.transpose(qml.math.conj(A))
-                    ),
-                    -qml.math.transpose(qml.math.conj(A)),
-                ]
+                    sqrt_matrix(cast(eye(d1, like=A), A.dtype) - A @ transpose(conj(A))),
+                    -transpose(conj(A)),
+                ],
+                like=interface,
             )
-            u = qml.math.hstack([col1, col2])
+            u = _stack([col1, col2], h=True, like=interface)
 
         if n + m < k:
             r = k - (n + m)
-            col1 = qml.math.vstack([u, qml.math.zeros((r, n + m), like=A)])
-            col2 = qml.math.vstack([qml.math.zeros((n + m, r), like=A), qml.math.eye(r, like=A)])
-            u = qml.math.hstack([col1, col2])
+            col1 = _stack([u, zeros((r, n + m), like=A)], like=interface)
+            col2 = _stack([zeros((n + m, r), like=A), eye(r, like=A)], like=interface)
+            u = _stack([col1, col2], h=True, like=interface)
+
         return u
 
     def adjoint(self):

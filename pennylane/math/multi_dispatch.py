@@ -815,6 +815,18 @@ def expm(tensor, like=None):
     return scipy_expm(tensor)
 
 
+@multi_dispatch()
+def norm(tensor, like=None, **kwargs):
+    if like == "jax":
+        from jax.numpy.linalg import norm
+
+        return norm(tensor, **kwargs)
+
+    from scipy.linalg import norm
+
+    return norm(tensor, **kwargs)
+
+
 @multi_dispatch(argnum=[1])
 def gammainc(m, t, like=None):
     r"""Return the lower incomplete Gamma function.

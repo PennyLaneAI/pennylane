@@ -265,3 +265,16 @@ class TestDetach:
             out = fn.detach(x)
         jac = t.jacobian(out, x)
         assert jac is None
+
+
+# @pytest.mark.all_interfaces
+# class TestNorm:
+#     import tensorflow as tf
+#     import torch
+#     from jax import numpy as jnp
+#
+#     params = [
+#         torch.tensor([5, 6]),
+#         tf.Variable([-1.0, -2.0]),
+#         jnp.array([6, 7]),
+#     ]
