@@ -882,7 +882,7 @@ class TestAutogradExecuteIntegration:
         """Test sampling works as expected"""
         if (
             execute_kwargs["gradient_fn"] == "device"
-            and execute_kwargs["grad_on_execution"] == True
+            and execute_kwargs["grad_on_execution"] is True
         ):
             pytest.skip("Adjoint differentiation does not support samples")
 
