@@ -1642,7 +1642,7 @@ class TestSample:
     [(tf.function, "auto"), (tf.function, "tf"), (lambda x: x, "tf-autograph")],
 )
 class TestAutograph:
-    """Tests for Autograph grad_on_execution. This class is parametrized over the combination:
+    """Tests for Autograph mode. This class is parametrized over the combination:
 
     1. interface=interface with the QNode decoratored with @tf.function, and
     2. interface="tf-autograph" with no QNode decorator.
@@ -1651,7 +1651,7 @@ class TestAutograph:
     in TensorFlow, the new `tf-autograph` interface is automatically applied.
 
     Option (2) ensures that the tf-autograph interface can be manually applied,
-    even if in eager execution grad_on_execution.
+    even if in eager execution mode.
     """
 
     def test_autograph_gradients(self, decorator, interface, tol):
@@ -1722,7 +1722,7 @@ class TestAutograph:
         )
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
-    @pytest.mark.parametrize("grad_on_execution", ["forward", "backward"])
+    @pytest.mark.parametrize("grad_on_execution", [True, False])
     def test_autograph_adjoint_single_param(self, grad_on_execution, decorator, interface, tol):
         """Test that a parameter-shift QNode can be compiled
         using @tf.function, and differentiated to second order"""
@@ -1746,7 +1746,7 @@ class TestAutograph:
         expected_g = -tf.sin(x)
         assert np.allclose(g, expected_g, atol=tol, rtol=0)
 
-    @pytest.mark.parametrize("grad_on_execution", ["forward", "backward"])
+    @pytest.mark.parametrize("grad_on_execution", [True, False])
     def test_autograph_adjoint_multi_params(self, grad_on_execution, decorator, interface, tol):
         """Test that a parameter-shift QNode can be compiled
         using @tf.function, and differentiated to second order"""
