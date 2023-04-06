@@ -1060,9 +1060,6 @@ class QubitDevice(Device):
             else:
                 result = None
 
-            else:
-                result = None
-
             # 2. Post-process statistics results (if need be)
             if isinstance(
                 m,
