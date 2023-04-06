@@ -3,6 +3,10 @@
 # Release 0.30.0-dev (development release)
 
 <h3>New features since last release</h3>
+* The new return system is activated and public facing. The qnode kwarg `mode` is replaced by the boolean 
+  `grad_on_execution` .
+  [(#3957)](https://github.com/PennyLaneAI/pennylane/pull/3957)
+  [(#3969)](https://github.com/PennyLaneAI/pennylane/pull/3969)
 
 * The `sample_state` function is added to `devices/qubit` that returns a series of samples based on a given
   state vector and a number of shots.
