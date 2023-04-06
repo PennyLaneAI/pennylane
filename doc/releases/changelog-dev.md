@@ -8,6 +8,10 @@
   state vector and a number of shots.
   [(#3720)](https://github.com/PennyLaneAI/pennylane/pull/3720)
 
+* Adjoint differentiation support for the new qubit state-vector device has been added via
+  `adjoint_jacobian` in `devices/qubit`.
+  [(#3790)](https://github.com/PennyLaneAI/pennylane/pull/3790)
+
 * Added the needed functions and classes to simulate an ensemble of Rydberg atoms:
   * A new internal `RydbergHamiltonian` class is added, which contains the Hamiltonian of an ensemble of
     Rydberg atoms.
@@ -25,6 +29,9 @@
 * The `simulate` function added to `devices/qubit` now supports measuring expectation values of large observables such as
   `qml.Hamiltonian`, `qml.SparseHamiltonian`, `qml.Sum`.
   [(#3759)](https://github.com/PennyLaneAI/pennylane/pull/3759)
+
+* Added a `Shots` class to the `measurements` module to hold shot-related data.
+  [(#3682)](https://github.com/PennyLaneAI/pennylane/pull/3682)
 
 <h3>Improvements</h3>
 
@@ -169,7 +176,7 @@
 <h3>Documentation</h3>
 
 * A typo was corrected in the documentation for introduction to `inspecting_circuits` and `chemistry`.
-[(#3844)](https://github.com/PennyLaneAI/pennylane/pull/3844)
+  [(#3844)](https://github.com/PennyLaneAI/pennylane/pull/3844)
 
 <h3>Bug fixes</h3>
 
