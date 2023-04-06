@@ -47,9 +47,9 @@ def transmon_interaction(
 
     .. math::
 
-        H = \sum_q \omega_q a^\dagger_q a_q
+        H = \sum__{q\in \text{wires}} \omega_q a^\dagger_q a_q
         + \sum_{(i, j) \in \mathcal{C}} g_{ij} \left(a^\dagger_i a_j + a_j^\dagger a_i \right)
-        + \sum_q \alpha_q a^\dagger_q a^\dagger_q a_q a_q
+        + \sum_{q\in \text{wires}} \alpha_q a^\dagger_q a^\dagger_q a_q a_q
 
     where :math:`[a^\dagger_p, a_q] = i \delta_{pq}` are bosonic creation and annihilation operators.
     The first term describes the dressed qubit frequencies :math:`\omega_q`, the second term their
