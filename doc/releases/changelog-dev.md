@@ -145,6 +145,9 @@
   This allows devices that inherit from `QubitDevice` to override and customize their definition of diagonalizing gates.
   [(#3938)](https://github.com/PennyLaneAI/pennylane/pull/3938)
 
+* `Sum`, `Prod`, and `SProd` operator data is now a flat list, instead of nested.
+  [(#3958)](https://github.com/PennyLaneAI/pennylane/pull/3958)
+
 <h3>Breaking changes</h3>
 
 * Both JIT interfaces are not compatible with Jax `>0.4.3`, we raise an error for those versions.
@@ -170,6 +173,9 @@
 * Some `MeasurementProcess` classes can now only be instantiated with arguments that they will actually use.
   For example, you can no longer create `StateMP(qml.PauliX(0))` or `PurityMP(eigvals=(-1,1), wires=Wires(0))`.
   [(#3898)](https://github.com/PennyLaneAI/pennylane/pull/3898)
+
+* `Sum`, `Prod`, and `SProd` operator data is now a flat list, instead of nested.
+  [(#3958)](https://github.com/PennyLaneAI/pennylane/pull/3958)
 
 <h3>Deprecations</h3>
 
