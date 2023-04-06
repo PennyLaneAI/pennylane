@@ -20,7 +20,7 @@ import pytest
 
 import pennylane as qml
 from pennylane.pulse import HardwareHamiltonian, transmon_interaction
-from pennylane.pulse.transmon import TransmonSettings
+from pennylane.pulse.transmon import TransmonSettings, a, ad
 
 from pennylane.wires import Wires
 
@@ -69,6 +69,16 @@ class TestTransmonInteraction:
             connections, omega, g, anharmonicity=anharmonicity, d=3
         )
         assert all(Hd2.coeffs == np.concatenate([omega, g, anharmonicity]))
+
+    def test_float_omega_with_explicit_wires(self):
+        """Test that a single float omega with explicit wires yields the correct Hamiltonian"""
+        wires = range(10)
+        H = qml.pulse.transmon_interaction(omega=1.0, connections=connections, g=g, wires=wires)
+
+        assert H.coeffs[:10] == [1.0] * 10
+        assert all(H.coeffs[10:] == g)
+        for o1, o2 in zip(H.ops[:10], [ad(i, 2) @ a(i, 2) for i in wires]):
+            assert qml.equal(o1, o2)
 
     def test_d_neq_2_raises_error(self):
         """Test that setting d != 2 raises error"""
