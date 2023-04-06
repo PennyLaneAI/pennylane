@@ -1935,11 +1935,9 @@ def _param_shift_legacy(
         gradient_recipes = [None] * len(argnum)
 
     if any(isinstance(m, VarianceMP) for m in tape.measurements):
-        g_tapes, fn = _var_param_shift_legacy(tape, argnum, shifts, gradient_recipes, f0, broadcast)
+        g_tapes, fn = var_param_shift(tape, argnum, shifts, gradient_recipes, f0, broadcast)
     else:
-        g_tapes, fn = _expval_param_shift_legacy(
-            tape, argnum, shifts, gradient_recipes, f0, broadcast
-        )
+        g_tapes, fn = expval_param_shift(tape, argnum, shifts, gradient_recipes, f0, broadcast)
 
     gradient_tapes.extend(g_tapes)
 
