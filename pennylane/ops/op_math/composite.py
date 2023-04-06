@@ -120,8 +120,8 @@ class CompositeOp(Operator):
         for op in self:
             op_num_params = op.num_params
             if op_num_params > 0:
-                op.data = new_data[: op_num_params]
-                new_data = new_data[op_num_params :]
+                op.data = new_data[:op_num_params]
+                new_data = new_data[op_num_params:]
 
     @property
     def num_wires(self):
