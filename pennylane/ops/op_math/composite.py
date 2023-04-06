@@ -112,18 +112,16 @@ class CompositeOp(Operator):
     @property
     def data(self):
         """Create data property"""
-        data = []
-        for op in self:
-            data.extend(op.data)
-        return data
+        return [d for op in self for d in op.data]
 
     @data.setter
     def data(self, new_data):
         """Set the data property"""
         for op in self:
-            if op.num_params > 0:
-                op.data = new_data[: op.num_params]
-                new_data = new_data[op.num_params :]
+            op_num_params = op.num_params
+            if op_num_params > 0:
+                op.data = new_data[: op_num_params]
+                new_data = new_data[op_num_params :]
 
     @property
     def num_wires(self):
