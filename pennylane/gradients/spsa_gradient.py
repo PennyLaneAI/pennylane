@@ -79,7 +79,7 @@ def spsa_grad(
     r"""Transform a QNode to compute the SPSA gradient of all gate
     parameters with respect to its inputs. This estimator shifts all parameters
     simultaneously and approximates the gradient based on these shifts and a
-    finite-difference method. This function is adapted to the new return system.
+    finite-difference method.
 
     Args:
         tape (pennylane.QNode or .QuantumTape): quantum tape or QNode to differentiate
@@ -109,11 +109,9 @@ def spsa_grad(
             inferring that they support SPSA as well.
             If ``False``, the SPSA gradient method will be applied to all parameters without
             checking.
-        shots (None, int, list[int], list[ShotTuple]): The device shots that will be used to
-            execute the tapes outputted by this transform. Note that this argument doesn't
-            influence the shots used for tape execution, but provides information
-            to the transform about the device shots and helps in determining if a shot
-            sequence was used to define the device shots for the new return types output system.
+        shots (None, int, list[int], list[ShotTuple]): The device shots that will be used to execute the tapes
+            outputted by this transform. Note that this argument doesn't influence the shots used for tape execution,
+            but provides information about the shots.
         num_directions (int): Number of sampled simultaneous perturbation vectors. An estimate for
             the gradient is computed for each vector using the underlying finite-difference
             method, and afterwards all estimates are averaged.
@@ -145,14 +143,14 @@ def spsa_grad(
         function or tuple[list[QuantumTape], function]:
 
         - If the input is a QNode, an object representing the Jacobian (function) of the QNode
-          that can be executed to obtain the Jacobian matrix.
-          The type of the matrix returned is either a tensor, a tuple or a
+          that can be executed to obtain the Jacobian.
+          The type of the Jacobian returned is either a tensor, a tuple or a
           nested tuple depending on the nesting structure of the original QNode output.
 
         - If the input is a tape, a tuple containing a
           list of generated tapes, together with a post-processing
           function to be applied to the results of the evaluated tapes
-          in order to obtain the Jacobian matrix.
+          in order to obtain the Jacobian.
 
     **Example**
 
@@ -436,11 +434,9 @@ def _spsa_grad_legacy(
             inferring that they support SPSA as well.
             If ``False``, the SPSA gradient method will be applied to all parameters without
             checking.
-        shots (None, int, list[int], list[ShotTuple]): The device shots that will be used to
-            execute the tapes outputted by this transform. Note that this argument doesn't
-            influence the shots used for tape execution, but provides information
-            to the transform about the device shots and helps in determining if a shot
-            sequence was used to define the device shots for the new return types output system.
+        shots (None, int, list[int], list[ShotTuple]): The device shots that will be used to execute the
+            tapes outputted by this transform. Note that this argument doesn't influence the shots used for tape
+            execution, but provides information about the shots.
         num_directions (int): Number of sampled simultaneous perturbation vectors. An estimate for
             the gradient is computed for each vector using the underlying finite-difference
             method, and afterwards all estimates are averaged.

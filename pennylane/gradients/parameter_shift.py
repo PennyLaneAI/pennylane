@@ -184,9 +184,6 @@ def _multi_meas_grad(res, coeffs, r0, unshifted_coeff, num_measurements):
 def _evaluate_gradient(tape, res, data, r0, shots):
     """Use shifted tape evaluations and parameter-shift rule coefficients to evaluate
     a gradient result. If res is an empty list, ``r0`` and ``data[3]``, which is the
-    coefficient for the unshifted term, must be given and not None.
-
-    This is a helper function for the new return type system.
     """
 
     _, coeffs, fn, unshifted_coeff, _ = data
@@ -484,10 +481,9 @@ def expval_param_shift(
                 saving a quantum evaluation.
             broadcast (bool): Whether or not to use parameter broadcasting to create the
                 a single broadcasted tape per operation instead of one tape per shift angle.
-            shots (None, int, list[int], list[ShotTuple]): The device shots that will be used to execute the tapes outputted by this
-                transform. Note that this argument doesn't influence the shots used for tape execution, but provides
-                information to the transform about the device shots and helps in determining if a shot sequence was used
-                to define the device shots for the new return types output system.
+            shots (None, int, list[int], list[ShotTuple]): The device shots that will be used to execute the tapes
+                outputted by this transform. Note that this argument doesn't influence the shots used for tape
+                execution, but provides information to the transform about the shots.
 
         Returns:
             tuple[list[QuantumTape], function]: A tuple containing a
@@ -629,10 +625,9 @@ def _expval_param_shift_legacy(
             saving a quantum evaluation.
         broadcast (bool): Whether or not to use parameter broadcasting to create the
             a single broadcasted tape per operation instead of one tape per shift angle.
-        shots (None, int, list[int]): The device shots that will be used to execute the tapes outputted by this
-            transform. Note that this argument doesn't influence the shots used for tape execution, but provides information
-            to the transform about the device shots and helps in determining if a shot sequence was used to define the
-            device shots for the new return types output system.
+        shots (None, int, list[int]): The device shots that will be used to execute the tapes
+                outputted by this transform. Note that this argument doesn't influence the shots used for tape
+                execution, but provides information to the transform about the shots.
 
     Returns:
         tuple[list[QuantumTape], function]: A tuple containing a
@@ -961,10 +956,9 @@ def var_param_shift(
             saving a quantum evaluation.
         broadcast (bool): Whether or not to use parameter broadcasting to create the
             a single broadcasted tape per operation instead of one tape per shift angle.
-        shots (None, int, list[int]): The device shots that will be used to execute the tapes outputted by this
-            transform. Note that this argument doesn't influence the shots used for tape execution, but provides information
-            to the transform about the device shots and helps in determining if a shot sequence was used to define the
-            device shots for the new return types output system.
+        shots (None, int, list[int]): The device shots that will be used to execute the tapes
+                outputted by this transform. Note that this argument doesn't influence the shots used for tape
+                execution, but provides information to the transform about the shots.
 
     Returns:
         tuple[list[QuantumTape], function]: A tuple containing a
@@ -1065,10 +1059,9 @@ def _var_param_shift_legacy(
             saving a quantum evaluation.
         broadcast (bool): Whether or not to use parameter broadcasting to create the
             a single broadcasted tape per operation instead of one tape per shift angle.
-        shots (None, int, list[int]): The device shots that will be used to execute the tapes outputted by this
-            transform. Note that this argument doesn't influence the shots used for tape execution, but provides information
-            to the transform about the device shots and helps in determining if a shot sequence was used to define the
-            device shots for the new return types output system.
+        shots (None, int, list[int]): The device shots that will be used to execute the tapes
+                outputted by this transform. Note that this argument doesn't influence the shots used for tape
+                execution, but provides information to the transform about the shots.
 
     Returns:
         tuple[list[QuantumTape], function]: A tuple containing a
@@ -1205,8 +1198,6 @@ def param_shift(
     r"""Transform a QNode to compute the parameter-shift gradient of all gate
     parameters with respect to its inputs.
 
-    This function uses the new return types system.
-
     Args:
         qnode (pennylane.QNode or .QuantumTape): quantum tape or QNode to differentiate
         argnum (int or list[int] or None): Trainable parameter indices to differentiate
@@ -1238,22 +1229,21 @@ def param_shift(
         broadcast (bool): Whether or not to use parameter broadcasting to create the
             a single broadcasted tape per operation instead of one tape per shift angle.
         shots (None, int, list[int]): The device shots that will be used to execute the tapes outputted by this
-            transform. Note that this argument doesn't influence the shots used for tape execution, but provides information
-            to the transform about the device shots and helps in determining if a shot sequence was used to define the
-            device shots for the new return types output system.
+            transform. Note that this argument doesn't influence the shots used for tape execution, but provides
+            information about the shots.
 
     Returns:
         function or tuple[list[QuantumTape], function]:
 
         - If the input is a QNode, an object representing the Jacobian (function) of the QNode
-          that can be executed to obtain the Jacobian matrix.
-          The type of the matrix returned is either a tensor, a tuple or a
+          that can be executed to obtain the Jacobian.
+          The type of the Jacobian returned is either a tensor, a tuple or a
           nested tuple depending on the nesting structure of the original QNode output.
 
         - If the input is a tape, a tuple containing a
           list of generated tapes, together with a post-processing
           function to be applied to the results of the evaluated tapes
-          in order to obtain the Jacobian matrix.
+          in order to obtain the Jacobian.
 
     For a variational evolution :math:`U(\mathbf{p}) \vert 0\rangle` with
     :math:`N` parameters :math:`\mathbf{p}`,
@@ -1462,8 +1452,8 @@ def param_shift(
         >>> [t.batch_size for t in gradient_tapes]
         [2, 2, 2]
 
-        The postprocessing function will know that broadcasting is used and handle
-        the results accordingly:
+        The postprocessing function will know that broadcasting is used and handle the results accordingly:
+
         >>> fn(qml.execute(gradient_tapes, dev, None))
         (array(-0.3875172), array(-0.18884787), array(-0.38355704))
 
@@ -1675,10 +1665,9 @@ def _param_shift_legacy(
             saving a quantum evaluation.
         broadcast (bool): Whether or not to use parameter broadcasting to create the
             a single broadcasted tape per operation instead of one tape per shift angle.
-        shots (None, int, list[int]): Argument used by the new return type system (see :func:`~.enable_return` for more
-            information); it represents the device shots that will be used to execute the tapes outputted by this transform.
-            Note that this argument doesn't influence the shots used for tape execution, but provides information to the
-            transform about the device shots and helps in determining if a shot sequence was used.
+        shots (None, int, list[int]): The device shots that will be used to execute the tapes
+                outputted by this transform. Note that this argument doesn't influence the shots used for tape
+                execution, but provides information to the transform about the shots.
 
     Returns:
         function or tuple[list[QuantumTape], function]:

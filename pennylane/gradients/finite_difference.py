@@ -219,8 +219,7 @@ def finite_diff(
     validate_params=True,
     shots=None,
 ):
-    r"""Transform a QNode to compute the finite-difference gradient of all gate
-    parameters with respect to its inputs. This function is adapted to the new return system.
+    r"""Transform a QNode to compute the finite-difference gradient of all gate parameters with respect to its inputs.
 
     Args:
         tape (pennylane.QNode or .QuantumTape): quantum tape or QNode to differentiate
@@ -246,22 +245,21 @@ def finite_diff(
             to determine if the trainable parameters support the finite-difference method.
             If ``False``, the finite-difference method will be applied to all parameters.
         shots (None, int, list[int], list[ShotTuple]): The device shots that will be used to execute the tapes outputted by this
-            transform. Note that this argument doesn't influence the shots used for tape execution, but provides information
-            to the transform about the device shots and helps in determining if a shot sequence was used to define the
-            device shots for the new return types output system.
+            transform. Note that this argument doesn't influence the shots used for tape execution, but provides
+            information about the shots.
 
     Returns:
         function or tuple[list[QuantumTape], function]:
 
         - If the input is a QNode, an object representing the Jacobian (function) of the QNode
-          that can be executed to obtain the Jacobian matrix.
-          The type of the matrix returned is either a tensor, a tuple or a
+          that can be executed to obtain the Jacobian.
+          The type of the Jacobian returned is either a tensor, a tuple or a
           nested tuple depending on the nesting structure of the original QNode output.
 
         - If the input is a tape, a tuple containing a
           list of generated tapes, together with a post-processing
           function to be applied to the results of the evaluated tapes
-          in order to obtain the Jacobian matrix.
+          in order to obtain the Jacobian.
 
     **Example**
 
@@ -576,9 +574,8 @@ def _finite_diff_legacy(
             to determine if the trainable parameters support the finite-difference method.
             If ``False``, the finite-difference method will be applied to all parameters.
         shots (None, int, list[int]): The device shots that will be used to execute the tapes outputted by this
-            transform. Note that this argument doesn't influence the shots used for tape execution, but provides information
-            to the transform about the device shots and helps in determining if a shot sequence was used to define the
-            device shots for the new return types output system.
+            transform. Note that this argument doesn't influence the shots used for tape execution, but provides
+            information to the transform about the shots.
 
     Returns:
         function or tuple[list[QuantumTape], function]:
