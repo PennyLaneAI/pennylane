@@ -80,15 +80,6 @@ class TestTransmonInteraction:
         with pytest.raises(ValueError, match="Cannot instantiate wires automatically."):
             _ = transmon_interaction(connections=connections, omega=0.1, g=0.2)
 
-    # def test_wrong_omega_len_raises_error(self):
-    #     """Test that providing list of omegas with wrong length raises error"""
-    #     with pytest.raises(ValueError, match="Number of qubit frequencies omega"):
-    #         _ = transmon_interaction(
-    #             connections=connections,
-    #             omega=[0.1, 0.2],
-    #             g=0.2,
-    #         )
-
     def test_wrong_g_len_raises_error(self):
         """Test that providing list of g with wrong length raises error"""
         with pytest.raises(ValueError, match="Number of coupling terms"):
