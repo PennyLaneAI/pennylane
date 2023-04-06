@@ -129,7 +129,7 @@ def rydberg_drive(amplitude, phase, detuning, wires):
     :math:`\alpha = x,y,z` are the Pauli matrices. For hardware upload, time is expected to be in units
     of :math:`\text{µs}`, and the frequency in units of :math:`\text{MHz}`. It is recommended to also follow
     this convention for simultation, as it avoids numerical problems due to using very large and very small
-    number. This driving term can be combined with an interaction term to create a Hamiltonian describing a
+    numbers. This driving term can be combined with an interaction term to create a Hamiltonian describing a
     driven Rydberg atom system. Multiple driving terms can be combined by summing them (see example).
 
     Args:
