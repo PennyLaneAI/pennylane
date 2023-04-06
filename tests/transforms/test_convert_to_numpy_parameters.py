@@ -61,21 +61,31 @@ def test_convert_arrays_to_numpy(framework):
 
 
 @pytest.mark.autograd
+def test_preserves_trainable_params():
+    """Test that convert_to_numpy_parameters preserves the trainable parameters property."""
+    ops = [qml.RX(qml.numpy.array(2.0), 0), qml.RY(qml.numpy.array(3.0), 0)]
+    qs = qml.tape.QuantumScript(ops)
+    qs.trainable_params = {0}
+    output = convert_to_numpy_parameters(qs)
+    assert output.trainable_params == [0]
+
+
+@pytest.mark.autograd
 def test_unwraps_arithmetic_op():
-    """Should currently fail. We will need to flatten composite op data to get this to work."""
+    """Test that the operator helper function can handle operator arithmetic objects."""
     op1 = qml.s_prod(qml.numpy.array(2.0), qml.PauliX(0))
     op2 = qml.s_prod(qml.numpy.array(3.0), qml.PauliY(0))
 
     sum_op = qml.sum(op1, op2)
 
     unwrapped_op = _convert_op_to_numpy_data(sum_op)
-    assert qml.math.get_interface(unwrapped_op[0].data[0][0]) == "numpy"
-    assert qml.math.get_interface(unwrapped_op[1].data[0][0]) == "numpy"
+    assert qml.math.get_interface(*unwrapped_op.data) == "numpy"
+    assert qml.math.get_interface(*unwrapped_op.data) == "numpy"
 
 
 @pytest.mark.autograd
 def test_unwraps_arithmetic_op_measurement():
-    """Should currently fail. We will need to flatten composite op data to get this to work."""
+    """Test that the measurement helper function can handle operator arithmetic objects."""
     op1 = qml.s_prod(qml.numpy.array(2.0), qml.PauliX(0))
     op2 = qml.s_prod(qml.numpy.array(3.0), qml.PauliY(0))
 
@@ -84,5 +94,5 @@ def test_unwraps_arithmetic_op_measurement():
 
     unwrapped_m = _convert_measurement_to_numpy_data(m)
     unwrapped_op = unwrapped_m.obs
-    assert qml.math.get_interface(unwrapped_op[0].data[0][0]) == "numpy"
-    assert qml.math.get_interface(unwrapped_op[1].data[0][0]) == "numpy"
+    assert qml.math.get_interface(*unwrapped_op.data) == "numpy"
+    assert qml.math.get_interface(*unwrapped_op.data) == "numpy"

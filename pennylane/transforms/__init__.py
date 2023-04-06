@@ -152,6 +152,13 @@ more tapes as well as a classical processing function.
     ~transforms.sign_expand
     ~transforms.sum_expand
 
+This transform accepts a single tape and returns a single tape:
+
+.. autosummary::
+    :toctree: api
+
+    ~transforms.convert_to_numpy_parameters
+
 Decorators and utility functions
 --------------------------------
 
@@ -186,13 +193,6 @@ Transforms for error mitigation
     ~transforms.poly_extrapolate
     ~transforms.richardson_extrapolate
 
-Other
------
-
-.. autosummary::
-    :toctree: api
-
-    ~transforms.convert_to_numpy_parameters
 """
 # Import the decorators first to prevent circular imports when used in other transforms
 from .batch_transform import batch_transform, map_batch_transform
