@@ -1735,8 +1735,8 @@ qubit_device_and_diff_method_and_grad_on_execution = [
     ["default.qubit", "finite-diff", False],
     ["default.qubit", "parameter-shift", False],
     ["default.qubit", "adjoint", True],
-    ["default.qubit", "adjoint", True],
-    ["default.qubit", "hadamard", True],
+    ["default.qubit", "adjoint", False],
+    ["default.qubit", "hadamard", False],
 ]
 
 
