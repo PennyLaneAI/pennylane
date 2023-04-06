@@ -29,7 +29,7 @@ import numpy as np
 import pennylane as qml
 from pennylane.gradients import param_shift
 from pennylane.interfaces import InterfaceUnsupportedError, execute
-from pennylane.interfaces.jax_jit import _execute_with_fwd
+from pennylane.interfaces.jax_jit import _execute_with_fwd_legacy
 
 
 @pytest.mark.parametrize(
@@ -95,9 +95,9 @@ class TestJaxExecuteUnitTests:
         for args in spy.call_args_list:
             assert args[1]["shifts"] == [(np.pi / 4,)] * 2
 
-    def test_incorrect_mode(self, interface):
+    def test_incorrect_grad_on_execution(self, interface):
         """Test that an error is raised if an gradient transform
-        is used with mode=forward"""
+        is used with grad_on_execution=True"""
         a = jnp.array([0.1, 0.2])
 
         dev = qml.device("default.qubit", wires=1)
@@ -110,7 +110,7 @@ class TestJaxExecuteUnitTests:
 
             tape = qml.tape.QuantumScript.from_queue(q)
             return execute(
-                [tape], device, gradient_fn=param_shift, mode="forward", interface=interface
+                [tape], device, gradient_fn=param_shift, grad_on_execution=True, interface=interface
             )[0]
 
         with pytest.raises(
@@ -136,8 +136,8 @@ class TestJaxExecuteUnitTests:
         with pytest.raises(ValueError, match="Unknown interface"):
             cost(a, device=dev)
 
-    def test_forward_mode(self, interface, mocker):
-        """Test that forward mode uses the `device.execute_and_gradients` pathway"""
+    def test_forward_grad_on_execution(self, interface, mocker):
+        """Test that forward grad_on_execution uses the `device.execute_and_gradients` pathway"""
         dev = qml.device("default.qubit", wires=1)
         spy = mocker.spy(dev, "execute_and_gradients")
 
@@ -166,8 +166,8 @@ class TestJaxExecuteUnitTests:
         assert dev.num_executions == 1
         spy.assert_called()
 
-    def test_backward_mode(self, interface, mocker):
-        """Test that backward mode uses the `device.batch_execute` and `device.gradients` pathway"""
+    def test_backward_grad_on_execution(self, interface, mocker):
+        """Test that backward grad_on_execution uses the `device.batch_execute` and `device.gradients` pathway"""
         dev = qml.device("default.qubit", wires=1)
         spy_execute = mocker.spy(qml.devices.DefaultQubit, "batch_execute")
         spy_gradients = mocker.spy(qml.devices.DefaultQubit, "gradients")
@@ -183,7 +183,7 @@ class TestJaxExecuteUnitTests:
                 [tape],
                 dev,
                 gradient_fn="device",
-                mode="backward",
+                grad_on_execution=False,
                 interface=interface,
                 gradient_kwargs={"method": "adjoint_jacobian"},
             )[0][0]
@@ -352,7 +352,7 @@ class TestCaching:
 
     def test_caching_adjoint_backward(self, interface):
         """Test that caching produces the optimum number of adjoint evaluations
-        when mode=backward"""
+        when grad_on_execution=False"""
         dev = qml.device("default.qubit", wires=2)
         params = jnp.array([0.1, 0.2, 0.3])
 
@@ -369,7 +369,7 @@ class TestCaching:
                 dev,
                 gradient_fn="device",
                 cache=cache,
-                mode="backward",
+                grad_on_execution=False,
                 interface=interface,
                 gradient_kwargs={"method": "adjoint_jacobian"},
             )[0][0]
@@ -392,12 +392,12 @@ execute_kwargs = [
     {"gradient_fn": param_shift},
     {
         "gradient_fn": "device",
-        "mode": "forward",
+        "grad_on_execution": True,
         "gradient_kwargs": {"method": "adjoint_jacobian", "use_device_state": True},
     },
     {
         "gradient_fn": "device",
-        "mode": "backward",
+        "grad_on_execution": False,
         "gradient_kwargs": {"method": "adjoint_jacobian"},
     },
 ]
@@ -508,8 +508,8 @@ class TestJaxExecuteIntegration:
         expected = -2 * np.sin(2 * a)
         assert np.allclose(jac, expected, atol=tol, rtol=0)
 
-    def test_jit_grad_with_backward_mode(self, execute_kwargs, interface):
-        """Test jax jit grad for adjoint diff method in backward mode"""
+    def test_jit_grad_with_backward_grad_on_execution(self, execute_kwargs, interface):
+        """Test jax jit grad for adjoint diff method in backward grad_on_execution"""
         dev = qml.device("default.qubit", wires=2)
         params = jnp.array([0.1, 0.2, 0.3])
         expected_results = jnp.array([-0.3875172, -0.18884787, -0.38355705])
@@ -713,9 +713,11 @@ class TestVectorValued:
 
     def test_multiple_expvals(self, execute_kwargs):
         """Tests computing multiple expectation values in a tape."""
-        fwd_mode = execute_kwargs.get("mode", "not forward") == "forward"
-        if fwd_mode:
-            pytest.skip("The forward mode is tested separately as it should raise an error.")
+        fwd_grad_on_execution = execute_kwargs.get("grad_on_execution", False) == True
+        if fwd_grad_on_execution:
+            pytest.skip(
+                "The forward grad_on_execution is tested separately as it should raise an error."
+            )
 
         dev = qml.device("default.qubit", wires=2)
         params = jnp.array([0.1, 0.2, 0.3])
@@ -740,9 +742,11 @@ class TestVectorValued:
     def test_multiple_expvals_single_par(self, execute_kwargs):
         """Tests computing multiple expectation values in a tape with a single
         trainable parameter."""
-        fwd_mode = execute_kwargs.get("mode", "not forward") == "forward"
-        if fwd_mode:
-            pytest.skip("The forward mode is tested separately as it should raise an error.")
+        fwd_grad_on_execution = execute_kwargs.get("grad_on_execution", False) == True
+        if fwd_grad_on_execution:
+            pytest.skip(
+                "The forward grad_on_execution is tested separately as it should raise an error."
+            )
 
         dev = qml.device("default.qubit", wires=2)
         params = jnp.array([0.1])
@@ -793,9 +797,11 @@ class TestVectorValued:
 
     def test_multi_tape_jacobian(self, execute_kwargs):
         """Test the jacobian computation with multiple tapes."""
-        fwd_mode = execute_kwargs.get("mode", "not forward") == "forward"
-        if fwd_mode:
-            pytest.skip("The forward mode is tested separately as it should raise an error.")
+        fwd_grad_on_execution = execute_kwargs.get("grad_on_execution", False) == True
+        if fwd_grad_on_execution:
+            pytest.skip(
+                "The forward grad_on_execution is tested separately as it should raise an error."
+            )
 
         def cost(x, y, device, interface, ek):
             with qml.queuing.AnnotatedQueue() as q1:
@@ -836,9 +842,11 @@ class TestVectorValued:
     def test_multi_tape_jacobian_probs_expvals(self, execute_kwargs):
         """Test the jacobian computation with multiple tapes with probability
         and expectation value computations."""
-        fwd_mode = execute_kwargs.get("mode", "not forward") == "forward"
-        if fwd_mode:
-            pytest.skip("The forward mode is tested separately as it should raise an error.")
+        fwd_grad_on_execution = execute_kwargs.get("grad_on_execution", False) == True
+        if fwd_grad_on_execution:
+            pytest.skip(
+                "The forward grad_on_execution is tested separately as it should raise an error."
+            )
 
         adjoint = execute_kwargs.get("gradient_kwargs", {}).get("method", "") == "adjoint_jacobian"
         if adjoint:
@@ -882,9 +890,9 @@ class TestVectorValued:
 
     def test_multiple_expvals_raises_fwd_device_grad(self, execute_kwargs):
         """Tests computing multiple expectation values in a tape."""
-        fwd_mode = execute_kwargs.get("mode", "not forward") == "forward"
-        if not fwd_mode:
-            pytest.skip("Forward mode is not turned on.")
+        fwd_grad_on_execution = execute_kwargs.get("grad_on_execution", False) == True
+        if not fwd_grad_on_execution:
+            pytest.skip("Forward grad_on_execution is not turned on.")
 
         dev = qml.device("default.qubit", wires=2)
         params = jnp.array([0.1, 0.2, 0.3])
@@ -1048,9 +1056,11 @@ class TestVectorValuedJIT:
         """Tests computing multiple expectation values in a tape."""
         dev = qml.device("default.qubit", wires=2)
         params = jnp.array([0.1, 0.2, 0.3])
-        fwd_mode = execute_kwargs.get("mode", "not forward") == "forward"
-        if fwd_mode:
-            pytest.skip("The forward mode is tested separately as it should raise an error.")
+        fwd_grad_on_execution = execute_kwargs.get("grad_on_execution", False) == True
+        if fwd_grad_on_execution:
+            pytest.skip(
+                "The forward grad_on_execution is tested separately as it should raise an error."
+            )
 
         def cost(a, cache):
             with qml.queuing.AnnotatedQueue() as q:
@@ -1072,9 +1082,11 @@ class TestVectorValuedJIT:
     def test_multi_tape_jacobian_probs_expvals(self, execute_kwargs):
         """Test the jacobian computation with multiple tapes with probability
         and expectation value computations."""
-        fwd_mode = execute_kwargs.get("mode", "not forward") == "forward"
-        if fwd_mode:
-            pytest.skip("The forward mode is tested separately as it should raise an error.")
+        fwd_grad_on_execution = execute_kwargs.get("grad_on_execution", False) == True
+        if fwd_grad_on_execution:
+            pytest.skip(
+                "The forward grad_on_execution is tested separately as it should raise an error."
+            )
 
         adjoint = execute_kwargs.get("gradient_kwargs", {}).get("method", "") == "adjoint_jacobian"
         if adjoint:
@@ -1115,9 +1127,9 @@ class TestVectorValuedJIT:
 
     def test_multiple_expvals_raises_fwd_device_grad(self, execute_kwargs):
         """Tests computing multiple expectation values in a tape."""
-        fwd_mode = execute_kwargs.get("mode", "not forward") == "forward"
-        if not fwd_mode:
-            pytest.skip("Forward mode is not turned on.")
+        fwd_grad_on_execution = execute_kwargs.get("grad_on_execution", False) == True
+        if not fwd_grad_on_execution:
+            pytest.skip("Forward grad_on_execution is not turned on.")
 
         dev = qml.device("default.qubit", wires=2)
         params = jnp.array([0.1, 0.2, 0.3])
@@ -1161,7 +1173,7 @@ class TestVectorValuedJIT:
         tapes = [tape]
 
         with pytest.raises(AssertionError):
-            _execute_with_fwd(
+            _execute_with_fwd_legacy(
                 params,
                 tapes=tapes,
                 device=device,
