@@ -496,7 +496,7 @@ class QubitDevice(Device):
         return tuple(results)
 
     def _multi_meas_with_counts_shot_vec(self, circuit: QuantumTape, shot_tuple, r):
-        """Auxiliary function of the shot_vec_statistics and execute_new
+        """Auxiliary function of the shot_vec_statistics and execute
         functions for post-processing the results of multiple measurements at
         least one of which was a counts measurement.
 

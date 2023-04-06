@@ -280,13 +280,13 @@ def pytreeify(cls):
     return cls
 
 
-def _compute_vjps_new(dys, jacs, multi_measurements):
+def _compute_vjps(dys, jacs, multi_measurements):
     """Compute the vjps of multiple tapes, directly for a Jacobian and tangents."""
     vjps = []
 
     for i, multi in enumerate(multi_measurements):
         compute_func = (
-            qml.gradients.compute_vjp_multi_new if multi else qml.gradients.compute_vjp_single_new
+            qml.gradients.compute_vjp_multi if multi else qml.gradients.compute_vjp_single
         )
         vjps.extend(compute_func(dys[i], jacs[i]))
     return vjps
@@ -366,7 +366,7 @@ class ExecuteTapes(torch.autograd.Function):
         if ctx.jacs:
             # Jacobians were computed on the forward pass (mode="forward")
             # No additional quantum evaluations needed; simply compute the VJPs directly.
-            vjps = _compute_vjps_new(dy, ctx.jacs, multi_measurements)
+            vjps = _compute_vjps(dy, ctx.jacs, multi_measurements)
 
         else:
             # Need to compute the Jacobians on the backward pass (accumulation="backward")
@@ -430,7 +430,7 @@ class ExecuteTapes(torch.autograd.Function):
                 with qml.tape.Unwrap(*ctx.tapes):
                     jacs = ctx.gradient_fn(ctx.tapes, **ctx.gradient_kwargs)
 
-                vjps = _compute_vjps_new(dy, jacs, multi_measurements)
+                vjps = _compute_vjps(dy, jacs, multi_measurements)
 
         # Remove empty vjps (from tape with non trainable params)
         vjps = [vjp for vjp in vjps if list(vjp.shape) != [0]]

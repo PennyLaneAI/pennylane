@@ -520,7 +520,13 @@ def qnode_execution_wrapper_mc(self, qnode, targs, tkwargs):
         if "mode" in execute_kwargs:
             mode = execute_kwargs.pop("mode")
             if not qml.active_return():
-                execute_kwargs["grad_on_execution"] = "forward" if mode != "best" else "best"
+                if mode == "forward":
+                    grad_on_execution = True
+                elif mode == "backward":
+                    grad_on_execution = False
+                else:
+                    grad_on_execution = "best"
+                execute_kwargs["grad_on_execution"] = grad_on_execution
 
         res = qml.execute(
             tapes,
