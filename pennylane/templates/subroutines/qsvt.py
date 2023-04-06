@@ -124,7 +124,7 @@ class QSVT(Operation):
 
     >>> @qml.qnode(dev)
     >>> def example_circuit(A):
-    ...     qml.QSVT(blckencode, angles, wires=[0, 1])
+    ...     qml.QSVT(block_encode, angles, wires=[0, 1])
     ...     return qml.expval(qml.PauliZ(wires=0))
 
     >>> print(qml.matrix(example_circuit)(A))
