@@ -29,7 +29,7 @@ def qsvt(A, angles, wires, convention=None):
     `quantum singular value transformation <https://arxiv.org/abs/1806.01838>`__ using
     :class:`~.BlockEncode` and :class:`~.PCPhase`.
     See also `A Grand Unification of Quantum Algorithms <https://arxiv.org/pdf/2105.02859.pdf>`__ and
-    :class:`~.QSVT`__.
+    :class:`~.QSVT`.
 
     Args:
         A (tensor_like): the general :math:`(n \times m)` matrix to be encoded
