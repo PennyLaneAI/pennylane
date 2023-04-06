@@ -428,7 +428,7 @@ class BlockEncode(Operation):
             )
             subspace = (*shape_a, 2 ** len(wires))
 
-        A = A / normalization if normalization > 1 else A
+        A = qml.math.array(A) / normalization if normalization > 1 else A
 
         if subspace[2] < (subspace[0] + subspace[1]):
             raise ValueError(
