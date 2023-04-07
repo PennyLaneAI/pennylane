@@ -252,6 +252,7 @@ def clifford(generators, paulixops):
         cliff.append(pauli_sentence(1 / 2**0.5 * (paulixops[i] + t)))
 
     u = functools.reduce(lambda p, q: p * q, cliff)
+
     return u.hamiltonian()
 
 
@@ -264,7 +265,7 @@ def taper(h, generators, paulixops, paulix_sector):
     eigenvalues is defined as the Pauli sector.
 
     Args:
-        h (Hamiltonian): PennyLane Hamiltonian
+        h (Hamiltonian or PauliSentence): PennyLane Hamiltonian
         generators (list[Hamiltonian]): generators expressed as PennyLane Hamiltonians
         paulixops (list[Operation]): list of single-qubit Pauli-X operators
         paulix_sector (llist[int]): eigenvalues of the Pauli-X operators
@@ -290,28 +291,31 @@ def taper(h, generators, paulixops, paulix_sector):
 
     # cast to pauli sentence
     ps_u = pauli_sentence(u)
-    ps_h = pauli_sentence(h)
+
+    ps_h = h
+    if not isinstance(ps_h, qml.pauli.PauliSentence):
+        ps_h = pauli_sentence(h)
 
     h = (ps_u * ps_h * ps_u).hamiltonian()  # cast back to hamiltonian
-
-    val = np.ones(len(h.terms()[0])) * complex(1.0)
-
+    
     wireset = u.wires + h.wires
     wiremap = dict(zip(wireset, range(len(wireset) + 1)))
     paulix_wires = [x.wires[0] for x in paulixops]
 
-    for idx, w in enumerate(paulix_wires):
-        for i in range(len(h.terms()[0])):
-            s = qml.pauli.pauli_word_to_string(h.terms()[1][i], wire_map=wiremap)
-            if s[w] == "X":
-                val[i] *= paulix_sector[idx]
-
     o = []
+    h_coeffs, h_ops = h.terms()
+    val = np.ones(len(h_coeffs)) 
+
     wires_tap = [i for i in h.wires if i not in paulix_wires]
     wiremap_tap = dict(zip(wires_tap, range(len(wires_tap) + 1)))
 
-    for i in range(len(h.terms()[0])):
-        s = qml.pauli.pauli_word_to_string(h.terms()[1][i], wire_map=wiremap)
+    for i in range(len(h_coeffs)):
+
+        s = qml.pauli.pauli_word_to_string(h_ops[i], wire_map=wiremap)
+
+        for idx, w in enumerate(paulix_wires):
+            if s[w] == "X":
+                val[i] *= paulix_sector[idx]
 
         wires = [x for x in h.wires if x not in paulix_wires]
         o.append(
@@ -320,7 +324,7 @@ def taper(h, generators, paulixops, paulix_sector):
             )
         )
 
-    c = qml.math.multiply(val, h.terms()[0])
+    c = qml.math.multiply(val * complex(1.0), h_coeffs)
     c = qml.math.stack(c)
 
     tapered_ham = simplify(qml.Hamiltonian(c, o))
@@ -447,10 +451,9 @@ def taper_hf(generators, paulixops, paulix_sector, num_electrons, num_wires):
 
     fermop_terms_as_ps = [pauli_sentence(term) for term in fermop_terms]
     ferm_ps = functools.reduce(lambda i, j: i * j, fermop_terms_as_ps)
-    ferm_op = ferm_ps.hamiltonian()
 
     # taper the HF observable using the symmetries obtained from the molecular hamiltonian
-    fermop_taper = taper(ferm_op, generators, paulixops, paulix_sector)
+    fermop_taper = taper(ferm_ps, generators, paulixops, paulix_sector)
     fermop_mat = _binary_matrix(fermop_taper.ops, len(fermop_taper.wires))
 
     # build a wireset to match wires with that of the tapered Hamiltonian
