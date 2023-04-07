@@ -93,25 +93,26 @@ class TestConstruction:
 
     def test_parameters(self):
         """Test that parameters are initialized correctly."""
-        op = ValidOp(qml.RX(9.87, wires=0), qml.Rot(1.23, 4.0, 5.67, wires=1))
-        assert op.parameters == [[9.87], [1.23, 4.0, 5.67]]
+        op = ValidOp(qml.RX(9.87, wires=0), qml.Rot(1.23, 4.0, 5.67, wires=1), qml.PauliX(0))
+        assert op.parameters == [9.87, 1.23, 4.0, 5.67]
 
     def test_data(self):
         """Test that data is initialized correctly."""
-        op = ValidOp(qml.RX(9.87, wires=0), qml.Rot(1.23, 4.0, 5.67, wires=1))
-        assert op.data == [[9.87], [1.23, 4.0, 5.67]]
+        op = ValidOp(qml.RX(9.87, wires=0), qml.Rot(1.23, 4.0, 5.67, wires=1), qml.PauliX(0))
+        assert op.data == [9.87, 1.23, 4.0, 5.67]
 
     def test_data_setter(self):
         """Test the setter method for data"""
-        op = ValidOp(qml.RX(9.87, wires=0), qml.Rot(1.23, 4.0, 5.67, wires=1))
-        assert op.data == [[9.87], [1.23, 4.0, 5.67]]
+        op = ValidOp(qml.RX(9.87, wires=0), qml.Rot(1.23, 4.0, 5.67, wires=1), qml.PauliX(0))
+        assert op.data == [9.87, 1.23, 4.0, 5.67]
 
-        new_data = [[1.23], [0.0, -1.0, -2.0]]
+        new_data = [1.23, 0.0, -1.0, -2.0]
         op.data = new_data
         assert op.data == new_data
 
-        for op, new_entry in zip(op.operands, new_data):
-            assert op.data == new_entry
+        for o in op:
+            assert o.data == new_data[: o.num_params]
+            new_data = new_data[o.num_params :]
 
     def test_ndim_params_raises_error(self):
         """Test that calling ndim_params raises a ValueError."""

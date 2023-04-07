@@ -208,7 +208,7 @@ def _evaluate_gradient_new(tape, res, data, r0, shots):
         # 1. Number of parameters
         # 2. Shot vector
         if r0 is None:
-            r0 = [None] * len_shot_vec
+            r0 = [None] * int(len_shot_vec)
         for i in range(len_shot_vec):
             shot_comp_res = [r[i] for r in res]
             shot_comp_res = _single_meas_grad(shot_comp_res, coeffs, unshifted_coeff, r0[i])

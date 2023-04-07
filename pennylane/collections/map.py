@@ -106,6 +106,9 @@ def map(
     """
     warnings.warn("The map function is deprecated and it will be removed soon.", UserWarning)
 
+    if qml.active_return():
+        raise qml.QuantumFunctionError("QNodeCollections does not support the new return system.")
+
     if not callable(template):
         raise ValueError("Could not create QNodes. The template is not a callable function.")
 
