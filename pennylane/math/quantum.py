@@ -1177,6 +1177,7 @@ def min_entropy(state, indices, base=None, check_state=False, c_dtype="complex12
 
     return minimum_entropy
 
+
 def _compute_min_entropy(density_matrix, base):
     r"""Compute the minimum entropy from a density matrix
 
