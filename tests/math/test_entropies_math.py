@@ -462,6 +462,7 @@ class TestMaxEntropy:
 
         assert qml.math.allclose(gradient, 0.0)
 
+
 class TestMinEntropy:
     """Test for computing the minimum entropy of a given state."""
 
@@ -471,7 +472,7 @@ class TestMinEntropy:
         [1],
     ]
 
-    base  = [2, np.exp(1), 10]
+    base = [2, np.exp(1), 10]
 
     check_state = [True, False]
 
@@ -489,12 +490,11 @@ class TestMinEntropy:
         entropy = qml.math.min_entropy(state_vector, wires, check_state=check_state)
 
         if pure:
-            expected_min_entropy = 0 
+            expected_min_entropy = 0
         else:
-            expected_min_entropy = - np.log(2) 
+            expected_min_entropy = -np.log(2)
         assert qml.math.allclose(entropy, expected_min_entropy)
 
-    
     @pytest.mark.parametrize("wires", single_wires_list)
     @pytest.mark.parametrize("state_vector,pure", state_vector)
     @pytest.mark.parametrize("base", base)
@@ -510,16 +510,15 @@ class TestMinEntropy:
             entropy = qml.math.min_entropy(state_vector, wires, base, check_state=check_state)
 
             if pure:
-                expected_min_entropy = 0 
+                expected_min_entropy = 0
             else:
-                expected_min_entropy = - np.log(2) / np.log(base)
+                expected_min_entropy = -np.log(2) / np.log(base)
             assert qml.math.allclose(entropy, expected_min_entropy)
 
     density_matrices = [
         ([[1 / 2, 0, 0, 1 / 2], [0, 0, 0, 0], [0, 0, 0, 0], [1 / 2, 0, 0, 1 / 2]], False),
         ([[1, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0]], True),
     ]
-
 
     @pytest.mark.parametrize("density_matrix,pure", density_matrices)
     @pytest.mark.parametrize("wires", single_wires_list)
@@ -538,16 +537,14 @@ class TestMinEntropy:
         if pure:
             expected_min_entropy = 0
         else:
-            expected_min_entropy = - np.log(2) / np.log(base)
+            expected_min_entropy = -np.log(2) / np.log(base)
 
         assert qml.math.allclose(entropy, expected_min_entropy)
-
 
     parameters = [
         [1, 0, 0, 1] / np.sqrt(2),
         [[1 / 2, 0, 0, 1 / 2], [0, 0, 0, 0], [0, 0, 0, 0], [1 / 2, 0, 0, 1 / 2]],
     ]
-
 
     @pytest.mark.autograd
     @pytest.mark.parametrize("params", parameters)
@@ -559,22 +556,23 @@ class TestMinEntropy:
 
         # It handles different parameters' shapes
         try:
-            expected_results = [1/(param * np.log(base)) if param != 0 else param for param in params]
+            expected_results = [
+                1 / (param * np.log(base)) if param != 0 else param for param in params
+            ]
         except TypeError:
             expected_results = [
-                    [1 / np.log(base), 0., 0., 0.],
-                    [0., 1 / np.log(base), 0., 0.],
-                    [0., 0., 1 / np.log(base), 0.],
-                    [0., 0., 0., 1 / np.log(base)]
-                    ]
+                [1 / np.log(base), 0.0, 0.0, 0.0],
+                [0.0, 1 / np.log(base), 0.0, 0.0],
+                [0.0, 0.0, 1 / np.log(base), 0.0],
+                [0.0, 0.0, 0.0, 1 / np.log(base)],
+            ]
 
         params = np.tensor(params)
-        
+
         gradient = qml.grad(qml.math.min_entropy)(params, wires, base, check_state)
 
         for grad, param in zip(gradient, expected_results):
-            assert qml.math.allclose(grad,param)
-
+            assert qml.math.allclose(grad, param)
 
     @pytest.mark.torch
     @pytest.mark.parametrize("params", parameters)
@@ -587,15 +585,17 @@ class TestMinEntropy:
 
         # It handles different parameters' shapes
         try:
-            expected_results = [1/(param * np.log(base)) if param != 0 else param for param in params]
+            expected_results = [
+                1 / (param * np.log(base)) if param != 0 else param for param in params
+            ]
         except TypeError:
             expected_results = [
-                    [1 / np.log(base), 0., 0., 0.],
-                    [0., 1 / np.log(base), 0., 0.],
-                    [0., 0., 1 / np.log(base), 0.],
-                    [0., 0., 0., 1 / np.log(base)]
-                    ]
-            
+                [1 / np.log(base), 0.0, 0.0, 0.0],
+                [0.0, 1 / np.log(base), 0.0, 0.0],
+                [0.0, 0.0, 1 / np.log(base), 0.0],
+                [0.0, 0.0, 0.0, 1 / np.log(base)],
+            ]
+
         params = torch.tensor(params, requires_grad=True)
 
         min_entropy = qml.math.min_entropy(params, wires, base, check_state)
@@ -613,18 +613,20 @@ class TestMinEntropy:
     def test_min_entropy_grad_tf(self, params, wires, base, check_state):
         """Test `min_entropy` differentiability with tensorflow interface."""
         import tensorflow as tf
-        
+
         # It handles different parameters' shapes
         try:
-            expected_results = [1/(param * np.log(base)) if param != 0 else param for param in params]
+            expected_results = [
+                1 / (param * np.log(base)) if param != 0 else param for param in params
+            ]
         except TypeError:
             expected_results = [
-                    [1 / np.log(base), 0., 0., 0.],
-                    [0., 1 / np.log(base), 0., 0.],
-                    [0., 0., 1 / np.log(base), 0.],
-                    [0., 0., 0., 1 / np.log(base)]
-                    ]
-            
+                [1 / np.log(base), 0.0, 0.0, 0.0],
+                [0.0, 1 / np.log(base), 0.0, 0.0],
+                [0.0, 0.0, 1 / np.log(base), 0.0],
+                [0.0, 0.0, 0.0, 1 / np.log(base)],
+            ]
+
         params = tf.Variable(params)
 
         with tf.GradientTape() as tape:
@@ -634,7 +636,6 @@ class TestMinEntropy:
 
         for grad, result in zip(gradient, expected_results):
             assert qml.math.allclose(grad, result)
-
 
     @pytest.mark.jax
     @pytest.mark.parametrize("params", parameters)
@@ -648,18 +649,21 @@ class TestMinEntropy:
         import jax.numpy as jnp
 
         from jax.config import config
-        config.update("jax_enable_x64", True) # Enabling complex128 datatypes for jax
-        
+
+        config.update("jax_enable_x64", True)  # Enabling complex128 datatypes for jax
+
         # It handles different parameters' shapes
         try:
-            expected_results = [1/(param * np.log(base)) if param != 0 else param for param in params]
+            expected_results = [
+                1 / (param * np.log(base)) if param != 0 else param for param in params
+            ]
         except TypeError:
             expected_results = [
-                    [1 / np.log(base), 0., 0., 0.],
-                    [0., 1 / np.log(base), 0., 0.],
-                    [0., 0., 1 / np.log(base), 0.],
-                    [0., 0., 0., 1 / np.log(base)]
-                    ]
+                [1 / np.log(base), 0.0, 0.0, 0.0],
+                [0.0, 1 / np.log(base), 0.0, 0.0],
+                [0.0, 0.0, 1 / np.log(base), 0.0],
+                [0.0, 0.0, 0.0, 1 / np.log(base)],
+            ]
 
         params = jnp.array(params)
 
@@ -674,4 +678,3 @@ class TestMinEntropy:
 
         for grad, result in zip(gradient, expected_results):
             assert qml.math.allclose(grad, result)
-            
