@@ -39,6 +39,10 @@
 
 <h3>Improvements</h3>
 
+* Added a new decomposition to `qml.SingleExcitation` that halves the number of
+  CNOTs required.
+  [(3976)](https://github.com/PennyLaneAI/pennylane/pull/3976)
+
 * The default gaussian device and parameter shift cv support the new return system but only for single measurement.
   [(3946)](https://github.com/PennyLaneAI/pennylane/pull/3946)
 
@@ -245,6 +249,7 @@ This release contains contributions from (in alphabetical order):
 
 Komi Amiko
 Utkarsh Azad
+Olivia Di Matteo
 Lillian M. A. Frederiksen
 Soran Jahangiri
 Christina Lee
