@@ -227,9 +227,22 @@ class SingleExcitation(Operation):
 
         """
         decomp_ops = [
-            qml.CNOT(wires=[wires[0], wires[1]]),
-            qml.CRY(phi, wires=[wires[1], wires[0]]),
-            qml.CNOT(wires=[wires[0], wires[1]]),
+            qml.adjoint(qml.T)(wires=wires[0]),
+            qml.Hadamard(wires=wires[0]),
+            qml.S(wires=wires[0]),
+            qml.adjoint(qml.T)(wires=wires[1]),
+            qml.adjoint(qml.S)(wires=wires[1]),
+            qml.Hadamard(wires=wires[1]),
+            qml.CNOT(wires=[wires[1], wires[0]]),
+            qml.RZ(-phi/2, wires=wires[0]),
+            qml.RY(phi/2, wires=wires[1]),
+            qml.CNOT(wires=[wires[1], wires[0]]),
+            qml.adjoint(qml.S)(wires=wires[0]),
+            qml.Hadamard(wires=wires[0]),
+            qml.T(wires=wires[0]),
+            qml.Hadamard(wires=wires[1]),
+            qml.S(wires=wires[1]),
+            qml.T(wires=wires[1])
         ]
         return decomp_ops
 
