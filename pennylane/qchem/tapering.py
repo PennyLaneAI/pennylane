@@ -551,8 +551,7 @@ def _build_generator(operation, wire_order, op_gen=None):
         if operation.num_params < 1:  # Non-parameterized gates
             gen_mat = 1j * scipy.linalg.logm(qml.matrix(operation, wire_order=wire_order))
             op_gen = qml.pauli_decompose(gen_mat, wire_order=wire_order, hide_identity=True)
-
-            qml.simplify(op_gen)
+            op_gen = simplify(op_gen)
             if op_gen.ops[0].label() == qml.Identity(wires=[wire_order[0]]).label():
                 op_gen -= qml.Hamiltonian([op_gen.coeffs[0]], [qml.Identity(wires=wire_order[0])])
         else:  # Single-parameter gates
@@ -734,7 +733,7 @@ def taper_operation(
         gen_tapered = qml.taper(op_gen, generators, paulixops, paulix_sector)
     else:
         gen_tapered = qml.Hamiltonian([], [])
-    qml.simplify(gen_tapered)
+    gen_tapered = simplify(gen_tapered)
 
     def _tapered_op(params):
         r"""Applies the tapered operation for the specified parameter value whenever
