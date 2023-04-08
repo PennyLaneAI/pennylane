@@ -453,7 +453,7 @@ def taper_hf(generators, paulixops, paulix_sector, num_electrons, num_wires):
 
     # taper the HF observable using the symmetries obtained from the molecular hamiltonian
     fermop_taper = qml.Hamiltonian([], [])
-    for ferm_p in ferm_ps.split(10000):
+    for ferm_p in ferm_ps.split(10000): # helps restrict the peak memory usage for u @ h @ u
         fermop_taper += taper(ferm_p, generators, paulixops, paulix_sector)
     fermop_taper = simplify(fermop_taper)
     fermop_mat = _binary_matrix(fermop_taper.ops, len(fermop_taper.wires))
