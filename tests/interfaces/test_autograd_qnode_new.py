@@ -1752,7 +1752,7 @@ class TestSample:
     """Tests for the sample integration"""
 
     def test_backprop_error(self):
-        """Test that sampling in backpropagation mode raises an error"""
+        """Test that sampling in backpropagation grad_on_execution raises an error"""
         dev = qml.device("default.qubit", wires=2)
 
         @qnode(dev, diff_method="backprop")
