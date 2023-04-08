@@ -15,7 +15,7 @@
 Class and functions for activating, deactivating and checking the new return types system
 """
 # pylint: disable=global-statement
-__activated = False
+__activated = True
 
 
 def enable_return():

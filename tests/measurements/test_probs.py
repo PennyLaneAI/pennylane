@@ -99,7 +99,7 @@ class TestProbs:
         """Test that the shape is correct."""
         dev = qml.device("default.qubit", wires=3, shots=shots)
         res = qml.probs(wires=wires)
-        assert res.shape(dev) == (1, 2 ** len(wires))
+        assert res.shape(dev) == (2 ** len(wires),)
 
     @pytest.mark.parametrize("wires", [[0], [2, 1], ["a", "c", 3]])
     def test_shape_shot_vector(self, wires):
@@ -107,7 +107,7 @@ class TestProbs:
         res = qml.probs(wires=wires)
         shot_vector = (1, 2, 3)
         dev = qml.device("default.qubit", wires=3, shots=shot_vector)
-        assert res.shape(dev) == (len(shot_vector), 2 ** len(wires))
+        assert res.shape(dev) == ((2 ** len(wires),), (2 ** len(wires),), (2 ** len(wires),))
 
     @pytest.mark.parametrize(
         "measurement",
