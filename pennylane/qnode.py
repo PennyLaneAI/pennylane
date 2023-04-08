@@ -127,7 +127,7 @@ class QNode:
             executed on a device. Expansion occurs when an operation or measurement is not
             supported, and results in a gate decomposition. If any operations in the decomposition
             remain unsupported by the device, another expansion occurs.
-        grad_on_execution (str): (bool, str): Whether the gradients should be computed on the execution or not.
+        grad_on_execution (bool, str): Whether the gradients should be computed on the execution or not.
             Only applies if the device is queried for the gradient; gradient transform
             functions available in ``qml.gradients`` are only supported on the backward
             pass. The 'best' option chooses automatically between the two options and is default.

@@ -865,7 +865,7 @@ class TestQubitIntegration:
 
     def test_sampling(self, dev_name, diff_method, grad_on_execution):
         """Test sampling works as expected"""
-        if grad_on_execution:
+        if grad_on_execution is True:
             pytest.skip("Sampling not possible with grad_on_execution differentiation.")
 
         if diff_method == "adjoint":
@@ -890,7 +890,7 @@ class TestQubitIntegration:
 
     def test_counts(self, dev_name, diff_method, grad_on_execution):
         """Test counts works as expected"""
-        if grad_on_execution:
+        if grad_on_execution is True:
             pytest.skip("Sampling not possible with grad_on_execution differentiation.")
 
         if diff_method == "adjoint":

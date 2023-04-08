@@ -34,7 +34,7 @@ qubit_device_and_diff_method = [
 interface_qubit_device_and_diff_method = [
     ["autograd", "default.qubit", "finite-diff", False],
     ["autograd", "default.qubit", "parameter-shift", False],
-    ["autograd", "default.qubit", "backprop", False],
+    ["autograd", "default.qubit", "backprop", True],
     ["autograd", "default.qubit", "adjoint", True],
     ["autograd", "default.qubit", "adjoint", False],
     ["autograd", "default.qubit", "spsa", False],

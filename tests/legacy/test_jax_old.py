@@ -97,7 +97,7 @@ class TestJaxExecuteUnitTests:
 
     def test_incorrect_grad_on_execution(self, interface):
         """Test that an error is raised if an gradient transform
-        is used with grad_on_execution=forward"""
+        is used with grad_on_execution=True"""
         a = jnp.array([0.1, 0.2])
 
         dev = qml.device("default.qubit", wires=1)
@@ -352,7 +352,7 @@ class TestCaching:
 
     def test_caching_adjoint_backward(self, interface):
         """Test that caching produces the optimum number of adjoint evaluations
-        when grad_on_execution=backward"""
+        when grad_on_execution=False"""
         dev = qml.device("default.qubit", wires=2)
         params = jnp.array([0.1, 0.2, 0.3])
 
@@ -369,7 +369,7 @@ class TestCaching:
                 dev,
                 gradient_fn="device",
                 cache=cache,
-                grad_on_execution="backward",
+                grad_on_execution=False,
                 interface=interface,
                 gradient_kwargs={"method": "adjoint_jacobian"},
             )[0][0]

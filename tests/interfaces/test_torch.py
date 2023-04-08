@@ -901,7 +901,10 @@ class TestTorchExecuteIntegration:
 
     def test_sampling(self, torch_device, execute_kwargs):
         """Test sampling works as expected"""
-        if execute_kwargs["gradient_fn"] == "device" and execute_kwargs["grad_on_execution"]:
+        if (
+            execute_kwargs["gradient_fn"] == "device"
+            and execute_kwargs["grad_on_execution"] is True
+        ):
             pytest.skip("Adjoint differentiation does not support samples")
         if execute_kwargs["interface"] == "auto":
             pytest.skip("Can't detect interface without a parametrized gate in the tape")
@@ -929,7 +932,10 @@ class TestTorchExecuteIntegration:
 
     def test_sampling_expval(self, torch_device, execute_kwargs):
         """Test sampling works as expected if combined with expectation values"""
-        if execute_kwargs["gradient_fn"] == "device" and execute_kwargs["grad_on_execution"]:
+        if (
+            execute_kwargs["gradient_fn"] == "device"
+            and execute_kwargs["grad_on_execution"] is True
+        ):
             pytest.skip("Adjoint differentiation does not support samples")
         if execute_kwargs["interface"] == "auto":
             pytest.skip("Can't detect interface without a parametrized gate in the tape")
@@ -955,7 +961,10 @@ class TestTorchExecuteIntegration:
 
     def test_sampling_gradient_error(self, torch_device, execute_kwargs):
         """Test differentiating a tape with sampling results in an error"""
-        if execute_kwargs["gradient_fn"] == "device" and execute_kwargs["grad_on_execution"]:
+        if (
+            execute_kwargs["gradient_fn"] == "device"
+            and execute_kwargs["grad_on_execution"] is True
+        ):
             pytest.skip("Adjoint differentiation does not support samples")
 
         dev = qml.device("default.qubit", wires=1, shots=10)
