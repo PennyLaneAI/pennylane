@@ -643,9 +643,9 @@ def taper_operation(
     1: ────────────────────┤ ╰<Z@Z>
 
     .. details::
-
-        **Usage Details**
-
+        :title: Usage Details
+        :href: usage-taper-operation
+        
         ``qml.taper_operation`` can also be used with the quantum operations, in which case one does not need to specify ``op_wires`` args:
 
         >>> qchem.taper_operation(qml.SingleExcitation(3.14159, wires=[0, 2]), generators,
@@ -689,7 +689,9 @@ def taper_operation(
         ...                       wire_order=H.wires, op_wires=[0, 2], op_gen=op_gen)(3.14159)
         [Exp(1.570795j PauliY)]
 
-        **Theory**
+    .. details::
+        :title: Theory
+        :href: theory-taper-operation
 
         Consider :math:`G` to be the generator of a unitrary :math:`V(\theta)`, i.e.,
 
