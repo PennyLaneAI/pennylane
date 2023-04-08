@@ -29,7 +29,6 @@ from pennylane.pauli.utils import _binary_matrix
 from pennylane.qchem.observable_hf import jordan_wigner
 from pennylane.wires import Wires
 
-
 def _reduced_row_echelon(binary_matrix):
     r"""Returns the reduced row echelon form (RREF) of a matrix in a binary finite field :math:`\mathbb{Z}_2`.
 
@@ -453,7 +452,10 @@ def taper_hf(generators, paulixops, paulix_sector, num_electrons, num_wires):
     ferm_ps = functools.reduce(lambda i, j: i * j, fermop_terms_as_ps)
 
     # taper the HF observable using the symmetries obtained from the molecular hamiltonian
-    fermop_taper = taper(ferm_ps, generators, paulixops, paulix_sector)
+    fermop_taper = qml.Hamiltonian([], [])
+    for ferm_p in ferm_ps.split(10000):
+        fermop_taper += taper(ferm_p, generators, paulixops, paulix_sector)
+    fermop_taper = simplify(fermop_taper)
     fermop_mat = _binary_matrix(fermop_taper.ops, len(fermop_taper.wires))
 
     # build a wireset to match wires with that of the tapered Hamiltonian
