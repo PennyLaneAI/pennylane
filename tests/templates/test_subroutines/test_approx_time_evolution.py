@@ -18,7 +18,7 @@ import pytest
 import numpy as np
 from pennylane import numpy as pnp
 import pennylane as qml
-from pennylane.gradients.finite_difference import _finite_diff_new
+from pennylane.gradients.finite_difference import finite_diff
 
 
 class TestDecomposition:
@@ -411,6 +411,6 @@ def test_trainable_hamiltonian(dev_name, diff_method):
 
     # compare to finite-differences
     tape = create_tape(coeffs, t)
-    g_tapes, fn = _finite_diff_new(tape, _expand=False, validate_params=False)
+    g_tapes, fn = finite_diff(tape, _expand=False, validate_params=False)
     expected = fn(qml.execute(g_tapes, dev, None))
     assert np.allclose(qml.math.hstack(grad), qml.math.stack(expected))
