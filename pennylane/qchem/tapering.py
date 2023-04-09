@@ -29,6 +29,7 @@ from pennylane.pauli.utils import _binary_matrix
 from pennylane.qchem.observable_hf import jordan_wigner
 from pennylane.wires import Wires
 
+
 def _reduced_row_echelon(binary_matrix):
     r"""Returns the reduced row echelon form (RREF) of a matrix in a binary finite field :math:`\mathbb{Z}_2`.
 
@@ -295,21 +296,23 @@ def taper(h, generators, paulixops, paulix_sector):
     if not isinstance(ps_h, qml.pauli.PauliSentence):
         ps_h = pauli_sentence(h)
 
-    h = (ps_u * ps_h * ps_u).hamiltonian()  # cast back to hamiltonian
-    
+    ts_h = qml.pauli.PauliSentence()
+    for ps in ps_h.split(15000):  # helps restrict the peak memory usage for u @ h @ u
+        ts_h += ps_u * ps * ps_u
+    h = ts_h.hamiltonian()  # cast back to hamiltonian
+
     wireset = u.wires + h.wires
     wiremap = dict(zip(wireset, range(len(wireset) + 1)))
     paulix_wires = [x.wires[0] for x in paulixops]
 
     o = []
     h_coeffs, h_ops = h.terms()
-    val = np.ones(len(h_coeffs)) 
+    val = np.ones(len(h_coeffs))
 
     wires_tap = [i for i in h.wires if i not in paulix_wires]
     wiremap_tap = dict(zip(wires_tap, range(len(wires_tap) + 1)))
 
     for i in range(len(h_coeffs)):
-
         s = qml.pauli.pauli_word_to_string(h_ops[i], wire_map=wiremap)
 
         for idx, w in enumerate(paulix_wires):
@@ -453,7 +456,7 @@ def taper_hf(generators, paulixops, paulix_sector, num_electrons, num_wires):
 
     # taper the HF observable using the symmetries obtained from the molecular hamiltonian
     fermop_taper = qml.Hamiltonian([], [])
-    for ferm_p in ferm_ps.split(10000): # helps restrict the peak memory usage for u @ h @ u
+    for ferm_p in ferm_ps.split(10000):  # helps restrict the peak memory usage for u @ h @ u
         fermop_taper += taper(ferm_p, generators, paulixops, paulix_sector)
     fermop_taper = simplify(fermop_taper)
     fermop_mat = _binary_matrix(fermop_taper.ops, len(fermop_taper.wires))
@@ -645,7 +648,7 @@ def taper_operation(
     .. details::
         :title: Usage Details
         :href: usage-taper-operation
-        
+
         ``qml.taper_operation`` can also be used with the quantum operations, in which case one does not need to specify ``op_wires`` args:
 
         >>> qchem.taper_operation(qml.SingleExcitation(3.14159, wires=[0, 2]), generators,

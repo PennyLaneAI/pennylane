@@ -403,4 +403,4 @@ class PauliSentence(dict):
         """Splits into sub PauliSentences of size determined by the max_size."""
         it, length = iter(self), len(self)
         for _ in range(0, length, max_size):
-            yield PauliSentence({k:self[k] for k in islice(it, max_size)})
+            yield PauliSentence({k: self[k] for k in islice(it, max_size)})
