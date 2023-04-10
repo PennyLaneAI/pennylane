@@ -21,6 +21,7 @@ from pennylane.tape import QuantumTape, QuantumScript
 
 from . import Device
 from .execution_config import ExecutionConfig, DefaultExecutionConfig
+from ..qubit.adjoint_jacobian import adjoint_jacobian
 from ..qubit.simulate import simulate
 from ..qubit.preprocess import preprocess
 
@@ -116,7 +117,7 @@ class DefaultQubit2(Device):
         self,
         circuits: QuantumTape_or_Batch,
         execution_config: ExecutionConfig = DefaultExecutionConfig,
-    ) -> Tuple[QuantumTapeBatch, Callable]:
+    ) -> Tuple[QuantumTapeBatch, Callable, ExecutionConfig]:
         """Converts an arbitrary circuit or batch of circuits into a batch natively executable by the :meth:`~.execute` method.
 
         Args:
@@ -126,8 +127,8 @@ class DefaultQubit2(Device):
                 the execution. Includes such information as shots.
 
         Returns:
-            Sequence[QuantumTape], Callable: QuantumTapes that the device can natively execute
-            and a postprocessing function to be called after execution.
+            Tuple[QuantumTape], Callable, ExecutionConfig: QuantumTapes that the device can natively execute,
+            a postprocessing function to be called after execution, and a configuration with unset specifications filled in.
 
         This device:
 
@@ -141,7 +142,7 @@ class DefaultQubit2(Device):
             circuits = [circuits]
             is_single_circuit = True
 
-        batch, post_processing_fn = preprocess(circuits, execution_config=execution_config)
+        batch, post_processing_fn, config = preprocess(circuits, execution_config=execution_config)
 
         if is_single_circuit:
 
@@ -149,9 +150,9 @@ class DefaultQubit2(Device):
                 """Unwraps a dimension so that executing the batch of circuits looks like executing a single circuit."""
                 return post_processing_fn(results)[0]
 
-            return batch, convert_batch_to_single_output
+            return batch, convert_batch_to_single_output, config
 
-        return batch, post_processing_fn
+        return batch, post_processing_fn, config
 
     def execute(
         self,
@@ -178,3 +179,18 @@ class DefaultQubit2(Device):
 
         results = tuple(simulate(c) for c in circuits)
         return results[0] if is_single_circuit else results
+
+    def compute_derivatives(
+        self,
+        circuits: QuantumTape_or_Batch,
+        execution_config: ExecutionConfig = DefaultExecutionConfig,
+    ):
+        if (
+            execution_config.gradient_method in {"adjoint", "device"}
+            and execution_config.derivative_order == 1
+        ):
+            if self.tracker.active:
+                self.tracker.update(derivative_batches=1, derivative_computations=len(circuits))
+                self.tracker.record()
+            return tuple(adjoint_jacobian(c) for c in circuits)
+        raise NotImplementedError
