@@ -879,7 +879,14 @@ class TestBlockEncode:
         """Test that the adjoint of a BlockEncode operation is correctly computed."""
         mat = qml.matrix(qml.BlockEncode(input_matrix, wires))
         adj = qml.matrix(qml.adjoint(qml.BlockEncode(input_matrix, wires)))
+        other_adj = qml.matrix(qml.BlockEncode(input_matrix, wires).adjoint())
         assert np.allclose(np.eye(len(mat)), mat @ adj)
+        assert np.allclose(np.eye(len(mat)), mat @ other_adj)
+
+    def test_label(self):
+        """Test the label method for BlockEncode op"""
+        op = qml.BlockEncode(0.5, wires=[0, 1])
+        assert op.label() == "BlockEncode"
 
     @pytest.mark.parametrize(
         ("input_matrix", "wires", "output_value"),
