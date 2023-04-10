@@ -616,7 +616,7 @@ class TestBlockEncode:
             (
                 [[0, 1], [1, 0]],
                 1,
-                r"Block encoding a \(2 x 2\) matrix requires a hilbert space of size"
+                r"Block encoding a \(2 x 2\) matrix requires a Hilbert space of size"
                 r" at least \(4 x 4\). Cannot be embedded in a 1 qubit system.",
             ),
         ],
@@ -684,22 +684,6 @@ class TestBlockEncode:
         """Test that BlockEncode matrices are unitary."""
         mat = qml.matrix(qml.BlockEncode(input_matrix, wires))
         assert np.allclose(np.eye(len(mat)), mat.dot(mat.T.conj()))
-
-    @pytest.mark.parametrize(
-        ("input_matrix", "wires", "msg"),
-        [
-            (
-                [[0, 1], [1, 0]],
-                1,
-                rf"Block encoding a \({2} x {2}\) matrix requires a Hilbert space of size"
-                rf" at least \({4} x {4}\). Cannot be embedded in a {1} qubit system.",
-            ),
-        ],
-    )
-    def test_correct_error_message(self, input_matrix, wires, msg):
-        """Test that an error is raised when incompatible matrix and wires provided."""
-        with pytest.raises(ValueError, match=msg):
-            qml.BlockEncode(input_matrix, wires)
 
     @pytest.mark.tf
     @pytest.mark.parametrize(
