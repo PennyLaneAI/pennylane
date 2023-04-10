@@ -151,6 +151,10 @@
 * `Sum`, `Prod`, and `SProd` operator data is now a flat list, instead of nested.
   [(#3958)](https://github.com/PennyLaneAI/pennylane/pull/3958)
 
+* `qml.operation.WiresEnum.AllWires` is now -2 instead of 0 to avoid the
+  ambiguity between `op.num_wires = 0` and `op.num_wires = AllWires`.
+  [(#3978)](https://github.com/PennyLaneAI/pennylane/pull/3978)
+
 <h3>Breaking changes</h3>
 
 * Both JIT interfaces are not compatible with Jax `>0.4.3`, we raise an error for those versions.
