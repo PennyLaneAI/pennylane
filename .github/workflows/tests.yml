@@ -122,7 +122,7 @@ jobs:
 
     strategy:
       matrix:
-        group: [1, 2, 3, 4]
+        group: [1, 2]
         python-version: [3.8, '3.10']
 
     steps:
@@ -156,7 +156,7 @@ jobs:
         run: python -m pip install -i https://test.pypi.org/simple/ PennyLane-Lightning --pre --upgrade
 
       - name: Run tests
-        run: python -m pytest tests --cov=pennylane $COVERAGE_FLAGS --splits 4 --group ${{ matrix.group }} -m "tf and not qcut and not legacy and not finite-diff and not param-shift" -n auto
+        run: python -m pytest tests --cov=pennylane $COVERAGE_FLAGS --splits 2 --group ${{ matrix.group }} -m "tf and not qcut and not legacy and not finite-diff and not param-shift" -n auto
 
       - name: Adjust coverage file for Codecov
         run: bash <(sed -i 's/filename=\"/filename=\"pennylane\//g' coverage.xml)
@@ -171,7 +171,7 @@ jobs:
 
     strategy:
       matrix:
-        group: [1, 2, 3, 4]
+        group: [1, 2]
         python-version: [3.8, '3.11']
 
     steps:
@@ -209,7 +209,7 @@ jobs:
         run: python -m pip install -i https://test.pypi.org/simple/ PennyLane-Lightning --pre --upgrade
 
       - name: Run tests
-        run: python -m pytest tests --cov=pennylane $COVERAGE_FLAGS --splits 4 --group ${{ matrix.group }} -m "jax and not qcut and not legacy and not finite-diff and not param-shift" -n auto
+        run: python -m pytest tests --cov=pennylane $COVERAGE_FLAGS --splits 2 --group ${{ matrix.group }} -m "jax and not qcut and not legacy and not finite-diff and not param-shift" -n auto
 
       - name: Adjust coverage file for Codecov
         run: bash <(sed -i 's/filename=\"/filename=\"pennylane\//g' coverage.xml)
@@ -224,7 +224,7 @@ jobs:
 
     strategy:
       matrix:
-        group: [1, 2, 3, 4]
+        group: [1, 2]
         python-version: [3.8, 3.9, '3.10', '3.11']
 
     steps:
@@ -262,7 +262,7 @@ jobs:
         run: python -m pip install -i https://test.pypi.org/simple/ PennyLane-Lightning --pre --upgrade
 
       - name: Run tests
-        run: python -m pytest tests --cov=pennylane $COVERAGE_FLAGS --splits 4 --group ${{ matrix.group }} -m "core and not qcut and not legacy and not finite-diff and not param-shift" -n auto
+        run: python -m pytest tests --cov=pennylane $COVERAGE_FLAGS --splits 2 --group ${{ matrix.group }} -m "core and not qcut and not legacy and not finite-diff and not param-shift" -n auto
 
       - name: Adjust coverage file for Codecov
         run: bash <(sed -i 's/filename=\"/filename=\"pennylane\//g' coverage.xml)
