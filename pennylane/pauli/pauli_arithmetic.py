@@ -400,7 +400,7 @@ class PauliSentence(dict):
                 del self[pw]
 
     def split(self, max_size=20000):
-        """Splits into sub PauliSentences of size determined by the max_size."""
+        """Splits into sub-PauliSentences of size determined by the `max_size`."""
         it, length = iter(self), len(self)
         for _ in range(0, length, max_size):
             yield PauliSentence({k: self[k] for k in islice(it, max_size)})
