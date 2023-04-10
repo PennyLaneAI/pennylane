@@ -7,6 +7,7 @@ tests/measurements/test_counts.py
 tests/measurements/test_probs.py
 tests/qchem/test_givens_rotations.py
 tests/templates/test_subroutines/test_basis_rotation.py
+tests/templates/test_subroutines/test_qsvt.py
 tests/ops/op_math/test_controlled_ops.py
 tests/ops/op_math/test_controlled.py
 tests/ops/op_math/test_sprod.py
