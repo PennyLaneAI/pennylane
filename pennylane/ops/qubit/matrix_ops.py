@@ -433,7 +433,7 @@ class BlockEncode(Operation):
         if subspace[2] < (subspace[0] + subspace[1]):
             raise ValueError(
                 f"Block encoding a ({subspace[0]} x {subspace[1]}) matrix "
-                f"requires a hilbert space of size at least "
+                f"requires a Hilbert space of size at least "
                 f"({subspace[0] + subspace[1]} x {subspace[0] + subspace[1]})."
                 f" Cannot be embedded in a {len(wires)} qubit system."
             )
