@@ -820,9 +820,18 @@ def norm(tensor, like=None, **kwargs):
     if like == "jax":
         from jax.numpy.linalg import norm
 
-        return norm(tensor, **kwargs)
+    elif like == "tensorflow":
+        from tensorflow import norm
 
-    from scipy.linalg import norm
+    elif like == "torch":
+        from torch.linalg import norm
+
+        if "axis" in kwargs:
+            axis_val = kwargs.pop("axis")
+            kwargs["dim"] = axis_val
+
+    else:
+        from scipy.linalg import norm
 
     return norm(tensor, **kwargs)
 
