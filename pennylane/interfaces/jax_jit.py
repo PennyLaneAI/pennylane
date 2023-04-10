@@ -26,6 +26,7 @@ import pennylane as qml
 from pennylane.interfaces import InterfaceUnsupportedError
 from pennylane.interfaces.jax import _raise_vector_valued_fwd
 from pennylane.measurements import ProbabilityMP
+from pennylane.transforms import convert_to_numpy_parameters
 
 dtype = jnp.float64
 
@@ -159,10 +160,10 @@ def _execute_legacy(
     total_params = np.sum([len(p) for p in params])
 
     # Copy a given tape with operations and set parameters
-    def cp_tape(t, a):
+    def cp_tape(t, a, unwrap=True):
         tc = t.copy(copy_operations=True)
         tc.set_parameters(a)
-        return tc
+        return convert_to_numpy_parameters(tc) if unwrap else tc
 
     @jax.custom_vjp
     def wrapped_exec(params):
@@ -171,8 +172,7 @@ def _execute_legacy(
         def wrapper(p):
             """Compute the forward pass."""
             new_tapes = [cp_tape(t, a) for t, a in zip(tapes, p)]
-            with qml.tape.Unwrap(*new_tapes):
-                res, _ = execute_fn(new_tapes, **gradient_kwargs)
+            res, _ = execute_fn(new_tapes, **gradient_kwargs)
 
             # When executed under `jax.vmap` the `result_shapes_dtypes` will contain
             # the shape without the vmap dimensions, while the function here will be
@@ -216,7 +216,7 @@ def _execute_legacy(
                 p = args[:-1]
                 dy = args[-1]
 
-                new_tapes = [cp_tape(t, a) for t, a in zip(tapes, p)]
+                new_tapes = [cp_tape(t, a, unwrap=False) for t, a in zip(tapes, p)]
                 vjp_tapes, processing_fn = qml.gradients.batch_vjp(
                     new_tapes,
                     dy,
@@ -262,8 +262,7 @@ def _execute_legacy(
         def jacs_wrapper(p):
             """Compute the jacs"""
             new_tapes = [cp_tape(t, a) for t, a in zip(tapes, p)]
-            with qml.tape.Unwrap(*new_tapes):
-                jacs = gradient_fn(new_tapes, **gradient_kwargs)
+            jacs = gradient_fn(new_tapes, **gradient_kwargs)
             return jacs
 
         shapes = [
