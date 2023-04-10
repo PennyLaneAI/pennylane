@@ -122,7 +122,7 @@ def _jit_compute_jvps(jacobians, tangents, multi_measurements, trainable_params)
     return jvps
 
 
-def execute_tuple(tapes, device, execute_fn, gradient_fn, gradient_kwargs, _n=1, max_diff=1):
+def execute(tapes, device, execute_fn, gradient_fn, gradient_kwargs, _n=1, max_diff=1):
     """Execute a batch of tapes with JAX parameters on a device.
 
     Args:
@@ -169,7 +169,7 @@ def execute_tuple(tapes, device, execute_fn, gradient_fn, gradient_kwargs, _n=1,
     parameters = tuple(list(t.get_parameters(trainable_only=False)) for t in tapes)
 
     if gradient_fn is None:
-        return _execute_fwd_tuple(
+        return _execute_fwd(
             parameters,
             tapes=tapes,
             device=device,
@@ -178,7 +178,7 @@ def execute_tuple(tapes, device, execute_fn, gradient_fn, gradient_kwargs, _n=1,
             _n=_n,
         )
 
-    return _execute_bwd_tuple(
+    return _execute_bwd(
         parameters,
         tapes=tapes,
         device=device,
@@ -190,7 +190,7 @@ def execute_tuple(tapes, device, execute_fn, gradient_fn, gradient_kwargs, _n=1,
     )
 
 
-def _execute_bwd_tuple(
+def _execute_bwd(
     params,
     tapes=None,
     device=None,
@@ -260,7 +260,7 @@ def _execute_bwd_tuple(
                     jvp_tapes, res_processing_fn = gradient_fn(
                         new_t, shots=device.shots, **gradient_kwargs
                     )
-                    jacs = execute_tuple(
+                    jacs = execute(
                         jvp_tapes,
                         device,
                         execute_fn,
@@ -359,7 +359,7 @@ def _execute_bwd_tuple(
 
 
 # The execute function in forward mode
-def _execute_fwd_tuple(
+def _execute_fwd(
     params,
     tapes=None,
     device=None,

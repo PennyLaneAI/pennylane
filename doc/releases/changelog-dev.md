@@ -3,6 +3,10 @@
 # Release 0.30.0-dev (development release)
 
 <h3>New features since last release</h3>
+* The new return system is activated and public facing. The qnode kwarg `mode` is replaced by the boolean 
+  `grad_on_execution` .
+  [(#3957)](https://github.com/PennyLaneAI/pennylane/pull/3957)
+  [(#3969)](https://github.com/PennyLaneAI/pennylane/pull/3969)
 
 * The `sample_state` function is added to `devices/qubit` that returns a series of samples based on a given
   state vector and a number of shots.
@@ -141,6 +145,9 @@
   This allows devices that inherit from `QubitDevice` to override and customize their definition of diagonalizing gates.
   [(#3938)](https://github.com/PennyLaneAI/pennylane/pull/3938)
 
+* `Sum`, `Prod`, and `SProd` operator data is now a flat list, instead of nested.
+  [(#3958)](https://github.com/PennyLaneAI/pennylane/pull/3958)
+
 <h3>Breaking changes</h3>
 
 * Both JIT interfaces are not compatible with Jax `>0.4.3`, we raise an error for those versions.
@@ -169,6 +176,9 @@
 
 * Integrates the `devices.experimental.DefaultQubit2` with `qml.execute` for the autograd interface.
   [(#3903)](https://github.com/PennyLaneAI/pennylane/pull/3903)
+
+* `Sum`, `Prod`, and `SProd` operator data is now a flat list, instead of nested.
+  [(#3958)](https://github.com/PennyLaneAI/pennylane/pull/3958)
 
 <h3>Deprecations</h3>
 

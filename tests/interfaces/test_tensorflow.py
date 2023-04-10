@@ -74,7 +74,9 @@ class TestTensorFlowExecuteUnitTests:
         with pytest.raises(
             ValueError, match="Gradient transforms cannot be used with grad_on_execution=True"
         ):
-            res = execute([tape], dev, gradient_fn=param_shift, mode="forward", interface="tf")[0]
+            res = execute(
+                [tape], dev, gradient_fn=param_shift, grad_on_execution=True, interface="tf"
+            )[0]
 
     def test_grad_on_execution(self, mocker):
         """Test that grad on execution uses the `device.execute_and_gradients` pathway"""
@@ -119,7 +121,7 @@ class TestTensorFlowExecuteUnitTests:
                 [tape],
                 dev,
                 gradient_fn="device",
-                mode="backward",
+                grad_on_execution=False,
                 gradient_kwargs={"method": "adjoint_jacobian"},
                 interface="tf",
             )[0]
@@ -293,25 +295,25 @@ execute_kwargs = [
     {"gradient_fn": param_shift, "interface": "auto"},
     {
         "gradient_fn": "device",
-        "mode": "forward",
+        "grad_on_execution": True,
         "gradient_kwargs": {"method": "adjoint_jacobian", "use_device_state": True},
         "interface": "tf",
     },
     {
         "gradient_fn": "device",
-        "mode": "backward",
+        "grad_on_execution": False,
         "gradient_kwargs": {"method": "adjoint_jacobian"},
         "interface": "tf",
     },
     {
         "gradient_fn": "device",
-        "mode": "backward",
+        "grad_on_execution": False,
         "gradient_kwargs": {"method": "adjoint_jacobian"},
         "interface": "auto",
     },
     {
         "gradient_fn": "device",
-        "mode": "forward",
+        "grad_on_execution": True,
         "gradient_kwargs": {"method": "adjoint_jacobian", "use_device_state": True},
         "interface": "auto",
     },
@@ -724,7 +726,10 @@ class TestTensorFlowExecuteIntegration:
 
     def test_sampling(self, execute_kwargs):
         """Test sampling works as expected"""
-        if execute_kwargs["gradient_fn"] == "device" and execute_kwargs["mode"] == "forward":
+        if (
+            execute_kwargs["gradient_fn"] == "device"
+            and execute_kwargs["grad_on_execution"] is True
+        ):
             pytest.skip("Adjoint differentiation does not support samples")
 
         dev = qml.device("default.qubit", wires=2, shots=10)

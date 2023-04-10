@@ -102,7 +102,6 @@ def _parshift_and_integrate(results, cjacs, int_prefactor, single_measure, shot_
     """Apply the parameter-shift rule post-processing to tape results and contract
     with classical Jacobians, effectively evaluating the numerical integral of the stochastic
     parameter-shift rule.
-    This is a helper method for the new return type system.
 
     Args:
         results (list): Tape evaluation results, corresponding to the modified quantum
@@ -189,25 +188,22 @@ def _stoch_pulse_grad(tape, argnum=None, num_split_times=1, sampler_seed=None, s
             rule underlying the differentiation; also see details
         sample_seed (int): randomness seed to be used for the time samples in the stochastic
             parameter-shift rule
-        shots (None, int, list[int]): Argument used by the new return type system
-            (see :func:`~.enable_return` for more information); it represents the device shots
-            that will be used to execute the tapes outputted by this transform. Note that this
-            argument doesn't influence the shots used for tape execution, but provides information
-            to the transform about the device shots and helps in determining if a shot sequence
-            was used.
+        shots (None, int, list[int]): The device shots that will be used to execute the tapes outputted by this
+            transform. Note that this argument doesn't influence the shots used for tape execution, but provides
+            information about the shots.
 
     Returns:
         function or tuple[list[QuantumTape], function]:
 
         - If the input is a QNode, an object representing the Jacobian (function) of the QNode
-          that can be executed to obtain the Jacobian matrix.
-          The type of the matrix returned is either a tensor, a tuple or a
+          that can be executed to obtain the Jacobian.
+          The type of the Jacobian returned is either a tensor, a tuple or a
           nested tuple depending on the nesting structure of the original QNode output.
 
         - If the input is a tape, a tuple containing a
           list of generated tapes, together with a post-processing
           function to be applied to the results of the evaluated tapes
-          in order to obtain the Jacobian matrix.
+          in order to obtain the Jacobian.
 
     This transform realizes the stochastic parameter-shift rule for pulse sequences, as introduced
     in `Banchi and Crooks (2018) <https://quantum-journal.org/papers/q-2021-01-25-386/>`_ and
@@ -216,8 +212,7 @@ def _stoch_pulse_grad(tape, argnum=None, num_split_times=1, sampler_seed=None, s
     .. note::
 
         This function requires the JAX interface and does not work with other autodiff interfaces
-        commonly encountered with PennyLane. It additionally only supports the new return type
-        system, see :func:`~.enable_return`.
+        commonly encountered with PennyLane.
         Finally, this transform is not JIT-compatible yet.
 
     .. note::
@@ -473,7 +468,6 @@ def _expval_stoch_pulse_grad(tape, argnum, num_split_times, key, shots):
     r"""Compute the gradient of a quantum circuit composed of pulse sequences that measures
     an expectation value or probabilities, by applying the stochastic parameter shift rule.
     See the main function for the signature.
-    This function is adapted to the new return type system.
     """
     tapes = []
     gradient_data = []
