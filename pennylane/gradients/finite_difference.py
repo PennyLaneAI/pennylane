@@ -208,7 +208,7 @@ def _all_zero_grad_new(tape, shots=None):
 
 
 @gradient_transform
-def _finite_diff_new(
+def finite_diff(
     tape,
     argnum=None,
     h=1e-7,
@@ -219,8 +219,7 @@ def _finite_diff_new(
     validate_params=True,
     shots=None,
 ):
-    r"""Transform a QNode to compute the finite-difference gradient of all gate
-    parameters with respect to its inputs. This function is adapted to the new return system.
+    r"""Transform a QNode to compute the finite-difference gradient of all gate parameters with respect to its inputs.
 
     Args:
         tape (pennylane.QNode or .QuantumTape): quantum tape or QNode to differentiate
@@ -246,22 +245,21 @@ def _finite_diff_new(
             to determine if the trainable parameters support the finite-difference method.
             If ``False``, the finite-difference method will be applied to all parameters.
         shots (None, int, list[int], list[ShotTuple]): The device shots that will be used to execute the tapes outputted by this
-            transform. Note that this argument doesn't influence the shots used for tape execution, but provides information
-            to the transform about the device shots and helps in determining if a shot sequence was used to define the
-            device shots for the new return types output system.
+            transform. Note that this argument doesn't influence the shots used for tape execution, but provides
+            information about the shots.
 
     Returns:
         function or tuple[list[QuantumTape], function]:
 
         - If the input is a QNode, an object representing the Jacobian (function) of the QNode
-          that can be executed to obtain the Jacobian matrix.
-          The type of the matrix returned is either a tensor, a tuple or a
+          that can be executed to obtain the Jacobian.
+          The type of the Jacobian returned is either a tensor, a tuple or a
           nested tuple depending on the nesting structure of the original QNode output.
 
         - If the input is a tape, a tuple containing a
           list of generated tapes, together with a post-processing
           function to be applied to the results of the evaluated tapes
-          in order to obtain the Jacobian matrix.
+          in order to obtain the Jacobian.
 
     **Example**
 
@@ -368,12 +366,24 @@ def _finite_diff_new(
 
         The outermost tuple contains results corresponding to each element of the shot vector.
     """
+    if not qml.active_return():
+        return _finite_diff_legacy(
+            tape,
+            argnum=argnum,
+            h=h,
+            approx_order=approx_order,
+            n=n,
+            strategy=strategy,
+            f0=f0,
+            validate_params=validate_params,
+            shots=shots,
+        )
     if argnum is None and not tape.trainable_params:
         return _no_trainable_grad_new(tape, shots)
 
     if validate_params:
         if "grad_method" not in tape._par_info[0]:
-            gradient_analysis(tape, grad_fn=_finite_diff_new)
+            gradient_analysis(tape, grad_fn=finite_diff)
         diff_methods = grad_method_validation("numeric", tape)
     else:
         diff_methods = ["F" for i in tape.trainable_params]
@@ -524,8 +534,9 @@ def _finite_diff_new(
     return gradient_tapes, processing_fn
 
 
+# pylint: disable=unused-argument
 @gradient_transform
-def finite_diff(
+def _finite_diff_legacy(
     tape,
     argnum=None,
     h=1e-7,
@@ -563,9 +574,8 @@ def finite_diff(
             to determine if the trainable parameters support the finite-difference method.
             If ``False``, the finite-difference method will be applied to all parameters.
         shots (None, int, list[int]): The device shots that will be used to execute the tapes outputted by this
-            transform. Note that this argument doesn't influence the shots used for tape execution, but provides information
-            to the transform about the device shots and helps in determining if a shot sequence was used to define the
-            device shots for the new return types output system.
+            transform. Note that this argument doesn't influence the shots used for tape execution, but provides
+            information to the transform about the shots.
 
     Returns:
         function or tuple[list[QuantumTape], function]:
@@ -641,18 +651,6 @@ def finite_diff(
         [[-0.38751721 -0.18884787 -0.38355704]
          [ 0.69916862  0.34072424  0.69202359]]
     """
-    if qml.active_return():
-        return _finite_diff_new(
-            tape,
-            argnum=argnum,
-            h=h,
-            approx_order=approx_order,
-            n=n,
-            strategy=strategy,
-            f0=f0,
-            validate_params=validate_params,
-            shots=shots,
-        )
 
     if argnum is None and not tape.trainable_params:
         warnings.warn(
