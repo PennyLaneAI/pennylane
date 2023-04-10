@@ -102,6 +102,14 @@ class Evolution(Exp):
     def coeff(self):
         return 1j * self.data[0]
 
+    @property
+    def data(self):
+        return self._data
+
+    @data.setter
+    def data(self, new_data):
+        self._data = new_data
+
     def label(self, decimals=None, base_label=None, cache=None):
         param = (
             self.data[0]
