@@ -163,7 +163,7 @@ jobs:
 
       - uses: actions/upload-artifact@v2
         with:
-          name: core-interfaces-coverage-tf-${{ matrix.python-version }}
+          name: core-interfaces-coverage-tf-${{ matrix.python-version }}-${{ matrix.group }}
           path: ./coverage.xml
 
   jax-tests:
@@ -216,7 +216,7 @@ jobs:
 
       - uses: actions/upload-artifact@v2
         with:
-          name: core-interfaces-coverage-jax-${{ matrix.python-version }}
+          name: core-interfaces-coverage-jax-${{ matrix.python-version }}-${{ matrix.group }}
           path: ./coverage.xml
 
   core-tests:
@@ -269,7 +269,7 @@ jobs:
 
       - uses: actions/upload-artifact@v2
         with:
-          name: core-interfaces-coverage-core-${{ matrix.python-version }}
+          name: core-interfaces-coverage-core-${{ matrix.python-version }}-${{ matrix.group }}
           path: ./coverage.xml
 
   all-interfaces-tests:
