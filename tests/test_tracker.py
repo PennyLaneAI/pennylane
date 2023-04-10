@@ -63,7 +63,18 @@ class TestTrackerCoreBehavior:
 
         temp = TempDevice()
 
-        with pytest.raises(ValueError, match=r"Device 'temp' does not support device tracking"):
+        with pytest.raises(Exception, match=r"Device 'temp' does not support device tracking"):
+            Tracker(dev=temp)
+
+    def test_incompatible_device_assignment_explicit_false(self):
+        """Assert exception raised when `supports_tracker` is False"""
+
+        class TempDevice:
+            short_name = "temp"
+
+        temp = TempDevice()
+
+        with pytest.raises(Exception, match=r"Device 'temp' does not support device tracking"):
             Tracker(dev=temp)
 
     def test_reset(self):
