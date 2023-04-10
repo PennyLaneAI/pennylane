@@ -265,3 +265,28 @@ class TestDetach:
             out = fn.detach(x)
         jac = t.jacobian(out, x)
         assert jac is None
+
+
+@pytest.mark.all_interfaces
+class TestNorm:
+    import tensorflow as tf
+    import torch
+    from jax import numpy as jnp
+
+    mats_intrf_norm = (
+        (np.array([0.5, -1, 2]), "numpy", np.array(2), dict()),
+        (np.array([[5, 6], [-2, 3]]), "numpy", np.array(11), dict()),
+        (torch.tensor([0.5, -1, 2]), "torch", torch.tensor(2), dict()),
+        (torch.tensor([[5.0, 6.0], [-2.0, 3.0]]), "torch", torch.tensor(11), {"axis": (0, 1)}),
+        (tf.Variable([0.5, -1, 2]), "tensorflow", tf.Variable(2), dict()),
+        (tf.Variable([[5, 6], [-2, 3]]), "tensorflow", tf.Variable(11), {"axis": [-2, -1]}),
+        (jnp.array([0.5, -1, 2]), "jax", jnp.array(2), dict()),
+        (jnp.array([[5, 6], [-2, 3]]), "jax", jnp.array(11), dict()),
+    )
+
+    @pytest.mark.parametrize("arr, expected_intrf, expected_norm, kwargs", mats_intrf_norm)
+    def test_inf_norm(self, arr, expected_intrf, expected_norm, kwargs):
+        """Test that inf norm is correct and works for each interface."""
+        computed_norm = fn.norm(arr, ord=np.inf, **kwargs)
+        assert np.allclose(computed_norm, expected_norm)
+        assert fn.get_interface(computed_norm) == expected_intrf

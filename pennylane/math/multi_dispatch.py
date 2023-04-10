@@ -815,6 +815,28 @@ def expm(tensor, like=None):
     return scipy_expm(tensor)
 
 
+@multi_dispatch()
+def norm(tensor, like=None, **kwargs):
+    """Compute the norm of a tensor in each interface."""
+    if like == "jax":
+        from jax.numpy.linalg import norm
+
+    elif like == "tensorflow":
+        from tensorflow import norm
+
+    elif like == "torch":
+        from torch.linalg import norm
+
+        if "axis" in kwargs:
+            axis_val = kwargs.pop("axis")
+            kwargs["dim"] = axis_val
+
+    else:
+        from scipy.linalg import norm
+
+    return norm(tensor, **kwargs)
+
+
 @multi_dispatch(argnum=[1])
 def gammainc(m, t, like=None):
     r"""Return the lower incomplete Gamma function.

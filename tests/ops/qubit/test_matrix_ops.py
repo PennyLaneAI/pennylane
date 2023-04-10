@@ -616,7 +616,7 @@ class TestBlockEncode:
             (
                 [[0, 1], [1, 0]],
                 1,
-                r"Block encoding a \(2 x 2\) matrix requires a hilbert space of size"
+                r"Block encoding a \(2 x 2\) matrix requires a Hilbert space of size"
                 r" at least \(4 x 4\). Cannot be embedded in a 1 qubit system.",
             ),
         ],
@@ -632,6 +632,11 @@ class TestBlockEncode:
             (1, 0, [[1, 0], [0, -1]]),
             (0.3, 0, [[0.3, 0.9539392], [0.9539392, -0.3]]),
             (
+                0.1,
+                range(2),
+                [[0.1, 0.99498744, 0, 0], [0.99498744, -0.1, 0, 0], [0, 0, 1, 0], [0, 0, 0, 1]],
+            ),
+            (
                 [[0.1, 0.2], [0.3, 0.4]],
                 range(2),
                 [
@@ -642,9 +647,20 @@ class TestBlockEncode:
                 ],
             ),
             (
-                0.1,
-                range(2),
-                [[0.1, 0.99498744, 0, 0], [0.99498744, -0.1, 0, 0], [0, 0, 1, 0], [0, 0, 0, 1]],
+                [[0.1, 0.2, 0.3], [0.3, 0.4, 0.2], [0.1, 0.2, 0.3]],
+                range(3),
+                [
+                    [
+                        [0.1, 0.2, 0.3, 0.91808609, -0.1020198, -0.08191391, 0.0, 0.0],
+                        [0.3, 0.4, 0.2, -0.1020198, 0.83017102, -0.1020198, 0.0, 0.0],
+                        [0.1, 0.2, 0.3, -0.08191391, -0.1020198, 0.91808609, 0.0, 0.0],
+                        [0.93589192, -0.09400608, -0.07258899, -0.1, -0.3, -0.1, 0.0, 0.0],
+                        [-0.09400608, 0.85841586, -0.11952016, -0.2, -0.4, -0.2, 0.0, 0.0],
+                        [-0.07258899, -0.11952016, 0.87203542, -0.3, -0.2, -0.3, 0.0, 0.0],
+                        [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0],
+                        [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0],
+                    ],
+                ],
             ),
         ],
     )
@@ -669,9 +685,38 @@ class TestBlockEncode:
         mat = qml.matrix(qml.BlockEncode(input_matrix, wires))
         assert np.allclose(np.eye(len(mat)), mat.dot(mat.T.conj()))
 
-    # TODO: add tensorflow support
-    # def test_blockencode_tf(self):
-    #     """Test that the BlockEncode operator matrix is correct for tf."""
+    @pytest.mark.tf
+    @pytest.mark.parametrize(
+        ("input_matrix", "wires", "output_matrix"),
+        [
+            (1.0, 0, [[1, 0], [0, -1]]),
+            (0.3, 0, [[0.3, 0.9539392], [0.9539392, -0.3]]),
+            (
+                [[0.1, 0.2], [0.3, 0.4]],
+                range(2),
+                [
+                    [0.1, 0.2, 0.97283788, -0.05988708],
+                    [0.3, 0.4, -0.05988708, 0.86395228],
+                    [0.94561648, -0.07621992, -0.1, -0.3],
+                    [-0.07621992, 0.89117368, -0.2, -0.4],
+                ],
+            ),
+            (
+                0.1,
+                range(2),
+                [[0.1, 0.99498744, 0, 0], [0.99498744, -0.1, 0, 0], [0, 0, 1, 0], [0, 0, 0, 1]],
+            ),
+        ],
+    )
+    def test_blockencode_tf(self, input_matrix, wires, output_matrix):
+        """Test that the BlockEncode operator matrix is correct for tf."""
+        import tensorflow as tf
+
+        input_matrix = tf.Variable(input_matrix)
+
+        op = qml.BlockEncode(input_matrix, wires)
+        assert np.allclose(qml.matrix(op), output_matrix)
+        assert qml.math.get_interface(qml.matrix(op)) == "tensorflow"
 
     @pytest.mark.torch
     @pytest.mark.parametrize(
@@ -737,83 +782,112 @@ class TestBlockEncode:
         assert np.allclose(qml.matrix(op), output_matrix)
         assert qml.math.get_interface(qml.matrix(op)) == "jax"
 
+    @pytest.mark.parametrize("method", ["backprop"])
     @pytest.mark.parametrize(
         (
-            "device_type",
             "wires",
             "input_matrix",
             "expected_result",
         ),  # expected_results calculated manually
         [
-            ("default.qubit.autograd", range(1), pnp.array(0.3), 4 * 0.3),
-            ("default.qubit.autograd", range(2), pnp.diag([0.2, 0.3]), 4 * pnp.diag([0.2, 0])),
+            (range(1), pnp.array(0.3), 4 * 0.3),
+            (range(2), pnp.diag([0.2, 0.3]), 4 * pnp.diag([0.2, 0])),
         ],
     )
-    def test_blockencode_grad(self, device_type, wires, input_matrix, expected_result):
+    def test_blockencode_grad(self, method, wires, input_matrix, expected_result):
         """Test that BlockEncode is differentiable."""
-        dev = qml.device(device_type, wires=wires)
+        dev = qml.device("default.qubit", wires=wires)
 
-        @qml.qnode(dev)
+        @qml.qnode(dev, diff_method=method)
         def circuit(input_matrix):
             qml.BlockEncode(input_matrix, wires=wires)
             return qml.expval(qml.PauliZ(wires=0))
 
         assert np.allclose(qml.grad(circuit)(input_matrix), expected_result)
 
-    # TODO: add jax tests
-    # @pytest.mark.jax
-    # @pytest.mark.parametrize(
-    #     (
-    #         "device_type",
-    #         "wires",
-    #         "input_matrix",
-    #         "expected_result",
-    #     ),  # expected_results calculated manually
-    #     [
-    #         ("default.qubit.autograd", range(1), pnp.array(0.3), 4 * 0.3),
-    #         ("default.qubit.autograd", range(2), pnp.diag([0.2, 0.3]), 4 * pnp.diag([0.2, 0])),
-    #     ],
-    # )
-    # def test_blockencode_grad_jax(self, device_type, wires, input_matrix, expected_result):
-    #     """Test that block encode is differentiable when using jax."""
-    #     import jax
-    #     import jax.numpy as jnp
+    @pytest.mark.jax
+    @pytest.mark.parametrize(
+        (
+            "wires",
+            "input_matrix",
+            "expected_result",
+        ),  # expected_results calculated manually
+        [
+            (range(1), pnp.array(0.3), 4 * 0.3),
+            (range(2), pnp.diag([0.2, 0.3]), 4 * pnp.diag([0.2, 0])),
+        ],
+    )
+    def test_blockencode_grad_jax(self, wires, input_matrix, expected_result):
+        """Test that block encode is differentiable when using jax."""
+        import jax
+        import jax.numpy as jnp
 
-    #     input_matrix = jnp.array(input_matrix)
-    #     expected_result = jnp.array(expected_result)
+        input_matrix = jnp.array(input_matrix)
+        expected_result = jnp.array(expected_result)
 
-    #     dev = qml.device(device_type, wires=wires)
+        dev = qml.device("default.qubit", wires=wires)
 
-    #     @qml.qnode(dev)
-    #     def circuit(input_matrix):
-    #         qml.BlockEncode(input_matrix, wires=wires)
-    #         return qml.expval(qml.PauliZ(wires=0))
+        @qml.qnode(dev)
+        def circuit(input_matrix):
+            qml.BlockEncode(input_matrix, wires=wires)
+            return qml.expval(qml.PauliZ(wires=0))
 
-    #     grad = jax.grad(circuit, argnums=0)(input_matrix)
-    #     assert np.allclose(grad, expected_result)
+        grad = jax.grad(circuit, argnums=0)(input_matrix)
+        assert np.allclose(grad, expected_result)
 
-    # TODO: add tensorflow support
-    # @pytest.mark.parametrize(
-    #     ("device_type", "wires", "input_matrix", "expected_result"), #expected_results calculated manually
-    #     [
-    #         ("default.qubit.tf", range(1), pnp.array(0.3), 4*0.3),
-    #         ("default.qubit.tf", range(2), pnp.diag([0.2, 0.3]), 4*pnp.diag([0.2,0])),
-    #     ],
-    # )
-    # def test_blockencode_tf(self, device_type, wires, input_matrix, expected_result):
+    @pytest.mark.tf
+    @pytest.mark.parametrize(
+        ("wires", "input_matrix", "expected_result"),  # expected_results calculated manually
+        [
+            (range(1), pnp.array(0.3), 4 * 0.3),
+            (range(2), pnp.diag([0.2, 0.3]), 4 * pnp.diag([0.2, 0])),
+        ],
+    )
+    def test_blockencode_grad_tf(self, wires, input_matrix, expected_result):
+        """Test that block encode is differentiable when using tensorflow."""
+        import tensorflow as tf
 
-    #     import tensorflow as tf
+        input_matrix = tf.Variable(input_matrix)
 
-    #     input_matrix = tf.Variable(input_matrix)
+        dev = qml.device("default.qubit", wires=wires)
 
-    # dev = qml.device(device_type, wires=wires)
+        @qml.qnode(dev)
+        def circuit(input_matrix):
+            qml.BlockEncode(input_matrix, wires=wires)
+            return qml.expval(qml.PauliZ(wires=0))
 
-    # @qml.qnode(dev)
-    # def circuit(input_matrix):
-    #     qml.BlockEncode(input_matrix, wires=wires)
-    #     return qml.expval(qml.PauliZ(wires=0))
+        with tf.GradientTape() as tape:
+            result = circuit(input_matrix)
 
-    # assert np.allclose(qml.grad(circuit)(input_matrix),expected_result)
+        computed_grad = tape.gradient(result, input_matrix)
+        assert np.allclose(computed_grad, expected_result)
+
+    @pytest.mark.parametrize(
+        ("input_matrix", "wires"),
+        [
+            (1, 0),
+            (0.3, 0),
+            (0.1, range(2)),
+            (
+                [[0.1, 0.2], [0.3, 0.4]],
+                range(2),
+            ),
+            ([[0.1, 0.2, 0.3], [0.3, 0.4, 0.2], [0.1, 0.2, 0.3]], range(3)),
+        ],
+    )
+    def test_adjoint(self, input_matrix, wires):
+        """Test that the adjoint of a BlockEncode operation is correctly computed."""
+        mat = qml.matrix(qml.BlockEncode(input_matrix, wires))
+        adj = qml.matrix(qml.adjoint(qml.BlockEncode(input_matrix, wires)))
+        other_adj = qml.matrix(qml.BlockEncode(input_matrix, wires).adjoint())
+        assert np.allclose(np.eye(len(mat)), mat @ adj)
+        assert np.allclose(np.eye(len(mat)), mat @ other_adj)
+
+    def test_label(self):
+        """Test the label method for BlockEncode op"""
+        op = qml.BlockEncode(0.5, wires=[0, 1])
+        assert op.label() == "BlockEncode"
+
     @pytest.mark.parametrize(
         ("input_matrix", "wires", "output_value"),
         [
