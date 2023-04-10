@@ -691,15 +691,15 @@ class TestBlockEncode:
             (
                 [[0, 1], [1, 0]],
                 1,
-                f"Block encoding a \({2} x {2}\) matrix requires a Hilbert space of size"
-                f" at least \({4} x {4}\). Cannot be embedded in a {1} qubit system.",
+                rf"Block encoding a \({2} x {2}\) matrix requires a Hilbert space of size"
+                rf" at least \({4} x {4}\). Cannot be embedded in a {1} qubit system.",
             ),
         ],
     )
     def test_correct_error_message(self, input_matrix, wires, msg):
         """Test that an error is raised when incompatible matrix and wires provided."""
         with pytest.raises(ValueError, match=msg):
-            op = qml.BlockEncode(input_matrix, wires)
+            qml.BlockEncode(input_matrix, wires)
 
     @pytest.mark.tf
     @pytest.mark.parametrize(
