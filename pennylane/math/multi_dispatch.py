@@ -817,6 +817,7 @@ def expm(tensor, like=None):
 
 @multi_dispatch()
 def norm(tensor, like=None, **kwargs):
+    """Compute the norm of a tensor in each interface."""
     if like == "jax":
         from jax.numpy.linalg import norm
 

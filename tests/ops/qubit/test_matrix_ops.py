@@ -697,6 +697,7 @@ class TestBlockEncode:
         ],
     )
     def test_correct_error_message(self, input_matrix, wires, msg):
+        """Test that an error is raised when incompatible matrix and wires provided."""
         with pytest.raises(ValueError, match=msg):
             op = qml.BlockEncode(input_matrix, wires)
 
@@ -859,6 +860,7 @@ class TestBlockEncode:
         ],
     )
     def test_blockencode_grad_tf(self, wires, input_matrix, expected_result):
+        """Test that block encode is differentiable when using tensorflow."""
         import tensorflow as tf
 
         input_matrix = tf.Variable(input_matrix)
@@ -890,6 +892,7 @@ class TestBlockEncode:
         ],
     )
     def test_adjoint(self, input_matrix, wires):
+        """Test that the adjoint of a BlockEncode operation is correctly computed."""
         mat = qml.matrix(qml.BlockEncode(input_matrix, wires))
         adj = qml.matrix(qml.adjoint(qml.BlockEncode(input_matrix, wires)))
         assert np.allclose(np.eye(len(mat)), mat @ adj)
