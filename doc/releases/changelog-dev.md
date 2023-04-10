@@ -45,7 +45,7 @@
 * Improve the efficiency of `tapering()`, `tapering_hf()` and `clifford()`.
   [(3942)](https://github.com/PennyLaneAI/pennylane/pull/3942)
 
-* Improve the peak memory requirements of `tapering()` and `tapering_hf()` while used for larger observables.
+* Improve the peak memory requirements of `tapering()` and `tapering_hf()` when used for larger observables.
   [(3977)](https://github.com/PennyLaneAI/pennylane/pull/3977)
 
 * Update Pauli arithmetic to more efficiently convert to a Hamiltonian.
