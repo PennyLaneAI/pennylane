@@ -145,6 +145,9 @@
   This allows devices that inherit from `QubitDevice` to override and customize their definition of diagonalizing gates.
   [(#3938)](https://github.com/PennyLaneAI/pennylane/pull/3938)
 
+* `retworkx` has been renamed to `rustworkx` to accomodate the change in name for the package.
+  [(#3975)](https://github.com/PennyLaneAI/pennylane/pull/3975)
+
 * `Sum`, `Prod`, and `SProd` operator data is now a flat list, instead of nested.
   [(#3958)](https://github.com/PennyLaneAI/pennylane/pull/3958)
 
