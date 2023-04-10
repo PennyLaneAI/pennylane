@@ -99,7 +99,7 @@ class TestAutogradExecuteUnitTests:
 
             tape = qml.tape.QuantumScript.from_queue(q)
             return execute(
-                [tape], device, gradient_fn=param_shift, mode="forward", interface=interface
+                [tape], device, gradient_fn=param_shift, grad_on_execution=True, interface=interface
             )[0]
 
         with pytest.raises(
@@ -171,7 +171,7 @@ class TestAutogradExecuteUnitTests:
                 [tape],
                 dev,
                 gradient_fn="device",
-                mode="backward",
+                grad_on_execution=False,
                 gradient_kwargs={"method": "adjoint_jacobian"},
                 interface=interface,
             )[0]
@@ -401,7 +401,7 @@ class TestCaching:
                 dev,
                 gradient_fn="device",
                 cache=cache,
-                mode="backward",
+                grad_on_execution=False,
                 gradient_kwargs={"method": "adjoint_jacobian"},
             )[0]
 
@@ -423,12 +423,12 @@ execute_kwargs = [
     {"gradient_fn": param_shift},
     {
         "gradient_fn": "device",
-        "mode": "forward",
+        "grad_on_execution": True,
         "gradient_kwargs": {"method": "adjoint_jacobian", "use_device_state": True},
     },
     {
         "gradient_fn": "device",
-        "mode": "backward",
+        "grad_on_execution": False,
         "gradient_kwargs": {"method": "adjoint_jacobian"},
     },
 ]
@@ -823,7 +823,10 @@ class TestAutogradExecuteIntegration:
 
     def test_sampling(self, interface, execute_kwargs):
         """Test sampling works as expected"""
-        if execute_kwargs["gradient_fn"] == "device" and execute_kwargs["mode"] == "forward":
+        if (
+            execute_kwargs["gradient_fn"] == "device"
+            and execute_kwargs["grad_on_execution"] == True
+        ):
             pytest.skip("Adjoint differentiation does not support samples")
 
         def cost(x, device):

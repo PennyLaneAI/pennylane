@@ -3,6 +3,10 @@
 # Release 0.30.0-dev (development release)
 
 <h3>New features since last release</h3>
+* The new return system is activated and public facing. The qnode kwarg `mode` is replaced by the boolean 
+  `grad_on_execution` .
+  [(#3957)](https://github.com/PennyLaneAI/pennylane/pull/3957)
+  [(#3969)](https://github.com/PennyLaneAI/pennylane/pull/3969)
 
 * The `sample_state` function is added to `devices/qubit` that returns a series of samples based on a given
   state vector and a number of shots.
@@ -144,6 +148,9 @@
 * `retworkx` has been renamed to `rustworkx` to accomodate the change in name for the package.
   [(#3975)](https://github.com/PennyLaneAI/pennylane/pull/3975)
 
+* `Sum`, `Prod`, and `SProd` operator data is now a flat list, instead of nested.
+  [(#3958)](https://github.com/PennyLaneAI/pennylane/pull/3958)
+
 <h3>Breaking changes</h3>
 
 * Both JIT interfaces are not compatible with Jax `>0.4.3`, we raise an error for those versions.
@@ -169,6 +176,9 @@
 * Some `MeasurementProcess` classes can now only be instantiated with arguments that they will actually use.
   For example, you can no longer create `StateMP(qml.PauliX(0))` or `PurityMP(eigvals=(-1,1), wires=Wires(0))`.
   [(#3898)](https://github.com/PennyLaneAI/pennylane/pull/3898)
+
+* `Sum`, `Prod`, and `SProd` operator data is now a flat list, instead of nested.
+  [(#3958)](https://github.com/PennyLaneAI/pennylane/pull/3958)
 
 <h3>Deprecations</h3>
 
