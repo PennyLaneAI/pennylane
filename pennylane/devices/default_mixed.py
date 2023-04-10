@@ -656,7 +656,7 @@ class DefaultMixed(QubitDevice):
             self.measured_wires = qml.wires.Wires.all_wires(wires_list)
         return super().execute(circuit, **kwargs)
 
-    def _execute_new(self, circuit, **kwargs):
+    def _execute_legacy(self, circuit, **kwargs):
         """Execute a queue of quantum operations on the device and then
         measure the given observables.
 
@@ -693,7 +693,7 @@ class DefaultMixed(QubitDevice):
                     # State: This returns pre-rotated state, so no readout error.
                     # Assumed to only be allowed if it's the only measurement.
                     self.measured_wires = []
-                    return super()._execute_new(circuit, **kwargs)
+                    return super()._execute_legacy(circuit, **kwargs)
                 if isinstance(m, (SampleMP, CountsMP)) and m.wires in (
                     qml.wires.Wires([]),
                     self.wires,
@@ -701,14 +701,14 @@ class DefaultMixed(QubitDevice):
                     # Sample, Counts: Readout error applied to all device wires when wires
                     # not specified or all wires specified.
                     self.measured_wires = self.wires
-                    return super()._execute_new(circuit, **kwargs)
+                    return super()._execute_legacy(circuit, **kwargs)
                 if isinstance(m, (VnEntropyMP, MutualInfoMP)):
                     # VnEntropy, MutualInfo: Computed for the state prior to measurement. So, readout
                     # error need not be applied on the corresponding device wires.
                     continue
                 wires_list.append(m.wires)
             self.measured_wires = qml.wires.Wires.all_wires(wires_list)
-        return super()._execute_new(circuit, **kwargs)
+        return super()._execute_legacy(circuit, **kwargs)
 
     def apply(self, operations, rotations=None, **kwargs):
         rotations = rotations or []
