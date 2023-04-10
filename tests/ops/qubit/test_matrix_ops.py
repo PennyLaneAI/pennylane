@@ -691,7 +691,7 @@ class TestBlockEncode:
             (
                 [[0, 1], [1, 0]],
                 1,
-                f"Block encoding a \({2} x {2}\) matrix requires a hilbert space of size"
+                f"Block encoding a \({2} x {2}\) matrix requires a Hilbert space of size"
                 f" at least \({4} x {4}\). Cannot be embedded in a {1} qubit system.",
             ),
         ],
