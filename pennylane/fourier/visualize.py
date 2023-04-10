@@ -304,13 +304,15 @@ def box(coeffs, n_inputs, ax, colour_dict=None, show_freqs=True, show_fliers=Tru
         data_colour = colour_dict[data_type]
         axis.boxplot(
             data[data_type],
-            boxprops=dict(
-                facecolor=to_rgb(data_colour) + (0.4,), color=data_colour, edgecolor=data_colour
-            ),
-            medianprops=dict(color=data_colour, linewidth=1.5),
-            flierprops=dict(markeredgecolor=data_colour),
-            whiskerprops=dict(color=data_colour),
-            capprops=dict(color=data_colour),
+            boxprops={
+                "facecolor": to_rgb(data_colour) + (0.4,),
+                "color": data_colour,
+                "edgecolor": data_colour,
+            },
+            medianprops={"color": data_colour, "linewidth": 1.5},
+            flierprops={"markeredgecolor": data_colour},
+            whiskerprops={"color": data_colour},
+            capprops={"color": data_colour},
             patch_artist=True,
             showfliers=show_fliers,
         )
@@ -568,7 +570,7 @@ def radial_box(coeffs, n_inputs, ax, show_freqs=True, colour_dict=None, show_fli
             :func:`~.pennylane.fourier.coefficients`.
         n_inputs (int): Dimension of the transformed function.
         ax (array[matplotlib.axes.Axes]): Axes to plot on. For this function, subplots
-            must specify ``subplot_kw=dict(polar=True)`` upon construction.
+            must specify ``subplot_kw={"polar":True}`` upon construction.
         show_freqs (bool): Whether or not to label the frequencies on
             the radial axis. Turn off for large plots.
         colour_dict (dict[str, str]): Specify a colour mapping for positive and negative
@@ -631,7 +633,7 @@ def radial_box(coeffs, n_inputs, ax, show_freqs=True, colour_dict=None, show_fli
 
         fig, ax = plt.subplots(
             1, 2, sharex=True, sharey=True,
-            subplot_kw=dict(polar=True),
+            subplot_kw={"polar": True},
             figsize=(15, 8)
         )
 
@@ -672,13 +674,15 @@ def radial_box(coeffs, n_inputs, ax, show_freqs=True, colour_dict=None, show_fli
             data[data_type],
             positions=angles,
             widths=width,
-            boxprops=dict(
-                facecolor=to_rgb(data_colour) + (0.4,), color=data_colour, edgecolor=data_colour
-            ),
-            medianprops=dict(color=data_colour, linewidth=1.5),
-            flierprops=dict(markeredgecolor=data_colour),
-            whiskerprops=dict(color=data_colour),
-            capprops=dict(color=data_colour),
+            boxprops={
+                "facecolor": to_rgb(data_colour) + (0.4,),
+                "color": data_colour,
+                "edgecolor": data_colour,
+            },
+            medianprops={"color": data_colour, "linewidth": 1.5},
+            flierprops={"markeredgecolor": data_colour},
+            whiskerprops={"color": data_colour},
+            capprops={"color": data_colour},
             patch_artist=True,
             showfliers=show_fliers,
         )
