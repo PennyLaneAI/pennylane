@@ -38,7 +38,11 @@ def _convert_measurement_to_numpy_data(
         return m
     # Use measurement method to change parameters when it becomes available
     copied_m = copy.copy(m)
-    copied_m.obs.data = math.unwrap(m.obs.data)
+    copied_m.obs.data = math.unwrap(
+        [o.data for o in m.obs.obs]
+        if isinstance(copied_m.obs, qml.operation.Tensor)
+        else m.obs.data
+    )
     return copied_m
 
 
