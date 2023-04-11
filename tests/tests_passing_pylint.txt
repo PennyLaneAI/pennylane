@@ -1,9 +1,11 @@
 tests/data/**
-tests/devices/test_execution_config.py
+tests/devices/experimental/**
 tests/drawer/test_tape_mpl.py
 tests/drawer/test_draw_mpl.py
 tests/drawer/test_drawer_utils.py
+tests/measurements/test_counts.py
 tests/measurements/test_probs.py
+tests/measurements/test_shots.py
 tests/qchem/test_givens_rotations.py
 tests/templates/test_subroutines/test_basis_rotation.py
 tests/ops/op_math/test_controlled_ops.py
@@ -24,7 +26,6 @@ tests/ops/qubit/test_matrix_ops.py
 tests/ops/op_math/test_exp.py
 tests/transforms/test_decompositions.py
 tests/transforms/test_qfunc_transform.py
-tests/returntypes/gradients/test_hadamard_grad.py
 tests/ops/op_math/test_exp.py
 tests/ops/qubit/test_state_prep.py
 tests/devices/qubit/**
@@ -33,10 +34,11 @@ tests/test_operation.py
 tests/pulse/**
 tests/math/test_init.py
 tests/math/test_functions.py
-tests/gradients/test_spsa_gradient.py
-tests/returntypes/gradients/test_spsa_gradient_new.py
-tests/returntypes/gradients/test_spsa_gradient_shot_vec_new.py
-tests/returntypes/gradients/test_jvp.py
+tests/gradients/core/test_hadamard_gradient.py
+tests/gradients/core/test_hamiltonian_gradient.py
+tests/gradients/core/test_jvp.py
+tests/gradients/core/test_pulse_gradient.py
+tests/gradients/finite_diff/test_spsa_gradient.py
 tests/kernels/**
 tests/devices/test_default_mixed.py
 tests/devices/test_default_mixed_autograd.py
@@ -44,3 +46,5 @@ tests/devices/test_default_mixed_jax.py
 tests/devices/test_default_mixed_torch.py
 tests/devices/test_default_mixed_tf.py
 tests/devices/test_null_qubit.py
+tests/fourier/test_coefficients.py
+tests/test_qutrit_device.py
