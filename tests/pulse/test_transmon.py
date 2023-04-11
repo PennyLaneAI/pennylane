@@ -98,9 +98,26 @@ class TestTransmonInteraction:
             _ = transmon_interaction(connections=connections, omega=[0.1], g=[0.2, 0.2], wires=[0])
 
     def test_omega_and_wires_dont_match(self):
-        """That that providing missmatching omega and wires raises error"""
+        """Test that providing missmatching omega and wires raises error"""
         with pytest.raises(ValueError, match="Number of qubit frequencies omega"):
             _ = transmon_interaction(omega=[1, 2, 3], wires=[0, 1], connections=[], g=[])
+    
+    def test_wires_and_connections_and_not_containing_each_other_raise_warning(self,):
+        """Test that when wires and connections to not contain each other, a warning is raised"""
+        with pytest.warns(
+            UserWarning, match="Caution, wires and connections do not match."
+        ):
+            _ = qml.pulse.transmon_interaction(omega=0.5, connections=[[0, 1], [2, 3]], g=0.5, wires=[4, 5, 6])
+        
+        with pytest.warns(
+            UserWarning, match="Caution, wires and connections do not match."
+        ):
+            _ = qml.pulse.transmon_interaction(omega=0.5, connections=[[0, 1], [2, 3]], g=0.5, wires=[0, 1, 2])
+        
+        with pytest.warns(
+            UserWarning, match="Caution, wires and connections do not match."
+        ):
+            _ = qml.pulse.transmon_interaction(omega=0.5, connections=[[0, 1], [2, 3]], g=0.5, wires=[0, 1, 2, 3, 4])
 
 
 # For transmon settings test

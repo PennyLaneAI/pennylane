@@ -57,7 +57,7 @@ def drive(amplitude, phase, wires):
             the electromagnetic field acts on
 
     Returns:
-        HardwareHamiltonian: a :class:`~.ParametrizedHamiltonian` representing the action of the electromagnetic field
+        ParametrizedHamiltonian: a :class:`~.ParametrizedHamiltonian` representing the action of the electromagnetic field
         on the qubits.
 
     .. seealso::
@@ -67,7 +67,7 @@ def drive(amplitude, phase, wires):
 
     **Example**
 
-    We create a Hamiltonian describing a electromagnetic field acting on 4 qubits with a fixed detuning and
+    We create a Hamiltonian describing an electromagnetic field acting on 4 qubits with a fixed
     phase, as well as a parametrized, time-dependent amplitude. The Hamiltonian includes an interaction term for
     inter-qubit interactions.
 

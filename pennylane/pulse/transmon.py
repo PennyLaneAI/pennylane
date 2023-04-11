@@ -12,13 +12,16 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """This module contains the classes/functions specific for simulation of superconducting transmon hardware systems"""
+import warnings
+
 from dataclasses import dataclass
 from typing import Callable, List, Union
 
 import pennylane as qml
+import pennylane.numpy as np
 from pennylane.pulse import HardwareHamiltonian
 from pennylane.typing import TensorLike
-
+from pennylane.wires import Wires
 
 # TODO ladder operators once there is qudit support
 # pylint: disable=unused-argument
@@ -41,7 +44,7 @@ def transmon_interaction(
     anharmonicity=None,
     d=2,
 ):
-    r"""Returns a :class:`ParametrizedHamiltonian` representing the cQED Hamiltonian of a superconducting transmon system.
+    r"""Returns a :class:`ParametrizedHamiltonian` representing the circuit QED Hamiltonian of a superconducting transmon system.
 
     The Hamiltonian is given by
 
@@ -124,9 +127,14 @@ def transmon_interaction(
 
     n_wires = len(wires)
 
+    if not Wires(wires).contains_wires(Wires(np.unique(connections))):
+        warnings.warn(f"Caution, wires and connections do not match. "
+                      f"I.e., wires {wires} and wires in connections {connections} do not contain each other")
+
     # Prepare coefficients
     if anharmonicity is None:
         anharmonicity = [0.0] * n_wires
+
     # TODO: make coefficients callable / trainable. Currently not supported
     if qml.math.ndim(omega) == 0:
         omega = [omega] * n_wires
