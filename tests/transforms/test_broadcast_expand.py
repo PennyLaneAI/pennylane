@@ -96,6 +96,7 @@ class TestBroadcastExpand:
     def test_expansion(self, params, size, obs, exp_fn):
         """Test that the expansion works as expected."""
         tape = make_tape(*params, obs)
+        print(tape.batch_size)
         assert tape.batch_size == size
 
         tapes, fn = qml.transforms.broadcast_expand(tape)
@@ -103,6 +104,7 @@ class TestBroadcastExpand:
         assert all(_tape.batch_size is None for _tape in tapes)
 
         result = fn(qml.execute(tapes, dev, None))
+        print(result)
         assert isinstance(result, np.ndarray)
         assert qml.math.allclose(result, exp_fn(*params))
 
