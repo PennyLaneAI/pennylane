@@ -25,7 +25,7 @@ from typing import (
 )
 
 import networkx as nx
-import retworkx as rx
+import rustworkx as rx
 
 import numpy as np
 import pennylane as qml
@@ -187,7 +187,7 @@ def cycle_mixer(graph: Union[nx.DiGraph, rx.PyDiGraph]) -> Hamiltonian:
     + (0.25) [Y5 Y4 X0]
     + (0.25) [Y5 X4 Y0]
 
-    >>> import retworkx as rx
+    >>> import rustworkx as rx
     >>> g = rx.generators.directed_mesh_graph(3, [0,1,2])
     >>> h_m = cycle_mixer(g)
     >>> print(h_m)
@@ -349,7 +349,7 @@ def loss_hamiltonian(graph: Union[nx.Graph, rx.PyGraph, rx.PyDiGraph]) -> Hamilt
     + (0.9162907318741551) [Z4]
     + (1.0986122886681098) [Z5]
 
-    >>> import retworkx as rx
+    >>> import rustworkx as rx
     >>> g = rx.generators.directed_mesh_graph(3)
     >>> edge_weight_data = {edge: (i + 1) * 0.5 for i, edge in enumerate(sorted(g.edge_list()))}
     >>> for k, v in edge_weight_data.items():

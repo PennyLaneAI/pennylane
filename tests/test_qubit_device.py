@@ -326,31 +326,6 @@ class TestParameters:
 class TestExtractStatistics:
     """Test the statistics method"""
 
-    def test_observables_deprecated(self, mock_qubit_device_extract_stats, monkeypatch):
-        """Test that using a list of observables as an argument is deprecated."""
-        with monkeypatch.context() as m:
-            dev = mock_qubit_device_extract_stats()
-            with pytest.warns(
-                UserWarning,
-                match="Using a list of observables in ``QubitDevice.statistics`` is",
-            ):
-                dev.statistics([])
-            with pytest.warns(
-                UserWarning,
-                match="Using a list of observables in ``QubitDevice.statistics`` is",
-            ):
-                dev.statistics(observables=[])
-            qscript = QuantumScript()
-            with pytest.warns(
-                UserWarning,
-                match="Using a list of observables in ``QubitDevice.statistics`` is",
-            ):
-                dev.statistics([], circuit=qscript)
-            with pytest.raises(
-                ValueError, match="Please provide a circuit into the statistics method"
-            ):
-                dev.statistics()
-
     @pytest.mark.parametrize(
         "measurement",
         [
@@ -1312,7 +1287,7 @@ class TestBatchExecution:
         """Tests that the device's execute method is called the correct number of times."""
 
         dev = mock_qubit_device_with_paulis_and_methods(wires=2)
-        spy = mocker.spy(QubitDevice, "_execute_new")
+        spy = mocker.spy(QubitDevice, "execute")
 
         tapes = [self.tape1] * n_tapes
         dev.batch_execute(tapes)

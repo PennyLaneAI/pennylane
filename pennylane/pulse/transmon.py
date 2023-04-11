@@ -12,12 +12,16 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """This module contains the classes/functions specific for simulation of superconducting transmon hardware systems"""
+import warnings
+
 from dataclasses import dataclass
 from typing import Callable, List, Union
 
 import pennylane as qml
+import pennylane.numpy as np
 from pennylane.pulse import HardwareHamiltonian
 from pennylane.typing import TensorLike
+from pennylane.wires import Wires
 
 
 # TODO ladder operators once there is qudit support
@@ -37,19 +41,19 @@ def transmon_interaction(
     omega: Union[float, list],
     connections: list,
     g: Union[float, list],
+    wires: list,
     anharmonicity=None,
-    wires=None,
     d=2,
 ):
-    r"""Returns a :class:`ParametrizedHamiltonian` representing the cQED Hamiltonian of a superconducting transmon system.
+    r"""Returns a :class:`ParametrizedHamiltonian` representing the circuit QED Hamiltonian of a superconducting transmon system.
 
     The Hamiltonian is given by
 
     .. math::
 
-        H = \sum_q \omega_q a^\dagger_q a_q
+        H = \sum_{q\in \text{wires}} \omega_q a^\dagger_q a_q
         + \sum_{(i, j) \in \mathcal{C}} g_{ij} \left(a^\dagger_i a_j + a_j^\dagger a_i \right)
-        + \sum_q \alpha_q a^\dagger_q a^\dagger_q a_q a_q
+        + \sum_{q\in \text{wires}} \alpha_q a^\dagger_q a^\dagger_q a_q a_q
 
     where :math:`[a^\dagger_p, a_q] = i \delta_{pq}` are bosonic creation and annihilation operators.
     The first term describes the dressed qubit frequencies :math:`\omega_q`, the second term their
@@ -58,8 +62,8 @@ def transmon_interaction(
     local Hilbert space (default ``d=2`` corresponds to qubits).
     In that case, the anharmonicity is set to :math:`\alpha=0` and ignored.
 
-    The values of :math:`\omega \pm \alpha` are typically around :math:`(5 \pm 0.3) \times 2\pi \text{GHz}` and it is common
-    for different qubits to be out of tune with different energy gaps. The coupling strength
+    The values of :math:`\omega` and :math:`\alpha` are typically around :math:`5 \times 2\pi \text{GHz}` and :math:`0.3 \times 2\pi \text{GHz}`, respectively.
+    It is common for different qubits to be out of tune with different energy gaps. The coupling strength
     :math:`g` typically varies betwewen :math:`[0.001, 0.1] \times 2\pi \text{GHz}`. For some example parameters,
     see e.g. `arXiv:1804.04073 <https://arxiv.org/abs/1804.04073>`_,
     `arXiv:2203.06818 <https://arxiv.org/abs/2203.06818>`_, or `arXiv:2210.15812 <https://arxiv.org/abs/2210.15812>`_.
@@ -71,16 +75,16 @@ def transmon_interaction(
         :func:`~.drive`
 
     Args:
-        omega (Union[float, list[float]]): List of dressed qubit frequencies in GHz.
+        omega (Union[float, list[float]]): List of dressed qubit frequencies in GHz. Needs to match the length of ``wires``.
             When passing a single float all qubits are assumed to have that same frequency.
         connections (list[tuple(int)]): List of connections ``(i, j)`` between qubits i and j.
+            When the wires in ``connections`` are not contained in ``wires``, a warning is raised.
         g (Union[float, list[float]]): List of coupling strengths in GHz. Needs to match the length of ``connections``.
             When passing a single float need explicit ``wires``.
         anharmonicity (Union[float, list[float]]): List of anharmonicities in GHz. Ignored when ``d=2``.
             When passing a single float all qubits are assumed to have that same anharmonicity.
-        wires (list): Optional, defaults to ``range(len(omega))`` when set to ``None``. When passing explicit ``wires``,
-            needs to be of the same length as omega. Note that there can be additional wires in the resulting operator from
-            the ``connections``, which are treated independently.
+        wires (list): Needs to be of the same length as omega. Note that there can be additional
+            wires in the resulting operator from the ``connections``, which are treated independently.
         d (int): Local Hilbert space dimension. Defaults to ``d=2`` and is currently the only supported value.
 
     Returns:
@@ -115,19 +119,26 @@ def transmon_interaction(
             "Currently only supporting qubits. Qutrits and qudits are planned in the future."
         )
 
-    if wires is None and qml.math.ndim(omega) == 0:
-        raise ValueError(
-            f"Cannot instantiate wires automatically. Either need specific wires or a list of omega."
-            f"Received wires {wires} and omega of type {type(omega)}"
-        )
+    # if wires is None and qml.math.ndim(omega) == 0:
+    #     raise ValueError(
+    #         f"Cannot instantiate wires automatically. Either need specific wires or a list of omega."
+    #         f"Received wires {wires} and omega of type {type(omega)}"
+    #     )
 
-    wires = wires or list(range(len(omega)))
+    # wires = wires or list(range(len(omega)))
 
     n_wires = len(wires)
+
+    if not Wires(wires).contains_wires(Wires(np.unique(connections).tolist())):
+        warnings.warn(
+            f"Caution, wires and connections do not match. "
+            f"I.e., wires in connections {connections} are not contained in the wires {wires}"
+        )
 
     # Prepare coefficients
     if anharmonicity is None:
         anharmonicity = [0.0] * n_wires
+
     # TODO: make coefficients callable / trainable. Currently not supported
     if qml.math.ndim(omega) == 0:
         omega = [omega] * n_wires

@@ -30,26 +30,24 @@ from .parametrized_hamiltonian import ParametrizedHamiltonian
 
 
 def drive(amplitude, phase, wires):
-    r"""Constructs a :class:`ParametrizedHamiltonian` representing the action of a driving electromagnetic
-    field with a qubit.
+    r"""Returns a :class:`ParametrizedHamiltonian` representing the action of a driving electromagnetic
+    field with a set of qubits.
 
     .. math::
         \frac{1}{2} \sum_{j \in \text{wires}} \Omega(t) \left(e^{i \phi(t)} \sigma^+_j + e^{-i \phi(t)} \sigma^-_j \right)
 
     where :math:`\Omega` and :math:`\phi` correspond to the amplitude and phase of the
     electromagnetic driving field and :math:`j` corresponds to the wire index. We are describing the Hamiltonian
-    in terms of ladder operators :math:`\sigma^\pm = \frac{1}{2}(\sigma_x \pm i \sigma_y)`. Note that it is common
-    to describe the exponent of the phase factor as :math:`\exp(i(\phi(t) + \nu t))`, where :math:`\nu` is the
-    drive frequency (see theoretical background below).
+    in terms of ladder operators :math:`\sigma^\pm = \frac{1}{2}(\sigma_x \pm i \sigma_y)`. Note that depending on the
+    hardware realization (neutral atoms, superconducting qubits), there are different conventions and notations.
+    E.g., for superconducting qubits it is common to describe the exponent of the phase factor as :math:`\exp(i(\phi(t) + \nu t))`, where :math:`\nu` is the
+    drive frequency. We describe their relations in the theoretical background section below.
 
     Common hardware systems are superconducting qubits and neutral atoms. The electromagnetic field of the drive is
     realized by microwave and laser fields, respectively, operating at very different wavelengths.
-
-    Note that to avoid nummerical problems due to using both very large and very small numbers, it is advisable to match
-    the order of magnitudes of frequency and time arguments. For example, when frequencies are of order
-    MHz (microwave pulses for superconducting systems), then one can ommit the explicit factor :math:`10^6`
-    by treating the times passed to the constructed :class:`ParametrizedHamiltonian` in :math:`\mu s = 10^{-6}s`
-    to be able to use numerical units of order :math:`\mathcal{O}(1)`. We further elaborate on that in the examples below.
+    To avoid nummerical problems due to using both very large and very small numbers, it is advisable to match
+    the order of magnitudes of frequency and time arguments.
+    Read the usage details for more information on how to choose :math:`\Omega` and :math:`\phi`.
 
     Args:
         amplitude (Union[float, Callable]): float or callable returning the amplitude of an
@@ -59,7 +57,7 @@ def drive(amplitude, phase, wires):
             the electromagnetic field acts on
 
     Returns:
-        HardwareHamiltonian: a :class:`~.ParametrizedHamiltonian` representing the action of the electromagnetic field
+        ParametrizedHamiltonian: a :class:`~.ParametrizedHamiltonian` representing the action of the electromagnetic field
         on the qubits.
 
     .. seealso::
@@ -69,7 +67,7 @@ def drive(amplitude, phase, wires):
 
     **Example**
 
-    We create a Hamiltonian describing a electromagnetic field acting on 4 qubits with a fixed detuning and
+    We create a Hamiltonian describing an electromagnetic field acting on 4 qubits with a fixed
     phase, as well as a parametrized, time-dependent amplitude. The Hamiltonian includes an interaction term for
     inter-qubit interactions.
 
@@ -151,14 +149,14 @@ def drive(amplitude, phase, wires):
 
         .. math::
             H = \frac{1}{2} \Omega(t) \sum_{j \in \text{wires}} \left(e^{i (\phi(t) + \nu t)} \sigma^+_j + e^{-i (\phi(t) + \nu t)} \sigma^-_j \right)
-            + \frac{1}{2} \omega_q \sum_{j \in \text{wires}} \sigma^z_j,
+            + \omega_q \sum_{j \in \text{wires}} \sigma^z_j,
 
         with amplitude :math:`\Omega`, phase :math:`\phi` and drive frequency :math:`\nu` of the electromagnetic field, as well as the qubit frequency :math:`\omega_q`.
-        We can move to the rotating frame of the driving field by applying :math:`U = e^{-i\nu t \sigma^z / 2}` which yields the new Hamiltonian
+        We can move to the rotating frame of the driving field by applying :math:`U = e^{-i\nu t \sigma^z}` which yields the new Hamiltonian
 
         .. math::
             H = \frac{1}{2} \Omega(t) \sum_{j \in \text{wires}} \left(e^{i \phi(t)} \sigma^+_j + e^{-i \phi(t)} \sigma^-_j \right)
-            - \frac{1}{2} (\nu - \omega_q) \sum_{j \in \text{wires}} \sigma^z_j
+            - (\nu - \omega_q) \sum_{j \in \text{wires}} \sigma^z_j
 
         The latter formulation is more common in neutral atom systems where we define the detuning from the atomic energy gap
         as :math:`\Delta = \nu - \omega_q`. This is because here all atoms have the same energy gap, whereas for superconducting
@@ -181,13 +179,6 @@ def drive(amplitude, phase, wires):
             H_i = qml.pulse.rydberg_interaction(atom_coordinates, wires)
 
         We can now simulate driving those atoms with an oscillating amplitude :math:`\Omega` that is trainable, for a duration of :math:`10 \mu s`.
-        The total Hamiltonian of that evolution is given by
-
-        .. math::
-            \frac{1}{2} p \sin(\pi t) \sum_{j \in \text{wires}} \left(e^{i \pi/2} \sigma^+_j + e^{-i \pi/2} \sigma^-_j \right) -
-            \frac{1}{2} \frac{3 \pi}{4} \sum_{j \in \text{wires}} \sigma^z_j + \sum_{k<\ell} V_{k \ell} n_k n_\ell
-
-        and can be executed and differentiated via the following code.
 
         .. code-block:: python3
 
@@ -197,7 +188,18 @@ def drive(amplitude, phase, wires):
             H_d = qml.pulse.drive(amplitude, phase, wires)
 
             # detuning term
-            H_z = qml.dot([-3*np.pi/2/4]*len(wires), [qml.PauliZ(i) for i in wires])
+            H_z = qml.dot([-3*np.pi/4]*len(wires), [qml.PauliZ(i) for i in wires])
+
+
+        The total Hamiltonian of that evolution is given by
+
+        .. math::
+            \frac{1}{2} p \sin(\pi t) \sum_{j \in \text{wires}} \left(e^{i \pi/2} \sigma^+_j + e^{-i \pi/2} \sigma^-_j \right) -
+            \frac{3 \pi}{4} \sum_{j \in \text{wires}} \sigma^z_j + \sum_{k<\ell} V_{k \ell} n_k n_\ell
+
+        and can be executed and differentiated via the following code.
+
+        .. code-block:: python3
 
             dev = qml.device("default.qubit.jax", wires=wires)
             @qml.qnode(dev, interface="jax")

@@ -144,7 +144,7 @@ class TestParamShift:
     def test_independent_parameter(self, mocker):
         """Test that an independent parameter is skipped
         during the Jacobian computation."""
-        spy = mocker.spy(qml.gradients.parameter_shift, "expval_param_shift")
+        spy = mocker.spy(qml.gradients.parameter_shift, "_expval_param_shift_legacy")
 
         with qml.queuing.AnnotatedQueue() as q:
             qml.RX(0.543, wires=[0])
@@ -597,7 +597,7 @@ class TestParamShiftUsingBroadcasting:
     def test_independent_parameter(self, mocker):
         """Test that an independent parameter is skipped
         during the Jacobian computation."""
-        spy = mocker.spy(qml.gradients.parameter_shift, "expval_param_shift")
+        spy = mocker.spy(qml.gradients.parameter_shift, "_expval_param_shift_legacy")
 
         with qml.queuing.AnnotatedQueue() as q:
             qml.RX(0.543, wires=[0])

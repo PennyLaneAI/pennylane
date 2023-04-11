@@ -94,7 +94,7 @@ class TestJaxExecuteUnitTests:
                 [tape],
                 device,
                 gradient_fn=param_shift,
-                mode="forward",
+                grad_on_execution=True,
             )[0]
 
         with pytest.raises(
@@ -171,7 +171,7 @@ class TestJaxExecuteUnitTests:
                 [tape],
                 dev,
                 gradient_fn="device",
-                mode="backward",
+                grad_on_execution=False,
                 gradient_kwargs={"method": "adjoint_jacobian"},
             )[0]
 
@@ -341,7 +341,7 @@ class TestCaching:
                 dev,
                 gradient_fn="device",
                 cache=cache,
-                mode="backward",
+                grad_on_execution=False,
                 gradient_kwargs={"method": "adjoint_jacobian"},
             )[0]
 
@@ -363,12 +363,12 @@ execute_kwargs = [
     {"gradient_fn": param_shift},
     {
         "gradient_fn": "device",
-        "mode": "forward",
+        "grad_on_execution": True,
         "gradient_kwargs": {"method": "adjoint_jacobian", "use_device_state": True},
     },
     {
         "gradient_fn": "device",
-        "mode": "backward",
+        "grad_on_execution": False,
         "gradient_kwargs": {"method": "adjoint_jacobian"},
     },
 ]

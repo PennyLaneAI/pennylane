@@ -20,7 +20,7 @@ import pytest
 
 import pennylane as qml
 from pennylane.pulse import HardwareHamiltonian, transmon_interaction
-from pennylane.pulse.transmon import TransmonSettings
+from pennylane.pulse.transmon import TransmonSettings, a, ad
 
 from pennylane.wires import Wires
 
@@ -50,53 +50,80 @@ class TestTransmonInteraction:
         assert len(Hd.ops) == num_combinations
         assert Hd.pulses == []
 
-    def test_wires_is_none(self):
-        """Test that when wires is None the wires correspond to an increasing list of values with
-        the same as the unique connections."""
-        Hd = transmon_interaction(connections=connections, omega=[0.3], g=0.3, anharmonicity=0.3)
-
-        assert Hd.wires == Wires.all_wires(connections + [0])
-
     def test_coeffs(self):
         """Test that the generated coefficients are correct."""
-        Hd = qml.pulse.transmon_interaction(omega, connections, g, anharmonicity=anharmonicity, d=2)
+        Hd = qml.pulse.transmon_interaction(
+            omega, connections, g, wires=wires, anharmonicity=anharmonicity, d=2
+        )
         assert all(Hd.coeffs == np.concatenate([omega, g]))
 
     @pytest.mark.skip
     def test_coeffs_d(self):
         """Test that generated coefficients are correct for d>2"""
         Hd2 = qml.pulse.transmon_interaction(
-            connections, omega, g, anharmonicity=anharmonicity, d=3
+            omega=omega, connections=connections, g=g, wires=wires, anharmonicity=anharmonicity, d=3
         )
         assert all(Hd2.coeffs == np.concatenate([omega, g, anharmonicity]))
+
+    def test_float_omega_with_explicit_wires(self):
+        """Test that a single float omega with explicit wires yields the correct Hamiltonian"""
+        wires = range(6)
+        H = qml.pulse.transmon_interaction(omega=1.0, connections=connections, g=g, wires=wires)
+
+        assert H.coeffs[:6] == [1.0] * 6
+        assert all(H.coeffs[6:] == g)
+        for o1, o2 in zip(H.ops[:6], [ad(i, 2) @ a(i, 2) for i in wires]):
+            assert qml.equal(o1, o2)
+
+    def test_single_callable_omega_with_explicit_wires(self):
+        """Test that a single callable omega with explicit wires yields the correct Hamiltonian"""
+        wires0 = np.arange(10)
+        H = qml.pulse.transmon_interaction(
+            omega=np.polyval, connections=[[i, (i + 1) % 10] for i in wires0], g=0.5, wires=wires0
+        )
+
+        assert qml.math.allclose(H.coeffs[:10], 0.5)
+        assert H.coeffs[10:] == [np.polyval] * 10
+        for o1, o2 in zip(H.ops[10:], [ad(i, 2) @ a(i, 2) for i in wires0]):
+            assert qml.equal(o1, o2)
 
     def test_d_neq_2_raises_error(self):
         """Test that setting d != 2 raises error"""
         with pytest.raises(NotImplementedError, match="Currently only supporting qubits."):
-            _ = transmon_interaction(connections=connections, omega=[0.1], g=0.2, d=3)
-
-    def test_float_omega_with_no_explicit_wires(self):
-        """Test that raises warning when omega is float and wires not explicit"""
-        with pytest.raises(ValueError, match="Cannot instantiate wires automatically."):
-            _ = transmon_interaction(connections=connections, omega=0.1, g=0.2)
-
-    # def test_wrong_omega_len_raises_error(self):
-    #     """Test that providing list of omegas with wrong length raises error"""
-    #     with pytest.raises(ValueError, match="Number of qubit frequencies omega"):
-    #         _ = transmon_interaction(
-    #             connections=connections,
-    #             omega=[0.1, 0.2],
-    #             g=0.2,
-    #         )
+            _ = transmon_interaction(connections=connections, omega=[0.1], wires=[0], g=0.2, d=3)
 
     def test_wrong_g_len_raises_error(self):
         """Test that providing list of g with wrong length raises error"""
         with pytest.raises(ValueError, match="Number of coupling terms"):
-            _ = transmon_interaction(
-                connections=connections,
-                omega=[0.1],
-                g=[0.2, 0.2],
+            _ = transmon_interaction(connections=connections, omega=[0.1], g=[0.2, 0.2], wires=[0])
+
+    def test_omega_and_wires_dont_match(self):
+        """Test that providing missmatching omega and wires raises error"""
+        with pytest.raises(ValueError, match="Number of qubit frequencies omega"):
+            _ = transmon_interaction(omega=[1, 2, 3], wires=[0, 1], connections=[], g=[])
+
+    def test_wires_and_connections_and_not_containing_each_other_raise_warning(
+        self,
+    ):
+        """Test that when wires and connections to not contain each other, a warning is raised"""
+        with pytest.warns(UserWarning, match="Caution, wires and connections do not match."):
+            _ = qml.pulse.transmon_interaction(
+                omega=0.5, connections=[[0, 1], [2, 3]], g=0.5, wires=[4, 5, 6]
             )
+
+        with pytest.warns(UserWarning, match="Caution, wires and connections do not match."):
+            _ = qml.pulse.transmon_interaction(
+                omega=0.5, connections=[[0, 1], [2, 3]], g=0.5, wires=[0, 1, 2]
+            )
+
+        with pytest.warns(UserWarning, match="Caution, wires and connections do not match."):
+            connections = [["a", "b"], ["a", "c"], ["d", "e"], ["e", "f"]]
+            wires = ["a", "b", "c", "d", "e"]
+            omega = 0.5 * np.arange(len(wires))
+            g = 0.1 * np.arange(len(connections))
+
+            H = qml.pulse.transmon_interaction(omega, connections, g, wires)
+            assert H.wires == Wires(["a", "b", "c", "d", "e", "f"])
 
 
 # For transmon settings test
