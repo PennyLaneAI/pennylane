@@ -29,6 +29,9 @@ from pennylane.pauli.utils import _binary_matrix
 from pennylane.qchem.observable_hf import jordan_wigner
 from pennylane.wires import Wires
 
+# Global Variables
+PAULI_SENTENCE_MEMORY_SPLITTING_SIZE = 15000
+
 
 def _reduced_row_echelon(binary_matrix):
     r"""Returns the reduced row echelon form (RREF) of a matrix in a binary finite field :math:`\mathbb{Z}_2`.
@@ -297,8 +300,8 @@ def taper(h, generators, paulixops, paulix_sector):
         ps_h = pauli_sentence(h)
 
     ts_h = qml.pauli.PauliSentence()
-    for ps in ps_h.split(15000):  # helps restrict the peak memory usage for u @ h @ u
-        ts_h += ps_u * ps * ps_u
+    for ps in ps_h.split(PAULI_SENTENCE_MEMORY_SPLITTING_SIZE):
+        ts_h += ps_u * ps * ps_u  # helps restrict the peak memory usage for u @ h @ u
     h = ts_h.hamiltonian()  # cast back to hamiltonian
 
     wireset = u.wires + h.wires
