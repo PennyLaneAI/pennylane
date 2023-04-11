@@ -71,7 +71,7 @@ def transmon_interaction(
         :func:`~.drive`
 
     Args:
-        omega (Union[float, list[float]]): List of dressed qubit frequencies in GHz.
+        omega (Union[float, list[float]]): List of dressed qubit frequencies in GHz. Needs to match the length of ``wires``.
             When passing a single float all qubits are assumed to have that same frequency.
         connections (list[tuple(int)]): List of connections ``(i, j)`` between qubits i and j.
         g (Union[float, list[float]]): List of coupling strengths in GHz. Needs to match the length of ``connections``.

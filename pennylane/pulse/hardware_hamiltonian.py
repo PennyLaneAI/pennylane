@@ -38,18 +38,16 @@ def drive(amplitude, phase, wires):
 
     where :math:`\Omega` and :math:`\phi` correspond to the amplitude and phase of the
     electromagnetic driving field and :math:`j` corresponds to the wire index. We are describing the Hamiltonian
-    in terms of ladder operators :math:`\sigma^\pm = \frac{1}{2}(\sigma_x \pm i \sigma_y)`. Note that it is common
-    to describe the exponent of the phase factor as :math:`\exp(i(\phi(t) + \nu t))`, where :math:`\nu` is the
-    drive frequency (see theoretical background below).
+    in terms of ladder operators :math:`\sigma^\pm = \frac{1}{2}(\sigma_x \pm i \sigma_y)`. Note that depending on the
+    hardware realization (neutral atoms, superconducting qubits), there are different conventions and notations.
+    E.g., for superconducting qubits it is common to describe the exponent of the phase factor as :math:`\exp(i(\phi(t) + \nu t))`, where :math:`\nu` is the
+    drive frequency. We describe their relations in the theoretical background section below.
 
     Common hardware systems are superconducting qubits and neutral atoms. The electromagnetic field of the drive is
     realized by microwave and laser fields, respectively, operating at very different wavelengths.
-
-    Note that to avoid numerical problems due to using both very large and very small numbers, it is advisable to match
-    the order of magnitudes of frequency and time arguments. For example, when frequencies are of order
-    MHz (microwave pulses for superconducting systems), then one can ommit the explicit factor :math:`10^6`
-    by treating the times passed to the constructed :class:`ParametrizedHamiltonian` in :math:`\mu s = 10^{-6}s`
-    to be able to use numerical units of order :math:`\mathcal{O}(1)`. We further elaborate on that in the examples below.
+    To avoid nummerical problems due to using both very large and very small numbers, it is advisable to match
+    the order of magnitudes of frequency and time arguments.
+    Read the usage details for more information on how to choose :math:`\Omega` and :math:`\phi`.
 
     Args:
         amplitude (Union[float, Callable]): float or callable returning the amplitude of an
