@@ -242,6 +242,10 @@
 * `SampleMP.shape` is now correct when sampling only occurs on a subset of the device wires.
   [(#3921)](https://github.com/PennyLaneAI/pennylane/pull/3921)
 
+* An issue is fixed in `qchem.Molecule` to allow basis sets other than the hard-coded ones to be
+  used in the `Molecule` class.
+  [(#3955)](https://github.com/PennyLaneAI/pennylane/pull/3955)
+
 * Fixed bug where all devices that inherit from DefaultQubit claimed to support `ParametrizedEvolution`.
   Now only `DefaultQubitJax` supports the operator, as expected.
   [(#3964)](https://github.com/PennyLaneAI/pennylane/pull/3964)
