@@ -25,12 +25,12 @@ class Resources:
     tracked over a quantum workflow.
 
     This container object tracks the following resources as attributes:
-        num_wires (int): number of qubits
-        num_gates (int): number of gates
-        depth (int): the depth of the circuit (max number of non-parallel operations)
-        shots (int): number of sampels to measure
-        gate_types (defaultdict(int)): dictionary with keys are operation names (str) and
-            values are the number of times the operation is repeated in the circuit (int)
+    - num_wires (int): number of qubits
+    - num_gates (int): number of gates
+    - depth (int): the depth of the circuit (max number of non-parallel operations)
+    - shots (int): number of sampels to measure
+    - gate_types (defaultdict(int)): dictionary with keys are operation names (str) and
+        values are the number of times the operation is repeated in the circuit (int)
 
     .. details::
 
