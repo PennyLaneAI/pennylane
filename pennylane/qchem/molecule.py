@@ -74,12 +74,16 @@ class Molecule:
         coeff=None,
         normalize=True,
     ):
-        if basis_name.lower() not in [
-            "sto-3g",
-            "6-31g",
-            "6-311g",
-            "cc-pvdz",
-        ]:
+        if (
+            basis_name.lower()
+            not in [
+                "sto-3g",
+                "6-31g",
+                "6-311g",
+                "cc-pvdz",
+            ]
+            and load_data is False
+        ):
             raise ValueError(
                 "Currently, the only supported basis sets are 'sto-3g', '6-31g', '6-311g' and "
                 "'cc-pvdz'. Please consider using `load_data=True` to download the basis set from "
