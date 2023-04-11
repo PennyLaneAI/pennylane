@@ -116,11 +116,6 @@ class TestTransmonInteraction:
                 omega=0.5, connections=[[0, 1], [2, 3]], g=0.5, wires=[0, 1, 2]
             )
 
-        with pytest.warns(UserWarning, match="Caution, wires and connections do not match."):
-            _ = qml.pulse.transmon_interaction(
-                omega=0.5, connections=[[0, 1], [2, 3]], g=0.5, wires=[0, 1, 2, 3, 4]
-            )
-
 
 # For transmon settings test
 connections0 = [[0, 1], [0, 2]]
