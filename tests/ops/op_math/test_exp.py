@@ -941,3 +941,16 @@ class TestDifferentiation:
             op1.parameter_frequencies()
 
         assert op2.parameter_frequencies == [(4.0,)]
+
+    def test_params_can_be_considered_trainable(self):
+        """Tests that the parameters of an Exp are considered trainable."""
+        dev = qml.device("default.qubit", wires=1)
+
+        @qml.qnode(dev)
+        def circuit(x, coeff):
+            Exp(qml.RX(x, 0), coeff)
+            return qml.expval(qml.PauliZ(0))
+
+        with pytest.warns(UserWarning):
+            circuit(np.array(2.0), np.array(0.5))
+        assert circuit.tape.trainable_params == [0, 1]
