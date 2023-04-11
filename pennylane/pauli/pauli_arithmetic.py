@@ -242,7 +242,7 @@ class PauliWord(dict):
 
     def map_wires(self, wire_map: dict) -> "PauliWord":
         """Return a new PauliWord with the wires mapped."""
-        return self.__class__({wire_map[w]: op for w, op in self.items()})
+        return self.__class__({wire_map.get(w, w): op for w, op in self.items()})
 
 
 class PauliSentence(dict):

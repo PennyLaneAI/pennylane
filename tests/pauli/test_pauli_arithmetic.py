@@ -235,6 +235,7 @@ class TestPauliWord:
         "word,wire_map,expected",
         [
             (PauliWord({0: X, 1: Y}), {0: "a", 1: "b"}, PauliWord({"a": X, "b": Y})),
+            (PauliWord({0: X, 1: Y}), {1: "b"}, PauliWord({0: X, "b": Y})),
             (PauliWord({0: X, 1: Y}), {0: 1, 1: 0}, PauliWord({0: Y, 1: X})),
             (PauliWord({"a": X, 0: Y}), {"a": 2, 0: 1, "c": "C"}, PauliWord({2: X, 1: Y})),
         ],
@@ -601,10 +602,10 @@ class TestPauliSentence:
 
     def test_map_wires(self):
         """Test the map_wires conversion method."""
-        assert ps1.map_wires({0: "t", 1: "u", 2: "v", "a": 1, "b": 2, "c": 3}) == PauliSentence(
+        assert ps1.map_wires({1: "u", 2: "v", "a": 1, "b": 2, "c": 3}) == PauliSentence(
             {
                 PauliWord({"u": X, "v": Y}): 1.23,
                 PauliWord({1: X, 2: X, 3: Z}): 4j,
-                PauliWord({"t": Z, 2: Z, 3: Z}): -0.5,
+                PauliWord({0: Z, 2: Z, 3: Z}): -0.5,
             }
         )
