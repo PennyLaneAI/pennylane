@@ -26,7 +26,6 @@ import numpy as np
 import pennylane as qml
 from pennylane.gradients import param_shift
 from pennylane.interfaces import execute, InterfaceUnsupportedError
-from pennylane.interfaces.jax_jit import _execute_with_fwd
 
 
 @pytest.mark.parametrize(
@@ -130,7 +129,7 @@ class TestJaxExecuteUnitTests:
                 [tape],
                 device,
                 gradient_fn=param_shift,
-                mode="forward",
+                grad_on_execution=True,
             )[0]
 
         with pytest.raises(
@@ -210,7 +209,7 @@ class TestJaxExecuteUnitTests:
                 [tape],
                 dev,
                 gradient_fn="device",
-                mode="backward",
+                grad_on_execution=False,
                 gradient_kwargs={"method": "adjoint_jacobian"},
             )[0]
 
@@ -386,7 +385,7 @@ class TestCaching:
                 dev,
                 gradient_fn="device",
                 cache=cache,
-                mode="backward",
+                grad_on_execution=False,
                 gradient_kwargs={"method": "adjoint_jacobian"},
             )[0]
 
@@ -408,12 +407,12 @@ execute_kwargs = [
     {"gradient_fn": param_shift},
     {
         "gradient_fn": "device",
-        "mode": "forward",
+        "grad_on_execution": True,
         "gradient_kwargs": {"method": "adjoint_jacobian", "use_device_state": True},
     },
     {
         "gradient_fn": "device",
-        "mode": "backward",
+        "grad_on_execution": False,
         "gradient_kwargs": {"method": "adjoint_jacobian"},
     },
 ]
@@ -931,38 +930,6 @@ class TestVectorValuedJIT:
 
         for r, e in zip(res, exp):
             assert jax.numpy.allclose(r, e, atol=1e-7)
-
-    def test_assertion_error_fwd(self, execute_kwargs):
-        """Test that an assertion is raised if by chance there is a difference
-        in the number of tapes and the number of parameters sequences passed
-        to _execute_with_fwd."""
-        a = 0.3
-        b = 0.3
-
-        with qml.queuing.AnnotatedQueue() as q:
-            qml.RY(a, wires=0)
-            qml.RY(b, wires=0)
-            qml.expval(qml.PauliZ(0))
-
-        tape = qml.tape.QuantumScript.from_queue(q)
-
-        device = qml.device("default.qubit", wires=2)
-
-        # Create arguments for 2 tapes
-        params = [[0.2], [0.3]]
-
-        # But pass only 1 tape
-        tapes = [tape]
-
-        with pytest.raises(AssertionError):
-            _execute_with_fwd(
-                params,
-                tapes=tapes,
-                device=device,
-                execute_fn=lambda a: a,  # Some dummy function
-                gradient_kwargs=None,
-                _n=1,
-            )
 
 
 def test_diff_method_None_jit():

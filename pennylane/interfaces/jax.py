@@ -61,7 +61,9 @@ def get_jax_interface_name(tapes):
     return "jax"
 
 
-def execute(tapes, device, execute_fn, gradient_fn, gradient_kwargs, _n=1, max_diff=1, mode=None):
+def execute_legacy(
+    tapes, device, execute_fn, gradient_fn, gradient_kwargs, _n=1, max_diff=1, mode=None
+):
     """Execute a batch of tapes with JAX parameters on a device.
 
     Args:
@@ -104,7 +106,7 @@ def execute(tapes, device, execute_fn, gradient_fn, gradient_kwargs, _n=1, max_d
     parameters = tuple(list(t.get_parameters()) for t in tapes)
 
     if gradient_fn is None:
-        return _execute_fwd(
+        return _execute_fwd_legacy(
             parameters,
             tapes=tapes,
             device=device,
@@ -113,7 +115,7 @@ def execute(tapes, device, execute_fn, gradient_fn, gradient_kwargs, _n=1, max_d
             _n=_n,
         )
 
-    return _execute(
+    return _execute_legacy(
         parameters,
         tapes=tapes,
         device=device,
@@ -153,7 +155,7 @@ def _validate_tapes(tapes):
                 )
 
 
-def _execute(
+def _execute_legacy(
     params,
     tapes=None,
     device=None,
@@ -293,7 +295,7 @@ def _raise_vector_valued_fwd(tapes):
         )
 
 
-def _execute_fwd(
+def _execute_fwd_legacy(
     params,
     tapes=None,
     device=None,
@@ -364,7 +366,7 @@ def _execute_fwd(
     return res
 
 
-def execute_new(tapes, device, execute_fn, gradient_fn, gradient_kwargs, _n=1, max_diff=2):
+def execute(tapes, device, execute_fn, gradient_fn, gradient_kwargs, _n=1, max_diff=2):
     """Execute a batch of tapes with JAX parameters on a device.
 
     Args:
@@ -398,7 +400,7 @@ def execute_new(tapes, device, execute_fn, gradient_fn, gradient_kwargs, _n=1, m
 
     if gradient_fn is None:
         # PennyLane forward execution
-        return _execute_fwd_new(
+        return _execute_fwd(
             parameters,
             tapes,
             execute_fn,
@@ -407,7 +409,7 @@ def execute_new(tapes, device, execute_fn, gradient_fn, gradient_kwargs, _n=1, m
         )
 
     # PennyLane backward execution
-    return _execute_bwd_new(
+    return _execute_bwd(
         parameters,
         tapes,
         device,
@@ -419,7 +421,7 @@ def execute_new(tapes, device, execute_fn, gradient_fn, gradient_kwargs, _n=1, m
     )
 
 
-def _execute_bwd_new(
+def _execute_bwd(
     params,
     tapes,
     device,
@@ -474,7 +476,7 @@ def _execute_bwd_new(
                 jvp_tapes, processing_fn = qml.gradients.batch_jvp(*_args, **_kwargs)
 
                 jvps = processing_fn(
-                    execute_new(
+                    execute(
                         jvp_tapes,
                         device,
                         execute_fn,
@@ -500,7 +502,7 @@ def _execute_bwd_new(
     return execute_wrapper(params)
 
 
-def _execute_fwd_new(
+def _execute_fwd(
     params,
     tapes,
     execute_fn,
