@@ -77,14 +77,14 @@ class TestTransmonInteraction:
 
     def test_single_callable_omega_with_explicit_wires(self):
         """Test that a single callable omega with explicit wires yields the correct Hamiltonian"""
-        wires = range(10)
+        wires0 = np.arange(10)
         H = qml.pulse.transmon_interaction(
-            omega=np.polyval, connections=connections, g=g, wires=wires
+            omega=np.polyval, connections=[[i, (i+1)%10] for i in wires0], g=0.5, wires=wires0
         )
 
-        assert H.coeffs[4:] == [np.polyval] * 10
-        assert all(H.coeffs[:4] == g)
-        for o1, o2 in zip(H.ops[4:], [ad(i, 2) @ a(i, 2) for i in wires]):
+        assert qml.math.allclose(H.coeffs[:10], 0.5)
+        assert H.coeffs[10:] == [np.polyval] * 10
+        for o1, o2 in zip(H.ops[10:], [ad(i, 2) @ a(i, 2) for i in wires0]):
             assert qml.equal(o1, o2)
 
     def test_d_neq_2_raises_error(self):
