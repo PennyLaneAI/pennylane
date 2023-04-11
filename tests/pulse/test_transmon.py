@@ -67,12 +67,12 @@ class TestTransmonInteraction:
 
     def test_float_omega_with_explicit_wires(self):
         """Test that a single float omega with explicit wires yields the correct Hamiltonian"""
-        wires = range(10)
+        wires = range(6)
         H = qml.pulse.transmon_interaction(omega=1.0, connections=connections, g=g, wires=wires)
 
-        assert H.coeffs[:10] == [1.0] * 10
-        assert all(H.coeffs[10:] == g)
-        for o1, o2 in zip(H.ops[:10], [ad(i, 2) @ a(i, 2) for i in wires]):
+        assert H.coeffs[:6] == [1.0] * 6
+        assert all(H.coeffs[6:] == g)
+        for o1, o2 in zip(H.ops[:6], [ad(i, 2) @ a(i, 2) for i in wires]):
             assert qml.equal(o1, o2)
 
     def test_single_callable_omega_with_explicit_wires(self):
