@@ -23,6 +23,7 @@ from pennylane.pulse import HardwareHamiltonian
 from pennylane.typing import TensorLike
 from pennylane.wires import Wires
 
+
 # TODO ladder operators once there is qudit support
 # pylint: disable=unused-argument
 def a(wire, d=2):
@@ -128,8 +129,10 @@ def transmon_interaction(
     n_wires = len(wires)
 
     if not Wires(wires).contains_wires(Wires(np.unique(connections))):
-        warnings.warn(f"Caution, wires and connections do not match. "
-                      f"I.e., wires {wires} and wires in connections {connections} do not contain each other")
+        warnings.warn(
+            f"Caution, wires and connections do not match. "
+            f"I.e., wires {wires} and wires in connections {connections} do not contain each other"
+        )
 
     # Prepare coefficients
     if anharmonicity is None:
