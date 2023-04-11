@@ -31,17 +31,21 @@ dtype = jnp.float64
 
 
 def _validate_jax_version():
-    if semantic_version.match("<0.3.17", jax.__version__) or semantic_version.match(
-        "<0.3.15", jax.lib.__version__
-    ):
+    if semantic_version.match(">0.4.3", jax.__version__):
         msg = (
-            "The JAX JIT interface of PennyLane requires version 0.3.17 or higher for JAX "
-            "and 0.3.15 or higher JAX lib. Please upgrade these packages."
+            "The JAX JIT interface of PennyLane requires JAX and and JAX lib version below 0.4.4. "
+            "Please downgrade these packages."
+            "If you are using pip to manage your packages, you can run the following command:\n\n"
+            "\tpip install 'jax==0.4.3' 'jaxlib==0.4.3'\n\n"
+            "If you are using conda to manage your packages, you can run the following command:\n\n"
+            "\tconda install 'jax==0.4.3' 'jaxlib==0.4.3'\n\n"
         )
         raise InterfaceUnsupportedError(msg)
 
 
-def execute(tapes, device, execute_fn, gradient_fn, gradient_kwargs, _n=1, max_diff=1, mode=None):
+def execute_legacy(
+    tapes, device, execute_fn, gradient_fn, gradient_kwargs, _n=1, max_diff=1, mode=None
+):
     """Execute a batch of tapes with JAX parameters on a device.
 
     Args:
@@ -73,17 +77,22 @@ def execute(tapes, device, execute_fn, gradient_fn, gradient_kwargs, _n=1, max_d
     if max_diff > 1:
         raise InterfaceUnsupportedError("The JAX interface only supports first order derivatives.")
 
-    for tape in tapes:
-        # set the trainable parameters
-        params = tape.get_parameters(trainable_only=False)
-        tape.trainable_params = qml.math.get_trainable_indices(params)
+    if _n == 1:
+        for tape in tapes:
+            # set the jitted parameters
+            params = tape.get_parameters(trainable_only=False)
+            trainable_params = set()
+            for idx, p in enumerate(params):
+                if isinstance(p, jax.core.Tracer) or qml.math.requires_grad(p):
+                    trainable_params.add(idx)
+            tape.trainable_params = trainable_params
 
     parameters = tuple(list(t.get_parameters()) for t in tapes)
 
     _validate_jax_version()
 
     if gradient_fn is None:
-        return _execute_with_fwd(
+        return _execute_with_fwd_legacy(
             parameters,
             tapes=tapes,
             device=device,
@@ -92,7 +101,7 @@ def execute(tapes, device, execute_fn, gradient_fn, gradient_kwargs, _n=1, max_d
             _n=_n,
         )
 
-    return _execute(
+    return _execute_legacy(
         parameters,
         tapes=tapes,
         device=device,
@@ -138,7 +147,7 @@ def _extract_shape_dtype_structs(tapes, device):
     return shape_dtypes
 
 
-def _execute(
+def _execute_legacy(
     params,
     tapes=None,
     device=None,
@@ -271,7 +280,7 @@ def _execute(
 
 
 # The execute function in forward mode
-def _execute_with_fwd(
+def _execute_with_fwd_legacy(
     params,
     tapes=None,
     device=None,

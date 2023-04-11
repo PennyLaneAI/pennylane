@@ -9,7 +9,7 @@ on:
 env:
   JAX_VERSION: 0.4.3
   TF_VERSION: 2.10.0
-  TORCH_VERSION: 1.13.0
+  TORCH_VERSION: 2.0.0
   COVERAGE_FLAGS: "--cov=pennylane --cov-report=term-missing --cov-report=xml --no-flaky-report -p no:warnings --tb=native"
 
 
@@ -86,7 +86,7 @@ jobs:
         run: python -m pip install -i https://test.pypi.org/simple/ PennyLane-Lightning --pre --upgrade
 
       - name: Run tests
-        run: python -m pytest tests --cov=pennylane $COVERAGE_FLAGS -m "$SUITE and not qcut and not return" -n auto
+        run: python -m pytest tests --cov=pennylane $COVERAGE_FLAGS -m "$SUITE and not qcut and not legacy and not finite-diff and not param-shift" -n auto
 
       - name: Adjust coverage file for Codecov
         run: bash <(sed -i 's/filename=\"/filename=\"pennylane\//g' coverage.xml)
@@ -136,7 +136,7 @@ jobs:
 
       - name: Run tests
         run: |
-          python -m pytest tests --cov=pennylane $COVERAGE_FLAGS -m "all_interfaces and not return"  -n auto
+          python -m pytest tests --cov=pennylane $COVERAGE_FLAGS -m "all_interfaces"  -n auto
 
       - name: Adjust coverage file for Codecov
         run: bash <(sed -i 's/filename=\"/filename=\"pennylane\//g' coverage.xml)
@@ -243,72 +243,6 @@ jobs:
           name: qcut-coverage
           path: ./coverage.xml
 
-  # Testing the new return types suite
-  return-tests:
-    runs-on: ubuntu-latest
-
-    strategy:
-      matrix:
-        config:
-          - { loc: "tests/returntypes/jax", suite: 'jax'}
-          - { loc: "tests/returntypes/tf", suite: 'tf'}
-          - { loc: "tests/returntypes/torch", suite: 'torch'}
-          - { loc: "tests/returntypes/autograd", suite: 'autograd'}
-          - { loc: "tests/returntypes/gradients", suite: 'gradients'}
-          - { loc: "tests/returntypes/transforms", suite: 'transforms'}
-          - { loc: "tests/returntypes/paramshift", suite: 'paramshift'}
-          - { loc: "tests/returntypes/finitediff", suite: 'finitediff'}
-          - { loc: "tests/returntypes/core", suite: 'core'}
-          - { loc: "tests/returntypes/optimizers", suite: 'optimizers'}
-
-    steps:
-      - name: Cancel Previous Runs
-        uses: styfle/cancel-workflow-action@0.11.0
-        with:
-          access_token: ${{ github.token }}
-
-      - uses: actions/checkout@v2
-        with:
-          fetch-depth: 2
-
-      - name: Set up Python
-        uses: actions/setup-python@v2
-        with:
-          python-version: 3.8
-
-      - name: Install dependencies
-        run: |
-          python -m pip install --upgrade pip && pip install wheel --upgrade
-          pip install -r requirements-ci.txt --upgrade
-          pip install -r requirements-dev.txt --upgrade
-
-      - name: Install PyTorch
-        run: pip3 install torch==$TORCH_VERSION -f https://download.pytorch.org/whl/torch_stable.html
-
-      - name: Install TensorFlow
-        run: pip3 install tensorflow~=$TF_VERSION keras~=$TF_VERSION
-
-      - name: Install JAX
-        run: pip3 install jax==$JAX_VERSION jaxlib==$JAX_VERSION
-
-      - name: Install PennyLane
-        run: |
-          python setup.py bdist_wheel
-          pip install dist/PennyLane*.whl
-
-      - name: Run tests
-        run: |
-          python -m pytest ${{ matrix.config.loc }} --cov=pennylane $COVERAGE_FLAGS -n auto
-
-
-      - name: Adjust coverage file for Codecov
-        run: bash <(sed -i 's/filename=\"/filename=\"pennylane\//g' coverage.xml)
-
-      - uses: actions/upload-artifact@v2
-        with:
-          name: return-coverage-${{ matrix.config.suite }}
-          path: ./coverage.xml
-
   qchem-tests:
     runs-on: ubuntu-latest
 
@@ -356,6 +290,115 @@ jobs:
       - uses: actions/upload-artifact@v2
         with:
           name: qchem-coverage
+          path: ./coverage.xml
+
+  legacy-tests:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Cancel Previous Runs
+        uses: styfle/cancel-workflow-action@0.11.0
+        with:
+          access_token: ${{ github.token }}
+
+      - uses: actions/checkout@v2
+        with:
+          fetch-depth: 2
+
+      - name: Set up Python
+        uses: actions/setup-python@v2
+        with:
+          python-version: 3.8
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip && pip install wheel --upgrade
+          pip install -r requirements-ci.txt --upgrade
+          pip install -r requirements-dev.txt --upgrade
+
+      - name: Install PyTorch
+        run: pip3 install torch==$TORCH_VERSION -f https://download.pytorch.org/whl/torch_stable.html
+
+      - name: Install TensorFlow
+        run: pip3 install tensorflow~=$TF_VERSION keras~=$TF_VERSION
+
+      - name: Install JAX
+        run: pip3 install jax==$JAX_VERSION jaxlib==$JAX_VERSION
+
+      - name: Install PennyLane
+        run: |
+          python setup.py bdist_wheel
+          pip install dist/PennyLane*.whl
+
+      - name: Run tests
+        run: |
+          python -m pytest tests --cov=pennylane $COVERAGE_FLAGS -m legacy -n auto
+
+      - name: Adjust coverage file for Codecov
+        run: bash <(sed -i 's/filename=\"/filename=\"pennylane\//g' coverage.xml)
+
+      - uses: actions/upload-artifact@v2
+        with:
+          name: legacy-coverage
+          path: ./coverage.xml
+
+  gradients-tests:
+    runs-on: ubuntu-latest
+
+    strategy:
+      matrix:
+        config:
+          - {suite: 'finite-diff' }
+          - {suite: 'param-shift' }
+
+    env:
+      SUITE: ${{ matrix.config.suite }}
+
+    steps:
+      - name: Cancel Previous Runs
+        uses: styfle/cancel-workflow-action@0.11.0
+        with:
+          access_token: ${{ github.token }}
+
+      - uses: actions/checkout@v2
+        with:
+          fetch-depth: 2
+
+      - name: Set up Python
+        uses: actions/setup-python@v2
+        with:
+          python-version: 3.8
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip && pip install wheel --upgrade
+          pip install -r requirements-ci.txt --upgrade
+          pip install -r requirements-dev.txt --upgrade
+
+      - name: Install PyTorch
+        run: pip3 install torch==$TORCH_VERSION -f https://download.pytorch.org/whl/torch_stable.html
+
+      - name: Install TensorFlow
+        run: pip3 install tensorflow~=$TF_VERSION keras~=$TF_VERSION
+
+      - name: Install JAX
+        run: pip3 install jax==$JAX_VERSION jaxlib==$JAX_VERSION
+
+      - name: Install PennyLane
+        run: |
+          python setup.py bdist_wheel
+          pip install dist/PennyLane*.whl
+
+      - name: Run tests
+        run: |
+          python -m pytest tests --cov=pennylane $COVERAGE_FLAGS -m "$SUITE" -n auto
+
+      - name: Adjust coverage file for Codecov
+        run: bash <(sed -i 's/filename=\"/filename=\"pennylane\//g' coverage.xml)
+
+      - uses: actions/upload-artifact@v2
+        with:
+          name: gradients-${{ matrix.config.suite }}-coverage
           path: ./coverage.xml
 
   data-tests:
@@ -471,7 +514,7 @@ jobs:
           path: ./coverage.xml
 
   upload-to-codecov:
-      needs: [core-and-interface-tests, all-interfaces-tests, qcut-tests, return-tests, qchem-tests, data-tests, device-tests, zx-tests]
+      needs: [core-and-interface-tests, all-interfaces-tests, qcut-tests, qchem-tests, legacy-tests, gradients-tests, data-tests, device-tests, zx-tests]
       runs-on: ubuntu-latest
       steps:
         - name: Checkout
