@@ -141,7 +141,7 @@ def rydberg_drive(amplitude, phase, detuning, wires):
             the laser field acts on
 
     Returns:
-        `ParametrizedHamiltonian`: representing the action of the laser field on the Rydberg atoms.
+        ParametrizedHamiltonian: a :class:`~.ParametrizedHamiltonian` representing the action of the laser field on the Rydberg atoms.
 
     .. seealso::
 
