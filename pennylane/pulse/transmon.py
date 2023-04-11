@@ -47,7 +47,7 @@ def transmon_interaction(
 
     .. math::
 
-        H = \sum__{q\in \text{wires}} \omega_q a^\dagger_q a_q
+        H = \sum_{q\in \text{wires}} \omega_q a^\dagger_q a_q
         + \sum_{(i, j) \in \mathcal{C}} g_{ij} \left(a^\dagger_i a_j + a_j^\dagger a_i \right)
         + \sum_{q\in \text{wires}} \alpha_q a^\dagger_q a^\dagger_q a_q a_q
 

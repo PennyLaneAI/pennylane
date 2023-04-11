@@ -45,7 +45,7 @@ def drive(amplitude, phase, wires):
     Common hardware systems are superconducting qubits and neutral atoms. The electromagnetic field of the drive is
     realized by microwave and laser fields, respectively, operating at very different wavelengths.
 
-    Note that to avoid nummerical problems due to using both very large and very small numbers, it is advisable to match
+    Note that to avoid numerical problems due to using both very large and very small numbers, it is advisable to match
     the order of magnitudes of frequency and time arguments. For example, when frequencies are of order
     MHz (microwave pulses for superconducting systems), then one can ommit the explicit factor :math:`10^6`
     by treating the times passed to the constructed :class:`ParametrizedHamiltonian` in :math:`\mu s = 10^{-6}s`
