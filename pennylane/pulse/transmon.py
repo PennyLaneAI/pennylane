@@ -78,6 +78,7 @@ def transmon_interaction(
         omega (Union[float, list[float]]): List of dressed qubit frequencies in GHz. Needs to match the length of ``wires``.
             When passing a single float all qubits are assumed to have that same frequency.
         connections (list[tuple(int)]): List of connections ``(i, j)`` between qubits i and j.
+            When the wires in ``connections`` are not contained in ``wires``, a warning is raised.
         g (Union[float, list[float]]): List of coupling strengths in GHz. Needs to match the length of ``connections``.
             When passing a single float need explicit ``wires``.
         anharmonicity (Union[float, list[float]]): List of anharmonicities in GHz. Ignored when ``d=2``.
