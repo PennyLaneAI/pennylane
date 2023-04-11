@@ -50,23 +50,16 @@ class TestTransmonInteraction:
         assert len(Hd.ops) == num_combinations
         assert Hd.pulses == []
 
-    def test_wires_is_none(self):
-        """Test that when wires is None the wires correspond to an increasing list of values with
-        the same as the unique connections."""
-        Hd = transmon_interaction(connections=connections, omega=[0.3], g=0.3, anharmonicity=0.3)
-
-        assert Hd.wires == Wires.all_wires(connections + [0])
-
     def test_coeffs(self):
         """Test that the generated coefficients are correct."""
-        Hd = qml.pulse.transmon_interaction(omega, connections, g, anharmonicity=anharmonicity, d=2)
+        Hd = qml.pulse.transmon_interaction(omega, connections, g, wires=wires, anharmonicity=anharmonicity, d=2)
         assert all(Hd.coeffs == np.concatenate([omega, g]))
 
     @pytest.mark.skip
     def test_coeffs_d(self):
         """Test that generated coefficients are correct for d>2"""
         Hd2 = qml.pulse.transmon_interaction(
-            connections, omega, g, anharmonicity=anharmonicity, d=3
+            omega=omega, connections=connections, g=g, wires=wires, anharmonicity=anharmonicity, d=3
         )
         assert all(Hd2.coeffs == np.concatenate([omega, g, anharmonicity]))
 
@@ -95,12 +88,7 @@ class TestTransmonInteraction:
     def test_d_neq_2_raises_error(self):
         """Test that setting d != 2 raises error"""
         with pytest.raises(NotImplementedError, match="Currently only supporting qubits."):
-            _ = transmon_interaction(connections=connections, omega=[0.1], g=0.2, d=3)
-
-    def test_float_omega_with_no_explicit_wires(self):
-        """Test that raises warning when omega is float and wires not explicit"""
-        with pytest.raises(ValueError, match="Cannot instantiate wires automatically."):
-            _ = transmon_interaction(connections=connections, omega=0.1, g=0.2)
+            _ = transmon_interaction(connections=connections, omega=[0.1], wires=[0], g=0.2, d=3)
 
     def test_wrong_g_len_raises_error(self):
         """Test that providing list of g with wrong length raises error"""
@@ -109,6 +97,7 @@ class TestTransmonInteraction:
                 connections=connections,
                 omega=[0.1],
                 g=[0.2, 0.2],
+                wires=[0]
             )
 
     def test_omega_and_wires_dont_match(self):

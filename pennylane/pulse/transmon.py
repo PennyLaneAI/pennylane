@@ -37,8 +37,8 @@ def transmon_interaction(
     omega: Union[float, list],
     connections: list,
     g: Union[float, list],
+    wires: list,
     anharmonicity=None,
-    wires=None,
     d=2,
 ):
     r"""Returns a :class:`ParametrizedHamiltonian` representing the cQED Hamiltonian of a superconducting transmon system.
@@ -58,8 +58,8 @@ def transmon_interaction(
     local Hilbert space (default ``d=2`` corresponds to qubits).
     In that case, the anharmonicity is set to :math:`\alpha=0` and ignored.
 
-    The values of :math:`\omega \pm \alpha` are typically around :math:`(5 \pm 0.3) \times 2\pi \text{GHz}` and it is common
-    for different qubits to be out of tune with different energy gaps. The coupling strength
+    The values of :math:`\omega` and :math:`\alpha` are typically around :math:`5 \times 2\pi \text{GHz}` and :math:`0.3 \times 2\pi \text{GHz}`, respectively.
+    It is common for different qubits to be out of tune with different energy gaps. The coupling strength
     :math:`g` typically varies betwewen :math:`[0.001, 0.1] \times 2\pi \text{GHz}`. For some example parameters,
     see e.g. `arXiv:1804.04073 <https://arxiv.org/abs/1804.04073>`_,
     `arXiv:2203.06818 <https://arxiv.org/abs/2203.06818>`_, or `arXiv:2210.15812 <https://arxiv.org/abs/2210.15812>`_.
@@ -78,9 +78,8 @@ def transmon_interaction(
             When passing a single float need explicit ``wires``.
         anharmonicity (Union[float, list[float]]): List of anharmonicities in GHz. Ignored when ``d=2``.
             When passing a single float all qubits are assumed to have that same anharmonicity.
-        wires (list): Optional, defaults to ``range(len(omega))`` when set to ``None``. When passing explicit ``wires``,
-            needs to be of the same length as omega. Note that there can be additional wires in the resulting operator from
-            the ``connections``, which are treated independently.
+        wires (list): Needs to be of the same length as omega. Note that there can be additional
+            wires in the resulting operator from the ``connections``, which are treated independently.
         d (int): Local Hilbert space dimension. Defaults to ``d=2`` and is currently the only supported value.
 
     Returns:
@@ -115,13 +114,13 @@ def transmon_interaction(
             "Currently only supporting qubits. Qutrits and qudits are planned in the future."
         )
 
-    if wires is None and qml.math.ndim(omega) == 0:
-        raise ValueError(
-            f"Cannot instantiate wires automatically. Either need specific wires or a list of omega."
-            f"Received wires {wires} and omega of type {type(omega)}"
-        )
+    # if wires is None and qml.math.ndim(omega) == 0:
+    #     raise ValueError(
+    #         f"Cannot instantiate wires automatically. Either need specific wires or a list of omega."
+    #         f"Received wires {wires} and omega of type {type(omega)}"
+    #     )
 
-    wires = wires or list(range(len(omega)))
+    # wires = wires or list(range(len(omega)))
 
     n_wires = len(wires)
 
