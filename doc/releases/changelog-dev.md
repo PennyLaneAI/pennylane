@@ -250,6 +250,10 @@
   used in the `Molecule` class.
   [(#3955)](https://github.com/PennyLaneAI/pennylane/pull/3955)
 
+* Fixed bug where all devices that inherit from DefaultQubit claimed to support `ParametrizedEvolution`.
+  Now only `DefaultQubitJax` supports the operator, as expected.
+  [(#3964)](https://github.com/PennyLaneAI/pennylane/pull/3964)
+
 <h3>Contributors</h3>
 
 This release contains contributions from (in alphabetical order):
