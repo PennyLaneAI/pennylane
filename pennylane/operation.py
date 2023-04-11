@@ -297,7 +297,7 @@ class WiresEnum(IntEnum):
     an operation acts on"""
 
     AnyWires = -1
-    AllWires = 0
+    AllWires = -2
 
 
 AllWires = WiresEnum.AllWires
