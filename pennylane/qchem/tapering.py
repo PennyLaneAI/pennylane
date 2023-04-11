@@ -259,6 +259,23 @@ def clifford(generators, paulixops):
     return u.hamiltonian()
 
 
+def _split_pauli_sentence(pauli_sentence, max_size=20000):
+    r"""Splits PauliSentences into smaller chunks of the size determined by the `max_size`.
+
+    Args:
+        pauli_sentence (PauliSentence): PennyLane PauliSentence to be split
+        max_size (int): Maximum size of each chunk
+
+    Returns:
+        Iterable consisting of smaller `PauliSentence` objects.
+    """
+    it, length = iter(pauli_sentence), len(pauli_sentence)
+    for _ in range(0, length, max_size):
+        yield qml.pauli.PauliSentence(
+            {k: pauli_sentence[k] for k in itertools.islice(it, max_size)}
+        )
+
+
 def taper(h, generators, paulixops, paulix_sector):
     r"""Transform a Hamiltonian with a Clifford operator and then taper qubits.
 
@@ -268,7 +285,7 @@ def taper(h, generators, paulixops, paulix_sector):
     eigenvalues is defined as the Pauli sector.
 
     Args:
-        h (Hamiltonian or PauliSentence): PennyLane Hamiltonian
+        h (Hamiltonian or PauliSentence): PennyLane Hamiltonian or PauliSentence
         generators (list[Hamiltonian]): generators expressed as PennyLane Hamiltonians
         paulixops (list[Operation]): list of single-qubit Pauli-X operators
         paulix_sector (llist[int]): eigenvalues of the Pauli-X operators
@@ -300,7 +317,7 @@ def taper(h, generators, paulixops, paulix_sector):
         ps_h = pauli_sentence(h)
 
     ts_h = qml.pauli.PauliSentence()
-    for ps in ps_h.split(PAULI_SENTENCE_MEMORY_SPLITTING_SIZE):
+    for ps in _split_pauli_sentence(ps_h, max_size=PAULI_SENTENCE_MEMORY_SPLITTING_SIZE):
         ts_h += ps_u * ps * ps_u  # helps restrict the peak memory usage for u @ h @ u
     h = ts_h.hamiltonian()  # cast back to hamiltonian
 

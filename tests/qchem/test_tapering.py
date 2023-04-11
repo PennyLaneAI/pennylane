@@ -31,6 +31,7 @@ from pennylane.qchem.tapering import (
     optimal_sector,
     taper_hf,
     taper_operation,
+    _split_pauli_sentence,
 )
 
 
@@ -952,3 +953,52 @@ def test_inconsistent_callable_ops(operation, op_wires, op_gen, message_match):
         taper_operation(
             operation, generators, paulixops, paulix_sector, wire_order, op_wires, op_gen
         )
+
+
+@pytest.mark.parametrize(
+    ("symbols", "geometry", "charge"),
+    [
+        (
+            ["H", "H"],
+            np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.40104295]], requires_grad=True),
+            0,
+        ),
+        (
+            ["He", "H"],
+            np.array(
+                [[0.0, 0.0, 0.0], [0.0, 0.0, 1.4588684632]],
+                requires_grad=True,
+            ),
+            1,
+        ),
+        (
+            ["H", "H", "H"],
+            np.array(
+                [[-0.84586466, 0.0, 0.0], [0.84586466, 0.0, 0.0], [0.0, 1.46508057, 0.0]],
+                requires_grad=True,
+            ),
+            1,
+        ),
+        (
+            ["H", "H", "H", "H"],
+            np.array(
+                [[0.0, 0.0, 0.0], [0.0, 0.0, 1.0], [0.0, 0.0, 2.0], [0.0, 0.0, 3.0]],
+                requires_grad=True,
+            ),
+            0,
+        ),
+    ],
+)
+def test_split_pauli_sentence(symbols, geometry, charge):
+    """Test that _split_pauli_sentence split the PauliSentence objects into correct correct chunks"""
+
+    mol = qml.qchem.Molecule(symbols, geometry, charge)
+    hamiltonian = qml.qchem.diff_hamiltonian(mol)(geometry)
+
+    pauli_sentence = qml.pauli.pauli_sentence(hamiltonian)
+    split_sentence = {}
+
+    for ps in _split_pauli_sentence(pauli_sentence, max_size=2):
+        split_sentence = {**split_sentence, **ps}
+
+    assert pauli_sentence == qml.pauli.PauliSentence(split_sentence)
