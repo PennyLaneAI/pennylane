@@ -148,8 +148,9 @@
 * `retworkx` has been renamed to `rustworkx` to accomodate the change in name for the package.
   [(#3975)](https://github.com/PennyLaneAI/pennylane/pull/3975)
 
-* `Sum`, `Prod`, and `SProd` operator data is now a flat list, instead of nested.
+* `Exp`, `Sum`, `Prod`, and `SProd` operator data is now a flat list, instead of nested.
   [(#3958)](https://github.com/PennyLaneAI/pennylane/pull/3958)
+  [(#3983)](https://github.com/PennyLaneAI/pennylane/pull/3983)
 
 * `qml.operation.WiresEnum.AllWires` is now -2 instead of 0 to avoid the
   ambiguity between `op.num_wires = 0` and `op.num_wires = AllWires`.
@@ -181,8 +182,9 @@
   For example, you can no longer create `StateMP(qml.PauliX(0))` or `PurityMP(eigvals=(-1,1), wires=Wires(0))`.
   [(#3898)](https://github.com/PennyLaneAI/pennylane/pull/3898)
 
-* `Sum`, `Prod`, and `SProd` operator data is now a flat list, instead of nested.
+* `Exp`, `Sum`, `Prod`, and `SProd` operator data is now a flat list, instead of nested.
   [(#3958)](https://github.com/PennyLaneAI/pennylane/pull/3958)
+  [(#3983)](https://github.com/PennyLaneAI/pennylane/pull/3983)
 
 <h3>Deprecations</h3>
 
