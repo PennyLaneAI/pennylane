@@ -96,3 +96,14 @@ def test_unwraps_arithmetic_op_measurement():
     unwrapped_op = unwrapped_m.obs
     assert qml.math.get_interface(*unwrapped_op.data) == "numpy"
     assert qml.math.get_interface(*unwrapped_op.data) == "numpy"
+
+
+@pytest.mark.autograd
+def test_unwraps_tensor_observables():
+    """Test that the measurement helper function can set data on a tensor observable."""
+    mat = qml.numpy.eye(2)
+    obs = qml.operation.Tensor(qml.PauliZ(0), qml.Hermitian(mat, 1))
+    m = qml.expval(obs)
+
+    unwrapped_m = _convert_measurement_to_numpy_data(m)
+    assert qml.math.get_interface(*unwrapped_m.obs.data) == "numpy"
