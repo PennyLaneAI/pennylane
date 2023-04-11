@@ -209,6 +209,10 @@ class Exp(ScalarSymbolicOp, Operation):
     def data(self):
         return self._data
 
+    @data.setter
+    def data(self, new_data):
+        self._data = new_data
+
     @property
     def coeff(self):
         """The numerical coefficient of the operator in the exponent."""

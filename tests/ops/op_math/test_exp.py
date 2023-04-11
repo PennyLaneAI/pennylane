@@ -113,6 +113,12 @@ class TestProperties:
 
         assert op.data == [coeff, phi]
 
+        new_phi = np.array(0.1234)
+        new_coeff = np.array(3.456)
+        op.data = [new_phi, new_coeff]
+
+        assert op.data == [new_phi, new_coeff]
+
     # pylint: disable=protected-access
     def test_queue_category_ops(self):
         """Test the _queue_category property."""
