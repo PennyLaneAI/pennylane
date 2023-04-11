@@ -48,3 +48,4 @@ tests/devices/test_default_mixed_tf.py
 tests/devices/test_null_qubit.py
 tests/fourier/test_coefficients.py
 tests/test_qutrit_device.py
+tests/resources/test_resource.py
