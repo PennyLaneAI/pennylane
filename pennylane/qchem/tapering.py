@@ -259,20 +259,20 @@ def clifford(generators, paulixops):
     return u.hamiltonian()
 
 
-def _split_pauli_sentence(pauli_sentence, max_size=20000):
+def _split_pauli_sentence(pl_sentence, max_size=20000):
     r"""Splits PauliSentences into smaller chunks of the size determined by the `max_size`.
 
     Args:
-        pauli_sentence (PauliSentence): PennyLane PauliSentence to be split
+        pl_sentence (PauliSentence): PennyLane PauliSentence to be split
         max_size (int): Maximum size of each chunk
 
     Returns:
         Iterable consisting of smaller `PauliSentence` objects.
     """
-    it, length = iter(pauli_sentence), len(pauli_sentence)
+    it, length = iter(pl_sentence), len(pl_sentence)
     for _ in range(0, length, max_size):
         yield qml.pauli.PauliSentence(
-            {k: pauli_sentence[k] for k in itertools.islice(it, max_size)}
+            {k: pl_sentence[k] for k in itertools.islice(it, max_size)}
         )
 
 
