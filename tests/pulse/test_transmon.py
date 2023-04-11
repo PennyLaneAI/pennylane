@@ -52,7 +52,9 @@ class TestTransmonInteraction:
 
     def test_coeffs(self):
         """Test that the generated coefficients are correct."""
-        Hd = qml.pulse.transmon_interaction(omega, connections, g, wires=wires, anharmonicity=anharmonicity, d=2)
+        Hd = qml.pulse.transmon_interaction(
+            omega, connections, g, wires=wires, anharmonicity=anharmonicity, d=2
+        )
         assert all(Hd.coeffs == np.concatenate([omega, g]))
 
     @pytest.mark.skip
@@ -93,12 +95,7 @@ class TestTransmonInteraction:
     def test_wrong_g_len_raises_error(self):
         """Test that providing list of g with wrong length raises error"""
         with pytest.raises(ValueError, match="Number of coupling terms"):
-            _ = transmon_interaction(
-                connections=connections,
-                omega=[0.1],
-                g=[0.2, 0.2],
-                wires=[0]
-            )
+            _ = transmon_interaction(connections=connections, omega=[0.1], g=[0.2, 0.2], wires=[0])
 
     def test_omega_and_wires_dont_match(self):
         """That that providing missmatching omega and wires raises error"""
