@@ -125,7 +125,7 @@ def rydberg_drive(amplitude, phase, detuning, wires):
 
     where :math:`\Omega`, :math:`\delta` and :math:`\phi` correspond to the amplitude, detuning
     and phase of the laser, :math:`i` correspond to the wire index, and :math:`\sigma^\alpha` for
-    :math:`\alpha = x,y,z` are the Pauli matrices. For hardware upload, time is expected to be in units
+    :math:`\alpha = x,y,z` are the Pauli matrices. For hardware execution, time is expected to be in units
     of :math:`\text{µs}`, and the frequency in units of :math:`\text{MHz}`. It is recommended to also follow
     this convention for simulation, as it avoids numerical problems due to using very large and very small
     numbers. This driving term can be combined with an interaction term to create a Hamiltonian describing a
