@@ -30,7 +30,7 @@ class Resources:
     - depth (int): the depth of the circuit (max number of non-parallel operations)
     - shots (int): number of sampels to measure
     - gate_types (defaultdict(int)): dictionary with keys are operation names (str) and
-        values are the number of times the operation is repeated in the circuit (int)
+    values are the number of times the operation is repeated in the circuit (int)
 
     .. details::
 

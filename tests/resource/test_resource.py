@@ -104,7 +104,7 @@ class TestResources:
     def test_ipython_display(self, r_params, rep, capsys):
         """Test that the ipython display prints the string representation of a Resources instance."""
         r = self._construct_resource(*r_params)
-        r._ipython_display_()  # this prints the string representation
+        r._ipython_display_()  # pylint: disable=protected-access
         captured = capsys.readouterr()
         assert rep in captured.out
 
@@ -198,21 +198,21 @@ class TestResources:
 
         for other in lst_objs:
             with pytest.raises(
-                ValueError, match=f"Can only combine with another instance of `Resources`"
+                ValueError, match="Can only combine with another instance of `Resources`"
             ):
                 _ = r0 + other
 
             with pytest.raises(
-                ValueError, match=f"Can only combine with another instance of `Resources`"
+                ValueError, match="Can only combine with another instance of `Resources`"
             ):
                 _ = r0 @ other
 
             with pytest.raises(
-                ValueError, match=f"Can only combine with another instance of `Resources`"
+                ValueError, match="Can only combine with another instance of `Resources`"
             ):
                 _ = Resources.combine([r0, other], in_parallel=True)
 
             with pytest.raises(
-                ValueError, match=f"Can only combine with another instance of `Resources`"
+                ValueError, match="Can only combine with another instance of `Resources`"
             ):
                 _ = Resources.combine([r0, other], in_parallel=False)
