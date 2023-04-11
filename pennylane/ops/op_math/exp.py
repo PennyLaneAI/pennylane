@@ -212,6 +212,8 @@ class Exp(ScalarSymbolicOp, Operation):
     @data.setter
     def data(self, new_data):
         self._data = new_data
+        self.scalar = new_data[0]
+        self.base.data = new_data[1:]
 
     @property
     def coeff(self):
