@@ -30,8 +30,8 @@ from .parametrized_hamiltonian import ParametrizedHamiltonian
 
 
 def drive(amplitude, phase, wires):
-    r"""Constructs a :class:`ParametrizedHamiltonian` representing the action of a driving electromagnetic
-    field with a qubit.
+    r"""Returns a :class:`ParametrizedHamiltonian` representing the action of a driving electromagnetic
+    field with a set of qubits.
 
     .. math::
         \frac{1}{2} \sum_{j \in \text{wires}} \Omega(t) \left(e^{i \phi(t)} \sigma^+_j + e^{-i \phi(t)} \sigma^-_j \right)
