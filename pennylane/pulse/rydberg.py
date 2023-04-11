@@ -120,11 +120,11 @@ def rydberg_drive(amplitude, phase, detuning, wires):
 
     .. math::
 
-        \frac{1}{2} \Omega(t) \sum_{q \in \text{wires}} (\cos(\phi)\sigma_q^x - \sin(\phi)\sigma_q^y) -
+        \frac{1}{2} \Omega(t) \sum_{q \in \text{wires}} (\cos(\phi(t))\sigma_q^x - \sin(\phi(t))\sigma_q^y) -
         \delta(t) \sum_{q \in \text{wires}} \sigma_q^z
 
-    where :math:`\Omega`, :math:`\delta` and :math:`\phi` correspond to the amplitude, detuning
-    and phase of the laser, :math:`i` correspond to the wire index, and :math:`\sigma^\alpha` for
+    where :math:`\Omega`, :math:`\phi` and :math:`\delta` correspond to the amplitude, phase,
+    and detuning of the laser, :math:`i` correspond to the wire index, and :math:`\sigma^\alpha` for
     :math:`\alpha = x,y,z` are the Pauli matrices. For hardware execution, time is expected to be in units
     of :math:`\text{µs}`, and the frequency in units of :math:`\text{MHz}`. It is recommended to also follow
     this convention for simulation, as it avoids numerical problems due to using very large and very small
@@ -134,7 +134,7 @@ def rydberg_drive(amplitude, phase, detuning, wires):
     Args:
         amplitude (Union[float, Callable]): float or callable returning the amplitude (in MHz) of a
             laser field
-        phase (Union[float, Callable]): float or callable containing the phase (in radians) of the laser field
+        phase (Union[float, Callable]): float or callable returning the phase (in radians) of the laser field
         detuning (Union[float, Callable]): float or callable returning the detuning (in MHz) of a
             laser field
         wires (Union[int, List[int]]): integer or list containing wire values for the Rydberg atoms that
