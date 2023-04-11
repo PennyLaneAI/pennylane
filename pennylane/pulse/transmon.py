@@ -128,7 +128,7 @@ def transmon_interaction(
 
     n_wires = len(wires)
 
-    if not Wires(wires).contains_wires(Wires(np.unique(connections))):
+    if not Wires(wires).contains_wires(Wires(np.unique(connections).tolist())):
         warnings.warn(
             f"Caution, wires and connections do not match. "
             f"I.e., wires {wires} and wires in connections {connections} do not contain each other"
