@@ -134,7 +134,7 @@ def rydberg_drive(amplitude, phase, detuning, wires):
     Args:
         amplitude (Union[float, Callable]): float or callable returning the amplitude (in MHz) of a
             laser field
-        phase (Union[float, Callable]): float containing the phase (in radians) of the laser field
+        phase (Union[float, Callable]): float or callable containing the phase (in radians) of the laser field
         detuning (Union[float, Callable]): float or callable returning the detuning (in MHz) of a
             laser field
         wires (Union[int, List[int]]): integer or list containing wire values for the Rydberg atoms that
