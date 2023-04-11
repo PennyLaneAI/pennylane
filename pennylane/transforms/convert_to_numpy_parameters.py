@@ -57,7 +57,7 @@ def convert_to_numpy_parameters(circuit: QuantumScript) -> QuantumScript:
 
     .. seealso::
 
-        :class:`pennylane.tape.Unwrap` modifies a :class:`qml.tape.QuantumScript` in place instead of creating
+        :class:`pennylane.tape.Unwrap` modifies a :class:`~.pennylane.tape.QuantumScript` in place instead of creating
         a new class. It will also set all parameters on the circuit, not just ones that need to be unwrapped.
 
     >>> ops = [qml.S(0), qml.RX(torch.tensor(0.1234), 0)]
