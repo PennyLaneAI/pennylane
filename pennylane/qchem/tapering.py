@@ -271,9 +271,7 @@ def _split_pauli_sentence(pl_sentence, max_size=20000):
     """
     it, length = iter(pl_sentence), len(pl_sentence)
     for _ in range(0, length, max_size):
-        yield qml.pauli.PauliSentence(
-            {k: pl_sentence[k] for k in itertools.islice(it, max_size)}
-        )
+        yield qml.pauli.PauliSentence({k: pl_sentence[k] for k in itertools.islice(it, max_size)})
 
 
 def taper(h, generators, paulixops, paulix_sector):
