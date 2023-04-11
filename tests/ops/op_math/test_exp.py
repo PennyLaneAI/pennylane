@@ -44,8 +44,8 @@ class TestInitialization:
         assert op.id == "something"
 
         assert op.num_params == 1
-        assert op.parameters == [[1], []]
-        assert op.data == [[1], []]
+        assert op.parameters == [1]
+        assert op.data == [1]
 
         assert op.wires == qml.wires.Wires("a")
 
@@ -63,8 +63,8 @@ class TestInitialization:
         assert op.name == "Exp"
 
         assert op.num_params == 1
-        assert op.parameters == [[coeff], []]
-        assert op.data == [[coeff], []]
+        assert op.parameters == [coeff]
+        assert op.data == [coeff]
 
         assert op.wires == qml.wires.Wires(("b", "c"))
 
@@ -82,7 +82,7 @@ class TestInitialization:
         assert op.name == "Exp"
 
         assert op.num_params == 2
-        assert op.data == [coeff, [base_coeff]]
+        assert op.data == [coeff, base_coeff]
 
         assert op.wires == qml.wires.Wires(5)
 
@@ -111,7 +111,7 @@ class TestProperties:
         base = qml.RX(phi, wires=0)
         op = Exp(base, coeff)
 
-        assert op.data == [[coeff], [phi]]
+        assert op.data == [coeff, phi]
 
     # pylint: disable=protected-access
     def test_queue_category_ops(self):
