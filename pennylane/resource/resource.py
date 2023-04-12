@@ -14,10 +14,8 @@
 """
 The data class which will aggregate all the resource information from a quantum workflow.
 """
-from copy import copy
-from functools import reduce
+from typing import DefaultDict
 from collections import defaultdict
-from typing import Iterable, DefaultDict
 
 
 class Resources:
@@ -52,12 +50,14 @@ class Resources:
         gate_types: {'Hadamard': 1, 'CNOT': 1}
     """
 
-    def __init__(self, num_wires=0, num_gates=0, gate_types=defaultdict(int), depth=0, shots=0):
+    def __init__(
+        self, num_wires=0, num_gates=0, gate_types=defaultdict(int), depth=0, shots=0
+    ):  # pylint: disable=too-many-arguments, dangerous-default-value
         """Initialize a Resources instance and perform input type validation."""
 
         if not (
             all(isinstance(param, int) for param in [num_wires, num_gates, depth, shots])
-            and all([val > -1 for val in [num_wires, num_gates, depth, shots]])
+            and all(val > -1 for val in [num_wires, num_gates, depth, shots])
             and isinstance(gate_types, DefaultDict)
         ):
             raise TypeError(
