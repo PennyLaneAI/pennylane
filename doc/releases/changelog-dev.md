@@ -11,10 +11,6 @@
 
 <h4>Pulse programming</h4>
 
-* Adjoint differentiation support for the new qubit state-vector device has been added via
-  `adjoint_jacobian` in `devices/qubit`.
-  [(#3790)](https://github.com/PennyLaneAI/pennylane/pull/3790)
-
 * Added the needed functions and classes to simulate an ensemble of Rydberg atoms:
   * A new internal `HardwareHamiltonian` class is added, which contains additional information about pulses and settings.
   * A new user-facing `rydberg_interaction` function is added, which returns a `HardwareHamiltonian` containing
@@ -52,6 +48,10 @@
 
 * `pennylane.devices.qubit.preprocess` now allows circuits with non-commuting observables.
   [(#3857)](https://github.com/PennyLaneAI/pennylane/pull/3857)
+
+* Adjoint differentiation support for the new qubit state-vector device has been added via
+  `adjoint_jacobian` in `devices/qubit`.
+  [(#3790)](https://github.com/PennyLaneAI/pennylane/pull/3790)
 
 <h4>Other improvements</h4>
 
