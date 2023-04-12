@@ -54,6 +54,36 @@
   `adjoint_jacobian` in `devices/qubit`.
   [(#3790)](https://github.com/PennyLaneAI/pennylane/pull/3790)
 
+<h4>Performance improvements</h4>
+
+* Improve the efficiency of `tapering()`, `tapering_hf()` and `clifford()`.
+  [(3942)](https://github.com/PennyLaneAI/pennylane/pull/3942)
+
+* Update Pauli arithmetic to more efficiently convert to a Hamiltonian.
+  [(#3939)](https://github.com/PennyLaneAI/pennylane/pull/3939)
+
+* The adjoint differentiation method now supports more operations, and does no longer decompose
+  some operations that may be differentiated directly. In addition, all new operations with a
+  generator are now supported by the method.
+  [(#3874)](https://github.com/PennyLaneAI/pennylane/pull/3874)
+
+* When using Jax-jit with gradient transforms the trainable parameters are correctly set (instead of every parameter 
+  to be set as trainable), and therefore the derivatives are computed more efficiently.
+  [(#3697)](https://github.com/PennyLaneAI/pennylane/pull/3697)
+
+* `CompositeOp` now overrides `Operator._check_batching`, providing a significant performance improvement.
+  `Hamiltonian` also overrides this method and does nothing, because it does not support batching.
+  [(#3915)](https://github.com/PennyLaneAI/pennylane/pull/3915)
+
+* If a `Sum` operator has a pre-computed Pauli representation, `is_hermitian` now checks that all coefficients
+  are real, providing a significant performance improvement.
+  [(#3915)](https://github.com/PennyLaneAI/pennylane/pull/3915)
+
+* 3 new decomposition algorithms are added for n-controlled operations with single-qubit target,
+  and are selected automatically when they produce a better result, i.e., fewer CNOT gates.
+  They can be accessed via `ops.op_math.ctrl_decomp_bisect`.
+  [(#3851)](https://github.com/PennyLaneAI/pennylane/pull/3851)
+
 <h4>Intuitive QNode returns</h4>
 
 * The default gaussian device and parameter shift cv support the new return system but only for single measurement.
@@ -70,17 +100,6 @@
 
 * Added a `Shots` class to the `measurements` module to hold shot-related data.
   [(#3682)](https://github.com/PennyLaneAI/pennylane/pull/3682)
-
-* Improve the efficiency of `tapering()`, `tapering_hf()` and `clifford()`.
-  [(3942)](https://github.com/PennyLaneAI/pennylane/pull/3942)
-
-* Update Pauli arithmetic to more efficiently convert to a Hamiltonian.
-  [(#3939)](https://github.com/PennyLaneAI/pennylane/pull/3939)
-
-* The adjoint differentiation method now supports more operations, and does no longer decompose
-  some operations that may be differentiated directly. In addition, all new operations with a
-  generator are now supported by the method.
-  [(#3874)](https://github.com/PennyLaneAI/pennylane/pull/3874)
 
 * The `coefficients` function and the `visualize` submodule of the `qml.fourier` module
   now allow assigning different degrees for different parameters of the input function.
@@ -117,18 +136,9 @@
 * `qml.QubitStateVector.state_vector` now supports broadcasting.
   [(#3852)](https://github.com/PennyLaneAI/pennylane/pull/3852)
 
-* When using Jax-jit with gradient transforms the trainable parameters are correctly set (instead of every parameter 
-  to be set as trainable), and therefore the derivatives are computed more efficiently.
-  [(#3697)](https://github.com/PennyLaneAI/pennylane/pull/3697)
-
 * `qml.SparseHamiltonian` can now be applied to any wires in a circuit rather than being restricted to all wires
   in the circuit.
   [(#3888)](https://github.com/PennyLaneAI/pennylane/pull/3888)
-
-* 3 new decomposition algorithms are added for n-controlled operations with single-qubit target,
-  and are selected automatically when they produce a better result, i.e., fewer CNOT gates.
-  They can be accessed via `ops.op_math.ctrl_decomp_bisect`.
-  [(#3851)](https://github.com/PennyLaneAI/pennylane/pull/3851)
 
 * Added `Operation.__truediv__` dunder method to be able to divide operators.
   [(#3749)](https://github.com/PennyLaneAI/pennylane/pull/3749)
@@ -142,15 +152,7 @@
 * Do not run `qml.transforms.sum_expand` in `Device.batch_transform` if the device supports Sum observables.
   [(#3915)](https://github.com/PennyLaneAI/pennylane/pull/3915)
 
-* `CompositeOp` now overrides `Operator._check_batching`, providing a significant performance improvement.
-  `Hamiltonian` also overrides this method and does nothing, because it does not support batching.
-  [(#3915)](https://github.com/PennyLaneAI/pennylane/pull/3915)
-
-* If a `Sum` operator has a pre-computed Pauli representation, `is_hermitian` now checks that all coefficients
-  are real, providing a significant performance improvement.
-  [(#3915)](https://github.com/PennyLaneAI/pennylane/pull/3915)
-
-  * The type of `n_electrons` in `qml.qchem.Molecule` is set to `int`.
+* The type of `n_electrons` in `qml.qchem.Molecule` is set to `int`.
   [(#3885)](https://github.com/PennyLaneAI/pennylane/pull/3885)
 
 * Added explicit errors to `QutritDevice` if `classical_shadow` or `shadow_expval` are measured.
@@ -160,7 +162,7 @@
   This allows devices that inherit from `QubitDevice` to override and customize their definition of diagonalizing gates.
   [(#3938)](https://github.com/PennyLaneAI/pennylane/pull/3938)
 
-* `retworkx` has been renamed to `rustworkx` to accomodate the change in name for the package.
+* `retworkx` has been renamed to `rustworkx` to accommodate the change in name for the package.
   [(#3975)](https://github.com/PennyLaneAI/pennylane/pull/3975)
 
 * `Sum`, `Prod`, and `SProd` operator data is now a flat list, instead of nested.
