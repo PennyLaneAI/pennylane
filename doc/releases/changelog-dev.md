@@ -25,6 +25,8 @@
     from atoms beyond `max_distance`from each other.
     [(#3889)](https://github.com/PennyLaneAI/pennylane/pull/3889)
 
+<h4>Quantum singular value transform</h4>
+
 <h4>Intuitive QNode returns</h4>
 
 * The new return system is activated and public facing. The qnode kwarg `mode` is replaced by the boolean 
