@@ -69,6 +69,15 @@ class TestHardwareHamiltonian:
         assert rm.settings is None
         assert rm.reorder_fn(3, 4) == 4
 
+    def test_two_different_reorder_fns_raises_error(self):
+        H1 = HardwareHamiltonian(coeffs=[], observables=[])
+        H2 = HardwareHamiltonian(coeffs=[], observables=[], reorder_fn=lambda _, y: y[:2])
+
+        with pytest.raises(
+            ValueError, match="Cannot add two HardwareHamiltonians with different reorder"
+        ):
+            _ = H1 + H2
+
     @pytest.mark.parametrize(
         "settings",
         [
