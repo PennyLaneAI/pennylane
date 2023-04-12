@@ -510,14 +510,12 @@ class PauliRot(Operation):
 
 
 class PCPhase(Operation):
-    r"""
+    r"""PCPhase(phi, dim, wires)
     A projector-controlled phase gate.
 
-    This gate applies a complex phase :math:`e^{i\phi}` to first :math:`dim`
+    This gate applies a complex phase :math:`e^{i\phi}` to the first :math:`dim`
     basis vectors of the input state while applying a complex phase :math:`e^{-i \phi}`
-    to the remaining basis vectors. This is equivalent to applying a constant
-    phase shift to the subspace spanned by those :math:`dim` vectors. Consider the 2 qubit
-    case where :math:`dim = 2`.
+    to the remaining basis vectors. Consider the 2 qubit case where :math:`dim = 2`:
 
     .. math:: \Pi(\phi) = \begin{bmatrix}
                 e^{i\phi} & 0 & 0 & 0 \\
@@ -526,12 +524,9 @@ class PCPhase(Operation):
                 0 & 0 & 0 & e^{-i\phi}
             \end{bmatrix}.
 
-    This is effectively applying a :math:`2*\phi` phase shift to the subspace spanned by
-    :math:`\lbrace | 00 \rangle , | 01 \rangle \rbrace` excluding global phase.
-
     **Details:**
 
-    * Number of wires: AnyWires
+    * Number of wires: Any (the operation can act on any number of wires)
     * Number of parameters: 1
     * Number of dimensions per parameter: (0,)
 
@@ -545,12 +540,32 @@ class PCPhase(Operation):
 
     **Example:**
 
+    We can define a circuit using :class:`~.PCPhase` as follows:
+
+    >>> dev = qml.device('default.qubit', wires=2)
+    >>> @qml.qnode(dev)
+    >>> def example_circuit():
+    ...     qml.PCPhase(0.27, dim = 2, wires=range(2))
+    ...     return qml.state()
+
+    The resulting operation applies a complex phase :math:`e^{0.27i}` to the first :math:`dim = 2`
+    basis vectors and :math:`e^{-0.27i}` to the remaining basis vectors.
+
+    >>> print(np.round(qml.matrix(example_circuit)(),2))
+    [[0.96+0.27j 0.  +0.j   0.  +0.j   0.  +0.j  ]
+     [0.  +0.j   0.96+0.27j 0.  +0.j   0.  +0.j  ]
+     [0.  +0.j   0.  +0.j   0.96-0.27j 0.  +0.j  ]
+     [0.  +0.j   0.  +0.j   0.  +0.j   0.96-0.27j]]
+
+    We can also choose a different :math:`dim` value to apply the phase shift to a different set of
+    basis vectors as follows:
+     
     >>> pc_op = qml.PCPhase(1.23, dim=3, wires=[1,2])
-    >>> qml.matrix(pc_op)
-    array([[0.33423773+0.9424888j, 0.        +0.j       , 0.        +0.j       , 0.        +0.j       ],
-           [0.        +0.j       , 0.33423773+0.9424888j, 0.        +0.j       , 0.        +0.j       ],
-           [0.        +0.j       , 0.        +0.j       , 0.33423773+0.9424888j, 0.        +0.j       ],
-           [0.        +0.j       , 0.        +0.j       , 0.        +0.j       , 0.33423773-0.9424888j]])
+    >>> print(np.round(qml.matrix(pc_op),2))
+    [[0.33+0.94j 0.  +0.j   0.  +0.j   0.  +0.j  ]
+     [0.  +0.j   0.33+0.94j 0.  +0.j   0.  +0.j  ]
+     [0.  +0.j   0.  +0.j   0.33+0.94j 0.  +0.j  ]
+     [0.  +0.j   0.  +0.j   0.  +0.j   0.33-0.94j]]
     """
     num_wires = AnyWires
     num_params = 1

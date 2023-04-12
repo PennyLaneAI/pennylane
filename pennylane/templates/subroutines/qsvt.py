@@ -26,11 +26,13 @@ from pennylane import numpy as np
 
 def qsvt(A, angles, wires, convention=None):
     r"""Implements the
-    `quantum singular value transformation <https://arxiv.org/abs/1806.01838>`__ (QSVT) circuit using
-    :class:`~.BlockEncode` and :class:`~.PCPhase`.
+    `quantum singular value transformation <https://arxiv.org/abs/1806.01838>`__ (QSVT) circuit.
 
     Given a matrix :math:`A`, and a list of angles :math:`\vec{\phi}`, this template applies a
-    circuit for the quantum singular value transformation as follows.
+    circuit for the quantum singular value transformation using :class:`~.BlockEncode` and
+    :class:`~.PCPhase`. These operators are matrix-based and well-suited for simulators.
+    To implement QSVT with specific circuits for block-encoding and projector-controlled phase
+    shifts, use the :class:`~.QSVT` template.
 
     When the number of angles is even (:math:`d` is odd), the QSVT circuit is defined as:
 
@@ -64,6 +66,9 @@ def qsvt(A, angles, wires, convention=None):
             \end{bmatrix}.
         \end{align}
 
+    The polynomial transformation is determined by the choice of projector-controlled phase shift
+    angles, :math:`\vec{\phi}`.
+
     .. seealso::
 
         :class:`~.QSVT` and `A Grand Unification of Quantum Algorithms <https://arxiv.org/pdf/2105.02859.pdf>`_
@@ -77,6 +82,8 @@ def qsvt(A, angles, wires, convention=None):
 
     **Example**
 
+    To implement QSVT in a circuit, we can use the following method:
+
     >>> dev = qml.device("default.qubit", wires=2)
     >>> A = np.array([[0.1, 0.2], [0.3, 0.4]])
     >>> angles = np.array([0.1, 0.2, 0.3])
@@ -84,9 +91,15 @@ def qsvt(A, angles, wires, convention=None):
     ... def example_circuit(A):
     ...     qml.qsvt(A, angles, wires=[0, 1])
     ...     return qml.expval(qml.PauliZ(wires=0))
+
+    The resulting circuit implements QSVT.
+
     >>> print(qml.draw(example_circuit)(A))
     0: ─╭QSVT─┤  <Z>
     1: ─╰QSVT─┤
+
+    To see the implementation details, we can expand the circuit:
+
     >>> print(qml.draw(example_circuit, expansion_strategy="device")(A))
     0: ─╭∏_ϕ(0.10)─╭BlockEncode(M0)─╭∏_ϕ(0.20)─╭BlockEncode(M0)†─╭∏_ϕ(0.30)─┤  <Z>
     1: ─╰∏_ϕ(0.10)─╰BlockEncode(M0)─╰∏_ϕ(0.20)─╰BlockEncode(M0)†─╰∏_ϕ(0.30)─┤
@@ -114,12 +127,16 @@ def qsvt(A, angles, wires, convention=None):
 
 
 class QSVT(Operation):
-    r"""Implements the
-    `quantum singular value transformation <https://arxiv.org/abs/1806.01838>`__ circuit.
+    r"""QSVT(UA,projectors,wires)
+    Implements the
+    `quantum singular value transformation <https://arxiv.org/abs/1806.01838>`__ (QSVT) circuit.
 
     Given an :class:`~.Operator` :math:`U`, which block encodes the matrix :math:`A`, and a list of
     projector-controlled phase shift operations :math:`\vec{\Pi}_\phi`, this template applies a
-    circuit for the quantum singular value transformation as follows.
+    circuit for the quantum singular value transformation as follows. This allows users to define
+    circuits that can be implemented in hardware. For a QSVT implementation that is specially
+    tailored for use in simulators see :func:`~.qsvt` .
+
 
     When the number of projector-controlled phase shifts is even (:math:`d` is odd), the QSVT
     circuit is defined as:
@@ -166,6 +183,8 @@ class QSVT(Operation):
 
     **Example**
 
+    To implement QSVT in a circuit, we can use the following method:
+
     >>> dev = qml.device("default.qubit", wires=2)
     >>> A = np.array([[0.1]])
     >>> block_encode = qml.BlockEncode(A, wires=[0, 1])
@@ -174,9 +193,15 @@ class QSVT(Operation):
     >>> def example_circuit():
     ...    qml.QSVT(block_encode, angles, wires=[0, 1])
     ...    return qml.expval(qml.PauliZ(wires=0))
+
+    The resulting circuit implements QSVT.
+
     >>> print(qml.draw(example_circuit)())
     0: ─╭QSVT─┤  <Z>
     1: ─╰QSVT─┤
+
+    To see the implementation details, we can expand the circuit:
+
     >>> print(qml.draw(example_circuit,expansion_strategy='device')())
     0: ─╭∏_ϕ(0.10)─╭BlockEncode(M0)─╭∏_ϕ(1.10)─╭BlockEncode(M0)†─╭∏_ϕ(2.10)─┤  <Z>
     1: ─╰∏_ϕ(0.10)─╰BlockEncode(M0)─╰∏_ϕ(1.10)─╰BlockEncode(M0)†─╰∏_ϕ(2.10)─┤

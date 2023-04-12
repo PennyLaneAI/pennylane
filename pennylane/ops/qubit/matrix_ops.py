@@ -365,28 +365,35 @@ class BlockEncode(Operation):
 
     Args:
         A (array[complex]): a general :math:`(n \times m)` matrix to be encoded
-        wires (Sequence[int] or int): the wire(s) the operation acts on
-        do_queue (bool): indicates whether the operator should be
-            recorded when created in a tape context
-        id (str): custom label given to an operator instance,
-            can be useful for some applications where the instance has to be identified
+        wires (Iterable[int, str], Wires): the wires the operation acts on
+        do_queue (bool): Indicates whether the operator should be
+            immediately pushed into the Operator queue (optional)
+        id (str or None): String representing the operation (optional)
 
     Raises:
         ValueError: if the number of wires doesn't fit the dimensions of the matrix
 
     **Example**
+    
+    We can define a matrix and a block-encoding circuit as follows:
 
-    >>> dev = qml.device('default.qubit', wires=2)
     >>> A = [[0.1,0.2],[0.3,0.4]]
+    >>> dev = qml.device('default.qubit', wires=2)
     >>> @qml.qnode(dev)
     ... def example_circuit():
     ...     qml.BlockEncode(A, wires=range(2))
     ...     return qml.state()
+
+    We can see that :math:`A` has been block encoded in the matrix of the circuit:
+
     >>> print(qml.matrix(example_circuit)())
     [[ 0.1         0.2         0.97283788 -0.05988708]
      [ 0.3         0.4        -0.05988708  0.86395228]
      [ 0.94561648 -0.07621992 -0.1        -0.3       ]
      [-0.07621992  0.89117368 -0.2        -0.4       ]]
+
+    We can also block-encode a non-square matrix and check the resulting unitary matrix:
+
     >>> A = [[0.2, 0, 0.2],[-0.2, 0.2, 0]]
     >>> op = qml.BlockEncode(A, wires=range(3))
     >>> print(np.round(qml.matrix(op), 2))
