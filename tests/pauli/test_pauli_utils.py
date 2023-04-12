@@ -227,6 +227,16 @@ class TestGroupingUtils:
             True,
         ),  # multi I
         ([qml.PauliZ(0) @ qml.PauliZ(1), qml.PauliZ(2), qml.PauliX(1) @ qml.PauliY(2)], False),
+        (
+            [
+                qml.prod(PauliZ(0), PauliX(1)),
+                qml.s_prod(2.0, PauliX(1)),
+                PauliY(2),
+                qml.prod(PauliZ(0), PauliY(2)),
+            ],
+            True,
+        ),
+        ([qml.s_prod(2.0, PauliZ("a")), qml.prod(PauliZ("a"), PauliX(100)), PauliX("a")], False),
     ]
 
     @pytest.mark.parametrize("obs_lst, expected_qwc", obs_lsts)
@@ -302,12 +312,18 @@ class TestGroupingUtils:
         pauli_word_1 = PauliX(0) @ PauliY(1)
         pauli_word_2 = PauliY(1) @ PauliX(0)
         pauli_word_3 = Tensor(PauliX(0), PauliY(1))
-        pauli_word_4 = PauliX(1) @ PauliZ(2)
+        pauli_word_4 = qml.prod(qml.PauliX(0), qml.PauliY(1))
+        pauli_word_5 = qml.s_prod(1, pauli_word_4)
+        pauli_word_different = PauliX(1) @ PauliZ(2)
 
         assert are_identical_pauli_words(pauli_word_1, pauli_word_2)
         assert are_identical_pauli_words(pauli_word_1, pauli_word_3)
-        assert not are_identical_pauli_words(pauli_word_1, pauli_word_4)
-        assert not are_identical_pauli_words(pauli_word_3, pauli_word_4)
+        assert are_identical_pauli_words(pauli_word_3, pauli_word_4)
+        assert are_identical_pauli_words(pauli_word_3, pauli_word_5)
+
+        assert not are_identical_pauli_words(pauli_word_1, pauli_word_different)
+        assert not are_identical_pauli_words(pauli_word_3, pauli_word_different)
+        assert not are_identical_pauli_words(pauli_word_4, pauli_word_different)
 
     @pytest.mark.parametrize("non_pauli_word", non_pauli_words)
     def test_are_identical_pauli_words_non_pauli_word_catch(self, non_pauli_word):
