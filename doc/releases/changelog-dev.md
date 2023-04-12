@@ -17,9 +17,8 @@
   [(#3790)](https://github.com/PennyLaneAI/pennylane/pull/3790)
 
 * Added the needed functions and classes to simulate an ensemble of Rydberg atoms:
-  * A new internal `RydbergHamiltonian` class is added, which contains the Hamiltonian of an ensemble of
-    Rydberg atoms.
-  * A new user-facing `rydberg_interaction` function is added, which returns a `RydbergHamiltonian` containing
+  * A new internal `HardwareHamiltonian` class is added, which contains additional information about pulses and settings.
+  * A new user-facing `rydberg_interaction` function is added, which returns a `HardwareHamiltonian` containing
     the Hamiltonian of the interaction of all the Rydberg atoms.
   * A new user-facing `transmon_interaction` function is added, constructing
     the Hamiltonian that describes the circuit QED interaction Hamiltonian of superconducting transmon systems.
@@ -255,6 +254,10 @@
 * An issue is fixed in `qchem.Molecule` to allow basis sets other than the hard-coded ones to be
   used in the `Molecule` class.
   [(#3955)](https://github.com/PennyLaneAI/pennylane/pull/3955)
+
+* Fixed bug where all devices that inherit from DefaultQubit claimed to support `ParametrizedEvolution`.
+  Now only `DefaultQubitJax` supports the operator, as expected.
+  [(#3964)](https://github.com/PennyLaneAI/pennylane/pull/3964)
 
 <h3>Contributors</h3>
 
