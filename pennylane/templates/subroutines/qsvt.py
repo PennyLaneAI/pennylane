@@ -71,14 +71,14 @@ def qsvt(A, angles, wires, convention=None):
 
     .. seealso::
 
-        :class:`~.QSVT` and `A Grand Unification of Quantum Algorithms <https://arxiv.org/pdf/2105.02859.pdf>`_
+        :class:`~.QSVT` and `A Grand Unification of Quantum Algorithms <https://arxiv.org/pdf/2105.02859.pdf>`_.
 
     Args:
         A (tensor_like): the general :math:`(n \times m)` matrix to be encoded
         angles (tensor_like): a list of angles by which to shift to obtain the desired polynomial
         wires (Iterable): the wires the template acts on
-        convention (string): can be set to "Wx" to convert quantum signal processing angles in the
-            "Wx" convention to QSVT angles.
+        convention (string): can be set to ``"Wx"`` to convert quantum signal processing angles in the
+            `Wx` convention to QSVT angles.
 
     **Example**
 
@@ -169,11 +169,11 @@ class QSVT(Operation):
 
     .. seealso::
 
-        :func:`~.qsvt` and `A Grand Unification of Quantum Algorithms <https://arxiv.org/pdf/2105.02859.pdf>`_
+        :func:`~.qsvt` and `A Grand Unification of Quantum Algorithms <https://arxiv.org/pdf/2105.02859.pdf>`_.
 
     Args:
         UA (Operator): the block encoding circuit, specified as an :class:`~.Operator`,
-            like :func:`~.BlockEncode`
+            like :class:`~.BlockEncode`
         projectors (Sequence[Operator]): a list of projector-controlled phase
             shifts that implement the desired polynomial
         wires (Iterable): the wires the template acts on
