@@ -650,9 +650,18 @@ def is_qwc(pauli_vec_1, pauli_vec_2):
     return True
 
 
+def _non_pauli_word_to_dict_form(op: qml.operation.Operator) -> dict[int, str]:
+    if isinstance(op, qml.operation.Tensor):
+        pw = {}
+        for ob in op.obs:
+            pw.update(_non_pauli_word_to_dict_form(ob))
+        return pw
+    return {w: op.name for w in op.wires}
+
+
 def are_pauli_words_qwc(lst_pauli_words):
-    """Given a list of observables assumed to be valid Pauli words, determine if they are pairwise
-    qubit-wise commuting.
+    """Given a list of observables, determine if they are pairwise qubit-wise commuting. They do not need
+    to be pauli words.
 
     This implementation has time complexity ~ O(m * n) for m Pauli words and n wires, where n is the
     number of distinct wire labels used to represent the Pauli words.
@@ -667,7 +676,10 @@ def are_pauli_words_qwc(lst_pauli_words):
 
     for op in lst_pauli_words:
         # just need the first term since it should already be only one pauli word
-        pw = next(iter(qml.pauli.pauli_sentence(op)))
+        if is_pauli_word(op):
+            pw = next(iter(qml.pauli.pauli_sentence(op)))
+        else:
+            pw = _non_pauli_word_to_dict_form(op)
 
         for wire, pauli_type in pw.items():
             if wire in basis and pauli_type != basis[wire]:
