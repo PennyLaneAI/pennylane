@@ -361,11 +361,14 @@ class TestPassthruIntegration:
         dev1 = qml.device("default.mixed", wires=3)
         dev2 = qml.device("default.mixed", wires=3)
 
+        def cost(x):
+            return qml.math.stack(circuit(x))
+
         circuit1 = decorator(qml.QNode(circuit, dev1, diff_method="backprop", interface=interface))
-        circuit2 = qml.QNode(circuit, dev2, diff_method="parameter-shift")
+        circuit2 = qml.QNode(cost, dev2, diff_method="parameter-shift")
 
         with tf.GradientTape() as tape:
-            res = circuit1(p_tf)
+            res = tf.experimental.numpy.hstack(circuit1(p_tf))
 
         assert np.allclose(res, circuit2(p), atol=tol, rtol=0)
 
@@ -673,7 +676,7 @@ class TestPassthruIntegration:
             return [qml.expval(qml.PauliZ(0)), qml.probs(wires=[1])]
 
         with tf.GradientTape() as tape:
-            res = circuit(x, y)
+            res = tf.experimental.numpy.hstack(circuit(x, y))
 
         expected = np.array(
             [
@@ -744,32 +747,6 @@ class TestHighLevelIntegration:
             res = circuit(weights)
 
         grad = tape.gradient(res, weights)
-        assert isinstance(grad, tf.Tensor)
-        assert grad.shape == weights.shape
-
-    def test_qnode_collection_integration(self):
-        """Test that a PassthruQNode default.mixed.tf works with QNodeCollections."""
-        dev = qml.device("default.mixed", wires=2)
-
-        obs_list = [qml.PauliX(0) @ qml.PauliY(1), qml.PauliZ(0), qml.PauliZ(0) @ qml.PauliZ(1)]
-        with pytest.warns(UserWarning, match="The map function is deprecated"):
-            qnodes = qml.map(qml.templates.StronglyEntanglingLayers, obs_list, dev, interface="tf")
-
-        assert qnodes.interface == "tf"
-
-        weights = tf.Variable(
-            np.random.random(qml.templates.StronglyEntanglingLayers.shape(n_layers=2, n_wires=2))
-        )
-
-        @tf.function
-        def cost(weights):
-            return tf.reduce_sum(qnodes(weights))
-
-        with tf.GradientTape() as tape:
-            res = cost(weights)
-
-        grad = tape.gradient(res, weights)
-
         assert isinstance(grad, tf.Tensor)
         assert grad.shape == weights.shape
 

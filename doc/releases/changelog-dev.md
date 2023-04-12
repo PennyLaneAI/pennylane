@@ -3,20 +3,34 @@
 # Release 0.30.0-dev (development release)
 
 <h3>New features since last release</h3>
+* The new return system is activated and public facing. The qnode kwarg `mode` is replaced by the boolean 
+  `grad_on_execution` .
+  [(#3957)](https://github.com/PennyLaneAI/pennylane/pull/3957)
+  [(#3969)](https://github.com/PennyLaneAI/pennylane/pull/3969)
 
 * The `sample_state` function is added to `devices/qubit` that returns a series of samples based on a given
   state vector and a number of shots.
   [(#3720)](https://github.com/PennyLaneAI/pennylane/pull/3720)
 
+* Adjoint differentiation support for the new qubit state-vector device has been added via
+  `adjoint_jacobian` in `devices/qubit`.
+  [(#3790)](https://github.com/PennyLaneAI/pennylane/pull/3790)
+
 * Added the needed functions and classes to simulate an ensemble of Rydberg atoms:
-  * A new internal `RydbergHamiltonian` class is added, which contains the Hamiltonian of an ensemble of
-    Rydberg atoms.
-  * A new user-facing `rydberg_interaction` function is added, which returns a `RydbergHamiltonian` containing
+  * A new internal `HardwareHamiltonian` class is added, which contains additional information about pulses and settings.
+  * A new user-facing `rydberg_interaction` function is added, which returns a `HardwareHamiltonian` containing
     the Hamiltonian of the interaction of all the Rydberg atoms.
-  * A new user-facing `rydberg_drive` function is added, which returns a `RydbergHamiltonian` containing
-    the Hamiltonian of the interaction between a driving laser field and a group of atoms.
+  * A new user-facing `transmon_interaction` function is added, constructing
+    the Hamiltonian that describes the circuit QED interaction Hamiltonian of superconducting transmon systems.
+  * A new user-facing `drive` function is added, which returns a `ParametrizedHamiltonian` (`HardwareHamiltonian`) containing
+    the Hamiltonian of the interaction between a driving electro-magnetic field and a group of qubits.
+  * A new user-facing `rydberg_drive` function is added, which returns a `ParametrizedHamiltonian` (`HardwareHamiltonian`) containing
+    the Hamiltonian of the interaction between a driving laser field and a group of Rydberg atoms.
   [(#3749)](https://github.com/PennyLaneAI/pennylane/pull/3749)
   [(#3911)](https://github.com/PennyLaneAI/pennylane/pull/3911)
+  [(#3930)](https://github.com/PennyLaneAI/pennylane/pull/3930)
+  [(#3936)](https://github.com/PennyLaneAI/pennylane/pull/3936/)
+  [(#3966)](https://github.com/PennyLaneAI/pennylane/pull/3966)
 
 * Added `Operation.__truediv__` dunder method to be able to divide operators.
   [(#3749)](https://github.com/PennyLaneAI/pennylane/pull/3749)
@@ -25,7 +39,19 @@
   `qml.Hamiltonian`, `qml.SparseHamiltonian`, `qml.Sum`.
   [(#3759)](https://github.com/PennyLaneAI/pennylane/pull/3759)
 
+* Added a `Shots` class to the `measurements` module to hold shot-related data.
+  [(#3682)](https://github.com/PennyLaneAI/pennylane/pull/3682)
+
 <h3>Improvements</h3>
+
+* The default gaussian device and parameter shift cv support the new return system but only for single measurement.
+  [(3946)](https://github.com/PennyLaneAI/pennylane/pull/3946)
+
+* Improve the efficiency of `tapering()`, `tapering_hf()` and `clifford()`.
+  [(3942)](https://github.com/PennyLaneAI/pennylane/pull/3942)
+
+* Update Pauli arithmetic to more efficiently convert to a Hamiltonian.
+  [(#3939)](https://github.com/PennyLaneAI/pennylane/pull/3939)
 
 * Keras and Torch NN modules are now compatible with the new return type system.
   [(#3913)](https://github.com/PennyLaneAI/pennylane/pull/3913)
@@ -111,6 +137,33 @@
   are real, providing a significant performance improvement.
   [(#3915)](https://github.com/PennyLaneAI/pennylane/pull/3915)
 
+* The type of `n_electrons` in `qml.qchem.Molecule` is set to `int`.
+  [(#3885)](https://github.com/PennyLaneAI/pennylane/pull/3885)
+
+* Added explicit errors to `QutritDevice` if `classical_shadow` or `shadow_expval` are measured.
+  [(#3934)](https://github.com/PennyLaneAI/pennylane/pull/3934)
+
+* `DefaultQutrit` supports the new return system.
+  [(#3934)](https://github.com/PennyLaneAI/pennylane/pull/3934)
+
+* `QubitDevice` now defines the private `_get_diagonalizing_gates(circuit)` method and uses it when executing circuits.
+  This allows devices that inherit from `QubitDevice` to override and customize their definition of diagonalizing gates.
+  [(#3938)](https://github.com/PennyLaneAI/pennylane/pull/3938)
+
+* `retworkx` has been renamed to `rustworkx` to accomodate the change in name for the package.
+  [(#3975)](https://github.com/PennyLaneAI/pennylane/pull/3975)
+
+* `Sum`, `Prod`, and `SProd` operator data is now a flat list, instead of nested.
+  [(#3958)](https://github.com/PennyLaneAI/pennylane/pull/3958)
+
+* `qml.transforms.convert_to_numpy_parameters` is added to convert a circuit with interface-specific parameters to one
+  with only numpy parameters. This transform is designed to replace `qml.tape.Unwrap`.
+  [(#3899)](https://github.com/PennyLaneAI/pennylane/pull/3899)
+
+* `qml.operation.WiresEnum.AllWires` is now -2 instead of 0 to avoid the
+  ambiguity between `op.num_wires = 0` and `op.num_wires = AllWires`.
+  [(#3978)](https://github.com/PennyLaneAI/pennylane/pull/3978)
+
 * Update various Operators and templates to ensure their decompositions only return lists of Operators.
   [(#3243)](https://github.com/PennyLaneAI/pennylane/pull/3243)
 
@@ -140,15 +193,21 @@
   For example, you can no longer create `StateMP(qml.PauliX(0))` or `PurityMP(eigvals=(-1,1), wires=Wires(0))`.
   [(#3898)](https://github.com/PennyLaneAI/pennylane/pull/3898)
 
+* `Sum`, `Prod`, and `SProd` operator data is now a flat list, instead of nested.
+  [(#3958)](https://github.com/PennyLaneAI/pennylane/pull/3958)
+
 <h3>Deprecations</h3>
 
 <h3>Documentation</h3>
 
 * A typo was corrected in the documentation for introduction to `inspecting_circuits` and `chemistry`.
-[(#3844)](https://github.com/PennyLaneAI/pennylane/pull/3844)
+  [(#3844)](https://github.com/PennyLaneAI/pennylane/pull/3844)
 
 <h3>Bug fixes</h3>
 
+* Fixed a bug where calling `Evolution.generator` with `coeff` being a complex ArrayBox raised an error.
+  [(#3796)](https://github.com/PennyLaneAI/pennylane/pull/3796)
+  
 * `MeasurementProcess.hash` now uses the hash property of the observable. The property now depends on all
   properties that affect the behaviour of the object, such as `VnEntropyMP.log_base` or the distribution of wires between
   the two subsystems in `MutualInfoMP`.
@@ -161,7 +220,7 @@
   to work with non-numeric wire labels.  `sum_expand` should now return correct results and not treat some products as the same
   operation.
   [(#3898)](https://github.com/PennyLaneAI/pennylane/pull/3898)
-
+  
 * Fixed bug where the coefficients where not ordered correctly when summing a `ParametrizedHamiltonian`
   with other operators.
   [(#3749)](https://github.com/PennyLaneAI/pennylane/pull/3749)
@@ -195,6 +254,20 @@
 * A correction is added to the reference values in `test_dipole_of` to account for small changes
   (~2e-8) in the computed dipole moment values, resulting from the new [PySCF 2.2.0](https://github.com/pyscf/pyscf/releases/tag/v2.2.0) release.
   [(#3908)](https://github.com/PennyLaneAI/pennylane/pull/3908)
+
+* `SampleMP.shape` is now correct when sampling only occurs on a subset of the device wires.
+  [(#3921)](https://github.com/PennyLaneAI/pennylane/pull/3921)
+
+* An issue is fixed in `qchem.Molecule` to allow basis sets other than the hard-coded ones to be
+  used in the `Molecule` class.
+  [(#3955)](https://github.com/PennyLaneAI/pennylane/pull/3955)
+
+* Fixed bug where all devices that inherit from DefaultQubit claimed to support `ParametrizedEvolution`.
+  Now only `DefaultQubitJax` supports the operator, as expected.
+  [(#3964)](https://github.com/PennyLaneAI/pennylane/pull/3964)
+
+* Ensure that parallel `AnnotatedQueues` do not queue each other's contents.
+  [(#3924)](https://github.com/PennyLaneAI/pennylane/pull/3924)
 
 <h3>Contributors</h3>
 

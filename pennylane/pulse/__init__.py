@@ -68,7 +68,9 @@ Hardware Compatible Hamiltonians
     :toctree: api
 
     ~rydberg_interaction
+    ~transmon_interaction
     ~rydberg_drive
+    ~drive
 
 
 Creating a parametrized Hamiltonian
@@ -259,4 +261,6 @@ JIT-compiling is optional, and one can remove the decorator when only single exe
 from .convenience_functions import constant, pwc, pwc_from_function, rect
 from .parametrized_evolution import ParametrizedEvolution
 from .parametrized_hamiltonian import ParametrizedHamiltonian
-from .rydberg_hamiltonian import RydbergHamiltonian, rydberg_drive, rydberg_interaction
+from .hardware_hamiltonian import HardwareHamiltonian, HardwarePulse, drive
+from .rydberg import rydberg_interaction, rydberg_drive
+from .transmon import transmon_interaction

@@ -15,6 +15,7 @@
 
 import copy
 
+import autograd.numpy
 import pytest
 
 import pennylane as qml
@@ -132,7 +133,7 @@ class TestClassicalShadow:
         """Test that the shape of the MeasurementProcess instance is correct"""
         dev = qml.device("default.qubit", wires=wires, shots=shots)
         res = qml.classical_shadow(wires=range(wires), seed=seed)
-        assert res.shape(device=dev) == (1, 2, shots, wires)
+        assert res.shape(device=dev) == (2, shots, wires)
 
         # test an error is raised when device is None
         msg = (
@@ -335,8 +336,8 @@ class TestExpvalMeasurement:
         dev = qml.device("default.qubit", wires=wires, shots=shots)
         H = qml.PauliZ(0)
         res = qml.shadow_expval(H)
-        assert res.shape() == (1,)
-        assert res.shape(dev) == (1,)
+        assert res.shape() == ()
+        assert res.shape(dev) == ()
 
     def test_shape_matches(self):
         """Test that the shape of the MeasurementProcess matches the shape
@@ -560,13 +561,15 @@ class TestExpvalBackward:
         shadow_circuit = strongly_entangling_circuit(3, shots=20000, interface="autograd")
         exact_circuit = strongly_entangling_circuit_exact(3, "autograd")
 
+        def cost_exact(x, obs):
+            return autograd.numpy.hstack(exact_circuit(x, obs))
+
         # make rotations close to pi / 2 to ensure gradients are not too small
         x = np.random.uniform(
             0.8, 2, size=qml.StronglyEntanglingLayers.shape(n_layers=2, n_wires=3)
         )
-
         actual = qml.jacobian(shadow_circuit)(x, obs, k=1)
-        expected = qml.jacobian(exact_circuit)(x, obs)
+        expected = qml.jacobian(cost_exact, argnum=0)(x, obs)
 
         assert qml.math.allclose(actual, expected, atol=1e-1)
 
@@ -614,7 +617,7 @@ class TestExpvalBackward:
         actual = tape.jacobian(out, x)
 
         with tf.GradientTape() as tape2:
-            out2 = exact_circuit(x, obs)
+            out2 = qml.math.hstack(exact_circuit(x, obs))
 
         expected = tape2.jacobian(out2, x)
 
@@ -638,6 +641,6 @@ class TestExpvalBackward:
         )
 
         actual = torch.autograd.functional.jacobian(lambda x: shadow_circuit(x, obs, k=10), x)
-        expected = torch.autograd.functional.jacobian(lambda x: exact_circuit(x, obs), x)
+        expected = torch.autograd.functional.jacobian(lambda x: tuple(exact_circuit(x, obs)), x)
 
-        assert qml.math.allclose(actual, expected, atol=1e-1)
+        assert qml.math.allclose(actual, qml.math.stack(expected), atol=1e-1)

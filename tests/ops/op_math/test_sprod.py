@@ -112,31 +112,49 @@ class TestInitialization:
         assert sprod_op.id == test_id
         assert sprod_op.queue_idx is None
 
-        assert sprod_op.data == [[3.14], [0.23]]
-        assert sprod_op.parameters == [[3.14], [0.23]]
+        assert sprod_op.data == [3.14, 0.23]
+        assert sprod_op.parameters == [3.14, 0.23]
         assert sprod_op.num_params == 2
 
     def test_parameters(self):
         sprod_op = s_prod(9.87, qml.Rot(1.23, 4.0, 5.67, wires=1))
-        assert sprod_op.parameters == [[9.87], [1.23, 4.0, 5.67]]
+        assert sprod_op.parameters == [9.87, 1.23, 4.0, 5.67]
 
     def test_data(self):
         sprod_op = s_prod(9.87, qml.Rot(1.23, 4.0, 5.67, wires=1))
-        assert sprod_op.data == [[9.87], [1.23, 4.0, 5.67]]
+        assert sprod_op.data == [9.87, 1.23, 4.0, 5.67]
 
     def test_data_setter(self):
         """Test the setter method for data"""
         scalar, angles = (9.87, (1.23, 4.0, 5.67))
-        old_data = [[9.87], [1.23, 4.0, 5.67]]
+        old_data = [9.87, 1.23, 4.0, 5.67]
 
         sprod_op = s_prod(scalar, qml.Rot(*angles, wires=1))
         assert sprod_op.data == old_data
 
-        new_data = [[1.23], [0.0, -1.0, -2.0]]
+        new_data = [1.23, 0.0, -1.0, -2.0]
         sprod_op.data = new_data
         assert sprod_op.data == new_data
-        assert sprod_op.scalar == new_data[0][0]
-        assert sprod_op.base.data == new_data[1]
+        assert sprod_op.scalar == new_data[0]
+        assert sprod_op.base.data == new_data[1:]
+
+    def test_data_setter_shallow(self):
+        """Test the setter method for data with a non-parametric base op."""
+        op = s_prod(0.1, qml.PauliX(0))
+        op.data = [0.2]
+        assert op.data == [0.2] == [op.scalar]
+
+    def test_data_setter_deep(self):
+        """Test the setter method for data with a deep base operator."""
+        op = s_prod(0.1, qml.sum(qml.PauliX(0), qml.prod(qml.PauliY(0), qml.RX(0.2, 1))))
+        assert op.data == [0.1, 0.2]
+
+        new_data = [0.3, 0.4]
+        op.data = new_data
+        assert op.data == new_data
+        assert op.scalar == 0.3
+        assert op.base[1].data == [0.4]
+        assert op.base[1][1].data == [0.4]
 
     @pytest.mark.parametrize("scalar, op", ops)
     def test_terms(self, op, scalar):
