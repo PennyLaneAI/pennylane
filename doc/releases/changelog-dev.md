@@ -156,6 +156,10 @@
 * `Sum`, `Prod`, and `SProd` operator data is now a flat list, instead of nested.
   [(#3958)](https://github.com/PennyLaneAI/pennylane/pull/3958)
 
+* `qml.transforms.convert_to_numpy_parameters` is added to convert a circuit with interface-specific parameters to one
+  with only numpy parameters. This transform is designed to replace `qml.tape.Unwrap`.
+  [(#3899)](https://github.com/PennyLaneAI/pennylane/pull/3899)
+
 * `qml.operation.WiresEnum.AllWires` is now -2 instead of 0 to avoid the
   ambiguity between `op.num_wires = 0` and `op.num_wires = AllWires`.
   [(#3978)](https://github.com/PennyLaneAI/pennylane/pull/3978)
