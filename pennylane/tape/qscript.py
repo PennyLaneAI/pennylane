@@ -634,10 +634,15 @@ class QuantumScript:
         >>> qscript.get_parameters(trainable_only=False)
         [0.432, 0.543, 0.133]
         """
-        params = []
-        iterator = self.trainable_params if trainable_only else range(len(self._par_info))
+        if not trainable_only:
+            params = [d for o in self.operations for d in o.data]
+            if not operations_only:
+                params.extend([d for o in self.observables for d in o.data])
+            return params
 
-        for p_idx in iterator:
+        params = []
+
+        for p_idx in self.trainable_params:
             op = self._par_info[p_idx]["op"]
             if operations_only and hasattr(op, "return_type"):
                 continue
