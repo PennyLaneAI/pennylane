@@ -542,11 +542,24 @@ class TestOperatorConstruction:
             num_wires = 3
 
         op = DummyOp(wires=[0, 1, 2])
+        op._pauli_rep = qml.pauli.PauliSentence(  # pylint:disable=attribute-defined-outside-init
+            {
+                qml.pauli.PauliWord({0: "X", 1: "Y", 2: "Z"}): 1.1,
+                qml.pauli.PauliWord({0: "Z", 1: "X", 2: "Y"}): 2.2,
+            }
+        )
         wire_map = {0: 10, 1: 11, 2: 12}
         mapped_op = op.map_wires(wire_map=wire_map)
         assert op is not mapped_op
         assert op.wires == Wires([0, 1, 2])
         assert mapped_op.wires == Wires([10, 11, 12])
+        assert mapped_op._pauli_rep is not op._pauli_rep
+        assert mapped_op._pauli_rep == qml.pauli.PauliSentence(
+            {
+                qml.pauli.PauliWord({10: "X", 11: "Y", 12: "Z"}): 1.1,
+                qml.pauli.PauliWord({10: "Z", 11: "X", 12: "Y"}): 2.2,
+            }
+        )
 
     def test_map_wires_uncomplete_wire_map(self):
         """Test that the map_wires method doesn't change wires that are not present in the wire
