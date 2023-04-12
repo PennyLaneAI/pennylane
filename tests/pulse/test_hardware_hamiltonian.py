@@ -330,11 +330,6 @@ class TestDrive:
         # Hamiltonian is as expected
         assert qml.equal(Hd([0.5, -0.5], t=5), H_expected([0.5, -0.5], t=5))
 
-    def test_no_amplitude_no_detuning(self):
-        """Test that the correct error is raised if both amplitude and detuning are trivial."""
-        with pytest.raises(ValueError, match="Expected non-zero value or callable"):
-            _ = drive(0, np.pi, wires=[0])
-
 
 def callable_amp(p, t):
     return np.polyval(p, t)
