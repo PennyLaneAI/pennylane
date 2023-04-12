@@ -4,11 +4,6 @@
 
 <h3>New features since last release</h3>
 
-* The new return system is activated and public facing. The qnode kwarg `mode` is replaced by the boolean 
-  `grad_on_execution` .
-  [(#3957)](https://github.com/PennyLaneAI/pennylane/pull/3957)
-  [(#3969)](https://github.com/PennyLaneAI/pennylane/pull/3969)
-
 <h4>Pulse programming</h4>
 
 * Added the needed functions and classes to simulate an ensemble of Rydberg atoms:
@@ -29,6 +24,13 @@
   * Added `max_distance` keyword argument to `qml.pulse.rydberg_interaction` to allow removal of negligible contributions
     from atoms beyond `max_distance`from each other.
     [(#3889)](https://github.com/PennyLaneAI/pennylane/pull/3889)
+
+<h4>Intuitive QNode returns</h4>
+
+* The new return system is activated and public facing. The qnode kwarg `mode` is replaced by the boolean 
+  `grad_on_execution` .
+  [(#3957)](https://github.com/PennyLaneAI/pennylane/pull/3957)
+  [(#3969)](https://github.com/PennyLaneAI/pennylane/pull/3969)
 
 <h3>Improvements 🛠</h3>
 
@@ -52,23 +54,28 @@
   `adjoint_jacobian` in `devices/qubit`.
   [(#3790)](https://github.com/PennyLaneAI/pennylane/pull/3790)
 
+<h4>Intuitive QNode returns</h4>
+
+* The default gaussian device and parameter shift cv support the new return system but only for single measurement.
+  [(3946)](https://github.com/PennyLaneAI/pennylane/pull/3946)
+
+* Keras and Torch NN modules are now compatible with the new return type system.
+  [(#3913)](https://github.com/PennyLaneAI/pennylane/pull/3913)
+  [(#3914)](https://github.com/PennyLaneAI/pennylane/pull/3914)
+
+* `DefaultQutrit` supports the new return system.
+  [(#3934)](https://github.com/PennyLaneAI/pennylane/pull/3934)
+
 <h4>Other improvements</h4>
 
 * Added a `Shots` class to the `measurements` module to hold shot-related data.
   [(#3682)](https://github.com/PennyLaneAI/pennylane/pull/3682)
-
-* The default gaussian device and parameter shift cv support the new return system but only for single measurement.
-  [(3946)](https://github.com/PennyLaneAI/pennylane/pull/3946)
 
 * Improve the efficiency of `tapering()`, `tapering_hf()` and `clifford()`.
   [(3942)](https://github.com/PennyLaneAI/pennylane/pull/3942)
 
 * Update Pauli arithmetic to more efficiently convert to a Hamiltonian.
   [(#3939)](https://github.com/PennyLaneAI/pennylane/pull/3939)
-
-* Keras and Torch NN modules are now compatible with the new return type system.
-  [(#3913)](https://github.com/PennyLaneAI/pennylane/pull/3913)
-  [(#3914)](https://github.com/PennyLaneAI/pennylane/pull/3914)
 
 * The adjoint differentiation method now supports more operations, and does no longer decompose
   some operations that may be differentiated directly. In addition, all new operations with a
@@ -100,7 +107,7 @@
 * `AdaptiveOptimizer` is updated to use non-default user-defined qnode arguments.
   [(#3765)](https://github.com/PennyLaneAI/pennylane/pull/3765)
 
-* Adds logic to `qml.devices.qubit.measure` to compute the expectation values of `Hamiltonian` and `Sum `
+* Adds logic to `qml.devices.qubit.measure` to compute the expectation values of `Hamiltonian` and `Sum`
   in a backpropagation compatible way.
   [(#3862)](https://github.com/PennyLaneAI/pennylane/pull/3862/)
 
@@ -147,9 +154,6 @@
   [(#3885)](https://github.com/PennyLaneAI/pennylane/pull/3885)
 
 * Added explicit errors to `QutritDevice` if `classical_shadow` or `shadow_expval` are measured.
-  [(#3934)](https://github.com/PennyLaneAI/pennylane/pull/3934)
-
-* `DefaultQutrit` supports the new return system.
   [(#3934)](https://github.com/PennyLaneAI/pennylane/pull/3934)
 
 * `QubitDevice` now defines the private `_get_diagonalizing_gates(circuit)` method and uses it when executing circuits.
