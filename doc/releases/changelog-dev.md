@@ -193,6 +193,9 @@
 * `Sum`, `Prod`, and `SProd` operator data is now a flat list, instead of nested.
   [(#3958)](https://github.com/PennyLaneAI/pennylane/pull/3958)
 
+* `qml.ExpvalCost` has been removed.
+  [(#3991)](https://github.com/PennyLaneAI/pennylane/pull/3991)
+
 <h3>Deprecations</h3>
 
 <h3>Documentation</h3>
