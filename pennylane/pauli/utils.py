@@ -650,7 +650,7 @@ def is_qwc(pauli_vec_1, pauli_vec_2):
     return True
 
 
-def _non_pauli_word_to_dict_form(op: qml.operation.Operator) -> dict[int, str]:
+def _non_pauli_word_to_dict_form(op: qml.operation.Operator) -> dict:
     if isinstance(op, qml.operation.Tensor):
         pw = {}
         for ob in op.obs:
