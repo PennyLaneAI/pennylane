@@ -21,16 +21,16 @@
   [(#3930)](https://github.com/PennyLaneAI/pennylane/pull/3930)
   [(#3936)](https://github.com/PennyLaneAI/pennylane/pull/3936/)
   [(#3966)](https://github.com/PennyLaneAI/pennylane/pull/3966)
-  * Added `max_distance` keyword argument to `qml.pulse.rydberg_interaction` to allow removal of negligible contributions
-    from atoms beyond `max_distance`from each other.
+  * A new keyword argument called `max_distance` has been added to `qml.pulse.rydberg_interaction` to allow for the removal of negligible contributions
+    from atoms beyond `max_distance` from each other.
     [(#3889)](https://github.com/PennyLaneAI/pennylane/pull/3889)
 
 <h4>Quantum singular value transform</h4>
 
 <h4>Intuitive QNode returns</h4>
 
-* The new return system is activated and public facing. The qnode kwarg `mode` is replaced by the boolean 
-  `grad_on_execution` .
+* The new return system is now activated and public facing. The QNode keyword argument `mode` is replaced by the boolean  
+  `grad_on_execution`.
   [(#3957)](https://github.com/PennyLaneAI/pennylane/pull/3957)
   [(#3969)](https://github.com/PennyLaneAI/pennylane/pull/3969)
 
@@ -56,8 +56,8 @@
   `adjoint_jacobian` in `devices/qubit`.
   [(#3790)](https://github.com/PennyLaneAI/pennylane/pull/3790)
 
-* Adds logic to `qml.devices.qubit.measure` to compute the expectation values of `Hamiltonian` and `Sum`
-  in a backpropagation compatible way.
+* qml.devices.qubit.measure` now computes the expectation values of `Hamiltonian` and `Sum`
+  in a backpropagation-compatible way.
   [(#3862)](https://github.com/PennyLaneAI/pennylane/pull/3862/)
 
 <h4>Performance improvements</h4>
@@ -85,7 +85,7 @@
   are real, providing a significant performance improvement.
   [(#3915)](https://github.com/PennyLaneAI/pennylane/pull/3915)
 
-* 3 new decomposition algorithms are added for n-controlled operations with single-qubit target,
+* Three new decomposition algorithms are added for n-controlled operations with a single-qubit target
   and are selected automatically when they produce a better result, i.e., fewer CNOT gates.
   They can be accessed via `ops.op_math.ctrl_decomp_bisect`.
   [(#3851)](https://github.com/PennyLaneAI/pennylane/pull/3851)
