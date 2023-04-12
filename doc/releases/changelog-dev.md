@@ -3,6 +3,7 @@
 # Release 0.30.0-dev (development release)
 
 <h3>New features since last release</h3>
+
 * The new return system is activated and public facing. The qnode kwarg `mode` is replaced by the boolean 
   `grad_on_execution` .
   [(#3957)](https://github.com/PennyLaneAI/pennylane/pull/3957)
