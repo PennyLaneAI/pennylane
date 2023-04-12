@@ -513,13 +513,13 @@ class PCPhase(Operation):
     r"""
     A projector-controlled phase gate.
 
-    This gate applies a complex phase :math:`\phi` to first :math:`dim`
-    basis vectors of the input state while applying a complex phase :math:`- \phi`
+    This gate applies a complex phase :math:`e^{i\phi}` to first :math:`dim`
+    basis vectors of the input state while applying a complex phase :math:`e^{-i \phi}`
     to the remaining basis vectors. This is equivalent to applying a constant
     phase shift to the subspace spanned by those :math:`dim` vectors. Consider the 2 qubit
     case where :math:`dim = 2`.
 
-    .. math:: \Pi_{\phi}(\phi, dim=2, wires=[0,1]) = \begin{bmatrix}
+    .. math:: \Pi(\phi) = \begin{bmatrix}
                 e^{i\phi} & 0 & 0 & 0 \\
                 0 & e^{i\phi} & 0 & 0 \\
                 0 & 0 & e^{-i\phi} & 0 \\
@@ -537,7 +537,7 @@ class PCPhase(Operation):
 
     Args:
         phi (float): rotation angle :math:`\phi`
-        dim (int): the qubit subspace on which we apply the phase shift
+        dim (int): the dimension of the subspace
         wires (Iterable[int, str], Wires): the wires the operation acts on
         do_queue (bool): Indicates whether the operator should be
             immediately pushed into the Operator queue (optional)

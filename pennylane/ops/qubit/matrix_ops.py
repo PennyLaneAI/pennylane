@@ -338,11 +338,11 @@ class DiagonalQubitUnitary(Operation):
 
 class BlockEncode(Operation):
     r"""BlockEncode(a, wires)
-    Construct a unitary :math:`U(A)` for an arbitrary matrix, :math:`A`,
-    such that it is encoded in the top left block of the unitary matrix.
+    Construct a unitary :math:`U(A)` such that an arbitrary matrix :math:`A`
+    is encoded in the top left block.
 
     .. note::
-        If :math:`A` has norm greater than 1, we normalize it to ensure
+        If :math:`A` has operator norm greater than 1, we normalize it to ensure
         :math:`U(A)` is unitary. The normalization constant can be
         accessed through :code:`op.hyperparameters["norm"]`.
 

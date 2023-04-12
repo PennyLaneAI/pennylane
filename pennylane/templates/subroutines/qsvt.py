@@ -26,7 +26,7 @@ from pennylane import numpy as np
 
 def qsvt(A, angles, wires, convention=None):
     r"""Implements the
-    `quantum singular value transformation <https://arxiv.org/abs/1806.01838>`__ circuit using
+    `quantum singular value transformation <https://arxiv.org/abs/1806.01838>`__ (QSVT) circuit using
     :class:`~.BlockEncode` and :class:`~.PCPhase`.
 
     Given a matrix :math:`A`, and a list of angles :math:`\vec{\phi}`, this template applies a
@@ -52,7 +52,7 @@ def qsvt(A, angles, wires, convention=None):
     via :class:`~.PCPhase`.
 
     This circuit applies a polynomial transformation (:math:`Poly^{SV}`) to the singular values of
-    the block encoded matrix:
+    the block-encoded matrix:
 
     .. math::
 
