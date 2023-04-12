@@ -97,7 +97,6 @@ ops = {
     "QubitUnitary",
     "BlockEncode",
     "SpecialUnitary",
-    "BlockEncode",
     "MultiControlledX",
     "IntegerComparator",
     "DiagonalQubitUnitary",
