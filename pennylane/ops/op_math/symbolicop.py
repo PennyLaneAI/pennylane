@@ -164,7 +164,6 @@ class ScalarSymbolicOp(SymbolicOp):
     def __init__(self, base, scalar: float, do_queue=True, id=None):
         self.scalar = np.array(scalar) if isinstance(scalar, list) else scalar
         super().__init__(base, do_queue=do_queue, id=id)
-        self._data = [self.scalar, *base.data]
         self._batch_size = self._check_and_compute_batch_size(scalar)
 
     @property
@@ -173,11 +172,10 @@ class ScalarSymbolicOp(SymbolicOp):
 
     @property
     def data(self):
-        return self._data
+        return [self.scalar, *self.base.data]
 
     @data.setter
     def data(self, new_data):
-        self._data = new_data
         self.scalar = new_data[0]
         self.base.data = new_data[1:]
 
@@ -260,8 +258,3 @@ class ScalarSymbolicOp(SymbolicOp):
             mat = self._matrix(self.scalar, base_matrix)
 
         return qml.math.expand_matrix(mat, wires=self.wires, wire_order=wire_order)
-
-    def __copy__(self):
-        copied = super().__copy__()
-        copied._data = copy(self._data)
-        return copied
