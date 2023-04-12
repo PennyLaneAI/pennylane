@@ -651,8 +651,8 @@ class TestTapeConstruction:
             pnp.array(0.45, requires_grad=True), pnp.array(0.1, requires_grad=True)
         )
         assert isinstance(jac, tuple) and len(jac) == 2
-        assert jac[0].shape == (2, 2)
-        assert jac[1].shape == (2, 2)
+        assert len(jac[0]) == 2
+        assert len(jac[1]) == 2
 
     def test_returning_non_measurements(self):
         """Test that an exception is raised if a non-measurement
@@ -812,6 +812,43 @@ class TestTapeConstruction:
         dev = qml.device("default.qubit", wires=1)
         qnode = QNode(circuit, dev)
         assert np.allclose(qnode(0.5), np.cos(0.5), atol=tol, rtol=0)
+
+    @pytest.mark.jax
+    def test_jit_counts_raises_error(self):
+        """Test that returning counts in a quantum function with trainable parameters while
+        jitting raises an error."""
+        import jax
+
+        dev = qml.device("default.qubit", wires=2, shots=5)
+
+        def circuit1(param):
+            qml.Hadamard(0)
+            qml.RX(param, wires=1)
+            qml.CNOT([1, 0])
+            return qml.counts()
+
+        qnode = qml.QNode(circuit1, dev)
+        jitted_qnode1 = jax.jit(qnode)
+
+        with pytest.raises(
+            qml.QuantumFunctionError, match="Can't JIT a quantum function that returns counts."
+        ):
+            jitted_qnode1(0.123)
+
+        # Test with qnode decorator syntax
+        @qml.qnode(dev)
+        def circuit2(param):
+            qml.Hadamard(0)
+            qml.RX(param, wires=1)
+            qml.CNOT([1, 0])
+            return qml.counts()
+
+        jitted_qnode2 = jax.jit(circuit2)
+
+        with pytest.raises(
+            qml.QuantumFunctionError, match="Can't JIT a quantum function that returns counts."
+        ):
+            jitted_qnode2(0.123)
 
 
 class TestDecorator:
@@ -1000,7 +1037,7 @@ class TestIntegration:
         """
         from pennylane import numpy as anp
 
-        dev = qml.device("default.qubit", wires=2)
+        dev = qml.device("default.qubit", wires=3)
 
         x = anp.array(0.543, requires_grad=True)
         y = anp.array(-0.654, requires_grad=True)
@@ -1014,20 +1051,14 @@ class TestIntegration:
             qml.CNOT(wires=[0, 1])
             return qml.expval(qml.PauliZ(0) @ qml.PauliX(1))
 
-        if diff_method == "hadamard":
-            with pytest.raises(
-                ValueError, match="The hadamard gradient only supports the new return type."
-            ):
-                res = qml.grad(circuit)(x, y)
-        else:
-            res = qml.grad(circuit)(x, y)
-            assert len(res) == 2
+        res = qml.grad(circuit)(x, y)
+        assert len(res) == 2
 
-            expected = (0, np.cos(y) * np.cos(x))
-            res = res
-            expected = expected
+        expected = (0, np.cos(y) * np.cos(x))
+        res = res
+        expected = expected
 
-            assert np.allclose(res, expected, atol=tol, rtol=0)
+        assert np.allclose(res, expected, atol=tol, rtol=0)
 
     @pytest.mark.parametrize("first_par", np.linspace(0.15, np.pi - 0.3, 3))
     @pytest.mark.parametrize("sec_par", np.linspace(0.15, np.pi - 0.3, 3))

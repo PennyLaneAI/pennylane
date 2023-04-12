@@ -103,6 +103,7 @@ class SymbolicOp(Operator):
 
     @property
     def num_wires(self):
+        """Number of wires the operator acts on."""
         return len(self.wires)
 
     # pylint: disable=arguments-renamed, invalid-overridden-method
@@ -137,8 +138,11 @@ class SymbolicOp(Operator):
         )
 
     def map_wires(self, wire_map: dict):
+        # pylint:disable=protected-access
         new_op = copy(self)
         new_op.hyperparameters["base"] = self.base.map_wires(wire_map=wire_map)
+        if (p_rep := new_op._pauli_rep) is not None:
+            new_op._pauli_rep = p_rep.map_wires(wire_map)
         return new_op
 
 

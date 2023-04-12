@@ -332,7 +332,7 @@ class TestQNodeIntegration:
 
     def test_custom_shots_probs_jax_jit(self, tol):
         """Test that returning probs works with jax and jit when using custom shot vector"""
-        dev = qml.device("default.qubit.jax", wires=1, shots=(2, 2))
+        dev = qml.device("default.qubit.jax", wires=1, shots=(3, 2))
         expected = jnp.array([[0.0, 1.0], [0.0, 1.0]])
 
         @jax.jit
@@ -342,7 +342,8 @@ class TestQNodeIntegration:
             return qml.probs(wires=0)
 
         result = circuit()
-        assert jnp.allclose(result, expected, atol=tol)
+        assert jnp.allclose(qml.math.hstack(result[0]), expected[0], atol=tol)
+        assert jnp.allclose(qml.math.hstack(result[1]), expected[1], atol=tol)
 
     @pytest.mark.skip("Shot lists are not supported with broadcasting yet")
     def test_custom_shots_probs_jax_jit_broadcasted(self, tol):
@@ -1064,52 +1065,6 @@ class TestHighLevelIntegration:
 
         grad = jax.grad(circuit)(weights)
         assert grad.shape == weights.shape
-
-    def test_qnode_collection_integration(self):
-        """Test that a PassthruQNode using default.qubit.jax works with QNodeCollections."""
-        dev = qml.device("default.qubit.jax", wires=2)
-
-        def ansatz(weights, **kwargs):
-            qml.RX(weights[0], wires=0)
-            qml.RY(weights[1], wires=1)
-            qml.CNOT(wires=[0, 1])
-
-        obs_list = [qml.PauliX(0) @ qml.PauliY(1), qml.PauliZ(0), qml.PauliZ(0) @ qml.PauliZ(1)]
-        qnodes = qml.map(ansatz, obs_list, dev, interface="jax")
-
-        weights = jnp.array([0.1, 0.2])
-
-        def cost(weights):
-            return jnp.sum(jnp.array(qnodes(weights)))
-
-        grad = jax.grad(cost)(weights)
-        assert grad.shape == weights.shape
-
-    def test_qnode_collection_integration_broadcasted(self):
-        """Test that a broadcasted PassthruQNode default.qubit.jax
-        works with QNodeCollections."""
-        dev = qml.device("default.qubit.jax", wires=2)
-
-        def ansatz(weights, **kwargs):
-            qml.RX(weights[0], wires=0)
-            qml.RY(weights[1], wires=1)
-            qml.CNOT(wires=[0, 1])
-
-        obs_list = [qml.PauliX(0) @ qml.PauliY(1), qml.PauliZ(0), qml.PauliZ(0) @ qml.PauliZ(1)]
-        qnodes = qml.map(ansatz, obs_list, dev, interface="jax")
-
-        assert qnodes.interface == "jax"
-
-        weights = jnp.array([[0.1, 0.65, 1.2], [0.2, 1.9, -0.6]])
-
-        def cost(weights):
-            return jnp.sum(qnodes(weights), axis=-1)
-
-        res = cost(weights)
-        assert res.shape == (3,)
-
-        jac = jax.jacobian(cost)(weights)
-        assert jac.shape == (3, 2, 3)
 
 
 @pytest.mark.jax
