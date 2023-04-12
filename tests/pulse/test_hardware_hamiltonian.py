@@ -67,7 +67,7 @@ class TestHardwareHamiltonian:
         assert rm.pulses == []
         assert rm.wires == Wires([])
         assert rm.settings is None
-        assert rm.reorder_fn(3, 4) == 4
+        assert rm.reorder_fn is None
 
     def test_two_different_reorder_fns_raises_error(self):
         H1 = HardwareHamiltonian(coeffs=[], observables=[])

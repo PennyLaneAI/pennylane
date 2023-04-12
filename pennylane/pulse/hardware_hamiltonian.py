@@ -272,15 +272,12 @@ class HardwareHamiltonian(ParametrizedHamiltonian):
     ):
         self.settings = settings
         self.pulses = [] if pulses is None else pulses
-
-        def trivial_func(_, y):
-            return y
-
-        self.reorder_fn = trivial_func if reorder_fn is None else reorder_fn
+        self.reorder_fn = reorder_fn
         super().__init__(coeffs, observables)
 
     def __call__(self, params, t):
-        params = self.reorder_fn(params, self.coeffs_parametrized)
+        if self.reorder_fn is not None:
+            params = self.reorder_fn(params, self.coeffs_parametrized)
         return super().__call__(params, t)
 
     def __add__(self, other):
