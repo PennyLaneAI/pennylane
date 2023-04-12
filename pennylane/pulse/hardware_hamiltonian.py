@@ -252,6 +252,11 @@ class HardwareHamiltonian(ParametrizedHamiltonian):
             length as ``coeffs``
 
     Keyword Args:
+        reorder_fn (callable): function for reordering the parameters before calling.
+            This allows automatically copying parameters when they are used for different terms,
+            as well as allowing single terms to depend on multiple parameters, as is the case for
+            drive Hamiltonians. Note that in order to add two HardwareHamiltonians,
+            the reorder_fn needs to be matching.
         settings Union[RydbergSettings, TransmonSettings]: Dataclass containing the hardware specific settings. Default is ``None``.
         pulses (list[HardwarePulse]): list of ``HardwarePulse`` dataclasses containing the information about the
             amplitude, phase, drive frequency and wires of each pulse
@@ -264,9 +269,9 @@ class HardwareHamiltonian(ParametrizedHamiltonian):
     # pylint: disable=too-many-arguments
     def __init__(
         self,
-        coeffs,
+        coeffs,ñ
         observables,
-        reorder_fn=None,
+        reorder_fn = None,
         pulses: List["HardwarePulse"] = None,
         settings: Union["RydbergSettings", "TransmonSettings"] = None,
     ):
@@ -284,7 +289,7 @@ class HardwareHamiltonian(ParametrizedHamiltonian):
         if isinstance(other, HardwareHamiltonian):
             if not self.reorder_fn == other.reorder_fn:
                 raise ValueError(
-                    f"Cannot add two HardwareHamiltonians with different reorder functions. Received reorder_fns {self.reorder_fn} and {other.reorder_fn}"
+                    f"Cannot add two HardwareHamiltonians with different reorder functions. Received reorder_fns {self.reorder_fn} and {other.reorder_fn}. Most likely, this is because you are trying to combine hardware compatible Hamiltonians for different target systems."
                 )
             if self.settings is None and other.settings is None:
                 new_settings = None
