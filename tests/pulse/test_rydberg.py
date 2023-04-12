@@ -22,6 +22,7 @@ import pennylane as qml
 from pennylane.pulse import HardwareHamiltonian, rydberg_interaction
 
 from pennylane.wires import Wires
+from pennylane.pulse.rydberg import RydbergSettings
 
 atom_coordinates = [[0, 0], [0, 5], [5, 0], [10, 5], [5, 10], [10, 10]]
 wires = [1, 6, 0, 2, 4, 3]
@@ -34,15 +35,15 @@ class TestRydbergInteraction:
         """Test that the attributes and the number of terms of the ``ParametrizedHamiltonian`` returned by
         ``rydberg_interaction`` are correct."""
         Hd = rydberg_interaction(register=atom_coordinates, wires=wires, interaction_coeff=1)
+        settings = RydbergSettings(atom_coordinates, 1)
 
         assert isinstance(Hd, HardwareHamiltonian)
-        assert Hd.interaction_coeff == 1
         assert Hd.wires == Wires(wires)
-        assert qml.math.allequal(Hd.register, atom_coordinates)
         N = len(wires)
         num_combinations = N * (N - 1) / 2  # number of terms on the rydberg_interaction hamiltonian
         assert len(Hd.ops) == num_combinations
         assert Hd.pulses == []
+        assert Hd.settings == settings
 
     def test_wires_is_none(self):
         """Test that when wires is None the wires correspond to an increasing list of values with
@@ -79,3 +80,52 @@ class TestRydbergInteraction:
         # Only 3 of the interactions will be non-negligible
         assert H_res.coeffs == [2.5**-6, 5**-6, 2.5**-6]
         assert qml.equal(H_res([], t=5), H_exp([], t=5))
+
+
+# For rydberg settings test
+register0 = [[0.0, 1.0], [0.0, 2.0]]
+register1 = [[2.0, 0.3], [1.0, 4.0], [0.5, 0.4]]
+
+
+class TestRydbergSettings:
+    """Unit tests for TransmonSettings dataclass"""
+
+    def test_init(self):
+        """Test the initialization of the ``RydbergSettings`` class."""
+        settings = RydbergSettings(register0)
+        assert settings.register == register0
+        assert settings.interaction_coeff == 0.0
+
+    def test_equal(self):
+        """Test the ``__eq__`` method of the ``RydbergSettings`` class."""
+        settings0 = RydbergSettings(register0)
+        settings1 = RydbergSettings(register1, interaction_coeff=2.0)
+        settings2 = RydbergSettings(register0, interaction_coeff=0.0)
+        assert settings0 != settings1
+        assert settings1 != settings2
+        assert settings0 == settings2
+
+    def test_add_two_settings(
+        self,
+    ):
+        """Test that two RydbergSettings are correctly added"""
+
+        settings0 = RydbergSettings(register0, interaction_coeff=2.0)
+        settings1 = None
+
+        settings01 = settings0 + settings1
+        settings10 = settings1 + settings0
+        assert settings01.register == register0
+        assert settings01.interaction_coeff == 2.0
+        assert settings10.register == register0
+        assert settings10.interaction_coeff == 2.0
+
+    # pylint: disable=unused-variable
+    def test_raises_error_two_interaction_terms(
+        self,
+    ):
+        """Raises error when attempting to add two non-trivial RydbergSettings"""
+        settings0 = RydbergSettings(register0)
+        settings1 = RydbergSettings(register1)
+        with pytest.raises(ValueError, match="Cannot add two"):
+            res = settings0 + settings1
