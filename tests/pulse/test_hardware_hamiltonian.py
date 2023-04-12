@@ -84,11 +84,13 @@ class TestHardwareHamiltonian:
             observables=[qml.PauliX(4), qml.PauliZ(8)],
             pulses=[HardwarePulse(1, 2, 3, [4, 8])],
             settings=settings,
+            reorder_fn=_reorder_parameters,
         )
         rm2 = HardwareHamiltonian(
             coeffs=[2],
             observables=[qml.PauliY(8)],
             pulses=[HardwarePulse(5, 6, 7, 8)],
+            reorder_fn=_reorder_parameters,
         )
 
         sum_rm = rm1 + rm2

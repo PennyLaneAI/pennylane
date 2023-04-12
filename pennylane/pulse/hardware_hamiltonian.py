@@ -285,8 +285,10 @@ class HardwareHamiltonian(ParametrizedHamiltonian):
 
     def __add__(self, other):
         if isinstance(other, HardwareHamiltonian):
-            # if not self.reorder_fn == other.reorder_fn:
-            #     raise ValueError(f"Cannot add two HardwareHamiltonians with different reorder functions. Received reorder_fns {self.reorder_fn} and {other.reorder_fn}")
+            if not self.reorder_fn == other.reorder_fn:
+                raise ValueError(
+                    f"Cannot add two HardwareHamiltonians with different reorder functions. Received reorder_fns {self.reorder_fn} and {other.reorder_fn}"
+                )
             if self.settings is None and other.settings is None:
                 new_settings = None
             else:
