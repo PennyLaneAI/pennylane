@@ -239,24 +239,34 @@ def drive(amplitude, phase, wires):
 class HardwareHamiltonian(ParametrizedHamiltonian):
     r"""Internal class used to keep track of the required information to translate a ``ParametrizedHamiltonian``
     into hardware.
+
     This class contains the ``coeffs`` and the ``observables`` to construct the :class:`ParametrizedHamiltonian`,
     but on top of that also contains attributes that store parameteres relevant for real hardware execution.
+
     .. warning::
         This class should NEVER be initialized directly! Please use the functions
         :func:`rydberg_interaction` and :func:`drive` instead.
+
+
     .. seealso:: :func:`rydberg_interaction`, :func:`drive`, :class:`ParametrizedHamiltonian`
+
+
     Args:
         coeffs (Union[float, callable]): coefficients of the Hamiltonian expression, which may be
             constants or parametrized functions. All functions passed as ``coeffs`` must have two
             arguments, the first one being the trainable parameters and the second one being time.
         observables (Iterable[Observable]): observables in the Hamiltonian expression, of same
             length as ``coeffs``
+
+
     Keyword Args:
         settings Union[RydbergSettings, TransmonSettings]: Dataclass containing the hardware specific settings. Default is ``None``.
         pulses (list[HardwarePulse]): list of ``HardwarePulse`` dataclasses containing the information about the
             amplitude, phase, drive frequency and wires of each pulse
+
     Returns:
         HardwareHamiltonian: class representing the Hamiltonian of Rydberg or Transmon device.
+
     """
 
     # pylint: disable=too-many-arguments
@@ -338,6 +348,7 @@ class HardwareHamiltonian(ParametrizedHamiltonian):
 class HardwarePulse:
     """Dataclass that contains the information of a single drive pulse. This class is used
     internally in PL to group into a single object all the data related to a single EM field.
+
     Args:
         amplitude (Union[float, Callable]): float or callable returning the amplitude of an EM
             field
@@ -409,6 +420,7 @@ class AmplitudeAndPhase:
 def _reorder_parameters(params, coeffs_parametrized):
     """Takes `params`, and reorganizes it based on whether the Hamiltonian has
     callable phase and/or callable amplitude.
+
     Consolidates phase and amplitude parameters in the case that both are callable,
     and duplicates phase and/or amplitude parameters if either are callables, since
     they will be passed to two operators in the Hamiltonian"""
