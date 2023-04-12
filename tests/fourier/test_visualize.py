@@ -121,6 +121,9 @@ coeffs_2D_valid_2 = np.array(
 
 coeffs_2D_valid_list = [coeffs_2D_valid_1, coeffs_2D_valid_2]
 
+coeffs_2D_varying_degrees = np.zeros((5, 9), dtype=complex)
+coeffs_2D_varying_degrees[:5, :5] = coeffs_2D_valid_2
+
 coeffs_2D_invalid = np.array(
     [
         [
@@ -154,99 +157,46 @@ coeffs_2D_invalid = np.array(
     ]
 )
 
-coeffs_3D_valid = np.array(
-    [
-        [
-            [
-                0.0 + 0.0j,
-                -0.00882888 - 0.14568055j,
-                0.0 - 0.0j,
-                0.0 + 0.0j,
-                -0.00882888 + 0.14568055j,
-            ],
-            [0.38262211 - 0.0j, 0.0 - 0.0j, 0.0 - 0.0j, -0.0 + 0.0j, -0.0 + 0.0j],
-            [
-                -0.0 - 0.03218167j,
-                0.00441444 + 0.07284027j,
-                -0.0 + 0.0j,
-                -0.0 + 0.0j,
-                0.00441444 - 0.07284027j,
-            ],
-            [
-                -0.0 + 0.03218167j,
-                0.00441444 + 0.07284027j,
-                -0.0 - 0.0j,
-                -0.0 - 0.0j,
-                0.00441444 - 0.07284027j,
-            ],
-            [0.38262211 + 0.0j, -0.0 - 0.0j, -0.0 - 0.0j, 0.0 + 0.0j, 0.0 + 0.0j],
-        ],
-        [
-            [-0.0 - 0.0j, -0.0 - 0.0j, 0.0 + 0.0j, 0.0 + 0.0j, -0.0 - 0.0j],
-            [0.0 + 0.0j, -0.0 - 0.0j, -0.0 + 0.0j, 0.0 - 0.0j, 0.0 - 0.0j],
-            [-0.0 + 0.0j, 0.0 + 0.0j, 0.0 - 0.0j, 0.0 + 0.0j, -0.0 - 0.0j],
-            [-0.0 - 0.0j, 0.0 + 0.0j, 0.0 - 0.0j, 0.0 - 0.0j, -0.0 - 0.0j],
-            [0.0 + 0.0j, 0.0 - 0.0j, 0.0 + 0.0j, 0.0 + 0.0j, 0.0 + 0.0j],
-        ],
-        [
-            [
-                0.0 - 0.0j,
-                0.0019699 - 0.00293059j,
-                0.0 + 0.0j,
-                -0.0 + 0.0j,
-                -0.0023094 + 0.00267124j,
-            ],
-            [0.00439013 - 0.00574692j, 0.0 - 0.0j, -0.0 - 0.0j, -0.0 - 0.0j, 0.0 + 0.0j],
-            [
-                0.00047266 - 0.00061874j,
-                -0.00098495 + 0.00146529j,
-                -0.0 - 0.0j,
-                -0.0 + 0.0j,
-                0.0011547 - 0.00133562j,
-            ],
-            [
-                -0.00047266 + 0.00061874j,
-                -0.00098495 + 0.00146529j,
-                -0.0 + 0.0j,
-                -0.0 + 0.0j,
-                0.0011547 - 0.00133562j,
-            ],
-            [0.00439013 - 0.00574692j, 0.0 - 0.0j, -0.0 + 0.0j, -0.0 + 0.0j, -0.0 + 0.0j],
-        ],
-        [
-            [
-                0.0 + 0.0j,
-                -0.0023094 - 0.00267124j,
-                -0.0 - 0.0j,
-                0.0 - 0.0j,
-                0.0019699 + 0.00293059j,
-            ],
-            [0.00439013 + 0.00574692j, -0.0 - 0.0j, -0.0 - 0.0j, -0.0 - 0.0j, 0.0 + 0.0j],
-            [
-                -0.00047266 - 0.00061874j,
-                0.0011547 + 0.00133562j,
-                -0.0 - 0.0j,
-                -0.0 - 0.0j,
-                -0.00098495 - 0.00146529j,
-            ],
-            [
-                0.00047266 + 0.00061874j,
-                0.0011547 + 0.00133562j,
-                -0.0 - 0.0j,
-                -0.0 + 0.0j,
-                -0.00098495 - 0.00146529j,
-            ],
-            [0.00439013 + 0.00574692j, 0.0 - 0.0j, -0.0 + 0.0j, -0.0 + 0.0j, 0.0 + 0.0j],
-        ],
-        [
-            [-0.0 + 0.0j, -0.0 + 0.0j, 0.0 - 0.0j, 0.0 - 0.0j, -0.0 + 0.0j],
-            [0.0 - 0.0j, 0.0 - 0.0j, 0.0 - 0.0j, 0.0 - 0.0j, 0.0 + 0.0j],
-            [-0.0 + 0.0j, -0.0 + 0.0j, 0.0 + 0.0j, 0.0 + 0.0j, 0.0 - 0.0j],
-            [-0.0 - 0.0j, -0.0 + 0.0j, 0.0 - 0.0j, 0.0 + 0.0j, 0.0 - 0.0j],
-            [0.0 - 0.0j, 0.0 + 0.0j, 0.0 + 0.0j, -0.0 - 0.0j, -0.0 + 0.0j],
-        ],
-    ]
-)
+coeffs_3D_valid = np.zeros((5, 5, 5), dtype=complex)
+data = {
+    (0, 0, 1): -0.00882888 - 0.14568055j,
+    (0, 0, 4): -0.00882888 + 0.14568055j,
+    (0, 1, 0): 0.38262211 + 0.0j,
+    (0, 2, 0): -0.0 - 0.03218167j,
+    (0, 2, 1): 0.00441444 + 0.07284027j,
+    (0, 2, 4): 0.00441444 - 0.07284027j,
+    (0, 3, 0): -0.0 + 0.03218167j,
+    (0, 3, 1): 0.00441444 + 0.07284027j,
+    (0, 3, 4): 0.00441444 - 0.07284027j,
+    (0, 4, 0): 0.38262211 + 0.0j,
+    (2, 0, 1): 0.0019699 - 0.00293059j,
+    (2, 0, 4): -0.0023094 + 0.00267124j,
+    (2, 1, 0): 0.00439013 - 0.00574692j,
+    (2, 2, 0): 0.00047266 - 0.00061874j,
+    (2, 2, 1): -0.00098495 + 0.00146529j,
+    (2, 2, 4): 0.0011547 - 0.00133562j,
+    (2, 3, 0): -0.00047266 + 0.00061874j,
+    (2, 3, 1): -0.00098495 + 0.00146529j,
+    (2, 3, 4): 0.0011547 - 0.00133562j,
+    (2, 4, 0): 0.00439013 - 0.00574692j,
+    (3, 0, 1): -0.0023094 - 0.00267124j,
+    (3, 0, 4): 0.0019699 + 0.00293059j,
+    (3, 1, 0): 0.00439013 + 0.00574692j,
+    (3, 2, 0): -0.00047266 - 0.00061874j,
+    (3, 2, 1): 0.0011547 + 0.00133562j,
+    (3, 2, 4): -0.00098495 - 0.00146529j,
+    (3, 3, 0): 0.00047266 + 0.00061874j,
+    (3, 3, 1): 0.0011547 + 0.00133562j,
+    (3, 3, 4): -0.00098495 - 0.00146529j,
+    (3, 4, 0): 0.00439013 + 0.00574692j,
+}
+coeffs_3D_varying_degrees = np.zeros((3, 7, 5), dtype=complex)
+
+for key, val in data.items():
+    coeffs_3D_valid[key] = val
+    key = (key[0] - 1 if key[0] > 0 else 0, *key[1:])
+    coeffs_3D_varying_degrees[key] = val
+
 
 fig_valid, ax_valid = plt.subplots(2, 1, sharex=True, sharey=True)
 fig_invalid, ax_invalid = plt.subplots(3, 1, sharex=True, sharey=True)
@@ -278,6 +228,8 @@ class TestValidateCoefficients:
             (coeffs_2D_valid_list, 2, True, np.array(coeffs_2D_valid_list)),
             (coeffs_3D_valid, 3, True, np.array([coeffs_3D_valid])),
             (coeffs_3D_valid, 3, False, coeffs_3D_valid),
+            (coeffs_3D_varying_degrees, 3, True, np.array([coeffs_3D_varying_degrees])),
+            (coeffs_3D_varying_degrees, 3, False, coeffs_3D_varying_degrees),
         ],
     )
     def test_valid_fourier_coeffs(self, coeffs, n_inputs, can_be_list, expected_coeffs):
@@ -295,7 +247,7 @@ class TestValidateCoefficients:
         [
             (coeffs_1D_invalid, 1, True, "Shape of input coefficients must be 2d"),
             (coeffs_1D_valid_1, 2, True, "Plotting function expected a list of"),
-            (coeffs_2D_invalid, 2, False, "All dimensions of coefficient array must be the same"),
+            (coeffs_2D_invalid, 2, False, "Shape of input coefficients must be 2d_i"),
         ],
     )
     def test_invalid_fourier_coeffs(self, coeffs, n_inputs, can_be_list, expected_error_message):
@@ -366,37 +318,16 @@ class TestReturnType:
     @pytest.mark.parametrize(
         "func,coeffs,n_inputs,ax,show_freqs",
         [
-            (
-                violin,
-                coeffs_1D_valid_1,
-                1,
-                ax_valid,
-                True,
-            ),
-            (
-                violin,
-                coeffs_1D_valid_1,
-                1,
-                ax_valid,
-                False,
-            ),
-            (
-                box,
-                coeffs_1D_valid_1,
-                1,
-                ax_valid,
-                True,
-            ),
+            (violin, coeffs_1D_valid_1, 1, ax_valid, True),
+            (violin, coeffs_1D_valid_1, 1, ax_valid, False),
+            (violin, coeffs_2D_varying_degrees, 2, ax_valid, True),
+            (box, coeffs_1D_valid_1, 1, ax_valid, True),
             (box, coeffs_1D_valid_1, 1, ax_valid, False),
+            (box, coeffs_3D_valid, 3, ax_valid, True),
             (bar, coeffs_1D_valid_1, 1, ax_valid, True),
             (bar, coeffs_1D_valid_1, 1, ax_valid, False),
-            (
-                radial_box,
-                coeffs_2D_valid_list,
-                2,
-                ax_radial_valid,
-                True,
-            ),
+            (bar, coeffs_3D_varying_degrees, 3, ax_valid, False),
+            (radial_box, coeffs_2D_valid_list, 2, ax_radial_valid, True),
             (radial_box, coeffs_2D_valid_list, 2, ax_radial_valid, False),
             (panel, coeffs_2D_valid_list, 2, ax_panel_valid, None),
             (panel, coeffs_1D_valid_list, 1, ax_panel_1d_valid, None),
