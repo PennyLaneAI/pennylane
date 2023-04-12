@@ -67,6 +67,7 @@ class TestHardwareHamiltonian:
         assert rm.pulses == []
         assert rm.wires == Wires([])
         assert rm.settings is None
+        assert rm.reorder_fn(3, 4) == 4
 
     @pytest.mark.parametrize(
         "settings",
