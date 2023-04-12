@@ -73,14 +73,6 @@ b_rx.add_nodes_from(["b", 1, 0.3])
 b_rx.add_edges_from([(0, 1, ""), (1, 2, ""), (0, 2, "")])
 
 
-def catch_warn_ExpvalCost(ansatz, hamiltonian, device, **kwargs):
-    """Computes the ExpvalCost and catches the initial deprecation warning."""
-
-    with pytest.warns(UserWarning, match="is deprecated,"):
-        res = qml.ExpvalCost(ansatz, hamiltonian, device, **kwargs)
-    return res
-
-
 def decompose_hamiltonian(hamiltonian):
     coeffs = list(qml.math.toarray(hamiltonian.coeffs))
     ops = [i.name for i in hamiltonian.ops]
@@ -1217,9 +1209,11 @@ class TestIntegration:
 
             qml.layer(qaoa_layer, 2, params[0], params[1])
 
+            return qml.expval(cost_h)
+
         # Defines the device and the QAOA cost function
         dev = qml.device("default.qubit", wires=len(wires))
-        cost_function = catch_warn_ExpvalCost(circuit, cost_h, dev)
+        cost_function = qml.QNode(circuit, dev)
 
         res = cost_function([[1, 1], [1, 1]])
         expected = -1.8260274380964299
@@ -1251,9 +1245,11 @@ class TestIntegration:
 
             qml.layer(qaoa_layer, 2, params[0], params[1])
 
+            return qml.expval(cost_h)
+
         # Defines the device and the QAOA cost function
         dev = qml.device("default.qubit", wires=len(wires))
-        cost_function = catch_warn_ExpvalCost(circuit, cost_h, dev)
+        cost_function = qml.QNode(circuit, dev)
 
         res = cost_function([[1, 1], [1, 1]])
         expected = -1.8260274380964299
@@ -1881,10 +1877,13 @@ class TestCycles:
         # We use PL to find the energies corresponding to each possible bitstring
         dev = qml.device("default.qubit", wires=wires)
 
+        h.compute_grouping()
+
         def states(basis_state, **kwargs):
             qml.BasisState(basis_state, wires=range(wires))
+            return qml.expval(h)
 
-        cost = catch_warn_ExpvalCost(states, h, dev, optimize=True)
+        cost = qml.QNode(states, dev)
 
         # Calculate the set of all bitstrings
         bitstrings = itertools.product([0, 1], repeat=wires)
@@ -1930,11 +1929,14 @@ class TestCycles:
 
         # We use PL to find the energies corresponding to each possible bitstring
         dev = qml.device("default.qubit", wires=wires)
+        
+        h.compute_grouping()
 
         def energy(basis_state, **kwargs):
             qml.BasisState(basis_state, wires=range(wires))
+            return qml.expval(h)
 
-        cost = catch_warn_ExpvalCost(energy, h, dev, optimize=True)
+        cost = qml.QNode(energy, dev)
 
         # Calculate the set of all bitstrings
         states = itertools.product([0, 1], repeat=wires)
@@ -2003,11 +2005,13 @@ class TestCycles:
 
         # Find the energies corresponding to each possible bitstring
         dev = qml.device("default.qubit", wires=wires)
+        
+        h.compute_grouping()
 
         def states(basis_state, **kwargs):
             qml.BasisState(basis_state, wires=range(wires))
 
-        cost = catch_warn_ExpvalCost(states, h, dev, optimize=True)
+        cost = qml.QNode(states, dev)
 
         # Calculate the set of all bitstrings
         bitstrings = itertools.product([0, 1], repeat=wires)

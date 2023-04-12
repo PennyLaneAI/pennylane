@@ -29,14 +29,6 @@ openfermion = pytest.importorskip("openfermion")
 openfermionpyscf = pytest.importorskip("openfermionpyscf")
 
 
-def catch_warn_ExpvalCost(ansatz, hamiltonian, device, **kwargs):
-    """Computes the ExpvalCost and catches the initial deprecation warning."""
-
-    with pytest.warns(UserWarning, match="is deprecated,"):
-        res = qml.ExpvalCost(ansatz, hamiltonian, device, **kwargs)
-    return res
-
-
 @pytest.fixture(
     scope="module",
     params=[
@@ -543,7 +535,7 @@ def test_pennylane_to_openfermion_no_decomp():
 def test_integration_observable_to_vqe_cost(
     monkeypatch, mol_name, terms_ref, expected_cost, custom_wires, tol
 ):
-    r"""Test if `import_operator()` integrates with `ExpvalCost()` in pennylane"""
+    r"""Test if `import_operator()` integrates with expectation value measurements in pennylane"""
 
     qOp = openfermion.QubitOperator()
     if terms_ref is not None:
@@ -565,8 +557,9 @@ def test_integration_observable_to_vqe_cost(
     def dummy_ansatz(phis, wires):
         for phi, w in zip(phis, wires):
             qml.RX(phi, wires=w)
+        return qml.expval(vqe_observable)
 
-    dummy_cost = catch_warn_ExpvalCost(dummy_ansatz, vqe_observable, dev)
+    dummy_cost = qml.QNode(dummy_ansatz, dev)
     params = [0.1 * i for i in range(num_qubits)]
     res = dummy_cost(params)
 
@@ -643,7 +636,7 @@ def test_integration_mol_file_to_vqe_cost(
     name, core, active, mapping, expected_cost, custom_wires, tol
 ):
     r"""Test if the output of `decompose()` works with `import_operator()`
-    to generate `ExpvalCost()`"""
+    to generate expectation values"""
     ref_dir = os.path.join(os.path.dirname(os.path.realpath(__file__)), "test_ref_files")
     hf_file = os.path.join(ref_dir, name)
     qubit_hamiltonian = qchem.decompose(
@@ -673,10 +666,11 @@ def test_integration_mol_file_to_vqe_cost(
     def dummy_ansatz(phis, wires):
         for phi, w in zip(phis, wires):
             qml.RX(phi, wires=w)
+        return qml.expval(vqe_hamiltonian)
 
     phis = np.load(os.path.join(ref_dir, "dummy_ansatz_parameters.npy"))
 
-    dummy_cost = catch_warn_ExpvalCost(dummy_ansatz, vqe_hamiltonian, dev)
+    dummy_cost = qml.QNode(dummy_ansatz, dev)
     res = dummy_cost(phis)
 
     assert np.abs(res - expected_cost) < tol["atol"]

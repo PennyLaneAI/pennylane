@@ -81,8 +81,9 @@ which we implement as the following function:
         qaoa.mixer_layer(alpha, mixer_h)
 
 Finally, the full QAOA circuit is built. We begin by initializing the wires in an even superposition over
-computational basis states, and then repeatedly apply QAOA layers with the
-``qml.layer`` method. In this case we repeat the circuit twice:
+computational basis states, and then repeatedly apply QAOA layers with the ``qml.layer`` method. In this
+case we repeat the circuit twice. When executed on a device, this circuit creates the QAOA cost function:
+the expected value of the cost Hamiltonian with respect to the parametrized output performing QAOA:
 
 .. code-block:: python3
 
@@ -94,15 +95,15 @@ computational basis states, and then repeatedly apply QAOA layers with the
 
         qml.layer(qaoa_layer, 2, params[0], params[1])
 
-With the circuit defined, we call the device on which QAOA will be executed, as well as the ``qml.ExpvalCost``, which
-creates the QAOA cost function: the expected value of the cost Hamiltonian with respect to the parametrized output
-of the QAOA circuit.
+        return qml.expval(cost_h)
+
+With the circuit defined, we call the device on which QAOA will be executed and create the cost function.
 
 .. code-block:: python3
 
     # Defines the device and the QAOA cost function
     dev = qml.device('default.qubit', wires=len(wires))
-    cost_function = qml.ExpvalCost(circuit, cost_h, dev)
+    cost_function = qml.QNode(circuit, dev)
 
 >>> print(cost_function([[1, 1], [1, 1]]))
 -1.8260274380964299

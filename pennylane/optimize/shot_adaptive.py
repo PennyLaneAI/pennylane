@@ -29,16 +29,14 @@ class ShotAdaptiveOptimizer(GradientDescentOptimizer):
     of the parameter-shift gradient, this optimizer frugally distributes a shot
     budget across the partial derivatives of each parameter.
 
-    In addition, if computing the expectation value of a Hamiltonian using
-    :class:`~.ExpvalCost`, weighted random sampling can be used to further
-    distribute the shot budget across the local terms from which the Hamiltonian
+    In addition, if computing the expectation value of a Hamiltonian, weighted random sampling can
+    be used to further distribute the shot budget across the local terms from which the Hamiltonian
     is constructed.
 
     .. note::
 
-        The shot adaptive optimizer only supports single QNodes or :class:`~.ExpvalCost` objects as
-        objective functions. The bound device must also be instantiated with a finite number
-        of shots.
+        The shot adaptive optimizer only supports single QNodes as objective functions. The bound device
+        must also be instantiated with a finite number of shots.
 
     Args:
         min_shots (int): The minimum number of shots used to estimate the expectations
@@ -50,7 +48,6 @@ class ShotAdaptiveOptimizer(GradientDescentOptimizer):
         term_sampling (str): The random sampling algorithm to multinomially distribute the shot budget
             across terms in the Hamiltonian expectation value.
             Currently, only ``"weighted_random_sampling"`` is supported.
-            Only takes effect if the objective function provided is an instance of :class:`~.ExpvalCost`.
             Set this argument to ``None`` to turn off random sampling of Hamiltonian terms.
         stepsize (float): The learning rate :math:`\eta`. The learning rate *must* be such
             that :math:`\eta < 2/L = 2/\sum_i|c_i|`, where:
@@ -64,7 +61,7 @@ class ShotAdaptiveOptimizer(GradientDescentOptimizer):
     **Example**
 
     For VQE/VQE-like problems, the objective function for the optimizer can be
-    realized as an :class:`~.ExpvalCost` object, constructed using a :class:`~.Hamiltonian`.
+    realized as an :class:`~.QNode` that returns the expected value of a :class:`~.Hamiltonian`.
 
     >>> coeffs = [2, 4, -1, 5, 2]
     >>> obs = [
@@ -76,7 +73,10 @@ class ShotAdaptiveOptimizer(GradientDescentOptimizer):
     ... ]
     >>> H = qml.Hamiltonian(coeffs, obs)
     >>> dev = qml.device("default.qubit", wires=2, shots=100)
-    >>> cost = qml.ExpvalCost(qml.templates.StronglyEntanglingLayers, H, dev)
+    >>> def circuit(params):
+    ...     qml.templates.StronglyEntanglingLayers(params, wires=dev.wires)
+    ...     return qml.expval(H)
+    >>> cost = qml.QNode(circuit, dev)
 
     Once constructed, the cost function can be passed directly to the
     optimizer's ``step`` method. The attributes ``opt.shots_used`` and
@@ -299,43 +299,6 @@ class ShotAdaptiveOptimizer(GradientDescentOptimizer):
         if self.stepsize > 2 / self.lipschitz:
             raise ValueError(f"The learning rate must be less than {2 / self.lipschitz}")
 
-    def _single_shot_expval_gradients(self, expval_cost, args, kwargs):
-        """Compute the single shot gradients of an ExpvalCost object"""
-        qnodes = expval_cost.qnodes
-        coeffs = expval_cost.hamiltonian.coeffs
-        device = qnodes[0].device
-
-        self.check_device(device)
-        original_shots = device.shots
-
-        if self.lipschitz is None:
-            self.check_learning_rate(coeffs)
-
-        try:
-            if self.term_sampling == "weighted_random_sampling":
-                grads = self.weighted_random_sampling(
-                    qnodes, coeffs, self.max_shots, self.trainable_args, *args, **kwargs
-                )
-            elif self.term_sampling is None:
-                device.shots = [(1, self.max_shots)]
-                # We iterate over each trainable argument, rather than using
-                # qml.jacobian(expval_cost), to take into account the edge case where
-                # different arguments have different shapes and cannot be stacked.
-                grads = [
-                    qml.jacobian(expval_cost, argnum=i)(*args, **kwargs)
-                    for i in self.trainable_args
-                ]
-            else:
-                raise ValueError(
-                    f"Unknown Hamiltonian term sampling method {self.term_sampling}. "
-                    "Only term_sampling='weighted_random_sampling' and "
-                    "term_sampling=None currently supported."
-                )
-        finally:
-            device.shots = original_shots
-
-        return grads
-
     def _single_shot_qnode_gradients(self, qnode, args, kwargs):
         """Compute the single shot gradients of a QNode."""
         device = qnode.device
@@ -378,14 +341,12 @@ class ShotAdaptiveOptimizer(GradientDescentOptimizer):
             tuple[array[float], array[float]]: a tuple of NumPy arrays containing the gradient
             :math:`\nabla f(x^{(t)})` and the variance of the gradient
         """
-        if isinstance(objective_fn, qml.ExpvalCost):
-            grads = self._single_shot_expval_gradients(objective_fn, args, kwargs)
-        elif isinstance(objective_fn, qml.QNode) or hasattr(objective_fn, "device"):
+        if isinstance(objective_fn, qml.QNode) or hasattr(objective_fn, "device"):
             grads = self._single_shot_qnode_gradients(objective_fn, args, kwargs)
         else:
             raise ValueError(
-                "The objective function must either be encoded as a single QNode or "
-                "an ExpvalCost object for the Shot adaptive optimizer. "
+                "The objective function must either be encoded as a single QNode for "
+                "the Shot adaptive optimizer."
             )
 
         # grads will have dimension [max(self.s), *params.shape]
@@ -514,11 +475,7 @@ class ShotAdaptiveOptimizer(GradientDescentOptimizer):
             If single arg is provided, list [array] is replaced by array.
         """
         new_args = self.step(objective_fn, *args, **kwargs)
-
-        if isinstance(objective_fn, qml.ExpvalCost):
-            device = objective_fn.qnodes[0].device
-        elif isinstance(objective_fn, qml.QNode) or hasattr(objective_fn, "device"):
-            device = objective_fn.device
+        device = objective_fn.device
 
         original_shots = device.shots
 

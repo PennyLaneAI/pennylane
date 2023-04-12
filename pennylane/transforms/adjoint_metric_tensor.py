@@ -158,7 +158,7 @@ def adjoint_metric_tensor(circuit, device=None, hybrid=True):
     """
     if isinstance(circuit, qml.tape.QuantumScript):
         return _adjoint_metric_tensor_tape(circuit, device)
-    if isinstance(circuit, (qml.QNode, qml.ExpvalCost)):
+    if isinstance(circuit, qml.QNode):
         return _adjoint_metric_tensor_qnode(circuit, device, hybrid)
 
     raise qml.QuantumFunctionError("The passed object is not a QuantumTape or QNode.")
@@ -258,14 +258,6 @@ def _adjoint_metric_tensor_qnode(qnode, device, hybrid):
     QNode.
     """
     if device is None:
-        if isinstance(qnode, qml.ExpvalCost):
-            if qnode._multiple_devices:  # pylint: disable=protected-access
-                warnings.warn(
-                    "ExpvalCost was instantiated with multiple devices. Only the first device "
-                    "will be used to evaluate the metric tensor with the adjoint method.",
-                    UserWarning,
-                )
-            qnode = qnode.qnodes[0]
         device = qnode.device
 
     def wrapper(*args, **kwargs):

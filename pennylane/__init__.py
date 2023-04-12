@@ -100,7 +100,6 @@ from pennylane.transforms import (
 )
 from pennylane.ops.functions import *
 from pennylane.optimize import *
-from pennylane.vqe import ExpvalCost
 from pennylane.debugging import snapshots
 from pennylane.shadows import ClassicalShadow
 import pennylane.data

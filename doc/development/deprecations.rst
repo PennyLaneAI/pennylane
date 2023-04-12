@@ -41,21 +41,6 @@ Pending deprecations
   ``grouping/utils.py`` have been moved to ``pauli/utils.py``. The remaining functions
   have been consolidated in the ``pauli/grouping/`` directory.
 
-* ``qml.ExpvalCost`` has been deprecated, and usage will now raise a warning.
-  
-  - Deprecated in v0.24
-  - Will be removed in v0.30
-
-  Instead, it is recommended to simply
-  pass Hamiltonians to the ``qml.expval`` function inside QNodes:
-
-  .. code-block:: python
-
-    @qml.qnode(dev)
-    def ansatz(params):
-        some_qfunc(params)
-        return qml.expval(Hamiltonian)
-
 * The ``collections`` module has been deprecated.
 
   - Deprecated in v0.29
@@ -80,7 +65,21 @@ Pending deprecations
 Completed deprecation cycles
 ----------------------------
 
-* ``qml.VQECost`` is removed. 
+* ``qml.ExpvalCost`` has been removed.
+  
+  - Deprecated in v0.24
+  - Removed in v0.30
+
+  Instead, simply pass Hamiltonians to the ``qml.expval`` function inside QNodes:
+
+  .. code-block:: python
+
+    @qml.qnode(dev)
+    def ansatz(params):
+        some_qfunc(params)
+        return qml.expval(Hamiltonian)
+
+* ``qml.VQECost`` is removed.
 
    - Deprecated in 0.13
    - Removed in 0.29

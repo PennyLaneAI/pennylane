@@ -202,7 +202,6 @@ class ParticleConservingU1(Operation):
 
             import pennylane as qml
             import numpy as np
-            from functools import partial
 
             # Build the electronic Hamiltonian
             symbols, coordinates = (['H', 'H'], np.array([0., 0., -0.66140414, 0., 0., 0.66140414]))
@@ -216,10 +215,12 @@ class ParticleConservingU1(Operation):
             dev = qml.device('default.qubit', wires=qubits)
 
             # Define the ansatz
-            ansatz = partial(qml.ParticleConservingU1, init_state=ref_state)
+            def ansatz(params):
+                qml.ParticleConservingU1(params, wires=dev.wires, init_state=ref_state)
+                return qml.expval(h)
 
             # Define the cost function
-            cost_fn = qml.ExpvalCost(ansatz, h, dev)
+            cost_fn = qml.QNode(ansatz, dev)
 
             # Compute the expectation value of 'h'
             layers = 2
