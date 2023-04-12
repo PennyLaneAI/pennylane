@@ -54,6 +54,10 @@
   `adjoint_jacobian` in `devices/qubit`.
   [(#3790)](https://github.com/PennyLaneAI/pennylane/pull/3790)
 
+* Adds logic to `qml.devices.qubit.measure` to compute the expectation values of `Hamiltonian` and `Sum`
+  in a backpropagation compatible way.
+  [(#3862)](https://github.com/PennyLaneAI/pennylane/pull/3862/)
+
 <h4>Performance improvements</h4>
 
 * Improve the efficiency of `tapering()`, `tapering_hf()` and `clifford()`.
@@ -125,10 +129,6 @@
 
 * `AdaptiveOptimizer` is updated to use non-default user-defined qnode arguments.
   [(#3765)](https://github.com/PennyLaneAI/pennylane/pull/3765)
-
-* Adds logic to `qml.devices.qubit.measure` to compute the expectation values of `Hamiltonian` and `Sum`
-  in a backpropagation compatible way.
-  [(#3862)](https://github.com/PennyLaneAI/pennylane/pull/3862/)
 
 * Use `TensorLike` type in `Operator` dunder methods.
   [(#3749)](https://github.com/PennyLaneAI/pennylane/pull/3749)
