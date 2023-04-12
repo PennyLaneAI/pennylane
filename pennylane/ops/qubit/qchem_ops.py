@@ -241,6 +241,9 @@ class SingleExcitation(Operation):
          T(wires=[1])]
 
         """
+        # This decomposition was found by plugging the matrix representation
+        # into transforms.two_qubit_decomposition and post-processing some of
+        # the resulting single-qubit gates.
         decomp_ops = [
             qml.adjoint(qml.T)(wires=wires[0]),
             qml.Hadamard(wires=wires[0]),
