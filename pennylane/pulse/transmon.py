@@ -215,3 +215,105 @@ class TransmonSettings:
             return TransmonSettings(new_connections, new_omega, new_g, anharmonicity=new_anh)
 
         return self
+
+
+def amplitude_and_phase_and_freq(trig_fn, amp, phase, freq):
+    """Wrapper function for combining amplitude and phase into a single callable
+    (or constant if neither amplitude nor phase are callable)."""
+    if not callable(amp) and not callable(phase) and not callable(freq):
+        return lambda _, t: amp * trig_fn(phase + freq * t)
+    return AmplitudeAndPhaseAndFreq(trig_fn, amp, phase, freq)
+
+
+# pylint:disable = too-few-public-methods
+class AmplitudeAndPhaseAndFreq:
+    """Class storing combined amplitude and phase callable if either or both
+    of amplitude or phase are callable."""
+
+    def __init__(self, trig_fn, amp, phase, freq):
+        self.amp_is_callable = callable(amp)
+        self.phase_is_callable = callable(phase)
+        self.freq_is_callable = callable(freq)
+
+        # all 3 callable
+        def callable_amp_and_phase_and_freq(params, t):
+            return amp(params[0], t) * trig_fn(phase(params[1], t) + params[2] * t)
+
+        if self.amp_is_callable and self.phase_is_callable and self.freq_is_callable:
+            self.func = callable_amp_and_phase_and_freq
+
+        # 2 out of 3 callable
+        def callable_amp_and_phase(params, t):
+            return amp(params[0], t) * trig_fn(phase(params[1], t) + freq * t)
+
+        if self.amp_is_callable and self.phase_is_callable and not self.freq_is_callable:
+            self.func = callable_amp_and_phase
+
+        def callable_amp_and_freq(params, t):
+            return amp(params[0], t) * trig_fn(phase + freq(params[1], t) * t)
+
+        if self.amp_is_callable and not self.phase_is_callable and self.freq_is_callable:
+            self.func = callable_amp_and_freq
+
+        def callable_phase_and_freq(params, t):
+            return amp * trig_fn(phase(params[0], t) + freq(params[1], t) * t)
+
+        if not self.amp_is_callable and self.phase_is_callable and self.freq_is_callable:
+            self.func = callable_phase_and_freq
+
+        # 1 out of 3 callable
+        def callable_amp(params, t):
+            return amp(params, t) * trig_fn(phase + freq * t)
+
+        if self.amp_is_callable and not self.phase_is_callable and not self.freq_is_callable:
+            self.func = callable_amp
+
+        def callable_phase(params, t):
+            return amp * trig_fn(phase(params, t) + freq * t)
+
+        if not self.amp_is_callable and self.phase_is_callable and not self.freq_is_callable:
+            self.func = callable_phase
+
+        def callable_freq(params, t):
+            return amp * trig_fn(phase + freq(params, t) * t)
+
+        if not self.amp_is_callable and not self.phase_is_callable and self.freq_is_callable:
+            self.func = callable_freq
+
+    def __call__(self, params, t):
+        return self.func(params, t)
+
+
+def _reorder_parameters(params, coeffs_parametrized):
+    """Takes `params`, and reorganizes it based on whether the Hamiltonian has
+    callable phase and/or callable amplitude.
+
+    Consolidates phase and amplitude parameters in the case that both are callable,
+    and duplicates phase and/or amplitude parameters if either are callables, since
+    they will be passed to two operators in the Hamiltonian"""
+
+    reordered_params = []
+
+    coeff_idx = 0
+    params_idx = 0
+
+    for i, coeff in enumerate(coeffs_parametrized):
+        if i == coeff_idx:
+            if isinstance(coeff, AmplitudeAndPhaseAndFreq):
+                if coeff.phase_is_callable and coeff.amp_is_callable:
+                    # add the joined parameters twice, and skip an index
+                    reordered_params.append([params[params_idx], params[params_idx + 1]])
+                    reordered_params.append([params[params_idx], params[params_idx + 1]])
+                    coeff_idx += 2
+                    params_idx += 2
+                elif coeff.phase_is_callable or coeff.amp_is_callable:
+                    reordered_params.append(params[params_idx])
+                    reordered_params.append(params[params_idx])
+                    coeff_idx += 2
+                    params_idx += 1
+            else:
+                reordered_params.append(params[params_idx])
+                coeff_idx += 1
+                params_idx += 1
+
+    return reordered_params
