@@ -266,6 +266,10 @@
 * Ensure that parallel `AnnotatedQueues` do not queue each other's contents.
   [(#3924)](https://github.com/PennyLaneAI/pennylane/pull/3924)
 
+* Added a `map_wires` method to `PauliWord` and `PauliSentence`, and ensured that operators call
+  it in their respective `map_wires` methods if they have a Pauli rep.
+  [(#3985)](https://github.com/PennyLaneAI/pennylane/pull/3985)
+
 <h3>Contributors</h3>
 
 This release contains contributions from (in alphabetical order):
