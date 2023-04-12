@@ -195,6 +195,7 @@
 
 * Updates `qml.pauli.are_pauli_words_qwc` and `qml.pauli.are_identical_pauli_words` to work with
   operator arithmetic `Sum`, `Prod`, and `SProd`.
+  [(#3986)](https://github.com/PennyLaneAI/pennylane/pull/3986)
 
 * Fixed a bug where calling `Evolution.generator` with `coeff` being a complex ArrayBox raised an error.
   [(#3796)](https://github.com/PennyLaneAI/pennylane/pull/3796)
