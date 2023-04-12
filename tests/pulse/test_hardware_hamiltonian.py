@@ -310,7 +310,7 @@ class TestDrive:
             AmplitudeAndPhase(np.cos, fa, 1),
             AmplitudeAndPhase(np.sin, fa, 1),
         ]
-        H_expected = HardwareHamiltonian(coeffs_expected, ops_expected)
+        H_expected = HardwareHamiltonian(coeffs_expected, ops_expected, _reorder_parameters)
 
         # structure of Hamiltonian is as expected
         assert isinstance(Hd, HardwareHamiltonian)

@@ -274,7 +274,7 @@ class HardwareHamiltonian(ParametrizedHamiltonian):
         self,
         coeffs,
         observables,
-        reorder_fn = None,
+        reorder_fn=None,
         pulses: List["HardwarePulse"] = None,
         settings: Union["RydbergSettings", "TransmonSettings"] = None,
     ):
@@ -303,7 +303,11 @@ class HardwareHamiltonian(ParametrizedHamiltonian):
             new_ops = self.ops + other.ops
             new_coeffs = self.coeffs + other.coeffs
             return HardwareHamiltonian(
-                new_coeffs, new_ops, reorder_fn=self.reorder_fn, settings=new_settings, pulses=new_pulses
+                new_coeffs,
+                new_ops,
+                reorder_fn=self.reorder_fn,
+                settings=new_settings,
+                pulses=new_pulses,
             )
 
         ops = self.ops.copy()
@@ -314,17 +318,23 @@ class HardwareHamiltonian(ParametrizedHamiltonian):
         if isinstance(other, (Hamiltonian, ParametrizedHamiltonian)):
             new_coeffs = coeffs + list(other.coeffs.copy())
             new_ops = ops + other.ops.copy()
-            return HardwareHamiltonian(new_coeffs, new_ops, reorder_fn=self.reorder_fn, settings=settings, pulses=pulses)
+            return HardwareHamiltonian(
+                new_coeffs, new_ops, reorder_fn=self.reorder_fn, settings=settings, pulses=pulses
+            )
 
         if isinstance(other, qml.ops.SProd):  # pylint: disable=no-member
             new_coeffs = coeffs + [other.scalar]
             new_ops = ops + [other.base]
-            return HardwareHamiltonian(new_coeffs, new_ops, reorder_fn=self.reorder_fn, settings=settings, pulses=pulses)
+            return HardwareHamiltonian(
+                new_coeffs, new_ops, reorder_fn=self.reorder_fn, settings=settings, pulses=pulses
+            )
 
         if isinstance(other, Operator):
             new_coeffs = coeffs + [1]
             new_ops = ops + [other]
-            return HardwareHamiltonian(new_coeffs, new_ops, reorder_fn=self.reorder_fn, settings=settings, pulses=pulses)
+            return HardwareHamiltonian(
+                new_coeffs, new_ops, reorder_fn=self.reorder_fn, settings=settings, pulses=pulses
+            )
 
         return NotImplemented
 
@@ -344,7 +354,11 @@ class HardwareHamiltonian(ParametrizedHamiltonian):
             new_ops = other.ops.copy() + ops
 
             return HardwareHamiltonian(
-                new_coeffs, new_ops, settings=self.settings, pulses=self.pulses
+                new_coeffs,
+                new_ops,
+                reorder_fn=self.reorder_fn,
+                settings=self.settings,
+                pulses=self.pulses,
             )
 
         return self.__add__(other)

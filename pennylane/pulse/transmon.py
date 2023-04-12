@@ -216,12 +216,14 @@ class TransmonSettings:
 
         return self
 
+
 def amplitude_and_phase_and_freq(trig_fn, amp, phase, freq):
     """Wrapper function for combining amplitude and phase into a single callable
     (or constant if neither amplitude nor phase are callable)."""
     if not callable(amp) and not callable(phase) and not callable(freq):
-        return lambda _, t: amp * trig_fn(phase + freq*t)
+        return lambda _, t: amp * trig_fn(phase + freq * t)
     return AmplitudeAndPhaseAndFreq(trig_fn, amp, phase, freq)
+
 
 # pylint:disable = too-few-public-methods
 class AmplitudeAndPhaseAndFreq:
@@ -236,44 +238,52 @@ class AmplitudeAndPhaseAndFreq:
         # all 3 callable
         def callable_amp_and_phase_and_freq(params, t):
             return amp(params[0], t) * trig_fn(phase(params[1], t) + params[2] * t)
+
         if self.amp_is_callable and self.phase_is_callable and self.freq_is_callable:
             self.func = callable_amp_and_phase_and_freq
 
         # 2 out of 3 callable
         def callable_amp_and_phase(params, t):
             return amp(params[0], t) * trig_fn(phase(params[1], t) + freq * t)
+
         if self.amp_is_callable and self.phase_is_callable and not self.freq_is_callable:
             self.func = callable_amp_and_phase
-        
+
         def callable_amp_and_freq(params, t):
             return amp(params[0], t) * trig_fn(phase + freq(params[1], t) * t)
+
         if self.amp_is_callable and not self.phase_is_callable and self.freq_is_callable:
             self.func = callable_amp_and_freq
 
         def callable_phase_and_freq(params, t):
             return amp * trig_fn(phase(params[0], t) + freq(params[1], t) * t)
+
         if not self.amp_is_callable and self.phase_is_callable and self.freq_is_callable:
             self.func = callable_phase_and_freq
 
-        # 1 out of 3 callable 
+        # 1 out of 3 callable
         def callable_amp(params, t):
             return amp(params, t) * trig_fn(phase + freq * t)
+
         if self.amp_is_callable and not self.phase_is_callable and not self.freq_is_callable:
             self.func = callable_amp
 
         def callable_phase(params, t):
             return amp * trig_fn(phase(params, t) + freq * t)
+
         if not self.amp_is_callable and self.phase_is_callable and not self.freq_is_callable:
             self.func = callable_phase
 
         def callable_freq(params, t):
             return amp * trig_fn(phase + freq(params, t) * t)
+
         if not self.amp_is_callable and not self.phase_is_callable and self.freq_is_callable:
             self.func = callable_freq
 
     def __call__(self, params, t):
         return self.func(params, t)
-    
+
+
 def _reorder_parameters(params, coeffs_parametrized):
     """Takes `params`, and reorganizes it based on whether the Hamiltonian has
     callable phase and/or callable amplitude.

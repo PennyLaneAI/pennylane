@@ -112,7 +112,9 @@ def rydberg_interaction(
 
     settings = RydbergSettings(register, interaction_coeff)
 
-    return HardwareHamiltonian(coeffs, observables, settings=settings, reorder_fn=_reorder_parameters)
+    return HardwareHamiltonian(
+        coeffs, observables, settings=settings, reorder_fn=_reorder_parameters
+    )
 
 
 @dataclass
