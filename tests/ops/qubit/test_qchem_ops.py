@@ -174,6 +174,8 @@ class TestSingleExcitation:
     @pytest.mark.parametrize("phi", [-0.1, 0.2, np.pi / 4])
     def test_single_excitation_decomp(self, phi):
         """Tests that the SingleExcitation operation calculates the correct decomposition."""
+        exp = SingleExcitation(phi)
+
         decomp1 = qml.SingleExcitation(phi, wires=[0, 1]).decomposition()
         decomp2 = qml.SingleExcitation.compute_decomposition(phi, wires=[0, 1])
 
@@ -183,8 +185,6 @@ class TestSingleExcitation:
                     qml.apply(op)
 
             decomposed_matrix = qml.matrix(tape, wire_order=[0, 1])
-            exp = SingleExcitation(phi)
-
             assert np.allclose(decomposed_matrix, exp)
 
     @pytest.mark.parametrize("phi", [-0.1, 0.2, np.pi / 4])
