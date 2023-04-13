@@ -67,7 +67,16 @@ class TestHardwareHamiltonian:
         assert rm.pulses == []
         assert rm.wires == Wires([])
         assert rm.settings is None
-        assert rm.reorder_fn(3, 4) == 4
+        assert rm.reorder_fn == _reorder_parameters
+
+    def test_two_different_reorder_fns_raises_error(self):
+        H1 = HardwareHamiltonian(coeffs=[], observables=[])
+        H2 = HardwareHamiltonian(coeffs=[], observables=[], reorder_fn=lambda _, y: y[:2])
+
+        with pytest.raises(
+            ValueError, match="Cannot add two HardwareHamiltonians with different reorder"
+        ):
+            _ = H1 + H2
 
     @pytest.mark.parametrize(
         "settings",
@@ -84,11 +93,13 @@ class TestHardwareHamiltonian:
             observables=[qml.PauliX(4), qml.PauliZ(8)],
             pulses=[HardwarePulse(1, 2, 3, [4, 8])],
             settings=settings,
+            reorder_fn=_reorder_parameters,
         )
         rm2 = HardwareHamiltonian(
             coeffs=[2],
             observables=[qml.PauliY(8)],
             pulses=[HardwarePulse(5, 6, 7, 8)],
+            reorder_fn=_reorder_parameters,
         )
 
         sum_rm = rm1 + rm2
@@ -311,7 +322,9 @@ class TestDrive:
             AmplitudeAndPhase(np.cos, fa, 1),
             AmplitudeAndPhase(np.sin, fa, 1),
         ]
-        H_expected = HardwareHamiltonian(coeffs_expected, ops_expected, _reorder_parameters)
+        H_expected = HardwareHamiltonian(
+            coeffs_expected, ops_expected, reorder_fn=_reorder_parameters
+        )
 
         # structure of Hamiltonian is as expected
         assert isinstance(Hd, HardwareHamiltonian)
@@ -330,11 +343,6 @@ class TestDrive:
 
         # Hamiltonian is as expected
         assert qml.equal(Hd([0.5, -0.5], t=5), H_expected([0.5, -0.5], t=5))
-
-    def test_no_amplitude_no_detuning(self):
-        """Test that the correct error is raised if both amplitude and detuning are trivial."""
-        with pytest.raises(ValueError, match="Expected non-zero value or callable"):
-            _ = drive(0, np.pi, wires=[0])
 
 
 def callable_amp(p, t):

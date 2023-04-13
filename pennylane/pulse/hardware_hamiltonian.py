@@ -213,13 +213,7 @@ def drive(amplitude, phase, wires):
         >>> jax.grad(circuit)(params)
         [Array(1.75825695, dtype=float64)]
     """
-    if isinstance(wires, int):
-        wires = [wires]
-
-    if not callable(amplitude) and qml.math.isclose(amplitude, 0.0):
-        raise ValueError(
-            f"Expected non-zero value or callable for amplitude, but received amplitude={amplitude}. All terms are zero."
-        )
+    wires = Wires(wires)
 
     # TODO: use sigma+ and sigma- (not necessary as terms are the same, but for consistency)
     # We compute the `coeffs` and `observables` of the EM field
@@ -236,6 +230,40 @@ def drive(amplitude, phase, wires):
     return HardwareHamiltonian(coeffs, observables, _reorder_parameters)
 
 
+def _reorder_parameters(params, coeffs_parametrized):
+    """Takes `params`, and reorganizes it based on whether the Hamiltonian has
+    callable phase and/or callable amplitude.
+    Consolidates phase and amplitude parameters in the case that both are callable,
+    and duplicates phase and/or amplitude parameters if either are callables, since
+    they will be passed to two operators in the Hamiltonian"""
+
+    reordered_params = []
+
+    coeff_idx = 0
+    params_idx = 0
+
+    for i, coeff in enumerate(coeffs_parametrized):
+        if i == coeff_idx:
+            if isinstance(coeff, AmplitudeAndPhase):
+                if coeff.phase_is_callable and coeff.amp_is_callable:
+                    # add the joined parameters twice, and skip an index
+                    reordered_params.append([params[params_idx], params[params_idx + 1]])
+                    reordered_params.append([params[params_idx], params[params_idx + 1]])
+                    coeff_idx += 2
+                    params_idx += 2
+                elif coeff.phase_is_callable or coeff.amp_is_callable:
+                    reordered_params.append(params[params_idx])
+                    reordered_params.append(params[params_idx])
+                    coeff_idx += 2
+                    params_idx += 1
+            else:
+                reordered_params.append(params[params_idx])
+                coeff_idx += 1
+                params_idx += 1
+
+    return reordered_params
+
+
 class HardwareHamiltonian(ParametrizedHamiltonian):
     r"""Internal class used to keep track of the required information to translate a ``ParametrizedHamiltonian``
     into hardware.
@@ -244,12 +272,11 @@ class HardwareHamiltonian(ParametrizedHamiltonian):
     but on top of that also contains attributes that store parameteres relevant for real hardware execution.
 
     .. warning::
+
         This class should NEVER be initialized directly! Please use the functions
         :func:`rydberg_interaction` and :func:`drive` instead.
 
-
     .. seealso:: :func:`rydberg_interaction`, :func:`drive`, :class:`ParametrizedHamiltonian`
-
 
     Args:
         coeffs (Union[float, callable]): coefficients of the Hamiltonian expression, which may be
@@ -258,8 +285,12 @@ class HardwareHamiltonian(ParametrizedHamiltonian):
         observables (Iterable[Observable]): observables in the Hamiltonian expression, of same
             length as ``coeffs``
 
-
     Keyword Args:
+        reorder_fn (callable): function for reordering the parameters before calling.
+            This allows automatically copying parameters when they are used for different terms,
+            as well as allowing single terms to depend on multiple parameters, as is the case for
+            drive Hamiltonians. Note that in order to add two HardwareHamiltonians,
+            the reorder_fn needs to be matching.
         settings Union[RydbergSettings, TransmonSettings]: Dataclass containing the hardware specific settings. Default is ``None``.
         pulses (list[HardwarePulse]): list of ``HardwarePulse`` dataclasses containing the information about the
             amplitude, phase, drive frequency and wires of each pulse
@@ -274,17 +305,13 @@ class HardwareHamiltonian(ParametrizedHamiltonian):
         self,
         coeffs,
         observables,
-        reorder_fn=None,
+        reorder_fn=_reorder_parameters,
         pulses: List["HardwarePulse"] = None,
         settings: Union["RydbergSettings", "TransmonSettings"] = None,
     ):
         self.settings = settings
         self.pulses = [] if pulses is None else pulses
-
-        def trivial_func(_, y):
-            return y
-
-        self.reorder_fn = trivial_func if reorder_fn is None else reorder_fn
+        self.reorder_fn = reorder_fn
         super().__init__(coeffs, observables)
 
     def __call__(self, params, t):
@@ -293,8 +320,10 @@ class HardwareHamiltonian(ParametrizedHamiltonian):
 
     def __add__(self, other):
         if isinstance(other, HardwareHamiltonian):
-            # if not self.reorder_fn == other.reorder_fn:
-            #     raise ValueError(f"Cannot add two HardwareHamiltonians with different reorder functions. Received reorder_fns {self.reorder_fn} and {other.reorder_fn}")
+            if not self.reorder_fn == other.reorder_fn:
+                raise ValueError(
+                    f"Cannot add two HardwareHamiltonians with different reorder functions. Received reorder_fns {self.reorder_fn} and {other.reorder_fn}. Most likely, this is because you are trying to combine hardware compatible Hamiltonians for different target systems."
+                )
             if self.settings is None and other.settings is None:
                 new_settings = None
             else:
@@ -370,7 +399,6 @@ class HardwareHamiltonian(ParametrizedHamiltonian):
 class HardwarePulse:
     """Dataclass that contains the information of a single drive pulse. This class is used
     internally in PL to group into a single object all the data related to a single EM field.
-
     Args:
         amplitude (Union[float, Callable]): float or callable returning the amplitude of an EM
             field
@@ -437,38 +465,3 @@ class AmplitudeAndPhase:
 
     def __call__(self, params, t):
         return self.func(params, t)
-
-
-def _reorder_parameters(params, coeffs_parametrized):
-    """Takes `params`, and reorganizes it based on whether the Hamiltonian has
-    callable phase and/or callable amplitude.
-
-    Consolidates phase and amplitude parameters in the case that both are callable,
-    and duplicates phase and/or amplitude parameters if either are callables, since
-    they will be passed to two operators in the Hamiltonian"""
-
-    reordered_params = []
-
-    coeff_idx = 0
-    params_idx = 0
-
-    for i, coeff in enumerate(coeffs_parametrized):
-        if i == coeff_idx:
-            if isinstance(coeff, AmplitudeAndPhase):
-                if coeff.phase_is_callable and coeff.amp_is_callable:
-                    # add the joined parameters twice, and skip an index
-                    reordered_params.append([params[params_idx], params[params_idx + 1]])
-                    reordered_params.append([params[params_idx], params[params_idx + 1]])
-                    coeff_idx += 2
-                    params_idx += 2
-                elif coeff.phase_is_callable or coeff.amp_is_callable:
-                    reordered_params.append(params[params_idx])
-                    reordered_params.append(params[params_idx])
-                    coeff_idx += 2
-                    params_idx += 1
-            else:
-                reordered_params.append(params[params_idx])
-                coeff_idx += 1
-                params_idx += 1
-
-    return reordered_params

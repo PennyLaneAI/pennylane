@@ -24,10 +24,14 @@
     the Hamiltonian that describes the circuit QED interaction Hamiltonian of superconducting transmon systems.
   * A new user-facing `drive` function is added, which returns a `ParametrizedHamiltonian` (`HardwareHamiltonian`) containing
     the Hamiltonian of the interaction between a driving electro-magnetic field and a group of qubits.
+  * A new user-facing `rydberg_drive` function is added, which returns a `ParametrizedHamiltonian` (`HardwareHamiltonian`) containing
+    the Hamiltonian of the interaction between a driving laser field and a group of Rydberg atoms.
   [(#3749)](https://github.com/PennyLaneAI/pennylane/pull/3749)
   [(#3911)](https://github.com/PennyLaneAI/pennylane/pull/3911)
   [(#3930)](https://github.com/PennyLaneAI/pennylane/pull/3930)
   [(#3936)](https://github.com/PennyLaneAI/pennylane/pull/3936/)
+  [(#3966)](https://github.com/PennyLaneAI/pennylane/pull/3966)
+  [(#3987)](https://github.com/PennyLaneAI/pennylane/pull/3987)
 
 * Added `Operation.__truediv__` dunder method to be able to divide operators.
   [(#3749)](https://github.com/PennyLaneAI/pennylane/pull/3749)
@@ -153,6 +157,10 @@
 * `Sum`, `Prod`, and `SProd` operator data is now a flat list, instead of nested.
   [(#3958)](https://github.com/PennyLaneAI/pennylane/pull/3958)
 
+* `qml.transforms.convert_to_numpy_parameters` is added to convert a circuit with interface-specific parameters to one
+  with only numpy parameters. This transform is designed to replace `qml.tape.Unwrap`.
+  [(#3899)](https://github.com/PennyLaneAI/pennylane/pull/3899)
+
 * `qml.operation.WiresEnum.AllWires` is now -2 instead of 0 to avoid the
   ambiguity between `op.num_wires = 0` and `op.num_wires = AllWires`.
   [(#3978)](https://github.com/PennyLaneAI/pennylane/pull/3978)
@@ -255,6 +263,13 @@
 * Fixed bug where all devices that inherit from DefaultQubit claimed to support `ParametrizedEvolution`.
   Now only `DefaultQubitJax` supports the operator, as expected.
   [(#3964)](https://github.com/PennyLaneAI/pennylane/pull/3964)
+
+* Ensure that parallel `AnnotatedQueues` do not queue each other's contents.
+  [(#3924)](https://github.com/PennyLaneAI/pennylane/pull/3924)
+
+* Added a `map_wires` method to `PauliWord` and `PauliSentence`, and ensured that operators call
+  it in their respective `map_wires` methods if they have a Pauli rep.
+  [(#3985)](https://github.com/PennyLaneAI/pennylane/pull/3985)
 
 <h3>Contributors</h3>
 
