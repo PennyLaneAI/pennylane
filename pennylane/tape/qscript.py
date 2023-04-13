@@ -373,7 +373,6 @@ class QuantumScript:
         # The following line requires _par_info to be up to date
         self._update_trainable_params()  # Updates the _trainable_params; O(1)
 
-        self._update_measured_wires()
         self._update_observables()  # Updates _obs_sharing_wires and _obs_sharing_wires_id
         self._update_batch_size()  # Updates _batch_size; O(ops)
 
