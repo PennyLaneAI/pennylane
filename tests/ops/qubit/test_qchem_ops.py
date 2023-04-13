@@ -173,32 +173,18 @@ class TestSingleExcitation:
 
     @pytest.mark.parametrize("phi", [-0.1, 0.2, np.pi / 4])
     def test_single_excitation_decomp(self, phi):
-        """Tests that the SingleExcitation operation calculates the correct decomposition.
+        """Tests that the SingleExcitation operation calculates the correct decomposition."""
+        exp = SingleExcitation(phi)
 
-        Need to consider the matrix of CRY separately, as the control is wire 1
-        and the target is wire 0 in the decomposition."""
         decomp1 = qml.SingleExcitation(phi, wires=[0, 1]).decomposition()
         decomp2 = qml.SingleExcitation.compute_decomposition(phi, wires=[0, 1])
 
         for decomp in [decomp1, decomp2]:
-            mats = []
-            for i in reversed(decomp):
-                if i.wires.tolist() == [1, 0] and isinstance(i, qml.CRY):
-                    new_mat = np.array(
-                        [
-                            [1, 0, 0, 0],
-                            [0, np.cos(phi / 2), 0, -np.sin(phi / 2)],
-                            [0, 0, 1, 0],
-                            [0, np.sin(phi / 2), 0, np.cos(phi / 2)],
-                        ]
-                    )
-                    mats.append(new_mat)
-                else:
-                    mats.append(i.matrix())
+            with qml.tape.QuantumTape() as tape:
+                for op in decomp:
+                    qml.apply(op)
 
-            decomposed_matrix = np.linalg.multi_dot(mats)
-            exp = SingleExcitation(phi)
-
+            decomposed_matrix = qml.matrix(tape, wire_order=[0, 1])
             assert np.allclose(decomposed_matrix, exp)
 
     @pytest.mark.parametrize("phi", [-0.1, 0.2, np.pi / 4])

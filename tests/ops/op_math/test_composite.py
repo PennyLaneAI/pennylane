@@ -188,12 +188,18 @@ class TestConstruction:
     def test_map_wires(self):
         """Test the map_wires method."""
         diag_op = ValidOp(*self.simple_operands)
+        diag_op._pauli_rep = qml.pauli.PauliSentence({qml.pauli.PauliWord({0: "X", 1: "Y"}): 1})
+
         wire_map = {0: 5, 1: 7, 2: 9, 3: 11}
         mapped_op = diag_op.map_wires(wire_map=wire_map)
 
         assert mapped_op.wires == Wires([5, 7])
         assert mapped_op[0].wires == Wires(5)
         assert mapped_op[1].wires == Wires(7)
+        assert mapped_op._pauli_rep is not diag_op._pauli_rep
+        assert mapped_op._pauli_rep == qml.pauli.PauliSentence(
+            {qml.pauli.PauliWord({5: "X", 7: "Y"}): 1}
+        )
 
     def test_build_pauli_rep(self):
         """Test the build_pauli_rep"""
