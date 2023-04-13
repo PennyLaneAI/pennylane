@@ -559,7 +559,7 @@ class PCPhase(Operation):
 
     We can also choose a different :math:`dim` value to apply the phase shift to a different set of
     basis vectors as follows:
-     
+
     >>> pc_op = qml.PCPhase(1.23, dim=3, wires=[1, 2])
     >>> print(np.round(qml.matrix(pc_op),2))
     [[0.33+0.94j 0.  +0.j   0.  +0.j   0.  +0.j  ]

@@ -30,8 +30,8 @@ def qsvt(A, angles, wires, convention=None):
 
     Given a matrix :math:`A`, and a list of angles :math:`\vec{\phi}`, this function applies a
     circuit for the quantum singular value transformation using :class:`~.BlockEncode` and
-    :class:`~.PCPhase`. 
-    
+    :class:`~.PCPhase`.
+
     .. note ::
 
         :class:`~.BlockEncode` and :class:`~.PCPhase` used in this implementation of QSVT
@@ -138,7 +138,7 @@ class QSVT(Operation):
     Given an :class:`~.Operator` :math:`U`, which block encodes the matrix :math:`A`, and a list of
     projector-controlled phase shift operations :math:`\vec{\Pi}_\phi`, this template applies a
     circuit for the quantum singular value transformation as follows.
-    
+
     .. note ::
 
         This template allows users to define hardware-compatible block-encoding and
@@ -196,10 +196,10 @@ class QSVT(Operation):
     >>> dev = qml.device("default.qubit", wires=2)
     >>> A = np.array([[0.1]])
     >>> block_encode = qml.BlockEncode(A, wires=[0, 1])
-    >>> angles = [qml.PCPhase(i + 0.1, dim=1, wires=[0, 1]) for i in range(3)]
+    >>> shifts = [qml.PCPhase(i + 0.1, dim=1, wires=[0, 1]) for i in range(3)]
     >>> @qml.qnode(dev)
     >>> def example_circuit():
-    ...    qml.QSVT(block_encode, angles, wires=[0, 1])
+    ...    qml.QSVT(block_encode, shifts, wires=[0, 1])
     ...    return qml.expval(qml.PauliZ(wires=0))
 
     The resulting circuit implements QSVT.

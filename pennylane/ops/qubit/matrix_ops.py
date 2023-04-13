@@ -374,7 +374,7 @@ class BlockEncode(Operation):
         ValueError: if the number of wires doesn't fit the dimensions of the matrix
 
     **Example**
-    
+
     We can define a matrix and a block-encoding circuit as follows:
 
     >>> A = [[0.1,0.2],[0.3,0.4]]
