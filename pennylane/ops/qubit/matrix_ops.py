@@ -348,7 +348,8 @@ class BlockEncode(Operation):
 
         Specifically, the norm is computed as the maximum of
         :math:`L_{\infty} \vert AA^\dagger \vert` and
-        :math:`L_{\infty} \vert A^\dagger A \vert`
+        :math:`L_{\infty} \vert A^\dagger A \vert`. Where :math:`L_{\infty}`
+        is the infinity-norm.
 
     .. math::
 
