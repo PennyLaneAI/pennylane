@@ -1132,7 +1132,7 @@ def min_entropy(state, indices, base=None, check_state=False, c_dtype="complex12
     interfaces (Numpy, Autograd, Torch, Tensorflow and Jax).
 
     .. math::
-        S_{\text{max}}( \rho ) = \log( \text{rank} ( \rho ))
+        S_{\text{min}}( \rho ) = -\log( \max_{i} ( p_{i} ))
 
     Args:
         state (tensor_like): ``(2**N)`` state vector or ``(2**N, 2**N)`` density matrix.
@@ -1151,25 +1151,26 @@ def min_entropy(state, indices, base=None, check_state=False, c_dtype="complex12
 
     >>> x = [1, 0, 0, 1] / np.sqrt(2)
     >>> min_entropy(x, indices=[0])
-    -0.6931472
+    0.6931472
 
     The logarithm base can be changed. For example:
 
     >>> min_entropy(x, indices=[0], base=2)
-    -1.0
+    1.0
 
     The minimum entropy can be obtained by providing a quantum state as a density matrix. For example:
 
     >>> y = [[1/2, 0, 0, 1/2], [0, 0, 0, 0], [0, 0, 0, 0], [1/2, 0, 0, 1/2]]
     >>> min_entropy(y, indices=[0])
-    -0.6931472
+    0.6931472
 
     The Von Neumann entropy is always greater than the minimum entropy.
+    
     >>> x = [np.cos(np.pi/8), 0, 0, -1j*np.sin(np.pi/8)]
     >>> vn_entropy(x, indices=[1])
     0.4164955
     >>> min_entropy(x, indices=[1])
-    -0.15834718382037496
+    0.15834718382037496
 
     """
     density_matrix = reduced_dm(state, indices, check_state, c_dtype)
@@ -1192,11 +1193,11 @@ def _compute_min_entropy(density_matrix, base):
 
     >>> x = [[1/2, 0], [0, 1/2]]
     >>> _compute_min_entropy(x)
-    -0.6931472
+    0.6931472
 
     >>> x = [[1/2, 0], [0, 1/2]]
     >>> _compute_min_entropy(x, base=2)
-    -1.0
+    1.0
 
     """
     # Change basis if necessary
@@ -1207,6 +1208,6 @@ def _compute_min_entropy(density_matrix, base):
 
     evs, _ = qml.math.linalg.eigh(density_matrix)
     evs = qml.math.real(evs)
-    minimum_entropy = qml.math.log(qml.math.max(evs)) / div_base
+    minimum_entropy = -qml.math.log(qml.math.max(evs)) / div_base
 
     return minimum_entropy

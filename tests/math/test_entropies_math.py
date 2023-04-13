@@ -449,6 +449,7 @@ class TestMaxEntropy:
         import jax
         import jax.numpy as jnp
 
+        config.update("jax_enable_x64", True)  # Enabling complex128 datatypes for jax
         params = jnp.array(params)
 
         max_entropy_grad = jax.grad(qml.math.max_entropy)
@@ -466,7 +467,12 @@ class TestMaxEntropy:
 class TestMinEntropy:
     """Test for computing the minimum entropy of a given state."""
 
-    state_vector = [([1, 0, 0, 1] / np.sqrt(2), False), ([1, 0, 0, 0], True)]
+    state_vector = [
+        ([1, 0, 0, 1] / np.sqrt(2), False),
+        ([1, 0, 0, 0], True),
+        ([1, 0, 1, 0] / np.sqrt(2), True),
+    ]
+    
     single_wires_list = [
         [0],
         [1],
@@ -492,7 +498,7 @@ class TestMinEntropy:
         if pure:
             expected_min_entropy = 0
         else:
-            expected_min_entropy = -np.log(2)
+            expected_min_entropy = np.log(2)
         assert qml.math.allclose(entropy, expected_min_entropy)
 
     @pytest.mark.parametrize("wires", single_wires_list)
@@ -512,7 +518,7 @@ class TestMinEntropy:
             if pure:
                 expected_min_entropy = 0
             else:
-                expected_min_entropy = -np.log(2) / np.log(base)
+                expected_min_entropy = np.log(2) / np.log(base)
             assert qml.math.allclose(entropy, expected_min_entropy)
 
     density_matrices = [
@@ -537,7 +543,7 @@ class TestMinEntropy:
         if pure:
             expected_min_entropy = 0
         else:
-            expected_min_entropy = -np.log(2) / np.log(base)
+            expected_min_entropy = np.log(2) / np.log(base)
 
         assert qml.math.allclose(entropy, expected_min_entropy)
 
@@ -555,16 +561,16 @@ class TestMinEntropy:
         """Test `min_entropy` differentiability with autograd."""
 
         # It handles different parameters' shapes
-        try:
+        if len(np.array(params).shape) > 1:
             expected_results = [
-                1 / (param * np.log(base)) if param != 0 else param for param in params
+                [-1/np.log(base), 0.0, 0.0, 0.0],
+                [0.0, -1/np.log(base), 0.0, 0.0],
+                [0.0, 0.0, -1/np.log(base), 0.0],
+                [0.0, 0.0, 0.0, -1/np.log(base)],
             ]
-        except TypeError:
+        else:
             expected_results = [
-                [1 / np.log(base), 0.0, 0.0, 0.0],
-                [0.0, 1 / np.log(base), 0.0, 0.0],
-                [0.0, 0.0, 1 / np.log(base), 0.0],
-                [0.0, 0.0, 0.0, 1 / np.log(base)],
+                1 / (param * -np.log(base)) if param != 0 else param for param in params
             ]
 
         params = np.tensor(params)
@@ -584,16 +590,16 @@ class TestMinEntropy:
         import torch
 
         # It handles different parameters' shapes
-        try:
+        if len(np.array(params).shape) > 1:
             expected_results = [
-                1 / (param * np.log(base)) if param != 0 else param for param in params
+                [-1/np.log(base), 0.0, 0.0, 0.0],
+                [0.0, -1/np.log(base), 0.0, 0.0],
+                [0.0, 0.0, -1/np.log(base), 0.0],
+                [0.0, 0.0, 0.0, -1/np.log(base)],
             ]
-        except TypeError:
+        else:
             expected_results = [
-                [1 / np.log(base), 0.0, 0.0, 0.0],
-                [0.0, 1 / np.log(base), 0.0, 0.0],
-                [0.0, 0.0, 1 / np.log(base), 0.0],
-                [0.0, 0.0, 0.0, 1 / np.log(base)],
+                1 / (param * -np.log(base)) if param != 0 else param for param in params
             ]
 
         params = torch.tensor(params, requires_grad=True)
@@ -615,16 +621,16 @@ class TestMinEntropy:
         import tensorflow as tf
 
         # It handles different parameters' shapes
-        try:
+        if len(np.array(params).shape) > 1:
             expected_results = [
-                1 / (param * np.log(base)) if param != 0 else param for param in params
+                [-1/np.log(base), 0.0, 0.0, 0.0],
+                [0.0, -1/np.log(base), 0.0, 0.0],
+                [0.0, 0.0, -1/np.log(base), 0.0],
+                [0.0, 0.0, 0.0, -1/np.log(base)],
             ]
-        except TypeError:
+        else:
             expected_results = [
-                [1 / np.log(base), 0.0, 0.0, 0.0],
-                [0.0, 1 / np.log(base), 0.0, 0.0],
-                [0.0, 0.0, 1 / np.log(base), 0.0],
-                [0.0, 0.0, 0.0, 1 / np.log(base)],
+                1 / (param * -np.log(base)) if param != 0 else param for param in params
             ]
 
         params = tf.Variable(params)
@@ -653,16 +659,16 @@ class TestMinEntropy:
         config.update("jax_enable_x64", True)  # Enabling complex128 datatypes for jax
 
         # It handles different parameters' shapes
-        try:
+        if len(np.array(params).shape) > 1:
             expected_results = [
-                1 / (param * np.log(base)) if param != 0 else param for param in params
+                [-1/np.log(base), 0.0, 0.0, 0.0],
+                [0.0, -1/np.log(base), 0.0, 0.0],
+                [0.0, 0.0, -1/np.log(base), 0.0],
+                [0.0, 0.0, 0.0, -1/np.log(base)],
             ]
-        except TypeError:
+        else:
             expected_results = [
-                [1 / np.log(base), 0.0, 0.0, 0.0],
-                [0.0, 1 / np.log(base), 0.0, 0.0],
-                [0.0, 0.0, 1 / np.log(base), 0.0],
-                [0.0, 0.0, 0.0, 1 / np.log(base)],
+                1 / (param * -np.log(base)) if param != 0 else param for param in params
             ]
 
         params = jnp.array(params)
