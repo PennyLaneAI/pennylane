@@ -19,6 +19,7 @@ import pennylane as qml
 
 from pennylane.pulse import HardwareHamiltonian, HardwarePulse, drive
 from pennylane.wires import Wires
+from pennylane.pulse.hardware_hamiltonian import _reorder_parameters
 
 
 def rydberg_interaction(
@@ -112,7 +113,9 @@ def rydberg_interaction(
 
     settings = RydbergSettings(register, interaction_coeff)
 
-    return HardwareHamiltonian(coeffs, observables, settings=settings)
+    return HardwareHamiltonian(
+        coeffs, observables, settings=settings, reorder_fn=_reorder_parameters
+    )
 
 
 def rydberg_drive(amplitude, phase, detuning, wires):

@@ -31,6 +31,7 @@
   [(#3930)](https://github.com/PennyLaneAI/pennylane/pull/3930)
   [(#3936)](https://github.com/PennyLaneAI/pennylane/pull/3936/)
   [(#3966)](https://github.com/PennyLaneAI/pennylane/pull/3966)
+  [(#3987)](https://github.com/PennyLaneAI/pennylane/pull/3987)
 
 * Added `Operation.__truediv__` dunder method to be able to divide operators.
   [(#3749)](https://github.com/PennyLaneAI/pennylane/pull/3749)
