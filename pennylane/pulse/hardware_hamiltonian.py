@@ -227,7 +227,41 @@ def drive(amplitude, phase, wires):
 
     observables = [drive_x_term, drive_y_term]
 
-    return HardwareHamiltonian(coeffs, observables)
+    return HardwareHamiltonian(coeffs, observables, _reorder_parameters)
+
+
+def _reorder_parameters(params, coeffs_parametrized):
+    """Takes `params`, and reorganizes it based on whether the Hamiltonian has
+    callable phase and/or callable amplitude.
+    Consolidates phase and amplitude parameters in the case that both are callable,
+    and duplicates phase and/or amplitude parameters if either are callables, since
+    they will be passed to two operators in the Hamiltonian"""
+
+    reordered_params = []
+
+    coeff_idx = 0
+    params_idx = 0
+
+    for i, coeff in enumerate(coeffs_parametrized):
+        if i == coeff_idx:
+            if isinstance(coeff, AmplitudeAndPhase):
+                if coeff.phase_is_callable and coeff.amp_is_callable:
+                    # add the joined parameters twice, and skip an index
+                    reordered_params.append([params[params_idx], params[params_idx + 1]])
+                    reordered_params.append([params[params_idx], params[params_idx + 1]])
+                    coeff_idx += 2
+                    params_idx += 2
+                elif coeff.phase_is_callable or coeff.amp_is_callable:
+                    reordered_params.append(params[params_idx])
+                    reordered_params.append(params[params_idx])
+                    coeff_idx += 2
+                    params_idx += 1
+            else:
+                reordered_params.append(params[params_idx])
+                coeff_idx += 1
+                params_idx += 1
+
+    return reordered_params
 
 
 class HardwareHamiltonian(ParametrizedHamiltonian):
@@ -252,6 +286,11 @@ class HardwareHamiltonian(ParametrizedHamiltonian):
             length as ``coeffs``
 
     Keyword Args:
+        reorder_fn (callable): function for reordering the parameters before calling.
+            This allows automatically copying parameters when they are used for different terms,
+            as well as allowing single terms to depend on multiple parameters, as is the case for
+            drive Hamiltonians. Note that in order to add two HardwareHamiltonians,
+            the reorder_fn needs to be matching.
         settings Union[RydbergSettings, TransmonSettings]: Dataclass containing the hardware specific settings. Default is ``None``.
         pulses (list[HardwarePulse]): list of ``HardwarePulse`` dataclasses containing the information about the
             amplitude, phase, drive frequency and wires of each pulse
@@ -266,19 +305,25 @@ class HardwareHamiltonian(ParametrizedHamiltonian):
         self,
         coeffs,
         observables,
+        reorder_fn: Callable = _reorder_parameters,
         pulses: List["HardwarePulse"] = None,
         settings: Union["RydbergSettings", "TransmonSettings"] = None,
     ):
         self.settings = settings
         self.pulses = [] if pulses is None else pulses
+        self.reorder_fn = reorder_fn
         super().__init__(coeffs, observables)
 
     def __call__(self, params, t):
-        params = _reorder_parameters(params, self.coeffs_parametrized)
+        params = self.reorder_fn(params, self.coeffs_parametrized)
         return super().__call__(params, t)
 
     def __add__(self, other):
         if isinstance(other, HardwareHamiltonian):
+            if not self.reorder_fn == other.reorder_fn:
+                raise ValueError(
+                    f"Cannot add two HardwareHamiltonians with different reorder functions. Received reorder_fns {self.reorder_fn} and {other.reorder_fn}. This is likely due to an attempt to add hardware compatible Hamiltonians for different target systems."
+                )
             if self.settings is None and other.settings is None:
                 new_settings = None
             else:
@@ -289,7 +334,11 @@ class HardwareHamiltonian(ParametrizedHamiltonian):
             new_ops = self.ops + other.ops
             new_coeffs = self.coeffs + other.coeffs
             return HardwareHamiltonian(
-                new_coeffs, new_ops, settings=new_settings, pulses=new_pulses
+                new_coeffs,
+                new_ops,
+                reorder_fn=self.reorder_fn,
+                settings=new_settings,
+                pulses=new_pulses,
             )
 
         ops = self.ops.copy()
@@ -300,17 +349,23 @@ class HardwareHamiltonian(ParametrizedHamiltonian):
         if isinstance(other, (Hamiltonian, ParametrizedHamiltonian)):
             new_coeffs = coeffs + list(other.coeffs.copy())
             new_ops = ops + other.ops.copy()
-            return HardwareHamiltonian(new_coeffs, new_ops, settings=settings, pulses=pulses)
+            return HardwareHamiltonian(
+                new_coeffs, new_ops, reorder_fn=self.reorder_fn, settings=settings, pulses=pulses
+            )
 
         if isinstance(other, qml.ops.SProd):  # pylint: disable=no-member
             new_coeffs = coeffs + [other.scalar]
             new_ops = ops + [other.base]
-            return HardwareHamiltonian(new_coeffs, new_ops, settings=settings, pulses=pulses)
+            return HardwareHamiltonian(
+                new_coeffs, new_ops, reorder_fn=self.reorder_fn, settings=settings, pulses=pulses
+            )
 
         if isinstance(other, Operator):
             new_coeffs = coeffs + [1]
             new_ops = ops + [other]
-            return HardwareHamiltonian(new_coeffs, new_ops, settings=settings, pulses=pulses)
+            return HardwareHamiltonian(
+                new_coeffs, new_ops, reorder_fn=self.reorder_fn, settings=settings, pulses=pulses
+            )
 
         return NotImplemented
 
@@ -330,7 +385,11 @@ class HardwareHamiltonian(ParametrizedHamiltonian):
             new_ops = other.ops.copy() + ops
 
             return HardwareHamiltonian(
-                new_coeffs, new_ops, settings=self.settings, pulses=self.pulses
+                new_coeffs,
+                new_ops,
+                reorder_fn=self.reorder_fn,
+                settings=self.settings,
+                pulses=self.pulses,
             )
 
         return self.__add__(other)
@@ -406,37 +465,3 @@ class AmplitudeAndPhase:
 
     def __call__(self, params, t):
         return self.func(params, t)
-
-
-def _reorder_parameters(params, coeffs_parametrized):
-    """Takes `params`, and reorganizes it based on whether the Hamiltonian has
-    callable phase and/or callable amplitude.
-    Consolidates phase and amplitude parameters in the case that both are callable,
-    and duplicates phase and/or amplitude parameters if either are callables, since
-    they will be passed to two operators in the Hamiltonian"""
-
-    reordered_params = []
-
-    coeff_idx = 0
-    params_idx = 0
-
-    for i, coeff in enumerate(coeffs_parametrized):
-        if i == coeff_idx:
-            if isinstance(coeff, AmplitudeAndPhase):
-                if coeff.phase_is_callable and coeff.amp_is_callable:
-                    # add the joined parameters twice, and skip an index
-                    reordered_params.append([params[params_idx], params[params_idx + 1]])
-                    reordered_params.append([params[params_idx], params[params_idx + 1]])
-                    coeff_idx += 2
-                    params_idx += 2
-                elif coeff.phase_is_callable or coeff.amp_is_callable:
-                    reordered_params.append(params[params_idx])
-                    reordered_params.append(params[params_idx])
-                    coeff_idx += 2
-                    params_idx += 1
-            else:
-                reordered_params.append(params[params_idx])
-                coeff_idx += 1
-                params_idx += 1
-
-    return reordered_params
