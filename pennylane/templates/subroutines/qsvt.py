@@ -28,25 +28,30 @@ def qsvt(A, angles, wires, convention=None):
     r"""Implements the
     `quantum singular value transformation <https://arxiv.org/abs/1806.01838>`__ (QSVT) circuit.
 
-    Given a matrix :math:`A`, and a list of angles :math:`\vec{\phi}`, this template applies a
+    Given a matrix :math:`A`, and a list of angles :math:`\vec{\phi}`, this function applies a
     circuit for the quantum singular value transformation using :class:`~.BlockEncode` and
-    :class:`~.PCPhase`. These operators are matrix-based and well-suited for simulators.
-    To implement QSVT with specific circuits for block-encoding and projector-controlled phase
-    shifts, use the :class:`~.QSVT` template.
+    :class:`~.PCPhase`. 
+    
+    .. note ::
+
+        :class:`~.BlockEncode` and :class:`~.PCPhase` used in this implementation of QSVT
+        are matrix-based operators and well-suited for simulators.
+        To implement QSVT with user-defined circuits for the block-encoding and
+        projector-controlled phase shifts, use the :class:`~.QSVT` template.
 
     When the number of angles is even (:math:`d` is odd), the QSVT circuit is defined as:
 
     .. math::
 
         U_{QSVT} = \Pi_{\phi_1}U\left[\prod^{(d-1)/2}_{k=1}\Pi_{\phi_{2k}}U^\dagger
-        \Pi_{\phi_{2k+1}}U\right]\Pi_{\phi_{d+1}},
+        \tilde{\Pi}_{\phi_{2k+1}}U\right]\Pi_{\phi_{d+1}},
 
 
     and when the number of angles is odd (:math:`d` is even):
 
     .. math::
 
-        U_{QSVT} = \left[\prod^{d/2}_{k=1}\Pi_{\phi_{2k-1}}U^\dagger\Pi_{\phi_{2k}}U\right]
+        U_{QSVT} = \left[\prod^{d/2}_{k=1}\Pi_{\phi_{2k-1}}U^\dagger\tilde{\Pi}_{\phi_{2k}}U\right]
         \Pi_{\phi_{d+1}}.
 
     Here, :math:`U` denotes a block encoding of :math:`A` via :class:`~.BlockEncode` and
@@ -75,7 +80,7 @@ def qsvt(A, angles, wires, convention=None):
     Args:
         A (tensor_like): the general :math:`(n \times m)` matrix to be encoded
         angles (tensor_like): a list of angles by which to shift to obtain the desired polynomial
-        wires (Iterable): the wires the template acts on
+        wires (Iterable[int, str], Wires): the wires the template acts on
         convention (string): can be set to ``"Wx"`` to convert quantum signal processing angles in the
             `Wx` convention to QSVT angles.
 
@@ -132,9 +137,13 @@ class QSVT(Operation):
 
     Given an :class:`~.Operator` :math:`U`, which block encodes the matrix :math:`A`, and a list of
     projector-controlled phase shift operations :math:`\vec{\Pi}_\phi`, this template applies a
-    circuit for the quantum singular value transformation as follows. This allows users to define
-    circuits that can be implemented in hardware. For a QSVT implementation that is specially
-    tailored for use in simulators see :func:`~.qsvt` .
+    circuit for the quantum singular value transformation as follows.
+    
+    .. note ::
+
+        This template allows users to define hardware-compatible block-encoding and
+        projector-controlled phase shift circuits. For a QSVT implementation that is
+        tailored to for simulators see :func:`~.qsvt` .
 
 
     When the number of projector-controlled phase shifts is even (:math:`d` is odd), the QSVT
@@ -143,14 +152,14 @@ class QSVT(Operation):
     .. math::
 
         U_{QSVT} = \Pi_{\phi_1}U\left[\prod^{(d-1)/2}_{k=1}\Pi_{\phi_{2k}}U^\dagger
-        \Pi_{\phi_{2k+1}}U\right]\Pi_{\phi_{d+1}}.
+        \tilde{\Pi}_{\phi_{2k+1}}U\right]\Pi_{\phi_{d+1}}.
 
 
     And when the number of projector-controlled phase shifts is odd (:math:`d` is even):
 
     .. math::
 
-        U_{QSVT} = \left[\prod^{d/2}_{k=1}\Pi_{\phi_{2k-1}}U^\dagger\Pi_{\phi_{2k}}U\right]
+        U_{QSVT} = \left[\prod^{d/2}_{k=1}\Pi_{\phi_{2k-1}}U^\dagger\tilde{\Pi}_{\phi_{2k}}U\right]
         \Pi_{\phi_{d+1}}.
 
     This circuit applies a polynomial transformation (:math:`Poly^{SV}`) to the singular values of
@@ -240,14 +249,14 @@ class QSVT(Operation):
         .. math::
 
             U_{QSVT} = \Pi_{\phi_1}U\left[\prod^{(d-1)/2}_{k=1}\Pi_{\phi_{2k}}U^\dagger
-            \Pi_{\phi_{2k+1}}U\right]\Pi_{\phi_{d+1}}.
+            \tilde{\Pi}_{\phi_{2k+1}}U\right]\Pi_{\phi_{d+1}}.
 
 
         And when the number of projector-controlled phase shifts is odd (:math:`d` is even):
 
         .. math::
 
-            U_{QSVT} = \left[\prod^{d/2}_{k=1}\Pi_{\phi_{2k-1}}U^\dagger\Pi_{\phi_{2k}}U\right]
+            U_{QSVT} = \left[\prod^{d/2}_{k=1}\Pi_{\phi_{2k-1}}U^\dagger\tilde{\Pi}_{\phi_{2k}}U\right]
             \Pi_{\phi_{d+1}}.
 
         .. seealso:: :meth:`~.QSVT.decomposition`.

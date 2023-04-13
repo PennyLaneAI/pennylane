@@ -364,7 +364,7 @@ class BlockEncode(Operation):
     * Gradient recipe: None
 
     Args:
-        A (array[complex]): a general :math:`(n \times m)` matrix to be encoded
+        A (tensor_like): a general :math:`(n \times m)` matrix to be encoded
         wires (Iterable[int, str], Wires): the wires the operation acts on
         do_queue (bool): Indicates whether the operator should be
             immediately pushed into the Operator queue (optional)

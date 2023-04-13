@@ -515,12 +515,12 @@ class PCPhase(Operation):
 
     This gate applies a complex phase :math:`e^{i\phi}` to the first :math:`dim`
     basis vectors of the input state while applying a complex phase :math:`e^{-i \phi}`
-    to the remaining basis vectors. For example, consider the 2-qubit case where :math:`dim = 2`:
+    to the remaining basis vectors. For example, consider the 2-qubit case where :math:`dim = 3`:
 
     .. math:: \Pi(\phi) = \begin{bmatrix}
                 e^{i\phi} & 0 & 0 & 0 \\
                 0 & e^{i\phi} & 0 & 0 \\
-                0 & 0 & e^{-i\phi} & 0 \\
+                0 & 0 & e^{i\phi} & 0 \\
                 0 & 0 & 0 & e^{-i\phi}
             \end{bmatrix}.
 
