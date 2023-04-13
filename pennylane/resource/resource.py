@@ -61,7 +61,9 @@ class Resources:
             )
 
         if not isinstance(gate_types, dict):
-            raise TypeError(f"Incorrect type of input, expected type dict for gate_types. Got {type(gate_types)}.")
+            raise TypeError(
+                f"Incorrect type of input, expected type dict for gate_types. Got {type(gate_types)}."
+            )
 
         if not all(val > -1 for val in [num_wires, num_gates, depth, shots]):
             raise ValueError(

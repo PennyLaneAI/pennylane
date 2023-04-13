@@ -59,9 +59,7 @@ class TestResources:
         with pytest.raises(TypeError, match="Incorrect type of input,"):
             Resources(*params)
 
-    value_error = (
-        (0, -1, {"Hadamard": 1}, 2, -3),
-    )
+    value_error = ((0, -1, {"Hadamard": 1}, 2, -3),)
 
     @pytest.mark.parametrize("params", value_error)
     def test_init_value_error(self, params):
@@ -129,9 +127,9 @@ class TestResources:
 
         r4 = Resources(1, 2, {"Hadamard": 1, "CNOT": 1}, 2, 100)  # diff wires
         r5 = Resources(4, 1, {"Hadamard": 1, "CNOT": 1}, 2, 100)  # diff num_gates
-        r6 = Resources(4, 2, {"CNOT": 1}, 2, 100)                 # diff gate_types
+        r6 = Resources(4, 2, {"CNOT": 1}, 2, 100)  # diff gate_types
         r7 = Resources(4, 2, {"Hadamard": 1, "CNOT": 1}, 1, 100)  # diff depth
-        r8 = Resources(4, 2, {"Hadamard": 1, "CNOT": 1}, 2, 1)    # diff shots
+        r8 = Resources(4, 2, {"Hadamard": 1, "CNOT": 1}, 2, 1)  # diff shots
 
         assert r1.__eq__(r1)
         assert r1.__eq__(r2)
