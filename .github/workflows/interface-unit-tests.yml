@@ -5,12 +5,26 @@ on:
       description: The PennyLane branch to checkout and run unit tests for
       required: true
       type: string
-
-env:
-  JAX_VERSION: 0.4.3
-  TF_VERSION: 2.10.0
-  TORCH_VERSION: 2.0.0
-  COVERAGE_FLAGS: --cov=pennylane --cov-report=term-missing --cov-report=xml --no-flaky-report -p no:warnings --tb=native
+    jax_version:
+      description: The version of JAX to install for any job that requires JAX
+      required: false
+      type: string
+      default: 0.4.3
+    tensorflow_version:
+      description: The version of TensorFlow to install for any job that requires TensorFlow
+      required: false
+      type: string
+      default: 2.10.0
+    pytorch_version:
+      description: The version of PyTorch to install for any job that requires PyTorch
+      required: false
+      type: string
+      default: 2.0.0
+    pytest_coverage_flags:
+      description: PyTest Coverage flags to pass to all jobs
+      required: false
+      type: string
+      default: --cov=pennylane --cov-report=term-missing --cov-report=xml --no-flaky-report -p no:warnings --tb=native
 
 jobs:
   torch-tests:
@@ -27,9 +41,9 @@ jobs:
       install_jax: false
       install_tensorflow: false
       install_pytorch: true
-      pytorch_version: ${{ env.TORCH_VERSION }}
+      pytorch_version: ${{ inputs.pytorch_version }}
       install_pennylane_lightning_master: true
-      pytest_coverage_flags: ${{ env.COVERAGE_FLAGS }}
+      pytest_coverage_flags: ${{ inputs.pytest_coverage_flags }}
       pytest_markers: torch and not qcut and not legacy and not finite-diff and not param-shift
       additional_pip_packages: ${{ matrix.python-version != '3.11' && 'cvxpy cvxopt' || '' }}
 
@@ -51,7 +65,7 @@ jobs:
       install_tensorflow: false
       install_pytorch: false
       install_pennylane_lightning_master: true
-      pytest_coverage_flags: ${{ env.COVERAGE_FLAGS }}
+      pytest_coverage_flags: ${{ inputs.pytest_coverage_flags }}
       pytest_markers: autograd and not qcut and not legacy and not finite-diff and not param-shift
       additional_pip_packages: ${{ matrix.python-version != '3.11' && 'cvxpy cvxopt' || '' }}
 
@@ -72,11 +86,11 @@ jobs:
       python_version: ${{ matrix.python-version }}
       install_jax: false
       install_tensorflow: true
-      tensorflow_version: ${{ env.TF_VERSION }}
-      keras_version: ${{ env.TF_VERSION }}
+      tensorflow_version: ${{ inputs.tensorflow_version }}
+      keras_version: ${{ inputs.tensorflow_version }}
       install_pytorch: false
       install_pennylane_lightning_master: true
-      pytest_coverage_flags: ${{ env.COVERAGE_FLAGS }}
+      pytest_coverage_flags: ${{ inputs.pytest_coverage_flags }}
       pytest_markers: tf and not qcut and not legacy and not finite-diff and not param-shift
       pytest_additional_args: --splits 2 --group ${{ matrix.group }}
       additional_pip_packages: pytest-split cvxpy cvxopt
@@ -97,11 +111,11 @@ jobs:
       coverage_artifact_name: core-interfaces-coverage-jax-${{ matrix.python-version }}-${{ matrix.group }}
       python_version: ${{ matrix.python-version }}
       install_jax: true
-      jax_version: ${{ env.JAX_VERSION }}
+      jax_version: ${{ inputs.jax_version }}
       install_tensorflow: false
       install_pytorch: false
       install_pennylane_lightning_master: true
-      pytest_coverage_flags: ${{ env.COVERAGE_FLAGS }}
+      pytest_coverage_flags: ${{ inputs.pytest_coverage_flags }}
       pytest_markers: jax and not qcut and not legacy and not finite-diff and not param-shift
       pytest_additional_args: --splits 2 --group ${{ matrix.group }}
       additional_pip_packages: ${{ matrix.python-version != '3.11' && 'pytest-split cvxpy cvxopt' || 'pytest-split' }}
@@ -127,7 +141,7 @@ jobs:
       install_tensorflow: false
       install_pytorch: false
       install_pennylane_lightning_master: true
-      pytest_coverage_flags: ${{ env.COVERAGE_FLAGS }}
+      pytest_coverage_flags: ${{ inputs.pytest_coverage_flags }}
       pytest_markers: core and not qcut and not legacy and not finite-diff and not param-shift
       pytest_additional_args: --splits 2 --group ${{ matrix.group }}
       additional_pip_packages: ${{ matrix.python-version != '3.11' && 'pytest-split cvxpy cvxopt' || 'pytest-split' }}
@@ -140,14 +154,14 @@ jobs:
       coverage_artifact_name: all-interfaces-coverage
       python_version: 3.8
       install_jax: true
-      jax_version: ${{ env.JAX_VERSION }}
+      jax_version: ${{ inputs.jax_version }}
       install_tensorflow: true
-      tensorflow_version: ${{ env.TF_VERSION }}
-      keras_version: ${{ env.TF_VERSION }}
+      tensorflow_version: ${{ inputs.tensorflow_version }}
+      keras_version: ${{ inputs.tensorflow_version }}
       install_pytorch: true
-      pytorch_version: ${{ env.TORCH_VERSION }}
+      pytorch_version: ${{ inputs.pytorch_version }}
       install_pennylane_lightning_master: false
-      pytest_coverage_flags: ${{ env.COVERAGE_FLAGS }}
+      pytest_coverage_flags: ${{ inputs.pytest_coverage_flags }}
       pytest_markers: all_interfaces
 
 
@@ -161,7 +175,7 @@ jobs:
       install_tensorflow: false
       install_pytorch: false
       install_pennylane_lightning_master: false
-      pytest_coverage_flags: ${{ env.COVERAGE_FLAGS }}
+      pytest_coverage_flags: ${{ inputs.pytest_coverage_flags }}
       pytest_markers: zx
       additional_pip_packages: git+https://github.com/Quantomatic/pyzx.git@master
 
@@ -173,14 +187,14 @@ jobs:
       coverage_artifact_name: qcut-coverage
       python_version: 3.8
       install_jax: true
-      jax_version: ${{ env.JAX_VERSION }}
+      jax_version: ${{ inputs.jax_version }}
       install_tensorflow: true
-      tensorflow_version: ${{ env.TF_VERSION }}
-      keras_version: ${{ env.TF_VERSION }}
+      tensorflow_version: ${{ inputs.tensorflow_version }}
+      keras_version: ${{ inputs.tensorflow_version }}
       install_pytorch: true
-      pytorch_version: ${{ env.TORCH_VERSION }}
+      pytorch_version: ${{ inputs.pytorch_version }}
       install_pennylane_lightning_master: false
-      pytest_coverage_flags: ${{ env.COVERAGE_FLAGS }}
+      pytest_coverage_flags: ${{ inputs.pytest_coverage_flags }}
       pytest_markers: qcut
       additional_pip_packages: kahypar==1.1.7 opt_einsum
 
@@ -195,7 +209,7 @@ jobs:
       install_tensorflow: false
       install_pytorch: false
       install_pennylane_lightning_master: false
-      pytest_coverage_flags: ${{ env.COVERAGE_FLAGS }}
+      pytest_coverage_flags: ${{ inputs.pytest_coverage_flags }}
       pytest_markers: qchem
       additional_pip_packages: openfermionpyscf basis-set-exchange
 
@@ -207,14 +221,14 @@ jobs:
       coverage_artifact_name: legacy-coverage
       python_version: 3.8
       install_jax: true
-      jax_version: ${{ env.JAX_VERSION }}
+      jax_version: ${{ inputs.jax_version }}
       install_tensorflow: true
-      tensorflow_version: ${{ env.TF_VERSION }}
-      keras_version: ${{ env.TF_VERSION }}
+      tensorflow_version: ${{ inputs.tensorflow_version }}
+      keras_version: ${{ inputs.tensorflow_version }}
       install_pytorch: true
-      pytorch_version: ${{ env.TORCH_VERSION }}
+      pytorch_version: ${{ inputs.pytorch_version }}
       install_pennylane_lightning_master: false
-      pytest_coverage_flags: ${{ env.COVERAGE_FLAGS }}
+      pytest_coverage_flags: ${{ inputs.pytest_coverage_flags }}
       pytest_markers: legacy
 
 
@@ -230,14 +244,14 @@ jobs:
       coverage_artifact_name: gradients-${{ matrix.config.suite }}-coverage
       python_version: 3.8
       install_jax: true
-      jax_version: ${{ env.JAX_VERSION }}
+      jax_version: ${{ inputs.jax_version }}
       install_tensorflow: true
-      tensorflow_version: ${{ env.TF_VERSION }}
-      keras_version: ${{ env.TF_VERSION }}
+      tensorflow_version: ${{ inputs.tensorflow_version }}
+      keras_version: ${{ inputs.tensorflow_version }}
       install_pytorch: true
-      pytorch_version: ${{ env.TORCH_VERSION }}
+      pytorch_version: ${{ inputs.pytorch_version }}
       install_pennylane_lightning_master: false
-      pytest_coverage_flags: ${{ env.COVERAGE_FLAGS }}
+      pytest_coverage_flags: ${{ inputs.pytest_coverage_flags }}
       pytest_markers: ${{ matrix.config.suite }}
 
 
@@ -251,7 +265,7 @@ jobs:
       install_tensorflow: false
       install_pytorch: false
       install_pennylane_lightning_master: false
-      pytest_coverage_flags: ${{ env.COVERAGE_FLAGS }}
+      pytest_coverage_flags: ${{ inputs.pytest_coverage_flags }}
       pytest_markers: data
       additional_pip_packages: zstd dill
 
@@ -276,15 +290,15 @@ jobs:
       coverage_artifact_name: devices-coverage-${{ matrix.config.device }}-${{ matrix.config.shots }}
       python_version: 3.8
       install_jax: ${{ contains(matrix.config.device, 'jax') }}
-      jax_version: ${{ env.JAX_VERSION }}
+      jax_version: ${{ inputs.jax_version }}
       install_tensorflow: ${{ contains(matrix.config.device, 'tf') }}
-      tensorflow_version: ${{ env.TF_VERSION }}
-      keras_version: ${{ env.TF_VERSION }}
+      tensorflow_version: ${{ inputs.tensorflow_version }}
+      keras_version: ${{ inputs.tensorflow_version }}
       install_pytorch: ${{ contains(matrix.config.device, 'torch') }}
-      pytorch_version: ${{ env.TORCH_VERSION }}
+      pytorch_version: ${{ inputs.pytorch_version }}
       install_pennylane_lightning_master: false
       pytest_test_directory: pennylane/devices/tests
-      pytest_coverage_flags: ${{ env.COVERAGE_FLAGS }}
+      pytest_coverage_flags: ${{ inputs.pytest_coverage_flags }}
       pytest_additional_args: --device=${{ matrix.config.device }} --shots=${{ matrix.config.shots }}
 
 
