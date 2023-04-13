@@ -561,7 +561,7 @@ def test_integration_observable_to_vqe_cost(
 
     dummy_cost = qml.QNode(dummy_ansatz, dev)
     params = [0.1 * i for i in range(num_qubits)]
-    res = dummy_cost(params, wires)
+    res = dummy_cost(params, dev.wires)
 
     assert np.allclose(res, expected_cost, **tol)
 
@@ -671,6 +671,6 @@ def test_integration_mol_file_to_vqe_cost(
     phis = np.load(os.path.join(ref_dir, "dummy_ansatz_parameters.npy"))
 
     dummy_cost = qml.QNode(dummy_ansatz, dev)
-    res = dummy_cost(phis)
+    res = dummy_cost(phis, dev.wires)
 
     assert np.abs(res - expected_cost) < tol["atol"]

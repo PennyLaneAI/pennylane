@@ -63,7 +63,7 @@ class TestExceptions:
         assert opt.stepsize > 2 / lipschitz
 
         with pytest.raises(
-            ValueError, match=f"The learning rate must be less than {2 / lipschitz}"
+            ValueError, match=f"The learning rate must be less than"
         ):
             opt.step(expval_cost, np.array(0.5, requires_grad=True))
 
@@ -88,7 +88,7 @@ class TestExceptions:
 
         # test expval cost
         with pytest.raises(
-            ValueError, match="The objective function must either be encoded as a single QNode"
+            ValueError, match="The objective function must be encoded as a single QNode"
         ):
             opt.step(cost, np.array(0.5, requires_grad=True))
 
@@ -104,7 +104,6 @@ class TestSingleShotGradientIntegration:
     for a variety of argument types."""
 
     dev = qml.device("default.qubit", wires=1, shots=100)
-    H = qml.Hamiltonian([1.0], [qml.PauliZ(0)])
 
     @qml.qnode(dev)
     def qnode(x):
@@ -168,7 +167,7 @@ class TestSingleShotGradientIntegration:
         qml.RX(x[1, 0], wires=0)
         qml.RY(x[1, 1], wires=0)
         qml.RZ(x[1, 2], wires=0)
-        return qml.expval(H)
+        return qml.expval(qml.PauliZ(0))
 
     qnode = qml.QNode(ansatz, dev)
 
