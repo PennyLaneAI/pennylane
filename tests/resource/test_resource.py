@@ -16,7 +16,11 @@ Test base Resource class and its associated methods
 """
 
 import pytest
-from pennylane.resource import Resources
+
+import pennylane as qml
+from pennylane.tape import QuantumTape
+from pennylane.operation import Operation
+from pennylane.resource import Resources, count_resources
 
 
 class TestResources:
@@ -147,3 +151,88 @@ class TestResources:
         r._ipython_display_()  # pylint: disable=protected-access
         captured = capsys.readouterr()
         assert rep in captured.out
+
+
+def _construct_tape_from_ops(lst_ops):
+    with QuantumTape() as tape:
+        for op in lst_ops:
+            qml.apply(op)
+    return tape
+
+
+class _CustomOpWithResource(Operation):
+    num_wires = 2
+    name = "CustomOp1"
+
+    # TODO: add test where custom op has depth >1 once Circuit Graph PR is merged.
+    def resources(self):
+        return Resources(
+            num_wires=self.num_wires, num_gates=3, gate_types={"Identity": 1, "PauliZ": 2}, depth=1
+        )
+
+
+class _CustomOpWithoutResource(Operation):
+    num_wires = 2
+    name = "CustomOp2"
+
+
+lst_ops_and_shots = (
+    ([], 0),
+    ([qml.Hadamard(0), qml.CNOT([0, 1])], 0),
+    ([qml.PauliZ(0), qml.CNOT([0, 1]), qml.RX(1.23, 2)], 10),
+    (
+        [
+            qml.Hadamard(0),
+            qml.RX(1.23, 1),
+            qml.CNOT([0, 1]),
+            qml.RX(4.56, 1),
+            qml.Hadamard(0),
+            qml.Hadamard(1),
+        ],
+        100,
+    ),
+    ([qml.Hadamard(0), qml.CNOT([0, 1]), _CustomOpWithResource(wires=[1, 0])], 0),
+    (
+        [
+            qml.PauliZ(0),
+            qml.CNOT([0, 1]),
+            qml.RX(1.23, 2),
+            _CustomOpWithResource(wires=[0, 2]),
+            _CustomOpWithoutResource(wires=[0, 1]),
+        ],
+        10,
+    ),
+    (
+        [
+            qml.Hadamard(0),
+            qml.RX(1.23, 1),
+            qml.CNOT([0, 1]),
+            qml.RX(4.56, 1),
+            qml.Hadamard(0),
+            qml.Hadamard(1),
+            _CustomOpWithoutResource(wires=[0, 1]),
+        ],
+        100,
+    ),
+)
+
+resources_data = (
+    Resources(),
+    Resources(2, 2, {"Hadamard": 1, "CNOT": 1}, 2, 0),
+    Resources(3, 3, {"PauliZ": 1, "CNOT": 1, "RX": 1}, 2, 10),
+    Resources(2, 6, {"Hadamard": 3, "RX": 2, "CNOT": 1}, 4, 100),
+    Resources(2, 5, {"Hadamard": 1, "CNOT": 1, "Identity": 1, "PauliZ": 2}, 3, 0),
+    Resources(3, 7, {"PauliZ": 3, "CNOT": 1, "RX": 1, "Identity": 1, "CustomOp2": 1}, 4, 10),
+    Resources(2, 7, {"Hadamard": 3, "RX": 2, "CNOT": 1, "CustomOp2": 1}, 5, 100),
+)
+
+
+@pytest.mark.parametrize(
+    "ops_and_shots, expected_resources", zip(lst_ops_and_shots, resources_data)
+)
+def test_count_resources(ops_and_shots, expected_resources):
+    """Test the count resources method."""
+    ops, shots = ops_and_shots
+    tape = _construct_tape_from_ops(ops)
+    computed_resources = count_resources(tape, shots)
+    assert computed_resources == expected_resources

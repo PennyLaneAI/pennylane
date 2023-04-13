@@ -12,8 +12,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-The data class which will aggregate all the resource information from a quantum workflow.
+Stores classes and logic to aggregate all the resource information from a quantum workflow.
 """
+
+from collections import defaultdict
+from pennylane.tape import QuantumTape
 
 
 class Resources:
@@ -167,3 +170,31 @@ class Resources:
                 self.gate_types == other.gate_types,
             ),
         )
+
+
+def count_resources(tape: QuantumTape, shots: int) -> Resources:
+    """Given a quantum workflow (tape) and number of samples, return the resources used.
+
+    Args:
+        tape (.QuantumTape): The quantum workflow for which we count resources
+        shots (int): The number of samples or shots to execute
+
+    Returns:
+        (.Resources): The total resources used in the workflow
+    """
+    num_wires = len(tape.wires)
+    depth = tape.graph.get_depth()
+
+    num_gates = 0
+    gate_types = defaultdict(int)
+    for op in tape.operations:
+        if hasattr(op, "resources"):
+            op_resource = op.resources()
+            for d in op_resource.gate_types:
+                gate_types[d] += op_resource.gate_types[d]
+            num_gates += sum(op_resource.gate_types.values())
+        else:
+            gate_types[op.name] += 1
+            num_gates += 1
+
+    return Resources(num_wires, num_gates, gate_types, depth, shots)
