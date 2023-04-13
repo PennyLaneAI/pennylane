@@ -14,7 +14,6 @@
 """
 Contains the adjoint_metric_tensor.
 """
-import warnings
 from itertools import chain
 
 import pennylane as qml

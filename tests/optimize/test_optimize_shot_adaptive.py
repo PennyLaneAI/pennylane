@@ -104,7 +104,6 @@ class TestSingleShotGradientIntegration:
     for a variety of argument types."""
 
     dev = qml.device("default.qubit", wires=1, shots=100)
-    H = qml.Hamiltonian([1.0], [qml.PauliZ(0)])
 
     @qml.qnode(dev)
     def qnode(x):
@@ -168,7 +167,7 @@ class TestSingleShotGradientIntegration:
         qml.RX(x[1, 0], wires=0)
         qml.RY(x[1, 1], wires=0)
         qml.RZ(x[1, 2], wires=0)
-        return qml.expval(H)
+        return qml.expval(qml.PauliZ(0))
 
     qnode = qml.QNode(ansatz, dev)
 
@@ -379,30 +378,6 @@ class TestSingleShotGradientIntegration:
 
 class TestWeightedRandomSampling:
     """Tests for weighted random Hamiltonian term sampling"""
-
-    def test_wrs_expval_cost(self, mocker):
-        """Checks that cost functions that are expval costs can
-        make use of weighted random sampling"""
-        coeffs = [0.2, 0.1]
-        dev = qml.device("default.qubit", wires=2, shots=100)
-        H = qml.Hamiltonian(coeffs, [qml.PauliZ(0), qml.PauliZ(0) @ qml.PauliZ(1)])
-
-        def circ(params):
-            qml.templates.StronglyEntanglingLayers(params, wires=dev.wires)
-            return qml.expval(H)
-
-        expval_cost = qml.QNode(circ, dev)
-        weights = np.random.random(qml.templates.StronglyEntanglingLayers.shape(3, 2))
-
-        opt = qml.ShotAdaptiveOptimizer(min_shots=10)
-        spy = mocker.spy(opt, "weighted_random_sampling")
-
-        _ = opt.step(expval_cost, weights)
-        spy.assert_called_once()
-
-        grads = opt.weighted_random_sampling(expval_cost.qnodes, coeffs, 10, [0], weights)
-        assert len(grads) == 1
-        assert grads[0].shape == (10, *weights.shape)
 
     def test_wrs_disabled(self, mocker):
         """Checks that cost functions that are expval costs can

@@ -1929,7 +1929,7 @@ class TestCycles:
 
         # We use PL to find the energies corresponding to each possible bitstring
         dev = qml.device("default.qubit", wires=wires)
-        
+
         h.compute_grouping()
 
         def energy(basis_state, **kwargs):
@@ -2005,7 +2005,7 @@ class TestCycles:
 
         # Find the energies corresponding to each possible bitstring
         dev = qml.device("default.qubit", wires=wires)
-        
+
         h.compute_grouping()
 
         def states(basis_state, **kwargs):
