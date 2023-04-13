@@ -207,6 +207,9 @@
 
 <h3>Bug fixes</h3>
 
+* Fixes a bug where the broadcast expand results where stacked along the wrong axis for the new return system.
+  [(#3984)](https://github.com/PennyLaneAI/pennylane/pull/3984)
+
 * Fixed a bug where calling `Evolution.generator` with `coeff` being a complex ArrayBox raised an error.
   [(#3796)](https://github.com/PennyLaneAI/pennylane/pull/3796)
   
