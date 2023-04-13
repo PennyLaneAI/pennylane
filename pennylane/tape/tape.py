@@ -97,12 +97,12 @@ def get_ops_with_rotations_and_measurements(tape):
 
             raise qml.QuantumFunctionError(_err_msg_for_some_meas_not_qwc(tape.measurements)) from e
 
-    ops = tape._ops + rotations
-    measurements = copy.copy(tape._measurements)
+        ops = tape._ops + rotations
+        measurements = copy.copy(tape._measurements)
 
-    for o, i in zip(diag_obs, tape._obs_sharing_wires_id):
-        new_m = tape.measurements[i].__class__(obs=o)
-        measurements[i] = new_m
+        for o, i in zip(diag_obs, tape._obs_sharing_wires_id):
+            new_m = tape.measurements[i].__class__(obs=o)
+            measurements[i] = new_m
 
     return ops, measurements
 
