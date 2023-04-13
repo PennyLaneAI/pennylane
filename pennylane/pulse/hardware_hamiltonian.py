@@ -269,7 +269,7 @@ class HardwareHamiltonian(ParametrizedHamiltonian):
     # pylint: disable=too-many-arguments
     def __init__(
         self,
-        coeffs
+        coeffs,
         observables,
         reorder_fn = None,
         pulses: List["HardwarePulse"] = None,
