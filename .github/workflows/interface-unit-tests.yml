@@ -84,7 +84,7 @@ jobs:
           - '3.10'
     uses: ./.github/workflows/unit-test.yml
     with:
-      job_name: tf-tests (${{ matrix.python-version }}, ${{ matrix.group }})
+      job_name: tf-tests (${{ matrix.group }}, ${{ matrix.python-version }})
       branch: ${{ inputs.branch }}
       coverage_artifact_name: core-interfaces-coverage-tf-${{ matrix.python-version }}-${{ matrix.group }}
       python_version: ${{ matrix.python-version }}
@@ -111,7 +111,7 @@ jobs:
           - '3.11'
     uses: ./.github/workflows/unit-test.yml
     with:
-      job_name: jax-tests (${{ matrix.python-version }}, ${{ matrix.group }})
+      job_name: jax-tests (${{ matrix.group }}, ${{ matrix.python-version }})
       branch: ${{ inputs.branch }}
       coverage_artifact_name: core-interfaces-coverage-jax-${{ matrix.python-version }}-${{ matrix.group }}
       python_version: ${{ matrix.python-version }}
@@ -139,7 +139,7 @@ jobs:
           - '3.11'
     uses: ./.github/workflows/unit-test.yml
     with:
-      job_name: core-tests (${{ matrix.python-version }}, ${{ matrix.group }})
+      job_name: core-tests (${{ matrix.group }}, ${{ matrix.python-version }})
       branch: ${{ inputs.branch }}
       coverage_artifact_name: core-interfaces-coverage-core-${{ matrix.python-version }}-${{ matrix.group }}
       python_version: ${{ matrix.python-version }}
@@ -251,7 +251,7 @@ jobs:
           - suite: param-shift
     uses: ./.github/workflows/unit-test.yml
     with:
-      job_name: gradients-tests (${{ matrix.suite }})
+      job_name: gradients-tests (${{ matrix.configsuite }})
       branch: ${{ inputs.branch }}
       coverage_artifact_name: gradients-${{ matrix.config.suite }}-coverage
       python_version: 3.8
