@@ -112,7 +112,7 @@ class grad:
             self._forward = self._fun(*args, **kwargs)
             return ()
 
-        grad_value, ans = grad_fn(*args, **kwargs)
+        grad_value, ans = grad_fn(*args, **kwargs)  # pylint: disable=not-callable
         self._forward = ans
 
         return grad_value
@@ -324,7 +324,16 @@ def jacobian(func, argnum=None):
                 "If this is unintended, please add trainable parameters via the "
                 "'requires_grad' attribute or 'argnum' keyword."
             )
-        jac = tuple(_jacobian(func, arg)(*args, **kwargs) for arg in _argnum)
+        try:
+            jac = tuple(_jacobian(func, arg)(*args, **kwargs) for arg in _argnum)
+        except Exception as e:
+            raise ValueError(
+                "PennyLane has a new return shape specification that"
+                " may not work well with autograd and more than one measurement. That may"
+                " be the source of the error. \n\n"
+                "Try wrapping your output in a autograd numpy array,"
+                " using qml.disable_return, or using a different interface."
+            ) from e
 
         return jac[0] if unpack else jac
 
