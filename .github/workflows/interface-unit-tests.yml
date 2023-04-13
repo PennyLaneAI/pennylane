@@ -251,7 +251,7 @@ jobs:
           - suite: param-shift
     uses: ./.github/workflows/unit-test.yml
     with:
-      job_name: gradients-tests (${{ matrix.configsuite }})
+      job_name: gradients-tests (${{ matrix.config.suite }})
       branch: ${{ inputs.branch }}
       coverage_artifact_name: gradients-${{ matrix.config.suite }}-coverage
       python_version: 3.8

@@ -3,12 +3,6 @@ on:
   release:
     types: [published]
 
-env:
-  JAX_VERSION: 0.4.3
-  TF_VERSION: 2.10.0
-  TORCH_VERSION: 1.13.0
-
-
 jobs:
   tests:
     uses: ./.github/workflows/interface-unit-tests.yml
