@@ -339,7 +339,7 @@ class DiagonalQubitUnitary(Operation):
 class BlockEncode(Operation):
     r"""BlockEncode(a, wires)
     Construct a unitary :math:`U(A)` such that an arbitrary matrix :math:`A`
-    is encoded in the top left block.
+    is encoded in the top-left block.
 
     .. note::
         If :math:`A` has operator norm greater than 1, we normalize it to ensure

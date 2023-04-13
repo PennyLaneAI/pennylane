@@ -66,8 +66,7 @@ def qsvt(A, angles, wires, convention=None):
             \end{bmatrix}.
         \end{align}
 
-    The polynomial transformation is determined by the choice of projector-controlled phase shift
-    angles, :math:`\vec{\phi}`.
+    The polynomial transformation is determined by the choice of angles, :math:`\vec{\phi}`.
 
     .. seealso::
 
