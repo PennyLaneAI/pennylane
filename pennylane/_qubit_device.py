@@ -1975,7 +1975,7 @@ class QubitDevice(Device):
             adj_op = qml.adjoint(op)
             ket = self._apply_operation(ket, adj_op)
 
-            if getattr(op, "grad_method", None) is not None:
+            if op.grad_method is not None:
                 if param_number in trainable_params:
                     d_op_matrix = operation_derivative(op)
                     ket_temp = self._apply_unitary(ket, d_op_matrix, op.wires)

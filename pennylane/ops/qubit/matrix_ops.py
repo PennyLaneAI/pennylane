@@ -342,9 +342,13 @@ class BlockEncode(Operation):
     is encoded in the top-left block.
 
     .. note::
-        If :math:`A` has operator norm greater than 1, we normalize it to ensure
+        If the norm of :math:`A` greater than 1, we normalize it to ensure
         :math:`U(A)` is unitary. The normalization constant can be
         accessed through :code:`op.hyperparameters["norm"]`.
+
+        Specifically, the norm is computed as the maximum of
+        :math:`L_{\infty} \vert AA^\dagger \vert` and
+        :math:`L_{\infty} \vert A^\dagger A \vert`
 
     .. math::
 
