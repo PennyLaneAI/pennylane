@@ -60,7 +60,7 @@ class Resources:
                 f"Got {type(num_wires)}, {type(num_gates)}, {type(depth)}, {type(shots)} respectively. "
             )
 
-        if not isinstance(gate_types, dict):
+        if gate_types and isinstance(gate_types, dict):
             raise TypeError(
                 f"Incorrect type of input, expected type dict for gate_types. Got {type(gate_types)}."
             )
