@@ -11,7 +11,7 @@ env:
 
 jobs:
   tests:
-    uses: ./github/workflows/interface-unit-tests.yml
+    uses: ./.github/workflows/interface-unit-tests.yml
     with:
       branch: ${{ github.ref }}
 
