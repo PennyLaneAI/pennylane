@@ -124,7 +124,7 @@ jobs:
       - name: Install TensorFlow
         if: inputs.install_tensorflow == true
         env:
-          TF_VERSION: ${{ inputs.torch_version != '' && format('~={0}', inputs.torch_version) || '' }}
+          TF_VERSION: ${{ inputs.tensorflow_version != '' && format('~={0}', inputs.tensorflow_version) || '' }}
         run: pip install "tensorflow${{ env.TF_VERSION }}" "keras${{ env.TF_VERSION }}"
 
       - name: Install JAX
@@ -156,6 +156,7 @@ jobs:
       - name: Run PennyLane Unit Tests
         env:
           PYTEST_MARKER: ${{ inputs.pytest_markers != '' && format('-m "{0}"', inputs.pytest_markers) || '' }}
+        # Calling PyTest by invoking Python first as that adds the current directory to sys.path
         run: python -m pytest ${{ inputs.pytest_test_directory }} ${{ inputs.pytest_coverage_flags }} ${{ inputs.pytest_additional_args }} ${{ env.PYTEST_MARKER }} -n auto
 
       - name: Adjust coverage file for Codecov
