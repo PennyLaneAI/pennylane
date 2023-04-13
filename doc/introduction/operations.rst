@@ -123,9 +123,10 @@ Matrix to Operator functions
 .. autosummary::
 
     ~pennylane.pauli_decompose
+    ~pennylane.qsvt
 
-These functions take the matrix representation of an operator and return
-the equivalent native PennyLane operator.
+These functions take a matrix and return an associated native PennyLane operator.
+For example:
 
 >>> mat = np.array([[1, 1], [1, -1]])
 >>> h = qml.pauli_decompose(mat)
