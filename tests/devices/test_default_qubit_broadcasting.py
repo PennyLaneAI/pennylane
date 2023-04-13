@@ -1987,5 +1987,4 @@ class TestBroadcastingSupportViaExpansion:
 
         assert circuit.device.num_executions == len(y)
         tol = 1e-10 if shots is None else 1e-2
-        print(out, expected)
         assert qml.math.allclose(out, expected, atol=tol, rtol=0)
