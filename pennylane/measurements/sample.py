@@ -155,15 +155,8 @@ class SampleMP(SampleMeasurement):
         return self.obs is None
 
     # pylint: disable=protected-access
-    def shape(self, config, num_wires):
-        if qml.active_return():
-            return self._shape_new(config, num_wires)
-        if config is None:
-            raise MeasurementShapeError(
-                "The config argument is required to obtain the shape of the measurement "
-                f"{self.__class__.__name__}."
-            )
-        if config.shot_vector is not None:
+    def _shape_legacy(self, shots, num_wires):
+        if shots.shot_vector is not None:
             if self.obs is None:
                 # TODO: revisit when qml.sample without an observable fully
                 # supports shot vectors
@@ -173,33 +166,31 @@ class SampleMP(SampleMeasurement):
                 )
 
             shape_list = []
-            for s in config.shot_vector:
+            for s in shots.shot_vector:
                 shape_list.extend([(s.shots,) if s.shots != 1 else tuple()] * s.copies)
             return tuple(shape_list)
 
-        return (1, config.shots) if self.obs is not None else (1, config.shots, num_wires)
+        return (1, shots.total_shots) if self.obs is not None else (1, shots.total_shots, num_wires)
 
-    def _shape_new(self, config, num_wires):
-        if config is None:
-            raise MeasurementShapeError(
-                "The config argument is required to obtain the shape of the measurement "
-                f"{self.__class__.__name__}."
-            )
-        if config.shot_vector is not None:
+    def shape(self, shots, num_wires):
+        if not qml.active_return():
+            return self._shape_legacy(shots, num_wires)
+
+        if shots.shot_vector is not None:
             shape_list = []
             if self.obs is not None:
-                for s in config.shot_vector:
+                for s in shots.shot_vector:
                     shape_list.extend([(s.shots,) if s.shots != 1 else tuple()] * s.copies)
             else:
-                for s in config.shot_vector:
+                for s in shots.shot_vector:
                     shape_list.extend(
                         [(s.shots, num_wires) if s.shots != 1 else (num_wires,)] * s.copies
                     )
             return tuple(shape_list)
 
         if self.obs is None:
-            return (config.shots, num_wires) if config.shots != 1 else (num_wires,)
-        return (config.shots,) if config.shots != 1 else ()
+            return (shots.total_shots, num_wires) if shots.total_shots != 1 else (num_wires,)
+        return (shots.total_shots,) if shots.total_shots != 1 else ()
 
     def process_samples(
         self,

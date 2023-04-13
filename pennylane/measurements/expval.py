@@ -83,18 +83,18 @@ class ExpectationMP(SampleMeasurement, StateMeasurement):
     def numeric_type(self):
         return float
 
-    def shape(self, config, num_wires):
-        if qml.active_return():
-            return self._shape_new(config, num_wires)
-        if config is None or config.shot_vector is None:
+    def _shape_legacy(self, shots, num_wires):  # pylint: disable=unused-argument
+        if shots.shot_vector is None:
             return (1,)
-        num_shot_elements = sum(s.copies for s in config.shot_vector)
+        num_shot_elements = sum(s.copies for s in shots.shot_vector)
         return (num_shot_elements,)
 
-    def _shape_new(self, config, num_wires):  # pylint: disable=unused-argument
-        if config is None or config.shot_vector is None:
+    def shape(self, shots, num_wires):
+        if not qml.active_return():
+            return self._shape_legacy(shots, num_wires)
+        if shots.shot_vector is None:
             return ()
-        num_shot_elements = sum(s.copies for s in config.shot_vector)
+        num_shot_elements = sum(s.copies for s in shots.shot_vector)
         return tuple(() for _ in range(num_shot_elements))
 
     def process_samples(

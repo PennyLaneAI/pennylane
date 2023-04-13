@@ -150,13 +150,11 @@ class StateMP(StateMeasurement):
     def numeric_type(self):
         return complex
 
-    def shape(self, config, num_wires):
-        if qml.active_return():
-            return self._shape_new(config, num_wires)
+    def _shape_legacy(self, shots, num_wires):
         num_shot_elements = (
             1
-            if (config is None or config.shot_vector is None)
-            else sum(s.copies for s in config.shot_vector)
+            if (shots.shot_vector is None)
+            else sum(s.copies for s in shots.shot_vector)
         )
 
         if self.wires:
@@ -164,20 +162,18 @@ class StateMP(StateMeasurement):
             dim = 2 ** len(self.wires)
             return (num_shot_elements, dim, dim)
 
-        if config is None:
-            raise MeasurementShapeError(
-                "The config argument is required to obtain the shape of the measurement "
-                f"{self.__class__.__name__}."
-            )
         # qml.state()
         dim = 2**num_wires
         return (num_shot_elements, dim)
 
-    def _shape_new(self, config, num_wires):
+    def shape(self, shots, num_wires):
+        if not qml.active_return():
+            return self._shape_legacy(shots, num_wires)
+
         num_shot_elements = (
             1
-            if (config is None or config.shot_vector is None)
-            else sum(s.copies for s in config.shot_vector)
+            if shots.shot_vector is None
+            else sum(s.copies for s in shots.shot_vector)
         )
 
         if self.wires:
@@ -190,12 +186,6 @@ class StateMP(StateMeasurement):
             )
 
         # qml.state()
-        if config is None:
-            raise MeasurementShapeError(
-                "The config argument is required to obtain the shape of the measurement "
-                f"{self.__class__.__name__}."
-            )
-
         dim = 2**num_wires
         return (dim,) if num_shot_elements == 1 else tuple((dim,) for _ in range(num_shot_elements))
 

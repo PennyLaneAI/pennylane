@@ -185,7 +185,7 @@ class MeasurementProcess(ABC):
             f"The numeric type of the measurement {self.__class__.__name__} is not defined."
         )
 
-    def shape(self, config, num_wires):
+    def shape(self, shots, num_wires):
         """The expected output shape of the MeasurementProcess.
 
         Note that the output shape is dependent on the device or execution config when:
@@ -216,13 +216,13 @@ class MeasurementProcess(ABC):
             QuantumFunctionError: the return type of the measurement process is
                 unrecognized and cannot deduce the numeric type
         """
-        if qml.active_return():
-            return self._shape_new(config, num_wires)
+        if not qml.active_return():
+            return self._shape_legacy(shots, num_wires)
         raise qml.QuantumFunctionError(
             f"The shape of the measurement {self.__class__.__name__} is not defined"
         )
 
-    def _shape_new(self, config, num_wires):
+    def _shape_legacy(self, shots, num_wires):
         """The expected output shape of the MeasurementProcess.
 
         Note that the output shape is dependent on the device or execution configuration when:

@@ -139,33 +139,23 @@ class ProbabilityMP(SampleMeasurement, StateMeasurement):
     def numeric_type(self):
         return float
 
-    def shape(self, config, num_wires):
-        if qml.active_return():
-            return self._shape_new(config, num_wires)
-        if config is None:
-            raise MeasurementShapeError(
-                "The config argument is required to obtain the shape of the measurement "
-                f"{self.__class__.__name__}."
-            )
+    def _shape_legacy(self, shots, num_wires):  # pylint: disable=unused-argument
         num_shot_elements = (
-            1 if config.shot_vector is None else sum(s.copies for s in config.shot_vector)
+            1 if shots.shot_vector is None else sum(s.copies for s in shots.shot_vector)
         )
         n_wires = len(self.wires)
-        dim = self._get_num_basis_states(n_wires, config)
+        dim = self._get_num_basis_states(n_wires, shots)
 
         return (num_shot_elements, dim)
 
-    def _shape_new(self, config, num_wires):  # pylint: disable=unused-argument
-        if config is None:
-            raise MeasurementShapeError(
-                "The config argument is required to obtain the shape of the measurement "
-                f"{self.__class__.__name__}."
-            )
+    def shape(self, shots, num_wires):
+        if not qml.active_return():
+            return self._shape_legacy(shots, num_wires)
         num_shot_elements = (
-            1 if config.shot_vector is None else sum(s.copies for s in config.shot_vector)
+            1 if shots.shot_vector is None else sum(s.copies for s in shots.shot_vector)
         )
         n_wires = len(self.wires)
-        dim = self._get_num_basis_states(n_wires, config)
+        dim = self._get_num_basis_states(n_wires, shots)
 
         return (dim,) if num_shot_elements == 1 else tuple((dim,) for _ in range(num_shot_elements))
 
