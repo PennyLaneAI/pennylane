@@ -271,7 +271,7 @@ class HardwareHamiltonian(ParametrizedHamiltonian):
         self,
         coeffs,
         observables,
-        reorder_fn = None,
+        reorder_fn=None,
         pulses: List["HardwarePulse"] = None,
         settings: Union["RydbergSettings", "TransmonSettings"] = None,
     ):
