@@ -279,7 +279,7 @@ class ShotAdaptiveOptimizer(GradientDescentOptimizer):
         """
         if dev.analytic:
             raise ValueError(
-                "The Rosalin optimizer can only be used with devices "
+                "The ShotAdaptiveOptimizer can only be used with devices "
                 "that estimate expectation values with a finite number of shots."
             )
 
@@ -345,7 +345,7 @@ class ShotAdaptiveOptimizer(GradientDescentOptimizer):
             grads = self._single_shot_qnode_gradients(objective_fn, args, kwargs)
         else:
             raise ValueError(
-                "The objective function must either be encoded as a single QNode for "
+                "The objective function must be encoded as a single QNode for "
                 "the Shot adaptive optimizer."
             )
 
