@@ -19,17 +19,84 @@ import numpy as np
 import pytest
 
 import pennylane as qml
-from pennylane.pulse import HardwareHamiltonian, transmon_interaction
-from pennylane.pulse.transmon import TransmonSettings, a, ad
+from pennylane.pulse import HardwareHamiltonian, transmon_interaction, transmon_drive
+from pennylane.pulse.transmon import TransmonSettings, a, ad, AmplitudeAndPhaseAndFreq, _reorder_AmpPhaseFreq
 
 from pennylane.wires import Wires
+
+class TestTransmonDrive:
+
+    def test_attributes_and_number_of_terms(self):
+        """Test that the attributes and the number of terms of the ``ParametrizedHamiltonian`` returned by
+        ``drive`` are correct."""
+
+        Hd = transmon_drive(amplitude=1, phase=2, freq=3, wires=[1, 2])
+
+        assert isinstance(Hd, HardwareHamiltonian)
+        assert Hd.wires == Wires([1, 2])
+        assert len(Hd.ops) == 2
+
+    @pytest.mark.parametrize("amp", np.arange(3, dtype=float))
+    @pytest.mark.parametrize("phase", np.arange(3, dtype=float))
+    @pytest.mark.parametrize("freq", np.arange(3, dtype=float))
+    @pytest.mark.parametrize("t", np.arange(3, dtype=float))
+    def test_all_constant_parameters(self, amp, phase, freq, t):
+        """Test that transmon drive with all constant parameters yields the expected Hamiltonian"""
+        H = transmon_drive(amp, phase, freq, wires=[0])
+
+        def expected(amp, phase, freq, t, wire=0):
+            return 0.5 * amp * (np.cos(phase + freq*t) * qml.PauliX(wire) - np.sin(phase + freq * t) * qml.PauliY(wire))
+
+        assert qml.math.allclose(qml.matrix(H([], t)), qml.matrix(expected(amp, phase, freq, t)))
+
+    @pytest.mark.xfail
+    def test_multiple_drives(self,):
+        def fa(p, t):
+            return np.sin(p * t)
+
+        H1 = transmon_drive(amplitude=fa, phase=1, freq=3, wires=[0, 3])
+        H2 = transmon_drive(amplitude=1, phase=3, freq=3, wires=[1, 2])
+        Hd = H1 + H2
+
+        t = 5
+
+        ops_expected = [
+            qml.Hamiltonian([0.5, 0.5], [qml.PauliX(1), qml.PauliX(2)]),
+            qml.Hamiltonian([-0.5, -0.5], [qml.PauliY(1), qml.PauliY(2)]),
+            qml.Hamiltonian([0.5, 0.5], [qml.PauliX(0), qml.PauliX(3)]),
+            qml.Hamiltonian([-0.5, -0.5], [qml.PauliY(0), qml.PauliY(3)]),
+        ]
+        coeffs_expected = [
+            np.cos(3 + 3*t),
+            np.sin(3 + 3*t),
+            AmplitudeAndPhaseAndFreq(np.cos, fa, 1, 3),
+            AmplitudeAndPhaseAndFreq(np.sin, fa, 1, 3),
+        ]
+        H_expected = HardwareHamiltonian(
+            coeffs_expected, ops_expected, reorder_fn=_reorder_AmpPhaseFreq
+        )
+        # structure of Hamiltonian is as expected
+        assert isinstance(Hd, HardwareHamiltonian)
+        assert Hd.wires == Wires([0, 3, 1, 2])
+        assert Hd.settings is None
+        assert len(Hd.ops) == 4  # 2 terms for amplitude/phase
+
+        for coeff in Hd.coeffs:
+            assert isinstance(coeff, AmplitudeAndPhaseAndFreq)
+
+        # pulses were added correctly
+        assert Hd.pulses == []
+        # Hamiltonian is as expected
+        qml.math.allclose(qml.matrix(Hd([0.5], t=5)), qml.matrix(H_expected([0.5], t=5)))
+        #qml.matrix(Hd([0.5], t=5)), qml.matrix(H_expected([0.5], t=5))
+
+
 
 connections = [[0, 1], [1, 3], [2, 1], [4, 5]]
 wires = [0, 1, 2, 3, 4, 5]
 omega = 0.5 * np.arange(len(wires))
 g = 0.1 * np.arange(len(connections))
 anharmonicity = 0.3 * np.arange(len(wires))
-
 
 class TestTransmonInteraction:
     """Unit tests for the ``transmon_interaction`` function."""
@@ -181,3 +248,4 @@ class TestTransmonSettings:
 
         settings10 = settings1 + settings0
         assert settings10.anharmonicity == [0.0] * len(omega0) + anharmonicity
+

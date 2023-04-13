@@ -70,6 +70,7 @@ Hardware Compatible Hamiltonians
     ~rydberg_interaction
     ~transmon_interaction
     ~rydberg_drive
+    ~transmon_drive
     ~drive
 
 
@@ -263,4 +264,4 @@ from .parametrized_evolution import ParametrizedEvolution
 from .parametrized_hamiltonian import ParametrizedHamiltonian
 from .hardware_hamiltonian import HardwareHamiltonian, HardwarePulse, drive
 from .rydberg import rydberg_interaction, rydberg_drive
-from .transmon import transmon_interaction
+from .transmon import transmon_interaction, transmon_drive
