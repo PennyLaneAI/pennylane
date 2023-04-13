@@ -112,11 +112,10 @@ def broadcast_expand(tape):
 
     def processing_fn(results):
         if len(tape.measurements) > 1 and qml.active_return():
-            processed_results = [None] * len(tape.measurements)
-            for i in range(len(tape.measurements)):
-                processed_results[i] = qml.math.squeeze(
-                    qml.math.stack([results[b][i] for b in range(tape.batch_size)])
-                )
+            processed_results = [
+                qml.math.squeeze(qml.math.stack([results[b][i] for b in range(tape.batch_size)]))
+                for i in range(len(tape.measurements))
+            ]
             return tuple(processed_results)
         return qml.math.squeeze(qml.math.stack(results))
 
