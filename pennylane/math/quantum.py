@@ -1165,7 +1165,7 @@ def min_entropy(state, indices, base=None, check_state=False, c_dtype="complex12
     0.6931472
 
     The Von Neumann entropy is always greater than the minimum entropy.
-    
+
     >>> x = [np.cos(np.pi/8), 0, 0, -1j*np.sin(np.pi/8)]
     >>> vn_entropy(x, indices=[1])
     0.4164955
