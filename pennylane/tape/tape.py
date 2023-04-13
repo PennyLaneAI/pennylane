@@ -149,11 +149,11 @@ def expand_tape(tape, depth=1, stop_at=None, expand_measurements=False):
     if tape.samples_computational_basis and len(tape.measurements) > 1:
         _validate_computational_basis_sampling(tape.measurements)
 
+    old_prep, old_ops, old_measurements = tape._prep, tape._ops, tape._measurements
     if tape._obs_sharing_wires:
         with QueuingManager.stop_recording():  # stop recording operations to active context when computing qwc groupings
             try:
                 rotations, diag_obs = qml.pauli.diagonalize_qwc_pauli_words(tape._obs_sharing_wires)
-                tape._obs_sharing_wires = diag_obs
             except (TypeError, ValueError) as e:
                 if any(
                     isinstance(m, (ProbabilityMP, SampleMP, CountsMP)) for m in tape.measurements
@@ -170,16 +170,16 @@ def expand_tape(tape, depth=1, stop_at=None, expand_measurements=False):
                     _err_msg_for_some_meas_not_qwc(tape.measurements)
                 ) from e
 
-            tape._ops.extend(rotations)
+            old_ops = old_ops + rotations
 
             for o, i in zip(diag_obs, tape._obs_sharing_wires_id):
                 new_m = tape.measurements[i].__class__(obs=o)
-                tape._measurements[i] = new_m
+                old_measurements[i] = new_m
 
     for queue, new_queue in [
-        (tape._prep, new_prep),
-        (tape._ops, new_ops),
-        (tape._measurements, new_measurements),
+        (old_prep, new_prep),
+        (old_ops, new_ops),
+        (old_measurements, new_measurements),
     ]:
         for obj in queue:
             stop = stop_at(obj)
