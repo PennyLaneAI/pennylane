@@ -62,9 +62,7 @@ class TestExceptions:
 
         assert opt.stepsize > 2 / lipschitz
 
-        with pytest.raises(
-            ValueError, match=f"The learning rate must be less than"
-        ):
+        with pytest.raises(ValueError, match=f"The learning rate must be less than"):
             opt.step(expval_cost, np.array(0.5, requires_grad=True))
 
         # for a single QNode, the lipschitz constant is simply 1
