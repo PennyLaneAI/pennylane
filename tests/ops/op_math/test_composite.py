@@ -93,25 +93,26 @@ class TestConstruction:
 
     def test_parameters(self):
         """Test that parameters are initialized correctly."""
-        op = ValidOp(qml.RX(9.87, wires=0), qml.Rot(1.23, 4.0, 5.67, wires=1))
-        assert op.parameters == [[9.87], [1.23, 4.0, 5.67]]
+        op = ValidOp(qml.RX(9.87, wires=0), qml.Rot(1.23, 4.0, 5.67, wires=1), qml.PauliX(0))
+        assert op.parameters == [9.87, 1.23, 4.0, 5.67]
 
     def test_data(self):
         """Test that data is initialized correctly."""
-        op = ValidOp(qml.RX(9.87, wires=0), qml.Rot(1.23, 4.0, 5.67, wires=1))
-        assert op.data == [[9.87], [1.23, 4.0, 5.67]]
+        op = ValidOp(qml.RX(9.87, wires=0), qml.Rot(1.23, 4.0, 5.67, wires=1), qml.PauliX(0))
+        assert op.data == [9.87, 1.23, 4.0, 5.67]
 
     def test_data_setter(self):
         """Test the setter method for data"""
-        op = ValidOp(qml.RX(9.87, wires=0), qml.Rot(1.23, 4.0, 5.67, wires=1))
-        assert op.data == [[9.87], [1.23, 4.0, 5.67]]
+        op = ValidOp(qml.RX(9.87, wires=0), qml.Rot(1.23, 4.0, 5.67, wires=1), qml.PauliX(0))
+        assert op.data == [9.87, 1.23, 4.0, 5.67]
 
-        new_data = [[1.23], [0.0, -1.0, -2.0]]
+        new_data = [1.23, 0.0, -1.0, -2.0]
         op.data = new_data
         assert op.data == new_data
 
-        for op, new_entry in zip(op.operands, new_data):
-            assert op.data == new_entry
+        for o in op:
+            assert o.data == new_data[: o.num_params]
+            new_data = new_data[o.num_params :]
 
     def test_ndim_params_raises_error(self):
         """Test that calling ndim_params raises a ValueError."""
@@ -187,12 +188,18 @@ class TestConstruction:
     def test_map_wires(self):
         """Test the map_wires method."""
         diag_op = ValidOp(*self.simple_operands)
+        diag_op._pauli_rep = qml.pauli.PauliSentence({qml.pauli.PauliWord({0: "X", 1: "Y"}): 1})
+
         wire_map = {0: 5, 1: 7, 2: 9, 3: 11}
         mapped_op = diag_op.map_wires(wire_map=wire_map)
 
         assert mapped_op.wires == Wires([5, 7])
         assert mapped_op[0].wires == Wires(5)
         assert mapped_op[1].wires == Wires(7)
+        assert mapped_op._pauli_rep is not diag_op._pauli_rep
+        assert mapped_op._pauli_rep == qml.pauli.PauliSentence(
+            {qml.pauli.PauliWord({5: "X", 7: "Y"}): 1}
+        )
 
     def test_build_pauli_rep(self):
         """Test the build_pauli_rep"""

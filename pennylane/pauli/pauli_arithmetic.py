@@ -240,6 +240,10 @@ class PauliWord(dict):
         obs = [op_map[op](wire) for wire, op in self.items()]
         return Hamiltonian([1], [obs[0] if len(obs) == 1 else Tensor(*obs)])
 
+    def map_wires(self, wire_map: dict) -> "PauliWord":
+        """Return a new PauliWord with the wires mapped."""
+        return self.__class__({wire_map.get(w, w): op for w, op in self.items()})
+
 
 class PauliSentence(dict):
     """Dictionary representing a linear combination of Pauli words, with the keys
@@ -397,3 +401,7 @@ class PauliSentence(dict):
         for pw, coeff in items:
             if abs(coeff) <= tol:
                 del self[pw]
+
+    def map_wires(self, wire_map: dict) -> "PauliSentence":
+        """Return a new PauliSentence with the wires mapped."""
+        return self.__class__({pw.map_wires(wire_map): coeff for pw, coeff in self.items()})
