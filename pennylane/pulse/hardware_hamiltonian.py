@@ -229,6 +229,7 @@ def drive(amplitude, phase, wires):
 
     return HardwareHamiltonian(coeffs, observables, _reorder_parameters)
 
+
 def _reorder_parameters(params, coeffs_parametrized):
     """Takes `params`, and reorganizes it based on whether the Hamiltonian has
     callable phase and/or callable amplitude.
@@ -261,6 +262,7 @@ def _reorder_parameters(params, coeffs_parametrized):
                 params_idx += 1
 
     return reordered_params
+
 
 class HardwareHamiltonian(ParametrizedHamiltonian):
     r"""Internal class used to keep track of the required information to translate a ``ParametrizedHamiltonian``
@@ -303,7 +305,7 @@ class HardwareHamiltonian(ParametrizedHamiltonian):
         self,
         coeffs,
         observables,
-        reorder_fn = _reorder_parameters,
+        reorder_fn=_reorder_parameters,
         pulses: List["HardwarePulse"] = None,
         settings: Union["RydbergSettings", "TransmonSettings"] = None,
     ):
