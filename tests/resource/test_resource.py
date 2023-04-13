@@ -14,7 +14,6 @@
 """
 Test base Resource class and its associated methods
 """
-from collections import defaultdict
 
 import pytest
 from pennylane.resource import Resources
@@ -25,16 +24,16 @@ class TestResources:
 
     resource_quantities = (
         Resources(),
-        Resources(5, 0, defaultdict(int), 0, 0),
-        Resources(1, 3, defaultdict(int, {"Hadamard": 1, "PauliZ": 2}), 3, 10),
-        Resources(4, 2, defaultdict(int, {"Hadamard": 1, "CNOT": 1}), 2, 100),
+        Resources(5, 0, {}, 0, 0),
+        Resources(1, 3, {"Hadamard": 1, "PauliZ": 2}, 3, 10),
+        Resources(4, 2, {"Hadamard": 1, "CNOT": 1}, 2, 100),
     )
 
     resource_parameters = (
-        (0, 0, defaultdict(int), 0, 0),
-        (5, 0, defaultdict(int), 0, 0),
-        (1, 3, defaultdict(int, {"Hadamard": 1, "PauliZ": 2}), 3, 10),
-        (4, 2, defaultdict(int, {"Hadamard": 1, "CNOT": 1}), 2, 100),
+        (0, 0, {}, 0, 0),
+        (5, 0, {}, 0, 0),
+        (1, 3, {"Hadamard": 1, "PauliZ": 2}, 3, 10),
+        (4, 2, {"Hadamard": 1, "CNOT": 1}, 2, 100),
     )
 
     @pytest.mark.parametrize("r, attribute_tup", zip(resource_quantities, resource_parameters))
@@ -48,17 +47,26 @@ class TestResources:
         assert r.shots == shots
         assert r.gate_types == gate_types
 
-    params_error = (
-        (0, 1, {}, 2, 3),
-        (0.0, 1.1, defaultdict(int, {"Hadamard": 1}), 2.2, 3.3),
-        (0, -1, defaultdict(int, {"Hadamard": 1}), 2, -3),
-        ("0", [1], {"dict": 1}, True, False),
+    type_error = (
+        (0, 1, "wrong_type", 2, 3),
+        (0.0, 1.1, {"Hadamard": 1}, 2.2, 3.3),
+        ("0", [1], {"Identity": 1}, True, False),
     )
 
-    @pytest.mark.parametrize("params", params_error)
-    def test_init_error(self, params):
-        """Test that an error is raised if an attribute is initialized with the wrong type."""
+    @pytest.mark.parametrize("params", type_error)
+    def test_init_type_error(self, params):
+        """Test that a type error is raised if an attribute is initialized with the wrong type."""
         with pytest.raises(TypeError, match="Incorrect type of input,"):
+            Resources(*params)
+
+    value_error = (
+        (0, -1, {"Hadamard": 1}, 2, -3),
+    )
+
+    @pytest.mark.parametrize("params", value_error)
+    def test_init_value_error(self, params):
+        """Test that a value error is raised if an attribute is initialized with the wrong type."""
+        with pytest.raises(ValueError, match="Incorrect value of input,"):
             Resources(*params)
 
     def test_set_attributes_error(self):
@@ -100,18 +108,40 @@ class TestResources:
         assert str(r) == rep
 
     test_rep_data = (
-        "<Resource: wires=0, gates=0, depth=0, shots=0, gate_types=defaultdict(<class 'int'>, {})>",
-        "<Resource: wires=5, gates=0, depth=0, shots=0, gate_types=defaultdict(<class 'int'>, {})>",
+        "<Resource: wires=0, gates=0, depth=0, shots=0, gate_types={}>",
+        "<Resource: wires=5, gates=0, depth=0, shots=0, gate_types={}>",
         "<Resource: wires=1, gates=3, depth=3, shots=10, "
-        "gate_types=defaultdict(<class 'int'>, {'Hadamard': 1, 'PauliZ': 2})>",
+        "gate_types={'Hadamard': 1, 'PauliZ': 2}>",
         "<Resource: wires=4, gates=2, depth=2, shots=100, "
-        "gate_types=defaultdict(<class 'int'>, {'Hadamard': 1, 'CNOT': 1})>",
+        "gate_types={'Hadamard': 1, 'CNOT': 1}>",
     )
 
     @pytest.mark.parametrize("r, rep", zip(resource_quantities, test_rep_data))
     def test_repr(self, r, rep):
         """Test the repr method of a Resources instance looks as expected."""
         assert repr(r) == rep
+
+    def test_eq(self):
+        """Test that the equality dunder method is correct for Resources."""
+        r1 = Resources(4, 2, {"Hadamard": 1, "CNOT": 1}, 2, 100)
+        r2 = Resources(4, 2, {"Hadamard": 1, "CNOT": 1}, 2, 100)
+        r3 = Resources(4, 2, {"CNOT": 1, "Hadamard": 1}, 2, 100)  # all equal
+
+        r4 = Resources(1, 2, {"Hadamard": 1, "CNOT": 1}, 2, 100)  # diff wires
+        r5 = Resources(4, 1, {"Hadamard": 1, "CNOT": 1}, 2, 100)  # diff num_gates
+        r6 = Resources(4, 2, {"CNOT": 1}, 2, 100)                 # diff gate_types
+        r7 = Resources(4, 2, {"Hadamard": 1, "CNOT": 1}, 1, 100)  # diff depth
+        r8 = Resources(4, 2, {"Hadamard": 1, "CNOT": 1}, 2, 1)    # diff shots
+
+        assert r1.__eq__(r1)
+        assert r1.__eq__(r2)
+        assert r1.__eq__(r3)
+
+        assert not r1.__eq__(r4)
+        assert not r1.__eq__(r5)
+        assert not r1.__eq__(r6)
+        assert not r1.__eq__(r7)
+        assert not r1.__eq__(r8)
 
     @pytest.mark.parametrize("r, rep", zip(resource_quantities, test_str_data))
     def test_ipython_display(self, r, rep, capsys):

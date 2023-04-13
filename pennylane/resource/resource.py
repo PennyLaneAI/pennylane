@@ -14,24 +14,23 @@
 """
 The data class which will aggregate all the resource information from a quantum workflow.
 """
-from typing import DefaultDict
-from collections import defaultdict
 
 
 class Resources:
-    r"""Contains attributes which store key resources (such as number of gates, number of wires, etc.)
-    tracked over a quantum workflow.
+    r"""Contains attributes which store key resources such as number of gates, number of wires, shots,
+    depth and gate types, tracked over a quantum workflow.
 
     Args:
         num_wires (int): number of qubits
         num_gates (int): number of gates
-        gate_types (defaultdict(int)): dictionary with keys are operation names (str)
-            and values are the number of times the operation is repeated in the circuit (int)
-        depth (int): the depth of the circuit (max number of non-parallel operations)
-        shots (int): number of samples to measure
+        gate_types (dict): dictionary storing operation names (str) as keys
+            and the number of times they are used in the circuit (int) as values
+        depth (int): the depth of the circuit defined as the maximum number of non-parallel operations
+        shots (int): number of samples to generate
 
     Raises:
         TypeError: If the attributes provided are not of the correct type.
+        ValueError: If an attribute provided has value less than 0.
         AttributeError: If an attribute is set after initialization.
 
     .. details::
@@ -51,19 +50,23 @@ class Resources:
     """
 
     def __init__(
-        self, num_wires=0, num_gates=0, gate_types=defaultdict(int), depth=0, shots=0
+        self, num_wires=0, num_gates=0, gate_types={}, depth=0, shots=0
     ):  # pylint: disable=too-many-arguments, dangerous-default-value
         """Initialize a Resources instance and perform input type validation."""
 
-        if not (
-            all(isinstance(param, int) for param in [num_wires, num_gates, depth, shots])
-            and all(val > -1 for val in [num_wires, num_gates, depth, shots])
-            and isinstance(gate_types, DefaultDict)
-        ):
+        if not all(isinstance(param, int) for param in [num_wires, num_gates, depth, shots]):
             raise TypeError(
                 "Incorrect type of input, expected type int for num_wires, num_gates, depth and shots. "
                 f"Got {type(num_wires)}, {type(num_gates)}, {type(depth)}, {type(shots)} respectively. "
-                f"Expected type dict or DefaultDict for gate_types, got {type(gate_types)}."
+            )
+
+        if not isinstance(gate_types, dict):
+            raise TypeError(f"Incorrect type of input, expected type dict for gate_types. Got {type(gate_types)}.")
+
+        if not all(val > -1 for val in [num_wires, num_gates, depth, shots]):
+            raise ValueError(
+                "Incorrect value of input, expected value of num_wires, num_gates, depth and shots to be >= 0."
+                f"Got {num_wires}, {num_gates}, {depth}, {shots} respectively. "
             )
 
         self._num_wires = num_wires
@@ -139,7 +142,7 @@ class Resources:
         items = items.replace("('", "")
         items = items.replace("',", ":")
         items = items.replace(")", "")
-        items = items.replace("defaultdict(<class 'int'>, ", "\n")
+        items = items.replace("{", "\n{")
         return items
 
     def __repr__(self):
