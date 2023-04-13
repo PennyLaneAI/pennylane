@@ -152,6 +152,13 @@ more tapes as well as a classical processing function.
     ~transforms.sign_expand
     ~transforms.sum_expand
 
+This transform accepts a single tape and returns a single tape:
+
+.. autosummary::
+    :toctree: api
+
+    ~transforms.convert_to_numpy_parameters
+
 Decorators and utility functions
 --------------------------------
 
@@ -185,6 +192,7 @@ Transforms for error mitigation
     ~transforms.fold_global
     ~transforms.poly_extrapolate
     ~transforms.richardson_extrapolate
+
 """
 # Import the decorators first to prevent circular imports when used in other transforms
 from .batch_transform import batch_transform, map_batch_transform
@@ -195,6 +203,7 @@ from .batch_input import batch_input
 from .batch_partial import batch_partial
 from .classical_jacobian import classical_jacobian
 from .condition import cond, Conditional
+from .convert_to_numpy_parameters import convert_to_numpy_parameters
 from .compile import compile
 from .decompositions import zyz_decomposition, xyx_decomposition, two_qubit_decomposition
 from .defer_measurements import defer_measurements
