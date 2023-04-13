@@ -1,30 +1,31 @@
 name: Unit Test - All Interfaces
 on:
   workflow_call:
-    branch:
-      description: The PennyLane branch to checkout and run unit tests for
-      required: true
-      type: string
-    jax_version:
-      description: The version of JAX to install for any job that requires JAX
-      required: false
-      type: string
-      default: 0.4.3
-    tensorflow_version:
-      description: The version of TensorFlow to install for any job that requires TensorFlow
-      required: false
-      type: string
-      default: 2.10.0
-    pytorch_version:
-      description: The version of PyTorch to install for any job that requires PyTorch
-      required: false
-      type: string
-      default: 2.0.0
-    pytest_coverage_flags:
-      description: PyTest Coverage flags to pass to all jobs
-      required: false
-      type: string
-      default: --cov=pennylane --cov-report=term-missing --cov-report=xml --no-flaky-report -p no:warnings --tb=native
+    inputs:
+      branch:
+        description: The PennyLane branch to checkout and run unit tests for
+        required: true
+        type: string
+      jax_version:
+        description: The version of JAX to install for any job that requires JAX
+        required: false
+        type: string
+        default: 0.4.3
+      tensorflow_version:
+        description: The version of TensorFlow to install for any job that requires TensorFlow
+        required: false
+        type: string
+        default: 2.10.0
+      pytorch_version:
+        description: The version of PyTorch to install for any job that requires PyTorch
+        required: false
+        type: string
+        default: 2.0.0
+      pytest_coverage_flags:
+        description: PyTest Coverage flags to pass to all jobs
+        required: false
+        type: string
+        default: --cov=pennylane --cov-report=term-missing --cov-report=xml --no-flaky-report -p no:warnings --tb=native
 
 jobs:
   torch-tests:
