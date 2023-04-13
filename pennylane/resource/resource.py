@@ -50,8 +50,8 @@ class Resources:
     """
 
     def __init__(
-        self, num_wires=0, num_gates=0, gate_types={}, depth=0, shots=0
-    ):  # pylint: disable=too-many-arguments, dangerous-default-value
+        self, num_wires=0, num_gates=0, gate_types=None, depth=0, shots=0
+    ):  # pylint: disable=too-many-arguments
         """Initialize a Resources instance and perform input type validation."""
 
         if not all(isinstance(param, int) for param in [num_wires, num_gates, depth, shots]):
@@ -73,7 +73,7 @@ class Resources:
 
         self._num_wires = num_wires
         self._num_gates = num_gates
-        self._gate_types = gate_types
+        self._gate_types = {} if gate_types is None else gate_types
         self._depth = depth
         self._shots = shots
 
