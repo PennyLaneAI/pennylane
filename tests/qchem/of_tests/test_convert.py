@@ -561,7 +561,7 @@ def test_integration_observable_to_vqe_cost(
 
     dummy_cost = qml.QNode(dummy_ansatz, dev)
     params = [0.1 * i for i in range(num_qubits)]
-    res = dummy_cost(params)
+    res = dummy_cost(params, wires)
 
     assert np.allclose(res, expected_cost, **tol)
 
