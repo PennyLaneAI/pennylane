@@ -317,7 +317,7 @@ jobs:
       - qcut-tests
       - qchem-tests
       - legacy-tests
-      - gradient-tests
+      - gradients-tests
       - data-tests
       - device-tests
 
