@@ -1125,16 +1125,15 @@ def qwc_rotation(pauli_operators):
             f"All values of input pauli_operators must be either Identity, PauliX, PauliY, or PauliZ instances,"
             f" instead got pauli_operators = {pauli_operators}."
         )
-    with OperationRecorder() as rec:
-        for pauli in pauli_operators:
-            if isinstance(pauli, qml.PauliX):
-                qml.RY(-np.pi / 2, wires=pauli.wires)
+    ops = []
+    for pauli in pauli_operators:
+        if isinstance(pauli, qml.PauliX):
+            ops.append(qml.RY(-np.pi / 2, wires=pauli.wires))
 
-            elif isinstance(pauli, qml.PauliY):
-                qml.RX(np.pi / 2, wires=pauli.wires)
+        elif isinstance(pauli, qml.PauliY):
+            ops.append(qml.RX(np.pi / 2, wires=pauli.wires))
 
-    # known issue with pylint recognizing @property members
-    return rec.queue  # pylint:disable=no-member
+    return ops
 
 
 def diagonalize_pauli_word(pauli_word):
@@ -1216,35 +1215,25 @@ def diagonalize_qwc_pauli_words(
     if not are_pauli_words_qwc(qwc_grouping):
         raise ValueError("The list of Pauli words are not qubit-wise commuting.")
 
-    if not all(isinstance(op, (Tensor, PauliX, PauliY, PauliZ, Identity)) for op in qwc_grouping):
-        raise ValueError("This function only supports Tensor products of pauli ops.")
+    op_pauli_sentences = tuple(qml.pauli.pauli_sentence(o) for o in qwc_grouping)
 
-    pauli_operators = []
-    diag_terms = []
+    basis_word = {}
+    for ps in op_pauli_sentences:
+        basis_word.update(next(iter(ps)))
+    basis_word = qml.pauli.PauliWord(basis_word)
 
-    paulis_with_identity = (qml.PauliX, qml.PauliY, qml.PauliZ, qml.Identity)
-    for term in qwc_grouping:
-        diag_terms.append(diagonalize_pauli_word(term))
-        if isinstance(term, Tensor):
-            for sigma in term.obs:
-                if sigma.name != "Identity":
-                    if not any(
-                        are_identical_pauli_words(sigma, existing_pauli)
-                        for existing_pauli in pauli_operators
-                    ):
-                        pauli_operators.append(sigma)
-        elif isinstance(term, paulis_with_identity):
-            sigma = term
-            if sigma.name != "Identity":
-                if not any(
-                    are_identical_pauli_words(sigma, existing_pauli)
-                    for existing_pauli in pauli_operators
-                ):
-                    pauli_operators.append(sigma)
+    diagonal_terms = []
+    for op, ps in zip(qwc_grouping, op_pauli_sentences):
+        _, coeff = next(iter(ps.items()))
+        ops = [qml.PauliZ(w) for w in op.wires]
+        op = ops[0] if len(ops) == 1 else qml.prod(*ops)
+        diagonal_terms.append(op if coeff == 1 else qml.s_prod(coeff, op))
 
-    unitary = qwc_rotation(pauli_operators)
-
-    return unitary, diag_terms
+    basis_word_op = basis_word.operation()
+    diagonal_gates = qwc_rotation(
+        basis_word_op if isinstance(basis_word_op, qml.ops.Prod) else [basis_word_op]
+    )
+    return diagonal_gates, diagonal_terms
 
 
 def diagonalize_qwc_groupings(qwc_groupings):

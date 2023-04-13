@@ -39,6 +39,42 @@ def _err_msg_for_some_meas_not_qwc(measurements):
     )
 
 
+def _observable_dict_form(op) -> dict:
+    if isinstance(op, qml.operation.Tensor):
+        pw = {}
+        for ob in op.obs:
+            pw.update(_observable_dict_form(ob))
+        return pw
+    return {w: op.name for w in op.wires}
+
+
+def _are_qwc(lst_pauli_words) -> bool:
+    """Given a list of observables, determine if they are pairwise qubit-wise commuting. They do not need
+    to be pauli words.
+
+    This implementation has time complexity ~ O(m * n) for m Pauli words and n wires, where n is the
+    number of distinct wire labels used to represent the Pauli words.
+
+    Args:
+        lst_pauli_words (list[Observable]): List of observables (assumed to be valid Pauli words).
+
+    Returns:
+        (bool): True if they are all qubit-wise commuting, false otherwise.
+    """
+    basis = {}
+
+    for op in lst_pauli_words:
+        # just need the first term since it should already be only one pauli word
+        op_dict_form = _observable_dict_form(op)
+
+        for wire, op_type in op_dict_form.items():
+            if wire in basis and op_type != basis[wire]:
+                return False
+            basis[wire] = op_type
+
+    return True
+
+
 def _validate_computational_basis_sampling(measurements):
     """Auxiliary function for validating computational basis state sampling with other measurements considering the
     qubit-wise commutativity relation."""
@@ -71,9 +107,7 @@ def _validate_computational_basis_sampling(measurements):
 
         for obs in non_comp_basis_sampling_obs:
             # Cover e.g., qml.probs(wires=wires) case by checking obs attr
-            if obs.obs is not None and not qml.pauli.utils.are_pauli_words_qwc(
-                [obs.obs, pauliz_for_cb_obs]
-            ):
+            if obs.obs is not None and not _are_qwc([obs.obs, pauliz_for_cb_obs]):
                 raise qml.QuantumFunctionError(_err_msg_for_some_meas_not_qwc(measurements))
 
 
