@@ -31,6 +31,7 @@
   [(#3930)](https://github.com/PennyLaneAI/pennylane/pull/3930)
   [(#3936)](https://github.com/PennyLaneAI/pennylane/pull/3936/)
   [(#3966)](https://github.com/PennyLaneAI/pennylane/pull/3966)
+  [(#3987)](https://github.com/PennyLaneAI/pennylane/pull/3987)
 
 * Added `Operation.__truediv__` dunder method to be able to divide operators.
   [(#3749)](https://github.com/PennyLaneAI/pennylane/pull/3749)
@@ -43,6 +44,10 @@
   [(#3682)](https://github.com/PennyLaneAI/pennylane/pull/3682)
 
 <h3>Improvements</h3>
+
+* Added a new decomposition to `qml.SingleExcitation` that halves the number of
+  CNOTs required.
+  [(3976)](https://github.com/PennyLaneAI/pennylane/pull/3976)
 
 * The default gaussian device and parameter shift cv support the new return system but only for single measurement.
   [(3946)](https://github.com/PennyLaneAI/pennylane/pull/3946)
@@ -276,6 +281,7 @@ This release contains contributions from (in alphabetical order):
 
 Komi Amiko
 Utkarsh Azad
+Olivia Di Matteo
 Lillian M. A. Frederiksen
 Soran Jahangiri
 Christina Lee
