@@ -77,6 +77,36 @@ def _validate_computational_basis_sampling(measurements):
                 raise qml.QuantumFunctionError(_err_msg_for_some_meas_not_qwc(measurements))
 
 
+def get_ops_with_rotations_and_measurements(tape):
+    """Compute the rotations for overlapping observables, and return them along with the diagonalized observables."""
+    if not tape._obs_sharing_wires:
+        return tape._ops, tape._measurements
+
+    with QueuingManager.stop_recording():  # stop recording operations to active context when computing qwc groupings
+        try:
+            rotations, diag_obs = qml.pauli.diagonalize_qwc_pauli_words(tape._obs_sharing_wires)
+        except (TypeError, ValueError) as e:
+            if any(isinstance(m, (ProbabilityMP, SampleMP, CountsMP)) for m in tape.measurements):
+                raise qml.QuantumFunctionError(
+                    "Only observables that are qubit-wise commuting "
+                    "Pauli words can be returned on the same wire.\n"
+                    "Try removing all probability, sample and counts measurements "
+                    "this will allow for splitting of execution and separate measurements "
+                    "for each non-commuting observable."
+                ) from e
+
+            raise qml.QuantumFunctionError(_err_msg_for_some_meas_not_qwc(tape.measurements)) from e
+
+    ops = tape._ops + rotations
+    measurements = copy.copy(tape._measurements)
+
+    for o, i in zip(diag_obs, tape._obs_sharing_wires_id):
+        new_m = tape.measurements[i].__class__(obs=o)
+        measurements[i] = new_m
+
+    return ops, measurements
+
+
 # TODO: move this function to its own file and rename
 def expand_tape(tape, depth=1, stop_at=None, expand_measurements=False):
     """Expand all objects in a tape to a specific depth.
@@ -149,37 +179,11 @@ def expand_tape(tape, depth=1, stop_at=None, expand_measurements=False):
     if tape.samples_computational_basis and len(tape.measurements) > 1:
         _validate_computational_basis_sampling(tape.measurements)
 
-    old_prep, old_ops, old_measurements = tape._prep, tape._ops, tape._measurements
-    if tape._obs_sharing_wires:
-        with QueuingManager.stop_recording():  # stop recording operations to active context when computing qwc groupings
-            try:
-                rotations, diag_obs = qml.pauli.diagonalize_qwc_pauli_words(tape._obs_sharing_wires)
-            except (TypeError, ValueError) as e:
-                if any(
-                    isinstance(m, (ProbabilityMP, SampleMP, CountsMP)) for m in tape.measurements
-                ):
-                    raise qml.QuantumFunctionError(
-                        "Only observables that are qubit-wise commuting "
-                        "Pauli words can be returned on the same wire.\n"
-                        "Try removing all probability, sample and counts measurements "
-                        "this will allow for splitting of execution and separate measurements "
-                        "for each non-commuting observable."
-                    ) from e
-
-                raise qml.QuantumFunctionError(
-                    _err_msg_for_some_meas_not_qwc(tape.measurements)
-                ) from e
-
-            old_ops = old_ops + rotations
-
-            for o, i in zip(diag_obs, tape._obs_sharing_wires_id):
-                new_m = tape.measurements[i].__class__(obs=o)
-                old_measurements[i] = new_m
-
+    tape_ops, tape_measurements = get_ops_with_rotations_and_measurements(tape)
     for queue, new_queue in [
-        (old_prep, new_prep),
-        (old_ops, new_ops),
-        (old_measurements, new_measurements),
+        (tape._prep, new_prep),
+        (tape_ops, new_ops),
+        (tape_measurements, new_measurements),
     ]:
         for obj in queue:
             stop = stop_at(obj)
