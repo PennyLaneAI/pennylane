@@ -448,8 +448,7 @@ class TestMaxEntropy:
         """Test `max_entropy` differentiability with jax."""
         import jax
         import jax.numpy as jnp
-
-        config.update("jax_enable_x64", True)  # Enabling complex128 datatypes for jax
+        
         params = jnp.array(params)
 
         max_entropy_grad = jax.grad(qml.math.max_entropy)
@@ -472,7 +471,7 @@ class TestMinEntropy:
         ([1, 0, 0, 0], True),
         ([1, 0, 1, 0] / np.sqrt(2), True),
     ]
-    
+
     single_wires_list = [
         [0],
         [1],
@@ -563,10 +562,10 @@ class TestMinEntropy:
         # It handles different parameters' shapes
         if len(np.array(params).shape) > 1:
             expected_results = [
-                [-1/np.log(base), 0.0, 0.0, 0.0],
-                [0.0, -1/np.log(base), 0.0, 0.0],
-                [0.0, 0.0, -1/np.log(base), 0.0],
-                [0.0, 0.0, 0.0, -1/np.log(base)],
+                [-1 / np.log(base), 0.0, 0.0, 0.0],
+                [0.0, -1 / np.log(base), 0.0, 0.0],
+                [0.0, 0.0, -1 / np.log(base), 0.0],
+                [0.0, 0.0, 0.0, -1 / np.log(base)],
             ]
         else:
             expected_results = [
@@ -592,10 +591,10 @@ class TestMinEntropy:
         # It handles different parameters' shapes
         if len(np.array(params).shape) > 1:
             expected_results = [
-                [-1/np.log(base), 0.0, 0.0, 0.0],
-                [0.0, -1/np.log(base), 0.0, 0.0],
-                [0.0, 0.0, -1/np.log(base), 0.0],
-                [0.0, 0.0, 0.0, -1/np.log(base)],
+                [-1 / np.log(base), 0.0, 0.0, 0.0],
+                [0.0, -1 / np.log(base), 0.0, 0.0],
+                [0.0, 0.0, -1 / np.log(base), 0.0],
+                [0.0, 0.0, 0.0, -1 / np.log(base)],
             ]
         else:
             expected_results = [
@@ -623,10 +622,10 @@ class TestMinEntropy:
         # It handles different parameters' shapes
         if len(np.array(params).shape) > 1:
             expected_results = [
-                [-1/np.log(base), 0.0, 0.0, 0.0],
-                [0.0, -1/np.log(base), 0.0, 0.0],
-                [0.0, 0.0, -1/np.log(base), 0.0],
-                [0.0, 0.0, 0.0, -1/np.log(base)],
+                [-1 / np.log(base), 0.0, 0.0, 0.0],
+                [0.0, -1 / np.log(base), 0.0, 0.0],
+                [0.0, 0.0, -1 / np.log(base), 0.0],
+                [0.0, 0.0, 0.0, -1 / np.log(base)],
             ]
         else:
             expected_results = [
@@ -661,10 +660,10 @@ class TestMinEntropy:
         # It handles different parameters' shapes
         if len(np.array(params).shape) > 1:
             expected_results = [
-                [-1/np.log(base), 0.0, 0.0, 0.0],
-                [0.0, -1/np.log(base), 0.0, 0.0],
-                [0.0, 0.0, -1/np.log(base), 0.0],
-                [0.0, 0.0, 0.0, -1/np.log(base)],
+                [-1 / np.log(base), 0.0, 0.0, 0.0],
+                [0.0, -1 / np.log(base), 0.0, 0.0],
+                [0.0, 0.0, -1 / np.log(base), 0.0],
+                [0.0, 0.0, 0.0, -1 / np.log(base)],
             ]
         else:
             expected_results = [
