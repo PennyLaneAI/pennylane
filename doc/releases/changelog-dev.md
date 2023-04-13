@@ -209,6 +209,7 @@
 
 * A more informative error message is raised in `qml.jacobian` to explain potential
   problems with the new return types specification.
+  [(#3997)](https://github.com/PennyLaneAI/pennylane/pull/3997)
 
 * Fixed a bug where calling `Evolution.generator` with `coeff` being a complex ArrayBox raised an error.
   [(#3796)](https://github.com/PennyLaneAI/pennylane/pull/3796)
