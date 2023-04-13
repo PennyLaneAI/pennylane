@@ -160,7 +160,7 @@ def _construct_tape_from_ops(lst_ops):
     return tape
 
 
-class _CustomOpWithResource(Operation):
+class _CustomOpWithResource(Operation):  # pylint: disable=too-few-public-methods
     num_wires = 2
     name = "CustomOp1"
 
@@ -171,7 +171,7 @@ class _CustomOpWithResource(Operation):
         )
 
 
-class _CustomOpWithoutResource(Operation):
+class _CustomOpWithoutResource(Operation):  # pylint: disable=too-few-public-methods
     num_wires = 2
     name = "CustomOp2"
 
