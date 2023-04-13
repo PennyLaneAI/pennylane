@@ -305,7 +305,7 @@ class HardwareHamiltonian(ParametrizedHamiltonian):
         self,
         coeffs,
         observables,
-        reorder_fn=_reorder_parameters,
+        reorder_fn: Callable = _reorder_parameters,
         pulses: List["HardwarePulse"] = None,
         settings: Union["RydbergSettings", "TransmonSettings"] = None,
     ):
@@ -322,7 +322,7 @@ class HardwareHamiltonian(ParametrizedHamiltonian):
         if isinstance(other, HardwareHamiltonian):
             if not self.reorder_fn == other.reorder_fn:
                 raise ValueError(
-                    f"Cannot add two HardwareHamiltonians with different reorder functions. Received reorder_fns {self.reorder_fn} and {other.reorder_fn}. Most likely, this is because you are trying to combine hardware compatible Hamiltonians for different target systems."
+                    f"Cannot add two HardwareHamiltonians with different reorder functions. Received reorder_fns {self.reorder_fn} and {other.reorder_fn}. This is likely due to an attempt to add hardware compatible Hamiltonians for different target systems."
                 )
             if self.settings is None and other.settings is None:
                 new_settings = None
