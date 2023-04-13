@@ -176,7 +176,9 @@ def transmon_interaction(
 
     settings = TransmonSettings(connections, omega, g, anharmonicity=anharmonicity)
 
-    return HardwareHamiltonian(coeffs, observables, settings=settings, reorder_fn=_reorder_AmpPhaseFreq)
+    return HardwareHamiltonian(
+        coeffs, observables, settings=settings, reorder_fn=_reorder_AmpPhaseFreq
+    )
 
 
 @dataclass
@@ -215,6 +217,7 @@ class TransmonSettings:
             return TransmonSettings(new_connections, new_omega, new_g, anharmonicity=new_anh)
 
         return self
+
 
 def transmon_drive(amplitude, phase, freq, wires):
     r"""TODO"""
@@ -259,13 +262,11 @@ class AmplitudeAndPhaseAndFreq:
         if self.amp_is_callable and self.phase_is_callable and not self.freq_is_callable:
             self.func = callable_amp_and_phase
 
-
         def callable_amp_and_freq(params, t):
             return amp(params[0], t) * trig_fn(phase + freq(params[1], t) * t)
 
         if self.amp_is_callable and not self.phase_is_callable and self.freq_is_callable:
             self.func = callable_amp_and_freq
-
 
         def callable_phase_and_freq(params, t):
             return amp * trig_fn(phase(params[0], t) + freq(params[1], t) * t)
@@ -280,20 +281,18 @@ class AmplitudeAndPhaseAndFreq:
         if self.amp_is_callable and not self.phase_is_callable and not self.freq_is_callable:
             self.func = callable_amp
 
-
         def callable_phase(params, t):
             return amp * trig_fn(phase(params, t) + freq * t)
 
         if not self.amp_is_callable and self.phase_is_callable and not self.freq_is_callable:
             self.func = callable_phase
 
-
         def callable_freq(params, t):
             return amp * trig_fn(phase + freq(params, t) * t)
 
         if not self.amp_is_callable and not self.phase_is_callable and self.freq_is_callable:
             self.func = callable_freq
-        
+
         # 0 out of 3 callable (the remaining coeff is still callable due to explicit time dependence)
         def no_callable(_, t):
             return amp * trig_fn(phase + freq * t)
@@ -321,29 +320,37 @@ def _reorder_AmpPhaseFreq(params, coeffs_parametrized):
     for i, coeff in enumerate(coeffs_parametrized):
         if i == coeff_idx:
             if isinstance(coeff, AmplitudeAndPhaseAndFreq):
-                is_callables = [coeff.phase_is_callable, coeff.amp_is_callable, coeff.freq_is_callable]
-                if sum(is_callables)==3:
+                is_callables = [
+                    coeff.phase_is_callable,
+                    coeff.amp_is_callable,
+                    coeff.freq_is_callable,
+                ]
+                if sum(is_callables) == 3:
                     # add the joined parameters twice, and skip an index
-                    reordered_params.append([params[params_idx], params[params_idx + 1], params[params_idx + 2]])
-                    reordered_params.append([params[params_idx], params[params_idx + 1], params[params_idx + 2]])
+                    reordered_params.append(
+                        [params[params_idx], params[params_idx + 1], params[params_idx + 2]]
+                    )
+                    reordered_params.append(
+                        [params[params_idx], params[params_idx + 1], params[params_idx + 2]]
+                    )
                     coeff_idx += 2
                     params_idx += 3
 
-                elif sum(is_callables)==2:
+                elif sum(is_callables) == 2:
                     # add the joined parameters twice, and skip an index
                     reordered_params.append([params[params_idx], params[params_idx + 1]])
                     reordered_params.append([params[params_idx], params[params_idx + 1]])
                     coeff_idx += 2
                     params_idx += 2
 
-                elif sum(is_callables)==1:
+                elif sum(is_callables) == 1:
                     reordered_params.append(params[params_idx])
                     reordered_params.append(params[params_idx])
                     coeff_idx += 2
                     params_idx += 1
 
                 # in case of no callable, the coeff is still callable due to the explicit freq*t dependence
-                elif sum(is_callables)==0:
+                elif sum(is_callables) == 0:
                     reordered_params.append(None)
                     reordered_params.append(None)
                     coeff_idx += 2
