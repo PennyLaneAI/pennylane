@@ -1020,7 +1020,7 @@ class TestExpval:
         res = dev.execute(tape)
 
         expected_res = expected(theta, phi, torch_device)
-        assert torch.allclose(res, expected_res, atol=tol, rtol=0)
+        assert torch.allclose(qml.math.stack(res), expected_res, atol=tol, rtol=0)
 
     def test_hermitian_expectation(self, device, torch_device, theta, phi, varphi, tol):
         """Test that arbitrary Hermitian expectation values are correct"""
@@ -1052,7 +1052,7 @@ class TestExpval:
         ev2 = ((a - d) * torch.cos(theta) * torch.cos(phi) + 2 * re_b * torch.sin(phi) + a + d) / 2
         expected = torch.tensor([ev1, ev2], dtype=torch.float64, device=torch_device)
 
-        assert torch.allclose(res, expected, atol=tol, rtol=0)
+        assert torch.allclose(qml.math.stack(res), expected, atol=tol, rtol=0)
 
     def test_do_not_split_analytic_torch(
         self, device, torch_device, theta, phi, varphi, tol, mocker
@@ -2288,7 +2288,7 @@ class TestSamples:
         b = torch.tensor(0.43, dtype=torch.float64, device=torch_device)
 
         res = circuit(a, b)
-        assert torch.is_tensor(res)
+        assert isinstance(res, tuple)
 
         # We don't check the expected value due to stochasticity, but
         # leave it here for completeness.
@@ -2393,94 +2393,6 @@ class TestSamplesBroadcasted:
 @pytest.mark.parametrize("torch_device", torch_devices)
 class TestHighLevelIntegration:
     """Tests for integration with higher level components of PennyLane."""
-
-    def test_qnode_collection_integration(self, torch_device):
-        """Test that a PassthruQNode default.qubit.torch works with QNodeCollections."""
-        dev = qml.device("default.qubit.torch", wires=2, torch_device=torch_device)
-
-        obs_list = [qml.PauliX(0) @ qml.PauliY(1), qml.PauliZ(0), qml.PauliZ(0) @ qml.PauliZ(1)]
-        qnodes = qml.map(qml.templates.StronglyEntanglingLayers, obs_list, dev, interface="torch")
-
-        assert qnodes.interface == "torch"
-
-        torch.manual_seed(42)
-        weights = torch.rand(
-            qml.templates.StronglyEntanglingLayers.shape(n_wires=2, n_layers=2),
-            requires_grad=True,
-            device=torch_device,
-        )
-
-        def cost(weights):
-            return torch.sum(qnodes(weights))
-
-        res = cost(weights)
-        res.backward()
-
-        grad = weights.grad
-
-        assert torch.is_tensor(res)
-        assert grad.shape == weights.shape
-
-    def test_qnode_collection_integration(self, torch_device):
-        """Test that a PassthruQNode default.qubit.torch works with QNodeCollections."""
-        dev = qml.device("default.qubit.torch", wires=2, torch_device=torch_device)
-
-        obs_list = [qml.PauliX(0) @ qml.PauliY(1), qml.PauliZ(0), qml.PauliZ(0) @ qml.PauliZ(1)]
-        qnodes = qml.map(qml.templates.StronglyEntanglingLayers, obs_list, dev, interface="torch")
-
-        assert qnodes.interface == "torch"
-
-        torch.manual_seed(42)
-        weights = torch.rand(
-            qml.templates.StronglyEntanglingLayers.shape(n_wires=2, n_layers=2),
-            requires_grad=True,
-            device=torch_device,
-        )
-
-        def cost(weights):
-            return torch.sum(qnodes(weights))
-
-        res = cost(weights)
-        res.backward()
-
-        grad = weights.grad
-
-        assert torch.is_tensor(res)
-        assert grad.shape == weights.shape
-
-    def test_qnode_collection_integration_broadcasted(self, torch_device):
-        """Test that a PassthruQNode default.qubit.torch works with QNodeCollections."""
-        dev = qml.device("default.qubit.torch", wires=2, torch_device=torch_device)
-
-        def ansatz(weights, **kwargs):
-            qml.RX(weights[0], wires=0)
-            qml.RY(weights[1], wires=1)
-            qml.CNOT(wires=[0, 1])
-
-        obs_list = [qml.PauliX(0) @ qml.PauliY(1), qml.PauliZ(0), qml.PauliZ(0) @ qml.PauliZ(1)]
-        qnodes = qml.map(ansatz, obs_list, dev, interface="torch")
-
-        assert qnodes.interface == "torch"
-
-        torch.manual_seed(42)
-        weights = torch.tensor(
-            [[0.1, 0.65, 1.2], [0.2, 1.9, -0.6]],
-            requires_grad=True,
-            device=torch_device,
-            dtype=torch.float64,
-        )
-
-        def cost(weights):
-            return torch.sum(qnodes(weights), axis=-1)
-
-        res = cost(weights)
-        assert torch.is_tensor(res)
-        assert qml.math.shape(res) == (3,)
-
-        jac = torch.autograd.functional.jacobian(cost, (weights,))[0]
-
-        assert torch.is_tensor(jac)
-        assert jac.shape == (3, 2, 3)
 
     def test_sampling_analytic_mode(self, torch_device):
         """Test that when sampling with shots=None, dev uses 1000 shots and

@@ -166,13 +166,13 @@ class SProd(ScalarSymbolicOp):
     @property
     def data(self):
         """The trainable parameters"""
-        return [[self.scalar], self.base.data]  # Not sure if this is the best way to deal with this
+        return [self.scalar, *self.base.data]
 
     @data.setter
     def data(self, new_data):
-        self.scalar = new_data[0][0]
+        self.scalar = new_data[0]
         if len(new_data) > 1:
-            self.base.data = new_data[1]
+            self.base.data = new_data[1:]
 
     @property
     def num_params(self):
