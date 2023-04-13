@@ -43,7 +43,7 @@ def qsvt(A, angles, wires, convention=None):
 
     .. math::
 
-        U_{QSVT} = \Pi_{\phi_1}U\left[\prod^{(d-1)/2}_{k=1}\Pi_{\phi_{2k}}U^\dagger
+        U_{QSVT} = \tilde{\Pi}_{\phi_1}U\left[\prod^{(d-1)/2}_{k=1}\Pi_{\phi_{2k}}U^\dagger
         \tilde{\Pi}_{\phi_{2k+1}}U\right]\Pi_{\phi_{d+1}},
 
 
@@ -151,7 +151,7 @@ class QSVT(Operation):
 
     .. math::
 
-        U_{QSVT} = \Pi_{\phi_1}U\left[\prod^{(d-1)/2}_{k=1}\Pi_{\phi_{2k}}U^\dagger
+        U_{QSVT} = \tilde{\Pi}_{\phi_1}U\left[\prod^{(d-1)/2}_{k=1}\Pi_{\phi_{2k}}U^\dagger
         \tilde{\Pi}_{\phi_{2k+1}}U\right]\Pi_{\phi_{d+1}}.
 
 
@@ -272,7 +272,7 @@ class QSVT(Operation):
         """
 
         op_list = []
-        UA_adj = UA.__copy__()
+        UA_adj = copy.copy(UA)
 
         for idx, op in enumerate(projectors[:-1]):
             qml.apply(op)
