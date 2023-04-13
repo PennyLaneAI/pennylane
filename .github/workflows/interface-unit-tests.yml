@@ -36,6 +36,7 @@ jobs:
           - '3.11'
     uses: ./.github/workflows/unit-test.yml
     with:
+      job_name: torch-tests (${{ matrix.python-version }})
       branch: ${{ inputs.branch }}
       coverage_artifact_name: core-interfaces-coverage-torch-${{ matrix.python-version }}
       python_version: ${{ matrix.python-version }}
@@ -59,6 +60,7 @@ jobs:
           - '3.11'
     uses: ./.github/workflows/unit-test.yml
     with:
+      job_name: autograd-tests (${{ matrix.python-version }})
       branch: ${{ inputs.branch }}
       coverage_artifact_name: core-interfaces-coverage-autograd-${{ matrix.python-version }}
       python_version: ${{ matrix.python-version }}
@@ -82,6 +84,7 @@ jobs:
           - '3.10'
     uses: ./.github/workflows/unit-test.yml
     with:
+      job_name: tf-tests (${{ matrix.python-version }}, ${{ matrix.group }})
       branch: ${{ inputs.branch }}
       coverage_artifact_name: core-interfaces-coverage-tf-${{ matrix.python-version }}-${{ matrix.group }}
       python_version: ${{ matrix.python-version }}
@@ -108,6 +111,7 @@ jobs:
           - '3.11'
     uses: ./.github/workflows/unit-test.yml
     with:
+      job_name: jax-tests (${{ matrix.python-version }}, ${{ matrix.group }})
       branch: ${{ inputs.branch }}
       coverage_artifact_name: core-interfaces-coverage-jax-${{ matrix.python-version }}-${{ matrix.group }}
       python_version: ${{ matrix.python-version }}
@@ -135,6 +139,7 @@ jobs:
           - '3.11'
     uses: ./.github/workflows/unit-test.yml
     with:
+      job_name: core-tests (${{ matrix.python-version }}, ${{ matrix.group }})
       branch: ${{ inputs.branch }}
       coverage_artifact_name: core-interfaces-coverage-core-${{ matrix.python-version }}-${{ matrix.group }}
       python_version: ${{ matrix.python-version }}
@@ -151,6 +156,7 @@ jobs:
   all-interfaces-tests:
     uses: ./.github/workflows/unit-test.yml
     with:
+      job_name: all-interfaces-tests
       branch: ${{ inputs.branch }}
       coverage_artifact_name: all-interfaces-coverage
       python_version: 3.8
@@ -169,6 +175,7 @@ jobs:
   zx-tests:
     uses: ./.github/workflows/unit-test.yml
     with:
+      job_name: zx-tests
       branch: ${{ inputs.branch }}
       coverage_artifact_name: zx-coverage
       python_version: 3.9
@@ -184,6 +191,7 @@ jobs:
   qcut-tests:
     uses: ./.github/workflows/unit-test.yml
     with:
+      job_name: qcut-tests
       branch: ${{ inputs.branch }}
       coverage_artifact_name: qcut-coverage
       python_version: 3.8
@@ -203,6 +211,7 @@ jobs:
   qchem-tests:
     uses: ./.github/workflows/unit-test.yml
     with:
+      job_name: qchem-tests
       branch: ${{ inputs.branch }}
       coverage_artifact_name: qchem-coverage
       python_version: 3.9
@@ -218,6 +227,7 @@ jobs:
   legacy-tests:
     uses: ./.github/workflows/unit-test.yml
     with:
+      job_name: legacy-tests
       branch: ${{ inputs.branch }}
       coverage_artifact_name: legacy-coverage
       python_version: 3.8
@@ -241,6 +251,7 @@ jobs:
           - suite: param-shift
     uses: ./.github/workflows/unit-test.yml
     with:
+      job_name: gradients-tests (${{ matrix.suite }})
       branch: ${{ inputs.branch }}
       coverage_artifact_name: gradients-${{ matrix.config.suite }}-coverage
       python_version: 3.8
@@ -259,6 +270,7 @@ jobs:
   data-tests:
     uses: ./.github/workflows/unit-test.yml
     with:
+      job_name: data-tests
       branch: ${{ inputs.branch }}
       coverage_artifact_name: data-coverage
       python_version: '3.10'
@@ -287,6 +299,7 @@ jobs:
             shots: None
     uses: ./.github/workflows/unit-test.yml
     with:
+      job_name: device-tests (${{ matrix.config.device }}, ${{ matrix.config.shots }})
       branch: ${{ inputs.branch }}
       coverage_artifact_name: devices-coverage-${{ matrix.config.device }}-${{ matrix.config.shots }}
       python_version: 3.8

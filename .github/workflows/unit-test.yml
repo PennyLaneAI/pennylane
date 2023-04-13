@@ -2,6 +2,10 @@ name: Unit Test
 on:
   workflow_call:
     inputs:
+      job_name:
+        description: The name of the Job as it would appear on GitHub Actions UI
+        required: true
+        type: string
       branch:
         description: The PennyLane branch to checkout and run unit tests for
         required: true
@@ -88,6 +92,7 @@ on:
 
 jobs:
   test:
+    name: ${{ inputs.job_name }}
     runs-on: ubuntu-latest
 
     steps:
