@@ -64,12 +64,16 @@ def test_map_wires():
     """Test the map_wires method."""
     base = TempOperator("a")
     op = SymbolicOp(base, id="something")
+    # pylint:disable=attribute-defined-outside-init
+    op._pauli_rep = qml.pauli.PauliSentence({qml.pauli.PauliWord({"a": "X"}): 1})
     wire_map = {"a": 5}
     mapped_op = op.map_wires(wire_map=wire_map)
     assert op.wires == Wires("a")
     assert op.base.wires == Wires("a")
     assert mapped_op.wires == Wires(5)
     assert mapped_op.base.wires == Wires(5)
+    assert mapped_op._pauli_rep is not op._pauli_rep
+    assert mapped_op._pauli_rep == qml.pauli.PauliSentence({qml.pauli.PauliWord({5: "X"}): 1})
 
 
 class TestProperties:
