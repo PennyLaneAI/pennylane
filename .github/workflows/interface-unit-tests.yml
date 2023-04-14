@@ -335,7 +335,14 @@ jobs:
       - device-tests
 
     steps:
+      # Checkout repo so Codecov action is able to resolve git HEAD reference
+      - name: Checkout
+        uses: actions/checkout@v3
+        with:
+          ref: ${{ inputs.branch }}
+
       - name: Down Coverage Artifacts
         uses: actions/download-artifact@v3
+
       - name: Upload to Codecov
         uses: codecov/codecov-action@v3
