@@ -131,21 +131,6 @@ class TestUpdate:
         assert qs._graph is None
         assert qs._specs is None
 
-    def test_update_measured_wires(self):
-        """Test that on construction measured_wires is set."""
-        prep = [qml.BasisState([1, 1], wires=(-1, -2))]
-        ops = [qml.S(0), qml.T("a"), qml.S(0)]
-        measurement = [
-            qml.probs(wires=(-1)),
-            qml.expval(qml.Hermitian(2 * np.eye(2), wires=-2)),
-            qml.expval(qml.PauliX(-1)),
-        ]
-
-        qs = QuantumScript(ops, measurement, prep)
-        assert -1 in qs.measured_wires
-        assert -2 in qs.measured_wires
-        assert len(qs.measured_wires) == 2
-
     def test_update_circuit_info_wires(self):
         """Test that on construction wires and num_wires are set."""
         prep = [qml.BasisState([1, 1], wires=(-1, -2))]
@@ -375,6 +360,32 @@ class TestIteration:
 
         # Check that the underlying circuit is still as expected
         assert qs.circuit == circuit
+
+
+class TestMeasuredWires:
+    """Tests the measured_wires property."""
+
+    @pytest.fixture
+    def make_script(self):
+        prep = [qml.BasisState([1, 1], wires=(-1, -2))]
+        ops = [qml.S(0), qml.T("a"), qml.S(0)]
+        measurement = [
+            qml.probs(wires=(-1)),
+            qml.expval(qml.Hermitian(2 * np.eye(2), wires=-2)),
+            qml.expval(qml.PauliX(-1)),
+        ]
+
+        return QuantumScript(ops, measurement, prep)
+
+    def test_measured_wires(self, make_script):
+        """Test that measured_wires property is set when called and not before."""
+        qs = make_script
+
+        assert len(qs._measured_wires) == 0
+
+        assert -1 in qs.measured_wires
+        assert -2 in qs.measured_wires
+        assert len(qs.measured_wires) == 2
 
 
 class TestInfomationProperties:
