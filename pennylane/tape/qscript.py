@@ -237,10 +237,10 @@ class QuantumScript:
             if m.obs is not None:
                 wires.append(m.obs.wires)
 
-        # Assumes a QuantumScript is not generally mutated. Otherwise, you might use 
+        # Assumes a QuantumScript is not generally mutated. Otherwise, you might use
         # Wires.all_wires([*wires, self._measured_wires]) here to capture everything.
         self._measured_wires = wires
-        
+
         return self._measured_wires
 
     @property
@@ -454,7 +454,7 @@ class QuantumScript:
                 if m.obs is not None and len(set(m.wires) & repeated_wires) > 0:
                     self._obs_sharing_wires.append(m.obs)
                     self._obs_sharing_wires_id.append(i)
-        
+
     def _update_batch_size(self):
         """Infer the batch_size of the quantum script from the batch sizes of its operations
         and check the latter for consistency.
