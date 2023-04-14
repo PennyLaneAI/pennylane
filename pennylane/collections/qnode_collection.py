@@ -19,6 +19,8 @@ import warnings
 # pylint: disable=too-many-arguments,import-outside-toplevel
 from collections.abc import Sequence
 
+import pennylane as qml
+
 
 class QNodeCollection(Sequence):
     """Represents a sequence of independent QNodes that all share the same signature.
@@ -163,6 +165,11 @@ class QNodeCollection(Sequence):
         warnings.warn(
             "The QNodeCollection class is deprecated and it will be removed soon.", UserWarning
         )
+
+        if qml.active_return():
+            raise qml.QuantumFunctionError(
+                "QNodeCollections does not support the new return system."
+            )
 
         self.qnodes = []
         self.extend(qnodes or [])

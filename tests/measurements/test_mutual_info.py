@@ -36,7 +36,7 @@ class TestMutualInfoUnitTests:
         assert q.queue[0] is m
         assert isinstance(q.queue[0], MutualInfoMP)
 
-    @pytest.mark.parametrize("shots, shape", [(None, (1,)), (10, (1,)), ([1, 10], (2,))])
+    @pytest.mark.parametrize("shots, shape", [(None, ()), (10, ()), ([1, 10], ((), ()))])
     def test_shape(self, shots, shape):
         """Test that the shape is correct."""
         dev = qml.device("default.qubit", wires=3, shots=shots)
