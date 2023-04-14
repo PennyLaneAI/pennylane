@@ -25,7 +25,7 @@ def hamiltonian_grad(tape, idx):
         idx (int): index of parameter that we differentiate with respect to
     """
 
-    op, _, p_idx = tape.get_operation(idx, return_op_index=True)
+    op, _, p_idx = tape.get_operation(idx)
     new_tape = tape.copy(copy_operations=True)
 
     # get position in queue

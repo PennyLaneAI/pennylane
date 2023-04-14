@@ -477,7 +477,7 @@ def _expval_stoch_pulse_grad(tape, argnum, num_split_times, key, shots):
             gradient_data.append((0, None, None))
             continue
 
-        op, op_idx, term_idx = tape.get_operation(idx, return_op_index=True)
+        op, op_idx, term_idx = tape.get_operation(idx)
         if not isinstance(op, ParametrizedEvolution):
             raise ValueError(
                 "stoch_pulse_grad does not support differentiating parameters of "
