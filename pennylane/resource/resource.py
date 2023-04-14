@@ -18,7 +18,7 @@ The data class which will aggregate all the resource information from a quantum 
 
 class Resources:
     r"""Contains attributes which store key resources such as number of gates, number of wires, shots,
-    depth and gate types, tracked over a quantum workflow.
+    depth and gate types.
 
     Args:
         num_wires (int): number of qubits
