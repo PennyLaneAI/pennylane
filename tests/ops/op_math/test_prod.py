@@ -1300,6 +1300,18 @@ class TestIntegration:
         res2 = batched_no_prod(x, y)
         assert qml.math.allclose(res1, res2)
 
+    def test_params_can_be_considered_trainable(self):
+        """Tests that the parameters of a Prod are considered trainable."""
+        dev = qml.device("default.qubit", wires=2)
+
+        @qml.qnode(dev)
+        def circuit():
+            return qml.expval(qml.prod(qml.RX(1.1, 0), qml.RY(qnp.array(2.2), 1)))
+
+        with pytest.warns(UserWarning):
+            circuit()
+        assert circuit.tape.trainable_params == [1]
+
 
 class TestSortWires:
     """Tests for the wire sorting algorithm."""
