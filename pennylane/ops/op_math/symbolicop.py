@@ -138,8 +138,11 @@ class SymbolicOp(Operator):
         )
 
     def map_wires(self, wire_map: dict):
+        # pylint:disable=protected-access
         new_op = copy(self)
         new_op.hyperparameters["base"] = self.base.map_wires(wire_map=wire_map)
+        if (p_rep := new_op._pauli_rep) is not None:
+            new_op._pauli_rep = p_rep.map_wires(wire_map)
         return new_op
 
 
@@ -169,6 +172,15 @@ class ScalarSymbolicOp(SymbolicOp):
     @property
     def batch_size(self):
         return self._batch_size
+
+    @property
+    def data(self):
+        return [self.scalar, *self.base.data]
+
+    @data.setter
+    def data(self, new_data):
+        self.scalar = new_data[0]
+        self.base.data = new_data[1:]
 
     def _check_and_compute_batch_size(self, scalar):
         batched_scalar = qml.math.ndim(scalar) > 0
