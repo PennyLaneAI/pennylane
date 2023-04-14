@@ -231,7 +231,16 @@ class QuantumScript:
     @property
     def measured_wires(self) -> List[int]:
         """Returns the measured wires"""
-        self._update_measured_wires()
+        wires = []
+
+        for m in self.measurements:
+            if m.obs is not None:
+                wires.append(m.obs.wires)
+
+        # Assumes a QuantumScript is not generally mutated. Otherwise, you might use 
+        # Wires.all_wires([*wires, self._measured_wires]) here to capture everything.
+        self._measured_wires = wires
+        
         return self._measured_wires
 
     @property
@@ -445,21 +454,7 @@ class QuantumScript:
                 if m.obs is not None and len(set(m.wires) & repeated_wires) > 0:
                     self._obs_sharing_wires.append(m.obs)
                     self._obs_sharing_wires_id.append(i)
-
-    def _update_measured_wires(self):
-        """Updates the measured wires straightforwardly.
-
-        Sets:
-            _measured_wires (int): The wires measured in this QuantumScript
-        """
-        wires = []
-
-        for m in self.measurements:
-            if m.obs is not None:
-                wires.append(m.obs.wires)
-
-        self._measured_wires = Wires.all_wires([*wires, self._measured_wires])
-
+        
     def _update_batch_size(self):
         """Infer the batch_size of the quantum script from the batch sizes of its operations
         and check the latter for consistency.
@@ -1023,7 +1018,6 @@ class QuantumScript:
         new_qscript._obs_sharing_wires_id = self._obs_sharing_wires_id
         new_qscript._batch_size = self.batch_size
         new_qscript._output_dim = self.output_dim
-        new_qscript._update_measured_wires()
 
         return new_qscript
 
