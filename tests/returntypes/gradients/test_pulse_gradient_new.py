@@ -796,7 +796,7 @@ class TestStochPulseGradQNodeIntegration:
                 assert qml.math.allclose(j[0], e, atol=tol, rtol=0.0)
 
     @pytest.mark.parametrize("num_split_times", [1, 3])
-    @pytest.mark.parametrize("time_interface", ["python", "numpy", "JAX"])
+    @pytest.mark.parametrize("time_interface", ["python", "numpy", "jax"])
     def test_simple_qnode_jit(self, num_split_times, time_interface):
         """Test that a simple qnode can be differentiated with stoch_pulse_grad."""
         import jax
@@ -804,19 +804,21 @@ class TestStochPulseGradQNodeIntegration:
         jnp = jax.numpy
         jax.config.update("jax_enable_x64", True)
         dev = qml.device("default.qubit.jax", wires=1)
-        T = {"python": 0.2, "numpy": np.array(0.2), "JAX": jnp.array(0.2)}[time_interface]
+        T = {"python": 0.2, "numpy": np.array(0.2), "jax": jnp.array(0.2)}[time_interface]
         ham_single_q_const = qml.pulse.constant * qml.PauliY(0)
 
         @qml.qnode(
             dev, interface="jax", diff_method=stoch_pulse_grad, num_split_times=num_split_times
         )
-        def circuit(params, T=T):
+        def circuit(params, T=None):
             qml.evolve(ham_single_q_const)(params, T)
             return qml.expval(qml.PauliZ(0))
 
         params = [jnp.array(0.4)]
         p = params[0] * T
         exp_grad = -2 * jnp.sin(2 * p) * T
+        jax.jit(circuit)(params, T=T)
+        ### THE PROBLEM IS NOT WITH THE GRADIENT
         jit_grad = jax.jit(jax.grad(circuit))(params, T=T)
         assert qml.math.isclose(jit_grad, exp_grad)
 

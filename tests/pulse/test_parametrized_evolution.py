@@ -240,6 +240,8 @@ class TestIntegration:
 
         if time_interface == "jax":
             time = jnp.array(time)
+        elif time_interface == "numpy":
+            time = np.array(time)
         H = qml.pulse.ParametrizedHamiltonian([2], [qml.PauliX(0)])
 
         dev = qml.device("default.qubit", wires=1)
