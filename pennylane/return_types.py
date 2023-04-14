@@ -15,7 +15,7 @@
 Class and functions for activating, deactivating and checking the new return types system
 """
 # pylint: disable=global-statement
-__activated = False
+__activated = True
 
 
 def enable_return():
@@ -181,6 +181,9 @@ def enable_return():
 
             AttributeError: 'tuple' object has no attribute 'shape'
 
+    .. details::
+        :title: JAX Usage Details
+
         **JAX interface upgrades: higher-order derivatives and mixing measurements**
 
         Higher-order derivatives can now be computed with the JAX interface:
@@ -244,7 +247,7 @@ def enable_return():
             ValueError: All input arrays must have the same shape.
 
         The new return types system also unlocks the use of shot vectors with all the previous features. For example you
-        can take the second derivative and multiple measurement with with JAX:
+        can take the second derivative and multiple measurement with JAX:
 
         .. code-block:: python
 

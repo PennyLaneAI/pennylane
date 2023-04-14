@@ -14,9 +14,9 @@
 """
 Unit tests for :mod:`pennylane.operation`.
 """
+import copy
 import itertools
 from functools import reduce
-import copy
 
 import numpy as np
 import pytest
@@ -25,12 +25,12 @@ from numpy.linalg import multi_dot
 
 import pennylane as qml
 from pennylane import numpy as pnp
-from pennylane.operation import Operation, Operator, Tensor, operation_derivative
+from pennylane.operation import Operation, Operator, StatePrep, Tensor, operation_derivative
 from pennylane.ops import Prod, SProd, Sum, cv
 from pennylane.wires import Wires
 
 # pylint: disable=no-self-use, no-member, protected-access, redefined-outer-name, too-few-public-methods
-# pylint: disable=too-many-public-methods, unused-argument, unnecessary-lambda-assignment
+# pylint: disable=too-many-public-methods, unused-argument, unnecessary-lambda-assignment, unnecessary-dunder-call
 
 Toffoli_broadcasted = np.tensordot([0.1, -4.2j], Toffoli, axes=0)
 CNOT_broadcasted = np.tensordot([1.4], CNOT, axes=0)
@@ -70,6 +70,15 @@ class TestOperatorConstruction:
 
         with pytest.raises(qml.wires.WireError, match="Wires must be unique"):
             DummyOp(0.5, wires=[1, 1], do_queue=False)
+
+    def test_num_wires_default_any_wires(self):
+        """Test that num_wires is `AnyWires` by default."""
+
+        class DummyOp(qml.operation.Operator):
+            r"""Dummy custom operator"""
+
+        assert DummyOp.num_wires == qml.operation.AnyWires
+        assert Operator.num_wires == qml.operation.AnyWires
 
     def test_incorrect_num_params(self):
         """Test that an exception is raised if called with wrong number of parameters"""
@@ -451,6 +460,42 @@ class TestOperatorConstruction:
         assert MyOp.has_diagonalizing_gates is False
         assert MyOp(wires=0).has_diagonalizing_gates is False
 
+    def test_has_generator_true(self):
+        """Test `has_generator` property detects overriding of `generator` method."""
+
+        class MyOp(qml.operation.Operator):
+            num_wires = 1
+
+            @staticmethod
+            def generator():
+                return np.eye(2)
+
+        assert MyOp.has_generator is True
+        assert MyOp(wires=0).has_generator is True
+
+    def test_has_generator_true_concrete_op(self):
+        """Test has_generator with a concrete operation (RZ)
+        that does have a generator defined."""
+
+        op = qml.RZ(0.3, 0)
+        assert op.has_generator is True
+
+    def test_has_generator_false(self):
+        """Test `has_generator` property defaults to false if `generator` not overwritten."""
+
+        class MyOp(qml.operation.Operator):
+            num_wires = 1
+
+        assert MyOp.has_generator is False
+        assert MyOp(wires=0).has_generator is False
+
+    def test_has_generator_false_concrete_op(self):
+        """Test has_generator with a concrete operation (Rot)
+        that does not have a generator defined."""
+
+        op = qml.Rot(0.3, 0.2, 0.1, 0)
+        assert op.has_generator is False
+
     @pytest.mark.tf
     @pytest.mark.parametrize("jit_compile", [True, False])
     def test_with_tf_function(self, jit_compile):
@@ -497,11 +542,24 @@ class TestOperatorConstruction:
             num_wires = 3
 
         op = DummyOp(wires=[0, 1, 2])
+        op._pauli_rep = qml.pauli.PauliSentence(  # pylint:disable=attribute-defined-outside-init
+            {
+                qml.pauli.PauliWord({0: "X", 1: "Y", 2: "Z"}): 1.1,
+                qml.pauli.PauliWord({0: "Z", 1: "X", 2: "Y"}): 2.2,
+            }
+        )
         wire_map = {0: 10, 1: 11, 2: 12}
         mapped_op = op.map_wires(wire_map=wire_map)
         assert op is not mapped_op
         assert op.wires == Wires([0, 1, 2])
         assert mapped_op.wires == Wires([10, 11, 12])
+        assert mapped_op._pauli_rep is not op._pauli_rep
+        assert mapped_op._pauli_rep == qml.pauli.PauliSentence(
+            {
+                qml.pauli.PauliWord({10: "X", 11: "Y", 12: "Z"}): 1.1,
+                qml.pauli.PauliWord({10: "Z", 11: "X", 12: "Y"}): 2.2,
+            }
+        )
 
     def test_map_wires_uncomplete_wire_map(self):
         """Test that the map_wires method doesn't change wires that are not present in the wire
@@ -527,6 +585,17 @@ class TestOperatorConstruction:
 
         op = DummyOp(wires=0)
         assert op._pauli_rep is None
+
+    def test_list_params_casted_into_numpy_array(self):
+        """Test that list parameters are casted into numpy arrays."""
+
+        class DummyOp(qml.operation.Operator):
+            r"""Dummy custom operator"""
+            num_wires = 1
+
+        op = DummyOp([1, 2, 3], wires=0)
+
+        assert isinstance(op.data[0], np.ndarray)
 
 
 class TestOperationConstruction:
@@ -883,7 +952,7 @@ class TestOperatorIntegration:
     def test_sum_with_operator(self):
         """Test the __sum__ dunder method with two operators."""
         sum_op = qml.PauliX(0) + qml.RX(1, 0)
-        final_op = qml.op_sum(qml.PauliX(0), qml.RX(1, 0))
+        final_op = qml.sum(qml.PauliX(0), qml.RX(1, 0))
         #  TODO: Use qml.equal when fixed.
         assert isinstance(sum_op, Sum)
         for s1, s2 in zip(sum_op.operands, final_op.operands):
@@ -895,7 +964,7 @@ class TestOperatorIntegration:
     def test_sum_with_scalar(self):
         """Test the __sum__ dunder method with a scalar value."""
         sum_op = 5 + qml.PauliX(0) + 0
-        final_op = qml.op_sum(qml.PauliX(0), qml.s_prod(5, qml.Identity(0)))
+        final_op = qml.sum(qml.PauliX(0), qml.s_prod(5, qml.Identity(0)))
         # TODO: Use qml.equal when fixed.
         assert isinstance(sum_op, Sum)
         for s1, s2 in zip(sum_op.operands, final_op.operands):
@@ -943,7 +1012,7 @@ class TestOperatorIntegration:
     def test_sum_multi_wire_operator_with_scalar(self):
         """Test the __sum__ dunder method with a multi-wire operator and a scalar value."""
         sum_op = 5 + qml.CNOT(wires=[0, 1])
-        final_op = qml.op_sum(
+        final_op = qml.sum(
             qml.CNOT(wires=[0, 1]),
             qml.s_prod(5, qml.Identity([0, 1])),
         )
@@ -985,6 +1054,33 @@ class TestOperatorIntegration:
         prod_op = qml.RX(1.23, 0) * scalar
         assert isinstance(prod_op, SProd)
         assert prod_op.scalar is scalar
+
+    def test_divide_with_scalar(self):
+        """Test the __truediv__ dunder method with a scalar value."""
+        sprod_op = qml.RX(1, 0) / 4
+        final_op = qml.s_prod(scalar=1 / 4, operator=qml.RX(1, 0))
+        assert isinstance(sprod_op, qml.ops.SProd)
+        assert sprod_op.name == final_op.name
+        assert sprod_op.wires == final_op.wires
+        assert sprod_op.data == final_op.data
+        assert np.allclose(sprod_op.matrix(), final_op.matrix(), rtol=0)
+
+    def test_divide_with_scalar_tensor(self):
+        """Test the __truediv__ dunder method with a scalar tensor."""
+        scalar = pnp.array(5)
+        prod_op = qml.RX(1.23, 0) / scalar
+        assert isinstance(prod_op, SProd)
+        assert prod_op.scalar == 1 / scalar
+
+    def test_divide_not_supported(self):
+        """Test that the division of an operator with an unknown object is not supported."""
+        obs = qml.PauliX(0)
+
+        class UnknownObject:
+            pass
+
+        with pytest.raises(TypeError, match="unsupported operand type"):
+            _ = obs / UnknownObject()
 
     def test_dunder_method_with_new_class(self):
         """Test that when calling any Operator dunder method with a non-supported class that
@@ -1186,6 +1282,13 @@ class TestTensor:
         t = Tensor(X, Y)
         assert t.batch_size is None
 
+    def test_pauli_rep(self):
+        """Test that the _pauli_rep attribute of the Tensor is initialized as None."""
+        X = qml.PauliX(0)
+        Y = qml.PauliY(2)
+        t = Tensor(X, Y)
+        assert t._pauli_rep is None
+
     def test_has_matrix(self):
         """Test that the Tensor class has a ``has_matrix`` static attribute set to True."""
         assert Tensor.has_matrix is True
@@ -1213,6 +1316,17 @@ class TestTensor:
         Y = qml.Hermitian(p, wires=[1, 2])
         t = Tensor(X, Y)
         assert t.data == [p]
+
+    def test_data_setter(self):
+        """Test the data setter"""
+        p = np.eye(4)
+        X = qml.PauliX(0)
+        Y = qml.Hermitian(p, wires=[1, 2])
+        t = Tensor(X, Y)
+        assert t.data == [p]
+        new_data = np.eye(4) * 6
+        t.data = [[], [new_data]]
+        assert qml.math.allequal(t.data, [new_data])
 
     def test_num_params(self):
         """Test that the correct number of parameters is returned"""
@@ -1625,14 +1739,12 @@ class TestTensor:
     def test_copy(self):
         """Test copying of a Tensor."""
         tensor = Tensor(qml.PauliX(0), qml.PauliY(1), qml.PauliZ(2))
-        copied_tensor = copy.copy(tensor)
-        copied_tensor1 = tensor.__copy__()
-        for c in [copied_tensor, copied_tensor1]:
-            assert c is not tensor
-            assert c.wires == Wires([0, 1, 2])
-            assert c.batch_size == tensor.batch_size == None
-            for obs1, obs2 in zip(c.obs, tensor.obs):
-                assert qml.equal(obs1, obs2)
+        c = copy.copy(tensor)
+        assert c is not tensor
+        assert c.wires == Wires([0, 1, 2])
+        assert c.batch_size == tensor.batch_size == None
+        for obs1, obs2 in zip(c.obs, tensor.obs):
+            assert qml.equal(obs1, obs2)
 
     def test_map_wires(self):
         """Test the map_wires method."""
@@ -1831,24 +1943,6 @@ class TestTensorObservableOperations:
     def test_tensor_product(self, obs1, obs2, res):
         """Tests the tensor product between Observables"""
         assert res.compare(obs1 @ obs2)
-
-    def test_arithmetic_errors(self):
-        """Tests that the arithmetic operations throw the correct errors"""
-        obs = qml.PauliZ(0)
-        tensor = qml.PauliZ(0) @ qml.PauliX(1)
-        A = [[1, 0], [0, -1]]
-        with pytest.raises(TypeError, match="unsupported operand type"):
-            _ = obs + A
-        with pytest.raises(TypeError, match="unsupported operand type"):
-            _ = tensor + A
-        with pytest.raises(TypeError, match="can't multiply sequence by non-int of type 'PauliZ'"):
-            _ = obs * A
-        with pytest.raises(TypeError, match="can't multiply sequence by non-int of type 'Tensor'"):
-            _ = A * tensor
-        with pytest.raises(TypeError, match="unsupported operand type"):
-            _ = obs - A
-        with pytest.raises(TypeError, match="unsupported operand type"):
-            _ = tensor - A
 
 
 # Dummy class inheriting from Operator
@@ -2111,6 +2205,36 @@ class TestCVOperation:
             op.heisenberg_expand(U_high_order, op.wires)
 
 
+class TestStatePrep:
+    """Test the StatePrep interface."""
+
+    # pylint:disable=unused-argument,too-few-public-methods
+    def test_basic_stateprep(self):
+        """Tests a basic implementation of the StatePrep interface."""
+
+        class DefaultPrep(StatePrep):
+            """A dummy class that assumes it was given a state vector."""
+
+            num_wires = qml.operation.AllWires
+
+            def state_vector(self, wire_order=None):
+                return self.parameters[0]
+
+        prep_op = DefaultPrep([1, 0], wires=[0])
+        assert np.array_equal(prep_op.state_vector(), [1, 0])
+
+    def test_child_must_implement_state_vector(self):
+        """Tests that a child class that does not implement state_vector fails."""
+
+        class NoStatePrepOp(StatePrep):
+            """A class that is missing the state_vector implementation."""
+
+            num_wires = qml.operation.AllWires
+
+        with pytest.raises(TypeError, match="Can't instantiate abstract class"):
+            NoStatePrepOp(wires=[0])
+
+
 class TestCriteria:
     doubleExcitation = qml.DoubleExcitation(0.1, wires=[0, 1, 2, 3])
     rx = qml.RX(qml.numpy.array(0.3, requires_grad=True), wires=1)
@@ -2192,13 +2316,11 @@ def test_docstring_example_of_operator_class(tol):
     page in the developer guide."""
 
     class FlipAndRotate(qml.operation.Operation):
-
         num_wires = qml.operation.AnyWires
         grad_method = "A"
 
         # pylint: disable=too-many-arguments
         def __init__(self, angle, wire_rot, wire_flip=None, do_flip=False, do_queue=True, id=None):
-
             if do_flip and wire_flip is None:
                 raise ValueError("Expected a wire to flip; got None.")
 

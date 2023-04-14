@@ -14,7 +14,7 @@
 """
 This module contains the discrete-variable quantum operations.
 
-The operations are divided into six different files:
+The operations are divided into the following files:
 
 * ``arithmetic_ops.py``: Operations that perform arithmetic on the states.
 * ``matrix_ops.py``: Generalized operations that accept a matrix parameter,
@@ -26,15 +26,19 @@ The operations are divided into six different files:
   any of the more specific categories.
 * ``qchem_ops.py``: Operations for quantum chemistry applications.
 * ``state_preparation.py``: Operations that initialize the state.
+* ``special_unitary.py``: The ``SpecialUnitary`` operation.
 """
 
 from .arithmetic_ops import *
 from .matrix_ops import *
 from .non_parametric_ops import *
 from .observables import *
-from .parametric_ops import *
+from .parametric_ops_single_qubit import *
+from .parametric_ops_multi_qubit import *
+from .parametric_ops_controlled import *
 from .qchem_ops import *
 from .state_preparation import *
+from .special_unitary import SpecialUnitary
 from .hamiltonian import Hamiltonian
 from ..identity import Identity
 from ..snapshot import Snapshot
@@ -89,6 +93,7 @@ ops = {
     "QubitStateVector",
     "QubitDensityMatrix",
     "QubitUnitary",
+    "SpecialUnitary",
     "MultiControlledX",
     "IntegerComparator",
     "DiagonalQubitUnitary",

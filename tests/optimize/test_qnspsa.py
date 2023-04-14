@@ -25,6 +25,7 @@ from scipy.linalg import sqrtm
 def get_single_input_qnode():
     """Prepare qnode with a single tensor as input."""
     dev = qml.device("default.qubit", wires=2)
+
     # the analytical expression of the qnode goes as:
     # np.cos(params[0][0] / 2) ** 2 - np.sin(params[0][0] / 2) ** 2 * np.cos(params[0][1])
     @qml.qnode(dev)
@@ -39,6 +40,7 @@ def get_single_input_qnode():
 def get_multi_input_qnode():
     """Prepare qnode with two separate tensors as input."""
     dev = qml.device("default.qubit", wires=2)
+
     # the analytical expression of the qnode goes as:
     # np.cos(x1 / 2) ** 2 - np.sin(x1 / 2) ** 2 * np.cos(x2)
     @qml.qnode(dev)
@@ -200,7 +202,7 @@ class TestQNSPSAOptimizer:
         grad_res = opt._post_process_grad(raw_results, grad_dirs)
 
         # gradient computed analytically
-        qnode_finite_diff = get_grad_finite_diff(params, finite_diff_step, grad_dirs).reshape(1, 1)
+        qnode_finite_diff = get_grad_finite_diff(params, finite_diff_step, grad_dirs)
         grad_expected = [
             qnode_finite_diff / (2 * finite_diff_step) * grad_dir for grad_dir in grad_dirs
         ]
@@ -314,7 +316,7 @@ class TestQNSPSAOptimizer:
         # test the next-step parameter
         _, grad_dirs = target_opt._get_spsa_grad_tapes(qnode, params, {})
         _, tensor_dirs = target_opt._get_tensor_tapes(qnode, params, {})
-        qnode_finite_diff = get_grad_finite_diff(params, finite_diff_step, grad_dirs).reshape(1, 1)
+        qnode_finite_diff = get_grad_finite_diff(params, finite_diff_step, grad_dirs)
         grad_expected = [
             qnode_finite_diff / (2 * finite_diff_step) * grad_dir for grad_dir in grad_dirs
         ]

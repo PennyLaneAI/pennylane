@@ -173,7 +173,6 @@ def split_non_commuting(tape):
         def reorder_fn(res):
             """re-order the output to the original shape and order"""
             if qml.active_return():
-
                 # determine if shot vector is used
                 if len(tapes[0].measurements) == 1:
                     shot_vector_defined = isinstance(res[0], tuple)

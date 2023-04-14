@@ -95,7 +95,6 @@ class ArbitraryUnitary(Operation):
     grad_method = None
 
     def __init__(self, weights, wires, do_queue=True, id=None):
-
         shape = qml.math.shape(weights)
         if shape != (4 ** len(wires) - 1,):
             raise ValueError(

@@ -58,7 +58,7 @@ def circuit(ops, obs):
 
 
 @pytest.fixture
-def parameterized_circuit(wires):
+def parameterized_circuit_gaussian(wires):
     def qfunc(a, b, c, d, e, f):
         qml.Rotation(a, wires=wires[0]),
         qml.Rotation(b, wires=wires[1]),
@@ -68,11 +68,7 @@ def parameterized_circuit(wires):
         qml.Rotation(e, wires=wires[1]),
         qml.Rotation(f, wires=wires[2]),
 
-        return [
-            qml.expval(qml.ops.NumberOperator(wires=wires[0])),
-            qml.expval(qml.ops.NumberOperator(wires=wires[1])),
-            qml.expval(qml.ops.NumberOperator(wires=wires[2])),
-        ]
+        return qml.expval(qml.ops.NumberOperator(wires=wires[0]))
 
     return qfunc
 
@@ -84,15 +80,15 @@ def circuit_measure_max_once():
 
 def circuit_measure_max_twice():
     """A fixture of a circuit that measures wire 0 twice."""
-    return qml.expval(qml.PauliX(wires=0)), qml.probs(wires=0)
+    return qml.expval(qml.PauliZ(wires=0)), qml.probs(wires=0)
 
 
 def circuit_measure_multiple_with_max_twice():
     """A fixture of a circuit that measures wire 0 twice."""
     return (
-        qml.expval(qml.PauliX(wires=0)),
+        qml.expval(qml.PauliZ(wires=0)),
         qml.probs(wires=[0, 1, 2]),
-        qml.var(qml.PauliX(wires=[1]) @ qml.PauliZ([2])),
+        qml.var(qml.PauliZ(wires=[1]) @ qml.PauliZ([2])),
     )
 
 
@@ -217,11 +213,11 @@ class TestCircuitGraph:
         assert circuit.wire_indices(2) == op_indices_for_wire_2
 
     @pytest.mark.parametrize("wires", [["a", "q1", 3]])
-    def test_layers(self, parameterized_circuit, wires):
+    def test_layers(self, parameterized_circuit_gaussian, wires):
         """A test of a simple circuit with 3 layers and 6 trainable parameters"""
 
         dev = qml.device("default.gaussian", wires=wires)
-        qnode = qml.QNode(parameterized_circuit, dev)
+        qnode = qml.QNode(parameterized_circuit_gaussian, dev)
         qnode(*pnp.array([0.1, 0.2, 0.3, 0.4, 0.5, 0.6], requires_grad=True))
         circuit = qnode.qtape.graph
         layers = circuit.parametrized_layers
@@ -236,11 +232,11 @@ class TestCircuitGraph:
         assert layers[2].param_inds == [6, 7]
 
     @pytest.mark.parametrize("wires", [["a", "q1", 3]])
-    def test_iterate_layers(self, parameterized_circuit, wires):
+    def test_iterate_layers(self, parameterized_circuit_gaussian, wires):
         """A test of the different layers, their successors and ancestors using a simple circuit"""
 
         dev = qml.device("default.gaussian", wires=wires)
-        qnode = qml.QNode(parameterized_circuit, dev)
+        qnode = qml.QNode(parameterized_circuit_gaussian, dev)
         qnode(*pnp.array([0.1, 0.2, 0.3, 0.4, 0.5, 0.6], requires_grad=True))
         circuit = qnode.qtape.graph
         result = list(circuit.iterate_parametrized_layers())

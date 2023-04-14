@@ -50,7 +50,6 @@ def get_jax_interface_name(tapes):
     """
     for t in tapes:
         for op in t:
-
             # Unwrap the observable from a MeasurementProcess
             op = op.obs if hasattr(op, "obs") else op
             if op is not None:
@@ -62,12 +61,14 @@ def get_jax_interface_name(tapes):
     return "jax"
 
 
-def execute(tapes, device, execute_fn, gradient_fn, gradient_kwargs, _n=1, max_diff=1, mode=None):
+def execute_legacy(
+    tapes, device, execute_fn, gradient_fn, gradient_kwargs, _n=1, max_diff=1, mode=None
+):
     """Execute a batch of tapes with JAX parameters on a device.
 
     Args:
         tapes (Sequence[.QuantumTape]): batch of tapes to execute
-        device (.Device): Device to use to execute the batch of tapes.
+        device (pennylane.Device): Device to use to execute the batch of tapes.
             If the device does not provide a ``batch_execute`` method,
             by default the tapes will be executed in serial.
         execute_fn (callable): The execution function used to execute the tapes
@@ -96,15 +97,16 @@ def execute(tapes, device, execute_fn, gradient_fn, gradient_kwargs, _n=1, max_d
 
     _validate_tapes(tapes)
 
-    for tape in tapes:
-        # set the trainable parameters
-        params = tape.get_parameters(trainable_only=False)
-        tape.trainable_params = qml.math.get_trainable_indices(params)
+    if _n == 1:
+        for tape in tapes:
+            # set the trainable parameters
+            params = tape.get_parameters(trainable_only=False)
+            tape.trainable_params = qml.math.get_trainable_indices(params)
 
     parameters = tuple(list(t.get_parameters()) for t in tapes)
 
     if gradient_fn is None:
-        return _execute_fwd(
+        return _execute_fwd_legacy(
             parameters,
             tapes=tapes,
             device=device,
@@ -113,7 +115,7 @@ def execute(tapes, device, execute_fn, gradient_fn, gradient_kwargs, _n=1, max_d
             _n=_n,
         )
 
-    return _execute(
+    return _execute_legacy(
         parameters,
         tapes=tapes,
         device=device,
@@ -135,7 +137,6 @@ def _validate_tapes(tapes):
         InterfaceUnsupportedError: if tapes that produce ragged outputs were provided
     """
     for t in tapes:
-
         measurement_types = [type(m) for m in t.measurements]
         set_of_measurement_types = set(measurement_types)
         probs_or_sample_measure = (
@@ -154,7 +155,7 @@ def _validate_tapes(tapes):
                 )
 
 
-def _execute(
+def _execute_legacy(
     params,
     tapes=None,
     device=None,
@@ -166,21 +167,22 @@ def _execute(
     """The main interface execution function where jacobians of the execute
     function are computed by the registered backward function."""
 
-    # Copy a given tape with operations and set parameters
-    def cp_tape(t, a):
-        tc = t.copy(copy_operations=True)
-        tc.set_parameters(a)
-        return tc
-
     def array_if_not_counts(tape, r):
         """Auxiliary function to convert the result of a tape to an array,
         unless the tape had Counts measurements that are represented with
         dictionaries. JAX NumPy arrays don't support dictionaries."""
-        return jnp.array(r) if not any(isinstance(m, CountsMP) for m in tape.measurements) else r
+        if any(isinstance(m, CountsMP) for m in tape.measurements):
+            if tape.batch_size is not None:
+                raise InterfaceUnsupportedError(
+                    "Broadcasted circuits with counts return types are only supported with "
+                    "the new return system. Use qml.enable_return() to turn it on."
+                )
+            return r
+        return jnp.array(r)
 
     @jax.custom_vjp
     def wrapped_exec(params):
-        new_tapes = [cp_tape(t, a) for t, a in zip(tapes, params)]
+        new_tapes = [_copy_tape(t, a) for t, a in zip(tapes, params)]
         with qml.tape.Unwrap(*new_tapes):
             res, _ = execute_fn(new_tapes, **gradient_kwargs)
 
@@ -195,18 +197,12 @@ def _execute(
         return wrapped_exec(params), params
 
     def wrapped_exec_bwd(params, g):
-
         if isinstance(gradient_fn, qml.gradients.gradient_transform):
-            args = tuple(params) + (g,)
-
-            p = args[:-1]
-            dy = args[-1]
-
-            new_tapes = [cp_tape(t, a) for t, a in zip(tapes, p)]
+            new_tapes = [_copy_tape(t, a) for t, a in zip(tapes, params)]
             with qml.tape.Unwrap(*new_tapes):
                 vjp_tapes, processing_fn = qml.gradients.batch_vjp(
                     new_tapes,
-                    dy,
+                    g,
                     gradient_fn,
                     reduction="append",
                     gradient_kwargs=gradient_kwargs,
@@ -299,7 +295,7 @@ def _raise_vector_valued_fwd(tapes):
         )
 
 
-def _execute_fwd(
+def _execute_fwd_legacy(
     params,
     tapes=None,
     device=None,
@@ -333,7 +329,6 @@ def _execute_fwd(
         return res, tuple([jacs, params])
 
     def wrapped_exec_bwd(params, g):
-
         # Use the jacobian that was computed on the forward pass
         jacs, params = params
 
@@ -371,12 +366,12 @@ def _execute_fwd(
     return res
 
 
-def execute_new(tapes, device, execute_fn, gradient_fn, gradient_kwargs, _n=1, max_diff=2):
+def execute(tapes, device, execute_fn, gradient_fn, gradient_kwargs, _n=1, max_diff=2):
     """Execute a batch of tapes with JAX parameters on a device.
 
     Args:
         tapes (Sequence[.QuantumTape]): batch of tapes to execute
-        device (.Device): Device to use for the shots vectors.
+        device (pennylane.Device): Device to use for the shots vectors.
         execute_fn (callable): The execution function used to execute the tapes
             during the forward pass. This function must return a tuple ``(results, jacobians)``.
             If ``jacobians`` is an empty list, then ``gradient_fn`` is used to
@@ -396,15 +391,16 @@ def execute_new(tapes, device, execute_fn, gradient_fn, gradient_kwargs, _n=1, m
         the returned list corresponds in order to the provided tapes.
     """
     # Set the trainable parameters
-    for tape in tapes:
-        params = tape.get_parameters(trainable_only=False)
-        tape.trainable_params = qml.math.get_trainable_indices(params)
+    if _n == 1:
+        for tape in tapes:
+            params = tape.get_parameters(trainable_only=False)
+            tape.trainable_params = qml.math.get_trainable_indices(params)
 
     parameters = tuple(list(t.get_parameters()) for t in tapes)
 
     if gradient_fn is None:
         # PennyLane forward execution
-        return _execute_fwd_new(
+        return _execute_fwd(
             parameters,
             tapes,
             execute_fn,
@@ -413,7 +409,7 @@ def execute_new(tapes, device, execute_fn, gradient_fn, gradient_kwargs, _n=1, m
         )
 
     # PennyLane backward execution
-    return _execute_bwd_new(
+    return _execute_bwd(
         parameters,
         tapes,
         device,
@@ -425,7 +421,7 @@ def execute_new(tapes, device, execute_fn, gradient_fn, gradient_kwargs, _n=1, m
     )
 
 
-def _execute_bwd_new(
+def _execute_bwd(
     params,
     tapes,
     device,
@@ -461,31 +457,26 @@ def _execute_bwd_new(
         new_tapes = [_copy_tape(t, a) for t, a in zip(tapes, primals[0])]
 
         if isinstance(gradient_fn, qml.gradients.gradient_transform):
+            _args = (
+                new_tapes,
+                tangents[0],
+                gradient_fn,
+                device.shot_vector,
+            )
+            _kwargs = {
+                "reduction": "append",
+                "gradient_kwargs": gradient_kwargs,
+            }
             if _n == max_diff:
-
                 with qml.tape.Unwrap(*new_tapes):
-                    jvp_tapes, processing_fn = qml.gradients.batch_jvp(
-                        new_tapes,
-                        tangents[0],
-                        gradient_fn,
-                        device.shot_vector,
-                        reduction="append",
-                        gradient_kwargs=gradient_kwargs,
-                    )
+                    jvp_tapes, processing_fn = qml.gradients.batch_jvp(*_args, **_kwargs)
                     jvps = processing_fn(execute_fn(jvp_tapes)[0])
 
             else:
-                jvp_tapes, processing_fn = qml.gradients.batch_jvp(
-                    new_tapes,
-                    tangents[0],
-                    gradient_fn,
-                    device.shot_vector,
-                    reduction="append",
-                    gradient_kwargs=gradient_kwargs,
-                )
+                jvp_tapes, processing_fn = qml.gradients.batch_jvp(*_args, **_kwargs)
 
                 jvps = processing_fn(
-                    execute_new(
+                    execute(
                         jvp_tapes,
                         device,
                         execute_fn,
@@ -495,6 +486,7 @@ def _execute_bwd_new(
                         max_diff=max_diff,
                     )
                 )
+
             res = execute_wrapper(primals[0])
         else:
             # Execution: execute the function first
@@ -510,7 +502,7 @@ def _execute_bwd_new(
     return execute_wrapper(params)
 
 
-def _execute_fwd_new(
+def _execute_fwd(
     params,
     tapes,
     execute_fn,
@@ -580,17 +572,24 @@ def _copy_tape(t, a):
     return tc
 
 
+def _is_count_result(r):
+    """Checks if ``r`` is a single count (or broadcasted count) result"""
+    return isinstance(r, dict) or isinstance(r, list) and all(isinstance(i, dict) for i in r)
+
+
 def _to_jax(res):
     """From a list of tapes results (each result is either a np.array or tuple), transform it to a list of Jax
     results (structure stay the same)."""
     res_ = []
     for r in res:
-        if not isinstance(r, tuple):
+        if _is_count_result(r):
+            res_.append(r)
+        elif not isinstance(r, tuple):
             res_.append(jnp.array(r))
         else:
             sub_r = []
             for r_i in r:
-                if isinstance(r_i, dict):
+                if _is_count_result(r_i):
                     sub_r.append(r_i)
                 else:
                     sub_r.append(jnp.array(r_i))
@@ -603,5 +602,4 @@ def _to_jax_shot_vector(res):
 
     The expected structure of the inputs is a list of tape results with each element in the list being a tuple due to execution using shot vectors.
     """
-    res_ = [tuple(_to_jax([r_])[0] for r_ in r) for r in res]
-    return res_
+    return [tuple(_to_jax([r_])[0] for r_ in r) for r in res]

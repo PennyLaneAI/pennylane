@@ -20,10 +20,13 @@ import cmath
 import math
 
 import pytest
+
 import pennylane as qml
-from pennylane import numpy as np, DeviceError
-from pennylane.devices.default_qubit import _get_slice, DefaultQubit
-from pennylane.wires import Wires, WireError
+from pennylane import DeviceError
+from pennylane import numpy as np
+from pennylane.devices.default_qubit import DefaultQubit, _get_slice
+from pennylane.pulse import ParametrizedHamiltonian
+from pennylane.wires import WireError, Wires
 
 U = np.array(
     [
@@ -404,6 +407,16 @@ class TestApply:
             [cmath.exp(1j * 0.4) / 2, cmath.exp(1j * -0.4) * math.sqrt(3) / 4],
             [np.array([cmath.exp(1j * 0.4), cmath.exp(1j * -0.4)])],
         ),
+        (qml.SpecialUnitary, [1, 0], [0, 1j], [np.array([np.pi / 2, 0, 0])]),
+        (qml.SpecialUnitary, [1, 0], [0, -1], [np.array([0, np.pi / 2, 0])]),
+        (qml.SpecialUnitary, [1, 0], [1j, 0], [np.array([0, 0, np.pi / 2])]),
+        (qml.SpecialUnitary, [0.6, 0.8], [0.573 + 0.236j, 0.764 + 0.177j], [np.array([0.3, 0, 0])]),
+        (
+            qml.SpecialUnitary,
+            [0.8j, -0.6],
+            [-0.808 + 0.049j, -0.411 + 0.419j],
+            [np.array([0.4, 0.2, 1.2])],
+        ),
     ]
 
     @pytest.mark.parametrize(
@@ -533,6 +546,42 @@ class TestApply:
             [np.array([1, 1, 1, -1])],
         ),
         (qml.DiagonalQubitUnitary, [0, 0, 1, 0], [0, 0, 1j, 0], [np.array([-1, 1j, 1j, -1])]),
+        (
+            qml.SpecialUnitary,
+            [0.5, -0.5j, 0.5j, -0.5],
+            [0.382 - 0.322j, -0.322 - 0.382j, 0.322 + 0.382j, -0.382 + 0.322j],
+            [np.eye(15)[4] * 0.7],
+        ),
+        (
+            qml.SpecialUnitary,
+            [0.6, 0, 0, -0.8],
+            [0.553, 0.312, -0.234, -0.737],
+            [np.eye(15)[10] * 0.4],
+        ),
+        (
+            qml.SpecialUnitary,
+            [0, 0, 1, 0],
+            [0, -1j / math.sqrt(2), 1 / math.sqrt(2), 0],
+            [-np.eye(15)[4] * np.pi / 4],
+        ),  # Like Ising XX
+        (
+            qml.SpecialUnitary,
+            [0, 0, 1, 0],
+            [0, -1j / math.sqrt(2), 1 / math.sqrt(2), 0],
+            [-np.eye(15)[9] * np.pi / 4],
+        ),  # Like Ising YY
+        (
+            qml.SpecialUnitary,
+            [0, 0, 0, 1],
+            [0, 0, 0, 1 / math.sqrt(2) - 1j / math.sqrt(2)],
+            [-np.eye(15)[14] * np.pi / 4],
+        ),  # Like Ising ZZ
+        (
+            qml.SpecialUnitary,
+            [0.5, -0.5j, -0.5, -0.5],
+            [-0.616 - 0.018j, 0.316 + 0.243j, 0.427 + 0.437j, 0.294 + 0.043j],
+            [np.linspace(0.1, 3, 15)],
+        ),
         (qml.IsingXX, [0, 0, 1, 0], [0, -1j / math.sqrt(2), 1 / math.sqrt(2), 0], [math.pi / 2]),
         (qml.IsingXX, [0, 0, 0, 1], [-1j / math.sqrt(2), 0, 0, 1 / math.sqrt(2)], [math.pi / 2]),
         (qml.IsingXX, [1, 0, 0, 0], [1 / math.sqrt(2), 0, 0, -1j / math.sqrt(2)], [math.pi / 2]),
@@ -2014,6 +2063,34 @@ class TestApplyOps:
         state_out_einsum = np.einsum("abcdef,kdfe->kacb", matrix, self.state)
         assert np.allclose(state_out, state_out_einsum)
 
+    @pytest.mark.jax
+    def test_apply_parametrized_evolution_raises_error(self):
+        """Test that applying a ParametrizedEvolution raises an error."""
+        param_ev = qml.evolve(ParametrizedHamiltonian([1], [qml.PauliX(0)]))
+        with pytest.raises(
+            NotImplementedError,
+            match="The device default.qubit cannot execute a ParametrizedEvolution operation",
+        ):
+            self.dev._apply_parametrized_evolution(state=self.state, operation=param_ev)
+
+        @qml.qnode(self.dev)
+        def circuit():
+            qml.apply(param_ev)
+            return qml.expval(qml.PauliZ(0))
+
+        with pytest.raises(
+            DeviceError,
+            match="Gate ParametrizedEvolution not supported on device default.qubit.autograd",
+        ):
+            circuit()
+
+        self.dev.operations.add("ParametrizedEvolution")
+        with pytest.raises(
+            NotImplementedError,
+            match="The device default.qubit.autograd cannot execute a ParametrizedEvolution operation",
+        ):
+            circuit()
+
 
 class TestStateVector:
     """Unit tests for the _apply_state_vector method"""
@@ -2265,6 +2342,24 @@ class TestHamiltonianSupport:
         ):
             dev.expval(H)
 
+    def test_Hamiltonian_filtered_from_rotations(self, mocker):
+        """Tests that the device does not attempt to get rotations for Hamiltonians."""
+        dev = qml.device("default.qubit", wires=2, shots=10)
+        H = qml.Hamiltonian([0.1, 0.2], [qml.PauliX(0), qml.PauliZ(1)])
+
+        spy = mocker.spy(qml.QubitDevice, "_get_diagonalizing_gates")
+        qs = qml.tape.QuantumScript([qml.RX(1, 0)], [qml.expval(qml.PauliX(0)), qml.expval(H)])
+        rotations = dev._get_diagonalizing_gates(qs)
+
+        assert len(rotations) == 1
+        assert qml.equal(rotations[0], qml.Hadamard(0))
+
+        call_args = spy.call_args.args[1]  # 0 is self (the device)
+        assert isinstance(call_args, qml.tape.QuantumScript)
+        assert len(call_args.operations) == 0
+        assert len(call_args.measurements) == 1
+        assert qml.equal(call_args.measurements[0], qml.expval(qml.PauliX(0)))
+
 
 class TestGetBatchSize:
     """Tests for the helper method ``_get_batch_size`` of ``QubitDevice``."""
@@ -2311,7 +2406,6 @@ class TestDenseMatrixDecompositionThreshold:
 
     @pytest.mark.parametrize("op, n_wires, condition", input)
     def test_threshold(self, op, n_wires, condition):
-
         wires = np.linspace(0, n_wires - 1, n_wires, dtype=int)
         op = op(wires=wires)
         assert DefaultQubit.stopping_condition.__get__(op)(op) == condition

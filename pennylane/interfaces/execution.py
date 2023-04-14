@@ -61,7 +61,7 @@ SUPPORTED_INTERFACES = list(INTERFACE_MAP)
 
 
 def _adjoint_jacobian_expansion(
-    tapes: Sequence[QuantumTape], mode: str, interface: str, max_expansion: int
+    tapes: Sequence[QuantumTape], grad_on_execution: bool, interface: str, max_expansion: int
 ):
     """Performs adjoint jacobian specific expansion.  Expands so that every
     trainable operation has a generator.
@@ -69,15 +69,14 @@ def _adjoint_jacobian_expansion(
     TODO: Let the device specify any gradient-specific expansion logic.  This
     function will be removed once the device-support pipeline is improved.
     """
-    if mode == "forward" and INTERFACE_MAP[interface] == "jax":
+    if grad_on_execution and INTERFACE_MAP[interface] == "jax":
         # qml.math.is_trainable doesn't work with jax on the forward pass
         non_trainable = qml.operation.has_nopar
     else:
         non_trainable = ~qml.operation.is_trainable
 
     stop_at = ~qml.operation.is_measurement & (
-        non_trainable  # pylint: disable=unsupported-binary-operation
-        | qml.operation.has_unitary_gen
+        non_trainable | qml.operation.has_gen  # pylint: disable=unsupported-binary-operation
     )
     for i, tape in enumerate(tapes):
         if any(not stop_at(op) for op in tape.operations):
@@ -132,7 +131,6 @@ def cache_execute(fn: Callable, cache, pass_kwargs=False, return_tuple=True, exp
 
     @wraps(fn)
     def wrapper(tapes: Sequence[QuantumTape], **kwargs):
-
         if not pass_kwargs:
             kwargs = {}
 
@@ -228,12 +226,12 @@ def cache_execute(fn: Callable, cache, pass_kwargs=False, return_tuple=True, exp
     return wrapper
 
 
-def _execute_new(
+def execute(
     tapes: Sequence[QuantumTape],
     device,
     gradient_fn: Callable = None,
-    interface="autograd",
-    mode="best",
+    interface="auto",
+    grad_on_execution="best",
     gradient_kwargs=None,
     cache=True,
     cachesize=10000,
@@ -248,7 +246,7 @@ def _execute_new(
 
     Args:
         tapes (Sequence[.QuantumTape]): batch of tapes to execute
-        device (.Device): Device to use to execute the batch of tapes.
+        device (pennylane.Device): Device to use to execute the batch of tapes.
             If the device does not provide a ``batch_execute`` method,
             by default the tapes will be executed in serial.
         gradient_fn (None or callable): The gradient transform function to use
@@ -257,11 +255,10 @@ def _execute_new(
         interface (str): The interface that will be used for classical autodifferentiation.
             This affects the types of parameters that can exist on the input tapes.
             Available options include ``autograd``, ``torch``, ``tf``, ``jax`` and ``auto``.
-        mode (str): Whether the gradients should be computed on the forward
-            pass (``forward``) or the backward pass (``backward``). Only applies
+        grad_on_execution (bool, str): Whether the gradients should be computed on the execution or not. Only applies
             if the device is queried for the gradient; gradient transform
             functions available in ``qml.gradients`` are only supported on the backward
-            pass.
+            pass. The 'best' option chooses automatically between the two options and is default.
         gradient_kwargs (dict): dictionary of keyword arguments to pass when
             determining the gradients of tapes
         cache (bool): Whether to cache evaluations. This can result in
@@ -344,6 +341,28 @@ def _execute_new(
            [ 0.01983384, -0.97517033,  0.        ],
            [ 0.        ,  0.        , -0.95533649]])
     """
+    if not qml.active_return():
+        if isinstance(grad_on_execution, str):
+            mode = "best"
+        else:
+            mode = "forward" if grad_on_execution else "backward"
+
+        return _execute_legacy(
+            tapes,
+            device,
+            gradient_fn,
+            interface=interface,
+            mode=mode,
+            gradient_kwargs=gradient_kwargs,
+            cache=cache,
+            cachesize=cachesize,
+            max_diff=max_diff,
+            override_shots=override_shots,
+            expand_fn=expand_fn,
+            max_expansion=max_expansion,
+            device_batch_transform=device_batch_transform,
+        )
+
     if interface == "auto":
         params = []
         for tape in tapes:
@@ -392,7 +411,8 @@ def _execute_new(
 
     # the default execution function is batch_execute
     execute_fn = qml.interfaces.cache_execute(batch_execute, cache, expand_fn=expand_fn)
-    _mode = "backward"
+
+    _grad_on_execution = False
 
     if gradient_fn == "device":
         # gradient function is a device method
@@ -405,16 +425,18 @@ def _execute_new(
             tapes[i] = expand_fn(tape)
 
         if gradient_kwargs.get("method", "") == "adjoint_jacobian":
+            mode = "forward" if grad_on_execution else "backward"
             tapes = _adjoint_jacobian_expansion(tapes, mode, interface, max_expansion)
 
-        if mode in ("forward", "best"):
+        # grad on execution or best was chosen
+        if grad_on_execution is True or grad_on_execution == "best":
             # replace the forward execution function to return
             # both results and gradients
             execute_fn = set_shots(device, override_shots)(device.execute_and_gradients)
             gradient_fn = None
-            _mode = "forward"
+            _grad_on_execution = True
 
-        elif mode == "backward":
+        else:
             # disable caching on the forward pass
             execute_fn = qml.interfaces.cache_execute(batch_execute, cache=None)
 
@@ -425,12 +447,11 @@ def _execute_new(
                 pass_kwargs=True,
                 return_tuple=False,
             )
-
-    elif mode == "forward":
+    elif grad_on_execution is True:
         # In "forward" mode, gradients are automatically handled
         # within execute_and_gradients, so providing a gradient_fn
         # in this case would have ambiguous behaviour.
-        raise ValueError("Gradient transforms cannot be used with mode='forward'")
+        raise ValueError("Gradient transforms cannot be used with grad_on_execution=True")
 
     try:
         mapped_interface = INTERFACE_MAP[interface]
@@ -443,20 +464,18 @@ def _execute_new(
             from .autograd import execute as _execute
 
         elif mapped_interface == "tf":
-            # TODO: remove pragmas when TF is supported
-            import tensorflow as tf  # pragma: no cover
+            import tensorflow as tf
 
-            if not tf.executing_eagerly() or "autograph" in interface:  # pragma: no cover
-                from .tensorflow_autograph import execute as _execute  # pragma: no cover
+            if not tf.executing_eagerly() or "autograph" in interface:
+                from .tensorflow_autograph import execute as _execute
 
-                _execute = partial(_execute, mode=_mode)
+                _execute = partial(_execute, grad_on_execution=_grad_on_execution)
 
             else:
-                from .tensorflow import execute as _execute  # pragma: no cover
+                from .tensorflow import execute as _execute
 
         elif mapped_interface == "torch":
-            # TODO: remove pragmas when Torch is supported
-            from .torch import execute as _execute  # pragma: no cover
+            from .torch import execute as _execute
 
         elif mapped_interface == "jax":
             _execute = _get_jax_execute_fn(interface, tapes)
@@ -474,11 +493,11 @@ def _execute_new(
     return batch_fn(res)
 
 
-def execute(
+def _execute_legacy(
     tapes: Sequence[QuantumTape],
     device,
     gradient_fn: Callable = None,
-    interface="autograd",
+    interface="auto",
     mode="best",
     gradient_kwargs=None,
     cache=True,
@@ -493,7 +512,7 @@ def execute(
 
     Args:
         tapes (Sequence[.QuantumTape]): batch of tapes to execute
-        device (.Device): Device to use to execute the batch of tapes.
+        device (pennylane.Device): Device to use to execute the batch of tapes.
             If the device does not provide a ``batch_execute`` method,
             by default the tapes will be executed in serial.
         gradient_fn (None or callable): The gradient transform function to use
@@ -589,23 +608,6 @@ def execute(
            [ 0.01983384, -0.97517033,  0.        ],
            [ 0.        ,  0.        , -0.95533649]])
     """
-    if qml.active_return():
-        return _execute_new(
-            tapes,
-            device,
-            gradient_fn,
-            interface=interface,
-            mode=mode,
-            gradient_kwargs=gradient_kwargs,
-            cache=cache,
-            cachesize=cachesize,
-            max_diff=max_diff,
-            override_shots=override_shots,
-            expand_fn=expand_fn,
-            max_expansion=max_expansion,
-            device_batch_transform=device_batch_transform,
-        )
-
     if interface == "auto":
         params = []
         for tape in tapes:
@@ -709,6 +711,10 @@ def execute(
 
             if not tf.executing_eagerly() or "autograph" in interface:
                 from .tensorflow_autograph import execute as _execute
+
+                _grad_on_execution = _mode == "forward"
+
+                _execute = partial(_execute, grad_on_execution=_grad_on_execution)
             else:
                 from .tensorflow import execute as _execute
         elif mapped_interface == "torch":
@@ -721,9 +727,7 @@ def execute(
             f"version of {mapped_interface} to enable the '{mapped_interface}' interface."
         ) from e
 
-    res = _execute(
-        tapes, device, execute_fn, gradient_fn, gradient_kwargs, _n=1, max_diff=max_diff, mode=_mode
-    )
+    res = _execute(tapes, device, execute_fn, gradient_fn, gradient_kwargs, _n=1, max_diff=max_diff)
 
     return batch_fn(res)
 
@@ -741,12 +745,12 @@ def _get_jax_execute_fn(interface: str, tapes: Sequence[QuantumTape]):
 
     if interface == "jax-jit":
         if qml.active_return():
-            from .jax_jit_tuple import execute_tuple as _execute
+            from .jax_jit_tuple import execute as _execute
         else:
-            from .jax_jit import execute as _execute
+            from .jax_jit import execute_legacy as _execute
     else:
         if qml.active_return():
-            from .jax import execute_new as _execute
-        else:
             from .jax import execute as _execute
+        else:
+            from .jax import execute_legacy as _execute
     return _execute

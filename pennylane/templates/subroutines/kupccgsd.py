@@ -204,7 +204,6 @@ class kUpCCGSD(Operation):
     grad_method = None
 
     def __init__(self, weights, wires, k=1, delta_sz=0, init_state=None, do_queue=True, id=None):
-
         if len(wires) < 4:
             raise ValueError(f"Requires at least four wires; got {len(wires)} wires.")
         if len(wires) % 2:

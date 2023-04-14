@@ -27,7 +27,7 @@ from pennylane.measurements import SampleMP, StateMP
 
 from .tensorflow import (
     _compute_vjp,
-    _compute_vjp_new,
+    _compute_vjp_legacy,
     _jac_restructured,
     _res_restructured,
     _to_tensors,
@@ -44,12 +44,14 @@ def _flatten_nested_list(x):
     return reduce(lambda a, y: a + _flatten_nested_list(y), x, [])
 
 
-def execute(tapes, device, execute_fn, gradient_fn, gradient_kwargs, _n=1, max_diff=2, mode=None):
+def _execute_legacy(
+    tapes, device, execute_fn, gradient_fn, gradient_kwargs, _n=1, max_diff=2, mode=None
+):
     """Execute a batch of tapes with TensorFlow parameters on a device.
 
     Args:
         tapes (Sequence[.QuantumTape]): batch of tapes to execute
-        device (.Device): Device to use to execute the batch of tapes.
+        device (pennylane.Device): Device to use to execute the batch of tapes.
             If the device does not provide a ``batch_execute`` method,
             by default the tapes will be executed in serial.
         execute_fn (callable): The execution function used to execute the tapes
@@ -72,17 +74,6 @@ def execute(tapes, device, execute_fn, gradient_fn, gradient_kwargs, _n=1, max_d
         list[list[tf.Tensor]]: A nested list of tape results. Each element in
         the returned list corresponds in order to the provided tapes.
     """
-    if qml.active_return():
-        return _execute_new(
-            tapes,
-            device,
-            execute_fn,
-            gradient_fn,
-            gradient_kwargs,
-            _n=_n,
-            max_diff=max_diff,
-            mode=mode,
-        )
 
     all_params = []
     parameters = []
@@ -145,7 +136,6 @@ def execute(tapes, device, execute_fn, gradient_fn, gradient_kwargs, _n=1, max_d
 
     @tf.custom_gradient
     def _execute(*all_params):  # pylint:disable=unused-argument
-
         res = tf.numpy_function(func=_forward, inp=all_params, Tout=output_types)
         output_sizes = res[-len(tapes) :]
 
@@ -165,7 +155,7 @@ def execute(tapes, device, execute_fn, gradient_fn, gradient_kwargs, _n=1, max_d
                 # No additional quantum evaluations needed; simply compute the VJPs directly.
                 len_dy = len(dy)
                 vjps = tf.numpy_function(
-                    func=lambda *args: _compute_vjp(args[:len_dy], args[len_dy:]),
+                    func=lambda *args: _compute_vjp_legacy(args[:len_dy], args[len_dy:]),
                     inp=dy + jacs,
                     Tout=[tf.float64] * len(parameters),
                 )
@@ -177,7 +167,6 @@ def execute(tapes, device, execute_fn, gradient_fn, gradient_kwargs, _n=1, max_d
 
                     # Generate and execute the required gradient tapes
                     if _n == max_diff:
-
                         len_all_params = len(all_params)
 
                         def _backward(*all_params):
@@ -216,7 +205,7 @@ def execute(tapes, device, execute_fn, gradient_fn, gradient_kwargs, _n=1, max_d
                         # This recursion, coupled with the fact that the gradient transforms
                         # are differentiable, allows for arbitrary order differentiation.
                         vjps = processing_fn(
-                            execute(
+                            _execute_legacy(
                                 vjp_tapes,
                                 device,
                                 execute_fn,
@@ -248,7 +237,7 @@ def execute(tapes, device, execute_fn, gradient_fn, gradient_kwargs, _n=1, max_d
                         params_unwrapped = _nest_params(all_params)
 
                         with qml.tape.Unwrap(*tapes, params=params_unwrapped):
-                            vjps = _compute_vjp(dy, gradient_fn(tapes, **gradient_kwargs))
+                            vjps = _compute_vjp_legacy(dy, gradient_fn(tapes, **gradient_kwargs))
 
                         return vjps
 
@@ -269,14 +258,21 @@ def execute(tapes, device, execute_fn, gradient_fn, gradient_kwargs, _n=1, max_d
     return _execute(*all_params)
 
 
-def _execute_new(
-    tapes, device, execute_fn, gradient_fn, gradient_kwargs, _n=1, max_diff=2, mode=None
+def execute(
+    tapes,
+    device,
+    execute_fn,
+    gradient_fn,
+    gradient_kwargs,
+    _n=1,
+    max_diff=2,
+    grad_on_execution=None,
 ):
     """Execute a batch of tapes with TensorFlow parameters on a device.
 
     Args:
         tapes (Sequence[.QuantumTape]): batch of tapes to execute
-        device (.Device): Device to use to execute the batch of tapes.
+        device (pennylane.Device): Device to use to execute the batch of tapes.
             If the device does not provide a ``batch_execute`` method,
             by default the tapes will be executed in serial.
         execute_fn (callable): The execution function used to execute the tapes
@@ -292,13 +288,26 @@ def _execute_new(
             the maximum number of derivatives to support. Increasing this value allows
             for higher order derivatives to be extracted, at the cost of additional
             (classical) computational overhead during the backwards pass.
-        mode (str): Whether the gradients should be computed on the forward
-            pass (``forward``) or the backward pass (``backward``).
+        grad_on_execution (bool): Whether the gradients should be computed on execution or not.
 
     Returns:
         list[list[tf.Tensor]]: A nested list of tape results. Each element in
         the returned list corresponds in order to the provided tapes.
     """
+    if not qml.active_return():
+        mode = "forward" if grad_on_execution else "backward"
+
+        return _execute_legacy(
+            tapes,
+            device,
+            execute_fn,
+            gradient_fn,
+            gradient_kwargs,
+            _n=_n,
+            max_diff=max_diff,
+            mode=mode,
+        )
+
     all_params = []
     parameters = []
     lens = []
@@ -328,10 +337,9 @@ def _execute_new(
                 o_types.append(tf.float64)
 
         output_types.extend(o_types * num_shot_copies)
-
     total_measurements = sum(len(tape.measurements) for tape in tapes)
 
-    if mode == "forward":
+    if grad_on_execution:
         output_types += [tf.float64] * len(trainable)
 
     output_types += [tf.int32] * (total_measurements * num_shot_copies)
@@ -372,11 +380,10 @@ def _execute_new(
 
     @tf.custom_gradient
     def _execute(*all_params):  # pylint:disable=unused-argument
-
         res = tf.numpy_function(func=_forward, inp=all_params, Tout=output_types)
         output_sizes = res[-total_measurements * num_shot_copies :]
 
-        if mode == "forward":
+        if grad_on_execution:
             jacs = res[total_measurements * num_shot_copies : -total_measurements * num_shot_copies]
 
         res = res[: total_measurements * num_shot_copies]
@@ -392,8 +399,8 @@ def _execute_new(
             multi_measurements = [len(tape.measurements) > 1 for tape in tapes]
             dy = list(dy[: total_measurements * num_shot_copies])
 
-            if mode == "forward":
-                # Jacobians were computed on the forward pass (mode="forward")
+            if grad_on_execution:
+                # Jacobians were computed on the forward pass (grad_on_execution=True)
                 # No additional quantum evaluations needed; simply compute the VJPs directly.
 
                 def _backward(*args):
@@ -404,7 +411,7 @@ def _execute_new(
                     dy = _res_restructured(dy, tapes, shots=device.shot_vector)
                     jacs = _jac_restructured(jacs, tapes)
 
-                    return _compute_vjp_new(dy, jacs, multi_measurements, device.shot_vector)
+                    return _compute_vjp(dy, jacs, multi_measurements, device.shot_vector)
 
                 vjps = tf.numpy_function(
                     func=_backward,
@@ -419,7 +426,6 @@ def _execute_new(
 
                     # Generate and execute the required gradient tapes
                     if _n == max_diff:
-
                         len_all_params = len(all_params)
 
                         def _backward(*all_params):
@@ -463,6 +469,7 @@ def _execute_new(
                         # This is where the magic happens. Note that we call ``execute``.
                         # This recursion, coupled with the fact that the gradient transforms
                         # are differentiable, allows for arbitrary order differentiation.
+
                         vjps = processing_fn(
                             execute(
                                 vjp_tapes,
@@ -472,7 +479,7 @@ def _execute_new(
                                 gradient_kwargs,
                                 _n=_n + 1,
                                 max_diff=max_diff,
-                                mode=mode,
+                                grad_on_execution=grad_on_execution,
                             ),
                             nums=output_sizes,
                         )
@@ -499,7 +506,7 @@ def _execute_new(
                         with qml.tape.Unwrap(*tapes, params=params_unwrapped):
                             jac = gradient_fn(tapes, **gradient_kwargs)
 
-                        vjps = _compute_vjp_new(dy, jac, multi_measurements, device.shot_vector)
+                        vjps = _compute_vjp(dy, jac, multi_measurements, device.shot_vector)
                         return vjps
 
                     vjps = tf.numpy_function(

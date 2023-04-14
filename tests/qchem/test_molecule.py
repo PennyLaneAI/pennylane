@@ -47,6 +47,17 @@ class TestMolecule:
             qchem.Molecule(symbols, geometry, basis_name="6-3_1_g")
 
     @pytest.mark.parametrize(
+        ("symbols", "geometry", "charge", "mult"),
+        [
+            (["H", "He"], np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]]), 0, 2),
+        ],
+    )
+    def test_openshell_error(self, symbols, geometry, charge, mult):
+        r"""Test that an error is raised if the molecule has unpaired electrons."""
+        with pytest.raises(ValueError, match="Openshell systems are not supported"):
+            qchem.Molecule(symbols, geometry, charge=charge, mult=mult)
+
+    @pytest.mark.parametrize(
         ("symbols", "geometry"),
         [
             (["H", "Og"], np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]])),
@@ -181,6 +192,7 @@ class TestMolecule:
         r"""Test that the molecule object contains the correct basis set and non-default basis data
         for a given molecule.
         """
+        pytest.importorskip("basis_set_exchange")
         mol = qchem.Molecule(symbols, geometry, load_data=load_data, normalize=False)
 
         assert set(map(type, mol.basis_set)) == {qchem.BasisFunction}
@@ -279,11 +291,65 @@ class TestMolecule:
             ["H", "C", "O"],
             np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.0], [0.0, 0.0, 2.0]]),
         )
-        mol = qchem.Molecule(symbols, geometry, 0)
+        mol = qchem.Molecule(symbols, geometry, 1)
         assert (
-            repr(mol) == "<Molecule = CHO, Charge: 0, Basis: STO-3G, Orbitals: 11, Electrons: 15>"
+            repr(mol) == "<Molecule = CHO, Charge: 1, Basis: STO-3G, Orbitals: 11, Electrons: 14>"
         )
 
         symbols, geometry = (["C", "O"], np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]]))
         mol = qchem.Molecule(symbols, geometry, 0)
         assert repr(mol) == "<Molecule = CO, Charge: 0, Basis: STO-3G, Orbitals: 10, Electrons: 14>"
+
+    @pytest.mark.parametrize(
+        ("symbols", "geometry", "basis_name", "params_ref"),
+        [  # data manually copied from https://www.basissetexchange.org/
+            (
+                ["H", "H"],
+                np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]]),
+                "6-31+g",
+                (
+                    (
+                        (0, 0, 0),  # l
+                        [0.1873113696e02, 0.2825394365e01, 0.6401216923e00],  # alpha
+                        [0.3349460434e-01, 0.2347269535e00, 0.8137573261e00],  # coeff
+                    ),
+                    (
+                        (0, 0, 0),  # l
+                        [0.1612777588e00],  # alpha
+                        [1.0000000],  # coeff
+                    ),
+                    (
+                        (0, 0, 0),  # l
+                        [0.1873113696e02, 0.2825394365e01, 0.6401216923e00],  # alpha
+                        [0.3349460434e-01, 0.2347269535e00, 0.8137573261e00],  # coeff
+                    ),
+                    (
+                        (0, 0, 0),  # l
+                        [0.1612777588e00],  # alpha
+                        [1.0000000],  # coeff
+                    ),
+                ),
+            ),
+        ],
+    )
+    def test_load_basis(self, symbols, geometry, basis_name, params_ref):
+        """Test that correct basis set parameters are loaded from the basis_set_exchange library."""
+
+        pytest.importorskip("basis_set_exchange")
+
+        mol = qchem.Molecule(symbols, geometry, basis_name=basis_name, load_data=True)
+
+        params = mol.basis_data
+
+        l = [p[0] for p in params]
+        l_ref = [p[0] for p in params_ref]
+
+        alpha = [p[1] for p in params]
+        alpha_ref = [p[1] for p in params_ref]
+
+        coeff = [p[2] for p in params]
+        coeff_ref = [p[2] for p in params_ref]
+
+        assert l == l_ref
+        assert alpha == alpha_ref
+        assert coeff == coeff_ref

@@ -22,7 +22,9 @@ from pennylane.transforms.tape_expand import expand_invalid_trainable
 SUPPORTED_GRADIENT_KWARGS = [
     "approx_order",
     "argnum",
+    "aux_wire",
     "broadcast",
+    "device_wires",
     "diagonal_shifts",
     "f0",
     "force_order2",
@@ -31,6 +33,8 @@ SUPPORTED_GRADIENT_KWARGS = [
     "h",
     "n",
     "num",
+    "num_directions",
+    "num_split_times",
     "off_diagonal_shifts",
     "order",
     "reduction",
@@ -77,7 +81,6 @@ def gradient_analysis(tape, use_graph=True, grad_fn=None):
         tape._gradient_fn = grad_fn
 
     for idx, info in enumerate(tape._par_info):
-
         if idx not in tape.trainable_params:
             # non-trainable parameters do not require a grad_method
             info["grad_method"] = None
@@ -121,7 +124,6 @@ def grad_method_validation(method, tape):
     Returns:
         tuple[str, None]: the allowed parameter gradient methods for each trainable parameter
     """
-
     diff_methods = {
         idx: info["grad_method"]
         for idx, info in enumerate(tape._par_info)  # pylint: disable=protected-access
@@ -272,16 +274,43 @@ class gradient_transform(qml.batch_transform):
         self.hybrid = hybrid
         super().__init__(transform_fn, expand_fn=expand_fn, differentiable=differentiable)
 
-    def default_qnode_wrapper(self, qnode, targs, tkwargs):
+    def default_qnode_wrapper(self, qnode, targs, tkwargs):  # pylint: disable=too-many-statements
         # Here, we overwrite the QNode execution wrapper in order
         # to take into account that classical processing may be present
         # inside the QNode.
         hybrid = tkwargs.pop("hybrid", self.hybrid)
         _wrapper = super().default_qnode_wrapper(qnode, targs, tkwargs)
-        cjac_fn = qml.transforms.classical_jacobian(qnode, expand_fn=expand_invalid_trainable)
 
-        def jacobian_wrapper(*args, **kwargs):
-            if not qml.math.get_trainable_indices(args):
+        def jacobian_wrapper(
+            *args, **kwargs
+        ):  # pylint: disable=too-many-return-statements, too-many-branches, too-many-statements
+            argnum = tkwargs.get("argnum", None)
+            argnums = tkwargs.get("argnums", None)
+
+            interface = qml.math.get_interface(*args)
+            trainable_params = qml.math.get_trainable_indices(args)
+
+            if interface == "jax" and argnum:
+                warnings.warn(
+                    "argnum is deprecated with the Jax interface. You should use argnums instead."
+                )
+                tkwargs.pop("argnum")
+                argnums = argnum
+
+            if interface == "jax" and not trainable_params:
+                if argnums is None:
+                    argnums_ = [0]
+
+                else:
+                    argnums_ = [argnums] if isinstance(argnums, int) else argnums
+
+                params = qml.math.jax_argnums_to_tape_trainable(
+                    qnode, argnums_, self.expand_fn, args, kwargs
+                )
+                argnums_ = qml.math.get_trainable_indices(params)
+                kwargs["argnums"] = argnums_
+
+            elif not trainable_params:
                 warnings.warn(
                     "Attempted to compute the gradient of a QNode with no trainable parameters. "
                     "If this is unintended, please add trainable parameters in accordance with "
@@ -295,13 +324,92 @@ class gradient_transform(qml.batch_transform):
                 return qjac
 
             kwargs.pop("shots", False)
-            cjac = cjac_fn(*args, **kwargs)
+
+            # Special case where we apply a Jax transform (jacobian e.g.) on the gradient transform and argnums are
+            # defined on the outer transform and therefore on the args.
+            if interface == "jax":
+                argnum_cjac = trainable_params or argnums
+            else:
+                argnum_cjac = None
+
+            cjac = qml.transforms.classical_jacobian(
+                qnode, argnum=argnum_cjac, expand_fn=self.expand_fn
+            )(*args, **kwargs)
+
+            if qml.active_return():
+                if isinstance(cjac, tuple) and len(cjac) == 1:
+                    cjac = cjac[0]
+
+                if not isinstance(cjac, tuple):
+                    is_square = cjac.ndim == 2 and cjac.shape[0] == cjac.shape[1]
+
+                    if not qml.math.is_abstract(cjac):
+                        if is_square and qml.math.allclose(cjac, qml.numpy.eye(cjac.shape[0])):
+                            # Classical Jacobian is the identity. No classical processing
+                            # is present inside the QNode.
+                            return qjac
+
+                multi_meas = len(qnode.tape.measurements) > 1
+
+                if multi_meas:
+                    multi_params = isinstance(cjac, tuple) or isinstance(qjac[0], tuple)
+                else:
+                    multi_params = isinstance(cjac, tuple) or isinstance(qjac, tuple)
+
+                if not multi_params and not multi_meas:
+                    if qjac.shape == ():
+                        qjac = qml.math.reshape(qjac, (1,))
+
+                    # With dimension e.g. probs
+                    else:
+                        qjac = qml.math.reshape(qjac, (1, -1))
+
+                    return qml.math.tensordot(qjac, cjac, [[0], [0]])
+
+                if multi_meas and not multi_params:
+                    jacs = tuple(
+                        qml.math.tensordot(qml.math.reshape(q, (1,)), cjac, [[0], [0]])
+                        if q.shape == ()
+                        else qml.math.tensordot(qml.math.reshape(q, (1, -1)), cjac, [[0], [0]])
+                        for q in qjac
+                    )
+                    return jacs
+                if not multi_meas and multi_params:
+                    if not isinstance(cjac, tuple):
+                        jacs = qml.math.tensordot(
+                            qml.math.stack(qjac), qml.math.stack(cjac), [[0], [0]]
+                        )
+                    else:
+                        jacs = tuple(
+                            qml.math.tensordot(qml.math.stack(qjac), c, [[0], [0]])
+                            for c in cjac
+                            if c is not None
+                        )
+                    return jacs
+                # Multi measurement and multi params
+                if not isinstance(cjac, tuple):
+                    jacs = tuple(
+                        qml.math.tensordot(qml.math.stack(q), qml.math.stack(cjac), [[0], [0]])
+                        for q in qjac
+                    )
+                else:
+                    jacs = tuple(
+                        tuple(
+                            qml.math.tensordot(qml.math.stack(q), c, [[0], [0]])
+                            for c in cjac
+                            if c is not None
+                        )
+                        for q in qjac
+                    )
+                return jacs
 
             if isinstance(cjac, tuple):
                 # Classical processing of multiple arguments is present. Return qjac @ cjac.
                 jacs = tuple(
                     qml.math.tensordot(qjac, c, [[-1], [0]]) for c in cjac if c is not None
                 )
+                if len(jacs) == 1:
+                    return jacs[0]
                 return jacs
 
             is_square = cjac.ndim == 2 and cjac.shape[0] == cjac.shape[1]

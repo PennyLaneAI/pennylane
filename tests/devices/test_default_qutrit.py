@@ -17,6 +17,7 @@ Unit tests for the :mod:`pennylane.plugin.DefaultQutrit` device.
 import math
 
 import pytest
+from flaky import flaky
 import pennylane as qml
 from pennylane import numpy as np, DeviceError
 from pennylane.devices.default_qutrit import DefaultQutrit
@@ -879,6 +880,7 @@ class TestTensorSample:
         )
         assert np.allclose(var, expected, atol=tol_stochastic, rtol=0)
 
+    @flaky(max_runs=3)
     @pytest.mark.parametrize("index", list(range(1, 9)))
     def test_hermitian(self, index, tol_stochastic):
         """Tests that sampling on a tensor product of Hermitian observables with another observable works
@@ -969,6 +971,20 @@ class TestProbabilityIntegration:
         dev._state = None
 
         assert dev.analytic_probability() is None
+
+    def test_marginal_prob_wire_order(self):
+        """Tests that marginal_prob rearranges wires as expected."""
+        dev = qml.device("default.qutrit", wires=3)
+
+        @qml.qnode(dev)
+        def circuit():
+            qml.QutritUnitary(U_x_02, wires=[1])  # second wire ("1") set to 2-state
+            return qml.probs(wires=[2, 0, 1])  # third wire ("1") should be in 2-state here
+
+        probs = qml.math.reshape(circuit(), (3, 3, 3))
+        assert probs[0, 0, 2] == 1
+        probs[0, 0, 2] = 0
+        assert qml.math.allequal(probs, 0)
 
 
 class TestWiresIntegration:

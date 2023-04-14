@@ -20,7 +20,7 @@ import numpy as np
 
 import networkx as nx
 from networkx import Graph
-import retworkx as rx
+import rustworkx as rx
 
 import pennylane as qml
 from pennylane import qaoa
@@ -879,7 +879,6 @@ MWC = list(zip(DIGRAPHS, MWC_CONSTRAINED, COST_HAMILTONIANS, MIXER_HAMILTONIANS,
 
 
 def decompose_hamiltonian(hamiltonian):
-
     coeffs = list(qml.math.toarray(hamiltonian.coeffs))
     ops = [i.name for i in hamiltonian.ops]
     wires = [i.wires for i in hamiltonian.ops]
@@ -1154,7 +1153,6 @@ class TestLayers:
         rec = rec.expand()
 
         for i, j in zip(rec.operations, gates):
-
             prep = [i.name, i.parameters, i.wires]
             target = [j.name, j.parameters, j.wires]
 
@@ -1892,12 +1890,9 @@ class TestCycles:
         bitstrings = itertools.product([0, 1], repeat=wires)
 
         # Calculate the corresponding energies
-        energies_bitstrings = (
-            (cost(np.array(bitstring)).numpy(), bitstring) for bitstring in bitstrings
-        )
+        energies_bitstrings = ((cost(np.array(bitstring)), bitstring) for bitstring in bitstrings)
 
         for energy, bs in energies_bitstrings:
-
             # convert binary string to wires then wires to edges
             wires_ = tuple(i for i, s in enumerate(bs) if s != 0)
             edges = tuple(m[w] for w in wires_)
@@ -1945,12 +1940,11 @@ class TestCycles:
         states = itertools.product([0, 1], repeat=wires)
 
         # Calculate the corresponding energies
-        energies_states = ((cost(np.array(state)).numpy(), state) for state in states)
+        energies_states = ((cost(np.array(state)), state) for state in states)
 
         # We now have the energies of each bitstring/state. We also want to calculate the net flow of
         # the corresponding edges
         for energy, state in energies_states:
-
             # This part converts from a binary string of wires selected to graph edges
             wires_ = tuple(i for i, s in enumerate(state) if s != 0)
             edges = tuple(m[w] for w in wires_)
@@ -2019,9 +2013,7 @@ class TestCycles:
         bitstrings = itertools.product([0, 1], repeat=wires)
 
         # Calculate the corresponding energies
-        energies_bitstrings = (
-            (cost(np.array(bitstring)).numpy(), bitstring) for bitstring in bitstrings
-        )
+        energies_bitstrings = ((cost(np.array(bitstring)), bitstring) for bitstring in bitstrings)
 
         def find_simple_cycle(list_of_edges):
             """Returns True if list_of_edges contains a permutation corresponding to a simple cycle"""

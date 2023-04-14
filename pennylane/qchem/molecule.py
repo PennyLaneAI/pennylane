@@ -74,17 +74,20 @@ class Molecule:
         coeff=None,
         normalize=True,
     ):
-
-        if basis_name.lower() not in [
-            "sto-3g",
-            "6-31g",
-            "6-311g",
-            "cc-pvdz",
-        ]:
+        if (
+            basis_name.lower()
+            not in [
+                "sto-3g",
+                "6-31g",
+                "6-311g",
+                "cc-pvdz",
+            ]
+            and load_data is False
+        ):
             raise ValueError(
-                "Currently, the only supported basis sets are 'sto-3g', '6-31g', '6-311g' and"
-                " 'cc-pvdz'. Please consider using `load_data=True` to download the basis set from"
-                " an external library that can be installed with: pip install basis-set-exchange."
+                "Currently, the only supported basis sets are 'sto-3g', '6-31g', '6-311g' and "
+                "'cc-pvdz'. Please consider using `load_data=True` to download the basis set from "
+                "an external library that can be installed with: pip install basis-set-exchange."
             )
 
         if set(symbols) - set(atomic_numbers):
@@ -97,6 +100,16 @@ class Molecule:
         self.basis_name = basis_name.lower()
 
         self.n_basis, self.basis_data = mol_basis_data(self.basis_name, self.symbols, load_data)
+
+        self.nuclear_charges = [atomic_numbers[s] for s in self.symbols]
+
+        self.n_electrons = sum(self.nuclear_charges) - self.charge
+
+        if self.n_electrons % 2 == 1 or self.mult != 1:
+            raise ValueError(
+                "Openshell systems are not supported. Change the charge or spin "
+                "multiplicity of the molecule."
+            )
 
         if l is None:
             l = [i[0] for i in self.basis_data]
@@ -127,10 +140,6 @@ class Molecule:
             BasisFunction(self.l[i], self.alpha[i], self.coeff[i], self.r[i]) for i in range(len(l))
         ]
         self.n_orbitals = len(self.l)
-
-        self.nuclear_charges = [atomic_numbers[s] for s in self.symbols]
-
-        self.n_electrons = sum(np.array(self.nuclear_charges)) - self.charge
 
         self.mo_coefficients = None
 

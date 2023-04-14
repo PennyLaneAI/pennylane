@@ -149,6 +149,10 @@ class TestExpandMultipar:
         dev = qml.device("default.qubit", wires=3)
 
         class _CRX(qml.CRX):
+            @property
+            def has_generator(self):
+                return False
+
             def generator(self):
                 raise qml.operations.GeneratorUndefinedError()
 
@@ -751,7 +755,6 @@ class TestCreateCustomDecompExpandFn:
         correct method under the hood and produces expected results."""
         res = []
         for i in range(2):
-
             custom_decomps = {"MultiRZ": qml.MultiRZ.compute_decomposition}
             dev = qml.device("lightning.qubit", wires=2, custom_decomps=custom_decomps)
 

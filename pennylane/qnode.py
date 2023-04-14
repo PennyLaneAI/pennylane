@@ -97,6 +97,11 @@ class QNode:
               rule for all supported quantum operation arguments, with finite-difference
               as a fallback.
 
+            * ``"hadamard"``: Use the analytic hadamard gradient test
+              rule for all supported quantum operation arguments. More info is in the documentation
+              :func:`qml.gradients.hadamard_grad <.gradients.hadamard_grad>`.
+
+
             * ``"finite-diff"``: Uses numerical finite-differences for all quantum operation
               arguments.
 
@@ -122,6 +127,10 @@ class QNode:
             executed on a device. Expansion occurs when an operation or measurement is not
             supported, and results in a gate decomposition. If any operations in the decomposition
             remain unsupported by the device, another expansion occurs.
+        grad_on_execution (bool, str): Whether the gradients should be computed on the execution or not.
+            Only applies if the device is queried for the gradient; gradient transform
+            functions available in ``qml.gradients`` are only supported on the backward
+            pass. The 'best' option chooses automatically between the two options and is default.
         mode (str): Whether the gradients should be computed on the forward
             pass (``forward``) or the backward pass (``backward``). Only applies
             if the device is queried for the gradient; gradient transform
@@ -352,10 +361,11 @@ class QNode:
         self,
         func,
         device,
-        interface="autograd",
+        interface="auto",
         diff_method="best",
         expansion_strategy="gradient",
         max_expansion=10,
+        grad_on_execution="best",
         mode="best",
         cache=True,
         cachesize=10000,
@@ -388,7 +398,7 @@ class QNode:
             if kwarg in ["gradient_fn", "grad_method"]:
                 warnings.warn(
                     f"It appears you may be trying to set the method of differentiation via the kwarg "
-                    f"{kwarg}. This is not supported in qnode and will defualt to backpropogation. Use "
+                    f"{kwarg}. This is not supported in qnode and will default to backpropogation. Use "
                     f"diff_method instead."
                 )
             elif kwarg not in qml.gradients.SUPPORTED_GRADIENT_KWARGS:
@@ -408,6 +418,7 @@ class QNode:
         # execution keyword arguments
         self.execute_kwargs = {
             "mode": mode,
+            "grad_on_execution": grad_on_execution,
             "cache": cache,
             "cachesize": cachesize,
             "max_diff": max_diff,
@@ -423,7 +434,7 @@ class QNode:
         self._user_gradient_kwargs = gradient_kwargs
         self._original_device = device
         self.gradient_fn = None
-        self.gradient_kwargs = None
+        self.gradient_kwargs = {}
         self._tape_cached = False
 
         self._update_gradient_fn()
@@ -460,7 +471,15 @@ class QNode:
             self.gradient_fn = None
             self.gradient_kwargs = {}
             return
-        if self.interface == "auto":
+        if self.interface == "auto" and self.diff_method in ["backprop", "best"]:
+            if self.diff_method == "backprop":
+                # Check that the device has the capabilities to support backprop
+                backprop_devices = self.device.capabilities().get("passthru_devices", None)
+                if backprop_devices is None:
+                    raise qml.QuantumFunctionError(
+                        f"The {self.device.short_name} device does not support native computations with "
+                        "autodifferentiation frameworks."
+                    )
             return
 
         self.gradient_fn, self.gradient_kwargs, self.device = self.get_gradient_fn(
@@ -475,7 +494,6 @@ class QNode:
         # of the user's device before and after executing the tape.
 
         if self.device is not self._original_device:
-
             if not self._tape_cached:
                 self._original_device._num_executions += 1  # pylint: disable=protected-access
 
@@ -498,7 +516,7 @@ class QNode:
             interface (str): name of the requested interface
             diff_method (str or .gradient_transform): The requested method of differentiation.
                 If a string, allowed options are ``"best"``, ``"backprop"``, ``"adjoint"``,
-                ``"device"``, ``"parameter-shift"``, ``"finite-diff"``, or ``"spsa"``.
+                ``"device"``, ``"parameter-shift"``, ``"hadamard"``, ``"finite-diff"``, or ``"spsa"``.
                 A gradient transform may also be passed here.
 
         Returns:
@@ -526,11 +544,14 @@ class QNode:
         if diff_method == "spsa":
             return qml.gradients.spsa_grad, {}, device
 
+        if diff_method == "hadamard":
+            return qml.gradients.hadamard_grad, {}, device
+
         if isinstance(diff_method, str):
             raise qml.QuantumFunctionError(
                 f"Differentiation method {diff_method} not recognized. Allowed "
                 "options are ('best', 'parameter-shift', 'backprop', 'finite-diff', "
-                "'device', 'adjoint', 'spsa')."
+                "'device', 'adjoint', 'spsa', 'hadamard')."
             )
 
         if isinstance(diff_method, qml.gradients.gradient_transform):
@@ -554,8 +575,8 @@ class QNode:
         * ``"finite-diff"``
 
         The first differentiation method that is supported (going from
-        top to bottom) will be returned. Note that the SPSA-based gradient
-        is not included here.
+        top to bottom) will be returned. Note that the SPSA-based and Hadamard-based gradients
+        are not included here.
 
         Args:
             device (.Device): PennyLane device
@@ -590,8 +611,8 @@ class QNode:
         * ``"finite-diff"``
 
         The first differentiation method that is supported (going from
-        top to bottom) will be returned. Note that the SPSA-based gradient
-        is not included here.
+        top to bottom) will be returned. Note that the SPSA-based and Hadamard-based gradient
+        are not included here.
 
         This method is intended only for debugging purposes. Otherwise,
         :meth:`~.get_best_method` should be used instead.
@@ -642,7 +663,6 @@ class QNode:
             # device is analytic and has child devices that support backpropagation natively
 
             if mapped_interface in backprop_devices:
-
                 # no need to create another device if the child device is the same (e.g., default.mixed)
                 if backprop_devices[mapped_interface] == device.short_name:
                     return "backprop", {}, device
@@ -688,8 +708,8 @@ class QNode:
 
         if device.shots is not None:
             warnings.warn(
-                "Requested adjoint differentiation to be computed with finite shots."
-                " Adjoint differentiation always calculated exactly.",
+                "Requested adjoint differentiation to be computed with finite shots. "
+                "Adjoint differentiation always calculated exactly.",
                 UserWarning,
             )
         return "device", {"use_device_state": True, "method": "adjoint_jacobian"}, device
@@ -727,14 +747,23 @@ class QNode:
 
     qtape = tape  # for backwards compatibility
 
-    def construct(self, args, kwargs):
+    def construct(self, args, kwargs):  # pylint: disable=too-many-branches
         """Call the quantum function with a tape context, ensuring the operations get queued."""
+        old_interface = self.interface
+
+        if old_interface == "auto":
+            self.interface = qml.math.get_interface(*args, *list(kwargs.values()))
 
         self._tape = make_qscript(self.func)(*args, **kwargs)
         self._qfunc_output = self.tape._qfunc_output
 
         params = self.tape.get_parameters(trainable_only=False)
         self.tape.trainable_params = qml.math.get_trainable_indices(params)
+
+        if any(isinstance(m, CountsMP) for m in self.tape.measurements) and any(
+            qml.math.is_abstract(a) for a in args
+        ):
+            raise qml.QuantumFunctionError("Can't JIT a quantum function that returns counts.")
 
         if isinstance(self._qfunc_output, qml.numpy.ndarray):
             measurement_processes = tuple(self.tape.measurements)
@@ -743,7 +772,7 @@ class QNode:
         else:
             measurement_processes = self._qfunc_output
 
-        if not all(
+        if not measurement_processes or not all(
             isinstance(m, qml.measurements.MeasurementProcess) for m in measurement_processes
         ):
             raise qml.QuantumFunctionError(
@@ -760,7 +789,6 @@ class QNode:
             )
 
         for obj in self.tape.operations + self.tape.observables:
-
             if (
                 getattr(obj, "num_wires", None) is qml.operation.WiresEnum.AllWires
                 and len(obj.wires) != self.device.num_wires
@@ -771,8 +799,8 @@ class QNode:
             # pylint: disable=no-member
             if isinstance(obj, qml.ops.qubit.SparseHamiltonian) and self.gradient_fn == "backprop":
                 raise qml.QuantumFunctionError(
-                    "SparseHamiltonian observable must be used with the parameter-shift"
-                    " differentiation method"
+                    "SparseHamiltonian observable must be used with the parameter-shift "
+                    "differentiation method"
                 )
 
         # Apply the deferred measurement principle if the device doesn't
@@ -793,11 +821,16 @@ class QNode:
         if isinstance(self.gradient_fn, qml.gradients.gradient_transform):
             self._tape = self.gradient_fn.expand_fn(self._tape)
 
+        if old_interface == "auto":
+            self.interface = "auto"
+
     def __call__(self, *args, **kwargs):  # pylint: disable=too-many-branches, too-many-statements
         override_shots = False
         old_interface = self.interface
+
         if old_interface == "auto":
             self.interface = qml.math.get_interface(*args, *list(kwargs.values()))
+            self.device.tracker = self._original_device.tracker
 
         if not self._qfunc_uses_shots_arg:
             # If shots specified in call but not in qfunc signature,
@@ -828,6 +861,9 @@ class QNode:
         self._tape_cached = using_custom_cache and self.tape.hash in cache
 
         if qml.active_return():
+            if "mode" in self.execute_kwargs:
+                self.execute_kwargs.pop("mode")
+            # pylint: disable=unexpected-keyword-arg
             res = qml.execute(
                 [self.tape],
                 device=self.device,
@@ -863,7 +899,16 @@ class QNode:
             self._update_original_device()
 
             return res
-
+        if "mode" in self.execute_kwargs:
+            mode = self.execute_kwargs.pop("mode")
+            if mode == "forward":
+                grad_on_execution = True
+            elif mode == "backward":
+                grad_on_execution = False
+            else:
+                grad_on_execution = "best"
+            self.execute_kwargs["grad_on_execution"] = grad_on_execution
+        # pylint: disable=unexpected-keyword-arg
         res = qml.execute(
             [self.tape],
             device=self.device,
@@ -903,7 +948,6 @@ class QNode:
         if isinstance(self._qfunc_output, Sequence) and any(
             isinstance(m, CountsMP) for m in self._qfunc_output
         ):
-
             # If Counts was returned with other measurements, then apply the
             # data structure used in the qfunc
             qfunc_output_type = type(self._qfunc_output)

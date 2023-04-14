@@ -77,7 +77,6 @@ def _process_shot_sequence(shot_list):
     integer is repeated.
     """
     if all(isinstance(s, int) for s in shot_list):
-
         if len(set(shot_list)) == 1:
             # All shots are identical, only require a single shot tuple
             shot_vector = [ShotTuple(shots=shot_list[0], copies=len(shot_list))]
@@ -134,7 +133,6 @@ class Device(abc.ABC):
     _asarray = staticmethod(np.asarray)
 
     def __init__(self, wires=1, shots=1000, *, analytic=None):
-
         self.shots = shots
 
         if analytic is not None:
@@ -402,7 +400,6 @@ class Device(abc.ABC):
             def capabilities(cls):
                 capabilities = super().capabilities().copy()
                 capabilities.update(
-                    supports_inverse_operations=False,
                     supports_a_new_capability=True,
                 )
                 return capabilities
@@ -462,7 +459,6 @@ class Device(abc.ABC):
             self.pre_measure()
 
             for obs in observables:
-
                 if isinstance(obs, Tensor):
                     wires = [ob.wires for ob in obs.obs]
                 else:
@@ -694,6 +690,7 @@ class Device(abc.ABC):
             will natively support all operations.
         """
         if self.custom_expand_fn is not None:
+            # pylint:disable=not-callable
             return self.custom_expand_fn(circuit, max_expansion=max_expansion)
 
         return self.default_expand_fn(circuit, max_expansion=max_expansion)
@@ -725,6 +722,7 @@ class Device(abc.ABC):
             to be applied to the list of evaluated circuit results.
         """
         supports_hamiltonian = self.supports_observable("Hamiltonian")
+        supports_sum = self.supports_observable("Sum")
         finite_shots = self.shots is not None
         grouping_known = all(
             obs.grouping_indices is not None
@@ -754,7 +752,7 @@ class Device(abc.ABC):
                 raise ValueError(
                     "Can only return the expectation of a single Hamiltonian observable"
                 ) from e
-        elif expval_sum_in_obs and not is_shadow:
+        elif expval_sum_in_obs and not is_shadow and not supports_sum:
             circuits, hamiltonian_fn = qml.transforms.sum_expand(circuit)
 
         elif (
@@ -873,8 +871,9 @@ class Device(abc.ABC):
         quantum library requires that;
         all operations and method calls (including :meth:`apply` and :meth:`expval`)
         are then evaluated within the context of this context manager (see the
-        source of :meth:`.Device.execute` for more details).
+        source of :meth:`execute` for more details).
         """
+
         # pylint: disable=no-self-use
         class MockContext:  # pylint: disable=too-few-public-methods
             """Mock class as a default for the with statement in execute()."""
@@ -902,15 +901,6 @@ class Device(abc.ABC):
         if isinstance(operation, type) and issubclass(operation, Operation):
             return operation.__name__ in self.operations
         if isinstance(operation, str):
-
-            if operation.endswith(".inv"):
-                in_ops = operation[:-4] in self.operations
-                # TODO: update when all capabilities keys changed to "supports_inverse_operations"
-                supports_inv = self.capabilities().get(
-                    "supports_inverse_operations", False
-                ) or self.capabilities().get("inverse_operations", False)
-                return in_ops and supports_inv
-
             return operation in self.operations
 
         raise ValueError(
@@ -933,11 +923,6 @@ class Device(abc.ABC):
         if isinstance(observable, type) and issubclass(observable, Observable):
             return observable.__name__ in self.observables
         if isinstance(observable, str):
-
-            # This check regards observables that are also operations
-            if observable.endswith(".inv"):
-                return self.supports_operation(observable[:-4])
-
             return observable in self.observables
 
         raise ValueError(
@@ -946,7 +931,6 @@ class Device(abc.ABC):
 
     def check_validity(self, queue, observables):
         """Checks whether the operations and observables in queue are all supported by the device.
-        Includes checks for inverse operations.
 
         Args:
             queue (Iterable[~.operation.Operation]): quantum operation objects which are intended
@@ -960,7 +944,6 @@ class Device(abc.ABC):
         """
 
         for o in queue:
-
             operation_name = o.name
 
             if isinstance(o, MidMeasureMP) and not self.capabilities().get(
@@ -971,17 +954,6 @@ class Device(abc.ABC):
                     "Apply the @qml.defer_measurements decorator to your quantum function to "
                     "simulate the application of mid-circuit measurements on this device."
                 )
-
-            if getattr(o, "inverse", False):
-                # TODO: update when all capabilities keys changed to "supports_inverse_operations"
-                supports_inv = self.capabilities().get(
-                    "supports_inverse_operations", False
-                ) or self.capabilities().get("inverse_operations", False)
-                if not supports_inv:
-                    raise DeviceError(
-                        f"The inverse of gates are not supported on device {self.short_name}"
-                    )
-                operation_name = o.base_name
 
             if not self.stopping_condition(o):
                 raise DeviceError(
@@ -1009,17 +981,6 @@ class Device(abc.ABC):
                         )
             else:
                 observable_name = o.name
-
-                if issubclass(o.__class__, Operation) and o.inverse:
-                    # TODO: update when all capabilities keys changed to "supports_inverse_operations"
-                    supports_inv = self.capabilities().get(
-                        "supports_inverse_operations", False
-                    ) or self.capabilities().get("inverse_operations", False)
-                    if not supports_inv:
-                        raise DeviceError(
-                            f"The inverse of gates are not supported on device {self.short_name}"
-                        )
-                    observable_name = o.base_name
 
                 if not self.supports_observable(observable_name):
                     raise DeviceError(

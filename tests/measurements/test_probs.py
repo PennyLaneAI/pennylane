@@ -58,8 +58,8 @@ def custom_measurement_process(device, spy):
 np.random.seed(42)
 
 
-@pytest.fixture
-def init_state():
+@pytest.fixture(name="init_state")
+def fixture_init_state():
     """Fixture that creates an initial state"""
 
     def _init_state(n):
@@ -73,6 +73,8 @@ def init_state():
 
 class TestProbs:
     """Tests for the probs function"""
+
+    # pylint:disable=too-many-public-methods
 
     def test_queue(self):
         """Test that the right measurement class is queued."""
@@ -97,7 +99,7 @@ class TestProbs:
         """Test that the shape is correct."""
         dev = qml.device("default.qubit", wires=3, shots=shots)
         res = qml.probs(wires=wires)
-        assert res.shape(dev) == (1, 2 ** len(wires))
+        assert res.shape(dev) == (2 ** len(wires),)
 
     @pytest.mark.parametrize("wires", [[0], [2, 1], ["a", "c", 3]])
     def test_shape_shot_vector(self, wires):
@@ -105,7 +107,7 @@ class TestProbs:
         res = qml.probs(wires=wires)
         shot_vector = (1, 2, 3)
         dev = qml.device("default.qubit", wires=3, shots=shot_vector)
-        assert res.shape(dev) == (len(shot_vector), 2 ** len(wires))
+        assert res.shape(dev) == ((2 ** len(wires),), (2 ** len(wires),), (2 ** len(wires),))
 
     @pytest.mark.parametrize(
         "measurement",
@@ -194,12 +196,10 @@ class TestProbs:
         spy_probs = mocker.spy(qml.QubitDevice, "probability")
         state = init_state(4)
 
-        spy = mocker.spy(qml.QubitDevice, "states_to_binary")
-
         @qml.qnode(dev)
         def circuit():
             qml.QubitStateVector(state, wires=list(range(4)))
-            return qml.probs(wires=[1, 0, 3])  # <--- more than 2 wires: states_to_binary used
+            return qml.probs(wires=[1, 0, 3])
 
         res = circuit()
 
@@ -207,9 +207,49 @@ class TestProbs:
         expected = np.einsum("ijkl->jil", expected).flatten()
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
-        spy.assert_called_once()
-
         custom_measurement_process(dev, spy_probs)
+
+    @pytest.mark.all_interfaces
+    @pytest.mark.parametrize("interface", ["numpy", "jax", "torch", "tensorflow"])
+    @pytest.mark.parametrize(
+        "subset_wires,expected",
+        [
+            ([0, 1], [0.25, 0.25, 0.25, 0.25]),
+            ([1, 2], [0.5, 0, 0.5, 0]),
+            ([0, 2], [0.5, 0, 0.5, 0]),
+            ([2, 0], [0.5, 0.5, 0, 0]),
+            ([2, 1], [0.5, 0.5, 0, 0]),
+            ([1, 2, 0], [0.25, 0.25, 0, 0, 0.25, 0.25, 0, 0]),
+        ],
+    )
+    def test_process_state(self, interface, subset_wires, expected):
+        """Tests that process_state functions as expected with all interfaces."""
+        state = qml.math.array([1 / 2, 0] * 4, like=interface)
+        wires = qml.wires.Wires(range(3))
+        subset_probs = qml.probs(wires=subset_wires).process_state(state, wires)
+        assert subset_probs.shape == (len(expected),)
+        assert qml.math.allclose(subset_probs, expected)
+
+    @pytest.mark.all_interfaces
+    @pytest.mark.parametrize("interface", ["numpy", "jax", "torch", "tensorflow"])
+    @pytest.mark.parametrize(
+        "subset_wires,expected",
+        [
+            ([1, 2], [[0.5, 0, 0.5, 0], [0, 0.5, 0, 0.5]]),
+            ([2, 0], [[0.5, 0.5, 0, 0], [0, 0, 0.5, 0.5]]),
+            (
+                [1, 2, 0],
+                [[0.25, 0.25, 0, 0, 0.25, 0.25, 0, 0], [0, 0, 0.25, 0.25, 0, 0, 0.25, 0.25]],
+            ),
+        ],
+    )
+    def test_process_state_batched(self, interface, subset_wires, expected):
+        """Tests that process_state functions as expected with all interfaces with batching."""
+        states = qml.math.array([[1 / 2, 0] * 4, [0, 1 / 2] * 4], like=interface)
+        wires = qml.wires.Wires(range(3))
+        subset_probs = qml.probs(wires=subset_wires).process_state(states, wires)
+        assert subset_probs.shape == qml.math.shape(expected)
+        assert qml.math.allclose(subset_probs, expected)
 
     def test_integration(self, tol, mocker):
         """Test the probability is correct for a known state preparation."""
@@ -411,6 +451,7 @@ class TestProbs:
     @pytest.mark.parametrize("wire", [0, 1, 2, 3])
     def test_prob_generalize_initial_state(self, hermitian, wire, init_state, tol, mocker):
         """Test that the correct probability is returned."""
+        # pylint:disable=too-many-arguments
         dev = qml.device("default.qubit", wires=4)
         spy = mocker.spy(qml.QubitDevice, "probability")
         state = init_state(4)
@@ -454,6 +495,7 @@ class TestProbs:
     @pytest.mark.parametrize("wire", [0, 1, 2, 3])
     def test_operation_prob(self, operation, wire, init_state, tol, mocker):
         "Test the rotated probability with different wires and rotating operations."
+        # pylint:disable=too-many-arguments
         dev = qml.device("default.qubit", wires=4)
         spy = mocker.spy(qml.QubitDevice, "probability")
         state = init_state(4)
@@ -627,3 +669,51 @@ class TestProbs:
         )
 
         assert np.allclose(res, expected)
+
+    def test_non_commuting_probs_raises_error(self):
+        dev = qml.device("default.qubit", wires=5)
+
+        @qml.qnode(dev)
+        def circuit(x, y):
+            qml.RX(x, wires=[0])
+            qml.RY(y, wires=[1])
+            qml.CNOT(wires=[0, 1])
+            return qml.expval(qml.PauliX(0)), qml.probs(wires=[0, 1])
+
+        with pytest.raises(
+            qml.QuantumFunctionError, match="Only observables that are qubit-wise commuting"
+        ):
+            circuit(1, 2)
+
+    def test_commuting_probs_in_computational_basis(self):
+        """Test that `qml.probs` can be used in the computational basis with other commuting observables."""
+        dev = qml.device("default.qubit", wires=5)
+
+        @qml.qnode(dev)
+        def circuit(x, y):
+            qml.RX(x, wires=[0])
+            qml.RY(y, wires=[1])
+            qml.CNOT(wires=[0, 1])
+            return qml.expval(qml.PauliZ(0)), qml.probs(wires=[0, 1])
+
+        res = circuit(1, 2)
+
+        @qml.qnode(dev)
+        def circuit2(x, y):
+            qml.RX(x, wires=[0])
+            qml.RY(y, wires=[1])
+            qml.CNOT(wires=[0, 1])
+            return qml.expval(qml.PauliZ(0))
+
+        @qml.qnode(dev)
+        def circuit3(x, y):
+            qml.RX(x, wires=[0])
+            qml.RY(y, wires=[1])
+            qml.CNOT(wires=[0, 1])
+            return qml.probs(wires=[0, 1])
+
+        res2 = circuit2(1, 2)
+        res3 = circuit3(1, 2)
+
+        assert res[0] == res2
+        assert qml.math.allequal(res[1:], res3)

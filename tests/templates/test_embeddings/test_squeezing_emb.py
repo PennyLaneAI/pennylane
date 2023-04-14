@@ -45,13 +45,10 @@ class TestDecomposition:
         @qml.qnode(dev)
         def circuit(x=None):
             qml.SqueezingEmbedding(features=x, wires=range(n_wires), method="amplitude", c=1)
-            return [
-                qml.expval(qml.NumberOperator(wires=0)),
-                qml.expval(qml.NumberOperator(wires=1)),
-            ]
+            return qml.expval(qml.NumberOperator(wires=0))
 
         # TODO: come up with better test case
-        assert np.allclose(circuit(x=features), [2.2784, 0.09273], atol=0.001)
+        assert np.allclose(circuit(x=features), 2.2784, atol=0.001)
 
     def test_state_execution_phase(self):
         """Checks the state produced using the phase execution method."""
@@ -65,13 +62,10 @@ class TestDecomposition:
             qml.SqueezingEmbedding(features=x, wires=range(n_wires), method="phase", c=1)
             qml.Beamsplitter(np.pi / 2, 0, wires=[0, 1])
             qml.SqueezingEmbedding(features=[0, 0], wires=range(n_wires), method="phase", c=1)
-            return [
-                qml.expval(qml.NumberOperator(wires=0)),
-                qml.expval(qml.NumberOperator(wires=1)),
-            ]
+            return qml.expval(qml.NumberOperator(wires=0))
 
         # TODO: come up with better test case
-        assert np.allclose(circuit(x=features), [12.86036, 8.960306], atol=0.001)
+        assert np.allclose(circuit(x=features), 12.86036, atol=0.001)
 
     def test_custom_wire_labels(self, tol):
         """Test that template can deal with non-numeric, nonconsecutive wire labels."""
@@ -220,8 +214,8 @@ class TestInterfaces:
 
         dev = qml.device("default.gaussian", wires=3)
 
-        circuit = qml.QNode(circuit_template, dev, interface="jax")
-        circuit2 = qml.QNode(circuit_decomposed, dev, interface="jax")
+        circuit = qml.QNode(circuit_template, dev)
+        circuit2 = qml.QNode(circuit_decomposed, dev)
 
         res = circuit(features)
         res2 = circuit2(features)
@@ -245,8 +239,8 @@ class TestInterfaces:
 
         dev = qml.device("default.gaussian", wires=3)
 
-        circuit = qml.QNode(circuit_template, dev, interface="tf")
-        circuit2 = qml.QNode(circuit_decomposed, dev, interface="tf")
+        circuit = qml.QNode(circuit_template, dev)
+        circuit2 = qml.QNode(circuit_decomposed, dev)
 
         res = circuit(features)
         res2 = circuit2(features)
@@ -272,8 +266,8 @@ class TestInterfaces:
 
         dev = qml.device("default.gaussian", wires=3)
 
-        circuit = qml.QNode(circuit_template, dev, interface="torch")
-        circuit2 = qml.QNode(circuit_decomposed, dev, interface="torch")
+        circuit = qml.QNode(circuit_template, dev)
+        circuit2 = qml.QNode(circuit_decomposed, dev)
 
         res = circuit(features)
         res2 = circuit2(features)
