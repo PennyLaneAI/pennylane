@@ -339,6 +339,7 @@ class ParametrizedEvolution(Operation):
 
     _name = "ParametrizedEvolution"
     num_wires = AnyWires
+    grad_method = "A"
 
     # pylint: disable=too-many-arguments
 
@@ -353,11 +354,6 @@ class ParametrizedEvolution(Operation):
         id=None,
         **odeint_kwargs
     ):
-        if not has_jax:
-            raise ImportError(
-                "Module jax is required for the ``ParametrizedEvolution`` class. "
-                "You can install jax via: pip install jax"
-            )
         if not all(op.has_matrix or isinstance(op, qml.Hamiltonian) for op in H.ops):
             raise ValueError(
                 "All operators inside the parametrized hamiltonian must have a matrix defined."
@@ -368,7 +364,7 @@ class ParametrizedEvolution(Operation):
         if t is None:
             self.t = None
         else:
-            self.t = jnp.array([0, t] if qml.math.ndim(t) == 0 else t, dtype=float)
+            self.t = qml.math.array([0.0, t] if qml.math.ndim(t) == 0 else t, dtype=float)
         if return_intermediate and len(self.t) == 2:
             warnings.warn(
                 "Setting return_intermediate=True does not have any effect if the time argument contains a duration or start and end points only."
@@ -384,6 +380,11 @@ class ParametrizedEvolution(Operation):
         self._check_time_batching()
 
     def __call__(self, params, t, return_intermediate=None, complementary=None, **odeint_kwargs):
+        if not has_jax:
+            raise ImportError(
+                "Module jax is required for the ``ParametrizedEvolution`` class. "
+                "You can install jax via: pip install jax"
+            )
         # Need to cast all elements inside params to `jnp.arrays` to make sure they are not cast
         # to `np.arrays` inside `Operator.__init__`
         params = [jnp.array(p) for p in params]
@@ -422,6 +423,11 @@ class ParametrizedEvolution(Operation):
 
     # pylint: disable=import-outside-toplevel
     def matrix(self, wire_order=None):
+        if not has_jax:
+            raise ImportError(
+                "Module jax is required for the ``ParametrizedEvolution`` class. "
+                "You can install jax via: pip install jax"
+            )
         if not self.has_matrix:
             raise ValueError(
                 "The parameters and the time window are required to compute the matrix. "

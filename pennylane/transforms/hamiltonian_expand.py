@@ -165,23 +165,26 @@ def hamiltonian_expand(tape: QuantumTape, group=True):
 
         def processing_fn(res_groupings):
             if qml.active_return():
-                dot_products = [
-                    qml.math.dot(
-                        qml.math.reshape(
-                            qml.math.convert_like(r_group, c_group), qml.math.shape(c_group)
-                        ),
-                        c_group,
-                    )
-                    for c_group, r_group in zip(coeff_groupings, res_groupings)
+                # pylint: disable=no-member
+                res_groupings = [
+                    qml.math.stack(r)
+                    if isinstance(r, (tuple, qml.numpy.builtins.SequenceBox))
+                    else r
+                    for r in res_groupings
                 ]
-            else:
-                dot_products = []
-                for c_group, r_group in zip(coeff_groupings, res_groupings):
-                    if len(c_group) == 1 and len(r_group) != 1:
-                        dot_products.append(r_group * c_group)
-                    else:
-                        dot_products.append(qml.math.dot(r_group, c_group))
+                res_groupings = [
+                    qml.math.reshape(r, (1,)) if r.shape == () else r for r in res_groupings
+                ]
+            dot_products = []
+            for c_group, r_group in zip(coeff_groupings, res_groupings):
+                if tape.batch_size:
+                    r_group = r_group.T
+                if len(c_group) == 1 and len(r_group) != 1:
+                    dot_products.append(r_group * c_group)
+                else:
+                    dot_products.append(qml.math.dot(r_group, c_group))
             summed_dot_products = qml.math.sum(qml.math.stack(dot_products), axis=0)
+
             return qml.math.convert_like(summed_dot_products, res_groupings[0])
 
         return tapes, processing_fn

@@ -212,15 +212,20 @@ except ImportError as e:
 
 
 def pytest_collection_modifyitems(items, config):
-    # python 3.4/3.5 compat: rootdir = pathlib.Path(str(config.rootdir))
     rootdir = pathlib.Path(config.rootdir)
     for item in items:
         rel_path = pathlib.Path(item.fspath).relative_to(rootdir)
         if "qchem" in rel_path.parts:
             mark = getattr(pytest.mark, "qchem")
             item.add_marker(mark)
-        if "returntypes" in rel_path.parts:
-            mark = getattr(pytest.mark, "return")
+        if "legacy" in rel_path.parts:
+            mark = getattr(pytest.mark, "legacy")
+            item.add_marker(mark)
+        if "finite_diff" in rel_path.parts:
+            mark = getattr(pytest.mark, "finite-diff")
+            item.add_marker(mark)
+        if "parameter_shift" in rel_path.parts:
+            mark = getattr(pytest.mark, "param-shift")
             item.add_marker(mark)
 
     # Tests that do not have a specific suite marker are marked `core`
@@ -229,7 +234,18 @@ def pytest_collection_modifyitems(items, config):
         if (
             not any(
                 elem
-                in ["autograd", "torch", "tf", "jax", "qchem", "qcut", "all_interfaces", "return"]
+                in [
+                    "autograd",
+                    "torch",
+                    "tf",
+                    "jax",
+                    "qchem",
+                    "qcut",
+                    "all_interfaces",
+                    "legacy",
+                    "finite-diff",
+                    "param-shift",
+                ]
                 for elem in markers
             )
             or not markers

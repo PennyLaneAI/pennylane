@@ -110,4 +110,13 @@ def broadcast_expand(tape):
         new_tape.set_parameters(p, trainable_only=False)
         output_tapes.append(new_tape)
 
-    return output_tapes, lambda x: qml.math.squeeze(qml.math.stack(x))
+    def processing_fn(results):
+        if len(tape.measurements) > 1 and qml.active_return():
+            processed_results = [
+                qml.math.squeeze(qml.math.stack([results[b][i] for b in range(tape.batch_size)]))
+                for i in range(len(tape.measurements))
+            ]
+            return tuple(processed_results)
+        return qml.math.squeeze(qml.math.stack(results))
+
+    return output_tapes, processing_fn

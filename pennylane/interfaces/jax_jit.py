@@ -43,7 +43,9 @@ def _validate_jax_version():
         raise InterfaceUnsupportedError(msg)
 
 
-def execute(tapes, device, execute_fn, gradient_fn, gradient_kwargs, _n=1, max_diff=1, mode=None):
+def execute_legacy(
+    tapes, device, execute_fn, gradient_fn, gradient_kwargs, _n=1, max_diff=1, mode=None
+):
     """Execute a batch of tapes with JAX parameters on a device.
 
     Args:
@@ -90,7 +92,7 @@ def execute(tapes, device, execute_fn, gradient_fn, gradient_kwargs, _n=1, max_d
     _validate_jax_version()
 
     if gradient_fn is None:
-        return _execute_with_fwd(
+        return _execute_with_fwd_legacy(
             parameters,
             tapes=tapes,
             device=device,
@@ -99,7 +101,7 @@ def execute(tapes, device, execute_fn, gradient_fn, gradient_kwargs, _n=1, max_d
             _n=_n,
         )
 
-    return _execute(
+    return _execute_legacy(
         parameters,
         tapes=tapes,
         device=device,
@@ -145,7 +147,7 @@ def _extract_shape_dtype_structs(tapes, device):
     return shape_dtypes
 
 
-def _execute(
+def _execute_legacy(
     params,
     tapes=None,
     device=None,
@@ -278,7 +280,7 @@ def _execute(
 
 
 # The execute function in forward mode
-def _execute_with_fwd(
+def _execute_with_fwd_legacy(
     params,
     tapes=None,
     device=None,
