@@ -75,6 +75,12 @@ Pending deprecations
 Completed deprecation cycles
 ----------------------------
 
+* The ``get_operation`` tape method is updated to return the operation index as well, changing its signature.
+
+  - The new signature is available by changing the arg ``return_op_index`` to ``True`` in v0.29
+  - The old signature is replaced with the new one in v0.30
+
+
 * ``qml.VQECost`` is removed. 
 
    - Deprecated in 0.13
