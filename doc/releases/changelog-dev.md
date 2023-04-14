@@ -30,14 +30,14 @@
 
 <h4>Intuitive QNode returns</h4>
 
-* The new return system is now activated and public facing. The QNode keyword argument `mode` is replaced by the boolean  
+* The new return system is now activated and public-facing. The QNode keyword argument `mode` is replaced by the boolean  
   `grad_on_execution`.
   [(#3957)](https://github.com/PennyLaneAI/pennylane/pull/3957)
   [(#3969)](https://github.com/PennyLaneAI/pennylane/pull/3969)
 
 <h3>Improvements 🛠</h3>
 
-<h4>Next generation device API</h4>
+<h4>Next-generation device API</h4>
 
 * The `sample_state` function is added to `devices/qubit` that returns a series of samples based on a given
   state vector and a number of shots.
@@ -57,7 +57,7 @@
   `adjoint_jacobian` in `devices/qubit`.
   [(#3790)](https://github.com/PennyLaneAI/pennylane/pull/3790)
 
-* qml.devices.qubit.measure` now computes the expectation values of `Hamiltonian` and `Sum`
+* `qml.devices.qubit.measure` now computes the expectation values of `Hamiltonian` and `Sum`
   in a backpropagation-compatible way.
   [(#3862)](https://github.com/PennyLaneAI/pennylane/pull/3862/)
 
@@ -67,10 +67,10 @@
   CNOTs required.
   [(3976)](https://github.com/PennyLaneAI/pennylane/pull/3976)
 
-* Improve the efficiency of `tapering()`, `tapering_hf()` and `clifford()`.
+* Improved efficiency of `tapering()`, `tapering_hf()` and `clifford()`.
   [(3942)](https://github.com/PennyLaneAI/pennylane/pull/3942)
 
-* Update Pauli arithmetic to more efficiently convert to a Hamiltonian.
+* Updated Pauli arithmetic to more efficiently convert to a Hamiltonian.
   [(#3939)](https://github.com/PennyLaneAI/pennylane/pull/3939)
 
 * The adjoint differentiation method now supports more operations, and does no longer decompose
@@ -78,7 +78,7 @@
   generator are now supported by the method.
   [(#3874)](https://github.com/PennyLaneAI/pennylane/pull/3874)
 
-* When using Jax-jit with gradient transforms the trainable parameters are correctly set (instead of every parameter 
+* When using `jax.jit` with gradient transforms, the trainable parameters are set correctly (instead of every parameter having
   to be set as trainable), and therefore the derivatives are computed more efficiently.
   [(#3697)](https://github.com/PennyLaneAI/pennylane/pull/3697)
 
@@ -90,14 +90,14 @@
   are real, providing a significant performance improvement.
   [(#3915)](https://github.com/PennyLaneAI/pennylane/pull/3915)
 
-* Three new decomposition algorithms are added for n-controlled operations with a single-qubit target
+* Three new decomposition algorithms have been added for n-controlled operations with a single-qubit target
   and are selected automatically when they produce a better result, i.e., fewer CNOT gates.
   They can be accessed via `ops.op_math.ctrl_decomp_bisect`.
   [(#3851)](https://github.com/PennyLaneAI/pennylane/pull/3851)
 
 <h4>Intuitive QNode returns</h4>
 
-* The default gaussian device and parameter shift cv support the new return system but only for single measurement.
+* The default Gaussian device and parameter shift CV support the new return system, but only for single measurements.
   [(3946)](https://github.com/PennyLaneAI/pennylane/pull/3946)
 
 * Keras and Torch NN modules are now compatible with the new return type system.
@@ -107,7 +107,6 @@
 * `DefaultQutrit` supports the new return system.
   [(#3934)](https://github.com/PennyLaneAI/pennylane/pull/3934)
 
-* The default gaussian device and parameter shift cv support the new return system but only for single measurement.
   [(3946)](https://github.com/PennyLaneAI/pennylane/pull/3946)
 
 <h4>Other improvements</h4>
@@ -159,10 +158,10 @@
 * Changed `Operator.num_wires` from an abstract value to `AnyWires`.
   [(#3919)](https://github.com/PennyLaneAI/pennylane/pull/3919)
 
-* Do not run `qml.transforms.sum_expand` in `Device.batch_transform` if the device supports Sum observables.
+* `qml.transforms.sum_expand` is not run in `Device.batch_transform` if the device supports Sum observables.
   [(#3915)](https://github.com/PennyLaneAI/pennylane/pull/3915)
 
-* The type of `n_electrons` in `qml.qchem.Molecule` is set to `int`.
+* The type of `n_electrons` in `qml.qchem.Molecule` has been set to `int`.
   [(#3885)](https://github.com/PennyLaneAI/pennylane/pull/3885)
 
 * Added explicit errors to `QutritDevice` if `classical_shadow` or `shadow_expval` are measured.
@@ -172,7 +171,7 @@
   This allows devices that inherit from `QubitDevice` to override and customize their definition of diagonalizing gates.
   [(#3938)](https://github.com/PennyLaneAI/pennylane/pull/3938)
 
-* `retworkx` has been renamed to `rustworkx` to accommodate the change in name for the package.
+* `retworkx` has been renamed to `rustworkx` to accommodate the change in the package name.
   [(#3975)](https://github.com/PennyLaneAI/pennylane/pull/3975)
 
 * `Exp`, `Sum`, `Prod`, and `SProd` operator data is now a flat list, instead of nested.
@@ -189,7 +188,7 @@
 
 <h3>Breaking changes 💔</h3>
 
-* Both JIT interfaces are not compatible with Jax `>0.4.3`, we raise an error for those versions.
+* Both JIT interfaces are not compatible with JAX `>0.4.3`, we raise an error for those versions.
   [(#3877)](https://github.com/PennyLaneAI/pennylane/pull/3877)
 
 * An operation that implements a custom `generator` method, but does not always return a valid generator, also has
