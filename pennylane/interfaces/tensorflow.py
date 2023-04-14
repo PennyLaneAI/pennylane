@@ -189,7 +189,7 @@ def _execute_legacy(
             [i.numpy() if isinstance(i, (tf.Variable, tf.Tensor)) else i for i in params]
         )
 
-    unwrapped_tapes = [convert_to_numpy_parameters(t) for t in tapes]
+    unwrapped_tapes = tuple(convert_to_numpy_parameters(t) for t in tapes)
     # Forward pass: execute the tapes
     res, jacs = execute_fn(unwrapped_tapes, **gradient_kwargs)
 
@@ -237,10 +237,10 @@ def _execute_legacy(
 
                     # Generate and execute the required gradient tapes
                     if _n == max_diff or not context.executing_eagerly():
-                        new_tapes = [
+                        new_tapes = tuple(
                             set_parameters_on_copy_and_unwrap(t, a)
                             for t, a in zip(tapes, params_unwrapped)
-                        ]
+                        )
                         vjp_tapes, processing_fn = qml.gradients.batch_vjp(
                             new_tapes,
                             dy,
@@ -284,10 +284,10 @@ def _execute_legacy(
                     # - gradient_fn is not differentiable
                     #
                     # so we cannot support higher-order derivatives.
-                    new_tapes = [
+                    new_tapes = tuple(
                         set_parameters_on_copy_and_unwrap(t, a)
                         for t, a in zip(tapes, params_unwrapped)
-                    ]
+                    )
                     vjps = _compute_vjp_legacy(dy, gradient_fn(new_tapes, **gradient_kwargs))
 
             variables = tfkwargs.get("variables")
@@ -351,7 +351,7 @@ def execute(tapes, device, execute_fn, gradient_fn, gradient_kwargs, _n=1, max_d
             [i.numpy() if isinstance(i, (tf.Variable, tf.Tensor)) else i for i in params]
         )
 
-    unwrapped_tapes = [convert_to_numpy_parameters(t) for t in tapes]
+    unwrapped_tapes = tuple(convert_to_numpy_parameters(t) for t in tapes)
     res, jacs = execute_fn(unwrapped_tapes, **gradient_kwargs)
 
     for i, r in enumerate(res):
@@ -383,10 +383,10 @@ def execute(tapes, device, execute_fn, gradient_fn, gradient_kwargs, _n=1, max_d
 
                     # Generate and execute the required gradient tapes
                     if _n == max_diff or not context.executing_eagerly():
-                        new_tapes = [
+                        new_tapes = tuple(
                             set_parameters_on_copy_and_unwrap(t, a)
                             for t, a in zip(tapes, params_unwrapped)
-                        ]
+                        )
                         vjp_tapes, processing_fn = qml.gradients.batch_vjp(
                             new_tapes,
                             dy,
@@ -432,10 +432,10 @@ def execute(tapes, device, execute_fn, gradient_fn, gradient_kwargs, _n=1, max_d
                     # - gradient_fn is not differentiable
                     #
                     # so we cannot support higher-order derivatives.
-                    new_tapes = [
+                    new_tapes = tuple(
                         set_parameters_on_copy_and_unwrap(t, a)
                         for t, a in zip(tapes, params_unwrapped)
-                    ]
+                    )
                     jac = gradient_fn(new_tapes, **gradient_kwargs)
 
                     vjps = _compute_vjp(dy, jac, multi_measurements, device.shot_vector)

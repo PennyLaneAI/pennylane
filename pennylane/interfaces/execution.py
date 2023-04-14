@@ -395,7 +395,7 @@ def execute(
                     batch_execute, cache, return_tuple=False, expand_fn=expand_fn
                 )(tapes)
             )
-        unwrapped_tapes = [qml.transforms.convert_to_numpy_parameters(t) for t in tapes]
+        unwrapped_tapes = tuple(qml.transforms.convert_to_numpy_parameters(t) for t in tapes)
         res = qml.interfaces.cache_execute(
             batch_execute, cache, return_tuple=False, expand_fn=expand_fn
         )(unwrapped_tapes)
@@ -641,7 +641,7 @@ def _execute_legacy(
                     batch_execute, cache, return_tuple=False, expand_fn=expand_fn
                 )(tapes)
             )
-        unwrapped_tapes = [qml.transforms.convert_to_numpy_parameters(t) for t in tapes]
+        unwrapped_tapes = tuple(qml.transforms.convert_to_numpy_parameters(t) for t in tapes)
         res = qml.interfaces.cache_execute(
             batch_execute, cache, return_tuple=False, expand_fn=expand_fn
         )(unwrapped_tapes)

@@ -84,7 +84,7 @@ class ExecuteTapesLegacy(torch.autograd.Function):
         ctx.max_diff = kwargs["max_diff"]
         ctx._n = kwargs.get("_n", 1)
 
-        unwrapped_tapes = [convert_to_numpy_parameters(t) for t in ctx.tapes]
+        unwrapped_tapes = tuple(convert_to_numpy_parameters(t) for t in ctx.tapes)
         res, ctx.jacs = ctx.execute_fn(unwrapped_tapes, **ctx.gradient_kwargs)
 
         # if any input tensor uses the GPU, the output should as well
@@ -166,7 +166,7 @@ class ExecuteTapesLegacy(torch.autograd.Function):
                     # The derivative order is at the maximum. Compute the VJP
                     # in a non-differentiable manner to reduce overhead.
 
-                    unwrapped_tapes = [convert_to_numpy_parameters(t) for t in ctx.tapes]
+                    unwrapped_tapes = tuple(convert_to_numpy_parameters(t) for t in ctx.tapes)
                     vjp_tapes, processing_fn = qml.gradients.batch_vjp(
                         unwrapped_tapes,
                         dy,
@@ -187,7 +187,7 @@ class ExecuteTapesLegacy(torch.autograd.Function):
                 #
                 # so we cannot support higher-order derivatives.
 
-                unwrapped_tapes = [convert_to_numpy_parameters(t) for t in ctx.tapes]
+                unwrapped_tapes = tuple(convert_to_numpy_parameters(t) for t in ctx.tapes)
                 jacs = ctx.gradient_fn(unwrapped_tapes, **ctx.gradient_kwargs)
 
                 vjps = _compute_vjp(dy, jacs, device=ctx.torch_device)
@@ -339,7 +339,7 @@ class ExecuteTapes(torch.autograd.Function):
         ctx.max_diff = kwargs["max_diff"]
         ctx._n = kwargs.get("_n", 1)
 
-        unwrapped_tapes = [convert_to_numpy_parameters(t) for t in ctx.tapes]
+        unwrapped_tapes = tuple(convert_to_numpy_parameters(t) for t in ctx.tapes)
         res, ctx.jacs = ctx.execute_fn(unwrapped_tapes, **ctx.gradient_kwargs)
 
         # if any input tensor uses the GPU, the output should as well
@@ -407,7 +407,7 @@ class ExecuteTapes(torch.autograd.Function):
                 else:
                     # The derivative order is at the maximum. Compute the VJP
                     # in a non-differentiable manner to reduce overhead.
-                    unwrapped_tapes = [convert_to_numpy_parameters(t) for t in ctx.tapes]
+                    unwrapped_tapes = tuple(convert_to_numpy_parameters(t) for t in ctx.tapes)
                     vjp_tapes, processing_fn = qml.gradients.batch_vjp(
                         unwrapped_tapes,
                         dy,
@@ -428,7 +428,7 @@ class ExecuteTapes(torch.autograd.Function):
                 #
                 # so we cannot support higher-order derivatives.
 
-                unwrapped_tapes = [convert_to_numpy_parameters(t) for t in ctx.tapes]
+                unwrapped_tapes = tuple(convert_to_numpy_parameters(t) for t in ctx.tapes)
                 jacs = ctx.gradient_fn(unwrapped_tapes, **ctx.gradient_kwargs)
 
                 vjps = _compute_vjps(dy, jacs, multi_measurements)
