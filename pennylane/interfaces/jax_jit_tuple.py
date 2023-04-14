@@ -43,7 +43,7 @@ def _validate_jax_version():
         raise InterfaceUnsupportedError(msg)
 
 
-def _copy_tape(t, a, unwrap=True):
+def set_parameters_on_copy_and_unwrap(t, a, unwrap=True):
     """Copy a given tape with operations and set parameters"""
     tc = t.copy(copy_operations=True)
     tc.set_parameters(a, trainable_only=False)
@@ -207,7 +207,7 @@ def _execute_bwd(
 
         def wrapper(p):
             """Compute the forward pass."""
-            new_tapes = [_copy_tape(t, a) for t, a in zip(tapes, p)]
+            new_tapes = [set_parameters_on_copy_and_unwrap(t, a) for t, a in zip(tapes, p)]
             res, _ = execute_fn(new_tapes, **gradient_kwargs)
 
             # When executed under `jax.vmap` the `result_shapes_dtypes` will contain
@@ -252,7 +252,10 @@ def _execute_bwd(
                     jacobians_from_callback, tangents[0], multi_measurements, trainable_params
                 )
             else:
-                new_tapes = [_copy_tape(t, a, unwrap=False) for t, a in zip(tapes, params)]
+                new_tapes = [
+                    set_parameters_on_copy_and_unwrap(t, a, unwrap=False)
+                    for t, a in zip(tapes, params)
+                ]
 
                 all_jacs = []
                 for new_t in new_tapes:
@@ -307,7 +310,7 @@ def _execute_bwd(
         """
 
         def wrapper(params):
-            new_tapes = [_copy_tape(t, a) for t, a in zip(tapes, params)]
+            new_tapes = [set_parameters_on_copy_and_unwrap(t, a) for t, a in zip(tapes, params)]
 
             all_jacs = []
             for new_t in new_tapes:
@@ -346,7 +349,7 @@ def _execute_bwd(
         """
 
         def wrapper(params):
-            new_tapes = [_copy_tape(t, a) for t, a in zip(tapes, params)]
+            new_tapes = [set_parameters_on_copy_and_unwrap(t, a) for t, a in zip(tapes, params)]
             return gradient_fn(new_tapes, **gradient_kwargs)
 
         shape_dtype_structs = _jac_shape_dtype_tuple(tapes, device)
@@ -374,7 +377,7 @@ def _execute_fwd(
     def execute_wrapper(params):
         def wrapper(p):
             """Compute the forward pass."""
-            new_tapes = [_copy_tape(t, a) for t, a in zip(tapes, p)]
+            new_tapes = [set_parameters_on_copy_and_unwrap(t, a) for t, a in zip(tapes, p)]
             res, jacs = execute_fn(new_tapes, **gradient_kwargs)
             return res, jacs
 

@@ -160,7 +160,7 @@ def _execute_legacy(
     total_params = np.sum([len(p) for p in params])
 
     # Copy a given tape with operations and set parameters
-    def cp_tape(t, a, unwrap=True):
+    def set_parameters_on_copy_and_unwrap(t, a, unwrap=True):
         tc = t.copy(copy_operations=True)
         tc.set_parameters(a)
         return convert_to_numpy_parameters(tc) if unwrap else tc
@@ -171,7 +171,7 @@ def _execute_legacy(
 
         def wrapper(p):
             """Compute the forward pass."""
-            new_tapes = [cp_tape(t, a) for t, a in zip(tapes, p)]
+            new_tapes = [set_parameters_on_copy_and_unwrap(t, a) for t, a in zip(tapes, p)]
             res, _ = execute_fn(new_tapes, **gradient_kwargs)
 
             # When executed under `jax.vmap` the `result_shapes_dtypes` will contain
@@ -216,7 +216,9 @@ def _execute_legacy(
                 p = args[:-1]
                 dy = args[-1]
 
-                new_tapes = [cp_tape(t, a, unwrap=False) for t, a in zip(tapes, p)]
+                new_tapes = [
+                    set_parameters_on_copy_and_unwrap(t, a, unwrap=False) for t, a in zip(tapes, p)
+                ]
                 vjp_tapes, processing_fn = qml.gradients.batch_vjp(
                     new_tapes,
                     dy,
@@ -261,7 +263,7 @@ def _execute_legacy(
 
         def jacs_wrapper(p):
             """Compute the jacs"""
-            new_tapes = [cp_tape(t, a) for t, a in zip(tapes, p)]
+            new_tapes = [set_parameters_on_copy_and_unwrap(t, a) for t, a in zip(tapes, p)]
             jacs = gradient_fn(new_tapes, **gradient_kwargs)
             return jacs
 
