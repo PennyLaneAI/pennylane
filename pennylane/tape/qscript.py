@@ -17,6 +17,7 @@ executed by a device.
 """
 # pylint: disable=too-many-instance-attributes, protected-access, too-many-public-methods
 
+import warnings
 import contextlib
 import copy
 from collections import Counter, defaultdict
@@ -34,7 +35,7 @@ from pennylane.measurements import (
     StateMP,
     VarianceMP,
 )
-from pennylane.operation import Observable, Operator
+from pennylane.operation import Observable, Operator, Operation
 from pennylane.queuing import AnnotatedQueue, process_queue
 from pennylane.wires import Wires
 
@@ -53,9 +54,9 @@ OPENQASM_GATES = {
     "PauliZ": "z",
     "Hadamard": "h",
     "S": "s",
-    "S.inv": "sdg",
+    "Adjoint(S)": "sdg",
     "T": "t",
-    "T.inv": "tdg",
+    "Adjoint(T)": "tdg",
     "RX": "rx",
     "RY": "ry",
     "RZ": "rz",
@@ -328,7 +329,7 @@ class QuantumScript:
 
     @property
     def samples_computational_basis(self):
-        """Determines if any of the measurements do sampling/counting in the computational basis."""
+        """Determines if any of the measurements are in the computational basis."""
         return any(o.samples_computational_basis for o in self.measurements)
 
     @property
@@ -354,7 +355,7 @@ class QuantumScript:
         return self._output_dim
 
     @property
-    def diagonalizing_gates(self):
+    def diagonalizing_gates(self) -> List[Operation]:
         """Returns the gates that diagonalize the measured wires such that they
         are in the eigenbasis of the circuit observables.
 
@@ -363,11 +364,12 @@ class QuantumScript:
         """
         rotation_gates = []
 
-        for observable in self.observables:
-            # some observables do not have diagonalizing gates,
-            # in which case we just don't append any
-            with contextlib.suppress(qml.operation.DiagGatesUndefinedError):
-                rotation_gates.extend(observable.diagonalizing_gates())
+        with qml.queuing.QueuingManager.stop_recording():
+            for observable in self.observables:
+                # some observables do not have diagonalizing gates,
+                # in which case we just don't append any
+                with contextlib.suppress(qml.operation.DiagGatesUndefinedError):
+                    rotation_gates.extend(observable.diagonalizing_gates())
         return rotation_gates
 
     ##### Update METHODS ###############
@@ -415,12 +417,16 @@ class QuantumScript:
             _par_info (list): Parameter information
         """
         self._par_info = []
-        for op in self.operations:
-            self._par_info.extend({"op": op, "p_idx": i} for i, d in enumerate(op.data))
+        for idx, op in enumerate(self.operations):
+            self._par_info.extend(
+                {"op": op, "op_idx": idx, "p_idx": i} for i, d in enumerate(op.data)
+            )
 
-        for m in self.measurements:
+        for idx, m in enumerate(self.measurements):
             if m.obs is not None:
-                self._par_info.extend({"op": m.obs, "p_idx": i} for i, d in enumerate(m.obs.data))
+                self._par_info.extend(
+                    {"op": m.obs, "op_idx": idx, "p_idx": i} for i, d in enumerate(m.obs.data)
+                )
 
     def _update_trainable_params(self):
         """Set the trainable parameters
@@ -563,16 +569,42 @@ class QuantumScript:
 
         self._trainable_params = sorted(set(param_indices))
 
-    def get_operation(self, idx):
+    def get_operation(self, idx, return_op_index=False):
         """Returns the trainable operation, and the corresponding operation argument
+        index, for a specified trainable parameter index.
+
+        Args:
+            idx (int): the trainable parameter index
+            return_op_index (bool): Whether the function also returns the operation index.
+        Returns:
+            tuple[.Operation, int, int]: tuple containing the corresponding
+            operation, the operation index, and an integer representing the argument index,
+            for the provided trainable parameter.
+        """
+        if return_op_index:
+            return self._get_operation(idx)
+        warnings.warn(
+            "The get_operation will soon be updated to also return the index of the trainable operation in the tape. "
+            "If you want to switch to the new behavior, you can pass `return_op_index=True`"
+        )
+
+        # get the index of the parameter in the script
+        t_idx = self.trainable_params[idx]
+
+        # get the info for the parameter
+        info = self._par_info[t_idx]
+        return info["op"], info["p_idx"]
+
+    def _get_operation(self, idx):
+        """Returns the trainable operation, the operation index and the corresponding operation argument
         index, for a specified trainable parameter index.
 
         Args:
             idx (int): the trainable parameter index
 
         Returns:
-            tuple[.Operation, int]: tuple containing the corresponding
-            operation, and an integer representing the argument index,
+            tuple[.Operation, int, int]: tuple containing the corresponding
+            operation, operation index and an integer representing the argument index,
             for the provided trainable parameter.
         """
         # get the index of the parameter in the script
@@ -580,7 +612,7 @@ class QuantumScript:
 
         # get the info for the parameter
         info = self._par_info[t_idx]
-        return info["op"], info["p_idx"]
+        return info["op"], info["op_idx"], info["p_idx"]
 
     def get_parameters(
         self, trainable_only=True, operations_only=False, **kwargs
@@ -699,7 +731,7 @@ class QuantumScript:
         Args:
             measurement_process (MeasurementProcess): the measurement process
                 associated with the single measurement
-            device (~.Device): a PennyLane device
+            device (pennylane.Device): a PennyLane device
 
         Returns:
             tuple: output shape
@@ -739,11 +771,9 @@ class QuantumScript:
         shot_vector = device._shot_vector
         if shot_vector is None:
             if isinstance(mps[0], (ExpectationMP, VarianceMP)):
-
                 shape = (len(mps),)
 
             elif isinstance(mps[0], ProbabilityMP):
-
                 wires_num_set = {len(meas.wires) for meas in mps}
                 same_num_wires = len(wires_num_set) == 1
                 if same_num_wires:
@@ -760,7 +790,6 @@ class QuantumScript:
                     shape = (sum(2 ** len(m.wires) for m in mps),)
 
             elif isinstance(mps[0], SampleMP):
-
                 dim = mps[0].shape(device)
                 shape = (len(mps),) + dim[1:]
 
@@ -789,7 +818,6 @@ class QuantumScript:
             shape = (num, len(mps))
 
         elif isinstance(mps[0], ProbabilityMP):
-
             wires_num_set = {len(meas.wires) for meas in mps}
             same_num_wires = len(wires_num_set) == 1
             if not same_num_wires:
@@ -828,7 +856,7 @@ class QuantumScript:
                 used for execution.
 
         Args:
-            device (.Device): the device that will be used for the script execution
+            device (pennylane.Device): the device that will be used for the script execution
 
         Raises:
             ValueError: raised for unsupported cases for example when the script contains
@@ -879,7 +907,7 @@ class QuantumScript:
             dependent on the device used for execution.
 
         Args:
-            device (.Device): the device that will be used for the script execution
+            device (pennylane.Device): the device that will be used for the script execution
 
         Returns:
             Union[tuple[int], tuple[tuple[int]]]: the output shape(s) of the quantum script result
@@ -1071,9 +1099,6 @@ class QuantumScript:
         )
         new_script._update()
         return new_script
-
-    # NOT MOVING OVER INV
-    # As it will be deprecated soon.
 
     def adjoint(self):
         """Create a quantum script that is the adjoint of this one.

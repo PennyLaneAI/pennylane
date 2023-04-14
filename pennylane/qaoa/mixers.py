@@ -20,7 +20,7 @@ import functools
 from typing import Iterable, Union
 
 import networkx as nx
-import retworkx as rx
+import rustworkx as rx
 
 import pennylane as qml
 from pennylane.wires import Wires
@@ -103,7 +103,7 @@ def xy_mixer(graph: Union[nx.Graph, rx.PyGraph]):
     + (0.5) [X1 X2]
     + (0.5) [Y1 Y2]
 
-    >>> import retworkx as rx
+    >>> import rustworkx as rx
     >>> graph = rx.PyGraph()
     >>> graph.add_nodes_from([0, 1, 2])
     >>> graph.add_edges_from([(0, 1, ""), (1, 2, "")])
@@ -182,7 +182,7 @@ def bit_flip_mixer(graph: Union[nx.Graph, rx.PyGraph], b: int):
     + (0.5) [X2 Z1]
     + (0.25) [X1 Z0 Z2]
 
-    >>> import retworkx as rx
+    >>> import rustworkx as rx
     >>> graph = rx.PyGraph()
     >>> graph.add_nodes_from([0, 1, 2])
     >>> graph.add_edges_from([(0, 1, ""), (1, 2, "")])
@@ -219,7 +219,6 @@ def bit_flip_mixer(graph: Union[nx.Graph, rx.PyGraph], b: int):
     get_nvalue = lambda i: graph.nodes()[i] if is_rx else i
 
     for i in graph_nodes:
-
         neighbours = sorted(graph.neighbors(i)) if is_rx else list(graph.neighbors(i))
         degree = len(neighbours)
 

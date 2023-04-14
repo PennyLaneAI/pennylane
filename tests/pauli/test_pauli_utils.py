@@ -14,45 +14,45 @@
 """
 Unit tests for the :mod:`pauli` utility functions in ``pauli/utils.py``.
 """
-import pytest
 import numpy as np
+import pytest
+
 import pennylane as qml
 from pennylane import (
+    RX,
+    RY,
+    U3,
+    Hadamard,
     Hamiltonian,
+    Hermitian,
     Identity,
     PauliX,
     PauliY,
     PauliZ,
-    Hadamard,
-    Hermitian,
-    U3,
     is_commuting,
-    RX,
-    RY,
 )
 from pennylane.operation import Tensor
 from pennylane.pauli import (
-    is_pauli_word,
     are_identical_pauli_words,
-    pauli_to_binary,
-    binary_to_pauli,
-    pauli_word_to_string,
-    string_to_pauli_word,
-    pauli_word_to_matrix,
-    is_qwc,
     are_pauli_words_qwc,
+    binary_to_pauli,
+    diagonalize_pauli_word,
+    diagonalize_qwc_pauli_words,
+    is_pauli_word,
+    is_qwc,
     observables_to_binary_matrix,
-    qwc_complement_adj_matrix,
     partition_pauli_group,
     pauli_group,
     pauli_mult,
     pauli_mult_with_phase,
+    pauli_to_binary,
+    pauli_word_to_matrix,
+    pauli_word_to_string,
+    qwc_complement_adj_matrix,
     qwc_rotation,
-    diagonalize_pauli_word,
-    diagonalize_qwc_pauli_words,
     simplify,
+    string_to_pauli_word,
 )
-
 
 non_pauli_words = [
     PauliX(0) @ Hadamard(1) @ Identity(2),
@@ -266,8 +266,15 @@ class TestGroupingUtils:
         (PauliZ(1) @ PauliX(2) @ PauliZ(4), True),
         (PauliX(1) @ Hadamard(4), False),
         (Hadamard(0), False),
-        (Hamiltonian([1.0, 0.5], [PauliX(0), PauliZ(1) @ PauliX(2)]), True),
-        (Hamiltonian([1.0, 0.5], [Hadamard(0), PauliZ(1) @ PauliX(2)]), False),
+        (Hamiltonian([0.5], [PauliZ(1) @ PauliX(2)]), True),
+        (Hamiltonian([0.5], [PauliZ(1) @ PauliX(1)]), True),
+        (Hamiltonian([1.0], [Hadamard(0)]), False),
+        (Hamiltonian([1.0, 0.5], [PauliX(0), PauliZ(1) @ PauliX(2)]), False),
+        (qml.prod(qml.PauliX(0), qml.PauliY(0)), True),
+        (qml.prod(qml.PauliX(0), qml.PauliY(1)), True),
+        (qml.prod(qml.PauliX(0), qml.Hadamard(1)), False),
+        (qml.s_prod(5, qml.PauliX(0) @ qml.PauliZ(1)), True),
+        (qml.s_prod(5, qml.Hadamard(0)), False),
     )
 
     @pytest.mark.parametrize("ob, is_pw", obs_pw_status)
@@ -369,6 +376,12 @@ class TestGroupingUtils:
             (PauliZ("a") @ PauliY("b") @ PauliZ("d"), {"a": 0, "b": 1, "c": 2, "d": 3}, "ZYIZ"),
             (PauliZ("a") @ PauliY("b") @ PauliZ("d"), None, "ZYZ"),
             (PauliX("a") @ PauliY("b") @ PauliZ("d"), {"d": 0, "c": 1, "b": 2, "a": 3}, "ZIYX"),
+            (4.5 * PauliX(0), {0: 0}, "X"),
+            (qml.prod(PauliX(0), PauliY(1)), {0: 0, 1: 1}, "XY"),
+            (PauliX(0) @ PauliZ(0), {0: 0}, "X"),  # second operator is ignored!!
+            (3 * PauliZ(0) @ PauliY(3), {0: 0, 3: 1}, "ZY"),
+            (qml.s_prod(8, qml.PauliX(0) @ qml.PauliZ(1)), {0: 0, 1: 1}, "XZ"),
+            (qml.Hamiltonian([4], [qml.PauliX(0) @ qml.PauliZ(1)]), {0: 0, 1: 1}, "XZ"),
         ],
     )
     def test_pauli_word_to_string(self, pauli_word, wire_map, expected_string):
@@ -918,7 +931,7 @@ class TestObservableHF:
             (
                 [(0, "X"), (1, "Y")],  # X_0 @ Y_1
                 [(0, "X"), (2, "Y")],  # X_0 @ Y_2
-                ([(2, "Y"), (1, "Y")], 1.0),  # X_0 @ Y_1 @ X_0 @ Y_2
+                ([(0, "I"), (2, "Y"), (1, "Y")], 1.0),  # X_0 @ Y_1 @ X_0 @ Y_2
             ),
         ],
     )

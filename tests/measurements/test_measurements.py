@@ -95,7 +95,7 @@ def test_numeric_type_unrecognized_error():
         qml.QuantumFunctionError,
         match="The numeric type of the measurement NotValidMeasurement is not defined",
     ):
-        mp.numeric_type()
+        mp.numeric_type
 
 
 def test_shape_unrecognized_error():
@@ -215,10 +215,6 @@ class TestStatisticsQueuing:
 class TestProperties:
     """Test for the properties"""
 
-    def test_return_type(self):
-        """Test MeasurementProcess ``return_type`` property is None."""
-        assert MeasurementProcess().return_type is None
-
     def test_wires_match_observable(self):
         """Test that the wires of the measurement process
         match an internal observable"""
@@ -271,6 +267,9 @@ class TestProperties:
         m = qml.probs(op=qml.PauliZ(wires="a"))
         expected = "probs(PauliZ(wires=['a']))"
         assert str(m) == expected
+
+        m = ProbabilityMP(eigvals=(1, 0), wires=qml.wires.Wires(0))
+        assert repr(m) == "probs(eigvals=[1 0], wires=[0])"
 
 
 class TestExpansion:
@@ -381,6 +380,10 @@ class TestExpansion:
             CountsMP(wires=["a", 1], all_outcomes=True),
             CountsMP(),
             CountsMP(wires=["a", 1]),
+            StateMP(),
+            VnEntropyMP(wires=["a", 1]),
+            MutualInfoMP(wires=[["a", 1], ["b", 2]]),
+            ProbabilityMP(wires=["a", 1]),
         ],
     )
     def test_samples_computational_basis_true(self, m):
@@ -393,14 +396,10 @@ class TestExpansion:
             ExpectationMP(obs=qml.PauliX(2)),
             VarianceMP(obs=qml.PauliX("a")),
             ProbabilityMP(obs=qml.PauliX("b")),
-            ProbabilityMP(wires=["a", 1]),
             SampleMP(obs=qml.PauliX("a")),
             CountsMP(obs=qml.PauliX("a")),
-            StateMP(),
-            VnEntropyMP(wires=["a", 1]),
-            MutualInfoMP(wires=[["a", 1], ["b", 2]]),
-            ClassicalShadowMP(wires=[["a", 1], ["b", 2]]),
             ShadowExpvalMP(H=qml.PauliX("a")),
+            ClassicalShadowMP(wires=[["a", 1], ["b", 2]]),
         ],
     )
     def test_samples_computational_basis_false(self, m):
@@ -428,13 +427,11 @@ class TestDiagonalizingGates:
             assert isinstance(op, c)
 
 
-@pytest.mark.parametrize("switch_return", [qml.enable_return, qml.disable_return])
 class TestSampleMeasurement:
     """Tests for the SampleMeasurement class."""
 
-    def test_custom_sample_measurement(self, switch_return):
+    def test_custom_sample_measurement(self):
         """Test the execution of a custom sampled measurement."""
-        switch_return()
 
         class MyMeasurement(SampleMeasurement):
             def process_samples(self, samples, wire_order, shot_range, bin_size):
@@ -449,9 +446,8 @@ class TestSampleMeasurement:
 
         assert qml.math.allequal(circuit(), [1000, 0])
 
-    def test_sample_measurement_without_shots(self, switch_return):
+    def test_sample_measurement_without_shots(self):
         """Test that executing a sampled measurement with ``shots=None`` raises an error."""
-        switch_return()
 
         class MyMeasurement(SampleMeasurement):
             def process_samples(self, samples, wire_order, shot_range, bin_size):
@@ -469,9 +465,8 @@ class TestSampleMeasurement:
         ):
             circuit()
 
-    def test_method_overriden_by_device(self, switch_return):
+    def test_method_overriden_by_device(self):
         """Test that the device can override a measurement process."""
-        switch_return()
 
         dev = qml.device("default.qubit", wires=2, shots=1000)
 
@@ -486,13 +481,11 @@ class TestSampleMeasurement:
         assert qml.math.allequal(circuit(), [2, 2])
 
 
-@pytest.mark.parametrize("switch_return", [qml.enable_return, qml.disable_return])
 class TestStateMeasurement:
     """Tests for the SampleMeasurement class."""
 
-    def test_custom_state_measurement(self, switch_return):
+    def test_custom_state_measurement(self):
         """Test the execution of a custom state measurement."""
-        switch_return()
 
         class MyMeasurement(StateMeasurement):
             def process_state(self, state, wire_order):
@@ -506,9 +499,8 @@ class TestStateMeasurement:
 
         assert circuit() == 1
 
-    def test_sample_measurement_with_shots(self, switch_return):
+    def test_sample_measurement_with_shots(self):
         """Test that executing a state measurement with shots raises a warning."""
-        switch_return()
 
         class MyMeasurement(StateMeasurement):
             def process_state(self, state, wire_order):
@@ -526,13 +518,12 @@ class TestStateMeasurement:
         ):
             circuit()
 
-    def test_method_overriden_by_device(self, switch_return):
+    def test_method_overriden_by_device(self):
         """Test that the device can override a measurement process."""
-        switch_return()
 
         dev = qml.device("default.qubit", wires=2)
 
-        @qml.qnode(dev)
+        @qml.qnode(dev, interface="autograd")
         def circuit():
             return qml.state()
 
@@ -542,13 +533,11 @@ class TestStateMeasurement:
         assert circuit() == 2
 
 
-@pytest.mark.parametrize("switch_return", [qml.enable_return, qml.disable_return])
 class TestMeasurementTransform:
     """Tests for the MeasurementTransform class."""
 
-    def test_custom_measurement(self, switch_return):
+    def test_custom_measurement(self):
         """Test the execution of a custom measurement."""
-        switch_return()
 
         class MyMeasurement(MeasurementTransform):
             def process(self, tape, device):
@@ -562,9 +551,8 @@ class TestMeasurementTransform:
 
         assert circuit() == {dev.shots: len(circuit.tape)}
 
-    def test_method_overriden_by_device(self, switch_return):
+    def test_method_overriden_by_device(self):
         """Test that the device can override a measurement process."""
-        switch_return()
 
         dev = qml.device("default.qubit", wires=2, shots=1000)
 

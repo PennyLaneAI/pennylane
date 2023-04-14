@@ -14,9 +14,12 @@
 """
 Contains the QNodeCollection class.
 """
+import warnings
+
 # pylint: disable=too-many-arguments,import-outside-toplevel
 from collections.abc import Sequence
-import warnings
+
+import pennylane as qml
 
 
 class QNodeCollection(Sequence):
@@ -159,6 +162,15 @@ class QNodeCollection(Sequence):
     """
 
     def __init__(self, qnodes=None):
+        warnings.warn(
+            "The QNodeCollection class is deprecated and it will be removed soon.", UserWarning
+        )
+
+        if qml.active_return():
+            raise qml.QuantumFunctionError(
+                "QNodeCollections does not support the new return system."
+            )
+
         self.qnodes = []
         self.extend(qnodes or [])
 

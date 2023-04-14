@@ -148,9 +148,16 @@ more tapes as well as a classical processing function.
     :toctree: api
 
     ~transforms.broadcast_expand
-    ~transforms.measurement_grouping
     ~transforms.hamiltonian_expand
+    ~transforms.sign_expand
     ~transforms.sum_expand
+
+This transform accepts a single tape and returns a single tape:
+
+.. autosummary::
+    :toctree: api
+
+    ~transforms.convert_to_numpy_parameters
 
 Decorators and utility functions
 --------------------------------
@@ -170,6 +177,7 @@ to help build custom QNode, quantum function, and tape transforms:
     ~transforms.create_expand_fn
     ~transforms.create_decomp_expand_fn
     ~transforms.expand_invalid_trainable
+    ~transforms.expand_invalid_trainable_hadamard_gradient
     ~transforms.expand_multipar
     ~transforms.expand_trainable_multipar
     ~transforms.expand_nonunitary_gen
@@ -184,6 +192,7 @@ Transforms for error mitigation
     ~transforms.fold_global
     ~transforms.poly_extrapolate
     ~transforms.richardson_extrapolate
+
 """
 # Import the decorators first to prevent circular imports when used in other transforms
 from .batch_transform import batch_transform, map_batch_transform
@@ -194,12 +203,13 @@ from .batch_input import batch_input
 from .batch_partial import batch_partial
 from .classical_jacobian import classical_jacobian
 from .condition import cond, Conditional
+from .convert_to_numpy_parameters import convert_to_numpy_parameters
 from .compile import compile
 from .decompositions import zyz_decomposition, xyx_decomposition, two_qubit_decomposition
 from .defer_measurements import defer_measurements
+from .sign_expand import sign_expand
 from .hamiltonian_expand import hamiltonian_expand, sum_expand
 from .split_non_commuting import split_non_commuting
-from .measurement_grouping import measurement_grouping
 from .metric_tensor import metric_tensor
 from .adjoint_metric_tensor import adjoint_metric_tensor
 from .insert_ops import insert
@@ -226,6 +236,7 @@ from .commutation_dag import (
 )
 from .tape_expand import (
     expand_invalid_trainable,
+    expand_invalid_trainable_hadamard_gradient,
     expand_multipar,
     expand_nonunitary_gen,
     expand_trainable_multipar,

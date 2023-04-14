@@ -166,6 +166,7 @@ use the :meth:`~.QueuingManager.stop_recording` context or specify `do_queue=Fal
 import copy
 from collections import OrderedDict
 from contextlib import contextmanager
+from threading import RLock
 
 
 class QueuingError(Exception):
@@ -335,12 +336,16 @@ class AnnotatedQueue(OrderedDict):
     """Lightweight class that maintains a basic queue of operations, in addition
     to metadata annotations."""
 
+    _lock = RLock()
+    """threading.RLock: Used to synchronize appending to/popping from global QueueingContext."""
+
     def __enter__(self):
         """Adds this instance to the global list of active contexts.
 
         Returns:
             AnnotatedQueue: this instance
         """
+        AnnotatedQueue._lock.acquire()
         QueuingManager.add_active_queue(self)
 
         return self
@@ -348,6 +353,7 @@ class AnnotatedQueue(OrderedDict):
     def __exit__(self, exception_type, exception_value, traceback):
         """Remove this instance from the global list of active contexts."""
         QueuingManager.remove_active_queue()
+        AnnotatedQueue._lock.release()
 
     def append(self, obj, **kwargs):
         """Append ``obj`` into the queue with ``kwargs`` metadata."""
@@ -512,7 +518,6 @@ def process_queue(queue: AnnotatedQueue):
     current_list = "_prep"
 
     for obj, info in queue.items():
-
         if "owner" not in info and getattr(obj, "_queue_category", None) is not None:
             if list_order[obj._queue_category] > list_order[current_list]:
                 current_list = obj._queue_category

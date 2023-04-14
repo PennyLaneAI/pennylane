@@ -37,7 +37,7 @@ Creating your device
 --------------------
 
 The first step in creating your PennyLane plugin is to create your device class.
-This is as simple as importing the abstract base class :class:`~.Device` from PennyLane,
+This is as simple as importing the abstract base class :class:`pennylane.Device` from PennyLane,
 and subclassing it:
 
 .. code-block:: python
@@ -54,27 +54,27 @@ and subclassing it:
 
 .. note::
 
-    Most devices inherit from a subclass of :class:`~.Device` called :class:`~.QubitDevice`,
+    Most devices inherit from a subclass of :class:`pennylane.Device` called :class:`~.QubitDevice`,
     which contains a lot of functionality specific to computations based on qubits. We will
     take a deeper look at this important case below.
 
 Here, we have begun defining some important class attributes that allow PennyLane to identify
 and use the device. These include:
 
-* :attr:`.Device.name`: a string containing the official name of the device
+* :attr:`pennylane.Device.name`: a string containing the official name of the device
 
-* :attr:`.Device.short_name`: the string used to identify and load the device by users of PennyLane
+* :attr:`pennylane.Device.short_name`: the string used to identify and load the device by users of PennyLane
 
-* :attr:`.Device.pennylane_requires`: the PennyLane version this device supports.
+* :attr:`pennylane.Device.pennylane_requires`: the PennyLane version this device supports.
   Note that this class attribute supports pip *requirements.txt* style version ranges,
   for example:
 
   - ``pennylane_requires = "2"`` to support PennyLane version 2.x.x
   - ``pennylane_requires = ">=0.1.5,<0.6"`` to support a range of PennyLane versions
 
-* :attr:`.Device.version`: the version number of the device
+* :attr:`pennylane.Device.version`: the version number of the device
 
-* :attr:`.Device.author`: the author of the device
+* :attr:`pennylane.Device.author`: the author of the device
 
 Defining all these attributes is mandatory.
 
@@ -85,7 +85,7 @@ Device capabilities
 You must further tell PennyLane about the operations that your device supports, 
 as well as potential further capabilities, by providing the following class attributes/properties:
 
-* :attr:`.Device.stopping_condition`: This :class:`~.BooleanFn` should return ``True`` for supported
+* :attr:`pennylane.Device.stopping_condition`: This :class:`~.BooleanFn` should return ``True`` for supported
   operations and measurement processes, and ``False`` otherwise.  Note that this function is called on
   **both** ``Operator`` and ``MeasurementProcess`` classes. Though this function must accept both ``Operator``
   and ``MeasurementProcess`` classes, it does not affect whether or not a ``MeasurementProcess`` is supported.
@@ -99,9 +99,9 @@ as well as potential further capabilities, by providing the following class attr
           return qml.BooleanFn(accepts_obj)
 
   If the device does *not* inherit from :class:`~.DefaultQubit`, then supported operations can be determined
-  by the :attr:`.Device.operations` property.  This property is a list of string names for supported operations.
+  by the :attr:`pennylane.Device.operations` property.  This property is a list of string names for supported operations.
   :class:`~.DefaultQubit` supports any operation with a matrix, even if it's name isn't specifically enumerated
-  in :attr:`.Device.operations`.
+  in :attr:`pennylane.Device.operations`.
 
   .. code-block:: python
 
@@ -123,7 +123,7 @@ as well as potential further capabilities, by providing the following class attr
       conversion between the two conventions takes place automatically
       by the plugin device.
 
-* :func:`.Device.capabilities`: A class method which returns the dictionary of capabilities of a device. A
+* :func:`pennylane.Device.capabilities`: A class method which returns the dictionary of capabilities of a device. A
   new device should override this method to retrieve the parent classes' capabilities dictionary, make a copy
   and update and/or add capabilities before returning the copy.
 
@@ -348,7 +348,7 @@ object and store it in their ``wires`` attribute.
 
 When the device applies operations, it needs to translate
 ``op.wires`` into wire labels that the backend "understands". This can be done with the
-:meth:`~.Device.map_wires` method which maps ``Wires`` objects to other ``Wires`` objects,
+:meth:`pennylane.Device.map_wires` method which maps ``Wires`` objects to other ``Wires`` objects,
 but changes the labels according to the ``wire_map`` attribute of the device which defines the translation.
 
 .. code-block:: python
@@ -359,7 +359,7 @@ but changes the labels according to the ``wire_map`` attribute of the device whi
 
 By default, the map translates the custom labels ``'q11'``, ``'q12'``, ``'q21'``, ``'q22'`` to
 consecutive integers ``0``, ``1``, ``2``, ``3``. If a device uses a different wire labeling,
-such as non-consecutive wires ``0``, ``4``, ``7``, ``12``, the :meth:`~.Device.define_wire_map` method
+such as non-consecutive wires ``0``, ``4``, ``7``, ``12``, the :meth:`pennylane.Device.define_wire_map` method
 has to be overwritten accordingly.
 
 The ``device_wires`` can then be further processed, for example by extracting the actual labels as a tuple,
@@ -414,7 +414,7 @@ And similar code in the ``batch_execute`` method:
     self.tracker.update(batches=1, batch_len=len(circuits))
     self.tracker.record()
 
-These functions are called in base :class:`~.Device` and :class:`~.QubitDevice` devices. Unless you are
+These functions are called in base :class:`pennylane.Device` and :class:`~.QubitDevice` devices. Unless you are
 overriding the ``execute`` and ``batch_execute`` methods or want to customize the stored
 information, you do not need to add any new code.
 

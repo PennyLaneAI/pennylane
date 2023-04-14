@@ -14,7 +14,7 @@
 """
 Tests for the ``default.mixed`` device for the Autograd interface
 """
-import re
+# pylint: disable=protected-access
 import pytest
 
 import pennylane as qml
@@ -22,8 +22,9 @@ from pennylane import numpy as np
 from pennylane.devices.default_mixed import DefaultMixed
 from pennylane import DeviceError
 
+pytestmark = pytest.mark.autograd
 
-@pytest.mark.autograd
+
 def test_analytic_deprecation():
     """Tests if the kwarg `analytic` is used and displays error message."""
     msg = "The analytic argument has been replaced by shots=None. "
@@ -36,7 +37,6 @@ def test_analytic_deprecation():
         qml.device("default.mixed", wires=1, shots=1, analytic=True)
 
 
-@pytest.mark.autograd
 class TestQNodeIntegration:
     """Integration tests for default.mixed.autograd. This test ensures it integrates
     properly with the PennyLane UI, in particular the QNode."""
@@ -67,7 +67,7 @@ class TestQNodeIntegration:
         """Test that the plugin device loads correctly"""
         dev = qml.device("default.mixed", wires=2)
         assert dev.num_wires == 2
-        assert dev.shots == None
+        assert dev.shots is None
         assert dev.short_name == "default.mixed"
         assert dev.capabilities()["passthru_devices"]["autograd"] == "default.mixed"
 
@@ -116,7 +116,6 @@ class TestQNodeIntegration:
         assert np.allclose(state, expected, atol=tol, rtol=0)
 
 
-@pytest.mark.autograd
 class TestDtypePreserved:
     """Test that the user-defined dtype of the device is preserved for QNode
     evaluation"""
@@ -131,7 +130,7 @@ class TestDtypePreserved:
             qml.probs(wires=[2, 0]),
         ],
     )
-    def test_real_dtype(self, r_dtype, measurement, tol):
+    def test_real_dtype(self, r_dtype, measurement):
         """Test that the user-defined dtype of the device is preserved
         for QNodes with real-valued outputs"""
         p = 0.543
@@ -152,7 +151,7 @@ class TestDtypePreserved:
         "measurement",
         [qml.state(), qml.density_matrix(wires=[1]), qml.density_matrix(wires=[2, 0])],
     )
-    def test_complex_dtype(self, c_dtype, measurement, tol):
+    def test_complex_dtype(self, c_dtype, measurement):
         """Test that the user-defined dtype of the device is preserved
         for QNodes with complex-valued outputs"""
         p = 0.543
@@ -168,7 +167,6 @@ class TestDtypePreserved:
         assert res.dtype == c_dtype
 
 
-@pytest.mark.autograd
 class TestOps:
     """Unit tests for operations supported by the default.mixed.autograd device"""
 
@@ -217,7 +215,37 @@ class TestOps:
         spy.assert_called()
 
 
-@pytest.mark.autograd
+@pytest.mark.parametrize(
+    "op, exp_method, dev_wires",
+    [
+        (qml.RX(np.array(0.2), 0), "_apply_channel", 1),
+        (qml.RX(np.array(0.2), 0), "_apply_channel", 8),
+        (qml.CNOT([0, 1]), "_apply_channel", 3),
+        (qml.CNOT([0, 1]), "_apply_channel", 8),
+        (qml.MultiControlledX(wires=list(range(2))), "_apply_channel", 3),
+        (qml.MultiControlledX(wires=list(range(3))), "_apply_channel_tensordot", 3),
+        (qml.MultiControlledX(wires=list(range(8))), "_apply_channel_tensordot", 8),
+        (qml.PauliError("X", np.array(0.5), 0), "_apply_channel", 2),
+        (qml.PauliError("XXX", np.array(0.5), [0, 1, 2]), "_apply_channel_tensordot", 4),
+        (qml.PauliError("X" * 8, np.array(0.5), list(range(8))), "_apply_channel_tensordot", 8),
+    ],
+)
+def test_method_choice(mocker, op, exp_method, dev_wires):
+    """Test that the right method between _apply_channel and _apply_channel_tensordot
+    is chosen."""
+
+    methods = ["_apply_channel", "_apply_channel_tensordot"]
+    del methods[methods.index(exp_method)]
+    unexp_method = methods[0]
+    spy_exp = mocker.spy(DefaultMixed, exp_method)
+    spy_unexp = mocker.spy(DefaultMixed, unexp_method)
+    dev = qml.device("default.mixed", wires=dev_wires)
+    dev._apply_operation(op)
+
+    spy_unexp.assert_not_called()
+    spy_exp.assert_called_once()
+
+
 class TestPassthruIntegration:
     """Tests for integration with the PassthruQNode"""
 
@@ -301,31 +329,46 @@ class TestPassthruIntegration:
         dev1 = qml.device("default.mixed", wires=3)
         dev2 = qml.device("default.mixed", wires=3)
 
-        circuit1 = qml.QNode(circuit, dev1, diff_method="backprop", interface="autograd")
-        circuit2 = qml.QNode(circuit, dev2, diff_method="parameter-shift")
+        def cost(x):
+            return qml.math.stack(circuit(x))
 
-        assert circuit1.gradient_fn == "backprop"
-        assert circuit2.gradient_fn is qml.gradients.param_shift
+        circuit1 = qml.QNode(cost, dev1, diff_method="backprop", interface="autograd")
+        circuit2 = qml.QNode(cost, dev2, diff_method="parameter-shift")
 
         res = circuit1(p)
 
         assert np.allclose(res, circuit2(p), atol=tol, rtol=0)
 
+        assert circuit1.gradient_fn == "backprop"
+        assert circuit2.gradient_fn is qml.gradients.param_shift
+
         grad_fn = qml.jacobian(circuit1, 0)
         res = grad_fn(p)
         assert np.allclose(res, qml.jacobian(circuit2)(p), atol=tol, rtol=0)
 
+    @pytest.mark.parametrize(
+        "op, wire_ids, exp_fn",
+        [
+            (qml.RY, [0], lambda a: -np.sin(a)),
+            (qml.AmplitudeDamping, [0], lambda a: -2),
+            (qml.DepolarizingChannel, [-1], lambda a: -4 / 3),
+            (lambda a, wires: qml.ResetError(p0=a, p1=0.1, wires=wires), [0], lambda a: -2),
+            (lambda a, wires: qml.ResetError(p0=0.1, p1=a, wires=wires), [0], lambda a: 0),
+        ],
+    )
     @pytest.mark.parametrize("wires", [[0], ["abc"]])
-    def test_state_differentiability(self, wires, tol):
+    def test_state_differentiability(self, wires, op, wire_ids, exp_fn, tol):
         """Test that the device state can be differentiated"""
+        # pylint: disable=too-many-arguments
         dev = qml.device("default.mixed", wires=wires)
 
         @qml.qnode(dev, diff_method="backprop", interface="autograd")
         def circuit(a):
-            qml.RY(a, wires=wires[0])
+            qml.PauliX(wires[wire_ids[0]])
+            op(a, wires=[wires[idx] for idx in wire_ids])
             return qml.state()
 
-        a = np.array(0.54, requires_grad=True)
+        a = np.array(0.23, requires_grad=True)
 
         def cost(a):
             """A function of the device quantum state, as a function
@@ -335,7 +378,7 @@ class TestPassthruIntegration:
             return res[1][1] - res[0][0]
 
         grad = qml.grad(cost)(a)
-        expected = np.sin(a)
+        expected = exp_fn(a)
         assert np.allclose(grad, expected, atol=tol, rtol=0)
 
     @pytest.mark.parametrize("wires", [range(2), [-12.32, "abc"]])
@@ -421,6 +464,7 @@ class TestPassthruIntegration:
 
     def test_sample_backprop_error(self):
         """Test that sampling in backpropagation mode raises an error"""
+        # pylint: disable=unused-variable
         dev = qml.device("default.mixed", wires=1, shots=100)
 
         msg = "Backpropagation is only supported when shots=None"
@@ -534,7 +578,7 @@ class TestPassthruIntegration:
             ["default.mixed", "backprop", "forward"],
         ],
     )
-    def test_ragged_differentiation(self, dev_name, diff_method, mode, tol):
+    def test_multiple_measurements_differentiation(self, dev_name, diff_method, mode, tol):
         """Tests correct output shape and evaluation for a tape
         with prob and expval outputs"""
         dev = qml.device(dev_name, wires=2)
@@ -546,16 +590,19 @@ class TestPassthruIntegration:
             qml.RX(x, wires=[0])
             qml.RY(y, wires=[1])
             qml.CNOT(wires=[0, 1])
-            return [qml.expval(qml.PauliZ(0)), qml.probs(wires=[1])]
+            return qml.expval(qml.PauliZ(0)), qml.probs(wires=[1])
 
         res = circuit(x, y)
 
         expected = np.array(
             [np.cos(x), (1 + np.cos(x) * np.cos(y)) / 2, (1 - np.cos(x) * np.cos(y)) / 2]
         )
-        assert np.allclose(res, expected, atol=tol, rtol=0)
+        assert np.allclose(qml.math.hstack(res), expected, atol=tol, rtol=0)
 
-        res = qml.jacobian(circuit)(x, y)
+        def cost(x, y):
+            return qml.math.hstack(circuit(x, y))
+
+        res = qml.jacobian(cost)(x, y)
         assert isinstance(res, tuple) and len(res) == 2
         assert res[0].shape == (3,)
         assert res[1].shape == (3,)
@@ -595,7 +642,6 @@ class TestPassthruIntegration:
         assert np.allclose(np.diag(res_b), expected_b, atol=tol, rtol=0)
 
 
-@pytest.mark.autograd
 class TestHighLevelIntegration:
     """Tests for integration with higher level components of PennyLane."""
 
@@ -615,23 +661,18 @@ class TestHighLevelIntegration:
         assert grad.shape == weights.shape
 
     def test_qnode_collection_integration(self):
-        """Test that a PassthruQNode default.mixed.autograd works with QNodeCollections."""
+        """Test that QNodeCollections does not work with the new return system."""
         dev = qml.device("default.mixed", wires=2)
 
         def ansatz(weights, **kwargs):
+            # pylint: disable=unused-argument
             qml.RX(weights[0], wires=0)
             qml.RY(weights[1], wires=1)
             qml.CNOT(wires=[0, 1])
 
         obs_list = [qml.PauliX(0) @ qml.PauliY(1), qml.PauliZ(0), qml.PauliZ(0) @ qml.PauliZ(1)]
-        qnodes = qml.map(ansatz, obs_list, dev, interface="autograd")
-
-        assert qnodes.interface == "autograd"
-
-        weights = np.array([0.1, 0.2], requires_grad=True)
-
-        def cost(weights):
-            return np.sum(qnodes(weights))
-
-        grad = qml.grad(cost)(weights)
-        assert grad.shape == weights.shape
+        with pytest.raises(
+            qml.QuantumFunctionError,
+            match="QNodeCollections does not support the new return system.",
+        ):
+            qml.map(ansatz, obs_list, dev, interface="autograd")

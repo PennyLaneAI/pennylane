@@ -35,11 +35,20 @@ class TestApplyOperations:
         out = qml.math.reshape(out, 4)
         exp = np.array([np.cos(self.x / 2), 0.0, -1j * np.sin(self.x / 2), 0.0])
         assert np.allclose(out, exp)
-        assert not op.inverse
+
+    def test_simple_operation_inv(self):
+        """Test that an operation is applied correctly when using invert=True
+        but does not alter the operation (in particular its inverse flag) that is used."""
+        op = qml.RX(self.x, wires=0)
+        out = _apply_operations(self.device._state, op, self.device, invert=True)
+        out = qml.math.reshape(out, 4)
+        exp = np.array([np.cos(self.x / 2), 0.0, 1j * np.sin(self.x / 2), 0.0])
+        assert np.allclose(out, exp)
 
     def test_operation_group(self):
         """Test that a group of operations with is applied correctly
-        but does not alter the operations (in particular their order) that are used."""
+        but does not alter the operations (in particular their order and
+        inverse flags) that are used."""
         op = [qml.adjoint(qml.RX(self.x, wires=0)), qml.Hadamard(wires=1), qml.CNOT(wires=[1, 0])]
         out = _apply_operations(self.device._state, op, self.device)
         out = qml.math.reshape(out, 4)
@@ -49,6 +58,26 @@ class TestApplyOperations:
                 1j * np.sin(self.x / 2) / np.sqrt(2),
                 1j * np.sin(self.x / 2) / np.sqrt(2),
                 np.cos(self.x / 2) / np.sqrt(2),
+            ]
+        )
+        assert np.allclose(out, exp)
+        assert qml.equal(op[0], qml.adjoint(qml.RX(self.x, wires=0)))
+        assert isinstance(op[1], qml.Hadamard)
+        assert isinstance(op[2], qml.CNOT)
+
+    def test_operation_group_inv(self):
+        """Test that a group of operations with is applied correctly when using invert=True
+        but does not alter the operations (in particular their order and
+        inverse flags) that are used."""
+        op = [qml.adjoint(qml.RX(self.x, wires=0)), qml.Hadamard(wires=1), qml.CNOT(wires=[1, 0])]
+        out = _apply_operations(self.device._state, op, self.device, invert=True)
+        out = qml.math.reshape(out, 4)
+        exp = np.array(
+            [
+                np.cos(self.x / 2) / np.sqrt(2),
+                np.cos(self.x / 2) / np.sqrt(2),
+                -1j * np.sin(self.x / 2) / np.sqrt(2),
+                -1j * np.sin(self.x / 2) / np.sqrt(2),
             ]
         )
         assert np.allclose(out, exp)
@@ -406,15 +435,17 @@ class TestAdjointMetricTensorTape:
     """
 
     num_wires = 3
+    interfaces = ["auto", "autograd"]
 
     @pytest.mark.autograd
-    def test_correct_output_tape_autograd(self, ansatz, params):
+    @pytest.mark.parametrize("interface", interfaces)
+    def test_correct_output_tape_autograd(self, ansatz, params, interface):
         """Test that the output is correct when using Autograd and
         calling the adjoint metric tensor directly on a tape."""
         expected = autodiff_metric_tensor(ansatz, self.num_wires)(*params)
         dev = qml.device("default.qubit.autograd", wires=self.num_wires)
 
-        @qml.qnode(dev, interface="autograd")
+        @qml.qnode(dev, interface=interface)
         def circuit(*params):
             """Circuit with dummy output to create a QNode."""
             ansatz(*params, dev.wires)
@@ -457,8 +488,11 @@ class TestAdjointMetricTensorTape:
         mt = qml.adjoint_metric_tensor(circuit, hybrid=False)(*j_params)
         assert qml.math.allclose(mt, expected)
 
+    interfaces = ["auto", "torch"]
+
     @pytest.mark.torch
-    def test_correct_output_tape_torch(self, ansatz, params):
+    @pytest.mark.parametrize("interface", interfaces)
+    def test_correct_output_tape_torch(self, ansatz, params, interface):
         """Test that the output is correct when using Torch and
         calling the adjoint metric tensor directly on a tape."""
 
@@ -468,7 +502,7 @@ class TestAdjointMetricTensorTape:
         t_params = tuple(torch.tensor(p, requires_grad=True) for p in params)
         dev = qml.device("default.qubit.torch", wires=self.num_wires)
 
-        @qml.qnode(dev, interface="torch")
+        @qml.qnode(dev, interface=interface)
         def circuit(*params):
             """Circuit with dummy output to create a QNode."""
             ansatz(*params, dev.wires)
@@ -482,8 +516,11 @@ class TestAdjointMetricTensorTape:
         mt = qml.adjoint_metric_tensor(circuit, hybrid=False)(*t_params)
         assert qml.math.allclose(mt, expected)
 
+    interfaces = ["auto", "tf"]
+
     @pytest.mark.tf
-    def test_correct_output_tape_tf(self, ansatz, params):
+    @pytest.mark.parametrize("interface", interfaces)
+    def test_correct_output_tape_tf(self, ansatz, params, interface):
         """Test that the output is correct when using TensorFlow and
         calling the adjoint metric tensor directly on a tape."""
 
@@ -493,7 +530,7 @@ class TestAdjointMetricTensorTape:
         t_params = tuple(tf.Variable(p) for p in params)
         dev = qml.device("default.qubit.tf", wires=self.num_wires)
 
-        @qml.qnode(dev, interface="tf")
+        @qml.qnode(dev, interface=interface)
         def circuit(*params):
             """Circuit with dummy output to create a QNode."""
             ansatz(*params, dev.wires)
@@ -517,16 +554,18 @@ class TestAdjointMetricTensorQNode:
     """
 
     num_wires = 3
+    interfaces = ["auto", "autograd"]
 
     @pytest.mark.autograd
     @pytest.mark.parametrize("ansatz, params", list(zip(fubini_ansatze, fubini_params)))
-    def test_correct_output_qnode_autograd(self, ansatz, params):
+    @pytest.mark.parametrize("interface", interfaces)
+    def test_correct_output_qnode_autograd(self, ansatz, params, interface):
         """Test that the output is correct when using Autograd and
         calling the adjoint metric tensor on a QNode."""
         expected = autodiff_metric_tensor(ansatz, self.num_wires)(*params)
         dev = qml.device("default.qubit", wires=self.num_wires)
 
-        @qml.qnode(dev, interface="autograd")
+        @qml.qnode(dev, interface=interface)
         def circuit(*params):
             """Circuit with dummy output to create a QNode."""
             ansatz(*params, dev.wires)
@@ -568,9 +607,12 @@ class TestAdjointMetricTensorQNode:
         else:
             assert qml.math.allclose(mt, expected)
 
+    interfaces = ["auto", "torch"]
+
     @pytest.mark.torch
     @pytest.mark.parametrize("ansatz, params", list(zip(fubini_ansatze, fubini_params)))
-    def test_correct_output_qnode_torch(self, ansatz, params):
+    @pytest.mark.parametrize("interface", interfaces)
+    def test_correct_output_qnode_torch(self, ansatz, params, interface):
         """Test that the output is correct when using Torch and
         calling the adjoint metric tensor on a QNode."""
 
@@ -578,9 +620,9 @@ class TestAdjointMetricTensorQNode:
 
         expected = autodiff_metric_tensor(ansatz, self.num_wires)(*params)
         t_params = tuple(torch.tensor(p, requires_grad=True, dtype=torch.float64) for p in params)
-        dev = qml.device("default.qubit", wires=self.num_wires)
+        dev = qml.device("default.qubit.torch", wires=self.num_wires)
 
-        @qml.qnode(dev, interface="torch")
+        @qml.qnode(dev, interface=interface)
         def circuit(*params):
             """Circuit with dummy output to create a QNode."""
             ansatz(*params, dev.wires)
@@ -593,9 +635,12 @@ class TestAdjointMetricTensorQNode:
         else:
             assert qml.math.allclose(mt, expected)
 
+    interfaces = ["auto", "tf"]
+
     @pytest.mark.tf
     @pytest.mark.parametrize("ansatz, params", list(zip(fubini_ansatze, fubini_params)))
-    def test_correct_output_qnode_tf(self, ansatz, params):
+    @pytest.mark.parametrize("interface", interfaces)
+    def test_correct_output_qnode_tf(self, ansatz, params, interface):
         """Test that the output is correct when using TensorFlow and
         calling the adjoint metric tensor on a QNode."""
 
@@ -605,7 +650,7 @@ class TestAdjointMetricTensorQNode:
         t_params = tuple(tf.Variable(p, dtype=tf.float64) for p in params)
         dev = qml.device("default.qubit", wires=self.num_wires)
 
-        @qml.qnode(dev, interface="tf")
+        @qml.qnode(dev, interface=interface)
         def circuit(*params):
             """Circuit with dummy output to create a QNode."""
             ansatz(*params, dev.wires)
@@ -630,7 +675,7 @@ class TestAdjointMetricTensorQNode:
         dev = qml.device("default.qubit", wires=self.num_wires)
         dev2 = qml.device("default.qubit.autograd", wires=self.num_wires)
 
-        @qml.qnode(dev, interface="autograd")
+        @qml.qnode(dev)
         def circuit(*params):
             """Circuit with dummy output to create a QNode."""
             ansatz(*params, dev.wires)

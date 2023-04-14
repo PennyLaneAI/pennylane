@@ -120,7 +120,6 @@ class TestLabels:
         drawn_labels = drawer.ax.texts
 
         for wire, expected_label, actual_label in zip(range(3), labels, drawn_labels):
-
             assert actual_label.get_text() == expected_label
 
             assert actual_label.get_position() == (-1.5, wire)
@@ -450,7 +449,6 @@ class TestCTRL:
         plt.close()
 
     def test_target_x_color(self):
-
         drawer = MPLDrawer(1, 3)
 
         rgba_red = (1, 0, 0, 1)

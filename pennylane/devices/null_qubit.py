@@ -22,6 +22,7 @@ from pennylane import QubitDevice
 from pennylane import numpy as np
 from .._version import __version__
 
+
 # pylint: disable=unused-argument, no-self-use
 class NullQubit(QubitDevice):
     """Null qubit device for PennyLane. This device performs no operations involved in numerical calculations.
@@ -48,6 +49,7 @@ class NullQubit(QubitDevice):
         "ControlledQubitUnitary",
         "MultiControlledX",
         "DiagonalQubitUnitary",
+        "SpecialUnitary",
         "PauliX",
         "PauliY",
         "PauliZ",
@@ -163,7 +165,7 @@ class NullQubit(QubitDevice):
         self._operation_calls[operation.base_name] += 1
 
         if operation.__class__.__name__ in self._apply_ops:
-            return self._apply_ops[operation.base_name](state, axes=None, inverse=operation.inverse)
+            return self._apply_ops[operation.base_name](state, axes=None)
 
         wires = operation.wires
         if operation in diagonal_in_z_basis:
@@ -278,7 +280,7 @@ class NullQubit(QubitDevice):
         return self._operation_calls
 
     def execute(self, circuit, **kwargs):
-        self.apply(circuit.operations, rotations=circuit.diagonalizing_gates, **kwargs)
+        self.apply(circuit.operations, rotations=self._get_diagonalizing_gates(circuit), **kwargs)
 
         if self.tracker.active:
             self.tracker.update(executions=1, shots=self._shots)

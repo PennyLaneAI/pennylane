@@ -1,4 +1,4 @@
-# Copyright 2018-2020 Xanadu Quantum Technologies Inc.
+# Copyright 2018-2023 Xanadu Quantum Technologies Inc.
 
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -11,9 +11,8 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""Unit tests for the counts module"""
+"""Tests for the qml.counts measurement process."""
 import copy
-
 import numpy as np
 import pytest
 
@@ -27,7 +26,7 @@ from pennylane.wires import Wires
 def custom_measurement_process(device, spy):
     assert len(spy.call_args_list) > 0  # make sure method is mocked properly
 
-    samples = device._samples
+    samples = device._samples  # pylint:disable=protected-access
     call_args_list = list(spy.call_args_list)
     for call_args in call_args_list:
         if not call_args.kwargs.get("counts", False):
@@ -63,55 +62,63 @@ class TestCounts:
 
     def test_queue(self):
         """Test that the right measurement class is queued."""
-        dev = qml.device("default.qubit", wires=2, shots=1000)
 
-        @qml.qnode(dev)
-        def circuit():
-            return qml.counts(wires=0)
+        with qml.queuing.AnnotatedQueue() as q:
+            op = qml.PauliX(0)
+            m = qml.counts(op)
 
-        circuit()
-
-        assert isinstance(circuit.tape[0], CountsMP)
+        assert q.queue[0] is m
+        assert isinstance(m, CountsMP)
 
     def test_copy(self):
         """Test that the ``__copy__`` method also copies the ``all_outcomes`` information."""
         meas = qml.counts(wires=0, all_outcomes=True)
         meas_copy = copy.copy(meas)
         assert meas_copy.wires == Wires(0)
-        assert meas_copy.all_outcomes == True
+        assert meas_copy.all_outcomes is True
 
     def test_providing_observable_and_wires(self):
         """Test that a ValueError is raised if both an observable is provided and wires are
         specified"""
-        dev = qml.device("default.qubit", wires=2)
-
-        @qml.qnode(dev)
-        def circuit():
-            qml.Hadamard(wires=0)
-            return qml.counts(qml.PauliZ(0), wires=[0, 1])
 
         with pytest.raises(
             ValueError,
             match="Cannot specify the wires to sample if an observable is provided."
             " The wires to sample will be determined directly from the observable.",
         ):
-            _ = circuit()
+            qml.counts(qml.PauliZ(0), wires=[0, 1])
 
-    def test_not_an_observable(self, mocker):
+    def test_observable_might_not_be_hermitian(self):
         """Test that a UserWarning is raised if the provided
         argument might not be hermitian."""
-        dev = qml.device("default.qubit", wires=2, shots=10)
-        spy = mocker.spy(qml.QubitDevice, "sample")
-
-        @qml.qnode(dev)
-        def circuit():
-            qml.RX(0.52, wires=0)
-            return qml.counts(qml.prod(qml.PauliX(0), qml.PauliZ(0)))
 
         with pytest.warns(UserWarning, match="Prod might not be hermitian."):
-            _ = circuit()
+            qml.counts(qml.prod(qml.PauliX(0), qml.PauliZ(0)))
 
-        custom_measurement_process(dev, spy)
+    def test_hash(self):
+        """Test that the hash property includes the all_outcomes property."""
+        m1 = qml.counts(all_outcomes=True)
+        m2 = qml.counts(all_outcomes=False)
+
+        assert m1.hash != m2.hash
+
+        m3 = CountsMP(eigvals=[0.5, -0.5], wires=qml.wires.Wires(0), all_outcomes=True)
+        assert m3.hash != m1.hash
+
+    def test_repr(self):
+        """Test that the repr includes the all_outcomes property."""
+        m1 = CountsMP(wires=Wires(0), all_outcomes=True)
+        assert repr(m1) == "CountsMP(wires=[0], all_outcomes=True)"
+
+        m2 = CountsMP(obs=qml.PauliX(0), all_outcomes=True)
+        assert repr(m2) == "CountsMP(PauliX(wires=[0]), all_outcomes=True)"
+
+        m3 = CountsMP(eigvals=(-1, 1), all_outcomes=False)
+        assert repr(m3) == "CountsMP(eigvals=[-1  1], wires=[], all_outcomes=False)"
+
+
+class TestCountsIntegration:
+    # pylint:disable=too-many-public-methods
 
     def test_counts_dimension(self, mocker):
         """Test that the counts function outputs counts of the right size"""
@@ -129,6 +136,26 @@ class TestCounts:
 
         assert len(sample) == 2
         assert np.all([sum(s.values()) == n_sample for s in sample])
+
+        custom_measurement_process(dev, spy)
+
+    def test_batched_counts_dimension(self, mocker):
+        """Test that the counts function outputs counts of the right size with batching"""
+        n_sample = 10
+
+        dev = qml.device("default.qubit", wires=2, shots=n_sample)
+        spy = mocker.spy(qml.QubitDevice, "sample")
+
+        @qml.qnode(dev)
+        def circuit():
+            qml.RX([0.54, 0.65], wires=0)
+            return qml.counts(qml.PauliZ(0)), qml.counts(qml.PauliX(1))
+
+        sample = circuit()
+
+        assert isinstance(sample, tuple)
+        assert len(sample) == 2
+        assert np.all([sum(s.values()) == n_sample for batch in sample for s in batch])
 
         custom_measurement_process(dev, spy)
 
@@ -202,11 +229,10 @@ class TestCounts:
 
         custom_measurement_process(dev, spy)
 
-    def test_observable_return_type_is_counts(self, mocker):
+    def test_observable_return_type_is_counts(self):
         """Test that the return type of the observable is :attr:`ObservableReturnTypes.Counts`"""
         n_shots = 10
         dev = qml.device("default.qubit", wires=1, shots=n_shots)
-        spy = mocker.spy(qml.QubitDevice, "sample")
 
         @qml.qnode(dev)
         def circuit():
@@ -253,6 +279,20 @@ class TestCounts:
 
         custom_measurement_process(dev, spy)
 
+    def test_batched_counts_work_individually(self, mocker):
+        """Test that each counts call operates independently"""
+        n_shots = 10
+        dev = qml.device("default.qubit", wires=1, shots=n_shots)
+        spy = mocker.spy(qml.QubitDevice, "sample")
+
+        @qml.qnode(dev)
+        def circuit():
+            qml.pow(qml.PauliX(0), z=[1, 2])
+            return qml.counts()
+
+        assert circuit() == [{"1": 10}, {"0": 10}]
+        custom_measurement_process(dev, spy)
+
     @pytest.mark.all_interfaces
     @pytest.mark.parametrize("wires, basis_state", [(None, "010"), ([2, 1], "01")])
     @pytest.mark.parametrize("interface", ["autograd", "jax", "tensorflow", "torch"])
@@ -295,7 +335,9 @@ class TestCounts:
     @pytest.mark.parametrize("shot_vec", [(1, 10, 10), (1, 10, 1000)])
     @pytest.mark.parametrize("wires, basis_state", [(None, "010"), ([2, 1], "01")])
     @pytest.mark.parametrize("interface", ["autograd", "jax", "tensorflow", "torch"])
-    def test_counts_binned(self, shot_vec, interface, wires, basis_state, mocker):
+    def test_counts_binned(
+        self, shot_vec, interface, wires, basis_state, mocker
+    ):  # pylint:disable=too-many-arguments
         """Check all interfaces with computational basis state counts and
         different shot vectors"""
         dev = qml.device("default.qubit", wires=3, shots=shot_vec)
@@ -404,20 +446,14 @@ class TestCounts:
     @pytest.mark.parametrize("interface", ["autograd", "jax", "tensorflow", "torch"])
     @pytest.mark.parametrize("meas2", meas2)
     @pytest.mark.parametrize("shots", [1000, (1, 10)])
-    @pytest.mark.filterwarnings("ignore:Creating an ndarray from ragged nested sequences")
     def test_counts_observable_finite_shots(self, interface, meas2, shots, mocker):
         """Check all interfaces with observable measurement counts and finite
         shot"""
-
-        if interface == "jax" and meas2.return_type in (
-            qml.measurements.Probability,
-            qml.measurements.Sample,
-        ):
-            reason = "Using the JAX interface, sample and probability measurements cannot be mixed with other measurement types."
-            pytest.skip(reason)
-
         dev = qml.device("default.qubit", wires=3, shots=shots)
         spy = mocker.spy(qml.QubitDevice, "sample")
+
+        if isinstance(shots, tuple) and interface == "torch":
+            pytest.skip("Torch needs to be updated for shot vectors.")
 
         @qml.qnode(dev, interface=interface)
         def circuit():
@@ -428,9 +464,18 @@ class TestCounts:
         assert isinstance(res, tuple)
 
         num_shot_bins = 1 if isinstance(shots, int) else len(shots)
-        counts_term_indices = [i * 2 for i in range(num_shot_bins)]
-        for ind in counts_term_indices:
-            assert isinstance(res[ind], dict)
+
+        if num_shot_bins == 1:
+            counts_term_indices = [i * 2 for i in range(num_shot_bins)]
+            for ind in counts_term_indices:
+                assert isinstance(res[ind], dict)
+        else:
+            assert len(res) == 2
+
+            assert isinstance(res[0], tuple)
+            assert isinstance(res[0][0], dict)
+            assert isinstance(res[1], tuple)
+            assert isinstance(res[1][0], dict)
 
         custom_measurement_process(dev, spy)
 
@@ -529,6 +574,21 @@ class TestCounts:
         assert res[2] == {"00": 10, "01": 0, "10": 0, "11": 0}
         custom_measurement_process(dev, spy)
 
+    def test_batched_all_outcomes(self, mocker):
+        """Tests that all_outcomes=True works with broadcasting."""
+        n_shots = 10
+        dev = qml.device("default.qubit", wires=1, shots=n_shots)
+        spy = mocker.spy(qml.QubitDevice, "sample")
+
+        @qml.qnode(dev)
+        def circuit():
+            qml.pow(qml.PauliX(0), z=[1, 2])
+            return qml.counts(qml.PauliZ(0), all_outcomes=True)
+
+        assert circuit() == [{1: 0, -1: n_shots}, {1: n_shots, -1: 0}]
+
+        custom_measurement_process(dev, spy)
+
     def test_counts_empty_wires(self):
         """Test that using ``qml.counts`` with an empty wire list raises an error."""
         with pytest.raises(ValueError, match="Cannot set an empty list of wires."):
@@ -546,3 +606,105 @@ class TestCounts:
         res = circuit()
 
         assert qml.math.allequal(res, {"000": shots})
+
+
+@pytest.mark.all_interfaces
+@pytest.mark.parametrize("wires, basis_state", [(None, "010"), ([2, 1], "01")])
+@pytest.mark.parametrize("interface", ["autograd", "jax", "tensorflow", "torch"])
+def test_counts_no_op_finite_shots(interface, wires, basis_state, mocker):
+    """Check all interfaces with computational basis state counts and finite shot"""
+    n_shots = 10
+    dev = qml.device("default.qubit", wires=3, shots=n_shots)
+    spy = mocker.spy(qml.QubitDevice, "sample")
+
+    @qml.qnode(dev, interface=interface)
+    def circuit():
+        qml.PauliX(1)
+        return qml.counts(wires=wires)
+
+    res = circuit()
+    assert res == {basis_state: n_shots}
+
+    custom_measurement_process(dev, spy)
+
+
+@pytest.mark.all_interfaces
+@pytest.mark.parametrize("wires, basis_states", [(None, ("010", "000")), ([2, 1], ("01", "00"))])
+@pytest.mark.parametrize("interface", ["autograd", "jax", "tensorflow", "torch"])
+def test_batched_counts_no_op_finite_shots(interface, wires, basis_states, mocker):
+    """Check all interfaces with computational basis state counts and
+    finite shot"""
+    n_shots = 10
+    dev = qml.device("default.qubit", wires=3, shots=n_shots)
+    spy = mocker.spy(qml.QubitDevice, "sample")
+
+    @qml.qnode(dev, interface=interface)
+    def circuit():
+        qml.pow(qml.PauliX(1), z=[1, 2])
+        return qml.counts(wires=wires)
+
+    assert circuit() == [{basis_state: n_shots} for basis_state in basis_states]
+
+    custom_measurement_process(dev, spy)
+
+
+@pytest.mark.all_interfaces
+@pytest.mark.parametrize("wires, basis_states", [(None, ("010", "000")), ([2, 1], ("01", "00"))])
+@pytest.mark.parametrize("interface", ["autograd", "jax", "tensorflow", "torch"])
+def test_batched_counts_and_expval_no_op_finite_shots(interface, wires, basis_states, mocker):
+    """Check all interfaces with computational basis state counts and
+    finite shot"""
+    n_shots = 10
+    dev = qml.device("default.qubit", wires=3, shots=n_shots)
+    spy = mocker.spy(qml.QubitDevice, "sample")
+
+    @qml.qnode(dev, interface=interface)
+    def circuit():
+        qml.pow(qml.PauliX(1), z=[1, 2])
+        return qml.counts(wires=wires), qml.expval(qml.PauliZ(0))
+
+    res = circuit()
+    assert isinstance(res, tuple) and len(res) == 2
+    assert res[0] == [{basis_state: n_shots} for basis_state in basis_states]
+    assert len(res[1]) == 2 and qml.math.allequal(res[1], 1)
+
+    custom_measurement_process(dev, spy)
+
+
+@pytest.mark.all_interfaces
+@pytest.mark.parametrize("interface", ["autograd", "jax", "tensorflow", "torch"])
+def test_batched_counts_operator_finite_shots(interface, mocker):
+    """Check all interfaces with observable measurement counts, batching and finite shots"""
+    n_shots = 10
+    dev = qml.device("default.qubit", wires=3, shots=n_shots)
+    spy = mocker.spy(qml.QubitDevice, "sample")
+
+    @qml.qnode(dev, interface=interface)
+    def circuit():
+        qml.pow(qml.PauliX(0), z=[1, 2])
+        return qml.counts(qml.PauliZ(0))
+
+    assert circuit() == [{-1: n_shots}, {1: n_shots}]
+
+    custom_measurement_process(dev, spy)
+
+
+@pytest.mark.all_interfaces
+@pytest.mark.parametrize("interface", ["autograd", "jax", "tensorflow", "torch"])
+def test_batched_counts_and_expval_operator_finite_shots(interface, mocker):
+    """Check all interfaces with observable measurement counts, batching and finite shots"""
+    n_shots = 10
+    dev = qml.device("default.qubit", wires=3, shots=n_shots)
+    spy = mocker.spy(qml.QubitDevice, "sample")
+
+    @qml.qnode(dev, interface=interface)
+    def circuit():
+        qml.pow(qml.PauliX(0), z=[1, 2])
+        return qml.counts(qml.PauliZ(0)), qml.expval(qml.PauliZ(0))
+
+    res = circuit()
+    assert isinstance(res, tuple) and len(res) == 2
+    assert res[0] == [{-1: n_shots}, {1: n_shots}]
+    assert len(res[1]) == 2 and qml.math.allequal(res[1], [-1, 1])
+
+    custom_measurement_process(dev, spy)

@@ -21,7 +21,6 @@ import warnings
 from collections.abc import Sequence
 
 import pennylane as qml
-from pennylane import numpy as np
 
 
 class ExpvalCost:
@@ -161,83 +160,70 @@ class ExpvalCost:
         if kwargs.get("measure", "expval") != "expval":
             raise ValueError("ExpvalCost can only be used to construct sums of expectation values.")
 
-        coeffs, observables = hamiltonian.terms()
+        if not callable(ansatz):
+            raise ValueError("Could not create QNodes. The template is not a callable function.")
 
         self.hamiltonian = hamiltonian
         """Hamiltonian: the input Hamiltonian."""
 
-        self.qnodes = None
-        """QNodeCollection: The QNodes to be evaluated. Each QNode corresponds to the expectation
-        value of each observable term after applying the circuit ansatz."""
-
         self._multiple_devices = isinstance(device, Sequence)
         """Bool: Records if multiple devices are input"""
 
-        if np.isclose(qml.math.toarray(qml.math.count_nonzero(coeffs)), 0):
-            self.cost_fn = lambda *args, **kwargs: np.array(0)
-            return
+        self.qnodes = []
+        """The QNodes to be evaluated."""
 
-        self._optimize = optimize
-
-        self.qnodes = qml.map(
-            ansatz, observables, device, interface=interface, diff_method=diff_method, **kwargs
-        )
-
-        if self._optimize:
-
+        if optimize:
             if self._multiple_devices:
                 raise ValueError("Using multiple devices is not supported when optimize=True")
 
-            obs_groupings, coeffs_groupings = qml.pauli.group_observables(observables, coeffs)
-            d = device[0] if self._multiple_devices else device
-            w = d.wires.tolist()
+            hamiltonian.compute_grouping()
 
             @qml.qnode(device, interface=interface, diff_method=diff_method, **kwargs)
-            def circuit(*qnode_args, obs, **qnode_kwargs):
-                """Converting ansatz into a full circuit including measurements"""
-                ansatz(*qnode_args, wires=w, **qnode_kwargs)
-                return [qml.expval(o) for o in obs]
+            def circuit(params, **circuit_kwargs):
+                ansatz(params, wires=device.wires, **circuit_kwargs)
+                return qml.expval(hamiltonian)
 
-            def cost_fn(*qnode_args, **qnode_kwargs):
-                """Combine results from grouped QNode executions with grouped coefficients"""
-                if device.shot_vector:
-                    shots_batch = sum(i[1] for i in device.shot_vector)
-
-                    total = [0] * shots_batch
-
-                    for o, c in zip(obs_groupings, coeffs_groupings):
-                        res = circuit(*qnode_args, obs=o, **qnode_kwargs)
-
-                        for i, batch_res in enumerate(res):
-                            total[i] += sum(batch_res * c)
-                else:
-                    total = 0
-                    for o, c in zip(obs_groupings, coeffs_groupings):
-                        res = circuit(*qnode_args, obs=o, **qnode_kwargs)
-                        total += sum(r * c_ for r, c_ in zip(res, c))
-                return total
-
-            self.cost_fn = cost_fn
+            self.qnodes.append(circuit)
+            self.cost_fn = self.qnodes[0]
 
         else:
-            self.cost_fn = qml.dot(coeffs, self.qnodes)
+            coeffs, observables = hamiltonian.terms()
+            if not self._multiple_devices:
+                device = [device] * len(coeffs)
+
+            for obs, dev in zip(observables, device):
+                wires = dev.wires
+
+                @qml.qnode(
+                    dev,  # pylint: disable=cell-var-from-loop
+                    interface=interface,
+                    diff_method=diff_method,
+                    **kwargs,
+                )
+                def circuit(params, _wires=wires, _obs=obs, **circuit_kwargs):
+                    ansatz(params, wires=_wires, **circuit_kwargs)
+                    return qml.expval(_obs)
+
+                self.qnodes.append(circuit)
+
+            if qml.active_return():
+
+                def cost_fn(*args, **kwargs):
+                    res = [q(*args, **kwargs) for q in self.qnodes]
+                    # pylint: disable=no-member
+                    res = [
+                        qml.math.stack(r)
+                        if isinstance(r, (tuple, qml.numpy.builtins.SequenceBox))
+                        else r
+                        for r in res
+                    ]
+                    return sum(c * q for c, q in zip(coeffs, res))
+
+                self.cost_fn = cost_fn
+            else:
+                self.cost_fn = lambda *args, **kwargs: sum(
+                    c * q(*args, **kwargs) for c, q in zip(coeffs, self.qnodes)
+                )
 
     def __call__(self, *args, **kwargs):
         return self.cost_fn(*args, **kwargs)
-
-
-class VQECost(ExpvalCost):
-    """Create a cost function that gives the expectation value of an input Hamiltonian.
-
-    .. warning::
-        Use of :class:`~.VQECost` is deprecated and should be replaced with
-        :class:`~.ExpvalCost`.
-    """
-
-    def __init__(self, *args, **kwargs):
-        warnings.warn(
-            "Use of VQECost is deprecated and should be replaced with ExpvalCost",
-            UserWarning,
-            2,
-        )
-        super().__init__(*args, **kwargs)

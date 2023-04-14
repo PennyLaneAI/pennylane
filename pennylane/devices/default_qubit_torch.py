@@ -155,7 +155,6 @@ class DefaultQubitTorch(DefaultQubit):
     _ndim = staticmethod(lambda tensor: tensor.ndim)
 
     def __init__(self, wires, *, shots=None, analytic=None, torch_device=None):
-
         # Store if the user specified a Torch device. Otherwise the execute
         # method attempts to infer the Torch device from the gate parameters.
         self._torch_device_specified = torch_device is not None
@@ -194,7 +193,6 @@ class DefaultQubitTorch(DefaultQubit):
         par_torch_device = None
         for op in ops:
             for data in op.data:
-
                 # Using hasattr in case we don't have a Torch tensor as input
                 if hasattr(data, "is_cuda"):
                     if data.is_cuda:  # pragma: no cover
@@ -224,7 +222,6 @@ class DefaultQubitTorch(DefaultQubit):
                 # Raise a warning if there's a mismatch between the specified and
                 # used Torch devices
                 if params_cuda_device != specified_device_cuda:
-
                     warnings.warn(
                         f"Torch device {self._torch_device} specified "
                         "upon PennyLane device creation does not match the "
@@ -257,7 +254,6 @@ class DefaultQubitTorch(DefaultQubit):
     @staticmethod
     def _dot(x, y):
         if x.device != y.device:
-
             # GPU-specific cases
             if x.device != "cpu":  # pragma: no cover
                 return torch.tensordot(x, y.to(x.device), dims=1)
@@ -280,7 +276,6 @@ class DefaultQubitTorch(DefaultQubit):
 
     @staticmethod
     def _scatter(indices, array, new_dimensions):
-
         # `array` is now a torch tensor
         tensor = array
         new_tensor = torch.zeros(new_dimensions, dtype=tensor.dtype, device=tensor.device)

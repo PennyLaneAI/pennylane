@@ -15,6 +15,14 @@ r"""
 This module contains the abstract base classes for defining PennyLane
 operations and observables.
 
+.. warning::
+
+    Unless you are a PennyLane or plugin developer, you likely do not need
+    to use these classes directly.
+
+    See the :doc:`main operations page <../introduction/operations>` for
+    details on available operations and observables.
+
 Description
 -----------
 
@@ -91,13 +99,123 @@ and :math:`\mathbf{r} = (\I, \x_0, \p_0, \x_1, \p_1, \ldots)` for multi-mode ope
 .. note::
     Non-Gaussian CV operations and observables are currently only supported via
     the finite-difference method of gradient computation.
+
+Contents
+--------
+
+.. currentmodule:: pennylane.operation
+
+Operator Types
+~~~~~~~~~~~~~~
+
+.. currentmodule:: pennylane.operation
+
+.. autosummary::
+    :toctree: api
+
+    ~Operator
+    ~Operation
+    ~Observable
+    ~CV
+    ~CVObservable
+    ~CVOperation
+    ~Channel
+    ~Tensor
+    ~StatePrep
+
+.. currentmodule:: pennylane.operation
+
+.. inheritance-diagram:: Operator Operation Observable Channel CV CVObservable CVOperation Tensor StatePrep
+    :parts: 1
+
+Errors
+~~~~~~
+
+When an :class:`~.Operator` method is undefined, it raises a error type that depends
+on the method that is undefined.
+
+.. currentmodule:: pennylane.operation
+
+.. autosummary::
+    :toctree: api
+
+    ~OperatorPropertyUndefined
+    ~AdjointUndefinedError
+    ~DecompositionUndefinedError
+    ~DiagGatesUndefinedError
+    ~EigvalsUndefinedError
+    ~GeneratorUndefinedError
+    ~MatrixUndefinedError
+    ~ParameterFrequenciesUndefinedError
+    ~PowUndefinedError
+    ~SparseMatrixUndefinedError
+    ~TermsUndefinedError
+
+Boolean Functions
+~~~~~~~~~~~~~~~~~
+
+:class:`~.BooleanFn`'s are functions of a single object that return ``True`` or ``False``.
+The ``operation`` module provides the following:
+
+.. currentmodule:: pennylane.operation
+
+.. autosummary::
+    :toctree: api
+
+    ~defines_diagonalizing_gates
+    ~gen_is_multi_term_hamiltonian
+    ~has_gen
+    ~has_grad_method
+    ~has_multipar
+    ~has_nopar
+    ~has_unitary_gen
+    ~is_measurement
+    ~is_trainable
+    ~not_tape
+
+Other
+~~~~~
+
+.. currentmodule:: pennylane.operation
+
+.. autosummary::
+    :toctree: api
+
+    ~operation_derivative
+    ~WiresEnum
+    ~AllWires
+    ~AnyWires
+
+Operation attributes
+~~~~~~~~~~~~~~~~~~~~
+
+PennyLane contains a mechanism for storing lists of operations with similar
+attributes and behaviour (for example, those that are their own inverses).
+The attributes below are already included, and are used primarily for the
+purpose of compilation transforms. New attributes can be added by instantiating
+new :class:`~pennylane.ops.qubit.attributes.Attribute` objects. Please note that
+these objects are located in ``pennylane.ops.qubit.attributes``, not ``pennylane.operation``.
+
+.. currentmodule:: pennylane
+
+.. autosummary::
+    :toctree: api
+
+    ~ops.qubit.attributes.Attribute
+    ~ops.qubit.attributes.composable_rotations
+    ~ops.qubit.attributes.diagonal_in_z_basis
+    ~ops.qubit.attributes.has_unitary_generator
+    ~ops.qubit.attributes.self_inverses
+    ~ops.qubit.attributes.supports_broadcasting
+    ~ops.qubit.attributes.symmetric_over_all_wires
+    ~ops.qubit.attributes.symmetric_over_control_wires
+
 """
 # pylint:disable=access-member-before-definition
 import abc
 import copy
 import functools
 import itertools
-import numbers
 import warnings
 from enum import IntEnum
 from typing import List
@@ -109,6 +227,7 @@ from scipy.sparse import coo_matrix, eye, kron
 import pennylane as qml
 from pennylane.math import expand_matrix
 from pennylane.queuing import QueuingManager
+from pennylane.typing import TensorLike
 from pennylane.wires import Wires
 
 from .utils import pauli_eigs
@@ -116,6 +235,8 @@ from .utils import pauli_eigs
 # =============================================================================
 # Errors
 # =============================================================================
+
+SUPPORTED_INTERFACES = {"numpy", "scipy", "autograd", "torch", "tensorflow", "jax"}
 
 
 class OperatorPropertyUndefined(Exception):
@@ -176,7 +297,7 @@ class WiresEnum(IntEnum):
     an operation acts on"""
 
     AnyWires = -1
-    AllWires = 0
+    AllWires = -2
 
 
 AllWires = WiresEnum.AllWires
@@ -234,7 +355,6 @@ def classproperty(func):
 
 
 def _process_data(op):
-
     # Use qml.math.real to take the real part. We may get complex inputs for
     # example when differentiating holomorphic functions with JAX: a complex
     # valued QNode (one that returns qml.state) requires complex typed inputs.
@@ -722,10 +842,8 @@ class Operator(abc.ABC):
         """
         raise TermsUndefinedError
 
-    @property
-    @abc.abstractmethod
-    def num_wires(self):
-        """Number of wires the operator acts on."""
+    num_wires = AnyWires
+    """Number of wires the operator acts on."""
 
     @property
     def name(self):
@@ -883,7 +1001,7 @@ class Operator(abc.ABC):
 
         self._check_batching(params)
 
-        self.data = list(params)  #: list[Any]: parameters of the operator
+        self.data = [np.array(p) if isinstance(p, list) else p for p in params]
 
         if do_queue:
             self.queue()
@@ -1148,6 +1266,15 @@ class Operator(abc.ABC):
             *self.parameters, wires=self.wires, **self.hyperparameters
         )
 
+    # pylint: disable=no-self-argument, comparison-with-callable
+    @classproperty
+    def has_generator(cls):
+        r"""Bool: Whether or not the Operator returns a defined generator.
+
+        Note: Child classes may have this as an instance property instead of as a class property.
+        """
+        return cls.generator != Operator.generator
+
     def generator(self):  # pylint: disable=no-self-use
         r"""Generator of an operator that is in single-parameter-form.
 
@@ -1242,12 +1369,7 @@ class Operator(abc.ABC):
         if not self.has_decomposition:
             raise DecompositionUndefinedError
 
-        decomp_fn = (
-            qml.adjoint(self.decomposition, lazy=False)
-            if getattr(self, "inverse", False)
-            else self.decomposition
-        )
-        qscript = qml.tape.make_qscript(decomp_fn)()
+        qscript = qml.tape.make_qscript(self.decomposition)()
 
         if not self.data:
             # original operation has no trainable parameters
@@ -1272,6 +1394,8 @@ class Operator(abc.ABC):
         """
         new_op = copy.copy(self)
         new_op._wires = Wires([wire_map.get(wire, wire) for wire in self.wires])
+        if (p_rep := new_op._pauli_rep) is not None:
+            new_op._pauli_rep = p_rep.map_wires(wire_map)
         return new_op
 
     def simplify(self) -> "Operator":  # pylint: disable=unused-argument
@@ -1285,26 +1409,28 @@ class Operator(abc.ABC):
     def __add__(self, other):
         """The addition operation of Operator-Operator objects and Operator-scalar."""
         if isinstance(other, Operator):
-            return qml.op_sum(self, other)
-        if other == 0:
-            return self
-        if isinstance(other, qml.ops.ParametrizedHamiltonian):  # pylint: disable=no-member
-            return other.__add__(self)
-        try:
-            return qml.op_sum(self, qml.s_prod(scalar=other, operator=qml.Identity(self.wires)))
-        except ValueError:
-            return NotImplemented
+            return qml.sum(self, other)
+        if isinstance(other, TensorLike):
+            if qml.math.allequal(other, 0):
+                return self
+            return qml.sum(self, qml.s_prod(scalar=other, operator=qml.Identity(self.wires)))
+        return NotImplemented
 
     __radd__ = __add__
 
     def __mul__(self, other):
         """The scalar multiplication between scalars and Operators."""
         if callable(other):
-            return qml.ops.ParametrizedHamiltonian([other], [self])  # pylint: disable=no-member
-        try:
+            return qml.pulse.ParametrizedHamiltonian([other], [self])
+        if isinstance(other, TensorLike):
             return qml.s_prod(scalar=other, operator=self)
-        except ValueError:
-            return NotImplemented
+        return NotImplemented
+
+    def __truediv__(self, other):
+        """The division between an Operator and a number."""
+        if isinstance(other, TensorLike):
+            return self.__mul__(1 / other)
+        return NotImplemented
 
     __rmul__ = __mul__
 
@@ -1314,8 +1440,8 @@ class Operator(abc.ABC):
 
     def __sub__(self, other):
         """The subtraction operation of Operator-Operator objects and Operator-scalar."""
-        if isinstance(other, (Operator, numbers.Number)):
-            return self + (-other)
+        if isinstance(other, (Operator, TensorLike)):
+            return self + (qml.math.multiply(-1, other))
         return NotImplemented
 
     def __rsub__(self, other):
@@ -1328,7 +1454,7 @@ class Operator(abc.ABC):
 
     def __pow__(self, other):
         r"""The power operation of an Operator object."""
-        if isinstance(other, numbers.Number):
+        if isinstance(other, TensorLike):
             return qml.pow(self, z=other)
         return NotImplemented
 
@@ -1407,7 +1533,7 @@ class Operation(Operator):
 
     # Attributes for compilation transforms
     basis = None
-    """str or None: The target operation for controlled gates.
+    """str or None: The basis of an operation, or for controlled gates, of the
     target operation. If not ``None``, should take a value of ``"X"``, ``"Y"``,
     or ``"Z"``.
 
@@ -1496,43 +1622,11 @@ class Operation(Operator):
         )
 
     @property
-    def inverse(self):
-        """Boolean determining if the inverse of the operation was requested."""
-        return False
-
-    def matrix(self, wire_order=None):
-        canonical_matrix = self.compute_matrix(*self.parameters, **self.hyperparameters)
-
-        if self.inverse:
-            canonical_matrix = qml.math.conj(qml.math.moveaxis(canonical_matrix, -2, -1))
-
-        return expand_matrix(canonical_matrix, wires=self.wires, wire_order=wire_order)
-
-    def eigvals(self):
-        op_eigvals = super().eigvals()
-
-        return qml.math.conj(op_eigvals) if self.inverse else op_eigvals
-
-    @property
     def base_name(self):
-        """If inverse is requested, this is the name of the original
-        operator to be inverted."""
+        """Holdover from when in-place inversion changed then name. To be removed."""
         return self.__class__.__name__
 
-    @property
-    def name(self):
-        """Name of the operator."""
-        return f"{self._name}.inv" if self.inverse else self._name
-
-    def label(self, decimals=None, base_label=None, cache=None):
-        if self.inverse:
-            base_label = base_label or self.__class__.__name__
-            base_label += "⁻¹"
-        return super().label(decimals=decimals, base_label=base_label, cache=cache)
-
     def __init__(self, *params, wires=None, do_queue=True, id=None):
-
-        self._inverse = False
         super().__init__(*params, wires=wires, do_queue=do_queue, id=id)
 
         # check the grad_recipe validity
@@ -1790,7 +1884,6 @@ class Tensor(Observable):
     has_matrix = True
 
     def __init__(self, *args):  # pylint: disable=super-init-not-called
-
         wires = [op.wires for op in args]
         if len(wires) != len(set(wires)):
             warnings.warn(
@@ -1802,6 +1895,7 @@ class Tensor(Observable):
         self.obs: List[Observable] = []
         self._args = args
         self._batch_size = None
+        self._pauli_rep = None
         self.queue(init=True)
 
     def label(self, decimals=None, base_label=None, cache=None):
@@ -1828,8 +1922,8 @@ class Tensor(Observable):
         if base_label is not None:
             if len(base_label) != len(self.obs):
                 raise ValueError(
-                    "Tensor label requires ``base_label`` keyword to be same length"
-                    " as tensor components."
+                    "Tensor label requires ``base_label`` keyword to be same length "
+                    "as tensor components."
                 )
             return "@".join(
                 ob.label(decimals=decimals, base_label=lbl) for ob, lbl in zip(self.obs, base_label)
@@ -1841,7 +1935,6 @@ class Tensor(Observable):
         constituents = self._args if init else self.obs
 
         for o in constituents:
-
             if init:
                 if isinstance(o, Tensor):
                     self.obs.extend(o.obs)
@@ -1912,6 +2005,28 @@ class Tensor(Observable):
             list[Any]: flattened list containing all dependent parameters
         """
         return sum((o.data for o in self.obs), [])
+
+    @data.setter
+    def data(self, new_data):
+        """Setter used to set the parameters of all constituent observables in the tensor product.
+
+        The ``new_data`` argument should contain a list of elements, where each element corresponds
+        to a list containing the parameters of each observable (in order). If an observable doesn't
+        have any parameter, an empty list must be used.
+
+        **Example:**
+
+        >>> op = qml.PauliX(0) @ qml.Hermitian(np.eye(2), wires=1)
+        >>> op.data
+        [array([[1., 0.],
+        [0., 1.]])]
+        >>> op.data = [[], [np.eye(2) * 5]]
+        >>> op.data
+        [array([[5., 0.],
+        [0., 5.]])]
+        """
+        for new_entry, op in zip(new_data, self.obs):
+            op.data = new_entry
 
     @property
     def num_params(self):
@@ -2544,6 +2659,27 @@ class CVObservable(CV, Observable):
         return self.heisenberg_expand(U, wire_order)
 
 
+class StatePrep(Operation):
+    """An interface for state-prep operations."""
+
+    grad_method = None
+    _queue_category = "_prep"
+
+    # pylint:disable=too-few-public-methods
+    @abc.abstractmethod
+    def state_vector(self, wire_order=None):
+        """
+        Returns the initial state vector for a circuit given a state preparation.
+
+        Args:
+            wire_order (Iterable): global wire order, must contain all wire labels
+                from the operator's wires
+
+        Returns:
+            array: A state vector for all wires in a circuit
+        """
+
+
 def operation_derivative(operation) -> np.ndarray:
     r"""Calculate the derivative of an operation.
 
@@ -2579,11 +2715,12 @@ def not_tape(obj):
 @qml.BooleanFn
 def has_gen(obj):
     """Returns ``True`` if an operator has a generator defined."""
+    if isinstance(obj, Operator):
+        return obj.has_generator
     try:
         obj.generator()
     except (AttributeError, OperatorPropertyUndefined, GeneratorUndefinedError):
         return False
-
     return True
 
 
@@ -2630,8 +2767,7 @@ def is_trainable(obj):
 
 @qml.BooleanFn
 def defines_diagonalizing_gates(obj):
-    """Returns ``True`` if an operator defines the diagonalizing
-    gates are defined.
+    """Returns ``True`` if an operator defines the diagonalizing gates.
 
     This helper function is useful if the property is to be checked in
     a queuing context, but the resulting gates must not be queued.

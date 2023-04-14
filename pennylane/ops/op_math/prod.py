@@ -61,6 +61,19 @@ def prod(*ops, do_queue=True, id=None, lazy=True):
     Returns:
         ~ops.op_math.Prod: the operator representing the product.
 
+    .. note::
+
+        This operator supports batched operands:
+
+        >>> op = qml.prod(qml.RX(np.array([1, 2, 3]), wires=0), qml.PauliX(1))
+        >>> op.matrix().shape
+        (3, 4, 4)
+
+        But it doesn't support batching of operators:
+
+        >>> op = qml.prod(np.array([qml.RX(0.5, 0), qml.RZ(0.3, 0)]), qml.PauliZ(0))
+        AttributeError: 'numpy.ndarray' object has no attribute 'wires'
+
     .. seealso:: :class:`~.ops.op_math.Prod`
 
     **Example**
@@ -99,17 +112,6 @@ class Prod(CompositeOp):
         do_queue (bool): determines if the product operator will be queued. Default is True.
         id (str or None): id for the product operator. Default is None.
 
-    .. note::
-
-        This operator supports batched operands:
-        >>> op = qml.prod(qml.RX(np.array([1, 2, 3]), wires=0), qml.PauliX(1))
-        >>> op.matrix().shape
-        (3, 4, 4)
-
-        But it doesn't support batching of operators:
-        >>> op = qml.prod(np.array([qml.RX(0.5, 0), qml.RZ(0.3, 0)]), qml.PauliZ(0))
-        AttributeError: 'numpy.ndarray' object has no attribute 'wires'
-
     .. seealso:: :func:`~.ops.op_math.prod`
 
     **Example**
@@ -125,8 +127,8 @@ class Prod(CompositeOp):
 
     .. note::
         When a Prod operator is applied in a circuit, its factors are applied in the reverse order.
-        (i.e ``Prod(op1, op2)`` corresponds to :math:`\hat{op}_{1}\dot\hat{op}_{2}` which indicates
-        first applying :math:`\hat{op}_{2}` then :math:`\hat{op}_{1}` in the circuit. We can see this
+        (i.e ``Prod(op1, op2)`` corresponds to :math:`\hat{op}_{1}\cdot\hat{op}_{2}` which indicates
+        first applying :math:`\hat{op}_{2}` then :math:`\hat{op}_{1}` in the circuit). We can see this
         in the decomposition of the operator.
 
     >>> op = Prod(qml.PauliX(wires=0), qml.PauliZ(wires=1))
@@ -245,8 +247,8 @@ class Prod(CompositeOp):
         r"""Decomposition of the product operator is given by each factor applied in succession.
 
         Note that the decomposition is the list of factors returned in reversed order. This is
-        to support the intuition that when we write $\hat{O} = \hat{A} \dot \hat{B}$ it is implied
-        that $\hat{B}$ is applied to the state before $\hat{A}$ in the quantum circuit.
+        to support the intuition that when we write :math:`\hat{O} = \hat{A} \cdot \hat{B}` it is implied
+        that :math:`\hat{B}` is applied to the state before :math:`\hat{A}` in the quantum circuit.
         """
         if qml.queuing.QueuingManager.recording():
             return [qml.apply(op) for op in self[::-1]]
@@ -351,6 +353,11 @@ class Prod(CompositeOp):
         return new_factors.global_phase, new_factors.factors
 
     def simplify(self) -> Union["Prod", Sum]:
+        # try using pauli_rep:
+        if pr := self._pauli_rep:
+            pr.simplify()
+            return pr.operation(wire_order=self.wires)
+
         global_phase, factors = self._simplify_factors(factors=self.operands)
 
         factors = list(itertools.product(*factors))
@@ -384,7 +391,6 @@ class Prod(CompositeOp):
             op_list = list(op_list)
 
         for i in range(1, len(op_list)):
-
             key_op = op_list[i]
 
             j = i - 1
@@ -416,7 +422,8 @@ def _swappable_ops(op1, op2, wire_map: dict = None) -> bool:
         wires2 = wires2.map(wire_map)
     wires1 = set(wires1)
     wires2 = set(wires2)
-    return False if wires1 & wires2 else wires1.pop() > wires2.pop()
+    # compare strings of wire labels so that we can compare arbitrary wire labels like 0 and "a"
+    return False if wires1 & wires2 else str(wires1.pop()) > str(wires2.pop())
 
 
 class _ProductFactorsGrouping:

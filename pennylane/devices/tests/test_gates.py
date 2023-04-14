@@ -65,6 +65,7 @@ ops = {
     "QubitStateVector": qml.QubitStateVector(np.array([1.0, 0.0]), wires=[0]),
     "QubitDensityMatrix": qml.QubitDensityMatrix(np.array([[0.5, 0.0], [0, 0.5]]), wires=[0]),
     "QubitUnitary": qml.QubitUnitary(np.eye(2), wires=[0]),
+    "SpecialUnitary": qml.SpecialUnitary(np.array([0.2, -0.1, 2.3]), wires=1),
     "ControlledQubitUnitary": qml.ControlledQubitUnitary(np.eye(2), control_wires=[1], wires=[0]),
     "MultiControlledX": qml.MultiControlledX(control_wires=[1, 2], wires=[0]),
     "IntegerComparator": qml.IntegerComparator(1, geq=True, wires=[0, 1, 2]),
@@ -334,8 +335,8 @@ U2 = np.array([[0, 1, 1, 1], [1, 0, 1, -1], [1, -1, 0, 1], [1, 1, -1, 0]]) / sqr
 # single qubit Hermitian observable
 A = np.array([[1.02789352, 1.61296440 - 0.3498192j], [1.61296440 + 0.3498192j, 1.23920938 + 0j]])
 
-
 # ===============================================================
+
 
 # pylint: disable=too-few-public-methods
 class TestSupportedGates:
@@ -533,6 +534,34 @@ class TestGatesQubit:
 
         res = circuit()
 
+        expected = np.abs(mat @ rnd_state) ** 2
+        assert np.allclose(res, expected, atol=tol(dev.shots))
+
+    @pytest.mark.parametrize("theta_", [np.array([0.4, -0.1, 0.2]), np.ones(15) / 3])
+    def test_special_unitary(self, device, init_state, theta_, tol, skip_if):
+        """Test SpecialUnitary gate."""
+        n_wires = int(np.log(len(theta_) + 1) / np.log(4))
+        dev = device(n_wires)
+
+        if "SpecialUnitary" not in dev.operations:
+            pytest.skip("Skipped because device does not support SpecialUnitary.")
+
+        skip_if(dev, {"returns_probs": False})
+
+        rnd_state = init_state(n_wires)
+
+        @qml.qnode(dev)
+        def circuit():
+            qml.QubitStateVector(rnd_state, wires=range(n_wires))
+            qml.SpecialUnitary(theta_, wires=list(range(n_wires)))
+            return qml.probs(wires=range(n_wires))
+
+        res = circuit()
+
+        # Disabling Pylint test because qml.ops can be misunderstood as qml.ops.qubit.ops
+        basis_fn = qml.ops.qubit.special_unitary.pauli_basis_matrices  # pylint: disable=no-member
+        basis = basis_fn(n_wires)
+        mat = qml.math.expm(1j * np.tensordot(theta_, basis, axes=[[0], [0]]))
         expected = np.abs(mat @ rnd_state) ** 2
         assert np.allclose(res, expected, atol=tol(dev.shots))
 

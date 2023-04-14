@@ -304,7 +304,7 @@ class TestInterfaces:
         weight = jnp.array(0.5)
         dev = qml.device("default.qubit", wires=4)
 
-        circuit = qml.QNode(circuit_template, dev, interface="jax")
+        circuit = qml.QNode(circuit_template, dev)
 
         circuit(weight)
         grad_fn = jax.grad(circuit)
@@ -321,7 +321,7 @@ class TestInterfaces:
         weight = tf.Variable(0.5)
         dev = qml.device("default.qubit", wires=4)
 
-        circuit = qml.QNode(circuit_template, dev, interface="tf")
+        circuit = qml.QNode(circuit_template, dev)
 
         circuit(weight)
 
@@ -341,7 +341,7 @@ class TestInterfaces:
 
         dev = qml.device("default.qubit", wires=4)
 
-        circuit = qml.QNode(circuit_template, dev, interface="torch")
+        circuit = qml.QNode(circuit_template, dev)
 
         circuit(weight)
 

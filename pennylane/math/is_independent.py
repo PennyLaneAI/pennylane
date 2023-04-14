@@ -201,7 +201,6 @@ def _get_random_args(args, interface, num, seed, bounds):
             tuple(rng.random(np.shape(arg)) * width + bounds[0] for arg in args) for _ in range(num)
         ]
         if interface == "autograd":
-
             # Mark the arguments as trainable with Autograd
             rnd_args = [tuple(pnp.array(a, requires_grad=True) for a in arg) for arg in rnd_args]
 
@@ -374,9 +373,9 @@ def is_independent(
 
     if interface == "torch":
         warnings.warn(
-            "The function is_independent is only available numerically for the PyTorch interface."
-            " Make sure that sampling positions and evaluating the function at these positions"
-            " is a sufficient test, or change the interface."
+            "The function is_independent is only available numerically for the PyTorch interface. "
+            "Make sure that sampling positions and evaluating the function at these positions "
+            "is a sufficient test, or change the interface."
         )
 
     return _is_indep_numerical(func, interface, args, kwargs, num_pos, seed, atol, rtol, bounds)

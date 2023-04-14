@@ -14,6 +14,7 @@
 """
 Unit tests for the Prod arithmetic class of qubit operations
 """
+# pylint:disable=protected-access
 import gate_data as gd  # a file containing matrix rep of each gate
 import numpy as np
 import pytest
@@ -106,7 +107,7 @@ def compare_and_expand_mat(mat1, mat2):
     return smaller_mat, larger_mat
 
 
-class MyOp(qml.RX):
+class MyOp(qml.RX):  # pylint:disable=too-few-public-methods
     """Variant of qml.RX that claims to not have `adjoint` or a matrix defined."""
 
     has_matrix = False
@@ -129,9 +130,21 @@ class TestInitialization:
         assert prod_op.id == id
         assert prod_op.queue_idx is None
 
-        assert prod_op.data == [[], [0.23]]
-        assert prod_op.parameters == [[], [0.23]]
+        assert prod_op.data == [0.23]
+        assert prod_op.parameters == [0.23]
         assert prod_op.num_params == 1
+
+    def test_hash(self):
+        """Testing some situations for the hash property."""
+        # same hash if different order but can be permuted to right order
+        op1 = qml.prod(qml.PauliX(0), qml.PauliY("a"))
+        op2 = qml.prod(qml.PauliY("a"), qml.PauliX(0))
+        assert op1.hash == op2.hash
+
+        # test not the same hash if different order and cant be exchanged to correct order
+        op3 = qml.prod(qml.PauliX("a"), qml.PauliY("a"), qml.PauliX(1))
+        op4 = qml.prod(qml.PauliY("a"), qml.PauliX("a"), qml.PauliX(1))
+        assert op3.hash != op4.hash
 
     @pytest.mark.parametrize("ops_lst", ops)
     def test_terms(self, ops_lst):
@@ -395,26 +408,25 @@ class TestMatrix:
         true_mat = math.kron(x, math.kron(h, z))
         assert np.allclose(mat, true_mat)
 
-    @staticmethod
-    def get_qft_mat(num_wires):
-        """Helper function to generate the matrix of a qft protocol."""
-        omega = math.exp(np.pi * 1.0j / 2 ** (num_wires - 1))
-        mat = math.zeros((2**num_wires, 2**num_wires), dtype="complex128")
-
-        for m in range(2**num_wires):
-            for n in range(2**num_wires):
-                mat[m, n] = omega ** (m * n)
-
-        return 1 / math.sqrt(2**num_wires) * mat
-
     def test_prod_templates(self):
         """Test that we can compose templates and the generated matrix is correct."""
+
+        def get_qft_mat(num_wires):
+            omega = math.exp(np.pi * 1.0j / 2 ** (num_wires - 1))
+            mat = math.zeros((2**num_wires, 2**num_wires), dtype="complex128")
+
+            for m in range(2**num_wires):
+                for n in range(2**num_wires):
+                    mat[m, n] = omega ** (m * n)
+
+            return 1 / math.sqrt(2**num_wires) * mat
+
         wires = [0, 1, 2]
         prod_op = Prod(qml.QFT(wires=wires), qml.GroverOperator(wires=wires), qml.PauliX(wires=0))
         mat = prod_op.matrix()
 
         grov_mat = (1 / 4) * math.ones((8, 8), dtype="complex128") - math.eye(8, dtype="complex128")
-        qft_mat = self.get_qft_mat(3)
+        qft_mat = get_qft_mat(3)
         x = math.array([[0.0 + 0j, 1.0 + 0j], [1.0 + 0j, 0.0 + 0j]])
         x_mat = math.kron(x, math.eye(4, dtype="complex128"))
 
@@ -566,7 +578,6 @@ class TestMatrix:
             @ qnp.kron(qnp.eye(2), gd.Rotx(theta))
             @ qnp.eye(4)
         )
-        true_mat = torch.tensor(true_mat)
         true_mat = torch.tensor(true_mat, dtype=torch.complex64)
 
         assert torch.allclose(mat, true_mat)
@@ -636,7 +647,7 @@ class TestMatrix:
         """Test that an error is raised when the sparse matrix method
         is undefined for any of the factors."""
 
-        class DummyOp(qml.operation.Operation):
+        class DummyOp(qml.operation.Operation):  # pylint:disable=too-few-public-methods
             num_wires = 1
 
             def sparse_matrix(self, wire_order=None):
@@ -651,10 +662,7 @@ class TestMatrix:
 class TestProperties:
     """Test class properties."""
 
-    @pytest.mark.parametrize(
-        "ops_lst, hermitian_status",
-        [(ops_tup, status) for ops_tup, status in zip(ops, ops_hermitian_status)],
-    )
+    @pytest.mark.parametrize("ops_lst, hermitian_status", list(zip(ops, ops_hermitian_status)))
     def test_is_hermitian(self, ops_lst, hermitian_status):
         """Test is_hermitian property updates correctly."""
         prod_op = prod(*ops_lst)
@@ -666,13 +674,13 @@ class TestProperties:
         import tensorflow as tf
 
         theta = tf.Variable(1.23)
-        ops = (
+        prod_ops = (
             prod(qml.RX(theta, wires=0), qml.RX(-theta, wires=0), qml.PauliZ(wires=1)),
             prod(qml.RX(theta, wires=0), qml.RX(-theta, wires=1), qml.PauliZ(wires=2)),
         )
         true_hermitian_states = (True, False)
 
-        for op, hermitian_state in zip(ops, true_hermitian_states):
+        for op, hermitian_state in zip(prod_ops, true_hermitian_states):
             assert qml.is_hermitian(op) == hermitian_state
 
     @pytest.mark.jax
@@ -681,13 +689,13 @@ class TestProperties:
         import jax.numpy as jnp
 
         theta = jnp.array(1.23)
-        ops = (
+        prod_ops = (
             prod(qml.RX(theta, wires=0), qml.RX(-theta, wires=0), qml.PauliZ(wires=1)),
             prod(qml.RX(theta, wires=0), qml.RX(-theta, wires=1), qml.PauliZ(wires=2)),
         )
         true_hermitian_states = (True, False)
 
-        for op, hermitian_state in zip(ops, true_hermitian_states):
+        for op, hermitian_state in zip(prod_ops, true_hermitian_states):
             assert qml.is_hermitian(op) == hermitian_state
 
     @pytest.mark.torch
@@ -696,13 +704,13 @@ class TestProperties:
         import torch
 
         theta = torch.tensor(1.23)
-        ops = (
+        prod_ops = (
             prod(qml.RX(theta, wires=0), qml.RX(-theta, wires=0), qml.PauliZ(wires=1)),
             prod(qml.RX(theta, wires=0), qml.RX(-theta, wires=1), qml.PauliZ(wires=2)),
         )
         true_hermitian_states = (True, False)
 
-        for op, hermitian_state in zip(ops, true_hermitian_states):
+        for op, hermitian_state in zip(prod_ops, true_hermitian_states):
             assert qml.is_hermitian(op) == hermitian_state
 
     @pytest.mark.parametrize("ops_lst", ops)
@@ -714,7 +722,7 @@ class TestProperties:
     def test_queue_category_none(self):
         """Test _queue_category property is None when any factor is not `_ops`."""
 
-        class DummyOp(Operator):
+        class DummyOp(Operator):  # pylint:disable=too-few-public-methods
             """Dummy op with None queue category"""
 
             _queue_category = None
@@ -863,7 +871,7 @@ class TestSimplify:
     def test_simplify_method_product_of_sums(self):
         """Test the simplify method with a product of sums."""
         prod_op = Prod(qml.PauliX(0) + qml.RX(1, 0), qml.PauliX(1) + qml.RX(1, 1), qml.Identity(3))
-        final_op = qml.op_sum(
+        final_op = qml.sum(
             Prod(qml.PauliX(0), qml.PauliX(1)),
             qml.PauliX(0) @ qml.RX(1, 1),
             qml.PauliX(1) @ qml.RX(1, 0),
@@ -909,7 +917,7 @@ class TestSimplify:
             qml.Identity(0),
         )
         mod_angle = -1 % (4 * np.pi)
-        final_op = qml.op_sum(
+        final_op = qml.sum(
             qml.Identity(0),
             5 * Prod(qml.PauliX(0), qml.RX(1, 1)),
             5 * Prod(qml.PauliX(0), qml.PauliX(1)),
@@ -924,7 +932,7 @@ class TestSimplify:
         assert isinstance(simplified_op, qml.ops.Sum)
         for s1, s2 in zip(final_op.operands, simplified_op.operands):
             assert s1.name == s2.name
-            assert s1.wires == s2.wires
+            assert s1.wires.toset() == s2.wires.toset()
             assert s1.data == s2.data
             assert s1.arithmetic_depth == s2.arithmetic_depth
 
@@ -948,9 +956,9 @@ class TestSimplify:
     def test_simplify_method_with_pauli_words(self):
         """Test that the simplify method groups pauli words."""
         prod_op = qml.prod(
-            qml.op_sum(qml.PauliX(0), qml.PauliX(1)), qml.PauliZ(1), qml.PauliX(0), qml.PauliY(1)
+            qml.sum(qml.PauliX(0), qml.PauliX(1)), qml.PauliZ(1), qml.PauliX(0), qml.PauliY(1)
         )
-        final_op = qml.op_sum(qml.s_prod(0 - 1j, qml.PauliX(1)), qml.s_prod(0 - 1j, qml.PauliX(0)))
+        final_op = qml.sum(qml.s_prod(0 - 1j, qml.PauliX(1)), qml.s_prod(0 - 1j, qml.PauliX(0)))
         simplified_op = prod_op.simplify()
 
         # TODO: Use qml.equal when supported for nested operators
@@ -1000,9 +1008,9 @@ class TestSimplify:
     def test_grouping_with_product_of_sum(self):
         """Test that grouping works with product of a sum"""
         prod_op = qml.prod(
-            qml.PauliX(0), qml.op_sum(qml.PauliY(0), qml.Identity(0)), qml.PauliZ(0), qml.PauliX(0)
+            qml.PauliX(0), qml.sum(qml.PauliY(0), qml.Identity(0)), qml.PauliZ(0), qml.PauliX(0)
         )
-        final_op = qml.op_sum(qml.s_prod(1j, qml.PauliX(0)), qml.s_prod(-1, qml.PauliZ(0)))
+        final_op = qml.sum(qml.s_prod(1j, qml.PauliX(0)), qml.s_prod(-1, qml.PauliZ(0)))
         simplified_op = prod_op.simplify()
 
         assert isinstance(simplified_op, qml.ops.Sum)
@@ -1015,7 +1023,7 @@ class TestSimplify:
     def test_grouping_with_product_of_sums(self):
         """Test that grouping works with product of two sums"""
         prod_op = qml.prod(qml.S(0) + qml.T(1), qml.S(0) + qml.T(1))
-        final_op = qml.op_sum(
+        final_op = qml.sum(
             qml.PauliZ(wires=[0]),
             2 * qml.prod(qml.S(wires=[0]), qml.T(wires=[1])),
             qml.S(wires=[1]),
@@ -1043,6 +1051,49 @@ class TestSimplify:
         """Test that grouping is implemented when an only-visual barrier is present."""
         prod_op = qml.prod(qml.S(0), qml.Barrier(0, only_visual=True), qml.S(0)).simplify()
         assert qml.equal(prod_op.simplify(), qml.PauliZ(0))
+
+    @pytest.mark.jax
+    def test_simplify_pauli_rep_jax(self):
+        """Test that simplifying operators with a valid pauli representation works with jax interface."""
+        import jax.numpy as jnp
+
+        c1, c2, c3 = jnp.array(1.23), jnp.array(2.0), jnp.array(2.46j)
+
+        op = prod(qml.s_prod(c1, qml.PauliX(0)), qml.s_prod(c2, prod(qml.PauliY(0), qml.PauliZ(1))))
+        result = qml.s_prod(c3, prod(qml.PauliZ(0), qml.PauliZ(1)))
+        simplified_op = op.simplify()
+
+        assert qml.equal(simplified_op, result)
+
+    @pytest.mark.tf
+    def test_simplify_pauli_rep_tf(self):
+        """Test that simplifying operators with a valid pauli representation works with tf interface."""
+        import tensorflow as tf
+
+        c1, c2, c3 = tf.Variable(1.23), tf.Variable(2.0), tf.Variable(2.46j)
+
+        op = prod(qml.s_prod(c1, qml.PauliX(0)), qml.s_prod(c2, prod(qml.PauliY(0), qml.PauliZ(1))))
+        result = qml.s_prod(c3, prod(qml.PauliZ(0), qml.PauliZ(1)))
+        simplified_op = op.simplify()
+
+        assert isinstance(simplified_op, type(result))
+        assert result.wires.toset() == simplified_op.wires.toset()
+        assert result.arithmetic_depth == simplified_op.arithmetic_depth
+        assert qnp.isclose(result.data[0], simplified_op.data[0])
+        assert result.data[1:] == simplified_op.data[1:]
+
+    @pytest.mark.torch
+    def test_simplify_pauli_rep_torch(self):
+        """Test that simplifying operators with a valid pauli representation works with torch interface."""
+        import torch
+
+        c1, c2, c3 = torch.tensor(1.23), torch.tensor(2.0), torch.tensor(2.46j)
+
+        op = prod(qml.s_prod(c1, qml.PauliX(0)), qml.s_prod(c2, prod(qml.PauliY(0), qml.PauliZ(1))))
+        result = qml.s_prod(c3, prod(qml.PauliZ(0), qml.PauliZ(1)))
+        simplified_op = op.simplify()
+
+        assert qml.equal(simplified_op, result)
 
 
 class TestWrapperFunc:
@@ -1201,7 +1252,7 @@ class TestIntegration:
     def test_operation_integration(self):
         """Test that a Product operation can be queued and executed in a circuit"""
         dev = qml.device("default.qubit", wires=3)
-        ops = (
+        operands = (
             qml.Hadamard(wires=0),
             qml.CNOT(wires=[0, 1]),
             qml.RX(1.23, wires=1),
@@ -1210,7 +1261,7 @@ class TestIntegration:
 
         @qml.qnode(dev)
         def prod_state_circ():
-            Prod(*ops)
+            Prod(*operands)
             return qml.state()
 
         @qml.qnode(dev)
@@ -1244,6 +1295,18 @@ class TestIntegration:
         res1 = batched_prod(x, y)
         res2 = batched_no_prod(x, y)
         assert qml.math.allclose(res1, res2)
+
+    def test_params_can_be_considered_trainable(self):
+        """Tests that the parameters of a Prod are considered trainable."""
+        dev = qml.device("default.qubit", wires=2)
+
+        @qml.qnode(dev)
+        def circuit():
+            return qml.expval(qml.prod(qml.RX(1.1, 0), qml.RY(qnp.array(2.2), 1)))
+
+        with pytest.warns(UserWarning):
+            circuit()
+        assert circuit.tape.trainable_params == [1]
 
 
 class TestSortWires:
