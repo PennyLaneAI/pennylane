@@ -232,11 +232,11 @@ class QuantumScript:
     @property
     def measured_wires(self) -> List[int]:
         """Returns the measured wires"""
-        wires = []
+        wires = Wires([])
 
         for m in self.measurements:
             if m.obs is not None:
-                wires.append(m.obs.wires)
+                wires = wires + m.obs.wires
 
         # Assumes a QuantumScript is not generally mutated. Otherwise, you might use
         # Wires.all_wires([*wires, self._measured_wires]) here to capture everything.
