@@ -127,6 +127,7 @@ def qsvt(A, angles, wires, convention=None):
         dim = c if idx % 2 else r
         projectors.append(PCPhase(phi, dim=dim, wires=wires, do_queue=False))
 
+    projectors = projectors[::-1]  # reverse order to match equation
     return QSVT(UA, projectors, wires=wires)
 
 
@@ -300,6 +301,41 @@ class QSVT(Operation):
             context.remove(op)
         context.append(self)
         return self
+
+    @staticmethod
+    def compute_matrix(*args, **kwargs):
+        r"""Representation of the operator as a canonical matrix in the computational basis (static method).
+
+        The canonical matrix is the textbook matrix representation that does not consider wires.
+        Implicitly, this assumes that the wires of the operator correspond to the global wire order.
+
+        .. seealso:: :meth:`~.Operator.matrix` and :func:`~.matrix`
+
+        Args:
+            params (list): trainable parameters of the operator, as stored in the ``parameters`` attribute
+            hyperparams (dict): non-trainable hyperparameters of the operator, as stored in the ``hyperparameters`` attribute
+
+        Returns:
+            tensor_like: matrix representation
+        """
+        op_list = []
+        UA = kwargs["UA"]
+        projectors = kwargs["projectors"]
+
+        with QueuingManager.stop_recording():  # incase this method is called in a queue context, this prevents
+            UA_copy = copy.copy(UA)  # us from queuing operators unnecessarily
+
+            for idx, op in enumerate(projectors[:-1]):
+                op_list.append(op)
+                if idx % 2 == 0:
+                    op_list.append(UA)
+                else:
+                    op_list.append(adjoint(UA_copy))
+
+            op_list.append(projectors[-1])
+            mat = qml.matrix(qml.prod(*tuple(op_list)))
+
+        return mat
 
 
 def _qsp_to_qsvt(angles):
