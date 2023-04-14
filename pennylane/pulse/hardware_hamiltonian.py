@@ -51,7 +51,7 @@ def drive(amplitude, phase, wires):
 
     Args:
         amplitude (Union[float, Callable]): float or callable returning the amplitude of an
-            electromagnetic field
+            electromagnetic field in angular frequency (rad/s)
         phase (Union[float, Callable]): float or callable returning the phase (in radians) of the electromagnetic field
         wires (Union[int, List[int]]): integer or list containing wire values for the qubits that
             the electromagnetic field acts on

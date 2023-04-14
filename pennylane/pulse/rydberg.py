@@ -22,7 +22,7 @@ from pennylane.wires import Wires
 
 
 def rydberg_interaction(
-    register: list, wires=None, interaction_coeff: float = 862690, max_distance: float = np.inf
+    register: list, wires=None, interaction_coeff: float = 5420000, max_distance: float = np.inf
 ):
     r"""Returns a :class:`ParametrizedHamiltonian` representing the interaction of an ensemble of
     Rydberg atoms due to the Rydberg blockade
@@ -39,7 +39,7 @@ def rydberg_interaction(
         V_{ij} = \frac{C_6}{R_{ij}^6}
 
     where :math:`R_{ij}` is the distance between the atoms :math:`i` and :math:`j`, and :math:`C_6`
-    is the Rydberg interaction constant, which defaults to :math:`862690 \text{MHz} \times \mu \text{m}^6`.
+    is the Rydberg interaction constant, which defaults to :math:`5420000 \text{1e6 rad/s} \times \mu \text{m}^6`.
     The unit of time for the evolution of this Rydberg interaction term is in :math:`\mu \text{s}`.
     This interaction term can be combined with laser drive terms (:func:`~.rydberg_drive`) to create
     a Hamiltonian describing a driven Rydberg atom system.
@@ -53,9 +53,9 @@ def rydberg_interaction(
         wires (list): List of wires containing the wire values for all the atoms. This list should
             have the same length as ``register``. If ``None``, each atom's wire value will
             correspond to its index in the ``register`` list.
-        interaction_coeff (float): Rydberg interaction constant in units: :math:`\text{MHz} \times \mu \text{m}^6`.
-            Defaults to :math:`862690 \text{ MHz} \times \mu \text{m}^6`. This value is based on an assumption that
-            frequencies and energies in the Hamiltonian are provided in units of MHz.
+        interaction_coeff (float): Rydberg interaction constant in units: :math:`\text{Mrad/s} \times \mu \text{m}^6`.
+            Defaults to :math:`5420000 \text{ M rad/s} \times \mu \text{m}^6`. This value is based on an assumption that
+            frequencies and energies in the Hamiltonian are provided in units of 1e6 rad/s.
         max_distance (float): Threshold for distance in :math:`\mu \text{m}` between two Rydberg atoms beyond which their
             contribution to the interaction term is removed from the Hamiltonian.
 
@@ -126,16 +126,16 @@ def rydberg_drive(amplitude, phase, detuning, wires):
     where :math:`\Omega`, :math:`\phi` and :math:`\delta` correspond to the amplitude, phase,
     and detuning of the laser, :math:`i` correspond to the wire index, and :math:`\sigma^\alpha` for
     :math:`\alpha = x,y,z` are the Pauli matrices. For hardware execution, time is expected to be in units
-    of :math:`\text{µs}`, and the frequency in units of :math:`\text{MHz}`. It is recommended to also follow
+    of :math:`\text{µs}`, and the frequency in units of :math:`\text{Mrad/s}`. It is recommended to also follow
     this convention for simulation, as it avoids numerical problems due to using very large and very small
     numbers. This driving term can be combined with an interaction term to create a Hamiltonian describing a
     driven Rydberg atom system. Multiple driving terms can be combined by summing them (see example).
 
     Args:
-        amplitude (Union[float, Callable]): float or callable returning the amplitude (in MHz) of a
+        amplitude (Union[float, Callable]): float or callable returning the amplitude (in Mrad/s) of a
             laser field
         phase (Union[float, Callable]): float or callable returning the phase (in radians) of the laser field
-        detuning (Union[float, Callable]): float or callable returning the detuning (in MHz) of a
+        detuning (Union[float, Callable]): float or callable returning the detuning (in Mrad/s) of a
             laser field
         wires (Union[int, List[int]]): integer or list containing wire values for the Rydberg atoms that
             the laser field acts on
