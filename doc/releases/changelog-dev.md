@@ -45,6 +45,10 @@
 
 <h3>Improvements</h3>
 
+* Added a new decomposition to `qml.SingleExcitation` that halves the number of
+  CNOTs required.
+  [(3976)](https://github.com/PennyLaneAI/pennylane/pull/3976)
+
 * The default gaussian device and parameter shift cv support the new return system but only for single measurement.
   [(3946)](https://github.com/PennyLaneAI/pennylane/pull/3946)
 
@@ -154,8 +158,9 @@
 * `retworkx` has been renamed to `rustworkx` to accomodate the change in name for the package.
   [(#3975)](https://github.com/PennyLaneAI/pennylane/pull/3975)
 
-* `Sum`, `Prod`, and `SProd` operator data is now a flat list, instead of nested.
+* `Exp`, `Sum`, `Prod`, and `SProd` operator data is now a flat list, instead of nested.
   [(#3958)](https://github.com/PennyLaneAI/pennylane/pull/3958)
+  [(#3983)](https://github.com/PennyLaneAI/pennylane/pull/3983)
 
 * `qml.transforms.convert_to_numpy_parameters` is added to convert a circuit with interface-specific parameters to one
   with only numpy parameters. This transform is designed to replace `qml.tape.Unwrap`.
@@ -191,8 +196,9 @@
   For example, you can no longer create `StateMP(qml.PauliX(0))` or `PurityMP(eigvals=(-1,1), wires=Wires(0))`.
   [(#3898)](https://github.com/PennyLaneAI/pennylane/pull/3898)
 
-* `Sum`, `Prod`, and `SProd` operator data is now a flat list, instead of nested.
+* `Exp`, `Sum`, `Prod`, and `SProd` operator data is now a flat list, instead of nested.
   [(#3958)](https://github.com/PennyLaneAI/pennylane/pull/3958)
+  [(#3983)](https://github.com/PennyLaneAI/pennylane/pull/3983)
 
 * `qml.ExpvalCost` has been removed.
   [(#3991)](https://github.com/PennyLaneAI/pennylane/pull/3991)
@@ -205,6 +211,9 @@
   [(#3844)](https://github.com/PennyLaneAI/pennylane/pull/3844)
 
 <h3>Bug fixes</h3>
+
+* Fixes a bug where the broadcast expand results where stacked along the wrong axis for the new return system.
+  [(#3984)](https://github.com/PennyLaneAI/pennylane/pull/3984)
 
 * Fixed a bug where calling `Evolution.generator` with `coeff` being a complex ArrayBox raised an error.
   [(#3796)](https://github.com/PennyLaneAI/pennylane/pull/3796)
@@ -280,6 +289,7 @@ This release contains contributions from (in alphabetical order):
 
 Komi Amiko
 Utkarsh Azad
+Olivia Di Matteo
 Lillian M. A. Frederiksen
 Soran Jahangiri
 Christina Lee

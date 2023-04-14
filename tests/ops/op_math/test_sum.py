@@ -1076,6 +1076,18 @@ class TestIntegration:
         with pytest.warns(UserWarning, match="Sum might not be hermitian."):
             my_circ()
 
+    def test_params_can_be_considered_trainable(self):
+        """Tests that the parameters of a Sum are considered trainable."""
+        dev = qml.device("default.qubit", wires=2)
+
+        @qml.qnode(dev)
+        def circuit():
+            return qml.expval(Sum(qml.RX(1.1, 0), qml.RY(qnp.array(2.2), 0)))
+
+        with pytest.warns(UserWarning):
+            circuit()
+        assert circuit.tape.trainable_params == [1]
+
 
 # pylint: disable=too-few-public-methods
 class TestArithmetic:
