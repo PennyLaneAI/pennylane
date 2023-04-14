@@ -39,7 +39,16 @@ except ImportError as e:
 
 class ParametrizedEvolution(Operation):
     r"""
-    ParametrizedEvolution(H, params=None, t=None, do_queue=True, id=None, **odeint_kwargs)
+    ParametrizedEvolution(
+        H,
+        params=None,
+        t=None,
+        return_intermediate=False,
+        complementary=False,
+        do_queue=True,
+        id=None,
+        **odeint_kwargs,
+    )
 
     Parametrized evolution gate, created by passing a :class:`~.ParametrizedHamiltonian` to the
     :func:`~.pennylane.evolve` function
@@ -75,14 +84,14 @@ class ParametrizedEvolution(Operation):
             from comparing a 4th and 5th order Runge-Kutta step in the Dopri5 algorithm. This error
             is guaranteed to stay below ``tol = atol + rtol * abs(y)`` through adaptive step size
             selection. Defaults to 1.4e-8.
-        mxstep (int, optional): maximum number of steps to take for each timepoint for the ODE solver. Defaults to
-            ``jnp.inf``.
+        mxstep (int, optional): maximum number of steps to take for each timepoint for the
+            ODE solver. Defaults to ``jnp.inf``.
         hmax (float, optional): maximum step size allowed for the ODE solver. Defaults to ``jnp.inf``.
         return_intermediate (bool): Whether or not the ``matrix`` method returns all intermediate
             solutions of the time evolution ODE at the times provided in ``t``. If ``False``
             (the default), only the matrix for the full time evolution is returned. If ``True``,
-            all solutions after :math:`U(t_0, t_0)=1` are returned; when used in a circuit, this
-            results in ``ParametrizedEvolution`` being a broadcasted operation.
+            all solutions including the initial condition :math:`U(t_0, t_0)=1` are returned; when
+            used in a circuit, this results in ``ParametrizedEvolution`` being a broadcasted operation.
         complementary (bool): Whether or not to compute the complementary time evolution when using
             ``return_intermediate=True`` (ignored otherwise).
             If ``False`` (the default), the usual solutions to the Schrodinger equation
@@ -275,11 +284,10 @@ class ParametrizedEvolution(Operation):
 
         .. math::
 
-            \{U(t_0, t_1), \dots, U(t_0, t_{P-1}), U(t_0, t_P)\}.
+            \{U(t_0, t_0), U(t_0, t_1), \dots, U(t_0, t_{P-1}), U(t_0, t_P)\}.
 
-        While standard ODE solvers also return the initial condition, i.e. :math:`U(t_0, t_0)`,
-        this value is skipped in the output of ``ParametrizedEvolution.matrix``. For a simple
-        time-dependent single-qubit Hamiltonian, this looks like the following:
+        The first entry here is the initial condition :math:`U(t_0, t_0)=1`. For a simple
+        time-dependent single-qubit Hamiltonian, this feature looks like the following:
 
         .. code-block:: python
 
@@ -294,10 +302,11 @@ class ParametrizedEvolution(Operation):
 
         >>> ev_mats = ev.matrix()
         >>> ev_mats.shape
-        (5, 2, 2)
+        (6, 2, 2)
+        #TODO: CHECK
 
-        Note that the broadcasting axis has length ``len(time) - 1`` because the initial
-        condition is skipped.
+        Note that the broadcasting axis has length ``len(time)`` and is the first axis of the
+        returned tensor.
 
         **Computing complementary time evolution**
 
@@ -309,31 +318,29 @@ class ParametrizedEvolution(Operation):
 
         .. math::
 
-            \{U(t_1, t_P), \dots, U(t_{P-1}, t_P)\}.
+            \{U(t_0, t_P), U(t_1, t_P), \dots, U(t_P, t_P)\}.
 
-        Note that this not only skips the last complementary evolution :math:`U(t_P, t_P)` but
-        also the full evolution :math:`U(t_0, t_P)` that could be expected as a first entry.
         Using the Hamiltonian from the example above:
 
         >>> complementary_ev = ev(param, time, return_intermediate=True, complementary=True)
         >>> comp_ev_mats = complementary_ev.matrix()
         >>> comp_ev_mats.shape
-        (4, 2, 2)
+        (6, 2, 2)
+        #TODO: CHECK
 
-        Note that now the broadcasting axis has size ``len(time) - 2`` because both
-        the full time evolution :math:`U(t_0, t_P)` and the identity :math:`U(t_P, t_P)`
-        are skipped.
+        If we multiply the matrices computed before with ``complementary=False`` with these
+        complementary evolution matrices from the left, we obtain the full time evolution,
+        which we can check by comparing to the last entry of ``ev_mats``:
 
-        For all but the last matrix in ``ev_mats``, there is a matrixin ``comp_ev_mats``
-        that complements it to the full time evolution, which in turn is stored in the
-        last matrix in ``ev_mats``:
-
-        >>> for mat, c_mat in zip(ev_mats[:-1], comp_ev_mats):
+        >>> for mat, c_mat in zip(ev_mats, comp_ev_mats):
         ...     print(qml.math.allclose(c_mat @ mat, ev_mats[-1]))
         True
         True
         True
         True
+        True
+        True
+        #TODO: CHECK
 
     """
 
@@ -365,14 +372,10 @@ class ParametrizedEvolution(Operation):
             self.t = None
         else:
             self.t = qml.math.array([0.0, t] if qml.math.ndim(t) == 0 else t, dtype=float)
-            if return_intermediate and len(self.t) == 2:
-                warnings.warn(
-                    "Setting return_intermediate=True does not have any effect if the time "
-                    "argument contains a duration or start and end points only."
-                )
         if complementary and not return_intermediate:
             warnings.warn(
-                "The keyword argument complementary does not have any effect if return_intermediate is set to False."
+                "The keyword argument complementary does not have any effect if "
+                "return_intermediate is set to False."
             )
         params = [] if params is None else params
         super().__init__(*params, wires=H.wires, do_queue=do_queue, id=id)
@@ -415,7 +418,7 @@ class ParametrizedEvolution(Operation):
             return
         # Subtract 1 because the identity is never returned by `matrix`. If `complementary=True`,
         # subtract and additional 1 because the full time evolution is not being returned.
-        self._batch_size = self.t.shape[0] - 1 - self.hyperparameters["complementary"]
+        self._batch_size = self.t.shape[0]
 
     # pylint: disable=arguments-renamed, invalid-overridden-method
     @property
@@ -446,15 +449,11 @@ class ParametrizedEvolution(Operation):
             return (-1j * H_jax(self.data, t=t)) @ y
 
         mat = odeint(fun, y0, self.t, **self.odeint_kwargs)
-        if self.hyperparameters["return_intermediate"]:
-            # Skip U(t_0, t_0) for both activated and deactivated `complementary`
-            #mat = mat[1:]
-            if self.hyperparameters["complementary"]:
-                # Compute U(t_0, t_P)@U(t_0, t_i)^\dagger, where i indexes the first axis of mat
-                # We skip the last entry of `mat`, because it would yield U(t_P, t_P)
-                mat = qml.math.tensordot(mat[-1], qml.math.conj(mat), axes=[[1], [-1]])
-                # The previous line leaves the axis indexing the t_i as second, so we move it up
-                mat = qml.math.moveaxis(mat, 1, 0)
-        else:
+        if self.hyperparameters["return_intermediate"] and self.hyperparameters["complementary"]:
+            # Compute U(t_0, t_P)@U(t_0, t_i)^\dagger, where i indexes the first axis of mat
+            mat = qml.math.tensordot(mat[-1], qml.math.conj(mat), axes=[[1], [-1]])
+            # The previous line leaves the axis indexing the t_i as second, so we move it up
+            mat = qml.math.moveaxis(mat, 1, 0)
+        elif not self.hyperparameters["return_intermediate"]:
             mat = mat[-1]
         return qml.math.expand_matrix(mat, wires=self.wires, wire_order=wire_order)

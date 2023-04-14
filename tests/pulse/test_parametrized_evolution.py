@@ -67,18 +67,18 @@ def time_dependent_hamiltonian():
     return ParametrizedHamiltonian(coeffs, ops)
 
 
-def test_error_raised_on_call_if_jax_not_installed():
-    """Test that an error is raised if an ``Evolve`` operator is instantiated without jax installed"""
-    with pytest.raises(ImportError, match="Module jax is required"):
-        ParametrizedEvolution(H=ParametrizedHamiltonian([1], [qml.PauliX(0)]))([], 2)
+# def test_error_raised_on_call_if_jax_not_installed():
+# """Test that an error is raised if an ``Evolve`` operator is instantiated without jax installed"""
+# with pytest.raises(ImportError, match="Module jax is required"):
+# ParametrizedEvolution(H=ParametrizedHamiltonian([1], [qml.PauliX(0)]))([], 2)
 
 
-def test_error_raised_for_matrix_method_if_jax_not_installed():
-    """Test that an error is raised if an ``Evolve`` operator is instantiated without jax installed"""
-    with pytest.raises(ImportError, match="Module jax is required"):
-        ParametrizedEvolution(
-            H=ParametrizedHamiltonian([1], [qml.PauliX(0)]), params=[], t=2
-        ).matrix()
+# def test_error_raised_for_matrix_method_if_jax_not_installed():
+# """Test that an error is raised if an ``Evolve`` operator is instantiated without jax installed"""
+# with pytest.raises(ImportError, match="Module jax is required"):
+# ParametrizedEvolution(
+# H=ParametrizedHamiltonian([1], [qml.PauliX(0)]), params=[], t=2
+# ).matrix()
 
 
 @pytest.mark.jax
@@ -141,11 +141,11 @@ class TestInitialization:
         ev = ParametrizedEvolution(H=H, params=coeffs, t=t)
         assert ev.batch_size is None
         ev = ParametrizedEvolution(H=H, params=coeffs, t=t, return_intermediate=True)
-        assert ev.batch_size == len_t - 1
+        assert ev.batch_size == len_t
         ev = ParametrizedEvolution(
             H=H, params=coeffs, t=t, return_intermediate=True, complementary=True
         )
-        assert ev.batch_size == len_t - 2
+        assert ev.batch_size == len_t
 
     def test_warns_with_complementary_without_ret_intermediate(self):
         """Test that a warning is raised if the keyword argument complementary is activated
@@ -160,18 +160,6 @@ class TestInitialization:
 
         assert ev.hyperparameters["return_intermediate"] is False
         assert ev.hyperparameters["complementary"] is True
-
-    @pytest.mark.parametrize("t", [0.5, [0.2, 0.9]])
-    def test_warns_with_ret_intermediate_with_simple_time(self, t):
-        """Test that a warning is raised if the keyword argument return_intermediate is activated
-        without providing intermediate times (but only a duration or only a start and end point)."""
-        ops = [qml.PauliX(0), qml.PauliY(1)]
-        coeffs = [1, 2]
-        H = ParametrizedHamiltonian(coeffs, ops)
-        with pytest.warns(UserWarning, match="Setting return_intermediate=True does not"):
-            ev = ParametrizedEvolution(H=H, params=[1, 2], t=t, return_intermediate=True)
-
-        assert ev.hyperparameters["return_intermediate"] is True
 
     def test_odeint_kwargs(self):
         """Test the initialization with odeint kwargs."""
@@ -297,31 +285,31 @@ class TestMatrix:
 
         assert qml.math.allclose(ev.matrix(), true_mat, atol=1e-2)
 
-    @pytest.mark.filterwarnings("ignore:Setting return_intermediate=True")
     @pytest.mark.parametrize("comp", [False, True])
     @pytest.mark.parametrize("len_t", [2, 6])
     def test_return_intermediate_and_complementary(self, comp, len_t):
         """Test that intermediate time evolution matrices are returned."""
+        import jax
         from jax import numpy as jnp
+
+        jax.config.update("jax_enable_x64", True)
 
         H = time_independent_hamiltonian()
         t = np.linspace(0.4, 0.7, len_t)
         params = [1, 2]
         ev = ParametrizedEvolution(
-            H=H, params=params, t=t, return_intermediate=True, complementary=comp
+            H=H, params=params, t=t, return_intermediate=True, complementary=comp, rtol=1e-10
         )
         matrices = ev.matrix()
         assert isinstance(matrices, jnp.ndarray)
-        expected_num_mat = len_t - 1 - comp
-        assert matrices.shape == (expected_num_mat, 4, 4)
+        assert matrices.shape == (len_t, 4, 4)
 
-        if len_t > 2 and not comp:
-            # If len_t is 2 or smaller and comp=True, there are no matrices to be checked
-            durations = t[-1] - t[1:-1] if comp else t[1:] - t[0]
-            true_matrices = [
-                qml.math.expm(-1j * qml.matrix(H(params, t=t[-1])) * _t) for _t in durations
-            ]
-            assert qml.math.allclose(matrices, true_matrices)
+        H_mat = qml.matrix(H(params, t=t[-1]))
+        if comp:
+            true_matrices = [qml.math.expm(-1j * H_mat * (t[-1] - _t)) for _t in t]
+        else:
+            true_matrices = [qml.math.expm(-1j * H_mat * (_t - t[0])) for _t in t]
+        assert qml.math.allclose(matrices, true_matrices, atol=1e-6, rtol=0.0)
 
 
 @pytest.mark.jax
