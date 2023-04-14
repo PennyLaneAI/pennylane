@@ -80,7 +80,13 @@ def split_evol_ops(op, word, word_wires, key, num_split_times=1):
         op(op.data, before_t, return_intermediate=broadcast, **op.odeint_kwargs) for _ in range(2)
     )
     after_plus, after_minus = (
-        op(op.data, after_t, return_intermediate=broadcast, complementary=broadcast, **op.odeint_kwargs)
+        op(
+            op.data,
+            after_t,
+            return_intermediate=broadcast,
+            complementary=broadcast,
+            **op.odeint_kwargs,
+        )
         for _ in range(2)
     )
     # Create Pauli rotations to be inserted at tau
@@ -136,12 +142,14 @@ def _parshift_and_integrate(
     """
 
     if use_broadcasting:
+
         def _diff_and_contract(res_list, cjacs, int_prefactor):
             # This one will not work yet with tuples.
             diff = qml.math.stack(res_list)[0, 1:-1] - qml.math.stack(res_list)[1, 1:-1]
             return qml.math.tensordot(diff, cjacs, axes=[[0], [0]]) * int_prefactor
 
     else:
+
         def _diff_and_contract(res_list, cjacs, int_prefactor):
             diff = qml.math.stack(res_list)[::2] - qml.math.stack(res_list)[1::2]
             return qml.math.tensordot(diff, cjacs, axes=[[0], [0]]) * int_prefactor
