@@ -167,7 +167,7 @@ def get_variable(interface, wire_specs, complex=False):
         # complex dtype is required for TF when the gradients have non-zero
         # imaginary parts, otherwise they will be ignored
         return tf.Variable(
-            [0.1] * num_wires, trainable=True, dtype=np.complex64 if complex else None
+            [0.1] * num_wires, trainable=True, dtype=tf.complex128 if complex else tf.float64
         )
     elif interface == "torch":
         # complex dtype is required for torch when the gradients have non-zero
@@ -232,13 +232,13 @@ def compute_gradient(x, interface, circuit, return_type, complex=False):
         else:
             return jax.jacrev(cost_fn, holomorphic=complex)(x)
     elif interface == "tf":
-        with tf.GradientTape() as tape:
+        with tf.GradientTape(persistent=True) as tape:
             out = cost_fn(x)
 
         if return_type in grad_return_cases:
             return tape.gradient(out, [x])
         else:
-            return tape.jacobian(out, [x])
+            return tape.jacobian(out, [x], experimental_use_pfor=False)
     elif interface == "torch":
         if return_type in grad_return_cases:
             res = cost_fn(x)
