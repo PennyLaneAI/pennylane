@@ -40,19 +40,10 @@ except ImportError as e:
 
 class ParametrizedEvolution(Operation):
     r"""
-    ParametrizedEvolution(
-        H,
-        params=None,
-        t=None,
-        return_intermediate=False,
-        complementary=False,
-        do_queue=True,
-        id=None,
-        **odeint_kwargs,
-    )
+    ParametrizedEvolution(H, params=None, t=None, return_intermediate=False, complementary=False, do_queue=True, id=None, **odeint_kwargs)
 
-    Parametrized evolution gate, created by passing a :class:`~.ParametrizedHamiltonian` to the
-    :func:`~.pennylane.evolve` function
+    Parametrized evolution gate, created by passing a :class:`~.ParametrizedHamiltonian` to
+    the :func:`~.pennylane.evolve` function
 
     For a time-dependent Hamiltonian of the form
 
@@ -306,7 +297,6 @@ class ParametrizedEvolution(Operation):
         >>> ev_mats = ev.matrix()
         >>> ev_mats.shape
         (6, 2, 2)
-        #TODO: CHECK
 
         Note that the broadcasting axis has length ``len(time)`` and is the first axis of the
         returned tensor.
@@ -329,7 +319,6 @@ class ParametrizedEvolution(Operation):
         >>> comp_ev_mats = complementary_ev.matrix()
         >>> comp_ev_mats.shape
         (6, 2, 2)
-        #TODO: CHECK
 
         If we multiply the matrices computed before with ``complementary=False`` with these
         complementary evolution matrices from the left, we obtain the full time evolution,
@@ -343,7 +332,6 @@ class ParametrizedEvolution(Operation):
         True
         True
         True
-        #TODO: CHECK
 
     """
 
