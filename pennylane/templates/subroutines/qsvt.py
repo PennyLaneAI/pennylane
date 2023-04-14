@@ -71,7 +71,14 @@ def qsvt(A, angles, wires, convention=None):
             \end{bmatrix}.
         \end{align}
 
-    The polynomial transformation is determined by the choice of angles, :math:`\vec{\phi}`.
+    The polynomial transformation is determined by a combination of the block encoding and choice of angles,
+    :math:`\vec{\phi}`. The convention used by :class:`~.BlockEncode` is commonly refered to as the
+    reflection convention or :math:`R` convention. Another equivalent convention for the blockencoding is
+    the :math:`Wx` or rotation convention.
+
+    Depending on the choice of convention for blockencoding, the same phase angles will produce different
+    polynomial transformations. We provide the functionality to swap between blockencoding conventions and
+    to transform the phase angles accordingly using the :code:`convention` keyword argument.
 
     .. seealso::
 
@@ -104,8 +111,9 @@ def qsvt(A, angles, wires, convention=None):
 
     To see the implementation details, we can expand the circuit:
 
-    >>> print(qml.draw(example_circuit, expansion_strategy="device")(A))
-    0: ─╭∏_ϕ(0.10)─╭BlockEncode(M0)─╭∏_ϕ(0.20)─╭BlockEncode(M0)†─╭∏_ϕ(0.30)─┤  <Z>
+    >>> q_script = qml.tape.QuantumScript(ops=[qml.qsvt(A, angles, wires=[0, 1])])
+    >>> print(q_script.expand().draw(decimals=2))
+    0: ─╭∏_ϕ(0.10)─╭BlockEncode(M0)─╭∏_ϕ(0.20)─╭BlockEncode(M0)†─╭∏_ϕ(0.30)─┤
     1: ─╰∏_ϕ(0.10)─╰BlockEncode(M0)─╰∏_ϕ(0.20)─╰BlockEncode(M0)†─╰∏_ϕ(0.30)─┤
     """
     if qml.math.shape(A) == () or qml.math.shape(A) == (1,):
