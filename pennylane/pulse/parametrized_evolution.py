@@ -294,7 +294,6 @@ class ParametrizedEvolution(Operation):
         >>> ev_mats = ev.matrix()
         >>> ev_mats.shape
         (6, 2, 2)
-        #TODO: CHECK
 
         Note that the broadcasting axis has length ``len(time)`` and is the first axis of the
         returned tensor.
@@ -317,7 +316,6 @@ class ParametrizedEvolution(Operation):
         >>> comp_ev_mats = complementary_ev.matrix()
         >>> comp_ev_mats.shape
         (6, 2, 2)
-        #TODO: CHECK
 
         If we multiply the matrices computed before with ``complementary=False`` with these
         complementary evolution matrices from the left, we obtain the full time evolution,
@@ -331,7 +329,6 @@ class ParametrizedEvolution(Operation):
         True
         True
         True
-        #TODO: CHECK
 
     """
 
