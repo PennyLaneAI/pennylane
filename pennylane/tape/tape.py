@@ -77,10 +77,10 @@ def _validate_computational_basis_sampling(measurements):
                 raise qml.QuantumFunctionError(_err_msg_for_some_meas_not_qwc(measurements))
 
 
-def get_ops_with_rotations_and_measurements(tape):
+def rotations_and_diagonal_measurements(tape):
     """Compute the rotations for overlapping observables, and return them along with the diagonalized observables."""
     if not tape._obs_sharing_wires:
-        return tape._ops, tape._measurements
+        return [], tape._measurements
 
     with QueuingManager.stop_recording():  # stop recording operations to active context when computing qwc groupings
         try:
@@ -97,14 +97,13 @@ def get_ops_with_rotations_and_measurements(tape):
 
             raise qml.QuantumFunctionError(_err_msg_for_some_meas_not_qwc(tape.measurements)) from e
 
-        ops = tape._ops + rotations
         measurements = copy.copy(tape._measurements)
 
         for o, i in zip(diag_obs, tape._obs_sharing_wires_id):
             new_m = tape.measurements[i].__class__(obs=o)
             measurements[i] = new_m
 
-    return ops, measurements
+    return rotations, measurements
 
 
 # TODO: move this function to its own file and rename
@@ -179,11 +178,11 @@ def expand_tape(tape, depth=1, stop_at=None, expand_measurements=False):
     if tape.samples_computational_basis and len(tape.measurements) > 1:
         _validate_computational_basis_sampling(tape.measurements)
 
-    tape_ops, tape_measurements = get_ops_with_rotations_and_measurements(tape)
+    diagonalizing_gates, diagonal_measurements = rotations_and_diagonal_measurements(tape)
     for queue, new_queue in [
         (tape._prep, new_prep),
-        (tape_ops, new_ops),
-        (tape_measurements, new_measurements),
+        (tape._ops + diagonalizing_gates, new_ops),
+        (diagonal_measurements, new_measurements),
     ]:
         for obj in queue:
             stop = stop_at(obj)
