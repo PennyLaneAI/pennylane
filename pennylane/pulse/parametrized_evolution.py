@@ -19,6 +19,7 @@ This file contains the ``ParametrizedEvolution`` operator.
 """
 
 from typing import List, Union
+import warnings
 
 import pennylane as qml
 from pennylane.operation import AnyWires, Operation
@@ -39,7 +40,16 @@ except ImportError as e:
 
 class ParametrizedEvolution(Operation):
     r"""
-    ParametrizedEvolution(H, params=None, t=None, do_queue=True, id=None, **odeint_kwargs)
+    ParametrizedEvolution(
+        H,
+        params=None,
+        t=None,
+        return_intermediate=False,
+        complementary=False,
+        do_queue=True,
+        id=None,
+        **odeint_kwargs,
+    )
 
     Parametrized evolution gate, created by passing a :class:`~.ParametrizedHamiltonian` to the
     :func:`~.pennylane.evolve` function
@@ -48,7 +58,7 @@ class ParametrizedEvolution(Operation):
 
     .. math:: H(\{v_j\}, t) = H_\text{drift} + \sum_j f_j(v_j, t) H_j
 
-    it implements the corresponding time-evolution operator :math:`U(t_1, t_2)`, which is the
+    it implements the corresponding time-evolution operator :math:`U(t_0, t_1)`, which is the
     solution to the time-dependent Schrodinger equation.
 
     .. math:: \frac{d}{dt}U(t) = -i H(\{v_j\}, t) U(t).
@@ -62,8 +72,9 @@ class ParametrizedEvolution(Operation):
             the parameters of a scalar-valued function of the Hamiltonian being evolved.
         t (Union[float, List[float]]): If a float, it corresponds to the duration of the evolution.
             If a list of floats, the ODE solver will use all the provided time values, and
-            perform intermediate steps if necessary. It is recommended to just provide a start and end time.
-            Note that such absolute times only have meaning within an instance of
+            perform intermediate steps if necessary. It is recommended to just provide a start
+            and end time unless matrices of the time evolution at intermediate times needs
+            to be computed. Note that such absolute times only have meaning within an instance of
             ``ParametrizedEvolution`` and will not affect other gates.
             # TODO
         do_queue (bool): determines if the scalar product operator will be queued. Default is True.
@@ -75,9 +86,21 @@ class ParametrizedEvolution(Operation):
             from comparing a 4th and 5th order Runge-Kutta step in the Dopri5 algorithm. This error
             is guaranteed to stay below ``tol = atol + rtol * abs(y)`` through adaptive step size
             selection. Defaults to 1.4e-8.
-        mxstep (int, optional): maximum number of steps to take for each timepoint for the ODE solver. Defaults to
-            ``jnp.inf``.
+        mxstep (int, optional): maximum number of steps to take for each timepoint for the
+            ODE solver. Defaults to ``jnp.inf``.
         hmax (float, optional): maximum step size allowed for the ODE solver. Defaults to ``jnp.inf``.
+        return_intermediate (bool): Whether or not the ``matrix`` method returns all intermediate
+            solutions of the time evolution ODE at the times provided in ``t``. If ``False``
+            (the default), only the matrix for the full time evolution is returned. If ``True``,
+            all solutions including the initial condition :math:`U(t_0, t_0)=1` are returned; when
+            used in a circuit, this results in ``ParametrizedEvolution`` being a broadcasted operation.
+        complementary (bool): Whether or not to compute the complementary time evolution when using
+            ``return_intermediate=True`` (ignored otherwise).
+            If ``False`` (the default), the usual solutions to the Schrodinger equation
+            :math:`\{U(t_0, t_0), U(t_0, t_1),\dots, U(t_0, t_P)\}` are computed,
+            where :math:`t_i` are the additional times provided in ``t``.
+            If ``True``, the *remaining* time evolution to :math:`t_P` is computed instead, returning
+            :math:`\{U(t_0, t_P), U(t_1, t_P),\dots, U(t_{P-1}, t_P), U(t_P, t_P)\}`.
 
     .. warning::
         The :class:`~.ParametrizedHamiltonian` must be Hermitian at all times. This is not explicitly checked
@@ -144,6 +167,11 @@ class ParametrizedEvolution(Operation):
         operators are executed simultaneously, but rather that both evaluate their respective
         scalar-valued functions using the same time window. See Usage Details.
 
+    .. note::
+
+        Using ``return_intermediate`` in a quantum circuit leads to broadcasted execution,
+        which can lead to unintended additional computational cost.
+        Also consider the usage details below.
 
     .. details::
         :title: Usage Details
@@ -248,6 +276,74 @@ class ParametrizedEvolution(Operation):
             -0.52277344], dtype=float32)
 
         Given that we used the same time window (``[0, 10]``), the results are the same as before.
+
+        **Computing intermediate time evolution**
+
+        As discussed above, the ODE solver will evaluate the Schrodinger equation at
+        intermediate times in any case. By passing additional time values explicitly in the time
+        window ``t`` and setting ``return_intermediate=True``, the ``matrix`` method will
+        return the matrices for the intermediate time evolutions as well:
+
+        .. math::
+
+            \{U(t_0, t_0), U(t_0, t_1), \dots, U(t_0, t_{P-1}), U(t_0, t_P)\}.
+
+        The first entry here is the initial condition :math:`U(t_0, t_0)=1`. For a simple
+        time-dependent single-qubit Hamiltonian, this feature looks like the following:
+
+        .. code-block:: python
+
+            ops = [qml.PauliZ(0), qml.PauliY(0), qml.PauliX(0)]
+            coeffs = [lambda p, t: p * jnp.sin(t) for _ in range(3)]
+            H = qml.dot(coeffs, ops) # time-dependent parametrized Hamiltonian
+
+            param = [jnp.array(0.2), jnp.array(0.1), jnp.array(-0.3)]
+            time = jnp.linspace(0.1, 0.4, 6) # Six time points from 0.1 to 0.4
+
+            ev = qml.evolve(H)(param, time, return_intermediate=True)
+
+        >>> ev_mats = ev.matrix()
+        >>> ev_mats.shape
+        (6, 2, 2)
+        #TODO: CHECK
+
+        Note that the broadcasting axis has length ``len(time)`` and is the first axis of the
+        returned tensor.
+
+        **Computing complementary time evolution**
+
+        When using ``return_intermediate=True``, the partial time evolutions share the *initial*
+        time :math:`t_0`. For some applications, however, it may be useful to compute the
+        complementary time evolutions, i.e. the partial evolutions that share the *final* time
+        :math:`t_P`. This can be activated by setting ``complementary=True``, which will make
+        ``ParametrizedEvolution.matrix`` return the matrices
+
+        .. math::
+
+            \{U(t_0, t_P), U(t_1, t_P), \dots, U(t_P, t_P)\}.
+
+        Using the Hamiltonian from the example above:
+
+        >>> complementary_ev = ev(param, time, return_intermediate=True, complementary=True)
+        >>> comp_ev_mats = complementary_ev.matrix()
+        >>> comp_ev_mats.shape
+        (6, 2, 2)
+        #TODO: CHECK
+
+        If we multiply the matrices computed before with ``complementary=False`` with these
+        complementary evolution matrices from the left, we obtain the full time evolution,
+        which we can check by comparing to the last entry of ``ev_mats``:
+
+        >>> for mat, c_mat in zip(ev_mats, comp_ev_mats):
+        ...     print(qml.math.allclose(c_mat @ mat, ev_mats[-1]))
+        True
+        True
+        True
+        True
+        True
+        True
+        #TODO: CHECK
+
     """
 
     _name = "ParametrizedEvolution"
@@ -260,18 +356,13 @@ class ParametrizedEvolution(Operation):
         self,
         H: ParametrizedHamiltonian,
         params: list = None,
-        t: Union[float, List[float], List[TensorLike]] = None,
-        broadcast_t=False,
-        accum_to_t1=False,
+        t: Union[float, List[float]] = None,
+        return_intermediate: bool = False,
+        complementary: bool = False,
         do_queue=True,
         id=None,
         **odeint_kwargs
     ):
-        if not has_jax:
-            raise ImportError(
-                "Module jax is required for the ``ParametrizedEvolution`` class. "
-                "You can install jax via: pip install jax"
-            )
         if not all(op.has_matrix or isinstance(op, qml.Hamiltonian) for op in H.ops):
             raise ValueError(
                 "All operators inside the parametrized hamiltonian must have a matrix defined."
@@ -282,34 +373,32 @@ class ParametrizedEvolution(Operation):
         if t is None:
             self.t = None
         else:
-            self.t = jnp.array([0, t] if qml.math.ndim(t) == 0 else t, dtype=float)
-        self.broadcast_t = broadcast_t  # TODO: qml.equal
-        self.accum_to_t1 = accum_to_t1  # TODO: unification with broadcast_t, qml.equal
+            self.t = qml.math.array([0.0, t] if qml.math.ndim(t) == 0 else t, dtype=float)
+        if complementary and not return_intermediate:
+            warnings.warn(
+                "The keyword argument complementary does not have any effect if "
+                "return_intermediate is set to False."
+            )
         params = [] if params is None else params
         super().__init__(*params, wires=H.wires, do_queue=do_queue, id=id)
+        self.hyperparameters["return_intermediate"] = return_intermediate
+        self.hyperparameters["complementary"] = complementary
         self._check_time_batching()
 
-    def _check_time_batching(self):
-        """Check whether the time argument is broadcasted/batched.
-        If it is broadcasted and the parameters are broadcasted as well, raises an
-        error."""
-        if not self.broadcast_t:
-            return
-        if self._batch_size is not None:
-            # Parameters and time are both batched, which is not supported (yet)
-            raise ValueError(
-                "The parameters and the time argument of ParametrizedEvolution are both batched, which is not supported yet."
+    def __call__(self, params, t, return_intermediate=None, complementary=None, **odeint_kwargs):
+        if not has_jax:
+            raise ImportError(
+                "Module jax is required for the ``ParametrizedEvolution`` class. "
+                "You can install jax via: pip install jax"
             )
-
-        shape = qml.math.shape(self.t)
-        # if shape[1] != 2:
-        # raise ValueError("When using time broadcasting with ParametrizedEvolution, it is not suported to use intermediate evaluation points in the ODE solver. Expected shape (batch_size, 2).")
-        self._batch_size = shape[0] - 1 - self.accum_to_t1
-
-    def __call__(self, params, t, broadcast_t=False, accum_to_t1=False, **odeint_kwargs):
         # Need to cast all elements inside params to `jnp.arrays` to make sure they are not cast
         # to `np.arrays` inside `Operator.__init__`
         params = [jnp.array(p) for p in params]
+        # Inherit return_intermediate and complementary from self if not provided.
+        if return_intermediate is None:
+            return_intermediate = self.hyperparameters["return_intermediate"]
+        if complementary is None:
+            complementary = self.hyperparameters["complementary"]
         odeint_kwargs = {**self.odeint_kwargs, **odeint_kwargs}
         if qml.QueuingManager.recording():
             qml.QueuingManager.remove(self)
@@ -318,12 +407,20 @@ class ParametrizedEvolution(Operation):
             H=self.H,
             params=params,
             t=t,
-            broadcast_t=broadcast_t,
-            accum_to_t1=accum_to_t1,
+            return_intermediate=return_intermediate,
+            complementary=complementary,
             do_queue=True,
             id=self.id,
             **odeint_kwargs
         )
+
+    def _check_time_batching(self):
+        """Check whether the time argument is broadcasted/batched."""
+        if not self.hyperparameters["return_intermediate"] or self.t is None:
+            return
+        # Subtract 1 because the identity is never returned by `matrix`. If `complementary=True`,
+        # subtract and additional 1 because the full time evolution is not being returned.
+        self._batch_size = self.t.shape[0]
 
     # pylint: disable=arguments-renamed, invalid-overridden-method
     @property
@@ -332,6 +429,11 @@ class ParametrizedEvolution(Operation):
 
     # pylint: disable=import-outside-toplevel
     def matrix(self, wire_order=None):
+        if not has_jax:
+            raise ImportError(
+                "Module jax is required for the ``ParametrizedEvolution`` class. "
+                "You can install jax via: pip install jax"
+            )
         if not self.has_matrix:
             raise ValueError(
                 "The parameters and the time window are required to compute the matrix. "
@@ -349,11 +451,11 @@ class ParametrizedEvolution(Operation):
             return (-1j * H_jax(self.data, t=t)) @ y
 
         mat = odeint(fun, y0, self.t, **self.odeint_kwargs)
-        if self.broadcast_t:
-            if self.accum_to_t1:
-                mat = qml.math.tensordot(mat[-1], qml.math.conj(mat), axes=[[1], [-1]])
-                mat = qml.math.moveaxis(mat, 0, -2)[:-1]
-            mat = mat[1:]
-        else:
+        if self.hyperparameters["return_intermediate"] and self.hyperparameters["complementary"]:
+            # Compute U(t_0, t_P)@U(t_0, t_i)^\dagger, where i indexes the first axis of mat
+            mat = qml.math.tensordot(mat[-1], qml.math.conj(mat), axes=[[1], [-1]])
+            # The previous line leaves the axis indexing the t_i as second, so we move it up
+            mat = qml.math.moveaxis(mat, 1, 0)
+        elif not self.hyperparameters["return_intermediate"]:
             mat = mat[-1]
         return qml.math.expand_matrix(mat, wires=self.wires, wire_order=wire_order)

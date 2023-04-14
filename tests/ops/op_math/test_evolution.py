@@ -83,6 +83,32 @@ class TestEvolution:
         assert op.coeff == 1j * op.data[0]
         assert op.param == op.data[0]
 
+        new_param = np.array(2.345)
+        op.data = [new_param]
+
+        assert op.data == [new_param]
+        assert op.coeff == 1j * op.data[0]
+        assert op.data == op.data[0]
+
+    def test_repr_paulix(self):
+        """Test the __repr__ method when the base is a simple observable."""
+        op = Evolution(qml.PauliX(0), 3)
+        assert repr(op) == "Evolution(3j PauliX)"
+
+    def test_repr_tensor(self):
+        """Test the __repr__ method when the base is a tensor."""
+        t = qml.PauliX(0) @ qml.PauliX(1)
+        isingxx = Evolution(t, 0.25)
+
+        assert repr(isingxx) == "Evolution(0.25j PauliX(wires=[0]) @ PauliX(wires=[1]))"
+
+    def test_repr_deep_operator(self):
+        """Test the __repr__ method when the base is any operator with arithmetic depth > 0."""
+        base = qml.S(0) @ qml.PauliX(0)
+        op = Evolution(base, 3)
+
+        assert repr(op) == "Evolution(3j S(wires=[0]) @ PauliX(wires=[0]))"
+
     @pytest.mark.parametrize(
         "op,decimals,expected",
         [

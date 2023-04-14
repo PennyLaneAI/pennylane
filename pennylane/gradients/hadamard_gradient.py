@@ -37,8 +37,7 @@ def _hadamard_grad(
     aux_wire=None,
     device_wires=None,
 ):
-    r"""Transform a QNode to compute the Hadamard test gradient of all gates
-    with respect to their inputs. This function is adapted to the new return system.
+    r"""Transform a QNode to compute the Hadamard test gradient of all gates with respect to their inputs.
 
     Args:
         tape (pennylane.QNode or .QuantumTape): quantum tape or QNode to differentiate
@@ -59,14 +58,14 @@ def _hadamard_grad(
         function or tuple[list[QuantumTape], function]:
 
         - If the input is a QNode, an object representing the Jacobian (function) of the QNode
-          that can be executed to obtain the Jacobian matrix.
-          The type of the matrix returned is either a tensor, a tuple or a
+          that can be executed to obtain the Jacobian.
+          The type of the Jacobian returned is either a tensor, a tuple or a
           nested tuple depending on the nesting structure of the original QNode output.
 
         - If the input is a tape, a tuple containing a
           list of generated tapes, together with a post-processing
           function to be applied to the results of the evaluated tapes
-          in order to obtain the Jacobian matrix.
+          in order to obtain the Jacobian.
 
     For a variational evolution :math:`U(\mathbf{p}) \vert 0\rangle` with
     :math:`N` parameters :math:`\mathbf{p}`,

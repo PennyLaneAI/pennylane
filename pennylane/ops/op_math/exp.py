@@ -14,7 +14,6 @@
 """
 This submodule defines the symbolic operation that stands for an exponential of an operator.
 """
-from copy import copy
 from typing import List
 from warnings import warn
 
@@ -173,7 +172,6 @@ class Exp(ScalarSymbolicOp, Operation):
     # pylint: disable=too-many-arguments
     def __init__(self, base, coeff=1, num_steps=None, do_queue=True, id=None):
         super().__init__(base, scalar=coeff, do_queue=do_queue, id=id)
-        self._data = [[coeff], self.base.data]
         self.grad_recipe = [None]
         self.num_steps = num_steps
 
@@ -184,30 +182,9 @@ class Exp(ScalarSymbolicOp, Operation):
             else f"Exp({self.coeff} {self.base.name})"
         )
 
-    # pylint: disable=attribute-defined-outside-init
-    def __copy__(self):
-        # this method needs to be overwritten because the base must be copied too.
-        copied_op = object.__new__(type(self))
-        # copied_op must maintain inheritance structure of self
-        # Relevant for symbolic ops that mix in operation-specific components.
-
-        for attr, value in vars(self).items():
-            if attr not in {"_hyperparameters"}:
-                setattr(copied_op, attr, value)
-
-        copied_op._hyperparameters = copy(self.hyperparameters)
-        copied_op.hyperparameters["base"] = copy(self.base)
-        copied_op._data = copy(self._data)
-
-        return copied_op
-
     @property
     def hash(self):
         return hash((str(self.name), self.base.hash, str(self.coeff)))
-
-    @property
-    def data(self):
-        return self._data
 
     @property
     def coeff(self):
@@ -306,7 +283,9 @@ class Exp(ScalarSymbolicOp, Operation):
                 new_g = qml.map_wires(g, dict(zip(g.wires, base.wires)))
 
                 if qml.equal(base, new_g) and math.real(coeff) == 0:
-                    coeff *= -1j / c  # cancel the coefficients added by the generator
+                    coeff = math.real(
+                        -1j / c * coeff
+                    )  # cancel the coefficients added by the generator
                     return [op_class(coeff, g.wires)]
 
         if qml.pauli.is_pauli_word(base) and math.real(coeff) == 0:
@@ -330,7 +309,9 @@ class Exp(ScalarSymbolicOp, Operation):
         Returns:
             List[Operator]: list containing the PauliRot operator
         """
-        coeff = 2j * coeff  # need to cancel the coefficients added by PauliRot and Ising gates
+        coeff = math.real(
+            2j * coeff
+        )  # need to cancel the coefficients added by PauliRot and Ising gates
         pauli_word = qml.pauli.pauli_word_to_string(base)
         if pauli_word == "I" * base.num_wires:
             return []

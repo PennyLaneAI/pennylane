@@ -91,7 +91,10 @@ def rect(x: Union[float, Callable], windows: Union[Tuple[float], List[Tuple[floa
         ``windows``, and otherwise returns 0.
 
     .. note::
-        If ``x`` is a function, it must accept two arguments: the trainable parameters and time.
+        If ``x`` is a function, it must accept two arguments: the trainable parameters and time. The primary use
+        of ``rect`` is for numerical simulations via :class:`ParametrizedEvolution`, which assumes ``t`` to be a single scalar
+        argument. If you need to efficiently compute multiple times, you need to broadcast over ``t`` via
+        `jax.vmap <https://jax.readthedocs.io/en/latest/_autosummary/jax.vmap.html>`_ (see examples below).
 
     **Example**
 
@@ -107,8 +110,10 @@ def rect(x: Union[float, Callable], windows: Union[Tuple[float], List[Tuple[floa
         time = jnp.linspace(0, 10, 1000)
         windows = [(1, 7)]
 
+        windowed_f = qml.pulse.rect(f, windows=windows)
+
         y1 = f(p, time)
-        y2 = [qml.pulse.rect(f, windows=windows)(p, t) for t in time]
+        y2 = jax.vmap(windowed_f, (None, 0))(p, time)
 
         plt.plot(time, y1, label=f"polyval(p={p}, t)")
         plt.plot(time, y2, label=f"rect(polyval, windows={windows})(p={p}, t)")
@@ -121,7 +126,10 @@ def rect(x: Union[float, Callable], windows: Union[Tuple[float], List[Tuple[floa
             :width: 60%
             :target: javascript:void(0);
 
-    This can be used to create a :class:`~.ParametrizedHamiltonian` in the following way:
+    Note that in order to efficiently create ``y2``, we broadcasted ``windowed_f`` over the
+    time argument using `jax.vmap <https://jax.readthedocs.io/en/latest/_autosummary/jax.vmap.html>`_.
+
+    ``rect`` can be used to create a :class:`~.ParametrizedHamiltonian` in the following way:
 
     >>> H = qml.pulse.rect(jnp.polyval, windows=[(1, 7)]) * qml.PauliX(0)
 
@@ -279,16 +287,16 @@ def pwc(timespan):
         )
 
     if isinstance(timespan, (tuple, list)):
-        t1, t2 = timespan
+        t0, t1 = timespan
     else:
-        t1 = 0
-        t2 = timespan
+        t0 = 0
+        t1 = timespan
 
     def func(params, t):
         num_bins = len(params)
         params = jnp.concatenate([jnp.array(params), jnp.zeros(1)])
         # get idx from timestamp, then set idx=0 if idx is out of bounds for the array
-        idx = num_bins / (t2 - t1) * (t - t1)
+        idx = num_bins / (t1 - t0) * (t - t0)
         idx = jnp.where((idx >= 0) & (idx <= num_bins), jnp.array(idx, dtype=int), -1)
 
         return params[idx]
@@ -353,18 +361,18 @@ def pwc_from_function(timespan, num_bins):
         )
 
     if isinstance(timespan, tuple):
-        t1, t2 = timespan
+        t0, t1 = timespan
     else:
-        t1 = 0
-        t2 = timespan
+        t0 = 0
+        t1 = timespan
 
     def inner(fn):
-        time_bins = np.linspace(t1, t2, num_bins)
+        time_bins = np.linspace(t0, t1, num_bins)
 
         def wrapper(params, t):
             constants = jnp.array(list(fn(params, time_bins)) + [0])
 
-            idx = num_bins / (t2 - t1) * (t - t1)
+            idx = num_bins / (t1 - t0) * (t - t0)
             # check interval is within 0 to num_bins, then cast to int, to avoid casting outcomes between -1 and 0 as 0
             idx = jnp.where((idx >= 0) & (idx <= num_bins), jnp.array(idx, dtype=int), -1)
 

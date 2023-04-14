@@ -167,8 +167,8 @@ def evolve(*args, **kwargs):  # pylint: disable=unused-argument
 
 # pylint: disable=missing-docstring
 @evolve.register
-def parametrized_evolution(op: ParametrizedHamiltonian):
-    return ParametrizedEvolution(H=op)
+def parametrized_evolution(op: ParametrizedHamiltonian, **kwargs):
+    return ParametrizedEvolution(H=op, **kwargs)
 
 
 # pylint: disable=missing-docstring

@@ -129,9 +129,21 @@ class TestInitialization:
         assert prod_op.id == id
         assert prod_op.queue_idx is None
 
-        assert prod_op.data == [[], [0.23]]
-        assert prod_op.parameters == [[], [0.23]]
+        assert prod_op.data == [0.23]
+        assert prod_op.parameters == [0.23]
         assert prod_op.num_params == 1
+
+    def test_hash(self):
+        """Testing some situations for the hash property."""
+        # same hash if different order but can be permuted to right order
+        op1 = qml.prod(qml.PauliX(0), qml.PauliY("a"))
+        op2 = qml.prod(qml.PauliY("a"), qml.PauliX(0))
+        assert op1.hash == op2.hash
+
+        # test not the same hash if different order and cant be exchanged to correct order
+        op3 = qml.prod(qml.PauliX("a"), qml.PauliY("a"), qml.PauliX(1))
+        op4 = qml.prod(qml.PauliY("a"), qml.PauliX("a"), qml.PauliX(1))
+        assert op3.hash != op4.hash
 
     @pytest.mark.parametrize("ops_lst", ops)
     def test_terms(self, ops_lst):
@@ -1287,6 +1299,18 @@ class TestIntegration:
         res1 = batched_prod(x, y)
         res2 = batched_no_prod(x, y)
         assert qml.math.allclose(res1, res2)
+
+    def test_params_can_be_considered_trainable(self):
+        """Tests that the parameters of a Prod are considered trainable."""
+        dev = qml.device("default.qubit", wires=2)
+
+        @qml.qnode(dev)
+        def circuit():
+            return qml.expval(qml.prod(qml.RX(1.1, 0), qml.RY(qnp.array(2.2), 1)))
+
+        with pytest.warns(UserWarning):
+            circuit()
+        assert circuit.tape.trainable_params == [1]
 
 
 class TestSortWires:

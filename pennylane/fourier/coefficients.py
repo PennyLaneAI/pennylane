@@ -15,8 +15,12 @@
 from itertools import product
 import numpy as np
 
+# pylint:disable=too-many-arguments
 
-def coefficients(f, n_inputs, degree, lowpass_filter=False, filter_threshold=None):
+
+def coefficients(
+    f, n_inputs, degree, lowpass_filter=False, filter_threshold=None, use_broadcasting=False
+):
     r"""Computes the first :math:`2d+1` Fourier coefficients of a :math:`2\pi`
     periodic function, where :math:`d` is the highest desired frequency (the
     degree) of the Fourier spectrum.
@@ -58,16 +62,21 @@ def coefficients(f, n_inputs, degree, lowpass_filter=False, filter_threshold=Non
         f (callable): Function that takes a 1D tensor of ``n_inputs`` scalar inputs. The function can be a QNode, but
             has to return a real scalar value (such as an expectation).
         n_inputs (int): number of function inputs
-        degree (int): max frequency of Fourier coeffs to be computed. For degree :math:`d`,
+        degree (int or tuple[int]): max frequency of Fourier coeffs to be computed. For degree :math:`d`,
             the coefficients from frequencies :math:`-d, -d+1,...0,..., d-1, d` will be computed.
+            If multiple degrees are passed, their length must match ``n_inputs``.
         lowpass_filter (bool): If ``True``, a simple low-pass filter is applied prior to
             computing the set of coefficients in order to filter out frequencies above the
-            given degree. See examples below.
-        filter_threshold (None or int): The integer frequency at which to filter. If
-            ``lowpass_filter`` is set to ``True,`` but no value is specified, ``2 * degree`` is used.
+            given degree(s). See examples below.
+        filter_threshold (None or int or tuple[int]): The integer frequency at which to filter if
+            ``lowpass_filter`` is set to ``True``. If set to ``None``, ``2 * degree`` is used.
+            If multiple thresholds are passed, their length must match ``n_inputs``.
+        use_broadcasting (bool): Whether or not to broadcast the parameters to execute
+            multiple function calls at once. Broadcasting is performed along the last axis
+            of the grid of evaluation points.
 
     Returns:
-        array[complex]: The Fourier coefficients of the function ``f`` up to the specified degree.
+        array[complex]: The Fourier coefficients of the function ``f`` up to the specified degree(s).
 
     **Example**
 
@@ -155,34 +164,43 @@ def coefficients(f, n_inputs, degree, lowpass_filter=False, filter_threshold=Non
     Note that in this case, ``2 * degree`` gives us exactly the maximum coefficient;
     in other situations it may be desirable to set the threshold value explicitly.
 
-    The `coefficients` function can handle qnodes from all PennyLane interfaces.
+    The `coefficients` function can handle qnodes from all PennyLane interfaces and if the
+    passed function allows broadcasted parameter inputs, the computation of the coefficients
+    can be accelerated by setting ``use_broadcasting=True``.
     """
+    if isinstance(degree, int):
+        degree = (degree,) * n_inputs
+    elif len(degree) != n_inputs:
+        raise ValueError("If multiple degrees are provided, their number has to match n_inputs.")
+
     if not lowpass_filter:
-        return _coefficients_no_filter(f, n_inputs, degree)
+        return _coefficients_no_filter(f, degree, use_broadcasting)
 
     if filter_threshold is None:
-        filter_threshold = 2 * degree
+        filter_threshold = tuple(2 * d for d in degree)
+    elif isinstance(filter_threshold, int):
+        filter_threshold = (filter_threshold,) * n_inputs
+    elif len(filter_threshold) != n_inputs:
+        raise ValueError(
+            "If multiple filter_thresholds are provided, their number has to match n_inputs."
+        )
 
     # Compute the fft of the function at 2x the specified degree
-    unfiltered_coeffs = _coefficients_no_filter(f, n_inputs, filter_threshold)
+    unfiltered_coeffs = _coefficients_no_filter(f, filter_threshold, use_broadcasting)
 
     # Shift the frequencies so that the 0s are at the centre
     shifted_unfiltered_coeffs = np.fft.fftshift(unfiltered_coeffs)
 
     # Next, slice up the array so that we get only the coefficients we care about,
     # those between -degree and degree
-    range_slices = list(
-        range(
-            filter_threshold - degree,
-            shifted_unfiltered_coeffs.shape[0] - (filter_threshold - degree),
-        )
-    )
-
+    shape = shifted_unfiltered_coeffs.shape
     shifted_filtered_coeffs = shifted_unfiltered_coeffs.copy()
 
     # Go axis by axis and take only the central components
     for axis in range(n_inputs - 1, -1, -1):
-        shifted_filtered_coeffs = np.take(shifted_filtered_coeffs, range_slices, axis=axis)
+        num_excess = filter_threshold[axis] - degree[axis]
+        _slice = list(range(num_excess, shape[axis] - num_excess))
+        shifted_filtered_coeffs = np.take(shifted_filtered_coeffs, _slice, axis=axis)
 
     # Shift everything back into "normal" fft ordering
     filtered_coeffs = np.fft.ifftshift(shifted_filtered_coeffs)
@@ -196,7 +214,7 @@ def coefficients(f, n_inputs, degree, lowpass_filter=False, filter_threshold=Non
     return coeffs
 
 
-def _coefficients_no_filter(f, n_inputs, degree):
+def _coefficients_no_filter(f, degree, use_broadcasting):
     r"""Computes the first :math:`2d+1` Fourier coefficients of a :math:`2\pi` periodic
     function, where :math:`d` is the highest desired frequency in the Fourier spectrum.
 
@@ -204,35 +222,42 @@ def _coefficients_no_filter(f, n_inputs, degree):
     is thus used as a helper function for the true ``coefficients`` function.
 
     Args:
-        f (callable): function that takes a 1D array of ``n_inputs`` scalar inputs
-        n_inputs (int): number of function inputs
-        degree (int): max frequency of Fourier coeffs to be computed. For degree :math:`d`,
-            the coefficients from frequencies :math:`-d, -d+1,...0,..., d-1, d ` will be computed.
+        f (callable): function that takes a 1D array of scalar inputs
+        degree (int or tuple[int]): max frequency of Fourier coeffs to be computed. For degree
+            :math:`d`, the coefficients from frequencies :math:`-d, -d+1,...0,..., d-1, d`
+            will be computed.
+        use_broadcasting (bool): Whether or not to broadcast the parameters to execute
+            multiple function calls at once. Broadcasting is performed along the last axis
+            of the grid of evaluation points.
 
     Returns:
         array[complex]: The Fourier coefficients of the function f up to the specified degree.
     """
+    degree = np.array(degree)
 
-    # number of integer values for the indices n_i = -degree,...,0,...,degree
+    # number of integer values for the indices n_i = -degree_i,...,0,...,degree_i
     k = 2 * degree + 1
 
-    # create generator for indices nvec = (n1, ..., nN), ranging from (-d,...,-d) to (d,...,d).
-    n_range = np.array(range(-degree, degree + 1))
-    n_ranges = [n_range] * n_inputs
-    nvecs = product(*n_ranges)
+    # create generator for indices nvec = (n1, ..., nN), ranging from (-d1,...,-dN) to (d1,...,dN)
+    n_ranges = [np.arange(-d, d + 1) for d in degree]
+    nvecs = product(*(n_ranges[:-1] if use_broadcasting else n_ranges))
 
     # here we will collect the discretized values of function f
-    shp = tuple([k] * n_inputs)
-    f_discrete = np.zeros(shape=shp)
+    f_discrete = np.zeros(shape=tuple(k))
+
+    spacing = (2 * np.pi) / k
 
     for nvec in nvecs:
-        nvec = np.array(nvec)
-
-        # compute the evaluation points for frequencies nvec
-        sample_points = 2 * np.pi / k * nvec
-
+        # When use_broadcasting=True, `nvec` is made into a tuple[int,..int,ndarray].
+        # This would yield to a ragged array, so we do not cast `nvec` to an array but manually
+        # iterate over the first axis of `spacing` and `nvec`.
+        if use_broadcasting:
+            nvec = (*nvec, n_ranges[-1])
+            sampling_point = [s * n for s, n in zip(spacing, nvec)]
+        else:
+            sampling_point = spacing * np.array(nvec)
         # fill discretized function array with value of f at inpts
-        f_discrete[tuple(nvec)] = f(sample_points)
+        f_discrete[nvec] = f(sampling_point)
 
     coeffs = np.fft.fftn(f_discrete) / f_discrete.size
 
