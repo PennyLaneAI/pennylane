@@ -70,18 +70,21 @@ def split_evol_ops(op, word, word_wires, key, num_samples=1):
         tau = jax.random.uniform(key, shape=(num_samples,)) * (t1 - t0) + t0
         sorted_tau = jax.numpy.sort(tau)
         # For the time evolution before we just need t_0, for the one after we need both t_0 and t_1
-        before_t = jax.numpy.concatenate([jax.numpy.array([t0]), sorted_tau])
-        after_t = jax.numpy.concatenate([before_t, jax.numpy.array([t1])])
+        #before_t = jax.numpy.concatenate([jax.numpy.array([t0]), sorted_tau])
+        #after_t = jax.numpy.concatenate([before_t, jax.numpy.array([t1])])
+        new_t = jax.numpy.concatenate([jax.numpy.array([t0]), sorted_tau, jax.numpy.array([t0])])
+        before_t = new_t
+        after_t = new_t
     else:
         tau = jax.random.uniform(key) * (t1 - t0) + t0
         before_t = jax.numpy.array([t0, tau])
         after_t = jax.numpy.array([tau, t1])
 
     before_plus, before_minus = (
-        op(op.data, before_t, broadcast_t=broadcast, **op.odeint_kwargs) for _ in range(2)
+        op(op.data, before_t, return_intermediate=broadcast, **op.odeint_kwargs) for _ in range(2)
     )
     after_plus, after_minus = (
-        op(op.data, after_t, broadcast_t=broadcast, accum_to_t1=broadcast, **op.odeint_kwargs)
+        op(op.data, after_t, return_intermediate=broadcast, complementary=broadcast, **op.odeint_kwargs)
         for _ in range(2)
     )
     # Create Pauli rotations to be inserted at tau
@@ -141,7 +144,7 @@ def _parshift_and_integrate(
 
         def _diff_and_contract(res_list, cjacs, int_prefactor):
             # This one will not work yet with tuples.
-            diff = qml.math.stack(res_list)[0] - qml.math.stack(res_list)[1]
+            diff = qml.math.stack(res_list)[0, 1:-1] - qml.math.stack(res_list)[1, 1:-1]
             return qml.math.tensordot(diff, cjacs, axes=[[0], [0]]) * int_prefactor
 
     else:
