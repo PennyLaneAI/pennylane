@@ -2424,3 +2424,65 @@ class TestHighLevelIntegration:
             "when using sample-based measurements.",
         ):
             res = circuit()
+
+
+@pytest.mark.torch
+@pytest.mark.parametrize("torch_device", torch_devices)
+class TestCtrlOperator:
+    """Test-case for qml.ctrl operator with in-built parametric gates."""
+
+    @pytest.mark.parametrize(
+        "ops",
+        [
+            (
+                qml.RX,
+                torch.tensor(
+                    [
+                        0.70172985 - 0.08687008j,
+                        -0.0053667 + 0.0j,
+                        0.70039457 - 0.08703569j,
+                        0.0 - 0.04326927j,
+                    ],
+                    dtype=torch.complex128,
+                ),
+            ),
+            (
+                qml.RY,
+                torch.tensor(
+                    [
+                        0.70172985 - 0.08687008j,
+                        0.0 - 0.0053667j,
+                        0.70039457 - 0.08703569j,
+                        0.04326927 + 0.0j,
+                    ],
+                    dtype=torch.complex128,
+                ),
+            ),
+            (
+                qml.RZ,
+                torch.tensor(
+                    [0.69636316 - 0.08687008j, 0.0 + 0.0j, 0.70039457 - 0.13030496j, 0.0 + 0.0j],
+                    dtype=torch.complex128,
+                ),
+            ),
+        ],
+    )
+    def test_ctrl_r_operators(self, torch_device, ops, tol):
+        """Test qml.ctrl using R-gate targets"""
+        dev = qml.device("default.qubit.torch", wires=2, shots=None, torch_device=torch_device)
+        par = torch.tensor([0.12345, 0.2468], dtype=torch.float64, device=torch_device)
+
+        @qml.qnode(dev, interface="torch", diff_method="backprop")
+        def circuit(params):
+            qml.Hadamard(0)
+            qml.ctrl(op=ops[0](params[0], wires=1), control=0)
+            qml.RX(params[1], wires=0)
+            return qml.state()
+
+        result = circuit(par)
+        assert torch.allclose(
+            result,
+            ops[1].to(device=torch_device),
+            atol=tol,
+            rtol=0,
+        )
