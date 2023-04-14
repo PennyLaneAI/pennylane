@@ -73,10 +73,11 @@ class ParametrizedEvolution(Operation):
         t (Union[float, List[float]]): If a float, it corresponds to the duration of the evolution.
             If a list of floats, the ODE solver will use all the provided time values, and
             perform intermediate steps if necessary. It is recommended to just provide a start
-            and end time unless matrices of the time evolution at intermediate times needs
+            and end time unless matrices of the time evolution at intermediate times need
             to be computed. Note that such absolute times only have meaning within an instance of
             ``ParametrizedEvolution`` and will not affect other gates.
-            # TODO
+            To return the matrix at intermediate evolution times, activate ``return_intermediate``
+            (see below).
         do_queue (bool): determines if the scalar product operator will be queued. Default is True.
         id (str or None): id for the scalar product operator. Default is None.
 

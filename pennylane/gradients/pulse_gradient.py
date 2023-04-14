@@ -120,7 +120,6 @@ def _parshift_and_integrate(
     """Apply the parameter-shift rule post-processing to tape results and contract
     with classical Jacobians, effectively evaluating the numerical integral of the stochastic
     parameter-shift rule.
-    This is a helper method for the new return type system.
 
     Args:
         results (list): Tape evaluation results, corresponding to the modified quantum
@@ -214,12 +213,9 @@ def _stoch_pulse_grad(
             rule underlying the differentiation; also see details
         sample_seed (int): randomness seed to be used for the time samples in the stochastic
             parameter-shift rule
-        shots (None, int, list[int]): Argument used by the new return type system
-            (see :func:`~.enable_return` for more information); it represents the device shots
-            that will be used to execute the tapes outputted by this transform. Note that this
-            argument doesn't influence the shots used for tape execution, but provides information
-            to the transform about the device shots and helps in determining if a shot sequence
-            was used.
+        shots (None, int, list[int]): The device shots that will be used to execute the tapes 
+            outputted by this transform. Note that this argument doesn't influence the shots
+            used for tape execution, but provides information about the shots.
         use_broadcasting # TODO docs
 
     Returns:
@@ -242,8 +238,7 @@ def _stoch_pulse_grad(
     .. note::
 
         This function requires the JAX interface and does not work with other autodiff interfaces
-        commonly encountered with PennyLane. It additionally only supports the new return type
-        system, see :func:`~.enable_return`.
+        commonly encountered with PennyLane.
         Finally, this transform is not JIT-compatible yet.
 
     .. note::
@@ -504,7 +499,6 @@ def _expval_stoch_pulse_grad(tape, argnum, num_split_times, key, shots, use_broa
     r"""Compute the gradient of a quantum circuit composed of pulse sequences that measures
     an expectation value or probabilities, by applying the stochastic parameter shift rule.
     See the main function for the signature.
-    This function is adapted to the new return type system.
     """
     tapes = []
     gradient_data = []
