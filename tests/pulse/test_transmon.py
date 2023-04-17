@@ -217,7 +217,6 @@ class TestTransmonDrive:
         assert H.coeffs[1].func.__name__ == "callable_phase_and_freq"
         assert qml.math.allclose(qml.matrix(H(params, t)), qml.matrix(expected(amp, phase, freq, *params, t)))
 
-    @pytest.mark.xfail
     @pytest.mark.parametrize("amp", [lambda p, t: p*t, lambda p, t: np.sin(p*t)])
     @pytest.mark.parametrize("phase", [lambda p, t: p*t, lambda p, t: np.sin(p*t)])
     @pytest.mark.parametrize("freq", [lambda p, t: p*t, lambda p, t: np.sin(p*t)])
@@ -229,13 +228,11 @@ class TestTransmonDrive:
         """Test callable amplitude, phase and freq works as expected"""
         H = transmon_drive(amp, phase, freq, wires=[0])
 
-        def expected(amp, phase, freq, p0, p1, p2, t, wire=0):
+        def expected(params, t, wire=0):
             return (
-                0.5
-                * amp(p0, t)
-                * (
-                    np.cos(phase(p1, t) + freq(p2, t) * t) * qml.PauliX(wire)
-                    - np.sin(phase(p1, t) + freq(p2, t) * t) * qml.PauliY(wire)
+                0.5 * amp(params[0], t) * (
+                    np.cos(phase(params[1], t) + freq(params[2], t) * t) * qml.PauliX(wire)
+                    - np.sin(phase(params[1], t) + freq(params[2], t) * t) * qml.PauliY(wire)
                 )
             )
 
@@ -243,7 +240,7 @@ class TestTransmonDrive:
 
         assert H.coeffs[0].func.__name__ == "callable_amp_and_phase_and_freq"
         assert H.coeffs[1].func.__name__ == "callable_amp_and_phase_and_freq"
-        assert qml.math.allclose(qml.matrix(H(params, t)), qml.matrix(expected(amp, phase, freq, *params, t)))
+        assert qml.math.allclose(qml.matrix(H(params, t)), qml.matrix(expected(params, t)))
 
     @pytest.mark.xfail
     def test_multiple_drives(

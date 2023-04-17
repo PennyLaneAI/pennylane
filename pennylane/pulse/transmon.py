@@ -248,9 +248,10 @@ class AmplitudeAndPhaseAndFreq:
         self.phase_is_callable = callable(phase)
         self.freq_is_callable = callable(freq)
 
+
         # all 3 callable
         def callable_amp_and_phase_and_freq(params, t):
-            return amp(params[0], t) * trig_fn(phase(params[1], t) + params[2] * t)
+            return amp(params[0], t) * trig_fn(phase(params[1], t) + freq(params[2], t) * t)
 
         if self.amp_is_callable and self.phase_is_callable and self.freq_is_callable:
             self.func = callable_amp_and_phase_and_freq
@@ -277,6 +278,7 @@ class AmplitudeAndPhaseAndFreq:
         if not self.amp_is_callable and self.phase_is_callable and self.freq_is_callable:
             self.func = callable_phase_and_freq
 
+
         # 1 out of 3 callable
         def callable_amp(params, t):
             return amp(params, t) * trig_fn(phase + freq * t)
@@ -297,6 +299,7 @@ class AmplitudeAndPhaseAndFreq:
 
         if not self.amp_is_callable and not self.phase_is_callable and self.freq_is_callable:
             self.func = callable_freq
+
 
         # 0 out of 3 callable (the remaining coeff is still callable due to explicit time dependence)
         def no_callable(_, t):
@@ -330,8 +333,9 @@ def _reorder_AmpPhaseFreq(params, coeffs_parametrized):
                     coeff.amp_is_callable,
                     coeff.freq_is_callable,
                 ]
+
+                # all 3 parameters are callable
                 if sum(is_callables) == 3:
-                    # add the joined parameters twice, and skip an index
                     reordered_params.append(
                         [params[params_idx], params[params_idx + 1], params[params_idx + 2]]
                     )
@@ -341,13 +345,14 @@ def _reorder_AmpPhaseFreq(params, coeffs_parametrized):
                     coeff_idx += 2
                     params_idx += 3
 
+                # 2 of 3 parameters are callable
                 elif sum(is_callables) == 2:
-                    # add the joined parameters twice, and skip an index
                     reordered_params.append([params[params_idx], params[params_idx + 1]])
                     reordered_params.append([params[params_idx], params[params_idx + 1]])
                     coeff_idx += 2
                     params_idx += 2
 
+                # 1 of 3 parameters is callable
                 elif sum(is_callables) == 1:
                     reordered_params.append(params[params_idx])
                     reordered_params.append(params[params_idx])
