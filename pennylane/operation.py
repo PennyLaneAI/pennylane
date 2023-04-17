@@ -1763,6 +1763,9 @@ class Observable(Operator):
         )
 
     def __matmul__(self, other):
+        if qml.active_op_arithmetic():
+            return super().__matmul__(other=other)
+
         if isinstance(other, (Tensor, qml.Hamiltonian)):
             return other.__rmatmul__(self)
 
@@ -1833,6 +1836,9 @@ class Observable(Operator):
 
     def __add__(self, other):
         r"""The addition operation between Observables/Tensors/qml.Hamiltonian objects."""
+        if qml.active_op_arithmetic():
+            return super().__add__(other=other)
+
         if isinstance(other, qml.Hamiltonian):
             return other + self
         if isinstance(other, (Observable, Tensor)):
@@ -1844,6 +1850,11 @@ class Observable(Operator):
 
     def __mul__(self, a):
         r"""The scalar multiplication operation between a scalar and an Observable/Tensor."""
+        if qml.active_op_arithmetic():
+            if isinstance(a, (int, float, complex)):
+                return qml.s_prod(a, self, lazy=False)
+            return super().__mul__(other=a)
+
         if isinstance(a, (int, float)):
             return qml.Hamiltonian([a], [self], simplify=True)
 
@@ -1853,6 +1864,11 @@ class Observable(Operator):
 
     def __sub__(self, other):
         r"""The subtraction operation between Observables/Tensors/qml.Hamiltonian objects."""
+        if qml.active_op_arithmetic():
+            if isinstance(other, Operator):
+                return self + (-1 * other)
+            return super().__sub__(other=other)
+
         if isinstance(other, (Observable, Tensor, qml.Hamiltonian)):
             return self + (-1 * other)
         return super().__sub__(other=other)
