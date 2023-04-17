@@ -41,6 +41,9 @@ class ExecutionConfig:
     shots: Optional[Union[int, Tuple[int]]] = None
     """The number of shots for an execution"""
 
+    grad_on_execution: Union[bool, str] = "best"
+    """Whether or not to compute the gradient at the same time as the execution."""
+
     gradient_method: Optional[str] = None
     """The method used to compute the gradient of the quantum circuit being executed"""
 
@@ -65,6 +68,11 @@ class ExecutionConfig:
         if self.interface not in SUPPORTED_INTERFACES:
             raise ValueError(
                 f"interface must be in {SUPPORTED_INTERFACES}, got {self.interface} instead."
+            )
+
+        if self.grad_on_execution not in {True, False, "best"}:
+            raise ValueError(
+                f"grad_on_execution must be True, False, or 'best'. Got {self.grad_on_execution} instead."
             )
 
         if (

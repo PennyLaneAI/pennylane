@@ -188,6 +188,10 @@
 
 <h3>Breaking changes 💔</h3>
 
+* The experimental Device interface `qml.devices.experimental.Device` now requires that the `preprocess` method
+  also returns an `ExecutionConfig` object. This allows the device to choose what `"best"` means for various
+  hyperparameters like `gradient_method` and `grad_on_execution`.
+
 * Both JIT interfaces are not compatible with JAX `>0.4.3`, we raise an error for those versions.
   [(#3877)](https://github.com/PennyLaneAI/pennylane/pull/3877)
 

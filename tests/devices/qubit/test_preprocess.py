@@ -390,6 +390,13 @@ class TestPreprocess:
         ):
             _ = preprocess([tape], execution_config=config)
 
+    def test_choose_best_gradient_method(self):
+        """Test that preprocessing chooses backprop as the best gradient method."""
+        tape = QuantumScript(ops=[], measurements=[])
+        config = qml.devices.ExecutionConfig(gradient_method="best")
+        _, _, config = preprocess([tape], config)
+        assert config.gradient_method == "backprop"
+
     def test_preprocess_batch_transform(self):
         """Test that preprocess returns the correct tapes when a batch transform
         is needed."""
@@ -401,7 +408,7 @@ class TestPreprocess:
             QuantumScript(ops=ops, measurements=[measurements[1]]),
         ]
 
-        res_tapes, batch_fn = preprocess(tapes)
+        res_tapes, batch_fn, _ = preprocess(tapes)
         expected_ops = [
             [qml.Hadamard(0), qml.CNOT([0, 1]), qml.RX(np.pi, wires=1)],
             [qml.Hadamard(0), qml.CNOT([0, 1]), qml.RX(np.pi / 2, wires=1)],
@@ -429,7 +436,7 @@ class TestPreprocess:
             QuantumScript(ops=ops, measurements=measurements[1]),
         ]
 
-        res_tapes, batch_fn = preprocess(tapes)
+        res_tapes, batch_fn, _ = preprocess(tapes)
         expected = [qml.Hadamard(0), qml.PauliX(1), qml.PauliY(1), qml.RZ(0.123, wires=1)]
 
         assert len(res_tapes) == 2
@@ -451,7 +458,7 @@ class TestPreprocess:
             QuantumScript(ops=ops, measurements=[measurements[1]]),
         ]
 
-        res_tapes, batch_fn = preprocess(tapes)
+        res_tapes, batch_fn, _ = preprocess(tapes)
         expected_ops = [
             [qml.Hadamard(0), qml.PauliX(1), qml.PauliY(1), qml.RX(np.pi, wires=1)],
             [qml.Hadamard(0), qml.PauliX(1), qml.PauliY(1), qml.RX(np.pi / 2, wires=1)],
@@ -519,7 +526,7 @@ class TestPreprocess:
         )
         execution_config = qml.devices.experimental.ExecutionConfig(gradient_method="adjoint")
 
-        expanded_tapes, _ = preprocess([qs], execution_config)
+        expanded_tapes, _, _ = preprocess([qs], execution_config)
 
         assert len(expanded_tapes) == 1
         expanded_qs = expanded_tapes[0]

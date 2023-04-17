@@ -93,6 +93,21 @@ class TestTracking:
         assert tracker.latest == {"batches": 1, "executions": 2}
 
 
+# pylint: disable=too-few-public-methods
+class TestPreprocessing:
+    """Unit tests for the preprocessing method."""
+
+    def test_chooses_best_gradient_method(self):
+        """Test that preprocessing chooses backprop as the best gradient method."""
+        dev = DefaultQubit2()
+
+        config = ExecutionConfig(gradient_method="best")
+        circuit = qml.tape.QuantumScript([], [qml.expval(qml.PauliZ(0))])
+        _, _, new_config = dev.preprocess(circuit, config)
+
+        assert new_config.gradient_method == "backprop"
+
+
 class TestSupportsDerivatives:
     """Test that DefaultQubit2 states what kind of derivatives it supports."""
 
@@ -477,7 +492,7 @@ class TestPreprocessingIntegration:
 
         dev = DefaultQubit2()
 
-        batch, post_procesing_fn = dev.preprocess(qscript)
+        batch, post_procesing_fn, config = dev.preprocess(qscript)
 
         assert len(batch) == 1
         execute_circuit = batch[0]
@@ -488,7 +503,7 @@ class TestPreprocessingIntegration:
         assert qml.equal(execute_circuit[4], qml.expval(qml.PauliZ("a")))
         assert qml.equal(execute_circuit[5], qml.expval(qml.PauliX("b")))
 
-        results = dev.execute(batch)
+        results = dev.execute(batch, config)
         assert len(results) == 1
         assert len(results[0]) == 3
 
@@ -526,9 +541,9 @@ class TestPreprocessingIntegration:
         initial_batch = [qs1, qs2]
 
         dev = DefaultQubit2()
-        batch, post_processing_fn = dev.preprocess(initial_batch)
+        batch, post_processing_fn, config = dev.preprocess(initial_batch)
 
-        results = dev.execute(batch)
+        results = dev.execute(batch, config)
         processed_results = post_processing_fn(results)
 
         assert len(processed_results) == 2
@@ -554,8 +569,8 @@ def test_broadcasted_parameter():
     dev = DefaultQubit2()
     x = np.array([0.536, 0.894])
     qs = qml.tape.QuantumScript([qml.RX(x, 0)], [qml.expval(qml.PauliZ(0))])
-    batch, post_processing_fn = dev.preprocess(qs)
+    batch, post_processing_fn, config = dev.preprocess(qs)
     assert len(batch) == 2
-    results = dev.execute(batch)
+    results = dev.execute(batch, config)
     processed_results = post_processing_fn(results)
     assert qml.math.allclose(processed_results, np.cos(x))

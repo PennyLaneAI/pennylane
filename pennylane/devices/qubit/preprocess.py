@@ -15,6 +15,7 @@
 """This module contains functions for preprocessing `QuantumTape` objects to ensure
 that they are supported for execution by a device."""
 # pylint: disable=protected-access
+import dataclasses
 from typing import Generator, Callable, Tuple
 import warnings
 
@@ -239,7 +240,7 @@ def batch_transform(
 def preprocess(
     circuits: Tuple[qml.tape.QuantumScript],
     execution_config: ExecutionConfig = DefaultExecutionConfig,
-) -> Tuple[Tuple[qml.tape.QuantumScript], Callable]:
+) -> Tuple[Tuple[qml.tape.QuantumScript], Callable, ExecutionConfig]:
     """Preprocess a batch of :class:`~.QuantumTape` objects to make them ready for execution.
 
     This function validates a batch of :class:`~.QuantumTape` objects by transforming and expanding
@@ -251,9 +252,8 @@ def preprocess(
             options for the execution.
 
     Returns:
-        Tuple[Sequence[.QuantumTape], callable]: Returns a tuple containing
-        the sequence of circuits to be executed, and a post-processing function
-        to be applied to the list of evaluated circuit results.
+        Tuple[QuantumTape], Callable, ExecutionConfig: QuantumTapes that the device can natively execute,
+        a postprocessing function to be called after execution, and a configuration with unset specifications filled in.
     """
     if execution_config.shots is not None:
         # Finite shot support will be added later
@@ -265,4 +265,7 @@ def preprocess(
 
     circuits, batch_fn = qml.transforms.map_batch_transform(batch_transform, circuits)
 
-    return circuits, batch_fn
+    if execution_config.gradient_method == "best":
+        execution_config = dataclasses.replace(execution_config, gradient_method="backprop")
+
+    return circuits, batch_fn, execution_config
