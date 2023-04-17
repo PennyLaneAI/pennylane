@@ -14,7 +14,7 @@
 """
 Unit tests for the HardwareHamiltonian class.
 """
-# pylint: disable=too-few-public-methods,redefined-outer-name
+# pylint: disable=too-few-public-methods,redefined-outer-name,too-many-arguments
 import numpy as np
 import pytest
 
@@ -271,8 +271,6 @@ class TestTransmonDrive:
         H2 = transmon_drive(amplitude=1, phase=phase1, freq=freq1, wires=[1, 2])
         Hd = H1 + H2
 
-        t = 6.0
-
         ops_expected = [
             qml.Hamiltonian([0.5, 0.5], [qml.PauliX(1), qml.PauliX(2)]),
             qml.Hamiltonian([-0.5, -0.5], [qml.PauliY(1), qml.PauliY(2)]),
@@ -302,7 +300,7 @@ class TestTransmonDrive:
         # pulses were added correctly
         assert Hd.pulses == []
         # Hamiltonian is as expected
-        assert qml.math.allclose(qml.matrix(Hd([0.5], t=5)), qml.matrix(H_expected([0.5], t=5)))
+        assert qml.math.allclose(qml.matrix(Hd([0.5], t=6)), qml.matrix(H_expected([0.5], t=6)))
 
 
 connections = [[0, 1], [1, 3], [2, 1], [4, 5]]
