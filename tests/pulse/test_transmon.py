@@ -462,7 +462,7 @@ class TestTransmonSettings:
         assert settings10.anharmonicity == [0.0] * len(omega0) + anharmonicity
 
 
-class TestIntegrationDrive:
+class TestIntegration:
     @pytest.mark.jax
     def test_jitted_qnode(
         self,
@@ -504,4 +504,102 @@ class TestIntegrationDrive:
         res_jit = qnode_jit(params)
 
         assert isinstance(res, jax.Array)
-        assert res == res_jit
+        assert qml.math.isclose(res, res_jit)
+
+    @pytest.mark.jax
+    def test_jitted_qnode_multidrive(
+        self,
+    ):
+        """Test that a transmon system with multiple drive terms can be
+        executed within a jitted qnode."""
+        import jax
+        import jax.numpy as jnp
+
+        Hd = transmon_interaction(omega, connections, g, wires=wires)
+
+        def fa(p, t):
+            return jnp.polyval(p, t)
+
+        def fb(p, t):
+            return p[0] * jnp.sin(p[1] * t)
+
+        def fc(p, t):
+            return p[0] * jnp.sin(t) + jnp.cos(p[1] * t)
+
+        def fd(p, t):
+            return p * jnp.cos(t)
+
+        H1 = transmon_drive(amplitude=fa, phase=fb, freq=0.5, wires=wires)
+        H2 = transmon_drive(amplitude=fc, phase=3 * jnp.pi, freq=0, wires=4)
+        H3 = transmon_drive(amplitude=0, phase=fd, freq=3.0, wires=[3, 0])
+
+        dev = qml.device("default.qubit", wires=wires)
+
+        ts = jnp.array([0.0, 3.0])
+        H_obj = sum(qml.PauliZ(i) for i in range(2))
+
+        @qml.qnode(dev, interface="jax")
+        def qnode(params):
+            qml.evolve(Hd + H1 + H2 + H3)(params, ts)
+            return qml.expval(H_obj)
+
+        @jax.jit
+        @qml.qnode(dev, interface="jax")
+        def qnode_jit(params):
+            qml.evolve(Hd + H1 + H2 + H3)(params, ts)
+            return qml.expval(H_obj)
+
+        params = (
+            jnp.ones(5),
+            jnp.array([1.0, jnp.pi]),
+            jnp.array([jnp.pi / 2, 0.5]),
+            jnp.array(-0.5),
+        )
+        res = qnode(params)
+        res_jit = qnode_jit(params)
+
+        assert isinstance(res, jax.Array)
+        assert qml.math.isclose(res, res_jit)
+
+    @pytest.mark.jax
+    def test_jitted_qnode_all_coeffs_callable(self):
+        """Test that a transmons system can be simulated within a
+        jitted qnode when all coeffs are callable."""
+        import jax
+        import jax.numpy as jnp
+
+        H_drift = transmon_interaction(omega, connections, g, wires=wires)
+
+        def fa(p, t):
+            return jnp.polyval(p, t)
+
+        def fb(p, t):
+            return p[0] * jnp.sin(p[1] * t)
+
+        def fc(p, t):
+            return p[0] * jnp.sin(t) + jnp.cos(p[1] * t)
+
+        H_drive = transmon_drive(amplitude=fa, phase=fb, freq=fc, wires=1)
+
+        dev = qml.device("default.qubit", wires=wires)
+
+        ts = jnp.array([0.0, 3.0])
+        H_obj = sum(qml.PauliZ(i) for i in range(2))
+
+        @qml.qnode(dev, interface="jax")
+        def qnode(params):
+            qml.evolve(H_drift + H_drive)(params, ts)
+            return qml.expval(H_obj)
+
+        @jax.jit
+        @qml.qnode(dev, interface="jax")
+        def qnode_jit(params):
+            qml.evolve(H_drift + H_drive)(params, ts)
+            return qml.expval(H_obj)
+
+        params = (jnp.ones(5), jnp.array([1.0, jnp.pi]), jnp.array([jnp.pi / 2, 0.5]))
+        res = qnode(params)
+        res_jit = qnode_jit(params)
+
+        assert isinstance(res, jax.Array)
+        assert qml.math.isclose(res, res_jit, atol=1e-4)
