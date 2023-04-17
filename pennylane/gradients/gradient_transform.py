@@ -23,7 +23,7 @@ SUPPORTED_GRADIENT_KWARGS = [
     "approx_order",
     "argnum",
     "aux_wire",
-    "broadcast",
+    "broadcast",  # [TODO: This is in param_shift. Unify with use_broadcasting in stoch_pulse_grad
     "device_wires",
     "diagonal_shifts",
     "f0",
@@ -43,6 +43,7 @@ SUPPORTED_GRADIENT_KWARGS = [
     "shifts",
     "shots",
     "strategy",
+    "use_broadcasting",
     "validate_params",
 ]
 

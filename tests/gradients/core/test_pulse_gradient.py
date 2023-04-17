@@ -860,6 +860,69 @@ class TestStochPulseGradQNodeIntegration:
             qml.math.allclose(r, e, rtol=0.4) for r, e in zip(grad_pulse_grad, grad_backprop)
         )
 
+    def test_multi_return_broadcasting_shot_vector_raises(self):
+        """Test that a simple qnode that returns an expectation value and probabilities
+        can be differentiated with stoch_pulse_grad with use_broadcasting."""
+        import jax
+
+        jnp = jax.numpy
+        jax.config.update("jax_enable_x64", True)
+        dev = qml.device("default.qubit.jax", wires=1, shots=shots, prng_key=jax.random.PRNGKey(74))
+        T = 0.2
+        ham_single_q_const = qml.pulse.constant * qml.PauliY(0)
+
+        @qml.qnode(
+            dev,
+            interface="jax",
+            diff_method=stoch_pulse_grad,
+            num_split_times=num_split_times,
+            use_broadcasting=True,
+        )
+        def circuit(params):
+            qml.evolve(ham_single_q_const)(params, T)
+            return qml.probs(wires=0), qml.expval(qml.PauliZ(0))
+
+        params = [jnp.array(0.4)]
+        with pytest.raises(NotImplementedError, "Broadcasting, multiple measurements and shot vec"):
+            _ = jax.jacobian(circuit)(params)
+
+    # TODO: delete error test above and uncomment the following test case once #2690 is resolved.
+    @pytest.mark.parametrize("shots, tol", [(None, 1e-4), (100, 0.1)])  # , ([100, 100], 0.1)])
+    @pytest.mark.parametrize("num_split_times", [1, 3])
+    def test_qnode_probs_expval_broadcasting(self, num_split_times, shots, tol):
+        """Test that a simple qnode that returns an expectation value and probabilities
+        can be differentiated with stoch_pulse_grad with use_broadcasting."""
+        import jax
+
+        jnp = jax.numpy
+        jax.config.update("jax_enable_x64", True)
+        dev = qml.device("default.qubit.jax", wires=1, shots=shots, prng_key=jax.random.PRNGKey(74))
+        T = 0.2
+        ham_single_q_const = qml.pulse.constant * qml.PauliY(0)
+
+        @qml.qnode(
+            dev,
+            interface="jax",
+            diff_method=stoch_pulse_grad,
+            num_split_times=num_split_times,
+            use_broadcasting=True,
+        )
+        def circuit(params):
+            qml.evolve(ham_single_q_const)(params, T)
+            return qml.probs(wires=0), qml.expval(qml.PauliZ(0))
+
+        params = [jnp.array(0.4)]
+        jac = jax.jacobian(circuit)(params)
+        p = params[0] * T
+        exp_jac = (jnp.array([-1, 1]) * jnp.sin(2 * p) * T, -2 * jnp.sin(2 * p) * T)
+        if hasattr(shots, "len"):
+            for j_shots, e_shots in zip(jac, exp_jac):
+                for j, e in zip(j_shots, e_shots):
+                    assert qml.math.allclose(j[0], e, atol=tol, rtol=0.0)
+        else:
+            for j, e in zip(jac, exp_jac):
+                assert qml.math.allclose(j[0], e, atol=tol, rtol=0.0)
+
 
 @pytest.mark.jax
 class TestStochPulseGradDiff:

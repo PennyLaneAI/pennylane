@@ -210,6 +210,7 @@ class DefaultQubitJax(DefaultQubit):
         # given that wires is a static value (it is not a tracer), we can use an if statement
         if (
             2 * len(operation.wires) > self.num_wires
+            and not operation.hyperparameters["return_intermediate"]
             and not operation.hyperparameters["complementary"]
         ):
             # the device state vector contains less values than the operation matrix --> evolve state

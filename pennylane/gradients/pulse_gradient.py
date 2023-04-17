@@ -40,11 +40,13 @@ from .gradient_transform import (
 has_jax = True
 try:
     import jax
+
+    jnp = jax.numpy
 except ImportError:
     has_jax = False
 
 
-def split_evol_ops(op, word, word_wires, key, num_split_times=1):
+def split_evol_ops(op, word, word_wires, key, broadcasting_len=None):
     r"""Randomly split a ``ParametrizedEvolution`` with respect to time into two operations and
     insert a Pauli rotation using a given Pauli word and rotation angles :math:`\pm\pi/2`.
     This yields two groups of three operations each.
@@ -61,15 +63,11 @@ def split_evol_ops(op, word, word_wires, key, num_split_times=1):
             inner lists. The first tuple entry contains the operations with positive Pauli rotation
             angle, the second entry the operations with negative Pauli rotation angle.
     """
-    if len(op.t) != 2:
-        raise ValueError("")  # TODO
     # Extract time interval, split it, and set the intervals of the copies to the split intervals
     t0, t1 = op.t
-    broadcast = num_split_times > 1
-    if broadcast:
-        tau = jax.random.uniform(key, shape=(num_split_times,)) * (t1 - t0) + t0
-        sorted_tau = jax.numpy.sort(tau)
-        before_t = jax.numpy.concatenate([jax.numpy.array([t0]), sorted_tau, jax.numpy.array([t0])])
+    if broadcast := (broadcasting_len is not None):
+        tau = jnp.sort(jax.random.uniform(key, shape=(broadcasting_len,)) * (t1 - t0) + t0)
+        before_t = jnp.concatenate([jnp.array([t0]), tau, jnp.array([t1])])
         after_t = before_t.copy()
     else:
         tau = jax.random.uniform(key) * (t1 - t0) + t0
@@ -135,8 +133,8 @@ def _parshift_and_integrate(
         cjacs (tensor_like): classical Jacobian evaluated at the splitting times
         int_prefactor (float): prefactor of the numerical integration, corresponding to the size
             of the time range divided by the number of splitting time samples
-        single_measure (bool):
-        shot_vector (bool):
+        single_measure (bool): Whether the results contain a single measurement per shot setting
+        shot_vector (bool): Whether the results have a shot vector axis
     Returns:
         tensor_like or tuple[tensor_like] or tuple[tuple[tensor_like]]: Gradient entry
     """
@@ -145,13 +143,13 @@ def _parshift_and_integrate(
 
         def _diff_and_contract(res_list, cjacs, int_prefactor):
             # This one will not work yet with tuples.
-            diff = qml.math.stack(res_list)[0, 1:-1] - qml.math.stack(res_list)[1, 1:-1]
+            diff = (res := qml.math.stack(res_list))[0, 1:-1] - res[1, 1:-1]
             return qml.math.tensordot(diff, cjacs, axes=[[0], [0]]) * int_prefactor
 
     else:
 
         def _diff_and_contract(res_list, cjacs, int_prefactor):
-            diff = qml.math.stack(res_list)[::2] - qml.math.stack(res_list)[1::2]
+            diff = (res := qml.math.stack(res_list))[::2] - res[1::2]
             return qml.math.tensordot(diff, cjacs, axes=[[0], [0]]) * int_prefactor
 
     # If multiple measure xor shot_vector: One axis to pull out of the shift rule and integration
@@ -161,7 +159,13 @@ def _parshift_and_integrate(
         # Single measurement without shot vector
         return _diff_and_contract(results, cjacs, int_prefactor)
 
-    # Multiple measurements with shot vector
+    # Multiple measurements with shot vector. Not supported with broadcasting yet.
+    if use_broadcasting:
+        # TODO: Remove once #2690 is resolved
+        raise NotImplementedError(
+            "Broadcasting, multiple measurements and shot vectors are currently not "
+            "supported all simultaneously by stoch_pulse_grad."
+        )
     return tuple(
         tuple(_diff_and_contract(_r, cjacs, int_prefactor) for _r in zip(*r)) for r in zip(*results)
     )
@@ -224,7 +228,10 @@ def _stoch_pulse_grad(
         shots (None, int, list[int]): The device shots that will be used to execute the tapes 
             outputted by this transform. Note that this argument doesn't influence the shots
             used for tape execution, but provides information about the shots.
-        use_broadcasting # TODO docs
+        use_broadcasting (bool): Whether to use broadcasting across the different sampled
+            splitting times. If ``False`` (the default), one set of modified tapes per
+            splitting time is created, if ``True`` only a single set of broadcasted, modified
+            tapes is created.
 
     Returns:
         function or tuple[list[QuantumTape], function]:
@@ -316,10 +323,29 @@ def _stoch_pulse_grad(
     ...     sampler_seed=18, # Fix randomness seed
     ... )
     >>> jax.grad(qnode)(params)
-    [Array(0.37935182, dtype=float32, weak_type=True),
-     Array(-0.26384923, dtype=float32, weak_type=True)] # results do not vary
+    [Array(0.26571652, dtype=float64, weak_type=True),
+     Array(-0.22621927, dtype=float64, weak_type=True)]
 
-    # TODO broadcasting example
+    On simulator devices, we may activate the option ``use_broadcasting``, which makes
+    use of broadcasting internally to improve the performance of the stochastic parameter-shift
+    rule:
+
+    >>> from time import process_time
+    >>> faster_grad_qnode = qml.QNode(
+    ...     ansatz,
+    ...     dev,
+    ...     interface="jax",
+    ...     diff_method=qml.gradients.stoch_pulse_grad,
+    ...     num_split_times=20, # Use 20 samples for the approximation
+    ...     sampler_seed=18, # Fix randomness seed
+    ...     use_broadcasting=True, # Activate broadcasting for parallelized evaluation
+    ... )
+    # TODO: Timing comparison
+
+    .. warning::
+
+        As the option ``use_broadcasting=True`` adds a broadcasting dimension to the modified
+        circuits, it is not compatible with circuits that already are broadcasted.
 
     .. details::
         :title: Theoretical background
@@ -484,7 +510,7 @@ def _stoch_pulse_grad(
         return _no_trainable_grad_new(tape, shots)
 
     if use_broadcasting and tape.batch_size is not None:
-        raise ValueError()  # TODO add error and test
+        raise ValueError("Broadcasting is not supported for tapes that already are broadcasted.")
 
     gradient_analysis(tape, grad_fn=stoch_pulse_grad)
     method = "analytic"
@@ -521,6 +547,11 @@ def _expval_stoch_pulse_grad(tape, argnum, num_split_times, key, shots, use_broa
             raise ValueError(
                 "stoch_pulse_grad does not support differentiating parameters of "
                 "other operations than pulses."
+            )
+        if len(op.t) != 2:
+            raise ValueError(
+                "stoch_pulse_grad does not support differentiating ParametrizedEvolutions with "
+                f"intermediate time steps. Got t={op.t}"
             )
 
         coeff, ham = op.H.coeffs_parametrized[term_idx], op.H.ops_parametrized[term_idx]
