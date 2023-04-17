@@ -65,7 +65,7 @@ class ParametrizedHamiltonianPytree:
                 mat_fixed,
                 mats_parametrized,
                 H.coeffs_parametrized,
-                reorder_fn=_reorder_parameters,
+                reorder_fn=H.reorder_fn,
             )
 
         return ParametrizedHamiltonianPytree(

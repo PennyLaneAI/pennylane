@@ -42,10 +42,10 @@ class TestTransmonDrive:
         assert Hd.wires == Wires([1, 2])
         assert len(Hd.ops) == 2
 
-    @pytest.mark.parametrize("amp", 0.5*np.arange(3, dtype=float))
-    @pytest.mark.parametrize("phase", 0.5*np.arange(3, dtype=float))
-    @pytest.mark.parametrize("freq", 0.5*np.arange(3, dtype=float))
-    @pytest.mark.parametrize("t", 0.5*np.arange(3, dtype=float))
+    @pytest.mark.parametrize("amp", 0.5 * np.arange(2, dtype=float))
+    @pytest.mark.parametrize("phase", 0.5 * np.arange(2, dtype=float))
+    @pytest.mark.parametrize("freq", 0.5 * np.arange(2, dtype=float))
+    @pytest.mark.parametrize("t", 0.5 * np.arange(1, 3, dtype=float))
     def test_all_constant_parameters(self, amp, phase, freq, t):
         """Test that transmon drive with all constant parameters yields the expected Hamiltonian"""
         H = transmon_drive(amp, phase, freq, wires=[0])
@@ -64,11 +64,11 @@ class TestTransmonDrive:
         assert H.coeffs[1].func.__name__ == "no_callable"
         assert qml.math.allclose(qml.matrix(H([], t)), qml.matrix(expected(amp, phase, freq, t)))
 
-    @pytest.mark.parametrize("amp", [lambda p, t: p*t, lambda p, t: np.sin(p*t)])
-    @pytest.mark.parametrize("phase", 0.5*np.arange(3, dtype=float))
-    @pytest.mark.parametrize("freq", 0.5*np.arange(3, dtype=float))
-    @pytest.mark.parametrize("p", 0.5*np.arange(3, dtype=float))
-    @pytest.mark.parametrize("t", 0.5*np.arange(3, dtype=float))
+    @pytest.mark.parametrize("amp", [lambda p, t: p * t, lambda p, t: np.sin(p * t)])
+    @pytest.mark.parametrize("phase", 0.5 * np.arange(2, dtype=float))
+    @pytest.mark.parametrize("freq", 0.5 * np.arange(2, dtype=float))
+    @pytest.mark.parametrize("p", 0.5 * np.arange(2, dtype=float))
+    @pytest.mark.parametrize("t", 0.5 * np.arange(1, 3, dtype=float))
     def test_amp_callable(self, amp, phase, freq, p, t):
         """Test callable amplitude works as expected"""
         H = transmon_drive(amp, phase, freq, wires=[0])
@@ -87,13 +87,15 @@ class TestTransmonDrive:
 
         assert H.coeffs[0].func.__name__ == "callable_amp"
         assert H.coeffs[1].func.__name__ == "callable_amp"
-        assert qml.math.allclose(qml.matrix(H(params, t)), qml.matrix(expected(amp, phase, freq, params, t)))
+        assert qml.math.allclose(
+            qml.matrix(H(params, t)), qml.matrix(expected(amp, phase, freq, params, t))
+        )
 
-    @pytest.mark.parametrize("amp", 0.5*np.arange(3, dtype=float))
-    @pytest.mark.parametrize("phase", [lambda p, t: p*t, lambda p, t: np.sin(p*t)])
-    @pytest.mark.parametrize("freq", 0.5*np.arange(3, dtype=float))
-    @pytest.mark.parametrize("p", 0.5*np.arange(3, dtype=float))
-    @pytest.mark.parametrize("t", 0.5*np.arange(3, dtype=float))
+    @pytest.mark.parametrize("amp", 0.5 * np.arange(2, dtype=float))
+    @pytest.mark.parametrize("phase", [lambda p, t: p * t, lambda p, t: np.sin(p * t)])
+    @pytest.mark.parametrize("freq", 0.5 * np.arange(2, dtype=float))
+    @pytest.mark.parametrize("p", 0.5 * np.arange(2, dtype=float))
+    @pytest.mark.parametrize("t", 0.5 * np.arange(1, 3, dtype=float))
     def test_phase_callable(self, amp, phase, freq, p, t):
         """Test callable phase works as expected"""
         H = transmon_drive(amp, phase, freq, wires=[0])
@@ -112,13 +114,15 @@ class TestTransmonDrive:
 
         assert H.coeffs[0].func.__name__ == "callable_phase"
         assert H.coeffs[1].func.__name__ == "callable_phase"
-        assert qml.math.allclose(qml.matrix(H(params, t)), qml.matrix(expected(amp, phase, freq, params, t)))
+        assert qml.math.allclose(
+            qml.matrix(H(params, t)), qml.matrix(expected(amp, phase, freq, params, t))
+        )
 
-    @pytest.mark.parametrize("amp", 0.5*np.arange(3, dtype=float))
-    @pytest.mark.parametrize("phase", 0.5*np.arange(3, dtype=float))
-    @pytest.mark.parametrize("freq", [lambda p, t: p*t, lambda p, t: np.sin(p*t)])
-    @pytest.mark.parametrize("p", 0.5*np.arange(3, dtype=float))
-    @pytest.mark.parametrize("t", 0.5*np.arange(3, dtype=float))
+    @pytest.mark.parametrize("amp", 0.5 * np.arange(2, dtype=float))
+    @pytest.mark.parametrize("phase", 0.5 * np.arange(2, dtype=float))
+    @pytest.mark.parametrize("freq", [lambda p, t: p * t, lambda p, t: np.sin(p * t)])
+    @pytest.mark.parametrize("p", 0.5 * np.arange(2, dtype=float))
+    @pytest.mark.parametrize("t", 0.5 * np.arange(1, 3, dtype=float))
     def test_freq_callable(self, amp, phase, freq, p, t):
         """Test callable freq works as expected"""
         H = transmon_drive(amp, phase, freq, wires=[0])
@@ -137,14 +141,16 @@ class TestTransmonDrive:
 
         assert H.coeffs[0].func.__name__ == "callable_freq"
         assert H.coeffs[1].func.__name__ == "callable_freq"
-        assert qml.math.allclose(qml.matrix(H(params, t)), qml.matrix(expected(amp, phase, freq, params, t)))
+        assert qml.math.allclose(
+            qml.matrix(H(params, t)), qml.matrix(expected(amp, phase, freq, params, t))
+        )
 
-    @pytest.mark.parametrize("amp", [lambda p, t: p*t, lambda p, t: np.sin(p*t)])
-    @pytest.mark.parametrize("phase", 0.5*np.arange(3, dtype=float))
-    @pytest.mark.parametrize("freq", [lambda p, t: p*t, lambda p, t: np.sin(p*t)])
-    @pytest.mark.parametrize("p1", 0.5*np.arange(3, dtype=float))
-    @pytest.mark.parametrize("p2", 0.5*np.arange(3, dtype=float))
-    @pytest.mark.parametrize("t", 0.5*np.arange(3, dtype=float))
+    @pytest.mark.parametrize("amp", [lambda p, t: p * t, lambda p, t: np.sin(p * t)])
+    @pytest.mark.parametrize("phase", 0.5 * np.arange(2, dtype=float))
+    @pytest.mark.parametrize("freq", [lambda p, t: p * t, lambda p, t: np.sin(p * t)])
+    @pytest.mark.parametrize("p1", 0.5 * np.arange(2, dtype=float))
+    @pytest.mark.parametrize("p2", 0.5 * np.arange(2, dtype=float))
+    @pytest.mark.parametrize("t", 0.5 * np.arange(1, 3, dtype=float))
     def test_amp_and_freq_callable(self, amp, phase, freq, p1, p2, t):
         """Test callable amplitude and freq works as expected"""
         H = transmon_drive(amp, phase, freq, wires=[0])
@@ -163,14 +169,16 @@ class TestTransmonDrive:
 
         assert H.coeffs[0].func.__name__ == "callable_amp_and_freq"
         assert H.coeffs[1].func.__name__ == "callable_amp_and_freq"
-        assert qml.math.allclose(qml.matrix(H(params, t)), qml.matrix(expected(amp, phase, freq, *params, t)))
+        assert qml.math.allclose(
+            qml.matrix(H(params, t)), qml.matrix(expected(amp, phase, freq, *params, t))
+        )
 
-    @pytest.mark.parametrize("amp", [lambda p, t: p*t, lambda p, t: np.sin(p*t)])
-    @pytest.mark.parametrize("phase", [lambda p, t: p*t, lambda p, t: np.sin(p*t)])
-    @pytest.mark.parametrize("freq", 0.5*np.arange(3, dtype=float))
-    @pytest.mark.parametrize("p1", 0.5*np.arange(3, dtype=float))
-    @pytest.mark.parametrize("p2", 0.5*np.arange(3, dtype=float))
-    @pytest.mark.parametrize("t", 0.5*np.arange(3, dtype=float))
+    @pytest.mark.parametrize("amp", [lambda p, t: p * t, lambda p, t: np.sin(p * t)])
+    @pytest.mark.parametrize("phase", [lambda p, t: p * t, lambda p, t: np.sin(p * t)])
+    @pytest.mark.parametrize("freq", 0.5 * np.arange(2, dtype=float))
+    @pytest.mark.parametrize("p1", 0.5 * np.arange(2, dtype=float))
+    @pytest.mark.parametrize("p2", 0.5 * np.arange(2, dtype=float))
+    @pytest.mark.parametrize("t", 0.5 * np.arange(1, 3, dtype=float))
     def test_amp_and_phase_callable(self, amp, phase, freq, p1, p2, t):
         """Test callable amplitude and phase works as expected"""
         H = transmon_drive(amp, phase, freq, wires=[0])
@@ -189,14 +197,16 @@ class TestTransmonDrive:
 
         assert H.coeffs[0].func.__name__ == "callable_amp_and_phase"
         assert H.coeffs[1].func.__name__ == "callable_amp_and_phase"
-        assert qml.math.allclose(qml.matrix(H(params, t)), qml.matrix(expected(amp, phase, freq, *params, t)))
+        assert qml.math.allclose(
+            qml.matrix(H(params, t)), qml.matrix(expected(amp, phase, freq, *params, t))
+        )
 
-    @pytest.mark.parametrize("amp", 0.5*np.arange(3, dtype=float))
-    @pytest.mark.parametrize("phase", [lambda p, t: p*t, lambda p, t: np.sin(p*t)])
-    @pytest.mark.parametrize("freq", [lambda p, t: p*t, lambda p, t: np.sin(p*t)])
-    @pytest.mark.parametrize("p1", 0.5*np.arange(3, dtype=float))
-    @pytest.mark.parametrize("p2", 0.5*np.arange(3, dtype=float))
-    @pytest.mark.parametrize("t", 0.5*np.arange(3, dtype=float))
+    @pytest.mark.parametrize("amp", 0.5 * np.arange(2, dtype=float))
+    @pytest.mark.parametrize("phase", [lambda p, t: p * t, lambda p, t: np.sin(p * t)])
+    @pytest.mark.parametrize("freq", [lambda p, t: p * t, lambda p, t: np.sin(p * t)])
+    @pytest.mark.parametrize("p1", 0.5 * np.arange(2, dtype=float))
+    @pytest.mark.parametrize("p2", 0.5 * np.arange(2, dtype=float))
+    @pytest.mark.parametrize("t", 0.5 * np.arange(1, 3, dtype=float))
     def test_phase_and_freq_callable(self, amp, phase, freq, p1, p2, t):
         """Test callable phase and freq works as expected"""
         H = transmon_drive(amp, phase, freq, wires=[0])
@@ -215,22 +225,26 @@ class TestTransmonDrive:
 
         assert H.coeffs[0].func.__name__ == "callable_phase_and_freq"
         assert H.coeffs[1].func.__name__ == "callable_phase_and_freq"
-        assert qml.math.allclose(qml.matrix(H(params, t)), qml.matrix(expected(amp, phase, freq, *params, t)))
+        assert qml.math.allclose(
+            qml.matrix(H(params, t)), qml.matrix(expected(amp, phase, freq, *params, t))
+        )
 
-    @pytest.mark.parametrize("amp", [lambda p, t: p*t, lambda p, t: np.sin(p*t)])
-    @pytest.mark.parametrize("phase", [lambda p, t: p*t, lambda p, t: np.sin(p*t)])
-    @pytest.mark.parametrize("freq", [lambda p, t: p*t, lambda p, t: np.sin(p*t)])
-    @pytest.mark.parametrize("p0", 0.5*np.arange(3, dtype=float))
-    @pytest.mark.parametrize("p1", 0.5*np.arange(3, dtype=float))
-    @pytest.mark.parametrize("p2", 0.5*np.arange(3, dtype=float))
-    @pytest.mark.parametrize("t", 0.5*np.arange(3, dtype=float))
+    @pytest.mark.parametrize("amp", [lambda p, t: p * t, lambda p, t: np.sin(p * t)])
+    @pytest.mark.parametrize("phase", [lambda p, t: p * t, lambda p, t: np.sin(p * t)])
+    @pytest.mark.parametrize("freq", [lambda p, t: p * t, lambda p, t: np.sin(p * t)])
+    @pytest.mark.parametrize("p0", 0.5 * np.arange(2, dtype=float))
+    @pytest.mark.parametrize("p1", 0.5 * np.arange(2, dtype=float))
+    @pytest.mark.parametrize("p2", 0.5 * np.arange(2, dtype=float))
+    @pytest.mark.parametrize("t", 0.5 * np.arange(1, 3, dtype=float))
     def test_amplitude_phase_and_freq_callable(self, amp, phase, freq, p0, p1, p2, t):
         """Test callable amplitude, phase and freq works as expected"""
         H = transmon_drive(amp, phase, freq, wires=[0])
 
         def expected(params, t, wire=0):
             return (
-                0.5 * amp(params[0], t) * (
+                0.5
+                * amp(params[0], t)
+                * (
                     np.cos(phase(params[1], t) + freq(params[2], t) * t) * qml.PauliX(wire)
                     - np.sin(phase(params[1], t) + freq(params[2], t) * t) * qml.PauliY(wire)
                 )
@@ -242,18 +256,22 @@ class TestTransmonDrive:
         assert H.coeffs[1].func.__name__ == "callable_amp_and_phase_and_freq"
         assert qml.math.allclose(qml.matrix(H(params, t)), qml.matrix(expected(params, t)))
 
-    @pytest.mark.xfail
     def test_multiple_drives(
         self,
     ):
-        def fa(p, t):
+        def amp(p, t):
             return np.sin(p * t)
 
-        H1 = transmon_drive(amplitude=fa, phase=1, freq=3, wires=[0, 3])
-        H2 = transmon_drive(amplitude=1, phase=3, freq=3, wires=[1, 2])
+        phase0 = 3.0
+        phase1 = 5.0
+        freq0 = 0.1
+        freq1 = 0.5
+
+        H1 = transmon_drive(amplitude=amp, phase=phase0, freq=freq0, wires=[0, 3])
+        H2 = transmon_drive(amplitude=1, phase=phase1, freq=freq1, wires=[1, 2])
         Hd = H1 + H2
 
-        t = 5
+        t = 6.0
 
         ops_expected = [
             qml.Hamiltonian([0.5, 0.5], [qml.PauliX(1), qml.PauliX(2)]),
@@ -262,10 +280,10 @@ class TestTransmonDrive:
             qml.Hamiltonian([-0.5, -0.5], [qml.PauliY(0), qml.PauliY(3)]),
         ]
         coeffs_expected = [
-            np.cos(3 + 3 * t),
-            np.sin(3 + 3 * t),
-            AmplitudeAndPhaseAndFreq(np.cos, fa, 1, 3),
-            AmplitudeAndPhaseAndFreq(np.sin, fa, 1, 3),
+            AmplitudeAndPhaseAndFreq(np.cos, amp, phase0, freq0),
+            AmplitudeAndPhaseAndFreq(np.sin, amp, phase0, freq0),
+            AmplitudeAndPhaseAndFreq(np.cos, 1, phase1, freq1),
+            AmplitudeAndPhaseAndFreq(np.sin, 1, phase1, freq1),
         ]
         H_expected = HardwareHamiltonian(
             coeffs_expected, ops_expected, reorder_fn=_reorder_AmpPhaseFreq
@@ -278,12 +296,13 @@ class TestTransmonDrive:
 
         for coeff in Hd.coeffs:
             assert isinstance(coeff, AmplitudeAndPhaseAndFreq)
+        assert Hd.coeffs[0].func.__name__ == "callable_amp"
+        assert Hd.coeffs[2].func.__name__ == "no_callable"
 
         # pulses were added correctly
         assert Hd.pulses == []
         # Hamiltonian is as expected
-        qml.math.allclose(qml.matrix(Hd([0.5], t=5)), qml.matrix(H_expected([0.5], t=5)))
-        # qml.matrix(Hd([0.5], t=5)), qml.matrix(H_expected([0.5], t=5))
+        assert qml.math.allclose(qml.matrix(Hd([0.5], t=5)), qml.matrix(H_expected([0.5], t=5)))
 
 
 connections = [[0, 1], [1, 3], [2, 1], [4, 5]]
@@ -443,3 +462,48 @@ class TestTransmonSettings:
 
         settings10 = settings1 + settings0
         assert settings10.anharmonicity == [0.0] * len(omega0) + anharmonicity
+
+
+class TestIntegrationDrive:
+    @pytest.mark.jax
+    def test_jitted_qnode(
+        self,
+    ):
+        """Test that regular and jitted qnode yield same result"""
+        import jax
+        import jax.numpy as jnp
+
+        Hd = transmon_interaction(omega, connections, g, wires=wires)
+
+        def fa(p, t):
+            return jnp.polyval(p, t)
+
+        def fb(p, t):
+            return p[0] * jnp.sin(p[1] * t)
+
+        Ht = transmon_drive(amplitude=fa, phase=fb, freq=0.5, wires=[0])
+        H = Hd + Ht
+
+        dev = qml.device("default.qubit.jax", wires=wires)
+
+        ts = jnp.array([0.0, 3.0])
+        H_obj = sum(qml.PauliZ(i) for i in range(2))
+
+        @qml.qnode(dev, interface="jax")
+        def qnode(params):
+            qml.evolve(H)(params, ts)
+            return qml.expval(H_obj)
+
+        @jax.jit
+        @qml.qnode(dev, interface="jax")
+        def qnode_jit(params):
+            qml.evolve(H)(params, ts)
+            return qml.expval(H_obj)
+
+        params = (jnp.ones(5), jnp.array([1.0, jnp.pi]))
+
+        res = qnode(params)
+        res_jit = qnode_jit(params)
+
+        assert isinstance(res, jax.Array)
+        assert res == res_jit

@@ -248,14 +248,12 @@ class AmplitudeAndPhaseAndFreq:
         self.phase_is_callable = callable(phase)
         self.freq_is_callable = callable(freq)
 
-
         # all 3 callable
         def callable_amp_and_phase_and_freq(params, t):
             return amp(params[0], t) * trig_fn(phase(params[1], t) + freq(params[2], t) * t)
 
         if self.amp_is_callable and self.phase_is_callable and self.freq_is_callable:
             self.func = callable_amp_and_phase_and_freq
-
 
         # 2 out of 3 callable
         def callable_amp_and_phase(params, t):
@@ -264,20 +262,17 @@ class AmplitudeAndPhaseAndFreq:
         if self.amp_is_callable and self.phase_is_callable and not self.freq_is_callable:
             self.func = callable_amp_and_phase
 
-
         def callable_amp_and_freq(params, t):
             return amp(params[0], t) * trig_fn(phase + freq(params[1], t) * t)
 
         if self.amp_is_callable and not self.phase_is_callable and self.freq_is_callable:
             self.func = callable_amp_and_freq
 
-
         def callable_phase_and_freq(params, t):
             return amp * trig_fn(phase(params[0], t) + freq(params[1], t) * t)
 
         if not self.amp_is_callable and self.phase_is_callable and self.freq_is_callable:
             self.func = callable_phase_and_freq
-
 
         # 1 out of 3 callable
         def callable_amp(params, t):
@@ -286,20 +281,17 @@ class AmplitudeAndPhaseAndFreq:
         if self.amp_is_callable and not self.phase_is_callable and not self.freq_is_callable:
             self.func = callable_amp
 
-
         def callable_phase(params, t):
             return amp * trig_fn(phase(params, t) + freq * t)
 
         if not self.amp_is_callable and self.phase_is_callable and not self.freq_is_callable:
             self.func = callable_phase
 
-
         def callable_freq(params, t):
             return amp * trig_fn(phase + freq(params, t) * t)
 
         if not self.amp_is_callable and not self.phase_is_callable and self.freq_is_callable:
             self.func = callable_freq
-
 
         # 0 out of 3 callable (the remaining coeff is still callable due to explicit time dependence)
         def no_callable(_, t):
