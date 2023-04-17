@@ -64,12 +64,34 @@
   demonstration of how to perform the execution on actual hardware!  
 
 * A pulse-level circuit can now be differentiated using a
-  [stochastic parameter shift](https://arxiv.org/abs/2210.15812) method that can be compatible with
-  hardware-based systems such as an ensemble of Rydberg atoms.
+  [stochastic parameter shift](https://arxiv.org/abs/2210.15812) method. The current version of this
+  method is restricted to Hamiltonians composed of parametrized
+  [Pauli words](https://docs.pennylane.ai/en/stable/code/api/pennylane.pauli.PauliWord.html), but
+  future updates to extend to parametrized
+  [Pauli sentences](https://docs.pennylane.ai/en/stable/code/api/pennylane.pauli.PauliSentence.html)
+  can allow this method to be compatible with hardware-based systems such as an ensemble of Rydberg
+  atoms.
   [(#3780)](https://github.com/PennyLaneAI/pennylane/pull/3780)
+  [(#3900)](https://github.com/PennyLaneAI/pennylane/pull/3900)
+  [(#4000)](https://github.com/PennyLaneAI/pennylane/pull/4000)
+  [(#4004)](https://github.com/PennyLaneAI/pennylane/pull/4004)
+  TODO - check if performance PRs are merged.
 
-  This method can be activated by settomg `diff_method` to
+  This method can be activated by setting `diff_method` to
   [`qml.gradient.stoch_pulse_grad`](https://docs.pennylane.ai/en/stable/code/api/pennylane.gradients.stoch_pulse_grad.html):
+
+  ```pycon
+  >>> dev = qml.device("default.qubit.jax", wires=2)
+  >>> sin = lambda p, t: jax.numpy.sin(p * t)
+  >>> ZZ = qml.PauliZ(0) @ qml.PauliZ(1)
+  >>> H = 0.5 * qml.PauliX(0) + qml.pulse.constant * ZZ + sin * qml.PauliX(1)
+  >>> @qml.qnode(dev, interface="jax", diff_method=qml.gradients.stoch_pulse_grad)
+  >>> def ansatz(params):
+  ...     qml.evolve(H)(params, (0.2, 1.))
+  ...     return qml.expval(qml.PauliY(1))
+  >>> params = [jax.numpy.array(0.4), jax.numpy.array(1.3)]
+  >>> jax.grad(ansatz)(params)
+  ```
 
 <h4>Quantum singular value transform 🐛➡️🦋</h4>
 
