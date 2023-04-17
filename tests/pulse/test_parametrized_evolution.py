@@ -248,6 +248,38 @@ class TestInitialization:
         ):
             _ = ParametrizedEvolution(H=H, params=[1, 2], t=2)
 
+    def test_hash_with_data(self):
+        """Test that the hash of a ParametrizedEvolution takes all attributes into account."""
+
+        H_0 = 0.2 * qml.PauliZ(0) + qml.pulse.constant * (qml.PauliX(0) @ qml.PauliY(1))
+        H_1 = 0.2 * qml.PauliX(0) + qml.pulse.constant * (qml.PauliX(0) @ qml.PauliY(1))
+
+        params_0 = [np.array(0.4)]
+        params_1 = [np.array(0.43)]
+
+        t_0 = (0.3, 0.4)
+        t_1 = (0.3, 0.5)
+
+        atol_0 = 1e-8
+        atol_1 = 1e-7
+
+        compare_to = ParametrizedEvolution(H_0, params_0, t_0, False, False, atol=atol_0)
+        equal = ParametrizedEvolution(H_0, params_0, t_0, False, False, atol=atol_0)
+        diff_H = ParametrizedEvolution(H_1, params_0, t_0, False, False, atol=atol_0)
+        diff_params = ParametrizedEvolution(H_0, params_1, t_0, False, False, atol=atol_0)
+        diff_t = ParametrizedEvolution(H_0, params_0, t_1, False, False, atol=atol_0)
+        diff_atol = ParametrizedEvolution(H_0, params_0, t_0, False, False, atol=atol_1)
+        diff_ret_intmdt = ParametrizedEvolution(H_0, params_0, t_0, True, False, atol=atol_0)
+        diff_complementary = ParametrizedEvolution(H_0, params_0, t_0, False, True, atol=atol_0)
+
+        assert compare_to.hash == equal.hash
+        assert compare_to.hash != diff_H.hash
+        assert compare_to.hash != diff_params.hash
+        assert compare_to.hash != diff_t.hash
+        assert compare_to.hash != diff_atol.hash
+        assert compare_to.hash != diff_ret_intmdt.hash
+        assert compare_to.hash != diff_complementary.hash
+
 
 @pytest.mark.jax
 class TestMatrix:

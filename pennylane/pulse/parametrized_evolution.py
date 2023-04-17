@@ -23,7 +23,6 @@ import warnings
 
 import pennylane as qml
 from pennylane.operation import AnyWires, Operation
-from pennylane.typing import TensorLike
 
 from .parametrized_hamiltonian import ParametrizedHamiltonian
 
@@ -410,6 +409,21 @@ class ParametrizedEvolution(Operation):
         # Subtract 1 because the identity is never returned by `matrix`. If `complementary=True`,
         # subtract and additional 1 because the full time evolution is not being returned.
         self._batch_size = self.t.shape[0]
+
+    @property
+    def hash(self):
+        """int: Integer hash that uniquely represents the operator."""
+        return hash(
+            (
+                str(self.name),
+                tuple(self.wires.tolist()),
+                str(self.hyperparameters.values()),
+                str(self.t),
+                str(self.data),
+                self.H,
+                str(self.odeint_kwargs.values()),
+            )
+        )
 
     # pylint: disable=arguments-renamed, invalid-overridden-method
     @property
