@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Tests that a device gives the same output as the default device."""
-# pylint: disable=no-self-use,no-member
+# pylint: disable=no-self-use,no-member,redefined-outer-name
 import pytest
 
 import pennylane as qml
@@ -24,6 +24,7 @@ wires = [2, 3, 4]
 
 
 def qubit_ansatz(x):
+    """Qfunc ansatz"""
     qml.Hadamard(wires=[0])
     qml.CRX(x, wires=[0, 1])
 
@@ -94,7 +95,7 @@ class TestIntegrationMultipleReturns:
     ]
 
     @pytest.mark.parametrize("op1,wires1,op2,wires2", multi_probs_data)
-    def test_multiple_prob(self, op1, op2, wires1, wires2, device):
+    def test_multiple_prob(self, op1, op2, wires1, wires2, device):  # pylint: disable=too-many-arguments
         """Return multiple probs."""
 
         dev = qml.device(device, wires=2)
@@ -123,7 +124,7 @@ class TestIntegrationMultipleReturns:
 
     @pytest.mark.parametrize("op1,wires1,op2,wires2", multi_probs_data)
     @pytest.mark.parametrize("wires3, wires4", wires)
-    def test_mix_meas(self, op1, wires1, op2, wires2, wires3, wires4, device):
+    def test_mix_meas(self, op1, wires1, op2, wires2, wires3, wires4, device):  # pylint: disable=too-many-arguments
         """Return multiple different measurements."""
         if device == "default.qutrit":
             pytest.skip("Different test for DefaultQutrit.")
@@ -189,7 +190,6 @@ class TestIntegrationMultipleReturns:
         assert isinstance(res[1], np.ndarray)
         assert res[1].shape == (shots,)
 
-    @pytest.mark.parametrize("device", devices)
     @pytest.mark.parametrize(
         "measurement",
         [qml.counts(qml.PauliZ(0)), qml.counts(wires=[0]), qml.counts(qml.GellMann(0, 3))],
