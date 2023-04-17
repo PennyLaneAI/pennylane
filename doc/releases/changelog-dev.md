@@ -46,7 +46,7 @@
   
   This circuit can be executed and differentiated:
 
-  ```python
+  ```pycon
   >>> params = jnp.array([2.4])
   >>> circuit(params)
   Array(0.94307977, dtype=float32)
@@ -60,7 +60,55 @@
   [release blog post](https://pennylane.ai/blog/2023/04/pennylane-v030-released/) for a
   demonstration of how to perform the execution on actual hardware!  
 
-<h4>Quantum singular value transform</h4>
+<h4>Quantum singular value transform 🐛➡️🦋</h4>
+
+* PennyLane now supports the
+  [quantum singular value transformation](https://arxiv.org/abs/1806.01838) (QSVT), which describes
+  how a quantum circuit can be constructed to apply a polynomial transformation to the singular
+  values of an input matrix.
+  [(#3756)](https://github.com/PennyLaneAI/pennylane/pull/3756)
+  [(#3757)](https://github.com/PennyLaneAI/pennylane/pull/3757)
+  [(#3758)](https://github.com/PennyLaneAI/pennylane/pull/3758)
+  [(#3905)](https://github.com/PennyLaneAI/pennylane/pull/3905)
+  [(#3909)](https://github.com/PennyLaneAI/pennylane/pull/3909)
+  [(#3926)](https://github.com/PennyLaneAI/pennylane/pull/3926)
+
+  Consider a matrix `A` along with a vector `angles` that describes the target polynomial
+  transformation. The [qml.qsvt](https://docs.pennylane.ai/en/stable/code/api/pennylane.qsvt.html)
+  function creates a corresponding circuit:
+
+  ```python
+  dev = qml.device("default.qubit", wires=2)
+
+  A = np.array([[0.1, 0.2], [0.3, 0.4]])
+  angles = np.array([0.1, 0.2, 0.3])
+
+  @qml.qnode(dev)
+  def example_circuit(A):
+      qml.qsvt(A, angles, wires=[0, 1])
+      return qml.expval(qml.PauliZ(wires=0))
+  ```
+  
+  This circuit is composed of
+  [qml.BlockEncode](https://docs.pennylane.ai/en/stable/code/api/pennylane.BlockEncode.html) and
+  [qml.PCPhase](https://docs.pennylane.ai/en/stable/code/api/pennylane.PCPhase.html) operations.
+
+  ```pycon
+  >>> qml.draw(example_circuit, expansion_strategy="device")(A)  # TODO
+  0: ─╭∏_ϕ─╭BlockEncode(M0)─╭∏_ϕ─╭BlockEncode(M0)†─╭∏_ϕ─┤  
+  1: ─╰∏_ϕ─╰BlockEncode(M0)─╰∏_ϕ─╰BlockEncode(M0)†─╰∏_ϕ─┤
+  ```
+
+  The [qml.qsvt](https://docs.pennylane.ai/en/stable/code/api/pennylane.qsvt.html) function creates
+  a circuit that is targeted at simulators due to the use of matrix-based operations.
+  Advanced users are able to use the
+  [qml.QSVT](https://docs.pennylane.ai/en/stable/code/api/pennylane.QSVT.html) template to perform
+  the transformation with a custom choice of unitary and projector operations, which may be
+  hardware compatible if a decomposition is provided.
+
+  The QSVT is a complex but powerful transformation capable of
+  [generalizing important algorithms](https://arxiv.org/abs/2105.02859)
+  like amplitude amplification. Stay tuned for a demo in the coming few weeks to learn more!
 
 <h4>Intuitive QNode returns</h4>
 
