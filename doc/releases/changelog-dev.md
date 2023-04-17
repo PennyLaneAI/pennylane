@@ -63,6 +63,14 @@
   [release blog post](https://pennylane.ai/blog/2023/04/pennylane-v030-released/) for a
   demonstration of how to perform the execution on actual hardware!  
 
+* A pulse-level circuit can now be differentiated using a
+  [stochastic parameter shift](https://arxiv.org/abs/2210.15812) method that can be compatible with
+  hardware-based systems such as an ensemble of Rydberg atoms.
+  [(#3780)](https://github.com/PennyLaneAI/pennylane/pull/3780)
+
+  This method can be activated by settomg `diff_method` to
+  [`qml.gradient.stoch_pulse_grad`](https://docs.pennylane.ai/en/stable/code/api/pennylane.gradients.stoch_pulse_grad.html):
+
 <h4>Quantum singular value transform 🐛➡️🦋</h4>
 
 * PennyLane now supports the
