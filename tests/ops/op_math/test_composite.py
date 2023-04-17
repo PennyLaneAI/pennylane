@@ -14,6 +14,7 @@
 """
 Unit tests for the composite operator class of qubit operations
 """
+# pylint:disable=protected-access
 from copy import copy
 
 import numpy as np
@@ -42,6 +43,7 @@ ops_rep = (
 
 
 class ValidOp(CompositeOp):
+    # pylint:disable=unused-argument
     _op_symbol = "#"
     _math_op = None
 
@@ -107,7 +109,7 @@ class TestConstruction:
         assert op.data == [9.87, 1.23, 4.0, 5.67]
 
         new_data = [1.23, 0.0, -1.0, -2.0]
-        op.data = new_data
+        op.data = new_data  # pylint:disable=attribute-defined-outside-init
         assert op.data == new_data
 
         for o in op:
@@ -144,7 +146,7 @@ class TestConstruction:
         with pytest.raises(
             ValueError, match="Broadcasting was attempted but the broadcasted dimensions"
         ):
-            op = ValidOp(base, qml.RY(1, 0), qml.RZ(np.array([1, 2, 3, 4]), wires=2))
+            _ = ValidOp(base, qml.RY(1, 0), qml.RZ(np.array([1, 2, 3, 4]), wires=2))
 
     def test_decomposition_raises_error(self):
         """Test that calling decomposition() raises a ValueError."""
@@ -188,12 +190,19 @@ class TestConstruction:
     def test_map_wires(self):
         """Test the map_wires method."""
         diag_op = ValidOp(*self.simple_operands)
+        # pylint:disable=attribute-defined-outside-init
+        diag_op._pauli_rep = qml.pauli.PauliSentence({qml.pauli.PauliWord({0: "X", 1: "Y"}): 1})
+
         wire_map = {0: 5, 1: 7, 2: 9, 3: 11}
         mapped_op = diag_op.map_wires(wire_map=wire_map)
 
         assert mapped_op.wires == Wires([5, 7])
         assert mapped_op[0].wires == Wires(5)
         assert mapped_op[1].wires == Wires(7)
+        assert mapped_op._pauli_rep is not diag_op._pauli_rep
+        assert mapped_op._pauli_rep == qml.pauli.PauliSentence(
+            {qml.pauli.PauliWord({5: "X", 7: "Y"}): 1}
+        )
 
     def test_build_pauli_rep(self):
         """Test the build_pauli_rep"""
@@ -204,33 +213,33 @@ class TestConstruction:
 class TestMscMethods:
     """Test dunder and other visualizing methods."""
 
-    @pytest.mark.parametrize("ops_lst, ops_rep", tuple((i, j) for i, j in zip(ops, ops_rep)))
-    def test_repr(self, ops_lst, ops_rep):
+    @pytest.mark.parametrize("ops_lst, op_rep", tuple((i, j) for i, j in zip(ops, ops_rep)))
+    def test_repr(self, ops_lst, op_rep):
         """Test __repr__ method."""
         op = ValidOp(*ops_lst)
-        assert ops_rep == repr(op)
+        assert op_rep == repr(op)
 
     def test_nested_repr(self):
         """Test nested repr values while other nested features such as equality are not ready"""
         op = ValidOp(qml.PauliX(0), ValidOp(qml.RY(1, wires=1), qml.PauliX(0)))
-        assert "PauliX(wires=[0]) # (RY(1, wires=[1]) # PauliX(wires=[0]))" == repr(op)
+        assert repr(op) == "PauliX(wires=[0]) # (RY(1, wires=[1]) # PauliX(wires=[0]))"
 
     def test_label(self):
         """Test label method."""
         op = ValidOp(qml.RY(1, wires=1), qml.PauliX(1))
-        assert "RY#X" == op.label()
+        assert op.label() == "RY#X"
         with pytest.raises(ValueError):
             op.label(base_label=["only_first"])
 
         nested_op = ValidOp(qml.PauliX(0), op)
-        assert "X#(RY#X)" == nested_op.label()
-        assert "X#(RY\n(1.00)#X)" == nested_op.label(decimals=2)
-        assert "x0#(ry#x1)" == nested_op.label(base_label=["x0", ["ry", "x1"]])
+        assert nested_op.label() == "X#(RY#X)"
+        assert nested_op.label(decimals=2) == "X#(RY\n(1.00)#X)"
+        assert nested_op.label(base_label=["x0", ["ry", "x1"]]) == "x0#(ry#x1)"
 
         U = np.array([[1, 0], [0, -1]])
         cache = {"matrices": []}
         op = ValidOp(qml.PauliX(0), ValidOp(qml.PauliY(1), qml.QubitUnitary(U, wires=0)))
-        assert "X#(Y#U(M0))" == op.label(cache=cache)
+        assert op.label(cache=cache) == "X#(Y#U(M0))"
         assert cache["matrices"] == [U]
 
     @pytest.mark.parametrize("ops_lst", ops)
@@ -264,8 +273,8 @@ class TestMscMethods:
     def test_getitem(self, ops_lst):
         """Test __getitem__ method."""
         op = ValidOp(*ops_lst)
-        for i in range(len(ops_lst)):
-            assert op[i] == ops_lst[i]
+        for i, operand in enumerate(ops_lst):
+            assert op[i] == operand
 
 
 class TestProperties:

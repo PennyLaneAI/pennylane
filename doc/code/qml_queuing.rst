@@ -15,4 +15,4 @@ Overview
     :no-heading:
     :include-all-objects:
     :no-inherited-members:
-    :skip: contextmanager, OrderedDict
+    :skip: contextmanager, OrderedDict, RLock

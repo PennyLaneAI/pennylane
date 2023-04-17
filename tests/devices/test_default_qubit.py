@@ -2079,6 +2079,13 @@ class TestApplyOps:
             return qml.expval(qml.PauliZ(0))
 
         with pytest.raises(
+            DeviceError,
+            match="Gate ParametrizedEvolution not supported on device default.qubit.autograd",
+        ):
+            circuit()
+
+        self.dev.operations.add("ParametrizedEvolution")
+        with pytest.raises(
             NotImplementedError,
             match="The device default.qubit.autograd cannot execute a ParametrizedEvolution operation",
         ):

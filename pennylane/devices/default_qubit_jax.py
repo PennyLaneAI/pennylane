@@ -180,6 +180,8 @@ class DefaultQubitJax(DefaultQubit):
     _size = staticmethod(jnp.size)
     _ndim = staticmethod(jnp.ndim)
 
+    operations = DefaultQubit.operations.union({"ParametrizedEvolution"})
+
     def __init__(self, wires, *, shots=None, prng_key=None, analytic=None):
         _validate_jax_version()
 
@@ -196,7 +198,6 @@ class DefaultQubitJax(DefaultQubit):
         del self._apply_ops["PauliY"]
         del self._apply_ops["Hadamard"]
         del self._apply_ops["CZ"]
-        self.operations.add("ParametrizedEvolution")
         self._prng_key = prng_key
 
     @classmethod

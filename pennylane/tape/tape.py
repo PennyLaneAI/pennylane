@@ -352,25 +352,15 @@ class QuantumTape(QuantumScript, AnnotatedQueue):
 
     def __enter__(self):
         QuantumTape._lock.acquire()
-        try:
-            if self.do_queue:
-                QueuingManager.append(self)
-            return AnnotatedQueue.__enter__(self)
-        except Exception as _:
-            QuantumTape._lock.release()
-            raise
+        if self.do_queue:
+            QueuingManager.append(self)
+        QueuingManager.add_active_queue(self)
+        return self
 
     def __exit__(self, exception_type, exception_value, traceback):
-        try:
-            AnnotatedQueue.__exit__(self, exception_type, exception_value, traceback)
-            # After other optimizations in #2963, #2986 and follow-up work, we should check whether
-            # calling `_process_queue` only if there is no `exception_type` saves time. This would
-            # be done via the following:
-            # if exception_type is None:
-            #    self._process_queue()
-            self._process_queue()
-        finally:
-            QuantumTape._lock.release()
+        QueuingManager.remove_active_queue()
+        QuantumTape._lock.release()
+        self._process_queue()
 
     # ========================================================
     # construction methods
