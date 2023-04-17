@@ -645,6 +645,8 @@ class QuantumScript:
                 params.append(op.data[op_idx])
             return params
 
+        # If trainable_only=False, return all parameters
+        # This is faster than the above and should be used when indexing `_par_info` is not needed
         params = [d for op in self.operations for d in op.data]
         if operations_only:
             return params
