@@ -95,7 +95,9 @@ class TestIntegrationMultipleReturns:
     ]
 
     @pytest.mark.parametrize("op1,wires1,op2,wires2", multi_probs_data)
-    def test_multiple_prob(self, op1, op2, wires1, wires2, device):  # pylint: disable=too-many-arguments
+    def test_multiple_prob(
+        self, op1, op2, wires1, wires2, device
+    ):  # pylint: disable=too-many-arguments
         """Return multiple probs."""
 
         dev = qml.device(device, wires=2)
@@ -124,7 +126,9 @@ class TestIntegrationMultipleReturns:
 
     @pytest.mark.parametrize("op1,wires1,op2,wires2", multi_probs_data)
     @pytest.mark.parametrize("wires3, wires4", wires)
-    def test_mix_meas(self, op1, wires1, op2, wires2, wires3, wires4, device):  # pylint: disable=too-many-arguments
+    def test_mix_meas(
+        self, op1, wires1, op2, wires2, wires3, wires4, device
+    ):  # pylint: disable=too-many-arguments
         """Return multiple different measurements."""
         if device == "default.qutrit":
             pytest.skip("Different test for DefaultQutrit.")
