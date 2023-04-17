@@ -58,8 +58,8 @@
   Array([0.5940717], dtype=float32)
   ```
   
-  The [qml.pulse](https://docs.pennylane.ai/en/stable/code/qml_pulse.html) page contains additional
-  details. Check out our
+  The [`qml.pulse`](https://docs.pennylane.ai/en/stable/code/qml_pulse.html) page contains
+  additional details. Check out our
   [release blog post](https://pennylane.ai/blog/2023/04/pennylane-v030-released/) for a
   demonstration of how to perform the execution on actual hardware!  
 
@@ -85,7 +85,7 @@
   [(#3926)](https://github.com/PennyLaneAI/pennylane/pull/3926)
 
   Consider a matrix `A` along with a vector `angles` that describes the target polynomial
-  transformation. The [qml.qsvt](https://docs.pennylane.ai/en/stable/code/api/pennylane.qsvt.html)
+  transformation. The [`qml.qsvt`](https://docs.pennylane.ai/en/stable/code/api/pennylane.qsvt.html)
   function creates a corresponding circuit:
 
   ```python
@@ -101,8 +101,8 @@
   ```
   
   This circuit is composed of
-  [qml.BlockEncode](https://docs.pennylane.ai/en/stable/code/api/pennylane.BlockEncode.html) and
-  [qml.PCPhase](https://docs.pennylane.ai/en/stable/code/api/pennylane.PCPhase.html) operations.
+  [`qml.BlockEncode`](https://docs.pennylane.ai/en/stable/code/api/pennylane.BlockEncode.html) and
+  [`qml.PCPhase`](https://docs.pennylane.ai/en/stable/code/api/pennylane.PCPhase.html) operations.
 
   ```pycon
   >>> qml.draw(example_circuit, expansion_strategy="device")(A)  # TODO
@@ -110,10 +110,10 @@
   1: ─╰∏_ϕ─╰BlockEncode(M0)─╰∏_ϕ─╰BlockEncode(M0)†─╰∏_ϕ─┤
   ```
 
-  The [qml.qsvt](https://docs.pennylane.ai/en/stable/code/api/pennylane.qsvt.html) function creates
-  a circuit that is targeted at simulators due to the use of matrix-based operations.
+  The [`qml.qsvt`](https://docs.pennylane.ai/en/stable/code/api/pennylane.qsvt.html) function
+  creates a circuit that is targeted at simulators due to the use of matrix-based operations.
   Advanced users are able to use the
-  [qml.QSVT](https://docs.pennylane.ai/en/stable/code/api/pennylane.QSVT.html) template to perform
+  [`qml.QSVT`](https://docs.pennylane.ai/en/stable/code/api/pennylane.QSVT.html) template to perform
   the transformation with a custom choice of unitary and projector operations, which may be
   hardware compatible if a decomposition is provided.
 
