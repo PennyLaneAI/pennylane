@@ -4,27 +4,61 @@
 
 <h3>New features since last release</h3>
 
-<h4>Pulse programming</h4>
+<h4>Pulse programming on hardware ⚛️🔬</h4>
 
-* Added the needed functions and classes to simulate an ensemble of Rydberg atoms:
-  * A new internal `HardwareHamiltonian` class is added, which contains additional information about pulses and settings.
-  * A new user-facing `rydberg_interaction` function is added, which returns a `HardwareHamiltonian` containing
-    the Hamiltonian of the interaction of all the Rydberg atoms.
-  * A new user-facing `transmon_interaction` function is added, constructing
-    the Hamiltonian that describes the circuit QED interaction Hamiltonian of superconducting transmon systems.
-  * A new user-facing `drive` function is added, which returns a `ParametrizedHamiltonian` (`HardwareHamiltonian`) containing
-    the Hamiltonian of the interaction between a driving electro-magnetic field and a group of qubits.
-  * A new user-facing `rydberg_drive` function is added, which returns a `ParametrizedHamiltonian` (`HardwareHamiltonian`) containing
-    the Hamiltonian of the interaction between a driving laser field and a group of Rydberg atoms.
+* Support for loading time-dependent Hamiltonians that are compatible with quantum hardware has been
+  added. It is now possible to load a Hamiltonian that describes an ensemble of Rydberg atoms or a
+  collection of transmon qubits.
   [(#3749)](https://github.com/PennyLaneAI/pennylane/pull/3749)
   [(#3911)](https://github.com/PennyLaneAI/pennylane/pull/3911)
   [(#3930)](https://github.com/PennyLaneAI/pennylane/pull/3930)
-  [(#3936)](https://github.com/PennyLaneAI/pennylane/pull/3936/)
+  [(#3936)](https://github.com/PennyLaneAI/pennylane/pull/3936)
   [(#3966)](https://github.com/PennyLaneAI/pennylane/pull/3966)
   [(#3987)](https://github.com/PennyLaneAI/pennylane/pull/3987)
-  * A new keyword argument called `max_distance` has been added to `qml.pulse.rydberg_interaction` to allow for the removal of negligible contributions
-    from atoms beyond `max_distance` from each other.
-    [(#3889)](https://github.com/PennyLaneAI/pennylane/pull/3889)
+
+  A Rydberg system can be described by a drive term and an interaction term:
+
+  ```python
+  from jax import numpy as jnp
+  
+  atom_coordinates = [[0, 0], [0, 4], [4, 0], [4, 4]]
+  wires = [0, 1, 2, 3]
+    
+  amplitude = lambda p, t: p * jnp.sin(jnp.pi * t)
+  phase = jnp.pi / 2
+  detuning = 3 * jnp.pi / 4
+  
+  H_d = qml.pulse.rydberg_drive(amplitude, phase, detuning, wires)
+  H_i = qml.pulse.rydberg_interaction(atom_coordinates, wires)
+  H = H_d + H_i
+  ```
+  
+  The time-dependent Hamiltonian `H` can be used in a PennyLane pulse-level circuit:
+
+  ```python
+  dev = qml.device("default.qubit.jax", wires=wires)
+
+  @qml.qnode(dev, interface="jax")
+  def circuit(params):
+      qml.evolve(H)(params, t=[0, 10])
+      return qml.expval(qml.PauliZ(0))
+  ```
+  
+  This circuit can be executed and differentiated:
+
+  ```python
+  >>> params = jnp.array([2.4])
+  >>> circuit(params)
+  Array(0.94307977, dtype=float32)
+  >>> import jax
+  >>> jax.grad(circuit)(params)
+  Array([0.5940717], dtype=float32)
+  ```
+  
+  The [qml.pulse](https://docs.pennylane.ai/en/stable/code/qml_pulse.html) page contains additional
+  details. Check out our
+  [release blog post](https://pennylane.ai/blog/2023/04/pennylane-v030-released/) for a
+  demonstration of how to perform the execution on actual hardware!  
 
 <h4>Quantum singular value transform</h4>
 
@@ -94,6 +128,27 @@
   and are selected automatically when they produce a better result, i.e., fewer CNOT gates.
   They can be accessed via `ops.op_math.ctrl_decomp_bisect`.
   [(#3851)](https://github.com/PennyLaneAI/pennylane/pull/3851)
+
+<h4>Pulse programming on hardware</h4>
+
+* Added the needed functions and classes to simulate an ensemble of Rydberg atoms:
+  [(#3749)](https://github.com/PennyLaneAI/pennylane/pull/3749)
+  [(#3911)](https://github.com/PennyLaneAI/pennylane/pull/3911)
+  [(#3930)](https://github.com/PennyLaneAI/pennylane/pull/3930)
+  [(#3936)](https://github.com/PennyLaneAI/pennylane/pull/3936)
+  [(#3966)](https://github.com/PennyLaneAI/pennylane/pull/3966)
+  [(#3987)](https://github.com/PennyLaneAI/pennylane/pull/3987)
+  [(#3889)](https://github.com/PennyLaneAI/pennylane/pull/3889)
+  * A new internal `HardwareHamiltonian` class is added, which contains additional information about pulses and settings.
+  * A new user-facing `rydberg_interaction` function is added, which returns a `HardwareHamiltonian` containing
+    the Hamiltonian of the interaction of all the Rydberg atoms.
+  * A new user-facing `transmon_interaction` function is added, constructing
+    the Hamiltonian that describes the circuit QED interaction Hamiltonian of superconducting transmon systems.
+  * A new user-facing `drive` function is added, which returns a `ParametrizedHamiltonian` (`HardwareHamiltonian`) containing
+    the Hamiltonian of the interaction between a driving electro-magnetic field and a group of qubits.
+  * A new user-facing `rydberg_drive` function is added, which returns a `ParametrizedHamiltonian` (`HardwareHamiltonian`) containing
+    the Hamiltonian of the interaction between a driving laser field and a group of Rydberg atoms.
+  * A new keyword argument called `max_distance` has been added to `qml.pulse.rydberg_interaction` to allow for the removal of negligible contributions from atoms beyond `max_distance` from each other.
 
 <h4>Intuitive QNode returns</h4>
 
