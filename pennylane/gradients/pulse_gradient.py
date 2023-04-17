@@ -559,7 +559,7 @@ def _generate_tapes_and_cjacs(tape, idx, key, num_split_times, use_broadcasting)
         )
     word = qml.pauli.pauli_word_to_string(ham)
     cjac_fn = jax.jacobian(coeff, argnums=0)
-    
+
     t0, t1 = op.t
     taus = jnp.sort(jax.random.uniform(key, shape=(num_split_times,)) * (t1 - t0) + t0)
     cjacs = [cjac_fn(op.data[term_idx], tau) for tau in taus]

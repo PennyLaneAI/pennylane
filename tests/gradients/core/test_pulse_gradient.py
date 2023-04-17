@@ -88,6 +88,7 @@ class TestSplitEvolOps:
             assert qml.math.allclose(_ops[1].data, sign * np.pi / 2)
             assert _ops[1].hyperparameters["pauli_word"] == word
 
+
 @pytest.mark.jax
 class TestSplitEvolTapes:
     """Tests for the helper method _split_evol_tapes that replaces an indicated operation by
