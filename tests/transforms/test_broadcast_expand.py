@@ -71,17 +71,16 @@ def exp_fn_Z0Y1(x, y, z):
 
 def exp_fn_Z0_and_Y1(x, y, z):
     """Compute the expected value for qml.PauliZ(0) and qml.PauliY(1)."""
-    return qml.math.transpose(
-        qml.math.array(
-            [exp_fn_Z0(x, y, z), exp_fn_Y1(x, y, z)],
-            like=exp_fn_Z0(x, y, z) + exp_fn_Y1(x, y, z),
-        )
+    return qml.math.array(
+        [exp_fn_Z0(x, y, z), exp_fn_Y1(x, y, z)],
+        like=exp_fn_Z0(x, y, z) + exp_fn_Y1(x, y, z),
     )
 
 
 def exp_fn_H0(x, y, z):
     """Compute the expected value for the Hamiltonian H0 defined above."""
     return exp_fn_Z0(x, y, z) * coeffs0[0] + exp_fn_Y1(x, y, z) * coeffs0[1]
+
 
 observables_and_exp_fns = [
     ([qml.PauliZ(0)], exp_fn_Z0),
@@ -108,9 +107,6 @@ class TestBroadcastExpand:
 
         result = fn(qml.execute(tapes, dev, None))
         expected = exp_fn(*params)
-
-        if len(tape.measurements) > 1 and size == 1:
-            expected = expected.T
 
         assert qml.math.allclose(result, expected)
 
@@ -141,20 +137,12 @@ class TestBroadcastExpand:
 
         expected = exp_fn(*params)
 
-        if len(obs) > 1 and size == 1:
-            expected = expected.T
-
         assert qml.math.allclose(cost(*params), expected)
 
         jac = qml.jacobian(cost)(*params)
         exp_jac = qml.jacobian(exp_fn)(*params)
 
-        if len(obs) > 1 and size == 1:
-            new_exp_jac = [qml.math.flatten(el) for el in exp_jac]
-            new_jac = [qml.math.flatten(el) for el in jac]
-            assert all(qml.math.allclose(_jac, e_jac) for _jac, e_jac in zip(new_jac, new_exp_jac))
-        else:
-            assert all(qml.math.allclose(_jac, e_jac) for _jac, e_jac in zip(jac, exp_jac))
+        assert all(qml.math.allclose(_jac, e_jac) for _jac, e_jac in zip(jac, exp_jac))
 
     @pytest.mark.jax
     @pytest.mark.parametrize("params", parameters)
@@ -182,9 +170,6 @@ class TestBroadcastExpand:
             cost = jax.jit(cost)
 
         expected = exp_fn(*params)
-
-        if len(obs) > 1 and size == 1:
-            expected = expected.T
 
         assert qml.math.allclose(cost(*params), expected)
 
@@ -225,16 +210,11 @@ class TestBroadcastExpand:
         jac = t.jacobian(out, params)
         exp_jac = t.jacobian(exp, params)
 
-        if len(obs) > 1 and size == 1:
-            new_exp_jac = [qml.math.flatten(el) for el in exp_jac]
-            new_jac = [qml.math.flatten(el) for el in jac]
-            assert all(qml.math.allclose(_jac, e_jac) for _jac, e_jac in zip(new_jac, new_exp_jac))
-        else:
-            for _jac, e_jac in zip(jac, exp_jac):
-                if e_jac is None:
-                    assert qml.math.allclose(_jac, 0.0)
-                else:
-                    assert qml.math.allclose(_jac, e_jac)
+        for _jac, e_jac in zip(jac, exp_jac):
+            if e_jac is None:
+                assert qml.math.allclose(_jac, 0.0)
+            else:
+                assert qml.math.allclose(_jac, e_jac)
 
     @pytest.mark.torch
     @pytest.mark.filterwarnings("ignore:Output seems independent of input")
@@ -263,11 +243,5 @@ class TestBroadcastExpand:
         jac = torch.autograd.functional.jacobian(cost, torch_params)
         exp_jac = qml.jacobian(exp_fn)(*params)
 
-        if len(obs) > 1 and size == 1:
-            assert qml.math.allclose(cost(*torch_params), exp_fn(*params).T)
-            new_exp_jac = [qml.math.flatten(el) for el in exp_jac]
-            new_jac = [qml.math.flatten(el) for el in jac]
-            assert all(qml.math.allclose(_jac, e_jac) for _jac, e_jac in zip(new_jac, new_exp_jac))
-        else:
-            assert qml.math.allclose(cost(*torch_params), exp_fn(*params))
-            assert all(qml.math.allclose(_jac, e_jac) for _jac, e_jac in zip(jac, exp_jac))
+        assert qml.math.allclose(cost(*torch_params), exp_fn(*params))
+        assert all(qml.math.allclose(_jac, e_jac) for _jac, e_jac in zip(jac, exp_jac))
