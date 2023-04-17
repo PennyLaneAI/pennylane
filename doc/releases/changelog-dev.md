@@ -4,16 +4,6 @@
 
 <h3>New features since last release</h3>
 
-* `ParametrizedEvolution` takes two new Boolean keyword arguments: `return_intermediate` and
-  `complementary`. They allow computing intermediate time evolution matrices.
-  [(#3900)](https://github.com/PennyLaneAI/pennylane/pull/3900)
-  
-  Activating `return_intermediate` will result in `evol_op.matrix()` returning intermediate solutions
-  to the Schrodinger equation. Activating `complementary` will make these intermediate solutions
-  be the _remaining_ time evolution complementary to the output for `complementary=False`.
-  See the [docstring](https://docs.pennylane.ai/en/stable/code/api/pennylane.pulse.ParametrizedEvolution.html)
-  for details.
- 
 <h4>Pulse programming</h4>
 
 * Added the needed functions and classes to simulate an ensemble of Rydberg atoms:
@@ -35,6 +25,16 @@
   * A new keyword argument called `max_distance` has been added to `qml.pulse.rydberg_interaction` to allow for the removal of negligible contributions
     from atoms beyond `max_distance` from each other.
     [(#3889)](https://github.com/PennyLaneAI/pennylane/pull/3889)
+
+* `ParametrizedEvolution` takes two new Boolean keyword arguments: `return_intermediate` and
+  `complementary`. They allow computing intermediate time evolution matrices.
+  [(#3900)](https://github.com/PennyLaneAI/pennylane/pull/3900)
+  
+  Activating `return_intermediate` will result in `evol_op.matrix()` returning intermediate solutions
+  to the Schrodinger equation. Activating `complementary` will make these intermediate solutions
+  be the _remaining_ time evolution complementary to the output for `complementary=False`.
+  See the [docstring](https://docs.pennylane.ai/en/stable/code/api/pennylane.pulse.ParametrizedEvolution.html)
+  for details.
 
 <h4>Quantum singular value transform</h4>
 
@@ -72,6 +72,10 @@
   [(#3862)](https://github.com/PennyLaneAI/pennylane/pull/3862/)
 
 <h4>Performance improvements</h4>
+
+* Hardware-compatible pulse sequence gradients with `stoch_pulse_grad` can be calculated faster now, using
+  the new keyword argument `use_broadcasting`.
+  [(#4004)](https://github.com/PennyLaneAI/pennylane/pull/4004)
 
 * Executing a `ParametrizedEvolution` with `return_intermediate=True` and `complementary=False`
   on the JAX default qubit device now uses the state vector ODE solver instead of the
