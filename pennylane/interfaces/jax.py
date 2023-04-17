@@ -459,8 +459,9 @@ def _execute_bwd(
         """Primals[0] are parameters as Jax tracers and tangents[0] is a list of tangent vectors as Jax tracers."""
         if isinstance(gradient_fn, qml.gradients.gradient_transform):
             at_max_diff = _n == max_diff
+            new_tapes = set_parameters_on_copy_and_unwrap(tapes, primals[0], unwrap=at_max_diff)
             _args = (
-                set_parameters_on_copy_and_unwrap(tapes, primals[0], unwrap=at_max_diff),
+                new_tapes,
                 tangents[0],
                 gradient_fn,
                 device.shot_vector,
