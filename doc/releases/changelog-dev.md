@@ -16,7 +16,10 @@
   [(#3966)](https://github.com/PennyLaneAI/pennylane/pull/3966)
   [(#3987)](https://github.com/PennyLaneAI/pennylane/pull/3987)
 
-  A Rydberg system can be described by a drive term and an interaction term:
+  A Rydberg system Hamiltonian can be constructed from a
+  [drive term](https://docs.pennylane.ai/en/stable/code/api/pennylane.pulse.rydberg_drive.html)
+  and an
+  [interaction term](https://docs.pennylane.ai/en/stable/code/api/pennylane.pulse.rydberg_interaction.html):
 
   ```python
   from jax import numpy as jnp
