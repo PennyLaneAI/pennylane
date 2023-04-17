@@ -177,6 +177,8 @@ def hamiltonian_expand(tape: QuantumTape, group=True):
                 ]
             dot_products = []
             for c_group, r_group in zip(coeff_groupings, res_groupings):
+                if tape.batch_size:
+                    r_group = r_group.T
                 if len(c_group) == 1 and len(r_group) != 1:
                     dot_products.append(r_group * c_group)
                 else:
