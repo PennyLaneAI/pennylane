@@ -28,16 +28,16 @@ def qsvt(A, angles, wires, convention=None):
     r"""Implements the
     `quantum singular value transformation <https://arxiv.org/abs/1806.01838>`__ (QSVT) circuit.
 
-    Given a matrix :math:`A`, and a list of angles :math:`\vec{\phi}`, this function applies a
-    circuit for the quantum singular value transformation using :class:`~.BlockEncode` and
-    :class:`~.PCPhase`.
-
     .. note ::
 
         :class:`~.BlockEncode` and :class:`~.PCPhase` used in this implementation of QSVT
         are matrix-based operators and well-suited for simulators.
-        To implement QSVT with user-defined circuits for the block-encoding and
+        To implement QSVT with user-defined circuits for the block encoding and
         projector-controlled phase shifts, use the :class:`~.QSVT` template.
+
+    Given a matrix :math:`A`, and a list of angles :math:`\vec{\phi}`, this function applies a
+    circuit for the quantum singular value transformation using :class:`~.BlockEncode` and
+    :class:`~.PCPhase`.
 
     When the number of angles is even (:math:`d` is odd), the QSVT circuit is defined as:
 
@@ -59,7 +59,7 @@ def qsvt(A, angles, wires, convention=None):
     via :class:`~.PCPhase`.
 
     This circuit applies a polynomial transformation (:math:`Poly^{SV}`) to the singular values of
-    the block-encoded matrix:
+    the block encoded matrix:
 
     .. math::
 
@@ -73,7 +73,7 @@ def qsvt(A, angles, wires, convention=None):
 
     The polynomial transformation is determined by a combination of the block encoding and choice of angles,
     :math:`\vec{\phi}`. The convention used by :class:`~.BlockEncode` is commonly refered to as the
-    reflection convention or :math:`R` convention. Another equivalent convention for the blockencoding is
+    reflection convention or :math:`R` convention. Another equivalent convention for the block encoding is
     the :math:`Wx` or rotation convention.
 
     Depending on the choice of convention for blockencoding, the same phase angles will produce different
@@ -144,16 +144,15 @@ class QSVT(Operation):
     Implements the
     `quantum singular value transformation <https://arxiv.org/abs/1806.01838>`__ (QSVT) circuit.
 
+    .. note ::
+
+        This template allows users to define hardware-compatible block encoding and
+        projector-controlled phase shift circuits. For a QSVT implementation that is
+        tailored for simulators see :func:`~.qsvt` .
+
     Given an :class:`~.Operator` :math:`U`, which block encodes the matrix :math:`A`, and a list of
     projector-controlled phase shift operations :math:`\vec{\Pi}_\phi`, this template applies a
     circuit for the quantum singular value transformation as follows.
-
-    .. note ::
-
-        This template allows users to define hardware-compatible block-encoding and
-        projector-controlled phase shift circuits. For a QSVT implementation that is
-        tailored to for simulators see :func:`~.qsvt` .
-
 
     When the number of projector-controlled phase shifts is even (:math:`d` is odd), the QSVT
     circuit is defined as:
@@ -326,6 +325,7 @@ class QSVT(Operation):
         Returns:
             tensor_like: matrix representation
         """
+        # pylint: disable=unused-argument
         op_list = []
         UA = kwargs["UA"]
         projectors = kwargs["projectors"]

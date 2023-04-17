@@ -341,16 +341,6 @@ class BlockEncode(Operation):
     Construct a unitary :math:`U(A)` such that an arbitrary matrix :math:`A`
     is encoded in the top-left block.
 
-    .. note::
-        If the norm of :math:`A`  is greater than 1, we normalize it to ensure
-        :math:`U(A)` is unitary. The normalization constant can be
-        accessed through :code:`op.hyperparameters["norm"]`.
-
-        Specifically, the norm is computed as the maximum of
-        :math:`L_{\infty} \vert AA^\dagger \vert` and
-        :math:`L_{\infty} \vert A^\dagger A \vert`. Where :math:`L_{\infty}`
-        is the infinity-norm.
-
     .. math::
 
         \begin{align}
@@ -410,6 +400,15 @@ class BlockEncode(Operation):
      [ 0.    0.    0.    0.    0.    1.    0.    0.  ]
      [ 0.    0.    0.    0.    0.    0.    1.    0.  ]
      [ 0.    0.    0.    0.    0.    0.    0.    1.  ]]
+
+    .. note::
+        If the operator norm of :math:`A`  is greater than 1, we normalize it to ensure
+        :math:`U(A)` is unitary. The normalization constant can be
+        accessed through :code:`op.hyperparameters["norm"]`.
+
+        Specifically, the norm is computed as the maximum of
+        :math:`\| AA^\dagger \|` and
+        :math:`\| A^\dagger A \|`.
     """
 
     num_params = 1
