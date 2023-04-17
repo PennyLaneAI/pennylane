@@ -16,7 +16,6 @@ This module contains functions for computing the stochastic parameter-shift grad
 of pulse sequences in a qubit-based quantum tape.
 """
 from collections.abc import Sequence
-from copy import copy
 import numpy as np
 
 import pennylane as qml
@@ -65,7 +64,7 @@ def split_evol_ops(op, word, word_wires, key, broadcasting_len=None):
     """
     # Extract time interval, split it, and set the intervals of the copies to the split intervals
     t0, t1 = op.t
-    if broadcast := (broadcasting_len is not None):
+    if broadcast := broadcasting_len is not None:
         tau = jnp.sort(jax.random.uniform(key, shape=(broadcasting_len,)) * (t1 - t0) + t0)
         before_t = jnp.concatenate([jnp.array([t0]), tau, jnp.array([t1])])
         after_t = before_t.copy()
@@ -118,6 +117,7 @@ def _split_evol_tapes(tape, split_evolve_ops, op_idx):
     ]
 
 
+# pylint: disable=too-many-arguments
 def _parshift_and_integrate(
     results, cjacs, int_prefactor, single_measure, shot_vector, use_broadcasting
 ):
@@ -171,6 +171,7 @@ def _parshift_and_integrate(
     )
 
 
+# pylint: disable=too-many-arguments
 def _stoch_pulse_grad(
     tape, argnum=None, num_split_times=1, sampler_seed=None, shots=None, use_broadcasting=False
 ):
@@ -529,6 +530,48 @@ def _stoch_pulse_grad(
     return _expval_stoch_pulse_grad(tape, argnum, num_split_times, key, shots, use_broadcasting)
 
 
+def _generate_tapes_and_cjacs(tape, idx, key, num_split_times, use_broadcasting):
+    """Generate the tapes and compute the classical Jacobians for one given
+    generating Hamiltonian term of one pulse.
+    """
+    op, op_idx, term_idx = tape.get_operation(idx, return_op_index=True)
+    if not isinstance(op, ParametrizedEvolution):
+        raise ValueError(
+            "stoch_pulse_grad does not support differentiating parameters of "
+            "other operations than pulses."
+        )
+    if len(op.t) != 2:
+        raise ValueError(
+            "stoch_pulse_grad does not support differentiating ParametrizedEvolutions with "
+            f"intermediate time steps. Got t={op.t}"
+        )
+
+    coeff, ham = op.H.coeffs_parametrized[term_idx], op.H.ops_parametrized[term_idx]
+    if not qml.pauli.is_pauli_word(ham):
+        raise ValueError(
+            "stoch_pulse_grad currently only supports Pauli words as parametrized "
+            f"terms in ParametrizedHamiltonian. Got {ham}"
+        )
+    word = qml.pauli.pauli_word_to_string(ham)
+    cjac_fn = jax.jacobian(coeff, argnums=0)
+    if use_broadcasting:
+        key, _key = jax.random.split(key)
+        taus, split_evolve_ops = split_evol_ops(op, word, ham.wires, _key, num_split_times)
+        cjacs = [cjac_fn(op.data[term_idx], tau) for tau in taus]
+        tapes = _split_evol_tapes(tape, split_evolve_ops, op_idx)
+    else:
+        cjacs = []
+        tapes = []
+        for _ in range(num_split_times):
+            key, _key = jax.random.split(key)
+            tau, split_evolve_ops = split_evol_ops(op, word, ham.wires, _key)
+            cjacs.append(cjac_fn(op.data[term_idx], tau))
+            tapes.extend(_split_evol_tapes(tape, split_evolve_ops, op_idx))
+    avg_prefactor = (op.t[1] - op.t[0]) / num_split_times
+    return cjacs, tapes, avg_prefactor, key
+
+
+# pylint: disable=too-many-arguments
 def _expval_stoch_pulse_grad(tape, argnum, num_split_times, key, shots, use_broadcasting):
     r"""Compute the gradient of a quantum circuit composed of pulse sequences that measures
     an expectation value or probabilities, by applying the stochastic parameter shift rule.
@@ -542,42 +585,12 @@ def _expval_stoch_pulse_grad(tape, argnum, num_split_times, key, shots, use_broa
             gradient_data.append((0, None, None))
             continue
 
-        op, op_idx, term_idx = tape.get_operation(idx, return_op_index=True)
-        if not isinstance(op, ParametrizedEvolution):
-            raise ValueError(
-                "stoch_pulse_grad does not support differentiating parameters of "
-                "other operations than pulses."
-            )
-        if len(op.t) != 2:
-            raise ValueError(
-                "stoch_pulse_grad does not support differentiating ParametrizedEvolutions with "
-                f"intermediate time steps. Got t={op.t}"
-            )
+        cjacs, _tapes, avg_prefactor, key = _generate_tapes_and_cjacs(
+            tape, idx, key, num_split_times, use_broadcasting
+        )
 
-        coeff, ham = op.H.coeffs_parametrized[term_idx], op.H.ops_parametrized[term_idx]
-        if not qml.pauli.is_pauli_word(ham):
-            raise ValueError(
-                "stoch_pulse_grad currently only supports Pauli words as parametrized "
-                f"terms in ParametrizedHamiltonian. Got {ham}"
-            )
-        word = qml.pauli.pauli_word_to_string(ham)
-        cjac_fn = jax.jacobian(coeff, argnums=0)
-        if use_broadcasting:
-            key, _key = jax.random.split(key)
-            taus, split_evolve_ops = split_evol_ops(op, word, ham.wires, _key, num_split_times)
-            this_cjacs = [cjac_fn(op.data[term_idx], tau) for tau in taus]
-            this_tapes = _split_evol_tapes(tape, split_evolve_ops, op_idx)
-        else:
-            this_cjacs = []
-            this_tapes = []
-            for _ in range(num_split_times):
-                key, _key = jax.random.split(key)
-                tau, split_evolve_ops = split_evol_ops(op, word, ham.wires, _key)
-                this_cjacs.append(cjac_fn(op.data[term_idx], tau))
-                this_tapes.extend(_split_evol_tapes(tape, split_evolve_ops, op_idx))
-        avg_prefactor = (op.t[1] - op.t[0]) / num_split_times
-        gradient_data.append((len(this_tapes), qml.math.stack(this_cjacs), avg_prefactor))
-        tapes.extend(this_tapes)
+        gradient_data.append((len(_tapes), qml.math.stack(cjacs), avg_prefactor))
+        tapes.extend(_tapes)
 
     def processing_fn(results):
         # pylint: disable=protected-access

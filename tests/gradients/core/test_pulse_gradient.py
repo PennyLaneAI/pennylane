@@ -867,6 +867,7 @@ class TestStochPulseGradQNodeIntegration:
 
         jnp = jax.numpy
         jax.config.update("jax_enable_x64", True)
+        shots = [100, 100]
         dev = qml.device("default.qubit.jax", wires=1, shots=shots, prng_key=jax.random.PRNGKey(74))
         T = 0.2
         ham_single_q_const = qml.pulse.constant * qml.PauliY(0)
@@ -875,7 +876,7 @@ class TestStochPulseGradQNodeIntegration:
             dev,
             interface="jax",
             diff_method=stoch_pulse_grad,
-            num_split_times=num_split_times,
+            num_split_times=3,
             use_broadcasting=True,
         )
         def circuit(params):
@@ -883,7 +884,7 @@ class TestStochPulseGradQNodeIntegration:
             return qml.probs(wires=0), qml.expval(qml.PauliZ(0))
 
         params = [jnp.array(0.4)]
-        with pytest.raises(NotImplementedError, "Broadcasting, multiple measurements and shot vec"):
+        with pytest.raises(NotImplementedError, match="Broadcasting, multiple measurements and"):
             _ = jax.jacobian(circuit)(params)
 
     # TODO: delete error test above and uncomment the following test case once #2690 is resolved.
