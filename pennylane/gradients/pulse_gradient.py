@@ -45,7 +45,7 @@ except ImportError:
     has_jax = False
 
 
-def split_evol_ops(op, word, word_wires, key, broadcasting_len=None):
+def split_evol_ops(op, word, word_wires, tau):
     r"""Randomly split a ``ParametrizedEvolution`` with respect to time into two operations and
     insert a Pauli rotation using a given Pauli word and rotation angles :math:`\pm\pi/2`.
     This yields two groups of three operations each.
@@ -54,22 +54,21 @@ def split_evol_ops(op, word, word_wires, key, broadcasting_len=None):
         op (ParametrizedEvolution): operation to split up.
         word (str): Pauli word with respect to which to rotate between the split up parts.
         word_wires (~.wires.Wires): wires on which the Pauli word acts
-        key (list[int]): randomness seed to pass to the sampler for sampling the split-up point.
+        tau (float or tensor_like): split-up time(s). If multiple times are passed, the split-up
+            operations are set up to return intermediate time evolution results, leading to
+            broadcasting effectively.
 
     Returns:
-        float: The sampled split-up time tau
         tuple[list[`~.Operation`]]: The split-time evolution, expressed as three operations in the
             inner lists. The first tuple entry contains the operations with positive Pauli rotation
             angle, the second entry the operations with negative Pauli rotation angle.
     """
-    # Extract time interval, split it, and set the intervals of the copies to the split intervals
     t0, t1 = op.t
-    if broadcast := broadcasting_len is not None:
-        tau = jnp.sort(jax.random.uniform(key, shape=(broadcasting_len,)) * (t1 - t0) + t0)
+    if broadcast := qml.math.ndim(tau) > 0:
+        tau = jnp.sort(tau)
         before_t = jnp.concatenate([jnp.array([t0]), tau, jnp.array([t1])])
         after_t = before_t.copy()
     else:
-        tau = jax.random.uniform(key) * (t1 - t0) + t0
         before_t = jax.numpy.array([t0, tau])
         after_t = jax.numpy.array([tau, t1])
 
@@ -91,7 +90,7 @@ def split_evol_ops(op, word, word_wires, key, broadcasting_len=None):
     evolve_minus = qml.PauliRot(-np.pi / 2, word, wires=word_wires)
     # Construct gate sequences of split intervals and inserted Pauli rotations
     ops = ([before_plus, evolve_plus, after_plus], [before_minus, evolve_minus, after_minus])
-    return tau, ops
+    return ops
 
 
 def _split_evol_tapes(tape, split_evolve_ops, op_idx):
@@ -560,21 +559,20 @@ def _generate_tapes_and_cjacs(tape, idx, key, num_split_times, use_broadcasting)
         )
     word = qml.pauli.pauli_word_to_string(ham)
     cjac_fn = jax.jacobian(coeff, argnums=0)
+    
+    t0, t1 = op.t
+    taus = jnp.sort(jax.random.uniform(key, shape=(num_split_times,)) * (t1 - t0) + t0)
+    cjacs = [cjac_fn(op.data[term_idx], tau) for tau in taus]
     if use_broadcasting:
-        key, _key = jax.random.split(key)
-        taus, split_evolve_ops = split_evol_ops(op, word, ham.wires, _key, num_split_times)
-        cjacs = [cjac_fn(op.data[term_idx], tau) for tau in taus]
+        split_evolve_ops = split_evol_ops(op, word, ham.wires, taus)
         tapes = _split_evol_tapes(tape, split_evolve_ops, op_idx)
     else:
-        cjacs = []
         tapes = []
-        for _ in range(num_split_times):
-            key, _key = jax.random.split(key)
-            tau, split_evolve_ops = split_evol_ops(op, word, ham.wires, _key)
-            cjacs.append(cjac_fn(op.data[term_idx], tau))
+        for tau in taus:
+            split_evolve_ops = split_evol_ops(op, word, ham.wires, tau)
             tapes.extend(_split_evol_tapes(tape, split_evolve_ops, op_idx))
-    avg_prefactor = (op.t[1] - op.t[0]) / num_split_times
-    return cjacs, tapes, avg_prefactor, key
+    avg_prefactor = (t1 - t0) / num_split_times
+    return cjacs, tapes, avg_prefactor
 
 
 # pylint: disable=too-many-arguments
@@ -591,8 +589,9 @@ def _expval_stoch_pulse_grad(tape, argnum, num_split_times, key, shots, use_broa
             gradient_data.append((0, None, None))
             continue
 
-        cjacs, _tapes, avg_prefactor, key = _generate_tapes_and_cjacs(
-            tape, idx, key, num_split_times, use_broadcasting
+        key, _key = jax.random.split(key)
+        cjacs, _tapes, avg_prefactor = _generate_tapes_and_cjacs(
+            tape, idx, _key, num_split_times, use_broadcasting
         )
 
         gradient_data.append((len(_tapes), qml.math.stack(cjacs), avg_prefactor))

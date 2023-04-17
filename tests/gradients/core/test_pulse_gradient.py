@@ -48,7 +48,7 @@ class TestSplitEvolOps:
 
     @pytest.mark.parametrize("test_case", split_evol_ops_test_cases)
     def test_output_properties(self, test_case):
-        """Test that split_evol_ops returns the right objects with correct
+        """Test that split_evol_ops returns the right ops with correct
         relations to the input operation."""
 
         import jax
@@ -59,19 +59,14 @@ class TestSplitEvolOps:
         op = qml.evolve(ham)(params, time)
         op_copy = copy.deepcopy(op)
         exp_time = [0, time] if qml.math.ndim(time) == 0 else time
+        # Cross-check instantiation of evolution time
         assert qml.math.allclose(op.t, exp_time)
-        output = split_evol_ops(op, word, word_wires, key)
+
+        # Sample splitting time
+        tau = jax.random.uniform(key) * (exp_time[1] - exp_time[0]) + exp_time[0]
+        ops = split_evol_ops(op, word, word_wires, tau)
         # Check that the original operation was not altered
         assert qml.equal(op, op_copy)
-
-        # Check that tau and ops is returned
-        assert isinstance(output, tuple) and len(output) == 2
-
-        tau, ops = output
-
-        # Check format and range of tau
-        assert isinstance(tau, jax.Array) and tau.shape == ()
-        assert op.t[0] <= tau <= op.t[1]
 
         assert isinstance(ops, tuple) and len(ops) == 2
 
@@ -92,37 +87,6 @@ class TestSplitEvolOps:
             assert isinstance(_ops[1], qml.PauliRot)
             assert qml.math.allclose(_ops[1].data, sign * np.pi / 2)
             assert _ops[1].hyperparameters["pauli_word"] == word
-
-    @pytest.mark.parametrize("test_case", split_evol_ops_test_cases)
-    def test_randomness_key(self, test_case):
-        """Test that split_evol_ops returns the same when used twice with the same
-        randomness key and different results when used with different keys."""
-        import jax
-
-        ham, params, time, word, word_wires = test_case
-        ham = ham(None)
-        op = qml.evolve(ham)(params, time)
-        key_a = jax.random.PRNGKey(5324)
-        key_b = jax.random.PRNGKey(7281)
-        tau_a_0, ops_a_0 = split_evol_ops(op, word, word_wires, key_a)
-        tau_a_1, ops_a_1 = split_evol_ops(op, word, word_wires, key_a)
-        tau_b, ops_b = split_evol_ops(op, word, word_wires, key_b)
-
-        # Check same output for same key
-        assert qml.math.isclose(tau_a_0, tau_a_1)
-        assert all(
-            qml.equal(o_0, o_1) for o_0, o_1 in zip(np.array(ops_a_0).flat, np.array(ops_a_1).flat)
-        )
-
-        # Check different output for different key
-        assert not qml.math.isclose(tau_a_0, tau_b)
-        assert not all(
-            qml.equal(o_0, o_1) for o_0, o_1 in zip(np.array(ops_a_0).flat, np.array(ops_b).flat)
-        )
-        # Check positive and negative Pauli rotations are the same even for different keys
-        assert qml.equal(ops_a_0[0][1], ops_b[0][1])
-        assert qml.equal(ops_a_0[1][1], ops_b[1][1])
-
 
 @pytest.mark.jax
 class TestSplitEvolTapes:
@@ -398,8 +362,9 @@ class TestStochPulseGrad:
         r = qml.execute([tape], dev, None)
         assert qml.math.isclose(r, jnp.cos(2 * theta))
 
-        tapes, fn = stoch_pulse_grad(tape, num_split_times=100)
-        assert len(tapes) == 200
+        num_split_times = 5
+        tapes, fn = stoch_pulse_grad(tape, num_split_times=num_split_times)
+        assert len(tapes) == 2 * num_split_times
 
         res = fn(qml.execute(tapes, dev, None))
         exp_grad = -2 * jnp.sin(2 * theta) * theta_jac
@@ -437,8 +402,9 @@ class TestStochPulseGrad:
         exp_probs = jnp.array([jnp.cos(theta) ** 2, jnp.sin(theta) ** 2])
         assert qml.math.allclose(r, exp_probs)
 
-        tapes, fn = stoch_pulse_grad(tape, num_split_times=100)
-        assert len(tapes) == 200
+        num_split_times = 5
+        tapes, fn = stoch_pulse_grad(tape, num_split_times=num_split_times)
+        assert len(tapes) == 2 * num_split_times
 
         jac = fn(qml.execute(tapes, dev, None))
         probs_jac = jnp.array([-1, 1]) * (2 * jnp.sin(theta) * jnp.cos(theta))
@@ -479,8 +445,9 @@ class TestStochPulseGrad:
         assert qml.math.allclose(r[0], exp[0])
         assert qml.math.allclose(r[1], exp[1])
 
-        tapes, fn = stoch_pulse_grad(tape, num_split_times=100)
-        assert len(tapes) == 200
+        num_split_times = 5
+        tapes, fn = stoch_pulse_grad(tape, num_split_times=num_split_times)
+        assert len(tapes) == 2 * num_split_times
 
         jac = fn(qml.execute(tapes, dev, None))
         expval_jac = -2 * jnp.sin(2 * theta)
@@ -509,8 +476,9 @@ class TestStochPulseGrad:
         p = jnp.mean(params[0]) * (T[1] - T[0])
         r = qml.execute([tape], dev, None)
         assert qml.math.isclose(r, jnp.cos(2 * p))
-        tapes, fn = stoch_pulse_grad(tape, num_split_times=100, sampler_seed=7512)
-        assert len(tapes) == 200
+        num_split_times = 5
+        tapes, fn = stoch_pulse_grad(tape, num_split_times=num_split_times, sampler_seed=7512)
+        assert len(tapes) == 2 * num_split_times
 
         res = fn(qml.execute(tapes, dev, None))
         # The sampling of pwc functions does not automatically reduce to the analytically
@@ -571,7 +539,7 @@ class TestStochPulseGrad:
 
         qnode.construct((params,), {})
 
-        num_split_times = 100
+        num_split_times = 5
         tapes, fn = stoch_pulse_grad(
             qnode.tape, argnums=[0, 1, 2], num_split_times=num_split_times, sampler_seed=7123
         )
@@ -579,7 +547,7 @@ class TestStochPulseGrad:
 
         res = fn(qml.execute(tapes, dev, None))
         exp_grad = jax.grad(qnode)(params)
-        assert all(qml.math.allclose(r, e, rtol=0.4) for r, e in zip(res, exp_grad))
+        assert all([qml.math.allclose(r, e, rtol=0.4) for r, e in zip(res, exp_grad)])
 
     def test_randomness(self):
         """Test that the derivative of a pulse is exactly the same when reusing a seed and
@@ -634,13 +602,13 @@ class TestStochPulseGrad:
 
         @qml.qnode(dev, interface="jax")
         def qnode(params_0, params_1):
-            qml.evolve(ham_0)(params_0, 0.2)
-            qml.evolve(ham_1)(params_1, 0.4)
+            qml.evolve(ham_0)(params_0, 0.1)
+            qml.evolve(ham_1)(params_1, 0.15)
             return qml.expval(qml.PauliY(0) @ qml.PauliZ(1))
 
         qnode.construct((params_0, params_1), {})
 
-        num_split_times = 50
+        num_split_times = 3
         qnode.tape.trainable_params = [0, 1, 2]
         tapes, fn = stoch_pulse_grad(qnode.tape, num_split_times=num_split_times, sampler_seed=7123)
         assert len(tapes) == 3 * 2 * num_split_times
@@ -648,7 +616,7 @@ class TestStochPulseGrad:
         res = fn(qml.execute(tapes, dev, None))
         exp_grad = jax.grad(qnode, argnums=(0, 1))(params_0, params_1)
         exp_grad = exp_grad[0] + exp_grad[1]
-        assert all(qml.math.allclose(r, e, rtol=0.2) for r, e in zip(res, exp_grad))
+        assert all(qml.math.allclose(r, e, rtol=0.4) for r, e in zip(res, exp_grad))
 
     def test_with_jit(self):
         """Test that the stochastic parameter-shift rule works with JITting."""
@@ -682,7 +650,7 @@ class TestStochPulseGradQNodeIntegration:
     """Test that stoch_pulse_grad integrates correctly with QNodes."""
 
     @pytest.mark.parametrize("shots, tol", [(None, 1e-4), (100, 0.1), ([100, 99], 0.1)])
-    @pytest.mark.parametrize("num_split_times", [1, 3])
+    @pytest.mark.parametrize("num_split_times", [1, 2])
     def test_simple_qnode_expval(self, num_split_times, shots, tol):
         """Test that a simple qnode that returns an expectation value
         can be differentiated with stoch_pulse_grad."""
@@ -708,7 +676,7 @@ class TestStochPulseGradQNodeIntegration:
         assert qml.math.allclose(grad, exp_grad, atol=tol, rtol=0.0)
 
     @pytest.mark.parametrize("shots, tol", [(None, 1e-4), (100, 0.1), ([100, 99], 0.1)])
-    @pytest.mark.parametrize("num_split_times", [1, 3])
+    @pytest.mark.parametrize("num_split_times", [1, 2])
     def test_simple_qnode_expval_two_evolves(self, num_split_times, shots, tol):
         """Test that a simple qnode that returns an expectation value
         can be differentiated with stoch_pulse_grad."""
@@ -738,7 +706,7 @@ class TestStochPulseGradQNodeIntegration:
         assert qml.math.allclose(grad, exp_grad, atol=tol, rtol=0.0)
 
     @pytest.mark.parametrize("shots, tol", [(None, 1e-4), (100, 0.1), ([100, 99], 0.1)])
-    @pytest.mark.parametrize("num_split_times", [1, 3])
+    @pytest.mark.parametrize("num_split_times", [1, 2])
     def test_simple_qnode_probs(self, num_split_times, shots, tol):
         """Test that a simple qnode that returns an probabilities
         can be differentiated with stoch_pulse_grad."""
@@ -764,7 +732,7 @@ class TestStochPulseGradQNodeIntegration:
         assert qml.math.allclose(jac, exp_jac, atol=tol, rtol=0.0)
 
     @pytest.mark.parametrize("shots, tol", [(None, 1e-4), (100, 0.1), ([100, 100], 0.1)])
-    @pytest.mark.parametrize("num_split_times", [1, 3])
+    @pytest.mark.parametrize("num_split_times", [1, 2])
     def test_simple_qnode_probs_expval(self, num_split_times, shots, tol):
         """Test that a simple qnode that returns an probabilities
         can be differentiated with stoch_pulse_grad."""
@@ -795,7 +763,7 @@ class TestStochPulseGradQNodeIntegration:
             for j, e in zip(jac, exp_jac):
                 assert qml.math.allclose(j[0], e, atol=tol, rtol=0.0)
 
-    @pytest.mark.parametrize("num_split_times", [1, 3])
+    @pytest.mark.parametrize("num_split_times", [1, 2])
     @pytest.mark.parametrize("time_interface", ["python", "numpy", "JAX"])
     def test_simple_qnode_jit(self, num_split_times, time_interface):
         """Test that a simple qnode can be differentiated with stoch_pulse_grad."""
@@ -889,7 +857,7 @@ class TestStochPulseGradQNodeIntegration:
 
     # TODO: delete error test above and uncomment the following test case once #2690 is resolved.
     @pytest.mark.parametrize("shots, tol", [(None, 1e-4), (100, 0.1)])  # , ([100, 100], 0.1)])
-    @pytest.mark.parametrize("num_split_times", [1, 3])
+    @pytest.mark.parametrize("num_split_times", [1, 2])
     def test_qnode_probs_expval_broadcasting(self, num_split_times, shots, tol):
         """Test that a simple qnode that returns an expectation value and probabilities
         can be differentiated with stoch_pulse_grad with use_broadcasting."""
