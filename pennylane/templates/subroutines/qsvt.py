@@ -218,9 +218,37 @@ class QSVT(Operation):
 
     To see the implementation details, we can expand the circuit:
 
-    >>> print(qml.draw(example_circuit,expansion_strategy='device')())
-    0: ─╭∏_ϕ(0.10)─╭BlockEncode(M0)─╭∏_ϕ(1.10)─╭BlockEncode(M0)†─╭∏_ϕ(2.10)─┤  <Z>
+    >>> q_script = qml.tape.QuantumScript(ops=[qml.QSVT(block_encode, shifts, wires=[0, 1])])
+    >>> print(q_script.expand().draw(decimals=2))
+    0: ─╭∏_ϕ(0.10)─╭BlockEncode(M0)─╭∏_ϕ(1.10)─╭BlockEncode(M0)†─╭∏_ϕ(2.10)─┤
     1: ─╰∏_ϕ(0.10)─╰BlockEncode(M0)─╰∏_ϕ(1.10)─╰BlockEncode(M0)†─╰∏_ϕ(2.10)─┤
+
+    Working with this class directly, we can make use of any PennyLane operations
+    to represent our block-encoding and our phase-shifts. In this example we
+    transform the scalar :math:`a = \frac{1}{\sqrt{2}}`
+
+    >>> dev = qml.device("default.qubit", wires=[0])
+    >>> block_encoding = qml.Hadamard(wires=0)  # note H is a block encoding of 1/sqrt(2)
+    >>> phase_shifts = [qml.RZ(-2 * theta, wires=0) for theta in (1.23, -0.5, 4)]  # -2*theta to math convention
+    >>>
+    >>> @qml.qnode(dev)
+    >>> def example_circuit():
+    ...    qml.QSVT(block_encoding, phase_shifts, wires=[0])
+    ...    return qml.expval(qml.PauliZ(wires=0))
+    >>>
+    >>> example_circuit()
+    tensor(0.54030231, requires_grad=True)
+
+    Once again, we can visualize the circuit as follows:
+
+    >>> print(qml.draw(example_circuit)())
+    0: ──QSVT─┤  <Z>
+
+    To see the implementation details, we can expand the circuit:
+
+    >>> q_script = qml.tape.QuantumScript(ops=[qml.QSVT(block_encoding, phase_shifts, wires=[0])])
+    >>> print(q_script.expand().draw(decimals=2))
+    0: ──RZ(-2.46)──H──RZ(1.00)──H†──RZ(-8.00)─┤
     """
 
     num_wires = AnyWires

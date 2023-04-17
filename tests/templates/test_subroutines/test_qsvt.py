@@ -61,6 +61,18 @@ class TestQSVT:
                     qml.PCPhase(0.3, dim=2, wires=[0, 1]),
                 ],
             ),
+            (
+                qml.Hadamard(wires=0),
+                [qml.RZ(-2 * theta, wires=0) for theta in [1.23, -0.5, 4]],
+                [0],
+                [
+                    qml.RZ(-8, wires=0),
+                    qml.Hadamard(0),
+                    qml.RZ(1, wires=0),
+                    qml.Hadamard(0),
+                    qml.RZ(-2.46, wires=0),
+                ],
+            ),
         ],
     )
     def test_output(self, U_A, lst_projectors, wires, operations):
@@ -182,7 +194,7 @@ class TestQSVT:
         default_matrix = qml.matrix(qml.qsvt(input_matrix, angles, wires))
 
         input_matrix = torch.tensor(input_matrix, dtype=float)
-        angles = torch.tensor(angles, dtype=float)
+        angles = torch.tensor(angles[::-1], dtype=float)
 
         op = qml.QSVT(
             qml.BlockEncode(input_matrix, wires),
@@ -205,7 +217,7 @@ class TestQSVT:
         default_matrix = qml.matrix(qml.qsvt(input_matrix, angles, wires))
 
         input_matrix = jnp.array(input_matrix)
-        angles = jnp.array(angles)
+        angles = jnp.array(angles[::-1])
 
         op = qml.QSVT(
             qml.BlockEncode(input_matrix, wires),
@@ -228,7 +240,7 @@ class TestQSVT:
         default_matrix = qml.matrix(qml.qsvt(input_matrix, angles, wires))
 
         input_matrix = tf.Variable(input_matrix)
-        angles = tf.Variable(angles)
+        angles = tf.Variable(angles[::-1])
 
         op = qml.QSVT(
             qml.BlockEncode(input_matrix, wires),
@@ -300,9 +312,9 @@ class Testqsvt:
                 [0.2, 0.3],
                 [0, 1],
                 [
-                    qml.PCPhase(0.2, dim=2, wires=[0, 1]),
-                    qml.BlockEncode([[0.1, 0.2], [0.3, 0.4]], wires=[0, 1]),
                     qml.PCPhase(0.3, dim=2, wires=[0, 1]),
+                    qml.BlockEncode([[0.1, 0.2], [0.3, 0.4]], wires=[0, 1]),
+                    qml.PCPhase(0.2, dim=2, wires=[0, 1]),
                 ],
             ),
             (
@@ -310,11 +322,11 @@ class Testqsvt:
                 [0.1, 0.2, 0.3],
                 [0, 1],
                 [
-                    qml.PCPhase(0.1, dim=2, wires=[0, 1]),
+                    qml.PCPhase(0.3, dim=2, wires=[0, 1]),
                     qml.BlockEncode([[0.3, 0.1], [0.2, 0.9]], wires=[0, 1]),
                     qml.PCPhase(0.2, dim=2, wires=[0, 1]),
                     qml.adjoint(qml.BlockEncode([[0.3, 0.1], [0.2, 0.9]], wires=[0, 1])),
-                    qml.PCPhase(0.3, dim=2, wires=[0, 1]),
+                    qml.PCPhase(0.1, dim=2, wires=[0, 1]),
                 ],
             ),
         ],
@@ -328,13 +340,15 @@ class Testqsvt:
             qml.qsvt(A, phis, wires)
             return qml.expval(qml.PauliZ(wires=0))
 
-        @qml.qnode(dev)
-        def circuit_correct():
-            for op in operations:
-                qml.apply(op)
-            return qml.expval(qml.PauliZ(wires=0))
+        true_mat = np.eye(4)
+        for op in operations:
+            true_mat = true_mat @ qml.matrix(op)
 
-        assert np.allclose(qml.matrix(circuit)(), qml.matrix(circuit_correct)())
+        observable_mat = np.kron(qml.matrix(qml.PauliZ(0)), np.eye(2))
+        true_expval = (np.conj(true_mat).T @ observable_mat @ true_mat)[0, 0]
+
+        assert np.isclose(circuit(), true_expval)
+        assert np.allclose(qml.matrix(circuit)(), true_mat)
 
     @pytest.mark.parametrize(
         ("A", "phis", "wires", "result"),
