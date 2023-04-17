@@ -475,8 +475,9 @@ def _expval_hessian_param_shift_tuple(
     return hessian_tapes, processing_fn
 
 
-@hessian_transform
-def param_shift_hessian(tape, argnum=None, diagonal_shifts=None, off_diagonal_shifts=None, f0=None):
+def _param_shift_hessian_legacy(
+    tape, argnum=None, diagonal_shifts=None, off_diagonal_shifts=None, f0=None
+):
     r"""Transform a QNode to compute the parameter-shift Hessian with respect to its trainable
     parameters.
 
@@ -621,15 +622,6 @@ def param_shift_hessian(tape, argnum=None, diagonal_shifts=None, off_diagonal_sh
                [0.        , 0.05998862]])
 
     """
-    if qml.active_return():
-        return _param_shift_hessian_tuple(
-            tape,
-            argnum=argnum,
-            diagonal_shifts=diagonal_shifts,
-            off_diagonal_shifts=off_diagonal_shifts,
-            f0=f0,
-        )
-
     # Perform input validation before generating tapes.
     if any(isinstance(m, StateMP) for m in tape.measurements):
         raise ValueError(
@@ -699,9 +691,8 @@ def param_shift_hessian(tape, argnum=None, diagonal_shifts=None, off_diagonal_sh
     )
 
 
-def _param_shift_hessian_tuple(
-    tape, argnum=None, diagonal_shifts=None, off_diagonal_shifts=None, f0=None
-):
+@hessian_transform
+def param_shift_hessian(tape, argnum=None, diagonal_shifts=None, off_diagonal_shifts=None, f0=None):
     r"""Transform a QNode to compute the parameter-shift Hessian with respect to its trainable
     parameters. This is the Hessian transform to replace the old one in the new return types system
 
@@ -844,6 +835,14 @@ def _param_shift_hessian_tuple(
         ((array(0.), array(0.)), (array(0.), array(0.05998862)))
 
     """
+    if not qml.active_return():
+        return _param_shift_hessian_legacy(
+            tape,
+            argnum=argnum,
+            diagonal_shifts=diagonal_shifts,
+            off_diagonal_shifts=off_diagonal_shifts,
+            f0=f0,
+        )
 
     # Perform input validation before generating tapes.
     if any(isinstance(m, StateMP) for m in tape.measurements):

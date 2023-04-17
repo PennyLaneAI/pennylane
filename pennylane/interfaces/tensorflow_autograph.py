@@ -24,6 +24,7 @@ import tensorflow as tf
 import pennylane as qml
 from pennylane._device import _get_num_copies
 from pennylane.measurements import SampleMP, StateMP
+from pennylane.transforms import convert_to_numpy_parameters
 
 from .tensorflow import (
     _compute_vjp,
@@ -32,6 +33,18 @@ from .tensorflow import (
     _res_restructured,
     _to_tensors,
 )
+
+
+def _set_copy_and_unwrap_tape(t, a):
+    """Copy a given tape with operations and set parameters"""
+    tc = t.copy(copy_operations=True)
+    tc.set_parameters(a, trainable_only=False)
+    return convert_to_numpy_parameters(tc)
+
+
+def set_parameters_on_copy_and_unwrap(tapes, params):
+    """Copy a set of tapes with operations and set parameters"""
+    return tuple(_set_copy_and_unwrap_tape(t, a) for t, a in zip(tapes, params))
 
 
 def _flatten_nested_list(x):
@@ -118,9 +131,9 @@ def _execute_legacy(
         params_unwrapped = _nest_params(all_params)
         output_sizes = []
 
-        with qml.tape.Unwrap(*tapes, params=params_unwrapped):
-            # Forward pass: execute the tapes
-            res, jacs = execute_fn(tapes, **gradient_kwargs)
+        new_tapes = set_parameters_on_copy_and_unwrap(tapes, params_unwrapped)
+        # Forward pass: execute the tapes
+        res, jacs = execute_fn(new_tapes, **gradient_kwargs)
 
         for i, _ in enumerate(tapes):
             # convert output to TensorFlow tensors
@@ -174,17 +187,16 @@ def _execute_legacy(
                             all_params = all_params[:len_all_params]
                             params_unwrapped = _nest_params(all_params)
 
-                            with qml.tape.Unwrap(*tapes, params=params_unwrapped):
-                                vjp_tapes, processing_fn = qml.gradients.batch_vjp(
-                                    tapes,
-                                    dy,
-                                    gradient_fn,
-                                    reduction=lambda vjps, x: vjps.extend(qml.math.unstack(x)),
-                                    gradient_kwargs=gradient_kwargs,
-                                )
+                            new_tapes = set_parameters_on_copy_and_unwrap(tapes, params_unwrapped)
+                            vjp_tapes, processing_fn = qml.gradients.batch_vjp(
+                                new_tapes,
+                                dy,
+                                gradient_fn,
+                                reduction=lambda vjps, x: vjps.extend(qml.math.unstack(x)),
+                                gradient_kwargs=gradient_kwargs,
+                            )
 
-                                vjps = processing_fn(execute_fn(vjp_tapes)[0])
-                            return vjps
+                            return processing_fn(execute_fn(vjp_tapes)[0])
 
                         vjps = tf.py_function(
                             func=_backward,
@@ -236,10 +248,8 @@ def _execute_legacy(
                         all_params = all_params[:len_all_params]
                         params_unwrapped = _nest_params(all_params)
 
-                        with qml.tape.Unwrap(*tapes, params=params_unwrapped):
-                            vjps = _compute_vjp_legacy(dy, gradient_fn(tapes, **gradient_kwargs))
-
-                        return vjps
+                        new_tapes = set_parameters_on_copy_and_unwrap(tapes, params_unwrapped)
+                        return _compute_vjp_legacy(dy, gradient_fn(new_tapes, **gradient_kwargs))
 
                     vjps = tf.numpy_function(
                         func=_backward,
@@ -250,7 +260,7 @@ def _execute_legacy(
             vjps = iter(vjps)
             vjps = [next(vjps) if x in trainable else None for x in range(len(all_params))]
 
-            variables = tfkwargs.get("variables", None)
+            variables = tfkwargs.get("variables")
             return (vjps, variables) if variables is not None else vjps
 
         return res, grad_fn
@@ -358,9 +368,9 @@ def execute(
         params_unwrapped = _nest_params(all_params)
         output_sizes = []
 
-        with qml.tape.Unwrap(*tapes, params=params_unwrapped):
-            # Forward pass: execute the tapes
-            res, jacs = execute_fn(tapes, **gradient_kwargs)
+        new_tapes = set_parameters_on_copy_and_unwrap(tapes, params_unwrapped)
+        # Forward pass: execute the tapes
+        res, jacs = execute_fn(new_tapes, **gradient_kwargs)
 
         # flatten the results
         res = _flatten_nested_list(res)
@@ -435,18 +445,17 @@ def execute(
 
                             dy = _res_restructured(dy, tapes, device.shot_vector)
 
-                            with qml.tape.Unwrap(*tapes, params=params_unwrapped):
-                                vjp_tapes, processing_fn = qml.gradients.batch_vjp(
-                                    tapes,
-                                    dy,
-                                    gradient_fn,
-                                    shots=device.shot_vector,
-                                    reduction=lambda vjps, x: vjps.extend(qml.math.unstack(x)),
-                                    gradient_kwargs=gradient_kwargs,
-                                )
+                            new_tapes = set_parameters_on_copy_and_unwrap(tapes, params_unwrapped)
+                            vjp_tapes, processing_fn = qml.gradients.batch_vjp(
+                                new_tapes,
+                                dy,
+                                gradient_fn,
+                                shots=device.shot_vector,
+                                reduction=lambda vjps, x: vjps.extend(qml.math.unstack(x)),
+                                gradient_kwargs=gradient_kwargs,
+                            )
 
-                                vjps = processing_fn(execute_fn(vjp_tapes)[0])
-                            return vjps
+                            return processing_fn(execute_fn(vjp_tapes)[0])
 
                         vjps = tf.py_function(
                             func=_backward,
@@ -503,8 +512,8 @@ def execute(
                         all_params = all_params[:len_all_params]
                         params_unwrapped = _nest_params(all_params)
 
-                        with qml.tape.Unwrap(*tapes, params=params_unwrapped):
-                            jac = gradient_fn(tapes, **gradient_kwargs)
+                        new_tapes = set_parameters_on_copy_and_unwrap(tapes, params_unwrapped)
+                        jac = gradient_fn(new_tapes, **gradient_kwargs)
 
                         vjps = _compute_vjp(dy, jac, multi_measurements, device.shot_vector)
                         return vjps
@@ -521,7 +530,7 @@ def execute(
             vjps = iter(vjps)
             vjps = [next(vjps) if x in trainable else None for x in range(len(all_params))]
 
-            variables = tfkwargs.get("variables", None)
+            variables = tfkwargs.get("variables")
             return (vjps, variables) if variables is not None else vjps
 
         return res, grad_fn
