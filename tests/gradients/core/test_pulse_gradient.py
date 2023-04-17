@@ -24,6 +24,7 @@ import pennylane as qml
 from pennylane.gradients.pulse_gradient import split_evol_ops, _split_evol_tapes, stoch_pulse_grad
 
 
+#pylint: disable=too-few-public-methods
 @pytest.mark.jax
 class TestSplitEvolOps:
     """Tests for the helper method split_evol_ops that samples a splitting time and splits up
@@ -548,7 +549,7 @@ class TestStochPulseGrad:
 
         res = fn(qml.execute(tapes, dev, None))
         exp_grad = jax.grad(qnode)(params)
-        assert all([qml.math.allclose(r, e, rtol=0.4) for r, e in zip(res, exp_grad)])
+        assert all(qml.math.allclose(r, e, rtol=0.4) for r, e in zip(res, exp_grad))
 
     def test_randomness(self):
         """Test that the derivative of a pulse is exactly the same when reusing a seed and
