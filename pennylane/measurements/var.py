@@ -83,18 +83,18 @@ class VarianceMP(SampleMeasurement, StateMeasurement):
     def numeric_type(self):
         return float
 
-    def shape(self, device=None):
-        if qml.active_return():
-            return self._shape_new(device)
-        if device is None or device.shot_vector is None:
+    def _shape_legacy(self, shots, num_wires):  # pylint: disable=unused-arguments
+        if shots.shot_vector is None:
             return (1,)
-        num_shot_elements = sum(s.copies for s in device.shot_vector)
+        num_shot_elements = sum(s.copies for s in shots.shot_vector)
         return (num_shot_elements,)
 
-    def _shape_new(self, device=None):
-        if device is None or device.shot_vector is None:
+    def shape(self, shots, num_wires):
+        if not qml.active_return():
+            return self._shape_legacy(num_wires)
+        if shots.shot_vector is None:
             return ()
-        num_shot_elements = sum(s.copies for s in device.shot_vector)
+        num_shot_elements = sum(s.copies for s in shots.shot_vector)
         return tuple(() for _ in range(num_shot_elements))
 
     def process_samples(

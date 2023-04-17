@@ -332,19 +332,19 @@ class ClassicalShadowMP(MeasurementTransform):
     def return_type(self):
         return Shadow
 
-    def shape(self, device=None):
+    def shape(self, shots, num_wires):  # pylint: disable=unused-arguments
         # otherwise, the return type requires a device
-        if device is None:
+        if not shots.total_shots:
             raise MeasurementShapeError(
-                "The device argument is required to obtain the shape of a classical "
+                "Shots must be specified to obtain the shape of a classical "
                 "shadow measurement process."
             )
 
         # the first entry of the tensor represents the measured bits,
         # and the second indicate the indices of the unitaries used
-        if qml.active_return():
-            return (2, device.shots, len(self.wires))
-        return (1, 2, device.shots, len(self.wires))
+        if not qml.active_return():
+            return (1, 2, shots.total_shots, len(self.wires))
+        return (2, shots.total_shots, len(self.wires))
 
     def __copy__(self):
         return self.__class__(
@@ -396,10 +396,10 @@ class ShadowExpvalMP(MeasurementTransform):
     def return_type(self):
         return ShadowExpval
 
-    def shape(self, device=None):
-        if qml.active_return():
-            return ()
-        return (1,)
+    def shape(self, shots, num_wires):  # pylint: disable=unused-arguments
+        if not qml.active_return():
+            return (1,)
+        return ()
 
     @property
     def wires(self):

@@ -148,13 +148,11 @@ class StateMP(StateMeasurement):
     def numeric_type(self):
         return complex
 
-    def shape(self, device=None):
-        if qml.active_return():
-            return self._shape_new(device)
+    def _shape_legacy(self, shots, num_wires):
         num_shot_elements = (
             1
-            if (device is None or device.shot_vector is None)
-            else sum(s.copies for s in device.shot_vector)
+            if shots.shot_vector is None
+            else sum(s.copies for s in shots.shot_vector)
         )
 
         if self.wires:
@@ -162,20 +160,17 @@ class StateMP(StateMeasurement):
             dim = 2 ** len(self.wires)
             return (num_shot_elements, dim, dim)
 
-        if device is None:
-            raise MeasurementShapeError(
-                "The device argument is required to obtain the shape of the measurement "
-                f"{self.__class__.__name__}."
-            )
         # qml.state()
-        dim = 2 ** len(device.wires)
+        dim = 2 ** num_wires
         return (num_shot_elements, dim)
 
-    def _shape_new(self, device=None):
+    def shape(self, shots, num_wires):
+        if not qml.active_return():
+            return self._shape_legacy(shots, num_wires)
         num_shot_elements = (
             1
-            if (device is None or device.shot_vector is None)
-            else sum(s.copies for s in device.shot_vector)
+            if shots.shot_vector is None
+            else sum(s.copies for s in shots.shot_vector)
         )
 
         if self.wires:
@@ -188,13 +183,7 @@ class StateMP(StateMeasurement):
             )
 
         # qml.state()
-        if device is None:
-            raise MeasurementShapeError(
-                "The device argument is required to obtain the shape of the measurement "
-                f"{self.__class__.__name__}."
-            )
-
-        dim = 2 ** len(device.wires)
+        dim = 2 ** num_wires
         return (dim,) if num_shot_elements == 1 else tuple((dim,) for _ in range(num_shot_elements))
 
     # pylint: disable=redefined-outer-name
