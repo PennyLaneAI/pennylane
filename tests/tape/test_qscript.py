@@ -568,6 +568,7 @@ class TestScriptCopying:
         ops = [qml.RY(0.5, wires=1), qml.CNOT((0, 1))]
         m = [qml.expval(qml.PauliZ(0) @ qml.PauliY(1))]
         qs = QuantumScript(ops, m, prep=prep)
+        qs._qfunc_output = np.array(123)
 
         copied_qs = qs.copy()
 
@@ -587,6 +588,8 @@ class TestScriptCopying:
         assert qs.get_parameters() == copied_qs.get_parameters()
         assert qs.wires == copied_qs.wires
         assert qs.data == copied_qs.data
+        assert qs._qfunc_output == copied_qs._qfunc_output
+        assert qs._qfunc_output is not copied_qs._qfunc_output
 
         # check that the output dim is identical
         assert qs.output_dim == copied_qs.output_dim
