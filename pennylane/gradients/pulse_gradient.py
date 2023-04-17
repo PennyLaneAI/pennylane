@@ -226,7 +226,7 @@ def _stoch_pulse_grad(
             rule underlying the differentiation; also see details
         sample_seed (int): randomness seed to be used for the time samples in the stochastic
             parameter-shift rule
-        shots (None, int, list[int]): The device shots that will be used to execute the tapes 
+        shots (None, int, list[int]): The device shots that will be used to execute the tapes
             outputted by this transform. Note that this argument doesn't influence the shots
             used for tape execution, but provides information about the shots.
         use_broadcasting (bool): Whether to use broadcasting across the different sampled
@@ -291,22 +291,23 @@ def _stoch_pulse_grad(
         H = 0.5 * qml.PauliX(0) + qml.pulse.constant * ZZ + sin * qml.PauliX(1)
 
         def ansatz(params):
-            qml.evolve(H)(params, (0.2, 1.))
+            qml.evolve(H)(params, (0.2, 0.4))
             return qml.expval(qml.PauliY(1))
 
-        qnode = qml.QNode(ansatz, dev, interface="jax", diff_method=stoch_pulse_grad)
+        qnode = qml.QNode(ansatz, dev, interface="jax", diff_method=qml.gradients.stoch_pulse_grad)
 
     The program takes the two parameters :math:`v_1, v_2` for the two trainable terms:
 
     >>> params = [jax.numpy.array(0.4), jax.numpy.array(1.3)]
     >>> qnode(params)
-    Array(-0.83524704, dtype=float32)
+    Array(-0.15052551, dtype=float32)
 
     And as we registered the differentiation method :func:`~.stoch_pulse_grad`,
     we can compute its gradient in a hardware compatible manner:
 
     >>> jax.grad(qnode)(params)
-    [Array(0.2167219, dtype=float32), Array(-0.25133985, dtype=float32)] # results may differ
+    [Array(0.00277838, dtype=float32, weak_type=True),
+     Array(-0.07787319, dtype=float32, weak_type=True)] # results may differ
 
     Note that the derivative is computed using a stochastic parameter-shift rule,
     which is based on a sampled approximation of an integral expression (see theoretical
@@ -320,12 +321,12 @@ def _stoch_pulse_grad(
     ...     dev,
     ...     interface="jax",
     ...     diff_method=qml.gradients.stoch_pulse_grad,
-    ...     num_split_times=20, # Use 20 samples for the approximation
+    ...     num_split_times=5, # Use 5 samples for the approximation
     ...     sampler_seed=18, # Fix randomness seed
     ... )
     >>> jax.grad(qnode)(params)
-    [Array(0.26571652, dtype=float64, weak_type=True),
-     Array(-0.22621927, dtype=float64, weak_type=True)]
+    [Array(0.00246266, dtype=float32, weak_type=True),
+     Array(-0.11399216, dtype=float32, weak_type=True)]
 
     On simulator devices, we may activate the option ``use_broadcasting``, which makes
     use of broadcasting internally to improve the performance of the stochastic parameter-shift
@@ -337,11 +338,16 @@ def _stoch_pulse_grad(
     ...     dev,
     ...     interface="jax",
     ...     diff_method=qml.gradients.stoch_pulse_grad,
-    ...     num_split_times=20, # Use 20 samples for the approximation
+    ...     num_split_times=5, # Use 20 samples for the approximation
     ...     sampler_seed=18, # Fix randomness seed
-    ...     use_broadcasting=True, # Activate broadcasting for parallelized evaluation
+    ...     use_broadcasting=True, # Activate broadcasting
     ... )
-    # TODO: Timing comparison
+    >>> for node in [qnode, faster_grad_qnode]:
+    ...     start = process_time()
+    ...     jax.grad(node)(params)
+    ...     print(process_time() - start) # Show the gradient computation time in seconds.
+    11.582010403000002
+    3.9708045299999988
 
     .. warning::
 
