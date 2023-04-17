@@ -181,6 +181,11 @@ class TestPauliWord:
             assert pw_op.name == op.name
             assert pw_op.wires == op.wires
 
+        if isinstance(op, qml.ops.Prod):
+            pw_tensor_op = pw.operation(get_as_tensor=True)
+            expected_tensor_op = qml.operation.Tensor(*op.operands)
+            assert qml.equal(pw_tensor_op, expected_tensor_op)
+
     def test_operation_empty(self):
         """Test that an empty PauliWord with wire_order returns Identity."""
         op = PauliWord({}).operation(wire_order=[0, 1])
@@ -225,6 +230,19 @@ class TestPauliWord:
         serialization = pickle.dumps(pw)
         new_pw = pickle.loads(serialization)
         assert pw == new_pw
+
+    @pytest.mark.parametrize(
+        "word,wire_map,expected",
+        [
+            (PauliWord({0: X, 1: Y}), {0: "a", 1: "b"}, PauliWord({"a": X, "b": Y})),
+            (PauliWord({0: X, 1: Y}), {1: "b"}, PauliWord({0: X, "b": Y})),
+            (PauliWord({0: X, 1: Y}), {0: 1, 1: 0}, PauliWord({0: Y, 1: X})),
+            (PauliWord({"a": X, 0: Y}), {"a": 2, 0: 1, "c": "C"}, PauliWord({2: X, 1: Y})),
+        ],
+    )
+    def test_map_wires(self, word, wire_map, expected):
+        """Test the map_wires conversion method."""
+        assert word.map_wires(wire_map) == expected
 
 
 class TestPauliSentence:
@@ -321,6 +339,18 @@ class TestPauliSentence:
         (ps4, ps3, ps3),
         (ps1, ps5, ps1),
         (ps5, ps1, ps1),
+        (
+            PauliSentence(
+                {PauliWord({0: "Z"}): np.array(1.0), PauliWord({0: "Z", 1: "X"}): np.array(1.0)}
+            ),
+            PauliSentence({PauliWord({1: "Z"}): np.array(1.0), PauliWord({1: "Y"}): np.array(1.0)}),
+            PauliSentence(
+                {
+                    PauliWord({0: "Z", 1: "Z"}): np.array(1.0 + 1.0j),
+                    PauliWord({0: "Z", 1: "Y"}): np.array(1.0 - 1.0j),
+                }
+            ),
+        ),
     )
 
     @pytest.mark.parametrize("ps1, ps2, res", tup_ps_mult)
@@ -569,3 +599,13 @@ class TestPauliSentence:
         serialization = pickle.dumps(ps)
         new_ps = pickle.loads(serialization)
         assert ps == new_ps
+
+    def test_map_wires(self):
+        """Test the map_wires conversion method."""
+        assert ps1.map_wires({1: "u", 2: "v", "a": 1, "b": 2, "c": 3}) == PauliSentence(
+            {
+                PauliWord({"u": X, "v": Y}): 1.23,
+                PauliWord({1: X, 2: X, 3: Z}): 4j,
+                PauliWord({0: Z, 2: Z, 3: Z}): -0.5,
+            }
+        )

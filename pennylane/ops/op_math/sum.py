@@ -179,9 +179,18 @@ class Sum(CompositeOp):
     _math_op = math.sum
 
     @property
+    def hash(self):
+        # Since addition is always commutative, we do not need to sort
+        return hash(("Sum", frozenset(o.hash for o in self.operands)))
+
+    @property
     def is_hermitian(self):
         """If all of the terms in the sum are hermitian, then the Sum is hermitian."""
-        return all(s.is_hermitian for s in self)
+        return (
+            all(s.is_hermitian for s in self)
+            if self._pauli_rep is None
+            else not any(qml.math.iscomplex(val) for val in self._pauli_rep.values())
+        )
 
     def terms(self):
         r"""Representation of the operator as a linear combination of other operators.
