@@ -15,9 +15,8 @@
 This submodule defines the Evolution class.
 """
 import warnings
+from copy import copy
 from warnings import warn
-
-import numpy as np
 
 import pennylane as qml
 from pennylane import math
@@ -88,6 +87,21 @@ class Evolution(Exp):
         super().__init__(generator, coeff=1j * param, num_steps=num_steps, do_queue=do_queue, id=id)
         self._data = [param]
 
+    def __repr__(self):
+        return (
+            f"Evolution({self.coeff} {self.base})"
+            if self.base.arithmetic_depth > 0
+            else f"Evolution({self.coeff} {self.base.name})"
+        )
+
+    @property
+    def data(self):
+        return self._data
+
+    @data.setter
+    def data(self, new_data):
+        self._data = new_data
+
     @property
     def param(self):
         """A real coefficient with ``1j`` factored out."""
@@ -114,7 +128,7 @@ class Evolution(Exp):
     # pylint: disable=arguments-renamed, invalid-overridden-method
     @property
     def has_generator(self):
-        return not np.real(self.coeff)
+        return not qml.math.real(self.coeff)
 
     def generator(self):
         r"""Generator of an operator that is in single-parameter-form.
@@ -134,9 +148,14 @@ class Evolution(Exp):
         """
         if not self.base.is_hermitian:
             warn(f"The base {self.base} may not be hermitian.")
-        if np.real(self.coeff):
+        if qml.math.real(self.coeff):
             raise GeneratorUndefinedError(
                 f"The operator coefficient {self.coeff} is not imaginary; the expected format is exp(ixG)."
                 f"The generator is not defined."
             )
         return self.base
+
+    def __copy__(self):
+        copied = super().__copy__()
+        copied._data = copy(self._data)
+        return copied

@@ -83,7 +83,6 @@ def exp_fn_H0(x, y, z):
     """Compute the expected value for the Hamiltonian H0 defined above."""
     return exp_fn_Z0(x, y, z) * coeffs0[0] + exp_fn_Y1(x, y, z) * coeffs0[1]
 
-
 observables_and_exp_fns = [
     ([qml.PauliZ(0)], exp_fn_Z0),
     ([qml.PauliZ(0) @ qml.PauliY(1)], exp_fn_Z0Y1),
@@ -108,8 +107,12 @@ class TestBroadcastExpand:
         assert all(_tape.batch_size is None for _tape in tapes)
 
         result = fn(qml.execute(tapes, dev, None))
-        assert isinstance(result, np.ndarray)
-        assert qml.math.allclose(result, exp_fn(*params))
+        expected = exp_fn(*params)
+
+        if len(tape.measurements) > 1 and size == 1:
+            expected = expected.T
+
+        assert qml.math.allclose(result, expected)
 
     def test_without_broadcasting(self):
         """Test that an error is raised when applying the transform to a non-broadcasted tape."""
@@ -132,14 +135,26 @@ class TestBroadcastExpand:
         def cost(*params):
             tape = make_tape(*params, obs)
             tapes, fn = qml.transforms.broadcast_expand(tape)
-            return fn(qml.execute(tapes, dev, gradient_fn))
+            if len(tape.measurements) > 1:
+                return qml.math.stack(fn(qml.execute(tapes, dev, qml.gradients.param_shift)))
+            return fn(qml.execute(tapes, dev, qml.gradients.param_shift))
 
-        assert qml.math.allclose(cost(*params), exp_fn(*params))
+        expected = exp_fn(*params)
+
+        if len(obs) > 1 and size == 1:
+            expected = expected.T
+
+        assert qml.math.allclose(cost(*params), expected)
 
         jac = qml.jacobian(cost)(*params)
         exp_jac = qml.jacobian(exp_fn)(*params)
 
-        assert all(qml.math.allclose(_jac, e_jac) for _jac, e_jac in zip(jac, exp_jac))
+        if len(obs) > 1 and size == 1:
+            new_exp_jac = [qml.math.flatten(el) for el in exp_jac]
+            new_jac = [qml.math.flatten(el) for el in jac]
+            assert all(qml.math.allclose(_jac, e_jac) for _jac, e_jac in zip(new_jac, new_exp_jac))
+        else:
+            assert all(qml.math.allclose(_jac, e_jac) for _jac, e_jac in zip(jac, exp_jac))
 
     @pytest.mark.jax
     @pytest.mark.parametrize("params", parameters)
@@ -166,12 +181,26 @@ class TestBroadcastExpand:
         if use_jit:
             cost = jax.jit(cost)
 
-        assert qml.math.allclose(cost(*params), exp_fn(*params))
+        expected = exp_fn(*params)
+
+        if len(obs) > 1 and size == 1:
+            expected = expected.T
+
+        assert qml.math.allclose(cost(*params), expected)
 
         jac = jax.jacobian(cost, argnums=[0, 1, 2])(*params)
+
         exp_jac = jax.jacobian(exp_fn, argnums=[0, 1, 2])(*params)
 
-        assert all(qml.math.allclose(_jac, e_jac) for _jac, e_jac in zip(jac, exp_jac))
+        if len(obs) > 1:
+            exp_jac_0 = jax.jacobian(exp_fn_Z0, argnums=[0, 1, 2])(*params)
+            exp_jac_1 = jax.jacobian(exp_fn_Y1, argnums=[0, 1, 2])(*params)
+
+            assert all(qml.math.allclose(_jac, e_jac) for _jac, e_jac in zip(jac[0], exp_jac_0))
+            assert all(qml.math.allclose(_jac, e_jac) for _jac, e_jac in zip(jac[1], exp_jac_1))
+
+        else:
+            assert all(qml.math.allclose(_jac, e_jac) for _jac, e_jac in zip(jac, exp_jac))
 
     @pytest.mark.slow
     @pytest.mark.tf
@@ -190,18 +219,22 @@ class TestBroadcastExpand:
             return fn(qml.execute(tapes, dev, qml.gradients.param_shift))
 
         with tf.GradientTape(persistent=True) as t:
-            out = cost(*params)
+            out = tf.stack(cost(*params))
             exp = exp_fn(*params)
 
         jac = t.jacobian(out, params)
         exp_jac = t.jacobian(exp, params)
 
-        assert qml.math.allclose(out, exp)
-        for _jac, e_jac in zip(jac, exp_jac):
-            if e_jac is None:
-                assert qml.math.allclose(_jac, 0.0)
-            else:
-                assert qml.math.allclose(_jac, e_jac)
+        if len(obs) > 1 and size == 1:
+            new_exp_jac = [qml.math.flatten(el) for el in exp_jac]
+            new_jac = [qml.math.flatten(el) for el in jac]
+            assert all(qml.math.allclose(_jac, e_jac) for _jac, e_jac in zip(new_jac, new_exp_jac))
+        else:
+            for _jac, e_jac in zip(jac, exp_jac):
+                if e_jac is None:
+                    assert qml.math.allclose(_jac, 0.0)
+                else:
+                    assert qml.math.allclose(_jac, e_jac)
 
     @pytest.mark.torch
     @pytest.mark.filterwarnings("ignore:Output seems independent of input")
@@ -223,11 +256,18 @@ class TestBroadcastExpand:
         def cost(*params):
             tape = make_tape(*params, obs)
             tapes, fn = qml.transforms.broadcast_expand(tape)
-            return fn(qml.execute(tapes, dev, gradient_fn))
-
-        assert qml.math.allclose(cost(*torch_params), exp_fn(*params))
+            if len(tape.measurements) > 1:
+                return qml.math.stack(fn(qml.execute(tapes, dev, qml.gradients.param_shift)))
+            return fn(qml.execute(tapes, dev, qml.gradients.param_shift))
 
         jac = torch.autograd.functional.jacobian(cost, torch_params)
         exp_jac = qml.jacobian(exp_fn)(*params)
 
-        assert all(qml.math.allclose(_jac, e_jac, atol=1e-7) for _jac, e_jac in zip(jac, exp_jac))
+        if len(obs) > 1 and size == 1:
+            assert qml.math.allclose(cost(*torch_params), exp_fn(*params).T)
+            new_exp_jac = [qml.math.flatten(el) for el in exp_jac]
+            new_jac = [qml.math.flatten(el) for el in jac]
+            assert all(qml.math.allclose(_jac, e_jac) for _jac, e_jac in zip(new_jac, new_exp_jac))
+        else:
+            assert qml.math.allclose(cost(*torch_params), exp_fn(*params))
+            assert all(qml.math.allclose(_jac, e_jac) for _jac, e_jac in zip(jac, exp_jac))

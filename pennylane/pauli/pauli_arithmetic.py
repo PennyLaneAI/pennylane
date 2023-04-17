@@ -217,7 +217,7 @@ class PauliWord(dict):
 
         return reduce(kron, (matrix_map[self[w]] for w in wire_order))
 
-    def operation(self, wire_order=None):
+    def operation(self, wire_order=None, get_as_tensor=False):
         """Returns a native PennyLane :class:`~pennylane.operation.Operation` representing the PauliWord."""
         if len(self) == 0:
             if wire_order in (None, [], wires.Wires([])):
@@ -225,10 +225,13 @@ class PauliWord(dict):
             return Identity(wires=wire_order)
 
         factors = [op_map[op](wire) for wire, op in self.items()]
+
+        if get_as_tensor:
+            return factors[0] if len(factors) == 1 else Tensor(*factors)
         return factors[0] if len(factors) == 1 else prod(*factors)
 
     def hamiltonian(self, wire_order=None):
-        """Return :class:`~pennylane.Hamiltonian` representing the PauliWord"""
+        """Return :class:`~pennylane.Hamiltonian` representing the PauliWord."""
         if len(self) == 0:
             if wire_order in (None, [], wires.Wires([])):
                 raise ValueError("Can't get the Hamiltonian for an empty PauliWord.")
@@ -236,6 +239,10 @@ class PauliWord(dict):
 
         obs = [op_map[op](wire) for wire, op in self.items()]
         return Hamiltonian([1], [obs[0] if len(obs) == 1 else Tensor(*obs)])
+
+    def map_wires(self, wire_map: dict) -> "PauliWord":
+        """Return a new PauliWord with the wires mapped."""
+        return self.__class__({wire_map.get(w, w): op for w, op in self.items()})
 
 
 class PauliSentence(dict):
@@ -293,7 +300,7 @@ class PauliSentence(dict):
         for pw1 in self:
             for pw2 in other:
                 prod_pw, coeff = pw1 * pw2
-                final_ps[prod_pw] += coeff * self[pw1] * other[pw2]
+                final_ps[prod_pw] = final_ps[prod_pw] + coeff * self[pw1] * other[pw2]
 
         return final_ps
 
@@ -381,8 +388,11 @@ class PauliSentence(dict):
             return Hamiltonian([], [])
 
         wire_order = wire_order or self.wires
-        return sum(
-            coeff * pw.hamiltonian(wire_order=list(wire_order)) for pw, coeff in self.items()
+        wire_order = list(wire_order)
+
+        return Hamiltonian(
+            list(self.values()),
+            [pw.operation(wire_order=wire_order, get_as_tensor=True) for pw in self],
         )
 
     def simplify(self, tol=1e-8):
@@ -391,3 +401,7 @@ class PauliSentence(dict):
         for pw, coeff in items:
             if abs(coeff) <= tol:
                 del self[pw]
+
+    def map_wires(self, wire_map: dict) -> "PauliSentence":
+        """Return a new PauliSentence with the wires mapped."""
+        return self.__class__({pw.map_wires(wire_map): coeff for pw, coeff in self.items()})
