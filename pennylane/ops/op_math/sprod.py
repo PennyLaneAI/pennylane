@@ -164,17 +164,6 @@ class SProd(ScalarSymbolicOp):
         return base_label or f"{scalar_val}*{self.base.label(decimals=decimals, cache=cache)}"
 
     @property
-    def data(self):
-        """The trainable parameters"""
-        return [self.scalar, *self.base.data]
-
-    @data.setter
-    def data(self, new_data):
-        self.scalar = new_data[0]
-        if len(new_data) > 1:
-            self.base.data = new_data[1:]
-
-    @property
     def num_params(self):
         """Number of trainable parameters that the operator depends on.
         Usually 1 + the number of trainable parameters for the base op.
