@@ -23,7 +23,7 @@ from jax.tree_util import register_pytree_node_class
 import pennylane as qml
 
 from .parametrized_hamiltonian import ParametrizedHamiltonian
-from .hardware_hamiltonian import HardwareHamiltonian, _reorder_parameters
+from .hardware_hamiltonian import HardwareHamiltonian
 
 
 @register_pytree_node_class
