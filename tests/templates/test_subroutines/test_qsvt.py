@@ -38,6 +38,12 @@ def lst_phis(phis):
 class TestQSVT:
     """Test the qml.QSVT template."""
 
+    def test_init_error(self):
+        """Test that an error is raised if a non-operation object is passed
+        for the block-encoding."""
+        with pytest.raises(ValueError, match="Input block encoding must be an Operator"):
+            qml.QSVT(1.23, [qml.Identity(wires=0)], wires=[0, 1])
+
     @pytest.mark.parametrize(
         ("U_A", "lst_projectors", "wires", "operations"),
         [
@@ -299,6 +305,12 @@ class TestQSVT:
 
         for idx, result in enumerate(manual_phi_results):
             assert np.isclose(result, np.real(phi_grad_results[idx]), atol=1e-6)
+
+    def test_label(self):
+        """Test that the label method returns the correct string label"""
+        op = qml.QSVT(qml.Hadamard(0), [qml.Identity(0)], wires=0)
+        assert op.label() == "QSVT"
+        assert op.label(base_label="custom_label") == "custom_label"
 
 
 class Testqsvt:
