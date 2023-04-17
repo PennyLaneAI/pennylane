@@ -32,6 +32,11 @@ from pennylane.wires import Wires
 
 
 class TestTransmonDrive:
+    def test_d_neq_2_raises_error(self):
+        """Test that setting d != 2 raises error"""
+        with pytest.raises(NotImplementedError, match="Currently only supporting qubits."):
+            _ = transmon_drive(0.5, 0.5, 0.5, [0], d=3)
+
     def test_attributes_and_number_of_terms(self):
         """Test that the attributes and the number of terms of the ``ParametrizedHamiltonian`` returned by
         ``drive`` are correct."""

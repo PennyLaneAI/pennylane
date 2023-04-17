@@ -219,8 +219,60 @@ class TransmonSettings:
         return self
 
 
-def transmon_drive(amplitude, phase, freq, wires):
-    r"""TODO"""
+def transmon_drive(amplitude, phase, freq, wires, d=2):
+    r"""Returns a :class:`ParametrizedHamiltonian` representing the drive term of a transmon qubit.
+
+    The Hamiltonian is given by
+
+    .. math::
+
+        \Omega(t) \left(e^{i (\phi(t) + \nu t)} a_q + e^{-i (\phi(t) + \nu t)} a^\dagger_q\right)
+
+    where :math:`[a^\dagger_p, a_q] = i \delta_{pq}` are bosonic creation and annihilation operators
+    and :math:`q` the qubit label (``wires``).
+    The parameters ``amplitude``. ``phase`` and ``freq`` correspond to :math:`\Omega`, :math:`phi`
+    and :math:`nu`, respectively, and can all be either fixed numbers (``float``) or depend on time
+    (``callable``).
+
+    For more realistic simulations, one may restrict the amplitude to at most
+    :math:`\Omega_{\text{max}} = 20 \text{MHz}` and the carrier frequency to deviate at most
+    :math:`\nu - \omega = \pm 1 \text{GHz}` from the qubit frequency :math:`\omega`
+    (see :func:`~.transmon_interaction` and `arXiv:2203.06818 <https://arxiv.org/abs/2203.06818>`_).
+    The phase :math:`\phi(t)` is typically a slow function of time compared to :math:`\Omega(t)`.
+
+    .. note:: Currently only supporting ``d=2`` with qudit support planned in the future.
+
+    .. seealso::
+
+        :func:`~.drive`, :func:`~.rydberg_drive`, :func:`~.transmon_interaction`
+
+    Args:
+        omega (Union[float, list[float]]): List of dressed qubit frequencies in GHz. Needs to match the length of ``wires``.
+            When passing a single float all qubits are assumed to have that same frequency.
+        connections (list[tuple(int)]): List of connections ``(i, j)`` between qubits i and j.
+            When the wires in ``connections`` are not contained in ``wires``, a warning is raised.
+        g (Union[float, list[float]]): List of coupling strengths in GHz. Needs to match the length of ``connections``.
+            When passing a single float need explicit ``wires``.
+        anharmonicity (Union[float, list[float]]): List of anharmonicities in GHz. Ignored when ``d=2``.
+            When passing a single float all qubits are assumed to have that same anharmonicity.
+        wires (Union[int, list[int]]): Label of the qubit that the drive acts upon. Can be a list of multiple wires.
+        d (int): Local Hilbert space dimension. Defaults to ``d=2`` and is currently the only supported value.
+
+    Returns:
+        HardwareHamiltonian: a :class:`~.ParametrizedHamiltonian` representing the transmon interaction
+
+    **Example**
+
+    TODO: simple catch-all example
+
+    TODO: simple integration example with transmon_interaction
+
+    """
+    if d != 2:
+        raise NotImplementedError(
+            "Currently only supporting qubits. Qutrits and qudits are planned in the future."
+        )
+
     wires = Wires(wires)
 
     # TODO: use sigma+ and sigma- (not necessary as terms are the same, but for consistency)
