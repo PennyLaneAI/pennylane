@@ -403,7 +403,7 @@ def second_order_param_shift(tape, dev_wires, argnum=None, shifts=None, gradient
             constants.append(constant)
 
             g_tape._measurements[idx] = qml.expval(op=_transform_observable(obs, Z, dev_wires))
-            g_tape._update_par_info()
+        g_tape._update_par_info()
 
         if not any(i is None for i in constants):
             # Check if *all* transformed observables corresponds to a constant

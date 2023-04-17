@@ -25,6 +25,7 @@ import pennylane as qml
 from pennylane.interfaces.jax import _compute_jvps
 from pennylane.interfaces.jax_jit import _numeric_type_to_dtype
 from pennylane.interfaces import InterfaceUnsupportedError
+from pennylane.transforms import convert_to_numpy_parameters
 
 dtype = jnp.float64
 
@@ -42,11 +43,16 @@ def _validate_jax_version():
         raise InterfaceUnsupportedError(msg)
 
 
-def _copy_tape(t, a):
+def _set_copy_and_unwrap_tape(t, a, unwrap=True):
     """Copy a given tape with operations and set parameters"""
     tc = t.copy(copy_operations=True)
     tc.set_parameters(a, trainable_only=False)
-    return tc
+    return convert_to_numpy_parameters(tc) if unwrap else tc
+
+
+def set_parameters_on_copy_and_unwrap(tapes, params, unwrap=True):
+    """Copy a set of tapes with operations and set parameters"""
+    return tuple(_set_copy_and_unwrap_tape(t, a, unwrap=unwrap) for t, a in zip(tapes, params))
 
 
 def _create_shape_dtype_struct(tape, device):
@@ -206,10 +212,8 @@ def _execute_bwd(
 
         def wrapper(p):
             """Compute the forward pass."""
-            new_tapes = [_copy_tape(t, a) for t, a in zip(tapes, p)]
-
-            with qml.tape.Unwrap(*new_tapes):
-                res, _ = execute_fn(new_tapes, **gradient_kwargs)
+            new_tapes = set_parameters_on_copy_and_unwrap(tapes, p)
+            res, _ = execute_fn(new_tapes, **gradient_kwargs)
 
             # When executed under `jax.vmap` the `result_shapes_dtypes` will contain
             # the shape without the vmap dimensions, while the function here will be
@@ -253,8 +257,7 @@ def _execute_bwd(
                     jacobians_from_callback, tangents[0], multi_measurements, trainable_params
                 )
             else:
-                new_tapes = [_copy_tape(t, a) for t, a in zip(tapes, params)]
-
+                new_tapes = set_parameters_on_copy_and_unwrap(tapes, params, unwrap=False)
                 all_jacs = []
                 for new_t in new_tapes:
                     jvp_tapes, res_processing_fn = gradient_fn(
@@ -308,17 +311,15 @@ def _execute_bwd(
         """
 
         def wrapper(params):
-            new_tapes = [_copy_tape(t, a) for t, a in zip(tapes, params)]
-
-            with qml.tape.Unwrap(*new_tapes):
-                all_jacs = []
-                for new_t in new_tapes:
-                    jvp_tapes, res_processing_fn = gradient_fn(
-                        new_t, shots=device.shots, **gradient_kwargs
-                    )
-                    jacs = execute_fn(jvp_tapes)[0]
-                    jacs = res_processing_fn(jacs)
-                    all_jacs.append(jacs)
+            new_tapes = set_parameters_on_copy_and_unwrap(tapes, params)
+            all_jacs = []
+            for new_t in new_tapes:
+                jvp_tapes, res_processing_fn = gradient_fn(
+                    new_t, shots=device.shots, **gradient_kwargs
+                )
+                jacs = execute_fn(jvp_tapes)[0]
+                jacs = res_processing_fn(jacs)
+                all_jacs.append(jacs)
 
             if len(all_jacs) == 1:
                 return all_jacs[0]
@@ -348,9 +349,8 @@ def _execute_bwd(
         """
 
         def wrapper(params):
-            new_tapes = [_copy_tape(t, a) for t, a in zip(tapes, params)]
-            with qml.tape.Unwrap(*new_tapes):
-                return gradient_fn(new_tapes, **gradient_kwargs)
+            new_tapes = set_parameters_on_copy_and_unwrap(tapes, params)
+            return gradient_fn(new_tapes, **gradient_kwargs)
 
         shape_dtype_structs = _jac_shape_dtype_tuple(tapes, device)
         return jax.pure_callback(wrapper, shape_dtype_structs, params)
@@ -377,9 +377,8 @@ def _execute_fwd(
     def execute_wrapper(params):
         def wrapper(p):
             """Compute the forward pass."""
-            new_tapes = [_copy_tape(t, a) for t, a in zip(tapes, p)]
-            with qml.tape.Unwrap(*new_tapes):
-                res, jacs = execute_fn(new_tapes, **gradient_kwargs)
+            new_tapes = set_parameters_on_copy_and_unwrap(tapes, p)
+            res, jacs = execute_fn(new_tapes, **gradient_kwargs)
             return res, jacs
 
         shape_dtype_structs = _tapes_shape_dtype_tuple(tapes, device)

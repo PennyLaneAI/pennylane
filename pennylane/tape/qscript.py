@@ -1038,6 +1038,7 @@ class QuantumScript:
         new_qscript._obs_sharing_wires_id = self._obs_sharing_wires_id
         new_qscript._batch_size = self.batch_size
         new_qscript._output_dim = self.output_dim
+        new_qscript._qfunc_output = copy.copy(self._qfunc_output)
 
         return new_qscript
 
