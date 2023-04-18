@@ -81,7 +81,7 @@ class ParametrizedEvolution(Operation):
             ODE solver. Defaults to ``jnp.inf``.
         hmax (float, optional): maximum step size allowed for the ODE solver. Defaults to ``jnp.inf``.
         return_intermediate (bool): Whether or not the ``matrix`` method returns all intermediate
-            solutions of the time evolution ODE at the times provided in ``t = [t_0,...,t_f]``.
+            solutions of the time evolution at the times provided in ``t = [t_0,...,t_f]``.
             If ``False`` (the default), only the matrix for the full time evolution is returned.
             If ``True``, all solutions including the initial condition are returned;
             when used in a circuit, this results in ``ParametrizedEvolution`` being a broadcasted
