@@ -290,7 +290,7 @@ def transmon_drive(amplitude, phase, freq, wires, d=2):
     return HardwareHamiltonian(coeffs, observables, reorder_fn=_reorder_AmpPhaseFreq)
 
 
-# pylint:disable = too-few-public-methods
+# pylint:disable = too-few-public-methods,too-many-return-statements
 class AmplitudeAndPhaseAndFreq:
     """Class storing combined amplitude, phase and freq callables"""
 
