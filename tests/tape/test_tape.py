@@ -1198,6 +1198,28 @@ class TestExpand:
             ]
         )
 
+    def test_expand_does_not_affect_original_tape(self):
+        """Test that expand_tape does not modify the inputted tape while creating a new one."""
+        ops = [qml.RX(1.1, 0)]
+        measurements = [qml.expval(qml.PauliX(0)), qml.expval(qml.PauliX(0))]
+        tape = qml.tape.QuantumTape(ops, measurements)
+        expanded = tape.expand()
+
+        assert len(tape.operations) == 1
+        assert qml.equal(tape.operations[0], ops[0])
+        assert len(tape._obs_sharing_wires) == 2
+        assert all(qml.equal(obs, qml.PauliX(0)) for obs in tape._obs_sharing_wires)
+        assert qml.equal(tape.measurements[0], qml.expval(qml.PauliX(0)))
+        assert qml.equal(tape.measurements[1], qml.expval(qml.PauliX(0)))
+
+        assert len(expanded.operations) == 2
+        assert qml.equal(expanded.operations[0], ops[0])
+        assert qml.equal(expanded.operations[1], qml.RY(-np.pi / 2, 0))  # new rotation
+        assert len(expanded._obs_sharing_wires) == 2
+        assert all(qml.equal(obs, qml.PauliZ(0)) for obs in expanded._obs_sharing_wires)
+        assert qml.equal(expanded.measurements[0], qml.expval(qml.PauliZ(0)))
+        assert qml.equal(expanded.measurements[1], qml.expval(qml.PauliZ(0)))
+
     def test_is_sampled_reserved_after_expansion(self, monkeypatch, mocker):
         """Test that the is_sampled property is correctly set when tape
         expansion happens."""
