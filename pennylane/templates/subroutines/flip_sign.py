@@ -137,7 +137,7 @@ class FlipSign(Operation):
             op_list.append(qml.PauliX(wires[-1]))
 
         op_list.append(
-            qml.ctrl(qml.PauliZ, control=wires[:-1], control_values=arr_bin[:-1])(wires=wires[-1])
+            qml.ctrl(qml.PauliZ(wires[-1]), control=wires[:-1], control_values=arr_bin[:-1])
         )
 
         if arr_bin[-1] == 0:
