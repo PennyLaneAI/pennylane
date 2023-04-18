@@ -1670,7 +1670,7 @@ class TestPassthruIntegration:
         ) * tf.math.sin(z / 2)
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
-        res = tf.concat(tape.jacobian(res, [x, y, z]), axis=0)
+        res = tf.stack(tape.jacobian(res, [x, y, z]), axis=0)
 
         expected = np.array(
             [
