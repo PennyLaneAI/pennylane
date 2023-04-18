@@ -8,9 +8,10 @@
   `complementary`. They allow computing intermediate time evolution matrices.
   [(#3900)](https://github.com/PennyLaneAI/pennylane/pull/3900)
   
-  Activating `return_intermediate` will result in `evol_op.matrix()` returning intermediate solutions
-  to the Schrodinger equation. Activating `complementary` will make these intermediate solutions
-  be the _remaining_ time evolution complementary to the output for `complementary=False`.
+  Activating `return_intermediate` will return intermediate time evolution steps, for example
+  for the matrix of the Operation, or of a quantum circuit when used in a QNode.
+  Activating `complementary` will make these intermediate steps be the _remaining_
+  time evolution complementary to the output for `complementary=False`.
   See the [docstring](https://docs.pennylane.ai/en/stable/code/api/pennylane.pulse.ParametrizedEvolution.html)
   for details.
  
