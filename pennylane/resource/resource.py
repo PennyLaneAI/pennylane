@@ -76,7 +76,7 @@ class Resources:
 
 def _count_resources(tape: QuantumTape, shots: int) -> Resources:
     """Given a quantum circuit (tape) and number of samples, this function
-     counts the resources used by both standard pennylane operations and
+     counts the resources used by both standard PennyLane operations and
      custom user-defined operations.
 
     Args:
