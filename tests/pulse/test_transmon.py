@@ -547,6 +547,7 @@ class TestIntegration:
         jitted qnode when all coeffs are callable."""
         import jax
         import jax.numpy as jnp
+
         jax.config.update("jax_enable_x64", True)
 
         H_drift = transmon_interaction(omega, connections, g, wires=wires)
