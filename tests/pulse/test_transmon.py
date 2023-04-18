@@ -30,8 +30,17 @@ from pennylane.pulse.transmon import (
 
 from pennylane.wires import Wires
 
+
 def amp_phase_freq(amp, phase, freq, t, wire=0):
-    return 0.5 * amp * (np.cos(phase + freq * t) * qml.PauliX(wire) - np.sin(phase + freq * t) * qml.PauliY(wire))
+    return (
+        0.5
+        * amp
+        * (
+            np.cos(phase + freq * t) * qml.PauliX(wire)
+            - np.sin(phase + freq * t) * qml.PauliY(wire)
+        )
+    )
+
 
 class TestTransmonDrive:
     """Tests for the transmon drive Hamiltonian."""
@@ -266,17 +275,18 @@ class TestTransmonDrive:
         assert Hd.pulses == []
         # Hamiltonian is as expected
         assert qml.math.allclose(qml.matrix(Hd([0.5], t=6)), qml.matrix(H_expected([0.5], t=6)))
-    
+
     def test_transmon_drive_with_regular_Parametrized_Hamiltonian(self):
         """Test call works as expected for regular parametrized Hamiltonian"""
+
         def f(p, t):
             return np.sin(p * t)
 
         H = transmon_drive(f, f, f, wires=[0])
         H += np.polyval * qml.PauliZ(0)
 
-        t = 5.
-        params = [1., 2., 3., [0.5]]
+        t = 5.0
+        params = [1.0, 2.0, 3.0, [0.5]]
         expected = amp_phase_freq(f(params[0], t), f(params[1], t), f(params[2], t), t, wire=0)
         expected += np.polyval(params[3], t) * qml.PauliZ(0)
 

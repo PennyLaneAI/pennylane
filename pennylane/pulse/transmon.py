@@ -88,7 +88,7 @@ def transmon_interaction(
         d (int): Local Hilbert space dimension. Defaults to ``d=2`` and is currently the only supported value.
 
     Returns:
-        HardwareHamiltonian: a :class:`~.ParametrizedHamiltonian` representing the transmon interaction
+        :class:`~.ParametrizedHamiltonian`: a :class:`~.ParametrizedHamiltonian` representing the transmon interaction
 
     **Example**
 
@@ -259,7 +259,7 @@ def transmon_drive(amplitude, phase, freq, wires, d=2):
         d (int): Local Hilbert space dimension. Defaults to ``d=2`` and is currently the only supported value.
 
     Returns:
-        HardwareHamiltonian: a :class:`~.ParametrizedHamiltonian` representing the transmon interaction
+        :class:`~.ParametrizedHamiltonian`: a :class:`~.ParametrizedHamiltonian` representing the transmon interaction
 
     **Example**
 
@@ -292,8 +292,7 @@ def transmon_drive(amplitude, phase, freq, wires, d=2):
 
 # pylint:disable = too-few-public-methods
 class AmplitudeAndPhaseAndFreq:
-    """Class storing combined amplitude and phase callable if either or both
-    of amplitude and phase are callable."""
+    """Class storing combined amplitude, phase and freq callables"""
 
     def __init__(self, trig_fn, amp, phase, freq):
         self.amp_is_callable = callable(amp)
@@ -312,22 +311,23 @@ class AmplitudeAndPhaseAndFreq:
         # 2 out of 3 callable
 
         if self.amp_is_callable and self.phase_is_callable:
+
             def callable_amp_and_phase(params, t):
                 return amp(params[0], t) * trig_fn(phase(params[1], t) + freq * t)
 
             self.func = callable_amp_and_phase
-            return 
-
+            return
 
         if self.amp_is_callable and self.freq_is_callable:
+
             def callable_amp_and_freq(params, t):
                 return amp(params[0], t) * trig_fn(phase + freq(params[1], t) * t)
 
             self.func = callable_amp_and_freq
             return
 
-
         if self.phase_is_callable and self.freq_is_callable:
+
             def callable_phase_and_freq(params, t):
                 return amp * trig_fn(phase(params[0], t) + freq(params[1], t) * t)
 
@@ -337,22 +337,23 @@ class AmplitudeAndPhaseAndFreq:
         # 1 out of 3 callable
 
         if self.amp_is_callable:
+
             def callable_amp(params, t):
                 return amp(params, t) * trig_fn(phase + freq * t)
 
             self.func = callable_amp
             return
 
-
         if self.phase_is_callable:
+
             def callable_phase(params, t):
                 return amp * trig_fn(phase(params, t) + freq * t)
 
             self.func = callable_phase
             return
 
-
         if self.freq_is_callable:
+
             def callable_freq(params, t):
                 return amp * trig_fn(phase + freq(params, t) * t)
 
@@ -371,11 +372,10 @@ class AmplitudeAndPhaseAndFreq:
 
 def _reorder_AmpPhaseFreq(params, coeffs_parametrized):
     """Takes `params`, and reorganizes it based on whether the Hamiltonian has
-    callable phase and/or callable amplitude.
+    callable phase and/or callable amplitude and/or callable freq.
 
-    Consolidates phase and amplitude parameters in the case that both are callable,
-    and duplicates phase and/or amplitude parameters if either are callables, since
-    they will be passed to two operators in the Hamiltonian"""
+    Consolidates amplitude, phase and freq parameters in they are callable,
+    and duplicates parameters since they will be passed to two operators in the Hamiltonian"""
 
     reordered_params = []
 
