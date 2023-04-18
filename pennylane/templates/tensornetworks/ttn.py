@@ -211,17 +211,18 @@ class TTN(Operation):
             list[.Operator]: decomposition of the operator
         """
         op_list = []
+        block_gen = qml.tape.make_qscript(block)
         if block.__code__.co_argcount > 2:
             for idx, w in enumerate(ind_gates):
-                op_list.append(block(*weights[idx], wires=w))
+                op_list += block_gen(*weights[idx], wires=w)
         elif block.__code__.co_argcount == 2:
             for idx, w in enumerate(ind_gates):
-                op_list.append(block(weights[idx], wires=w))
+                op_list += block_gen(weights[idx], wires=w)
         else:
-            for idx, w in enumerate(ind_gates):
-                op_list.append(block(wires=w))
+            for w in ind_gates:
+                op_list += block_gen(wires=w)
 
-        return op_list
+        return [qml.apply(op) for op in op_list] if qml.QueuingManager.recording() else op_list
 
     @staticmethod
     def get_n_blocks(wires, n_block_wires):
