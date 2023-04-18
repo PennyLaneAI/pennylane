@@ -79,17 +79,17 @@ class ParametrizedEvolution(Operation):
             ODE solver. Defaults to ``jnp.inf``.
         hmax (float, optional): maximum step size allowed for the ODE solver. Defaults to ``jnp.inf``.
         return_intermediate (bool): Whether or not the ``matrix`` method returns all intermediate
-            solutions of the time evolution ODE at the times provided in ``t = [t_0, t_1, .. , t_P]``. If ``False``
+            solutions of the time evolution ODE at the times provided in ``t = [t_0, t_1, .. , t_f]``. If ``False``
             (the default), only the matrix for the full time evolution is returned. If ``True``,
             all solutions including the initial condition :math:`U(t_0, t_0)=1` are returned; when
             used in a circuit, this results in ``ParametrizedEvolution`` being a broadcasted operation.
         complementary (bool): Whether or not to compute the complementary time evolution when using
             ``return_intermediate=True`` (ignored otherwise).
             If ``False`` (the default), the usual solutions to the Schrodinger equation
-            :math:`\{U(t_0, t_0), U(t_0, t_1),\dots, U(t_0, t_P)\}` are computed,
+            :math:`\{U(t_0, t_0), U(t_0, t_1),\dots, U(t_0, t_f)\}` are computed,
             where :math:`t_i` are the additional times provided in ``t``.
-            If ``True``, the *remaining* time evolution to :math:`t_P` is computed instead, returning
-            :math:`\{U(t_0, t_P), U(t_1, t_P),\dots, U(t_{P-1}, t_P), U(t_P, t_P)\}`.
+            If ``True``, the *remaining* time evolution to :math:`t_f` is computed instead, returning
+            :math:`\{U(t_0, t_f), U(t_1, t_f),\dots, U(t_{f-1}, t_f), U(t_f, t_f)\}`.
 
     .. warning::
         The :class:`~.ParametrizedHamiltonian` must be Hermitian at all times. This is not explicitly checked
@@ -275,7 +275,7 @@ class ParametrizedEvolution(Operation):
 
         .. math::
 
-            \{U(t_0, t_0), U(t_0, t_1), \dots, U(t_0, t_{P-1}), U(t_0, t_P)\}.
+            \{U(t_0, t_0), U(t_0, t_1), \dots, U(t_0, t_{f-1}), U(t_0, t_f)\}.
 
         The first entry here is the initial condition :math:`U(t_0, t_0)=1`. For a simple
         time-dependent single-qubit Hamiltonian, this feature looks like the following:
@@ -303,12 +303,12 @@ class ParametrizedEvolution(Operation):
         When using ``return_intermediate=True``, the partial time evolutions share the *initial*
         time :math:`t_0`. For some applications, however, it may be useful to compute the
         complementary time evolutions, i.e. the partial evolutions that share the *final* time
-        :math:`t_P`. This can be activated by setting ``complementary=True``, which will make
+        :math:`t_f`. This can be activated by setting ``complementary=True``, which will make
         ``ParametrizedEvolution.matrix`` return the matrices
 
         .. math::
 
-            \{U(t_0, t_P), U(t_1, t_P), \dots, U(t_P, t_P)\}.
+            \{U(t_0, t_f), U(t_1, t_f), \dots, U(t_f, t_f)\}.
 
         Using the Hamiltonian from the example above:
 
@@ -438,7 +438,7 @@ class ParametrizedEvolution(Operation):
 
         mat = odeint(fun, y0, self.t, **self.odeint_kwargs)
         if self.hyperparameters["return_intermediate"] and self.hyperparameters["complementary"]:
-            # Compute U(t_0, t_P)@U(t_0, t_i)^\dagger, where i indexes the first axis of mat
+            # Compute U(t_0, t_f)@U(t_0, t_i)^\dagger, where i indexes the first axis of mat
             mat = qml.math.tensordot(mat[-1], qml.math.conj(mat), axes=[[1], [-1]])
             # The previous line leaves the axis indexing the t_i as second, so we move it up
             mat = qml.math.moveaxis(mat, 1, 0)
