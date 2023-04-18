@@ -62,7 +62,7 @@ def split_evol_ops(op, word, word_wires, tau):
             inner lists. The first tuple entry contains the operations with positive Pauli rotation
             angle, the second entry the operations with negative Pauli rotation angle.
     """
-    t0, t1 = op.t
+    t0, *_, t1 = op.t
     if broadcast := qml.math.ndim(tau) > 0:
         tau = jnp.sort(tau)
         before_t = jnp.concatenate([jnp.array([t0]), tau, jnp.array([t1])])
@@ -552,11 +552,6 @@ def _generate_tapes_and_cjacs(tape, idx, key, num_split_times, use_broadcasting)
             "stoch_pulse_grad does not support differentiating parameters of "
             "other operations than pulses."
         )
-    if len(op.t) != 2:
-        raise ValueError(
-            "stoch_pulse_grad does not support differentiating ParametrizedEvolutions with "
-            f"intermediate time steps. Got t={op.t}"
-        )
 
     coeff, ob = op.H.coeffs_parametrized[term_idx], op.H.ops_parametrized[term_idx]
     if not qml.pauli.is_pauli_word(ob):
@@ -567,7 +562,7 @@ def _generate_tapes_and_cjacs(tape, idx, key, num_split_times, use_broadcasting)
     word = qml.pauli.pauli_word_to_string(ob)
     cjac_fn = jax.jacobian(coeff, argnums=0)
 
-    t0, t1 = op.t
+    t0, *_, t1 = op.t
     taus = jnp.sort(jax.random.uniform(key, shape=(num_split_times,)) * (t1 - t0) + t0)
     cjacs = [cjac_fn(op.data[term_idx], tau) for tau in taus]
     if use_broadcasting:
