@@ -19,7 +19,7 @@ representation of a quantum circuit from an Operator queue.
 from collections import namedtuple
 
 import numpy as np
-import retworkx as rx
+import rustworkx as rx
 
 import pennylane as qml
 from pennylane.measurements import SampleMP, StateMP
@@ -281,7 +281,7 @@ class CircuitGraph:
         and directed edges pointing from nodes to their immediate dependents/successors.
 
         Returns:
-            retworkx.PyDiGraph: the directed acyclic graph representing the quantum circuit
+            rustworkx.PyDiGraph: the directed acyclic graph representing the quantum circuit
         """
         return self._graph
 

@@ -24,6 +24,7 @@ from autograd.numpy.numpy_boxes import ArrayBox
 import pennylane as qml
 from pennylane import numpy as np
 from pennylane.measurements import CountsMP
+from pennylane.transforms import convert_to_numpy_parameters
 
 
 def _execute_legacy(
@@ -111,8 +112,8 @@ def __execute_legacy(
     if the nth-order derivative is requested. Do not set this argument unless you
     understand the consequences!
     """
-    with qml.tape.Unwrap(*tapes):
-        res, jacs = execute_fn(tapes, **gradient_kwargs)
+    unwrapped_tapes = tuple(convert_to_numpy_parameters(t) for t in tapes)
+    res, jacs = execute_fn(unwrapped_tapes, **gradient_kwargs)
 
     for i, r in enumerate(res):
         if any(isinstance(m, CountsMP) for m in tapes[i].measurements):
@@ -182,9 +183,9 @@ def _vjp_legacy(
         for t in tapes:
             g_tapes, fn = gradient_fn(t, **gradient_kwargs)
 
-            with qml.tape.Unwrap(*g_tapes):
-                res, _ = execute_fn(g_tapes, **gradient_kwargs)
-                jacs.append(fn(res))
+            unwrapped_tapes = tuple(convert_to_numpy_parameters(g_t) for g_t in g_tapes)
+            res, _ = execute_fn(unwrapped_tapes, **gradient_kwargs)
+            jacs.append(fn(res))
 
         cached_jac["jacobian"] = jacs
         return jacs
@@ -214,16 +215,16 @@ def _vjp_legacy(
 
                 # Generate and execute the required gradient tapes
                 if _n == max_diff:
-                    with qml.tape.Unwrap(*tapes):
-                        vjp_tapes, processing_fn = qml.gradients.batch_vjp(
-                            tapes,
-                            dy,
-                            gradient_fn,
-                            reduction="append",
-                            gradient_kwargs=gradient_kwargs,
-                        )
+                    unwrapped_tapes = tuple(convert_to_numpy_parameters(t) for t in tapes)
+                    vjp_tapes, processing_fn = qml.gradients.batch_vjp(
+                        unwrapped_tapes,
+                        dy,
+                        gradient_fn,
+                        reduction="append",
+                        gradient_kwargs=gradient_kwargs,
+                    )
 
-                        vjps = processing_fn(execute_fn(vjp_tapes)[0])
+                    vjps = processing_fn(execute_fn(vjp_tapes)[0])
 
                 else:
                     vjp_tapes, processing_fn = qml.gradients.batch_vjp(
@@ -252,8 +253,8 @@ def _vjp_legacy(
                 # - gradient_fn is not differentiable
                 #
                 # so we cannot support higher-order derivatives.
-                with qml.tape.Unwrap(*tapes):
-                    jacs = gradient_fn(tapes, **gradient_kwargs)
+                unwrapped_tapes = tuple(convert_to_numpy_parameters(t) for t in tapes)
+                jacs = gradient_fn(unwrapped_tapes, **gradient_kwargs)
 
                 vjps = [qml.gradients.compute_vjp(d, jac) for d, jac in zip(dy, jacs)]
         return_vjps = [
@@ -365,8 +366,8 @@ def _execute(
     if the nth-order derivative is requested. Do not set this argument unless you
     understand the consequences!
     """
-    with qml.tape.Unwrap(*tapes):
-        res, jacs = execute_fn(tapes, **gradient_kwargs)
+    unwrapped_tapes = tuple(convert_to_numpy_parameters(t) for t in tapes)
+    res, jacs = execute_fn(unwrapped_tapes, **gradient_kwargs)
 
     return res, jacs
 
@@ -422,9 +423,9 @@ def vjp(
             shot_vector = getattr(device, "shot_vector", None)
             g_tapes, fn = gradient_fn(t, shots=shot_vector, **gradient_kwargs)
 
-            with qml.tape.Unwrap(*g_tapes):
-                res, _ = execute_fn(g_tapes, **gradient_kwargs)
-                jacs.append(fn(res))
+            unwrapped_tapes = tuple(convert_to_numpy_parameters(g_t) for g_t in g_tapes)
+            res, _ = execute_fn(unwrapped_tapes, **gradient_kwargs)
+            jacs.append(fn(res))
 
         cached_jac["jacobian"] = jacs
         return jacs
@@ -458,17 +459,17 @@ def vjp(
 
                 # Generate and execute the required gradient tapes
                 if _n == max_diff:
-                    with qml.tape.Unwrap(*tapes):
-                        vjp_tapes, processing_fn = qml.gradients.batch_vjp(
-                            tapes,
-                            dy,
-                            gradient_fn,
-                            shots=shot_vector,
-                            reduction="append",
-                            gradient_kwargs=gradient_kwargs,
-                        )
+                    unwrapped_tapes = tuple(convert_to_numpy_parameters(t) for t in tapes)
+                    vjp_tapes, processing_fn = qml.gradients.batch_vjp(
+                        unwrapped_tapes,
+                        dy,
+                        gradient_fn,
+                        shots=device.shot_vector,
+                        reduction="append",
+                        gradient_kwargs=gradient_kwargs,
+                    )
 
-                        vjps = processing_fn(execute_fn(vjp_tapes)[0])
+                    vjps = processing_fn(execute_fn(vjp_tapes)[0])
 
                 else:
                     vjp_tapes, processing_fn = qml.gradients.batch_vjp(
@@ -504,8 +505,8 @@ def vjp(
                 # - gradient_fn is not differentiable
                 #
                 # so we cannot support higher-order derivatives.
-                with qml.tape.Unwrap(*tapes):
-                    jacs = gradient_fn(tapes, **gradient_kwargs)
+                unwrapped_tapes = tuple(convert_to_numpy_parameters(t) for t in tapes)
+                jacs = gradient_fn(unwrapped_tapes, **gradient_kwargs)
 
                 vjps = _compute_vjps_autograd(jacs, dy, multi_measurements, device.shot_vector)
 

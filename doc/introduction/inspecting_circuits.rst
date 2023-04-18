@@ -192,10 +192,10 @@ or to check whether two gates causally influence each other.
     obs = tape.observables
     g = CircuitGraph(ops, obs, tape.wires)
 
-Internally, the :class:`~pennylane.CircuitGraph` class constructs a ``retworkx`` graph object.
+Internally, the :class:`~pennylane.CircuitGraph` class constructs a ``rustworkx`` graph object.
 
 >>> type(g.graph)
-<class 'retworkx.PyDiGraph'>
+<class 'rustworkx.PyDiGraph'>
 
 There is no edge between the ``Hadamard`` and the first ``CNOT``, but between consecutive ``CNOT`` gates:
 
