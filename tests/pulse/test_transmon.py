@@ -547,6 +547,7 @@ class TestIntegration:
         jitted qnode when all coeffs are callable."""
         import jax
         import jax.numpy as jnp
+        jax.config.update("jax_enable_x64", True)
 
         H_drift = transmon_interaction(omega, connections, g, wires=wires)
 
@@ -578,4 +579,4 @@ class TestIntegration:
         res_jit = qnode_jit(params)
 
         assert isinstance(res, jax.Array)
-        assert qml.math.isclose(res, res_jit, atol=1e-4)
+        assert qml.math.isclose(res, res_jit)
