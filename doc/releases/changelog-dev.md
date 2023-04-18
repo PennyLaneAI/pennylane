@@ -17,15 +17,21 @@
   [(#3790)](https://github.com/PennyLaneAI/pennylane/pull/3790)
 
 * Added the needed functions and classes to simulate an ensemble of Rydberg atoms:
-  * A new internal `RydbergHamiltonian` class is added, which contains the Hamiltonian of an ensemble of
-    Rydberg atoms.
-  * A new user-facing `rydberg_interaction` function is added, which returns a `RydbergHamiltonian` containing
+  * A new internal `HardwareHamiltonian` class is added, which contains additional information about pulses and settings.
+  * A new user-facing `rydberg_interaction` function is added, which returns a `HardwareHamiltonian` containing
     the Hamiltonian of the interaction of all the Rydberg atoms.
+  * A new user-facing `transmon_interaction` function is added, constructing
+    the Hamiltonian that describes the circuit QED interaction Hamiltonian of superconducting transmon systems.
   * A new user-facing `drive` function is added, which returns a `ParametrizedHamiltonian` (`HardwareHamiltonian`) containing
     the Hamiltonian of the interaction between a driving electro-magnetic field and a group of qubits.
+  * A new user-facing `rydberg_drive` function is added, which returns a `ParametrizedHamiltonian` (`HardwareHamiltonian`) containing
+    the Hamiltonian of the interaction between a driving laser field and a group of Rydberg atoms.
   [(#3749)](https://github.com/PennyLaneAI/pennylane/pull/3749)
   [(#3911)](https://github.com/PennyLaneAI/pennylane/pull/3911)
   [(#3930)](https://github.com/PennyLaneAI/pennylane/pull/3930)
+  [(#3936)](https://github.com/PennyLaneAI/pennylane/pull/3936/)
+  [(#3966)](https://github.com/PennyLaneAI/pennylane/pull/3966)
+  [(#3987)](https://github.com/PennyLaneAI/pennylane/pull/3987)
 
 * Added `Operation.__truediv__` dunder method to be able to divide operators.
   [(#3749)](https://github.com/PennyLaneAI/pennylane/pull/3749)
@@ -38,6 +44,10 @@
   [(#3682)](https://github.com/PennyLaneAI/pennylane/pull/3682)
 
 <h3>Improvements</h3>
+
+* Added a new decomposition to `qml.SingleExcitation` that halves the number of
+  CNOTs required.
+  [(3976)](https://github.com/PennyLaneAI/pennylane/pull/3976)
 
 * The default gaussian device and parameter shift cv support the new return system but only for single measurement.
   [(3946)](https://github.com/PennyLaneAI/pennylane/pull/3946)
@@ -148,8 +158,13 @@
 * `retworkx` has been renamed to `rustworkx` to accomodate the change in name for the package.
   [(#3975)](https://github.com/PennyLaneAI/pennylane/pull/3975)
 
-* `Sum`, `Prod`, and `SProd` operator data is now a flat list, instead of nested.
+* `Exp`, `Sum`, `Prod`, and `SProd` operator data is now a flat list, instead of nested.
   [(#3958)](https://github.com/PennyLaneAI/pennylane/pull/3958)
+  [(#3983)](https://github.com/PennyLaneAI/pennylane/pull/3983)
+
+* `qml.transforms.convert_to_numpy_parameters` is added to convert a circuit with interface-specific parameters to one
+  with only numpy parameters. This transform is designed to replace `qml.tape.Unwrap`.
+  [(#3899)](https://github.com/PennyLaneAI/pennylane/pull/3899)
 
 * `qml.operation.WiresEnum.AllWires` is now -2 instead of 0 to avoid the
   ambiguity between `op.num_wires = 0` and `op.num_wires = AllWires`.
@@ -181,8 +196,9 @@
   For example, you can no longer create `StateMP(qml.PauliX(0))` or `PurityMP(eigvals=(-1,1), wires=Wires(0))`.
   [(#3898)](https://github.com/PennyLaneAI/pennylane/pull/3898)
 
-* `Sum`, `Prod`, and `SProd` operator data is now a flat list, instead of nested.
+* `Exp`, `Sum`, `Prod`, and `SProd` operator data is now a flat list, instead of nested.
   [(#3958)](https://github.com/PennyLaneAI/pennylane/pull/3958)
+  [(#3983)](https://github.com/PennyLaneAI/pennylane/pull/3983)
 
 <h3>Deprecations</h3>
 
@@ -192,6 +208,9 @@
   [(#3844)](https://github.com/PennyLaneAI/pennylane/pull/3844)
 
 <h3>Bug fixes</h3>
+
+* Fixes a bug where the broadcast expand results where stacked along the wrong axis for the new return system.
+  [(#3984)](https://github.com/PennyLaneAI/pennylane/pull/3984)
 
 * Fixed a bug where calling `Evolution.generator` with `coeff` being a complex ArrayBox raised an error.
   [(#3796)](https://github.com/PennyLaneAI/pennylane/pull/3796)
@@ -254,12 +273,20 @@
   Now only `DefaultQubitJax` supports the operator, as expected.
   [(#3964)](https://github.com/PennyLaneAI/pennylane/pull/3964)
 
+* Ensure that parallel `AnnotatedQueues` do not queue each other's contents.
+  [(#3924)](https://github.com/PennyLaneAI/pennylane/pull/3924)
+
+* Added a `map_wires` method to `PauliWord` and `PauliSentence`, and ensured that operators call
+  it in their respective `map_wires` methods if they have a Pauli rep.
+  [(#3985)](https://github.com/PennyLaneAI/pennylane/pull/3985)
+
 <h3>Contributors</h3>
 
 This release contains contributions from (in alphabetical order):
 
 Komi Amiko
 Utkarsh Azad
+Olivia Di Matteo
 Lillian M. A. Frederiksen
 Soran Jahangiri
 Christina Lee

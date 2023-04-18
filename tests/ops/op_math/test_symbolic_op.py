@@ -18,12 +18,17 @@ import pytest
 
 import pennylane as qml
 from pennylane import numpy as np
-from pennylane.ops.op_math import SymbolicOp
+from pennylane.ops.op_math import SymbolicOp, ScalarSymbolicOp
 from pennylane.wires import Wires
 
 
 class TempOperator(qml.operation.Operator):
     num_wires = 1
+
+
+class TempScalar(ScalarSymbolicOp):
+    def _matrix(scalar, mat):
+        pass
 
 
 def test_intialization():
@@ -59,12 +64,16 @@ def test_map_wires():
     """Test the map_wires method."""
     base = TempOperator("a")
     op = SymbolicOp(base, id="something")
+    # pylint:disable=attribute-defined-outside-init
+    op._pauli_rep = qml.pauli.PauliSentence({qml.pauli.PauliWord({"a": "X"}): 1})
     wire_map = {"a": 5}
     mapped_op = op.map_wires(wire_map=wire_map)
     assert op.wires == Wires("a")
     assert op.base.wires == Wires("a")
     assert mapped_op.wires == Wires(5)
     assert mapped_op.base.wires == Wires(5)
+    assert mapped_op._pauli_rep is not op._pauli_rep
+    assert mapped_op._pauli_rep == qml.pauli.PauliSentence({qml.pauli.PauliWord({5: "X"}): 1})
 
 
 class TestProperties:
@@ -199,3 +208,41 @@ class TestQueuing:
             op = SymbolicOp(base, do_queue=False)
 
         assert len(q) == 0
+
+
+class TestScalarSymbolicOp:
+    """Tests for the ScalarSymbolicOp class."""
+
+    def test_init(self):
+        base = TempOperator(1.1, wires=[0])
+        scalar = 2.2
+        op = TempScalar(base, scalar)
+        assert isinstance(op.scalar, float)
+        assert op.scalar == 2.2
+        assert op.data == [2.2, 1.1]
+
+        base = TempOperator(1.1, wires=[0])
+        scalar = [2.2, 3.3]
+        op = TempScalar(base, scalar)
+        assert isinstance(op.scalar, np.ndarray)
+        assert np.all(op.scalar == [2.2, 3.3])
+        assert np.all(op.data[0] == op.scalar)
+        assert op.data[1] == 1.1
+
+    def test_data(self):
+        """Tests the data property."""
+        op = TempScalar(TempOperator(1.1, wires=[0]), 2.2)
+        assert op.scalar == 2.2
+        assert op.data == [2.2, 1.1]
+
+        # check setting through ScalarSymbolicOp
+        op.data = [3.3, 4.4]
+        assert op.data == [3.3, 4.4]
+        assert op.scalar == 3.3
+        assert op.base.data == [4.4]
+
+        # check setting through base
+        op.base.data = [5.5]
+        assert op.data == [3.3, 5.5]
+        assert op.scalar == 3.3
+        assert op.base.data == [5.5]
