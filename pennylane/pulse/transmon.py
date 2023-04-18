@@ -263,9 +263,60 @@ def transmon_drive(amplitude, phase, freq, wires, d=2):
 
     **Example**
 
-    TODO: simple catch-all example
+    Simple Example 1
 
-    TODO: simple integration example with transmon_interaction
+    .. code-block::python3
+
+        def amp(Omega, t): return Omega * jnp.sin(jnp.pi*t)
+        def phase(phi, t): return phi * (t - 0.5)
+
+        H = qml.pulse.transmon_drive(amp, phase, 0.5, 0)
+
+        Omega = 0.1
+        phi = 0.001
+        params = [Omega, phi]
+
+    >>> H(params, 0.5) #TODO update output
+    (0.09689124217106448*(  (0.5) [X0])) + (0.024740395925452296*(  (-0.5) [Y0]))
+
+    Integration Example 2
+
+    .. code-block::python3
+
+        omega = [5.1, 5., 5.3]
+        connections = [[0, 1], [1, 2]]
+        g = [0.02, 0.05]
+        H = qml.pulse.transmon_interaction(omega, connections, g, wires=range(3))
+
+        def amp(Omega, t): return Omega * jnp.sin(t)
+        def freq(fr, t): return fr
+        phase = 0.
+        t=2
+
+        H += qml.pulse.transmon_drive(amp, phase, freq, 0)
+        H += qml.pulse.transmon_drive(amp, phase, freq, 1)
+        H += qml.pulse.transmon_drive(amp, phase, freq, 2)
+
+        Omega0, Omega1, Omega2 = [0.5, 0.3, 0.6]
+        fr0, fr1, fr2 = omega
+        params = [Omega0, fr0, Omega1, fr1, Omega2, fr2]
+
+        dev = qml.device("default.qubit.jax", wires=range(3))
+
+        @qml.qnode(dev, interface="jax")
+        def qnode(params):
+            qml.evolve(H)(params, t=5.)
+            return qml.expval(qml.PauliZ(0) + qml.PauliZ(1) + qml.PauliZ(2))
+
+    >>> qnode(params)
+    Array(2.80723239, dtype=float64)
+    >>> jax.grad(qnode)(params)
+    [Array(-0.25930683, dtype=float64),
+     Array(0.0285115, dtype=float64),
+     Array(-0.16081173, dtype=float64),
+     Array(0.12002264, dtype=float64),
+     Array(-0.33964591, dtype=float64),
+     Array(0.06057963, dtype=float64)]
 
     """
     if d != 2:
