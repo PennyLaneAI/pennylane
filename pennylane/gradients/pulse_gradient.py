@@ -598,13 +598,6 @@ def _expval_stoch_pulse_grad(tape, argnum, num_split_times, key, shots, use_broa
         tapes.extend(_tapes)
 
     def processing_fn(results):
-        # pylint: disable=protected-access
-        scalar_qfunc_output = tape._qfunc_output is not None and not isinstance(
-            tape._qfunc_output, Sequence
-        )
-        if scalar_qfunc_output:
-            results = [qml.math.squeeze(res) for res in results]
-
         num_measurements = len(tape.measurements)
         single_measure = num_measurements == 1
         shot_vector = isinstance(shots, Sequence)
