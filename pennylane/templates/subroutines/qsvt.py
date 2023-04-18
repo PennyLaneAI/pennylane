@@ -113,8 +113,8 @@ def qsvt(A, angles, wires, convention=None):
 
     >>> q_script = qml.tape.QuantumScript(ops=[qml.qsvt(A, angles, wires=[0, 1])])
     >>> print(q_script.expand().draw(decimals=2))
-    0: ─╭∏_ϕ(0.10)─╭BlockEncode(M0)─╭∏_ϕ(0.20)─╭BlockEncode(M0)†─╭∏_ϕ(0.30)─┤
-    1: ─╰∏_ϕ(0.10)─╰BlockEncode(M0)─╰∏_ϕ(0.20)─╰BlockEncode(M0)†─╰∏_ϕ(0.30)─┤
+    0: ─╭∏_ϕ(0.30)─╭BlockEncode(M0)─╭∏_ϕ(0.20)─╭BlockEncode(M0)†─╭∏_ϕ(0.10)─┤
+    1: ─╰∏_ϕ(0.30)─╰BlockEncode(M0)─╰∏_ϕ(0.20)─╰BlockEncode(M0)†─╰∏_ϕ(0.10)─┤
     """
     if qml.math.shape(A) == () or qml.math.shape(A) == (1,):
         A = qml.math.reshape(A, [1, 1])
@@ -223,18 +223,17 @@ class QSVT(Operation):
     0: ─╭∏_ϕ(0.10)─╭BlockEncode(M0)─╭∏_ϕ(1.10)─╭BlockEncode(M0)†─╭∏_ϕ(2.10)─┤
     1: ─╰∏_ϕ(0.10)─╰BlockEncode(M0)─╰∏_ϕ(1.10)─╰BlockEncode(M0)†─╰∏_ϕ(2.10)─┤
 
-    Working with this class directly, we can make use of any PennyLane operations
-    to represent our block-encoding and our phase-shifts. In this example we
-    transform the scalar :math:`a = \frac{1}{\sqrt{2}}`
+    When working with this class directly, we can make use of any PennyLane operation
+    to represent our block-encoding and our phase-shifts.
 
     >>> dev = qml.device("default.qubit", wires=[0])
     >>> block_encoding = qml.Hadamard(wires=0)  # note H is a block encoding of 1/sqrt(2)
-    >>> phase_shifts = [qml.RZ(-2 * theta, wires=0) for theta in (1.23, -0.5, 4)]  # -2*theta to math convention
+    >>> phase_shifts = [qml.RZ(-2 * theta, wires=0) for theta in (1.23, -0.5, 4)]  # -2*theta to match convention
     >>>
     >>> @qml.qnode(dev)
     >>> def example_circuit():
-    ...    qml.QSVT(block_encoding, phase_shifts, wires=[0])
-    ...    return qml.expval(qml.PauliZ(wires=0))
+    ...     qml.QSVT(block_encoding, phase_shifts, wires=[0])
+    ...     return qml.expval(qml.PauliZ(wires=0))
     >>>
     >>> example_circuit()
     tensor(0.54030231, requires_grad=True)
