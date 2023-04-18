@@ -115,7 +115,7 @@ class TestIntegrationMultipleReturns:
             qubit_ansatz(x)
             return (
                 qml.probs(wires=0),
-                qml.vn_entropy(wires=0),
+                qml.expval(qml.PauliZ(wires=0)),
                 qml.probs(op=qml.PauliY(wires=1)),
                 qml.expval(qml.PauliY(wires=1)),
             )
