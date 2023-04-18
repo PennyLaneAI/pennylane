@@ -39,8 +39,7 @@ from .gradient_transform import (
 has_jax = True
 try:
     import jax
-
-    jnp = jax.numpy
+    import jax.numpy as jnp
 except ImportError:
     has_jax = False
 
@@ -225,13 +224,14 @@ def _stoch_pulse_grad(
             rule underlying the differentiation; also see details
         sample_seed (int): randomness seed to be used for the time samples in the stochastic
             parameter-shift rule
-        shots (None, int, list[int]): The device shots that will be used to execute the tapes
-            outputted by this transform. Note that this argument doesn't influence the shots
-            used for tape execution, but provides information about the shots.
+        shots (None, int, list[int]): The shots of the device used to execute the tapes which are
+            returned by this transform. Note that this argument does not *influence* the shots
+            used for execution, but informs the transform about the shots to ensure a compatible
+            return value structure.
         use_broadcasting (bool): Whether to use broadcasting across the different sampled
             splitting times. If ``False`` (the default), one set of modified tapes per
             splitting time is created, if ``True`` only a single set of broadcasted, modified
-            tapes is created.
+            tapes is created, increasing performance. This is only available on simulators.
 
     Returns:
         function or tuple[list[QuantumTape], function]:
@@ -315,14 +315,17 @@ def _stoch_pulse_grad(
     approximate the integral can be chosen with ``num_split_times``, the seed for the
     sampling can be fixed with ``sampler_seed``:
 
-    >>> qnode = qml.QNode(
-    ...     ansatz,
-    ...     dev,
-    ...     interface="jax",
-    ...     diff_method=qml.gradients.stoch_pulse_grad,
-    ...     num_split_times=5, # Use 5 samples for the approximation
-    ...     sampler_seed=18, # Fix randomness seed
-    ... )
+    .. code-block:: python
+
+        qnode = qml.QNode(
+            ansatz,
+            dev,
+            interface="jax",
+            diff_method=qml.gradients.stoch_pulse_grad,
+            num_split_times=5, # Use 5 samples for the approximation
+            sampler_seed=18, # Fix randomness seed
+        )
+
     >>> jax.grad(qnode)(params)
     [Array(0.00246266, dtype=float32, weak_type=True),
      Array(-0.11399216, dtype=float32, weak_type=True)]
@@ -331,22 +334,26 @@ def _stoch_pulse_grad(
     use of broadcasting internally to improve the performance of the stochastic parameter-shift
     rule:
 
-    >>> from time import process_time
-    >>> faster_grad_qnode = qml.QNode(
-    ...     ansatz,
-    ...     dev,
-    ...     interface="jax",
-    ...     diff_method=qml.gradients.stoch_pulse_grad,
-    ...     num_split_times=5, # Use 20 samples for the approximation
-    ...     sampler_seed=18, # Fix randomness seed
-    ...     use_broadcasting=True, # Activate broadcasting
-    ... )
-    >>> for node in [qnode, faster_grad_qnode]:
-    ...     start = process_time()
-    ...     jax.grad(node)(params)
-    ...     print(process_time() - start) # Show the gradient computation time in seconds.
-    11.582010403000002
-    3.9708045299999988
+    .. code-block:: python
+
+        from time import process_time
+        faster_grad_qnode = qml.QNode(
+            ansatz,
+            dev,
+            interface="jax",
+            diff_method=qml.gradients.stoch_pulse_grad,
+            num_split_times=5, # Use 20 samples for the approximation
+            sampler_seed=18, # Fix randomness seed
+            use_broadcasting=True, # Activate broadcasting
+        )
+        times = []
+        for node in [qnode, faster_grad_qnode]:
+            start = process_time()
+            jax.grad(node)(params)
+            times.append(process_time() - start)
+
+    >>> print(times) # Show the gradient computation times in seconds.
+    [11.582010403000002, 3.9708045299999988]
 
     .. warning::
 
@@ -551,25 +558,25 @@ def _generate_tapes_and_cjacs(tape, idx, key, num_split_times, use_broadcasting)
             f"intermediate time steps. Got t={op.t}"
         )
 
-    coeff, ham = op.H.coeffs_parametrized[term_idx], op.H.ops_parametrized[term_idx]
-    if not qml.pauli.is_pauli_word(ham):
+    coeff, ob = op.H.coeffs_parametrized[term_idx], op.H.ops_parametrized[term_idx]
+    if not qml.pauli.is_pauli_word(ob):
         raise ValueError(
             "stoch_pulse_grad currently only supports Pauli words as parametrized "
-            f"terms in ParametrizedHamiltonian. Got {ham}"
+            f"terms in ParametrizedHamiltonian. Got {ob}"
         )
-    word = qml.pauli.pauli_word_to_string(ham)
+    word = qml.pauli.pauli_word_to_string(ob)
     cjac_fn = jax.jacobian(coeff, argnums=0)
 
     t0, t1 = op.t
     taus = jnp.sort(jax.random.uniform(key, shape=(num_split_times,)) * (t1 - t0) + t0)
     cjacs = [cjac_fn(op.data[term_idx], tau) for tau in taus]
     if use_broadcasting:
-        split_evolve_ops = split_evol_ops(op, word, ham.wires, taus)
+        split_evolve_ops = split_evol_ops(op, word, ob.wires, taus)
         tapes = _split_evol_tapes(tape, split_evolve_ops, op_idx)
     else:
         tapes = []
         for tau in taus:
-            split_evolve_ops = split_evol_ops(op, word, ham.wires, tau)
+            split_evolve_ops = split_evol_ops(op, word, ob.wires, tau)
             tapes.extend(_split_evol_tapes(tape, split_evolve_ops, op_idx))
     avg_prefactor = (t1 - t0) / num_split_times
     return cjacs, tapes, avg_prefactor
