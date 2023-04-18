@@ -218,13 +218,23 @@ class TestStochPulseGradErrors:
             stoch_pulse_grad(tape)
 
     def test_raises_for_non_pauli_term(self):
-        """Test that an error is raised if a ParametrizedHamiltonian contains a paramatrized
+        """Test that an error is raised if a ParametrizedEvolution contains a paramatrized
         term that is not a Pauli word."""
         ham = qml.dot([qml.pulse.constant], [qml.PauliX(0) + qml.PauliY(2)])
         ops = [qml.evolve(ham)([0.152], 0.3)]
         tape = qml.tape.QuantumScript(ops, measurements=[qml.expval(qml.PauliZ(0))])
         tape.trainable_params = [0]
         with pytest.raises(ValueError, match="stoch_pulse_grad currently only supports Pauli"):
+            stoch_pulse_grad(tape)
+
+    def test_raises_for_pulse_with_intermediate_timesteps(self):
+        """Test that an error is raised if a differentiated ParametrizedEvolution has
+        intermediate time steps given already."""
+        ham = qml.dot([qml.pulse.constant], [qml.PauliX(0) + qml.PauliY(2)])
+        ops = [qml.evolve(ham)([0.152], t=[0.1, 0.2, 0.3])]
+        tape = qml.tape.QuantumScript(ops, measurements=[qml.expval(qml.PauliZ(0))])
+        tape.trainable_params = [0]
+        with pytest.raises(ValueError, match="with intermediate time steps"):
             stoch_pulse_grad(tape)
 
     def test_raises_use_broadcasting_with_broadcasted_tape(self):
