@@ -14,6 +14,7 @@
 """
 Integration tests for the draw transform
 """
+# pylint: disable=import-outside-toplevel
 from functools import partial
 
 import pytest
@@ -25,6 +26,7 @@ from pennylane.drawer import draw
 
 @qml.qnode(qml.device("default.qubit", wires=(0, "a", 1.234)))
 def circuit(x, y, z):
+    """A quantum circuit on three wires."""
     qml.RX(x, wires=0)
     qml.RY(y, wires="a")
     qml.RZ(z, wires=1.234)
@@ -54,10 +56,10 @@ class TestLabelling:
         """Test show_all_wires=True forces empty wires to display."""
 
         @qml.qnode(qml.device("default.qubit", wires=(0, 1)))
-        def circuit():
+        def circ():
             return qml.expval(qml.PauliZ(0))
 
-        split_str = draw(circuit, show_all_wires=True)().split("\n")
+        split_str = draw(circ, show_all_wires=True)().split("\n")
         assert split_str[0][:2] == "0:"
         assert split_str[1][:2] == "1:"
 
@@ -65,10 +67,10 @@ class TestLabelling:
         """Test show_all_wires forces empty wires to display when empty wire is in wire order."""
 
         @qml.qnode(qml.device("default.qubit", wires=1))
-        def circuit():
+        def circ():
             return qml.expval(qml.PauliZ(0))
 
-        split_str = draw(circuit, wire_order=[0, "a"], show_all_wires=True)().split("\n")
+        split_str = draw(circ, wire_order=[0, "a"], show_all_wires=True)().split("\n")
         assert split_str[0][:2] == "0:"
         assert split_str[1][:2] == "a:"
 
@@ -98,12 +100,12 @@ class TestDecimals:
         """Test decimals also displays parameters when the operation has multiple parameters."""
 
         @qml.qnode(qml.device("default.qubit", wires=(0)))
-        def circuit(x):
+        def circ(x):
             qml.Rot(*x, wires=0)
             return qml.expval(qml.PauliZ(0))
 
         expected = "0: ──Rot(1.2,2.3,3.5)─┤  <Z>"
-        assert draw(circuit, decimals=1)([1.234, 2.345, 3.456]) == expected
+        assert draw(circ, decimals=1)([1.234, 2.345, 3.456]) == expected
 
     def test_decimals_0(self):
         """Test decimals=0 rounds to integers."""
@@ -229,6 +231,7 @@ class TestMaxLength:
 
     @pytest.mark.parametrize("ml", [10, 15, 20])
     def test_setting_max_length(self, ml):
+        """Test that setting a maximal length works as expected."""
         @qml.qnode(qml.device("default.qubit", wires=1))
         def long_circuit():
             for _ in range(10):
@@ -246,29 +249,29 @@ class TestLayering:
         """Test non-blocking gates end up on same layer."""
 
         @qml.qnode(qml.device("default.qubit", wires=3))
-        def circuit():
-            [qml.PauliX(i) for i in range(3)]
+        def circ():
+            _ = [qml.PauliX(i) for i in range(3)]
             return [qml.expval(qml.PauliZ(i)) for i in range(3)]
 
         expected = "0: ──X─┤  <Z>\n1: ──X─┤  <Z>\n2: ──X─┤  <Z>"
-        assert draw(circuit)() == expected
+        assert draw(circ)() == expected
 
     def test_blocking_ops(self):
         """Test single qubits gates on the same wire block each other."""
 
         @qml.qnode(qml.device("default.qubit", wires=1))
-        def circuit():
-            [qml.PauliX(0) for i in range(3)]
+        def circ():
+            _ = [qml.PauliX(0) for i in range(3)]
             return qml.expval(qml.PauliZ(0))
 
         expected = "0: ──X──X──X─┤  <Z>"
-        assert draw(circuit)() == expected
+        assert draw(circ)() == expected
 
     def test_blocking_multiwire_gate(self):
         """Test gate gets blocked by multi-wire gate."""
 
         @qml.qnode(qml.device("default.qubit", wires=3))
-        def circuit():
+        def circ():
             qml.PauliX(0)
             qml.IsingXX(1.234, wires=(0, 2))
             qml.PauliX(1)
@@ -279,7 +282,7 @@ class TestLayering:
             "1: ────│───────────────X─┤     \n"
             "2: ────╰IsingXX(1.23)────┤     "
         )
-        assert draw(circuit)() == expected
+        assert draw(circ)() == expected
 
 
 @pytest.mark.parametrize(
@@ -294,13 +297,13 @@ def test_draw_batch_transform(transform):
 
     @transform
     @qml.qnode(qml.device("default.qubit", wires=1))
-    def circuit(x):
+    def circ(x):
         qml.Hadamard(wires=0)
         qml.RX(x, wires=0)
         return qml.expval(qml.PauliZ(0))
 
     expected = "0: ──H──RX(0.8)─┤  <Z>\n\n0: ──H──RX(0.4)─┤  <Z>"
-    assert draw(circuit, decimals=1)(np.array(0.6, requires_grad=True)) == expected
+    assert draw(circ, decimals=1)(np.array(0.6, requires_grad=True)) == expected
 
 
 @pytest.mark.skip("Nested tapes are being deprecated")
@@ -308,19 +311,15 @@ def test_nested_tapes():
     """Test nested tapes inside the qnode."""
 
     @qml.qnode(qml.device("default.qubit", wires=1))
-    def circuit():
-        with qml.queuing.AnnotatedQueue() as q_tape1:
+    def circ():
+        with qml.queuing.AnnotatedQueue():
             qml.PauliX(0)
-            with qml.queuing.AnnotatedQueue() as q_tape2:
+            with qml.queuing.AnnotatedQueue():
                 qml.PauliY(0)
-            tape2 = qml.tape.QuantumScript.from_queue(q_tape2)
-        tape1 = qml.tape.QuantumScript.from_queue(q_tape1)
-        with qml.queuing.AnnotatedQueue() as q_tape3:
+        with qml.queuing.AnnotatedQueue():
             qml.PauliZ(0)
-            with qml.queuing.AnnotatedQueue() as q_tape4:
+            with qml.queuing.AnnotatedQueue():
                 qml.PauliX(0)
-            tape4 = qml.tape.QuantumScript.from_queue(q_tape4)
-        tape3 = qml.tape.QuantumScript.from_queue(q_tape3)
         return qml.expval(qml.PauliZ(0))
 
     expected = (
@@ -331,7 +330,7 @@ def test_nested_tapes():
         "Tape:3\n0: ──X─┤  "
     )
 
-    assert draw(circuit)() == expected
+    assert draw(circ)() == expected
 
 
 def test_expansion_strategy():
@@ -340,15 +339,15 @@ def test_expansion_strategy():
     H = qml.PauliX(0) + qml.PauliZ(1) + 0.5 * qml.PauliX(0) @ qml.PauliX(1)
 
     @qml.qnode(qml.device("default.qubit", wires=2))
-    def circuit(t):
+    def circ(t):
         qml.ApproxTimeEvolution(H, t, 2)
         return qml.probs(wires=0)
 
     expected_gradient = "0: ─╭ApproxTimeEvolution─┤  Probs\n1: ─╰ApproxTimeEvolution─┤       "
-    assert draw(circuit, expansion_strategy="gradient", decimals=None)(0.5) == expected_gradient
+    assert draw(circ, expansion_strategy="gradient", decimals=None)(0.5) == expected_gradient
 
     expected_device = "0: ──RX─╭RXX──RX─╭RXX─┤  Probs\n1: ──RZ─╰RXX──RZ─╰RXX─┤       "
-    assert draw(circuit, expansion_strategy="device", decimals=None)(0.5) == expected_device
+    assert draw(circ, expansion_strategy="device", decimals=None)(0.5) == expected_device
 
 
 def test_draw_with_qfunc():
