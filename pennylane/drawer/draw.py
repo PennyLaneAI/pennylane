@@ -108,7 +108,7 @@ def draw(
     ...     qml.QubitUnitary(np.eye(2), wires=0)
     ...     qml.QubitUnitary(-np.eye(4), wires=(0,1))
     ...     return qml.expval(qml.Hermitian(np.eye(2), wires=1))
-    >>> print(qml.draw(circuit3, show_matrices=True)())
+    >>> print(qml.draw(circuit3)())
     0: ──U(M0)─╭U(M1)─┤
     1: ────────╰U(M1)─┤  <𝓗(M0)>
     M0 =

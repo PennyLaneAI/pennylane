@@ -213,7 +213,7 @@ def tape_text(
             qml.QubitUnitary(np.eye(2), wires=1)
             qml.expval(qml.Hermitian(np.eye(4), wires=(0,1)))
 
-    >>> print(qml.drawer.tape_text(tape, show_matrices=True))
+    >>> print(qml.drawer.tape_text(tape))
     0: ──U(M0)─┤ ╭<𝓗(M1)>
     1: ──U(M0)─┤ ╰<𝓗(M1)>
     M0 =
@@ -230,7 +230,7 @@ def tape_text(
     tape offset.
 
     >>> cache = {'matrices': [-np.eye(3)]}
-    >>> print(qml.drawer.tape_text(tape, show_matrices=True, cache=cache))
+    >>> print(qml.drawer.tape_text(tape, cache=cache))
     0: ──U(M1)─┤ ╭<𝓗(M2)>
     1: ──U(M1)─┤ ╰<𝓗(M2)>
     M0 =

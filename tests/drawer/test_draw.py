@@ -195,20 +195,21 @@ class TestMatrixParameters:
             "0: ─╭QubitStateVector(M0)──U(M1)────┤         \n"
             "1: ─╰QubitStateVector(M0)──RX(1.20)─┤  <𝓗(M1)>\n\n"
             "0: ─╭QubitStateVector(M0)──U(M1)────┤         \n"
-            "1: ─╰QubitStateVector(M0)──RX(0.80)─┤  <𝓗(M1)>"
+            "1: ─╰QubitStateVector(M0)──RX(0.80)─┤  <𝓗(M1)>\n\n"
+            "M0 = \n[1. 0. 0. 0.]\n"
+            "M1 = \n[[1. 0.]\n [0. 1.]]"
         )
-
-        assert draw(matrices_circuit)(np.array(1.0, requires_grad=True))
+        output = draw(matrices_circuit)(np.array(1.0, requires_grad=True))
+        assert output==expected1
 
         expected2 = (
             "0: ─╭QubitStateVector(M0)──U(M1)────┤         \n"
             "1: ─╰QubitStateVector(M0)──RX(1.20)─┤  <𝓗(M1)>\n\n"
             "0: ─╭QubitStateVector(M0)──U(M1)────┤         \n"
-            "1: ─╰QubitStateVector(M0)──RX(0.80)─┤  <𝓗(M1)>\n\n"
-            "M0 = \n[1.0, 0.0, 0.0, 0.0]\n"
-            "M1 = \n[[1. 0.]\n [0. 1.]]"
+            "1: ─╰QubitStateVector(M0)──RX(0.80)─┤  <𝓗(M1)>"
         )
-        assert draw(matrices_circuit, show_matrices=True)(np.array(1.0, requires_grad=True))
+        output = draw(matrices_circuit, show_matrices=False)(np.array(1.0, requires_grad=True))
+        assert output==expected2
 
 
 class TestMaxLength:
@@ -261,6 +262,7 @@ class TestLayering:
             return qml.expval(qml.PauliZ(0))
 
         expected = "0: ──X──X──X─┤  <Z>"
+        assert draw(circuit)() == expected
 
     def test_blocking_multiwire_gate(self):
         """Test gate gets blocked by multi-wire gate."""
@@ -272,12 +274,12 @@ class TestLayering:
             qml.PauliX(1)
             return qml.expval(qml.PauliZ(0))
 
-        expect = (
+        expected = (
             "0: ──X─╭IsingXX(1.23)────┤  <Z>\n"
             "1: ────│───────────────X─┤     \n"
             "2: ────╰IsingXX(1.23)────┤     "
         )
-        assert draw(circuit)() == expect
+        assert draw(circuit)() == expected
 
 
 @pytest.mark.parametrize(
