@@ -52,7 +52,7 @@ class Resources:
     """
     num_wires: int = 0
     num_gates: int = 0
-    gate_types: dict[int] = field(default_factory=dict)
+    gate_types: dict = field(default_factory=dict)
     depth: int = 0
     shots: int = 0
 
