@@ -911,7 +911,10 @@ class TestStochPulseGradQNodeIntegration:
         jax.config.update("jax_enable_x64", True)
         dev = qml.device("default.qubit.jax", wires=1)
         T = 0.2
-        def f(p, t): return jnp.sin(p*t)
+
+        def f(p, t):
+            return jnp.sin(p * t)
+
         ham_single_q_const = 0.1 * qml.PauliX(0) + f * qml.PauliY(0)
 
         def ansatz(params):
