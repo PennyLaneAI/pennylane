@@ -606,6 +606,61 @@ class TestQNodeIntegration:
         spy2.assert_called_once()
         assert qml.math.allclose(res, true_circuit(), atol=1e-6)
 
+    def test_parametrized_evolution_state_vector_return_intermediate(self, mocker):
+        """Test that when executing a ParametrizedEvolution with ``num_wires >= device.num_wires/2``
+        and ``return_intermediate=True``, the ``_evolve_state_vector_under_parametrized_evolution``
+        method is used."""
+        dev = qml.device("default.qubit.jax", wires=1)
+        H = ParametrizedHamiltonian([1], [qml.PauliX(0)])
+        spy = mocker.spy(dev, "_evolve_state_vector_under_parametrized_evolution")
+        spy2 = mocker.spy(dev, "_apply_operation")
+
+        phi = jnp.linspace(0.3, 0.7, 7)
+        phi_for_RX = phi - phi[0]
+
+        @jax.jit
+        @qml.qnode(dev, interface="jax")
+        def circuit():
+            qml.evolve(H, return_intermediate=True)(params=[], t=phi / 2)
+            return qml.expval(qml.PauliZ(0))
+
+        @qml.qnode(dev)
+        def true_circuit():
+            qml.RX(phi_for_RX, 0)
+            return qml.expval(qml.PauliZ(0))
+
+        res = circuit()
+        spy.assert_called_once()
+        spy2.assert_not_called()
+        assert qml.math.allclose(res, true_circuit(), atol=1e-6)
+
+    def test_parametrized_evolution_matrix_complementary(self, mocker):
+        """Test that when executing a ParametrizedEvolution with ``num_wires >= device.num_wires/2``
+        but with ``complementary=True``, the `_apply_operation` method is used."""
+        dev = qml.device("default.qubit.jax", wires=1)
+        H = ParametrizedHamiltonian([1], [qml.PauliX(0)])
+        spy = mocker.spy(dev, "_evolve_state_vector_under_parametrized_evolution")
+        spy2 = mocker.spy(dev, "_apply_operation")
+
+        phi = jnp.linspace(0.3, 0.7, 7)
+        phi_for_RX = phi[-1] - phi
+
+        @jax.jit
+        @qml.qnode(dev, interface="jax")
+        def circuit():
+            qml.evolve(H, return_intermediate=True, complementary=True)(params=[], t=phi / 2)
+            return qml.expval(qml.PauliZ(0))
+
+        @qml.qnode(dev)
+        def true_circuit():
+            qml.RX(phi_for_RX, 0)
+            return qml.expval(qml.PauliZ(0))
+
+        res = circuit()
+        spy.assert_not_called()
+        spy2.assert_called_once()
+        assert qml.math.allclose(res, true_circuit(), atol=1e-6)
+
 
 @pytest.mark.jax
 class TestPassthruIntegration:

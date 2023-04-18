@@ -4,6 +4,16 @@
 
 <h3>New features since last release</h3>
 
+* `ParametrizedEvolution` takes two new Boolean keyword arguments: `return_intermediate` and
+  `complementary`. They allow computing intermediate time evolution matrices.
+  [(#3900)](https://github.com/PennyLaneAI/pennylane/pull/3900)
+  
+  Activating `return_intermediate` will result in `evol_op.matrix()` returning intermediate solutions
+  to the Schrodinger equation. Activating `complementary` will make these intermediate solutions
+  be the _remaining_ time evolution complementary to the output for `complementary=False`.
+  See the [docstring](https://docs.pennylane.ai/en/stable/code/api/pennylane.pulse.ParametrizedEvolution.html)
+  for details.
+ 
 <h4>Pulse programming</h4>
 
 * Added the needed functions and classes to simulate an ensemble of Rydberg atoms:
@@ -62,6 +72,11 @@
   [(#3862)](https://github.com/PennyLaneAI/pennylane/pull/3862/)
 
 <h4>Performance improvements</h4>
+
+* Executing a `ParametrizedEvolution` with `return_intermediate=True` and `complementary=False`
+  on the JAX default qubit device now uses the state vector ODE solver instead of the
+  matrix ODE solver, increasing its performance.
+  [(#4000)](https://github.com/PennyLaneAI/pennylane/pull/4000)
 
 * Added a new decomposition to `qml.SingleExcitation` that halves the number of
   CNOTs required.
