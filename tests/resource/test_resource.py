@@ -14,10 +14,10 @@
 """
 Test base Resource class and its associated methods
 """
-
-import pytest
-from pennylane.resource import Resources
 from dataclasses import FrozenInstanceError
+import pytest
+
+from pennylane.resource import Resources
 
 
 class TestResources:
