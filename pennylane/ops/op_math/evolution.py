@@ -15,6 +15,7 @@
 This submodule defines the Evolution class.
 """
 import warnings
+from copy import copy
 from warnings import warn
 
 import pennylane as qml
@@ -94,6 +95,14 @@ class Evolution(Exp):
         )
 
     @property
+    def data(self):
+        return self._data
+
+    @data.setter
+    def data(self, new_data):
+        self._data = new_data
+
+    @property
     def param(self):
         """A real coefficient with ``1j`` factored out."""
         return self.data[0]
@@ -145,3 +154,8 @@ class Evolution(Exp):
                 f"The generator is not defined."
             )
         return self.base
+
+    def __copy__(self):
+        copied = super().__copy__()
+        copied._data = copy(self._data)
+        return copied
