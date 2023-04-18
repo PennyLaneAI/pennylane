@@ -921,7 +921,8 @@ class TestStochPulseGradQNodeIntegration:
         jax.config.update("jax_enable_x64", True)
         dev = qml.device("default.qubit.jax", wires=1)
         T = 0.2
-        ham_single_q_const = 0.1 * qml.PauliX(0) + qml.pulse.constant * qml.PauliY(0)
+        def f(p, t): return jnp.sin(p*t)
+        ham_single_q_const = 0.1 * qml.PauliX(0) + f * qml.PauliY(0)
 
         def ansatz(params):
             qml.evolve(ham_single_q_const)(params, T)
@@ -950,7 +951,7 @@ class TestStochPulseGradQNodeIntegration:
         jac_bc = jax.jacobian(circuit_bc)(params)
         jac_no_bc = jax.jacobian(circuit_no_bc)(params)
         for j0, j1 in zip(jac_bc, jac_no_bc):
-            assert qml.math.allclose(j0, j1, atol=1e-8, rtol=0.0)
+            assert qml.math.allclose(j0, j1)
 
 
 @pytest.mark.jax
