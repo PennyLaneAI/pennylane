@@ -73,6 +73,11 @@
 
 <h4>Performance improvements</h4>
 
+* Executing a `ParametrizedEvolution` with `return_intermediate=True` and `complementary=False`
+  on the JAX default qubit device now uses the state vector ODE solver instead of the
+  matrix ODE solver, increasing its performance.
+  [(#4000)](https://github.com/PennyLaneAI/pennylane/pull/4000)
+
 * Added a new decomposition to `qml.SingleExcitation` that halves the number of
   CNOTs required.
   [(3976)](https://github.com/PennyLaneAI/pennylane/pull/3976)
