@@ -1361,7 +1361,7 @@ class Operator(abc.ABC):
         raise AdjointUndefinedError
 
     def expand(self):
-        """Returns a tape that has recorded the decomposition of the operator.
+        """Returns a tape that contains the decomposition of the operator.
 
         Returns:
             .QuantumTape: quantum tape
