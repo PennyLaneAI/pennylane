@@ -149,8 +149,7 @@ class SampleMP(SampleMeasurement):
         every_term_standard = all(o.__class__ in int_eigval_obs for o in tensor_terms)
         return int if every_term_standard else float
 
-    # pylint: disable=protected-access
-    def _shape_legacy(self, shots, num_wires):
+    def _shape_legacy(self, device, shots):
         if shots.total_shots is None:
             raise MeasurementShapeError(
                 "Shots are required to obtain the shape of the measurement "
@@ -167,18 +166,18 @@ class SampleMP(SampleMeasurement):
             return tuple(
                 (s.shots,) * s.copies if s.shots != 1 else tuple() * s.copies for s in shots.shot_vector
             )
-        len_wires = len(self.wires) if len(self.wires) > 0 else num_wires
+        len_wires = len(self.wires) if len(self.wires) > 0 else len(device.wires)
         return (1, shots.total_shots) if self.obs is not None else (1, shots.total_shots, len_wires)
 
-    def shape(self, shots, num_wires):
+    def shape(self, device, shots):
         if not qml.active_return():
-            return self._shape_legacy(shots, num_wires)
+            return self._shape_legacy(device, shots)
         if shots.total_shots is None:
             raise MeasurementShapeError(
                 "Shots are required to obtain the shape of the measurement "
                 f"{self.__class__.__name__}."
             )
-        len_wires = len(self.wires) if len(self.wires) > 0 else num_wires
+        len_wires = len(self.wires) if len(self.wires) > 0 else len(device.wires)
 
         def _single_int_shape(shot_val, num_wires):
             # singleton dimensions, whether in shot val or num_wires are squeezed away

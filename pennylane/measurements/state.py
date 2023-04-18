@@ -148,7 +148,7 @@ class StateMP(StateMeasurement):
     def numeric_type(self):
         return complex
 
-    def _shape_legacy(self, shots, num_wires):
+    def _shape_legacy(self, device, shots):
         num_shot_elements = (
             1
             if shots.shot_vector is None
@@ -161,12 +161,12 @@ class StateMP(StateMeasurement):
             return (num_shot_elements, dim, dim)
 
         # qml.state()
-        dim = 2 ** num_wires
+        dim = 2 ** len(device.wires)
         return (num_shot_elements, dim)
 
-    def shape(self, shots, num_wires):
+    def shape(self, device, shots):
         if not qml.active_return():
-            return self._shape_legacy(shots, num_wires)
+            return self._shape_legacy(device, shots)
         num_shot_elements = (
             1
             if shots.shot_vector is None
@@ -183,7 +183,7 @@ class StateMP(StateMeasurement):
             )
 
         # qml.state()
-        dim = 2 ** num_wires
+        dim = 2 ** len(device.wires)
         return (dim,) if num_shot_elements == 1 else tuple((dim,) for _ in range(num_shot_elements))
 
     # pylint: disable=redefined-outer-name

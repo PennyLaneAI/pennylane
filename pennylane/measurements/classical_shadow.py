@@ -332,7 +332,7 @@ class ClassicalShadowMP(MeasurementTransform):
     def return_type(self):
         return Shadow
 
-    def shape(self, shots, num_wires):  # pylint: disable=unused-arguments
+    def shape(self, device, shots):  # pylint: disable=unused-argument
         # otherwise, the return type requires a device
         if not shots.total_shots:
             raise MeasurementShapeError(
@@ -396,7 +396,7 @@ class ShadowExpvalMP(MeasurementTransform):
     def return_type(self):
         return ShadowExpval
 
-    def shape(self, shots, num_wires):  # pylint: disable=unused-arguments
+    def shape(self, device, shots):  # pylint: disable=unused-argument
         if not qml.active_return():
             return (1,)
         return ()

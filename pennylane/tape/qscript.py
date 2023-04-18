@@ -829,7 +829,7 @@ class QuantumScript:
                     shape.extend((len(mps),) for _ in range(shot_val.copies))
         return shape
 
-    def shape(self, device):
+    def _shape_legacy(self, device):
         """Produces the output shape of the quantum script by inspecting its measurements
         and the device used for execution.
 
@@ -857,9 +857,6 @@ class QuantumScript:
             >>> qs.shape(dev)
             (1, 4)
         """
-        if qml.active_return():
-            return self._shape_new(device)
-
         output_shape = tuple()
 
         if len(self.measurements) == 1:
@@ -880,7 +877,7 @@ class QuantumScript:
 
         return output_shape
 
-    def _shape_new(self, device):
+    def shape(self, device):
         """Produces the output shape of the quantum script by inspecting its measurements
         and the device used for execution.
 
@@ -909,6 +906,9 @@ class QuantumScript:
             >>> qs.shape(dev)
             ((4,), (), (4,))
         """
+        if not qml.active_return():
+            return self._shape_legacy(device)
+
         if device.shot_vector is not None and self.batch_size is not None:
             raise NotImplementedError(
                 "Parameter broadcasting when using a shot vector is not supported yet."

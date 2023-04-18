@@ -26,6 +26,7 @@ from typing import Sequence, Tuple, Optional
 import numpy as np
 
 import pennylane as qml
+from pennylane import Device
 from pennylane.operation import Operator
 from pennylane.wires import Wires
 
@@ -192,10 +193,10 @@ class MeasurementProcess(ABC):
             f"The numeric type of the measurement {self.__class__.__name__} is not defined."
         )
 
-    def _shape_legacy(self, shots: Shots, num_wires: int) -> Tuple[int]:  # pylint: disable=unused-arguments
+    def _shape_legacy(self, device: Device, shots: Shots)   -> Tuple:  # pylint: disable=unused-arguments
         """The expected output shape of the MeasurementProcess.
 
-        Note that the output shape is dependent on the shots and device wires when:
+        Note that the output shape is dependent on the shots and device when:
 
         * The measurement type is either ``ProbabilityMP``, ``StateMP`` (from :func:`.state`) or
           ``SampleMP``;
@@ -213,10 +214,10 @@ class MeasurementProcess(ABC):
 
         Args:
             device (pennylane.Device): a PennyLane device to use for determining the shape
+            shots (~.Shots): object defining the number and batches of shots
 
         Returns:
-            shots (~.Shots): object defining the number and batches of shots
-            num_wires (int): Number of wires on the device being used
+            Tuple: the output shape
 
         Raises:
             QuantumFunctionError: the return type of the measurement process is
@@ -226,10 +227,10 @@ class MeasurementProcess(ABC):
             f"The shape of the measurement {self.__class__.__name__} is not defined"
         )
 
-    def shape(self, shots: Shots, num_wires: int) -> Tuple[int]:
+    def shape(self, device: Device, shots: Shots) -> Tuple:
         """The expected output shape of the MeasurementProcess.
 
-        Note that the output shape is dependent on the shots or device wires when:
+        Note that the output shape is dependent on the shots or device when:
 
         * The measurement type is either ``_Probability``, ``_State`` (from :func:`.state`) or
           ``_Sample``;
@@ -241,8 +242,8 @@ class MeasurementProcess(ABC):
         number of wires the measurement acts on.
 
         Args:
+            device (pennylane.Device): a PennyLane device to use for determining the shape
             shots (~.Shots): object defining the number and batches of shots
-            num_wires (int): Number of wires on the device being used
 
         Returns:
             tuple: the output shape
