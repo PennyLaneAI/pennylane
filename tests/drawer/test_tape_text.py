@@ -14,7 +14,7 @@
 """
 Unit tests for the `pennylane.draw_text` function.
 """
-#pylint: disable=import-outside-toplevel
+# pylint: disable=import-outside-toplevel
 
 import pytest
 
@@ -118,6 +118,7 @@ class TestHelperFunctions:
 
 class TestEmptyTapes:
     """Test that the text for empty tapes is correct."""
+
     def test_empty_tape(self):
         """Test using an empty tape returns a blank string"""
         assert tape_text(QuantumScript()) == ""
@@ -497,9 +498,7 @@ class TestNestedTapes:
                 qml.PauliX(0)
                 qml.PauliY(1)
 
-        expected = (
-            "1: ──Y─╭Tape:0─┤  \n0: ──X─╰Tape:0─┤  \n\nTape:0\n1: ──Y─┤  \n0: ──X─┤  "
-        )
+        expected = "1: ──Y─╭Tape:0─┤  \n0: ──X─╰Tape:0─┤  \n\nTape:0\n1: ──Y─┤  \n0: ──X─┤  "
 
         assert tape_text(_tape, wire_order=[1, 0]) == expected
 
@@ -512,9 +511,7 @@ class TestNestedTapes:
                 for _ in range(10):
                     qml.PauliX(0)
 
-        expected = (
-            "0: ──X──Tape:0─┤  \n\nTape:0\n0: ──X──X──X──X──X\n\n───X──X──X──X──X─┤  "
-        )
+        expected = "0: ──X──Tape:0─┤  \n\nTape:0\n0: ──X──X──X──X──X\n\n───X──X──X──X──X─┤  "
 
         out = tape_text(_tape, max_length=20)
         assert out == expected

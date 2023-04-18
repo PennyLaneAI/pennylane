@@ -264,7 +264,7 @@ def _draw_qnode(
                 )
                 for t in tapes[0]
             ]
-            if show_matrices and cache['matrices']:
+            if show_matrices and cache["matrices"]:
                 mat_str = ""
                 for i, mat in enumerate(cache["matrices"]):
                     mat_str += f"\nM{i} = \n{mat}"

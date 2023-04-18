@@ -202,7 +202,7 @@ class TestMatrixParameters:
             "M1 = \n[[1. 0.]\n [0. 1.]]"
         )
         output = draw(matrices_circuit)(np.array(1.0, requires_grad=True))
-        assert output==expected1
+        assert output == expected1
 
         expected2 = (
             "0: ─╭QubitStateVector(M0)──U(M1)────┤         \n"
@@ -211,7 +211,7 @@ class TestMatrixParameters:
             "1: ─╰QubitStateVector(M0)──RX(0.80)─┤  <𝓗(M1)>"
         )
         output = draw(matrices_circuit, show_matrices=False)(np.array(1.0, requires_grad=True))
-        assert output==expected2
+        assert output == expected2
 
 
 class TestMaxLength:
@@ -232,6 +232,7 @@ class TestMaxLength:
     @pytest.mark.parametrize("ml", [10, 15, 20])
     def test_setting_max_length(self, ml):
         """Test that setting a maximal length works as expected."""
+
         @qml.qnode(qml.device("default.qubit", wires=1))
         def long_circuit():
             for _ in range(10):
