@@ -305,7 +305,6 @@ def amp_phase_freq(trig_fn, amp, phase, freq):
 
         return callable_amp_and_phase_and_freq
 
-
     # 2 out of 3 callable
 
     if amp_is_callable and phase_is_callable:
@@ -358,6 +357,7 @@ def amp_phase_freq(trig_fn, amp, phase, freq):
 
     return no_callable
 
+
 def _reorder_AmpPhaseFreq(params, coeffs_parametrized):
     """Takes `params`, and reorganizes it based on whether the Hamiltonian has
     callable phase and/or callable amplitude and/or callable freq.
@@ -386,7 +386,6 @@ def _reorder_AmpPhaseFreq(params, coeffs_parametrized):
     for i, coeff in enumerate(coeffs_parametrized):
         if i == coeff_idx:
             if cname := coeff.__name__ in callables0 + callables1 + callables2 + callables3:
-
                 # all 3 parameters are callable
                 if cname in callables3:
                     reordered_params.append(
