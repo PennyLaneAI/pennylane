@@ -30,6 +30,8 @@ from pennylane.pulse.transmon import (
 
 from pennylane.wires import Wires
 
+def amp_phase_freq(amp, phase, freq, t, wire=0):
+    return 0.5 * amp * (np.cos(phase + freq * t) * qml.PauliX(wire) - np.sin(phase + freq * t) * qml.PauliY(wire))
 
 class TestTransmonDrive:
     """Tests for the transmon drive Hamiltonian."""
@@ -58,14 +60,7 @@ class TestTransmonDrive:
         H = transmon_drive(amp, phase, freq, wires=[0])
 
         def expected(amp, phase, freq, t, wire=0):
-            return (
-                0.5
-                * amp
-                * (
-                    np.cos(phase + freq * t) * qml.PauliX(wire)
-                    - np.sin(phase + freq * t) * qml.PauliY(wire)
-                )
-            )
+            return amp_phase_freq(amp, phase, freq, t, wire)
 
         assert H.coeffs[0].func.__name__ == "no_callable"
         assert H.coeffs[1].func.__name__ == "no_callable"
@@ -81,14 +76,8 @@ class TestTransmonDrive:
         H = transmon_drive(amp, phase, freq, wires=[0])
 
         def expected(amp, phase, freq, p, t, wire=0):
-            return (
-                0.5
-                * amp(p[0], t)
-                * (
-                    np.cos(phase + freq * t) * qml.PauliX(wire)
-                    - np.sin(phase + freq * t) * qml.PauliY(wire)
-                )
-            )
+            a = amp(p[0], t)
+            return amp_phase_freq(a, phase, freq, t, wire)
 
         params = [p]
 
@@ -108,14 +97,8 @@ class TestTransmonDrive:
         H = transmon_drive(amp, phase, freq, wires=[0])
 
         def expected(amp, phase, freq, p, t, wire=0):
-            return (
-                0.5
-                * amp
-                * (
-                    np.cos(phase(p[0], t) + freq * t) * qml.PauliX(wire)
-                    - np.sin(phase(p[0], t) + freq * t) * qml.PauliY(wire)
-                )
-            )
+            ph = phase(p[0], t)
+            return amp_phase_freq(amp, ph, freq, t, wire)
 
         params = [p]
 
@@ -135,14 +118,8 @@ class TestTransmonDrive:
         H = transmon_drive(amp, phase, freq, wires=[0])
 
         def expected(amp, phase, freq, p, t, wire=0):
-            return (
-                0.5
-                * amp
-                * (
-                    np.cos(phase + freq(p[0], t) * t) * qml.PauliX(wire)
-                    - np.sin(phase + freq(p[0], t) * t) * qml.PauliY(wire)
-                )
-            )
+            fr = freq(p[0], t)
+            return amp_phase_freq(amp, phase, fr, t, wire)
 
         params = [p]
 
@@ -163,14 +140,9 @@ class TestTransmonDrive:
         H = transmon_drive(amp, phase, freq, wires=[0])
 
         def expected(amp, phase, freq, p1, p2, t, wire=0):
-            return (
-                0.5
-                * amp(p1, t)
-                * (
-                    np.cos(phase + freq(p2, t) * t) * qml.PauliX(wire)
-                    - np.sin(phase + freq(p2, t) * t) * qml.PauliY(wire)
-                )
-            )
+            a = amp(p1, t)
+            fr = freq(p2, t)
+            return amp_phase_freq(a, phase, fr, t, wire)
 
         params = [p1, p2]
 
@@ -191,14 +163,9 @@ class TestTransmonDrive:
         H = transmon_drive(amp, phase, freq, wires=[0])
 
         def expected(amp, phase, freq, p1, p2, t, wire=0):
-            return (
-                0.5
-                * amp(p1, t)
-                * (
-                    np.cos(phase(p2, t) + freq * t) * qml.PauliX(wire)
-                    - np.sin(phase(p2, t) + freq * t) * qml.PauliY(wire)
-                )
-            )
+            a = amp(p1, t)
+            ph = phase(p2, t)
+            return amp_phase_freq(a, ph, freq, t, wire)
 
         params = [p1, p2]
 
@@ -219,14 +186,9 @@ class TestTransmonDrive:
         H = transmon_drive(amp, phase, freq, wires=[0])
 
         def expected(amp, phase, freq, p1, p2, t, wire=0):
-            return (
-                0.5
-                * amp
-                * (
-                    np.cos(phase(p1, t) + freq(p2, t) * t) * qml.PauliX(wire)
-                    - np.sin(phase(p1, t) + freq(p2, t) * t) * qml.PauliY(wire)
-                )
-            )
+            ph = phase(p1, t)
+            fr = freq(p2, t)
+            return amp_phase_freq(amp, ph, fr, t, wire)
 
         params = [p1, p2]
 
@@ -248,14 +210,10 @@ class TestTransmonDrive:
         H = transmon_drive(amp, phase, freq, wires=[0])
 
         def expected(params, t, wire=0):
-            return (
-                0.5
-                * amp(params[0], t)
-                * (
-                    np.cos(phase(params[1], t) + freq(params[2], t) * t) * qml.PauliX(wire)
-                    - np.sin(phase(params[1], t) + freq(params[2], t) * t) * qml.PauliY(wire)
-                )
-            )
+            a = amp(params[0], t)
+            ph = phase(params[1], t)
+            fr = freq(params[2], t)
+            return amp_phase_freq(a, ph, fr, t, wire)
 
         params = [p0, p1, p2]
 
