@@ -229,18 +229,18 @@ def transmon_drive(amplitude, phase, freq, wires, d=2):
         \Omega(t) \left(e^{i (\phi(t) + \nu t)} a_q + e^{-i (\phi(t) + \nu t)} a^\dagger_q\right)
 
     where :math:`[a^\dagger_p, a_q] = i \delta_{pq}` are bosonic creation and annihilation operators
-    and :math:`q` the qubit label (``wires``).
-    The parameters ``amplitude``. ``phase`` and ``freq`` correspond to :math:`\Omega`, :math:`phi`
-    and :math:`nu`, respectively, and can all be either fixed numbers (``float``) or depend on time
+    and :math:`q` is the qubit label (``wires``).
+    The arguments ``amplitude``, ``phase`` and ``freq`` correspond to :math:`\Omega`, :math:`\phi`
+    and :math:`\nu`, respectively, and can all be either fixed numbers (``float``) or depend on time
     (``callable``).
 
     For more realistic simulations, one may restrict the amplitude to at most
     :math:`\Omega_{\text{max}} = 20 \text{MHz}` and the carrier frequency to deviate at most
     :math:`\nu - \omega = \pm 1 \text{GHz}` from the qubit frequency :math:`\omega`
     (see :func:`~.transmon_interaction` and `arXiv:2203.06818 <https://arxiv.org/abs/2203.06818>`_).
-    The phase :math:`\phi(t)` is typically a slow function of time compared to :math:`\Omega(t)`.
+    The phase :math:`\phi(t)` is typically a slowly changing function of time compared to :math:`\Omega(t)`.
 
-    .. note:: Currently only supporting ``d=2`` with qudit support planned in the future.
+    .. note:: Currently only supports ``d=2`` with qudit support planned in the future.
 
     .. seealso::
 
@@ -270,7 +270,7 @@ def transmon_drive(amplitude, phase, freq, wires, d=2):
     """
     if d != 2:
         raise NotImplementedError(
-            "Currently only supporting qubits. Qutrits and qudits are planned in the future."
+            "Currently only supports qubits (d=2). Qutrits and qudits support is planned in the future."
         )
 
     wires = Wires(wires)
@@ -293,7 +293,7 @@ def transmon_drive(amplitude, phase, freq, wires, d=2):
 # pylint:disable = too-few-public-methods
 class AmplitudeAndPhaseAndFreq:
     """Class storing combined amplitude and phase callable if either or both
-    of amplitude or phase are callable."""
+    of amplitude and phase are callable."""
 
     def __init__(self, trig_fn, amp, phase, freq):
         self.amp_is_callable = callable(amp)
@@ -301,56 +301,55 @@ class AmplitudeAndPhaseAndFreq:
         self.freq_is_callable = callable(freq)
 
         # all 3 callable
-        def callable_amp_and_phase_and_freq(params, t):
-            return amp(params[0], t) * trig_fn(phase(params[1], t) + freq(params[2], t) * t)
-
         if self.amp_is_callable and self.phase_is_callable and self.freq_is_callable:
+            def callable_amp_and_phase_and_freq(params, t):
+                return amp(params[0], t) * trig_fn(phase(params[1], t) + freq(params[2], t) * t)
             self.func = callable_amp_and_phase_and_freq
+            return
 
         # 2 out of 3 callable
         def callable_amp_and_phase(params, t):
             return amp(params[0], t) * trig_fn(phase(params[1], t) + freq * t)
 
-        if self.amp_is_callable and self.phase_is_callable and not self.freq_is_callable:
+        if self.amp_is_callable and self.phase_is_callable:
             self.func = callable_amp_and_phase
 
         def callable_amp_and_freq(params, t):
             return amp(params[0], t) * trig_fn(phase + freq(params[1], t) * t)
 
-        if self.amp_is_callable and not self.phase_is_callable and self.freq_is_callable:
+        if self.amp_is_callable and self.freq_is_callable:
             self.func = callable_amp_and_freq
 
         def callable_phase_and_freq(params, t):
             return amp * trig_fn(phase(params[0], t) + freq(params[1], t) * t)
 
-        if not self.amp_is_callable and self.phase_is_callable and self.freq_is_callable:
+        if self.phase_is_callable and self.freq_is_callable:
             self.func = callable_phase_and_freq
 
         # 1 out of 3 callable
         def callable_amp(params, t):
             return amp(params, t) * trig_fn(phase + freq * t)
 
-        if self.amp_is_callable and not self.phase_is_callable and not self.freq_is_callable:
+        if self.amp_is_callable:
             self.func = callable_amp
 
         def callable_phase(params, t):
             return amp * trig_fn(phase(params, t) + freq * t)
 
-        if not self.amp_is_callable and self.phase_is_callable and not self.freq_is_callable:
+        if self.phase_is_callable:
             self.func = callable_phase
 
         def callable_freq(params, t):
             return amp * trig_fn(phase + freq(params, t) * t)
 
-        if not self.amp_is_callable and not self.phase_is_callable and self.freq_is_callable:
+        if self.freq_is_callable:
             self.func = callable_freq
 
         # 0 out of 3 callable (the remaining coeff is still callable due to explicit time dependence)
         def no_callable(_, t):
             return amp * trig_fn(phase + freq * t)
 
-        if not self.amp_is_callable and not self.phase_is_callable and not self.freq_is_callable:
-            self.func = no_callable
+        self.func = no_callable
 
     def __call__(self, params, t):
         return self.func(params, t)

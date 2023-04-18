@@ -32,6 +32,7 @@ from pennylane.wires import Wires
 
 
 class TestTransmonDrive:
+    """Tests for the transmon drive Hamiltonian."""
     def test_d_neq_2_raises_error(self):
         """Test that setting d != 2 raises error"""
         with pytest.raises(NotImplementedError, match="Currently only supporting qubits."):
@@ -261,9 +262,8 @@ class TestTransmonDrive:
         assert H.coeffs[1].func.__name__ == "callable_amp_and_phase_and_freq"
         assert qml.math.allclose(qml.matrix(H(params, t)), qml.matrix(expected(params, t)))
 
-    def test_multiple_drives(
-        self,
-    ):
+    def test_multiple_drives(self):
+        """Test that the sum of two transmon drive Hamiltonians behaves correctly."""
         def amp(p, t):
             return np.sin(p * t)
 
@@ -469,9 +469,7 @@ class TestTransmonSettings:
 
 class TestIntegration:
     @pytest.mark.jax
-    def test_jitted_qnode(
-        self,
-    ):
+    def test_jitted_qnode(self):
         """Test that regular and jitted qnode yield same result"""
         import jax
         import jax.numpy as jnp
@@ -497,11 +495,7 @@ class TestIntegration:
             qml.evolve(H)(params, ts)
             return qml.expval(H_obj)
 
-        @jax.jit
-        @qml.qnode(dev, interface="jax")
-        def qnode_jit(params):
-            qml.evolve(H)(params, ts)
-            return qml.expval(H_obj)
+        qnode_jit = jax.jit(qnode)
 
         params = (jnp.ones(5), jnp.array([1.0, jnp.pi]))
 
@@ -548,11 +542,7 @@ class TestIntegration:
             qml.evolve(Hd + H1 + H2 + H3)(params, ts)
             return qml.expval(H_obj)
 
-        @jax.jit
-        @qml.qnode(dev, interface="jax")
-        def qnode_jit(params):
-            qml.evolve(Hd + H1 + H2 + H3)(params, ts)
-            return qml.expval(H_obj)
+        qnode_jit = jax.jit(qnode)
 
         params = (
             jnp.ones(5),
@@ -596,11 +586,7 @@ class TestIntegration:
             qml.evolve(H_drift + H_drive)(params, ts)
             return qml.expval(H_obj)
 
-        @jax.jit
-        @qml.qnode(dev, interface="jax")
-        def qnode_jit(params):
-            qml.evolve(H_drift + H_drive)(params, ts)
-            return qml.expval(H_obj)
+        qnode_jit = jax.jit(qnode)
 
         params = (jnp.ones(5), jnp.array([1.0, jnp.pi]), jnp.array([jnp.pi / 2, 0.5]))
         res = qnode(params)
