@@ -20,7 +20,8 @@ import pytest
 import pennylane as qml
 from pennylane.tape import QuantumTape
 from pennylane.operation import Operation
-from pennylane.resource import Resources, count_resources
+from pennylane.resource import Resources
+from pennylane.resource.resource import _count_resources
 
 
 class TestResources:
@@ -211,5 +212,5 @@ def test_count_resources(ops_and_shots, expected_resources):
     """Test the count resources method."""
     ops, shots = ops_and_shots
     tape = _construct_tape_from_ops(ops)
-    computed_resources = count_resources(tape, shots)
+    computed_resources = _count_resources(tape, shots)
     assert computed_resources == expected_resources
