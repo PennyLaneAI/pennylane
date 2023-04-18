@@ -42,7 +42,7 @@ class TestQSVT:
         """Test that an error is raised if a non-operation object is passed
         for the block-encoding."""
         with pytest.raises(ValueError, match="Input block encoding must be an Operator"):
-            qml.QSVT(1.23, [qml.Identity(wires=0)], wires=[0, 1])
+            qml.QSVT(1.23, [qml.Identity(wires=0)])
 
     @pytest.mark.parametrize(
         ("U_A", "lst_projectors", "wires", "operations"),
@@ -87,7 +87,7 @@ class TestQSVT:
 
         @qml.qnode(dev)
         def circuit():
-            qml.QSVT(U_A, lst_projectors, wires)
+            qml.QSVT(U_A, lst_projectors)
             return qml.expval(qml.PauliZ(wires=0))
 
         @qml.qnode(dev)
@@ -99,12 +99,11 @@ class TestQSVT:
         assert np.isclose(circuit(), circuit_correct())
 
     @pytest.mark.parametrize(
-        ("U_A", "lst_projectors", "wires", "results"),
+        ("U_A", "lst_projectors", "results"),
         [
             (
                 qml.BlockEncode(0.1, wires=0),
                 [qml.PCPhase(0.2, dim=1, wires=0), qml.PCPhase(0.3, dim=1, wires=0)],
-                0,
                 [
                     qml.PCPhase(0.2, dim=2, wires=[0]),
                     qml.BlockEncode(np.array([[0.1]]), wires=[0]),
@@ -114,7 +113,6 @@ class TestQSVT:
             (
                 qml.PauliZ(wires=0),
                 [qml.RZ(0.1, wires=0), qml.RY(0.2, wires=0), qml.RZ(0.3, wires=1)],
-                [0, 1],
                 [
                     qml.RZ(0.1, wires=[0]),
                     qml.PauliZ(wires=[0]),
@@ -125,10 +123,10 @@ class TestQSVT:
             ),
         ],
     )
-    def test_queuing_ops(self, U_A, lst_projectors, wires, results):
+    def test_queuing_ops(self, U_A, lst_projectors, results):
         """Test that qml.QSVT queues operations in the correct order."""
         with qml.tape.QuantumTape() as tape:
-            qml.QSVT(U_A, lst_projectors, wires)
+            qml.QSVT(U_A, lst_projectors)
 
         for idx, val in enumerate(tape.expand().operations):
             assert val.name == results[idx].name
@@ -145,7 +143,7 @@ class TestQSVT:
         ]
 
         with qml.tape.QuantumTape() as tape:
-            qml.QSVT(qml.PauliX(wires=0), lst_projectors, wires)
+            qml.QSVT(qml.PauliX(wires=0), lst_projectors)
 
         for idx, val in enumerate(tape.expand().operations):
             assert val.name == results[idx].name
@@ -182,7 +180,7 @@ class TestQSVT:
         """Test that qml.QSVT queues operations correctly when a function is called"""
 
         with qml.tape.QuantumTape() as tape:
-            qml.QSVT(quantum_function(A), phi_func(phis), wires=[0, 1])
+            qml.QSVT(quantum_function(A), phi_func(phis))
 
         for idx, val in enumerate(tape.expand().operations):
             assert val.name == results[idx].name
@@ -205,7 +203,6 @@ class TestQSVT:
         op = qml.QSVT(
             qml.BlockEncode(input_matrix, wires),
             [qml.PCPhase(phi, 2, wires) for phi in angles],
-            wires,
         )
 
         assert np.allclose(qml.matrix(op), default_matrix)
@@ -228,7 +225,6 @@ class TestQSVT:
         op = qml.QSVT(
             qml.BlockEncode(input_matrix, wires),
             [qml.PCPhase(phi, 2, wires) for phi in angles],
-            wires,
         )
 
         assert np.allclose(qml.matrix(op), default_matrix)
@@ -251,23 +247,21 @@ class TestQSVT:
         op = qml.QSVT(
             qml.BlockEncode(input_matrix, wires),
             [qml.PCPhase(phi, 2, wires) for phi in angles],
-            wires,
         )
 
         assert np.allclose(qml.matrix(op), default_matrix)
         assert qml.math.get_interface(qml.matrix(op)) == "tensorflow"
 
     @pytest.mark.parametrize(
-        ("A", "phis", "wires"),
+        ("A", "phis"),
         [
             (
                 [[0.1, 0.2], [0.3, 0.4]],
                 [0.1, 0.2, 0.3],
-                [0, 1],
             )
         ],
     )
-    def test_QSVT_grad(self, A, phis, wires):
+    def test_QSVT_grad(self, A, phis):
         """Test that qml.grad results are the same as finite difference results"""
 
         @qml.qnode(qml.device("default.qubit", wires=2))
@@ -275,7 +269,6 @@ class TestQSVT:
             qml.QSVT(
                 qml.BlockEncode(A, wires=[0, 1]),
                 [qml.PCPhase(phi, 2, wires=[0, 1]) for phi in phis],
-                wires=wires,
             )
             return qml.expval(qml.PauliZ(wires=0))
 
@@ -308,7 +301,7 @@ class TestQSVT:
 
     def test_label(self):
         """Test that the label method returns the correct string label"""
-        op = qml.QSVT(qml.Hadamard(0), [qml.Identity(0)], wires=0)
+        op = qml.QSVT(qml.Hadamard(0), [qml.Identity(0)])
         assert op.label() == "QSVT"
         assert op.label(base_label="custom_label") == "custom_label"
 

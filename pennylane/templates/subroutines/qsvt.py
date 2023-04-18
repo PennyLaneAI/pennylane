@@ -136,7 +136,7 @@ def qsvt(A, angles, wires, convention=None):
         projectors.append(PCPhase(phi, dim=dim, wires=wires, do_queue=False))
 
     projectors = projectors[::-1]  # reverse order to match equation
-    return QSVT(UA, projectors, wires=wires)
+    return QSVT(UA, projectors)
 
 
 class QSVT(Operation):
@@ -192,7 +192,6 @@ class QSVT(Operation):
             like :class:`~.BlockEncode`
         projectors (Sequence[Operator]): a list of projector-controlled phase
             shifts that implement the desired polynomial
-        wires (Iterable): the wires the template acts on
 
     Raises:
         ValueError: if the input block encoding is not an operator
@@ -207,7 +206,7 @@ class QSVT(Operation):
     >>> shifts = [qml.PCPhase(i + 0.1, dim=1, wires=[0, 1]) for i in range(3)]
     >>> @qml.qnode(dev)
     >>> def example_circuit():
-    ...    qml.QSVT(block_encode, shifts, wires=[0, 1])
+    ...    qml.QSVT(block_encode, shifts)
     ...    return qml.expval(qml.PauliZ(wires=0))
 
     The resulting circuit implements QSVT.
@@ -218,7 +217,7 @@ class QSVT(Operation):
 
     To see the implementation details, we can expand the circuit:
 
-    >>> q_script = qml.tape.QuantumScript(ops=[qml.QSVT(block_encode, shifts, wires=[0, 1])])
+    >>> q_script = qml.tape.QuantumScript(ops=[qml.QSVT(block_encode, shifts)])
     >>> print(q_script.expand().draw(decimals=2))
     0: ─╭∏_ϕ(0.10)─╭BlockEncode(M0)─╭∏_ϕ(1.10)─╭BlockEncode(M0)†─╭∏_ϕ(2.10)─┤
     1: ─╰∏_ϕ(0.10)─╰BlockEncode(M0)─╰∏_ϕ(1.10)─╰BlockEncode(M0)†─╰∏_ϕ(2.10)─┤
@@ -232,7 +231,7 @@ class QSVT(Operation):
     >>>
     >>> @qml.qnode(dev)
     >>> def example_circuit():
-    ...     qml.QSVT(block_encoding, phase_shifts, wires=[0])
+    ...     qml.QSVT(block_encoding, phase_shifts)
     ...     return qml.expval(qml.PauliZ(wires=0))
     >>>
     >>> example_circuit()
@@ -245,7 +244,7 @@ class QSVT(Operation):
 
     To see the implementation details, we can expand the circuit:
 
-    >>> q_script = qml.tape.QuantumScript(ops=[qml.QSVT(block_encoding, phase_shifts, wires=[0])])
+    >>> q_script = qml.tape.QuantumScript(ops=[qml.QSVT(block_encoding, phase_shifts)])
     >>> print(q_script.expand().draw(decimals=2))
     0: ──RZ(-2.46)──H──RZ(1.00)──H†──RZ(-8.00)─┤
     """
@@ -256,7 +255,7 @@ class QSVT(Operation):
     grad_method = None
     """Gradient computation method."""
 
-    def __init__(self, UA, projectors, wires, do_queue=True, id=None):
+    def __init__(self, UA, projectors, do_queue=True, id=None):
         if not isinstance(UA, qml.operation.Operator):
             raise ValueError("Input block encoding must be an Operator")
 
@@ -265,7 +264,11 @@ class QSVT(Operation):
             "projectors": projectors,
         }
 
-        super().__init__(wires=wires, do_queue=do_queue, id=id)
+        ua_wires = UA.wires.toset()
+        proj_wires = set.union(*(proj.wires.toset() for proj in projectors))
+
+        total_wires = ua_wires.union(proj_wires)
+        super().__init__(wires=total_wires, do_queue=do_queue, id=id)
 
     @staticmethod
     def compute_decomposition(
