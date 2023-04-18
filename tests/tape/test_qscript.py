@@ -21,7 +21,7 @@ import pennylane as qml
 from pennylane.measurements import MutualInfo, State, VnEntropy, Shots
 from pennylane.tape import QuantumScript
 
-# pylint: disable=protected-access, unused-argument
+# pylint: disable=protected-access, unused-argument, too-few-public-methods
 
 
 class TestInitialization:

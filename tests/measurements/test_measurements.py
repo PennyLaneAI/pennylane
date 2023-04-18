@@ -46,6 +46,8 @@ from pennylane.measurements import (
 from pennylane.operation import DecompositionUndefinedError
 from pennylane.queuing import AnnotatedQueue
 
+# pylint: disable=too-few-public-methods, unused-argument
+
 
 class NotValidMeasurement(MeasurementProcess):
     @property

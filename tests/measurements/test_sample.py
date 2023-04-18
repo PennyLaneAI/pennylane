@@ -397,7 +397,7 @@ class TestSample:
     def test_new_sample_with_operator_with_no_eigvals(self):
         """Test that calling process with an operator that has no eigvals defined raises an error."""
 
-        class DummyOp(Operator):
+        class DummyOp(Operator):    # pylint: disable=too-few-public-methods
             num_wires = 1
 
         with pytest.raises(EigvalsUndefinedError, match="Cannot compute samples of"):
