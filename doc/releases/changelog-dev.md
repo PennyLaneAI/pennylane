@@ -212,6 +212,9 @@
 * Update various Operators and templates to ensure their decompositions only return lists of Operators.
   [(#3243)](https://github.com/PennyLaneAI/pennylane/pull/3243)
 
+* `qml.prod` now accepts a single qfunc input for creating new `Prod` operators.
+  [(#4011)](https://github.com/PennyLaneAI/pennylane/pull/4011)
+
 <h3>Breaking changes 💔</h3>
 
 * Both JIT interfaces are not compatible with JAX `>0.4.3`, we raise an error for those versions.
