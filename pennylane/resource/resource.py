@@ -14,7 +14,9 @@
 """
 Stores classes and logic to aggregate all the resource information from a quantum workflow.
 """
+from collections import defaultdict
 from dataclasses import dataclass, field
+
 from pennylane.tape import QuantumTape
 
 
@@ -88,7 +90,7 @@ def count_resources(tape: QuantumTape, shots: int) -> Resources:
     depth = tape.graph.get_depth()
 
     num_gates = 0
-    gate_types = dict()
+    gate_types = defaultdict(int)
     for op in tape.operations:
         if hasattr(op, "resources"):
             op_resource = op.resources()
