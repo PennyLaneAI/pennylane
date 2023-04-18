@@ -379,9 +379,10 @@ def custom_rot(phi, theta, omega, wires):
 
 # Decompose a template into another template
 def custom_basic_entangler_layers(weights, wires, **kwargs):
+    cnot_broadcast = qml.tape.make_qscript(qml.broadcast)(qml.CNOT, pattern="ring", wires=wires)
     return [
         qml.AngleEmbedding(weights[0], wires=wires),
-        qml.broadcast(qml.CNOT, pattern="ring", wires=wires),
+        *[qml.apply(op) for op in cnot_broadcast],
     ]
 
 
