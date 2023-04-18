@@ -880,7 +880,7 @@ class QuantumScript:
                     "measurements is unsupported."
                 )
 
-        if shots.shot_vector is None and self.batch_size is not None:
+        if len(shots.shot_vector) <= 1 and self.batch_size is not None:
             # insert the batch dimension
             output_shape = output_shape[:1] + (self.batch_size,) + output_shape[1:]
 
@@ -924,7 +924,7 @@ class QuantumScript:
             else Shots(device.shots)
         )
 
-        if shots.shot_vector is not None and self.batch_size is not None:
+        if len(shots.shot_vector) > 1 and self.batch_size is not None:
             raise NotImplementedError(
                 "Parameter broadcasting when using a shot vector is not supported yet."
             )
@@ -937,7 +937,7 @@ class QuantumScript:
         if len(shapes) == 1:
             return shapes[0]
 
-        if shots.shot_vector is not None:
+        if len(shots.shot_vector) > 1:
             # put the shot vector axis before the measurement axis
             shapes = tuple(zip(*shapes))
 

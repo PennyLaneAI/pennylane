@@ -155,7 +155,7 @@ class SampleMP(SampleMeasurement):
                 "Shots are required to obtain the shape of the measurement "
                 f"{self.__class__.__name__}."
             )
-        if shots.shot_vector is not None:
+        if len(shots.shot_vector) > 1:
             if self.obs is None:
                 # TODO: revisit when qml.sample without an observable fully
                 # supports shot vectors
@@ -189,9 +189,15 @@ class SampleMP(SampleMeasurement):
                 inner_shape.append(num_wires)
             return tuple(inner_shape)
 
-        if shots.shot_vector is None:
+        if len(shots.shot_vector) <= 1:
             return _single_int_shape(shots.total_shots, len_wires)
-        return tuple(_single_int_shape(s.shots, len_wires) * s.copies for s in shots.shot_vector)
+
+        shape = []
+        for s in shots.shot_vector:
+            for _ in range(s.copies):
+                shape.append(_single_int_shape(s.shots, len_wires))
+
+        return tuple(shape)
 
     def process_samples(
         self,

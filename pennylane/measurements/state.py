@@ -150,7 +150,7 @@ class StateMP(StateMeasurement):
 
     def _shape_legacy(self, device, shots):
         num_shot_elements = (
-            1 if shots.shot_vector is None else sum(s.copies for s in shots.shot_vector)
+            1 if len(shots.shot_vector) <= 1 else sum(s.copies for s in shots.shot_vector)
         )
 
         if self.wires:
@@ -166,7 +166,7 @@ class StateMP(StateMeasurement):
         if not qml.active_return():
             return self._shape_legacy(device, shots)
         num_shot_elements = (
-            1 if shots.shot_vector is None else sum(s.copies for s in shots.shot_vector)
+            1 if len(shots.shot_vector) <= 1 else sum(s.copies for s in shots.shot_vector)
         )
 
         if self.wires:

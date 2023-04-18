@@ -26,7 +26,6 @@ from typing import Sequence, Tuple, Optional
 import numpy as np
 
 import pennylane as qml
-from pennylane import Device
 from pennylane.operation import Operator
 from pennylane.wires import Wires
 
@@ -193,9 +192,7 @@ class MeasurementProcess(ABC):
             f"The numeric type of the measurement {self.__class__.__name__} is not defined."
         )
 
-    def _shape_legacy(
-        self, device: Device, shots: Shots
-    ) -> Tuple:  # pylint: disable=unused-arguments
+    def _shape_legacy(self, device, shots: Shots) -> Tuple:  # pylint: disable=unused-arguments
         """The expected output shape of the MeasurementProcess.
 
         Note that the output shape is dependent on the shots and device when:
@@ -229,7 +226,7 @@ class MeasurementProcess(ABC):
             f"The shape of the measurement {self.__class__.__name__} is not defined"
         )
 
-    def shape(self, device: Device, shots: Shots) -> Tuple:
+    def shape(self, device, shots: Shots) -> Tuple:
         """The expected output shape of the MeasurementProcess.
 
         Note that the output shape is dependent on the shots or device when:
@@ -255,7 +252,7 @@ class MeasurementProcess(ABC):
                 unrecognized and cannot deduce the numeric type
         """
         if not qml.active_return():
-            return self._shape_legacy(shots, num_wires)
+            return self._shape_legacy(device, shots)
         raise qml.QuantumFunctionError(
             f"The shape of the measurement {self.__class__.__name__} is not defined"
         )

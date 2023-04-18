@@ -32,6 +32,7 @@ from pennylane.measurements import (
     SampleMeasurement,
     SampleMP,
     ShadowExpvalMP,
+    Shots,
     State,
     StateMeasurement,
     StateMP,
@@ -95,7 +96,7 @@ def test_numeric_type_unrecognized_error():
         qml.QuantumFunctionError,
         match="The numeric type of the measurement NotValidMeasurement is not defined",
     ):
-        mp.numeric_type
+        _ = mp.numeric_type
 
 
 def test_shape_unrecognized_error():
@@ -107,7 +108,7 @@ def test_shape_unrecognized_error():
         qml.QuantumFunctionError,
         match="The shape of the measurement NotValidMeasurement is not defined",
     ):
-        mp.shape(dev)
+        mp.shape(dev, Shots(None))
 
 
 @pytest.mark.parametrize(
@@ -195,7 +196,7 @@ class TestStatisticsQueuing:
         assert isinstance(meas_proc, MeasurementProcess)
         assert meas_proc.return_type == return_type
 
-    def test_not_an_observable(self, stat_func, return_type):
+    def test_not_an_observable(self, stat_func, return_type):  # pylint: disable=unused-argument
         """Test that a UserWarning is raised if the provided
         argument might not be hermitian."""
         if stat_func is sample:
@@ -355,7 +356,9 @@ class TestExpansion:
 
         class HermitianNoDiagGates(qml.Hermitian):
             @property
-            def has_diagonalizing_gates(self):
+            def has_diagonalizing_gates(
+                self,
+            ):  # pylint: disable=invalid-overridden-method, arguments-renamed
                 return False
 
         H = np.array([[1, 2], [2, 4]])
@@ -434,6 +437,7 @@ class TestSampleMeasurement:
         """Test the execution of a custom sampled measurement."""
 
         class MyMeasurement(SampleMeasurement):
+            # pylint: disable=signature-differs
             def process_samples(self, samples, wire_order, shot_range, bin_size):
                 return qml.math.sum(samples[..., self.wires])
 
@@ -450,6 +454,7 @@ class TestSampleMeasurement:
         """Test that executing a sampled measurement with ``shots=None`` raises an error."""
 
         class MyMeasurement(SampleMeasurement):
+            # pylint: disable=signature-differs
             def process_samples(self, samples, wire_order, shot_range, bin_size):
                 return qml.math.sum(samples[..., self.wires])
 

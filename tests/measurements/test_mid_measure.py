@@ -13,12 +13,14 @@
 # limitations under the License.
 """Unit tests for the mid_measure module"""
 
+from itertools import product
 import pytest
 
 import pennylane as qml
 import pennylane.numpy as np
-from pennylane.measurements import MeasurementValue, MeasurementValueError
+from pennylane.measurements import MeasurementValue
 
+# pylint: disable=too-few-public-methods, too-many-public-methods
 
 def test_samples_computational_basis():
     """Test that samples_computational_basis is always false for mid circuit measurements."""
@@ -47,7 +49,7 @@ class TestMeasurementValueManipulation:
 
         m = MeasurementValue(["m"], lambda v: v)
 
-        sin_of_m = m._apply(np.sin)
+        sin_of_m = m._apply(np.sin) # pylint: disable=protected-access
         assert sin_of_m[0] == 0.0
         assert sin_of_m[1] == np.sin(1)
 
@@ -378,8 +380,6 @@ binary_dunders = measurement_value_binary_dunders + boolean_binary_dunders
 
 divisions = ["__rtruediv__", "__truediv__"]
 
-from itertools import product
-
 
 class TestMeasurementCompositeValueManipulation:
     """Test composite application of dunder methods associated with the MeasurementValue class"""
@@ -414,14 +414,13 @@ class TestMeasurementCompositeValueManipulation:
 
         assert isinstance(boolean_of_measurements, MeasurementValue)
 
-    @pytest.mark.parametrize("unary_name", unary_dunders)
     @pytest.mark.parametrize("mv_dunder_name", measurement_value_binary_dunders)
     @pytest.mark.parametrize("boolean_dunder_name", boolean_binary_dunders)
     @pytest.mark.parametrize("scalar", [MeasurementValue(["m1"], lambda v: v), 0, 1.0, 1.0 + 0j])
     @pytest.mark.parametrize("boolean", [MeasurementValue(["m2"], lambda v: v), True, False, None])
     def test_composition_measurement_values_and_boolean(
-        self, unary_name, mv_dunder_name, boolean_dunder_name, scalar, boolean
-    ):
+        self, mv_dunder_name, boolean_dunder_name, scalar, boolean
+    ):  # pylint: disable=too-many-arguments
         """Test the composition of dunder methods, applying one whose argument is scalar and one whose argument
         is a boolean."""
         m0 = MeasurementValue(["m0"], lambda v: v)
