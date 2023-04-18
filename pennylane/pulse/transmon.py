@@ -281,6 +281,8 @@ def transmon_drive(amplitude, phase, freq, wires, d=2):
 
     Integration Example 2
 
+    notice how we make frequency a callable to be able to differentiate with respect to it
+
     .. code-block::python3
 
         omega = [5.1, 5., 5.3]
@@ -303,6 +305,7 @@ def transmon_drive(amplitude, phase, freq, wires, d=2):
 
         dev = qml.device("default.qubit.jax", wires=range(3))
 
+        @jax.jit
         @qml.qnode(dev, interface="jax")
         def qnode(params):
             qml.evolve(H)(params, t=5.)
