@@ -459,7 +459,7 @@ class TestIntegration:
         import jax
         import jax.numpy as jnp
 
-        Hd = transmon_interaction(omega, connections, g, wires=wires)
+        Hi = transmon_interaction(omega, connections, g, wires=wires)
 
         def fa(p, t):
             return jnp.polyval(p, t)
@@ -467,8 +467,8 @@ class TestIntegration:
         def fb(p, t):
             return p[0] * jnp.sin(p[1] * t)
 
-        Ht = transmon_drive(amplitude=fa, phase=fb, freq=0.5, wires=[0])
-        H = Hd + Ht
+        Hd = transmon_drive(amplitude=fa, phase=fb, freq=0.5, wires=[0])
+        H = Hi + Hd
 
         dev = qml.device("default.qubit.jax", wires=wires)
 
@@ -499,7 +499,7 @@ class TestIntegration:
         import jax
         import jax.numpy as jnp
 
-        Hd = transmon_interaction(omega, connections, g, wires=wires)
+        Hi = transmon_interaction(omega, connections, g, wires=wires)
 
         def fa(p, t):
             return jnp.polyval(p, t)
@@ -524,7 +524,7 @@ class TestIntegration:
 
         @qml.qnode(dev, interface="jax")
         def qnode(params):
-            qml.evolve(Hd + H1 + H2 + H3)(params, ts)
+            qml.evolve(Hi + H1 + H2 + H3)(params, ts)
             return qml.expval(H_obj)
 
         qnode_jit = jax.jit(qnode)
