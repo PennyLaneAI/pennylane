@@ -196,6 +196,9 @@
   ambiguity between `op.num_wires = 0` and `op.num_wires = AllWires`.
   [(#3978)](https://github.com/PennyLaneAI/pennylane/pull/3978)
 
+* Execution code has been updated to use the new `qml.transforms.convert_to_numpy_parameters` instead of `qml.tape.Unwrap`.
+  [(#3989)](https://github.com/PennyLaneAI/pennylane/pull/3989)
+
 <h3>Breaking changes 💔</h3>
 
 * Both JIT interfaces are not compatible with JAX `>0.4.3`, we raise an error for those versions.
