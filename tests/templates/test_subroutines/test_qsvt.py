@@ -135,7 +135,6 @@ class TestQSVT:
     def test_queuing_ops_defined_in_circuit(self):
         """Test that qml.QSVT queues operations correctly when they are called in the qnode."""
         lst_projectors = [qml.PCPhase(0.2, dim=1, wires=0), qml.PCPhase(0.3, dim=1, wires=0)]
-        wires = [0, 1]
         results = [
             qml.PCPhase(0.2, dim=1, wires=[0]),
             qml.PauliX(wires=[0]),
