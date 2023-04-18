@@ -19,7 +19,7 @@ from typing import Sequence, Optional
 import pennylane as qml
 from pennylane.wires import Wires
 
-from .measurements import MeasurementShapeError, State, StateMeasurement
+from .measurements import State, StateMeasurement
 
 
 def state() -> "StateMP":

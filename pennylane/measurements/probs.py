@@ -20,7 +20,7 @@ import pennylane as qml
 from pennylane import numpy as np
 from pennylane.wires import Wires
 
-from .measurements import MeasurementShapeError, Probability, SampleMeasurement, StateMeasurement
+from .measurements import Probability, SampleMeasurement, StateMeasurement
 
 
 def probs(wires=None, op=None) -> "ProbabilityMP":

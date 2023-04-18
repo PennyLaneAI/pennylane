@@ -22,6 +22,7 @@ from pennylane.measurements import MeasurementValue
 
 # pylint: disable=too-few-public-methods, too-many-public-methods
 
+
 def test_samples_computational_basis():
     """Test that samples_computational_basis is always false for mid circuit measurements."""
     m = qml.measurements.MidMeasureMP(qml.wires.Wires(0))
@@ -49,7 +50,7 @@ class TestMeasurementValueManipulation:
 
         m = MeasurementValue(["m"], lambda v: v)
 
-        sin_of_m = m._apply(np.sin) # pylint: disable=protected-access
+        sin_of_m = m._apply(np.sin)  # pylint: disable=protected-access
         assert sin_of_m[0] == 0.0
         assert sin_of_m[1] == np.sin(1)
 
