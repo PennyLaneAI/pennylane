@@ -337,7 +337,7 @@ class DiagonalQubitUnitary(Operation):
 
 
 class BlockEncode(Operation):
-    r"""BlockEncode(a, wires)
+    r"""BlockEncode(A, wires)
     Construct a unitary :math:`U(A)` such that an arbitrary matrix :math:`A`
     is encoded in the top-left block.
 
