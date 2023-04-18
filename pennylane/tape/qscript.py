@@ -634,16 +634,25 @@ class QuantumScript:
         >>> qscript.get_parameters(trainable_only=False)
         [0.432, 0.543, 0.133]
         """
-        params = []
-        iterator = self.trainable_params if trainable_only else range(len(self._par_info))
+        if trainable_only:
+            params = []
+            for p_idx in self.trainable_params:
+                op = self._par_info[p_idx]["op"]
+                if operations_only and hasattr(op, "return_type"):
+                    continue
 
-        for p_idx in iterator:
-            op = self._par_info[p_idx]["op"]
-            if operations_only and hasattr(op, "return_type"):
-                continue
+                op_idx = self._par_info[p_idx]["p_idx"]
+                params.append(op.data[op_idx])
+            return params
 
-            op_idx = self._par_info[p_idx]["p_idx"]
-            params.append(op.data[op_idx])
+        # If trainable_only=False, return all parameters
+        # This is faster than the above and should be used when indexing `_par_info` is not needed
+        params = [d for op in self.operations for d in op.data]
+        if operations_only:
+            return params
+        for m in self.measurements:
+            if m.obs is not None:
+                params.extend(m.obs.data)
         return params
 
     def set_parameters(self, params, trainable_only=True):
@@ -1029,6 +1038,7 @@ class QuantumScript:
         new_qscript._obs_sharing_wires_id = self._obs_sharing_wires_id
         new_qscript._batch_size = self.batch_size
         new_qscript._output_dim = self.output_dim
+        new_qscript._qfunc_output = copy.copy(self._qfunc_output)
 
         return new_qscript
 
