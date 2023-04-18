@@ -261,6 +261,7 @@ class SPSAOptimizer:
         yplus = objective_fn(*thetaplus, **kwargs)
         yminus = objective_fn(*thetaminus, **kwargs)
         try:
+            # pylint: disable=protected-access
             shots = (
                 Shots(objective_fn.device._raw_shot_sequence)
                 if objective_fn.device.shot_vector is not None
