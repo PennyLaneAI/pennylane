@@ -149,9 +149,9 @@ Allowed wire labels can be of any type that is hashable, which allows two wires 
 
 .. warning::
 
-        In order to support wire labels of any hashable type, integers and 0-d arrays are considered different.
-        For example, running ``qml.RX(1.1, qml.numpy.array(0))`` on a device initialized with ``wires=[0]``
-        will fail because ``qml.numpy.array(0)`` does not exist in the device's wire map.
+    In order to support wire labels of any hashable type, integers and 0-d arrays are considered different.
+    For example, running ``qml.RX(1.1, qml.numpy.array(0))`` on a device initialized with ``wires=[0]``
+    will fail because ``qml.numpy.array(0)`` does not exist in the device's wire map.
 
 Shots
 *****
