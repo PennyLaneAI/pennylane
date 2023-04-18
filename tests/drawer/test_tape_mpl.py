@@ -370,6 +370,7 @@ class TestSpecialGates:
         plt.close()
 
     def test_Prod(self):
+        """Test Prod gets correct special call."""
         with qml.queuing.AnnotatedQueue() as q_tape:
             qml.S(0) @ qml.T(0)
 
