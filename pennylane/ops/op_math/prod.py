@@ -21,7 +21,6 @@ from functools import reduce
 from itertools import combinations
 from typing import List, Tuple, Union
 
-import numpy as np
 from scipy.sparse import kron as sparse_kron
 
 import pennylane as qml
@@ -33,6 +32,7 @@ from pennylane.ops.op_math.sum import Sum
 from pennylane.ops.qubit import Hamiltonian
 from pennylane.ops.qubit.non_parametric_ops import PauliX, PauliY, PauliZ
 from pennylane.queuing import QueuingManager
+from pennylane.typing import TensorLike
 from pennylane.wires import Wires
 
 from .composite import CompositeOp
@@ -51,7 +51,8 @@ def prod(*ops, do_queue=True, id=None, lazy=True):
     that the given operators act on.
 
     Args:
-        ops (tuple[~.operation.Operator]): The operators we would like to multiply
+        ops (Union[tuple[~.operation.Operator], Callable]): The operators we would like to multiply.
+            Alternatively, a single qfunc that queues operators can be passed to this function.
 
     Keyword Args:
         do_queue (bool): determines if the product operator will be queued. Default is True.
@@ -84,7 +85,19 @@ def prod(*ops, do_queue=True, id=None, lazy=True):
     >>> prod_op.matrix()
     array([[ 0, -1],
            [ 1,  0]])
+
+    You can also create a prod operator by passing a qfunc to prod, like the following:
+
+    >>> def qfunc():
+    ...     qml.Hadamard(0)
+    ...     qml.CNOT([0, 1])
+    >>> prod_op = prod(qfunc)
+    >>> prod_op
+    CNOT(wires=[0, 1]) @ Hadamard(wires=[0])
     """
+    if len(ops) == 1 and callable(ops[0]):
+        ops = qml.tape.make_qscript(ops[0])().operations[::-1]
+
     if lazy:
         return Prod(*ops, do_queue=do_queue, id=id)
 
@@ -257,7 +270,7 @@ class Prod(CompositeOp):
     def matrix(self, wire_order=None):
         """Representation of the operator as a matrix in the computational basis."""
 
-        mats: List[np.ndarray] = []  # TODO: change type to `tensor_like` when available
+        mats: List[TensorLike] = []
         batched: List[bool] = []  # batched[i] tells if mats[i] is batched or not
         for ops in self.overlapping_ops:
             gen = (

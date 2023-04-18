@@ -316,6 +316,37 @@ class TestInitialization:
         prod_op = prod(MyOp(3.1, 0), qml.PauliX(2), do_queue=True)
         assert prod_op.has_diagonalizing_gates is False
 
+    def test_qfunc_init(self):
+        """Tests prod initialization with a qfunc argument."""
+
+        def qfunc():
+            qml.Hadamard(0)
+            qml.CNOT([0, 1])
+            qml.RZ(1.1, 1)
+
+        prod_op = prod(qfunc)
+        expected = prod(qml.RZ(1.1, 1), qml.CNOT([0, 1]), qml.Hadamard(0))
+        assert qml.equal(prod_op, expected)
+        assert prod_op.wires == Wires([1, 0])
+
+    def test_qfunc_init_only_works_with_one_qfunc(self):
+        """Test that the qfunc init only occurs when one callable is passed to prod."""
+
+        def qfunc():
+            qml.Hadamard(0)
+            qml.CNOT([0, 1])
+
+        prod_op = prod(qfunc)
+        assert qml.equal(prod_op, prod(qml.CNOT([0, 1]), qml.Hadamard(0)))
+
+        def fn2():
+            qml.PauliX(0)
+            qml.PauliY(1)
+
+        for args in [(qfunc, fn2), (qfunc, qml.PauliX), (qml.PauliX, qfunc)]:
+            with pytest.raises(AttributeError, match="has no attribute 'wires'"):
+                prod(*args)
+
 
 class TestMatrix:
     """Test matrix-related methods."""
