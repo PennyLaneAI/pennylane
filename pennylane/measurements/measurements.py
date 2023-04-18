@@ -193,7 +193,9 @@ class MeasurementProcess(ABC):
             f"The numeric type of the measurement {self.__class__.__name__} is not defined."
         )
 
-    def _shape_legacy(self, device: Device, shots: Shots)   -> Tuple:  # pylint: disable=unused-arguments
+    def _shape_legacy(
+        self, device: Device, shots: Shots
+    ) -> Tuple:  # pylint: disable=unused-arguments
         """The expected output shape of the MeasurementProcess.
 
         Note that the output shape is dependent on the shots and device when:

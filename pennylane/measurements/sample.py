@@ -164,7 +164,8 @@ class SampleMP(SampleMeasurement):
                     "a device with a shot vector is not supported."
                 )
             return tuple(
-                (s.shots,) * s.copies if s.shots != 1 else tuple() * s.copies for s in shots.shot_vector
+                (s.shots,) * s.copies if s.shots != 1 else tuple() * s.copies
+                for s in shots.shot_vector
             )
         len_wires = len(self.wires) if len(self.wires) > 0 else len(device.wires)
         return (1, shots.total_shots) if self.obs is not None else (1, shots.total_shots, len_wires)
@@ -190,9 +191,7 @@ class SampleMP(SampleMeasurement):
 
         if shots.shot_vector is None:
             return _single_int_shape(shots.total_shots, len_wires)
-        return tuple(
-            _single_int_shape(s.shots, len_wires) * s.copies for s in shots.shot_vector
-        )
+        return tuple(_single_int_shape(s.shots, len_wires) * s.copies for s in shots.shot_vector)
 
     def process_samples(
         self,

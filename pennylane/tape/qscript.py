@@ -35,6 +35,7 @@ from pennylane.measurements import (
     StateMP,
     VarianceMP,
 )
+from pennylane.measurements import Shots
 from pennylane.operation import Observable, Operator, Operation
 from pennylane.queuing import AnnotatedQueue, process_queue
 
@@ -707,7 +708,7 @@ class QuantumScript:
     # ========================================================
 
     @staticmethod
-    def _single_measurement_shape(measurement_process, device):
+    def _single_measurement_shape(measurement_process, device, shots):
         """Auxiliary function of shape that determines the output
         shape of a quantum script with a single measurement.
 
@@ -715,14 +716,15 @@ class QuantumScript:
             measurement_process (MeasurementProcess): the measurement process
                 associated with the single measurement
             device (pennylane.Device): a PennyLane device
+            shots (~.Shots): object defining number and batches of shots
 
         Returns:
             tuple: output shape
         """
-        return measurement_process.shape(device)
+        return measurement_process.shape(device, shots)
 
     @staticmethod
-    def _multi_homogenous_measurement_shape(mps, device):
+    def _multi_homogenous_measurement_shape(mps, device, shots):
         """Auxiliary function of shape that determines the output
         shape of a quantum script with multiple homogenous measurements.
 
@@ -751,7 +753,7 @@ class QuantumScript:
                 "Getting the output shape of a quantum script with multiple state measurements is not supported."
             )
 
-        shot_vector = device._shot_vector
+        shot_vector = shots.shot_vector
         if shot_vector is None:
             if isinstance(mps[0], (ExpectationMP, VarianceMP)):
                 shape = (len(mps),)
@@ -773,18 +775,18 @@ class QuantumScript:
                     shape = (sum(2 ** len(m.wires) for m in mps),)
 
             elif isinstance(mps[0], SampleMP):
-                dim = mps[0].shape(device)
+                dim = mps[0].shape(device, shots)
                 shape = (len(mps),) + dim[1:]
 
             # No other measurement type to check
 
         else:
-            shape = QuantumScript._shape_shot_vector_multi_homogenous(mps, device)
+            shape = QuantumScript._shape_shot_vector_multi_homogenous(mps, device, shots)
 
         return shape
 
     @staticmethod
-    def _shape_shot_vector_multi_homogenous(mps, device):
+    def _shape_shot_vector_multi_homogenous(mps, device, shots):
         """Auxiliary function for determining the output shape of the quantum script for
         multiple homogenous measurements for a device with a shot vector.
 
@@ -793,7 +795,7 @@ class QuantumScript:
         """
         shape = tuple()
 
-        shot_vector = device._shot_vector
+        shot_vector = shots.shot_vector
 
         # Shot vector was defined
         if isinstance(mps[0], (ExpectationMP, VarianceMP)):
@@ -821,10 +823,10 @@ class QuantumScript:
 
         elif isinstance(mps[0], SampleMP):
             shape = []
-            for shot_val in device.shot_vector:
-                shots = shot_val.shots
-                if shots != 1:
-                    shape.extend((shots, len(mps)) for _ in range(shot_val.copies))
+            for shot_val in shot_vector:
+                num_shots = shot_val.shots
+                if num_shots != 1:
+                    shape.extend((num_shots, len(mps)) for _ in range(shot_val.copies))
                 else:
                     shape.extend((len(mps),) for _ in range(shot_val.copies))
         return shape
@@ -858,20 +860,27 @@ class QuantumScript:
             (1, 4)
         """
         output_shape = tuple()
+        shots = (
+            Shots(device._raw_shot_sequence)
+            if device.shot_vector is not None
+            else Shots(device.shots)
+        )
 
         if len(self.measurements) == 1:
-            output_shape = self._single_measurement_shape(self.measurements[0], device)
+            output_shape = self._single_measurement_shape(self.measurements[0], device, shots)
         else:
             num_measurements = len({type(meas) for meas in self.measurements})
             if num_measurements == 1:
-                output_shape = self._multi_homogenous_measurement_shape(self.measurements, device)
+                output_shape = self._multi_homogenous_measurement_shape(
+                    self.measurements, device, shots
+                )
             else:
                 raise ValueError(
                     "Getting the output shape of a quantum script that contains multiple types of "
                     "measurements is unsupported."
                 )
 
-        if device._shot_vector is None and self.batch_size is not None:
+        if shots.shot_vector is None and self.batch_size is not None:
             # insert the batch dimension
             output_shape = output_shape[:1] + (self.batch_size,) + output_shape[1:]
 
@@ -909,12 +918,18 @@ class QuantumScript:
         if not qml.active_return():
             return self._shape_legacy(device)
 
-        if device.shot_vector is not None and self.batch_size is not None:
+        shots = (
+            Shots(device._raw_shot_sequence)
+            if device.shot_vector is not None
+            else Shots(device.shots)
+        )
+
+        if shots.shot_vector is not None and self.batch_size is not None:
             raise NotImplementedError(
                 "Parameter broadcasting when using a shot vector is not supported yet."
             )
 
-        shapes = tuple(meas_process.shape(device) for meas_process in self.measurements)
+        shapes = tuple(meas_process.shape(device, shots) for meas_process in self.measurements)
 
         if self.batch_size is not None:
             shapes = tuple((self.batch_size,) + shape for shape in shapes)
@@ -922,7 +937,7 @@ class QuantumScript:
         if len(shapes) == 1:
             return shapes[0]
 
-        if device.shot_vector is not None:
+        if shots.shot_vector is not None:
             # put the shot vector axis before the measurement axis
             shapes = tuple(zip(*shapes))
 
