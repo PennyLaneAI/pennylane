@@ -17,6 +17,7 @@ Test base Resource class and its associated methods
 
 import pytest
 from pennylane.resource import Resources
+from dataclasses import FrozenInstanceError
 
 
 class TestResources:
@@ -47,36 +48,13 @@ class TestResources:
         assert r.shots == shots
         assert r.gate_types == gate_types
 
-    type_error = (
-        (0, 1, "wrong_type", 2, 3),
-        (0.0, 1.1, {"Hadamard": 1}, 2.2, 3.3),
-        ("0", [1], {"Identity": 1}, True, False),
-    )
-
-    @pytest.mark.parametrize("params", type_error)
-    def test_init_type_error(self, params):
-        """Test that a type error is raised if an attribute is initialized with the wrong type."""
-        with pytest.raises(TypeError, match="Incorrect type of input,"):
-            Resources(*params)
-
-    value_error = ((0, -1, {"Hadamard": 1}, 2, -3),)
-
-    @pytest.mark.parametrize("params", value_error)
-    def test_init_value_error(self, params):
-        """Test that a value error is raised if an attribute is initialized with the wrong type."""
-        with pytest.raises(ValueError, match="Incorrect value of input,"):
-            Resources(*params)
-
     def test_set_attributes_error(self):
         """Test that an error is raised if we try to set any attribute."""
         r = Resources()
         attr_lst = ["num_wires", "num_gates", "depth", "shots", "gate_types"]
-        message = (
-            "<class 'pennylane.resource.resource.Resources'> object does not support assignment"
-        )
 
         for attr_name in attr_lst:
-            with pytest.raises(AttributeError, match=message):
+            with pytest.raises(FrozenInstanceError, match="cannot assign to field"):
                 setattr(r, attr_name, 1)
 
     test_str_data = (
@@ -101,17 +79,17 @@ class TestResources:
     )
 
     @pytest.mark.parametrize("r, rep", zip(resource_quantities, test_str_data))
-    def test_to_str(self, r, rep):
+    def test_str(self, r, rep):
         """Test the string representation of a Resources instance."""
         assert str(r) == rep
 
     test_rep_data = (
-        "<Resource: wires=0, gates=0, depth=0, shots=0, gate_types={}>",
-        "<Resource: wires=5, gates=0, depth=0, shots=0, gate_types={}>",
-        "<Resource: wires=1, gates=3, depth=3, shots=10, "
-        "gate_types={'Hadamard': 1, 'PauliZ': 2}>",
-        "<Resource: wires=4, gates=2, depth=2, shots=100, "
-        "gate_types={'Hadamard': 1, 'CNOT': 1}>",
+        "Resources(num_wires=0, num_gates=0, gate_types={}, depth=0, shots=0)",
+        "Resources(num_wires=5, num_gates=0, gate_types={}, depth=0, shots=0)",
+        "Resources(num_wires=1, num_gates=3, gate_types={'Hadamard': 1, 'PauliZ': 2}, "
+        "depth=3, shots=10)",
+        "Resources(num_wires=4, num_gates=2, gate_types={'Hadamard': 1, 'CNOT': 1}, "
+        "depth=2, shots=100)",
     )
 
     @pytest.mark.parametrize("r, rep", zip(resource_quantities, test_rep_data))

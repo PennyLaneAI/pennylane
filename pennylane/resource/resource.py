@@ -14,8 +14,10 @@
 """
 The data class which will aggregate all the resource information from a quantum workflow.
 """
+from dataclasses import dataclass, field
 
 
+@dataclass(frozen=True)
 class Resources:
     r"""Contains attributes which store key resources such as number of gates, number of wires, shots,
     depth and gate types.
@@ -48,94 +50,11 @@ class Resources:
         shots: 0
         gate_types: {'Hadamard': 1, 'CNOT': 1}
     """
-
-    def __init__(
-        self, num_wires=0, num_gates=0, gate_types=None, depth=0, shots=0
-    ):  # pylint: disable=too-many-arguments
-        """Initialize a Resources instance and perform input type validation."""
-
-        if not all(isinstance(param, int) for param in [num_wires, num_gates, depth, shots]):
-            raise TypeError(
-                "Incorrect type of input, expected type int for num_wires, num_gates, depth and shots. "
-                f"Got {type(num_wires)}, {type(num_gates)}, {type(depth)}, {type(shots)} respectively. "
-            )
-
-        if gate_types and not isinstance(gate_types, dict):
-            raise TypeError(
-                f"Incorrect type of input, expected type dict for gate_types. Got {type(gate_types)}."
-            )
-
-        if not all(val > -1 for val in [num_wires, num_gates, depth, shots]):
-            raise ValueError(
-                "Incorrect value of input, expected value of num_wires, num_gates, depth and shots to be >= 0."
-                f"Got {num_wires}, {num_gates}, {depth}, {shots} respectively. "
-            )
-
-        self._num_wires = num_wires
-        self._num_gates = num_gates
-        self._gate_types = {} if gate_types is None else gate_types
-        self._depth = depth
-        self._shots = shots
-
-    @property
-    def num_wires(self):
-        """Number of wires in the quantum workflow."""
-        return self._num_wires
-
-    @num_wires.setter
-    def num_wires(self, new_val):
-        """Setting is NOT allowed"""
-        raise AttributeError(
-            f"{type(self)} object does not support assignment for 'num_wires' attribute"
-        )
-
-    @property
-    def num_gates(self):
-        """Number of gates in the quantum workflow."""
-        return self._num_gates
-
-    @num_gates.setter
-    def num_gates(self, new_val):
-        """Setting is NOT allowed"""
-        raise AttributeError(
-            f"{type(self)} object does not support assignment for 'num_gates' attribute"
-        )
-
-    @property
-    def gate_types(self):
-        """Dictionary of unique quantum gates and counts in the quantum workflow."""
-        return self._gate_types
-
-    @gate_types.setter
-    def gate_types(self, new_val):
-        """Setting is NOT allowed"""
-        raise AttributeError(
-            f"{type(self)} object does not support assignment for 'gate_types' attribute"
-        )
-
-    @property
-    def depth(self):
-        """Circuit depth of the quantum workflow."""
-        return self._depth
-
-    @depth.setter
-    def depth(self, new_val):
-        """Setting is NOT allowed"""
-        raise AttributeError(
-            f"{type(self)} object does not support assignment for 'depth' attribute"
-        )
-
-    @property
-    def shots(self):
-        """Number of shots/samples in the quantum workflow."""
-        return self._shots
-
-    @shots.setter
-    def shots(self, new_val):
-        """Setting is NOT allowed"""
-        raise AttributeError(
-            f"{type(self)} object does not support assignment for 'shots' attribute"
-        )
+    num_wires: int = 0
+    num_gates: int = 0
+    gate_types: dict[int] = field(default_factory=dict)
+    depth: int = 0
+    shots: int = 0
 
     def __str__(self):
         keys = ["wires", "gates", "depth", "shots", "gate_types"]
@@ -147,23 +66,6 @@ class Resources:
         items = items.replace("{", "\n{")
         return items
 
-    def __repr__(self):
-        return (
-            f"<Resource: wires={self.num_wires}, gates={self.num_gates}, "
-            f"depth={self.depth}, shots={self.shots}, gate_types={self.gate_types}>"
-        )
-
     def _ipython_display_(self):
         """Displays __str__ in ipython instead of __repr__"""
         print(str(self))
-
-    def __eq__(self, other: "Resources") -> bool:
-        return all(
-            (
-                self.num_wires == other.num_wires,
-                self.num_gates == other.num_gates,
-                self.depth == other.depth,
-                self.shots == other.shots,
-                self.gate_types == other.gate_types,
-            ),
-        )
