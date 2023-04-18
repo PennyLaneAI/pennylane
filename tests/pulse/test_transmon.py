@@ -266,6 +266,18 @@ class TestTransmonDrive:
         assert Hd.pulses == []
         # Hamiltonian is as expected
         assert qml.math.allclose(qml.matrix(Hd([0.5], t=6)), qml.matrix(H_expected([0.5], t=6)))
+    
+    def test_transmon_drive_with_regular_Parametrized_Hamiltonian(self):
+        """Test call works as expected for regular parametrized Hamiltonian"""
+        H = transmon_drive(0.5, 0.5, 0.5, wires=[0])
+        H += np.polyval * qml.PauliZ(0)
+
+        t = 5.
+        params = [[0.5]]
+        expected = amp_phase_freq(0.5, 0.5, 0.5, t, wire=0)
+        expected += np.polyval(params[0], t) * qml.PauliZ(0)
+
+        assert qml.allclose(qml.matrix(H(params, t)), qml.matrix(expected))
 
 
 connections = [[0, 1], [1, 3], [2, 1], [4, 5]]
