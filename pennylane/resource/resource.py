@@ -33,14 +33,9 @@ class Resources:
         depth (int): the depth of the circuit defined as the maximum number of non-parallel operations
         shots (int): number of samples to generate
 
-    Raises:
-        TypeError: If the attributes provided are not of the correct type.
-        ValueError: If an attribute provided has value less than 0.
-        AttributeError: If an attribute is set after initialization.
-
     .. details::
 
-        The resources being tracked can be accessed and set as class attributes.
+        The resources being tracked can be accessed as class attributes.
         Additionally, the :code:`Resources` instance can be nicely displayed in the console.
 
         **Example**
