@@ -269,15 +269,18 @@ class TestTransmonDrive:
     
     def test_transmon_drive_with_regular_Parametrized_Hamiltonian(self):
         """Test call works as expected for regular parametrized Hamiltonian"""
-        H = transmon_drive(0.5, 0.5, 0.5, wires=[0])
+        def f(p, t):
+            return np.sin(p * t)
+
+        H = transmon_drive(f, f, f, wires=[0])
         H += np.polyval * qml.PauliZ(0)
 
         t = 5.
-        params = [[0.5]]
-        expected = amp_phase_freq(0.5, 0.5, 0.5, t, wire=0)
-        expected += np.polyval(params[0], t) * qml.PauliZ(0)
+        params = [1., 2., 3., [0.5]]
+        expected = amp_phase_freq(f(params[0], t), f(params[1], t), f(params[2], t), t, wire=0)
+        expected += np.polyval(params[3], t) * qml.PauliZ(0)
 
-        assert qml.allclose(qml.matrix(H(params, t)), qml.matrix(expected))
+        assert qml.math.allclose(qml.matrix(H(params, t)), qml.matrix(expected))
 
 
 connections = [[0, 1], [1, 3], [2, 1], [4, 5]]
