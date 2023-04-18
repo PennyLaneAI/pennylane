@@ -302,8 +302,10 @@ class AmplitudeAndPhaseAndFreq:
 
         # all 3 callable
         if self.amp_is_callable and self.phase_is_callable and self.freq_is_callable:
+
             def callable_amp_and_phase_and_freq(params, t):
                 return amp(params[0], t) * trig_fn(phase(params[1], t) + freq(params[2], t) * t)
+
             self.func = callable_amp_and_phase_and_freq
             return
 

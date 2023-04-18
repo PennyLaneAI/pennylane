@@ -33,6 +33,7 @@ from pennylane.wires import Wires
 
 class TestTransmonDrive:
     """Tests for the transmon drive Hamiltonian."""
+
     def test_d_neq_2_raises_error(self):
         """Test that setting d != 2 raises error"""
         with pytest.raises(NotImplementedError, match="Currently only supporting qubits."):
@@ -264,6 +265,7 @@ class TestTransmonDrive:
 
     def test_multiple_drives(self):
         """Test that the sum of two transmon drive Hamiltonians behaves correctly."""
+
         def amp(p, t):
             return np.sin(p * t)
 
