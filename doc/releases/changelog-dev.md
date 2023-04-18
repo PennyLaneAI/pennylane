@@ -13,7 +13,21 @@
   be the _remaining_ time evolution complementary to the output for `complementary=False`.
   See the [docstring](https://docs.pennylane.ai/en/stable/code/api/pennylane.pulse.ParametrizedEvolution.html)
   for details.
- 
+
+* The `qml.enable_op_arithmetic` toggle has been introduced to cause dunder methods to return arithmetic
+  operators instead of Hamiltonians and Tensors.
+  [(#4008)](https://github.com/PennyLaneAI/pennylane/pull/4008)
+
+  For example:
+
+  ```pycon
+  >>> type(qml.PauliX(0) @ qml.PauliZ(1))
+  <class 'pennylane.operation.Tensor'>
+  >>> qml.enable_op_arithmetic()
+  >>> type(qml.PauliX(0) @ qml.PauliZ(1))
+  <class 'pennylane.ops.op_math.prod.Prod'>
+  ```
+
 <h4>Pulse programming</h4>
 
 * Added the needed functions and classes to simulate an ensemble of Rydberg atoms:
