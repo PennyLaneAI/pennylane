@@ -231,7 +231,7 @@ def _stoch_pulse_grad(
         use_broadcasting (bool): Whether to use broadcasting across the different sampled
             splitting times. If ``False`` (the default), one set of modified tapes per
             splitting time is created, if ``True`` only a single set of broadcasted, modified
-            tapes is created, increasing performance. This is only available on simulators.
+            tapes is created, increasing performance on simulators.
 
     Returns:
         function or tuple[list[QuantumTape], function]:
