@@ -140,7 +140,7 @@ def qsvt(A, angles, wires, convention=None):
 
 
 class QSVT(Operation):
-    r"""QSVT(UA,projectors,wires)
+    r"""QSVT(UA,projectors)
     Implements the
     `quantum singular value transformation <https://arxiv.org/abs/1806.01838>`__ (QSVT) circuit.
 
