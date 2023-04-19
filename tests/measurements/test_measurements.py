@@ -113,6 +113,17 @@ def test_shape_unrecognized_error():
         mp.shape(dev, Shots(None))
 
 
+def test_none_return_type():
+    """Test that a measurement process without a return type property has return_type
+    `None`"""
+
+    class NoReturnTypeMeasurement(MeasurementProcess):
+        """Dummy measurement process with no return type."""
+
+    mp = NoReturnTypeMeasurement()
+    assert mp.return_type is None
+
+
 @pytest.mark.parametrize(
     "stat_func,return_type", [(expval, Expectation), (var, Variance), (sample, Sample)]
 )

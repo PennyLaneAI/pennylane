@@ -16,7 +16,7 @@ import numpy as np
 import pytest
 
 import pennylane as qml
-from pennylane.measurements import Sample, Shots
+from pennylane.measurements import MeasurementShapeError, Sample, Shots
 from pennylane.operation import EigvalsUndefinedError, Operator
 
 # pylint: disable=protected-access, no-member
@@ -315,6 +315,17 @@ class TestSample:
         """Test that the numeric type is correct."""
         res = qml.sample(obs) if obs is not None else qml.sample()
         assert res.numeric_type is exp
+
+    def test_shape_no_shots_error(self):
+        """Test that the appropriate error is raised with no shots are specified"""
+        dev = qml.device("default.qubit", wires=2, shots=None)
+        shots = Shots(None)
+        mp = qml.sample()
+
+        with pytest.raises(
+            MeasurementShapeError, match="Shots are required to obtain the shape of the measurement"
+        ):
+            _ = mp.shape(dev, shots)
 
     @pytest.mark.parametrize(
         "obs",
