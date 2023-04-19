@@ -285,7 +285,7 @@ def transmon_drive(amplitude, phase, freq, wires, d=2):
     >>> H(params, t)
     (0.1*(PauliX(wires=[0]))) + (0.0*(-1*(PauliY(wires=[0]))))
 
-    We can combine ``transmon_drive`` with :func:`~.transmon_interaction` to create a full driven transmon Hamiltonian.
+    We can combine ``transmon_drive()`` with :func:`~.transmon_interaction` to create a full driven transmon Hamiltonian.
     Let us look at a chain of three transmon qubits that are coupled with their direct neighbors. We provide all numbers in
     :math:`2\pi\text{GHz}`. We parametrize the amplitude as a sinusodial and make the maximum amplitude
     as well as the drive frequency trainable parameters. We simulate the evolution for a time window of :math:`[0, 5]\text{ns}`.
@@ -317,7 +317,7 @@ def transmon_drive(amplitude, phase, freq, wires, d=2):
     We evaluate the Hamiltonian with some arbitrarily chosen maximum amplitudes and set
     the drive frequency equal to the qubit frequencies. Note how the order of the construction
     of ``H`` determines the order with which the parameters need to be passed to
-    :class:`~.ParametrizedHamiltonian` and :func:`~.evolve`. By making the drive frequency
+    :class:`~.ParametrizedHamiltonian` and :func:`~.evolve`. By making the drive frequencies
     trainable parameters by providing a constant callable above instead of the fixed values,
     we can differentiate with respect to them.
 
