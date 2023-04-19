@@ -13,6 +13,15 @@
   be the _remaining_ time evolution complementary to the output for `complementary=False`.
   See the [docstring](https://docs.pennylane.ai/en/stable/code/api/pennylane.pulse.ParametrizedEvolution.html)
   for details.
+
+* New `Resources` data class to store resources like number of gates and circuit depth throughout a 
+  quantum circuit.
+  [(#3981)](https://github.com/PennyLaneAI/pennylane/pull/3981/)
+
+* A `_count_resources()` function was added to count the resources required when executing a 
+  QuantumTape for a given number of shots.
+  [(#3996)](https://github.com/PennyLaneAI/pennylane/pull/3996)
+
  
 <h4>Pulse programming</h4>
 
