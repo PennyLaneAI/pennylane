@@ -79,7 +79,7 @@ class TestSplitEvolOps:
             _ops[0].t = op.t
             assert qml.equal(_ops[0], op)
 
-            assert qml.math.allclose(_ops[2].t, [tau, op.t[1]])
+            assert qml.math.allclose(_ops[2].t, [tau, op.t[-1]])
             # Patch _ops[2] to have the same time as op, so that it should become the same as op
             _ops[2].t = op.t
             assert qml.equal(_ops[2], op)
