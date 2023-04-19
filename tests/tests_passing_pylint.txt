@@ -17,6 +17,7 @@ tests/gradients/core/test_jvp.py
 tests/gradients/core/test_pulse_gradient.py
 tests/gradients/finite_diff/test_spsa_gradient.py
 tests/kernels/**
+tests/legacy/test_measurements_old.py
 tests/math/test_functions.py
 tests/math/test_init.py
 tests/measurements/**
