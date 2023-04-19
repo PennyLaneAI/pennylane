@@ -32,12 +32,8 @@ from pennylane.wires import Wires
 
 
 def amp_phase_freq(amp, phase, freq, t, wire=0):
-    return (
-        amp
-        * (
-            np.cos(phase + freq * t) * qml.PauliX(wire)
-            - np.sin(phase + freq * t) * qml.PauliY(wire)
-        )
+    return amp * (
+        np.cos(phase + freq * t) * qml.PauliX(wire) - np.sin(phase + freq * t) * qml.PauliY(wire)
     )
 
 
@@ -245,10 +241,16 @@ class TestTransmonDrive:
         Hd = H1 + H2
 
         ops_expected = [
-            qml.Hamiltonian([1., 1.], [qml.PauliX(1), qml.PauliX(2)]),
-            qml.Hamiltonian([-1., -1.], [qml.PauliY(1), qml.PauliY(2)]),
-            qml.Hamiltonian([1., 1.,], [qml.PauliX(0), qml.PauliX(3)]),
-            qml.Hamiltonian([-1., -1.], [qml.PauliY(0), qml.PauliY(3)]),
+            qml.Hamiltonian([1.0, 1.0], [qml.PauliX(1), qml.PauliX(2)]),
+            qml.Hamiltonian([-1.0, -1.0], [qml.PauliY(1), qml.PauliY(2)]),
+            qml.Hamiltonian(
+                [
+                    1.0,
+                    1.0,
+                ],
+                [qml.PauliX(0), qml.PauliX(3)],
+            ),
+            qml.Hamiltonian([-1.0, -1.0], [qml.PauliY(0), qml.PauliY(3)]),
         ]
         coeffs_expected = [
             AmplitudeAndPhaseAndFreq(np.cos, amp, phase0, freq0),

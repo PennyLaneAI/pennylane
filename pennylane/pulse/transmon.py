@@ -263,25 +263,31 @@ def transmon_drive(amplitude, phase, freq, wires, d=2):
 
     **Example**
 
-    Simple Example 1
+    We can construct a drive term acting on qubit ``0`` in the following way. We parametrize the amplitude and phase
+    via :math:`\Omega(t) = \Omega \sin(\pi t)` and :math:`\phi(t) = \phi (t - \frac{1}{2})`.
 
     .. code-block::python3
 
         def amp(Omega, t): return Omega * jnp.sin(jnp.pi*t)
         def phase(phi, t): return phi * (t - 0.5)
 
-        H = qml.pulse.transmon_drive(amp, phase, 0.5, 0)
+        H = qml.pulse.transmon_drive(amp, phase, 0, 0)
 
+        t = 0.5
         Omega = 0.1
         phi = 0.001
         params = [Omega, phi]
+    
+    Evaluated at :math:`t = \frac{1}{2}` with the parameters :math:`\Omega = 0.1` and :math:`\phi = 10^{-3}` we obtain
+    :math:`\Omega \left(\frac{1}{2}(\sigma^x + i \sigma^y) + \frac{1}{2}(\sigma^x + i \sigma^y)\right) = \Omega \sigma^x`.
 
-    >>> H(params, 0.5) #TODO update output
-    (0.09689124217106448*(  (0.5) [X0])) + (0.024740395925452296*(  (-0.5) [Y0]))
+    >>> H(params, t)
+    (0.1*(PauliX(wires=[0]))) + (0.0*(-1*(PauliY(wires=[0]))))
 
-    Integration Example 2
-
-    notice how we make frequency a callable to be able to differentiate with respect to it
+    We can combine ``transmon_drive`` with :func:`~.transmon_interaction` to create a full driven transmon Hamiltonian.
+    Let us look at a chain of three transmon qubits that are coupled with their direct neighbors. We provide all numbers in
+    :math:`2\pi\text{GHz}`. We parametrize the amplitude as a sinusodial and make the maximum amplitude 
+    as well as the drive frequency trainable parameters. We simulate the evolution for a time window of :math:`[0, 5]\text{ns}`.
 
     .. code-block::python3
 
@@ -299,10 +305,6 @@ def transmon_drive(amplitude, phase, freq, wires, d=2):
         H += qml.pulse.transmon_drive(amp, phase, freq, 1)
         H += qml.pulse.transmon_drive(amp, phase, freq, 2)
 
-        Omega0, Omega1, Omega2 = [0.5, 0.3, 0.6]
-        fr0, fr1, fr2 = omega
-        params = [Omega0, fr0, Omega1, fr1, Omega2, fr2]
-
         dev = qml.device("default.qubit.jax", wires=range(3))
 
         @jax.jit
@@ -310,16 +312,26 @@ def transmon_drive(amplitude, phase, freq, wires, d=2):
         def qnode(params):
             qml.evolve(H)(params, t=5.)
             return qml.expval(qml.PauliZ(0) + qml.PauliZ(1) + qml.PauliZ(2))
+    
+    We evaluate the Hamiltonian with some arbitrarily chosen maximum amplitudes and set
+    the drive frequency equal to the qubit frequencies. Note how the order of the construction
+    of ``H`` determines the order with which the parameters need to be passed to
+    :class:`~.ParametrizedHamiltonian` and :func:`~.evolve`. By making the drive frequency
+    trainable parameters by providing a constant callable above instead of the fixed values,
+    we can differentiate with respect to them.
 
+    >>> Omega0, Omega1, Omega2 = [0.5, 0.3, 0.6]
+    >>> fr0, fr1, fr2 = omega
+    >>> params = [Omega0, fr0, Omega1, fr1, Omega2, fr2]
     >>> qnode(params)
-    Array(2.80723239, dtype=float64)
+    Array(2.25098131, dtype=float64)
     >>> jax.grad(qnode)(params)
-    [Array(-0.25930683, dtype=float64),
-     Array(0.0285115, dtype=float64),
-     Array(-0.16081173, dtype=float64),
-     Array(0.12002264, dtype=float64),
-     Array(-0.33964591, dtype=float64),
-     Array(0.06057963, dtype=float64)]
+    [Array(-0.96356123, dtype=float64),
+     Array(-0.0189564, dtype=float64),
+     Array(-0.58581467, dtype=float64),
+     Array(0.24023855, dtype=float64),
+     Array(-1.30009675, dtype=float64),
+     Array(-0.10709503, dtype=float64)]
 
     """
     if d != 2:
@@ -337,7 +349,7 @@ def transmon_drive(amplitude, phase, freq, wires, d=2):
     ]
 
     drive_x_term = sum(qml.PauliX(wire) for wire in wires)
-    drive_y_term = -sum(qml.PauliY(wire) for wire in wires)
+    drive_y_term = sum(-qml.PauliY(wire) for wire in wires)
 
     observables = [drive_x_term, drive_y_term]
 
