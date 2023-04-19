@@ -256,11 +256,11 @@ def transmon_drive(amplitude, phase, freq, wires, d=2):
         :func:`~.drive`, :func:`~.rydberg_drive`, :func:`~.transmon_interaction`
 
     Args:
-        amplitude (Union[float, callable]): The amplitude :math:`\Omega(t)`.
+        amplitude (Union[float, callable]): The amplitude :math:`\Omega(t)` (in GHz).
             Can be a fixed number (``float``) or depend on time (``callable``)
-        phase (Union[float, callable]): The phase :math:`\phi(t)`.
+        phase (Union[float, callable]): The phase :math:`\phi(t)` (in radians).
             Can be a fixed number (``float``) or depend on time (``callable``)
-        freq (Union[float, callable]): The drive frequency :math:`\nu`.
+        freq (Union[float, callable]): The drive frequency :math:`\nu` (in GHz).
             Can be a fixed number (``float``) or depend on time (``callable``)
         wires (Union[int, list[int]]): Label of the qubit that the drive acts upon. Can be a list of multiple wires.
         d (int): Local Hilbert space dimension. Defaults to ``d=2`` and is currently the only supported value.
