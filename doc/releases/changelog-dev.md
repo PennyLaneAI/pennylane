@@ -4,6 +4,16 @@
 
 <h3>New features since last release</h3>
 
+* `ParametrizedEvolution` takes two new Boolean keyword arguments: `return_intermediate` and
+  `complementary`. They allow computing intermediate time evolution matrices.
+  [(#3900)](https://github.com/PennyLaneAI/pennylane/pull/3900)
+  
+  Activating `return_intermediate` will result in `evol_op.matrix()` returning intermediate solutions
+  to the Schrodinger equation. Activating `complementary` will make these intermediate solutions
+  be the _remaining_ time evolution complementary to the output for `complementary=False`.
+  See the [docstring](https://docs.pennylane.ai/en/stable/code/api/pennylane.pulse.ParametrizedEvolution.html)
+  for details.
+ 
 <h4>Pulse programming</h4>
 
 * Added the needed functions and classes to simulate an ensemble of Rydberg atoms:
@@ -62,6 +72,11 @@
   [(#3862)](https://github.com/PennyLaneAI/pennylane/pull/3862/)
 
 <h4>Performance improvements</h4>
+
+* Executing a `ParametrizedEvolution` with `return_intermediate=True` and `complementary=False`
+  on the JAX default qubit device now uses the state vector ODE solver instead of the
+  matrix ODE solver, increasing its performance.
+  [(#4000)](https://github.com/PennyLaneAI/pennylane/pull/4000)
 
 * Added a new decomposition to `qml.SingleExcitation` that halves the number of
   CNOTs required.
@@ -186,6 +201,17 @@
   ambiguity between `op.num_wires = 0` and `op.num_wires = AllWires`.
   [(#3978)](https://github.com/PennyLaneAI/pennylane/pull/3978)
 
+* Execution code has been updated to use the new `qml.transforms.convert_to_numpy_parameters` instead of `qml.tape.Unwrap`.
+  [(#3989)](https://github.com/PennyLaneAI/pennylane/pull/3989)
+
+* Converted a sub-routine of `expand_tape` into `qml.tape.tape.rotations_and_diagonal_measurements`,
+  a helper function that computes rotations and diagonal measurements for a tape with measurements
+  with overlapping wires.
+  [(#3912)](https://github.com/PennyLaneAI/pennylane/pull/3912)
+
+* Update various Operators and templates to ensure their decompositions only return lists of Operators.
+  [(#3243)](https://github.com/PennyLaneAI/pennylane/pull/3243)
+
 <h3>Breaking changes 💔</h3>
 
 * Both JIT interfaces are not compatible with JAX `>0.4.3`, we raise an error for those versions.
@@ -215,6 +241,11 @@
 * `Exp`, `Sum`, `Prod`, and `SProd` operator data is now a flat list, instead of nested.
   [(#3958)](https://github.com/PennyLaneAI/pennylane/pull/3958)
   [(#3983)](https://github.com/PennyLaneAI/pennylane/pull/3983)
+
+* `qml.tape.tape.expand_tape` (and consequentially `QuantumScript.expand`) no longer updates the inputted tape
+  with rotations and diagonal measurements. Note that the newly expanded tape that is returned will still have
+  the rotations and diagonal measurements.
+  [(#3912)](https://github.com/PennyLaneAI/pennylane/pull/3912)
 
 <h3>Deprecations 👋</h3>
 
