@@ -267,7 +267,7 @@ def transmon_drive(amplitude, phase, freq, wires, d=2):
     We can construct a drive term acting on qubit ``0`` in the following way. We parametrize the amplitude and phase
     via :math:`\Omega(t) = \Omega \sin(\pi t)` and :math:`\phi(t) = \phi (t - \frac{1}{2})`.
 
-    .. code-block::python3
+    .. code-block:: python3
 
         def amp(Omega, t): return Omega * jnp.sin(jnp.pi*t)
         def phase(phi, t): return phi * (t - 0.5)
@@ -290,7 +290,7 @@ def transmon_drive(amplitude, phase, freq, wires, d=2):
     :math:`2\pi\text{GHz}`. We parametrize the amplitude as a sinusodial and make the maximum amplitude
     as well as the drive frequency trainable parameters. We simulate the evolution for a time window of :math:`[0, 5]\text{ns}`.
 
-    .. code-block::python3
+    .. code-block:: python3
 
         omega = [5.1, 5., 5.3]
         connections = [[0, 1], [1, 2]]
