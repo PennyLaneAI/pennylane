@@ -91,7 +91,7 @@
   in a backpropagation-compatible way.
   [(#3862)](https://github.com/PennyLaneAI/pennylane/pull/3862/)
 
-* `MeasurementProcess.shape` now accepts a `Shots` object as one of its arguments to improve exposure to unnecessary
+* `MeasurementProcess.shape` now accepts a `Shots` object as one of its arguments to reduce exposure to unnecessary
   execution details.
   [(#4012)](https://github.com/PennyLaneAI/pennylane/pull/4012)
 
