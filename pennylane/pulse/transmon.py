@@ -409,7 +409,7 @@ class AmplitudeAndPhaseAndFreq:
         if self.amp_is_callable:
 
             def callable_amp(params, t):
-                return amp(params, t) * trig_fn(phase + freq * t)
+                return amp(params[0], t) * trig_fn(phase + freq * t)
 
             self.func = callable_amp
             return
@@ -417,7 +417,7 @@ class AmplitudeAndPhaseAndFreq:
         if self.phase_is_callable:
 
             def callable_phase(params, t):
-                return amp * trig_fn(phase(params, t) + freq * t)
+                return amp * trig_fn(phase(params[0], t) + freq * t)
 
             self.func = callable_phase
             return
@@ -425,7 +425,7 @@ class AmplitudeAndPhaseAndFreq:
         if self.freq_is_callable:
 
             def callable_freq(params, t):
-                return amp * trig_fn(phase + freq(params, t) * t)
+                return amp * trig_fn(phase + freq(params[0], t) * t)
 
             self.func = callable_freq
             return
@@ -463,9 +463,11 @@ def _reorder_AmpPhaseFreq(params, coeffs_parametrized):
                     coeff.freq_is_callable,
                 ]
 
-                # all 3 parameters are callable
                 num_callables = sum(is_callables)
-                reordered_params.extend([params[params_idx : params_idx + num_callables]]*2)
+
+                # duplicate and package parameters according to how many coeffs are callable
+                reordered_params.extend([params[params_idx : params_idx + num_callables]] * 2)
+
                 coeff_idx += 2
                 params_idx += num_callables
 
