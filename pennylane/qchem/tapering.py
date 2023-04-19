@@ -259,7 +259,7 @@ def clifford(generators, paulixops):
     return u.hamiltonian()
 
 
-def _split_pauli_sentence(pl_sentence, max_size=20000):
+def _split_pauli_sentence(pl_sentence, max_size=15000):
     r"""Splits PauliSentences into smaller chunks of the size determined by the `max_size`.
 
     Args:
