@@ -277,7 +277,7 @@ def transmon_drive(amplitude, phase, freq, wires, d=2):
         Omega = 0.1
         phi = 0.001
         params = [Omega, phi]
-    
+
     Evaluated at :math:`t = \frac{1}{2}` with the parameters :math:`\Omega = 0.1` and :math:`\phi = 10^{-3}` we obtain
     :math:`\Omega \left(\frac{1}{2}(\sigma^x + i \sigma^y) + \frac{1}{2}(\sigma^x + i \sigma^y)\right) = \Omega \sigma^x`.
 
@@ -286,7 +286,7 @@ def transmon_drive(amplitude, phase, freq, wires, d=2):
 
     We can combine ``transmon_drive`` with :func:`~.transmon_interaction` to create a full driven transmon Hamiltonian.
     Let us look at a chain of three transmon qubits that are coupled with their direct neighbors. We provide all numbers in
-    :math:`2\pi\text{GHz}`. We parametrize the amplitude as a sinusodial and make the maximum amplitude 
+    :math:`2\pi\text{GHz}`. We parametrize the amplitude as a sinusodial and make the maximum amplitude
     as well as the drive frequency trainable parameters. We simulate the evolution for a time window of :math:`[0, 5]\text{ns}`.
 
     .. code-block::python3
@@ -312,7 +312,7 @@ def transmon_drive(amplitude, phase, freq, wires, d=2):
         def qnode(params):
             qml.evolve(H)(params, t=5.)
             return qml.expval(qml.PauliZ(0) + qml.PauliZ(1) + qml.PauliZ(2))
-    
+
     We evaluate the Hamiltonian with some arbitrarily chosen maximum amplitudes and set
     the drive frequency equal to the qubit frequencies. Note how the order of the construction
     of ``H`` determines the order with which the parameters need to be passed to
