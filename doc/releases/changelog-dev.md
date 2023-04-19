@@ -256,6 +256,9 @@
 
 <h3>Bug fixes 🐛</h3>
 
+* Fixes a bug where `qml.ctrl` for parametric gates were incompatible with PyTorch tensors on the GPU.
+  [(#4002)](https://github.com/PennyLaneAI/pennylane/pull/4002)
+
 * Fixes a bug where the broadcast expand results where stacked along the wrong axis for the new return system.
   [(#3984)](https://github.com/PennyLaneAI/pennylane/pull/3984)
 
@@ -340,6 +343,7 @@ Christina Lee,
 Vincent Michaud-Rioux,
 Albert Mitjans,
 Romain Moyard,
+Lee J. O'Riordan,
 Mudit Pandey,
 Matthew Silverman,
 Jay Soni,
