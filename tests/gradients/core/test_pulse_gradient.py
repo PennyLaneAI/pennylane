@@ -237,16 +237,6 @@ class TestStochPulseGradErrors:
         with pytest.raises(ValueError, match="Broadcasting is not supported for tapes that"):
             stoch_pulse_grad(tape, use_broadcasting=True)
 
-    def test_raises_pulse_with_multiple_time_steps(self):
-        """Test that an error is raised if a differentiated pulse already has multiple
-        time steps given."""
-        ham = qml.dot([qml.pulse.constant], [qml.PauliX(0)])
-        ops = [qml.evolve(ham, return_intermediate=True)([0.152], 0.3)]
-        tape = qml.tape.QuantumScript(ops, measurements=[qml.expval(qml.PauliZ(0))])
-        tape.trainable_params = [0]
-        with pytest.raises(ValueError, match="Broadcasting is not supported for tapes that"):
-            stoch_pulse_grad(tape, use_broadcasting=True)
-
 
 @pytest.mark.jax
 class TestStochPulseGrad:

@@ -133,6 +133,8 @@ def _parshift_and_integrate(
             of the time range divided by the number of splitting time samples
         single_measure (bool): Whether the results contain a single measurement per shot setting
         shot_vector (bool): Whether the results have a shot vector axis
+        use_broadcasting (bool): Whether broadcasting was used in the tapes that returned the
+            ``results``.
     Returns:
         tensor_like or tuple[tensor_like] or tuple[tuple[tensor_like]]: Gradient entry
     """
@@ -342,7 +344,7 @@ def _stoch_pulse_grad(
             dev,
             interface="jax",
             diff_method=qml.gradients.stoch_pulse_grad,
-            num_split_times=5, # Use 20 samples for the approximation
+            num_split_times=5, # Use 5 samples for the approximation
             sampler_seed=18, # Fix randomness seed
             use_broadcasting=True, # Activate broadcasting
         )
