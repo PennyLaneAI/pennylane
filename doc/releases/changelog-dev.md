@@ -40,6 +40,17 @@
     from atoms beyond `max_distance` from each other.
     [(#3889)](https://github.com/PennyLaneAI/pennylane/pull/3889)
 
+* `ParametrizedEvolution` takes two new Boolean keyword arguments: `return_intermediate` and
+  `complementary`. They allow computing intermediate time evolution matrices.
+  [(#3900)](https://github.com/PennyLaneAI/pennylane/pull/3900)
+  
+  Activating `return_intermediate` will return intermediate time evolution steps, for example
+  for the matrix of the Operation, or of a quantum circuit when used in a QNode.
+  Activating `complementary` will make these intermediate steps be the _remaining_
+  time evolution complementary to the output for `complementary=False`.
+  See the [docstring](https://docs.pennylane.ai/en/stable/code/api/pennylane.pulse.ParametrizedEvolution.html)
+  for details.
+
 <h4>Quantum singular value transform</h4>
 
 <h4>Intuitive QNode returns</h4>
@@ -77,10 +88,11 @@
 
 <h4>Performance improvements</h4>
 
-* Executing a `ParametrizedEvolution` with `return_intermediate=True` and `complementary=False`
-  on the JAX default qubit device now uses the state vector ODE solver instead of the
-  matrix ODE solver, increasing its performance.
+* Hardware-compatible pulse sequence gradients with `stoch_pulse_grad` can be calculated faster now, using
+  the new keyword argument `use_broadcasting`. Executing a `ParametrizedEvolution` that returns
+  intermediate evolutions has increased performance as well, using the state vector ODE solver.
   [(#4000)](https://github.com/PennyLaneAI/pennylane/pull/4000)
+  [(#4004)](https://github.com/PennyLaneAI/pennylane/pull/4004)
 
 * Added a new decomposition to `qml.SingleExcitation` that halves the number of
   CNOTs required.
