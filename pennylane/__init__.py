@@ -49,11 +49,6 @@ from pennylane.configuration import Configuration
 from pennylane.drawer import draw, draw_mpl
 from pennylane.tracker import Tracker
 from pennylane.io import *
-from pennylane.op_arithmetic import (
-    enable_op_arithmetic,
-    disable_op_arithmetic,
-    active_op_arithmetic,
-)
 from pennylane.measurements import (
     counts,
     density_matrix,

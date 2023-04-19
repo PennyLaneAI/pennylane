@@ -211,7 +211,7 @@ these objects are located in ``pennylane.ops.qubit.attributes``, not ``pennylane
     ~ops.qubit.attributes.symmetric_over_control_wires
 
 """
-# pylint:disable=access-member-before-definition
+# pylint:disable=access-member-before-definition,global-statement
 import abc
 import copy
 import functools
@@ -237,6 +237,7 @@ from .utils import pauli_eigs
 # =============================================================================
 
 SUPPORTED_INTERFACES = {"numpy", "scipy", "autograd", "torch", "tensorflow", "jax"}
+__use_new_opmath = False
 
 
 class OperatorPropertyUndefined(Exception):
@@ -1763,7 +1764,7 @@ class Observable(Operator):
         )
 
     def __matmul__(self, other):
-        if qml.active_op_arithmetic():
+        if active_new_opmath():
             return super().__matmul__(other=other)
 
         if isinstance(other, (Tensor, qml.Hamiltonian)):
@@ -1836,7 +1837,7 @@ class Observable(Operator):
 
     def __add__(self, other):
         r"""The addition operation between Observables/Tensors/qml.Hamiltonian objects."""
-        if qml.active_op_arithmetic():
+        if active_new_opmath():
             return super().__add__(other=other)
 
         if isinstance(other, qml.Hamiltonian):
@@ -1850,7 +1851,7 @@ class Observable(Operator):
 
     def __mul__(self, a):
         r"""The scalar multiplication operation between a scalar and an Observable/Tensor."""
-        if qml.active_op_arithmetic():
+        if active_new_opmath():
             return super().__mul__(other=a)
 
         if isinstance(a, (int, float)):
@@ -1862,7 +1863,7 @@ class Observable(Operator):
 
     def __sub__(self, other):
         r"""The subtraction operation between Observables/Tensors/qml.Hamiltonian objects."""
-        if qml.active_op_arithmetic():
+        if active_new_opmath():
             return super().__sub__(other=other)
 
         if isinstance(other, (Observable, Tensor, qml.Hamiltonian)):
@@ -2798,3 +2799,57 @@ def gen_is_multi_term_hamiltonian(obj):
         return False
 
     return isinstance(o, qml.Hamiltonian) and len(o.coeffs) > 1
+
+
+def enable_new_opmath():
+    """
+    Change dunder methods to return arithmetic operators instead of Hamiltonians and Tensors
+
+    **Example**
+
+    >>> qml.operation.active_new_opmath()
+    False
+    >>> type(qml.PauliX(0) @ qml.PauliZ(1))
+    <class 'pennylane.operation.Tensor'>
+    >>> qml.operation.enable_new_opmath()
+    >>> type(qml.PauliX(0) @ qml.PauliZ(1))
+    <class 'pennylane.ops.op_math.prod.Prod'>
+    """
+    global __use_new_opmath
+    __use_new_opmath = True
+
+
+def disable_new_opmath():
+    """
+    Change dunder methods to return Hamiltonians and Tensors instead of arithmetic operators
+
+    **Example**
+
+    >>> qml.operation.active_new_opmath()
+    True
+    >>> type(qml.PauliX(0) @ qml.PauliZ(1))
+    <class 'pennylane.ops.op_math.prod.Prod'>
+    >>> qml.disable_new_opmath()
+    >>> type(qml.PauliX(0) @ qml.PauliZ(1))
+    <class 'pennylane.operation.Tensor'>
+    """
+    global __use_new_opmath
+    __use_new_opmath = False
+
+
+def active_new_opmath():
+    """
+    Function that checks if the new arithmetic operator dunders are active
+
+    Returns:
+        bool: Returns ``True`` if the new arithmetic operator dunders are active
+
+    **Example**
+
+    >>> qml.operation.active_new_opmath()
+    False
+    >>> qml.operation.enable_new_opmath()
+    >>> qml.operation.active_new_opmath()
+    True
+    """
+    return __use_new_opmath
