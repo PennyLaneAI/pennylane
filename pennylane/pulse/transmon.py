@@ -256,8 +256,7 @@ def transmon_drive(amplitude, phase, freq, wires, d=2):
         phase (Union[float, callable]): The phase :math:`\phi(t)`.
             Can be a fixed number (``float``) or depend on time (``callable``)
         freq (Union[float, callable]): The drive frequency :math:`\nu`.
-            Can be a fixed number (``float``) or ``callable``. Physically it does not make sense for the drive frequency
-            to depend on time. The option for it to be ``callable`` is to allow the it to be a trainable parameter.
+            Can be a fixed number (``float``) or depend on time (``callable``)
         wires (Union[int, list[int]]): Label of the qubit that the drive acts upon. Can be a list of multiple wires.
         d (int): Local Hilbert space dimension. Defaults to ``d=2`` and is currently the only supported value.
 
