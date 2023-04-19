@@ -15,10 +15,10 @@
 This file contains the implementation of the Sum class which contains logic for
 computing the sum of operations.
 """
-import itertools
 import warnings
 from copy import copy
 from functools import reduce
+from itertools import chain
 from typing import List
 
 import numpy as np
@@ -32,24 +32,22 @@ from pennylane.queuing import QueuingManager
 from .composite import CompositeOp
 
 
-def op_sum(*summands, do_queue=True, id=None, lazy=True):
+def op_sum(*summands, id=None, lazy=True):
     """This function is deprecated and will be removed soon. Please use :func:`sum` instead."""
     warnings.warn(
         "The `op_sum` function is deprecated and will be removed soon. Please use `sum` instead.",
         UserWarning,
     )
-    return sum(*summands, do_queue=do_queue, id=id, lazy=lazy)
+    return sum(*summands, id=id, lazy=lazy)
 
 
-def sum(*summands, do_queue=True, id=None, lazy=True):
+def sum(*summands, id=None, lazy=True):
     r"""Construct an operator which is the sum of the given operators.
 
     Args:
         summands (tuple[~.operation.Operator]): the operators we want to sum together.
 
     Keyword Args:
-        do_queue (bool): determines if the sum operator will be queued (currently not supported).
-            Default is True.
         id (str or None): id for the Sum operator. Default is None.
         lazy=True (bool): If ``lazy=False``, a simplification will be performed such that when any
             of the operators is already a sum operator, its operands (summands) will be used instead.
@@ -83,20 +81,13 @@ def sum(*summands, do_queue=True, id=None, lazy=True):
     """
     if len(summands) == 1 and isinstance(summands[0], qml.QNodeCollection):
         return qml.collections.sum(summands[0])
-    if lazy:
-        return Sum(*summands, do_queue=do_queue, id=id)
 
-    summands_simp = Sum(
-        *itertools.chain.from_iterable([op if isinstance(op, Sum) else [op] for op in summands]),
-        do_queue=do_queue,
-        id=id,
-    )
-
-    if do_queue:
+    if not lazy:
         for op in summands:
             QueuingManager.remove(op)
+        summands = chain.from_iterable([op if isinstance(op, Sum) else [op] for op in summands])
 
-    return summands_simp
+    return Sum(*summands, id=id)
 
 
 class Sum(CompositeOp):
@@ -106,7 +97,6 @@ class Sum(CompositeOp):
         summands (tuple[~.operation.Operator]): a tuple of operators which will be summed together.
 
     Keyword Args:
-        do_queue (bool): determines if the sum operator will be queued. Default is True.
         id (str or None): id for the sum operator. Default is None.
 
     .. note::

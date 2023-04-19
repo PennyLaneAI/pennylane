@@ -15,10 +15,9 @@
 This file contains the implementation of the Prod class which contains logic for
 computing the product between operations.
 """
-import itertools
 from copy import copy
 from functools import reduce
-from itertools import combinations
+from itertools import chain, combinations, product
 from typing import List, Tuple, Union
 
 import numpy as np
@@ -42,7 +41,7 @@ MAX_NUM_WIRES_KRON_PRODUCT = 9
 computing the sparse matrix representation."""
 
 
-def prod(*ops, do_queue=True, id=None, lazy=True):
+def prod(*ops, id=None, lazy=True):
     """Construct an operator which represents the generalized product of the
     operators provided.
 
@@ -54,7 +53,6 @@ def prod(*ops, do_queue=True, id=None, lazy=True):
         ops (tuple[~.operation.Operator]): The operators we would like to multiply
 
     Keyword Args:
-        do_queue (bool): determines if the product operator will be queued. Default is True.
         id (str or None): id for the product operator. Default is None.
         lazy=True (bool): If ``lazy=False``, a simplification will be performed such that when any of the operators is already a product operator, its operands will be used instead.
 
@@ -85,20 +83,12 @@ def prod(*ops, do_queue=True, id=None, lazy=True):
     array([[ 0, -1],
            [ 1,  0]])
     """
-    if lazy:
-        return Prod(*ops, do_queue=do_queue, id=id)
-
-    ops_simp = Prod(
-        *itertools.chain.from_iterable([op if isinstance(op, Prod) else [op] for op in ops]),
-        do_queue=do_queue,
-        id=id,
-    )
-
-    if do_queue:
+    if not lazy:
         for op in ops:
             QueuingManager.remove(op)
+        ops = chain.from_iterable([op if isinstance(op, Prod) else [op] for op in ops])
 
-    return ops_simp
+    return Prod(*ops, id=id)
 
 
 class Prod(CompositeOp):
@@ -109,7 +99,6 @@ class Prod(CompositeOp):
         together.
 
     Keyword Args:
-        do_queue (bool): determines if the product operator will be queued. Default is True.
         id (str or None): id for the product operator. Default is None.
 
     .. seealso:: :func:`~.ops.op_math.prod`
@@ -360,7 +349,7 @@ class Prod(CompositeOp):
 
         global_phase, factors = self._simplify_factors(factors=self.operands)
 
-        factors = list(itertools.product(*factors))
+        factors = list(product(*factors))
         if len(factors) == 1:
             factor = factors[0]
             if len(factor) == 0:
