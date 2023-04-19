@@ -342,7 +342,7 @@ def transmon_drive(amplitude, phase, freq, wires, d=2):
 
     wires = Wires(wires)
 
-    # TODO: use sigma+ and sigma- (not necessary as terms are the same, but for consistency)
+    # TODO: use creation and annihilation operators when introducing qutrits
     # We compute the `coeffs` and `observables` of the EM field
     coeffs = [
         AmplitudeAndPhaseAndFreq(qml.math.cos, amplitude, phase, freq),
@@ -367,6 +367,7 @@ class AmplitudeAndPhaseAndFreq:
         self.freq_is_callable = callable(freq)
 
         # all 3 callable
+
         if self.amp_is_callable and self.phase_is_callable and self.freq_is_callable:
 
             def callable_amp_and_phase_and_freq(params, t):
@@ -427,7 +428,9 @@ class AmplitudeAndPhaseAndFreq:
             self.func = callable_freq
             return
 
-        # 0 out of 3 callable (the remaining coeff is still callable due to explicit time dependence)
+        # 0 out of 3 callable 
+        # (the remaining coeff is still callable due to explicit time dependence)
+
         def no_callable(_, t):
             return amp * trig_fn(phase + freq * t)
 
