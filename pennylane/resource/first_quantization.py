@@ -536,13 +536,7 @@ class FirstQuantization(Operation):
         eta,
         omega,
         error,
-        br=8,
-        charge=0,
         cubic=True,
-        exact=False,
-        p_th=0.95,
-        bmin=None,
-        recip_bv=None,
         lambda_total=None,
     ):
         r"""Return the number of calls to the unitary needed to achieve the desired error in quantum
@@ -568,7 +562,7 @@ class FirstQuantization(Operation):
         >>> eta = 156
         >>> omega = 1145.166
         >>> error = 0.01
-        >>> estimation_cost(n, eta, omega, error)
+        >>> estimation_cost(n, eta, omega, error, cubic, lambda_total)
         102133985
         """
         if error <= 0.0:
@@ -642,9 +636,7 @@ class FirstQuantization(Operation):
         if br <= 0 or not isinstance(br, int):
             raise ValueError("br must be a positive integer.")
 
-        e_cost = FirstQuantization.estimation_cost(
-            n, eta, omega, error, br, charge, cubic, exact, p_th, bmin, recip_bv, lambda_total
-        )
+        e_cost = FirstQuantization.estimation_cost(n, eta, omega, error, cubic, lambda_total)
 
         u_cost = FirstQuantization.unitary_cost(
             n,
@@ -654,8 +646,6 @@ class FirstQuantization(Operation):
             br,
             charge,
             cubic,
-            exact,
-            p_th,
             bmin,
             recip_bv,
             lambda_total,
@@ -818,6 +808,26 @@ class FirstQuantization(Operation):
         if not isinstance(charge, int):
             raise ValueError("system charge must be an integer.")
 
+        l_z = eta + charge
+
+        # n_p is taken from Eq. (22) of PRX Quantum 2, 040332 (2021)
+        n_p = np.ceil(np.log2(n ** (1 / 3) + 1))
+
+        # errors in Eqs. (132-134) of PRX Quantum 2, 040332 (2021)
+        alpha = 0.0248759298  # optimal value for lower resource estimates
+        error_m = alpha * error
+
+        n_m = int(  # Eq. (132)
+            np.ceil(
+                np.log2(
+                    (8 * np.pi * eta)
+                    / (error_m * omega * bmin**2)
+                    * (eta - 1 + 2 * l_z)
+                    * (7 * 2 ** (n_p + 1) - 9 * n_p - 11 - 3 * 2 ** (-1 * n_p))
+                )
+            )
+        )
+
         logical_clean_qubits = FirstQuantization._clean_cost(
             n,
             eta,
@@ -852,8 +862,6 @@ class FirstQuantization(Operation):
         br=8,
         charge=0,
         cubic=True,
-        exact=False,
-        p_th=0.95,
         bmin=None,
         recip_bv=None,
         lambda_total=None,
@@ -950,7 +958,7 @@ class FirstQuantization(Operation):
             n_b = FirstQuantization._compute_n_b(error_b, eta, n_p, recip_bv)
             # this and the next corrects the cost of PREP and PREP^dagger for T
             cost -= 2 * (3 * 2 + 2 * br - 9)
-            cost += 2 * (2 * (2 * (2 ** (4 + 1) - 1) + (n_B - 3) * 4 + 2**4 + (n_p - 2)))
+            cost += 2 * (2 * (2 * (2 ** (4 + 1) - 1) + (n_b - 3) * 4 + 2**4 + (n_p - 2)))
             cost += 8  # 5 to compute the flag qubit for T being prepared, uncomputation without Toffolis, and 3 for the ROT cost
 
             ms_cost = FirstQuantization._momentum_state_QROM(n_p, n_m, n_dirty, n_tof, kappa=1)[0]
