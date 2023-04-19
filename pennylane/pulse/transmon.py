@@ -20,6 +20,7 @@ from typing import Callable, List, Union
 import pennylane as qml
 import pennylane.numpy as np
 from pennylane.pulse import HardwareHamiltonian
+from pennylane.pulse.hardware_hamiltonian import HardwarePulse
 from pennylane.typing import TensorLike
 from pennylane.wires import Wires
 
@@ -72,7 +73,7 @@ def transmon_interaction(
 
     .. seealso::
 
-        :func:`~.drive`
+        :func:`~.transmon_drive`
 
     Args:
         omega (Union[float, list[float]]): List of dressed qubit frequencies in GHz. Needs to match the length of ``wires``.
@@ -355,7 +356,9 @@ def transmon_drive(amplitude, phase, freq, wires, d=2):
 
     observables = [drive_x_term, drive_y_term]
 
-    return HardwareHamiltonian(coeffs, observables, reorder_fn=_reorder_AmpPhaseFreq)
+    pulses = [HardwarePulse(amplitude, phase, freq, wires)]
+
+    return HardwareHamiltonian(coeffs, observables, pulses=pulses, reorder_fn=_reorder_AmpPhaseFreq)
 
 
 # pylint:disable = too-few-public-methods,too-many-return-statements

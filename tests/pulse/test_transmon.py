@@ -27,7 +27,7 @@ from pennylane.pulse.transmon import (
     AmplitudeAndPhaseAndFreq,
     _reorder_AmpPhaseFreq,
 )
-
+from pennylane.pulse.hardware_hamiltonian import HardwarePulse
 from pennylane.wires import Wires
 
 
@@ -54,6 +54,7 @@ class TestTransmonDrive:
         assert isinstance(Hd, HardwareHamiltonian)
         assert Hd.wires == Wires([1, 2])
         assert len(Hd.ops) == 2
+        assert Hd.pulses == [HardwarePulse(1, 2, 3, wires=[1, 2])]
 
     @pytest.mark.parametrize("amp", 0.5 * np.arange(2, dtype=float))
     @pytest.mark.parametrize("phase", 0.5 * np.arange(2, dtype=float))
@@ -267,7 +268,10 @@ class TestTransmonDrive:
         assert Hd.coeffs[2].func.__name__ == "no_callable"
 
         # pulses were added correctly
-        assert Hd.pulses == []
+        assert Hd.pulses == [
+            HardwarePulse(amp, phase0, freq0, wires=[0, 3]),
+            HardwarePulse(1, phase1, freq1, wires=[1, 2]),
+        ]
         # Hamiltonian is as expected
         assert qml.math.allclose(qml.matrix(Hd([0.5], t=6)), qml.matrix(H_expected([0.5], t=6)))
 
