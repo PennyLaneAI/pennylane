@@ -28,6 +28,10 @@
   <class 'pennylane.ops.op_math.prod.Prod'>
   ```
 
+* New `Resources` data class to store resources like number of gates and circuit depth throughout a 
+  quantum circuit.
+  [(3981)](https://github.com/PennyLaneAI/pennylane/pull/3981/)
+ 
 <h4>Pulse programming</h4>
 
 * Added the needed functions and classes to simulate an ensemble of Rydberg atoms:
@@ -49,6 +53,17 @@
   * A new keyword argument called `max_distance` has been added to `qml.pulse.rydberg_interaction` to allow for the removal of negligible contributions
     from atoms beyond `max_distance` from each other.
     [(#3889)](https://github.com/PennyLaneAI/pennylane/pull/3889)
+
+* `ParametrizedEvolution` takes two new Boolean keyword arguments: `return_intermediate` and
+  `complementary`. They allow computing intermediate time evolution matrices.
+  [(#3900)](https://github.com/PennyLaneAI/pennylane/pull/3900)
+  
+  Activating `return_intermediate` will return intermediate time evolution steps, for example
+  for the matrix of the Operation, or of a quantum circuit when used in a QNode.
+  Activating `complementary` will make these intermediate steps be the _remaining_
+  time evolution complementary to the output for `complementary=False`.
+  See the [docstring](https://docs.pennylane.ai/en/stable/code/api/pennylane.pulse.ParametrizedEvolution.html)
+  for details.
 
 <h4>Quantum singular value transform</h4>
 
@@ -87,10 +102,11 @@
 
 <h4>Performance improvements</h4>
 
-* Executing a `ParametrizedEvolution` with `return_intermediate=True` and `complementary=False`
-  on the JAX default qubit device now uses the state vector ODE solver instead of the
-  matrix ODE solver, increasing its performance.
+* Hardware-compatible pulse sequence gradients with `stoch_pulse_grad` can be calculated faster now, using
+  the new keyword argument `use_broadcasting`. Executing a `ParametrizedEvolution` that returns
+  intermediate evolutions has increased performance as well, using the state vector ODE solver.
   [(#4000)](https://github.com/PennyLaneAI/pennylane/pull/4000)
+  [(#4004)](https://github.com/PennyLaneAI/pennylane/pull/4004)
 
 * Added a new decomposition to `qml.SingleExcitation` that halves the number of
   CNOTs required.
@@ -223,6 +239,9 @@
   with overlapping wires.
   [(#3912)](https://github.com/PennyLaneAI/pennylane/pull/3912)
 
+* Update various Operators and templates to ensure their decompositions only return lists of Operators.
+  [(#3243)](https://github.com/PennyLaneAI/pennylane/pull/3243)
+
 <h3>Breaking changes 💔</h3>
 
 * Both JIT interfaces are not compatible with JAX `>0.4.3`, we raise an error for those versions.
@@ -266,6 +285,9 @@
   [(#3844)](https://github.com/PennyLaneAI/pennylane/pull/3844)
 
 <h3>Bug fixes 🐛</h3>
+
+* Fixes a bug where `qml.ctrl` for parametric gates were incompatible with PyTorch tensors on the GPU.
+  [(#4002)](https://github.com/PennyLaneAI/pennylane/pull/4002)
 
 * Fixes a bug where the broadcast expand results where stacked along the wrong axis for the new return system.
   [(#3984)](https://github.com/PennyLaneAI/pennylane/pull/3984)
@@ -351,6 +373,7 @@ Christina Lee,
 Vincent Michaud-Rioux,
 Albert Mitjans,
 Romain Moyard,
+Lee J. O'Riordan,
 Mudit Pandey,
 Matthew Silverman,
 Jay Soni,
