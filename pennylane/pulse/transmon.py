@@ -232,29 +232,30 @@ def transmon_drive(amplitude, phase, freq, wires, d=2):
     and :math:`q` is the qubit label (``wires``).
     The arguments ``amplitude``, ``phase`` and ``freq`` correspond to :math:`\Omega`, :math:`\phi`
     and :math:`\nu`, respectively, and can all be either fixed numbers (``float``) or depend on time
-    (``callable``).
+    (``callable``). In the case they are time-dependent, they need to abide by the restrictions imposed
+    in :class:`ParametrizedHamiltonian` and have a signature of two parameters, ``(params, t)``.
 
-    For more realistic simulations, one may restrict the amplitude to at most
-    :math:`\Omega_{\text{max}} = 20 \text{MHz}` and the carrier frequency to deviate at most
+    For realistic simulations, one may restrict the amplitude, phase and drive frequency parameters.
+    For example, the authors in `2008.04302 <https://arxiv.org/abs/2008.04302>`_ impose the restrictions of
+    a maximum amplitude :math:`\Omega_{\text{max}} = 20 \text{MHz}` and the carrier frequency to deviate at most
     :math:`\nu - \omega = \pm 1 \text{GHz}` from the qubit frequency :math:`\omega`
-    (see :func:`~.transmon_interaction` and `arXiv:2203.06818 <https://arxiv.org/abs/2203.06818>`_).
+    (see :func:`~.transmon_interaction`).
     The phase :math:`\phi(t)` is typically a slowly changing function of time compared to :math:`\Omega(t)`.
 
-    .. note:: Currently only supports ``d=2`` with qudit support planned in the future. In that case, :math:`a:=\frac{1}{2}(\sigma^x + i \sigma^y)`.
+    .. note:: Currently only supports ``d=2`` with qudit support planned in the future. For ``d=2`` we have :math:`a:=\frac{1}{2}(\sigma^x + i \sigma^y)`.
 
     .. seealso::
 
         :func:`~.drive`, :func:`~.rydberg_drive`, :func:`~.transmon_interaction`
 
     Args:
-        omega (Union[float, list[float]]): List of dressed qubit frequencies in GHz. Needs to match the length of ``wires``.
-            When passing a single float all qubits are assumed to have that same frequency.
-        connections (list[tuple(int)]): List of connections ``(i, j)`` between qubits i and j.
-            When the wires in ``connections`` are not contained in ``wires``, a warning is raised.
-        g (Union[float, list[float]]): List of coupling strengths in GHz. Needs to match the length of ``connections``.
-            When passing a single float need explicit ``wires``.
-        anharmonicity (Union[float, list[float]]): List of anharmonicities in GHz. Ignored when ``d=2``.
-            When passing a single float all qubits are assumed to have that same anharmonicity.
+        amplitude (Union[float, callable]): The amplitude :math:`\Omega(t)`.
+            Can be a fixed number (``float``) or depend on time (``callable``)
+        phase (Union[float, callable]): The phase :math:`\phi(t)`.
+            Can be a fixed number (``float``) or depend on time (``callable``)
+        freq (Union[float, callable]): The drive frequency :math:`\nu`.
+            Can be a fixed number (``float``) or ``callable``. Physically it does not make sense for the drive frequency
+            to depend on time. The option for it to be ``callable`` is to allow the it to be a trainable parameter.
         wires (Union[int, list[int]]): Label of the qubit that the drive acts upon. Can be a list of multiple wires.
         d (int): Local Hilbert space dimension. Defaults to ``d=2`` and is currently the only supported value.
 
