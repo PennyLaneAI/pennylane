@@ -87,9 +87,7 @@ class TestClassicalShadow:
         assert res.shape(dev, num_shots) == (1, 2, shots, wires)
 
         # test an error is raised when device is None
-        msg = (
-            "Shots must be specified to obtain the shape of a classical shadow measurement"
-        )
+        msg = "Shots must be specified to obtain the shape of a classical shadow measurement"
         with pytest.raises(qml.measurements.MeasurementShapeError, match=msg):
             res.shape(dev, Shots(None))
 
@@ -102,7 +100,9 @@ class TestClassicalShadow:
         circuit.construct((), {})
 
         res = qml.execute([circuit.tape], circuit.device, None)[0]
-        expected_shape = qml.classical_shadow(wires=range(wires)).shape(circuit.device, Shots(shots))
+        expected_shape = qml.classical_shadow(wires=range(wires)).shape(
+            circuit.device, Shots(shots)
+        )
 
         assert res.shape == expected_shape
 
