@@ -98,7 +98,7 @@ def transmon_interaction(
     .. code-block::
 
         connections = [[0, 1], [1, 3], [2, 1], [4, 5]]
-        H = qml.pulse.transmon_interaction(omega=0.5, connections=connections, g=1.)
+        H = qml.pulse.transmon_interaction(omega=0.5, connections=connections, g=1., wires=range(6))
 
     The resulting :class:`~.ParametrizedHamiltonian` consists of ``4`` coupling terms and ``6`` qubits
     because there are six different wire indices in ``connections``.
@@ -112,7 +112,7 @@ def transmon_interaction(
 
         omega = [0.5, 0.4, 0.3, 0.2, 0.1, 0.]
         g = [1., 2., 3., 4.]
-        H = qml.pulse.transmon_interaction(omega=omega, connections=connections, g=g)
+        H = qml.pulse.transmon_interaction(omega=omega, connections=connections, g=g, wires=range(6))
 
     """
     if d != 2:
