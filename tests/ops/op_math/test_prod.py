@@ -324,10 +324,43 @@ class TestInitialization:
             qml.CNOT([0, 1])
             qml.RZ(1.1, 1)
 
-        prod_op = prod(qfunc)
+        prod_gen = prod(qfunc)
+        assert callable(prod_gen)
+        prod_op = prod_gen()
         expected = prod(qml.RZ(1.1, 1), qml.CNOT([0, 1]), qml.Hadamard(0))
         assert qml.equal(prod_op, expected)
         assert prod_op.wires == Wires([1, 0])
+
+    def test_qfunc_init_accepts_args_kwargs(self):
+        """Tests that prod preserves args when wrapping qfuncs."""
+
+        def qfunc(x, run_had=False):
+            if run_had:
+                qml.Hadamard(0)
+            qml.RX(x, 0)
+            qml.CNOT([0, 1])
+
+        prod_gen = prod(qfunc)
+        assert qml.equal(prod_gen(1.1), prod(qml.CNOT([0, 1]), qml.RX(1.1, 0)))
+        assert qml.equal(
+            prod_gen(2.2, run_had=True), prod(qml.CNOT([0, 1]), qml.RX(2.2, 0), qml.Hadamard(0))
+        )
+
+    def test_qfunc_init_propagates_Prod_kwargs(self):
+        """Tests that additional kwargs for Prod are propagated using qfunc initialization."""
+
+        def qfunc(x):
+            qml.prod(qml.RX(x, 0), qml.PauliZ(1))
+            qml.CNOT([0, 1])
+
+        prod_gen = prod(qfunc, do_queue=False, id=123987, lazy=False)
+
+        with qml.queuing.AnnotatedQueue() as q:
+            prod_op = prod_gen(1.1)
+
+        assert prod_op not in q  # do_queue worked
+        assert prod_op.id == 123987  # id was set
+        assert qml.equal(prod_op, prod(qml.CNOT([0, 1]), qml.PauliZ(1), qml.RX(1.1, 0)))  # eager
 
     def test_qfunc_init_only_works_with_one_qfunc(self):
         """Test that the qfunc init only occurs when one callable is passed to prod."""
@@ -336,7 +369,7 @@ class TestInitialization:
             qml.Hadamard(0)
             qml.CNOT([0, 1])
 
-        prod_op = prod(qfunc)
+        prod_op = prod(qfunc)()
         assert qml.equal(prod_op, prod(qml.CNOT([0, 1]), qml.Hadamard(0)))
 
         def fn2():

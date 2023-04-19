@@ -17,7 +17,7 @@ computing the product between operations.
 """
 import itertools
 from copy import copy
-from functools import reduce
+from functools import reduce, wraps
 from itertools import combinations
 from typing import List, Tuple, Union
 
@@ -96,7 +96,14 @@ def prod(*ops, do_queue=True, id=None, lazy=True):
     CNOT(wires=[0, 1]) @ Hadamard(wires=[0])
     """
     if len(ops) == 1 and callable(ops[0]):
-        ops = qml.tape.make_qscript(ops[0])().operations[::-1]
+        fn = ops[0]
+
+        @wraps(fn)
+        def wrapper(*args, **kwargs):
+            qs = qml.tape.make_qscript(fn)(*args, **kwargs)
+            return prod(*qs.operations[::-1], do_queue=do_queue, id=id, lazy=lazy)
+
+        return wrapper
 
     if lazy:
         return Prod(*ops, do_queue=do_queue, id=id)
