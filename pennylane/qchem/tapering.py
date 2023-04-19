@@ -283,7 +283,7 @@ def taper(h, generators, paulixops, paulix_sector):
     eigenvalues is defined as the Pauli sector.
 
     Args:
-        h (Hamiltonian or PauliSentence): PennyLane Hamiltonian or PauliSentence
+        h (Hamiltonian): PennyLane Hamiltonian
         generators (list[Hamiltonian]): generators expressed as PennyLane Hamiltonians
         paulixops (list[Operation]): list of single-qubit Pauli-X operators
         paulix_sector (llist[int]): eigenvalues of the Pauli-X operators
