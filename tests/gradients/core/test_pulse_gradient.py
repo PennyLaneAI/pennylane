@@ -21,13 +21,13 @@ import pytest
 import numpy as np
 import pennylane as qml
 
-from pennylane.gradients.pulse_gradient import split_evol_ops, _split_evol_tapes, stoch_pulse_grad
+from pennylane.gradients.pulse_gradient import _split_evol_ops, _split_evol_tapes, stoch_pulse_grad
 
 
 # pylint: disable=too-few-public-methods
 @pytest.mark.jax
 class TestSplitEvolOps:
-    """Tests for the helper method split_evol_ops that samples a splitting time and splits up
+    """Tests for the helper method _split_evol_ops that samples a splitting time and splits up
     a ParametrizedEvolution operation at the sampled time, inserting a Pauli rotation about the
     provided Pauli word with angles +- pi/2."""
 
@@ -49,7 +49,7 @@ class TestSplitEvolOps:
 
     @pytest.mark.parametrize("test_case", split_evol_ops_test_cases)
     def test_output_properties(self, test_case):
-        """Test that split_evol_ops returns the right ops with correct
+        """Test that _split_evol_ops returns the right ops with correct
         relations to the input operation."""
 
         import jax
@@ -65,7 +65,7 @@ class TestSplitEvolOps:
 
         # Sample splitting time
         tau = jax.random.uniform(key) * (exp_time[1] - exp_time[0]) + exp_time[0]
-        ops = split_evol_ops(op, word, word_wires, tau)
+        ops = _split_evol_ops(op, word, word_wires, tau)
         # Check that the original operation was not altered
         assert qml.equal(op, op_copy)
 

@@ -44,7 +44,7 @@ except ImportError:
     has_jax = False
 
 
-def split_evol_ops(op, word, word_wires, tau):
+def _split_evol_ops(op, word, word_wires, tau):
     r"""Randomly split a ``ParametrizedEvolution`` with respect to time into two operations and
     insert a Pauli rotation using a given Pauli word and rotation angles :math:`\pm\pi/2`.
     This yields two groups of three operations each.
@@ -99,7 +99,7 @@ def _split_evol_tapes(tape, split_evolve_ops, op_idx):
     Args:
         tape (QuantumTape): original tape
         split_evolve_ops (tuple[list[qml.Operation]]): The time-split evolution operations as
-            created by :func:`~.split_evol_ops`. For each group of operations, a new tape
+            created by ``_split_evol_ops``. For each group of operations, a new tape
             is created.
         op_idx (int): index of the operation to replace within the tape
 
@@ -568,12 +568,12 @@ def _generate_tapes_and_cjacs(tape, idx, key, num_split_times, use_broadcasting)
     taus = jnp.sort(jax.random.uniform(key, shape=(num_split_times,)) * (t1 - t0) + t0)
     cjacs = [cjac_fn(op.data[term_idx], tau) for tau in taus]
     if use_broadcasting:
-        split_evolve_ops = split_evol_ops(op, word, ob.wires, taus)
+        split_evolve_ops = _split_evol_ops(op, word, ob.wires, taus)
         tapes = _split_evol_tapes(tape, split_evolve_ops, op_idx)
     else:
         tapes = []
         for tau in taus:
-            split_evolve_ops = split_evol_ops(op, word, ob.wires, tau)
+            split_evolve_ops = _split_evol_ops(op, word, ob.wires, tau)
             tapes.extend(_split_evol_tapes(tape, split_evolve_ops, op_idx))
     avg_prefactor = (t1 - t0) / num_split_times
     return cjacs, tapes, avg_prefactor
