@@ -12,9 +12,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-The data class which will aggregate all the resource information from a quantum workflow.
+Stores classes and logic to aggregate all the resource information from a quantum workflow.
 """
+from collections import defaultdict
 from dataclasses import dataclass, field
+
+from pennylane.tape import QuantumTape
 
 
 @dataclass(frozen=True)
@@ -64,3 +67,26 @@ class Resources:
     def _ipython_display_(self):
         """Displays __str__ in ipython instead of __repr__"""
         print(str(self))
+
+
+def _count_resources(tape: QuantumTape, shots: int) -> Resources:
+    """Given a quantum circuit (tape) and number of samples, this function
+     counts the resources used by standard PennyLane operations.
+
+    Args:
+        tape (.QuantumTape): The quantum circuit for which we count resources
+        shots (int): The number of samples or shots to execute
+
+    Returns:
+        (.Resources): The total resources used in the workflow
+    """
+    num_wires = len(tape.wires)
+    depth = tape.graph.get_depth()
+
+    num_gates = 0
+    gate_types = defaultdict(int)
+    for op in tape.operations:
+        gate_types[op.name] += 1
+        num_gates += 1
+
+    return Resources(num_wires, num_gates, gate_types, depth, shots)
