@@ -114,6 +114,10 @@ def transmon_interaction(
         g = [1., 2., 3., 4.]
         H = qml.pulse.transmon_interaction(omega=omega, connections=connections, g=g, wires=range(6))
 
+    The interaction term is dependent only on the typically fixed transmon energies and coupling strengths.
+    Executing this as a pulse program via :func:`~.evolve` would correspond to all driving fields being turned off.
+    To add a driving field, see :func:`~.transmon_drive`.
+
     """
     if d != 2:
         raise NotImplementedError(
