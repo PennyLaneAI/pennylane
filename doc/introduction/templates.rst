@@ -255,6 +255,10 @@ Other useful templates which do not belong to the previous categories can be fou
     :description: :doc:`FlipSign operator<../code/api/pennylane.FlipSign>`
     :figure: _static/templates/subroutines/flip_sign.png
 
+.. gallery-item::
+    :description: :doc:`QSVT<../code/api/pennylane.QSVT>`
+    :figure: _static/templates/subroutines/qsvt.png
+
 .. raw:: html
 
         <div style='clear:both'></div>
