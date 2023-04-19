@@ -634,16 +634,25 @@ class QuantumScript:
         >>> qscript.get_parameters(trainable_only=False)
         [0.432, 0.543, 0.133]
         """
-        params = []
-        iterator = self.trainable_params if trainable_only else range(len(self._par_info))
+        if trainable_only:
+            params = []
+            for p_idx in self.trainable_params:
+                op = self._par_info[p_idx]["op"]
+                if operations_only and hasattr(op, "return_type"):
+                    continue
 
-        for p_idx in iterator:
-            op = self._par_info[p_idx]["op"]
-            if operations_only and hasattr(op, "return_type"):
-                continue
+                op_idx = self._par_info[p_idx]["p_idx"]
+                params.append(op.data[op_idx])
+            return params
 
-            op_idx = self._par_info[p_idx]["p_idx"]
-            params.append(op.data[op_idx])
+        # If trainable_only=False, return all parameters
+        # This is faster than the above and should be used when indexing `_par_info` is not needed
+        params = [d for op in self.operations for d in op.data]
+        if operations_only:
+            return params
+        for m in self.measurements:
+            if m.obs is not None:
+                params.extend(m.obs.data)
         return params
 
     def set_parameters(self, params, trainable_only=True):
