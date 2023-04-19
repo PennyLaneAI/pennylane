@@ -71,8 +71,7 @@ class Resources:
 
 def _count_resources(tape: QuantumTape, shots: int) -> Resources:
     """Given a quantum circuit (tape) and number of samples, this function
-     counts the resources used by both standard PennyLane operations and
-     custom user-defined operations.
+     counts the resources used by standard PennyLane operations.
 
     Args:
         tape (.QuantumTape): The quantum circuit for which we count resources
@@ -87,13 +86,7 @@ def _count_resources(tape: QuantumTape, shots: int) -> Resources:
     num_gates = 0
     gate_types = defaultdict(int)
     for op in tape.operations:
-        if hasattr(op, "resources"):
-            op_resource = op.resources()
-            for d in op_resource.gate_types:
-                gate_types[d] += op_resource.gate_types[d]
-            num_gates += sum(op_resource.gate_types.values())
-        else:
-            gate_types[op.name] += 1
-            num_gates += 1
+        gate_types[op.name] += 1
+        num_gates += 1
 
     return Resources(num_wires, num_gates, gate_types, depth, shots)
