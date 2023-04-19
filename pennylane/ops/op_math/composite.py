@@ -336,16 +336,17 @@ class CompositeOp(Operator):
         """The function used when combining the operands of the composite operator"""
 
     def map_wires(self, wire_map: dict):
+        # pylint:disable=protected-access
         cls = self.__class__
         new_op = cls.__new__(cls)
         new_op.operands = tuple(op.map_wires(wire_map=wire_map) for op in self)
-        new_op._wires = Wires(  # pylint: disable=protected-access
-            [wire_map.get(wire, wire) for wire in self.wires]
-        )
+        new_op._wires = Wires([wire_map.get(wire, wire) for wire in self.wires])
         new_op.data = self.data.copy()
         for attr, value in vars(self).items():
             if attr not in {"data", "operands", "_wires"}:
                 setattr(new_op, attr, value)
+        if (p_rep := new_op._pauli_rep) is not None:
+            new_op._pauli_rep = p_rep.map_wires(wire_map)
 
         return new_op
 
