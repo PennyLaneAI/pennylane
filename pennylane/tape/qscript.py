@@ -763,7 +763,7 @@ class QuantumScript:
             )
 
         shot_vector = shots.shot_vector
-        if shot_vector is None:
+        if len(shot_vector) <= 1:
             if isinstance(mps[0], (ExpectationMP, VarianceMP)):
                 shape = (len(mps),)
 
