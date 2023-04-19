@@ -232,7 +232,7 @@ def transmon_drive(amplitude, phase, freq, wires, d=2):
     and :math:`q` is the qubit label (``wires``).
     The arguments ``amplitude``, ``phase`` and ``freq`` correspond to :math:`\Omega`, :math:`\phi`
     and :math:`\nu`, respectively, and can all be either fixed numbers (``float``) or depend on time
-    (``callable``). In the case they are time-dependent, they need to abide by the restrictions imposed
+    (``callable``). If they are time-dependent, they need to abide by the restrictions imposed
     in :class:`ParametrizedHamiltonian` and have a signature of two parameters, ``(params, t)``.
 
     For realistic simulations, one may restrict the amplitude, phase and drive frequency parameters.
@@ -289,7 +289,7 @@ def transmon_drive(amplitude, phase, freq, wires, d=2):
 
     We can combine ``transmon_drive()`` with :func:`~.transmon_interaction` to create a full driven transmon Hamiltonian.
     Let us look at a chain of three transmon qubits that are coupled with their direct neighbors. We provide all numbers in
-    :math:`2\pi\text{GHz}`. We parametrize the amplitude as a sinusodial and make the maximum amplitude
+    units of :math:`2\pi\text{GHz}`. We parametrize the amplitude as a sinusodial and make the maximum amplitude
     as well as the drive frequency trainable parameters. We simulate the evolution for a time window of :math:`[0, 5]\text{ns}`.
 
     .. code-block:: python3
@@ -319,9 +319,9 @@ def transmon_drive(amplitude, phase, freq, wires, d=2):
     We evaluate the Hamiltonian with some arbitrarily chosen maximum amplitudes and set
     the drive frequency equal to the qubit frequencies. Note how the order of the construction
     of ``H`` determines the order with which the parameters need to be passed to
-    :class:`~.ParametrizedHamiltonian` and :func:`~.evolve`. By making the drive frequencies
-    trainable parameters by providing a constant callable above instead of the fixed values,
-    we can differentiate with respect to them.
+    :class:`~.ParametrizedHamiltonian` and :func:`~.evolve`. We made the drive frequencies
+    trainable parameters by providing a constant callable above instead of fixed values.
+    This allows us to differentiate with respect to the frequencies and to optimize them.
 
     >>> Omega0, Omega1, Omega2 = [0.5, 0.3, 0.6]
     >>> fr0, fr1, fr2 = omega
@@ -464,36 +464,10 @@ def _reorder_AmpPhaseFreq(params, coeffs_parametrized):
                 ]
 
                 # all 3 parameters are callable
-                if sum(is_callables) == 3:
-                    reordered_params.append(
-                        [params[params_idx], params[params_idx + 1], params[params_idx + 2]]
-                    )
-                    reordered_params.append(
-                        [params[params_idx], params[params_idx + 1], params[params_idx + 2]]
-                    )
-                    coeff_idx += 2
-                    params_idx += 3
-
-                # 2 of 3 parameters are callable
-                elif sum(is_callables) == 2:
-                    reordered_params.append([params[params_idx], params[params_idx + 1]])
-                    reordered_params.append([params[params_idx], params[params_idx + 1]])
-                    coeff_idx += 2
-                    params_idx += 2
-
-                # 1 of 3 parameters is callable
-                elif sum(is_callables) == 1:
-                    reordered_params.append(params[params_idx])
-                    reordered_params.append(params[params_idx])
-                    coeff_idx += 2
-                    params_idx += 1
-
-                # in case of no callable, the coeff is still callable due to the explicit freq*t dependence
-                elif sum(is_callables) == 0:
-                    reordered_params.append(None)
-                    reordered_params.append(None)
-                    coeff_idx += 2
-                    params_idx += 0
+                num_callables = sum(is_callables)
+                reordered_params.extend([params[params_idx : params_idx + num_callables]]*2)
+                coeff_idx += 2
+                params_idx += num_callables
 
             else:
                 reordered_params.append(params[params_idx])
