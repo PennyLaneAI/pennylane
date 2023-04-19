@@ -1,0 +1,22 @@
+\documentclass[border=0.2cm]{standalone}
+\usepackage[utf8]{inputenc}
+\usepackage{amsmath}
+\usepackage{outlines}
+\usepackage{braket}
+\usepackage[dvipsnames]{xcolor}
+\definecolor{templategreen}{RGB}{216, 234, 210}
+\usepackage{tikz}
+\usetikzlibrary{quantikz}
+\usepackage{braket}
+
+
+\begin{document}
+
+\begin{quantikz}
+    \qw & \qw  & \gate[wires=4][1cm]{\Pi_\phi} & \gate[wires=4][1cm]{U(A)} & \gate[wires=4][1cm]{\tilde{\Pi}_\phi}& \gate[wires=4][1cm]{U(A)^\dagger} & \gate[wires=4][1cm]{\Pi_\phi} & \qw &\qw   \\
+    \qw & \qw &\qw & \qw & \qw &\qw &\qw & \qw & \qw \\
+   \qw & \qw &\qw & \qw & \qw &\qw &\qw & \qw & \qw \\
+   \qw & \qw & \qw &\qw&  \qw &\qw &\qw & \qw & \qw 
+   \end{quantikz}
+
+\end{document}
