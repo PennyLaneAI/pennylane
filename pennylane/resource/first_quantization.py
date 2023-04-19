@@ -25,6 +25,8 @@ import inspect
 from pennylane.operation import AnyWires, Operation
 from itertools import product
 
+angs2bohr = 1.8897259886
+
 
 class FirstQuantization(Operation):
     r"""Estimate the number of non-Clifford gates and logical qubits for a quantum phase estimation
@@ -86,70 +88,122 @@ class FirstQuantization(Operation):
     def __init__(
         self,
         n,
-        eta=None,
-        omega=None,
-        material=None,
-        error=0.0015,
+        eta,
+        omega,
+        vec_a=None,
         charge=0,
+        error=0.0016,
         br=8,
         n_tof=500,
-        n_dirty=None,  # if given, it should be above a minimum, otherwise we get error as QROM cannot be implemented
+        n_dirty=None,
+        # if given, it should be above a minimum, otherwise we get error as QROM cannot be implemented
         p_th=0.95,
         exact=False,
     ):
         self.n = n
-        self.error = error
+        self.eta = eta
+        self.omega = omega
+        self.vec_a = vec_a
         self.charge = charge
+        self.error = error
         self.br = br
         self.n_tof = n_tof
         self.n_dirty = n_dirty
         self.p_th = p_th
         self.exact = exact
 
-        # material specs
-        if material is None:
-            self.eta = eta
-            self.omega = omega
-            self.recip_bv = None
-            self.cubic = True
+        self.omega = np.abs(np.sum((np.cross(vec_a[0], vec_a[1]) * vec_a[2]))) * angs2bohr**3
+
+        self.recip_bv = (
+            2
+            * np.pi
+            / self.omega
+            * np.array([np.cross(vec_a[i], vec_a[j]) for i, j in [(1, 2), (2, 0), (0, 1)]])
+            * angs2bohr**2
+        )
+
+        bbt = np.matrix(self.recip_bv) @ np.matrix(self.recip_bv).T
+
+        self.cubic = np.linalg.norm(bbt - (self.recip_bv**2).max() * np.identity(3)) < 1e-6
+
+        self.orthogonal = (
+            np.linalg.norm(bbt - np.array([np.max(b**2) for b in self.recip_bv]) * np.identity(3))
+            < 1e-6
+        )
+
+        if self.cubic:
             self.bmin = 2 * np.pi / omega ** (1 / 3)
         else:
-            self.eta = material["eta"]
-            vec_a = material["vec_a"]
-            angs2bohr = 1.8897259886
-            self.omega = np.abs(np.sum((np.cross(vec_a[0], vec_a[1]) * vec_a[2]))) * angs2bohr ** 3
-            self.recip_bv = (
-                2
-                * np.pi
-                / self.omega
-                * np.array([np.cross(vec_a[i], vec_a[j]) for i, j in [(1, 2), (2, 0), (0, 1)]])
-                * angs2bohr ** 2
-            )
-            BBt = np.matrix(self.recip_bv) @ np.matrix(self.recip_bv).T
-            self.cubic = np.linalg.norm(BBt - (self.recip_bv ** 2).max() * np.identity(3)) < 1e-6
-            recip_bv_s = np.linalg.svd(self.recip_bv)[1]
-            sigma_min_B = np.min(recip_bv_s)
-            self.bmin = sigma_min_B
-        # computing LCU 1-norm
-        inputs = dict(self.__dict__.items())
-        inputs["lambda_total"], inputs["aa_steps"] = self.norm(**self._args(self.norm, inputs))
-        self.lambda_total = inputs["lambda_total"]
-        # computing gate cost
-        self.gates = self.gate_cost(**self._args(self.gate_cost, inputs))
-        # computing qubit cost
-        self.n_dirty = (
-            self.n_dirty if self.n_dirty is not None else -1
-        )  # in case n_dirty is selected by user, -1 is flag for assigning n_dirty <-- logical_clean_qubits
-        inputs["n_dirty"] = self.n_dirty
-        self.qubits = self.qubit_cost(**self._args(self.qubit_cost, inputs))
+            self.bmin = np.min(np.linalg.svd(self.recip_bv)[1])
+
+        self.lambda_total, self.aa_steps = self.norm(
+            self.n,
+            self.eta,
+            self.omega,
+            self.error,
+            self.br,
+            self.charge,
+            self.cubic,
+            self.orthogonal,
+            self.exact,
+            self.p_th,
+            self.bmin,
+            self.recip_bv,
+        )
+
+        self.n_dirty = self._clean_cost(
+            self.n,
+            self.eta,
+            self.omega,
+            self.error,
+            self.br,
+            self.charge,
+            self.cubic,
+            self.exact,
+            self.p_th,
+            self.bmin,
+            self.recip_bv,
+            self.n_dirty,
+            self.n_tof,
+            self.lambda_total,
+        )
+
+        self.gates = self.gate_cost(
+            self.n,
+            self.eta,
+            self.omega,
+            self.error,
+            self.br,
+            self.charge,
+            self.cubic,
+            self.exact,
+            self.p_th,
+            self.bmin,
+            self.recip_bv,
+            self.n_dirty,
+            self.n_tof,
+            self.lambda_total,
+            self.aa_steps,
+        )
+
+        self.qubits = self.qubit_cost(
+            self.n,
+            self.eta,
+            self.omega,
+            self.error,
+            self.br,
+            self.charge,
+            self.cubic,
+            self.exact,
+            self.p_th,
+            self.bmin,
+            self.recip_bv,
+            self.n_dirty,
+            self.n_tof,
+            self.lambda_total,
+        )
 
         super().__init__(wires=range(self.qubits))
-
-    @staticmethod
-    def _args(
-        f, inputs
-    ):  # wish this was already in python, couldn't find it though; retrieves values of function f parameters from a dict called inputs
-        return {k: inputs[k] for k in inspect.getfullargspec(f)[0]}
 
     @staticmethod
     def success_prob(n, br):
@@ -179,7 +233,7 @@ class FirstQuantization(Operation):
             raise ValueError("br must be a positive integer.")
 
         c = n / 2 ** np.ceil(np.log2(n))
-        d = 2 * np.pi / 2 ** br
+        d = 2 * np.pi / 2**br
 
         theta = d * np.round((1 / d) * np.arcsin(np.sqrt(1 / (4 * c))))
 
@@ -196,6 +250,7 @@ class FirstQuantization(Operation):
         br=8,
         charge=0,
         cubic=True,
+        orthogonal=True,
         exact=False,
         p_th=0.95,
         bmin=None,
@@ -311,7 +366,7 @@ class FirstQuantization(Operation):
 
         l_z = eta + charge
         alpha = 0.0248759298  # same as the pseudopotential/AE code
-        # target error in the qubitization of U+V which we set to be 0.01 of the algorithm error
+        # target error in the qubitization of U+V
         error_uv = alpha * error
 
         # taken from Eq. (22) of PRX Quantum 2, 040332 (2021)
@@ -320,67 +375,76 @@ class FirstQuantization(Operation):
         n0 = n ** (1 / 3)
 
         bmin = 2 * np.pi / omega ** (1 / 3) if cubic else bmin
+
         n_m = int(
             np.ceil(
                 np.log2(  # taken from Eq. (132) of PRX Quantum 2, 040332 (2021)
                     (8 * np.pi * eta)
-                    / (error_uv * omega * bmin ** 2)
+                    / (error_uv * omega * bmin**2)
                     * (eta - 1 + 2 * l_z)
                     * (7 * 2 ** (n_p + 1) - 9 * n_p - 11 - 3 * 2 ** (-1 * n_p))
                 )
             )
         )
-        if not cubic:
-            BBt = np.matrix(recip_bv) @ np.matrix(recip_bv).T
-            is_orthogonal = (
-                np.linalg.norm(BBt - np.array([np.max(b ** 2) for b in recip_bv]) * np.identity(3))
-                < 1e-6
-            )
 
         if not cubic and exact and n_p <= 6:
             lambda_nu = 0
-            B_mus = {}
+            b_mus = {}
             for j in range(2, n_p + 3):
-                B_mus[j] = []
+                b_mus[j] = []
             for nu in product(range(-(2 ** (n_p)), 2 ** (n_p) + 1), repeat=3):
                 nu = np.array(nu)
                 if list(nu) != [0, 0, 0]:
                     mu = int(np.floor(np.log2(np.max(abs(nu))))) + 2
-                    B_mus[mu].append(nu)
+                    b_mus[mu].append(nu)
             for mu in range(2, (n_p + 2)):
-                for nu in B_mus[mu]:
-                    Gnu_norm = np.linalg.norm(np.sum(nu * recip_bv, axis=0))
-                    lambda_nu += np.ceil(2 ** n_m * (bmin * 2 ** (mu - 2) / Gnu_norm) ** 2) / (
-                        2 ** n_m * (bmin * 2 ** (mu - 2)) ** 2
+                for nu in b_mus[mu]:
+                    gnu_norm = np.linalg.norm(np.sum(nu * recip_bv, axis=0))
+                    lambda_nu += np.ceil(2**n_m * (bmin * 2 ** (mu - 2) / gnu_norm) ** 2) / (
+                        2**n_m * (bmin * 2 ** (mu - 2)) ** 2
                     )
             lambda_nu_1 = lambda_nu
+
         else:
+
             lambda_nu = (  # expression is taken from Eq. (F6) of PRX 8, 011044 (2018)
                 4 * np.pi * (np.sqrt(3) * n ** (1 / 3) / 2 - 1)
                 + 3
                 - 3 / n ** (1 / 3)
-                + 3 * integrate.nquad(lambda x, y: 1 / (x ** 2 + y ** 2), [[1, n0], [1, n0]])[0]
-            ) / bmin ** 2
-            lambda_nu_1 = lambda_nu + 4 / (2 ** n_m * bmin ** 2) * (
+                + 3 * integrate.nquad(lambda x, y: 1 / (x**2 + y**2), [[1, n0], [1, n0]])[0]
+            ) / bmin**2
+
+            lambda_nu_1 = lambda_nu + 4 / (2**n_m * bmin**2) * (
                 7 * 2 ** (n_p + 1) - 9 * n_p - 11 - 3 * 2 ** (-1 * n_p)
             )
 
-        p_nu = lambda_nu_1 * bmin ** 2 / 2 ** (n_p + 6)
-        p_nu_amp, aa_steps = FirstQuantization._compute_AA_steps(p_nu, p_th)
+        p_nu = lambda_nu_1 * bmin**2 / 2 ** (n_p + 6)
+
+        # compute_AA_steps
+        probability_amplified = 0
+        index = 0  # number of amplitude amplifications
+        for i in range(29, -1, -1):
+            probability = (np.sin((2 * i + 1) * np.arcsin(np.sqrt(p_nu)))) ** 2  # Eq (I6)
+            if probability > p_th:
+                index = i
+                probability_amplified = probability
+        p_nu_amp, aa_steps = probability_amplified, index
 
         # lambda_u and lambda_v are taken from Eq. (25) of PRX Quantum 2, 040332 (2021)
         lambda_u = 4 * np.pi * eta * l_z * lambda_nu / omega
         lambda_v = 2 * np.pi * eta * (eta - 1) * lambda_nu / omega
+
         # lambda_u_1 and lambda_v_1 are taken from Eq. (124) of PRX Quantum 2, 040332 (2021)
         lambda_u_1 = lambda_u * lambda_nu_1 / lambda_nu
         lambda_v_1 = lambda_v * lambda_nu_1 / lambda_nu
 
         # taken from Eq. (71) of PRX Quantum 2, 040332 (2021)
-        abs_sum = 3 * bmin ** 2
+        abs_sum = 3 * bmin**2
         if not cubic:
-            B_mat = np.matrix(recip_bv)
-            abs_sum = np.abs(B_mat @ B_mat.T).flatten().sum()
-        if cubic or is_orthogonal:
+            b_mat = np.matrix(recip_bv)
+            abs_sum = np.abs(b_mat @ b_mat.T).flatten().sum()
+
+        if cubic or orthogonal:
             lambda_t_p = abs_sum * eta * 2 ** (2 * n_p - 2) / 4
         else:
             lambda_t_p = abs_sum * eta * 2 ** (2 * n_p - 2) / 2
@@ -392,37 +456,21 @@ class FirstQuantization(Operation):
         )
         if cubic:
             p_eq *= FirstQuantization.success_prob(3, 8)
+
         # final lambda value is computed from Eq. (126) of PRX Quantum 2, 040332 (2021)
-        lambda_total, strategy = FirstQuantization._aa_strategy(
-            eta, p_eq, p_nu, p_nu_amp, lambda_t_p, lambda_u_1, lambda_v_1
-        )
-        return lambda_total, aa_steps if strategy != 0 else 0
-
-    @staticmethod
-    def _compute_n_b(error_B, eta, n_p, recip_bv):
-        abs_sum = np.abs(np.matrix(recip_bv) @ np.matrix(recip_bv).T).flatten().sum()
-        scalar = 2 * np.pi * eta * 2 ** (2 * n_p - 2) * abs_sum / error_B
-        return np.ceil(np.log2(scalar))
-
-    @staticmethod
-    def _compute_AA_steps(p_nu, p_th):
-        probability_amplified = 0
-        index = 0  # number of amplitude amplifications
-        for i in range(29, -1, -1):
-            probability = (np.sin((2 * i + 1) * np.arcsin(np.sqrt(p_nu)))) ** 2
-            if probability > p_th:
-                index = i
-                probability_amplified = probability
-        return probability_amplified, index
-
-    @staticmethod
-    def _aa_strategy(eta, p_eq, p_nu, p_nu_amp, lambda_t_p, lambda_u_1, lambda_v_1):
         if p_nu * lambda_t_p >= (1 - p_nu) * (lambda_u_1 + lambda_v_1):
-            return (lambda_t_p + lambda_u_1 + lambda_v_1) / p_eq, 0
+            return 0.0, 0.0
         elif p_nu_amp * lambda_t_p >= (1 - p_nu_amp) * (lambda_u_1 + lambda_v_1):
-            return (lambda_t_p + lambda_u_1 + lambda_v_1) / p_eq, 1
+            return (lambda_t_p + lambda_u_1 + lambda_v_1) / p_eq, aa_steps
         else:
-            return ((lambda_u_1 + lambda_v_1 / (1 - 1 / eta)) / p_nu_amp) / p_eq, 2
+            return ((lambda_u_1 + lambda_v_1 / (1 - 1 / eta)) / p_nu_amp) / p_eq, aa_steps
+
+    @staticmethod
+    def _compute_n_b(error_b, eta, n_p, recip_bv):
+        r"""Eq (J7)"""
+        abs_sum = np.abs(np.matrix(recip_bv) @ np.matrix(recip_bv).T).flatten().sum()
+        scalar = 2 * np.pi * eta * 2 ** (2 * n_p - 2) * abs_sum / error_b
+        return np.ceil(np.log2(scalar))
 
     @staticmethod
     def _cost_qrom(lz):
@@ -446,137 +494,15 @@ class FirstQuantization(Operation):
         k_f = np.floor(np.log2(lz) / 2)
         k_c = np.ceil(np.log2(lz) / 2)
 
-        cost_f = int(2 ** k_f + np.ceil(2 ** (-1 * k_f) * lz))
-        cost_c = int(2 ** k_c + np.ceil(2 ** (-1 * k_c) * lz))
+        cost_f = int(2**k_f + np.ceil(2 ** (-1 * k_f) * lz))
+        cost_c = int(2**k_c + np.ceil(2 ** (-1 * k_c) * lz))
 
         return min(cost_f, cost_c)
 
     @staticmethod
-    def unitary_cost(
-        n,
-        eta,
-        omega,
-        error,
-        br=8,
-        charge=0,
-        cubic=True,
-        exact=False,
-        p_th=0.95,
-        bmin=None,
-        recip_bv=None,
-        lambda_total=None,
-        aa_steps=None,
-        n_dirty=None,
-        n_tof=500,
-    ):
-        r"""Return the number of Toffoli gates needed to implement the qubitization unitary
-        operator.
-
-        The expression for computing the cost is taken from Eq. (125) of
-        [`PRX Quantum 2, 040332 (2021) <https://link.aps.org/doi/10.1103/PRXQuantum.2.040332>`_].
-
-        Args:
-            n (int): number of plane waves
-            eta (int): number of electrons
-            omega (float): unit cell volume
-            error (float): target error in the algorithm
-            br (int): number of bits for ancilla qubit rotation
-            charge (int): total electric charge of the system
-
-        Returns:
-            int: the number of Toffoli gates needed to implement the qubitization unitary operator
-
-        **Example**
-
-        >>> n = 100000
-        >>> eta = 156
-        >>> omega = 169.69608
-        >>> error = 0.01
-        >>> unitary_cost(n, eta, omega, error)
-        17033
-        """
-        if n <= 0:
-            raise ValueError("The number of plane waves must be a positive number.")
-
-        if eta <= 0 or not isinstance(eta, (int, numpy.integer)):
-            raise ValueError("The number of electrons must be a positive integer.")
-
-        if omega <= 0:
-            raise ValueError("The unit cell volume must be a positive number.")
-
-        if error <= 0.0:
-            raise ValueError("The target error must be greater than zero.")
-
-        if br <= 0 or not isinstance(br, int):
-            raise ValueError("br must be a positive integer.")
-
-        if not isinstance(charge, int):
-            raise ValueError("system charge must be an integer.")
-        if lambda_total is None:
-            lambda_total, aa_steps = FirstQuantization.norm(
-                **FirstQuantization._args(FirstQuantization.norm, locals())
-            )
-        alpha = 0.0248759298
-        l_z = eta + charge
-        l_nu = 2 * np.pi * n ** (2 / 3)
-
-        # n_eta and n_etaz are defined in the third and second paragraphs of page 040332-15
-        n_eta = np.ceil(np.log2(eta))
-        n_etaz = np.ceil(np.log2(eta + 2 * l_z))
-
-        # n_p is taken from Eq. (22)
-        n_p = int(np.ceil(np.log2(n ** (1 / 3) + 1)))
-
-        # errors in Eqs. (132-134) are set to be 0.01 of the algorithm error
-        error_t, error_r, error_m = [alpha * error] * 3
-
-        # parameters taken from Eqs. (132-134) of PRX Quantum 2, 040332 (2021)
-        n_t = int(np.ceil(np.log2(np.pi * lambda_total / error_t)))  # Eq. (134)
-        n_r = int(np.ceil(np.log2((eta * l_z * l_nu) / (error_r * omega ** (1 / 3)))))  # Eq. (133)
-
-        bmin = 2 * np.pi / omega ** (1 / 3) if cubic else bmin
-        n_m = int(
-            np.ceil(
-                np.log2(  # Eq. (132)
-                    (8 * np.pi * eta)
-                    / (error_m * omega * bmin ** 2)
-                    * (eta - 1 + 2 * l_z)
-                    * (7 * 2 ** (n_p + 1) - 9 * n_p - 11 - 3 * 2 ** (-1 * n_p))
-                )
-            )
-        )
-        if not cubic:
-            error_B = alpha * error
-            n_B = FirstQuantization._compute_n_b(error_B, eta, n_p, recip_bv)
-        e_r = FirstQuantization._cost_qrom(l_z)
-
-        # taken from Eq. (125)
-        cost = 2 * (n_t + 4 * n_etaz + 2 * br - 12) + 14 * n_eta + 8 * br - 36
-        cost += (2 * aa_steps + 1) * (3 * n_p ** 2 + 15 * n_p - 7 + 4 * n_m * (n_p + 1))
-        cost += l_z + e_r + 2 * (2 * n_p + 2 * br - 7) + 12 * eta * n_p
-        cost += 5 * (n_p - 1) + 2 + 24 * n_p + 6 * n_p * n_r + 18
-        cost += n_etaz + 2 * n_eta + 6 * n_p + n_m + 16
-
-        if not cubic:
-            # this and the next corrects the cost of PREP and PREP^dagger for T
-            cost -= 2 * (3 * 2 + 2 * br - 9)
-            cost += 2 * (2 * (2 * (2 ** (4 + 1) - 1) + (n_B - 3) * 4 + 2 ** 4 + (n_p - 2)))
-            cost += 8  # 5 to compute the flag qubit for T being prepared, uncomputation without Toffolis, and 3 for the ROT cost
-            if n_dirty is None:
-                n_dirty = FirstQuantization.qubit_cost(
-                    **FirstQuantization._args(FirstQuantization.qubit_cost, locals())
-                )
-            Prep_1_nu_and_inv_U, _ = FirstQuantization._momentum_state_QROM(
-                n_p, n_m, n_dirty, n_tof, kappa=1
-            )
-            cost -= (2 * aa_steps + 1) * (3 * n_p ** 2 + 15 * n_p - 7 + 4 * n_m * (n_p + 1))
-            cost += (2 * aa_steps + 1) * Prep_1_nu_and_inv_U
-        return int(np.ceil(cost))
-
-    @staticmethod
     def _momentum_state_QROM(n_p, n_m, n_dirty, n_tof, kappa):
         nqrom_bits = 3 * n_p
-        x = 2 ** nqrom_bits
+        x = 2**nqrom_bits
         y = n_m
 
         beta_dirty = np.floor(n_dirty / y)
@@ -591,6 +517,7 @@ class FirstQuantization(Operation):
             beta = np.min([beta_dirty, beta_gate])
         else:
             beta = np.min([beta_dirty, beta_gate, beta_parallel])
+
         if n_tof == 1:
             momentum_state_cost_qrom = 2 * np.ceil(x / beta) + 3 * y * beta
         else:
@@ -646,14 +573,11 @@ class FirstQuantization(Operation):
         """
         if error <= 0.0:
             raise ValueError("The target error must be greater than zero.")
-        if lambda_total is None:
-            lambda_total, _ = FirstQuantization.norm(
-                **FirstQuantization._args(FirstQuantization.norm, locals())
-            )
+
         alpha = 0.0248759298
         # qpe_error obtained to satisfy inequality (131)
         n_errors = 3 if cubic else 4
-        error_qpe = np.sqrt(error ** 2 * (1 - (n_errors * alpha) ** 2))
+        error_qpe = np.sqrt(error**2 * (1 - (n_errors * alpha) ** 2))
         return int(np.ceil(np.pi * lambda_total / (2 * error_qpe)))
 
     @staticmethod
@@ -717,17 +641,124 @@ class FirstQuantization(Operation):
 
         if br <= 0 or not isinstance(br, int):
             raise ValueError("br must be a positive integer.")
-        if lambda_total is None:
-            lambda_total, aa_steps = FirstQuantization.norm(
-                **FirstQuantization._args(FirstQuantization.norm, locals())
-            )
+
         e_cost = FirstQuantization.estimation_cost(
-            **FirstQuantization._args(FirstQuantization.estimation_cost, locals())
+            n, eta, omega, error, br, charge, cubic, exact, p_th, bmin, recip_bv, lambda_total
         )
+
         u_cost = FirstQuantization.unitary_cost(
-            **FirstQuantization._args(FirstQuantization.unitary_cost, locals())
+            n,
+            eta,
+            omega,
+            error,
+            br,
+            charge,
+            cubic,
+            exact,
+            p_th,
+            bmin,
+            recip_bv,
+            lambda_total,
+            aa_steps,
+            n_dirty,
+            n_tof,
         )
+
         return e_cost * u_cost
+
+    @staticmethod
+    def _clean_cost(
+        n,
+        eta,
+        omega,
+        error,
+        br=8,
+        charge=0,
+        cubic=True,
+        exact=False,
+        p_th=0.95,
+        bmin=None,
+        recip_bv=None,
+        n_dirty=None,
+        n_tof=500,
+        lambda_total=None,
+    ):
+        r"""Return the number of clean logical qubits needed to ...."""
+        if n <= 0:
+            raise ValueError("The number of plane waves must be a positive number.")
+
+        if eta <= 0 or not isinstance(eta, (int, numpy.integer)):
+            raise ValueError("The number of electrons must be a positive integer.")
+
+        if omega <= 0:
+            raise ValueError("The unit cell volume must be a positive number.")
+
+        if error <= 0.0:
+            raise ValueError("The target error must be greater than zero.")
+
+        if not isinstance(charge, int):
+            raise ValueError("system charge must be an integer.")
+
+        l_z = eta + charge
+        l_nu = 2 * np.pi * n ** (2 / 3)
+
+        # n_p is taken from Eq. (22) of PRX Quantum 2, 040332 (2021)
+        n_p = np.ceil(np.log2(n ** (1 / 3) + 1))
+
+        # errors in Eqs. (132-134) of PRX Quantum 2, 040332 (2021)
+        alpha = 0.0248759298  # optimal value for lower resource estimates
+        error_t = alpha * error
+        error_r = alpha * error
+        error_m = alpha * error
+
+        # parameters taken from Eqs. (132-134) of PRX Quantum 2, 040332 (2021)
+        n_t = int(np.ceil(np.log2(np.pi * lambda_total / error_t)))  # Eq. (134)
+        n_r = int(np.ceil(np.log2((eta * l_z * l_nu) / (error_r * omega ** (1 / 3)))))  # Eq. (133)
+        n_m = int(  # Eq. (132)
+            np.ceil(
+                np.log2(
+                    (8 * np.pi * eta)
+                    / (error_m * omega * bmin**2)
+                    * (eta - 1 + 2 * l_z)
+                    * (7 * 2 ** (n_p + 1) - 9 * n_p - 11 - 3 * 2 ** (-1 * n_p))
+                )
+            )
+        )
+
+        # qpe_error obtained to satisfy inequality (131) of PRX Quantum 2, 040332 (2021)
+        n_errors = 3 if cubic else 4
+        error_qpe = np.sqrt(error**2 * (1 - (n_errors * alpha) ** 2))
+
+        # the expression for computing the cost is taken from Eq. (101) of arXiv:2204.11890v1
+        clean_cost = 3 * eta * n_p
+        clean_cost += np.ceil(np.log2(np.ceil(np.pi * lambda_total / (2 * error_qpe))))
+        clean_cost += 1 + 1 + np.ceil(np.log2(eta + 2 * l_z)) + 3 + 3
+        clean_cost += 2 * np.ceil(np.log2(eta)) + 5 + 3 * (n_p + 1)
+        clean_cost += n_p + n_m + 3 * n_p + 2 + 2 * n_p + 1 + 1 + 2 + 2 * n_p + 6 + 1
+
+        clean_temp_H_cost = max([5 * n_r - 4, 5 * n_p + 1]) + max([5, n_m + 3 * n_p])
+        __name = (
+            np.ceil(np.log2(eta + 2 * l_z))
+            + 2 * np.ceil(np.log2(eta))
+            + 6 * n_p
+            + n_m
+            + 16
+            + (0 if cubic else 3)
+        )
+        clean_temp_cost = max([clean_temp_H_cost, __name])
+
+        logical_clean_qubits = clean_cost + clean_temp_cost
+
+        if cubic:
+            logical_clean_qubits += np.max([n_r + 1, n_t]) + sum(
+                (3 * n_p**2 + n_p + 1 + 4 * n_m * (n_p + 1), 4)
+            )
+        else:
+            error_b = alpha * error
+            n_b = FirstQuantization._compute_n_b(error_b, eta, n_p, recip_bv)
+            logical_clean_qubits += np.max([n_r + 1, n_t, n_b]) + 6 + n_m + 1
+
+        return logical_clean_qubits
 
     @staticmethod
     def qubit_cost(
@@ -787,89 +818,143 @@ class FirstQuantization(Operation):
         if not isinstance(charge, int):
             raise ValueError("system charge must be an integer.")
 
-        if lambda_total is None:
-            lambda_total, _ = FirstQuantization.norm(
-                **FirstQuantization._args(FirstQuantization.norm, locals())
-            )
+        logical_clean_qubits = FirstQuantization._clean_cost(
+            n,
+            eta,
+            omega,
+            error,
+            br,
+            charge,
+            cubic,
+            exact,
+            p_th,
+            bmin,
+            recip_bv,
+            n_dirty,
+            n_tof,
+            lambda_total,
+        )
+
+        if n_dirty is None or cubic:
+            return int(np.ceil(logical_clean_qubits))
+
+        beta = FirstQuantization._momentum_state_QROM(n_p, n_m, n_dirty, n_tof, kappa=1)[1]
+        qubits = max([logical_clean_qubits, beta * (n_m + 1)])
+
+        return int(np.ceil(qubits))
+
+    @staticmethod
+    def unitary_cost(
+        n,
+        eta,
+        omega,
+        error,
+        br=8,
+        charge=0,
+        cubic=True,
+        exact=False,
+        p_th=0.95,
+        bmin=None,
+        recip_bv=None,
+        lambda_total=None,
+        aa_steps=None,
+        n_dirty=None,
+        n_tof=500,
+    ):
+        r"""Return the number of Toffoli gates needed to implement the qubitization unitary
+        operator.
+
+        The expression for computing the cost is taken from Eq. (125) of
+        [`PRX Quantum 2, 040332 (2021) <https://link.aps.org/doi/10.1103/PRXQuantum.2.040332>`_].
+
+        Args:
+            n (int): number of plane waves
+            eta (int): number of electrons
+            omega (float): unit cell volume
+            error (float): target error in the algorithm
+            br (int): number of bits for ancilla qubit rotation
+            charge (int): total electric charge of the system
+
+        Returns:
+            int: the number of Toffoli gates needed to implement the qubitization unitary operator
+
+        **Example**
+
+        >>> n = 100000
+        >>> eta = 156
+        >>> omega = 169.69608
+        >>> error = 0.01
+        >>> unitary_cost(n, eta, omega, error)
+        17033
+        """
+        if n <= 0:
+            raise ValueError("The number of plane waves must be a positive number.")
+
+        if eta <= 0 or not isinstance(eta, (int, numpy.integer)):
+            raise ValueError("The number of electrons must be a positive integer.")
+
+        if omega <= 0:
+            raise ValueError("The unit cell volume must be a positive number.")
+
+        if error <= 0.0:
+            raise ValueError("The target error must be greater than zero.")
+
+        if br <= 0 or not isinstance(br, int):
+            raise ValueError("br must be a positive integer.")
+
+        if not isinstance(charge, int):
+            raise ValueError("system charge must be an integer.")
 
         alpha = 0.0248759298
         l_z = eta + charge
         l_nu = 2 * np.pi * n ** (2 / 3)
 
-        # n_p is taken from Eq. (22) of PRX Quantum 2, 040332 (2021)
-        n_p = np.ceil(np.log2(n ** (1 / 3) + 1))
+        # n_eta and n_etaz are defined in the third and second paragraphs of page 040332-15
+        n_eta = np.ceil(np.log2(eta))
+        n_etaz = np.ceil(np.log2(eta + 2 * l_z))
 
-        # errors in Eqs. (132-134) of PRX Quantum 2, 040332 (2021),
-        # set to 0.01 of the algorithm error
-        error_t = alpha * error
-        error_r = alpha * error
-        error_m = alpha * error
-        if not cubic:
-            error_B = alpha * error
-            n_B = FirstQuantization._compute_n_b(error_B, eta, n_p, recip_bv)
+        # n_p is taken from Eq. (22)
+        n_p = int(np.ceil(np.log2(n ** (1 / 3) + 1)))
+
+        # errors in Eqs. (132-134) are set to be 0.0248759298 of the algorithm error
+        error_t, error_r, error_m = [alpha * error] * 3
 
         # parameters taken from Eqs. (132-134) of PRX Quantum 2, 040332 (2021)
+        # __modified__
         n_t = int(np.ceil(np.log2(np.pi * lambda_total / error_t)))  # Eq. (134)
         n_r = int(np.ceil(np.log2((eta * l_z * l_nu) / (error_r * omega ** (1 / 3)))))  # Eq. (133)
+
+        bmin = 2 * np.pi / omega ** (1 / 3) if cubic else bmin
         n_m = int(
             np.ceil(
-                np.log2(  # taken from Eq. (132) of PRX Quantum 2, 040332 (2021)
+                np.log2(  # Eq. (132)
                     (8 * np.pi * eta)
-                    / (error_m * omega * bmin ** 2)
+                    / (error_m * omega * bmin**2)
                     * (eta - 1 + 2 * l_z)
                     * (7 * 2 ** (n_p + 1) - 9 * n_p - 11 - 3 * 2 ** (-1 * n_p))
                 )
             )
         )
 
-        # qpe_error obtained to satisfy inequality (131) of PRX Quantum 2, 040332 (2021)
-        n_errors = 3 if cubic else 4
-        error_qpe = np.sqrt(error ** 2 * (1 - (n_errors * alpha) ** 2))
+        e_r = FirstQuantization._cost_qrom(l_z)
 
-        # the expression for computing the cost is taken from Eq. (101) of arXiv:2204.11890v1
-        clean_cost = (
-            3 * eta * n_p,
-            np.ceil(np.log2(np.ceil(np.pi * lambda_total / (2 * error_qpe)))),
-            1,
-            1,
-            np.ceil(np.log2(eta + 2 * l_z)) + 3,
-            3,
-            2 * np.ceil(np.log2(eta)) + 5,
-            3 * (n_p + 1),
-            n_p,
-            n_m,
-            3 * n_p + 2,
-            2 * n_p + 1,
-            1,
-            2,
-            2 * n_p,
-            6,
-            1,
-        )
-        clean_prep_temp_cost = max([5, n_m + 3 * n_p])
-        clean_temp_H_cost = max([5 * n_r - 4, 5 * n_p + 1]) + clean_prep_temp_cost
-        clean_temp_cost = max(
-            [
-                clean_temp_H_cost,
-                np.ceil(np.log2(eta + 2 * l_z))
-                + 2 * np.ceil(np.log2(eta))
-                + 6 * n_p
-                + n_m
-                + 16
-                + (0 if cubic else 3),
-            ]
-        )
-        logical_clean_qubits = sum(clean_cost) + clean_temp_cost
-        if cubic:
-            logical_clean_qubits += np.max([n_r + 1, n_t]) + sum(
-                (3 * n_p ** 2 + n_p + 1 + 4 * n_m * (n_p + 1), 4)
-            )
-        else:
-            logical_clean_qubits += np.max([n_r + 1, n_t, n_B]) + 6 + n_m + 1
+        # taken from Eq. (125)
+        cost = 2 * (n_t + 4 * n_etaz + 2 * br - 12) + 14 * n_eta + 8 * br - 36
+        cost += (2 * aa_steps + 1) * (3 * n_p**2 + 15 * n_p - 7 + 4 * n_m * (n_p + 1))
+        cost += l_z + e_r + 2 * (2 * n_p + 2 * br - 7) + 12 * eta * n_p
+        cost += 5 * (n_p - 1) + 2 + 24 * n_p + 6 * n_p * n_r + 18
+        cost += n_etaz + 2 * n_eta + 6 * n_p + n_m + 16
 
-        if n_dirty is None or cubic:
-            return int(np.ceil(logical_clean_qubits))
-        n_dirty = logical_clean_qubits if n_dirty == -1 else n_dirty
-        beta = FirstQuantization._momentum_state_QROM(n_p, n_m, n_dirty, n_tof, kappa=1)[1]
-        qubits = max([logical_clean_qubits, beta * (n_m + 1)])
-        return int(np.ceil(qubits))
+        if not cubic:
+            error_b = alpha * error
+            n_b = FirstQuantization._compute_n_b(error_b, eta, n_p, recip_bv)
+            # this and the next corrects the cost of PREP and PREP^dagger for T
+            cost -= 2 * (3 * 2 + 2 * br - 9)
+            cost += 2 * (2 * (2 * (2 ** (4 + 1) - 1) + (n_B - 3) * 4 + 2**4 + (n_p - 2)))
+            cost += 8  # 5 to compute the flag qubit for T being prepared, uncomputation without Toffolis, and 3 for the ROT cost
+
+            ms_cost = FirstQuantization._momentum_state_QROM(n_p, n_m, n_dirty, n_tof, kappa=1)[0]
+            cost -= (2 * aa_steps + 1) * (3 * n_p**2 + 15 * n_p - 7 + 4 * n_m * (n_p + 1))
+            cost += (2 * aa_steps + 1) * ms_cost
+
+        return int(np.ceil(cost))
