@@ -241,16 +241,10 @@ class TestTransmonDrive:
         Hd = H1 + H2
 
         ops_expected = [
-            qml.Hamiltonian([1.0, 1.0], [qml.PauliX(1), qml.PauliX(2)]),
-            qml.Hamiltonian([-1.0, -1.0], [qml.PauliY(1), qml.PauliY(2)]),
-            qml.Hamiltonian(
-                [
-                    1.0,
-                    1.0,
-                ],
-                [qml.PauliX(0), qml.PauliX(3)],
-            ),
-            qml.Hamiltonian([-1.0, -1.0], [qml.PauliY(0), qml.PauliY(3)]),
+            qml.dot([1.0, 1.0], [qml.PauliX(1), qml.PauliX(2)]),
+            qml.dot([-1.0, -1.0], [qml.PauliY(1), qml.PauliY(2)]),
+            qml.dot([1.0, 1.0], [qml.PauliX(0), qml.PauliX(3)]),
+            qml.dot([-1.0, -1.0], [qml.PauliY(0), qml.PauliY(3)]),
         ]
         coeffs_expected = [
             AmplitudeAndPhaseAndFreq(np.cos, amp, phase0, freq0),

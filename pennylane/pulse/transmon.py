@@ -428,7 +428,7 @@ class AmplitudeAndPhaseAndFreq:
             self.func = callable_freq
             return
 
-        # 0 out of 3 callable 
+        # 0 out of 3 callable
         # (the remaining coeff is still callable due to explicit time dependence)
 
         def no_callable(_, t):
