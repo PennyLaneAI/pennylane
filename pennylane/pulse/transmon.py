@@ -240,7 +240,7 @@ def transmon_drive(amplitude, phase, freq, wires, d=2):
     (see :func:`~.transmon_interaction` and `arXiv:2203.06818 <https://arxiv.org/abs/2203.06818>`_).
     The phase :math:`\phi(t)` is typically a slowly changing function of time compared to :math:`\Omega(t)`.
 
-    .. note:: Currently only supports ``d=2`` with qudit support planned in the future.
+    .. note:: Currently only supports ``d=2`` with qudit support planned in the future. In that case, :math:`a:=\frac{1}{2}(\sigma^x + i \sigma^y)`.
 
     .. seealso::
 
@@ -336,8 +336,8 @@ def transmon_drive(amplitude, phase, freq, wires, d=2):
         AmplitudeAndPhaseAndFreq(qml.math.sin, amplitude, phase, freq),
     ]
 
-    drive_x_term = 0.5 * sum(qml.PauliX(wire) for wire in wires)
-    drive_y_term = -0.5 * sum(qml.PauliY(wire) for wire in wires)
+    drive_x_term = sum(qml.PauliX(wire) for wire in wires)
+    drive_y_term = -sum(qml.PauliY(wire) for wire in wires)
 
     observables = [drive_x_term, drive_y_term]
 
