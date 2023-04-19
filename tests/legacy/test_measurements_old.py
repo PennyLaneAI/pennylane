@@ -13,6 +13,7 @@
 # limitations under the License.
 
 """Unit tests for measurements for the legacy return types"""
+# pylint: disable=too-few-public-method
 import pytest
 
 import pennylane as qml
