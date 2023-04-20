@@ -4,6 +4,25 @@
 
 <h3>New features since last release</h3>
 
+* `ParametrizedEvolution` takes two new Boolean keyword arguments: `return_intermediate` and
+  `complementary`. They allow computing intermediate time evolution matrices.
+  [(#3900)](https://github.com/PennyLaneAI/pennylane/pull/3900)
+  
+  Activating `return_intermediate` will result in `evol_op.matrix()` returning intermediate solutions
+  to the Schrodinger equation. Activating `complementary` will make these intermediate solutions
+  be the _remaining_ time evolution complementary to the output for `complementary=False`.
+  See the [docstring](https://docs.pennylane.ai/en/stable/code/api/pennylane.pulse.ParametrizedEvolution.html)
+  for details.
+
+* New `Resources` data class to store resources like number of gates and circuit depth throughout a 
+  quantum circuit.
+  [(#3981)](https://github.com/PennyLaneAI/pennylane/pull/3981/)
+
+* A `_count_resources()` function was added to count the resources required when executing a 
+  QuantumTape for a given number of shots.
+  [(#3996)](https://github.com/PennyLaneAI/pennylane/pull/3996)
+
+ 
 <h4>Pulse programming</h4>
 
 * Added the needed functions and classes to simulate an ensemble of Rydberg atoms:
@@ -25,6 +44,17 @@
   * A new keyword argument called `max_distance` has been added to `qml.pulse.rydberg_interaction` to allow for the removal of negligible contributions
     from atoms beyond `max_distance` from each other.
     [(#3889)](https://github.com/PennyLaneAI/pennylane/pull/3889)
+
+* `ParametrizedEvolution` takes two new Boolean keyword arguments: `return_intermediate` and
+  `complementary`. They allow computing intermediate time evolution matrices.
+  [(#3900)](https://github.com/PennyLaneAI/pennylane/pull/3900)
+  
+  Activating `return_intermediate` will return intermediate time evolution steps, for example
+  for the matrix of the Operation, or of a quantum circuit when used in a QNode.
+  Activating `complementary` will make these intermediate steps be the _remaining_
+  time evolution complementary to the output for `complementary=False`.
+  See the [docstring](https://docs.pennylane.ai/en/stable/code/api/pennylane.pulse.ParametrizedEvolution.html)
+  for details.
 
 <h4>Quantum singular value transform</h4>
 
@@ -62,6 +92,12 @@
   [(#3862)](https://github.com/PennyLaneAI/pennylane/pull/3862/)
 
 <h4>Performance improvements</h4>
+
+* Hardware-compatible pulse sequence gradients with `stoch_pulse_grad` can be calculated faster now, using
+  the new keyword argument `use_broadcasting`. Executing a `ParametrizedEvolution` that returns
+  intermediate evolutions has increased performance as well, using the state vector ODE solver.
+  [(#4000)](https://github.com/PennyLaneAI/pennylane/pull/4000)
+  [(#4004)](https://github.com/PennyLaneAI/pennylane/pull/4004)
 
 * Added a new decomposition to `qml.SingleExcitation` that halves the number of
   CNOTs required.
@@ -186,6 +222,17 @@
   ambiguity between `op.num_wires = 0` and `op.num_wires = AllWires`.
   [(#3978)](https://github.com/PennyLaneAI/pennylane/pull/3978)
 
+* Execution code has been updated to use the new `qml.transforms.convert_to_numpy_parameters` instead of `qml.tape.Unwrap`.
+  [(#3989)](https://github.com/PennyLaneAI/pennylane/pull/3989)
+
+* Converted a sub-routine of `expand_tape` into `qml.tape.tape.rotations_and_diagonal_measurements`,
+  a helper function that computes rotations and diagonal measurements for a tape with measurements
+  with overlapping wires.
+  [(#3912)](https://github.com/PennyLaneAI/pennylane/pull/3912)
+
+* Update various Operators and templates to ensure their decompositions only return lists of Operators.
+  [(#3243)](https://github.com/PennyLaneAI/pennylane/pull/3243)
+
 <h3>Breaking changes 💔</h3>
 
 * The tape method `get_operation` has an updated signature.
@@ -220,6 +267,11 @@
   [(#3958)](https://github.com/PennyLaneAI/pennylane/pull/3958)
   [(#3983)](https://github.com/PennyLaneAI/pennylane/pull/3983)
 
+* `qml.tape.tape.expand_tape` (and consequentially `QuantumScript.expand`) no longer updates the inputted tape
+  with rotations and diagonal measurements. Note that the newly expanded tape that is returned will still have
+  the rotations and diagonal measurements.
+  [(#3912)](https://github.com/PennyLaneAI/pennylane/pull/3912)
+
 <h3>Deprecations 👋</h3>
 
 <h3>Documentation 📝</h3>
@@ -228,6 +280,9 @@
   [(#3844)](https://github.com/PennyLaneAI/pennylane/pull/3844)
 
 <h3>Bug fixes 🐛</h3>
+
+* Fixes a bug where `qml.ctrl` for parametric gates were incompatible with PyTorch tensors on the GPU.
+  [(#4002)](https://github.com/PennyLaneAI/pennylane/pull/4002)
 
 * Fixes a bug where the broadcast expand results where stacked along the wrong axis for the new return system.
   [(#3984)](https://github.com/PennyLaneAI/pennylane/pull/3984)
@@ -313,6 +368,7 @@ Christina Lee,
 Vincent Michaud-Rioux,
 Albert Mitjans,
 Romain Moyard,
+Lee J. O'Riordan,
 Mudit Pandey,
 Matthew Silverman,
 Jay Soni,
