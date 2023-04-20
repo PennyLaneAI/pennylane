@@ -151,22 +151,6 @@ class FirstQuantization(Operation):
             self.recip_bv,
         )
 
-        self.n_dirty = self._clean_cost(
-            self.n,
-            self.eta,
-            self.omega,
-            self.error,
-            self.br,
-            self.charge,
-            self.cubic,
-            self.orthogonal,
-            self.exact,
-            self.p_th,
-            self.recip_bv,
-            self.n_dirty,
-            self.n_tof,
-        )
-
         self.gates = self.gate_cost(
             self.n,
             self.eta,
@@ -650,7 +634,7 @@ class FirstQuantization(Operation):
         return e_cost * u_cost
 
     @staticmethod
-    def _clean_cost(
+    def _clean_qubits(
         n,
         eta,
         omega,
@@ -662,7 +646,6 @@ class FirstQuantization(Operation):
         exact=False,
         p_th=0.95,
         recip_bv=None,
-        n_dirty=None,
         n_tof=500,
     ):
         r"""Return the number of clean logical qubits needed to ...."""
@@ -848,7 +831,7 @@ class FirstQuantization(Operation):
             )
         )
 
-        logical_clean_qubits = FirstQuantization._clean_cost(
+        logical_clean_qubits = FirstQuantization._clean_qubits(
             n,
             eta,
             omega,
@@ -860,7 +843,6 @@ class FirstQuantization(Operation):
             exact,
             p_th,
             recip_bv,
-            n_dirty,
             n_tof,
         )
 
@@ -996,6 +978,22 @@ class FirstQuantization(Operation):
             cost -= 2 * (3 * 2 + 2 * br - 9)
             cost += 2 * (2 * (2 * (2 ** (4 + 1) - 1) + (n_b - 3) * 4 + 2**4 + (n_p - 2)))
             cost += 8  # 5 to compute the flag qubit for T being prepared, uncomputation without Toffolis, and 3 for the ROT cost
+
+            if n_dirty is None:
+                n_dirty = FirstQuantization._clean_qubits(
+                    n,
+                    eta,
+                    omega,
+                    error,
+                    br,
+                    charge,
+                    cubic,
+                    orthogonal,
+                    exact,
+                    p_th,
+                    recip_bv,
+                    n_tof,
+                )
 
             ms_cost = FirstQuantization._momentum_state_qrom(n_p, n_m, n_dirty, n_tof, kappa=1)[0]
             cost -= (2 * aa_steps + 1) * (3 * n_p**2 + 15 * n_p - 7 + 4 * n_m * (n_p + 1))
