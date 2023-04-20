@@ -14,7 +14,7 @@
   See the [docstring](https://docs.pennylane.ai/en/stable/code/api/pennylane.pulse.ParametrizedEvolution.html)
   for details.
 
-* The `qml.enable_op_arithmetic` toggle has been introduced to cause dunder methods to return arithmetic
+* The `qml.operation.enable_new_opmath` toggle has been introduced to cause dunder methods to return arithmetic
   operators instead of Hamiltonians and Tensors.
   [(#4008)](https://github.com/PennyLaneAI/pennylane/pull/4008)
 
@@ -23,9 +23,12 @@
   ```pycon
   >>> type(qml.PauliX(0) @ qml.PauliZ(1))
   <class 'pennylane.operation.Tensor'>
-  >>> qml.enable_op_arithmetic()
+  >>> qml.operation.enable_new_opmath()
   >>> type(qml.PauliX(0) @ qml.PauliZ(1))
   <class 'pennylane.ops.op_math.prod.Prod'>
+  >>> qml.operation.disable_new_opmath()
+  >>> type(qml.PauliX(0) @ qml.PauliZ(1))
+  <class 'pennylane.operation.Tensor'>
   ```
 
 * New `Resources` data class to store resources like number of gates and circuit depth throughout a 
