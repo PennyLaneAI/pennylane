@@ -135,8 +135,8 @@ If you are still experiencing issues, please post in the
               return expval + p0 - p1
 
 .. details::
-    :title: I am a plugin developer
-    :href: plugin-developer
+    :title: I am a device developer
+    :href: device-developer
 
     If you are a :ref:`device developer <plugin_overview>`, your issue may because:
 
