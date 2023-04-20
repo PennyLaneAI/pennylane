@@ -274,45 +274,21 @@ def _split_pauli_sentence(pl_sentence, max_size=15000):
         yield qml.pauli.PauliSentence({k: pl_sentence[k] for k in itertools.islice(it, max_size)})
 
 
-def taper(h, generators, paulixops, paulix_sector):
-    r"""Transform a Hamiltonian with a Clifford operator and then taper qubits.
-
-    The Hamiltonian is transformed as :math:`H' = U^{\dagger} H U` where :math:`U` is a Clifford
-    operator. The transformed Hamiltonian acts trivially on some qubits which are then replaced
-    with the eigenvalues of their corresponding Pauli-X operator. The list of these
-    eigenvalues is defined as the Pauli sector.
+def _taper_pauli_sentence(ps_h, generators, paulixops, paulix_sector):
+    r"""Transform a PauliSentence with a Clifford operator and then taper qubits.
 
     Args:
-        h (Hamiltonian): PennyLane Hamiltonian
+        ps_h (Hamiltonian): PauliSentence
         generators (list[Hamiltonian]): generators expressed as PennyLane Hamiltonians
         paulixops (list[Operation]): list of single-qubit Pauli-X operators
         paulix_sector (llist[int]): eigenvalues of the Pauli-X operators
 
     Returns:
         Hamiltonian: the tapered Hamiltonian
-
-    **Example**
-
-    >>> symbols = ["H", "H"]
-    >>> geometry = np.array([[0.0, 0.0, -0.69440367], [0.0, 0.0, 0.69440367]])
-    >>> H, qubits = qml.qchem.molecular_hamiltonian(symbols, geometry)
-    >>> generators = qml.qchem.symmetry_generators(H)
-    >>> paulixops = paulix_ops(generators, 4)
-    >>> paulix_sector = [1, -1, -1]
-    >>> H_tapered = taper(H, generators, paulixops, paulix_sector)
-    >>> print(H_tapered)
-      ((-0.321034397355757+0j)) [I0]
-    + ((0.1809270275619003+0j)) [X0]
-    + ((0.7959678503869626+0j)) [Z0]
     """
+
     u = clifford(generators, paulixops)
-
-    # cast to pauli sentence
-    ps_u = pauli_sentence(u)
-
-    ps_h = h
-    if not isinstance(ps_h, qml.pauli.PauliSentence):
-        ps_h = pauli_sentence(h)
+    ps_u = pauli_sentence(u)  # cast to pauli sentence
 
     ts_ps = qml.pauli.PauliSentence()
     for ps in _split_pauli_sentence(ps_h, max_size=PAULI_SENTENCE_MEMORY_SPLITTING_SIZE):
@@ -360,6 +336,42 @@ def taper(h, generators, paulixops, paulix_sector):
             np.array([*tapered_ham.coeffs, 0.0]), [*tapered_ham.ops, identity_op]
         )
     return tapered_ham
+
+
+def taper(h, generators, paulixops, paulix_sector):
+    r"""Transform a Hamiltonian with a Clifford operator and then taper qubits.
+
+    The Hamiltonian is transformed as :math:`H' = U^{\dagger} H U` where :math:`U` is a Clifford
+    operator. The transformed Hamiltonian acts trivially on some qubits which are then replaced
+    with the eigenvalues of their corresponding Pauli-X operator. The list of these
+    eigenvalues is defined as the Pauli sector.
+
+    Args:
+        h (Hamiltonian): PennyLane Hamiltonian
+        generators (list[Hamiltonian]): generators expressed as PennyLane Hamiltonians
+        paulixops (list[Operation]): list of single-qubit Pauli-X operators
+        paulix_sector (llist[int]): eigenvalues of the Pauli-X operators
+
+    Returns:
+        Hamiltonian: the tapered Hamiltonian
+
+    **Example**
+
+    >>> symbols = ["H", "H"]
+    >>> geometry = np.array([[0.0, 0.0, -0.69440367], [0.0, 0.0, 0.69440367]])
+    >>> H, qubits = qml.qchem.molecular_hamiltonian(symbols, geometry)
+    >>> generators = qml.qchem.symmetry_generators(H)
+    >>> paulixops = paulix_ops(generators, 4)
+    >>> paulix_sector = [1, -1, -1]
+    >>> H_tapered = taper(H, generators, paulixops, paulix_sector)
+    >>> print(H_tapered)
+      ((-0.321034397355757+0j)) [I0]
+    + ((0.1809270275619003+0j)) [X0]
+    + ((0.7959678503869626+0j)) [Z0]
+    """
+
+    ps_h = pauli_sentence(h)
+    return _taper_pauli_sentence(ps_h, generators, paulixops, paulix_sector)
 
 
 def optimal_sector(qubit_op, generators, active_electrons):
@@ -472,7 +484,7 @@ def taper_hf(generators, paulixops, paulix_sector, num_electrons, num_wires):
     ferm_ps = functools.reduce(lambda i, j: i * j, fermop_terms_as_ps)
 
     # taper the HF observable using the symmetries obtained from the molecular hamiltonian
-    fermop_taper = taper(ferm_ps, generators, paulixops, paulix_sector)
+    fermop_taper = _taper_pauli_sentence(ferm_ps, generators, paulixops, paulix_sector)
     fermop_mat = _binary_matrix(fermop_taper.ops, len(fermop_taper.wires))
 
     # build a wireset to match wires with that of the tapered Hamiltonian

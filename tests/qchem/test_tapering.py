@@ -32,6 +32,7 @@ from pennylane.qchem.tapering import (
     taper_hf,
     taper_operation,
     _split_pauli_sentence,
+    _taper_pauli_sentence,
 )
 
 
@@ -519,7 +520,10 @@ def test_taper_obs(symbols, geometry, charge):
         qml.qchem.spinz(len(hamiltonian.wires)),
     ]
     for observable in observables:
+        obs_ps = qml.pauli.pauli_sentence(observable)
         tapered_obs = qml.taper(observable, generators, paulixops, paulix_sector)
+        tapered_ps = _taper_pauli_sentence(obs_ps, generators, paulixops, paulix_sector)
+
         obs_val = (
             scipy.sparse.coo_matrix(state)
             @ qml.utils.sparse_hamiltonian(observable)
@@ -531,6 +535,7 @@ def test_taper_obs(symbols, geometry, charge):
             @ scipy.sparse.coo_matrix(state_tapered).T
         ).toarray()
         assert np.isclose(obs_val, obs_val_tapered)
+        assert qml.equal(tapered_obs, tapered_ps)
 
 
 @pytest.mark.parametrize(
@@ -956,37 +961,22 @@ def test_inconsistent_callable_ops(operation, op_wires, op_gen, message_match):
 
 
 @pytest.mark.parametrize(
-    ("symbols", "geometry", "charge"),
+    ("ps_size", "max_size"),
     [
-        (
-            ["H", "H"],
-            np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.40104295]], requires_grad=True),
-            0,
-        ),
-        (
-            ["He", "H"],
-            np.array(
-                [[0.0, 0.0, 0.0], [0.0, 0.0, 1.4588684632]],
-                requires_grad=True,
-            ),
-            1,
-        ),
+        (19, 49),
+        (4, 13),
     ],
 )
-@pytest.mark.parametrize(
-    "max_size",
-    [2, 5],
-)
-def test_split_pauli_sentence(symbols, geometry, charge, max_size):
+def test_split_pauli_sentence(ps_size, max_size):
     """Test that _split_pauli_sentence splits the PauliSentence objects into correct chunks."""
 
-    mol = qml.qchem.Molecule(symbols, geometry, charge)
-    hamiltonian = qml.qchem.diff_hamiltonian(mol)(geometry)
+    pauli_sentence = qml.pauli.PauliSentence(
+        {qml.pauli.PauliWord({i: "X", i + 1: "Y", i + 2: "Z"}): i for i in range(ps_size)}
+    )
 
-    pauli_sentence = qml.pauli.pauli_sentence(hamiltonian)
     split_sentence = {}
-
     for ps in _split_pauli_sentence(pauli_sentence, max_size=max_size):
+        assert len(ps) <= max_size
         split_sentence = {**split_sentence, **ps}
 
     assert pauli_sentence == qml.pauli.PauliSentence(split_sentence)
