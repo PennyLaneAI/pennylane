@@ -17,6 +17,8 @@ Stores classes and logic to aggregate all the resource information from a quantu
 from collections import defaultdict
 from dataclasses import dataclass, field
 
+from pennylane.tape import QuantumTape
+
 
 @dataclass(frozen=True)
 class Resources:
