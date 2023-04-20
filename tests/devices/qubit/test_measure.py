@@ -223,8 +223,8 @@ class TestSumOfTermsDifferentiability:
         config.update("jax_enable_x64", True)  # otherwise output is too noisy
 
         x = jax.numpy.array(0.52, dtype=jax.numpy.float64)
-        coeffs = [jax.numpy.array(5.2), jax.numpy.array(9.67)]
-        f = jax.jit(self.f, static_argnums=(1, 2, 3)) if use_jit else self.f
+        coeffs = (5.2, 6.7)
+        f = jax.jit(self.f, static_argnums=(1, 2, 3, 4)) if use_jit else self.f
 
         out = f(x, coeffs, convert_to_hamiltonian=convert_to_hamiltonian)
         expected_out = self.expected(x, coeffs)
@@ -240,10 +240,13 @@ class TestSumOfTermsDifferentiability:
         """Test that backpropagation derivatives work with torch with hamiltonians and large sums."""
         import torch
 
-        coeffs = [torch.tensor(9.2, requires_grad=False), torch.tensor(6.2, requires_grad=False)]
+        coeffs = [
+            torch.tensor(9.2, requires_grad=False, dtype=torch.float64),
+            torch.tensor(6.2, requires_grad=False, dtype=torch.float64),
+        ]
 
-        x = torch.tensor(-0.289, requires_grad=True)
-        x2 = torch.tensor(-0.289, requires_grad=True)
+        x = torch.tensor(-0.289, requires_grad=True, dtype=torch.float64)
+        x2 = torch.tensor(-0.289, requires_grad=True, dtype=torch.float64)
         out = self.f(x, coeffs, convert_to_hamiltonian=convert_to_hamiltonian)
         expected_out = self.expected(x2, coeffs, like="torch")
         assert qml.math.allclose(out, expected_out)

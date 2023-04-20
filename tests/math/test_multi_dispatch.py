@@ -201,7 +201,6 @@ def test_gammainc(n, t, gamma_ref):
 
 
 def test_dot_autograd():
-
     x = np.array([1.0, 2.0], requires_grad=False)
     y = np.array([2.0, 3.0], requires_grad=True)
 
