@@ -63,9 +63,11 @@ class ParametrizedEvolution(Operation):
         t (Union[float, List[float]]): If a float, it corresponds to the duration of the evolution.
             If a list of floats, the ODE solver will use all the provided time values, and
             perform intermediate steps if necessary. It is recommended to just provide a start
-            and end time unless matrices of the time evolution at intermediate times needs
+            and end time unless matrices of the time evolution at intermediate times need
             to be computed. Note that such absolute times only have meaning within an instance of
             ``ParametrizedEvolution`` and will not affect other gates.
+            To return the matrix at intermediate evolution times, activate ``return_intermediate``
+            (see below).
         do_queue (bool): determines if the scalar product operator will be queued. Default is True.
         id (str or None): id for the scalar product operator. Default is None.
 
@@ -79,10 +81,11 @@ class ParametrizedEvolution(Operation):
             ODE solver. Defaults to ``jnp.inf``.
         hmax (float, optional): maximum step size allowed for the ODE solver. Defaults to ``jnp.inf``.
         return_intermediate (bool): Whether or not the ``matrix`` method returns all intermediate
-            solutions of the time evolution ODE at the times provided in ``t = [t_0, t_1, .. , t_f]``. If ``False``
-            (the default), only the matrix for the full time evolution is returned. If ``True``,
-            all solutions including the initial condition :math:`U(t_0, t_0)=1` are returned; when
-            used in a circuit, this results in ``ParametrizedEvolution`` being a broadcasted operation.
+            solutions of the time evolution at the times provided in ``t = [t_0,...,t_f]``.
+            If ``False`` (the default), only the matrix for the full time evolution is returned.
+            If ``True``, all solutions including the initial condition are returned;
+            when used in a circuit, this results in ``ParametrizedEvolution`` being a broadcasted
+            operation, see the usage details ("Computing intermediate time evolution") below.
         complementary (bool): Whether or not to compute the complementary time evolution when using
             ``return_intermediate=True`` (ignored otherwise).
             If ``False`` (the default), the usual solutions to the Schrodinger equation
@@ -283,10 +286,10 @@ class ParametrizedEvolution(Operation):
         .. code-block:: python
 
             ops = [qml.PauliZ(0), qml.PauliY(0), qml.PauliX(0)]
-            coeffs = [lambda p, t: p * jnp.sin(t) for _ in range(3)]
+            coeffs = [lambda p, t: p * jnp.cos(t) for _ in range(3)]
             H = qml.dot(coeffs, ops) # time-dependent parametrized Hamiltonian
 
-            param = [jnp.array(0.2), jnp.array(0.1), jnp.array(-0.3)]
+            param = [jnp.array(0.2), jnp.array(1.1), jnp.array(-1.3)]
             time = jnp.linspace(0.1, 0.4, 6) # Six time points from 0.1 to 0.4
 
             ev = qml.evolve(H)(param, time, return_intermediate=True)
@@ -297,6 +300,26 @@ class ParametrizedEvolution(Operation):
 
         Note that the broadcasting axis has length ``len(time)`` and is the first axis of the
         returned tensor.
+        We may use this feature within QNodes executed on a simulator, returning the
+        measurements for all intermediate time steps:
+
+        .. code-block:: python
+
+            dev = qml.device("default.qubit.jax", wires=1)
+
+            @qml.qnode(dev, interface="jax")
+            def circuit(param, time):
+                qml.evolve(H)(param, time, return_intermediate=True)
+                return qml.probs(wires=[0])
+
+        >>> circuit(param, time)
+        Array([[1.        , 0.        ],
+               [0.9897738 , 0.01022595],
+               [0.9599043 , 0.04009585],
+               [0.9123617 , 0.08763832],
+               [0.84996957, 0.15003097],
+               [0.7761489 , 0.22385144]], dtype=float32)
+
 
         **Computing complementary time evolution**
 
@@ -407,6 +430,21 @@ class ParametrizedEvolution(Operation):
         # Subtract 1 because the identity is never returned by `matrix`. If `complementary=True`,
         # subtract and additional 1 because the full time evolution is not being returned.
         self._batch_size = self.t.shape[0]
+
+    @property
+    def hash(self):
+        """int: Integer hash that uniquely represents the operator."""
+        return hash(
+            (
+                str(self.name),
+                tuple(self.wires.tolist()),
+                str(self.hyperparameters.values()),
+                str(self.t),
+                str(self.data),
+                self.H,
+                str(self.odeint_kwargs.values()),
+            )
+        )
 
     # pylint: disable=arguments-renamed, invalid-overridden-method
     @property
