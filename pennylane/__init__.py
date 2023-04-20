@@ -27,12 +27,14 @@ from semantic_version import SimpleSpec, Version
 from pennylane.boolean_fn import BooleanFn
 from pennylane.queuing import QueuingManager, apply
 
-import pennylane.fourier
-import pennylane.kernels
-import pennylane.math
-import pennylane.operation
-import pennylane.qnn
-import pennylane.templates
+from pennylane import fourier as fourier
+from pennylane import kernels as kernels
+from pennylane import math as math
+from pennylane import operation as operation
+from pennylane import qnn as qnn
+from pennylane import templates as qntemplatesn
+from pennylane import pauli as pauli
+
 import pennylane.pauli
 from pennylane.pauli import pauli_decompose
 import pennylane.resource
