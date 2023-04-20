@@ -88,12 +88,12 @@ def prod(*ops, do_queue=True, id=None, lazy=True):
 
     You can also create a prod operator by passing a qfunc to prod, like the following:
 
-    >>> def qfunc():
-    ...     qml.Hadamard(0)
+    >>> def qfunc(x):
+    ...     qml.RX(x, 0)
     ...     qml.CNOT([0, 1])
-    >>> prod_op = prod(qfunc)
+    >>> prod_op = prod(qfunc)(1.1)
     >>> prod_op
-    CNOT(wires=[0, 1]) @ Hadamard(wires=[0])
+    CNOT(wires=[0, 1]) @ RX(1.1, wires=[0])
     """
     if len(ops) == 1 and callable(ops[0]):
         fn = ops[0]
