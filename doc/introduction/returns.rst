@@ -103,6 +103,9 @@ If you are still experiencing issues, please post in the
           qml.jacobian(circuit)(x)
 
       Follow the instructions :ref:`here <return-autograd-tf-gotcha>` to fix this issue.
+      Alternatively, consider porting your code to use the :ref:`JAX <jax_interf>` or
+      :ref:`Torch <torch_interf>` interface, which could unlock additional features and performance
+      benefits!
 
     * You are returning differently-shaped quantities together, such as :func:`~.expval` and
       :func:`~.probs`. For example, the following code is compatible with version 0.29 of PennyLane
