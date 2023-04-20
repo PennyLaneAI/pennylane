@@ -233,6 +233,9 @@
 * Update various Operators and templates to ensure their decompositions only return lists of Operators.
   [(#3243)](https://github.com/PennyLaneAI/pennylane/pull/3243)
 
+* Expose the private `Operator._pauli_rep` property via the public, read-only `pauli_rep` property.
+  [(4017)](https://github.com/PennyLaneAI/pennylane/pull/4017)
+
 <h3>Breaking changes 💔</h3>
 
 * Both JIT interfaces are not compatible with JAX `>0.4.3`, we raise an error for those versions.
