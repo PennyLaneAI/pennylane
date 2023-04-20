@@ -14,16 +14,19 @@
 """
 This module contains the :class:`Wires` class, which takes care of wire bookkeeping.
 """
+from typing import Any, Iterable, Union, Optional
 import functools
 from collections.abc import Iterable, Sequence
 import itertools
 
 import numpy as np
 
+from pennylane.core.pytree import Pytree, static_field, field
 
 class WireError(Exception):
     """Exception raised by a :class:`~.pennylane.wires.Wire` object when it is unable to process wires."""
 
+WiresT = Union["Wires", Sequence, int, str]
 
 def _process(wires):
     """Converts the input to a tuple of wire labels.
@@ -76,7 +79,7 @@ def _process(wires):
     return tuple_of_wires
 
 
-class Wires(Sequence):
+class Wires(Sequence, Pytree):
     r"""
     A bookkeeping class for wires, which are ordered collections of unique objects.
 
@@ -98,14 +101,16 @@ class Wires(Sequence):
     Args:
          wires (Any): the wire label(s)
     """
+    
+    _labels : Iterable[Any] = static_field()
+    
+    _hash_cache : Optional[int] = field(default=None, cache_node=True, pytree_node=False)
 
     def __init__(self, wires, _override=False):
         if _override:
             self._labels = wires
         else:
             self._labels = _process(wires)
-
-        self._hash = None
 
     def __getitem__(self, idx):
         """Method to support indexing. Returns a Wires object if index is a slice,
@@ -145,9 +150,9 @@ class Wires(Sequence):
 
     def __hash__(self):
         """Implements the hash function."""
-        if self._hash is None:
-            self._hash = hash(self._labels)
-        return self._hash
+        if self._hash_cache is None:
+            object.__setattr__(self, "_hash_cache", hash(self._labels))
+        return self._hash_cache
 
     def __add__(self, other):
         """Defines the addition to return a Wires object containing all wires of the two terms.
