@@ -19,6 +19,8 @@ Summary of the update
 
 Consider the following circuit:
 
+.. _return-type-example-issue:
+
 .. code-block:: python
 
     import pennylane as qml
@@ -53,46 +55,99 @@ PennyLane has historically adopted the approach of combining the returned
 :ref:`measurements <intro_ref_meas>` of a QNode into a single array. However, this has presented
 some challenges:
 
-* The return of a QNode could be different to what is expected, as shown in the example above.
+* The return of a QNode could be different to what is expected, as shown in the
+  :ref:`example <return-type-example-issue>` above.
 * For measurements of different shapes, ragged arrays were generated internally and then squeezed
   into a single output array. This was incompatible with NumPy's
-  `NEP 34 <https://numpy.org/neps/nep-0034-infer-dtype-is-object.html>`__ and constrained the
-  `version of NumPy <https://github.com/PennyLaneAI/pennylane/blob/v0.29.1/setup.py#L21>`__ that
+  `NEP 34 <https://numpy.org/neps/nep-0034-infer-dtype-is-object.html>`_ and constrained the
+  `version of NumPy <https://github.com/PennyLaneAI/pennylane/blob/v0.29.1/setup.py#L21>`_ that
   PennyLane was compatible with.
 * Use of stacking and squeezing presented performance bottlenecks.
 
 The changes made in PennyLane version 0.30 address the challenges above. However, existing users
 may experience breaking changes or issues.
 
-Who might be affected?
-----------------------
-
-You may experience issues with PennyLane's updated QNode return system in version 0.30 and above
-if:
-
-* You have existing code that works with PennyLane version 0.29 or below.
-
-* You are using a QNode that returns more than one quantity, and:
-
-  * You are calculating the Jacobian of the QNode in :ref:`NumPy <numpy_interf>` or
-    :ref:`TensorFlow <tf_interf>`;
-
-  * You are returning differently-shaped quantities together, such as :func:`~.expval` and
-    :func:`~.probs`.
-
-* You are a :ref:`device developer <plugin_overview>`, and:
-
-  * Your device inherits from :class:`~.Device`,
-
-  * Your device inherits from :class:`~.QubitDevice` and have overriden the
-    :meth:`~.QubitDevice.statistics` method.
-
-Please post in the `PennyLane Discussion Forum <https://discuss.pennylane.ai>`_ if you experience
-any other issues that cannot be resolved after consulting the troubleshooting section below.
-
 .. _Troubleshooting:
 
 Troubleshooting
 ---------------
 
-TODO
+You may experience issues with PennyLane's updated QNode return system in version 0.30 and above
+if you have existing code that works with an earlier version of PennyLane. To help identify a fix,
+select the option below that describes your situation.
+
+If you are still experiencing issues, please post in the
+`PennyLane Discussion Forum <https://discuss.pennylane.ai>`_.
+
+.. details::
+    :title: I am using a QNode that returns more than one quantity
+    :href: qnode-multiple-returns
+
+    Your issue may be because:
+
+    * You are calculating the Jacobian of the QNode using the :ref:`NumPy <numpy_interf>` or
+      :ref:`TensorFlow <tf_interf>` interface. For example, the following will raise an error:
+
+      .. code-block:: python
+
+          from pennylane import numpy as np
+
+          dev = qml.device("default.qubit", wires=1)
+
+          @qml.qnode(dev)
+          def circuit(x):
+              qml.RX(x, wires=0)
+              return qml.expval(qml.PauliY(0)), qml.expval(qml.PauliZ(0))
+
+          x = np.array(0.5, requires_grad=True)
+          qml.jacobian(circuit)(x)
+
+      Follow the instructions :ref:`here <return-autograd-tf-gotcha>` to fix this issue.
+
+    * You are returning differently-shaped quantities together, such as :func:`~.expval` and
+      :func:`~.probs`. For example, the following code is compatible with version 0.29 of PennyLane
+      but will raise an error in version 0.30 and above:
+
+      .. code-block:: python
+
+          dev = qml.device("default.qubit", wires=1)
+
+          @qml.qnode(dev)
+          def circuit(x):
+              qml.RX(x, wires=0)
+              return qml.expval(qml.PauliZ(0)), qml.probs(0)
+
+          def result(x):
+              expval, p0, p1 = circuit(x)
+              return expval + p0 - p1
+
+          x = np.array(0.5, requires_grad=True)
+          result(x)
+
+      Such issues can be addressed by updating how the return of a QNode is processed, being aware
+      of unpacking, slicing, and indexing. The example above would be fixed simply by updating
+      ``result`` to:
+
+      .. code-block:: python
+
+          def result(x):
+              expval, (p0, p1) = circuit(x)
+              return expval + p0 - p1
+
+.. details::
+    :title: I am a plugin developer
+    :href: plugin-developer
+
+    If you are a :ref:`device developer <plugin_overview>`, your issue may because:
+
+    * Your device inherits from :class:`~.QubitDevice` and you have overriden or interact with the
+      :meth:`~.QubitDevice.execute`, :meth:`~.QubitDevice.batch_execute`, or
+      :meth:`~.QubitDevice.statistics` methods. Your device will need to be updated to accommodate
+      for the new return behaviour. An example can be found
+      `here <https://github.com/PennyLaneAI/pennylane-qiskit/pull/281>`_ for the
+      `Qiskit plugin <https://docs.pennylane.ai/projects/qiskit/en/latest/>`_.
+
+    * Your device inherits from :class:`~.Device`, in which case you may need to rewrite the
+      :meth:`~.QubitDevice.execute`, :meth:`~.QubitDevice.batch_execute`, and
+      :meth:`~.QubitDevice.statistics` methods. Please
+      `reach out to us <https://discuss.pennylane.ai>`_ for guidance!

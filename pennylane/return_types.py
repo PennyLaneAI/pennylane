@@ -87,8 +87,11 @@ def enable_return():
     Note that this is an experimental feature and may not support every feature in PennyLane. See the ``Usage Details``
     section for more details.
 
+    .. _return-autograd-tf-gotcha:
+
     .. details::
         :title: Usage Details
+        :href: return-autograd-tf-gotcha
 
         **Gotcha: Autograd and TensorFlow can only compute gradients of tensor-valued functions**
 
