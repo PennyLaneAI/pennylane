@@ -349,6 +349,7 @@ def transmon_drive(amplitude, phase, freq, wires, d=2):
     wires = Wires(wires)
 
     # TODO: use creation and annihilation operators when introducing qutrits
+    # Note that exp(-iw)a* + exp(iw)a = cos(w)X - sin(w)Y for a=1/2(X+iY)
     # We compute the `coeffs` and `observables` of the EM field
     coeffs = [
         AmplitudeAndPhaseAndFreq(qml.math.cos, amplitude, phase, freq),
