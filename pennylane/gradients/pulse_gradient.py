@@ -593,12 +593,10 @@ def _expval_stoch_pulse_grad(tape, argnum, num_split_times, key, shots, use_broa
             gradient_data.append((0, None, None))
             continue
 
-        op, op_idx, term_idx = tape.get_operation(idx)
-        if not isinstance(op, ParametrizedEvolution):
-            raise ValueError(
-                "stoch_pulse_grad does not support differentiating parameters of "
-                "other operations than pulses."
-            )
+        key, _key = jax.random.split(key)
+        cjacs, _tapes, avg_prefactor = _generate_tapes_and_cjacs(
+            tape, idx, _key, num_split_times, use_broadcasting
+        )
 
         gradient_data.append((len(_tapes), qml.math.stack(cjacs), avg_prefactor))
         tapes.extend(_tapes)
