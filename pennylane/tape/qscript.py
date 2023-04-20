@@ -21,7 +21,7 @@ import warnings
 import contextlib
 import copy
 from collections import Counter, defaultdict
-from typing import List, Union
+from typing import List, Optional, Union
 
 import pennylane as qml
 from pennylane.measurements import (
@@ -37,6 +37,8 @@ from pennylane.measurements import (
 )
 from pennylane.operation import Observable, Operator, Operation
 from pennylane.queuing import AnnotatedQueue, process_queue
+
+from pennylane.core.pytree import Pytree, field, static_field, property_cached
 
 _empty_wires = qml.wires.Wires([])
 
@@ -80,7 +82,7 @@ https://github.com/Qiskit/openqasm/blob/master/examples/stdgates.inc
 """
 
 
-class QuantumScript:
+class QuantumScript(Pytree):
     """The state preparation, operations, and measurements that represent instructions for
     execution on a quantum device.
 
@@ -161,6 +163,13 @@ class QuantumScript:
 
     """
 
+    name: Optional[str] = static_field(default=None)
+    
+    _prep: List[Operator] = field(default_factory=list)
+    _ops: List[Operator] = field(default_factory=list)
+    _measurements : List[MeasurementProcess] = field(default_factory=list)
+    
+
     do_queue = False
     """Whether or not to queue the object. Assumed ``False`` for a vanilla Quantum Script, but may be
     True for its child Quantum Tape."""
@@ -171,27 +180,27 @@ class QuantumScript:
         self._ops = [] if ops is None else list(ops)
         self._measurements = [] if measurements is None else list(measurements)
 
-        self._par_info = []
+        #self._par_info = []
         """list[dict[str, Operator or int]]: Parameter information.
         Values are dictionaries containing the corresponding operation and operation parameter index."""
 
-        self._trainable_params = []
+        #self._trainable_params = []
         self._graph = None
         self._specs = None
-        self._output_dim = 0
-        self._batch_size = None
+        #self._output_dim = 0
+        #self._batch_size = None
         self._qfunc_output = None
 
-        self.wires = _empty_wires
-        self.num_wires = 0
+        #self.wires = _empty_wires
+        #self.num_wires = 0
 
-        self.is_sampled = False
-        self.all_sampled = False
+        #self.is_sampled = False
+        #self.all_sampled = False
 
-        self._obs_sharing_wires = []
+        #self._obs_sharing_wires = []
         """list[.Observable]: subset of the observables that share wires with another observable,
         i.e., that do not have their own unique set of wires."""
-        self._obs_sharing_wires_id = []
+        #self._obs_sharing_wires_id = []
 
         if _update:
             self._update()
@@ -321,23 +330,6 @@ class QuantumScript:
         return len(self.trainable_params)
 
     @property
-    def batch_size(self):
-        r"""The batch size of the quantum script inferred from the batch sizes
-        of the used operations for parameter broadcasting.
-
-        .. seealso:: :attr:`~.Operator.batch_size` for details.
-
-        Returns:
-            int or None: The batch size of the quantum script if present, else ``None``.
-        """
-        return self._batch_size
-
-    @property
-    def output_dim(self):
-        """The (inferred) output dimension of the quantum script."""
-        return self._output_dim
-
-    @property
     def diagonalizing_gates(self) -> List[Operation]:
         """Returns the gates that diagonalize the measured wires such that they
         are in the eigenbasis of the circuit observables.
@@ -361,150 +353,70 @@ class QuantumScript:
         """Update all internal metadata regarding processed operations and observables"""
         self._graph = None
         self._specs = None
-        self._update_circuit_info()  # Updates wires, num_wires, is_sampled, all_sampled; O(ops+obs)
-        self._update_par_info()  # Updates _par_info; O(ops+obs)
+        #self._update_circuit_info()  # Updates wires, num_wires, is_sampled, all_sampled; O(ops+obs)
+        #self._update_par_info()  # Updates _par_info; O(ops+obs)
 
         # The following line requires _par_info to be up to date
-        self._update_trainable_params()  # Updates the _trainable_params; O(1)
+        #self._update_trainable_params()  # Updates the _trainable_params; O(1)
 
-        self._update_observables()  # Updates _obs_sharing_wires and _obs_sharing_wires_id
-        self._update_batch_size()  # Updates _batch_size; O(ops)
+        #self._update_observables()  # Updates _obs_sharing_wires and _obs_sharing_wires_id
+        #self._update_batch_size()  # Updates _batch_size; O(ops)
 
         # The following line requires _batch_size to be up to date
-        self._update_output_dim()  # Updates _output_dim; O(obs)
+        #self._update_output_dim()  # Updates _output_dim; O(obs)
 
-    def _update_circuit_info(self):
-        """Update circuit metadata
+    ## FROM _update_circuit_info
+    @property#_cached
+    def wires(self) -> qml.wires.Wires:
+        """The wires used in the operations in this Quantum Script."""
+        return qml.wires.Wires.all_wires(dict.fromkeys(op.wires for op in self))
 
-        Sets:
-            wires (~.Wires): Wires
-            num_wires (int): Number of wires
-            is_sampled (bool): Whether any measurement is of type ``Sample`` or ``Counts``
-            all_sampled (bool): Whether all measurements are of type ``Sample`` or ``Counts``
-        """
-        self.wires = qml.wires.Wires.all_wires(dict.fromkeys(op.wires for op in self))
-        self.num_wires = len(self.wires)
-
+    @property#_cached
+    def num_wires(self) -> int:
+        """The number of wires used in the operations in this Quantum Script."""
+        return len(self.wires)
+    
+    @property#_cached
+    def is_sampled(self) -> bool:
+        """Whether any measurement is of type ``Sample`` or ``Counts``."""
         is_sample_type = [
             isinstance(m, (SampleMP, CountsMP, ClassicalShadowMP, ShadowExpvalMP))
             for m in self.measurements
         ]
-        self.is_sampled = any(is_sample_type)
-        self.all_sampled = all(is_sample_type)
+        return any(is_sample_type)
 
-    def _update_par_info(self):
-        """Update the parameter information list. Each entry in the list with an operation and an index
-        into that operation's data.
+    @property#_cached
+    def all_sampled(self) -> bool:
+        """Whether all measurement are of type ``Sample`` or ``Counts``."""
+        is_sample_type = [
+            isinstance(m, (SampleMP, CountsMP, ClassicalShadowMP, ShadowExpvalMP))
+            for m in self.measurements
+        ]
+        return all(is_sample_type)
 
-        Sets:
-            _par_info (list): Parameter information
+    ## END FROM _update_circuit_info
+    
+    # TODO is it safe to cache?
+    @property#_cached
+    def _par_info(self) -> List:
+        """The parameter information list. 
+        Each entry in the list with an operation and an index into that operation's data.
         """
-        self._par_info = []
+        par_info = []
         for idx, op in enumerate(self.operations):
-            self._par_info.extend(
+            par_info.extend(
                 {"op": op, "op_idx": idx, "p_idx": i} for i, d in enumerate(op.data)
             )
 
         for idx, m in enumerate(self.measurements):
             if m.obs is not None:
-                self._par_info.extend(
+                par_info.extend(
                     {"op": m.obs, "op_idx": idx, "p_idx": i} for i, d in enumerate(m.obs.data)
                 )
-
-    def _update_trainable_params(self):
-        """Set the trainable parameters
-
-        Sets:
-            _trainable_params (list[int]): Script parameter indices of trainable parameters
-
-        Call `_update_par_info` before `_update_trainable_params`
-        """
-        self._trainable_params = list(range(len(self._par_info)))
-
-    def _update_observables(self):
-        """Update information about observables, including the wires that are acted upon and
-        identifying any observables that share wires.
-
-        Sets:
-            _obs_sharing_wires (list[~.Observable]): Observables that share wires with
-                any other observable
-            _obs_sharing_wires_id (list[int]): Indices of the measurements that contain
-                the observables in _obs_sharing_wires
-        """
-        obs_wires = [wire for m in self.measurements for wire in m.wires if m.obs is not None]
-        self._obs_sharing_wires = []
-        self._obs_sharing_wires_id = []
-
-        if len(obs_wires) != len(set(obs_wires)):
-            c = Counter(obs_wires)
-            repeated_wires = {w for w in obs_wires if c[w] > 1}
-
-            for i, m in enumerate(self.measurements):
-                if m.obs is not None and len(set(m.wires) & repeated_wires) > 0:
-                    self._obs_sharing_wires.append(m.obs)
-                    self._obs_sharing_wires_id.append(i)
-
-    def _update_batch_size(self):
-        """Infer the batch_size of the quantum script from the batch sizes of its operations
-        and check the latter for consistency.
-
-        Sets:
-            _batch_size (int): The common batch size of the quantum script operations, if any has one
-        """
-        candidate = None
-        for op in self.operations:
-            op_batch_size = getattr(op, "batch_size", None)
-            if op_batch_size is None:
-                continue
-            if candidate:
-                if op_batch_size != candidate:
-                    raise ValueError(
-                        "The batch sizes of the quantum script operations do not match, they include "
-                        f"{candidate} and {op_batch_size}."
-                    )
-            else:
-                candidate = op_batch_size
-
-        self._batch_size = candidate
-
-    def _update_output_dim(self):
-        """Update the dimension of the output of the quantum script.
-
-        Sets:
-            self._output_dim (int): Size of the quantum script output (when flattened)
-
-        This method makes use of `self.batch_size`, so that `self._batch_size`
-        needs to be up to date when calling it.
-        Call `_update_batch_size` before `_update_output_dim`
-        """
-        self._output_dim = 0
-        for m in self.measurements:
-            # attempt to infer the output dimension
-            if isinstance(m, ProbabilityMP):
-                # TODO: what if we had a CV device here? Having the base as
-                # 2 would have to be swapped to the cutoff value
-                self._output_dim += 2 ** len(m.wires)
-            elif not isinstance(m, StateMP):
-                self._output_dim += 1
-        if self.batch_size:
-            self._output_dim *= self.batch_size
-
-    # ========================================================
-    # Parameter handling
-    # ========================================================
-
+        return par_info
+    
     @property
-    def data(self):
-        """Alias to :meth:`~.get_parameters` and :meth:`~.set_parameters`
-        for backwards compatibilities with operations."""
-        return self.get_parameters(trainable_only=False)
-
-    @data.setter
-    def data(self, params):
-        self.set_parameters(params, trainable_only=False)
-
-    @property
-    def trainable_params(self):
+    def _trainable_params(self) -> List:
         """Store or return a list containing the indices of parameters that support
         differentiability. The indices provided match the order of appearence in the
         quantum circuit.
@@ -534,6 +446,116 @@ class QuantumScript:
         >>> qscript.get_parameters()
         [0.432]
         """
+        return list(range(len(self._par_info)))
+    
+    ## from _update_observables
+    @property_cached
+    def _obs_sharing_wires(self) -> List[Observable]:
+        """The list of observables that share wires with any other observable."""
+        obs_wires = [wire for m in self.measurements for wire in m.wires if m.obs is not None]
+        obs_sharing_wires = []
+
+        if len(obs_wires) != len(set(obs_wires)):
+            c = Counter(obs_wires)
+            repeated_wires = {w for w in obs_wires if c[w] > 1}
+
+            for i, m in enumerate(self.measurements):
+                if m.obs is not None and len(set(m.wires) & repeated_wires) > 0:
+                    obs_sharing_wires.append(m.obs)
+                    
+        return obs_sharing_wires
+
+    @property
+    def _obs_sharing_wires_id(self) -> List[int]:
+        """The list of indices of the measurements that contain the observables in _obs_sharing_wires."""
+        obs_wires = [wire for m in self.measurements for wire in m.wires if m.obs is not None]
+        obs_sharing_wires_id = []
+
+        if len(obs_wires) != len(set(obs_wires)):
+            c = Counter(obs_wires)
+            repeated_wires = {w for w in obs_wires if c[w] > 1}
+
+            for i, m in enumerate(self.measurements):
+                if m.obs is not None and len(set(m.wires) & repeated_wires) > 0:
+                    obs_sharing_wires_id.append(i)
+                    
+        return obs_sharing_wires_id
+    ## end from _update_observables
+    ## from _update_batch_size
+    
+    @property
+    def batch_size(self)-> Optional[int]:
+        r"""The batch size of the quantum script inferred from the batch sizes
+        of the used operations for parameter broadcasting.
+
+        .. seealso:: :attr:`~.Operator.batch_size` for details.
+
+        Returns:
+            int or None: The batch size of the quantum script if present, else ``None``.
+        """
+        """The batch_size of the quantum script from the batch sizes of its operations
+        and check the latter for consistency.
+
+        The common batch size of the quantum script operations, if any has one
+        """
+        batch_size = None
+        for op in self.operations:
+            op_batch_size = getattr(op, "batch_size", None)
+            if op_batch_size is None:
+                continue
+            if batch_size:
+                if op_batch_size != batch_size:
+                    raise ValueError(
+                        "The batch sizes of the quantum script operations do not match, they include "
+                        f"{batch_size} and {op_batch_size}."
+                    )
+            else:
+                batch_size = op_batch_size
+
+        return batch_size
+    
+    @property
+    def output_dim(self) -> int:
+        """The dimension of the output of the quantum script.
+        The (inferred) output dimension of the quantum script.
+
+        Sets:
+            self._output_dim (int): Size of the quantum script output (when flattened)
+
+        This method makes use of `self.batch_size`, so that `self._batch_size`
+        needs to be up to date when calling it.
+        Call `_update_batch_size` before `_update_output_dim`
+        """
+        output_dim = 0
+        for m in self.measurements:
+            # attempt to infer the output dimension
+            if isinstance(m, ProbabilityMP):
+                # TODO: what if we had a CV device here? Having the base as
+                # 2 would have to be swapped to the cutoff value
+                output_dim += 2 ** len(m.wires)
+            elif not isinstance(m, StateMP):
+                output_dim += 1
+        if self.batch_size:
+            output_dim *= self.batch_size
+            
+        return output_dim
+
+    # ========================================================
+    # Parameter handling
+    # ========================================================
+
+    @property
+    def data(self):
+        """Alias to :meth:`~.get_parameters` and :meth:`~.set_parameters`
+        for backwards compatibilities with operations."""
+        return self.get_parameters(trainable_only=False)
+
+    @data.setter
+    def data(self, params):
+        self.set_parameters(params, trainable_only=False)
+
+    @property
+    def trainable_params(self):
         return self._trainable_params
 
     @trainable_params.setter
