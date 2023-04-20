@@ -96,9 +96,7 @@ class FirstQuantization(Operation):
         br=8,
         n_tof=500,
         n_dirty=None,
-        # if given, it should be above a minimum, otherwise we get error as QROM cannot be implemented
         p_th=0.95,
-        exact=False,
     ):
         self.n = n
         self.eta = eta
@@ -110,7 +108,6 @@ class FirstQuantization(Operation):
         self.n_tof = n_tof
         self.n_dirty = n_dirty
         self.p_th = p_th
-        self.exact = exact
 
         if vec_a is not None:
             self.omega = np.abs(np.sum((np.cross(vec_a[0], vec_a[1]) * vec_a[2])))
@@ -146,7 +143,6 @@ class FirstQuantization(Operation):
             self.charge,
             self.cubic,
             self.orthogonal,
-            self.exact,
             self.p_th,
             self.recip_bv,
         )
@@ -160,7 +156,6 @@ class FirstQuantization(Operation):
             self.charge,
             self.cubic,
             self.orthogonal,
-            self.exact,
             self.p_th,
             self.recip_bv,
             self.n_dirty,
@@ -176,7 +171,6 @@ class FirstQuantization(Operation):
             self.charge,
             self.cubic,
             self.orthogonal,
-            self.exact,
             self.p_th,
             self.recip_bv,
             self.n_dirty,
@@ -231,7 +225,6 @@ class FirstQuantization(Operation):
         charge=0,
         cubic=True,
         orthogonal=True,
-        exact=False,
         p_th=0.95,
         recip_bv=None,
     ):
@@ -369,36 +362,16 @@ class FirstQuantization(Operation):
             )
         )
 
-        if not cubic and exact and n_p <= 6:
-            lambda_nu = 0
-            b_mus = {}
-            for j in range(2, n_p + 3):
-                b_mus[j] = []
-            for nu in product(range(-(2 ** (n_p)), 2 ** (n_p) + 1), repeat=3):
-                nu = np.array(nu)
-                if list(nu) != [0, 0, 0]:
-                    mu = int(np.floor(np.log2(np.max(abs(nu))))) + 2
-                    b_mus[mu].append(nu)
-            for mu in range(2, (n_p + 2)):
-                for nu in b_mus[mu]:
-                    gnu_norm = np.linalg.norm(np.sum(nu * recip_bv, axis=0))
-                    lambda_nu += np.ceil(2**n_m * (bmin * 2 ** (mu - 2) / gnu_norm) ** 2) / (
-                        2**n_m * (bmin * 2 ** (mu - 2)) ** 2
-                    )
-            lambda_nu_1 = lambda_nu
+        lambda_nu = (  # expression is taken from Eq. (F6) of PRX 8, 011044 (2018)
+            4 * np.pi * (np.sqrt(3) * n ** (1 / 3) / 2 - 1)
+            + 3
+            - 3 / n ** (1 / 3)
+            + 3 * integrate.nquad(lambda x, y: 1 / (x**2 + y**2), [[1, n0], [1, n0]])[0]
+        ) / bmin**2
 
-        else:
-
-            lambda_nu = (  # expression is taken from Eq. (F6) of PRX 8, 011044 (2018)
-                4 * np.pi * (np.sqrt(3) * n ** (1 / 3) / 2 - 1)
-                + 3
-                - 3 / n ** (1 / 3)
-                + 3 * integrate.nquad(lambda x, y: 1 / (x**2 + y**2), [[1, n0], [1, n0]])[0]
-            ) / bmin**2
-
-            lambda_nu_1 = lambda_nu + 4 / (2**n_m * bmin**2) * (
-                7 * 2 ** (n_p + 1) - 9 * n_p - 11 - 3 * 2 ** (-1 * n_p)
-            )
+        lambda_nu_1 = lambda_nu + 4 / (2**n_m * bmin**2) * (
+            7 * 2 ** (n_p + 1) - 9 * n_p - 11 - 3 * 2 ** (-1 * n_p)
+        )
 
         p_nu = lambda_nu_1 * bmin**2 / 2 ** (n_p + 6)
 
@@ -479,15 +452,15 @@ class FirstQuantization(Operation):
 
         x = 2 ** (3 * n_p)
 
-        beta_dirty = np.floor(n_dirty / n_m)
-        beta_parallel = np.floor(n_tof / kappa)
+        beta_dirty = max([np.floor(n_dirty / n_m), 1])
+        beta_parallel = max([np.floor(n_tof / kappa), 1])
 
         if n_tof == 1:
-            beta_gate = np.floor(np.sqrt(2 * x / (3 * n_m)))
+            beta_gate = max([np.floor(np.sqrt(2 * x / (3 * n_m))), 1])
             beta = np.min([beta_dirty, beta_gate])
             ms_cost_qrom = 2 * np.ceil(x / beta) + 3 * n_m * beta
         else:
-            beta_gate = np.floor(2 * x / (3 * n_m / kappa) * np.log(2))
+            beta_gate = max([np.floor(2 * x / (3 * n_m / kappa) * np.log(2)), 1])
             beta = np.min([beta_dirty, beta_gate, beta_parallel])
             ms_cost_qrom = 2 * np.ceil(x / beta) + 3 * np.ceil(n_m / kappa) * np.ceil(np.log2(beta))
 
@@ -549,7 +522,6 @@ class FirstQuantization(Operation):
         charge=0,
         cubic=True,
         orthogonal=True,
-        exact=False,
         p_th=0.95,
         recip_bv=None,
         n_dirty=None,
@@ -608,7 +580,6 @@ class FirstQuantization(Operation):
             charge,
             cubic,
             orthogonal,
-            exact,
             p_th,
             recip_bv,
         )
@@ -624,7 +595,6 @@ class FirstQuantization(Operation):
             charge,
             cubic,
             orthogonal,
-            exact,
             p_th,
             recip_bv,
             n_dirty,
@@ -643,7 +613,6 @@ class FirstQuantization(Operation):
         charge=0,
         cubic=True,
         orthogonal=True,
-        exact=False,
         p_th=0.95,
         recip_bv=None,
         n_tof=500,
@@ -673,7 +642,6 @@ class FirstQuantization(Operation):
             charge,
             cubic,
             orthogonal,
-            exact,
             p_th,
             recip_bv,
         )
@@ -712,7 +680,7 @@ class FirstQuantization(Operation):
         error_qpe = np.sqrt(error**2 * (1 - (n_errors * alpha) ** 2))
 
         clean_temp_H_cost = max([5 * n_r - 4, 5 * n_p + 1]) + max([5, n_m + 3 * n_p])
-        __name = (
+        reflection_cost = (
             np.ceil(np.log2(eta + 2 * l_z))
             + 2 * np.ceil(np.log2(eta))
             + 6 * n_p
@@ -720,7 +688,7 @@ class FirstQuantization(Operation):
             + 16
             + (0 if cubic else 3)
         )
-        clean_temp_cost = max([clean_temp_H_cost, __name])
+        clean_temp_cost = max([clean_temp_H_cost, reflection_cost])
 
         # the expression for computing the cost is taken from Eq. (101) of arXiv:2204.11890v1
         clean_cost = 3 * eta * n_p
@@ -759,7 +727,6 @@ class FirstQuantization(Operation):
         charge=0,
         cubic=True,
         orthogonal=True,
-        exact=False,
         p_th=0.95,
         recip_bv=None,
         n_dirty=None,
@@ -840,7 +807,6 @@ class FirstQuantization(Operation):
             charge,
             cubic,
             orthogonal,
-            exact,
             p_th,
             recip_bv,
             n_tof,
@@ -864,7 +830,6 @@ class FirstQuantization(Operation):
         charge=0,
         cubic=True,
         orthogonal=True,
-        exact=False,
         p_th=0.95,
         recip_bv=None,
         n_dirty=None,
@@ -919,7 +884,7 @@ class FirstQuantization(Operation):
         l_nu = 2 * np.pi * n ** (2 / 3)
 
         lambda_total, aa_steps = FirstQuantization.norm(
-            n, eta, omega, error, br, charge, cubic, orthogonal, exact, p_th, recip_bv
+            n, eta, omega, error, br, charge, cubic, orthogonal, p_th, recip_bv
         )
 
         # n_eta and n_etaz are defined in the third and second paragraphs of page 040332-15
@@ -989,7 +954,6 @@ class FirstQuantization(Operation):
                     charge,
                     cubic,
                     orthogonal,
-                    exact,
                     p_th,
                     recip_bv,
                     n_tof,
