@@ -586,7 +586,7 @@ def _block_diag_torch(tensors):
     torch = _i("torch")
     sizes = np.array([t.shape for t in tensors])
     shape = np.sum(sizes, axis=0).tolist()
-    res = torch.zeros(shape, dtype=tensors[0].dtype)
+    res = torch.zeros(shape, dtype=tensors[0].dtype, device=tensors[0].device)
 
     # get the diagonal indices at which new block
     # diagonals need to be inserted
