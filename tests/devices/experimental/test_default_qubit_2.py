@@ -372,7 +372,7 @@ class TestSumOfTermsDifferentiability:
         t2 = 6.2 * qml.prod(*(qml.PauliY(i) for i in range(n_wires)))
         H = t1 + t2
         if convert_to_hamiltonian:
-            H = H._pauli_rep.hamiltonian()  # pylint: disable=protected-access
+            H = H.pauli_rep.hamiltonian()
         qs = qml.tape.QuantumScript(ops, [qml.expval(H)])
         return DefaultQubit2().execute(qs)
 

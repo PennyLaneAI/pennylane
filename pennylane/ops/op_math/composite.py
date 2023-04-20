@@ -345,7 +345,7 @@ class CompositeOp(Operator):
         for attr, value in vars(self).items():
             if attr not in {"data", "operands", "_wires"}:
                 setattr(new_op, attr, value)
-        if (p_rep := new_op._pauli_rep) is not None:
+        if (p_rep := new_op.pauli_rep) is not None:
             new_op._pauli_rep = p_rep.map_wires(wire_map)
 
         return new_op

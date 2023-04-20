@@ -70,8 +70,8 @@ def test_map_wires():
     assert op.base.wires == Wires("a")
     assert mapped_op.wires == Wires(5)
     assert mapped_op.base.wires == Wires(5)
-    assert mapped_op._pauli_rep is not op._pauli_rep
-    assert mapped_op._pauli_rep == qml.pauli.PauliSentence({qml.pauli.PauliWord({5: "X"}): 1})
+    assert mapped_op.pauli_rep is not op.pauli_rep
+    assert mapped_op.pauli_rep == qml.pauli.PauliSentence({qml.pauli.PauliWord({5: "X"}): 1})
 
 
 class TestProperties:
@@ -168,7 +168,7 @@ class TestProperties:
         """Test that pauli_rep is None by default"""
         base = Operator("a")
         op = SymbolicOp(base)
-        assert op._pauli_rep is None  # pylint:disable=protected-access
+        assert op.pauli_rep is None
 
 
 class TestQueuing:

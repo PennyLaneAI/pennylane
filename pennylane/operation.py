@@ -1149,6 +1149,11 @@ class Operator(abc.ABC):
         return self._hyperparameters
 
     @property
+    def pauli_rep(self):
+        """A PauliSentence representation of the Operator, or None if it doesn't have one."""
+        return self._pauli_rep
+
+    @property
     def is_hermitian(self):
         """This property determines if an operator is hermitian."""
         return False
@@ -1394,7 +1399,7 @@ class Operator(abc.ABC):
         """
         new_op = copy.copy(self)
         new_op._wires = Wires([wire_map.get(wire, wire) for wire in self.wires])
-        if (p_rep := new_op._pauli_rep) is not None:
+        if (p_rep := new_op.pauli_rep) is not None:
             new_op._pauli_rep = p_rep.map_wires(wire_map)
         return new_op
 

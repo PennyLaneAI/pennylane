@@ -553,8 +553,8 @@ class TestOperatorConstruction:
         assert op is not mapped_op
         assert op.wires == Wires([0, 1, 2])
         assert mapped_op.wires == Wires([10, 11, 12])
-        assert mapped_op._pauli_rep is not op._pauli_rep
-        assert mapped_op._pauli_rep == qml.pauli.PauliSentence(
+        assert mapped_op.pauli_rep is not op.pauli_rep
+        assert mapped_op.pauli_rep == qml.pauli.PauliSentence(
             {
                 qml.pauli.PauliWord({10: "X", 11: "Y", 12: "Z"}): 1.1,
                 qml.pauli.PauliWord({10: "Z", 11: "X", 12: "Y"}): 2.2,
@@ -584,7 +584,7 @@ class TestOperatorConstruction:
             num_wires = 1
 
         op = DummyOp(wires=0)
-        assert op._pauli_rep is None
+        assert op.pauli_rep is None
 
     def test_list_params_casted_into_numpy_array(self):
         """Test that list parameters are casted into numpy arrays."""
@@ -1287,7 +1287,7 @@ class TestTensor:
         X = qml.PauliX(0)
         Y = qml.PauliY(2)
         t = Tensor(X, Y)
-        assert t._pauli_rep is None
+        assert t.pauli_rep is None
 
     def test_has_matrix(self):
         """Test that the Tensor class has a ``has_matrix`` static attribute set to True."""

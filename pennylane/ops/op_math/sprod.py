@@ -289,7 +289,7 @@ class SProd(ScalarSymbolicOp):
             .Operator: simplified operator
         """
         # try using pauli_rep:
-        if pr := self._pauli_rep:
+        if pr := self.pauli_rep:
             pr.simplify()
             return pr.operation(wire_order=self.wires)
 

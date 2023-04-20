@@ -199,8 +199,8 @@ class TestConstruction:
         assert mapped_op.wires == Wires([5, 7])
         assert mapped_op[0].wires == Wires(5)
         assert mapped_op[1].wires == Wires(7)
-        assert mapped_op._pauli_rep is not diag_op._pauli_rep
-        assert mapped_op._pauli_rep == qml.pauli.PauliSentence(
+        assert mapped_op.pauli_rep is not diag_op.pauli_rep
+        assert mapped_op.pauli_rep == qml.pauli.PauliSentence(
             {qml.pauli.PauliWord({5: "X", 7: "Y"}): 1}
         )
 

@@ -188,8 +188,8 @@ class Sum(CompositeOp):
         """If all of the terms in the sum are hermitian, then the Sum is hermitian."""
         return (
             all(s.is_hermitian for s in self)
-            if self._pauli_rep is None
-            else not any(qml.math.iscomplex(val) for val in self._pauli_rep.values())
+            if self.pauli_rep is None
+            else not any(qml.math.iscomplex(val) for val in self.pauli_rep.values())
         )
 
     def terms(self):
@@ -266,11 +266,7 @@ class Sum(CompositeOp):
 
     def _build_pauli_rep(self):
         """PauliSentence representation of the Sum of operations."""
-        if all(
-            operand_pauli_reps := [
-                op._pauli_rep for op in self.operands  # pylint: disable=protected-access
-            ]
-        ):
+        if all(operand_pauli_reps := [op.pauli_rep for op in self.operands]):
             return reduce((lambda a, b: a + b), operand_pauli_reps)
         return None
 
@@ -305,7 +301,7 @@ class Sum(CompositeOp):
 
     def simplify(self, cutoff=1.0e-12) -> "Sum":  # pylint: disable=arguments-differ
         # try using pauli_rep:
-        if pr := self._pauli_rep:
+        if pr := self.pauli_rep:
             pr.simplify()
             return pr.operation(wire_order=self.wires)
 

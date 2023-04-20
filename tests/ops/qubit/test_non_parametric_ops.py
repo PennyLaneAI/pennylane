@@ -1458,4 +1458,4 @@ op_pauli_rep = (
 
 @pytest.mark.parametrize("op, rep", op_pauli_rep)
 def test_pauli_rep(op, rep):
-    assert op._pauli_rep == rep
+    assert op.pauli_rep == rep
