@@ -735,9 +735,8 @@ class FirstQuantization(Operation):
         clean_cost += clean_temp_cost
 
         if cubic:
-            clean_cost += np.max([n_r + 1, n_t]) + sum(
-                (3 * n_p**2 + n_p + 1 + 4 * n_m * (n_p + 1), 4)
-            )
+            clean_cost += np.max([n_r + 1, n_t])
+            clean_cost += 3 * n_p**2 + n_p + 1 + 4 * n_m * (n_p + 1) + 4
         else:
             error_b = alpha * error
             n_b = FirstQuantization._compute_n_b(error_b, eta, n_p, recip_bv)
