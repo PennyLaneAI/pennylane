@@ -353,6 +353,12 @@ def dot(tensor1, tensor2, like=None):
 
         return np.tensordot(x, y, axes=[[-1], [-2]], like=like)
 
+    # pylint: disable=protected-access
+    if like == "autograd":
+        out = np.dot(x, y, like=like)
+        if hasattr(out, "_value"):
+            out._value = ar.numpy.asarray(out._value, like="autograd")
+        return out
     return np.dot(x, y, like=like)
 
 
