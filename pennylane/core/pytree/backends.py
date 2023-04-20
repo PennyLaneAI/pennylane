@@ -7,6 +7,6 @@ try:
 except ImportError:
 	pass
 
-def register_pytree_with_keys(cls, flatten_fun, unflatten_fun, static_fields):
+def register_pytree_with_keys(cls, flatten_fun, unflatten_fun, static_fields, cache_fields):
 	for backend in backends:
-		backend.register_pytree_with_keys(cls, flatten_fun, unflatten_fun, static_fields)
+		backend.register_pytree_with_keys(cls, flatten_fun, unflatten_fun, static_fields, cache_fields)

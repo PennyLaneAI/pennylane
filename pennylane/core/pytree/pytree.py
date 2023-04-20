@@ -63,7 +63,7 @@ def field(
         raise ValueError("'pytree_node' found in metadata")
     
     if cache_node:
-        metadata["cache_field"] = cache_node
+        metadata["cache_node"] = cache_node
         pytree_node = False
     metadata["pytree_node"] = pytree_node
 
@@ -124,6 +124,7 @@ class Pytree(metaclass=PytreeMeta):
     _pytree__initializing: bool
     _pytree__class_is_mutable: bool
     _pytree__static_fields: tp.FrozenSet[str]
+    _pytree__cache_fields: tp.FrozenSet[str]
     _pytree__setter_descriptors: tp.FrozenSet[str]
     _pytree__field_default_init: tp.FrozenSet[str]
 
@@ -134,6 +135,7 @@ class Pytree(metaclass=PytreeMeta):
         class_vars = vars(cls)
         setter_descriptors = set()
         static_fields = _inherited_static_fields(cls)
+        cache_fields = _inherited_cache_fields(cls)
         default_init_fields = _inherited_default_init_fields(cls)
 
         for field, value in class_vars.items():
@@ -141,6 +143,11 @@ class Pytree(metaclass=PytreeMeta):
                 "pytree_node", True
             ):
                 static_fields.add(field)
+
+            if isinstance(value, dataclasses.Field) and value.metadata.get(
+                "cache_node", False
+            ):
+                cache_fields.add(field)
 
             # add setter descriptors
             if hasattr(value, "__set__"):
@@ -155,10 +162,11 @@ class Pytree(metaclass=PytreeMeta):
         cls._pytree__initializing = False
         cls._pytree__class_is_mutable = mutable
         cls._pytree__static_fields = frozenset(static_fields)
+        cls._pytree__cache_fields = frozenset(cache_fields)
         cls._pytree__setter_descriptors = frozenset(setter_descriptors)
         cls._pytree__field_default_init = frozenset(default_init_fields)
 
-        backends.register_pytree_with_keys(cls, cls._pytree__flatten, cls._pytree__unflatten, cls._pytree__static_fields)
+        backends.register_pytree_with_keys(cls, cls._pytree__flatten, cls._pytree__unflatten, cls._pytree__static_fields, cls._pytree__cache_fields)
 
         # flax serialization support
         if importlib.util.find_spec("flax") is not None:
@@ -174,6 +182,7 @@ class Pytree(metaclass=PytreeMeta):
     def _pytree__flatten(
         cls,
         static_field_names: tp.FrozenSet[str],
+        cache_field_names: tp.FrozenSet[str],
         pytree: "Pytree",
         *,
         with_key_paths: bool,
@@ -187,7 +196,9 @@ class Pytree(metaclass=PytreeMeta):
         # sort to ensure deterministic order
         for field in sorted(vars(pytree)):
             value = getattr(pytree, field)
-            if field in static_field_names:
+            if field in cache_field_names:
+                pass
+            elif field in static_field_names:
                 static_fields.append((field, value))
             else:
                 if with_key_paths:
@@ -302,6 +313,18 @@ def _inherited_static_fields(cls: type) -> tp.Set[str]:
         ):
             static_fields.update(parent_class._pytree__static_fields)
     return static_fields
+
+def _inherited_cache_fields(cls: type) -> tp.Set[str]:
+    cache_fields = set()
+    for parent_class in cls.mro():
+        if (
+            parent_class is not cls
+            and parent_class is not Pytree
+            and issubclass(parent_class, Pytree)
+        ):
+            cache_fields.update(parent_class._pytree__cache_fields)
+    return cache_fields
+
 
 def _inherited_default_init_fields(cls: type) -> tp.Set[str]:
     default_init_fields = set()
