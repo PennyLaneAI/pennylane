@@ -191,7 +191,7 @@ class TestUpdate:
         assert qs._trainable_params == list(range(8))
 
     def test_get_operation(self):
-        """Tests the tape method get_operation with `return_op_index` bool."""
+        """Tests the tape method get_operation."""
         ops = [
             qml.RX(1.2, wires=0),
             qml.Rot(2.3, 3.4, 5.6, wires=0),
