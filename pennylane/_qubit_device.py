@@ -942,8 +942,7 @@ class QubitDevice(Device):
         for m in measurements:
             # TODO: Remove this when all overriden measurements support the `MeasurementProcess` class
             if m.obs is not None:
-                obs = m.obs
-                obs.return_type = m.return_type
+                obs = m.obs.replace(return_type=m.return_type)
             else:
                 obs = m
             # Check if there is an overriden version of the measurement process
