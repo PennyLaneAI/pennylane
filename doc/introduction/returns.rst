@@ -61,6 +61,9 @@ some challenges:
   PennyLane was compatible with.
 - Use of stacking and squeezing presented performance bottlenecks.
 
+The changes made in PennyLane version 0.30 address the challenges above. However, existing users
+may experience breaking changes or issues with QNodes that return more than one quantity.
+
 .. _Troubleshooting:
 
 Troubleshooting
