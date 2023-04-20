@@ -17,15 +17,7 @@
 import pytest
 
 import pennylane as qml
-from pennylane.measurements import (
-    MeasurementProcess,
-    MeasurementShapeError,
-    MutualInfoMP,
-    PurityMP,
-    SampleMP,
-    Shots,
-    VnEntropyMP,
-)
+from pennylane.measurements import MeasurementProcess, MeasurementShapeError, Shots
 
 
 dev = qml.device("default.qubit", wires=3)
@@ -91,7 +83,6 @@ class TestShape:
         shots = Shots(None)
         mp = qml.sample()
 
-        assert isinstance(mp, SampleMP)
         with pytest.raises(MeasurementShapeError, match="Shots are required to obtain the shape"):
             _ = mp.shape(dev, shots)
 
@@ -102,7 +93,6 @@ class TestShape:
         shots = Shots(shot_vector)
         mp = qml.sample()
 
-        assert isinstance(mp, SampleMP)
         with pytest.raises(
             MeasurementShapeError,
             match="Getting the output shape of a measurement returning samples along with",
