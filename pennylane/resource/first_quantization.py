@@ -113,14 +113,13 @@ class FirstQuantization(Operation):
         self.exact = exact
 
         if vec_a is not None:
-            self.omega = np.abs(np.sum((np.cross(vec_a[0], vec_a[1]) * vec_a[2]))) * angs2bohr**3
+            self.omega = np.abs(np.sum((np.cross(vec_a[0], vec_a[1]) * vec_a[2])))
 
             self.recip_bv = (
                 2
                 * np.pi
                 / self.omega
                 * np.array([np.cross(vec_a[i], vec_a[j]) for i, j in [(1, 2), (2, 0), (0, 1)]])
-                * angs2bohr**2
             )
 
             bbt = np.matrix(self.recip_bv) @ np.matrix(self.recip_bv).T
