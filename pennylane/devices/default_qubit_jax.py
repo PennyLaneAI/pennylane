@@ -146,7 +146,7 @@ class DefaultQubitJax(DefaultQubit):
             QNode differentiation method is not supported and it is recommended to consider
             switching device to ``default.qubit`` and using ``diff_method="parameter-shift"``.
             Or keeping ``default.qubit.jax`` but switching to
-            ``diff_method=qml.gradient.stoch_pulse_grad`` for pulse programming.
+            ``diff_method=qml.gradients.stoch_pulse_grad`` for pulse programming.
         prng_key (Optional[jax.random.PRNGKey]): An optional ``jax.random.PRNGKey``. This is the key to the
             pseudo random number generator. If None, a random key will be generated.
 

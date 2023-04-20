@@ -20,6 +20,7 @@ from typing import Callable, List, Union
 import pennylane as qml
 import pennylane.numpy as np
 from pennylane.pulse import HardwareHamiltonian
+from pennylane.pulse.hardware_hamiltonian import HardwarePulse
 from pennylane.typing import TensorLike
 from pennylane.wires import Wires
 
@@ -72,7 +73,7 @@ def transmon_interaction(
 
     .. seealso::
 
-        :func:`~.drive`
+        :func:`~.transmon_drive`
 
     Args:
         omega (Union[float, list[float]]): List of dressed qubit frequencies in GHz. Needs to match the length of ``wires``.
@@ -88,7 +89,7 @@ def transmon_interaction(
         d (int): Local Hilbert space dimension. Defaults to ``d=2`` and is currently the only supported value.
 
     Returns:
-        HardwareHamiltonian: a :class:`~.ParametrizedHamiltonian` representing the transmon interaction
+        :class:`~.ParametrizedHamiltonian`: a :class:`~.ParametrizedHamiltonian` representing the transmon interaction
 
     **Example**
 
@@ -97,7 +98,7 @@ def transmon_interaction(
     .. code-block::
 
         connections = [[0, 1], [1, 3], [2, 1], [4, 5]]
-        H = qml.pulse.transmon_interaction(omega=0.5, connections=connections, g=1.)
+        H = qml.pulse.transmon_interaction(omega=0.5, connections=connections, g=1., wires=range(6))
 
     The resulting :class:`~.ParametrizedHamiltonian` consists of ``4`` coupling terms and ``6`` qubits
     because there are six different wire indices in ``connections``.
@@ -111,7 +112,11 @@ def transmon_interaction(
 
         omega = [0.5, 0.4, 0.3, 0.2, 0.1, 0.]
         g = [1., 2., 3., 4.]
-        H = qml.pulse.transmon_interaction(omega=omega, connections=connections, g=g)
+        H = qml.pulse.transmon_interaction(omega=omega, connections=connections, g=g, wires=range(6))
+
+    The interaction term is dependent only on the typically fixed transmon energies and coupling strengths.
+    Executing this as a pulse program via :func:`~.evolve` would correspond to all driving fields being turned off.
+    To add a driving field, see :func:`~.transmon_drive`.
 
     """
     if d != 2:
@@ -176,7 +181,9 @@ def transmon_interaction(
 
     settings = TransmonSettings(connections, omega, g, anharmonicity=anharmonicity)
 
-    return HardwareHamiltonian(coeffs, observables, settings=settings)
+    return HardwareHamiltonian(
+        coeffs, observables, settings=settings, reorder_fn=_reorder_AmpPhaseFreq
+    )
 
 
 @dataclass
@@ -215,3 +222,265 @@ class TransmonSettings:
             return TransmonSettings(new_connections, new_omega, new_g, anharmonicity=new_anh)
 
         return self
+
+
+def transmon_drive(amplitude, phase, freq, wires, d=2):
+    r"""Returns a :class:`ParametrizedHamiltonian` representing the drive term of a transmon qubit.
+
+    The Hamiltonian is given by
+
+    .. math::
+
+        \Omega(t) \left(e^{i (\phi(t) + \nu t)} a_q + e^{-i (\phi(t) + \nu t)} a^\dagger_q\right)
+
+    where :math:`[a^\dagger_p, a_q] = i \delta_{pq}` are bosonic creation and annihilation operators
+    and :math:`q` is the qubit label (``wires``).
+    The arguments ``amplitude``, ``phase`` and ``freq`` correspond to :math:`\Omega`, :math:`\phi`
+    and :math:`\nu`, respectively, and can all be either fixed numbers (``float``) or depend on time
+    (``callable``). If they are time-dependent, they need to abide by the restrictions imposed
+    in :class:`ParametrizedHamiltonian` and have a signature of two parameters, ``(params, t)``.
+
+    For realistic simulations, one may restrict the amplitude, phase and drive frequency parameters.
+    For example, the authors in `2008.04302 <https://arxiv.org/abs/2008.04302>`_ impose the restrictions of
+    a maximum amplitude :math:`\Omega_{\text{max}} = 20 \text{MHz}` and the carrier frequency to deviate at most
+    :math:`\nu - \omega = \pm 1 \text{GHz}` from the qubit frequency :math:`\omega`
+    (see :func:`~.transmon_interaction`).
+    The phase :math:`\phi(t)` is typically a slowly changing function of time compared to :math:`\Omega(t)`.
+
+    .. note:: Currently only supports ``d=2`` with qudit support planned in the future. For ``d=2`` we have :math:`a:=\frac{1}{2}(\sigma^x + i \sigma^y)`.
+
+    .. note:: Due to convention in the respective fields, we ommit the factor :math:`\frac{1}{2}` present in the related constructors :func:`~.drive` and :func:`~.rydberg_drive`
+
+    .. seealso::
+
+        :func:`~.drive`, :func:`~.rydberg_drive`, :func:`~.transmon_interaction`
+
+    Args:
+        amplitude (Union[float, callable]): The amplitude :math:`\Omega(t)` (in GHz).
+            Can be a fixed number (``float``) or depend on time (``callable``)
+        phase (Union[float, callable]): The phase :math:`\phi(t)` (in radians).
+            Can be a fixed number (``float``) or depend on time (``callable``)
+        freq (Union[float, callable]): The drive frequency :math:`\nu` (in GHz).
+            Can be a fixed number (``float``) or depend on time (``callable``)
+        wires (Union[int, list[int]]): Label of the qubit that the drive acts upon. Can be a list of multiple wires.
+        d (int): Local Hilbert space dimension. Defaults to ``d=2`` and is currently the only supported value.
+
+    Returns:
+        :class:`~.ParametrizedHamiltonian`: a :class:`~.ParametrizedHamiltonian` representing the transmon interaction
+
+    **Example**
+
+    We can construct a drive term acting on qubit ``0`` in the following way. We parametrize the amplitude and phase
+    via :math:`\Omega(t) = \Omega_{\text{max}} \sin(\pi t)` and :math:`\phi(t) = \phi (t - \frac{1}{2})`.
+
+    .. code-block:: python3
+
+        def amp(max_amp, t): return max_amp * jnp.sin(jnp.pi*t)
+        def phase(phi, t): return phi * (t - 0.5)
+
+        H = qml.pulse.transmon_drive(amp, phase, 0, 0)
+
+        t = 0.5
+        max_amp = 0.1
+        phi = 0.001
+        params = [max_amp, phi]
+
+    Evaluated at :math:`t = \frac{1}{2}` with the parameters :math:`\Omega_{\text{max}} = 0.1` and :math:`\phi = 10^{-3}` we obtain
+    :math:`\Omega_{\text{max}} \left(\frac{1}{2}(\sigma^x + i \sigma^y) + \frac{1}{2}(\sigma^x + i \sigma^y)\right) = \Omega_{\text{max}} \sigma^x`.
+
+    >>> H(params, t)
+    (0.1*(PauliX(wires=[0]))) + (0.0*(-1*(PauliY(wires=[0]))))
+
+    We can combine ``transmon_drive()`` with :func:`~.transmon_interaction` to create a full driven transmon Hamiltonian.
+    Let us look at a chain of three transmon qubits that are coupled with their direct neighbors. We provide all numbers in
+    units of :math:`2\pi\text{GHz}`. We parametrize the amplitude as a sinusodial and make the maximum amplitude
+    as well as the drive frequency trainable parameters. We simulate the evolution for a time window of :math:`[0, 5]\text{ns}`.
+
+    .. code-block:: python3
+
+        qubit_freqs = [5.1, 5., 5.3]
+        connections = [[0, 1], [1, 2]]
+        g = [0.02, 0.05]
+        H = qml.pulse.transmon_interaction(qubit_freqs, connections, g, wires=range(3))
+
+        def amp(max_amp, t): return max_amp * jnp.sin(t)
+        def freq(fr, t): return fr
+        phase = 0.
+        t=2
+
+        H += qml.pulse.transmon_drive(amp, phase, freq, 0)
+        H += qml.pulse.transmon_drive(amp, phase, freq, 1)
+        H += qml.pulse.transmon_drive(amp, phase, freq, 2)
+
+        dev = qml.device("default.qubit.jax", wires=range(3))
+
+        @jax.jit
+        @qml.qnode(dev, interface="jax")
+        def qnode(params):
+            qml.evolve(H)(params, t=5.)
+            return qml.expval(qml.PauliZ(0) + qml.PauliZ(1) + qml.PauliZ(2))
+
+    We evaluate the Hamiltonian with some arbitrarily chosen maximum amplitudes and set
+    the drive frequency equal to the qubit frequencies. Note how the order of the construction
+    of ``H`` determines the order with which the parameters need to be passed to
+    :class:`~.ParametrizedHamiltonian` and :func:`~.evolve`. We made the drive frequencies
+    trainable parameters by providing a constant callable above instead of fixed values.
+    This allows us to differentiate with respect to the frequencies and to optimize them.
+
+    >>> max_amp0, max_amp1, max_amp2 = [0.5, 0.3, 0.6]
+    >>> fr0, fr1, fr2 = qubit_freqs
+    >>> params = [max_amp0, fr0, max_amp1, fr1, max_amp2, fr2]
+    >>> qnode(params)
+    Array(2.25098131, dtype=float64)
+    >>> jax.grad(qnode)(params)
+    [Array(-0.96356123, dtype=float64),
+     Array(-0.0189564, dtype=float64),
+     Array(-0.58581467, dtype=float64),
+     Array(0.24023855, dtype=float64),
+     Array(-1.30009675, dtype=float64),
+     Array(-0.10709503, dtype=float64)]
+
+    """
+    if d != 2:
+        raise NotImplementedError(
+            "Currently only supports qubits (d=2). Qutrits and qudits support is planned in the future."
+        )
+
+    wires = Wires(wires)
+
+    # TODO: use creation and annihilation operators when introducing qutrits
+    # Note that exp(-iw)a* + exp(iw)a = cos(w)X - sin(w)Y for a=1/2(X+iY)
+    # We compute the `coeffs` and `observables` of the EM field
+    coeffs = [
+        AmplitudeAndPhaseAndFreq(qml.math.cos, amplitude, phase, freq),
+        AmplitudeAndPhaseAndFreq(qml.math.sin, amplitude, phase, freq),
+    ]
+
+    drive_x_term = sum(qml.PauliX(wire) for wire in wires)
+    drive_y_term = sum(-qml.PauliY(wire) for wire in wires)
+
+    observables = [drive_x_term, drive_y_term]
+
+    pulses = [HardwarePulse(amplitude, phase, freq, wires)]
+
+    return HardwareHamiltonian(coeffs, observables, pulses=pulses, reorder_fn=_reorder_AmpPhaseFreq)
+
+
+# pylint:disable = too-few-public-methods,too-many-return-statements
+class AmplitudeAndPhaseAndFreq:
+    """Class storing combined amplitude, phase and freq callables"""
+
+    def __init__(self, trig_fn, amp, phase, freq):
+        self.amp_is_callable = callable(amp)
+        self.phase_is_callable = callable(phase)
+        self.freq_is_callable = callable(freq)
+
+        # all 3 callable
+
+        if self.amp_is_callable and self.phase_is_callable and self.freq_is_callable:
+
+            def callable_amp_and_phase_and_freq(params, t):
+                return amp(params[0], t) * trig_fn(phase(params[1], t) + freq(params[2], t) * t)
+
+            self.func = callable_amp_and_phase_and_freq
+            return
+
+        # 2 out of 3 callable
+
+        if self.amp_is_callable and self.phase_is_callable:
+
+            def callable_amp_and_phase(params, t):
+                return amp(params[0], t) * trig_fn(phase(params[1], t) + freq * t)
+
+            self.func = callable_amp_and_phase
+            return
+
+        if self.amp_is_callable and self.freq_is_callable:
+
+            def callable_amp_and_freq(params, t):
+                return amp(params[0], t) * trig_fn(phase + freq(params[1], t) * t)
+
+            self.func = callable_amp_and_freq
+            return
+
+        if self.phase_is_callable and self.freq_is_callable:
+
+            def callable_phase_and_freq(params, t):
+                return amp * trig_fn(phase(params[0], t) + freq(params[1], t) * t)
+
+            self.func = callable_phase_and_freq
+            return
+
+        # 1 out of 3 callable
+
+        if self.amp_is_callable:
+
+            def callable_amp(params, t):
+                return amp(params[0], t) * trig_fn(phase + freq * t)
+
+            self.func = callable_amp
+            return
+
+        if self.phase_is_callable:
+
+            def callable_phase(params, t):
+                return amp * trig_fn(phase(params[0], t) + freq * t)
+
+            self.func = callable_phase
+            return
+
+        if self.freq_is_callable:
+
+            def callable_freq(params, t):
+                return amp * trig_fn(phase + freq(params[0], t) * t)
+
+            self.func = callable_freq
+            return
+
+        # 0 out of 3 callable
+        # (the remaining coeff is still callable due to explicit time dependence)
+
+        def no_callable(_, t):
+            return amp * trig_fn(phase + freq * t)
+
+        self.func = no_callable
+
+    def __call__(self, params, t):
+        return self.func(params, t)
+
+
+def _reorder_AmpPhaseFreq(params, coeffs_parametrized):
+    """Takes `params`, and reorganizes it based on whether the Hamiltonian has
+    callable phase and/or callable amplitude and/or callable freq.
+
+    Consolidates amplitude, phase and freq parameters in they are callable,
+    and duplicates parameters since they will be passed to two operators in the Hamiltonian"""
+
+    reordered_params = []
+
+    coeff_idx = 0
+    params_idx = 0
+
+    for i, coeff in enumerate(coeffs_parametrized):
+        if i == coeff_idx:
+            if isinstance(coeff, AmplitudeAndPhaseAndFreq):
+                is_callables = [
+                    coeff.phase_is_callable,
+                    coeff.amp_is_callable,
+                    coeff.freq_is_callable,
+                ]
+
+                num_callables = sum(is_callables)
+
+                # duplicate and package parameters according to how many coeffs are callable
+                reordered_params.extend([params[params_idx : params_idx + num_callables]] * 2)
+
+                coeff_idx += 2
+                params_idx += num_callables
+
+            else:
+                reordered_params.append(params[params_idx])
+                coeff_idx += 1
+                params_idx += 1
+
+    return reordered_params

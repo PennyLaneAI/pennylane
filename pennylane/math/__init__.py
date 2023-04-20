@@ -54,6 +54,7 @@ from .multi_dispatch import (
     kron,
     matmul,
     multi_dispatch,
+    norm,
     ones_like,
     scatter,
     scatter_element_add,
