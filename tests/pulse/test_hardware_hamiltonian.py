@@ -59,7 +59,7 @@ rydberg_settings = RydbergSettings(atom_coordinates, 1)
 class TestHardwareHamiltonian:
     """Unit tests for the properties of the HardwareHamiltonian class."""
 
-    # pylint: disable=protected-access
+    # pylint: disable=protected-access, comparison-with-callable
     def test_initialization(self):
         """Test the HardwareHamiltonian class is initialized correctly."""
         rm = HardwareHamiltonian(coeffs=[], observables=[])
