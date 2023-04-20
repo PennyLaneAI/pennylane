@@ -271,22 +271,22 @@ def transmon_drive(amplitude, phase, freq, wires, d=2):
     **Example**
 
     We can construct a drive term acting on qubit ``0`` in the following way. We parametrize the amplitude and phase
-    via :math:`\Omega(t) = \Omega \sin(\pi t)` and :math:`\phi(t) = \phi (t - \frac{1}{2})`.
+    via :math:`\Omega(t) = \Omega_{\text{max}} \sin(\pi t)` and :math:`\phi(t) = \phi (t - \frac{1}{2})`.
 
     .. code-block:: python3
 
-        def amp(Omega, t): return Omega * jnp.sin(jnp.pi*t)
+        def amp(max_amp, t): return max_amp * jnp.sin(jnp.pi*t)
         def phase(phi, t): return phi * (t - 0.5)
 
         H = qml.pulse.transmon_drive(amp, phase, 0, 0)
 
         t = 0.5
-        Omega = 0.1
+        max_amp = 0.1
         phi = 0.001
-        params = [Omega, phi]
+        params = [max_amp, phi]
 
-    Evaluated at :math:`t = \frac{1}{2}` with the parameters :math:`\Omega = 0.1` and :math:`\phi = 10^{-3}` we obtain
-    :math:`\Omega \left(\frac{1}{2}(\sigma^x + i \sigma^y) + \frac{1}{2}(\sigma^x + i \sigma^y)\right) = \Omega \sigma^x`.
+    Evaluated at :math:`t = \frac{1}{2}` with the parameters :math:`\Omega_{\text{max}} = 0.1` and :math:`\phi = 10^{-3}` we obtain
+    :math:`\Omega_{\text{max}} \left(\frac{1}{2}(\sigma^x + i \sigma^y) + \frac{1}{2}(\sigma^x + i \sigma^y)\right) = \Omega_{\text{max}} \sigma^x`.
 
     >>> H(params, t)
     (0.1*(PauliX(wires=[0]))) + (0.0*(-1*(PauliY(wires=[0]))))
@@ -298,12 +298,12 @@ def transmon_drive(amplitude, phase, freq, wires, d=2):
 
     .. code-block:: python3
 
-        omega = [5.1, 5., 5.3]
+        qubit_freqs = [5.1, 5., 5.3]
         connections = [[0, 1], [1, 2]]
         g = [0.02, 0.05]
-        H = qml.pulse.transmon_interaction(omega, connections, g, wires=range(3))
+        H = qml.pulse.transmon_interaction(qubit_freqs, connections, g, wires=range(3))
 
-        def amp(Omega, t): return Omega * jnp.sin(t)
+        def amp(max_amp, t): return max_amp * jnp.sin(t)
         def freq(fr, t): return fr
         phase = 0.
         t=2
@@ -327,9 +327,9 @@ def transmon_drive(amplitude, phase, freq, wires, d=2):
     trainable parameters by providing a constant callable above instead of fixed values.
     This allows us to differentiate with respect to the frequencies and to optimize them.
 
-    >>> Omega0, Omega1, Omega2 = [0.5, 0.3, 0.6]
-    >>> fr0, fr1, fr2 = omega
-    >>> params = [Omega0, fr0, Omega1, fr1, Omega2, fr2]
+    >>> max_amp0, max_amp1, max_amp2 = [0.5, 0.3, 0.6]
+    >>> fr0, fr1, fr2 = qubit_freqs
+    >>> params = [max_amp0, fr0, max_amp1, fr1, max_amp2, fr2]
     >>> qnode(params)
     Array(2.25098131, dtype=float64)
     >>> jax.grad(qnode)(params)
