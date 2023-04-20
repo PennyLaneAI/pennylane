@@ -473,13 +473,6 @@ class FirstQuantization(Operation):
             return ((lambda_u_1 + lambda_v_1 / (1 - 1 / eta)) / p_nu_amp) / p_eq, aa_steps
 
     @staticmethod
-    def _compute_n_b(error_b, eta, n_p, recip_bv):
-        r"""Eq (J7)"""
-        abs_sum = np.abs(np.matrix(recip_bv) @ np.matrix(recip_bv).T).flatten().sum()
-        scalar = 2 * np.pi * eta * 2 ** (2 * n_p - 2) * abs_sum / error_b
-        return np.ceil(np.log2(scalar))
-
-    @staticmethod
     def _cost_qrom(lz):
         r"""Return the minimum number of Toffoli gates needed for erasing the output of a QROM.
 
@@ -694,7 +687,7 @@ class FirstQuantization(Operation):
 
         # errors in Eqs. (132-134) of PRX Quantum 2, 040332 (2021)
         alpha = 0.0248759298  # optimal value for lower resource estimates
-        error_t, error_r, error_m = [alpha * error] * 3
+        error_t, error_r, error_m, error_b = [alpha * error] * 4
 
         # parameters taken from Eqs. (132-134) of PRX Quantum 2, 040332 (2021)
         n_t = int(np.ceil(np.log2(np.pi * lambda_total / error_t)))  # Eq. (134)
@@ -738,8 +731,16 @@ class FirstQuantization(Operation):
             clean_cost += np.max([n_r + 1, n_t])
             clean_cost += 3 * n_p**2 + n_p + 1 + 4 * n_m * (n_p + 1) + 4
         else:
-            error_b = alpha * error
-            n_b = FirstQuantization._compute_n_b(error_b, eta, n_p, recip_bv)
+            n_b = np.ceil(
+                np.log2(
+                    2
+                    * np.pi
+                    * eta
+                    * 2 ** (2 * n_p - 2)
+                    * np.abs(np.matrix(recip_bv) @ np.matrix(recip_bv).T).flatten().sum()
+                    / error_b
+                )
+            )
             clean_cost += np.max([n_r + 1, n_t, n_b]) + 6 + n_m + 1
 
         return clean_cost
@@ -919,10 +920,9 @@ class FirstQuantization(Operation):
         n_p = int(np.ceil(np.log2(n ** (1 / 3) + 1)))
 
         # errors in Eqs. (132-134) are set to be 0.0248759298 of the algorithm error
-        error_t, error_r, error_m = [alpha * error] * 3
+        error_t, error_r, error_m, error_b = [alpha * error] * 4
 
         # parameters taken from Eqs. (132-134) of PRX Quantum 2, 040332 (2021)
-        # __modified__
         n_t = int(np.ceil(np.log2(np.pi * lambda_total / error_t)))  # Eq. (134)
         n_r = int(np.ceil(np.log2((eta * l_z * l_nu) / (error_r * omega ** (1 / 3)))))  # Eq. (133)
 
@@ -948,8 +948,16 @@ class FirstQuantization(Operation):
         cost += n_etaz + 2 * n_eta + 6 * n_p + n_m + 16
 
         if not cubic:
-            error_b = alpha * error
-            n_b = FirstQuantization._compute_n_b(error_b, eta, n_p, recip_bv)
+            n_b = np.ceil(
+                np.log2(
+                    2
+                    * np.pi
+                    * eta
+                    * 2 ** (2 * n_p - 2)
+                    * np.abs(np.matrix(recip_bv) @ np.matrix(recip_bv).T).flatten().sum()
+                    / error_b
+                )
+            )
             # this and the next corrects the cost of PREP and PREP^dagger for T
             cost -= 2 * (3 * 2 + 2 * br - 9)
             cost += 2 * (2 * (2 * (2 ** (4 + 1) - 1) + (n_b - 3) * 4 + 2**4 + (n_p - 2)))
