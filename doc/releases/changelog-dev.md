@@ -221,6 +221,9 @@
 * `qml.operation.WiresEnum.AllWires` is now -2 instead of 0 to avoid the
   ambiguity between `op.num_wires = 0` and `op.num_wires = AllWires`.
   [(#3978)](https://github.com/PennyLaneAI/pennylane/pull/3978)
+  
+* Added a `measured_wires` property to the `QuantumScript` class.
+  [(#3655)](https://github.com/PennyLaneAI/pennylane/pull/3655)
 
 * Execution code has been updated to use the new `qml.transforms.convert_to_numpy_parameters` instead of `qml.tape.Unwrap`.
   [(#3989)](https://github.com/PennyLaneAI/pennylane/pull/3989)
@@ -359,6 +362,7 @@
 
 This release contains contributions from (in alphabetical order):
 
+
 Komi Amiko,
 Utkarsh Azad,
 Olivia Di Matteo,
@@ -372,4 +376,5 @@ Lee J. O'Riordan,
 Mudit Pandey,
 Matthew Silverman,
 Jay Soni,
-David Wierichs.
+David Wierichs,
+Marcus Edwards.

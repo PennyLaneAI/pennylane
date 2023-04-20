@@ -36,6 +36,7 @@ from pennylane.measurements import (
 )
 from pennylane.operation import Observable, Operator, Operation
 from pennylane.queuing import AnnotatedQueue, process_queue
+from pennylane.wires import Wires
 
 _empty_wires = qml.wires.Wires([])
 
@@ -169,6 +170,7 @@ class QuantumScript:
         self._prep = [] if prep is None else list(prep)
         self._ops = [] if ops is None else list(ops)
         self._measurements = [] if measurements is None else list(measurements)
+        self._measured_wires = Wires([])
 
         self._par_info = []
         """list[dict[str, Operator or int]]: Parameter information.
@@ -225,6 +227,21 @@ class QuantumScript:
     # ========================================================
     # QSCRIPT properties
     # ========================================================
+
+    @property
+    def measured_wires(self) -> List[int]:
+        """Returns the measured wires"""
+        wires = Wires([])
+
+        for m in self.measurements:
+            if m.obs is not None:
+                wires = wires + m.obs.wires
+
+        # Assumes a QuantumScript is not generally mutated. Otherwise, you might use
+        # Wires.all_wires([*wires, self._measured_wires]) here to capture everything.
+        self._measured_wires = wires
+
+        return self._measured_wires
 
     @property
     def interface(self):
@@ -434,7 +451,7 @@ class QuantumScript:
         self._obs_sharing_wires = []
         self._obs_sharing_wires_id = []
 
-        if len(obs_wires) != len(set(obs_wires)):
+        if len(obs_wires) != len(self._measured_wires):
             c = Counter(obs_wires)
             repeated_wires = {w for w in obs_wires if c[w] > 1}
 
