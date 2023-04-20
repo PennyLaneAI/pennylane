@@ -218,7 +218,7 @@ import functools
 import itertools
 import warnings
 from enum import IntEnum
-from typing import List
+from typing import Any, List, Optional, Union
 
 import numpy as np
 from numpy.linalg import multi_dot
@@ -229,6 +229,8 @@ from pennylane.math import expand_matrix
 from pennylane.queuing import QueuingManager
 from pennylane.typing import TensorLike
 from pennylane.wires import Wires
+
+from pennylane.core.pytree import Pytree, field, static_field
 
 from .utils import pauli_eigs
 
@@ -367,7 +369,7 @@ def _process_data(op):
     return str(op.data)
 
 
-class Operator(abc.ABC):
+class Operator(Pytree, abc.ABC):
     r"""Base class representing quantum operators.
 
     Operators are uniquely defined by their name, the wires they act on, their (trainable) parameters,
@@ -634,46 +636,46 @@ class Operator(abc.ABC):
     """
     # pylint: disable=too-many-public-methods, too-many-instance-attributes
 
-    def __copy__(self):
-        cls = self.__class__
-        copied_op = cls.__new__(cls)
-        copied_op.data = self.data.copy()
-        for attr, value in vars(self).items():
-            if attr != "data":
-                setattr(copied_op, attr, value)
+    wires : "WiresT" 
+    """Wires that the operator acts on."""
 
-        return copied_op
+    num_wires : "WiresT" = AnyWires
+    """Number of wires the operator acts on."""
 
-    def __deepcopy__(self, memo):
-        copied_op = object.__new__(type(self))
+    name : str = static_field()
+    """String for the name of the operator."""
 
-        # The memo dict maps object ID to object, and is required by
-        # the deepcopy function to keep track of objects it has already
-        # deep copied.
-        memo[id(self)] = copied_op
+    id : int = static_field()
+    """Custom string to label a specific operator instance."""
 
-        for attribute, value in self.__dict__.items():
-            if attribute == "data":
-                # Shallow copy the list of parameters. We avoid a deep copy
-                # here, since PyTorch does not support deep copying of tensors
-                # within a differentiable computation.
-                copied_op.data = value.copy()
-            else:
-                # Deep copy everything else.
-                setattr(copied_op, attribute, copy.deepcopy(value, memo))
-        return copied_op
+    queue_idx : Optional[int] = static_field(None) 
+    """index of the Operator in the circuit queue, or None if not in a queue"""
+
+    _pauli_rep : Union["PauliSentence", None] = static_field(None)
+    """Representation of the operator as a pauli sentence, if applicable"""
+
+    _num_params : int = static_field()
+
+    hyperparameters : dict = field(default_factory=lambda *args:{})
+    """dict: Dictionary of non-trainable variables that this operation depends on."""
+    
+    _ndim_params : int = static_field(default=None)
+
+    def __eq__(self, o):
+        if type(self) is type(o):
+            return self._attrs == o._attrs
+        return False
 
     @property
-    def hash(self):
-        """int: Integer hash that uniquely represents the operator."""
-        return hash(
-            (
-                str(self.name),
-                tuple(self.wires.tolist()),
-                str(self.hyperparameters.values()),
-                _process_data(self),
-            )
-        )
+    def _attrs(self):
+        return (self.name, self.wires, str(self.hyperparameters.values()), _process_data(self))
+
+    def __hash__(self):
+        return hash(self._attrs)
+
+    @property
+    def data(self):
+        return self._data
 
     @staticmethod
     def compute_matrix(*params, **hyperparams):  # pylint:disable=unused-argument
@@ -842,23 +844,6 @@ class Operator(abc.ABC):
         """
         raise TermsUndefinedError
 
-    num_wires = AnyWires
-    """Number of wires the operator acts on."""
-
-    @property
-    def name(self):
-        """String for the name of the operator."""
-        return self._name
-
-    @property
-    def id(self):
-        """Custom string to label a specific operator instance."""
-        return self._id
-
-    @name.setter
-    def name(self, value):
-        self._name = value
-
     def label(self, decimals=None, base_label=None, cache=None):
         r"""A customizable string representation of the operator.
 
@@ -952,10 +937,8 @@ class Operator(abc.ABC):
 
     def __init__(self, *params, wires=None, do_queue=True, id=None):
         # pylint: disable=too-many-branches
-        self._name = self.__class__.__name__  #: str: name of the operator
-        self._id = id
-        self.queue_idx = None  #: int, None: index of the Operator in the circuit queue, or None if not in a queue
-        self._pauli_rep = None  # Union[PauliSentence, None]: Representation of the operator as a pauli sentence, if applicable
+        self.name = self.__class__.__name__  #: str: name of the operator
+        self.id = id
 
         wires_from_args = False
         if wires is None:
@@ -981,7 +964,7 @@ class Operator(abc.ABC):
                 f"{len(params)} parameters passed, {self.num_params} expected."
             )
 
-        self._wires = wires if isinstance(wires, Wires) else Wires(wires)
+        self.wires = wires if isinstance(wires, Wires) else Wires(wires)
 
         # check that the number of wires given corresponds to required number
         if self.num_wires in {AllWires, AnyWires}:
@@ -993,15 +976,15 @@ class Operator(abc.ABC):
                     f"{self.name}: wrong number of wires. " f"At least one wire has to be given."
                 )
 
-        elif len(self._wires) != self.num_wires:
+        elif len(self.wires) != self.num_wires:
             raise ValueError(
                 f"{self.name}: wrong number of wires. "
-                f"{len(self._wires)} wires given, {self.num_wires} expected."
+                f"{len(self.wires)} wires given, {self.num_wires} expected."
             )
 
         self._check_batching(params)
 
-        self.data = [np.array(p) if isinstance(p, list) else p for p in params]
+        self._data = [np.array(p) if isinstance(p, list) else p for p in params]
 
         if do_queue:
             self.queue()
@@ -1126,27 +1109,9 @@ class Operator(abc.ABC):
         return self._batch_size
 
     @property
-    def wires(self):
-        """Wires that the operator acts on.
-
-        Returns:
-            Wires: wires
-        """
-        return self._wires
-
-    @property
     def parameters(self):
         """Trainable parameters that the operator depends on."""
         return self.data.copy()
-
-    @property
-    def hyperparameters(self):
-        """dict: Dictionary of non-trainable variables that this operation depends on."""
-        # pylint: disable=attribute-defined-outside-init
-        if hasattr(self, "_hyperparameters"):
-            return self._hyperparameters
-        self._hyperparameters = {}
-        return self._hyperparameters
 
     @property
     def is_hermitian(self):
@@ -1722,6 +1687,18 @@ class Observable(Operator):
             can be useful for some applications where the instance has to be identified
     """
 
+    # pylint: disable=abstract-method
+    return_type : Optional["ObservableReturnTypes"] = static_field(None)
+    """None or ObservableReturnTypes: Measurement type that this observable is called with."""
+
+    @property
+    def _attrs(self):
+        return (self.name, 
+            self.wires, 
+            str(self.hyperparameters.values()), 
+            _process_data(self), 
+            self.return_type)
+
     @property
     def _queue_category(self):
         """Used for sorting objects into their respective lists in `QuantumTape` objects.
@@ -1744,10 +1721,6 @@ class Observable(Operator):
     def is_hermitian(self):
         """All observables must be hermitian"""
         return True
-
-    # pylint: disable=abstract-method
-    return_type = None
-    """None or ObservableReturnTypes: Measurement type that this observable is called with."""
 
     def __repr__(self):
         """Constructor-call-like representation."""

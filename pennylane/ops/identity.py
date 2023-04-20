@@ -48,7 +48,7 @@ class Identity(CVObservable, Operation):
 
     def __init__(self, *params, wires=None, do_queue=True, id=None):
         super().__init__(*params, wires=wires, do_queue=do_queue, id=id)
-        self._hyperparameters = {"n_wires": len(self.wires)}
+        self.hyperparameters = {"n_wires": len(self.wires)}
         self._pauli_rep = qml.pauli.PauliSentence({qml.pauli.PauliWord({}): 1.0})
 
     def label(self, decimals=None, base_label=None, cache=None):
