@@ -21,13 +21,15 @@ import copy
 import functools
 from abc import ABC, abstractmethod
 from enum import Enum
-from typing import Sequence, Tuple, Optional
+from typing import Sequence, Tuple, Optional, List
 
 import numpy as np
 
 import pennylane as qml
 from pennylane.operation import Operator
 from pennylane.wires import Wires
+
+from pennylane.core.pytree import Pytree, field, static_field
 
 # =============================================================================
 # ObservableReturnTypes types
@@ -110,7 +112,7 @@ class MeasurementShapeError(ValueError):
     quantum tape."""
 
 
-class MeasurementProcess(ABC):
+class MeasurementProcess(Pytree):
     """Represents a measurement process occurring at the end of a
     quantum variational circuit.
 
@@ -125,6 +127,34 @@ class MeasurementProcess(ABC):
         id (str): custom label given to a measurement instance, can be useful for some applications
             where the instance has to be identified
     """
+    
+    obs : Optional[Operator] = field(default=None)
+    """The observable that is to be measured as part of the measurement process. 
+        Not all measurement processes require observables (for example ``Probability``)
+        """
+        
+    _wires : Optional[Wires] = field(default=None)
+    """The wires the measurement process applies to and defines broadcasting behavour"""
+    
+    id : Optional[str] = static_field(default=None)
+    """I don't know what this is."""
+    
+    _eigvals : Optional[np.array] = field(default=None)
+    """Should probably be refactored in a subclass"""
+    
+
+    # TODO: remove the following lines once devices
+    # have been refactored to accept and understand receiving
+    # measurement processes rather than specific observables.
+
+    # The following lines are only applicable for measurement processes
+    # that do not have corresponding observables (e.g., Probability). We use
+    # them to 'trick' the device into thinking it has received an observable.
+
+    # Below, we imitate an identity observable, so that the
+    # device undertakes no action upon receiving this observable.
+    name : str = "Identity"
+    data: List = []
 
     # pylint: disable=too-many-arguments
     def __init__(
@@ -153,19 +183,6 @@ class MeasurementProcess(ABC):
                 raise ValueError("Cannot set the eigenvalues if an observable is provided.")
 
             self._eigvals = np.array(eigvals)
-
-        # TODO: remove the following lines once devices
-        # have been refactored to accept and understand receiving
-        # measurement processes rather than specific observables.
-
-        # The following lines are only applicable for measurement processes
-        # that do not have corresponding observables (e.g., Probability). We use
-        # them to 'trick' the device into thinking it has received an observable.
-
-        # Below, we imitate an identity observable, so that the
-        # device undertakes no action upon receiving this observable.
-        self.name = "Identity"
-        self.data = []
 
         # Queue the measurement process
         self.queue()
@@ -322,12 +339,12 @@ class MeasurementProcess(ABC):
         """
         if self.obs is not None:
             return self.obs.wires
-
-        return (
-            Wires.all_wires(self._wires)
-            if isinstance(self._wires, list)
-            else self._wires or Wires([])
-        )
+        else:
+            return (
+                Wires.all_wires(self._wires)
+                if isinstance(self._wires, list)
+                else self._wires or Wires([])
+            )
 
     @property
     def raw_wires(self):
