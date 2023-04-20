@@ -963,8 +963,8 @@ def test_inconsistent_callable_ops(operation, op_wires, op_gen, message_match):
 @pytest.mark.parametrize(
     ("ps_size", "max_size"),
     [
-        (19, 49),
-        (4, 13),
+        (190, 49),
+        (40, 13),
     ],
 )
 def test_split_pauli_sentence(ps_size, max_size):
