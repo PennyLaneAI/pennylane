@@ -176,9 +176,9 @@ class QuantumScript(Pytree):
 
     def __init__(self, ops=None, measurements=None, prep=None, name=None, _update=True):
         self.name = name
-        self._prep = [] if prep is None else list(prep)
-        self._ops = [] if ops is None else list(ops)
-        self._measurements = [] if measurements is None else list(measurements)
+        self._prep = tuple() if prep is None else tuple(prep)
+        self._ops = tuple() if ops is None else tuple(ops)
+        self._measurements = tuple() if measurements is None else tuple(measurements)
 
         #self._par_info = []
         """list[dict[str, Operator or int]]: Parameter information.
@@ -296,8 +296,7 @@ class QuantumScript(Pytree):
 
         for m in self.measurements:
             if m.obs is not None:
-                m.obs.return_type = m.return_type
-                obs.append(m.obs)
+                obs.append(m.obs.replace(return_type=m.return_type))
             else:
                 obs.append(m)
 
@@ -1354,6 +1353,19 @@ class QuantumScript(Pytree):
     def from_queue(cls, queue):
         """Construct a QuantumScript from an AnnotatedQueue."""
         return cls(*process_queue(queue))
+
+
+    @property
+    def _attrs(self):
+        return (self.name, self._prep, self._ops, self._measurements)
+
+    def __eq__(self, o):
+        if type(self) is type(o):
+            return self._attrs == o._attrs
+        return False
+
+    def __hash__(self):
+        return hash(self._attrs)
 
 
 def make_qscript(fn):

@@ -154,7 +154,7 @@ class MeasurementProcess(Pytree):
     # Below, we imitate an identity observable, so that the
     # device undertakes no action upon receiving this observable.
     name : str = "Identity"
-    data: List = []
+    data: List = ()
 
     # pylint: disable=too-many-arguments
     def __init__(
@@ -493,6 +493,18 @@ class MeasurementProcess(Pytree):
         else:
             new_measurement._wires = Wires([wire_map.get(wire, wire) for wire in self.wires])
         return new_measurement
+
+    @property
+    def _attrs(self):
+        return (self.name, self.id, self.obs, self._wires, self._eigvals, self.data)
+
+    def __eq__(self, o):
+        if type(self) is type(o):
+            return self._attrs == o._attrs
+        return False
+
+    def __hash__(self):
+        return hash(self._attrs)
 
 
 class SampleMeasurement(MeasurementProcess):
