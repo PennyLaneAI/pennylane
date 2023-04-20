@@ -314,20 +314,20 @@ def taper(h, generators, paulixops, paulix_sector):
     if not isinstance(ps_h, qml.pauli.PauliSentence):
         ps_h = pauli_sentence(h)
 
-    ts_h = qml.pauli.PauliSentence()
+    ts_ps = qml.pauli.PauliSentence()
     for ps in _split_pauli_sentence(ps_h, max_size=PAULI_SENTENCE_MEMORY_SPLITTING_SIZE):
-        ts_h += ps_u * ps * ps_u  # helps restrict the peak memory usage for u @ h @ u
-    h = ts_h.hamiltonian()  # cast back to hamiltonian
+        ts_ps += ps_u * ps * ps_u  # helps restrict the peak memory usage for u @ h @ u
+    ts_h = ts_ps.hamiltonian()  # cast back to hamiltonian
 
-    wireset = u.wires + h.wires
+    wireset = u.wires + ts_h.wires
     wiremap = dict(zip(wireset, range(len(wireset) + 1)))
     paulix_wires = [x.wires[0] for x in paulixops]
 
     o = []
-    h_coeffs, h_ops = h.terms()
+    h_coeffs, h_ops = ts_h.terms()
     val = np.ones(len(h_coeffs))
 
-    wires_tap = [i for i in h.wires if i not in paulix_wires]
+    wires_tap = [i for i in ts_h.wires if i not in paulix_wires]
     wiremap_tap = dict(zip(wires_tap, range(len(wires_tap) + 1)))
 
     for i in range(len(h_coeffs)):
@@ -337,15 +337,14 @@ def taper(h, generators, paulixops, paulix_sector):
             if s[w] == "X":
                 val[i] *= paulix_sector[idx]
 
-        wires = [x for x in h.wires if x not in paulix_wires]
+        wires = [x for x in ts_h.wires if x not in paulix_wires]
         o.append(
             qml.pauli.string_to_pauli_word(
                 "".join([s[wiremap[i]] for i in wires]), wire_map=wiremap_tap
             )
         )
 
-    c = qml.math.multiply(val * complex(1.0), h_coeffs)
-    c = qml.math.stack(c)
+    c = qml.math.stack(qml.math.multiply(val * complex(1.0), h_coeffs))
 
     tapered_ham = simplify(qml.Hamiltonian(c, o))
     # If simplified Hamiltonian is missing wires, then add wires manually for consistency
