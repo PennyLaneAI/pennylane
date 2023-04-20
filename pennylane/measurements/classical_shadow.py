@@ -15,7 +15,6 @@
 This module contains the qml.classical_shadow measurement.
 """
 import copy
-import warnings
 from collections.abc import Iterable
 from typing import Optional, Union, Sequence
 
