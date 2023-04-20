@@ -302,7 +302,7 @@ def _get_operation_recipe(tape, t_idx, shifts, order=1):
     if order not in {1, 2}:
         raise NotImplementedError("_get_operation_recipe only is implemented for orders 1 and 2.")
 
-    op, _, p_idx = tape.get_operation(t_idx, return_op_index=True)
+    op, _, p_idx = tape.get_operation(t_idx)
 
     # Try to use the stored grad_recipe of the operation
     op_recipe = _process_op_recipe(op, p_idx, order)
@@ -512,7 +512,7 @@ def expval_param_shift(
             gradient_data.append((0, [], None, None, 0))
             continue
 
-        op, *_ = tape.get_operation(idx, return_op_index=True)
+        op, *_ = tape.get_operation(idx)
 
         if op.name == "Hamiltonian":
             # operation is a Hamiltonian
@@ -651,7 +651,7 @@ def _expval_param_shift_legacy(
             gradient_data.append((0, [], None, None, 0))
             continue
 
-        op, *_ = tape.get_operation(idx, return_op_index=True)
+        op, *_ = tape.get_operation(idx)
 
         if op.name == "Hamiltonian":
             # operation is a Hamiltonian
