@@ -19,13 +19,6 @@ Pending deprecations
   - Still accessible in v0.28, v0.29
   - Will be removed in v0.30
 
-* The ``seed_recipes`` argument in ``qml.classical_shadow`` and ``qml.shadow_expval`` is deprecated.
-  A new argument ``seed`` has been added, which defaults to ``None`` and can contain an integer with the 
-  wanted seed.
-
-  - Still accessible in v0.28, v0.29
-  - Will be removed in v0.30
-
 * The ``grouping`` module is deprecated. The functionality has been moved and
   reorganized in the new ``pauli`` module under ``pauli/utils.py`` or ``pauli/grouping/``.
 
@@ -74,6 +67,12 @@ Pending deprecations
 
 Completed deprecation cycles
 ----------------------------
+
+* The ``seed_recipes`` argument in ``qml.classical_shadow`` and ``qml.shadow_expval`` has been removed.
+  An argument ``seed`` which defaults to ``None`` can contain an integer with the wanted seed.
+
+  - Still accessible in v0.28, v0.29
+  - Removed in v0.30
 
 * The ``get_operation`` tape method is updated to return the operation index as well, changing its signature.
 
