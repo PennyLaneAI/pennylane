@@ -14,11 +14,11 @@
   See the [docstring](https://docs.pennylane.ai/en/stable/code/api/pennylane.pulse.ParametrizedEvolution.html)
   for details.
 
-* New `Resources` data class to store resources like number of gates and circuit depth throughout a 
+* The `Resources` data class is added to store resources like number of gates and circuit depth throughout a 
   quantum circuit.
   [(#3981)](https://github.com/PennyLaneAI/pennylane/pull/3981/)
 
-* A `_count_resources()` function was added to count the resources required when executing a 
+* The `_count_resources()` function is added to count the resources required when executing a 
   QuantumTape for a given number of shots.
   [(#3996)](https://github.com/PennyLaneAI/pennylane/pull/3996)
 
@@ -232,6 +232,10 @@
 
 * Update various Operators and templates to ensure their decompositions only return lists of Operators.
   [(#3243)](https://github.com/PennyLaneAI/pennylane/pull/3243)
+
+* `QuantumScript.specs` is modified to make use of the new `Resources` class. This also modifies the 
+  output of `qml.specs()`. 
+  [(#4015)](https://github.com/PennyLaneAI/pennylane/pull/4015)
 
 <h3>Breaking changes 💔</h3>
 

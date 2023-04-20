@@ -1143,23 +1143,23 @@ class QuantumScript:
             dict[str, Union[defaultdict,int]]: dictionaries that contain quantum script specifications
 
         **Example**
-        >>> prep = [qml.BasisState(np.array([1,1]), wires=(0,"a"))]
-        >>> ops = [qml.DoubleExcitation(0.1, wires=[0, 1, 2, 3])]
-        >>> qscript = QuantumScript(ops, [qml.expval(qml.PauliZ(0))], prep)
+         >>> ops = [qml.Hadamard(0), qml.RX(0.26, 1), qml.CNOT((1,0)),
+         ...         qml.Rot(1.8, -2.7, 0.2, 0), qml.Hadamard(1), qml.CNOT((0,1))]
+         >>> qscript = QuantumScript(ops, [qml.expval(qml.PauliZ(0) @ qml.PauliZ(1))])
 
         Asking for the specs produces a dictionary of useful information about the circuit:
 
         >>> qscript.specs["num_observables"]
         1
         >>> qscript.specs['gate_sizes']
-        defaultdict(<class 'int'>, {2: 1, 4: 1})
+        defaultdict(<class 'int'>, {1: 4, 2: 2})
         >>> print(qscript.specs['resources'])
-        wires: 5
-        gates: 2
-        depth: 2
+        wires: 2
+        gates: 6
+        depth: 4
         shots: 0
         gate_types:
-        {'BasisState': 1, 'DoubleExcitation': 1}
+        {'Hadamard': 2, 'RX': 1, 'CNOT': 2, 'Rot': 1}
         """
         if self._specs is None:
             resources = qml.resource.resource._count_resources(
