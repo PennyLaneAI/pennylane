@@ -33,7 +33,12 @@
 
 * New `Resources` data class to store resources like number of gates and circuit depth throughout a 
   quantum circuit.
-  [(3981)](https://github.com/PennyLaneAI/pennylane/pull/3981/)
+  [(#3981)](https://github.com/PennyLaneAI/pennylane/pull/3981/)
+
+* A `_count_resources()` function was added to count the resources required when executing a 
+  QuantumTape for a given number of shots.
+  [(#3996)](https://github.com/PennyLaneAI/pennylane/pull/3996)
+
  
 <h4>Pulse programming</h4>
 
@@ -246,6 +251,10 @@
   [(#3243)](https://github.com/PennyLaneAI/pennylane/pull/3243)
 
 <h3>Breaking changes 💔</h3>
+
+* The tape method `get_operation` has an updated signature.
+  [(#3998)](https://github.com/PennyLaneAI/pennylane/pull/3998)
+
 
 * Both JIT interfaces are not compatible with JAX `>0.4.3`, we raise an error for those versions.
   [(#3877)](https://github.com/PennyLaneAI/pennylane/pull/3877)

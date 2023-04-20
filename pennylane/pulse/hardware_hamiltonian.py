@@ -164,6 +164,9 @@ def drive(amplitude, phase, wires):
         Note that a potential anharmonicity term, as is common for transmon systems when taking into account higher energy
         levels, is unaffected by this transformation.
 
+        Further, note that the factor :math:`\frac{1}{2}` is a matter of convention. We keep it for ``drive()`` as well as :func:`~.rydberg_drive`,
+        but ommit it in :func:`~.transmon_drive`, as is common in the respective fields.
+
     .. details::
         **Neutral Atom Rydberg systems**
 

@@ -12,11 +12,6 @@ Pending deprecations
   - ``argnums`` is the only option for gradient transforms using JAX in v0.31
 
 
-* The ``get_operation`` tape method is updated to return the operation index as well, changing its signature.
-
-  - The new signature is available by changing the arg ``return_op_index`` to ``True`` in v0.29
-  - The old signature is replaced with the new one in v0.30
-
 * The ``observables`` argument in ``QubitDevice.statistics`` is deprecated. Please use ``circuit``
   instead. Using a list of observables in ``QubitDevice.statistics`` is deprecated. Please use a
   ``QuantumTape`` instead.
@@ -44,7 +39,7 @@ Pending deprecations
 * ``qml.ExpvalCost`` has been deprecated, and usage will now raise a warning.
   
   - Deprecated in v0.24
-  - Will be removed in v0.30
+  - Will be removed in v0.31
 
   Instead, it is recommended to simply
   pass Hamiltonians to the ``qml.expval`` function inside QNodes:
@@ -79,6 +74,12 @@ Pending deprecations
 
 Completed deprecation cycles
 ----------------------------
+
+* The ``get_operation`` tape method is updated to return the operation index as well, changing its signature.
+
+  - The new signature is available by changing the arg ``return_op_index`` to ``True`` in v0.29
+  - The old signature is replaced with the new one in v0.30
+
 
 * ``qml.VQECost`` is removed. 
 
