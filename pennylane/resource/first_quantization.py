@@ -36,7 +36,7 @@ class FirstQuantization(Operation):
     the number of electrons and the unit cell volume need to be defined. The costs can then be
     computed using the functions :func:`~.pennylane.resource.FirstQuantization.gate_cost` and
     :func:`~.pennylane.resource.FirstQuantization.qubit_cost` with a target error that has the default
-    value of 0.0015 Ha (chemical accuracy). Atomic units are used throughout the class.
+    value of 0.0016 Ha (chemical accuracy). Atomic units are used throughout the class.
 
     Args:
         n (int): number of plane waves
@@ -112,24 +112,31 @@ class FirstQuantization(Operation):
         self.p_th = p_th
         self.exact = exact
 
-        self.omega = np.abs(np.sum((np.cross(vec_a[0], vec_a[1]) * vec_a[2]))) * angs2bohr**3
+        if vec_a is not None:
+            self.omega = np.abs(np.sum((np.cross(vec_a[0], vec_a[1]) * vec_a[2]))) * angs2bohr**3
 
-        self.recip_bv = (
-            2
-            * np.pi
-            / self.omega
-            * np.array([np.cross(vec_a[i], vec_a[j]) for i, j in [(1, 2), (2, 0), (0, 1)]])
-            * angs2bohr**2
-        )
+            self.recip_bv = (
+                2
+                * np.pi
+                / self.omega
+                * np.array([np.cross(vec_a[i], vec_a[j]) for i, j in [(1, 2), (2, 0), (0, 1)]])
+                * angs2bohr**2
+            )
 
-        bbt = np.matrix(self.recip_bv) @ np.matrix(self.recip_bv).T
+            bbt = np.matrix(self.recip_bv) @ np.matrix(self.recip_bv).T
 
-        self.cubic = np.linalg.norm(bbt - (self.recip_bv**2).max() * np.identity(3)) < 1e-6
+            self.cubic = np.linalg.norm(bbt - (self.recip_bv**2).max() * np.identity(3)) < 1e-6
 
-        self.orthogonal = (
-            np.linalg.norm(bbt - np.array([np.max(b**2) for b in self.recip_bv]) * np.identity(3))
-            < 1e-6
-        )
+            self.orthogonal = (
+                np.linalg.norm(
+                    bbt - np.array([np.max(b**2) for b in self.recip_bv]) * np.identity(3)
+                )
+                < 1e-6
+            )
+        else:
+            self.cubic = True
+            self.orthogonal = True
+            self.recip_bv = None
 
         if self.cubic:
             self.bmin = 2 * np.pi / omega ** (1 / 3)
@@ -500,35 +507,25 @@ class FirstQuantization(Operation):
         return min(cost_f, cost_c)
 
     @staticmethod
-    def _momentum_state_QROM(n_p, n_m, n_dirty, n_tof, kappa):
-        nqrom_bits = 3 * n_p
-        x = 2**nqrom_bits
-        y = n_m
+    def _momentum_state_qrom(n_p, n_m, n_dirty, n_tof, kappa):
 
-        beta_dirty = np.floor(n_dirty / y)
+        x = 2 ** (3 * n_p)
+
+        beta_dirty = np.floor(n_dirty / n_m)
         beta_parallel = np.floor(n_tof / kappa)
 
         if n_tof == 1:
-            beta_gate = np.floor(np.sqrt(2 * x / (3 * y)))
-        else:
-            beta_gate = np.floor(2 * x / (3 * y / kappa) * np.log(2))
-
-        if n_tof == 1:
+            beta_gate = np.floor(np.sqrt(2 * x / (3 * n_m)))
             beta = np.min([beta_dirty, beta_gate])
+            ms_cost_qrom = 2 * np.ceil(x / beta) + 3 * n_m * beta
         else:
+            beta_gate = np.floor(2 * x / (3 * n_m / kappa) * np.log(2))
             beta = np.min([beta_dirty, beta_gate, beta_parallel])
+            ms_cost_qrom = 2 * np.ceil(x / beta) + 3 * np.ceil(n_m / kappa) * np.ceil(np.log2(beta))
 
-        if n_tof == 1:
-            momentum_state_cost_qrom = 2 * np.ceil(x / beta) + 3 * y * beta
-        else:
-            momentum_state_cost_qrom = 2 * np.ceil(x / beta) + 3 * np.ceil(y / kappa) * np.ceil(
-                np.log2(beta)
-            )
+        ms_cost = 2 * ms_cost_qrom + n_m + 8 * (n_p - 1) + 6 * n_p + 2 + 2 * n_p + n_m + 2
 
-        momentum_state_cost = (
-            2 * momentum_state_cost_qrom + y + 8 * (n_p - 1) + 6 * n_p + 2 + 2 * n_p + n_m + 2
-        )
-        return momentum_state_cost, beta
+        return ms_cost, beta
 
     @staticmethod
     def estimation_cost(
@@ -697,9 +694,7 @@ class FirstQuantization(Operation):
 
         # errors in Eqs. (132-134) of PRX Quantum 2, 040332 (2021)
         alpha = 0.0248759298  # optimal value for lower resource estimates
-        error_t = alpha * error
-        error_r = alpha * error
-        error_m = alpha * error
+        error_t, error_r, error_m = [alpha * error] * 3
 
         # parameters taken from Eqs. (132-134) of PRX Quantum 2, 040332 (2021)
         n_t = int(np.ceil(np.log2(np.pi * lambda_total / error_t)))  # Eq. (134)
@@ -719,13 +714,6 @@ class FirstQuantization(Operation):
         n_errors = 3 if cubic else 4
         error_qpe = np.sqrt(error**2 * (1 - (n_errors * alpha) ** 2))
 
-        # the expression for computing the cost is taken from Eq. (101) of arXiv:2204.11890v1
-        clean_cost = 3 * eta * n_p
-        clean_cost += np.ceil(np.log2(np.ceil(np.pi * lambda_total / (2 * error_qpe))))
-        clean_cost += 1 + 1 + np.ceil(np.log2(eta + 2 * l_z)) + 3 + 3
-        clean_cost += 2 * np.ceil(np.log2(eta)) + 5 + 3 * (n_p + 1)
-        clean_cost += n_p + n_m + 3 * n_p + 2 + 2 * n_p + 1 + 1 + 2 + 2 * n_p + 6 + 1
-
         clean_temp_H_cost = max([5 * n_r - 4, 5 * n_p + 1]) + max([5, n_m + 3 * n_p])
         __name = (
             np.ceil(np.log2(eta + 2 * l_z))
@@ -737,18 +725,25 @@ class FirstQuantization(Operation):
         )
         clean_temp_cost = max([clean_temp_H_cost, __name])
 
-        logical_clean_qubits = clean_cost + clean_temp_cost
+        # the expression for computing the cost is taken from Eq. (101) of arXiv:2204.11890v1
+        clean_cost = 3 * eta * n_p
+        clean_cost += np.ceil(np.log2(np.ceil(np.pi * lambda_total / (2 * error_qpe))))
+        clean_cost += 1 + 1 + np.ceil(np.log2(eta + 2 * l_z)) + 3 + 3
+        clean_cost += 2 * np.ceil(np.log2(eta)) + 5 + 3 * (n_p + 1)
+        clean_cost += n_p + n_m + 3 * n_p + 2 + 2 * n_p + 1 + 1 + 2 + 2 * n_p + 6 + 1
+
+        clean_cost += clean_temp_cost
 
         if cubic:
-            logical_clean_qubits += np.max([n_r + 1, n_t]) + sum(
+            clean_cost += np.max([n_r + 1, n_t]) + sum(
                 (3 * n_p**2 + n_p + 1 + 4 * n_m * (n_p + 1), 4)
             )
         else:
             error_b = alpha * error
             n_b = FirstQuantization._compute_n_b(error_b, eta, n_p, recip_bv)
-            logical_clean_qubits += np.max([n_r + 1, n_t, n_b]) + 6 + n_m + 1
+            clean_cost += np.max([n_r + 1, n_t, n_b]) + 6 + n_m + 1
 
-        return logical_clean_qubits
+        return clean_cost
 
     @staticmethod
     def qubit_cost(
@@ -848,7 +843,7 @@ class FirstQuantization(Operation):
         if n_dirty is None or cubic:
             return int(np.ceil(logical_clean_qubits))
 
-        beta = FirstQuantization._momentum_state_QROM(n_p, n_m, n_dirty, n_tof, kappa=1)[1]
+        beta = FirstQuantization._momentum_state_qrom(n_p, n_m, n_dirty, n_tof, kappa=1)[1]
         qubits = max([logical_clean_qubits, beta * (n_m + 1)])
 
         return int(np.ceil(qubits))
@@ -961,7 +956,7 @@ class FirstQuantization(Operation):
             cost += 2 * (2 * (2 * (2 ** (4 + 1) - 1) + (n_b - 3) * 4 + 2**4 + (n_p - 2)))
             cost += 8  # 5 to compute the flag qubit for T being prepared, uncomputation without Toffolis, and 3 for the ROT cost
 
-            ms_cost = FirstQuantization._momentum_state_QROM(n_p, n_m, n_dirty, n_tof, kappa=1)[0]
+            ms_cost = FirstQuantization._momentum_state_qrom(n_p, n_m, n_dirty, n_tof, kappa=1)[0]
             cost -= (2 * aa_steps + 1) * (3 * n_p**2 + 15 * n_p - 7 + 4 * n_m * (n_p + 1))
             cost += (2 * aa_steps + 1) * ms_cost
 
