@@ -49,64 +49,40 @@ class TestShape:
         ):
             _ = mp.shape(dev, shots)
 
+    @pytest.mark.parametrize(
+        "mp",
+        [
+            qml.expval(qml.PauliZ(0)),
+            qml.var(qml.PauliZ(0)),
+            qml.purity(wires=0),
+            qml.vn_entropy(wires=0),
+            qml.mutual_info(0, 1),
+        ],
+    )
     @pytest.mark.parametrize("shots", [None, 10])
-    def test_purity_shape(self, shots):
-        """Test that the shape of a purity measurement is as expected"""
+    def test_single_value_measurement_process_shape(self, mp, shots):
+        """Test that the shape of a single-value measurements is as expected"""
         dev.shots = shots
         num_shots = Shots(shots)
-        mp = qml.purity(wires=0)
 
-        assert isinstance(mp, PurityMP)
         assert mp.shape(dev, num_shots) == (1,)
 
-    def test_purity_shape_shot_vector(self):
-        """Test that the shape of a purity measurement with a shot vector is as expected"""
+    @pytest.mark.parametrize(
+        "mp",
+        [
+            qml.expval(qml.PauliZ(0)),
+            qml.var(qml.PauliZ(0)),
+            qml.purity(wires=0),
+            qml.vn_entropy(wires=0),
+            qml.mutual_info(0, 1),
+        ],
+    )
+    def test_single_value_measurement_process_shape_shot_vector(self, mp):
+        """Test that the shape of a single-value measurement with a shot vector is as expected"""
         shot_vector = [1, 1, 2, 3, 1]
         dev.shots = shot_vector
         shots = Shots(shot_vector)
-        mp = qml.purity(wires=0)
 
-        assert isinstance(mp, PurityMP)
-        assert mp.shape(dev, shots) == (len(shot_vector),)
-
-    @pytest.mark.parametrize("shots", [None, 10])
-    def test_mutual_info_shape(self, shots):
-        """Test that the shape of a mutual info measurement is as expected"""
-        dev.shots = shots
-        num_shots = Shots(shots)
-        mp = qml.mutual_info(0, 1)
-
-        assert isinstance(mp, MutualInfoMP)
-        assert mp.shape(dev, num_shots) == (1,)
-
-    def test_mutual_info_shape_shot_vector(self):
-        """Test that the shape of a mutual info measurement with a shot vector is as expected"""
-        shot_vector = [1, 1, 2, 3, 1]
-        dev.shots = shot_vector
-        shots = Shots(shot_vector)
-        mp = qml.mutual_info(0, 1)
-
-        assert isinstance(mp, MutualInfoMP)
-        assert mp.shape(dev, shots) == (len(shot_vector),)
-
-    @pytest.mark.parametrize("shots", [None, 10])
-    def test_vn_entropy_shape(self, shots):
-        """Test that the shape of a vn_entropy measurement is as expected"""
-        dev.shots = shots
-        num_shots = Shots(shots)
-        mp = qml.vn_entropy(wires=0)
-
-        assert isinstance(mp, VnEntropyMP)
-        assert mp.shape(dev, num_shots) == (1,)
-
-    def test_vn_entropy_shape_shot_vector(self):
-        """Test that the shape of a vn_entropy measurement with a shot vector is as expected"""
-        shot_vector = [1, 1, 2, 3, 1]
-        dev.shots = shot_vector
-        shots = Shots(shot_vector)
-        mp = qml.vn_entropy(wires=0)
-
-        assert isinstance(mp, VnEntropyMP)
         assert mp.shape(dev, shots) == (len(shot_vector),)
 
     def test_sample_shape_no_shots_error(self):

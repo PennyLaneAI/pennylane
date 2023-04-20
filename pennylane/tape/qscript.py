@@ -811,6 +811,7 @@ class QuantumScript:
                     shape.extend((num_shots, len(mps)) for _ in range(shot_val.copies))
                 else:
                     shape.extend((len(mps),) for _ in range(shot_val.copies))
+            shape = tuple(shape)
         return shape
 
     def _shape_legacy(self, device):
