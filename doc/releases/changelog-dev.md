@@ -239,9 +239,11 @@
 
 <h3>Breaking changes 💔</h3>
 
+* The `seed_recipes` argument has been removed from `qml.classical_shadow` and `qml.shadow_expval`.
+  [(#4020)](https://github.com/PennyLaneAI/pennylane/pull/4020)
+
 * The tape method `get_operation` has an updated signature.
   [(#3998)](https://github.com/PennyLaneAI/pennylane/pull/3998)
-
 
 * Both JIT interfaces are not compatible with JAX `>0.4.3`, we raise an error for those versions.
   [(#3877)](https://github.com/PennyLaneAI/pennylane/pull/3877)

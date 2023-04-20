@@ -15,7 +15,6 @@
 This module contains the qml.classical_shadow measurement.
 """
 import copy
-import warnings
 from collections.abc import Iterable
 from typing import Optional, Union, Sequence
 
@@ -28,7 +27,7 @@ from pennylane.wires import Wires
 from .measurements import MeasurementShapeError, MeasurementTransform, Shadow, ShadowExpval
 
 
-def shadow_expval(H, k=1, seed=None, seed_recipes=True):
+def shadow_expval(H, k=1, seed=None):
     r"""Compute expectation values using classical shadows in a differentiable manner.
 
     The canonical way of computing expectation values is to simply average the expectation values for each local snapshot, :math:`\langle O \rangle = \sum_t \text{tr}(\rho^{(t)}O) / T`.
@@ -85,16 +84,11 @@ def shadow_expval(H, k=1, seed=None, seed_recipes=True):
     >>> qml.jacobian(circuit)(x, Hs)
     [-0.48312, -0.00198, -0.00375,  0.00168]
     """
-    if seed_recipes is False:
-        warnings.warn(
-            "Using ``seed_recipes`` is deprecated. Please use ``seed`` instead.",
-            UserWarning,
-        )
     seed = seed or np.random.randint(2**30)
     return ShadowExpvalMP(H=H, seed=seed, k=k)
 
 
-def classical_shadow(wires, seed=None, seed_recipes=True):
+def classical_shadow(wires, seed=None):
     """
     The classical shadow measurement protocol.
 
@@ -186,37 +180,37 @@ def classical_shadow(wires, seed=None, seed_recipes=True):
                 qml.CNOT(wires=[0, 1])
                 qml.classical_shadow(wires=[0, 1])
 
-        >>> bits1, recipes1 = qml.execute([tape], device=dev, gradient_fn=None)[0][0]
-        >>> bits2, recipes2 = qml.execute([tape], device=dev, gradient_fn=None)[0][0]
+        >>> bits1, recipes1 = qml.execute([tape], device=dev, gradient_fn=None)[0]
+        >>> bits2, recipes2 = qml.execute([tape], device=dev, gradient_fn=None)[0]
         >>> np.all(recipes1 == recipes2)
         True
         >>> np.all(bits1 == bits2)
         False
 
         If using different Pauli recipes is desired for the :class:`~.tape.QuantumTape` interface,
-        the ``seed_recipes`` flag should be explicitly set to ``False``:
+        different seeds should be used for the classical shadow:
 
         .. code-block:: python3
 
             dev = qml.device("default.qubit", wires=2, shots=5)
 
-            with qml.tape.QuantumTape() as tape:
+            with qml.tape.QuantumTape() as tape1:
                 qml.Hadamard(wires=0)
                 qml.CNOT(wires=[0, 1])
-                qml.classical_shadow(wires=[0, 1], seed_recipes=False)
+                qml.classical_shadow(wires=[0, 1], seed=10)
 
-        >>> bits1, recipes1 = qml.execute([tape], device=dev, gradient_fn=None)[0][0]
-        >>> bits2, recipes2 = qml.execute([tape], device=dev, gradient_fn=None)[0][0]
+            with qml.tape.QuantumTape() as tape2:
+                qml.Hadamard(wires=0)
+                qml.CNOT(wires=[0, 1])
+                qml.classical_shadow(wires=[0, 1], seed=15)
+
+        >>> bits1, recipes1 = qml.execute([tape1], device=dev, gradient_fn=None)[0]
+        >>> bits2, recipes2 = qml.execute([tape2], device=dev, gradient_fn=None)[0]
         >>> np.all(recipes1 == recipes2)
         False
         >>> np.all(bits1 == bits2)
         False
     """
-    if seed_recipes is False:
-        warnings.warn(
-            "Using ``seed_recipes`` is deprecated. Please use ``seed`` instead.",
-            UserWarning,
-        )
     wires = Wires(wires)
     seed = seed or np.random.randint(2**30)
     return ClassicalShadowMP(wires=wires, seed=seed)
