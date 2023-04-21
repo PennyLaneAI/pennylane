@@ -41,7 +41,7 @@ MAX_NUM_WIRES_KRON_PRODUCT = 9
 computing the sparse matrix representation."""
 
 
-def prod(*ops, id=None, lazy=True):
+def prod(*ops, do_queue=True, id=None, lazy=True):
     """Construct an operator which represents the generalized product of the
     operators provided.
 
@@ -53,6 +53,7 @@ def prod(*ops, id=None, lazy=True):
         ops (tuple[~.operation.Operator]): The operators we would like to multiply
 
     Keyword Args:
+        do_queue (bool): Must be True (default) for prod, but present for consistency.
         id (str or None): id for the product operator. Default is None.
         lazy=True (bool): If ``lazy=False``, a simplification will be performed such that when any of the operators is already a product operator, its operands will be used instead.
 
@@ -83,6 +84,9 @@ def prod(*ops, id=None, lazy=True):
     array([[ 0, -1],
            [ 1,  0]])
     """
+    if not do_queue:
+        raise ValueError("do_queue=False is not supported for qml.prod")
+
     if not lazy:
         for op in ops:
             QueuingManager.remove(op)
@@ -99,6 +103,7 @@ class Prod(CompositeOp):
         together.
 
     Keyword Args:
+        do_queue (bool): Must be True (default) for Prod, but present for consistency.
         id (str or None): id for the product operator. Default is None.
 
     .. seealso:: :func:`~.ops.op_math.prod`

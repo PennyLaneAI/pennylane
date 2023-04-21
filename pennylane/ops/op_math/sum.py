@@ -32,22 +32,23 @@ from pennylane.queuing import QueuingManager
 from .composite import CompositeOp
 
 
-def op_sum(*summands, id=None, lazy=True):
+def op_sum(*summands, do_queue=True, id=None, lazy=True):
     """This function is deprecated and will be removed soon. Please use :func:`sum` instead."""
     warnings.warn(
         "The `op_sum` function is deprecated and will be removed soon. Please use `sum` instead.",
         UserWarning,
     )
-    return sum(*summands, id=id, lazy=lazy)
+    return sum(*summands, do_queue=do_queue, id=id, lazy=lazy)
 
 
-def sum(*summands, id=None, lazy=True):
+def sum(*summands, do_queue=True, id=None, lazy=True):
     r"""Construct an operator which is the sum of the given operators.
 
     Args:
         summands (tuple[~.operation.Operator]): the operators we want to sum together.
 
     Keyword Args:
+        do_queue (bool): Must be True (default) for sum, but present for consistency.
         id (str or None): id for the Sum operator. Default is None.
         lazy=True (bool): If ``lazy=False``, a simplification will be performed such that when any
             of the operators is already a sum operator, its operands (summands) will be used instead.
@@ -79,6 +80,9 @@ def sum(*summands, id=None, lazy=True):
     array([[ 1,  1],
            [ 1, -1]])
     """
+    if not do_queue:
+        raise ValueError("do_queue=False is not supported for qml.sum")
+
     if len(summands) == 1 and isinstance(summands[0], qml.QNodeCollection):
         return qml.collections.sum(summands[0])
 
@@ -97,6 +101,7 @@ class Sum(CompositeOp):
         summands (tuple[~.operation.Operator]): a tuple of operators which will be summed together.
 
     Keyword Args:
+        do_queue (bool): Must be True (default) for Sum, but present for consistency.
         id (str or None): id for the sum operator. Default is None.
 
     .. note::

@@ -209,6 +209,11 @@ class TestConstruction:
         op = ValidOp(*self.simple_operands)
         assert op._build_pauli_rep() == qml.pauli.PauliSentence({})
 
+    def test_do_queue_kwarg_not_supported(self):
+        """Test that the do_queue kwarg is not available for the wrapper func or Operator."""
+        with pytest.raises(ValueError, match="do_queue=False is not supported for ValidOp"):
+            ValidOp(qml.PauliX(0), qml.PauliZ(1), do_queue=False)
+
 
 class TestMscMethods:
     """Test dunder and other visualizing methods."""

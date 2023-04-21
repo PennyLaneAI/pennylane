@@ -316,6 +316,12 @@ class TestInitialization:
         prod_op = prod(MyOp(3.1, 0), qml.PauliX(2))
         assert prod_op.has_diagonalizing_gates is False
 
+    @pytest.mark.parametrize("method,name", [(prod, "qml.prod"), (Prod, "Prod")])
+    def test_do_queue_kwarg_not_supported(self, method, name):
+        """Test that the do_queue kwarg is not available for the wrapper func or Operator."""
+        with pytest.raises(ValueError, match=f"do_queue=False is not supported for {name}"):
+            method(qml.PauliX(0), qml.PauliZ(1), do_queue=False)
+
 
 class TestMatrix:
     """Test matrix-related methods."""
@@ -1138,11 +1144,6 @@ class TestWrapperFunc:
 
         assert len(q) == 1
         assert q.queue[0] is prod2
-
-    def test_do_queue_kwarg_not_supported(self):
-        """Test that the do_queue kwarg is not available for the wrapper func."""
-        with pytest.raises(TypeError, match="unexpected keyword argument 'do_queue'"):
-            prod(qml.PauliX(0), qml.PauliZ(1), do_queue=False)
 
 
 class TestIntegration:

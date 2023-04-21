@@ -35,6 +35,7 @@ class CompositeOp(Operator):
         operands: (tuple[~.operation.Operator]): a tuple of operators which will be combined.
 
     Keyword Args:
+        do_queue (bool): Must be True (default) for CompositeOps, but present for consistency.
         id (str or None): id for the operator. Default is None.
 
     The child composite operator should define the `_op_symbol` property
@@ -44,13 +45,18 @@ class CompositeOp(Operator):
 
     _eigs = {}  # cache eigen vectors and values like in qml.Hermitian
 
-    def __init__(self, *operands: Operator, id=None):  # pylint: disable=super-init-not-called
+    def __init__(
+        self, *operands: Operator, do_queue=True, id=None
+    ):  # pylint: disable=super-init-not-called
         self._id = id
         self.queue_idx = None
         self._name = self.__class__.__name__
 
         if len(operands) < 2:
             raise ValueError(f"Require at least two operators to combine; got {len(operands)}")
+
+        if not do_queue:
+            raise ValueError(f"do_queue=False is not supported for {self.name}")
 
         self.operands = operands
         self._wires = qml.wires.Wires.all_wires([op.wires for op in operands])
@@ -59,7 +65,6 @@ class CompositeOp(Operator):
         self._overlapping_ops = None
         self._pauli_rep = self._build_pauli_rep()
         self.queue()
-
         self._check_batching(None)  # unused param
 
     def _check_batching(self, _):

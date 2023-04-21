@@ -174,6 +174,12 @@ class TestInitialization:
         assert np.allclose(eig_vals, cached_vals)
         assert np.allclose(eig_vecs, cached_vecs)
 
+    @pytest.mark.parametrize("method,name", [(qml.sum, "qml.sum"), (Sum, "Sum")])
+    def test_do_queue_kwarg_not_supported(self, method, name):
+        """Test that the do_queue kwarg is not available for the wrapper func or Operator."""
+        with pytest.raises(ValueError, match=f"do_queue=False is not supported for {name}"):
+            method(qml.PauliX(0), qml.PauliZ(1), do_queue=False)
+
 
 class TestMatrix:
     """Test matrix-related methods."""
@@ -947,11 +953,6 @@ class TestWrapperFunc:
 
         assert len(q) == 1
         assert q.queue[0] is sum2
-
-    def test_do_queue_kwarg_not_supported(self):
-        """Test that the do_queue kwarg is not available for the wrapper func."""
-        with pytest.raises(TypeError, match="unexpected keyword argument 'do_queue'"):
-            qml.sum(qml.PauliX(0), qml.PauliZ(1), do_queue=False)
 
 
 class TestIntegration:
