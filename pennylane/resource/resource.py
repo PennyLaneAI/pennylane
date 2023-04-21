@@ -76,8 +76,8 @@ class Resources:
 
 
 class ResourcesOperation(Operation):
-    r"""Base class representing quantum gates or channels applied to quantum states
-    storing additionally, the resource requirements of the quantum gate.
+    r"""Base class that represents quantum gates or channels applied to quantum 
+    states and stores the resource requirements of the quantum gate.
 
     .. note::
         Child classes must implement the :func:`resources()` method which computes
