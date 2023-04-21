@@ -14,6 +14,23 @@
   See the [docstring](https://docs.pennylane.ai/en/stable/code/api/pennylane.pulse.ParametrizedEvolution.html)
   for details.
 
+* The `qml.operation.enable_new_opmath` toggle has been introduced to cause dunder methods to return arithmetic
+  operators instead of Hamiltonians and Tensors.
+  [(#4008)](https://github.com/PennyLaneAI/pennylane/pull/4008)
+
+  For example:
+
+  ```pycon
+  >>> type(qml.PauliX(0) @ qml.PauliZ(1))
+  <class 'pennylane.operation.Tensor'>
+  >>> qml.operation.enable_new_opmath()
+  >>> type(qml.PauliX(0) @ qml.PauliZ(1))
+  <class 'pennylane.ops.op_math.prod.Prod'>
+  >>> qml.operation.disable_new_opmath()
+  >>> type(qml.PauliX(0) @ qml.PauliZ(1))
+  <class 'pennylane.operation.Tensor'>
+  ```
+
 * New `Resources` data class to store resources like number of gates and circuit depth throughout a 
   quantum circuit.
   [(#3981)](https://github.com/PennyLaneAI/pennylane/pull/3981/)
@@ -106,7 +123,10 @@
 * Improved efficiency of `tapering()`, `tapering_hf()` and `clifford()`.
   [(3942)](https://github.com/PennyLaneAI/pennylane/pull/3942)
 
-* Updated Pauli arithmetic to more efficiently convert to a Hamiltonian.
+* Improve the peak memory requirements of `tapering()` and `tapering_hf()` when used for larger observables.
+  [(3977)](https://github.com/PennyLaneAI/pennylane/pull/3977)
+
+* Update Pauli arithmetic to more efficiently convert to a Hamiltonian.
   [(#3939)](https://github.com/PennyLaneAI/pennylane/pull/3939)
 
 * The adjoint differentiation method now supports more operations, and does no longer decompose
@@ -235,6 +255,12 @@
 
 <h3>Breaking changes 💔</h3>
 
+* The `seed_recipes` argument has been removed from `qml.classical_shadow` and `qml.shadow_expval`.
+  [(#4020)](https://github.com/PennyLaneAI/pennylane/pull/4020)
+
+* The tape method `get_operation` has an updated signature.
+  [(#3998)](https://github.com/PennyLaneAI/pennylane/pull/3998)
+
 * Both JIT interfaces are not compatible with JAX `>0.4.3`, we raise an error for those versions.
   [(#3877)](https://github.com/PennyLaneAI/pennylane/pull/3877)
 
@@ -275,7 +301,16 @@
 * A typo was corrected in the documentation for introduction to `inspecting_circuits` and `chemistry`.
   [(#3844)](https://github.com/PennyLaneAI/pennylane/pull/3844)
 
+* Separated `Usage Details` and `Theory` sections in documentation for `qml.qchem.taper_operation`.
+  [(3977)](https://github.com/PennyLaneAI/pennylane/pull/3977)
+
 <h3>Bug fixes 🐛</h3>
+
+* Fixes a bug where `qml.math.dot` returned a numpy array instead of an autograd array, breaking autograd derivatives
+  in certain circumstances.
+
+* `Operator` now casts `tuple` to `np.ndarray` as well as `list`. 
+  [(#4022)](https://github.com/PennyLaneAI/pennylane/pull/4022)
 
 * Fixes a bug where `qml.ctrl` for parametric gates were incompatible with PyTorch tensors on the GPU.
   [(#4002)](https://github.com/PennyLaneAI/pennylane/pull/4002)
