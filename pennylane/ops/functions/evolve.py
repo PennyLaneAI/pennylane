@@ -14,7 +14,6 @@
 """
 This module contains the qml.evolve function.
 """
-import warnings
 from functools import singledispatch
 
 from pennylane.operation import Operator
@@ -56,7 +55,7 @@ def evolve(*args, **kwargs):  # pylint: disable=unused-argument
 
     >>> op = qml.evolve(qml.PauliX(0), coeff=2)
     >>> op
-    Exp(2j PauliX)
+    Exp(-2j PauliX)
 
     .. raw:: html
 
@@ -174,8 +173,4 @@ def parametrized_evolution(op: ParametrizedHamiltonian, **kwargs):
 # pylint: disable=missing-docstring
 @evolve.register
 def evolution(op: Operator, coeff: float = 1, num_steps: int = None):
-    with warnings.catch_warnings():
-        # Ignore the warning raised in `Evolution`
-        warnings.simplefilter("ignore")
-        ev = Evolution(op, -1 * coeff, num_steps)
-    return ev
+        return Evolution(op, coeff, num_steps)
