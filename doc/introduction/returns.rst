@@ -58,7 +58,7 @@ PennyLane has historically adopted the approach of combining the returned
 :ref:`measurements <intro_ref_meas>` of a QNode into a single array. However, this has presented
 some challenges:
 
-* The return of a QNode could be different to what is expected, as shown in the
+* The return of a QNode could be different from what is expected, as shown in the
   :ref:`example <return-type-example-issue>` above.
 * For measurements of different shapes, ragged arrays were generated internally and then squeezed
   into a single output array. This is incompatible with NumPy's
@@ -67,7 +67,7 @@ some challenges:
   PennyLane is compatible with.
 * Use of stacking and squeezing presents performance bottlenecks.
 
-The changes made in PennyLane version 0.30 address the challenges above. However, existing users
+The changes made in version 0.30 of PennyLane address the challenges above. However, existing users
 may experience breaking changes or issues when upgrading their PennyLane version.
 
 .. _Troubleshooting:
@@ -142,7 +142,7 @@ select the option below that describes your situation.
     :title: I am a device developer
     :href: device-developer
 
-    If you are a :ref:`device developer <plugin_overview>`, your issue may because:
+    If you are a :ref:`device developer <plugin_overview>`, your issue may be because:
 
     * Your device inherits from :class:`~.QubitDevice` and you have overriden or interact with the
       :meth:`~.QubitDevice.execute`, :meth:`~.QubitDevice.batch_execute`, or
