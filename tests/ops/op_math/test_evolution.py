@@ -209,6 +209,6 @@ class TestEvolution:
 
         with pytest.raises(
             qml.operation.GeneratorUndefinedError,
-            match=f"is not imaginary;",
+            match="is not imaginary; the expected format is exp",
         ):
             _ = op.generator()
