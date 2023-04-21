@@ -72,11 +72,11 @@ class TestQSVT:
                 [qml.RZ(-2 * theta, wires=0) for theta in [1.23, -0.5, 4]],
                 [0],
                 [
-                    qml.RZ(-8, wires=0),
+                    qml.RZ(-2.46, wires=0),
                     qml.Hadamard(0),
                     qml.RZ(1, wires=0),
                     qml.Hadamard(0),
-                    qml.RZ(-2.46, wires=0),
+                    qml.RZ(-8, wires=0),
                 ],
             ),
         ],
@@ -271,8 +271,8 @@ class TestQSVT:
             )
             return qml.expval(qml.PauliZ(wires=0))
 
-        A = np.array([[0.1j, 0.2], [0.3, 0.4]], dtype=complex, requires_grad=True)
-        phis = np.array([0.1, 0.2, 0.3], requires_grad=True)
+        A = np.array([[0.1, 0.2], [0.3, 0.4]], dtype=complex, requires_grad=True)
+        phis = np.array([0.1, 0.2, 0.3], dtype=complex, requires_grad=True)
         y = circuit(A, phis)
 
         mat_grad_results, phi_grad_results = qml.grad(circuit)(A, phis)
@@ -309,33 +309,31 @@ class Testqsvt:
     """Test the qml.qsvt function."""
 
     @pytest.mark.parametrize(
-        ("A", "phis", "wires", "operations"),
+        ("A", "phis", "wires", "true_mat"),
         [
             (
                 [[0.1, 0.2], [0.3, 0.4]],
                 [0.2, 0.3],
                 [0, 1],
-                [
-                    qml.PCPhase(0.3, dim=2, wires=[0, 1]),
-                    qml.BlockEncode([[0.1, 0.2], [0.3, 0.4]], wires=[0, 1]),
-                    qml.PCPhase(0.2, dim=2, wires=[0, 1]),
-                ],
+                # mathematical order of gates:
+                qml.matrix(qml.PCPhase(0.2, dim=2, wires=[0, 1]))@\
+                qml.matrix(qml.BlockEncode([[0.1, 0.2], [0.3, 0.4]], wires=[0, 1]))@\
+                qml.matrix(qml.PCPhase(0.3, dim=2, wires=[0, 1]))
             ),
             (
                 [[0.3, 0.1], [0.2, 0.9]],
                 [0.1, 0.2, 0.3],
                 [0, 1],
-                [
-                    qml.PCPhase(0.3, dim=2, wires=[0, 1]),
-                    qml.BlockEncode([[0.3, 0.1], [0.2, 0.9]], wires=[0, 1]),
-                    qml.PCPhase(0.2, dim=2, wires=[0, 1]),
-                    qml.adjoint(qml.BlockEncode([[0.3, 0.1], [0.2, 0.9]], wires=[0, 1])),
-                    qml.PCPhase(0.1, dim=2, wires=[0, 1]),
-                ],
+                # mathematical order of gates:
+                qml.matrix(qml.PCPhase(0.1, dim=2, wires=[0, 1]))@\
+                qml.matrix(qml.adjoint(qml.BlockEncode([[0.3, 0.1], [0.2, 0.9]], wires=[0, 1])))@\
+                qml.matrix(qml.PCPhase(0.2, dim=2, wires=[0, 1]))@\
+                qml.matrix(qml.BlockEncode([[0.3, 0.1], [0.2, 0.9]], wires=[0, 1]))@\
+                qml.matrix(qml.PCPhase(0.3, dim=2, wires=[0, 1]))
             ),
         ],
     )
-    def test_output(self, A, phis, wires, operations):
+    def test_output(self, A, phis, wires, true_mat):
         """Test that qml.qsvt produces the correct output."""
         dev = qml.device("default.qubit", wires=len(wires))
 
@@ -343,10 +341,6 @@ class Testqsvt:
         def circuit():
             qml.qsvt(A, phis, wires)
             return qml.expval(qml.PauliZ(wires=0))
-
-        true_mat = np.eye(4)
-        for op in operations:
-            true_mat = true_mat @ qml.matrix(op)
 
         observable_mat = np.kron(qml.matrix(qml.PauliZ(0)), np.eye(2))
         true_expval = (np.conj(true_mat).T @ observable_mat @ true_mat)[0, 0]
@@ -439,17 +433,7 @@ class Testqsvt:
         assert np.allclose(qml.matrix(op), default_matrix)
         assert qml.math.get_interface(qml.matrix(op)) == "tensorflow"
 
-    @pytest.mark.parametrize(
-        ("A", "phis", "wires"),
-        [
-            (
-                [[0.1, 0.2], [0.3, 0.4]],
-                [0.1, 0.2, 0.3],
-                [0, 1],
-            )
-        ],
-    )
-    def test_qsvt_grad(self, A, phis, wires):
+    def test_qsvt_grad(self):
         """Test that qml.grad results are the same as finite difference results"""
 
         @qml.qnode(qml.device("default.qubit", wires=2))
@@ -457,12 +441,12 @@ class Testqsvt:
             qml.qsvt(
                 A,
                 phis,
-                wires=wires,
+                wires=[0,1],
             )
             return qml.expval(qml.PauliZ(wires=0))
 
-        A = np.array([[0.1j, 0.2], [0.3, 0.4]], dtype=complex, requires_grad=True)
-        phis = np.array([0.1, 0.2, 0.3], requires_grad=True)
+        A = np.array([[0.1, 0.2], [0.3, 0.4]], dtype=complex, requires_grad=True)
+        phis = np.array([0.1, 0.2, 0.3], dtype=complex, requires_grad=True)
         y = circuit(A, phis)
 
         mat_grad_results, phi_grad_results = qml.grad(circuit)(A, phis)
