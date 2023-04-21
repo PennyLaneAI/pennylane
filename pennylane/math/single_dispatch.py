@@ -471,6 +471,7 @@ def _asarray_torch(x, dtype=None, **kwargs):
         np.float64: torch.float64,
         np.complex64: torch.complex64,
         np.complex128: torch.complex128,
+        "float64": torch.float64,
     }
 
     if dtype in dtype_map:
