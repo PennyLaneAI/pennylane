@@ -256,6 +256,39 @@
   output of `qml.specs()`. 
   [(#4015)](https://github.com/PennyLaneAI/pennylane/pull/4015)
 
+* The `ResourcesOperation` class is added to allow users to define operations with custom resource information.
+  [(#4026)](https://github.com/PennyLaneAI/pennylane/pull/4026)
+
+  For example, users can define a custom operation by inheriting from this new class:
+
+  ```pycon
+  >>> class CustomOp(ResourcesOperation):
+  ...     def resources(self):
+  ...         return Resources(num_wires=1, num_gates=2, gate_types={"PauliX": 2})
+  ... 
+  >>> CustomOp(wires=1)
+  CustomOp(wires=[1])
+  ```
+  
+  Then we can track and display the resources of the workflow using `tape.specs`:
+
+  ```pycon
+  >>> with qml.tape.QuantumTape() as tape:
+  ...     qml.PauliZ(wires=0)
+  ...     CustomOp(wires=1)
+  ... 
+  PauliZ(wires=[0])
+  CustomOp(wires=[1])
+  >>> 
+  >>> print(tape.specs["resources"])
+  wires: 2
+  gates: 3
+  depth: 1
+  shots: 0
+  gate_types:
+  {'PauliZ': 1, 'PauliX': 2}
+  ```
+
 <h3>Breaking changes 💔</h3>
 
 * The `seed_recipes` argument has been removed from `qml.classical_shadow` and `qml.shadow_expval`.

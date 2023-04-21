@@ -88,25 +88,25 @@ class ResourcesOperation(Operation):
     def resources(self) -> Resources:
         r"""Compute the resources required for this operation.
 
-         Returns:
-             (:class:`~.Resources`): The resources required by this operation.
+        Returns:
+            (:class:`~.Resources`): The resources required by this operation.
 
-         **Examples**
+        **Examples**
 
-         >>> class CustomOp(OperationWithResources):
-         ...     num_wires = 2
-         ...     def resources(self):
-         ...         return Resources(num_wires=self.num_wires, num_gates=3, depth=2)
-         ...
-         >>> op = CustomOp()
-         >>> print(op.resources())
-         wires: 2
-         gates: 3
-         depth: 2
-         shots: 0
-         gate_types:
-         {}
-         """
+        >>> class CustomOp(OperationWithResources):
+        ...     num_wires = 2
+        ...     def resources(self):
+        ...         return Resources(num_wires=self.num_wires, num_gates=3, depth=2)
+        ...
+        >>> op = CustomOp()
+        >>> print(op.resources())
+        wires: 2
+        gates: 3
+        depth: 2
+        shots: 0
+        gate_types:
+        {}
+        """
 
 
 def _count_resources(tape, shots: int) -> Resources:
@@ -127,13 +127,13 @@ def _count_resources(tape, shots: int) -> Resources:
     gate_types = defaultdict(int)
     for op in tape.operations:
         if isinstance(op, ResourcesOperation):
-             op_resource = op.resources()
-             for d in op_resource.gate_types:
-                 gate_types[d] += op_resource.gate_types[d]
-             num_gates += sum(op_resource.gate_types.values())
+            op_resource = op.resources()
+            for d in op_resource.gate_types:
+                gate_types[d] += op_resource.gate_types[d]
+            num_gates += sum(op_resource.gate_types.values())
 
-         else:
-             gate_types[op.name] += 1
-             num_gates += 1
+        else:
+            gate_types[op.name] += 1
+            num_gates += 1
 
     return Resources(num_wires, num_gates, gate_types, depth, shots)
