@@ -155,7 +155,7 @@ class SampleMP(SampleMeasurement):
                 "Shots are required to obtain the shape of the measurement "
                 f"{self.__class__.__name__}."
             )
-        if len(shots.shot_vector) > 1:
+        if shots.has_partitioned_shots:
             if self.obs is None:
                 # TODO: revisit when qml.sample without an observable fully
                 # supports shot vectors
