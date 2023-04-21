@@ -270,17 +270,17 @@
   CustomOp(wires=[1])
   ```
   
-  Then we can track and display the resources of the workflow using `tape.specs`:
+  Then we can track and display the resources of the workflow using `qml.specs()`:
 
   ```pycon
-  >>> with qml.tape.QuantumTape() as tape:
+  >>> dev = qml.device("default.qubit", wires=[0,1])
+  >>> @qml.qnode(dev)
+  ... def circ():
   ...     qml.PauliZ(wires=0)
   ...     CustomOp(wires=1)
+  ...     return qml.state()
   ... 
-  PauliZ(wires=[0])
-  CustomOp(wires=[1])
-  >>> 
-  >>> print(tape.specs["resources"])
+  >>> print(qml.specs(circ)()['resources'])
   wires: 2
   gates: 3
   depth: 1
