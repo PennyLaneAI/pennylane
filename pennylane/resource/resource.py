@@ -76,7 +76,7 @@ class Resources:
 
 
 class ResourcesOperation(Operation):
-    r"""Base class that represents quantum gates or channels applied to quantum 
+    r"""Base class that represents quantum gates or channels applied to quantum
     states and stores the resource requirements of the quantum gate.
 
     .. note::
