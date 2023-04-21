@@ -31,11 +31,11 @@
   <class 'pennylane.operation.Tensor'>
   ```
 
-* New `Resources` data class to store resources like number of gates and circuit depth throughout a 
+* The `Resources` data class is added to store resources like number of gates and circuit depth throughout a  
   quantum circuit.
   [(#3981)](https://github.com/PennyLaneAI/pennylane/pull/3981/)
 
-* A `_count_resources()` function was added to count the resources required when executing a 
+* The `_count_resources()` function is added to count the resources required when executing a 
   QuantumTape for a given number of shots.
   [(#3996)](https://github.com/PennyLaneAI/pennylane/pull/3996)
 
@@ -48,16 +48,15 @@
     the Hamiltonian of the interaction of all the Rydberg atoms.
   * A new user-facing `transmon_interaction` function is added, constructing
     the Hamiltonian that describes the circuit QED interaction Hamiltonian of superconducting transmon systems.
-  * A new user-facing `drive` function is added, which returns a `ParametrizedHamiltonian` (`HardwareHamiltonian`) containing
-    the Hamiltonian of the interaction between a driving electro-magnetic field and a group of qubits.
-  * A new user-facing `rydberg_drive` function is added, which returns a `ParametrizedHamiltonian` (`HardwareHamiltonian`) containing
-    the Hamiltonian of the interaction between a driving laser field and a group of Rydberg atoms.
+  * A new user-facing `rydberg_drive` function is added, which returns a `ParametrizedHamiltonian` (`HardwareHamiltonian`) containing the Hamiltonian of the interaction between a driving laser field and a group of Rydberg atoms.
   [(#3749)](https://github.com/PennyLaneAI/pennylane/pull/3749)
   [(#3911)](https://github.com/PennyLaneAI/pennylane/pull/3911)
   [(#3930)](https://github.com/PennyLaneAI/pennylane/pull/3930)
-  [(#3936)](https://github.com/PennyLaneAI/pennylane/pull/3936/)
+  [(#3936)](https://github.com/PennyLaneAI/pennylane/pull/3936)
   [(#3966)](https://github.com/PennyLaneAI/pennylane/pull/3966)
   [(#3987)](https://github.com/PennyLaneAI/pennylane/pull/3987)
+  [(#4021)](https://github.com/PennyLaneAI/pennylane/pull/4021)
+
   * A new keyword argument called `max_distance` has been added to `qml.pulse.rydberg_interaction` to allow for the removal of negligible contributions
     from atoms beyond `max_distance` from each other.
     [(#3889)](https://github.com/PennyLaneAI/pennylane/pull/3889)
@@ -256,6 +255,10 @@
 
 * Update various Operators and templates to ensure their decompositions only return lists of Operators.
   [(#3243)](https://github.com/PennyLaneAI/pennylane/pull/3243)
+
+* `QuantumScript.specs` is modified to make use of the new `Resources` class. This also modifies the 
+  output of `qml.specs()`. 
+  [(#4015)](https://github.com/PennyLaneAI/pennylane/pull/4015)
 
 <h3>Breaking changes 💔</h3>
 

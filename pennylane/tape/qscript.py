@@ -1159,38 +1159,46 @@ class QuantumScript:
             dict[str, Union[defaultdict,int]]: dictionaries that contain quantum script specifications
 
         **Example**
+         >>> ops = [qml.Hadamard(0), qml.RX(0.26, 1), qml.CNOT((1,0)),
+         ...         qml.Rot(1.8, -2.7, 0.2, 0), qml.Hadamard(1), qml.CNOT((0, 1))]
+         >>> qscript = QuantumScript(ops, [qml.expval(qml.PauliZ(0) @ qml.PauliZ(1))])
 
-        >>> ops = [qml.Hadamard(0), qml.RX(0.26, 1), qml.CNOT((1,0)),
-        ...         qml.Rot(1.8, -2.7, 0.2, 0), qml.Hadamard(1), qml.CNOT((0,1))]
-        >>> qscript = QuantumScript(ops, [qml.expval(qml.PauliZ(0) @ qml.PauliZ(1))])
+        Asking for the specs produces a dictionary of useful information about the circuit:
 
-        Asking for the specs produces a dictionary as shown below:
-
+        >>> qscript.specs['num_observables']
+        1
         >>> qscript.specs['gate_sizes']
-        defaultdict(int, {1: 4, 2: 2})
-        >>> qscript.specs['gate_types']
-        defaultdict(int, {'Hadamard': 2, 'RX': 1, 'CNOT': 2, 'Rot': 1})
-
-        As ``defaultdict`` objects, any key not present in the dictionary returns 0.
-
-        >>> qscript.specs['gate_types']['RZ']
-        0
-
+        defaultdict(<class 'int'>, {1: 4, 2: 2})
+        >>> print(qscript.specs['resources'])
+        wires: 2
+        gates: 6
+        depth: 4
+        shots: 0
+        gate_types:
+        {'Hadamard': 2, 'RX': 1, 'CNOT': 2, 'Rot': 1}
         """
         if self._specs is None:
-            self._specs = {"gate_sizes": defaultdict(int), "gate_types": defaultdict(int)}
+            resources = qml.resource.resource._count_resources(
+                self, shots=0
+            )  # pylint: disable=protected-access
+
+            self._specs = {
+                "resources": resources,
+                "gate_sizes": defaultdict(int),
+                "gate_types": defaultdict(int),
+            }
 
             for op in self.operations:
                 # don't use op.num_wires to allow for flexible gate classes like QubitUnitary
                 self._specs["gate_sizes"][len(op.wires)] += 1
                 self._specs["gate_types"][op.name] += 1
 
-            self._specs["num_operations"] = len(self.operations)
+            self._specs["num_operations"] = resources.num_gates
             self._specs["num_observables"] = len(self.observables)
             self._specs["num_diagonalizing_gates"] = len(self.diagonalizing_gates)
             self._specs["num_used_wires"] = self.num_wires
-            self._specs["depth"] = self.graph.get_depth()
             self._specs["num_trainable_params"] = self.num_params
+            self._specs["depth"] = resources.depth
 
         return self._specs
 
