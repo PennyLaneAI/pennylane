@@ -190,7 +190,7 @@ class TestOperatorConstruction:
         assert isinstance(op.data[0], np.ndarray)
 
         op2 = DummyOp((1, 2, 3), wires=0)
-        assert isinstance(op.data[0], np.ndarray)
+        assert isinstance(op2.data[0], np.ndarray)
 
     def test_wires_by_final_argument(self):
         """Test that wires can be passed as the final positional argument."""
