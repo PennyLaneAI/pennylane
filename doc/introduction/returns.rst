@@ -107,9 +107,10 @@ select the option below that describes your situation.
       :ref:`Torch <torch_interf>` interface, which could unlock additional features and performance
       benefits!
 
-    * You are returning differently-shaped quantities together, such as :func:`~.expval` and
-      :func:`probs() <pennylane.probs>`. For example, the following code is compatible with version
-      0.29 of PennyLane but will raise an error in version 0.30.0 and above:
+    * You are returning differently-shaped quantities together, such as
+      :func:`expval() <pennylane.expval>` and :func:`probs() <pennylane.probs>`. For example, the
+      following code is compatible with version 0.29 of PennyLane but will raise an error in version
+      0.30.0 and above:
 
       .. code-block:: python
 
@@ -150,7 +151,7 @@ select the option below that describes your situation.
       `here <https://github.com/PennyLaneAI/pennylane-qiskit/pull/281>`_ for the
       `Qiskit plugin <https://docs.pennylane.ai/projects/qiskit/en/latest/>`_.
 
-    * Your device inherits from :class:`~.Device`, in which case you may need to rewrite the
+    * Your device inherits from :class:`Device <pennylane.Device>`, in which case you may need to rewrite the
       :meth:`~.QubitDevice.execute`, :meth:`~.QubitDevice.batch_execute`, and
       :meth:`~.QubitDevice.statistics` methods. Please
       `reach out to us <https://discuss.pennylane.ai>`_ for guidance!
