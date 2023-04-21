@@ -168,6 +168,96 @@ class TestOperatorConstruction:
         with pytest.raises(ValueError, match="Broadcasting was attempted but the broadcasted"):
             DummyOp4([0.3] * 4, [[[0.3, 1.2]]] * 3, wires=0)
 
+    def test_default_pauli_rep(self):
+        """Test that the default _pauli_rep attribute is None"""
+
+        class DummyOp(qml.operation.Operator):
+            r"""Dummy custom operator"""
+            num_wires = 1
+
+        op = DummyOp(wires=0)
+        assert op._pauli_rep is None
+
+    def test_list_or_tuple_params_casted_into_numpy_array(self):
+        """Test that list parameters are casted into numpy arrays."""
+
+        class DummyOp(qml.operation.Operator):
+            r"""Dummy custom operator"""
+            num_wires = 1
+
+        op = DummyOp([1, 2, 3], wires=0)
+
+        assert isinstance(op.data[0], np.ndarray)
+
+        op2 = DummyOp((1, 2, 3), wires=0)
+        assert isinstance(op.data[0], np.ndarray)
+
+    def test_wires_by_final_argument(self):
+        """Test that wires can be passed as the final positional argument."""
+
+        class DummyOp(qml.operation.Operator):
+            num_wires = 1
+            num_params = 1
+
+        op = DummyOp(1.234, "a")
+        assert op.wires[0] == "a"
+        assert op.data == [1.234]
+
+    def test_no_wires(self):
+        """Test an error is raised if no wires are passed."""
+
+        class DummyOp(qml.operation.Operator):
+            num_wires = 1
+            num_params = 1
+
+        with pytest.raises(ValueError, match="Must specify the wires"):
+            DummyOp(1.234)
+
+    def test_name_setter(self):
+        """Tests that we can set the name of an operator"""
+
+        class DummyOp(qml.operation.Operator):
+            r"""Dummy custom operator"""
+            num_wires = 1
+
+        op = DummyOp(wires=0)
+        op.name = "MyOp"  # pylint: disable=attribute-defined-outside-init
+        assert op.name == "MyOp"
+
+    def test_default_hyperparams(self):
+        """Tests that the hyperparams attribute is defined for all operations."""
+
+        class MyOp(qml.operation.Operation):
+            num_wires = 1
+
+        class MyOpOverwriteInit(qml.operation.Operation):
+            num_wires = 1
+
+            def __init__(self, wires):
+                pass
+
+        op = MyOp(wires=0)
+        assert op.hyperparameters == {}
+
+        op = MyOpOverwriteInit(wires=0)
+        assert op.hyperparameters == {}
+
+    def test_custom_hyperparams(self):
+        """Tests that an operation can add custom hyperparams."""
+
+        class MyOp(qml.operation.Operation):
+            num_wires = 1
+
+            def __init__(self, wires, basis_state=None):
+                self._hyperparameters = {"basis_state": basis_state}
+
+        state = [0, 1, 0]
+        assert MyOp(wires=1, basis_state=state).hyperparameters["basis_state"] == state
+
+
+class TestBroadcasting:
+    """Test parameter broadcasting checks."""
+
     broadcasted_params_test_data = [
         # Test with no parameter broadcasted
         ((0.3, [[0.3, 1.2]]), None),
@@ -271,67 +361,36 @@ class TestOperatorConstruction:
         with pytest.raises(ValueError, match="could not broadcast input array"):
             qml.RX(x, 0)
 
-    def test_wires_by_final_argument(self):
-        """Test that wires can be passed as the final positional argument."""
+    @pytest.mark.tf
+    @pytest.mark.parametrize("jit_compile", [True, False])
+    def test_with_tf_function(self, jit_compile):
+        """Tests using tf.function with an operation works with and without
+        just in time (JIT) compilation."""
+        import tensorflow as tf
 
-        class DummyOp(qml.operation.Operator):
-            num_wires = 1
-            num_params = 1
+        class MyRX(qml.RX):
+            @property
+            def ndim_params(self):
+                return self._ndim_params
 
-        op = DummyOp(1.234, "a")
-        assert op.wires[0] == "a"
-        assert op.data == [1.234]
+        def fun(x):
+            _ = qml.RX(x, 0)
+            _ = MyRX(x, 0)
 
-    def test_no_wires(self):
-        """Test an error is raised if no wires are passed."""
+        # No kwargs
+        fun0 = tf.function(fun)
+        fun0(tf.Variable(0.2))
+        fun0(tf.Variable([0.2, 0.5]))
 
-        class DummyOp(qml.operation.Operator):
-            num_wires = 1
-            num_params = 1
+        # With kwargs
+        signature = (tf.TensorSpec(shape=None, dtype=tf.float32),)
+        fun1 = tf.function(fun, jit_compile=jit_compile, input_signature=signature)
+        fun1(tf.Variable(0.2))
+        fun1(tf.Variable([0.2, 0.5]))
 
-        with pytest.raises(ValueError, match="Must specify the wires"):
-            DummyOp(1.234)
 
-    def test_name_setter(self):
-        """Tests that we can set the name of an operator"""
-
-        class DummyOp(qml.operation.Operator):
-            r"""Dummy custom operator"""
-            num_wires = 1
-
-        op = DummyOp(wires=0)
-        op.name = "MyOp"  # pylint: disable=attribute-defined-outside-init
-        assert op.name == "MyOp"
-
-    def test_default_hyperparams(self):
-        """Tests that the hyperparams attribute is defined for all operations."""
-
-        class MyOp(qml.operation.Operation):
-            num_wires = 1
-
-        class MyOpOverwriteInit(qml.operation.Operation):
-            num_wires = 1
-
-            def __init__(self, wires):
-                pass
-
-        op = MyOp(wires=0)
-        assert op.hyperparameters == {}
-
-        op = MyOpOverwriteInit(wires=0)
-        assert op.hyperparameters == {}
-
-    def test_custom_hyperparams(self):
-        """Tests that an operation can add custom hyperparams."""
-
-        class MyOp(qml.operation.Operation):
-            num_wires = 1
-
-            def __init__(self, wires, basis_state=None):
-                self._hyperparameters = {"basis_state": basis_state}
-
-        state = [0, 1, 0]
-        assert MyOp(wires=1, basis_state=state).hyperparameters["basis_state"] == state
+class TestHasReprProperties:
+    """Test has representation properties."""
 
     def test_has_matrix_true(self):
         """Test has_matrix property detects overriding of `compute_matrix` method."""
@@ -496,32 +555,9 @@ class TestOperatorConstruction:
         op = qml.Rot(0.3, 0.2, 0.1, 0)
         assert op.has_generator is False
 
-    @pytest.mark.tf
-    @pytest.mark.parametrize("jit_compile", [True, False])
-    def test_with_tf_function(self, jit_compile):
-        """Tests using tf.function with an operation works with and without
-        just in time (JIT) compilation."""
-        import tensorflow as tf
 
-        class MyRX(qml.RX):
-            @property
-            def ndim_params(self):
-                return self._ndim_params
-
-        def fun(x):
-            _ = qml.RX(x, 0)
-            _ = MyRX(x, 0)
-
-        # No kwargs
-        fun0 = tf.function(fun)
-        fun0(tf.Variable(0.2))
-        fun0(tf.Variable([0.2, 0.5]))
-
-        # With kwargs
-        signature = (tf.TensorSpec(shape=None, dtype=tf.float32),)
-        fun1 = tf.function(fun, jit_compile=jit_compile, input_signature=signature)
-        fun1(tf.Variable(0.2))
-        fun1(tf.Variable([0.2, 0.5]))
+class TestModificationMethods:
+    """Test the methods that produce a new operation with some modification."""
 
     def test_simplify_method(self):
         """Test that simplify method returns the same instance."""
@@ -575,27 +611,6 @@ class TestOperatorConstruction:
         assert op is not mapped_op
         assert op.wires == Wires([0, 1, 2])
         assert mapped_op.wires == Wires([10, 1, 12])
-
-    def test_default_pauli_rep(self):
-        """Test that the default _pauli_rep attribute is None"""
-
-        class DummyOp(qml.operation.Operator):
-            r"""Dummy custom operator"""
-            num_wires = 1
-
-        op = DummyOp(wires=0)
-        assert op._pauli_rep is None
-
-    def test_list_params_casted_into_numpy_array(self):
-        """Test that list parameters are casted into numpy arrays."""
-
-        class DummyOp(qml.operation.Operator):
-            r"""Dummy custom operator"""
-            num_wires = 1
-
-        op = DummyOp([1, 2, 3], wires=0)
-
-        assert isinstance(op.data[0], np.ndarray)
 
 
 class TestOperationConstruction:
