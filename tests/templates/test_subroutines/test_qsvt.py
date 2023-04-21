@@ -316,20 +316,20 @@ class Testqsvt:
                 [0.2, 0.3],
                 [0, 1],
                 # mathematical order of gates:
-                qml.matrix(qml.PCPhase(0.2, dim=2, wires=[0, 1]))@\
-                qml.matrix(qml.BlockEncode([[0.1, 0.2], [0.3, 0.4]], wires=[0, 1]))@\
-                qml.matrix(qml.PCPhase(0.3, dim=2, wires=[0, 1]))
+                qml.matrix(qml.PCPhase(0.2, dim=2, wires=[0, 1]))
+                @ qml.matrix(qml.BlockEncode([[0.1, 0.2], [0.3, 0.4]], wires=[0, 1]))
+                @ qml.matrix(qml.PCPhase(0.3, dim=2, wires=[0, 1])),
             ),
             (
                 [[0.3, 0.1], [0.2, 0.9]],
                 [0.1, 0.2, 0.3],
                 [0, 1],
                 # mathematical order of gates:
-                qml.matrix(qml.PCPhase(0.1, dim=2, wires=[0, 1]))@\
-                qml.matrix(qml.adjoint(qml.BlockEncode([[0.3, 0.1], [0.2, 0.9]], wires=[0, 1])))@\
-                qml.matrix(qml.PCPhase(0.2, dim=2, wires=[0, 1]))@\
-                qml.matrix(qml.BlockEncode([[0.3, 0.1], [0.2, 0.9]], wires=[0, 1]))@\
-                qml.matrix(qml.PCPhase(0.3, dim=2, wires=[0, 1]))
+                qml.matrix(qml.PCPhase(0.1, dim=2, wires=[0, 1]))
+                @ qml.matrix(qml.adjoint(qml.BlockEncode([[0.3, 0.1], [0.2, 0.9]], wires=[0, 1])))
+                @ qml.matrix(qml.PCPhase(0.2, dim=2, wires=[0, 1]))
+                @ qml.matrix(qml.BlockEncode([[0.3, 0.1], [0.2, 0.9]], wires=[0, 1]))
+                @ qml.matrix(qml.PCPhase(0.3, dim=2, wires=[0, 1])),
             ),
         ],
     )
@@ -441,7 +441,7 @@ class Testqsvt:
             qml.qsvt(
                 A,
                 phis,
-                wires=[0,1],
+                wires=[0, 1],
             )
             return qml.expval(qml.PauliZ(wires=0))
 
