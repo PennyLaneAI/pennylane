@@ -35,7 +35,7 @@ class CompositeOp(Operator):
         operands: (tuple[~.operation.Operator]): a tuple of operators which will be combined.
 
     Keyword Args:
-        do_queue (bool): Must be True (default) for CompositeOps, but present for consistency.
+        do_queue (bool): Must be ``True`` (default) for ``CompositeOps``, but present for consistency.
         id (str or None): id for the operator. Default is None.
 
     The child composite operator should define the `_op_symbol` property

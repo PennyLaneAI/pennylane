@@ -53,7 +53,7 @@ def prod(*ops, do_queue=True, id=None, lazy=True):
         ops (tuple[~.operation.Operator]): The operators we would like to multiply
 
     Keyword Args:
-        do_queue (bool): Must be True (default) for prod, but present for consistency.
+        do_queue (bool): Must be ``True`` (default) for ``prod``, but present for consistency.
         id (str or None): id for the product operator. Default is None.
         lazy=True (bool): If ``lazy=False``, a simplification will be performed such that when any of the operators is already a product operator, its operands will be used instead.
 
@@ -103,7 +103,7 @@ class Prod(CompositeOp):
         together.
 
     Keyword Args:
-        do_queue (bool): Must be True (default) for Prod, but present for consistency.
+        do_queue (bool): Must be ``True`` (default) for ``Prod``, but present for consistency.
         id (str or None): id for the product operator. Default is None.
 
     .. seealso:: :func:`~.ops.op_math.prod`
