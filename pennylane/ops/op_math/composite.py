@@ -56,7 +56,10 @@ class CompositeOp(Operator):
             raise ValueError(f"Require at least two operators to combine; got {len(operands)}")
 
         if not do_queue:
-            raise ValueError(f"do_queue=False is not supported for {self.name}")
+            raise ValueError(
+                f"do_queue=False is not supported for {self.name}. Consider constructing "
+                "your operator within a qml.QueuingManager.stop_recording() context."
+            )
 
         self.operands = operands
         self._wires = qml.wires.Wires.all_wires([op.wires for op in operands])

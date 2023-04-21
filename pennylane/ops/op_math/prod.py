@@ -85,7 +85,10 @@ def prod(*ops, do_queue=True, id=None, lazy=True):
            [ 1,  0]])
     """
     if not do_queue:
-        raise ValueError("do_queue=False is not supported for qml.prod")
+        raise ValueError(
+            "do_queue=False is not supported for qml.prod. Consider constructing "
+            "your operator within a qml.QueuingManager.stop_recording() context."
+        )
 
     if not lazy:
         for op in ops:

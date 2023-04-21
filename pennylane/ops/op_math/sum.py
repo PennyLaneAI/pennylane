@@ -81,7 +81,10 @@ def sum(*summands, do_queue=True, id=None, lazy=True):
            [ 1, -1]])
     """
     if not do_queue:
-        raise ValueError("do_queue=False is not supported for qml.sum")
+        raise ValueError(
+            "do_queue=False is not supported for qml.sum. Consider constructing "
+            "your operator within a qml.QueuingManager.stop_recording() context."
+        )
 
     if len(summands) == 1 and isinstance(summands[0], qml.QNodeCollection):
         return qml.collections.sum(summands[0])
