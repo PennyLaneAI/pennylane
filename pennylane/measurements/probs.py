@@ -152,7 +152,7 @@ class ProbabilityMP(SampleMeasurement, StateMeasurement):
         if not qml.active_return():
             return self._shape_legacy(device, shots)
         num_shot_elements = (
-            1 if len(shots.shot_vector) <= 1 else sum(s.copies for s in shots.shot_vector)
+            sum(s.copies for s in shots.shot_vector) if shots.has_partitioned_shots else 1
         )
         len_wires = len(self.wires)
         dim = self._get_num_basis_states(len_wires, device)
