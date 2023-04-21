@@ -135,7 +135,7 @@ class Evolution(Exp):
 
         .. math::
 
-            U(\phi) = e^{i\phi (0.5 Y + Z\otimes X)}
+            U(\phi) = e^{-i\phi (0.5 Y + Z\otimes X)}
 
         we get the generator
 
@@ -148,7 +148,7 @@ class Evolution(Exp):
             warn(f"The base {self.base} may not be hermitian.")
         if qml.math.real(self.coeff):
             raise GeneratorUndefinedError(
-                f"The operator coefficient {self.coeff} is not imaginary; the expected format is exp(ixG)."
+                f"The operator coefficient {self.coeff} is not imaginary; the expected format is exp(-ixG)."
                 f"The generator is not defined."
             )
         return self.base

@@ -204,12 +204,11 @@ class TestEvolution:
     def test_generator_undefined_error(self):
         """Tests that an error is raised if the generator of an Evolution operator is requested
         with a non-zero complex term in the operator parameter."""
-        param = -1 + 2.5j
-        coeff = -1j * param
+        param = 1 + 2.5j
         op = Evolution(qml.PauliZ(0), param)
 
         with pytest.raises(
             qml.operation.GeneratorUndefinedError,
-            match=f"The operator coefficient {coeff} is not imaginary; the expected format",
+            match=f"is not imaginary;",
         ):
             _ = op.generator()
