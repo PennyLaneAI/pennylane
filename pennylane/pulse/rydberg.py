@@ -61,7 +61,7 @@ def rydberg_interaction(
             contribution to the interaction term is removed from the Hamiltonian.
 
     Returns:
-        RydbergHamiltonian: a :class:`~.ParametrizedHamiltonian` representing the atom interaction
+        :class:`~.ParametrizedHamiltonian`: a :class:`~.ParametrizedHamiltonian` representing the atom interaction
 
     **Example**
 
@@ -144,7 +144,7 @@ def rydberg_drive(amplitude, phase, detuning, wires):
             the laser field acts on
 
     Returns:
-        ParametrizedHamiltonian: a :class:`~.ParametrizedHamiltonian` representing the action of the laser field on the Rydberg atoms.
+        :class:`~.ParametrizedHamiltonian`: a :class:`~.ParametrizedHamiltonian` representing the action of the laser field on the Rydberg atoms.
 
     .. seealso::
 

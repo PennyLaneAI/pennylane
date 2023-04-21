@@ -17,7 +17,6 @@ executed by a device.
 """
 # pylint: disable=too-many-instance-attributes, protected-access, too-many-public-methods
 
-import warnings
 import contextlib
 import copy
 from collections import Counter, defaultdict
@@ -552,33 +551,7 @@ class QuantumScript:
 
         self._trainable_params = sorted(set(param_indices))
 
-    def get_operation(self, idx, return_op_index=False):
-        """Returns the trainable operation, and the corresponding operation argument
-        index, for a specified trainable parameter index.
-
-        Args:
-            idx (int): the trainable parameter index
-            return_op_index (bool): Whether the function also returns the operation index.
-        Returns:
-            tuple[.Operation, int, int]: tuple containing the corresponding
-            operation, the operation index, and an integer representing the argument index,
-            for the provided trainable parameter.
-        """
-        if return_op_index:
-            return self._get_operation(idx)
-        warnings.warn(
-            "The get_operation will soon be updated to also return the index of the trainable operation in the tape. "
-            "If you want to switch to the new behavior, you can pass `return_op_index=True`"
-        )
-
-        # get the index of the parameter in the script
-        t_idx = self.trainable_params[idx]
-
-        # get the info for the parameter
-        info = self._par_info[t_idx]
-        return info["op"], info["p_idx"]
-
-    def _get_operation(self, idx):
+    def get_operation(self, idx):
         """Returns the trainable operation, the operation index and the corresponding operation argument
         index, for a specified trainable parameter index.
 
@@ -634,16 +607,25 @@ class QuantumScript:
         >>> qscript.get_parameters(trainable_only=False)
         [0.432, 0.543, 0.133]
         """
-        params = []
-        iterator = self.trainable_params if trainable_only else range(len(self._par_info))
+        if trainable_only:
+            params = []
+            for p_idx in self.trainable_params:
+                op = self._par_info[p_idx]["op"]
+                if operations_only and hasattr(op, "return_type"):
+                    continue
 
-        for p_idx in iterator:
-            op = self._par_info[p_idx]["op"]
-            if operations_only and hasattr(op, "return_type"):
-                continue
+                op_idx = self._par_info[p_idx]["p_idx"]
+                params.append(op.data[op_idx])
+            return params
 
-            op_idx = self._par_info[p_idx]["p_idx"]
-            params.append(op.data[op_idx])
+        # If trainable_only=False, return all parameters
+        # This is faster than the above and should be used when indexing `_par_info` is not needed
+        params = [d for op in self.operations for d in op.data]
+        if operations_only:
+            return params
+        for m in self.measurements:
+            if m.obs is not None:
+                params.extend(m.obs.data)
         return params
 
     def set_parameters(self, params, trainable_only=True):
