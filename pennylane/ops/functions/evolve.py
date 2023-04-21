@@ -173,4 +173,4 @@ def parametrized_evolution(op: ParametrizedHamiltonian, **kwargs):
 # pylint: disable=missing-docstring
 @evolve.register
 def evolution(op: Operator, coeff: float = 1, num_steps: int = None):
-        return Evolution(op, coeff, num_steps)
+    return Evolution(op, coeff, num_steps)

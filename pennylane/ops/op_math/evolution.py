@@ -14,7 +14,6 @@
 """
 This submodule defines the Evolution class.
 """
-import warnings
 from copy import copy
 from warnings import warn
 
@@ -81,7 +80,9 @@ class Evolution(Exp):
 
     # pylint: disable=too-many-arguments
     def __init__(self, generator, param=1, num_steps=None, do_queue=True, id=None):
-        super().__init__(generator, coeff=-1j * param, num_steps=num_steps, do_queue=do_queue, id=id)
+        super().__init__(
+            generator, coeff=-1j * param, num_steps=num_steps, do_queue=do_queue, id=id
+        )
         self._data = [param]
 
     def __repr__(self):
