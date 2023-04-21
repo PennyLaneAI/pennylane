@@ -110,7 +110,10 @@
 * Improved efficiency of `tapering()`, `tapering_hf()` and `clifford()`.
   [(3942)](https://github.com/PennyLaneAI/pennylane/pull/3942)
 
-* Updated Pauli arithmetic to more efficiently convert to a Hamiltonian.
+* Improve the peak memory requirements of `tapering()` and `tapering_hf()` when used for larger observables.
+  [(3977)](https://github.com/PennyLaneAI/pennylane/pull/3977)
+
+* Update Pauli arithmetic to more efficiently convert to a Hamiltonian.
   [(#3939)](https://github.com/PennyLaneAI/pennylane/pull/3939)
 
 * The adjoint differentiation method now supports more operations, and does no longer decompose
@@ -284,6 +287,9 @@
 
 * A typo was corrected in the documentation for introduction to `inspecting_circuits` and `chemistry`.
   [(#3844)](https://github.com/PennyLaneAI/pennylane/pull/3844)
+
+* Separated `Usage Details` and `Theory` sections in documentation for `qml.qchem.taper_operation`.
+  [(3977)](https://github.com/PennyLaneAI/pennylane/pull/3977)
 
 <h3>Bug fixes 🐛</h3>
 
