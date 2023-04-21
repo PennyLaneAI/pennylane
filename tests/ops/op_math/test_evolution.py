@@ -210,12 +210,6 @@ class TestEvolution:
 
         with pytest.raises(
             qml.operation.GeneratorUndefinedError,
-            match="The operator coefficient {coeff} is not imaginary; the expected format"
+            match=f"The operator coefficient {coeff} is not imaginary; the expected format"
         ):
             _ = op.generator()
-
-
-
-
-
-
