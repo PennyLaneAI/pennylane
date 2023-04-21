@@ -31,11 +31,11 @@
   <class 'pennylane.operation.Tensor'>
   ```
 
-* New `Resources` data class to store resources like number of gates and circuit depth throughout a 
+* The `Resources` data class is added to store resources like number of gates and circuit depth throughout a  
   quantum circuit.
   [(#3981)](https://github.com/PennyLaneAI/pennylane/pull/3981/)
 
-* A `_count_resources()` function was added to count the resources required when executing a 
+* The `_count_resources()` function is added to count the resources required when executing a 
   QuantumTape for a given number of shots.
   [(#3996)](https://github.com/PennyLaneAI/pennylane/pull/3996)
 
@@ -253,6 +253,10 @@
 * Update various Operators and templates to ensure their decompositions only return lists of Operators.
   [(#3243)](https://github.com/PennyLaneAI/pennylane/pull/3243)
 
+* `QuantumScript.specs` is modified to make use of the new `Resources` class. This also modifies the 
+  output of `qml.specs()`. 
+  [(#4015)](https://github.com/PennyLaneAI/pennylane/pull/4015)
+
 <h3>Breaking changes 💔</h3>
 
 * The `seed_recipes` argument has been removed from `qml.classical_shadow` and `qml.shadow_expval`.
@@ -305,6 +309,12 @@
   [(3977)](https://github.com/PennyLaneAI/pennylane/pull/3977)
 
 <h3>Bug fixes 🐛</h3>
+
+* Fixes a bug where `qml.math.dot` returned a numpy array instead of an autograd array, breaking autograd derivatives
+  in certain circumstances.
+
+* `Operator` now casts `tuple` to `np.ndarray` as well as `list`. 
+  [(#4022)](https://github.com/PennyLaneAI/pennylane/pull/4022)
 
 * Fixes a bug where `qml.ctrl` for parametric gates were incompatible with PyTorch tensors on the GPU.
   [(#4002)](https://github.com/PennyLaneAI/pennylane/pull/4002)
