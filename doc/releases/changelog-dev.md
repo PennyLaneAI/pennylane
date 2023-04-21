@@ -186,32 +186,6 @@
   More details about this change, along with help and troubleshooting tips to solve any issues,
   can be found [here](https://docs.pennylane.ai/en/stable/introduction/returns.html).
 
-<h3>Improvements 🛠</h3>
-
-<h4>Next-generation device API</h4>
-
-* The `sample_state` function is added to `devices/qubit` that returns a series of samples based on a given
-  state vector and a number of shots.
-  [(#3720)](https://github.com/PennyLaneAI/pennylane/pull/3720)
-
-* The `simulate` function added to `devices/qubit` now supports measuring expectation values of large observables such as
-  `qml.Hamiltonian`, `qml.SparseHamiltonian`, `qml.Sum`.
-  [(#3759)](https://github.com/PennyLaneAI/pennylane/pull/3759)
-
-* The `apply_operation` function added to `devices/qubit` now supports broadcasting.
-  [(#3852)](https://github.com/PennyLaneAI/pennylane/pull/3852)
-
-* `pennylane.devices.qubit.preprocess` now allows circuits with non-commuting observables.
-  [(#3857)](https://github.com/PennyLaneAI/pennylane/pull/3857)
-
-* Adjoint differentiation support for the new qubit state-vector device has been added via
-  `adjoint_jacobian` in `devices/qubit`.
-  [(#3790)](https://github.com/PennyLaneAI/pennylane/pull/3790)
-
-* `qml.devices.qubit.measure` now computes the expectation values of `Hamiltonian` and `Sum`
-  in a backpropagation-compatible way.
-  [(#3862)](https://github.com/PennyLaneAI/pennylane/pull/3862/)
-
 <h4>Performance improvements</h4>
 
 * Added a new decomposition to `qml.SingleExcitation` that halves the number of
@@ -248,6 +222,32 @@
   and are selected automatically when they produce a better result, i.e., fewer CNOT gates.
   They can be accessed via `ops.op_math.ctrl_decomp_bisect`.
   [(#3851)](https://github.com/PennyLaneAI/pennylane/pull/3851)
+
+<h3>Improvements 🛠</h3>
+
+<h4>Next-generation device API</h4>
+
+* The `sample_state` function is added to `devices/qubit` that returns a series of samples based on a given
+  state vector and a number of shots.
+  [(#3720)](https://github.com/PennyLaneAI/pennylane/pull/3720)
+
+* The `simulate` function added to `devices/qubit` now supports measuring expectation values of large observables such as
+  `qml.Hamiltonian`, `qml.SparseHamiltonian`, `qml.Sum`.
+  [(#3759)](https://github.com/PennyLaneAI/pennylane/pull/3759)
+
+* The `apply_operation` function added to `devices/qubit` now supports broadcasting.
+  [(#3852)](https://github.com/PennyLaneAI/pennylane/pull/3852)
+
+* `pennylane.devices.qubit.preprocess` now allows circuits with non-commuting observables.
+  [(#3857)](https://github.com/PennyLaneAI/pennylane/pull/3857)
+
+* Adjoint differentiation support for the new qubit state-vector device has been added via
+  `adjoint_jacobian` in `devices/qubit`.
+  [(#3790)](https://github.com/PennyLaneAI/pennylane/pull/3790)
+
+* `qml.devices.qubit.measure` now computes the expectation values of `Hamiltonian` and `Sum`
+  in a backpropagation-compatible way.
+  [(#3862)](https://github.com/PennyLaneAI/pennylane/pull/3862/)
 
 <h4>Pulse programming</h4>
 
