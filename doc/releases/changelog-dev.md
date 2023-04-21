@@ -186,7 +186,17 @@
   More details about this change, along with help and troubleshooting tips to solve any issues,
   can be found [here](https://docs.pennylane.ai/en/stable/introduction/returns.html).
 
-<h4>Performance improvements</h4>
+<h4>A bunch of performance tweaks 🏃💨</h4>
+
+* Three new decomposition algorithms have been added for n-controlled operations with a single-qubit
+  target and are selected automatically when they produce a better result, i.e., fewer CNOT gates.
+  They can be accessed via `ops.op_math.ctrl_decomp_bisect`.
+  [(#3851)](https://github.com/PennyLaneAI/pennylane/pull/3851)
+
+* The adjoint differentiation method now supports more operations, and does no longer decompose
+  some operations that may be differentiated directly. In addition, all new operations with a
+  generator are now supported by the method.
+  [(#3874)](https://github.com/PennyLaneAI/pennylane/pull/3874)
 
 * Added a new decomposition to `qml.SingleExcitation` that halves the number of
   CNOTs required.
@@ -201,11 +211,6 @@
 * Update Pauli arithmetic to more efficiently convert to a Hamiltonian.
   [(#3939)](https://github.com/PennyLaneAI/pennylane/pull/3939)
 
-* The adjoint differentiation method now supports more operations, and does no longer decompose
-  some operations that may be differentiated directly. In addition, all new operations with a
-  generator are now supported by the method.
-  [(#3874)](https://github.com/PennyLaneAI/pennylane/pull/3874)
-
 * When using `jax.jit` with gradient transforms, the trainable parameters are set correctly (instead of every parameter having
   to be set as trainable), and therefore the derivatives are computed more efficiently.
   [(#3697)](https://github.com/PennyLaneAI/pennylane/pull/3697)
@@ -217,11 +222,6 @@
 * If a `Sum` operator has a pre-computed Pauli representation, `is_hermitian` now checks that all coefficients
   are real, providing a significant performance improvement.
   [(#3915)](https://github.com/PennyLaneAI/pennylane/pull/3915)
-
-* Three new decomposition algorithms have been added for n-controlled operations with a single-qubit target
-  and are selected automatically when they produce a better result, i.e., fewer CNOT gates.
-  They can be accessed via `ops.op_math.ctrl_decomp_bisect`.
-  [(#3851)](https://github.com/PennyLaneAI/pennylane/pull/3851)
 
 <h3>Improvements 🛠</h3>
 
