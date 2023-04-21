@@ -154,3 +154,16 @@ If you are still experiencing issues, please post in the
       :meth:`~.QubitDevice.execute`, :meth:`~.QubitDevice.batch_execute`, and
       :meth:`~.QubitDevice.statistics` methods. Please
       `reach out to us <https://discuss.pennylane.ai>`_ for guidance!
+
+.. details::
+    :title: I am unsure what to do
+    :href: unsure
+
+    Please carefully read through the options above. If you are still stuck, you can:
+
+    - Post on the PennyLane `discussion forum <https://discuss.pennylane.ai>`_. Please include
+      a complete block of code demonstrating your issue so that we can quickly troubleshoot.
+
+    - As a *last resort*, you can place :func:`qml.disable_return() <.disable_return>` at the top of
+      your code. This will revert PennyLane's behaviour to the QNode return type in version 0.29.
+      However, be aware that this capability will be removed in a future version of PennyLane!
