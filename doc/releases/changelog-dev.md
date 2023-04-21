@@ -104,6 +104,7 @@
   [(#3905)](https://github.com/PennyLaneAI/pennylane/pull/3905)
   [(#3909)](https://github.com/PennyLaneAI/pennylane/pull/3909)
   [(#3926)](https://github.com/PennyLaneAI/pennylane/pull/3926)
+  [(#4023)](https://github.com/PennyLaneAI/pennylane/pull/4023)
 
   Consider a matrix `A` along with a vector `angles` that describes the target polynomial
   transformation. The [`qml.qsvt`](https://docs.pennylane.ai/en/stable/code/api/pennylane.qsvt.html)
