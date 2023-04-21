@@ -143,9 +143,48 @@
   [generalizing important algorithms](https://arxiv.org/abs/2105.02859)
   like amplitude amplification. Stay tuned for a demo in the coming few weeks to learn more!
 
-<h4>Intuitive QNode returns</h4>
+<h4>Intuitive QNode returns ↩️</h4>
 
+* An updated QNode return system has been introduced. PennyLane QNodes now return exactly what you 
+  tell them to! 🎉
+  [(#3957)](https://github.com/PennyLaneAI/pennylane/pull/3957)
+  [(#3969)](https://github.com/PennyLaneAI/pennylane/pull/3969)
+  [(#3946)](https://github.com/PennyLaneAI/pennylane/pull/3946)
+  [(#3913)](https://github.com/PennyLaneAI/pennylane/pull/3913)
+  [(#3914)](https://github.com/PennyLaneAI/pennylane/pull/3914)
+  [(#3934)](https://github.com/PennyLaneAI/pennylane/pull/3934)
 
+  Consider the following circuit:
+
+  ```python
+  import pennylane as qml
+  
+  dev = qml.device("default.qubit", wires=1)
+  
+  @qml.qnode(dev)
+  def circuit(x):
+      qml.RX(x, wires=0)
+      return qml.expval(qml.PauliZ(0)), qml.probs(0)
+  ```
+
+  In version 0.29 and earlier of PennyLane, `circuit()` would return a single length-3 array:
+
+  ```pycon
+  >>> circuit(0.5)
+  tensor([0.87758256, 0.93879128, 0.06120872], requires_grad=True)
+  ```
+
+  In versions 0.30 and above, `circuit()` returns a length-2 tuple containing the expectation
+  value and probabilities separately:
+
+  ```pycon
+  >>> circuit(0.5)
+  (tensor(0.87758256, requires_grad=True),
+   tensor([0.93879128, 0.06120872], requires_grad=True))
+  ```
+
+  More details about this change, along with help and troubleshooting tips to solve any issues,
+  can be found [here](https://docs.pennylane.ai/en/stable/introduction/returns.html).
 
 <h3>Improvements 🛠</h3>
 
@@ -266,7 +305,7 @@
   [(#3969)](https://github.com/PennyLaneAI/pennylane/pull/3969)
 
 * The default Gaussian device and parameter shift CV support the new return system, but only for single measurements.
-  [(3946)](https://github.com/PennyLaneAI/pennylane/pull/3946)
+  [(#3946)](https://github.com/PennyLaneAI/pennylane/pull/3946)
 
 * Keras and Torch NN modules are now compatible with the new return type system.
   [(#3913)](https://github.com/PennyLaneAI/pennylane/pull/3913)
@@ -274,8 +313,6 @@
 
 * `DefaultQutrit` supports the new return system.
   [(#3934)](https://github.com/PennyLaneAI/pennylane/pull/3934)
-
-  [(3946)](https://github.com/PennyLaneAI/pennylane/pull/3946)
 
 <h4>Other improvements</h4>
 
