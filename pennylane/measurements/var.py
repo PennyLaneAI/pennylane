@@ -84,7 +84,7 @@ class VarianceMP(SampleMeasurement, StateMeasurement):
         return float
 
     def _shape_legacy(self, device, shots):  # pylint: disable=unused-argument
-        if len(shots.shot_vector) <= 1:
+        if not shots.has_partitioned_shots:
             return (1,)
         num_shot_elements = sum(s.copies for s in shots.shot_vector)
         return (num_shot_elements,)
