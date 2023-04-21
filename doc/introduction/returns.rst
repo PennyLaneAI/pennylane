@@ -58,14 +58,14 @@ some challenges:
 * The return of a QNode could be different to what is expected, as shown in the
   :ref:`example <return-type-example-issue>` above.
 * For measurements of different shapes, ragged arrays were generated internally and then squeezed
-  into a single output array. This was incompatible with NumPy's
-  `NEP 34 <https://numpy.org/neps/nep-0034-infer-dtype-is-object.html>`_ and constrained the
+  into a single output array. This is incompatible with NumPy's
+  `NEP 34 <https://numpy.org/neps/nep-0034-infer-dtype-is-object.html>`_ and constrains the
   `version of NumPy <https://github.com/PennyLaneAI/pennylane/blob/v0.29.1/setup.py#L21>`_ that
-  PennyLane was compatible with.
-* Use of stacking and squeezing presented performance bottlenecks.
+  PennyLane is compatible with.
+* Use of stacking and squeezing presents performance bottlenecks.
 
 The changes made in PennyLane version 0.30 address the challenges above. However, existing users
-may experience breaking changes or issues.
+may experience breaking changes or issues when upgrading their PennyLane version.
 
 .. _Troubleshooting:
 
@@ -76,9 +76,6 @@ You may experience issues with PennyLane's updated QNode return system in versio
 if you have existing code that works with an earlier version of PennyLane. To help identify a fix,
 select the option below that describes your situation.
 
-If you are still experiencing issues, please post in the
-`PennyLane Discussion Forum <https://discuss.pennylane.ai>`_.
-
 .. details::
     :title: I am using a QNode that returns more than one quantity
     :href: qnode-multiple-returns
@@ -86,7 +83,7 @@ If you are still experiencing issues, please post in the
     Your issue may be because:
 
     * You are calculating the Jacobian of the QNode using the :ref:`NumPy <numpy_interf>` or
-      :ref:`TensorFlow <tf_interf>` interface. For example, the following will raise an error:
+      :ref:`TensorFlow <tf_interf>` interface. For example, the following will now raise an error:
 
       .. code-block:: python
 
@@ -108,8 +105,8 @@ If you are still experiencing issues, please post in the
       benefits!
 
     * You are returning differently-shaped quantities together, such as :func:`~.expval` and
-      :func:`~.probs`. For example, the following code is compatible with version 0.29 of PennyLane
-      but will raise an error in version 0.30 and above:
+      :func:`probs() <pennylane.probs>`. For example, the following code is compatible with version
+      0.29 of PennyLane but will raise an error in version 0.30.0 and above:
 
       .. code-block:: python
 
@@ -129,7 +126,7 @@ If you are still experiencing issues, please post in the
 
       Such issues can be addressed by updating how the return of a QNode is processed, being aware
       of unpacking, slicing, and indexing. The example above would be fixed simply by updating
-      ``result`` to:
+      ``result()`` to:
 
       .. code-block:: python
 
