@@ -548,7 +548,7 @@ def _generate_tapes_and_cjacs(tape, idx, key, num_split_times, use_broadcasting)
     """Generate the tapes and compute the classical Jacobians for one given
     generating Hamiltonian term of one pulse.
     """
-    op, op_idx, term_idx = tape.get_operation(idx, return_op_index=True)
+    op, op_idx, term_idx = tape.get_operation(idx)
     if not isinstance(op, ParametrizedEvolution):
         raise ValueError(
             "stoch_pulse_grad does not support differentiating parameters of "
