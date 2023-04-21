@@ -84,7 +84,7 @@ class ExpectationMP(SampleMeasurement, StateMeasurement):
         return float
 
     def _shape_legacy(self, device, shots):  # pylint: disable=unused-argument
-        if len(shots.shot_vector) <= 1:
+        if not shots.has_partitioned_shots:
             return (1,)
         num_shot_elements = sum(s.copies for s in shots.shot_vector)
         return (num_shot_elements,)
@@ -92,7 +92,7 @@ class ExpectationMP(SampleMeasurement, StateMeasurement):
     def shape(self, device, shots):
         if not qml.active_return():
             return self._shape_legacy(device, shots)
-        if len(shots.shot_vector) <= 1:
+        if not shots.has_partitioned_shots:
             return ()
         num_shot_elements = sum(s.copies for s in shots.shot_vector)
         return tuple(() for _ in range(num_shot_elements))
