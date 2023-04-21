@@ -22,6 +22,8 @@ from autoray import numpy as anp
 from pennylane import math as fn
 from pennylane import numpy as np
 
+from pennylane import grad as qml_grad
+
 pytestmark = pytest.mark.all_interfaces
 
 tf = pytest.importorskip("tensorflow", minversion="2.1")
@@ -196,6 +198,18 @@ def test_gammainc(n, t, gamma_ref):
     gamma = fn.gammainc(n, t)
 
     assert np.allclose(gamma, gamma_ref)
+
+
+def test_dot_autograd():
+    x = np.array([1.0, 2.0], requires_grad=False)
+    y = np.array([2.0, 3.0], requires_grad=True)
+
+    res = fn.dot(x, y)
+    assert isinstance(res, np.tensor)
+    assert res.requires_grad
+    assert fn.allclose(res, 8)
+
+    assert fn.allclose(qml_grad(fn.dot)(x, y), x)
 
 
 class TestMatmul:
