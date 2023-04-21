@@ -189,7 +189,7 @@ class SampleMP(SampleMeasurement):
                 inner_shape.append(num_wires)
             return tuple(inner_shape)
 
-        if len(shots.shot_vector) <= 1:
+        if not shots.has_partitioned_shots:
             return _single_int_shape(shots.total_shots, len_wires)
 
         shape = []
