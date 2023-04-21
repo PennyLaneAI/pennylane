@@ -145,10 +145,7 @@
 
 <h4>Intuitive QNode returns</h4>
 
-* The new return system is now activated and public-facing. The QNode keyword argument `mode` is replaced by the boolean  
-  `grad_on_execution`.
-  [(#3957)](https://github.com/PennyLaneAI/pennylane/pull/3957)
-  [(#3969)](https://github.com/PennyLaneAI/pennylane/pull/3969)
+
 
 <h3>Improvements 🛠</h3>
 
@@ -262,6 +259,11 @@
   for details.
 
 <h4>Intuitive QNode returns</h4>
+
+* The new return system is now activated and public-facing. The QNode keyword argument `mode` is replaced by the boolean  
+  `grad_on_execution`.
+  [(#3957)](https://github.com/PennyLaneAI/pennylane/pull/3957)
+  [(#3969)](https://github.com/PennyLaneAI/pennylane/pull/3969)
 
 * The default Gaussian device and parameter shift CV support the new return system, but only for single measurements.
   [(3946)](https://github.com/PennyLaneAI/pennylane/pull/3946)
