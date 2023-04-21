@@ -123,7 +123,10 @@
 * Improved efficiency of `tapering()`, `tapering_hf()` and `clifford()`.
   [(3942)](https://github.com/PennyLaneAI/pennylane/pull/3942)
 
-* Updated Pauli arithmetic to more efficiently convert to a Hamiltonian.
+* Improve the peak memory requirements of `tapering()` and `tapering_hf()` when used for larger observables.
+  [(3977)](https://github.com/PennyLaneAI/pennylane/pull/3977)
+
+* Update Pauli arithmetic to more efficiently convert to a Hamiltonian.
   [(#3939)](https://github.com/PennyLaneAI/pennylane/pull/3939)
 
 * The adjoint differentiation method now supports more operations, and does no longer decompose
@@ -252,9 +255,11 @@
 
 <h3>Breaking changes 💔</h3>
 
+* The `seed_recipes` argument has been removed from `qml.classical_shadow` and `qml.shadow_expval`.
+  [(#4020)](https://github.com/PennyLaneAI/pennylane/pull/4020)
+
 * The tape method `get_operation` has an updated signature.
   [(#3998)](https://github.com/PennyLaneAI/pennylane/pull/3998)
-
 
 * Both JIT interfaces are not compatible with JAX `>0.4.3`, we raise an error for those versions.
   [(#3877)](https://github.com/PennyLaneAI/pennylane/pull/3877)
@@ -295,6 +300,9 @@
 
 * A typo was corrected in the documentation for introduction to `inspecting_circuits` and `chemistry`.
   [(#3844)](https://github.com/PennyLaneAI/pennylane/pull/3844)
+
+* Separated `Usage Details` and `Theory` sections in documentation for `qml.qchem.taper_operation`.
+  [(3977)](https://github.com/PennyLaneAI/pennylane/pull/3977)
 
 <h3>Bug fixes 🐛</h3>
 
