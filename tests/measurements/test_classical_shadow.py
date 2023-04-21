@@ -272,14 +272,6 @@ class TestClassicalShadow:
         with pytest.raises(qml.QuantumFunctionError, match=msg):
             circuit()
 
-    def test_seed_recipes_deprecated(self, wires):
-        """Test that using the ``seed_recipes`` argument is deprecated."""
-        with pytest.warns(
-            UserWarning,
-            match="Using ``seed_recipes`` is deprecated. Please use ``seed`` instead",
-        ):
-            qml.classical_shadow(wires=wires, seed_recipes=False)
-
 
 def hadamard_circuit(wires, shots=10000, interface="autograd"):
     dev = qml.device("default.qubit", wires=wires, shots=shots)
@@ -403,14 +395,6 @@ class TestExpvalMeasurement:
         assert tape.operations[0].name == "PauliY"
         assert len(tape.measurements) == 1
         assert isinstance(tape.measurements[0], ShadowExpvalMP)
-
-    def test_seed_recipes_deprecated(self):
-        """Test that using the ``seed_recipes`` argument is deprecated."""
-        with pytest.warns(
-            UserWarning,
-            match="Using ``seed_recipes`` is deprecated. Please use ``seed`` instead",
-        ):
-            qml.shadow_expval(H=qml.PauliX(0), seed_recipes=False)
 
 
 obs_hadamard = [
