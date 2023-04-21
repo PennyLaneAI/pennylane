@@ -927,7 +927,7 @@ class QuantumScript:
         return shapes
 
     @property
-    def numeric_type(self):
+    def _numeric_type_legacy(self):
         """Returns the expected numeric type of the script result by inspecting
         its measurements.
 
@@ -945,8 +945,6 @@ class QuantumScript:
         >>> qscript.numeric_type
         complex
         """
-        if qml.active_return():
-            return self._numeric_type_new
         measurement_types = {type(meas) for meas in self.measurements}
         if len(measurement_types) > 1:
             raise ValueError(
@@ -961,7 +959,7 @@ class QuantumScript:
         return self.measurements[0].numeric_type
 
     @property
-    def _numeric_type_new(self):
+    def numeric_type(self):
         """Returns the expected numeric type of the quantum script result by inspecting
         its measurements.
 
@@ -979,6 +977,8 @@ class QuantumScript:
             >>> qs.numeric_type
             complex
         """
+        if not qml.active_return():
+            return self._numeric_type_legacy
         types = tuple(observable.numeric_type for observable in self.measurements)
 
         return types[0] if len(types) == 1 else types
