@@ -214,12 +214,6 @@
 
 <h4>Performance improvements</h4>
 
-* Hardware-compatible pulse sequence gradients with `stoch_pulse_grad` can be calculated faster now, using
-  the new keyword argument `use_broadcasting`. Executing a `ParametrizedEvolution` that returns
-  intermediate evolutions has increased performance as well, using the state vector ODE solver.
-  [(#4000)](https://github.com/PennyLaneAI/pennylane/pull/4000)
-  [(#4004)](https://github.com/PennyLaneAI/pennylane/pull/4004)
-
 * Added a new decomposition to `qml.SingleExcitation` that halves the number of
   CNOTs required.
   [(3976)](https://github.com/PennyLaneAI/pennylane/pull/3976)
@@ -255,7 +249,7 @@
   They can be accessed via `ops.op_math.ctrl_decomp_bisect`.
   [(#3851)](https://github.com/PennyLaneAI/pennylane/pull/3851)
 
-<h4>Pulse programming on hardware</h4>
+<h4>Pulse programming</h4>
 
 * Added the needed functions and classes to simulate an ensemble of Rydberg atoms:
   [(#3749)](https://github.com/PennyLaneAI/pennylane/pull/3749)
@@ -296,6 +290,12 @@
   be the _remaining_ time evolution complementary to the output for `complementary=False`.
   See the [docstring](https://docs.pennylane.ai/en/stable/code/api/pennylane.pulse.ParametrizedEvolution.html)
   for details.
+
+* Hardware-compatible pulse sequence gradients with `stoch_pulse_grad` can be calculated faster now, using
+  the new keyword argument `use_broadcasting`. Executing a `ParametrizedEvolution` that returns
+  intermediate evolutions has increased performance as well, using the state vector ODE solver.
+  [(#4000)](https://github.com/PennyLaneAI/pennylane/pull/4000)
+  [(#4004)](https://github.com/PennyLaneAI/pennylane/pull/4004)
 
 <h4>Intuitive QNode returns</h4>
 
