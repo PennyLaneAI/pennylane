@@ -93,7 +93,7 @@ class ResourcesOperation(Operation):
 
         **Examples**
 
-        >>> class CustomOp(OperationWithResources):
+        >>> class CustomOp(ResourcesOperation):
         ...     num_wires = 2
         ...     def resources(self):
         ...         return Resources(num_wires=self.num_wires, num_gates=3, depth=2)
