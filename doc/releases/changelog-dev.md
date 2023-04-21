@@ -306,6 +306,9 @@
 
 <h3>Bug fixes 🐛</h3>
 
+* `Operator` now casts `tuple` to `np.ndarray` as well as `list`. 
+  [(#4022)](https://github.com/PennyLaneAI/pennylane/pull/4022)
+
 * Fixes a bug where `qml.ctrl` for parametric gates were incompatible with PyTorch tensors on the GPU.
   [(#4002)](https://github.com/PennyLaneAI/pennylane/pull/4002)
 
