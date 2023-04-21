@@ -249,11 +249,11 @@ def transmon_drive(amplitude, phase, freq, wires, d=2):
 
     .. note:: Currently only supports ``d=2`` with qudit support planned in the future. For ``d=2`` we have :math:`a:=\frac{1}{2}(\sigma^x + i \sigma^y)`.
 
-    .. note:: Due to convention in the respective fields, we ommit the factor :math:`\frac{1}{2}` present in the related constructors :func:`~.drive` and :func:`~.rydberg_drive`
+    .. note:: Due to convention in the respective fields, we ommit the factor :math:`\frac{1}{2}` present in the related constructors :func:`~.rydberg_drive`
 
     .. seealso::
 
-        :func:`~.drive`, :func:`~.rydberg_drive`, :func:`~.transmon_interaction`
+        :func:`~.rydberg_drive`, :func:`~.transmon_interaction`
 
     Args:
         amplitude (Union[float, callable]): The amplitude :math:`\Omega(t)` (in GHz).
