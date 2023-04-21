@@ -428,6 +428,7 @@ class TestInfomationProperties:
         assert qs._specs is None
 
         assert qs.specs["gate_sizes"] == defaultdict(int)
+        assert qs.specs["gate_types"] == defaultdict(int)
 
         gate_types = defaultdict(int)
         assert qs.specs["resources"] == qml.resource.Resources(gate_types=gate_types)
@@ -437,8 +438,9 @@ class TestInfomationProperties:
         assert qs.specs["num_diagonalizing_gates"] == 0
         assert qs.specs["num_used_wires"] == 0
         assert qs.specs["num_trainable_params"] == 0
+        assert qs.specs["depth"] == 0
 
-        assert len(qs.specs) == 7
+        assert len(qs.specs) == 9
 
         assert qs._specs is qs.specs
 
@@ -450,9 +452,10 @@ class TestInfomationProperties:
         specs = qs.specs
         assert qs._specs is specs
 
-        assert len(specs) == 7
+        assert len(specs) == 9
 
         assert specs["gate_sizes"] == defaultdict(int, {1: 3, 2: 1})
+        assert specs["gate_types"] == defaultdict(int, {"RX": 2, "Rot": 1, "CNOT": 1})
 
         gate_types = defaultdict(int, {"RX": 2, "Rot": 1, "CNOT": 1})
         assert specs["resources"] == qml.resource.Resources(
@@ -464,6 +467,7 @@ class TestInfomationProperties:
         assert specs["num_diagonalizing_gates"] == 1
         assert specs["num_used_wires"] == 3
         assert specs["num_trainable_params"] == 5
+        assert specs["depth"] == 3
 
 
 class TestScriptCopying:

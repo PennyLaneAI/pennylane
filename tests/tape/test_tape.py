@@ -557,6 +557,7 @@ class TestResourceEstimation:
         tape = make_empty_tape
 
         assert tape.specs["gate_sizes"] == defaultdict(int)
+        assert tape.specs["gate_types"] == defaultdict(int)
 
         gate_types = defaultdict(int)
         expected_resources = qml.resource.Resources(num_wires=2, gate_types=gate_types)
@@ -567,8 +568,9 @@ class TestResourceEstimation:
         assert tape.specs["num_diagonalizing_gates"] == 0
         assert tape.specs["num_used_wires"] == 2
         assert tape.specs["num_trainable_params"] == 0
+        assert tape.specs["depth"] == 0
 
-        assert len(tape.specs) == 7
+        assert len(tape.specs) == 9
 
     def test_specs_tape(self, make_tape):
         """Tests that regular tapes return correct specifications"""
@@ -576,7 +578,7 @@ class TestResourceEstimation:
 
         specs = tape.specs
 
-        assert len(specs) == 7
+        assert len(specs) == 9
 
         gate_types = defaultdict(int, {"RX": 2, "Rot": 1, "CNOT": 1})
         expected_resources = qml.resource.Resources(
@@ -585,11 +587,13 @@ class TestResourceEstimation:
         assert specs["resources"] == expected_resources
 
         assert specs["gate_sizes"] == defaultdict(int, {1: 3, 2: 1})
+        assert specs["gate_types"] == defaultdict(int, {"RX": 2, "Rot": 1, "CNOT": 1})
         assert specs["num_operations"] == 4
         assert specs["num_observables"] == 2
         assert specs["num_diagonalizing_gates"] == 1
         assert specs["num_used_wires"] == 3
         assert specs["num_trainable_params"] == 5
+        assert specs["depth"] == 3
 
     def test_specs_add_to_tape(self, make_extendible_tape):
         """Test that tapes return correct specs after adding to them."""
@@ -597,8 +601,9 @@ class TestResourceEstimation:
         tape = make_extendible_tape
         specs1 = tape.specs
 
-        assert len(specs1) == 7
+        assert len(specs1) == 9
         assert specs1["gate_sizes"] == defaultdict(int, {1: 3, 2: 1})
+        assert specs1["gate_types"] == defaultdict(int, {"RX": 2, "Rot": 1, "CNOT": 1})
 
         gate_types = defaultdict(int, {"RX": 2, "Rot": 1, "CNOT": 1})
         expected_resoures = qml.resource.Resources(
@@ -611,6 +616,7 @@ class TestResourceEstimation:
         assert specs1["num_diagonalizing_gates"] == 0
         assert specs1["num_used_wires"] == 3
         assert specs1["num_trainable_params"] == 5
+        assert specs1["depth"] == 3
 
         with tape as tape:
             qml.CNOT(wires=[0, 1])
@@ -620,8 +626,9 @@ class TestResourceEstimation:
 
         specs2 = tape.specs
 
-        assert len(specs2) == 7
+        assert len(specs2) == 9
         assert specs2["gate_sizes"] == defaultdict(int, {1: 4, 2: 2})
+        assert specs2["gate_types"] == defaultdict(int, {"RX": 2, "Rot": 1, "CNOT": 2, "RZ": 1})
 
         gate_types = defaultdict(int, {"RX": 2, "Rot": 1, "CNOT": 2, "RZ": 1})
         expected_resoures = qml.resource.Resources(
@@ -634,6 +641,7 @@ class TestResourceEstimation:
         assert specs2["num_diagonalizing_gates"] == 1
         assert specs2["num_used_wires"] == 5
         assert specs2["num_trainable_params"] == 6
+        assert specs2["depth"] == 4
 
 
 class TestParameters:
