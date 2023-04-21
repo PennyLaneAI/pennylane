@@ -1149,7 +1149,7 @@ class QuantumScript:
 
         Asking for the specs produces a dictionary of useful information about the circuit:
 
-        >>> qscript.specs["num_observables"]
+        >>> qscript.specs['num_observables']
         1
         >>> qscript.specs['gate_sizes']
         defaultdict(<class 'int'>, {1: 4, 2: 2})
