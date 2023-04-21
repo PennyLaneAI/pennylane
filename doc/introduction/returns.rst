@@ -13,7 +13,7 @@ provides additional details about the update and can be used to troubleshoot iss
 Summary of the update
 ---------------------
 
-.. highlights::
+.. rst-class:: admonition tip
 
     PennyLane QNodes now return exactly what you tell them to! 🎉
 
