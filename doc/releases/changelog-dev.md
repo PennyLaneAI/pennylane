@@ -14,6 +14,23 @@
   See the [docstring](https://docs.pennylane.ai/en/stable/code/api/pennylane.pulse.ParametrizedEvolution.html)
   for details.
 
+* The `qml.operation.enable_new_opmath` toggle has been introduced to cause dunder methods to return arithmetic
+  operators instead of Hamiltonians and Tensors.
+  [(#4008)](https://github.com/PennyLaneAI/pennylane/pull/4008)
+
+  For example:
+
+  ```pycon
+  >>> type(qml.PauliX(0) @ qml.PauliZ(1))
+  <class 'pennylane.operation.Tensor'>
+  >>> qml.operation.enable_new_opmath()
+  >>> type(qml.PauliX(0) @ qml.PauliZ(1))
+  <class 'pennylane.ops.op_math.prod.Prod'>
+  >>> qml.operation.disable_new_opmath()
+  >>> type(qml.PauliX(0) @ qml.PauliZ(1))
+  <class 'pennylane.operation.Tensor'>
+  ```
+
 * New `Resources` data class to store resources like number of gates and circuit depth throughout a 
   quantum circuit.
   [(#3981)](https://github.com/PennyLaneAI/pennylane/pull/3981/)
@@ -292,6 +309,9 @@
   [(3977)](https://github.com/PennyLaneAI/pennylane/pull/3977)
 
 <h3>Bug fixes 🐛</h3>
+
+* `Operator` now casts `tuple` to `np.ndarray` as well as `list`. 
+  [(#4022)](https://github.com/PennyLaneAI/pennylane/pull/4022)
 
 * Fixes a bug where `qml.ctrl` for parametric gates were incompatible with PyTorch tensors on the GPU.
   [(#4002)](https://github.com/PennyLaneAI/pennylane/pull/4002)
