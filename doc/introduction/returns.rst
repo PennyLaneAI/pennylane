@@ -48,6 +48,9 @@ and probabilities separately:
     (tensor(0.87758256, requires_grad=True),
      tensor([0.93879128, 0.06120872], requires_grad=True))
 
+For a detailed explanation of this change, along with code examples, check out the
+:func:`~.enable_return` function documentation.
+
 Motivation
 ----------
 
