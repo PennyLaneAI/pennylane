@@ -10,6 +10,14 @@ provides additional details about the update and can be used to troubleshoot iss
 
     If you are looking for a quick fix, jump to the :ref:`Troubleshooting` section!
 
+    After visiting the :ref:`Troubleshooting` section, if you are still stuck then you can:
+
+    - Post on the PennyLane `discussion forum <https://discuss.pennylane.ai>`_.
+
+    - If you suspect that your issue is due to a bug in PennyLane itself, please open a
+      `bug report <https://github.com/PennyLaneAI/pennylane/issues/new?labels=bug+%3Abug%3A&template=bug_report.yml&title=[BUG]>`_
+      on the PennyLane GitHub page.
+
 Summary of the update
 ---------------------
 
@@ -164,6 +172,10 @@ select the option below that describes your situation.
 
     - Post on the PennyLane `discussion forum <https://discuss.pennylane.ai>`_. Please include
       a complete block of code demonstrating your issue so that we can quickly troubleshoot.
+
+    - If you suspect that your issue is due to a bug in PennyLane itself, please open a
+      `bug report <https://github.com/PennyLaneAI/pennylane/issues/new?labels=bug+%3Abug%3A&template=bug_report.yml&title=[BUG]>`_
+      on the PennyLane GitHub page.
 
     - As a *last resort*, you can place :func:`qml.disable_return() <.disable_return>` at the top of
       your code. This will revert PennyLane's behaviour to the QNode return type in version 0.29.
