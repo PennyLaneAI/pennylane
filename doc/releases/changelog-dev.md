@@ -31,16 +31,15 @@
     the Hamiltonian of the interaction of all the Rydberg atoms.
   * A new user-facing `transmon_interaction` function is added, constructing
     the Hamiltonian that describes the circuit QED interaction Hamiltonian of superconducting transmon systems.
-  * A new user-facing `drive` function is added, which returns a `ParametrizedHamiltonian` (`HardwareHamiltonian`) containing
-    the Hamiltonian of the interaction between a driving electro-magnetic field and a group of qubits.
-  * A new user-facing `rydberg_drive` function is added, which returns a `ParametrizedHamiltonian` (`HardwareHamiltonian`) containing
-    the Hamiltonian of the interaction between a driving laser field and a group of Rydberg atoms.
+  * A new user-facing `rydberg_drive` function is added, which returns a `ParametrizedHamiltonian` (`HardwareHamiltonian`) containing the Hamiltonian of the interaction between a driving laser field and a group of Rydberg atoms.
   [(#3749)](https://github.com/PennyLaneAI/pennylane/pull/3749)
   [(#3911)](https://github.com/PennyLaneAI/pennylane/pull/3911)
   [(#3930)](https://github.com/PennyLaneAI/pennylane/pull/3930)
-  [(#3936)](https://github.com/PennyLaneAI/pennylane/pull/3936/)
+  [(#3936)](https://github.com/PennyLaneAI/pennylane/pull/3936)
   [(#3966)](https://github.com/PennyLaneAI/pennylane/pull/3966)
   [(#3987)](https://github.com/PennyLaneAI/pennylane/pull/3987)
+  [(#4021)](https://github.com/PennyLaneAI/pennylane/pull/4021)
+
   * A new keyword argument called `max_distance` has been added to `qml.pulse.rydberg_interaction` to allow for the removal of negligible contributions
     from atoms beyond `max_distance` from each other.
     [(#3889)](https://github.com/PennyLaneAI/pennylane/pull/3889)
