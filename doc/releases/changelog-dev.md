@@ -275,7 +275,7 @@
   [(#3912)](https://github.com/PennyLaneAI/pennylane/pull/3912)
 
 * `Evolution` now initializes the coefficient with a factor of `-1j` instead of `1j`.
-  [(#)]()
+  [(#4024)](https://github.com/PennyLaneAI/pennylane/pull/4024)
 
 <h3>Deprecations 👋</h3>
 
