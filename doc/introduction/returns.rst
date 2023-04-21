@@ -110,7 +110,7 @@ select the option below that describes your situation.
     * You are returning differently-shaped quantities together, such as
       :func:`expval() <pennylane.expval>` and :func:`probs() <pennylane.probs>`. For example, the
       following code is compatible with version 0.29 of PennyLane but will raise an error in version
-      0.30.0 and above:
+      0.30 and above:
 
       .. code-block:: python
 
