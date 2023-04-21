@@ -75,7 +75,6 @@
   [(#3900)](https://github.com/PennyLaneAI/pennylane/pull/3900)
   [(#4000)](https://github.com/PennyLaneAI/pennylane/pull/4000)
   [(#4004)](https://github.com/PennyLaneAI/pennylane/pull/4004)
-  TODO - check if performance PRs are merged.
 
   This method can be activated by setting `diff_method` to
   [`qml.gradient.stoch_pulse_grad`](https://docs.pennylane.ai/en/stable/code/api/pennylane.gradients.stoch_pulse_grad.html):
