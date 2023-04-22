@@ -54,12 +54,6 @@ Pending deprecations
   - Deprecated in v0.29.
   - Will be removed in v0.31.
 
-* A warning has been added in ``Evolution`` redirecting users to ``qml.evolve``. This was added
-  because we want to change the behaviour of ``Evolution``, adding a ``-1`` to the given parameter.
-
-  - Deprecated in v0.29.
-  - Will be removed in v0.30.
-  
 * The ``qml.utils.sparse_hamiltonian`` function is deprecated. ``~.Hamiltonian.sparse_matrix`` should be used instead.
 
   - Deprecated in v0.29
@@ -67,6 +61,11 @@ Pending deprecations
 
 Completed deprecation cycles
 ----------------------------
+
+* ``Evolution`` now adds a ``-1`` to the input parameter. Beforehand, the minus sign was not included.
+
+  - Transition warning added in v0.29.
+  - Updated to current behaviour in v0.30.
 
 * The ``seed_recipes`` argument in ``qml.classical_shadow`` and ``qml.shadow_expval`` has been removed.
   An argument ``seed`` which defaults to ``None`` can contain an integer with the wanted seed.
