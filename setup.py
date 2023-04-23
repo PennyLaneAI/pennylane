@@ -14,6 +14,8 @@
 
 from setuptools import setup, find_packages
 
+import pennylane
+
 with open("pennylane/_version.py") as f:
     version = f.readlines()[-1].split()[-1].strip("\"'")
 
@@ -48,6 +50,7 @@ info = {
             "default.gaussian = pennylane.devices:DefaultGaussian",
             "default.qubit.tf = pennylane.devices.default_qubit_tf:DefaultQubitTF",
             "default.qubit.torch = pennylane.devices.default_qubit_torch:DefaultQubitTorch",
+            "default.qubit.numba = pennylane.devices.default_qubit_numba:DefaultQubitNumba",
             "default.qubit.autograd = pennylane.devices.default_qubit_autograd:DefaultQubitAutograd",
             "default.qubit.jax = pennylane.devices.default_qubit_jax:DefaultQubitJax",
             "default.mixed = pennylane.devices.default_mixed:DefaultMixed",

@@ -332,6 +332,7 @@ class DefaultQubit(QubitDevice):
         :math:`|0\rangle`.
 
         Args:
+
             state (array[complex]): input state
             axes (List[int]): target axes to apply transformation
 
