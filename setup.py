@@ -14,7 +14,6 @@
 
 from setuptools import setup, find_packages
 
-import pennylane
 
 with open("pennylane/_version.py") as f:
     version = f.readlines()[-1].split()[-1].strip("\"'")
