@@ -209,132 +209,28 @@ class TestUpdate:
         m = [qml.expval(qml.Hermitian(2 * np.eye(2), wires=0))]
         qs = QuantumScript(ops, m)
 
-        with pytest.warns(
-            UserWarning,
-            match="The get_operation will soon be updated to also return the index of the trainable operation in the tape.",
-        ):
-            op_0, p_id_0 = qs.get_operation(0)
-            assert op_0 == ops[0] and p_id_0 == 0
-
-        with pytest.warns(
-            UserWarning,
-            match="The get_operation will soon be updated to also return the index of the trainable operation in the tape.",
-        ):
-            op_1, p_id_1 = qs.get_operation(1)
-            assert op_1 == ops[1] and p_id_1 == 0
-
-        with pytest.warns(
-            UserWarning,
-            match="The get_operation will soon be updated to also return the index of the trainable operation in the tape.",
-        ):
-            op_2, p_id_2 = qs.get_operation(2)
-            assert op_2 == ops[1] and p_id_2 == 1
-
-        with pytest.warns(
-            UserWarning,
-            match="The get_operation will soon be updated to also return the index of the trainable operation in the tape.",
-        ):
-            op_3, p_id_3 = qs.get_operation(3)
-            assert op_3 == ops[1] and p_id_3 == 2
-
-        with pytest.warns(
-            UserWarning,
-            match="The get_operation will soon be updated to also return the index of the trainable operation in the tape.",
-        ):
-            op_4, p_id_4 = qs.get_operation(4)
-            assert op_4 == ops[3] and p_id_4 == 0
-
-        with pytest.warns(
-            UserWarning,
-            match="The get_operation will soon be updated to also return the index of the trainable operation in the tape.",
-        ):
-            op_5, p_id_5 = qs.get_operation(5)
-            assert op_5 == ops[4] and p_id_5 == 0
-
-        with pytest.warns(
-            UserWarning,
-            match="The get_operation will soon be updated to also return the index of the trainable operation in the tape.",
-        ):
-            op_6, p_id_6 = qs.get_operation(6)
-            assert op_6 == ops[4] and p_id_6 == 1
-
-        with pytest.warns(
-            UserWarning,
-            match="The get_operation will soon be updated to also return the index of the trainable operation in the tape.",
-        ):
-            _, p_id_0 = qs.get_operation(7)
-            assert p_id_0 == 0
-
-    def test_get_operation_return_index(self):
-        """Tests the tape method get_operation with `return_op_index` bool."""
-        ops = [
-            qml.RX(1.2, wires=0),
-            qml.Rot(2.3, 3.4, 5.6, wires=0),
-            qml.PauliX(wires=0),
-            qml.QubitUnitary(np.eye(2), wires=0),
-            qml.U2(-1, -2, wires=0),
-        ]
-        m = [qml.expval(qml.Hermitian(2 * np.eye(2), wires=0))]
-        qs = QuantumScript(ops, m)
-
-        op_0, op_id_0, p_id_0 = qs.get_operation(0, True)
+        op_0, op_id_0, p_id_0 = qs.get_operation(0)
         assert op_0 == ops[0] and op_id_0 == 0 and p_id_0 == 0
 
-        op_1, op_id_1, p_id_1 = qs.get_operation(1, True)
+        op_1, op_id_1, p_id_1 = qs.get_operation(1)
         assert op_1 == ops[1] and op_id_1 == 1 and p_id_1 == 0
 
-        op_2, op_id_2, p_id_2 = qs.get_operation(2, True)
+        op_2, op_id_2, p_id_2 = qs.get_operation(2)
         assert op_2 == ops[1] and op_id_2 == 1 and p_id_2 == 1
 
-        op_3, op_id_3, p_id_3 = qs.get_operation(3, True)
+        op_3, op_id_3, p_id_3 = qs.get_operation(3)
         assert op_3 == ops[1] and op_id_3 == 1 and p_id_3 == 2
 
-        op_4, op_id_4, p_id_4 = qs.get_operation(4, True)
+        op_4, op_id_4, p_id_4 = qs.get_operation(4)
         assert op_4 == ops[3] and op_id_4 == 3 and p_id_4 == 0
 
-        op_5, op_id_5, p_id_5 = qs.get_operation(5, True)
+        op_5, op_id_5, p_id_5 = qs.get_operation(5)
         assert op_5 == ops[4] and op_id_5 == 4 and p_id_5 == 0
 
-        op_6, op_id_6, p_id_6 = qs.get_operation(6, True)
+        op_6, op_id_6, p_id_6 = qs.get_operation(6)
         assert op_6 == ops[4] and op_id_6 == 4 and p_id_6 == 1
 
-        _, obs_id_0, p_id_0 = qs.get_operation(7, True)
-        assert obs_id_0 == 0 and p_id_0 == 0
-
-    def test_get_operation_private(self):
-        """Tests the tape method _get_operation"""
-        ops = [
-            qml.RX(1.2, wires=0),
-            qml.Rot(2.3, 3.4, 5.6, wires=0),
-            qml.PauliX(wires=0),
-            qml.QubitUnitary(np.eye(2), wires=0),
-            qml.U2(-1, -2, wires=0),
-        ]
-        m = [qml.expval(qml.Hermitian(2 * np.eye(2), wires=0))]
-        qs = QuantumScript(ops, m)
-
-        op_0, op_id_0, p_id_0 = qs._get_operation(0)
-        assert op_0 == ops[0] and op_id_0 == 0 and p_id_0 == 0
-
-        op_1, op_id_1, p_id_1 = qs._get_operation(1)
-        assert op_1 == ops[1] and op_id_1 == 1 and p_id_1 == 0
-
-        op_2, op_id_2, p_id_2 = qs._get_operation(2)
-        assert op_2 == ops[1] and op_id_2 == 1 and p_id_2 == 1
-
-        op_3, op_id_3, p_id_3 = qs._get_operation(3)
-        assert op_3 == ops[1] and op_id_3 == 1 and p_id_3 == 2
-
-        op_4, op_id_4, p_id_4 = qs._get_operation(4)
-        assert op_4 == ops[3] and op_id_4 == 3 and p_id_4 == 0
-
-        op_5, op_id_5, p_id_5 = qs._get_operation(5)
-        assert op_5 == ops[4] and op_id_5 == 4 and p_id_5 == 0
-
-        op_6, op_id_6, p_id_6 = qs._get_operation(6)
-        assert op_6 == ops[4] and op_id_6 == 4 and p_id_6 == 1
-
-        _, obs_id_0, p_id_0 = qs._get_operation(7)
+        _, obs_id_0, p_id_0 = qs.get_operation(7)
         assert obs_id_0 == 0 and p_id_0 == 0
 
     def test_update_observables(self):
@@ -534,6 +430,9 @@ class TestInfomationProperties:
         assert qs.specs["gate_sizes"] == defaultdict(int)
         assert qs.specs["gate_types"] == defaultdict(int)
 
+        gate_types = defaultdict(int)
+        assert qs.specs["resources"] == qml.resource.Resources(gate_types=gate_types)
+
         assert qs.specs["num_operations"] == 0
         assert qs.specs["num_observables"] == 0
         assert qs.specs["num_diagonalizing_gates"] == 0
@@ -541,7 +440,7 @@ class TestInfomationProperties:
         assert qs.specs["num_trainable_params"] == 0
         assert qs.specs["depth"] == 0
 
-        assert len(qs.specs) == 8
+        assert len(qs.specs) == 9
 
         assert qs._specs is qs.specs
 
@@ -553,10 +452,16 @@ class TestInfomationProperties:
         specs = qs.specs
         assert qs._specs is specs
 
-        assert len(specs) == 8
+        assert len(specs) == 9
 
         assert specs["gate_sizes"] == defaultdict(int, {1: 3, 2: 1})
         assert specs["gate_types"] == defaultdict(int, {"RX": 2, "Rot": 1, "CNOT": 1})
+
+        gate_types = defaultdict(int, {"RX": 2, "Rot": 1, "CNOT": 1})
+        assert specs["resources"] == qml.resource.Resources(
+            num_wires=3, num_gates=4, gate_types=gate_types, depth=3
+        )
+
         assert specs["num_operations"] == 4
         assert specs["num_observables"] == 2
         assert specs["num_diagonalizing_gates"] == 1
@@ -724,6 +629,28 @@ def test_unwrap():
     with unwrapper:
         assert qml.math.get_interface(qs.data[0]) == "numpy"
     assert qml.math.get_interface(qs.data[0]) == "torch"
+
+
+@pytest.mark.parametrize(
+    "measurements, expected",
+    [
+        ([qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliZ(1)), qml.expval(qml.PauliZ(2))], (5, 3)),
+        ([qml.var(qml.PauliZ(0)), qml.var(qml.PauliZ(1)), qml.var(qml.PauliZ(2))], (5, 3)),
+        ([qml.probs(wires=0), qml.probs(wires=1), qml.probs(wires=2)], (5, 3, 2)),
+        (
+            [qml.sample(wires=0), qml.sample(wires=1), qml.sample(wires=2)],
+            ((3,), (3,), (2, 3), (3, 3), (3,)),
+        ),
+    ],
+)
+def test_homogenous_multimeasure_shot_vector(measurements, expected):
+    """Test that multiple measurements of ther same type have the expected shape"""
+    shot_vector = [1, 1, 2, 3, 1]
+    dev = qml.device("default.qubit", wires=3, shots=shot_vector)
+    qs = QuantumScript(measurements=measurements)
+
+    res = qs.shape(dev)
+    assert res == expected
 
 
 class TestHashing:

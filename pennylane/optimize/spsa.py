@@ -14,6 +14,7 @@
 """SPSA optimizer"""
 
 from pennylane import numpy as np
+from pennylane.measurements import Shots
 
 
 class SPSAOptimizer:
@@ -260,7 +261,13 @@ class SPSAOptimizer:
         yplus = objective_fn(*thetaplus, **kwargs)
         yminus = objective_fn(*thetaminus, **kwargs)
         try:
-            if np.prod(objective_fn.func(*args).shape(objective_fn.device)) > 1:
+            # pylint: disable=protected-access
+            shots = (
+                Shots(objective_fn.device._raw_shot_sequence)
+                if objective_fn.device.shot_vector is not None
+                else Shots(None)
+            )
+            if np.prod(objective_fn.func(*args).shape(objective_fn.device, shots)) > 1:
                 raise ValueError(
                     "The objective function must be a scalar function for the gradient "
                     "to be computed."
