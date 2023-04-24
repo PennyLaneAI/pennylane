@@ -371,7 +371,7 @@ class QSVT(Operation):
                     op_list.append(adjoint(UA_copy))
 
             op_list.append(projectors[-1])
-            mat = qml.matrix(qml.prod(*tuple(op_list)))
+            mat = qml.matrix(qml.prod(*tuple(op_list[::-1])))
 
         return mat
 
