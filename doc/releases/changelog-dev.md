@@ -107,6 +107,10 @@
   in a backpropagation-compatible way.
   [(#3862)](https://github.com/PennyLaneAI/pennylane/pull/3862/)
 
+* `MeasurementProcess.shape` now accepts a `Shots` object as one of its arguments to reduce exposure to unnecessary
+  execution details.
+  [(#4012)](https://github.com/PennyLaneAI/pennylane/pull/4012)
+
 <h4>Performance improvements</h4>
 
 * Hardware-compatible pulse sequence gradients with `stoch_pulse_grad` can be calculated faster now, using
