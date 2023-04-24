@@ -226,14 +226,34 @@
   PennyLane, but can also be accessed directly using
   [ctrl_decomp_bisect()](https://docs.pennylane.ai/en/stable/code/api/pennylane.ops.op_math.ctrl_decomp_bisect.html).
 
+* Added a new decomposition to `qml.SingleExcitation` that halves the number of
+  CNOTs required.
+  [(3976)](https://github.com/PennyLaneAI/pennylane/pull/3976)
+
+  ```pycon
+  >>> qml.SingleExcitation.compute_decomposition(1.23, wires=(0,1))
+  [Adjoint(T(wires=[0])),
+   Hadamard(wires=[0]),
+   S(wires=[0]),
+   Adjoint(T(wires=[1])),
+   Adjoint(S(wires=[1])),
+   Hadamard(wires=[1]),
+   CNOT(wires=[1, 0]),
+   RZ(-0.615, wires=[0]),
+   RY(0.615, wires=[1]),
+   CNOT(wires=[1, 0]),
+   Adjoint(S(wires=[0])),
+   Hadamard(wires=[0]),
+   T(wires=[0]),
+   Hadamard(wires=[1]),
+   S(wires=[1]),
+   T(wires=[1])]
+  ```
+
 * The adjoint differentiation method now supports more operations, and does no longer decompose
   some operations that may be differentiated directly. In addition, all new operations with a
   generator are now supported by the method.
   [(#3874)](https://github.com/PennyLaneAI/pennylane/pull/3874)
-
-* Added a new decomposition to `qml.SingleExcitation` that halves the number of
-  CNOTs required.
-  [(3976)](https://github.com/PennyLaneAI/pennylane/pull/3976)
 
 * Improved efficiency of `tapering()`, `tapering_hf()` and `clifford()`.
   [(3942)](https://github.com/PennyLaneAI/pennylane/pull/3942)
