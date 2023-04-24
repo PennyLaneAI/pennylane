@@ -15,6 +15,12 @@ or replace a large circuit by a number of smaller circuits.
 Compilation functionality is mostly designed as **transforms**, which you can read up on in the
 section on :doc:`inspecting circuits </introduction/inspecting_circuits>`.
 
+PennyLane also supports experimental just-in-time compilation, via
+[Catalyst](https://github.com/pennylaneai/catalyst). This is more general, and
+supports full hybrid compilation --- compiling both the classical and quantum components
+of your workflow into a binary that can be run close to the accelerators (GPUs, QPUs, CPUs)
+that you are using.
+
 Simplifying Operators
 ----------------------
 
@@ -332,3 +338,67 @@ observables and coefficients:
 [[0.97, 4.21], [1.43]]
 
 This and more logic to manipulate Pauli observables is found in the :mod:`~.pennylane.pauli` module.
+
+Just-in-time compilation with Catlyst
+-------------------------------------
+
+In addition to quantum circuit transformations, PennyLane also supports full
+hybrid just-in-time (JIT) compilation via `Catalyst
+<https://github.com/pennylaneai/catalyst>`__. Catalyst allows you to compile
+the entire quantum-classical workflow, including any optimization loops,
+which allows for optimized performance, and the ability to run the entire
+workflow on accelerator devices as appropriate.
+
+Currently, Catalyst must be installed separately, and only supports the JAX
+interface and ``lightning.qubit``. Check out the Catalyst documentation for
+`installation instructions
+<https://docs.pennylane.ai/projects/catalyst/en/latest/dev/installation.html>`__.
+
+Using Catalyst with PennyLane is a simple as using the ``@qjit`` decorator to
+compile your hybrid workflows:
+
+.. code-block:: python
+
+    from catalyst import qjit
+    from jax import numpy as jnp
+
+    dev = qml.device("lightning.qubit", wires=2, shots=1000)
+
+    @qml.qnode(dev)
+    def cost(params):
+        qml.Hadamard(0)
+        qml.RX(jnp.sin(params[0]) ** 2, wires=1)
+        qml.CRY(params[0], wires=[0, 1])
+        qml.RX(jnp.sqrt(params[1]), wires=1)
+        return qml.expval(qml.PauliZ(1))
+
+The ``qjit`` decorator can also be used on hybrid cost functions -- that is,
+cost functions that include both QNodes and classical processing. We can even
+JIT compile the full optimization loop, for example when training models:
+
+.. code-block:: python
+
+    import jaxopt
+
+    @qjit
+    def optimization():
+        # initial parameter
+        params = jnp.array([0.54, 0.3154])
+
+        # define the optimizer
+        opt = jaxopt.GradientDescent(cost, stepsize=0.4)
+        update = lambda i, args: tuple(opt.update(*args))
+
+        # perform optimization loop
+        state = opt.init_state(params)
+        (params, _) = jax.lax.fori_loop(0, 100, update, (params, state))
+
+        return params
+
+Finally, Catalyst provides additional features to PennyLane, such as classical
+control of quantum operations that are JIT-enabled, via the function
+``catalyst.for_loop`` and ``catalyst.cond``. It also enables arbitrary
+post-processing of mid-circuit measurements.
+
+For more details, see the `Catalyst documentation and tutorials
+<https://docs.pennylane.ai/projects/catalyst/>`__.

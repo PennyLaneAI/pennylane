@@ -71,6 +71,12 @@ Features
 
 ..
 
+- *Just in time compilation*. Experimental support for just-in-time
+  compilation. Compile your entire hybrid workflow, loops. See
+  `Catalyst <https://github.com/pennylaneai/catalyst>`__ for more details.
+
+..
+
 - *Batteries included*.
   Provides **optimization and machine learning** tools.
 
