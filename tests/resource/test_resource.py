@@ -150,7 +150,7 @@ class TestResourcesOperation:  # pylint: disable=too-few-public-methods
         with pytest.raises(TypeError, match="Can't instantiate"):
             _ = CustomOpNoResource()
 
-        assert CustomOPWithResources  # shouldn't raise an error
+        assert CustomOPWithResources()  # shouldn't raise an error
 
 
 def _construct_tape_from_ops(lst_ops):
