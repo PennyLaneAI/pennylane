@@ -22,8 +22,9 @@ import numpy as np
 import rustworkx as rx
 
 import pennylane as qml
-from pennylane.measurements import SampleMP, StateMP
 from pennylane.wires import Wires
+from pennylane.resource import ResourcesOperation
+from pennylane.measurements import SampleMP, StateMP
 
 
 def _by_idx(x):
@@ -469,8 +470,41 @@ class CircuitGraph:
                 self._operation_graph = self._graph.subgraph(
                     list(self._graph.nodes().index(node) for node in self.operations)
                 )
+                self._extend_graph(self._operation_graph)
                 self._depth = rx.dag_longest_path_length(self._operation_graph) + 1
         return self._depth
+
+    def _extend_graph(self, graph: rx.PyDiGraph) -> rx.PyDiGraph:
+        """Extend graph to account for custom depth operations"""
+        custom_depth_node_dict = dict()
+        for op in self.operations:
+            if isinstance(op, ResourcesOperation) and (d := op.resources().depth) > 1:
+                custom_depth_node_dict[graph.nodes().index(op)] = d
+
+        for node_index, depth in custom_depth_node_dict.items():
+            # Construct sub_graph:
+            sub_graph = rx.PyDiGraph()
+            for i in range(depth):
+                sub_graph.add_node(f"{node_index}.{i}")
+
+                if i > 0:
+                    sub_graph.add_edge(
+                        sub_graph.nodes().index(f"{node_index}.{i-1}"),
+                        sub_graph.nodes().index(f"{node_index}.{i}"),
+                        "",
+                    )
+
+            # extend_graph:
+            def _link_graph(source_index, target_index):
+                if target_index == node_index:
+                    return sub_graph.nodes().index(f"{node_index}.{0}")
+                elif source_index == node_index:
+                    return sub_graph.nodes().index(f"{node_index}.{depth-1}")
+                return None
+
+            graph.substitute_node_with_subgraph(
+                node_index, sub_graph, lambda s, t, _: _link_graph(s, t)
+            )
 
     def has_path(self, a, b):
         """Checks if a path exists between the two given nodes.

@@ -128,10 +128,6 @@ def _count_resources(tape, shots: int) -> Resources:
     for op in tape.operations:
         if isinstance(op, ResourcesOperation):
             op_resource = op.resources()
-
-            if op_resource.depth > 1:
-                depth = None  # Cannot be determined with custom depth operations
-
             for d in op_resource.gate_types:
                 gate_types[d] += op_resource.gate_types[d]
             num_gates += sum(op_resource.gate_types.values())
