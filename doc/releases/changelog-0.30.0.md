@@ -1,13 +1,13 @@
 :orphan:
 
-# Release 0.30.0 (current release)
+# Release 0.30.0
 
 <h3>New features since last release</h3>
 
 <h4>Pulse programming on hardware ⚛️🔬</h4>
 
 * Support for loading time-dependent Hamiltonians that are compatible with quantum hardware has been
-  added. It is now possible to load a Hamiltonian that describes an ensemble of Rydberg atoms or a
+  added, making it possible to load a Hamiltonian that describes an ensemble of Rydberg atoms or a
   collection of transmon qubits.
   [(#3749)](https://github.com/PennyLaneAI/pennylane/pull/3749)
   [(#3911)](https://github.com/PennyLaneAI/pennylane/pull/3911)
@@ -16,10 +16,13 @@
   [(#3966)](https://github.com/PennyLaneAI/pennylane/pull/3966)
   [(#3987)](https://github.com/PennyLaneAI/pennylane/pull/3987)
 
+  [Rydberg atoms](https://en.wikipedia.org/wiki/Rydberg_atom) are the foundational 
+  unit for neutral atom quantum computing. 
   A Rydberg system Hamiltonian can be constructed from a
   [drive term](https://docs.pennylane.ai/en/stable/code/api/pennylane.pulse.rydberg_drive.html)
-  and an
-  [interaction term](https://docs.pennylane.ai/en/stable/code/api/pennylane.pulse.rydberg_interaction.html):
+  — `qml.pulse.rydberg_drive` — and an
+  [interaction term](https://docs.pennylane.ai/en/stable/code/api/pennylane.pulse.rydberg_interaction.html)
+  — `qml.pulse.rydberg_interaction`:
 
   ```python
   from jax import numpy as jnp
@@ -36,7 +39,7 @@
   H = H_d + H_i
   ```
   
-  The time-dependent Hamiltonian `H` can be used in a PennyLane pulse-level circuit:
+  The time-dependent Hamiltonian `H` can be used in a PennyLane pulse-level differentiable circuit:
 
   ```python
   dev = qml.device("default.qubit.jax", wires=wires)
@@ -47,8 +50,6 @@
       return qml.expval(qml.PauliZ(0))
   ```
   
-  This circuit can be executed and differentiated:
-
   ```pycon
   >>> params = jnp.array([2.4])
   >>> circuit(params)
@@ -60,21 +61,25 @@
   
   The [`qml.pulse`](https://docs.pennylane.ai/en/stable/code/qml_pulse.html) page contains
   additional details. Check out our
-  [release blog post](https://pennylane.ai/blog/2023/04/pennylane-v030-released/) for a
-  demonstration of how to perform the execution on actual hardware!  
+  [release blog post](https://pennylane.ai/blog/2023/05/pennylane-v030-released/) for a
+  demonstration of how to perform the execution on actual hardware!
 
 * A pulse-level circuit can now be differentiated using a
-  [stochastic parameter shift](https://arxiv.org/abs/2210.15812) method. The current version of this
-  method is restricted to Hamiltonians composed of parametrized
+  [stochastic parameter-shift](https://arxiv.org/abs/2210.15812) method. 
+  [(#3780)](https://github.com/PennyLaneAI/pennylane/pull/3780)
+  [(#3900)](https://github.com/PennyLaneAI/pennylane/pull/3900)
+  [(#4000)](https://github.com/PennyLaneAI/pennylane/pull/4000)
+  [(#4004)](https://github.com/PennyLaneAI/pennylane/pull/4004)
+
+  The new 
+  [`qml.gradient.stoch_pulse_grad`](https://docs.pennylane.ai/en/stable/code/api/pennylane.gradients.stoch_pulse_grad.html) 
+  differentiation method unlocks stochastic-parameter-shift differentiation for pulse-level circuits.
+  The current version of this new method is restricted to Hamiltonians composed of parametrized
   [Pauli words](https://docs.pennylane.ai/en/stable/code/api/pennylane.pauli.PauliWord.html), but
   future updates to extend to parametrized
   [Pauli sentences](https://docs.pennylane.ai/en/stable/code/api/pennylane.pauli.PauliSentence.html)
   can allow this method to be compatible with hardware-based systems such as an ensemble of Rydberg
   atoms.
-  [(#3780)](https://github.com/PennyLaneAI/pennylane/pull/3780)
-  [(#3900)](https://github.com/PennyLaneAI/pennylane/pull/3900)
-  [(#4000)](https://github.com/PennyLaneAI/pennylane/pull/4000)
-  [(#4004)](https://github.com/PennyLaneAI/pennylane/pull/4004)
 
   This method can be activated by setting `diff_method` to
   [`qml.gradient.stoch_pulse_grad`](https://docs.pennylane.ai/en/stable/code/api/pennylane.gradients.stoch_pulse_grad.html):
@@ -153,6 +158,9 @@
   [(#3913)](https://github.com/PennyLaneAI/pennylane/pull/3913)
   [(#3914)](https://github.com/PennyLaneAI/pennylane/pull/3914)
   [(#3934)](https://github.com/PennyLaneAI/pennylane/pull/3934)
+
+  This was an experimental feature introduced in version 0.25 of PennyLane that was enabled
+  via `qml.enable_return()`. Now, it's the default return system. Here's how it works:
 
   Consider the following circuit:
 
