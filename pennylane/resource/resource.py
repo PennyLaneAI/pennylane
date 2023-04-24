@@ -17,8 +17,6 @@ Stores classes and logic to aggregate all the resource information from a quantu
 from collections import defaultdict
 from dataclasses import dataclass, field
 
-from pennylane.tape import QuantumTape
-
 
 @dataclass(frozen=True)
 class Resources:
@@ -55,13 +53,17 @@ class Resources:
     shots: int = 0
 
     def __str__(self):
-        keys = ["wires", "gates", "depth", "shots", "gate_types"]
-        vals = [self.num_wires, self.num_gates, self.depth, self.shots, self.gate_types]
+        keys = ["wires", "gates", "depth", "shots"]
+        vals = [self.num_wires, self.num_gates, self.depth, self.shots]
         items = "\n".join([str(i) for i in zip(keys, vals)])
         items = items.replace("('", "")
         items = items.replace("',", ":")
         items = items.replace(")", "")
-        items = items.replace("{", "\n{")
+
+        gate_str = ", ".join(
+            [f"'{gate_name}': {count}" for gate_name, count in self.gate_types.items()]
+        )
+        items += "\ngate_types:\n{" + gate_str + "}"
         return items
 
     def _ipython_display_(self):
@@ -69,7 +71,7 @@ class Resources:
         print(str(self))
 
 
-def _count_resources(tape: QuantumTape, shots: int) -> Resources:
+def _count_resources(tape, shots: int) -> Resources:
     """Given a quantum circuit (tape) and number of samples, this function
      counts the resources used by standard PennyLane operations.
 

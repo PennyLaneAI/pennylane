@@ -11,13 +11,16 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+"""Tests for the purity measurement process"""
 
 import pytest
 
 import numpy as np
 import pennylane as qml
 
-from pennylane.measurements import PurityMP
+from pennylane.measurements import PurityMP, Shots
+
+# pylint: disable=too-many-arguments
 
 
 def expected_purity_ising_xx(param):
@@ -69,7 +72,7 @@ class TestPurityUnitTest:
         """Test the ``shape_new`` method."""
         meas = qml.purity(wires=0)
         dev = qml.device("default.qubit", wires=1, shots=shots)
-        assert meas.shape(dev) == shape
+        assert meas.shape(dev, Shots(shots)) == shape
 
 
 class TestPurityIntegration:
@@ -154,7 +157,7 @@ class TestPurityIntegration:
 
         dev = qml.device(device, wires=2)
 
-        @qml.qnode(dev)
+        @qml.qnode(dev, diff_method=diff_method)
         def circuit(p):
             qml.Hadamard(wires=0)
             qml.CNOT(wires=[0, 1])
@@ -304,7 +307,7 @@ class TestPurityIntegration:
 
         param = torch.tensor(param, dtype=torch.float64, requires_grad=True)
         purity = circuit(param)
-        purity.backward()
+        purity.backward()  # pylint: disable=no-member
         grad_purity = param.grad
 
         assert qml.math.allclose(grad_purity, expected_grad, rtol=1e-04, atol=1e-05)

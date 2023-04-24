@@ -71,7 +71,6 @@ Hardware Compatible Hamiltonians
     ~rydberg_drive
     ~transmon_interaction
     ~transmon_drive
-    ~drive
 
 
 Creating a parametrized Hamiltonian
