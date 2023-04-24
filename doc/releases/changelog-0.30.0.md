@@ -188,6 +188,44 @@
 
 <h4>A bunch of performance tweaks 🏃💨</h4>
 
+* Single-qubit operations that have multi-qubit control can now be decomposed more efficiently
+  using fewer CNOT gates.
+  [(#3851)](https://github.com/PennyLaneAI/pennylane/pull/3851)
+
+  Three decompositions from [arXiv:2302.06377](https://arxiv.org/abs/2302.06377) are provided and
+  compare favourably to the already-available ZYZ decomposition:
+
+  ```python
+  wires = [0, 1, 2, 3, 4, 5]
+  control_wires = wires[1:]
+
+  op = qml.RX(np.pi / 2, wires=0)
+
+  with qml.tape.QuantumTape() as tape:
+      qml.ctrl(op, control=control_wires)
+  
+  with qml.tape.QuantumTape() as zyz_tape:
+      qml.RZ(np.pi / 2, wires=0)
+      qml.RY(np.pi / 4, wires=0)
+      qml.MultiControlledX(wires=control_wires + [0], control_values="11111", work_wires=[6, 7, 8])
+      qml.RY(-np.pi / 4, wires=0)
+      qml.MultiControlledX(wires=control_wires + [0], control_values="11111", work_wires=[6, 7, 8])
+      qml.RZ(-np.pi / 2, wires=0)
+  ```
+  
+  Fewer CNOT gates are used:
+
+  ```pycon
+  >>> tape.expand(depth=5).specs["gate_types"]["CNOT"]
+  60
+  >>> zyz_tape.expand(depth=5).specs["gate_types"]["CNOT"]
+  144
+  ```
+  
+  The decompositions are applied automatically when expanding tapes or decomposing operations in
+  PennyLane, and can also be accessed directly using
+  [ctrl_decomp_bisect()](https://docs.pennylane.ai/en/stable/code/api/pennylane.ops.op_math.ctrl_decomp_bisect.html).
+
 * Three new decomposition algorithms have been added for n-controlled operations with a single-qubit
   target and are selected automatically when they produce a better result, i.e., fewer CNOT gates.
   They can be accessed via `ops.op_math.ctrl_decomp_bisect`.
