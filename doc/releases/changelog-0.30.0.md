@@ -234,7 +234,7 @@
   PennyLane, but can also be accessed directly using
   [ctrl_decomp_bisect()](https://docs.pennylane.ai/en/stable/code/api/pennylane.ops.op_math.ctrl_decomp_bisect.html).
 
-* Added a new decomposition to `qml.SingleExcitation` that halves the number of
+* A new decomposition to `qml.SingleExcitation` has been added that halves the number of
   CNOTs required.
   [(3976)](https://github.com/PennyLaneAI/pennylane/pull/3976)
 
@@ -258,22 +258,22 @@
    T(wires=[1])]
   ```
 
-* The adjoint differentiation method now supports more operations, and does no longer decompose
+* The adjoint differentiation method now supports more operations, and no longer decomposes
   some operations that may be differentiated directly. In addition, all new operations with a
-  generator are now supported by the method.
+  generator now support adjoint differentiation.
   [(#3874)](https://github.com/PennyLaneAI/pennylane/pull/3874)
 
-* When using `jax.jit` with gradient transforms, the trainable parameters are set correctly (instead of every parameter having
+* When using `jax.jit` with gradient transforms, the trainable parameters are now set correctly (instead of every parameter having
   to be set as trainable), and therefore the derivatives are computed more efficiently.
   [(#3697)](https://github.com/PennyLaneAI/pennylane/pull/3697)
 
-* Improved efficiency of `tapering()`, `tapering_hf()` and `clifford()`.
+* The efficiency of `tapering()`, `tapering_hf()` and `clifford()` have been improved.
   [(3942)](https://github.com/PennyLaneAI/pennylane/pull/3942)
 
-* Improve the peak memory requirements of `tapering()` and `tapering_hf()` when used for larger observables.
+* The peak memory requirements of `tapering()` and `tapering_hf()` have been improved when used for larger observables.
   [(3977)](https://github.com/PennyLaneAI/pennylane/pull/3977)
 
-* Update Pauli arithmetic to more efficiently convert to a Hamiltonian.
+* Pauli arithmetic has been updated to more efficiently convert to a Hamiltonian.
   [(#3939)](https://github.com/PennyLaneAI/pennylane/pull/3939)
 
 * `Operator` now has a `has_generator` attribute that returns whether or not the operator
@@ -415,7 +415,7 @@ these changes when using PennyLane, but here is what has changed this release:
 * Printing an instance of `MutualInfoMP` now displays the distribution of the wires between the two subsystems.
   [(#3898)](https://github.com/PennyLaneAI/pennylane/pull/3898)
 
-* Changed `Operator.num_wires` from an abstract value to `AnyWires`.
+* `Operator.num_wires` has been changed from an abstract value to `AnyWires`.
   [(#3919)](https://github.com/PennyLaneAI/pennylane/pull/3919)
 
 * `qml.transforms.sum_expand` is not run in `Device.batch_transform` if the device supports Sum observables.
