@@ -148,9 +148,9 @@ class TestResourcesOperation:  # pylint: disable=too-few-public-methods
                 return Resources(num_wires=self.num_wires)
 
         with pytest.raises(TypeError, match="Can't instantiate"):
-            _ = CustomOpNoResource()
+            _ = CustomOpNoResource(wires=[0, 1])
 
-        assert CustomOPWithResources()  # shouldn't raise an error
+        assert CustomOPWithResources(wires=[0, 1])  # shouldn't raise an error
 
 
 def _construct_tape_from_ops(lst_ops):
