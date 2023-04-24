@@ -131,17 +131,17 @@ class TestResources:
         assert rep in captured.out
 
 
-class TestResourcesOperation:
+class TestResourcesOperation:  # pylint: disable=too-few-public-methods
     """Test that the ResourcesOperation class is constructed correctly"""
 
     def test_raise_not_implemented_error(self):
         """Test that a not type error is raised if the class is
         initialized without a `resources` method."""
 
-        class CustomOpNoResource(ResourcesOperation):
+        class CustomOpNoResource(ResourcesOperation):  # pylint: disable=too-few-public-methods
             num_wires = 2
 
-        class CustomOPWithResources(ResourcesOperation):
+        class CustomOPWithResources(ResourcesOperation):  # pylint: disable=too-few-public-methods
             num_wires = 2
 
             def resources(self):
