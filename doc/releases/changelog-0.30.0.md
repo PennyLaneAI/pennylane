@@ -321,7 +321,7 @@ these changes when using PennyLane, but here is what has changed this release:
 
 <h4>Pulse programming</h4>
 
-* Added the needed functions and classes to simulate an ensemble of Rydberg atoms:
+* Here are the functions, classes, and more that were added or improved to facilitate simulating ensembles of Rydberg atoms:
   [(#3749)](https://github.com/PennyLaneAI/pennylane/pull/3749)
   [(#3911)](https://github.com/PennyLaneAI/pennylane/pull/3911)
   [(#3930)](https://github.com/PennyLaneAI/pennylane/pull/3930)
@@ -330,18 +330,18 @@ these changes when using PennyLane, but here is what has changed this release:
   [(#3987)](https://github.com/PennyLaneAI/pennylane/pull/3987)
   [(#3889)](https://github.com/PennyLaneAI/pennylane/pull/3889)
   [(#4021)](https://github.com/PennyLaneAI/pennylane/pull/4021)
-  + A new internal `HardwareHamiltonian` class has been added, which contains additional information about pulses and settings.
-  + A new user-facing `rydberg_interaction` function has been added, which returns a `HardwareHamiltonian` containing
+  + `HardwareHamiltonian`: an internal class that contains additional information about pulses and settings.
+  + `rydberg_interaction`: a user-facing function that returns a `HardwareHamiltonian` containing
     the Hamiltonian of the interaction of all the Rydberg atoms.
-  + A new user-facing `transmon_interaction` function has been added, constructing
+  + `transmon_interaction`: a user-facing function for constructing
     the Hamiltonian that describes the circuit QED interaction Hamiltonian of superconducting transmon systems.
-  + A new user-facing `drive` function has been added, which returns a `ParametrizedHamiltonian` (`HardwareHamiltonian`) containing
+  + `drive`: a user-facing function function that returns a `ParametrizedHamiltonian` (`HardwareHamiltonian`) containing
     the Hamiltonian of the interaction between a driving electro-magnetic field and a group of qubits.
-  + A new user-facing `rydberg_drive` function has been added, which returns a `ParametrizedHamiltonian` (`HardwareHamiltonian`) containing
+  + `rydberg_drive`: a user-facing function that returns a `ParametrizedHamiltonian` (`HardwareHamiltonian`) containing
     the Hamiltonian of the interaction between a driving laser field and a group of Rydberg atoms.
-  + A new keyword argument called `max_distance` has been added to `qml.pulse.rydberg_interaction` to allow for the removal of negligible contributions from atoms beyond `max_distance` from each other.
+  + `max_distance`: a keyword argument added to `qml.pulse.rydberg_interaction` to allow for the removal of negligible contributions from atoms beyond `max_distance` from each other.
 
-* `ParametrizedEvolution` takes two new Boolean keyword arguments: `return_intermediate` and
+* `ParametrizedEvolution` now takes two new Boolean keyword arguments: `return_intermediate` and
   `complementary`. They allow computing intermediate time evolution matrices.
   [(#3900)](https://github.com/PennyLaneAI/pennylane/pull/3900)
   
@@ -362,43 +362,41 @@ these changes when using PennyLane, but here is what has changed this release:
   See the [docstring](https://docs.pennylane.ai/en/stable/code/api/pennylane.pulse.ParametrizedEvolution.html)
   for details.
 
-* Hardware-compatible pulse sequence gradients with `stoch_pulse_grad` can be calculated faster now, using
+* Hardware-compatible pulse sequence gradients with `stoch_pulse_grad` can now be calculated faster using
   the new keyword argument `use_broadcasting`. Executing a `ParametrizedEvolution` that returns
-  intermediate evolutions has increased performance as well, using the state vector ODE solver.
+  intermediate evolutions has increased performance using the state vector ODE solver, as well.
   [(#4000)](https://github.com/PennyLaneAI/pennylane/pull/4000)
   [(#4004)](https://github.com/PennyLaneAI/pennylane/pull/4004)
 
 <h4>Intuitive QNode returns</h4>
 
-* The new return system is now activated and public-facing. The QNode keyword argument `mode` is replaced by the boolean  
-  `grad_on_execution`.
-  [(#3957)](https://github.com/PennyLaneAI/pennylane/pull/3957)
+* The QNode keyword argument `mode` has been replaced by the boolean `grad_on_execution`.
   [(#3969)](https://github.com/PennyLaneAI/pennylane/pull/3969)
 
-* The default Gaussian device and parameter shift CV support the new return system, but only for single measurements.
+* The `"default.gaussian"` device and parameter-shift CV both support the new return system, but only for single measurements.
   [(#3946)](https://github.com/PennyLaneAI/pennylane/pull/3946)
 
 * Keras and Torch NN modules are now compatible with the new return type system.
   [(#3913)](https://github.com/PennyLaneAI/pennylane/pull/3913)
   [(#3914)](https://github.com/PennyLaneAI/pennylane/pull/3914)
 
-* `DefaultQutrit` supports the new return system.
+* `DefaultQutrit` now supports the new return system.
   [(#3934)](https://github.com/PennyLaneAI/pennylane/pull/3934)
 
 <h4>Other improvements</h4>
 
-* Added a `Shots` class to the `measurements` module to hold shot-related data.
+* A `Shots` class has been added to the `measurements` module to hold shot-related data.
   [(#3682)](https://github.com/PennyLaneAI/pennylane/pull/3682)
 
 * The custom JVP rules in PennyLane now also support non-scalar and mixed-shape tape parameters as
   well as multi-dimensional tape return types, like broadcasted `qml.probs`, for example.
   [(#3766)](https://github.com/PennyLaneAI/pennylane/pull/3766)
 
-* The `qchem.jordan_wigner` function is extended to support more fermionic operator orders.
+* The `qchem.jordan_wigner` function has been extended to support more fermionic operator orders.
   [(#3754)](https://github.com/PennyLaneAI/pennylane/pull/3754)
   [(#3751)](https://github.com/PennyLaneAI/pennylane/pull/3751)
 
-* `AdaptiveOptimizer` is updated to use non-default user-defined qnode arguments.
+* `AdaptiveOptimizer` has been updated to use non-default user-defined QNode arguments.
   [(#3765)](https://github.com/PennyLaneAI/pennylane/pull/3765)
 
 * Use `TensorLike` type in `Operator` dunder methods.
@@ -414,7 +412,7 @@ these changes when using PennyLane, but here is what has changed this release:
 * Added `Operation.__truediv__` dunder method to be able to divide operators.
   [(#3749)](https://github.com/PennyLaneAI/pennylane/pull/3749)
 
-* `repr` for `MutualInfoMP` now displays the distribution of the wires between the two subsystems.
+* Printing an instance of `MutualInfoMP` now displays the distribution of the wires between the two subsystems.
   [(#3898)](https://github.com/PennyLaneAI/pennylane/pull/3898)
 
 * Changed `Operator.num_wires` from an abstract value to `AnyWires`.
