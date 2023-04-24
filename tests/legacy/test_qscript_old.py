@@ -631,6 +631,28 @@ def test_unwrap():
     assert qml.math.get_interface(qs.data[0]) == "torch"
 
 
+@pytest.mark.parametrize(
+    "measurements, expected",
+    [
+        ([qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliZ(1)), qml.expval(qml.PauliZ(2))], (5, 3)),
+        ([qml.var(qml.PauliZ(0)), qml.var(qml.PauliZ(1)), qml.var(qml.PauliZ(2))], (5, 3)),
+        ([qml.probs(wires=0), qml.probs(wires=1), qml.probs(wires=2)], (5, 3, 2)),
+        (
+            [qml.sample(wires=0), qml.sample(wires=1), qml.sample(wires=2)],
+            ((3,), (3,), (2, 3), (3, 3), (3,)),
+        ),
+    ],
+)
+def test_homogenous_multimeasure_shot_vector(measurements, expected):
+    """Test that multiple measurements of ther same type have the expected shape"""
+    shot_vector = [1, 1, 2, 3, 1]
+    dev = qml.device("default.qubit", wires=3, shots=shot_vector)
+    qs = QuantumScript(measurements=measurements)
+
+    res = qs.shape(dev)
+    assert res == expected
+
+
 class TestHashing:
     """Test for script hashing"""
 
