@@ -263,6 +263,10 @@
   generator are now supported by the method.
   [(#3874)](https://github.com/PennyLaneAI/pennylane/pull/3874)
 
+* When using `jax.jit` with gradient transforms, the trainable parameters are set correctly (instead of every parameter having
+  to be set as trainable), and therefore the derivatives are computed more efficiently.
+  [(#3697)](https://github.com/PennyLaneAI/pennylane/pull/3697)
+
 * Improved efficiency of `tapering()`, `tapering_hf()` and `clifford()`.
   [(3942)](https://github.com/PennyLaneAI/pennylane/pull/3942)
 
@@ -272,9 +276,9 @@
 * Update Pauli arithmetic to more efficiently convert to a Hamiltonian.
   [(#3939)](https://github.com/PennyLaneAI/pennylane/pull/3939)
 
-* When using `jax.jit` with gradient transforms, the trainable parameters are set correctly (instead of every parameter having
-  to be set as trainable), and therefore the derivatives are computed more efficiently.
-  [(#3697)](https://github.com/PennyLaneAI/pennylane/pull/3697)
+* `Operator` now has a `has_generator` attribute that returns whether or not the operator
+  has a generator defined. It is used in `qml.operation.has_gen`, improving its performance.
+  [(#3875)](https://github.com/PennyLaneAI/pennylane/pull/3875)
 
 * `CompositeOp` now overrides `Operator._check_batching`, providing a significant performance improvement.
   `Hamiltonian` also overrides this method and does nothing, because it does not support batching.
@@ -283,6 +287,16 @@
 * If a `Sum` operator has a pre-computed Pauli representation, `is_hermitian` now checks that all coefficients
   are real, providing a significant performance improvement.
   [(#3915)](https://github.com/PennyLaneAI/pennylane/pull/3915)
+
+* The `coefficients` function and the `visualize` submodule of the `qml.fourier` module
+  now allow assigning different degrees for different parameters of the input function.
+  [(#3005)](https://github.com/PennyLaneAI/pennylane/pull/3005)
+
+  The arguments `degree` and `filter_threshold` to `qml.fourier.coefficients` previously were
+  expected to be integers, and now can be a sequences of integers with one integer per function
+  parameter (i.e. `len(degree)==n_inputs`), resulting in a returned array with shape
+  `(2*degrees[0]+1,..., 2*degrees[-1]+1)`.
+  The functions in `qml.fourier.visualize` accordingly accept such arrays of coefficients.
 
 <h3>Improvements 🛠</h3>
 
@@ -380,20 +394,6 @@
 
 * Added a `Shots` class to the `measurements` module to hold shot-related data.
   [(#3682)](https://github.com/PennyLaneAI/pennylane/pull/3682)
-
-* The `coefficients` function and the `visualize` submodule of the `qml.fourier` module
-  now allow assigning different degrees for different parameters of the input function.
-  [(#3005)](https://github.com/PennyLaneAI/pennylane/pull/3005)
-
-  The arguments `degree` and `filter_threshold` to `qml.fourier.coefficients` previously were
-  expected to be integers, and now can be a sequences of integers with one integer per function
-  parameter (i.e. `len(degree)==n_inputs`), resulting in a returned array with shape
-  `(2*degrees[0]+1,..., 2*degrees[-1]+1)`.
-  The functions in `qml.fourier.visualize` accordingly accept such arrays of coefficients.
-
-* `Operator` now has a `has_generator` attribute that returns whether or not the operator
-  has a generator defined. It is used in `qml.operation.has_gen`, improving its performance.
-  [(#3875)](https://github.com/PennyLaneAI/pennylane/pull/3875)
 
 * The custom JVP rules in PennyLane now also support non-scalar and mixed-shape tape parameters as
   well as multi-dimensional tape return types, like broadcasted `qml.probs`, for example.
