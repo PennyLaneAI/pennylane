@@ -16,13 +16,14 @@ import numpy as np
 import pytest
 
 import pennylane as qml
-from pennylane.measurements import Variance
+from pennylane.measurements import Variance, Shots
 
 
 # TODO: Remove this when new CustomMP are the default
 def custom_measurement_process(device, spy):
     assert len(spy.call_args_list) > 0  # make sure method is mocked properly
 
+    # pylint: disable=protected-access
     samples = device._samples
     state = device._state
     call_args_list = list(spy.call_args_list)
@@ -66,6 +67,7 @@ class TestVar:
         rtol = 0 if shots is None else 0.05
 
         assert np.allclose(res, expected, atol=atol, rtol=rtol)
+        # pylint: disable=no-member, unsubscriptable-object
         if isinstance(res, tuple):
             assert res[0].dtype == r_dtype
             assert res[1].dtype == r_dtype
@@ -120,8 +122,11 @@ class TestVar:
     )
     def test_shape(self, obs):
         """Test that the shape is correct."""
+        dev = qml.device("default.qubit", wires=1)
         res = qml.var(obs)
-        assert res.shape() == ()
+        # pylint: disable=use-implicit-booleaness-not-comparison
+        assert res.shape(dev, Shots(None)) == ()
+        assert res.shape(dev, Shots(100)) == ()
 
     @pytest.mark.parametrize(
         "obs",
@@ -132,7 +137,7 @@ class TestVar:
         res = qml.var(obs)
         shot_vector = (1, 2, 3)
         dev = qml.device("default.qubit", wires=3, shots=shot_vector)
-        assert res.shape(dev) == ((), (), ())
+        assert res.shape(dev, Shots(shot_vector)) == ((), (), ())
 
     @pytest.mark.parametrize("shots", [None, 1000, [1000, 10000]])
     def test_projector_var(self, shots, mocker):
