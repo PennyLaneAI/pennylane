@@ -196,19 +196,72 @@
 
 <h4>A bunch of performance tweaks 🏃💨</h4>
 
-* Three new decomposition algorithms have been added for n-controlled operations with a single-qubit
-  target and are selected automatically when they produce a better result, i.e., fewer CNOT gates.
-  They can be accessed via `ops.op_math.ctrl_decomp_bisect`.
+* Single-qubit operations that have multi-qubit control can now be decomposed more efficiently
+  using fewer CNOT gates.
   [(#3851)](https://github.com/PennyLaneAI/pennylane/pull/3851)
+
+  Three decompositions from [arXiv:2302.06377](https://arxiv.org/abs/2302.06377) are provided and
+  compare favourably to the already-available ZYZ decomposition:
+
+  ```python
+  wires = [0, 1, 2, 3, 4, 5]
+  control_wires = wires[1:]
+
+  op = qml.RX(np.pi / 2, wires=0)
+
+  with qml.tape.QuantumTape() as tape:
+      qml.ctrl(op, control=control_wires)
+  
+  with qml.tape.QuantumTape() as zyz_tape:
+      qml.RZ(np.pi / 2, wires=0)
+      qml.RY(np.pi / 4, wires=0)
+      qml.MultiControlledX(wires=control_wires + [0], control_values="11111", work_wires=[6, 7, 8])
+      qml.RY(-np.pi / 4, wires=0)
+      qml.MultiControlledX(wires=control_wires + [0], control_values="11111", work_wires=[6, 7, 8])
+      qml.RZ(-np.pi / 2, wires=0)
+  ```
+  
+  Fewer CNOT gates are used:
+
+  ```pycon
+  >>> tape.expand(depth=5).specs["gate_types"]["CNOT"]
+  60
+  >>> zyz_tape.expand(depth=5).specs["gate_types"]["CNOT"]
+  144
+  ```
+  
+  The decompositions are applied automatically when expanding tapes or decomposing operations in
+  PennyLane, but can also be accessed directly using
+  [ctrl_decomp_bisect()](https://docs.pennylane.ai/en/stable/code/api/pennylane.ops.op_math.ctrl_decomp_bisect.html).
+
+* Added a new decomposition to `qml.SingleExcitation` that halves the number of
+  CNOTs required.
+  [(3976)](https://github.com/PennyLaneAI/pennylane/pull/3976)
+
+  ```pycon
+  >>> qml.SingleExcitation.compute_decomposition(1.23, wires=(0,1))
+  [Adjoint(T(wires=[0])),
+   Hadamard(wires=[0]),
+   S(wires=[0]),
+   Adjoint(T(wires=[1])),
+   Adjoint(S(wires=[1])),
+   Hadamard(wires=[1]),
+   CNOT(wires=[1, 0]),
+   RZ(-0.615, wires=[0]),
+   RY(0.615, wires=[1]),
+   CNOT(wires=[1, 0]),
+   Adjoint(S(wires=[0])),
+   Hadamard(wires=[0]),
+   T(wires=[0]),
+   Hadamard(wires=[1]),
+   S(wires=[1]),
+   T(wires=[1])]
+  ```
 
 * The adjoint differentiation method now supports more operations, and does no longer decompose
   some operations that may be differentiated directly. In addition, all new operations with a
   generator are now supported by the method.
   [(#3874)](https://github.com/PennyLaneAI/pennylane/pull/3874)
-
-* Added a new decomposition to `qml.SingleExcitation` that halves the number of
-  CNOTs required.
-  [(3976)](https://github.com/PennyLaneAI/pennylane/pull/3976)
 
 * Improved efficiency of `tapering()`, `tapering_hf()` and `clifford()`.
   [(3942)](https://github.com/PennyLaneAI/pennylane/pull/3942)
