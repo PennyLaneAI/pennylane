@@ -326,7 +326,7 @@ def jacobian(func, argnum=None):
             )
         try:
             jac = tuple(_jacobian(func, arg)(*args, **kwargs) for arg in _argnum)
-        except Exception as e:
+        except TypeError as e:
             raise ValueError(
                 "PennyLane has a new return shape specification that"
                 " may not work well with autograd and more than one measurement. That may"
