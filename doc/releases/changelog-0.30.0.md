@@ -288,23 +288,18 @@
 
 <h4>Next-generation device API</h4>
 
-* The `sample_state` function is added to `devices/qubit` that returns a series of samples based on a given
-  state vector and a number of shots.
-  [(#3720)](https://github.com/PennyLaneAI/pennylane/pull/3720)
+In this release and future releases, we will be making changes to our device API with the goal in mind to make 
+developing plugins much easier for developers and unlock new device capabilities. Users shouldn't yet feel any of 
+these changes when using PennyLane, but here is what has changed this release:
 
-* The `simulate` function added to `devices/qubit` now supports measuring expectation values of large observables such as
-  `qml.Hamiltonian`, `qml.SparseHamiltonian`, `qml.Sum`.
-  [(#3759)](https://github.com/PennyLaneAI/pennylane/pull/3759)
-
-* The `apply_operation` function added to `devices/qubit` now supports broadcasting.
-  [(#3852)](https://github.com/PennyLaneAI/pennylane/pull/3852)
-
+* Several functions in `devices/qubit` have been added or improved:
+  + `sample_state`: returns a series of samples based on a given state vector and a number of shots. [(#3720)](https://github.com/PennyLaneAI/pennylane/pull/3720)
+  + `simulate`: supports measuring expectation values of large observables such as `qml.Hamiltonian`, `qml.SparseHamiltonian`, and `qml.Sum`. [(#3759)](https://github.com/PennyLaneAI/pennylane/pull/3759) 
+  + `apply_operation`: supports broadcasting. [(#3852)](https://github.com/PennyLaneAI/pennylane/pull/3852)
+  + `adjoint_jacobian`: supports adjoint differentiation in the new qubit state-vector device. [(#3790)](https://github.com/PennyLaneAI/pennylane/pull/3790)
+  
 * `pennylane.devices.qubit.preprocess` now allows circuits with non-commuting observables.
   [(#3857)](https://github.com/PennyLaneAI/pennylane/pull/3857)
-
-* Adjoint differentiation support for the new qubit state-vector device has been added via
-  `adjoint_jacobian` in `devices/qubit`.
-  [(#3790)](https://github.com/PennyLaneAI/pennylane/pull/3790)
 
 * `qml.devices.qubit.measure` now computes the expectation values of `Hamiltonian` and `Sum`
   in a backpropagation-compatible way.
@@ -321,16 +316,16 @@
   [(#3987)](https://github.com/PennyLaneAI/pennylane/pull/3987)
   [(#3889)](https://github.com/PennyLaneAI/pennylane/pull/3889)
   [(#4021)](https://github.com/PennyLaneAI/pennylane/pull/4021)
-  * A new internal `HardwareHamiltonian` class is added, which contains additional information about pulses and settings.
-  * A new user-facing `rydberg_interaction` function is added, which returns a `HardwareHamiltonian` containing
+  + A new internal `HardwareHamiltonian` class has been added, which contains additional information about pulses and settings.
+  + A new user-facing `rydberg_interaction` function has been added, which returns a `HardwareHamiltonian` containing
     the Hamiltonian of the interaction of all the Rydberg atoms.
-  * A new user-facing `transmon_interaction` function is added, constructing
+  + A new user-facing `transmon_interaction` function has been added, constructing
     the Hamiltonian that describes the circuit QED interaction Hamiltonian of superconducting transmon systems.
-  * A new user-facing `drive` function is added, which returns a `ParametrizedHamiltonian` (`HardwareHamiltonian`) containing
+  + A new user-facing `drive` function has been added, which returns a `ParametrizedHamiltonian` (`HardwareHamiltonian`) containing
     the Hamiltonian of the interaction between a driving electro-magnetic field and a group of qubits.
-  * A new user-facing `rydberg_drive` function is added, which returns a `ParametrizedHamiltonian` (`HardwareHamiltonian`) containing
+  + A new user-facing `rydberg_drive` function has been added, which returns a `ParametrizedHamiltonian` (`HardwareHamiltonian`) containing
     the Hamiltonian of the interaction between a driving laser field and a group of Rydberg atoms.
-  * A new keyword argument called `max_distance` has been added to `qml.pulse.rydberg_interaction` to allow for the removal of negligible contributions from atoms beyond `max_distance` from each other.
+  + A new keyword argument called `max_distance` has been added to `qml.pulse.rydberg_interaction` to allow for the removal of negligible contributions from atoms beyond `max_distance` from each other.
 
 * `ParametrizedEvolution` takes two new Boolean keyword arguments: `return_intermediate` and
   `complementary`. They allow computing intermediate time evolution matrices.
@@ -445,7 +440,7 @@
   [(#3958)](https://github.com/PennyLaneAI/pennylane/pull/3958)
   [(#3983)](https://github.com/PennyLaneAI/pennylane/pull/3983)
 
-* `qml.transforms.convert_to_numpy_parameters` is added to convert a circuit with interface-specific parameters to one
+* `qml.transforms.convert_to_numpy_parameters` has been added to convert a circuit with interface-specific parameters to one
   with only numpy parameters. This transform is designed to replace `qml.tape.Unwrap`.
   [(#3899)](https://github.com/PennyLaneAI/pennylane/pull/3899)
 
@@ -481,11 +476,11 @@
   <class 'pennylane.operation.Tensor'>
   ```
 
-* The `Resources` data class is added to store resources like number of gates and circuit depth throughout a  
+* The `Resources` data class has been added to store resources like number of gates and circuit depth throughout a  
   quantum circuit.
   [(#3981)](https://github.com/PennyLaneAI/pennylane/pull/3981/)
 
-* The `_count_resources()` function is added to count the resources required when executing a 
+* The `_count_resources()` function has been added to count the resources required when executing a 
   QuantumTape for a given number of shots.
   [(#3996)](https://github.com/PennyLaneAI/pennylane/pull/3996)
 
@@ -573,7 +568,7 @@
   the two subsystems in `MutualInfoMP`.
   [(#3898)](https://github.com/PennyLaneAI/pennylane/pull/3898)
 
-* The enum `measurements.Purity` is added so that `PurityMP.return_type` is defined. `str` and `repr` for `PurityMP` are now defined.
+* The enum `measurements.Purity` has been added so that `PurityMP.return_type` is defined. `str` and `repr` for `PurityMP` are now defined.
   [(#3898)](https://github.com/PennyLaneAI/pennylane/pull/3898)
 
 * `Sum.hash` and `Prod.hash` are slightly changed
@@ -611,7 +606,7 @@
 * An error is now raised if a `QNode` with Jax-jit in use returns `counts` while having trainable parameters
   [(#3892)](https://github.com/PennyLaneAI/pennylane/pull/3892)
 
-* A correction is added to the reference values in `test_dipole_of` to account for small changes
+* A correction has been added to the reference values in `test_dipole_of` to account for small changes
   (~2e-8) in the computed dipole moment values, resulting from the new [PySCF 2.2.0](https://github.com/pyscf/pyscf/releases/tag/v2.2.0) release.
   [(#3908)](https://github.com/PennyLaneAI/pennylane/pull/3908)
 
