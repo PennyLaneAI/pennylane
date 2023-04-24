@@ -29,7 +29,7 @@ from pennylane.wires import Wires
 
 class QubitUnitary(Operation):
     r"""QubitUnitary(U, wires)
-    Apply an arbitrary fixed unitary matrix.
+    Apply an arbitrary unitary matrix with a dimension that is a power of two.
 
     **Details:**
 
@@ -200,7 +200,7 @@ class QubitUnitary(Operation):
 
 class DiagonalQubitUnitary(Operation):
     r"""DiagonalQubitUnitary(D, wires)
-    Apply an arbitrary fixed diagonal unitary matrix.
+    Apply an arbitrary diagonal unitary matrix with a dimension that is a power of two.
 
     **Details:**
 
