@@ -1,6 +1,6 @@
 :orphan:
 
-# Release 0.30.0-dev (development release)
+# Release 0.30.0 (current release)
 
 <h3>New features since last release</h3>
 
@@ -259,6 +259,7 @@
   [(#3966)](https://github.com/PennyLaneAI/pennylane/pull/3966)
   [(#3987)](https://github.com/PennyLaneAI/pennylane/pull/3987)
   [(#3889)](https://github.com/PennyLaneAI/pennylane/pull/3889)
+  [(#4021)](https://github.com/PennyLaneAI/pennylane/pull/4021)
   * A new internal `HardwareHamiltonian` class is added, which contains additional information about pulses and settings.
   * A new user-facing `rydberg_interaction` function is added, which returns a `HardwareHamiltonian` containing
     the Hamiltonian of the interaction of all the Rydberg atoms.
@@ -419,13 +420,21 @@
   <class 'pennylane.operation.Tensor'>
   ```
 
-* New `Resources` data class to store resources like number of gates and circuit depth throughout a 
+* The `Resources` data class is added to store resources like number of gates and circuit depth throughout a  
   quantum circuit.
   [(#3981)](https://github.com/PennyLaneAI/pennylane/pull/3981/)
 
-* A `_count_resources()` function was added to count the resources required when executing a 
+* The `_count_resources()` function is added to count the resources required when executing a 
   QuantumTape for a given number of shots.
   [(#3996)](https://github.com/PennyLaneAI/pennylane/pull/3996)
+
+* `QuantumScript.specs` is modified to make use of the new `Resources` class. This also modifies the 
+  output of `qml.specs()`. 
+  [(#4015)](https://github.com/PennyLaneAI/pennylane/pull/4015)
+
+* `MeasurementProcess.shape` now accepts a `Shots` object as one of its arguments to reduce exposure to unnecessary
+  execution details.
+  [(#4012)](https://github.com/PennyLaneAI/pennylane/pull/4012)
 
 <h3>Breaking changes 💔</h3>
 
@@ -467,6 +476,9 @@
   with rotations and diagonal measurements. Note that the newly expanded tape that is returned will still have
   the rotations and diagonal measurements.
   [(#3912)](https://github.com/PennyLaneAI/pennylane/pull/3912)
+
+* `Evolution` now initializes the coefficient with a factor of `-1j` instead of `1j`.
+  [(#4024)](https://github.com/PennyLaneAI/pennylane/pull/4024)
 
 <h3>Deprecations 👋</h3>
 

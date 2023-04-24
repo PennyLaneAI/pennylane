@@ -15,6 +15,7 @@
 Test base Resource class and its associated methods
 """
 from dataclasses import FrozenInstanceError
+from collections import defaultdict
 import pytest
 
 import pennylane as qml
@@ -29,14 +30,14 @@ class TestResources:
     resource_quantities = (
         Resources(),
         Resources(5, 0, {}, 0, 0),
-        Resources(1, 3, {"Hadamard": 1, "PauliZ": 2}, 3, 10),
+        Resources(1, 3, defaultdict(int, {"Hadamard": 1, "PauliZ": 2}), 3, 10),
         Resources(4, 2, {"Hadamard": 1, "CNOT": 1}, 2, 100),
     )
 
     resource_parameters = (
         (0, 0, {}, 0, 0),
         (5, 0, {}, 0, 0),
-        (1, 3, {"Hadamard": 1, "PauliZ": 2}, 3, 10),
+        (1, 3, defaultdict(int, {"Hadamard": 1, "PauliZ": 2}), 3, 10),
         (4, 2, {"Hadamard": 1, "CNOT": 1}, 2, 100),
     )
 
@@ -61,14 +62,14 @@ class TestResources:
                 setattr(r, attr_name, 1)
 
     test_str_data = (
-        ("wires: 0\n" + "gates: 0\n" + "depth: 0\n" + "shots: 0\n" + "gate_types: \n" + "{}"),
-        ("wires: 5\n" + "gates: 0\n" + "depth: 0\n" + "shots: 0\n" + "gate_types: \n" + "{}"),
+        ("wires: 0\n" + "gates: 0\n" + "depth: 0\n" + "shots: 0\n" + "gate_types:\n" + "{}"),
+        ("wires: 5\n" + "gates: 0\n" + "depth: 0\n" + "shots: 0\n" + "gate_types:\n" + "{}"),
         (
             "wires: 1\n"
             + "gates: 3\n"
             + "depth: 3\n"
             + "shots: 10\n"
-            + "gate_types: \n"
+            + "gate_types:\n"
             + "{'Hadamard': 1, 'PauliZ': 2}"
         ),
         (
@@ -76,7 +77,7 @@ class TestResources:
             + "gates: 2\n"
             + "depth: 2\n"
             + "shots: 100\n"
-            + "gate_types: \n"
+            + "gate_types:\n"
             + "{'Hadamard': 1, 'CNOT': 1}"
         ),
     )
@@ -89,7 +90,7 @@ class TestResources:
     test_rep_data = (
         "Resources(num_wires=0, num_gates=0, gate_types={}, depth=0, shots=0)",
         "Resources(num_wires=5, num_gates=0, gate_types={}, depth=0, shots=0)",
-        "Resources(num_wires=1, num_gates=3, gate_types={'Hadamard': 1, 'PauliZ': 2}, "
+        "Resources(num_wires=1, num_gates=3, gate_types=defaultdict(<class 'int'>, {'Hadamard': 1, 'PauliZ': 2}), "
         "depth=3, shots=10)",
         "Resources(num_wires=4, num_gates=2, gate_types={'Hadamard': 1, 'CNOT': 1}, "
         "depth=2, shots=100)",

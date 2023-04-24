@@ -18,8 +18,10 @@ import numpy as np
 import pytest
 
 import pennylane as qml
-from pennylane.measurements import MeasurementShapeError, MutualInfo, State, VnEntropy
+from pennylane.measurements import MutualInfo, State, VnEntropy, Shots
 from pennylane.tape import QuantumScript
+
+# pylint: disable=protected-access, unused-argument, too-few-public-methods
 
 
 class TestInitialization:
@@ -36,11 +38,11 @@ class TestInitialization:
 
         qs = QuantumScript(_update=False)
         assert qs.name is None
-        assert qs._ops == []
-        assert qs._prep == []
-        assert qs._measurements == []
-        assert qs._par_info == []
-        assert qs._trainable_params == []
+        assert len(qs._ops) == 0
+        assert len(qs._prep) == 0
+        assert len(qs._measurements) == 0
+        assert len(qs._par_info) == 0
+        assert len(qs._trainable_params) == 0
         assert qs._graph is None
         assert qs._specs is None
         assert qs._batch_size is None
@@ -50,8 +52,8 @@ class TestInitialization:
         assert qs.is_sampled is False
         assert qs.all_sampled is False
         assert qs.samples_computational_basis is False
-        assert qs._obs_sharing_wires == []
-        assert qs._obs_sharing_wires_id == []
+        assert len(qs._obs_sharing_wires) == 0
+        assert len(qs._obs_sharing_wires_id) == 0
 
     @pytest.mark.parametrize(
         "ops",
@@ -121,6 +123,7 @@ class TestUpdate:
         assert qs._graph is None
         assert qs._specs is None
 
+    # pylint: disable=superfluous-parens
     def test_update_circuit_info_wires(self):
         """Test that on construction wires and num_wires are set."""
         prep = [qml.BasisState([1, 1], wires=(-1, -2))]
@@ -190,6 +193,7 @@ class TestUpdate:
 
         assert qs._trainable_params == list(range(8))
 
+    # pylint: disable=unbalanced-tuple-unpacking
     def test_get_operation(self):
         """Tests the tape method get_operation."""
         ops = [
@@ -272,7 +276,7 @@ class TestUpdate:
         with pytest.raises(
             ValueError, match="batch sizes of the quantum script operations do not match."
         ):
-            qs = QuantumScript(ops)
+            _ = QuantumScript(ops)
 
     @pytest.mark.parametrize(
         "m, output_dim",
@@ -342,7 +346,7 @@ class TestIteration:
         expected = ops + meas
 
         for idx, exp_elem in enumerate(expected):
-            tape[idx] is exp_elem
+            assert tape[idx] is exp_elem
 
         assert len(tape) == len(expected)
 
@@ -420,6 +424,7 @@ class TestInfomationProperties:
         qs = QuantumScript()
         assert qs._specs is None
 
+        assert qs.specs["resources"] == qml.resource.Resources()
         assert qs.specs["gate_sizes"] == defaultdict(int)
         assert qs.specs["gate_types"] == defaultdict(int)
 
@@ -430,7 +435,7 @@ class TestInfomationProperties:
         assert qs.specs["num_trainable_params"] == 0
         assert qs.specs["depth"] == 0
 
-        assert len(qs.specs) == 8
+        assert len(qs.specs) == 9
 
         assert qs._specs is qs.specs
 
@@ -442,7 +447,13 @@ class TestInfomationProperties:
         specs = qs.specs
         assert qs._specs is specs
 
-        assert len(specs) == 8
+        assert len(specs) == 9
+
+        gate_types = defaultdict(int, {"RX": 2, "Rot": 1, "CNOT": 1})
+        expected_resources = qml.resource.Resources(
+            num_wires=3, num_gates=4, gate_types=gate_types, depth=3
+        )
+        assert specs["resources"] == expected_resources
 
         assert specs["gate_sizes"] == defaultdict(int, {1: 3, 2: 1})
         assert specs["gate_types"] == defaultdict(int, {"RX": 2, "Rot": 1, "CNOT": 1})
@@ -502,6 +513,7 @@ class TestScriptCopying:
         for i, j in zip(copied_qs.get_parameters(), new_params):
             assert i is j
 
+    # pylint: disable=unnecessary-lambda
     @pytest.mark.parametrize(
         "copy_fn", [lambda tape: tape.copy(copy_operations=True), lambda tape: copy.copy(tape)]
     )
@@ -633,8 +645,6 @@ class TestHashing:
     )
     def test_identical(self, m):
         """Tests that the circuit hash of identical circuits are identical"""
-        a = 0.3
-        b = 0.2
         ops = [qml.RX(0.3, 0), qml.RY(0.2, 1), qml.CNOT((0, 1))]
         qs1 = QuantumScript(ops, [m])
         qs2 = QuantumScript(ops, [m])
@@ -838,7 +848,7 @@ class TestFromQueue:
             qml.PauliZ(0)
 
         qscript = MyScript.from_queue(q)
-        assert type(qscript) == MyScript
+        assert isinstance(qscript, MyScript)
 
     def test_from_queue_child_with_different_init_fails(self):
         """Test that if a child class overrides init to take different arguments, from_queue will fail."""
@@ -879,7 +889,7 @@ class TestFromQueue:
         assert len(diag_ops) == 1
         # Hadamard is the diagonalizing gate for PauliX
         assert qml.equal(diag_ops[0], qml.Hadamard(0))
-        assert q.queue == []
+        assert len(q.queue) == 0
 
 
 measures = [
@@ -960,7 +970,7 @@ class TestMeasurementProcess:
         num_wires = 3
         dev = qml.device("default.qubit", wires=num_wires, shots=None)
 
-        assert measurement.shape(dev) == expected_shape
+        assert measurement.shape(dev, Shots(None)) == expected_shape
 
     @pytest.mark.parametrize("measurement, expected_shape", measurements_finite_shots)
     def test_output_shapes_finite_shots(self, measurement, expected_shape):
@@ -970,7 +980,7 @@ class TestMeasurementProcess:
         num_shots = 10
         dev = qml.device("default.qubit", wires=num_wires, shots=num_shots)
 
-        assert measurement.shape(dev) == expected_shape
+        assert measurement.shape(dev, Shots(num_shots)) == expected_shape
 
     @pytest.mark.parametrize("measurement, expected_shape", measurements_shot_vector)
     def test_output_shapes_shot_vector(self, measurement, expected_shape):
@@ -980,24 +990,17 @@ class TestMeasurementProcess:
         shot_vector = [10, 20, 30]
         dev = qml.device("default.qubit", wires=num_wires, shots=shot_vector)
 
-        assert measurement.shape(dev) == expected_shape
-
-    @pytest.mark.parametrize("measurement", [qml.probs(wires=[0, 1]), qml.state(), qml.sample()])
-    def test_no_device_error(self, measurement):
-        """Test that an error is raised when a measurement that requires a device
-        is called without a device"""
-        msg = "The device argument is required to obtain the shape of the measurement"
-
-        with pytest.raises(MeasurementShapeError, match=msg):
-            measurement.shape()
+        assert measurement.shape(dev, Shots(shot_vector)) == expected_shape
 
     def test_undefined_shape_error(self):
         """Test that an error is raised for a measurement with an undefined shape"""
         measurement = qml.counts(wires=[0, 1])
+        dev = qml.device("default.qubit", wires=2)
+        shots = Shots(None)
         msg = "The shape of the measurement CountsMP is not defined"
 
         with pytest.raises(qml.QuantumFunctionError, match=msg):
-            measurement.shape()
+            measurement.shape(dev, shots)
 
 
 class TestOutputShape:
@@ -1381,14 +1384,6 @@ class TestNumericType:
         sampling measurement with a Hermitian observable with integer
         eigenvalues."""
         dev = qml.device("default.qubit", wires=3, shots=5)
-
-        arr = np.array(
-            [
-                1.32,
-                2.312,
-            ]
-        )
-        herm = np.outer(arr, arr)
         qs = QuantumScript([qml.RY(0.4, 0)], [ret])
 
         result = qml.execute([qs], dev, gradient_fn=None)[0]
