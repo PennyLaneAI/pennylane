@@ -73,7 +73,7 @@ PyTorch-capable QNodes can also be created using the
     qnode1 = qml.QNode(circuit1, dev1)
     qnode2 = qml.QNode(circuit1, dev2, interface='torch')
 
-``qnode1()`` is a detects the interface from the parameters of each call, while ``qnode2()`` is a strictly a PyTorch-capable
+``qnode1()`` detects the interface from the parameters of each call, while ``qnode2()`` is a strictly a PyTorch-capable
 QNode:
 
 >>> qnode1(phi, theta)

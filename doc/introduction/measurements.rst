@@ -95,7 +95,7 @@ by a ``Hadamard`` and ``CNOT`` gate.
         return qml.sample(qml.PauliZ(0)), qml.sample(qml.PauliZ(1))
 
 The combined PauliZ-measurement of the
-first and second qubit returns tuple of two arrays, each containing
+first and second qubit returns a tuple of two arrays, each containing
 the measurement results of the respective qubit. :func:`~.pennylane.sample`
 returns 1000 samples per observable as defined on the device.
 
