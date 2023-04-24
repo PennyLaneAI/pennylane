@@ -223,13 +223,8 @@
   ```
   
   The decompositions are applied automatically when expanding tapes or decomposing operations in
-  PennyLane, and can also be accessed directly using
+  PennyLane, but can also be accessed directly using
   [ctrl_decomp_bisect()](https://docs.pennylane.ai/en/stable/code/api/pennylane.ops.op_math.ctrl_decomp_bisect.html).
-
-* Three new decomposition algorithms have been added for n-controlled operations with a single-qubit
-  target and are selected automatically when they produce a better result, i.e., fewer CNOT gates.
-  They can be accessed via `ops.op_math.ctrl_decomp_bisect`.
-  [(#3851)](https://github.com/PennyLaneAI/pennylane/pull/3851)
 
 * The adjoint differentiation method now supports more operations, and does no longer decompose
   some operations that may be differentiated directly. In addition, all new operations with a
