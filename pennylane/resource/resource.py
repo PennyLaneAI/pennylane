@@ -14,10 +14,11 @@
 """
 Stores classes and logic to aggregate all the resource information from a quantum workflow.
 """
+from abc import abstractmethod
 from collections import defaultdict
 from dataclasses import dataclass, field
 
-from pennylane.tape import QuantumTape
+from pennylane.operation import Operation
 
 
 @dataclass(frozen=True)
@@ -46,7 +47,8 @@ class Resources:
         gates: 2
         depth: 2
         shots: 0
-        gate_types: {'Hadamard': 1, 'CNOT': 1}
+        gate_types:
+        {'Hadamard': 1, 'CNOT': 1}
     """
     num_wires: int = 0
     num_gates: int = 0
@@ -55,13 +57,17 @@ class Resources:
     shots: int = 0
 
     def __str__(self):
-        keys = ["wires", "gates", "depth", "shots", "gate_types"]
-        vals = [self.num_wires, self.num_gates, self.depth, self.shots, self.gate_types]
+        keys = ["wires", "gates", "depth", "shots"]
+        vals = [self.num_wires, self.num_gates, self.depth, self.shots]
         items = "\n".join([str(i) for i in zip(keys, vals)])
         items = items.replace("('", "")
         items = items.replace("',", ":")
         items = items.replace(")", "")
-        items = items.replace("{", "\n{")
+
+        gate_str = ", ".join(
+            [f"'{gate_name}': {count}" for gate_name, count in self.gate_types.items()]
+        )
+        items += "\ngate_types:\n{" + gate_str + "}"
         return items
 
     def _ipython_display_(self):
@@ -69,7 +75,41 @@ class Resources:
         print(str(self))
 
 
-def _count_resources(tape: QuantumTape, shots: int) -> Resources:
+class ResourcesOperation(Operation):
+    r"""Base class that represents quantum gates or channels applied to quantum
+    states and stores the resource requirements of the quantum gate.
+
+    .. note::
+        Child classes must implement the :func:`~.ResourcesOperation.resources` method which computes
+        the resource requirements of the operation.
+    """
+
+    @abstractmethod
+    def resources(self) -> Resources:
+        r"""Compute the resources required for this operation.
+
+        Returns:
+            Resources: The resources required by this operation.
+
+        **Examples**
+
+        >>> class CustomOp(ResourcesOperation):
+        ...     num_wires = 2
+        ...     def resources(self):
+        ...         return Resources(num_wires=self.num_wires, num_gates=3, depth=2)
+        ...
+        >>> op = CustomOp()
+        >>> print(op.resources())
+        wires: 2
+        gates: 3
+        depth: 2
+        shots: 0
+        gate_types:
+        {}
+        """
+
+
+def _count_resources(tape, shots: int) -> Resources:
     """Given a quantum circuit (tape) and number of samples, this function
      counts the resources used by standard PennyLane operations.
 
@@ -86,7 +126,18 @@ def _count_resources(tape: QuantumTape, shots: int) -> Resources:
     num_gates = 0
     gate_types = defaultdict(int)
     for op in tape.operations:
-        gate_types[op.name] += 1
-        num_gates += 1
+        if isinstance(op, ResourcesOperation):
+            op_resource = op.resources()
+
+            if op_resource.depth > 1:
+                depth = None  # Cannot be determined with custom depth operations
+
+            for d in op_resource.gate_types:
+                gate_types[d] += op_resource.gate_types[d]
+            num_gates += sum(op_resource.gate_types.values())
+
+        else:
+            gate_types[op.name] += 1
+            num_gates += 1
 
     return Resources(num_wires, num_gates, gate_types, depth, shots)

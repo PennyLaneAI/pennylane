@@ -1,6 +1,6 @@
 :orphan:
 
-# Release 0.30.0-dev (development release)
+# Release 0.30.0 (current release)
 
 <h3>New features since last release</h3>
 
@@ -14,11 +14,28 @@
   See the [docstring](https://docs.pennylane.ai/en/stable/code/api/pennylane.pulse.ParametrizedEvolution.html)
   for details.
 
-* New `Resources` data class to store resources like number of gates and circuit depth throughout a 
+* The `qml.operation.enable_new_opmath` toggle has been introduced to cause dunder methods to return arithmetic
+  operators instead of Hamiltonians and Tensors.
+  [(#4008)](https://github.com/PennyLaneAI/pennylane/pull/4008)
+
+  For example:
+
+  ```pycon
+  >>> type(qml.PauliX(0) @ qml.PauliZ(1))
+  <class 'pennylane.operation.Tensor'>
+  >>> qml.operation.enable_new_opmath()
+  >>> type(qml.PauliX(0) @ qml.PauliZ(1))
+  <class 'pennylane.ops.op_math.prod.Prod'>
+  >>> qml.operation.disable_new_opmath()
+  >>> type(qml.PauliX(0) @ qml.PauliZ(1))
+  <class 'pennylane.operation.Tensor'>
+  ```
+
+* The `Resources` data class is added to store resources like number of gates and circuit depth throughout a  
   quantum circuit.
   [(#3981)](https://github.com/PennyLaneAI/pennylane/pull/3981/)
 
-* A `_count_resources()` function was added to count the resources required when executing a 
+* The `_count_resources()` function is added to count the resources required when executing a 
   QuantumTape for a given number of shots.
   [(#3996)](https://github.com/PennyLaneAI/pennylane/pull/3996)
 
@@ -31,16 +48,15 @@
     the Hamiltonian of the interaction of all the Rydberg atoms.
   * A new user-facing `transmon_interaction` function is added, constructing
     the Hamiltonian that describes the circuit QED interaction Hamiltonian of superconducting transmon systems.
-  * A new user-facing `drive` function is added, which returns a `ParametrizedHamiltonian` (`HardwareHamiltonian`) containing
-    the Hamiltonian of the interaction between a driving electro-magnetic field and a group of qubits.
-  * A new user-facing `rydberg_drive` function is added, which returns a `ParametrizedHamiltonian` (`HardwareHamiltonian`) containing
-    the Hamiltonian of the interaction between a driving laser field and a group of Rydberg atoms.
+  * A new user-facing `rydberg_drive` function is added, which returns a `ParametrizedHamiltonian` (`HardwareHamiltonian`) containing the Hamiltonian of the interaction between a driving laser field and a group of Rydberg atoms.
   [(#3749)](https://github.com/PennyLaneAI/pennylane/pull/3749)
   [(#3911)](https://github.com/PennyLaneAI/pennylane/pull/3911)
   [(#3930)](https://github.com/PennyLaneAI/pennylane/pull/3930)
-  [(#3936)](https://github.com/PennyLaneAI/pennylane/pull/3936/)
+  [(#3936)](https://github.com/PennyLaneAI/pennylane/pull/3936)
   [(#3966)](https://github.com/PennyLaneAI/pennylane/pull/3966)
   [(#3987)](https://github.com/PennyLaneAI/pennylane/pull/3987)
+  [(#4021)](https://github.com/PennyLaneAI/pennylane/pull/4021)
+
   * A new keyword argument called `max_distance` has been added to `qml.pulse.rydberg_interaction` to allow for the removal of negligible contributions
     from atoms beyond `max_distance` from each other.
     [(#3889)](https://github.com/PennyLaneAI/pennylane/pull/3889)
@@ -90,6 +106,10 @@
 * `qml.devices.qubit.measure` now computes the expectation values of `Hamiltonian` and `Sum`
   in a backpropagation-compatible way.
   [(#3862)](https://github.com/PennyLaneAI/pennylane/pull/3862/)
+
+* `MeasurementProcess.shape` now accepts a `Shots` object as one of its arguments to reduce exposure to unnecessary
+  execution details.
+  [(#4012)](https://github.com/PennyLaneAI/pennylane/pull/4012)
 
 <h4>Performance improvements</h4>
 
@@ -236,6 +256,43 @@
 * Update various Operators and templates to ensure their decompositions only return lists of Operators.
   [(#3243)](https://github.com/PennyLaneAI/pennylane/pull/3243)
 
+* `QuantumScript.specs` is modified to make use of the new `Resources` class. This also modifies the 
+  output of `qml.specs()`. 
+  [(#4015)](https://github.com/PennyLaneAI/pennylane/pull/4015)
+
+* The `ResourcesOperation` class is added to allow users to define operations with custom resource information.
+  [(#4026)](https://github.com/PennyLaneAI/pennylane/pull/4026)
+
+  For example, users can define a custom operation by inheriting from this new class:
+
+  ```pycon
+  >>> class CustomOp(ResourcesOperation):
+  ...     def resources(self):
+  ...         return Resources(num_wires=1, num_gates=2, gate_types={"PauliX": 2})
+  ... 
+  >>> CustomOp(wires=1)
+  CustomOp(wires=[1])
+  ```
+  
+  Then we can track and display the resources of the workflow using `qml.specs()`:
+
+  ```pycon
+  >>> dev = qml.device("default.qubit", wires=[0,1])
+  >>> @qml.qnode(dev)
+  ... def circ():
+  ...     qml.PauliZ(wires=0)
+  ...     CustomOp(wires=1)
+  ...     return qml.state()
+  ... 
+  >>> print(qml.specs(circ)()['resources'])
+  wires: 2
+  gates: 3
+  depth: 1
+  shots: 0
+  gate_types:
+  {'PauliZ': 1, 'PauliX': 2}
+  ```
+
 <h3>Breaking changes 💔</h3>
 
 * The `seed_recipes` argument has been removed from `qml.classical_shadow` and `qml.shadow_expval`.
@@ -277,6 +334,9 @@
   the rotations and diagonal measurements.
   [(#3912)](https://github.com/PennyLaneAI/pennylane/pull/3912)
 
+* `Evolution` now initializes the coefficient with a factor of `-1j` instead of `1j`.
+  [(#4024)](https://github.com/PennyLaneAI/pennylane/pull/4024)
+
 <h3>Deprecations 👋</h3>
 
 <h3>Documentation 📝</h3>
@@ -288,6 +348,12 @@
   [(3977)](https://github.com/PennyLaneAI/pennylane/pull/3977)
 
 <h3>Bug fixes 🐛</h3>
+
+* Fixes a bug where `qml.math.dot` returned a numpy array instead of an autograd array, breaking autograd derivatives
+  in certain circumstances.
+
+* `Operator` now casts `tuple` to `np.ndarray` as well as `list`. 
+  [(#4022)](https://github.com/PennyLaneAI/pennylane/pull/4022)
 
 * Fixes a bug where `qml.ctrl` for parametric gates were incompatible with PyTorch tensors on the GPU.
   [(#4002)](https://github.com/PennyLaneAI/pennylane/pull/4002)
