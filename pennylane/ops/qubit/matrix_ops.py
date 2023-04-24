@@ -76,15 +76,12 @@ class QubitUnitary(Operation):
     def __init__(
         self, U, wires, do_queue=True, id=None, unitary_check=False
     ):  # pylint: disable=too-many-arguments
-        # For pure QubitUnitary operations (not controlled), check that the number
-        # of wires fits the dimensions of the matrix
-
         wires = Wires(wires)
-
         U_shape = qml.math.shape(U)
-
         dim = 2 ** len(wires)
 
+        # For pure QubitUnitary operations (not controlled), check that the number
+        # of wires fits the dimensions of the matrix
         if len(U_shape) not in {2, 3} or U_shape[-2:] != (dim, dim):
             raise ValueError(
                 f"Input unitary must be of shape {(dim, dim)} or (batch_size, {dim}, {dim}) "
