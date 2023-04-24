@@ -80,7 +80,7 @@ class ResourcesOperation(Operation):
     states and stores the resource requirements of the quantum gate.
 
     .. note::
-        Child classes must implement the :func:`resources()` method which computes
+        Child classes must implement the :func:`~.ResourcesOperation.resources` method which computes
         the resource requirements of the operation.
     """
 
@@ -89,7 +89,7 @@ class ResourcesOperation(Operation):
         r"""Compute the resources required for this operation.
 
         Returns:
-            (:class:`~.Resources`): The resources required by this operation.
+            Resources: The resources required by this operation.
 
         **Examples**
 
