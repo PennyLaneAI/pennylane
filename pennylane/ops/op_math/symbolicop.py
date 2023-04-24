@@ -173,6 +173,15 @@ class ScalarSymbolicOp(SymbolicOp):
     def batch_size(self):
         return self._batch_size
 
+    @property
+    def data(self):
+        return [self.scalar, *self.base.data]
+
+    @data.setter
+    def data(self, new_data):
+        self.scalar = new_data[0]
+        self.base.data = new_data[1:]
+
     def _check_and_compute_batch_size(self, scalar):
         batched_scalar = qml.math.ndim(scalar) > 0
         scalar_size = qml.math.size(scalar)
