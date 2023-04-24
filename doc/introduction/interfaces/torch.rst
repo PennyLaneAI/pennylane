@@ -50,7 +50,7 @@ it can now be used like any other PyTorch function:
 >>> phi = torch.tensor([0.5, 0.1])
 >>> theta = torch.tensor(0.2)
 >>> circuit(phi, theta)
-tensor([0.8776, 0.6880], dtype=torch.float64)
+(tensor(0.8776, dtype=torch.float64), tensor(0.6880, dtype=torch.float64))
 
 The interface can also be automatically determined when the ``QNode`` is called. You do not need to pass the interface
 if you provide parameters.
@@ -73,11 +73,13 @@ PyTorch-capable QNodes can also be created using the
     qnode1 = qml.QNode(circuit1, dev1)
     qnode2 = qml.QNode(circuit1, dev2, interface='torch')
 
-``qnode1()`` is a default NumPy-interfacing QNode, while ``qnode2()`` is a PyTorch-capable
+``qnode1()`` is a detects the interface from the parameters of each call, while ``qnode2()`` is a strictly a PyTorch-capable
 QNode:
 
+>>> qnode1(phi, theta)
+(tensor(0.8776, dtype=torch.float64), tensor(0.6880, dtype=torch.float64))
 >>> qnode2(phi, theta)
-tensor([0.8776, 0.6880], dtype=torch.float64)
+(tensor(0.8776, dtype=torch.float64), tensor(0.6880, dtype=torch.float64))
 
 .. _pytorch_qgrad:
 
@@ -129,13 +131,13 @@ To include non-differentiable data arguments, simply set ``requires_grad=False``
 Here, ``data`` is non-trainable embedded data, so should be marked as non-differentiable:
 
 >>> weights = torch.tensor([0.1, 0.2, 0.3], requires_grad=True)
->>> data = torch.tensor(np.random.random([4]), requires_grad=False)
+>>> data = torch.tensor([0.4741, 0.9257, 0.5541, 0.3137], requires_grad=False)
 >>> result = circuit3(weights, data)
 >>> result.backward()
 >>> data.grad is None
 True
 >>> weights.grad
-tensor([3.6317e-02, 0.0000e+00, 5.5511e-17])
+tensor([-4.5398e-02, -3.7253e-09,  0.0000e+00])
 
 
 .. _pytorch_optimize:

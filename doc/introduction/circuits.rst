@@ -183,17 +183,22 @@ For example:
 
     @qml.qnode(dev)
     def circuit(x):
-      qml.RX(x, wires=0)
-      qml.CNOT(wires=[0, 1])
-      return qml.expval(qml.PauliZ(0) @ qml.PauliX(1)), qml.expval(qml.PauliZ(0))
+        qml.RX(x, wires=0)
+        qml.CNOT(wires=[0, 1])
+        return qml.expval(qml.PauliZ(0) @ qml.PauliX(1)), qml.expval(qml.PauliZ(0))
 
-Executing this, we will get an output of size ``(3, 2)``:
+Executing this, we will get an output of shape ``(3, 2)``:
 
->>> circuit(0.5)
-tensor([[ 1.   ,  1.   ],
-        [ 0.2  ,  1.   ],
-        [-0.022,  0.876]], requires_grad=True)
+>>> results = circuit(0.5)
+>>> results
+((array(0.6), array(1.)),
+ (array(-0.4), array(1.)),
+ (array(0.048), array(0.902)))
 
+We can index into this tuple and retrieve the results computed with only 5 shots:
+
+>>> results[0]
+(array(0.6), array(1.))
 
 .. _intro_vcirc_qnode:
 
