@@ -100,7 +100,7 @@ the measurement results of the respective qubit. :func:`~.pennylane.sample`
 returns 1000 samples per observable as defined on the device.
 
 >>> results = circuit()
->>> results[0].shape'
+>>> results[0].shape
 (1000,)
 >>> results[1].shape
 (1000,)

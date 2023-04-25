@@ -277,7 +277,7 @@ returns multiple expectation values, the correct differential operator to use is
 the `Jacobian matrix <https://en.wikipedia.org/wiki/Jacobian_matrix_and_determinant>`_.
 This can be accessed in PennyLane as :func:`~.jacobian`.
 
-As the `circuit5` returns a tuple of numpy arrays instead of a single numpy array, the results need
+As the ``circuit5`` returns a tuple of numpy arrays instead of a single numpy array, the results need
 to be stacked into a single array before use with :func:`~.jacobian`.
 
 >>> j1 = qml.jacobian(lambda x: np.stack(circuit5(x)))
