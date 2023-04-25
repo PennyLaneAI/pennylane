@@ -480,10 +480,10 @@ class CircuitGraph:
         return self._depth
 
     @staticmethod
-    def _weight_func(w):
-        """If weight is an int, use it!"""
-        if isinstance(w, (int, float)):
-            return w
+    def _weight_func(weight):
+        """If weight is a number, use it!"""
+        if isinstance(weight, (int, float)):
+            return weight
         return 1
 
     def _extend_graph(self, graph: rx.PyDiGraph) -> rx.PyDiGraph:
@@ -517,7 +517,7 @@ class CircuitGraph:
 
             graph.substitute_node_with_subgraph(
                 node_index, sub_graph, lambda s, t, _: _link_graph(s, t, sub_graph, node_index)
-            )
+            )  # pylint: disable=cell-var-from-loop
 
     def has_path(self, a, b):
         """Checks if a path exists between the two given nodes.
