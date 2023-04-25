@@ -464,6 +464,18 @@ class TestInfomationProperties:
         assert specs["num_trainable_params"] == 5
         assert specs["depth"] == 3
 
+    def test_specs_warning(self, make_script):
+        """Test that a deprecation warning is displayed when trying to access deprecated
+        fields of the specs dictionary."""
+        deprecated_keys = ("gate_types", "num_operations", "num_used_wires", "depth")
+
+        qs = make_script
+        specs = qs.specs
+
+        for old_key in deprecated_keys:
+            with pytest.warns(UserWarning, match=f"The {old_key} key is deprecated"):
+                _ = specs[f"{old_key}"]
+
 
 class TestScriptCopying:
     """Test for quantum script copying behaviour"""
