@@ -668,7 +668,7 @@ class Operator(Pytree, abc.ABC):
 
     @property
     def _attrs(self):
-        return (self.name, self.wires, str(self.hyperparameters.values()), _process_data(self))
+        return (self.name, self.wires)#, str(self.hyperparameters.values()), _process_data(self))
 
     def __hash__(self):
         return hash(self._attrs)
