@@ -806,7 +806,7 @@ class TestHamiltonian:
         """Tests that Hamiltonians are subtracted correctly"""
         assert H.compare(H1 - H2)
 
-    def test_hamiltonian_tenosr_matmul(self):
+    def test_hamiltonian_tensor_matmul(self):
         """Tests that a hamiltonian can be multiplied by a tensor."""
         H = qml.PauliX(0) + qml.PauliY(0)
         t = qml.PauliZ(1) @ qml.PauliZ(2)
