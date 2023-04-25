@@ -129,16 +129,41 @@ def cache_execute(fn: Callable, cache, pass_kwargs=False, return_tuple=True, exp
             tapes = [expand_fn(tape) for tape in tapes]
             return original_fn(tapes, **kwargs)
 
-    @wraps(fn)
-    def wrapper(tapes: Sequence[QuantumTape], **kwargs):
-        if not pass_kwargs:
+    return CacheExecuteFn(fn, cache=cache, pass_kwargs=pass_kwargs, return_tuple=return_tuple, expand_fn=expand_fn)
+
+class CacheExecuteFn:
+    def __init__(self, function, *, cache, pass_kwargs=False, return_tuple=True, expand_fn=None):
+
+        self._wrapped_function = function
+        self._cache = cache
+        self._pass_kwargs = pass_kwargs
+        self._return_tuple = return_tuple
+        #self._expand_fn = expand_fn
+
+    @property
+    def wrapped_function(self): 
+        return self._wrapped_function
+    @property
+    def cache(self): 
+        return self._cache
+    @property
+    def pass_kwargs(self): 
+        return self._pass_kwargs
+    @property
+    def return_tuple(self): 
+        return self._return_tuple
+    def hash(self):
+        return hash((self.wrapped_function, self.cache, self.pass_kwargs, self.return_tuple))
+
+    def __call__(self, tapes: Sequence[QuantumTape], **kwargs):
+        if not self.pass_kwargs:
             kwargs = {}
 
-        if cache is None or (isinstance(cache, bool) and not cache):
+        if self.cache is None or (isinstance(self.cache, bool) and not self.cache):
             # No caching. Simply execute the execution function
             # and return the results.
-            res = fn(tapes, **kwargs)
-            return (res, []) if return_tuple else res
+            res = self.wrapped_function(tapes, **kwargs)
+            return (res, []) if self.return_tuple else res
 
         execution_tapes = {}
         cached_results = {}
@@ -158,15 +183,15 @@ def cache_execute(fn: Callable, cache, pass_kwargs=False, return_tuple=True, exp
 
             hashes[i] = h
 
-            if hashes[i] in cache:
+            if hashes[i] in self.cache:
                 # Tape exists within the cache, store the cached result
-                cached_results[i] = cache[hashes[i]]
+                cached_results[i] = self.cache[hashes[i]]
 
                 # Introspect the set_shots decorator of the input function:
                 #   warn the user in case of finite shots with cached results
                 finite_shots = False
 
-                closure = inspect.getclosurevars(fn).nonlocals
+                closure = inspect.getclosurevars(self.wrapped_function).nonlocals
                 if "original_fn" in closure:  # deal with expand_fn wrapper above
                     closure = inspect.getclosurevars(closure["original_fn"]).nonlocals
 
@@ -178,7 +203,7 @@ def cache_execute(fn: Callable, cache, pass_kwargs=False, return_tuple=True, exp
                         shots = dev.shots if shots is False else shots
                         finite_shots = isinstance(shots, int)
 
-                if finite_shots and getattr(cache, "_persistent_cache", True):
+                if finite_shots and getattr(self.cache, "_persistent_cache", True):
                     warnings.warn(
                         "Cached execution with finite shots detected!\n"
                         "Note that samples as well as all noisy quantities computed via sampling "
@@ -197,11 +222,11 @@ def cache_execute(fn: Callable, cache, pass_kwargs=False, return_tuple=True, exp
         if not execution_tapes:
             if not repeated:
                 res = list(cached_results.values())
-                return (res, []) if return_tuple else res
+                return (res, []) if self.return_tuple else res
 
         else:
             # execute all unique tapes that do not exist in the cache
-            res = fn(execution_tapes.values(), **kwargs)
+            res = self.wrapped_function(execution_tapes.values(), **kwargs)
 
         final_res = []
 
@@ -218,12 +243,10 @@ def cache_execute(fn: Callable, cache, pass_kwargs=False, return_tuple=True, exp
                 # insert evaluated results into the results vector
                 r = res.pop(0)
                 final_res.append(r)
-                cache[hashes[i]] = r
+                self.cache[hashes[i]] = r
 
-        return (final_res, []) if return_tuple else final_res
+        return (final_res, []) if self.return_tuple else final_res
 
-    wrapper.fn = fn
-    return wrapper
 
 
 def execute(

@@ -16,10 +16,9 @@ Contains the set_shots context manager, which allows devices shots
 to be temporarily modified.
 """
 # pylint: disable=protected-access
-import contextlib
+from functools import partial
 
 
-@contextlib.contextmanager
 def set_shots(device, shots):
     """Context manager to temporarily change the shots
     of a device.
@@ -40,17 +39,51 @@ def set_shots(device, shots):
     >>> set_shots(dev, shots=100)(lambda: dev.shots)()
     100
     """
-    if shots == device.shots:
-        yield
-        return
+    return partial(SetShots, device=device, shots=shots)
 
-    original_shots = device.shots
-    original_shot_vector = device._shot_vector
+class SetShots:
+    def __init__(self, function, device, shots):
+        self._function = function
+        self._device = device
+        self._shots = shots
 
-    try:
-        if shots is not False and device.shots != shots:
-            device.shots = shots
-        yield
-    finally:
-        device.shots = original_shots
-        device._shot_vector = original_shot_vector
+    def __call__(self, *args, **kwargs):
+        if self.shots == self.device.shots:
+            result = self.wrapped_function(*args, **kwargs)
+        else:
+            original_shots = self.device.shots
+            original_shot_vector = self.device._shot_vector
+
+            try:
+                if self.shots is not False and self.device.shots != self.shots:
+                    self.device.shots = self.shots
+                result = self.wrapped_function(*args, **kwargs)
+            finally:
+                self.device.shots = original_shots
+                self.device._shot_vector = original_shot_vector
+
+        return result
+
+    @property
+    def device(self):
+        return self._device
+
+    @property
+    def shots(self):
+        return self._shots
+
+    @property
+    def wrapped_function(self):
+        return self._function
+
+    def __hash__(self):
+        return hash((self._function,  self._device, self._shots))
+
+    def __eq__(self, o):
+        if isinstance(o, SetShots):
+            return (self._function, self._device, self._shots) == (o._function, o._device, o._shots)
+        return False
+
+    def __repr__(self):
+        return f"SetShots(device={self.device}, shots={self.shots}, function={self.wrapped_function})"
+
