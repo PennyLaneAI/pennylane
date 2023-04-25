@@ -2094,6 +2094,9 @@ class Tensor(Observable):
         return 1 + max(o.arithmetic_depth for o in self.obs)
 
     def __matmul__(self, other):
+        if isinstance(other, qml.Hamiltonian):
+            return other.__rmatmul__(self)
+
         if isinstance(other, Tensor):
             self.obs.extend(other.obs)
 

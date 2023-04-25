@@ -429,6 +429,8 @@
   it in their respective `map_wires` methods if they have a Pauli rep.
   [(#3985)](https://github.com/PennyLaneAI/pennylane/pull/3985)
 
+* Fixes a bug when a Tensor is multiplied by a Hamiltonian or a Hamiltonian is multipled by a Tensor.
+
 <h3>Contributors ✍️</h3>
 
 This release contains contributions from (in alphabetical order):
