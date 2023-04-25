@@ -534,7 +534,10 @@ class QuantumScript(Pytree):
 
     @property
     def trainable_params(self):
-        return self._trainable_params
+        #return self._trainable_params
+        params = self.get_parameters(trainable_only=False)
+        return qml.math.get_trainable_indices(params)
+
 
     @trainable_params.setter
     def trainable_params(self, param_indices):

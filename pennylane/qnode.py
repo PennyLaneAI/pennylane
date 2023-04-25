@@ -758,7 +758,8 @@ class QNode:
         self._qfunc_output = self.tape._qfunc_output
 
         params = self.tape.get_parameters(trainable_only=False)
-        self.tape.trainable_params = qml.math.get_trainable_indices(params)
+        #print(self.tape.trainable_params)
+        #self.tape.trainable_params = qml.math.get_trainable_indices(params)
 
         if any(isinstance(m, CountsMP) for m in self.tape.measurements) and any(
             qml.math.is_abstract(a) for a in args
