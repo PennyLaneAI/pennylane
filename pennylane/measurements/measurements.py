@@ -319,17 +319,17 @@ class MeasurementProcess(Pytree):
 
         return f"{self.obs}"
 
-    def __copy__(self):
-        cls = self.__class__
-        copied_m = cls.__new__(cls)
-
-        for attr, value in vars(self).items():
-            setattr(copied_m, attr, value)
-
-        if self.obs is not None:
-            copied_m.obs = copy.copy(self.obs)
-
-        return copied_m
+    #def __copy__(self):
+    #    cls = self.__class__
+    #    copied_m = cls.__new__(cls)
+    #
+    #    for attr, value in vars(self).items():
+    #        setattr(copied_m, attr, value)
+    #
+    #    if self.obs is not None:
+    #        copied_m.obs = copy.copy(self.obs)
+    #
+    #    return copied_m
 
     @property
     def wires(self):
