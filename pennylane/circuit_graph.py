@@ -516,8 +516,12 @@ class CircuitGraph:
             )
 
             graph.substitute_node_with_subgraph(
-                node_index, sub_graph, lambda s, t, _: _link_graph(s, t, sub_graph, node_index)
-            )  # pylint: disable=cell-var-from-loop
+                node_index,
+                sub_graph,
+                lambda s, t, _: _link_graph(
+                    s, t, sub_graph, node_index
+                ),  # pylint: disable=cell-var-from-loop
+            )
 
     def has_path(self, a, b):
         """Checks if a path exists between the two given nodes.
