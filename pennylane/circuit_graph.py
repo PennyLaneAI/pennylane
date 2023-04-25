@@ -503,7 +503,7 @@ class CircuitGraph:
             sub_graph.add_edge(
                 sub_graph.nodes().index(f"{node_index}.0"),
                 sub_graph.nodes().index(f"{node_index}.1"),
-                depth - 1,
+                depth - 1,  # set edge weight as 1 - depth
             )
 
             # extend_graph:
@@ -517,31 +517,6 @@ class CircuitGraph:
             graph.substitute_node_with_subgraph(
                 node_index, sub_graph, lambda s, t, _: _link_graph(s, t)
             )
-
-        # for node_index, depth in custom_depth_node_dict.items():
-        #     # Construct sub_graph:
-        #     sub_graph = rx.PyDiGraph()
-        #     for i in range(depth):
-        #         sub_graph.add_node(f"{node_index}.{i}")
-        #
-        #         if i > 0:
-        #             sub_graph.add_edge(
-        #                 sub_graph.nodes().index(f"{node_index}.{i-1}"),
-        #                 sub_graph.nodes().index(f"{node_index}.{i}"),
-        #                 "",
-        #             )
-        #
-        #     # extend_graph:
-        #     def _link_graph(source_index, target_index):
-        #         if target_index == node_index:
-        #             return sub_graph.nodes().index(f"{node_index}.{0}")
-        #         elif source_index == node_index:
-        #             return sub_graph.nodes().index(f"{node_index}.{depth-1}")
-        #         return None
-        #
-        #     graph.substitute_node_with_subgraph(
-        #         node_index, sub_graph, lambda s, t, _: _link_graph(s, t)
-        #     )
 
     def has_path(self, a, b):
         """Checks if a path exists between the two given nodes.
