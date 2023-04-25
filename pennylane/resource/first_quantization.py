@@ -347,7 +347,7 @@ class FirstQuantization(Operation):
         return min(cost_f, cost_c)
 
     @staticmethod
-    def unitary_cost(n, eta, omega, error, br=7, charge=0):
+    def unitary_cost(n, eta, omega, error, br=7, charge=0, vec_a=None):
         r"""Return the number of Toffoli gates needed to implement the qubitization unitary
         operator.
 
@@ -433,7 +433,7 @@ class FirstQuantization(Operation):
         return int(np.ceil(cost))
 
     @staticmethod
-    def estimation_cost(n, eta, omega, error, br=7, charge=0, cubic=True):
+    def estimation_cost(n, eta, omega, error, br=7, charge=0, cubic=True, vec_a=None):
         r"""Return the number of calls to the unitary needed to achieve the desired error in quantum
         phase estimation.
 
@@ -525,7 +525,7 @@ class FirstQuantization(Operation):
             raise ValueError("br must be a positive integer.")
 
         e_cost = FirstQuantization.estimation_cost(
-            n, eta, omega, error, br=br, charge=charge, cubic=cubic
+            n, eta, omega, error, br=br, charge=charge, cubic=cubic, vec_a=vec_a
         )
 
         if cubic:
@@ -627,33 +627,32 @@ class FirstQuantization(Operation):
         eta,
         omega,
         error,
-        br=8,
+        br=7,
         charge=0,
         vec_a=None,
     ):
 
-        br = 8
-
         omega = np.abs(np.sum((np.cross(vec_a[0], vec_a[1]) * vec_a[2])))
 
-        recip_bv = (
+        recip_vectors = (
             2
             * np.pi
             / omega
             * np.array([np.cross(vec_a[i], vec_a[j]) for i, j in [(1, 2), (2, 0), (0, 1)]])
         )
 
-        bbt = np.matrix(recip_bv) @ np.matrix(recip_bv).T
+        bbt = np.matrix(recip_vectors) @ np.matrix(recip_vectors).T
 
         orthogonal = (
-            np.linalg.norm(bbt - np.array([np.max(b**2) for b in recip_bv]) * np.identity(3))
+            np.linalg.norm(bbt - np.array([np.max(b**2) for b in recip_vectors]) * np.identity(3))
             < 1e-6
         )
 
         l_z = eta + charge
-        alpha = 0.0248759298  # same as the pseudopotential/AE code
-        p_th = 0.95
-        # target error in the qubitization of U+V
+
+        alpha = 0.0248759298  # optimal value for lower resource estimates
+        p_th = 0.95  # optimal value for lower resource estimates
+
         error_uv = alpha * error
 
         # taken from Eq. (22) of PRX Quantum 2, 040332 (2021)
@@ -661,11 +660,12 @@ class FirstQuantization(Operation):
 
         n0 = n ** (1 / 3)
 
-        bmin = np.min(np.linalg.svd(recip_bv)[1])
+        # defined in Eq. (F3) of arXiv:2302.07981 (2023)
+        bmin = np.min(np.linalg.svd(recip_vectors)[1])
 
         n_m = int(
             np.ceil(
-                np.log2(  # taken from Eq. (132) of PRX Quantum 2, 040332 (2021)
+                np.log2(  # taken from ???
                     (8 * np.pi * eta)
                     / (error_uv * omega * bmin**2)
                     * (eta - 1 + 2 * l_z)
@@ -681,13 +681,15 @@ class FirstQuantization(Operation):
             + 3 * integrate.nquad(lambda x, y: 1 / (x**2 + y**2), [[1, n0], [1, n0]])[0]
         ) / bmin**2
 
+        # taken from ???
         lambda_nu_1 = lambda_nu + 4 / (2**n_m * bmin**2) * (
             7 * 2 ** (n_p + 1) - 9 * n_p - 11 - 3 * 2 ** (-1 * n_p)
         )
 
+        # taken from ???
         p_nu = lambda_nu_1 * bmin**2 / 2 ** (n_p + 6)
 
-        # compute_AA_steps
+        # compute_AA_steps, taken from ???
         probability_amplified = 0
         index = 0  # number of amplitude amplifications
         for i in range(29, -1, -1):
@@ -697,7 +699,7 @@ class FirstQuantization(Operation):
                 probability_amplified = probability
         p_nu_amp, aa_steps = probability_amplified, index
 
-        # lambda_u and lambda_v are taken from Eq. (25) of PRX Quantum 2, 040332 (2021)
+        # lambda_u and lambda_v are taken from ???
         lambda_u = 4 * np.pi * eta * l_z * lambda_nu / omega
         lambda_v = 2 * np.pi * eta * (eta - 1) * lambda_nu / omega
 
@@ -705,22 +707,22 @@ class FirstQuantization(Operation):
         lambda_u_1 = lambda_u * lambda_nu_1 / lambda_nu
         lambda_v_1 = lambda_v * lambda_nu_1 / lambda_nu
 
-        b_mat = np.matrix(recip_bv)
+        b_mat = np.matrix(recip_vectors)
         abs_sum = np.abs(b_mat @ b_mat.T).flatten().sum()
 
-        # taken from Eq. (71) of PRX Quantum 2, 040332 (2021)
+        # taken from ???
         if orthogonal:
             lambda_t_p = abs_sum * eta * 2 ** (2 * n_p - 2) / 4
         else:
             lambda_t_p = abs_sum * eta * 2 ** (2 * n_p - 2) / 2
 
-        # taken from Eq. (63) of PRX Quantum 2, 040332 (2021)
+        # taken from ???
         p_eq = (
             FirstQuantization.success_prob(3 * eta + 2 * charge, br)
             * FirstQuantization.success_prob(eta, br) ** 2
         )
 
-        # final lambda value is computed from Eq. (126) of PRX Quantum 2, 040332 (2021)
+        # final lambda value is computed from ???
         if p_nu * lambda_t_p >= (1 - p_nu) * (lambda_u_1 + lambda_v_1):
             return 0.0, 0.0
         elif p_nu_amp * lambda_t_p >= (1 - p_nu_amp) * (lambda_u_1 + lambda_v_1):
@@ -729,9 +731,7 @@ class FirstQuantization(Operation):
             return ((lambda_u_1 + lambda_v_1 / (1 - 1 / eta)) / p_nu_amp) / p_eq, aa_steps
 
     @staticmethod
-    def _qubit_cost_noncubic(n, eta, omega, error, br=8, charge=0, vec_a=None):
-
-        br = 8
+    def _qubit_cost_noncubic(n, eta, omega, error, br=7, charge=0, vec_a=None):
 
         lambda_total, aa_steps = FirstQuantization._norm_noncubic(
             n,
@@ -745,22 +745,22 @@ class FirstQuantization(Operation):
 
         omega = np.abs(np.sum((np.cross(vec_a[0], vec_a[1]) * vec_a[2])))
 
-        recip_bv = (
+        recip_vectors = (
             2
             * np.pi
             / omega
             * np.array([np.cross(vec_a[i], vec_a[j]) for i, j in [(1, 2), (2, 0), (0, 1)]])
         )
 
-        bbt = np.matrix(recip_bv) @ np.matrix(recip_bv).T
+        bbt = np.matrix(recip_vectors) @ np.matrix(recip_vectors).T
 
         orthogonal = (
-            np.linalg.norm(bbt - np.array([np.max(b**2) for b in recip_bv]) * np.identity(3))
+            np.linalg.norm(bbt - np.array([np.max(b**2) for b in recip_vectors]) * np.identity(3))
             < 1e-6
         )
 
-        p_th = 0.95
-        n_tof = 500
+        p_th = 0.95  # optimal value for lower resource estimates
+        n_tof = 500  # optimal value for lower resource estimates
 
         l_z = eta + charge
         l_nu = 2 * np.pi * n ** (2 / 3)
@@ -768,13 +768,14 @@ class FirstQuantization(Operation):
         # n_p is taken from Eq. (22) of PRX Quantum 2, 040332 (2021)
         n_p = np.ceil(np.log2(n ** (1 / 3) + 1))
 
-        bmin = np.min(np.linalg.svd(recip_bv)[1])
+        # defined in Eq. (F3) of arXiv:2302.07981 (2023)
+        bmin = np.min(np.linalg.svd(recip_vectors)[1])
 
-        # errors in Eqs. (132-134) of PRX Quantum 2, 040332 (2021)
+        # errors in Eqs. ???
         alpha = 0.0248759298  # optimal value for lower resource estimates
         error_t, error_r, error_m, error_b = [alpha * error] * 4
 
-        # parameters taken from Eqs. (132-134) of PRX Quantum 2, 040332 (2021)
+        # parameters taken from ???
         n_t = int(np.ceil(np.log2(np.pi * lambda_total / error_t)))  # Eq. (134)
         n_r = int(np.ceil(np.log2((eta * l_z * l_nu) / (error_r * omega ** (1 / 3)))))  # Eq. (133)
         n_m = int(  # Eq. (132)
@@ -788,17 +789,20 @@ class FirstQuantization(Operation):
             )
         )
 
-        # qpe_error obtained to satisfy inequality (131) of PRX Quantum 2, 040332 (2021)
+        # qpe_error obtained to satisfy inequality ???
         n_errors = 4
         error_qpe = np.sqrt(error**2 * (1 - (n_errors * alpha) ** 2))
 
+        # taken from ???
         clean_temp_H_cost = max([5 * n_r - 4, 5 * n_p + 1]) + max([5, n_m + 3 * n_p])
+        # taken from ???
         reflection_cost = (
             np.ceil(np.log2(eta + 2 * l_z)) + 2 * np.ceil(np.log2(eta)) + 6 * n_p + n_m + 16 + 3
         )
+        # taken from ???
         clean_temp_cost = max([clean_temp_H_cost, reflection_cost])
 
-        # the expression for computing the cost is taken from Eq. (101) of arXiv:2204.11890v1
+        # the expression for computing the cost is taken from ???
         clean_cost = 3 * eta * n_p
         clean_cost += np.ceil(np.log2(np.ceil(np.pi * lambda_total / (2 * error_qpe))))
         clean_cost += 1 + 1 + np.ceil(np.log2(eta + 2 * l_z)) + 3 + 3
@@ -807,13 +811,14 @@ class FirstQuantization(Operation):
 
         clean_cost += clean_temp_cost
 
+        # taken from ???
         n_b = np.ceil(
             np.log2(
                 2
                 * np.pi
                 * eta
                 * 2 ** (2 * n_p - 2)
-                * np.abs(np.matrix(recip_bv) @ np.matrix(recip_bv).T).flatten().sum()
+                * np.abs(np.matrix(recip_vectors) @ np.matrix(recip_vectors).T).flatten().sum()
                 / error_b
             )
         )
@@ -822,9 +827,7 @@ class FirstQuantization(Operation):
         return int(np.ceil(clean_cost))
 
     @staticmethod
-    def _unitary_cost_noncubic(n, eta, omega, error, br=8, charge=0, vec_a=None):
-
-        br = 8
+    def _unitary_cost_noncubic(n, eta, omega, error, br=7, charge=0, vec_a=None):
 
         lambda_total, aa_steps = FirstQuantization._norm_noncubic(
             n,
@@ -838,24 +841,24 @@ class FirstQuantization(Operation):
 
         omega = np.abs(np.sum((np.cross(vec_a[0], vec_a[1]) * vec_a[2])))
 
-        recip_bv = (
+        recip_vectors = (
             2
             * np.pi
             / omega
             * np.array([np.cross(vec_a[i], vec_a[j]) for i, j in [(1, 2), (2, 0), (0, 1)]])
         )
 
-        bbt = np.matrix(recip_bv) @ np.matrix(recip_bv).T
+        bbt = np.matrix(recip_vectors) @ np.matrix(recip_vectors).T
 
         orthogonal = (
-            np.linalg.norm(bbt - np.array([np.max(b**2) for b in recip_bv]) * np.identity(3))
+            np.linalg.norm(bbt - np.array([np.max(b**2) for b in recip_vectors]) * np.identity(3))
             < 1e-6
         )
 
-        p_th = 0.95
-        n_tof = 500
+        p_th = 0.95  # optimal value for lower resource estimates
+        n_tof = 500  # optimal value for lower resource estimates
 
-        alpha = 0.0248759298
+        alpha = 0.0248759298  # optimal value for lower resource estimates
         l_z = eta + charge
         l_nu = 2 * np.pi * n ** (2 / 3)
 
@@ -866,18 +869,20 @@ class FirstQuantization(Operation):
         # n_p is taken from Eq. (22)
         n_p = int(np.ceil(np.log2(n ** (1 / 3) + 1)))
 
-        # errors in Eqs. (132-134) are set to be 0.0248759298 of the algorithm error
+        # errors in Eqs. ???
         error_t, error_r, error_m = [alpha * error] * 3
 
-        # parameters taken from Eqs. (132-134) of PRX Quantum 2, 040332 (2021)
+        # parameters taken from ???
         n_t = int(np.ceil(np.log2(np.pi * lambda_total / error_t)))  # Eq. (134)
         n_r = int(np.ceil(np.log2((eta * l_z * l_nu) / (error_r * omega ** (1 / 3)))))  # Eq. (133)
 
-        bmin = np.min(np.linalg.svd(recip_bv)[1])
+        # defined in Eq. (F3) of arXiv:2302.07981 (2023)
+        bmin = np.min(np.linalg.svd(recip_vectors)[1])
 
+        # taken from ???
         n_m = int(
             np.ceil(
-                np.log2(  # Eq. (132) of PRX Quantum 2, 040332 (2021)
+                np.log2(
                     (8 * np.pi * eta)
                     / (error_m * omega * bmin**2)
                     * (eta - 1 + 2 * l_z)
@@ -903,18 +908,18 @@ class FirstQuantization(Operation):
                 * np.pi
                 * eta
                 * 2 ** (2 * n_p - 2)
-                * np.abs(np.matrix(recip_bv) @ np.matrix(recip_bv).T).flatten().sum()
+                * np.abs(np.matrix(recip_vectors) @ np.matrix(recip_vectors).T).flatten().sum()
                 / error_b
             )
         )
-        # this and the next corrects the cost of PREP and PREP^dagger for T
-        cost -= 2 * (3 * 2 + 2 * br - 9)
-        cost += 2 * (2 * (2 * (2 ** (4 + 1) - 1) + (n_b - 3) * 4 + 2**4 + (n_p - 2)))
-        cost += 8  # 5 to compute the flag qubit for T being prepared, uncomputation without Toffolis, and 3 for the ROT cost
 
         n_dirty = FirstQuantization._qubit_cost_noncubic(n, eta, omega, error, br, charge, vec_a)
-
         ms_cost = FirstQuantization._momentum_state_qrom(n_p, n_m, n_dirty, n_tof, kappa=1)[0]
+
+        # taken from ???
+        cost -= 2 * (3 * 2 + 2 * br - 9)
+        cost += 2 * (2 * (2 * (2 ** (4 + 1) - 1) + (n_b - 3) * 4 + 2**4 + (n_p - 2)))
+        cost += 8
         cost -= (2 * aa_steps + 1) * (3 * n_p**2 + 15 * n_p - 7 + 4 * n_m * (n_p + 1))
         cost += (2 * aa_steps + 1) * ms_cost
 
@@ -922,6 +927,7 @@ class FirstQuantization(Operation):
 
     @staticmethod
     def _momentum_state_qrom(n_p, n_m, n_dirty, n_tof, kappa):
+        r"""Taken from ???"""
 
         x = 2 ** (3 * n_p)
 
