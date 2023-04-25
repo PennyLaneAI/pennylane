@@ -368,13 +368,13 @@ def execute(
         )
 
     new_device_interface = isinstance(device, qml.devices.experimental.Device)
-    config = qml.devices.experimental.ExecutionConfig(interface=interface)
 
     if interface == "auto":
         params = []
         for tape in tapes:
             params.extend(tape.get_parameters(trainable_only=False))
         interface = qml.math.get_interface(*params)
+    config = qml.devices.experimental.ExecutionConfig(interface=interface)
 
     gradient_kwargs = gradient_kwargs or {}
 
@@ -414,41 +414,29 @@ def execute(
                 """A wrapper around the device ``expand_fn``."""
                 return device.expand_fn(tape, max_expansion=max_expansion)
 
-    if gradient_fn is None:
-        if new_device_interface:
-            cached_execution = cache_execute(
-                device.execute, cache, return_tuple=False, pass_kwargs=True
-            )
-            results = cached_execution(tapes, execution_config=config)
-            return batch_fn(results)
-        # don't unwrap if it's an interface device
-        if "passthru_interface" in device.capabilities() or device.short_name == "default.mixed":
-            return batch_fn(
-                qml.interfaces.cache_execute(
-                    batch_execute, cache, return_tuple=False, expand_fn=expand_fn
-                )(tapes)
-            )
-        unwrapped_tapes = tuple(qml.transforms.convert_to_numpy_parameters(t) for t in tapes)
-        res = qml.interfaces.cache_execute(
-            batch_execute, cache, return_tuple=False, expand_fn=expand_fn
-        )(unwrapped_tapes)
+    if gradient_fn in {None, "backprop"} or interface is None:
+        if not (
+            new_device_interface
+            or interface is None
+            or gradient_fn == "backprop"
+            or device.short_name == "default.mixed"
+            or "passthru_interface" in device.capabilities()
+        ):
+            tapes = tuple(qml.transforms.convert_to_numpy_parameters(t) for t in tapes)
 
-        return batch_fn(res)
-
-    if gradient_fn == "backprop" or interface is None:
-        if new_device_interface:
-            cached_execution = cache_execute(
-                device.execute, cache, return_tuple=False, pass_kwargs=True
-            )
-            results = cached_execution(tapes, execution_config=config)
-            return batch_fn(results)
-        return batch_fn(
-            qml.interfaces.cache_execute(
-                batch_execute, cache, return_tuple=False, expand_fn=expand_fn
-            )(tapes)
+        # use qml.interfaces so that mocker can spy on it during testing
+        cached_execute_fn = qml.interfaces.cache_execute(
+            batch_execute,
+            cache,
+            expand_fn=expand_fn,
+            return_tuple=False,
+            pass_kwargs=new_device_interface,
         )
+        results = cached_execute_fn(tapes, execution_config=config)
+        return batch_fn(results)
 
     # the default execution function is batch_execute
+    # use qml.interfaces so that mocker can spy on it during testing
     execute_fn = qml.interfaces.cache_execute(batch_execute, cache, expand_fn=expand_fn)
 
     _grad_on_execution = False
@@ -477,11 +465,14 @@ def execute(
 
         else:
             # disable caching on the forward pass
+            # use qml.interfaces so that mocker can spy on it during testing
             execute_fn = qml.interfaces.cache_execute(batch_execute, cache=None)
 
             # replace the backward gradient computation
+            # use qml.interfaces so that mocker can spy on it during testing
+            gradient_fn_with_shots = set_shots(device, override_shots)(device.gradients)
             gradient_fn = qml.interfaces.cache_execute(
-                set_shots(device, override_shots)(device.gradients),
+                gradient_fn_with_shots,
                 cache,
                 pass_kwargs=True,
                 return_tuple=False,
@@ -492,12 +483,7 @@ def execute(
         # in this case would have ambiguous behaviour.
         raise ValueError("Gradient transforms cannot be used with grad_on_execution=True")
 
-    try:
-        mapped_interface = INTERFACE_MAP[interface]
-    except KeyError as e:
-        raise ValueError(
-            f"Unknown interface {interface}. Supported " f"interfaces are {SUPPORTED_INTERFACES}"
-        ) from e
+    mapped_interface = INTERFACE_MAP[config.interface]
     try:
         if mapped_interface == "autograd":
             from .autograd import execute as _execute

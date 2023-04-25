@@ -54,7 +54,6 @@ class NewDeviceUnitTests:
 
 @pytest.mark.parametrize("gradient_fn", (None, "backprop", qml.gradients.param_shift))
 def test_caching(gradient_fn):
-
     dev = DefaultQubit2()
 
     qs = qml.tape.QuantumScript([qml.PauliX(0)], [qml.expval(qml.PauliZ(0))])
