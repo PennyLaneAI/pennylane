@@ -112,7 +112,7 @@
   [(#4023)](https://github.com/PennyLaneAI/pennylane/pull/4023)
 
   Consider a matrix `A` along with a vector `angles` that describes the target polynomial
-  transformation. The [`qml.qsvt`](https://docs.pennylane.ai/en/stable/code/api/pennylane.qsvt.html)
+  transformation. The `qml.qsvt`
   function creates a corresponding circuit:
 
   ```python
