@@ -130,7 +130,7 @@
   This circuit is composed of `qml.BlockEncode` and `qml.PCPhase` operations.
 
   ```pycon
-  >>> qml.draw(example_circuit, expansion_strategy="device")(A)  # TODO
+  >>> qml.draw(example_circuit, expansion_strategy="device")(A)
   0: ─╭∏_ϕ─╭BlockEncode(M0)─╭∏_ϕ─╭BlockEncode(M0)†─╭∏_ϕ─┤  
   1: ─╰∏_ϕ─╰BlockEncode(M0)─╰∏_ϕ─╰BlockEncode(M0)†─╰∏_ϕ─┤
   ```
