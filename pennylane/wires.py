@@ -150,9 +150,10 @@ class Wires(Sequence, Pytree):
 
     def __hash__(self):
         """Implements the hash function."""
-        if self._hash_cache is None:
-            object.__setattr__(self, "_hash_cache", hash(self._labels))
-        return self._hash_cache
+        #if self._hash_cache is None:
+        #    object.__setattr__(self, "_hash_cache", hash(self._labels))
+        #return self._hash_cache
+        return hash(self._labels)
 
     def __add__(self, other):
         """Defines the addition to return a Wires object containing all wires of the two terms.
