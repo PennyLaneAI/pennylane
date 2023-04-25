@@ -396,7 +396,7 @@ these changes when using PennyLane, but here is what has changed this release:
   [(#3754)](https://github.com/PennyLaneAI/pennylane/pull/3754)
   [(#3751)](https://github.com/PennyLaneAI/pennylane/pull/3751)
 
-* `AdaptiveOptimizer` has been updated to use non-default user-defined QNode arguments.
+* The `AdaptiveOptimizer` has been updated to use non-default user-defined QNode arguments.
   [(#3765)](https://github.com/PennyLaneAI/pennylane/pull/3765)
 
 * Use `TensorLike` type in `Operator` dunder methods.
