@@ -135,10 +135,9 @@
   1: ─╰∏_ϕ─╰BlockEncode(M0)─╰∏_ϕ─╰BlockEncode(M0)†─╰∏_ϕ─┤
   ```
 
-  The [`qml.qsvt`](https://docs.pennylane.ai/en/stable/code/api/pennylane.qsvt.html) function
+  The `qml.qsvt` function
   creates a circuit that is targeted at simulators due to the use of matrix-based operations.
-  Advanced users are able to use the
-  [`qml.QSVT`](https://docs.pennylane.ai/en/stable/code/api/pennylane.QSVT.html) template to perform
+  Advanced users are able to use the `qml.QSVT` template to perform
   the transformation with a custom choice of unitary and projector operations, which may be
   hardware compatible if a decomposition is provided.
 
