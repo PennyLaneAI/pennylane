@@ -17,7 +17,6 @@ executed by a device.
 """
 # pylint: disable=too-many-instance-attributes, protected-access, too-many-public-methods
 
-import warnings
 import contextlib
 import copy
 from collections import Counter, defaultdict
@@ -35,6 +34,7 @@ from pennylane.measurements import (
     StateMP,
     VarianceMP,
 )
+from pennylane.measurements import Shots
 from pennylane.operation import Observable, Operator, Operation
 from pennylane.queuing import AnnotatedQueue, process_queue
 
@@ -552,33 +552,7 @@ class QuantumScript:
 
         self._trainable_params = sorted(set(param_indices))
 
-    def get_operation(self, idx, return_op_index=False):
-        """Returns the trainable operation, and the corresponding operation argument
-        index, for a specified trainable parameter index.
-
-        Args:
-            idx (int): the trainable parameter index
-            return_op_index (bool): Whether the function also returns the operation index.
-        Returns:
-            tuple[.Operation, int, int]: tuple containing the corresponding
-            operation, the operation index, and an integer representing the argument index,
-            for the provided trainable parameter.
-        """
-        if return_op_index:
-            return self._get_operation(idx)
-        warnings.warn(
-            "The get_operation will soon be updated to also return the index of the trainable operation in the tape. "
-            "If you want to switch to the new behavior, you can pass `return_op_index=True`"
-        )
-
-        # get the index of the parameter in the script
-        t_idx = self.trainable_params[idx]
-
-        # get the info for the parameter
-        info = self._par_info[t_idx]
-        return info["op"], info["p_idx"]
-
-    def _get_operation(self, idx):
+    def get_operation(self, idx):
         """Returns the trainable operation, the operation index and the corresponding operation argument
         index, for a specified trainable parameter index.
 
@@ -716,7 +690,7 @@ class QuantumScript:
     # ========================================================
 
     @staticmethod
-    def _single_measurement_shape(measurement_process, device):
+    def _single_measurement_shape(measurement_process, device, shots):
         """Auxiliary function of shape that determines the output
         shape of a quantum script with a single measurement.
 
@@ -724,14 +698,15 @@ class QuantumScript:
             measurement_process (MeasurementProcess): the measurement process
                 associated with the single measurement
             device (pennylane.Device): a PennyLane device
+            shots (~.Shots): object defining number and batches of shots
 
         Returns:
             tuple: output shape
         """
-        return measurement_process.shape(device)
+        return measurement_process.shape(device, shots)
 
     @staticmethod
-    def _multi_homogenous_measurement_shape(mps, device):
+    def _multi_homogenous_measurement_shape(mps, device, shots):
         """Auxiliary function of shape that determines the output
         shape of a quantum script with multiple homogenous measurements.
 
@@ -760,8 +735,8 @@ class QuantumScript:
                 "Getting the output shape of a quantum script with multiple state measurements is not supported."
             )
 
-        shot_vector = device._shot_vector
-        if shot_vector is None:
+        shot_vector = shots.shot_vector
+        if len(shot_vector) <= 1:
             if isinstance(mps[0], (ExpectationMP, VarianceMP)):
                 shape = (len(mps),)
 
@@ -782,18 +757,18 @@ class QuantumScript:
                     shape = (sum(2 ** len(m.wires) for m in mps),)
 
             elif isinstance(mps[0], SampleMP):
-                dim = mps[0].shape(device)
+                dim = mps[0].shape(device, shots)
                 shape = (len(mps),) + dim[1:]
 
             # No other measurement type to check
 
         else:
-            shape = QuantumScript._shape_shot_vector_multi_homogenous(mps, device)
+            shape = QuantumScript._shape_shot_vector_multi_homogenous(mps, device, shots)
 
         return shape
 
     @staticmethod
-    def _shape_shot_vector_multi_homogenous(mps, device):
+    def _shape_shot_vector_multi_homogenous(mps, device, shots):
         """Auxiliary function for determining the output shape of the quantum script for
         multiple homogenous measurements for a device with a shot vector.
 
@@ -802,7 +777,7 @@ class QuantumScript:
         """
         shape = tuple()
 
-        shot_vector = device._shot_vector
+        shot_vector = shots.shot_vector
 
         # Shot vector was defined
         if isinstance(mps[0], (ExpectationMP, VarianceMP)):
@@ -830,15 +805,16 @@ class QuantumScript:
 
         elif isinstance(mps[0], SampleMP):
             shape = []
-            for shot_val in device.shot_vector:
-                shots = shot_val.shots
-                if shots != 1:
-                    shape.extend((shots, len(mps)) for _ in range(shot_val.copies))
+            for shot_val in shot_vector:
+                num_shots = shot_val.shots
+                if num_shots != 1:
+                    shape.extend((num_shots, len(mps)) for _ in range(shot_val.copies))
                 else:
                     shape.extend((len(mps),) for _ in range(shot_val.copies))
+            shape = tuple(shape)
         return shape
 
-    def shape(self, device):
+    def _shape_legacy(self, device):
         """Produces the output shape of the quantum script by inspecting its measurements
         and the device used for execution.
 
@@ -866,30 +842,34 @@ class QuantumScript:
             >>> qs.shape(dev)
             (1, 4)
         """
-        if qml.active_return():
-            return self._shape_new(device)
-
         output_shape = tuple()
+        shots = (
+            Shots(device._raw_shot_sequence)
+            if device.shot_vector is not None
+            else Shots(device.shots)
+        )
 
         if len(self.measurements) == 1:
-            output_shape = self._single_measurement_shape(self.measurements[0], device)
+            output_shape = self._single_measurement_shape(self.measurements[0], device, shots)
         else:
             num_measurements = len({type(meas) for meas in self.measurements})
             if num_measurements == 1:
-                output_shape = self._multi_homogenous_measurement_shape(self.measurements, device)
+                output_shape = self._multi_homogenous_measurement_shape(
+                    self.measurements, device, shots
+                )
             else:
                 raise ValueError(
                     "Getting the output shape of a quantum script that contains multiple types of "
                     "measurements is unsupported."
                 )
 
-        if device._shot_vector is None and self.batch_size is not None:
+        if len(shots.shot_vector) <= 1 and self.batch_size is not None:
             # insert the batch dimension
             output_shape = output_shape[:1] + (self.batch_size,) + output_shape[1:]
 
         return output_shape
 
-    def _shape_new(self, device):
+    def shape(self, device):
         """Produces the output shape of the quantum script by inspecting its measurements
         and the device used for execution.
 
@@ -918,12 +898,21 @@ class QuantumScript:
             >>> qs.shape(dev)
             ((4,), (), (4,))
         """
-        if device.shot_vector is not None and self.batch_size is not None:
+        if not qml.active_return():
+            return self._shape_legacy(device)
+
+        shots = (
+            Shots(device._raw_shot_sequence)
+            if device.shot_vector is not None
+            else Shots(device.shots)
+        )
+
+        if len(shots.shot_vector) > 1 and self.batch_size is not None:
             raise NotImplementedError(
                 "Parameter broadcasting when using a shot vector is not supported yet."
             )
 
-        shapes = tuple(meas_process.shape(device) for meas_process in self.measurements)
+        shapes = tuple(meas_process.shape(device, shots) for meas_process in self.measurements)
 
         if self.batch_size is not None:
             shapes = tuple((self.batch_size,) + shape for shape in shapes)
@@ -931,14 +920,14 @@ class QuantumScript:
         if len(shapes) == 1:
             return shapes[0]
 
-        if device.shot_vector is not None:
+        if len(shots.shot_vector) > 1:
             # put the shot vector axis before the measurement axis
             shapes = tuple(zip(*shapes))
 
         return shapes
 
     @property
-    def numeric_type(self):
+    def _numeric_type_legacy(self):
         """Returns the expected numeric type of the script result by inspecting
         its measurements.
 
@@ -956,8 +945,6 @@ class QuantumScript:
         >>> qscript.numeric_type
         complex
         """
-        if qml.active_return():
-            return self._numeric_type_new
         measurement_types = {type(meas) for meas in self.measurements}
         if len(measurement_types) > 1:
             raise ValueError(
@@ -972,7 +959,7 @@ class QuantumScript:
         return self.measurements[0].numeric_type
 
     @property
-    def _numeric_type_new(self):
+    def numeric_type(self):
         """Returns the expected numeric type of the quantum script result by inspecting
         its measurements.
 
@@ -990,6 +977,8 @@ class QuantumScript:
             >>> qs.numeric_type
             complex
         """
+        if not qml.active_return():
+            return self._numeric_type_legacy
         types = tuple(observable.numeric_type for observable in self.measurements)
 
         return types[0] if len(types) == 1 else types
@@ -1170,38 +1159,46 @@ class QuantumScript:
             dict[str, Union[defaultdict,int]]: dictionaries that contain quantum script specifications
 
         **Example**
+         >>> ops = [qml.Hadamard(0), qml.RX(0.26, 1), qml.CNOT((1,0)),
+         ...         qml.Rot(1.8, -2.7, 0.2, 0), qml.Hadamard(1), qml.CNOT((0, 1))]
+         >>> qscript = QuantumScript(ops, [qml.expval(qml.PauliZ(0) @ qml.PauliZ(1))])
 
-        >>> ops = [qml.Hadamard(0), qml.RX(0.26, 1), qml.CNOT((1,0)),
-        ...         qml.Rot(1.8, -2.7, 0.2, 0), qml.Hadamard(1), qml.CNOT((0,1))]
-        >>> qscript = QuantumScript(ops, [qml.expval(qml.PauliZ(0) @ qml.PauliZ(1))])
+        Asking for the specs produces a dictionary of useful information about the circuit:
 
-        Asking for the specs produces a dictionary as shown below:
-
+        >>> qscript.specs['num_observables']
+        1
         >>> qscript.specs['gate_sizes']
-        defaultdict(int, {1: 4, 2: 2})
-        >>> qscript.specs['gate_types']
-        defaultdict(int, {'Hadamard': 2, 'RX': 1, 'CNOT': 2, 'Rot': 1})
-
-        As ``defaultdict`` objects, any key not present in the dictionary returns 0.
-
-        >>> qscript.specs['gate_types']['RZ']
-        0
-
+        defaultdict(<class 'int'>, {1: 4, 2: 2})
+        >>> print(qscript.specs['resources'])
+        wires: 2
+        gates: 6
+        depth: 4
+        shots: 0
+        gate_types:
+        {'Hadamard': 2, 'RX': 1, 'CNOT': 2, 'Rot': 1}
         """
         if self._specs is None:
-            self._specs = {"gate_sizes": defaultdict(int), "gate_types": defaultdict(int)}
+            resources = qml.resource.resource._count_resources(
+                self, shots=0
+            )  # pylint: disable=protected-access
+
+            self._specs = {
+                "resources": resources,
+                "gate_sizes": defaultdict(int),
+                "gate_types": defaultdict(int),
+            }
 
             for op in self.operations:
                 # don't use op.num_wires to allow for flexible gate classes like QubitUnitary
                 self._specs["gate_sizes"][len(op.wires)] += 1
                 self._specs["gate_types"][op.name] += 1
 
-            self._specs["num_operations"] = len(self.operations)
+            self._specs["num_operations"] = resources.num_gates
             self._specs["num_observables"] = len(self.observables)
             self._specs["num_diagonalizing_gates"] = len(self.diagonalizing_gates)
             self._specs["num_used_wires"] = self.num_wires
-            self._specs["depth"] = self.graph.get_depth()
             self._specs["num_trainable_params"] = self.num_params
+            self._specs["depth"] = resources.depth
 
         return self._specs
 
