@@ -174,7 +174,7 @@ class QuantumScript(Pytree):
     """Whether or not to queue the object. Assumed ``False`` for a vanilla Quantum Script, but may be
     True for its child Quantum Tape."""
 
-    def __init__(self, ops=None, measurements=None, prep=None, name=None, _update=True):
+    def __init__(self, ops=None, measurements=None, prep=None, name=None, result=None):
         self.name = name
         self._prep = tuple() if prep is None else tuple(prep)
         self._ops = tuple() if ops is None else tuple(ops)
@@ -189,7 +189,7 @@ class QuantumScript(Pytree):
         self._specs = None
         #self._output_dim = 0
         #self._batch_size = None
-        self._qfunc_output = None
+        self._qfunc_output = result
 
         #self.wires = _empty_wires
         #self.num_wires = 0
@@ -201,9 +201,6 @@ class QuantumScript(Pytree):
         """list[.Observable]: subset of the observables that share wires with another observable,
         i.e., that do not have their own unique set of wires."""
         #self._obs_sharing_wires_id = []
-
-        if _update:
-            self._update()
 
     def __repr__(self):
         return f"<{self.__class__.__name__}: wires={self.wires.tolist()}, params={self.num_params}>"
@@ -300,7 +297,7 @@ class QuantumScript(Pytree):
             else:
                 obs.append(m)
 
-        return obs
+        return tuple(obs)
 
     @property
     def measurements(self) -> List[MeasurementProcess]:
@@ -345,24 +342,6 @@ class QuantumScript(Pytree):
                 with contextlib.suppress(qml.operation.DiagGatesUndefinedError):
                     rotation_gates.extend(observable.diagonalizing_gates())
         return rotation_gates
-
-    ##### Update METHODS ###############
-
-    def _update(self):
-        """Update all internal metadata regarding processed operations and observables"""
-        self._graph = None
-        self._specs = None
-        #self._update_circuit_info()  # Updates wires, num_wires, is_sampled, all_sampled; O(ops+obs)
-        #self._update_par_info()  # Updates _par_info; O(ops+obs)
-
-        # The following line requires _par_info to be up to date
-        #self._update_trainable_params()  # Updates the _trainable_params; O(1)
-
-        #self._update_observables()  # Updates _obs_sharing_wires and _obs_sharing_wires_id
-        #self._update_batch_size()  # Updates _batch_size; O(ops)
-
-        # The following line requires _batch_size to be up to date
-        #self._update_output_dim()  # Updates _output_dim; O(obs)
 
     ## FROM _update_circuit_info
     @property#_cached
@@ -448,7 +427,7 @@ class QuantumScript(Pytree):
         return list(range(len(self._par_info)))
     
     ## from _update_observables
-    @property_cached
+    @property#_cached
     def _obs_sharing_wires(self) -> List[Observable]:
         """The list of observables that share wires with any other observable."""
         obs_wires = [wire for m in self.measurements for wire in m.wires if m.obs is not None]
@@ -664,17 +643,17 @@ class QuantumScript(Pytree):
 
                 op_idx = self._par_info[p_idx]["p_idx"]
                 params.append(op.data[op_idx])
-            return params
+            return tuple(params)
 
         # If trainable_only=False, return all parameters
         # This is faster than the above and should be used when indexing `_par_info` is not needed
         params = [d for op in self.operations for d in op.data]
         if operations_only:
-            return params
+            return tuple(params)
         for m in self.measurements:
             if m.obs is not None:
                 params.extend(m.obs.data)
-        return params
+        return tuple(params)
 
     def set_parameters(self, params, trainable_only=True):
         """Set the parameters incident on the quantum script operations.
@@ -1350,9 +1329,9 @@ class QuantumScript(Pytree):
         return qasm_str
 
     @classmethod
-    def from_queue(cls, queue):
+    def from_queue(cls, queue, result=None):
         """Construct a QuantumScript from an AnnotatedQueue."""
-        return cls(*process_queue(queue))
+        return cls(*process_queue(queue), result=result)
 
 
     @property
@@ -1414,8 +1393,7 @@ def make_qscript(fn):
         with AnnotatedQueue() as q:
             result = fn(*args, **kwargs)
 
-        qscript = QuantumScript.from_queue(q)
-        qscript._qfunc_output = result
+        qscript = QuantumScript.from_queue(q, result=result)
         return qscript
 
     return wrapper
