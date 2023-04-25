@@ -15,7 +15,7 @@
 The ``resource`` module provides functionality to estimate the number of non-Clifford gates and
 logical qubits required to implement advanced quantum algorithms.
 """
-from .resource import Resources
+from .resource import Resources, ResourcesOperation
 from .first_quantization import FirstQuantization
 from .second_quantization import DoubleFactorization
 from .measurement import estimate_error, estimate_shots

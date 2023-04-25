@@ -483,6 +483,39 @@ these changes when using PennyLane, but here is what has changed this release:
   output of `qml.specs()`. 
   [(#4015)](https://github.com/PennyLaneAI/pennylane/pull/4015)
 
+* The `ResourcesOperation` class is added to allow users to define operations with custom resource information.
+  [(#4026)](https://github.com/PennyLaneAI/pennylane/pull/4026)
+
+  For example, users can define a custom operation by inheriting from this new class:
+
+  ```pycon
+  >>> class CustomOp(ResourcesOperation):
+  ...     def resources(self):
+  ...         return Resources(num_wires=1, num_gates=2, gate_types={"PauliX": 2})
+  ... 
+  >>> CustomOp(wires=1)
+  CustomOp(wires=[1])
+  ```
+  
+  Then we can track and display the resources of the workflow using `qml.specs()`:
+
+  ```pycon
+  >>> dev = qml.device("default.qubit", wires=[0,1])
+  >>> @qml.qnode(dev)
+  ... def circ():
+  ...     qml.PauliZ(wires=0)
+  ...     CustomOp(wires=1)
+  ...     return qml.state()
+  ... 
+  >>> print(qml.specs(circ)()['resources'])
+  wires: 2
+  gates: 3
+  depth: 1
+  shots: 0
+  gate_types:
+  {'PauliZ': 1, 'PauliX': 2}
+  ```
+
 * `MeasurementProcess.shape` now accepts a `Shots` object as one of its arguments to reduce exposure to unnecessary
   execution details.
   [(#4012)](https://github.com/PennyLaneAI/pennylane/pull/4012)
@@ -622,6 +655,9 @@ these changes when using PennyLane, but here is what has changed this release:
 * Added a `map_wires` method to `PauliWord` and `PauliSentence`, and ensured that operators call
   it in their respective `map_wires` methods if they have a Pauli rep.
   [(#3985)](https://github.com/PennyLaneAI/pennylane/pull/3985)
+
+* Fixes a bug when a Tensor is multiplied by a Hamiltonian or a Hamiltonian is multipled by a Tensor.
+  [(#4036)](https://github.com/PennyLaneAI/pennylane/pull/4036)
 
 <h3>Contributors ✍️</h3>
 
