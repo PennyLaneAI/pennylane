@@ -6,6 +6,9 @@
 
 <h3>Improvements 🛠</h3>
 
+* Support for adjoint differentiation has been added to the `DefaultQubit2` device.
+  [(#4037)](https://github.com/PennyLaneAI/pennylane/pull/4037)
+
 <h3>Breaking changes 💔</h3>
 
 <h3>Deprecations 👋</h3>
@@ -17,3 +20,5 @@
 <h3>Contributors ✍️</h3>
 
 This release contains contributions from (in alphabetical order):
+
+Matthew Silverman
