@@ -501,16 +501,40 @@ def map_batch_transform(transform, tapes):
         batch_fns.append(fn)
         tape_counts.append(len(new_tapes))
 
-    def processing_fn(res):
+    return tuple(execution_tapes), MapBatchTransform(batch_fns, tape_counts)
+
+
+class MapBatchTransform:
+    """
+    Maps a batch transform over multiple tapes.
+    """
+    def __init__(self, batch_fns, tape_counts):
+        self._batch_fns = tuple(batch_fns)
+        self._tape_counts = tuple(tape_counts)
+
+    def __call__(self, res):
         count = 0
         final_results = []
 
-        for idx, s in enumerate(tape_counts):
+        for idx, s in enumerate(self.tape_counts):
             # apply any batch transform post-processing
-            new_res = batch_fns[idx](res[count : count + s])
+            new_res = self.batch_fns[idx](res[count : count + s])
             final_results.append(new_res)
             count += s
 
         return final_results
 
-    return execution_tapes, processing_fn
+    @property
+    def batch_fns(self):
+        return self._batch_fns
+    @property
+    def tape_counts(self):
+        return self._tape_counts
+    def __hash__(self):
+        return hash((self.batch_fns, self.tape_counts))
+    def __eq__(self):
+        if isinstance(o, MapBatchTransform):
+            return (self.batch_fns, self.tape_counts) == (o.batch_fns, o.tape_counts)
+        return False
+    def __repr__(self):
+        return f"MapBatchTransform(batch_fns={self.batch_fns}, tape_counts={self.tape_counts})"
