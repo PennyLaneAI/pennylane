@@ -116,7 +116,7 @@ class MyOp(qml.RX):  # pylint:disable=too-few-public-methods
     has_diagonalizing_gates = False
 
 
-class TestInitialization:
+class TestInitialization:  # pylint:disable=too-many-public-methods
     """Test the initialization."""
 
     @pytest.mark.parametrize("id", ("foo", "bar"))
@@ -379,6 +379,27 @@ class TestInitialization:
         for args in [(qfunc, fn2), (qfunc, qml.PauliX), (qml.PauliX, qfunc)]:
             with pytest.raises(AttributeError, match="has no attribute 'wires'"):
                 prod(*args)
+
+    def test_qfunc_init_returns_single_op(self):
+        """Tests that if a qfunc only queues one operator, that operator is returned."""
+
+        def qfunc():
+            qml.PauliX(0)
+
+        prod_op = prod(qfunc)()
+        assert qml.equal(prod_op, qml.PauliX(0))
+        assert not isinstance(prod_op, Prod)
+
+    def test_prod_accepts_single_operator_but_Prod_does_not(self):
+        """Tests that the prod wrapper can accept a single operator, and return it."""
+
+        x = qml.PauliX(0)
+        prod_op = prod(x)
+        assert prod_op is x
+        assert not isinstance(prod_op, Prod)
+
+        with pytest.raises(ValueError, match="Require at least two operators"):
+            Prod(x)
 
 
 class TestMatrix:

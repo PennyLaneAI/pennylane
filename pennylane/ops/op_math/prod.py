@@ -95,8 +95,14 @@ def prod(*ops, do_queue=True, id=None, lazy=True):
     >>> prod_op
     CNOT(wires=[0, 1]) @ RX(1.1, wires=[0])
     """
-    if len(ops) == 1 and callable(ops[0]):
+    if len(ops) == 1:
+        if isinstance(ops[0], qml.operation.Operator):
+            return ops[0]
+
         fn = ops[0]
+
+        if not callable(fn):
+            raise ValueError(f"Unexpected argument of type {type(fn)} passed to qml.prod")
 
         @wraps(fn)
         def wrapper(*args, **kwargs):
