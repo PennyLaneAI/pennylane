@@ -43,18 +43,6 @@ def _validate_jax_version():
         raise InterfaceUnsupportedError(msg)
 
 
-def _set_copy_and_unwrap_tape(t, a, unwrap=True):
-    """Copy a given tape with operations and set parameters"""
-    tc = t.copy(copy_operations=True)
-    tc.set_parameters(a, trainable_only=False)
-    return convert_to_numpy_parameters(tc) if unwrap else tc
-
-
-def set_parameters_on_copy_and_unwrap(tapes, params, unwrap=True):
-    """Copy a set of tapes with operations and set parameters"""
-    return tuple(_set_copy_and_unwrap_tape(t, a, unwrap=unwrap) for t, a in zip(tapes, params))
-
-
 def _create_shape_dtype_struct(tape, device):
     """Auxiliary function for creating the shape and dtype object structure
     given a tape."""
@@ -170,7 +158,7 @@ def execute(tapes, device, execute_fn, gradient_fn, gradient_kwargs, _n=1, max_d
         for tape in tapes:
             # set the trainable parameters
             params = tape.get_parameters(trainable_only=False)
-            tape.trainable_params = qml.math.get_trainable_indices(params)
+            # = qml.math.get_trainable_indices(params)
 
     parameters = tuple(list(t.get_parameters(trainable_only=False)) for t in tapes)
 
@@ -210,10 +198,10 @@ def _execute_bwd(
     def execute_wrapper(params):
         shape_dtype_structs = _tapes_shape_dtype_tuple(tapes, device)
 
-        def wrapper(p):
+        def wrapper(tapes):
             """Compute the forward pass."""
-            new_tapes = set_parameters_on_copy_and_unwrap(tapes, p)
-            res, _ = execute_fn(new_tapes, **gradient_kwargs)
+            #new_tapes = set_parameters_on_copy_and_unwrap(tapes, p)
+            res, _ = execute_fn(tapes, **gradient_kwargs)
 
             # When executed under `jax.vmap` the `result_shapes_dtypes` will contain
             # the shape without the vmap dimensions, while the function here will be
@@ -228,7 +216,7 @@ def _execute_bwd(
             res = jax.tree_map(lambda r, s: r.T if r.ndim > s.ndim else r, res, shape_dtype_structs)
             return res
 
-        res = jax.pure_callback(wrapper, shape_dtype_structs, params, vectorized=True)
+        res = jax.pure_callback(wrapper, shape_dtype_structs, tapes, vectorized=True)
         return res
 
     @execute_wrapper.defjvp

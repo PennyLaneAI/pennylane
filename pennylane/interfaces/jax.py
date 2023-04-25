@@ -19,6 +19,7 @@ to a PennyLane Device class.
 
 import jax
 import jax.numpy as jnp
+import jax.tree_util as jtu
 
 import pennylane as qml
 from pennylane.interfaces import InterfaceUnsupportedError
@@ -26,18 +27,6 @@ from pennylane.measurements import CountsMP, ProbabilityMP, SampleMP
 from pennylane.transforms import convert_to_numpy_parameters
 
 dtype = jnp.float64
-
-
-def _set_copy_and_unwrap_tape(t, a, unwrap=True):
-    """Copy a given tape with operations and set parameters"""
-    tc = t.copy(copy_operations=True)
-    tc.set_parameters(a)
-    return convert_to_numpy_parameters(tc) if unwrap else tc
-
-
-def set_parameters_on_copy_and_unwrap(tapes, params, unwrap=True):
-    """Copy a set of tapes with operations and set parameters"""
-    return tuple(_set_copy_and_unwrap_tape(t, a, unwrap=unwrap) for t, a in zip(tapes, params))
 
 
 def get_jax_interface_name(tapes):
@@ -194,14 +183,13 @@ def _execute_legacy(
         return jnp.array(r)
 
     @jax.custom_vjp
-    def wrapped_exec(params):
-        new_tapes = set_parameters_on_copy_and_unwrap(tapes, params)
+    def wrapped_exec(new_tapes):
         res, _ = execute_fn(new_tapes, **gradient_kwargs)
 
-        if len(tapes) > 1:
-            res = [array_if_not_counts(tape, r) for tape, r in zip(tapes, res)]
+        if len(new_tapes) > 1:
+            res = [array_if_not_counts(tape, r) for tape, r in zip(new_tapes, res)]
         else:
-            res = array_if_not_counts(tapes[0], res)
+            res = array_if_not_counts(new_tapes[0], res)
 
         return res
 
@@ -395,27 +383,19 @@ def execute(tapes, device, execute_fn, gradient_fn, gradient_kwargs, _n=1, max_d
         list[list[float]]: A nested list of tape results. Each element in
         the returned list corresponds in order to the provided tapes.
     """
-    # Set the trainable parameters
-    if _n == 1:
-        for tape in tapes:
-            params = tape.get_parameters(trainable_only=False)
-            tape.trainable_params = qml.math.get_trainable_indices(params)
-
-    parameters = tuple(list(t.get_parameters()) for t in tapes)
-
     if gradient_fn is None:
         # PennyLane forward execution
-        return _execute_fwd(
-            parameters,
+        res = _execute_fwd(
+            None,
             tapes,
             execute_fn,
             gradient_kwargs,
             _n=_n,
         )
 
+    print("executing tape", tapes, "with", [t._par_info for t in tapes])
     # PennyLane backward execution
-    return _execute_bwd(
-        parameters,
+    res = _execute_bwd(
         tapes,
         device,
         execute_fn,
@@ -424,10 +404,9 @@ def execute(tapes, device, execute_fn, gradient_fn, gradient_kwargs, _n=1, max_d
         _n=_n,
         max_diff=max_diff,
     )
-
+    return res
 
 def _execute_bwd(
-    params,
     tapes,
     device,
     execute_fn,
@@ -439,13 +418,12 @@ def _execute_bwd(
     """The main interface execution function where jacobians of the execute
     function are computed by the registered backward function."""
 
-    # pylint: disable=unused-variable
-    # Copy a given tape with operations and set parameters
+    params, tape_def = jtu.tree_flatten(tapes)
 
     @jax.custom_jvp
     def execute_wrapper(params):
-        new_tapes = set_parameters_on_copy_and_unwrap(tapes, params)
-        res, _ = execute_fn(new_tapes, **gradient_kwargs)
+        tapes = jtu.tree_unflatten(tape_def, params)
+        res, _ = execute_fn(tapes, **gradient_kwargs)
 
         if device.shot_vector:
             res = _to_jax_shot_vector(res)
@@ -459,7 +437,8 @@ def _execute_bwd(
         """Primals[0] are parameters as Jax tracers and tangents[0] is a list of tangent vectors as Jax tracers."""
         if isinstance(gradient_fn, qml.gradients.gradient_transform):
             at_max_diff = _n == max_diff
-            new_tapes = set_parameters_on_copy_and_unwrap(tapes, primals[0], unwrap=at_max_diff)
+            print("primal structure is ", primals)
+            new_tapes = jtu.tree_unflatten(tape_def, primals[0])
             _args = (
                 new_tapes,
                 tangents[0],
