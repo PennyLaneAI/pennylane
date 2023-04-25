@@ -497,7 +497,7 @@ class CircuitGraph:
             """Link incoming and outgoing edges for the initial node to the sub-graph"""
             if target_index == node_index:
                 return sub_graph.nodes().index(f"{node_index}.0")
-            elif source_index == node_index:
+            if source_index == node_index:
                 return sub_graph.nodes().index(f"{node_index}.1")
             return None
 
