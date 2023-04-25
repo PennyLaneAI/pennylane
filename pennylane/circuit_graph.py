@@ -493,29 +493,30 @@ class CircuitGraph:
             if isinstance(op, ResourcesOperation) and (d := op.resources().depth) > 1:
                 custom_depth_node_dict[graph.nodes().index(op)] = d
 
+        def _link_graph(source_index, target_index, sub_graph, node_index):
+            """Link incoming and outgoing edges for the initial node to the sub-graph"""
+            if target_index == node_index:
+                return sub_graph.nodes().index(f"{node_index}.0")
+            elif source_index == node_index:
+                return sub_graph.nodes().index(f"{node_index}.1")
+            return None
+
         for node_index, depth in custom_depth_node_dict.items():
             # Construct sub_graph:
             sub_graph = rx.PyDiGraph()
+            source_node, target_node = (f"{node_index}.0", f"{node_index}.1")
 
-            sub_graph.add_node(f"{node_index}.0")
-            sub_graph.add_node(f"{node_index}.1")
+            sub_graph.add_node(source_node)
+            sub_graph.add_node(target_node)
 
             sub_graph.add_edge(
-                sub_graph.nodes().index(f"{node_index}.0"),
-                sub_graph.nodes().index(f"{node_index}.1"),
+                sub_graph.nodes().index(source_node),
+                sub_graph.nodes().index(target_node),
                 depth - 1,  # set edge weight as 1 - depth
             )
 
-            # extend_graph:
-            def _link_graph(source_index, target_index):
-                if target_index == node_index:
-                    return sub_graph.nodes().index(f"{node_index}.0")
-                elif source_index == node_index:
-                    return sub_graph.nodes().index(f"{node_index}.1")
-                return None
-
             graph.substitute_node_with_subgraph(
-                node_index, sub_graph, lambda s, t, _: _link_graph(s, t)
+                node_index, sub_graph, lambda s, t, _: _link_graph(s, t, sub_graph, node_index)
             )
 
     def has_path(self, a, b):
