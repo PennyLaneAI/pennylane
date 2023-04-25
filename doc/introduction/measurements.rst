@@ -65,7 +65,7 @@ can not be simultaneously measured in conjunction with non-observable type measu
         qml.RZ(x, wires=0)
         qml.CNOT(wires=[0, 1])
         qml.RY(y, wires=1)
-        return qml.expval(qml.PauliZ(0))), qml.var(qml.PauliX(0))
+        return qml.expval(qml.PauliZ(0)), qml.var(qml.PauliX(0))
 
 You can also use list comprehensions, and other common Python patterns:
 
@@ -95,13 +95,15 @@ by a ``Hadamard`` and ``CNOT`` gate.
         return qml.sample(qml.PauliZ(0)), qml.sample(qml.PauliZ(1))
 
 The combined PauliZ-measurement of the
-first and second qubit returns a list of two lists, each containing
-the measurement results of the respective qubit. As a default, :func:`~.pennylane.sample`
-returns 1000 samples per observable.
+first and second qubit returns a tuple of two arrays, each containing
+the measurement results of the respective qubit. :func:`~.pennylane.sample`
+returns 1000 samples per observable as defined on the device.
 
->>> result = circuit()
->>> result.shape
-(2, 1000)
+>>> results = circuit()
+>>> results[0].shape
+(1000,)
+>>> results[1].shape
+(1000,)
 
 Since the two qubits are maximally entangled,
 the measurement results always coincide, and the lists are therefore equal:
