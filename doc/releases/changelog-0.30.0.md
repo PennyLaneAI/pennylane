@@ -127,9 +127,7 @@
       return qml.expval(qml.PauliZ(wires=0))
   ```
   
-  This circuit is composed of
-  [`qml.BlockEncode`](https://docs.pennylane.ai/en/stable/code/api/pennylane.BlockEncode.html) and
-  [`qml.PCPhase`](https://docs.pennylane.ai/en/stable/code/api/pennylane.PCPhase.html) operations.
+  This circuit is composed of `qml.BlockEncode` and `qml.PCPhase` operations.
 
   ```pycon
   >>> qml.draw(example_circuit, expansion_strategy="device")(A)  # TODO
