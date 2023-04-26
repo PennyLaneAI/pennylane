@@ -59,6 +59,11 @@ and probabilities separately:
 For a detailed explanation of this change, along with code examples, check out the
 :func:`~.enable_return` function documentation.
 
+.. image:: ../_static/new_return_types.png
+    :align: right
+    :width: 180px
+    :target: javascript:void(0);
+
 Motivation
 ----------
 
