@@ -15,12 +15,13 @@
 Test base Resource class and its associated methods
 """
 from dataclasses import FrozenInstanceError
+from collections import defaultdict
 import pytest
 
 import pennylane as qml
+from pennylane.operation import Operation
 from pennylane.tape import QuantumTape
-from pennylane.resource import Resources
-from pennylane.resource.resource import _count_resources
+from pennylane.resource.resource import Resources, ResourcesOperation, _count_resources
 
 
 class TestResources:
@@ -29,14 +30,14 @@ class TestResources:
     resource_quantities = (
         Resources(),
         Resources(5, 0, {}, 0, 0),
-        Resources(1, 3, {"Hadamard": 1, "PauliZ": 2}, 3, 10),
+        Resources(1, 3, defaultdict(int, {"Hadamard": 1, "PauliZ": 2}), 3, 10),
         Resources(4, 2, {"Hadamard": 1, "CNOT": 1}, 2, 100),
     )
 
     resource_parameters = (
         (0, 0, {}, 0, 0),
         (5, 0, {}, 0, 0),
-        (1, 3, {"Hadamard": 1, "PauliZ": 2}, 3, 10),
+        (1, 3, defaultdict(int, {"Hadamard": 1, "PauliZ": 2}), 3, 10),
         (4, 2, {"Hadamard": 1, "CNOT": 1}, 2, 100),
     )
 
@@ -61,14 +62,14 @@ class TestResources:
                 setattr(r, attr_name, 1)
 
     test_str_data = (
-        ("wires: 0\n" + "gates: 0\n" + "depth: 0\n" + "shots: 0\n" + "gate_types: \n" + "{}"),
-        ("wires: 5\n" + "gates: 0\n" + "depth: 0\n" + "shots: 0\n" + "gate_types: \n" + "{}"),
+        ("wires: 0\n" + "gates: 0\n" + "depth: 0\n" + "shots: 0\n" + "gate_types:\n" + "{}"),
+        ("wires: 5\n" + "gates: 0\n" + "depth: 0\n" + "shots: 0\n" + "gate_types:\n" + "{}"),
         (
             "wires: 1\n"
             + "gates: 3\n"
             + "depth: 3\n"
             + "shots: 10\n"
-            + "gate_types: \n"
+            + "gate_types:\n"
             + "{'Hadamard': 1, 'PauliZ': 2}"
         ),
         (
@@ -76,7 +77,7 @@ class TestResources:
             + "gates: 2\n"
             + "depth: 2\n"
             + "shots: 100\n"
-            + "gate_types: \n"
+            + "gate_types:\n"
             + "{'Hadamard': 1, 'CNOT': 1}"
         ),
     )
@@ -89,7 +90,7 @@ class TestResources:
     test_rep_data = (
         "Resources(num_wires=0, num_gates=0, gate_types={}, depth=0, shots=0)",
         "Resources(num_wires=5, num_gates=0, gate_types={}, depth=0, shots=0)",
-        "Resources(num_wires=1, num_gates=3, gate_types={'Hadamard': 1, 'PauliZ': 2}, "
+        "Resources(num_wires=1, num_gates=3, gate_types=defaultdict(<class 'int'>, {'Hadamard': 1, 'PauliZ': 2}), "
         "depth=3, shots=10)",
         "Resources(num_wires=4, num_gates=2, gate_types={'Hadamard': 1, 'CNOT': 1}, "
         "depth=2, shots=100)",
@@ -130,11 +131,48 @@ class TestResources:
         assert rep in captured.out
 
 
+class TestResourcesOperation:  # pylint: disable=too-few-public-methods
+    """Test that the ResourcesOperation class is constructed correctly"""
+
+    def test_raise_not_implemented_error(self):
+        """Test that a not type error is raised if the class is
+        initialized without a `resources` method."""
+
+        class CustomOpNoResource(ResourcesOperation):  # pylint: disable=too-few-public-methods
+            num_wires = 2
+
+        class CustomOPWithResources(ResourcesOperation):  # pylint: disable=too-few-public-methods
+            num_wires = 2
+
+            def resources(self):
+                return Resources(num_wires=self.num_wires)
+
+        with pytest.raises(TypeError, match="Can't instantiate"):
+            _ = CustomOpNoResource(wires=[0, 1])
+
+        assert CustomOPWithResources(wires=[0, 1])  # shouldn't raise an error
+
+
 def _construct_tape_from_ops(lst_ops):
     with QuantumTape() as tape:
         for op in lst_ops:
             qml.apply(op)
     return tape
+
+
+class _CustomOpWithResource(ResourcesOperation):  # pylint: disable=too-few-public-methods
+    num_wires = 2
+    name = "CustomOp1"
+
+    def resources(self):
+        return Resources(
+            num_wires=self.num_wires, num_gates=3, gate_types={"Identity": 1, "PauliZ": 2}, depth=3
+        )
+
+
+class _CustomOpWithoutResource(Operation):  # pylint: disable=too-few-public-methods
+    num_wires = 2
+    name = "CustomOp2"
 
 
 lst_ops_and_shots = (
@@ -152,6 +190,29 @@ lst_ops_and_shots = (
         ],
         100,
     ),
+    ([qml.Hadamard(0), qml.CNOT([0, 1]), _CustomOpWithResource(wires=[1, 0])], 0),
+    (
+        [
+            qml.PauliZ(0),
+            qml.CNOT([0, 1]),
+            qml.RX(1.23, 2),
+            _CustomOpWithResource(wires=[0, 2]),
+            _CustomOpWithoutResource(wires=[0, 1]),
+        ],
+        10,
+    ),
+    (
+        [
+            qml.Hadamard(0),
+            qml.RX(1.23, 1),
+            qml.CNOT([0, 1]),
+            qml.RX(4.56, 1),
+            qml.Hadamard(0),
+            qml.Hadamard(1),
+            _CustomOpWithoutResource(wires=[0, 1]),
+        ],
+        100,
+    ),
 )
 
 resources_data = (
@@ -159,6 +220,9 @@ resources_data = (
     Resources(2, 2, {"Hadamard": 1, "CNOT": 1}, 2, 0),
     Resources(3, 3, {"PauliZ": 1, "CNOT": 1, "RX": 1}, 2, 10),
     Resources(2, 6, {"Hadamard": 3, "RX": 2, "CNOT": 1}, 4, 100),
+    Resources(2, 5, {"Hadamard": 1, "CNOT": 1, "Identity": 1, "PauliZ": 2}, None, 0),
+    Resources(3, 7, {"PauliZ": 3, "CNOT": 1, "RX": 1, "Identity": 1, "CustomOp2": 1}, None, 10),
+    Resources(2, 7, {"Hadamard": 3, "RX": 2, "CNOT": 1, "CustomOp2": 1}, 5, 100),
 )
 
 
