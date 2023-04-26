@@ -60,7 +60,8 @@ class TestRydbergInteraction:
     def test_coeffs(self):
         """Test that the generated coefficients are correct."""
         coords = [[0, 0], [0, 1], [1, 0]]
-        Hd = rydberg_interaction(coords, interaction_coeff=1)
+        # factor (2 * np.pi) to convert between angular and standard frequency
+        Hd = rydberg_interaction(coords, interaction_coeff=1 / (2 * np.pi))
         assert Hd.coeffs == [1, 1, 1 / np.sqrt(2) ** 6]
 
     def test_different_lengths_raises_error(self):
@@ -77,10 +78,16 @@ class TestRydbergInteraction:
         h_wires = [1, 0, 2, 3]
 
         # Set interaction_coeff to one for easier comparison
+        # factor (2 * np.pi) to convert between angular and standard frequency
         H_res = rydberg_interaction(
-            register=coords, wires=h_wires, interaction_coeff=1, max_distance=max_distance
+            register=coords,
+            wires=h_wires,
+            interaction_coeff=1 / (2 * np.pi),
+            max_distance=max_distance,
         )
-        H_exp = rydberg_interaction(register=coords[:3], wires=h_wires[:3], interaction_coeff=1)
+        H_exp = rydberg_interaction(
+            register=coords[:3], wires=h_wires[:3], interaction_coeff=1 / (2 * np.pi)
+        )
 
         # Only 3 of the interactions will be non-negligible
         assert H_res.coeffs == [2.5**-6, 5**-6, 2.5**-6]
@@ -105,19 +112,20 @@ class TestRydbergDrive:
     def test_multiple_local_drives(self):
         """Test that adding multiple drive terms behaves as expected"""
 
+        # factors (2 * np.pi) to convert between angular and standard frequency
         def fa(p, t):
-            return np.sin(p * t)
+            return np.sin(p * t) / (2 * np.pi)
 
         def fb(p, t):
             return np.cos(p * t)
 
         H1 = rydberg_drive(amplitude=fa, phase=1, detuning=3, wires=[0, 3])
-        H2 = rydberg_drive(amplitude=1, phase=3, detuning=fb, wires=[1, 2])
+        H2 = rydberg_drive(amplitude=1 / (2 * np.pi), phase=3, detuning=fb, wires=[1, 2])
         Hd = H1 + H2
 
         ops_expected = [
             qml.Hamiltonian(
-                [-0.5, -0.5, 0.5, 0.5],
+                [-0.5 * (2 * np.pi), -0.5 * (2 * np.pi), 0.5 * (2 * np.pi), 0.5 * (2 * np.pi)],
                 [qml.Identity(0), qml.Identity(3), qml.PauliZ(0), qml.PauliZ(3)],
             ),
             qml.Hamiltonian([0.5, 0.5], [qml.PauliX(1), qml.PauliX(2)]),
@@ -125,7 +133,7 @@ class TestRydbergDrive:
             qml.Hamiltonian([0.5, 0.5], [qml.PauliX(0), qml.PauliX(3)]),
             qml.Hamiltonian([-0.5, -0.5], [qml.PauliY(0), qml.PauliY(3)]),
             qml.Hamiltonian(
-                [-0.5, -0.5, 0.5, 0.5],
+                [-0.5 * (2 * np.pi), -0.5 * (2 * np.pi), 0.5 * (2 * np.pi), 0.5 * (2 * np.pi)],
                 [qml.Identity(1), qml.Identity(2), qml.PauliZ(1), qml.PauliZ(2)],
             ),
         ]
@@ -162,14 +170,15 @@ class TestRydbergDrive:
     def test_no_amplitude(self):
         """Test that when amplitude is not specified, the drive term is correctly defined."""
 
+        # factors (2 * np.pi) to convert between angular and standard frequency
         def f(p, t):
-            return np.cos(p * t)
+            return np.cos(p * t) / (2 * np.pi)
 
         Hd = rydberg_drive(amplitude=0, phase=1, detuning=f, wires=[0, 3])
 
         ops_expected = [
             qml.Hamiltonian(
-                [-0.5, -0.5, 0.5, 0.5],
+                [-0.5 * (2 * np.pi), -0.5 * (2 * np.pi), 0.5 * (2 * np.pi), 0.5 * (2 * np.pi)],
                 [qml.Identity(0), qml.Identity(3), qml.PauliZ(0), qml.PauliZ(3)],
             )
         ]
@@ -402,4 +411,4 @@ class TestIntegration:
         res_jit = qnode_jit(params)
 
         assert isinstance(res, jax.Array)
-        assert res == res_jit
+        assert np.allclose(res, res_jit)
