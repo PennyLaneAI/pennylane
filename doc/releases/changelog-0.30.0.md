@@ -528,7 +528,7 @@ these changes when using PennyLane, but here is what has changed this release:
 * The tape method `get_operation` has an updated signature.
   [(#3998)](https://github.com/PennyLaneAI/pennylane/pull/3998)
 
-* Both JIT interfaces are not compatible with JAX `>0.4.3`, we raise an error for those versions.
+* Both JIT interfaces are no longer compatible with JAX `>0.4.3`, we raise an error for those versions.
   [(#3877)](https://github.com/PennyLaneAI/pennylane/pull/3877)
 
 * An operation that implements a custom `generator` method, but does not always return a valid generator, also has
@@ -544,7 +544,7 @@ these changes when using PennyLane, but here is what has changed this release:
   [(#3697)](https://github.com/PennyLaneAI/pennylane/pull/3697)
   [(#3847)](https://github.com/PennyLaneAI/pennylane/pull/3847)
 
-* Made `qml.OrbitalRotation` and consequently `qml.GateFabric` consistent with the interleaved Jordan-Wigner ordering.
+* `qml.OrbitalRotation` and, consequently, `qml.GateFabric` are now more consistent with the interleaved Jordan-Wigner ordering.
   Previously, they were consistent with the sequential Jordan-Wigner ordering.
   [(#3861)](https://github.com/PennyLaneAI/pennylane/pull/3861)
 
@@ -556,15 +556,17 @@ these changes when using PennyLane, but here is what has changed this release:
   [(#3958)](https://github.com/PennyLaneAI/pennylane/pull/3958)
   [(#3983)](https://github.com/PennyLaneAI/pennylane/pull/3983)
 
-* `qml.tape.tape.expand_tape` (and consequentially `QuantumScript.expand`) no longer updates the inputted tape
+* `qml.tape.tape.expand_tape` and, consequentially, `QuantumScript.expand` no longer update the input tape
   with rotations and diagonal measurements. Note that the newly expanded tape that is returned will still have
   the rotations and diagonal measurements.
   [(#3912)](https://github.com/PennyLaneAI/pennylane/pull/3912)
 
-* `Evolution` now initializes the coefficient with a factor of `-1j` instead of `1j`.
+* `qml.Evolution` now initializes the coefficient with a factor of `-1j` instead of `1j`.
   [(#4024)](https://github.com/PennyLaneAI/pennylane/pull/4024)
 
 <h3>Deprecations 👋</h3>
+
+Nothing for this release!
 
 <h3>Documentation 📝</h3>
 
