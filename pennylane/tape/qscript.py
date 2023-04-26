@@ -187,6 +187,7 @@ class QuantumScript:
 
         self.is_sampled = False
         self.all_sampled = False
+        self._shots = Shots(None)
 
         self._obs_sharing_wires = []
         """list[.Observable]: subset of the observables that share wires with another observable,
@@ -354,6 +355,21 @@ class QuantumScript:
                 with contextlib.suppress(qml.operation.DiagGatesUndefinedError):
                     rotation_gates.extend(observable.diagonalizing_gates())
         return rotation_gates
+
+    @property
+    def shots(self):
+        """Returns a ``Shots`` object containing information about the number
+        and batches of shots
+
+        Returns:
+            ~.Shots: Object with shot information
+        """
+        return self._shots
+
+    @shots.setter
+    def shots(self, shots):
+        """Setter for shots information stored on the ``QuantumScript``."""
+        self._shots = Shots(shots)
 
     ##### Update METHODS ###############
 

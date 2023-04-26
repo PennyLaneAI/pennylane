@@ -45,6 +45,7 @@ class TestInitialization:
         assert len(qs._trainable_params) == 0
         assert qs._graph is None
         assert qs._specs is None
+        assert qs._shots.total_shots is None
         assert qs._batch_size is None
         assert qs._qfunc_output is None
         assert qs.wires == qml.wires.Wires([])
@@ -463,6 +464,27 @@ class TestInfomationProperties:
         assert specs["num_used_wires"] == 3
         assert specs["num_trainable_params"] == 5
         assert specs["depth"] == 3
+
+    @pytest.mark.parametrize(
+        "shots, total_shots, shot_vector",
+        [
+            (None, None, ()),
+            (1, 1, ((1, 1),)),
+            (10, 10, ((10, 1),)),
+            ([1, 1, 2, 3, 1], 8, ((1, 2), (2, 1), (3, 1), (1, 1))),
+            (Shots([1, 1, 2]), 4, ((1, 2), (2, 1))),
+        ],
+    )
+    def test_set_shots(self, shots, total_shots, shot_vector):
+        qs = QuantumScript([], [])
+        assert isinstance(qs.shots, Shots)
+        assert qs.shots.total_shots == None
+        assert qs.shots.shot_vector == ()
+
+        qs.shots = shots
+        assert isinstance(qs.shots, Shots)
+        assert qs.shots.total_shots == total_shots
+        assert qs.shots.shot_vector == shot_vector
 
 
 class TestScriptCopying:

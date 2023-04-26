@@ -851,6 +851,14 @@ class QNode:
 
         # construct the tape
         self.construct(args, kwargs)
+        if override_shots is not False:
+            self._tape.shots = override_shots
+        else:
+            self._tape.shots = (
+                self.device._raw_shot_sequence
+                if self.device._has_partitioned_shots()
+                else self.device.shots
+            )
 
         cache = self.execute_kwargs.get("cache", False)
         using_custom_cache = (
