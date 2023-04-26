@@ -116,12 +116,12 @@ class TestRydbergDrive:
         Hd = H1 + H2
 
         ops_expected = [
-            qml.Hamiltonian([-1, -1], [qml.PauliZ(0), qml.PauliZ(3)]),
+            qml.Hamiltonian([0.5, 0.5], [qml.PauliZ(0), qml.PauliZ(3)]),
             qml.Hamiltonian([0.5, 0.5], [qml.PauliX(1), qml.PauliX(2)]),
             qml.Hamiltonian([-0.5, -0.5], [qml.PauliY(1), qml.PauliY(2)]),
             qml.Hamiltonian([0.5, 0.5], [qml.PauliX(0), qml.PauliX(3)]),
             qml.Hamiltonian([-0.5, -0.5], [qml.PauliY(0), qml.PauliY(3)]),
-            qml.Hamiltonian([-1, -1], [qml.PauliZ(1), qml.PauliZ(2)]),
+            qml.Hamiltonian([0.5, 0.5], [qml.PauliZ(1), qml.PauliZ(2)]),
         ]
         coeffs_expected = [
             3,
@@ -161,7 +161,7 @@ class TestRydbergDrive:
 
         Hd = rydberg_drive(amplitude=0, phase=1, detuning=f, wires=[0, 3])
 
-        ops_expected = [qml.Hamiltonian([-1, -1], [qml.PauliZ(0), qml.PauliZ(3)])]
+        ops_expected = [qml.Hamiltonian([0.5, 0.5], [qml.PauliZ(0), qml.PauliZ(3)])]
         coeffs_expected = [f]
         H_expected = HardwareHamiltonian(coeffs_expected, ops_expected)
 
