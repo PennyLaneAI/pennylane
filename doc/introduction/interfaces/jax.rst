@@ -73,7 +73,7 @@ as input, and returning ``jax.Array`` objects. It can now be used like any other
 >>> phi = jnp.array([0.5, 0.1])
 >>> theta = jnp.array(0.2)
 >>> circuit1(phi, theta)
-Array([0.8776, 0.6880], dtype=float64)
+(Array(0.87758256, dtype=float64), Array(0.68803733, dtype=float64))
 
 The interface can also be automatically determined when the ``QNode`` is called. You do not need to pass the interface
 if you provide parameters.
@@ -193,7 +193,7 @@ Example:
         return circuit(phi, theta)
 
     # Get the samples from the jitted method.
-    samples = sample_circuit([0.0, 1.0], 0.0, jax.random.PRNGKey(0))
+    samples = sample_circuit([0.2, 1.0], 5.2, jax.random.PRNGKey(0))
 
 .. note::
 

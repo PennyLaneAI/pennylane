@@ -1424,6 +1424,21 @@ class TestTensor:
         assert isinstance(t, Tensor)
         assert t.obs == [Z, H, X, Y]
 
+    def test_multiply_tensor_hamiltonian(self):
+        """Test that a tensor can be multiplied by a hamiltonian."""
+        H = qml.PauliX(0) + qml.PauliY(0)
+        t = qml.PauliZ(1) @ qml.PauliZ(2)
+        out = t @ H
+
+        expected = qml.Hamiltonian(
+            [1, 1],
+            [
+                qml.PauliZ(1) @ qml.PauliZ(2) @ qml.PauliX(0),
+                qml.PauliZ(1) @ qml.PauliZ(2) @ qml.PauliY(0),
+            ],
+        )
+        assert qml.equal(out, expected)
+
     def test_multiply_tensor_in_place(self):
         """Test that multiplying a tensor in-place
         produces a tensor"""
