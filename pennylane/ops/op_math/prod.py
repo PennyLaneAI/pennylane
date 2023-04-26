@@ -102,7 +102,7 @@ def prod(*ops, do_queue=True, id=None, lazy=True):
         fn = ops[0]
 
         if not callable(fn):
-            raise ValueError(f"Unexpected argument of type {type(fn)} passed to qml.prod")
+            raise TypeError(f"Unexpected argument of type {type(fn).__name__} passed to qml.prod")
 
         @wraps(fn)
         def wrapper(*args, **kwargs):

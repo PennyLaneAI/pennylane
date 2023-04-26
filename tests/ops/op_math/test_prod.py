@@ -401,6 +401,11 @@ class TestInitialization:  # pylint:disable=too-many-public-methods
         with pytest.raises(ValueError, match="Require at least two operators"):
             Prod(x)
 
+    def test_prod_fails_with_non_callable_arg(self):
+        """Tests that prod explicitly checks that a single-arg is either an Operator or callable."""
+        with pytest.raises(TypeError, match="Unexpected argument of type int passed to qml.prod"):
+            prod(1)
+
 
 class TestMatrix:
     """Test matrix-related methods."""
