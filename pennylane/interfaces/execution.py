@@ -29,7 +29,7 @@ from contextlib import _GeneratorContextManager
 from functools import wraps, partial
 from typing import Callable, Sequence, Optional, Union
 
-from cachetools import LRUCache
+from cachetools import LRUCache, Cache
 
 import pennylane as qml
 from pennylane.tape import QuantumTape
@@ -237,7 +237,7 @@ def execute(
     interface="auto",
     grad_on_execution="best",
     gradient_kwargs=None,
-    cache=True,
+    cache: Union[bool, dict, Cache] = True,
     cachesize=10000,
     max_diff=1,
     override_shots: int = False,
@@ -265,7 +265,7 @@ def execute(
             pass. The 'best' option chooses automatically between the two options and is default.
         gradient_kwargs (dict): dictionary of keyword arguments to pass when
             determining the gradients of tapes
-        cache (bool): Whether to cache evaluations. This can result in
+        cache (bool, dict, Cache): Whether to cache evaluations. This can result in
             a significant reduction in quantum evaluations during gradient computations.
         cachesize (int): the size of the cache
         max_diff (int): If ``gradient_fn`` is a gradient transform, this option specifies

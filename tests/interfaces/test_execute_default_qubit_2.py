@@ -19,7 +19,7 @@ import pennylane as qml
 from pennylane.devices.experimental import DefaultQubit2
 
 
-class NewDeviceUnitTests:
+class TestNewDeviceIntegration:
     """Localized tests for specific warnings, errors, and edge behaviour."""
 
     def test_warning_if_not_device_batch_transform(self):
@@ -54,6 +54,8 @@ class NewDeviceUnitTests:
 
 @pytest.mark.parametrize("gradient_fn", (None, "backprop", qml.gradients.param_shift))
 def test_caching(gradient_fn):
+    """Test that cache execute returns the cached result if the same script is executed
+    multiple times, both in multiple times in a batch and in separate batches."""
     dev = DefaultQubit2()
 
     qs = qml.tape.QuantumScript([qml.PauliX(0)], [qml.expval(qml.PauliZ(0))])
@@ -63,6 +65,9 @@ def test_caching(gradient_fn):
     with qml.Tracker(dev) as tracker:
         results = qml.execute([qs, qs], dev, cache=cache, gradient_fn=gradient_fn)
         results2 = qml.execute([qs, qs], dev, cache=cache, gradient_fn=gradient_fn)
+
+    assert len(cache) == 1
+    assert cache[qs.hash] == -1.0
 
     assert results == [-1.0, -1.0]
     assert results2 == [-1.0, -1.0]
