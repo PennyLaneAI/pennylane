@@ -54,7 +54,7 @@ For example, we can download or load only the molecule and energy of a dataset a
 >>> part = qml.data.load("qchem", molname="H2", basis="STO-3G", bondlength=1.1, 
 ...                      attributes=["molecule", "fci_energy"])[0]
 >>> part.molecule
-<pennylane.qchem.molecule.Molecule at 0x7f56c9d78e50>
+<Molecule = H2, Charge: 0, Basis: STO-3G, Orbitals: 2, Electrons: 2>
 >>> part.fci_energy
 -1.0791924385860894
 
@@ -78,7 +78,7 @@ Using Datasets in PennyLane
 Once loaded, one can access properties of the datasets:
 
 >>> H2data.molecule
-<pennylane.qchem.molecule.Molecule object at 0x7f890b409280>
+<Molecule = H2, Charge: 0, Basis: STO-3G, Orbitals: 2, Electrons: 2>
 >>> print(H2data.hf_state)
 [1 1 0 0]
 
