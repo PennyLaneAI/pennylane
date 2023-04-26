@@ -71,8 +71,7 @@ Features
 
 ..
 
-- *Just in time compilation*. Experimental support for just-in-time
-  compilation. Compile your entire hybrid workflow, loops. See
+- *Just in time compilation*. Compile your **entire hybrid workflow**, including loops. See
   `Catalyst <https://github.com/pennylaneai/catalyst>`__ for more details.
 
 ..

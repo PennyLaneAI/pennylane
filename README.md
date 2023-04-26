@@ -48,7 +48,7 @@
 - *Machine learning on quantum hardware*. Connect to quantum hardware using **PyTorch**, **TensorFlow**, **JAX**, **Keras**, or **NumPy**. Build rich and flexible hybrid quantum-classical models.
 
 - *Just in time compilation*. Experimental support for just-in-time
-  compilation. Compile your entire hybrid workflow, loops. See
+  compilation. Compile your entire hybrid workflow, including loops. See
   [Catalyst](https://github.com/pennylaneai/catalyst) for more details.
 
 - *Device-independent*. Run the same quantum circuit on different quantum backends. Install
