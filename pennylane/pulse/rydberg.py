@@ -23,7 +23,7 @@ from pennylane.pulse.hardware_hamiltonian import _reorder_parameters
 
 
 def rydberg_interaction(
-    register: list, wires=None, interaction_coeff: float = 862690, max_distance: float = np.inf
+    register: list, wires=None, interaction_coeff: float = 5420000, max_distance: float = np.inf
 ):
     r"""Returns a :class:`ParametrizedHamiltonian` representing the interaction of an ensemble of
     Rydberg atoms due to the Rydberg blockade
@@ -40,7 +40,7 @@ def rydberg_interaction(
         V_{ij} = \frac{C_6}{R_{ij}^6}
 
     where :math:`R_{ij}` is the distance between the atoms :math:`i` and :math:`j`, and :math:`C_6`
-    is the Rydberg interaction constant, which defaults to :math:`862690 \text{MHz} \times \mu \text{m}^6`.
+    is the Rydberg interaction constant, which defaults to :math:`5420000 \text{MHz} \times \mu \text{m}^6`.
     The unit of time for the evolution of this Rydberg interaction term is in :math:`\mu \text{s}`.
     This interaction term can be combined with laser drive terms (:func:`~.rydberg_drive`) to create
     a Hamiltonian describing a driven Rydberg atom system.
@@ -55,7 +55,7 @@ def rydberg_interaction(
             have the same length as ``register``. If ``None``, each atom's wire value will
             correspond to its index in the ``register`` list.
         interaction_coeff (float): Rydberg interaction constant in units: :math:`\text{MHz} \times \mu \text{m}^6`.
-            Defaults to :math:`862690 \text{ MHz} \times \mu \text{m}^6`. This value is based on an assumption that
+            Defaults to :math:`5420000 \text{ MHz} \times \mu \text{m}^6`. This value is based on an assumption that
             frequencies and energies in the Hamiltonian are provided in units of MHz.
         max_distance (float): Threshold for distance in :math:`\mu \text{m}` between two Rydberg atoms beyond which their
             contribution to the interaction term is removed from the Hamiltonian.
@@ -76,7 +76,7 @@ def rydberg_interaction(
     >>> H_i
     ParametrizedHamiltonian: terms=36
 
-    As expected, we have :math:`\frac{N(N-1)}{2} = 36` terms for N=6 atoms.
+    As expected, we have :math:`\frac{N(N-1)}{2} = 36` terms for N=9 atoms.
 
     The interaction term is dependent only on the number and positions of the Rydberg atoms. We can execute this
     pulse program, which corresponds to all driving laser fields being turned off and therefore has no trainable
@@ -124,11 +124,13 @@ def rydberg_drive(amplitude, phase, detuning, wires):
     .. math::
 
         \frac{1}{2} \Omega(t) \sum_{q \in \text{wires}} (\cos(\phi(t))\sigma_q^x - \sin(\phi(t))\sigma_q^y) -
-        \delta(t) \sum_{q \in \text{wires}} \sigma_q^z
+        \delta(t) \sum_{q \in \text{wires}} n_q
 
     where :math:`\Omega`, :math:`\phi` and :math:`\delta` correspond to the amplitude, phase,
-    and detuning of the laser, :math:`i` correspond to the wire index, and :math:`\sigma^\alpha` for
-    :math:`\alpha = x,y,z` are the Pauli matrices. For hardware execution, time is expected to be in units
+    and detuning of the laser, :math:`q` corresponds to the wire index, and
+    :math:`\sigma_q^\alpha` for :math:`\alpha = x,y` are the Pauli matrices on the corresponding
+    qubit. Finally, :math:`n_q` is the number operator on qubit :math:`q`.
+    For hardware execution, time is expected to be in units
     of :math:`\text{µs}`, and the frequency in units of :math:`\text{MHz}`. It is recommended to also follow
     this convention for simulation, as it avoids numerical problems due to using very large and very small
     numbers. This driving term can be combined with an interaction term to create a Hamiltonian describing a
@@ -191,9 +193,9 @@ def rydberg_drive(amplitude, phase, detuning, wires):
 
     >>> params = [2.4]
     >>> circuit(params)
-    Array(0.94301294, dtype=float64)
+    Array(0.6625702, dtype=float32)
     >>> jax.grad(circuit)(params)
-    [Array(0.59484969, dtype=float64)]
+    [Array(1.5687807, dtype=float32)]
 
     We can also create a Hamiltonian with local drives. The following circuit corresponds to the
     evolution where additional local drives acting on wires ``0`` and ``1`` respectively are added to the
@@ -226,14 +228,14 @@ def rydberg_drive(amplitude, phase, detuning, wires):
     >>> p_local_det_1 = 3.1
     >>> params = [p_global, p_local_amp_0, p_local_det_0, p_local_amp_1, p_local_det_1]
     >>> circuit_local(params)
-    Array(0.6464017, dtype=float64)
+    Array(0.75121987, dtype=float32)
     >>> jax.grad(circuit_local)(params)
-    [Array(-1.47216703, dtype=float64),
-     [Array(0.25855072, dtype=float64, weak_type=True),
-      Array(0.1453378, dtype=float64, weak_type=True)],
-     Array(0.18329746, dtype=float64),
-     Array(0.05901987, dtype=float64),
-     Array(-0.23426886, dtype=float64)]
+    [Array(-0.31714883, dtype=float32),
+     [Array(0.06422369, dtype=float32, weak_type=True),
+      Array(-0.13978648, dtype=float32, weak_type=True)],
+     Array(0.25930983, dtype=float32),
+     Array(0.15205535, dtype=float32),
+     Array(-0.9993739, dtype=float32)]
     """
     wires = Wires(wires)
     trivial_detuning = not callable(detuning) and qml.math.isclose(detuning, 0.0)
@@ -252,7 +254,7 @@ def rydberg_drive(amplitude, phase, detuning, wires):
 
     detuning_obs, detuning_coeffs = [], []
     if not trivial_detuning:
-        detuning_obs.append(-1.0 * sum(qml.PauliZ(wire) for wire in wires))
+        detuning_obs.append(0.5 * sum(qml.PauliZ(wire) for wire in wires))
         detuning_coeffs.append(detuning)
 
     detuning_term = HardwareHamiltonian(detuning_coeffs, detuning_obs)
