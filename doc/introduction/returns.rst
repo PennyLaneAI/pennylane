@@ -21,6 +21,11 @@ provides additional details about the update and can be used to troubleshoot iss
 Summary of the update
 ---------------------
 
+.. image:: ../_static/new_return_types.png
+    :align: center
+    :width: 500px
+    :target: javascript:void(0);
+
 .. rst-class:: admonition tip
 
     PennyLane QNodes now return exactly what you tell them to! 🎉
@@ -58,11 +63,6 @@ and probabilities separately:
 
 For a detailed explanation of this change, along with code examples, check out the
 :func:`~.enable_return` function documentation.
-
-.. image:: ../_static/new_return_types.png
-    :align: right
-    :width: 180px
-    :target: javascript:void(0);
 
 Motivation
 ----------
