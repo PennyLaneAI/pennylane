@@ -129,7 +129,7 @@ def rydberg_drive(amplitude, phase, detuning, wires):
     where :math:`\Omega`, :math:`\phi` and :math:`\delta` correspond to the amplitude, phase,
     and detuning of the laser, :math:`q` corresponds to the wire index, and
     :math:`\sigma_q^\alpha` for :math:`\alpha = x,y` are the Pauli matrices on the corresponding
-    qubit. Finally, :math:`n_q` is the number operator on qubit :math:`q`.
+    qubit. Finally, :math:`n_q=\frac{1}{2}(\mathbb{I}_q-\sigma_q^z)` is the number operator on qubit :math:`q`.
     For hardware execution, time is expected to be in units
     of :math:`\text{µs}`, and the frequency in units of :math:`\text{MHz}`. It is recommended to also follow
     this convention for simulation, as it avoids numerical problems due to using very large and very small
