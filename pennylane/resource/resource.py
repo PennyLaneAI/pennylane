@@ -14,8 +14,11 @@
 """
 Stores classes and logic to aggregate all the resource information from a quantum workflow.
 """
+from abc import abstractmethod
 from collections import defaultdict
 from dataclasses import dataclass, field
+
+from pennylane.operation import Operation
 
 
 @dataclass(frozen=True)
@@ -44,7 +47,8 @@ class Resources:
         gates: 2
         depth: 2
         shots: 0
-        gate_types: {'Hadamard': 1, 'CNOT': 1}
+        gate_types:
+        {'Hadamard': 1, 'CNOT': 1}
     """
     num_wires: int = 0
     num_gates: int = 0
@@ -71,6 +75,40 @@ class Resources:
         print(str(self))
 
 
+class ResourcesOperation(Operation):
+    r"""Base class that represents quantum gates or channels applied to quantum
+    states and stores the resource requirements of the quantum gate.
+
+    .. note::
+        Child classes must implement the :func:`~.ResourcesOperation.resources` method which computes
+        the resource requirements of the operation.
+    """
+
+    @abstractmethod
+    def resources(self) -> Resources:
+        r"""Compute the resources required for this operation.
+
+        Returns:
+            Resources: The resources required by this operation.
+
+        **Examples**
+
+        >>> class CustomOp(ResourcesOperation):
+        ...     num_wires = 2
+        ...     def resources(self):
+        ...         return Resources(num_wires=self.num_wires, num_gates=3, depth=2)
+        ...
+        >>> op = CustomOp()
+        >>> print(op.resources())
+        wires: 2
+        gates: 3
+        depth: 2
+        shots: 0
+        gate_types:
+        {}
+        """
+
+
 def _count_resources(tape, shots: int) -> Resources:
     """Given a quantum circuit (tape) and number of samples, this function
      counts the resources used by standard PennyLane operations.
@@ -88,7 +126,18 @@ def _count_resources(tape, shots: int) -> Resources:
     num_gates = 0
     gate_types = defaultdict(int)
     for op in tape.operations:
-        gate_types[op.name] += 1
-        num_gates += 1
+        if isinstance(op, ResourcesOperation):
+            op_resource = op.resources()
+
+            if op_resource.depth > 1:
+                depth = None  # Cannot be determined with custom depth operations
+
+            for d in op_resource.gate_types:
+                gate_types[d] += op_resource.gate_types[d]
+            num_gates += sum(op_resource.gate_types.values())
+
+        else:
+            gate_types[op.name] += 1
+            num_gates += 1
 
     return Resources(num_wires, num_gates, gate_types, depth, shots)
