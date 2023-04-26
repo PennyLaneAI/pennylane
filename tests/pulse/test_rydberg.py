@@ -14,7 +14,7 @@
 """
 Tests for everything related to rydberg system specific functionality.
 """
-# pylint: disable=too-few-public-methods
+# pylint: disable=too-few-public-methods, import-outside-toplevel
 import numpy as np
 import pytest
 
