@@ -254,11 +254,12 @@ def rydberg_drive(amplitude, phase, detuning, wires):
 
     detuning_obs, detuning_coeffs = [], []
     if not trivial_detuning:
+        # 2pi factors are to convert detuning frequency to angular frequency
         detuning_obs.append(
             # Global phase from the number operator
-            -0.5 * sum(qml.Identity(wire) for wire in wires)
+            -0.5 * sum(qml.Identity(wire) for wire in wires) * np.pi * 2
             # Equivalent of the number operator up to the global phase above
-            + 0.5 * sum(qml.PauliZ(wire) for wire in wires)
+            + 0.5 * sum(qml.PauliZ(wire) for wire in wires) * np.pi * 2
         )
         detuning_coeffs.append(detuning)
 

@@ -370,7 +370,7 @@ def transmon_drive(amplitude, phase, freq, wires, d=2):
 class AmplitudeAndPhaseAndFreq:
     """Class storing combined amplitude, phase and freq callables"""
 
-    def __init__(self, trig_fn, amp, phase, freq):
+    def __init__(self, trig_fn, amp, phase, freq, hz_to_rads=2 * np.pi):
         self.amp_is_callable = callable(amp)
         self.phase_is_callable = callable(phase)
         self.freq_is_callable = callable(freq)
@@ -380,7 +380,11 @@ class AmplitudeAndPhaseAndFreq:
         if self.amp_is_callable and self.phase_is_callable and self.freq_is_callable:
 
             def callable_amp_and_phase_and_freq(params, t):
-                return amp(params[0], t) * trig_fn(phase(params[1], t) + freq(params[2], t) * t)
+                return (
+                    hz_to_rads
+                    * amp(params[0], t)
+                    * trig_fn(phase(params[1], t) + hz_to_rads * freq(params[2], t) * t)
+                )
 
             self.func = callable_amp_and_phase_and_freq
             return
@@ -390,7 +394,11 @@ class AmplitudeAndPhaseAndFreq:
         if self.amp_is_callable and self.phase_is_callable:
 
             def callable_amp_and_phase(params, t):
-                return amp(params[0], t) * trig_fn(phase(params[1], t) + freq * t)
+                return (
+                    hz_to_rads
+                    * amp(params[0], t)
+                    * trig_fn(phase(params[1], t) + hz_to_rads * freq * t)
+                )
 
             self.func = callable_amp_and_phase
             return
@@ -398,7 +406,11 @@ class AmplitudeAndPhaseAndFreq:
         if self.amp_is_callable and self.freq_is_callable:
 
             def callable_amp_and_freq(params, t):
-                return amp(params[0], t) * trig_fn(phase + freq(params[1], t) * t)
+                return (
+                    hz_to_rads
+                    * amp(params[0], t)
+                    * trig_fn(phase + hz_to_rads * freq(params[1], t) * t)
+                )
 
             self.func = callable_amp_and_freq
             return
@@ -406,7 +418,11 @@ class AmplitudeAndPhaseAndFreq:
         if self.phase_is_callable and self.freq_is_callable:
 
             def callable_phase_and_freq(params, t):
-                return amp * trig_fn(phase(params[0], t) + freq(params[1], t) * t)
+                return (
+                    hz_to_rads
+                    * amp
+                    * trig_fn(phase(params[0], t) + hz_to_rads * freq(params[1], t) * t)
+                )
 
             self.func = callable_phase_and_freq
             return
@@ -416,7 +432,7 @@ class AmplitudeAndPhaseAndFreq:
         if self.amp_is_callable:
 
             def callable_amp(params, t):
-                return amp(params[0], t) * trig_fn(phase + freq * t)
+                return hz_to_rads * amp(params[0], t) * trig_fn(phase + hz_to_rads * freq * t)
 
             self.func = callable_amp
             return
@@ -424,7 +440,7 @@ class AmplitudeAndPhaseAndFreq:
         if self.phase_is_callable:
 
             def callable_phase(params, t):
-                return amp * trig_fn(phase(params[0], t) + freq * t)
+                return hz_to_rads * amp * trig_fn(phase(params[0], t) + hz_to_rads * freq * t)
 
             self.func = callable_phase
             return
@@ -432,7 +448,7 @@ class AmplitudeAndPhaseAndFreq:
         if self.freq_is_callable:
 
             def callable_freq(params, t):
-                return amp * trig_fn(phase + freq(params[0], t) * t)
+                return hz_to_rads * amp * trig_fn(phase + hz_to_rads * freq(params[0], t) * t)
 
             self.func = callable_freq
             return
@@ -441,7 +457,7 @@ class AmplitudeAndPhaseAndFreq:
         # (the remaining coeff is still callable due to explicit time dependence)
 
         def no_callable(_, t):
-            return amp * trig_fn(phase + freq * t)
+            return hz_to_rads * amp * trig_fn(phase + hz_to_rads * freq * t)
 
         self.func = no_callable
 
