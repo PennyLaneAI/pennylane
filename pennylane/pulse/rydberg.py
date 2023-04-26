@@ -193,9 +193,9 @@ def rydberg_drive(amplitude, phase, detuning, wires):
 
     >>> params = [2.4]
     >>> circuit(params)
-    Array(0.6625702, dtype=float32)
+    Array(0.66322464, dtype=float32)
     >>> jax.grad(circuit)(params)
-    [Array(1.5687807, dtype=float32)]
+    [Array(1.5733964, dtype=float32)]
 
     We can also create a Hamiltonian with local drives. The following circuit corresponds to the
     evolution where additional local drives acting on wires ``0`` and ``1`` respectively are added to the
@@ -228,14 +228,14 @@ def rydberg_drive(amplitude, phase, detuning, wires):
     >>> p_local_det_1 = 3.1
     >>> params = [p_global, p_local_amp_0, p_local_det_0, p_local_amp_1, p_local_det_1]
     >>> circuit_local(params)
-    Array(0.75121987, dtype=float32)
+    Array(0.7526707, dtype=float32)
     >>> jax.grad(circuit_local)(params)
-    [Array(-0.31714883, dtype=float32),
-     [Array(0.06422369, dtype=float32, weak_type=True),
-      Array(-0.13978648, dtype=float32, weak_type=True)],
-     Array(0.25930983, dtype=float32),
-     Array(0.15205535, dtype=float32),
-     Array(-0.9993739, dtype=float32)]
+    [Array(-0.31931373, dtype=float32),
+     [Array(0.06391271, dtype=float32, weak_type=True),
+      Array(-0.14062276, dtype=float32, weak_type=True)],
+     Array(0.2604623, dtype=float32),
+     Array(0.15228909, dtype=float32),
+     Array(-0.9984372, dtype=float32)]
     """
     wires = Wires(wires)
     trivial_detuning = not callable(detuning) and qml.math.isclose(detuning, 0.0)
@@ -254,7 +254,12 @@ def rydberg_drive(amplitude, phase, detuning, wires):
 
     detuning_obs, detuning_coeffs = [], []
     if not trivial_detuning:
-        detuning_obs.append(0.5 * sum(qml.PauliZ(wire) for wire in wires))
+        detuning_obs.append(
+            # Global phase from the number operator
+            -0.5 * sum(qml.Identity(wire) for wire in wires)
+            # Equivalent of the number operator up to the global phase above
+            + 0.5 * sum(qml.PauliZ(wire) for wire in wires)
+        )
         detuning_coeffs.append(detuning)
 
     detuning_term = HardwareHamiltonian(detuning_coeffs, detuning_obs)
