@@ -110,7 +110,8 @@ select the option below that describes your situation.
           x = np.array(0.5, requires_grad=True)
           qml.jacobian(circuit)(x)
 
-      Follow the instructions :ref:`here <return-autograd-tf-gotcha>` to fix this issue.
+      Follow the instructions :ref:`here <return-autograd-tf-gotcha>` to fix this issue, which
+      arises because NumPy and TensorFlow do not support differentiating tuples.
       Alternatively, consider porting your code to use the :ref:`JAX <jax_interf>` or
       :ref:`Torch <torch_interf>` interface, which could unlock additional features and performance
       benefits!
@@ -159,8 +160,8 @@ select the option below that describes your situation.
       `here <https://github.com/PennyLaneAI/pennylane-qiskit/pull/281>`_ for the
       `Qiskit plugin <https://docs.pennylane.ai/projects/qiskit/en/latest/>`_.
 
-    * Your device inherits from :class:`Device <pennylane.Device>`, in which case you may need to rewrite the
-      :meth:`~.QubitDevice.execute`, :meth:`~.QubitDevice.batch_execute`, and
+    * Your device inherits directly from :class:`Device <pennylane.Device>`, in which case you may
+      need to rewrite the :meth:`~.QubitDevice.execute`, :meth:`~.QubitDevice.batch_execute`, and
       :meth:`~.QubitDevice.statistics` methods. Please
       `reach out to us <https://discuss.pennylane.ai>`_ for guidance!
 
