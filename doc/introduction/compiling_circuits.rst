@@ -15,8 +15,9 @@ or replace a large circuit by a number of smaller circuits.
 Compilation functionality is mostly designed as **transforms**, which you can read up on in the
 section on :doc:`inspecting circuits </introduction/inspecting_circuits>`.
 
-PennyLane also supports experimental just-in-time compilation, via
-[Catalyst](https://github.com/pennylaneai/catalyst). This is more general, and
+In addition to quantum circuit transforms, PennyLane also
+supports experimental just-in-time compilation, via
+`Catalyst <https://github.com/pennylaneai/catalyst>`__. This is more general, and
 supports full hybrid compilation --- compiling both the classical and quantum components
 of your workflow into a binary that can be run close to the accelerators (GPUs, QPUs, CPUs)
 that you are using.
@@ -380,7 +381,7 @@ JIT compile the full optimization loop, for example when training models:
 
     import jaxopt
 
-    @qjit
+    @jax.jit
     def optimization():
         # initial parameter
         params = jnp.array([0.54, 0.3154])
