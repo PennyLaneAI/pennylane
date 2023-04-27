@@ -1392,11 +1392,9 @@ def _pauli_mult(p1, p2):
                 k.append((j[0], pauli_mult_dict[j[1]]))
 
             if i[0] == j[0]:
+                k.append((i[0], pauli_mult_dict[i[1] + j[1]]))
                 if i[1] + j[1] in pauli_coeff:
-                    k.append((i[0], pauli_mult_dict[i[1] + j[1]]))
                     c = c * pauli_coeff[i[1] + j[1]]
-                else:
-                    k.append((i[0], pauli_mult_dict[i[1] + j[1]]))
 
     for item in k:
         k_ = [i for i, x in enumerate(k) if x == item]

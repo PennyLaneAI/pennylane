@@ -15,7 +15,7 @@
 This module contains the functions needed for creating fermionic and qubit observables.
 """
 # pylint: disable= too-many-branches,
-from functools import reduce
+from functools import lru_cache, reduce
 
 import pennylane as qml
 from pennylane import numpy as np
@@ -74,7 +74,7 @@ def fermionic_observable(constant, one=None, two=None, cutoff=1.0e-12):
         operators = operators + operators_two
 
     indices_sort = [operators.index(i) for i in sorted(operators)]
-    if len(indices_sort) != 0:
+    if indices_sort:
         indices_sort = qml.math.array(indices_sort)
 
     return coeffs[indices_sort], sorted(operators)
@@ -117,9 +117,16 @@ def qubit_observable(o_ferm, cutoff=1.0e-12):
                 ops = ops + op[1]
                 coeffs = qml.math.concatenate([coeffs, qml.math.array(op[0]) * o_ferm[0][n]])
 
-    o_qubit = simplify(qml.Hamiltonian(coeffs, ops), cutoff=cutoff)
+    return simplify(qml.Hamiltonian(coeffs, ops), cutoff=cutoff)
 
-    return o_qubit
+
+@lru_cache
+def get_pauli_map(n):
+    """Return Pauli gate objects on wires 0 up to n."""
+    return [
+        {"I": qml.Identity(i), "X": qml.PauliX(i), "Y": qml.PauliY(i), "Z": qml.PauliZ(i)}
+        for i in range(n + 1)
+    ]
 
 
 def jordan_wigner(op, notation="physicist"):
@@ -156,9 +163,8 @@ def jordan_wigner(op, notation="physicist"):
                 return [0], [qml.Identity(wires=[min(op)])]
             op = [(op[0], 1), (op[1], 1), (op[2], 0), (op[3], 0)]
         elif notation == "chemist":
-            if op[0] == op[2] or op[1] == op[3]:
-                if op[1] != op[2]:
-                    return [0], [qml.Identity(wires=[min(op)])]
+            if (op[0] == op[2] or op[1] == op[3]) and op[1] != op[2]:
+                return [0], [qml.Identity(wires=[min(op)])]
             op = [(op[0], 1), (op[1], 0), (op[2], 1), (op[3], 0)]
         else:
             raise ValueError(
@@ -194,11 +200,10 @@ def jordan_wigner(op, notation="physicist"):
                 del c[j]
 
     # Pauli gates objects pregenerated for speed
-    pauli_map = []
-    for i in range(np.max(op) + 1):
-        pauli_map.append(
-            {"I": qml.Identity(i), "X": qml.PauliX(i), "Y": qml.PauliY(i), "Z": qml.PauliZ(i)}
-        )
+    pauli_map = get_pauli_map(np.max(op))
+
+    def tensor_prod(x, y):
+        return x if isinstance(y, qml.Identity) else x @ y
 
     for i, term in enumerate(o):
         if len(term) == 0:
@@ -207,6 +212,6 @@ def jordan_wigner(op, notation="physicist"):
             o[i] = pauli_map[term[0][0]][term[0][1]]
         if len(term) > 1:
             k = [pauli_map[t[0]][t[1]] for t in term]
-            o[i] = reduce(lambda x, y: x @ y, k)
+            o[i] = reduce(tensor_prod, k)
 
     return c, o
