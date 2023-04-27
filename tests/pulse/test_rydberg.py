@@ -14,9 +14,11 @@
 """
 Tests for everything related to rydberg system specific functionality.
 """
-# pylint: disable=too-few-public-methods, import-outside-toplevel
+# pylint: disable=too-few-public-methods, import-outside-toplevel, redefined-outer-name, reimported
 import numpy as np
 import pytest
+import jax
+import jax.numpy as jnp
 
 import pennylane as qml
 from pennylane.pulse import rydberg_interaction, rydberg_drive
@@ -412,3 +414,38 @@ class TestIntegration:
 
         assert isinstance(res, jax.Array)
         assert np.allclose(res, res_jit)
+
+    def test_pennylane_and_exact_solution_correspond(self):
+        """Test that the results of PennyLane simulation and the AWS Local simulator roughly
+        match each other, and the exact solution"""
+
+        def exact(H, H_obj, t):
+            psi0 = jnp.eye(2 ** len(H.wires))[0]
+            U_exact = jax.scipy.linalg.expm(-1j * t * qml.matrix(H([], 1)))
+            return (
+                psi0 @ U_exact.conj().T @ qml.matrix(H_obj, wire_order=[0, 1, 2]) @ U_exact @ psi0
+            )
+
+        default_qubit = qml.device("default.qubit", wires=3)
+
+        coordinates = [[0, 0], [0, 5], [5, 0]]
+
+        H_i = qml.pulse.rydberg_interaction(coordinates)
+
+        H = H_i + qml.pulse.rydberg_drive(3, 2, 4, [0, 1, 2])
+
+        H_obj = qml.PauliZ(0)
+
+        @jax.jit
+        @qml.qnode(default_qubit, interface="jax")
+        def circuit(t):
+            qml.evolve(H)([], t)
+            return qml.expval(H_obj)
+
+        t = jnp.linspace(0.05, 1.55, 151)
+
+        circuit_results = np.array([circuit(_t) for _t in t])
+        exact_results = np.array([exact(H, H_obj, _t) for _t in t])
+
+        # all results are approximately the same
+        np.allclose(circuit_results, exact_results, atol=0.07)
