@@ -193,14 +193,20 @@ def jordan_wigner(op, notation="physicist"):
                 c[k[0]] = c[k[0]] + c[j]
                 del c[j]
 
-    pauli_map = {"I": qml.Identity, "X": qml.PauliX, "Y": qml.PauliY, "Z": qml.PauliZ}
+    # Pauli gates objects pregenerated for speed
+    pauli_map = []
+    for i in range(np.max(op) + 1):
+        pauli_map.append(
+            {"I": qml.Identity(i), "X": qml.PauliX(i), "Y": qml.PauliY(i), "Z": qml.PauliZ(i)}
+        )
+
     for i, term in enumerate(o):
         if len(term) == 0:
             o[i] = qml.Identity(0)
         if len(term) == 1:
-            o[i] = pauli_map[term[0][1]](term[0][0])
+            o[i] = pauli_map[term[0][0]][term[0][1]]
         if len(term) > 1:
-            k = [pauli_map[t[1]](t[0]) for t in term]
+            k = [pauli_map[t[0]][t[1]] for t in term]
             o[i] = reduce(lambda x, y: x @ y, k)
 
     return c, o
