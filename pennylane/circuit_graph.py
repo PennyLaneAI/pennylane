@@ -493,13 +493,12 @@ class CircuitGraph:
             if isinstance(op, ResourcesOperation) and (d := op.resources().depth) > 1:
                 custom_depth_node_dict[graph.nodes().index(op)] = d
 
-        def _link_graph(source_index, target_index, sub_graph, node_index):
+        def _link_graph(target_index, sub_graph, node_index):
             """Link incoming and outgoing edges for the initial node to the sub-graph"""
             if target_index == node_index:
                 return sub_graph.nodes().index(f"{node_index}.0")
-            if source_index == node_index:
+            else:
                 return sub_graph.nodes().index(f"{node_index}.1")
-            return None
 
         for node_index, depth in custom_depth_node_dict.items():
             # Construct sub_graph:
@@ -518,9 +517,9 @@ class CircuitGraph:
             graph.substitute_node_with_subgraph(
                 node_index,
                 sub_graph,
-                lambda s, t, _: _link_graph(
-                    s, t, sub_graph, node_index
-                ),  # pylint: disable=cell-var-from-loop
+                lambda _, t, __: _link_graph(
+                    t, sub_graph, node_index  # pylint: disable=cell-var-from-loop
+                ),
             )
 
     def has_path(self, a, b):

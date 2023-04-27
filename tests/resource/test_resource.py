@@ -223,7 +223,7 @@ resources_data = (
     Resources(2, 5, {"Hadamard": 1, "CNOT": 1, "Identity": 1, "PauliZ": 2}, 5, 0),
     Resources(3, 7, {"PauliZ": 3, "CNOT": 1, "RX": 1, "Identity": 1, "CustomOp2": 1}, 6, 10),
     Resources(2, 7, {"Hadamard": 3, "RX": 2, "CNOT": 1, "CustomOp2": 1}, 5, 100),
-)
+)  # Resources(wires, gates, gate_types, depth, shots)
 
 
 @pytest.mark.parametrize(
