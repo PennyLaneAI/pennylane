@@ -450,8 +450,9 @@ class TestInfomationProperties:
         assert len(specs) == 9
 
         gate_types = defaultdict(int, {"RX": 2, "Rot": 1, "CNOT": 1})
+        gate_sizes = defaultdict(int, {1: 3, 2: 1})
         expected_resources = qml.resource.Resources(
-            num_wires=3, num_gates=4, gate_types=gate_types, depth=3
+            num_wires=3, num_gates=4, gate_types=gate_types, gate_sizes=gate_sizes, depth=3
         )
         assert specs["resources"] == expected_resources
 

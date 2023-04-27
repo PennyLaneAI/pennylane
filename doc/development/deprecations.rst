@@ -13,6 +13,7 @@ Pending deprecations
   - ``num_operations`` will no longer be supported, use ``specs_dict["resources"].num_gates``
   - ``num_used_wires`` will no longer be supported, use ``specs_dict["resources"].num_wires``
   - ``gate_types`` will no longer be supported, use ``specs_dict["resources"].gate_types``
+  - ``gate_sizes`` will no longer be supported, use ``specs_dict["resources"].gate_sizes``
   - ``depth`` will no longer be supported, use ``specs_dict["resources"].depth``
 
   These keys are still accessible in v0.31 and will be removed in v0.32.
