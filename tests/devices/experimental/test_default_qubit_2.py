@@ -110,14 +110,16 @@ class TestSupportsDerivatives:
         """Test that DefaultQubit2 says that it supports adjoint differentiation."""
         dev = DefaultQubit2()
         config = ExecutionConfig(gradient_method="adjoint")
+        assert dev.supports_derivatives(config) is True
+
         qs = qml.tape.QuantumScript([], [qml.expval(qml.PauliZ(0))])
         assert dev.supports_derivatives(config, qs) is True
 
-    @pytest.mark.parametrize("circuit", [None, qml.tape.QuantumScript([], [qml.probs()])])
-    def test_doesnt_support_adjoint_with_invalid_tape(self, circuit):
+    def test_doesnt_support_adjoint_with_invalid_tape(self):
         """Tests that DefaultQubit2 does not support adjoint differentiation with invalid circuits."""
         dev = DefaultQubit2()
         config = ExecutionConfig(gradient_method="adjoint")
+        circuit = qml.tape.QuantumScript([], [qml.probs()])
         assert dev.supports_derivatives(config, circuit=circuit) is False
 
     @pytest.mark.parametrize("gradient_method", ["parameter-shift", "finite-diff", "device"])
