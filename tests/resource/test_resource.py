@@ -30,7 +30,9 @@ class TestResources:
     resource_quantities = (
         Resources(),
         Resources(5, 0, {}, {}, 0, 0),
-        Resources(1, 3, defaultdict(int, {"Hadamard": 1, "PauliZ": 2}), defaultdict(int, {1: 3}), 3, 10),
+        Resources(
+            1, 3, defaultdict(int, {"Hadamard": 1, "PauliZ": 2}), defaultdict(int, {1: 3}), 3, 10
+        ),
         Resources(4, 2, {"Hadamard": 1, "CNOT": 1}, {1: 1, 2: 1}, 2, 100),
     )
 
@@ -63,8 +65,26 @@ class TestResources:
                 setattr(r, attr_name, 1)
 
     test_str_data = (
-        ("wires: 0\n" + "gates: 0\n" + "depth: 0\n" + "shots: 0\n" + "gate_types:\n" + "{}\n" + "gate_sizes:\n" + "{}"),
-        ("wires: 5\n" + "gates: 0\n" + "depth: 0\n" + "shots: 0\n" + "gate_types:\n" + "{}\n" + "gate_sizes:\n" + "{}"),
+        (
+            "wires: 0\n"
+            + "gates: 0\n"
+            + "depth: 0\n"
+            + "shots: 0\n"
+            + "gate_types:\n"
+            + "{}\n"
+            + "gate_sizes:\n"
+            + "{}"
+        ),
+        (
+            "wires: 5\n"
+            + "gates: 0\n"
+            + "depth: 0\n"
+            + "shots: 0\n"
+            + "gate_types:\n"
+            + "{}\n"
+            + "gate_sizes:\n"
+            + "{}"
+        ),
         (
             "wires: 1\n"
             + "gates: 3\n"
@@ -173,7 +193,11 @@ class _CustomOpWithResource(ResourcesOperation):  # pylint: disable=too-few-publ
 
     def resources(self):
         return Resources(
-            num_wires=self.num_wires, num_gates=3, gate_types={"Identity": 1, "PauliZ": 2}, gate_sizes={1: 3}, depth=3
+            num_wires=self.num_wires,
+            num_gates=3,
+            gate_types={"Identity": 1, "PauliZ": 2},
+            gate_sizes={1: 3},
+            depth=3,
         )
 
 
@@ -228,7 +252,14 @@ resources_data = (
     Resources(3, 3, {"PauliZ": 1, "CNOT": 1, "RX": 1}, {1: 2, 2: 1}, 2, 10),
     Resources(2, 6, {"Hadamard": 3, "RX": 2, "CNOT": 1}, {1: 5, 2: 1}, 4, 100),
     Resources(2, 5, {"Hadamard": 1, "CNOT": 1, "Identity": 1, "PauliZ": 2}, {1: 4, 2: 1}, None, 0),
-    Resources(3, 7, {"PauliZ": 3, "CNOT": 1, "RX": 1, "Identity": 1, "CustomOp2": 1}, {1: 5, 2: 2}, None, 10),
+    Resources(
+        3,
+        7,
+        {"PauliZ": 3, "CNOT": 1, "RX": 1, "Identity": 1, "CustomOp2": 1},
+        {1: 5, 2: 2},
+        None,
+        10,
+    ),
     Resources(2, 7, {"Hadamard": 3, "RX": 2, "CNOT": 1, "CustomOp2": 1}, {1: 5, 2: 2}, 5, 100),
 )
 
