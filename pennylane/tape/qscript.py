@@ -1335,6 +1335,8 @@ class QuantumScript:
 
 
 class SpecsDict(dict):
+    """A dictionary to track and warn about deprecated keys"""
+
     deprecated_keys = ("gate_types", "num_operations", "num_used_wires", "depth")
     new_keys = ("gate_types", "num_gates", "num_wires", "depth")
 
