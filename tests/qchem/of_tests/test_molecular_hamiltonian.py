@@ -212,6 +212,30 @@ def test_differentiable_hamiltonian(symbols, geometry, h_ref_data):
     )
 
 
+@pytest.mark.parametrize(
+    (
+        "molecule",
+        "geometry",
+        "method",
+        "wiremap",
+    ),
+    [
+        (["H", "H"], np.array([[1.0, 0.0, 0.0], [0.0, 0.0, 0.0]]), "pyscf", ["a", "b", "c", "d"]),
+        (["H", "H"], np.array([[1.0, 0.0, 0.0], [0.0, 0.0, 0.0]]), "dhf", ["a", "b", "c", "d"]),
+    ],
+)
+def test_custom_wiremap_hamiltonian(molecule, geometry, method, wiremap):
+    r"""Test that the generated Hamiltonian has the correct wire labels given by a custom wiremap."""
+    built_hamiltonian, qubits = qchem.molecular_hamiltonian(
+        symbols=molecule,
+        coordinates=geometry,
+        method=method,
+        wires=wiremap,
+    )
+    print(built_hamiltonian)
+    assert list(built_hamiltonian.wires) == wiremap
+
+
 file_content = """\
 2
 in Angstrom
