@@ -304,10 +304,14 @@ developing plugins much easier for developers and unlock new device capabilities
 these changes when using PennyLane, but here is what has changed this release:
 
 * Several functions in `devices/qubit` have been added or improved:
-  - `sample_state`: returns a series of samples based on a given state vector and a number of shots. [(#3720)](https://github.com/PennyLaneAI/pennylane/pull/3720)
-  - `simulate`: supports measuring expectation values of large observables such as `qml.Hamiltonian`, `qml.SparseHamiltonian`, and `qml.Sum`. [(#3759)](https://github.com/PennyLaneAI/pennylane/pull/3759) 
-  - `apply_operation`: supports broadcasting. [(#3852)](https://github.com/PennyLaneAI/pennylane/pull/3852)
-  - `adjoint_jacobian`: supports adjoint differentiation in the new qubit state-vector device. [(#3790)](https://github.com/PennyLaneAI/pennylane/pull/3790)
+  - `sample_state`: returns a series of samples based on a given state vector and a number of shots.
+    [(#3720)](https://github.com/PennyLaneAI/pennylane/pull/3720)
+  - `simulate`: supports measuring expectation values of large observables such as `qml.Hamiltonian`, `qml.SparseHamiltonian`, and `qml.Sum`.
+    [(#3759)](https://github.com/PennyLaneAI/pennylane/pull/3759) 
+  - `apply_operation`: supports broadcasting.
+    [(#3852)](https://github.com/PennyLaneAI/pennylane/pull/3852)
+  - `adjoint_jacobian`: supports adjoint differentiation in the new qubit state-vector device.
+    [(#3790)](https://github.com/PennyLaneAI/pennylane/pull/3790)
   
 * `qml.devices.qubit.preprocess` now allows circuits with non-commuting observables.
   [(#3857)](https://github.com/PennyLaneAI/pennylane/pull/3857)
@@ -477,9 +481,10 @@ these changes when using PennyLane, but here is what has changed this release:
   For example, users can define a custom operation by inheriting from this new class:
 
   ```pycon
-  >>> class CustomOp(ResourcesOperation):
+  >>> class CustomOp(qml.resource.ResourcesOperation):
   ...     def resources(self):
-  ...         return Resources(num_wires=1, num_gates=2, gate_types={"PauliX": 2})
+  ...         return qml.resource.Resources(num_wires=1, num_gates=2,
+  ...                                       gate_types={"PauliX": 2})
   ... 
   >>> CustomOp(wires=1)
   CustomOp(wires=[1])
