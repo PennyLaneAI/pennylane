@@ -22,6 +22,8 @@ from autograd.numpy.numpy_boxes import ArrayBox
 from autograd.extend import vspace
 from autograd.wrap_util import unary_to_nary
 
+from pennylane.return_types import active_return
+
 make_vjp = unary_to_nary(_make_vjp)
 
 
@@ -327,12 +329,14 @@ def jacobian(func, argnum=None):
         try:
             jac = tuple(_jacobian(func, arg)(*args, **kwargs) for arg in _argnum)
         except TypeError as e:
-            raise ValueError(
-                "PennyLane has a new return shape specification that"
-                " may not work well with autograd and more than one measurement. That may"
-                " be the source of the error. \n\n"
-                "See the documentation of qml.enable_return for more information."
-            ) from e
+            if active_return():
+                raise ValueError(
+                    "PennyLane has a new return shape specification that"
+                    " may not work well with autograd and more than one measurement. That may"
+                    " be the source of the error. \n\n"
+                    "See the documentation of qml.enable_return for more information."
+                ) from e
+            raise e
 
         return jac[0] if unpack else jac
 

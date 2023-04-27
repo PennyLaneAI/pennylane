@@ -32,3 +32,19 @@ def test_return_types_error_caught():
     x = qml.numpy.array(0.1)
     with pytest.raises(ValueError, match=r"PennyLane has a new return shape specification"):
         qml.jacobian(circuit)(x)
+
+
+def test_same_error_if_no_return_types():
+    """Tests that the error is not changed if return types are disabled."""
+    qml.disable_return()
+
+    dev = qml.device("default.qubit", wires=2)
+
+    @qml.qnode(dev)
+    def circuit(x):
+        raise TypeError
+
+    x = qml.numpy.array(0.1)
+    with pytest.raises(TypeError):
+        qml.jacobian(circuit)(x)
+    qml.enable_return()
