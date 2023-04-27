@@ -55,10 +55,12 @@
   ```pycon
   >>> params = jnp.array([2.4])
   >>> circuit(params)
-  Array(0.94307977, dtype=float32)
+  Array(0.6316659, dtype=float32)
   >>> import jax
   >>> jax.grad(circuit)(params)
-  Array([0.5940717], dtype=float32)
+  Array([1.3116529], dtype=float32)
+  [Array(0.16921353, dtype=float32, weak_type=True),
+   Array(-0.2537478, dtype=float32, weak_type=True)]
   ```
   
   The [qml.pulse](https://docs.pennylane.ai/en/stable/code/qml_pulse.html) page contains
@@ -139,10 +141,10 @@
   1: ─╰∏_ϕ(0.30)─╰BlockEncode(M0)─╰∏_ϕ(0.20)─╰BlockEncode(M0)†─╰∏_ϕ(0.10)─┤
   ```
 
-  The [qml.qsvt](https://docs.pennylane.ai/en/latest/code/api/pennylane.qsvt.html) function
+  The [qml.qsvt](https://docs.pennylane.ai/en/stable/code/api/pennylane.qsvt.html) function
   creates a circuit that is targeted at simulators due to the use of matrix-based operations.
   For advanced users, you can use the 
-  [qml.QSVT](https://docs.pennylane.ai/en/latest/code/api/pennylane.QSVT.html) template to perform
+  [qml.QSVT](https://docs.pennylane.ai/en/stable/code/api/pennylane.QSVT.html) template to perform
   the transformation with a custom choice of unitary and projector operations, which may be
   hardware compatible if a decomposition is provided.
 
