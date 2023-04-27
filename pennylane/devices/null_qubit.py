@@ -285,7 +285,9 @@ class NullQubit(QubitDevice):
         self.apply(circuit.operations, rotations=self._get_diagonalizing_gates(circuit), **kwargs)
 
         if self.tracker.active:
-            self.tracker.update(executions=1, shots=self._shots, resources=circuit.specs['resources'])
+            self.tracker.update(
+                executions=1, shots=self._shots, resources=circuit.specs["resources"]
+            )
             self.tracker.record()
         return [0.0]
 
