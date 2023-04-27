@@ -15,11 +15,12 @@
 This module contains the functions needed for creating fermionic and qubit observables.
 """
 # pylint: disable= too-many-branches,
-from functools import lru_cache, reduce
+from functools import lru_cache
 
 import pennylane as qml
 from pennylane import numpy as np
 from pennylane.pauli.utils import _pauli_mult, simplify
+from pennylane.operation import Tensor
 
 
 def fermionic_observable(constant, one=None, two=None, cutoff=1.0e-12):
@@ -201,10 +202,6 @@ def jordan_wigner(op, notation="physicist"):
 
     # Pauli gates objects pregenerated for speed
     pauli_map = get_pauli_map(np.max(op))
-
-    def tensor_prod(x, y):
-        return x if isinstance(y, qml.Identity) else x @ y
-
     for i, term in enumerate(o):
         if len(term) == 0:
             o[i] = qml.Identity(0)
@@ -212,6 +209,6 @@ def jordan_wigner(op, notation="physicist"):
             o[i] = pauli_map[term[0][0]][term[0][1]]
         if len(term) > 1:
             k = [pauli_map[t[0]][t[1]] for t in term]
-            o[i] = reduce(tensor_prod, k)
+            o[i] = Tensor(*k)
 
     return c, o
