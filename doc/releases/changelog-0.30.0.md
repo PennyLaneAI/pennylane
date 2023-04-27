@@ -132,9 +132,11 @@
   This circuit is composed of `qml.BlockEncode` and `qml.PCPhase` operations.
 
   ```pycon
-  >>> qml.draw(example_circuit, expansion_strategy="device")(A)
-  0: ─╭∏_ϕ─╭BlockEncode(M0)─╭∏_ϕ─╭BlockEncode(M0)†─╭∏_ϕ─┤  
-  1: ─╰∏_ϕ─╰BlockEncode(M0)─╰∏_ϕ─╰BlockEncode(M0)†─╰∏_ϕ─┤
+  >>> example_circuit(A)
+  tensor(0.97777078, requires_grad=True)
+  >>> print(example_circuit.qtape.expand(depth=1).draw(decimals=2)) 
+  0: ─╭∏_ϕ(0.30)─╭BlockEncode(M0)─╭∏_ϕ(0.20)─╭BlockEncode(M0)†─╭∏_ϕ(0.10)─┤  <Z>
+  1: ─╰∏_ϕ(0.30)─╰BlockEncode(M0)─╰∏_ϕ(0.20)─╰BlockEncode(M0)†─╰∏_ϕ(0.10)─┤
   ```
 
   The [qml.qsvt](https://docs.pennylane.ai/en/latest/code/api/pennylane.qsvt.html) function
