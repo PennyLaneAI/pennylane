@@ -118,7 +118,7 @@ class DefaultQubit2(Device):
 
         if execution_config.gradient_method == "adjoint":
             if circuit is None:
-                return False
+                return True
             try:
                 validate_and_expand_adjoint(circuit)
                 return True
