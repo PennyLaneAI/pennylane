@@ -405,7 +405,7 @@ class HardwarePulse:
     internally in PL to group into a single object all the data related to a single EM field.
     Args:
         amplitude (Union[float, Callable]): float or callable returning the amplitude of an EM
-            field
+            field.
         phase (Union[float, Callable]): float containing the phase (in radians) of the EM field
         frequency (Union[float, Callable]): float or callable returning the frequency of a
             EM field. In the case of superconducting transmon systems this is the drive frequency.
@@ -447,7 +447,7 @@ class AmplitudeAndPhase:
     of amplitude or phase are callable."""
 
     def __init__(self, trig_fn, amp, phase, hz_to_rads=2 * np.pi):
-        """The factor of 2pi converts amplitude in Hz to amplitude in radians/second"""
+        # The factor of 2pi converts amplitude in Hz to amplitude in radians/second
         self.amp_is_callable = callable(amp)
         self.phase_is_callable = callable(phase)
 

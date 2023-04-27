@@ -39,9 +39,9 @@ def ad(wire, d=2):
 
 # pylint: disable=too-many-arguments
 def transmon_interaction(
-    omega: Union[float, list],
+    qubit_freq: Union[float, list],
     connections: list,
-    g: Union[float, list],
+    coupling: Union[float, list],
     wires: list,
     anharmonicity=None,
     d=2,
@@ -57,8 +57,8 @@ def transmon_interaction(
         + \sum_{q\in \text{wires}} \alpha_q a^\dagger_q a^\dagger_q a_q a_q
 
     where :math:`[a^\dagger_p, a_q] = i \delta_{pq}` are bosonic creation and annihilation operators.
-    The first term describes the dressed qubit frequencies :math:`\omega_q`, the second term their
-    coupling :math:`g_{ij}` and the last the anharmonicity :math:`\alpha_q`, which all can vary for
+    The first term describes the dressed qubit frequencies ``qubit_freq`` :math:` = \omega_q/ (2\pi)`, the second term their
+    ``coupling`` :math:` = g_{ij}/(2\pi)` and the last the ``anharmonicity`` :math:`= \alpha_q/(2\pi)`, which all can vary for
     different qubits. In practice, the bosonic operators are restricted to a finite dimension of the
     local Hilbert space (default ``d=2`` corresponds to qubits).
     In that case, the anharmonicity is set to :math:`\alpha=0` and ignored.
@@ -76,11 +76,11 @@ def transmon_interaction(
         :func:`~.transmon_drive`
 
     Args:
-        omega (Union[float, list[float]]): List of dressed qubit frequencies in GHz. Needs to match the length of ``wires``.
+        qubit_freq (Union[float, list[float]]): List of dressed qubit frequencies in GHz. Needs to match the length of ``wires``.
             When passing a single float all qubits are assumed to have that same frequency.
         connections (list[tuple(int)]): List of connections ``(i, j)`` between qubits i and j.
             When the wires in ``connections`` are not contained in ``wires``, a warning is raised.
-        g (Union[float, list[float]]): List of coupling strengths in GHz. Needs to match the length of ``connections``.
+        coupling (Union[float, list[float]]): List of coupling strengths in GHz. Needs to match the length of ``connections``.
             When passing a single float need explicit ``wires``.
         anharmonicity (Union[float, list[float]]): List of anharmonicities in GHz. Ignored when ``d=2``.
             When passing a single float all qubits are assumed to have that same anharmonicity.
@@ -145,19 +145,24 @@ def transmon_interaction(
         anharmonicity = [0.0] * n_wires
 
     # TODO: make coefficients callable / trainable. Currently not supported
-    if qml.math.ndim(omega) == 0:
-        omega = [omega] * n_wires
-    if len(omega) != n_wires:
+    if qml.math.ndim(qubit_freq) == 0:
+        qubit_freq = [qubit_freq] * n_wires
+    if len(qubit_freq) != n_wires:
         raise ValueError(
-            f"Number of qubit frequencies omega = {omega} does not match the provided wires = {wires}"
+            f"Number of qubit frequencies in {qubit_freq} does not match the provided wires = {wires}"
         )
 
-    if qml.math.ndim(g) == 0:
-        g = [g] * len(connections)
-    if len(g) != len(connections):
+    if qml.math.ndim(coupling) == 0:
+        coupling = [coupling] * len(connections)
+    if len(coupling) != len(connections):
         raise ValueError(
-            f"Number of coupling terms {g} does not match the provided connections = {connections}"
+            f"Number of coupling terms {coupling} does not match the provided connections = {connections}"
         )
+
+    settings = TransmonSettings(connections, qubit_freq, coupling, anharmonicity=anharmonicity)
+
+    omega = [2 * np.pi * f for f in qubit_freq]  # can't currently be a callable
+    g = [2 * np.pi * g_i for g_i in coupling]  # can't currently be a callable
 
     # qubit term
     coeffs = list(omega)
@@ -169,17 +174,14 @@ def transmon_interaction(
 
     # TODO Qudit support. Currently not supported but will be in the future.
     # if d>2:
-    #     if anharmonicity is None:
-    #         anharmonicity = [0.] * n_wires
     #     if qml.math.ndim(anharmonicity)==0:
     #         anharmonicity = [anharmonicity] * n_wires
     #     if len(anharmonicity) != n_wires:
     #         raise ValueError(f"Number of qubit anharmonicities anharmonicity = {anharmonicity} does not match the provided wires = {wires}")
     #     # anharmonicity term
-    #     coeffs += list(anharmonicity)
+    #     alpha = [2 * np.pi * a for a in anharmonicity]
+    #     coeffs += list(alpha)
     #     observables += [ad(i, d) @ ad(i, d) @ a(i, d) @ a(i, d) for i in wires]
-
-    settings = TransmonSettings(connections, omega, g, anharmonicity=anharmonicity)
 
     return HardwareHamiltonian(
         coeffs, observables, settings=settings, reorder_fn=_reorder_AmpPhaseFreq
@@ -194,32 +196,34 @@ class TransmonSettings:
 
     Args:
             connections (List): List `[[idx_q0, idx_q1], ..]` of connected qubits (wires)
-            omega (List[float, Callable]):
+            qubit_freq (List[float, Callable]):
+            coupling (List[list, TensorLike, Callable]):
             anharmonicity (List[float, Callable]):
-            g (List[list, TensorLike, Callable]):
 
     """
 
     connections: List
-    omega: Union[float, Callable]
-    g: Union[list, TensorLike, Callable]
+    qubit_freq: Union[float, Callable]
+    coupling: Union[list, TensorLike, Callable]
     anharmonicity: Union[float, Callable]
 
     def __eq__(self, other):
         return (
             qml.math.all(self.connections == other.connections)
-            and qml.math.all(self.omega == other.omega)
-            and qml.math.all(self.g == other.g)
+            and qml.math.all(self.qubit_freq == other.qubit_freq)
+            and qml.math.all(self.coupling == other.coupling)
             and qml.math.all(self.anharmonicity == other.anharmonicity)
         )
 
     def __add__(self, other):
         if other is not None:
             new_connections = list(self.connections) + list(other.connections)
-            new_omega = list(self.omega) + list(other.omega)
-            new_g = list(self.g) + list(other.g)
+            new_qubit_freq = list(self.qubit_freq) + list(other.qubit_freq)
+            new_coupling = list(self.coupling) + list(other.coupling)
             new_anh = list(self.anharmonicity) + list(other.anharmonicity)
-            return TransmonSettings(new_connections, new_omega, new_g, anharmonicity=new_anh)
+            return TransmonSettings(
+                new_connections, new_qubit_freq, new_coupling, anharmonicity=new_anh
+            )
 
         return self
 
@@ -235,8 +239,8 @@ def transmon_drive(amplitude, phase, freq, wires, d=2):
 
     where :math:`[a^\dagger_p, a_q] = i \delta_{pq}` are bosonic creation and annihilation operators
     and :math:`q` is the qubit label (``wires``).
-    The arguments ``amplitude``, ``phase`` and ``freq`` correspond to :math:`\Omega`, :math:`\phi`
-    and :math:`\nu`, respectively, and can all be either fixed numbers (``float``) or depend on time
+    The arguments ``amplitude``, ``phase`` and ``freq`` correspond to :math:`\Omega / (2\pi)`, :math:`\phi`
+    and :math:`\nu / (2\pi)`, respectively, and can all be either fixed numbers (``float``) or depend on time
     (``callable``). If they are time-dependent, they need to abide by the restrictions imposed
     in :class:`ParametrizedHamiltonian` and have a signature of two parameters, ``(params, t)``.
 
