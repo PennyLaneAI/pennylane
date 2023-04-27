@@ -394,7 +394,7 @@ these changes when using PennyLane, but here is what has changed this release:
   in the circuit.
   [(#3888)](https://github.com/PennyLaneAI/pennylane/pull/3888)
 
-* Added `Operation.__truediv__` dunder method to be able to divide operators.
+* Added `Operation.__truediv__` dunder method to be able to divide operators by scalars.
   [(#3749)](https://github.com/PennyLaneAI/pennylane/pull/3749)
 
 * Printing an instance of `MutualInfoMP` now displays the distribution of the wires between the two subsystems.
