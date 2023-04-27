@@ -577,6 +577,7 @@ Nothing for this release!
 
 * Fixed a bug where `qml.math.dot` returned a numpy array instead of an autograd array, breaking autograd derivatives
   in certain circumstances.
+  [(#4019)](https://github.com/PennyLaneAI/pennylane/pull/4019)
 
 * `Operator` now casts `tuple` to `np.ndarray` as well as `list`. 
   [(#4022)](https://github.com/PennyLaneAI/pennylane/pull/4022)
