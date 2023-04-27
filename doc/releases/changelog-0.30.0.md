@@ -60,9 +60,9 @@
   ```
   
   The [qml.pulse](https://docs.pennylane.ai/en/stable/code/qml_pulse.html) page contains
-  additional details. Check out our
-  [release blog post](https://pennylane.ai/blog/2023/05/pennylane-v030-released/) for a
-  demonstration of how to perform the execution on actual hardware!
+  additional details. Stay
+  tuned for a [demo](https://pennylane.ai/qml/demos_quantum-computing) that will walk you through the
+  details of hardware device access!
 
 * A pulse-level circuit can now be differentiated using a
   [stochastic parameter-shift](https://arxiv.org/abs/2210.15812) method. 
