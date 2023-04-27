@@ -167,8 +167,9 @@ select the option below that describes your situation.
 
     * Your device inherits directly from :class:`Device <pennylane.Device>`, in which case you may
       need to rewrite the :meth:`~.Device.execute`, :meth:`~.Device.batch_execute`, and
-      :meth:`~.Device.statistics` methods. Please
-      `reach out to us <https://discuss.pennylane.ai>`_ for guidance!
+      :meth:`~.Device.statistics` methods.
+
+    In either case, please `reach out to us <https://discuss.pennylane.ai>`_ for guidance!
 
 .. details::
     :title: I am unsure what to do
