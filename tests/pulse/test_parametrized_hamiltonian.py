@@ -15,7 +15,7 @@
 """
 Unit tests for the ParametrizedHamiltonian class
 """
-# pylint: disable=no-member
+# pylint: disable=no-member, import-outside-toplevel
 import pytest
 
 import pennylane as qml
@@ -25,10 +25,12 @@ from pennylane.wires import Wires
 
 
 def f1(p, t):
+    """Compute the function p * sin(t) * (t - 1)."""
     return p * np.sin(t) * (t - 1)
 
 
 def f2(p, t):
+    """Compute the function p * cos(t**2)."""
     return p * np.cos(t**2)
 
 
@@ -136,6 +138,8 @@ class TestInitialization:
 
 
 class TestCall:
+    """Test that calling the ParametrizedHamiltonian behaves as expected."""
+
     coeffs_and_ops_and_params = (
         (
             [f1, f2],
@@ -294,14 +298,11 @@ class TestInteractionWithOperators:
         object."""
         H = ParametrizedHamiltonian([f1, f2], [qml.PauliX(0), qml.PauliY(1)])
 
-        class DummyObject:  # pylint: disable=too-few-public-methods
-            pass
+        with pytest.raises(TypeError, match="unsupported operand type"):
+            _ = H + object()
 
         with pytest.raises(TypeError, match="unsupported operand type"):
-            _ = H + DummyObject()
-
-        with pytest.raises(TypeError, match="unsupported operand type"):
-            _ = DummyObject() + H
+            _ = object() + H
 
     def test_multiply_with_scalar(self):
         """Test the __mul__ dunder method with a scalar."""
@@ -318,14 +319,11 @@ class TestInteractionWithOperators:
         object."""
         H = ParametrizedHamiltonian([f1, f2], [qml.PauliX(0), qml.PauliY(1)])
 
-        class DummyObject:  # pylint: disable=too-few-public-methods
-            pass
+        with pytest.raises(TypeError, match="unsupported operand type"):
+            _ = H * object()
 
         with pytest.raises(TypeError, match="unsupported operand type"):
-            _ = H * DummyObject()
-
-        with pytest.raises(TypeError, match="unsupported operand type"):
-            _ = DummyObject() * H
+            _ = object() * H
 
     def test_adding_two_parametrized_hamiltonians(self):
         """Test that two ParametrizedHamiltonians can be added together and
@@ -374,6 +372,8 @@ class TestProperties:
 
 
 class TestInterfaces:
+    """Test ParametrizedHamiltonian with ML interfaces."""
+
     @pytest.mark.jax
     def test_call_jax(self):
         """Test result of calling the ParametrizedHamiltonian works with parameters as a jax array"""
@@ -399,6 +399,8 @@ class TestInterfaces:
 
     @pytest.mark.torch
     def test_call_torch(self):
+        """Test result of calling the ParametrizedHamiltonian works with
+        parameters as a torch tensor"""
         import torch
 
         pH = ParametrizedHamiltonian([1.2, f1, 2.3, f2], [qml.PauliX(i) for i in range(4)])
@@ -421,6 +423,8 @@ class TestInterfaces:
 
     @pytest.mark.tf
     def test_call_tf(self):
+        """Test result of calling the ParametrizedHamiltonian works with
+        parameters as a Tensorflow tensor"""
         import tensorflow as tf
 
         pH = ParametrizedHamiltonian([1.2, f1, 2.3, f2], [qml.PauliX(i) for i in range(4)])
