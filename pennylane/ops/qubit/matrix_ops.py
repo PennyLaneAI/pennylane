@@ -29,7 +29,7 @@ from pennylane.wires import Wires
 
 class QubitUnitary(Operation):
     r"""QubitUnitary(U, wires)
-    Apply an arbitrary unitary matrix with a dimension that is a power of two.
+    Apply an arbitrary fixed unitary matrix.
 
     **Details:**
 
@@ -76,12 +76,15 @@ class QubitUnitary(Operation):
     def __init__(
         self, U, wires, do_queue=True, id=None, unitary_check=False
     ):  # pylint: disable=too-many-arguments
-        wires = Wires(wires)
-        U_shape = qml.math.shape(U)
-        dim = 2 ** len(wires)
-
         # For pure QubitUnitary operations (not controlled), check that the number
         # of wires fits the dimensions of the matrix
+
+        wires = Wires(wires)
+
+        U_shape = qml.math.shape(U)
+
+        dim = 2 ** len(wires)
+
         if len(U_shape) not in {2, 3} or U_shape[-2:] != (dim, dim):
             raise ValueError(
                 f"Input unitary must be of shape {(dim, dim)} or (batch_size, {dim}, {dim}) "
@@ -197,7 +200,7 @@ class QubitUnitary(Operation):
 
 class DiagonalQubitUnitary(Operation):
     r"""DiagonalQubitUnitary(D, wires)
-    Apply an arbitrary diagonal unitary matrix with a dimension that is a power of two.
+    Apply an arbitrary fixed diagonal unitary matrix.
 
     **Details:**
 

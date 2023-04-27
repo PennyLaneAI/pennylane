@@ -341,10 +341,6 @@
 
 <h3>Documentation 📝</h3>
 
-* The documentation of `QubitUnitary` and `DiagonalQubitUnitary` was clarified regarding the
-  parameters of the operations.
-  [(#4031)](https://github.com/PennyLaneAI/pennylane/pull/4031)
-
 * A typo was corrected in the documentation for introduction to `inspecting_circuits` and `chemistry`.
   [(#3844)](https://github.com/PennyLaneAI/pennylane/pull/3844)
 
