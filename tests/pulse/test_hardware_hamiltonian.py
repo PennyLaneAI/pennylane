@@ -14,7 +14,7 @@
 """
 Unit tests for the HardwareHamiltonian class.
 """
-# pylint: disable=too-few-public-methods
+# pylint: disable=too-few-public-methods, import-outside-toplevel
 import numpy as np
 import pytest
 
@@ -35,10 +35,12 @@ wires = [1, 6, 0, 2, 4, 3]
 
 
 def f1(p, t):
+    """Compute the function p * sin(t) * (t - 1)."""
     return p * np.sin(t) * (t - 1)
 
 
 def f2(p, t):
+    """Compute the function p * cos(t**2)."""
     return p * np.cos(t**2)
 
 
@@ -70,6 +72,8 @@ class TestHardwareHamiltonian:
         assert rm.reorder_fn == _reorder_parameters
 
     def test_two_different_reorder_fns_raises_error(self):
+        """Test that adding two HardwareHamiltonians with different reordering functions
+        raises an error."""
         H1 = HardwareHamiltonian(coeffs=[], observables=[])
         H2 = HardwareHamiltonian(coeffs=[], observables=[], reorder_fn=lambda _, y: y[:2])
 
@@ -282,6 +286,7 @@ class TestInteractionWithOperators:
         new_pH(params, 2)  # confirm calling does not raise error
 
     def test_unknown_type_raises_error(self):
+        """Test that adding an invalid object to a HardwareHamiltonian raises an error."""
         R = drive(amplitude=f1, phase=0, wires=[0, 1])
         with pytest.raises(TypeError, match="unsupported operand type"):
             R += 3
@@ -291,8 +296,8 @@ class TestDrive:
     """Unit tests for the ``drive`` function."""
 
     def test_attributes_and_number_of_terms(self):
-        """Test that the attributes and the number of terms of the ``ParametrizedHamiltonian`` returned by
-        ``drive`` are correct."""
+        """Test that the attributes and the number of terms of the
+        ``ParametrizedHamiltonian`` returned by ``drive`` are correct."""
 
         Hd = drive(amplitude=1, phase=2, wires=[1, 2])
 
@@ -346,18 +351,22 @@ class TestDrive:
 
 
 def callable_amp(p, t):
+    """Compute the polynomial function polyval(p, t)."""
     return np.polyval(p, t)
 
 
 def callable_phase(p, t):
+    """Compute the function p_0 * sin(p_1 * t)."""
     return p[0] * np.sin(p[1] * t)
 
 
 def sine_func(p, t):
+    """Compute the function sin(p * t)."""
     return np.sin(p * t)
 
 
 def cosine_fun(p, t):
+    """Compute the function cos(p * t)."""
     return np.cos(p * t)
 
 
