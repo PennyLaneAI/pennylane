@@ -56,6 +56,7 @@
   [(#3966)](https://github.com/PennyLaneAI/pennylane/pull/3966)
   [(#3987)](https://github.com/PennyLaneAI/pennylane/pull/3987)
   [(#4021)](https://github.com/PennyLaneAI/pennylane/pull/4021)
+  [(#4040)](https://github.com/PennyLaneAI/pennylane/pull/4040)
 
   * A new keyword argument called `max_distance` has been added to `qml.pulse.rydberg_interaction` to allow for the removal of negligible contributions
     from atoms beyond `max_distance` from each other.
