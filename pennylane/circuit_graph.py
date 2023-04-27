@@ -16,6 +16,7 @@ This module contains the CircuitGraph class which is used to generate a DAG (dir
 representation of a quantum circuit from an Operator queue.
 """
 # pylint: disable=too-many-branches,too-many-arguments,too-many-instance-attributes
+from numbers import Number
 from collections import namedtuple
 
 import numpy as np
@@ -482,7 +483,7 @@ class CircuitGraph:
     @staticmethod
     def _weight_func(weight):
         """If weight is a number, use it!"""
-        if isinstance(weight, (int, float)):
+        if isinstance(weight, Number):
             return weight
         return 1
 
