@@ -166,8 +166,8 @@ select the option below that describes your situation.
       `Qiskit plugin <https://docs.pennylane.ai/projects/qiskit/en/latest/>`_.
 
     * Your device inherits directly from :class:`Device <pennylane.Device>`, in which case you may
-      need to rewrite the :meth:`~.QubitDevice.execute`, :meth:`~.QubitDevice.batch_execute`, and
-      :meth:`~.QubitDevice.statistics` methods. Please
+      need to rewrite the :meth:`~.Device.execute`, :meth:`~.Device.batch_execute`, and
+      :meth:`~.Device.statistics` methods. Please
       `reach out to us <https://discuss.pennylane.ai>`_ for guidance!
 
 .. details::
