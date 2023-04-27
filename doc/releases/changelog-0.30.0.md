@@ -346,16 +346,6 @@ these changes when using PennyLane, but here is what has changed this release:
   See the [docstring](https://docs.pennylane.ai/en/stable/code/api/pennylane.pulse.ParametrizedEvolution.html)
   for details.
 
-* `ParametrizedEvolution` takes two new Boolean keyword arguments: `return_intermediate` and
-  `complementary`. They allow computing intermediate time evolution matrices.
-  [(#3900)](https://github.com/PennyLaneAI/pennylane/pull/3900)
-  
-  Activating `return_intermediate` will result in `evol_op.matrix()` returning intermediate solutions
-  to the Schrodinger equation. Activating `complementary` will make these intermediate solutions
-  be the _remaining_ time evolution complementary to the output for `complementary=False`.
-  See the [docstring](https://docs.pennylane.ai/en/stable/code/api/pennylane.pulse.ParametrizedEvolution.html)
-  for details.
-
 * Hardware-compatible pulse sequence gradients with `qml.gradient.stoch_pulse_grad` can now be calculated faster using
   the new keyword argument `use_broadcasting`. Executing a `ParametrizedEvolution` that returns
   intermediate evolutions has increased performance using the state vector ODE solver, as well.
