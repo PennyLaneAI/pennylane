@@ -256,8 +256,9 @@
   generator now support adjoint differentiation.
   [(#3874)](https://github.com/PennyLaneAI/pennylane/pull/3874)
 
-* When using `jax.jit` with gradient transforms, the trainable parameters are now set correctly (instead of every parameter having
-  to be set as trainable), and therefore the derivatives are computed more efficiently.
+* Derivatives are computed more efficiently when using `jax.jit` with gradient transforms; the
+  trainable parameters are now set correctly instead of every parameter having to be set as
+  trainable.
   [(#3697)](https://github.com/PennyLaneAI/pennylane/pull/3697)
 
 * The efficiency of `tapering()`, `tapering_hf()` and `clifford()` have been improved.
