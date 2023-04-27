@@ -302,10 +302,10 @@ developing plugins much easier for developers and unlock new device capabilities
 these changes when using PennyLane, but here is what has changed this release:
 
 * Several functions in `devices/qubit` have been added or improved:
-  + `sample_state`: returns a series of samples based on a given state vector and a number of shots. [(#3720)](https://github.com/PennyLaneAI/pennylane/pull/3720)
-  + `simulate`: supports measuring expectation values of large observables such as `qml.Hamiltonian`, `qml.SparseHamiltonian`, and `qml.Sum`. [(#3759)](https://github.com/PennyLaneAI/pennylane/pull/3759) 
-  + `apply_operation`: supports broadcasting. [(#3852)](https://github.com/PennyLaneAI/pennylane/pull/3852)
-  + `adjoint_jacobian`: supports adjoint differentiation in the new qubit state-vector device. [(#3790)](https://github.com/PennyLaneAI/pennylane/pull/3790)
+  - `sample_state`: returns a series of samples based on a given state vector and a number of shots. [(#3720)](https://github.com/PennyLaneAI/pennylane/pull/3720)
+  - `simulate`: supports measuring expectation values of large observables such as `qml.Hamiltonian`, `qml.SparseHamiltonian`, and `qml.Sum`. [(#3759)](https://github.com/PennyLaneAI/pennylane/pull/3759) 
+  - `apply_operation`: supports broadcasting. [(#3852)](https://github.com/PennyLaneAI/pennylane/pull/3852)
+  - `adjoint_jacobian`: supports adjoint differentiation in the new qubit state-vector device. [(#3790)](https://github.com/PennyLaneAI/pennylane/pull/3790)
   
 * `qml.devices.qubit.preprocess` now allows circuits with non-commuting observables.
   [(#3857)](https://github.com/PennyLaneAI/pennylane/pull/3857)
@@ -325,16 +325,16 @@ these changes when using PennyLane, but here is what has changed this release:
   [(#3987)](https://github.com/PennyLaneAI/pennylane/pull/3987)
   [(#3889)](https://github.com/PennyLaneAI/pennylane/pull/3889)
   [(#4021)](https://github.com/PennyLaneAI/pennylane/pull/4021)
-  + `HardwareHamiltonian`: an internal class that contains additional information about pulses and settings.
-  + `rydberg_interaction`: a user-facing function that returns a `HardwareHamiltonian` containing
+  - `HardwareHamiltonian`: an internal class that contains additional information about pulses and settings.
+  - `rydberg_interaction`: a user-facing function that returns a `HardwareHamiltonian` containing
     the Hamiltonian of the interaction of all the Rydberg atoms.
-  + `transmon_interaction`: a user-facing function for constructing
+  - `transmon_interaction`: a user-facing function for constructing
     the Hamiltonian that describes the circuit QED interaction Hamiltonian of superconducting transmon systems.
-  + `drive`: a user-facing function function that returns a `ParametrizedHamiltonian` (`HardwareHamiltonian`) containing
+  - `drive`: a user-facing function function that returns a `ParametrizedHamiltonian` (`HardwareHamiltonian`) containing
     the Hamiltonian of the interaction between a driving electro-magnetic field and a group of qubits.
-  + `rydberg_drive`: a user-facing function that returns a `ParametrizedHamiltonian` (`HardwareHamiltonian`) containing
+  - `rydberg_drive`: a user-facing function that returns a `ParametrizedHamiltonian` (`HardwareHamiltonian`) containing
     the Hamiltonian of the interaction between a driving laser field and a group of Rydberg atoms.
-  + `max_distance`: a keyword argument added to `qml.pulse.rydberg_interaction` to allow for the removal of negligible contributions from atoms beyond `max_distance` from each other.
+  - `max_distance`: a keyword argument added to `qml.pulse.rydberg_interaction` to allow for the removal of negligible contributions from atoms beyond `max_distance` from each other.
 
 * `ParametrizedEvolution` now takes two new Boolean keyword arguments: `return_intermediate` and
   `complementary`. They allow computing intermediate time evolution matrices.
