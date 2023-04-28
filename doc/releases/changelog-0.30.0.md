@@ -56,6 +56,7 @@
   [(#3966)](https://github.com/PennyLaneAI/pennylane/pull/3966)
   [(#3987)](https://github.com/PennyLaneAI/pennylane/pull/3987)
   [(#4021)](https://github.com/PennyLaneAI/pennylane/pull/4021)
+  [(#4040)](https://github.com/PennyLaneAI/pennylane/pull/4040)
 
   * A new keyword argument called `max_distance` has been added to `qml.pulse.rydberg_interaction` to allow for the removal of negligible contributions
     from atoms beyond `max_distance` from each other.
@@ -341,6 +342,10 @@
 
 <h3>Documentation 📝</h3>
 
+* The documentation of `QubitUnitary` and `DiagonalQubitUnitary` was clarified regarding the
+  parameters of the operations.
+  [(#4031)](https://github.com/PennyLaneAI/pennylane/pull/4031)
+
 * A typo was corrected in the documentation for introduction to `inspecting_circuits` and `chemistry`.
   [(#3844)](https://github.com/PennyLaneAI/pennylane/pull/3844)
 
@@ -360,6 +365,10 @@
 
 * Fixes a bug where the broadcast expand results where stacked along the wrong axis for the new return system.
   [(#3984)](https://github.com/PennyLaneAI/pennylane/pull/3984)
+
+* A more informative error message is raised in `qml.jacobian` to explain potential
+  problems with the new return types specification.
+  [(#3997)](https://github.com/PennyLaneAI/pennylane/pull/3997)
 
 * Fixed a bug where calling `Evolution.generator` with `coeff` being a complex ArrayBox raised an error.
   [(#3796)](https://github.com/PennyLaneAI/pennylane/pull/3796)
