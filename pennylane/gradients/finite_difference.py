@@ -381,7 +381,9 @@ def finite_diff(
         return _no_trainable_grad_new(tape, shots)
 
     if validate_params:
-        diff_methods = gradient_analysis_and_validation(tape, "numeric", grad_fn=finite_diff, overwrite=False)
+        diff_methods = gradient_analysis_and_validation(
+            tape, "numeric", grad_fn=finite_diff, overwrite=False
+        )
     else:
         diff_methods = ["F" for i in tape.trainable_params]
 
@@ -658,7 +660,9 @@ def _finite_diff_legacy(
         return [], lambda _: qml.math.zeros([tape.output_dim, 0])
 
     if validate_params:
-        diff_methods = gradient_analysis_and_validation(tape, "numeric", grad_fn=finite_diff, overwrite=False)
+        diff_methods = gradient_analysis_and_validation(
+            tape, "numeric", grad_fn=finite_diff, overwrite=False
+        )
     else:
         diff_methods = ["F" for i in tape.trainable_params]
 

@@ -193,6 +193,7 @@ def _grad_method_validation(method, tape):
 
     return tuple(diff_methods.values())
 
+
 def gradient_analysis_and_validation(tape, method, use_graph=True, grad_fn=None, overwrite=True):
     """Combine the execution of _gradient_analysis and _grad_method_validation."""
     if overwrite or "grad_method" not in tape._par_info[0]:

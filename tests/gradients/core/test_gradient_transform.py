@@ -152,10 +152,11 @@ class TestGradMethodValidation:
         with pytest.raises(ValueError, match="The analytic gradient method cannot be used"):
             _grad_method_validation("analytic", tape)
 
+
 class TestGradientAnalysisAndValidation:
     """Test the combined function gradient_analysis_and_validation."""
-    pass
 
+    pass
 
 
 class TestChooseGradMethods:

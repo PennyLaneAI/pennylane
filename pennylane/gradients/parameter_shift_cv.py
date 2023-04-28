@@ -126,12 +126,14 @@ def _gradient_analysis_cv(tape):
     for idx, info in enumerate(tape._par_info):
         info["grad_method"] = _grad_method(tape, idx)
 
+
 def _gradient_analysis_and_validation_cv(tape, method):
     """Update the parameter information dictionary of the tape with
     gradient information of each parameter. Subsequently validate the
     gradient methods and return diff_methods."""
     _gradient_analysis_cv(tape)
     return _grad_method_validation(method, tape)
+
 
 def _transform_observable(obs, Z, device_wires):
     """Apply a Gaussian linear transformation to an observable.
