@@ -12,6 +12,9 @@
 
 <h3>Documentation 📝</h3>
 
+* The description of `mult` in the `qchem.Molecule` docstring now correctly states the value
+  of `mult` that is supported.
+
 <h3>Bug fixes 🐛</h3>
 
 <h3>Contributors ✍️</h3>
