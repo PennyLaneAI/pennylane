@@ -134,16 +134,16 @@ def rydberg_drive(amplitude, phase, detuning, wires):
     :math:`\sigma_q^\alpha` for :math:`\alpha = x,y` are the Pauli matrices on the corresponding
     qubit. Finally, :math:`n_q=\frac{1}{2}(\mathbb{I}_q-\sigma_q^z)` is the number operator on qubit :math:`q`.
     For hardware execution, time is expected to be in units
-    of :math:`\text{µs}`, and the frequency in units of :math:`\text{MHz}`. It is recommended to also follow
+    of :math:`\text{µs}`, and the frequency in units of :math:`2 \pi \text{MHz}`. It is recommended to also follow
     this convention for simulation, as it avoids numerical problems due to using very large and very small
     numbers. This driving term can be combined with an interaction term to create a Hamiltonian describing a
     driven Rydberg atom system. Multiple driving terms can be combined by summing them (see example).
 
     Args:
-        amplitude (Union[float, Callable]): float or callable returning the amplitude (in MHz) of a
+        amplitude (Union[float, Callable]): float or callable returning the amplitude (in :math:`2 \pi \text{MHz}`) of a
             laser field
         phase (Union[float, Callable]): float or callable returning the phase (in radians) of the laser field
-        detuning (Union[float, Callable]): float or callable returning the detuning (in MHz) of a
+        detuning (Union[float, Callable]): float or callable returning the detuning (in :math:`2 \pi \text{MHz}`) of a
             laser field
         wires (Union[int, List[int]]): integer or list containing wire values for the Rydberg atoms that
             the laser field acts on
