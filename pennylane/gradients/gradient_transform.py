@@ -18,6 +18,7 @@ import warnings
 
 import pennylane as qml
 from pennylane.transforms.tape_expand import expand_invalid_trainable
+from pennylane.measurements import MutualInfoMP, StateMP, VarianceMP, VnEntropyMP
 
 SUPPORTED_GRADIENT_KWARGS = [
     "approx_order",
@@ -46,6 +47,50 @@ SUPPORTED_GRADIENT_KWARGS = [
     "use_broadcasting",
     "validate_params",
 ]
+
+
+def assert_no_state_returns(measurements):
+    """Check whether a set of measurements contains a measurement process that returns the quantum
+    state and raise an error if this is the case.
+
+    Args:
+        measurements (list[MeasurementProcess]): measurements to analyze
+
+    Currently, the measurement processes that are considered to return the state are
+    ``~.measurements.StateMP``, ``~.measurements.VnEntropyMP``, and ``~.measurements.MutualInfoMP``.
+    """
+    if any(isinstance(m, (StateMP, VnEntropyMP, MutualInfoMP)) for m in measurements):
+        raise ValueError(
+            "Computing the gradient of circuits that return the state is not supported."
+        )
+
+
+def assert_no_variance(measurements, transform_name):
+    """Check whether a set of measurements contains a variance measurement
+    raise an error if this is the case.
+
+    Args:
+        measurements (list[MeasurementProcess]): measurements to analyze
+        transform_name (str): Name of the gradient transform that queries the measurements
+    """
+    if any(isinstance(m, VarianceMP) for m in measurements):
+        raise ValueError(
+            f"Computing the gradient of variances with the {transform_name} "
+            "gradient transform is not supported."
+        )
+
+
+def assert_active_return(transform_name):
+    """Check that the new return type system is active. Raise an error if this is not the case.
+
+    Args:
+        transform_name (str): Name of the gradient transform that queries the return system
+    """
+    if not qml.active_return():
+        raise NotImplementedError(
+            f"The {transform_name} gradient transform only supports the new "
+            "return type system. Use qml.enable_return() to activate it."
+        )
 
 
 def gradient_analysis(tape, use_graph=True, grad_fn=None):

@@ -24,7 +24,7 @@ import numpy as np
 
 import pennylane as qml
 from pennylane._device import _get_num_copies
-from pennylane.measurements import MutualInfoMP, StateMP, VarianceMP, VnEntropyMP
+from pennylane.measurements import VarianceMP
 
 from .finite_difference import _all_zero_grad_new, _no_trainable_grad_new, finite_diff
 from .general_shift_rules import (
@@ -34,6 +34,7 @@ from .general_shift_rules import (
     process_shifts,
 )
 from .gradient_transform import (
+    assert_no_state_returns,
     choose_grad_methods,
     grad_method_validation,
     gradient_analysis,
@@ -1492,10 +1493,7 @@ def param_shift(
             shots=shots,
         )
 
-    if any(isinstance(m, (StateMP, VnEntropyMP, MutualInfoMP)) for m in tape.measurements):
-        raise ValueError(
-            "Computing the gradient of circuits that return the state is not supported."
-        )
+    assert_no_state_returns(tape.measurements)
 
     if broadcast and len(tape.measurements) > 1:
         raise NotImplementedError(
@@ -1874,12 +1872,7 @@ def _param_shift_legacy(
         Note that ``broadcast=True`` requires additional memory by a factor of the largest
         batch_size of the created tapes.
     """
-
-    if any(isinstance(m, (StateMP, VnEntropyMP, MutualInfoMP)) for m in tape.measurements):
-        raise ValueError(
-            "Computing the gradient of circuits that return the state is not supported."
-        )
-
+    assert_no_state_returns(tape.measurements)
     if broadcast and len(tape.measurements) > 1:
         raise NotImplementedError(
             "Broadcasting with multiple measurements is not supported yet. "

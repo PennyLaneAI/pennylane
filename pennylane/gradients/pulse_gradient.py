@@ -20,7 +20,6 @@ import numpy as np
 
 import pennylane as qml
 from pennylane._device import _get_num_copies
-from pennylane.measurements import MutualInfoMP, StateMP, VarianceMP, VnEntropyMP
 from pennylane.pulse import ParametrizedEvolution
 
 from .finite_difference import _all_zero_grad_new, _no_trainable_grad_new
@@ -30,6 +29,9 @@ from .parameter_shift import (
     _make_zero_rep,
 )
 from .gradient_transform import (
+    assert_active_return,
+    assert_no_state_returns,
+    assert_no_variance,
     choose_grad_methods,
     grad_method_validation,
     gradient_analysis,
@@ -42,6 +44,19 @@ try:
     import jax.numpy as jnp
 except ImportError:
     has_jax = False
+
+
+def _assert_has_jax(transform_name):
+    """Check that JAX is installed and imported correctly, otherwise raise an error.
+
+    Args:
+        transform_name (str): Name of the gradient transform that queries the return system
+    """
+    if not has_jax:  # pragma: no cover
+        raise ImportError(
+            f"Module jax is required for the {transform_name} gradient transform. "
+            "You can install jax via: pip install jax jaxlib"
+        )
 
 
 def _split_evol_ops(op, word, word_wires, tau):
@@ -495,25 +510,11 @@ def _stoch_pulse_grad(
         Therefore, it is important to implement pulses in the simplest way possible.
     """
     # pylint:disable=unused-argument
-    if not has_jax:  # pragma: no cover
-        raise ImportError(
-            "Module jax is required for the stochastic pulse parameter-shift gradient transform. "
-            "You can install jax via: pip install jax jaxlib"
-        )
-    if not qml.active_return():
-        raise NotImplementedError(
-            "The stochastic pulse parameter-shift gradient only supports the new "
-            "return type. Use qml.enable_return() to turn it on."
-        )
-    if any(isinstance(m, VarianceMP) for m in tape.measurements):
-        raise ValueError(
-            "Computing the gradient of variances with the stochastic pulse "
-            "parameter-shift gradient is not implemented."
-        )
-    if any(isinstance(m, (StateMP, VnEntropyMP, MutualInfoMP)) for m in tape.measurements):
-        raise ValueError(
-            "Computing the gradient of circuits that return the state is not supported."
-        )
+    transform_name = "stochastic pulse parameter-shift"
+    _assert_has_jax(transform_name)
+    assert_active_return(transform_name)
+    assert_no_state_returns(tape.measurements)
+    assert_no_variance(tape.measurements, transform_name)
 
     if num_split_times < 1:
         raise ValueError(

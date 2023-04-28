@@ -17,12 +17,14 @@ of a qubit-based quantum tape.
 """
 import pennylane as qml
 import pennylane.numpy as np
-from pennylane.measurements import MutualInfoMP, StateMP, VarianceMP, VnEntropyMP
 from pennylane.transforms.metric_tensor import _get_aux_wire
 from pennylane.transforms.tape_expand import expand_invalid_trainable_hadamard_gradient
 from .finite_difference import _all_zero_grad_new, _no_trainable_grad_new
 
 from .gradient_transform import (
+    assert_active_return,
+    assert_no_state_returns,
+    assert_no_variance,
     choose_grad_methods,
     grad_method_validation,
     gradient_analysis,
@@ -180,18 +182,10 @@ def _hadamard_grad(
         The number of trainable parameters may increase due to the decomposition.
 
     """
-    if not qml.active_return():
-        raise NotImplementedError(
-            "The Hadamard gradient only supports the new return type. Use qml.enable_return() to turn it on."
-        )
-    if any(isinstance(m, VarianceMP) for m in tape.measurements):
-        raise ValueError(
-            "Computing the gradient of variances with the Hadamard test gradient is not implemented."
-        )
-    if any(isinstance(m, (StateMP, VnEntropyMP, MutualInfoMP)) for m in tape.measurements):
-        raise ValueError(
-            "Computing the gradient of circuits that return the state is not supported."
-        )
+    transform_name = "Hadamard"
+    assert_active_return(transform_name)
+    assert_no_state_returns(tape.measurements)
+    assert_no_variance(tape.measurements, transform_name)
 
     if argnum is None and not tape.trainable_params:
         return _no_trainable_grad_new(tape, shots)
