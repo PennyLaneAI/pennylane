@@ -76,13 +76,13 @@ def transmon_interaction(
         :func:`~.transmon_drive`
 
     Args:
-        omega (Union[float, list[float]]): List of dressed qubit frequencies in GHz. Needs to match the length of ``wires``.
+        omega (Union[float, list[float]]): List of dressed qubit frequencies in :math:`2 \pi \text{GHz}`. Needs to match the length of ``wires``.
             When passing a single float all qubits are assumed to have that same frequency.
         connections (list[tuple(int)]): List of connections ``(i, j)`` between qubits i and j.
             When the wires in ``connections`` are not contained in ``wires``, a warning is raised.
-        g (Union[float, list[float]]): List of coupling strengths in GHz. Needs to match the length of ``connections``.
+        g (Union[float, list[float]]): List of coupling strengths in :math:`2 \pi \text{GHz}`. Needs to match the length of ``connections``.
             When passing a single float need explicit ``wires``.
-        anharmonicity (Union[float, list[float]]): List of anharmonicities in GHz. Ignored when ``d=2``.
+        anharmonicity (Union[float, list[float]]): List of anharmonicities in :math:`2 \pi \text{GHz}`. Ignored when ``d=2``.
             When passing a single float all qubits are assumed to have that same anharmonicity.
         wires (list): Needs to be of the same length as omega. Note that there can be additional
             wires in the resulting operator from the ``connections``, which are treated independently.
@@ -106,7 +106,7 @@ def transmon_interaction(
     >>> print(H)
     ParametrizedHamiltonian: terms=10
 
-    We can also provide individual values for each of the qubit energies and connections.
+    We can also provide individual values (in :math:`2 \pi \text{GHz}`) for each of the qubit energies and coupling strengths.
 
     .. code-block::
 
