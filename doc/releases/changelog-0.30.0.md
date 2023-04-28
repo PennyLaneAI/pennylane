@@ -407,8 +407,9 @@ these changes when using PennyLane, but here is what has changed this release:
 * Pauli arithmetic has been updated to convert to a Hamiltonian more efficiently.
   [(#3939)](https://github.com/PennyLaneAI/pennylane/pull/3939)
 
-* Operators now have a `has_generator` attribute that returns whether or not the operator
-  has a generator defined. It is used in `qml.operation.has_gen`, improving its performance.
+* `Operator` has a new Boolean attribute `has_generator`. It returns whether or not the `Operator`
+  has a `generator` defined. `has_generator` is used in `qml.operation.has_gen`, which improves its performance
+  and extends differentiation support. 
   [(#3875)](https://github.com/PennyLaneAI/pennylane/pull/3875)
 
 * The performance of `CompositeOp` has been significantly improved now that it overrides
