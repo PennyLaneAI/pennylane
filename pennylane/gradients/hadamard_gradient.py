@@ -181,7 +181,7 @@ def _hadamard_grad(
         The number of trainable parameters may increase due to the decomposition.
 
     """
-    transform_name = "Hadamard"
+    transform_name = "Hadamard test"
     assert_active_return(transform_name)
     assert_no_state_returns(tape.measurements)
     assert_no_variance(tape.measurements, transform_name)

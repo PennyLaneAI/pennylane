@@ -117,9 +117,8 @@ def _grad_method(tape, idx):
 def _gradient_analysis_cv(tape):
     """Update the parameter information dictionary of the tape with
     gradient information of each parameter."""
-
     if getattr(tape, "_gradient_fn", None) is param_shift_cv:
-        # gradient analysis has already been performed on this tape
+        # gradient analysis for param_shift_cv has already been performed on this tape
         return
 
     tape._gradient_fn = param_shift_cv
@@ -128,6 +127,9 @@ def _gradient_analysis_cv(tape):
         info["grad_method"] = _grad_method(tape, idx)
 
 def _gradient_analysis_and_validation_cv(tape, method):
+    """Update the parameter information dictionary of the tape with
+    gradient information of each parameter. Subsequently validate the
+    gradient methods and return diff_methods."""
     _gradient_analysis_cv(tape)
     return _grad_method_validation(method, tape)
 

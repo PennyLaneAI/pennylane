@@ -654,7 +654,10 @@ class TestHadamardGradEdgeCases:
         tape = qml.tape.QuantumScript.from_queue(q)
         with pytest.raises(
             ValueError,
-            match=r"Computing the gradient of variances with the Hadamard test gradient is not implemented.",
+            match=(
+                r"Computing the gradient of variances with the Hadamard test "
+                "gradient transform is not supported."
+            ),
         ):
             qml.gradients.hadamard_grad(tape)
 
