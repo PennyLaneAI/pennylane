@@ -241,9 +241,9 @@ def transmon_drive(amplitude, phase, freq, wires, d=2):
     in :class:`ParametrizedHamiltonian` and have a signature of two parameters, ``(params, t)``.
 
     For realistic simulations, one may restrict the amplitude, phase and drive frequency parameters.
-    For example, the authors in `2008.04302 <https://arxiv.org/abs/2008.04302>`_ impose the restrictions of
-    a maximum amplitude :math:`\Omega_{\text{max}} = 20 \text{MHz}` and the carrier frequency to deviate at most
-    :math:`\nu - \omega = \pm 1 \text{GHz}` from the qubit frequency :math:`\omega`
+    For example, the authors in `2203.06818 <https://arxiv.org/abs/2203.06818>`_ impose the restrictions of
+    a maximum amplitude :math:`\Omega_{\text{max}} = 0.02 \times 2 \pi \text{GHz}` and the carrier frequency to deviate at most
+    :math:`\nu - \omega = \pm 1 \times 2 \pi \text{GHz}` from the qubit frequency :math:`\omega`
     (see :func:`~.transmon_interaction`).
     The phase :math:`\phi(t)` is typically a slowly changing function of time compared to :math:`\Omega(t)`.
 
