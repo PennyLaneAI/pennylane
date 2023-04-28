@@ -6,6 +6,11 @@
 
 <h3>Improvements 🛠</h3>
 
+* An error is raised by `qchem.molecular_hamiltonian` when the `dhf` method is used for an 
+  open-shell system. This duplicates a similar error in `qchem.Molecule` but makes it easier to
+  inform the users that the `pyscf` backend can be used for open-shell calculations.
+  [(4058)](https://github.com/PennyLaneAI/pennylane/pull/4058)
+
 <h3>Breaking changes 💔</h3>
 
 <h3>Deprecations 👋</h3>
@@ -21,3 +26,6 @@
 <h3>Contributors ✍️</h3>
 
 This release contains contributions from (in alphabetical order):
+
+Isaac De Vlugt,
+Soran Jahangiri,
