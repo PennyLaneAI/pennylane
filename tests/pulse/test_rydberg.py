@@ -14,10 +14,12 @@
 """
 Tests for everything related to rydberg system specific functionality.
 """
-# pylint: disable=too-few-public-methods, import-outside-toplevel, redefined-outer-name, reimported
+# pylint: disable=too-few-public-methods, import-outside-toplevel, redefined-outer-name
+# pylint: disable=reimported, wrong-import-position
 import numpy as np
 import pytest
-import jax
+
+jax = pytest.importorskip("jax")
 import jax.numpy as jnp
 
 import pennylane as qml
