@@ -450,6 +450,24 @@ def _reorder_grad_axes_multi_measure(
 
     return new_grad
 
+def _reorder_grads(grads, tape_specs):
+    """
+    """
+    single_measure, num_params, num_measurements, shot_vector, shots = tape_specs
+    if single_measure and num_params == 1:
+        return grads[0]
+    len_shot_vec = _get_num_copies(shots) if shot_vector else None
+    if single_measure and shot_vector:
+        return _reorder_grad_axes_single_measure_shot_vector(grads, num_params, len_shot_vec)
+    if not single_measure:
+        return _reorder_grad_axes_multi_measure(
+            grads,
+            num_params,
+            num_measurements,
+            len_shot_vec,
+            shot_vector,
+        )
+    return tuple(grads)
 
 def _make_zero_rep(g, single_measure, shot_vector):
     """Create a zero-valued gradient entry adapted to the measurements and shot_vector
@@ -556,12 +574,14 @@ def expval_param_shift(
         batch_size = g_tapes[0].batch_size if broadcast and g_tapes else None
         gradient_data.append((len(g_tapes), coeffs, None, unshifted_coeff, batch_size))
 
+    num_measurements = len(tape.measurements)
+    single_measure = num_measurements == 1
+    num_params = len(tape.trainable_params)
+    shot_vector = isinstance(shots, Sequence)
+    tape_specs = (single_measure, num_params, num_measurements, shot_vector, shots)
+
     def processing_fn(results):
         start, r0 = (1, results[0]) if at_least_one_unshifted and f0 is None else (0, f0)
-        single_measure = len(tape.measurements) == 1
-        single_param = len(tape.trainable_params) == 1
-        shot_vector = isinstance(shots, Sequence)
-
         grads = []
         for data in gradient_data:
             num_tapes, *_, unshifted_coeff, batch_size = data
@@ -589,25 +609,8 @@ def expval_param_shift(
         # Fill in zero-valued gradients
         grads = [zero_rep if g is None else g for g in grads]
 
-        if single_measure and single_param:
-            return grads[0]
+        return _reorder_grads(grads, tape_specs)
 
-        num_params = len(tape.trainable_params)
-        len_shot_vec = _get_num_copies(shots) if shot_vector else None
-        if single_measure and shot_vector:
-            return _reorder_grad_axes_single_measure_shot_vector(grads, num_params, len_shot_vec)
-        if not single_measure:
-            shot_vector_multi_measure = not single_measure and shot_vector
-            num_measurements = len(tape.measurements)
-            grads = _reorder_grad_axes_multi_measure(
-                grads,
-                num_params,
-                num_measurements,
-                len_shot_vec,
-                shot_vector_multi_measure,
-            )
-
-        return tuple(grads)
 
     processing_fn.first_result_unshifted = at_least_one_unshifted
 

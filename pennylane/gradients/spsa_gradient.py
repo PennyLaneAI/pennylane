@@ -26,6 +26,7 @@ from pennylane._device import _get_num_copies
 
 from .finite_difference import (
     _all_zero_grad_new,
+    _processing_fn,
     _no_trainable_grad_new,
     _no_trainable_grad_legacy,
     finite_diff_coeffs,
@@ -366,21 +367,7 @@ def spsa_grad(
             return tuple(g[0] for g in grads)
         return tuple(grads)
 
-    def processing_fn(results):
-        shot_vector = isinstance(shots, Sequence)
-
-        if not shot_vector:
-            grads_tuple = _single_shot_batch_result(results)
-        else:
-            grads_tuple = []
-            len_shot_vec = _get_num_copies(shots)
-            for idx in range(len_shot_vec):
-                res = [tape_res[idx] for tape_res in results]
-                g_tuple = _single_shot_batch_result(res)
-                grads_tuple.append(g_tuple)
-            grads_tuple = tuple(grads_tuple)
-
-        return grads_tuple
+    processing_fn = partial(_processing_fn, shots=shots, single_shot_batch_fn=_single_shot_batch_result)
 
     return gradient_tapes, processing_fn
 

@@ -24,8 +24,7 @@ from pennylane.pulse import ParametrizedEvolution
 
 from .finite_difference import _all_zero_grad_new, _no_trainable_grad_new
 from .parameter_shift import (
-    _reorder_grad_axes_multi_measure,
-    _reorder_grad_axes_single_measure_shot_vector,
+    _reorder_grads,
     _make_zero_rep,
 )
 from .gradient_transform import (
@@ -599,10 +598,13 @@ def _expval_stoch_pulse_grad(tape, argnum, num_split_times, key, shots, use_broa
         gradient_data.append((len(_tapes), qml.math.stack(cjacs), avg_prefactor))
         tapes.extend(_tapes)
 
+    num_measurements = len(tape.measurements)
+    single_measure = num_measurements == 1
+    num_params = len(tape.trainable_params)
+    shot_vector = isinstance(shots, Sequence)
+    tape_specs = (single_measure, num_params, num_measurements, shot_vector, shots)
+
     def processing_fn(results):
-        num_measurements = len(tape.measurements)
-        single_measure = num_measurements == 1
-        shot_vector = isinstance(shots, Sequence)
         start = 0
         grads = []
         for num_tapes, cjacs, avg_prefactor in gradient_data:
@@ -625,21 +627,8 @@ def _expval_stoch_pulse_grad(tape, argnum, num_split_times, key, shots, use_broa
         # Fill in zero-valued gradients
         grads = [zero_rep if g is None else g for g in grads]
 
-        num_params = len(tape.trainable_params)
-        if single_measure and num_params == 1:
-            return grads[0]
-        len_shot_vec = _get_num_copies(shots) if shot_vector else None
-        if single_measure and shot_vector:
-            return _reorder_grad_axes_single_measure_shot_vector(grads, num_params, len_shot_vec)
-        if not single_measure:
-            return _reorder_grad_axes_multi_measure(
-                grads,
-                num_params,
-                num_measurements,
-                len_shot_vec,
-                shot_vector,
-            )
-        return tuple(grads)
+        return _reorder_grads(grads, tape_specs)
+
 
     return tapes, processing_fn
 

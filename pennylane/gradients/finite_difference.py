@@ -213,6 +213,21 @@ def _all_zero_grad_new(tape, shots=None):
 
     return [], lambda _: tuple(list_zeros)
 
+def _processing_fn(results, shots=None, single_shot_batch_fn=None):
+    shot_vector = isinstance(shots, Sequence)
+
+    if not shot_vector:
+        grads_tuple = single_shot_batch_fn(results)
+    else:
+        grads_tuple = []
+        len_shot_vec = _get_num_copies(shots)
+        for idx in range(len_shot_vec):
+            res = [tape_res[idx] for tape_res in results]
+            g_tuple = single_shot_batch_fn(res)
+            grads_tuple.append(g_tuple)
+        grads_tuple = tuple(grads_tuple)
+
+    return grads_tuple
 
 @gradient_transform
 def finite_diff(
@@ -517,26 +532,10 @@ def finite_diff(
 
         # To tuple
         if len(tape.trainable_params) == 1:
-            grads_tuple = tuple(elem[0] for elem in grads_reorder)
-        else:
-            grads_tuple = tuple(tuple(elem) for elem in grads_reorder)
-        return grads_tuple
+            return tuple(elem[0] for elem in grads_reorder)
+        return tuple(tuple(elem) for elem in grads_reorder)
 
-    def processing_fn(results):
-        shot_vector = isinstance(shots, Sequence)
-
-        if not shot_vector:
-            grads_tuple = _single_shot_batch_result(results)
-        else:
-            grads_tuple = []
-            len_shot_vec = _get_num_copies(shots)
-            for idx in range(len_shot_vec):
-                res = [tape_res[idx] for tape_res in results]
-                g_tuple = _single_shot_batch_result(res)
-                grads_tuple.append(g_tuple)
-            grads_tuple = tuple(grads_tuple)
-
-        return grads_tuple
+    processing_fn = partial(_processing_fn, shots=shots, single_shot_batch_fn=_single_shot_batch_result)
 
     return gradient_tapes, processing_fn
 

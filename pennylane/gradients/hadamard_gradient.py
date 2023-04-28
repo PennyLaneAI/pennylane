@@ -307,10 +307,10 @@ def _expval_hadamard_grad(tape, argnum, aux_wire):
 
         gradient_data.append(num_tape)
 
-    def processing_fn(results):  # pylint: disable=too-many-branches
-        multi_measurements = len(tape.measurements) > 1
-        multi_params = len(tape.trainable_params) > 1
+    multi_measurements = len(tape.measurements) > 1
+    multi_params = len(tape.trainable_params) > 1
 
+    def processing_fn(results):  # pylint: disable=too-many-branches
         final_res = [
             [qml.math.convert_like(2 * coeff * r, r) for r in res]
             if isinstance(res, tuple)
@@ -321,10 +321,8 @@ def _expval_hadamard_grad(tape, argnum, aux_wire):
         # Post process for probs
         if measurements_probs:
             projector = np.array([1, -1])
-            if multi_measurements:
-                projector = qml.math.convert_like(projector, final_res[0][0])
-            else:
-                projector = qml.math.convert_like(projector, final_res[0])
+            like = final_res[0][0] if multi_measurements else final_res[0]
+            projector = qml.math.convert_like(projector, like)
             for idx, res in enumerate(final_res):
                 if multi_measurements:
                     for prob_idx in measurements_probs:
