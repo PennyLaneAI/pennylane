@@ -285,7 +285,7 @@ def transmon_drive(amplitude, phase, freq, wires, d=2):
         phi = 0.001
         params = [max_amp, phi]
 
-    Evaluated at :math:`t = \frac{1}{2} \text{ns}` with the parameters :math:`\Omega_{\text{max}} = 0.1 \times 2 \pi \text{GHz}` and :math:`\phi = 10^{-3}` we obtain
+    Evaluated at :math:`t = \frac{1}{2} \text{ns}` with the parameters :math:`\Omega_{\text{max}} = 0.1 \times 2 \pi \text{GHz}` and :math:`\phi = 10^{-3} \frac{\text{rad}}{\text{s}}` we obtain
     :math:`\Omega_{\text{max}} \left(\frac{1}{2}(\sigma^x + i \sigma^y) + \frac{1}{2}(\sigma^x + i \sigma^y)\right) = \Omega_{\text{max}} \sigma^x`.
 
     >>> H(params, t)
