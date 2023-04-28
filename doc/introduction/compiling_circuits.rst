@@ -19,7 +19,7 @@ In addition to quantum circuit transforms, PennyLane also
 supports experimental just-in-time compilation, via
 `Catalyst <https://github.com/pennylaneai/catalyst>`__. This is more general, and
 supports full hybrid compilation --- compiling both the classical and quantum components
-of your workflow into a binary that can be run close to the accelerators (GPUs, QPUs, CPUs)
+of your workflow into a binary that can be run close to the accelerators.
 that you are using.
 
 Simplifying Operators
@@ -366,6 +366,7 @@ compile your hybrid workflows:
 
     dev = qml.device("lightning.qubit", wires=2, shots=1000)
 
+    @qjit
     @qml.qnode(dev)
     def cost(params):
         qml.Hadamard(0)
