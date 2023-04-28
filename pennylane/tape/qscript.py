@@ -1337,14 +1337,18 @@ class QuantumScript:
 class SpecsDict(dict):
     """A dictionary to track and warn about deprecated keys"""
 
-    deprecated_keys = ("gate_types", "num_operations", "num_used_wires", "depth")
-    new_keys = ("gate_types", "num_gates", "num_wires", "depth")
+    old_to_new_key_map = {
+        "gate_types": "gate_types",
+        "num_operations": "num_gates",
+        "num_used_wires": "num_wires",
+        "depth": "depth",
+    }
 
     def __getitem__(self, item):
-        if item in self.deprecated_keys:
+        if item in self.old_to_new_key_map:
             warnings.warn(
                 f"The {item} key is deprecated and will be removed in the next release. "
-                f'Going forward, please use: qml.specs()["resources"].{self.new_keys[self.deprecated_keys.index(item)]}'
+                f'Going forward, please use: qml.specs()["resources"].{self.old_to_new_key_map[item]}'
             )
         return super().__getitem__(item)
 

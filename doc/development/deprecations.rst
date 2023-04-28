@@ -29,13 +29,13 @@ Pending deprecations
   ``QuantumTape`` instead.
 
   - Still accessible in v0.28, v0.29
-  - Will be removed in v0.31
+  - Will be removed in v0.30
 
 * The ``grouping`` module is deprecated. The functionality has been moved and
   reorganized in the new ``pauli`` module under ``pauli/utils.py`` or ``pauli/grouping/``.
 
   - Still accessible in v0.27, v0.28, v0.29
-  - Will be removed in v0.31
+  - Will be removed in v0.30
 
   The functions from ``grouping/pauli.py``, ``grouping/transformations.py`` and
   ``grouping/utils.py`` have been moved to ``pauli/utils.py``. The remaining functions
