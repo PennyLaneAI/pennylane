@@ -20,7 +20,7 @@
 
   [Rydberg atoms](https://en.wikipedia.org/wiki/Rydberg_atom) are the foundational 
   unit for neutral atom quantum computing. 
-  A Rydberg system Hamiltonian can be constructed from a
+  A Rydberg-system Hamiltonian can be constructed from a
   [drive term](https://docs.pennylane.ai/en/stable/code/api/pennylane.pulse.rydberg_drive.html)
   — `qml.pulse.rydberg_drive` — and an
   [interaction term](https://docs.pennylane.ai/en/stable/code/api/pennylane.pulse.rydberg_interaction.html)
@@ -473,7 +473,7 @@ these changes when using PennyLane, but here is what has changed this release:
 * The type of `n_electrons` in `qml.qchem.Molecule` has been set to `int`.
   [(#3885)](https://github.com/PennyLaneAI/pennylane/pull/3885)
 
-* Explicit errors have beeb added to `QutritDevice` if `classical_shadow` or `shadow_expval` is measured.
+* Explicit errors have been added to `QutritDevice` if `classical_shadow` or `shadow_expval` is measured.
   [(#3934)](https://github.com/PennyLaneAI/pennylane/pull/3934)
 
 * `QubitDevice` now defines the private `_get_diagonalizing_gates(circuit)` method and uses it when executing circuits.
@@ -690,7 +690,7 @@ Nothing for this release!
 * Fixed parameter broadcasting support with `qml.counts` in most cases and introduced explicit errors otherwise.
   [(#3876)](https://github.com/PennyLaneAI/pennylane/pull/3876)
 
-* An error is now raised if a `QNode` with Jax-jit in use returns `counts` while having trainable parameters
+* An error is now raised if a QNode with Jax-jit in use returns `counts` while having trainable parameters
   [(#3892)](https://github.com/PennyLaneAI/pennylane/pull/3892)
 
 * A correction has been added to the reference values in `test_dipole_of` to account for small changes
