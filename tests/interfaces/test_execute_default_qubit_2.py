@@ -11,7 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
+"""Tests for exeuction with default qubit 2 independent of any interface."""
 import pytest
 
 import pennylane as qml
@@ -26,6 +26,8 @@ class TestNewDeviceIntegration:
         """Test that a warning is raised if the users requests to not run device batch transform."""
 
         class CustomOp(qml.operation.Operator):
+            """Dummy operator."""
+
             def decomposition(self):
                 return [qml.PauliX(self.wires[0])]
 
@@ -46,7 +48,9 @@ class TestNewDeviceIntegration:
         dev = DefaultQubit2()
 
         qs = qml.tape.QuantumScript([], [qml.state()])
-        with pytest.raises(ValueError, "New device interface only works with return types enabled"):
+        with pytest.raises(
+            ValueError, match="New device interface only works with return types enabled"
+        ):
             qml.execute([qs], dev)
 
         qml.enable_return()
