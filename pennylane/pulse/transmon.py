@@ -256,11 +256,11 @@ def transmon_drive(amplitude, phase, freq, wires, d=2):
         :func:`~.rydberg_drive`, :func:`~.transmon_interaction`
 
     Args:
-        amplitude (Union[float, callable]): The amplitude :math:`\Omega(t)` (in GHz).
+        amplitude (Union[float, callable]): The amplitude :math:`\Omega(t)` (in :math:`2 \pi \text{GHz}`).
             Can be a fixed number (``float``) or depend on time (``callable``)
         phase (Union[float, callable]): The phase :math:`\phi(t)` (in radians).
             Can be a fixed number (``float``) or depend on time (``callable``)
-        freq (Union[float, callable]): The drive frequency :math:`\nu` (in GHz).
+        freq (Union[float, callable]): The drive frequency :math:`\nu` (in :math:`2 \pi \text{GHz}`).
             Can be a fixed number (``float``) or depend on time (``callable``)
         wires (Union[int, list[int]]): Label of the qubit that the drive acts upon. Can be a list of multiple wires.
         d (int): Local Hilbert space dimension. Defaults to ``d=2`` and is currently the only supported value.
@@ -285,7 +285,7 @@ def transmon_drive(amplitude, phase, freq, wires, d=2):
         phi = 0.001
         params = [max_amp, phi]
 
-    Evaluated at :math:`t = \frac{1}{2}` with the parameters :math:`\Omega_{\text{max}} = 0.1` and :math:`\phi = 10^{-3}` we obtain
+    Evaluated at :math:`t = \frac{1}{2} \text{ns}` with the parameters :math:`\Omega_{\text{max}} = 0.1 \times 2 \pi \text{GHz}` and :math:`\phi = 10^{-3}` we obtain
     :math:`\Omega_{\text{max}} \left(\frac{1}{2}(\sigma^x + i \sigma^y) + \frac{1}{2}(\sigma^x + i \sigma^y)\right) = \Omega_{\text{max}} \sigma^x`.
 
     >>> H(params, t)
