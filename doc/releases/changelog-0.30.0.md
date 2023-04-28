@@ -317,38 +317,6 @@
   assert len(circuit.tape.trainable_params) == 1
   ```
 
-* The efficiency of `tapering()`, `tapering_hf()` and `clifford()` have been improved.
-  [(3942)](https://github.com/PennyLaneAI/pennylane/pull/3942)
-
-* The peak memory requirements of `tapering()` and `tapering_hf()` have been improved when used for larger observables.
-  [(3977)](https://github.com/PennyLaneAI/pennylane/pull/3977)
-
-* Pauli arithmetic has been updated to convert to a Hamiltonian more efficiently.
-  [(#3939)](https://github.com/PennyLaneAI/pennylane/pull/3939)
-
-* Operators now have a `has_generator` attribute that returns whether or not the operator
-  has a generator defined. It is used in `qml.operation.has_gen`, improving its performance.
-  [(#3875)](https://github.com/PennyLaneAI/pennylane/pull/3875)
-
-* The performance of `CompositeOp` has been significantly improved now that it overrides
-  determining whether it is being used with a batch of parameters (see `Operator._check_batching`).
-  `Hamiltonian` also now overrides this, but it does nothing since it does not support batching.
-  [(#3915)](https://github.com/PennyLaneAI/pennylane/pull/3915)
-
-* The performance of a `Sum` operator has been significantly improved now that `is_hermitian` checks 
-  that all coefficients are real if the operator has a pre-computed Pauli representation.
-  [(#3915)](https://github.com/PennyLaneAI/pennylane/pull/3915)
-
-* The `coefficients` function and the `visualize` submodule of the `qml.fourier` module
-  now allow assigning different degrees for different parameters of the input function.
-  [(#3005)](https://github.com/PennyLaneAI/pennylane/pull/3005)
-
-  Previously, the arguments `degree` and `filter_threshold` to `qml.fourier.coefficients` were
-  expected to be integers. Now, they can be a sequences of integers with one integer per function
-  parameter (i.e. `len(degree)==n_inputs`), resulting in a returned array with shape
-  `(2*degrees[0]+1,..., 2*degrees[-1]+1)`.
-  The functions in `qml.fourier.visualize` accordingly accept such arrays of coefficients.
-
 <h3>Improvements 🛠</h3>
 
 <h4>Next-generation device API</h4>
@@ -427,6 +395,40 @@ these changes when using PennyLane, but here is what has changed this release:
 
 * `DefaultQutrit` now supports the new return system.
   [(#3934)](https://github.com/PennyLaneAI/pennylane/pull/3934)
+
+<h4>Performance improvements</h4>
+
+* The efficiency of `tapering()`, `tapering_hf()` and `clifford()` have been improved.
+  [(3942)](https://github.com/PennyLaneAI/pennylane/pull/3942)
+
+* The peak memory requirements of `tapering()` and `tapering_hf()` have been improved when used for larger observables.
+  [(3977)](https://github.com/PennyLaneAI/pennylane/pull/3977)
+
+* Pauli arithmetic has been updated to convert to a Hamiltonian more efficiently.
+  [(#3939)](https://github.com/PennyLaneAI/pennylane/pull/3939)
+
+* Operators now have a `has_generator` attribute that returns whether or not the operator
+  has a generator defined. It is used in `qml.operation.has_gen`, improving its performance.
+  [(#3875)](https://github.com/PennyLaneAI/pennylane/pull/3875)
+
+* The performance of `CompositeOp` has been significantly improved now that it overrides
+  determining whether it is being used with a batch of parameters (see `Operator._check_batching`).
+  `Hamiltonian` also now overrides this, but it does nothing since it does not support batching.
+  [(#3915)](https://github.com/PennyLaneAI/pennylane/pull/3915)
+
+* The performance of a `Sum` operator has been significantly improved now that `is_hermitian` checks 
+  that all coefficients are real if the operator has a pre-computed Pauli representation.
+  [(#3915)](https://github.com/PennyLaneAI/pennylane/pull/3915)
+
+* The `coefficients` function and the `visualize` submodule of the `qml.fourier` module
+  now allow assigning different degrees for different parameters of the input function.
+  [(#3005)](https://github.com/PennyLaneAI/pennylane/pull/3005)
+
+  Previously, the arguments `degree` and `filter_threshold` to `qml.fourier.coefficients` were
+  expected to be integers. Now, they can be a sequences of integers with one integer per function
+  parameter (i.e. `len(degree)==n_inputs`), resulting in a returned array with shape
+  `(2*degrees[0]+1,..., 2*degrees[-1]+1)`.
+  The functions in `qml.fourier.visualize` accordingly accept such arrays of coefficients.
 
 <h4>Other improvements</h4>
 
