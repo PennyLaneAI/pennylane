@@ -57,13 +57,15 @@ def transmon_interaction(
         + \sum_{q\in \text{wires}} \alpha_q a^\dagger_q a^\dagger_q a_q a_q
 
     where :math:`[a^\dagger_p, a_q] = i \delta_{pq}` are bosonic creation and annihilation operators.
-    The first term describes the dressed qubit frequencies ``qubit_freq`` :math:` = \omega_q/ (2\pi)`, the second term their
-    ``coupling`` :math:` = g_{ij}/(2\pi)` and the last the ``anharmonicity`` :math:`= \alpha_q/(2\pi)`, which all can vary for
+    The first term describes the effect of the dressed qubit frequencies ``qubit_freq`` :math::` = \omega_q/ (2\pi)`,
+    the second term their ``coupling`` :math::` = g_{ij}/(2\pi)` and the last the
+    ``anharmonicity`` :math::`= \alpha_q/(2\pi)`, which all can vary for
     different qubits. In practice, the bosonic operators are restricted to a finite dimension of the
     local Hilbert space (default ``d=2`` corresponds to qubits).
     In that case, the anharmonicity is set to :math:`\alpha=0` and ignored.
 
-    The values of :math:`\omega` and :math:`\alpha` are typically around :math:`5 \times 2\pi \text{GHz}` and :math:`0.3 \times 2\pi \text{GHz}`, respectively.
+    The values of :math:`\omega` and :math:`\alpha` are typically around :math:`5 \times 2\pi \text{GHz}`
+    and :math:`0.3 \times 2\pi \text{GHz}`, respectively.
     It is common for different qubits to be out of tune with different energy gaps. The coupling strength
     :math:`g` typically varies betwewen :math:`[0.001, 0.1] \times 2\pi \text{GHz}`. For some example parameters,
     see e.g. `arXiv:1804.04073 <https://arxiv.org/abs/1804.04073>`_,
@@ -76,15 +78,21 @@ def transmon_interaction(
         :func:`~.transmon_drive`
 
     Args:
-        qubit_freq (Union[float, list[float]]): List of dressed qubit frequencies in GHz. Needs to match the length of ``wires``.
-            When passing a single float all qubits are assumed to have that same frequency.
+        qubit_freq (Union[float, list[float]]): List of dressed qubit frequencies. This should be in units
+            of frequency (GHz), and will be converted to angular frequency :math::`\omega` internally where
+            needed, i.e. multiplied by :math::`2 \pi`. When passing a single float all qubits are assumed to
+            have that same frequency.
         connections (list[tuple(int)]): List of connections ``(i, j)`` between qubits i and j.
             When the wires in ``connections`` are not contained in ``wires``, a warning is raised.
-        coupling (Union[float, list[float]]): List of coupling strengths in GHz. Needs to match the length of ``connections``.
+        coupling (Union[float, list[float]]): List of coupling strengths. This should be in units
+            of frequency (GHz), and will be converted to angular frequency internally where
+            needed, i.e. multiplied by :math::`2 \pi`. Needs to match the length of ``connections``.
             When passing a single float need explicit ``wires``.
-        anharmonicity (Union[float, list[float]]): List of anharmonicities in GHz. Ignored when ``d=2``.
+        anharmonicity (Union[float, list[float]]): List of anharmonicities. This should be in units
+            of frequency (GHz), and will be converted to angular frequency internally where
+            needed, i.e. multiplied by :math::`2 \pi`. Ignored when ``d=2``.
             When passing a single float all qubits are assumed to have that same anharmonicity.
-        wires (list): Needs to be of the same length as omega. Note that there can be additional
+        wires (list): Needs to be of the same length as qubit_freq. Note that there can be additional
             wires in the resulting operator from the ``connections``, which are treated independently.
         d (int): Local Hilbert space dimension. Defaults to ``d=2`` and is currently the only supported value.
 
@@ -260,12 +268,14 @@ def transmon_drive(amplitude, phase, freq, wires, d=2):
         :func:`~.rydberg_drive`, :func:`~.transmon_interaction`
 
     Args:
-        amplitude (Union[float, callable]): The amplitude :math:`\Omega(t)` (in GHz).
+        amplitude (Union[float, callable]): Float or callable representing the amplitude of the driving field.
+            This should be in units of frequency (GHz), and will be converted to angular frequency
+            :math::`\Omega(t)` internally where needed, i.e. multiplied by :math::`2 \pi`.
+        phase (Union[float, callable]): Float or callable returning phase :math:`\phi(t)` (in radians).
             Can be a fixed number (``float``) or depend on time (``callable``)
-        phase (Union[float, callable]): The phase :math:`\phi(t)` (in radians).
-            Can be a fixed number (``float``) or depend on time (``callable``)
-        freq (Union[float, callable]): The drive frequency :math:`\nu` (in GHz).
-            Can be a fixed number (``float``) or depend on time (``callable``)
+        freq (Union[float, callable]): Float or callable representing the frequency of the driving field.
+            This should be in units of frequency (GHz), and will be converted to angular frequency
+            :math::`\nu(t)` internally where needed, i.e. multiplied by :math::`2 \pi`.
         wires (Union[int, list[int]]): Label of the qubit that the drive acts upon. Can be a list of multiple wires.
         d (int): Local Hilbert space dimension. Defaults to ``d=2`` and is currently the only supported value.
 

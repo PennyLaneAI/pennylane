@@ -54,9 +54,10 @@ def rydberg_interaction(
         wires (list): List of wires containing the wire values for all the atoms. This list should
             have the same length as ``register``. If ``None``, each atom's wire value will
             correspond to its index in the ``register`` list.
-        interaction_coeff (float): Rydberg interaction constant in units: :math:`2 \pi \text{MHz } \mu\text{m}^6`.
-            Defaults to :math:`862690 \times 2 \pi \text{MHz } \mu\text{m}^6`. This value is based on an assumption that
-            frequencies and energies in the Hamiltonian are provided in units of :math:`2 \pi \text{MHz}`.
+        interaction_coeff (float): Defaults to :math:`862690 \times 2 \pi \text{MHz } \mu\text{m}^6`.
+            The value will be multiplied by :math::`2 \pi` internally to convert to angular frequency,
+            such that only the value in standard frequency (i.e. 862690 in the default example) should be
+            passed.
         max_distance (float): Threshold for distance in :math:`\mu\text{m}` between two Rydberg atoms beyond which their
             contribution to the interaction term is removed from the Hamiltonian.
 
@@ -133,18 +134,24 @@ def rydberg_drive(amplitude, phase, detuning, wires):
     and detuning of the laser, :math:`q` corresponds to the wire index, and
     :math:`\sigma_q^\alpha` for :math:`\alpha = x,y` are the Pauli matrices on the corresponding
     qubit. Finally, :math:`n_q=\frac{1}{2}(\mathbb{I}_q-\sigma_q^z)` is the number operator on qubit :math:`q`.
-    For hardware execution, time is expected to be in units
-    of :math:`\mu\text{s}`, and the frequency in units of :math:`2 \pi \text{MHz}`. It is recommended to also follow
-    this convention for simulation, as it avoids numerical problems due to using very large and very small
-    numbers. This driving term can be combined with an interaction term to create a Hamiltonian describing a
+
+    For hardware execution, input time is expected to be in units of :math:`\mu\text{s}`, and the frequency
+    in units of MHz. It is recommended to also follow this convention for simulation,
+    as it avoids numerical problems due to using very large and very small numbers. Frequency inputs will be
+    converted internally to angular frequency, such that ``amplitude`` :math::`= \Omega(t)/ (2 \pi)` and
+    ``detuning`` :math::`= \delta(t) / (2 \pi)`.
+
+    This driving term can be combined with an interaction term to create a Hamiltonian describing a
     driven Rydberg atom system. Multiple driving terms can be combined by summing them (see example).
 
     Args:
-        amplitude (Union[float, Callable]): float or callable returning the amplitude (in :math:`2 \pi \text{MHz}`) of a
-            laser field
-        phase (Union[float, Callable]): float or callable returning the phase (in radians) of the laser field
-        detuning (Union[float, Callable]): float or callable returning the detuning (in :math:`2 \pi \text{MHz}`) of a
-            laser field
+        amplitude (Union[float, Callable]): Float or callable representing the amplitude of a laser field.
+            This should be in units of frequency (MHz), and will be converted to angular frequency
+            :math::`\Omega(t)` internally where needed, i.e. multiplied by :math::`2 \pi`.
+        phase (Union[float, Callable]): float or callable representing the phase (in radians) of the laser field
+        detuning (Union[float, Callable]): Float or callable representing the detuning of a laser field.
+            This should be in units of frequency (MHz), and will be converted to angular frequency
+            :math::`\delta(t)` internally where needed, i.e. multiplied by :math::`2 \pi`.
         wires (Union[int, List[int]]): integer or list containing wire values for the Rydberg atoms that
             the laser field acts on
 
