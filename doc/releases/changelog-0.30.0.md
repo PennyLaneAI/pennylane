@@ -253,14 +253,14 @@
    T(wires=[0]), Hadamard(wires=[1]), S(wires=[1]), T(wires=[1])]
   ```
 
-* The adjoint differentiation method can now be more efficient, avoiding decomposition of operations
+* The adjoint differentiation method can now be more efficient, avoiding the decomposition of operations
   that can be differentiated directly. Any operation that defines a ``generator()`` can
   be differentiated with the adjoint method.
   [(#3874)](https://github.com/PennyLaneAI/pennylane/pull/3874)
 
-  For example, the ``qml.CRY`` operation would be decomposed in version 0.29 when calculating the
-  adjoint-method gradient. The code below shows that this decomposition no longer takes place and
-  ``qml.CRY`` is differentiated directly:
+  For example, in version 0.29 the ``qml.CRY`` operation would be decomposed when calculating the
+  adjoint-method gradient. The code below shows that this decomposition no longer takes place in 
+  version 0.30 and ``qml.CRY`` is differentiated directly:
 
   ```python
   import jax
@@ -295,7 +295,7 @@
   trainable.
   [(#3697)](https://github.com/PennyLaneAI/pennylane/pull/3697)
 
-  In the circuit below, now only the derivative with respect to parameter `b` is calculated:
+  In the circuit below, only the derivative with respect to parameter `b` is now calculated:
 
   ```python
   dev = qml.device("default.qubit", wires=2)
@@ -446,7 +446,7 @@ these changes when using PennyLane, but here is what has changed this release:
 * The `AdaptiveOptimizer` has been updated to use non-default user-defined QNode arguments.
   [(#3765)](https://github.com/PennyLaneAI/pennylane/pull/3765)
 
-* Use `TensorLike` type in `Operator` dunder methods.
+* Operators now use `TensorLike` types dunder methods.
   [(#3749)](https://github.com/PennyLaneAI/pennylane/pull/3749)
 
 * `qml.QubitStateVector.state_vector` now supports broadcasting.
@@ -456,7 +456,8 @@ these changes when using PennyLane, but here is what has changed this release:
   in the circuit.
   [(#3888)](https://github.com/PennyLaneAI/pennylane/pull/3888)
 
-* Added `Operation.__truediv__` dunder method to be able to divide operators by scalars.
+* Operators can now be divided by scalars with `/` with the addition of the `Operation.__truediv__` dunder 
+  method.
   [(#3749)](https://github.com/PennyLaneAI/pennylane/pull/3749)
 
 * Printing an instance of `MutualInfoMP` now displays the distribution of the wires between the two subsystems.
@@ -471,7 +472,7 @@ these changes when using PennyLane, but here is what has changed this release:
 * The type of `n_electrons` in `qml.qchem.Molecule` has been set to `int`.
   [(#3885)](https://github.com/PennyLaneAI/pennylane/pull/3885)
 
-* Added explicit errors to `QutritDevice` if `classical_shadow` or `shadow_expval` is measured.
+* Explicit errors have beeb added to `QutritDevice` if `classical_shadow` or `shadow_expval` is measured.
   [(#3934)](https://github.com/PennyLaneAI/pennylane/pull/3934)
 
 * `QubitDevice` now defines the private `_get_diagonalizing_gates(circuit)` method and uses it when executing circuits.
@@ -496,7 +497,7 @@ these changes when using PennyLane, but here is what has changed this release:
 * Execution code has been updated to use the new `qml.transforms.convert_to_numpy_parameters` instead of `qml.tape.Unwrap`.
   [(#3989)](https://github.com/PennyLaneAI/pennylane/pull/3989)
 
-* Converted a sub-routine of `expand_tape` into `qml.tape.tape.rotations_and_diagonal_measurements`,
+* A sub-routine of `expand_tape` has been converted into `qml.tape.tape.rotations_and_diagonal_measurements`,
   a helper function that computes rotations and diagonal measurements for a tape with measurements
   with overlapping wires.
   [(#3912)](https://github.com/PennyLaneAI/pennylane/pull/3912)
@@ -505,7 +506,7 @@ these changes when using PennyLane, but here is what has changed this release:
   [(#3243)](https://github.com/PennyLaneAI/pennylane/pull/3243)
 
 * The `qml.operation.enable_new_opmath` toggle has been introduced to cause dunder methods to return arithmetic
-  operators instead of Hamiltonians and Tensors.
+  operators instead of a `Hamiltonian` or `Tensor`.
   [(#4008)](https://github.com/PennyLaneAI/pennylane/pull/4008)
 
   ```pycon
@@ -635,7 +636,7 @@ Nothing for this release!
   in certain circumstances.
   [(#4019)](https://github.com/PennyLaneAI/pennylane/pull/4019)
 
-* `Operator` now casts `tuple` to `np.ndarray` as well as `list`. 
+* Operators now cast a `tuple` to an `np.ndarray` as well as `list`. 
   [(#4022)](https://github.com/PennyLaneAI/pennylane/pull/4022)
 
 * Fixed a bug where `qml.ctrl` with parametric gates was incompatible with PyTorch tensors on GPUs.
