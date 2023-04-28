@@ -71,7 +71,8 @@ Features
 
 ..
 
-- *Just in time compilation*. Compile your **entire hybrid workflow**, including loops. See
+- *Just in time compilation*. Compile your **entire hybrid workflow**, with support for
+  adaptive circuits, real-time measurement feedback, unbounded loops, and more. See
   `Catalyst <https://github.com/pennylaneai/catalyst>`__ for more details.
 
 ..
