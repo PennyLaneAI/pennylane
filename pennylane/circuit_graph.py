@@ -511,7 +511,7 @@ class CircuitGraph:
             sub_graph.add_edge(
                 sub_graph.nodes().index(source_node),
                 sub_graph.nodes().index(target_node),
-                depth - 1,  # set edge weight as 1 - depth
+                depth - 1,  # set edge weight as depth - 1
             )
 
             graph.substitute_node_with_subgraph(
