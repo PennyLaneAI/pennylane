@@ -90,6 +90,7 @@ def dot(x, y):
 
     .. warning::
         ``dot`` is deprecated and will be deleted in v0.31.
+        Individual ``QNode``'s can now handle multiple measurements and parameter broadcasting.
 
     **Example:**
 

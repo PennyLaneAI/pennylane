@@ -31,6 +31,7 @@ class QNodeCollection(Sequence):
 
     .. warning::
         ``QNodeCollection`` is deprecated and will be deleted in v0.31.
+        Individual ``QNode``'s can now handle multiple measurements and parameter broadcasting.
 
     .. note:: the recommended method of creating a QNodeCollection is via :func:`~.map`.
 

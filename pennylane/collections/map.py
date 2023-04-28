@@ -45,7 +45,8 @@ def map(
     fine-grained control.
 
     .. warning::
-        ``map`` is deprecated and will be deleted in v0.31.
+        ``map`` is deprecated and will be deleted in v0.31. A single ``QNode`` can now handle
+        multiple measurements.
 
     Args:
         template (callable): the ansatz for the circuit before the final measurement step
