@@ -295,6 +295,28 @@
   trainable.
   [(#3697)](https://github.com/PennyLaneAI/pennylane/pull/3697)
 
+  In the circuit below, now only the derivative with respect to parameter `b` is calculated:
+
+  ```python
+  dev = qml.device("default.qubit", wires=2)
+
+  @qml.qnode(dev, interface="jax-jit")
+  def circuit(a, b):
+      qml.RX(a, wires=0)
+      qml.RY(b, wires=0)
+      qml.CNOT(wires=[0, 1])
+      return qml.expval(qml.PauliZ(0))
+
+  a = jnp.array(0.4)
+  b = jnp.array(0.5)
+
+  jac = jax.jacobian(circuit, argnums=[1])
+  jac_jit = jax.jit(jac)
+
+  jac_jit(a, b)
+  assert len(circuit.tape.trainable_params) == 1
+  ```
+
 * The efficiency of `tapering()`, `tapering_hf()` and `clifford()` have been improved.
   [(3942)](https://github.com/PennyLaneAI/pennylane/pull/3942)
 
