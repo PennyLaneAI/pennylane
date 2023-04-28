@@ -59,8 +59,6 @@
   >>> import jax
   >>> jax.grad(circuit)(params)
   Array([1.3116529], dtype=float32)
-  [Array(0.16921353, dtype=float32, weak_type=True),
-   Array(-0.2537478, dtype=float32, weak_type=True)]
   ```
   
   The [qml.pulse](https://docs.pennylane.ai/en/stable/code/qml_pulse.html) page contains
@@ -99,6 +97,8 @@
   ...     return qml.expval(qml.PauliY(1))
   >>> params = [jax.numpy.array(0.4), jax.numpy.array(1.3)]
   >>> jax.grad(ansatz)(params)
+  [Array(0.16921353, dtype=float32, weak_type=True),
+   Array(-0.2537478, dtype=float32, weak_type=True)]
   ```
 
 <h4>Quantum singular value transformation 🐛➡️🦋</h4>
