@@ -14,6 +14,7 @@
 
 * The description of `mult` in the `qchem.Molecule` docstring now correctly states the value
   of `mult` that is supported.
+  [(4058)](https://github.com/PennyLaneAI/pennylane/pull/4058)
 
 <h3>Bug fixes 🐛</h3>
 
