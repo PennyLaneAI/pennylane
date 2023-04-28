@@ -144,7 +144,8 @@
   The [qml.qsvt](https://docs.pennylane.ai/en/stable/code/api/pennylane.qsvt.html) function
   creates a circuit that is targeted at simulators due to the use of matrix-based operations.
   For advanced users, you can use the 
-  [qml.QSVT](https://docs.pennylane.ai/en/stable/code/api/pennylane.QSVT.html) template to perform
+  [operation-based](https://docs.pennylane.ai/en/stable/code/api/pennylane.QSVT.html)
+  `qml.QSVT` template to perform
   the transformation with a custom choice of unitary and projector operations, which may be
   hardware compatible if a decomposition is provided.
 
@@ -195,8 +196,9 @@
    tensor([0.93879128, 0.06120872], requires_grad=True))
   ```
 
-  More details about this change, along with help and troubleshooting tips to solve any issues,
-  can be found [here](https://docs.pennylane.ai/en/stable/introduction/returns.html).
+  You can find
+  [more details about this change](https://docs.pennylane.ai/en/stable/introduction/returns.html),
+  along with help and troubleshooting tips to solve any issues.
   If you still have questions, comments, or concerns, we encourage you to post on the
   PennyLane [discussion forum](https://discuss.pennylane.ai).
 
