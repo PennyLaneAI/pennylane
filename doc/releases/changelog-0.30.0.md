@@ -101,7 +101,7 @@
   >>> jax.grad(ansatz)(params)
   ```
 
-<h4>Quantum singular value transform 🐛➡️🦋</h4>
+<h4>Quantum singular value transformation 🐛➡️🦋</h4>
 
 * PennyLane now supports the
   [quantum singular value transformation](https://arxiv.org/abs/1806.01838) (QSVT), which describes
