@@ -1177,6 +1177,8 @@ class QuantumScript:
         shots: 0
         gate_types:
         {'Hadamard': 2, 'RX': 1, 'CNOT': 2, 'Rot': 1}
+        gate_sizes:
+        {1: 4, 2: 2}
         """
         if self._specs is None:
             resources = qml.resource.resource._count_resources(

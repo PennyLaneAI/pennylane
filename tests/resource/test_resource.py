@@ -29,28 +29,31 @@ class TestResources:
 
     resource_quantities = (
         Resources(),
-        Resources(5, 0, {}, 0, 0),
-        Resources(1, 3, defaultdict(int, {"Hadamard": 1, "PauliZ": 2}), 3, 10),
-        Resources(4, 2, {"Hadamard": 1, "CNOT": 1}, 2, 100),
+        Resources(5, 0, {}, {}, 0, 0),
+        Resources(
+            1, 3, defaultdict(int, {"Hadamard": 1, "PauliZ": 2}), defaultdict(int, {1: 3}), 3, 10
+        ),
+        Resources(4, 2, {"Hadamard": 1, "CNOT": 1}, {1: 1, 2: 1}, 2, 100),
     )
 
     resource_parameters = (
-        (0, 0, {}, 0, 0),
-        (5, 0, {}, 0, 0),
-        (1, 3, defaultdict(int, {"Hadamard": 1, "PauliZ": 2}), 3, 10),
-        (4, 2, {"Hadamard": 1, "CNOT": 1}, 2, 100),
+        (0, 0, {}, {}, 0, 0),
+        (5, 0, {}, {}, 0, 0),
+        (1, 3, defaultdict(int, {"Hadamard": 1, "PauliZ": 2}), defaultdict(int, {1: 3}), 3, 10),
+        (4, 2, {"Hadamard": 1, "CNOT": 1}, {1: 1, 2: 1}, 2, 100),
     )
 
     @pytest.mark.parametrize("r, attribute_tup", zip(resource_quantities, resource_parameters))
     def test_init(self, r, attribute_tup):
         """Test that the Resource class is instantiated as expected."""
-        num_wires, num_gates, gate_types, depth, shots = attribute_tup
+        num_wires, num_gates, gate_types, gate_sizes, depth, shots = attribute_tup
 
         assert r.num_wires == num_wires
         assert r.num_gates == num_gates
         assert r.depth == depth
         assert r.shots == shots
         assert r.gate_types == gate_types
+        assert r.gate_sizes == gate_sizes
 
     def test_set_attributes_error(self):
         """Test that an error is raised if we try to set any attribute."""
@@ -62,15 +65,35 @@ class TestResources:
                 setattr(r, attr_name, 1)
 
     test_str_data = (
-        ("wires: 0\n" + "gates: 0\n" + "depth: 0\n" + "shots: 0\n" + "gate_types:\n" + "{}"),
-        ("wires: 5\n" + "gates: 0\n" + "depth: 0\n" + "shots: 0\n" + "gate_types:\n" + "{}"),
+        (
+            "wires: 0\n"
+            + "gates: 0\n"
+            + "depth: 0\n"
+            + "shots: 0\n"
+            + "gate_types:\n"
+            + "{}\n"
+            + "gate_sizes:\n"
+            + "{}"
+        ),
+        (
+            "wires: 5\n"
+            + "gates: 0\n"
+            + "depth: 0\n"
+            + "shots: 0\n"
+            + "gate_types:\n"
+            + "{}\n"
+            + "gate_sizes:\n"
+            + "{}"
+        ),
         (
             "wires: 1\n"
             + "gates: 3\n"
             + "depth: 3\n"
             + "shots: 10\n"
             + "gate_types:\n"
-            + "{'Hadamard': 1, 'PauliZ': 2}"
+            + "{'Hadamard': 1, 'PauliZ': 2}\n"
+            + "gate_sizes:\n"
+            + "{1: 3}"
         ),
         (
             "wires: 4\n"
@@ -78,7 +101,9 @@ class TestResources:
             + "depth: 2\n"
             + "shots: 100\n"
             + "gate_types:\n"
-            + "{'Hadamard': 1, 'CNOT': 1}"
+            + "{'Hadamard': 1, 'CNOT': 1}\n"
+            + "gate_sizes:\n"
+            + "{1: 1, 2: 1}"
         ),
     )
 
@@ -88,12 +113,12 @@ class TestResources:
         assert str(r) == rep
 
     test_rep_data = (
-        "Resources(num_wires=0, num_gates=0, gate_types={}, depth=0, shots=0)",
-        "Resources(num_wires=5, num_gates=0, gate_types={}, depth=0, shots=0)",
+        "Resources(num_wires=0, num_gates=0, gate_types={}, gate_sizes={}, depth=0, shots=0)",
+        "Resources(num_wires=5, num_gates=0, gate_types={}, gate_sizes={}, depth=0, shots=0)",
         "Resources(num_wires=1, num_gates=3, gate_types=defaultdict(<class 'int'>, {'Hadamard': 1, 'PauliZ': 2}), "
-        "depth=3, shots=10)",
+        "gate_sizes=defaultdict(<class 'int'>, {1: 3}), depth=3, shots=10)",
         "Resources(num_wires=4, num_gates=2, gate_types={'Hadamard': 1, 'CNOT': 1}, "
-        "depth=2, shots=100)",
+        "gate_sizes={1: 1, 2: 1}, depth=2, shots=100)",
     )
 
     @pytest.mark.parametrize("r, rep", zip(resource_quantities, test_rep_data))
@@ -103,15 +128,16 @@ class TestResources:
 
     def test_eq(self):
         """Test that the equality dunder method is correct for Resources."""
-        r1 = Resources(4, 2, {"Hadamard": 1, "CNOT": 1}, 2, 100)
-        r2 = Resources(4, 2, {"Hadamard": 1, "CNOT": 1}, 2, 100)
-        r3 = Resources(4, 2, {"CNOT": 1, "Hadamard": 1}, 2, 100)  # all equal
+        r1 = Resources(4, 2, {"Hadamard": 1, "CNOT": 1}, {1: 1, 2: 1}, 2, 100)
+        r2 = Resources(4, 2, {"Hadamard": 1, "CNOT": 1}, {1: 1, 2: 1}, 2, 100)
+        r3 = Resources(4, 2, {"CNOT": 1, "Hadamard": 1}, {2: 1, 1: 1}, 2, 100)  # all equal
 
-        r4 = Resources(1, 2, {"Hadamard": 1, "CNOT": 1}, 2, 100)  # diff wires
-        r5 = Resources(4, 1, {"Hadamard": 1, "CNOT": 1}, 2, 100)  # diff num_gates
-        r6 = Resources(4, 2, {"CNOT": 1}, 2, 100)  # diff gate_types
-        r7 = Resources(4, 2, {"Hadamard": 1, "CNOT": 1}, 1, 100)  # diff depth
-        r8 = Resources(4, 2, {"Hadamard": 1, "CNOT": 1}, 2, 1)  # diff shots
+        r4 = Resources(1, 2, {"Hadamard": 1, "CNOT": 1}, {1: 1, 2: 1}, 2, 100)  # diff wires
+        r5 = Resources(4, 1, {"Hadamard": 1, "CNOT": 1}, {1: 1, 2: 1}, 2, 100)  # diff num_gates
+        r6 = Resources(4, 2, {"CNOT": 1}, {1: 1, 2: 1}, 2, 100)  # diff gate_types
+        r7 = Resources(4, 2, {"Hadamard": 1, "CNOT": 1}, {1: 3, 2: 2}, 2, 100)  # diff gate_sizes
+        r8 = Resources(4, 2, {"Hadamard": 1, "CNOT": 1}, {1: 1, 2: 1}, 1, 100)  # diff depth
+        r9 = Resources(4, 2, {"Hadamard": 1, "CNOT": 1}, {1: 1, 2: 1}, 2, 1)  # diff shots
 
         assert r1.__eq__(r1)
         assert r1.__eq__(r2)
@@ -122,6 +148,7 @@ class TestResources:
         assert not r1.__eq__(r6)
         assert not r1.__eq__(r7)
         assert not r1.__eq__(r8)
+        assert not r1.__eq__(r9)
 
     @pytest.mark.parametrize("r, rep", zip(resource_quantities, test_str_data))
     def test_ipython_display(self, r, rep, capsys):
@@ -166,7 +193,11 @@ class _CustomOpWithResource(ResourcesOperation):  # pylint: disable=too-few-publ
 
     def resources(self):
         return Resources(
-            num_wires=self.num_wires, num_gates=3, gate_types={"Identity": 1, "PauliZ": 2}, depth=3
+            num_wires=self.num_wires,
+            num_gates=3,
+            gate_types={"Identity": 1, "PauliZ": 2},
+            gate_sizes={1: 3},
+            depth=3,
         )
 
 
@@ -217,12 +248,19 @@ lst_ops_and_shots = (
 
 resources_data = (
     Resources(),
-    Resources(2, 2, {"Hadamard": 1, "CNOT": 1}, 2, 0),
-    Resources(3, 3, {"PauliZ": 1, "CNOT": 1, "RX": 1}, 2, 10),
-    Resources(2, 6, {"Hadamard": 3, "RX": 2, "CNOT": 1}, 4, 100),
-    Resources(2, 5, {"Hadamard": 1, "CNOT": 1, "Identity": 1, "PauliZ": 2}, None, 0),
-    Resources(3, 7, {"PauliZ": 3, "CNOT": 1, "RX": 1, "Identity": 1, "CustomOp2": 1}, None, 10),
-    Resources(2, 7, {"Hadamard": 3, "RX": 2, "CNOT": 1, "CustomOp2": 1}, 5, 100),
+    Resources(2, 2, {"Hadamard": 1, "CNOT": 1}, {1: 1, 2: 1}, 2, 0),
+    Resources(3, 3, {"PauliZ": 1, "CNOT": 1, "RX": 1}, {1: 2, 2: 1}, 2, 10),
+    Resources(2, 6, {"Hadamard": 3, "RX": 2, "CNOT": 1}, {1: 5, 2: 1}, 4, 100),
+    Resources(2, 5, {"Hadamard": 1, "CNOT": 1, "Identity": 1, "PauliZ": 2}, {1: 4, 2: 1}, None, 0),
+    Resources(
+        3,
+        7,
+        {"PauliZ": 3, "CNOT": 1, "RX": 1, "Identity": 1, "CustomOp2": 1},
+        {1: 5, 2: 2},
+        None,
+        10,
+    ),
+    Resources(2, 7, {"Hadamard": 3, "RX": 2, "CNOT": 1, "CustomOp2": 1}, {1: 5, 2: 2}, 5, 100),
 )
 
 
