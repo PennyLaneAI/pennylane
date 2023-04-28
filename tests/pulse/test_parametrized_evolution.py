@@ -18,7 +18,6 @@ Unit tests for the ParametrizedEvolution class
 from functools import reduce
 import numpy as np
 
-# pylint: disable=unused-argument, too-few-public-methods, import-outside-toplevel
 import pytest
 import pennylane as qml
 from pennylane.operation import AnyWires
