@@ -253,10 +253,42 @@
    T(wires=[0]), Hadamard(wires=[1]), S(wires=[1]), T(wires=[1])]
   ```
 
-* The adjoint differentiation method now supports more operations and no longer decomposes
-  some operations that may be differentiated directly. Additionally, all new operations with a
-  generator now support adjoint differentiation.
+* The adjoint differentiation method can now be more efficient, avoiding decomposition of operations
+  that can be differentiated directly. Any operation that defines a ``generator()`` can
+  be differentiated with the adjoint method.
   [(#3874)](https://github.com/PennyLaneAI/pennylane/pull/3874)
+
+  For example, the ``qml.CRY`` operation would be decomposed in version 0.29 when calculating the
+  adjoint-method gradient. The code below shows that this decomposition no longer takes place and
+  ``qml.CRY`` is differentiated directly:
+
+  ```python
+  import jax
+  from jax import numpy as jnp
+
+  def compute_decomposition(self, phi, wires):
+      print("A decomposition has been performed!")
+      decomp_ops = [
+          qml.RY(phi / 2, wires=wires[1]),
+          qml.CNOT(wires=wires),
+          qml.RY(-phi / 2, wires=wires[1]),
+          qml.CNOT(wires=wires),
+      ]
+      return decomp_ops
+
+  qml.CRY.compute_decomposition = compute_decomposition
+
+  dev = qml.device("default.qubit", wires=2)
+
+  @qml.qnode(dev, diff_method="adjoint")
+  def circuit(phi):
+      qml.Hadamard(wires=0)
+      qml.CRY(phi, wires=[0, 1])
+      return qml.expval(qml.PauliZ(1))
+
+  phi = jnp.array(0.5)
+  jax.grad(circuit)(phi)
+  ```
 
 * Derivatives are computed more efficiently when using `jax.jit` with gradient transforms; the
   trainable parameters are now set correctly instead of every parameter having to be set as
