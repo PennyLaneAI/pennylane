@@ -54,7 +54,7 @@ PennyLane Documentation
 Features
 --------
 
-.. image:: _static/header.png
+.. image:: _static/header-tall.png
     :align: left
     :width: 450px
     :target: javascript:void(0);
