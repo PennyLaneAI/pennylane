@@ -44,6 +44,9 @@ def map(
     applied to all QNodes in the collection, or can be provided as a list for more
     fine-grained control.
 
+    .. warning::
+        ``map`` is deprecated and will be deleted in v0.31.
+
     Args:
         template (callable): the ansatz for the circuit before the final measurement step
             Note that the template **must** have the following signature:

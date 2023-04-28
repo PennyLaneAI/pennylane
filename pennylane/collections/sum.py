@@ -27,6 +27,9 @@ def sum(x):
     Args:
         x (QNodeCollection): a QNode collection of independent QNodes.
 
+    .. warning::
+        ``sum`` is deprecated and will be deleted in v0.31.
+
     .. seealso:: :func:`~.apply`, :func:`~.dot`
 
     **Example:**

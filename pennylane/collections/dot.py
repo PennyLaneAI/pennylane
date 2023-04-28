@@ -88,6 +88,9 @@ def dot(x, y):
 
     .. seealso:: :func:`~.apply`, :func:`~.sum`
 
+    .. warning::
+        ``dot`` is deprecated and will be deleted in v0.31.
+
     **Example:**
 
     We can create a QNodeCollection using :func:`~.map`:

@@ -28,6 +28,9 @@ def apply(func, qnode_collection):
             that accept ``torch.tensor`` objects.
         qnode_collection (QNodeCollection): a QNode collection.
 
+    .. warning::
+        ``apply`` is deprecated and will be deleted in v0.31.
+
     **Example:**
 
     We can create a QNodeCollection using :func:`~.map`:
