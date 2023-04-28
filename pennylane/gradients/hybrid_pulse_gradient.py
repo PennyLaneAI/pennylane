@@ -31,11 +31,10 @@ from .finite_difference import _all_zero_grad_new, _no_trainable_grad_new
 # )
 from .stoch_pulse_gradient import _assert_has_jax
 from .gradient_transform import (
-    # assert_active_return,
-    # assert_no_state_returns,
-    # assert_no_variance,
+    assert_active_return,
+    assert_no_state_returns,
+    assert_no_variance,
     choose_grad_methods,
-    # grad_method_validation,
     gradient_analysis_and_validation,
     gradient_transform,
 )
