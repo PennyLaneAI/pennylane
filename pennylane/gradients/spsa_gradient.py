@@ -16,14 +16,12 @@ This module contains functions for computing the SPSA gradient
 of a quantum tape.
 """
 # pylint: disable=protected-access,too-many-arguments,too-many-branches,too-many-statements
-import warnings
 from functools import partial
 from collections.abc import Sequence
 
 import numpy as np
 
 import pennylane as qml
-from pennylane._device import _get_num_copies
 
 from .finite_difference import (
     _all_zero_grad_new,
