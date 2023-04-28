@@ -27,6 +27,7 @@ from pennylane._device import _get_num_copies
 from .finite_difference import (
     _all_zero_grad_new,
     _no_trainable_grad_new,
+    _no_trainable_grad_legacy,
     finite_diff_coeffs,
 )
 from .gradient_transform import (
@@ -551,12 +552,7 @@ def _spsa_grad_legacy(
     """
 
     if argnum is None and not tape.trainable_params:
-        warnings.warn(
-            "Attempted to compute the gradient of a tape with no trainable parameters. "
-            "If this is unintended, please mark trainable parameters in accordance with the "
-            "chosen auto differentiation framework, or via the 'tape.trainable_params' property."
-        )
-        return [], lambda _: qml.math.zeros([tape.output_dim, 0])
+        return _no_trainable_grad_legacy(tape)
 
     if validate_params:
         diff_methods = gradient_analysis_and_validation(

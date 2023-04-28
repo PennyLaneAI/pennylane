@@ -49,7 +49,7 @@ def _process_jacs_new(jac, qhess):
 
         qh_indices = "ab..."
 
-        # contract the first axis of the jacobian with the first and second axes of the hessian
+        # contract the first axis of the jacobian with the first and second axes of the Hessian
         first_jac_indices = f"a{ABC[2:2 + jac_ndim - 1]}"
         second_jac_indices = f"b{ABC[2 + jac_ndim - 1:2 + 2 * jac_ndim - 2]}"
 
@@ -176,7 +176,7 @@ class hessian_transform(qml.batch_transform):
 
             if not qml.math.get_trainable_indices(args) and not argnums:
                 warnings.warn(
-                    "Attempted to compute the hessian of a QNode with no trainable parameters. "
+                    "Attempted to compute the Hessian of a QNode with no trainable parameters. "
                     "If this is unintended, please add trainable parameters in accordance with "
                     "the chosen auto differentiation framework."
                 )

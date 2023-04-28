@@ -25,7 +25,7 @@ import numpy as np
 import pennylane as qml
 from pennylane.measurements import ExpectationMP, ProbabilityMP, StateMP, VarianceMP
 
-from .finite_difference import finite_diff
+from .finite_difference import finite_diff, _no_trainable_grad_legacy
 from .general_shift_rules import generate_shifted_tapes, process_shifts
 from .gradient_transform import choose_grad_methods, _grad_method_validation, gradient_transform
 from .parameter_shift import _get_operation_recipe, expval_param_shift
@@ -674,12 +674,7 @@ def param_shift_cv(
     diff_methods = _gradient_analysis_and_validation_cv(tape, method)
 
     if argnum is None and not tape.trainable_params:
-        warnings.warn(
-            "Attempted to compute the gradient of a tape with no trainable parameters. "
-            "If this is unintended, please mark trainable parameters in accordance with the "
-            "chosen auto differentiation framework, or via the 'tape.trainable_params' property."
-        )
-        return [], lambda _: qml.math.zeros((tape.output_dim, 0))
+        return _no_trainable_grad_legacy(tape)
 
     gradient_tapes = []
     shapes = []

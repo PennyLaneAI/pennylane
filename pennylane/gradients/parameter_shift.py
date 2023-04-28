@@ -26,7 +26,12 @@ import pennylane as qml
 from pennylane._device import _get_num_copies
 from pennylane.measurements import VarianceMP
 
-from .finite_difference import _all_zero_grad_new, _no_trainable_grad_new, finite_diff
+from .finite_difference import (
+    _all_zero_grad_new,
+    _no_trainable_grad_new,
+    _no_trainable_grad_legacy,
+    finite_diff,
+)
 from .general_shift_rules import (
     _iterate_shift_rule,
     frequencies_to_period,
@@ -49,6 +54,14 @@ NONINVOLUTORY_OBS = {
 to a callable that accepts an observable object, and returns the square
 of that observable.
 """
+
+
+def assert_multimeasure_not_broadcasted(num_measurements, brodcast):
+    if broadcast and num_measurements > 1:
+        raise NotImplementedError(
+            "Broadcasting with multiple measurements is not supported yet. "
+            f"Set broadcast to False instead. The tape measurements are {tape.measurements}."
+        )
 
 
 def _square_observable(obs):
@@ -1492,13 +1505,8 @@ def param_shift(
             shots=shots,
         )
 
-    assert_no_state_returns(tape.measurements)
-
-    if broadcast and len(tape.measurements) > 1:
-        raise NotImplementedError(
-            "Broadcasting with multiple measurements is not supported yet. "
-            f"Set broadcast to False instead. The tape measurements are {tape.measurements}."
-        )
+    assert_no_state_returns(m := tape.measurements)
+    assert_multimeasure_not_broadcasted(len(m), broadcast)
 
     if argnum is None and not tape.trainable_params:
         return _no_trainable_grad_new(tape, shots)
@@ -1870,20 +1878,11 @@ def _param_shift_legacy(
         Note that ``broadcast=True`` requires additional memory by a factor of the largest
         batch_size of the created tapes.
     """
-    assert_no_state_returns(tape.measurements)
-    if broadcast and len(tape.measurements) > 1:
-        raise NotImplementedError(
-            "Broadcasting with multiple measurements is not supported yet. "
-            f"Set broadcast to False instead. The tape measurements are {tape.measurements}."
-        )
+    assert_no_state_returns(m := tape.measurements)
+    assert_multimeasure_not_broadcasted(len(m), broadcast)
 
     if argnum is None and not tape.trainable_params:
-        warnings.warn(
-            "Attempted to compute the gradient of a tape with no trainable parameters. "
-            "If this is unintended, please mark trainable parameters in accordance with the "
-            "chosen auto differentiation framework, or via the 'tape.trainable_params' property."
-        )
-        return [], lambda _: np.zeros((tape.output_dim, 0))
+        return _no_trainable_grad_legacy(tape)
 
     method = "analytic" if fallback_fn is None else "best"
     diff_methods = gradient_analysis_and_validation(tape, method, grad_fn=param_shift)

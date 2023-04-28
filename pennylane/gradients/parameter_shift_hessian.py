@@ -179,11 +179,24 @@ def _generate_diag_tapes(tape, idx, diag_recipes, add_unshifted, tapes, coeffs):
     return add_unshifted, unshifted_coeff
 
 
-def _no_trainable_grad_new(tape):
+_no_trainable_hessian_warning = (
+    "Attempted to compute the Hessian of a tape with no trainable parameters. "
+    "If this is unintended, please mark trainable parameters in accordance with the "
+    "chosen auto differentiation framework, or via the 'tape.trainable_params' property."
+)
+
+
+def _no_trainable_hessian_new(tape):
+    warnings.warn(_no_trainable_hessian_warning)
     if len(tape.measurements) == 1:
         return [], lambda _: qml.math.zeros((0,))
 
     return [], lambda _: tuple(qml.math.zeros((0,)) for _ in tape.measurements)
+
+
+def _no_trainable_hessian_legacy(tape):
+    warnings.warn(_no_trainable_hessian_warning)
+    return [], lambda _: qml.math.zeros((tape.output_dim, 0, 0))
 
 
 def _all_zero_grad_new(tape):
@@ -636,12 +649,7 @@ def _param_shift_hessian_legacy(
         )
 
     if argnum is None and not tape.trainable_params:
-        warnings.warn(
-            "Attempted to compute the hessian of a tape with no trainable parameters. "
-            "If this is unintended, please mark trainable parameters in accordance with the "
-            "chosen auto differentiation framework, or via the 'tape.trainable_params' property."
-        )
-        return [], lambda _: qml.math.zeros((tape.output_dim, 0, 0))
+        return _no_trainable_hessian_legacy(tape)
     bool_argnum = _process_argnum(argnum, tape)
 
     compare_diag_to = qml.math.sum(qml.math.diag(bool_argnum))
@@ -857,12 +865,7 @@ def param_shift_hessian(tape, argnum=None, diagonal_shifts=None, off_diagonal_sh
         )
 
     if argnum is None and not tape.trainable_params:
-        warnings.warn(
-            "Attempted to compute the hessian of a tape with no trainable parameters. "
-            "If this is unintended, please mark trainable parameters in accordance with the "
-            "chosen auto differentiation framework, or via the 'tape.trainable_params' property."
-        )
-        return _no_trainable_grad_new(tape)
+        return _no_trainable_hessian_new(tape)
 
     bool_argnum = _process_argnum(argnum, tape)
 
