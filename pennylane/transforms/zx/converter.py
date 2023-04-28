@@ -233,7 +233,7 @@ def to_zx(tape, expand_measurement=False):  # pylint: disable=unused-argument
                     qml.apply(g)
                 return qml.expval(qml.PauliZ(wires=0))
 
-        >>> mod_5_4_opt()
+        >>> mod_5_4()
         -0.9999999999999989
 
     .. note::
