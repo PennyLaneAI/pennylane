@@ -14,7 +14,7 @@
 """This module contains functions to construct many-body observables with ``OpenFermion-PySCF``.
 """
 # pylint: disable=too-many-arguments, too-few-public-methods, too-many-branches, unused-variable
-# pylint: disable=consider-using-generator
+# pylint: disable=consider-using-generator, protected-access
 import os
 
 import numpy as np
@@ -914,7 +914,6 @@ def molecular_hamiltonian(
         geometry_hf = coordinates.flatten()
 
     if method == "dhf":
-
         if wires:
             wires_new = qml.qchem.convert._process_wires(wires)
             wires_map = dict(zip(range(len(wires_new)), list(wires_new.labels)))
