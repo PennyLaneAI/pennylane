@@ -284,9 +284,7 @@ def spsa_grad(
         return _no_trainable_grad_new(tape, shots)
 
     if validate_params:
-        diff_methods = gradient_analysis_and_validation(
-            tape, "numeric", grad_fn=spsa_grad, overwrite=False
-        )
+        diff_methods = gradient_analysis_and_validation(tape, "numeric", grad_fn=spsa_grad)
     else:
         diff_methods = ["F" for i in tape.trainable_params]
 

@@ -1523,9 +1523,9 @@ def param_shift(
     method_map = choose_grad_methods(diff_methods, argnum)
 
     # If there are unsupported operations, call the fallback gradient function
-    gradient_tapes = []
     unsupported_params = {idx for idx, g in method_map.items() if g == "F"}
     argnum = [i for i, dm in method_map.items() if dm == "A"]
+    gradient_tapes = []
 
     if unsupported_params:
         # If shots were provided, assume that the fallback function also takes that arg
