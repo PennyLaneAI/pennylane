@@ -285,39 +285,46 @@ def transmon_drive(amplitude, phase, freq, wires, d=2):
     **Example**
 
     We can construct a drive term acting on qubit ``0`` in the following way. We parametrize the amplitude and phase
-    via :math:`\Omega(t) = \Omega_{\text{max}} \sin(\pi t)` and :math:`\phi(t) = \phi (t - \frac{1}{2})`.
+    via :math:`\Omega(t)/(2 \pi) = A \times \sin^2(\pi t)` and :math:`\phi(t) = \phi (t - \frac{1}{2})`. The squared
+    sine ensures that the amplitude will be strictly positive (a requirement for some hardware).
 
     .. code-block:: python3
 
-        def amp(max_amp, t): return max_amp * jnp.sin(jnp.pi*t)
+        def amp(A, t): return A * jnp.sin(jnp.pi*t) ** 2
         def phase(phi, t): return phi * (t - 0.5)
 
         H = qml.pulse.transmon_drive(amp, phase, 0, 0)
 
         t = 0.5
-        max_amp = 0.1
+        A = 0.1
         phi = 0.001
         params = [max_amp, phi]
 
-    Evaluated at :math:`t = \frac{1}{2}` with the parameters :math:`\Omega_{\text{max}} = 0.1` and :math:`\phi = 10^{-3}` we obtain
-    :math:`\Omega_{\text{max}} \left(\frac{1}{2}(\sigma^x + i \sigma^y) + \frac{1}{2}(\sigma^x + i \sigma^y)\right) = \Omega_{\text{max}} \sigma^x`.
+    Evaluated at :math:`t = \frac{1}{2}` with the parameters :math:`A = 0.1` and :math:`\phi = 10^{-3}` we obtain
+    :math:` A \left(\frac{1}{2}(\sigma^x + i \sigma^y) + \frac{1}{2}(\sigma^x + i \sigma^y)\right) = A \sigma^x`.
 
     >>> H(params, t)
     (0.1*(PauliX(wires=[0]))) + (0.0*(-1*(PauliY(wires=[0]))))
 
     We can combine ``transmon_drive()`` with :func:`~.transmon_interaction` to create a full driven transmon Hamiltonian.
-    Let us look at a chain of three transmon qubits that are coupled with their direct neighbors. We provide all numbers in
-    units of :math:`2\pi\text{GHz}`. We parametrize the amplitude as a sinusodial and make the maximum amplitude
-    as well as the drive frequency trainable parameters. We simulate the evolution for a time window of :math:`[0, 5]\text{ns}`.
+    Let us look at a chain of three transmon qubits that are coupled with their direct neighbors. We provide all
+    frequencies in GHz (conversion to angular frequency, i.e. multiplication by :math::`2 \pi`, is taken care of
+    internally where needed).
+
+    We use values around :math:`\omega = 5 \times 2\pi \text{GHz}` for resonant frequencies, and coupling strenghts
+    on the order of around :math:`g = 0.01 \times 2\pi \text{GHz}`.
+
+    We parametrize the amplitude as a squared sinusodial and make the maximum amplitude as well as the drive frequency
+    trainable parameters. We simulate the evolution for a time window of :math:`[0, 5]\text{ns}`.
 
     .. code-block:: python3
 
         qubit_freqs = [5.1, 5., 5.3]
-        connections = [[0, 1], [1, 2]]
+        connections = [[0, 1], [1, 2]]  # qubits 0 and 1 are coupled, as are 1 and 2
         g = [0.02, 0.05]
         H = qml.pulse.transmon_interaction(qubit_freqs, connections, g, wires=range(3))
 
-        def amp(max_amp, t): return max_amp * jnp.sin(t)
+        def amp(max_amp, t): return max_amp * jnp.sin(t) ** 2
         def freq(fr, t): return fr
         phase = 0.
         t=2
@@ -334,8 +341,8 @@ def transmon_drive(amplitude, phase, freq, wires, d=2):
             qml.evolve(H)(params, t=5.)
             return qml.expval(qml.PauliZ(0) + qml.PauliZ(1) + qml.PauliZ(2))
 
-    We evaluate the Hamiltonian with some arbitrarily chosen maximum amplitudes and set
-    the drive frequency equal to the qubit frequencies. Note how the order of the construction
+    We evaluate the Hamiltonian with some arbitrarily chosen maximum amplitudes (here on the order of 0.5 GHz)
+    and set the drive frequency equal to the qubit frequencies. Note how the order of the construction
     of ``H`` determines the order with which the parameters need to be passed to
     :class:`~.ParametrizedHamiltonian` and :func:`~.evolve`. We made the drive frequencies
     trainable parameters by providing a constant callable above instead of fixed values.

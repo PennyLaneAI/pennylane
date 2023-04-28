@@ -168,7 +168,16 @@ def rydberg_drive(amplitude, phase, detuning, wires):
     We create a Hamiltonian describing a laser acting on 4 wires (Rydberg atoms) with a fixed detuning and
     phase, and a parametrized, time-dependent amplitude. The Hamiltonian includes an interaction term for
     inter-atom interactions due to van der Waals forces, as well as the driving term for the laser driving
-    the atoms:
+    the atoms.
+
+    We provide all frequencies in the driving term in MHz (conversion to angular frequency, i.e. multiplication
+    by :math::`2 \pi`, is taken care of internally where needed). Phase (in radians) will not undergo unit conversion.
+
+    For the driving field, we specify a detuning on the order of :math:`\delta = 10 \times 2\pi \text{MHz}`, and an
+    amplitude :math::`\Omega(t) / (2 \pi)` defined by a sinusoidal oscillation, squared to ensure a positve amplitude
+    (a requirement for some hardware implementations). The maximum amplitude will dependent on the parameter ``p``
+    passed to the amplitude function later, and should also be passed in units of MHz. We introduce a small phase
+    shift as well, on the order of 1 rad.
 
     .. code-block:: python
 
@@ -176,9 +185,9 @@ def rydberg_drive(amplitude, phase, detuning, wires):
         wires = [0, 1, 2, 3]
         H_i = qml.pulse.rydberg_interaction(atom_coordinates, wires)
 
-        amplitude = lambda p, t: p * jnp.sin(jnp.pi * t)
+        amplitude = lambda p, t: p * jnp.sin(jnp.pi * t) ** 2
         phase = jnp.pi / 2
-        detuning = 3 * jnp.pi / 4
+        detuning = 30 * jnp.pi / 4
         H_d = qml.pulse.rydberg_drive(amplitude, phase, detuning, wires)
 
     >>> H_i
@@ -200,6 +209,8 @@ def rydberg_drive(amplitude, phase, detuning, wires):
         def circuit(params):
             qml.evolve(H_i + H_d)(params, t=[0, 10])
             return qml.expval(qml.PauliZ(0))
+
+    Here we set a maximum amplitude of 2.4 MHz, and calculate the result of running the pulse program:
 
     >>> params = [2.4]
     >>> circuit(params)
