@@ -1341,6 +1341,7 @@ class SpecsDict(dict):
 
     old_to_new_key_map = {
         "gate_types": "gate_types",
+        "gate_sizes": "gate_sizes",
         "num_operations": "num_gates",
         "num_used_wires": "num_wires",
         "depth": "depth",
