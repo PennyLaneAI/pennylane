@@ -213,6 +213,7 @@ def _all_zero_grad_new(tape, shots=None):
 
     return [], lambda _: tuple(list_zeros)
 
+
 def _processing_fn(results, shots=None, single_shot_batch_fn=None):
     shot_vector = isinstance(shots, Sequence)
 
@@ -228,6 +229,7 @@ def _processing_fn(results, shots=None, single_shot_batch_fn=None):
         grads_tuple = tuple(grads_tuple)
 
     return grads_tuple
+
 
 @gradient_transform
 def finite_diff(
@@ -535,7 +537,9 @@ def finite_diff(
             return tuple(elem[0] for elem in grads_reorder)
         return tuple(tuple(elem) for elem in grads_reorder)
 
-    processing_fn = partial(_processing_fn, shots=shots, single_shot_batch_fn=_single_shot_batch_result)
+    processing_fn = functools.partial(
+        _processing_fn, shots=shots, single_shot_batch_fn=_single_shot_batch_result
+    )
 
     return gradient_tapes, processing_fn
 

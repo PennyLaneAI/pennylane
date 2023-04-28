@@ -17,6 +17,7 @@ of a quantum tape.
 """
 # pylint: disable=protected-access,too-many-arguments,too-many-branches,too-many-statements
 import warnings
+from functools import partial
 from collections.abc import Sequence
 
 import numpy as np
@@ -367,7 +368,9 @@ def spsa_grad(
             return tuple(g[0] for g in grads)
         return tuple(grads)
 
-    processing_fn = partial(_processing_fn, shots=shots, single_shot_batch_fn=_single_shot_batch_result)
+    processing_fn = partial(
+        _processing_fn, shots=shots, single_shot_batch_fn=_single_shot_batch_result
+    )
 
     return gradient_tapes, processing_fn
 

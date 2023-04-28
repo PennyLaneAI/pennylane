@@ -629,7 +629,6 @@ def _expval_stoch_pulse_grad(tape, argnum, num_split_times, key, shots, use_broa
 
         return _reorder_grads(grads, tape_specs)
 
-
     return tapes, processing_fn
 
 

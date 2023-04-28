@@ -450,9 +450,9 @@ def _reorder_grad_axes_multi_measure(
 
     return new_grad
 
+
 def _reorder_grads(grads, tape_specs):
-    """
-    """
+    """ """
     single_measure, num_params, num_measurements, shot_vector, shots = tape_specs
     if single_measure and num_params == 1:
         return grads[0]
@@ -468,6 +468,7 @@ def _reorder_grads(grads, tape_specs):
             shot_vector,
         )
     return tuple(grads)
+
 
 def _make_zero_rep(g, single_measure, shot_vector):
     """Create a zero-valued gradient entry adapted to the measurements and shot_vector
@@ -610,7 +611,6 @@ def expval_param_shift(
         grads = [zero_rep if g is None else g for g in grads]
 
         return _reorder_grads(grads, tape_specs)
-
 
     processing_fn.first_result_unshifted = at_least_one_unshifted
 
