@@ -31,9 +31,8 @@ from .finite_difference import (
 )
 from .gradient_transform import (
     gradient_transform,
-    grad_method_validation,
     choose_grad_methods,
-    gradient_analysis,
+    gradient_analysis_and_validation,
 )
 from .general_shift_rules import generate_multishifted_tapes
 
@@ -282,10 +281,7 @@ def spsa_grad(
         return _no_trainable_grad_new(tape, shots)
 
     if validate_params:
-        # TODO: Can we resolve the following case distinction with the one in gradient_analysis?
-        if "grad_method" not in tape._par_info[0]:
-            gradient_analysis(tape, grad_fn=spsa_grad)
-        diff_methods = grad_method_validation("numeric", tape)
+        diff_methods = gradient_analysis_and_validation(tape, "numeric", grad_fn=spsa_grad)
     else:
         diff_methods = ["F" for i in tape.trainable_params]
 
@@ -561,10 +557,7 @@ def _spsa_grad_legacy(
         return [], lambda _: qml.math.zeros([tape.output_dim, 0])
 
     if validate_params:
-        # TODO: Can we resolve the following case distinction with the one in gradient_analysis?
-        if "grad_method" not in tape._par_info[0]:
-            gradient_analysis(tape, grad_fn=spsa_grad)
-        diff_methods = grad_method_validation("numeric", tape)
+        diff_methods = gradient_analysis_and_validation(tape, "numeric", grad_fn=spsa_grad)
     else:
         diff_methods = ["F" for i in tape.trainable_params]
 

@@ -30,8 +30,7 @@ from pennylane.measurements import ProbabilityMP
 from .general_shift_rules import generate_shifted_tapes
 from .gradient_transform import (
     choose_grad_methods,
-    grad_method_validation,
-    gradient_analysis,
+    gradient_analysis_and_validation,
     gradient_transform,
 )
 
@@ -382,10 +381,7 @@ def finite_diff(
         return _no_trainable_grad_new(tape, shots)
 
     if validate_params:
-        # TODO: Can we resolve the following case distinction with the one in gradient_analysis?
-        if "grad_method" not in tape._par_info[0]:
-            gradient_analysis(tape, grad_fn=finite_diff)
-        diff_methods = grad_method_validation("numeric", tape)
+        diff_methods = gradient_analysis_and_validation(tape, "numeric", grad_fn=finite_diff)
     else:
         diff_methods = ["F" for i in tape.trainable_params]
 
@@ -662,10 +658,7 @@ def _finite_diff_legacy(
         return [], lambda _: qml.math.zeros([tape.output_dim, 0])
 
     if validate_params:
-        # TODO: Can we resolve the following case distinction with the one in gradient_analysis?
-        if "grad_method" not in tape._par_info[0]:
-            gradient_analysis(tape, grad_fn=finite_diff)
-        diff_methods = grad_method_validation("numeric", tape)
+        diff_methods = gradient_analysis_and_validation(tape, "numeric", grad_fn=finite_diff)
     else:
         diff_methods = ["F" for i in tape.trainable_params]
 

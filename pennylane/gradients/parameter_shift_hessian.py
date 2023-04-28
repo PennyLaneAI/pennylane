@@ -28,7 +28,7 @@ from .general_shift_rules import (
     generate_multishifted_tapes,
     generate_shifted_tapes,
 )
-from .gradient_transform import gradient_analysis_and_validation,
+from .gradient_transform import gradient_analysis_and_validation
 from .hessian_transform import hessian_transform
 from .parameter_shift import _get_operation_recipe
 

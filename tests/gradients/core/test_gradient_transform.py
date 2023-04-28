@@ -18,9 +18,10 @@ import pennylane as qml
 from pennylane import numpy as np
 from pennylane.gradients.gradient_transform import (
     gradient_transform,
-    gradient_analysis,
+    _gradient_analysis,
     choose_grad_methods,
-    grad_method_validation,
+    _grad_method_validation,
+    gradient_analysis_and_validation,
 )
 
 
@@ -39,7 +40,7 @@ class TestGradAnalysis:
             qml.probs(wires=[0, 1])
 
         tape = qml.tape.QuantumScript.from_queue(q)
-        gradient_analysis(tape)
+        _gradient_analysis(tape)
 
         assert tape._par_info[0]["grad_method"] is None
         assert tape._par_info[1]["grad_method"] == "A"
@@ -47,7 +48,7 @@ class TestGradAnalysis:
 
     def test_analysis_caching(self, mocker):
         """Test that the gradient analysis is only executed once per tape
-        if grad_fn is set an unchanged."""
+        if grad_fn is set and unchanged."""
         psi = np.array([1, 0, 1, 0]) / np.sqrt(2)
 
         with qml.queuing.AnnotatedQueue() as q:
@@ -59,7 +60,7 @@ class TestGradAnalysis:
 
         tape = qml.tape.QuantumScript.from_queue(q)
         spy = mocker.spy(qml.operation, "has_grad_method")
-        gradient_analysis(tape, grad_fn=5)
+        _gradient_analysis(tape, grad_fn=5)
         spy.assert_called()
 
         assert tape._par_info[0]["grad_method"] is None
@@ -67,7 +68,7 @@ class TestGradAnalysis:
         assert tape._par_info[2]["grad_method"] == "A"
 
         spy = mocker.spy(qml.operation, "has_grad_method")
-        gradient_analysis(tape, grad_fn=5)
+        _gradient_analysis(tape, grad_fn=5)
         spy.assert_not_called()
 
     def test_independent(self):
@@ -80,7 +81,7 @@ class TestGradAnalysis:
             qml.expval(qml.PauliY(0))
 
         tape = qml.tape.QuantumScript.from_queue(q)
-        gradient_analysis(tape)
+        _gradient_analysis(tape)
 
         assert tape._par_info[0]["grad_method"] == "A"
         assert tape._par_info[1]["grad_method"] == "0"
@@ -95,7 +96,7 @@ class TestGradAnalysis:
             qml.expval(qml.PauliY(0))
 
         tape = qml.tape.QuantumScript.from_queue(q)
-        gradient_analysis(tape, use_graph=False)
+        _gradient_analysis(tape, use_graph=False)
 
         assert tape._par_info[0]["grad_method"] == "A"
         assert tape._par_info[1]["grad_method"] == "A"
@@ -114,7 +115,7 @@ class TestGradAnalysis:
             qml.probs(wires=[0, 1])
 
         tape = qml.tape.QuantumScript.from_queue(q)
-        gradient_analysis(tape)
+        _gradient_analysis(tape)
 
         assert tape._par_info[0]["grad_method"] is None
         assert tape._par_info[1]["grad_method"] == "F"
@@ -122,7 +123,7 @@ class TestGradAnalysis:
 
 
 class TestGradMethodValidation:
-    """Test the helper function grad_method_validation."""
+    """Test the helper function _grad_method_validation."""
 
     @pytest.mark.parametrize("method", ["analytic", "best"])
     def test_with_nondiff_parameters(self, method):
@@ -136,7 +137,7 @@ class TestGradMethodValidation:
         tape._par_info[0]["grad_method"] = "A"
         tape._par_info[1]["grad_method"] = None
         with pytest.raises(ValueError, match="Cannot differentiate with respect"):
-            grad_method_validation(method, tape)
+            _grad_method_validation(method, tape)
 
     def test_with_numdiff_parameters_and_analytic(self):
         """Test that trainable parameters with numerical grad_method ``"F"``
@@ -149,7 +150,12 @@ class TestGradMethodValidation:
         tape._par_info[0]["grad_method"] = "A"
         tape._par_info[1]["grad_method"] = "F"
         with pytest.raises(ValueError, match="The analytic gradient method cannot be used"):
-            grad_method_validation("analytic", tape)
+            _grad_method_validation("analytic", tape)
+
+class TestGradientAnalysisAndValidation:
+    """Test the combined function gradient_analysis_and_validation."""
+    pass
+
 
 
 class TestChooseGradMethods:

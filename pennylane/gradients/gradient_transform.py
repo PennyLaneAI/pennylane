@@ -93,7 +93,7 @@ def assert_active_return(transform_name):
         )
 
 
-def gradient_analysis(tape, use_graph=True, grad_fn=None):
+def _gradient_analysis(tape, use_graph=True, grad_fn=None):
     """Update the parameter information dictionary of the tape with
     gradient information of each parameter.
 
@@ -146,7 +146,7 @@ def gradient_analysis(tape, use_graph=True, grad_fn=None):
             info["grad_method"] = op.grad_method
 
 
-def grad_method_validation(method, tape):
+def _grad_method_validation(method, tape):
     """Validates if the gradient method requested is supported by the trainable
     parameters of a tape, and returns the allowed parameter gradient methods.
 
@@ -194,9 +194,9 @@ def grad_method_validation(method, tape):
     return tuple(diff_methods.values())
 
 def gradient_analysis_and_validation(tape, method, use_graph=True, grad_fn=None):
-    """Combine the execution of gradient_analysis and grad_method_validation."""
-    gradient_analysis(tape, use_graph=use_graph, grad_fn=grad_fn)
-    return grad_method_validation(method, tape)
+    """Combine the execution of _gradient_analysis and _grad_method_validation."""
+    _gradient_analysis(tape, use_graph=use_graph, grad_fn=grad_fn)
+    return _grad_method_validation(method, tape)
 
 
 def choose_grad_methods(diff_methods, argnum):
