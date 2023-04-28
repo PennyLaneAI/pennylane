@@ -198,7 +198,7 @@
 * `AdaptiveOptimizer` is updated to use non-default user-defined qnode arguments.
   [(#3765)](https://github.com/PennyLaneAI/pennylane/pull/3765)
 
-* Use `TensorLike` type in `Operator` dunder methods.
+* The `TensorLike` type is now used in `Operator` dunder methods.
   [(#3749)](https://github.com/PennyLaneAI/pennylane/pull/3749)
 
 * `qml.QubitStateVector.state_vector` now supports broadcasting.
@@ -208,7 +208,7 @@
   in the circuit.
   [(#3888)](https://github.com/PennyLaneAI/pennylane/pull/3888)
 
-* Added `Operation.__truediv__` dunder method to be able to divide operators.
+* Dividing operators by scalars with `/` is now possible with the addition og the `Operation.__truediv__` dunder method.
   [(#3749)](https://github.com/PennyLaneAI/pennylane/pull/3749)
 
 * `repr` for `MutualInfoMP` now displays the distribution of the wires between the two subsystems.
