@@ -33,8 +33,7 @@ from .gradient_transform import (
     assert_no_state_returns,
     assert_no_variance,
     choose_grad_methods,
-    grad_method_validation,
-    gradient_analysis,
+    gradient_analysis_and_validation,
     gradient_transform,
 )
 
@@ -528,9 +527,7 @@ def _stoch_pulse_grad(
     if use_broadcasting and tape.batch_size is not None:
         raise ValueError("Broadcasting is not supported for tapes that already are broadcasted.")
 
-    gradient_analysis(tape, grad_fn=stoch_pulse_grad)
-    method = "analytic"
-    diff_methods = grad_method_validation(method, tape)
+    diff_methods = gradient_analysis_and_validation(tape, "analytic", grad_fn=stoch_pulse_grad)
 
     if all(g == "0" for g in diff_methods):
         return _all_zero_grad_new(tape, shots)

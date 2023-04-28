@@ -36,8 +36,7 @@ from .general_shift_rules import (
 from .gradient_transform import (
     assert_no_state_returns,
     choose_grad_methods,
-    grad_method_validation,
-    gradient_analysis,
+    gradient_analysis_and_validation,
     gradient_transform,
 )
 
@@ -1504,9 +1503,8 @@ def param_shift(
     if argnum is None and not tape.trainable_params:
         return _no_trainable_grad_new(tape, shots)
 
-    gradient_analysis(tape, grad_fn=param_shift)
     method = "analytic" if fallback_fn is None else "best"
-    diff_methods = grad_method_validation(method, tape)
+    diff_methods = gradient_analysis_and_validation(tape, method, grad_fn=param_shift)
 
     if all(g == "0" for g in diff_methods):
         return _all_zero_grad_new(tape, shots)
@@ -1887,9 +1885,8 @@ def _param_shift_legacy(
         )
         return [], lambda _: np.zeros((tape.output_dim, 0))
 
-    gradient_analysis(tape, grad_fn=param_shift)
     method = "analytic" if fallback_fn is None else "best"
-    diff_methods = grad_method_validation(method, tape)
+    diff_methods = gradient_analysis_and_validation(tape, method, grad_fn=param_shift)
 
     if all(g == "0" for g in diff_methods):
         return [], lambda _: np.zeros([tape.output_dim, len(tape.trainable_params)])

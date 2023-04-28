@@ -282,6 +282,7 @@ def spsa_grad(
         return _no_trainable_grad_new(tape, shots)
 
     if validate_params:
+        # TODO: Can we resolve the following case distinction with the one in gradient_analysis?
         if "grad_method" not in tape._par_info[0]:
             gradient_analysis(tape, grad_fn=spsa_grad)
         diff_methods = grad_method_validation("numeric", tape)
@@ -560,6 +561,7 @@ def _spsa_grad_legacy(
         return [], lambda _: qml.math.zeros([tape.output_dim, 0])
 
     if validate_params:
+        # TODO: Can we resolve the following case distinction with the one in gradient_analysis?
         if "grad_method" not in tape._par_info[0]:
             gradient_analysis(tape, grad_fn=spsa_grad)
         diff_methods = grad_method_validation("numeric", tape)

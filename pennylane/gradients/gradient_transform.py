@@ -193,6 +193,11 @@ def grad_method_validation(method, tape):
 
     return tuple(diff_methods.values())
 
+def gradient_analysis_and_validation(tape, method, use_graph=True, grad_fn=None):
+    """Combine the execution of gradient_analysis and grad_method_validation."""
+    gradient_analysis(tape, use_graph=use_graph, grad_fn=grad_fn)
+    return grad_method_validation(method, tape)
+
 
 def choose_grad_methods(diff_methods, argnum):
     """Chooses the trainable parameters to use for computing the Jacobian

@@ -26,8 +26,7 @@ from .gradient_transform import (
     assert_no_state_returns,
     assert_no_variance,
     choose_grad_methods,
-    grad_method_validation,
-    gradient_analysis,
+    gradient_analysis_and_validation,
     gradient_transform,
 )
 
@@ -190,9 +189,7 @@ def _hadamard_grad(
     if argnum is None and not tape.trainable_params:
         return _no_trainable_grad_new(tape, shots)
 
-    gradient_analysis(tape, grad_fn=hadamard_grad)
-    method = "analytic"
-    diff_methods = grad_method_validation(method, tape)
+    diff_methods = gradient_analysis_and_validation(tape, "analytic", grad_fn=hadamard_grad)
 
     if all(g == "0" for g in diff_methods):
         return _all_zero_grad_new(tape, shots)

@@ -28,7 +28,7 @@ from .general_shift_rules import (
     generate_multishifted_tapes,
     generate_shifted_tapes,
 )
-from .gradient_transform import grad_method_validation, gradient_analysis
+from .gradient_transform import gradient_analysis_and_validation,
 from .hessian_transform import hessian_transform
 from .parameter_shift import _get_operation_recipe
 
@@ -661,12 +661,11 @@ def _param_shift_hessian_legacy(
             f"for which to compute at least one off-diagonal entry ({compare_offdiag_to})."
         )
 
-    gradient_analysis(tape, grad_fn=qml.gradients.param_shift)
     # If argnum is given, the grad_method_validation may allow parameters with
     # finite-difference as method. If they are among the requested argnum, we catch this
     # further below (as no fallback function in analogy to `param_shift` is used currently).
     method = "analytic" if argnum is None else "best"
-    diff_methods = grad_method_validation(method, tape)
+    diff_methods = gradient_analysis_and_validation(tape, method, grad_fn=qml.gradients.param_shift)
 
     for i, g in enumerate(diff_methods):
         if g == "0":
@@ -884,12 +883,11 @@ def param_shift_hessian(tape, argnum=None, diagonal_shifts=None, off_diagonal_sh
             f"for which to compute at least one off-diagonal entry ({compare_offdiag_to})."
         )
 
-    gradient_analysis(tape, grad_fn=qml.gradients.param_shift)
     # If argnum is given, the grad_method_validation may allow parameters with
     # finite-difference as method. If they are among the requested argnum, we catch this
     # further below (as no fallback function in analogy to `param_shift` is used currently).
     method = "analytic" if argnum is None else "best"
-    diff_methods = grad_method_validation(method, tape)
+    diff_methods = gradient_analysis_and_validation(tape, method, grad_fn=qml.gradients.param_shift)
 
     for i, g in enumerate(diff_methods):
         if g == "0":
