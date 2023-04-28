@@ -259,8 +259,8 @@
   [(#3874)](https://github.com/PennyLaneAI/pennylane/pull/3874)
 
   For example, in version 0.29 the ``qml.CRY`` operation would be decomposed when calculating the
-  adjoint-method gradient. The code below shows that this decomposition no longer takes place in 
-  version 0.30 and ``qml.CRY`` is differentiated directly:
+  adjoint-method gradient. Executing the code below shows that this decomposition no longer takes
+  place in version 0.30 and ``qml.CRY`` is differentiated directly:
 
   ```python
   import jax
@@ -521,8 +521,8 @@ these changes when using PennyLane, but here is what has changed this release:
   <class 'pennylane.operation.Tensor'>
   ```
 
-* A new data class called `Resources` has been added to store resources like the number of gates and circuit depth throughout a  
-  quantum circuit.
+* A new data class called `Resources` has been added to store resources like the number of gates and
+  circuit depth throughout a quantum circuit.
   [(#3981)](https://github.com/PennyLaneAI/pennylane/pull/3981/)
 
 * A new function called `_count_resources()` has been added to count the resources required when executing a 
