@@ -11,13 +11,13 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""Tests for the gradients.pulse_gradient module.
+"""Tests for the gradients.stoch_pulse_gradient module.
 Note that the module is implemented for the new return type system
 so that this test suite just tests for correctly raised errors."""
 # pylint:disable=import-outside-toplevel
 import pytest
 import pennylane as qml
-from pennylane.gradients.pulse_gradient import stoch_pulse_grad
+from pennylane.gradients.stoch_pulse_gradient import stoch_pulse_grad
 
 
 @pytest.mark.jax

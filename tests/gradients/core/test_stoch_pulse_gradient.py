@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-Tests for the gradients.pulse_gradient module.
+Tests for the gradients.stoch_pulse_gradient module.
 """
 # pylint:disable=import-outside-toplevel
 
@@ -21,7 +21,11 @@ import pytest
 import numpy as np
 import pennylane as qml
 
-from pennylane.gradients.pulse_gradient import _split_evol_ops, _split_evol_tapes, stoch_pulse_grad
+from pennylane.gradients.stoch_pulse_gradient import (
+    _split_evol_ops,
+    _split_evol_tapes,
+    stoch_pulse_grad,
+)
 
 
 # pylint: disable=too-few-public-methods
