@@ -173,8 +173,8 @@ def transmon_interaction(
 
     settings = TransmonSettings(connections, qubit_freq, coupling, anharmonicity=anharmonicity)
 
-    omega = [2 * np.pi * f for f in qubit_freq]  # can't currently be a callable
-    g = [2 * np.pi * g_i for g_i in coupling]  # can't currently be a callable
+    omega = [callable_freq_to_angular(f) if callable(f) else (2 * np.pi * f) for f in qubit_freq]
+    g = [callable_freq_to_angular(c) if callable(c) else (2 * np.pi * c) for c in coupling]
 
     # qubit term
     coeffs = list(omega)
@@ -198,6 +198,15 @@ def transmon_interaction(
     return HardwareHamiltonian(
         coeffs, observables, settings=settings, reorder_fn=_reorder_AmpPhaseFreq
     )
+
+
+def callable_freq_to_angular(fn):
+    """Add a factor of 2pi to a callable result to convert from Hz to rad/s"""
+
+    def angular_fn(p, t):
+        return 2 * np.pi * fn(p, t)
+
+    return angular_fn
 
 
 @dataclass
