@@ -46,7 +46,8 @@ def transmon_interaction(
     anharmonicity=None,
     d=2,
 ):
-    r"""Returns a :class:`ParametrizedHamiltonian` representing the circuit QED Hamiltonian of a superconducting transmon system.
+    r"""Returns a :class:`ParametrizedHamiltonian` representing the circuit QED Hamiltonian of a
+    superconducting transmon system.
 
     The Hamiltonian is given by
 
@@ -57,8 +58,8 @@ def transmon_interaction(
         + \sum_{q\in \text{wires}} \alpha_q a^\dagger_q a^\dagger_q a_q a_q
 
     where :math:`[a^\dagger_p, a_q] = i \delta_{pq}` are bosonic creation and annihilation operators.
-    The first term describes the effect of the dressed qubit frequencies ``qubit_freq`` :math:` = \omega_q/ (2\pi)`,
-    the second term their ``coupling`` :math:` = g_{ij}/(2\pi)` and the last the
+    The first term describes the effect of the dressed qubit frequencies ``qubit_freq`` :math:`= \omega_q/ (2\pi)`,
+    the second term their ``coupling`` :math:`= g_{ij}/(2\pi)` and the last the
     ``anharmonicity`` :math:`= \alpha_q/(2\pi)`, which all can vary for
     different qubits. In practice, the bosonic operators are restricted to a finite dimension of the
     local Hilbert space (default ``d=2`` corresponds to qubits).
@@ -106,7 +107,7 @@ def transmon_interaction(
     .. code-block::
 
         connections = [[0, 1], [1, 3], [2, 1], [4, 5]]
-        H = qml.pulse.transmon_interaction(omega=0.5, connections=connections, g=1., wires=range(6))
+        H = qml.pulse.transmon_interaction(qubit_freq=0.5, connections=connections, coupling=1., wires=range(6))
 
     The resulting :class:`~.ParametrizedHamiltonian` consists of ``4`` coupling terms and ``6`` qubits
     because there are six different wire indices in ``connections``.
@@ -118,9 +119,12 @@ def transmon_interaction(
 
     .. code-block::
 
-        omega = [0.5, 0.4, 0.3, 0.2, 0.1, 0.]
-        g = [1., 2., 3., 4.]
-        H = qml.pulse.transmon_interaction(omega=omega, connections=connections, g=g, wires=range(6))
+        qubit_freqs = [0.5, 0.4, 0.3, 0.2, 0.1, 0.]
+        couplings= [1., 2., 3., 4.]
+        H = qml.pulse.transmon_interaction(qubit_freq=qubit_freqs,
+                                           connections=connections,
+                                           coupling=couplings,
+                                           wires=range(6))
 
     The interaction term is dependent only on the typically fixed transmon energies and coupling strengths.
     Executing this as a pulse program via :func:`~.evolve` would correspond to all driving fields being turned off.
@@ -176,7 +180,7 @@ def transmon_interaction(
     coeffs = list(omega)
     observables = [ad(i, d) @ a(i, d) for i in wires]
 
-    # coupling term term
+    # coupling term
     coeffs += list(g)
     observables += [ad(i, d) @ a(j, d) + ad(j, d) @ a(i, d) for (i, j) in connections]
 
@@ -301,7 +305,7 @@ def transmon_drive(amplitude, phase, freq, wires, d=2):
         params = [max_amp, phi]
 
     Evaluated at :math:`t = \frac{1}{2}` with the parameters :math:`A = 0.1` and :math:`\phi = 10^{-3}` we obtain
-    :math:` A \left(\frac{1}{2}(\sigma^x + i \sigma^y) + \frac{1}{2}(\sigma^x + i \sigma^y)\right) = A \sigma^x`.
+    :math:`2 \pi A \left(\frac{1}{2}(\sigma^x + i \sigma^y) + \frac{1}{2}(\sigma^x + i \sigma^y)\right) = 2 \pi A \sigma^x`.
 
     >>> H(params, t)
     (0.1*(PauliX(wires=[0]))) + (0.0*(-1*(PauliY(wires=[0]))))
