@@ -56,7 +56,7 @@ def rydberg_interaction(
             correspond to its index in the ``register`` list.
         interaction_coeff (float): Defaults to :math:`862690 \times 2 \pi \text{MHz } \mu\text{m}^6`.
             The value will be multiplied by :math:`2 \pi` internally to convert to angular frequency,
-            such that only the value in standard frequency (i.e. 862690 in the default example) should be
+            such that only the value in standard frequency (i.e., 862690 in the default example) should be
             passed.
         max_distance (float): Threshold for distance in :math:`\mu\text{m}` between two Rydberg atoms beyond which their
             contribution to the interaction term is removed from the Hamiltonian.
