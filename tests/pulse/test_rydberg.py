@@ -418,8 +418,7 @@ class TestIntegration:
         assert np.allclose(res, res_jit)
 
     def test_pennylane_and_exact_solution_correspond(self):
-        """Test that the results of PennyLane simulation and the AWS Local simulator roughly
-        match each other, and the exact solution"""
+        """Test that the results of PennyLane simulation match (within reason) the exact solution"""
 
         def exact(H, H_obj, t):
             psi0 = jnp.eye(2 ** len(H.wires))[0]
