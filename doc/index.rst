@@ -54,7 +54,7 @@ PennyLane Documentation
 Features
 --------
 
-.. image:: _static/header.png
+.. image:: _static/header-tall.png
     :align: left
     :width: 450px
     :target: javascript:void(0);
@@ -68,6 +68,12 @@ Features
 - *Best of both worlds*.
   Support for **hybrid quantum and classical** models; connect quantum
   hardware with PyTorch, TensorFlow, and NumPy.
+
+..
+
+- *Just in time compilation*. Compile your **entire hybrid workflow**, with support for
+  adaptive circuits, real-time measurement feedback, unbounded loops, and more. See
+  `Catalyst <https://github.com/pennylaneai/catalyst>`__ for more details.
 
 ..
 
