@@ -311,13 +311,13 @@ def transmon_drive(amplitude, phase, freq, wires, d=2):
         t = 0.5
         A = 0.1
         phi = 0.001
-        params = [max_amp, phi]
+        params = [A, phi]
 
     Evaluated at :math:`t = \frac{1}{2}` with the parameters :math:`A = 0.1` and :math:`\phi = 10^{-3}` we obtain
-    :math:`2 \pi A \left(\frac{1}{2}(\sigma^x + i \sigma^y) + \frac{1}{2}(\sigma^x + i \sigma^y)\right) = 2 \pi A \sigma^x`.
+    :math:`2 \pi A \left(\frac{1}{2}(\sigma^x + i \sigma^y) + \frac{1}{2}(\sigma^x + i \sigma^y)\right) = 2 \pi A \sigma^x = 0.63 \sigma^x`.
 
     >>> H(params, t)
-    (0.1*(PauliX(wires=[0]))) + (0.0*(-1*(PauliY(wires=[0]))))
+    (0.6283185307179586*(PauliX(wires=[0]))) + (0.0*(-1*(PauliY(wires=[0]))))
 
     We can combine ``transmon_drive()`` with :func:`~.transmon_interaction` to create a full driven transmon Hamiltonian.
     Let us look at a chain of three transmon qubits that are coupled with their direct neighbors. We provide all
@@ -354,7 +354,7 @@ def transmon_drive(amplitude, phase, freq, wires, d=2):
             qml.evolve(H)(params, t=5.)
             return qml.expval(qml.PauliZ(0) + qml.PauliZ(1) + qml.PauliZ(2))
 
-    We evaluate the Hamiltonian with some arbitrarily chosen maximum amplitudes (here on the order of 0.5 GHz)
+    We evaluate the Hamiltonian with some arbitrarily chosen maximum amplitudes (here on the order of :math:`0.5 \times 2\pi \text{GHz}`)
     and set the drive frequency equal to the qubit frequencies. Note how the order of the construction
     of ``H`` determines the order with which the parameters need to be passed to
     :class:`~.ParametrizedHamiltonian` and :func:`~.evolve`. We made the drive frequencies
@@ -365,14 +365,14 @@ def transmon_drive(amplitude, phase, freq, wires, d=2):
     >>> fr0, fr1, fr2 = qubit_freqs
     >>> params = [max_amp0, fr0, max_amp1, fr1, max_amp2, fr2]
     >>> qnode(params)
-    Array(2.25098131, dtype=float64)
+    Array(-1.44726531, dtype=float64)
     >>> jax.grad(qnode)(params)
-    [Array(-0.96356123, dtype=float64),
-     Array(-0.0189564, dtype=float64),
-     Array(-0.58581467, dtype=float64),
-     Array(0.24023855, dtype=float64),
-     Array(-1.30009675, dtype=float64),
-     Array(-0.10709503, dtype=float64)]
+    [Array(23.29654346, dtype=float64),
+     Array(1.40236881, dtype=float64),
+     Array(7.79013035, dtype=float64),
+     Array(-4.33877283, dtype=float64),
+     Array(-27.53388596, dtype=float64),
+     Array(7.65313594, dtype=float64)]
 
     """
     if d != 2:
