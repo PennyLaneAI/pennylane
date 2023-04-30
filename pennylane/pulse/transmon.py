@@ -298,13 +298,13 @@ def transmon_drive(amplitude, phase, freq, wires, d=2):
     **Example**
 
     We can construct a drive term acting on qubit ``0`` in the following way. We parametrize the amplitude and phase
-    via :math:`\Omega(t)/(2 \pi) = A \times \sin^2(\pi t)` and :math:`\phi(t) = \phi (t - \frac{1}{2})`. The squared
+    via :math:`\Omega(t)/(2 \pi) = A \times \sin^2(\pi t)` and :math:`\phi(t) = \phi_0 (t - \frac{1}{2})`. The squared
     sine ensures that the amplitude will be strictly positive (a requirement for some hardware).
 
     .. code-block:: python3
 
         def amp(A, t): return A * jnp.sin(jnp.pi*t) ** 2
-        def phase(phi, t): return phi * (t - 0.5)
+        def phase(phi0, t): return phi0 * (t - 0.5)
 
         H = qml.pulse.transmon_drive(amp, phase, 0, 0)
 

@@ -216,9 +216,9 @@ def rydberg_drive(amplitude, phase, detuning, wires):
 
     >>> params = [2.4]
     >>> circuit(params)
-    Array(0.84661337, dtype=float64)
+    Array(0.78301974, dtype=float64)
     >>> jax.grad(circuit)(params)
-    [Array(-0.11262448, dtype=float64)]
+    [Array(-0.6250622, dtype=float64)]
 
     We can also create a Hamiltonian with local drives. The following circuit corresponds to the
     evolution where additional local drives acting on wires ``0`` and ``1`` respectively are added to the
@@ -253,14 +253,14 @@ def rydberg_drive(amplitude, phase, detuning, wires):
 
 
     >>> circuit_local(params)
-    Array(0.95960342, dtype=float64)
+    Array(0.62640288, dtype=float64)
     >>> jax.grad(circuit_local)(params)
-    [Array(0.00359322, dtype=float64),
-     [Array(0.03340537, dtype=float64, weak_type=True),
-      Array(0.06455033, dtype=float64, weak_type=True)],
-     Array(-0.03469173, dtype=float64),
-     Array(0.00101306, dtype=float64),
-     Array(-0.00022775, dtype=float64)]
+    [Array(1.07614151, dtype=float64),
+     [Array(0.36370049, dtype=float64, weak_type=True),
+      Array(0.91057498, dtype=float64, weak_type=True)],
+     Array(1.3166343, dtype=float64),
+     Array(-0.11102892, dtype=float64),
+     Array(-0.02205843, dtype=float64)]
     """
     wires = Wires(wires)
     trivial_detuning = not callable(detuning) and qml.math.isclose(detuning, 0.0)
