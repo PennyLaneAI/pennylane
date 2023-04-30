@@ -115,7 +115,7 @@ def transmon_interaction(
     >>> print(H)
     ParametrizedHamiltonian: terms=10
 
-    We can also provide individual values for each of the qubit energies and connections.
+    We can also provide individual values for each of the qubit energies and coupling strengths, here of order :math:`0.1 \times 2\pi\text{GHz}` and :math:`1 \times 2\pi\text{GHz}`, respectively.
 
     .. code-block::
 
