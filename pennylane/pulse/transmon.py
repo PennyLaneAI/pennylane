@@ -39,14 +39,15 @@ def ad(wire, d=2):
 
 # pylint: disable=too-many-arguments
 def transmon_interaction(
-    omega: Union[float, list],
+    qubit_freq: Union[float, list],
     connections: list,
-    g: Union[float, list],
+    coupling: Union[float, list],
     wires: list,
     anharmonicity=None,
     d=2,
 ):
-    r"""Returns a :class:`ParametrizedHamiltonian` representing the circuit QED Hamiltonian of a superconducting transmon system.
+    r"""Returns a :class:`ParametrizedHamiltonian` representing the circuit QED Hamiltonian of a
+    superconducting transmon system.
 
     The Hamiltonian is given by
 
@@ -57,13 +58,15 @@ def transmon_interaction(
         + \sum_{q\in \text{wires}} \alpha_q a^\dagger_q a^\dagger_q a_q a_q
 
     where :math:`[a^\dagger_p, a_q] = i \delta_{pq}` are bosonic creation and annihilation operators.
-    The first term describes the dressed qubit frequencies :math:`\omega_q`, the second term their
-    coupling :math:`g_{ij}` and the last the anharmonicity :math:`\alpha_q`, which all can vary for
+    The first term describes the effect of the dressed qubit frequencies ``qubit_freq`` :math:`= \omega_q/ (2\pi)`,
+    the second term their ``coupling`` :math:`= g_{ij}/(2\pi)` and the last the
+    ``anharmonicity`` :math:`= \alpha_q/(2\pi)`, which all can vary for
     different qubits. In practice, the bosonic operators are restricted to a finite dimension of the
     local Hilbert space (default ``d=2`` corresponds to qubits).
     In that case, the anharmonicity is set to :math:`\alpha=0` and ignored.
 
-    The values of :math:`\omega` and :math:`\alpha` are typically around :math:`5 \times 2\pi \text{GHz}` and :math:`0.3 \times 2\pi \text{GHz}`, respectively.
+    The values of :math:`\omega` and :math:`\alpha` are typically around :math:`5 \times 2\pi \text{GHz}`
+    and :math:`0.3 \times 2\pi \text{GHz}`, respectively.
     It is common for different qubits to be out of tune with different energy gaps. The coupling strength
     :math:`g` typically varies betwewen :math:`[0.001, 0.1] \times 2\pi \text{GHz}`. For some example parameters,
     see e.g. `arXiv:1804.04073 <https://arxiv.org/abs/1804.04073>`_,
@@ -76,15 +79,21 @@ def transmon_interaction(
         :func:`~.transmon_drive`
 
     Args:
-        omega (Union[float, list[float]]): List of dressed qubit frequencies in GHz. Needs to match the length of ``wires``.
-            When passing a single float all qubits are assumed to have that same frequency.
+        qubit_freq (Union[float, list[float]]): List of dressed qubit frequencies. This should be in units
+            of frequency (GHz), and will be converted to angular frequency :math:`\omega` internally where
+            needed, i.e. multiplied by :math:`2 \pi`. When passing a single float all qubits are assumed to
+            have that same frequency.
         connections (list[tuple(int)]): List of connections ``(i, j)`` between qubits i and j.
             When the wires in ``connections`` are not contained in ``wires``, a warning is raised.
-        g (Union[float, list[float]]): List of coupling strengths in GHz. Needs to match the length of ``connections``.
+        coupling (Union[float, list[float]]): List of coupling strengths. This should be in units
+            of frequency (GHz), and will be converted to angular frequency internally where
+            needed, i.e. multiplied by :math:`2 \pi`. Needs to match the length of ``connections``.
             When passing a single float need explicit ``wires``.
-        anharmonicity (Union[float, list[float]]): List of anharmonicities in GHz. Ignored when ``d=2``.
+        anharmonicity (Union[float, list[float]]): List of anharmonicities. This should be in units
+            of frequency (GHz), and will be converted to angular frequency internally where
+            needed, i.e. multiplied by :math:`2 \pi`. Ignored when ``d=2``.
             When passing a single float all qubits are assumed to have that same anharmonicity.
-        wires (list): Needs to be of the same length as omega. Note that there can be additional
+        wires (list): Needs to be of the same length as qubit_freq. Note that there can be additional
             wires in the resulting operator from the ``connections``, which are treated independently.
         d (int): Local Hilbert space dimension. Defaults to ``d=2`` and is currently the only supported value.
 
@@ -98,7 +107,7 @@ def transmon_interaction(
     .. code-block::
 
         connections = [[0, 1], [1, 3], [2, 1], [4, 5]]
-        H = qml.pulse.transmon_interaction(omega=0.5, connections=connections, g=1., wires=range(6))
+        H = qml.pulse.transmon_interaction(qubit_freq=0.5, connections=connections, coupling=1., wires=range(6))
 
     The resulting :class:`~.ParametrizedHamiltonian` consists of ``4`` coupling terms and ``6`` qubits
     because there are six different wire indices in ``connections``.
@@ -106,13 +115,16 @@ def transmon_interaction(
     >>> print(H)
     ParametrizedHamiltonian: terms=10
 
-    We can also provide individual values for each of the qubit energies and connections.
+    We can also provide individual values for each of the qubit energies and coupling strengths, here of order :math:`0.1 \times 2\pi\text{GHz}` and :math:`1 \times 2\pi\text{GHz}`, respectively.
 
     .. code-block::
 
-        omega = [0.5, 0.4, 0.3, 0.2, 0.1, 0.]
-        g = [1., 2., 3., 4.]
-        H = qml.pulse.transmon_interaction(omega=omega, connections=connections, g=g, wires=range(6))
+        qubit_freqs = [0.5, 0.4, 0.3, 0.2, 0.1, 0.]
+        couplings= [1., 2., 3., 4.]
+        H = qml.pulse.transmon_interaction(qubit_freq=qubit_freqs,
+                                           connections=connections,
+                                           coupling=couplings,
+                                           wires=range(6))
 
     The interaction term is dependent only on the typically fixed transmon energies and coupling strengths.
     Executing this as a pulse program via :func:`~.evolve` would correspond to all driving fields being turned off.
@@ -145,45 +157,56 @@ def transmon_interaction(
         anharmonicity = [0.0] * n_wires
 
     # TODO: make coefficients callable / trainable. Currently not supported
-    if qml.math.ndim(omega) == 0:
-        omega = [omega] * n_wires
-    if len(omega) != n_wires:
+    if qml.math.ndim(qubit_freq) == 0:
+        qubit_freq = [qubit_freq] * n_wires
+    if len(qubit_freq) != n_wires:
         raise ValueError(
-            f"Number of qubit frequencies omega = {omega} does not match the provided wires = {wires}"
+            f"Number of qubit frequencies in {qubit_freq} does not match the provided wires = {wires}"
         )
 
-    if qml.math.ndim(g) == 0:
-        g = [g] * len(connections)
-    if len(g) != len(connections):
+    if qml.math.ndim(coupling) == 0:
+        coupling = [coupling] * len(connections)
+    if len(coupling) != len(connections):
         raise ValueError(
-            f"Number of coupling terms {g} does not match the provided connections = {connections}"
+            f"Number of coupling terms {coupling} does not match the provided connections = {connections}"
         )
+
+    settings = TransmonSettings(connections, qubit_freq, coupling, anharmonicity=anharmonicity)
+
+    omega = [callable_freq_to_angular(f) if callable(f) else (2 * np.pi * f) for f in qubit_freq]
+    g = [callable_freq_to_angular(c) if callable(c) else (2 * np.pi * c) for c in coupling]
 
     # qubit term
     coeffs = list(omega)
     observables = [ad(i, d) @ a(i, d) for i in wires]
 
-    # coupling term term
+    # coupling term
     coeffs += list(g)
     observables += [ad(i, d) @ a(j, d) + ad(j, d) @ a(i, d) for (i, j) in connections]
 
     # TODO Qudit support. Currently not supported but will be in the future.
     # if d>2:
-    #     if anharmonicity is None:
-    #         anharmonicity = [0.] * n_wires
     #     if qml.math.ndim(anharmonicity)==0:
     #         anharmonicity = [anharmonicity] * n_wires
     #     if len(anharmonicity) != n_wires:
     #         raise ValueError(f"Number of qubit anharmonicities anharmonicity = {anharmonicity} does not match the provided wires = {wires}")
     #     # anharmonicity term
-    #     coeffs += list(anharmonicity)
+    #     alpha = [2 * np.pi * a for a in anharmonicity]
+    #     coeffs += list(alpha)
     #     observables += [ad(i, d) @ ad(i, d) @ a(i, d) @ a(i, d) for i in wires]
-
-    settings = TransmonSettings(connections, omega, g, anharmonicity=anharmonicity)
 
     return HardwareHamiltonian(
         coeffs, observables, settings=settings, reorder_fn=_reorder_AmpPhaseFreq
     )
+
+
+def callable_freq_to_angular(fn):
+    """Add a factor of 2pi to a callable result to convert from Hz to rad/s"""
+
+    def angular_fn(p, t):
+        return 2 * np.pi * fn(p, t)
+
+    return angular_fn
 
 
 @dataclass
@@ -194,32 +217,34 @@ class TransmonSettings:
 
     Args:
             connections (List): List `[[idx_q0, idx_q1], ..]` of connected qubits (wires)
-            omega (List[float, Callable]):
+            qubit_freq (List[float, Callable]):
+            coupling (List[list, TensorLike, Callable]):
             anharmonicity (List[float, Callable]):
-            g (List[list, TensorLike, Callable]):
 
     """
 
     connections: List
-    omega: Union[float, Callable]
-    g: Union[list, TensorLike, Callable]
+    qubit_freq: Union[float, Callable]
+    coupling: Union[list, TensorLike, Callable]
     anharmonicity: Union[float, Callable]
 
     def __eq__(self, other):
         return (
             qml.math.all(self.connections == other.connections)
-            and qml.math.all(self.omega == other.omega)
-            and qml.math.all(self.g == other.g)
+            and qml.math.all(self.qubit_freq == other.qubit_freq)
+            and qml.math.all(self.coupling == other.coupling)
             and qml.math.all(self.anharmonicity == other.anharmonicity)
         )
 
     def __add__(self, other):
         if other is not None:
             new_connections = list(self.connections) + list(other.connections)
-            new_omega = list(self.omega) + list(other.omega)
-            new_g = list(self.g) + list(other.g)
+            new_qubit_freq = list(self.qubit_freq) + list(other.qubit_freq)
+            new_coupling = list(self.coupling) + list(other.coupling)
             new_anh = list(self.anharmonicity) + list(other.anharmonicity)
-            return TransmonSettings(new_connections, new_omega, new_g, anharmonicity=new_anh)
+            return TransmonSettings(
+                new_connections, new_qubit_freq, new_coupling, anharmonicity=new_anh
+            )
 
         return self
 
@@ -235,8 +260,8 @@ def transmon_drive(amplitude, phase, freq, wires, d=2):
 
     where :math:`[a^\dagger_p, a_q] = i \delta_{pq}` are bosonic creation and annihilation operators
     and :math:`q` is the qubit label (``wires``).
-    The arguments ``amplitude``, ``phase`` and ``freq`` correspond to :math:`\Omega`, :math:`\phi`
-    and :math:`\nu`, respectively, and can all be either fixed numbers (``float``) or depend on time
+    The arguments ``amplitude``, ``phase`` and ``freq`` correspond to :math:`\Omega / (2\pi)`, :math:`\phi`
+    and :math:`\nu / (2\pi)`, respectively, and can all be either fixed numbers (``float``) or depend on time
     (``callable``). If they are time-dependent, they need to abide by the restrictions imposed
     in :class:`ParametrizedHamiltonian` and have a signature of two parameters, ``(params, t)``.
 
@@ -256,12 +281,14 @@ def transmon_drive(amplitude, phase, freq, wires, d=2):
         :func:`~.rydberg_drive`, :func:`~.transmon_interaction`
 
     Args:
-        amplitude (Union[float, callable]): The amplitude :math:`\Omega(t)` (in GHz).
+        amplitude (Union[float, callable]): Float or callable representing the amplitude of the driving field.
+            This should be in units of frequency (GHz), and will be converted to angular frequency
+            :math:`\Omega(t)` internally where needed, i.e. multiplied by :math:`2 \pi`.
+        phase (Union[float, callable]): Float or callable returning phase :math:`\phi(t)` (in radians).
             Can be a fixed number (``float``) or depend on time (``callable``)
-        phase (Union[float, callable]): The phase :math:`\phi(t)` (in radians).
-            Can be a fixed number (``float``) or depend on time (``callable``)
-        freq (Union[float, callable]): The drive frequency :math:`\nu` (in GHz).
-            Can be a fixed number (``float``) or depend on time (``callable``)
+        freq (Union[float, callable]): Float or callable representing the frequency of the driving field.
+            This should be in units of frequency (GHz), and will be converted to angular frequency
+            :math:`\nu(t)` internally where needed, i.e. multiplied by :math:`2 \pi`.
         wires (Union[int, list[int]]): Label of the qubit that the drive acts upon. Can be a list of multiple wires.
         d (int): Local Hilbert space dimension. Defaults to ``d=2`` and is currently the only supported value.
 
@@ -271,39 +298,46 @@ def transmon_drive(amplitude, phase, freq, wires, d=2):
     **Example**
 
     We can construct a drive term acting on qubit ``0`` in the following way. We parametrize the amplitude and phase
-    via :math:`\Omega(t) = \Omega_{\text{max}} \sin(\pi t)` and :math:`\phi(t) = \phi (t - \frac{1}{2})`.
+    via :math:`\Omega(t)/(2 \pi) = A \times \sin^2(\pi t)` and :math:`\phi(t) = \phi_0 (t - \frac{1}{2})`. The squared
+    sine ensures that the amplitude will be strictly positive (a requirement for some hardware).
 
     .. code-block:: python3
 
-        def amp(max_amp, t): return max_amp * jnp.sin(jnp.pi*t)
-        def phase(phi, t): return phi * (t - 0.5)
+        def amp(A, t): return A * jnp.sin(jnp.pi*t) ** 2
+        def phase(phi0, t): return phi0 * (t - 0.5)
 
         H = qml.pulse.transmon_drive(amp, phase, 0, 0)
 
         t = 0.5
-        max_amp = 0.1
+        A = 0.1
         phi = 0.001
-        params = [max_amp, phi]
+        params = [A, phi]
 
-    Evaluated at :math:`t = \frac{1}{2}` with the parameters :math:`\Omega_{\text{max}} = 0.1` and :math:`\phi = 10^{-3}` we obtain
-    :math:`\Omega_{\text{max}} \left(\frac{1}{2}(\sigma^x + i \sigma^y) + \frac{1}{2}(\sigma^x + i \sigma^y)\right) = \Omega_{\text{max}} \sigma^x`.
+    Evaluated at :math:`t = \frac{1}{2}` with the parameters :math:`A = 0.1` and :math:`\phi = 10^{-3}` we obtain
+    :math:`2 \pi A \left(\frac{1}{2}(\sigma^x + i \sigma^y) + \frac{1}{2}(\sigma^x + i \sigma^y)\right) = 2 \pi A \sigma^x = 0.63 \sigma^x`.
 
     >>> H(params, t)
-    (0.1*(PauliX(wires=[0]))) + (0.0*(-1*(PauliY(wires=[0]))))
+    (0.6283185307179586*(PauliX(wires=[0]))) + (0.0*(-1*(PauliY(wires=[0]))))
 
     We can combine ``transmon_drive()`` with :func:`~.transmon_interaction` to create a full driven transmon Hamiltonian.
-    Let us look at a chain of three transmon qubits that are coupled with their direct neighbors. We provide all numbers in
-    units of :math:`2\pi\text{GHz}`. We parametrize the amplitude as a sinusodial and make the maximum amplitude
-    as well as the drive frequency trainable parameters. We simulate the evolution for a time window of :math:`[0, 5]\text{ns}`.
+    Let us look at a chain of three transmon qubits that are coupled with their direct neighbors. We provide all
+    frequencies in GHz (conversion to angular frequency, i.e. multiplication by :math:`2 \pi`, is taken care of
+    internally where needed).
+
+    We use values around :math:`\omega = 5 \times 2\pi \text{GHz}` for resonant frequencies, and coupling strenghts
+    on the order of around :math:`g = 0.01 \times 2\pi \text{GHz}`.
+
+    We parametrize the amplitude as a squared sinusodial and make the maximum amplitude as well as the drive frequency
+    trainable parameters. We simulate the evolution for a time window of :math:`[0, 5]\text{ns}`.
 
     .. code-block:: python3
 
         qubit_freqs = [5.1, 5., 5.3]
-        connections = [[0, 1], [1, 2]]
+        connections = [[0, 1], [1, 2]]  # qubits 0 and 1 are coupled, as are 1 and 2
         g = [0.02, 0.05]
         H = qml.pulse.transmon_interaction(qubit_freqs, connections, g, wires=range(3))
 
-        def amp(max_amp, t): return max_amp * jnp.sin(t)
+        def amp(max_amp, t): return max_amp * jnp.sin(t) ** 2
         def freq(fr, t): return fr
         phase = 0.
         t=2
@@ -320,8 +354,8 @@ def transmon_drive(amplitude, phase, freq, wires, d=2):
             qml.evolve(H)(params, t=5.)
             return qml.expval(qml.PauliZ(0) + qml.PauliZ(1) + qml.PauliZ(2))
 
-    We evaluate the Hamiltonian with some arbitrarily chosen maximum amplitudes and set
-    the drive frequency equal to the qubit frequencies. Note how the order of the construction
+    We evaluate the Hamiltonian with some arbitrarily chosen maximum amplitudes (here on the order of :math:`0.5 \times 2\pi \text{GHz}`)
+    and set the drive frequency equal to the qubit frequencies. Note how the order of the construction
     of ``H`` determines the order with which the parameters need to be passed to
     :class:`~.ParametrizedHamiltonian` and :func:`~.evolve`. We made the drive frequencies
     trainable parameters by providing a constant callable above instead of fixed values.
@@ -331,14 +365,14 @@ def transmon_drive(amplitude, phase, freq, wires, d=2):
     >>> fr0, fr1, fr2 = qubit_freqs
     >>> params = [max_amp0, fr0, max_amp1, fr1, max_amp2, fr2]
     >>> qnode(params)
-    Array(2.25098131, dtype=float64)
+    Array(-1.44726531, dtype=float64)
     >>> jax.grad(qnode)(params)
-    [Array(-0.96356123, dtype=float64),
-     Array(-0.0189564, dtype=float64),
-     Array(-0.58581467, dtype=float64),
-     Array(0.24023855, dtype=float64),
-     Array(-1.30009675, dtype=float64),
-     Array(-0.10709503, dtype=float64)]
+    [Array(23.29654346, dtype=float64),
+     Array(1.40236881, dtype=float64),
+     Array(7.79013035, dtype=float64),
+     Array(-4.33877283, dtype=float64),
+     Array(-27.53388596, dtype=float64),
+     Array(7.65313594, dtype=float64)]
 
     """
     if d != 2:
@@ -370,7 +404,7 @@ def transmon_drive(amplitude, phase, freq, wires, d=2):
 class AmplitudeAndPhaseAndFreq:
     """Class storing combined amplitude, phase and freq callables"""
 
-    def __init__(self, trig_fn, amp, phase, freq):
+    def __init__(self, trig_fn, amp, phase, freq, hz_to_rads=2 * np.pi):
         self.amp_is_callable = callable(amp)
         self.phase_is_callable = callable(phase)
         self.freq_is_callable = callable(freq)
@@ -380,7 +414,11 @@ class AmplitudeAndPhaseAndFreq:
         if self.amp_is_callable and self.phase_is_callable and self.freq_is_callable:
 
             def callable_amp_and_phase_and_freq(params, t):
-                return amp(params[0], t) * trig_fn(phase(params[1], t) + freq(params[2], t) * t)
+                return (
+                    hz_to_rads
+                    * amp(params[0], t)
+                    * trig_fn(phase(params[1], t) + hz_to_rads * freq(params[2], t) * t)
+                )
 
             self.func = callable_amp_and_phase_and_freq
             return
@@ -390,7 +428,11 @@ class AmplitudeAndPhaseAndFreq:
         if self.amp_is_callable and self.phase_is_callable:
 
             def callable_amp_and_phase(params, t):
-                return amp(params[0], t) * trig_fn(phase(params[1], t) + freq * t)
+                return (
+                    hz_to_rads
+                    * amp(params[0], t)
+                    * trig_fn(phase(params[1], t) + hz_to_rads * freq * t)
+                )
 
             self.func = callable_amp_and_phase
             return
@@ -398,7 +440,11 @@ class AmplitudeAndPhaseAndFreq:
         if self.amp_is_callable and self.freq_is_callable:
 
             def callable_amp_and_freq(params, t):
-                return amp(params[0], t) * trig_fn(phase + freq(params[1], t) * t)
+                return (
+                    hz_to_rads
+                    * amp(params[0], t)
+                    * trig_fn(phase + hz_to_rads * freq(params[1], t) * t)
+                )
 
             self.func = callable_amp_and_freq
             return
@@ -406,7 +452,11 @@ class AmplitudeAndPhaseAndFreq:
         if self.phase_is_callable and self.freq_is_callable:
 
             def callable_phase_and_freq(params, t):
-                return amp * trig_fn(phase(params[0], t) + freq(params[1], t) * t)
+                return (
+                    hz_to_rads
+                    * amp
+                    * trig_fn(phase(params[0], t) + hz_to_rads * freq(params[1], t) * t)
+                )
 
             self.func = callable_phase_and_freq
             return
@@ -416,7 +466,7 @@ class AmplitudeAndPhaseAndFreq:
         if self.amp_is_callable:
 
             def callable_amp(params, t):
-                return amp(params[0], t) * trig_fn(phase + freq * t)
+                return hz_to_rads * amp(params[0], t) * trig_fn(phase + hz_to_rads * freq * t)
 
             self.func = callable_amp
             return
@@ -424,7 +474,7 @@ class AmplitudeAndPhaseAndFreq:
         if self.phase_is_callable:
 
             def callable_phase(params, t):
-                return amp * trig_fn(phase(params[0], t) + freq * t)
+                return hz_to_rads * amp * trig_fn(phase(params[0], t) + hz_to_rads * freq * t)
 
             self.func = callable_phase
             return
@@ -432,7 +482,7 @@ class AmplitudeAndPhaseAndFreq:
         if self.freq_is_callable:
 
             def callable_freq(params, t):
-                return amp * trig_fn(phase + freq(params[0], t) * t)
+                return hz_to_rads * amp * trig_fn(phase + hz_to_rads * freq(params[0], t) * t)
 
             self.func = callable_freq
             return
@@ -441,7 +491,7 @@ class AmplitudeAndPhaseAndFreq:
         # (the remaining coeff is still callable due to explicit time dependence)
 
         def no_callable(_, t):
-            return amp * trig_fn(phase + freq * t)
+            return hz_to_rads * amp * trig_fn(phase + hz_to_rads * freq * t)
 
         self.func = no_callable
 
