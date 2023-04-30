@@ -113,6 +113,7 @@ class TestResources:
         r7 = Resources(4, 2, {"Hadamard": 1, "CNOT": 1}, 1, 100)  # diff depth
         r8 = Resources(4, 2, {"Hadamard": 1, "CNOT": 1}, 2, 1)  # diff shots
 
+        # pylint: disable=unnecessary-dunder-call
         assert r1.__eq__(r1)
         assert r1.__eq__(r2)
         assert r1.__eq__(r3)
