@@ -130,7 +130,7 @@ def rydberg_drive(amplitude, phase, detuning, wires):
         \frac{1}{2} \Omega(t) \sum_{q \in \text{wires}} (\cos(\phi(t))\sigma_q^x - \sin(\phi(t))\sigma_q^y) -
         \delta(t) \sum_{q \in \text{wires}} n_q
 
-    where :math:`\Omega`, :math:`\phi` and :math:`\delta` correspond to the amplitude, phase,
+    where :math:`\Omega/(2\pi)`, :math:`\phi` and :math:`\delta/(2\pi)` correspond to the amplitude, phase,
     and detuning of the laser, :math:`q` corresponds to the wire index, and
     :math:`\sigma_q^\alpha` for :math:`\alpha = x,y` are the Pauli matrices on the corresponding
     qubit. Finally, :math:`n_q=\frac{1}{2}(\mathbb{I}_q-\sigma_q^z)` is the number operator on qubit :math:`q`.
@@ -174,9 +174,9 @@ def rydberg_drive(amplitude, phase, detuning, wires):
     We provide all frequencies in the driving term in MHz (conversion to angular frequency, i.e. multiplication
     by :math:`2 \pi`, is taken care of internally where needed). Phase (in radians) will not undergo unit conversion.
 
-    For the driving field, we specify a detuning on the order of
-    :math:`\delta / (2 * \pi) = \frac{1}{2\pi} \text{MHz}`, and an
-    amplitude :math:`\Omega(t) / (2 \pi)` defined by a sinusoidal oscillation, squared to ensure a positve amplitude
+    For the driving field, we specify a detuning of
+    :math:`\delta = 1 \times 2 \pi \text{MHz}`, and an
+    amplitude :math:`\Omega(t)` defined by a sinusoidal oscillation, squared to ensure a positve amplitude
     (a requirement for some hardware implementations). The maximum amplitude will dependent on the parameter ``p``
     passed to the amplitude function later, and should also be passed in units of MHz. We introduce a small phase
     shift as well, on the order of 1 rad.
@@ -187,9 +187,9 @@ def rydberg_drive(amplitude, phase, detuning, wires):
         wires = [0, 1, 2, 3]
         H_i = qml.pulse.rydberg_interaction(atom_coordinates, wires)
 
-        amplitude = lambda p, t: (p * jnp.sin(jnp.pi * t) ** 2)/(2 * jnp.pi)
+        amplitude = lambda p, t: p * jnp.sin(jnp.pi * t) ** 2
         phase = 0.25
-        detuning = 1 / (2 * np.pi)
+        detuning = 1.
         H_d = qml.pulse.rydberg_drive(amplitude, phase, detuning, wires)
 
     >>> H_i
@@ -209,16 +209,16 @@ def rydberg_drive(amplitude, phase, detuning, wires):
         dev = qml.device("default.qubit.jax", wires=wires)
         @qml.qnode(dev, interface="jax")
         def circuit(params):
-            qml.evolve(H_i + H_d)(params, t=[0, 3])
+            qml.evolve(H_i + H_d)(params, t=[0, 0.5])
             return qml.expval(qml.PauliZ(0))
 
-    Here we set a maximum amplitude of 2.4 MHz, and calculate the result of running the pulse program:
+    Here we set a maximum amplitude of :math:`2.4 \times 2 \pi \text{MHz}`, and calculate the result of running the pulse program:
 
     >>> params = [2.4]
     >>> circuit(params)
-    Array(0.7950459, dtype=float32)
+    Array(0.84661337, dtype=float64)
     >>> jax.grad(circuit)(params)
-    [Array(-0.6440226, dtype=float32)]
+    [Array(-0.11262448, dtype=float64)]
 
     We can also create a Hamiltonian with local drives. The following circuit corresponds to the
     evolution where additional local drives acting on wires ``0`` and ``1`` respectively are added to the
@@ -241,24 +241,26 @@ def rydberg_drive(amplitude, phase, detuning, wires):
         @jax.jit
         @qml.qnode(dev, interface="jax")
         def circuit_local(params):
-            qml.evolve(H)(params, t=[0, 3])
+            qml.evolve(H)(params, t=[0, 0.5])
             return qml.expval(qml.PauliZ(0))
 
-    >>> p_global = 2.4
-    >>> p_local_amp_0 = [1.3, -2.0]
-    >>> p_local_det_0 = -1.5
-    >>> p_local_amp_1 = -0.9
-    >>> p_local_det_1 = 3.1
-    >>> params = [p_global, p_local_amp_0, p_local_det_0, p_local_amp_1, p_local_det_1]
+        p_global = 2.4
+        p_local_amp_0 = [1.3, -2.0]
+        p_local_det_0 = -1.5
+        p_local_amp_1 = -0.9
+        p_local_det_1 = 3.1
+        params = [p_global, p_local_amp_0, p_local_det_0, p_local_amp_1, p_local_det_1]
+
+
     >>> circuit_local(params)
-    Array(0.76469827, dtype=float32)
+    Array(0.95960342, dtype=float64)
     >>> jax.grad(circuit_local)(params)
-    [Array(-0.19391689, dtype=float32),
-     [Array(-0.74057543, dtype=float32, weak_type=True),
-      Array(-1.8765249, dtype=float32, weak_type=True)],
-     Array(-3.0703192, dtype=float32),
-     Array(-0.05153497, dtype=float32),
-     Array(-0.07762932, dtype=float32)]
+    [Array(0.00359322, dtype=float64),
+     [Array(0.03340537, dtype=float64, weak_type=True),
+      Array(0.06455033, dtype=float64, weak_type=True)],
+     Array(-0.03469173, dtype=float64),
+     Array(0.00101306, dtype=float64),
+     Array(-0.00022775, dtype=float64)]
     """
     wires = Wires(wires)
     trivial_detuning = not callable(detuning) and qml.math.isclose(detuning, 0.0)
