@@ -220,7 +220,7 @@
       with qml.QueuingManager.stop_recording():
           # the decomposition does not un-queue the target
           target = qml.RX(np.pi/2, wires=0)
-      qml.ops.ctrl_decomp_bisect(target, (1,2,3,4,5))
+      qml.ops.ctrl_decomp_bisect(target, (1, 2, 3, 4, 5))
       return qml.state()
 
   print(qml.draw(circuit, expansion_strategy="device")())
@@ -630,6 +630,7 @@ Nothing for this release!
 
 * `ctrl_decomp_bisect` and `ctrl_decomp_zyz` are no longer used by default when decomposing
   controlled operations due to the presence of a global phase difference in the zyz decomposition of some target operators.
+  [(#4065)](https://github.com/PennyLaneAI/pennylane/pull/4065)
 
 * Fixed a bug where `qml.math.dot` returned a numpy array instead of an autograd array, breaking autograd derivatives
   in certain circumstances.
