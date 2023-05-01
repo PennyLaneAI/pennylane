@@ -1293,7 +1293,9 @@ class TestTrackerIntegration:
         # pylint: disable=unexpected-keyword-arg
         dev = nullqubit_device(wires=2)
 
-        class CustomResourceOperation(qml.resource.ResourcesOperation):  # pylint: disable=too-few-public-methods
+        class CustomResourceOperation(
+            qml.resource.ResourcesOperation
+        ):  # pylint: disable=too-few-public-methods
             def resources(self):
                 return qml.resource.Resources(
                     num_wires=2,
