@@ -454,15 +454,10 @@ def reduced_dm(state, indices, check_state=False, c_dtype="complex128"):
         # State vector
         density_matrix = _density_matrix_from_state_vector(state, indices, check_state)
         return density_matrix
-    elif len(shape) == 2 and shape[0] != shape[1]:
-        # Broadcasted state vector
+    if (len(shape) == 2 and shape[0] != shape[1]) or len(shape) == 3:
+        # Broadcasted state vector or broadcasted density matrix
         # WARNING: if the broadcasting dimension matches the state dim, this
         # will go unnoticed and be misinterpreted as a density matrix!
-        raise ValueError(
-            "Broadcasted density matrices are not supported yet. "
-            f"The batch dimension is {shape[0]}"
-        )
-    if len(shape) == 3:
         raise ValueError(
             "Broadcasted density matrices are not supported yet. "
             f"The batch dimension is {shape[0]}"
