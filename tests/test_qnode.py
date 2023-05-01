@@ -1208,6 +1208,7 @@ class TestIntegration:
     def test_conditional_ops_jax(self, jax_interface):
         """Test conditional operations with JAX."""
         import jax
+
         jax.config.update("jax_enable_x64", True)
 
         jnp = jax.numpy
