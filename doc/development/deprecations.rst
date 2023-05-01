@@ -16,7 +16,7 @@ Pending deprecations
   instead. Using a list of observables in ``QubitDevice.statistics`` is deprecated. Please use a
   ``QuantumTape`` instead.
 
-  - Still accessible in v0.28, v0.29
+  - Still accessible in v0.28, v0.29, v0.30
   - Will be removed in v0.31
 
 * The ``grouping`` module is deprecated. The functionality has been moved and
