@@ -32,15 +32,6 @@ from pennylane.queuing import QueuingManager
 from .composite import CompositeOp
 
 
-def op_sum(*summands, do_queue=True, id=None, lazy=True):
-    """This function is deprecated and will be removed soon. Please use :func:`sum` instead."""
-    warnings.warn(
-        "The `op_sum` function is deprecated and will be removed soon. Please use `sum` instead.",
-        UserWarning,
-    )
-    return sum(*summands, do_queue=do_queue, id=id, lazy=lazy)
-
-
 def sum(*summands, do_queue=True, id=None, lazy=True):
     r"""Construct an operator which is the sum of the given operators.
 
@@ -81,8 +72,6 @@ def sum(*summands, do_queue=True, id=None, lazy=True):
     array([[ 1,  1],
            [ 1, -1]])
     """
-    if len(summands) == 1 and isinstance(summands[0], qml.QNodeCollection):
-        return qml.collections.sum(summands[0])
     if lazy:
         return Sum(*summands, do_queue=do_queue, id=id)
 

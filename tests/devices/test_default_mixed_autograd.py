@@ -659,20 +659,3 @@ class TestHighLevelIntegration:
 
         grad = qml.grad(circuit)(weights)
         assert grad.shape == weights.shape
-
-    def test_qnode_collection_integration(self):
-        """Test that QNodeCollections does not work with the new return system."""
-        dev = qml.device("default.mixed", wires=2)
-
-        def ansatz(weights, **kwargs):
-            # pylint: disable=unused-argument
-            qml.RX(weights[0], wires=0)
-            qml.RY(weights[1], wires=1)
-            qml.CNOT(wires=[0, 1])
-
-        obs_list = [qml.PauliX(0) @ qml.PauliY(1), qml.PauliZ(0), qml.PauliZ(0) @ qml.PauliZ(1)]
-        with pytest.raises(
-            qml.QuantumFunctionError,
-            match="QNodeCollections does not support the new return system.",
-        ):
-            qml.map(ansatz, obs_list, dev, interface="autograd")
