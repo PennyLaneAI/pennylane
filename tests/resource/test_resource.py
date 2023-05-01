@@ -256,6 +256,7 @@ resources_data = (
     Resources(2, 7, {"Hadamard": 3, "RX": 2, "CNOT": 1, "CustomOp2": 1}, 5, 100),
 )  # Resources(wires, gates, gate_types, depth, shots)
 
+
 @pytest.mark.parametrize(
     "ops_and_shots, expected_resources", zip(lst_ops_and_shots, resources_data)
 )
