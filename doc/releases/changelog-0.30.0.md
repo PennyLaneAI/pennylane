@@ -635,6 +635,9 @@ Nothing for this release!
 
 <h3>Bug fixes 🐛</h3>
 
+* `ctrl_decomp_bisect` and `ctrl_decomp_zyz` are no longer used by default when decomposing
+  controlled operations due to the presence of a global phase difference in the zyz decomposition of some target operators.
+
 * Fixed a bug where `qml.math.dot` returned a numpy array instead of an autograd array, breaking autograd derivatives
   in certain circumstances.
   [(#4019)](https://github.com/PennyLaneAI/pennylane/pull/4019)
