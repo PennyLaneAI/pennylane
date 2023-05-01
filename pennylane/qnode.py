@@ -750,12 +750,11 @@ class QNode:
     def construct(self, args, kwargs):  # pylint: disable=too-many-branches
         """Call the quantum function with a tape context, ensuring the operations get queued."""
         old_interface = self.interface
-        shots = kwargs.pop("shots", None)
 
         if old_interface == "auto":
             self.interface = qml.math.get_interface(*args, *list(kwargs.values()))
 
-        self._tape = make_qscript(self.func, shots)(*args, **kwargs)
+        self._tape = make_qscript(self.func)(*args, **kwargs)
         self._qfunc_output = self.tape._qfunc_output
 
         params = self.tape.get_parameters(trainable_only=False)
@@ -836,7 +835,7 @@ class QNode:
         if not self._qfunc_uses_shots_arg:
             # If shots specified in call but not in qfunc signature,
             # interpret it as device shots value for this call.
-            override_shots = kwargs.get("shots", False)
+            override_shots = kwargs.pop("shots", False)
 
             if override_shots is not False:
                 # Since shots has changed, we need to update the preferred gradient function.
@@ -849,13 +848,6 @@ class QNode:
                 # pylint: disable=not-callable
                 # update the gradient function
                 set_shots(self._original_device, override_shots)(self._update_gradient_fn)()
-
-            else:
-                kwargs["shots"] = (
-                    self._original_device._raw_shot_sequence
-                    if self._original_device._shot_vector
-                    else self._original_device.shots
-                )
 
         # construct the tape
         self.construct(args, kwargs)

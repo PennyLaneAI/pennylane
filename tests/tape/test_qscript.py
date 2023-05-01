@@ -479,7 +479,7 @@ class TestInfomationProperties:
     def test_set_shots(self, shots, total_shots, shot_vector):
         qs = QuantumScript([], [])
         assert isinstance(qs.shots, Shots)
-        assert qs.shots.total_shots == None
+        assert qs.shots.total_shots is None
         assert qs.shots.shot_vector == ()
 
         qs.shots = shots
