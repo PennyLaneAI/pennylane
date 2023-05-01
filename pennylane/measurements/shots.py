@@ -14,6 +14,7 @@
 # pylint:disable=inconsistent-return-statements
 from collections import namedtuple
 from typing import Sequence, Tuple
+import copy
 
 ShotCopies = namedtuple("ShotCopies", ["shots", "copies"])
 """A namedtuple that represents a shot quantity being repeated some number of times.
@@ -153,6 +154,15 @@ class Shots:
             raise self._SHOT_ERROR
 
         self._frozen = True
+
+    def __deepcopy__(self, memo):
+        cls = self.__class__
+        shots = self.shot_vector if self.has_partitioned_shots else self.total_shots
+        result = cls.__new__(cls, shots)
+        memo[id(self)] = result
+        for k, v in self.__dict__.items():
+            setattr(result, k, copy.deepcopy(v, memo))
+        return result
 
     def __all_tuple_init__(self, shots: Sequence[Tuple]):
         res = []

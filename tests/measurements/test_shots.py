@@ -15,6 +15,7 @@
 Unit tests for :mod:`pennylane.shots`.
 """
 
+import copy
 import pytest
 
 from pennylane.measurements import Shots, ShotCopies
@@ -30,6 +31,14 @@ class TestShotsConstruction:
         x = Shots(123)
         y = Shots(x)
         assert y is x
+        assert y._frozen  # pylint:disable=protected-access
+
+    def test_deepcopy(self):
+        x = Shots([1, 1, 2, 3])
+        y = copy.deepcopy(x)
+        assert y is not x
+        assert y.total_shots == x.total_shots
+        assert all(ysv == xsv for ysv, xsv in zip(y.shot_vector, x.shot_vector))
         assert y._frozen  # pylint:disable=protected-access
 
     def test_None(self):
