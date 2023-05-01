@@ -39,6 +39,7 @@ test_shapes = [
     (2, 2, 2, 2, 2, 2),
 ]
 
+
 class TestFlatten:
     """Tests the flatten and unflatten functions"""
 

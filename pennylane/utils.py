@@ -20,7 +20,6 @@ from collections.abc import Iterable
 import functools
 import inspect
 import numbers
-import warnings
 
 
 import numpy as np

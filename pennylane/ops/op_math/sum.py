@@ -16,7 +16,6 @@ This file contains the implementation of the Sum class which contains logic for
 computing the sum of operations.
 """
 import itertools
-import warnings
 from copy import copy
 from functools import reduce
 from typing import List
