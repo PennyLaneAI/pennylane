@@ -835,7 +835,7 @@ class QNode:
         if not self._qfunc_uses_shots_arg:
             # If shots specified in call but not in qfunc signature,
             # interpret it as device shots value for this call.
-            override_shots = kwargs.pop("shots", False)
+            override_shots = kwargs.get("shots", False)
 
             if override_shots is not False:
                 # Since shots has changed, we need to update the preferred gradient function.
@@ -849,16 +849,15 @@ class QNode:
                 # update the gradient function
                 set_shots(self._original_device, override_shots)(self._update_gradient_fn)()
 
+            else:
+                kwargs["shots"] = (
+                    self._original_device._raw_shot_sequence
+                    if self._original_device._shot_vector
+                    else self._original_device.shots
+                )
+
         # construct the tape
         self.construct(args, kwargs)
-        if override_shots is not False:
-            self._tape.shots = override_shots
-        else:
-            self._tape.shots = (
-                self.device._raw_shot_sequence
-                if self.device._has_partitioned_shots()
-                else self.device.shots
-            )
 
         cache = self.execute_kwargs.get("cache", False)
         using_custom_cache = (

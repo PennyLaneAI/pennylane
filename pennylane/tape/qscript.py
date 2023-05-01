@@ -166,11 +166,14 @@ class QuantumScript:
     """Whether or not to queue the object. Assumed ``False`` for a vanilla Quantum Script, but may be
     True for its child Quantum Tape."""
 
-    def __init__(self, ops=None, measurements=None, prep=None, name=None, _update=True):
+    def __init__(
+        self, ops=None, measurements=None, prep=None, shots=None, name=None, _update=True
+    ):  # pylint: disable=too-many-arguments
         self.name = name
         self._prep = [] if prep is None else list(prep)
         self._ops = [] if ops is None else list(ops)
         self._measurements = [] if measurements is None else list(measurements)
+        self._shots = Shots(shots)
 
         self._par_info = []
         """list[dict[str, Operator or int]]: Parameter information.
@@ -188,7 +191,6 @@ class QuantumScript:
 
         self.is_sampled = False
         self.all_sampled = False
-        self._shots = Shots(None)
 
         self._obs_sharing_wires = []
         """list[.Observable]: subset of the observables that share wires with another observable,
@@ -1347,9 +1349,9 @@ class QuantumScript:
         return qasm_str
 
     @classmethod
-    def from_queue(cls, queue):
+    def from_queue(cls, queue, shots=None):
         """Construct a QuantumScript from an AnnotatedQueue."""
-        return cls(*process_queue(queue))
+        return cls(*process_queue(queue), shots=shots)
 
 
 class SpecsDict(dict):
@@ -1415,11 +1417,14 @@ def make_qscript(fn):
     """
 
     def wrapper(*args, **kwargs):
+        shots = kwargs.pop("shots", None)
+
         with AnnotatedQueue() as q:
             result = fn(*args, **kwargs)
 
-        qscript = QuantumScript.from_queue(q)
+        qscript = QuantumScript.from_queue(q, shots)
         qscript._qfunc_output = result
+
         return qscript
 
     return wrapper
