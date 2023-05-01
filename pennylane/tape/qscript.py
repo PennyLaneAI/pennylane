@@ -1374,7 +1374,7 @@ class SpecsDict(dict):
         return super().__getitem__(item)
 
 
-def make_qscript(fn):
+def make_qscript(fn, shots=None):
     """Returns a function that generates a qscript from a quantum function without any
     operation queuing taking place.
 
@@ -1383,6 +1383,7 @@ def make_qscript(fn):
 
     Args:
         fn (function): the quantum function to generate the qscript from
+        shots (int, Sequence[int]): number and/or batches of executions
 
     Returns:
         function: The returned function takes the same arguments as the quantum
@@ -1417,8 +1418,6 @@ def make_qscript(fn):
     """
 
     def wrapper(*args, **kwargs):
-        shots = kwargs.pop("shots", None)
-
         with AnnotatedQueue() as q:
             result = fn(*args, **kwargs)
 

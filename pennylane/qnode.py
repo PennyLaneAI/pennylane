@@ -750,11 +750,12 @@ class QNode:
     def construct(self, args, kwargs):  # pylint: disable=too-many-branches
         """Call the quantum function with a tape context, ensuring the operations get queued."""
         old_interface = self.interface
+        shots = kwargs.pop("shots", None)
 
         if old_interface == "auto":
             self.interface = qml.math.get_interface(*args, *list(kwargs.values()))
 
-        self._tape = make_qscript(self.func)(*args, **kwargs)
+        self._tape = make_qscript(self.func, shots)(*args, **kwargs)
         self._qfunc_output = self.tape._qfunc_output
 
         params = self.tape.get_parameters(trainable_only=False)
