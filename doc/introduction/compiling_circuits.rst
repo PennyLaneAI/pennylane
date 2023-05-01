@@ -340,7 +340,7 @@ observables and coefficients:
 
 This and more logic to manipulate Pauli observables is found in the :mod:`~.pennylane.pauli` module.
 
-Just-in-time compilation with Catlyst
+Just-in-time compilation with Catalyst
 -------------------------------------
 
 In addition to quantum circuit transformations, PennyLane also supports full

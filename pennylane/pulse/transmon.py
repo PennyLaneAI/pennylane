@@ -68,7 +68,7 @@ def transmon_interaction(
     The values of :math:`\omega` and :math:`\alpha` are typically around :math:`5 \times 2\pi \text{GHz}`
     and :math:`0.3 \times 2\pi \text{GHz}`, respectively.
     It is common for different qubits to be out of tune with different energy gaps. The coupling strength
-    :math:`g` typically varies betwewen :math:`[0.001, 0.1] \times 2\pi \text{GHz}`. For some example parameters,
+    :math:`g` typically varies between :math:`[0.001, 0.1] \times 2\pi \text{GHz}`. For some example parameters,
     see e.g. `arXiv:1804.04073 <https://arxiv.org/abs/1804.04073>`_,
     `arXiv:2203.06818 <https://arxiv.org/abs/2203.06818>`_, or `arXiv:2210.15812 <https://arxiv.org/abs/2210.15812>`_.
 
