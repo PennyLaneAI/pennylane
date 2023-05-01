@@ -6,6 +6,10 @@
 
 <h3>Improvements 🛠</h3>
 
+* Added a `shots` property to `QuantumScript`. This will allow shots to be tied to executions instead of devices more
+  concretely.
+  [(#4067)](https://github.com/PennyLaneAI/pennylane/pull/4067)
+
 <h3>Breaking changes 💔</h3>
 
 <h3>Deprecations 👋</h3>
