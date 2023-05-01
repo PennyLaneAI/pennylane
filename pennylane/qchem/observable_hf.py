@@ -15,11 +15,9 @@
 This module contains the functions needed for creating fermionic and qubit observables.
 """
 # pylint: disable= too-many-branches,
-from functools import lru_cache
-
 import pennylane as qml
 from pennylane import numpy as np
-from pennylane.pauli.utils import _pauli_mult, simplify
+from pennylane.pauli.utils import _get_pauli_map, _pauli_mult, simplify
 from pennylane.operation import Tensor
 
 
@@ -121,15 +119,6 @@ def qubit_observable(o_ferm, cutoff=1.0e-12):
     return simplify(qml.Hamiltonian(coeffs, ops), cutoff=cutoff)
 
 
-@lru_cache
-def get_pauli_map(n):
-    """Return Pauli gate objects on wires 0 up to n."""
-    return [
-        {"I": qml.Identity(i), "X": qml.PauliX(i), "Y": qml.PauliY(i), "Z": qml.PauliZ(i)}
-        for i in range(n + 1)
-    ]
-
-
 def jordan_wigner(op, notation="physicist"):
     r"""Convert a fermionic operator to a qubit operator using the Jordan-Wigner mapping.
 
@@ -201,7 +190,7 @@ def jordan_wigner(op, notation="physicist"):
                 del c[j]
 
     # Pauli gates objects pregenerated for speed
-    pauli_map = get_pauli_map(np.max(op))
+    pauli_map = _get_pauli_map(np.max(op))
     for i, term in enumerate(o):
         if len(term) == 0:
             o[i] = qml.Identity(0)

@@ -1480,3 +1480,15 @@ def _binary_matrix(terms, num_qubits, wire_map=None):
                 binary_matrix[idx][wire_map[wire]] = 1
 
     return binary_matrix
+
+
+@lru_cache
+def _get_pauli_map(n):
+    r"""Return Pauli gate objects on wires 0 up to n.
+
+    This function is used to accelerate ``qchem.observable_hf.jordan_wigner``.
+    """
+    return [
+        {"I": qml.Identity(i), "X": qml.PauliX(i), "Y": qml.PauliY(i), "Z": qml.PauliZ(i)}
+        for i in range(n + 1)
+    ]
