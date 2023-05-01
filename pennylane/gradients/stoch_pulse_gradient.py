@@ -81,8 +81,8 @@ def _split_evol_ops(op, word, word_wires, tau):
         before_t = jnp.concatenate([jnp.array([t0]), tau, jnp.array([t1])])
         after_t = before_t.copy()
     else:
-        before_t = jax.numpy.array([t0, tau])
-        after_t = jax.numpy.array([tau, t1])
+        before_t = jnp.array([t0, tau])
+        after_t = jnp.array([tau, t1])
 
     before_plus, before_minus = (
         op(op.data, before_t, return_intermediate=broadcast, **op.odeint_kwargs) for _ in range(2)
