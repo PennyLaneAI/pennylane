@@ -450,8 +450,9 @@ class TestInfomationProperties:
         assert len(specs) == 9
 
         gate_types = defaultdict(int, {"RX": 2, "Rot": 1, "CNOT": 1})
+        gate_sizes = defaultdict(int, {1: 3, 2: 1})
         expected_resources = qml.resource.Resources(
-            num_wires=3, num_gates=4, gate_types=gate_types, depth=3
+            num_wires=3, num_gates=4, gate_types=gate_types, gate_sizes=gate_sizes, depth=3
         )
         assert specs["resources"] == expected_resources
 
@@ -463,6 +464,18 @@ class TestInfomationProperties:
         assert specs["num_used_wires"] == 3
         assert specs["num_trainable_params"] == 5
         assert specs["depth"] == 3
+
+    def test_specs_warning(self, make_script):
+        """Test that a deprecation warning is displayed when trying to access deprecated
+        fields of the specs dictionary."""
+        deprecated_keys = ("gate_types", "gate_sizes", "num_operations", "num_used_wires", "depth")
+
+        qs = make_script
+        specs = qs.specs
+
+        for old_key in deprecated_keys:
+            with pytest.warns(UserWarning, match=f"The {old_key} key is deprecated"):
+                _ = specs[f"{old_key}"]
 
 
 class TestScriptCopying:

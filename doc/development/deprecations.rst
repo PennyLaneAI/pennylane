@@ -6,6 +6,19 @@ Deprecations
 Pending deprecations
 --------------------
 
+* The ``qml.specs`` dictionary will no longer support direct key access to certain keys. Instead
+  these quantities can be accessed as fields of the new ``Resources`` object saved under
+  ``specs_dict["resources"]``:
+
+  - ``num_operations`` will no longer be supported, use ``specs_dict["resources"].num_gates``
+  - ``num_used_wires`` will no longer be supported, use ``specs_dict["resources"].num_wires``
+  - ``gate_types`` will no longer be supported, use ``specs_dict["resources"].gate_types``
+  - ``gate_sizes`` will no longer be supported, use ``specs_dict["resources"].gate_sizes``
+  - ``depth`` will no longer be supported, use ``specs_dict["resources"].depth``
+
+  These keys are still accessible in v0.31 and will be removed in v0.32.
+
+
 * The argument ``argnum`` for gradient transforms using the Jax interface is replaced by ``argnums``.
 
   - ``argnum`` is automatically changed to ``argnums`` for gradient transforms using JAX and a warning is raised in v0.30

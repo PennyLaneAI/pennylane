@@ -31,6 +31,8 @@ class Resources:
         num_gates (int): number of gates
         gate_types (dict): dictionary storing operation names (str) as keys
             and the number of times they are used in the circuit (int) as values
+        gate_sizes (dict): dictionary storing the number of :math:`n` qubit gates in the circuit
+            as a key-value pair where :math:`n` is the key and the number of occurances is the value
         depth (int): the depth of the circuit defined as the maximum number of non-parallel operations
         shots (int): number of samples to generate
 
@@ -53,6 +55,7 @@ class Resources:
     num_wires: int = 0
     num_gates: int = 0
     gate_types: dict = field(default_factory=dict)
+    gate_sizes: dict = field(default_factory=dict)
     depth: int = 0
     shots: int = 0
 
@@ -64,10 +67,15 @@ class Resources:
         items = items.replace("',", ":")
         items = items.replace(")", "")
 
-        gate_str = ", ".join(
+        gate_type_str = ", ".join(
             [f"'{gate_name}': {count}" for gate_name, count in self.gate_types.items()]
         )
-        items += "\ngate_types:\n{" + gate_str + "}"
+        items += "\ngate_types:\n{" + gate_type_str + "}"
+
+        gate_size_str = ", ".join(
+            [f"{n_gate}: {count}" for n_gate, count in self.gate_sizes.items()]
+        )
+        items += "\ngate_sizes:\n{" + gate_size_str + "}"
         return items
 
     def _ipython_display_(self):
@@ -125,6 +133,7 @@ def _count_resources(tape, shots: int) -> Resources:
 
     num_gates = 0
     gate_types = defaultdict(int)
+    gate_sizes = defaultdict(int)
     for op in tape.operations:
         if isinstance(op, ResourcesOperation):
             op_resource = op.resources()
@@ -140,4 +149,4 @@ def _count_resources(tape, shots: int) -> Resources:
             gate_types[op.name] += 1
             num_gates += 1
 
-    return Resources(num_wires, num_gates, gate_types, depth, shots)
+    return Resources(num_wires, num_gates, gate_types, gate_sizes, depth, shots)
