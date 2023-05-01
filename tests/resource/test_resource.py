@@ -139,7 +139,6 @@ class TestResources:
         r8 = Resources(4, 2, {"Hadamard": 1, "CNOT": 1}, {1: 1, 2: 1}, 1, 100)  # diff depth
         r9 = Resources(4, 2, {"Hadamard": 1, "CNOT": 1}, {1: 1, 2: 1}, 2, 1)  # diff shots
 
-        # pylint: disable=unnecessary-dunder-call
         assert r1.__eq__(r1)
         assert r1.__eq__(r2)
         assert r1.__eq__(r3)
@@ -194,7 +193,11 @@ class _CustomOpWithResource(ResourcesOperation):  # pylint: disable=too-few-publ
 
     def resources(self):
         return Resources(
-            num_wires=self.num_wires, num_gates=3, gate_types={"Identity": 1, "PauliZ": 2}, depth=3
+            num_wires=self.num_wires,
+            num_gates=3,
+            gate_types={"Identity": 1, "PauliZ": 2},
+            gate_sizes={1: 3},
+            depth=3,
         )
 
 
@@ -245,12 +248,19 @@ lst_ops_and_shots = (
 
 resources_data = (
     Resources(),
-    Resources(2, 2, {"Hadamard": 1, "CNOT": 1}, 2, 0),
-    Resources(3, 3, {"PauliZ": 1, "CNOT": 1, "RX": 1}, 2, 10),
-    Resources(2, 6, {"Hadamard": 3, "RX": 2, "CNOT": 1}, 4, 100),
-    Resources(2, 5, {"Hadamard": 1, "CNOT": 1, "Identity": 1, "PauliZ": 2}, None, 0),
-    Resources(3, 7, {"PauliZ": 3, "CNOT": 1, "RX": 1, "Identity": 1, "CustomOp2": 1}, None, 10),
-    Resources(2, 7, {"Hadamard": 3, "RX": 2, "CNOT": 1, "CustomOp2": 1}, 5, 100),
+    Resources(2, 2, {"Hadamard": 1, "CNOT": 1}, {1: 1, 2: 1}, 2, 0),
+    Resources(3, 3, {"PauliZ": 1, "CNOT": 1, "RX": 1}, {1: 2, 2: 1}, 2, 10),
+    Resources(2, 6, {"Hadamard": 3, "RX": 2, "CNOT": 1}, {1: 5, 2: 1}, 4, 100),
+    Resources(2, 5, {"Hadamard": 1, "CNOT": 1, "Identity": 1, "PauliZ": 2}, {1: 4, 2: 1}, None, 0),
+    Resources(
+        3,
+        7,
+        {"PauliZ": 3, "CNOT": 1, "RX": 1, "Identity": 1, "CustomOp2": 1},
+        {1: 5, 2: 2},
+        None,
+        10,
+    ),
+    Resources(2, 7, {"Hadamard": 3, "RX": 2, "CNOT": 1, "CustomOp2": 1}, {1: 5, 2: 2}, 5, 100),
 )
 
 
