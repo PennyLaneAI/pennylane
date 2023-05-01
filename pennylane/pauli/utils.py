@@ -1379,22 +1379,23 @@ def _pauli_mult(p1, p2):
     """
     c = 1.0
 
-    t1 = [t[0] for t in p1]
-    t2 = [t[0] for t in p2]
-
+    t1 = np.array([t[0] for t in p1], dtype=int).reshape((1, -1))
+    t2 = np.array([t[0] for t in p2], dtype=int).reshape((-1, 1))
+    d = (t1 - t2) != 0
+    t1notint2 = np.all(d, axis=0)
+    t2notint1 = np.all(d, axis=1)
     k = []
 
-    for i in p1:
-        if i[0] in t1 and i[0] not in t2:
-            k.append((i[0], pauli_mult_dict[i[1]]))
-        for j in p2:
-            if j[0] in t2 and j[0] not in t1:
-                k.append((j[0], pauli_mult_dict[j[1]]))
-
-            if i[0] == j[0]:
-                k.append((i[0], pauli_mult_dict[i[1] + j[1]]))
-                if i[1] + j[1] in pauli_coeff:
-                    c = c * pauli_coeff[i[1] + j[1]]
+    for ip1, i in enumerate(p1):
+        if t1notint2[ip1]:
+            k.append(i)
+        for ip2, j in enumerate(p2):
+            if t2notint1[ip2]:
+                k.append(j)
+            elif i[0] == j[0]:
+                key = i[1] + j[1]
+                k.append((i[0], pauli_mult_dict[key]))
+                c *= pauli_coeff[key]
 
     for item in k:
         k_ = [i for i, x in enumerate(k) if x == item]
@@ -1429,12 +1430,26 @@ pauli_mult_dict = {
 }
 
 pauli_coeff = {
+    "XX": 1.0,
+    "YY": 1.0,
+    "ZZ": 1.0,
     "ZX": 1.0j,
     "XZ": -1.0j,
     "ZY": -1.0j,
     "YZ": 1.0j,
     "XY": 1.0j,
     "YX": -1.0j,
+    "IX": 1.0,
+    "IY": 1.0,
+    "IZ": 1.0,
+    "XI": 1.0,
+    "YI": 1.0,
+    "ZI": 1.0,
+    "I": 1.0,
+    "II": 1.0,
+    "X": 1.0,
+    "Y": 1.0,
+    "Z": 1.0,
 }
 
 
