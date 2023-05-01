@@ -15,6 +15,7 @@
 Unit tests for the HardwareHamiltonian class.
 """
 # pylint: disable=too-few-public-methods,redefined-outer-name,too-many-arguments
+# pylint: disable=import-outside-toplevel
 import numpy as np
 import pytest
 
@@ -32,6 +33,7 @@ from pennylane.wires import Wires
 
 
 def amp_phase_freq(amp, phase, freq, t, wire=0):
+    """Compute the transmon drive term for given amplitude, phase and frequency."""
     return amp * (
         np.cos(phase + freq * t) * qml.PauliX(wire) - np.sin(phase + freq * t) * qml.PauliY(wire)
     )
@@ -452,6 +454,8 @@ class TestTransmonSettings:
 
 
 class TestIntegration:
+    """Test integration with PennyLane."""
+
     @pytest.mark.jax
     def test_jitted_qnode(self):
         """Test that regular and jitted qnode yield same result"""

@@ -580,14 +580,15 @@ class TestResourceEstimation:
 
         assert len(specs) == 9
 
+        gate_sizes = defaultdict(int, {1: 3, 2: 1})
         gate_types = defaultdict(int, {"RX": 2, "Rot": 1, "CNOT": 1})
         expected_resources = qml.resource.Resources(
-            num_wires=3, num_gates=4, gate_types=gate_types, depth=3
+            num_wires=3, num_gates=4, gate_types=gate_types, gate_sizes=gate_sizes, depth=3
         )
         assert specs["resources"] == expected_resources
 
-        assert specs["gate_sizes"] == defaultdict(int, {1: 3, 2: 1})
-        assert specs["gate_types"] == defaultdict(int, {"RX": 2, "Rot": 1, "CNOT": 1})
+        assert specs["gate_sizes"] == gate_sizes
+        assert specs["gate_types"] == gate_types
         assert specs["num_operations"] == 4
         assert specs["num_observables"] == 2
         assert specs["num_diagonalizing_gates"] == 1
@@ -602,12 +603,14 @@ class TestResourceEstimation:
         specs1 = tape.specs
 
         assert len(specs1) == 9
-        assert specs1["gate_sizes"] == defaultdict(int, {1: 3, 2: 1})
-        assert specs1["gate_types"] == defaultdict(int, {"RX": 2, "Rot": 1, "CNOT": 1})
 
+        gate_sizes = defaultdict(int, {1: 3, 2: 1})
         gate_types = defaultdict(int, {"RX": 2, "Rot": 1, "CNOT": 1})
+        assert specs1["gate_sizes"] == gate_sizes
+        assert specs1["gate_types"] == gate_types
+
         expected_resoures = qml.resource.Resources(
-            num_wires=3, num_gates=4, gate_types=gate_types, depth=3
+            num_wires=3, num_gates=4, gate_types=gate_types, gate_sizes=gate_sizes, depth=3
         )
         assert specs1["resources"] == expected_resoures
 
@@ -627,12 +630,14 @@ class TestResourceEstimation:
         specs2 = tape.specs
 
         assert len(specs2) == 9
-        assert specs2["gate_sizes"] == defaultdict(int, {1: 4, 2: 2})
-        assert specs2["gate_types"] == defaultdict(int, {"RX": 2, "Rot": 1, "CNOT": 2, "RZ": 1})
 
+        gate_sizes = defaultdict(int, {1: 4, 2: 2})
         gate_types = defaultdict(int, {"RX": 2, "Rot": 1, "CNOT": 2, "RZ": 1})
+        assert specs2["gate_sizes"] == gate_sizes
+        assert specs2["gate_types"] == gate_types
+
         expected_resoures = qml.resource.Resources(
-            num_wires=5, num_gates=6, gate_types=gate_types, depth=4
+            num_wires=5, num_gates=6, gate_types=gate_types, gate_sizes=gate_sizes, depth=4
         )
         assert specs2["resources"] == expected_resoures
 
