@@ -642,6 +642,7 @@ class TestPassthruIntegration:
         assert np.allclose(np.diag(res_b), expected_b, atol=tol, rtol=0)
 
 
+# pylint: disable=too-few-public-methods
 class TestHighLevelIntegration:
     """Tests for integration with higher level components of PennyLane."""
 
