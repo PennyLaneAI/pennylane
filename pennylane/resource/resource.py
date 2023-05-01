@@ -51,6 +51,8 @@ class Resources:
         shots: 0
         gate_types:
         {'Hadamard': 1, 'CNOT': 1}
+        gate_sizes:
+        {1: 1, 2: 1}
     """
     num_wires: int = 0
     num_gates: int = 0
@@ -114,6 +116,8 @@ class ResourcesOperation(Operation):
         shots: 0
         gate_types:
         {}
+        gate_sizes:
+        {}
         """
 
 
@@ -143,10 +147,15 @@ def _count_resources(tape, shots: int) -> Resources:
 
             for d in op_resource.gate_types:
                 gate_types[d] += op_resource.gate_types[d]
+
+            for n in op_resource.gate_sizes:
+                gate_sizes[n] += op_resource.gate_sizes[n]
+
             num_gates += sum(op_resource.gate_types.values())
 
         else:
             gate_types[op.name] += 1
+            gate_sizes[len(op.wires)] += 1
             num_gates += 1
 
     return Resources(num_wires, num_gates, gate_types, gate_sizes, depth, shots)
