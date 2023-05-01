@@ -209,38 +209,31 @@
   [(#3851)](https://github.com/PennyLaneAI/pennylane/pull/3851)
 
   Three decompositions from [arXiv:2302.06377](https://arxiv.org/abs/2302.06377) are provided and
-  compare favourably to the already-available ZYZ decomposition:
+  compare favourably to the already-available `qml.ops.ctrl_decomp_zyz`:
 
   ```python
   wires = [0, 1, 2, 3, 4, 5]
   control_wires = wires[1:]
 
-  op = qml.RX(np.pi / 2, wires=0)
+  @qml.qnode(qml.device('default.qubit', wires=6))
+  def circuit():
+      with qml.QueuingManager.stop_recording():
+          # the decomposition does not un-queue the target
+          target = qml.RX(np.pi/2, wires=0)
+      qml.ops.ctrl_decomp_bisect(target, (1, 2, 3, 4, 5))
+      return qml.state()
 
-  with qml.tape.QuantumTape() as tape:
-      qml.ctrl(op, control=control_wires)
-  
-  with qml.tape.QuantumTape() as zyz_tape:
-      qml.RZ(np.pi / 2, wires=0)
-      qml.RY(np.pi / 4, wires=0)
-      qml.MultiControlledX(wires=control_wires + [0], control_values="11111", work_wires=[6, 7, 8])
-      qml.RY(-np.pi / 4, wires=0)
-      qml.MultiControlledX(wires=control_wires + [0], control_values="11111", work_wires=[6, 7, 8])
-      qml.RZ(-np.pi / 2, wires=0)
+  print(qml.draw(circuit, expansion_strategy="device")())
   ```
   
-  Fewer CNOT gates are used:
-
-  ```pycon
-  >>> tape.expand(depth=5).specs["gate_types"]["CNOT"]
-  60
-  >>> zyz_tape.expand(depth=5).specs["gate_types"]["CNOT"]
-  144
   ```
-  
-  The decompositions are applied automatically when expanding tapes or decomposing operations in
-  PennyLane, but can also be accessed directly using
-  [ctrl_decomp_bisect()](https://docs.pennylane.ai/en/stable/code/api/pennylane.ops.op_math.ctrl_decomp_bisect.html).
+  0: ──H─╭X──U(M0)─╭X──U(M0)†─╭X──U(M0)─╭X──U(M0)†──H─┤  State
+  1: ────├●────────│──────────├●────────│─────────────┤  State
+  2: ────├●────────│──────────├●────────│─────────────┤  State
+  3: ────╰●────────│──────────╰●────────│─────────────┤  State
+  4: ──────────────├●───────────────────├●────────────┤  State
+  5: ──────────────╰●───────────────────╰●────────────┤  State
+  ```
 
 * A new decomposition to `qml.SingleExcitation` has been added that halves the number of
   CNOTs required.
@@ -634,6 +627,10 @@ Nothing for this release!
   [(3977)](https://github.com/PennyLaneAI/pennylane/pull/3977)
 
 <h3>Bug fixes 🐛</h3>
+
+* `ctrl_decomp_bisect` and `ctrl_decomp_zyz` are no longer used by default when decomposing
+  controlled operations due to the presence of a global phase difference in the zyz decomposition of some target operators.
+  [(#4065)](https://github.com/PennyLaneAI/pennylane/pull/4065)
 
 * Fixed a bug where `qml.math.dot` returned a numpy array instead of an autograd array, breaking autograd derivatives
   in certain circumstances.
