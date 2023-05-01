@@ -33,12 +33,14 @@ class TestShotsConstruction:
         assert y is x
         assert y._frozen  # pylint:disable=protected-access
 
+        z = copy.copy(x)
+        assert z is x
+        assert z._frozen  # pylint:disable=protected-access
+
     def test_deepcopy(self):
         x = Shots([1, 1, 2, 3])
         y = copy.deepcopy(x)
-        assert y is not x
-        assert y.total_shots == x.total_shots
-        assert all(ysv == xsv for ysv, xsv in zip(y.shot_vector, x.shot_vector))
+        assert y is x
         assert y._frozen  # pylint:disable=protected-access
 
     def test_None(self):
