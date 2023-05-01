@@ -98,7 +98,7 @@ class CustomOpDepth2(ResourcesOperation):
     num_wires = 3
 
     def resources(self):
-        return Resources(num_wires=self.num_wires, depth=3)
+        return Resources(num_wires=self.num_wires, depth=2)
 
 
 class CustomOpDepth3(ResourcesOperation):
@@ -112,7 +112,7 @@ class CustomOpDepth4(ResourcesOperation):
     num_wires = 2
 
     def resources(self):
-        return Resources(num_wires=self.num_wires, depth=3)
+        return Resources(num_wires=self.num_wires, depth=4)
 
 
 class TestCircuitGraph:
