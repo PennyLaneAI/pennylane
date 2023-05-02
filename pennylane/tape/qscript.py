@@ -91,6 +91,8 @@ class QuantumScript:
         prep (Iterable[Operator]): Any state preparations to perform at the start of the circuit
 
     Keyword Args:
+        shots (None, int, Sequence[int], ~.pennylane.measurements.Shots): Number and/or batches of
+            shots for execution
         name (str): a name given to the quantum script
         _update=True (bool): Whether or not to set various properties on initialization. Setting
             ``_update=False`` reduces computations if the script is only an intermediary step.
@@ -152,6 +154,15 @@ class QuantumScript:
     >>> dev = qml.device('default.qubit', wires=(0,'a'))
     >>> qml.execute([qscript], dev, gradient_fn=None)
     [array([-0.77750694])]
+
+    Quantum scripts can also store information about the number and batches of
+    executions by setting the ``shots`` keyword argument. This information is internally
+    stored in a :class:`pennylane.measurements.Shots` object:
+
+    >>> s_vec = [1, 1, 2, 2, 2]
+    >>> qscript = QuantumScript([qml.Hadamard(0)], [qml.expval(qml.PauliZ(0))], shots=s_vec)
+    >>> qscript.shots.shot_vector
+    (ShotCopies(shots=1, copies=2), ShotCopies(shots=2, copies=3))
 
     ``ops``, ``measurements``, and ``prep`` are converted to lists upon initialization,
     so those arguments accept any iterable object:
@@ -368,11 +379,6 @@ class QuantumScript:
             ~.Shots: Object with shot information
         """
         return self._shots
-
-    @shots.setter
-    def shots(self, shots):
-        """Setter for shots information stored on the ``QuantumScript``."""
-        self._shots = Shots(shots)
 
     ##### Update METHODS ###############
 
@@ -1383,7 +1389,8 @@ def make_qscript(fn, shots=None):
 
     Args:
         fn (function): the quantum function to generate the qscript from
-        shots (int, Sequence[int]): number and/or batches of executions
+        shots (None, int, Sequence[int], ~.pennylane.measurements.Shots): number and/or
+            batches of executions
 
     Returns:
         function: The returned function takes the same arguments as the quantum

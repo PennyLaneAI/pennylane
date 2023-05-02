@@ -25,4 +25,5 @@
 
 This release contains contributions from (in alphabetical order):
 
+Mudit Pandey,
 Jay Soni,
