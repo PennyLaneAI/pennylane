@@ -334,7 +334,8 @@ def jacobian(func, argnum=None):
                     "PennyLane has a new return shape specification that"
                     " may not work well with autograd and more than one measurement. That may"
                     " be the source of the error. \n\n"
-                    "See the documentation of qml.enable_return for more information."
+                    "See the documentation here for more information:\n"
+                    "https://docs.pennylane.ai/en/stable/introduction/returns.html"
                 ) from e
             raise e
 

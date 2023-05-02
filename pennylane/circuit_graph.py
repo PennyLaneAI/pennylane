@@ -16,14 +16,16 @@ This module contains the CircuitGraph class which is used to generate a DAG (dir
 representation of a quantum circuit from an Operator queue.
 """
 # pylint: disable=too-many-branches,too-many-arguments,too-many-instance-attributes
+from numbers import Number
 from collections import namedtuple
 
 import numpy as np
 import rustworkx as rx
 
 import pennylane as qml
-from pennylane.measurements import SampleMP, StateMP
 from pennylane.wires import Wires
+from pennylane.resource import ResourcesOperation
+from pennylane.measurements import SampleMP, StateMP
 
 
 def _by_idx(x):
@@ -469,8 +471,56 @@ class CircuitGraph:
                 self._operation_graph = self._graph.subgraph(
                     list(self._graph.nodes().index(node) for node in self.operations)
                 )
-                self._depth = rx.dag_longest_path_length(self._operation_graph) + 1
+                self._extend_graph(self._operation_graph)
+                self._depth = (
+                    rx.dag_longest_path_length(
+                        self._operation_graph, weight_fn=lambda _, __, w: self._weight_func(w)
+                    )
+                    + 1
+                )
         return self._depth
+
+    @staticmethod
+    def _weight_func(weight):
+        """If weight is a number, use it!"""
+        if isinstance(weight, Number):
+            return weight
+        return 1
+
+    def _extend_graph(self, graph: rx.PyDiGraph) -> rx.PyDiGraph:
+        """Extend graph to account for custom depth operations"""
+        custom_depth_node_dict = {}
+        for op in self.operations:
+            if isinstance(op, ResourcesOperation) and (d := op.resources().depth) > 1:
+                custom_depth_node_dict[graph.nodes().index(op)] = d
+
+        def _link_graph(target_index, sub_graph, node_index):
+            """Link incoming and outgoing edges for the initial node to the sub-graph"""
+            if target_index == node_index:
+                return sub_graph.nodes().index(f"{node_index}.0")
+            return sub_graph.nodes().index(f"{node_index}.1")
+
+        for node_index, depth in custom_depth_node_dict.items():
+            # Construct sub_graph:
+            sub_graph = rx.PyDiGraph()
+            source_node, target_node = (f"{node_index}.0", f"{node_index}.1")
+
+            sub_graph.add_node(source_node)
+            sub_graph.add_node(target_node)
+
+            sub_graph.add_edge(
+                sub_graph.nodes().index(source_node),
+                sub_graph.nodes().index(target_node),
+                depth - 1,  # set edge weight as depth - 1
+            )
+
+            graph.substitute_node_with_subgraph(
+                node_index,
+                sub_graph,
+                lambda _, t, __: _link_graph(
+                    t, sub_graph, node_index  # pylint: disable=cell-var-from-loop
+                ),
+            )
 
     def has_path(self, a, b):
         """Checks if a path exists between the two given nodes.
