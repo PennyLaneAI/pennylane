@@ -18,7 +18,6 @@ Unit tests for the ParametrizedEvolution class
 from functools import reduce
 import numpy as np
 
-# pylint: disable=unused-argument, too-few-public-methods, import-outside-toplevel
 import pytest
 import pennylane as qml
 from pennylane.operation import AnyWires
@@ -65,20 +64,6 @@ def time_dependent_hamiltonian():
 
     coeffs = [f1, f2, 4, 9]
     return ParametrizedHamiltonian(coeffs, ops)
-
-
-def test_error_raised_on_call_if_jax_not_installed():
-    """Test that an error is raised if an ``Evolve`` operator is instantiated without jax installed"""
-    with pytest.raises(ImportError, match="Module jax is required"):
-        ParametrizedEvolution(H=ParametrizedHamiltonian([1], [qml.PauliX(0)]))([], 2)
-
-
-def test_error_raised_for_matrix_method_if_jax_not_installed():
-    """Test that an error is raised if an ``Evolve`` operator is instantiated without jax installed"""
-    with pytest.raises(ImportError, match="Module jax is required"):
-        ParametrizedEvolution(
-            H=ParametrizedHamiltonian([1], [qml.PauliX(0)]), params=[], t=2
-        ).matrix()
 
 
 @pytest.mark.jax

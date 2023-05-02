@@ -78,12 +78,12 @@ def defer_measurements(tape):
     >>> qnode = qml.QNode(transformed_qfunc, dev)
     >>> par = np.array(np.pi/2, requires_grad=True)
     >>> qnode(par)
-    tensor(-0.12269009, requires_grad=True)
+    tensor(0.43487747, requires_grad=True)
 
     We can also differentiate parameters passed to conditional operations:
 
     >>> qml.grad(qnode)(par)
-    -0.9924450321351936
+    tensor(-0.49622252, requires_grad=True)
     """
     measured_wires = {}
 
