@@ -431,7 +431,10 @@ class TestInfomationProperties:
         assert qs.specs["gate_types"] == defaultdict(int)
 
         gate_types = defaultdict(int)
-        assert qs.specs["resources"] == qml.resource.Resources(gate_types=gate_types)
+        gate_sizes = defaultdict(int)
+        assert qs.specs["resources"] == qml.resource.Resources(
+            gate_types=gate_types, gate_sizes=gate_sizes
+        )
 
         assert qs.specs["num_operations"] == 0
         assert qs.specs["num_observables"] == 0
@@ -454,12 +457,14 @@ class TestInfomationProperties:
 
         assert len(specs) == 9
 
-        assert specs["gate_sizes"] == defaultdict(int, {1: 3, 2: 1})
-        assert specs["gate_types"] == defaultdict(int, {"RX": 2, "Rot": 1, "CNOT": 1})
-
+        gate_sizes = defaultdict(int, {1: 3, 2: 1})
         gate_types = defaultdict(int, {"RX": 2, "Rot": 1, "CNOT": 1})
+
+        assert specs["gate_sizes"] == gate_sizes
+        assert specs["gate_types"] == gate_types
+
         assert specs["resources"] == qml.resource.Resources(
-            num_wires=3, num_gates=4, gate_types=gate_types, depth=3
+            num_wires=3, num_gates=4, gate_types=gate_types, gate_sizes=gate_sizes, depth=3
         )
 
         assert specs["num_operations"] == 4

@@ -21,6 +21,7 @@ import contextlib
 import copy
 from collections import Counter, defaultdict
 from typing import List, Union
+import warnings
 
 import pennylane as qml
 from pennylane.measurements import (
@@ -1176,17 +1177,21 @@ class QuantumScript:
         shots: 0
         gate_types:
         {'Hadamard': 2, 'RX': 1, 'CNOT': 2, 'Rot': 1}
+        gate_sizes:
+        {1: 4, 2: 2}
         """
         if self._specs is None:
             resources = qml.resource.resource._count_resources(
                 self, shots=0
             )  # pylint: disable=protected-access
 
-            self._specs = {
-                "resources": resources,
-                "gate_sizes": defaultdict(int),
-                "gate_types": defaultdict(int),
-            }
+            self._specs = SpecsDict(
+                {
+                    "resources": resources,
+                    "gate_sizes": defaultdict(int),
+                    "gate_types": defaultdict(int),
+                }
+            )
 
             for op in self.operations:
                 # don't use op.num_wires to allow for flexible gate classes like QubitUnitary
@@ -1329,6 +1334,26 @@ class QuantumScript:
     def from_queue(cls, queue):
         """Construct a QuantumScript from an AnnotatedQueue."""
         return cls(*process_queue(queue))
+
+
+class SpecsDict(dict):
+    """A dictionary to track and warn about deprecated keys"""
+
+    old_to_new_key_map = {
+        "gate_types": "gate_types",
+        "gate_sizes": "gate_sizes",
+        "num_operations": "num_gates",
+        "num_used_wires": "num_wires",
+        "depth": "depth",
+    }
+
+    def __getitem__(self, item):
+        if item in self.old_to_new_key_map:
+            warnings.warn(
+                f"The {item} key is deprecated and will be removed in the next release. "
+                f'Going forward, please use: qml.specs()["resources"].{self.old_to_new_key_map[item]}'
+            )
+        return super().__getitem__(item)
 
 
 def make_qscript(fn):
