@@ -20,7 +20,6 @@ import numpy as np
 
 import pennylane as qml
 
-from pennylane._device import _get_num_copies
 from pennylane.pulse import ParametrizedEvolution
 from pennylane.ops.qubit.special_unitary import pauli_basis_matrices, pauli_basis_strings
 
@@ -29,7 +28,7 @@ from .parameter_shift import (
     _make_zero_rep,
     _reorder_grads,
 )
-from .stoch_pulse_gradient import _assert_has_jax, _split_evol_tapes
+from .stoch_pulse_gradient import _assert_has_jax
 from .gradient_transform import (
     assert_active_return,
     assert_no_state_returns,
@@ -41,7 +40,6 @@ from .gradient_transform import (
 
 try:
     import jax
-    import jax.numpy as jnp
 except ImportError:
     # Handling the case where JAX is not installed is done via _assert_has_jax
     pass
@@ -67,8 +65,6 @@ def _get_one_parameter_generators(op):
     # if len(qml.math.shape(theta)) > 1:
     # raise ValueError("Broadcasting is not supported.")
 
-    num_wires = len(op.wires)
-
     def _compute_matrix(*args, **kwargs):
         return op(*args, **kwargs).matrix()
 
@@ -80,10 +76,8 @@ def _get_one_parameter_generators(op):
     U_dagger = qml.math.conj(_compute_matrix([qml.math.detach(d) for d in data], t=op.t))
     # After contracting, move the parameter derivative axis to the first position
     return tuple(
-        [
-            qml.math.moveaxis(qml.math.tensordot(U_dagger, j, axes=[[0], [0]]), (0, 1), (-2, -1))
-            for j in jac
-        ]
+        qml.math.moveaxis(qml.math.tensordot(U_dagger, j, axes=[[0], [0]]), (0, 1), (-2, -1))
+        for j in jac
     )
 
 
@@ -120,11 +114,8 @@ def _get_one_parameter_paulirot_coeffs(op):
     num_wires = len(op.wires)
     basis = pauli_basis_matrices(num_wires)
     return tuple(
-        [
-            qml.math.real(2j * qml.math.tensordot(basis, g, axes=[[1, 2], [-1, -2]]))
-            / 2**num_wires
-            for g in generators
-        ]
+        qml.math.real(2j * qml.math.tensordot(basis, g, axes=[[1, 2], [-1, -2]])) / 2**num_wires
+        for g in generators
     )
 
 
