@@ -24,8 +24,5 @@
 
 This release contains contributions from (in alphabetical order):
 
-<<<<<<< HEAD
-Christina Lee
-=======
-Jay Soni,
->>>>>>> 2931e4ad0a98a72bbb5a597cc315468ad65549e4
+Christina Lee,
+Jay Soni
