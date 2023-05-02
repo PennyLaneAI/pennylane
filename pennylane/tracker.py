@@ -121,6 +121,28 @@ class Tracker:
         >>> tracker.totals['executions']
         2
 
+        When used with the null qubit device (eg. ``dev = qml.device("null.qubit")``), we also track the resources
+        used in the circuit.
+
+        >>> dev = qml.device("null.qubit", wires=[0])
+        >>> @qml.qnode(dev)
+        ... def circuit(x):
+        ...     qml.RX(x, wires=0)
+        ...     return qml.expval(qml.PauliZ(0))
+        ...
+        >>> with qml.Tracker(dev) as tracker:
+        ...     circuit(0.1)
+        ...
+        >>> resources_lst = tracker.history['resources']
+        >>> print(resources_lst[0])
+        wires: 1
+        gates: 1
+        depth: 1
+        shots: 0
+        gate_types:
+        {"RX": 1}
+        gate_sizes:
+        {1: 1}
     """
 
     def __init__(self, dev=None, callback=None, persistent=False):
