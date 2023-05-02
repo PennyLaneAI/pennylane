@@ -25,6 +25,7 @@ class TestNewDeviceIntegration:
     def test_warning_if_not_device_batch_transform(self):
         """Test that a warning is raised if the users requests to not run device batch transform."""
 
+        # pylint: disable=too-few-public-methods
         class CustomOp(qml.operation.Operator):
             """Dummy operator."""
 
