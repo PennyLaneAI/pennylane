@@ -248,13 +248,13 @@ def test_custom_wiremap_hamiltonian_pyscf(symbols, geometry, method, wiremap, tm
         (
             ["H", "H"],
             np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 2.0]]),
-            ["a", "b", "c", "d"],
+            [0, "z", 3, "ancilla"],
             None,
         ),
         (
             ["H", "H"],
             np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 2.0]]),
-            ["a", "b", "c", "d"],
+            [0, "z", 3, "ancilla"],
             [np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 2.0]])],
         ),
     ],
@@ -269,7 +269,7 @@ def test_custom_wiremap_hamiltonian_dhf(symbols, geometry, wiremap, args, tmpdir
         outpath=tmpdir.strpath,
     )
 
-    assert set(hamiltonian.wires) == set(wiremap)
+    assert list(hamiltonian.wires) == list(wiremap)
 
 
 file_content = """\

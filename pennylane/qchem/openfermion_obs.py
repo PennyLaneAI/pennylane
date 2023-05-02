@@ -939,20 +939,27 @@ def molecular_hamiltonian(
         )
         if args is None:
             h = qml.qchem.diff_hamiltonian(mol, core=core, active=active)()
+            if grouping_type:
+                h = qml.Hamiltonian(
+                    qml.numpy.real(h.coeffs, requires_grad=False),
+                    h.ops,
+                    grouping_type=grouping_type,
+                    method=grouping_method,
+                )
             if wires:
                 h = qml.map_wires(h, wires_map)
-            return qml.Hamiltonian(
+            return h, 2 * len(active)
+        h = qml.qchem.diff_hamiltonian(mol, core=core, active=active)(*args)
+        if grouping_type:
+            h = qml.Hamiltonian(
                 qml.numpy.real(h.coeffs, requires_grad=False),
                 h.ops,
                 grouping_type=grouping_type,
                 method=grouping_method,
-            ), 2 * len(active)
-        h = qml.qchem.diff_hamiltonian(mol, core=core, active=active)(*args)
+            )
         if wires:
             h = qml.map_wires(h, wires_map)
-        return qml.Hamiltonian(
-            qml.numpy.real(h.coeffs), h.ops, grouping_type=grouping_type, method=grouping_method
-        ), 2 * len(active)
+        return h, 2 * len(active)
 
     openfermion, _ = _import_of()
 
