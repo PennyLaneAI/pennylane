@@ -264,3 +264,32 @@ def test_norm_error(n, eta, omega, error, br, charge):
     r"""Test that norm raises an error with incorrect inputs."""
     with pytest.raises(ValueError, match="must be"):
         qml.resource.FirstQuantization.norm(n, eta, omega, error, br, charge)
+
+
+@pytest.mark.parametrize(
+    ("n", "eta", "omega", "vectors", "lamb", "g_cost", "q_cost"),
+    [
+        (
+            100000,
+            156,
+            1113.47,
+            np.array(
+                [
+                    [9.44862994, 0.0, 0.0],
+                    [0.0, 10.39349294, 0.0],
+                    [0.94486299, 0.94486299, 11.33835593],
+                ]
+            ),
+            817051.632523202,
+            151664625909497,
+            3331,
+        ),
+    ],
+)
+def test_fq_vals_non_qubic(n, eta, omega, vectors, lamb, g_cost, q_cost):
+    r"""Test that the FirstQuantization class computes correct attributes."""
+    est = qml.resource.FirstQuantization(n, eta, omega, cubic=False, vectors=vectors)
+
+    assert np.allclose(est.lamb, lamb)
+    assert np.allclose(est.gates, g_cost)
+    assert np.allclose(est.qubits, q_cost)
