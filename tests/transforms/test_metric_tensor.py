@@ -1225,7 +1225,7 @@ class TestFullMetricTensor:
     @pytest.mark.jax
     @pytest.mark.parametrize("ansatz, params", zip(fubini_ansatze, fubini_params))
     @pytest.mark.parametrize("interface", ["auto", "jax"])
-    def test_correct_output_jax_argnum_warning(self, ansatz, params, interface):
+    def test_correct_output_jax_argnum_error(self, ansatz, params, interface):
         from jax.config import config
 
         config.update("jax_enable_x64", True)
@@ -1243,16 +1243,11 @@ class TestFullMetricTensor:
             ansatz(*params, dev.wires[:-1])
             return qml.expval(qml.PauliZ(0))
 
-        with pytest.warns(
-            UserWarning,
-            match="argnum is deprecated with the Jax interface. You should use argnums instead.",
+        with pytest.raises(
+                qml.QuantumFunctionError,
+                match="argnum is deprecated with the Jax interface. You should use argnums " "instead.",
         ):
-            mt = qml.metric_tensor(circuit, argnum=range(len(params)), approx=None)(*params)
-
-        if isinstance(mt, tuple):
-            assert all(qml.math.allclose(_mt, _exp) for _mt, _exp in zip(mt, expected))
-        else:
-            assert qml.math.allclose(mt, expected)
+            qml.metric_tensor(circuit, argnum=range(len(params)), approx=None)(*params)
 
     @pytest.mark.torch
     @pytest.mark.parametrize("ansatz, params", zip(fubini_ansatze, fubini_params))
