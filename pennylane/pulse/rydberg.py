@@ -40,7 +40,7 @@ def rydberg_interaction(
         V_{ij} = \frac{C_6}{R_{ij}^6}
 
     where :math:`R_{ij}` is the distance between the atoms :math:`i` and :math:`j`, and :math:`C_6`
-    is the Rydberg interaction constant, which defaults to :math:`862690 \text{MHz} \times \mu \text{m}^6`.
+    is the Rydberg interaction constant, which defaults to :math:`862690 \times 2 \pi \text{MHz } \mu \text{m}^6`.
     The unit of time for the evolution of this Rydberg interaction term is in :math:`\mu \text{s}`.
     This interaction term can be combined with laser drive terms (:func:`~.rydberg_drive`) to create
     a Hamiltonian describing a driven Rydberg atom system.
@@ -54,10 +54,11 @@ def rydberg_interaction(
         wires (list): List of wires containing the wire values for all the atoms. This list should
             have the same length as ``register``. If ``None``, each atom's wire value will
             correspond to its index in the ``register`` list.
-        interaction_coeff (float): Rydberg interaction constant in units: :math:`\text{MHz} \times \mu \text{m}^6`.
-            Defaults to :math:`862690 \text{ MHz} \times \mu \text{m}^6`. This value is based on an assumption that
-            frequencies and energies in the Hamiltonian are provided in units of MHz.
-        max_distance (float): Threshold for distance in :math:`\mu \text{m}` between two Rydberg atoms beyond which their
+        interaction_coeff (float): Defaults to :math:`862690 \times 2 \pi \text{MHz } \mu\text{m}^6`.
+            The value will be multiplied by :math:`2 \pi` internally to convert to angular frequency,
+            such that only the value in standard frequency (i.e., 862690 in the default example) should be
+            passed.
+        max_distance (float): Threshold for distance in :math:`\mu\text{m}` between two Rydberg atoms beyond which their
             contribution to the interaction term is removed from the Hamiltonian.
 
     Returns:
@@ -106,7 +107,10 @@ def rydberg_interaction(
             atom_distance = np.linalg.norm(qml.math.array(pos2) - pos1)
             if atom_distance > max_distance:
                 continue
-            Vij = interaction_coeff / (abs(atom_distance) ** 6)  # van der Waals potential
+            # factor 2pi converts interaction coefficient from standard to angular frequency
+            Vij = (
+                2 * np.pi * interaction_coeff / (abs(atom_distance) ** 6)
+            )  # van der Waals potential
             coeffs.append(Vij)
             observables.append(qml.prod(qml.Projector([1], wire1), qml.Projector([1], wire2)))
             # Rydberg projectors
@@ -126,22 +130,29 @@ def rydberg_drive(amplitude, phase, detuning, wires):
         \frac{1}{2} \Omega(t) \sum_{q \in \text{wires}} (\cos(\phi(t))\sigma_q^x - \sin(\phi(t))\sigma_q^y) -
         \delta(t) \sum_{q \in \text{wires}} n_q
 
-    where :math:`\Omega`, :math:`\phi` and :math:`\delta` correspond to the amplitude, phase,
+    where :math:`\Omega/(2\pi)`, :math:`\phi` and :math:`\delta/(2\pi)` correspond to the amplitude, phase,
     and detuning of the laser, :math:`q` corresponds to the wire index, and
     :math:`\sigma_q^\alpha` for :math:`\alpha = x,y` are the Pauli matrices on the corresponding
     qubit. Finally, :math:`n_q=\frac{1}{2}(\mathbb{I}_q-\sigma_q^z)` is the number operator on qubit :math:`q`.
-    For hardware execution, time is expected to be in units
-    of :math:`\text{µs}`, and the frequency in units of :math:`\text{MHz}`. It is recommended to also follow
-    this convention for simulation, as it avoids numerical problems due to using very large and very small
-    numbers. This driving term can be combined with an interaction term to create a Hamiltonian describing a
+
+    .. note::
+        For hardware execution, input time is expected to be in units of :math:`\mu\text{s}`, and the frequency
+        in units of MHz. It is recommended to also follow this convention for simulation,
+        as it avoids numerical problems due to using very large and very small numbers. Frequency inputs will be
+        converted internally to angular frequency, such that ``amplitude`` :math:`= \Omega(t)/ (2 \pi)` and
+        ``detuning`` :math:`= \delta(t) / (2 \pi)`.
+
+    This driving term can be combined with an interaction term to create a Hamiltonian describing a
     driven Rydberg atom system. Multiple driving terms can be combined by summing them (see example).
 
     Args:
-        amplitude (Union[float, Callable]): float or callable returning the amplitude (in MHz) of a
-            laser field
-        phase (Union[float, Callable]): float or callable returning the phase (in radians) of the laser field
-        detuning (Union[float, Callable]): float or callable returning the detuning (in MHz) of a
-            laser field
+        amplitude (Union[float, Callable]): Float or callable representing the amplitude of a laser field.
+            This should be in units of frequency (MHz), and will be converted to amplitude in angular frequency,
+            :math:`\Omega(t)`, internally where needed, i.e. multiplied by :math:`2 \pi`.
+        phase (Union[float, Callable]): float or callable representing the phase (in radians) of the laser field
+        detuning (Union[float, Callable]): Float or callable representing the detuning of a laser field.
+            This should be in units of frequency (MHz), and will be converted to detuning in angular frequency,
+            :math:`\delta(t)`, internally where needed, i.e. multiplied by :math:`2 \pi`.
         wires (Union[int, List[int]]): integer or list containing wire values for the Rydberg atoms that
             the laser field acts on
 
@@ -158,7 +169,17 @@ def rydberg_drive(amplitude, phase, detuning, wires):
     We create a Hamiltonian describing a laser acting on 4 wires (Rydberg atoms) with a fixed detuning and
     phase, and a parametrized, time-dependent amplitude. The Hamiltonian includes an interaction term for
     inter-atom interactions due to van der Waals forces, as well as the driving term for the laser driving
-    the atoms:
+    the atoms.
+
+    We provide all frequencies in the driving term in MHz (conversion to angular frequency, i.e. multiplication
+    by :math:`2 \pi`, is taken care of internally where needed). Phase (in radians) will not undergo unit conversion.
+
+    For the driving field, we specify a detuning of
+    :math:`\delta = 1 \times 2 \pi \text{MHz}`, and an
+    amplitude :math:`\Omega(t)` defined by a sinusoidal oscillation, squared to ensure a positve amplitude
+    (a requirement for some hardware implementations). The maximum amplitude will dependent on the parameter ``p``
+    passed to the amplitude function later, and should also be passed in units of MHz. We introduce a small phase
+    shift as well, on the order of 1 rad.
 
     .. code-block:: python
 
@@ -166,9 +187,9 @@ def rydberg_drive(amplitude, phase, detuning, wires):
         wires = [0, 1, 2, 3]
         H_i = qml.pulse.rydberg_interaction(atom_coordinates, wires)
 
-        amplitude = lambda p, t: p * jnp.sin(jnp.pi * t)
-        phase = jnp.pi / 2
-        detuning = 3 * jnp.pi / 4
+        amplitude = lambda p, t: p * jnp.sin(jnp.pi * t) ** 2
+        phase = 0.25
+        detuning = 1.
         H_d = qml.pulse.rydberg_drive(amplitude, phase, detuning, wires)
 
     >>> H_i
@@ -188,14 +209,16 @@ def rydberg_drive(amplitude, phase, detuning, wires):
         dev = qml.device("default.qubit.jax", wires=wires)
         @qml.qnode(dev, interface="jax")
         def circuit(params):
-            qml.evolve(H_i + H_d)(params, t=[0, 10])
+            qml.evolve(H_i + H_d)(params, t=[0, 0.5])
             return qml.expval(qml.PauliZ(0))
+
+    Here we set a maximum amplitude of :math:`2.4 \times 2 \pi \text{MHz}`, and calculate the result of running the pulse program:
 
     >>> params = [2.4]
     >>> circuit(params)
-    Array(0.66322464, dtype=float32)
+    Array(0.78301974, dtype=float64)
     >>> jax.grad(circuit)(params)
-    [Array(1.5733964, dtype=float32)]
+    [Array(-0.6250622, dtype=float64)]
 
     We can also create a Hamiltonian with local drives. The following circuit corresponds to the
     evolution where additional local drives acting on wires ``0`` and ``1`` respectively are added to the
@@ -203,12 +226,12 @@ def rydberg_drive(amplitude, phase, detuning, wires):
 
     .. code-block:: python
 
-        amplitude_local_0 = lambda p, t: p[0] * jnp.sin(2 * jnp.pi * t) + p[1]
+        amplitude_local_0 = lambda p, t: p[0] * jnp.sin(2 * jnp.pi * t) ** 2 + p[1]
         phase_local_0 = jnp.pi / 4
         detuning_local_0 = lambda p, t: p * jnp.exp(-0.25 * t)
         H_local_0 = qml.pulse.rydberg_drive(amplitude_local_0, phase_local_0, detuning_local_0, [0])
 
-        amplitude_local_1 = lambda p, t: jnp.cos(jnp.pi * t) + p
+        amplitude_local_1 = lambda p, t: jnp.cos(jnp.pi * t) ** 2 + p
         phase_local_1 = jnp.pi
         detuning_local_1 = lambda p, t: jnp.sin(jnp.pi * t) + p
         H_local_1 = qml.pulse.rydberg_drive(amplitude_local_1, phase_local_1, detuning_local_1, [1])
@@ -218,24 +241,26 @@ def rydberg_drive(amplitude, phase, detuning, wires):
         @jax.jit
         @qml.qnode(dev, interface="jax")
         def circuit_local(params):
-            qml.evolve(H)(params, t=[0, 10])
+            qml.evolve(H)(params, t=[0, 0.5])
             return qml.expval(qml.PauliZ(0))
 
-    >>> p_global = 2.4
-    >>> p_local_amp_0 = [1.3, -2.0]
-    >>> p_local_det_0 = -1.5
-    >>> p_local_amp_1 = -0.9
-    >>> p_local_det_1 = 3.1
-    >>> params = [p_global, p_local_amp_0, p_local_det_0, p_local_amp_1, p_local_det_1]
+        p_global = 2.4
+        p_local_amp_0 = [1.3, -2.0]
+        p_local_det_0 = -1.5
+        p_local_amp_1 = -0.9
+        p_local_det_1 = 3.1
+        params = [p_global, p_local_amp_0, p_local_det_0, p_local_amp_1, p_local_det_1]
+
+
     >>> circuit_local(params)
-    Array(0.7526707, dtype=float32)
+    Array(0.62640288, dtype=float64)
     >>> jax.grad(circuit_local)(params)
-    [Array(-0.31931373, dtype=float32),
-     [Array(0.06391271, dtype=float32, weak_type=True),
-      Array(-0.14062276, dtype=float32, weak_type=True)],
-     Array(0.2604623, dtype=float32),
-     Array(0.15228909, dtype=float32),
-     Array(-0.9984372, dtype=float32)]
+    [Array(1.07614151, dtype=float64),
+     [Array(0.36370049, dtype=float64, weak_type=True),
+      Array(0.91057498, dtype=float64, weak_type=True)],
+     Array(1.3166343, dtype=float64),
+     Array(-0.11102892, dtype=float64),
+     Array(-0.02205843, dtype=float64)]
     """
     wires = Wires(wires)
     trivial_detuning = not callable(detuning) and qml.math.isclose(detuning, 0.0)
@@ -254,11 +279,12 @@ def rydberg_drive(amplitude, phase, detuning, wires):
 
     detuning_obs, detuning_coeffs = [], []
     if not trivial_detuning:
+        # 2pi factors are to convert detuning frequency to angular frequency
         detuning_obs.append(
             # Global phase from the number operator
-            -0.5 * sum(qml.Identity(wire) for wire in wires)
+            -0.5 * sum(qml.Identity(wire) for wire in wires) * np.pi * 2
             # Equivalent of the number operator up to the global phase above
-            + 0.5 * sum(qml.PauliZ(wire) for wire in wires)
+            + 0.5 * sum(qml.PauliZ(wire) for wire in wires) * np.pi * 2
         )
         detuning_coeffs.append(detuning)
 
