@@ -20,7 +20,7 @@ from pennylane import numpy as pnp
 from pennylane.devices import DefaultQubit
 from pennylane.measurements import State, Shots, density_matrix, expval, state
 
-# pylint: disable=no-member, comparison-with-callable
+# pylint: disable=no-member, comparison-with-callable, import-outside-toplevel
 
 
 class TestState:
@@ -345,6 +345,7 @@ class TestState:
 
 class TestDensityMatrix:
     """Tests for the density matrix function"""
+    # pylint: disable=too-many-public-methods
 
     @pytest.mark.parametrize("wires", range(2, 5))
     @pytest.mark.parametrize("dev_name", ["default.qubit", "default.mixed"])
