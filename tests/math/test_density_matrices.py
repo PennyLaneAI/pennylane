@@ -84,11 +84,16 @@ single_wires_list = [
 ]
 
 multiple_wires_list = [
-    [0, 1]
+    [0, 1],
+    [1, 0],
 ]
 # fmt: on
 
 c_dtypes = ["complex64", "complex128"]
+
+
+def permute_two_qubit_dm(dm):
+    return fn.reshape(fn.transpose(fn.reshape(dm, [2] * 4), [1, 0, 3, 2]), (4, 4))
 
 
 class TestDensityMatrixFromStateVectors:
@@ -114,7 +119,10 @@ class TestDensityMatrixFromStateVectors:
         """Test the density matrix from state vectors for full wires."""
         state_vector = array_func(state_vector)
         density_matrix = fn.quantum._density_matrix_from_state_vector(state_vector, indices=wires)
-        assert np.allclose(density_matrix, expected_density_matrix[2])
+        expected = expected_density_matrix[2]
+        if wires == [1, 0]:
+            expected = permute_two_qubit_dm(expected)
+        assert np.allclose(density_matrix, expected)
 
     @pytest.mark.parametrize("array_func", array_funcs)
     @pytest.mark.parametrize("state_vector", list(zip(*state_vectors))[0])
@@ -146,7 +154,10 @@ class TestDensityMatrixFromStateVectors:
         """Test the reduced_dm with state vectors for full wires."""
         state_vector = array_func(state_vector)
         density_matrix = fn.reduced_dm(state_vector, indices=wires)
-        assert np.allclose(density_matrix, expected_density_matrix[2])
+        expected = expected_density_matrix[2]
+        if wires == [1, 0]:
+            expected = permute_two_qubit_dm(expected)
+        assert np.allclose(density_matrix, expected)
 
     @pytest.mark.parametrize("array_func", array_funcs)
     @pytest.mark.parametrize("state_vector, expected_density_matrix", state_vectors)
@@ -157,8 +168,11 @@ class TestDensityMatrixFromStateVectors:
         """Test the density matrix from state vectors for single wires with state checking"""
         state_vector = array_func(state_vector)
         density_matrix = fn.quantum.reduced_dm(state_vector, indices=wires, check_state=True)
+        expected = expected_density_matrix[2]
+        if wires == [1, 0]:
+            expected = permute_two_qubit_dm(expected)
 
-        assert np.allclose(density_matrix, expected_density_matrix[2])
+        assert np.allclose(density_matrix, expected)
 
     def test_state_vector_wrong_shape(self):
         """Test that wrong shaped state vector raises an error with check_state=True"""
@@ -279,16 +293,6 @@ density_matrices = [
 class TestDensityMatrixFromMatrix:
     """Tests for the (reduced) density matrix for matrix."""
 
-    @pytest.mark.parametrize("array_func", array_funcs)
-    @pytest.mark.parametrize("density_matrix", list(zip(*density_matrices))[0])
-    def test_reduced_dm_raises_with_broadcasted_statevector(self, density_matrix, array_func):
-        """Test that an error is raised for a broadcasted density matrix."""
-        density_matrix = np.tensordot(np.exp([1j, -0.5j, 0]), density_matrix, axes=0)
-        density_matrix = array_func(density_matrix)
-
-        with pytest.raises(ValueError, match="Broadcasted density matrices"):
-            _ = fn.reduced_dm(density_matrix, indices=[0])
-
     @pytest.mark.parametrize("density_matrix, expected_density_matrix", density_matrices)
     @pytest.mark.parametrize("wires", single_wires_list)
     def test_reduced_dm_with_matrix_single_wires(
@@ -305,8 +309,14 @@ class TestDensityMatrixFromMatrix:
     ):
         """Test the reduced_dm with matrix for full wires."""
         returned_density_matrix = fn.reduced_dm(density_matrix, indices=wires)
-
-        assert np.allclose(density_matrix, returned_density_matrix)
+        expected = density_matrix
+        print(wires)
+        print(density_matrix)
+        if wires == [1, 0]:
+            expected = permute_two_qubit_dm(expected)
+        print(expected)
+        print(density_matrix)
+        assert np.allclose(returned_density_matrix, expected)
 
     @pytest.mark.parametrize("density_matrix, expected_density_matrix", density_matrices)
     @pytest.mark.parametrize("wires", multiple_wires_list)
@@ -315,7 +325,20 @@ class TestDensityMatrixFromMatrix:
         returned_density_matrix = fn.quantum._density_matrix_from_matrix(
             density_matrix, indices=wires, check_state=True
         )
-        assert np.allclose(density_matrix, returned_density_matrix)
+        expected = density_matrix
+        if wires == [1, 0]:
+            expected = permute_two_qubit_dm(expected)
+
+        assert np.allclose(returned_density_matrix, expected)
+
+    @pytest.mark.parametrize("array_func", array_funcs)
+    def test_reduced_dm_raises_with_broadcasted_dm(self, array_func):
+        """Test that an error is raised for a broadcasted density matrix."""
+        density_matrix = np.tensordot(np.exp([1j, -0.5j, 0]), mat_00, axes=0)
+        density_matrix = array_func(density_matrix)
+
+        with pytest.raises(ValueError, match="Broadcasted density matrices"):
+            _ = fn.reduced_dm(density_matrix, indices=[0])
 
     def test_matrix_wrong_shape(self):
         """Test that wrong shaped state vector raises an error with check_state=True"""
