@@ -221,15 +221,9 @@ def test_differentiable_hamiltonian(symbols, geometry, h_ref_data):
             "pyscf",
             ["a", "b", "c", "d"],
         ),
-        (
-            ["H", "H"],
-            np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 2.0]]),
-            "dhf",
-            ["a", "b", "c", "d"],
-        ),
     ],
 )
-def test_custom_wiremap_hamiltonian(symbols, geometry, method, wiremap, tmpdir):
+def test_custom_wiremap_hamiltonian_pyscf(symbols, geometry, method, wiremap, tmpdir):
     r"""Test that the generated Hamiltonian has the correct wire labels given by a custom wiremap."""
     hamiltonian, qubits = qchem.molecular_hamiltonian(
         symbols=symbols,
@@ -238,7 +232,39 @@ def test_custom_wiremap_hamiltonian(symbols, geometry, method, wiremap, tmpdir):
         wires=wiremap,
         outpath=tmpdir.strpath,
     )
+
     assert list(hamiltonian.wires) == wiremap
+
+
+@pytest.mark.parametrize(
+    ("symbols", "geometry", "wiremap"),
+    [
+        (
+            ["H", "H"],
+            np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 2.0]]),
+            ["a", "b", "c", "d"],
+        )
+    ],
+)
+def test_custom_wiremap_hamiltonian_dhf(symbols, geometry, wiremap, tmpdir):
+    r"""Test that the generated Hamiltonian has the correct wire labels given by a custom wiremap."""
+    hamiltonian_noargs, qubits = qchem.molecular_hamiltonian(
+        symbols=symbols,
+        coordinates=geometry,
+        wires=wiremap,
+        outpath=tmpdir.strpath,
+    )
+
+    hamiltonian_args, qubits = qchem.molecular_hamiltonian(
+        symbols=symbols,
+        coordinates=geometry,
+        wires=wiremap,
+        args=[geometry],
+        outpath=tmpdir.strpath,
+    )
+
+    assert list(hamiltonian_noargs.wires) == wiremap
+    assert list(hamiltonian_args.wires) == wiremap
 
 
 file_content = """\
