@@ -19,7 +19,6 @@ from collections.abc import Sequence
 import numpy as np
 
 import pennylane as qml
-from pennylane._device import _get_num_copies
 from pennylane.pulse import ParametrizedEvolution
 
 from .finite_difference import _all_zero_grad_new, _no_trainable_grad_new

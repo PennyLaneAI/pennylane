@@ -16,7 +16,6 @@ This module contains functions for computing the parameter-shift gradient
 of a qubit-based quantum tape.
 """
 # pylint: disable=protected-access,too-many-arguments,too-many-statements
-import warnings
 from collections.abc import Sequence
 from functools import partial
 
@@ -56,11 +55,13 @@ of that observable.
 """
 
 
-def assert_multimeasure_not_broadcasted(num_measurements, brodcast):
-    if broadcast and num_measurements > 1:
+def assert_multimeasure_not_broadcasted(measurements, broadcast):
+    """Assert that there are not simultaneously multiple measurements and
+    broadcasting activated.Otherwise raises an error."""
+    if broadcast and measurements > 1:
         raise NotImplementedError(
             "Broadcasting with multiple measurements is not supported yet. "
-            f"Set broadcast to False instead. The tape measurements are {tape.measurements}."
+            f"Set broadcast to False instead. The tape measurements are {measurements}."
         )
 
 
@@ -1508,8 +1509,8 @@ def param_shift(
             shots=shots,
         )
 
-    assert_no_state_returns(m := tape.measurements)
-    assert_multimeasure_not_broadcasted(len(m), broadcast)
+    assert_no_state_returns(tape.measurements)
+    assert_multimeasure_not_broadcasted(tape.measurements, broadcast)
 
     if argnum is None and not tape.trainable_params:
         return _no_trainable_grad_new(tape, shots)
