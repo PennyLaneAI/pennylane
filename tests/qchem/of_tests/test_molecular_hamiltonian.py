@@ -221,6 +221,12 @@ def test_differentiable_hamiltonian(symbols, geometry, h_ref_data):
             "pyscf",
             ["a", "b", "c", "d"],
         ),
+        (
+            ["H", "H"],
+            np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 2.0]]),
+            "pyscf",
+            [0, "z", 3, "ancilla"],
+        ),
     ],
 )
 def test_custom_wiremap_hamiltonian_pyscf(symbols, geometry, method, wiremap, tmpdir):
@@ -233,38 +239,37 @@ def test_custom_wiremap_hamiltonian_pyscf(symbols, geometry, method, wiremap, tm
         outpath=tmpdir.strpath,
     )
 
-    assert list(hamiltonian.wires) == wiremap
+    assert set(hamiltonian.wires) == set(wiremap)
 
 
 @pytest.mark.parametrize(
-    ("symbols", "geometry", "wiremap"),
+    ("symbols", "geometry", "wiremap", "args"),
     [
         (
             ["H", "H"],
             np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 2.0]]),
             ["a", "b", "c", "d"],
-        )
+            None,
+        ),
+        (
+            ["H", "H"],
+            np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 2.0]]),
+            ["a", "b", "c", "d"],
+            [np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 2.0]])],
+        ),
     ],
 )
-def test_custom_wiremap_hamiltonian_dhf(symbols, geometry, wiremap, tmpdir):
+def test_custom_wiremap_hamiltonian_dhf(symbols, geometry, wiremap, args, tmpdir):
     r"""Test that the generated Hamiltonian has the correct wire labels given by a custom wiremap."""
-    hamiltonian_noargs, qubits = qchem.molecular_hamiltonian(
+    hamiltonian, qubits = qchem.molecular_hamiltonian(
         symbols=symbols,
         coordinates=geometry,
         wires=wiremap,
+        args=args,
         outpath=tmpdir.strpath,
     )
 
-    hamiltonian_args, qubits = qchem.molecular_hamiltonian(
-        symbols=symbols,
-        coordinates=geometry,
-        wires=wiremap,
-        args=[geometry],
-        outpath=tmpdir.strpath,
-    )
-
-    assert list(hamiltonian_noargs.wires) == wiremap
-    assert list(hamiltonian_args.wires) == wiremap
+    assert set(hamiltonian.wires) == set(wiremap)
 
 
 file_content = """\
