@@ -17,7 +17,6 @@ This module contains the next generation successor to default qubit
 
 from typing import Union, Callable, Tuple, Optional, Sequence
 
-from pennylane import DeviceError
 from pennylane.tape import QuantumTape, QuantumScript
 
 from . import Device
@@ -119,11 +118,7 @@ class DefaultQubit2(Device):
         if execution_config.gradient_method == "adjoint":
             if circuit is None:
                 return True
-            try:
-                validate_and_expand_adjoint(circuit)
-                return True
-            except DeviceError:
-                return False
+            return isinstance(validate_and_expand_adjoint(circuit), QuantumScript)
 
         return False
 
