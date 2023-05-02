@@ -18,8 +18,13 @@
 
 <h3>Bug fixes 🐛</h3>
 
+* Fixes a bug where the wire ordering of the `wires` argument to `qml.density_matrix`
+  was not taken into account.
+  [(#4072)](https://github.com/PennyLaneAI/pennylane/pull/4072)
+
 <h3>Contributors ✍️</h3>
 
 This release contains contributions from (in alphabetical order):
 
 Jay Soni,
+David Wierichs,
