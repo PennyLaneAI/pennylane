@@ -241,7 +241,7 @@ def _stoch_pulse_grad(
         shots (None, int, list[int]): The shots of the device used to execute the tapes which are
             returned by this transform. Note that this argument does not *influence* the shots
             used for execution, but informs the transform about the shots to ensure a compatible
-            return value structure.
+            return value formatting.
         use_broadcasting (bool): Whether to use broadcasting across the different sampled
             splitting times. If ``False`` (the default), one set of modified tapes per
             splitting time is created, if ``True`` only a single set of broadcasted, modified

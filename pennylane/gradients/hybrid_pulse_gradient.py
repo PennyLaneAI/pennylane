@@ -38,6 +38,7 @@ from .gradient_transform import (
     gradient_analysis_and_validation,
     gradient_transform,
 )
+
 try:
     import jax
     import jax.numpy as jnp
@@ -47,180 +48,264 @@ except ImportError:
 
 
 def _get_one_parameter_generators(op):
-    r"""Compute the generators of one-parameter groups that reproduce
-    the partial derivatives of a parameterized evolution gate.
+    r"""Compute the effective generators of one-parameter groups that reproduce
+    the partial derivatives of a parameterized evolution.
 
     Args:
-        op (): TODO
+        op (`~.ParametrizedEvolution`): Parametrized evolution for which to compute the generator
 
     Returns:
-        tensor_like: The generators for one-parameter groups that reproduce the
-        partial derivatives of the special unitary gate.
-        The output shape is ``(num_params, 2**num_wires, 2**num_wires)`` where
-        ``num_params`` is the number of parameters of the parameterized evolution.
+        tuple[tensor_like]: The generators for one-parameter groups that reproduce the
+        partial derivatives of the parametrized evolution.
+        The ``k``\ th entry of the returned ``tuple`` has the shape ``(2**N, 2**N, *par_shape)``
+        where ``N`` is the number of qubits the evolution acts on and ``par_shape`` is the
+        shape of the ``k``\ th parameter of the evolution.
 
-    TODO:
-    Consider a special unitary gate parametrized in the following way:
-
-    .. math::
-
-        U(\theta) &= \exp\{A(\theta)\}\\
-        A(\theta) &= \sum_{m=1}^d i \theta_m P_m\\
-        P_m &\in \{I, X, Y, Z\}^{\otimes n} \setminus \{I^{\otimes n}\}
-
-    Then the partial derivatives of the gate can be shown to be given by
-
-    .. math::
-
-        \frac{\partial}{\partial \theta_\ell} U(\theta) = U(\theta)
-        \frac{\mathrm{d}}{\mathrm{d}t}\exp\left(t\Omega_\ell(\theta)\right)\large|_{t=0}
-
-    where :math:`\Omega_\ell(\theta)` is the one-parameter generator belonging to the partial
-    derivative :math:`\partial_\ell U(\theta)` at the parameters :math:`\theta`.
-    It can be computed via
-
-    .. math::
-
-        \Omega_\ell(\theta) = U(\theta)^\dagger
-        \left(\frac{\partial}{\partial \theta_\ell}\mathfrak{Re}[U(\theta)]
-        +i\frac{\partial}{\partial \theta_\ell}\mathfrak{Im}[U(\theta)]\right)
-
-    where we may compute the derivatives :math:`\frac{\partial}{\partial \theta_\ell} U(\theta)` using auto-differentiation.
-
-    .. warning::
-
-        This function requires JAX to be installed.
-
+    See the documentation of hybrid_pulse_grad for more details and a mathematical derivation.
     """
-    #theta = self.data[0]
-    #if len(qml.math.shape(theta)) > 1:
-        #raise ValueError("Broadcasting is not supported.")
+    # theta = self.data[0]
+    # if len(qml.math.shape(theta)) > 1:
+    # raise ValueError("Broadcasting is not supported.")
 
     num_wires = len(op.wires)
 
     def _compute_matrix(*args, **kwargs):
         return op(*args, **kwargs).matrix()
 
-    data = [qml.math.cast_like(d, 1j) for d in op.data]
+    data = [1.0 + 0.0j * d for d in op.data]
     # These lines compute the Jacobian of compute_matrix every time -> to be optimized
     jac = jax.jacobian(_compute_matrix, argnums=0, holomorphic=True)(data, t=op.t)
 
     # Compute the Omegas from the Jacobian.
     U_dagger = qml.math.conj(_compute_matrix([qml.math.detach(d) for d in data], t=op.t))
     # After contracting, move the parameter derivative axis to the first position
-    return [qml.math.moveaxis(qml.math.tensordot(U_dagger, j, axes=[[0], [0]]), (0, 1), (-2, -1)) for j in jac]
+    return tuple(
+        [
+            qml.math.moveaxis(qml.math.tensordot(U_dagger, j, axes=[[0], [0]]), (0, 1), (-2, -1))
+            for j in jac
+        ]
+    )
 
-def _get_one_parameter_coeffs(generators, num_wires):
-    """To be improved via fast Hadamard transform"""
-    basis = pauli_basis_matrices(num_wires)
-    return [
-        qml.math.tensordot(basis, g, axes=[[1, 2], [-1, -2]]) / 2**num_wires 
-        for g in generators
-    ]
 
-def _get_pauli_rots_to_insert(coefficients, wires, atol=1e-8, rtol=0.):
-    #pauli_rot_parameters = [2j * coeffs for coeffs in coefficients]
-    zero_ids = []
-    words = pauli_basis_strings(len(wires))
-    pauli_rots = []
-    new_coefficients = [[] for _ in coefficients]
-    for i, (word, *coeffs) in enumerate(zip(words, *coefficients)):
-        if all(qml.math.allclose(c, 0., atol=atol, rtol=rtol) for c in coeffs):
-            #print(f"{word} : all zero")
-            zero_ids.append(i)
-            continue
-        #print(coeffs)
-        #print(f"nonzero: {word}")
-        pauli_rots.extend([qml.PauliRot(sign * np.pi/2, word, wires=wires) for sign in [1, -1]])
-        for new_coeffs, c in zip(new_coefficients, coeffs):
-            new_coeffs.append(c)
-    return pauli_rots, new_coefficients
-
-def _insert_op(tape, insert_ops, op_idx):
-    """Replace a marked ``ParametrizedEvolution`` in a given tape by provided operations, creating
-    one tape per group of operations.
+def _get_one_parameter_paulirot_coeffs(op):
+    r"""Compute the Pauli coefficients of the one-parameter group generators that reproduce
+    the partial derivatives of a parametrized evolution. The coefficients correspond
+    to the decomposition into (rescaled) Pauli word generators as used by ``PauliRot``
+    gates.
 
     Args:
-        tape (QuantumTape): original tape
-        split_evolve_ops (tuple[list[qml.Operation]]): The time-split evolution operations as
-            created by ``_split_evol_ops``. For each group of operations, a new tape
-            is created.
-        op_idx (int): index of the operation to replace within the tape
+        op (`~.ParametrizedEvolution`): Parametrized evolution for which to compute the coefficients
 
     Returns:
-        list[QuantumTape]: new tapes with replaced operation, one tape per group of operations in
-        ``split_evolve_ops``.
+        tuple[tensor_like]: Coefficients of the provided generators in the Pauli basis,
+        modified by a factor of ``2j`` (see warning below).
+
+    .. warning::
+
+        This function includes a prefactor ``2j`` in its output compared to the "standard" Pauli
+        basis coefficients. That is, for the effective generator :math:`\frac{1}{3}iX`, which has
+        the Pauli basis coefficient :math:`\frac{1}{3}i`, this function will compute the
+        number :math:`-\frac{2}{3}`. This is in order to accomodate the use of ``qml.PauliRot``
+        in the hybrid pulse differentiation pipeline.
+
+    .. note::
+
+        Currently, this function work via tensor multiplication, costing
+        :math:`\mathcal{O}(n16^N)` scalar multiplications, where :math:`N` is the
+        number of qubits the evolution acts on and :math:`n` is the number of (scalar) parameters
+        of the evolution. This can be improved to :math:`\mathcal{O}(nN4^N}` by using the
+        fast Walsh-Hadamard transform.
+    """
+    generators = _get_one_parameter_generators(op)
+    num_wires = len(op.wires)
+    basis = pauli_basis_matrices(num_wires)
+    return tuple(
+        [
+            qml.math.real(2j * qml.math.tensordot(basis, g, axes=[[1, 2], [-1, -2]]))
+            / 2**num_wires
+            for g in generators
+        ]
+    )
+
+
+def _get_nonzero_coeffs_and_words(coefficients, num_wires, atol=1e-8, rtol=0.0):
+    """Given a tuple of coefficient tensors with a common first axis size :math:`4^N-1`,
+    where :math:`N` is the number of wires, filter out those indices for the first axis for which
+    the sliced coefficients are not all zero. Return these coefficients, as well as the
+    corresponding Pauli word strings on :math:`N` wires for these indices.
+
+    Args:
+        coefficients(tuple[tensor_like]): Coefficients to filter.
+        num_wires (int): Number of qubits the generators act on.
+        atol (float): absolute tolerance used to determine whether a tensor is zero.
+        rtol (float): relative tolerance used to determine whether a tensor is zero.
+    """
+    words = pauli_basis_strings(num_wires)
+    new_coefficients = [[] for _ in coefficients]
+    new_words = []
+    for word, *coeffs in zip(words, *coefficients):
+        if all(qml.math.allclose(c, 0.0, atol=atol, rtol=rtol) for c in coeffs):
+            continue
+        new_words.append(word)
+        for new_coeffs, c in zip(new_coefficients, coeffs):
+            new_coeffs.append(c)
+    return new_coefficients, new_words
+
+
+def _insert_op(tape, insert_ops, op_idx):
+    """Create new tapes, each with an additional operation from a provided list inserted at
+    the specified position. Creates as many new tapes as there are operations provided.
+
+    Args:
+        tape (`~.QuantumTape`): Original tape.
+        insert_ops (list[qml.Operation]): Operations to insert (individually) at ``op_idx``
+            to produce a new tape each.
+        op_idx (int): Index at which to insert the operations in ``insert_ops``.
+
+    Returns:
+        list[`~.QuantumScript`]: new tapes with inserted operations, one tape per operation
+        in ``insert_ops``.
     """
     ops_pre = tape.operations[:op_idx]
     ops_post = tape.operations[op_idx:]
     return [
-        qml.tape.QuantumScript(ops_pre + insert + ops_post, tape.measurements)
+        qml.tape.QuantumScript(ops_pre + [insert] + ops_post, tape.measurements)
         for insert in insert_ops
     ]
 
-def _hybrid_pulse_grad(tape, argnum=None, shots=None, tolerances=None):
-    transform_name = "hybrid pulse parameter-shift"
-    _assert_has_jax(transform_name)
-    assert_active_return(transform_name)
-    assert_no_state_returns(tape.measurements)
-    assert_no_variance(tape.measurements, transform_name)
 
-    if tolerances is None:
-        tolerances = (1e-7, 0.)
+def _generate_tapes_and_coeffs(tape, idx, atol, rtol, cache):
+    """Compute the modified tapes and coefficients required to compute the hybrid pulse
+    derivative of a tape with respect to an indicated trainable parameter.
 
-    if argnum is None and not tape.trainable_params:
-        return _no_trainable_grad_new(tape, shots)
+    Args:
+        tape (`~.QuantumTape`): Tape to differentiate.
+        idx (int): Index of the parameter with respect to which to differentiate
+            into ``tape.trainable_parameters``.
+        atol (float): absolute tolerance used to determine whether a coefficient is zero.
+        rtol (float): relative tolerance used to determine whether a coefficient is zero.
+        cache (dict): Caching dictionary that allows to skip adding duplicate modified tapes.
 
-    #if use_broadcasting and tape.batch_size is not None:
-        #raise ValueError("Broadcasting is not supported for tapes that already are broadcasted.")
-
-    diff_methods = gradient_analysis_and_validation(tape, "analytic", grad_fn=hybrid_pulse_grad)
-
-    if all(g == "0" for g in diff_methods):
-        return _all_zero_grad_new(tape, shots)
-
-    method_map = choose_grad_methods(diff_methods, argnum)
-
-    argnum = [i for i, dm in method_map.items() if dm == "A"]
-
-    return _expval_hybrid_pulse_grad(tape, argnum, shots, tolerances)
-
-def _generate_tapes_and_coeffs(tape, idx, atol, rtol):
+    Returns:
+        list[`~.QuantumScript`]: Modified tapes to be added to the hybrid pulse differentiation
+            tapes. It is an empty list if modified tapes were already created for another
+            parameter of the pulse of interest.
+        tuple[int, int, tensor_like]: Gradient computation data, consisting of the start and end
+            indices into the total list of tapes as well as the coefficients that need to be
+            contracted with the corresponding results to obtain the partial derivative with respect
+            to the indicated trainable parameter.
+        dict: Input ``cache`` dictionary. If the cache lookup missed, the cache is extended by one
+            entry and its entry ``"total_num_tapes"`` is increased by the number of created tapes.
+    """
     op, op_idx, term_idx = tape.get_operation(idx)
+    if op_idx in cache:
+        # operation was analyzed and tapes were added before. Retrieve tape indices and coefficients.
+        start, end, all_coeffs = cache[op_idx]
+        return [], (start, end, all_coeffs[term_idx]), cache
+
     if not isinstance(op, ParametrizedEvolution):
+        # only ParametrizedEvolution can be treated with this gradient transform
         raise ValueError(
             "hybrid_pulse_grad does not support differentiating parameters of "
             "other operations than pulses."
         )
 
-    num_wires = len(op.wires)
-    generators = _get_one_parameter_generators(op)
-    coeffs = _get_one_parameter_coeffs(generators, num_wires)
-    pauli_rots = _get_pauli_rots_to_insert(coeffs, op.wires, atol, rtol)
+    # Obtain one-parameter-group coefficients in Pauli basis and filter for non-zero coeffs
+    all_coeffs = _get_one_parameter_paulirot_coeffs(op)
+    all_coeffs, pauli_words = _get_nonzero_coeffs_and_words(all_coeffs, len(op.wires), atol, rtol)
+    # create PauliRot gates for each Pauli word with a non-zero coefficient and for both shifts
+    pauli_rots = [
+        qml.PauliRot(angle, word, wires=op.wires)
+        for word in pauli_words
+        for angle in [np.pi / 2, -np.pi / 2]
+    ]
+    # create tapes with the above PauliRot gates inserted, one per tape
     tapes = _insert_op(tape, pauli_rots, op_idx)
-    return tapes, coeffs
+    # get the previous total number of tapes from the cache and determine start and end indices
+    end = (start := cache["total_num_tapes"]) + (num_tapes := len(tapes))
+    # store the tape indices and coefficients for this operation, to be retrieved for other
+    # parameters of the same operation
+    cache[op_idx] = (start, end, all_coeffs)
+    # increment total number of tapes
+    cache["total_num_tapes"] += num_tapes
+    return tapes, (start, end, all_coeffs[term_idx]), cache
 
-def _contract_with_coeffs(results, coeffs, single_measure, shot_vector):
+
+def _parshift_and_contract(results, coeffs, single_measure, shot_vector):
+    """Compute parameter-shift tape derivatives and contract them with coefficients.
+
+    Args:
+        results (list[tensor_like]): Tape execution results to be processed.
+        coeffs (list[tensor_like]): Coefficients to be contracted.
+        single_measure (bool): whether the tape execution results contain single measurements.
+        shot_vector (bool): whether the tape execution results were obtained with a shot vector.
+
+    Returns:
+        tensor_like or tuple[tensor_like] or tuple[tuple[tensor_like]]: contraction between the
+        parameter-shift derivative computed from ``results`` and the ``coeffs``.
+    """
+
+    def _parshift_and_contract_single(res_list, coeffs):
+        psr_deriv = ((res := qml.math.stack(res_list))[::2] - res[1::2]) / 2
+        return qml.math.tensordot(psr_deriv, coeffs, axes=[[0], [0]])
+
     if single_measure and not shot_vector:
-        return tuple([qml.math.tensordot(results, c, axes=[[0], [0]]) for c in coeffs])
-    raise NotImplementedError
+        # single measurement and single shot entry
+        return _parshift_and_contract_single(results, qml.math.stack(coeffs))
+    if single_measure or not shot_vector:
+        # single measurement or single shot entry, but not both
+        return tuple(
+            _parshift_and_contract_single(r, qml.math.stack(coeffs)) for r in zip(*results)
+        )
+
+    return tuple(
+        tuple(_parshift_and_contract_single(_r, qml.math.stack(coeffs)) for _r in zip(*r))
+        for r in zip(*results)
+    )
 
 
-    
+def _expval_hybrid_pulse_grad(tape, argnum, shots, atol, rtol):
+    """Compute the hybrid pulse parameter-shift rule for a quantum circuit that returns expectation
+    values of observables.
 
-def _expval_hybrid_pulse_grad(tape, argnum, shots, tolerances):
-    atol, rtol = tolerances
+    Args:
+        tape (`~.QuantumTape`): Quantum circuit to be differentiated with the hybrid rule.
+        argnum (int or list[int] or None): Trainable tape parameter indices to differentiate
+            with respect to. If not provided, the derivatives with respect to all
+            trainable parameters are returned.
+        shots (None, int, list[int]): The shots of the device used to execute the tapes which are
+            returned by this transform. Note that this argument does not *influence* the shots
+            used for execution, but *informs* the transform about the shots to ensure a compatible
+            return value formatting.
+        atol (float): absolute tolerance used to determine vanishing contributions.
+        rtol (float): relative tolerance used to determine vanishing contributions.
+
+    Returns:
+        function or tuple[list[QuantumTape], function]:
+
+        - If the input is a QNode, an object representing the Jacobian (function) of the QNode
+          that can be executed to obtain the Jacobian.
+          The type of the Jacobian returned is either a tensor, a tuple or a
+          nested tuple depending on the nesting structure of the original QNode output.
+
+        - If the input is a tape, a tuple containing a
+          list of generated tapes, together with a post-processing
+          function to be applied to the results of the evaluated tapes
+          in order to obtain the Jacobian.
+
+    """
     gradient_data = []
-    tapes = []
+    gradient_tapes = []
+    cache = {"total_num_tapes": 0}
     for idx, trainable_idx in enumerate(tape.trainable_params):
         if trainable_idx not in argnum:
-            # Only the number of tapes is needed to indicate a zero gradient entry
-            gradient_data.append((0, None))
+            # Indicate that there are no tapes for this parameter by setting start==end
+            gradient_data.append((0, 0, None))
             continue
 
-        _tapes, _coeffs = _generate_tapes_and_coeffs(tape, idx, atol, rtol)
-        gradient_data.append((len(_tapes), _coeffs))
-        tapes.extend(_tapes)
+        tapes, data, cache = _generate_tapes_and_coeffs(tape, idx, atol, rtol, cache)
+        gradient_data.append(data)
+        gradient_tapes.extend(tapes)
 
     num_measurements = len(tape.measurements)
     single_measure = num_measurements == 1
@@ -229,17 +314,15 @@ def _expval_hybrid_pulse_grad(tape, argnum, shots, tolerances):
     tape_specs = (single_measure, num_params, num_measurements, shot_vector, shots)
 
     def processing_fn(results):
-        start = 0
         grads = []
-        for num_tapes, coeffs in gradient_data:
-            if num_tapes == 0:
+        for start, end, coeffs in gradient_data:
+            if start == end:
                 grads.append(None)
                 continue
-            res = results[start : start + num_tapes]
-            start += num_tapes
-            # Apply the postprocessing of the parameter-shift rule and contract
-            # with classical Jacobian, effectively computing the integral approximation
-            g = _contract_with_coeffs(res, coeffs, single_measure, shot_vector)
+            res = results[start:end]
+            # Apply the postprocessing of the parameter-shift rule and contract with the
+            # one-parameter group coefficients, computing the partial circuit derivative
+            g = _parshift_and_contract(res, coeffs, single_measure, shot_vector)
             grads.append(g)
 
         # g will have been defined at least once (because otherwise all gradients would have
@@ -251,7 +334,31 @@ def _expval_hybrid_pulse_grad(tape, argnum, shots, tolerances):
 
         return _reorder_grads(grads, tape_specs)
 
-    return tapes, processing_fn
+    return gradient_tapes, processing_fn
+
+
+def _hybrid_pulse_grad(tape, argnum=None, shots=None, tolerances=(1e-7, 0.0)):
+    """Super amazing docstring."""
+    transform_name = "hybrid pulse parameter-shift"
+    _assert_has_jax(transform_name)
+    assert_active_return(transform_name)
+    assert_no_state_returns(tape.measurements)
+    assert_no_variance(tape.measurements, transform_name)
+
+    if argnum is None and not tape.trainable_params:
+        return _no_trainable_grad_new(tape, shots)
+
+    diff_methods = gradient_analysis_and_validation(tape, "analytic", grad_fn=hybrid_pulse_grad)
+
+    if all(g == "0" for g in diff_methods):
+        return _all_zero_grad_new(tape, shots)
+
+    method_map = choose_grad_methods(diff_methods, argnum)
+
+    argnum = [i for i, dm in method_map.items() if dm == "A"]
+
+    return _expval_hybrid_pulse_grad(tape, argnum, shots, *tolerances)
+
 
 def expand_invalid_trainable_hybrid_pulse_grad(x, *args, **kwargs):
     r"""Do not expand any operation. We expect the ``hybrid_pulse_grad`` to be used
