@@ -16,7 +16,7 @@ This module contains functions for adding the JAX interface
 to a PennyLane Device class.
 """
 # pylint: disable=too-many-arguments
-
+from functools import partial
 import jax
 import jax.numpy as jnp
 
@@ -26,6 +26,7 @@ from pennylane.measurements import CountsMP, ProbabilityMP, SampleMP
 from pennylane.transforms import convert_to_numpy_parameters
 
 dtype = jnp.float64
+Zero = jax.custom_derivatives.SymbolicZero
 
 
 def _set_copy_and_unwrap_tape(t, a, unwrap=True):
@@ -454,7 +455,7 @@ def _execute_bwd(
 
         return res
 
-    @execute_wrapper.defjvp
+    @partial(execute_wrapper.defjvp, symbolic_zeros=True)
     def execute_wrapper_jvp(primals, tangents):
         """Primals[0] are parameters as Jax tracers and tangents[0] is a list of tangent vectors as Jax tracers."""
         if isinstance(gradient_fn, qml.gradients.gradient_transform):
@@ -524,7 +525,7 @@ def _execute_fwd(
 
         return res, jacs
 
-    @execute_wrapper.defjvp
+    @partial(execute_wrapper.defjvp, symbolic_zeros=True)
     def execute_wrapper_jvp(primals, tangents):
         """Primals[0] are parameters as Jax tracers and tangents[0] is a list of tangent vectors as Jax tracers."""
         res, jacs = execute_wrapper(primals[0])

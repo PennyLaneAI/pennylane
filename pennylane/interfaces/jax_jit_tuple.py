@@ -18,6 +18,7 @@ to a PennyLane Device class.
 
 # pylint: disable=too-many-arguments
 import semantic_version
+from functools import partial
 import jax
 import jax.numpy as jnp
 
@@ -28,19 +29,7 @@ from pennylane.interfaces import InterfaceUnsupportedError
 from pennylane.transforms import convert_to_numpy_parameters
 
 dtype = jnp.float64
-
-
-def _validate_jax_version():
-    if semantic_version.match(">0.4.3", jax.__version__):
-        msg = (
-            "The new JAX JIT interface of PennyLane requires JAX and and JAX lib version below 0.4.4. "
-            "Please downgrade these packages."
-            "If you are using pip to manage your packages, you can run the following command:\n\n"
-            "\tpip install 'jax==0.4.3' 'jaxlib==0.4.3'\n\n"
-            "If you are using conda to manage your packages, you can run the following command:\n\n"
-            "\tconda install 'jax==0.4.3' 'jaxlib==0.4.3'\n\n"
-        )
-        raise InterfaceUnsupportedError(msg)
+Zero = jax.custom_derivatives.SymbolicZero
 
 
 def _set_copy_and_unwrap_tape(t, a, unwrap=True):
@@ -116,16 +105,13 @@ def _jac_shape_dtype_tuple(tapes, device):
     return tuple(shape_dtypes)
 
 
-def _jit_compute_jvps(jacobians, tangents, multi_measurements, trainable_params):
-    # Remove the jitted parameters that are not trainable as they are not contributing to the jacobian.
-    tangents_trainable = [
-        [tangent[idx] for idx in trainable]
-        for tangent, trainable in zip(tangents, trainable_params)
+def _filter_zeros_tangents(tangents):
+    non_zeros_tangents = [
+        [t for t in tangent if type(t) is not Zero]
+        for tangent in tangents
     ]
 
-    jvps = _compute_jvps(jacobians, tangents_trainable, multi_measurements)
-
-    return jvps
+    return non_zeros_tangents
 
 
 def execute(tapes, device, execute_fn, gradient_fn, gradient_kwargs, _n=1, max_diff=1):
@@ -155,7 +141,6 @@ def execute(tapes, device, execute_fn, gradient_fn, gradient_kwargs, _n=1, max_d
         the returned list corresponds in order to the provided tapes.
     """
     # pylint: disable=unused-argument
-    _validate_jax_version()
 
     if any(
         m.return_type in (qml.measurements.Counts, qml.measurements.AllCounts)
@@ -163,14 +148,8 @@ def execute(tapes, device, execute_fn, gradient_fn, gradient_kwargs, _n=1, max_d
         for m in t.measurements
     ):
         # Obtaining information about the shape of the Counts measurements is
-        # not implemeneted and is required for the callback logic
+        # not implemented and is required for the callback logic
         raise NotImplementedError("The JAX-JIT interface doesn't support qml.counts.")
-
-    if _n == 1:
-        for tape in tapes:
-            # set the trainable parameters
-            params = tape.get_parameters(trainable_only=False)
-            tape.trainable_params = qml.math.get_trainable_indices(params)
 
     parameters = tuple(list(t.get_parameters(trainable_only=False)) for t in tapes)
 
@@ -197,14 +176,14 @@ def execute(tapes, device, execute_fn, gradient_fn, gradient_kwargs, _n=1, max_d
 
 
 def _execute_bwd(
-    params,
-    tapes=None,
-    device=None,
-    execute_fn=None,
-    gradient_fn=None,
-    gradient_kwargs=None,
-    _n=1,
-    max_diff=2,
+        params,
+        tapes=None,
+        device=None,
+        execute_fn=None,
+        gradient_fn=None,
+        gradient_kwargs=None,
+        _n=1,
+        max_diff=2,
 ):  # pylint: disable=dangerous-default-value,unused-argument
     @jax.custom_jvp
     def execute_wrapper(params):
@@ -231,13 +210,16 @@ def _execute_bwd(
         res = jax.pure_callback(wrapper, shape_dtype_structs, params, vectorized=True)
         return res
 
-    @execute_wrapper.defjvp
+    @partial(execute_wrapper.defjvp, symbolic_zeros=True)
     def execute_wrapper_jvp(primals, tangents):
         # pylint: disable=unused-variable
         params = primals[0]
 
         # Select the trainable params. Non-trainable params contribute a 0 gradient.
-        trainable_params = [t.trainable_params for t in tapes]
+        list_trainable_parameters = [[idx for idx, t in enumerate(tangent) if type(t) is not Zero] for tangent in
+                                     tangents[0]]
+        for trainable_params, tape in zip(list_trainable_parameters, tapes):
+            tape.trainable_params = trainable_params
 
         multi_measurements = [len(tape.measurements) > 1 for tape in tapes]
 
@@ -253,9 +235,10 @@ def _execute_bwd(
                 if len(tapes) == 1:
                     jacobians_from_callback = [jacobians_from_callback]
 
-                jvps = _jit_compute_jvps(
-                    jacobians_from_callback, tangents[0], multi_measurements, trainable_params
-                )
+                tangents_trainable = _filter_zeros_tangents(tangents[0])
+                print(tangents_trainable, tangents)
+                jvps = _compute_jvps(jacobians_from_callback, tangents_trainable, multi_measurements)
+
             else:
                 new_tapes = set_parameters_on_copy_and_unwrap(tapes, params, unwrap=False)
                 all_jacs = []
@@ -275,9 +258,9 @@ def _execute_bwd(
                     jacs = res_processing_fn(jacs)
                     all_jacs.append(jacs)
 
-                jvps = _jit_compute_jvps(
-                    all_jacs, tangents[0], multi_measurements, trainable_params
-                )
+                tangents_trainable = _filter_zeros_tangents(tangents[0])
+
+                jvps = _compute_jvps(all_jacs, tangents_trainable, multi_measurements)
         else:
             # Gradient function is a device method
             res_from_callback = _device_method_jac_via_callback(params, device)
@@ -285,9 +268,9 @@ def _execute_bwd(
             if len(tapes) == 1:
                 res_from_callback = [res_from_callback]
 
-            jvps = _jit_compute_jvps(
-                res_from_callback, tangents[0], multi_measurements, trainable_params
-            )
+            tangents_trainable = _filter_zeros_tangents(tangents[0])
+
+            jvps = _compute_jvps(res_from_callback, tangents_trainable, multi_measurements)
 
         return evaluation_results, jvps
 
@@ -360,12 +343,12 @@ def _execute_bwd(
 
 # The execute function in forward mode
 def _execute_fwd(
-    params,
-    tapes=None,
-    device=None,
-    execute_fn=None,
-    gradient_kwargs=None,
-    _n=1,
+        params,
+        tapes=None,
+        device=None,
+        execute_fn=None,
+        gradient_kwargs=None,
+        _n=1,
 ):  # pylint: disable=dangerous-default-value,unused-argument
     """The auxiliary execute function for cases when the user requested
     jacobians to be computed in forward mode (e.g. adjoint) or when no gradient function was
@@ -388,17 +371,21 @@ def _execute_fwd(
         )
         return res, jacs
 
-    @execute_wrapper.defjvp
+    @partial(execute_wrapper.defjvp, symbolic_zeros=True)
     def execute_wrapper_jvp(primals, tangents):
         """Primals[0] are parameters as Jax tracers and tangents[0] is a list of tangent vectors as Jax tracers."""
-        trainable_params = [t.trainable_params for t in tapes]
+        list_trainable_parameters = [[idx for idx, t in enumerate(tangent) if type(t) is not Zero] for tangent in tangents[0]]
+
+        for trainable_params, tape in zip(list_trainable_parameters, tapes):
+            tape.trainable_params = trainable_params
+
         res, jacs = execute_wrapper(primals[0])
         multi_measurements = [len(tape.measurements) > 1 for tape in tapes]
 
         if len(tapes) == 1:
             jacs = [jacs]
-
-        jvps = _jit_compute_jvps(jacs, tangents[0], multi_measurements, trainable_params)
+        tangents = _filter_zeros_tangents(tangents[0])
+        jvps = _compute_jvps(jacs, tangents, multi_measurements)
         return res, jvps
 
     res = execute_wrapper(params)
