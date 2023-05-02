@@ -92,7 +92,7 @@ class QuantumScript:
 
     Keyword Args:
         shots (None, int, Sequence[int], ~.Shots): Number and/or batches of
-            shots for execution
+            shots for execution. Note that this property is still experimental and under development.
         name (str): a name given to the quantum script
         _update=True (bool): Whether or not to set various properties on initialization. Setting
             ``_update=False`` reduces computations if the script is only an intermediary step.
