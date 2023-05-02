@@ -19,7 +19,7 @@ import pytest
 
 import pennylane as qml
 from pennylane.interfaces import INTERFACE_MAP
-from pennylane.measurements import MutualInfo
+from pennylane.measurements import MutualInfo, Shots
 from pennylane.measurements.mutual_info import MutualInfoMP
 from pennylane.wires import Wires
 
@@ -36,12 +36,12 @@ class TestMutualInfoUnitTests:
         assert q.queue[0] is m
         assert isinstance(q.queue[0], MutualInfoMP)
 
-    @pytest.mark.parametrize("shots, shape", [(None, (1,)), (10, (1,)), ([1, 10], (2,))])
+    @pytest.mark.parametrize("shots, shape", [(None, ()), (10, ()), ([1, 10], ((), ()))])
     def test_shape(self, shots, shape):
         """Test that the shape is correct."""
         dev = qml.device("default.qubit", wires=3, shots=shots)
         res = qml.mutual_info(wires0=[0], wires1=[1])
-        assert res.shape(dev) == shape
+        assert res.shape(dev, Shots(shots)) == shape
 
     def test_properties(self):
         """Test that the properties are correct."""
@@ -102,7 +102,7 @@ class TestIntegration:
         assert np.allclose(res, expected, atol=1e-6)
         assert np.allclose(new_res, expected, atol=1e-6)
         assert INTERFACE_MAP.get(qml.math.get_interface(new_res)) == interface
-        assert res.dtype == new_res.dtype
+        assert res.dtype == new_res.dtype  # pylint: disable=no-member
 
     def test_shot_vec_error(self):
         """Test an error is raised when using shot vectors with mutual_info."""
@@ -400,7 +400,7 @@ class TestIntegration:
 
         param = torch.tensor(param, requires_grad=True)
         out = circuit(param)
-        out.backward()
+        out.backward()  # pylint: disable=no-member
 
         # higher tolerance for finite-diff method
         tol = 1e-8 if diff_method == "backprop" else 1e-5

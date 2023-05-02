@@ -44,6 +44,10 @@ def map(
     applied to all QNodes in the collection, or can be provided as a list for more
     fine-grained control.
 
+    .. warning::
+        ``map`` is deprecated and will be deleted in v0.31. A single ``QNode`` can now handle
+        multiple measurements.
+
     Args:
         template (callable): the ansatz for the circuit before the final measurement step
             Note that the template **must** have the following signature:
@@ -105,6 +109,9 @@ def map(
     array([-0.06154835  0.99280864])
     """
     warnings.warn("The map function is deprecated and it will be removed soon.", UserWarning)
+
+    if qml.active_return():
+        raise qml.QuantumFunctionError("QNodeCollections does not support the new return system.")
 
     if not callable(template):
         raise ValueError("Could not create QNodes. The template is not a callable function.")

@@ -75,7 +75,7 @@ def batch_params(tape, all_operations=False):
         dev = qml.device("default.qubit", wires=3)
 
         @qml.batch_params
-        @qml.beta.qnode(dev)
+        @qml.qnode(dev)
         def circuit(x, weights):
             qml.RX(x, wires=0)
             qml.RY(0.2, wires=1)
@@ -111,7 +111,7 @@ def batch_params(tape, all_operations=False):
     .. code-block:: python
 
         @qml.batch_params(all_operations=True)
-        @qml.beta.qnode(dev)
+        @qml.qnode(dev)
         def circuit(x, weights):
             qml.RX(x, wires=0)
             qml.RY([0.2, 0.2, 0.2], wires=1)

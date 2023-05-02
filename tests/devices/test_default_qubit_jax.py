@@ -332,7 +332,7 @@ class TestQNodeIntegration:
 
     def test_custom_shots_probs_jax_jit(self, tol):
         """Test that returning probs works with jax and jit when using custom shot vector"""
-        dev = qml.device("default.qubit.jax", wires=1, shots=(2, 2))
+        dev = qml.device("default.qubit.jax", wires=1, shots=(3, 2))
         expected = jnp.array([[0.0, 1.0], [0.0, 1.0]])
 
         @jax.jit
@@ -342,7 +342,8 @@ class TestQNodeIntegration:
             return qml.probs(wires=0)
 
         result = circuit()
-        assert jnp.allclose(result, expected, atol=tol)
+        assert jnp.allclose(qml.math.hstack(result[0]), expected[0], atol=tol)
+        assert jnp.allclose(qml.math.hstack(result[1]), expected[1], atol=tol)
 
     @pytest.mark.skip("Shot lists are not supported with broadcasting yet")
     def test_custom_shots_probs_jax_jit_broadcasted(self, tol):
@@ -598,6 +599,61 @@ class TestQNodeIntegration:
         @qml.qnode(dev)
         def true_circuit():
             qml.RX(phi, 0)
+            return qml.expval(qml.PauliZ(0))
+
+        res = circuit()
+        spy.assert_not_called()
+        spy2.assert_called_once()
+        assert qml.math.allclose(res, true_circuit(), atol=1e-6)
+
+    def test_parametrized_evolution_state_vector_return_intermediate(self, mocker):
+        """Test that when executing a ParametrizedEvolution with ``num_wires >= device.num_wires/2``
+        and ``return_intermediate=True``, the ``_evolve_state_vector_under_parametrized_evolution``
+        method is used."""
+        dev = qml.device("default.qubit.jax", wires=1)
+        H = ParametrizedHamiltonian([1], [qml.PauliX(0)])
+        spy = mocker.spy(dev, "_evolve_state_vector_under_parametrized_evolution")
+        spy2 = mocker.spy(dev, "_apply_operation")
+
+        phi = jnp.linspace(0.3, 0.7, 7)
+        phi_for_RX = phi - phi[0]
+
+        @jax.jit
+        @qml.qnode(dev, interface="jax")
+        def circuit():
+            qml.evolve(H, return_intermediate=True)(params=[], t=phi / 2)
+            return qml.expval(qml.PauliZ(0))
+
+        @qml.qnode(dev)
+        def true_circuit():
+            qml.RX(phi_for_RX, 0)
+            return qml.expval(qml.PauliZ(0))
+
+        res = circuit()
+        spy.assert_called_once()
+        spy2.assert_not_called()
+        assert qml.math.allclose(res, true_circuit(), atol=1e-6)
+
+    def test_parametrized_evolution_matrix_complementary(self, mocker):
+        """Test that when executing a ParametrizedEvolution with ``num_wires >= device.num_wires/2``
+        but with ``complementary=True``, the `_apply_operation` method is used."""
+        dev = qml.device("default.qubit.jax", wires=1)
+        H = ParametrizedHamiltonian([1], [qml.PauliX(0)])
+        spy = mocker.spy(dev, "_evolve_state_vector_under_parametrized_evolution")
+        spy2 = mocker.spy(dev, "_apply_operation")
+
+        phi = jnp.linspace(0.3, 0.7, 7)
+        phi_for_RX = phi[-1] - phi
+
+        @jax.jit
+        @qml.qnode(dev, interface="jax")
+        def circuit():
+            qml.evolve(H, return_intermediate=True, complementary=True)(params=[], t=phi / 2)
+            return qml.expval(qml.PauliZ(0))
+
+        @qml.qnode(dev)
+        def true_circuit():
+            qml.RX(phi_for_RX, 0)
             return qml.expval(qml.PauliZ(0))
 
         res = circuit()
@@ -1064,52 +1120,6 @@ class TestHighLevelIntegration:
 
         grad = jax.grad(circuit)(weights)
         assert grad.shape == weights.shape
-
-    def test_qnode_collection_integration(self):
-        """Test that a PassthruQNode using default.qubit.jax works with QNodeCollections."""
-        dev = qml.device("default.qubit.jax", wires=2)
-
-        def ansatz(weights, **kwargs):
-            qml.RX(weights[0], wires=0)
-            qml.RY(weights[1], wires=1)
-            qml.CNOT(wires=[0, 1])
-
-        obs_list = [qml.PauliX(0) @ qml.PauliY(1), qml.PauliZ(0), qml.PauliZ(0) @ qml.PauliZ(1)]
-        qnodes = qml.map(ansatz, obs_list, dev, interface="jax")
-
-        weights = jnp.array([0.1, 0.2])
-
-        def cost(weights):
-            return jnp.sum(jnp.array(qnodes(weights)))
-
-        grad = jax.grad(cost)(weights)
-        assert grad.shape == weights.shape
-
-    def test_qnode_collection_integration_broadcasted(self):
-        """Test that a broadcasted PassthruQNode default.qubit.jax
-        works with QNodeCollections."""
-        dev = qml.device("default.qubit.jax", wires=2)
-
-        def ansatz(weights, **kwargs):
-            qml.RX(weights[0], wires=0)
-            qml.RY(weights[1], wires=1)
-            qml.CNOT(wires=[0, 1])
-
-        obs_list = [qml.PauliX(0) @ qml.PauliY(1), qml.PauliZ(0), qml.PauliZ(0) @ qml.PauliZ(1)]
-        qnodes = qml.map(ansatz, obs_list, dev, interface="jax")
-
-        assert qnodes.interface == "jax"
-
-        weights = jnp.array([[0.1, 0.65, 1.2], [0.2, 1.9, -0.6]])
-
-        def cost(weights):
-            return jnp.sum(qnodes(weights), axis=-1)
-
-        res = cost(weights)
-        assert res.shape == (3,)
-
-        jac = jax.jacobian(cost)(weights)
-        assert jac.shape == (3, 2, 3)
 
 
 @pytest.mark.jax

@@ -26,6 +26,7 @@ import pennylane as qml
 from pennylane.interfaces import InterfaceUnsupportedError
 from pennylane.interfaces.jax import _raise_vector_valued_fwd
 from pennylane.measurements import ProbabilityMP
+from pennylane.transforms import convert_to_numpy_parameters
 
 dtype = jnp.float64
 
@@ -43,7 +44,9 @@ def _validate_jax_version():
         raise InterfaceUnsupportedError(msg)
 
 
-def execute(tapes, device, execute_fn, gradient_fn, gradient_kwargs, _n=1, max_diff=1, mode=None):
+def execute_legacy(
+    tapes, device, execute_fn, gradient_fn, gradient_kwargs, _n=1, max_diff=1, mode=None
+):
     """Execute a batch of tapes with JAX parameters on a device.
 
     Args:
@@ -90,7 +93,7 @@ def execute(tapes, device, execute_fn, gradient_fn, gradient_kwargs, _n=1, max_d
     _validate_jax_version()
 
     if gradient_fn is None:
-        return _execute_with_fwd(
+        return _execute_with_fwd_legacy(
             parameters,
             tapes=tapes,
             device=device,
@@ -99,7 +102,7 @@ def execute(tapes, device, execute_fn, gradient_fn, gradient_kwargs, _n=1, max_d
             _n=_n,
         )
 
-    return _execute(
+    return _execute_legacy(
         parameters,
         tapes=tapes,
         device=device,
@@ -145,7 +148,7 @@ def _extract_shape_dtype_structs(tapes, device):
     return shape_dtypes
 
 
-def _execute(
+def _execute_legacy(
     params,
     tapes=None,
     device=None,
@@ -157,10 +160,14 @@ def _execute(
     total_params = np.sum([len(p) for p in params])
 
     # Copy a given tape with operations and set parameters
-    def cp_tape(t, a):
+    def _set_copy_and_unwrap_tape(t, a, unwrap=True):
         tc = t.copy(copy_operations=True)
         tc.set_parameters(a)
-        return tc
+        return convert_to_numpy_parameters(tc) if unwrap else tc
+
+    def set_parameters_on_copy_and_unwrap(tapes, params, unwrap=True):
+        """Copy a set of tapes with operations and set parameters"""
+        return tuple(_set_copy_and_unwrap_tape(t, a, unwrap=unwrap) for t, a in zip(tapes, params))
 
     @jax.custom_vjp
     def wrapped_exec(params):
@@ -168,9 +175,8 @@ def _execute(
 
         def wrapper(p):
             """Compute the forward pass."""
-            new_tapes = [cp_tape(t, a) for t, a in zip(tapes, p)]
-            with qml.tape.Unwrap(*new_tapes):
-                res, _ = execute_fn(new_tapes, **gradient_kwargs)
+            new_tapes = set_parameters_on_copy_and_unwrap(tapes, p)
+            res, _ = execute_fn(new_tapes, **gradient_kwargs)
 
             # When executed under `jax.vmap` the `result_shapes_dtypes` will contain
             # the shape without the vmap dimensions, while the function here will be
@@ -214,7 +220,7 @@ def _execute(
                 p = args[:-1]
                 dy = args[-1]
 
-                new_tapes = [cp_tape(t, a) for t, a in zip(tapes, p)]
+                new_tapes = set_parameters_on_copy_and_unwrap(tapes, p, unwrap=False)
                 vjp_tapes, processing_fn = qml.gradients.batch_vjp(
                     new_tapes,
                     dy,
@@ -259,9 +265,8 @@ def _execute(
 
         def jacs_wrapper(p):
             """Compute the jacs"""
-            new_tapes = [cp_tape(t, a) for t, a in zip(tapes, p)]
-            with qml.tape.Unwrap(*new_tapes):
-                jacs = gradient_fn(new_tapes, **gradient_kwargs)
+            new_tapes = set_parameters_on_copy_and_unwrap(tapes, p)
+            jacs = gradient_fn(new_tapes, **gradient_kwargs)
             return jacs
 
         shapes = [
@@ -278,7 +283,7 @@ def _execute(
 
 
 # The execute function in forward mode
-def _execute_with_fwd(
+def _execute_with_fwd_legacy(
     params,
     tapes=None,
     device=None,

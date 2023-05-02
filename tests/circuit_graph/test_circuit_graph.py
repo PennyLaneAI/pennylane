@@ -23,6 +23,8 @@ import pytest
 
 import pennylane as qml
 from pennylane import numpy as pnp
+from pennylane.tape import QuantumTape
+from pennylane.resource import ResourcesOperation, Resources
 from pennylane.circuit_graph import CircuitGraph
 from pennylane.wires import Wires
 
@@ -58,7 +60,7 @@ def circuit(ops, obs):
 
 
 @pytest.fixture
-def parameterized_circuit(wires):
+def parameterized_circuit_gaussian(wires):
     def qfunc(a, b, c, d, e, f):
         qml.Rotation(a, wires=wires[0]),
         qml.Rotation(b, wires=wires[1]),
@@ -68,11 +70,7 @@ def parameterized_circuit(wires):
         qml.Rotation(e, wires=wires[1]),
         qml.Rotation(f, wires=wires[2]),
 
-        return [
-            qml.expval(qml.ops.NumberOperator(wires=wires[0])),
-            qml.expval(qml.ops.NumberOperator(wires=wires[1])),
-            qml.expval(qml.ops.NumberOperator(wires=wires[2])),
-        ]
+        return qml.expval(qml.ops.NumberOperator(wires=wires[0]))
 
     return qfunc
 
@@ -94,6 +92,27 @@ def circuit_measure_multiple_with_max_twice():
         qml.probs(wires=[0, 1, 2]),
         qml.var(qml.PauliZ(wires=[1]) @ qml.PauliZ([2])),
     )
+
+
+class CustomOpDepth2(ResourcesOperation):
+    num_wires = 3
+
+    def resources(self):
+        return Resources(num_wires=self.num_wires, depth=2)
+
+
+class CustomOpDepth3(ResourcesOperation):
+    num_wires = 2
+
+    def resources(self):
+        return Resources(num_wires=self.num_wires, depth=3)
+
+
+class CustomOpDepth4(ResourcesOperation):
+    num_wires = 2
+
+    def resources(self):
+        return Resources(num_wires=self.num_wires, depth=4)
 
 
 class TestCircuitGraph:
@@ -217,11 +236,11 @@ class TestCircuitGraph:
         assert circuit.wire_indices(2) == op_indices_for_wire_2
 
     @pytest.mark.parametrize("wires", [["a", "q1", 3]])
-    def test_layers(self, parameterized_circuit, wires):
+    def test_layers(self, parameterized_circuit_gaussian, wires):
         """A test of a simple circuit with 3 layers and 6 trainable parameters"""
 
         dev = qml.device("default.gaussian", wires=wires)
-        qnode = qml.QNode(parameterized_circuit, dev)
+        qnode = qml.QNode(parameterized_circuit_gaussian, dev)
         qnode(*pnp.array([0.1, 0.2, 0.3, 0.4, 0.5, 0.6], requires_grad=True))
         circuit = qnode.qtape.graph
         layers = circuit.parametrized_layers
@@ -236,11 +255,11 @@ class TestCircuitGraph:
         assert layers[2].param_inds == [6, 7]
 
     @pytest.mark.parametrize("wires", [["a", "q1", 3]])
-    def test_iterate_layers(self, parameterized_circuit, wires):
+    def test_iterate_layers(self, parameterized_circuit_gaussian, wires):
         """A test of the different layers, their successors and ancestors using a simple circuit"""
 
         dev = qml.device("default.gaussian", wires=wires)
-        qnode = qml.QNode(parameterized_circuit, dev)
+        qnode = qml.QNode(parameterized_circuit_gaussian, dev)
         qnode(*pnp.array([0.1, 0.2, 0.3, 0.4, 0.5, 0.6], requires_grad=True))
         circuit = qnode.qtape.graph
         result = list(circuit.iterate_parametrized_layers())
@@ -322,3 +341,33 @@ class TestCircuitGraph:
 
         expected = """Operations\n==========\nHadamard(wires=[0])\nCNOT(wires=[0, 1])\n\nObservables\n===========\nsample(wires=[0, 1, 2])"""
         assert out == expected
+
+    tape_depth = (
+        ([qml.PauliZ(0), qml.CNOT([0, 1]), qml.RX(1.23, 2)], 2),
+        ([qml.Hadamard(0), qml.CNOT([0, 1]), CustomOpDepth3(wires=[1, 0])], 5),
+        (
+            [
+                qml.RX(1.23, 0),
+                qml.RZ(-0.45, 0),
+                CustomOpDepth3(wires=[3, 4]),
+                qml.Hadamard(0),
+                qml.Hadamard(1),
+                qml.Hadamard(2),
+                qml.Hadamard(3),
+                qml.Hadamard(4),
+                CustomOpDepth2(wires=[1, 2, 3]),
+                qml.RZ(-1, 4),
+                qml.RX(0.5, 4),
+                qml.RX(0.5, 3),
+                CustomOpDepth4(wires=[0, 1]),
+                qml.CNOT(wires=[3, 4]),
+            ],
+            10,
+        ),
+    )
+
+    @pytest.mark.parametrize("ops, true_depth", tape_depth)
+    def test_get_depth(self, ops, true_depth):
+        """Test that depth is computed correctly for operations that define a custom depth > 1"""
+        cg = CircuitGraph(ops, [], wires=[0, 1, 2, 3, 4])
+        assert cg.get_depth() == true_depth

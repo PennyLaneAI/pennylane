@@ -146,7 +146,7 @@ class DefaultQubitJax(DefaultQubit):
             QNode differentiation method is not supported and it is recommended to consider
             switching device to ``default.qubit`` and using ``diff_method="parameter-shift"``.
             Or keeping ``default.qubit.jax`` but switching to
-            ``diff_method=qml.gradient.stoch_pulse_grad`` for pulse programming.
+            ``diff_method=qml.gradients.stoch_pulse_grad`` for pulse programming.
         prng_key (Optional[jax.random.PRNGKey]): An optional ``jax.random.PRNGKey``. This is the key to the
             pseudo random number generator. If None, a random key will be generated.
 
@@ -180,6 +180,8 @@ class DefaultQubitJax(DefaultQubit):
     _size = staticmethod(jnp.size)
     _ndim = staticmethod(jnp.ndim)
 
+    operations = DefaultQubit.operations.union({"ParametrizedEvolution"})
+
     def __init__(self, wires, *, shots=None, prng_key=None, analytic=None):
         _validate_jax_version()
 
@@ -196,7 +198,6 @@ class DefaultQubitJax(DefaultQubit):
         del self._apply_ops["PauliY"]
         del self._apply_ops["Hadamard"]
         del self._apply_ops["CZ"]
-        self.operations.add("ParametrizedEvolution")
         self._prng_key = prng_key
 
     @classmethod
@@ -207,7 +208,10 @@ class DefaultQubitJax(DefaultQubit):
 
     def _apply_parametrized_evolution(self, state: TensorLike, operation: ParametrizedEvolution):
         # given that wires is a static value (it is not a tracer), we can use an if statement
-        if 2 * len(operation.wires) > self.num_wires:
+        if (
+            2 * len(operation.wires) > self.num_wires
+            and not operation.hyperparameters["complementary"]
+        ):
             # the device state vector contains less values than the operation matrix --> evolve state
             return self._evolve_state_vector_under_parametrized_evolution(state, operation)
         # the device state vector contains more/equal values than the operation matrix --> evolve matrix
@@ -248,7 +252,10 @@ class DefaultQubitJax(DefaultQubit):
             return (-1j * H_jax(operation.data, t=t)) @ y
 
         result = odeint(fun, state, operation.t, **operation.odeint_kwargs)
-        return self._reshape(result[-1], [2] * self.num_wires)
+        out_shape = [2] * self.num_wires
+        if operation.hyperparameters["return_intermediate"]:
+            return self._reshape(result, [-1] + out_shape)
+        return self._reshape(result[-1], out_shape)
 
     @staticmethod
     def _scatter(indices, array, new_dimensions):
