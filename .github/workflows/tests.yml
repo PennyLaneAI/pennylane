@@ -194,7 +194,7 @@ jobs:
           python -m pip install --upgrade pip && pip install wheel --upgrade
           pip install -r requirements-ci.txt --upgrade
           pip install -r requirements-dev.txt --upgrade
-          pip3 install git+https://github.com/google/jax.git@master
+          pip3 install git+https://github.com/google/jax.git@main
           pip3 install jaxlib==$JAX_VERSION
 
       - name: Conditionally install cvxpy and cvxopt
@@ -304,7 +304,7 @@ jobs:
         run: pip3 install tensorflow~=$TF_VERSION keras~=$TF_VERSION
 
       - name: Install JAX
-        run: pip3 install git+https://github.com/google/jax.git@master
+        run: pip3 install git+https://github.com/google/jax.git@main
              pip3 install jaxlib==$JAX_VERSION
 
       - name: Install PennyLane
@@ -399,7 +399,7 @@ jobs:
         run: pip3 install tensorflow~=$TF_VERSION keras~=$TF_VERSION
 
       - name: Install JAX
-        run: pip3 install git+https://github.com/google/jax.git@master
+        run: pip3 install git+https://github.com/google/jax.git@main
              pip3 install jaxlib==$JAX_VERSION
 
       - name: Install KaHyPar and opt_einsum
@@ -502,7 +502,7 @@ jobs:
         run: pip3 install tensorflow~=$TF_VERSION keras~=$TF_VERSION
 
       - name: Install JAX
-        run: pip3 install git+https://github.com/google/jax.git@master
+        run: pip3 install git+https://github.com/google/jax.git@main
              pip3 install jaxlib==$JAX_VERSION
 
       - name: Install PennyLane
@@ -562,7 +562,7 @@ jobs:
         run: pip3 install tensorflow~=$TF_VERSION keras~=$TF_VERSION
 
       - name: Install JAX
-        run: pip3 install git+https://github.com/google/jax.git@master
+        run: pip3 install git+https://github.com/google/jax.git@main
              pip3 install jaxlib==$JAX_VERSION
 
       - name: Install PennyLane
@@ -672,7 +672,7 @@ jobs:
 
       - name: Conditionally install Jax
         if: contains(matrix.config.device, 'jax')
-        run: pip3 install git+https://github.com/google/jax.git@master
+        run: pip3 install git+https://github.com/google/jax.git@main
              pip3 install jaxlib==$JAX_VERSION
 
       - name: Install PennyLane
