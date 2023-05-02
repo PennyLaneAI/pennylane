@@ -348,6 +348,7 @@ class TestState:
 
 class TestDensityMatrix:
     """Tests for the density matrix function"""
+
     # pylint: disable=too-many-public-methods
 
     @pytest.mark.parametrize("wires", range(2, 5))
