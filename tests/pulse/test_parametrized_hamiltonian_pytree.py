@@ -14,6 +14,7 @@
 """
 Unit tests for the ParametrizedHamiltonianPytree class
 """
+# pylint: disable=import-outside-toplevel
 import numpy as np
 import pytest
 
@@ -37,10 +38,12 @@ jnp = pytest.importorskip("jax.numpy")
 
 
 def f1(p, t):
+    """Compute the function p * sin(t) * (t - 1)."""
     return p * np.sin(t) * (t - 1)
 
 
 def f2(p, t):
+    """Compute the function p * cos(t**2)."""
     return np.cos(p * t**2)
 
 
@@ -153,6 +156,7 @@ class TestLazyDotPytree:
     """Unit tests for the LazyDotPytree class."""
 
     def test_initialization(self):
+        """Test that a LazyDotPytree is initialized correctly."""
         coeffs = [1, 2, 3]
         ops = [qml.PauliX(0), qml.PauliY(0), qml.PauliZ(0)]
         mats = [qml.matrix(o) for o in ops]

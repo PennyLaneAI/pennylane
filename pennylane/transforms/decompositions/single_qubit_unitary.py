@@ -134,7 +134,7 @@ def xyx_decomposition(U, wire, return_global_phase=False):
             element of the returned list of operations.
 
     Returns:
-        list[qml.Operation]: Returns a list of of gates, an ``RX``, an ``RY`` and
+        list[Operation]: Returns a list of of gates, an ``RX``, an ``RY`` and
         another ``RX`` gate, which when applied in the order of appearance in the list is equivalent
         to the unitary :math:`U` up to global phase. If `return_global_phase=True`,
         the global phase is returned as the last element of the list.
@@ -142,7 +142,7 @@ def xyx_decomposition(U, wire, return_global_phase=False):
     **Example**
 
     >>> U = np.array([[-0.28829348-0.78829734j,  0.30364367+0.45085995j],
-                      [ 0.53396245-0.10177564j,  0.76279558-0.35024096j]])
+    ...               [ 0.53396245-0.10177564j,  0.76279558-0.35024096j]])
     >>> decomp = xyx_decomposition(U, 0, return_global_phase=True)
     >>> decomp
     [RX(array(0.45246584), wires=[0]),
