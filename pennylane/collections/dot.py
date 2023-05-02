@@ -88,6 +88,10 @@ def dot(x, y):
 
     .. seealso:: :func:`~.apply`, :func:`~.sum`
 
+    .. warning::
+        ``dot`` is deprecated and will be deleted in v0.31.
+        Individual ``QNode``'s can now handle multiple measurements and parameter broadcasting.
+
     **Example:**
 
     We can create a QNodeCollection using :func:`~.map`:
