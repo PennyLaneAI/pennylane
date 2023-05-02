@@ -61,7 +61,7 @@ SUPPORTED_INTERFACES = list(INTERFACE_MAP)
 
 
 def _adjoint_jacobian_expansion(
-    tapes: Sequence[QuantumTape], mode: str, interface: str, max_expansion: int
+    tapes: Sequence[QuantumTape], grad_on_execution: bool, interface: str, max_expansion: int
 ):
     """Performs adjoint jacobian specific expansion.  Expands so that every
     trainable operation has a generator.
@@ -69,7 +69,7 @@ def _adjoint_jacobian_expansion(
     TODO: Let the device specify any gradient-specific expansion logic.  This
     function will be removed once the device-support pipeline is improved.
     """
-    if mode == "forward" and INTERFACE_MAP[interface] == "jax":
+    if grad_on_execution and INTERFACE_MAP[interface] == "jax":
         # qml.math.is_trainable doesn't work with jax on the forward pass
         non_trainable = qml.operation.has_nopar
     else:
@@ -226,7 +226,7 @@ def cache_execute(fn: Callable, cache, pass_kwargs=False, return_tuple=True, exp
     return wrapper
 
 
-def _execute_new(
+def execute(
     tapes: Sequence[QuantumTape],
     device,
     gradient_fn: Callable = None,
@@ -341,6 +341,28 @@ def _execute_new(
            [ 0.01983384, -0.97517033,  0.        ],
            [ 0.        ,  0.        , -0.95533649]])
     """
+    if not qml.active_return():
+        if isinstance(grad_on_execution, str):
+            mode = "best"
+        else:
+            mode = "forward" if grad_on_execution else "backward"
+
+        return _execute_legacy(
+            tapes,
+            device,
+            gradient_fn,
+            interface=interface,
+            mode=mode,
+            gradient_kwargs=gradient_kwargs,
+            cache=cache,
+            cachesize=cachesize,
+            max_diff=max_diff,
+            override_shots=override_shots,
+            expand_fn=expand_fn,
+            max_expansion=max_expansion,
+            device_batch_transform=device_batch_transform,
+        )
+
     if interface == "auto":
         params = []
         for tape in tapes:
@@ -373,10 +395,10 @@ def _execute_new(
                     batch_execute, cache, return_tuple=False, expand_fn=expand_fn
                 )(tapes)
             )
-        with qml.tape.Unwrap(*tapes):
-            res = qml.interfaces.cache_execute(
-                batch_execute, cache, return_tuple=False, expand_fn=expand_fn
-            )(tapes)
+        unwrapped_tapes = tuple(qml.transforms.convert_to_numpy_parameters(t) for t in tapes)
+        res = qml.interfaces.cache_execute(
+            batch_execute, cache, return_tuple=False, expand_fn=expand_fn
+        )(unwrapped_tapes)
 
         return batch_fn(res)
 
@@ -442,23 +464,18 @@ def _execute_new(
             from .autograd import execute as _execute
 
         elif mapped_interface == "tf":
-            # TODO: remove pragmas when TF is supported
-            import tensorflow as tf  # pragma: no cover
+            import tensorflow as tf
 
-            if not tf.executing_eagerly() or "autograph" in interface:  # pragma: no cover
-                from .tensorflow_autograph import execute as _execute  # pragma: no cover
+            if not tf.executing_eagerly() or "autograph" in interface:
+                from .tensorflow_autograph import execute as _execute
 
-                # TODO: Remove when old interface is deprecated
-                _mode = "forward" if _grad_on_execution else "backward"
-
-                _execute = partial(_execute, mode=_mode)
+                _execute = partial(_execute, grad_on_execution=_grad_on_execution)
 
             else:
-                from .tensorflow import execute as _execute  # pragma: no cover
+                from .tensorflow import execute as _execute
 
         elif mapped_interface == "torch":
-            # TODO: remove pragmas when Torch is supported
-            from .torch import execute as _execute  # pragma: no cover
+            from .torch import execute as _execute
 
         elif mapped_interface == "jax":
             _execute = _get_jax_execute_fn(interface, tapes)
@@ -476,7 +493,7 @@ def _execute_new(
     return batch_fn(res)
 
 
-def execute(
+def _execute_legacy(
     tapes: Sequence[QuantumTape],
     device,
     gradient_fn: Callable = None,
@@ -591,25 +608,6 @@ def execute(
            [ 0.01983384, -0.97517033,  0.        ],
            [ 0.        ,  0.        , -0.95533649]])
     """
-    if qml.active_return():
-        grad_on_execution = mode == "forward" if mode != "best" else "best"
-
-        return _execute_new(
-            tapes,
-            device,
-            gradient_fn,
-            interface=interface,
-            grad_on_execution=grad_on_execution,
-            gradient_kwargs=gradient_kwargs,
-            cache=cache,
-            cachesize=cachesize,
-            max_diff=max_diff,
-            override_shots=override_shots,
-            expand_fn=expand_fn,
-            max_expansion=max_expansion,
-            device_batch_transform=device_batch_transform,
-        )
-
     if interface == "auto":
         params = []
         for tape in tapes:
@@ -643,10 +641,10 @@ def execute(
                     batch_execute, cache, return_tuple=False, expand_fn=expand_fn
                 )(tapes)
             )
-        with qml.tape.Unwrap(*tapes):
-            res = qml.interfaces.cache_execute(
-                batch_execute, cache, return_tuple=False, expand_fn=expand_fn
-            )(tapes)
+        unwrapped_tapes = tuple(qml.transforms.convert_to_numpy_parameters(t) for t in tapes)
+        res = qml.interfaces.cache_execute(
+            batch_execute, cache, return_tuple=False, expand_fn=expand_fn
+        )(unwrapped_tapes)
 
         return batch_fn(res)
 
@@ -713,6 +711,10 @@ def execute(
 
             if not tf.executing_eagerly() or "autograph" in interface:
                 from .tensorflow_autograph import execute as _execute
+
+                _grad_on_execution = _mode == "forward"
+
+                _execute = partial(_execute, grad_on_execution=_grad_on_execution)
             else:
                 from .tensorflow import execute as _execute
         elif mapped_interface == "torch":
@@ -725,9 +727,7 @@ def execute(
             f"version of {mapped_interface} to enable the '{mapped_interface}' interface."
         ) from e
 
-    res = _execute(
-        tapes, device, execute_fn, gradient_fn, gradient_kwargs, _n=1, max_diff=max_diff, mode=_mode
-    )
+    res = _execute(tapes, device, execute_fn, gradient_fn, gradient_kwargs, _n=1, max_diff=max_diff)
 
     return batch_fn(res)
 
@@ -745,12 +745,12 @@ def _get_jax_execute_fn(interface: str, tapes: Sequence[QuantumTape]):
 
     if interface == "jax-jit":
         if qml.active_return():
-            from .jax_jit_tuple import execute_tuple as _execute
+            from .jax_jit_tuple import execute as _execute
         else:
-            from .jax_jit import execute as _execute
+            from .jax_jit import execute_legacy as _execute
     else:
         if qml.active_return():
-            from .jax import execute_new as _execute
-        else:
             from .jax import execute as _execute
+        else:
+            from .jax import execute_legacy as _execute
     return _execute

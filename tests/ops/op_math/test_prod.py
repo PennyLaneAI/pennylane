@@ -14,6 +14,7 @@
 """
 Unit tests for the Prod arithmetic class of qubit operations
 """
+# pylint:disable=protected-access
 import gate_data as gd  # a file containing matrix rep of each gate
 import numpy as np
 import pytest
@@ -106,7 +107,7 @@ def compare_and_expand_mat(mat1, mat2):
     return smaller_mat, larger_mat
 
 
-class MyOp(qml.RX):
+class MyOp(qml.RX):  # pylint:disable=too-few-public-methods
     """Variant of qml.RX that claims to not have `adjoint` or a matrix defined."""
 
     has_matrix = False
@@ -129,8 +130,8 @@ class TestInitialization:
         assert prod_op.id == id
         assert prod_op.queue_idx is None
 
-        assert prod_op.data == [[], [0.23]]
-        assert prod_op.parameters == [[], [0.23]]
+        assert prod_op.data == [0.23]
+        assert prod_op.parameters == [0.23]
         assert prod_op.num_params == 1
 
     def test_hash(self):
@@ -407,26 +408,25 @@ class TestMatrix:
         true_mat = math.kron(x, math.kron(h, z))
         assert np.allclose(mat, true_mat)
 
-    @staticmethod
-    def get_qft_mat(num_wires):
-        """Helper function to generate the matrix of a qft protocol."""
-        omega = math.exp(np.pi * 1.0j / 2 ** (num_wires - 1))
-        mat = math.zeros((2**num_wires, 2**num_wires), dtype="complex128")
-
-        for m in range(2**num_wires):
-            for n in range(2**num_wires):
-                mat[m, n] = omega ** (m * n)
-
-        return 1 / math.sqrt(2**num_wires) * mat
-
     def test_prod_templates(self):
         """Test that we can compose templates and the generated matrix is correct."""
+
+        def get_qft_mat(num_wires):
+            omega = math.exp(np.pi * 1.0j / 2 ** (num_wires - 1))
+            mat = math.zeros((2**num_wires, 2**num_wires), dtype="complex128")
+
+            for m in range(2**num_wires):
+                for n in range(2**num_wires):
+                    mat[m, n] = omega ** (m * n)
+
+            return 1 / math.sqrt(2**num_wires) * mat
+
         wires = [0, 1, 2]
         prod_op = Prod(qml.QFT(wires=wires), qml.GroverOperator(wires=wires), qml.PauliX(wires=0))
         mat = prod_op.matrix()
 
         grov_mat = (1 / 4) * math.ones((8, 8), dtype="complex128") - math.eye(8, dtype="complex128")
-        qft_mat = self.get_qft_mat(3)
+        qft_mat = get_qft_mat(3)
         x = math.array([[0.0 + 0j, 1.0 + 0j], [1.0 + 0j, 0.0 + 0j]])
         x_mat = math.kron(x, math.eye(4, dtype="complex128"))
 
@@ -578,7 +578,6 @@ class TestMatrix:
             @ qnp.kron(qnp.eye(2), gd.Rotx(theta))
             @ qnp.eye(4)
         )
-        true_mat = torch.tensor(true_mat)
         true_mat = torch.tensor(true_mat, dtype=torch.complex64)
 
         assert torch.allclose(mat, true_mat)
@@ -648,7 +647,7 @@ class TestMatrix:
         """Test that an error is raised when the sparse matrix method
         is undefined for any of the factors."""
 
-        class DummyOp(qml.operation.Operation):
+        class DummyOp(qml.operation.Operation):  # pylint:disable=too-few-public-methods
             num_wires = 1
 
             def sparse_matrix(self, wire_order=None):
@@ -663,10 +662,7 @@ class TestMatrix:
 class TestProperties:
     """Test class properties."""
 
-    @pytest.mark.parametrize(
-        "ops_lst, hermitian_status",
-        [(ops_tup, status) for ops_tup, status in zip(ops, ops_hermitian_status)],
-    )
+    @pytest.mark.parametrize("ops_lst, hermitian_status", list(zip(ops, ops_hermitian_status)))
     def test_is_hermitian(self, ops_lst, hermitian_status):
         """Test is_hermitian property updates correctly."""
         prod_op = prod(*ops_lst)
@@ -678,13 +674,13 @@ class TestProperties:
         import tensorflow as tf
 
         theta = tf.Variable(1.23)
-        ops = (
+        prod_ops = (
             prod(qml.RX(theta, wires=0), qml.RX(-theta, wires=0), qml.PauliZ(wires=1)),
             prod(qml.RX(theta, wires=0), qml.RX(-theta, wires=1), qml.PauliZ(wires=2)),
         )
         true_hermitian_states = (True, False)
 
-        for op, hermitian_state in zip(ops, true_hermitian_states):
+        for op, hermitian_state in zip(prod_ops, true_hermitian_states):
             assert qml.is_hermitian(op) == hermitian_state
 
     @pytest.mark.jax
@@ -693,13 +689,13 @@ class TestProperties:
         import jax.numpy as jnp
 
         theta = jnp.array(1.23)
-        ops = (
+        prod_ops = (
             prod(qml.RX(theta, wires=0), qml.RX(-theta, wires=0), qml.PauliZ(wires=1)),
             prod(qml.RX(theta, wires=0), qml.RX(-theta, wires=1), qml.PauliZ(wires=2)),
         )
         true_hermitian_states = (True, False)
 
-        for op, hermitian_state in zip(ops, true_hermitian_states):
+        for op, hermitian_state in zip(prod_ops, true_hermitian_states):
             assert qml.is_hermitian(op) == hermitian_state
 
     @pytest.mark.torch
@@ -708,13 +704,13 @@ class TestProperties:
         import torch
 
         theta = torch.tensor(1.23)
-        ops = (
+        prod_ops = (
             prod(qml.RX(theta, wires=0), qml.RX(-theta, wires=0), qml.PauliZ(wires=1)),
             prod(qml.RX(theta, wires=0), qml.RX(-theta, wires=1), qml.PauliZ(wires=2)),
         )
         true_hermitian_states = (True, False)
 
-        for op, hermitian_state in zip(ops, true_hermitian_states):
+        for op, hermitian_state in zip(prod_ops, true_hermitian_states):
             assert qml.is_hermitian(op) == hermitian_state
 
     @pytest.mark.parametrize("ops_lst", ops)
@@ -726,7 +722,7 @@ class TestProperties:
     def test_queue_category_none(self):
         """Test _queue_category property is None when any factor is not `_ops`."""
 
-        class DummyOp(Operator):
+        class DummyOp(Operator):  # pylint:disable=too-few-public-methods
             """Dummy op with None queue category"""
 
             _queue_category = None
@@ -1256,7 +1252,7 @@ class TestIntegration:
     def test_operation_integration(self):
         """Test that a Product operation can be queued and executed in a circuit"""
         dev = qml.device("default.qubit", wires=3)
-        ops = (
+        operands = (
             qml.Hadamard(wires=0),
             qml.CNOT(wires=[0, 1]),
             qml.RX(1.23, wires=1),
@@ -1265,7 +1261,7 @@ class TestIntegration:
 
         @qml.qnode(dev)
         def prod_state_circ():
-            Prod(*ops)
+            Prod(*operands)
             return qml.state()
 
         @qml.qnode(dev)
@@ -1299,6 +1295,18 @@ class TestIntegration:
         res1 = batched_prod(x, y)
         res2 = batched_no_prod(x, y)
         assert qml.math.allclose(res1, res2)
+
+    def test_params_can_be_considered_trainable(self):
+        """Tests that the parameters of a Prod are considered trainable."""
+        dev = qml.device("default.qubit", wires=2)
+
+        @qml.qnode(dev)
+        def circuit():
+            return qml.expval(qml.prod(qml.RX(1.1, 0), qml.RY(qnp.array(2.2), 1)))
+
+        with pytest.warns(UserWarning):
+            circuit()
+        assert circuit.tape.trainable_params == [1]
 
 
 class TestSortWires:

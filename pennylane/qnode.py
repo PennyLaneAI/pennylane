@@ -127,6 +127,10 @@ class QNode:
             executed on a device. Expansion occurs when an operation or measurement is not
             supported, and results in a gate decomposition. If any operations in the decomposition
             remain unsupported by the device, another expansion occurs.
+        grad_on_execution (bool, str): Whether the gradients should be computed on the execution or not.
+            Only applies if the device is queried for the gradient; gradient transform
+            functions available in ``qml.gradients`` are only supported on the backward
+            pass. The 'best' option chooses automatically between the two options and is default.
         mode (str): Whether the gradients should be computed on the forward
             pass (``forward``) or the backward pass (``backward``). Only applies
             if the device is queried for the gradient; gradient transform
@@ -361,6 +365,7 @@ class QNode:
         diff_method="best",
         expansion_strategy="gradient",
         max_expansion=10,
+        grad_on_execution="best",
         mode="best",
         cache=True,
         cachesize=10000,
@@ -413,6 +418,7 @@ class QNode:
         # execution keyword arguments
         self.execute_kwargs = {
             "mode": mode,
+            "grad_on_execution": grad_on_execution,
             "cache": cache,
             "cachesize": cachesize,
             "max_diff": max_diff,
@@ -855,6 +861,9 @@ class QNode:
         self._tape_cached = using_custom_cache and self.tape.hash in cache
 
         if qml.active_return():
+            if "mode" in self.execute_kwargs:
+                self.execute_kwargs.pop("mode")
+            # pylint: disable=unexpected-keyword-arg
             res = qml.execute(
                 [self.tape],
                 device=self.device,
@@ -890,7 +899,16 @@ class QNode:
             self._update_original_device()
 
             return res
-
+        if "mode" in self.execute_kwargs:
+            mode = self.execute_kwargs.pop("mode")
+            if mode == "forward":
+                grad_on_execution = True
+            elif mode == "backward":
+                grad_on_execution = False
+            else:
+                grad_on_execution = "best"
+            self.execute_kwargs["grad_on_execution"] = grad_on_execution
+        # pylint: disable=unexpected-keyword-arg
         res = qml.execute(
             [self.tape],
             device=self.device,
