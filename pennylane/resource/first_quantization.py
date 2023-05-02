@@ -39,6 +39,8 @@ class FirstQuantization(Operation):
         error (float): target error in the algorithm
         charge (int): total electric charge of the system
         br (int): number of bits for ancilla qubit rotation
+        cubic (bool): True if the unit cell is cubic
+        vectors (array[float]): lattice vectors
 
     **Example**
 
@@ -164,6 +166,8 @@ class FirstQuantization(Operation):
             error (float): target error in the algorithm
             br (int): number of bits for ancilla qubit rotation
             charge (int): total electric charge of the system
+            cubic (bool): True if the unit cell is cubic
+            vectors (array[float]): lattice vectors
 
         Returns:
             float: 1-norm of a first-quantized Hamiltonian in the plane-wave basis
@@ -447,6 +451,8 @@ class FirstQuantization(Operation):
             error (float): target error in the algorithm
             br (int): number of bits for ancilla qubit rotation
             charge (int): total electric charge of the system
+            cubic (bool): True if the unit cell is cubic
+            vectors (array[float]): lattice vectors
 
         Returns:
             int: number of calls to unitary
@@ -493,6 +499,8 @@ class FirstQuantization(Operation):
             error (float): target error in the algorithm
             br (int): number of bits for ancilla qubit rotation
             charge (int): total electric charge of the system
+            cubic (bool): True if the unit cell is cubic
+            vectors (array[float]): lattice vectors
 
         Returns:
             int: the number of Toffoli gates needed to implement the first quantization algorithm
@@ -550,6 +558,8 @@ class FirstQuantization(Operation):
             error (float): target error in the algorithm
             br (int): number of bits for ancilla qubit rotation
             charge (int): total electric charge of the system
+            cubic (bool): True if the unit cell is cubic
+            vectors (array[float]): lattice vectors
 
         Returns:
             int: number of logical qubits needed to implement the first quantization algorithm
@@ -624,10 +634,26 @@ class FirstQuantization(Operation):
         n,
         eta,
         error,
-        br=7,
-        charge=0,
-        vectors=None,
+        br,
+        charge,
+        vectors,
     ):
+        r"""Return the 1-norm of a first-quantized Hamiltonian in the plane-wave basis
+        for non-cubic systems.
+
+        Args:
+            n (int): number of plane waves
+            eta (int): number of electrons
+            error (float): target error in the algorithm
+            br (int): number of bits for ancilla qubit rotation
+            charge (int): total electric charge of the system
+            vectors (array[float]): lattice vectors
+
+        Returns:
+            float: 1-norm of a first-quantized Hamiltonian in the plane-wave basis
+
+
+        """
         omega = np.abs(np.sum((np.cross(vectors[0], vectors[1]) * vectors[2])))
 
         recip_vectors = (
@@ -727,7 +753,7 @@ class FirstQuantization(Operation):
             return ((lambda_u_1 + lambda_v_1 / (1 - 1 / eta)) / p_nu_amp) / p_eq, aa_steps
 
     @staticmethod
-    def _qubit_cost_noncubic(n, eta, error, br=7, charge=0, vectors=None):
+    def _qubit_cost_noncubic(n, eta, error, br, charge, vectors):
         lambda_total, aa_steps = FirstQuantization._norm_noncubic(
             n,
             eta,
@@ -736,7 +762,22 @@ class FirstQuantization(Operation):
             charge,
             vectors,
         )
+        r"""Return the number of logical qubits needed to implement the first quantization
+        algorithm for non-cubic systems.
+        
+        Args:
+            n (int): number of plane waves
+            eta (int): number of electrons
+            error (float): target error in the algorithm
+            br (int): number of bits for ancilla qubit rotation
+            charge (int): total electric charge of the system
+            vectors (array[float]): lattice vectors
 
+        Returns:
+            int: number of logical qubits needed to implement the first quantization algorithm
+        
+        
+        """
         omega = np.abs(np.sum((np.cross(vectors[0], vectors[1]) * vectors[2])))
 
         recip_vectors = (
@@ -823,7 +864,7 @@ class FirstQuantization(Operation):
         return int(np.ceil(clean_cost))
 
     @staticmethod
-    def _unitary_cost_noncubic(n, eta, error, br=7, charge=0, vectors=None):
+    def _unitary_cost_noncubic(n, eta, error, br, charge, vectors):
         lambda_total, aa_steps = FirstQuantization._norm_noncubic(
             n,
             eta,
@@ -832,7 +873,21 @@ class FirstQuantization(Operation):
             charge,
             vectors,
         )
+        r"""Return the number of Toffoli gates needed to implement the qubitization unitary
+        operator for non-cubic systems.
 
+        Args:
+            n (int): number of plane waves
+            eta (int): number of electrons
+            error (float): target error in the algorithm
+            br (int): number of bits for ancilla qubit rotation
+            charge (int): total electric charge of the system
+            vectors (array[float]): lattice vectors
+
+        Returns:
+            int: the number of Toffoli gates needed to implement the qubitization unitary operator        
+        
+        """
         omega = np.abs(np.sum((np.cross(vectors[0], vectors[1]) * vectors[2])))
 
         recip_vectors = (
@@ -922,7 +977,9 @@ class FirstQuantization(Operation):
 
     @staticmethod
     def _momentum_state_qrom(n_p, n_m, n_dirty, n_tof, kappa):
-        r"""Derived from Section D.1 item (6) and Appendix K.1.f of arXiv:2302.07981 (2023)"""
+        r"""Returns the Toffoli cost for preparing the momentum state superposition.
+
+        Derived from Section D.1 item (6) and Appendix K.1.f of arXiv:2302.07981 (2023)"""
 
         x = 2 ** (3 * n_p)
 
