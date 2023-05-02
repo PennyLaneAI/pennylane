@@ -21,11 +21,6 @@ from scipy import integrate
 from pennylane import numpy as np
 from pennylane.operation import AnyWires, Operation
 
-# class FirstQuantizationPP(Operation):
-#     r"""Estimate resources with the pseudopotential algorithm."""
-
-# class FirstQuantizationAE(Operation):
-#     r"""Estimate resources with the all-electron algorithm."""
 
 class FirstQuantization(Operation):
     r"""Estimate the number of non-Clifford gates and logical qubits for a quantum phase estimation
