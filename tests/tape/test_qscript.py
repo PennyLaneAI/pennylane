@@ -825,6 +825,7 @@ class TestMakeQscript:
     def test_make_qscript_with_shots(self, shots, total_shots, shot_vector):
         """Test that ``make_qscript`` creates a ``QuantumScript`` correctly when
         shots are specified."""
+
         def qfunc():
             qml.Hadamard(0)
             qml.CNOT([0, 1])

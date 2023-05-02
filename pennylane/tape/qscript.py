@@ -20,7 +20,7 @@ executed by a device.
 import contextlib
 import copy
 from collections import Counter, defaultdict
-from typing import List, Union
+from typing import List, Union, Optional, Sequence
 import warnings
 
 import pennylane as qml
@@ -34,8 +34,8 @@ from pennylane.measurements import (
     ShadowExpvalMP,
     StateMP,
     VarianceMP,
+    Shots,
 )
-from pennylane.measurements import Shots
 from pennylane.operation import Observable, Operator, Operation
 from pennylane.queuing import AnnotatedQueue, process_queue
 
@@ -91,7 +91,7 @@ class QuantumScript:
         prep (Iterable[Operator]): Any state preparations to perform at the start of the circuit
 
     Keyword Args:
-        shots (None, int, Sequence[int], ~.pennylane.measurements.Shots): Number and/or batches of
+        shots (None, int, Sequence[int], ~.Shots): Number and/or batches of
             shots for execution
         name (str): a name given to the quantum script
         _update=True (bool): Whether or not to set various properties on initialization. Setting
@@ -178,7 +178,13 @@ class QuantumScript:
     True for its child Quantum Tape."""
 
     def __init__(
-        self, ops=None, measurements=None, prep=None, shots=None, name=None, _update=True
+        self,
+        ops=None,
+        measurements=None,
+        prep=None,
+        shots: Optional[Union[int, Sequence, Shots]] = None,
+        name=None,
+        _update=True,
     ):  # pylint: disable=too-many-arguments
         self.name = name
         self._prep = [] if prep is None else list(prep)
@@ -371,7 +377,7 @@ class QuantumScript:
         return rotation_gates
 
     @property
-    def shots(self):
+    def shots(self) -> Shots:
         """Returns a ``Shots`` object containing information about the number
         and batches of shots
 
@@ -1355,7 +1361,7 @@ class QuantumScript:
         return qasm_str
 
     @classmethod
-    def from_queue(cls, queue, shots=None):
+    def from_queue(cls, queue, shots: Optional[Union[int, Sequence, Shots]] = None):
         """Construct a QuantumScript from an AnnotatedQueue."""
         return cls(*process_queue(queue), shots=shots)
 
@@ -1380,7 +1386,7 @@ class SpecsDict(dict):
         return super().__getitem__(item)
 
 
-def make_qscript(fn, shots=None):
+def make_qscript(fn, shots: Optional[Union[int, Sequence, Shots]] = None):
     """Returns a function that generates a qscript from a quantum function without any
     operation queuing taking place.
 
@@ -1389,7 +1395,7 @@ def make_qscript(fn, shots=None):
 
     Args:
         fn (function): the quantum function to generate the qscript from
-        shots (None, int, Sequence[int], ~.pennylane.measurements.Shots): number and/or
+        shots (None, int, Sequence[int], ~.Shots): number and/or
             batches of executions
 
     Returns:
