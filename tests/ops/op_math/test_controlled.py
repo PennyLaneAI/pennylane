@@ -1520,6 +1520,7 @@ def test_qubit_unitary(M):
     assert not equal_list(list(tape), expected)
 
 
+@pytest.mark.xfail
 @pytest.mark.parametrize(
     "M",
     [

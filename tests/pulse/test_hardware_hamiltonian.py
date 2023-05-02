@@ -309,10 +309,10 @@ class TestDrive:
         """Test that adding multiple drive terms behaves as expected"""
 
         def fa(p, t):
-            return np.sin(p * t)
+            return np.sin(p * t) / (2 * np.pi)
 
         H1 = drive(amplitude=fa, phase=1, wires=[0, 3])
-        H2 = drive(amplitude=1, phase=3, wires=[1, 2])
+        H2 = drive(amplitude=0.5 / np.pi, phase=3, wires=[1, 2])
         Hd = H1 + H2
 
         ops_expected = [
@@ -377,7 +377,7 @@ class TestAmplitudeAndPhase:
     def test_amplitude_and_phase_no_callables(self):
         """Test that when calling amplitude_and_phase, if neither are callable,
         a float is returned instead of an AmplitudeAndPhase object"""
-        f = amplitude_and_phase(np.sin, 3, 4)
+        f = amplitude_and_phase(np.sin, 3 / (2 * np.pi), 4)
         expected_result = 3 * np.sin(4)
 
         assert isinstance(f, float)
@@ -387,7 +387,7 @@ class TestAmplitudeAndPhase:
         """Test that when calling amplitude_and_phase, if only phase is callable,
         an AmplitudeAndPhase object with callable phase and fixed amplitude is
         correctly created"""
-        f = amplitude_and_phase(np.sin, 2.7, callable_phase)
+        f = amplitude_and_phase(np.sin, 2.7 / (2 * np.pi), callable_phase)
 
         # attributes are correct
         assert isinstance(f, AmplitudeAndPhase)
@@ -412,7 +412,7 @@ class TestAmplitudeAndPhase:
         assert f.func.__name__ == "callable_amp"
 
         # calling yields expected result
-        expected_result = callable_amp([1.7], 2) * np.sin(0.7)
+        expected_result = callable_amp([1.7], 2) * (2 * np.pi) * np.sin(0.7)
         assert f([1.7], 2) == expected_result
 
     def test_amplitude_and_phase_both_callable(self):
@@ -428,7 +428,9 @@ class TestAmplitudeAndPhase:
         assert f.func.__name__ == "callable_amp_and_phase"
 
         # calling yields expected result
-        expected_result = callable_amp([1.7], 2) * np.sin(callable_phase([1.3, 2.5], 2))
+        expected_result = (
+            callable_amp([1.7], 2) * (2 * np.pi) * np.sin(callable_phase([1.3, 2.5], 2))
+        )
         assert f([[1.7], [1.3, 2.5]], 2) == expected_result
 
     def test_callable_phase_and_amplitude_hamiltonian(self):
@@ -445,8 +447,8 @@ class TestAmplitudeAndPhase:
 
         evaluated_H = Hd([3.4, 5.6], t)
 
-        c1 = np.sin(3.4 * t) * np.cos(np.cos(5.6 * t))
-        c2 = np.sin(3.4 * t) * np.sin(np.cos(5.6 * t))
+        c1 = np.sin(3.4 * t) * (2 * np.pi) * np.cos(np.cos(5.6 * t))
+        c2 = np.sin(3.4 * t) * (2 * np.pi) * np.sin(np.cos(5.6 * t))
         expected_H_parametrized = qml.sum(
             qml.s_prod(c1, qml.Hamiltonian([0.5, 0.5], [qml.PauliX(0), qml.PauliX(1)])),
             qml.s_prod(c2, qml.Hamiltonian([-0.5, -0.5], [qml.PauliY(0), qml.PauliY(1)])),
@@ -457,7 +459,7 @@ class TestAmplitudeAndPhase:
         """Test that using callable phase in drive creates AmplitudeAndPhase
         callables, and the resulting Hamiltonian can be called"""
 
-        Hd = drive(7.2, sine_func, wires=[0, 1])
+        Hd = drive(7.2 / (2 * np.pi), sine_func, wires=[0, 1])
 
         assert len(Hd.coeffs) == 2
         assert isinstance(Hd.coeffs[0], AmplitudeAndPhase)
@@ -488,8 +490,8 @@ class TestAmplitudeAndPhase:
 
         evaluated_H = Hd([3.4], t)
 
-        c1 = np.sin(3.4 * t) * np.cos(4.3)
-        c2 = np.sin(3.4 * t) * np.sin(4.3)
+        c1 = np.sin(3.4 * t) * (2 * np.pi) * np.cos(4.3)
+        c2 = np.sin(3.4 * t) * (2 * np.pi) * np.sin(4.3)
         expected_H_parametrized = qml.sum(
             qml.s_prod(c1, qml.Hamiltonian([0.5, 0.5], [qml.PauliX(0), qml.PauliX(1)])),
             qml.s_prod(c2, qml.Hamiltonian([-0.5, -0.5], [qml.PauliY(0), qml.PauliY(1)])),
