@@ -58,7 +58,7 @@ of that observable.
 def assert_multimeasure_not_broadcasted(measurements, broadcast):
     """Assert that there are not simultaneously multiple measurements and
     broadcasting activated.Otherwise raises an error."""
-    if broadcast and measurements > 1:
+    if broadcast and len(measurements) > 1:
         raise NotImplementedError(
             "Broadcasting with multiple measurements is not supported yet. "
             f"Set broadcast to False instead. The tape measurements are {measurements}."
