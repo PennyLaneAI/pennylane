@@ -88,7 +88,7 @@ class FirstQuantization(Operation):
         charge=0,
         br=7,
         cubic=True,
-        vec_a=None,
+        vectors=None,
     ):
         self.n = n
         self.eta = eta
@@ -97,18 +97,18 @@ class FirstQuantization(Operation):
         self.charge = charge
         self.br = br
         self.cubic = cubic
-        self.vec_a = vec_a
+        self.vectors = vectors
 
         self.lamb = self.norm(
-            self.n, self.eta, self.omega, self.error, self.br, self.charge, self.cubic, self.vec_a
+            self.n, self.eta, self.omega, self.error, self.br, self.charge, self.cubic, self.vectors
         )
 
         self.gates = self.gate_cost(
-            self.n, self.eta, self.omega, self.error, self.br, self.charge, self.cubic, self.vec_a
+            self.n, self.eta, self.omega, self.error, self.br, self.charge, self.cubic, self.vectors
         )
 
         self.qubits = self.qubit_cost(
-            self.n, self.eta, self.omega, self.error, self.br, self.charge, self.cubic, self.vec_a
+            self.n, self.eta, self.omega, self.error, self.br, self.charge, self.cubic, self.vectors
         )
 
         super().__init__(wires=range(self.qubits))
@@ -150,7 +150,7 @@ class FirstQuantization(Operation):
         return p
 
     @staticmethod
-    def norm(n, eta, omega, error, br=7, charge=0, cubic=True, vec_a=None):
+    def norm(n, eta, omega, error, br=7, charge=0, cubic=True, vectors=None):
         r"""Return the 1-norm of a first-quantized Hamiltonian in the plane-wave basis.
 
         The expressions needed for computing the norm are taken from
@@ -260,7 +260,7 @@ class FirstQuantization(Operation):
             raise ValueError("system charge must be an integer.")
 
         if cubic is False:
-            return FirstQuantization._norm_noncubic(n, eta, omega, error, br, charge, vec_a)[0]
+            return FirstQuantization._norm_noncubic(n, eta, error, br, charge, vectors)[0]
 
         l_z = eta + charge
 
@@ -347,7 +347,7 @@ class FirstQuantization(Operation):
         return min(cost_f, cost_c)
 
     @staticmethod
-    def unitary_cost(n, eta, omega, error, br=7, charge=0, vec_a=None):
+    def unitary_cost(n, eta, omega, error, br=7, charge=0):
         r"""Return the number of Toffoli gates needed to implement the qubitization unitary
         operator.
 
@@ -433,7 +433,7 @@ class FirstQuantization(Operation):
         return int(np.ceil(cost))
 
     @staticmethod
-    def estimation_cost(n, eta, omega, error, br=7, charge=0, cubic=True, vec_a=None):
+    def estimation_cost(n, eta, omega, error, br=7, charge=0, cubic=True, vectors=None):
         r"""Return the number of calls to the unitary needed to achieve the desired error in quantum
         phase estimation.
 
@@ -464,7 +464,7 @@ class FirstQuantization(Operation):
             raise ValueError("The target error must be greater than zero.")
 
         lamb = FirstQuantization.norm(
-            n, eta, omega, error, br=br, charge=charge, cubic=cubic, vec_a=vec_a
+            n, eta, omega, error, br=br, charge=charge, cubic=cubic, vectors=vectors
         )
 
         if cubic:
@@ -479,7 +479,7 @@ class FirstQuantization(Operation):
         return int(np.ceil(np.pi * lamb / (2 * error_qpe)))
 
     @staticmethod
-    def gate_cost(n, eta, omega, error, br=7, charge=0, cubic=True, vec_a=None):
+    def gate_cost(n, eta, omega, error, br=7, charge=0, cubic=True, vectors=None):
         r"""Return the total number of Toffoli gates needed to implement the first quantization
         algorithm.
 
@@ -525,20 +525,18 @@ class FirstQuantization(Operation):
             raise ValueError("br must be a positive integer.")
 
         e_cost = FirstQuantization.estimation_cost(
-            n, eta, omega, error, br=br, charge=charge, cubic=cubic, vec_a=vec_a
+            n, eta, omega, error, br=br, charge=charge, cubic=cubic, vectors=vectors
         )
 
         if cubic:
             u_cost = FirstQuantization.unitary_cost(n, eta, omega, error, br, charge)
         else:
-            u_cost = FirstQuantization._unitary_cost_noncubic(
-                n, eta, omega, error, br, charge, vec_a
-            )
+            u_cost = FirstQuantization._unitary_cost_noncubic(n, eta, error, br, charge, vectors)
 
         return e_cost * u_cost
 
     @staticmethod
-    def qubit_cost(n, eta, omega, error, br=7, charge=0, cubic=True, vec_a=None):
+    def qubit_cost(n, eta, omega, error, br=7, charge=0, cubic=True, vectors=None):
         r"""Return the number of logical qubits needed to implement the first quantization
         algorithm.
 
@@ -581,7 +579,7 @@ class FirstQuantization(Operation):
             raise ValueError("system charge must be an integer.")
 
         if cubic is False:
-            return FirstQuantization._qubit_cost_noncubic(n, eta, omega, error, br, charge, vec_a)
+            return FirstQuantization._qubit_cost_noncubic(n, eta, error, br, charge, vectors)
 
         lamb = FirstQuantization.norm(n, eta, omega, error, br=br, charge=charge)
         alpha = 0.01
@@ -625,19 +623,18 @@ class FirstQuantization(Operation):
     def _norm_noncubic(
         n,
         eta,
-        omega,
         error,
         br=7,
         charge=0,
-        vec_a=None,
+        vectors=None,
     ):
-        omega = np.abs(np.sum((np.cross(vec_a[0], vec_a[1]) * vec_a[2])))
+        omega = np.abs(np.sum((np.cross(vectors[0], vectors[1]) * vectors[2])))
 
         recip_vectors = (
             2
             * np.pi
             / omega
-            * np.array([np.cross(vec_a[i], vec_a[j]) for i, j in [(1, 2), (2, 0), (0, 1)]])
+            * np.array([np.cross(vectors[i], vectors[j]) for i, j in [(1, 2), (2, 0), (0, 1)]])
         )
 
         bbt = np.matrix(recip_vectors) @ np.matrix(recip_vectors).T
@@ -730,24 +727,23 @@ class FirstQuantization(Operation):
             return ((lambda_u_1 + lambda_v_1 / (1 - 1 / eta)) / p_nu_amp) / p_eq, aa_steps
 
     @staticmethod
-    def _qubit_cost_noncubic(n, eta, omega, error, br=7, charge=0, vec_a=None):
+    def _qubit_cost_noncubic(n, eta, error, br=7, charge=0, vectors=None):
         lambda_total, aa_steps = FirstQuantization._norm_noncubic(
             n,
             eta,
-            omega,
             error,
             br,
             charge,
-            vec_a,
+            vectors,
         )
 
-        omega = np.abs(np.sum((np.cross(vec_a[0], vec_a[1]) * vec_a[2])))
+        omega = np.abs(np.sum((np.cross(vectors[0], vectors[1]) * vectors[2])))
 
         recip_vectors = (
             2
             * np.pi
             / omega
-            * np.array([np.cross(vec_a[i], vec_a[j]) for i, j in [(1, 2), (2, 0), (0, 1)]])
+            * np.array([np.cross(vectors[i], vectors[j]) for i, j in [(1, 2), (2, 0), (0, 1)]])
         )
 
         bbt = np.matrix(recip_vectors) @ np.matrix(recip_vectors).T
@@ -827,24 +823,23 @@ class FirstQuantization(Operation):
         return int(np.ceil(clean_cost))
 
     @staticmethod
-    def _unitary_cost_noncubic(n, eta, omega, error, br=7, charge=0, vec_a=None):
+    def _unitary_cost_noncubic(n, eta, error, br=7, charge=0, vectors=None):
         lambda_total, aa_steps = FirstQuantization._norm_noncubic(
             n,
             eta,
-            omega,
             error,
             br,
             charge,
-            vec_a,
+            vectors,
         )
 
-        omega = np.abs(np.sum((np.cross(vec_a[0], vec_a[1]) * vec_a[2])))
+        omega = np.abs(np.sum((np.cross(vectors[0], vectors[1]) * vectors[2])))
 
         recip_vectors = (
             2
             * np.pi
             / omega
-            * np.array([np.cross(vec_a[i], vec_a[j]) for i, j in [(1, 2), (2, 0), (0, 1)]])
+            * np.array([np.cross(vectors[i], vectors[j]) for i, j in [(1, 2), (2, 0), (0, 1)]])
         )
 
         bbt = np.matrix(recip_vectors) @ np.matrix(recip_vectors).T
@@ -912,7 +907,7 @@ class FirstQuantization(Operation):
             )
         )
 
-        n_dirty = FirstQuantization._qubit_cost_noncubic(n, eta, omega, error, br, charge, vec_a)
+        n_dirty = FirstQuantization._qubit_cost_noncubic(n, eta, error, br, charge, vectors)
         ms_cost = FirstQuantization._momentum_state_qrom(n_p, n_m, n_dirty, n_tof, kappa=1)[0]
 
         # adapted Eq. (125) of PRX Quantum 2, 040332 (2021) to the noncubic case using Appendix K of
