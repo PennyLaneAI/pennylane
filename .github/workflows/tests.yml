@@ -304,8 +304,10 @@ jobs:
         run: pip3 install tensorflow~=$TF_VERSION keras~=$TF_VERSION
 
       - name: Install JAX
-        run: pip3 install git+https://github.com/google/jax.git@main
-             pip3 install jaxlib==$JAX_VERSION
+        run: |
+          pip3 install git+https://github.com/google/jax.git@main
+          pip3 install jaxlib==$JAX_VERSION
+
 
       - name: Install PennyLane
         run: |
@@ -502,8 +504,9 @@ jobs:
         run: pip3 install tensorflow~=$TF_VERSION keras~=$TF_VERSION
 
       - name: Install JAX
-        run: pip3 install git+https://github.com/google/jax.git@main
-             pip3 install jaxlib==$JAX_VERSION
+        run: |
+          pip3 install git+https://github.com/google/jax.git@main
+          pip3 install jaxlib==$JAX_VERSION
 
       - name: Install PennyLane
         run: |
@@ -562,8 +565,10 @@ jobs:
         run: pip3 install tensorflow~=$TF_VERSION keras~=$TF_VERSION
 
       - name: Install JAX
-        run: pip3 install git+https://github.com/google/jax.git@main
-             pip3 install jaxlib==$JAX_VERSION
+        run: |
+          pip3 install git+https://github.com/google/jax.git@main
+          pip3 install jaxlib==$JAX_VERSION
+
 
       - name: Install PennyLane
         run: |
@@ -672,8 +677,10 @@ jobs:
 
       - name: Conditionally install Jax
         if: contains(matrix.config.device, 'jax')
-        run: pip3 install git+https://github.com/google/jax.git@main
-             pip3 install jaxlib==$JAX_VERSION
+        run: |
+          pip3 install git+https://github.com/google/jax.git@main
+          pip3 install jaxlib==$JAX_VERSION
+
 
       - name: Install PennyLane
         run: |
