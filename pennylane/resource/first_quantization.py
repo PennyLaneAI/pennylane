@@ -651,8 +651,6 @@ class FirstQuantization(Operation):
 
         Returns:
             float: 1-norm of a first-quantized Hamiltonian in the plane-wave basis
-
-
         """
         omega = np.abs(np.sum((np.cross(vectors[0], vectors[1]) * vectors[2])))
 
@@ -749,12 +747,11 @@ class FirstQuantization(Operation):
             return 0.0, 0.0
         elif p_nu_amp * lambda_t_p >= (1 - p_nu_amp) * (lambda_u_1 + lambda_v_1):
             return (lambda_t_p + lambda_u_1 + lambda_v_1) / p_eq, aa_steps
-        else:
-            return ((lambda_u_1 + lambda_v_1 / (1 - 1 / eta)) / p_nu_amp) / p_eq, aa_steps
+        return ((lambda_u_1 + lambda_v_1 / (1 - 1 / eta)) / p_nu_amp) / p_eq, aa_steps
 
     @staticmethod
     def _qubit_cost_noncubic(n, eta, error, br, charge, vectors):
-        lambda_total, aa_steps = FirstQuantization._norm_noncubic(
+        lambda_total, _ = FirstQuantization._norm_noncubic(
             n,
             eta,
             error,
@@ -764,7 +761,7 @@ class FirstQuantization(Operation):
         )
         r"""Return the number of logical qubits needed to implement the first quantization
         algorithm for non-cubic systems.
-        
+
         Args:
             n (int): number of plane waves
             eta (int): number of electrons
@@ -775,8 +772,6 @@ class FirstQuantization(Operation):
 
         Returns:
             int: number of logical qubits needed to implement the first quantization algorithm
-        
-        
         """
         omega = np.abs(np.sum((np.cross(vectors[0], vectors[1]) * vectors[2])))
 
@@ -786,16 +781,6 @@ class FirstQuantization(Operation):
             / omega
             * np.array([np.cross(vectors[i], vectors[j]) for i, j in [(1, 2), (2, 0), (0, 1)]])
         )
-
-        bbt = np.matrix(recip_vectors) @ np.matrix(recip_vectors).T
-
-        orthogonal = (
-            np.linalg.norm(bbt - np.array([np.max(b**2) for b in recip_vectors]) * np.identity(3))
-            < 1e-6
-        )
-
-        p_th = 0.95  # optimal value for lower resource estimates
-        n_tof = 500  # optimal value for lower resource estimates
 
         l_z = eta + charge
         l_nu = 2 * np.pi * n ** (2 / 3)
@@ -885,8 +870,7 @@ class FirstQuantization(Operation):
             vectors (array[float]): lattice vectors
 
         Returns:
-            int: the number of Toffoli gates needed to implement the qubitization unitary operator        
-        
+            int: the number of Toffoli gates needed to implement the qubitization unitary operator
         """
         omega = np.abs(np.sum((np.cross(vectors[0], vectors[1]) * vectors[2])))
 
@@ -897,14 +881,6 @@ class FirstQuantization(Operation):
             * np.array([np.cross(vectors[i], vectors[j]) for i, j in [(1, 2), (2, 0), (0, 1)]])
         )
 
-        bbt = np.matrix(recip_vectors) @ np.matrix(recip_vectors).T
-
-        orthogonal = (
-            np.linalg.norm(bbt - np.array([np.max(b**2) for b in recip_vectors]) * np.identity(3))
-            < 1e-6
-        )
-
-        p_th = 0.95  # optimal value for lower resource estimates
         n_tof = 500  # optimal value for lower resource estimates
 
         alpha = 0.0248759298  # optimal value for lower resource estimates
