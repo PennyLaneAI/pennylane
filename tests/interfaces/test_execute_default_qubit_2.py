@@ -15,8 +15,86 @@
 import pytest
 
 import pennylane as qml
+from pennylane import numpy as np
+from pennylane.interfaces.execution import _batch_transform
 
 from pennylane.devices.experimental import DefaultQubit2
+
+
+class TestBatchTransformHelper:
+    """Unit tests for the _batch_transform helper function."""
+
+    def test_warns_if_requested_off(self):
+        """Test that a warning is raised if the the batch transform is requested to not be used."""
+        # pylint: disable=too-few-public-methods
+        class CustomOp(qml.operation.Operator):
+            """Dummy operator."""
+
+            def decomposition(self):
+                return [qml.PauliX(self.wires[0])]
+
+        dev = DefaultQubit2()
+
+        qs = qml.tape.QuantumScript([CustomOp(0)], [qml.expval(qml.PauliZ(0))])
+
+        config = qml.devices.experimental.ExecutionConfig()
+
+        with pytest.warns(UserWarning, match="device batch transforms cannot be turned off"):
+            new_batch, post_procesing_fn = _batch_transform(
+                (qs, qs), dev, config, device_batch_transform=False
+            )
+
+        assert len(new_batch) == 2
+
+        x = "a"
+        assert x is post_procesing_fn(x)
+
+    def test_split_and_expand_performed(self):
+        """Test that preprocess returns the correct tapes when splitting and expanding
+        is needed."""
+
+        class NoMatOp(qml.operation.Operation):
+            """Dummy operation for expanding circuit."""
+
+            # pylint: disable=missing-function-docstring
+            num_wires = 1
+
+            @property
+            def has_matrix(self):
+                return False
+
+            def decomposition(self):
+                return [qml.PauliX(self.wires), qml.PauliY(self.wires)]
+
+        ops = [qml.Hadamard(0), NoMatOp(1), qml.RX([np.pi, np.pi / 2], wires=1)]
+        # Need to specify grouping type to transform tape
+        measurements = [qml.expval(qml.PauliX(0)), qml.expval(qml.PauliZ(1))]
+        tapes = [
+            qml.tape.QuantumScript(ops=ops, measurements=[measurements[0]]),
+            qml.tape.QuantumScript(ops=ops, measurements=[measurements[1]]),
+        ]
+
+        dev = DefaultQubit2()
+        config = qml.devices.experimental.ExecutionConfig()
+
+        res_tapes, batch_fn = _batch_transform(tapes, dev, config)
+        expected_ops = [
+            [qml.Hadamard(0), qml.PauliX(1), qml.PauliY(1), qml.RX(np.pi, wires=1)],
+            [qml.Hadamard(0), qml.PauliX(1), qml.PauliY(1), qml.RX(np.pi / 2, wires=1)],
+        ]
+
+        assert len(res_tapes) == 4
+        for i, t in enumerate(res_tapes):
+            for op, expected_op in zip(t.operations, expected_ops[i % 2]):
+                assert qml.equal(op, expected_op)
+            assert len(t.measurements) == 1
+            if i < 2:
+                assert qml.equal(t.measurements[0], measurements[0])
+            else:
+                assert qml.equal(t.measurements[0], measurements[1])
+
+        input = ([[1, 2]], [[3, 4]], [[5, 6]], [[7, 8]])
+        assert np.array_equal(batch_fn(input), np.array([[[1, 2], [3, 4]], [[5, 6], [7, 8]]]))
 
 
 class TestNewDeviceIntegration:
