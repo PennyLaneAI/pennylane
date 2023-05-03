@@ -751,14 +751,6 @@ class FirstQuantization(Operation):
 
     @staticmethod
     def _qubit_cost_noncubic(n, eta, error, br, charge, vectors):
-        lambda_total, _ = FirstQuantization._norm_noncubic(
-            n,
-            eta,
-            error,
-            br,
-            charge,
-            vectors,
-        )
         r"""Return the number of logical qubits needed to implement the first quantization
         algorithm for non-cubic systems.
 
@@ -773,6 +765,16 @@ class FirstQuantization(Operation):
         Returns:
             int: number of logical qubits needed to implement the first quantization algorithm
         """
+
+        lambda_total, _ = FirstQuantization._norm_noncubic(
+            n,
+            eta,
+            error,
+            br,
+            charge,
+            vectors,
+        )
+
         omega = np.abs(np.sum((np.cross(vectors[0], vectors[1]) * vectors[2])))
 
         recip_vectors = (
@@ -850,14 +852,6 @@ class FirstQuantization(Operation):
 
     @staticmethod
     def _unitary_cost_noncubic(n, eta, error, br, charge, vectors):
-        lambda_total, aa_steps = FirstQuantization._norm_noncubic(
-            n,
-            eta,
-            error,
-            br,
-            charge,
-            vectors,
-        )
         r"""Return the number of Toffoli gates needed to implement the qubitization unitary
         operator for non-cubic systems.
 
@@ -872,6 +866,16 @@ class FirstQuantization(Operation):
         Returns:
             int: the number of Toffoli gates needed to implement the qubitization unitary operator
         """
+
+        lambda_total, aa_steps = FirstQuantization._norm_noncubic(
+            n,
+            eta,
+            error,
+            br,
+            charge,
+            vectors,
+        )
+
         omega = np.abs(np.sum((np.cross(vectors[0], vectors[1]) * vectors[2])))
 
         recip_vectors = (
