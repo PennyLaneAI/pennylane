@@ -69,7 +69,7 @@ jobs:
       - name: Setup Python virtual environment
         id: setup_venv
         env:
-          VENV_NAME: ${{ github.workspace }}/venv_${{ steps.setup_python.outputs.python-version }}_${{ github.sha }
+          VENV_NAME: ${{ github.workspace }}/venv_${{ steps.setup_python.outputs.python-version }}_${{ github.sha }}
         run: |
           # Clear any pre-existing venvs
           rm -rf venv_*
