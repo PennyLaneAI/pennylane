@@ -57,23 +57,24 @@ Pending deprecations
         some_qfunc(params)
         return qml.expval(Hamiltonian)
 
-* The ``collections`` module has been deprecated.
 
-  - Deprecated in v0.29
-  - Will be removed in v0.31
-
-* ``qml.op_sum``` is deprecated. Users should use ``qml.sum`` instead.
-
-  - Deprecated in v0.29.
-  - Will be removed in v0.31.
+Completed deprecation cycles
+----------------------------
 
 * The ``qml.utils.sparse_hamiltonian`` function is deprecated. ``~.Hamiltonian.sparse_matrix`` should be used instead.
 
   - Deprecated in v0.29
   - Removed in v0.31
 
-Completed deprecation cycles
-----------------------------
+* The ``collections`` module has been deprecated.
+
+  - Deprecated in v0.29
+  - Removed in v0.31
+
+* ``qml.op_sum``` is deprecated. Users should use ``qml.sum`` instead.
+
+  - Deprecated in v0.29.
+  - Removed in v0.31.
 
 * ``Evolution`` now adds a ``-1`` to the input parameter. Beforehand, the minus sign was not included.
 
