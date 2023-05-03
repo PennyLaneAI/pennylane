@@ -543,7 +543,10 @@ class TestSupportedConfs:
         elif return_type == Variance:
             with pytest.raises(
                 ValueError,
-                match="Computing the gradient of variances with the Hadamard test gradient is not implemented.",
+                match=(
+                    "Computing the gradient of variances with the Hadamard test "
+                    "gradient transform is not supported."
+                ),
             ):
                 grad = compute_gradient(x, interface, circuit, return_type)
         else:

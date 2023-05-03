@@ -58,7 +58,7 @@ of that observable.
 def assert_multimeasure_not_broadcasted(measurements, broadcast):
     """Assert that there are not simultaneously multiple measurements and
     broadcasting activated.Otherwise raises an error."""
-    if broadcast and measurements > 1:
+    if broadcast and len(measurements) > 1:
         raise NotImplementedError(
             "Broadcasting with multiple measurements is not supported yet. "
             f"Set broadcast to False instead. The tape measurements are {measurements}."
@@ -340,7 +340,9 @@ def _get_operation_recipe(tape, t_idx, shifts, order=1):
     return qml.math.stack([coeffs, mults, shifts]).T
 
 
-def _swap_two_axes(grads, first_axis_size, second_axis_size):
+def _swap_first_two_axes(grads, first_axis_size, second_axis_size):
+    """Transpose the first two axes of an iterable of iterables, returning
+    a tuple of tuples."""
     if first_axis_size == 1:
         return tuple(grads[0][i] for i in range(second_axis_size))
     return tuple(
@@ -380,7 +382,7 @@ def _reorder_grad_axes_single_measure_shot_vector(grads, num_params, len_shot_ve
         2. Num params
         3. Measurement shape
     """
-    return _swap_two_axes(grads, num_params, len_shot_vec)
+    return _swap_first_two_axes(grads, num_params, len_shot_vec)
 
 
 def _reorder_grad_axes_multi_measure(
@@ -435,7 +437,7 @@ def _reorder_grad_axes_multi_measure(
     """
     multi_param = num_params > 1
     if not shot_vector_multi_measure:
-        new_grad = _swap_two_axes(grads, num_params, num_measurements)
+        new_grad = _swap_first_two_axes(grads, num_params, num_measurements)
     else:
         new_grad = []
         for i in range(len_shot_vec):
@@ -453,7 +455,15 @@ def _reorder_grad_axes_multi_measure(
 
 
 def _reorder_grads(grads, tape_specs):
-    """ """
+    """Reorder the axes of tape gradients according to the original tape specifications.
+
+    - If the original tape returned a single measurement and has a single parameter, the
+      first entry is returned.
+    - If the original tape returned a single measurement and a shot vector was used,
+      reorder the gradient axes with ``_reorder_grad_axes_single_measure_shot_vector``
+    - If the original tape returned multiple measurements,
+      reorder the gradient axes with ``_reorder_grad_axes_multi_measure``.
+    """
     single_measure, num_params, num_measurements, shot_vector, shots = tape_specs
     if single_measure and num_params == 1:
         return grads[0]
@@ -461,7 +471,7 @@ def _reorder_grads(grads, tape_specs):
     if single_measure and shot_vector:
         return _reorder_grad_axes_single_measure_shot_vector(grads, num_params, len_shot_vec)
     if not single_measure:
-        return _reorder_grad_axes_multi_measure(
+        grads = _reorder_grad_axes_multi_measure(
             grads,
             num_params,
             num_measurements,
@@ -556,7 +566,6 @@ def expval_param_shift(
                 )
 
             g_tapes, h_fn = qml.gradients.hamiltonian_grad(tape, idx)
-            # hamiltonian_grad always returns a list with a single tape
             gradient_tapes.extend(g_tapes)
             # hamiltonian_grad always returns a list with a single tape!
             gradient_data.append((1, np.array([1.0]), h_fn, None, g_tapes[0].batch_size))
@@ -679,7 +688,6 @@ def _expval_param_shift_legacy(
                 )
 
             g_tapes, h_fn = qml.gradients.hamiltonian_grad(tape, idx)
-            # hamiltonian_grad always returns a list with a single tape
             gradient_tapes.extend(g_tapes)
             # hamiltonian_grad always returns a list with a single tape!
             gradient_data.append((1, np.array([1.0]), h_fn, None, g_tapes[0].batch_size))
@@ -1883,7 +1891,7 @@ def _param_shift_legacy(
         batch_size of the created tapes.
     """
     assert_no_state_returns(m := tape.measurements)
-    assert_multimeasure_not_broadcasted(len(m), broadcast)
+    assert_multimeasure_not_broadcasted(m, broadcast)
 
     if argnum is None and not tape.trainable_params:
         return _no_trainable_grad_legacy(tape)

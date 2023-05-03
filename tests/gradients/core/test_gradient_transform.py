@@ -153,12 +153,6 @@ class TestGradMethodValidation:
             _grad_method_validation("analytic", tape)
 
 
-class TestGradientAnalysisAndValidation:
-    """Test the combined function gradient_analysis_and_validation."""
-
-    pass
-
-
 class TestChooseGradMethods:
     """Test the helper function choose_grad_methods"""
 

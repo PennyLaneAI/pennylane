@@ -59,7 +59,7 @@ def undo_swaps(tape):
 
     >>> optimized_qfunc = undo_swaps(qfunc)
     >>> optimized_qnode = qml.QNode(optimized_qfunc, dev)
-    >>> print(qml.draw(optimized_qnode)(1, 2))
+    >>> print(qml.draw(optimized_qnode)())
         0: ──Y──┤ ⟨Z⟩
         1: ──H──┤
         2: ──X──┤
