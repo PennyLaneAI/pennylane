@@ -18,6 +18,9 @@
 * `qml.specs` is compatible with custom operations that have `depth` bigger than 1.
   [(#4033)](https://github.com/PennyLaneAI/pennylane/pull/4033)
 
+* `qml.prod` now accepts a single qfunc input for creating new `Prod` operators.
+  [(#4011)](https://github.com/PennyLaneAI/pennylane/pull/4011)
+
 <h3>Breaking changes 💔</h3>
 
 * `pennylane.collections`, `pennylane.op_sum`, and `pennylane.utils.sparse_hamiltonian` are removed.
@@ -40,7 +43,6 @@ Isaac De Vlugt,
 Soran Jahangiri,
 Christina Lee,
 Mudit Pandey,
-Christina Lee,
-Mudit Pandey,
+Matthew Silverman,
 Jay Soni
 
