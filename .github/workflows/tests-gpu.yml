@@ -97,7 +97,6 @@ jobs:
 
       - name: Install Torch
         run: |
-          
           python -m pip install --no-cache-dir torch==${{ env.TORCH_VERSION }} -f https://download.pytorch.org/whl/cu118/torch_stable.html
 
       - name: Install PennyLane
