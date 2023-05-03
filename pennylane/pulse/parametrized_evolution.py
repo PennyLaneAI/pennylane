@@ -368,6 +368,7 @@ class ParametrizedEvolution(Operation):
         t: Union[float, List[float]] = None,
         return_intermediate: bool = False,
         complementary: bool = False,
+        dense: bool = None,
         do_queue=True,
         id=None,
         **odeint_kwargs
@@ -393,6 +394,7 @@ class ParametrizedEvolution(Operation):
         self.hyperparameters["return_intermediate"] = return_intermediate
         self.hyperparameters["complementary"] = complementary
         self._check_time_batching()
+        self.dense = dense or len(self.wires) < 3
 
     def __call__(self, params, t, return_intermediate=None, complementary=None, **odeint_kwargs):
         if not has_jax:
@@ -467,7 +469,7 @@ class ParametrizedEvolution(Operation):
 
         with jax.ensure_compile_time_eval():
             H_jax = ParametrizedHamiltonianPytree.from_hamiltonian(
-                self.H, dense=len(self.wires) < 3, wire_order=self.wires
+                self.H, dense=self.dense, wire_order=self.wires
             )
 
         def fun(y, t):
