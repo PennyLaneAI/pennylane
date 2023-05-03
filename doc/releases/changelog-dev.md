@@ -15,6 +15,8 @@
 
 <h3>Breaking changes 💔</h3>
 
+* `pennylane.collections`, `pennylane.op_sum`, and `pennylane.utils.sparse_hamiltonian` are removed.
+
 <h3>Deprecations 👋</h3>
 
 * Gradient transforms with Jax do not support `argnum` anymore,  `argnums` needs to be used.
@@ -28,6 +30,7 @@
 
 This release contains contributions from (in alphabetical order):
 
+Christina Lee,
 Romain Moyard,
 Mudit Pandey,
-Jay Soni,
+Jay Soni
