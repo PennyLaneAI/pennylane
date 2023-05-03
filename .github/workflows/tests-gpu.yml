@@ -69,7 +69,7 @@ jobs:
       - name: Setup Python virtual environment
         id: setup_venv
         env:
-          VENV_NAME: venv_${{ steps.setup_python.outputs.python-version }}_${{ github.sha }}
+          VENV_NAME: ${{ github.workspace }}/venv_${{ steps.setup_python.outputs.python-version }}_${{ github.sha }
         run: |
           # Clear any pre-existing venvs
           rm -rf venv_*
@@ -79,7 +79,7 @@ jobs:
           python -m venv ${{ env.VENV_NAME }}
 
           # Add the venv to PATH for subsequent steps
-          echo ${{ github.workspace }}/${{ env.VENV_NAME }}/bin >> $GITHUB_PATH
+          echo ${{ env.VENV_NAME }}/bin >> $GITHUB_PATH
 
           # Adding venv name as an output for subsequent steps to reference if needed
           echo "venv_name=${{ env.VENV_NAME }}" >> $GITHUB_OUTPUT
