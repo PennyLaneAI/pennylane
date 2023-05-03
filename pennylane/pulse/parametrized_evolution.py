@@ -93,6 +93,8 @@ class ParametrizedEvolution(Operation):
             where :math:`t_i` are the additional times provided in ``t``.
             If ``True``, the *remaining* time evolution to :math:`t_f` is computed instead, returning
             :math:`\{U(t_0, t_f), U(t_1, t_f),\dots, U(t_{f-1}, t_f), U(t_f, t_f)\}`.
+        dense (bool): Whether the evolution should use dense matrices. Per default, this is decided by
+            the number of wires, i.e. ``dense = len(wires) < 3``.
 
     .. warning::
         The :class:`~.ParametrizedHamiltonian` must be Hermitian at all times. This is not explicitly checked
