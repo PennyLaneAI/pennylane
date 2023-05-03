@@ -17,6 +17,9 @@
 
 <h3>Deprecations 👋</h3>
 
+* Gradient transforms with Jax do not support `argnum` anymore,  `argnums` needs to be used.
+  [(#4076)](https://github.com/PennyLaneAI/pennylane/pull/4076)
+
 <h3>Documentation 📝</h3>
 
 <h3>Bug fixes 🐛</h3>
@@ -25,5 +28,6 @@
 
 This release contains contributions from (in alphabetical order):
 
+Romain Moyard,
 Mudit Pandey,
 Jay Soni,
