@@ -154,6 +154,13 @@ class Shots:
 
         self._frozen = True
 
+    def __copy__(self):
+        return self
+
+    def __deepcopy__(self, memo):
+        memo[id(self)] = self
+        return self
+
     def __all_tuple_init__(self, shots: Sequence[Tuple]):
         res = []
         total_shots = 0

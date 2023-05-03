@@ -6,6 +6,10 @@
 
 <h3>Improvements 🛠</h3>
 
+* Added a `shots` property to `QuantumScript`. This will allow shots to be tied to executions instead of devices more
+  concretely.
+  [(#4067)](https://github.com/PennyLaneAI/pennylane/pull/4067)
+
 * `qml.specs` is compatible with custom operations that have `depth` bigger than 1.
   [(#4033)](https://github.com/PennyLaneAI/pennylane/pull/4033)
 
@@ -24,5 +28,6 @@
 
 This release contains contributions from (in alphabetical order):
 
+Mudit Pandey,
 Matthew Silverman,
 Jay Soni,
