@@ -922,6 +922,11 @@ def molecular_hamiltonian(
             raise ValueError(
                 "Only 'jordan_wigner' mapping is supported for the differentiable workflow."
             )
+        if mult != 1:
+            raise ValueError(
+                "Openshell systems are not supported for the differentiable workflow. Use "
+                "`method = 'pyscf'` or change the charge or spin multiplicity of the molecule."
+            )
         if args is None and isinstance(geometry_dhf, qml.numpy.tensor):
             geometry_dhf.requires_grad = False
         mol = qml.qchem.Molecule(
