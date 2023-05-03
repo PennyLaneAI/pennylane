@@ -6,7 +6,7 @@
 
 <h3>Improvements 🛠</h3>
 
-* An error is raised by `qchem.molecular_hamiltonian` when the `dhf` method is used for an 
+* An error is now raised by `qchem.molecular_hamiltonian` when the `dhf` method is used for an 
   open-shell system. This duplicates a similar error in `qchem.Molecule` but makes it easier to
   inform the users that the `pyscf` backend can be used for open-shell calculations.
   [(4058)](https://github.com/PennyLaneAI/pennylane/pull/4058)
