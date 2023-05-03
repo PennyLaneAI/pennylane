@@ -23,6 +23,8 @@ import pytest
 
 import pennylane as qml
 from pennylane import numpy as pnp
+from pennylane.tape import QuantumTape
+from pennylane.resource import ResourcesOperation, Resources
 from pennylane.circuit_graph import CircuitGraph
 from pennylane.wires import Wires
 
@@ -90,6 +92,27 @@ def circuit_measure_multiple_with_max_twice():
         qml.probs(wires=[0, 1, 2]),
         qml.var(qml.PauliZ(wires=[1]) @ qml.PauliZ([2])),
     )
+
+
+class CustomOpDepth2(ResourcesOperation):
+    num_wires = 3
+
+    def resources(self):
+        return Resources(num_wires=self.num_wires, depth=2)
+
+
+class CustomOpDepth3(ResourcesOperation):
+    num_wires = 2
+
+    def resources(self):
+        return Resources(num_wires=self.num_wires, depth=3)
+
+
+class CustomOpDepth4(ResourcesOperation):
+    num_wires = 2
+
+    def resources(self):
+        return Resources(num_wires=self.num_wires, depth=4)
 
 
 class TestCircuitGraph:
@@ -318,3 +341,33 @@ class TestCircuitGraph:
 
         expected = """Operations\n==========\nHadamard(wires=[0])\nCNOT(wires=[0, 1])\n\nObservables\n===========\nsample(wires=[0, 1, 2])"""
         assert out == expected
+
+    tape_depth = (
+        ([qml.PauliZ(0), qml.CNOT([0, 1]), qml.RX(1.23, 2)], 2),
+        ([qml.Hadamard(0), qml.CNOT([0, 1]), CustomOpDepth3(wires=[1, 0])], 5),
+        (
+            [
+                qml.RX(1.23, 0),
+                qml.RZ(-0.45, 0),
+                CustomOpDepth3(wires=[3, 4]),
+                qml.Hadamard(0),
+                qml.Hadamard(1),
+                qml.Hadamard(2),
+                qml.Hadamard(3),
+                qml.Hadamard(4),
+                CustomOpDepth2(wires=[1, 2, 3]),
+                qml.RZ(-1, 4),
+                qml.RX(0.5, 4),
+                qml.RX(0.5, 3),
+                CustomOpDepth4(wires=[0, 1]),
+                qml.CNOT(wires=[3, 4]),
+            ],
+            10,
+        ),
+    )
+
+    @pytest.mark.parametrize("ops, true_depth", tape_depth)
+    def test_get_depth(self, ops, true_depth):
+        """Test that depth is computed correctly for operations that define a custom depth > 1"""
+        cg = CircuitGraph(ops, [], wires=[0, 1, 2, 3, 4])
+        assert cg.get_depth() == true_depth
