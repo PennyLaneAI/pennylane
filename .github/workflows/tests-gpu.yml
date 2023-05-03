@@ -38,6 +38,9 @@ jobs:
       max-parallel: 2
       matrix:
         python-version:
+          - 3.8
+          - 3.9
+          - '3.10'
           - '3.11'
 
     env:
@@ -60,10 +63,6 @@ jobs:
         uses: actions/setup-python@v4
         with:
           python-version: ${{ matrix.python-version }}
-
-      - name: Setup tools
-        run: |
-          sudo -H pip install -U setuptools
 
       # Since the self-hosted runner can be re-used. It is best to set up all package
       # installations in a virtual environment that gets cleaned at the end of each workflow run
@@ -98,7 +97,6 @@ jobs:
 
       - name: Install Torch
         run: |
-          python -m pip install --no-cache-dir lit
           python -m pip install torch==${{ env.TORCH_VERSION }} -f https://download.pytorch.org/whl/cu118/torch_stable.html
 
       - name: Install PennyLane
