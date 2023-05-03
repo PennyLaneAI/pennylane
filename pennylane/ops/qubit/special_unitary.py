@@ -125,6 +125,27 @@ def pauli_basis_strings(num_wires):
     return ["".join(letters) for letters in product(_pauli_letters, repeat=num_wires)][1:]
 
 
+def _pauli_decompose(matrix, num_wires):
+    """Compute the coefficients of a matrix or a batch of matrices (batch dimension(s) in the
+    leading axes) in the Pauli basis.
+
+    Args:
+        matrix (tensor_like): Matrix or batch of matrices to decompose into the Pauli basis.
+        num_wires (int): Number of wires the matrices act on.
+
+    Returns:
+        tensor_like: Coefficients of the input ``matrix`` in the Pauli basis.
+
+    The normalization is such that a single Pauli word as input has a coefficient of
+    ``1`` for its own word and zeros else.
+    """
+    basis = pauli_basis_matrices(num_wires)
+    return (
+        qml.math.cast(qml.math.tensordot(basis, matrix, axes=[[1, 2], [-1, -2]]), matrix.dtype)
+        / 2**num_wires
+    )
+
+
 class SpecialUnitary(Operation):
     r"""Gate from the group :math:`SU(N)` with :math:`N=2^n` for :math:`n` qubits.
 
@@ -594,9 +615,8 @@ class SpecialUnitary(Operation):
 
         """
         num_wires = self.hyperparameters["num_wires"]
-        basis = pauli_basis_matrices(num_wires)
         generators = self.get_one_parameter_generators(interface)
-        return qml.math.tensordot(basis, generators, axes=[[1, 2], [2, 1]]) / 2**num_wires
+        return _pauli_decompose(generators, num_wires)
 
     def decomposition(self):
         r"""Representation of the operator as a product of other operators.

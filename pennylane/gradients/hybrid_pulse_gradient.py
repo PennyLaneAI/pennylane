@@ -21,7 +21,7 @@ import numpy as np
 import pennylane as qml
 
 from pennylane.pulse import ParametrizedEvolution
-from pennylane.ops.qubit.special_unitary import pauli_basis_matrices, pauli_basis_strings
+from pennylane.ops.qubit.special_unitary import pauli_basis_strings, _pauli_decompose
 
 from .finite_difference import _all_zero_grad_new, _no_trainable_grad_new
 from .parameter_shift import (
@@ -45,7 +45,7 @@ except ImportError:
     pass
 
 
-def _get_one_parameter_generators(op):
+def _one_parameter_generators(op):
     r"""Compute the effective generators of one-parameter groups that reproduce
     the partial derivatives of a parameterized evolution.
 
@@ -61,6 +61,7 @@ def _get_one_parameter_generators(op):
 
     See the documentation of hybrid_pulse_grad for more details and a mathematical derivation.
     """
+
     def _compute_matrix(*args, **kwargs):
         return op(*args, **kwargs).matrix()
 
@@ -77,14 +78,16 @@ def _get_one_parameter_generators(op):
     )
 
 
-def _get_one_parameter_paulirot_coeffs(op):
+def _one_parameter_paulirot_coeffs(generators, num_wires):
     r"""Compute the Pauli coefficients of the one-parameter group generators that reproduce
     the partial derivatives of a parametrized evolution. The coefficients correspond
     to the decomposition into (rescaled) Pauli word generators as used by ``PauliRot``
     gates.
 
     Args:
-        op (`~.ParametrizedEvolution`): Parametrized evolution for which to compute the coefficients
+        generators (tuple[tensor_like]): Generators of the one-parameter groups that
+            reproduce the partial derivatives of the parametrized evolution of interest.
+        num_wires (int): Number of wires the parametrized evolution acts on.
 
     Returns:
         tuple[tensor_like]: Coefficients of the provided generators in the Pauli basis,
@@ -106,16 +109,10 @@ def _get_one_parameter_paulirot_coeffs(op):
         of the evolution. This can be improved to :math:`\mathcal{O}(nN4^N}` by using the
         fast Walsh-Hadamard transform.
     """
-    generators = _get_one_parameter_generators(op)
-    num_wires = len(op.wires)
-    basis = pauli_basis_matrices(num_wires)
-    return tuple(
-        qml.math.real(2j * qml.math.tensordot(basis, g, axes=[[1, 2], [-1, -2]])) / 2**num_wires
-        for g in generators
-    )
+    return tuple(qml.math.real(2j * _pauli_decompose(g, num_wires)) for g in generators)
 
 
-def _get_nonzero_coeffs_and_words(coefficients, num_wires, atol=1e-8, rtol=0.0):
+def _nonzero_coeffs_and_words(coefficients, num_wires, atol=1e-8):
     """Given a tuple of coefficient tensors with a common first axis size :math:`4^N-1`,
     where :math:`N` is the number of wires, filter out those indices for the first axis for which
     the sliced coefficients are not all zero. Return these coefficients, as well as the
@@ -125,13 +122,12 @@ def _get_nonzero_coeffs_and_words(coefficients, num_wires, atol=1e-8, rtol=0.0):
         coefficients(tuple[tensor_like]): Coefficients to filter.
         num_wires (int): Number of qubits the generators act on.
         atol (float): absolute tolerance used to determine whether a tensor is zero.
-        rtol (float): relative tolerance used to determine whether a tensor is zero.
     """
     words = pauli_basis_strings(num_wires)
     new_coefficients = [[] for _ in coefficients]
     new_words = []
     for word, *coeffs in zip(words, *coefficients):
-        if all(qml.math.allclose(c, 0.0, atol=atol, rtol=rtol) for c in coeffs):
+        if all(qml.math.allclose(c, 0.0, atol=atol, rtol=0.0) for c in coeffs):
             continue
         new_words.append(word)
         for new_coeffs, c in zip(new_coefficients, coeffs):
@@ -139,29 +135,28 @@ def _get_nonzero_coeffs_and_words(coefficients, num_wires, atol=1e-8, rtol=0.0):
     return new_coefficients, new_words
 
 
-def _insert_op(tape, insert_ops, op_idx):
+def _insert_op(tape, ops, op_idx):
     """Create new tapes, each with an additional operation from a provided list inserted at
     the specified position. Creates as many new tapes as there are operations provided.
 
     Args:
         tape (`~.QuantumTape`): Original tape.
-        insert_ops (list[qml.Operation]): Operations to insert (individually) at ``op_idx``
+        ops (list[qml.Operation]): Operations to insert (individually) at ``op_idx``
             to produce a new tape each.
-        op_idx (int): Index at which to insert the operations in ``insert_ops``.
+        op_idx (int): Index at which to insert the operations in ``ops``.
 
     Returns:
         list[`~.QuantumScript`]: new tapes with inserted operations, one tape per operation
-        in ``insert_ops``.
+        in ``ops``.
     """
     ops_pre = tape.operations[:op_idx]
     ops_post = tape.operations[op_idx:]
     return [
-        qml.tape.QuantumScript(ops_pre + [insert] + ops_post, tape.measurements)
-        for insert in insert_ops
+        qml.tape.QuantumScript(ops_pre + [insert] + ops_post, tape.measurements) for insert in ops
     ]
 
 
-def _generate_tapes_and_coeffs(tape, idx, atol, rtol, cache):
+def _generate_tapes_and_coeffs(tape, idx, atol, cache):
     """Compute the modified tapes and coefficients required to compute the hybrid pulse
     derivative of a tape with respect to an indicated trainable parameter.
 
@@ -170,7 +165,6 @@ def _generate_tapes_and_coeffs(tape, idx, atol, rtol, cache):
         idx (int): Index of the parameter with respect to which to differentiate
             into ``tape.trainable_parameters``.
         atol (float): absolute tolerance used to determine whether a coefficient is zero.
-        rtol (float): relative tolerance used to determine whether a coefficient is zero.
         cache (dict): Caching dictionary that allows to skip adding duplicate modified tapes.
 
     Returns:
@@ -197,9 +191,11 @@ def _generate_tapes_and_coeffs(tape, idx, atol, rtol, cache):
             "other operations than pulses."
         )
 
+    num_wires = len(op.wires)
     # Obtain one-parameter-group coefficients in Pauli basis and filter for non-zero coeffs
-    all_coeffs = _get_one_parameter_paulirot_coeffs(op)
-    all_coeffs, pauli_words = _get_nonzero_coeffs_and_words(all_coeffs, len(op.wires), atol, rtol)
+    generators = _one_parameter_generators(op)
+    all_coeffs = _one_parameter_paulirot_coeffs(generators, num_wires)
+    all_coeffs, pauli_words = _nonzero_coeffs_and_words(all_coeffs, num_wires, atol)
     # create PauliRot gates for each Pauli word with a non-zero coefficient and for both shifts
     pauli_rots = [
         qml.PauliRot(angle, word, wires=op.wires)
@@ -251,7 +247,7 @@ def _parshift_and_contract(results, coeffs, single_measure, shot_vector):
     )
 
 
-def _expval_hybrid_pulse_grad(tape, argnum, shots, atol, rtol):
+def _expval_hybrid_pulse_grad(tape, argnum, shots, atol):
     """Compute the hybrid pulse parameter-shift rule for a quantum circuit that returns expectation
     values of observables.
 
@@ -265,7 +261,6 @@ def _expval_hybrid_pulse_grad(tape, argnum, shots, atol, rtol):
             used for execution, but *informs* the transform about the shots to ensure a compatible
             return value formatting.
         atol (float): absolute tolerance used to determine vanishing contributions.
-        rtol (float): relative tolerance used to determine vanishing contributions.
 
     Returns:
         function or tuple[list[QuantumTape], function]:
@@ -290,7 +285,7 @@ def _expval_hybrid_pulse_grad(tape, argnum, shots, atol, rtol):
             gradient_data.append((0, 0, None))
             continue
 
-        tapes, data, cache = _generate_tapes_and_coeffs(tape, idx, atol, rtol, cache)
+        tapes, data, cache = _generate_tapes_and_coeffs(tape, idx, atol, cache)
         gradient_data.append(data)
         gradient_tapes.extend(tapes)
 
@@ -324,7 +319,7 @@ def _expval_hybrid_pulse_grad(tape, argnum, shots, atol, rtol):
     return gradient_tapes, processing_fn
 
 
-def _hybrid_pulse_grad(tape, argnum=None, shots=None, tolerances=(1e-7, 0.0)):
+def _hybrid_pulse_grad(tape, argnum=None, shots=None, atol=1e-7):
     """Super amazing docstring."""
     transform_name = "hybrid pulse parameter-shift"
     _assert_has_jax(transform_name)
@@ -344,7 +339,7 @@ def _hybrid_pulse_grad(tape, argnum=None, shots=None, tolerances=(1e-7, 0.0)):
 
     argnum = [i for i, dm in method_map.items() if dm == "A"]
 
-    return _expval_hybrid_pulse_grad(tape, argnum, shots, *tolerances)
+    return _expval_hybrid_pulse_grad(tape, argnum, shots, atol)
 
 
 def expand_invalid_trainable_hybrid_pulse_grad(x, *args, **kwargs):
