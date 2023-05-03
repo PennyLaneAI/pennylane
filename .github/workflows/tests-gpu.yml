@@ -121,3 +121,4 @@ jobs:
           rm -rf .git
           rm -rf .gitignore
           rm -rf .github
+          pip cache purge
