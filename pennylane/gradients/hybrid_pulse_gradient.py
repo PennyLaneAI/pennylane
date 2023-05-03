@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-This module contains functions for computing the stochastic parameter-shift gradient
+This module contains functions for computing the hybrid parameter-shift gradient
 of pulse sequences in a qubit-based quantum tape.
 """
 from collections.abc import Sequence
@@ -61,14 +61,10 @@ def _get_one_parameter_generators(op):
 
     See the documentation of hybrid_pulse_grad for more details and a mathematical derivation.
     """
-    # theta = self.data[0]
-    # if len(qml.math.shape(theta)) > 1:
-    # raise ValueError("Broadcasting is not supported.")
-
     def _compute_matrix(*args, **kwargs):
         return op(*args, **kwargs).matrix()
 
-    data = [1.0 + 0.0j * d for d in op.data]
+    data = [(1.0 + 0.0j) * d for d in op.data]
     # These lines compute the Jacobian of compute_matrix every time -> to be optimized
     jac = jax.jacobian(_compute_matrix, argnums=0, holomorphic=True)(data, t=op.t)
 
