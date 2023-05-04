@@ -30,14 +30,7 @@ from typing import (
     cast,
 )
 
-try:
-    import zarr
-except ImportError as Error:
-    raise ImportError(
-        "This feature requires the 'zarr' package. "
-        "It can be installed with:\n\n pip install zarr."
-    ) from Error
-
+import zarr
 import zarr.convenience
 
 from pennylane.data.base.attribute import AttributeInfo, AttributeType
@@ -137,6 +130,9 @@ class Dataset(MapperMixin):
         """Returns all attributes of this Dataset."""
         return self._mapper.view()
 
+    def list_attributes(self) -> list[str]:
+        return list(self.attrs.keys())
+
     def read(
         self,
         filepath: Union[str, Path],
@@ -162,7 +158,7 @@ class Dataset(MapperMixin):
             if_exists = "replace" if overwrite_attrs else "raise"
             zarr.convenience.copy_all(zgrp, self.bind, if_exists=if_exists)
 
-    def write(self, filepath: Union[str, Path], mode: Literal["w", "w-", "a"]):
+    def write(self, filepath: Union[str, Path], mode: Literal["w", "w-", "a"] = "w-"):
         """Write dataset to Zarr file at filepath. Can also accept an S3 URL.
 
         Args:

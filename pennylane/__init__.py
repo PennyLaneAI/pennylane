@@ -103,7 +103,6 @@ from pennylane.optimize import *
 from pennylane.vqe import ExpvalCost
 from pennylane.debugging import snapshots
 from pennylane.shadows import ClassicalShadow
-import pennylane.data
 import pennylane.pulse
 
 import pennylane.gradients  # pylint:disable=wrong-import-order
