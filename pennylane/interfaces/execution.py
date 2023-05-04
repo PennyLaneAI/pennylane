@@ -36,7 +36,7 @@ from pennylane.tape import QuantumTape
 
 from .set_shots import set_shots
 
-device_type = Union[qml.Device, qml.devices.experimental.Device]
+device_type = Union[qml.Device, "qml.devices.experimental.Device"]
 
 INTERFACE_MAP = {
     None: "Numpy",
@@ -90,7 +90,7 @@ def _adjoint_jacobian_expansion(
 def _batch_transform(
     tapes: Sequence[QuantumTape],
     device: device_type,
-    config: qml.devices.experimental.ExecutionConfig,
+    config: "qml.devices.experimental.ExecutionConfig",
     override_shots: Union[bool, int, Sequence[int]] = False,
     device_batch_transform: bool = True,
 ) -> Tuple[Sequence[QuantumTape], Callable]:
