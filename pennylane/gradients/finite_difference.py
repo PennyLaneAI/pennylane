@@ -29,6 +29,7 @@ from pennylane.measurements import ProbabilityMP
 
 from .general_shift_rules import generate_shifted_tapes
 from .gradient_transform import (
+    _all_zero_grad,
     choose_grad_methods,
     gradient_analysis_and_validation,
     gradient_transform,
@@ -181,37 +182,6 @@ def _no_trainable_grad(tape, shots=None):
 def _no_trainable_grad_legacy(tape):
     warnings.warn(_no_trainable_grad_warning)
     return [], lambda _: np.zeros((tape.output_dim, 0))
-
-
-def _all_zero_grad(tape, shots=None):
-    """Auxiliary function to return zeros for the all-zero gradient case."""
-    list_zeros = []
-
-    par_shapes = [qml.math.shape(p) for p in tape.get_parameters()]
-    for m in tape.measurements:
-        # TODO: Update shape for CV variables
-        if isinstance(m, ProbabilityMP):
-            shape = (2 ** len(m.wires),)
-        else:
-            shape = ()
-
-        if len(tape.trainable_params) == 1:
-            sub_list_zeros = qml.math.zeros(par_shapes[0] + shape)
-        else:
-            sub_list_zeros = tuple(qml.math.zeros(sh + shape) for sh in par_shapes)
-
-        list_zeros.append(sub_list_zeros)
-
-    if isinstance(shots, Sequence):
-        len_shot_vec = _get_num_copies(shots)
-        if len(tape.measurements) == 1:
-            return [], lambda _: tuple(list_zeros[0] for _ in range(len_shot_vec))
-        return [], lambda _: tuple(tuple(list_zeros) for _ in range(len_shot_vec))
-
-    if len(tape.measurements) == 1:
-        return [], lambda _: list_zeros[0]
-
-    return [], lambda _: tuple(list_zeros)
 
 
 def _processing_fn(results, shots=None, single_shot_batch_fn=None):

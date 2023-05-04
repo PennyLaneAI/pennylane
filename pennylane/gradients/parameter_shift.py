@@ -26,7 +26,6 @@ from pennylane._device import _get_num_copies
 from pennylane.measurements import VarianceMP
 
 from .finite_difference import (
-    _all_zero_grad,
     _no_trainable_grad,
     _no_trainable_grad_legacy,
     finite_diff,
@@ -38,6 +37,7 @@ from .general_shift_rules import (
     process_shifts,
 )
 from .gradient_transform import (
+    _all_zero_grad,
     assert_no_state_returns,
     choose_grad_methods,
     gradient_analysis_and_validation,

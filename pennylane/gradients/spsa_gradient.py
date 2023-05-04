@@ -24,13 +24,13 @@ import numpy as np
 import pennylane as qml
 
 from .finite_difference import (
-    _all_zero_grad,
     _processing_fn,
     _no_trainable_grad,
     _no_trainable_grad_legacy,
     finite_diff_coeffs,
 )
 from .gradient_transform import (
+    _all_zero_grad,
     gradient_transform,
     choose_grad_methods,
     gradient_analysis_and_validation,

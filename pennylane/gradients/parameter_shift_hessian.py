@@ -199,7 +199,7 @@ def _no_trainable_hessian_legacy(tape):
     return [], lambda _: qml.math.zeros((tape.output_dim, 0, 0))
 
 
-def _all_zero_grad(tape):
+def _all_zero_hessian(tape):
     num_params = len(tape.trainable_params)
 
     zeros_list = []
@@ -896,7 +896,7 @@ def param_shift_hessian(tape, argnum=None, diagonal_shifts=None, off_diagonal_sh
         if g == "0":
             bool_argnum[i] = bool_argnum[:, i] = False
     if qml.math.all(~bool_argnum):  # pylint: disable=invalid-unary-operand-type
-        return _all_zero_grad(tape)
+        return _all_zero_hessian(tape)
 
     # Find all argument indices that appear in at least one derivative that was requested
     choose_argnum = qml.math.where(qml.math.any(bool_argnum, axis=0))[0]

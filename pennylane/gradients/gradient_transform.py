@@ -126,6 +126,32 @@ def _gradient_analysis(tape, use_graph=True, grad_fn=None):
 
             info["grad_method"] = op.grad_method
 
+def _grad_method_validation(tape, method):
+    """Validates if the gradient method requested is supported by the trainable
+    parameters of a tape, and returns the allowed parameter gradient methods."""
+    diff_methods = {
+        idx: info["grad_method"]
+        for idx, info in enumerate(tape._par_info)  # pylint: disable=protected-access
+        if idx in tape.trainable_params
+    }
+
+    # check and raise an error if any parameters are non-differentiable
+    nondiff_params = {idx for idx, g in diff_methods.items() if g is None}
+
+    if nondiff_params:
+        raise ValueError(f"Cannot differentiate with respect to parameter(s) {nondiff_params}")
+
+    numeric_params = {idx for idx, g in diff_methods.items() if g == "F"}
+
+    # If explicitly using analytic mode, ensure that all parameters
+    # support analytic differentiation.
+    if method == "analytic" and numeric_params:
+        raise ValueError(
+            f"The analytic gradient method cannot be used with the parameter(s) {numeric_params}."
+        )
+
+    return tuple(diff_methods.values())
+
 
 def gradient_analysis_and_validation(tape, method, use_graph=True, grad_fn=None, overwrite=True):
     """Update the parameter information dictionary of the tape with gradient information of
@@ -168,29 +194,8 @@ def gradient_analysis_and_validation(tape, method, use_graph=True, grad_fn=None,
     """
     if overwrite or "grad_method" not in tape._par_info[0]:  # pylint: disable=protected-access
         _gradient_analysis(tape, use_graph=use_graph, grad_fn=grad_fn)
+    return _grad_method_validation(tape, method)
 
-    diff_methods = {
-        idx: info["grad_method"]
-        for idx, info in enumerate(tape._par_info)  # pylint: disable=protected-access
-        if idx in tape.trainable_params
-    }
-
-    # check and raise an error if any parameters are non-differentiable
-    nondiff_params = {idx for idx, g in diff_methods.items() if g is None}
-
-    if nondiff_params:
-        raise ValueError(f"Cannot differentiate with respect to parameter(s) {nondiff_params}")
-
-    numeric_params = {idx for idx, g in diff_methods.items() if g == "F"}
-
-    # If explicitly using analytic mode, ensure that all parameters
-    # support analytic differentiation.
-    if method == "analytic" and numeric_params:
-        raise ValueError(
-            f"The analytic gradient method cannot be used with the parameter(s) {numeric_params}."
-        )
-
-    return tuple(diff_methods.values())
 
 
 def choose_grad_methods(diff_methods, argnum):
@@ -227,6 +232,36 @@ def choose_grad_methods(diff_methods, argnum):
         return {}
 
     return {idx: diff_methods[idx] for idx in argnum}
+
+def _all_zero_grad(tape, shots=None):
+    """Auxiliary function to return zeros for the all-zero gradient case."""
+    list_zeros = []
+
+    par_shapes = [qml.math.shape(p) for p in tape.get_parameters()]
+    for m in tape.measurements:
+        # TODO: Update shape for CV variables
+        if isinstance(m, ProbabilityMP):
+            shape = (2 ** len(m.wires),)
+        else:
+            shape = ()
+
+        if len(tape.trainable_params) == 1:
+            sub_list_zeros = qml.math.zeros(par_shapes[0] + shape)
+        else:
+            sub_list_zeros = tuple(qml.math.zeros(sh + shape) for sh in par_shapes)
+
+        list_zeros.append(sub_list_zeros)
+
+    if isinstance(shots, Sequence):
+        len_shot_vec = _get_num_copies(shots)
+        if len(tape.measurements) == 1:
+            return [], lambda _: tuple(list_zeros[0] for _ in range(len_shot_vec))
+        return [], lambda _: tuple(tuple(list_zeros) for _ in range(len_shot_vec))
+
+    if len(tape.measurements) == 1:
+        return [], lambda _: list_zeros[0]
+
+    return [], lambda _: tuple(list_zeros)
 
 
 class gradient_transform(qml.batch_transform):
