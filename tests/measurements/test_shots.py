@@ -26,12 +26,7 @@ ERROR_MSG = "Shots must be a single positive integer, a tuple"
 class TestShotCopies:
     """Test that the ShotCopies class displays well."""
 
-    sc_data = (
-        ShotCopies(1, 1),
-        ShotCopies(100, 1),
-        ShotCopies(100, 2),
-        ShotCopies(10, 100)
-    )
+    sc_data = (ShotCopies(1, 1), ShotCopies(100, 1), ShotCopies(100, 2), ShotCopies(10, 100))
 
     str_data = (
         "1",

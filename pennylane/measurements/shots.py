@@ -20,6 +20,7 @@ class ShotCopies(NamedTuple):
     """A namedtuple that represents a shot quantity being repeated some number of times.
     For example, ``ShotCopies(shots=10, copies=2)`` indicates two executions with 10 shots each for 20 shots total.
     """
+
     shots: int
     copies: int
 
@@ -191,9 +192,7 @@ class Shots:
 
     def __hash__(self):
         """Hash for a given Shot instance."""
-        return hash(
-            (self.total_shots, self.shot_vector)  # hash the tuple of these two attributes
-        )
+        return hash((self.total_shots, self.shot_vector))  # hash the tuple of these two attributes
 
     def __all_tuple_init__(self, shots: Sequence[Tuple]):
         res = []
