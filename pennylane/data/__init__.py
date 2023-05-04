@@ -22,14 +22,13 @@ from .attributes import (
     DatasetString,
 )
 from .base.attribute import AttributeInfo, AttributeType
-from .dataset import Attribute, Dataset, attribute
+from .base.dataset import DatasetBase, attribute
 
 __all__ = (
-    "Attribute",
     "AttributeType",
     "AttributeInfo",
     "attribute",
-    "Dataset",
+    "DatasetBase",
     "DatasetArray",
     "DatasetDict",
     "DatasetList",

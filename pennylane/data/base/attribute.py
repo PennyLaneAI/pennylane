@@ -40,7 +40,7 @@ class AttributeInfo(Generic[T]):
     attribute. Is stored in the Zarr object's ``attrs`` dict.
 
     Attributes:
-        py_type: Class or type annotation for this attribute
+        py_type: Type annotation for this attribute
         doc: Documentation for this attribute
         meta: Extra metdata to attach to this attribute. Must be
             json serializable.
@@ -66,6 +66,7 @@ class AttributeInfo(Generic[T]):
             zobj: Zarr object
             clobber: If True, replace existing values in attrs.
         """
+        # TODO: flatten extra
         for f, v in self.jsonify().items():
             if clobber or zobj.attrs.get(f) is None:
                 zobj.attrs[f] = v
@@ -87,7 +88,7 @@ class AttributeType(ABC, Generic[Zarr, T]):
     Codecs, and Python types to compatible Codecs.
 
     Attributes:
-        codec_id: Unique identifier for this Codec class. Must be declared
+        type_id: Unique identifier for this Codec class. Must be declared
             in subclasses.
         registry: Maps codec ids to compatible Codec classes
         type_to_default_codec_id: Maps types to their default Codec classes
@@ -197,25 +198,10 @@ class AttributeType(ABC, Generic[Zarr, T]):
             )
 
     def __str__(self) -> str:
-        self_value = self.get_value()
-        if self_value is not self:
-            return str(self_value)
-
-        return object.__str__(self)
+        return str(self.get_value())
 
     def __repr__(self) -> str:
-        self_value = self.get_value()
-        if self_value is not self:
-            return f"{type(self).__qualname__}({repr(self_value)})"
-
         return object.__repr__(self)
-
-    def __eq__(self, __value: object) -> bool:
-        self_value = self.get_value()
-        if self_value is not self:
-            return self_value == __value
-
-        raise NotImplementedError
 
     __registry: dict[str, type["AttributeType"]] = {}
     __type_consumer_registry: dict[type, type["AttributeType"]] = {}

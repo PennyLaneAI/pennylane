@@ -115,40 +115,6 @@ def test_copy_standard(tmp_path):
     assert new_dataset.attrs == {"molecule": 1, "hf_state": 2}
 
 
-def test_getattribute_dunder_non_full(tmp_path):
-    """Test the getattribute override."""
-    non_standard_dataset = data.Dataset(foo="bar")
-    with pytest.raises(AttributeError):
-        _ = non_standard_dataset.baz
-
-    folder = tmp_path / "datasets" / "myset"
-
-    # would not usually be done by users, bypassing qml.data.load
-    standard_dataset = data.Dataset("qchem", str(folder), "myset", "", standard=True)
-
-    # no hf_state file exists (yet!)
-    with pytest.raises(AttributeError):
-        _ = standard_dataset.hf_state
-    # create an hf_state file
-    os.makedirs(folder)
-    filepath = str(folder / "myset_hf_state.dat")
-    data.Dataset._write_file(2, filepath)
-    # getattribute does not try to find files that have not yet been read
-    with pytest.raises(AttributeError):
-        _ = standard_dataset.hf_state
-
-
-def test_getattribute_dunder_full(tmp_path):
-    """Test the getattribute behaviour when a fullfile is set."""
-    folder = tmp_path / "datasets" / "myset"
-    os.makedirs(folder)
-    data.Dataset._write_file({"hf_state": 2}, str(folder / "myset_full.dat"))
-
-    # this getattribute will read from the above created file
-    dataset = data.Dataset("qchem", str(folder), "myset", "", standard=True)
-    assert dataset.hf_state == 2
-    with pytest.raises(AttributeError):
-        _ = dataset.molecule
 
 
 def test_getattribute_fail_when_attribute_deleted_from_file(tmp_path):
@@ -178,26 +144,7 @@ def test_none_attribute_value(tmp_path):
     assert standard_dataset.molecule is None
 
 
-def test_lazy_load_until_access_non_full(tmp_path):
-    """Test that Datasets do not load values until accessed with non-full files."""
-    filename = str(tmp_path / "myset_hf_state.dat")
-    data.Dataset._write_file(2, filename)
-    dataset = data.Dataset("qchem", str(tmp_path), "myset", "", standard=True)
-    assert dataset.attrs == {"hf_state": None}
-    assert dataset.hf_state == 2
-    assert dataset.attrs == {"hf_state": 2}
 
-
-def test_lazy_load_until_access_full(tmp_path):
-    """Test that Datasets do not load values until accessed with full files."""
-    filename = str(tmp_path / "myset_full.dat")
-    data.Dataset._write_file({"molecule": 1, "hf_state": 2}, filename)
-    dataset = data.Dataset("qchem", str(tmp_path), "myset", "", standard=True)
-    assert dataset.attrs == {"molecule": None, "hf_state": None}
-    assert dataset.molecule == 1
-    assert dataset.attrs == {"molecule": 1, "hf_state": None}
-    assert dataset.hf_state == 2
-    assert dataset.attrs == {"molecule": 1, "hf_state": 2}
 
 
 def test_hamiltonian_is_loaded_properly(tmp_path):
