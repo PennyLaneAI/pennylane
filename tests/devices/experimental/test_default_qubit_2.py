@@ -531,8 +531,8 @@ class TestAdjointDifferentiation:
             [qml.RY(x, 0)], [qml.expval(qml.PauliX(0)), qml.expval(qml.PauliZ(0))]
         )
 
-        circuits, fn = dev.preprocess([single_meas, multi_meas], self.ec)
-        actual_grad = fn(dev.compute_derivatives(circuits, self.ec))
+        circuits, _ = dev.preprocess([single_meas, multi_meas], self.ec)
+        actual_grad = dev.compute_derivatives(circuits, self.ec)
 
         assert np.isclose(actual_grad[0], expected_grad[0])
         assert isinstance(actual_grad[1], tuple)
