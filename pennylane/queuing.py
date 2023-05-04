@@ -373,24 +373,28 @@ class AnnotatedQueue(OrderedDict):
 
     def append(self, obj, **kwargs):
         """Append ``obj`` into the queue with ``kwargs`` metadata."""
-        self[WrappedObj(obj)] = kwargs
+        obj = obj if isinstance(obj, WrappedObj) else WrappedObj(obj)
+        self[obj] = kwargs
 
     def remove(self, obj):
         """Remove ``obj`` from the queue. Passes silently if the object is not in the queue."""
-        if WrappedObj(obj) in self:
-            del self[WrappedObj(obj)]
+        obj = obj if isinstance(obj, WrappedObj) else WrappedObj(obj)
+        if obj in self:
+            del self[obj]
 
     def update_info(self, obj, **kwargs):
         """Update ``obj``'s metadata with ``kwargs`` if it exists in the queue."""
-        if WrappedObj(obj) in self:
-            self[WrappedObj(obj)].update(kwargs)
+        obj = obj if isinstance(obj, WrappedObj) else WrappedObj(obj)
+        if obj in self:
+            self[obj].update(kwargs)
 
     def get_info(self, obj):
         """Retrieve the metadata for ``obj``.  Raises a ``QueuingError`` if obj is not in the queue."""
-        if WrappedObj(obj) not in self:
-            raise QueuingError(f"Object {obj} not in the queue.")
+        obj = obj if isinstance(obj, WrappedObj) else WrappedObj(obj)
+        if obj not in self:
+            raise QueuingError(f"Object {obj.obj} not in the queue.")
 
-        return self[WrappedObj(obj)]
+        return self[obj]
 
     @property
     def queue(self):
@@ -398,13 +402,11 @@ class AnnotatedQueue(OrderedDict):
         return list(key.obj for key in self.keys())
 
     def __setitem__(self, key, value):
-        if not isinstance(key, WrappedObj):
-            key = WrappedObj(key)
+        key = key if isinstance(key, WrappedObj) else WrappedObj(key)
         return super().__setitem__(key, value)
 
     def __getitem__(self, key):
-        if not isinstance(key, WrappedObj):
-            key = WrappedObj(key)
+        key = key if isinstance(key, WrappedObj) else WrappedObj(key)
         return super().__getitem__(key)
 
 
