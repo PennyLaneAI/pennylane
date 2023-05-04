@@ -15,6 +15,7 @@
 Unit tests for :mod:`pennylane.shots`.
 """
 
+import copy
 import pytest
 
 from pennylane.measurements import Shots, ShotCopies
@@ -29,6 +30,16 @@ class TestShotsConstruction:
         """Tests that creating a Shots from another Shots instance returns the same instance."""
         x = Shots(123)
         y = Shots(x)
+        assert y is x
+        assert y._frozen  # pylint:disable=protected-access
+
+        z = copy.copy(x)
+        assert z is x
+        assert z._frozen  # pylint:disable=protected-access
+
+    def test_deepcopy(self):
+        x = Shots([1, 1, 2, 3])
+        y = copy.deepcopy(x)
         assert y is x
         assert y._frozen  # pylint:disable=protected-access
 
