@@ -12,7 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-Contains the :class:`~pennylane.data.Dataset` class and its associated functions.
+Contains the :class:`~pennylane.data.Dataset` class, and `qml.data.Attribute` class
+for declaratively defining dataset classes.
 """
 
 from collections.abc import Mapping
