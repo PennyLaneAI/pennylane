@@ -131,7 +131,7 @@ class TestMeasureSamples:
     def test_sample_measure(self):
         """Test that a sample measurement works as expected"""
         state = qml.math.array(two_qubit_state)
-        shots = 100
+        shots = qml.measurements.Shots(100)
         mp = qml.sample(wires=range(2))
 
         result = measure_with_samples(mp, state, shots=shots)
@@ -143,7 +143,7 @@ class TestMeasureSamples:
     def test_sample_measure_single_wire(self):
         """Test that a sample measurement on a single wire works as expected"""
         state = np.array([[1, -1j], [0, 0]]) / np.sqrt(2)
-        shots = 100
+        shots = qml.measurements.Shots(100)
 
         mp0 = qml.sample(wires=0)
         mp1 = qml.sample(wires=1)
@@ -162,7 +162,7 @@ class TestMeasureSamples:
     def test_prob_measure(self):
         """Test that a probability measurement works as expected"""
         state = qml.math.array(two_qubit_state)
-        shots = 100
+        shots = qml.measurements.Shots(100)
         mp = qml.probs(wires=range(2))
 
         result = measure_with_samples(mp, state, shots=shots)
@@ -175,7 +175,7 @@ class TestMeasureSamples:
     def test_prob_measure_single_wire(self):
         """Test that a probability measurement on a single wire works as expected"""
         state = np.array([[1, -1j], [0, 0]]) / np.sqrt(2)
-        shots = 100
+        shots = qml.measurements.Shots(100)
 
         mp0 = qml.probs(wires=0)
         mp1 = qml.probs(wires=1)
@@ -195,7 +195,7 @@ class TestMeasureSamples:
     def test_expval_measure(self):
         """Test that an expval measurement works as expected"""
         state = qml.math.array(two_qubit_state)
-        shots = 100
+        shots = qml.measurements.Shots(100)
         mp = qml.expval(qml.prod(qml.PauliX(0), qml.PauliY(1)))
 
         result = measure_with_samples(mp, state, shots=shots)
@@ -206,7 +206,7 @@ class TestMeasureSamples:
     def test_expval_measure_single_wire(self):
         """Test that an expval measurement on a single wire works as expected"""
         state = np.array([[1, -1j], [0, 0]]) / np.sqrt(2)
-        shots = 100
+        shots = qml.measurements.Shots(100)
 
         mp0 = qml.expval(qml.PauliZ(0))
         mp1 = qml.expval(qml.PauliY(1))
@@ -222,7 +222,7 @@ class TestMeasureSamples:
     def test_approximate_sample_measure(self):
         """Test that a sample measurement returns approximately the correct distribution"""
         state = qml.math.array(two_qubit_state)
-        shots = 10000
+        shots = qml.measurements.Shots(10000)
         mp = qml.sample(wires=range(2))
 
         result = measure_with_samples(mp, state, shots=shots)
@@ -233,7 +233,7 @@ class TestMeasureSamples:
     def test_approximate_prob_measure(self):
         """Test that a probability measurement works as expected"""
         state = qml.math.array(two_qubit_state)
-        shots = 10000
+        shots = qml.measurements.Shots(10000)
         mp = qml.probs(wires=range(2))
 
         result = measure_with_samples(mp, state, shots=shots)
@@ -245,7 +245,7 @@ class TestMeasureSamples:
     def test_approximate_expval_measure(self):
         """Test that an expval measurement works as expected"""
         state = qml.math.array(two_qubit_state)
-        shots = 10000
+        shots = qml.measurements.Shots(10000)
         mp = qml.expval(qml.prod(qml.PauliX(0), qml.PauliX(1)))
 
         result = measure_with_samples(mp, state, shots=shots)
