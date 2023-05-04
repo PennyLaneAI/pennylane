@@ -86,7 +86,7 @@ def resolve_special_type(type_: Any) -> Tuple[type, List[type]]:
     orig_type = get_origin(type_)
     if orig_type is None:
         return (type_, [])
-    
+
     args = list(get_args(type_))
     type_ = orig_type
 
