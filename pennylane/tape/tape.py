@@ -77,6 +77,35 @@ def _validate_computational_basis_sampling(measurements):
                 raise qml.QuantumFunctionError(_err_msg_for_some_meas_not_qwc(measurements))
 
 
+def rotations_and_diagonal_measurements(tape):
+    """Compute the rotations for overlapping observables, and return them along with the diagonalized observables."""
+    if not tape._obs_sharing_wires:
+        return [], tape._measurements
+
+    with QueuingManager.stop_recording():  # stop recording operations to active context when computing qwc groupings
+        try:
+            rotations, diag_obs = qml.pauli.diagonalize_qwc_pauli_words(tape._obs_sharing_wires)
+        except (TypeError, ValueError) as e:
+            if any(isinstance(m, (ProbabilityMP, SampleMP, CountsMP)) for m in tape.measurements):
+                raise qml.QuantumFunctionError(
+                    "Only observables that are qubit-wise commuting "
+                    "Pauli words can be returned on the same wire.\n"
+                    "Try removing all probability, sample and counts measurements "
+                    "this will allow for splitting of execution and separate measurements "
+                    "for each non-commuting observable."
+                ) from e
+
+            raise qml.QuantumFunctionError(_err_msg_for_some_meas_not_qwc(tape.measurements)) from e
+
+        measurements = copy.copy(tape._measurements)
+
+        for o, i in zip(diag_obs, tape._obs_sharing_wires_id):
+            new_m = tape.measurements[i].__class__(obs=o)
+            measurements[i] = new_m
+
+    return rotations, measurements
+
+
 # TODO: move this function to its own file and rename
 def expand_tape(tape, depth=1, stop_at=None, expand_measurements=False):
     """Expand all objects in a tape to a specific depth.
@@ -149,37 +178,11 @@ def expand_tape(tape, depth=1, stop_at=None, expand_measurements=False):
     if tape.samples_computational_basis and len(tape.measurements) > 1:
         _validate_computational_basis_sampling(tape.measurements)
 
-    if tape._obs_sharing_wires:
-        with QueuingManager.stop_recording():  # stop recording operations to active context when computing qwc groupings
-            try:
-                rotations, diag_obs = qml.pauli.diagonalize_qwc_pauli_words(tape._obs_sharing_wires)
-                tape._obs_sharing_wires = diag_obs
-            except (TypeError, ValueError) as e:
-                if any(
-                    isinstance(m, (ProbabilityMP, SampleMP, CountsMP)) for m in tape.measurements
-                ):
-                    raise qml.QuantumFunctionError(
-                        "Only observables that are qubit-wise commuting "
-                        "Pauli words can be returned on the same wire.\n"
-                        "Try removing all probability, sample and counts measurements "
-                        "this will allow for splitting of execution and separate measurements "
-                        "for each non-commuting observable."
-                    ) from e
-
-                raise qml.QuantumFunctionError(
-                    _err_msg_for_some_meas_not_qwc(tape.measurements)
-                ) from e
-
-            tape._ops.extend(rotations)
-
-            for o, i in zip(diag_obs, tape._obs_sharing_wires_id):
-                new_m = tape.measurements[i].__class__(obs=o)
-                tape._measurements[i] = new_m
-
+    diagonalizing_gates, diagonal_measurements = rotations_and_diagonal_measurements(tape)
     for queue, new_queue in [
         (tape._prep, new_prep),
-        (tape._ops, new_ops),
-        (tape._measurements, new_measurements),
+        (tape._ops + diagonalizing_gates, new_ops),
+        (diagonal_measurements, new_measurements),
     ]:
         for obj in queue:
             stop = stop_at(obj)
@@ -344,11 +347,18 @@ class QuantumTape(QuantumScript, AnnotatedQueue):
     """threading.RLock: Used to synchronize appending to/popping from global QueueingContext."""
 
     def __init__(
-        self, ops=None, measurements=None, prep=None, name=None, do_queue=True, _update=True
-    ):
+        self,
+        ops=None,
+        measurements=None,
+        prep=None,
+        shots=None,
+        name=None,
+        do_queue=True,
+        _update=True,
+    ):  # pylint: disable=too-many-arguments
         self.do_queue = do_queue
         AnnotatedQueue.__init__(self)
-        QuantumScript.__init__(self, ops, measurements, prep, name=name, _update=_update)
+        QuantumScript.__init__(self, ops, measurements, prep, shots, name=name, _update=_update)
 
     def __enter__(self):
         QuantumTape._lock.acquire()

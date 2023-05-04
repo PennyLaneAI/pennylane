@@ -139,6 +139,7 @@ separately_tested_ops = [
     "AngleEmbedding",
     "IQPEmbedding",
     "QAOAEmbedding",
+    "PCPhase",
 ]
 
 
@@ -451,3 +452,22 @@ class TestSupportsBroadcasting:
             features, weights, wires=list(range(num_wires)), local_field=qml.RY
         )
         op.decomposition()
+
+    def test_pcphase(self):
+        """Test that the PCPhase matrix works with broadcasted parameters"""
+        dim = 2
+        size = 4
+        broadcasted_phi = [1.23, 4.56, -0.7]
+
+        op = qml.PCPhase(broadcasted_phi, dim=dim, wires=[0, 1])
+
+        mat1 = qml.matrix(op)
+        mat2 = op.compute_matrix(*op.parameters, **op.hyperparameters)
+
+        mats = [
+            np.diag([np.exp(1j * phi) if i < dim else np.exp(-1j * phi) for i in range(size)])
+            for phi in broadcasted_phi
+        ]
+        expected_mat = np.array(mats)
+        assert np.allclose(mat1, expected_mat)
+        assert np.allclose(mat2, expected_mat)

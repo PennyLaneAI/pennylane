@@ -559,6 +559,10 @@ class TestResourceEstimation:
         assert tape.specs["gate_sizes"] == defaultdict(int)
         assert tape.specs["gate_types"] == defaultdict(int)
 
+        gate_types = defaultdict(int)
+        expected_resources = qml.resource.Resources(num_wires=2, gate_types=gate_types)
+        assert tape.specs["resources"] == expected_resources
+
         assert tape.specs["num_operations"] == 0
         assert tape.specs["num_observables"] == 1
         assert tape.specs["num_diagonalizing_gates"] == 0
@@ -566,7 +570,7 @@ class TestResourceEstimation:
         assert tape.specs["num_trainable_params"] == 0
         assert tape.specs["depth"] == 0
 
-        assert len(tape.specs) == 8
+        assert len(tape.specs) == 9
 
     def test_specs_tape(self, make_tape):
         """Tests that regular tapes return correct specifications"""
@@ -574,10 +578,17 @@ class TestResourceEstimation:
 
         specs = tape.specs
 
-        assert len(specs) == 8
+        assert len(specs) == 9
 
-        assert specs["gate_sizes"] == defaultdict(int, {1: 3, 2: 1})
-        assert specs["gate_types"] == defaultdict(int, {"RX": 2, "Rot": 1, "CNOT": 1})
+        gate_sizes = defaultdict(int, {1: 3, 2: 1})
+        gate_types = defaultdict(int, {"RX": 2, "Rot": 1, "CNOT": 1})
+        expected_resources = qml.resource.Resources(
+            num_wires=3, num_gates=4, gate_types=gate_types, gate_sizes=gate_sizes, depth=3
+        )
+        assert specs["resources"] == expected_resources
+
+        assert specs["gate_sizes"] == gate_sizes
+        assert specs["gate_types"] == gate_types
         assert specs["num_operations"] == 4
         assert specs["num_observables"] == 2
         assert specs["num_diagonalizing_gates"] == 1
@@ -591,9 +602,18 @@ class TestResourceEstimation:
         tape = make_extendible_tape
         specs1 = tape.specs
 
-        assert len(specs1) == 8
-        assert specs1["gate_sizes"] == defaultdict(int, {1: 3, 2: 1})
-        assert specs1["gate_types"] == defaultdict(int, {"RX": 2, "Rot": 1, "CNOT": 1})
+        assert len(specs1) == 9
+
+        gate_sizes = defaultdict(int, {1: 3, 2: 1})
+        gate_types = defaultdict(int, {"RX": 2, "Rot": 1, "CNOT": 1})
+        assert specs1["gate_sizes"] == gate_sizes
+        assert specs1["gate_types"] == gate_types
+
+        expected_resoures = qml.resource.Resources(
+            num_wires=3, num_gates=4, gate_types=gate_types, gate_sizes=gate_sizes, depth=3
+        )
+        assert specs1["resources"] == expected_resoures
+
         assert specs1["num_operations"] == 4
         assert specs1["num_observables"] == 0
         assert specs1["num_diagonalizing_gates"] == 0
@@ -609,63 +629,24 @@ class TestResourceEstimation:
 
         specs2 = tape.specs
 
-        assert len(specs2) == 8
-        assert specs2["gate_sizes"] == defaultdict(int, {1: 4, 2: 2})
-        assert specs2["gate_types"] == defaultdict(int, {"RX": 2, "Rot": 1, "CNOT": 2, "RZ": 1})
+        assert len(specs2) == 9
+
+        gate_sizes = defaultdict(int, {1: 4, 2: 2})
+        gate_types = defaultdict(int, {"RX": 2, "Rot": 1, "CNOT": 2, "RZ": 1})
+        assert specs2["gate_sizes"] == gate_sizes
+        assert specs2["gate_types"] == gate_types
+
+        expected_resoures = qml.resource.Resources(
+            num_wires=5, num_gates=6, gate_types=gate_types, gate_sizes=gate_sizes, depth=4
+        )
+        assert specs2["resources"] == expected_resoures
+
         assert specs2["num_operations"] == 6
         assert specs2["num_observables"] == 2
         assert specs2["num_diagonalizing_gates"] == 1
         assert specs2["num_used_wires"] == 5
         assert specs2["num_trainable_params"] == 6
         assert specs2["depth"] == 4
-
-    def test_resources_empty_tape(self, make_empty_tape):
-        """Test that empty tapes return empty resource counts."""
-        tape = make_empty_tape
-
-        assert len(tape.specs["gate_types"]) == 0
-        assert tape.specs["depth"] == 0
-
-    def test_resources_tape(self, make_tape):
-        """Test that regular tapes return correct number of resources."""
-        tape = make_tape
-
-        depth = tape.specs["depth"]
-        assert depth == 3
-
-        # Verify resource counts
-        resources = tape.specs["gate_types"]
-        assert len(resources) == 3
-        assert resources["RX"] == 2
-        assert resources["Rot"] == 1
-        assert resources["CNOT"] == 1
-
-    def test_resources_add_to_tape(self, make_extendible_tape):
-        """Test that tapes return correct number of resources after adding to them."""
-        tape = make_extendible_tape
-
-        depth = tape.specs["depth"]
-        assert depth == 3
-
-        resources = tape.specs["gate_types"]
-        assert len(resources) == 3
-        assert resources["RX"] == 2
-        assert resources["Rot"] == 1
-        assert resources["CNOT"] == 1
-
-        with tape as tape:
-            qml.CNOT(wires=[0, 1])
-            qml.RZ(0.1, wires=3)
-            qml.expval(qml.PauliX(wires="a"))
-            qml.probs(wires=[0, "a"])
-
-        assert tape.specs["depth"] == 4
-        resources = tape.specs["gate_types"]
-        assert len(resources) == 4
-        assert resources["RX"] == 2
-        assert resources["Rot"] == 1
-        assert resources["CNOT"] == 2
-        assert resources["RZ"] == 1
 
 
 class TestParameters:
@@ -1197,6 +1178,28 @@ class TestExpand:
                 for op1, op2 in zip(circuit_after_first_expand, circuit_after_second_expand)
             ]
         )
+
+    def test_expand_does_not_affect_original_tape(self):
+        """Test that expand_tape does not modify the inputted tape while creating a new one."""
+        ops = [qml.RX(1.1, 0)]
+        measurements = [qml.expval(qml.PauliX(0)), qml.expval(qml.PauliX(0))]
+        tape = qml.tape.QuantumTape(ops, measurements)
+        expanded = tape.expand()
+
+        assert len(tape.operations) == 1
+        assert qml.equal(tape.operations[0], ops[0])
+        assert len(tape._obs_sharing_wires) == 2
+        assert all(qml.equal(obs, qml.PauliX(0)) for obs in tape._obs_sharing_wires)
+        assert qml.equal(tape.measurements[0], qml.expval(qml.PauliX(0)))
+        assert qml.equal(tape.measurements[1], qml.expval(qml.PauliX(0)))
+
+        assert len(expanded.operations) == 2
+        assert qml.equal(expanded.operations[0], ops[0])
+        assert qml.equal(expanded.operations[1], qml.RY(-np.pi / 2, 0))  # new rotation
+        assert len(expanded._obs_sharing_wires) == 2
+        assert all(qml.equal(obs, qml.PauliZ(0)) for obs in expanded._obs_sharing_wires)
+        assert qml.equal(expanded.measurements[0], qml.expval(qml.PauliZ(0)))
+        assert qml.equal(expanded.measurements[1], qml.expval(qml.PauliZ(0)))
 
     def test_is_sampled_reserved_after_expansion(self, monkeypatch, mocker):
         """Test that the is_sampled property is correctly set when tape

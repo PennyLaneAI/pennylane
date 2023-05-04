@@ -341,14 +341,16 @@ def dot(tensor1, tensor2, like=None):
 
         return np.tensordot(x, y, axes=[[-1], [-2]], like=like)
 
-    if like == "tensorflow":
-        if len(np.shape(x)) == 0 and len(np.shape(y)) == 0:
+    if like in {"tensorflow", "autograd"}:
+        shape_y = len(np.shape(y))
+        shape_x = len(np.shape(x))
+        if shape_x == 0 and shape_y == 0:
             return x * y
 
-        if len(np.shape(y)) == 1:
+        if shape_y == 1:
             return np.tensordot(x, y, axes=[[-1], [0]], like=like)
 
-        if len(np.shape(x)) == 2 and len(np.shape(y)) == 2:
+        if shape_x == 2 and shape_y == 2:
             return x @ y
 
         return np.tensordot(x, y, axes=[[-1], [-2]], like=like)
@@ -813,6 +815,28 @@ def expm(tensor, like=None):
     from scipy.linalg import expm as scipy_expm
 
     return scipy_expm(tensor)
+
+
+@multi_dispatch()
+def norm(tensor, like=None, **kwargs):
+    """Compute the norm of a tensor in each interface."""
+    if like == "jax":
+        from jax.numpy.linalg import norm
+
+    elif like == "tensorflow":
+        from tensorflow import norm
+
+    elif like == "torch":
+        from torch.linalg import norm
+
+        if "axis" in kwargs:
+            axis_val = kwargs.pop("axis")
+            kwargs["dim"] = axis_val
+
+    else:
+        from scipy.linalg import norm
+
+    return norm(tensor, **kwargs)
 
 
 @multi_dispatch(argnum=[1])

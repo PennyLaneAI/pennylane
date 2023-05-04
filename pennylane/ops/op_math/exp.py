@@ -53,7 +53,7 @@ def exp(op, coeff=1, num_steps=None, id=None):
         id (str): id for the Exp operator. Default is None.
 
     Returns:
-       :class:`Exp`: A :class:`~.operation.Operator` representing an operator exponential.
+       :class:`Exp`: An :class:`~.operation.Operator` representing an operator exponential.
 
     .. note::
 
@@ -455,5 +455,5 @@ class Exp(ScalarSymbolicOp, Operation):
         raise GeneratorUndefinedError(
             f"Exponential with coefficient {self.coeff} and base operator {self.base} does not appear to have a "
             f"generator. Consider using op.simplify() to simplify before finding the generator, or define the operator "
-            f"in the form exp(ixG) through the Evolution class."
+            f"in the form exp(-ixG) through the Evolution class."
         )
