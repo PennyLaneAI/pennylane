@@ -20,64 +20,11 @@ from collections.abc import Iterable
 import functools
 import inspect
 import numbers
-import warnings
 
 
 import numpy as np
 
 import pennylane as qml
-
-
-def sparse_hamiltonian(H, wires=None):
-    r"""Warning: This method is deprecated. Use :meth:~.Hamiltonian.sparse_matrix` instead.
-
-    Computes the sparse matrix representation a Hamiltonian in the computational basis.
-
-    Args:
-        H (~.Hamiltonian): Hamiltonian operator for which the matrix representation should be
-            computed
-        wires (Iterable): Wire labels that indicate the order of wires according to which the matrix
-            is constructed. If not profided, ``H.wires`` is used.
-
-    Returns:
-        csr_matrix: a sparse matrix in scipy Compressed Sparse Row (CSR) format with dimension
-        :math:`(2^n, 2^n)`, where :math:`n` is the number of wires
-
-    **Example:**
-
-    This function can be used by passing a `qml.Hamiltonian` object as:
-
-    >>> coeffs = [1, -0.45]
-    >>> obs = [qml.PauliZ(0) @ qml.PauliZ(1), qml.PauliY(0) @ qml.PauliZ(1)]
-    >>> H = qml.Hamiltonian(coeffs, obs)
-    >>> H_sparse = sparse_hamiltonian(H)
-    >>> H_sparse
-    <4x4 sparse matrix of type '<class 'numpy.complex128'>'
-        with 2 stored elements in COOrdinate format>
-
-    The resulting sparse matrix can be either used directly or transformed into a numpy array:
-
-    >>> H_sparse.toarray()
-    array([[ 1.+0.j  ,  0.+0.j  ,  0.+0.45j,  0.+0.j  ],
-           [ 0.+0.j  , -1.+0.j  ,  0.+0.j  ,  0.-0.45j],
-           [ 0.-0.45j,  0.+0.j  , -1.+0.j  ,  0.+0.j  ],
-           [ 0.+0.j  ,  0.+0.45j,  0.+0.j  ,  1.+0.j  ]])
-
-    """
-    warnings.warn(
-        "The method sparse_hamiltonian is deprecated. Please use the method "
-        "sparse_matrix of the Hamiltonian operator instead.",
-        UserWarning,
-    )
-    if not isinstance(H, qml.Hamiltonian):
-        raise TypeError("Passed Hamiltonian must be of type `qml.Hamiltonian`")
-
-    if wires is None:  # not sure if this if-else is still necessary
-        wires = H.wires
-    else:
-        wires = qml.wires.Wires(wires)
-
-    return H.sparse_matrix(wire_order=wires)
 
 
 def _flatten(x):
