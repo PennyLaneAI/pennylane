@@ -396,6 +396,15 @@ class AnnotatedQueue(OrderedDict):
 
         return self[obj]
 
+    def items(self):
+        items = super().items()
+        new_items = []
+
+        for key, value in items:
+            new_items.append((key.obj, value))
+
+        return tuple(new_items)
+
     @property
     def queue(self):
         """Returns a list of objects in the annotated queue"""
@@ -546,14 +555,14 @@ def process_queue(queue: AnnotatedQueue):
     current_list = "_prep"
 
     for obj, info in queue.items():
-        if "owner" not in info and getattr(obj.obj, "_queue_category", None) is not None:
-            if list_order[obj.obj._queue_category] > list_order[current_list]:
-                current_list = obj.obj._queue_category
-            elif list_order[obj.obj._queue_category] < list_order[current_list]:
+        if "owner" not in info and getattr(obj, "_queue_category", None) is not None:
+            if list_order[obj._queue_category] > list_order[current_list]:
+                current_list = obj._queue_category
+            elif list_order[obj._queue_category] < list_order[current_list]:
                 raise ValueError(
-                    f"{obj.obj._queue_category[1:]} operation {obj.obj} must occur prior "
+                    f"{obj._queue_category[1:]} operation {obj} must occur prior "
                     f"to {current_list[1:]}. Please place earlier in the queue."
                 )
-            lists[obj.obj._queue_category].append(obj.obj)
+            lists[obj._queue_category].append(obj)
 
     return lists["_ops"], lists["_measurements"], lists["_prep"]
