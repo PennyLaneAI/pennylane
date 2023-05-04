@@ -267,9 +267,8 @@ def cache_execute(fn: Callable, cache, pass_kwargs=False, return_tuple=True, exp
 
         else:
             # execute all unique tapes that do not exist in the cache
-            res = fn(execution_tapes.values(), **kwargs)
             # convert to list as new device interface returns a tuple
-            res = list(res)
+            res = list(fn(execution_tapes.values(), **kwargs))
 
         final_res = []
 
