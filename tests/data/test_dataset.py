@@ -1,4 +1,4 @@
-# Copyright 2018-2022 Xanadu Quantum Technologies Inc.
+# Copyright 2018-2023 Xanadu Quantum Technologies Inc.
 
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -14,13 +14,15 @@
 """
 Unit tests for the :class:`pennylane.data.Dataset` class and its functions.
 """
-# pylint:disable=protected-access
-from copy import copy
 import os
 import sys
+# pylint:disable=protected-access
+from copy import copy
+
 import pytest
-from pennylane import data
+
 import pennylane as qml
+from pennylane import data
 
 pytestmark = pytest.mark.data
 
