@@ -19,7 +19,6 @@ import pytest
 import pennylane as qml
 from pennylane import numpy as np
 from pennylane.devices.qubit import sample_state, measure_with_samples
-from pennylane.measurements import SampleMP, ProbabilityMP, ExpectationMP
 
 two_qubit_state = np.array([[0, 1j], [-1, 0]]) / np.sqrt(2)
 APPROX_ATOL = 0.01
@@ -39,6 +38,7 @@ def fixture_init_state():
 
 
 def samples_to_probs(samples, num_wires):
+    """Converts samples to probs"""
     samples_decimal = [np.ravel_multi_index(sample, [2] * num_wires) for sample in samples]
     counts = [0] * (2**num_wires)
 
@@ -132,7 +132,6 @@ class TestMeasureSamples:
         """Test that a sample measurement works as expected"""
         state = qml.math.array(two_qubit_state)
         shots = 100
-        wire_order = qml.wires.Wires(range(2))
         mp = qml.sample(wires=range(2))
 
         result = measure_with_samples(mp, state, shots=shots)
@@ -154,7 +153,7 @@ class TestMeasureSamples:
 
         assert result0.shape == (shots, 1)
         assert result0.dtype == np.bool8
-        assert np.all(result0 == False)
+        assert np.all(result0 == 0)
 
         assert result1.shape == (shots, 1)
         assert result1.dtype == np.bool8
@@ -164,7 +163,6 @@ class TestMeasureSamples:
         """Test that a probability measurement works as expected"""
         state = qml.math.array(two_qubit_state)
         shots = 100
-        wire_order = qml.wires.Wires(range(2))
         mp = qml.probs(wires=range(2))
 
         result = measure_with_samples(mp, state, shots=shots)
@@ -198,7 +196,6 @@ class TestMeasureSamples:
         """Test that an expval measurement works as expected"""
         state = qml.math.array(two_qubit_state)
         shots = 100
-        wire_order = qml.wires.Wires(range(2))
         mp = qml.expval(qml.prod(qml.PauliX(0), qml.PauliY(1)))
 
         result = measure_with_samples(mp, state, shots=shots)
@@ -226,7 +223,6 @@ class TestMeasureSamples:
         """Test that a sample measurement returns approximately the correct distribution"""
         state = qml.math.array(two_qubit_state)
         shots = 10000
-        wire_order = qml.wires.Wires(range(2))
         mp = qml.sample(wires=range(2))
 
         result = measure_with_samples(mp, state, shots=shots)
@@ -238,7 +234,6 @@ class TestMeasureSamples:
         """Test that a probability measurement works as expected"""
         state = qml.math.array(two_qubit_state)
         shots = 10000
-        wire_order = qml.wires.Wires(range(2))
         mp = qml.probs(wires=range(2))
 
         result = measure_with_samples(mp, state, shots=shots)
@@ -251,7 +246,6 @@ class TestMeasureSamples:
         """Test that an expval measurement works as expected"""
         state = qml.math.array(two_qubit_state)
         shots = 10000
-        wire_order = qml.wires.Wires(range(2))
         mp = qml.expval(qml.prod(qml.PauliX(0), qml.PauliX(1)))
 
         result = measure_with_samples(mp, state, shots=shots)
