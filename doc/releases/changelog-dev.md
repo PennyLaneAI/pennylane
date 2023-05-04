@@ -57,6 +57,7 @@ This release contains contributions from (in alphabetical order):
 
 Isaac De Vlugt,
 Soran Jahangiri,
+Edward Jiang,
 Christina Lee,
 Romain Moyard,
 Mudit Pandey,
