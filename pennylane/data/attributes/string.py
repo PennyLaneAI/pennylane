@@ -13,9 +13,9 @@
 # limitations under the License.
 """Contains an AttributeType for str objects."""
 
-import zarr
 
 from pennylane.data.base.attribute import AttributeType
+from pennylane.data.base.typing_util import ZarrArray, ZarrGroup
 
 
 class DatasetString(AttributeType):
@@ -25,10 +25,10 @@ class DatasetString(AttributeType):
     def consumes_types(cls) -> tuple[type[str]]:
         return (str,)
 
-    def zarr_to_value(self, bind: zarr.Array) -> str:
+    def zarr_to_value(self, bind: ZarrArray) -> str:
         return bind[()]
 
-    def value_to_zarr(self, bind_parent: zarr.Group, key: str, value: str) -> zarr.Array:
-        bind_parent[self.key] = value
+    def value_to_zarr(self, bind_parent: ZarrGroup, key: str, value: str) -> ZarrArray:
+        bind_parent[key] = value
 
-        return bind_parent[self.key]
+        return bind_parent[key]

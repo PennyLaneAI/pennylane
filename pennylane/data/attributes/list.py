@@ -17,26 +17,23 @@ types."""
 from collections.abc import Iterable, MutableSequence, Sequence
 from typing import Generic, Union, overload
 
-import zarr
-import zarr.convenience
-
 from pennylane.data.base.attribute import AttributeType
 from pennylane.data.base.mapper import MapperMixin
-from pennylane.data.base.typing_util import T, ZarrAny
+from pennylane.data.base.typing_util import T, ZarrAny, ZarrGroup
 
 
 class DatasetList(
-    Generic[T], AttributeType[zarr.Group, Iterable[T]], MutableSequence[T], MapperMixin
+    Generic[T], AttributeType[ZarrGroup, Iterable[T]], MutableSequence[T], MapperMixin
 ):
     type_id = "list"
 
     def default_value(self) -> list[T]:
         return []
 
-    def zarr_to_value(self, bind: zarr.Group) -> MutableSequence[T]:
+    def zarr_to_value(self, bind: ZarrGroup) -> MutableSequence[T]:
         return self
 
-    def value_to_zarr(self, bind_parent: zarr.Group, key: str, value: Iterable[T]) -> zarr.Group:
+    def value_to_zarr(self, bind_parent: ZarrGroup, key: str, value: Iterable[T]) -> ZarrGroup:
         grp = bind_parent.create_group(key)
 
         self.extend(value)

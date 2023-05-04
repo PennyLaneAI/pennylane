@@ -14,13 +14,18 @@
 """Contains a sentinel object, common type objects utilities for parsing types
 and converting them to strings."""
 
+from collections.abc import MutableMapping
 from enum import Enum
 from types import GenericAlias
-from typing import Any, Literal, TypeVar, Union, get_args, get_origin
+from typing import Any, List, Literal, Tuple, TypeVar, Union, get_args, get_origin
 
-import zarr
+from numpy.typing import ArrayLike
 
-ZarrAny = Union[zarr.Array, zarr.Group]
+from pennylane.data.base._zarr import zarr
+
+ZarrArray = ArrayLike
+ZarrGroup = MutableMapping
+ZarrAny = Union[ZarrArray, ZarrGroup]
 Zarr = TypeVar("Zarr", zarr.Array, zarr.Group, ZarrAny)
 
 """
@@ -67,7 +72,7 @@ def get_type_str(cls_or_obj: Union[object, type]) -> str:
     return f"{cls.__module__}.{cls.__qualname__}"
 
 
-def resolve_special_type(type_: Any) -> tuple[type, list[type]]:
+def resolve_special_type(type_: Any) -> Tuple[type, List[type]]:
     """Converts special typing forms (Union[...], Optional[...]), and parametrized
     generics (list[...], dict[...]) into a 2-tuple of its base type and arguments.
     If ``type_`` is a regular type_, it the argument list will be empty.
@@ -81,9 +86,9 @@ def resolve_special_type(type_: Any) -> tuple[type, list[type]]:
     orig_type = get_origin(type_)
     if orig_type is None:
         return (type_, [])
-    else:
-        args = list(get_args(type_))
-        type_ = orig_type
+    
+    args = list(get_args(type_))
+    type_ = orig_type
 
     for i in range(len(args)):
         orig_type = get_origin(args[i])

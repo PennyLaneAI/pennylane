@@ -22,14 +22,13 @@ from numbers import Number
 from types import MappingProxyType
 from typing import Any, ClassVar, Generic, Optional, TypeVar, Union, cast
 
-import zarr
-import zarr.convenience
-
+from pennylane.data.base._zarr import zarr
 from pennylane.data.base.typing_util import (
     UNSET,
     T,
     Zarr,
     ZarrAny,
+    ZarrGroup,
     get_type_str,
     resolve_special_type,
 )
@@ -98,7 +97,7 @@ class AttributeType(ABC, Generic[Zarr, T]):
 
     Self = TypeVar("Self", bound="AttributeType")
 
-    _parent: zarr.Group
+    _parent: ZarrGroup
     _name: Optional[str] = None
     _key: Optional[str] = None
 
@@ -107,7 +106,7 @@ class AttributeType(ABC, Generic[Zarr, T]):
         value: Optional[T] = None,
         info: Optional[AttributeInfo] = None,
         *,
-        parent: Optional[zarr.Group] = None,
+        parent: Optional[ZarrGroup] = None,
         key: Optional[str] = None,
     ) -> None:
         if parent is not None:
@@ -148,7 +147,7 @@ class AttributeType(ABC, Generic[Zarr, T]):
         ...
 
     @abstractmethod
-    def value_to_zarr(self, bind_parent: zarr.Group, key: str, value: T) -> Zarr:
+    def value_to_zarr(self, bind_parent: ZarrGroup, key: str, value: T) -> Zarr:
         """Converts value into a Zarr Array or Group under bind_parent[key]."""
         ...
 
@@ -166,7 +165,7 @@ class AttributeType(ABC, Generic[Zarr, T]):
         return cast(Zarr, self._parent[self.key])
 
     @property
-    def bind_parent(self) -> zarr.Group:
+    def bind_parent(self) -> ZarrGroup:
         return self._parent
 
     def get_value(self) -> T:
@@ -180,7 +179,7 @@ class AttributeType(ABC, Generic[Zarr, T]):
 
         return new_bind
 
-    def _set_parent(self, parent: zarr.Group, key: str):
+    def _set_parent(self, parent: ZarrGroup, key: str):
         """Copies this attribute's data into ``parent``, under ``key``."""
         zarr.convenience.copy(source=self.bind, dest=parent, name=key)
         self._parent = parent

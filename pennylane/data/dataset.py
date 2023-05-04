@@ -20,23 +20,12 @@ from collections.abc import Mapping
 from dataclasses import dataclass
 from pathlib import Path
 from types import MappingProxyType
-from typing import (
-    Any,
-    Callable,
-    ClassVar,
-    Generic,
-    Literal,
-    Optional,
-    Union,
-    cast,
-)
+from typing import Any, Callable, ClassVar, Generic, Literal, Optional, Union, cast
 
-import zarr
-import zarr.convenience
-
+from pennylane.data.base._zarr import zarr
 from pennylane.data.base.attribute import AttributeInfo, AttributeType
 from pennylane.data.base.mapper import MapperMixin, match_obj_type
-from pennylane.data.base.typing_util import UNSET, T, ZarrAny
+from pennylane.data.base.typing_util import UNSET, T, ZarrAny, ZarrGroup
 
 
 @dataclass
@@ -97,7 +86,7 @@ class Dataset(MapperMixin):
 
     def __init__(
         self,
-        bind: Optional[Union[str, Path, zarr.Group]] = None,
+        bind: Optional[Union[str, Path, ZarrGroup]] = None,
         **attrs: Any,
     ):
         """
@@ -122,7 +111,7 @@ class Dataset(MapperMixin):
             setattr(self, name, attr)
 
     @property
-    def bind(self) -> zarr.Group:
+    def bind(self) -> ZarrGroup:
         """The Zarr group that contains this dataset's attributes."""
         return self._bind
 

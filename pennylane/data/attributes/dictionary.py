@@ -18,17 +18,14 @@ of Dataset attributes."""
 from collections.abc import Iterator, Mapping, MutableMapping
 from typing import Generic, TypeVar, Union
 
-import zarr
-import zarr.convenience
-
 from pennylane.data.base.attribute import AttributeType
 from pennylane.data.base.mapper import MapperMixin
-from pennylane.data.base.typing_util import T, ZarrAny
+from pennylane.data.base.typing_util import T, ZarrAny, ZarrGroup
 
 
 class DatasetDict(
     Generic[T],
-    AttributeType[zarr.Group, Mapping[str, T]],
+    AttributeType[ZarrGroup, Mapping[str, T]],
     MutableMapping[str, T],
     MapperMixin,
 ):
@@ -39,12 +36,10 @@ class DatasetDict(
     def default_value(self) -> Mapping[str, T]:
         return {}
 
-    def zarr_to_value(self, bind: zarr.Group) -> MutableMapping[str, T]:
+    def zarr_to_value(self, bind: ZarrGroup) -> MutableMapping[str, T]:
         return self
 
-    def value_to_zarr(
-        self, bind_parent: zarr.Group, key: str, value: Mapping[str, T]
-    ) -> zarr.Group:
+    def value_to_zarr(self, bind_parent: ZarrGroup, key: str, value: Mapping[str, T]) -> ZarrGroup:
         grp = bind_parent.create_group(key)
 
         self.update(value)

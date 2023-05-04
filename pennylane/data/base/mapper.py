@@ -18,11 +18,12 @@ from collections.abc import KeysView, Mapping
 from types import MappingProxyType
 from typing import Any, Union
 
-import zarr
-import zarr.convenience
-
-from pennylane.data.base.attribute import AttributeType, get_attribute_type, match_obj_type
-from pennylane.data.base.typing_util import ZarrAny
+from pennylane.data.base.attribute import (
+    AttributeType,
+    get_attribute_type,
+    match_obj_type,
+)
+from pennylane.data.base.typing_util import ZarrAny, ZarrGroup
 
 
 class AttributeTypeMapper:
@@ -33,7 +34,7 @@ class AttributeTypeMapper:
 
     _cache: dict[str, AttributeType]
 
-    def __init__(self, zroot: zarr.Group) -> None:
+    def __init__(self, zroot: ZarrGroup) -> None:
         self._cache = {}
         self.zroot = zroot
 
@@ -86,7 +87,7 @@ class MapperMixin:
     to a Zarr group, e.g `DatasetList`, `DatasetDict`. Provides
     a `_mapper` property over the type's ``bind`` attribute."""
 
-    bind: zarr.Group
+    bind: ZarrGroup
 
     __mapper: AttributeTypeMapper = None
 
