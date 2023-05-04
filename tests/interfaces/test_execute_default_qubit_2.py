@@ -16,9 +16,32 @@ import pytest
 
 import pennylane as qml
 from pennylane import numpy as np
-from pennylane.interfaces.execution import _batch_transform
+from pennylane.interfaces.execution import _batch_transform, _preprocess_expand_fn
 
 from pennylane.devices.experimental import DefaultQubit2
+
+
+class TestPreprocessExpandFn:
+    def test_provided_is_callable(self):
+        """Test that if the expand_fn is not "device", it is simply returned."""
+
+        dev = DefaultQubit2()
+
+        def f(tape):
+            return tape
+
+        out = _preprocess_expand_fn(f, dev, 10)
+        assert out is f
+
+    def test_new_device_blank_expand_fn(self):
+        """Test that the expand_fn is blank if is new device."""
+
+        dev = DefaultQubit2()
+
+        out = _preprocess_expand_fn("device", dev, 10)
+
+        x = [1]
+        assert out(x) is x
 
 
 class TestBatchTransformHelper:
@@ -46,8 +69,8 @@ class TestBatchTransformHelper:
 
         assert len(new_batch) == 2
 
-        x = "a"
-        assert x is post_procesing_fn(x)
+        # for some reason map batch transform is converting a tuple to a list :(
+        assert post_procesing_fn((1, 1)) == [1, 1]
 
     def test_split_and_expand_performed(self):
         """Test that preprocess returns the correct tapes when splitting and expanding

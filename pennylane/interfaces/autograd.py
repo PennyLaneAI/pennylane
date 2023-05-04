@@ -260,11 +260,6 @@ def _vjp_legacy(
         return_vjps = [
             qml.math.to_numpy(v, max_depth=_n) if isinstance(v, ArrayBox) else v for v in vjps
         ]
-        if getattr(device, "short_name", device.name) == "strawberryfields.gbs":  # pragma: no cover
-            # TODO: remove this exceptional case once the source of this issue
-            # https://github.com/PennyLaneAI/pennylane-sf/issues/89 is determined
-            return (return_vjps,)  # pragma: no cover
-
         return return_vjps
 
     return grad_fn
@@ -419,8 +414,11 @@ def vjp(
 
         jacs = []
         for t in tapes:
-            # assume that shot vector is always none on the new device interface for now
-            shot_vector = getattr(device, "shot_vector", None)
+            if isinstance(device, qml.devices.experimental.Device):  # pragma:  no-cover
+                # cant test until we integrate device with shot vector
+                shot_vector = t.shots.shot_vector
+            else:
+                shot_vector = device.shot_vector
             g_tapes, fn = gradient_fn(t, shots=shot_vector, **gradient_kwargs)
 
             unwrapped_tapes = tuple(convert_to_numpy_parameters(g_t) for g_t in g_tapes)
@@ -439,8 +437,11 @@ def vjp(
 
         computing_jacobian = _n == max_diff
 
-        # assume that shot vector is always none on the new device interface for now
-        shot_vector = getattr(device, "shot_vector", None)
+        if isinstance(device, qml.devices.experimental.Device):  # pragma: no-cover
+            # cant test until we integrate device with shot vector
+            shot_vector = t.shots.shot_vector
+        else:
+            shot_vector = device.shot_vector
 
         if gradient_fn and gradient_fn.__name__ == "param_shift" and computing_jacobian:
             jacs = _get_jac_with_caching()
@@ -464,7 +465,7 @@ def vjp(
                         unwrapped_tapes,
                         dy,
                         gradient_fn,
-                        shots=device.shot_vector,
+                        shots=shot_vector,
                         reduction="append",
                         gradient_kwargs=gradient_kwargs,
                     )
@@ -513,10 +514,6 @@ def vjp(
         return_vjps = [
             qml.math.to_numpy(v, max_depth=_n) if isinstance(v, ArrayBox) else v for v in vjps
         ]
-        if getattr(device, "short_name", device.name) == "strawberryfields.gbs":  # pragma: no cover
-            # TODO: remove this exceptional case once the source of this issue
-            # https://github.com/PennyLaneAI/pennylane-sf/issues/89 is determined
-            return (return_vjps,)  # pragma: no cover
 
         return return_vjps
 

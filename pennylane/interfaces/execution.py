@@ -112,6 +112,7 @@ def _batch_transform(
 
     """
     if isinstance(device, qml.devices.experimental.Device):
+        print("is experimental device")
         if not device_batch_transform:
             warnings.warn(
                 "device batch transforms cannot be turned off with the new device interface.",
@@ -132,6 +133,21 @@ def _batch_transform(
 def _preprocess_expand_fn(
     expand_fn: Union[str, Callable], device: device_type, max_expansion: int
 ) -> Callable:
+    """Preprocess the ``expand_fn`` configuration property.
+
+    Args:
+        expand_fn (str, Callable): If string, then it must be "device".  Otherwise, it should be a map
+            from one tape to a new tape. The final tape must be natively executable by the device.
+        device (Device, devices.experimental.Device): The device that we will be executing on.
+        max_expansion (int): The number of times the internal circuit should be expanded when
+            executed on a device. Expansion occurs when an operation or measurement is not
+            supported, and results in a gate decomposition. If any operations in the decomposition
+            remain unsupported by the device, another expansion occurs.
+
+    Returns:
+        Callable: a map from one quantum tape to a new one. The output should be compatible with the device.
+
+    """
     if expand_fn != "device":
         return expand_fn
     if isinstance(device, qml.devices.experimental.Device):
@@ -464,8 +480,6 @@ def execute(
     no_interface_boundary_required = interface is None or gradient_fn in {None, "backprop"}
     if no_interface_boundary_required:
 
-        # used in this block
-        # device, tapes, cache, expand_fn, config, use_backprop, override shots
         device_supports_interface_data = (
             new_device_interface
             or config.interface is None
