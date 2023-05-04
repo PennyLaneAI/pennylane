@@ -96,13 +96,13 @@ class TestInitialization:
         ops = [qml.PauliX(0), qml.PauliY(1), qml.PauliZ(2)]
         coeffs = [1, 2, 3]
         H = ParametrizedHamiltonian(coeffs, ops)
-        ev = ParametrizedEvolution(H=H, params=[1, 2], t=2)
+        ev = ParametrizedEvolution(H=H, params=None, t=2)
         assert ev.dense is False
 
-        ev2 = ParametrizedEvolution(H=H, params=[1, 2], t=2, dense=True)
+        ev2 = ParametrizedEvolution(H=H, params=None, t=2, dense=True)
         assert ev2.dense is True
 
-        ev3 = ParametrizedEvolution(H=H, params=[1, 2], t=2, dense=False)
+        ev3 = ParametrizedEvolution(H=H, params=None, t=2, dense=False)
         assert ev3.dense is False
 
     @pytest.mark.parametrize("ret_intmdt, comp", ([False, False], [True, False], [True, True]))
