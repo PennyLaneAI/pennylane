@@ -89,7 +89,7 @@ class TestInitialization:
         assert qml.math.allequal(ev.data, [1, 2])
         assert qml.math.allequal(ev.parameters, [1, 2])
         assert ev.num_params == 2
-        assert ev.dense == True
+        assert ev.dense is True
 
     def test_set_dense(self):
         """Test that flag dense is set correctly"""
@@ -97,10 +97,10 @@ class TestInitialization:
         coeffs = [1, 2, 3]
         H = ParametrizedHamiltonian(coeffs, ops)
         ev = ParametrizedEvolution(H=H, params=[1, 2], t=2)
-        assert ev.dense == False
+        assert ev.dense is False
 
         ev2 = ParametrizedEvolution(H=H, params=[1, 2], t=2, dense=True)
-        assert ev2.dense == True
+        assert ev2.dense is True
 
     @pytest.mark.parametrize("ret_intmdt, comp", ([False, False], [True, False], [True, True]))
     def test_return_intermediate_and_complementary(self, ret_intmdt, comp):
