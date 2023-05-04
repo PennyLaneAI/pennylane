@@ -1124,7 +1124,7 @@ class TestJaxArgnums:
 
         with pytest.raises(
             qml.QuantumFunctionError,
-            match="argnum does not work with the Jax interface. You should use argnums " "instead.",
+            match="argnum does not work with the Jax interface. You should use argnums instead.",
         ):
             qml.gradients.hadamard_grad(circuit, argnum=argnums)(x, y)
 

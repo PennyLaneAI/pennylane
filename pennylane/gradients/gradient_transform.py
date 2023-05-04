@@ -293,8 +293,7 @@ class gradient_transform(qml.batch_transform):
 
             if interface == "jax" and argnum:
                 raise qml.QuantumFunctionError(
-                    "argnum does not work with the Jax interface. You should use argnums "
-                    "instead."
+                    "argnum does not work with the Jax interface. You should use argnums instead."
                 )
 
             if interface == "jax" and not trainable_params:

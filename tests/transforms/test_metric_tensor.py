@@ -1245,7 +1245,7 @@ class TestFullMetricTensor:
 
         with pytest.raises(
             qml.QuantumFunctionError,
-            match="argnum does not work with the Jax interface. You should use argnums " "instead.",
+            match="argnum does not work with the Jax interface. You should use argnums instead.",
         ):
             qml.metric_tensor(circuit, argnum=range(len(params)), approx=None)(*params)
 
