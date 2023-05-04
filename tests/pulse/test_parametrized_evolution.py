@@ -75,7 +75,7 @@ class TestInitialization:
         ops = [qml.PauliX(0), qml.PauliY(1)]
         coeffs = [1, 2]
         H = ParametrizedHamiltonian(coeffs, ops)
-        ev = ParametrizedEvolution(H=H, params=[1, 2], t=2)
+        ev = ParametrizedEvolution(H=H, params=[1, 2], t=2, dense=True)
 
         assert ev.H is H
         assert qml.math.allequal(ev.t, [0, 2])
@@ -89,6 +89,21 @@ class TestInitialization:
         assert qml.math.allequal(ev.data, [1, 2])
         assert qml.math.allequal(ev.parameters, [1, 2])
         assert ev.num_params == 2
+        assert ev.dense is True
+
+    def test_set_dense(self):
+        """Test that flag dense is set correctly"""
+        ops = [qml.PauliX(0), qml.PauliY(1), qml.PauliZ(2)]
+        coeffs = [1, 2, 3]
+        H = ParametrizedHamiltonian(coeffs, ops)
+        ev = ParametrizedEvolution(H=H, params=None, t=2)
+        assert ev.dense is False
+
+        ev2 = ParametrizedEvolution(H=H, params=None, t=2, dense=True)
+        assert ev2.dense is True
+
+        ev3 = ParametrizedEvolution(H=H, params=None, t=2, dense=False)
+        assert ev3.dense is False
 
     @pytest.mark.parametrize("ret_intmdt, comp", ([False, False], [True, False], [True, True]))
     def test_return_intermediate_and_complementary(self, ret_intmdt, comp):

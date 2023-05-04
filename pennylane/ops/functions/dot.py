@@ -73,8 +73,6 @@ def dot(
     >>> qml.dot(coeffs, ops)
     ParametrizedHamiltonian: terms=2
     """
-    if isinstance(coeffs, qml.QNodeCollection) or isinstance(ops, qml.QNodeCollection):
-        return qml.collections.dot(coeffs, ops)
 
     if len(coeffs) != len(ops):
         raise ValueError("Number of coefficients and operators does not match.")

@@ -15,6 +15,45 @@
 
 import pennylane as qml
 from pennylane import numpy as np
+from pennylane.measurements import SampleMeasurement, Shots
+from pennylane.typing import TensorLike
+from .apply_operation import apply_operation
+
+
+def measure_with_samples(
+    mp: SampleMeasurement, state: np.ndarray, shots: Shots, rng=None
+) -> TensorLike:
+    """
+    Returns the samples of the measurement process performed on the given state.
+
+    Args:
+        mp (~.measurements.SampleMeasurement): The sample measurement to perform
+        state (np.ndarray[complex]): The state vector to sample from
+        shots (~.measurements.Shots): The number of samples to take
+        rng (Union[None, int, array_like[int], SeedSequence, BitGenerator, Generator]): A
+            seed-like parameter matching that of ``seed`` for ``numpy.random.default_rng``.
+            If no value is provided, a default RNG will be used.
+
+    Returns:
+        TensorLike[Any]: Sample measurement results
+    """
+    # apply diagonalizing gates
+    pre_rotated_state = state
+    for op in mp.diagonalizing_gates():
+        pre_rotated_state = apply_operation(op, pre_rotated_state)
+
+    # we don't need to worry about shot vectors for now
+    # if shots.has_partitioned_shots:
+    #     processed_samples = []
+    #     for shot_copies in shots.shot_vector:
+    #         for _ in range(shot_copies.copies):
+    #             samples = sample_state(pre_rotated_state, shot_copies.shots, rng=rng)
+    #             processed_samples.append(mp.process_samples(samples, wire_order))
+
+    #     return tuple(processed_samples)
+
+    samples = sample_state(pre_rotated_state, shots=shots.total_shots, wires=mp.wires, rng=rng)
+    return mp.process_samples(samples, mp.wires)
 
 
 def sample_state(state, shots: int, wires=None, rng=None) -> np.ndarray:
