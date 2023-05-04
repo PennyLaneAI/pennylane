@@ -11,12 +11,24 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""
-Provides base `Dataset` class.
-"""
-
-from pennylane.data.base.dataset import DatasetBase, attribute
+"""Contains an AttributeType for str objects."""
 
 
-class Dataset(DatasetBase):
-    description: str = attribute(doc="Description for this Dataset")
+from pennylane.data.base.attribute import AttributeType
+from pennylane.data.base.typing_util import ZarrArray, ZarrGroup
+
+
+class DatasetString(AttributeType):
+    type_id = "string"
+
+    @classmethod
+    def consumes_types(cls) -> tuple[type[str]]:
+        return (str,)
+
+    def zarr_to_value(self, bind: ZarrArray) -> str:
+        return bind[()]
+
+    def value_to_zarr(self, bind_parent: ZarrGroup, key: str, value: str) -> ZarrArray:
+        bind_parent[key] = value
+
+        return bind_parent[key]

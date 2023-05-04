@@ -602,11 +602,8 @@ jobs:
           pip install -r requirements-dev.txt --upgrade
 
       - name: Install zstd
-        run: pip3 install zstd
-
-      - name: Install dill
-        run: pip3 install dill
-
+        run: pip3 install zarr
+        
       - name: Install PennyLane
         run: |
           python setup.py bdist_wheel

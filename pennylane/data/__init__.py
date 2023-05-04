@@ -1,4 +1,4 @@
-# Copyright 2018-2022 Xanadu Quantum Technologies Inc.
+# Copyright 2018-2023 Xanadu Quantum Technologies Inc.
 
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -11,20 +11,19 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""
-The data subpackage provides functionality to access, store and manipulate quantum datasets.
+"""Datasets module. Documentation incoming."""
 
-Datasets are generally stored and accessed using the :class:`~pennylane.data.Dataset` class.
-Pre-computed datasets are available for download and can be accessed using the :func:`~pennylane.data.load` or
-:func:`~pennylane.data.load_interactive` functions.
-Additionally, users can easily create, write to disk, and read custom datasets using functions within the
-:class:`~pennylane.data.Dataset` class.
-
-.. currentmodule:: pennylane.data
-.. autosummary::
-   :toctree: api
-
-"""
-
+from .attributes import DatasetArray, DatasetScalar, DatasetString
+from .base.attribute import AttributeInfo, AttributeType
+from .base.dataset import attribute
 from .dataset import Dataset
-from .data_manager import load, load_interactive, list_datasets, list_attributes
+
+__all__ = (
+    "AttributeType",
+    "AttributeInfo",
+    "attribute",
+    "Dataset",
+    "DatasetArray",
+    "DatasetScalar",
+    "DatasetString",
+)

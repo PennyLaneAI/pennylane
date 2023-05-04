@@ -11,12 +11,5 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""
-Provides base `Dataset` class.
-"""
-
-from pennylane.data.base.dataset import DatasetBase, attribute
-
-
-class Dataset(DatasetBase):
-    description: str = attribute(doc="Description for this Dataset")
+"""The base module contains the base class that form the underlying
+type machinery, and low-level Zarr interface of the data module."""

@@ -11,12 +11,14 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""
-Provides base `Dataset` class.
-"""
+"""Contains AttributeType definitions for builtin types, including dicts,
+heterogenous lists, strings and numpy arrays, as well as Pennylane classes."""
 
-from pennylane.data.base.dataset import DatasetBase, attribute
+from .array import DatasetArray, DatasetScalar
+from .string import DatasetString
 
-
-class Dataset(DatasetBase):
-    description: str = attribute(doc="Description for this Dataset")
+__all__ = (
+    "DatasetArray",
+    "DatasetScalar",
+    "DatasetString",
+)
