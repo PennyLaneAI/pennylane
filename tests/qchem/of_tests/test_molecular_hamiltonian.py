@@ -252,3 +252,6 @@ def test_diff_hamiltonian_error(symbols, geometry):
 
     with pytest.raises(ValueError, match="Only 'dhf' and 'pyscf' backends are supported"):
         qchem.molecular_hamiltonian(symbols, geometry, method="psi4")[0]
+
+    with pytest.raises(ValueError, match="Openshell systems are not supported"):
+        qchem.molecular_hamiltonian(symbols, geometry, mult=3)[0]
