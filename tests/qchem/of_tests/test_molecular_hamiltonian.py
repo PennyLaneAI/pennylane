@@ -232,7 +232,7 @@ def test_differentiable_hamiltonian(symbols, geometry, h_ref_data):
     ],
 )
 def test_custom_wiremap_hamiltonian_pyscf(symbols, geometry, method, wiremap, grouping, tmpdir):
-    """Test that the generated Hamiltonian has the correct wire labels given by a custom wiremap."""
+    r"""Test that the generated Hamiltonian has the correct wire labels given by a custom wiremap."""
     hamiltonian, qubits = qchem.molecular_hamiltonian(
         symbols=symbols,
         coordinates=geometry,
@@ -265,7 +265,7 @@ def test_custom_wiremap_hamiltonian_pyscf(symbols, geometry, method, wiremap, gr
     ],
 )
 def test_custom_wiremap_hamiltonian_dhf(symbols, geometry, wiremap, args, grouping, tmpdir):
-    """Test that the generated Hamiltonian has the correct wire labels given by a custom wiremap."""
+    r"""Test that the generated Hamiltonian has the correct wire labels given by a custom wiremap."""
     hamiltonian, qubits = qchem.molecular_hamiltonian(
         symbols=symbols,
         coordinates=geometry,
