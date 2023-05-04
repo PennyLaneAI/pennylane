@@ -39,7 +39,6 @@ class FirstQuantization(Operation):
         error (float): target error in the algorithm
         charge (int): total electric charge of the system
         br (int): number of bits for ancilla qubit rotation
-        cubic (bool): True if the unit cell is cubic
         vectors (array[float]): lattice vectors
 
     **Example**
@@ -89,7 +88,6 @@ class FirstQuantization(Operation):
         error=0.0016,
         charge=0,
         br=7,
-        cubic=True,
         vectors=None,
     ):
         self.n = n
@@ -98,8 +96,24 @@ class FirstQuantization(Operation):
         self.error = error
         self.charge = charge
         self.br = br
-        self.cubic = cubic
         self.vectors = vectors
+
+        if self.vectors is None:
+            self.cubic = True
+        else:
+            recip_v = (
+                2
+                * np.pi
+                / np.abs(np.sum((np.cross(vectors[0], vectors[1]) * vectors[2])))
+                * np.array([np.cross(vectors[i], vectors[j]) for i, j in [(1, 2), (2, 0), (0, 1)]])
+            )
+
+            bbt = np.matrix(recip_v) @ np.matrix(recip_v).T
+
+            cubic = np.linalg.norm(bbt - (recip_v**2).max() * np.identity(3)) < 1e-6
+
+            if not cubic:
+                self.cubic = False
 
         self.lamb = self.norm(
             self.n, self.eta, self.omega, self.error, self.br, self.charge, self.cubic, self.vectors

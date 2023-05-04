@@ -288,7 +288,7 @@ def test_norm_error(n, eta, omega, error, br, charge):
 )
 def test_fq_vals_non_qubic(n, eta, omega, vectors, lamb, g_cost, q_cost):
     r"""Test that the FirstQuantization class computes correct attributes."""
-    est = qml.resource.FirstQuantization(n, eta, omega, cubic=False, vectors=vectors)
+    est = qml.resource.FirstQuantization(n, eta, omega, vectors=vectors)
 
     assert np.allclose(est.lamb, lamb)
     assert np.allclose(est.gates, g_cost)
