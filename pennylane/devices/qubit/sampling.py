@@ -52,7 +52,7 @@ def measure_with_samples(
 
     #     return tuple(processed_samples)
 
-    samples = sample_state(pre_rotated_state, shots=shots, wires=mp.wires, rng=rng)
+    samples = sample_state(pre_rotated_state, shots=shots.total_shots, wires=mp.wires, rng=rng)
     return mp.process_samples(samples, mp.wires)
 
 
