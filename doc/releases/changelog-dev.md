@@ -21,6 +21,9 @@
 * `qml.prod` now accepts a single qfunc input for creating new `Prod` operators.
   [(#4011)](https://github.com/PennyLaneAI/pennylane/pull/4011)
 
+* Added `__repr__` and `__str__` methods to the `Shots` class.
+  [(#4081)](https://github.com/PennyLaneAI/pennylane/pull/4081)
+
 <h3>Breaking changes 💔</h3>
 
 * `pennylane.collections`, `pennylane.op_sum`, and `pennylane.utils.sparse_hamiltonian` are removed.
