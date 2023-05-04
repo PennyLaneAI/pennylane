@@ -20,6 +20,7 @@ class ShotCopies(NamedTuple):
     """A namedtuple that represents a shot quantity being repeated some number of times.
     For example, ``ShotCopies(shots=10, copies=2)`` indicates two executions with 10 shots each for 20 shots total.
     """
+
     shots: int
     copies: int
 
