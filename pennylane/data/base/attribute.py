@@ -202,7 +202,7 @@ class AttributeType(ABC, Generic[Zarr, T]):
 
     def __repr__(self) -> str:
         return object.__repr__(self)
-    
+
     def __eq__(self, __value: object) -> bool:
         return self.get_value() == __value
 
