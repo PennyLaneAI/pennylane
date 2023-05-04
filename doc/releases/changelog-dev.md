@@ -24,6 +24,10 @@
 * Added a function `measure_with_samples` that returns a sample-based measurement result given a state
   [(#4083)](https://github.com/PennyLaneAI/pennylane/pull/4083)
 
+* Wrap all objects being queued in an `AnnotatedQueue` so that `AnnotatedQueue` is not dependent on
+  the hash of any operators/measurement processes.
+  [(#4087)](https://github.com/PennyLaneAI/pennylane/pull/4087)
+
 <h3>Breaking changes 💔</h3>
 
 * `pennylane.collections`, `pennylane.op_sum`, and `pennylane.utils.sparse_hamiltonian` are removed.
