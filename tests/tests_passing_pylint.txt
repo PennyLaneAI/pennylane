@@ -15,6 +15,7 @@ tests/gradients/core/test_hadamard_gradient.py
 tests/gradients/core/test_hamiltonian_gradient.py
 tests/gradients/core/test_jvp.py
 tests/gradients/core/test_stoch_pulse_gradient.py
+tests/gradients/core/test_hybrid_pulse_gradient.py
 tests/gradients/finite_diff/test_spsa_gradient.py
 tests/kernels/**
 tests/legacy/test_measurements_old.py
