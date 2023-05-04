@@ -142,7 +142,7 @@ class TestMeasureSamples:
         assert all(qml.math.allequal(s, [0, 1]) or qml.math.allequal(s, [1, 0]) for s in result)
 
     def test_sample_measure_single_wire(self):
-        """Test that a sample measurement on a single wire works as expected """
+        """Test that a sample measurement on a single wire works as expected"""
         state = np.array([[1, -1j], [0, 0]]) / np.sqrt(2)
         shots = 100
 

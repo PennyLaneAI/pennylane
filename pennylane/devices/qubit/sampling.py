@@ -20,12 +20,9 @@ from pennylane.typing import TensorLike
 from .apply_operation import apply_operation
 
 
-def measure_with_samples(mp: SampleMeasurement,
-    state: np.ndarray,
-    shots: qml.measurements.Shots,
-    rng=None
+def measure_with_samples(
+    mp: SampleMeasurement, state: np.ndarray, shots: qml.measurements.Shots, rng=None
 ) -> TensorLike:
-
     # apply diagonalizing gates
     pre_rotated_state = state
     for op in mp.diagonalizing_gates():
