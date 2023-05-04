@@ -95,6 +95,21 @@ class TestShotsConstruction:
         """Test that the repr is correct"""
         assert expected_str == repr(shots_obj)
 
+    def test_eq(self):
+        """Test that the equality function behaves correctly"""
+        for s in self.shot_data:
+            assert s == copy.copy(s)
+            assert s == copy.deepcopy(s)
+            assert s != Shots(2)
+
+    def test_hash(self):
+        """Test that the hash function behaves correctly"""
+        for s in self.shot_data:
+            hash_s = hash(s)
+            assert hash_s == hash(copy.copy(s))
+            assert hash_s == hash(copy.deepcopy(s))
+            assert hash_s != hash(Shots(2))
+
     def test_sequence_all_tuple(self):
         """Tests that a sequence of tuples is allowed."""
         shots = Shots([(1, 2), (1, 5), (3, 4)])
