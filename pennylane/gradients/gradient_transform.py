@@ -98,27 +98,6 @@ def assert_active_return(transform_name):
 def _gradient_analysis(tape, use_graph=True, grad_fn=None):
     """Update the parameter information dictionary of the tape with
     gradient information of each parameter.
-
-    Parameter gradient methods include:
-
-    * ``None``: the parameter does not support differentiation.
-
-    * ``"0"``: the variational circuit output does not depend on this
-      parameter (the partial derivative is zero).
-
-    In addition, the operator might define its own grad method
-    via :attr:`.Operator.grad_method`.
-
-    Note that this function modifies the input tape in-place.
-
-    Args:
-        tape (.QuantumTape): the quantum tape to analyze
-        use_graph (bool): whether to use a directed-acyclic graph to determine
-            if the parameter has a gradient of 0
-        grad_fn (None or callable): The gradient transform performing the analysis.
-            This is an optional argument; if provided, and the tape has already
-            been analyzed for the gradient information by the same gradient transform,
-            the cached gradient analysis will be used.
     """
     # pylint:disable=protected-access
     if grad_fn is not None:
@@ -148,30 +127,48 @@ def _gradient_analysis(tape, use_graph=True, grad_fn=None):
             info["grad_method"] = op.grad_method
 
 
-def _grad_method_validation(method, tape):
-    """Validates if the gradient method requested is supported by the trainable
+def gradient_analysis_and_validation(tape, method, use_graph=True, grad_fn=None, overwrite=True):
+    """Update the parameter information dictionary of the tape with gradient information of
+    each parameter. Then validates if the gradient method requested is supported by the trainable
     parameters of a tape, and returns the allowed parameter gradient methods.
 
-    This method will generate parameter gradient information for the given tape if it
-    has not already been generated, and then proceed to validate the gradient method.
-    In particular:
+    Parameter gradient methods include:
 
-    * An exception will be raised if there exist non-differentiable trainable
-      parameters on the tape.
+    * ``None``: the parameter does not support differentiation.
 
-    * An exception will be raised if the Jacobian method is ``"analytic"`` but there
-      exist some trainable parameters on the tape that only support numeric differentiation.
+    * ``"0"``: the variational circuit output does not depend on this
+      parameter (the partial derivative is zero).
 
-    If all validations pass, this method will return a tuple containing the allowed parameter
-    gradient methods for each trainable parameter.
+    In addition, the operator might define its own grad method
+    via :attr:`.Operator.grad_method`.
+
+    .. note::
+
+        Note that this function modifies the input tape in-place.
 
     Args:
+        tape (.QuantumTape): the quantum tape to analyze
         method (str): the overall Jacobian differentiation method
-        tape (.QuantumTape): the tape with associated parameter information
+        use_graph (bool): whether to use a directed-acyclic graph to determine
+            if the parameter has a gradient of 0
+        grad_fn (None or callable): The gradient transform performing the analysis.
+            This is an optional argument; if provided, and the tape has already
+            been analyzed for the gradient information by the same gradient transform,
+            the cached gradient analysis will be used.
+        overwrite (bool): Whether to overwrite existing parameter gradient methods during the
+            first part of the function.
+
+    Raises:
+        ValueError: If there exist non-differentiable trainable parameters on the tape.
+        ValueError: If the Jacobian method is ``"analytic"`` but there exist some trainable
+            parameters on the tape that only support numeric differentiation.
 
     Returns:
         tuple[str, None]: the allowed parameter gradient methods for each trainable parameter
     """
+    if overwrite or "grad_method" not in tape._par_info[0]:  # pylint: disable=protected-access
+        _gradient_analysis(tape, use_graph=use_graph, grad_fn=grad_fn)
+
     diff_methods = {
         idx: info["grad_method"]
         for idx, info in enumerate(tape._par_info)  # pylint: disable=protected-access
@@ -194,13 +191,6 @@ def _grad_method_validation(method, tape):
         )
 
     return tuple(diff_methods.values())
-
-
-def gradient_analysis_and_validation(tape, method, use_graph=True, grad_fn=None, overwrite=True):
-    """Combine the execution of _gradient_analysis and _grad_method_validation."""
-    if overwrite or "grad_method" not in tape._par_info[0]:  # pylint: disable=protected-access
-        _gradient_analysis(tape, use_graph=use_graph, grad_fn=grad_fn)
-    return _grad_method_validation(method, tape)
 
 
 def choose_grad_methods(diff_methods, argnum):
