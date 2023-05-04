@@ -12,14 +12,26 @@
 # limitations under the License.
 """This module contains the Shots class to hold shot-related information."""
 # pylint:disable=inconsistent-return-statements
-from collections import namedtuple
+from typing import NamedTuple
 from typing import Sequence, Tuple
 
-ShotCopies = namedtuple("ShotCopies", ["shots", "copies"])
-"""A namedtuple that represents a shot quantity being repeated some number of times.
 
-For example, ``ShotCopies(shots=10, copies=2)`` indicates two executions with 10 shots each for 20 shots total.
-"""
+class ShotCopies(NamedTuple):
+    """A namedtuple that represents a shot quantity being repeated some number of times.
+    For example, ``ShotCopies(shots=10, copies=2)`` indicates two executions with 10 shots each for 20 shots total.
+    """
+    shots: int
+    copies: int
+
+    def __str__(self):
+        """The string representation of the class"""
+        if self.copies > 1:
+            return f"({self.shots} shots x {self.copies})"
+        return f"{self.shots}"
+
+    def __repr__(self):
+        """The representation of the class"""
+        return f"ShotCopies({self.shots} shots x {self.copies})"
 
 
 def valid_int(s):
@@ -163,12 +175,10 @@ class Shots:
 
     def __str__(self):
         """The string representation of the class"""
+        if not self.has_partitioned_shots:
+            return f"Shots(total={self.total_shots})"
 
-        shot_copy_strs = [
-            f"({sc.shots} shots x {sc.copies})" if sc.copies > 1 else f"{sc.shots}"
-            for sc in self.shot_vector
-        ]
-        shot_copy_str = ", ".join(shot_copy_strs) or None
+        shot_copy_str = ", ".join([str(sc) for sc in self.shot_vector]) or None
         return f"Shots(total={self.total_shots}, shot_vect=[{shot_copy_str}])"
 
     def __repr__(self):
