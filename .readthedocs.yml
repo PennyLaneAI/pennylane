@@ -9,7 +9,6 @@ build:
   os: ubuntu-22.04
   tools:
     python: "3.8"
-  image: latest
 
 # Build documentation in the docs/ directory with Sphinx
 sphinx:
