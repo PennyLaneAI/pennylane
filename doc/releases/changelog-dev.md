@@ -24,6 +24,9 @@
 * Added `__repr__` and `__str__` methods to the `Shots` class.
   [(#4081)](https://github.com/PennyLaneAI/pennylane/pull/4081)
 
+* Added `__eq__` and `__hash__` methods to the `Shots`class.
+  [(#4082)](https://github.com/PennyLaneAI/pennylane/pull/4082)
+
 <h3>Breaking changes 💔</h3>
 
 * `pennylane.collections`, `pennylane.op_sum`, and `pennylane.utils.sparse_hamiltonian` are removed.
