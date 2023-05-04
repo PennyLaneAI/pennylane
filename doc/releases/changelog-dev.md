@@ -42,6 +42,9 @@
 
 <h3>Bug fixes 🐛</h3>
 
+* Removes a patch in `interfaces/autograd.py` that checks for the `strawberryfields.gbs` device.  That device
+  is pinned to PennyLane <= v0.29.0, so that patch is no longer necessary.
+
 <h3>Contributors ✍️</h3>
 
 This release contains contributions from (in alphabetical order):
