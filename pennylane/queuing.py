@@ -406,7 +406,6 @@ class AnnotatedQueue(OrderedDict):
         if not isinstance(key, WrappedObj):
             key = WrappedObj(key)
         return super().__getitem__(key)
-        
 
 
 def apply(op, context=QueuingManager):

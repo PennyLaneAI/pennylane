@@ -184,8 +184,7 @@ def expand_tape(tape, depth=1, stop_at=None, expand_measurements=False):
         (tape._ops + diagonalizing_gates, new_ops),
         (diagonal_measurements, new_measurements),
     ]:
-        for wrapped_obj in queue:
-            obj = wrapped_obj.obj
+        for obj in queue:
             stop = stop_at(obj)
 
             if not expand_measurements:
