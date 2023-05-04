@@ -21,6 +21,9 @@
 * `qml.prod` now accepts a single qfunc input for creating new `Prod` operators.
   [(#4011)](https://github.com/PennyLaneAI/pennylane/pull/4011)
 
+* Added a function `measure_with_samples` that returns a sample-based measurement result given a state
+  [(#4083)](https://github.com/PennyLaneAI/pennylane/pull/4083)
+
 <h3>Breaking changes 💔</h3>
 
 * Gradient transforms with Jax do not support `argnum` anymore,  `argnums` needs to be used.
