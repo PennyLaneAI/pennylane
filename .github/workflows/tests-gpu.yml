@@ -15,7 +15,7 @@ concurrency:
   cancel-in-progress: true
 
 env:
-  TORCH_VERSION: 1.13.0
+  TORCH_VERSION: 2.0.0
 
 jobs:
   gpu-tests:
@@ -69,7 +69,7 @@ jobs:
       - name: Setup Python virtual environment
         id: setup_venv
         env:
-          VENV_NAME: venv_${{ steps.setup_python.outputs.python-version }}_${{ github.sha }}
+          VENV_NAME: ${{ github.workspace }}/venv_${{ steps.setup_python.outputs.python-version }}_${{ github.sha }}
         run: |
           # Clear any pre-existing venvs
           rm -rf venv_*
@@ -97,7 +97,7 @@ jobs:
 
       - name: Install Torch
         run: |
-          python -m pip install torch==${{ env.TORCH_VERSION }} -f https://download.pytorch.org/whl/cu113/torch_stable.html
+          python -m pip install --no-cache-dir torch==${{ env.TORCH_VERSION }} -f https://download.pytorch.org/whl/cu118/torch_stable.html
 
       - name: Install PennyLane
         run: |
@@ -120,3 +120,4 @@ jobs:
           rm -rf .git
           rm -rf .gitignore
           rm -rf .github
+          pip cache purge
