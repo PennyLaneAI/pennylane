@@ -21,8 +21,22 @@ from .apply_operation import apply_operation
 
 
 def measure_with_samples(
-    mp: SampleMeasurement, state: np.ndarray, shots: qml.measurements.Shots, rng=None
+    mp: SampleMeasurement, state: np.ndarray, shots: Shots, rng=None
 ) -> TensorLike:
+    """
+    Returns the samples of the measurement process performed on the given state.
+
+    Args:
+        mp (~.measurements.SampleMeasurement): The sample measurement to perform
+        state (np.ndarray[complex]): The state vector to sample from
+        shots (~.measurements.Shots): The number of samples to take
+        rng (Union[None, int, array_like[int], SeedSequence, BitGenerator, Generator]): A
+            seed-like parameter matching that of ``seed`` for ``numpy.random.default_rng``.
+            If no value is provided, a default RNG will be used.
+
+    Returns:
+        TensorLike[Any]: Sample measurement results
+    """
     # apply diagonalizing gates
     pre_rotated_state = state
     for op in mp.diagonalizing_gates():
