@@ -23,12 +23,12 @@
 
 <h3>Breaking changes 💔</h3>
 
+* Gradient transforms with Jax do not support `argnum` anymore,  `argnums` needs to be used.
+  [(#4076)](https://github.com/PennyLaneAI/pennylane/pull/4076)
+
 * `pennylane.collections`, `pennylane.op_sum`, and `pennylane.utils.sparse_hamiltonian` are removed.
 
 <h3>Deprecations 👋</h3>
-
-* Gradient transforms with Jax do not support `argnum` anymore,  `argnums` needs to be used.
-  [(#4076)](https://github.com/PennyLaneAI/pennylane/pull/4076)
 
 <h3>Documentation 📝</h3>
 

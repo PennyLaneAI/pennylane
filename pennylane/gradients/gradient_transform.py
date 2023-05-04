@@ -293,7 +293,7 @@ class gradient_transform(qml.batch_transform):
 
             if interface == "jax" and argnum:
                 raise qml.QuantumFunctionError(
-                    "argnum is deprecated with the Jax interface. You should use argnums "
+                    "argnum does not work with the Jax interface. You should use argnums "
                     "instead."
                 )
 
