@@ -93,6 +93,8 @@ class ParametrizedEvolution(Operation):
             where :math:`t_i` are the additional times provided in ``t``.
             If ``True``, the *remaining* time evolution to :math:`t_f` is computed instead, returning
             :math:`\{U(t_0, t_f), U(t_1, t_f),\dots, U(t_{f-1}, t_f), U(t_f, t_f)\}`.
+        dense (bool): Whether the evolution should use dense matrices. Per default, this is decided by
+            the number of wires, i.e. ``dense = len(wires) < 3``.
 
     .. warning::
         The :class:`~.ParametrizedHamiltonian` must be Hermitian at all times. This is not explicitly checked
@@ -368,6 +370,7 @@ class ParametrizedEvolution(Operation):
         t: Union[float, List[float]] = None,
         return_intermediate: bool = False,
         complementary: bool = False,
+        dense: bool = None,
         do_queue=True,
         id=None,
         **odeint_kwargs
@@ -393,6 +396,7 @@ class ParametrizedEvolution(Operation):
         self.hyperparameters["return_intermediate"] = return_intermediate
         self.hyperparameters["complementary"] = complementary
         self._check_time_batching()
+        self.dense = len(self.wires) < 3 if dense is None else dense
 
     def __call__(self, params, t, return_intermediate=None, complementary=None, **odeint_kwargs):
         if not has_jax:
@@ -467,7 +471,7 @@ class ParametrizedEvolution(Operation):
 
         with jax.ensure_compile_time_eval():
             H_jax = ParametrizedHamiltonianPytree.from_hamiltonian(
-                self.H, dense=len(self.wires) < 3, wire_order=self.wires
+                self.H, dense=self.dense, wire_order=self.wires
             )
 
         def fun(y, t):
