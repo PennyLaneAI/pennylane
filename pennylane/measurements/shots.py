@@ -180,7 +180,7 @@ class Shots:
             return f"Shots(total={self.total_shots})"
 
         shot_copy_str = ", ".join([str(sc) for sc in self.shot_vector]) or None
-        return f"Shots(total={self.total_shots}, shot_vect=[{shot_copy_str}])"
+        return f"Shots(total={self.total_shots}, vector=[{shot_copy_str}])"
 
     def __repr__(self):
         """The representation of the class"""
