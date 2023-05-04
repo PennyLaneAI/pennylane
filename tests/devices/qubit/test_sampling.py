@@ -136,7 +136,7 @@ class TestMeasureSamples:
 
         result = measure_with_samples(mp, state, shots=shots)
 
-        assert result.shape == (shots, 2)
+        assert result.shape == (shots.total_shots, 2)
         assert result.dtype == np.bool8
         assert all(qml.math.allequal(s, [0, 1]) or qml.math.allequal(s, [1, 0]) for s in result)
 
@@ -151,11 +151,11 @@ class TestMeasureSamples:
         result0 = measure_with_samples(mp0, state, shots=shots)
         result1 = measure_with_samples(mp1, state, shots=shots)
 
-        assert result0.shape == (shots, 1)
+        assert result0.shape == (shots.total_shots, 1)
         assert result0.dtype == np.bool8
         assert np.all(result0 == 0)
 
-        assert result1.shape == (shots, 1)
+        assert result1.shape == (shots.total_shots, 1)
         assert result1.dtype == np.bool8
         assert len(np.unique(result1)) == 2
 
