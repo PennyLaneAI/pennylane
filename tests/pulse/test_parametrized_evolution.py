@@ -90,7 +90,7 @@ class TestInitialization:
         assert qml.math.allequal(ev.parameters, [1, 2])
         assert ev.num_params == 2
         assert ev.dense == True
-    
+
     def test_set_dense(self):
         """Test that flag dense is set correctly"""
         ops = [qml.PauliX(0), qml.PauliY(1), qml.PauliZ(2)]
@@ -101,7 +101,6 @@ class TestInitialization:
 
         ev2 = ParametrizedEvolution(H=H, params=[1, 2], t=2, dense=True)
         assert ev2.dense == True
-
 
     @pytest.mark.parametrize("ret_intmdt, comp", ([False, False], [True, False], [True, True]))
     def test_return_intermediate_and_complementary(self, ret_intmdt, comp):
