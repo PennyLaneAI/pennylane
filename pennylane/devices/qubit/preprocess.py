@@ -260,9 +260,9 @@ def preprocess(
     circuits = tuple(expand_fn(c) for c in circuits)
     if execution_config.gradient_method == "adjoint":
         circuits = tuple(validate_and_expand_adjoint(c) for c in circuits)
-        for c in circuits:
-            if isinstance(c, DeviceError):
-                raise c
+        for circuit_or_error in circuits:
+            if isinstance(circuit_or_error, DeviceError):
+                raise circuit_or_error  # it's an error
 
     circuits, batch_fn = qml.transforms.map_batch_transform(batch_transform, circuits)
 
