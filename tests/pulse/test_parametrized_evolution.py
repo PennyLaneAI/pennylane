@@ -102,6 +102,9 @@ class TestInitialization:
         ev2 = ParametrizedEvolution(H=H, params=[1, 2], t=2, dense=True)
         assert ev2.dense is True
 
+        ev3 = ParametrizedEvolution(H=H, params=[1, 2], t=2, dense=False)
+        assert ev3.dense is False
+
     @pytest.mark.parametrize("ret_intmdt, comp", ([False, False], [True, False], [True, True]))
     def test_return_intermediate_and_complementary(self, ret_intmdt, comp):
         """Test that the keyword arguments return_intermediate and complementary are taken into

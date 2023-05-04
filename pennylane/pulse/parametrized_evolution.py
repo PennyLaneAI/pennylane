@@ -396,7 +396,7 @@ class ParametrizedEvolution(Operation):
         self.hyperparameters["return_intermediate"] = return_intermediate
         self.hyperparameters["complementary"] = complementary
         self._check_time_batching()
-        self.dense = dense or len(self.wires) < 3
+        self.dense = len(self.wires) < 3 if dense is None else dense
 
     def __call__(self, params, t, return_intermediate=None, complementary=None, **odeint_kwargs):
         if not has_jax:
