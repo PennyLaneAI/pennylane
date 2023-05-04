@@ -19,13 +19,9 @@ from copy import copy
 import os
 import sys
 import pytest
-import pennylane as qml
+import qml
 
 pytestmark = pytest.mark.data
-
-# TODO: Bring pytest skip to relevant tests.
-zstd = pytest.importorskip("zstd")
-dill = pytest.importorskip("dill")
 
 
 def test_build_dataset():

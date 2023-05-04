@@ -1,0 +1,77 @@
+from enum import Enum
+from types import GenericAlias
+from typing import Any, Literal, TypeVar, Union, get_args, get_origin
+
+import zarr
+
+ZarrAny = Union[zarr.Array, zarr.Group]
+Zarr = TypeVar("Zarr", zarr.Array, zarr.Group, ZarrAny)
+
+"""
+Generic type variable.
+"""
+T = TypeVar("T")
+
+
+class UnsetType(Enum):
+    """Sentintel object - used for defaults where None
+    may be a valid (non-default) value.
+
+    This class is an enum so it may used as a Literal
+    type annotation, e.g Literal[UNSET]."""
+
+    UNSET = "UNSET"
+
+    def __bool__(self) -> Literal[False]:
+        return False
+
+
+UNSET = UnsetType.UNSET
+
+
+def get_type_str(cls_or_obj: Union[object, type]) -> str:
+    """Return a string representing the type of `cls_or_obj`.
+
+    If cls_or_obj is a built-in type, such as 'str', returns the unqualified
+        name.
+
+    If cls_or_obj is a parametrized generic of a built-in type, such as list[str],
+        returns the string representation of that generic (e.g 'list[str]').
+
+    Otherwise, returns the fully-qualified class name, including the module.
+
+    """
+    cls = cls_or_obj if isinstance(cls_or_obj, type) else type(cls_or_obj)
+    if isinstance(cls_or_obj, GenericAlias):
+        return str(cls_or_obj)
+
+    if cls.__module__ == "builtins":
+        return cls.__name__
+
+    return f"{cls.__module__}.{cls.__qualname__}"
+
+
+def resolve_special_type(type_: Any) -> tuple[type, list[type]]:
+    """Converts special typing forms (Union[...], Optional[...]), and parametrized
+    generics (list[...], dict[...]) into a 2-tuple of its base type and arguments.
+    If ``type_`` is a regular type_, it the argument list will be empty.
+
+    For example:
+        resolve_special_type(Union[str, int]) == (Union, [str, int])
+        resolve_special_type(list[str]) == (list, [str])
+        resolve_special_type(list) == (list, [])
+    """
+
+    orig_type = get_origin(type_)
+    if orig_type is None:
+        return (type_, [])
+    else:
+        args = list(get_args(type_))
+        type_ = orig_type
+
+    for i in range(len(args)):
+        orig_type = get_origin(args[i])
+        if orig_type:
+            args[i] = orig_type
+
+    return (type_, args)
