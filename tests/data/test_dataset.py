@@ -24,6 +24,8 @@ import pennylane as qml
 
 pytestmark = pytest.mark.data
 
+torch = pytest.importorskip("zarr")
+
 
 def test_build_dataset():
     """Test that a dataset builds correctly and returns the correct values."""
