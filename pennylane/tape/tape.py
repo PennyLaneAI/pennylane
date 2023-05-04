@@ -184,7 +184,8 @@ def expand_tape(tape, depth=1, stop_at=None, expand_measurements=False):
         (tape._ops + diagonalizing_gates, new_ops),
         (diagonal_measurements, new_measurements),
     ]:
-        for obj in queue:
+        for wrapped_obj in queue:
+            obj = wrapped_obj.obj
             stop = stop_at(obj)
 
             if not expand_measurements:
@@ -217,7 +218,7 @@ def expand_tape(tape, depth=1, stop_at=None, expand_measurements=False):
 
     # preserves inheritance structure
     # if tape is a QuantumTape, returned object will be a quantum tape
-    new_tape = tape.__class__(new_ops, new_measurements, new_prep, _update=False)
+    new_tape = tape.__class__(new_ops, new_measurements, new_prep, shots=tape.shots, _update=False)
 
     # Update circuit info
     new_tape.wires = copy.copy(tape.wires)
@@ -240,6 +241,8 @@ class QuantumTape(QuantumScript, AnnotatedQueue):
         prep (Iterable[Operator]): Any state preparations to perform at the start of the circuit
 
     Keyword Args:
+        shots (None, int, Sequence[int], ~.Shots): Number and/or batches of shots for execution.
+            Note that this property is still experimental and under development.
         name (str): a name given to the quantum tape
         do_queue=True (bool): Whether or not to queue. Defaults to ``True`` for ``QuantumTape``.
         _update=True (bool): Whether or not to set various properties on initialization. Setting

@@ -173,6 +173,22 @@ class QueuingError(Exception):
     """Exception that is raised when there is a queuing error"""
 
 
+class WrappedObj:
+    """Wraps an object to make its has dependent on its identity"""
+
+    def __init__(self, obj):
+        self.obj = obj
+
+    def __hash__(self):
+        return id(self.obj)
+
+    def __eq__(self, other):
+        return id(self.obj) == id(other.obj)
+
+    def __repr__(self):
+        return self.obj.__repr__()
+
+
 class QueuingManager:
     """Singleton global entry point for managing active recording contexts.
 
@@ -357,29 +373,40 @@ class AnnotatedQueue(OrderedDict):
 
     def append(self, obj, **kwargs):
         """Append ``obj`` into the queue with ``kwargs`` metadata."""
-        self[obj] = kwargs
+        self[WrappedObj(obj)] = kwargs
 
     def remove(self, obj):
         """Remove ``obj`` from the queue. Passes silently if the object is not in the queue."""
-        if obj in self:
-            del self[obj]
+        if WrappedObj(obj) in self:
+            del self[WrappedObj(obj)]
 
     def update_info(self, obj, **kwargs):
         """Update ``obj``'s metadata with ``kwargs`` if it exists in the queue."""
-        if obj in self:
-            self[obj].update(kwargs)
+        if WrappedObj(obj) in self:
+            self[WrappedObj(obj)].update(kwargs)
 
     def get_info(self, obj):
         """Retrieve the metadata for ``obj``.  Raises a ``QueuingError`` if obj is not in the queue."""
-        if obj not in self:
+        if WrappedObj(obj) not in self:
             raise QueuingError(f"Object {obj} not in the queue.")
 
-        return self[obj]
+        return self[WrappedObj(obj)]
 
     @property
     def queue(self):
         """Returns a list of objects in the annotated queue"""
-        return list(self.keys())
+        return list(key.obj for key in self.keys())
+
+    def __setitem__(self, key, value):
+        if not isinstance(key, WrappedObj):
+            key = WrappedObj(key)
+        return super().__setitem__(key, value)
+
+    def __getitem__(self, key):
+        if not isinstance(key, WrappedObj):
+            key = WrappedObj(key)
+        return super().__getitem__(key)
+        
 
 
 def apply(op, context=QueuingManager):
@@ -518,14 +545,14 @@ def process_queue(queue: AnnotatedQueue):
     current_list = "_prep"
 
     for obj, info in queue.items():
-        if "owner" not in info and getattr(obj, "_queue_category", None) is not None:
-            if list_order[obj._queue_category] > list_order[current_list]:
-                current_list = obj._queue_category
-            elif list_order[obj._queue_category] < list_order[current_list]:
+        if "owner" not in info and getattr(obj.obj, "_queue_category", None) is not None:
+            if list_order[obj.obj._queue_category] > list_order[current_list]:
+                current_list = obj.obj._queue_category
+            elif list_order[obj.obj._queue_category] < list_order[current_list]:
                 raise ValueError(
-                    f"{obj._queue_category[1:]} operation {obj} must occur prior "
+                    f"{obj.obj._queue_category[1:]} operation {obj.obj} must occur prior "
                     f"to {current_list[1:]}. Please place earlier in the queue."
                 )
-            lists[obj._queue_category].append(obj)
+            lists[obj.obj._queue_category].append(obj.obj)
 
     return lists["_ops"], lists["_measurements"], lists["_prep"]
