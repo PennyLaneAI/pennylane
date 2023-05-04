@@ -24,9 +24,9 @@ import numpy as np
 import pennylane as qml
 
 from .finite_difference import (
-    _all_zero_grad_new,
+    _all_zero_grad,
     _processing_fn,
-    _no_trainable_grad_new,
+    _no_trainable_grad,
     _no_trainable_grad_legacy,
     finite_diff_coeffs,
 )
@@ -279,7 +279,7 @@ def spsa_grad(
         )
 
     if argnum is None and not tape.trainable_params:
-        return _no_trainable_grad_new(tape, shots)
+        return _no_trainable_grad(tape, shots)
 
     if validate_params:
         diff_methods = gradient_analysis_and_validation(tape, "numeric", grad_fn=spsa_grad)
@@ -287,7 +287,7 @@ def spsa_grad(
         diff_methods = ["F" for i in tape.trainable_params]
 
     if all(g == "0" for g in diff_methods):
-        return _all_zero_grad_new(tape, shots)
+        return _all_zero_grad(tape, shots)
 
     gradient_tapes = []
     extract_r0 = False

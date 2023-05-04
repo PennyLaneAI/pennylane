@@ -26,8 +26,8 @@ from pennylane._device import _get_num_copies
 from pennylane.measurements import VarianceMP
 
 from .finite_difference import (
-    _all_zero_grad_new,
-    _no_trainable_grad_new,
+    _all_zero_grad,
+    _no_trainable_grad,
     _no_trainable_grad_legacy,
     finite_diff,
 )
@@ -1517,17 +1517,18 @@ def param_shift(
             shots=shots,
         )
 
-    assert_no_state_returns(tape.measurements)
+    transform_name = "parameter-shift rule"
+    assert_no_state_returns(tape.measurements, transform_name)
     assert_multimeasure_not_broadcasted(tape.measurements, broadcast)
 
     if argnum is None and not tape.trainable_params:
-        return _no_trainable_grad_new(tape, shots)
+        return _no_trainable_grad(tape, shots)
 
     method = "analytic" if fallback_fn is None else "best"
     diff_methods = gradient_analysis_and_validation(tape, method, grad_fn=param_shift)
 
     if all(g == "0" for g in diff_methods):
-        return _all_zero_grad_new(tape, shots)
+        return _all_zero_grad(tape, shots)
 
     method_map = choose_grad_methods(diff_methods, argnum)
 
@@ -1890,8 +1891,9 @@ def _param_shift_legacy(
         Note that ``broadcast=True`` requires additional memory by a factor of the largest
         batch_size of the created tapes.
     """
-    assert_no_state_returns(m := tape.measurements)
-    assert_multimeasure_not_broadcasted(m, broadcast)
+    transform_name = "parameter-shift rule"
+    assert_no_state_returns(tape.measurements, transform_name)
+    assert_multimeasure_not_broadcasted(tape.measurements, broadcast)
 
     if argnum is None and not tape.trainable_params:
         return _no_trainable_grad_legacy(tape)

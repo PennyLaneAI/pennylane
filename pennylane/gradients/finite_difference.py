@@ -162,7 +162,7 @@ _no_trainable_grad_warning = (
 )
 
 
-def _no_trainable_grad_new(tape, shots=None):
+def _no_trainable_grad(tape, shots=None):
     warnings.warn(_no_trainable_grad_warning)
     if isinstance(shots, Sequence):
         len_shot_vec = _get_num_copies(shots)
@@ -183,7 +183,7 @@ def _no_trainable_grad_legacy(tape):
     return [], lambda _: np.zeros((tape.output_dim, 0))
 
 
-def _all_zero_grad_new(tape, shots=None):
+def _all_zero_grad(tape, shots=None):
     """Auxiliary function to return zeros for the all-zero gradient case."""
     list_zeros = []
 
@@ -403,7 +403,7 @@ def finite_diff(
             shots=shots,
         )
     if argnum is None and not tape.trainable_params:
-        return _no_trainable_grad_new(tape, shots)
+        return _no_trainable_grad(tape, shots)
 
     if validate_params:
         diff_methods = gradient_analysis_and_validation(
@@ -413,7 +413,7 @@ def finite_diff(
         diff_methods = ["F" for i in tape.trainable_params]
 
     if all(g == "0" for g in diff_methods):
-        return _all_zero_grad_new(tape, shots)
+        return _all_zero_grad(tape, shots)
 
     gradient_tapes = []
     shapes = []

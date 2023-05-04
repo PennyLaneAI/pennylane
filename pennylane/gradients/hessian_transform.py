@@ -20,7 +20,7 @@ import pennylane as qml
 from pennylane.transforms.tape_expand import expand_invalid_trainable
 
 
-def _process_jacs_new(jac, qhess):
+def _process_jacs(jac, qhess):
     """
     Combine the classical and quantum jacobians
     """
@@ -217,7 +217,7 @@ class hessian_transform(qml.batch_transform):
             for jac in cjac:
                 if jac is not None:
                     if qml.active_return():
-                        hess = _process_jacs_new(jac, qhess)
+                        hess = _process_jacs(jac, qhess)
                     else:
                         # Check for a Jacobian equal to the identity matrix.
                         shape = qml.math.shape(jac)

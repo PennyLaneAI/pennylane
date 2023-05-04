@@ -19,7 +19,7 @@ import pennylane as qml
 import pennylane.numpy as np
 from pennylane.transforms.metric_tensor import _get_aux_wire
 from pennylane.transforms.tape_expand import expand_invalid_trainable_hadamard_gradient
-from .finite_difference import _all_zero_grad_new, _no_trainable_grad_new
+from .finite_difference import _all_zero_grad, _no_trainable_grad
 
 from .gradient_transform import (
     assert_active_return,
@@ -183,16 +183,16 @@ def _hadamard_grad(
     """
     transform_name = "Hadamard test"
     assert_active_return(transform_name)
-    assert_no_state_returns(tape.measurements)
+    assert_no_state_returns(tape.measurements, transform_name)
     assert_no_variance(tape.measurements, transform_name)
 
     if argnum is None and not tape.trainable_params:
-        return _no_trainable_grad_new(tape, shots)
+        return _no_trainable_grad(tape, shots)
 
     diff_methods = gradient_analysis_and_validation(tape, "analytic", grad_fn=hadamard_grad)
 
     if all(g == "0" for g in diff_methods):
-        return _all_zero_grad_new(tape, shots)
+        return _all_zero_grad(tape, shots)
 
     method_map = choose_grad_methods(diff_methods, argnum)
 
