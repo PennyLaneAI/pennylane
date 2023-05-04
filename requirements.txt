@@ -13,4 +13,4 @@ dask[delayed]~=2022.4.1
 autoray==0.3.1
 matplotlib~=3.5
 opt_einsum~=3.3
-requests~=2.28.1
+requests~=2.30.0
