@@ -16,9 +16,7 @@ heterogenous lists, strings and numpy arrays, as well as Pennylane classes."""
 
 from .array import DatasetArray, DatasetScalar
 from .string import DatasetString
+from .list import DatasetList
+from .dictionary import DatasetDict
 
-__all__ = (
-    "DatasetArray",
-    "DatasetScalar",
-    "DatasetString",
-)
+__all__ = ("DatasetArray", "DatasetScalar", "DatasetString", "DatasetDict", "DatasetList")
