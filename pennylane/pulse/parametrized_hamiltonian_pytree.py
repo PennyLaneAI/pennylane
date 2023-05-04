@@ -49,7 +49,7 @@ class ParametrizedHamiltonianPytree:
         Returns:
             ParametrizedHamiltonianPytree: pytree object
         """
-        make_array = jnp.array if dense else sparse.BCSR.fromdense
+        make_array = jnp.array if dense else sparse.CSR.fromdense
 
         if len(H.ops_fixed) > 0:
             mat_fixed = make_array(qml.matrix(H.H_fixed(), wire_order=wire_order))
