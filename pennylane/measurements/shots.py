@@ -161,6 +161,20 @@ class Shots:
         memo[id(self)] = self
         return self
 
+    def __str__(self):
+        """The string representation of the class"""
+
+        shot_copy_strs = [
+            f"({sc.shots} shots x {sc.copies})" if sc.copies > 1 else f"{sc.shots}"
+            for sc in self.shot_vector
+        ]
+        shot_copy_str = ", ".join(shot_copy_strs) or None
+        return f"Shots(total={self.total_shots}, shot_vect=[{shot_copy_str}])"
+
+    def __repr__(self):
+        """The representation of the class"""
+        return f"Shots(total_shots={self.total_shots}, shot_vector={self.shot_vector})"
+
     def __all_tuple_init__(self, shots: Sequence[Tuple]):
         res = []
         total_shots = 0

@@ -62,6 +62,39 @@ class TestShotsConstruction:
         assert shots.total_shots == 11
         assert isinstance(shots.shot_vector, tuple)
 
+    shot_data = (
+        Shots(None),
+        Shots(10),
+        Shots((1, 10, 100)),
+        Shots((1, 10, 10, 100, 100, 100)),
+    )
+
+    str_data = (
+        "Shots(total=None, shot_vect=[None])",
+        "Shots(total=10, shot_vect=[10])",
+        "Shots(total=111, shot_vect=[1, 10, 100])",
+        "Shots(total=321, shot_vect=[1, (10 shots x 2), (100 shots x 3)])",
+    )
+
+    @pytest.mark.parametrize("expected_str, shots_obj", zip(str_data, shot_data))
+    def test_str(self, expected_str, shots_obj):
+        """Test that the string representation is correct."""
+        assert expected_str == str(shots_obj)
+
+    repr_data = (
+        "Shots(total_shots=None, shot_vector=())",
+        "Shots(total_shots=10, shot_vector=(ShotCopies(shots=10, copies=1),))",
+        "Shots(total_shots=111, shot_vector=(ShotCopies(shots=1, copies=1), "
+        "ShotCopies(shots=10, copies=1), ShotCopies(shots=100, copies=1)))",
+        "Shots(total_shots=321, shot_vector=(ShotCopies(shots=1, copies=1), "
+        "ShotCopies(shots=10, copies=2), ShotCopies(shots=100, copies=3)))",
+    )
+
+    @pytest.mark.parametrize("expected_str, shots_obj", zip(repr_data, shot_data))
+    def test_repr(self, expected_str, shots_obj):
+        """Test that the repr is correct"""
+        assert expected_str == repr(shots_obj)
+
     def test_sequence_all_tuple(self):
         """Tests that a sequence of tuples is allowed."""
         shots = Shots([(1, 2), (1, 5), (3, 4)])
