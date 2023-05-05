@@ -14,7 +14,7 @@
 """This module contains functions to construct many-body observables with ``OpenFermion-PySCF``.
 """
 # pylint: disable=too-many-arguments, too-few-public-methods, too-many-branches, unused-variable
-# pylint: disable=consider-using-generator
+# pylint: disable=consider-using-generator, protected-access
 import os
 
 import numpy as np
@@ -914,6 +914,10 @@ def molecular_hamiltonian(
         geometry_hf = coordinates.flatten()
 
     if method == "dhf":
+        if wires:
+            wires_new = qml.qchem.convert._process_wires(wires)
+            wires_map = dict(zip(range(len(wires_new)), list(wires_new.labels)))
+
         if mapping != "jordan_wigner":
             raise ValueError(
                 "Only 'jordan_wigner' mapping is supported for the differentiable workflow."
@@ -940,16 +944,27 @@ def molecular_hamiltonian(
         )
         if args is None:
             h = qml.qchem.diff_hamiltonian(mol, core=core, active=active)()
-            return qml.Hamiltonian(
+            if grouping_type:
+                h = qml.Hamiltonian(
+                    qml.numpy.real(h.coeffs, requires_grad=False),
+                    h.ops,
+                    grouping_type=grouping_type,
+                    method=grouping_method,
+                )
+            if wires:
+                h = qml.map_wires(h, wires_map)
+            return h, 2 * len(active)
+        h = qml.qchem.diff_hamiltonian(mol, core=core, active=active)(*args)
+        if grouping_type:
+            h = qml.Hamiltonian(
                 qml.numpy.real(h.coeffs, requires_grad=False),
                 h.ops,
                 grouping_type=grouping_type,
                 method=grouping_method,
-            ), 2 * len(active)
-        h = qml.qchem.diff_hamiltonian(mol, core=core, active=active)(*args)
-        return qml.Hamiltonian(
-            qml.numpy.real(h.coeffs), h.ops, grouping_type=grouping_type, method=grouping_method
-        ), 2 * len(active)
+            )
+        if wires:
+            h = qml.map_wires(h, wires_map)
+        return h, 2 * len(active)
 
     openfermion, _ = _import_of()
 

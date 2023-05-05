@@ -212,6 +212,72 @@ def test_differentiable_hamiltonian(symbols, geometry, h_ref_data):
     )
 
 
+@pytest.mark.parametrize(
+    ("symbols", "geometry", "method", "wiremap", "grouping"),
+    [
+        (
+            ["H", "H"],
+            np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 2.0]]),
+            "pyscf",
+            ["a", "b", "c", "d"],
+            None,
+        ),
+        (
+            ["H", "H"],
+            np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 2.0]]),
+            "pyscf",
+            [0, "z", 3, "ancilla"],
+            "qwc",
+        ),
+    ],
+)
+def test_custom_wiremap_hamiltonian_pyscf(symbols, geometry, method, wiremap, grouping, tmpdir):
+    r"""Test that the generated Hamiltonian has the correct wire labels given by a custom wiremap."""
+    hamiltonian, qubits = qchem.molecular_hamiltonian(
+        symbols=symbols,
+        coordinates=geometry,
+        method=method,
+        wires=wiremap,
+        grouping_type=grouping,
+        outpath=tmpdir.strpath,
+    )
+
+    assert set(hamiltonian.wires) == set(wiremap)
+
+
+@pytest.mark.parametrize(
+    ("symbols", "geometry", "wiremap", "args", "grouping"),
+    [
+        (
+            ["H", "H"],
+            np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 2.0]]),
+            [0, "z", 3, "ancilla"],
+            None,
+            None,
+        ),
+        (
+            ["H", "H"],
+            np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 2.0]]),
+            [0, "z", 3, "ancilla"],
+            [np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 2.0]])],
+            "qwc",
+        ),
+    ],
+)
+def test_custom_wiremap_hamiltonian_dhf(symbols, geometry, wiremap, args, grouping, tmpdir):
+    r"""Test that the generated Hamiltonian has the correct wire labels given by a custom wiremap."""
+    hamiltonian, qubits = qchem.molecular_hamiltonian(
+        symbols=symbols,
+        coordinates=geometry,
+        wires=wiremap,
+        args=args,
+        grouping_type=grouping,
+        outpath=tmpdir.strpath,
+    )
+
+    assert list(hamiltonian.wires) == list(wiremap)
+
+
 file_content = """\
 2
 in Angstrom
