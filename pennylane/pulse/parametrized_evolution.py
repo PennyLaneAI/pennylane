@@ -385,13 +385,11 @@ class ParametrizedEvolution(Operation):
         if t is None:
             self.t = None
         else:
-            t_interface = qml.math.get_interface(t)
             if isinstance(t, (list, tuple)):
                 t = qml.math.stack(t)
             self.t = qml.math.cast(
                 qml.math.stack([0.0, t]) if qml.math.ndim(t) == 0 else t, float
             )
-            #self.t = qml.math.array([0.0, t] if qml.math.ndim(t) == 0 else t, like=t_interface, dtype=float)
         if complementary and not return_intermediate:
             warnings.warn(
                 "The keyword argument complementary does not have any effect if "
