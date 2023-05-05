@@ -19,6 +19,7 @@ from collections import defaultdict
 from dataclasses import dataclass, field
 
 from pennylane.operation import Operation
+from pennylane.measurements import Shots
 
 
 @dataclass(frozen=True)
@@ -34,7 +35,7 @@ class Resources:
         gate_sizes (dict): dictionary storing the number of :math:`n` qubit gates in the circuit
             as a key-value pair where :math:`n` is the key and the number of occurances is the value
         depth (int): the depth of the circuit defined as the maximum number of non-parallel operations
-        shots (int): number of samples to generate
+        shots (Shots): number of samples to generate
 
     .. details::
 
@@ -59,15 +60,17 @@ class Resources:
     gate_types: dict = field(default_factory=dict)
     gate_sizes: dict = field(default_factory=dict)
     depth: int = 0
-    shots: int = 0
+    shots: Shots = Shots(None)
 
     def __str__(self):
-        keys = ["wires", "gates", "depth", "shots"]
-        vals = [self.num_wires, self.num_gates, self.depth, self.shots]
+        keys = ["wires", "gates", "depth"]
+        vals = [self.num_wires, self.num_gates, self.depth]
         items = "\n".join([str(i) for i in zip(keys, vals)])
         items = items.replace("('", "")
         items = items.replace("',", ":")
         items = items.replace(")", "")
+
+        items += f"\nshots: {str(self.shots)}"
 
         gate_type_str = ", ".join(
             [f"'{gate_name}': {count}" for gate_name, count in self.gate_types.items()]
@@ -121,13 +124,13 @@ class ResourcesOperation(Operation):
         """
 
 
-def _count_resources(tape, shots: int) -> Resources:
+def _count_resources(tape, shots: Shots) -> Resources:
     """Given a quantum circuit (tape) and number of samples, this function
      counts the resources used by standard PennyLane operations.
 
     Args:
         tape (.QuantumTape): The quantum circuit for which we count resources
-        shots (int): The number of samples or shots to execute
+        shots (Shots): The number of samples or shots to execute
 
     Returns:
         (.Resources): The total resources used in the workflow

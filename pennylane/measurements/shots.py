@@ -184,6 +184,9 @@ class Shots:
         """The representation of the class"""
         return f"Shots(total_shots={self.total_shots}, shot_vector={self.shot_vector})"
 
+    def __eq__(self, other):
+        return self.shot_vector == other.shot_vector
+
     def __all_tuple_init__(self, shots: Sequence[Tuple]):
         res = []
         total_shots = 0
