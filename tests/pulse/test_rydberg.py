@@ -420,9 +420,6 @@ class TestIntegration:
         import jax
         import jax.numpy as jnp
 
-        import jax
-        import jax.numpy as jnp
-
         def exact(H, H_obj, t):
             psi0 = jnp.eye(2 ** len(H.wires))[0]
             U_exact = jax.scipy.linalg.expm(-1j * t * qml.matrix(H([], 1)))
