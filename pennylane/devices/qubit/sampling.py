@@ -44,13 +44,10 @@ def measure_with_samples(
 
     # if there is a shot vector, build a list containing results for each shot entry
     if shots.has_partitioned_shots:
-        samples = sample_state(pre_rotated_state, shots=shots.total_shots, wires=mp.wires, rng=rng)
         processed_samples = []
-        start = 0
-        for shot_copies in shots.shot_vector:
-            for _ in range(shot_copies.copies):
-                processed_samples.append(mp.process_samples(samples, mp.wires, shot_range=(start, start + shot_copies.shots)))
-                start += shot_copies.shots
+        for s in shots:
+            samples = sample_state(pre_rotated_state, shots=s, wires=mp.wires, rng=rng)
+            processed_samples.append(mp.process_samples(samples, mp.wires))
 
         return tuple(processed_samples)
 
