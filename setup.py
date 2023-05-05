@@ -21,14 +21,14 @@ requirements = [
     "numpy<1.24",
     "scipy",
     "networkx",
-    "retworkx",
+    "rustworkx",
     "autograd",
     "toml",
     "appdirs",
     "semantic-version>=2.7",
     "autoray>=0.3.1",
     "cachetools",
-    "pennylane-lightning>=0.28",
+    "pennylane-lightning>=0.30",
     "requests",
 ]
 

@@ -17,6 +17,7 @@ Unit tests for the ParametrizedEvolution class
 # pylint: disable=unused-argument,too-few-public-methods,import-outside-toplevel
 from functools import reduce
 import numpy as np
+
 import pytest
 import pennylane as qml
 from pennylane.operation import AnyWires
@@ -50,7 +51,7 @@ def time_independent_hamiltonian():
 
 
 def time_dependent_hamiltonian():
-    """Create a time-dependent Hamiltonian on two qubits."""
+    """Create a time-dependent two-qubit Hamiltonian that takes two scalar parameters."""
     import jax.numpy as jnp
 
     ops = [qml.PauliX(0), qml.PauliZ(1), qml.PauliY(0), qml.PauliX(1)]
@@ -65,20 +66,6 @@ def time_dependent_hamiltonian():
     return ParametrizedHamiltonian(coeffs, ops)
 
 
-def test_error_raised_on_call_if_jax_not_installed():
-    """Test that an error is raised if an ``Evolve`` operator is instantiated without jax installed"""
-    with pytest.raises(ImportError, match="Module jax is required"):
-        ParametrizedEvolution(H=ParametrizedHamiltonian([1], [qml.PauliX(0)]))([], 2)
-
-
-def test_error_raised_for_matrix_method_if_jax_not_installed():
-    """Test that an error is raised if an ``Evolve`` operator is instantiated without jax installed"""
-    with pytest.raises(ImportError, match="Module jax is required"):
-        ParametrizedEvolution(
-            H=ParametrizedHamiltonian([1], [qml.PauliX(0)]), params=[], t=2
-        ).matrix()
-
-
 @pytest.mark.jax
 class TestInitialization:
     """Unit tests for the ParametrizedEvolution class."""
@@ -88,7 +75,7 @@ class TestInitialization:
         ops = [qml.PauliX(0), qml.PauliY(1)]
         coeffs = [1, 2]
         H = ParametrizedHamiltonian(coeffs, ops)
-        ev = ParametrizedEvolution(H=H, params=[1, 2], t=2)
+        ev = ParametrizedEvolution(H=H, params=[1, 2], t=2, dense=True)
 
         assert ev.H is H
         assert qml.math.allequal(ev.t, [0, 2])
@@ -102,6 +89,77 @@ class TestInitialization:
         assert qml.math.allequal(ev.data, [1, 2])
         assert qml.math.allequal(ev.parameters, [1, 2])
         assert ev.num_params == 2
+        assert ev.dense is True
+
+    def test_set_dense(self):
+        """Test that flag dense is set correctly"""
+        ops = [qml.PauliX(0), qml.PauliY(1), qml.PauliZ(2)]
+        coeffs = [1, 2, 3]
+        H = ParametrizedHamiltonian(coeffs, ops)
+        ev = ParametrizedEvolution(H=H, params=None, t=2)
+        assert ev.dense is False
+
+        ev2 = ParametrizedEvolution(H=H, params=None, t=2, dense=True)
+        assert ev2.dense is True
+
+        ev3 = ParametrizedEvolution(H=H, params=None, t=2, dense=False)
+        assert ev3.dense is False
+
+    @pytest.mark.parametrize("ret_intmdt, comp", ([False, False], [True, False], [True, True]))
+    def test_return_intermediate_and_complementary(self, ret_intmdt, comp):
+        """Test that the keyword arguments return_intermediate and complementary are taken into
+        account correctly at initialization and when calling. This includes testing
+        inheritance when calling without explicitly providing these kwargs."""
+        ops = [qml.PauliX(0), qml.PauliY(1)]
+        coeffs = [1, 2]
+        t = [0.1, 0.2, 0.9]  # avoid warning because of simple time argument+return_intermediate
+        H = ParametrizedHamiltonian(coeffs, ops)
+        ev = ParametrizedEvolution(
+            H=H, params=coeffs, t=t, return_intermediate=ret_intmdt, complementary=comp
+        )
+
+        assert ev.hyperparameters["return_intermediate"] is ret_intmdt
+        assert ev.hyperparameters["complementary"] is comp
+
+        new_ev = ev(coeffs, t=t)
+
+        assert new_ev.hyperparameters["return_intermediate"] is ret_intmdt
+        assert new_ev.hyperparameters["complementary"] is comp
+
+        for new_ret_intmdt, new_comp in ([False, False], [True, False], [True, True]):
+            new_ev = ev(coeffs, t=t, return_intermediate=new_ret_intmdt, complementary=new_comp)
+            assert new_ev.hyperparameters["return_intermediate"] is new_ret_intmdt
+            assert new_ev.hyperparameters["complementary"] is new_comp
+
+    @pytest.mark.parametrize("len_t", [3, 8])
+    def test_batch_size_with_return_intermediate(self, len_t):
+        """Test that the batch size is correctly set for intermediate time values."""
+        ops = [qml.PauliX(0), qml.PauliY(1)]
+        coeffs = [1, 2]
+        t = np.linspace(0, 1, len_t)
+        H = ParametrizedHamiltonian(coeffs, ops)
+        ev = ParametrizedEvolution(H=H, params=coeffs, t=t)
+        assert ev.batch_size is None
+        ev = ParametrizedEvolution(H=H, params=coeffs, t=t, return_intermediate=True)
+        assert ev.batch_size == len_t
+        ev = ParametrizedEvolution(
+            H=H, params=coeffs, t=t, return_intermediate=True, complementary=True
+        )
+        assert ev.batch_size == len_t
+
+    def test_warns_with_complementary_without_ret_intermediate(self):
+        """Test that a warning is raised if the keyword argument complementary is activated
+        without return_intermediate being activated."""
+        ops = [qml.PauliX(0), qml.PauliY(1)]
+        coeffs = [1, 2]
+        H = ParametrizedHamiltonian(coeffs, ops)
+        with pytest.warns(UserWarning, match="The keyword argument complementary"):
+            ev = ParametrizedEvolution(
+                H=H, params=[1, 2], t=2, return_intermediate=False, complementary=True
+            )
+
+        assert ev.hyperparameters["return_intermediate"] is False
+        assert ev.hyperparameters["complementary"] is True
 
     def test_odeint_kwargs(self):
         """Test the initialization with odeint kwargs."""
@@ -113,7 +171,8 @@ class TestInitialization:
         assert ev.odeint_kwargs == {"mxstep": 10, "hmax": 1, "atol": 1e-3, "rtol": 1e-6}
 
     def test_update_attributes(self):
-        """Test that the ``ParametrizedEvolution`` attributes can be updated using the ``__call__`` method."""
+        """Test that the ``ParametrizedEvolution`` attributes can be updated
+        using the ``__call__`` method."""
         ops = [qml.PauliX(0), qml.PauliY(1)]
         coeffs = [1, 2]
         H = ParametrizedHamiltonian(coeffs, ops)
@@ -166,7 +225,7 @@ class TestInitialization:
         assert isinstance(ev.t, exp_time_type[time_interface])
         assert qml.math.allclose(ev.t, t)
 
-    def test_has_matrix_true(self):
+    def test_has_matrix(self):
         """Test that a parametrized evolution has ``has_matrix=True`` only when `t` and `params` are
         defined."""
         ops = [qml.PauliX(0), qml.PauliY(1)]
@@ -188,6 +247,38 @@ class TestInitialization:
             match="All operators inside the parametrized hamiltonian must have a matrix defined",
         ):
             _ = ParametrizedEvolution(H=H, params=[1, 2], t=2)
+
+    def test_hash_with_data(self):
+        """Test that the hash of a ParametrizedEvolution takes all attributes into account."""
+
+        H_0 = 0.2 * qml.PauliZ(0) + qml.pulse.constant * (qml.PauliX(0) @ qml.PauliY(1))
+        H_1 = 0.2 * qml.PauliX(0) + qml.pulse.constant * (qml.PauliX(0) @ qml.PauliY(1))
+
+        params_0 = [np.array(0.4)]
+        params_1 = [np.array(0.43)]
+
+        t_0 = (0.3, 0.4)
+        t_1 = (0.3, 0.5)
+
+        atol_0 = 1e-8
+        atol_1 = 1e-7
+
+        compare_to = ParametrizedEvolution(H_0, params_0, t_0, False, False, atol=atol_0)
+        equal = ParametrizedEvolution(H_0, params_0, t_0, False, False, atol=atol_0)
+        diff_H = ParametrizedEvolution(H_1, params_0, t_0, False, False, atol=atol_0)
+        diff_params = ParametrizedEvolution(H_0, params_1, t_0, False, False, atol=atol_0)
+        diff_t = ParametrizedEvolution(H_0, params_0, t_1, False, False, atol=atol_0)
+        diff_atol = ParametrizedEvolution(H_0, params_0, t_0, False, False, atol=atol_1)
+        diff_ret_intmdt = ParametrizedEvolution(H_0, params_0, t_0, True, False, atol=atol_0)
+        diff_complementary = ParametrizedEvolution(H_0, params_0, t_0, False, True, atol=atol_0)
+
+        assert compare_to.hash == equal.hash
+        assert compare_to.hash != diff_H.hash
+        assert compare_to.hash != diff_params.hash
+        assert compare_to.hash != diff_t.hash
+        assert compare_to.hash != diff_atol.hash
+        assert compare_to.hash != diff_ret_intmdt.hash
+        assert compare_to.hash != diff_complementary.hash
 
 
 @pytest.mark.jax
@@ -225,6 +316,32 @@ class TestMatrix:
         true_mat = reduce(lambda x, y: y @ x, generator(params))
 
         assert qml.math.allclose(ev.matrix(), true_mat, atol=1e-2)
+
+    @pytest.mark.parametrize("comp", [False, True])
+    @pytest.mark.parametrize("len_t", [2, 6])
+    def test_return_intermediate_and_complementary(self, comp, len_t):
+        """Test that intermediate time evolution matrices are returned."""
+        import jax
+        from jax import numpy as jnp
+
+        jax.config.update("jax_enable_x64", True)
+
+        H = time_independent_hamiltonian()
+        t = np.linspace(0.4, 0.7, len_t)
+        params = [1, 2]
+        ev = ParametrizedEvolution(
+            H=H, params=params, t=t, return_intermediate=True, complementary=comp, rtol=1e-10
+        )
+        matrices = ev.matrix()
+        assert isinstance(matrices, jnp.ndarray)
+        assert matrices.shape == (len_t, 4, 4)
+
+        H_mat = qml.matrix(H(params, t=t[-1]))
+        if comp:
+            true_matrices = [qml.math.expm(-1j * H_mat * (t[-1] - _t)) for _t in t]
+        else:
+            true_matrices = [qml.math.expm(-1j * H_mat * (_t - t[0])) for _t in t]
+        assert qml.math.allclose(matrices, true_matrices, atol=1e-6, rtol=0.0)
 
 
 @pytest.mark.jax
@@ -394,13 +511,12 @@ class TestIntegration:
             atol=5e-4,
         )
 
-    def test_mixed_device(
-        self,
-    ):
+    def test_mixed_device(self):
         """Test mixed device integration matches that of default qubit"""
         import jax
         import jax.numpy as jnp
 
+        jax.config.update("jax_enable_x64", True)
         mixed = qml.device("default.mixed", wires=range(3))
         default = qml.device("default.qubit", wires=range(3))
 

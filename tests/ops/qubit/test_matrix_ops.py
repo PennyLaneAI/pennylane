@@ -17,9 +17,11 @@ Unit tests for the qubit matrix-based operations.
 # pylint: disable=import-outside-toplevel
 import numpy as np
 import pytest
+
 from gate_data import H, I, S, T, X, Z
 
 import pennylane as qml
+from pennylane import numpy as pnp
 from pennylane.operation import DecompositionUndefinedError
 from pennylane.wires import Wires
 
@@ -574,6 +576,340 @@ class TestUnitaryLabels:
         assert op.label(cache=cache) == "U(M1)"
 
         assert len(cache["matrices"]) == 3
+
+
+class TestBlockEncode:
+    """Test the BlockEncode operation."""
+
+    @pytest.mark.parametrize(
+        ("input_matrix", "wires", "expected_hyperparameters"),
+        [
+            (1, 1, {"norm": 1, "subspace": (1, 1, 2)}),
+            ([1], 1, {"norm": 1, "subspace": (1, 1, 2)}),
+            ([[1]], 1, {"norm": 1, "subspace": (1, 1, 2)}),
+            (pnp.array(1), [1], {"norm": 1, "subspace": (1, 1, 2)}),
+            (pnp.array([1]), 1, {"norm": 1, "subspace": (1, 1, 2)}),
+            (pnp.array([[1]]), 1, {"norm": 1, "subspace": (1, 1, 2)}),
+            ([[1, 0], [0, 1]], [0, 1], {"norm": 1.0, "subspace": (2, 2, 4)}),
+            (pnp.array([[1, 0], [0, 1]]), range(2), {"norm": 1.0, "subspace": (2, 2, 4)}),
+            (pnp.identity(3), ["a", "b", "c"], {"norm": 1.0, "subspace": (3, 3, 8)}),
+        ],
+    )
+    def test_accepts_various_types(self, input_matrix, wires, expected_hyperparameters):
+        """Test that BlockEncode outputs expected attributes for various input matrix types."""
+        op = qml.BlockEncode(input_matrix, wires)
+        assert np.allclose(op.parameters, input_matrix)
+        assert op.hyperparameters["norm"] == expected_hyperparameters["norm"]
+        assert op.hyperparameters["subspace"] == expected_hyperparameters["subspace"]
+
+    @pytest.mark.parametrize(
+        ("input_matrix", "wires"),
+        [(1, 1), (1, 2), (1, [1]), (1, range(2)), (np.identity(2), ["a", "b"])],
+    )
+    def test_varied_wires(self, input_matrix, wires):
+        """Test that BlockEncode wires are stored correctly for various wire input types."""
+        assert qml.BlockEncode(input_matrix, wires).wires == Wires(wires)
+
+    @pytest.mark.parametrize(
+        ("input_matrix", "wires", "msg"),
+        [
+            (
+                [[0, 1], [1, 0]],
+                1,
+                r"Block encoding a \(2 x 2\) matrix requires a Hilbert space of size"
+                r" at least \(4 x 4\). Cannot be embedded in a 1 qubit system.",
+            ),
+        ],
+    )
+    def test_error_raised_invalid_hilbert_space(self, input_matrix, wires, msg):
+        """Test the correct error is raised when inputting an invalid number of wires."""
+        with pytest.raises(ValueError, match=msg):
+            qml.BlockEncode(input_matrix, wires)
+
+    @pytest.mark.parametrize(
+        ("input_matrix", "wires", "output_matrix"),
+        [
+            (1, 0, [[1, 0], [0, -1]]),
+            (0.3, 0, [[0.3, 0.9539392], [0.9539392, -0.3]]),
+            (
+                0.1,
+                range(2),
+                [[0.1, 0.99498744, 0, 0], [0.99498744, -0.1, 0, 0], [0, 0, 1, 0], [0, 0, 0, 1]],
+            ),
+            (
+                [[0.1, 0.2], [0.3, 0.4]],
+                range(2),
+                [
+                    [0.1, 0.2, 0.97283788, -0.05988708],
+                    [0.3, 0.4, -0.05988708, 0.86395228],
+                    [0.94561648, -0.07621992, -0.1, -0.3],
+                    [-0.07621992, 0.89117368, -0.2, -0.4],
+                ],
+            ),
+            (
+                [[0.1, 0.2, 0.3], [0.3, 0.4, 0.2], [0.1, 0.2, 0.3]],
+                range(3),
+                [
+                    [
+                        [0.1, 0.2, 0.3, 0.91808609, -0.1020198, -0.08191391, 0.0, 0.0],
+                        [0.3, 0.4, 0.2, -0.1020198, 0.83017102, -0.1020198, 0.0, 0.0],
+                        [0.1, 0.2, 0.3, -0.08191391, -0.1020198, 0.91808609, 0.0, 0.0],
+                        [0.93589192, -0.09400608, -0.07258899, -0.1, -0.3, -0.1, 0.0, 0.0],
+                        [-0.09400608, 0.85841586, -0.11952016, -0.2, -0.4, -0.2, 0.0, 0.0],
+                        [-0.07258899, -0.11952016, 0.87203542, -0.3, -0.2, -0.3, 0.0, 0.0],
+                        [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0],
+                        [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0],
+                    ],
+                ],
+            ),
+        ],
+    )
+    def test_correct_output_matrix(self, input_matrix, wires, output_matrix):
+        """Test that BlockEncode outputs the correct matrix."""
+        assert np.allclose(qml.matrix(qml.BlockEncode)(input_matrix, wires), output_matrix)
+
+    @pytest.mark.parametrize(
+        ("input_matrix", "wires"),
+        [
+            (1, 0),
+            (0.3, 0),
+            (np.array([[0.1, 0.2], [0.3, 0.4]]), range(2)),
+            (np.array([[0.1, 0.2, 0.3]]), range(2)),
+            (np.array([[0.1], [0.2], [0.3]]), range(2)),
+            (np.array([[0.1, 0.2], [0.3, 0.4], [0.5, 0.6]]), range(3)),
+            (np.array([[1, 2], [3, 4]]), range(2)),
+        ],
+    )
+    def test_unitary(self, input_matrix, wires):
+        """Test that BlockEncode matrices are unitary."""
+        mat = qml.matrix(qml.BlockEncode(input_matrix, wires))
+        assert np.allclose(np.eye(len(mat)), mat.dot(mat.T.conj()))
+
+    @pytest.mark.tf
+    @pytest.mark.parametrize(
+        ("input_matrix", "wires", "output_matrix"),
+        [
+            (1.0, 0, [[1, 0], [0, -1]]),
+            (0.3, 0, [[0.3, 0.9539392], [0.9539392, -0.3]]),
+            (
+                [[0.1, 0.2], [0.3, 0.4]],
+                range(2),
+                [
+                    [0.1, 0.2, 0.97283788, -0.05988708],
+                    [0.3, 0.4, -0.05988708, 0.86395228],
+                    [0.94561648, -0.07621992, -0.1, -0.3],
+                    [-0.07621992, 0.89117368, -0.2, -0.4],
+                ],
+            ),
+            (
+                0.1,
+                range(2),
+                [[0.1, 0.99498744, 0, 0], [0.99498744, -0.1, 0, 0], [0, 0, 1, 0], [0, 0, 0, 1]],
+            ),
+        ],
+    )
+    def test_blockencode_tf(self, input_matrix, wires, output_matrix):
+        """Test that the BlockEncode operator matrix is correct for tf."""
+        import tensorflow as tf
+
+        input_matrix = tf.Variable(input_matrix)
+
+        op = qml.BlockEncode(input_matrix, wires)
+        assert np.allclose(qml.matrix(op), output_matrix)
+        assert qml.math.get_interface(qml.matrix(op)) == "tensorflow"
+
+    @pytest.mark.torch
+    @pytest.mark.parametrize(
+        ("input_matrix", "wires", "output_matrix"),
+        [
+            (1, 0, [[1, 0], [0, -1]]),
+            (0.3, 0, [[0.3, 0.9539392], [0.9539392, -0.3]]),
+            (
+                [[0.1, 0.2], [0.3, 0.4]],
+                range(2),
+                [
+                    [0.1, 0.2, 0.97283788, -0.05988708],
+                    [0.3, 0.4, -0.05988708, 0.86395228],
+                    [0.94561648, -0.07621992, -0.1, -0.3],
+                    [-0.07621992, 0.89117368, -0.2, -0.4],
+                ],
+            ),
+            (
+                0.1,
+                range(2),
+                [[0.1, 0.99498744, 0, 0], [0.99498744, -0.1, 0, 0], [0, 0, 1, 0], [0, 0, 0, 1]],
+            ),
+        ],
+    )
+    def test_blockencode_torch(self, input_matrix, wires, output_matrix):
+        """Test that the BlockEncode operator matrix is correct for torch."""
+        import torch
+
+        input_matrix = torch.tensor(input_matrix)
+        op = qml.BlockEncode(input_matrix, wires)
+        assert np.allclose(qml.matrix(op), output_matrix)
+        assert qml.math.get_interface(qml.matrix(op)) == "torch"
+
+    @pytest.mark.jax
+    @pytest.mark.parametrize(
+        ("input_matrix", "wires", "output_matrix"),
+        [
+            (1, 0, [[1, 0], [0, -1]]),
+            (0.3, 0, [[0.3, 0.9539392], [0.9539392, -0.3]]),
+            (
+                [[0.1, 0.2], [0.3, 0.4]],
+                range(2),
+                [
+                    [0.1, 0.2, 0.97283788, -0.05988708],
+                    [0.3, 0.4, -0.05988708, 0.86395228],
+                    [0.94561648, -0.07621992, -0.1, -0.3],
+                    [-0.07621992, 0.89117368, -0.2, -0.4],
+                ],
+            ),
+            (
+                0.1,
+                range(2),
+                [[0.1, 0.99498744, 0, 0], [0.99498744, -0.1, 0, 0], [0, 0, 1, 0], [0, 0, 0, 1]],
+            ),
+        ],
+    )
+    def test_blockencode_jax(self, input_matrix, wires, output_matrix):
+        """Test that the BlockEncode operator matrix is correct for jax."""
+        import jax.numpy as jnp
+
+        input_matrix = jnp.array(input_matrix)
+        op = qml.BlockEncode(input_matrix, wires)
+        assert np.allclose(qml.matrix(op), output_matrix)
+        assert qml.math.get_interface(qml.matrix(op)) == "jax"
+
+    @pytest.mark.parametrize("method", ["backprop"])
+    @pytest.mark.parametrize(
+        (
+            "wires",
+            "input_matrix",
+            "expected_result",
+        ),  # expected_results calculated manually
+        [
+            (range(1), pnp.array(0.3), 4 * 0.3),
+            (range(2), pnp.diag([0.2, 0.3]), 4 * pnp.diag([0.2, 0])),
+        ],
+    )
+    def test_blockencode_grad(self, method, wires, input_matrix, expected_result):
+        """Test that BlockEncode is differentiable."""
+        dev = qml.device("default.qubit", wires=wires)
+
+        @qml.qnode(dev, diff_method=method)
+        def circuit(input_matrix):
+            qml.BlockEncode(input_matrix, wires=wires)
+            return qml.expval(qml.PauliZ(wires=0))
+
+        assert np.allclose(qml.grad(circuit)(input_matrix), expected_result)
+
+    @pytest.mark.jax
+    @pytest.mark.parametrize(
+        (
+            "wires",
+            "input_matrix",
+            "expected_result",
+        ),  # expected_results calculated manually
+        [
+            (range(1), pnp.array(0.3), 4 * 0.3),
+            (range(2), pnp.diag([0.2, 0.3]), 4 * pnp.diag([0.2, 0])),
+        ],
+    )
+    def test_blockencode_grad_jax(self, wires, input_matrix, expected_result):
+        """Test that block encode is differentiable when using jax."""
+        import jax
+        import jax.numpy as jnp
+
+        input_matrix = jnp.array(input_matrix)
+        expected_result = jnp.array(expected_result)
+
+        dev = qml.device("default.qubit", wires=wires)
+
+        @qml.qnode(dev)
+        def circuit(input_matrix):
+            qml.BlockEncode(input_matrix, wires=wires)
+            return qml.expval(qml.PauliZ(wires=0))
+
+        grad = jax.grad(circuit, argnums=0)(input_matrix)
+        assert np.allclose(grad, expected_result)
+
+    @pytest.mark.tf
+    @pytest.mark.parametrize(
+        ("wires", "input_matrix", "expected_result"),  # expected_results calculated manually
+        [
+            (range(1), pnp.array(0.3), 4 * 0.3),
+            (range(2), pnp.diag([0.2, 0.3]), 4 * pnp.diag([0.2, 0])),
+        ],
+    )
+    def test_blockencode_grad_tf(self, wires, input_matrix, expected_result):
+        """Test that block encode is differentiable when using tensorflow."""
+        import tensorflow as tf
+
+        input_matrix = tf.Variable(input_matrix)
+
+        dev = qml.device("default.qubit", wires=wires)
+
+        @qml.qnode(dev)
+        def circuit(input_matrix):
+            qml.BlockEncode(input_matrix, wires=wires)
+            return qml.expval(qml.PauliZ(wires=0))
+
+        with tf.GradientTape() as tape:
+            result = circuit(input_matrix)
+
+        computed_grad = tape.gradient(result, input_matrix)
+        assert np.allclose(computed_grad, expected_result)
+
+    @pytest.mark.parametrize(
+        ("input_matrix", "wires"),
+        [
+            (1, 0),
+            (0.3, 0),
+            (0.1, range(2)),
+            (
+                [[0.1, 0.2], [0.3, 0.4]],
+                range(2),
+            ),
+            ([[0.1, 0.2, 0.3], [0.3, 0.4, 0.2], [0.1, 0.2, 0.3]], range(3)),
+        ],
+    )
+    def test_adjoint(self, input_matrix, wires):
+        """Test that the adjoint of a BlockEncode operation is correctly computed."""
+        mat = qml.matrix(qml.BlockEncode(input_matrix, wires))
+        adj = qml.matrix(qml.adjoint(qml.BlockEncode(input_matrix, wires)))
+        other_adj = qml.matrix(qml.BlockEncode(input_matrix, wires).adjoint())
+        assert np.allclose(np.eye(len(mat)), mat @ adj)
+        assert np.allclose(np.eye(len(mat)), mat @ other_adj)
+
+    def test_label(self):
+        """Test the label method for BlockEncode op"""
+        op = qml.BlockEncode(0.5, wires=[0, 1])
+        assert op.label() == "BlockEncode"
+
+    @pytest.mark.parametrize(
+        ("input_matrix", "wires", "output_value"),
+        [
+            (1, [0], 1),
+            ([[0.1, 0.2], [0.3, 0.4]], range(2), -0.8),
+            (
+                0.1,
+                range(2),
+                1,
+            ),
+        ],
+    )
+    def test_blockencode_integration(self, input_matrix, wires, output_value):
+        """Test that the BlockEncode gate applied to a circuit produces the correct final state."""
+        dev = qml.device("default.qubit", wires=wires)
+
+        @qml.qnode(dev)
+        def circuit(input_matrix):
+            qml.BlockEncode(input_matrix, wires=wires)
+            return qml.expval(qml.PauliZ(wires=0))
+
+        assert circuit(input_matrix) == output_value
 
 
 class TestInterfaceMatricesLabel:

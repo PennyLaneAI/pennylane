@@ -40,8 +40,8 @@ class Molecule:
             where ``N`` is the number of atoms.
         charge (int): net charge of the molecule
         mult (int): Spin multiplicity :math:`\mathrm{mult}=N_\mathrm{unpaired} + 1` for
-            :math:`N_\mathrm{unpaired}` unpaired electrons occupying the HF orbitals. Possible
-            values of ``mult`` are :math:`1, 2, 3, \ldots`.
+            :math:`N_\mathrm{unpaired}` unpaired electrons occupying the HF orbitals. Currently,
+            openshell systems are not supported; ``mult`` must be equal to :math:`1`.
         basis_name (str): Atomic basis set used to represent the molecular orbitals. Currently, the
             only supported basis sets are 'STO-3G', '6-31G', '6-311G' and 'CC-PVDZ'.
         load_data (bool): flag to load data from the basis-set-exchange library
@@ -74,12 +74,16 @@ class Molecule:
         coeff=None,
         normalize=True,
     ):
-        if basis_name.lower() not in [
-            "sto-3g",
-            "6-31g",
-            "6-311g",
-            "cc-pvdz",
-        ]:
+        if (
+            basis_name.lower()
+            not in [
+                "sto-3g",
+                "6-31g",
+                "6-311g",
+                "cc-pvdz",
+            ]
+            and load_data is False
+        ):
             raise ValueError(
                 "Currently, the only supported basis sets are 'sto-3g', '6-31g', '6-311g' and "
                 "'cc-pvdz'. Please consider using `load_data=True` to download the basis set from "
