@@ -1,69 +1,51 @@
 :orphan:
 
-# Release 0.30.0-dev (development release)
+# Release 0.31.0-dev (development release)
 
 <h3>New features since last release</h3>
 
-* The `sample_state` function is added to `devices/qubit` that returns a series of samples based on a given
-  state vector and a number of shots.
-  [(#3720)](https://github.com/PennyLaneAI/pennylane/pull/3720)
+<h3>Improvements 🛠</h3>
 
-* Added the needed functions and classes to simulate an ensemble of Rydberg atoms:
-  * A new internal `RydbergHamiltonian` class is added, which contains the Hamiltonian of an ensemble of
-    Rydberg atoms.
-  * A new user-facing `rydberg_interaction` function is added, which returns a `RydbergHamiltonian` containing
-    the Hamiltonian of the interaction of all the Rydberg atoms.
-  * A new user-facing `drive` function is added, which returns a `ParametrizedHamiltonian` (`HardwareHamiltonian`) containing
-    the Hamiltonian of the interaction between a driving electro-magnetic field and a group of qubits.
-  [(#3749)](https://github.com/PennyLaneAI/pennylane/pull/3749)
-  [(#3911)](https://github.com/PennyLaneAI/pennylane/pull/3911)
-  [(#3930)](https://github.com/PennyLaneAI/pennylane/pull/3930)
+* The `qchem.molecular_hamiltonian` function is upgraded to support custom wires for constructing
+  differentiable Hamiltonians.
+  [(4050)](https://github.com/PennyLaneAI/pennylane/pull/4050)
 
-* Added `Operation.__truediv__` dunder method to be able to divide operators.
-  [(#3749)](https://github.com/PennyLaneAI/pennylane/pull/3749)
+* An error is now raised by `qchem.molecular_hamiltonian` when the `dhf` method is used for an 
+  open-shell system. This duplicates a similar error in `qchem.Molecule` but makes it easier to
+  inform the users that the `pyscf` backend can be used for open-shell calculations.
+  [(4058)](https://github.com/PennyLaneAI/pennylane/pull/4058)
 
-* The `simulate` function added to `devices/qubit` now supports measuring expectation values of large observables such as
-  `qml.Hamiltonian`, `qml.SparseHamiltonian`, `qml.Sum`.
-  [(#3759)](https://github.com/PennyLaneAI/pennylane/pull/3759)
+* Added a `shots` property to `QuantumScript`. This will allow shots to be tied to executions instead of devices more
+  concretely.
+  [(#4067)](https://github.com/PennyLaneAI/pennylane/pull/4067)
 
-<h3>Improvements</h3>
+* `qml.specs` is compatible with custom operations that have `depth` bigger than 1.
+  [(#4033)](https://github.com/PennyLaneAI/pennylane/pull/4033)
 
-* The default gaussian device and parameter shift cv support the new return system but only for single measurement.
-  [(3946)](https://github.com/PennyLaneAI/pennylane/pull/3946)
+* `qml.prod` now accepts a single qfunc input for creating new `Prod` operators.
+  [(#4011)](https://github.com/PennyLaneAI/pennylane/pull/4011)
 
-* Improve the efficiency of `tapering()`, `tapering_hf()` and `clifford()`.
-  [(3942)](https://github.com/PennyLaneAI/pennylane/pull/3942)
+* Added a function `measure_with_samples` that returns a sample-based measurement result given a state
+  [(#4083)](https://github.com/PennyLaneAI/pennylane/pull/4083)
 
-* Update Pauli arithmetic to more efficiently convert to a Hamiltonian.
-  [(#3939)](https://github.com/PennyLaneAI/pennylane/pull/3939)
+<h3>Breaking changes 💔</h3>
 
-* Keras and Torch NN modules are now compatible with the new return type system.
-  [(#3913)](https://github.com/PennyLaneAI/pennylane/pull/3913)
-  [(#3914)](https://github.com/PennyLaneAI/pennylane/pull/3914)
+* `pennylane.collections`, `pennylane.op_sum`, and `pennylane.utils.sparse_hamiltonian` are removed.
 
-* The adjoint differentiation method now supports more operations, and does no longer decompose
-  some operations that may be differentiated directly. In addition, all new operations with a
-  generator are now supported by the method.
-  [(#3874)](https://github.com/PennyLaneAI/pennylane/pull/3874)
+<h3>Deprecations 👋</h3>
 
-* The `coefficients` function and the `visualize` submodule of the `qml.fourier` module
-  now allow assigning different degrees for different parameters of the input function.
-  [(#3005)](https://github.com/PennyLaneAI/pennylane/pull/3005)
+<h3>Documentation 📝</h3>
 
-  The arguments `degree` and `filter_threshold` to `qml.fourier.coefficients` previously were
-  expected to be integers, and now can be a sequences of integers with one integer per function
-  parameter (i.e. `len(degree)==n_inputs`), resulting in a returned array with shape
-  `(2*degrees[0]+1,..., 2*degrees[-1]+1)`.
-  The functions in `qml.fourier.visualize` accordingly accept such arrays of coefficients.
+* The description of `mult` in the `qchem.Molecule` docstring now correctly states the value
+  of `mult` that is supported.
+  [(4058)](https://github.com/PennyLaneAI/pennylane/pull/4058)
 
-* `Operator` now has a `has_generator` attribute that returns whether or not the operator
-  has a generator defined. It is used in `qml.operation.has_gen`, improving its performance.
-  [(#3875)](https://github.com/PennyLaneAI/pennylane/pull/3875)
+<h3>Bug fixes 🐛</h3>
 
-* The custom JVP rules in PennyLane now also support non-scalar and mixed-shape tape parameters as
-  well as multi-dimensional tape return types, like broadcasted `qml.probs`, for example.
-  [(#3766)](https://github.com/PennyLaneAI/pennylane/pull/3766)
+* Removes a patch in `interfaces/autograd.py` that checks for the `strawberryfields.gbs` device.  That device
+  is pinned to PennyLane <= v0.29.0, so that patch is no longer necessary.
 
+<<<<<<< HEAD
 * The `qchem.jordan_wigner` function is extended to support more fermionic operator orders.
   [(#3754)](https://github.com/PennyLaneAI/pennylane/pull/3754)
   [(#3751)](https://github.com/PennyLaneAI/pennylane/pull/3751)
@@ -227,18 +209,15 @@
   [(#3921)](https://github.com/PennyLaneAI/pennylane/pull/3921)
 
 <h3>Contributors</h3>
+=======
+<h3>Contributors ✍️</h3>
+>>>>>>> f0cabe85f86355a4dc0f132121db85d166949dbe
 
 This release contains contributions from (in alphabetical order):
 
-Komi Amiko
-Utkarsh Azad
-Lillian M. A. Frederiksen
-Soran Jahangiri
-Christina Lee
-Vincent Michaud-Rioux
-Albert Mitjans
-Romain Moyard
-Mudit Pandey
-Matthew Silverman
+Isaac De Vlugt,
+Soran Jahangiri,
+Christina Lee,
+Mudit Pandey,
+Matthew Silverman,
 Jay Soni
-David Wierichs

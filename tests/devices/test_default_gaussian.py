@@ -857,7 +857,6 @@ class TestDefaultGaussianIntegration:
 
     def test_new_return_type_error_multi_measurements(self):
         """Test that multiple measurements raise an error with the new return type."""
-        qml.enable_return()
         dev = qml.device("default.gaussian", wires=2)
 
         @qml.qnode(dev)
@@ -870,4 +869,3 @@ class TestDefaultGaussianIntegration:
             match="Default gaussian only support single measurements.",
         ):
             circuit()
-        qml.disable_return()

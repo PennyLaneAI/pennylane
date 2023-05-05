@@ -633,7 +633,7 @@ class Hamiltonian(Observable):
             return qml.Hamiltonian(coeffs, terms, simplify=True)
 
         if isinstance(H, (Tensor, Observable)):
-            terms = [op @ H for op in ops1]
+            terms = [op @ copy(H) for op in ops1]
 
             return qml.Hamiltonian(coeffs1, terms, simplify=True)
 
@@ -650,7 +650,7 @@ class Hamiltonian(Observable):
         ops1 = self.ops.copy()
 
         if isinstance(H, (Tensor, Observable)):
-            terms = [H @ op for op in ops1]
+            terms = [copy(H) @ op for op in ops1]
 
             return qml.Hamiltonian(coeffs1, terms, simplify=True)
 

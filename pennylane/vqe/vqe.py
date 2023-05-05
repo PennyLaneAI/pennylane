@@ -206,9 +206,24 @@ class ExpvalCost:
 
                 self.qnodes.append(circuit)
 
-            self.cost_fn = lambda *args, **kwargs: sum(
-                c * q(*args, **kwargs) for c, q in zip(coeffs, self.qnodes)
-            )
+            if qml.active_return():
+
+                def cost_fn(*args, **kwargs):
+                    res = [q(*args, **kwargs) for q in self.qnodes]
+                    # pylint: disable=no-member
+                    res = [
+                        qml.math.stack(r)
+                        if isinstance(r, (tuple, qml.numpy.builtins.SequenceBox))
+                        else r
+                        for r in res
+                    ]
+                    return sum(c * q for c, q in zip(coeffs, res))
+
+                self.cost_fn = cost_fn
+            else:
+                self.cost_fn = lambda *args, **kwargs: sum(
+                    c * q(*args, **kwargs) for c, q in zip(coeffs, self.qnodes)
+                )
 
     def __call__(self, *args, **kwargs):
         return self.cost_fn(*args, **kwargs)
