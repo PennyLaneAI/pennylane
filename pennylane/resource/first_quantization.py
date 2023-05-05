@@ -722,7 +722,8 @@ class FirstQuantization(Operation):
         # amplitude amplification steps, taken from Eq. (117) of PRX Quantum 2, 040332 (2021)
         p_nu_amp = 0
         aa_steps = 0
-        for i in range(29, -1, -1):
+        n_steps = 30  # maximum number of amplitude amplification steps
+        for i in reversed(range(n_steps)):
             probability = (np.sin((2 * i + 1) * np.arcsin(np.sqrt(p_nu)))) ** 2
             if probability > p_th:
                 aa_steps = i
