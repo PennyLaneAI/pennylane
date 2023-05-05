@@ -683,9 +683,6 @@ class Operator(abc.ABC):
                 setattr(copied_op, attribute, copy.deepcopy(value, memo))
         return copied_op
 
-    def __eq__(self, other):
-        return qml.equal(self, other)
-
     @property
     def hash(self):
         """int: Integer hash that uniquely represents the operator."""
@@ -697,6 +694,12 @@ class Operator(abc.ABC):
                 _process_data(self),
             )
         )
+
+    # def __eq__(self, other):
+    #     return qml.equal(self, other)
+
+    # def __hash__(self):
+    #     return self.hash
 
     @staticmethod
     def compute_matrix(*params, **hyperparams):  # pylint:disable=unused-argument
