@@ -86,7 +86,7 @@ We can examine the resources by accessing the :code:`resources` key:
 wires: 3
 gates: 7
 depth: 5
-shots: 0
+shots: Shots(None)
 gate_types:
 {"RZ": 1, "CNOT": 2, "Hadamard": 2, "PauliZ": 2}
 gate_sizes:

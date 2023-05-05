@@ -22,6 +22,7 @@ import pytest
 import pennylane as qml
 from pennylane import numpy as np, DeviceError
 from pennylane.devices.null_qubit import NullQubit
+from pennylane.measurements import Shots
 from pennylane import Tracker
 
 
@@ -1235,12 +1236,22 @@ class TestTrackerIntegration:
             qml.CNOT(wires=[0, 1])
             return qml.expval(qml.PauliZ(0))
 
-        circuit_resources = qml.resource.Resources(
+        circuit_resources_10 = qml.resource.Resources(
             num_wires=2,
             num_gates=2,
             gate_types={"RX": 1, "CNOT": 1},
             gate_sizes={1: 1, 2: 1},
             depth=2,
+            shots=Shots(10),
+        )
+
+        circuit_resources_20 = qml.resource.Resources(
+            num_wires=2,
+            num_gates=2,
+            gate_types={"RX": 1, "CNOT": 1},
+            gate_sizes={1: 1, 2: 1},
+            depth=2,
+            shots=Shots(20),
         )
 
         class callback_wrapper:
@@ -1265,7 +1276,7 @@ class TestTrackerIntegration:
             "shots": [10, 20],
             "batches": [1, 1],
             "batch_len": [1, 1],
-            "resources": [circuit_resources, circuit_resources],
+            "resources": [circuit_resources_10, circuit_resources_20],
         }
         assert tracker.latest == {"batches": 1, "batch_len": 1}
 
@@ -1284,7 +1295,7 @@ class TestTrackerIntegration:
             "shots": [10, 20],
             "batches": [1, 1],
             "batch_len": [1, 1],
-            "resources": [circuit_resources, circuit_resources],
+            "resources": [circuit_resources_10, circuit_resources_20],
         }
         assert kwargs_called["latest"] == {"batches": 1, "batch_len": 1}
 
@@ -1312,12 +1323,22 @@ class TestTrackerIntegration:
             CustomResourceOperation(wires=[0, 1])
             return qml.expval(qml.PauliZ(0))
 
-        circuit_resources = qml.resource.Resources(
+        circuit_resources_10 = qml.resource.Resources(
             num_wires=2,
             num_gates=5,
             gate_types={"RX": 1, "Hadamard": 2, "CNOT": 2},
             gate_sizes={1: 3, 2: 2},
             depth=4,
+            shots=Shots(10),
+        )
+
+        circuit_resources_20 = qml.resource.Resources(
+            num_wires=2,
+            num_gates=5,
+            gate_types={"RX": 1, "Hadamard": 2, "CNOT": 2},
+            gate_sizes={1: 3, 2: 2},
+            depth=4,
+            shots=Shots(20),
         )
 
         class callback_wrapper:
@@ -1342,7 +1363,7 @@ class TestTrackerIntegration:
             "shots": [10, 20],
             "batches": [1, 1],
             "batch_len": [1, 1],
-            "resources": [circuit_resources, circuit_resources],
+            "resources": [circuit_resources_10, circuit_resources_20],
         }
         assert tracker.latest == {"batches": 1, "batch_len": 1}
 
@@ -1361,6 +1382,6 @@ class TestTrackerIntegration:
             "shots": [10, 20],
             "batches": [1, 1],
             "batch_len": [1, 1],
-            "resources": [circuit_resources, circuit_resources],
+            "resources": [circuit_resources_10, circuit_resources_20],
         }
         assert kwargs_called["latest"] == {"batches": 1, "batch_len": 1}

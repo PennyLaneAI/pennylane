@@ -124,7 +124,7 @@ class Tracker:
         When used with the null qubit device (eg. ``dev = qml.device("null.qubit")``), we also track the resources
         used in the circuit.
 
-        >>> dev = qml.device("null.qubit", wires=[0])
+        >>> dev = qml.device("null.qubit", wires=[0], shots=10)
         >>> @qml.qnode(dev)
         ... def circuit(x):
         ...     qml.RX(x, wires=0)
@@ -138,7 +138,7 @@ class Tracker:
         wires: 1
         gates: 1
         depth: 1
-        shots: 0
+        shots: Shots(total=10)
         gate_types:
         {"RX": 1}
         gate_sizes:
