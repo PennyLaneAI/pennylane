@@ -211,6 +211,9 @@ def test_differentiable_hamiltonian(symbols, geometry, h_ref_data):
         Hamiltonian(np.ones(len(h_ref.coeffs)), h_ref.ops)
     )
 
+    assert h_args.coeffs.requires_grad == True
+    assert h_noargs.coeffs.requires_grad == False
+
 
 @pytest.mark.parametrize(
     ("symbols", "geometry", "method", "wiremap", "grouping"),
