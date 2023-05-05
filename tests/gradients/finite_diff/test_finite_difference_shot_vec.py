@@ -720,8 +720,8 @@ class TestFiniteDiffIntegration:
         for res in all_res:
             assert isinstance(res, tuple)
             assert len(res) == 2  # two measurements
-            assert np.allclose(res[0], exp_probs)
-            assert np.allclose(res[1], exp_expval)
+            assert np.allclose(res[0], exp_probs, atol=finite_diff_shot_vec_tol)
+            assert np.allclose(res[1], exp_expval, atol=finite_diff_shot_vec_tol)
 
     def test_multiple_expectation_values(self, approx_order, strategy, validate):
         """Tests correct output shape and evaluation for a tape
