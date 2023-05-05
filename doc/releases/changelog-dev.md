@@ -7,8 +7,10 @@
 <h3>Improvements 🛠</h3>
 
 * The `qchem.molecular_hamiltonian` function is upgraded to support custom wires for constructing
-  differentiable Hamiltonians.
+  differentiable Hamiltonians. The zero imaginary component of the Hamiltonian coefficients are
+  removed.
   [(4050)](https://github.com/PennyLaneAI/pennylane/pull/4050)
+  [(4094)](https://github.com/PennyLaneAI/pennylane/pull/4094)
 
 * An error is now raised by `qchem.molecular_hamiltonian` when the `dhf` method is used for an 
   open-shell system. This duplicates a similar error in `qchem.Molecule` but makes it easier to
