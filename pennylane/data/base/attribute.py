@@ -308,14 +308,14 @@ def match_obj_type(type_or_obj: Union[T, type[T]]) -> type[AttributeType[ZarrAny
     """
 
     type_, args = _get_type_and_args(type_or_obj)
-    ret = None
+    ret = AttributeType.registry["array"]
 
     if type_ in AttributeType.type_consumer_registry:
         ret = AttributeType.type_consumer_registry[type_]
-    elif hasattr(type_, "__array__"):
-        ret = AttributeType.registry["array"]
     elif issubclass(type_, Number):
         ret = AttributeType.registry["scalar"]
+    elif hasattr(type_, "__array__"):
+        ret = AttributeType.registry["array"]
     elif issubclass(type_, Sequence):
         if args and issubclass(args[0], Number):
             ret = AttributeType.registry["array"]
@@ -323,8 +323,5 @@ def match_obj_type(type_or_obj: Union[T, type[T]]) -> type[AttributeType[ZarrAny
             ret = AttributeType.registry["list"]
     elif issubclass(type_, Mapping):
         ret = AttributeType.registry["dict"]
-
-    if ret is None:
-        raise TypeError(f"Could not determine AttributeType for type {type_}")
 
     return ret
