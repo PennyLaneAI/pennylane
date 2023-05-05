@@ -190,7 +190,7 @@ class Shots:
 
     def __hash__(self):
         """Hash for a given Shot instance."""
-        return hash((self.total_shots, self.shot_vector))  # hash the tuple of these two attributes
+        return hash(self.shot_vector)
 
     def __all_tuple_init__(self, shots: Sequence[Tuple]):
         res = []
