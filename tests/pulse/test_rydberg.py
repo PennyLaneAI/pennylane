@@ -417,6 +417,8 @@ class TestIntegration:
     @pytest.mark.jax
     def test_pennylane_and_exact_solution_correspond(self):
         """Test that the results of PennyLane simulation match (within reason) the exact solution"""
+        import jax
+        import jax.numpy as jnp
 
         import jax
         import jax.numpy as jnp
