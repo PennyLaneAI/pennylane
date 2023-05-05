@@ -787,7 +787,6 @@ class TestStochPulseGradQNodeIntegration:
         p = params[0] * T
         exp_grad = -2 * jnp.sin(2 * p) * T
         jax.jit(circuit)(params, T=T)
-        ### THE PROBLEM IS NOT WITH THE GRADIENT
         jit_grad = jax.jit(jax.grad(circuit))(params, T=T)
         assert qml.math.isclose(jit_grad, exp_grad)
 
