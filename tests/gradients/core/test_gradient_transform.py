@@ -549,6 +549,7 @@ class TestGradientTransformIntegration:
         expected = qml.jacobian(circuit)(weights)
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
+    # pylint: disable=unexpected-keyword-arg
     def test_setting_shots(self):
         """Test that setting the number of shots works correctly for
         a gradient transform"""
