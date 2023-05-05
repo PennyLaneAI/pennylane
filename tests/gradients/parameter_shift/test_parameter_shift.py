@@ -1263,7 +1263,7 @@ class TestParameterShiftRule:
 
     @pytest.mark.autograd
     @pytest.mark.parametrize(
-        "RX, RY, argnum", [(RX_with_F, qml.RY, 0), (qml.RX_with_F, RY_with_F, 1)]
+        "RX, RY, argnum", [(RX_with_F, qml.RY, 0), (qml.RX, RY_with_F, 1)]
     )
     def test_fallback_probs(self, RX, RY, argnum, mocker):
         """Test that fallback gradient functions are correctly used with probs"""
@@ -3228,7 +3228,7 @@ class TestHamiltonianExpvalGradients:
 
         # TODO: test when Hessians are supported with the new return types
         # second derivative wrt to Hamiltonian coefficients should be zero.
-        # In order to activate the following, rename the GradientTape above from _ to t
+        # When activating the following, rename the GradientTape above from _ to t
         # ---
         # hess = t.jacobian(jac, [coeffs1, coeffs2])
         # assert np.allclose(hess[0][:, 2:5], np.zeros([2, 3, 3]), atol=tol, rtol=0)
