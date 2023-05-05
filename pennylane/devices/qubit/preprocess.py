@@ -15,7 +15,7 @@
 """This module contains functions for preprocessing `QuantumTape` objects to ensure
 that they are supported for execution by a device."""
 # pylint: disable=protected-access
-from typing import Generator, Callable, Tuple
+from typing import Generator, Callable, Tuple, Union
 import warnings
 
 import pennylane as qml
@@ -80,7 +80,7 @@ def _operator_decomposition_gen(
 
 def validate_and_expand_adjoint(
     circuit: qml.tape.QuantumTape,
-) -> qml.tape.QuantumTape:  # pylint: disable=protected-access
+) -> Union[qml.tape.QuantumTape, DeviceError]:  # pylint: disable=protected-access
     """Function for validating that the operations and observables present in the input circuit
     are valid for adjoint differentiation.
 
@@ -88,22 +88,20 @@ def validate_and_expand_adjoint(
         circuit(.QuantumTape): the tape to validate
 
     Returns:
-        .QuantumTape: The expanded tape, such that it is supported by adjoint differentiation
-
-    Raises:
-        QuantumFunctionError: if the circuit is invalid for adjoint differentiation
+        Union[.QuantumTape, .DeviceError]: The expanded tape, such that it is supported by adjoint differentiation.
+        If the circuit is invalid for adjoint differentiation, a DeviceError with an explanation is returned instead.
     """
     # Check validity of measurements
     measurements = []
     for m in circuit.measurements:
         if not isinstance(m, ExpectationMP):
-            raise DeviceError(
+            return DeviceError(
                 "Adjoint differentiation method does not support "
                 f"measurement {m.__class__.__name__}."
             )
 
         if not m.obs.has_matrix:
-            raise DeviceError(
+            return DeviceError(
                 f"Adjoint differentiation method does not support observable {m.obs.name}."
             )
 
@@ -113,7 +111,7 @@ def validate_and_expand_adjoint(
     for op in circuit._ops:
         if op.num_params > 1:
             if not isinstance(op, qml.Rot):
-                raise DeviceError(
+                return DeviceError(
                     f"The {op} operation is not supported using "
                     'the "adjoint" differentiation method.'
                 )
@@ -262,6 +260,9 @@ def preprocess(
     circuits = tuple(expand_fn(c) for c in circuits)
     if execution_config.gradient_method == "adjoint":
         circuits = tuple(validate_and_expand_adjoint(c) for c in circuits)
+        for circuit_or_error in circuits:
+            if isinstance(circuit_or_error, DeviceError):
+                raise circuit_or_error  # it's an error
 
     circuits, batch_fn = qml.transforms.map_batch_transform(batch_transform, circuits)
 
