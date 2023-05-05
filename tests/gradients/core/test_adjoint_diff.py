@@ -25,6 +25,7 @@ class TestAdjointJacobian:
 
     @pytest.fixture
     def dev(self):
+        """Fixture that creates a device with two wires."""
         return qml.device("default.qubit", wires=2)
 
     def test_not_expval(self, dev):
@@ -83,7 +84,7 @@ class TestAdjointJacobian:
         with pytest.raises(qml.QuantumFunctionError, match="The CRot operation is not"):
             dev.adjoint_jacobian(tape)
 
-    def test_trainable_hermitian_warns(self, tol):
+    def test_trainable_hermitian_warns(self):
         """Test attempting to compute the gradient of a tape that obtains the
         expectation value of a Hermitian operator emits a warning if the
         parameters to Hermitian are trainable."""
@@ -98,7 +99,7 @@ class TestAdjointJacobian:
         with pytest.warns(
             UserWarning, match="Differentiating with respect to the input parameters of Hermitian"
         ):
-            res = dev.adjoint_jacobian(tape)
+            _ = dev.adjoint_jacobian(tape)
 
     @pytest.mark.autograd
     @pytest.mark.parametrize("theta", np.linspace(-2 * np.pi, 2 * np.pi, 7))
@@ -243,7 +244,8 @@ class TestAdjointJacobian:
         tape = qml.tape.QuantumScript.from_queue(q)
         tape.trainable_params = set(range(1, 1 + op.num_params))
 
-        grad_F = (lambda t, fn: fn(qml.execute(t, dev, None)))(*qml.gradients.finite_diff(tape))
+        tapes, fn = qml.gradients.finite_diff(tape)
+        grad_F = fn(qml.execute(tapes, dev, None))
         grad_D = dev.adjoint_jacobian(tape)
 
         assert isinstance(grad_D, tuple)
@@ -272,7 +274,8 @@ class TestAdjointJacobian:
         tape.trainable_params = {1, 2, 3}
 
         grad_D = dev.adjoint_jacobian(tape)
-        grad_F = (lambda t, fn: fn(qml.execute(t, dev, None)))(*qml.gradients.finite_diff(tape))
+        tapes, fn = qml.gradients.finite_diff(tape)
+        grad_F = fn(qml.execute(tapes, dev, None))
 
         # gradient has the correct shape and every element is nonzero
         assert isinstance(grad_D, tuple)
@@ -304,6 +307,7 @@ class TestAdjointJacobian:
 
         assert np.allclose(dM1, dM2, atol=tol, rtol=0)
 
+    # pylint: disable=protected-access
     def test_provide_starting_state(self, tol, dev):
         """Tests provides correct answer when provided starting state."""
         x, y, z = [0.5, 0.3, -0.7]

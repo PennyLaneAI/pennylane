@@ -12,12 +12,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Tests for the gradients.gradient_transform module."""
+# pylint: disable=import-outside-toplevel
 import pytest
 
 import pennylane as qml
 from pennylane import numpy as np
 from pennylane.gradients.gradient_transform import (
-    gradient_transform,
     gradient_analysis,
     choose_grad_methods,
     grad_method_validation,
@@ -26,6 +26,8 @@ from pennylane.gradients.gradient_transform import (
 
 class TestGradAnalysis:
     """Tests for parameter gradient methods"""
+
+    # pylint: disable=protected-access
 
     def test_non_differentiable(self):
         """Test that a non-differentiable parameter is correctly marked"""
@@ -123,6 +125,8 @@ class TestGradAnalysis:
 
 class TestGradMethodValidation:
     """Test the helper function grad_method_validation."""
+
+    # pylint: disable=protected-access
 
     @pytest.mark.parametrize("method", ["analytic", "best"])
     def test_with_nondiff_parameters(self, method):
@@ -263,15 +267,20 @@ class TestGradientTransformIntegration:
         dev = qml.device("default.qubit", wires=2)
         spy = mocker.spy(qml.gradients.parameter_shift, "expval_param_shift")
 
-        class NonDiffRXGate(qml.PhaseShift):
+        # pylint: disable=too-few-public-methods
+        class NonDiffRXGate(qml.RX):
+            """A non-differentiable gate that decomposes into RX."""
+
             grad_method = None
 
             @staticmethod
             def compute_decomposition(x, wires):
+                """Decompose into a qml.RX gate."""
                 return [qml.RX(x, wires=wires)]
 
         @qml.qnode(dev)
         def circuit(weights):
+            """A quantum circuit using the above non-differentiable RX gate."""
             NonDiffRXGate(weights[0], wires=[0])
             qml.RY(weights[1], wires=[1])
             qml.CNOT(wires=[0, 1])
@@ -394,7 +403,6 @@ class TestGradientTransformIntegration:
         x = np.array([0.1, 0.2], requires_grad=True)
 
         expected = qml.jacobian(circuit)(x)
-        cjac = qml.transforms.classical_jacobian(circuit)(x)
         res = qml.gradients.param_shift(circuit)(x)
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
@@ -405,6 +413,8 @@ class TestGradientTransformIntegration:
 
         @qml.qnode(dev)
         def circuit(x, y):
+            """A quantum circuit that does not use its first parameter."""
+            # pylint: disable=unused-argument
             qml.RX(y[0], wires=0)
             qml.RY(y[0], wires=0)
             qml.RZ(y[1], wires=0)
@@ -438,7 +448,7 @@ class TestGradientTransformIntegration:
         assert isinstance(classical_jac, np.ndarray)
         assert np.allclose(classical_jac, np.array([[2 * w[0], 0], [0, 1]]))
 
-        x, y = w
+        x, _ = w
         expected = [-2 * x * np.sin(x**2), 0]
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
@@ -459,7 +469,7 @@ class TestGradientTransformIntegration:
         # set d as non-differentiable
         d = np.array(0.56, requires_grad=False)
         w = np.array([0.543, -0.654], requires_grad=True)
-        x, y = w
+        x, _ = w
 
         res = qml.gradients.param_shift(circuit)(d, w)
         classical_jac = spy.spy_return(d, w)
@@ -509,14 +519,14 @@ class TestGradientTransformIntegration:
         assert res[1].shape == (4,)
 
         @qml.qnode(dev)
-        def circuit(weights):
+        def circuit1(weights):
             qml.RX(weights[0], wires=[0])
             qml.RY(weights[1], wires=[1])
             qml.CNOT(wires=[0, 1])
             return qml.probs(wires=[0, 1])
 
         w = np.array([0.543**2, -0.654], requires_grad=True)
-        expected = qml.jacobian(circuit)(w)
+        expected = qml.jacobian(circuit1)(w)
 
         assert np.allclose(res[0], expected.T[0], atol=tol, rtol=0)
         assert np.allclose(res[1], expected.T[1], atol=tol, rtol=0)
@@ -566,6 +576,8 @@ class TestGradientTransformIntegration:
         dev = qml.device("default.qubit", wires=1, shots=1000)
 
         def circuit(x, shots):
+            """A quantum circuit that takes `shots` as an argument."""
+            # pylint: disable=unused-argument
             qml.RX(x, wires=0)
             return qml.expval(qml.PauliZ(0))
 
