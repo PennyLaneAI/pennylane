@@ -252,3 +252,29 @@ class TestMeasureSamples:
 
         assert result != 0
         assert np.allclose(result, 0, atol=0.03)
+
+    @pytest.mark.parametrize("shots, total_copies", [
+        [(100,), 1],
+        [((100, 1),), 1],
+        [((100, 2),), 2],
+        [(100, 100), 2],
+        [(100, 200), 2],
+        [(100, 100, 200), 3],
+        [(200, (100, 2)), 3]
+    ])
+    def test_sample_measure_shot_vector(self, shots, total_copies):
+        """Test that a sample measurement with shot vectors works as expected"""
+        state = qml.math.array(two_qubit_state)
+        shots_obj = qml.measurements.Shots(shots)
+        mp = qml.sample(wires=range(2))
+
+        result = measure_with_samples(mp, state, shots=shots_obj)
+
+        if total_copies == 1:
+            assert isinstance(result, np.ndarray)
+            result = (result,)
+
+        assert isinstance(result, tuple)
+        assert len(result) == total_copies
+
+
