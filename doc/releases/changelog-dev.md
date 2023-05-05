@@ -28,7 +28,13 @@
 * Added a function `measure_with_samples` that returns a sample-based measurement result given a state
   [(#4083)](https://github.com/PennyLaneAI/pennylane/pull/4083)
 
+* Support for adjoint differentiation has been added to the `DefaultQubit2` device.
+  [(#4037)](https://github.com/PennyLaneAI/pennylane/pull/4037)
+
 <h3>Breaking changes 💔</h3>
+
+* Gradient transforms with Jax do not support `argnum` anymore,  `argnums` needs to be used.
+  [(#4076)](https://github.com/PennyLaneAI/pennylane/pull/4076)
 
 * `pennylane.collections`, `pennylane.op_sum`, and `pennylane.utils.sparse_hamiltonian` are removed.
 
@@ -52,6 +58,7 @@ This release contains contributions from (in alphabetical order):
 Isaac De Vlugt,
 Soran Jahangiri,
 Christina Lee,
+Romain Moyard,
 Mudit Pandey,
 Matthew Silverman,
-Jay Soni
+Jay Soni.
