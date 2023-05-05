@@ -385,18 +385,15 @@ class ParametrizedEvolution(Operation):
         if t is None:
             self.t = None
         else:
-<<<<<<< HEAD
             if isinstance(t, (list, tuple)):
                 t = qml.math.stack(t)
             self.t = qml.math.cast(
                 qml.math.stack([t * 0.0, t]) if qml.math.ndim(t) == 0 else t, float
-=======
-            self.t = qml.math.array([0.0, t] if qml.math.ndim(t) == 0 else t, dtype=float)
+            )
         if complementary and not return_intermediate:
             warnings.warn(
                 "The keyword argument complementary does not have any effect if "
                 "return_intermediate is set to False."
->>>>>>> f0cabe85f86355a4dc0f132121db85d166949dbe
             )
         params = [] if params is None else params
         super().__init__(*params, wires=H.wires, do_queue=do_queue, id=id)
