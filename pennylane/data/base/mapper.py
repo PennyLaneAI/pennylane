@@ -53,7 +53,7 @@ class AttributeTypeMapper:
 
     def __setitem__(self, key: str, value: Union[Any, AttributeType[ZarrAny, Any]]):
         if not isinstance(value, AttributeType):
-            attr_type = match_obj_type(type(value))
+            attr_type = match_obj_type(value)
             attr = attr_type(value, parent=self.bind, key=key)
         else:
             value._set_parent(self.bind, key)
