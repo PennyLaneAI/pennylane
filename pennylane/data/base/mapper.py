@@ -52,14 +52,15 @@ class AttributeTypeMapper:
         return attr
 
     def __setitem__(self, key: str, value: Union[Any, AttributeType[ZarrAny, Any]]):
-        if not isinstance(value, AttributeType):
+        if key in self.bind:
+            self[key].set_value(value, None)
+        elif not isinstance(value, AttributeType):
             attr_type = match_obj_type(value)
-            attr = attr_type(value, parent=self.bind, key=key)
+            attr_type(value, parent=self.bind, key=key)
         else:
             value._set_parent(self.bind, key)
-            attr = value
 
-        self._cache[key] = attr
+        self._cache.pop(key, None)
 
     def move(self, src: str, dest: str):
         """Moves the attribute stored at ``src`` in ``bind`` to ``dest``."""

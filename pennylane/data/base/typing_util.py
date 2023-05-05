@@ -17,7 +17,18 @@ and converting them to strings."""
 from collections.abc import MutableMapping
 from enum import Enum
 from types import GenericAlias
-from typing import Any, List, Literal, Tuple, TypeVar, Union, get_args, get_origin, Optional
+from typing import (
+    Any,
+    List,
+    Literal,
+    Optional,
+    Tuple,
+    TypeVar,
+    Union,
+    get_args,
+    get_origin,
+)
+
 from numpy.typing import ArrayLike
 
 # Type aliases for Zarr objects.

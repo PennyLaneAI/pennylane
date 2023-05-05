@@ -16,11 +16,12 @@ attribute metadata."""
 
 import warnings
 from abc import ABC, abstractmethod
-from collections.abc import Iterable, Mapping, Sequence
+from collections.abc import Iterable, Mapping
 from dataclasses import asdict, dataclass, field, fields
 from numbers import Number
 from types import MappingProxyType
-from typing import Any, ClassVar, Generic, Literal, Optional, TypeVar, Union, cast, Tuple
+from typing import Any, ClassVar, Generic, Literal, Optional, TypeVar, Union, cast
+
 from pennylane.data.base._zarr import zarr
 from pennylane.data.base.typing_util import (
     UNSET,
@@ -251,44 +252,29 @@ def get_attribute_type(zobj: Zarr) -> type[AttributeType[Zarr, Any]]:
     return AttributeType.registry[type_id]
 
 
-def _get_type_and_args(type_or_obj: Union[T, type[T]]) -> Tuple[type, list[type]]:
-    """Given an object or an object type, returns a two-tuple of the type
-    and any arguments to the type.
+def _get_type(type_or_obj: Union[object, type]) -> type:
+    """Given an object or an object type, returns the underlying class.
 
     Examples:
-        >>> _get_type_and_args(Union[str, int])
-        (typing.Union, [<class 'str'>, <class 'int'>])
-        >>> _get_type_and_args(list)
-        (<class 'list'>, [])
-        >>> _get_type_and_args([])
-        (<class 'list'>, [])
-        >>> _get_type_and_args(List[int])
-        (<class 'list'>, [<class 'int'>])
-        >>> _get_type_and_args([1, 2, 3])
-        (<class 'list'>, [<class 'int'>])
-        >>> _get_type_and_args(Dict[str, int])
-        (<class 'dict'>, [<class 'str'>, <class 'int'>])
+        >>> _get_type(list)
+        <class 'list'>
+        >>> _get_type(List[int])
+        <class 'list'>
+        >>> _get_type([])
+        <class 'list'>
     """
 
     # First, check if this is a special type, e.g a parametrized
     # generic like List[int]
     special_args = resolve_special_type(type_or_obj)
     if special_args is not None:
-        type_, args = special_args
+        type_, _ = special_args
     elif isinstance(type_or_obj, type):
-        type_, args = type_or_obj, []
-    elif isinstance(type_or_obj, Sequence):
-        # If this is a sequence, use the type of its
-        # first element as an argument
-        type_ = type(type_or_obj)
-        if len(type_or_obj) > 0:
-            args = [type(type_or_obj[0])]
-        else:
-            args = []
+        type_ = type_or_obj
     else:
-        type_, args = type(type_or_obj), []
+        type_ = type(type_or_obj)
 
-    return type_, args
+    return type_
 
 
 def match_obj_type(type_or_obj: Union[T, type[T]]) -> type[AttributeType[ZarrAny, T]]:
@@ -307,7 +293,7 @@ def match_obj_type(type_or_obj: Union[T, type[T]]) -> type[AttributeType[ZarrAny
         TypeError, if no AttributeType can accept an object of that type
     """
 
-    type_, args = _get_type_and_args(type_or_obj)
+    type_ = _get_type(type_or_obj)
     ret = AttributeType.registry["array"]
 
     if type_ in AttributeType.type_consumer_registry:
@@ -316,12 +302,5 @@ def match_obj_type(type_or_obj: Union[T, type[T]]) -> type[AttributeType[ZarrAny
         ret = AttributeType.registry["scalar"]
     elif hasattr(type_, "__array__"):
         ret = AttributeType.registry["array"]
-    elif issubclass(type_, Sequence):
-        if args and issubclass(args[0], Number):
-            ret = AttributeType.registry["array"]
-        else:
-            ret = AttributeType.registry["list"]
-    elif issubclass(type_, Mapping):
-        ret = AttributeType.registry["dict"]
 
     return ret

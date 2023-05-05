@@ -15,10 +15,32 @@
 Provides base `Dataset` class.
 """
 
+from pathlib import Path
+from typing import Any, Optional, Union
+
 from pennylane.data.base.dataset import DatasetBase, attribute
+from pennylane.data.base.typing_util import ZarrGroup
 
 
 class Dataset(DatasetBase):
     """Base class for public datasets."""
 
     description: str = attribute(doc="Description for this Dataset")
+
+    def __init__(
+        self,
+        bind: Optional[Union[str, Path, ZarrGroup]] = None,
+        *,
+        description: str,
+        **attrs: Any,
+    ):
+        """
+        Load a dataset from a Zarr Group or initialize a new Dataset.
+
+        Args:
+            bind: The Zarr group, or path to zarr file, that will contain this dataset.
+                If None, the dataset will be stored in memory. Any attributes that
+                already exist in ``bind`` will be loaded into this dataset.
+            **attrs: Attributes to add to this dataset.
+        """
+        super().__init__(bind=bind, description=description, **attrs)
