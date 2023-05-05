@@ -26,9 +26,7 @@ class ShotCopies(NamedTuple):
 
     def __str__(self):
         """The string representation of the class"""
-        if self.copies > 1:
-            return f"{self.shots} shots{' x '+str(self.copies) if self.copies > 1 else ''}"
-        return f"{self.shots}"
+        return f"{self.shots} shots{' x '+str(self.copies) if self.copies > 1 else ''}"
 
     def __repr__(self):
         """The representation of the class"""
