@@ -49,7 +49,7 @@ class Resources:
         wires: 2
         gates: 2
         depth: 2
-        shots: 0
+        shots: Shots(total=None)
         gate_types:
         {'Hadamard': 1, 'CNOT': 1}
         gate_sizes:
@@ -111,12 +111,12 @@ class ResourcesOperation(Operation):
         ...     def resources(self):
         ...         return Resources(num_wires=self.num_wires, num_gates=3, depth=2)
         ...
-        >>> op = CustomOp()
+        >>> op = CustomOp(wires=[0, 1])
         >>> print(op.resources())
         wires: 2
         gates: 3
         depth: 2
-        shots: 0
+        shots: Shots(total=None)
         gate_types:
         {}
         gate_sizes:
