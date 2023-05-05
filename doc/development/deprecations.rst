@@ -18,13 +18,6 @@ Pending deprecations
 
   These keys are still accessible in v0.31 and will be removed in v0.32.
 
-
-* The argument ``argnum`` for gradient transforms using the Jax interface is replaced by ``argnums``.
-
-  - ``argnum`` is automatically changed to ``argnums`` for gradient transforms using JAX and a warning is raised in v0.30
-  - ``argnums`` is the only option for gradient transforms using JAX in v0.31
-
-
 * The ``observables`` argument in ``QubitDevice.statistics`` is deprecated. Please use ``circuit``
   instead. Using a list of observables in ``QubitDevice.statistics`` is deprecated. Please use a
   ``QuantumTape`` instead.
@@ -75,6 +68,11 @@ Completed deprecation cycles
 
   - Deprecated in v0.29.
   - Removed in v0.31.
+
+* The argument ``argnum`` for gradient transforms using the Jax interface is replaced by ``argnums``.
+
+  - ``argnum`` is automatically changed to ``argnums`` for gradient transforms using JAX and a warning is raised in v0.30
+  - ``argnums`` is the only option for gradient transforms using JAX in v0.31
 
 * ``Evolution`` now adds a ``-1`` to the input parameter. Beforehand, the minus sign was not included.
 
