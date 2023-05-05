@@ -14,13 +14,14 @@
 """
 Tests for the gradients.finite_difference module.
 """
+# pylint: disable=import-outside-toplevel
 import numpy
 import pytest
 
 import pennylane as qml
 from pennylane import numpy as np
 from pennylane.devices import DefaultQubit
-from pennylane.gradients import finite_diff, finite_diff_coeffs, generate_shifted_tapes
+from pennylane.gradients import finite_diff, finite_diff_coeffs
 from pennylane.operation import AnyWires, Observable
 
 
@@ -350,19 +351,17 @@ class TestFiniteDiff:
         tapes, _ = qml.gradients.finite_diff(circuit.tape)
         assert tapes == []
 
-    def test_y0(self, mocker):
+    def test_y0(self):
         """Test that if first order finite differences is used, then
         the tape is executed only once using the current parameter
         values."""
-        dev = qml.device("default.qubit", wires=2)
-
         with qml.queuing.AnnotatedQueue() as q:
             qml.RX(0.543, wires=[0])
             qml.RY(-0.654, wires=[0])
             qml.expval(qml.PauliZ(0))
 
         tape = qml.tape.QuantumScript.from_queue(q)
-        tapes, fn = finite_diff(tape, approx_order=1)
+        tapes, _ = finite_diff(tape, approx_order=1)
 
         # one tape per parameter, plus one global call
         assert len(tapes) == tape.num_params + 1
@@ -378,7 +377,7 @@ class TestFiniteDiff:
 
         tape = qml.tape.QuantumScript.from_queue(q)
         f0 = dev.execute(tape)
-        tapes, fn = finite_diff(tape, approx_order=1, f0=f0)
+        tapes, _ = finite_diff(tape, approx_order=1, f0=f0)
 
         assert len(tapes) == tape.num_params
 
@@ -475,6 +474,7 @@ class TestFiniteDiff:
             def __radd__(self, other):
                 return self + other
 
+        # pylint: disable=too-few-public-methods
         class SpecialObservable(Observable):
             """SpecialObservable"""
 
@@ -484,11 +484,15 @@ class TestFiniteDiff:
                 """Diagonalizing gates"""
                 return []
 
+        # pylint: disable=too-few-public-methods
         class DeviceSupportingSpecialObservable(DefaultQubit):
+            """A device that supports the above SpecialObservable as a return type."""
+
             name = "Device supporting SpecialObservable"
             short_name = "default.qubit.specialobservable"
             observables = DefaultQubit.observables.union({"SpecialObservable"})
 
+            # pylint: disable=unused-argument
             @staticmethod
             def _asarray(arr, dtype=None):
                 return np.asarray(arr)
@@ -498,6 +502,7 @@ class TestFiniteDiff:
                 self.R_DTYPE = SpecialObservable
 
             def expval(self, observable, **kwargs):
+                """Compute the expectation value of an observable."""
                 if self.analytic and isinstance(observable, SpecialObservable):
                     val = super().expval(qml.PauliZ(wires=0), **kwargs)
                     return SpecialObject(val)
@@ -697,9 +702,9 @@ class TestFiniteDiffIntegration:
 
         assert isinstance(res, tuple)
         assert isinstance(res[0], tuple)
-        assert np.allclose(res[0][0], 0)
+        assert np.allclose(res[0][0], 0, atol=tol, rtol=0)
         assert isinstance(res[1], tuple)
-        assert np.allclose(res[1][0], 0)
+        assert np.allclose(res[1][0], 0, atol=tol, rtol=0)
 
     def test_multiple_expectation_values(self, approx_order, strategy, validate, tol):
         """Tests correct output shape and evaluation for a tape
