@@ -19,9 +19,6 @@ Tests for everything related to rydberg system specific functionality.
 import numpy as np
 import pytest
 
-jax = pytest.importorskip("jax")
-import jax.numpy as jnp
-
 import pennylane as qml
 from pennylane.pulse import rydberg_interaction, rydberg_drive
 from pennylane.pulse.hardware_hamiltonian import (
@@ -417,8 +414,12 @@ class TestIntegration:
         assert isinstance(res, jax.Array)
         assert np.allclose(res, res_jit)
 
+    @pytest.mark.jax
     def test_pennylane_and_exact_solution_correspond(self):
         """Test that the results of PennyLane simulation match (within reason) the exact solution"""
+
+        import jax
+        import jax.numpy as jnp
 
         def exact(H, H_obj, t):
             psi0 = jnp.eye(2 ** len(H.wires))[0]
