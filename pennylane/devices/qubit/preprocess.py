@@ -255,9 +255,14 @@ def preprocess(
         Tuple[QuantumTape], Callable, ExecutionConfig: QuantumTapes that the device can natively execute,
         a postprocessing function to be called after execution, and a configuration with unset specifications filled in.
     """
-    if execution_config.shots is not None:
-        # Finite shot support will be added later
-        raise DeviceError("The Python Device does not support finite shots.")
+    updated_values = {}
+    if execution_config.gradient_method == "best":
+        updated_values["gradient_method"] = "backprop"
+    if execution_config.use_device_gradient is None:
+        updated_values["use_device_gradient"] = execution_config.gradient_method in {"best", "adjoint", "backprop"}
+    if execution_config.grad_on_execution is None:
+        updated_values["grad_on_execution"] = execution_config.gradient_method == "adjoint"
+    execution_config = dataclasses.replace(execution_config, **updated_values)
 
     circuits = tuple(expand_fn(c) for c in circuits)
     if execution_config.gradient_method == "adjoint":
@@ -265,7 +270,5 @@ def preprocess(
 
     circuits, batch_fn = qml.transforms.map_batch_transform(batch_transform, circuits)
 
-    if execution_config.gradient_method == "best":
-        execution_config = dataclasses.replace(execution_config, gradient_method="backprop")
 
     return circuits, batch_fn, execution_config

@@ -28,8 +28,8 @@ def test_default_values():
     assert config.interface == "autograd"
     assert config.gradient_method is None
     assert config.gradient_keyword_arguments == {}
-    assert config.shots is None
-    assert config.grad_on_execution == "best"
+    assert config.grad_on_execution is None
+    assert config.use_device_gradient is None
 
 
 def test_invalid_interface():
@@ -50,7 +50,7 @@ def test_invalid_gradient_keyword_arguments():
         _ = ExecutionConfig(gradient_keyword_arguments={"nonsense": 0})
 
 
-@pytest.mark.parametrize("option", (True, False, "best"))
+@pytest.mark.parametrize("option", (True, False, None))
 def test_valid_grad_on_execution(option):
     """Test execution config allows the True, False and best"""
     config = ExecutionConfig(grad_on_execution=option)
