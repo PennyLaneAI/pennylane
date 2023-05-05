@@ -65,7 +65,7 @@ class AttributeTypeMapper:
     def move(self, src: str, dest: str):
         """Moves the attribute stored at ``src`` in ``bind`` to ``dest``."""
         self.bind.move(src, dest)
-        del self._cache[src]
+        self._cache.pop(src, None)
 
     def view(self) -> Mapping[str, AttributeType]:
         """Returns a read-only mapping of the attributes in ``bind``."""

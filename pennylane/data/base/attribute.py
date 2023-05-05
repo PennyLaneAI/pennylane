@@ -16,7 +16,7 @@ attribute metadata."""
 
 import warnings
 from abc import ABC, abstractmethod
-from collections.abc import Iterable, Mapping
+from collections.abc import Iterable, Mapping, Sequence
 from dataclasses import asdict, dataclass, field, fields
 from numbers import Number
 from types import MappingProxyType
@@ -302,5 +302,9 @@ def match_obj_type(type_or_obj: Union[T, type[T]]) -> type[AttributeType[ZarrAny
         ret = AttributeType.registry["scalar"]
     elif hasattr(type_, "__array__"):
         ret = AttributeType.registry["array"]
+    elif issubclass(type_, Sequence):
+        ret = AttributeType.registry["list"]
+    elif issubclass(type_, Mapping):
+        ret = AttributeType.registry["dict"]
 
     return ret
