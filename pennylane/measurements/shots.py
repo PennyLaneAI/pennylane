@@ -18,7 +18,7 @@ from typing import Sequence, Tuple
 
 class ShotCopies(NamedTuple):
     """A namedtuple that represents a shot quantity being repeated some number of times.
-    For example, ``ShotCopies(shots=10, copies=2)`` indicates two executions with 10 shots each for 20 shots total.
+    For example, ``ShotCopies(10 shots x 2)`` indicates two executions with 10 shots each for 20 shots total.
     """
 
     shots: int
@@ -27,7 +27,7 @@ class ShotCopies(NamedTuple):
     def __str__(self):
         """The string representation of the class"""
         if self.copies > 1:
-            return f"({self.shots} shots x {self.copies})"
+            return f"{self.shots} shots{' x '+str(self.copies) if self.copies > 1 else ''}"
         return f"{self.shots}"
 
     def __repr__(self):
@@ -59,7 +59,7 @@ class Shots:
     * A positive integer
     * A sequence consisting of either positive integers or a tuple-pair of positive integers of the form ``(shots, copies)``
 
-    The tuple-pair of the form ``(shots, copies)`` is represented internally by a namedtuple called
+    The tuple-pair of the form ``(shots, copies)`` is represented internally by a NamedTuple called
     :class:`~ShotCopies`. The first value is the number of shots to execute, and the second value is the
     number of times to repeat a circuit with that number of shots.
 
@@ -84,7 +84,7 @@ class Shots:
 
     >>> shots = Shots(100)
     >>> shots.total_shots, shots.shot_vector
-    (100, (ShotCopies(shots=100, copies=1),))
+    (100, (ShotCopies(100 shots),))
 
     Example constructing a Shots instance with another instance:
 
@@ -96,13 +96,13 @@ class Shots:
 
     >>> shots = Shots([100, 200])
     >>> shots.total_shots, shots.shot_vector
-    (300, (ShotCopies(shots=100, copies=1), ShotCopies(shots=200, copies=1)))
+    (300, (ShotCopies(100 shots x 1), ShotCopies(200 shots x 1)))
 
     Example constructing a Shots instance with a sequence of tuple-pairs:
 
     >>> shots = Shots(((100, 3), (200, 4),))
     >>> shots.total_shots, shots.shot_vector
-    (1100, (ShotCopies(shots=100, copies=3), ShotCopies(shots=200, copies=4)))
+    (1100, (ShotCopies(100 shots x 3), ShotCopies(200 shots x 4)))
 
     Example constructing a Shots instance with a sequence of both ints and tuple-pairs.
     Note that the first stand-alone ``100`` gets absorbed into the subsequent tuple because the
@@ -110,7 +110,7 @@ class Shots:
 
     >>> shots = Shots((10, 100, (100, 3), (200, 4),))
     >>> shots.total_shots, shots.shot_vector
-    (1210, (ShotCopies(shots=10, copies=1), ShotCopies(shots=100, copies=4), ShotCopies(shots=200, copies=4)))
+    (1210, (ShotCopies(10 shots x 1), ShotCopies(100 shots x 4), ShotCopies(200 shots x 4)))
 
     One should also note that specifying a single tuple of length 2 is considered two different
     shot values, and *not* a tuple-pair representing shots and copies to avoid special behaviour
@@ -118,11 +118,11 @@ class Shots:
 
     >>> shots = Shots((100, 2))
     >>> shots.total_shots, shots.shot_vector
-    (102, (ShotCopies(shots=100, copies=1), ShotCopies(shots=2, copies=1)))
+    (102, (ShotCopies(100 shots x 1), ShotCopies(2 shots x 1)))
 
     >>> shots = Shots(((100, 2),))
     >>> shots.total_shots, shots.shot_vector
-    (200, (ShotCopies(shots=100, copies=2),))
+    (200, (ShotCopies(100 shots x 2),))
     """
 
     total_shots: int = None
@@ -207,7 +207,7 @@ class Shots:
         quantities, or the same shot quantity repeated multiple times.
 
         Returns:
-            bool: whether or not shots are partitioned
+            bool: whether shots are partitioned
         """
         if self.total_shots is None:
             return False
