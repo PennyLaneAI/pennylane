@@ -29,8 +29,8 @@ class TestShotCopies:
     sc_data = (ShotCopies(1, 1), ShotCopies(100, 1), ShotCopies(100, 2), ShotCopies(10, 100))
 
     str_data = (
-        "1",
-        "100",
+        "1 shots",
+        "100 shots",
         "100 shots x 2",
         "10 shots x 100",
     )
@@ -102,8 +102,8 @@ class TestShotsConstruction:
     str_data = (
         "Shots(total=None)",
         "Shots(total=10)",
-        "Shots(total=111, vector=[1, 10, 100])",
-        "Shots(total=321, vector=[1, 10 shots x 2, 100 shots x 3])",
+        "Shots(total=111, vector=[1 shots, 10 shots, 100 shots])",
+        "Shots(total=321, vector=[1 shots, 10 shots x 2, 100 shots x 3])",
     )
 
     @pytest.mark.parametrize("expected_str, shots_obj", zip(str_data, shot_data))
