@@ -100,14 +100,14 @@ class FirstQuantization(Operation):
         self.cubic = True
 
         if self.vectors is not None:
-            recip_v = (
+            recip_vectors = (  # taken from Eq. (35) of arXiv:2302.07981 (2023)
                 2
                 * np.pi
                 / np.abs(np.sum((np.cross(vectors[0], vectors[1]) * vectors[2])))
                 * np.array([np.cross(vectors[i], vectors[j]) for i, j in [(1, 2), (2, 0), (0, 1)]])
             )
-            bbt = np.matrix(recip_v) @ np.matrix(recip_v).T
-            cubic = np.linalg.norm(bbt - (recip_v**2).max() * np.identity(3)) < 1e-6
+            bbt = np.matrix(recip_vectors) @ np.matrix(recip_vectors).T
+            cubic = np.linalg.norm(bbt - (recip_vectors**2).max() * np.identity(3)) < 1e-6
             if not cubic:
                 self.cubic = False
 
@@ -664,7 +664,7 @@ class FirstQuantization(Operation):
         """
         omega = np.abs(np.sum((np.cross(vectors[0], vectors[1]) * vectors[2])))
 
-        recip_vectors = (
+        recip_vectors = (  # taken from Eq. (35) of arXiv:2302.07981 (2023)
             2
             * np.pi
             / omega
@@ -788,7 +788,7 @@ class FirstQuantization(Operation):
 
         omega = np.abs(np.sum((np.cross(vectors[0], vectors[1]) * vectors[2])))
 
-        recip_vectors = (
+        recip_vectors = (  # taken from Eq. (35) of arXiv:2302.07981 (2023)
             2
             * np.pi
             / omega
@@ -889,7 +889,7 @@ class FirstQuantization(Operation):
 
         omega = np.abs(np.sum((np.cross(vectors[0], vectors[1]) * vectors[2])))
 
-        recip_vectors = (
+        recip_vectors = (  # taken from Eq. (35) of arXiv:2302.07981 (2023)
             2
             * np.pi
             / omega
