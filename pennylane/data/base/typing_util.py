@@ -21,12 +21,13 @@ from typing import Any, List, Literal, Tuple, TypeVar, Union, get_args, get_orig
 
 from numpy.typing import ArrayLike
 
-from pennylane.data.base._zarr import zarr
-
+"""
+Type aliases for Zarr objects.
+"""
 ZarrArray = ArrayLike
 ZarrGroup = MutableMapping
 ZarrAny = Union[ZarrArray, ZarrGroup]
-Zarr = TypeVar("Zarr", zarr.Array, zarr.Group, ZarrAny)
+Zarr = TypeVar("Zarr", ZarrArray, ZarrGroup, ZarrAny)
 
 """
 Generic type variable.
