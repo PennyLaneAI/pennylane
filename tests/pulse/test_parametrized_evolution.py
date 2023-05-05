@@ -348,6 +348,33 @@ class TestMatrix:
 class TestIntegration:
     """Integration tests for the ParametrizedEvolution class."""
 
+    @pytest.mark.parametrize("time", [0.3, 1, [0, 2], [0.4, 2], (3, 3.1)])
+    @pytest.mark.parametrize("time_interface", ["python", "numpy", "jax"])
+    @pytest.mark.parametrize("use_jit", [False, True])
+    def test_time_input_formats(self, time, time_interface, use_jit):
+        import jax
+        import jax.numpy as jnp
+
+        if time_interface == "jax":
+            time = jnp.array(time)
+        elif time_interface == "numpy":
+            time = np.array(time)
+        H = qml.pulse.ParametrizedHamiltonian([2], [qml.PauliX(0)])
+
+        dev = qml.device("default.qubit", wires=1)
+
+        @qml.qnode(dev, interface="jax")
+        def circuit(t):
+            qml.evolve(H)([], t)
+            return qml.expval(qml.PauliZ(0))
+
+        if use_jit:
+            circuit = jax.jit(circuit)
+
+        res = circuit(time)
+        duration = time if qml.math.ndim(time) == 0 else time[1] - time[0]
+        assert qml.math.isclose(res, qml.math.cos(4 * duration))
+
     # pylint: disable=unused-argument
     def test_time_independent_hamiltonian(self):
         """Test the execution of a time independent hamiltonian."""
