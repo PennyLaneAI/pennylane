@@ -16,7 +16,6 @@ and converting them to strings."""
 
 from collections.abc import MutableMapping
 from enum import Enum
-from types import GenericAlias
 from typing import (
     Any,
     List,
@@ -69,10 +68,11 @@ def get_type_str(cls_or_obj: Union[object, type]) -> str:
     Otherwise, returns the fully-qualified class name, including the module.
 
     """
-    cls = cls_or_obj if isinstance(cls_or_obj, type) else type(cls_or_obj)
-    if isinstance(cls_or_obj, GenericAlias):
+
+    if get_origin(cls_or_obj) is not None:
         return str(cls_or_obj)
 
+    cls = cls_or_obj if isinstance(cls_or_obj, type) else type(cls_or_obj)
     if cls.__module__ == "builtins":
         return cls.__name__
 
