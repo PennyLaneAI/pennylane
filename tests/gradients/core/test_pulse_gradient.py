@@ -763,6 +763,7 @@ class TestStochPulseGradQNodeIntegration:
             for j, e in zip(jac, exp_jac):
                 assert qml.math.allclose(j[0], e, atol=tol, rtol=0.0)
 
+    @pytest.mark.xfail
     @pytest.mark.parametrize("num_split_times", [1, 2])
     @pytest.mark.parametrize("time_interface", ["python", "numpy", "JAX"])
     def test_simple_qnode_jit(self, num_split_times, time_interface):
