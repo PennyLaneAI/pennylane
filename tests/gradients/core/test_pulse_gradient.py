@@ -786,7 +786,6 @@ class TestStochPulseGradQNodeIntegration:
         params = [jnp.array(0.4)]
         p = params[0] * T
         exp_grad = -2 * jnp.sin(2 * p) * T
-        jax.jit(circuit)(params, T=T)
         jit_grad = jax.jit(jax.grad(circuit))(params, T=T)
         assert qml.math.isclose(jit_grad, exp_grad)
 
