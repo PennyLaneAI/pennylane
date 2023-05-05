@@ -25,11 +25,7 @@ import pennylane as qml
 from pennylane._device import _get_num_copies
 from pennylane.measurements import VarianceMP
 
-from .finite_difference import (
-    _no_trainable_grad,
-    _no_trainable_grad_legacy,
-    finite_diff,
-)
+from .finite_difference import finite_diff
 from .general_shift_rules import (
     _iterate_shift_rule,
     frequencies_to_period,
@@ -39,9 +35,12 @@ from .general_shift_rules import (
 from .gradient_transform import (
     _all_zero_grad,
     assert_no_state_returns,
+    assert_multimeasure_not_broadcasted,
     choose_grad_methods,
     gradient_analysis_and_validation,
     gradient_transform,
+    _no_trainable_grad,
+    _no_trainable_grad_legacy,
 )
 
 NONINVOLUTORY_OBS = {
@@ -53,16 +52,6 @@ NONINVOLUTORY_OBS = {
 to a callable that accepts an observable object, and returns the square
 of that observable.
 """
-
-
-def assert_multimeasure_not_broadcasted(measurements, broadcast):
-    """Assert that there are not simultaneously multiple measurements and
-    broadcasting activated.Otherwise raises an error."""
-    if broadcast and len(measurements) > 1:
-        raise NotImplementedError(
-            "Broadcasting with multiple measurements is not supported yet. "
-            f"Set broadcast to False instead. The tape measurements are {measurements}."
-        )
 
 
 def _square_observable(obs):

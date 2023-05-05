@@ -640,7 +640,8 @@ class TestHadamardGradEdgeCases:
             qml.state()
 
         tape = qml.tape.QuantumScript.from_queue(q)
-        with pytest.raises(ValueError, match=r"return the state is not supported"):
+        _match = r"return the state with the Hadamard test gradient transform"
+        with pytest.raises(ValueError, match=_match):
             qml.gradients.hadamard_grad(tape)
 
     def test_variance_non_differentiable_error(self):

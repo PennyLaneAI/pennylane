@@ -17,7 +17,6 @@ of a quantum tape.
 """
 # pylint: disable=protected-access,too-many-arguments,too-many-branches,too-many-statements
 import functools
-import warnings
 from collections.abc import Sequence
 
 import numpy as np
@@ -33,6 +32,8 @@ from .gradient_transform import (
     choose_grad_methods,
     gradient_analysis_and_validation,
     gradient_transform,
+    _no_trainable_grad,
+    _no_trainable_grad_legacy,
 )
 
 
@@ -154,34 +155,6 @@ def finite_diff_coeffs(n, approx_order, strategy):
     # sort columns in ascending order according to abs(shift)
     coeffs_and_shifts = coeffs_and_shifts[:, np.argsort(np.abs(coeffs_and_shifts)[1])]
     return coeffs_and_shifts
-
-
-_no_trainable_grad_warning = (
-    "Attempted to compute the gradient of a tape with no trainable parameters. "
-    "If this is unintended, please mark trainable parameters in accordance with the "
-    "chosen auto differentiation framework, or via the 'tape.trainable_params' property."
-)
-
-
-def _no_trainable_grad(tape, shots=None):
-    warnings.warn(_no_trainable_grad_warning)
-    if isinstance(shots, Sequence):
-        len_shot_vec = _get_num_copies(shots)
-        if len(tape.measurements) == 1:
-            return [], lambda _: tuple(qml.math.zeros([0]) for _ in range(len_shot_vec))
-        return [], lambda _: tuple(
-            tuple(qml.math.zeros([0]) for _ in range(len(tape.measurements)))
-            for _ in range(len_shot_vec)
-        )
-
-    if len(tape.measurements) == 1:
-        return [], lambda _: qml.math.zeros([0])
-    return [], lambda _: tuple(qml.math.zeros([0]) for _ in range(len(tape.measurements)))
-
-
-def _no_trainable_grad_legacy(tape):
-    warnings.warn(_no_trainable_grad_warning)
-    return [], lambda _: np.zeros((tape.output_dim, 0))
 
 
 def _processing_fn(results, shots=None, single_shot_batch_fn=None):

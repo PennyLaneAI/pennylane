@@ -23,17 +23,14 @@ import numpy as np
 
 import pennylane as qml
 
-from .finite_difference import (
-    _processing_fn,
-    _no_trainable_grad,
-    _no_trainable_grad_legacy,
-    finite_diff_coeffs,
-)
+from .finite_difference import _processing_fn, finite_diff_coeffs
 from .gradient_transform import (
     _all_zero_grad,
     gradient_transform,
     choose_grad_methods,
     gradient_analysis_and_validation,
+    _no_trainable_grad,
+    _no_trainable_grad_legacy,
 )
 from .general_shift_rules import generate_multishifted_tapes
 

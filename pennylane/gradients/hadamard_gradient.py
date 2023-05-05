@@ -19,16 +19,16 @@ import pennylane as qml
 import pennylane.numpy as np
 from pennylane.transforms.metric_tensor import _get_aux_wire
 from pennylane.transforms.tape_expand import expand_invalid_trainable_hadamard_gradient
-from .finite_difference import _no_trainable_grad
 
 from .gradient_transform import (
-    _all_zero_grad, 
+    _all_zero_grad,
     assert_active_return,
     assert_no_state_returns,
     assert_no_variance,
     choose_grad_methods,
     gradient_analysis_and_validation,
     gradient_transform,
+    _no_trainable_grad,
 )
 
 

@@ -21,7 +21,6 @@ from pennylane.gradients.gradient_transform import (
     _gradient_analysis,
     choose_grad_methods,
     _grad_method_validation,
-    gradient_analysis_and_validation,
 )
 
 

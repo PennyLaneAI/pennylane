@@ -156,7 +156,8 @@ class TestParamShift:
             qml.state()
 
         tape = qml.tape.QuantumScript.from_queue(q)
-        with pytest.raises(ValueError, match=r"return the state is not supported"):
+        _match = r"return the state with the parameter-shift rule gradient transform"
+        with pytest.raises(ValueError, match=_match):
             qml.gradients.param_shift(tape)
 
     def test_independent_parameter(self, mocker):

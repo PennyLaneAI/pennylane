@@ -21,19 +21,16 @@ import numpy as np
 import pennylane as qml
 from pennylane.pulse import ParametrizedEvolution
 
-from .finite_difference import _no_trainable_grad
-from .parameter_shift import (
-    _reorder_grads,
-    _make_zero_rep,
-)
+from .parameter_shift import _reorder_grads, _make_zero_rep
 from .gradient_transform import (
-    _all_zero_grad, 
+    _all_zero_grad,
     assert_active_return,
     assert_no_state_returns,
     assert_no_variance,
     choose_grad_methods,
     gradient_analysis_and_validation,
     gradient_transform,
+    _no_trainable_grad,
 )
 
 has_jax = True

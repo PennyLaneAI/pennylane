@@ -25,9 +25,14 @@ import numpy as np
 import pennylane as qml
 from pennylane.measurements import ExpectationMP, ProbabilityMP, StateMP, VarianceMP
 
-from .finite_difference import finite_diff, _no_trainable_grad_legacy
+from .finite_difference import finite_diff
 from .general_shift_rules import generate_shifted_tapes, process_shifts
-from .gradient_transform import choose_grad_methods, _grad_method_validation, gradient_transform
+from .gradient_transform import (
+    choose_grad_methods,
+    _grad_method_validation,
+    gradient_transform,
+    _no_trainable_grad_legacy,
+)
 from .parameter_shift import _get_operation_recipe, expval_param_shift
 
 

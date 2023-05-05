@@ -15,10 +15,13 @@
 including a decorator for specifying gradient expansions."""
 # pylint: disable=too-few-public-methods
 import warnings
+from collections.abc import Sequence
+import numpy as np
 
 import pennylane as qml
+from pennylane._device import _get_num_copies
 from pennylane.transforms.tape_expand import expand_invalid_trainable
-from pennylane.measurements import MutualInfoMP, StateMP, VarianceMP, VnEntropyMP
+from pennylane.measurements import MutualInfoMP, StateMP, VarianceMP, VnEntropyMP, ProbabilityMP
 
 SUPPORTED_GRADIENT_KWARGS = [
     "approx_order",
@@ -47,6 +50,29 @@ SUPPORTED_GRADIENT_KWARGS = [
     "use_broadcasting",
     "validate_params",
 ]
+
+
+def assert_active_return(transform_name):
+    """Check that the new return type system is active. Raise an error if this is not the case.
+
+    Args:
+        transform_name (str): Name of the gradient transform that queries the return system
+    """
+    if not qml.active_return():
+        raise NotImplementedError(
+            f"The {transform_name} gradient transform only supports the new "
+            "return type system. Use qml.enable_return() to activate it."
+        )
+
+
+def assert_multimeasure_not_broadcasted(measurements, broadcast):
+    """Assert that there are not simultaneously multiple measurements and
+    broadcasting activated.Otherwise raises an error."""
+    if broadcast and len(measurements) > 1:
+        raise NotImplementedError(
+            "Broadcasting with multiple measurements is not supported yet. "
+            f"Set broadcast to False instead. The tape measurements are {measurements}."
+        )
 
 
 def assert_no_state_returns(measurements, transform_name):
@@ -82,19 +108,6 @@ def assert_no_variance(measurements, transform_name):
         )
 
 
-def assert_active_return(transform_name):
-    """Check that the new return type system is active. Raise an error if this is not the case.
-
-    Args:
-        transform_name (str): Name of the gradient transform that queries the return system
-    """
-    if not qml.active_return():
-        raise NotImplementedError(
-            f"The {transform_name} gradient transform only supports the new "
-            "return type system. Use qml.enable_return() to activate it."
-        )
-
-
 def _gradient_analysis(tape, use_graph=True, grad_fn=None):
     """Update the parameter information dictionary of the tape with
     gradient information of each parameter.
@@ -126,7 +139,8 @@ def _gradient_analysis(tape, use_graph=True, grad_fn=None):
 
             info["grad_method"] = op.grad_method
 
-def _grad_method_validation(tape, method):
+
+def _grad_method_validation(method, tape):
     """Validates if the gradient method requested is supported by the trainable
     parameters of a tape, and returns the allowed parameter gradient methods."""
     diff_methods = {
@@ -194,8 +208,7 @@ def gradient_analysis_and_validation(tape, method, use_graph=True, grad_fn=None,
     """
     if overwrite or "grad_method" not in tape._par_info[0]:  # pylint: disable=protected-access
         _gradient_analysis(tape, use_graph=use_graph, grad_fn=grad_fn)
-    return _grad_method_validation(tape, method)
-
+    return _grad_method_validation(method, tape)
 
 
 def choose_grad_methods(diff_methods, argnum):
@@ -233,6 +246,7 @@ def choose_grad_methods(diff_methods, argnum):
 
     return {idx: diff_methods[idx] for idx in argnum}
 
+
 def _all_zero_grad(tape, shots=None):
     """Auxiliary function to return zeros for the all-zero gradient case."""
     list_zeros = []
@@ -262,6 +276,38 @@ def _all_zero_grad(tape, shots=None):
         return [], lambda _: list_zeros[0]
 
     return [], lambda _: tuple(list_zeros)
+
+
+_no_trainable_grad_warning = (
+    "Attempted to compute the gradient of a tape with no trainable parameters. "
+    "If this is unintended, please mark trainable parameters in accordance with the "
+    "chosen auto differentiation framework, or via the 'tape.trainable_params' property."
+)
+
+
+def _no_trainable_grad(tape, shots=None):
+    """Auxiliary function that returns correctly formatted gradients when there
+    are no trainable parameters."""
+    warnings.warn(_no_trainable_grad_warning)
+    if isinstance(shots, Sequence):
+        len_shot_vec = _get_num_copies(shots)
+        if len(tape.measurements) == 1:
+            return [], lambda _: tuple(qml.math.zeros([0]) for _ in range(len_shot_vec))
+        return [], lambda _: tuple(
+            tuple(qml.math.zeros([0]) for _ in range(len(tape.measurements)))
+            for _ in range(len_shot_vec)
+        )
+
+    if len(tape.measurements) == 1:
+        return [], lambda _: qml.math.zeros([0])
+    return [], lambda _: tuple(qml.math.zeros([0]) for _ in range(len(tape.measurements)))
+
+
+def _no_trainable_grad_legacy(tape):
+    """Auxiliary function that returns correctly formatted gradients when there
+    are no trainable parameters. This version is for the old return type system."""
+    warnings.warn(_no_trainable_grad_warning)
+    return [], lambda _: np.zeros((tape.output_dim, 0))
 
 
 class gradient_transform(qml.batch_transform):
