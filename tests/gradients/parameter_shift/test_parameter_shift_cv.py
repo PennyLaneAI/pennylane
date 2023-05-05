@@ -661,7 +661,6 @@ class TestExpectationQuantumGradients:
         with no Heisenberg representation is a descendent."""
         dev = qml.device("default.gaussian", wires=2, hbar=hbar)
 
-        
         # pylint: disable=too-few-public-methods
         class Rotation(qml.operation.CVOperation):
             """Dummy operation that does not support

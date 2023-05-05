@@ -144,6 +144,7 @@ class TestCollectRecipes:
         # pylint: disable=too-few-public-methods
         class DummyOp(qml.RX):
             """A custom RX variant with dummy gradient recipe."""
+
             grad_recipe = (dummy_recipe,)
 
         with qml.queuing.AnnotatedQueue() as q:
@@ -702,6 +703,7 @@ class TestParameterShiftHessian:
         # pylint: disable=too-few-public-methods
         class DummyOp(qml.CRZ):
             """A custom variant of qml.CRZ with zero grad_method."""
+
             grad_method = "0"
 
         x = np.array(0.1, requires_grad=True)
@@ -731,6 +733,7 @@ class TestParameterShiftHessian:
         # pylint: disable=too-few-public-methods
         class DummyOp(qml.CRZ):
             """A custom variant of qml.CRZ with grad_method "F"."""
+
             grad_method = "F"
 
         x = np.array([0.1, 0.2, 0.3], requires_grad=True)
@@ -1338,6 +1341,7 @@ class TestParameterShiftHessianQNode:
         # pylint: disable=too-few-public-methods
         class DummyOp(qml.CRZ):
             """A custom variant of qml.CRZ with grad_method "F"."""
+
             grad_method = "F"
 
         @qml.qnode(dev, max_diff=2, diff_method="parameter-shift")
@@ -1401,6 +1405,7 @@ class TestParameterShiftHessianQNode:
         # pylint: disable=too-few-public-methods
         class DummyOp(qml.CRZ):
             """A custom variant of qml.CRZ with grad_method "F"."""
+
             grad_method = "F"
 
         dev = qml.device("default.qubit", wires=2)
