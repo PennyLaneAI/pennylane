@@ -6,6 +6,10 @@
 
 <h3>Improvements 🛠</h3>
 
+* The `qchem.molecular_hamiltonian` function is upgraded to support custom wires for constructing
+  differentiable Hamiltonians.
+  [(4050)](https://github.com/PennyLaneAI/pennylane/pull/4050)
+
 * An error is now raised by `qchem.molecular_hamiltonian` when the `dhf` method is used for an 
   open-shell system. This duplicates a similar error in `qchem.Molecule` but makes it easier to
   inform the users that the `pyscf` backend can be used for open-shell calculations.
@@ -40,6 +44,9 @@
   [(4058)](https://github.com/PennyLaneAI/pennylane/pull/4058)
 
 <h3>Bug fixes 🐛</h3>
+
+* Removes a patch in `interfaces/autograd.py` that checks for the `strawberryfields.gbs` device.  That device
+  is pinned to PennyLane <= v0.29.0, so that patch is no longer necessary.
 
 <h3>Contributors ✍️</h3>
 
