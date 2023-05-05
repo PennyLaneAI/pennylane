@@ -20,7 +20,17 @@ from collections.abc import Mapping
 from dataclasses import InitVar, dataclass
 from pathlib import Path
 from types import MappingProxyType
-from typing import Any, Callable, ClassVar, Generic, Literal, Optional, Union, cast
+from typing import (
+    Any,
+    Callable,
+    ClassVar,
+    Generic,
+    Literal,
+    Optional,
+    Union,
+    cast,
+    get_origin,
+)
 
 from typing_extensions import dataclass_transform
 
@@ -53,7 +63,7 @@ class Attribute(Generic[T]):
     default_factory: Optional[Callable[[], T]] = None
 
 
-def attribute(
+def attribute(  # pylint: disable=too-many-arguments, unused-argument
     default: Union[Literal[UNSET], T, None] = UNSET,
     attribute_type: Union[type[AttributeType[ZarrAny, T]], Literal[UNSET]] = UNSET,
     doc: Optional[str] = None,
@@ -76,7 +86,7 @@ def attribute(
 
     return Attribute(
         cast(type[AttributeType[ZarrAny, T]], attribute_type),
-        AttributeInfo(doc=doc, py_type=py_type, extra=extra or dict()),
+        AttributeInfo(doc=doc, py_type=py_type, extra=extra or {}),
         default=default,
         default_factory=default_factory,
     )
@@ -86,10 +96,23 @@ def attribute(
     order_default=False, eq_default=False, field_specifiers=(attribute,), kw_only_default=True
 )
 class _DatasetMeta(type):
-    ...
+    """This is a metaclass for that tells the type system that
+    ``DatasetBase`` behaves like a dataclass. See:
+    https://peps.python.org/pep-0681/
+    """
 
 
 class DatasetBase(MapperMixin, metaclass=_DatasetMeta):
+    """
+    Base class for Datasets.
+
+    Attributes:
+        fields: A mapping of attribute names to their ``Attribute`` information. Note that
+            this contains attributes declared on the class, not attributes added to
+            an instance. Use ``attrs`` to view all attributes on an instance.
+        bind: The Zarr group that contains this dataset.
+    """
+
     type_id = "dataset"
 
     fields: ClassVar[Mapping[str, Attribute]] = MappingProxyType({})
@@ -133,6 +156,7 @@ class DatasetBase(MapperMixin, metaclass=_DatasetMeta):
         return self._mapper.view()
 
     def list_attributes(self) -> list[str]:
+        """Returns a list of this dataset's attributes."""
         return list(self.attrs.keys())
 
     def read(
@@ -193,24 +217,27 @@ class DatasetBase(MapperMixin, metaclass=_DatasetMeta):
 
     def __setattr__(self, __name: str, __value: Union[Any, AttributeType]) -> None:
         if __name.startswith("_"):
-            return super().__setattr__(__name, __value)
-
-        self._mapper[__name] = __value
+            super().__setattr__(__name, __value)
+        else:
+            self._mapper[__name] = __value
 
     def __getattr__(self, __name: str) -> Any:
         try:
             return self._mapper[__name].get_value()
         except KeyError as exc:
-            raise AttributeError(name=__name, obj=self) from exc
+            raise AttributeError(f"'{type(self)}' object has no attribute '{__name}'") from exc
 
     def __init_subclass__(cls, **kwargs) -> None:
         """Initializes the ``fields`` dict of a Dataset subclass using
         the declared ``Attributes`` and their type annotations."""
-        ignore = {"fields", "type_id"}
         fields = {}
 
         for name, annotated_type in cls.__annotations__.items():
-            if name in ignore or name.startswith("_") or type(annotated_type) is InitVar:
+            if (
+                name.startswith("_")
+                or isinstance(annotated_type, InitVar)
+                or get_origin(annotated_type) is ClassVar
+            ):
                 continue
 
             attr = getattr(cls, name, None)

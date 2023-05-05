@@ -18,7 +18,7 @@ from types import ModuleType
 from typing import Any
 
 
-class _zarr_lazy:
+class _zarr_lazy:  # pylint: disable=too-few-public-methods
     """Provides a lazy-loaded interface to the Zarr module."""
 
     convenience: ModuleType

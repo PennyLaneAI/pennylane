@@ -19,6 +19,8 @@ from pennylane.data.base.typing_util import ZarrArray, ZarrGroup
 
 
 class DatasetString(AttributeType):
+    """Attribute type for strings."""
+
     type_id = "string"
 
     @classmethod
@@ -29,6 +31,7 @@ class DatasetString(AttributeType):
         return bind[()]
 
     def value_to_zarr(self, bind_parent: ZarrGroup, key: str, value: str) -> ZarrArray:
-        bind_parent[key] = value
+        if key in bind_parent:
+            del bind_parent[key]
 
-        return bind_parent[key]
+        return bind_parent.array(name=key, data=value, dtype=str)
