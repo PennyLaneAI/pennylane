@@ -97,21 +97,17 @@ class FirstQuantization(Operation):
         self.charge = charge
         self.br = br
         self.vectors = vectors
+        self.cubic = True
 
-        if self.vectors is None:
-            self.cubic = True
-        else:
+        if self.vectors is not None:
             recip_v = (
                 2
                 * np.pi
                 / np.abs(np.sum((np.cross(vectors[0], vectors[1]) * vectors[2])))
                 * np.array([np.cross(vectors[i], vectors[j]) for i, j in [(1, 2), (2, 0), (0, 1)]])
             )
-
             bbt = np.matrix(recip_v) @ np.matrix(recip_v).T
-
             cubic = np.linalg.norm(bbt - (recip_v**2).max() * np.identity(3)) < 1e-6
-
             if not cubic:
                 self.cubic = False
 
