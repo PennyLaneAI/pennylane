@@ -45,6 +45,7 @@ class TestInitialization:
         assert len(qs._trainable_params) == 0
         assert qs._graph is None
         assert qs._specs is None
+        assert qs._shots.total_shots is None
         assert qs._batch_size is None
         assert qs._qfunc_output is None
         assert qs.wires == qml.wires.Wires([])
@@ -450,8 +451,9 @@ class TestInfomationProperties:
         assert len(specs) == 9
 
         gate_types = defaultdict(int, {"RX": 2, "Rot": 1, "CNOT": 1})
+        gate_sizes = defaultdict(int, {1: 3, 2: 1})
         expected_resources = qml.resource.Resources(
-            num_wires=3, num_gates=4, gate_types=gate_types, depth=3
+            num_wires=3, num_gates=4, gate_types=gate_types, gate_sizes=gate_sizes, depth=3
         )
         assert specs["resources"] == expected_resources
 
@@ -463,6 +465,34 @@ class TestInfomationProperties:
         assert specs["num_used_wires"] == 3
         assert specs["num_trainable_params"] == 5
         assert specs["depth"] == 3
+
+    @pytest.mark.parametrize(
+        "shots, total_shots, shot_vector",
+        [
+            (None, None, ()),
+            (1, 1, ((1, 1),)),
+            (10, 10, ((10, 1),)),
+            ([1, 1, 2, 3, 1], 8, ((1, 2), (2, 1), (3, 1), (1, 1))),
+            (Shots([1, 1, 2]), 4, ((1, 2), (2, 1))),
+        ],
+    )
+    def test_set_shots(self, shots, total_shots, shot_vector):
+        qs = QuantumScript([], [], shots=shots)
+        assert isinstance(qs.shots, Shots)
+        assert qs.shots.total_shots == total_shots
+        assert qs.shots.shot_vector == shot_vector
+
+    def test_specs_warning(self, make_script):
+        """Test that a deprecation warning is displayed when trying to access deprecated
+        fields of the specs dictionary."""
+        deprecated_keys = ("gate_types", "gate_sizes", "num_operations", "num_used_wires", "depth")
+
+        qs = make_script
+        specs = qs.specs
+
+        for old_key in deprecated_keys:
+            with pytest.warns(UserWarning, match=f"The {old_key} key is deprecated"):
+                _ = specs[f"{old_key}"]
 
 
 class TestScriptCopying:
@@ -781,6 +811,32 @@ class TestMakeQscript:
         qscript = qml.tape.make_qscript(qfunc)()
         assert len(qscript.operations) == 2
         assert len(qscript.measurements) == 1
+
+    @pytest.mark.parametrize(
+        "shots, total_shots, shot_vector",
+        [
+            (None, None, ()),
+            (1, 1, ((1, 1),)),
+            (10, 10, ((10, 1),)),
+            ([1, 1, 2, 3, 1], 8, ((1, 2), (2, 1), (3, 1), (1, 1))),
+            (Shots([1, 1, 2]), 4, ((1, 2), (2, 1))),
+        ],
+    )
+    def test_make_qscript_with_shots(self, shots, total_shots, shot_vector):
+        """Test that ``make_qscript`` creates a ``QuantumScript`` correctly when
+        shots are specified."""
+
+        def qfunc():
+            qml.Hadamard(0)
+            qml.CNOT([0, 1])
+            qml.expval(qml.PauliX(0))
+
+        qscript = qml.tape.make_qscript(qfunc, shots=shots)()
+
+        assert len(qscript.operations) == 2
+        assert len(qscript.measurements) == 1
+        assert qscript.shots.total_shots == total_shots
+        assert qscript.shots.shot_vector == shot_vector
 
     def test_qfunc_is_recording_during_make_qscript(self):
         """Test that quantum functions passed to make_qscript run in a recording context."""

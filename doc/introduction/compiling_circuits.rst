@@ -15,6 +15,13 @@ or replace a large circuit by a number of smaller circuits.
 Compilation functionality is mostly designed as **transforms**, which you can read up on in the
 section on :doc:`inspecting circuits </introduction/inspecting_circuits>`.
 
+In addition to quantum circuit transforms, PennyLane also
+supports experimental just-in-time compilation, via
+`Catalyst <https://github.com/pennylaneai/catalyst>`__. This is more general, and
+supports full hybrid compilation --- compiling both the classical and quantum components
+of your workflow into a binary that can be run close to the accelerators.
+that you are using.
+
 Simplifying Operators
 ----------------------
 
@@ -282,7 +289,7 @@ The example below shows how a three-wire circuit can be run on a two-wire device
 
         qml.CZ(wires=[1, 2])
 
-        return qml.expval(qml.grouping.string_to_pauli_word("ZZZ"))
+        return qml.expval(qml.pauli.string_to_pauli_word("ZZZ"))
 
 Instead of being executed directly, the circuit will be partitioned into
 smaller fragments according to the :class:`~.pennylane.WireCut` locations,
@@ -319,16 +326,81 @@ It turns a QNode that measures non-commuting observables into a QNode that inter
 uses *multiple* circuit executions with qubit-wise commuting groups. The transform is used
 by devices to make such measurements possible.
 
-On a lower level, the :func:`~.pennylane.grouping.group_observables` function can be used to split lists of
+On a lower level, the :func:`~.pennylane.pauli.group_observables` function can be used to split lists of
 observables and coefficients:
 
 >>> obs = [qml.PauliY(0), qml.PauliX(0) @ qml.PauliX(1), qml.PauliZ(1)]
 >>> coeffs = [1.43, 4.21, 0.97]
->>> obs_groupings, coeffs_groupings = qml.grouping.group_observables(obs, coeffs, 'anticommuting', 'lf')
+>>> obs_groupings, coeffs_groupings = qml.pauli.group_observables(obs, coeffs, 'anticommuting', 'lf')
 >>> obs_groupings
 [[PauliZ(wires=[1]), PauliX(wires=[0]) @ PauliX(wires=[1])],
  [PauliY(wires=[0])]]
 >>> coeffs_groupings
 [[0.97, 4.21], [1.43]]
 
-This and more logic to manipulate Pauli observables is found in the :mod:`~.pennylane.grouping` module.
+This and more logic to manipulate Pauli observables is found in the :mod:`~.pennylane.pauli` module.
+
+Just-in-time compilation with Catalyst
+--------------------------------------
+
+In addition to quantum circuit transformations, PennyLane also supports full
+hybrid just-in-time (JIT) compilation via `Catalyst
+<https://github.com/pennylaneai/catalyst>`__. Catalyst allows you to compile
+the entire quantum-classical workflow, including any optimization loops,
+which allows for optimized performance, and the ability to run the entire
+workflow on accelerator devices as appropriate.
+
+Currently, Catalyst must be installed separately, and only supports the JAX
+interface and ``lightning.qubit``. Check out the Catalyst documentation for
+`installation instructions
+<https://docs.pennylane.ai/projects/catalyst/en/latest/dev/installation.html>`__.
+
+Using Catalyst with PennyLane is a simple as using the ``@qjit`` decorator to
+compile your hybrid workflows:
+
+.. code-block:: python
+
+    from catalyst import qjit
+    from jax import numpy as jnp
+
+    dev = qml.device("lightning.qubit", wires=2, shots=1000)
+
+    @qjit
+    @qml.qnode(dev)
+    def cost(params):
+        qml.Hadamard(0)
+        qml.RX(jnp.sin(params[0]) ** 2, wires=1)
+        qml.CRY(params[0], wires=[0, 1])
+        qml.RX(jnp.sqrt(params[1]), wires=1)
+        return qml.expval(qml.PauliZ(1))
+
+The ``qjit`` decorator can also be used on hybrid cost functions -- that is,
+cost functions that include both QNodes and classical processing. We can even
+JIT compile the full optimization loop, for example when training models:
+
+.. code-block:: python
+
+    import jaxopt
+
+    @jax.jit
+    def optimization():
+        # initial parameter
+        params = jnp.array([0.54, 0.3154])
+
+        # define the optimizer
+        opt = jaxopt.GradientDescent(cost, stepsize=0.4)
+        update = lambda i, args: tuple(opt.update(*args))
+
+        # perform optimization loop
+        state = opt.init_state(params)
+        (params, _) = jax.lax.fori_loop(0, 100, update, (params, state))
+
+        return params
+
+Finally, Catalyst provides additional features to PennyLane, such as classical
+control of quantum operations that are JIT-enabled, via the function
+``catalyst.for_loop`` and ``catalyst.cond``. It also enables arbitrary
+post-processing of mid-circuit measurements.
+
+For more details, see the `Catalyst documentation and tutorials
+<https://docs.pennylane.ai/projects/catalyst/>`__.

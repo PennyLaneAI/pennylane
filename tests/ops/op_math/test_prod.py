@@ -116,7 +116,7 @@ class MyOp(qml.RX):  # pylint:disable=too-few-public-methods
     has_diagonalizing_gates = False
 
 
-class TestInitialization:
+class TestInitialization:  # pylint:disable=too-many-public-methods
     """Test the initialization."""
 
     @pytest.mark.parametrize("id", ("foo", "bar"))
@@ -321,6 +321,92 @@ class TestInitialization:
         """Test that the do_queue kwarg is not available for the wrapper func or Operator."""
         with pytest.raises(ValueError, match=f"do_queue=False is not supported for {name}"):
             method(qml.PauliX(0), qml.PauliZ(1), do_queue=False)
+
+    def test_qfunc_init(self):
+        """Tests prod initialization with a qfunc argument."""
+
+        def qfunc():
+            qml.Hadamard(0)
+            qml.CNOT([0, 1])
+            qml.RZ(1.1, 1)
+
+        prod_gen = prod(qfunc)
+        assert callable(prod_gen)
+        prod_op = prod_gen()
+        expected = prod(qml.RZ(1.1, 1), qml.CNOT([0, 1]), qml.Hadamard(0))
+        assert qml.equal(prod_op, expected)
+        assert prod_op.wires == Wires([1, 0])
+
+    def test_qfunc_init_accepts_args_kwargs(self):
+        """Tests that prod preserves args when wrapping qfuncs."""
+
+        def qfunc(x, run_had=False):
+            if run_had:
+                qml.Hadamard(0)
+            qml.RX(x, 0)
+            qml.CNOT([0, 1])
+
+        prod_gen = prod(qfunc)
+        assert qml.equal(prod_gen(1.1), prod(qml.CNOT([0, 1]), qml.RX(1.1, 0)))
+        assert qml.equal(
+            prod_gen(2.2, run_had=True), prod(qml.CNOT([0, 1]), qml.RX(2.2, 0), qml.Hadamard(0))
+        )
+
+    def test_qfunc_init_propagates_Prod_kwargs(self):
+        """Tests that additional kwargs for Prod are propagated using qfunc initialization."""
+
+        def qfunc(x):
+            qml.prod(qml.RX(x, 0), qml.PauliZ(1))
+            qml.CNOT([0, 1])
+
+        prod_op = prod(qfunc, id=123987, lazy=False)(1.1)
+
+        assert prod_op.id == 123987  # id was set
+        assert qml.equal(prod_op, prod(qml.CNOT([0, 1]), qml.PauliZ(1), qml.RX(1.1, 0)))  # eager
+
+    def test_qfunc_init_only_works_with_one_qfunc(self):
+        """Test that the qfunc init only occurs when one callable is passed to prod."""
+
+        def qfunc():
+            qml.Hadamard(0)
+            qml.CNOT([0, 1])
+
+        prod_op = prod(qfunc)()
+        assert qml.equal(prod_op, prod(qml.CNOT([0, 1]), qml.Hadamard(0)))
+
+        def fn2():
+            qml.PauliX(0)
+            qml.PauliY(1)
+
+        for args in [(qfunc, fn2), (qfunc, qml.PauliX), (qml.PauliX, qfunc)]:
+            with pytest.raises(AttributeError, match="has no attribute 'wires'"):
+                prod(*args)
+
+    def test_qfunc_init_returns_single_op(self):
+        """Tests that if a qfunc only queues one operator, that operator is returned."""
+
+        def qfunc():
+            qml.PauliX(0)
+
+        prod_op = prod(qfunc)()
+        assert qml.equal(prod_op, qml.PauliX(0))
+        assert not isinstance(prod_op, Prod)
+
+    def test_prod_accepts_single_operator_but_Prod_does_not(self):
+        """Tests that the prod wrapper can accept a single operator, and return it."""
+
+        x = qml.PauliX(0)
+        prod_op = prod(x)
+        assert prod_op is x
+        assert not isinstance(prod_op, Prod)
+
+        with pytest.raises(ValueError, match="Require at least two operators"):
+            Prod(x)
+
+    def test_prod_fails_with_non_callable_arg(self):
+        """Tests that prod explicitly checks that a single-arg is either an Operator or callable."""
+        with pytest.raises(TypeError, match="Unexpected argument of type int passed to qml.prod"):
+            prod(1)
 
 
 class TestMatrix:

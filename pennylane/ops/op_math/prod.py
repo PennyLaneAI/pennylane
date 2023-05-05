@@ -16,11 +16,10 @@ This file contains the implementation of the Prod class which contains logic for
 computing the product between operations.
 """
 from copy import copy
-from functools import reduce
+from functools import reduce, wraps
 from itertools import chain, combinations, product
 from typing import List, Tuple, Union
 
-import numpy as np
 from scipy.sparse import kron as sparse_kron
 
 import pennylane as qml
@@ -32,6 +31,7 @@ from pennylane.ops.op_math.sum import Sum
 from pennylane.ops.qubit import Hamiltonian
 from pennylane.ops.qubit.non_parametric_ops import PauliX, PauliY, PauliZ
 from pennylane.queuing import QueuingManager
+from pennylane.typing import TensorLike
 from pennylane.wires import Wires
 
 from .composite import CompositeOp
@@ -50,7 +50,8 @@ def prod(*ops, do_queue=True, id=None, lazy=True):
     that the given operators act on.
 
     Args:
-        ops (tuple[~.operation.Operator]): The operators we would like to multiply
+        ops (Union[tuple[~.operation.Operator], Callable]): The operators we would like to multiply.
+            Alternatively, a single qfunc that queues operators can be passed to this function.
 
     Keyword Args:
         do_queue (bool): Must be ``True`` (default) for ``prod``, but present for consistency.
@@ -83,12 +84,40 @@ def prod(*ops, do_queue=True, id=None, lazy=True):
     >>> prod_op.matrix()
     array([[ 0, -1],
            [ 1,  0]])
+
+    You can also create a prod operator by passing a qfunc to prod, like the following:
+
+    >>> def qfunc(x):
+    ...     qml.RX(x, 0)
+    ...     qml.CNOT([0, 1])
+    >>> prod_op = prod(qfunc)(1.1)
+    >>> prod_op
+    CNOT(wires=[0, 1]) @ RX(1.1, wires=[0])
     """
     if not do_queue:
         raise ValueError(
             "do_queue=False is not supported for qml.prod. Consider constructing "
             "your operator within a qml.QueuingManager.stop_recording() context."
         )
+
+    if len(ops) == 1:
+        if isinstance(ops[0], qml.operation.Operator):
+            return ops[0]
+
+        fn = ops[0]
+
+        if not callable(fn):
+            raise TypeError(f"Unexpected argument of type {type(fn).__name__} passed to qml.prod")
+
+        @wraps(fn)
+        def wrapper(*args, **kwargs):
+            qs = qml.tape.make_qscript(fn)(*args, **kwargs)
+            return prod(*qs.operations[::-1], do_queue=do_queue, id=id, lazy=lazy)
+
+        return wrapper
+
+    if lazy:
+        return Prod(*ops, do_queue=do_queue, id=id)
 
     if not lazy:
         for op in ops:
@@ -254,7 +283,7 @@ class Prod(CompositeOp):
     def matrix(self, wire_order=None):
         """Representation of the operator as a matrix in the computational basis."""
 
-        mats: List[np.ndarray] = []  # TODO: change type to `tensor_like` when available
+        mats: List[TensorLike] = []
         batched: List[bool] = []  # batched[i] tells if mats[i] is batched or not
         for ops in self.overlapping_ops:
             gen = (

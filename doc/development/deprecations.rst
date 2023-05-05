@@ -6,24 +6,30 @@ Deprecations
 Pending deprecations
 --------------------
 
-* The argument ``argnum`` for gradient transforms using the Jax interface is replaced by ``argnums``.
+* The ``qml.specs`` dictionary will no longer support direct key access to certain keys. Instead
+  these quantities can be accessed as fields of the new ``Resources`` object saved under
+  ``specs_dict["resources"]``:
 
-  - ``argnum`` is automatically changed to ``argnums`` for gradient transforms using JAX and a warning is raised in v0.30
-  - ``argnums`` is the only option for gradient transforms using JAX in v0.31
+  - ``num_operations`` will no longer be supported, use ``specs_dict["resources"].num_gates``
+  - ``num_used_wires`` will no longer be supported, use ``specs_dict["resources"].num_wires``
+  - ``gate_types`` will no longer be supported, use ``specs_dict["resources"].gate_types``
+  - ``gate_sizes`` will no longer be supported, use ``specs_dict["resources"].gate_sizes``
+  - ``depth`` will no longer be supported, use ``specs_dict["resources"].depth``
 
+  These keys are still accessible in v0.31 and will be removed in v0.32.
 
 * The ``observables`` argument in ``QubitDevice.statistics`` is deprecated. Please use ``circuit``
   instead. Using a list of observables in ``QubitDevice.statistics`` is deprecated. Please use a
   ``QuantumTape`` instead.
 
-  - Still accessible in v0.28, v0.29
-  - Will be removed in v0.30
+  - Still accessible in v0.28, v0.29, v0.30
+  - Will be removed in v0.31
 
 * The ``grouping`` module is deprecated. The functionality has been moved and
   reorganized in the new ``pauli`` module under ``pauli/utils.py`` or ``pauli/grouping/``.
 
-  - Still accessible in v0.27, v0.28, v0.29
-  - Will be removed in v0.30
+  - Still accessible in v0.27, v0.28, v0.29, v0.30
+  - Will be removed in v0.31
 
   The functions from ``grouping/pauli.py``, ``grouping/transformations.py`` and
   ``grouping/utils.py`` have been moved to ``pauli/utils.py``. The remaining functions
@@ -44,23 +50,29 @@ Pending deprecations
         some_qfunc(params)
         return qml.expval(Hamiltonian)
 
-* The ``collections`` module has been deprecated.
 
-  - Deprecated in v0.29
-  - Will be removed in v0.31
-
-* ``qml.op_sum``` is deprecated. Users should use ``qml.sum`` instead.
-
-  - Deprecated in v0.29.
-  - Will be removed in v0.31.
+Completed deprecation cycles
+----------------------------
 
 * The ``qml.utils.sparse_hamiltonian`` function is deprecated. ``~.Hamiltonian.sparse_matrix`` should be used instead.
 
   - Deprecated in v0.29
   - Removed in v0.31
 
-Completed deprecation cycles
-----------------------------
+* The ``collections`` module has been deprecated.
+
+  - Deprecated in v0.29
+  - Removed in v0.31
+
+* ``qml.op_sum``` is deprecated. Users should use ``qml.sum`` instead.
+
+  - Deprecated in v0.29.
+  - Removed in v0.31.
+
+* The argument ``argnum`` for gradient transforms using the Jax interface is replaced by ``argnums``.
+
+  - ``argnum`` is automatically changed to ``argnums`` for gradient transforms using JAX and a warning is raised in v0.30
+  - ``argnums`` is the only option for gradient transforms using JAX in v0.31
 
 * ``Evolution`` now adds a ``-1`` to the input parameter. Beforehand, the minus sign was not included.
 

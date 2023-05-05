@@ -18,7 +18,6 @@ Unit tests for the ParametrizedEvolution class
 from functools import reduce
 import numpy as np
 
-# pylint: disable=unused-argument, too-few-public-methods, import-outside-toplevel
 import pytest
 import pennylane as qml
 from pennylane.operation import AnyWires
@@ -67,20 +66,6 @@ def time_dependent_hamiltonian():
     return ParametrizedHamiltonian(coeffs, ops)
 
 
-def test_error_raised_on_call_if_jax_not_installed():
-    """Test that an error is raised if an ``Evolve`` operator is instantiated without jax installed"""
-    with pytest.raises(ImportError, match="Module jax is required"):
-        ParametrizedEvolution(H=ParametrizedHamiltonian([1], [qml.PauliX(0)]))([], 2)
-
-
-def test_error_raised_for_matrix_method_if_jax_not_installed():
-    """Test that an error is raised if an ``Evolve`` operator is instantiated without jax installed"""
-    with pytest.raises(ImportError, match="Module jax is required"):
-        ParametrizedEvolution(
-            H=ParametrizedHamiltonian([1], [qml.PauliX(0)]), params=[], t=2
-        ).matrix()
-
-
 @pytest.mark.jax
 class TestInitialization:
     """Unit tests for the ParametrizedEvolution class."""
@@ -90,7 +75,7 @@ class TestInitialization:
         ops = [qml.PauliX(0), qml.PauliY(1)]
         coeffs = [1, 2]
         H = ParametrizedHamiltonian(coeffs, ops)
-        ev = ParametrizedEvolution(H=H, params=[1, 2], t=2)
+        ev = ParametrizedEvolution(H=H, params=[1, 2], t=2, dense=True)
 
         assert ev.H is H
         assert qml.math.allequal(ev.t, [0, 2])
@@ -104,6 +89,21 @@ class TestInitialization:
         assert qml.math.allequal(ev.data, [1, 2])
         assert qml.math.allequal(ev.parameters, [1, 2])
         assert ev.num_params == 2
+        assert ev.dense is True
+
+    def test_set_dense(self):
+        """Test that flag dense is set correctly"""
+        ops = [qml.PauliX(0), qml.PauliY(1), qml.PauliZ(2)]
+        coeffs = [1, 2, 3]
+        H = ParametrizedHamiltonian(coeffs, ops)
+        ev = ParametrizedEvolution(H=H, params=None, t=2)
+        assert ev.dense is False
+
+        ev2 = ParametrizedEvolution(H=H, params=None, t=2, dense=True)
+        assert ev2.dense is True
+
+        ev3 = ParametrizedEvolution(H=H, params=None, t=2, dense=False)
+        assert ev3.dense is False
 
     @pytest.mark.parametrize("ret_intmdt, comp", ([False, False], [True, False], [True, True]))
     def test_return_intermediate_and_complementary(self, ret_intmdt, comp):
@@ -347,6 +347,33 @@ class TestMatrix:
 @pytest.mark.jax
 class TestIntegration:
     """Integration tests for the ParametrizedEvolution class."""
+
+    @pytest.mark.parametrize("time", [0.3, 1, [0, 2], [0.4, 2], (3, 3.1)])
+    @pytest.mark.parametrize("time_interface", ["python", "numpy", "jax"])
+    @pytest.mark.parametrize("use_jit", [False, True])
+    def test_time_input_formats(self, time, time_interface, use_jit):
+        import jax
+        import jax.numpy as jnp
+
+        if time_interface == "jax":
+            time = jnp.array(time)
+        elif time_interface == "numpy":
+            time = np.array(time)
+        H = qml.pulse.ParametrizedHamiltonian([2], [qml.PauliX(0)])
+
+        dev = qml.device("default.qubit", wires=1)
+
+        @qml.qnode(dev, interface="jax")
+        def circuit(t):
+            qml.evolve(H)([], t)
+            return qml.expval(qml.PauliZ(0))
+
+        if use_jit:
+            circuit = jax.jit(circuit)
+
+        res = circuit(time)
+        duration = time if qml.math.ndim(time) == 0 else time[1] - time[0]
+        assert qml.math.isclose(res, qml.math.cos(4 * duration))
 
     # pylint: disable=unused-argument
     def test_time_independent_hamiltonian(self):
