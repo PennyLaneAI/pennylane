@@ -34,6 +34,10 @@
 * Support for adjoint differentiation has been added to the `DefaultQubit2` device.
   [(#4037)](https://github.com/PennyLaneAI/pennylane/pull/4037)
 
+* Added a `dense` keyword to `ParametrizedEvolution` that allows forcing dense or sparse matrices.
+  [(#4079)](https://github.com/PennyLaneAI/pennylane/pull/4079)
+  [(#4095)](https://github.com/PennyLaneAI/pennylane/pull/4095)
+
 <h3>Breaking changes 💔</h3>
 
 * Gradient transforms with Jax do not support `argnum` anymore,  `argnums` needs to be used.
@@ -60,6 +64,7 @@ This release contains contributions from (in alphabetical order):
 
 Isaac De Vlugt,
 Soran Jahangiri,
+Korbinian Kottmann
 Christina Lee,
 Romain Moyard,
 Mudit Pandey,
