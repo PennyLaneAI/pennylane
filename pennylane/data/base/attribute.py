@@ -20,7 +20,7 @@ from collections.abc import Iterable, Mapping, Sequence
 from dataclasses import asdict, dataclass, field, fields
 from numbers import Number
 from types import MappingProxyType
-from typing import Any, ClassVar, Generic, Optional, TypeVar, Union, cast
+from typing import Any, ClassVar, Generic, Literal, Optional, TypeVar, Union, cast
 
 from pennylane.data.base._zarr import zarr
 from pennylane.data.base.typing_util import (
@@ -120,12 +120,14 @@ class AttributeType(ABC, Generic[Zarr, T]):
             self._key = "_"
 
         if self.key not in self._parent:
-            value = value if value is not None else self.default_value()
+            if value is None:
+                value = self.default_value()
+                if value is UNSET:
+                    raise TypeError("'value' not provided and attribute does not exist in parent.")
+
             info = info or AttributeInfo()
             info.py_type = type(value)
 
-            if value is None:
-                raise TypeError("'value' not provided and attribute does not exist in parent.")
             self.set_value(value, info)
 
         self._check_bind(self.bind)
@@ -139,18 +141,18 @@ class AttributeType(ABC, Generic[Zarr, T]):
         """
         return ()
 
-    def default_value(self) -> Optional[T]:
-        return cast(T, UNSET)
+    def default_value(self) -> Union[T, Literal[UNSET]]:
+        """Returns a valid default value for this type, or ``UNSET`` if this type
+        must be initialized with a value."""
+        return UNSET
 
     @abstractmethod
     def zarr_to_value(self, bind: Zarr) -> T:
         """Parses bind into Python object."""
-        ...
 
     @abstractmethod
     def value_to_zarr(self, bind_parent: ZarrGroup, key: str, value: T) -> Zarr:
         """Converts value into a Zarr Array or Group under bind_parent[key]."""
-        ...
 
     @property
     def key(self) -> str:
@@ -159,20 +161,26 @@ class AttributeType(ABC, Generic[Zarr, T]):
 
     @property
     def info(self) -> AttributeInfo:
+        """Returns the ``AttributeInfo`` for this attribute."""
         return AttributeInfo.load(self.bind)
 
     @property
     def bind(self) -> Zarr:
+        """Returns the Zarr object that contains this attribute's
+        data."""
         return cast(Zarr, self._parent[self.key])
 
     @property
     def bind_parent(self) -> ZarrGroup:
+        """Returns the Zarr group that contains this attribute."""
         return self._parent
 
     def get_value(self) -> T:
+        """Loads the mapped value from ``bind``."""
         return self.zarr_to_value(self.bind)
 
     def set_value(self, value: T, info: Optional[AttributeInfo]) -> Zarr:
+        """Converts ``value`` into Zarr format and sets the attribute info."""
         new_bind = self.value_to_zarr(self.bind_parent, self.key, value)
         new_bind.attrs["type_id"] = self.type_id
         if info:
@@ -214,10 +222,7 @@ class AttributeType(ABC, Generic[Zarr, T]):
         __type_consumer_registry
     )
 
-    def __init_subclass__(cls, abstract: bool = False, register: bool = True, **kwargs) -> None:
-        if abstract or not register:
-            return super().__init_subclass__()
-
+    def __init_subclass__(cls) -> None:  # pylint: disable=arguments-differ
         existing_type = AttributeType.__registry.get(cls.type_id)
         if existing_type is not None:
             raise TypeError(
@@ -238,30 +243,39 @@ class AttributeType(ABC, Generic[Zarr, T]):
 
 
 def get_attribute_type(zobj: Zarr) -> type[AttributeType[Zarr, Any]]:
+    """
+    Returns the ``AttributeType`` of the dataset attribute contained
+    in ``zobj``.
+    """
     type_id = zobj.attrs["type_id"]
 
     return AttributeType.registry[type_id]
 
 
 def match_obj_type(type_: type[T]) -> type[AttributeType[ZarrAny, T]]:
+    """
+    Returns an ``AttributeType`` that can accept an object of type ``type_``
+    as a value.
+    """
     type_, args = resolve_special_type(type_)
 
-    try:
-        return AttributeType.type_consumer_registry[type_]
-    except KeyError:
-        pass
+    ret = None
 
-    if hasattr(type_, "__array__"):
-        return AttributeType.registry["array"]
+    if type_ in AttributeType.type_consumer_registry:
+        ret = AttributeType.type_consumer_registry[type_]
+    elif hasattr(type_, "__array__"):
+        ret = AttributeType.registry["array"]
     elif issubclass(type_, Number):
-        return AttributeType.registry["scalar"]
-    elif issubclass(type_, str):
-        return AttributeType.registry["string"]
+        ret = AttributeType.registry["scalar"]
     elif issubclass(type_, Sequence):
         if len(args) == 1 and issubclass(args[0], Number):
-            return AttributeType.registry["array"]
-        return AttributeType.registry["list"]
+            ret = AttributeType.registry["array"]
+        else:
+            ret = AttributeType.registry["list"]
     elif issubclass(type_, Mapping):
-        return AttributeType.registry["dict"]
+        ret = AttributeType.registry["dict"]
 
-    raise TypeError(f"Could not determine AttributeType for type {type_}")
+    if ret is None:
+        raise TypeError(f"Could not determine AttributeType for type {type_}")
+
+    return ret

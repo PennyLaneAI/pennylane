@@ -32,20 +32,21 @@ class AttributeTypeMapper:
     in a Zarr group and Dataset attributes.
     """
 
+    bind: ZarrGroup
     _cache: dict[str, AttributeType]
 
-    def __init__(self, zroot: ZarrGroup) -> None:
+    def __init__(self, bind: ZarrGroup) -> None:
         self._cache = {}
-        self.zroot = zroot
+        self.bind = bind
 
     def __getitem__(self, key: str) -> AttributeType:
         if key in self._cache:
             return self._cache[key]
 
-        zobj = self.zroot[key]
+        zobj = self.bind[key]
 
         attr_type = get_attribute_type(zobj)
-        attr = attr_type(parent=self.zroot, key=key)
+        attr = attr_type(parent=self.bind, key=key)
         self._cache[key] = attr
 
         return attr
@@ -53,36 +54,39 @@ class AttributeTypeMapper:
     def __setitem__(self, key: str, value: Union[Any, AttributeType[ZarrAny, Any]]):
         if not isinstance(value, AttributeType):
             attr_type = match_obj_type(type(value))
-            attr = attr_type(value, parent=self.zroot, key=key)
+            attr = attr_type(value, parent=self.bind, key=key)
         else:
-            value._set_parent(self.zroot, key)
+            value._set_parent(self.bind, key)
             attr = value
 
         self._cache[key] = attr
 
-    def move(self, from_: str, to: str):
-        self.zroot.move(from_, to)
-        del self._cache[from_]
+    def move(self, src: str, dest: str):
+        """Moves the attribute stored at ``src`` in ``bind`` to ``dest``."""
+        self.bind.move(src, dest)
+        del self._cache[src]
 
     def view(self) -> Mapping[str, AttributeType]:
+        """Returns a read-only mapping of the attributes in ``bind``."""
         return MappingProxyType(self)
 
     def __len__(self) -> int:
-        return len(self.zroot)
+        return len(self.bind)
 
     def keys(self) -> KeysView[str]:
-        return self.zroot.keys()
+        """Returns all keys in ``bind``."""
+        return self.bind.keys()
 
     def __contains__(self, key: str) -> bool:
-        return key in self._cache or key in self.zroot
+        return key in self._cache or key in self.bind
 
     def __delitem__(self, key: str):
         self._cache.pop(key, None)
 
-        del self.zroot[key]
+        del self.bind[key]
 
 
-class MapperMixin:
+class MapperMixin:  # pylint: disable=too-few-public-methods
     """Mixin class for Dataset types that provide an interface
     to a Zarr group, e.g `DatasetList`, `DatasetDict`. Provides
     a `_mapper` property over the type's ``bind`` attribute."""

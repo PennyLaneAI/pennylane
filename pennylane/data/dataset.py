@@ -19,4 +19,6 @@ from pennylane.data.base.dataset import DatasetBase, attribute
 
 
 class Dataset(DatasetBase):
+    """Base class for public datasets."""
+
     description: str = attribute(doc="Description for this Dataset")
