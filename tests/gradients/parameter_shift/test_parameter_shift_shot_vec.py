@@ -57,6 +57,7 @@ class RX_with_F(qml.RX):
 
     grad_method = "F"
 
+
 # pylint: disable=too-few-public-methods
 class RX_par_dep_recipe(qml.RX):
     """RX operation with a parameter-dependent grad recipe."""
@@ -2086,6 +2087,7 @@ class TestParameterShiftRule:
 
         class DeviceSupporingSpecialObservable(DefaultQubit):
             """A custom device that supports the above SpecialObservable."""
+
             name = "Device supporting SpecialObservable"
             short_name = "default.qubit.specialobservable"
             observables = DefaultQubit.observables.union({"SpecialObservable"})

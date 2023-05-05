@@ -1262,9 +1262,7 @@ class TestParameterShiftRule:
         assert np.allclose(res[1], expval_expected[1])
 
     @pytest.mark.autograd
-    @pytest.mark.parametrize(
-        "RX, RY, argnum", [(RX_with_F, qml.RY, 0), (qml.RX, RY_with_F, 1)]
-    )
+    @pytest.mark.parametrize("RX, RY, argnum", [(RX_with_F, qml.RY, 0), (qml.RX, RY_with_F, 1)])
     def test_fallback_probs(self, RX, RY, argnum, mocker):
         """Test that fallback gradient functions are correctly used with probs"""
         spy = mocker.spy(qml.gradients, "finite_diff")

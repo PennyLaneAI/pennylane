@@ -11,11 +11,7 @@ tests/drawer/test_draw_mpl.py
 tests/drawer/test_drawer_utils.py
 tests/drawer/test_tape_mpl.py
 tests/fourier/test_coefficients.py
-tests/gradients/core/test_hadamard_gradient.py
-tests/gradients/core/test_hamiltonian_gradient.py
-tests/gradients/core/test_jvp.py
-tests/gradients/core/test_pulse_gradient.py
-tests/gradients/finite_diff/test_spsa_gradient.py
+tests/gradients/**
 tests/kernels/**
 tests/legacy/test_measurements_old.py
 tests/math/test_functions.py
