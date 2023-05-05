@@ -387,9 +387,7 @@ class ParametrizedEvolution(Operation):
         else:
             if isinstance(t, (list, tuple)):
                 t = qml.math.stack(t)
-            self.t = qml.math.cast(
-                qml.math.stack([0.0, t]) if qml.math.ndim(t) == 0 else t, float
-            )
+            self.t = qml.math.cast(qml.math.stack([0.0, t]) if qml.math.ndim(t) == 0 else t, float)
         if complementary and not return_intermediate:
             warnings.warn(
                 "The keyword argument complementary does not have any effect if "
