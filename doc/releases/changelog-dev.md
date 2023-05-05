@@ -25,6 +25,9 @@
 * `qml.prod` now accepts a single qfunc input for creating new `Prod` operators.
   [(#4011)](https://github.com/PennyLaneAI/pennylane/pull/4011)
 
+* Added `__repr__` and `__str__` methods to the `Shots` class.
+  [(#4081)](https://github.com/PennyLaneAI/pennylane/pull/4081)
+
 * Added a function `measure_with_samples` that returns a sample-based measurement result given a state
   [(#4083)](https://github.com/PennyLaneAI/pennylane/pull/4083)
 
