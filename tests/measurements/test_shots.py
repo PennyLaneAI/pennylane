@@ -15,11 +15,42 @@
 Unit tests for :mod:`pennylane.shots`.
 """
 
+import copy
 import pytest
 
 from pennylane.measurements import Shots, ShotCopies
 
 ERROR_MSG = "Shots must be a single positive integer, a tuple"
+
+
+class TestShotCopies:
+    """Test that the ShotCopies class displays well."""
+
+    sc_data = (ShotCopies(1, 1), ShotCopies(100, 1), ShotCopies(100, 2), ShotCopies(10, 100))
+
+    str_data = (
+        "1 shots",
+        "100 shots",
+        "100 shots x 2",
+        "10 shots x 100",
+    )
+
+    @pytest.mark.parametrize("expected_str, sc", zip(str_data, sc_data))
+    def test_str(self, expected_str, sc):
+        """Test the str method works well"""
+        assert expected_str == str(sc)
+
+    repr_data = (
+        "ShotCopies(1 shots x 1)",
+        "ShotCopies(100 shots x 1)",
+        "ShotCopies(100 shots x 2)",
+        "ShotCopies(10 shots x 100)",
+    )
+
+    @pytest.mark.parametrize("expected_str, sc", zip(repr_data, sc_data))
+    def test_repr(self, expected_str, sc):
+        """Test the repr method works well"""
+        assert expected_str == repr(sc)
 
 
 class TestShotsConstruction:
@@ -29,6 +60,16 @@ class TestShotsConstruction:
         """Tests that creating a Shots from another Shots instance returns the same instance."""
         x = Shots(123)
         y = Shots(x)
+        assert y is x
+        assert y._frozen  # pylint:disable=protected-access
+
+        z = copy.copy(x)
+        assert z is x
+        assert z._frozen  # pylint:disable=protected-access
+
+    def test_deepcopy(self):
+        x = Shots([1, 1, 2, 3])
+        y = copy.deepcopy(x)
         assert y is x
         assert y._frozen  # pylint:disable=protected-access
 
@@ -50,6 +91,59 @@ class TestShotsConstruction:
         assert shots.shot_vector == (ShotCopies(5, 1), ShotCopies(6, 1))
         assert shots.total_shots == 11
         assert isinstance(shots.shot_vector, tuple)
+
+    shot_data = (
+        Shots(None),
+        Shots(10),
+        Shots((1, 10, 100)),
+        Shots((1, 10, 10, 100, 100, 100)),
+    )
+
+    str_data = (
+        "Shots(total=None)",
+        "Shots(total=10)",
+        "Shots(total=111, vector=[1 shots, 10 shots, 100 shots])",
+        "Shots(total=321, vector=[1 shots, 10 shots x 2, 100 shots x 3])",
+    )
+
+    @pytest.mark.parametrize("expected_str, shots_obj", zip(str_data, shot_data))
+    def test_str(self, expected_str, shots_obj):
+        """Test that the string representation is correct."""
+        assert expected_str == str(shots_obj)
+
+    repr_data = (
+        "Shots(total_shots=None, shot_vector=())",
+        "Shots(total_shots=10, shot_vector=(ShotCopies(10 shots x 1),))",
+        "Shots(total_shots=111, shot_vector=(ShotCopies(1 shots x 1), "
+        "ShotCopies(10 shots x 1), ShotCopies(100 shots x 1)))",
+        "Shots(total_shots=321, shot_vector=(ShotCopies(1 shots x 1), "
+        "ShotCopies(10 shots x 2), ShotCopies(100 shots x 3)))",
+    )
+
+    @pytest.mark.parametrize("expected_str, shots_obj", zip(repr_data, shot_data))
+    def test_repr(self, expected_str, shots_obj):
+        """Test that the repr is correct"""
+        assert expected_str == repr(shots_obj)
+
+    def test_eq(self):
+        """Test that the equality function behaves correctly"""
+        for s in self.shot_data:
+            assert s == copy.copy(s)
+            assert s == Shots(s.shot_vector if s.shot_vector else None)
+
+    def test_eq_edge_case(self):
+        """Test edge cases for equality function are correct"""
+        assert Shots((1, 2)) != Shots((2, 1))
+        assert Shots((1, 10, 1)) != Shots((1, 1, 10))
+        assert Shots((5, 5)) != Shots(10)
+        assert Shots((1, 2, (10, 2))) == Shots((1, 2, 10, 10))
+
+    def test_hash(self):
+        """Test that the hash function behaves correctly"""
+        for s in self.shot_data:
+            hash_s = hash(s)
+            assert hash_s == hash(copy.copy(s))
+            assert hash_s == hash(Shots(s.shot_vector if s.shot_vector else None))
 
     def test_sequence_all_tuple(self):
         """Tests that a sequence of tuples is allowed."""

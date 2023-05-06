@@ -14,8 +14,11 @@
 """
 Stores classes and logic to aggregate all the resource information from a quantum workflow.
 """
+from abc import abstractmethod
 from collections import defaultdict
 from dataclasses import dataclass, field
+
+from pennylane.operation import Operation
 
 
 @dataclass(frozen=True)
@@ -28,6 +31,8 @@ class Resources:
         num_gates (int): number of gates
         gate_types (dict): dictionary storing operation names (str) as keys
             and the number of times they are used in the circuit (int) as values
+        gate_sizes (dict): dictionary storing the number of :math:`n` qubit gates in the circuit
+            as a key-value pair where :math:`n` is the key and the number of occurances is the value
         depth (int): the depth of the circuit defined as the maximum number of non-parallel operations
         shots (int): number of samples to generate
 
@@ -44,11 +49,15 @@ class Resources:
         gates: 2
         depth: 2
         shots: 0
-        gate_types: {'Hadamard': 1, 'CNOT': 1}
+        gate_types:
+        {'Hadamard': 1, 'CNOT': 1}
+        gate_sizes:
+        {1: 1, 2: 1}
     """
     num_wires: int = 0
     num_gates: int = 0
     gate_types: dict = field(default_factory=dict)
+    gate_sizes: dict = field(default_factory=dict)
     depth: int = 0
     shots: int = 0
 
@@ -60,15 +69,56 @@ class Resources:
         items = items.replace("',", ":")
         items = items.replace(")", "")
 
-        gate_str = ", ".join(
+        gate_type_str = ", ".join(
             [f"'{gate_name}': {count}" for gate_name, count in self.gate_types.items()]
         )
-        items += "\ngate_types:\n{" + gate_str + "}"
+        items += "\ngate_types:\n{" + gate_type_str + "}"
+
+        gate_size_str = ", ".join(
+            [f"{n_gate}: {count}" for n_gate, count in self.gate_sizes.items()]
+        )
+        items += "\ngate_sizes:\n{" + gate_size_str + "}"
         return items
 
     def _ipython_display_(self):
         """Displays __str__ in ipython instead of __repr__"""
         print(str(self))
+
+
+class ResourcesOperation(Operation):
+    r"""Base class that represents quantum gates or channels applied to quantum
+    states and stores the resource requirements of the quantum gate.
+
+    .. note::
+        Child classes must implement the :func:`~.ResourcesOperation.resources` method which computes
+        the resource requirements of the operation.
+    """
+
+    @abstractmethod
+    def resources(self) -> Resources:
+        r"""Compute the resources required for this operation.
+
+        Returns:
+            Resources: The resources required by this operation.
+
+        **Examples**
+
+        >>> class CustomOp(ResourcesOperation):
+        ...     num_wires = 2
+        ...     def resources(self):
+        ...         return Resources(num_wires=self.num_wires, num_gates=3, depth=2)
+        ...
+        >>> op = CustomOp()
+        >>> print(op.resources())
+        wires: 2
+        gates: 3
+        depth: 2
+        shots: 0
+        gate_types:
+        {}
+        gate_sizes:
+        {}
+        """
 
 
 def _count_resources(tape, shots: int) -> Resources:
@@ -87,8 +137,21 @@ def _count_resources(tape, shots: int) -> Resources:
 
     num_gates = 0
     gate_types = defaultdict(int)
+    gate_sizes = defaultdict(int)
     for op in tape.operations:
-        gate_types[op.name] += 1
-        num_gates += 1
+        if isinstance(op, ResourcesOperation):
+            op_resource = op.resources()
+            for d in op_resource.gate_types:
+                gate_types[d] += op_resource.gate_types[d]
 
-    return Resources(num_wires, num_gates, gate_types, depth, shots)
+            for n in op_resource.gate_sizes:
+                gate_sizes[n] += op_resource.gate_sizes[n]
+
+            num_gates += sum(op_resource.gate_types.values())
+
+        else:
+            gate_types[op.name] += 1
+            gate_sizes[len(op.wires)] += 1
+            num_gates += 1
+
+    return Resources(num_wires, num_gates, gate_types, gate_sizes, depth, shots)
