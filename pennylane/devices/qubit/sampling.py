@@ -42,17 +42,19 @@ def measure_with_samples(
     for op in mp.diagonalizing_gates():
         pre_rotated_state = apply_operation(op, pre_rotated_state)
 
+    wires = qml.wires.Wires(range(len(state.shape)))
+
     # if there is a shot vector, build a list containing results for each shot entry
     if shots.has_partitioned_shots:
         processed_samples = []
         for s in shots:
-            samples = sample_state(pre_rotated_state, shots=s, wires=mp.wires, rng=rng)
-            processed_samples.append(mp.process_samples(samples, mp.wires))
+            samples = sample_state(pre_rotated_state, shots=s, wires=wires, rng=rng)
+            processed_samples.append(mp.process_samples(samples, wires))
 
         return tuple(processed_samples)
 
-    samples = sample_state(pre_rotated_state, shots=shots.total_shots, wires=mp.wires, rng=rng)
-    return mp.process_samples(samples, mp.wires)
+    samples = sample_state(pre_rotated_state, shots=shots.total_shots, wires=wires, rng=rng)
+    return mp.process_samples(samples, wires)
 
 
 def sample_state(state, shots: int, wires=None, rng=None) -> np.ndarray:
