@@ -280,7 +280,6 @@ class TestMeasureSamples:
         assert result != 0
         assert np.allclose(result, 0, atol=0.05)
 
-<<<<<<< HEAD
     def test_approximate_var_measure(self):
         """Test that a variance measurement works as expected"""
         state = qml.math.array(two_qubit_state)
@@ -292,8 +291,6 @@ class TestMeasureSamples:
         assert result != 1
         assert np.allclose(result, 1, atol=0.05)
 
-=======
->>>>>>> e4fd474b7 (Add more tests)
     @pytest.mark.parametrize(
         "shots, total_copies",
         [
