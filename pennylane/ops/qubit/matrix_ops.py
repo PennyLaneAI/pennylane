@@ -41,13 +41,11 @@ def _walsh_hadamard_transform(D, n=None):
     Returns:
         tensor_like: The transformed tensor with the same shape as the input ``D``.
 
-    Note that there is a (theoretically) faster approach, the Fast Walsh-Hadamard transform.
-    However, due to the large internal speedups of compiled matrix multiplication, it
-    is often favourable to use this approach.
-
-    Another, even faster approach is to construct the tensor product of the Hadamard matrix
-    with itself. However, constructing and/or storing this matrix is rather wasteful, so that
-    the approach here is more memory-efficient and provides a reasonable runtime.
+    Note that although this function uses matrix multiplication to realize the transform, it actually scales like
+    the fast Walsh-Hadamard transform: On ``n`` qubits, there are ``n`` calls to ``tensordot``, each multiplying a
+    ``(2, 2)`` matrix to a ``(2,)*n`` vector, with a single axis being contracted. This means that there are ``n``
+    operations with a FLOP count of ``4 * 2**(n-1)``, where ``4`` is the cost of a single ``(2, 2) @ (2,)`` contraction 
+    and ``2**(n-1)`` is the number of copies due to the non-contracted ``n-1`` axes.
     """
     orig_shape = qml.math.shape(D)
     n = n or int(qml.math.log2(orig_shape[-1]))
