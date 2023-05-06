@@ -947,6 +947,8 @@ class TestParamShiftUsingBroadcasting:
         assert np.allclose(grad, -np.sin(x))
 
 
+# The first of the pylint disable is for cost1 through cost6
+# pylint: disable=no-self-argument, not-an-iterable
 # pylint: disable=too-many-public-methods
 class TestParameterShiftRule:
     """Tests for the parameter shift implementation"""
@@ -2054,37 +2056,31 @@ class TestParameterShiftRule:
         assert np.allclose(gradA, expected, atol=tol, rtol=0)
         assert gradF == pytest.approx(expected, abs=tol)
 
-    @staticmethod
     def cost1(x):
         """Perform rotation and return a scalar expectation value."""
         qml.Rot(*x, wires=0)
         return qml.expval(qml.PauliZ(0))
 
-    @staticmethod
     def cost2(x):
         """Perform rotation and return an expectation value in a 1d array."""
         qml.Rot(*x, wires=0)
         return [qml.expval(qml.PauliZ(0))]
 
-    @staticmethod
     def cost3(x):
         """Perform rotation and return two expectation value in a 1d array."""
         qml.Rot(*x, wires=0)
         return [qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliZ(1))]
 
-    @staticmethod
     def cost4(x):
         """Perform rotation and return probabilities."""
         qml.Rot(*x, wires=0)
         return qml.probs([0, 1])
 
-    @staticmethod
     def cost5(x):
         """Perform rotation and return probabilities in a 2d object."""
         qml.Rot(*x, wires=0)
         return [qml.probs([0, 1])]
 
-    @staticmethod
     def cost6(x):
         """Perform rotation and return two sets of probabilities in a 2d object."""
         qml.Rot(*x, wires=0)
@@ -2245,6 +2241,8 @@ class TestParameterShiftRule:
         assert len(record) == 0
 
 
+# The following pylint disable is for cost1 through cost6
+# pylint: disable=no-self-argument, not-an-iterable
 class TestParameterShiftRuleBroadcast:
     """Tests for the parameter shift implementation using broadcasting"""
 

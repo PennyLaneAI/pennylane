@@ -636,6 +636,8 @@ class TestParamShift:
 # `broadcast=False` (as double broadcasting is not supported).
 
 
+# The first line of pylint disable is for cost1 through cost6
+# pylint: disable=no-self-argument, not-an-iterable
 # pylint: disable=too-many-public-methods
 @pytest.mark.slow
 class TestParameterShiftRule:
@@ -1944,37 +1946,31 @@ class TestParameterShiftRule:
         for gradF in all_gradF:
             assert gradF == pytest.approx(expected, abs=finite_diff_tol)
 
-    @staticmethod
     def cost1(x):
         """Perform rotation and return a scalar expectation value."""
         qml.Rot(*x, wires=0)
         return qml.expval(qml.PauliZ(0))
 
-    @staticmethod
     def cost2(x):
         """Perform rotation and return an expectation value in a 1d array."""
         qml.Rot(*x, wires=0)
         return [qml.expval(qml.PauliZ(0))]
 
-    @staticmethod
     def cost3(x):
         """Perform rotation and return two expectation value in a 1d array."""
         qml.Rot(*x, wires=0)
         return [qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliZ(1))]
 
-    @staticmethod
     def cost4(x):
         """Perform rotation and return probabilities."""
         qml.Rot(*x, wires=0)
         return qml.probs([0, 1])
 
-    @staticmethod
     def cost5(x):
         """Perform rotation and return probabilities in a 2d object."""
         qml.Rot(*x, wires=0)
         return [qml.probs([0, 1])]
 
-    @staticmethod
     def cost6(x):
         """Perform rotation and return two sets of probabilities in a 2d object."""
         qml.Rot(*x, wires=0)
@@ -2179,6 +2175,7 @@ class TestHamiltonianExpvalGradients:
 
     def test_no_trainable_coeffs(self, mocker, broadcast, tol):
         """Test no trainable Hamiltonian coefficients"""
+        np.random.seed(3751)
         shot_vec = many_shots_shot_vector
         dev = qml.device("default.qubit", wires=2, shots=shot_vec)
         spy = mocker.spy(qml.gradients, "hamiltonian_grad")
