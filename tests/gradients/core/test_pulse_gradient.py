@@ -14,7 +14,6 @@
 """
 Tests for the gradients.pulse_gradient module.
 """
-# pylint:disable=import-outside-toplevel
 
 import copy
 import pytest

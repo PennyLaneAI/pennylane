@@ -12,7 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Tests for the gradients.param_shift_hessian module."""
-# pylint: disable=import-outside-toplevel
 
 from itertools import product
 import pytest

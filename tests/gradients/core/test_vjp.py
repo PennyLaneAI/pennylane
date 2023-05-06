@@ -12,7 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Tests for the gradients.vjp module."""
-# pylint: disable=import-outside-toplevel
 from functools import partial
 
 import pytest

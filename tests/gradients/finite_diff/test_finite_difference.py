@@ -14,7 +14,6 @@
 """
 Tests for the gradients.finite_difference module.
 """
-# pylint: disable=import-outside-toplevel
 import numpy
 import pytest
 
