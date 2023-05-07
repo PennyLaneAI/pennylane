@@ -21,7 +21,7 @@ import numpy as np
 import pennylane as qml
 from pennylane.pulse import ParametrizedEvolution
 
-from .parameter_shift import _reorder_grads, _make_zero_rep
+from .parameter_shift import _make_zero_rep
 from .gradient_transform import (
     _all_zero_grad,
     assert_active_return,
@@ -31,6 +31,7 @@ from .gradient_transform import (
     gradient_analysis_and_validation,
     gradient_transform,
     _no_trainable_grad,
+    reorder_grads,
 )
 
 has_jax = True
@@ -624,7 +625,7 @@ def _expval_stoch_pulse_grad(tape, argnum, num_split_times, key, shots, use_broa
         # Fill in zero-valued gradients
         grads = [zero_rep if g is None else g for g in grads]
 
-        return _reorder_grads(grads, tape_specs)
+        return reorder_grads(grads, tape_specs)
 
     return tapes, processing_fn
 
