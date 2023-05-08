@@ -33,11 +33,18 @@
 * Added `__repr__` and `__str__` methods to the `Shots` class.
   [(#4081)](https://github.com/PennyLaneAI/pennylane/pull/4081)
 
+* Added `__eq__` and `__hash__` methods to the `Shots` class.
+  [(#4082)](https://github.com/PennyLaneAI/pennylane/pull/4082)
+
 * Added a function `measure_with_samples` that returns a sample-based measurement result given a state
   [(#4083)](https://github.com/PennyLaneAI/pennylane/pull/4083)
 
 * Support for adjoint differentiation has been added to the `DefaultQubit2` device.
   [(#4037)](https://github.com/PennyLaneAI/pennylane/pull/4037)
+
+* Added a `dense` keyword to `ParametrizedEvolution` that allows forcing dense or sparse matrices.
+  [(#4079)](https://github.com/PennyLaneAI/pennylane/pull/4079)
+  [(#4095)](https://github.com/PennyLaneAI/pennylane/pull/4095)
 
 <h3>Breaking changes 💔</h3>
 
@@ -65,6 +72,7 @@ This release contains contributions from (in alphabetical order):
 
 Isaac De Vlugt,
 Soran Jahangiri,
+Korbinian Kottmann
 Christina Lee,
 Romain Moyard,
 Mudit Pandey,

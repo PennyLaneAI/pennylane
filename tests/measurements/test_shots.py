@@ -128,6 +128,26 @@ class TestShotsConstruction:
         """Test that the repr is correct"""
         assert expected_str == repr(shots_obj)
 
+    def test_eq(self):
+        """Test that the equality function behaves correctly"""
+        for s in self.shot_data:
+            assert s == copy.copy(s)
+            assert s == Shots(s.shot_vector if s.shot_vector else None)
+
+    def test_eq_edge_case(self):
+        """Test edge cases for equality function are correct"""
+        assert Shots((1, 2)) != Shots((2, 1))
+        assert Shots((1, 10, 1)) != Shots((1, 1, 10))
+        assert Shots((5, 5)) != Shots(10)
+        assert Shots((1, 2, (10, 2))) == Shots((1, 2, 10, 10))
+
+    def test_hash(self):
+        """Test that the hash function behaves correctly"""
+        for s in self.shot_data:
+            hash_s = hash(s)
+            assert hash_s == hash(copy.copy(s))
+            assert hash_s == hash(Shots(s.shot_vector if s.shot_vector else None))
+
     def test_sequence_all_tuple(self):
         """Tests that a sequence of tuples is allowed."""
         shots = Shots([(1, 2), (1, 5), (3, 4)])

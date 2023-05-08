@@ -185,7 +185,12 @@ class Shots:
         return f"Shots(total_shots={self.total_shots}, shot_vector={self.shot_vector})"
 
     def __eq__(self, other):
-        return self.shot_vector == other.shot_vector
+        """Equality between Shot instances."""
+        return self.total_shots == other.total_shots and self.shot_vector == other.shot_vector
+
+    def __hash__(self):
+        """Hash for a given Shot instance."""
+        return hash(self.shot_vector)
 
     def __all_tuple_init__(self, shots: Sequence[Tuple]):
         res = []
