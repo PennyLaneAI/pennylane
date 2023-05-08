@@ -68,8 +68,8 @@ def get_type_str(cls_or_obj: Union[object, type]) -> str:
     Otherwise, returns the fully-qualified class name, including the module.
 
     """
-
-    if get_origin(cls_or_obj) is not None:
+    cls = cls_or_obj if isinstance(cls_or_obj, type) else type(cls_or_obj)
+    if get_args(cls_or_obj) is not None:
         return str(cls_or_obj)
 
     cls = cls_or_obj if isinstance(cls_or_obj, type) else type(cls_or_obj)
