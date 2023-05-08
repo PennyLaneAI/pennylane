@@ -148,19 +148,47 @@ class AttributeInfo(Generic[T], MutableMapping[str, Any]):
 class AttributeType(ABC, Generic[Zarr, T]):
     """
     The AttributeType class provides an interface for converting Python objects to and from a Zarr
-    array or Group. It uses the registry pattern to maintain a mapping of codec IDs to
-    Codecs, and Python types to compatible Codecs.
+    array or Group. It uses the registry pattern to maintain a mapping of type_id to
+    AttributeType, and Python types to compatible AttributeType
 
     Attributes:
-        type_id: Unique identifier for this Codec class. Must be declared
+        type_id: Unique identifier for this AttributeType class. Must be declared
             in subclasses.
-        registry: Maps codec ids to compatible Codec classes
-        type_to_default_codec_id: Maps types to their default Codec classes
+        registry: Maps type_ids to their AttributeType classes
+        type_consumer_registry: Maps types to their default AttributeType
     """
 
     type_id: ClassVar[str]
 
     Self = TypeVar("Self", bound="AttributeType")
+
+    @overload
+    def __init__(
+        self,
+        value: T,
+        info: Optional[AttributeInfo] = None,
+        *,
+        parent_and_key: Optional[tuple[ZarrGroup, str]] = None,
+    ):
+        """Initialize a new dataset attribute from ``value``.
+
+        Args:
+            value: Value that will be stored in dataset attribute.
+            info: Metadata to attach to attribute
+            parent_and_key: A 2-tuple specifying the Zarr group that will contain
+                this attribute, and its key. If None, attribute will be stored in-memory.
+        """
+
+    @overload
+    def __init__(self, *, bind: Zarr):
+        """Load previosly persisted dataset attribute from ``bind``.
+
+        If ``bind`` contains an attribute of a different type, or does not
+        contain a dataset attribute, a ``TypeError` will be raised.
+
+        Args:
+            bind: Zarr object from which existing attribute will be loaded
+        """
 
     def __init__(
         self,
@@ -170,6 +198,30 @@ class AttributeType(ABC, Generic[Zarr, T]):
         bind: Optional[Zarr] = None,
         parent_and_key: Optional[tuple[ZarrGroup, str]] = None,
     ) -> None:
+        """
+        Initialize a new dataset attribute, or load from an existing
+        zarr object.
+
+        This constructor can be called two ways: value initialization
+        or bind initialization.
+
+        Value initialization creates the attribute with specified ``value`` in
+        a new Zarr object, with optional ``info`` attached. The attribute can
+        be created in an existing Zarr group by passing the ``parent_and_key``
+        argument.
+
+        Bind initialization loads an attribute that was previously persisted
+        in Zarr object ``bind``.
+
+        Note that if ``bind`` is provided, all other arguments will be ignored.
+
+        Args:
+            value: Value to initialize attribute to
+            info: Metadata to attach to attribute
+            bind: Zarr object from which existing attribute will be loaded
+            parent_and_key: A 2-tuple specifying the Zarr group that will contain
+                this attribute, and its key.
+        """
         if bind is not None:
             self._bind = bind
             self._check_bind()
@@ -252,9 +304,13 @@ class AttributeType(ABC, Generic[Zarr, T]):
         this type.
         """
         existing_type_id = self.info.get("type_id")
-        if existing_type_id is not None and existing_type_id != self.type_id:
+        if existing_type_id is None:
             raise TypeError(
-                f"zarr {type(self.bind).__qualname__} is bound to another type {existing_type_id}"
+                f"Zarr '{type(self.bind).__qualname__}' does not contain a dataset attribute."
+            )
+        if existing_type_id != self.type_id:
+            raise TypeError(
+                f"Zarr '{type(self.bind).__qualname__}' is bound to another attribute type {existing_type_id}"
             )
 
     def __str__(self) -> str:
