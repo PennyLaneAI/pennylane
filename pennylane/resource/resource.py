@@ -44,7 +44,7 @@ class Resources:
 
         **Example**
 
-        >>> r = Resources(num_wires=2, num_gates=2, gate_types={'Hadamard': 1, 'CNOT':1}, depth=2)
+        >>> r = Resources(num_wires=2, num_gates=2, gate_types={'Hadamard': 1, 'CNOT':1}, gate_sizes={1: 1, 2: 1}, depth=2)
         >>> print(r)
         wires: 2
         gates: 2
