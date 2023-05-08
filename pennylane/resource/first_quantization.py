@@ -102,7 +102,7 @@ class FirstQuantization(Operation):
         self.vectors = vectors
         self.cubic = True
 
-        if not omega and not vectors:
+        if omega is None and vectors is None:
             raise ValueError("The lattice vectors must be provided.")
 
         if self.vectors is not None:
