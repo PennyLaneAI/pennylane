@@ -11,9 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""Contains AttributeType definitions for numpy arrays and scalars (numbers)."""
-
-from numbers import Number
+"""Contains AttributeType definition for numpy arrays."""
 
 import numpy
 from numpy.typing import ArrayLike
@@ -34,20 +32,4 @@ class DatasetArray(AttributeType[ZarrArray, numpy.ndarray, ArrayLike]):
 
     def value_to_zarr(self, bind_parent: ZarrGroup, key: str, value: ArrayLike) -> ZarrArray:
         bind_parent[key] = value
-        return bind_parent[key]
-
-
-class DatasetScalar(AttributeType[ZarrArray, Number, Number]):
-    """
-    Attribute type for numbers.
-    """
-
-    type_id = "scalar"
-
-    def zarr_to_value(self, bind: ZarrArray) -> Number:
-        return bind[()]
-
-    def value_to_zarr(self, bind_parent: ZarrGroup, key: str, value: Number) -> ZarrArray:
-        bind_parent[key] = value
-
         return bind_parent[key]

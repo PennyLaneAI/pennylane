@@ -1,7 +1,8 @@
+from numbers import Number
+
 import numpy as np
 
-from pennylane.data import Dataset, DatasetScalar, AttributeInfo
-from numbers import Number
+from pennylane.data import AttributeInfo, Dataset, DatasetScalar
 
 
 class TestDataset:
