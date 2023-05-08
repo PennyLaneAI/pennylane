@@ -481,7 +481,7 @@ class TestWrappedObj:
         """Test that the ``WrappedObj` representation is equivalent to the repr of the
         object it wraps."""
 
-        class Dummy:
+        class Dummy:    # pylint: disable=too-few-public-methods
             """Dummy class with custom repr"""
 
             def __repr__(self):
