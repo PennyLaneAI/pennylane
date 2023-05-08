@@ -14,6 +14,7 @@
 """This module contains utilities for defining custom gradient transforms,
 including a decorator for specifying gradient expansions."""
 # pylint: disable=too-few-public-methods
+from functools import partial
 import warnings
 from collections.abc import Sequence
 import numpy as np
@@ -319,15 +320,17 @@ def _swap_first_two_axes(grads, first_axis_size, second_axis_size):
         tuple(grads[j][i] for j in range(first_axis_size)) for i in range(second_axis_size)
     )
 
+
 def _move_first_axis_to_third_pos(grads, first_axis_size, second_axis_size, third_axis_size):
     """Transpose the first two axes of an iterable of iterables, returning
     a tuple of tuples."""
-    if first_axis_size==1:
+    if first_axis_size == 1:
         return tuple(
             tuple(grads[0][i][j] for j in range(third_axis_size)) for i in range(second_axis_size)
         )
     return tuple(
-        tuple(tuple(grads[k][i][j] for k in range(first_axis_size)) for j in range(third_axis_size)) for i in range(second_axis_size)
+        tuple(tuple(grads[k][i][j] for k in range(first_axis_size)) for j in range(third_axis_size))
+        for i in range(second_axis_size)
     )
 
 
@@ -372,7 +375,7 @@ def reorder_grads(grads, tape_specs):
         dealt with at the moment by this function.
 
     The above reordering requires the following operations:
-        
+
         1. In all cases, remove the parameter axis if it has length one.
         2. For a single measurement and no shot vector: Do nothing (but cast to ``tuple``)
         3. For a single measurement and shot vector: Swap first two axes (shots and parameters)
@@ -399,6 +402,63 @@ def reorder_grads(grads, tape_specs):
     if not shot_vector:
         return _swap_first_two_axes(grads, num_params, num_measurements)
     return _move_first_axis_to_third_pos(grads, num_params, len_shot_vec, num_measurements)
+
+
+def _contract_qjac_with_cjac(qjac, cjac, num_measurements, shots):
+    """ """
+    if isinstance(cjac, tuple) and len(cjac) == 1:
+        cjac = cjac[0]
+
+    cjac_is_tuple = isinstance(cjac, tuple)
+    if not cjac_is_tuple:
+        is_square = cjac.ndim == 2 and cjac.shape[0] == cjac.shape[1]
+
+        if not qml.math.is_abstract(cjac):
+            if is_square and qml.math.allclose(cjac, qml.numpy.eye(cjac.shape[0])):
+                # Classical Jacobian is the identity. No classical processing
+                # is present inside the QNode.
+                return qjac
+
+    multi_meas = num_measurements > 1
+    shot_vector = isinstance(shots, Sequence)
+
+    if cjac_is_tuple:
+        multi_params = True
+    elif multi_meas and shot_vector:
+        multi_params = isinstance(qjac[0][0], tuple)
+    elif multi_meas or shot_vector:
+        multi_params = isinstance(qjac[0], tuple)
+    else:
+        multi_params = isinstance(qjac, tuple)
+    # if multi_meas:
+    # multi_params = cjac_is_tuple or isinstance(qjac[0], tuple)
+    # else:
+    # multi_params = cjac_is_tuple or isinstance(qjac, tuple)
+
+    tdot = partial(qml.math.tensordot, axes=[[0], [0]])
+
+    if not multi_params:
+        # Without dimension (e.g. expval) or with dimension (e.g. probs)
+        new_shape = (1,) if qjac.shape == () else (1, -1)
+
+        if not multi_meas:
+            # Single parameter, single measurement
+            return tdot(qml.math.reshape(qjac, new_shape), cjac)
+
+        # Single parameter, multiple measurements
+        return tuple(tdot(qml.math.reshape(q, new_shape), cjac) for q in qjac)
+
+    if not multi_meas:
+        # Multiple parameters, single measurement
+        qjac = qml.math.stack(qjac)
+        if not cjac_is_tuple:
+            return tdot(qjac, qml.math.stack(cjac))
+        return tuple(tdot(qjac, c) for c in cjac if c is not None)
+
+    # Multiple parameters, multiple measurements
+    if not cjac_is_tuple:
+        return tuple(tdot(qml.math.stack(q), qml.math.stack(cjac)) for q in qjac)
+    return tuple(tuple(tdot(qml.math.stack(q), c) for c in cjac if c is not None) for q in qjac)
 
 
 class gradient_transform(qml.batch_transform):
@@ -554,79 +614,8 @@ class gradient_transform(qml.batch_transform):
             )(*args, **kwargs)
 
             if qml.active_return():
-                if isinstance(cjac, tuple) and len(cjac) == 1:
-                    cjac = cjac[0]
-
-                cjac_is_tuple = isinstance(cjac, tuple)
-                if not cjac_is_tuple:
-                    is_square = cjac.ndim == 2 and cjac.shape[0] == cjac.shape[1]
-
-                    if not qml.math.is_abstract(cjac):
-                        if is_square and qml.math.allclose(cjac, qml.numpy.eye(cjac.shape[0])):
-                            # Classical Jacobian is the identity. No classical processing
-                            # is present inside the QNode.
-                            return qjac
-
-                multi_meas = len(qnode.tape.measurements) > 1
-                #shot_vector = isinstance(_shots, Sequence)
-
-                #if cjac_is_tuple:
-                    #multi_params = True
-                #elif multi_meas and shot_vector:
-                    #multi_params = isinstance(qjac[0][0], tuple)
-                #elif multi_meas or shot_vector:
-                    #multi_params = isinstance(qjac[0], tuple)
-                #else:
-                    #multi_params = isinstance(qjac, tuple)
-                if multi_meas:
-                    multi_params = cjac_is_tuple or isinstance(qjac[0], tuple)
-                else:
-                    multi_params = cjac_is_tuple or isinstance(qjac, tuple)
-
-                if not multi_params:
-                    if not multi_meas:
-                        # Without dimension (e.g. expval) or with dimension (e.g. probs)
-                        new_shape = (1,) if qjac.shape == () else (1, -1)
-                        qjac = qml.math.reshape(qjac, new_shape)
-                        return qml.math.tensordot(qjac, cjac, [[0], [0]])
-
-                if multi_meas and not multi_params:
-                    jacs = tuple(
-                        qml.math.tensordot(qml.math.reshape(q, (1,)), cjac, [[0], [0]])
-                        if q.shape == ()
-                        else qml.math.tensordot(qml.math.reshape(q, (1, -1)), cjac, [[0], [0]])
-                        for q in qjac
-                    )
-                    return jacs
-                if not multi_meas and multi_params:
-                    if not isinstance(cjac, tuple):
-                        print(qjac, cjac)
-                        jacs = qml.math.tensordot(
-                            qml.math.stack(qjac), qml.math.stack(cjac), [[0], [0]]
-                        )
-                    else:
-                        jacs = tuple(
-                            qml.math.tensordot(qml.math.stack(qjac), c, [[0], [0]])
-                            for c in cjac
-                            if c is not None
-                        )
-                    return jacs
-                # Multi measurement and multi params
-                if not isinstance(cjac, tuple):
-                    jacs = tuple(
-                        qml.math.tensordot(qml.math.stack(q), qml.math.stack(cjac), [[0], [0]])
-                        for q in qjac
-                    )
-                else:
-                    jacs = tuple(
-                        tuple(
-                            qml.math.tensordot(qml.math.stack(q), c, [[0], [0]])
-                            for c in cjac
-                            if c is not None
-                        )
-                        for q in qjac
-                    )
-                return jacs
+                num_measurements = len(qnode.tape.measurements)
+                return _contract_qjac_with_cjac(qjac, cjac, num_measurements)
 
             if isinstance(cjac, tuple):
                 # Classical processing of multiple arguments is present. Return qjac @ cjac.
