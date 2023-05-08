@@ -16,12 +16,22 @@ attribute metadata."""
 
 import warnings
 from abc import ABC, abstractmethod
-from collections.abc import Iterable, Mapping
-from dataclasses import asdict, dataclass, field, fields
+from collections.abc import Iterable, Mapping, MutableMapping
 from numbers import Number
 from types import MappingProxyType
-from typing import Any, ClassVar, Generic, Literal, Optional, TypeVar, Union, cast
-
+from typing import (
+    Any,
+    ClassVar,
+    Generic,
+    Iterator,
+    Literal,
+    Optional,
+    TypeVar,
+    Union,
+    cast,
+    overload,
+)
+import itertools
 from pennylane.data.base._zarr import zarr
 from pennylane.data.base.typing_util import (
     UNSET,
@@ -34,51 +44,103 @@ from pennylane.data.base.typing_util import (
 )
 
 
-@dataclass
-class AttributeInfo(Generic[T]):
+class AttributeInfo(Generic[T], MutableMapping[str, Any]):
     """Contains metadata that may be assigned to a dataset
     attribute. Is stored in the Zarr object's ``attrs`` dict.
 
     Attributes:
+        attrs_bind: The Zarr attrs dict that this instance is bound to,
+            or any mutable mapping
         py_type: Type annotation for this attribute
         doc: Documentation for this attribute
         meta: Extra metdata to attach to this attribute. Must be
             json serializable.
     """
 
-    doc: Optional[str] = None
-    py_type: Optional[Union[str, type[T]]] = None
-    extra: dict[str, Any] = field(default_factory=dict)
+    attrs_namespace: ClassVar[str] = "qml.data."
 
-    @classmethod
-    def load(cls, zobj: ZarrAny) -> "AttributeInfo":
-        """Load AttributeInfo from Zarr object's attrs."""
-        kwargs = {}
-        for f in fields(cls):
-            kwargs[f.name] = zobj.attrs.get(f.name)
+    attrs_bind: MutableMapping[str, Any]
 
-        return cls(**kwargs)
+    doc: Optional[str]
 
-    def save(self, zobj: ZarrAny, clobber: bool = False):
-        """Save AttributeInfo into Zarr object's attrs.
+    @overload
+    def __init__(
+        self,
+        attrs_bind: Optional[MutableMapping[str, Any]],
+        *,
+        doc: Optional[str] = None,
+        py_type: Optional[str] = None,
+    ):
+        ...
 
-        Args:
-            zobj: Zarr object
-            clobber: If True, replace existing values in attrs.
-        """
-        # TODO: flatten extra
-        for f, v in self.jsonify().items():
-            if clobber or zobj.attrs.get(f) is None:
-                zobj.attrs[f] = v
+    @overload
+    def __init__(self):
+        ...
 
-    def jsonify(self) -> dict[str, Any]:
-        """Converts the instance to a dict that can be passed directly
-        to json.dump()."""
-        d = asdict(self)
-        if not isinstance(d.get("py_type"), (str, type(None))):
-            d["py_type"] = get_type_str(d["py_type"])
+    def __init__(self, attrs_bind: Optional[MutableMapping[str, Any]] = None, **kwargs: Any):
+        object.__setattr__(self, "attrs_bind", attrs_bind or {})
 
-        return d
+        for k, v in kwargs.items():
+            setattr(self, k, v)
+
+    def save(self, attrs_bind: MutableMapping[str, Any], clobber: bool = False):
+        for k in self.raw_keys():
+            if k not in attrs_bind or clobber:
+                attrs_bind[k] = self.attrs_bind[k]
+
+    def load(self, attrs_bind: MutableMapping[str, Any], clobber: bool = False):
+        AttributeInfo(attrs_bind).save(self.attrs_bind, clobber=clobber)
+
+    @property
+    def py_type(self) -> Optional[str]:
+        return self.get("py_type")
+
+    @py_type.setter
+    def py_type(self, type_: Union[str, type]):
+        self["py_type"] = get_type_str(type_)
+
+    def __len__(self) -> int:
+        return self.get("__len__", 0)
+
+    def _update_len(self, inc: int):
+        self.attrs_bind[f"{self.attrs_namespace}__len__"] = self.__len__() + inc
+
+    def __setitem__(self, __name: str, __value: Any):
+        key = f"{self.attrs_namespace}{__name}"
+        exists = key in self.attrs_bind
+        self.attrs_bind[key] = __value
+        if not exists:
+            self._update_len(1)
+
+    def __getitem__(self, __name: str) -> Any:
+        try:
+            return self.attrs_bind[f"{self.attrs_namespace}{__name}"]
+        except KeyError as exc:
+            raise KeyError(__name) from exc
+
+    def __setattr__(self, __name: str, __value: Any) -> None:
+        if __name in self.__class__.__dict__:
+            object.__setattr__(self, __name, __value)
+        else:
+            self[__name] = __value
+
+    def __getattr__(self, __name: str) -> Any:
+        try:
+            return self[__name]
+        except KeyError:
+            return None
+
+    def __delitem__(self, __name: str):
+        del self.attrs_bind[f"{self.attrs_namespace}{__name}"]
+        self._update_len(-1)
+
+    def __iter__(self) -> Iterator[str]:
+        return itertools.chain.from_iterable(
+            key.split(self.attrs_namespace, maxsplit=1)[1:2] for key in self.raw_keys()
+        )
+
+    def raw_keys(self) -> Iterator[str]:
+        return (key for key in self.attrs_bind if key.startswith(self.attrs_namespace))
 
 
 class AttributeType(ABC, Generic[Zarr, T]):
@@ -162,7 +224,7 @@ class AttributeType(ABC, Generic[Zarr, T]):
     @property
     def info(self) -> AttributeInfo:
         """Returns the ``AttributeInfo`` for this attribute."""
-        return AttributeInfo.load(self.bind)
+        return AttributeInfo(self.bind.attrs)
 
     @property
     def bind(self) -> Zarr:
@@ -181,10 +243,14 @@ class AttributeType(ABC, Generic[Zarr, T]):
 
     def set_value(self, value: T, info: Optional[AttributeInfo]) -> Zarr:
         """Converts ``value`` into Zarr format and sets the attribute info."""
+        if info is None:
+            info = AttributeInfo()
+            info.load(self.bind.attrs)
+
+        info["type_id"] = self.type_id
+
         new_bind = self.value_to_zarr(self.bind_parent, self.key, value)
-        new_bind.attrs["type_id"] = self.type_id
-        if info:
-            info.save(new_bind, clobber=False)
+        info.save(new_bind.attrs)
 
         return new_bind
 
@@ -199,7 +265,7 @@ class AttributeType(ABC, Generic[Zarr, T]):
         Checks that ``bind.attrs`` contains the type_id corresponding to
         this type.
         """
-        existing_type_id = bind.attrs.get("type_id")
+        existing_type_id = self.info.get("type_id")
         if existing_type_id is not None and existing_type_id != self.type_id:
             raise TypeError(
                 f"zarr {type(bind).__qualname__} is bound to another type {existing_type_id}"
@@ -247,7 +313,7 @@ def get_attribute_type(zobj: Zarr) -> type[AttributeType[Zarr, Any]]:
     Returns the ``AttributeType`` of the dataset attribute contained
     in ``zobj``.
     """
-    type_id = zobj.attrs["type_id"]
+    type_id = zobj.attrs[f"{AttributeInfo.attrs_namespace}type_id"]
 
     return AttributeType.registry[type_id]
 
