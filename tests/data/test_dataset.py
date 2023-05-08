@@ -1,6 +1,6 @@
 import numpy as np
 
-from pennylane.data import Dataset
+from pennylane.data import Dataset, DatasetScalar, AttributeInfo
 
 
 class TestDataset:
@@ -8,7 +8,12 @@ class TestDataset:
         """Test that initializing a Dataset with keyword arguments
         creates the expected attributes.
         """
-        ds = Dataset(description="test", x=1, y=np.array([1, 2, 3]), z="abc")
+        ds = Dataset(
+            description="test",
+            x=DatasetScalar(1, AttributeInfo(doc="A variable")),
+            y=np.array([1, 2, 3]),
+            z="abc",
+        )
 
         assert ds.description == "test"
         assert ds.x == 1
@@ -24,3 +29,6 @@ class TestDataset:
 
         assert ds.q == "attribute"
         assert ds.x == 2.0
+
+    def test_setattr_preserves_info(self):
+        """Test that __setattr__ preserves AttributeInfo."""

@@ -83,7 +83,7 @@ class AttributeInfo(Generic[T]):
 
 class AttributeType(ABC, Generic[Zarr, T]):
     """
-    The AttributeType class provides an interface to converting Python objects to and from a Zarr
+    The AttributeType class provides an interface for converting Python objects to and from a Zarr
     array or Group. It uses the registry pattern to maintain a mapping of codec IDs to
     Codecs, and Python types to compatible Codecs.
 

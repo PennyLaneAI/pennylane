@@ -41,6 +41,7 @@ class Dataset(DatasetBase):
             bind: The Zarr group, or path to zarr file, that will contain this dataset.
                 If None, the dataset will be stored in memory. Any attributes that
                 already exist in ``bind`` will be loaded into this dataset.
+            description: A short description for this dataset.
             **attrs: Attributes to add to this dataset.
         """
         super().__init__(bind=bind, description=description, **attrs)
