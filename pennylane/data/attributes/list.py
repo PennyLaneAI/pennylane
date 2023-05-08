@@ -15,17 +15,33 @@
 types."""
 
 from collections.abc import Iterable, MutableSequence, Sequence
-from typing import Generic, Literal, Optional, Union, overload
+from typing import Generic, Optional, Union, overload
 
 from pennylane.data.base.attribute import AttributeInfo, AttributeType
 from pennylane.data.base.mapper import MapperMixin
-from pennylane.data.base.typing_util import T, UNSET, ZarrAny, ZarrGroup
+from pennylane.data.base.typing_util import T, ZarrAny, ZarrGroup
 
 
 class DatasetList(
     Generic[T], AttributeType[ZarrGroup, Iterable[T]], MutableSequence[T], MapperMixin
 ):
+    """Provides a list-like collection type for dataset attributes."""
+
     type_id = "list"
+
+    @overload
+    def __init__(
+        self,
+        value: Iterable[T] = (),
+        info: Optional[AttributeInfo] = None,
+        *,
+        parent_and_key: Optional[tuple[ZarrGroup, str]] = None
+    ):
+        """Overload type hint for value initialization."""
+
+    @overload
+    def __init__(self, *, bind: ZarrGroup):
+        """Overload type hint for bind initialization."""
 
     def __init__(
         self,

@@ -16,7 +16,7 @@ of Dataset attributes."""
 
 
 from collections.abc import Iterator, Mapping, MutableMapping
-from typing import Generic, TypeVar, Union, Optional
+from typing import Generic, TypeVar, Union, Optional, overload
 
 from pennylane.data.base.attribute import AttributeType, AttributeInfo
 from pennylane.data.base.mapper import MapperMixin
@@ -29,9 +29,25 @@ class DatasetDict(
     MutableMapping[str, T],
     MapperMixin,
 ):
+    """Provides a dict-like collection for Dataset attribute types."""
+
     Self = TypeVar("Self", bound="DatasetDict")
 
     type_id = "dict"
+
+    @overload
+    def __init__(
+        self,
+        value: Optional[Mapping[str, T]] = None,
+        info: Optional[AttributeInfo] = None,
+        *,
+        parent_and_key: Optional[tuple[ZarrGroup, str]] = None
+    ):
+        """Overload type hint for value initialization."""
+
+    @overload
+    def __init__(self, *, bind: ZarrGroup):
+        """Overload type hint for bind initialization."""
 
     def __init__(
         self,
@@ -52,7 +68,7 @@ class DatasetDict(
     def zarr_to_value(self, bind: ZarrGroup) -> MutableMapping[str, T]:
         return self
 
-    def value_to_zarr(self, bind_parent: ZarrGroup, key: str, value: Mapping[str, T]) -> ZarrGroup:
+    def value_to_zarr(self, bind_parent: ZarrGroup, key: str, value: None) -> ZarrGroup:
         grp = bind_parent.create_group(key)
 
         return grp
