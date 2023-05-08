@@ -9,7 +9,7 @@ version = 1
 "()" = "pennylane.logging.formatters.formatter.AnotherLogFormatter"
 
 [formatters.detailed]
-format = "\u001B[38;4;45m[%(asctime)s][%(levelname)s][<PID %(process)d:%(processName)s>] - %(name)s.%(funcName)s()::\"%(message)s\"\u001B[0m"
+format = "\u001B[38;2;45;145;210m[%(asctime)s][%(levelname)s][<PID %(process)d:%(processName)s>] - %(name)s.%(funcName)s()::\"%(message)s\"\u001B[0m"
 
 [formatters.standard]
 format = "[%(asctime)s] - %(name)s - %(levelname)s - %(message)s"
@@ -35,12 +35,17 @@ class = "logging.StreamHandler"
 formatter = "custom"
 level = "DEBUG"
 stream = "ext://sys.stdout"
-filters = ["LocalProcessFilter", "DebugOnlyFilter"]
+#filters = ["LocalProcessFilter", "DebugOnlyFilter"]
 
 
 [loggers]
 [loggers.jax]
-handlers = ["console_custom"]
+handlers = ["console"]
+level = "DEBUG"
+propagate = false
+
+[loggers.torch]
+handlers = ["console"]
 level = "DEBUG"
 propagate = false
 
