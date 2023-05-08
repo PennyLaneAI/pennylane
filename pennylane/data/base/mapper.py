@@ -52,11 +52,12 @@ class AttributeTypeMapper:
         return attr
 
     def __setitem__(self, key: str, value: Union[Any, AttributeType[ZarrAny, Any]]):
+        info = getattr(value, "info", None)
         if key in self.bind:
-            self[key].set_value(value, None)
+            self[key].set_value(value, info)
         elif not isinstance(value, AttributeType):
             attr_type = match_obj_type(value)
-            attr_type(value, parent=self.bind, key=key)
+            attr_type(value, info=info, parent=self.bind, key=key)
         else:
             value._set_parent(self.bind, key)
 
