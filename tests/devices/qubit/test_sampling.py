@@ -252,7 +252,7 @@ class TestMeasureSamples:
         shots = qml.measurements.Shots(10000)
         mp = qml.sample(wires=range(2))
 
-        result = measure_with_samples(mp, state, shots=shots)
+        result = measure_with_samples(mp, state, shots=shots, rng=123)
 
         one_prob = np.count_nonzero(result[:, 0]) / result.shape[0]
         assert np.allclose(one_prob, 0.5, atol=0.05)
@@ -263,7 +263,7 @@ class TestMeasureSamples:
         shots = qml.measurements.Shots(10000)
         mp = qml.probs(wires=range(2))
 
-        result = measure_with_samples(mp, state, shots=shots)
+        result = measure_with_samples(mp, state, shots=shots, rng=123)
 
         assert np.allclose(result[1], 0.5, atol=0.05)
         assert np.allclose(result[2], 0.5, atol=0.05)
@@ -275,7 +275,7 @@ class TestMeasureSamples:
         shots = qml.measurements.Shots(10000)
         mp = qml.expval(qml.prod(qml.PauliX(0), qml.PauliX(1)))
 
-        result = measure_with_samples(mp, state, shots=shots)
+        result = measure_with_samples(mp, state, shots=shots, rng=123)
 
         assert result != 0
         assert np.allclose(result, 0, atol=0.05)
@@ -286,7 +286,7 @@ class TestMeasureSamples:
         shots = qml.measurements.Shots(10000)
         mp = qml.var(qml.prod(qml.PauliX(0), qml.PauliX(1)))
 
-        result = measure_with_samples(mp, state, shots=shots)
+        result = measure_with_samples(mp, state, shots=shots, rng=123)
 
         assert result != 1
         assert np.allclose(result, 1, atol=0.05)
