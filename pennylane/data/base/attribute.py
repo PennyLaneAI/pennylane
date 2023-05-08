@@ -169,7 +169,7 @@ class AttributeType(ABC, Generic[Zarr, T, InitValueType]):
     @overload
     def __init__(
         self,
-        value: InitValueType,
+        value: Union[InitValueType, Literal[UNSET]] = UNSET,
         info: Optional[AttributeInfo] = None,
         *,
         parent_and_key: Optional[tuple[ZarrGroup, str]] = None,

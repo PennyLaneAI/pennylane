@@ -15,47 +15,25 @@
 types."""
 
 from collections.abc import Iterable, MutableSequence, Sequence
-from typing import Generic, Optional, Union, overload
+from typing import Generic, Union, overload
 
-from pennylane.data.base.attribute import AttributeInfo, AttributeType
+from pennylane.data.base.attribute import AttributeType
 from pennylane.data.base.mapper import MapperMixin
 from pennylane.data.base.typing_util import T, ZarrAny, ZarrGroup
 
 
 class DatasetList(
-    Generic[T], AttributeType[ZarrGroup, Iterable[T]], MutableSequence[T], MapperMixin
+    Generic[T], AttributeType[ZarrGroup, Sequence[T], Iterable[T]], MutableSequence[T], MapperMixin
 ):
     """Provides a list-like collection type for dataset attributes."""
 
     type_id = "list"
 
-    @overload
-    def __init__(
-        self,
-        value: Iterable[T] = (),
-        info: Optional[AttributeInfo] = None,
-        *,
-        parent_and_key: Optional[tuple[ZarrGroup, str]] = None
-    ):
-        """Overload type hint for value initialization."""
-
-    @overload
-    def __init__(self, *, bind: ZarrGroup):
-        """Overload type hint for bind initialization."""
-
-    def __init__(
-        self,
-        value: Iterable[T] = (),
-        info: Optional[AttributeInfo] = None,
-        *,
-        bind: Optional[ZarrGroup] = None,
-        parent_and_key: Optional[tuple[ZarrGroup, str]] = None
-    ) -> None:
-        super().__init__(value, info, bind=bind, parent_and_key=parent_and_key)
+    def __post_init__(self, value: Iterable[T], info):
         self.extend(value)
 
-    def default_value(self) -> list[T]:
-        return []
+    def default_value(self) -> Iterable[T]:
+        return ()
 
     def zarr_to_value(self, bind: ZarrGroup) -> MutableSequence[T]:
         return self
@@ -65,7 +43,7 @@ class DatasetList(
 
         return grp
 
-    def insert(self, index: int, value: Union[T, AttributeType[ZarrAny, T]]):
+    def insert(self, index: int, value: Union[T, AttributeType[ZarrAny, T, T]]):
         if index < 0:
             index = len(self) + index
 
@@ -118,7 +96,7 @@ class DatasetList(
 
         return self._mapper[str(index)].get_value()
 
-    def __setitem__(self, index: int, value: Union[T, AttributeType[ZarrAny, T]]):
+    def __setitem__(self, index: int, value: Union[T, AttributeType[ZarrAny, T, T]]):
         if index < 0:
             index = len(self) + index
 

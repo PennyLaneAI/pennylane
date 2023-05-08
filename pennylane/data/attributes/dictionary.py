@@ -16,16 +16,16 @@ of Dataset attributes."""
 
 
 from collections.abc import Iterator, Mapping, MutableMapping
-from typing import Generic, TypeVar, Union, Optional, overload
+from typing import Generic, Optional, TypeVar, Union
 
-from pennylane.data.base.attribute import AttributeType, AttributeInfo
+from pennylane.data.base.attribute import AttributeType
 from pennylane.data.base.mapper import MapperMixin
 from pennylane.data.base.typing_util import T, ZarrAny, ZarrGroup
 
 
 class DatasetDict(
     Generic[T],
-    AttributeType[ZarrGroup, Mapping[str, T]],
+    AttributeType[ZarrGroup, Mapping[str, T], Optional[Mapping[str, T]]],
     MutableMapping[str, T],
     MapperMixin,
 ):
@@ -35,35 +35,12 @@ class DatasetDict(
 
     type_id = "dict"
 
-    @overload
-    def __init__(
-        self,
-        value: Optional[Mapping[str, T]] = None,
-        info: Optional[AttributeInfo] = None,
-        *,
-        parent_and_key: Optional[tuple[ZarrGroup, str]] = None
-    ):
-        """Overload type hint for value initialization."""
-
-    @overload
-    def __init__(self, *, bind: ZarrGroup):
-        """Overload type hint for bind initialization."""
-
-    def __init__(
-        self,
-        value: Optional[Mapping[str, T]] = None,
-        info: Optional[AttributeInfo] = None,
-        *,
-        bind: Optional[ZarrGroup] = None,
-        parent_and_key: Optional[tuple[ZarrGroup, str]] = None
-    ) -> None:
-        super().__init__(value, info, bind=bind, parent_and_key=parent_and_key)
-
+    def __post_init__(self, value: Optional[Mapping[str, T]], info):
         if value:
             self.update(value)
 
-    def default_value(self) -> Mapping[str, T]:
-        return {}
+    def default_value(self) -> None:
+        return None
 
     def zarr_to_value(self, bind: ZarrGroup) -> MutableMapping[str, T]:
         return self
@@ -76,7 +53,7 @@ class DatasetDict(
     def __getitem__(self, __key: str) -> T:
         return self._mapper[__key].get_value()
 
-    def __setitem__(self, __key: str, __value: Union[T, AttributeType[ZarrAny, T]]) -> None:
+    def __setitem__(self, __key: str, __value: Union[T, AttributeType[ZarrAny, T, T]]) -> None:
         self._mapper[__key] = __value
 
     def __delitem__(self, __key: str) -> None:
