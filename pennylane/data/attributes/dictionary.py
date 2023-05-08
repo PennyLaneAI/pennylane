@@ -16,9 +16,9 @@ of Dataset attributes."""
 
 
 from collections.abc import Iterator, Mapping, MutableMapping
-from typing import Generic, TypeVar, Union
+from typing import Generic, TypeVar, Union, Optional
 
-from pennylane.data.base.attribute import AttributeType
+from pennylane.data.base.attribute import AttributeType, AttributeInfo
 from pennylane.data.base.mapper import MapperMixin
 from pennylane.data.base.typing_util import T, ZarrAny, ZarrGroup
 
@@ -33,6 +33,19 @@ class DatasetDict(
 
     type_id = "dict"
 
+    def __init__(
+        self,
+        value: Optional[Mapping[str, T]] = None,
+        info: Optional[AttributeInfo] = None,
+        *,
+        bind: Optional[ZarrGroup] = None,
+        parent_and_key: Optional[tuple[ZarrGroup, str]] = None
+    ) -> None:
+        super().__init__(value, info, bind=bind, parent_and_key=parent_and_key)
+
+        if value:
+            self.update(value)
+
     def default_value(self) -> Mapping[str, T]:
         return {}
 
@@ -41,8 +54,6 @@ class DatasetDict(
 
     def value_to_zarr(self, bind_parent: ZarrGroup, key: str, value: Mapping[str, T]) -> ZarrGroup:
         grp = bind_parent.create_group(key)
-
-        self.update(value)
 
         return grp
 

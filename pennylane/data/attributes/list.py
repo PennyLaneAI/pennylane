@@ -15,17 +15,28 @@
 types."""
 
 from collections.abc import Iterable, MutableSequence, Sequence
-from typing import Generic, Union, overload
+from typing import Generic, Literal, Optional, Union, overload
 
-from pennylane.data.base.attribute import AttributeType
+from pennylane.data.base.attribute import AttributeInfo, AttributeType
 from pennylane.data.base.mapper import MapperMixin
-from pennylane.data.base.typing_util import T, ZarrAny, ZarrGroup
+from pennylane.data.base.typing_util import T, UNSET, ZarrAny, ZarrGroup
 
 
 class DatasetList(
     Generic[T], AttributeType[ZarrGroup, Iterable[T]], MutableSequence[T], MapperMixin
 ):
     type_id = "list"
+
+    def __init__(
+        self,
+        value: Iterable[T] = (),
+        info: Optional[AttributeInfo] = None,
+        *,
+        bind: Optional[ZarrGroup] = None,
+        parent_and_key: Optional[tuple[ZarrGroup, str]] = None
+    ) -> None:
+        super().__init__(value, info, bind=bind, parent_and_key=parent_and_key)
+        self.extend(value)
 
     def default_value(self) -> list[T]:
         return []
@@ -35,8 +46,6 @@ class DatasetList(
 
     def value_to_zarr(self, bind_parent: ZarrGroup, key: str, value: Iterable[T]) -> ZarrGroup:
         grp = bind_parent.create_group(key)
-
-        self.extend(value)
 
         return grp
 

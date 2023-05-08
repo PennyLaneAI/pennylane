@@ -27,10 +27,9 @@ class TestList:
         """Test that a DatasetList can be initialized from
         a previously initialized Zarr group."""
 
-        parent = zarr.group()
-        DatasetList(value, parent=parent, key="list")
+        bind = DatasetList(value).bind
 
-        assert DatasetList(parent=parent, key="list") == value
+        assert DatasetList(bind=bind) == value
 
     @pytest.mark.parametrize("slc", _generate_slices(3))
     def test_slice(self, slc):
