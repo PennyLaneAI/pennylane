@@ -7,8 +7,10 @@
 <h3>Improvements 🛠</h3>
 
 * The `qchem.molecular_hamiltonian` function is upgraded to support custom wires for constructing
-  differentiable Hamiltonians.
+  differentiable Hamiltonians. The zero imaginary component of the Hamiltonian coefficients are
+  removed.
   [(4050)](https://github.com/PennyLaneAI/pennylane/pull/4050)
+  [(4094)](https://github.com/PennyLaneAI/pennylane/pull/4094)
 
 * An error is now raised by `qchem.molecular_hamiltonian` when the `dhf` method is used for an 
   open-shell system. This duplicates a similar error in `qchem.Molecule` but makes it easier to
@@ -25,11 +27,21 @@
 * `qml.prod` now accepts a single qfunc input for creating new `Prod` operators.
   [(#4011)](https://github.com/PennyLaneAI/pennylane/pull/4011)
 
+* Added `__repr__` and `__str__` methods to the `Shots` class.
+  [(#4081)](https://github.com/PennyLaneAI/pennylane/pull/4081)
+
+* Added `__eq__` and `__hash__` methods to the `Shots` class.
+  [(#4082)](https://github.com/PennyLaneAI/pennylane/pull/4082)
+
 * Added a function `measure_with_samples` that returns a sample-based measurement result given a state
   [(#4083)](https://github.com/PennyLaneAI/pennylane/pull/4083)
 
 * Support for adjoint differentiation has been added to the `DefaultQubit2` device.
   [(#4037)](https://github.com/PennyLaneAI/pennylane/pull/4037)
+
+* Added a `dense` keyword to `ParametrizedEvolution` that allows forcing dense or sparse matrices.
+  [(#4079)](https://github.com/PennyLaneAI/pennylane/pull/4079)
+  [(#4095)](https://github.com/PennyLaneAI/pennylane/pull/4095)
 
 <h3>Breaking changes 💔</h3>
 
@@ -58,6 +70,7 @@ This release contains contributions from (in alphabetical order):
 Isaac De Vlugt,
 Soran Jahangiri,
 Edward Jiang,
+Korbinian Kottmann
 Christina Lee,
 Romain Moyard,
 Mudit Pandey,
