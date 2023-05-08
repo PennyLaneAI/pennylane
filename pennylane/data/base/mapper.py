@@ -16,15 +16,15 @@ class that provides the mapper class."""
 
 from collections.abc import KeysView, Mapping
 from types import MappingProxyType
-from typing import Any, Union, Optional
+from typing import Any, Union
 
 from pennylane.data.base.attribute import (
-    AttributeType,
     AttributeInfo,
+    AttributeType,
     get_attribute_type,
     match_obj_type,
 )
-from pennylane.data.base.typing_util import ZarrAny, ZarrGroup
+from pennylane.data.base.typing_util import ZarrGroup
 
 
 class AttributeTypeMapper:
@@ -56,12 +56,12 @@ class AttributeTypeMapper:
         try:
             value, info = value
         except (TypeError, ValueError):
-            value, info = value, None
+            info = None
 
         if isinstance(value, AttributeType):
             value._set_parent(self.bind, key)
             if info:
-                value.info.load(info, clobber=True)
+                value.info.load(info)
         else:
             attr_type = match_obj_type(value)
             attr_type(value, info, parent_and_key=(self.bind, key))
