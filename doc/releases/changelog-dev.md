@@ -6,6 +6,9 @@
 
 <h3>Improvements 🛠</h3>
 
+* The `data.Dataset` class now uses Zarr for serialization
+  [(4097)](https://github.com/PennyLaneAI/pennylane/pull/4097)
+
 * The `qchem.molecular_hamiltonian` function is upgraded to support custom wires for constructing
   differentiable Hamiltonians. The zero imaginary component of the Hamiltonian coefficients are
   removed.
