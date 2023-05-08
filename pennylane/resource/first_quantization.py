@@ -20,6 +20,7 @@ import numpy
 from scipy import integrate
 from pennylane import numpy as np
 from pennylane.operation import AnyWires, Operation
+import warnings
 
 
 class FirstQuantization(Operation):
@@ -27,8 +28,7 @@ class FirstQuantization(Operation):
     algorithm in first quantization using a plane-wave basis.
 
     To estimate the gate and qubit costs for implementing this method, the number of plane waves,
-    the number of electrons and the unit cell volume need to be defined. The lattice vectors are
-    also needed if the material has a non-cubic unit cell. The costs can then be
+    the number of electrons and the lattive vectors need to be defined. The costs can then be
     computed using the functions :func:`~.pennylane.resource.FirstQuantization.gate_cost` and
     :func:`~.pennylane.resource.FirstQuantization.qubit_cost` with a target error that has the default
     value of 0.0016 Ha (chemical accuracy). Atomic units are used throughout the class.
@@ -44,34 +44,17 @@ class FirstQuantization(Operation):
 
     **Example**
 
-    Resource estimation can be performed for materials with a cubic unit cell by specifying the
-    number of plane waves, the number of electrons and the unit cell volume.
-
     >>> n = 100000
     >>> eta = 156
-    >>> omega = 1145.166
-    >>> algo = FirstQuantization(n, eta, omega)
+    >>> vectors = np.array([[10.46219511,  0.00000000,  0.00000000],
+    ...                     [ 0.00000000, 10.46219511,  0.00000000],
+    ...                     [ 0.00000000,  0.00000000, 10.46219511]])
+    >>> algo = FirstQuantization(n, eta, vectors=vectors)
     >>> print(algo.lamb,  # the 1-Norm of the Hamiltonian
     >>>       algo.gates, # estimated number of non-Clifford gates
     >>>       algo.qubits # estimated number of logical qubits
     >>>       )
-    649912.4801542697 1.10e+13 4416
-
-    Resource estimation for materials with a non-cubic unit cell requires the lattive vectors to be
-    defined as well.
-
-    >>> n = 100000
-    >>> eta = 156
-    >>> omega = 1113.47
-    >>> vectors = np.array([[9.44862994, 0.000000000, 0.000000000],
-    ...                     [0.00000000, 10.39349294,  0.00000000],
-    ...                     [0.94486299,  0.94486299, 11.33835593]])
-    >>> algo = FirstQuantization(n, eta, omega)
-    >>> print(algo.lamb,  # the 1-Norm of the Hamiltonian
-    >>>       algo.gates, # estimated number of non-Clifford gates
-    >>>       algo.qubits # estimated number of logical qubits
-    >>>       )
-    817051.632523202, 1.5e+14, 3331
+    649912.4804278888 1.1e+13 4416
 
     .. details::
         :title: Theory
@@ -104,7 +87,7 @@ class FirstQuantization(Operation):
         self,
         n,
         eta,
-        omega,
+        omega=None,
         error=0.0016,
         charge=0,
         br=7,
@@ -119,11 +102,15 @@ class FirstQuantization(Operation):
         self.vectors = vectors
         self.cubic = True
 
+        if not omega and not vectors:
+            raise ValueError("The lattice vectors must be provided.")
+
         if self.vectors is not None:
+            self.omega = np.abs(np.sum((np.cross(vectors[0], vectors[1]) * vectors[2])))
             recip_vectors = (  # taken from Eq. (35) of arXiv:2302.07981 (2023)
                 2
                 * np.pi
-                / np.abs(np.sum((np.cross(vectors[0], vectors[1]) * vectors[2])))
+                / self.omega
                 * np.array([np.cross(vectors[i], vectors[j]) for i, j in [(1, 2), (2, 0), (0, 1)]])
             )
             bbt = np.matrix(recip_vectors) @ np.matrix(recip_vectors).T

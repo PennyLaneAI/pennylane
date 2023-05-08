@@ -293,3 +293,15 @@ def test_fq_vals_non_qubic(n, eta, omega, vectors, lamb, g_cost, q_cost):
     assert np.allclose(est.lamb, lamb)
     assert np.allclose(est.gates, g_cost)
     assert np.allclose(est.qubits, q_cost)
+
+
+@pytest.mark.parametrize(
+    ("n", "eta", "omega", "error", "br", "charge", "vectors"),
+    [
+        (10000, 156, None, 0.001, 7, 0, None),
+    ],
+)
+def test_init_error(n, eta, omega, error, br, charge, vectors):
+    r"""Test that init raises an error when volume and vectors are None."""
+    with pytest.raises(ValueError, match="The lattice vectors must be provided"):
+        qml.resource.FirstQuantization(n, eta, omega, error, br, charge, vectors)
