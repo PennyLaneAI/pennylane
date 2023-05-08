@@ -20,6 +20,7 @@ import numpy as np
 
 import pennylane as qml
 from pennylane.devices.experimental import DefaultQubit2, ExecutionConfig
+from pennylane.devices.qubit.preprocess import validate_and_expand_adjoint
 
 
 def test_name():
@@ -139,9 +140,23 @@ class TestSupportsDerivatives:
         qs = qml.tape.QuantumScript([], [qml.state()])
         assert dev.supports_derivatives(config, qs)
 
-    @pytest.mark.parametrize(
-        "gradient_method", ["parameter-shift", "finite-diff", "device", "adjoint"]
-    )
+    def test_supports_adjoint(self):
+        """Test that DefaultQubit2 says that it supports adjoint differentiation."""
+        dev = DefaultQubit2()
+        config = ExecutionConfig(gradient_method="adjoint")
+        assert dev.supports_derivatives(config) is True
+
+        qs = qml.tape.QuantumScript([], [qml.expval(qml.PauliZ(0))])
+        assert dev.supports_derivatives(config, qs) is True
+
+    def test_doesnt_support_adjoint_with_invalid_tape(self):
+        """Tests that DefaultQubit2 does not support adjoint differentiation with invalid circuits."""
+        dev = DefaultQubit2()
+        config = ExecutionConfig(gradient_method="adjoint")
+        circuit = qml.tape.QuantumScript([], [qml.probs()])
+        assert dev.supports_derivatives(config, circuit=circuit) is False
+
+    @pytest.mark.parametrize("gradient_method", ["parameter-shift", "finite-diff", "device"])
     def test_doesnt_support_other_gradient_methods(self, gradient_method):
         """Test that DefaultQubit2 currently does not support other gradient methods natively."""
         dev = DefaultQubit2()
@@ -493,10 +508,81 @@ class TestSumOfTermsDifferentiability:
         assert qml.math.allclose(g1, g2)
 
 
+class TestAdjointDifferentiation:
+    """Tests adjoint differentiation integration with DefaultQubit2."""
+
+    ec = ExecutionConfig(gradient_method="adjoint")
+
+    def test_single_circuit(self):
+        """Tests a basic example with a single circuit."""
+        dev = DefaultQubit2()
+        x = np.array(np.pi / 7)
+        qs = qml.tape.QuantumScript([qml.RX(x, 0)], [qml.expval(qml.PauliZ(0))])
+        qs = validate_and_expand_adjoint(qs)
+        expected_grad = -qml.math.sin(x)
+        actual_grad = dev.compute_derivatives(qs, self.ec)
+        assert isinstance(actual_grad, np.ndarray)
+        assert actual_grad.shape == ()
+        assert np.isclose(actual_grad, expected_grad)
+
+        expected_val = qml.math.cos(x)
+        actual_val, actual_grad = dev.execute_and_compute_derivatives(qs, self.ec)
+        assert np.isclose(actual_val, expected_val)
+        assert np.isclose(actual_grad, expected_grad)
+
+    def test_list_with_single_circuit(self):
+        """Tests a basic example with a batch containing a single circuit."""
+        dev = DefaultQubit2()
+        x = np.array(np.pi / 7)
+        qs = qml.tape.QuantumScript([qml.RX(x, 0)], [qml.expval(qml.PauliZ(0))])
+        qs = validate_and_expand_adjoint(qs)
+        expected_grad = -qml.math.sin(x)
+        actual_grad = dev.compute_derivatives([qs], self.ec)
+        assert isinstance(actual_grad, tuple)
+        assert isinstance(actual_grad[0], np.ndarray)
+        assert np.isclose(actual_grad[0], expected_grad)
+
+        expected_val = qml.math.cos(x)
+        actual_val, actual_grad = dev.execute_and_compute_derivatives([qs], self.ec)
+        assert np.isclose(expected_val, actual_val[0])
+        assert np.isclose(expected_grad, actual_grad[0])
+
+    def test_many_tapes_many_results(self):
+        """Tests a basic example with a batch of circuits of varying return shapes."""
+        dev = DefaultQubit2()
+        x = np.array(np.pi / 7)
+        single_meas = qml.tape.QuantumScript([qml.RX(x, 0)], [qml.expval(qml.PauliZ(0))])
+        multi_meas = qml.tape.QuantumScript(
+            [qml.RY(x, 0)], [qml.expval(qml.PauliX(0)), qml.expval(qml.PauliZ(0))]
+        )
+        expected_grad = (-qml.math.sin(x), (qml.math.cos(x), -qml.math.sin(x)))
+        actual_grad = dev.compute_derivatives([single_meas, multi_meas], self.ec)
+        assert np.isclose(actual_grad[0], expected_grad[0])
+        assert isinstance(actual_grad[1], tuple)
+        assert qml.math.allclose(actual_grad[1], expected_grad[1])
+
+    def test_integration(self):
+        """Tests the expected workflow done by a calling method."""
+        dev = DefaultQubit2()
+        x = np.array(np.pi / 7)
+        expected_grad = (-qml.math.sin(x), (qml.math.cos(x), -qml.math.sin(x)))
+        single_meas = qml.tape.QuantumScript([qml.RX(x, 0)], [qml.expval(qml.PauliZ(0))])
+        multi_meas = qml.tape.QuantumScript(
+            [qml.RY(x, 0)], [qml.expval(qml.PauliX(0)), qml.expval(qml.PauliZ(0))]
+        )
+
+        circuits, _ = dev.preprocess([single_meas, multi_meas], self.ec)
+        actual_grad = dev.compute_derivatives(circuits, self.ec)
+
+        assert np.isclose(actual_grad[0], expected_grad[0])
+        assert isinstance(actual_grad[1], tuple)
+        assert qml.math.allclose(actual_grad[1], expected_grad[1])
+
+
 class TestPreprocessingIntegration:
     """Test preprocess produces output that can be executed by the device."""
 
-    def test_preproces_single_circuit(self):
+    def test_preprocess_single_circuit(self):
         """Test integration between preprocessing and execution with numpy parameters."""
 
         # pylint: disable=too-few-public-methods
