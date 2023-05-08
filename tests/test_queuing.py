@@ -23,6 +23,7 @@ from pennylane.queuing import (
     AnnotatedQueue,
     QueuingManager,
     QueuingError,
+    WrappedObj,
 )
 
 
@@ -440,3 +441,37 @@ class TestApplyOp:
         # so they are not included after queue processing
         assert tape1.operations == []
         assert tape2.operations == []
+
+class TestWrappedObj:
+    """Tests for the ``WrappedObj`` class"""
+
+    @pytest.mark.parametrize("obj", [qml.PauliX(0), qml.expval(qml.PauliZ(0)), [0, 1, 2], ("a", "b")])
+    def test_wrapped_obj_init(self, obj):
+        """Test that ``WrappedObj`` is initialized correctly"""
+        wo = WrappedObj(obj)
+        assert wo.obj is obj
+
+    @pytest.mark.parametrize("obj1, obj2", [(qml.PauliX(0), qml.PauliZ(0)), (qml.PauliX(0), qml.PauliX(0)), ((1,), (1, 2))])
+    def test_wrapped_obj_eq_false(self, obj1, obj2):
+        """Test that ``WrappedObj.__eq__`` returns False when expected."""
+        wo1 = WrappedObj(obj1)
+        wo2 = WrappedObj(obj2)
+        assert wo1 != wo2
+
+    def test_wrapped_obj_eq_true(self):
+        """Test that ``WrappedObj.__eq__`` returns True when expected."""
+        op = qml.PauliX(0)
+        assert WrappedObj(op) == WrappedObj(op)
+
+    @pytest.mark.parametrize("obj", [qml.PauliX(0), qml.expval(qml.PauliZ(0)), [0, 1, 2], ("a", "b")])
+    def test_wrapped_obj_hash(self, obj):
+        """Test that ``WrappedObj.__hash__`` is the object id."""
+        wo = WrappedObj(obj)
+        assert wo.__hash__() == id(obj)
+
+    @pytest.mark.parametrize("obj", [qml.PauliX(0), qml.expval(qml.PauliZ(0)), [0, 1, 2], ("a", "b")])
+    def test_wrapped_obj_repr(self, obj):
+        """Test that the ``WrappedObj` representation is equivalent to the repr of the
+        object it wraps."""
+        wo = WrappedObj(obj)
+        assert wo.__repr__() == obj.__repr__()
