@@ -98,7 +98,7 @@ def test_lie_algebra_omegas(circuit, hamiltonian):
 
     phi = get_state()
     rho = np.outer(phi, phi.conj())
-    hamiltonian_np = qml.utils.sparse_hamiltonian(hamiltonian, wires).toarray()
+    hamiltonian_np = hamiltonian.sparse_matrix(wire_order=wires).toarray()
     lie_algebra_np = hamiltonian_np @ rho - rho @ hamiltonian_np
     opt = LieAlgebraOptimizer(circuit=lie_circuit)
     ops = opt.get_su_n_operators(None)[0]
@@ -139,7 +139,7 @@ def test_lie_algebra_omegas_restricted(circuit, hamiltonian):
 
     phi = get_state()
     rho = np.outer(phi, phi.conj())
-    hamiltonian_np = qml.utils.sparse_hamiltonian(hamiltonian, wires).toarray()
+    hamiltonian_np = hamiltonian.sparse_matrix(wire_order=wires).toarray()
     lie_algebra_np = hamiltonian_np @ rho - rho @ hamiltonian_np
 
     restriction = qml.Hamiltonian(
@@ -186,7 +186,7 @@ def test_lie_algebra_evolution(circuit, hamiltonian):
 
     phi = get_state()
     rho = np.outer(phi, phi.conj())
-    hamiltonian_np = qml.utils.sparse_hamiltonian(hamiltonian, wires).toarray()
+    hamiltonian_np = hamiltonian.sparse_matrix(wire_order=wires).toarray()
     lie_algebra_np = hamiltonian_np @ rho - rho @ hamiltonian_np
 
     phi_exact = expm(-0.1 * lie_algebra_np * 2**nqubits) @ phi
