@@ -1484,7 +1484,7 @@ def _binary_matrix(terms, num_qubits, wire_map=None):
 
 @lru_cache
 def _get_pauli_map(n):
-    r"""Return Pauli gate objects on wires 0 up to n.
+    r"""Return a list of Pauli operator objects acting on wires `0` up to `n`.
 
     This function is used to accelerate ``qchem.observable_hf.jordan_wigner``.
     """
