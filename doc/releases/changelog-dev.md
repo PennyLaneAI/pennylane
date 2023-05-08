@@ -6,6 +6,9 @@
 
 <h3>Improvements 🛠</h3>
 
+* Accelerate Jordan-Wigner transforms caching Pauli gate objects.
+  [(4046)](https://github.com/PennyLaneAI/pennylane/pull/4046)
+
 * The `qchem.molecular_hamiltonian` function is upgraded to support custom wires for constructing
   differentiable Hamiltonians. The zero imaginary component of the Hamiltonian coefficients are
   removed.
@@ -73,6 +76,7 @@ Soran Jahangiri,
 Edward Jiang,
 Korbinian Kottmann
 Christina Lee,
+Vincent Michaud-Rioux,
 Romain Moyard,
 Mudit Pandey,
 Matthew Silverman,
