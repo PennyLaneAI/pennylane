@@ -186,7 +186,7 @@ class WrappedObj:
         return id(self.obj) == id(other.obj)
 
     def __repr__(self):
-        return self.obj.__repr__()
+        return f"Wrapped( {self.obj.__repr__()})"
 
 
 class QueuingManager:
