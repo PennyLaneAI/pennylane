@@ -319,113 +319,16 @@ def _swap_first_two_axes(grads, first_axis_size, second_axis_size):
         tuple(grads[j][i] for j in range(first_axis_size)) for i in range(second_axis_size)
     )
 
-
-def _reorder_grad_axes_single_measure_shot_vector(grads, num_params, len_shot_vec):
-    """Reorder the axes for gradient results obtained for a tape with a single measurement from
-    a device that defined a shot vector.
-
-    The order of axes of the gradient output matches the structure outputted by jax.jacobian
-    for a tuple-valued function. Internally, this may not be the case when computing the
-    gradients, so the axes are reordered here.
-
-    The first axis always corresponds to the number of trainable parameters because the
-    parameter-shift transform defines multiple tapes each of which corresponds to a trainable
-    parameter. Those tapes are then executed using a device, which at the moment outputs results
-    with the first axis corresponding to each tape output.
-
-    The final order of axes of gradient results should be:
-    1. Shot vector
-    2. Measurements
-    3. Number of trainable parameters (Num params)
-    4. Broadcasting dimension
-    5. Measurement shape
-
-    According to the order above, the following reordering is done:
-
-    Shot vectors:
-
-        Go from
-        1. Num params
-        2. Shot vector
-        3. Measurement shape
-
-        To
-        1. Shot vector
-        2. Num params
-        3. Measurement shape
-    """
-    return _swap_first_two_axes(grads, num_params, len_shot_vec)
-
-
-def _reorder_grad_axes_multi_measure(
-    grads, num_params, num_measurements, len_shot_vec, shot_vector_multi_measure
-):
-    """Reorder the axes for gradient results obtained for a tape with multiple measurements.
-
-    The order of axes of the gradient output matches the structure outputted by jax.jacobian for
-    a tuple-valued function. Internally, this may not be the case when computing the gradients,
-    so the axes are reordered here.
-
-    The first axis always corresponds to the number of trainable parameters because the
-    parameter-shift transform defines multiple tapes each of which corresponds to a trainable
-    parameter. Those tapes are then executed using a device, which at the moment outputs
-    results with the first axis corresponding to each tape output.
-
-    The final order of axes of gradient results should be:
-    1. Shot vector
-    2. Measurements
-    3. Number of trainable parameters (Num params)
-    4. Broadcasting dimension
-    5. Measurement shape
-
-    Parameter broadcasting doesn't yet support multiple measurements, hence such cases are not
-    dealt with at the moment by this function.
-
-    According to the order above, the following reorderings are done:
-
-    A) Analytic (``shots=None``) or finite shots:
-
-        Go from
-        1. Num params
-        2. Measurements
-        3. Measurement shape
-
-        To
-        1. Measurements
-        2. Num params
-        3. Measurement shape
-
-    B) Shot vectors:
-
-        Go from
-        1. Num params
-        2. Shot vector
-        3. Measurements
-        4. Measurement shape
-
-        To
-        1. Shot vector
-        2. Measurements
-        3. Num params
-        4. Measurement shape
-    """
-    multi_param = num_params > 1
-    if not shot_vector_multi_measure:
-        new_grad = _swap_first_two_axes(grads, num_params, num_measurements)
-    else:
-        new_grad = []
-        for i in range(len_shot_vec):
-            shot_vec_grad = []
-            for j in range(num_measurements):
-                measurement_grad = []
-                for k in range(num_params):
-                    measurement_grad.append(grads[k][i][j])
-
-                measurement_grad = tuple(measurement_grad) if multi_param else measurement_grad[0]
-                shot_vec_grad.append(measurement_grad)
-            new_grad.append(tuple(shot_vec_grad))
-
-    return new_grad
+def _move_first_axis_to_third_pos(grads, first_axis_size, second_axis_size, third_axis_size):
+    """Transpose the first two axes of an iterable of iterables, returning
+    a tuple of tuples."""
+    if first_axis_size==1:
+        return tuple(
+            tuple(grads[0][i][j] for j in range(third_axis_size)) for i in range(second_axis_size)
+        )
+    return tuple(
+        tuple(tuple(grads[k][i][j] for k in range(first_axis_size)) for j in range(third_axis_size)) for i in range(second_axis_size)
+    )
 
 
 def reorder_grads(grads, tape_specs):
@@ -442,28 +345,60 @@ def reorder_grads(grads, tape_specs):
         tensor_like or tuple[tensor_like] or tuple[tuple[tensor_like]]: The reordered gradient
             entries. Consider the details below for the ordering of the axes.
 
-    - If the original tape returned a single measurement and has a single parameter, the
-      first entry is returned.
-    - If the original tape returned a single measurement and a shot vector was used,
-      reorder the gradient axes with ``_reorder_grad_axes_single_measure_shot_vector``
-    - If the original tape returned multiple measurements,
-      reorder the gradient axes with ``_reorder_grad_axes_multi_measure``.
+    The order of axes of the gradient output matches the structure outputted by jax.jacobian for
+    a tuple-valued function. Internally, this may not be the case when computing the gradients,
+    so the axes are reordered here.
+
+    The axes of the input are assumed to be in the following order:
+
+        1. Number of trainable parameters (Num params)
+        2. Shot vector (if ``shots`` is a ``list`` or ``list[tuple]``. Skipped otherwise)
+        3. Measurements (if there are multiple measurements. Skipped otherwise)
+        4. Measurement shape
+        5. Broadcasting dimension (for broadcasted tapes, skipped otherwise) TODO: TBC
+
+    The final order of axes of gradient results should be:
+
+        1. Shot vector [1]
+        2. Measurements [1]
+        3. Number of trainable parameters (Num params) [1]
+        4. Broadcasting dimension [2]
+        5. Measurement shape
+
+    [1] These axes are skipped in the output if they have length one. For shot vector and
+        measurements, this already is true for the input. For num params, the axis is skipped
+        "in addition", compared to the input.
+    [2] Parameter broadcasting doesn't yet support multiple measurements, hence such cases are not
+        dealt with at the moment by this function.
+
+    The above reordering requires the following operations:
+        
+        1. In all cases, remove the parameter axis if it has length one.
+        2. For a single measurement and no shot vector: Do nothing (but cast to ``tuple``)
+        3. For a single measurement and shot vector: Swap first two axes (shots and parameters)
+        4. For multiple measurements and no shot vector: Swap first two axes
+           (measurements and parameters)
+        5. For multiple measurements and shot vector: Move parameter axis from first to third
+           position.
+
+    In all cases the output will be a ``tuple``, except for single-measurement, single-parameter
+    tapes, which will return a single measurement-like shaped output (no shot vector), or a list
+    thereof (shot vector).
     """
+    print(f"in: {grads}")
     single_measure, num_params, num_measurements, shot_vector, shots = tape_specs
-    if single_measure and num_params == 1:
+    single_param = num_params == 1
+    if single_measure and single_param:
         return grads[0]
     len_shot_vec = _get_num_copies(shots) if shot_vector else None
-    if single_measure and shot_vector:
-        return _reorder_grad_axes_single_measure_shot_vector(grads, num_params, len_shot_vec)
-    if not single_measure:
-        grads = _reorder_grad_axes_multi_measure(
-            grads,
-            num_params,
-            num_measurements,
-            len_shot_vec,
-            shot_vector,
-        )
-    return tuple(grads)
+    if single_measure:
+        if not shot_vector:
+            return tuple(grads)
+        return _swap_first_two_axes(grads, num_params, len_shot_vec)
+
+    if not shot_vector:
+        return _swap_first_two_axes(grads, num_params, num_measurements)
+    return _move_first_axis_to_third_pos(grads, num_params, len_shot_vec, num_measurements)
 
 
 class gradient_transform(qml.batch_transform):
@@ -605,7 +540,7 @@ class gradient_transform(qml.batch_transform):
             if not hybrid:
                 return qjac
 
-            kwargs.pop("shots", False)
+            _shots = kwargs.pop("shots", False)
 
             # Special case where we apply a Jax transform (jacobian e.g.) on the gradient transform and argnums are
             # defined on the outer transform and therefore on the args.
@@ -622,7 +557,8 @@ class gradient_transform(qml.batch_transform):
                 if isinstance(cjac, tuple) and len(cjac) == 1:
                     cjac = cjac[0]
 
-                if not isinstance(cjac, tuple):
+                cjac_is_tuple = isinstance(cjac, tuple)
+                if not cjac_is_tuple:
                     is_square = cjac.ndim == 2 and cjac.shape[0] == cjac.shape[1]
 
                     if not qml.math.is_abstract(cjac):
@@ -632,21 +568,27 @@ class gradient_transform(qml.batch_transform):
                             return qjac
 
                 multi_meas = len(qnode.tape.measurements) > 1
+                #shot_vector = isinstance(_shots, Sequence)
 
+                #if cjac_is_tuple:
+                    #multi_params = True
+                #elif multi_meas and shot_vector:
+                    #multi_params = isinstance(qjac[0][0], tuple)
+                #elif multi_meas or shot_vector:
+                    #multi_params = isinstance(qjac[0], tuple)
+                #else:
+                    #multi_params = isinstance(qjac, tuple)
                 if multi_meas:
-                    multi_params = isinstance(cjac, tuple) or isinstance(qjac[0], tuple)
+                    multi_params = cjac_is_tuple or isinstance(qjac[0], tuple)
                 else:
-                    multi_params = isinstance(cjac, tuple) or isinstance(qjac, tuple)
+                    multi_params = cjac_is_tuple or isinstance(qjac, tuple)
 
-                if not multi_params and not multi_meas:
-                    if qjac.shape == ():
-                        qjac = qml.math.reshape(qjac, (1,))
-
-                    # With dimension e.g. probs
-                    else:
-                        qjac = qml.math.reshape(qjac, (1, -1))
-
-                    return qml.math.tensordot(qjac, cjac, [[0], [0]])
+                if not multi_params:
+                    if not multi_meas:
+                        # Without dimension (e.g. expval) or with dimension (e.g. probs)
+                        new_shape = (1,) if qjac.shape == () else (1, -1)
+                        qjac = qml.math.reshape(qjac, new_shape)
+                        return qml.math.tensordot(qjac, cjac, [[0], [0]])
 
                 if multi_meas and not multi_params:
                     jacs = tuple(
@@ -658,6 +600,7 @@ class gradient_transform(qml.batch_transform):
                     return jacs
                 if not multi_meas and multi_params:
                     if not isinstance(cjac, tuple):
+                        print(qjac, cjac)
                         jacs = qml.math.tensordot(
                             qml.math.stack(qjac), qml.math.stack(cjac), [[0], [0]]
                         )
