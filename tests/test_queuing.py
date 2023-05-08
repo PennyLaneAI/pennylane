@@ -477,11 +477,16 @@ class TestWrappedObj:
         wo = WrappedObj(obj)
         assert wo.__hash__() == id(obj)
 
-    @pytest.mark.parametrize(
-        "obj", [qml.PauliX(0), qml.expval(qml.PauliZ(0)), [0, 1, 2], ("a", "b")]
-    )
-    def test_wrapped_obj_repr(self, obj):
+    def test_wrapped_obj_repr(self):
         """Test that the ``WrappedObj` representation is equivalent to the repr of the
         object it wraps."""
+
+        class Dummy:
+            """Dummy class with custom repr"""
+
+            def __repr__(self):
+                return "test_repr"
+
+        obj = Dummy()
         wo = WrappedObj(obj)
-        assert wo.__repr__() == obj.__repr__()
+        assert wo.__repr__() == "Wrapped(test_repr)"
