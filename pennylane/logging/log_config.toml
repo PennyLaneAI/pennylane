@@ -1,0 +1,100 @@
+disable_existing_loggers = true
+version = 1
+
+[formatters]
+[formatters.custom]
+"()" = "pennylane.logging.formatters.formatter.DefaultFormatter"
+
+[formatters.custom2]
+"()" = "pennylane.logging.formatters.formatter.AnotherLogFormatter"
+
+[formatters.detailed]
+format = "\u001B[38;4;45m[%(asctime)s][%(levelname)s][<PID %(process)d:%(processName)s>] - %(name)s.%(funcName)s()::\"%(message)s\"\u001B[0m"
+
+[formatters.standard]
+format = "[%(asctime)s] - %(name)s - %(levelname)s - %(message)s"
+
+[handlers]
+[handlers.console]
+class = "logging.StreamHandler"
+formatter = "detailed"
+level = "DEBUG"
+stream = "ext://sys.stdout"
+
+[handlers.console_custom]
+class = "logging.StreamHandler"
+formatter = "custom"
+level = "DEBUG"
+stream = "ext://sys.stdout"
+
+[handlers.debug_file_handler]
+backupCount = 20
+class = "logging.handlers.RotatingFileHandler"
+encoding = "utf8"
+filename = "/tmp/pennylane_debug.log"
+formatter = "standard"
+level = "DEBUG"
+maxBytes = 10485760
+
+[handlers.error_console]
+class = "logging.StreamHandler"
+formatter = "detailed"
+level = "ERROR"
+stream = "ext://sys.stderr"
+
+[handlers.error_file_handler]
+backupCount = 20
+class = "logging.handlers.RotatingFileHandler"
+encoding = "utf8"
+filename = "/tmp/pennylane_errors.log"
+formatter = "detailed"
+level = "ERROR"
+maxBytes = 10485760
+
+[handlers.info_file_handler]
+backupCount = 20
+class = "logging.handlers.RotatingFileHandler"
+encoding = "utf8"
+filename = "/tmp/pennylane_info.log"
+formatter = "standard"
+level = "INFO"
+maxBytes = 10485760
+
+[handlers.root_file_handler]
+backupCount = 20
+class = "logging.handlers.RotatingFileHandler"
+encoding = "utf8"
+filename = "/tmp/pennylane_logs.log"
+formatter = "standard"
+level = "DEBUG"
+maxBytes = 10485760
+
+[handlers.warn_file_handler]
+backupCount = 20
+class = "logging.handlers.RotatingFileHandler"
+encoding = "utf8"
+filename = "/tmp/pennylane_warn.log"
+formatter = "standard"
+level = "WARN"
+maxBytes = 10485760
+
+[loggers]
+[loggers.jax]
+handlers = ["console_custom"]
+level = "DEBUG"
+propagate = false
+
+[loggers.main]
+handlers = ["console_custom"]
+level = "DEBUG"
+propagate = false
+
+[loggers.pennylane]
+handlers = ["console_custom"]
+level = "DEBUG"
+propagate = false
+
+[root]
+handlers = ["console_custom"]
+level = "DEBUG"
+propagate = false
