@@ -15,12 +15,14 @@
 This module contains the functions needed for estimating the number of logical qubits and
 non-Clifford gates for quantum algorithms in first quantization using a plane-wave basis.
 """
+import warnings
+
 # pylint: disable=no-self-use disable=too-many-arguments disable=too-many-instance-attributes
 import numpy
 from scipy import integrate
+
 from pennylane import numpy as np
 from pennylane.operation import AnyWires, Operation
-import warnings
 
 
 class FirstQuantization(Operation):
