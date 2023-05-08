@@ -1,12 +1,16 @@
 import logging, logging.config
-import sys
 import os
 
+# Define a more verbose mode for the messages. Not currently controlled by internal log configurations.
 TRACE = 1
 path = os.path.dirname(__file__)
 
 
 def enable_logging(use_yaml=False):
+    """
+    This method allows top selectively enable logging throughout PennyLane.
+    All configurations are read through the `log_config.toml` or `log_config.yaml` files, selectively controlled via the `use_yaml` argument.
+    """
     if use_yaml:
         import yaml
 

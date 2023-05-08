@@ -1,5 +1,1 @@
-import logging
-
-
-class PLLogger:
-    pass
+# ToDo: add custom logger
