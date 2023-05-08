@@ -357,6 +357,25 @@ def execute(
            [ 0.01983384, -0.97517033,  0.        ],
            [ 0.        ,  0.        , -0.95533649]])
     """
+    if logger.isEnabledFor(logging.DEBUG):
+        logger.debug(
+            """Entry with args=(tapes=%s, device=%s, gradient_fn=%s, interface=%s, grad_on_execution=%s, gradient_kwargs=%s, cache=%s, cachesize=%s, max_diff=%s, override_shots=%s, expand_fn=%s, max_expansion=%s, device_batch_transform=%s) called by=%s""",
+            tapes,
+            device.short_name,
+            gradient_fn,
+            interface,
+            grad_on_execution,
+            gradient_kwargs,
+            cache,
+            cachesize,
+            max_diff,
+            override_shots,
+            expand_fn,
+            max_expansion,
+            device_batch_transform,
+            "::L".join(str(i) for i in inspect.getouterframes(inspect.currentframe(), 2)[1][1:3]),
+        )
+
     if not qml.active_return():
         if isinstance(grad_on_execution, str):
             mode = "best"
