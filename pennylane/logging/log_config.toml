@@ -91,7 +91,7 @@ propagate = false
 
 [loggers.pennylane]
 handlers = ["console_custom"]
-level = "DEBUG"
+level = 1# "DEBUG" # Set to 1 for highest verbosity
 propagate = false
 
 [root]

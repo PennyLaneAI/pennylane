@@ -28,6 +28,7 @@ import warnings
 from contextlib import _GeneratorContextManager
 from functools import wraps, partial
 from typing import Callable, Sequence
+import logging
 
 from cachetools import LRUCache
 
@@ -35,6 +36,8 @@ import pennylane as qml
 from pennylane.tape import QuantumTape
 
 from .set_shots import set_shots
+
+logger = logging.getLogger(__name__)
 
 INTERFACE_MAP = {
     None: "Numpy",
@@ -122,6 +125,19 @@ def cache_execute(fn: Callable, cache, pass_kwargs=False, return_tuple=True, exp
         function: a wrapped version of the execution function ``fn`` with caching
         support
     """
+    if logger.isEnabledFor(logging.DEBUG):
+        logger.debug(
+            "Entry with args=(fn=%s, cache=%s, pass_kwargs=%s, return_tuple=%s, expand_fn=%s) called by=%s",
+            fn if not logger.isEnabledFor(qml.logging.TRACE) else "\n" + inspect.getsource(fn),
+            cache,
+            pass_kwargs,
+            return_tuple,
+            expand_fn
+            if not logger.isEnabledFor(qml.logging.TRACE)
+            else "\n" + inspect.getsource(expand_fn) + "\n",
+            "::L".join(str(i) for i in inspect.getouterframes(inspect.currentframe(), 2)[1][1:3]),
+        )
+
     if expand_fn is not None:
         original_fn = fn
 

@@ -377,11 +377,11 @@ class QNode:
         **gradient_kwargs,
     ):
         if logger.isEnabledFor(logging.DEBUG):
-            import inspect
-
             logger.debug(
                 """Creating QNode(func=%s, device=%s, interface=%s, diff_method=%s, expansion_strategy=%s, max_expansion=%s, grad_on_execution=%s, mode=%s, cache=%s, cachesize=%s, max_diff=%s, gradient_kwargs=%s""",
-                inspect.getsource(func),
+                func
+                if not logger.isEnabledFor(qml.logging.TRACE)
+                else "\n" + inspect.getsource(func),
                 device.short_name,
                 interface,
                 diff_method,

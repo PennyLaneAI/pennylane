@@ -1,8 +1,9 @@
 import logging, logging.config
+import sys
 import os
 
+TRACE = 1
 path = os.path.dirname(__file__)
-# from .formatters.formatter import LogFormatter
 
 
 def enable_logging(use_yaml=False):
@@ -18,3 +19,12 @@ def enable_logging(use_yaml=False):
         with open(os.path.join(path, "log_config.toml"), "r") as f:
             config = pytoml.load(f)
             logging.config.dictConfig(config)
+
+    # Enable a more verbose mode than DEBUG.
+    # Used to enable inspection of function definitions in log messages.
+    def trace(self, message, *args, **kws):
+        self._log(TRACE, message, args, **kws)
+
+    logging.addLevelName(TRACE, "TRACE")
+    lc = logging.getLoggerClass()
+    lc.trace = trace
