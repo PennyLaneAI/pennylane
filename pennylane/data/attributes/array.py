@@ -22,14 +22,14 @@ from pennylane.data.base.attribute import AttributeType
 from pennylane.data.base.typing_util import ZarrArray, ZarrGroup
 
 
-class DatasetArray(AttributeType[ZarrArray, ArrayLike]):
+class DatasetArray(AttributeType[ZarrArray, numpy.ndarray, ArrayLike]):
     """
     Attribute type for objects that implement the Array protocol, including numpy arrays.
     """
 
     type_id = "array"
 
-    def zarr_to_value(self, bind: ZarrArray) -> ArrayLike:
+    def zarr_to_value(self, bind: ZarrArray) -> numpy.ndarray:
         return numpy.array(self.bind, dtype=bind.dtype, order=bind.order)
 
     def value_to_zarr(self, bind_parent: ZarrGroup, key: str, value: ArrayLike) -> ZarrArray:
@@ -37,7 +37,7 @@ class DatasetArray(AttributeType[ZarrArray, ArrayLike]):
         return bind_parent[key]
 
 
-class DatasetScalar(AttributeType[ZarrArray, Number]):
+class DatasetScalar(AttributeType[ZarrArray, Number, Number]):
     """
     Attribute type for numbers.
     """
