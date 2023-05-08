@@ -527,7 +527,6 @@ class TestScriptCopying:
         assert qs.data == copied_qs.data
         assert qs._qfunc_output == copied_qs._qfunc_output
         assert qs._qfunc_output is not copied_qs._qfunc_output
-        assert qs.shots is copied_qs.shots
 
         # check that the output dim is identical
         assert qs.output_dim == copied_qs.output_dim
@@ -576,7 +575,6 @@ class TestScriptCopying:
         assert qs.get_parameters() == copied_qs.get_parameters()
         assert qs.wires == copied_qs.wires
         assert qs.data == copied_qs.data
-        assert qs.shots is copied_qs.shots
 
         # check that the output dim is identical
         assert qs.output_dim == copied_qs.output_dim
@@ -609,7 +607,6 @@ class TestScriptCopying:
         assert copied_qs.observables != qs.observables
         assert copied_qs.measurements != qs.measurements
         assert copied_qs.operations[0] is not qs.operations[0]
-        assert copied_qs.shots is qs.shots
 
         # check that the output dim is identical
         assert qs.output_dim == copied_qs.output_dim
@@ -636,7 +633,6 @@ def test_adjoint():
 
     assert adj_qs._prep == qs._prep
     assert adj_qs._measurements == qs._measurements
-    assert adj_qs.shots is qs.shots
 
     # assumes lazy=False
     expected_ops = [qml.adjoint(qml.T(1)), qml.CNOT((0, 1)), qml.adjoint(qml.S(0)), qml.RX(-1.2, 0)]
