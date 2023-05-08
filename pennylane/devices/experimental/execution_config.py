@@ -15,7 +15,7 @@
 Contains the :class:`ExecutionConfig` data class.
 """
 from dataclasses import dataclass
-from typing import Optional, Tuple, Union
+from typing import Optional
 
 from pennylane.interfaces import SUPPORTED_INTERFACES
 from pennylane.gradients import SUPPORTED_GRADIENT_KWARGS
@@ -47,9 +47,9 @@ class ExecutionConfig:
     use_device_gradient: Optional[bool] = None
     """Whether or not to compute the gradient on the device. 
     
-    ``None`` indicates to use the device if possible, but to fall back to pennylane behavior if it isnt.
+    ``None`` indicates to use the device if possible, but to fall back to pennylane behavior if it isn't.
 
-    True indicates use the device for the gradient or fail.
+    True indicates a request to either use the device gradient or fail.
     """
 
     gradient_method: Optional[str] = None

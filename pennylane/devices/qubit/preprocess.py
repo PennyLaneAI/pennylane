@@ -237,6 +237,29 @@ def batch_transform(
     return tapes, batch_fn
 
 
+def _update_config(config: ExecutionConfig) -> ExecutionConfig:
+    """Chose the "best" options for the configuration if they are left unspecified.
+
+    Args:
+        config (ExecutionConfig): the initial execution config
+
+    Returns:
+        ExecutionConfig: a new config best choices selected.
+    """
+    updated_values = {}
+    if config.gradient_method == "best":
+        updated_values["gradient_method"] = "backprop"
+    if config.use_device_gradient is None:
+        updated_values["use_device_gradient"] = config.gradient_method in {
+            "best",
+            "adjoint",
+            "backprop",
+        }
+    if config.grad_on_execution is None:
+        updated_values["grad_on_execution"] = config.gradient_method == "adjoint"
+    return dataclasses.replace(config, **updated_values)
+
+
 def preprocess(
     circuits: Tuple[qml.tape.QuantumScript],
     execution_config: ExecutionConfig = DefaultExecutionConfig,
@@ -255,14 +278,6 @@ def preprocess(
         Tuple[QuantumTape], Callable, ExecutionConfig: QuantumTapes that the device can natively execute,
         a postprocessing function to be called after execution, and a configuration with unset specifications filled in.
     """
-    updated_values = {}
-    if execution_config.gradient_method == "best":
-        updated_values["gradient_method"] = "backprop"
-    if execution_config.use_device_gradient is None:
-        updated_values["use_device_gradient"] = execution_config.gradient_method in {"best", "adjoint", "backprop"}
-    if execution_config.grad_on_execution is None:
-        updated_values["grad_on_execution"] = execution_config.gradient_method == "adjoint"
-    execution_config = dataclasses.replace(execution_config, **updated_values)
 
     circuits = tuple(expand_fn(c) for c in circuits)
     if execution_config.gradient_method == "adjoint":
@@ -270,5 +285,4 @@ def preprocess(
 
     circuits, batch_fn = qml.transforms.map_batch_transform(batch_transform, circuits)
 
-
-    return circuits, batch_fn, execution_config
+    return circuits, batch_fn, _update_config(execution_config)

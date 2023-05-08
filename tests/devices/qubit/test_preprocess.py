@@ -396,6 +396,21 @@ class TestPreprocess:
         config = qml.devices.ExecutionConfig(gradient_method="best")
         _, _, config = preprocess([tape], config)
         assert config.gradient_method == "backprop"
+        assert config.use_device_gradient
+        assert not config.grad_on_execution
+
+    def test_config_choices_for_adjoint(self):
+        """Test that preprocessing request grad on execution and says to use the device gradient if adjoint is requested."""
+        dev = DefaultQubit2()
+
+        tape = QuantumScript(ops=[], measurements=[])
+        config = ExecutionConfig(
+            gradient_method="adjoint", use_device_gradient=None, grad_on_exection=None
+        )
+        _, _, new_config = preprocess([tape], config)
+
+        assert new_config.use_device_gradient
+        assert new_config.grad_on_execution
 
     def test_preprocess_batch_transform(self):
         """Test that preprocess returns the correct tapes when a batch transform
