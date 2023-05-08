@@ -25,6 +25,8 @@ def measure_with_samples(
 ) -> TensorLike:
     """
     Returns the samples of the measurement process performed on the given state.
+    This function assumes that the user-defined wire labels in the measurement process
+    have already been mapped to integer wires used in the device.
 
     Args:
         mp (~.measurements.SampleMeasurement): The sample measurement to perform
