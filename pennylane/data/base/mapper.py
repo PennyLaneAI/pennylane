@@ -16,10 +16,11 @@ class that provides the mapper class."""
 
 from collections.abc import KeysView, Mapping
 from types import MappingProxyType
-from typing import Any, Union
+from typing import Any, Union, Optional
 
 from pennylane.data.base.attribute import (
     AttributeType,
+    AttributeInfo,
     get_attribute_type,
     match_obj_type,
 )
@@ -46,20 +47,24 @@ class AttributeTypeMapper:
         zobj = self.bind[key]
 
         attr_type = get_attribute_type(zobj)
-        attr = attr_type(parent=self.bind, key=key)
+        attr = attr_type(bind=zobj)
         self._cache[key] = attr
 
         return attr
 
-    def __setitem__(self, key: str, value: Union[Any, AttributeType[ZarrAny, Any]]):
-        info = getattr(value, "info", None)
-        if key in self.bind:
-            self[key].set_value(value, info)
-        elif not isinstance(value, AttributeType):
-            attr_type = match_obj_type(value)
-            attr_type(value, info=info, parent=self.bind, key=key)
-        else:
+    def __setitem__(self, key: str, value: Union[tuple[Any, AttributeInfo], Any]):
+        try:
+            value, info = value
+        except (TypeError, ValueError):
+            value, info = value, None
+
+        if isinstance(value, AttributeType):
             value._set_parent(self.bind, key)
+            if info:
+                value.info.load(info, clobber=True)
+        else:
+            attr_type = match_obj_type(value)
+            attr_type(value, info, parent_and_key=(self.bind, key))
 
         self._cache.pop(key, None)
 

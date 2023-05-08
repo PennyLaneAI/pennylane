@@ -31,6 +31,7 @@ from typing import (
 from numpy.typing import ArrayLike
 
 # Type aliases for Zarr objects.
+ZarrAttrs = MutableMapping
 ZarrArray = ArrayLike
 ZarrGroup = MutableMapping
 ZarrAny = Union[ZarrArray, ZarrGroup]
@@ -56,24 +57,27 @@ class UnsetType(Enum):
 UNSET = UnsetType.UNSET
 
 
-def get_type_str(cls_or_obj: Union[object, type]) -> str:
-    """Return a string representing the type of `cls_or_obj`.
+def get_type_str(cls: Union[type, str, None]) -> str:
+    """Return a string representing the type `cls`.
 
-    If cls_or_obj is a built-in type, such as 'str', returns the unqualified
+    If cls is a built-in type, such as 'str', returns the unqualified
         name.
 
-    If cls_or_obj is a parametrized generic of a built-in type, such as list[str],
-        returns the string representation of that generic (e.g 'list[str]').
+    If cls_or_obj is a parametrized generic such as list[str], or a special typing
+        form such as Optional[int], returns the string representation of cls.
 
     Otherwise, returns the fully-qualified class name, including the module.
-
     """
-    cls = cls_or_obj if isinstance(cls_or_obj, type) else type(cls_or_obj)
-    if get_args(cls_or_obj) is not None:
-        return str(cls_or_obj)
+    if cls is None:
+        return "None"
 
-    cls = cls_or_obj if isinstance(cls_or_obj, type) else type(cls_or_obj)
-    if cls.__module__ == "builtins":
+    if isinstance(cls, str):
+        return cls
+
+    if get_origin(cls) is not None:
+        return str(cls)
+
+    if getattr(cls, "__module__", None) in ("builtins", None):
         return cls.__name__
 
     return f"{cls.__module__}.{cls.__qualname__}"
