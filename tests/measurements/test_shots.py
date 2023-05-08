@@ -75,9 +75,12 @@ class TestShotsConstruction:
 
     def test_None(self):
         """Tests the constructor when shots is None."""
-        shots = Shots(None)
-        assert shots.shot_vector == ()
-        assert shots.total_shots is None
+        shots1 = Shots(None)
+        shots2 = Shots()  # this also defaults to None
+        assert shots1.shot_vector == ()
+        assert shots2.shot_vector == ()
+        assert shots1.total_shots is None
+        assert shots2.total_shots is None
 
     def test_int(self):
         """Tests the constructor when shots is an int."""

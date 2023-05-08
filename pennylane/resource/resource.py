@@ -60,7 +60,7 @@ class Resources:
     gate_types: dict = field(default_factory=dict)
     gate_sizes: dict = field(default_factory=dict)
     depth: int = 0
-    shots: Shots = Shots(None)
+    shots: Shots = field(default_factory=Shots)
 
     def __str__(self):
         keys = ["wires", "gates", "depth"]
