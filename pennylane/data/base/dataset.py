@@ -57,7 +57,7 @@ class Attribute(Generic[T]):
             a default value
     """
 
-    attribute_type: type[AttributeType[ZarrAny, T]]
+    attribute_type: type[AttributeType[ZarrAny, T, Any]]
     info: AttributeInfo
     default: Union[Literal[UNSET], T, None]
     default_factory: Optional[Callable[[], T]] = None
@@ -65,7 +65,7 @@ class Attribute(Generic[T]):
 
 def attribute(  # pylint: disable=too-many-arguments, unused-argument
     default: Union[Literal[UNSET], T, None] = UNSET,
-    attribute_type: Union[type[AttributeType[ZarrAny, T]], Literal[UNSET]] = UNSET,
+    attribute_type: Union[type[AttributeType[ZarrAny, T, Any]], Literal[UNSET]] = UNSET,
     doc: Optional[str] = None,
     py_type: Optional[Any] = None,
     extra: Optional[dict[str, Any]] = None,
@@ -85,7 +85,7 @@ def attribute(  # pylint: disable=too-many-arguments, unused-argument
     """
 
     return Attribute(
-        cast(type[AttributeType[ZarrAny, T]], attribute_type),
+        cast(type[AttributeType[ZarrAny, T, T]], attribute_type),
         AttributeInfo(doc=doc, py_type=py_type, extra=extra or {}),
         default=default,
         default_factory=default_factory,

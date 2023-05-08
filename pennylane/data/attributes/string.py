@@ -18,7 +18,7 @@ from pennylane.data.base.attribute import AttributeType
 from pennylane.data.base.typing_util import ZarrArray, ZarrGroup
 
 
-class DatasetString(AttributeType):
+class DatasetString(AttributeType[ZarrArray, str, str]):
     """Attribute type for strings."""
 
     type_id = "string"

@@ -145,7 +145,11 @@ class AttributeInfo(Generic[T], MutableMapping[str, Any]):
         )
 
 
-class AttributeType(ABC, Generic[Zarr, T]):
+# Type variable for 'value' argument to 'AttributeType.__init__()'
+InitValueType = TypeVar("InitValueType")
+
+
+class AttributeType(ABC, Generic[Zarr, T, InitValueType]):
     """
     The AttributeType class provides an interface for converting Python objects to and from a Zarr
     array or Group. It uses the registry pattern to maintain a mapping of type_id to
@@ -165,7 +169,7 @@ class AttributeType(ABC, Generic[Zarr, T]):
     @overload
     def __init__(
         self,
-        value: T,
+        value: InitValueType,
         info: Optional[AttributeInfo] = None,
         *,
         parent_and_key: Optional[tuple[ZarrGroup, str]] = None,
@@ -192,7 +196,7 @@ class AttributeType(ABC, Generic[Zarr, T]):
 
     def __init__(
         self,
-        value: Union[T, Literal[UNSET]] = UNSET,
+        value: Union[InitValueType, Literal[UNSET]] = UNSET,
         info: Optional[AttributeInfo] = None,
         *,
         bind: Optional[Zarr] = None,
@@ -239,6 +243,7 @@ class AttributeType(ABC, Generic[Zarr, T]):
 
         self._bind = self._set_value(value, info, parent, key)
         self._check_bind()
+        self.__post_init__(value, info)
 
     @property
     def info(self) -> AttributeInfo:
@@ -251,10 +256,14 @@ class AttributeType(ABC, Generic[Zarr, T]):
         data."""
         return self._bind
 
-    def default_value(self) -> Union[T, Literal[UNSET]]:
+    def default_value(self) -> Union[InitValueType, Literal[UNSET]]:
         """Returns a valid default value for this type, or ``UNSET`` if this type
         must be initialized with a value."""
         return UNSET
+
+    def __post_init__(self, value: InitValueType, info: Optional[AttributeInfo]):
+        """Called after __init__(), only during value initialization. Can be implemented
+        in subclasses to implement additional initialization"""
 
     @classmethod
     def consumes_types(cls) -> Iterable[type]:
@@ -270,7 +279,7 @@ class AttributeType(ABC, Generic[Zarr, T]):
         """Parses bind into Python object."""
 
     @abstractmethod
-    def value_to_zarr(self, bind_parent: ZarrGroup, key: str, value: T) -> Zarr:
+    def value_to_zarr(self, bind_parent: ZarrGroup, key: str, value: InitValueType) -> Zarr:
         """Converts value into a Zarr Array or Group under bind_parent[key]."""
 
     def get_value(self) -> T:
@@ -278,7 +287,7 @@ class AttributeType(ABC, Generic[Zarr, T]):
         return self.zarr_to_value(self.bind)
 
     def _set_value(
-        self, value: T, info: Optional[AttributeInfo], parent: ZarrGroup, key: str
+        self, value: InitValueType, info: Optional[AttributeInfo], parent: ZarrGroup, key: str
     ) -> Zarr:
         """Converts ``value`` into Zarr format and sets the attribute info."""
         if info is None:
@@ -350,7 +359,7 @@ class AttributeType(ABC, Generic[Zarr, T]):
         return super().__init_subclass__()
 
 
-def get_attribute_type(zobj: Zarr) -> type[AttributeType[Zarr, Any]]:
+def get_attribute_type(zobj: Zarr) -> type[AttributeType[Zarr, Any, Any]]:
     """
     Returns the ``AttributeType`` of the dataset attribute contained
     in ``zobj``.
@@ -385,7 +394,7 @@ def _get_type(type_or_obj: Union[object, type]) -> type:
     return type_
 
 
-def match_obj_type(type_or_obj: Union[T, type[T]]) -> type[AttributeType[ZarrAny, T]]:
+def match_obj_type(type_or_obj: Union[T, type[T]]) -> type[AttributeType[ZarrAny, T, T]]:
     """
     Returns an ``AttributeType`` that can accept an object of type ``type_or_obj``
     as a value.
