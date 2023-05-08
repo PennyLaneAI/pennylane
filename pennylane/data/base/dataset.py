@@ -218,6 +218,11 @@ class DatasetBase(MapperMixin, metaclass=_DatasetMeta):
     def __setattr__(self, __name: str, __value: Union[Any, AttributeType]) -> None:
         if __name.startswith("_"):
             super().__setattr__(__name, __value)
+            return
+
+        if __name in self.fields:
+            info = self.fields[__name].info
+            self._mapper[__name] = (__value, info)
         else:
             self._mapper[__name] = __value
 

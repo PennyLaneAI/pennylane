@@ -66,10 +66,11 @@ class AttributeInfo(Generic[T], MutableMapping[str, Any]):
     @overload
     def __init__(
         self,
-        attrs_bind: Optional[MutableMapping[str, Any]],
+        attrs_bind: Optional[MutableMapping[str, Any]] = None,
         *,
         doc: Optional[str] = None,
         py_type: Optional[str] = None,
+        **kwargs: Any,
     ):
         ...
 
@@ -78,18 +79,17 @@ class AttributeInfo(Generic[T], MutableMapping[str, Any]):
         ...
 
     def __init__(self, attrs_bind: Optional[MutableMapping[str, Any]] = None, **kwargs: Any):
-        object.__setattr__(self, "attrs_bind", attrs_bind or {})
+        object.__setattr__(self, "attrs_bind", attrs_bind if attrs_bind is not None else {})
 
         for k, v in kwargs.items():
             setattr(self, k, v)
 
-    def save(self, attrs_bind: MutableMapping[str, Any], clobber: bool = False):
-        for k in self.raw_keys():
-            if k not in attrs_bind or clobber:
-                attrs_bind[k] = self.attrs_bind[k]
+    def save(self, info: "AttributeInfo", clobber: bool = False):
+        for k, v in self.items():
+            info[k] = v
 
-    def load(self, attrs_bind: MutableMapping[str, Any], clobber: bool = False):
-        AttributeInfo(attrs_bind).save(self.attrs_bind, clobber=clobber)
+    def load(self, info: "AttributeInfo", clobber: bool = False):
+        info.save(self, clobber=clobber)
 
     @property
     def py_type(self) -> Optional[str]:
@@ -136,11 +136,8 @@ class AttributeInfo(Generic[T], MutableMapping[str, Any]):
 
     def __iter__(self) -> Iterator[str]:
         return itertools.chain.from_iterable(
-            key.split(self.attrs_namespace, maxsplit=1)[1:2] for key in self.raw_keys()
+            key.split(self.attrs_namespace, maxsplit=1)[1:2] for key in self.attrs_bind
         )
-
-    def raw_keys(self) -> Iterator[str]:
-        return (key for key in self.attrs_bind if key.startswith(self.attrs_namespace))
 
 
 class AttributeType(ABC, Generic[Zarr, T]):
@@ -160,66 +157,31 @@ class AttributeType(ABC, Generic[Zarr, T]):
 
     Self = TypeVar("Self", bound="AttributeType")
 
-    _parent: ZarrGroup
-    _name: Optional[str] = None
-    _key: Optional[str] = None
-
     def __init__(
         self,
-        value: Optional[T] = None,
+        value: Union[T, Literal[UNSET]] = UNSET,
         info: Optional[AttributeInfo] = None,
         *,
-        parent: Optional[ZarrGroup] = None,
-        key: Optional[str] = None,
+        bind: Optional[Zarr] = None,
+        parent_and_key: Optional[tuple[ZarrGroup, str]] = None,
     ) -> None:
-        if parent is not None:
-            if key is None:
-                raise TypeError("'key' argument must be provided for 'parent'.")
-            self._parent = parent
-            self._key = key
+        if bind is not None:
+            self._bind = bind
+            self._check_bind()
+            return
+
+        if parent_and_key is not None:
+            parent, key = parent_and_key
         else:
-            self._parent = zarr.group()
-            self._key = "_"
+            parent, key = zarr.group(), "_"
 
-        if self.key not in self._parent:
-            if value is None:
-                value = self.default_value()
-                if value is UNSET:
-                    raise TypeError("'value' not provided and attribute does not exist in parent.")
+        if value is UNSET:
+            value = self.default_value()
+            if value is UNSET:
+                raise TypeError(f"__init__() missing 1 required positional argument: 'value'")
 
-            info = info or AttributeInfo()
-            info.py_type = type(value)
-
-            self.set_value(value, info)
-
-        self._check_bind(self.bind)
-
-    @classmethod
-    def consumes_types(cls) -> Iterable[type]:
-        """
-        Returns an iterable of types for which this should be the default
-        codec. If a value of one of these types is assigned to a Dataset
-        without specifying a `type_id`, this type will be used.
-        """
-        return ()
-
-    def default_value(self) -> Union[T, Literal[UNSET]]:
-        """Returns a valid default value for this type, or ``UNSET`` if this type
-        must be initialized with a value."""
-        return UNSET
-
-    @abstractmethod
-    def zarr_to_value(self, bind: Zarr) -> T:
-        """Parses bind into Python object."""
-
-    @abstractmethod
-    def value_to_zarr(self, bind_parent: ZarrGroup, key: str, value: T) -> Zarr:
-        """Converts value into a Zarr Array or Group under bind_parent[key]."""
-
-    @property
-    def key(self) -> str:
-        """The bound name of this attribute under ``parent``."""
-        return self._key or ""
+        self._bind = self._set_value(value, info, parent, key)
+        self._check_bind()
 
     @property
     def info(self) -> AttributeInfo:
@@ -230,37 +192,56 @@ class AttributeType(ABC, Generic[Zarr, T]):
     def bind(self) -> Zarr:
         """Returns the Zarr object that contains this attribute's
         data."""
-        return cast(Zarr, self._parent[self.key])
+        return self._bind
 
-    @property
-    def bind_parent(self) -> ZarrGroup:
-        """Returns the Zarr group that contains this attribute."""
-        return self._parent
+    def default_value(self) -> Union[T, Literal[UNSET]]:
+        """Returns a valid default value for this type, or ``UNSET`` if this type
+        must be initialized with a value."""
+        return UNSET
+
+    @classmethod
+    def consumes_types(cls) -> Iterable[type]:
+        """
+        Returns an iterable of types for which this should be the default
+        codec. If a value of one of these types is assigned to a Dataset
+        without specifying a `type_id`, this type will be used.
+        """
+        return ()
+
+    @abstractmethod
+    def zarr_to_value(self, bind: Zarr) -> T:
+        """Parses bind into Python object."""
+
+    @abstractmethod
+    def value_to_zarr(self, bind_parent: ZarrGroup, key: str, value: T) -> Zarr:
+        """Converts value into a Zarr Array or Group under bind_parent[key]."""
 
     def get_value(self) -> T:
         """Loads the mapped value from ``bind``."""
         return self.zarr_to_value(self.bind)
 
-    def set_value(self, value: T, info: Optional[AttributeInfo]) -> Zarr:
+    def _set_value(
+        self, value: T, info: Optional[AttributeInfo], parent: ZarrGroup, key: str
+    ) -> Zarr:
         """Converts ``value`` into Zarr format and sets the attribute info."""
         if info is None:
             info = AttributeInfo()
-            info.load(self.bind.attrs)
 
         info["type_id"] = self.type_id
+        if info.py_type is None:
+            info.py_type = get_type_str(type(value))
 
-        new_bind = self.value_to_zarr(self.bind_parent, self.key, value)
-        info.save(new_bind.attrs)
+        new_bind = self.value_to_zarr(parent, key, value)
+        new_info = AttributeInfo(new_bind.attrs)
+        info.save(new_info)
 
         return new_bind
 
     def _set_parent(self, parent: ZarrGroup, key: str):
         """Copies this attribute's data into ``parent``, under ``key``."""
-        zarr.convenience.copy(source=self.bind, dest=parent, name=key)
-        self._parent = parent
-        self._key = key
+        zarr.convenience.copy(source=self.bind, dest=parent, name=key, if_exists="replace")
 
-    def _check_bind(self, bind: Zarr):
+    def _check_bind(self):
         """
         Checks that ``bind.attrs`` contains the type_id corresponding to
         this type.
@@ -268,7 +249,7 @@ class AttributeType(ABC, Generic[Zarr, T]):
         existing_type_id = self.info.get("type_id")
         if existing_type_id is not None and existing_type_id != self.type_id:
             raise TypeError(
-                f"zarr {type(bind).__qualname__} is bound to another type {existing_type_id}"
+                f"zarr {type(self.bind).__qualname__} is bound to another type {existing_type_id}"
             )
 
     def __str__(self) -> str:
