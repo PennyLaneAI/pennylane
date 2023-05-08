@@ -194,9 +194,7 @@ def jordan_wigner(op, notation="physicist"):
     for i, term in enumerate(o):
         if len(term) == 0:
             o[i] = qml.Identity(0)
-        if len(term) == 1:
-            o[i] = pauli_map[term[0][0]][term[0][1]]
-        if len(term) > 1:
+        else    :
             k = [pauli_map[t[0]][t[1]] for t in term]
             o[i] = Tensor(*k)
 
