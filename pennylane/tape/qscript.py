@@ -91,8 +91,8 @@ class QuantumScript:
         prep (Iterable[Operator]): Any state preparations to perform at the start of the circuit
 
     Keyword Args:
-        shots (None, int, Sequence[int], ~.Shots): Number and/or batches of
-            shots for execution. Note that this property is still experimental and under development.
+        shots (None, int, Sequence[int], ~.Shots): Number and/or batches of shots for execution.
+            Note that this property is still experimental and under development.
         name (str): a name given to the quantum script
         _update=True (bool): Whether or not to set various properties on initialization. Setting
             ``_update=False`` reduces computations if the script is only an intermediary step.
@@ -1045,7 +1045,7 @@ class QuantumScript:
             _ops = self._ops.copy()
             _measurements = self.measurements.copy()
 
-        new_qscript = self.__class__(ops=_ops, measurements=_measurements, prep=_prep)
+        new_qscript = self.__class__(ops=_ops, measurements=_measurements, prep=_prep, shots=self.shots)
         new_qscript._graph = None if copy_operations else self._graph
         new_qscript._specs = None
         new_qscript.wires = copy.copy(self.wires)
@@ -1125,7 +1125,7 @@ class QuantumScript:
         """
         with qml.QueuingManager.stop_recording():
             ops_adj = [qml.adjoint(op, lazy=False) for op in reversed(self._ops)]
-        adj = self.__class__(ops=ops_adj, measurements=self.measurements, prep=self._prep)
+        adj = self.__class__(ops=ops_adj, measurements=self.measurements, prep=self._prep, shots=self.shots)
         if self.do_queue:
             qml.QueuingManager.append(adj)
         return adj
