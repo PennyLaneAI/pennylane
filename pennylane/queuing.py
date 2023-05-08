@@ -397,13 +397,7 @@ class AnnotatedQueue(OrderedDict):
         return self[obj]
 
     def items(self):
-        items = super().items()
-        new_items = []
-
-        for key, value in items:
-            new_items.append((key.obj, value))
-
-        return tuple(new_items)
+        return tuple((key.obj, value) for key, value in super().items())
 
     @property
     def queue(self):
