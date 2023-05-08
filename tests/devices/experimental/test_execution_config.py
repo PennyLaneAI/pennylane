@@ -28,8 +28,7 @@ def test_default_values():
     assert config.interface == "autograd"
     assert config.gradient_method is None
     assert config.gradient_keyword_arguments == {}
-    assert config.grad_on_execution is None
-    assert config.use_device_gradient is None
+    assert config.shots is None
 
 
 def test_invalid_interface():
@@ -48,16 +47,3 @@ def test_invalid_gradient_keyword_arguments():
     """Tests that unknown gradient_keyword_arguments raise a ValueError."""
     with pytest.raises(ValueError, match="All gradient_keyword_arguments keys must be in"):
         _ = ExecutionConfig(gradient_keyword_arguments={"nonsense": 0})
-
-
-@pytest.mark.parametrize("option", (True, False, None))
-def test_valid_grad_on_execution(option):
-    """Test execution config allows the True, False and best"""
-    config = ExecutionConfig(grad_on_execution=option)
-    assert config.grad_on_execution == option
-
-
-def test_invalid_grad_on_execution():
-    """Test invalid values for grad on execution raise an error."""
-    with pytest.raises(ValueError, match=r"grad_on_execution must be True, False,"):
-        ExecutionConfig(grad_on_execution="forward")
