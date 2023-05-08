@@ -27,7 +27,8 @@ class FirstQuantization(Operation):
     algorithm in first quantization using a plane-wave basis.
 
     To estimate the gate and qubit costs for implementing this method, the number of plane waves,
-    the number of electrons and the unit cell volume need to be defined. The costs can then be
+    the number of electrons and the unit cell volume need to be defined. The lattice vectors are
+    also needed if the material has a non-cubic unit cell. The costs can then be
     computed using the functions :func:`~.pennylane.resource.FirstQuantization.gate_cost` and
     :func:`~.pennylane.resource.FirstQuantization.qubit_cost` with a target error that has the default
     value of 0.0016 Ha (chemical accuracy). Atomic units are used throughout the class.
@@ -43,6 +44,9 @@ class FirstQuantization(Operation):
 
     **Example**
 
+    Resource estimation can be performed for materials with a cubic unit cell by specifying the
+    number of plane waves, the number of electrons and the unit cell volume.
+
     >>> n = 100000
     >>> eta = 156
     >>> omega = 1145.166
@@ -52,6 +56,22 @@ class FirstQuantization(Operation):
     >>>       algo.qubits # estimated number of logical qubits
     >>>       )
     649912.4801542697 1.10e+13 4416
+
+    Resource estimation for materials with a non-cubic unit cell requires the lattive vectors to be
+    defined as well.
+
+    >>> n = 100000
+    >>> eta = 156
+    >>> omega = 1113.47
+    >>> vectors = np.array([[9.44862994, 0.000000000, 0.000000000],
+    ...                     [0.00000000, 10.39349294,  0.00000000],
+    ...                     [0.94486299,  0.94486299, 11.33835593]])
+    >>> algo = FirstQuantization(n, eta, omega)
+    >>> print(algo.lamb,  # the 1-Norm of the Hamiltonian
+    >>>       algo.gates, # estimated number of non-Clifford gates
+    >>>       algo.qubits # estimated number of logical qubits
+    >>>       )
+    817051.632523202, 1.5e+14, 3331
 
     .. details::
         :title: Theory
