@@ -14,6 +14,7 @@
 """Contains the base class for Dataset attribute types, and a class for
 attribute metadata."""
 
+import itertools
 import warnings
 from abc import ABC, abstractmethod
 from collections.abc import Iterable, Mapping, MutableMapping, Sequence
@@ -30,7 +31,7 @@ from typing import (
     Union,
     overload,
 )
-import itertools
+
 from pennylane.data.base._zarr import zarr
 from pennylane.data.base.typing_util import (
     UNSET,
@@ -48,12 +49,14 @@ class AttributeInfo(Generic[T], MutableMapping[str, Any]):
     attribute. Is stored in the Zarr object's ``attrs`` dict.
 
     Attributes:
+        attrs_namespace: Keys for this class's attributes will
+            be prefixed with this string in ``attrs_bind``.
         attrs_bind: The Zarr attrs dict that this instance is bound to,
             or any mutable mapping
         py_type: Type annotation for this attribute
         doc: Documentation for this attribute
-        meta: Extra metdata to attach to this attribute. Must be
-            json serializable.
+        **kwargs: Extra metadata to include. Must be a string, number
+            or numpy array
     """
 
     attrs_namespace: ClassVar[str] = "qml.data."
@@ -83,15 +86,18 @@ class AttributeInfo(Generic[T], MutableMapping[str, Any]):
         for k, v in kwargs.items():
             setattr(self, k, v)
 
-    def save(self, info: "AttributeInfo", clobber: bool = False):
+    def save(self, info: "AttributeInfo"):
+        """Inserts the values set in this instance into ``info``."""
         for k, v in self.items():
             info[k] = v
 
-    def load(self, info: "AttributeInfo", clobber: bool = False):
-        info.save(self, clobber=clobber)
+    def load(self, info: "AttributeInfo"):
+        """Inserts the values set in ``info`` into this instance."""
+        info.save(self)
 
     @property
     def py_type(self) -> Optional[str]:
+        """String representation of this attribute's python type."""
         return self.get("py_type")
 
     @py_type.setter
@@ -102,7 +108,7 @@ class AttributeInfo(Generic[T], MutableMapping[str, Any]):
         return self.get("__len__", 0)
 
     def _update_len(self, inc: int):
-        self.attrs_bind[f"{self.attrs_namespace}__len__"] = self.__len__() + inc
+        self.attrs_bind[f"{self.attrs_namespace}__len__"] = len(self) + inc
 
     def __setitem__(self, __name: str, __value: Any):
         key = f"{self.attrs_namespace}{__name}"
@@ -177,7 +183,7 @@ class AttributeType(ABC, Generic[Zarr, T]):
         if value is UNSET:
             value = self.default_value()
             if value is UNSET:
-                raise TypeError(f"__init__() missing 1 required positional argument: 'value'")
+                raise TypeError("__init__() missing 1 required positional argument: 'value'")
 
         self._bind = self._set_value(value, info, parent, key)
         self._check_bind()
