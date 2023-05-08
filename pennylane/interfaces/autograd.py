@@ -18,6 +18,11 @@ to a PennyLane Device class.
 # pylint: disable=too-many-arguments
 from collections.abc import Sequence
 
+import logging
+import inspect
+
+logger = logging.getLogger(__name__)
+
 import autograd
 from autograd.numpy.numpy_boxes import ArrayBox
 
@@ -302,6 +307,19 @@ def execute(tapes, device, execute_fn, gradient_fn, gradient_kwargs, _n=1, max_d
         list[list[float]]: A nested list of tape results. Each element in
         the returned list corresponds in order to the provided tapes.
     """
+    if logger.isEnabledFor(logging.DEBUG):
+        logger.debug(
+            """Entry with args=(tapes=%s, device=%s, execute_fn=%s, gradient_fn=%s, gradient_kwargs=%s, _n=%s, max_diff=%s) called by=%s""",
+            tapes,
+            device.short_name,
+            execute_fn,
+            gradient_fn,
+            gradient_kwargs,
+            _n,
+            max_diff,
+            "::L".join(str(i) for i in inspect.getouterframes(inspect.currentframe(), 2)[1][1:3]),
+        )
+
     if not qml.active_return():
         return _execute_legacy(
             tapes,
@@ -366,6 +384,20 @@ def _execute(
     if the nth-order derivative is requested. Do not set this argument unless you
     understand the consequences!
     """
+    if logger.isEnabledFor(logging.DEBUG):
+        logger.debug(
+            "Entry with args=(parameters=%s, tapes=%s, device=%s, execute_fn=%s, gradient_fn=%s, gradient_kwargs=%s, _n=%s, max_diff=%s) called by=%s",
+            parameters,
+            tapes,
+            device.short_name,
+            execute_fn,
+            gradient_fn,
+            gradient_kwargs,
+            _n,
+            max_diff,
+            "::L".join(str(i) for i in inspect.getouterframes(inspect.currentframe(), 2)[1][1:3]),
+        )
+
     unwrapped_tapes = tuple(convert_to_numpy_parameters(t) for t in tapes)
     res, jacs = execute_fn(unwrapped_tapes, **gradient_kwargs)
 
@@ -411,6 +443,21 @@ def vjp(
         function: this function accepts the backpropagation
         gradient output vector, and computes the vector-Jacobian product
     """
+    if logger.isEnabledFor(logging.DEBUG):
+        logger.debug(
+            "Entry with args=(ans=%s, parameters=%s, tapes=%s, device=%s, execute_fn=%s, gradient_fn=%s, gradient_kwargs=%s, _n=%s, max_diff=%s) called by=%s",
+            ans,
+            parameters,
+            tapes,
+            device.short_name,
+            execute_fn,
+            gradient_fn,
+            gradient_kwargs,
+            _n,
+            max_diff,
+            "::L".join(str(i) for i in inspect.getouterframes(inspect.currentframe(), 2)[1][1:3]),
+        )
+
     cached_jac = {}
 
     def _get_jac_with_caching():
@@ -431,6 +478,16 @@ def vjp(
     def grad_fn(dy):
         """Returns the vector-Jacobian product with given
         parameter values and output gradient dy"""
+
+        if logger.isEnabledFor(logging.DEBUG):
+            logger.debug(
+                "Entry with args=(dy=%s) called by=%s",
+                dy,
+                "::L".join(
+                    str(i) for i in inspect.getouterframes(inspect.currentframe(), 2)[1][1:3]
+                ),
+            )
+
         # multi measurement
         multi_measurements = [len(tape.measurements) > 1 for tape in tapes]
         dy = dy[0]
@@ -520,6 +577,16 @@ def vjp(
 
 def _compute_vjps_autograd(jacs, dy, multi_measurements, shots):
     """Compute the vjps of multiple tapes, directly for a Jacobian and co-tangents dys."""
+    if logger.isEnabledFor(logging.DEBUG):
+        logger.debug(
+            "Entry with args=(jacs=%s, dy=%s, multi_measurements=%s, shots=%s) called by=%s",
+            jacs,
+            dy,
+            multi_measurements,
+            shots,
+            "::L".join(str(i) for i in inspect.getouterframes(inspect.currentframe(), 2)[1][1:3]),
+        )
+
     vjps = []
     for i, multi in enumerate(multi_measurements):
         shot_vector_defined = isinstance(shots, Sequence)
