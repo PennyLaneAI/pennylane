@@ -50,6 +50,9 @@ def measure_with_samples(
     if shots.has_partitioned_shots:
         processed_samples = []
         for s in shots:
+            # currently we call sample_state for each shot entry, but it may be
+            # better to call sample_state just once with total_shots, then use
+            # the shot_range keyword argument
             samples = sample_state(pre_rotated_state, shots=s, wires=wires, rng=rng)
             processed_samples.append(mp.process_samples(samples, wires))
 
