@@ -1,4 +1,4 @@
 qml.resource
 =============
 
-.. automodule:: pennylane.resources
+.. automodule:: pennylane.resource
