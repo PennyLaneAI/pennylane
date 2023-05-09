@@ -15,7 +15,7 @@
 of Dataset attributes."""
 
 
-from collections.abc import Iterator, Mapping, MutableMapping
+from collections.abc import Mapping, MutableMapping
 from typing import Generic, Optional, TypeVar, Union
 import typing
 from pennylane.data.base.attribute import AttributeType

@@ -14,7 +14,7 @@
 """Contains an AttributeType that allows for heterogenous lists of dataset
 types."""
 
-from collections.abc import Iterable, MutableSequence, Sequence
+from collections.abc import MutableSequence, Sequence
 from typing import Generic, Union, overload
 import typing
 
