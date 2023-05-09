@@ -24,8 +24,8 @@ Expectation Value Functions
 .. autosummary::
     :toctree: api
 
-    ~resource.estimate_error
-    ~resource.estimate_shots
+    ~estimate_error
+    ~estimate_shots
 
 Quantum Phase Estimation Resources
 ----------------------------------
@@ -35,8 +35,8 @@ Quantum Phase Estimation Resources
 .. autosummary::
     :toctree: api
 
-    ~resource.FirstQuantization
-    ~resource.DoubleFactorization
+    ~FirstQuantization
+    ~DoubleFactorization
 
 Resource Classes
 ----------------
@@ -46,8 +46,8 @@ Resource Classes
 .. autosummary::
     :toctree: api
 
-    ~resource.Resources
-    ~resource.ResourcesOperation
+    ~Resources
+    ~ResourcesOperation
 
 Tracking Resources for Custom Operations
 ----------------------------------------
