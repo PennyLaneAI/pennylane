@@ -14,21 +14,13 @@
 """
 Code relevant for performing measurements on a state.
 """
-import functools
 from typing import Callable
 
 from scipy.sparse import csr_matrix
 
-import pennylane as qml
 from pennylane import math
 from pennylane.ops import Sum, Hamiltonian
-from pennylane.measurements import (
-    Shots,
-    StateMeasurement,
-    SampleMeasurement,
-    MeasurementProcess,
-    ExpectationMP,
-)
+from pennylane.measurements import StateMeasurement, MeasurementProcess, ExpectationMP
 from pennylane.typing import TensorLike
 from pennylane.wires import Wires
 
@@ -101,7 +93,7 @@ def sum_of_terms_method(measurementprocess: ExpectationMP, state: TensorLike) ->
 
 
 def get_measurement_function(
-    measurementprocess: MeasurementProcess, state: TensorLike, shots: Shots = None
+    measurementprocess: MeasurementProcess, state: TensorLike
 ) -> Callable[[MeasurementProcess, TensorLike], TensorLike]:
     """Get the appropriate method for performing a measurement.
 
@@ -112,15 +104,6 @@ def get_measurement_function(
     Returns:
         Callable: function that returns the measurement result
     """
-    # use Shots to dispatch a SampleMeasurement; this is required because
-    # some measurements (such as expval) are subclasses of both StateMeasurement
-    # and SampleMeasurement, so we can't use isinstance checks to dispatch
-    if shots is not None and shots.total_shots is not None:
-        if isinstance(measurementprocess, SampleMeasurement):
-            return functools.partial(qml.devices.qubit.measure_with_samples, shots=shots)
-
-        # TODO: raise error here?
-
     if isinstance(measurementprocess, StateMeasurement):
         if isinstance(measurementprocess, ExpectationMP):
             if measurementprocess.obs.name == "SparseHamiltonian":
@@ -144,9 +127,7 @@ def get_measurement_function(
     raise NotImplementedError
 
 
-def measure(
-    measurementprocess: MeasurementProcess, state: TensorLike, shots: Shots = None
-) -> TensorLike:
+def measure(measurementprocess: MeasurementProcess, state: TensorLike) -> TensorLike:
     """Apply a measurement process to a state.
 
     Args:
@@ -156,4 +137,4 @@ def measure(
     Returns:
         Tensorlike: the result of the measurement
     """
-    return get_measurement_function(measurementprocess, state, shots)(measurementprocess, state)
+    return get_measurement_function(measurementprocess, state)(measurementprocess, state)

@@ -21,6 +21,7 @@ from pennylane.typing import TensorLike
 from .initialize_state import create_initial_state
 from .apply_operation import apply_operation
 from .measure import measure
+from .sampling import measure_with_samples
 
 
 def simulate(circuit: qml.tape.QuantumScript) -> Union[tuple, TensorLike]:
@@ -55,14 +56,26 @@ def simulate(circuit: qml.tape.QuantumScript) -> Union[tuple, TensorLike]:
     for op in circuit._ops:
         state = apply_operation(op, state)
 
-    if len(circuit.measurements) == 1:
-        return measure(circuit.measurements[0], state, circuit.shots)
+    if circuit.shots.total_shots is None:
+        # analytic case
 
-    measurement_results = tuple(measure(mp, state, circuit.shots) for mp in circuit.measurements)
+        if len(circuit.measurements) == 1:
+            return measure(circuit.measurements[0], state)
+
+        return tuple(measure(mp, state) for mp in circuit.measurements)
+
+    # finite-shot case
+
+    if len(circuit.measurements) == 1:
+        return measure_with_samples(circuit.measurements[0], state, shots=circuit.shots)
+
+    results = tuple(
+        measure_with_samples(mp, state, shots=circuit.shots) for mp in circuit.measurements
+    )
 
     # no shot vector
     if not circuit.shots.has_partitioned_shots:
-        return measurement_results
+        return results
 
     # shot vector case: move the shot vector axis before the measurement axis
-    return tuple(zip(*measurement_results))
+    return tuple(zip(*results))
