@@ -93,10 +93,13 @@ def sum_of_terms_method(measurementprocess: ExpectationMP, state: TensorLike) ->
     if isinstance(measurementprocess.obs, Sum):
         # Recursively call measure on each term, so that the best measurement method can
         # be used for each term
-        return sum(measure(ExpectationMP(term), state) for term in measurementprocess.obs)
+        return sum(
+            measure(ExpectationMP(term), state, Shots(None)) for term in measurementprocess.obs
+        )
     # else hamiltonian
     return sum(
-        c * measure(ExpectationMP(t), state) for c, t in zip(*measurementprocess.obs.terms())
+        c * measure(ExpectationMP(t), state, Shots(None))
+        for c, t in zip(*measurementprocess.obs.terms())
     )
 
 
@@ -120,7 +123,6 @@ def get_measurement_function(
             return functools.partial(qml.devices.qubit.measure_with_samples, shots=shots)
 
         # TODO: raise error here?
-        pass
 
     if isinstance(measurementprocess, StateMeasurement):
         if isinstance(measurementprocess, ExpectationMP):

@@ -335,6 +335,38 @@ class TestSampleMeasurements:
 
             assert shot_res[2].shape == (s, 2)
 
+    def test_custom_wire_labels(self):
+        """Test that custom wire labels works as expected"""
+        x, y = np.array(0.732), np.array(0.488)
+        qs = qml.tape.QuantumScript(
+            [qml.RX(x, wires='b'), qml.CNOT(wires=['b', 'a']), qml.RY(y, wires='a')],
+            [qml.expval(qml.PauliZ('b')), qml.probs(wires=['a', 'b']), qml.sample(wires=['b', 'a'])],
+            shots=10000,
+        )
+        result = simulate(qs)
+
+        assert isinstance(result, tuple)
+        assert len(result) == 3
+
+        assert all(isinstance(res, np.ndarray) for res in result)
+
+        assert result[0].shape == ()
+        assert np.allclose(result[0], np.cos(x), atol=0.1)
+
+        assert result[1].shape == (4,)
+        assert np.allclose(
+            result[1],
+            [
+                np.cos(x / 2) ** 2 * np.cos(y / 2) ** 2,
+                np.sin(x / 2) ** 2 * np.sin(y / 2) ** 2,
+                np.cos(x / 2) ** 2 * np.sin(y / 2) ** 2,
+                np.sin(x / 2) ** 2 * np.cos(y / 2) ** 2,
+            ],
+            atol=0.1,
+        )
+
+        assert result[2].shape == (10000, 2)
+
 
 class TestOperatorArithmetic:
     def test_numpy_op_arithmetic(self):
