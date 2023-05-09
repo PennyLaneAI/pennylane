@@ -93,18 +93,15 @@ def sum_of_terms_method(measurementprocess: ExpectationMP, state: TensorLike) ->
     if isinstance(measurementprocess.obs, Sum):
         # Recursively call measure on each term, so that the best measurement method can
         # be used for each term
-        return sum(
-            measure(ExpectationMP(term), state, Shots(None)) for term in measurementprocess.obs
-        )
+        return sum(measure(ExpectationMP(term), state) for term in measurementprocess.obs)
     # else hamiltonian
     return sum(
-        c * measure(ExpectationMP(t), state, Shots(None))
-        for c, t in zip(*measurementprocess.obs.terms())
+        c * measure(ExpectationMP(t), state) for c, t in zip(*measurementprocess.obs.terms())
     )
 
 
 def get_measurement_function(
-    measurementprocess: MeasurementProcess, state: TensorLike, shots: Shots
+    measurementprocess: MeasurementProcess, state: TensorLike, shots: Shots = None
 ) -> Callable[[MeasurementProcess, TensorLike], TensorLike]:
     """Get the appropriate method for performing a measurement.
 
@@ -118,7 +115,7 @@ def get_measurement_function(
     # use Shots to dispatch a SampleMeasurement; this is required because
     # some measurements (such as expval) are subclasses of both StateMeasurement
     # and SampleMeasurement, so we can't use isinstance checks to dispatch
-    if shots.total_shots is not None:
+    if shots is not None and shots.total_shots is not None:
         if isinstance(measurementprocess, SampleMeasurement):
             return functools.partial(qml.devices.qubit.measure_with_samples, shots=shots)
 
@@ -147,7 +144,9 @@ def get_measurement_function(
     raise NotImplementedError
 
 
-def measure(measurementprocess: MeasurementProcess, state: TensorLike, shots: Shots) -> TensorLike:
+def measure(
+    measurementprocess: MeasurementProcess, state: TensorLike, shots: Shots = None
+) -> TensorLike:
     """Apply a measurement process to a state.
 
     Args:
