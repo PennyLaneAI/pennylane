@@ -158,12 +158,8 @@ class TestShotsConstruction:
     )
     def test_iter(self, shots, expected):
         """Test that iteration over Shots works correctly"""
-        actual = []
-        for s in Shots(shots):
-            actual.append(s)
-
-        assert len(actual) == len(expected)
-        assert all(act == exp for act, exp in zip(actual, expected))
+        actual = [s for s in Shots(shots)]
+        assert actual == expected
 
     def test_sequence_all_tuple(self):
         """Tests that a sequence of tuples is allowed."""
