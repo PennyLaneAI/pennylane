@@ -35,7 +35,9 @@ from pennylane.measurements import (
     Variance,
     VarianceMP,
     state,
+    Shots,
 )
+from pennylane.resource import Resources
 from pennylane.tape import QuantumScript
 from pennylane.wires import Wires
 
@@ -1371,3 +1373,77 @@ class TestGetBatchSize:
             dev._get_batch_size(tensor1, broadcasted_shape, qml.math.prod(broadcasted_shape))
             is None
         )
+
+
+class TestResourcesTracker:
+    """Test that the tracker can track resources and is integrated well with default qubit"""
+
+    qs_shots_wires_data = (
+        (qml.tape.QuantumScript([qml.Hadamard(0), qml.CNOT([0, 1])]), None, [0, 1]),
+        (qml.tape.QuantumScript([qml.PauliZ(0), qml.CNOT([0, 1]), qml.RX(1.23, 2)]), 10, [0, 1, 2]),
+        (
+            qml.tape.QuantumScript(
+                [
+                    qml.Hadamard(0),
+                    qml.RX(1.23, 1),
+                    qml.CNOT([0, 1]),
+                    qml.RX(4.56, 1),
+                    qml.Hadamard(0),
+                    qml.Hadamard(1),
+                ],
+            ),
+            (10, 10, 50),
+            [0, 1],
+        ),
+    )
+
+    expected_resources = (
+        Resources(2, 2, {"Hadamard": 1, "CNOT": 1}, {1: 1, 2: 1}, 2, Shots(None)),
+        Resources(3, 3, {"PauliZ": 1, "CNOT": 1, "RX": 1}, {1: 2, 2: 1}, 2, Shots(10)),
+        Resources(2, 6, {"Hadamard": 3, "RX": 2, "CNOT": 1}, {1: 5, 2: 1}, 4, Shots(70)),
+    )  # Resources(wires, gates, gate_types, gate_sizes, depth, shots)
+
+    devices = (
+        "default.qubit",
+        "default.qubit.autograd",
+        "default.qubit.jax",
+        "default.qubit.torch",
+        "default.qubit.tf",
+    )
+
+    @pytest.mark.parametrize("dev_name", devices)
+    @pytest.mark.parametrize(
+        "qs_shots_wires, expected_resource", zip(qs_shots_wires_data, expected_resources)
+    )
+    def test_tracker_single_execution(self, dev_name, qs_shots_wires, expected_resource):
+        """Test that the tracker accurately tracks resources in a single execution"""
+        qs, shots, wires = qs_shots_wires
+        dev = qml.device(dev_name, shots=shots, wires=wires)
+
+        with qml.Tracker(dev) as tracker:
+            dev.execute(qs)
+
+        assert len(tracker.history["resources"]) == 1  # single execution
+        assert tracker.history["resources"][0] == expected_resource
+
+    @pytest.mark.parametrize("dev_name", devices)
+    def test_tracker_multi_execution(self, dev_name):
+        """Test that the tracker accurately tracks resources for multi executions"""
+        qs1 = qml.tape.QuantumScript([qml.Hadamard(0), qml.CNOT([0, 1])])
+        qs2 = qml.tape.QuantumScript([qml.PauliZ(0), qml.CNOT([0, 1]), qml.RX(1.23, 2)])
+
+        exp_res1 = Resources(2, 2, {"Hadamard": 1, "CNOT": 1}, {1: 1, 2: 1}, 2, Shots(10))
+        exp_res2 = Resources(3, 3, {"PauliZ": 1, "CNOT": 1, "RX": 1}, {1: 2, 2: 1}, 2, Shots(10))
+
+        dev = qml.device(dev_name, shots=10, wires=[0, 1, 2])
+        with qml.Tracker(dev) as tracker:
+            dev.batch_execute([qs1])
+            dev.batch_execute([qs1, qs2])
+
+        assert tracker.totals == {"batches": 2, "executions": 3, "shots": 30, "batch_len": 3}
+        assert len(tracker.history["resources"]) == 3  # 1 per qscript execution
+
+        for tracked_r, expected_r in zip(
+            tracker.history["resources"], [exp_res1, exp_res1, exp_res2]
+        ):
+            assert tracked_r == expected_r
