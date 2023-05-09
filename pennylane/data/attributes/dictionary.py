@@ -73,7 +73,7 @@ class DatasetDict(
             my_item == other_item for my_item, other_item in zip(self.items(), __value.items())
         )
 
-    def __iter__(self) -> Iterator[str]:
+    def __iter__(self) -> typing.Iterator[str]:
         return (key for key in self.bind.keys())
 
     def __str__(self) -> str:
