@@ -403,7 +403,12 @@ def reorder_grads(grads, tape_specs):
 
 
 def _contract_qjac_with_cjac(qjac, cjac, num_measurements, shots):
-    """TODO"""
+    """Contract a quantum Jacobian with a classical preprocessing Jacobian.
+    Essentially, this function computes the generalized version of 
+    ``tensordot(qjac, cjac)`` over the tape parameter axis, adapted to the new
+    return type system. This function takes the measurement shapes and different
+    QNode arguments into account.
+    """
     if isinstance(cjac, tuple) and len(cjac) == 1:
         cjac = cjac[0]
 
@@ -455,7 +460,11 @@ def _contract_qjac_with_cjac(qjac, cjac, num_measurements, shots):
 
 
 def _contract_qjac_with_cjac_legacy(qjac, cjac):
-    """ """
+    """Contract a quantum Jacobian with a classical preprocessing Jacobian.
+    Essentially, this function computes the generalized version of 
+    ``tensordot(qjac, cjac)`` over the tape parameter axis, adapted to the old
+    return type system.
+    """
     tdot = partial(qml.math.tensordot, axes=[[-1], [0]])
     if isinstance(cjac, tuple):
         # Classical processing of multiple arguments is present. Return qjac @ cjac.
