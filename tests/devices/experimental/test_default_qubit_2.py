@@ -522,7 +522,7 @@ class TestAdjointDifferentiation:
         expected_grad = -qml.math.sin(x)
         actual_grad = dev.compute_derivatives(qs, self.ec)
         assert isinstance(actual_grad, np.ndarray)
-        assert actual_grad.shape == ()
+        assert actual_grad.shape == ()  # pylint: disable=no-member
         assert np.isclose(actual_grad, expected_grad)
 
         expected_val = qml.math.cos(x)
@@ -571,8 +571,11 @@ class TestAdjointDifferentiation:
             [qml.RY(x, 0)], [qml.expval(qml.PauliX(0)), qml.expval(qml.PauliZ(0))]
         )
 
-        circuits, _ = dev.preprocess([single_meas, multi_meas], self.ec)
+        circuits, _, new_ec = dev.preprocess([single_meas, multi_meas], self.ec)
         actual_grad = dev.compute_derivatives(circuits, self.ec)
+
+        assert new_ec.use_device_gradient
+        assert new_ec.grad_on_execution
 
         assert np.isclose(actual_grad[0], expected_grad[0])
         assert isinstance(actual_grad[1], tuple)
