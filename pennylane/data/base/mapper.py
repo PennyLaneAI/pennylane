@@ -17,7 +17,7 @@ class that provides the mapper class."""
 
 import typing
 from types import MappingProxyType
-from typing import Any, Dict, Tuple, Union
+from typing import Any, Dict, Optional
 
 from pennylane.data.base.attribute import (
     AttributeInfo,
@@ -53,14 +53,11 @@ class AttributeTypeMapper:
 
         return attr
 
-    def __setitem__(self, key: str, value: Union[Tuple[Any, AttributeInfo], Any]):
-        try:
-            value, info = value
-        except (TypeError, ValueError):
-            info = None
-
+    def set_item(self, key: str, value: Any, info: Optional[AttributeInfo]):
+        """Creates or replaces attribute ``key`` with ``value``, optionally
+        including ``info``."""
         if isinstance(value, AttributeType):
-            value._set_parent(self.bind, key)
+            value._set_parent(self.bind, key)  # pylint: disable=protected-access
             if info:
                 value.info.load(info)
         else:
@@ -68,6 +65,9 @@ class AttributeTypeMapper:
             attr_type(value, info, parent_and_key=(self.bind, key))
 
         self._cache.pop(key, None)
+
+    def __setitem__(self, key: str, value: Any):
+        self.set_item(key, value, None)
 
     def move(self, src: str, dest: str):
         """Moves the attribute stored at ``src`` in ``bind`` to ``dest``."""

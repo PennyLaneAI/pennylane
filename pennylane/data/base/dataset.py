@@ -225,7 +225,7 @@ class DatasetBase(MapperMixin, metaclass=_DatasetMeta):
 
         if __name in self.fields:
             info = self.fields[__name].info
-            self._mapper[__name] = (__value, info)
+            self._mapper.set_item(__name, __value, info)
         else:
             self._mapper[__name] = __value
 
