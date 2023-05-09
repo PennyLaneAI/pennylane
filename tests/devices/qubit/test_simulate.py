@@ -339,8 +339,12 @@ class TestSampleMeasurements:
         """Test that custom wire labels works as expected"""
         x, y = np.array(0.732), np.array(0.488)
         qs = qml.tape.QuantumScript(
-            [qml.RX(x, wires='b'), qml.CNOT(wires=['b', 'a']), qml.RY(y, wires='a')],
-            [qml.expval(qml.PauliZ('b')), qml.probs(wires=['a', 'b']), qml.sample(wires=['b', 'a'])],
+            [qml.RX(x, wires="b"), qml.CNOT(wires=["b", "a"]), qml.RY(y, wires="a")],
+            [
+                qml.expval(qml.PauliZ("b")),
+                qml.probs(wires=["a", "b"]),
+                qml.sample(wires=["b", "a"]),
+            ],
             shots=10000,
         )
         result = simulate(qs)
