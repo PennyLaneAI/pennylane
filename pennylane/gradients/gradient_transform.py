@@ -388,10 +388,8 @@ def reorder_grads(grads, tape_specs):
     tapes, which will return a single measurement-like shaped output (no shot vector), or a list
     thereof (shot vector).
     """
-    print(f"in: {grads}")
     single_measure, num_params, num_measurements, shot_vector, shots = tape_specs
-    single_param = num_params == 1
-    if single_measure and single_param:
+    if single_measure and num_params == 1:
         return grads[0]
     len_shot_vec = _get_num_copies(shots) if shot_vector else None
     if single_measure:
@@ -405,7 +403,7 @@ def reorder_grads(grads, tape_specs):
 
 
 def _contract_qjac_with_cjac(qjac, cjac, num_measurements, shots):
-    """ """
+    """TODO"""
     if isinstance(cjac, tuple) and len(cjac) == 1:
         cjac = cjac[0]
 
@@ -430,23 +428,19 @@ def _contract_qjac_with_cjac(qjac, cjac, num_measurements, shots):
         multi_params = isinstance(qjac[0], tuple)
     else:
         multi_params = isinstance(qjac, tuple)
-    # if multi_meas:
-    # multi_params = cjac_is_tuple or isinstance(qjac[0], tuple)
-    # else:
-    # multi_params = cjac_is_tuple or isinstance(qjac, tuple)
 
     tdot = partial(qml.math.tensordot, axes=[[0], [0]])
 
     if not multi_params:
         # Without dimension (e.g. expval) or with dimension (e.g. probs)
-        new_shape = (1,) if qjac.shape == () else (1, -1)
+        reshape = lambda x: qml.math.reshape(x, (1,) if x.shape == () else (1, -1))
 
         if not multi_meas:
             # Single parameter, single measurement
-            return tdot(qml.math.reshape(qjac, new_shape), cjac)
+            return tdot(reshape(qjac), cjac)
 
         # Single parameter, multiple measurements
-        return tuple(tdot(qml.math.reshape(q, new_shape), cjac) for q in qjac)
+        return tuple(tdot(reshape(q), cjac) for q in qjac)
 
     if not multi_meas:
         # Multiple parameters, single measurement
@@ -459,6 +453,24 @@ def _contract_qjac_with_cjac(qjac, cjac, num_measurements, shots):
     if not cjac_is_tuple:
         return tuple(tdot(qml.math.stack(q), qml.math.stack(cjac)) for q in qjac)
     return tuple(tuple(tdot(qml.math.stack(q), c) for c in cjac if c is not None) for q in qjac)
+
+
+def _contract_qjac_with_cjac_legacy(qjac, cjac):
+    """ """
+    tdot = partial(qml.math.tensordot, axes=[[-1], [0]])
+    if isinstance(cjac, tuple):
+        # Classical processing of multiple arguments is present. Return qjac @ cjac.
+        jacs = tuple(tdot(qjac, c) for c in cjac if c is not None)
+        return jacs[0] if len(jacs) == 1 else jacs
+
+    is_square = cjac.ndim == 2 and cjac.shape[0] == cjac.shape[1]
+
+    if is_square and qml.math.allclose(cjac, qml.numpy.eye(cjac.shape[0])):
+        # Classical Jacobian is the identity. No classical processing
+        # is present inside the QNode.
+        return qjac
+
+    return tdot(qjac, cjac)
 
 
 class gradient_transform(qml.batch_transform):
@@ -615,24 +627,8 @@ class gradient_transform(qml.batch_transform):
 
             if qml.active_return():
                 num_measurements = len(qnode.tape.measurements)
-                return _contract_qjac_with_cjac(qjac, cjac, num_measurements)
+                return _contract_qjac_with_cjac(qjac, cjac, num_measurements, _shots)
 
-            if isinstance(cjac, tuple):
-                # Classical processing of multiple arguments is present. Return qjac @ cjac.
-                jacs = tuple(
-                    qml.math.tensordot(qjac, c, [[-1], [0]]) for c in cjac if c is not None
-                )
-                if len(jacs) == 1:
-                    return jacs[0]
-                return jacs
-
-            is_square = cjac.ndim == 2 and cjac.shape[0] == cjac.shape[1]
-
-            if is_square and qml.math.allclose(cjac, qml.numpy.eye(cjac.shape[0])):
-                # Classical Jacobian is the identity. No classical processing
-                # is present inside the QNode.
-                return qjac
-
-            return qml.math.tensordot(qjac, cjac, [[-1], [0]])
+            return _contract_qjac_with_cjac_legacy(qjac, cjac)
 
         return jacobian_wrapper
