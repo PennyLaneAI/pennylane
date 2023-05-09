@@ -15,7 +15,8 @@
 """This module contains functions for preprocessing `QuantumTape` objects to ensure
 that they are supported for execution by a device."""
 # pylint: disable=protected-access
-from typing import Generator, Callable, Tuple
+import dataclasses
+from typing import Generator, Callable, Tuple, Union
 import warnings
 
 import pennylane as qml
@@ -80,7 +81,7 @@ def _operator_decomposition_gen(
 
 def validate_and_expand_adjoint(
     circuit: qml.tape.QuantumTape,
-) -> qml.tape.QuantumTape:  # pylint: disable=protected-access
+) -> Union[qml.tape.QuantumTape, DeviceError]:  # pylint: disable=protected-access
     """Function for validating that the operations and observables present in the input circuit
     are valid for adjoint differentiation.
 
@@ -88,22 +89,20 @@ def validate_and_expand_adjoint(
         circuit(.QuantumTape): the tape to validate
 
     Returns:
-        .QuantumTape: The expanded tape, such that it is supported by adjoint differentiation
-
-    Raises:
-        QuantumFunctionError: if the circuit is invalid for adjoint differentiation
+        Union[.QuantumTape, .DeviceError]: The expanded tape, such that it is supported by adjoint differentiation.
+        If the circuit is invalid for adjoint differentiation, a DeviceError with an explanation is returned instead.
     """
     # Check validity of measurements
     measurements = []
     for m in circuit.measurements:
         if not isinstance(m, ExpectationMP):
-            raise DeviceError(
+            return DeviceError(
                 "Adjoint differentiation method does not support "
                 f"measurement {m.__class__.__name__}."
             )
 
         if not m.obs.has_matrix:
-            raise DeviceError(
+            return DeviceError(
                 f"Adjoint differentiation method does not support observable {m.obs.name}."
             )
 
@@ -113,7 +112,7 @@ def validate_and_expand_adjoint(
     for op in circuit._ops:
         if op.num_params > 1:
             if not isinstance(op, qml.Rot):
-                raise DeviceError(
+                return DeviceError(
                     f"The {op} operation is not supported using "
                     'the "adjoint" differentiation method.'
                 )
@@ -236,10 +235,33 @@ def batch_transform(
     return tapes, batch_fn
 
 
+def _update_config(config: ExecutionConfig) -> ExecutionConfig:
+    """Chose the "best" options for the configuration if they are left unspecified.
+
+    Args:
+        config (ExecutionConfig): the initial execution config
+
+    Returns:
+        ExecutionConfig: a new config best choices selected.
+    """
+    updated_values = {}
+    if config.gradient_method == "best":
+        updated_values["gradient_method"] = "backprop"
+    if config.use_device_gradient is None:
+        updated_values["use_device_gradient"] = config.gradient_method in {
+            "best",
+            "adjoint",
+            "backprop",
+        }
+    if config.grad_on_execution is None:
+        updated_values["grad_on_execution"] = config.gradient_method == "adjoint"
+    return dataclasses.replace(config, **updated_values)
+
+
 def preprocess(
     circuits: Tuple[qml.tape.QuantumScript],
     execution_config: ExecutionConfig = DefaultExecutionConfig,
-) -> Tuple[Tuple[qml.tape.QuantumScript], Callable]:
+) -> Tuple[Tuple[qml.tape.QuantumScript], Callable, ExecutionConfig]:
     """Preprocess a batch of :class:`~.QuantumTape` objects to make them ready for execution.
 
     This function validates a batch of :class:`~.QuantumTape` objects by transforming and expanding
@@ -251,18 +273,17 @@ def preprocess(
             options for the execution.
 
     Returns:
-        Tuple[Sequence[.QuantumTape], callable]: Returns a tuple containing
-        the sequence of circuits to be executed, and a post-processing function
-        to be applied to the list of evaluated circuit results.
+        Tuple[QuantumTape], Callable, ExecutionConfig: QuantumTapes that the device can natively execute,
+        a postprocessing function to be called after execution, and a configuration with unset specifications filled in.
     """
-    if execution_config.shots is not None:
-        # Finite shot support will be added later
-        raise DeviceError("The Python Device does not support finite shots.")
 
     circuits = tuple(expand_fn(c) for c in circuits)
     if execution_config.gradient_method == "adjoint":
         circuits = tuple(validate_and_expand_adjoint(c) for c in circuits)
+        for circuit_or_error in circuits:
+            if isinstance(circuit_or_error, DeviceError):
+                raise circuit_or_error  # it's an error
 
     circuits, batch_fn = qml.transforms.map_batch_transform(batch_transform, circuits)
 
-    return circuits, batch_fn
+    return circuits, batch_fn, _update_config(execution_config)

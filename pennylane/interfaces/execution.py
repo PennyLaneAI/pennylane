@@ -93,7 +93,7 @@ def _batch_transform(
     config: "qml.devices.experimental.ExecutionConfig",
     override_shots: Union[bool, int, Sequence[int]] = False,
     device_batch_transform: bool = True,
-) -> Tuple[Sequence[QuantumTape], Callable]:
+) -> Tuple[Sequence[QuantumTape], Callable, "qml.devices.experimental.ExecutionConfig"]:
     """Apply the device batch transform unless requested not to.
 
     Args:
@@ -112,7 +112,6 @@ def _batch_transform(
 
     """
     if isinstance(device, qml.devices.experimental.Device):
-        print("is experimental device")
         if not device_batch_transform:
             warnings.warn(
                 "device batch transforms cannot be turned off with the new device interface.",
@@ -121,13 +120,13 @@ def _batch_transform(
         return device.preprocess(tapes, config)
     if device_batch_transform:
         dev_batch_transform = set_shots(device, override_shots)(device.batch_transform)
-        return qml.transforms.map_batch_transform(dev_batch_transform, tapes)
+        return *qml.transforms.map_batch_transform(dev_batch_transform, tapes), config
 
     def null_post_processing_fn(results):
         """A null post processing function used because the user requested not to use the device batch transform."""
         return results
 
-    return tapes, null_post_processing_fn
+    return tapes, null_post_processing_fn, config
 
 
 def _preprocess_expand_fn(
@@ -472,7 +471,7 @@ def execute(
 
     #### Executing the configured setup #####
 
-    tapes, batch_fn = _batch_transform(
+    tapes, batch_fn, config = _batch_transform(
         tapes, device, config, override_shots, device_batch_transform
     )
 
