@@ -192,6 +192,11 @@ class Shots:
         """Hash for a given Shot instance."""
         return hash(self.shot_vector)
 
+    def __iter__(self):
+        for shot_copy in self.shot_vector:
+            for _ in range(shot_copy.copies):
+                yield shot_copy.shots
+
     def __all_tuple_init__(self, shots: Sequence[Tuple]):
         res = []
         total_shots = 0
