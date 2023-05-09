@@ -336,7 +336,7 @@ class QubitDevice(Device):
         self._num_executions += 1
 
         if self.tracker.active:
-            shots_from_dev = self._shots
+            shots_from_dev = self._shots if not self.shot_vector else self._raw_shot_sequence
             tape_resources = circuit.specs["resources"]
 
             resources = Resources(  # temporary until shots get updated on tape !
