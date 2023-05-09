@@ -11,5 +11,25 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""The base module contains the base class that defines the underlying
-type machinery, and the low-level Zarr interface of the data module."""
+"""Contains AttributeType definition for scalars (numbers)."""
+
+from numbers import Number
+
+from pennylane.data.base.attribute import AttributeType
+from pennylane.data.base.typing_util import ZarrArray, ZarrGroup
+
+
+class DatasetScalar(AttributeType[ZarrArray, Number, Number]):
+    """
+    Attribute type for numbers.
+    """
+
+    type_id = "scalar"
+
+    def zarr_to_value(self, bind: ZarrArray) -> Number:
+        return bind[()]
+
+    def value_to_zarr(self, bind_parent: ZarrGroup, key: str, value: Number) -> ZarrArray:
+        bind_parent[key] = value
+
+        return bind_parent[key]

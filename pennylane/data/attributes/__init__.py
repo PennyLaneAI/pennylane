@@ -14,9 +14,10 @@
 """Contains AttributeType definitions for builtin types, including dicts,
 heterogenous lists, strings and numpy arrays, as well as Pennylane classes."""
 
-from .array import DatasetArray, DatasetScalar
+from .array import DatasetArray
 from .dictionary import DatasetDict
 from .list import DatasetList
+from .scalar import DatasetScalar
 from .string import DatasetString
 
 __all__ = ("DatasetArray", "DatasetScalar", "DatasetString", "DatasetDict", "DatasetList")

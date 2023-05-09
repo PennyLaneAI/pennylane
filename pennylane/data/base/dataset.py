@@ -96,7 +96,7 @@ def attribute(  # pylint: disable=too-many-arguments, unused-argument
     order_default=False, eq_default=False, field_specifiers=(attribute,), kw_only_default=True
 )
 class _DatasetMeta(type):
-    """This is a metaclass for that tells the type system that
+    """This is a metaclass that tells the type system that
     ``DatasetBase`` behaves like a dataclass. See:
     https://peps.python.org/pep-0681/
     """
@@ -171,7 +171,7 @@ class DatasetBase(MapperMixin, metaclass=_DatasetMeta):
         Args:
             filepath: Path to file containing dataset
             assign_to: Attribute name to which the contents of the file should be assigned.
-                If this is ``None`` (the default value), the file's attributes will assigned
+                If this is ``None`` (the default value), the file's attributes will be assigned
                 to the current dataset
             overwrite_attrs: Whether to overwrite attributes that already exist in this
                 dataset.
