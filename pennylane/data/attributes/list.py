@@ -16,6 +16,7 @@ types."""
 
 from collections.abc import Iterable, MutableSequence, Sequence
 from typing import Generic, Union, overload
+import typing
 
 from pennylane.data.base.attribute import AttributeType
 from pennylane.data.base.mapper import MapperMixin
@@ -23,22 +24,27 @@ from pennylane.data.base.typing_util import T, ZarrAny, ZarrGroup
 
 
 class DatasetList(
-    Generic[T], AttributeType[ZarrGroup, Sequence[T], Iterable[T]], MutableSequence[T], MapperMixin
+    Generic[T],
+    AttributeType[ZarrGroup, typing.Sequence[T], typing.Iterable[T]],
+    MutableSequence,
+    MapperMixin,
 ):
     """Provides a list-like collection type for dataset attributes."""
 
     type_id = "list"
 
-    def __post_init__(self, value: Iterable[T], info):
+    def __post_init__(self, value: typing.Iterable[T], info):
         self.extend(value)
 
-    def default_value(self) -> Iterable[T]:
+    def default_value(self) -> typing.Iterable[T]:
         return ()
 
-    def zarr_to_value(self, bind: ZarrGroup) -> MutableSequence[T]:
+    def zarr_to_value(self, bind: ZarrGroup) -> typing.MutableSequence[T]:
         return self
 
-    def value_to_zarr(self, bind_parent: ZarrGroup, key: str, value: Iterable[T]) -> ZarrGroup:
+    def value_to_zarr(
+        self, bind_parent: ZarrGroup, key: str, value: typing.Iterable[T]
+    ) -> ZarrGroup:
         grp = bind_parent.create_group(key)
 
         return grp
@@ -78,7 +84,7 @@ class DatasetList(
         return repr(list(self))
 
     @overload
-    def __getitem__(self, index: slice) -> list[T]:
+    def __getitem__(self, index: slice) -> typing.List[T]:
         ...
 
     @overload
