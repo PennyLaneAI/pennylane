@@ -14,9 +14,10 @@
 """Contains a class for mapping Zarr groups to Dataset Attributes, and a mixin
 class that provides the mapper class."""
 
-from collections.abc import KeysView, Mapping
+
+import typing
 from types import MappingProxyType
-from typing import Any, Union
+from typing import Any, Dict, Tuple, Union
 
 from pennylane.data.base.attribute import (
     AttributeInfo,
@@ -34,7 +35,7 @@ class AttributeTypeMapper:
     """
 
     bind: ZarrGroup
-    _cache: dict[str, AttributeType]
+    _cache: Dict[str, AttributeType]
 
     def __init__(self, bind: ZarrGroup) -> None:
         self._cache = {}
@@ -52,7 +53,7 @@ class AttributeTypeMapper:
 
         return attr
 
-    def __setitem__(self, key: str, value: Union[tuple[Any, AttributeInfo], Any]):
+    def __setitem__(self, key: str, value: Union[Tuple[Any, AttributeInfo], Any]):
         try:
             value, info = value
         except (TypeError, ValueError):
@@ -73,14 +74,14 @@ class AttributeTypeMapper:
         self.bind.move(src, dest)
         self._cache.pop(src, None)
 
-    def view(self) -> Mapping[str, AttributeType]:
+    def view(self) -> typing.Mapping[str, AttributeType]:
         """Returns a read-only mapping of the attributes in ``bind``."""
         return MappingProxyType(self)
 
     def __len__(self) -> int:
         return len(self.bind)
 
-    def keys(self) -> KeysView[str]:
+    def keys(self) -> typing.KeysView[str]:
         """Returns all keys in ``bind``."""
         return self.bind.keys()
 

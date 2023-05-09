@@ -44,6 +44,7 @@ class DatasetList(
         return grp
 
     def insert(self, index: int, value: Union[T, AttributeType[ZarrAny, T, T]]):
+        """Implements the insert() method."""
         if index < 0:
             index = len(self) + index
 
