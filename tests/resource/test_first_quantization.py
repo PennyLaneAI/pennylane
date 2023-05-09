@@ -272,7 +272,7 @@ def test_norm_error(n, eta, omega, error, br, charge):
         (
             100000,
             156,
-            1113.47,
+            None,
             np.array(
                 [
                     [9.44862994, 0.0, 0.0],
@@ -301,7 +301,33 @@ def test_fq_vals_non_qubic(n, eta, omega, vectors, lamb, g_cost, q_cost):
         (10000, 156, None, 0.001, 7, 0, None),
     ],
 )
-def test_init_error(n, eta, omega, error, br, charge, vectors):
+def test_init_error_1(n, eta, omega, error, br, charge, vectors):
     r"""Test that init raises an error when volume and vectors are None."""
     with pytest.raises(ValueError, match="The lattice vectors must be provided"):
+        qml.resource.FirstQuantization(n, eta, omega, error, br, charge, vectors)
+
+
+@pytest.mark.parametrize(
+    ("n", "eta", "omega", "error", "br", "charge", "vectors"),
+    [
+        (
+            10000,
+            156,
+            1113.47,
+            0.001,
+            7,
+            0,
+            np.array(
+                [
+                    [9.0, 0.0, 0.0],
+                    [0.0, 9.0, 0.0],
+                    [9.0, 9.0, 9.0],
+                ]
+            ),
+        ),
+    ],
+)
+def test_init_error_2(n, eta, omega, error, br, charge, vectors):
+    r"""Test that init raises an error when volume and vectors are None."""
+    with pytest.raises(ValueError, match="lattice vectors and the unit cell volume should not be"):
         qml.resource.FirstQuantization(n, eta, omega, error, br, charge, vectors)

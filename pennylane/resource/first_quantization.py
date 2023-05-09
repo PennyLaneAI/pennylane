@@ -15,8 +15,6 @@
 This module contains the functions needed for estimating the number of logical qubits and
 non-Clifford gates for quantum algorithms in first quantization using a plane-wave basis.
 """
-import warnings
-
 # pylint: disable=no-self-use disable=too-many-arguments disable=too-many-instance-attributes
 import numpy
 from scipy import integrate
@@ -106,6 +104,12 @@ class FirstQuantization(Operation):
 
         if omega is None and vectors is None:
             raise ValueError("The lattice vectors must be provided.")
+
+        if omega is not None and vectors is not None:
+            raise ValueError(
+                "The lattice vectors and the unit cell volume should not be provided"
+                " together. Please provide only one of them."
+            )
 
         if self.vectors is not None:
             self.omega = np.abs(np.sum((np.cross(vectors[0], vectors[1]) * vectors[2])))
