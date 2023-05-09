@@ -1411,6 +1411,7 @@ class TestResourcesTracker:
         "default.qubit.tf",
     )
 
+    @pytest.mark.all_interfaces
     @pytest.mark.parametrize("dev_name", devices)
     @pytest.mark.parametrize(
         "qs_shots_wires, expected_resource", zip(qs_shots_wires_data, expected_resources)
@@ -1426,6 +1427,7 @@ class TestResourcesTracker:
         assert len(tracker.history["resources"]) == 1  # single execution
         assert tracker.history["resources"][0] == expected_resource
 
+    @pytest.mark.all_interfaces
     @pytest.mark.parametrize("dev_name", devices)
     def test_tracker_multi_execution(self, dev_name):
         """Test that the tracker accurately tracks resources for multi executions"""
