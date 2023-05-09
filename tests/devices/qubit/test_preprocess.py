@@ -273,46 +273,39 @@ class TestBatchTransform:
 class TestAdjointDiffTapeValidation:
     """Unit tests for validate_and_expand_adjoint"""
 
+    @staticmethod
+    def assert_validate_fails_with(qs, err):
+        res = validate_and_expand_adjoint(qs)
+        assert isinstance(res, DeviceError)
+        assert res.args == (err,)
+
     def test_not_expval(self):
         """Test if a QuantumFunctionError is raised for a tape with measurements that are not
         expectation values"""
 
         measurements = [qml.expval(qml.PauliZ(0)), qml.var(qml.PauliX(3)), qml.sample()]
         qs = QuantumScript(ops=[], measurements=measurements)
-
-        with pytest.raises(
-            DeviceError,
-            match="Adjoint differentiation method does not support measurement",
-        ):
-            validate_and_expand_adjoint(qs)
+        self.assert_validate_fails_with(
+            qs, "Adjoint differentiation method does not support measurement VarianceMP."
+        )
 
     def test_unsupported_op(self):
         """Test if a QuantumFunctionError is raised for an unsupported operation, i.e.,
         multi-parameter operations that are not qml.Rot"""
 
         qs = QuantumScript([qml.U2(0.1, 0.2, wires=[0])], [qml.expval(qml.PauliZ(2))])
+        self.assert_validate_fails_with(
+            qs,
+            'The U2(0.1, 0.2, wires=[0]) operation is not supported using the "adjoint" differentiation method.',
+        )
 
-        with pytest.raises(
-            DeviceError,
-            match='operation is not supported using the "adjoint" differentiation method',
-        ):
-            validate_and_expand_adjoint(qs)
-
-    @pytest.mark.parametrize(
-        "obs",
-        [
-            qml.Hamiltonian([2, 0.5], [qml.PauliZ(0), qml.PauliY(1)]),
-        ],
-    )
-    def test_unsupported_obs(self, obs):
+    def test_unsupported_obs(self):
         """Test that the correct error is raised if a Hamiltonian or Sum measurement is differentiated"""
+        obs = qml.Hamiltonian([2, 0.5], [qml.PauliZ(0), qml.PauliY(1)])
         qs = QuantumScript([qml.RX(0.5, wires=1)], [qml.expval(obs)])
-
-        with pytest.raises(
-            DeviceError,
-            match="Adjoint differentiation method does not support observable",
-        ):
-            validate_and_expand_adjoint(qs)
+        self.assert_validate_fails_with(
+            qs, "Adjoint differentiation method does not support observable Hamiltonian."
+        )
 
     def test_trainable_hermitian_warns(self):
         """Test attempting to compute the gradient of a tape that obtains the
