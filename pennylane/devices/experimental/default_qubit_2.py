@@ -26,9 +26,12 @@ from ..qubit.simulate import simulate
 from ..qubit.preprocess import preprocess, validate_and_expand_adjoint
 from ..qubit.adjoint_jacobian import adjoint_jacobian
 
-Result_or_Batch = Union[Result, ResultBatch]
+Result_or_ResultBatch = Union[Result, ResultBatch]
 QuantumTapeBatch = Sequence[QuantumTape]
 QuantumTape_or_Batch = Union[QuantumTape, QuantumTapeBatch]
+PostprocessingFn = Callable[
+    [ResultBatch], Result_or_ResultBatch
+]  # always a function from a resultbatch to either a result or a result batch
 
 
 class DefaultQubit2(Device):
@@ -128,7 +131,7 @@ class DefaultQubit2(Device):
         self,
         circuits: QuantumTape_or_Batch,
         execution_config: ExecutionConfig = DefaultExecutionConfig,
-    ) -> Tuple[QuantumTapeBatch, Callable[[ResultBatch], Result_or_Batch]]:
+    ) -> Tuple[QuantumTapeBatch, PostprocessingFn]:
         """Converts an arbitrary circuit or batch of circuits into a batch natively executable by the :meth:`~.execute` method.
 
         Args:
@@ -169,7 +172,7 @@ class DefaultQubit2(Device):
         self,
         circuits: QuantumTape_or_Batch,
         execution_config: ExecutionConfig = DefaultExecutionConfig,
-    ) -> Result_or_Batch:
+    ) -> Result_or_ResultBatch:
         is_single_circuit = False
         if isinstance(circuits, QuantumScript):
             is_single_circuit = True

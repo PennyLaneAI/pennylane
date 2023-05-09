@@ -26,8 +26,10 @@ from pennylane import Tracker
 
 from .execution_config import ExecutionConfig, DefaultExecutionConfig
 
+Result_or_ResultBatch = Union[Result, ResultBatch]
 QuantumTapeBatch = Sequence[QuantumTape]
 QuantumTape_or_Batch = Union[QuantumTape, QuantumTapeBatch]
+PostprocessingFn = Callable[[ResultBatch], Result_or_ResultBatch]
 
 
 # pylint: disable=unused-argument, no-self-use
@@ -140,7 +142,7 @@ class Device(abc.ABC):
         self,
         circuits: QuantumTape_or_Batch,
         execution_config: ExecutionConfig = DefaultExecutionConfig,
-    ) -> Tuple[QuantumTapeBatch, Callable[[ResultBatch], ResultBatch], ExecutionConfig]:
+    ) -> Tuple[QuantumTapeBatch, PostprocessingFn, ExecutionConfig]:
         """Device preprocessing function.
 
         .. warning::
@@ -194,7 +196,7 @@ class Device(abc.ABC):
         self,
         circuits: QuantumTape_or_Batch,
         execution_config: ExecutionConfig = DefaultExecutionConfig,
-    ) -> Union[Result, ResultBatch]:
+    ) -> Result_or_ResultBatch:
         """Execute a circuit or a batch of circuits and turn it into results.
 
         Args:

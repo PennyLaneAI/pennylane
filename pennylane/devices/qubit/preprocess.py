@@ -27,6 +27,8 @@ from pennylane import DeviceError
 
 from ..experimental import ExecutionConfig, DefaultExecutionConfig
 
+PostprocessingFn = Callable[[ResultBatch], Union[Result, ResultBatch]]
+
 # Update observable list. Current list is same as supported observables for
 # default.qubit.
 _observables = {
@@ -195,7 +197,7 @@ def expand_fn(circuit: qml.tape.QuantumScript) -> qml.tape.QuantumScript:
 
 def batch_transform(
     circuit: qml.tape.QuantumScript,
-) -> Tuple[Tuple[qml.tape.QuantumScript], Callable[[ResultBatch], Union[Result, ResultBatch]]]:
+) -> Tuple[Tuple[qml.tape.QuantumScript], PostprocessingFn]:
     """Apply a differentiable batch transform for preprocessing a circuit
     prior to execution.
 
@@ -238,7 +240,7 @@ def batch_transform(
 def preprocess(
     circuits: Tuple[qml.tape.QuantumScript],
     execution_config: ExecutionConfig = DefaultExecutionConfig,
-) -> Tuple[Tuple[qml.tape.QuantumScript], Callable[[ResultBatch], ResultBatch]]:
+) -> Tuple[Tuple[qml.tape.QuantumScript], PostprocessingFn]:
     """Preprocess a batch of :class:`~.QuantumTape` objects to make them ready for execution.
 
     This function validates a batch of :class:`~.QuantumTape` objects by transforming and expanding
