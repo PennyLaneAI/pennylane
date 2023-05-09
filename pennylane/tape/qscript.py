@@ -1212,7 +1212,7 @@ class QuantumScript:
         """
         if self._specs is None:
             resources = qml.resource.resource._count_resources(
-                self, shots=self.shots
+                self
             )  # pylint: disable=protected-access
 
             self._specs = SpecsDict(

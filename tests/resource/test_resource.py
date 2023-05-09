@@ -202,8 +202,8 @@ class TestResourcesOperation:  # pylint: disable=too-few-public-methods
         assert CustomOPWithResources(wires=[0, 1])  # shouldn't raise an error
 
 
-def _construct_tape_from_ops(lst_ops):
-    with QuantumTape() as tape:
+def _construct_tape_from_ops(lst_ops, shots=None):
+    with QuantumTape(shots=shots) as tape:
         for op in lst_ops:
             qml.apply(op)
     return tape
@@ -294,6 +294,6 @@ resources_data = (
 def test_count_resources(ops_and_shots, expected_resources):
     """Test the count resources method."""
     ops, shots = ops_and_shots
-    tape = _construct_tape_from_ops(ops)
-    computed_resources = _count_resources(tape, shots)
+    tape = _construct_tape_from_ops(ops, shots)
+    computed_resources = _count_resources(tape)
     assert computed_resources == expected_resources

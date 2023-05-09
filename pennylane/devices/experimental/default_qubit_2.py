@@ -18,7 +18,6 @@ This module contains the next generation successor to default qubit
 from typing import Union, Callable, Tuple, Optional, Sequence
 
 from pennylane.resource import Resources
-from pennylane.measurements import Shots
 from pennylane.tape import QuantumTape, QuantumScript
 
 from . import Device
@@ -185,7 +184,7 @@ class DefaultQubit2(Device):
                     tape_resources.gate_types,
                     tape_resources.gate_sizes,
                     tape_resources.depth,
-                    Shots(execution_config.shots),
+                    tape_resources.shots,
                 )
                 self.tracker.update(resources=resources)
             self.tracker.update(batches=1, executions=len(circuits))
