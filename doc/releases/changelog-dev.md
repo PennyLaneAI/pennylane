@@ -23,6 +23,7 @@
 * Added a `shots` property to `QuantumScript`. This will allow shots to be tied to executions instead of devices more
   concretely.
   [(#4067)](https://github.com/PennyLaneAI/pennylane/pull/4067)
+  [(#4106)](https://github.com/PennyLaneAI/pennylane/pull/4106)
 
 * `qml.specs` is compatible with custom operations that have `depth` bigger than 1.
   [(#4033)](https://github.com/PennyLaneAI/pennylane/pull/4033)
@@ -71,9 +72,6 @@
 
 * Removes a patch in `interfaces/autograd.py` that checks for the `strawberryfields.gbs` device.  That device
   is pinned to PennyLane <= v0.29.0, so that patch is no longer necessary.
-
-* Fixed a bug where `qml.map_wires` would not copy the `shots` attribute to a newly-created `QuantumScript`.
-  [(#4106)](https://github.com/PennyLaneAI/pennylane/pull/4106)
 
 <h3>Contributors ✍️</h3>
 
