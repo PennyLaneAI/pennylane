@@ -15,7 +15,7 @@ def _generate_slices(list_len: int):
 
 class TestList:
     @pytest.mark.parametrize("value", [[1], [1, 2, 3], ["a", "b", "c"], [{"a": 1}]])
-    def test_from_value(self, value):
+    def test_value_init(self, value):
         """Test that a DatasetList can be initialized from
         a list."""
 
@@ -23,7 +23,7 @@ class TestList:
         assert lst == value
 
     @pytest.mark.parametrize("value", [[], [1, 2, 3], ["a", "b", "c"], [{"a": 1}]])
-    def test_from_zarr(self, value):
+    def test_bind_init(self, value):
         """Test that a DatasetList can be initialized from
         a previously initialized Zarr group."""
 
