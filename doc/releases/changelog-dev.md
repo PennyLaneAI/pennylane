@@ -24,6 +24,7 @@
   concretely.
   [(#4067)](https://github.com/PennyLaneAI/pennylane/pull/4067)
   [(#4103)](https://github.com/PennyLaneAI/pennylane/pull/4103)
+  [(#4106)](https://github.com/PennyLaneAI/pennylane/pull/4106)
 
 * `qml.specs` is compatible with custom operations that have `depth` bigger than 1.
   [(#4033)](https://github.com/PennyLaneAI/pennylane/pull/4033)
@@ -39,6 +40,7 @@
 
 * Added a function `measure_with_samples` that returns a sample-based measurement result given a state
   [(#4083)](https://github.com/PennyLaneAI/pennylane/pull/4083)
+  [(#4093)](https://github.com/PennyLaneAI/pennylane/pull/4093)
 
 * Support for adjoint differentiation has been added to the `DefaultQubit2` device.
   [(#4037)](https://github.com/PennyLaneAI/pennylane/pull/4037)
@@ -48,6 +50,11 @@
   [(#4095)](https://github.com/PennyLaneAI/pennylane/pull/4095)
 
 <h3>Breaking changes 💔</h3>
+
+* The experimental Device interface `qml.devices.experimental.Device` now requires that the `preprocess` method
+  also returns an `ExecutionConfig` object. This allows the device to choose what `"best"` means for various
+  hyperparameters like `gradient_method` and `grad_on_execution`.
+  [(#4007)](https://github.com/PennyLaneAI/pennylane/pull/4007)
 
 * Gradient transforms with Jax do not support `argnum` anymore,  `argnums` needs to be used.
   [(#4076)](https://github.com/PennyLaneAI/pennylane/pull/4076)
@@ -73,6 +80,7 @@ This release contains contributions from (in alphabetical order):
 
 Isaac De Vlugt,
 Soran Jahangiri,
+Edward Jiang,
 Korbinian Kottmann
 Christina Lee,
 Vincent Michaud-Rioux,

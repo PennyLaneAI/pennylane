@@ -25,6 +25,8 @@ def measure_with_samples(
 ) -> TensorLike:
     """
     Returns the samples of the measurement process performed on the given state.
+    This function assumes that the user-defined wire labels in the measurement process
+    have already been mapped to integer wires used in the device.
 
     Args:
         mp (~.measurements.SampleMeasurement): The sample measurement to perform
@@ -42,18 +44,22 @@ def measure_with_samples(
     for op in mp.diagonalizing_gates():
         pre_rotated_state = apply_operation(op, pre_rotated_state)
 
-    # we don't need to worry about shot vectors for now
-    # if shots.has_partitioned_shots:
-    #     processed_samples = []
-    #     for shot_copies in shots.shot_vector:
-    #         for _ in range(shot_copies.copies):
-    #             samples = sample_state(pre_rotated_state, shot_copies.shots, rng=rng)
-    #             processed_samples.append(mp.process_samples(samples, wire_order))
+    wires = qml.wires.Wires(range(len(state.shape)))
 
-    #     return tuple(processed_samples)
+    # if there is a shot vector, build a list containing results for each shot entry
+    if shots.has_partitioned_shots:
+        processed_samples = []
+        for s in shots:
+            # currently we call sample_state for each shot entry, but it may be
+            # better to call sample_state just once with total_shots, then use
+            # the shot_range keyword argument
+            samples = sample_state(pre_rotated_state, shots=s, wires=wires, rng=rng)
+            processed_samples.append(mp.process_samples(samples, wires))
 
-    samples = sample_state(pre_rotated_state, shots=shots.total_shots, wires=mp.wires, rng=rng)
-    return mp.process_samples(samples, mp.wires)
+        return tuple(processed_samples)
+
+    samples = sample_state(pre_rotated_state, shots=shots.total_shots, wires=wires, rng=rng)
+    return mp.process_samples(samples, wires)
 
 
 def sample_state(state, shots: int, wires=None, rng=None) -> np.ndarray:
