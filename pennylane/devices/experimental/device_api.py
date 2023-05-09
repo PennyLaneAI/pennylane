@@ -139,7 +139,7 @@ class Device(abc.ABC):
         self,
         circuits: QuantumTape_or_Batch,
         execution_config: ExecutionConfig = DefaultExecutionConfig,
-    ) -> Tuple[QuantumTapeBatch, Callable]:
+    ) -> Tuple[QuantumTapeBatch, Callable, ExecutionConfig]:
         """Device preprocessing function.
 
         .. warning::
@@ -156,9 +156,8 @@ class Device(abc.ABC):
             execution_config (ExecutionConfig): A datastructure describing the parameters needed to fully describe
                 the execution.
 
-        Returns:
-            Sequence[QuantumTape], Callable: QuantumTapes that the device can natively execute
-            and a postprocessing function to be called after execution.
+            Tuple[QuantumTape], Callable, ExecutionConfig: QuantumTapes that the device can natively execute,
+            a postprocessing function to be called after execution, and a configuration with unset specifications filled in.
 
         Raises:
             Exception: An exception is raised if the input cannot be converted into a form supported by the device.
@@ -170,6 +169,7 @@ class Device(abc.ABC):
         * splitting circuits with batched parameters into multiple executions
         * gradient specific preprocessing, such as making sure trainable operators have generators
         * validation of configuration parameters
+        * choosing a best gradient method and ``grad_on_execution`` value.
 
         """
 
@@ -185,8 +185,8 @@ class Device(abc.ABC):
             """
             return res
 
-        circuit_batch = [circuits] if isinstance(circuits, QuantumTape) else circuits
-        return circuit_batch, blank_postprocessing_fn
+        circuit_batch = (circuits,) if isinstance(circuits, QuantumTape) else circuits
+        return circuit_batch, blank_postprocessing_fn, execution_config
 
     @abc.abstractmethod
     def execute(
