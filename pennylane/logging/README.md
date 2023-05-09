@@ -24,21 +24,24 @@ done
 ```
 The strings in the log messages are prepended with the appropriate ANSI codes to ensure different log-levels are highlighted in different ways when outputing to the standard output stream (stdout/stderr).
 
-## Example logging use: PennyLane & JAX
+## Setting up logging supports
+
+To avail of the new functionality, ensure the branch "debugging/logging_support" is installed in editable mode as:
 
 ```bash
 python -m venv pyenv
 source ./pyenv/bin/activate
-python -m pip install jax jaxlib pytoml pennylane
+python -m pip install pytoml
+python -m pip install -e . 
 ```
 
-To get started with logging in PennyLane, we must first define a logger per module we intend to use with the logging infrastructure, and ensure all log statements are using this logger. The first steps is to import and define a logger as:
+To get started with adding logging to components of PennyLane, we must first define a logger per module we intend to use with the logging infrastructure, and ensure all scoped log statements are using this logger. The first steps is to import and define a logger as:
 
 ```python
 import logging
 logger = logging.getLogger(__name__)
 ```
-which will be used within the given module, and track directories, filenames and function names, as we have defined the appropriate types within the formatter configuration (see `pennylane.logging.formatters.formatter.py::DefaultFormatter`). With the logger defined, we can selectively add to the logger by if-else statements, which compare the given module's log-level. This step is not necessary, as the message will only output if the level is enable. Though, if an expensive function call is required to build the string for the log-message, it can be faster to perform this check:
+which will be used within the given module, and track directories, filenames and function names, as we have defined the appropriate types within the formatter configuration (see `pennylane.logging.formatters.formatter.py::DefaultFormatter`). With the logger defined, we can selectively add to the logger by if-else statements, which compare the given module's log-level to any log record message it receives. This step is not necessary, as the message will only output if the level is enabled, though if an expensive function call is required to build the string for the log-message, it can be faster to perform this check:
 
 ```python
 if logger.isEnabledFor(logging.DEBUG):
@@ -47,11 +50,14 @@ if logger.isEnabledFor(logging.DEBUG):
         arg_name_1, arg_name_2, ..., arg_name_n,
     )
 ```
-The above line can be added to below the function/method entry point, and the provided arguments can be used to populate the log message. This allows us a way to track the inputs and calls through the stack in the order they are executed.
+
+The above line can be added to below the function/method entry point, and the provided arguments can be used to populate the log message. This allows us a way to track the inputs and calls through the stack in the order they are executed, as is the basis for following a trail of execution as needed.
+
+All debug log-statements currently added to the PennyLane execution pipeline output log level messages with the originating function making that call, as this can allow us to track hard-to-find bug origins in the execution pipeline.
 
 ## Logging example with PennyLane and JAX's JIT support
 
-As of PennyLane v0.31.0-dev we have added execution and interface function entry logging supports. We can examine this support for both internal and external packages, where we enable logs for JAX, which has support for Python-native log messages. To enable logging specfically for JAX, we can modify the `level` parameter for the `[loggers.jax]` entry in the `log_config.toml` file as:
+As mentioned above, we have added execution function entry logging supports, including some supports for each target interface. We can examine this support for both internal and external packages, where we enable logs for JAX, which has support for Python-native log messages. To enable logging specfically for JAX, we can modify the `level` parameter for the `[loggers.jax]` entry in the `log_config.toml` file as:
 
 ```toml
 [loggers.jax]
@@ -167,3 +173,7 @@ logger.info(f"Jacobian={qml.jacobian(circuit)(par[0])}")
 By using `lightning.qubit` we can now treat the execution environment as a black-box, and see the log-level messages as they hit the custom VJP functions as part of the autograd execution pipeline.
 
 Note that the above features have been added for Torch, Tensorflow, JAX and autograd.
+
+## Customizing logs
+
+As with any package that targets many domains, Python's loging is as extensible and flexible as it is hard to configure -- ideally we define some good defaults that meet our development goals, and only deviate from them if required. To change log-levels that are reporrting on a package or module-wide basis, it is possible to do so by modidyfing the entries in the `log_config.toml` file, under the `[loggers]` section. In addition, if we want to send the logs eslewhere, we can adjust the `[handlers]` section, which control what happens to each message. If we do not like the output format of the messages, we can adjust these through the `[formatters]` section. If we want to filter messages based on some criteria, we can add these to the respective handlers. Rather than provide extensive docs here, I will suggest reading the Python logging documentation [how-to](https://docs.python.org/3/howto/logging.html#python logging) and ["advanced" tutorial](https://docs.python.org/3/howto/logging.html#logging-advanced-tutorial) level.
