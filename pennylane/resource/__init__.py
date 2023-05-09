@@ -12,14 +12,14 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 r"""
-.. currentmodule:: pennylane
-
 The ``resource`` module provides classes and functionality to estimate the quantum resources
 (number of qubits, circuit depth, etc.) required to implement advanced quantum algorithms.
 
 
 Expectation Value Functions
 ---------------------------
+
+.. currentmodule:: pennylane.resource
 
 .. autosummary::
     :toctree: api
@@ -30,6 +30,8 @@ Expectation Value Functions
 Quantum Phase Estimation Resources
 ----------------------------------
 
+.. currentmodule:: pennylane.resource
+
 .. autosummary::
     :toctree: api
 
@@ -38,6 +40,8 @@ Quantum Phase Estimation Resources
 
 Resource Classes
 ----------------
+
+.. currentmodule:: pennylane.resource
 
 .. autosummary::
     :toctree: api
