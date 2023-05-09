@@ -18,11 +18,10 @@ from pennylane.data.base.attribute import match_obj_type
         (int, DatasetScalar),
         (complex, DatasetScalar),
         (np.array, DatasetArray),
-        ([0], DatasetArray),
-        ((0.0, 1), DatasetArray),
-        ([np.int64(0)], DatasetArray),
-        ([complex(1, 2)], DatasetArray),
-        (np.zeros(shape=(5,)), DatasetArray),
+        (np.array([0]), DatasetArray),
+        (np.array([np.int64(0)]), DatasetArray),
+        (np.array([complex(1, 2)]), DatasetArray),
+        (np.zeros(shape=(5, 5, 7)), DatasetArray),
     ],
 )
 def test_match_obj_type(type_or_obj, attribute_type):
