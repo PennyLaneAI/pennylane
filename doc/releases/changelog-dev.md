@@ -38,6 +38,7 @@
 
 * Added a function `measure_with_samples` that returns a sample-based measurement result given a state
   [(#4083)](https://github.com/PennyLaneAI/pennylane/pull/4083)
+  [(#4093)](https://github.com/PennyLaneAI/pennylane/pull/4093)
 
 * Support for adjoint differentiation has been added to the `DefaultQubit2` device.
   [(#4037)](https://github.com/PennyLaneAI/pennylane/pull/4037)
@@ -72,6 +73,7 @@ This release contains contributions from (in alphabetical order):
 
 Isaac De Vlugt,
 Soran Jahangiri,
+Edward Jiang,
 Korbinian Kottmann
 Christina Lee,
 Vincent Michaud-Rioux,
