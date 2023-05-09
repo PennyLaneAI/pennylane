@@ -20,6 +20,8 @@ import os
 import types
 import warnings
 
+from typing import Callable, Tuple
+
 import pennylane as qml
 
 
@@ -449,7 +451,11 @@ class batch_transform:
         return lambda tape: self.construct(tape, *targs, **tkwargs)
 
 
-def map_batch_transform(transform, tapes):
+def map_batch_transform(
+    transform, tapes: Tuple[qml.tape.QuantumScript]
+) -> Tuple[
+    Tuple[qml.tape.QuantumScript], Callable[[qml.typing.ResultBatch], qml.typing.ResultBatch]
+]:
     """Map a batch transform over multiple tapes.
 
     Args:
@@ -501,7 +507,7 @@ def map_batch_transform(transform, tapes):
         batch_fns.append(fn)
         tape_counts.append(len(new_tapes))
 
-    def processing_fn(res):
+    def processing_fn(res: qml.typing.ResultBatch) -> qml.typing.ResultBatch:
         count = 0
         final_results = []
 

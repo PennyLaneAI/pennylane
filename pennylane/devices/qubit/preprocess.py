@@ -22,6 +22,7 @@ import pennylane as qml
 
 from pennylane.operation import Tensor
 from pennylane.measurements import MidMeasureMP, StateMeasurement, ExpectationMP
+from pennylane.typing import ResultBatch
 from pennylane import DeviceError
 
 from ..experimental import ExecutionConfig, DefaultExecutionConfig
@@ -237,7 +238,7 @@ def batch_transform(
 def preprocess(
     circuits: Tuple[qml.tape.QuantumScript],
     execution_config: ExecutionConfig = DefaultExecutionConfig,
-) -> Tuple[Tuple[qml.tape.QuantumScript], Callable]:
+) -> Tuple[Tuple[qml.tape.QuantumScript], Callable[ResultBatch, ResultBatch]]:
     """Preprocess a batch of :class:`~.QuantumTape` objects to make them ready for execution.
 
     This function validates a batch of :class:`~.QuantumTape` objects by transforming and expanding

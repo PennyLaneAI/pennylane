@@ -47,6 +47,9 @@
   [(#4079)](https://github.com/PennyLaneAI/pennylane/pull/4079)
   [(#4095)](https://github.com/PennyLaneAI/pennylane/pull/4095)
 
+* Adds the Type variables `pennylane.typing.Result` and `pennylane.typing.ResultBatch` for type hinting the result of
+  an execution.
+
 <h3>Breaking changes 💔</h3>
 
 * The experimental Device interface `qml.devices.experimental.Device` now requires that the `preprocess` method

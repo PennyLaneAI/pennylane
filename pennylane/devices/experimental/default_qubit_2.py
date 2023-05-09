@@ -18,6 +18,7 @@ This module contains the next generation successor to default qubit
 from typing import Union, Callable, Tuple, Optional, Sequence
 
 from pennylane.tape import QuantumTape, QuantumScript
+from pennylane.typing import Result, ResultBatch
 
 from . import Device
 from .execution_config import ExecutionConfig, DefaultExecutionConfig
@@ -25,6 +26,7 @@ from ..qubit.simulate import simulate
 from ..qubit.preprocess import preprocess, validate_and_expand_adjoint
 from ..qubit.adjoint_jacobian import adjoint_jacobian
 
+Result_or_Batch = Union[Result, ResultBatch]
 QuantumTapeBatch = Sequence[QuantumTape]
 QuantumTape_or_Batch = Union[QuantumTape, QuantumTapeBatch]
 
@@ -126,7 +128,7 @@ class DefaultQubit2(Device):
         self,
         circuits: QuantumTape_or_Batch,
         execution_config: ExecutionConfig = DefaultExecutionConfig,
-    ) -> Tuple[QuantumTapeBatch, Callable]:
+    ) -> Tuple[QuantumTapeBatch, Callable[[ResultBatch], Result_or_Batch]]:
         """Converts an arbitrary circuit or batch of circuits into a batch natively executable by the :meth:`~.execute` method.
 
         Args:
@@ -155,7 +157,7 @@ class DefaultQubit2(Device):
 
         if is_single_circuit:
 
-            def convert_batch_to_single_output(results):
+            def convert_batch_to_single_output(results: ResultBatch) -> Result:
                 """Unwraps a dimension so that executing the batch of circuits looks like executing a single circuit."""
                 return post_processing_fn(results)[0]
 
@@ -167,7 +169,7 @@ class DefaultQubit2(Device):
         self,
         circuits: QuantumTape_or_Batch,
         execution_config: ExecutionConfig = DefaultExecutionConfig,
-    ):
+    ) -> Result_or_Batch:
         is_single_circuit = False
         if isinstance(circuits, QuantumScript):
             is_single_circuit = True

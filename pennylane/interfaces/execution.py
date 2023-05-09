@@ -240,7 +240,7 @@ def execute(
     expand_fn="device",
     max_expansion=10,
     device_batch_transform=True,
-):
+) -> qml.typing.ResultBatch:
     """New function to execute a batch of tapes on a device in an autodifferentiable-compatible manner. More cases will be added,
     during the project. The current version is supporting forward execution for Numpy and does not support shot vectors.
 
