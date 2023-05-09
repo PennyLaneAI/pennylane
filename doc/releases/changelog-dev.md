@@ -23,6 +23,7 @@
 * Added a `shots` property to `QuantumScript`. This will allow shots to be tied to executions instead of devices more
   concretely.
   [(#4067)](https://github.com/PennyLaneAI/pennylane/pull/4067)
+  [(#4103)](https://github.com/PennyLaneAI/pennylane/pull/4103)
   [(#4106)](https://github.com/PennyLaneAI/pennylane/pull/4106)
 
 * Integrated `QuantumScript.shots` with `QNode` so that shots are placed on the `QuantumScript`
