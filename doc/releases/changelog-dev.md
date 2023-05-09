@@ -50,6 +50,7 @@
 
 * Adds the Type variables `pennylane.typing.Result` and `pennylane.typing.ResultBatch` for type hinting the result of
   an execution.
+  [(#4018)](https://github.com/PennyLaneAI/pennylane/pull/4108)
 
 <h3>Breaking changes 💔</h3>
 
