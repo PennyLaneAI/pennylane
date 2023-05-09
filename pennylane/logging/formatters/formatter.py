@@ -63,6 +63,9 @@ green_shades = {
 
 
 def build_code_rgb(rgb: Tuple[int, int, int], rgb_bg: Union[None, Tuple[int, int, int]] = None):
+    """
+    Utility function to generate the appropriate ANSI RGB codes for a given set of foreground (font) and background colors.
+    """
     output = ansi_codes["begin"]
     output += ansi_codes["foreground_rgb"]
     output += ";".join([str(i) for i in rgb])

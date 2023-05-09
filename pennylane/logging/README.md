@@ -22,6 +22,7 @@ for r in `seq 0 5 255`; do
     done
 done
 ```
+The strings in the log messages are prepended with the appropriate ANSI codes to ensure different log-levels are highlighted in different ways when outputing to the standard output stream (stdout/stderr).
 
 ## Example logging use: PennyLane & JAX
 
@@ -50,7 +51,7 @@ The above line can be added to below the function/method entry point, and the pr
 
 ## Logging example with PennyLane and JAX's JIT support
 
-As there are currently no log-messages in PennyLane as of v0.30.0, we can examine the logging messages through a provided script, and also enable logs for JAX, which has support for Python-native log messages. To enable JAX-wide logging, we can modify the `level` parameter for the `[loggers.jax]` entry in the `log_config.toml` file. The change will look as:
+As of PennyLane v0.31.0-dev we have added execution and interface function entry logging supports. We can examine this support for both internal and external packages, where we enable logs for JAX, which has support for Python-native log messages. To enable logging specfically for JAX, we can modify the `level` parameter for the `[loggers.jax]` entry in the `log_config.toml` file as:
 
 ```toml
 [loggers.jax]
@@ -58,7 +59,16 @@ handlers = ["console_custom"]
 level = "DEBUG"
 propagate = false
 ```
-where we convert the highest supported log level from warning (less verbose) to debug (more verbose). Running the following example will produce lots of output about the JIT process, and surrounding operations:
+where we convert the highest supported log level from warning (less verbose) to debug (more verbose). We can at the same time change the PennyLane logging level to warnings and more severe, by making the following change:
+
+```toml
+[loggers.jax]
+handlers = ["console_custom"]
+level = "WARN"
+propagate = false
+```
+
+Running the following example will produce lots of output about the JIT process, and surrounding operations:
 
 ```python
 import pennylane as qml
@@ -66,10 +76,10 @@ import jax, jax.numpy as jnp
 from jax import jacfwd, jacrev
 import logging
 
-# Enable logging with PennyLane
+# Enable logging
 qml.logging.enable_logging()
 
-# Get logger for use herein
+# Get logger for use by this script only.
 logger = logging.getLogger(__name__)
 dev_name = "default.qubit.jax"
 num_wires = 2
@@ -107,6 +117,8 @@ logger.info(f"Calculating jacobian circuit with key={key1}")
 logger.info(f"Jacobian={jacfwd(lambda x: circuit(key1, x))(jnp.pi/3)}")
 ```
 
+We can examine the output of the log-statements, which shows debug level messages from JAX, and info-level messages for the given script (controlled by `[loggers.main]` in the config file). To see PennyLane-wide debug messages, we can revert the PennyLane log level to debug, and rerun the script. There should be more output than previously observed.
+
 ## Adding log-statements to the autograd execution pipeline
 
 Similarly, for autograd, where we have explicitly added log-statements to the execution pipeline:
@@ -118,7 +130,7 @@ qml.logging.enable_logging()
 
 # Get logger for use herein
 logger = logging.getLogger(__name__)
-dev_name = "default.qubit"
+dev_name = "lightning.qubit"
 num_wires = 2
 num_shots = None
 
@@ -130,7 +142,7 @@ def circuit(param):
     dev = qml.device(dev_name, wires=num_wires, shots=num_shots)
 
     # Now we can create our qnode within the circuit function.
-    @qml.qnode(dev, diff_method="parameter-shift")
+    @qml.qnode(dev, diff_method="adjoint")
     def my_circuit(param):
         qml.RX(param, wires=0)
         qml.CNOT(wires=[0, 1])
@@ -151,3 +163,7 @@ circuit(par[1])
 logger.info(f"Calculating jacobian circuit with par={par}")
 logger.info(f"Jacobian={qml.jacobian(circuit)(par[0])}")
 ```
+
+By using `lightning.qubit` we can now treat the execution environment as a black-box, and see the log-level messages as they hit the custom VJP functions as part of the autograd execution pipeline.
+
+Note that the above features have been added for Torch, Tensorflow, JAX and autograd.
