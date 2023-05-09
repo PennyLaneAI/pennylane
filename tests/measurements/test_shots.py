@@ -158,7 +158,7 @@ class TestShotsConstruction:
     )
     def test_iter(self, shots, expected):
         """Test that iteration over Shots works correctly"""
-        actual = [s for s in Shots(shots)]
+        actual = list(Shots(shots))
         assert actual == expected
 
     def test_sequence_all_tuple(self):
