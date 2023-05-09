@@ -176,17 +176,7 @@ class DefaultQubit2(Device):
 
         if self.tracker.active:
             for c in circuits:
-                tape_resources = c.specs["resources"]
-
-                resources = Resources(  # temporary until shots get updated on tape !
-                    tape_resources.num_wires,
-                    tape_resources.num_gates,
-                    tape_resources.gate_types,
-                    tape_resources.gate_sizes,
-                    tape_resources.depth,
-                    tape_resources.shots,
-                )
-                self.tracker.update(resources=resources)
+                self.tracker.update(resources=c.specs["resources"])
             self.tracker.update(batches=1, executions=len(circuits))
             self.tracker.record()
 
