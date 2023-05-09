@@ -601,7 +601,8 @@ jobs:
           pip install -r requirements-ci.txt --upgrade
           pip install -r requirements-dev.txt --upgrade
 
-      - name: Install zstd
+      - name: Install zarr
+
         run: pip3 install zarr
         
       - name: Install PennyLane

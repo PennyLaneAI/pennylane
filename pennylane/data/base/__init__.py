@@ -11,5 +11,5 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""The base module contains the base class that form the underlying
-type machinery, and low-level Zarr interface of the data module."""
+"""The base module contains the base class that defines the underlying
+type machinery, and the low-level Zarr interface of the data module."""

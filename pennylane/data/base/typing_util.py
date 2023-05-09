@@ -63,7 +63,7 @@ def get_type_str(cls: Union[type, str, None]) -> str:
     If cls is a built-in type, such as 'str', returns the unqualified
         name.
 
-    If cls_or_obj is a parametrized generic such as list[str], or a special typing
+    If cls is a parametrized generic such as list[str], or a special typing
         form such as Optional[int], returns the string representation of cls.
 
     Otherwise, returns the fully-qualified class name, including the module.

@@ -89,7 +89,6 @@ class AttributeTypeMapper:
 
     def __delitem__(self, key: str):
         self._cache.pop(key, None)
-
         del self.bind[key]
 
 
