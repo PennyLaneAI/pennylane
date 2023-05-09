@@ -1,0 +1,99 @@
+# Copyright 2023 Xanadu Quantum Technologies Inc.
+
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+
+#     http://www.apache.org/licenses/LICENSE-2.0
+
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+"""
+This module contains the transform dispatcher.
+"""
+import functools
+import inspect
+from typing import get_type_hints
+
+import pennylane as qml
+
+
+class TransformError(Exception):
+    """Raised when there is an error with the transform logic"""
+
+
+class transform_dispatcher:
+    r"""Convert a transform that has the signature (tape -> Sequence(tape), fn) to a transform dispatcher that can act
+    on tape, qfunc and qnode."""
+
+    def __init__(self, fn):
+        if not callable(fn):
+            raise TransformError(
+                f"The operator function to register, {fn}, "
+                "does not appear to be a valid Python function or callable."
+            )
+
+        self._fn = fn
+        # Check signature to force the fn style (tape, ...) - > (batch_tape, fn)
+        signature = get_type_hints(fn)
+
+        tape = signature.get('tape', None)
+
+        if tape is None:
+            TransformError("Their must be an argument tape")
+        if not isinstance(tape, qml.tape.QuantumTape):
+            TransformError("The type of the tape argument must be a QuantumTape")
+
+        ret = signature.get('return', None)
+
+        if ret is None:
+            TransformError("Their must be an argument tape")
+        functools.update_wrapper(self, fn)
+
+    def __call__(self, *targs, **tkwargs):
+        obj = None
+
+        if targs:
+            # assume the first argument passed to the transform
+            # is the object we wish to transform
+            obj, *targs = targs
+
+        if isinstance(obj, qml.tape.QuantumTape):
+            return self._fn(obj, *targs, **tkwargs)
+        elif isinstance(obj, qml.QNode):
+            return self.default_qnode_transform(obj, targs, tkwargs)
+        elif callable(obj):
+            return self.default_qfunc_transform(obj, targs, tkwargs)
+        else:
+            TransformError("The object on which is the transform is applied is not valid."
+                           "It can be a tape, a QNode or a qfunc.")
+
+    def default_qfunc_transform(self, qfunc, targs, tkwargs):
+        """Register a qnode transformation"""
+
+        def wrap(*args, **kwargs):
+            tape = qml.tape.make_qscript(qfunc)(*args, **kwargs)
+            new_tape, _ = self.fn(tape, *targs, **tkwargs)
+
+            for op in new_tape[0].circuit:
+                qml.apply(op)
+        return wrap
+
+    def default_qnode_transform(self, qnode, targs, tkwargs, expand_fn=None, qnode_postprocessing=None):
+        """Register a qnode transformation"""
+        qnode.transform_program.push(
+            TransformContainer(self.fn, targs, tkwargs, expand_fn, qnode_postprocessing)
+        )
+        return qnode
+
+
+class TransformContainer:
+    def __init__(self, fn, args, kwargs, expand_fn, qnode_processing):
+        self.transform_fn = fn
+        self.targs = args
+        self.tkwargs = kwargs
+        self.expand_fn = expand_fn
+        self.qnode_processing = qnode_processing

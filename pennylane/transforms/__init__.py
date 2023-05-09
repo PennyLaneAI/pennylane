@@ -193,6 +193,14 @@ Transforms for error mitigation
     ~transforms.poly_extrapolate
     ~transforms.richardson_extrapolate
 
+Transforms experimental
+-----------------------
+
+.. autosummary::
+    :toctree: api
+
+    ~transforms.experimental.transform_dispatcher
+
 """
 # Import the decorators first to prevent circular imports when used in other transforms
 from .batch_transform import batch_transform, map_batch_transform
@@ -249,3 +257,4 @@ from . import qcut
 from .qcut import cut_circuit, cut_circuit_mc
 from .zx import to_zx, from_zx
 from .broadcast_expand import broadcast_expand
+from .experimental import transform_dispatcher
