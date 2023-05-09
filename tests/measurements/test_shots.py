@@ -145,6 +145,22 @@ class TestShotsConstruction:
             assert hash_s == hash(copy.copy(s))
             assert hash_s == hash(Shots(s.shot_vector if s.shot_vector else None))
 
+    @pytest.mark.parametrize(
+        "shots, expected",
+        [
+            (100, [100]),
+            ([(100, 1)], [100]),
+            ([(100, 2)], [100, 100]),
+            ([100, 200], [100, 200]),
+            ([(100, 2), 200], [100, 100, 200]),
+            ([(100, 3), 200, (300, 2)], [100, 100, 100, 200, 300, 300]),
+        ],
+    )
+    def test_iter(self, shots, expected):
+        """Test that iteration over Shots works correctly"""
+        actual = list(Shots(shots))
+        assert actual == expected
+
     def test_sequence_all_tuple(self):
         """Tests that a sequence of tuples is allowed."""
         shots = Shots([(1, 2), (1, 5), (3, 4)])
