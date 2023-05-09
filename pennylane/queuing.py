@@ -174,7 +174,7 @@ class QueuingError(Exception):
 
 
 class WrappedObj:
-    """Wraps an object to make its has dependent on its identity"""
+    """Wraps an object to make its hash dependent on its identity"""
 
     def __init__(self, obj):
         self.obj = obj
