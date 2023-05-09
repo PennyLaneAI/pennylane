@@ -67,6 +67,9 @@
 * Removes a patch in `interfaces/autograd.py` that checks for the `strawberryfields.gbs` device.  That device
   is pinned to PennyLane <= v0.29.0, so that patch is no longer necessary.
 
+* Fixed a bug where `qml.map_wires` would not copy the `shots` attribute to a newly-created `QuantumScript`.
+  [(#4106)](https://github.com/PennyLaneAI/pennylane/pull/4106)
+
 <h3>Contributors ✍️</h3>
 
 This release contains contributions from (in alphabetical order):
