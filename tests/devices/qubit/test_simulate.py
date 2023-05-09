@@ -170,6 +170,19 @@ class TestBasicCircuit:
         assert qml.math.allclose(grad1[0], -tf.sin(phi))
 
 
+class TestSampleMeasurements:
+    """Tests circuits with sample-based measurements"""
+
+    def test_single_expval(self):
+        """Test a simple circuit with a single expval measurement"""
+        x = np.array(0.732)
+        qs = qml.tape.QuantumScript([qml.RY(x, wires=0)], [qml.expval(qml.PauliZ(0))], shots=10000)
+        result = simulate(qs)
+
+        assert isinstance(result, np.ndarray)
+        assert np.allclose(result, np.cos(x), atol=0.1)
+
+
 class TestOperatorArithmetic:
     def test_numpy_op_arithmetic(self):
         """Test an operator arithmetic circuit with non-integer wires with numpy."""

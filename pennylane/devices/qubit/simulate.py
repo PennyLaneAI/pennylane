@@ -56,5 +56,13 @@ def simulate(circuit: qml.tape.QuantumScript) -> Union[tuple, TensorLike]:
         state = apply_operation(op, state)
 
     if len(circuit.measurements) == 1:
-        return measure(circuit.measurements[0], state)
-    return tuple(measure(mp, state) for mp in circuit.measurements)
+        return measure(circuit.measurements[0], state, circuit.shots)
+
+    measurement_results = tuple(measure(mp, state, circuit.shots) for mp in circuit.measurements)
+
+    # no shot vector
+    if not circuit.shots.has_partitioned_shots:
+        return measurement_results
+
+    # shot vector case: move the shot vector axis before the measurement axis
+    return tuple(zip(*measurement_results))
