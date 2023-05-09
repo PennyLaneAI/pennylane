@@ -282,7 +282,7 @@ class TestBasicCircuit:
 
 
 class TestExecutingBatches:
-    """Tests invovling executing multiple circuits at the same time."""
+    """Tests involving executing multiple circuits at the same time."""
 
     @staticmethod
     def f(phi):
