@@ -163,6 +163,7 @@ Non-parametrized gates
     ~pennylane.CNOT
     ~pennylane.CZ
     ~pennylane.CY
+    ~pennylane.CH
     ~pennylane.SWAP
     ~pennylane.ISWAP
     ~pennylane.ECR
