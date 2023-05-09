@@ -422,12 +422,13 @@ def _contract_qjac_with_cjac(qjac, cjac, num_measurements, shots):
 
     if cjac_is_tuple:
         multi_params = True
-    elif multi_meas and shot_vector:
-        multi_params = isinstance(qjac[0][0], tuple)
-    elif multi_meas or shot_vector:
-        multi_params = isinstance(qjac[0], tuple)
     else:
-        multi_params = isinstance(qjac, tuple)
+        _qjac = qjac
+        if multi_meas:
+            _qjac = _qjac[0]
+        if shot_vector:
+            _qjac = _qjac[0]
+        multi_params = isinstance(_qjac, tuple)
 
     tdot = partial(qml.math.tensordot, axes=[[0], [0]])
 
@@ -435,12 +436,10 @@ def _contract_qjac_with_cjac(qjac, cjac, num_measurements, shots):
         # Without dimension (e.g. expval) or with dimension (e.g. probs)
         reshape = lambda x: qml.math.reshape(x, (1,) if x.shape == () else (1, -1))
 
-        if not multi_meas:
-            # Single parameter, single measurement
-            return tdot(reshape(qjac), cjac)
-
         # Single parameter, multiple measurements
-        return tuple(tdot(reshape(q), cjac) for q in qjac)
+        return (
+            tuple(tdot(reshape(q), cjac) for q in qjac) if multi_meas else tdot(reshape(qjac), cjac)
+        )
 
     if not multi_meas:
         # Multiple parameters, single measurement
