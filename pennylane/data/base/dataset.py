@@ -16,7 +16,7 @@ Contains the :class:`~pennylane.data.DatasetBase` class, and `qml.data.Attribute
 for declaratively defining dataset classes.
 """
 
-from collections.abc import Mapping
+import typing
 from dataclasses import InitVar, dataclass
 from pathlib import Path
 from types import MappingProxyType
@@ -24,9 +24,12 @@ from typing import (
     Any,
     Callable,
     ClassVar,
+    Dict,
     Generic,
+    List,
     Literal,
     Optional,
+    Type,
     Union,
     cast,
     get_origin,
@@ -57,7 +60,7 @@ class Attribute(Generic[T]):
             a default value
     """
 
-    attribute_type: type[AttributeType[ZarrAny, T, Any]]
+    attribute_type: Type[AttributeType[ZarrAny, T, Any]]
     info: AttributeInfo
     default: Union[Literal[UNSET], T, None]
     default_factory: Optional[Callable[[], T]] = None
@@ -65,10 +68,10 @@ class Attribute(Generic[T]):
 
 def attribute(  # pylint: disable=too-many-arguments, unused-argument
     default: Union[Literal[UNSET], T, None] = UNSET,
-    attribute_type: Union[type[AttributeType[ZarrAny, T, Any]], Literal[UNSET]] = UNSET,
+    attribute_type: Union[Type[AttributeType[ZarrAny, T, Any]], Literal[UNSET]] = UNSET,
     doc: Optional[str] = None,
     py_type: Optional[Any] = None,
-    extra: Optional[dict[str, Any]] = None,
+    extra: Optional[Dict[str, Any]] = None,
     default_factory: Optional[Callable[[], T]] = None,
     **kwargs,
 ) -> Any:
@@ -85,7 +88,7 @@ def attribute(  # pylint: disable=too-many-arguments, unused-argument
     """
 
     return Attribute(
-        cast(type[AttributeType[ZarrAny, T, T]], attribute_type),
+        cast(Type[AttributeType[ZarrAny, T, T]], attribute_type),
         AttributeInfo(doc=doc, py_type=py_type, extra=extra or {}),
         default=default,
         default_factory=default_factory,
@@ -115,7 +118,7 @@ class DatasetBase(MapperMixin, metaclass=_DatasetMeta):
 
     type_id = "dataset"
 
-    fields: ClassVar[Mapping[str, Attribute]] = MappingProxyType({})
+    fields: ClassVar[typing.Mapping[str, Attribute]] = MappingProxyType({})
 
     bind: InitVar[Optional[Union[ZarrGroup, str, Path]]] = attribute(kw_only=False)  # type: ignore
 
@@ -151,11 +154,11 @@ class DatasetBase(MapperMixin, metaclass=_DatasetMeta):
         return self._bind
 
     @property
-    def attrs(self) -> Mapping[str, AttributeType]:
+    def attrs(self) -> typing.Mapping[str, AttributeType]:
         """Returns all attributes of this Dataset."""
         return self._mapper.view()
 
-    def list_attributes(self) -> list[str]:
+    def list_attributes(self) -> List[str]:
         """Returns a list of this dataset's attributes."""
         return list(self.attrs.keys())
 
@@ -196,7 +199,7 @@ class DatasetBase(MapperMixin, metaclass=_DatasetMeta):
         zgrp = zarr.open_group(path=filepath, mode=mode)
         zarr.convenience.copy_all(self.bind, zgrp)
 
-    def _validate_arguments(self, args: dict[str, Any]):
+    def _validate_arguments(self, args: Dict[str, Any]):
         """Validates arguments to __init__() based on the declared
         fields of this dataset."""
         missing = []

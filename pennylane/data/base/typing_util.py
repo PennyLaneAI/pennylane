@@ -63,7 +63,7 @@ def get_type_str(cls: Union[type, str, None]) -> str:
     If cls is a built-in type, such as 'str', returns the unqualified
         name.
 
-    If cls is a parametrized generic such as list[str], or a special typing
+    If cls is a parametrized generic such as List[str], or a special typing
         form such as Optional[int], returns the string representation of cls.
 
     Otherwise, returns the fully-qualified class name, including the module.
@@ -85,13 +85,13 @@ def get_type_str(cls: Union[type, str, None]) -> str:
 
 def resolve_special_type(type_: Any) -> Optional[Tuple[type, List[type]]]:
     """Converts special typing forms (Union[...], Optional[...]), and parametrized
-    generics (list[...], dict[...]) into a 2-tuple of its base type and arguments.
+    generics (List[...], Dict[...]) into a 2-tuple of its base type and arguments.
     If ``type_`` is a regular type, or an object, this function will return
     ``None``.
 
     For example:
         resolve_special_type(Union[str, int]) == (Union, [str, int])
-        resolve_special_type(list[str]) == (list, [str])
+        resolve_special_type(List[str]) == (list, [str])
         resolve_special_type(list) == (list, [])
     """
 

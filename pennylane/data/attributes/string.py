@@ -14,6 +14,8 @@
 """Contains an AttributeType for str objects."""
 
 
+from typing import Tuple, Type
+
 from pennylane.data.base.attribute import AttributeType
 from pennylane.data.base.typing_util import ZarrArray, ZarrGroup
 
@@ -24,7 +26,7 @@ class DatasetString(AttributeType[ZarrArray, str, str]):
     type_id = "string"
 
     @classmethod
-    def consumes_types(cls) -> tuple[type[str]]:
+    def consumes_types(cls) -> Tuple[Type[str]]:
         return (str,)
 
     def zarr_to_value(self, bind: ZarrArray) -> str:

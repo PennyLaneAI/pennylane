@@ -15,9 +15,10 @@
 attribute metadata."""
 
 import itertools
+import typing
 import warnings
 from abc import ABC, abstractmethod
-from collections.abc import Iterable, Mapping, MutableMapping
+from collections.abc import MutableMapping
 from numbers import Number
 from types import MappingProxyType
 from typing import (
@@ -27,6 +28,8 @@ from typing import (
     Iterator,
     Literal,
     Optional,
+    Tuple,
+    Type,
     TypeVar,
     Union,
     overload,
@@ -44,7 +47,7 @@ from pennylane.data.base.typing_util import (
 )
 
 
-class AttributeInfo(Generic[T], MutableMapping[str, Any]):
+class AttributeInfo(MutableMapping):
     """Contains metadata that may be assigned to a dataset
     attribute. Is stored in the Zarr object's ``attrs`` dict.
 
@@ -61,14 +64,14 @@ class AttributeInfo(Generic[T], MutableMapping[str, Any]):
 
     attrs_namespace: ClassVar[str] = "qml.data."
 
-    attrs_bind: MutableMapping[str, Any]
+    attrs_bind: typing.MutableMapping[str, Any]
 
     doc: Optional[str]
 
     @overload
     def __init__(
         self,
-        attrs_bind: Optional[MutableMapping[str, Any]] = None,
+        attrs_bind: Optional[typing.MutableMapping[str, Any]] = None,
         *,
         doc: Optional[str] = None,
         py_type: Optional[str] = None,
@@ -80,7 +83,7 @@ class AttributeInfo(Generic[T], MutableMapping[str, Any]):
     def __init__(self):
         ...
 
-    def __init__(self, attrs_bind: Optional[MutableMapping[str, Any]] = None, **kwargs: Any):
+    def __init__(self, attrs_bind: Optional[typing.MutableMapping[str, Any]] = None, **kwargs: Any):
         object.__setattr__(self, "attrs_bind", attrs_bind if attrs_bind is not None else {})
 
         for k, v in kwargs.items():
@@ -101,7 +104,7 @@ class AttributeInfo(Generic[T], MutableMapping[str, Any]):
         return self.get("py_type")
 
     @py_type.setter
-    def py_type(self, type_: Union[str, type]):
+    def py_type(self, type_: Union[str, Type]):
         self["py_type"] = get_type_str(type_)
 
     def __len__(self) -> int:
@@ -172,7 +175,7 @@ class AttributeType(ABC, Generic[Zarr, T, InitValueType]):
         value: Union[InitValueType, Literal[UNSET]] = UNSET,
         info: Optional[AttributeInfo] = None,
         *,
-        parent_and_key: Optional[tuple[ZarrGroup, str]] = None,
+        parent_and_key: Optional[Tuple[ZarrGroup, str]] = None,
     ):
         """Initialize a new dataset attribute from ``value``.
 
@@ -200,7 +203,7 @@ class AttributeType(ABC, Generic[Zarr, T, InitValueType]):
         info: Optional[AttributeInfo] = None,
         *,
         bind: Optional[Zarr] = None,
-        parent_and_key: Optional[tuple[ZarrGroup, str]] = None,
+        parent_and_key: Optional[Tuple[ZarrGroup, str]] = None,
     ) -> None:
         """
         Initialize a new dataset attribute, or load from an existing
@@ -266,7 +269,7 @@ class AttributeType(ABC, Generic[Zarr, T, InitValueType]):
         in subclasses to implement additional initialization"""
 
     @classmethod
-    def consumes_types(cls) -> Iterable[type]:
+    def consumes_types(cls) -> typing.Iterable[type]:
         """
         Returns an iterable of types for which this should be the default
         codec. If a value of one of these types is assigned to a Dataset
@@ -331,11 +334,11 @@ class AttributeType(ABC, Generic[Zarr, T, InitValueType]):
     def __eq__(self, __value: object) -> bool:
         return self.get_value() == __value
 
-    __registry: dict[str, type["AttributeType"]] = {}
-    __type_consumer_registry: dict[type, type["AttributeType"]] = {}
+    __registry: typing.Mapping[str, Type["AttributeType"]] = {}
+    __type_consumer_registry: typing.Mapping[type, Type["AttributeType"]] = {}
 
-    registry: Mapping[str, type["AttributeType"]] = MappingProxyType(__registry)
-    type_consumer_registry: Mapping[type, type["AttributeType"]] = MappingProxyType(
+    registry: typing.Mapping[str, Type["AttributeType"]] = MappingProxyType(__registry)
+    type_consumer_registry: typing.Mapping[type, Type["AttributeType"]] = MappingProxyType(
         __type_consumer_registry
     )
 
@@ -359,7 +362,7 @@ class AttributeType(ABC, Generic[Zarr, T, InitValueType]):
         return super().__init_subclass__()
 
 
-def get_attribute_type(zobj: Zarr) -> type[AttributeType[Zarr, Any, Any]]:
+def get_attribute_type(zobj: Zarr) -> Type[AttributeType[Zarr, Any, Any]]:
     """
     Returns the ``AttributeType`` of the dataset attribute contained
     in ``zobj``.
@@ -369,7 +372,7 @@ def get_attribute_type(zobj: Zarr) -> type[AttributeType[Zarr, Any, Any]]:
     return AttributeType.registry[type_id]
 
 
-def _get_type(type_or_obj: Union[object, type]) -> type:
+def _get_type(type_or_obj: Union[object, Type]) -> Type:
     """Given an object or an object type, returns the underlying class.
 
     Examples:
@@ -394,7 +397,7 @@ def _get_type(type_or_obj: Union[object, type]) -> type:
     return type_
 
 
-def match_obj_type(type_or_obj: Union[T, type[T]]) -> type[AttributeType[ZarrAny, T, T]]:
+def match_obj_type(type_or_obj: Union[T, Type[T]]) -> Type[AttributeType[ZarrAny, T, T]]:
     """
     Returns an ``AttributeType`` that can accept an object of type ``type_or_obj``
     as a value.
