@@ -31,19 +31,6 @@ from pennylane.transforms import convert_to_numpy_parameters
 dtype = jnp.float64
 
 
-def _validate_jax_version():
-    if semantic_version.match(">0.4.3", jax.__version__):
-        msg = (
-            "The JAX JIT interface of PennyLane requires JAX and and JAX lib version below 0.4.4. "
-            "Please downgrade these packages."
-            "If you are using pip to manage your packages, you can run the following command:\n\n"
-            "\tpip install 'jax==0.4.3' 'jaxlib==0.4.3'\n\n"
-            "If you are using conda to manage your packages, you can run the following command:\n\n"
-            "\tconda install 'jax==0.4.3' 'jaxlib==0.4.3'\n\n"
-        )
-        raise InterfaceUnsupportedError(msg)
-
-
 def execute_legacy(
     tapes, device, execute_fn, gradient_fn, gradient_kwargs, _n=1, max_diff=1, mode=None
 ):
@@ -89,8 +76,6 @@ def execute_legacy(
             tape.trainable_params = trainable_params
 
     parameters = tuple(list(t.get_parameters()) for t in tapes)
-
-    _validate_jax_version()
 
     if gradient_fn is None:
         return _execute_with_fwd_legacy(

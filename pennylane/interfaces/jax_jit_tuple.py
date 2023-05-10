@@ -362,15 +362,12 @@ def _execute_fwd(
         def wrapper(p):
             """Compute the forward pass."""
             new_tapes = set_parameters_on_copy_and_unwrap(tapes, p)
-            print(new_tapes[0].trainable_params)
-            print(execute_fn)
             res, jacs = execute_fn(new_tapes, **gradient_kwargs)
-            print(res, jacs)
             return res, jacs
 
         shape_dtype_structs = _tapes_shape_dtype_tuple(tapes, device)
+
         jac_shape_dtype_structs = _jac_shape_dtype_tuple(tapes, device)
-        print(shape_dtype_structs, jac_shape_dtype_structs)
         res, jacs = jax.pure_callback(
             wrapper, (shape_dtype_structs, jac_shape_dtype_structs), params
         )
