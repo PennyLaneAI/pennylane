@@ -286,8 +286,12 @@ class AttributeType(ABC, Generic[Zarr, T, InitValueType]):
         """Converts value into a Zarr Array or Group under bind_parent[key]."""
 
     def get_value(self) -> T:
-        """Loads the mapped value from ``bind``."""
+        """Parses the mapped value from ``bind``."""
         return self.zarr_to_value(self.bind)
+
+    def copy_value(self) -> T:
+        """Parses the mapped value from ``bind`` and loads it into memory."""
+        return self.get_value()
 
     def _set_value(
         self, value: InitValueType, info: Optional[AttributeInfo], parent: ZarrGroup, key: str
@@ -365,6 +369,15 @@ class AttributeType(ABC, Generic[Zarr, T, InitValueType]):
             AttributeType.__type_consumer_registry[type_] = cls
 
         return super().__init_subclass__()
+
+    def __copy__(self: Self) -> Self:
+        impl_group = zarr.group()
+        zarr.convenience.copy(self.bind, impl_group, "_")
+
+        return type(self)(bind=impl_group["_"])
+
+    def __deepcopy__(self: Self, memo) -> Self:
+        return self.__copy__()
 
 
 def get_attribute_type(zobj: Zarr) -> Type[AttributeType[Zarr, Any, Any]]:

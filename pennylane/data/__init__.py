@@ -21,6 +21,7 @@ from .attributes import (
     DatasetOperator,
     DatasetScalar,
     DatasetString,
+    DatasetWires,
 )
 from .base.attribute import AttributeInfo, AttributeType
 from .base.dataset import attribute
@@ -38,4 +39,5 @@ __all__ = (
     "DatasetDict",
     "DatasetOperator",
     "DatasetNone",
+    "DatasetWires",
 )

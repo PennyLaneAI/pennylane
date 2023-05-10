@@ -8,8 +8,10 @@ from pennylane.data.attributes import (
     DatasetNone,
     DatasetScalar,
     DatasetString,
+    DatasetWires,
 )
 from pennylane.data.base.attribute import match_obj_type
+from pennylane.wires import Wires
 
 
 @pytest.mark.parametrize(
@@ -37,6 +39,8 @@ from pennylane.data.base.attribute import match_obj_type
         ({"a": [1, 2]}, DatasetDict),
         (None, DatasetNone),
         (type(None), DatasetNone),
+        (Wires([1]), DatasetWires),
+        (Wires, DatasetWires),
     ],
 )
 def test_match_obj_type(type_or_obj, attribute_type):

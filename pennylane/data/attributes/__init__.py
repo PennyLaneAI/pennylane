@@ -20,6 +20,7 @@ from .none import DatasetNone
 from .operator import DatasetOperator
 from .scalar import DatasetScalar
 from .string import DatasetString
+from .wires import DatasetWires
 
 __all__ = (
     "DatasetArray",
@@ -29,4 +30,5 @@ __all__ = (
     "DatasetList",
     "DatasetOperator",
     "DatasetNone",
+    "DatasetWires",
 )

@@ -5,6 +5,7 @@ from pennylane.data.base.attribute import AttributeType
 from pennylane.data.base.mapper import AttributeTypeMapper
 from pennylane.data.base.typing_util import ZarrGroup, get_type_str
 from pennylane.operation import Operator
+from copy import deepcopy
 
 
 @lru_cache(1)
@@ -62,7 +63,7 @@ class DatasetOperator(Generic[Op], _DatasetOperatorBase[Op]):
         op = object.__new__(op_cls)
 
         for attr_name, attr in mapper.items():
-            setattr(op, attr_name, attr)
+            setattr(op, attr_name, attr.copy_value())
 
         return op
 
@@ -72,3 +73,5 @@ class DatasetOperator(Generic[Op], _DatasetOperatorBase[Op]):
 
         for attr_name, attr in vars(value).items():
             mapper[attr_name] = attr
+
+        return bind

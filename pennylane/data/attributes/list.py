@@ -16,7 +16,7 @@ types."""
 
 import typing
 from collections.abc import MutableSequence, Sequence
-from typing import Generic, Union, overload
+from typing import Generic, Union, overload, List
 
 from pennylane.data.base.attribute import AttributeType
 from pennylane.data.base.mapper import MapperMixin
@@ -82,6 +82,12 @@ class DatasetList(
 
     def __repr__(self) -> str:
         return repr(list(self))
+
+    def copy_value(self) -> List[T]:
+        return [self._mapper[str(i)].copy_value() for i in range(len(self))]
+
+    def copy(self) -> List[T]:
+        return self.copy_value()
 
     @overload
     def __getitem__(self, index: slice) -> typing.List[T]:

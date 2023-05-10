@@ -10,7 +10,12 @@ H_TWO_QUBITS = np.array(
     [[0.5, 1.0j, 0.0, -3j], [-1.0j, -1.1, 0.0, -0.1], [0.0, 0.0, -0.9, 12.0], [3j, -0.1, 12.0, 0.0]]
 )
 valid_hamiltonians = [
-    ((1.0,), (qml.Hermitian(H_TWO_QUBITS, [0, 1]),)),
+    (
+        [
+            1.0,
+        ],
+        (qml.Hermitian(H_TWO_QUBITS, [0, 1]),),
+    ),
     ((-0.8,), (qml.PauliZ(0),)),
     ((0.6,), (qml.PauliX(0) @ qml.PauliX(1),)),
     ((0.5, -1.6), (qml.PauliX(0), qml.PauliY(1))),
@@ -28,14 +33,15 @@ valid_hamiltonians = [
 
 @pytest.mark.parametrize(
     "value",
-    [
-        qml.ops.CNOT(wires=[0, 1], do_queue=False),
-    ],
+    [*[qml.Hamiltonian(*args) for args in valid_hamiltonians]],
 )
 class TestDatasetOperator:
-    def test_value_init(self, value):
+    def test_value_init_with_hamiltonians(self, value):
         """Test that a DatasetOperator can be value-initialized
-        from a variety of Operator classes."""
+        from a Hamiltonian."""
         dset_op = DatasetOperator(value)
-        assert dset_op.get_value().hash() == value.hash()
-        assert dset_op.info["operator_class"] == get_type_str(value)
+
+        assert dset_op.get_value().compare(value)
+        assert repr(dset_op.get_value()) == repr(dset_op.get_value())
+        assert dset_op.info.py_type == get_type_str(qml.Hamiltonian)
+        assert dset_op.info["operator_class"] == get_type_str(type(value))

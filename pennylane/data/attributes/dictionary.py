@@ -17,7 +17,7 @@ of Dataset attributes."""
 
 import typing
 from collections.abc import Mapping, MutableMapping
-from typing import Generic, Optional, TypeVar, Union
+from typing import Generic, Optional, TypeVar, Union, Dict
 
 from pennylane.data.base.attribute import AttributeType
 from pennylane.data.base.mapper import MapperMixin
@@ -50,6 +50,12 @@ class DatasetDict(
         grp = bind_parent.create_group(key)
 
         return grp
+
+    def copy(self) -> Dict[str, T]:
+        return self.copy_value()
+
+    def copy_value(self) -> Dict[str, T]:
+        return {key: attr.copy_value() for key, attr in self._mapper.items()}
 
     def __getitem__(self, __key: str) -> T:
         return self._mapper[__key].get_value()
