@@ -16,7 +16,6 @@ This module contains functions for adding the JAX interface
 to a PennyLane Device class.
 """
 # pylint: disable=too-many-arguments
-from functools import partial
 import jax
 import jax.numpy as jnp
 
