@@ -31,6 +31,7 @@ from pennylane.transforms import convert_to_numpy_parameters
 import inspect, logging
 
 logger = logging.getLogger(__name__)
+logger.addHandler(logging.NullHandler())
 
 
 def _set_copy_and_unwrap_tape(t, a):

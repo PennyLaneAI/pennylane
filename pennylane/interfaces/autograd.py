@@ -22,6 +22,7 @@ import logging
 import inspect
 
 logger = logging.getLogger(__name__)
+logger.addHandler(logging.NullHandler())
 
 import autograd
 from autograd.numpy.numpy_boxes import ArrayBox

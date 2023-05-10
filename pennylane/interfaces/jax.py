@@ -16,10 +16,11 @@ This module contains functions for adding the JAX interface
 to a PennyLane Device class.
 """
 # pylint: disable=too-many-arguments
-import logging
+import inspect, logging
 
 # See https://docs.python.org/3/howto/logging.html#configuring-logging-for-a-library
 logger = logging.getLogger(__name__)
+logger.addHandler(logging.NullHandler())
 
 import jax
 import jax.numpy as jnp
@@ -401,14 +402,15 @@ def execute(tapes, device, execute_fn, gradient_fn, gradient_kwargs, _n=1, max_d
     """
     if logger.isEnabledFor(logging.DEBUG):
         logger.debug(
-            """tapes=%s, device=%s, execute_fn=%s, gradient_fn=%s, gradient_kwargs=%s, _n=%s, max_diff=%s""",
+            "Entry with args=(tapes=%s, device=%s, execute_fn=%s, gradient_fn=%s, gradient_kwargs=%s, _n=%s, max_diff=%s) called by=%s",
             tapes,
-            device,
+            device.short_name,
             execute_fn,
             gradient_fn,
             gradient_kwargs,
             _n,
             max_diff,
+            "::L".join(str(i) for i in inspect.getouterframes(inspect.currentframe(), 2)[1][1:3]),
         )
 
     # Set the trainable parameters

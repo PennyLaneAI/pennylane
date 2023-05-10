@@ -38,6 +38,7 @@ from pennylane.tape import QuantumTape
 from .set_shots import set_shots
 
 logger = logging.getLogger(__name__)
+logger.addHandler(logging.NullHandler())
 
 INTERFACE_MAP = {
     None: "Numpy",

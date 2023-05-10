@@ -8,8 +8,6 @@ The current structure defines some useful utility classes to allow ease-of-contr
 The package-wide logging controls are specific in the `log_config.toml` file (alternatively in the `log_config.yaml`), and control the logger levels, the log handlers, the formatters used, and even which parts of the package ecosystem should enable logging, including external packages such as `jax`.
 
 
-
-
 The logging-formatter ties-into the ANSI color-code system to improve visibility of standard output and error logging during execution. The ANSI codes accept RGB-coded code to change the text and background colors, allowing messages to be color coded for ease of readability. For example, to generate all such sequences in steps of 5 across each 8-bit range per color, we can use the following bash command:
 
 ```bash
