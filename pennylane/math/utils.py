@@ -474,9 +474,7 @@ def requires_grad(tensor, interface=None):
     if interface == "jax":
         import jax
 
-        if is_abstract(tensor):
-            return isinstance(tensor, jax.core.Tracer)
-        return isinstance(tensor, jax.interpreters.ad.JVPTracer)
+        return isinstance(tensor, jax.core.Tracer)
 
     raise ValueError(f"Argument {tensor} is an unknown object")
 

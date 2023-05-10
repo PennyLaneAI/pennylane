@@ -105,7 +105,7 @@ def _jac_shape_dtype_tuple(tapes, device):
 
 
 def _filter_zeros_tangents(tangents):
-    non_zeros_tangents = [[t for t in tangent if isinstance(t, Zero)] for tangent in tangents]
+    non_zeros_tangents = [[t for t in tangent if not isinstance(t, Zero)] for tangent in tangents]
 
     return non_zeros_tangents
 
@@ -213,8 +213,10 @@ def _execute_bwd(
 
         # Select the trainable params. Non-trainable params contribute a 0 gradient.
         list_trainable_parameters = [
-            [idx for idx, t in enumerate(tangent) if isinstance(t, Zero)] for tangent in tangents[0]
+            [idx for idx, t in enumerate(tangent) if not isinstance(t, Zero)]
+            for tangent in tangents[0]
         ]
+
         for trainable_params, tape in zip(list_trainable_parameters, tapes):
             tape.trainable_params = trainable_params
 
@@ -360,11 +362,15 @@ def _execute_fwd(
         def wrapper(p):
             """Compute the forward pass."""
             new_tapes = set_parameters_on_copy_and_unwrap(tapes, p)
+            print(new_tapes[0].trainable_params)
+            print(execute_fn)
             res, jacs = execute_fn(new_tapes, **gradient_kwargs)
+            print(res, jacs)
             return res, jacs
 
         shape_dtype_structs = _tapes_shape_dtype_tuple(tapes, device)
         jac_shape_dtype_structs = _jac_shape_dtype_tuple(tapes, device)
+        print(shape_dtype_structs, jac_shape_dtype_structs)
         res, jacs = jax.pure_callback(
             wrapper, (shape_dtype_structs, jac_shape_dtype_structs), params
         )
@@ -374,7 +380,8 @@ def _execute_fwd(
     def execute_wrapper_jvp(primals, tangents):
         """Primals[0] are parameters as Jax tracers and tangents[0] is a list of tangent vectors as Jax tracers."""
         list_trainable_parameters = [
-            [idx for idx, t in enumerate(tangent) if isinstance(t, Zero)] for tangent in tangents[0]
+            [idx for idx, t in enumerate(tangent) if not isinstance(t, Zero)]
+            for tangent in tangents[0]
         ]
 
         for trainable_params, tape in zip(list_trainable_parameters, tapes):
