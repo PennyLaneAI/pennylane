@@ -16,6 +16,7 @@ from typing import Union
 
 # pylint: disable=protected-access
 import pennylane as qml
+import pennylane.numpy as np
 from pennylane.typing import TensorLike
 
 from .initialize_state import create_initial_state
@@ -72,6 +73,7 @@ def simulate(circuit: qml.tape.QuantumScript, rng=None) -> Union[tuple, TensorLi
     if len(circuit.measurements) == 1:
         return measure_with_samples(circuit.measurements[0], state, shots=circuit.shots, rng=rng)
 
+    rng = np.random.default_rng(rng)
     results = tuple(
         measure_with_samples(mp, state, shots=circuit.shots, rng=rng) for mp in circuit.measurements
     )
