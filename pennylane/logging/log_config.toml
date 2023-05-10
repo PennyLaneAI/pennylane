@@ -46,6 +46,12 @@ formatter = "qml_default_formatter"
 level = "DEBUG"
 stream = "ext://sys.stdout"
 
+[handlers.qml_debug_stream_alt]
+class = "logging.StreamHandler"
+formatter = "qml_alt_formatter"
+level = "DEBUG"
+stream = "ext://sys.stdout"
+
 [handlers.qml_debug_file]
 class = "logging.handlers.RotatingFileHandler"
 formatter = "local_standard"
@@ -56,7 +62,7 @@ backupCount = 10 # Create 'qml_debug.log.1', ... 'qml_debug.log.backupCount' fil
 
 [handlers.local_filtered_detailed_stdout]
 class = "logging.StreamHandler"
-formatter = "local_detailed"
+formatter = "local_standard"
 level = "DEBUG"
 stream = "ext://sys.stdout"
 filters = ["qml_LocalProcessFilter", "qml_DebugOnlyFilter"]
@@ -69,26 +75,26 @@ filters = ["qml_LocalProcessFilter", "qml_DebugOnlyFilter"]
 
 # Control JAX logging 
 [loggers.jax]
-handlers = ["qml_debug_file", "local_filtered_detailed_stdout"]
+handlers = ["qml_debug_stream",]
 level = "DEBUG"
 propagate = false
 
 # Control logging in the executing Python script
 [loggers.__main__]
-handlers = ["qml_debug_file"]
+handlers = ["qml_debug_stream",]
 level = "DEBUG"
 propagate = false
 
 # Control logging across pennylane
 [loggers.pennylane]
-handlers = ["qml_debug_stream"]
+handlers = ["qml_debug_stream",]
 level = "DEBUG" # Set to 1 for highest verbosity
 propagate = false
 
 # Control logging specifically in the pennylane.qnode module
 # Note the required parenthesis to overcome TOML nesting issues
 [loggers."pennylane.qnode"]
-handlers = ["local_filtered_detailed_stdout"]
+handlers = ["qml_debug_stream_alt",]
 level = "DEBUG" # Set to 1 for highest verbosity
 propagate = false
 
