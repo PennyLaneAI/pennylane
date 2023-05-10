@@ -94,7 +94,7 @@ propagate = false
 # Control logging specifically in the pennylane.qnode module
 # Note the required parenthesis to overcome TOML nesting issues
 [loggers."pennylane.qnode"]
-handlers = ["qml_debug_stream_alt",]
+handlers = ["qml_debug_stream",]
 level = "DEBUG" # Set to 1 for highest verbosity
 propagate = false
 

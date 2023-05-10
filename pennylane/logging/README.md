@@ -59,15 +59,15 @@ As mentioned above, we have added execution function entry logging supports, inc
 
 ```toml
 [loggers.jax]
-handlers = ["console_custom"]
+handlers = ["qml_debug_stream"]
 level = "DEBUG"
 propagate = false
 ```
-where we convert the highest supported log level from warning (less verbose) to debug (more verbose). We can at the same time change the PennyLane logging level to warnings and more severe, by making the following change:
+where `handlers` represents some arbitrary custom class we define to deal with the message, `level` the associated level we want that package to log at, and `propagate` tells the logger to keep the message at the given handler level, or throw it up to the parent logger interface --- all these are adhereing to the logging API. We convert the highest supported log level from warning (less verbose) to debug (more verbose). We can at the same time change the PennyLane logging level to warnings and more severe, by making the following change:
 
 ```toml
-[loggers.jax]
-handlers = ["console_custom"]
+[loggers.pennylane]
+handlers = ["qml_debug_stream"]
 level = "WARN"
 propagate = false
 ```
@@ -121,11 +121,12 @@ logger.info(f"Calculating jacobian circuit with key={key1}")
 logger.info(f"Jacobian={jacfwd(lambda x: circuit(key1, x))(jnp.pi/3)}")
 ```
 
-We can examine the output of the log-statements, which shows debug level messages from JAX, and info-level messages for the given script (controlled by `[loggers.main]` in the config file). To see PennyLane-wide debug messages, we can revert the PennyLane log level to debug, and rerun the script. There should be more output than previously observed.
+We can examine the output of the log-statements, which shows debug level messages from JAX, and info-level messages for the given script (controlled by `[loggers.__main__]` in the config file). To see PennyLane-wide debug messages, we can revert the PennyLane log level to debug, and rerun the script. There should be more output than previously observed.
 
-## Adding log-statements to the autograd execution pipeline
+## Adding log-statements to the interface execution pipelines
 
-Similarly, for autograd, where we have explicitly added log-statements to the execution pipeline:
+Similarly, for autograd (TF and Torch also), we can run examples that tie-into the execution pipeline for devices without backprop supports:
+
 ```python
 import pennylane as qml
 import logging
@@ -168,10 +169,138 @@ logger.info(f"Calculating jacobian circuit with par={par}")
 logger.info(f"Jacobian={qml.jacobian(circuit)(par[0])}")
 ```
 
-By using `lightning.qubit` we can now treat the execution environment as a black-box, and see the log-level messages as they hit the custom VJP functions as part of the autograd execution pipeline.
+By using `lightning.qubit` we can now treat the execution environment as a black-box, and see the log-level messages as they hit the custom functions as part of the execution pipeline.
 
-Note that the above features have been added for Torch, Tensorflow, JAX and autograd.
+The above features have been added for Torch, Tensorflow, JAX and autograd, and should produce a sufficient level of detail in the execution messages.
 
 ## Customizing logs
 
-As with any package that targets many domains, Python's loging is as extensible and flexible as it is hard to configure -- ideally we define some good defaults that meet our development goals, and only deviate from them if required. To change log-levels that are reporrting on a package or module-wide basis, it is possible to do so by modidyfing the entries in the `log_config.toml` file, under the `[loggers]` section. In addition, if we want to send the logs eslewhere, we can adjust the `[handlers]` section, which control what happens to each message. If we do not like the output format of the messages, we can adjust these through the `[formatters]` section. If we want to filter messages based on some criteria, we can add these to the respective handlers. Rather than provide extensive docs here, I will suggest reading the Python logging documentation [how-to](https://docs.python.org/3/howto/logging.html#python logging) and ["advanced" tutorial](https://docs.python.org/3/howto/logging.html#logging-advanced-tutorial) level.
+As with any package that targets many domains, Python's loging is as extensible and flexible as it is hard to configure -- ideally we define some good defaults that meet our development goals, and only deviate from them if required. To change log-levels that are reporting on a package or module-wide basis, it is possible to do so by modidyfing the entries in the `log_config.toml` file, under the `[loggers]` section. In addition, if we want to send the logs elsewhere, we can adjust the `[handlers]` section, which controls what happens to each message. If we do not like the output format of the messages, we can adjust these through the `[formatters]` section. If we want to filter messages based on some criteria, we can add these to the respective handlers. As an example, we can go through the configuration file and explore the options.
+
+
+### Modifying the configuration options
+
+To allow for good expressivity when requiring logging, we must often adjust several parts of the ecosystem to ensure messages are formatted a ceratin way, we control logging internally to PennyLane different to external packages, messages are sent to somewhere we can make them actionable, and we can remove messages that are not 
+needed based on some criteria of interest. I'll break the `log_config.toml` file into sections to discuss how these can be adjusted to suit needs:
+
+
+```toml
+###############################################################################
+# Avoid interfering with existing loggers in dependent libraries
+###############################################################################
+
+disable_existing_loggers = false
+version = 1
+
+###############################################################################
+# Bind formatters defined locally and those defined in pennylane.logging
+###############################################################################
+
+[formatters]
+[formatters.qml_default_formatter]
+"()" = "pennylane.logging.formatters.formatter.DefaultFormatter"
+
+[formatters.qml_alt_formatter]
+"()" = "pennylane.logging.formatters.formatter.AnotherLogFormatter"
+
+[formatters.local_detailed]
+format = "\u001B[38;2;45;145;210m[%(asctime)s][%(levelname)s][<PID %(process)d:%(processName)s>] - %(name)s.%(funcName)s()::\"%(message)s\"\u001B[0m"
+
+[formatters.local_standard]
+format = "[%(asctime)s] - %(name)s - %(levelname)s - %(message)s"
+```
+
+The first sections of the configuration file tell the logging infrastructure to avoid modification to existing log settings --- this is set to `true` by default for backwards compatibility, though can be problematic if using external packages. It is recommended to keep this as `false` unless required otherwise.
+
+
+```toml
+
+###############################################################################
+# Bind LogRecord filters defined in pennylane.logging module
+###############################################################################
+
+[filters]
+# Filter to show messages from the same local process as the Python script
+[filters.qml_LocalProcessFilter]
+"()" = "pennylane.logging.filter.LocalProcessFilter"
+
+# Filter to show debug level messages only
+[filters.qml_DebugOnlyFilter]
+"()" = "pennylane.logging.filter.DebugOnlyFilter"
+```
+The above section defines how to filter log messages (known as `LogRecords`), given some predicate. In this case, we have defined some classes, `LocalProcessFilter` and `DebugOnlyFilter` to filter based on process ID and on the severity of the incoming message. These can used in the next section.
+
+
+```toml
+###############################################################################
+# Bind handlers defined in the logging and in pennylane.logging modules
+###############################################################################
+
+[handlers]
+[handlers.qml_debug_stream]
+class = "logging.StreamHandler"
+formatter = "qml_default_formatter"
+level = "DEBUG"
+stream = "ext://sys.stdout"
+
+[handlers.qml_debug_stream_alt]
+class = "logging.StreamHandler"
+formatter = "qml_alt_formatter"
+level = "DEBUG"
+stream = "ext://sys.stdout"
+
+[handlers.qml_debug_file]
+class = "logging.handlers.RotatingFileHandler"
+formatter = "local_standard"
+level = "DEBUG"
+filename ='qml_debug.log' # use `/tmp/filename.log` on Linux machines to avoid long-term persistence
+maxBytes = 16777216 # 16MB per file before splitting
+backupCount = 10 # Create 'qml_debug.log.1', ... 'qml_debug.log.backupCount' files and rollover when maxBytes is reached
+
+[handlers.local_filtered_detailed_stdout]
+class = "logging.StreamHandler"
+formatter = "local_standard"
+level = "DEBUG"
+stream = "ext://sys.stdout"
+filters = ["qml_LocalProcessFilter", "qml_DebugOnlyFilter"]
+
+```
+The above defines how `LogRecord` messages are handled, and directs them to the appropriate sink. The logging framework supports many such directions (see [here](https://docs.python.org/3/library/logging.handlers.html) for more info), but for this example we have defined stream handlers (printing to the screen via the standard output), and a file handler with a size cap at 16MB. Each handler can be customized by filters and formatters so that the consumed message fits the needs of the user.
+
+```toml
+###############################################################################
+# Define logger controls for internal and external packages
+###############################################################################
+
+[loggers]
+
+# Control JAX logging 
+[loggers.jax]
+handlers = ["qml_debug_stream",]
+level = "DEBUG"
+propagate = false
+
+# Control logging in the executing Python script
+[loggers.__main__]
+handlers = ["qml_debug_stream",]
+level = "DEBUG"
+propagate = false
+
+# Control logging across pennylane
+[loggers.pennylane]
+handlers = ["qml_debug_stream",]
+level = "DEBUG" # Set to 1 for highest verbosity
+propagate = false
+
+# Control logging specifically in the pennylane.qnode module
+# Note the required parenthesis to overcome TOML nesting issues
+[loggers."pennylane.qnode"]
+handlers = ["qml_debug_stream_alt",]
+level = "DEBUG" # Set to 1 for highest verbosity
+propagate = false
+
+###############################################################################
+```
+Finally, the `loggers` section which controls the inidividual loggers across the packages we are using. Python's logging framework follows a parent-child hierarchy, where a logging configuration set at a parent level will set all child levels with the same features. In this instance, we have configured JAX, PennyLane and our script to all log into the `qml_debug_stream` handler we defined earlier, and modified the child logger `"pennylane.qnode"` (parenthesis needed due to TOML parsing limitations) to use a different logger, in this case `qml_debug_stream_alt`. We are free to define the module/package log-level here (we opt for `DEBUG` for all), and to also use multiple handlers per logger (such as for logging to the standard output and files through `qml_debug_stream` and `qml_debug_file` simultaneously). Given the complexity explosion with configuring these options, the default features in `log_config.toml` all use the same log-level, and handler, which can be adjusted based on developer needs.
+
+For further details and customization options I will suggest reading the Python logging documentation [how-to](https://docs.python.org/3/howto/logging.html#python logging) and ["advanced" tutorial](https://docs.python.org/3/howto/logging.html#logging-advanced-tutorial) level.
