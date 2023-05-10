@@ -15,6 +15,7 @@
 """This module contains functions for preprocessing `QuantumTape` objects to ensure
 that they are supported for execution by a device."""
 # pylint: disable=protected-access
+from dataclasses import replace
 from typing import Generator, Callable, Tuple, Union
 import warnings
 
@@ -234,10 +235,33 @@ def batch_transform(
     return tapes, batch_fn
 
 
+def _update_config(config: ExecutionConfig) -> ExecutionConfig:
+    """Choose the "best" options for the configuration if they are left unspecified.
+
+    Args:
+        config (ExecutionConfig): the initial execution config
+
+    Returns:
+        ExecutionConfig: a new config with the best choices selected.
+    """
+    updated_values = {}
+    if config.gradient_method == "best":
+        updated_values["gradient_method"] = "backprop"
+    if config.use_device_gradient is None:
+        updated_values["use_device_gradient"] = config.gradient_method in {
+            "best",
+            "adjoint",
+            "backprop",
+        }
+    if config.grad_on_execution is None:
+        updated_values["grad_on_execution"] = config.gradient_method == "adjoint"
+    return replace(config, **updated_values)
+
+
 def preprocess(
     circuits: Tuple[qml.tape.QuantumScript],
     execution_config: ExecutionConfig = DefaultExecutionConfig,
-) -> Tuple[Tuple[qml.tape.QuantumScript], Callable]:
+) -> Tuple[Tuple[qml.tape.QuantumScript], Callable, ExecutionConfig]:
     """Preprocess a batch of :class:`~.QuantumTape` objects to make them ready for execution.
 
     This function validates a batch of :class:`~.QuantumTape` objects by transforming and expanding
@@ -249,13 +273,9 @@ def preprocess(
             options for the execution.
 
     Returns:
-        Tuple[Sequence[.QuantumTape], callable]: Returns a tuple containing
-        the sequence of circuits to be executed, and a post-processing function
-        to be applied to the list of evaluated circuit results.
+        Tuple[QuantumTape], Callable, ExecutionConfig: QuantumTapes that the device can natively execute,
+        a postprocessing function to be called after execution, and a configuration with originally unset specifications filled in.
     """
-    if execution_config.shots is not None:
-        # Finite shot support will be added later
-        raise DeviceError("The Python Device does not support finite shots.")
 
     circuits = tuple(expand_fn(c) for c in circuits)
     if execution_config.gradient_method == "adjoint":
@@ -266,4 +286,4 @@ def preprocess(
 
     circuits, batch_fn = qml.transforms.map_batch_transform(batch_transform, circuits)
 
-    return circuits, batch_fn
+    return circuits, batch_fn, _update_config(execution_config)

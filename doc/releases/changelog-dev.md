@@ -56,12 +56,21 @@
   [(#4079)](https://github.com/PennyLaneAI/pennylane/pull/4079)
   [(#4095)](https://github.com/PennyLaneAI/pennylane/pull/4095)
 
+* `qml.devices.ExecutionConfig` no longer has a `shots` property, as it is now on the `QuantumScript`.  It now has a `use_device_gradient` property. `ExecutionConfig.grad_on_execution = None` indicates a request for `"best"`, instead of a string.
+[(#4102)](https://github.com/PennyLaneAI/pennylane/pull/4102)
+
+* `DefaultQubit2.preprocess` now returns a new `ExecutionConfig` object with decisions for `gradient_method`,
+  `use_device_gradient`, and `grad_on_execution`.
+  [(#4102)](https://github.com/PennyLaneAI/pennylane/pull/4102)
+
+
 <h3>Breaking changes 💔</h3>
 
 * The experimental Device interface `qml.devices.experimental.Device` now requires that the `preprocess` method
   also returns an `ExecutionConfig` object. This allows the device to choose what `"best"` means for various
   hyperparameters like `gradient_method` and `grad_on_execution`.
   [(#4007)](https://github.com/PennyLaneAI/pennylane/pull/4007)
+  [(#4102)](https://github.com/PennyLaneAI/pennylane/pull/4102)
 
 * Gradient transforms with Jax do not support `argnum` anymore,  `argnums` needs to be used.
   [(#4076)](https://github.com/PennyLaneAI/pennylane/pull/4076)
