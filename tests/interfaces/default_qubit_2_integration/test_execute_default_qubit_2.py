@@ -22,6 +22,8 @@ from pennylane.devices.experimental import DefaultQubit2
 
 
 class TestPreprocessExpandFn:
+    """Tests the _preprocess_expand_fn helper function."""
+
     def test_provided_is_callable(self):
         """Test that if the expand_fn is not "device", it is simply returned."""
 
@@ -63,13 +65,12 @@ class TestBatchTransformHelper:
         config = qml.devices.experimental.ExecutionConfig()
 
         with pytest.warns(UserWarning, match="device batch transforms cannot be turned off"):
-            new_batch, post_procesing_fn = _batch_transform(
+            new_batch, post_procesing_fn, _ = _batch_transform(
                 (qs, qs), dev, config, device_batch_transform=False
             )
 
         assert len(new_batch) == 2
 
-        # for some reason map batch transform is converting a tuple to a list :(
         assert post_procesing_fn((1, 1)) == [1, 1]
 
     def test_split_and_expand_performed(self):
@@ -82,6 +83,7 @@ class TestBatchTransformHelper:
             # pylint: disable=missing-function-docstring
             num_wires = 1
 
+            # pylint: disable=arguments-renamed, invalid-overridden-method
             @property
             def has_matrix(self):
                 return False
@@ -98,9 +100,9 @@ class TestBatchTransformHelper:
         ]
 
         dev = DefaultQubit2()
-        config = qml.devices.experimental.ExecutionConfig()
+        config = qml.devices.experimental.ExecutionConfig(gradient_method="adjoint")
 
-        res_tapes, batch_fn = _batch_transform(tapes, dev, config)
+        res_tapes, batch_fn, new_config = _batch_transform(tapes, dev, config)
         expected_ops = [
             [qml.Hadamard(0), qml.PauliX(1), qml.PauliY(1), qml.RX(np.pi, wires=1)],
             [qml.Hadamard(0), qml.PauliX(1), qml.PauliY(1), qml.RX(np.pi / 2, wires=1)],
@@ -118,6 +120,9 @@ class TestBatchTransformHelper:
 
         input = ([[1, 2]], [[3, 4]], [[5, 6]], [[7, 8]])
         assert np.array_equal(batch_fn(input), np.array([[[1, 2], [3, 4]], [[5, 6], [7, 8]]]))
+
+        assert new_config.grad_on_execution
+        assert new_config.use_device_gradient
 
 
 class TestNewDeviceIntegration:

@@ -416,7 +416,7 @@ def vjp(
         for t in tapes:
             if isinstance(device, qml.devices.experimental.Device):  # pragma:  no-cover
                 # cant test until we integrate device with shot vector
-                shot_vector = t.shots.shot_vector
+                shot_vector = t.shots.shot_vector if t.shots.has_partitioned_shots else None
             else:
                 shot_vector = device.shot_vector
             g_tapes, fn = gradient_fn(t, shots=shot_vector, **gradient_kwargs)
@@ -438,8 +438,10 @@ def vjp(
         computing_jacobian = _n == max_diff
 
         if isinstance(device, qml.devices.experimental.Device):  # pragma: no-cover
-            # cant test until we integrate device with shot vector
-            shot_vector = t.shots.shot_vector
+            # assumes all tapes have the same shot vector
+            shot_vector = (
+                tapes[0].shots.shot_vector if tapes[0].shots.has_partitioned_shots else None
+            )
         else:
             shot_vector = device.shot_vector
 
