@@ -479,7 +479,7 @@ class TestSampleMeasurements:
         assert len(results) == 2
         assert all(isinstance(res, np.ndarray) for res in results)
         assert results[0].shape == (100, 2)
-        assert results[1].shape == (50, 1)
+        assert results[1].shape == (50,)
 
 
 class TestExecutingBatches:
