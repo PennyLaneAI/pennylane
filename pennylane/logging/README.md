@@ -1,4 +1,5 @@
 # Logging support in PennyLane
+## Log-level color coding
 
 PennyLanes's log support ties into the native Python logger, which allows extensive configurability and support for both developer and end-user centric log messages.
 
@@ -6,21 +7,6 @@ The current structure defines some useful utility classes to allow ease-of-contr
 
 
 The package-wide logging controls are specific in the `log_config.toml` file (alternatively in the `log_config.yaml`), and control the logger levels, the log handlers, the formatters used, and even which parts of the package ecosystem should enable logging, including external packages such as `jax`.
-
-
-The logging-formatter ties-into the ANSI color-code system to improve visibility of standard output and error logging during execution. The ANSI codes accept RGB-coded code to change the text and background colors, allowing messages to be color coded for ease of readability. For example, to generate all such sequences in steps of 5 across each 8-bit range per color, we can use the following bash command:
-
-```bash
-for r in `seq 0 5 255`; do
-    for g in `seq 0 5 255`; do
-        for b in `seq 0 5 255`; do
-            echo -e "\e[38;2;${r};${g};${b}m"'\\e[38;2;'"${r};${g};${b}"m" FOREGROUND\e[0m"
-            echo -e "\e[48;2;${r};${g};${b}m"'\\e[48;2;'"${r};${g};${b}"m" FOREGROUND\e[0m"
-        done
-    done
-done
-```
-The strings in the log messages are prepended with the appropriate ANSI codes to ensure different log-levels are highlighted in different ways when outputing to the standard output stream (stdout/stderr).
 
 ## Setting up logging supports
 
@@ -304,3 +290,19 @@ propagate = false
 Finally, the `loggers` section which controls the individual loggers across the packages we are using. Python's logging framework follows a parent-child hierarchy, where a logging configuration set at a parent level will set all child levels with the same features. In this instance, we have configured JAX, PennyLane and our script to all log into the `qml_debug_stream` handler we defined earlier, and modified the child logger `"pennylane.qnode"` (parenthesis needed due to TOML parsing limitations) to use a different logger, in this case `qml_debug_stream_alt`. We are free to define the module/package log-level here (we opt for `DEBUG` for all), and to also use multiple handlers per logger (such as for logging to the standard output and files through `qml_debug_stream` and `qml_debug_file` simultaneously). Given the complexity explosion with configuring these options, the default features in `log_config.toml` all use the same log-level, and handler, which can be adjusted based on developer needs.
 
 For further details and customization options I will suggest reading the Python logging documentation [how-to](https://docs.python.org/3/howto/logging.html#python logging) and ["advanced" tutorial](https://docs.python.org/3/howto/logging.html#logging-advanced-tutorial) level.
+
+## Log-level color controls
+
+The logging-formatter ties-into the ANSI color-code system to improve visibility of standard output and error logging during execution. The ANSI codes accept RGB-coded code to change the text and background colors, allowing messages to be color coded for ease of readability. For example, to generate all such sequences in steps of 5 across each 8-bit range per color, we can use the following bash command:
+
+```bash
+for r in `seq 0 5 255`; do
+    for g in `seq 0 5 255`; do
+        for b in `seq 0 5 255`; do
+            echo -e "\e[38;2;${r};${g};${b}m"'\\e[38;2;'"${r};${g};${b}"m" FOREGROUND\e[0m"
+            echo -e "\e[48;2;${r};${g};${b}m"'\\e[48;2;'"${r};${g};${b}"m" FOREGROUND\e[0m"
+        done
+    done
+done
+```
+The strings in the log messages are prepended with the appropriate ANSI codes to ensure different log-levels are highlighted in different ways when outputing to the standard output stream (stdout/stderr). These are defined in the `pennylane.logging.formatter` module, and can be customized to suit any colors, or messaging structure.
