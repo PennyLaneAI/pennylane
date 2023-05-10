@@ -166,7 +166,6 @@ class DefaultQubitJax(DefaultQubit):
     operations = DefaultQubit.operations.union({"ParametrizedEvolution"})
 
     def __init__(self, wires, *, shots=None, prng_key=None, analytic=None):
-
         if jax_config.read("jax_enable_x64"):
             c_dtype = jnp.complex128
             r_dtype = jnp.float64
