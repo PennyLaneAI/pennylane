@@ -52,7 +52,7 @@ def test_invalid_gradient_keyword_arguments():
 
 @pytest.mark.parametrize("option", (True, False, None))
 def test_valid_grad_on_execution(option):
-    """Test execution config allows the True, False and best"""
+    """Test execution config allows True, False and None"""
     config = ExecutionConfig(grad_on_execution=option)
     assert config.grad_on_execution == option
 

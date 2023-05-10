@@ -419,7 +419,7 @@ class TestSumOfTermsDifferentiability:
 
     @staticmethod
     def f(scale, n_wires=10, offset=0.1, convert_to_hamiltonian=False):
-        """Execute a quantum script with a large hamiltonian."""
+        """Execute a quantum script with a large Hamiltonian."""
         ops = [qml.RX(offset + scale * i, wires=i) for i in range(n_wires)]
 
         t1 = 2.5 * qml.prod(*(qml.PauliZ(i) for i in range(n_wires)))

@@ -15,7 +15,7 @@
 """This module contains functions for preprocessing `QuantumTape` objects to ensure
 that they are supported for execution by a device."""
 # pylint: disable=protected-access
-import dataclasses
+from dataclasses import replace
 from typing import Generator, Callable, Tuple, Union
 import warnings
 
@@ -236,13 +236,13 @@ def batch_transform(
 
 
 def _update_config(config: ExecutionConfig) -> ExecutionConfig:
-    """Chose the "best" options for the configuration if they are left unspecified.
+    """Choose the "best" options for the configuration if they are left unspecified.
 
     Args:
         config (ExecutionConfig): the initial execution config
 
     Returns:
-        ExecutionConfig: a new config best choices selected.
+        ExecutionConfig: a new config with the best choices selected.
     """
     updated_values = {}
     if config.gradient_method == "best":
@@ -255,7 +255,7 @@ def _update_config(config: ExecutionConfig) -> ExecutionConfig:
         }
     if config.grad_on_execution is None:
         updated_values["grad_on_execution"] = config.gradient_method == "adjoint"
-    return dataclasses.replace(config, **updated_values)
+    return replace(config, **updated_values)
 
 
 def preprocess(
@@ -274,7 +274,7 @@ def preprocess(
 
     Returns:
         Tuple[QuantumTape], Callable, ExecutionConfig: QuantumTapes that the device can natively execute,
-        a postprocessing function to be called after execution, and a configuration with unset specifications filled in.
+        a postprocessing function to be called after execution, and a configuration with originally unset specifications filled in.
     """
 
     circuits = tuple(expand_fn(c) for c in circuits)

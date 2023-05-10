@@ -63,7 +63,7 @@ class NoMatNoDecompOp(Operation):
 
 
 class TestPrivateHelpers:
-    """Test the privaate helpers for preprocessing."""
+    """Test the private helpers for preprocessing."""
 
     @pytest.mark.parametrize(
         "op, expected",
@@ -85,7 +85,7 @@ class TestPrivateHelpers:
 
     @pytest.mark.parametrize("op", (qml.PauliX(0), qml.RX(1.2, wires=0), qml.QFT(wires=range(3))))
     def test_operator_decomposition_gen_accepted_operator(self, op):
-        """Test the operator decomposition gen function on an operator thats accepted."""
+        """Test the _operator_decomposition_gen function on an operator that is accepted."""
         casted_to_list = list(_operator_decomposition_gen(op))
         assert len(casted_to_list) == 1
         assert casted_to_list[0] is op
@@ -200,7 +200,7 @@ class TestExpandFnValidation:
 
 
 class TestExpandFnTransformations:
-    """Tests for for the behavior of the `expand_fn` helper."""
+    """Tests for the behavior of the `expand_fn` helper."""
 
     def test_expand_fn_expand_unsupported_op(self):
         """Test that expand_fn expands the tape when unsupported operators are present"""
