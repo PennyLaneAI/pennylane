@@ -1,65 +1,95 @@
-disable_existing_loggers = true
+###############################################################################
+# Avoid interfering with existing loggers in dependent libraries
+###############################################################################
+
+disable_existing_loggers = false
 version = 1
 
+###############################################################################
+# Bind formatters defined locally and those defined in pennylane.logging
+###############################################################################
+
 [formatters]
-[formatters.custom]
+[formatters.qml_default_formatter]
 "()" = "pennylane.logging.formatters.formatter.DefaultFormatter"
 
-[formatters.custom2]
+[formatters.qml_alt_formatter]
 "()" = "pennylane.logging.formatters.formatter.AnotherLogFormatter"
 
-[formatters.detailed]
+[formatters.local_detailed]
 format = "\u001B[38;2;45;145;210m[%(asctime)s][%(levelname)s][<PID %(process)d:%(processName)s>] - %(name)s.%(funcName)s()::\"%(message)s\"\u001B[0m"
 
-[formatters.standard]
+[formatters.local_standard]
 format = "[%(asctime)s] - %(name)s - %(levelname)s - %(message)s"
 
+###############################################################################
+# Bind LogRecord filters defined in pennylane.logging module
+###############################################################################
+
 [filters]
-[filters.LocalProcessFilter]
+# Filter to show messages from the same local process as the Python script
+[filters.qml_LocalProcessFilter]
 "()" = "pennylane.logging.filter.LocalProcessFilter"
 
-[filters.DebugOnlyFilter]
+# Filter to show debug level messages only
+[filters.qml_DebugOnlyFilter]
 "()" = "pennylane.logging.filter.DebugOnlyFilter"
 
+###############################################################################
+# Bind handlers defined in the logging and in pennylane.logging modules
+###############################################################################
 
 [handlers]
-
-[handlers.console]
+[handlers.qml_debug_stream]
 class = "logging.StreamHandler"
-formatter = "detailed"
+formatter = "qml_default_formatter"
 level = "DEBUG"
 stream = "ext://sys.stdout"
 
-[handlers.console_custom]
+[handlers.qml_debug_file]
+class = "logging.handlers.RotatingFileHandler"
+formatter = "local_standard"
+level = "DEBUG"
+filename ='qml_debug.log' # use `/tmp/filename.log` on Linux machines to avoid long-term persistence
+maxBytes = 16777216 # 16MB per file before splitting
+backupCount = 10 # Create 'qml_debug.log.1', ... 'qml_debug.log.backupCount' files and rollover when maxBytes is reached
+
+[handlers.local_filtered_detailed_stdout]
 class = "logging.StreamHandler"
-formatter = "custom"
+formatter = "local_detailed"
 level = "DEBUG"
 stream = "ext://sys.stdout"
-#filters = ["LocalProcessFilter", "DebugOnlyFilter"]
+filters = ["qml_LocalProcessFilter", "qml_DebugOnlyFilter"]
 
+###############################################################################
+# Define logger controls for internal and external packages
+###############################################################################
 
 [loggers]
+
+# Control JAX logging 
 [loggers.jax]
-handlers = ["console"]
+handlers = ["qml_debug_file", "local_filtered_detailed_stdout"]
 level = "DEBUG"
 propagate = false
 
-[loggers.torch]
-handlers = ["console"]
+# Control logging in the executing Python script
+[loggers.__main__]
+handlers = ["qml_debug_file"]
 level = "DEBUG"
 propagate = false
 
-[loggers.main]
-handlers = ["console_custom"]
-level = "DEBUG"
-propagate = false
-
+# Control logging across pennylane
 [loggers.pennylane]
-handlers = ["console_custom"]
+handlers = ["qml_debug_stream"]
 level = "DEBUG" # Set to 1 for highest verbosity
 propagate = false
 
-[root]
-handlers = ["console_custom"]
-level = "DEBUG"
+# Control logging specifically in the pennylane.qnode module
+# Note the required parenthesis to overcome TOML nesting issues
+[loggers."pennylane.qnode"]
+handlers = ["local_filtered_detailed_stdout"]
+level = "DEBUG" # Set to 1 for highest verbosity
 propagate = false
+
+###############################################################################
