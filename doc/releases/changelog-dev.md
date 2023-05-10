@@ -23,6 +23,7 @@
 * Added a `shots` property to `QuantumScript`. This will allow shots to be tied to executions instead of devices more
   concretely.
   [(#4067)](https://github.com/PennyLaneAI/pennylane/pull/4067)
+  [(#4103)](https://github.com/PennyLaneAI/pennylane/pull/4103)
   [(#4106)](https://github.com/PennyLaneAI/pennylane/pull/4106)
 
 * `qml.specs` is compatible with custom operations that have `depth` bigger than 1.
@@ -40,6 +41,10 @@
 * Added a function `measure_with_samples` that returns a sample-based measurement result given a state
   [(#4083)](https://github.com/PennyLaneAI/pennylane/pull/4083)
   [(#4093)](https://github.com/PennyLaneAI/pennylane/pull/4093)
+
+* Wrap all objects being queued in an `AnnotatedQueue` so that `AnnotatedQueue` is not dependent on
+  the hash of any operators/measurement processes.
+  [(#4087)](https://github.com/PennyLaneAI/pennylane/pull/4087)
 
 * Support for adjoint differentiation has been added to the `DefaultQubit2` device.
   [(#4037)](https://github.com/PennyLaneAI/pennylane/pull/4037)
