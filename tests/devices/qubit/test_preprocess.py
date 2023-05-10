@@ -191,17 +191,20 @@ class TestExpandFnValidation:
 
 
 class TestExpandFnTransformations:
-    def test_expand_fn_expand_unsupported_op(self):
+    @pytest.mark.parametrize("shots", [None, 100])
+    def test_expand_fn_expand_unsupported_op(self, shots):
         """Test that expand_fn expands the tape when unsupported operators are present"""
         ops = [qml.Hadamard(0), NoMatOp(1), qml.RZ(0.123, wires=1)]
         measurements = [qml.expval(qml.PauliZ(0)), qml.probs()]
-        tape = QuantumScript(ops=ops, measurements=measurements)
+        tape = QuantumScript(ops=ops, measurements=measurements, shots=shots)
 
         expanded_tape = expand_fn(tape)
         expected = [qml.Hadamard(0), qml.PauliX(1), qml.PauliY(1), qml.RZ(0.123, wires=1)]
 
         for op, exp in zip(expanded_tape.circuit, expected + measurements):
             assert qml.equal(op, exp)
+
+        assert tape.shots == expanded_tape.shots
 
     def test_expand_fn_defer_measurement(self):
         """Test that expand_fn defers mid-circuit measurements."""
@@ -344,7 +347,8 @@ class TestAdjointDiffTapeValidation:
         assert all(qml.equal(o1, o2) for o1, o2 in zip(qs.measurements, qs_valid.measurements))
         assert qs.trainable_params == qs_valid.trainable_params
 
-    def test_valid_tape_with_expansion(self):
+    @pytest.mark.parametrize("shots", [None, 100])
+    def test_valid_tape_with_expansion(self, shots):
         """Test that a tape that is valid with operations that need to be expanded doesn't raise errors
         and is expanded"""
         prep_op = qml.QubitStateVector(
@@ -354,6 +358,7 @@ class TestAdjointDiffTapeValidation:
             ops=[qml.Rot(0.1, 0.2, 0.3, wires=[0])],
             measurements=[qml.expval(qml.PauliZ(0))],
             prep=[prep_op],
+            shots=shots,
         )
 
         qs.trainable_params = {1, 2, 3}
@@ -369,6 +374,7 @@ class TestAdjointDiffTapeValidation:
         assert all(qml.equal(o1, o2) for o1, o2 in zip(qs_valid.operations, expected_ops))
         assert all(qml.equal(o1, o2) for o1, o2 in zip(qs.measurements, qs_valid.measurements))
         assert qs.trainable_params == qs_valid.trainable_params
+        assert qs.shots == qs_valid.shots
 
 
 class TestPreprocess:
