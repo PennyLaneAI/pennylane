@@ -20,7 +20,7 @@ import pytest
 
 import pennylane as qml
 from pennylane.operation import Operation
-from pennylane.tape import QuantumTape
+from pennylane.tape import QuantumScript
 from pennylane.resource.resource import Resources, ResourcesOperation, _count_resources
 from pennylane.measurements import Shots
 
@@ -202,13 +202,6 @@ class TestResourcesOperation:  # pylint: disable=too-few-public-methods
         assert CustomOPWithResources(wires=[0, 1])  # shouldn't raise an error
 
 
-def _construct_tape_from_ops(lst_ops):
-    with QuantumTape() as tape:
-        for op in lst_ops:
-            qml.apply(op)
-    return tape
-
-
 class _CustomOpWithResource(ResourcesOperation):  # pylint: disable=too-few-public-methods
     num_wires = 2
     name = "CustomOp1"
@@ -294,6 +287,5 @@ resources_data = (
 def test_count_resources(ops_and_shots, expected_resources):
     """Test the count resources method."""
     ops, shots = ops_and_shots
-    tape = _construct_tape_from_ops(ops)
-    computed_resources = _count_resources(tape, shots)
+    computed_resources = _count_resources(QuantumScript(ops), shots)
     assert computed_resources == expected_resources

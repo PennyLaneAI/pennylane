@@ -29,7 +29,7 @@
 * `qml.specs` is compatible with custom operations that have `depth` bigger than 1.
   [(#4033)](https://github.com/PennyLaneAI/pennylane/pull/4033)
 
-* `qml.Tracker` when used with `null.qubit` devices, will track resources of the quantum circuit.
+* `qml.Tracker` when used with `default.qubit` or `null.qubit` devices, will track resources of the quantum circuit.
   [#(4045)](https://github.com/PennyLaneAI/pennylane/pull/4045)
 
 * `qml.prod` now accepts a single qfunc input for creating new `Prod` operators.
