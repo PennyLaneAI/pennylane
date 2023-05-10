@@ -19,7 +19,7 @@ from pennylane.data.base.attribute import AttributeType
 from pennylane.data.base.typing_util import ZarrArray, ZarrGroup
 
 
-class DatasetsNone(AttributeType[ZarrArray, type(None), type(None)]):
+class DatasetNone(AttributeType[ZarrArray, type(None), type(None)]):
     """Datasets type for 'None' values."""
 
     type_id = "none"

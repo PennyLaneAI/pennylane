@@ -1,11 +1,11 @@
-from pennylane.data.attributes.none import DatasetsNone
+from pennylane.data.attributes.none import DatasetNone
 
 
 class TestDatasetsNone:
     def test_value_init(self):
         """Test that DatasetsNone can be value-initialized."""
 
-        dsets_none = DatasetsNone(None)
+        dsets_none = DatasetNone(None)
 
         assert dsets_none.get_value() is None
         assert bool(dsets_none) is False
@@ -14,9 +14,9 @@ class TestDatasetsNone:
 
     def test_bind_init(self):
         """Test that DatasetsNone can be bind-initialized."""
-        bind = DatasetsNone(None).bind
+        bind = DatasetNone(None).bind
 
-        dsets_none = DatasetsNone(bind=bind)
+        dsets_none = DatasetNone(bind=bind)
 
         assert dsets_none.get_value() is None
         assert bool(dsets_none) is False
