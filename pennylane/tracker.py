@@ -73,14 +73,21 @@ class Tracker:
 
     >>> tracker.totals
     {'executions': 3, 'shots': 300, 'batches': 2, 'batch_len': 3}
-    >>> tracker.history
-    {'executions': [1, 1, 1],
-     'shots': [100, 100, 100],
-     'results': [array([1.]), array([-0.06]), array([0.18])],
-     'batches': [1, 1],
-     'batch_len': [1, 2]}
     >>> tracker.latest
     {'batches': 1, 'batch_len': 2}
+    >>> tracker.history.keys()
+    dict_keys(['executions', 'shots', 'results', 'resources', 'batches', 'batch_len'])
+    >>> tracker.history['results']
+    [array([1.]), array([-0.06]), array([0.18])]
+    >>> print(tracker.history['resources'][0])
+    wires: 1
+    gates: 1
+    depth: 1
+    shots: Shots(total=100)
+    gate_types:
+    {'RX': 1}
+    gate_sizes:
+    {1: 1}
 
     We can see that calculating the gradient of ``circuit`` takes three total evaluations: one
     forward pass and one batch of length two for the derivative of ``qml.RX``.
@@ -121,8 +128,8 @@ class Tracker:
         >>> tracker.totals['executions']
         2
 
-        When used with the null qubit device (eg. ``dev = qml.device("null.qubit")``), we also track the resources
-        used in the circuit.
+        When used with the null qubit device (eg. ``dev = qml.device("null.qubit")``), we can track the resources
+        used in the circuit without execution!
 
         >>> dev = qml.device("null.qubit", wires=[0], shots=10)
         >>> @qml.qnode(dev)
