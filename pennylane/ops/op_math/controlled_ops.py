@@ -19,8 +19,57 @@ import warnings
 from typing import Iterable
 
 from pennylane.operation import AnyWires
+from pennylane.ops.qubit.non_parametric_ops import PauliY
 from pennylane.ops.qubit.matrix_ops import QubitUnitary
 from .controlled import ControlledOp
+
+class CY(ControlledOp):
+    r"""CY(wires)
+    The controlled-Y operator
+
+    If `control_values=True`:
+    .. math:: CY = \begin{bmatrix}
+            1 & 0 & 0 & 0 \\
+            0 & 1 & 0 & 0\\
+            0 & 0 & 0 & -i\\
+            0 & 0 & i & 0
+        \end{bmatrix}.
+
+    .. note:: The first wire provided corresponds to the **control qubit**.
+
+    **Details:**
+
+    * Number of wires: 2
+    * Number of parameters: 0
+
+    Args:
+        wires (Sequence[int]): the wires the operation acts on
+    """
+    num_wires = 2
+    """int: Number of wires that the operator acts on."""
+
+    num_params = 0
+    """int: Number of trainable parameters that the operator depends on."""
+
+    ndim_params = ()
+    """tuple[int]: Number of dimensions per trainable parameter that the operator depends on."""
+
+    grad_method = None
+    """Gradient computation method."""
+
+    def __init__(self, wires, control_values=None, work_wires=None, do_queue=True, id=None):
+        control_wire, wire = wires
+        base = PauliY(wire)
+
+        super().__init__(
+            base,
+            control_wire,
+            control_values=control_values,
+            work_wires=work_wires,
+            do_queue=do_queue,
+            id=id
+        )
+        self._name = "ControlledPauliY"
 
 
 # pylint: disable=too-few-public-methods
