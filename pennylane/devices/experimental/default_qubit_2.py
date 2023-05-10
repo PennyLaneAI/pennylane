@@ -17,7 +17,6 @@ This module contains the next generation successor to default qubit
 
 from typing import Union, Callable, Tuple, Optional, Sequence
 
-from pennylane.resource import Resources
 from pennylane.tape import QuantumTape, QuantumScript
 
 from . import Device
