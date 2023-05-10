@@ -342,7 +342,12 @@ class AttributeType(ABC, Generic[Zarr, T, InitValueType]):
         __type_consumer_registry
     )
 
-    def __init_subclass__(cls) -> None:  # pylint: disable=arguments-differ
+    def __init_subclass__(
+        cls, *, abstract: bool = False
+    ) -> None:  # pylint: disable=arguments-differ
+        if abstract:
+            return super().__init_subclass__()
+
         existing_type = AttributeType.__registry.get(cls.type_id)
         if existing_type is not None:
             raise TypeError(

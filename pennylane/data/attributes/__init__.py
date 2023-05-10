@@ -18,5 +18,13 @@ from .dictionary import DatasetDict
 from .list import DatasetList
 from .scalar import DatasetScalar
 from .string import DatasetString
+from .operator import DatasetOperator
 
-__all__ = ("DatasetArray", "DatasetScalar", "DatasetString", "DatasetDict", "DatasetList")
+__all__ = (
+    "DatasetArray",
+    "DatasetScalar",
+    "DatasetString",
+    "DatasetDict",
+    "DatasetList",
+    "DatasetOperator",
+)
