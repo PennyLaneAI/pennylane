@@ -3,10 +3,11 @@ import pytest
 
 from pennylane.data.attributes import (
     DatasetArray,
+    DatasetDict,
+    DatasetList,
+    DatasetNone,
     DatasetScalar,
     DatasetString,
-    DatasetList,
-    DatasetDict,
 )
 from pennylane.data.base.attribute import match_obj_type
 
@@ -34,6 +35,8 @@ from pennylane.data.base.attribute import match_obj_type
         ([{"a": 1}], DatasetList),
         ({}, DatasetDict),
         ({"a": [1, 2]}, DatasetDict),
+        (None, DatasetNone),
+        (type(None), DatasetNone),
     ],
 )
 def test_match_obj_type(type_or_obj, attribute_type):
