@@ -114,6 +114,20 @@ class TestSignExpand:
         assert np.isclose(output, expval, 1e-2)
         # as these are approximations, these are only correct up to finite precision
 
+    @pytest.mark.parametrize("shots", [None, 100])
+    @pytest.mark.parametrize("circuit", [True, False])
+    def test_shots_attribute(self, shots, circuit):
+        """Tests that the shots attribute is copied to the new tapes"""
+        with qml.queuing.AnnotatedQueue() as q:
+            qml.PauliX(0)
+            H1 = qml.Hamiltonian([1.5], [qml.PauliZ(0) @ qml.PauliZ(1)])
+            qml.expval(H1)
+
+        tape = qml.tape.QuantumScript.from_queue(q, shots=shots)
+        new_tapes, _ = qml.transforms.sign_expand(tape, circuit=circuit)
+
+        assert all(new_tape.shots == tape.shots for new_tape in new_tapes)
+
     def test_hamiltonian_error(self):
         """Tests if wrong observables get caught in the test"""
 
