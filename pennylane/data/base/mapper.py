@@ -69,7 +69,7 @@ class AttributeTypeMapper:
     def __setitem__(self, key: str, value: Any):
         self.set_item(key, value, None)
 
-    def move(self, src: str, dest: str):
+    def move(self, src: str, dest: str) -> None:
         """Moves the attribute stored at ``src`` in ``bind`` to ``dest``."""
         self.bind.move(src, dest)
         self._cache.pop(src, None)

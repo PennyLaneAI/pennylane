@@ -603,7 +603,7 @@ jobs:
 
       - name: Install zarr
 
-        run: pip3 install zarr
+        run: pip install zarr
         
       - name: Install PennyLane
         run: |

@@ -23,7 +23,7 @@ class TestDataset:
         assert ds.z == "abc"
 
     def test_setattr(self):
-        """Test that __setattrr__ succesfully sets new and existing attributes."""
+        """Test that __setattrr__ successfully sets new and existing attributes."""
         ds = Dataset(description="test", x=1)
 
         ds.x = 2.0
