@@ -120,7 +120,6 @@ class TestSignExpand:
         """Tests that the shots attribute is copied to the new tapes"""
         with qml.queuing.AnnotatedQueue() as q:
             qml.PauliX(0)
-            H1 = qml.Hamiltonian([1.5], [qml.PauliZ(0) @ qml.PauliZ(1)])
             qml.expval(H1)
 
         tape = qml.tape.QuantumScript.from_queue(q, shots=shots)
