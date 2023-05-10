@@ -134,7 +134,7 @@ class Tracker:
 
         if dev is not None:
             if not hasattr(dev, "tracker"):
-                raise Exception(f"Device '{dev.short_name}' does not support device tracking")
+                raise ValueError(f"Device '{dev.short_name}' does not support device tracking")
             dev.tracker = self
 
     def __enter__(self):

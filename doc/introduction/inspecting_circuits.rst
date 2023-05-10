@@ -43,11 +43,11 @@ For example:
 
     @qml.qnode(dev, diff_method='parameter-shift')
     def circuit(x, y):
-      qml.RX(x[0], wires=0)
-      qml.Toffoli(wires=(0, 1, 2))
-      qml.CRY(x[1], wires=(0, 1))
-      qml.Rot(x[2], x[3], y, wires=0)
-      return qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliX(1))
+        qml.RX(x[0], wires=0)
+        qml.Toffoli(wires=(0, 1, 2))
+        qml.CRY(x[1], wires=(0, 1))
+        qml.Rot(x[2], x[3], y, wires=0)
+        return qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliX(1))
 
 
 We can now use the :func:`~pennylane.specs` transform to generate a function that returns
@@ -57,21 +57,23 @@ details and resource information:
 >>> y = np.array(0.4, requires_grad=False)
 >>> specs_func = qml.specs(circuit)
 >>> specs_func(x, y)
-{'gate_sizes': defaultdict(<class 'int'>, {1: 2, 3: 1, 2: 1}),
-'gate_types': defaultdict(<class 'int'>, {'RX': 1, 'Toffoli': 1, 'CRY': 1, 'Rot': 1}),
-'num_operations': 4,
-'num_observables': 2,
-'num_diagonalizing_gates': 1,
-'num_used_wires': 3, 'depth': 4,
-'num_trainable_params': 4,
-'num_device_wires': 4,
-'device_name': 'default.qubit',
-'expansion_strategy': 'gradient',
-'gradient_options': {},
-'interface': 'autograd',
-'diff_method': 'parameter-shift',
-'gradient_fn': 'pennylane.gradients.parameter_shift.param_shift',
-'num_gradient_executions': 10}
+{'resources': Resources(num_wires=3, num_gates=4, gate_types=defaultdict(<class 'int'>, {'RX': 1, 'Toffoli': 1, 'CRY': 1, 'Rot': 1}), depth=4, shots=0),
+ 'gate_sizes': defaultdict(int, {1: 2, 3: 1, 2: 1}),
+ 'gate_types': defaultdict(int, {'RX': 1, 'Toffoli': 1, 'CRY': 1, 'Rot': 1}),
+ 'num_operations': 4,
+ 'num_observables': 2,
+ 'num_diagonalizing_gates': 1,
+ 'num_used_wires': 3,
+ 'num_trainable_params': 4,
+ 'depth': 4,
+ 'num_device_wires': 4,
+ 'device_name': 'default.qubit',
+ 'expansion_strategy': 'gradient',
+ 'gradient_options': {},
+ 'interface': 'auto',
+ 'diff_method': 'parameter-shift',
+ 'gradient_fn': 'pennylane.gradients.parameter_shift.param_shift',
+ 'num_gradient_executions': 10}
 
 Circuit drawing
 ---------------
@@ -192,10 +194,10 @@ or to check whether two gates causally influence each other.
     obs = tape.observables
     g = CircuitGraph(ops, obs, tape.wires)
 
-Internally, the :class:`~pennylane.CircuitGraph` class constructs a ``retworkx`` graph object.
+Internally, the :class:`~pennylane.CircuitGraph` class constructs a ``rustworkx`` graph object.
 
 >>> type(g.graph)
-<class 'retworkx.PyDiGraph'>
+<class 'rustworkx.PyDiGraph'>
 
 There is no edge between the ``Hadamard`` and the first ``CNOT``, but between consecutive ``CNOT`` gates:
 

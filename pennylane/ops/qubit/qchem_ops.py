@@ -223,13 +223,44 @@ class SingleExcitation(Operation):
         **Example:**
 
         >>> qml.SingleExcitation.compute_decomposition(1.23, wires=(0,1))
-        [CNOT(wires=[0, 1]), CRY(1.23, wires=[1, 0]), CNOT(wires=[0, 1])]
+        [Adjoint(T(wires=[0])),
+         Hadamard(wires=[0]),
+         S(wires=[0]),
+         Adjoint(T(wires=[1])),
+         Adjoint(S(wires=[1])),
+         Hadamard(wires=[1]),
+         CNOT(wires=[1, 0]),
+         RZ(-0.615, wires=[0]),
+         RY(0.615, wires=[1]),
+         CNOT(wires=[1, 0]),
+         Adjoint(S(wires=[0])),
+         Hadamard(wires=[0]),
+         T(wires=[0]),
+         Hadamard(wires=[1]),
+         S(wires=[1]),
+         T(wires=[1])]
 
         """
+        # This decomposition was found by plugging the matrix representation
+        # into transforms.two_qubit_decomposition and post-processing some of
+        # the resulting single-qubit gates.
         decomp_ops = [
-            qml.CNOT(wires=[wires[0], wires[1]]),
-            qml.CRY(phi, wires=[wires[1], wires[0]]),
-            qml.CNOT(wires=[wires[0], wires[1]]),
+            qml.adjoint(qml.T)(wires=wires[0]),
+            qml.Hadamard(wires=wires[0]),
+            qml.S(wires=wires[0]),
+            qml.adjoint(qml.T)(wires=wires[1]),
+            qml.adjoint(qml.S)(wires=wires[1]),
+            qml.Hadamard(wires=wires[1]),
+            qml.CNOT(wires=[wires[1], wires[0]]),
+            qml.RZ(-phi / 2, wires=wires[0]),
+            qml.RY(phi / 2, wires=wires[1]),
+            qml.CNOT(wires=[wires[1], wires[0]]),
+            qml.adjoint(qml.S)(wires=wires[0]),
+            qml.Hadamard(wires=wires[0]),
+            qml.T(wires=wires[0]),
+            qml.Hadamard(wires=wires[1]),
+            qml.S(wires=wires[1]),
+            qml.T(wires=wires[1]),
         ]
         return decomp_ops
 

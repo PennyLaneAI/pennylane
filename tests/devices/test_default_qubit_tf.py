@@ -1670,7 +1670,7 @@ class TestPassthruIntegration:
         ) * tf.math.sin(z / 2)
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
-        res = tf.concat(tape.jacobian(res, [x, y, z]), axis=0)
+        res = tf.stack(tape.jacobian(res, [x, y, z]), axis=0)
 
         expected = np.array(
             [
@@ -1792,10 +1792,11 @@ class TestPassthruIntegration:
         )
         assert all(np.allclose(res[i, :, i], expected[:, i], atol=tol, rtol=0) for i in range(3))
 
-    def test_jacobian_agrees_backprop_parameter_shift(self, tol):
+    def test_backprop_jacobian_agrees_parameter_shift(self, tol):
         """Test that jacobian of a QNode with an attached default.qubit.tf device
         gives the correct result with respect to the parameter-shift method"""
-        p = pnp.array([0.43316321, 0.2162158, 0.75110998, 0.94714242], requires_grad=True)
+        p = pnp.array([0.43316321, 0.2162158, 0.75110998, 0.94714242])
+        p_tf = tf.Variable(p, trainable=True)
 
         def circuit(x):
             for i in range(0, len(p), 2):
@@ -1805,17 +1806,22 @@ class TestPassthruIntegration:
                 qml.CNOT(wires=[i, i + 1])
             return qml.expval(qml.PauliZ(0)), qml.var(qml.PauliZ(1))
 
-        dev1 = qml.device("default.qubit.tf", wires=3)
-        dev2 = qml.device("default.qubit.tf", wires=3)
+        dev1 = qml.device("default.qubit", wires=3)
+        dev2 = qml.device("default.qubit", wires=3)
+
+        def cost(x):
+            return qml.math.stack(circuit(x))
 
         circuit1 = qml.QNode(circuit, dev1, diff_method="backprop", interface="tf")
-        circuit2 = qml.QNode(circuit, dev2, diff_method="parameter-shift")
+        circuit2 = qml.QNode(cost, dev2, diff_method="parameter-shift")
 
-        p_tf = tf.Variable(p)
         with tf.GradientTape() as tape:
-            res = circuit1(p_tf)
+            res = tf.experimental.numpy.hstack(circuit1(p_tf))
 
         assert np.allclose(res, circuit2(p), atol=tol, rtol=0)
+
+        assert circuit1.gradient_fn == "backprop"
+        assert circuit2.gradient_fn is qml.gradients.param_shift
 
         res = tape.jacobian(res, p_tf)
         assert np.allclose(res, qml.jacobian(circuit2)(p), atol=tol, rtol=0)
@@ -2169,7 +2175,7 @@ class TestSamples:
         b = tf.Variable(0.43, dtype=tf.float64)
 
         res = circuit(a, b)
-        assert isinstance(res, tf.Tensor)
+        assert isinstance(res, tuple)
 
         # We don't check the expected value due to stochasticity, but
         # leave it here for completeness.
@@ -2258,69 +2264,6 @@ class TestSamplesBroadcasted:
         res = circuit(a, b)
         assert isinstance(res, tf.Tensor)
         assert qml.math.shape(res) == (batch_size, 2)
-
-
-@pytest.mark.tf
-class TestHighLevelIntegration:
-    """Tests for integration with higher level components of PennyLane."""
-
-    @pytest.mark.slow
-    def test_qnode_collection_integration(self):
-        """Test that a PassthruQNode default.qubit.tf works with QNodeCollections."""
-        dev = qml.device("default.qubit.tf", wires=2)
-
-        obs_list = [qml.PauliX(0) @ qml.PauliY(1), qml.PauliZ(0), qml.PauliZ(0) @ qml.PauliZ(1)]
-        qnodes = qml.map(qml.templates.StronglyEntanglingLayers, obs_list, dev, interface="tf")
-
-        assert qnodes.interface == "tf"
-
-        weights = tf.Variable(
-            np.random.random(qml.templates.StronglyEntanglingLayers.shape(n_layers=2, n_wires=2))
-        )
-
-        @tf.function
-        def cost(weights):
-            return tf.reduce_sum(qnodes(weights))
-
-        with tf.GradientTape() as tape:
-            res = cost(weights)
-
-        grad = tape.gradient(res, weights)
-
-        assert isinstance(grad, tf.Tensor)
-        assert grad.shape == weights.shape
-
-    @pytest.mark.slow
-    def test_qnode_collection_integration_broadcasted(self):
-        """Test that a broadcasted PassthruQNode default.qubit.tf
-        works with QNodeCollections."""
-        dev = qml.device("default.qubit.tf", wires=2)
-
-        def ansatz(weights, **kwargs):
-            qml.RX(weights[0], wires=0)
-            qml.RY(weights[1], wires=1)
-            qml.CNOT(wires=[0, 1])
-
-        obs_list = [qml.PauliX(0) @ qml.PauliY(1), qml.PauliZ(0), qml.PauliZ(0) @ qml.PauliZ(1)]
-        qnodes = qml.map(ansatz, obs_list, dev, interface="tf")
-
-        assert qnodes.interface == "tf"
-
-        weights = tf.Variable([[0.1, 0.65, 1.2], [0.2, 1.9, -0.6]])
-
-        @tf.function
-        def cost(weights):
-            return tf.reduce_sum(qnodes(weights), axis=-1)
-
-        with tf.GradientTape() as tape:
-            res = cost(weights)
-
-        assert qml.math.shape(res) == (3,)
-
-        jac = tape.jacobian(res, weights)
-
-        assert isinstance(jac, tf.Tensor)
-        assert jac.shape == (3, 2, 3)
 
 
 @pytest.mark.tf

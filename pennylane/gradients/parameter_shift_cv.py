@@ -264,6 +264,7 @@ def var_param_shift(tape, dev_wires, argnum=None, shifts=None, gradient_recipes=
 
         # return d(var(A))/dp = d<A^2>/dp -2 * <A> * d<A>/dp for the variances (mask==True)
         # d<A>/dp for plain expectations (mask==False)
+        pdA = qml.math.stack(pdA)
         return qml.math.where(mask, pdA2 - 2 * f0 * pdA, pdA)
 
     return gradient_tapes, processing_fn
@@ -402,6 +403,7 @@ def second_order_param_shift(tape, dev_wires, argnum=None, shifts=None, gradient
             constants.append(constant)
 
             g_tape._measurements[idx] = qml.expval(op=_transform_observable(obs, Z, dev_wires))
+        g_tape._update_par_info()
 
         if not any(i is None for i in constants):
             # Check if *all* transformed observables corresponds to a constant
@@ -467,7 +469,6 @@ def second_order_param_shift(tape, dev_wires, argnum=None, shifts=None, gradient
             g = qml.math.convert_like(g, results[0])
             if hasattr(g, "dtype") and g.dtype is np.dtype("object"):
                 grads[i] = qml.math.hstack(g)
-
         return qml.math.T(qml.math.stack(grads))
 
     return gradient_tapes, processing_fn
@@ -651,6 +652,10 @@ def param_shift_cv(
         >>> fn(qml.execute(gradient_tapes, dev, None))
         array([[-0.32487113, -0.4054074 , -0.87049853,  0.4054074 ]])
     """
+    if qml.active_return() and len(tape.measurements) > 1:
+        raise ValueError(
+            "Computing the gradient of CV circuits that return more than one measurement is not possible."
+        )
 
     # perform gradient method validation
     if any(isinstance(m, StateMP) for m in tape.measurements):
@@ -757,6 +762,19 @@ def param_shift_cv(
             grads.append(f(results[start : start + s]))
             start += s
 
-        return sum(grads)
+        # For expval param shift with multiple params
+        if qml.active_return():
+            if isinstance(grads[0], tuple):
+                grads = [qml.math.stack(g) for g in grads]
+
+        jacobian = sum(grads)
+
+        if qml.active_return():
+            if jacobian.shape != ():
+                if jacobian.shape[0] == 1:
+                    jacobian = jacobian[0]
+                if len(argnum) > 1:
+                    jacobian = tuple(j for j in jacobian)
+        return jacobian
 
     return gradient_tapes, processing_fn

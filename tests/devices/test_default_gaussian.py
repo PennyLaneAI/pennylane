@@ -854,3 +854,18 @@ class TestDefaultGaussianIntegration:
         ):
             circuit()
         assert dev.shots == sum(shots)
+
+    def test_new_return_type_error_multi_measurements(self):
+        """Test that multiple measurements raise an error with the new return type."""
+        dev = qml.device("default.gaussian", wires=2)
+
+        @qml.qnode(dev)
+        def circuit():
+            """Test quantum function"""
+            return qml.sample(qml.X(0)), qml.expval(qml.X(1))
+
+        with pytest.raises(
+            qml.QuantumFunctionError,
+            match="Default gaussian only support single measurements.",
+        ):
+            circuit()

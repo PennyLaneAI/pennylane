@@ -167,35 +167,49 @@ class TestMeasurements:
 
 class TestSumOfTermsDifferentiability:
     @staticmethod
-    def f(scale, n_wires=10, offset=0.1, convert_to_hamiltonian=False):
+    def f(scale, coeffs, n_wires=10, offset=0.1, convert_to_hamiltonian=False):
         ops = [qml.RX(offset + scale * i, wires=i) for i in range(n_wires)]
 
-        t1 = 2.5 * qml.prod(*(qml.PauliZ(i) for i in range(n_wires)))
-        t2 = 6.2 * qml.prod(*(qml.PauliY(i) for i in range(n_wires)))
-        H = t1 + t2
         if convert_to_hamiltonian:
-            H = H._pauli_rep.hamiltonian()  # pylint: disable=protected-access
+            H = qml.Hamiltonian(
+                coeffs,
+                [
+                    qml.operation.Tensor(*(qml.PauliZ(i) for i in range(n_wires))),
+                    qml.operation.Tensor(*(qml.PauliY(i) for i in range(n_wires))),
+                ],
+            )
+        else:
+            t1 = qml.s_prod(coeffs[0], qml.prod(*(qml.PauliZ(i) for i in range(n_wires))))
+            t2 = qml.s_prod(coeffs[1], qml.prod(*(qml.PauliY(i) for i in range(n_wires))))
+            H = t1 + t2
         qs = qml.tape.QuantumScript(ops, [qml.expval(H)])
         return simulate(qs)
 
     @staticmethod
-    def expected(scale, n_wires=10, offset=0.1, like="numpy"):
+    def expected(scale, coeffs, n_wires=10, offset=0.1, like="numpy"):
         phase = offset + scale * qml.math.asarray(range(n_wires), like=like)
         cosines = qml.math.cos(phase)
         sines = qml.math.sin(phase)
-        return 2.5 * qml.math.prod(cosines) + 6.2 * qml.math.prod(sines)
+        return coeffs[0] * qml.math.prod(cosines) + coeffs[1] * qml.math.prod(sines)
 
     @pytest.mark.autograd
     @pytest.mark.parametrize("convert_to_hamiltonian", (True, False))
-    def test_autograd_backprop(self, convert_to_hamiltonian):
+    @pytest.mark.parametrize(
+        "coeffs",
+        [
+            (qml.numpy.array(2.5), qml.numpy.array(6.2)),
+            (qml.numpy.array(2.5, requires_grad=False), qml.numpy.array(6.2, requires_grad=False)),
+        ],
+    )
+    def test_autograd_backprop(self, convert_to_hamiltonian, coeffs):
         """Test that backpropagation derivatives work in autograd with hamiltonians and large sums."""
         x = qml.numpy.array(0.52)
-        out = self.f(x, convert_to_hamiltonian=convert_to_hamiltonian)
-        expected_out = self.expected(x)
+        out = self.f(x, coeffs, convert_to_hamiltonian=convert_to_hamiltonian)
+        expected_out = self.expected(x, coeffs)
         assert qml.math.allclose(out, expected_out)
 
-        g = qml.grad(self.f)(x, convert_to_hamiltonian=convert_to_hamiltonian)
-        expected_g = qml.grad(self.expected)(x)
+        g = qml.grad(self.f)(x, coeffs, convert_to_hamiltonian=convert_to_hamiltonian)
+        expected_g = qml.grad(self.expected)(x, coeffs)
         assert qml.math.allclose(g, expected_g)
 
     @pytest.mark.jax
@@ -209,14 +223,15 @@ class TestSumOfTermsDifferentiability:
         config.update("jax_enable_x64", True)  # otherwise output is too noisy
 
         x = jax.numpy.array(0.52, dtype=jax.numpy.float64)
-        f = jax.jit(self.f, static_argnums=(1, 2, 3)) if use_jit else self.f
+        coeffs = (5.2, 6.7)
+        f = jax.jit(self.f, static_argnums=(1, 2, 3, 4)) if use_jit else self.f
 
-        out = f(x, convert_to_hamiltonian=convert_to_hamiltonian)
-        expected_out = self.expected(x)
+        out = f(x, coeffs, convert_to_hamiltonian=convert_to_hamiltonian)
+        expected_out = self.expected(x, coeffs)
         assert qml.math.allclose(out, expected_out)
 
-        g = jax.grad(f)(x, convert_to_hamiltonian=convert_to_hamiltonian)
-        expected_g = jax.grad(self.expected)(x)
+        g = jax.grad(f)(x, coeffs, convert_to_hamiltonian=convert_to_hamiltonian)
+        expected_g = jax.grad(self.expected)(x, coeffs)
         assert qml.math.allclose(g, expected_g)
 
     @pytest.mark.torch
@@ -225,10 +240,15 @@ class TestSumOfTermsDifferentiability:
         """Test that backpropagation derivatives work with torch with hamiltonians and large sums."""
         import torch
 
-        x = torch.tensor(-0.289, requires_grad=True)
-        x2 = torch.tensor(-0.289, requires_grad=True)
-        out = self.f(x, convert_to_hamiltonian=convert_to_hamiltonian)
-        expected_out = self.expected(x2, like="torch")
+        coeffs = [
+            torch.tensor(9.2, requires_grad=False, dtype=torch.float64),
+            torch.tensor(6.2, requires_grad=False, dtype=torch.float64),
+        ]
+
+        x = torch.tensor(-0.289, requires_grad=True, dtype=torch.float64)
+        x2 = torch.tensor(-0.289, requires_grad=True, dtype=torch.float64)
+        out = self.f(x, coeffs, convert_to_hamiltonian=convert_to_hamiltonian)
+        expected_out = self.expected(x2, coeffs, like="torch")
         assert qml.math.allclose(out, expected_out)
 
         out.backward()
@@ -242,12 +262,13 @@ class TestSumOfTermsDifferentiability:
         import tensorflow as tf
 
         x = tf.Variable(0.5)
+        coeffs = [8.3, 5.7]
 
         with tf.GradientTape() as tape1:
-            out = self.f(x, convert_to_hamiltonian=convert_to_hamiltonian)
+            out = self.f(x, coeffs, convert_to_hamiltonian=convert_to_hamiltonian)
 
         with tf.GradientTape() as tape2:
-            expected_out = self.expected(x)
+            expected_out = self.expected(x, coeffs)
 
         assert qml.math.allclose(out, expected_out)
         g1 = tape1.gradient(out, x)

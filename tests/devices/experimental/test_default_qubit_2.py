@@ -12,12 +12,15 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Tests for default qubit 2."""
+# pylint: disable=import-outside-toplevel
+
 import pytest
 
 import numpy as np
 
 import pennylane as qml
 from pennylane.devices.experimental import DefaultQubit2, ExecutionConfig
+from pennylane.devices.qubit.preprocess import validate_and_expand_adjoint
 
 
 def test_name():
@@ -93,6 +96,38 @@ class TestTracking:
         assert tracker.latest == {"batches": 1, "executions": 2}
 
 
+# pylint: disable=too-few-public-methods
+class TestPreprocessing:
+    """Unit tests for the preprocessing method."""
+
+    def test_chooses_best_gradient_method(self):
+        """Test that preprocessing chooses backprop as the best gradient method."""
+        dev = DefaultQubit2()
+
+        config = ExecutionConfig(
+            gradient_method="best", use_device_gradient=None, grad_on_execution=None
+        )
+        circuit = qml.tape.QuantumScript([], [qml.expval(qml.PauliZ(0))])
+        _, _, new_config = dev.preprocess(circuit, config)
+
+        assert new_config.gradient_method == "backprop"
+        assert new_config.use_device_gradient
+        assert not new_config.grad_on_execution
+
+    def test_config_choices_for_adjoint(self):
+        """Test that preprocessing request grad on execution and says to use the device gradient if adjoint is requested."""
+        dev = DefaultQubit2()
+
+        config = ExecutionConfig(
+            gradient_method="adjoint", use_device_gradient=None, grad_on_execution=None
+        )
+        circuit = qml.tape.QuantumScript([], [qml.expval(qml.PauliZ(0))])
+        _, _, new_config = dev.preprocess(circuit, config)
+
+        assert new_config.use_device_gradient
+        assert new_config.grad_on_execution
+
+
 class TestSupportsDerivatives:
     """Test that DefaultQubit2 states what kind of derivatives it supports."""
 
@@ -105,9 +140,23 @@ class TestSupportsDerivatives:
         qs = qml.tape.QuantumScript([], [qml.state()])
         assert dev.supports_derivatives(config, qs)
 
-    @pytest.mark.parametrize(
-        "gradient_method", ["parameter-shift", "finite-diff", "device", "adjoint"]
-    )
+    def test_supports_adjoint(self):
+        """Test that DefaultQubit2 says that it supports adjoint differentiation."""
+        dev = DefaultQubit2()
+        config = ExecutionConfig(gradient_method="adjoint")
+        assert dev.supports_derivatives(config) is True
+
+        qs = qml.tape.QuantumScript([], [qml.expval(qml.PauliZ(0))])
+        assert dev.supports_derivatives(config, qs) is True
+
+    def test_doesnt_support_adjoint_with_invalid_tape(self):
+        """Tests that DefaultQubit2 does not support adjoint differentiation with invalid circuits."""
+        dev = DefaultQubit2()
+        config = ExecutionConfig(gradient_method="adjoint")
+        circuit = qml.tape.QuantumScript([], [qml.probs()])
+        assert dev.supports_derivatives(config, circuit=circuit) is False
+
+    @pytest.mark.parametrize("gradient_method", ["parameter-shift", "finite-diff", "device"])
     def test_doesnt_support_other_gradient_methods(self, gradient_method):
         """Test that DefaultQubit2 currently does not support other gradient methods natively."""
         dev = DefaultQubit2()
@@ -233,6 +282,8 @@ class TestBasicCircuit:
 
 
 class TestExecutingBatches:
+    """Tests involving executing multiple circuits at the same time."""
+
     @staticmethod
     def f(phi):
         """A function that executes a batch of scripts on DefaultQubit2 without preprocessing."""
@@ -256,6 +307,7 @@ class TestExecutingBatches:
 
     @staticmethod
     def expected(phi):
+        """expected output of f."""
         out1 = (-qml.math.sin(phi) - 1, 3 * qml.math.cos(phi))
 
         x1 = qml.math.cos(phi / 2) ** 2 / 2
@@ -265,6 +317,7 @@ class TestExecutingBatches:
 
     @staticmethod
     def nested_compare(x1, x2):
+        """Assert two ragged lists are equal."""
         assert len(x1) == len(x2)
         assert len(x1[0]) == len(x2[0])
         assert qml.math.allclose(x1[0][0], x2[0][0])
@@ -366,6 +419,7 @@ class TestSumOfTermsDifferentiability:
 
     @staticmethod
     def f(scale, n_wires=10, offset=0.1, convert_to_hamiltonian=False):
+        """Execute a quantum script with a large Hamiltonian."""
         ops = [qml.RX(offset + scale * i, wires=i) for i in range(n_wires)]
 
         t1 = 2.5 * qml.prod(*(qml.PauliZ(i) for i in range(n_wires)))
@@ -378,6 +432,7 @@ class TestSumOfTermsDifferentiability:
 
     @staticmethod
     def expected(scale, n_wires=10, offset=0.1, like="numpy"):
+        """expected output of f."""
         phase = offset + scale * qml.math.asarray(range(n_wires), like=like)
         cosines = qml.math.cos(phase)
         sines = qml.math.sin(phase)
@@ -429,7 +484,7 @@ class TestSumOfTermsDifferentiability:
         expected_out = self.expected(x2, like="torch")
         assert qml.math.allclose(out, expected_out)
 
-        out.backward()
+        out.backward()  # pylint:disable=no-member
         expected_out.backward()
         assert qml.math.allclose(x.grad, x2.grad)
 
@@ -453,12 +508,90 @@ class TestSumOfTermsDifferentiability:
         assert qml.math.allclose(g1, g2)
 
 
+class TestAdjointDifferentiation:
+    """Tests adjoint differentiation integration with DefaultQubit2."""
+
+    ec = ExecutionConfig(gradient_method="adjoint")
+
+    def test_single_circuit(self):
+        """Tests a basic example with a single circuit."""
+        dev = DefaultQubit2()
+        x = np.array(np.pi / 7)
+        qs = qml.tape.QuantumScript([qml.RX(x, 0)], [qml.expval(qml.PauliZ(0))])
+        qs = validate_and_expand_adjoint(qs)
+        expected_grad = -qml.math.sin(x)
+        actual_grad = dev.compute_derivatives(qs, self.ec)
+        assert isinstance(actual_grad, np.ndarray)
+        assert actual_grad.shape == ()  # pylint: disable=no-member
+        assert np.isclose(actual_grad, expected_grad)
+
+        expected_val = qml.math.cos(x)
+        actual_val, actual_grad = dev.execute_and_compute_derivatives(qs, self.ec)
+        assert np.isclose(actual_val, expected_val)
+        assert np.isclose(actual_grad, expected_grad)
+
+    def test_list_with_single_circuit(self):
+        """Tests a basic example with a batch containing a single circuit."""
+        dev = DefaultQubit2()
+        x = np.array(np.pi / 7)
+        qs = qml.tape.QuantumScript([qml.RX(x, 0)], [qml.expval(qml.PauliZ(0))])
+        qs = validate_and_expand_adjoint(qs)
+        expected_grad = -qml.math.sin(x)
+        actual_grad = dev.compute_derivatives([qs], self.ec)
+        assert isinstance(actual_grad, tuple)
+        assert isinstance(actual_grad[0], np.ndarray)
+        assert np.isclose(actual_grad[0], expected_grad)
+
+        expected_val = qml.math.cos(x)
+        actual_val, actual_grad = dev.execute_and_compute_derivatives([qs], self.ec)
+        assert np.isclose(expected_val, actual_val[0])
+        assert np.isclose(expected_grad, actual_grad[0])
+
+    def test_many_tapes_many_results(self):
+        """Tests a basic example with a batch of circuits of varying return shapes."""
+        dev = DefaultQubit2()
+        x = np.array(np.pi / 7)
+        single_meas = qml.tape.QuantumScript([qml.RX(x, 0)], [qml.expval(qml.PauliZ(0))])
+        multi_meas = qml.tape.QuantumScript(
+            [qml.RY(x, 0)], [qml.expval(qml.PauliX(0)), qml.expval(qml.PauliZ(0))]
+        )
+        expected_grad = (-qml.math.sin(x), (qml.math.cos(x), -qml.math.sin(x)))
+        actual_grad = dev.compute_derivatives([single_meas, multi_meas], self.ec)
+        assert np.isclose(actual_grad[0], expected_grad[0])
+        assert isinstance(actual_grad[1], tuple)
+        assert qml.math.allclose(actual_grad[1], expected_grad[1])
+
+    def test_integration(self):
+        """Tests the expected workflow done by a calling method."""
+        dev = DefaultQubit2()
+        x = np.array(np.pi / 7)
+        expected_grad = (-qml.math.sin(x), (qml.math.cos(x), -qml.math.sin(x)))
+        single_meas = qml.tape.QuantumScript([qml.RX(x, 0)], [qml.expval(qml.PauliZ(0))])
+        multi_meas = qml.tape.QuantumScript(
+            [qml.RY(x, 0)], [qml.expval(qml.PauliX(0)), qml.expval(qml.PauliZ(0))]
+        )
+
+        circuits, _, new_ec = dev.preprocess([single_meas, multi_meas], self.ec)
+        actual_grad = dev.compute_derivatives(circuits, self.ec)
+
+        assert new_ec.use_device_gradient
+        assert new_ec.grad_on_execution
+
+        assert np.isclose(actual_grad[0], expected_grad[0])
+        assert isinstance(actual_grad[1], tuple)
+        assert qml.math.allclose(actual_grad[1], expected_grad[1])
+
+
 class TestPreprocessingIntegration:
-    def test_preproces_single_circuit(self):
+    """Test preprocess produces output that can be executed by the device."""
+
+    def test_preprocess_single_circuit(self):
         """Test integration between preprocessing and execution with numpy parameters."""
 
         # pylint: disable=too-few-public-methods
         class MyTemplate(qml.operation.Operation):
+            """Temp operator."""
+
             num_wires = 2
 
             def decomposition(self):
@@ -477,7 +610,7 @@ class TestPreprocessingIntegration:
 
         dev = DefaultQubit2()
 
-        batch, post_procesing_fn = dev.preprocess(qscript)
+        batch, post_procesing_fn, config = dev.preprocess(qscript)
 
         assert len(batch) == 1
         execute_circuit = batch[0]
@@ -488,7 +621,7 @@ class TestPreprocessingIntegration:
         assert qml.equal(execute_circuit[4], qml.expval(qml.PauliZ("a")))
         assert qml.equal(execute_circuit[5], qml.expval(qml.PauliX("b")))
 
-        results = dev.execute(batch)
+        results = dev.execute(batch, config)
         assert len(results) == 1
         assert len(results[0]) == 3
 
@@ -503,6 +636,8 @@ class TestPreprocessingIntegration:
 
         # pylint: disable=too-few-public-methods
         class CustomIsingXX(qml.operation.Operation):
+            """Temp operator."""
+
             num_wires = 2
 
             def decomposition(self):
@@ -526,9 +661,9 @@ class TestPreprocessingIntegration:
         initial_batch = [qs1, qs2]
 
         dev = DefaultQubit2()
-        batch, post_processing_fn = dev.preprocess(initial_batch)
+        batch, post_processing_fn, config = dev.preprocess(initial_batch)
 
-        results = dev.execute(batch)
+        results = dev.execute(batch, config)
         processed_results = post_processing_fn(results)
 
         assert len(processed_results) == 2
@@ -554,8 +689,8 @@ def test_broadcasted_parameter():
     dev = DefaultQubit2()
     x = np.array([0.536, 0.894])
     qs = qml.tape.QuantumScript([qml.RX(x, 0)], [qml.expval(qml.PauliZ(0))])
-    batch, post_processing_fn = dev.preprocess(qs)
+    batch, post_processing_fn, config = dev.preprocess(qs)
     assert len(batch) == 2
-    results = dev.execute(batch)
+    results = dev.execute(batch, config)
     processed_results = post_processing_fn(results)
     assert qml.math.allclose(processed_results, np.cos(x))

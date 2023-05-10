@@ -18,7 +18,9 @@ import pytest
 import pennylane as qml
 from pennylane import numpy as pnp
 from pennylane.devices import DefaultQubit
-from pennylane.measurements import State, density_matrix, expval, state
+from pennylane.measurements import State, Shots, density_matrix, expval, state
+
+# pylint: disable=no-member, comparison-with-callable
 
 
 class TestState:
@@ -68,6 +70,7 @@ class TestState:
 
         state_val = func()
         assert np.allclose(np.sum(np.abs(state_val) ** 2), 1)
+        # pylint: disable=unsubscriptable-object
         assert np.allclose(state_val[0], 1 / np.sqrt(2))
         assert np.allclose(state_val[-1], 1 / np.sqrt(2))
 
@@ -283,7 +286,6 @@ class TestState:
     def test_gradient_with_passthru_autograd(self):
         """Test that the gradient of the state is accessible when using default.qubit.autograd
         with the backprop diff_method."""
-        from pennylane import numpy as anp
 
         dev = qml.device("default.qubit.autograd", wires=1)
 
@@ -292,11 +294,11 @@ class TestState:
             qml.RY(x, wires=0)
             return state()
 
-        x = anp.array(0.1, requires_grad=True)
+        x = pnp.array(0.1, requires_grad=True)
 
         def loss_fn(x):
             res = func(x)
-            return anp.real(res)  # This errors without the real. Likely an issue with complex
+            return pnp.real(res)  # This errors without the real. Likely an issue with complex
             # numbers in autograd
 
         d_loss_fn = qml.jacobian(loss_fn)
@@ -326,14 +328,14 @@ class TestState:
         """Test that the shape is correct for qml.state."""
         dev = qml.device("default.qubit", wires=3, shots=shots)
         res = qml.state()
-        assert res.shape(dev) == (1, 2**3)
+        assert res.shape(dev, Shots(shots)) == (2**3,)
 
     @pytest.mark.parametrize("s_vec", [(3, 2, 1), (1, 5, 10), (3, 1, 20)])
     def test_shape_shot_vector(self, s_vec):
         """Test that the shape is correct for qml.state with the shot vector too."""
         dev = qml.device("default.qubit", wires=3, shots=s_vec)
         res = qml.state()
-        assert res.shape(dev) == (3, 2**3)
+        assert res.shape(dev, Shots(s_vec)) == ((2**3,), (2**3,), (2**3,))
 
     def test_numeric_type(self):
         """Test that the numeric type of state measurements."""
@@ -697,11 +699,15 @@ class TestDensityMatrix:
         """Test that the shape is correct for qml.density_matrix."""
         dev = qml.device("default.qubit", wires=3, shots=shots)
         res = qml.density_matrix(wires=[0, 1])
-        assert res.shape(dev) == (1, 2**2, 2**2)
+        assert res.shape(dev, Shots(shots)) == (2**2, 2**2)
 
     @pytest.mark.parametrize("s_vec", [(3, 2, 1), (1, 5, 10), (3, 1, 20)])
     def test_shape_shot_vector(self, s_vec):
         """Test that the shape is correct for qml.density_matrix with the shot vector too."""
         dev = qml.device("default.qubit", wires=3, shots=s_vec)
         res = qml.density_matrix(wires=[0, 1])
-        assert res.shape(dev) == (3, 2**2, 2**2)
+        assert res.shape(dev, Shots(s_vec)) == (
+            (2**2, 2**2),
+            (2**2, 2**2),
+            (2**2, 2**2),
+        )
