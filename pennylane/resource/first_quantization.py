@@ -120,9 +120,7 @@ class FirstQuantization(Operation):
                 * np.array([np.cross(vectors[i], vectors[j]) for i, j in [(1, 2), (2, 0), (0, 1)]])
             )
             bbt = np.matrix(recip_vectors) @ np.matrix(recip_vectors).T
-            cubic = np.linalg.norm(bbt - (recip_vectors**2).max() * np.identity(3)) < 1e-6
-            if not cubic:
-                self.cubic = False
+            self.cubic = np.linalg.norm(bbt - (recip_vectors**2).max() * np.identity(3)) < 1e-6
 
         self.lamb = self.norm(
             self.n, self.eta, self.omega, self.error, self.br, self.charge, self.cubic, self.vectors
@@ -286,7 +284,7 @@ class FirstQuantization(Operation):
         if not isinstance(charge, int):
             raise ValueError("system charge must be an integer.")
 
-        if cubic is False:
+        if not cubic:
             return FirstQuantization._norm_noncubic(n, eta, error, br, charge, vectors)[0]
 
         l_z = eta + charge
@@ -611,7 +609,7 @@ class FirstQuantization(Operation):
         if not isinstance(charge, int):
             raise ValueError("system charge must be an integer.")
 
-        if cubic is False:
+        if not cubic:
             return FirstQuantization._qubit_cost_noncubic(n, eta, error, br, charge, vectors)
 
         lamb = FirstQuantization.norm(n, eta, omega, error, br=br, charge=charge)
