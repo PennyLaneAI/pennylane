@@ -45,6 +45,10 @@
   [(#4083)](https://github.com/PennyLaneAI/pennylane/pull/4083)
   [(#4093)](https://github.com/PennyLaneAI/pennylane/pull/4093)
 
+* Wrap all objects being queued in an `AnnotatedQueue` so that `AnnotatedQueue` is not dependent on
+  the hash of any operators/measurement processes.
+  [(#4087)](https://github.com/PennyLaneAI/pennylane/pull/4087)
+
 * Support for adjoint differentiation has been added to the `DefaultQubit2` device.
   [(#4037)](https://github.com/PennyLaneAI/pennylane/pull/4037)
 
