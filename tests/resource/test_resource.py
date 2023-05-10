@@ -287,5 +287,5 @@ resources_data = (
 def test_count_resources(ops_and_shots, expected_resources):
     """Test the count resources method."""
     ops, shots = ops_and_shots
-    computed_resources = _count_resources(QuantumScript(ops, shots))
+    computed_resources = _count_resources(QuantumScript(ops=ops, shots=shots))
     assert computed_resources == expected_resources
