@@ -185,7 +185,7 @@ class DefaultQubit2(Device):
                     tape_resources.gate_types,
                     tape_resources.gate_sizes,
                     tape_resources.depth,
-                    Shots(execution_config.shots),
+                    Shots(getattr(execution_config, "shots", None)),
                 )
                 self.tracker.update(resources=resources)
             self.tracker.update(batches=1, executions=len(circuits))
