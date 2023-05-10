@@ -293,7 +293,7 @@ class TestSampleMeasurements:
         x, y = np.array(0.732), np.array(0.488)
         qs = qml.tape.QuantumScript(
             [qml.RX(x, wires=0), qml.CNOT(wires=[0, 1]), qml.RY(y, wires=1)],
-            [qml.expval(qml.PauliZ(0)), qml.probs(wires=range(2)), qml.sample(wires=range(2))],
+            [qml.expval(qml.Hadamard(0)), qml.probs(wires=range(2)), qml.sample(wires=range(2))],
             shots=10000,
         )
 
@@ -306,7 +306,7 @@ class TestSampleMeasurements:
         assert all(isinstance(res, np.ndarray) for res in result)
 
         assert result[0].shape == ()
-        assert np.allclose(result[0], np.cos(x), atol=0.1)
+        assert np.allclose(result[0], np.cos(x) / np.sqrt(2), atol=0.1)
 
         assert result[1].shape == (4,)
         assert np.allclose(
@@ -395,7 +395,7 @@ class TestSampleMeasurements:
         shots = qml.measurements.Shots(shots)
         qs = qml.tape.QuantumScript(
             [qml.RX(x, wires=0), qml.CNOT(wires=[0, 1]), qml.RY(y, wires=1)],
-            [qml.expval(qml.PauliZ(0)), qml.probs(wires=range(2)), qml.sample(wires=range(2))],
+            [qml.expval(qml.Hadamard(0)), qml.probs(wires=range(2)), qml.sample(wires=range(2))],
             shots=shots,
         )
 
@@ -412,7 +412,7 @@ class TestSampleMeasurements:
             assert all(isinstance(meas_res, np.ndarray) for meas_res in shot_res)
 
             assert shot_res[0].shape == ()
-            assert np.allclose(shot_res[0], np.cos(x), atol=0.1)
+            assert np.allclose(shot_res[0], np.cos(x) / np.sqrt(2), atol=0.1)
 
             assert shot_res[1].shape == (4,)
             assert np.allclose(

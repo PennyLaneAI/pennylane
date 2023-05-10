@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Simulate a quantum script."""
-from typing import Union
+from typing import Union, Sequence
 
 # pylint: disable=protected-access
 import pennylane as qml
@@ -24,13 +24,18 @@ from .measure import measure
 from .sampling import measure_with_samples
 
 
-def simulate(circuit: qml.tape.QuantumScript) -> Union[tuple, TensorLike]:
+def simulate(
+    circuit: qml.tape.QuantumScript, rng: Union[None, int, Sequence[int]] = None
+) -> Union[tuple, TensorLike]:
     """Simulate a single quantum script.
 
     This is an internal function that will be called by the successor to ``default.qubit``.
 
     Args:
         circuit (.QuantumScript): The single circuit to simulate
+        rng (Union[None, int, array_like[int], SeedSequence, BitGenerator, Generator]): A
+            seed-like parameter matching that of ``seed`` for ``numpy.random.default_rng``.
+            If no value is provided, a default RNG will be used.
 
     Returns:
         tuple(TensorLike): The results of the simulation
@@ -67,10 +72,10 @@ def simulate(circuit: qml.tape.QuantumScript) -> Union[tuple, TensorLike]:
     # finite-shot case
 
     if len(circuit.measurements) == 1:
-        return measure_with_samples(circuit.measurements[0], state, shots=circuit.shots)
+        return measure_with_samples(circuit.measurements[0], state, shots=circuit.shots, rng=rng)
 
     results = tuple(
-        measure_with_samples(mp, state, shots=circuit.shots) for mp in circuit.measurements
+        measure_with_samples(mp, state, shots=circuit.shots, rng=rng) for mp in circuit.measurements
     )
 
     # no shot vector
