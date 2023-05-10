@@ -55,7 +55,7 @@ All debug log-statements currently added to the PennyLane execution pipeline out
 
 ## Logging example with PennyLane and JAX's JIT support
 
-As mentioned above, we have added execution function entry logging supports, including some supports for each target interface. We can examine this support for both internal and external packages, where we enable logs for JAX, which has support for Python-native log messages. To enable logging specfically for JAX, we can modify the `level` parameter for the `[loggers.jax]` entry in the `log_config.toml` file as:
+As mentioned above, we have added execution function entry logging supports, including some supports for each target interface. We can examine this support for both internal and external packages, where we enable logs for JAX, which has support for Python-native log messages. To enable logging specifcally for JAX, we can modify the `level` parameter for the `[loggers.jax]` entry in the `log_config.toml` file as:
 
 ```toml
 [loggers.jax]
@@ -63,7 +63,7 @@ handlers = ["qml_debug_stream"]
 level = "DEBUG"
 propagate = false
 ```
-where `handlers` represents some arbitrary custom class we define to deal with the message, `level` the associated level we want that package to log at, and `propagate` tells the logger to keep the message at the given handler level, or throw it up to the parent logger interface --- all these are adhereing to the logging API. We convert the highest supported log level from warning (less verbose) to debug (more verbose). We can at the same time change the PennyLane logging level to warnings and more severe, by making the following change:
+where `handlers` represents some arbitrary custom class we define to deal with the message, `level` the associated level we want that package to log at, and `propagate` tells the logger to keep the message at the given handler level, or throw it up to the parent logger interface --- all these are adhering to the logging API. We convert the highest supported log level from warning (less verbose) to debug (more verbose). We can at the same time change the PennyLane logging level to warnings and more severe, by making the following change:
 
 ```toml
 [loggers.pennylane]
@@ -175,12 +175,12 @@ The above features have been added for Torch, Tensorflow, JAX and autograd, and 
 
 ## Customizing logs
 
-As with any package that targets many domains, Python's loging is as extensible and flexible as it is hard to configure -- ideally we define some good defaults that meet our development goals, and only deviate from them if required. To change log-levels that are reporting on a package or module-wide basis, it is possible to do so by modidyfing the entries in the `log_config.toml` file, under the `[loggers]` section. In addition, if we want to send the logs elsewhere, we can adjust the `[handlers]` section, which controls what happens to each message. If we do not like the output format of the messages, we can adjust these through the `[formatters]` section. If we want to filter messages based on some criteria, we can add these to the respective handlers. As an example, we can go through the configuration file and explore the options.
+As with any package that targets many domains, Python's logging is as extensible and flexible as it is hard to configure -- ideally we define some good defaults that meet our development goals, and only deviate from them if required. To change log-levels that are reporting on a package or module-wide basis, it is possible to do so by modifying the entries in the `log_config.toml` file, under the `[loggers]` section. In addition, if we want to send the logs elsewhere, we can adjust the `[handlers]` section, which controls what happens to each message. If we do not like the output format of the messages, we can adjust these through the `[formatters]` section. If we want to filter messages based on some criteria, we can add these to the respective handlers. As an example, we can go through the configuration file and explore the options.
 
 
 ### Modifying the configuration options
 
-To allow for good expressivity when requiring logging, we must often adjust several parts of the ecosystem to ensure messages are formatted a ceratin way, we control logging internally to PennyLane different to external packages, messages are sent to somewhere we can make them actionable, and we can remove messages that are not 
+To allow for good expressivity when requiring logging, we must often adjust several parts of the ecosystem to ensure messages are formatted a certain way, we control logging internally to PennyLane different to external packages, messages are sent to somewhere we can make them actionable, and we can remove messages that are not 
 needed based on some criteria of interest. I'll break the `log_config.toml` file into sections to discuss how these can be adjusted to suit needs:
 
 
@@ -301,6 +301,6 @@ propagate = false
 
 ###############################################################################
 ```
-Finally, the `loggers` section which controls the inidividual loggers across the packages we are using. Python's logging framework follows a parent-child hierarchy, where a logging configuration set at a parent level will set all child levels with the same features. In this instance, we have configured JAX, PennyLane and our script to all log into the `qml_debug_stream` handler we defined earlier, and modified the child logger `"pennylane.qnode"` (parenthesis needed due to TOML parsing limitations) to use a different logger, in this case `qml_debug_stream_alt`. We are free to define the module/package log-level here (we opt for `DEBUG` for all), and to also use multiple handlers per logger (such as for logging to the standard output and files through `qml_debug_stream` and `qml_debug_file` simultaneously). Given the complexity explosion with configuring these options, the default features in `log_config.toml` all use the same log-level, and handler, which can be adjusted based on developer needs.
+Finally, the `loggers` section which controls the individual loggers across the packages we are using. Python's logging framework follows a parent-child hierarchy, where a logging configuration set at a parent level will set all child levels with the same features. In this instance, we have configured JAX, PennyLane and our script to all log into the `qml_debug_stream` handler we defined earlier, and modified the child logger `"pennylane.qnode"` (parenthesis needed due to TOML parsing limitations) to use a different logger, in this case `qml_debug_stream_alt`. We are free to define the module/package log-level here (we opt for `DEBUG` for all), and to also use multiple handlers per logger (such as for logging to the standard output and files through `qml_debug_stream` and `qml_debug_file` simultaneously). Given the complexity explosion with configuring these options, the default features in `log_config.toml` all use the same log-level, and handler, which can be adjusted based on developer needs.
 
 For further details and customization options I will suggest reading the Python logging documentation [how-to](https://docs.python.org/3/howto/logging.html#python logging) and ["advanced" tutorial](https://docs.python.org/3/howto/logging.html#logging-advanced-tutorial) level.
