@@ -31,7 +31,7 @@ import logging
 
 # See https://docs.python.org/3/howto/logging.html#configuring-logging-for-a-library
 logger = logging.getLogger(__name__)
-
+logger.addHandler(logging.NullHandler())
 
 class QNode:
     """Represents a quantum node in the hybrid computational graph.
