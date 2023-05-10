@@ -7,7 +7,7 @@ on:
 
 
 env:
-  JAX_VERSION: 0.4.7
+  JAX_VERSION: 0.4.9
   TF_VERSION: 2.12.0
   TORCH_VERSION: 2.0.0
   COVERAGE_FLAGS: "--cov=pennylane --cov-report=term-missing --cov-report=xml --no-flaky-report -p no:warnings --tb=native"
@@ -194,8 +194,7 @@ jobs:
           python -m pip install --upgrade pip && pip install wheel --upgrade
           pip install -r requirements-ci.txt --upgrade
           pip install -r requirements-dev.txt --upgrade
-          pip3 install git+https://github.com/google/jax.git@main
-          pip3 install jaxlib==$JAX_VERSION
+          pip install pytest-split jax==$JAX_VERSION jaxlib==$JAX_VERSION
 
       - name: Conditionally install cvxpy and cvxopt
         if: matrix.python-version != '3.11'
@@ -305,8 +304,7 @@ jobs:
 
       - name: Install JAX
         run: |
-          pip3 install git+https://github.com/google/jax.git@main
-          pip3 install jaxlib==$JAX_VERSION
+          pip install pytest-split jax==$JAX_VERSION jaxlib==$JAX_VERSION
 
 
       - name: Install PennyLane
@@ -401,8 +399,7 @@ jobs:
         run: pip3 install tensorflow~=$TF_VERSION keras~=$TF_VERSION
 
       - name: Install JAX
-        run: pip3 install git+https://github.com/google/jax.git@main
-             pip3 install jaxlib==$JAX_VERSION
+        run: pip install pytest-split jax==$JAX_VERSION jaxlib==$JAX_VERSION
 
       - name: Install KaHyPar and opt_einsum
         run: pip3 install kahypar==1.1.7 opt_einsum
@@ -505,8 +502,7 @@ jobs:
 
       - name: Install JAX
         run: |
-          pip3 install git+https://github.com/google/jax.git@main
-          pip3 install jaxlib==$JAX_VERSION
+          pip install pytest-split jax==$JAX_VERSION jaxlib==$JAX_VERSION
 
       - name: Install PennyLane
         run: |
@@ -566,8 +562,7 @@ jobs:
 
       - name: Install JAX
         run: |
-          pip3 install git+https://github.com/google/jax.git@main
-          pip3 install jaxlib==$JAX_VERSION
+          pip install pytest-split jax==$JAX_VERSION jaxlib==$JAX_VERSION
 
 
       - name: Install PennyLane
@@ -678,8 +673,7 @@ jobs:
       - name: Conditionally install Jax
         if: contains(matrix.config.device, 'jax')
         run: |
-          pip3 install git+https://github.com/google/jax.git@main
-          pip3 install jaxlib==$JAX_VERSION
+          pip install pytest-split jax==$JAX_VERSION jaxlib==$JAX_VERSION
 
 
       - name: Install PennyLane
