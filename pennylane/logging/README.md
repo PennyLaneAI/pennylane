@@ -300,7 +300,7 @@ for r in `seq 0 5 255`; do
     for g in `seq 0 5 255`; do
         for b in `seq 0 5 255`; do
             echo -e "\e[38;2;${r};${g};${b}m"'\\e[38;2;'"${r};${g};${b}"m" FOREGROUND\e[0m"
-            echo -e "\e[48;2;${r};${g};${b}m"'\\e[48;2;'"${r};${g};${b}"m" FOREGROUND\e[0m"
+            echo -e "\e[48;2;${r};${g};${b}m"'\\e[48;2;'"${r};${g};${b}"m" BACKGROUND\e[0m"
         done
     done
 done
