@@ -466,6 +466,21 @@ class TestSampleMeasurements:
 
         assert result[2].shape == (10000, 2)
 
+    def test_batch_tapes(self):
+        """Test that a batch of tapes with sampling works as expected"""
+        x = np.array(0.732)
+        qs1 = qml.tape.QuantumScript([qml.RX(x, wires=0)], [qml.sample(wires=(0, 1))], shots=100)
+        qs2 = qml.tape.QuantumScript([qml.RX(x, wires=0)], [qml.sample(wires=1)], shots=50)
+
+        dev = DefaultQubit2()
+        results = dev.execute((qs1, qs2))
+
+        assert isinstance(results, tuple)
+        assert len(results) == 2
+        assert all(isinstance(res, np.ndarray) for res in results)
+        assert results[0].shape == (100, 2)
+        assert results[1].shape == (50, 1)
+
 
 class TestExecutingBatches:
     @staticmethod
