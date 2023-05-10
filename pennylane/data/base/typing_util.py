@@ -58,7 +58,7 @@ UNSET = UnsetType.UNSET
 
 
 def get_type_str(cls: Union[type, str, None]) -> str:
-    """Return a string representing the type `cls`.
+    """Return a string representing the type ``cls``.
 
     If cls is a built-in type, such as 'str', returns the unqualified
         name.
