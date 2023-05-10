@@ -20,7 +20,6 @@ to a PennyLane Device class.
 import jax
 import jax.numpy as jnp
 import numpy as np
-import semantic_version
 
 import pennylane as qml
 from pennylane.interfaces import InterfaceUnsupportedError
