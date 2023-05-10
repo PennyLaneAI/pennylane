@@ -236,7 +236,7 @@ def _execute_bwd(
                     jacobians_from_callback = [jacobians_from_callback]
 
                 tangents_trainable = _filter_zeros_tangents(tangents[0])
-                print(tangents_trainable, tangents)
+
                 jvps = _compute_jvps(jacobians_from_callback, tangents_trainable, multi_measurements)
 
             else:
@@ -382,27 +382,13 @@ def _execute_fwd(
         res, jacs = execute_wrapper(primals[0])
         multi_measurements = [len(tape.measurements) > 1 for tape in tapes]
 
-        if len(tapes) == 1:
-            jacs = [jacs]
+        jacs_ = [jacs] if len(tapes) == 1 else jacs
+
         tangents = _filter_zeros_tangents(tangents[0])
-        jvps = _compute_jvps(jacs, tangents, multi_measurements)
-        return res, jvps
+        jvps = _compute_jvps(jacs_, tangents, multi_measurements)
+
+        return (res, jacs), (jvps, jacs)
 
     res = execute_wrapper(params)
 
-    tracing = []
-    for i, tape in enumerate(tapes):
-        if len(tape.measurements) == 1:
-            tracing.append(isinstance(res[i], jax.interpreters.ad.JVPTracer))
-        else:
-            tracing.append(any(isinstance(r, jax.interpreters.ad.JVPTracer) for r in res[i]))
-
-    tracing = any(tracing)
-
-    # When there are no tracers (not differentiating), we have the result of
-    # the forward pass and the jacobian, but only need the result of the
-    # forward pass
-    if len(res) == 2 and not tracing:
-        res = res[0]
-
-    return res
+    return res[0]
