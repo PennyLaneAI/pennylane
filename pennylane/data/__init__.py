@@ -17,9 +17,10 @@ from .attributes import (
     DatasetArray,
     DatasetDict,
     DatasetList,
+    DatasetNone,
+    DatasetOperator,
     DatasetScalar,
     DatasetString,
-    DatasetOperator,
 )
 from .base.attribute import AttributeInfo, AttributeType
 from .base.dataset import attribute
@@ -36,4 +37,5 @@ __all__ = (
     "DatasetList",
     "DatasetDict",
     "DatasetOperator",
+    "DatasetNone",
 )

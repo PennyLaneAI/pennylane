@@ -16,8 +16,8 @@ class that provides the mapper class."""
 
 
 import typing
-from types import MappingProxyType
 from collections.abc import MutableMapping
+from types import MappingProxyType
 from typing import Any, Dict, Iterator, Optional
 
 from pennylane.data.base.attribute import (
@@ -74,7 +74,7 @@ class AttributeTypeMapper(MutableMapping):
     def __setitem__(self, key: str, value: Any):
         self.set_item(key, value, None)
 
-    def move(self, src: str, dest: str):
+    def move(self, src: str, dest: str) -> None:
         """Moves the attribute stored at ``src`` in ``bind`` to ``dest``."""
         self.bind.move(src, dest)
         self._cache.pop(src, None)

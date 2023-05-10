@@ -14,9 +14,9 @@
 """Contains an AttributeType that allows for heterogenous lists of dataset
 types."""
 
+import typing
 from collections.abc import MutableSequence, Sequence
 from typing import Generic, Union, overload
-import typing
 
 from pennylane.data.base.attribute import AttributeType
 from pennylane.data.base.mapper import MapperMixin

@@ -16,9 +16,10 @@
 from .array import DatasetArray
 from .dictionary import DatasetDict
 from .list import DatasetList
+from .none import DatasetNone
+from .operator import DatasetOperator
 from .scalar import DatasetScalar
 from .string import DatasetString
-from .operator import DatasetOperator
 
 __all__ = (
     "DatasetArray",
@@ -27,4 +28,5 @@ __all__ = (
     "DatasetDict",
     "DatasetList",
     "DatasetOperator",
+    "DatasetNone",
 )
