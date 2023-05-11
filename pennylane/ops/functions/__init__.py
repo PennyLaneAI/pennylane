@@ -19,7 +19,7 @@ This module contains functions that act on operators and tapes.
 .. autosummary::
     :toctree: api
 
-    ~bind_parameters
+    ~bind_new_parameters
     ~dot
     ~eigvals
     ~equal
@@ -33,7 +33,7 @@ This module contains functions that act on operators and tapes.
     ~simplify
 
 """
-from .bind_parameters import bind_parameters
+from .bind_new_parameters import bind_new_parameters
 from .dot import dot
 from .eigvals import eigvals
 from .equal import equal
