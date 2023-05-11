@@ -16,7 +16,7 @@ types."""
 
 import typing
 from collections.abc import MutableSequence, Sequence
-from typing import Generic, Union, overload, List
+from typing import Generic, List, Union, overload
 
 from pennylane.data.base.attribute import AttributeType
 from pennylane.data.base.mapper import MapperMixin

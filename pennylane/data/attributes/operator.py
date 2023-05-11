@@ -1,3 +1,4 @@
+from copy import deepcopy
 from functools import lru_cache
 from typing import Dict, Generic, Tuple, Type, TypeVar
 
@@ -5,7 +6,6 @@ from pennylane.data.base.attribute import AttributeType
 from pennylane.data.base.mapper import AttributeTypeMapper
 from pennylane.data.base.typing_util import ZarrGroup, get_type_str
 from pennylane.operation import Operator
-from copy import deepcopy
 
 
 @lru_cache(1)

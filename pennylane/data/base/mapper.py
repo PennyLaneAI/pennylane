@@ -56,6 +56,7 @@ class AttributeTypeMapper(MutableMapping):
 
     @property
     def info(self) -> AttributeInfo:
+        """Return ``AttributeInfo`` for ``self.bind``."""
         return AttributeInfo(self.bind.attrs)
 
     def set_item(self, key: str, value: Any, info: Optional[AttributeInfo]):
