@@ -404,6 +404,7 @@ def _execute_fwd(
                 # Multi measurement
                 shape_dtype = original_shape[0] if len(tapes) == 1 else original_shape[i][0]
 
+                # Multi measurement
                 if multi_measurement:
                     jac_empty = tuple(
                         jax.numpy.zeros(shape=tensor.shape, dtype=tensor.dtype)
