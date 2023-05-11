@@ -19,20 +19,21 @@ This module contains functions that act on operators and tapes.
 .. autosummary::
     :toctree: api
 
+    ~bind_parameters
+    ~dot
     ~eigvals
     ~equal
+    ~evolve
     ~generator
     ~is_commuting
     ~is_hermitian
     ~is_unitary
     ~map_wires
     ~matrix
-    ~new_parameters
     ~simplify
-    ~evolve
-    ~dot
 
 """
+from .bind_parameters import bind_parameters
 from .dot import dot
 from .eigvals import eigvals
 from .equal import equal
@@ -43,5 +44,4 @@ from .is_hermitian import is_hermitian
 from .is_unitary import is_unitary
 from .map_wires import map_wires
 from .matrix import matrix
-from .new_parameters import new_parameters
 from .simplify import simplify
