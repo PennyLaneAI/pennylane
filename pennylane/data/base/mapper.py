@@ -18,7 +18,7 @@ class that provides the mapper class."""
 import typing
 from collections.abc import MutableMapping
 from types import MappingProxyType
-from typing import Any, Dict, Optional
+from typing import Any, Dict, Optional, Type
 
 from pennylane.data.base.attribute import (
     AttributeInfo,
@@ -27,6 +27,23 @@ from pennylane.data.base.attribute import (
     match_obj_type,
 )
 from pennylane.data.base.typing_util import ZarrGroup
+
+
+class AttributeTypeError(TypeError):
+    key: str
+    expected_type: Type[AttributeType]
+    type_: Type[AttributeType]
+
+    def __init__(
+        self, key: str, expected_type: Type[AttributeType], type_: Type[AttributeType]
+    ) -> None:
+        self.key = key
+        self.expected_type = expected_type
+        self.type_ = type_
+
+        super().__init__(
+            f"Attribute '{key}' requires value compatible with '{expected_type}', got '{type_}'"
+        )
 
 
 class AttributeTypeMapper(MutableMapping):
@@ -59,13 +76,24 @@ class AttributeTypeMapper(MutableMapping):
         """Return ``AttributeInfo`` for ``self.bind``."""
         return AttributeInfo(self.bind.attrs)
 
-    def set_item(self, key: str, value: Any, info: Optional[AttributeInfo]):
+    def set_item(
+        self,
+        key: str,
+        value: Any,
+        info: Optional[AttributeInfo],
+        require_type: Optional[Type[AttributeType]] = None,
+    ):
         """Creates or replaces attribute ``key`` with ``value``, optionally
         including ``info``."""
         if isinstance(value, AttributeType):
+            if require_type and type(value) is not require_type:
+                raise AttributeTypeError(key, require_type, type(value))
+
             value._set_parent(self.bind, key)  # pylint: disable=protected-access
             if info:
                 value.info.load(info)
+        elif require_type:
+            require_type(value, info, parent_and_key=(self.bind, key))
         else:
             attr_type = match_obj_type(value)
             attr_type(value, info, parent_and_key=(self.bind, key))

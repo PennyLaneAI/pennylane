@@ -51,8 +51,9 @@ class TestDataset:
 
         ds = MyDataset(description="test")
 
-        ds.description = "a dataset"
+        ds.description = "abc"
         assert ds.attrs["description"].info.doc == MyDataset.fields["description"].info.doc
+        assert ds.attrs["description"].info["type_id"] == "string"
 
     def test_setattr_with_attribute_type_updates_info(self):
         """Test that when __setattr__ is called with an AttributeType, the info on
