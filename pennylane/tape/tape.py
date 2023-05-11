@@ -217,7 +217,7 @@ def expand_tape(tape, depth=1, stop_at=None, expand_measurements=False):
 
     # preserves inheritance structure
     # if tape is a QuantumTape, returned object will be a quantum tape
-    new_tape = tape.__class__(new_ops, new_measurements, new_prep, _update=False)
+    new_tape = tape.__class__(new_ops, new_measurements, new_prep, shots=tape.shots, _update=False)
 
     # Update circuit info
     new_tape.wires = copy.copy(tape.wires)
@@ -240,6 +240,8 @@ class QuantumTape(QuantumScript, AnnotatedQueue):
         prep (Iterable[Operator]): Any state preparations to perform at the start of the circuit
 
     Keyword Args:
+        shots (None, int, Sequence[int], ~.Shots): Number and/or batches of shots for execution.
+            Note that this property is still experimental and under development.
         name (str): a name given to the quantum tape
         do_queue=True (bool): Whether or not to queue. Defaults to ``True`` for ``QuantumTape``.
         _update=True (bool): Whether or not to set various properties on initialization. Setting
@@ -347,11 +349,18 @@ class QuantumTape(QuantumScript, AnnotatedQueue):
     """threading.RLock: Used to synchronize appending to/popping from global QueueingContext."""
 
     def __init__(
-        self, ops=None, measurements=None, prep=None, name=None, do_queue=True, _update=True
-    ):
+        self,
+        ops=None,
+        measurements=None,
+        prep=None,
+        shots=None,
+        name=None,
+        do_queue=True,
+        _update=True,
+    ):  # pylint: disable=too-many-arguments
         self.do_queue = do_queue
         AnnotatedQueue.__init__(self)
-        QuantumScript.__init__(self, ops, measurements, prep, name=name, _update=_update)
+        QuantumScript.__init__(self, ops, measurements, prep, shots, name=name, _update=_update)
 
     def __enter__(self):
         QuantumTape._lock.acquire()

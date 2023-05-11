@@ -285,18 +285,15 @@ class gradient_transform(qml.batch_transform):
         def jacobian_wrapper(
             *args, **kwargs
         ):  # pylint: disable=too-many-return-statements, too-many-branches, too-many-statements
-            argnum = tkwargs.get("argnum", None)
             argnums = tkwargs.get("argnums", None)
 
             interface = qml.math.get_interface(*args)
             trainable_params = qml.math.get_trainable_indices(args)
 
-            if interface == "jax" and argnum:
-                warnings.warn(
-                    "argnum is deprecated with the Jax interface. You should use argnums instead."
+            if interface == "jax" and tkwargs.get("argnum", None):
+                raise qml.QuantumFunctionError(
+                    "argnum does not work with the Jax interface. You should use argnums instead."
                 )
-                tkwargs.pop("argnum")
-                argnums = argnum
 
             if interface == "jax" and not trainable_params:
                 if argnums is None:

@@ -40,6 +40,7 @@ class NoMatOp(Operation):
     # pylint: disable=missing-function-docstring
     num_wires = 1
 
+    # pylint: disable=arguments-renamed, invalid-overridden-method
     @property
     def has_matrix(self):
         return False
@@ -55,12 +56,15 @@ class NoMatNoDecompOp(Operation):
     # pylint: disable=missing-function-docstring
     num_wires = 1
 
+    # pylint: disable=arguments-renamed, invalid-overridden-method
     @property
     def has_matrix(self):
         return False
 
 
 class TestPrivateHelpers:
+    """Test the private helpers for preprocessing."""
+
     @pytest.mark.parametrize(
         "op, expected",
         [
@@ -81,6 +85,7 @@ class TestPrivateHelpers:
 
     @pytest.mark.parametrize("op", (qml.PauliX(0), qml.RX(1.2, wires=0), qml.QFT(wires=range(3))))
     def test_operator_decomposition_gen_accepted_operator(self, op):
+        """Test the _operator_decomposition_gen function on an operator that is accepted."""
         casted_to_list = list(_operator_decomposition_gen(op))
         assert len(casted_to_list) == 1
         assert casted_to_list[0] is op
@@ -98,6 +103,8 @@ class TestPrivateHelpers:
         """Test that _operator_decomposition_gen handles a decomposition that requires different depths of decomposition."""
 
         class RaggedDecompositionOp(Operation):
+            """class with a ragged decomposition."""
+
             num_wires = 1
 
             def decomposition(self):
@@ -180,6 +187,8 @@ class TestExpandFnValidation:
         """Test that a device error is raised if decomposition enters an infinite loop."""
 
         class InfiniteOp(qml.operation.Operation):
+            """An op with an infinite decomposition."""
+
             num_wires = 1
 
             def decomposition(self):
@@ -191,17 +200,22 @@ class TestExpandFnValidation:
 
 
 class TestExpandFnTransformations:
-    def test_expand_fn_expand_unsupported_op(self):
+    """Tests for the behavior of the `expand_fn` helper."""
+
+    @pytest.mark.parametrize("shots", [None, 100])
+    def test_expand_fn_expand_unsupported_op(self, shots):
         """Test that expand_fn expands the tape when unsupported operators are present"""
         ops = [qml.Hadamard(0), NoMatOp(1), qml.RZ(0.123, wires=1)]
         measurements = [qml.expval(qml.PauliZ(0)), qml.probs()]
-        tape = QuantumScript(ops=ops, measurements=measurements)
+        tape = QuantumScript(ops=ops, measurements=measurements, shots=shots)
 
         expanded_tape = expand_fn(tape)
         expected = [qml.Hadamard(0), qml.PauliX(1), qml.PauliY(1), qml.RZ(0.123, wires=1)]
 
         for op, exp in zip(expanded_tape.circuit, expected + measurements):
             assert qml.equal(op, exp)
+
+        assert tape.shots == expanded_tape.shots
 
     def test_expand_fn_defer_measurement(self):
         """Test that expand_fn defers mid-circuit measurements."""
@@ -215,7 +229,10 @@ class TestExpandFnTransformations:
         tape = QuantumScript(ops=ops, measurements=measurements)
 
         expanded_tape = expand_fn(tape)
-        expected = [qml.Hadamard(0), qml.ops.Controlled(qml.RX(0.123, wires=1), 0)]
+        expected = [
+            qml.Hadamard(0),
+            qml.ops.Controlled(qml.RX(0.123, wires=1), 0),
+        ]  # pylint: disable=no-member
 
         for op, exp in zip(expanded_tape, expected + measurements):
             assert qml.equal(op, exp)
@@ -239,6 +256,8 @@ class TestExpandFnTransformations:
 
 
 class TestBatchTransform:
+    """Tests for the batch transformations."""
+
     def test_batch_transform_no_batching(self):
         """Test that batch_transform does nothing when no batching is required."""
         ops = [qml.Hadamard(0), qml.CNOT([0, 1]), qml.RX(0.123, wires=1)]
@@ -278,46 +297,40 @@ class TestBatchTransform:
 class TestAdjointDiffTapeValidation:
     """Unit tests for validate_and_expand_adjoint"""
 
+    @staticmethod
+    def assert_validate_fails_with(qs, err):
+        """Check that an specific error is raised."""
+        res = validate_and_expand_adjoint(qs)
+        assert isinstance(res, DeviceError)
+        assert res.args == (err,)
+
     def test_not_expval(self):
         """Test if a QuantumFunctionError is raised for a tape with measurements that are not
         expectation values"""
 
         measurements = [qml.expval(qml.PauliZ(0)), qml.var(qml.PauliX(3)), qml.sample()]
         qs = QuantumScript(ops=[], measurements=measurements)
-
-        with pytest.raises(
-            DeviceError,
-            match="Adjoint differentiation method does not support measurement",
-        ):
-            validate_and_expand_adjoint(qs)
+        self.assert_validate_fails_with(
+            qs, "Adjoint differentiation method does not support measurement VarianceMP."
+        )
 
     def test_unsupported_op(self):
         """Test if a QuantumFunctionError is raised for an unsupported operation, i.e.,
         multi-parameter operations that are not qml.Rot"""
 
         qs = QuantumScript([qml.U2(0.1, 0.2, wires=[0])], [qml.expval(qml.PauliZ(2))])
+        self.assert_validate_fails_with(
+            qs,
+            'The U2(0.1, 0.2, wires=[0]) operation is not supported using the "adjoint" differentiation method.',
+        )
 
-        with pytest.raises(
-            DeviceError,
-            match='operation is not supported using the "adjoint" differentiation method',
-        ):
-            validate_and_expand_adjoint(qs)
-
-    @pytest.mark.parametrize(
-        "obs",
-        [
-            qml.Hamiltonian([2, 0.5], [qml.PauliZ(0), qml.PauliY(1)]),
-        ],
-    )
-    def test_unsupported_obs(self, obs):
+    def test_unsupported_obs(self):
         """Test that the correct error is raised if a Hamiltonian or Sum measurement is differentiated"""
+        obs = qml.Hamiltonian([2, 0.5], [qml.PauliZ(0), qml.PauliY(1)])
         qs = QuantumScript([qml.RX(0.5, wires=1)], [qml.expval(obs)])
-
-        with pytest.raises(
-            DeviceError,
-            match="Adjoint differentiation method does not support observable",
-        ):
-            validate_and_expand_adjoint(qs)
+        self.assert_validate_fails_with(
+            qs, "Adjoint differentiation method does not support observable Hamiltonian."
+        )
 
     def test_trainable_hermitian_warns(self):
         """Test attempting to compute the gradient of a tape that obtains the
@@ -351,7 +364,8 @@ class TestAdjointDiffTapeValidation:
         assert all(qml.equal(o1, o2) for o1, o2 in zip(qs.measurements, qs_valid.measurements))
         assert qs.trainable_params == qs_valid.trainable_params
 
-    def test_valid_tape_with_expansion(self):
+    @pytest.mark.parametrize("shots", [None, 100])
+    def test_valid_tape_with_expansion(self, shots):
         """Test that a tape that is valid with operations that need to be expanded doesn't raise errors
         and is expanded"""
         prep_op = qml.QubitStateVector(
@@ -361,6 +375,7 @@ class TestAdjointDiffTapeValidation:
             ops=[qml.Rot(0.1, 0.2, 0.3, wires=[0])],
             measurements=[qml.expval(qml.PauliZ(0))],
             prep=[prep_op],
+            shots=shots,
         )
 
         qs.trainable_params = {1, 2, 3}
@@ -376,19 +391,32 @@ class TestAdjointDiffTapeValidation:
         assert all(qml.equal(o1, o2) for o1, o2 in zip(qs_valid.operations, expected_ops))
         assert all(qml.equal(o1, o2) for o1, o2 in zip(qs.measurements, qs_valid.measurements))
         assert qs.trainable_params == qs_valid.trainable_params
+        assert qs.shots == qs_valid.shots
 
 
 class TestPreprocess:
     """Unit tests for ``qml.devices.qubit.preprocess``."""
 
-    def test_preprocess_finite_shots_error(self):
-        """Test that preprocess throws an error if finite shots are present."""
-        config = qml.devices.ExecutionConfig(shots=100)
+    def test_choose_best_gradient_method(self):
+        """Test that preprocessing chooses backprop as the best gradient method."""
         tape = QuantumScript(ops=[], measurements=[])
-        with pytest.raises(
-            qml.DeviceError, match="The Python Device does not support finite shots."
-        ):
-            _ = preprocess([tape], execution_config=config)
+        config = qml.devices.ExecutionConfig(gradient_method="best")
+        _, _, config = preprocess([tape], config)
+        assert config.gradient_method == "backprop"
+        assert config.use_device_gradient
+        assert not config.grad_on_execution
+
+    def test_config_choices_for_adjoint(self):
+        """Test that preprocessing request grad on execution and says to use the device gradient if adjoint is requested."""
+
+        tape = QuantumScript(ops=[], measurements=[])
+        config = qml.devices.ExecutionConfig(
+            gradient_method="adjoint", use_device_gradient=None, grad_on_execution=None
+        )
+        _, _, new_config = preprocess([tape], config)
+
+        assert new_config.use_device_gradient
+        assert new_config.grad_on_execution
 
     def test_preprocess_batch_transform(self):
         """Test that preprocess returns the correct tapes when a batch transform
@@ -401,7 +429,7 @@ class TestPreprocess:
             QuantumScript(ops=ops, measurements=[measurements[1]]),
         ]
 
-        res_tapes, batch_fn = preprocess(tapes)
+        res_tapes, batch_fn, _ = preprocess(tapes)
         expected_ops = [
             [qml.Hadamard(0), qml.CNOT([0, 1]), qml.RX(np.pi, wires=1)],
             [qml.Hadamard(0), qml.CNOT([0, 1]), qml.RX(np.pi / 2, wires=1)],
@@ -429,7 +457,7 @@ class TestPreprocess:
             QuantumScript(ops=ops, measurements=measurements[1]),
         ]
 
-        res_tapes, batch_fn = preprocess(tapes)
+        res_tapes, batch_fn, _ = preprocess(tapes)
         expected = [qml.Hadamard(0), qml.PauliX(1), qml.PauliY(1), qml.RZ(0.123, wires=1)]
 
         assert len(res_tapes) == 2
@@ -451,7 +479,7 @@ class TestPreprocess:
             QuantumScript(ops=ops, measurements=[measurements[1]]),
         ]
 
-        res_tapes, batch_fn = preprocess(tapes)
+        res_tapes, batch_fn, _ = preprocess(tapes)
         expected_ops = [
             [qml.Hadamard(0), qml.PauliX(1), qml.PauliY(1), qml.RX(np.pi, wires=1)],
             [qml.Hadamard(0), qml.PauliX(1), qml.PauliY(1), qml.RX(np.pi / 2, wires=1)],
@@ -519,7 +547,7 @@ class TestPreprocess:
         )
         execution_config = qml.devices.experimental.ExecutionConfig(gradient_method="adjoint")
 
-        expanded_tapes, _ = preprocess([qs], execution_config)
+        expanded_tapes, _, _ = preprocess([qs], execution_config)
 
         assert len(expanded_tapes) == 1
         expanded_qs = expanded_tapes[0]
