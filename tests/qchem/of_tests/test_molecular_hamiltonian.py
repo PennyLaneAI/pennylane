@@ -211,6 +211,9 @@ def test_differentiable_hamiltonian(symbols, geometry, h_ref_data):
         Hamiltonian(np.ones(len(h_ref.coeffs)), h_ref.ops)
     )
 
+    assert h_args.coeffs.requires_grad == True
+    assert h_noargs.coeffs.requires_grad == False
+
 
 @pytest.mark.parametrize(
     ("symbols", "geometry", "method", "wiremap", "grouping"),
@@ -321,3 +324,39 @@ def test_diff_hamiltonian_error(symbols, geometry):
 
     with pytest.raises(ValueError, match="Openshell systems are not supported"):
         qchem.molecular_hamiltonian(symbols, geometry, mult=3)[0]
+
+
+@pytest.mark.parametrize(
+    ("symbols", "geometry", "method", "args"),
+    [
+        (
+            ["H", "H"],
+            np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 2.0]]),
+            "pyscf",
+            None,
+        ),
+        (
+            ["H", "H"],
+            np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 2.0]]),
+            "dhf",
+            None,
+        ),
+        (
+            ["H", "H"],
+            np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 2.0]]),
+            "dhf",
+            [np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 2.0]])],
+        ),
+    ],
+)
+def test_real_hamiltonian(symbols, geometry, method, args, tmpdir):
+    r"""Test that the generated Hamiltonian has real coefficients."""
+    hamiltonian, qubits = qchem.molecular_hamiltonian(
+        symbols=symbols,
+        coordinates=geometry,
+        method=method,
+        args=args,
+        outpath=tmpdir.strpath,
+    )
+
+    assert np.isrealobj(hamiltonian.coeffs)
