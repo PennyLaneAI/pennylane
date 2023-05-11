@@ -50,9 +50,10 @@ class DatasetList(
         return grp
 
     def copy_value(self) -> List[T]:
-        return {key: attr.copy_value() for key, attr in self._mapper.items()}
+        return [self._mapper[str(i)].copy_value() for i in range(len(self))]
 
     def copy(self) -> List[T]:
+        """Returns a copy of this list as a builtin `list`."""
         return self.copy_value()
 
     def insert(self, index: int, value: Union[T, AttributeType[ZarrAny, T, T]]):
