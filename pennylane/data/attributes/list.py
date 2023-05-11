@@ -49,6 +49,12 @@ class DatasetList(
 
         return grp
 
+    def copy_value(self) -> List[T]:
+        return {key: attr.copy_value() for key, attr in self._mapper.items()}
+
+    def copy(self) -> List[T]:
+        return self.copy_value()
+
     def insert(self, index: int, value: Union[T, AttributeType[ZarrAny, T, T]]):
         """Implements the insert() method."""
         if index < 0:

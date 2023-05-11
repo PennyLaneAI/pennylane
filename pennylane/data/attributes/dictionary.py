@@ -51,11 +51,11 @@ class DatasetDict(
 
         return grp
 
-    def copy(self) -> Dict[str, T]:
-        return self.copy_value()
-
     def copy_value(self) -> Dict[str, T]:
         return {key: attr.copy_value() for key, attr in self._mapper.items()}
+
+    def copy(self) -> Dict[str, T]:
+        return self.copy_value()
 
     def __getitem__(self, __key: str) -> T:
         return self._mapper[__key].get_value()
