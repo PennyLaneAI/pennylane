@@ -478,7 +478,6 @@ def execute(
     # Exiting early if we do not need to deal with an interface boundary
     no_interface_boundary_required = interface is None or gradient_fn in {None, "backprop"}
     if no_interface_boundary_required:
-
         device_supports_interface_data = (
             new_device_interface
             or config.interface is None
