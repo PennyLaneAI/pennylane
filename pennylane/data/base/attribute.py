@@ -346,9 +346,9 @@ class AttributeType(ABC, Generic[Zarr, T, InitValueType]):
         __type_consumer_registry
     )
 
-    def __init_subclass__(
+    def __init_subclass__(  # pylint: disable=arguments-differ
         cls, *, abstract: bool = False
-    ) -> None:  # pylint: disable=arguments-differ
+    ) -> None:
         if abstract:
             return super().__init_subclass__()
 

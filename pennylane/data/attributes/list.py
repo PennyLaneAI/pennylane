@@ -91,12 +91,6 @@ class DatasetList(
     def __repr__(self) -> str:
         return repr(list(self))
 
-    def copy_value(self) -> List[T]:
-        return [self._mapper[str(i)].copy_value() for i in range(len(self))]
-
-    def copy(self) -> List[T]:
-        return self.copy_value()
-
     @overload
     def __getitem__(self, index: slice) -> typing.List[T]:
         ...
