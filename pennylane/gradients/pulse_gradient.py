@@ -110,7 +110,7 @@ def _split_evol_tapes(tape, split_evolve_ops, op_idx):
     ops_pre = tape.operations[:op_idx]
     ops_post = tape.operations[op_idx + 1 :]
     return [
-        qml.tape.QuantumScript(ops_pre + split + ops_post, tape.measurements)
+        qml.tape.QuantumScript(ops_pre + split + ops_post, tape.measurements, shots=tape.shots)
         for split in split_evolve_ops
     ]
 

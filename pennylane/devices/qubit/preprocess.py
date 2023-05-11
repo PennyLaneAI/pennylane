@@ -138,7 +138,7 @@ def validate_and_expand_adjoint(
         else:
             trainable_params.append(k)
 
-    expanded_tape = qml.tape.QuantumScript(expanded_ops, measurements, prep)
+    expanded_tape = qml.tape.QuantumScript(expanded_ops, measurements, prep, circuit.shots)
     expanded_tape.trainable_params = trainable_params
 
     return expanded_tape
@@ -176,7 +176,9 @@ def expand_fn(circuit: qml.tape.QuantumScript) -> qml.tape.QuantumScript:
                 "Reached recursion limit trying to decompose operations. "
                 "Operator decomposition may have entered an infinite loop."
             ) from e
-        circuit = qml.tape.QuantumScript(new_ops, circuit.measurements, circuit._prep)
+        circuit = qml.tape.QuantumScript(
+            new_ops, circuit.measurements, circuit._prep, circuit.shots
+        )
 
     for observable in circuit.observables:
         if isinstance(observable, Tensor):

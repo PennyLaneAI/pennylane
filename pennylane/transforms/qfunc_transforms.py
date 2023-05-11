@@ -145,7 +145,7 @@ class single_tape_transform:
     def __call__(self, tape, *args, **kwargs):
         with qml.queuing.AnnotatedQueue() as q:
             self.transform_fn(tape, *args, **kwargs)
-        qs = qml.tape.QuantumScript.from_queue(q)
+        qs = qml.tape.QuantumScript.from_queue(q, shots=tape.shots)
         for obj, info in q.items():
             qml.queuing.QueuingManager.append(obj, **info)
         return qs

@@ -179,6 +179,23 @@ class TestHamiltonianExpand:
         tapes, fn = hamiltonian_expand(qs, group=True)
         assert len(tapes) == 2
 
+    @pytest.mark.parametrize("shots", [None, 100])
+    @pytest.mark.parametrize("group", [True, False])
+    def test_shots_attribute(self, shots, group):
+        """Tests that the shots attribute is copied to the new tapes"""
+        H = qml.Hamiltonian([1.0, 2.0, 3.0], [qml.PauliZ(0), qml.PauliX(1), qml.PauliX(0)])
+
+        with AnnotatedQueue() as q:
+            qml.Hadamard(wires=0)
+            qml.CNOT(wires=[0, 1])
+            qml.PauliX(wires=2)
+            qml.expval(H)
+
+        tape = QuantumScript.from_queue(q, shots=shots)
+        new_tapes, _ = hamiltonian_expand(tape, group=group)
+
+        assert all(new_tape.shots == tape.shots for new_tape in new_tapes)
+
     def test_hamiltonian_error(self):
         """Tests that the script passed to hamiltonian_expand must end with a hamiltonian."""
         qscript = QuantumScript(measurements=[qml.expval(qml.PauliZ(0))])
@@ -430,6 +447,23 @@ class TestSumExpand:
 
         tapes, fn = sum_expand(qs, group=True)
         assert len(tapes) == 2
+
+    @pytest.mark.parametrize("shots", [None, 100])
+    @pytest.mark.parametrize("group", [True, False])
+    def test_shots_attribute(self, shots, group):
+        """Tests that the shots attribute is copied to the new tapes"""
+        H = qml.Hamiltonian([1.0, 2.0, 3.0], [qml.PauliZ(0), qml.PauliX(1), qml.PauliX(0)])
+
+        with AnnotatedQueue() as q:
+            qml.Hadamard(wires=0)
+            qml.CNOT(wires=[0, 1])
+            qml.PauliX(wires=2)
+            qml.expval(H)
+
+        tape = QuantumScript.from_queue(q, shots=shots)
+        new_tapes, _ = sum_expand(tape, group=group)
+
+        assert all(new_tape.shots == tape.shots for new_tape in new_tapes)
 
     def test_non_sum_tape(self):
         """Test that the ``sum_expand`` function returns the input tape if it does not
