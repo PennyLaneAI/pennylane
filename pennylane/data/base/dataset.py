@@ -223,8 +223,8 @@ class Dataset(MapperMixin, metaclass=_DatasetMeta):
             return
 
         if __name in self.fields:
-            info = self.fields[__name].info
-            self._mapper.set_item(__name, __value, info)
+            field = self.fields[__name]
+            self._mapper.set_item(__name, __value, field.info, field.attribute_type)
         else:
             self._mapper[__name] = __value
 
