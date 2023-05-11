@@ -15,7 +15,7 @@
 This module contains the qml.new_parameters function.
 """
 
-from typing import Union, Sequence
+from typing import Optional, Sequence
 import copy
 
 import pennylane as qml
@@ -25,7 +25,7 @@ from pennylane.operation import Operator
 from ..op_math import CompositeOp, SymbolicOp, ScalarSymbolicOp
 
 
-def new_parameters(op: Operator, params: Sequence[Union[float, TensorLike]] = None) -> Operator:
+def new_parameters(op: Operator, params: Optional[Sequence[TensorLike]] = None) -> Operator:
     """Create a new operator with updated parameters
 
     This function takes an :class:`~.Operator` and new parameters as input and
@@ -33,7 +33,7 @@ def new_parameters(op: Operator, params: Sequence[Union[float, TensorLike]] = No
 
     Args:
         op (.Operator): Operator to update
-        params (Sequence[Union[float, Sequence]]): New parameters to create operator with
+        params (Sequence[TensorLike]): New parameters to create operator with
 
     Returns:
         .Operator: New operator with updated parameters
@@ -43,6 +43,8 @@ def new_parameters(op: Operator, params: Sequence[Union[float, TensorLike]] = No
     """
     if params is None:
         params = []
+
+    # TODO: Figure out how to support Hamiltonian
 
     if len(params) != op.num_params:
         raise ValueError(
