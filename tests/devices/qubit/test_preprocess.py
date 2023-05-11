@@ -26,6 +26,7 @@ from pennylane.devices.qubit.preprocess import (
     batch_transform,
     preprocess,
     validate_and_expand_adjoint,
+    validate_measurements,
 )
 from pennylane.measurements import MidMeasureMP, MeasurementValue
 from pennylane.tape import QuantumScript
@@ -170,12 +171,6 @@ class TestExpandFnValidation:
         ):
             expand_fn(qs)
 
-    def test_only_state_based_measurements(self):
-        """Test that a device error is raised if a measurement is not a state measurement."""
-        qs = QuantumScript([], [qml.expval(qml.PauliZ(0)), qml.sample()])
-        with pytest.raises(DeviceError, match=r"Measurement process sample"):
-            expand_fn(qs)
-
     def test_expand_fn_passes(self):
         """Test that expand_fn doesn't throw any errors for a valid circuit"""
         tape = QuantumScript(
@@ -253,6 +248,69 @@ class TestExpandFnTransformations:
         qs = QuantumScript([NoMatOp("a")], [qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliY(0))])
         new_qs = expand_fn(qs)
         assert new_qs.measurements == qs.measurements
+
+
+class TestValidateMeasurements:
+    """Unit tests for the validate_measurements function"""
+
+    @pytest.mark.parametrize(
+        "measurements",
+        [
+            [qml.state()],
+            [qml.expval(qml.PauliZ(0))],
+            [qml.state(), qml.expval(qml.PauliZ(0)), qml.probs(0)],
+            [qml.state(), qml.vn_entropy(0), qml.mutual_info(0, 1)],
+        ],
+    )
+    def test_only_state_measurements(self, measurements):
+        """Test that an analytic circuit containing only StateMeasurements works"""
+        tape = QuantumScript([], measurements, shots=None)
+        validate_measurements(tape)
+
+    @pytest.mark.parametrize(
+        "measurements",
+        [
+            [qml.sample(wires=0)],
+            [qml.expval(qml.PauliZ(0))],
+            [qml.sample(wires=0), qml.expval(qml.PauliZ(0)), qml.probs(0)],
+        ],
+    )
+    def test_only_sample_measurements(self, measurements):
+        """Test that a circuit with finite shots containing only SampleMeasurements works"""
+        tape = QuantumScript([], measurements, shots=100)
+        validate_measurements(tape)
+
+    @pytest.mark.parametrize(
+        "measurements",
+        [
+            [qml.sample(wires=0)],
+            [qml.state(), qml.sample(wires=0)],
+            [qml.sample(wires=0), qml.expval(qml.PauliZ(0))],
+        ],
+    )
+    def test_analytic_with_samples(self, measurements):
+        """Test that an analytic circuit containing SampleMeasurements raises an error"""
+        tape = QuantumScript([], measurements, shots=None)
+
+        msg = "Analytic circuits must only contain StateMeasurements"
+        with pytest.raises(DeviceError, match=msg):
+            validate_measurements(tape)
+
+    @pytest.mark.parametrize(
+        "measurements",
+        [
+            [qml.state()],
+            [qml.sample(wires=0), qml.state()],
+            [qml.expval(qml.PauliZ(0)), qml.state(), qml.sample(wires=0)],
+        ],
+    )
+    def test_finite_shots_with_state(self, measurements):
+        """Test that a circuit with finite shots containing StateMeasurements raises an error"""
+        tape = QuantumScript([], measurements, shots=100)
+
+        msg = "Circuits with finite shots must only contain SampleMeasurements"
+        with pytest.raises(DeviceError, match=msg):
+            validate_measurements(tape)
 
 
 class TestBatchTransform:
