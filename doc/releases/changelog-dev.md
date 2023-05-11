@@ -15,9 +15,6 @@
 
 <h3>Breaking changes 💔</h3>
 
-* Support for python 3.8 is removed.
-  [(#4077)](https://github.com/PennyLaneAI/pennylane/pull/4077)
-
 <h3>Deprecations 👋</h3>
 
 <h3>Documentation 📝</h3>

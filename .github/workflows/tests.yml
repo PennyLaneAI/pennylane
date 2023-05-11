@@ -7,7 +7,7 @@ on:
 
 
 env:
-  JAX_VERSION: 0.4.9
+  JAX_VERSION: 0.4.3
   TF_VERSION: 2.12.0
   TORCH_VERSION: 2.0.0
   COVERAGE_FLAGS: "--cov=pennylane --cov-report=term-missing --cov-report=xml --no-flaky-report -p no:warnings --tb=native"
@@ -19,7 +19,7 @@ jobs:
 
     strategy:
       matrix:
-        python-version: [3.9, '3.11']
+        python-version: [3.8, '3.11']
 
     steps:
       - name: Cancel Previous Runs
@@ -71,7 +71,7 @@ jobs:
 
     strategy:
       matrix:
-        python-version: [3.9, '3.10', '3.11']
+        python-version: [3.8, 3.9, '3.10', '3.11']
 
     steps:
       - name: Cancel Previous Runs
@@ -123,7 +123,7 @@ jobs:
     strategy:
       matrix:
         group: [1, 2]
-        python-version: [3.9, '3.10']
+        python-version: [3.8, '3.10']
 
     steps:
       - name: Cancel Previous Runs
@@ -172,7 +172,7 @@ jobs:
     strategy:
       matrix:
         group: [1, 2]
-        python-version: [3.9, '3.11']
+        python-version: [3.8, '3.11']
 
     steps:
       - name: Cancel Previous Runs
@@ -225,7 +225,7 @@ jobs:
     strategy:
       matrix:
         group: [1, 2]
-        python-version: [3.9, '3.10', '3.11']
+        python-version: [3.8, 3.9, '3.10', '3.11']
 
     steps:
       - name: Cancel Previous Runs
@@ -288,7 +288,7 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v2
         with:
-          python-version: 3.9
+          python-version: 3.8
 
       - name: Install dependencies
         run: |
@@ -303,9 +303,7 @@ jobs:
         run: pip3 install tensorflow~=$TF_VERSION keras~=$TF_VERSION
 
       - name: Install JAX
-        run: |
-          pip install pytest-split jax==$JAX_VERSION jaxlib==$JAX_VERSION
-
+        run: pip3 install jax==$JAX_VERSION jaxlib==$JAX_VERSION
 
       - name: Install PennyLane
         run: |
@@ -384,7 +382,7 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v2
         with:
-          python-version: 3.9
+          python-version: 3.8
 
       - name: Install dependencies
         run: |
@@ -399,7 +397,7 @@ jobs:
         run: pip3 install tensorflow~=$TF_VERSION keras~=$TF_VERSION
 
       - name: Install JAX
-        run: pip install pytest-split jax==$JAX_VERSION jaxlib==$JAX_VERSION
+        run: pip3 install jax==$JAX_VERSION jaxlib==$JAX_VERSION
 
       - name: Install KaHyPar and opt_einsum
         run: pip3 install kahypar==1.1.7 opt_einsum
@@ -486,7 +484,7 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v2
         with:
-          python-version: 3.9
+          python-version: 3.8
 
       - name: Install dependencies
         run: |
@@ -501,8 +499,7 @@ jobs:
         run: pip3 install tensorflow~=$TF_VERSION keras~=$TF_VERSION
 
       - name: Install JAX
-        run: |
-          pip install pytest-split jax==$JAX_VERSION jaxlib==$JAX_VERSION
+        run: pip3 install jax==$JAX_VERSION jaxlib==$JAX_VERSION
 
       - name: Install PennyLane
         run: |
@@ -546,7 +543,7 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v2
         with:
-          python-version: 3.9
+          python-version: 3.8
 
       - name: Install dependencies
         run: |
@@ -561,9 +558,7 @@ jobs:
         run: pip3 install tensorflow~=$TF_VERSION keras~=$TF_VERSION
 
       - name: Install JAX
-        run: |
-          pip install pytest-split jax==$JAX_VERSION jaxlib==$JAX_VERSION
-
+        run: pip3 install jax==$JAX_VERSION jaxlib==$JAX_VERSION
 
       - name: Install PennyLane
         run: |
@@ -654,7 +649,7 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v2
         with:
-          python-version: 3.9
+          python-version: 3.8
 
       - name: Install dependencies
         run: |
@@ -672,9 +667,7 @@ jobs:
 
       - name: Conditionally install Jax
         if: contains(matrix.config.device, 'jax')
-        run: |
-          pip install pytest-split jax==$JAX_VERSION jaxlib==$JAX_VERSION
-
+        run: pip3 install jax==$JAX_VERSION jaxlib==$JAX_VERSION
 
       - name: Install PennyLane
         run: |
