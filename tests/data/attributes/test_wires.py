@@ -1,6 +1,7 @@
-from pennylane.data.attributes.wires import DatasetWires
-import pytest
 import numpy as np
+import pytest
+
+from pennylane.data.attributes.wires import DatasetWires
 from pennylane.wires import Wires
 
 
