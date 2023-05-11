@@ -15,7 +15,7 @@
 Contains the :class:`ExecutionConfig` data class.
 """
 from dataclasses import dataclass
-from typing import Optional, Tuple, Union
+from typing import Optional
 
 from pennylane.interfaces import SUPPORTED_INTERFACES
 from pennylane.gradients import SUPPORTED_GRADIENT_KWARGS
@@ -38,16 +38,27 @@ class ExecutionConfig:
     See the Attributes section to learn more about the various configurable options.
     """
 
-    shots: Optional[Union[int, Tuple[int]]] = None
-    """The number of shots for an execution"""
+    grad_on_execution: Optional[bool] = None
+    """Whether or not to compute the gradient at the same time as the execution.
+
+    If ``None``, then the device or execution pipeline can decide which one is most efficient for the situation.
+    """
+
+    use_device_gradient: Optional[bool] = None
+    """Whether or not to compute the gradient on the device.
+
+    ``None`` indicates to use the device if possible, but to fall back to pennylane behavior if it isn't.
+
+    True indicates a request to either use the device gradient or fail.
+    """
 
     gradient_method: Optional[str] = None
     """The method used to compute the gradient of the quantum circuit being executed"""
 
-    gradient_keyword_arguments: dict = None
+    gradient_keyword_arguments: Optional[dict] = None
     """Arguments used to control a gradient transform"""
 
-    device_options: dict = None
+    device_options: Optional[dict] = None
     """Various options for the device executing a quantum circuit"""
 
     interface: str = "autograd"
@@ -65,6 +76,11 @@ class ExecutionConfig:
         if self.interface not in SUPPORTED_INTERFACES:
             raise ValueError(
                 f"interface must be in {SUPPORTED_INTERFACES}, got {self.interface} instead."
+            )
+
+        if self.grad_on_execution not in {True, False, None}:
+            raise ValueError(
+                f"grad_on_execution must be True, False, or None. Got {self.grad_on_execution} instead."
             )
 
         if (

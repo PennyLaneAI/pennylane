@@ -188,7 +188,7 @@ def construct_sgn_circuit(  # pylint: disable=too-many-arguments
         else:
             measurements = [qml.var(qml.PauliZ(controls[0]))]
 
-        new_tape = qml.tape.QuantumScript(operations, measurements)
+        new_tape = qml.tape.QuantumScript(operations, measurements, shots=tape.shots)
 
         tapes.append(new_tape)
     return tapes
@@ -353,7 +353,7 @@ def sign_expand(  # pylint: disable=too-many-arguments
         else:
             measurements = [qml.var(qml.Hermitian(proj, wires=wires))]
 
-        new_tape = qml.tape.QuantumScript(tape.operations, measurements)
+        new_tape = qml.tape.QuantumScript(tape.operations, measurements, shots=tape.shots)
 
         tapes.append(new_tape)
 
