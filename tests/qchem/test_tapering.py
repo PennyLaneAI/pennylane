@@ -526,12 +526,12 @@ def test_taper_obs(symbols, geometry, charge):
 
         obs_val = (
             scipy.sparse.coo_matrix(state)
-            @ qml.utils.sparse_hamiltonian(observable)
+            @ observable.sparse_matrix()
             @ scipy.sparse.coo_matrix(state).T
         ).toarray()
         obs_val_tapered = (
             scipy.sparse.coo_matrix(state_tapered)
-            @ qml.utils.sparse_hamiltonian(tapered_obs)
+            @ tapered_obs.sparse_matrix()
             @ scipy.sparse.coo_matrix(state_tapered).T
         ).toarray()
         assert np.isclose(obs_val, obs_val_tapered)
@@ -641,12 +641,12 @@ def test_taper_excitations(
             for obs, tap_obs in zip(observables, tapered_obs):
                 expec_val = (
                     scipy.sparse.coo_matrix(excited_state)
-                    @ qml.utils.sparse_hamiltonian(obs)
+                    @ obs.sparse_matrix()
                     @ scipy.sparse.coo_matrix(excited_state).getH()
                 ).toarray()
                 expec_val_tapered = (
                     scipy.sparse.coo_matrix(excited_state_tapered)
-                    @ qml.utils.sparse_hamiltonian(tap_obs)
+                    @ tap_obs.sparse_matrix()
                     @ scipy.sparse.coo_matrix(excited_state_tapered).getH()
                 ).toarray()
                 assert np.isclose(expec_val, expec_val_tapered)

@@ -520,6 +520,24 @@ class TestHadamardGrad:
 
         assert len(record) == 0
 
+    @pytest.mark.parametrize("shots", [None, 100])
+    def test_shots_attribute(self, shots):
+        """Tests that the shots attribute is copied to the new tapes"""
+        dev = qml.device("default.qubit", wires=3)
+        x = 0.543
+        y = -0.654
+
+        with qml.queuing.AnnotatedQueue() as q:
+            qml.RX(x, wires=[0])
+            qml.RY(y, wires=[1])
+            qml.CNOT(wires=[0, 1])
+            qml.expval(qml.PauliZ(0) @ qml.PauliX(1))
+
+        tape = qml.tape.QuantumScript.from_queue(q, shots=shots)
+        _, tapes = grad_fn(tape, dev)
+
+        assert all(new_tape.shots == tape.shots for new_tape in tapes)
+
 
 class TestHadamardGradEdgeCases:
     """Test the Hadamard gradient transform and edge cases such as non diff parameters, auxiliary wires, etc..."""
@@ -1106,8 +1124,8 @@ class TestJaxArgnums:
     expected_jacs = []
     interfaces = ["auto", "jax"]
 
-    def test_argnum_warning(self, argnums, interface):
-        """Test that giving argnum to Jax, raises a warning but still compute the correct values."""
+    def test_argnum_error(self, argnums, interface):
+        """Test that giving argnum to Jax, raises an error."""
         import jax
 
         dev = qml.device("default.qubit", wires=3)
@@ -1122,22 +1140,11 @@ class TestJaxArgnums:
         x = jax.numpy.array([0.543, 0.2])
         y = jax.numpy.array(-0.654)
 
-        with pytest.warns(
-            UserWarning,
-            match="argnum is deprecated with the Jax interface. You should use argnums " "instead.",
+        with pytest.raises(
+            qml.QuantumFunctionError,
+            match="argnum does not work with the Jax interface. You should use argnums instead.",
         ):
-            res = qml.gradients.hadamard_grad(circuit, argnum=argnums)(x, y)
-
-        expected_0 = np.array([-np.sin(y) * np.sin(x[0]), 0])
-        expected_1 = np.array(np.cos(y) * np.cos(x[0]))
-
-        if argnums == [0]:
-            assert np.allclose(res, expected_0)
-        if argnums == [1]:
-            assert np.allclose(res, expected_1)
-        if argnums == [0, 1]:
-            assert np.allclose(res[0], expected_0)
-            assert np.allclose(res[1], expected_1)
+            qml.gradients.hadamard_grad(circuit, argnum=argnums)(x, y)
 
     def test_single_expectation_value(self, argnums, interface):
         """Test for single expectation value."""
