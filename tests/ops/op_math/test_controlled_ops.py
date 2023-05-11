@@ -15,12 +15,18 @@
 Unit tests for Operators inheriting from Controlled.
 """
 
+import copy
 import numpy as np
 import pytest
 from scipy.stats import unitary_group
 
+from gate_data import (
+    CZ,
+)
+
 import pennylane as qml
 from pennylane.wires import Wires
+from pennylane.operation import AnyWires
 from pennylane.ops.qubit.matrix_ops import QubitUnitary
 
 
@@ -428,3 +434,133 @@ class TestControlledQubitUnitary:
             qml.ControlledQubitUnitary(
                 not_unitary, control_wires=[0, 2], wires=1, unitary_check=True
             )
+
+
+# Non-parametrized operations and their matrix representation
+NON_PARAMETRIZED_OPERATIONS = [
+    (qml.CZ, CZ),
+]
+
+
+class TestOperations:
+    @pytest.mark.parametrize("op_cls, mat", NON_PARAMETRIZED_OPERATIONS)
+    def test_nonparametrized_op_copy(self, op_cls, mat, tol):
+        """Tests that copied nonparametrized ops function as expected"""
+        op = op_cls(wires=0 if op_cls.num_wires is AnyWires else range(op_cls.num_wires))
+        copied_op = copy.copy(op)
+        np.testing.assert_allclose(op.matrix(), copied_op.matrix(), atol=tol)
+
+    @pytest.mark.parametrize("ops, mat", NON_PARAMETRIZED_OPERATIONS)
+    def test_matrices(self, ops, mat, tol):
+        """Test matrices of non-parametrized operations are correct"""
+        op = ops(wires=0 if ops.num_wires is AnyWires else range(ops.num_wires))
+        res_static = op.compute_matrix()
+        res_dynamic = op.matrix()
+        assert np.allclose(res_static, mat, atol=tol, rtol=0)
+        assert np.allclose(res_dynamic, mat, atol=tol, rtol=0)
+
+
+class TestDecompositions:
+    def test_CZ_decomposition(self, tol):
+        """Tests that the decomposition of the CZ gate is correct"""
+        op = qml.CZ(wires=[0, 1])
+        res = op.decomposition()
+
+        assert len(res) == 1
+        assert isinstance(res[0], qml.ops.ControlledOp)
+        assert res[0].base.name == "PhaseShift"
+        assert res[0].data[0] == np.pi
+
+        decomposed_matrix = res[0].matrix()
+        assert np.allclose(decomposed_matrix, op.matrix(), atol=tol, rtol=0)
+
+
+class TestEigenval:
+    def test_CZ_eigenval(self):
+        """Tests that the CZ eigenvalue matches the numpy eigenvalues of the CZ matrix"""
+        op = qml.CZ(wires=[0, 1])
+        exp = np.linalg.eigvals(op.matrix())
+        res = op.eigvals()
+        assert np.allclose(res, exp)
+
+
+period_two_ops = (qml.CZ(wires=(0, 1)),)
+
+
+class TestPowMethod:
+    @pytest.mark.parametrize("op", period_two_ops)
+    @pytest.mark.parametrize("n", (1, 5, -1, -5))
+    def test_period_two_pow_odd(self, op, n):
+        """Test that ops with a period of 2 raised to an odd power are the same as the original op."""
+        assert np.allclose(op.pow(n)[0].matrix(), op.matrix())
+
+    @pytest.mark.parametrize("op", period_two_ops)
+    @pytest.mark.parametrize("n", (2, 6, 0, -2))
+    def test_period_two_pow_even(self, op, n):
+        """Test that ops with a period of 2 raised to an even power are empty lists."""
+        assert len(op.pow(n)) == 0
+
+    @pytest.mark.parametrize("op", period_two_ops)
+    def test_period_two_noninteger_power(self, op):
+        """Test that ops with a period of 2 raised to a non-integer power raise an error."""
+        if op.__class__ is qml.CZ:
+            pytest.skip("CZ can be raised to any power.")
+        with pytest.raises(qml.operation.PowUndefinedError):
+            op.pow(1.234)
+
+    @pytest.mark.parametrize("n", (0.12, -3.462, 3.693))
+    def test_cz_general_power(self, n):
+        """Check that CZ raised to an non-integer power that's not the square root
+        results in a controlled PhaseShift."""
+        op_pow = qml.CZ(wires=[0, 1]).pow(n)
+
+        assert len(op_pow) == 1
+        assert isinstance(op_pow[0], qml.ops.ControlledOp)
+        assert isinstance(op_pow[0].base, qml.PhaseShift)
+        assert qml.math.allclose(op_pow[0].data[0], np.pi * (n % 2))
+
+
+class TestControlledMethod:
+    """Tests for the _controlled method of non-parametric operations."""
+
+    def test_CZ(self):
+        """Test the PauliZ _controlled method."""
+        out = qml.CZ(wires=[0, 1])._controlled("a")
+        assert qml.equal(out, qml.CCZ(("a", 0, 1)))
+
+
+label_data = [
+    (qml.CZ(wires=(0, 1)), "Z"),
+]
+
+
+@pytest.mark.parametrize("op, label", label_data)
+def test_label_method(op, label):
+    assert op.label() == label
+    assert op.label(decimals=2) == label
+
+
+control_data = [
+    (qml.CZ(wires=(0, 1)), Wires(0)),
+]
+
+
+@pytest.mark.parametrize("op, control_wires", control_data)
+def test_control_wires(op, control_wires):
+    """Test ``control_wires`` attribute for non-parametrized operations."""
+
+    assert op.control_wires == control_wires
+
+
+involution_ops = [  # ops who are their own inverses
+    qml.CZ((0, 1)),
+]
+
+
+@pytest.mark.parametrize("op", involution_ops)
+def test_adjoint_method(op):
+    adj_op = copy.copy(op)
+    for _ in range(4):
+        adj_op = adj_op.adjoint()
+
+        assert adj_op.name == op.name
