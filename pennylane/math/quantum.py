@@ -398,7 +398,7 @@ def _density_matrix_from_state_vector(state, indices, check_state=False):
     return _permute_dense_matrix(density_matrix, sorted(indices), indices, batch_dim)
 
 
-def reduced_dm(state, indices, check_state=False, c_dtype="complex128"):
+def reduced_dm(state, indices, check_state=False, c_dtype="complex128", input_is_dm=None):
     """Compute the reduced density matrix from a state vector or a density matrix. It supports all interfaces (Numpy,
     Autograd, Torch, Tensorflow and Jax).
 
@@ -407,9 +407,11 @@ def reduced_dm(state, indices, check_state=False, c_dtype="complex128"):
         indices (Sequence(int)): List of indices in the considered subsystem.
         check_state (bool): If True, the function will check the state validity (shape and norm).
         c_dtype (str): Complex floating point precision type.
+        input_is_dm (bool): Whether the input state is a density matrix already.
 
     Returns:
         tensor_like: Reduced density matrix of size ``(2**len(indices), 2**len(indices))``
+        or ``(batch_dim, 2**len(indices), 2**len(indices))`` with batching.
 
     **Example**
 
@@ -450,21 +452,31 @@ def reduced_dm(state, indices, check_state=False, c_dtype="complex128"):
     shape = state.shape
     dim = shape[-1]
 
-    if shape == (dim,):
-        # State vector
-        density_matrix = _density_matrix_from_state_vector(state, indices, check_state)
-        return density_matrix
-    if (len(shape) == 2 and shape[0] != shape[1]) or len(shape) == 3:
-        # Broadcasted state vector or broadcasted density matrix
-        # WARNING: if the broadcasting dimension matches the state dim, this
-        # will go unnoticed and be misinterpreted as a density matrix!
+    if input_is_dm is None:
+        if shape == (dim,):
+            input_is_dm = False
+        elif (len(shape) == 2 and shape[0] != shape[1]) or len(shape) == 3:
+            # Broadcasted state vector or broadcasted density matrix
+            # WARNING: if the broadcasting dimension matches the state dim, this
+            # will go unnoticed and be misinterpreted as a density matrix!
+            raise ValueError(
+                "Broadcasted density matrices are not supported yet. "
+                f"The batch dimension is {shape[0]}"
+            )
+        elif len(shape) == 2:
+            # WARNING: if the broadcasting dimension matches the state dim, this
+            # will go unnoticed and be misinterpreted as a density matrix!
+            input_is_dm = True
+    elif len(shape) != 1 + input_is_dm:
+        # Broadcasted  vector or density matrix was detected
         raise ValueError(
             "Broadcasted density matrices are not supported yet. "
             f"The batch dimension is {shape[0]}"
         )
-    density_matrix = _density_matrix_from_matrix(state, indices, check_state)
 
-    return density_matrix
+    if input_is_dm:
+        return _density_matrix_from_matrix(state, indices, check_state)
+    return _density_matrix_from_state_vector(state, indices, check_state)
 
 
 def purity(state, indices, check_state=False, c_dtype="complex128"):
