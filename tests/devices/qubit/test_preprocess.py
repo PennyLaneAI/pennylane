@@ -28,6 +28,7 @@ from pennylane.devices.qubit.preprocess import (
     validate_and_expand_adjoint,
     validate_measurements,
 )
+from pennylane.devices.experimental import ExecutionConfig
 from pennylane.measurements import MidMeasureMP, MeasurementValue
 from pennylane.tape import QuantumScript
 from pennylane import DeviceError
@@ -311,6 +312,19 @@ class TestValidateMeasurements:
         msg = "Circuits with finite shots must only contain SampleMeasurements"
         with pytest.raises(DeviceError, match=msg):
             validate_measurements(tape)
+
+    @pytest.mark.parametrize("diff_method", ["adjoint", "backprop"])
+    def test_finite_shots_analytic_diff_method(self, diff_method):
+        """Test that a circuit with finite shots executed with diff_method "adjoint"
+        or "backprop" raises an error"""
+        tape = QuantumScript([], [qml.expval(qml.PauliZ(0))], shots=100)
+
+        execution_config = ExecutionConfig()
+        execution_config.gradient_method = diff_method
+
+        msg = "Circuits with finite shots must be executed with non-analytic gradient methods"
+        with pytest.raises(DeviceError, match=msg):
+            validate_measurements(tape, execution_config)
 
 
 class TestBatchTransform:

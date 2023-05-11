@@ -144,7 +144,9 @@ def validate_and_expand_adjoint(
     return expanded_tape
 
 
-def validate_measurements(circuit: qml.tape.QuantumTape):
+def validate_measurements(
+    circuit: qml.tape.QuantumTape, execution_config: ExecutionConfig = DefaultExecutionConfig
+):
     """Check that the circuit contains a valid set of measurements. A valid
     set of measurements is defined as:
 
@@ -154,12 +156,24 @@ def validate_measurements(circuit: qml.tape.QuantumTape):
        ``SampleMeasurements``.
 
     If the circuit has an invalid set of measurements, then an error is raised.
+
+    Args:
+        circuit (.QuantumTape): the circuit to validate
+        execution_config (.ExecutionConfig): execution configuration with configurable
+            options for the execution.
     """
     if circuit.shots.total_shots is None:
         for m in circuit.measurements:
             if not isinstance(m, StateMeasurement):
                 raise DeviceError(f"Analytic circuits must only contain StateMeasurements; got {m}")
     else:
+        # check if an analytic diff method is used with finite shots
+        if execution_config.gradient_method in ["adjoint", "backprop"]:
+            raise DeviceError(
+                f"Circuits with finite shots must be executed with non-analytic "
+                f"gradient methods; got {execution_config.gradient_method}"
+            )
+
         for m in circuit.measurements:
             if not isinstance(m, SampleMeasurement):
                 raise DeviceError(
@@ -297,7 +311,7 @@ def preprocess(
         a postprocessing function to be called after execution, and a configuration with originally unset specifications filled in.
     """
     for c in circuits:
-        validate_measurements(c)
+        validate_measurements(c, execution_config)
 
     circuits = tuple(expand_fn(c) for c in circuits)
     if execution_config.gradient_method == "adjoint":
