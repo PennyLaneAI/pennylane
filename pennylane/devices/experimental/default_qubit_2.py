@@ -93,7 +93,7 @@ class DefaultQubit2(Device):
 
     def supports_derivatives(
         self,
-        execution_config: ExecutionConfig,
+        execution_config: Optional[ExecutionConfig] = None,
         circuit: Optional[QuantumTape] = None,
     ) -> bool:
         """Check whether or not derivatives are available for a given configuration and circuit.
@@ -109,6 +109,8 @@ class DefaultQubit2(Device):
             Bool: Whether or not a derivative can be calculated provided the given information
 
         """
+        if execution_config is None:
+            return True
         # backpropagation currently supported for all supported circuits
         # will later need to add logic if backprop requested with finite shots
         # do once device accepts finite shots
