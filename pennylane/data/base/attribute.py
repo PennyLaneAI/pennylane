@@ -89,7 +89,7 @@ class AttributeInfo(MutableMapping):
         for k, v in kwargs.items():
             setattr(self, k, v)
 
-    def save(self, info: "AttributeInfo"):
+    def save(self, info: "AttributeInfo") -> None:
         """Inserts the values set in this instance into ``info``."""
         for k, v in self.items():
             info[k] = v
@@ -156,7 +156,7 @@ class AttributeType(ABC, Generic[Zarr, T, InitValueType]):
     """
     The AttributeType class provides an interface for converting Python objects to and from a Zarr
     array or Group. It uses the registry pattern to maintain a mapping of type_id to
-    AttributeType, and Python types to compatible AttributeType
+    AttributeType, and Python types to compatible AttributeTypes.
 
     Attributes:
         type_id: Unique identifier for this AttributeType class. Must be declared
@@ -181,20 +181,20 @@ class AttributeType(ABC, Generic[Zarr, T, InitValueType]):
 
         Args:
             value: Value that will be stored in dataset attribute.
-            info: Metadata to attach to attribute
+            info: Metadata to attach to attribute.
             parent_and_key: A 2-tuple specifying the Zarr group that will contain
                 this attribute, and its key. If None, attribute will be stored in-memory.
         """
 
     @overload
     def __init__(self, *, bind: Zarr):
-        """Load previosly persisted dataset attribute from ``bind``.
+        """Load previously persisted dataset attribute from ``bind``.
 
         If ``bind`` contains an attribute of a different type, or does not
         contain a dataset attribute, a ``TypeError` will be raised.
 
         Args:
-            bind: Zarr object from which existing attribute will be loaded
+            bind: Zarr object from which existing attribute will be loaded.
         """
 
     def __init__(
