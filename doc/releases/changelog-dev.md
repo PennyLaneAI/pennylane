@@ -25,6 +25,7 @@
   [(#4067)](https://github.com/PennyLaneAI/pennylane/pull/4067)
   [(#4103)](https://github.com/PennyLaneAI/pennylane/pull/4103)
   [(#4106)](https://github.com/PennyLaneAI/pennylane/pull/4106)
+  [(#4112)](https://github.com/PennyLaneAI/pennylane/pull/4112)
 
 * `qml.specs` is compatible with custom operations that have `depth` bigger than 1.
   [(#4033)](https://github.com/PennyLaneAI/pennylane/pull/4033)
