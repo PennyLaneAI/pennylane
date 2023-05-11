@@ -74,12 +74,13 @@ class TestSimplifyOperators:
 class TestSimplifyTapes:
     """Tests for the qml.simplify method used with tapes."""
 
-    def test_simplify_tape(self):
+    @pytest.mark.parametrize("shots", [None, 100])
+    def test_simplify_tape(self, shots):
         """Test the simplify method with a tape."""
         with qml.queuing.AnnotatedQueue() as q_tape:
             build_op()
 
-        tape = QuantumScript.from_queue(q_tape)
+        tape = QuantumScript.from_queue(q_tape, shots=shots)
         s_tape = qml.simplify(tape)
         assert len(s_tape) == 1
         s_op = s_tape[0]
@@ -87,6 +88,7 @@ class TestSimplifyTapes:
         assert s_op.data == simplified_op.data
         assert s_op.wires == simplified_op.wires
         assert s_op.arithmetic_depth == simplified_op.arithmetic_depth
+        assert tape.shots == s_tape.shots
 
     def test_execute_simplified_tape(self):
         """Test the execution of a simplified tape."""
