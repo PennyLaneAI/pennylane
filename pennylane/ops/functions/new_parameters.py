@@ -19,10 +19,13 @@ from typing import Union, Sequence
 import copy
 
 import pennylane as qml
+from pennylane.typing import TensorLike
 from pennylane.operation import Operator
 
+from ..op_math import CompositeOp, SymbolicOp, ScalarSymbolicOp
 
-def new_parameters(op: Operator, params: Sequence[Union[float, Sequence]]) -> Operator:
+
+def new_parameters(op: Operator, params: Sequence[Union[float, TensorLike]] = None) -> Operator:
     """Create a new operator with updated parameters
 
     This function takes an :class:`~.Operator` and new parameters as input and
@@ -38,15 +41,34 @@ def new_parameters(op: Operator, params: Sequence[Union[float, Sequence]]) -> Op
     Raises:
         ValueError: If the shape of the old and new operator parameters don't match
     """
-    params = qml.math.convert_like(params, op.data)
+    if params is None:
+        params = []
 
-    if qml.math.shape(params) != qml.math.shape(op.data):
+    if len(params) != op.num_params:
         raise ValueError(
-            "The shape of the new parameters does not match the expected shape; "
-            f"got {qml.math.shape(params)}, expected {qml.math.shape(op.data)}."
+            "The length of the new parameters does not match the expected shape; "
+            f"got {len(params)}, expected {op.num_params}."
         )
 
-    new_op = copy.deepcopy(op)
-    new_op.data = params
+    if isinstance(op, CompositeOp):
+        new_operands = []
 
-    return new_op
+        for operand in op.operands:
+            sub_params = params[:operand.num_params]
+            params = params[operand.num_params:]
+            new_operands.append(new_parameters(operand, sub_params))
+
+        return op.__class__(*new_operands)
+
+    if isinstance(op, ScalarSymbolicOp):
+        new_scalar = params[0]
+        params = params[1:]
+        new_base = new_parameters(op.base, params)
+
+        return op.__class__(new_base, new_scalar)
+
+    if isinstance(op, SymbolicOp):
+        new_base = new_parameters(op.base, params)
+        return op.__class__(new_base)
+
+    return op.__class__(*params, wires=op.wires, **copy.deepcopy(op.hyperparameters))
