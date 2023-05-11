@@ -75,7 +75,7 @@ Decompositions
 from .adjoint import Adjoint, adjoint
 from .composite import CompositeOp
 from .controlled import Controlled, ControlledOp, ctrl
-from .controlled_ops import ControlledQubitUnitary
+from .controlled_ops import ControlledQubitUnitary, CY
 from .evolution import Evolution
 from .exp import Exp, exp
 from .pow import Pow, pow
@@ -87,4 +87,5 @@ from .controlled_decompositions import ctrl_decomp_zyz, ctrl_decomp_bisect
 
 controlled_qubit_ops = {
     "ControlledQubitUnitary",
+    "CY"
 }

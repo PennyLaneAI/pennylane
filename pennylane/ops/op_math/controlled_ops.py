@@ -17,7 +17,11 @@ This submodule contains controlled operators based on the Controlled and Control
 
 import warnings
 from typing import Iterable
+from functools import lru_cache
 
+import numpy as np
+
+import pennylane as qml
 from pennylane.operation import AnyWires
 from pennylane.ops.qubit.non_parametric_ops import PauliY
 from pennylane.ops.qubit.matrix_ops import QubitUnitary
@@ -27,7 +31,6 @@ class CY(ControlledOp):
     r"""CY(wires)
     The controlled-Y operator
 
-    If `control_values=True`:
     .. math:: CY = \begin{bmatrix}
             1 & 0 & 0 & 0 \\
             0 & 1 & 0 & 0\\
@@ -57,19 +60,90 @@ class CY(ControlledOp):
     grad_method = None
     """Gradient computation method."""
 
-    def __init__(self, wires, control_values=None, work_wires=None, do_queue=True, id=None):
+    def __init__(self, wires, do_queue=True, id=None):
         control_wire, wire = wires
         base = PauliY(wire)
 
         super().__init__(
             base,
             control_wire,
-            control_values=control_values,
-            work_wires=work_wires,
             do_queue=do_queue,
             id=id
         )
-        self._name = "ControlledPauliY"
+        self._name = "CY"
+
+    def adjoint(self):
+        return CY(self.wires)
+
+    def simplify(self):
+        return self
+
+    def pow(self, z):
+        base_pow = self.base.pow(z)
+        return [ControlledOp(op, self.control_wires) for op in base_pow]
+
+    def _controlled(self, wire):
+        ctrl_wires = self.control_wires + wire
+        new_op = ControlledOp(
+            self.base,
+            control_wires=ctrl_wires,
+        )
+        return new_op
+
+    @staticmethod
+    @lru_cache()
+    def compute_matrix():  # pylint: disable=arguments-differ
+        r"""Representation of the operator as a canonical matrix in the computational basis (static method).
+
+        The canonical matrix is the textbook matrix representation that does not consider wires.
+        Implicitly, this assumes that the wires of the operator correspond to the global wire order.
+
+        .. seealso:: :meth:`~.CY.matrix`
+
+
+        Returns:
+            ndarray: matrix
+
+        **Example**
+
+        >>> print(qml.CY.compute_matrix())
+        [[ 1.+0.j  0.+0.j  0.+0.j  0.+0.j]
+         [ 0.+0.j  1.+0.j  0.+0.j  0.+0.j]
+         [ 0.+0.j  0.+0.j  0.+0.j -0.-1.j]
+         [ 0.+0.j  0.+0.j  0.+1.j  0.+0.j]]
+        """
+        return np.array(
+            [
+                [1, 0, 0, 0],
+                [0, 1, 0, 0],
+                [0, 0, 0, -1j],
+                [0, 0, 1j, 0],
+            ]
+        )
+
+    @staticmethod
+    def compute_decomposition(wires):
+        r"""Representation of the operator as a product of other operators (static method).
+
+
+        .. math:: O = O_1 O_2 \dots O_n.
+
+
+        .. seealso:: :meth:`~.CY.decomposition`.
+
+        Args:
+            wires (Iterable, Wires): wires that the operator acts on
+
+        Returns:
+            list[Operator]: decomposition into lower level operations
+
+        **Example:**
+
+        >>> print(qml.CY.compute_decomposition(0))
+        [CRY(3.141592653589793, wires=[0, 1]), S(wires=[0])]
+
+        """
+        return [qml.CRY(np.pi, wires=wires), qml.ops.qubit.non_parametric_ops.S(wires=wires[0])]
 
 
 # pylint: disable=too-few-public-methods
