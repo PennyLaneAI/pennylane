@@ -16,6 +16,7 @@ class that provides the mapper class."""
 
 
 import typing
+from collections.abc import MutableMapping
 from types import MappingProxyType
 from typing import Any, Dict, Optional
 
@@ -28,7 +29,7 @@ from pennylane.data.base.attribute import (
 from pennylane.data.base.typing_util import ZarrGroup
 
 
-class AttributeTypeMapper:
+class AttributeTypeMapper(MutableMapping):
     """
     This class performs the mapping between the objects contained
     in a Zarr group and Dataset attributes.
@@ -52,6 +53,11 @@ class AttributeTypeMapper:
         self._cache[key] = attr
 
         return attr
+
+    @property
+    def info(self) -> AttributeInfo:
+        """Return ``AttributeInfo`` for ``self.bind``."""
+        return AttributeInfo(self.bind.attrs)
 
     def set_item(self, key: str, value: Any, info: Optional[AttributeInfo]):
         """Creates or replaces attribute ``key`` with ``value``, optionally
@@ -81,9 +87,8 @@ class AttributeTypeMapper:
     def __len__(self) -> int:
         return len(self.bind)
 
-    def keys(self) -> typing.KeysView[str]:
-        """Returns all keys in ``bind``."""
-        return self.bind.keys()
+    def __iter__(self) -> typing.Iterator[str]:
+        return iter(self.bind)
 
     def __contains__(self, key: str) -> bool:
         return key in self._cache or key in self.bind
