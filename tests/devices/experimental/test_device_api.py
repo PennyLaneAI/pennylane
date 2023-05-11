@@ -14,6 +14,7 @@
 """
 Tests for the basic default behavior of the Device API.
 """
+# pylint:disable=unused-argument
 import pytest
 
 import pennylane as qml
@@ -23,6 +24,7 @@ from pennylane.devices.experimental import Device, ExecutionConfig, DefaultExecu
 def test_execute_method_abstract():
     """Test that a device can't be instantiated without an execute method."""
 
+    # pylint: disable=too-few-public-methods
     class BadDevice(Device):
         """A bad device"""
 
@@ -139,6 +141,7 @@ class TestProvidingDerivatives:
         assert dev.supports_derivatives()
         assert not dev.supports_derivatives(ExecutionConfig(derivative_order=2))
         assert not dev.supports_derivatives(ExecutionConfig(gradient_method="backprop"))
+        assert dev.supports_derivatives(ExecutionConfig(gradient_method="device"))
 
         out = dev.execute_and_compute_derivatives(qml.tape.QuantumScript())
         assert out[0] == "a"
