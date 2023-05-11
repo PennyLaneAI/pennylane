@@ -105,7 +105,7 @@ class _DatasetMeta(type):
     """
 
 
-class DatasetBase(MapperMixin, metaclass=_DatasetMeta):
+class Dataset(MapperMixin, metaclass=_DatasetMeta):
     """
     Base class for Datasets.
 
@@ -120,11 +120,11 @@ class DatasetBase(MapperMixin, metaclass=_DatasetMeta):
 
     fields: ClassVar[typing.Mapping[str, Attribute]] = MappingProxyType({})
 
-    bind: InitVar[Optional[Union[ZarrGroup, str, Path]]] = attribute(kw_only=False)  # type: ignore
+    bind: InitVar[Optional[ZarrGroup]] = attribute(default=None, kw_only=False)  # type: ignore
 
     def __init__(
         self,
-        bind: Optional[Union[str, Path, ZarrGroup]] = None,
+        bind: Optional[ZarrGroup] = None,
         **attrs: Any,
     ):
         """
@@ -139,10 +139,8 @@ class DatasetBase(MapperMixin, metaclass=_DatasetMeta):
         if bind is None:
             self._bind = zarr.group()
             self._bind.attrs["type_id"] = self.type_id
-        elif isinstance(bind, zarr.Group):
-            self._bind = bind
         else:
-            self._bind = zarr.open_group(path=bind)
+            self._bind = bind
 
         self._validate_arguments(attrs)
         for name, attr in attrs.items():
@@ -196,8 +194,9 @@ class DatasetBase(MapperMixin, metaclass=_DatasetMeta):
                 exists), "w" (create, overwrite existing), and "a" (append existing,
                 create if doesn't exist). Default is "w-".
         """
-        zgrp = zarr.open_group(path=filepath, mode=mode)
-        zarr.convenience.copy_all(self.bind, zgrp)
+        with zarr.open_group(filepath, mode=mode) as zgrp:
+            zarr.convenience.copy_all(self.bind, zgrp)
+            zgrp.store.close()
 
     def _validate_arguments(self, args: Dict[str, Any]):
         """Validates arguments to __init__() based on the declared

@@ -22,8 +22,8 @@ from .attributes import (
     DatasetString,
 )
 from .base.attribute import AttributeInfo, AttributeType
-from .base.dataset import attribute
-from .dataset import Dataset
+from .base.dataset import Dataset, attribute
+
 
 __all__ = (
     "AttributeType",
