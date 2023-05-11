@@ -31,7 +31,8 @@ class TestSingleTapeTransform:
         with pytest.raises(ValueError, match="does not appear to be a valid Python function"):
             qml.single_tape_transform(5)
 
-    def test_parametrized_transform(self):
+    @pytest.mark.parametrize("shots", [None, 100])
+    def test_parametrized_transform(self, shots):
         """Test that a parametrized transform can be applied
         to a tape"""
 
@@ -55,8 +56,10 @@ class TestSingleTapeTransform:
             qml.Hadamard(wires=0)
             qml.CRX(x, wires=[0, 1])
 
-        tape = qml.tape.QuantumScript.from_queue(q)
-        ops = my_transform(tape, a, b).operations
+        tape = qml.tape.QuantumScript.from_queue(q, shots=shots)
+        new_tape = my_transform(tape, a, b)
+        ops = new_tape.operations
+
         assert len(ops) == 4
         assert ops[0].name == "Hadamard"
 
@@ -67,6 +70,8 @@ class TestSingleTapeTransform:
         assert ops[2].parameters == [np.sum(b) * x / 2]
 
         assert ops[3].name == "CZ"
+
+        assert new_tape.shots == tape.shots
 
 
 class TestQFuncTransforms:

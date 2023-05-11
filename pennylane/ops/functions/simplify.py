@@ -95,6 +95,7 @@ def simplify(input: Union[Operator, MeasurementProcess, QuantumTape, QNode, Call
             [op.simplify() for op in input._ops],
             [m.simplify() for m in input.measurements],
             [op.simplify() for op in input._prep],
+            shots=input.shots,
         )
 
     if callable(input):
