@@ -97,12 +97,13 @@ class TestMapWiresOperators:
 class TestMapWiresTapes:
     """Tests for the qml.map_wires method used with tapes."""
 
-    def test_map_wires_tape(self):
+    @pytest.mark.parametrize("shots", [None, 100])
+    def test_map_wires_tape(self, shots):
         """Test the map_wires method with a tape."""
         with qml.queuing.AnnotatedQueue() as q_tape:
             build_op()
 
-        tape = QuantumScript.from_queue(q_tape)
+        tape = QuantumScript.from_queue(q_tape, shots=shots)
         # TODO: Use qml.equal when supported
 
         s_tape = qml.map_wires(tape, wire_map=wire_map)
@@ -112,15 +113,17 @@ class TestMapWiresTapes:
         assert s_op.data == mapped_op.data
         assert s_op.wires == mapped_op.wires
         assert s_op.arithmetic_depth == mapped_op.arithmetic_depth
+        assert tape.shots == s_tape.shots
 
-    def test_execute_mapped_tape(self):
+    @pytest.mark.parametrize("shots", [None, 100])
+    def test_execute_mapped_tape(self, shots):
         """Test the execution of a mapped tape."""
         dev = qml.device("default.qubit", wires=5)
         with qml.queuing.AnnotatedQueue() as q_tape:
             build_op()
             qml.expval(op=qml.PauliZ(1))
 
-        tape = QuantumScript.from_queue(q_tape)
+        tape = QuantumScript.from_queue(q_tape, shots=shots)
         # TODO: Use qml.equal when supported
 
         m_tape = qml.map_wires(tape, wire_map=wire_map)
@@ -130,6 +133,7 @@ class TestMapWiresTapes:
         assert m_op.data == mapped_op.data
         assert m_op.wires == mapped_op.wires
         assert m_op.arithmetic_depth == mapped_op.arithmetic_depth
+        assert tape.shots == m_tape.shots
         assert m_obs.wires == Wires(wire_map[1])
         assert qml.math.allclose(dev.execute(tape), dev.execute(m_tape))
 
