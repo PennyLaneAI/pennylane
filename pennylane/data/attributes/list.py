@@ -16,7 +16,7 @@ types."""
 
 import typing
 from collections.abc import MutableSequence, Sequence
-from typing import Generic, Union, overload
+from typing import Generic, Union, overload, List
 
 from pennylane.data.base.attribute import AttributeType
 from pennylane.data.base.mapper import MapperMixin
@@ -48,6 +48,12 @@ class DatasetList(
         grp = bind_parent.create_group(key)
 
         return grp
+
+    def copy_value(self) -> List[T]:
+        return {key: attr.copy_value() for key, attr in self._mapper.items()}
+
+    def copy(self) -> List[T]:
+        return self.copy_value()
 
     def insert(self, index: int, value: Union[T, AttributeType[ZarrAny, T, T]]):
         """Implements the insert() method."""
