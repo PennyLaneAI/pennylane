@@ -289,6 +289,10 @@ class AttributeType(ABC, Generic[Zarr, T, InitValueType]):
         """Loads the mapped value from ``bind``."""
         return self.zarr_to_value(self.bind)
 
+    def copy_value(self) -> T:
+        """Parses the mapped value from ``bind`` and loads it into memory."""
+        return self.get_value()
+
     def _set_value(
         self, value: InitValueType, info: Optional[AttributeInfo], parent: ZarrGroup, key: str
     ) -> Zarr:
