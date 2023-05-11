@@ -644,6 +644,14 @@ class TestStochPulseGrad:
         res_jit = jax.jit(fun)(params)
         assert qml.math.isclose(res, res_jit)
 
+    @pytest.mark.parametrize("shots", [None, 100])
+    def test_shots_attribute(self, shots):
+        """Tests that the shots attribute is copied to the new tapes"""
+        tape = qml.tape.QuantumTape([], [qml.expval(qml.PauliZ(0)), qml.probs([1, 2])], shots=shots)
+        tapes, _ = stoch_pulse_grad(tape)
+
+        assert all(new_tape.shots == tape.shots for new_tape in tapes)
+
 
 @pytest.mark.jax
 class TestStochPulseGradQNodeIntegration:
