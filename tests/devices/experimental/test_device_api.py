@@ -26,7 +26,7 @@ def test_execute_method_abstract():
     class BadDevice(Device):
         """A bad device"""
 
-    with pytest.raises(TypeError, match=r"with abstract method execute"):
+    with pytest.raises(TypeError, match=r"instantiate abstract class BadDevice"):
         BadDevice()  # pylint: disable=abstract-class-instantiated
 
 
