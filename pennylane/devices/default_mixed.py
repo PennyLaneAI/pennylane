@@ -737,3 +737,17 @@ class DefaultMixed(QubitDevice):
             for k in self.measured_wires:
                 bit_flip = qml.BitFlip(self.readout_err, wires=k)
                 self._apply_operation(bit_flip)
+
+    def density_matrix(self, wires):
+        """Returns the reduced density matrix over the given wires.
+
+        Args:
+            wires (Wires): wires of the reduced system
+
+        Returns:
+            array[complex]: complex array of shape ``(2 ** len(wires), 2 ** len(wires))``
+            representing the reduced density matrix of the state prior to measurement.
+        """
+        state = getattr(self, "state", None)
+        wires = self.map_wires(wires)
+        return qml.math.reduced_dm(state, indices=wires, c_dtype=self.C_DTYPE, input_is_dm=True)
