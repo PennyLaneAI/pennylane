@@ -22,7 +22,7 @@ import warnings
 import pennylane as qml
 
 from pennylane.operation import Tensor
-from pennylane.measurements import MidMeasureMP, StateMeasurement, ExpectationMP
+from pennylane.measurements import MidMeasureMP, StateMeasurement, SampleMeasurement, ExpectationMP
 from pennylane.typing import ResultBatch, Result
 from pennylane import DeviceError
 
@@ -147,6 +147,43 @@ def validate_and_expand_adjoint(
     return expanded_tape
 
 
+def validate_measurements(
+    circuit: qml.tape.QuantumTape, execution_config: ExecutionConfig = DefaultExecutionConfig
+):
+    """Check that the circuit contains a valid set of measurements. A valid
+    set of measurements is defined as:
+
+    1. If circuit.shots is None (i.e., the execution is analytic), then
+       the circuit must only contain ``StateMeasurements``.
+    2. If circuit.shots is not None, then the circuit must only contain
+       ``SampleMeasurements``.
+
+    If the circuit has an invalid set of measurements, then an error is raised.
+
+    Args:
+        circuit (.QuantumTape): the circuit to validate
+        execution_config (.ExecutionConfig): execution configuration with configurable
+            options for the execution.
+    """
+    if circuit.shots.total_shots is None:
+        for m in circuit.measurements:
+            if not isinstance(m, StateMeasurement):
+                raise DeviceError(f"Analytic circuits must only contain StateMeasurements; got {m}")
+    else:
+        # check if an analytic diff method is used with finite shots
+        if execution_config.gradient_method in ["adjoint", "backprop"]:
+            raise DeviceError(
+                f"Circuits with finite shots must be executed with non-analytic "
+                f"gradient methods; got {execution_config.gradient_method}"
+            )
+
+        for m in circuit.measurements:
+            if not isinstance(m, SampleMeasurement):
+                raise DeviceError(
+                    f"Circuits with finite shots must only contain SampleMeasurements; got {m}"
+                )
+
+
 def expand_fn(circuit: qml.tape.QuantumScript) -> qml.tape.QuantumScript:
     """Method for expanding or decomposing an input circuit.
 
@@ -180,7 +217,7 @@ def expand_fn(circuit: qml.tape.QuantumScript) -> qml.tape.QuantumScript:
                 "Operator decomposition may have entered an infinite loop."
             ) from e
         circuit = qml.tape.QuantumScript(
-            new_ops, circuit.measurements, circuit._prep, circuit.shots
+            new_ops, circuit.measurements, circuit._prep, shots=circuit.shots
         )
 
     for observable in circuit.observables:
@@ -189,11 +226,6 @@ def expand_fn(circuit: qml.tape.QuantumScript) -> qml.tape.QuantumScript:
                 raise DeviceError(f"Observable {observable} not supported on DefaultQubit2")
         elif observable.name not in _observables:
             raise DeviceError(f"Observable {observable} not supported on DefaultQubit2")
-
-    # change this once shots are supported
-    for m in circuit.measurements:
-        if not isinstance(m, StateMeasurement):
-            raise DeviceError(f"Measurement process {m} is only useable with finite shots.")
 
     return circuit
 
@@ -281,6 +313,8 @@ def preprocess(
         Tuple[QuantumTape], Callable, ExecutionConfig: QuantumTapes that the device can natively execute,
         a postprocessing function to be called after execution, and a configuration with originally unset specifications filled in.
     """
+    for c in circuits:
+        validate_measurements(c, execution_config)
 
     circuits = tuple(expand_fn(c) for c in circuits)
     if execution_config.gradient_method == "adjoint":
