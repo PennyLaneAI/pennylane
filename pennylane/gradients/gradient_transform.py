@@ -404,7 +404,7 @@ def reorder_grads(grads, tape_specs):
 
 def _contract_qjac_with_cjac(qjac, cjac, num_measurements, shots):
     """Contract a quantum Jacobian with a classical preprocessing Jacobian.
-    Essentially, this function computes the generalized version of 
+    Essentially, this function computes the generalized version of
     ``tensordot(qjac, cjac)`` over the tape parameter axis, adapted to the new
     return type system. This function takes the measurement shapes and different
     QNode arguments into account.
@@ -423,7 +423,10 @@ def _contract_qjac_with_cjac(qjac, cjac, num_measurements, shots):
                 return qjac
 
     multi_meas = num_measurements > 1
+    print(shots)
     shot_vector = isinstance(shots, Sequence)
+    print(qjac)
+    print(cjac)
 
     if cjac_is_tuple:
         multi_params = True
@@ -435,6 +438,7 @@ def _contract_qjac_with_cjac(qjac, cjac, num_measurements, shots):
             _qjac = _qjac[0]
         multi_params = isinstance(_qjac, tuple)
 
+    print(f"{multi_meas=}, {multi_params=}, {shot_vector=}")
     tdot = partial(qml.math.tensordot, axes=[[0], [0]])
 
     if not multi_params:
@@ -461,7 +465,7 @@ def _contract_qjac_with_cjac(qjac, cjac, num_measurements, shots):
 
 def _contract_qjac_with_cjac_legacy(qjac, cjac):
     """Contract a quantum Jacobian with a classical preprocessing Jacobian.
-    Essentially, this function computes the generalized version of 
+    Essentially, this function computes the generalized version of
     ``tensordot(qjac, cjac)`` over the tape parameter axis, adapted to the old
     return type system.
     """
@@ -617,6 +621,7 @@ class gradient_transform(qml.batch_transform):
             if not hybrid:
                 return qjac
 
+            # TODO:  False although we pass shots
             _shots = kwargs.pop("shots", False)
 
             # Special case where we apply a Jax transform (jacobian e.g.) on the gradient transform and argnums are
