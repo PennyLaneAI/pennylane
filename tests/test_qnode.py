@@ -24,6 +24,7 @@ from pennylane import QNode
 from pennylane import numpy as pnp
 from pennylane import qnode
 from pennylane.tape import QuantumScript
+from pennylane.resource import Resources
 
 
 def dummyfunc():
@@ -579,6 +580,7 @@ class TestValidation:
             "shots": [None],
             "batches": [1],
             "batch_len": [1],
+            "resources": [Resources(1, 1, {"RX": 1}, {1: 1}, 1)],
         }
 
     def test_autograd_interface_device_switched_no_warnings(self):
