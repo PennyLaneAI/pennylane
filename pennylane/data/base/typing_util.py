@@ -16,8 +16,10 @@ and converting them to strings."""
 
 from collections.abc import MutableMapping
 from enum import Enum
+from functools import lru_cache
 from typing import (
     Any,
+    ForwardRef,
     List,
     Literal,
     Optional,
@@ -57,6 +59,7 @@ class UnsetType(Enum):
 UNSET = UnsetType.UNSET
 
 
+@lru_cache
 def get_type_str(cls: Union[type, str, None]) -> str:
     """Return a string representing the type ``cls``.
 
@@ -74,8 +77,15 @@ def get_type_str(cls: Union[type, str, None]) -> str:
     if isinstance(cls, str):
         return cls
 
-    if get_origin(cls) is not None:
-        return str(cls)
+    if isinstance(cls, ForwardRef):
+        return cls.__forward_arg__
+
+    orig_type = get_origin(cls)
+    if orig_type is not None:
+        orig_args = get_args(cls)
+        if orig_args:
+            return f"{get_type_str(orig_type)}[{','.join(get_type_str(arg) for arg in orig_args)}]"
+        return get_type_str(orig_type)
 
     if getattr(cls, "__module__", None) in ("builtins", None):
         return cls.__name__

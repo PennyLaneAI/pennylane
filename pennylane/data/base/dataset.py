@@ -29,6 +29,7 @@ from typing import (
     List,
     Literal,
     Optional,
+    Tuple,
     Type,
     Union,
     cast,
@@ -98,14 +99,13 @@ def attribute(  # pylint: disable=too-many-arguments, unused-argument
 @dataclass_transform(
     order_default=False, eq_default=False, field_specifiers=(attribute,), kw_only_default=True
 )
-class _DatasetMeta(type):
-    """This is a metaclass that tells the type system that
-    ``DatasetBase`` behaves like a dataclass. See:
-    https://peps.python.org/pep-0681/
+class _DatasetTransform:
+    """This base class that tells the type system that ``Dataset`` behaves like a dataclass.
+    See: https://peps.python.org/pep-0681/
     """
 
 
-class Dataset(MapperMixin, metaclass=_DatasetMeta):
+class Dataset(AttributeType[ZarrGroup, "Dataset", "Dataset"], MapperMixin, _DatasetTransform):
     """
     Base class for Datasets.
 
@@ -120,11 +120,12 @@ class Dataset(MapperMixin, metaclass=_DatasetMeta):
 
     fields: ClassVar[typing.Mapping[str, Attribute]] = MappingProxyType({})
 
-    bind: InitVar[Optional[ZarrGroup]] = attribute(default=None, kw_only=False)  # type: ignore
+    bind: ZarrGroup = attribute(default=None, kw_only=False)  # type: ignore
 
     def __init__(
         self,
         bind: Optional[ZarrGroup] = None,
+        info: Optional[AttributeInfo] = None,
         **attrs: Any,
     ):
         """
@@ -136,15 +137,21 @@ class Dataset(MapperMixin, metaclass=_DatasetMeta):
                 already exist in ``bind`` will be loaded into this dataset.
             **attrs: Attributes to add to this dataset.
         """
-        if bind is None:
-            self._bind = zarr.group()
-            self._bind.attrs["type_id"] = self.type_id
-        else:
-            self._bind = bind
+        super().__init__(value=None, info=info, bind=bind)  # type: ignore
 
         self._validate_arguments(attrs)
         for name, attr in attrs.items():
             setattr(self, name, attr)
+
+    @classmethod
+    def consumes_types(cls) -> Tuple[Type["Dataset"]]:
+        return (cls,)
+
+    def value_to_zarr(self, bind_parent: ZarrGroup, key: str, value) -> ZarrGroup:
+        return bind_parent.create_group(key)
+
+    def zarr_to_value(self, bind: ZarrGroup) -> "Dataset":
+        return self
 
     @property
     def bind(self) -> ZarrGroup:
