@@ -412,8 +412,7 @@ def _execute_fwd(
                 # Multi measurement
                 if multi_measurement:
                     jac_empty = tuple(
-                        jnp.zeros(shape=tensor.shape, dtype=tensor.dtype)
-                        for tensor in shape_dtype
+                        jnp.zeros(shape=tensor.shape, dtype=tensor.dtype) for tensor in shape_dtype
                     )
                 # Single measurement
                 else:
@@ -427,6 +426,8 @@ def _execute_fwd(
                     else:
                         intermediate_jacs.append(jac_empty)
                 updated_jacs.append(tuple(intermediate_jacs))
+            else:
+                updated_jacs.append(jacs_[i])
 
         if updated_jacs:
             updated_jacs = updated_jacs[0] if len(tapes) == 1 else tuple(updated_jacs)
@@ -435,8 +436,7 @@ def _execute_fwd(
         tangents = _filter_zeros_tangents(tangents[0])
         jvps = _compute_jvps(jacs_, tangents, multi_measurements)
 
-        jacs = jacs if not updated_jacs else updated_jacs
-        return (res, jacs), (jvps, jacs)
+        return (res, updated_jacs), (jvps, updated_jacs)
 
     res = execute_wrapper(params)
 
