@@ -995,13 +995,13 @@ class TestRandomSeed:
         different results (with almost certainty)"""
         qs = qml.tape.QuantumScript([qml.Hadamard(0)], measurements, shots=1000)
 
-        dev1 = DefaultQubit2(seed=123)
+        dev1 = DefaultQubit2(seed=None)
         result1 = dev1.execute(qs)
 
-        dev2 = DefaultQubit2(seed=456)
+        dev2 = DefaultQubit2(seed=123)
         result2 = dev2.execute(qs)
 
-        dev3 = DefaultQubit2(seed=None)
+        dev3 = DefaultQubit2(seed=456)
         result3 = dev3.execute(qs)
 
         if len(measurements) == 1:
