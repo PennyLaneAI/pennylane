@@ -33,6 +33,7 @@ from cachetools import LRUCache
 
 import pennylane as qml
 from pennylane.tape import QuantumTape
+from pennylane.typing import ResultBatch
 
 from .set_shots import set_shots
 
@@ -85,7 +86,9 @@ def _adjoint_jacobian_expansion(
     return tapes
 
 
-def cache_execute(fn: Callable, cache, pass_kwargs=False, return_tuple=True, expand_fn=None):
+def cache_execute(
+    fn: Callable, cache, pass_kwargs=False, return_tuple=True, expand_fn=None
+) -> Callable:
     """Decorator that adds caching to a function that executes
     multiple tapes on a device.
 
@@ -240,7 +243,7 @@ def execute(
     expand_fn="device",
     max_expansion=10,
     device_batch_transform=True,
-) -> qml.typing.ResultBatch:
+) -> ResultBatch:
     """New function to execute a batch of tapes on a device in an autodifferentiable-compatible manner. More cases will be added,
     during the project. The current version is supporting forward execution for Numpy and does not support shot vectors.
 
