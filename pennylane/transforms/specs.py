@@ -64,7 +64,7 @@ def specs(qnode, max_expansion=None, expansion_strategy=None):
 
     >>> qml.specs(circuit)(x, add_ry=False)
     {'resources': Resources(num_wires=2, num_gates=2, gate_types=defaultdict(<class 'int'>, {'RX': 1, 'CNOT': 1}),
-    gate_sizes=defaultdict(int, {1: 1, 2: 1}), depth=2, shots=0),
+    gate_sizes=defaultdict(int, {1: 1, 2: 1}), depth=2, shots=Shots(total_shots=None, shot_vector=())),
     'gate_sizes': defaultdict(int, {1: 1, 2: 1}),
     'gate_types': defaultdict(int, {'RX': 1, 'CNOT': 1}),
     'num_operations': 2,

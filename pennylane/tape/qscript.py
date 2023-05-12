@@ -1208,7 +1208,7 @@ class QuantumScript:
         wires: 2
         gates: 6
         depth: 4
-        shots: 0
+        shots: Shots(total=None)
         gate_types:
         {'Hadamard': 2, 'RX': 1, 'CNOT': 2, 'Rot': 1}
         gate_sizes:
@@ -1216,7 +1216,7 @@ class QuantumScript:
         """
         if self._specs is None:
             resources = qml.resource.resource._count_resources(
-                self, shots=0
+                self, shots=self.shots
             )  # pylint: disable=protected-access
 
             self._specs = SpecsDict(
