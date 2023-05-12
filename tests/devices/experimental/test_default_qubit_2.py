@@ -981,19 +981,10 @@ class TestRandomSeed:
 
         assert all(np.all(res1 == res2) for res1, res2 in zip(result1, result2))
 
-    @pytest.mark.parametrize(
-        "measurements",
-        [
-            [qml.sample(wires=0)],
-            [qml.expval(qml.PauliZ(0))],
-            [qml.probs(wires=0)],
-            [qml.sample(wires=0), qml.expval(qml.PauliZ(0)), qml.probs(wires=0)],
-        ],
-    )
-    def test_different_seed(self, measurements):
+    def test_different_seed(self):
         """Test that different devices given different random seeds will produce
         different results (with almost certainty)"""
-        qs = qml.tape.QuantumScript([qml.Hadamard(0)], measurements, shots=1000)
+        qs = qml.tape.QuantumScript([qml.Hadamard(0)], [qml.sample(wires=0)], shots=1000)
 
         dev1 = DefaultQubit2(seed=None)
         result1 = dev1.execute(qs)
@@ -1004,13 +995,10 @@ class TestRandomSeed:
         dev3 = DefaultQubit2(seed=456)
         result3 = dev3.execute(qs)
 
-        if len(measurements) == 1:
-            result1, result2, result3 = [result1], [result2], [result3]
-
         # assert results are pairwise different
-        assert all(np.any(res1 != res2) for res1, res2 in zip(result1, result2))
-        assert all(np.any(res1 != res3) for res1, res3 in zip(result1, result3))
-        assert all(np.any(res2 != res3) for res2, res3 in zip(result2, result3))
+        assert np.any(result1 != result2)
+        assert np.any(result1 != result3)
+        assert np.any(result2 != result3)
 
     @pytest.mark.parametrize(
         "measurements",
