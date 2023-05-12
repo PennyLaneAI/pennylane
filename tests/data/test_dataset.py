@@ -1,8 +1,8 @@
 from numbers import Number
+from pathlib import Path
 
 import numpy as np
 import pytest
-from pathlib import Path
 
 from pennylane.data import AttributeInfo, Dataset, DatasetScalar, attribute
 from pennylane.data.base._zarr import zarr

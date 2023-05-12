@@ -269,6 +269,14 @@ class AttributeType(ABC, Generic[Zarr, T, InitValueType]):
         in subclasses to implement additional initialization"""
 
     @classmethod
+    def py_type(cls, value_type: Type[InitValueType]) -> str:
+        """Determines the ``py_type`` of an attribute during value initialization,
+        if it was not provided in the ``info`` argument. This method returns
+        ``f"{value_type.__module__}.{value_type.__name__}``.
+        """
+        return get_type_str(value_type)
+
+    @classmethod
     def consumes_types(cls) -> typing.Iterable[type]:
         """
         Returns an iterable of types for which this should be the default
@@ -302,7 +310,7 @@ class AttributeType(ABC, Generic[Zarr, T, InitValueType]):
 
         info["type_id"] = self.type_id
         if info.py_type is None:
-            info.py_type = get_type_str(type(value))
+            info.py_type = self.py_type(type(value))
 
         new_bind = self.value_to_zarr(parent, key, value)
         new_info = AttributeInfo(new_bind.attrs)
