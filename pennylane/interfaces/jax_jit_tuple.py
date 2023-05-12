@@ -419,7 +419,9 @@ def _execute_fwd(
                 else:
                     jac_empty = jnp.zeros(shape_dtype.shape, shape_dtype.dtype)
 
-                for j, original_trainable_params in enumerate(list_original_trainable_parameters[i]):
+                for j, original_trainable_params in enumerate(
+                    list_original_trainable_parameters[i]
+                ):
                     if original_trainable_params in list_new_trainable_parameters[i]:
                         intermediate_jacs.append(jacs_[i])
                     else:
