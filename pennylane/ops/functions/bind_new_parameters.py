@@ -23,7 +23,7 @@ import pennylane as qml
 from pennylane.typing import TensorLike
 from pennylane.operation import Operator, Tensor
 
-from ..op_math import CompositeOp, SymbolicOp, ScalarSymbolicOp
+from ..op_math import CompositeOp, SymbolicOp, ScalarSymbolicOp, Adjoint
 
 
 def _validate_params(op: Operator, params: Optional[Sequence[TensorLike]]) -> Sequence[TensorLike]:
@@ -43,7 +43,7 @@ def _validate_params(op: Operator, params: Optional[Sequence[TensorLike]]) -> Se
         params = []
 
     if isinstance(op, qml.Hamiltonian):
-        invalid_params = len(params) != len(op.coeffs)
+        invalid_params = len(params) != len(op.data)
     else:
         invalid_params = len(params) != op.num_params
 
@@ -81,7 +81,9 @@ def bind_new_parameters(op: Operator, params: Optional[Sequence[TensorLike]] = N
 
 # pylint: disable=missing-docstring
 @bind_new_parameters.register
-def bind_new_parameters_composite_op(op: CompositeOp, params: Optional[Sequence[TensorLike]] = None):
+def bind_new_parameters_composite_op(
+    op: CompositeOp, params: Optional[Sequence[TensorLike]] = None
+):
     params = _validate_params(op, params)
     new_operands = []
 
@@ -90,7 +92,7 @@ def bind_new_parameters_composite_op(op: CompositeOp, params: Optional[Sequence[
         params = params[operand.num_params :]
         new_operands.append(bind_new_parameters(operand, sub_params))
 
-    return op.__class__(*new_operands)
+    return op.__class__(*new_operands, **copy.deepcopy(op.hyperparameters))
 
 
 # pylint: disable=missing-docstring
@@ -104,19 +106,37 @@ def bind_new_parameters_symbolic_op(op: SymbolicOp, params: Optional[Sequence[Te
         params = params[1:]
 
     new_base = bind_new_parameters(op.base, params)
-    return op.__class__(new_base, *new_scalar)
+    new_hyperparameters = copy.deepcopy(op.hyperparameters)
+    _ = new_hyperparameters.pop("base")
+
+    if isinstance(op, Adjoint):
+        # Need this branch because using the other class signature results in a call to
+        # `Adjoint.__new__` which doesn't raise an error but does return an unusable
+        # object
+        return Adjoint(new_base)
+    try:
+        # `try-except` block to accomodate for the fact that different `ScalarSymbolicOp`
+        # subclasses accept the base and scalar in different orders
+        return op.__class__(new_base, *new_scalar, **new_hyperparameters)
+    except AttributeError:
+        pass
+
+    return op.__class__(*new_scalar, new_base, **new_hyperparameters)
 
 
 # pylint: disable=missing-docstring
 @bind_new_parameters.register
-def bind_new_parameters_hamiltonian(op: qml.Hamiltonian, params: Optional[Sequence[TensorLike]] = None):
+def bind_new_parameters_hamiltonian(
+    op: qml.Hamiltonian, params: Optional[Sequence[TensorLike]] = None
+):
     params = _validate_params(op, params)
-    new_observables = copy.deepcopy(op.coeffs)
+    new_observables = copy.deepcopy(op.ops)
 
     return qml.Hamiltonian(params, new_observables)
 
 
-#pylint: disable=missing-docstring
+# pylint: disable=missing-docstring
+@bind_new_parameters.register
 def bind_new_parameters_tensor(op: Tensor, params: Optional[Sequence[TensorLike]] = None):
     params = _validate_params(op, params)
     new_obs = []

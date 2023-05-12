@@ -19,7 +19,7 @@ This module contains functions that act on operators and tapes.
 .. autosummary::
     :toctree: api
 
-    ~bind_new_parameters
+    ~ops.functions.bind_new_parameters
     ~dot
     ~eigvals
     ~equal
