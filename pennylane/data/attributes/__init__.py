@@ -21,6 +21,8 @@ from .operator import DatasetOperator
 from .scalar import DatasetScalar
 from .string import DatasetString
 from .wires import DatasetWires
+from .sparse_array import DatasetSparseArray
+from .molecule import DatasetMolecule
 
 __all__ = (
     "DatasetArray",
@@ -31,4 +33,6 @@ __all__ = (
     "DatasetOperator",
     "DatasetNone",
     "DatasetWires",
+    "DatasetMolecule",
+    "DatasetSparseArray",
 )
