@@ -953,6 +953,96 @@ class TestPreprocessingIntegration:
         assert qml.math.allclose(expected_expval, processed_results[1])
 
 
+class TestRandomSeed:
+    """Test that the device behaves correctly when provided with a random seed"""
+
+    @pytest.mark.parametrize(
+        "measurements",
+        [
+            [qml.sample(wires=0)],
+            [qml.expval(qml.PauliZ(0))],
+            [qml.probs(wires=0)],
+            [qml.sample(wires=0), qml.expval(qml.PauliZ(0)), qml.probs(wires=0)],
+        ],
+    )
+    def test_same_seed(self, measurements):
+        """Test that different devices given the same random seed will produce
+        the same results"""
+        qs = qml.tape.QuantumScript([qml.Hadamard(0)], measurements, shots=1000)
+
+        dev1 = DefaultQubit2(seed=123)
+        result1 = dev1.execute(qs)
+
+        dev2 = DefaultQubit2(seed=123)
+        result2 = dev2.execute(qs)
+
+        if len(measurements) == 1:
+            result1, result2 = [result1], [result2]
+
+        assert all(np.all(res1 == res2) for res1, res2 in zip(result1, result2))
+
+    @pytest.mark.parametrize(
+        "measurements",
+        [
+            [qml.sample(wires=0)],
+            [qml.expval(qml.PauliZ(0))],
+            [qml.probs(wires=0)],
+            [qml.sample(wires=0), qml.expval(qml.PauliZ(0)), qml.probs(wires=0)],
+        ],
+    )
+    def test_different_seed(self, measurements):
+        """Test that different devices given different random seeds will produce
+        different results (with almost certainty)"""
+        qs = qml.tape.QuantumScript([qml.Hadamard(0)], measurements, shots=1000)
+
+        dev1 = DefaultQubit2(seed=123)
+        result1 = dev1.execute(qs)
+
+        dev2 = DefaultQubit2(seed=456)
+        result2 = dev2.execute(qs)
+
+        dev3 = DefaultQubit2(seed=None)
+        result3 = dev3.execute(qs)
+
+        if len(measurements) == 1:
+            result1, result2, result3 = [result1], [result2], [result3]
+
+        # assert results are pairwise different
+        assert all(np.any(res1 != res2) for res1, res2 in zip(result1, result2))
+        assert all(np.any(res1 != res3) for res1, res3 in zip(result1, result3))
+        assert all(np.any(res2 != res3) for res2, res3 in zip(result2, result3))
+
+    @pytest.mark.parametrize(
+        "measurements",
+        [
+            [qml.sample(wires=0)],
+            [qml.expval(qml.PauliZ(0))],
+            [qml.probs(wires=0)],
+            [qml.sample(wires=0), qml.expval(qml.PauliZ(0)), qml.probs(wires=0)],
+        ],
+    )
+    def test_global_seed(self, measurements):
+        """Test that a global seed does not affect the result of devices
+        provided with a seed"""
+        qs = qml.tape.QuantumScript([qml.Hadamard(0)], measurements, shots=1000)
+
+        # expected result
+        dev1 = DefaultQubit2(seed=123)
+        result1 = dev1.execute(qs)
+
+        # set a global seed both before initialization of the
+        # device and before execution of the tape
+        np.random.seed(456)
+        dev2 = DefaultQubit2(seed=123)
+        np.random.seed(789)
+        result2 = dev2.execute(qs)
+
+        if len(measurements) == 1:
+            result1, result2 = [result1], [result2]
+
+        assert all(np.all(res1 == res2) for res1, res2 in zip(result1, result2))
+
+
 def test_broadcasted_parameter():
     """Test that DefaultQubit2 handles broadcasted parameters as expected."""
     dev = DefaultQubit2()
