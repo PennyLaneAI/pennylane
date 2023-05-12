@@ -1400,7 +1400,7 @@ class TestResourcesTracker:
     expected_resources = (
         Resources(2, 2, {"Hadamard": 1, "CNOT": 1}, {1: 1, 2: 1}, 2, Shots(None)),
         Resources(3, 3, {"PauliZ": 1, "CNOT": 1, "RX": 1}, {1: 2, 2: 1}, 2, Shots(10)),
-        Resources(2, 6, {"Hadamard": 3, "RX": 2, "CNOT": 1}, {1: 5, 2: 1}, 4, Shots(70)),
+        Resources(2, 6, {"Hadamard": 3, "RX": 2, "CNOT": 1}, {1: 5, 2: 1}, 4, Shots((10, 10, 50))),
     )  # Resources(wires, gates, gate_types, gate_sizes, depth, shots)
 
     devices = (
@@ -1449,3 +1449,34 @@ class TestResourcesTracker:
             tracker.history["resources"], [exp_res1, exp_res1, exp_res2]
         ):
             assert tracked_r == expected_r
+
+    @pytest.mark.all_interfaces
+    def test_tracker_grad(self):
+        """Test that the tracker can track resources through a gradient computation"""
+        dev = qml.device("default.qubit", wires=1, shots=100)
+
+        @qml.qnode(dev, diff_method="parameter-shift")
+        def circuit(x):
+            qml.RX(x, wires=0)  # 2 term parameter shift
+            return qml.expval(qml.PauliZ(0))
+
+        x = pnp.array(0.1, requires_grad=True)
+        expected_resources = Resources(
+            num_wires=1,
+            num_gates=1,
+            gate_types={"RX": 1},
+            gate_sizes={1: 1},
+            shots=Shots(100),
+            depth=1,
+        )
+
+        with qml.Tracker(dev) as tracker:
+            qml.grad(circuit)(x)
+
+        assert tracker.totals["executions"] == 3
+        assert len(tracker.history["resources"]) == 3
+        assert tracker.history["resources"] == [
+            expected_resources,
+            expected_resources,
+            expected_resources,
+        ]

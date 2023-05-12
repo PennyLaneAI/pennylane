@@ -15,13 +15,14 @@
 """This module contains functions for preprocessing `QuantumTape` objects to ensure
 that they are supported for execution by a device."""
 # pylint: disable=protected-access
+from dataclasses import replace
 from typing import Generator, Callable, Tuple, Union
 import warnings
 
 import pennylane as qml
 
 from pennylane.operation import Tensor
-from pennylane.measurements import MidMeasureMP, StateMeasurement, ExpectationMP
+from pennylane.measurements import MidMeasureMP, StateMeasurement, SampleMeasurement, ExpectationMP
 from pennylane import DeviceError
 
 from ..experimental import ExecutionConfig, DefaultExecutionConfig
@@ -137,10 +138,47 @@ def validate_and_expand_adjoint(
         else:
             trainable_params.append(k)
 
-    expanded_tape = qml.tape.QuantumScript(expanded_ops, measurements, prep)
+    expanded_tape = qml.tape.QuantumScript(expanded_ops, measurements, prep, circuit.shots)
     expanded_tape.trainable_params = trainable_params
 
     return expanded_tape
+
+
+def validate_measurements(
+    circuit: qml.tape.QuantumTape, execution_config: ExecutionConfig = DefaultExecutionConfig
+):
+    """Check that the circuit contains a valid set of measurements. A valid
+    set of measurements is defined as:
+
+    1. If circuit.shots is None (i.e., the execution is analytic), then
+       the circuit must only contain ``StateMeasurements``.
+    2. If circuit.shots is not None, then the circuit must only contain
+       ``SampleMeasurements``.
+
+    If the circuit has an invalid set of measurements, then an error is raised.
+
+    Args:
+        circuit (.QuantumTape): the circuit to validate
+        execution_config (.ExecutionConfig): execution configuration with configurable
+            options for the execution.
+    """
+    if circuit.shots.total_shots is None:
+        for m in circuit.measurements:
+            if not isinstance(m, StateMeasurement):
+                raise DeviceError(f"Analytic circuits must only contain StateMeasurements; got {m}")
+    else:
+        # check if an analytic diff method is used with finite shots
+        if execution_config.gradient_method in ["adjoint", "backprop"]:
+            raise DeviceError(
+                f"Circuits with finite shots must be executed with non-analytic "
+                f"gradient methods; got {execution_config.gradient_method}"
+            )
+
+        for m in circuit.measurements:
+            if not isinstance(m, SampleMeasurement):
+                raise DeviceError(
+                    f"Circuits with finite shots must only contain SampleMeasurements; got {m}"
+                )
 
 
 def expand_fn(circuit: qml.tape.QuantumScript) -> qml.tape.QuantumScript:
@@ -175,7 +213,9 @@ def expand_fn(circuit: qml.tape.QuantumScript) -> qml.tape.QuantumScript:
                 "Reached recursion limit trying to decompose operations. "
                 "Operator decomposition may have entered an infinite loop."
             ) from e
-        circuit = qml.tape.QuantumScript(new_ops, circuit.measurements, circuit._prep)
+        circuit = qml.tape.QuantumScript(
+            new_ops, circuit.measurements, circuit._prep, shots=circuit.shots
+        )
 
     for observable in circuit.observables:
         if isinstance(observable, Tensor):
@@ -183,11 +223,6 @@ def expand_fn(circuit: qml.tape.QuantumScript) -> qml.tape.QuantumScript:
                 raise DeviceError(f"Observable {observable} not supported on DefaultQubit2")
         elif observable.name not in _observables:
             raise DeviceError(f"Observable {observable} not supported on DefaultQubit2")
-
-    # change this once shots are supported
-    for m in circuit.measurements:
-        if not isinstance(m, StateMeasurement):
-            raise DeviceError(f"Measurement process {m} is only useable with finite shots.")
 
     return circuit
 
@@ -234,10 +269,33 @@ def batch_transform(
     return tapes, batch_fn
 
 
+def _update_config(config: ExecutionConfig) -> ExecutionConfig:
+    """Choose the "best" options for the configuration if they are left unspecified.
+
+    Args:
+        config (ExecutionConfig): the initial execution config
+
+    Returns:
+        ExecutionConfig: a new config with the best choices selected.
+    """
+    updated_values = {}
+    if config.gradient_method == "best":
+        updated_values["gradient_method"] = "backprop"
+    if config.use_device_gradient is None:
+        updated_values["use_device_gradient"] = config.gradient_method in {
+            "best",
+            "adjoint",
+            "backprop",
+        }
+    if config.grad_on_execution is None:
+        updated_values["grad_on_execution"] = config.gradient_method == "adjoint"
+    return replace(config, **updated_values)
+
+
 def preprocess(
     circuits: Tuple[qml.tape.QuantumScript],
     execution_config: ExecutionConfig = DefaultExecutionConfig,
-) -> Tuple[Tuple[qml.tape.QuantumScript], Callable]:
+) -> Tuple[Tuple[qml.tape.QuantumScript], Callable, ExecutionConfig]:
     """Preprocess a batch of :class:`~.QuantumTape` objects to make them ready for execution.
 
     This function validates a batch of :class:`~.QuantumTape` objects by transforming and expanding
@@ -249,13 +307,11 @@ def preprocess(
             options for the execution.
 
     Returns:
-        Tuple[Sequence[.QuantumTape], callable]: Returns a tuple containing
-        the sequence of circuits to be executed, and a post-processing function
-        to be applied to the list of evaluated circuit results.
+        Tuple[QuantumTape], Callable, ExecutionConfig: QuantumTapes that the device can natively execute,
+        a postprocessing function to be called after execution, and a configuration with originally unset specifications filled in.
     """
-    if execution_config.shots is not None:
-        # Finite shot support will be added later
-        raise DeviceError("The Python Device does not support finite shots.")
+    for c in circuits:
+        validate_measurements(c, execution_config)
 
     circuits = tuple(expand_fn(c) for c in circuits)
     if execution_config.gradient_method == "adjoint":
@@ -266,4 +322,4 @@ def preprocess(
 
     circuits, batch_fn = qml.transforms.map_batch_transform(batch_transform, circuits)
 
-    return circuits, batch_fn
+    return circuits, batch_fn, _update_config(execution_config)
