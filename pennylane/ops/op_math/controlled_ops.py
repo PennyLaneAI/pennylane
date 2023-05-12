@@ -79,6 +79,9 @@ class CY(ControlledOp):
         return self
 
     def pow(self, z):
+        if z % 2 == 1:
+            return [CY(self.wires)]
+
         base_pow = self.base.pow(z)
         return [ControlledOp(op, self.control_wires) for op in base_pow]
 
@@ -136,6 +139,9 @@ class CY(ControlledOp):
 
         """
         return [qml.CRY(np.pi, wires=wires), qml.ops.qubit.non_parametric_ops.S(wires=wires[0])]
+
+    def decomposition(self):
+        return self.compute_decomposition(self.wires)
 
 
 # pylint: disable=too-few-public-methods
