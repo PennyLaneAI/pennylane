@@ -82,14 +82,6 @@ class CY(ControlledOp):
         base_pow = self.base.pow(z)
         return [ControlledOp(op, self.control_wires) for op in base_pow]
 
-    def _controlled(self, wire):
-        ctrl_wires = self.control_wires + wire
-        new_op = ControlledOp(
-            self.base,
-            control_wires=ctrl_wires,
-        )
-        return new_op
-
     @staticmethod
     @lru_cache()
     def compute_matrix():  # pylint: disable=arguments-differ
