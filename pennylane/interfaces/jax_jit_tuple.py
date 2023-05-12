@@ -212,12 +212,12 @@ def _execute_bwd(
         params = primals[0]
 
         # Select the trainable params. Non-trainable params contribute a 0 gradient.
-        list_trainable_parameters = [
+        trainable_parameters = [
             [idx for idx, t in enumerate(tangent) if not isinstance(t, Zero)]
             for tangent in tangents[0]
         ]
 
-        for trainable_params, tape in zip(list_trainable_parameters, tapes):
+        for trainable_params, tape in zip(trainable_parameters, tapes):
             tape.trainable_params = trainable_params
 
         multi_measurements = [len(tape.measurements) > 1 for tape in tapes]
@@ -379,8 +379,8 @@ def _execute_fwd(
         original_shape = _jac_shape_dtype_tuple(tapes, device)
 
         # Get the original trainable parameters and the trainable parameters from symbolic zeros
-        list_original_trainable_parameters = [tape.trainable_params for tape in tapes]
-        list_new_trainable_parameters = [
+        original_trainable_parameters = [tape.trainable_params for tape in tapes]
+        new_trainable_parameters = [
             [idx for idx, t in enumerate(tangent) if not isinstance(t, Zero)]
             for tangent in tangents[0]
         ]
@@ -388,7 +388,7 @@ def _execute_fwd(
         switch_trainable = [False for _ in range(len(tapes))]
 
         # Update the trainable params for the forward execution
-        for i, (new_trainable_params, tape) in enumerate(zip(list_new_trainable_parameters, tapes)):
+        for i, (new_trainable_params, tape) in enumerate(zip(new_trainable_parameters, tapes)):
             if tape.trainable_params != new_trainable_params:
                 tape.trainable_params = new_trainable_params
                 switch_trainable[i] = True
@@ -419,9 +419,9 @@ def _execute_fwd(
                     jac_empty = jnp.zeros(shape_dtype.shape, shape_dtype.dtype)
 
                 for j, original_trainable_params in enumerate(
-                    list_original_trainable_parameters[i]
+                    original_trainable_parameters[i]
                 ):
-                    if original_trainable_params in list_new_trainable_parameters[i]:
+                    if original_trainable_params in new_trainable_parameters[i]:
                         intermediate_jacs.append(jacs_[i])
                     else:
                         intermediate_jacs.append(jac_empty)
@@ -429,8 +429,7 @@ def _execute_fwd(
             else:
                 updated_jacs.append(jacs_[i])
 
-        if updated_jacs:
-            updated_jacs = updated_jacs[0] if len(tapes) == 1 else tuple(updated_jacs)
+        updated_jacs = updated_jacs[0] if len(tapes) == 1 else tuple(updated_jacs)
 
         # Get the jvps
         tangents = _filter_zeros_tangents(tangents[0])
