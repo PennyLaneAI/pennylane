@@ -2834,6 +2834,7 @@ def test_jax_device_hessian_shots(hessian, diff_method, tol):
     assert np.allclose(hess, expected_hess, atol=shots_tol, rtol=0)
 
 
+@pytest.mark.parametrize("jit_inside", [True, False])
 @pytest.mark.parametrize("argnums", [0, 1, [0, 1]])
 @pytest.mark.parametrize("jacobian", jacobian_fn)
 @pytest.mark.parametrize(
@@ -2841,12 +2842,23 @@ def test_jax_device_hessian_shots(hessian, diff_method, tol):
 )
 class TestSubsetArgnums:
     def test_single_measurement(
-        self, interface, dev_name, diff_method, grad_on_execution, jacobian, argnums, tol
+        self,
+        interface,
+        dev_name,
+        diff_method,
+        grad_on_execution,
+        jacobian,
+        argnums,
+        jit_inside,
+        tol,
     ):
         """Test single measurement with different diff methods with argnums."""
+
+        if diff_method == "adjoint" and not grad_on_execution:
+            pytest.skip("Adjoint and backward pass do not work because of issue #3475")
+
         dev = qml.device(dev_name, wires=3)
 
-        @jax.jit
         @qml.qnode(
             dev,
             interface=interface,
@@ -2863,7 +2875,11 @@ class TestSubsetArgnums:
         a = jax.numpy.array(1.0)
         b = jax.numpy.array(2.0)
 
-        jac = jacobian(circuit, argnums=argnums)(a, b)
+        if jit_inside:
+            jac = jacobian(jax.jit(circuit), argnums=argnums)(a, b)
+        else:
+            jac = jax.jit(jacobian(circuit, argnums=argnums))(a, b)
+
         expected = np.array([-np.sin(a), 0])
 
         if diff_method == "spsa":
@@ -2878,10 +2894,21 @@ class TestSubsetArgnums:
             assert np.allclose(jac[1], expected[1], atol=tol)
 
     def test_multi_measurements(
-        self, interface, dev_name, diff_method, grad_on_execution, jacobian, argnums, tol
+        self,
+        interface,
+        dev_name,
+        diff_method,
+        grad_on_execution,
+        jacobian,
+        argnums,
+        jit_inside,
+        tol,
     ):
         """Test multiple measurements with different diff methods with argnums."""
         dev = qml.device(dev_name, wires=3)
+
+        if diff_method == "adjoint" and not grad_on_execution:
+            pytest.skip("Adjoint and backward pass do not work because of issue #3475")
 
         @qml.qnode(
             dev, interface=interface, diff_method=diff_method, grad_on_execution=grad_on_execution
@@ -2895,7 +2922,10 @@ class TestSubsetArgnums:
         a = jax.numpy.array(1.0)
         b = jax.numpy.array(2.0)
 
-        jac = jax.jit(jacobian(circuit, argnums=argnums))(a, b)
+        if jit_inside:
+            jac = jacobian(jax.jit(circuit), argnums=argnums)(a, b)
+        else:
+            jac = jax.jit(jacobian(circuit, argnums=argnums))(a, b)
 
         if diff_method == "spsa":
             tol = TOL_FOR_SPSA
