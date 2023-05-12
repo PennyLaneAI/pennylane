@@ -16,7 +16,7 @@
 import pennylane as qml
 
 import pennylane.numpy as np
-from pennylane.typing import TensorLike, Result
+from pennylane.typing import Result
 
 from .initialize_state import create_initial_state
 from .apply_operation import apply_operation
