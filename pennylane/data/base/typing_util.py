@@ -28,6 +28,7 @@ from typing import (
     Union,
     get_args,
     get_origin,
+    _SpecialForm,
 )
 
 from numpy.typing import ArrayLike
@@ -71,25 +72,35 @@ def get_type_str(cls: Union[type, str, None]) -> str:
 
     Otherwise, returns the fully-qualified class name, including the module.
     """
-    if cls is None:
+    if cls is None or cls is type(None):
         return "None"
 
     if isinstance(cls, str):
         return cls
 
     if isinstance(cls, ForwardRef):
+        # String annotations, as in List['MyClass']
         return cls.__forward_arg__
+
+    if isinstance(cls, _SpecialForm):
+        # These are typing constructs like Union, Literal etc that
+        # are not parametrized
+        return cls._name
 
     orig_type = get_origin(cls)
     if orig_type is not None:
+        # This is either a parametrized generic or parametrized special form
         orig_args = get_args(cls)
         if orig_args:
-            return f"{get_type_str(orig_type)}[{','.join(get_type_str(arg) for arg in orig_args)}]"
+            return f"{get_type_str(orig_type)}[{', '.join(get_type_str(arg) for arg in orig_args)}]"
+
         return get_type_str(orig_type)
 
     if getattr(cls, "__module__", None) in ("builtins", None):
+        # This is a built-in type
         return cls.__name__
 
+    # Regular class
     return f"{cls.__module__}.{cls.__qualname__}"
 
 
