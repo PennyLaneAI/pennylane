@@ -49,12 +49,12 @@ class TestMinimalDevice:
         assert self.dev.name == "MinimalDevice"
 
     def test_tracker_set_on_initialization(self):
-        """Test that a new tracker instance is intiailized with the class."""
+        """Test that a new tracker instance is initialized with the class."""
         assert isinstance(self.dev.tracker, qml.Tracker)
         assert self.dev.tracker is not self.MinimalDevice.tracker
 
     def test_preprocess_single_circuit(self):
-        """Test that preprocessing wraps a circuit circuit into a batch."""
+        """Test that preprocessing wraps a circuit into a batch."""
 
         circuit1 = qml.tape.QuantumScript()
         batch, fn, config = self.dev.preprocess(circuit1)
@@ -80,7 +80,7 @@ class TestMinimalDevice:
         assert fn(a) is a
 
     def test_supports_derivatives_default(self):
-        """Test that the defualt behavir of supports derivatives is false."""
+        """Test that the default behavior of supports derivatives is false."""
 
         assert not self.dev.supports_derivatives()
         assert not self.dev.supports_derivatives(ExecutionConfig())
