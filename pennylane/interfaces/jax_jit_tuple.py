@@ -412,7 +412,7 @@ def _execute_fwd(
                 # Multi measurement
                 if multi_measurement:
                     jac_empty = tuple(
-                        jax.numpy.zeros(shape=tensor.shape, dtype=tensor.dtype)
+                        jnp.zeros(shape=tensor.shape, dtype=tensor.dtype)
                         for tensor in shape_dtype
                     )
                 # Single measurement

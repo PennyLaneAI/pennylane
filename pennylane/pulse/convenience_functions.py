@@ -168,7 +168,7 @@ def rect(x: Union[float, Callable], windows: Union[Tuple[float], List[Tuple[floa
     if not has_jax:
         raise ImportError(
             "Module jax is required for any pulse-related convenience function. "
-            "You can install jax via: pip install jax==0.4.9 jaxlib==0.4.9"
+            "You can install jax via: pip install jax==0.4.10 jaxlib==0.4.10"
         )
     if windows is not None:
         is_nested = any(hasattr(w, "__len__") for w in windows)
