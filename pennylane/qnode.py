@@ -750,7 +750,7 @@ class QNode:
     def construct(self, args, kwargs):  # pylint: disable=too-many-branches
         """Call the quantum function with a tape context, ensuring the operations get queued."""
         old_interface = self.interface
-        
+
         if not self._qfunc_uses_shots_arg:
             shots = kwargs.pop("shots", None)
         else:
