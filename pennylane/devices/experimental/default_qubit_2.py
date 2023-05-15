@@ -17,6 +17,8 @@ This module contains the next generation successor to default qubit
 
 from typing import Union, Callable, Tuple, Optional, Sequence
 
+from pennylane.resource import Resources
+from pennylane.measurements import Shots
 from pennylane.tape import QuantumTape, QuantumScript
 
 from . import Device
@@ -126,7 +128,7 @@ class DefaultQubit2(Device):
         self,
         circuits: QuantumTape_or_Batch,
         execution_config: ExecutionConfig = DefaultExecutionConfig,
-    ) -> Tuple[QuantumTapeBatch, Callable]:
+    ) -> Tuple[QuantumTapeBatch, Callable, ExecutionConfig]:
         """Converts an arbitrary circuit or batch of circuits into a batch natively executable by the :meth:`~.execute` method.
 
         Args:
@@ -136,8 +138,8 @@ class DefaultQubit2(Device):
                 the execution. Includes such information as shots.
 
         Returns:
-            Sequence[QuantumTape], Callable: QuantumTapes that the device can natively execute
-            and a postprocessing function to be called after execution.
+            Tuple[QuantumTape], Callable, ExecutionConfig: QuantumTapes that the device can natively execute,
+            a postprocessing function to be called after execution, and a configuration with unset specifications filled in.
 
         This device:
 
@@ -151,7 +153,7 @@ class DefaultQubit2(Device):
             circuits = [circuits]
             is_single_circuit = True
 
-        batch, post_processing_fn = preprocess(circuits, execution_config=execution_config)
+        batch, post_processing_fn, config = preprocess(circuits, execution_config=execution_config)
 
         if is_single_circuit:
 
@@ -159,9 +161,9 @@ class DefaultQubit2(Device):
                 """Unwraps a dimension so that executing the batch of circuits looks like executing a single circuit."""
                 return post_processing_fn(results)[0]
 
-            return batch, convert_batch_to_single_output
+            return batch, convert_batch_to_single_output, config
 
-        return batch, post_processing_fn
+        return batch, post_processing_fn, config
 
     def execute(
         self,
@@ -174,6 +176,18 @@ class DefaultQubit2(Device):
             circuits = [circuits]
 
         if self.tracker.active:
+            for c in circuits:
+                tape_resources = c.specs["resources"]
+
+                resources = Resources(  # temporary until shots get updated on tape !
+                    tape_resources.num_wires,
+                    tape_resources.num_gates,
+                    tape_resources.gate_types,
+                    tape_resources.gate_sizes,
+                    tape_resources.depth,
+                    Shots(c.shots),
+                )
+                self.tracker.update(resources=resources)
             self.tracker.update(batches=1, executions=len(circuits))
             self.tracker.record()
 

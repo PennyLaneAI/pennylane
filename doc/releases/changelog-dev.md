@@ -6,6 +6,12 @@
 
 <h3>Improvements 🛠</h3>
 
+* The Jax-JIT interface now uses symbolic zeros to determine trainable parameters.
+  [(4075)](https://github.com/PennyLaneAI/pennylane/pull/4075)
+
+* Accelerate Jordan-Wigner transforms caching Pauli gate objects.
+  [(4046)](https://github.com/PennyLaneAI/pennylane/pull/4046)
+
 * The `qchem.molecular_hamiltonian` function is upgraded to support custom wires for constructing
   differentiable Hamiltonians. The zero imaginary component of the Hamiltonian coefficients are
   removed.
@@ -20,9 +26,15 @@
 * Added a `shots` property to `QuantumScript`. This will allow shots to be tied to executions instead of devices more
   concretely.
   [(#4067)](https://github.com/PennyLaneAI/pennylane/pull/4067)
+  [(#4103)](https://github.com/PennyLaneAI/pennylane/pull/4103)
+  [(#4106)](https://github.com/PennyLaneAI/pennylane/pull/4106)
+  [(#4112)](https://github.com/PennyLaneAI/pennylane/pull/4112)
 
 * `qml.specs` is compatible with custom operations that have `depth` bigger than 1.
   [(#4033)](https://github.com/PennyLaneAI/pennylane/pull/4033)
+
+* `qml.Tracker` when used with `default.qubit` or `null.qubit` devices, will track resources of the quantum circuit.
+  [#(4045)](https://github.com/PennyLaneAI/pennylane/pull/4045)
 
 * `qml.prod` now accepts a single qfunc input for creating new `Prod` operators.
   [(#4011)](https://github.com/PennyLaneAI/pennylane/pull/4011)
@@ -35,15 +47,41 @@
 
 * Added a function `measure_with_samples` that returns a sample-based measurement result given a state
   [(#4083)](https://github.com/PennyLaneAI/pennylane/pull/4083)
+  [(#4093)](https://github.com/PennyLaneAI/pennylane/pull/4093)
+
+* Wrap all objects being queued in an `AnnotatedQueue` so that `AnnotatedQueue` is not dependent on
+  the hash of any operators/measurement processes.
+  [(#4087)](https://github.com/PennyLaneAI/pennylane/pull/4087)
 
 * Support for adjoint differentiation has been added to the `DefaultQubit2` device.
   [(#4037)](https://github.com/PennyLaneAI/pennylane/pull/4037)
+
+* Support for sample-based measurements has been added to the `DefaultQubit2` device.
+  [(#4105)](https://github.com/PennyLaneAI/pennylane/pull/4105)
+  [(#4114)](https://github.com/PennyLaneAI/pennylane/pull/4114)
 
 * Added a `dense` keyword to `ParametrizedEvolution` that allows forcing dense or sparse matrices.
   [(#4079)](https://github.com/PennyLaneAI/pennylane/pull/4079)
   [(#4095)](https://github.com/PennyLaneAI/pennylane/pull/4095)
 
+* `qml.devices.ExecutionConfig` no longer has a `shots` property, as it is now on the `QuantumScript`.  It now has a `use_device_gradient` property. `ExecutionConfig.grad_on_execution = None` indicates a request for `"best"`, instead of a string.
+[(#4102)](https://github.com/PennyLaneAI/pennylane/pull/4102)
+
+* `DefaultQubit2.preprocess` now returns a new `ExecutionConfig` object with decisions for `gradient_method`,
+  `use_device_gradient`, and `grad_on_execution`.
+  [(#4102)](https://github.com/PennyLaneAI/pennylane/pull/4102)
+
 <h3>Breaking changes 💔</h3>
+
+* Jax trainable parameters are now `Tracer` instead of `JVPTracer`, it is not always the right definition for the JIT 
+  interface, but we update them in the custom JVP using symbolic zeros.
+  [(4075)](https://github.com/PennyLaneAI/pennylane/pull/4075)
+
+* The experimental Device interface `qml.devices.experimental.Device` now requires that the `preprocess` method
+  also returns an `ExecutionConfig` object. This allows the device to choose what `"best"` means for various
+  hyperparameters like `gradient_method` and `grad_on_execution`.
+  [(#4007)](https://github.com/PennyLaneAI/pennylane/pull/4007)
+  [(#4102)](https://github.com/PennyLaneAI/pennylane/pull/4102)
 
 * Gradient transforms with Jax do not support `argnum` anymore,  `argnums` needs to be used.
   [(#4076)](https://github.com/PennyLaneAI/pennylane/pull/4076)
@@ -69,8 +107,10 @@ This release contains contributions from (in alphabetical order):
 
 Isaac De Vlugt,
 Soran Jahangiri,
+Edward Jiang,
 Korbinian Kottmann
 Christina Lee,
+Vincent Michaud-Rioux,
 Romain Moyard,
 Mudit Pandey,
 Matthew Silverman,

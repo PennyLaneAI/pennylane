@@ -151,11 +151,11 @@ class TestMeasureSamples:
         result0 = measure_with_samples(mp0, state, shots=shots)
         result1 = measure_with_samples(mp1, state, shots=shots)
 
-        assert result0.shape == (shots.total_shots, 1)
+        assert result0.shape == (shots.total_shots,)
         assert result0.dtype == np.bool8
         assert np.all(result0 == 0)
 
-        assert result1.shape == (shots.total_shots, 1)
+        assert result1.shape == (shots.total_shots,)
         assert result1.dtype == np.bool8
         assert len(np.unique(result1)) == 2
 
@@ -219,16 +219,43 @@ class TestMeasureSamples:
         assert result0 == 1
         assert result1 == -1
 
+    def test_var_measure(self):
+        """Test that a variance measurement works as expected"""
+        state = qml.math.array(two_qubit_state)
+        shots = qml.measurements.Shots(100)
+        mp = qml.var(qml.prod(qml.PauliX(0), qml.PauliY(1)))
+
+        result = measure_with_samples(mp, state, shots=shots)
+
+        assert result.shape == ()
+        assert result == 0
+
+    def test_var_measure_single_wire(self):
+        """Test that a variance measurement on a single wire works as expected"""
+        state = np.array([[1, -1j], [0, 0]]) / np.sqrt(2)
+        shots = qml.measurements.Shots(100)
+
+        mp0 = qml.var(qml.PauliZ(0))
+        mp1 = qml.var(qml.PauliY(1))
+
+        result0 = measure_with_samples(mp0, state, shots=shots)
+        result1 = measure_with_samples(mp1, state, shots=shots)
+
+        assert result0.shape == ()
+        assert result1.shape == ()
+        assert result0 == 0
+        assert result1 == 0
+
     def test_approximate_sample_measure(self):
         """Test that a sample measurement returns approximately the correct distribution"""
         state = qml.math.array(two_qubit_state)
         shots = qml.measurements.Shots(10000)
         mp = qml.sample(wires=range(2))
 
-        result = measure_with_samples(mp, state, shots=shots)
+        result = measure_with_samples(mp, state, shots=shots, rng=123)
 
         one_prob = np.count_nonzero(result[:, 0]) / result.shape[0]
-        assert np.allclose(one_prob, 0.5, atol=0.03)
+        assert np.allclose(one_prob, 0.5, atol=0.05)
 
     def test_approximate_prob_measure(self):
         """Test that a probability measurement works as expected"""
@@ -236,10 +263,10 @@ class TestMeasureSamples:
         shots = qml.measurements.Shots(10000)
         mp = qml.probs(wires=range(2))
 
-        result = measure_with_samples(mp, state, shots=shots)
+        result = measure_with_samples(mp, state, shots=shots, rng=123)
 
-        assert np.allclose(result[1], 0.5, atol=0.03)
-        assert np.allclose(result[2], 0.5, atol=0.03)
+        assert np.allclose(result[1], 0.5, atol=0.05)
+        assert np.allclose(result[2], 0.5, atol=0.05)
         assert result[1] + result[2] == 1
 
     def test_approximate_expval_measure(self):
@@ -248,7 +275,145 @@ class TestMeasureSamples:
         shots = qml.measurements.Shots(10000)
         mp = qml.expval(qml.prod(qml.PauliX(0), qml.PauliX(1)))
 
-        result = measure_with_samples(mp, state, shots=shots)
+        result = measure_with_samples(mp, state, shots=shots, rng=123)
 
         assert result != 0
-        assert np.allclose(result, 0, atol=0.03)
+        assert np.allclose(result, 0, atol=0.05)
+
+    def test_approximate_var_measure(self):
+        """Test that a variance measurement works as expected"""
+        state = qml.math.array(two_qubit_state)
+        shots = qml.measurements.Shots(10000)
+        mp = qml.var(qml.prod(qml.PauliX(0), qml.PauliX(1)))
+
+        result = measure_with_samples(mp, state, shots=shots, rng=123)
+
+        assert result != 1
+        assert np.allclose(result, 1, atol=0.05)
+
+    @pytest.mark.parametrize(
+        "shots, total_copies",
+        [
+            [(100,), 1],
+            [((100, 1),), 1],
+            [((100, 2),), 2],
+            [(100, 100), 2],
+            [(100, 200), 2],
+            [(100, 100, 200), 3],
+            [(200, (100, 2)), 3],
+        ],
+    )
+    def test_sample_measure_shot_vector(self, shots, total_copies):
+        """Test that a sample measurement with shot vectors works as expected"""
+        state = qml.math.array(two_qubit_state)
+        shots = qml.measurements.Shots(shots)
+        mp = qml.sample(wires=range(2))
+
+        result = measure_with_samples(mp, state, shots=shots)
+
+        if total_copies == 1:
+            assert isinstance(result, np.ndarray)
+            result = (result,)
+
+        assert isinstance(result, tuple)
+        assert len(result) == total_copies
+
+        for res, sh in zip(result, shots):
+            assert res.shape == (sh, 2)
+            assert res.dtype == np.bool8
+            assert all(qml.math.allequal(s, [0, 1]) or qml.math.allequal(s, [1, 0]) for s in res)
+
+    @pytest.mark.parametrize(
+        "shots, total_copies",
+        [
+            [(100,), 1],
+            [((100, 1),), 1],
+            [((100, 2),), 2],
+            [(100, 100), 2],
+            [(100, 200), 2],
+            [(100, 100, 200), 3],
+            [(200, (100, 2)), 3],
+        ],
+    )
+    def test_prob_measure_shot_vector(self, shots, total_copies):
+        """Test that a probability measurement with shot vectors works as expected"""
+        state = qml.math.array(two_qubit_state)
+        shots = qml.measurements.Shots(shots)
+        mp = qml.probs(wires=range(2))
+
+        result = measure_with_samples(mp, state, shots=shots)
+
+        if total_copies == 1:
+            assert isinstance(result, np.ndarray)
+            result = (result,)
+
+        assert isinstance(result, tuple)
+        assert len(result) == total_copies
+
+        for res in result:
+            assert res.shape == (4,)
+            assert res[0] == 0
+            assert res[3] == 0
+            assert res[1] + res[2] == 1
+
+    @pytest.mark.parametrize(
+        "shots, total_copies",
+        [
+            [(100,), 1],
+            [((100, 1),), 1],
+            [((100, 2),), 2],
+            [(100, 100), 2],
+            [(100, 200), 2],
+            [(100, 100, 200), 3],
+            [(200, (100, 2)), 3],
+        ],
+    )
+    def test_expval_measure_shot_vector(self, shots, total_copies):
+        """Test that an expval measurement with shot vectors works as expected"""
+        state = qml.math.array(two_qubit_state)
+        shots = qml.measurements.Shots(shots)
+        mp = qml.expval(qml.prod(qml.PauliX(0), qml.PauliY(1)))
+
+        result = measure_with_samples(mp, state, shots=shots)
+
+        if total_copies == 1:
+            assert isinstance(result, np.float64)
+            result = (result,)
+
+        assert isinstance(result, tuple)
+        assert len(result) == total_copies
+
+        for res in result:
+            assert res.shape == ()
+            assert res == -1
+
+    @pytest.mark.parametrize(
+        "shots, total_copies",
+        [
+            [(100,), 1],
+            [((100, 1),), 1],
+            [((100, 2),), 2],
+            [(100, 100), 2],
+            [(100, 200), 2],
+            [(100, 100, 200), 3],
+            [(200, (100, 2)), 3],
+        ],
+    )
+    def test_var_measure_shot_vector(self, shots, total_copies):
+        """Test that a variance measurement with shot vectors works as expected"""
+        state = qml.math.array(two_qubit_state)
+        shots = qml.measurements.Shots(shots)
+        mp = qml.var(qml.prod(qml.PauliX(0), qml.PauliY(1)))
+
+        result = measure_with_samples(mp, state, shots=shots)
+
+        if total_copies == 1:
+            assert isinstance(result, np.float64)
+            result = (result,)
+
+        assert isinstance(result, tuple)
+        assert len(result) == total_copies
+
+        for res in result:
+            assert res.shape == ()
+            assert res == 0
