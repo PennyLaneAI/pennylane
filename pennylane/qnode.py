@@ -750,7 +750,15 @@ class QNode:
     def construct(self, args, kwargs):  # pylint: disable=too-many-branches
         """Call the quantum function with a tape context, ensuring the operations get queued."""
         old_interface = self.interface
-        shots = kwargs.pop("shots", None)
+        
+        if not self._qfunc_uses_shots_arg:
+            shots = kwargs.pop("shots", None)
+        else:
+            shots = (
+                        self._original_device._raw_shot_sequence
+                        if self._original_device._shot_vector
+                        else self._original_device.shots
+                    )
 
         if old_interface == "auto":
             self.interface = qml.math.get_interface(*args, *list(kwargs.values()))
