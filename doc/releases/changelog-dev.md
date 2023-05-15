@@ -71,6 +71,7 @@
   `use_device_gradient`, and `grad_on_execution`.
   [(#4102)](https://github.com/PennyLaneAI/pennylane/pull/4102)
 
+
 <h3>Breaking changes 💔</h3>
 
 * Jax trainable parameters are now `Tracer` instead of `JVPTracer`, it is not always the right definition for the JIT 
