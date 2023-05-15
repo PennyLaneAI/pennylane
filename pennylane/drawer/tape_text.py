@@ -332,6 +332,7 @@ def tape_text(
             totals = [filler.join([t, s]) for t, s in zip(totals, layer_str)]
         if ender:
             totals = [s + "─┤" for s in totals]
+            line_length += 2
 
     # Recursively handle nested tapes #
     tape_totals = "\n".join(finished_lines + totals)
