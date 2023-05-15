@@ -35,7 +35,6 @@ def test_execute_method_abstract():
 class TestMinimalDevice:
     """Tests for a device with only a minimal execute provided."""
 
-
     # pylint: disable=too-few-public-methods
     class MinimalDevice(Device):
         """A device with only a dummy execute method provided."""
