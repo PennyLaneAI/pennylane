@@ -228,9 +228,12 @@ class CZ(ControlledOp):
         return np.array([1, 1, 1, -1])
 
     def adjoint(self):
-        return CZ(self.wires)
+        return CZ(wires=self.wires)
 
     def pow(self, z):
+        if z % 2 == 1:
+            return [CZ(wires=self.wires)]
+        
         base_pow = self.base.pow(z)
         return [ControlledOp(op, self.control_wires) for op in base_pow]
 

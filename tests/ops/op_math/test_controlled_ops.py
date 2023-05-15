@@ -493,6 +493,7 @@ class TestPowMethod:
     def test_period_two_pow_odd(self, op, n):
         """Test that ops with a period of 2 raised to an odd power are the same as the original op."""
         assert np.allclose(op.pow(n)[0].matrix(), op.matrix())
+        assert op.pow(n)[0].name == op.name
 
     @pytest.mark.parametrize("op", period_two_ops)
     @pytest.mark.parametrize("n", (2, 6, 0, -2))
