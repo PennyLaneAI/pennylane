@@ -283,7 +283,7 @@ def test_vanilla_operators(op, new_params, expected_op):
         Tensor(qml.Hermitian(I, 0), qml.PauliX(1)),
         qml.RX(0.123, 0),
     ],
-)   # All tested operators expect one or more parameter; test uses empty parameter list
+)  # All tested operators expect one or more parameter; test uses empty parameter list
 def test_incorrect_parameters(op):
     """Test that `bind_new_parameters` with raises the correct error when the
     shape of the new parameters does not match the orginal parameters."""
