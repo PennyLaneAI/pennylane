@@ -2430,7 +2430,7 @@ class TestHamiltonianExpvalGradients:
                 NotImplementedError, match="Broadcasting with multiple measurements"
             ):
                 with tf.GradientTape() as _:
-                    _ = self.cost_fn(weights, coeffs1, coeffs2, dev, broadcast)
+                    self.cost_fn(weights, coeffs1, coeffs2, dev, broadcast)
             return
         with tf.GradientTape() as _:
             jac = self.cost_fn(weights, coeffs1, coeffs2, dev, broadcast)

@@ -645,7 +645,7 @@ class TestParameterShiftHessian:
         tape = qml.tape.QuantumScript.from_queue(q)
         msg = "Computing the Hessian of circuits that return the state is not supported"
         with pytest.raises(ValueError, match=msg):
-            _ = qml.gradients.param_shift_hessian(tape)
+            qml.gradients.param_shift_hessian(tape)
 
     def test_variance_error(self):
         """Test that an error is raised when computing the gradient of a tape
@@ -661,7 +661,7 @@ class TestParameterShiftHessian:
         tape = qml.tape.QuantumScript.from_queue(q)
         msg = "Computing the Hessian of circuits that return variances is currently not supported"
         with pytest.raises(ValueError, match=msg):
-            _ = qml.gradients.param_shift_hessian(tape)
+            qml.gradients.param_shift_hessian(tape)
 
     @pytest.mark.parametrize("num_measurements", [1, 2])
     def test_no_trainable_params(self, num_measurements):

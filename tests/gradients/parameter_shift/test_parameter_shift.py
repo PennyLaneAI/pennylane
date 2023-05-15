@@ -2449,7 +2449,7 @@ class TestParameterShiftRuleBroadcast:
         grad_A = grad_fn(tape, dev, broadcast=True)
 
         # gradients computed with different methods must agree
-        for idx1, _grad_A in range(len(grad_A)):
+        for idx1, _grad_A in enumerate(grad_A):
             for idx2, g in enumerate(_grad_A):
                 assert np.allclose(g, grad_F1[idx1][idx2], atol=tol, rtol=0)
                 assert np.allclose(g, grad_F2[idx1][idx2], atol=tol, rtol=0)
@@ -2483,7 +2483,7 @@ class TestParameterShiftRuleBroadcast:
             return fn(dev.batch_execute(tapes))
 
         with pytest.raises(NotImplementedError, match="Broadcasting with multiple measurements"):
-            _ = cost_fn(params)
+            cost_fn(params)
         # TODO: Uncomment the following when #2693 is resolved. Add test fixture arg `tol`
         # res = cost_fn(params)
         # assert res.shape == (2, 2)
@@ -2571,7 +2571,7 @@ class TestParameterShiftRuleBroadcast:
 
         tape = qml.tape.QuantumScript.from_queue(q)
         with pytest.raises(NotImplementedError, match="Broadcasting with multiple measurements"):
-            _ = qml.gradients.param_shift(tape, broadcast=True)
+            qml.gradients.param_shift(tape, broadcast=True)
         # TODO: Uncomment the following when #2693 is resolved. Add test fixture arg `tol`
         # dev = qml.device("default.qubit", wires=2)
         # tapes, fn = qml.gradients.param_shift(tape, broadcast=True)
@@ -2599,7 +2599,7 @@ class TestParameterShiftRuleBroadcast:
 
         tape = qml.tape.QuantumScript.from_queue(q)
         with pytest.raises(NotImplementedError, match="Broadcasting with multiple measurements"):
-            _ = qml.gradients.param_shift(tape, broadcast=True)
+            qml.gradients.param_shift(tape, broadcast=True)
         # TODO: Uncomment the following when #2693 is resolved. Add test fixture arg `tol`
         # dev = qml.device("default.qubit", wires=2)
         # tapes, fn = qml.gradients.param_shift(tape, broadcast=True)
@@ -2631,7 +2631,7 @@ class TestParameterShiftRuleBroadcast:
         dev.execute(tape)
 
         with pytest.raises(NotImplementedError, match="Broadcasting with multiple measurements"):
-            _ = qml.gradients.param_shift(tape, broadcast=True)
+            qml.gradients.param_shift(tape, broadcast=True)
         # TODO: Uncomment the following when #2693 is resolved. Add test fixture arg `tol`
         # tapes, fn = qml.gradients.param_shift(tape, broadcast=True)
         # assert len(tapes) == 2
@@ -2757,7 +2757,7 @@ class TestParameterShiftRuleBroadcast:
 
         # circuit jacobians
         with pytest.raises(NotImplementedError, match="Broadcasting with multiple measurements"):
-            _ = qml.gradients.param_shift(tape, broadcast=True)
+            qml.gradients.param_shift(tape, broadcast=True)
         # TODO: Uncomment the following when #2693 is resolved.
         # tapes, fn = qml.gradients.param_shift(tape, broadcast=True)
         # gradA = fn(dev.batch_execute(tapes))
@@ -2803,7 +2803,7 @@ class TestParameterShiftRuleBroadcast:
 
         # circuit jacobians
         with pytest.raises(NotImplementedError, match="Broadcasting with multiple measurements"):
-            _ = qml.gradients.param_shift(tape, broadcast=True)
+            qml.gradients.param_shift(tape, broadcast=True)
         # TODO: Uncomment the following when #2693 is resolved.
         # tapes, fn = qml.gradients.param_shift(tape, broadcast=True)
         # gradA = fn(dev.batch_execute(tapes))
@@ -2898,7 +2898,7 @@ class TestParameterShiftRuleBroadcast:
         circuits = [qml.QNode(cost, dev) for cost in (cost1, cost2, cost3, cost4, cost5, cost6)]
 
         with pytest.raises(NotImplementedError, match="Broadcasting with multiple measurements"):
-            _ = [qml.math.shape(qml.gradients.param_shift(c, broadcast=True)(x)) for c in circuits]
+            [qml.math.shape(qml.gradients.param_shift(c, broadcast=True)(x)) for c in circuits]
 
 
 @pytest.mark.parametrize(
@@ -3212,7 +3212,7 @@ class TestHamiltonianExpvalGradients:
                 NotImplementedError, match="Broadcasting with multiple measurements"
             ):
                 with tf.GradientTape() as _:
-                    _ = self.cost_fn(weights, coeffs1, coeffs2, dev, broadcast)
+                    self.cost_fn(weights, coeffs1, coeffs2, dev, broadcast)
             return
         with tf.GradientTape() as _:
             jac = self.cost_fn(weights, coeffs1, coeffs2, dev, broadcast)

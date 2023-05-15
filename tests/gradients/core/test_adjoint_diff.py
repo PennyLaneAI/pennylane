@@ -99,7 +99,7 @@ class TestAdjointJacobian:
         with pytest.warns(
             UserWarning, match="Differentiating with respect to the input parameters of Hermitian"
         ):
-            _ = dev.adjoint_jacobian(tape)
+            dev.adjoint_jacobian(tape)
 
     @pytest.mark.autograd
     @pytest.mark.parametrize("theta", np.linspace(-2 * np.pi, 2 * np.pi, 7))
