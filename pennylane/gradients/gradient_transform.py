@@ -402,7 +402,7 @@ def reorder_grads(grads, tape_specs):
     return _move_first_axis_to_third_pos(grads, num_params, len_shot_vec, num_measurements)
 
 
-# pylint: disable=too-many-statements
+# pylint: disable=too-many-return-statements,too-many-branches
 def _contract_qjac_with_cjac(qjac, cjac, num_measurements, shots):
     """Contract a quantum Jacobian with a classical preprocessing Jacobian.
     Essentially, this function computes the generalized version of
@@ -436,21 +436,21 @@ def _contract_qjac_with_cjac(qjac, cjac, num_measurements, shots):
             _qjac = _qjac[0]
         multi_params = isinstance(_qjac, tuple)
 
-    print(f"{multi_params=}, {multi_meas=}, {shot_vector=}, {shots=}")
-    print(qjac)
-    print(cjac)
     tdot = partial(qml.math.tensordot, axes=[[0], [0]])
 
     if not multi_params:
         # Without dimension (e.g. expval) or with dimension (e.g. probs)
         reshape = lambda x: qml.math.reshape(x, (1,) if x.shape == () else (1, -1))
 
-        if not multi_meas:
+        if not (multi_meas or shot_vector):
             # Single parameter, single measurements
             return tdot(reshape(qjac), cjac)
 
+        if not (multi_meas and shot_vector):
+            return tuple(tdot(reshape(q), cjac) for q in qjac)
+
         # Single parameter, multiple measurements
-        return tuple(tdot(reshape(q), cjac) for q in qjac)
+        return tuple(tuple(tdot(reshape(_q), cjac) for _q in q) for q in qjac)
 
     if not multi_meas:
         # Multiple parameters, single measurement
