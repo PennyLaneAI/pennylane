@@ -19,6 +19,7 @@ import pytest
 import numpy as np
 
 import pennylane as qml
+from pennylane.resource import Resources
 from pennylane.devices.experimental import DefaultQubit2, ExecutionConfig
 from pennylane.devices.qubit.preprocess import validate_and_expand_adjoint
 
@@ -70,7 +71,7 @@ class TestTracking:
 
     def test_tracker_set_upon_initialization(self):
         """Test that a new tracker is intialized with each device."""
-        assert DefaultQubit2.tracker is not DefaultQubit2().tracker
+        assert DefaultQubit2().tracker is not DefaultQubit2().tracker
 
     def test_tracker_not_updated_if_not_active(self):
         """Test that the tracker is not updated if not active."""
@@ -91,9 +92,42 @@ class TestTracking:
             dev.execute(qs)
             dev.execute([qs, qs])  # and a second time
 
-        assert tracker.history == {"batches": [1, 1], "executions": [1, 2]}
+        assert tracker.history == {
+            "batches": [1, 1],
+            "executions": [1, 2],
+            "resources": [Resources(num_wires=1), Resources(num_wires=1), Resources(num_wires=1)],
+        }
         assert tracker.totals == {"batches": 2, "executions": 3}
         assert tracker.latest == {"batches": 1, "executions": 2}
+
+    def test_tracking_resources(self):
+        """Test that resources are tracked for the experimental default qubit device."""
+        qs = qml.tape.QuantumScript(
+            [
+                qml.Hadamard(0),
+                qml.Hadamard(1),
+                qml.CNOT(wires=[0, 2]),
+                qml.RZ(1.23, 1),
+                qml.CNOT(wires=[1, 2]),
+                qml.Hadamard(0),
+            ],
+            [qml.expval(qml.PauliZ(1)), qml.expval(qml.PauliY(2))],
+        )
+
+        expected_resources = Resources(
+            num_wires=3,
+            num_gates=6,
+            gate_types={"Hadamard": 3, "CNOT": 2, "RZ": 1},
+            gate_sizes={1: 4, 2: 2},
+            depth=3,
+        )
+
+        dev = DefaultQubit2()
+        with qml.Tracker(dev) as tracker:
+            dev.execute(qs)
+
+        assert len(tracker.history["resources"]) == 1
+        assert tracker.history["resources"][0] == expected_resources
 
 
 # pylint: disable=too-few-public-methods
