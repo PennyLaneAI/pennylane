@@ -432,7 +432,7 @@ def _hybrid_pulse_grad(tape, argnum=None, shots=None, atol=1e-7):
 
         This function requires the JAX interface and does not work with other autodiff interfaces
         commonly encountered with PennyLane.
-        Finally, this transform is not JIT-compatible yet.
+        In addition, this transform is only JIT-compatible with scalar pulse parameters.
 
     .. details::
         :title: Theoretical background
