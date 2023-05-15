@@ -436,6 +436,9 @@ def _contract_qjac_with_cjac(qjac, cjac, num_measurements, shots):
             _qjac = _qjac[0]
         multi_params = isinstance(_qjac, tuple)
 
+    print(f"{multi_params=}, {multi_meas=}, {shot_vector=}, {shots=}")
+    print(qjac)
+    print(cjac)
     tdot = partial(qml.math.tensordot, axes=[[0], [0]])
 
     if not multi_params:
@@ -620,8 +623,8 @@ class gradient_transform(qml.batch_transform):
             if not hybrid:
                 return qjac
 
-            # TODO:  False although we pass shots
-            _shots = kwargs.pop("shots", False)
+            kwargs.pop("shots", False)
+            tkwarg_shots = tkwargs.get("shots", False)
 
             # Special case where we apply a Jax transform (jacobian e.g.) on the gradient transform and argnums are
             # defined on the outer transform and therefore on the args.
@@ -636,7 +639,7 @@ class gradient_transform(qml.batch_transform):
 
             if qml.active_return():
                 num_measurements = len(qnode.tape.measurements)
-                return _contract_qjac_with_cjac(qjac, cjac, num_measurements, _shots)
+                return _contract_qjac_with_cjac(qjac, cjac, num_measurements, tkwarg_shots)
 
             return _contract_qjac_with_cjac_legacy(qjac, cjac)
 
