@@ -113,7 +113,7 @@ class TRX(Operation):
     def compute_matrix(
         theta, subspace=(0, 1)
     ):  # pylint: disable=arguments-differ,dangerous-default-value
-        r"""Representation of the operator as a canonical matrix in the computational basis (static method).
+        r"""Representation of the operator as a canonical matrix in the computational basis.
 
         The canonical matrix is the textbook matrix representation that does not consider wires.
         Implicitly, this assumes that the wires of the operator correspond to the global wire order.
