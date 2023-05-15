@@ -37,6 +37,28 @@ CNOT_broadcasted = np.tensordot([1.4], CNOT, axes=0)
 I_broadcasted = I[pnp.newaxis]
 
 
+qutrit_subspace_error_data = [
+    ([1, 1], "Elements of subspace list must be unique."),
+    ([1, 2, 3], "The subspace must be a sequence with"),
+    ([3, 1], "Elements of the subspace must be 0, 1, or 2."),
+    ([3, 3], "Elements of the subspace must be 0, 1, or 2."),
+    ([1], "The subspace must be a sequence with"),
+    (0, "The subspace must be a sequence with two unique"),
+]
+
+
+@pytest.mark.parametrize("subspace, err_msg", qutrit_subspace_error_data)
+@pytest.mark.parametrize("op_cls", [qml.THadamard, qml.TRX])
+def test_qutrit_subspace_op_errors(op_cls, subspace, err_msg):
+    """Test that the correct errors are raised when subspace is incorrectly defined"""
+
+    with pytest.raises(ValueError, match=err_msg):
+        if op_cls.num_params != 0:
+            _ = op_cls(0.123, wires=range(op_cls.num_wires), subspace=subspace)
+        else:
+            _ = op_cls(wires=range(op_cls.num_wires), subspace=subspace)
+
+
 class TestOperatorConstruction:
     """Test custom operators construction."""
 

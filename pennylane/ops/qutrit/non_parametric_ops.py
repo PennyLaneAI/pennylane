@@ -19,7 +19,7 @@ that do not depend on any parameters.
 import numpy as np
 
 import pennylane as qml  # pylint: disable=unused-import
-from pennylane.operation import Operation
+from pennylane.operation import Operation, validate_subspace
 from pennylane.wires import Wires
 
 OMEGA = np.exp(2 * np.pi * 1j / 3)
@@ -469,7 +469,7 @@ class THadamard(Operation):
         return base_label or "TH"
 
     def __init__(self, wires, subspace=None, do_queue=True):
-        self._subspace = self.validate_subspace(subspace) if subspace is not None else None
+        self._subspace = validate_subspace(subspace) if subspace is not None else None
         self._hyperparameters = {
             "subspace": self.subspace,
         }
@@ -518,8 +518,6 @@ class THadamard(Operation):
             return (-1j / np.sqrt(3)) * np.array(
                 [[1, 1, 1], [1, OMEGA, OMEGA**2], [1, OMEGA**2, OMEGA]]
             )
-
-        subspace = THadamard.validate_subspace(subspace)
 
         mat = np.eye(3, dtype=np.complex128)
 
