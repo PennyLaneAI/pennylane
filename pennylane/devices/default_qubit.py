@@ -308,7 +308,7 @@ class DefaultQubit(QubitDevice):
             return state
         wires = operation.wires
 
-        if operation.name in self._apply_ops:
+        if str(operation.name) in self._apply_ops:  # cast to string because of Tensor
             shift = int(self._ndim(state) > self.num_wires)
             axes = [ax + shift for ax in self.wires.indices(wires)]
             return self._apply_ops[operation.name](state, axes)
