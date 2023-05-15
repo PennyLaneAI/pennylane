@@ -15,9 +15,7 @@
 API."""
 import inspect
 from collections.abc import Iterable
-from typing import Optional, Sequence, Text, Union
-
-from pennylane.transforms.batch_input import batch_input
+from typing import Optional, Text
 
 try:
     import tensorflow as tf
@@ -34,8 +32,7 @@ except ImportError:
 
 
 class KerasLayer(Layer):
-    """KerasLayer(qnode, weight_shapes: dict, output_dim, weight_specs: Optional[dict] = None, **kwargs)
-    Converts a :func:`~.QNode` to a Keras
+    """Converts a :func:`~.QNode` to a Keras
     `Layer <https://www.tensorflow.org/api_docs/python/tf/keras/layers/Layer>`__.
 
     The result can be used within the Keras
@@ -54,10 +51,9 @@ class KerasLayer(Layer):
             arguments of the `add_weight()
             <https://www.tensorflow.org/api_docs/python/tf/keras/layers/Layer#add_weight>`__
             method and values being the corresponding specification.
-        batch_idx (Union[Sequence[int], int]): Argument location of the non-trainable inputs for
-            the circuit. This allows batch execution by creating executable circuits for each
-            input example with the same trainable weights. Default ``None``.
-            See :func:`~.pennylane.transforms.batch_input` for more details.
+        split_batches (bool): If True, any batch dimension in the input tensor will be unstacked
+            and split into multiple QNode executions. Otherwise (default), internal PennyLane
+            broadcasting will be used.
         **kwargs: additional keyword arguments passed to the Layer_ base class
 
     **Example**
@@ -208,7 +204,7 @@ class KerasLayer(Layer):
         weight_shapes: dict,
         output_dim,
         weight_specs: Optional[dict] = None,
-        batch_idx: Union[Sequence[int], int] = None,
+        split_batches=False,
         **kwargs,
     ):
         # pylint: disable=too-many-arguments
@@ -227,13 +223,10 @@ class KerasLayer(Layer):
 
         self._signature_validation(qnode, weight_shapes)
 
-        self.argnum = batch_idx
-        if batch_idx is None:
-            self.qnode = qnode
-        else:
-            self.qnode = batch_input(qnode, argnum=batch_idx)
-
+        self.qnode = qnode
         self.qnode.interface = "tf"
+
+        self.split_batches = split_batches
 
         # Allows output_dim to be specified as an int or as a tuple, e.g, 5, (5,), (5, 2), [5, 2]
         # Note: Single digit values will be considered an int and multiple as a tuple, e.g [5,] or (5,)
@@ -293,14 +286,14 @@ class KerasLayer(Layer):
         Returns:
             tensor: output data
         """
-        if len(tf.shape(inputs)) > 1 and self.argnum is None:
+        if self.split_batches and len(tf.shape(inputs)) > 1:
             # If the input size is not 1-dimensional, unstack the input along its first dimension,
             # recursively call the forward pass on each of the yielded tensors, and then stack the
             # outputs back into the correct shape
-            reconstructor = []
+            batch_results = []
             for x in tf.unstack(inputs):
-                reconstructor.append(self.call(x))
-            return tf.stack(reconstructor)
+                batch_results.append(self.call(x))
+            return tf.stack(batch_results)
 
         return self._evaluate_qnode(inputs)
 
@@ -317,9 +310,16 @@ class KerasLayer(Layer):
             **{self.input_arg: x},
             **{k: 1.0 * w for k, w in self.qnode_weights.items()},
         }
+
         res = self.qnode(**kwargs)
+
         if isinstance(res, (list, tuple)):
+            if len(tf.shape(x)) > 1:
+                # multi-return and batch dim case
+                res = [tf.reshape(r, (tf.shape(x)[0], -1)) for r in res]
+
             return tf.experimental.numpy.hstack(res)
+
         return res
 
     def compute_output_shape(self, input_shape):

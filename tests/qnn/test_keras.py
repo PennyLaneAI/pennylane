@@ -51,8 +51,10 @@ def model(get_circuit, n_qubits, output_dim):
 def model_dm(get_circuit_dm, n_qubits, output_dim):
     """The Keras NN model."""
     c, w = get_circuit_dm
-    layer1 = KerasLayer(c, w, output_dim)
-    layer2 = KerasLayer(c, w, output_dim)
+
+    # set split_batches to True since qml.math.reduce_dm does not support broadcasting
+    layer1 = KerasLayer(c, w, output_dim, split_batches=True)
+    layer2 = KerasLayer(c, w, output_dim, split_batches=True)
 
     m = tf.keras.models.Sequential(
         [
@@ -436,7 +438,9 @@ class TestKerasLayer:
         """
         c, w = get_circuit
 
-        layer = KerasLayer(c, w, output_dim)
+        # set split_batches to True since parameter broadcasting does not support
+        # more than one batch dimension
+        layer = KerasLayer(c, w, output_dim, split_batches=True)
         x = tf.ones((batch_size, middle_dim, n_qubits))
 
         with tf.GradientTape() as tape:
@@ -606,6 +610,7 @@ class TestKerasLayerIntegrationDM:
         """Test if a model can train using the KerasLayer when QNode returns a density_matrix().
         The model is composed of two KerasLayers sandwiched between Dense neural network layers,
         and the dataset is simply input and output vectors of zeros."""
+
         x = np.zeros((batch_size, n_qubits))
         y = np.zeros((batch_size, output_dim[0] * output_dim[1]))
 
@@ -669,6 +674,7 @@ def test_batch_input():
         return qml.probs(op=qml.PauliZ(1))
 
     KerasLayer.set_input_argument("x")
-    layer = KerasLayer(circuit, weight_shapes={"weights": (2,)}, output_dim=(2,), batch_idx=0)
+    layer = KerasLayer(circuit, weight_shapes={"weights": (2,)}, output_dim=(2,))
     layer.build((None, 2))
     assert layer(np.random.uniform(0, 1, (10, 4))).shape == (10, 2)
+    assert dev.num_executions == 1
