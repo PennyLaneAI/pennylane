@@ -493,6 +493,17 @@ class TestMiscMethods:
 class TestOperationProperties:
     """Test ControlledOp specific properties."""
 
+    def test_base_name_deprecated(self):
+        """Tests that the base_name property is deprecated."""
+
+        class DummyOp(Operation):
+            """Dummy op."""
+
+            pass
+
+        with pytest.warns(UserWarning, match="Operation.base_name is deprecated."):
+            assert Controlled(DummyOp(2), 1).base_name == "C(DummyOp)"
+
     @pytest.mark.parametrize("gm", (None, "A", "F"))
     def test_grad_method(self, gm):
         """Check grad_method defers to that of the base operation."""
