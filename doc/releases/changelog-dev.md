@@ -30,6 +30,9 @@
 * `qml.specs` is compatible with custom operations that have `depth` bigger than 1.
   [(#4033)](https://github.com/PennyLaneAI/pennylane/pull/4033)
 
+* `qml.Tracker` when used with `default.qubit` or `null.qubit` devices, will track resources of the quantum circuit.
+  [#(4045)](https://github.com/PennyLaneAI/pennylane/pull/4045)
+
 * `qml.prod` now accepts a single qfunc input for creating new `Prod` operators.
   [(#4011)](https://github.com/PennyLaneAI/pennylane/pull/4011)
 
@@ -52,6 +55,7 @@
 
 * Support for sample-based measurements has been added to the `DefaultQubit2` device.
   [(#4105)](https://github.com/PennyLaneAI/pennylane/pull/4105)
+  [(#4114)](https://github.com/PennyLaneAI/pennylane/pull/4114)
 
 * Added a `dense` keyword to `ParametrizedEvolution` that allows forcing dense or sparse matrices.
   [(#4079)](https://github.com/PennyLaneAI/pennylane/pull/4079)
