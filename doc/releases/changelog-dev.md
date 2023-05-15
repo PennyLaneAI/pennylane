@@ -6,6 +6,9 @@
 
 <h3>Improvements 🛠</h3>
 
+* The Jax-JIT interface now uses symbolic zeros to determine trainable parameters.
+  [(4075)](https://github.com/PennyLaneAI/pennylane/pull/4075)
+
 * Accelerate Jordan-Wigner transforms caching Pauli gate objects.
   [(4046)](https://github.com/PennyLaneAI/pennylane/pull/4046)
 
@@ -30,6 +33,9 @@
 * `qml.specs` is compatible with custom operations that have `depth` bigger than 1.
   [(#4033)](https://github.com/PennyLaneAI/pennylane/pull/4033)
 
+* `qml.Tracker` when used with `default.qubit` or `null.qubit` devices, will track resources of the quantum circuit.
+  [#(4045)](https://github.com/PennyLaneAI/pennylane/pull/4045)
+
 * `qml.prod` now accepts a single qfunc input for creating new `Prod` operators.
   [(#4011)](https://github.com/PennyLaneAI/pennylane/pull/4011)
 
@@ -52,6 +58,10 @@
 
 * Support for sample-based measurements has been added to the `DefaultQubit2` device.
   [(#4105)](https://github.com/PennyLaneAI/pennylane/pull/4105)
+  [(#4114)](https://github.com/PennyLaneAI/pennylane/pull/4114)
+
+* Added a keyword argument `seed` to the `DefaultQubit2` device.
+  [(#4120)](https://github.com/PennyLaneAI/pennylane/pull/4120)
 
 * Added a `dense` keyword to `ParametrizedEvolution` that allows forcing dense or sparse matrices.
   [(#4079)](https://github.com/PennyLaneAI/pennylane/pull/4079)
@@ -66,6 +76,10 @@
 
 
 <h3>Breaking changes 💔</h3>
+
+* Jax trainable parameters are now `Tracer` instead of `JVPTracer`, it is not always the right definition for the JIT 
+  interface, but we update them in the custom JVP using symbolic zeros.
+  [(4075)](https://github.com/PennyLaneAI/pennylane/pull/4075)
 
 * The experimental Device interface `qml.devices.experimental.Device` now requires that the `preprocess` method
   also returns an `ExecutionConfig` object. This allows the device to choose what `"best"` means for various
