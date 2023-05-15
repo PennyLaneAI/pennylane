@@ -440,17 +440,18 @@ def _contract_qjac_with_cjac(qjac, cjac, num_measurements, shots):
 
     if not multi_params:
         # Without dimension (e.g. expval) or with dimension (e.g. probs)
-        reshape = lambda x: qml.math.reshape(x, (1,) if x.shape == () else (1, -1))
+        def _reshape(x):
+            return qml.math.reshape(x, (1,) if x.shape == () else (1, -1))
 
         if not (multi_meas or shot_vector):
             # Single parameter, single measurements
-            return tdot(reshape(qjac), cjac)
+            return tdot(_reshape(qjac), cjac)
 
         if not (multi_meas and shot_vector):
-            return tuple(tdot(reshape(q), cjac) for q in qjac)
+            return tuple(tdot(_reshape(q), cjac) for q in qjac)
 
         # Single parameter, multiple measurements
-        return tuple(tuple(tdot(reshape(_q), cjac) for _q in q) for q in qjac)
+        return tuple(tuple(tdot(_reshape(_q), cjac) for _q in q) for q in qjac)
 
     if not multi_meas:
         # Multiple parameters, single measurement
