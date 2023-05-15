@@ -275,6 +275,7 @@ def _expval_hybrid_pulse_grad(tape, argnum, shots, atol):
           in order to obtain the Jacobian.
 
     """
+    argnum = argnum or tape.trainable_params
     gradient_data = []
     gradient_tapes = []
     cache = {"total_num_tapes": 0}
@@ -312,8 +313,10 @@ def _expval_hybrid_pulse_grad(tape, argnum, shots, atol):
 
         # Fill in zero-valued gradients
         grads = [zero_rep if g is None else g for g in grads]
+        print(f"{grads=}")
+        x = reorder_grads(grads, tape_specs)
 
-        return reorder_grads(grads, tape_specs)
+        return x
 
     return gradient_tapes, processing_fn
 
@@ -390,9 +393,6 @@ def _hybrid_pulse_grad(tape, argnum=None, shots=None, atol=1e-7):
         def circuit(params):
             op = qml.evolve(H)(params, t)
             return qml.expval(qml.PauliX(0))
-
-    >>> circuit(params)
-    Array(0.2941767, dtype=float32)
 
     We registered the ``QNode`` to be differentiated with the ``hybrid_pulse_grad`` method.
     This allows us to simply differentiate it with ``jax.jacobian``, for example, internally
@@ -525,17 +525,20 @@ def _hybrid_pulse_grad(tape, argnum=None, shots=None, atol=1e-7):
         evolution.
 
     """
+    print(argnum)
     transform_name = "hybrid pulse parameter-shift"
     _assert_has_jax(transform_name)
     assert_active_return(transform_name)
     assert_no_state_returns(tape.measurements, transform_name)
     assert_no_variance(tape.measurements, transform_name)
+    print(argnum)
 
     if argnum is None and not tape.trainable_params:
         return _no_trainable_grad(tape, shots)
 
     diff_methods = gradient_analysis_and_validation(tape, "analytic", grad_fn=hybrid_pulse_grad)
 
+    print(diff_methods)
     if all(g == "0" for g in diff_methods):
         return _all_zero_grad(tape, shots)
 
