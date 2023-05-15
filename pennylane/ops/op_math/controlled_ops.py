@@ -117,7 +117,7 @@ class CY(ControlledOp):
         )
 
     @staticmethod
-    def compute_decomposition(wires, *params, **hyperparameters):
+    def compute_decomposition(wires):  # pylint: disable=arguments-differ
         r"""Representation of the operator as a product of other operators (static method).
 
 
