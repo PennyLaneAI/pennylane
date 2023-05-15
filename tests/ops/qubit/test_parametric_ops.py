@@ -208,9 +208,7 @@ class TestParameterFrequencies:
         try:
             mat = gen.matrix()
         except (AttributeError, qml.operation.MatrixUndefinedError):
-            if isinstance(gen, qml.Hamiltonian):
-                mat = qml.utils.sparse_hamiltonian(gen).toarray()
-            elif isinstance(gen, qml.SparseHamiltonian):
+            if isinstance(gen, (qml.Hamiltonian, qml.SparseHamiltonian)):
                 mat = gen.sparse_matrix().toarray()
             else:
                 pytest.skip(f"Operation {op.name}'s generator does not define a matrix.")

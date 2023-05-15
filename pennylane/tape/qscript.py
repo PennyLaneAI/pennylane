@@ -20,7 +20,8 @@ executed by a device.
 import contextlib
 import copy
 from collections import Counter, defaultdict
-from typing import List, Union
+from typing import List, Union, Optional, Sequence
+import warnings
 
 import pennylane as qml
 from pennylane.measurements import (
@@ -33,8 +34,8 @@ from pennylane.measurements import (
     ShadowExpvalMP,
     StateMP,
     VarianceMP,
+    Shots,
 )
-from pennylane.measurements import Shots
 from pennylane.operation import Observable, Operator, Operation
 from pennylane.queuing import AnnotatedQueue, process_queue
 
@@ -90,6 +91,8 @@ class QuantumScript:
         prep (Iterable[Operator]): Any state preparations to perform at the start of the circuit
 
     Keyword Args:
+        shots (None, int, Sequence[int], ~.Shots): Number and/or batches of shots for execution.
+            Note that this property is still experimental and under development.
         name (str): a name given to the quantum script
         _update=True (bool): Whether or not to set various properties on initialization. Setting
             ``_update=False`` reduces computations if the script is only an intermediary step.
@@ -152,6 +155,15 @@ class QuantumScript:
     >>> qml.execute([qscript], dev, gradient_fn=None)
     [array([-0.77750694])]
 
+    Quantum scripts can also store information about the number and batches of
+    executions by setting the ``shots`` keyword argument. This information is internally
+    stored in a :class:`pennylane.measurements.Shots` object:
+
+    >>> s_vec = [1, 1, 2, 2, 2]
+    >>> qscript = QuantumScript([qml.Hadamard(0)], [qml.expval(qml.PauliZ(0))], shots=s_vec)
+    >>> qscript.shots.shot_vector
+    (ShotCopies(shots=1, copies=2), ShotCopies(shots=2, copies=3))
+
     ``ops``, ``measurements``, and ``prep`` are converted to lists upon initialization,
     so those arguments accept any iterable object:
 
@@ -165,11 +177,20 @@ class QuantumScript:
     """Whether or not to queue the object. Assumed ``False`` for a vanilla Quantum Script, but may be
     True for its child Quantum Tape."""
 
-    def __init__(self, ops=None, measurements=None, prep=None, name=None, _update=True):
+    def __init__(
+        self,
+        ops=None,
+        measurements=None,
+        prep=None,
+        shots: Optional[Union[int, Sequence, Shots]] = None,
+        name=None,
+        _update=True,
+    ):  # pylint: disable=too-many-arguments
         self.name = name
         self._prep = [] if prep is None else list(prep)
         self._ops = [] if ops is None else list(ops)
         self._measurements = [] if measurements is None else list(measurements)
+        self._shots = Shots(shots)
 
         self._par_info = []
         """list[dict[str, Operator or int]]: Parameter information.
@@ -354,6 +375,16 @@ class QuantumScript:
                 with contextlib.suppress(qml.operation.DiagGatesUndefinedError):
                     rotation_gates.extend(observable.diagonalizing_gates())
         return rotation_gates
+
+    @property
+    def shots(self) -> Shots:
+        """Returns a ``Shots`` object containing information about the number
+        and batches of shots
+
+        Returns:
+            ~.Shots: Object with shot information
+        """
+        return self._shots
 
     ##### Update METHODS ###############
 
@@ -1014,7 +1045,9 @@ class QuantumScript:
             _ops = self._ops.copy()
             _measurements = self.measurements.copy()
 
-        new_qscript = self.__class__(ops=_ops, measurements=_measurements, prep=_prep)
+        new_qscript = self.__class__(
+            ops=_ops, measurements=_measurements, prep=_prep, shots=self.shots
+        )
         new_qscript._graph = None if copy_operations else self._graph
         new_qscript._specs = None
         new_qscript.wires = copy.copy(self.wires)
@@ -1094,7 +1127,9 @@ class QuantumScript:
         """
         with qml.QueuingManager.stop_recording():
             ops_adj = [qml.adjoint(op, lazy=False) for op in reversed(self._ops)]
-        adj = self.__class__(ops=ops_adj, measurements=self.measurements, prep=self._prep)
+        adj = self.__class__(
+            ops=ops_adj, measurements=self.measurements, prep=self._prep, shots=self.shots
+        )
         if self.do_queue:
             qml.QueuingManager.append(adj)
         return adj
@@ -1173,20 +1208,24 @@ class QuantumScript:
         wires: 2
         gates: 6
         depth: 4
-        shots: 0
+        shots: Shots(total=None)
         gate_types:
         {'Hadamard': 2, 'RX': 1, 'CNOT': 2, 'Rot': 1}
+        gate_sizes:
+        {1: 4, 2: 2}
         """
         if self._specs is None:
             resources = qml.resource.resource._count_resources(
-                self, shots=0
+                self, shots=self.shots
             )  # pylint: disable=protected-access
 
-            self._specs = {
-                "resources": resources,
-                "gate_sizes": defaultdict(int),
-                "gate_types": defaultdict(int),
-            }
+            self._specs = SpecsDict(
+                {
+                    "resources": resources,
+                    "gate_sizes": defaultdict(int),
+                    "gate_types": defaultdict(int),
+                }
+            )
 
             for op in self.operations:
                 # don't use op.num_wires to allow for flexible gate classes like QubitUnitary
@@ -1326,12 +1365,32 @@ class QuantumScript:
         return qasm_str
 
     @classmethod
-    def from_queue(cls, queue):
+    def from_queue(cls, queue, shots: Optional[Union[int, Sequence, Shots]] = None):
         """Construct a QuantumScript from an AnnotatedQueue."""
-        return cls(*process_queue(queue))
+        return cls(*process_queue(queue), shots=shots)
 
 
-def make_qscript(fn):
+class SpecsDict(dict):
+    """A dictionary to track and warn about deprecated keys"""
+
+    old_to_new_key_map = {
+        "gate_types": "gate_types",
+        "gate_sizes": "gate_sizes",
+        "num_operations": "num_gates",
+        "num_used_wires": "num_wires",
+        "depth": "depth",
+    }
+
+    def __getitem__(self, item):
+        if item in self.old_to_new_key_map:
+            warnings.warn(
+                f"The {item} key is deprecated and will be removed in the next release. "
+                f'Going forward, please use: qml.specs()["resources"].{self.old_to_new_key_map[item]}'
+            )
+        return super().__getitem__(item)
+
+
+def make_qscript(fn, shots: Optional[Union[int, Sequence, Shots]] = None):
     """Returns a function that generates a qscript from a quantum function without any
     operation queuing taking place.
 
@@ -1340,6 +1399,8 @@ def make_qscript(fn):
 
     Args:
         fn (function): the quantum function to generate the qscript from
+        shots (None, int, Sequence[int], ~.Shots): number and/or
+            batches of executions
 
     Returns:
         function: The returned function takes the same arguments as the quantum
@@ -1377,8 +1438,9 @@ def make_qscript(fn):
         with AnnotatedQueue() as q:
             result = fn(*args, **kwargs)
 
-        qscript = QuantumScript.from_queue(q)
+        qscript = QuantumScript.from_queue(q, shots)
         qscript._qfunc_output = result
+
         return qscript
 
     return wrapper
