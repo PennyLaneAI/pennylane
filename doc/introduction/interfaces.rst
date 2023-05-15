@@ -285,8 +285,9 @@ rules; these can be applied *directly* to QNodes:
 >>> circuit(weights)
 tensor([0.9658079, 0.0341921], requires_grad=True)
 >>> qml.gradients.param_shift(circuit)(weights)
-tensor([[-0.04673668, -0.09442394, -0.14409127],
-        [ 0.04673668,  0.09442394,  0.14409127]], requires_grad=True)
+(tensor([-0.04673668,  0.04673668], requires_grad=True),
+ tensor([-0.09442394,  0.09442394], requires_grad=True),
+ tensor([-0.14409127,  0.14409127], requires_grad=True))
 
 Note that, while gradient transforms allow quantum gradient rules to be applied directly to QNodes,
 this is not a replacement --- and should not be used instead of --- standard training workflows (for example,
@@ -319,8 +320,12 @@ gradients to be computed:
 >>> circuit(weights)
 tensor(0.9316158, requires_grad=True)
 >>> qml.gradients.param_shift(circuit)(weights)  # gradient
-array([[-0.09347337, -0.18884787, -0.28818254]])
->>> qml.jacobian(qml.gradients.param_shift(circuit))(weights)  # hessian
+(tensor(-0.09347337, requires_grad=True),
+ tensor(-0.18884787, requires_grad=True),
+ tensor(-0.28818254, requires_grad=True))
+>>> def f(weights):
+...     return np.stack(qml.gradients.param_shift(circuit)(weights))
+>>> qml.jacobian(f)(weights)  # hessian
 array([[[-0.9316158 ,  0.01894799,  0.0289147 ],
         [ 0.01894799, -0.9316158 ,  0.05841749],
         [ 0.0289147 ,  0.05841749, -0.9316158 ]]])

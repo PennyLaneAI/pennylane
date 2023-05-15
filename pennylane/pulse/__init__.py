@@ -68,9 +68,9 @@ Hardware Compatible Hamiltonians
     :toctree: api
 
     ~rydberg_interaction
-    ~transmon_interaction
     ~rydberg_drive
-    ~drive
+    ~transmon_interaction
+    ~transmon_drive
 
 
 Creating a parametrized Hamiltonian
@@ -263,4 +263,4 @@ from .parametrized_evolution import ParametrizedEvolution
 from .parametrized_hamiltonian import ParametrizedHamiltonian
 from .hardware_hamiltonian import HardwareHamiltonian, HardwarePulse, drive
 from .rydberg import rydberg_interaction, rydberg_drive
-from .transmon import transmon_interaction
+from .transmon import transmon_interaction, transmon_drive

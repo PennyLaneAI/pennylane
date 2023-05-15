@@ -49,7 +49,8 @@ The QNode ``circuit()`` is now a TensorFlow-capable QNode, accepting ``tf.Variab
 >>> phi = tf.Variable([0.5, 0.1])
 >>> theta = tf.Variable(0.2)
 >>> circuit(phi, theta)
-<tf.Tensor: id=22, shape=(2,), dtype=float64, numpy=array([ 0.87758256,  0.68803733])>
+(<tf.Tensor: shape=(), dtype=float64, numpy=0.8775825769558366>,
+ <tf.Tensor: shape=(), dtype=float64, numpy=0.6880373394540326>)
 
 The interface can also be automatically determined when the ``QNode`` is called. You do not need to pass the interface
 if you provide parameters.
@@ -76,7 +77,8 @@ TensorFlow-capable QNodes can also be created using the
 QNode:
 
 >>> qnode2(phi, theta)
-<tf.Tensor: id=22, shape=(2,), dtype=float64, numpy=array([ 0.87758256,  0.68803733])>
+(<tf.Tensor: shape=(), dtype=float64, numpy=0.8775825769558366>,
+ <tf.Tensor: shape=(), dtype=float64, numpy=0.6880373394540326>)
 
 
 .. _tf_qgrad:

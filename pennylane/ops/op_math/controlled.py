@@ -30,10 +30,6 @@ from pennylane.operation import Operator
 from pennylane.wires import Wires
 
 from .symbolicop import SymbolicOp
-from .controlled_decompositions import (
-    ctrl_decomp_zyz,
-    ctrl_decomp_bisect,
-)
 
 
 def ctrl(op, control, control_values=None, work_wires=None):
@@ -403,8 +399,12 @@ class Controlled(SymbolicOp):
         padding_left = self._control_int * num_target_states
         padding_right = total_matrix_size - padding_left - num_target_states
 
-        left_pad = qmlmath.cast_like(qmlmath.eye(padding_left, like=interface), 1j)
-        right_pad = qmlmath.cast_like(qmlmath.eye(padding_right, like=interface), 1j)
+        left_pad = qmlmath.convert_like(
+            qmlmath.cast_like(qmlmath.eye(padding_left, like=interface), 1j), base_matrix
+        )
+        right_pad = qmlmath.convert_like(
+            qmlmath.cast_like(qmlmath.eye(padding_right, like=interface), 1j), base_matrix
+        )
 
         shape = qml.math.shape(base_matrix)
         if len(shape) == 3:  # stack if batching
@@ -474,8 +474,8 @@ class Controlled(SymbolicOp):
             return True
         if isinstance(self.base, qml.PauliX):
             return True
-        if len(self.base.wires) == 1 and getattr(self.base, "has_matrix", False):
-            return True
+        # if len(self.base.wires) == 1 and getattr(self.base, "has_matrix", False):
+        #    return True
         if self.base.has_decomposition:
             return True
 
@@ -568,16 +568,16 @@ def _decompose_no_control_values(op: "operation.Operator") -> List["operation.Op
     if isinstance(op.base, qml.PauliX):
         # has some special case handling of its own for further decomposition
         return [qml.MultiControlledX(wires=op.active_wires, work_wires=op.work_wires)]
-    if (
-        len(op.base.wires) == 1
-        and len(op.control_wires) >= 2
-        and getattr(op.base, "has_matrix", False)
-        and qmlmath.get_interface(*op.data) == "numpy"  # as implemented, not differentiable
-    ):
-        # Bisect algorithms use CNOTs and single qubit unitary
-        return ctrl_decomp_bisect(op.base, op.control_wires)
-    if len(op.base.wires) == 1 and getattr(op.base, "has_matrix", False):
-        return ctrl_decomp_zyz(op.base, op.control_wires)
+    # if (
+    #    len(op.base.wires) == 1
+    #    and len(op.control_wires) >= 2
+    #    and getattr(op.base, "has_matrix", False)
+    #    and qmlmath.get_interface(*op.data) == "numpy"  # as implemented, not differentiable
+    # ):
+    # Bisect algorithms use CNOTs and single qubit unitary
+    #    return ctrl_decomp_bisect(op.base, op.control_wires)
+    # if len(op.base.wires) == 1 and getattr(op.base, "has_matrix", False):
+    #    return ctrl_decomp_zyz(op.base, op.control_wires)
 
     if not op.base.has_decomposition:
         return None

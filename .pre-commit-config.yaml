@@ -13,14 +13,6 @@ repos:
           "--rcfile=.pylintrc", # Link to your config file
         ]
       exclude: ^(doc/|tests/)
-- repo: local
-  hooks:
-    - id: pylint-tests
-      name: pylint whitelisted tests
-      language: system
-      types: [python]
-      entry: bash -c 'pylint --rcfile tests/.pylintrc $(cat tests/tests_passing_pylint.txt | tr "\n" " ")'
-      files: ^tests/
 -   repo: https://github.com/psf/black
     rev: 22.3.0
     hooks:

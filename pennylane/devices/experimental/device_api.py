@@ -20,7 +20,7 @@ import abc
 from numbers import Number
 from typing import Callable, Union, Sequence, Tuple, Optional
 
-from pennylane.tape import QuantumTape
+from pennylane.tape import QuantumTape, QuantumScript
 from pennylane import Tracker
 
 from .execution_config import ExecutionConfig, DefaultExecutionConfig
@@ -139,7 +139,7 @@ class Device(abc.ABC):
         self,
         circuits: QuantumTape_or_Batch,
         execution_config: ExecutionConfig = DefaultExecutionConfig,
-    ) -> Tuple[QuantumTapeBatch, Callable]:
+    ) -> Tuple[QuantumTapeBatch, Callable, ExecutionConfig]:
         """Device preprocessing function.
 
         .. warning::
@@ -156,9 +156,8 @@ class Device(abc.ABC):
             execution_config (ExecutionConfig): A datastructure describing the parameters needed to fully describe
                 the execution.
 
-        Returns:
-            Sequence[QuantumTape], Callable: QuantumTapes that the device can natively execute
-            and a postprocessing function to be called after execution.
+            Tuple[QuantumTape], Callable, ExecutionConfig: QuantumTapes that the device can natively execute,
+            a postprocessing function to be called after execution, and a configuration with unset specifications filled in.
 
         Raises:
             Exception: An exception is raised if the input cannot be converted into a form supported by the device.
@@ -170,6 +169,7 @@ class Device(abc.ABC):
         * splitting circuits with batched parameters into multiple executions
         * gradient specific preprocessing, such as making sure trainable operators have generators
         * validation of configuration parameters
+        * choosing a best gradient method and ``grad_on_execution`` value.
 
         """
 
@@ -185,8 +185,8 @@ class Device(abc.ABC):
             """
             return res
 
-        circuit_batch = [circuits] if isinstance(circuits, QuantumTape) else circuits
-        return circuit_batch, blank_postprocessing_fn
+        circuit_batch = (circuits,) if isinstance(circuits, QuantumScript) else circuits
+        return circuit_batch, blank_postprocessing_fn, execution_config
 
     @abc.abstractmethod
     def execute(
@@ -266,7 +266,7 @@ class Device(abc.ABC):
 
     def supports_derivatives(
         self,
-        execution_config: ExecutionConfig,
+        execution_config: Optional[ExecutionConfig] = None,
         circuit: Optional[QuantumTape] = None,
     ) -> bool:
         """Determine whether or not a device provided derivative is potentially available.
@@ -341,12 +341,12 @@ class Device(abc.ABC):
 
         """
         if execution_config is None:
-            return self.compute_derivatives != Device.compute_derivatives
+            return type(self).compute_derivatives != Device.compute_derivatives
 
         if execution_config.gradient_method != "device" or execution_config.derivative_order != 1:
             return False
 
-        return self.compute_derivatives != Device.compute_derivatives
+        return type(self).compute_derivatives != Device.compute_derivatives
 
     def compute_derivatives(
         self,
@@ -466,7 +466,9 @@ class Device(abc.ABC):
         )
 
     def supports_jvp(
-        self, execution_config: ExecutionConfig, circuit: Optional[QuantumTape] = None
+        self,
+        execution_config: Optional[ExecutionConfig] = None,
+        circuit: Optional[QuantumTape] = None,
     ) -> bool:
         """Whether or not a given device defines a custom jacobian vector product.
 
@@ -542,7 +544,9 @@ class Device(abc.ABC):
         )
 
     def supports_vjp(
-        self, execution_config: ExecutionConfig, circuit: Optional[QuantumTape] = None
+        self,
+        execution_config: Optional[ExecutionConfig] = None,
+        circuit: Optional[QuantumTape] = None,
     ) -> bool:
         """Whether or not a given device defines a custom vector jacobian product.
 

@@ -363,12 +363,12 @@ class TestVJPGradients:
     @pytest.mark.tf
     def test_tf_custom_loss(self):
         """Tests that the gradient pipeline using the TensorFlow interface with
-        a custom TF loss and lightning.qubit with a custom dtype does not raise
+        a custom TF loss and default.qubit with a custom dtype does not raise
         any errors."""
         import tensorflow as tf
 
         nwires = 5
-        dev = qml.device("lightning.qubit", wires=nwires)
+        dev = qml.device("default.qubit", wires=nwires)
         dev.C_DTYPE = vanilla_numpy.complex64
         dev.R_DTYPE = vanilla_numpy.float32
 

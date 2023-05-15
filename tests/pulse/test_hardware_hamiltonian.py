@@ -14,7 +14,7 @@
 """
 Unit tests for the HardwareHamiltonian class.
 """
-# pylint: disable=too-few-public-methods
+# pylint: disable=too-few-public-methods, import-outside-toplevel
 import numpy as np
 import pytest
 
@@ -35,10 +35,12 @@ wires = [1, 6, 0, 2, 4, 3]
 
 
 def f1(p, t):
+    """Compute the function p * sin(t) * (t - 1)."""
     return p * np.sin(t) * (t - 1)
 
 
 def f2(p, t):
+    """Compute the function p * cos(t**2)."""
     return p * np.cos(t**2)
 
 
@@ -59,7 +61,7 @@ rydberg_settings = RydbergSettings(atom_coordinates, 1)
 class TestHardwareHamiltonian:
     """Unit tests for the properties of the HardwareHamiltonian class."""
 
-    # pylint: disable=protected-access
+    # pylint: disable=protected-access, comparison-with-callable
     def test_initialization(self):
         """Test the HardwareHamiltonian class is initialized correctly."""
         rm = HardwareHamiltonian(coeffs=[], observables=[])
@@ -70,6 +72,8 @@ class TestHardwareHamiltonian:
         assert rm.reorder_fn == _reorder_parameters
 
     def test_two_different_reorder_fns_raises_error(self):
+        """Test that adding two HardwareHamiltonians with different reordering functions
+        raises an error."""
         H1 = HardwareHamiltonian(coeffs=[], observables=[])
         H2 = HardwareHamiltonian(coeffs=[], observables=[], reorder_fn=lambda _, y: y[:2])
 
@@ -282,6 +286,7 @@ class TestInteractionWithOperators:
         new_pH(params, 2)  # confirm calling does not raise error
 
     def test_unknown_type_raises_error(self):
+        """Test that adding an invalid object to a HardwareHamiltonian raises an error."""
         R = drive(amplitude=f1, phase=0, wires=[0, 1])
         with pytest.raises(TypeError, match="unsupported operand type"):
             R += 3
@@ -291,8 +296,8 @@ class TestDrive:
     """Unit tests for the ``drive`` function."""
 
     def test_attributes_and_number_of_terms(self):
-        """Test that the attributes and the number of terms of the ``ParametrizedHamiltonian`` returned by
-        ``drive`` are correct."""
+        """Test that the attributes and the number of terms of the
+        ``ParametrizedHamiltonian`` returned by ``drive`` are correct."""
 
         Hd = drive(amplitude=1, phase=2, wires=[1, 2])
 
@@ -304,10 +309,10 @@ class TestDrive:
         """Test that adding multiple drive terms behaves as expected"""
 
         def fa(p, t):
-            return np.sin(p * t)
+            return np.sin(p * t) / (2 * np.pi)
 
         H1 = drive(amplitude=fa, phase=1, wires=[0, 3])
-        H2 = drive(amplitude=1, phase=3, wires=[1, 2])
+        H2 = drive(amplitude=0.5 / np.pi, phase=3, wires=[1, 2])
         Hd = H1 + H2
 
         ops_expected = [
@@ -346,18 +351,22 @@ class TestDrive:
 
 
 def callable_amp(p, t):
+    """Compute the polynomial function polyval(p, t)."""
     return np.polyval(p, t)
 
 
 def callable_phase(p, t):
+    """Compute the function p_0 * sin(p_1 * t)."""
     return p[0] * np.sin(p[1] * t)
 
 
 def sine_func(p, t):
+    """Compute the function sin(p * t)."""
     return np.sin(p * t)
 
 
 def cosine_fun(p, t):
+    """Compute the function cos(p * t)."""
     return np.cos(p * t)
 
 
@@ -368,7 +377,7 @@ class TestAmplitudeAndPhase:
     def test_amplitude_and_phase_no_callables(self):
         """Test that when calling amplitude_and_phase, if neither are callable,
         a float is returned instead of an AmplitudeAndPhase object"""
-        f = amplitude_and_phase(np.sin, 3, 4)
+        f = amplitude_and_phase(np.sin, 3 / (2 * np.pi), 4)
         expected_result = 3 * np.sin(4)
 
         assert isinstance(f, float)
@@ -378,7 +387,7 @@ class TestAmplitudeAndPhase:
         """Test that when calling amplitude_and_phase, if only phase is callable,
         an AmplitudeAndPhase object with callable phase and fixed amplitude is
         correctly created"""
-        f = amplitude_and_phase(np.sin, 2.7, callable_phase)
+        f = amplitude_and_phase(np.sin, 2.7 / (2 * np.pi), callable_phase)
 
         # attributes are correct
         assert isinstance(f, AmplitudeAndPhase)
@@ -403,7 +412,7 @@ class TestAmplitudeAndPhase:
         assert f.func.__name__ == "callable_amp"
 
         # calling yields expected result
-        expected_result = callable_amp([1.7], 2) * np.sin(0.7)
+        expected_result = callable_amp([1.7], 2) * (2 * np.pi) * np.sin(0.7)
         assert f([1.7], 2) == expected_result
 
     def test_amplitude_and_phase_both_callable(self):
@@ -419,7 +428,9 @@ class TestAmplitudeAndPhase:
         assert f.func.__name__ == "callable_amp_and_phase"
 
         # calling yields expected result
-        expected_result = callable_amp([1.7], 2) * np.sin(callable_phase([1.3, 2.5], 2))
+        expected_result = (
+            callable_amp([1.7], 2) * (2 * np.pi) * np.sin(callable_phase([1.3, 2.5], 2))
+        )
         assert f([[1.7], [1.3, 2.5]], 2) == expected_result
 
     def test_callable_phase_and_amplitude_hamiltonian(self):
@@ -436,8 +447,8 @@ class TestAmplitudeAndPhase:
 
         evaluated_H = Hd([3.4, 5.6], t)
 
-        c1 = np.sin(3.4 * t) * np.cos(np.cos(5.6 * t))
-        c2 = np.sin(3.4 * t) * np.sin(np.cos(5.6 * t))
+        c1 = np.sin(3.4 * t) * (2 * np.pi) * np.cos(np.cos(5.6 * t))
+        c2 = np.sin(3.4 * t) * (2 * np.pi) * np.sin(np.cos(5.6 * t))
         expected_H_parametrized = qml.sum(
             qml.s_prod(c1, qml.Hamiltonian([0.5, 0.5], [qml.PauliX(0), qml.PauliX(1)])),
             qml.s_prod(c2, qml.Hamiltonian([-0.5, -0.5], [qml.PauliY(0), qml.PauliY(1)])),
@@ -448,7 +459,7 @@ class TestAmplitudeAndPhase:
         """Test that using callable phase in drive creates AmplitudeAndPhase
         callables, and the resulting Hamiltonian can be called"""
 
-        Hd = drive(7.2, sine_func, wires=[0, 1])
+        Hd = drive(7.2 / (2 * np.pi), sine_func, wires=[0, 1])
 
         assert len(Hd.coeffs) == 2
         assert isinstance(Hd.coeffs[0], AmplitudeAndPhase)
@@ -479,8 +490,8 @@ class TestAmplitudeAndPhase:
 
         evaluated_H = Hd([3.4], t)
 
-        c1 = np.sin(3.4 * t) * np.cos(4.3)
-        c2 = np.sin(3.4 * t) * np.sin(4.3)
+        c1 = np.sin(3.4 * t) * (2 * np.pi) * np.cos(4.3)
+        c2 = np.sin(3.4 * t) * (2 * np.pi) * np.sin(4.3)
         expected_H_parametrized = qml.sum(
             qml.s_prod(c1, qml.Hamiltonian([0.5, 0.5], [qml.PauliX(0), qml.PauliX(1)])),
             qml.s_prod(c2, qml.Hamiltonian([-0.5, -0.5], [qml.PauliY(0), qml.PauliY(1)])),
