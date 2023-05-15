@@ -23,7 +23,7 @@ import pennylane as qml
 from pennylane.typing import TensorLike
 from pennylane.operation import Operator, Tensor
 
-from ..op_math import CompositeOp, SymbolicOp, ScalarSymbolicOp, Adjoint
+from ..op_math import CompositeOp, SymbolicOp, ScalarSymbolicOp, Adjoint, Pow
 
 
 def _validate_params(op: Operator, params: Optional[Sequence[TensorLike]]) -> Sequence[TensorLike]:
@@ -92,18 +92,13 @@ def bind_new_parameters_composite_op(
         params = params[operand.num_params :]
         new_operands.append(bind_new_parameters(operand, sub_params))
 
-    return op.__class__(*new_operands, **copy.deepcopy(op.hyperparameters))
+    return op.__class__(*new_operands)
 
 
 # pylint: disable=missing-docstring
 @bind_new_parameters.register
 def bind_new_parameters_symbolic_op(op: SymbolicOp, params: Optional[Sequence[TensorLike]] = None):
     params = _validate_params(op, params)
-    new_scalar = []
-
-    if isinstance(op, ScalarSymbolicOp):
-        new_scalar.append(params[0])
-        params = params[1:]
 
     new_base = bind_new_parameters(op.base, params)
     new_hyperparameters = copy.deepcopy(op.hyperparameters)
@@ -114,14 +109,35 @@ def bind_new_parameters_symbolic_op(op: SymbolicOp, params: Optional[Sequence[Te
         # `Adjoint.__new__` which doesn't raise an error but does return an unusable
         # object
         return Adjoint(new_base)
+
+    return op.__class__(new_base, **new_hyperparameters)
+
+
+@bind_new_parameters.register
+def bind_new_parameters_scalar_symbolic_op(op: ScalarSymbolicOp, params: Optional[Sequence[TensorLike]] = None):
+    params = _validate_params(op, params)
+
+    if isinstance(op, Pow):
+        new_scalar = op.scalar
+        new_base = bind_new_parameters(op.base, params)
+
+        return Pow(new_base, new_scalar)
+
+    new_scalar = params[0]
+    params = params[1:]
+
+    new_base = bind_new_parameters(op.base, params)
+    new_hyperparameters = copy.deepcopy(op.hyperparameters)
+    _ = new_hyperparameters.pop("base")
+
     try:
         # `try-except` block to accomodate for the fact that different `ScalarSymbolicOp`
         # subclasses accept the base and scalar in different orders
-        return op.__class__(new_base, *new_scalar, **new_hyperparameters)
+        return op.__class__(new_base, new_scalar, **new_hyperparameters)
     except AttributeError:
         pass
 
-    return op.__class__(*new_scalar, new_base, **new_hyperparameters)
+    return op.__class__(new_scalar, new_base, **new_hyperparameters)
 
 
 # pylint: disable=missing-docstring
