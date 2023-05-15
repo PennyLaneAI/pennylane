@@ -163,14 +163,6 @@ class CZ(ControlledOp):
     Args:
         wires (Sequence[int]): the wires the operation acts on
     """
-    num_wires = 2
-    """int: Number of wires that the operator acts on."""
-
-    num_params = 0
-    """int: Number of trainable parameters that the operator depends on."""
-
-    ndim_params = ()
-    """tuple[int]: Number of dimensions per trainable parameter that the operator depends on."""
 
     def __init__(self, wires):
         control_wire, wire = wires
@@ -200,32 +192,6 @@ class CZ(ControlledOp):
          [ 0  0  0 -1]]
         """
         return np.array([[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 1, 0], [0, 0, 0, -1]])
-
-    @staticmethod
-    def compute_eigvals():  # pylint: disable=arguments-differ
-        r"""Eigenvalues of the operator in the computational basis (static method).
-
-        If :attr:`diagonalizing_gates` are specified and implement a unitary :math:`U^{\dagger}`,
-        the operator can be reconstructed as
-
-        .. math:: O = U \Sigma U^{\dagger},
-
-        where :math:`\Sigma` is the diagonal matrix containing the eigenvalues.
-
-        Otherwise, no particular order for the eigenvalues is guaranteed.
-
-        .. seealso:: :meth:`~.CZ.eigvals`
-
-
-        Returns:
-            array: eigenvalues
-
-        **Example**
-
-        >>> print(qml.CZ.compute_eigvals())
-        [1, 1, 1, -1]
-        """
-        return np.array([1, 1, 1, -1])
 
     def adjoint(self):
         return CZ(wires=self.wires)
