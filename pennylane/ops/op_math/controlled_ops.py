@@ -25,6 +25,7 @@ import pennylane as qml
 from pennylane.operation import AnyWires
 from pennylane.ops.qubit.non_parametric_ops import PauliY
 from pennylane.ops.qubit.matrix_ops import QubitUnitary
+from pennylane.ops.qubit.non_parametric_ops import S
 from .controlled import ControlledOp
 
 
@@ -134,7 +135,7 @@ class CY(ControlledOp):
         [CRY(3.141592653589793, wires=[0, 1]), S(wires=[0])]
 
         """
-        return [qml.CRY(np.pi, wires=wires), qml.ops.qubit.non_parametric_ops.S(wires=wires[0])]
+        return [qml.CRY(np.pi, wires=wires), S(wires=wires[0])]
 
     def decomposition(self):
         return self.compute_decomposition(self.wires)

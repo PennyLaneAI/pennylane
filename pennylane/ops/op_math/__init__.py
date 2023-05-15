@@ -85,7 +85,4 @@ from .sum import Sum, sum
 from .symbolicop import ScalarSymbolicOp, SymbolicOp
 from .controlled_decompositions import ctrl_decomp_zyz, ctrl_decomp_bisect
 
-controlled_qubit_ops = {
-    "ControlledQubitUnitary",
-    "CY"
-}
+controlled_qubit_ops = {"ControlledQubitUnitary", "CY"}
