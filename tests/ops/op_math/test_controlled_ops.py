@@ -15,6 +15,8 @@
 Unit tests for Operators inheriting from Controlled.
 """
 
+import copy
+
 import numpy as np
 import pytest
 from scipy.stats import unitary_group
@@ -428,3 +430,84 @@ class TestControlledQubitUnitary:
             qml.ControlledQubitUnitary(
                 not_unitary, control_wires=[0, 2], wires=1, unitary_check=True
             )
+
+
+class TestDecompositions:
+    def test_CY_decomposition(self, tol):
+        """Tests that the decomposition of the CY gate is correct"""
+        op = qml.CY(wires=[0, 1])
+        res = op.decomposition()
+
+        mats = []
+        for i in reversed(res):
+            if len(i.wires) == 1:
+                mats.append(np.kron(i.matrix(), np.eye(2)))
+            else:
+                mats.append(i.matrix())
+
+        decomposed_matrix = np.linalg.multi_dot(mats)
+        assert np.allclose(decomposed_matrix, op.matrix(), atol=tol, rtol=0)
+
+
+period_two_ops = (
+    qml.CY(wires=(0, 1)),
+)
+
+
+class TestPowMethod:
+    @pytest.mark.parametrize("op", period_two_ops)
+    @pytest.mark.parametrize("n", (1, 5, -1, -5))
+    def test_period_two_pow_odd(self, op, n):
+        """Test that ops with a period of 2 raised to an odd power are the same as the original op."""
+        assert op.pow(n)[0].__class__ is op.__class__
+
+    @pytest.mark.parametrize("op", period_two_ops)
+    @pytest.mark.parametrize("n", (2, 6, 0, -2))
+    def test_period_two_pow_even(self, op, n):
+        """Test that ops with a period of 2 raised to an even power are empty lists."""
+        assert len(op.pow(n)) == 0
+
+    @pytest.mark.parametrize("op", period_two_ops)
+    def test_period_two_noninteger_power(self, op):
+        """Test that ops with a period of 2 raised to a non-integer power raise an error."""
+        if op.__class__ is qml.PauliZ:
+            pytest.skip("PauliZ can be raised to any power.")
+        with pytest.raises(qml.operation.PowUndefinedError):
+            op.pow(1.234)
+
+
+label_data = [
+    (qml.CY(wires=(0, 1)), "Y"),
+]
+
+
+@pytest.mark.parametrize("op, label", label_data)
+def test_label_method(op, label):
+    assert op.label() == label
+    assert op.label(decimals=2) == label
+
+
+control_data = [
+    (qml.CY(wires=(0, 1)), Wires(0)),
+]
+
+
+@pytest.mark.parametrize("op, control_wires", control_data)
+def test_control_wires(op, control_wires):
+    """Test ``control_wires`` attribute for non-parametrized operations."""
+
+    assert op.control_wires == control_wires
+
+
+involution_ops = [  # ops who are their own inverses
+    qml.CY((0, 1)),
+]
+
+
+@pytest.mark.parametrize("op", involution_ops)
+def test_adjoint_method(op, tol):
+    adj_op = copy.copy(op)
+    for _ in range(4):
+        adj_op = adj_op.adjoint()
+
+        assert adj_op.name == op.name
