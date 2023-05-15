@@ -460,7 +460,7 @@ class TestOperations:
         assert np.allclose(res_dynamic, mat, atol=tol, rtol=0)
 
 
-class TestDecompositions:
+class TestDecompositions:  #pylint: disable=too-few-public-methods
     def test_CZ_decomposition(self, tol):
         """Tests that the decomposition of the CZ gate is correct"""
         op = qml.CZ(wires=[0, 1])
@@ -475,7 +475,7 @@ class TestDecompositions:
         assert np.allclose(decomposed_matrix, op.matrix(), atol=tol, rtol=0)
 
 
-class TestEigenval:
+class TestEigenval:  # pylint: disable=too-few-public-methods
     def test_CZ_eigenval(self):
         """Tests that the CZ eigenvalue matches the numpy eigenvalues of the CZ matrix"""
         op = qml.CZ(wires=[0, 1])
@@ -521,7 +521,7 @@ class TestPowMethod:
         assert qml.math.allclose(op_pow[0].data[0], np.pi * (n % 2))
 
 
-class TestControlledMethod:
+class TestControlledMethod:  # pylint: disable=too-few-public-methods
     """Tests for the _controlled method of non-parametric operations."""
 
     def test_CZ(self):
