@@ -2895,10 +2895,18 @@ class TestParameterShiftRuleBroadcast:
             return [qml.probs([0, 1]), qml.probs([2, 3])]
 
         x = np.random.rand(3)
-        circuits = [qml.QNode(cost, dev) for cost in (cost1, cost2, cost3, cost4, cost5, cost6)]
+        single_measure_circuits = [qml.QNode(cost, dev) for cost in (cost1, cost2, cost4, cost5)]
+        multi_measure_circuits = [qml.QNode(cost, dev) for cost in (cost3, cost6)]
 
-        with pytest.raises(NotImplementedError, match="Broadcasting with multiple measurements"):
-            [qml.math.shape(qml.gradients.param_shift(c, broadcast=True)(x)) for c in circuits]
+        for c, exp_shape in zip(single_measure_circuits, [(3,), (3,), (3, 4), (3, 4)]):
+            grad = qml.gradients.param_shift(c, broadcast=True)(x)
+            assert qml.math.shape(grad) == exp_shape
+
+        for c in multi_measure_circuits:
+            with pytest.raises(
+                NotImplementedError, match="Broadcasting with multiple measurements"
+            ):
+                qml.gradients.param_shift(c, broadcast=True)(x)
 
 
 @pytest.mark.parametrize(
