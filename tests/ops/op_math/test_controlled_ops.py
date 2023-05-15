@@ -444,7 +444,7 @@ NON_PARAMETRIZED_OPERATIONS = [
 
 class TestOperations:
     @pytest.mark.parametrize("op_cls, mat", NON_PARAMETRIZED_OPERATIONS)
-    def test_nonparametrized_op_copy(self, op_cls, mat, tol):
+    def test_nonparametrized_op_copy(self, op_cls, _, tol):
         """Tests that copied nonparametrized ops function as expected"""
         op = op_cls(wires=0 if op_cls.num_wires is AnyWires else range(op_cls.num_wires))
         copied_op = copy.copy(op)
