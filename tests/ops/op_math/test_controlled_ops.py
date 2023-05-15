@@ -460,7 +460,7 @@ class TestOperations:
         assert np.allclose(res_dynamic, mat, atol=tol, rtol=0)
 
 
-class TestDecompositions:
+class TestDecompositions:  # pylint: disable=too-few-public-methods
     def test_CY_decomposition(self, tol):
         """Tests that the decomposition of the CY gate is correct"""
         op = qml.CY(wires=[0, 1])
@@ -531,7 +531,7 @@ involution_ops = [  # ops who are their own inverses
 
 
 @pytest.mark.parametrize("op", involution_ops)
-def test_adjoint_method(op, tol):
+def test_adjoint_method(op):
     adj_op = copy.copy(op)
     for _ in range(4):
         adj_op = adj_op.adjoint()
