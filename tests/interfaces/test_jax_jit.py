@@ -25,38 +25,7 @@ import numpy as np
 
 import pennylane as qml
 from pennylane.gradients import param_shift
-from pennylane.interfaces import execute, InterfaceUnsupportedError
-
-
-@pytest.mark.parametrize(
-    "version, package, should_raise",
-    [
-        ("0.4.1", jax, False),
-        ("0.4.2", jax, False),
-        ("0.4.3", jax, False),
-        ("0.4.4", jax, True),
-        ("0.4.5", jax, True),
-    ],
-)
-def test_raise_version_error(package, version, should_raise, monkeypatch):
-    """Test JAX version error"""
-    a = jax.numpy.array([0.1, 0.2])
-
-    dev = qml.device("default.qubit", wires=1)
-
-    with qml.queuing.AnnotatedQueue() as q:
-        qml.expval(qml.PauliZ(0))
-
-    tape = qml.tape.QuantumScript.from_queue(q)
-    with monkeypatch.context() as m:
-        m.setattr(package, "__version__", version)
-
-        if should_raise:
-            msg = "The new JAX JIT interface of PennyLane requires JAX"
-            with pytest.raises(InterfaceUnsupportedError, match=msg):
-                execute([tape], dev, gradient_fn=param_shift, interface="jax-jit")
-        else:
-            execute([tape], dev, gradient_fn=param_shift, interface="jax-jit")
+from pennylane.interfaces import execute
 
 
 class TestJaxExecuteUnitTests:
