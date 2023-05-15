@@ -310,7 +310,6 @@ class KerasLayer(Layer):
             **{self.input_arg: x},
             **{k: 1.0 * w for k, w in self.qnode_weights.items()},
         }
-
         res = self.qnode(**kwargs)
 
         if isinstance(res, (list, tuple)):

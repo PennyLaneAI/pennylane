@@ -662,7 +662,7 @@ def test_no_attribute():
 
 
 @pytest.mark.tf
-def test_batch_input():
+def test_batch_input_single_measure():
     """Test input batching in keras"""
     dev = qml.device("default.qubit.tf", wires=4)
 
@@ -676,5 +676,39 @@ def test_batch_input():
     KerasLayer.set_input_argument("x")
     layer = KerasLayer(circuit, weight_shapes={"weights": (2,)}, output_dim=(2,))
     layer.build((None, 2))
-    assert layer(np.random.uniform(0, 1, (10, 4))).shape == (10, 2)
+
+    x = tf.constant(np.random.uniform(0, 1, (10, 4)))
+    res = layer(x)
+
+    assert res.shape == (10, 2)
     assert dev.num_executions == 1
+
+    for x_, r in zip(x, res):
+        assert qml.math.allclose(r, circuit(x_, layer.qnode_weights["weights"]))
+
+
+@pytest.mark.tf
+def test_batch_input_multi_measure():
+    """Test input batching in keras for multiple measurements"""
+    dev = qml.device("default.qubit.tf", wires=4)
+
+    @qml.qnode(dev, diff_method="parameter-shift")
+    def circuit(x, weights):
+        qml.AngleEmbedding(x, wires=range(4), rotation="Y")
+        qml.RY(weights[0], wires=0)
+        qml.RY(weights[1], wires=1)
+        return [qml.expval(qml.PauliZ(1)), qml.probs(wires=range(2))]
+
+    KerasLayer.set_input_argument("x")
+    layer = KerasLayer(circuit, weight_shapes={"weights": (2,)}, output_dim=(5,))
+    layer.build((None, 4))
+
+    x = tf.constant(np.random.uniform(0, 1, (10, 4)))
+    res = layer(x)
+
+    assert res.shape == (10, 5)
+    assert dev.num_executions == 1
+
+    for x_, r in zip(x, res):
+        exp = tf.experimental.numpy.hstack(circuit(x_, layer.qnode_weights["weights"]))
+        assert qml.math.allclose(r, exp)

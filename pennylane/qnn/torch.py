@@ -17,7 +17,7 @@ import functools
 import inspect
 import math
 from collections.abc import Iterable
-from typing import Callable, Dict, Union, Any
+from typing import Callable, Dict, Union, Any, Text
 
 from pennylane.qnode import QNode
 
@@ -52,6 +52,9 @@ class TorchLayer(Module):
             initializing all QNode weights or a dictionary specifying the callable/value used for
             each weight. If not specified, weights are randomly initialized using the uniform
             distribution over :math:`[0, 2 \pi]`.
+        split_batches (bool): If True, any batch dimension in the input tensor will be unstacked
+            and split into multiple QNode executions. Otherwise (default), internal PennyLane
+            broadcasting will be used.
 
     **Example**
 
@@ -242,6 +245,7 @@ class TorchLayer(Module):
         init_method: Union[Callable, Dict[str, Union[Callable, Any]]] = None,
         # FIXME: Cannot change type `Any` to `torch.Tensor` in init_method because it crashes the
         # tests that don't use torch module.
+        split_batches=False,
     ):
         if not TORCH_IMPORTED:
             raise ImportError(
@@ -262,6 +266,8 @@ class TorchLayer(Module):
         self._signature_validation(qnode, weight_shapes)
         self.qnode = qnode
         self.qnode.interface = "torch"
+
+        self.split_batches = split_batches
 
         self.qnode_weights: Dict[str, torch.nn.Parameter] = {}
 
@@ -302,14 +308,14 @@ class TorchLayer(Module):
             tensor: output data
         """
 
-        if len(inputs.shape) > 1:
+        if self.split_batches and len(inputs.shape) > 1:
             # If the input size is not 1-dimensional, unstack the input along its first dimension,
             # recursively call the forward pass on each of the yielded tensors, and then stack the
             # outputs back into the correct shape
             reconstructor = [self.forward(x) for x in torch.unbind(inputs)]
             return torch.stack(reconstructor)
 
-        # If the input is 1-dimensional, calculate the forward pass as usual
+        # calculate the forward pass as usual
         return self._evaluate_qnode(inputs)
 
     def _evaluate_qnode(self, x):
@@ -329,6 +335,9 @@ class TorchLayer(Module):
 
         if isinstance(res, torch.Tensor):
             return res.type(x.dtype)
+
+        if len(x.shape) > 1:
+            res = [torch.reshape(r, (x.shape[0], -1)) for r in res]
 
         return torch.hstack(res).type(x.dtype)
 
@@ -395,3 +404,13 @@ class TorchLayer(Module):
     def input_arg(self):
         """Name of the argument to be used as the input to the Torch layer. Set to ``"inputs"``."""
         return self._input_arg
+
+    @staticmethod
+    def set_input_argument(input_name: Text = "inputs") -> None:
+        """
+        Set the name of the input argument.
+
+        Args:
+            input_name (str): Name of the input argument
+        """
+        TorchLayer._input_arg = input_name

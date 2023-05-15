@@ -459,7 +459,11 @@ class TestTorchLayer:  # pylint: disable=too-many-public-methods
         """Test if the forward() method accepts a batched input with multiple dimensions and returns a tensor of the
         right shape by broadcasting. Also tests if gradients are still backpropagated correctly."""
         c, w = get_circuit
-        layer = TorchLayer(c, w)
+
+        # set split_batches to True since parameter broadcasting does not support
+        # more than one batch dimension
+        layer = TorchLayer(c, w, split_batches=True)
+
         x = torch.Tensor(np.ones((batch_size, middle_dim, n_qubits)))
 
         weights = layer.qnode_weights.values()
@@ -651,3 +655,52 @@ def test_vjp_is_unwrapped_for_param_shift():
     )[0]
 
     assert isinstance(u_x, torch.Tensor)
+
+
+@pytest.mark.torch
+def test_batch_input_single_measure():
+    """Test input batching in torch"""
+    dev = qml.device("default.qubit.torch", wires=4)
+
+    @qml.qnode(dev, diff_method="parameter-shift")
+    def circuit(x, weights):
+        qml.AngleEmbedding(x, wires=range(4), rotation="Y")
+        qml.RY(weights[0], wires=0)
+        qml.RY(weights[1], wires=1)
+        return qml.probs(op=qml.PauliZ(1))
+
+    TorchLayer.set_input_argument("x")
+    layer = TorchLayer(circuit, weight_shapes={"weights": (2,)})
+    x = torch.Tensor(np.random.uniform(0, 1, (10, 4)))
+    res = layer(x)
+
+    assert res.shape == (10, 2)
+    assert dev.num_executions == 1
+
+    for x_, r in zip(x, res):
+        assert qml.math.allclose(r, circuit(x_, layer.qnode_weights["weights"]))
+
+
+@pytest.mark.torch
+def test_batch_input_multi_measure():
+    """Test input batching in torch for multiple measurements"""
+    dev = qml.device("default.qubit.torch", wires=4)
+
+    @qml.qnode(dev, diff_method="parameter-shift")
+    def circuit(x, weights):
+        qml.AngleEmbedding(x, wires=range(4), rotation="Y")
+        qml.RY(weights[0], wires=0)
+        qml.RY(weights[1], wires=1)
+        return [qml.expval(qml.PauliZ(1)), qml.probs(wires=range(2))]
+
+    TorchLayer.set_input_argument("x")
+    layer = TorchLayer(circuit, weight_shapes={"weights": (2,)})
+    x = torch.Tensor(np.random.uniform(0, 1, (10, 4)))
+    res = layer(x)
+
+    assert res.shape == (10, 5)
+    assert dev.num_executions == 1
+
+    for x_, r in zip(x, res):
+        exp = torch.hstack(circuit(x_, layer.qnode_weights["weights"]))
+        assert qml.math.allclose(r, exp)
