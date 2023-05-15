@@ -460,7 +460,7 @@ class TestOperations:
         assert np.allclose(res_dynamic, mat, atol=tol, rtol=0)
 
 
-class TestDecompositions:  #pylint: disable=too-few-public-methods
+class TestDecompositions:  # pylint: disable=too-few-public-methods
     def test_CZ_decomposition(self, tol):
         """Tests that the decomposition of the CZ gate is correct"""
         op = qml.CZ(wires=[0, 1])

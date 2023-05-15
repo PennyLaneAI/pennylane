@@ -233,7 +233,7 @@ class CZ(ControlledOp):
     def pow(self, z):
         if z % 2 == 1:
             return [CZ(wires=self.wires)]
-        
+
         base_pow = self.base.pow(z)
         return [ControlledOp(op, self.control_wires) for op in base_pow]
 
