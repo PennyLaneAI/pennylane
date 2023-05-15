@@ -90,9 +90,7 @@ class TRX(Operation):
     def generator(self):
         return qml.s_prod(-0.5, qml.GellMann(self.wires, index=self._index_dict[self.subspace]))
 
-    def __init__(
-        self, phi, wires, subspace=[0, 1], do_queue=True, id=None
-    ):  # pylint: disable=dangerous-default-value
+    def __init__(self, phi, wires, subspace=(0, 1), do_queue=True, id=None):
         self._subspace = validate_subspace(subspace)
         self._hyperparameters = {
             "subspace": self._subspace,
