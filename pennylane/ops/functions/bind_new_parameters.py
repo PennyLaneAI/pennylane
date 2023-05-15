@@ -114,7 +114,9 @@ def bind_new_parameters_symbolic_op(op: SymbolicOp, params: Optional[Sequence[Te
 
 
 @bind_new_parameters.register
-def bind_new_parameters_scalar_symbolic_op(op: ScalarSymbolicOp, params: Optional[Sequence[TensorLike]] = None):
+def bind_new_parameters_scalar_symbolic_op(
+    op: ScalarSymbolicOp, params: Optional[Sequence[TensorLike]] = None
+):
     params = _validate_params(op, params)
 
     if isinstance(op, Pow):

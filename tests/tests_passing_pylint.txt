@@ -21,6 +21,7 @@ tests/legacy/test_measurements_old.py
 tests/math/test_functions.py
 tests/math/test_init.py
 tests/measurements/**
+tests/ops/functions/test_bind_new_parameters.py
 tests/ops/functions/test_dot.py
 tests/ops/functions/test_evolve.py
 tests/ops/op_math/**
