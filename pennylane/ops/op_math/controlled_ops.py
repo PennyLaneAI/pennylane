@@ -27,6 +27,7 @@ from pennylane.ops.qubit.non_parametric_ops import PauliY
 from pennylane.ops.qubit.matrix_ops import QubitUnitary
 from .controlled import ControlledOp
 
+
 class CY(ControlledOp):
     r"""CY(wires)
     The controlled-Y operator
@@ -64,12 +65,7 @@ class CY(ControlledOp):
         control_wire, wire = wires
         base = PauliY(wire)
 
-        super().__init__(
-            base,
-            control_wire,
-            do_queue=do_queue,
-            id=id
-        )
+        super().__init__(base, control_wire, do_queue=do_queue, id=id)
         self._name = "CY"
 
     def adjoint(self):

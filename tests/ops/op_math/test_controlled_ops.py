@@ -459,6 +459,7 @@ class TestOperations:
         assert np.allclose(res_static, mat, atol=tol, rtol=0)
         assert np.allclose(res_dynamic, mat, atol=tol, rtol=0)
 
+
 class TestDecompositions:
     def test_CY_decomposition(self, tol):
         """Tests that the decomposition of the CY gate is correct"""
@@ -476,9 +477,7 @@ class TestDecompositions:
         assert np.allclose(decomposed_matrix, op.matrix(), atol=tol, rtol=0)
 
 
-period_two_ops = (
-    qml.CY(wires=(0, 1)),
-)
+period_two_ops = (qml.CY(wires=(0, 1)),)
 
 
 class TestPowMethod:
