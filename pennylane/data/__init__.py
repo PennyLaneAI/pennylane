@@ -24,7 +24,6 @@ from .attributes import (
 from .base.attribute import AttributeInfo, AttributeType
 from .base.dataset import Dataset, attribute
 
-
 __all__ = (
     "AttributeType",
     "AttributeInfo",
