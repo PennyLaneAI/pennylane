@@ -41,13 +41,14 @@ def _walsh_hadamard_transform(D, n=None):
     Returns:
         tensor_like: The transformed tensor with the same shape as the input ``D``.
 
-    Note that there is a (theoretically) faster approach, the Fast Walsh-Hadamard transform.
-    However, due to the large internal speedups of compiled matrix multiplication, it
-    is often favourable to use this approach.
-
-    Another, even faster approach is to construct the tensor product of the Hadamard matrix
-    with itself. However, constructing and/or storing this matrix is rather wasteful, so that
-    the approach here is more memory-efficient and provides a reasonable runtime.
+    Due to the execution of the transform as a sequence of tensor multiplications
+    with shapes ``(2, 2), (2, 2,... 2)->(2, 2,... 2)``, the theoretical scaling of this
+    method is the same as the one for the
+    `Fast Walsh-Hadamard transform <https://en.wikipedia.org/wiki/Fast_Walsh-Hadamard_transform>`__.
+    Due to the large internal speedups of compiled matrix multiplication and compatibility
+    with autodifferentiation frameworks, the approach taken here is favourable over a manual
+    realization of the FWHT unless memory limitations restrict the creation of intermediate
+    arrays.
     """
     orig_shape = qml.math.shape(D)
     n = n or int(qml.math.log2(orig_shape[-1]))
@@ -344,7 +345,7 @@ class DiagonalQubitUnitary(Operation):
         .. seealso:: :meth:`~.DiagonalQubitUnitary.decomposition`.
 
         Args:
-            U (array[complex]): square unitary matrix
+            D (tensor_like): diagonal of the matrix
             wires (Iterable[Any] or Wires): the wire(s) the operation acts on
 
         Returns:
@@ -352,10 +353,10 @@ class DiagonalQubitUnitary(Operation):
 
         **Example:**
 
-        # TODO: Update once Identity has been replaced by GlobalPhase
-        >>> qml.DiagonalQubitUnitary.compute_decomposition([1, 1], wires=0)
+        >>> diag = np.exp(1j * np.array([0.4, 2.1, 0.5, 1.8]))
+        >>> qml.DiagonalQubitUnitary.compute_decomposition(diag, wires=[0, 1])
         [QubitUnitary(array([[0.36235775+0.93203909j, 0.        +0.j        ],
-                             [0.        +0.j        , 0.36235775+0.93203909j]]), wires=[0]),
+         [0.        +0.j        , 0.36235775+0.93203909j]]), wires=[0]),
          RZ(1.5000000000000002, wires=[1]),
          RZ(-0.10000000000000003, wires=[0]),
          IsingZZ(0.2, wires=[0, 1])]
@@ -368,6 +369,7 @@ class DiagonalQubitUnitary(Operation):
         # For all other gates, there is a prefactor -1/2 to be compensated.
         coeffs = coeffs * (-2.0)
 
+        # TODO: Replace the following by a GlobalPhase gate.
         ops = [QubitUnitary(qml.math.tensordot(global_phase, qml.math.eye(2), axes=0), wires[0])]
         for wire0 in range(n):
             # Single PauliZ generators correspond to the coeffs at powers of two
