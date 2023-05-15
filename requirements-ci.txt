@@ -1,5 +1,7 @@
 numpy
 scipy
+cvxpy
+cvxopt
 networkx
 rustworkx
 autograd
