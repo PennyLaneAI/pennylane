@@ -25,12 +25,7 @@ import pennylane as qml
 from pennylane._device import _get_num_copies
 from pennylane.measurements import VarianceMP
 
-from .finite_difference import (
-    _all_zero_grad_new,
-    _no_trainable_grad_new,
-    _no_trainable_grad_legacy,
-    finite_diff,
-)
+from .finite_difference import finite_diff
 from .general_shift_rules import (
     _iterate_shift_rule,
     frequencies_to_period,
@@ -38,10 +33,15 @@ from .general_shift_rules import (
     process_shifts,
 )
 from .gradient_transform import (
+    _all_zero_grad,
     assert_no_state_returns,
+    assert_multimeasure_not_broadcasted,
     choose_grad_methods,
     gradient_analysis_and_validation,
     gradient_transform,
+    _no_trainable_grad,
+    _no_trainable_grad_legacy,
+    reorder_grads,
 )
 
 NONINVOLUTORY_OBS = {
@@ -53,16 +53,6 @@ NONINVOLUTORY_OBS = {
 to a callable that accepts an observable object, and returns the square
 of that observable.
 """
-
-
-def assert_multimeasure_not_broadcasted(measurements, broadcast):
-    """Assert that there are not simultaneously multiple measurements and
-    broadcasting activated.Otherwise raises an error."""
-    if broadcast and len(measurements) > 1:
-        raise NotImplementedError(
-            "Broadcasting with multiple measurements is not supported yet. "
-            f"Set broadcast to False instead. The tape measurements are {measurements}."
-        )
 
 
 def _square_observable(obs):
@@ -340,147 +330,6 @@ def _get_operation_recipe(tape, t_idx, shifts, order=1):
     return qml.math.stack([coeffs, mults, shifts]).T
 
 
-def _swap_first_two_axes(grads, first_axis_size, second_axis_size):
-    """Transpose the first two axes of an iterable of iterables, returning
-    a tuple of tuples."""
-    if first_axis_size == 1:
-        return tuple(grads[0][i] for i in range(second_axis_size))
-    return tuple(
-        tuple(grads[j][i] for j in range(first_axis_size)) for i in range(second_axis_size)
-    )
-
-
-def _reorder_grad_axes_single_measure_shot_vector(grads, num_params, len_shot_vec):
-    """Reorder the axes for gradient results obtained for a tape with a single measurement from a device that defined a
-    shot vector.
-
-    The order of axes of the gradient output matches the structure outputted by jax.jacobian for a tuple-valued
-    function. Internally, this may not be the case when computing the gradients, so the axes are reordered here.
-
-    The first axis always corresponds to the number of trainable parameters because the parameter-shift transform
-    defines multiple tapes each of which corresponds to a trainable parameter. Those tapes are then executed using a
-    device, which at the moment outputs results with the first axis corresponding to each tape output.
-
-    The final order of axes of gradient results should be:
-    1. Shot vector
-    2. Measurements
-    3. Number of trainable parameters (Num params)
-    4. Broadcasting dimension
-    5. Measurement shape
-
-    According to the order above, the following reordering is done:
-
-    Shot vectors:
-
-        Go from
-        1. Num params
-        2. Shot vector
-        3. Measurement shape
-
-        To
-        1. Shot vector
-        2. Num params
-        3. Measurement shape
-    """
-    return _swap_first_two_axes(grads, num_params, len_shot_vec)
-
-
-def _reorder_grad_axes_multi_measure(
-    grads, num_params, num_measurements, len_shot_vec, shot_vector_multi_measure
-):
-    """Reorder the axes for gradient results obtained for a tape with multiple measurements.
-
-    The order of axes of the gradient output matches the structure outputted by jax.jacobian for a tuple-valued
-    function. Internally, this may not be the case when computing the gradients, so the axes are reordered here.
-
-    The first axis always corresponds to the number of trainable parameters because the parameter-shift transform
-    defines multiple tapes each of which corresponds to a trainable parameter. Those tapes are then executed using a
-    device, which at the moment outputs results with the first axis corresponding to each tape output.
-
-    The final order of axes of gradient results should be:
-    1. Shot vector
-    2. Measurements
-    3. Number of trainable parameters (Num params)
-    4. Broadcasting dimension
-    5. Measurement shape
-
-    Parameter broadcasting doesn't yet support multiple measurements, hence such cases are not dealt with at the moment
-    by this function.
-
-    According to the order above, the following reorderings are done:
-
-    A) Analytic (``shots=None``) or finite shots:
-
-        Go from
-        1. Num params
-        2. Measurements
-        3. Measurement shape
-
-        To
-        1. Measurements
-        2. Num params
-        3. Measurement shape
-
-    B) Shot vectors:
-
-        Go from
-        1. Num params
-        2. Shot vector
-        3. Measurements
-        4. Measurement shape
-
-        To
-        1. Shot vector
-        2. Measurements
-        3. Num params
-        4. Measurement shape
-    """
-    multi_param = num_params > 1
-    if not shot_vector_multi_measure:
-        new_grad = _swap_first_two_axes(grads, num_params, num_measurements)
-    else:
-        new_grad = []
-        for i in range(len_shot_vec):
-            shot_vec_grad = []
-            for j in range(num_measurements):
-                measurement_grad = []
-                for k in range(num_params):
-                    measurement_grad.append(grads[k][i][j])
-
-                measurement_grad = tuple(measurement_grad) if multi_param else measurement_grad[0]
-                shot_vec_grad.append(measurement_grad)
-            new_grad.append(tuple(shot_vec_grad))
-
-    return new_grad
-
-
-def _reorder_grads(grads, tape_specs):
-    """Reorder the axes of tape gradients according to the original tape specifications.
-
-    - If the original tape returned a single measurement and has a single parameter, the
-      first entry is returned.
-    - If the original tape returned a single measurement and a shot vector was used,
-      reorder the gradient axes with ``_reorder_grad_axes_single_measure_shot_vector``
-    - If the original tape returned multiple measurements,
-      reorder the gradient axes with ``_reorder_grad_axes_multi_measure``.
-    """
-    single_measure, num_params, num_measurements, shot_vector, shots = tape_specs
-    if single_measure and num_params == 1:
-        return grads[0]
-    len_shot_vec = _get_num_copies(shots) if shot_vector else None
-    if single_measure and shot_vector:
-        return _reorder_grad_axes_single_measure_shot_vector(grads, num_params, len_shot_vec)
-    if not single_measure:
-        grads = _reorder_grad_axes_multi_measure(
-            grads,
-            num_params,
-            num_measurements,
-            len_shot_vec,
-            shot_vector,
-        )
-    return tuple(grads)
-
-
 def _make_zero_rep(g, single_measure, shot_vector):
     """Create a zero-valued gradient entry adapted to the measurements and shot_vector
     of a gradient computation, where g is a previously computed non-zero gradient entry."""
@@ -620,7 +469,7 @@ def expval_param_shift(
         # Fill in zero-valued gradients
         grads = [zero_rep if g is None else g for g in grads]
 
-        return _reorder_grads(grads, tape_specs)
+        return reorder_grads(grads, tape_specs)
 
     processing_fn.first_result_unshifted = at_least_one_unshifted
 
@@ -1517,17 +1366,18 @@ def param_shift(
             shots=shots,
         )
 
-    assert_no_state_returns(tape.measurements)
+    transform_name = "parameter-shift rule"
+    assert_no_state_returns(tape.measurements, transform_name)
     assert_multimeasure_not_broadcasted(tape.measurements, broadcast)
 
     if argnum is None and not tape.trainable_params:
-        return _no_trainable_grad_new(tape, shots)
+        return _no_trainable_grad(tape, shots)
 
     method = "analytic" if fallback_fn is None else "best"
     diff_methods = gradient_analysis_and_validation(tape, method, grad_fn=param_shift)
 
     if all(g == "0" for g in diff_methods):
-        return _all_zero_grad_new(tape, shots)
+        return _all_zero_grad(tape, shots)
 
     method_map = choose_grad_methods(diff_methods, argnum)
 
@@ -1890,8 +1740,9 @@ def _param_shift_legacy(
         Note that ``broadcast=True`` requires additional memory by a factor of the largest
         batch_size of the created tapes.
     """
-    assert_no_state_returns(m := tape.measurements)
-    assert_multimeasure_not_broadcasted(m, broadcast)
+    transform_name = "parameter-shift rule"
+    assert_no_state_returns(tape.measurements, transform_name)
+    assert_multimeasure_not_broadcasted(tape.measurements, broadcast)
 
     if argnum is None and not tape.trainable_params:
         return _no_trainable_grad_legacy(tape)

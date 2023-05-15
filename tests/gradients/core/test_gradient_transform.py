@@ -21,7 +21,6 @@ from pennylane.gradients.gradient_transform import (
     _gradient_analysis,
     choose_grad_methods,
     _grad_method_validation,
-    gradient_analysis_and_validation,
 )
 
 
@@ -192,10 +191,37 @@ class TestChooseGradMethods:
 class TestGradientTransformIntegration:
     """Test integration of the gradient transform decorator"""
 
-    def test_acting_on_qnodes(self, tol):
-        """Test that a gradient transform acts on QNodes
-        correctly"""
-        dev = qml.device("default.qubit", wires=2)
+    @pytest.mark.parametrize("shots, atol", [(None, 1e-6), (1000, 1e-1), ([1000, 100], 2e-1)])
+    @pytest.mark.parametrize("slicing", [False, True])
+    def test_acting_on_qnodes_single_param(self, shots, slicing, atol):
+        """Test that a gradient transform acts on QNodes with a single parameter correctly"""
+        dev = qml.device("default.qubit", wires=2, shots=shots)
+
+        @qml.qnode(dev)
+        def circuit(weights):
+            if slicing:
+                qml.RX(weights[0], wires=[0])
+            else:
+                qml.RX(weights, wires=[0])
+            return qml.expval(qml.PauliZ(0)), qml.var(qml.PauliX(1))
+
+        grad_fn = qml.gradients.param_shift(circuit, shots=shots)
+
+        w = np.array([0.543] if slicing else 0.543, requires_grad=True)
+        res = grad_fn(w)
+        assert circuit.interface == "auto"
+        expected = np.array([-np.sin(w[0] if slicing else w), 0])
+        print(expected)
+        print(res)
+        if isinstance(shots, list):
+            assert all(np.allclose(r, expected, atol=atol, rtol=0) for r in res)
+        else:
+            assert np.allclose(res, expected, atol=atol, rtol=0)
+
+    @pytest.mark.parametrize("shots, atol", [(None, 1e-6), (1000, 1e-1), ([1000, 100], 2e-1)])
+    def test_acting_on_qnodes_multi_param(self, shots, atol):
+        """Test that a gradient transform acts on QNodes with multiple parameters correctly"""
+        dev = qml.device("default.qubit", wires=2, shots=shots)
 
         @qml.qnode(dev)
         def circuit(weights):
@@ -204,14 +230,48 @@ class TestGradientTransformIntegration:
             qml.CNOT(wires=[0, 1])
             return qml.expval(qml.PauliZ(0)), qml.var(qml.PauliX(1))
 
-        grad_fn = qml.gradients.param_shift(circuit)
+        grad_fn = qml.gradients.param_shift(circuit, shots=shots)
 
         w = np.array([0.543, -0.654], requires_grad=True)
         res = grad_fn(w)
         assert circuit.interface == "auto"
         x, y = w
         expected = np.array([[-np.sin(x), 0], [0, -2 * np.cos(y) * np.sin(y)]])
-        assert np.allclose(res, expected, atol=tol, rtol=0)
+        if isinstance(shots, list):
+            assert all(np.allclose(r, expected, atol=atol, rtol=0) for r in res)
+        else:
+            assert np.allclose(res, expected, atol=atol, rtol=0)
+
+    @pytest.mark.xfail(reason="Gradient transforms are not compatible with shots and mixed shapes")
+    @pytest.mark.parametrize("shots, atol", [(None, 1e-6), (1000, 1e-1), ([1000, 100], 2e-1)])
+    def test_acting_on_qnodes_multi_param_multi_arg(self, shots, atol):
+        """Test that a gradient transform acts on QNodes with multiple parameters
+        in both the tape and the QNode correctly"""
+        np.random.seed(234)
+        dev = qml.device("default.qubit", wires=2, shots=shots)
+
+        @qml.qnode(dev)
+        def circuit(weight0, weight1):
+            qml.RX(weight0, wires=[0])
+            qml.RY(weight1[0], wires=[1])
+            qml.CNOT(wires=[0, 1])
+            return qml.expval(qml.PauliZ(0)), qml.var(qml.PauliX(1))
+
+        grad_fn = qml.gradients.param_shift(circuit, shots=shots)
+
+        w = [np.array(0.543, requires_grad=True), np.array([-0.654], requires_grad=True)]
+        res = grad_fn(*w)
+        assert circuit.interface == "auto"
+        x, (y,) = w
+        expected = (np.array([-np.sin(x), 0]), np.array([[0], [-2 * np.cos(y) * np.sin(y)]]))
+        if isinstance(shots, list):
+            assert isinstance(res, tuple) and len(res) == len(shots)
+            for _res in res:
+                assert isinstance(_res, tuple) and len(_res) == 2
+                assert all(np.allclose(r, e, atol=atol, rtol=0) for r, e in zip(_res, expected))
+        else:
+            assert isinstance(res, tuple) and len(res) == 2
+            assert all(np.allclose(r, e, atol=atol, rtol=0) for r, e in zip(res, expected))
 
     def test_decorator(self, tol):
         """Test that a gradient transform decorating a QNode

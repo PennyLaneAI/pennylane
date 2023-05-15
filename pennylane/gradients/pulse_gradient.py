@@ -21,18 +21,17 @@ import numpy as np
 import pennylane as qml
 from pennylane.pulse import ParametrizedEvolution
 
-from .finite_difference import _all_zero_grad_new, _no_trainable_grad_new
-from .parameter_shift import (
-    _reorder_grads,
-    _make_zero_rep,
-)
+from .parameter_shift import _make_zero_rep
 from .gradient_transform import (
+    _all_zero_grad,
     assert_active_return,
     assert_no_state_returns,
     assert_no_variance,
     choose_grad_methods,
     gradient_analysis_and_validation,
     gradient_transform,
+    _no_trainable_grad,
+    reorder_grads,
 )
 
 has_jax = True
@@ -122,7 +121,7 @@ def _split_evol_tapes(tape, split_evolve_ops, op_idx):
     ops_pre = tape.operations[:op_idx]
     ops_post = tape.operations[op_idx + 1 :]
     return [
-        qml.tape.QuantumScript(ops_pre + split + ops_post, tape.measurements)
+        qml.tape.QuantumScript(ops_pre + split + ops_post, tape.measurements, shots=tape.shots)
         for split in split_evolve_ops
     ]
 
@@ -510,7 +509,7 @@ def _stoch_pulse_grad(
     transform_name = "stochastic pulse parameter-shift"
     _assert_has_jax(transform_name)
     assert_active_return(transform_name)
-    assert_no_state_returns(tape.measurements)
+    assert_no_state_returns(tape.measurements, transform_name)
     assert_no_variance(tape.measurements, transform_name)
 
     if num_split_times < 1:
@@ -520,7 +519,7 @@ def _stoch_pulse_grad(
         )
 
     if argnum is None and not tape.trainable_params:
-        return _no_trainable_grad_new(tape, shots)
+        return _no_trainable_grad(tape, shots)
 
     if use_broadcasting and tape.batch_size is not None:
         raise ValueError("Broadcasting is not supported for tapes that already are broadcasted.")
@@ -528,7 +527,7 @@ def _stoch_pulse_grad(
     diff_methods = gradient_analysis_and_validation(tape, "analytic", grad_fn=stoch_pulse_grad)
 
     if all(g == "0" for g in diff_methods):
-        return _all_zero_grad_new(tape, shots)
+        return _all_zero_grad(tape, shots)
 
     method_map = choose_grad_methods(diff_methods, argnum)
 
@@ -626,7 +625,7 @@ def _expval_stoch_pulse_grad(tape, argnum, num_split_times, key, shots, use_broa
         # Fill in zero-valued gradients
         grads = [zero_rep if g is None else g for g in grads]
 
-        return _reorder_grads(grads, tape_specs)
+        return reorder_grads(grads, tape_specs)
 
     return tapes, processing_fn
 

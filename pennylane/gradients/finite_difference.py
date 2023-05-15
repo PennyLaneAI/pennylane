@@ -17,7 +17,6 @@ of a quantum tape.
 """
 # pylint: disable=protected-access,too-many-arguments,too-many-branches,too-many-statements
 import functools
-import warnings
 from collections.abc import Sequence
 
 import numpy as np
@@ -29,9 +28,12 @@ from pennylane.measurements import ProbabilityMP
 
 from .general_shift_rules import generate_shifted_tapes
 from .gradient_transform import (
+    _all_zero_grad,
     choose_grad_methods,
     gradient_analysis_and_validation,
     gradient_transform,
+    _no_trainable_grad,
+    _no_trainable_grad_legacy,
 )
 
 
@@ -153,65 +155,6 @@ def finite_diff_coeffs(n, approx_order, strategy):
     # sort columns in ascending order according to abs(shift)
     coeffs_and_shifts = coeffs_and_shifts[:, np.argsort(np.abs(coeffs_and_shifts)[1])]
     return coeffs_and_shifts
-
-
-_no_trainable_grad_warning = (
-    "Attempted to compute the gradient of a tape with no trainable parameters. "
-    "If this is unintended, please mark trainable parameters in accordance with the "
-    "chosen auto differentiation framework, or via the 'tape.trainable_params' property."
-)
-
-
-def _no_trainable_grad_new(tape, shots=None):
-    warnings.warn(_no_trainable_grad_warning)
-    if isinstance(shots, Sequence):
-        len_shot_vec = _get_num_copies(shots)
-        if len(tape.measurements) == 1:
-            return [], lambda _: tuple(qml.math.zeros([0]) for _ in range(len_shot_vec))
-        return [], lambda _: tuple(
-            tuple(qml.math.zeros([0]) for _ in range(len(tape.measurements)))
-            for _ in range(len_shot_vec)
-        )
-
-    if len(tape.measurements) == 1:
-        return [], lambda _: qml.math.zeros([0])
-    return [], lambda _: tuple(qml.math.zeros([0]) for _ in range(len(tape.measurements)))
-
-
-def _no_trainable_grad_legacy(tape):
-    warnings.warn(_no_trainable_grad_warning)
-    return [], lambda _: np.zeros((tape.output_dim, 0))
-
-
-def _all_zero_grad_new(tape, shots=None):
-    """Auxiliary function to return zeros for the all-zero gradient case."""
-    list_zeros = []
-
-    par_shapes = [qml.math.shape(p) for p in tape.get_parameters()]
-    for m in tape.measurements:
-        # TODO: Update shape for CV variables
-        if isinstance(m, ProbabilityMP):
-            shape = (2 ** len(m.wires),)
-        else:
-            shape = ()
-
-        if len(tape.trainable_params) == 1:
-            sub_list_zeros = qml.math.zeros(par_shapes[0] + shape)
-        else:
-            sub_list_zeros = tuple(qml.math.zeros(sh + shape) for sh in par_shapes)
-
-        list_zeros.append(sub_list_zeros)
-
-    if isinstance(shots, Sequence):
-        len_shot_vec = _get_num_copies(shots)
-        if len(tape.measurements) == 1:
-            return [], lambda _: tuple(list_zeros[0] for _ in range(len_shot_vec))
-        return [], lambda _: tuple(tuple(list_zeros) for _ in range(len_shot_vec))
-
-    if len(tape.measurements) == 1:
-        return [], lambda _: list_zeros[0]
-
-    return [], lambda _: tuple(list_zeros)
 
 
 def _processing_fn(results, shots=None, single_shot_batch_fn=None):
@@ -403,7 +346,7 @@ def finite_diff(
             shots=shots,
         )
     if argnum is None and not tape.trainable_params:
-        return _no_trainable_grad_new(tape, shots)
+        return _no_trainable_grad(tape, shots)
 
     if validate_params:
         diff_methods = gradient_analysis_and_validation(
@@ -413,7 +356,7 @@ def finite_diff(
         diff_methods = ["F" for i in tape.trainable_params]
 
     if all(g == "0" for g in diff_methods):
-        return _all_zero_grad_new(tape, shots)
+        return _all_zero_grad(tape, shots)
 
     gradient_tapes = []
     shapes = []

@@ -14,12 +14,12 @@ tests/fourier/test_coefficients.py
 tests/gradients/core/test_hadamard_gradient.py
 tests/gradients/core/test_hamiltonian_gradient.py
 tests/gradients/core/test_jvp.py
-tests/gradients/core/test_stoch_pulse_gradient.py
+tests/gradients/core/test_pulse_gradient.py
 tests/gradients/core/test_hybrid_pulse_gradient.py
 tests/gradients/finite_diff/test_spsa_gradient.py
 tests/kernels/**
 tests/legacy/test_measurements_old.py
-tests/legacy/test_stoch_pulse_gradient_old.py
+tests/legacy/test_pulse_gradient_old.py
 tests/math/test_functions.py
 tests/math/test_init.py
 tests/measurements/**

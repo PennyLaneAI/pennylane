@@ -17,12 +17,15 @@ This module contains the next generation successor to default qubit
 
 from typing import Union, Callable, Tuple, Optional, Sequence
 
+from pennylane.resource import Resources
+from pennylane.measurements import Shots
 from pennylane.tape import QuantumTape, QuantumScript
 
 from . import Device
 from .execution_config import ExecutionConfig, DefaultExecutionConfig
 from ..qubit.simulate import simulate
-from ..qubit.preprocess import preprocess
+from ..qubit.preprocess import preprocess, validate_and_expand_adjoint
+from ..qubit.adjoint_jacobian import adjoint_jacobian
 
 QuantumTapeBatch = Sequence[QuantumTape]
 QuantumTape_or_Batch = Union[QuantumTape, QuantumTapeBatch]
@@ -97,7 +100,8 @@ class DefaultQubit2(Device):
     ) -> bool:
         """Check whether or not derivatives are available for a given configuration and circuit.
 
-        ``DefaultQubit2`` supports backpropagation derivatives with analytic results.
+        ``DefaultQubit2`` supports backpropagation derivatives with analytic results, as well as
+        adjoint differentiation.
 
         Args:
             execution_config (ExecutionConfig): The configuration of the desired derivative calculation
@@ -110,13 +114,21 @@ class DefaultQubit2(Device):
         # backpropagation currently supported for all supported circuits
         # will later need to add logic if backprop requested with finite shots
         # do once device accepts finite shots
-        return execution_config.gradient_method == "backprop"
+        if execution_config.gradient_method == "backprop":
+            return True
+
+        if execution_config.gradient_method == "adjoint":
+            if circuit is None:
+                return True
+            return isinstance(validate_and_expand_adjoint(circuit), QuantumScript)
+
+        return False
 
     def preprocess(
         self,
         circuits: QuantumTape_or_Batch,
         execution_config: ExecutionConfig = DefaultExecutionConfig,
-    ) -> Tuple[QuantumTapeBatch, Callable]:
+    ) -> Tuple[QuantumTapeBatch, Callable, ExecutionConfig]:
         """Converts an arbitrary circuit or batch of circuits into a batch natively executable by the :meth:`~.execute` method.
 
         Args:
@@ -126,8 +138,8 @@ class DefaultQubit2(Device):
                 the execution. Includes such information as shots.
 
         Returns:
-            Sequence[QuantumTape], Callable: QuantumTapes that the device can natively execute
-            and a postprocessing function to be called after execution.
+            Tuple[QuantumTape], Callable, ExecutionConfig: QuantumTapes that the device can natively execute,
+            a postprocessing function to be called after execution, and a configuration with unset specifications filled in.
 
         This device:
 
@@ -141,7 +153,7 @@ class DefaultQubit2(Device):
             circuits = [circuits]
             is_single_circuit = True
 
-        batch, post_processing_fn = preprocess(circuits, execution_config=execution_config)
+        batch, post_processing_fn, config = preprocess(circuits, execution_config=execution_config)
 
         if is_single_circuit:
 
@@ -149,32 +161,53 @@ class DefaultQubit2(Device):
                 """Unwraps a dimension so that executing the batch of circuits looks like executing a single circuit."""
                 return post_processing_fn(results)[0]
 
-            return batch, convert_batch_to_single_output
+            return batch, convert_batch_to_single_output, config
 
-        return batch, post_processing_fn
+        return batch, post_processing_fn, config
 
     def execute(
         self,
         circuits: QuantumTape_or_Batch,
         execution_config: ExecutionConfig = DefaultExecutionConfig,
     ):
-        """Execute a circuit or a batch of circuits and turn it into results.
-
-        Args:
-            circuits (Union[QuantumTape, Sequence[QuantumTape]]): the quantum circuits to be executed
-            execution_config (Union[ExecutionConfig, Sequence[ExecutionConfg]]): a datastructure with additional information required for execution
-
-        Returns:
-            TensorLike, tuple[TensorLike], tuple[tuple[TensorLike]]: A numeric result of the computation.
-        """
         is_single_circuit = False
         if isinstance(circuits, QuantumScript):
             is_single_circuit = True
             circuits = [circuits]
 
         if self.tracker.active:
+            for c in circuits:
+                tape_resources = c.specs["resources"]
+
+                resources = Resources(  # temporary until shots get updated on tape !
+                    tape_resources.num_wires,
+                    tape_resources.num_gates,
+                    tape_resources.gate_types,
+                    tape_resources.gate_sizes,
+                    tape_resources.depth,
+                    Shots(c.shots),
+                )
+                self.tracker.update(resources=resources)
             self.tracker.update(batches=1, executions=len(circuits))
             self.tracker.record()
 
         results = tuple(simulate(c) for c in circuits)
         return results[0] if is_single_circuit else results
+
+    def compute_derivatives(
+        self,
+        circuits: QuantumTape_or_Batch,
+        execution_config: ExecutionConfig = DefaultExecutionConfig,
+    ):
+        is_single_circuit = False
+        if isinstance(circuits, QuantumScript):
+            is_single_circuit = True
+            circuits = [circuits]
+
+        if execution_config.gradient_method == "adjoint":
+            res = tuple(adjoint_jacobian(circuit) for circuit in circuits)
+            return res[0] if is_single_circuit else res
+
+        raise NotImplementedError(
+            f"{self.name} cannot compute derivatives via {execution_config.gradient_method}"
+        )
