@@ -26,49 +26,6 @@ from pennylane.pulse import ParametrizedHamiltonian
 
 
 @pytest.mark.jax
-@pytest.mark.parametrize(
-    "version, package, should_raise",
-    [
-        ("0.4.4", jax, True),
-        ("0.4.3", jax, False),
-    ],
-)
-def test_jax_version(version, package, should_raise, monkeypatch):
-    from pennylane.devices.default_qubit_jax import _validate_jax_version
-
-    with monkeypatch.context() as m:
-        m.setattr(package, "__version__", version)
-
-        if should_raise:
-            msg = "version of JAX is 0.4.4"
-
-            with pytest.raises(RuntimeError, match=msg):
-                _validate_jax_version()
-
-            dev = qml.device("default.qubit", wires=1)
-
-            with pytest.raises(RuntimeError, match=msg):
-
-                @qml.qnode(dev, interface="jax", diff_method="backprop")
-                def circuit():
-                    return None
-
-            with pytest.raises(RuntimeError, match=msg):
-                dev = qml.device("default.qubit.jax", wires=1)
-
-        else:
-            _validate_jax_version()
-
-            _ = qml.device("default.qubit.jax", wires=1)
-
-            dev = qml.device("default.qubit", wires=1)
-
-            @qml.qnode(dev, interface="jax")
-            def circuit():
-                return None
-
-
-@pytest.mark.jax
 def test_analytic_deprecation():
     """Tests if the kwarg `analytic` is used and displays error message."""
     msg = "The analytic argument has been replaced by shots=None. "

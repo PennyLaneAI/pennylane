@@ -7,7 +7,7 @@ on:
 
 
 env:
-  JAX_VERSION: 0.4.3
+  JAX_VERSION: 0.4.10
   TF_VERSION: 2.12.0
   TORCH_VERSION: 2.0.0
   COVERAGE_FLAGS: "--cov=pennylane --cov-report=term-missing --cov-report=xml --no-flaky-report -p no:warnings --tb=native"
