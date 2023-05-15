@@ -242,7 +242,7 @@ class TestGradientTransformIntegration:
 
     @pytest.mark.parametrize("shots, atol", [(None, 1e-6), (1000, 1e-1), ([1000, 100], 2e-1)])
     def test_acting_on_qnodes_multi_param_multi_arg(self, shots, atol):
-        """Test that a gradient transform acts on QNodes with multiple parameters 
+        """Test that a gradient transform acts on QNodes with multiple parameters
         in both the tape and the QNode correctly"""
         np.random.seed(234)
         dev = qml.device("default.qubit", wires=2, shots=shots)
