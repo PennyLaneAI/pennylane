@@ -61,8 +61,9 @@ class TestDataset:
         ds = Dataset(
             description="test", x=DatasetScalar(1.0, AttributeInfo(py_type=int, doc="an int"))
         )
-
         ds.x = DatasetScalar(2, AttributeInfo(doc="a float"))
+
+        assert ds.attrs["x"].info.doc == "a float"
 
     @pytest.mark.parametrize("mode", ["w-", "w", "a"])
     def test_write(self, tmp_path, mode):
