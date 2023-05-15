@@ -168,6 +168,8 @@ class TestSupportsDerivatives:
     def test_supports_backprop(self):
         """Test that DefaultQubit2 says that it supports backpropagation."""
         dev = DefaultQubit2()
+        assert dev.supports_derivatives() is True
+
         config = ExecutionConfig(gradient_method="backprop")
         assert dev.supports_derivatives(config) is True
 
