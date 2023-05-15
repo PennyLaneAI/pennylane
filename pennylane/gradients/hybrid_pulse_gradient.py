@@ -23,19 +23,18 @@ import pennylane as qml
 from pennylane.pulse import ParametrizedEvolution
 from pennylane.ops.qubit.special_unitary import pauli_basis_strings, _pauli_decompose
 
-from .finite_difference import _all_zero_grad_new, _no_trainable_grad_new
-from .parameter_shift import (
-    _make_zero_rep,
-    _reorder_grads,
-)
-from .stoch_pulse_gradient import _assert_has_jax
+from .parameter_shift import _make_zero_rep
+from .pulse_gradient import _assert_has_jax
 from .gradient_transform import (
+    _all_zero_grad,
     assert_active_return,
     assert_no_state_returns,
     assert_no_variance,
     choose_grad_methods,
     gradient_analysis_and_validation,
     gradient_transform,
+    _no_trainable_grad,
+    reorder_grads,
 )
 
 try:
@@ -62,15 +61,15 @@ def _one_parameter_generators(op):
     See the documentation of hybrid_pulse_grad for more details and a mathematical derivation.
     """
 
-    def _compute_matrix(*args, **kwargs):
-        return op(*args, **kwargs).matrix()
+    def _compute_matrix(*args):
+        return op(*args, t=op.t, **op.odeint_kwargs).matrix()
 
     data = [(1.0 + 0.0j) * d for d in op.data]
     # These lines compute the Jacobian of compute_matrix every time -> to be optimized
-    jac = jax.jacobian(_compute_matrix, argnums=0, holomorphic=True)(data, t=op.t)
+    jac = jax.jacobian(_compute_matrix, argnums=0, holomorphic=True)(data)
 
     # Compute the Omegas from the Jacobian.
-    U_dagger = qml.math.conj(_compute_matrix([qml.math.detach(d) for d in data], t=op.t))
+    U_dagger = qml.math.conj(_compute_matrix([qml.math.detach(d) for d in data]))
     # After contracting, move the parameter derivative axis to the first position
     return tuple(
         qml.math.moveaxis(qml.math.tensordot(U_dagger, j, axes=[[0], [0]]), (0, 1), (-2, -1))
@@ -314,7 +313,7 @@ def _expval_hybrid_pulse_grad(tape, argnum, shots, atol):
         # Fill in zero-valued gradients
         grads = [zero_rep if g is None else g for g in grads]
 
-        return _reorder_grads(grads, tape_specs)
+        return reorder_grads(grads, tape_specs)
 
     return gradient_tapes, processing_fn
 
@@ -328,12 +327,12 @@ def _hybrid_pulse_grad(tape, argnum=None, shots=None, atol=1e-7):
     assert_no_variance(tape.measurements, transform_name)
 
     if argnum is None and not tape.trainable_params:
-        return _no_trainable_grad_new(tape, shots)
+        return _no_trainable_grad(tape, shots)
 
     diff_methods = gradient_analysis_and_validation(tape, "analytic", grad_fn=hybrid_pulse_grad)
 
     if all(g == "0" for g in diff_methods):
-        return _all_zero_grad_new(tape, shots)
+        return _all_zero_grad(tape, shots)
 
     method_map = choose_grad_methods(diff_methods, argnum)
 

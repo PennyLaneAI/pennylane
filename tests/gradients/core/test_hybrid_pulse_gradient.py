@@ -75,9 +75,12 @@ class TestOneParameterGenerators:
         [
             [qml.PauliX(0), qml.PauliZ(1), qml.PauliX(0) @ qml.PauliZ(1)],
             [qml.PauliX(0), qml.PauliX(0)],
-            # TODO: uncomment the following two cases once #4078 is resolved
-            # [qml.PauliX(0), qml.PauliZ(1), qml.PauliY(3)],
-            # [qml.PauliY("a") @ qml.PauliX(3), qml.PauliX(3) @ qml.PauliZ(0), qml.PauliY("a") @ qml.PauliZ(0)],
+            [qml.PauliX(0), qml.PauliZ(1), qml.PauliY(3)],
+            [
+                qml.PauliY("a") @ qml.PauliX(3),
+                qml.PauliX(3) @ qml.PauliZ(0),
+                qml.PauliY("a") @ qml.PauliZ(0),
+            ],
         ],
     )
     @pytest.mark.parametrize("t", ([0.3, 0.4], [-0.1, 0.1]))
@@ -94,7 +97,7 @@ class TestOneParameterGenerators:
         params = [jnp.array(0.4), jnp.array(0.9), jnp.array(-0.5)][:num_terms]
         T = t[1] - t[0]
 
-        op = qml.evolve(H)(params, t)
+        op = qml.evolve(H, dense=True)(params, t)
         gens = _one_parameter_generators(op)
 
         assert isinstance(gens, tuple)
@@ -179,9 +182,12 @@ class TestOneParameterGenerators:
         [
             [qml.PauliX(0), qml.PauliZ(1), qml.PauliX(0) @ qml.PauliZ(1)],
             [qml.PauliX(0), qml.PauliX(0)],
-            # TODO: uncomment the following two cases once #4078 is resolved
-            # [qml.PauliX(0), qml.PauliZ(1), qml.PauliY(3)],
-            # [qml.PauliY("a") @ qml.PauliX(3), qml.PauliX(3) @ qml.PauliZ(0), qml.PauliY("a") @ qml.PauliZ(0)],
+            [qml.PauliX(0), qml.PauliZ(1), qml.PauliY(3)],
+            [
+                qml.PauliY("a") @ qml.PauliX(3),
+                qml.PauliX(3) @ qml.PauliZ(0),
+                qml.PauliY("a") @ qml.PauliZ(0),
+            ],
         ],
     )
     @pytest.mark.parametrize("t", ([0.3, 0.4], [-0.1, 0.1]))
@@ -201,7 +207,7 @@ class TestOneParameterGenerators:
         par_fn_jac_fn = jax.grad(integral_of_polyval)
         par_fn_jac = [par_fn_jac_fn(p, t) for p in params]
 
-        op = qml.evolve(H, atol=1e-9)(params, t)
+        op = qml.evolve(H, dense=True, atol=1e-9)(params, t)
         gens = _one_parameter_generators(op)
 
         assert isinstance(gens, tuple)
@@ -547,6 +553,7 @@ class TestGenerateTapesAndCoeffs:
         words = ["YY", "ZZ"]
         wires = [1, 0]
         expected = (4, 8, 4, words, wires, tape, 1, exp_coeffs1[0])
+        exp_cache["total_num_tapes"] = 8
         exp_cache[1] = (4, 8, exp_coeffs1)
 
         self.check_tapes_and_coeffs_equality(grad_tapes, (start, end, coeffs), expected)
