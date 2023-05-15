@@ -1009,6 +1009,28 @@ class TestRandomSeed:
             [qml.sample(wires=0), qml.expval(qml.PauliZ(0)), qml.probs(wires=0)],
         ],
     )
+    def test_different_executions(self, measurements):
+        """Test that the same device will produce different results every execution"""
+        qs = qml.tape.QuantumScript([qml.Hadamard(0)], measurements, shots=1000)
+
+        dev = DefaultQubit2(seed=123)
+        result1 = dev.execute(qs)
+        result2 = dev.execute(qs)
+
+        if len(measurements) == 1:
+            result1, result2 = [result1], [result2]
+
+        assert all(np.any(res1 != res2) for res1, res2 in zip(result1, result2))
+
+    @pytest.mark.parametrize(
+        "measurements",
+        [
+            [qml.sample(wires=0)],
+            [qml.expval(qml.PauliZ(0))],
+            [qml.probs(wires=0)],
+            [qml.sample(wires=0), qml.expval(qml.PauliZ(0)), qml.probs(wires=0)],
+        ],
+    )
     def test_global_seed(self, measurements):
         """Test that a global seed does not affect the result of devices
         provided with a seed"""
