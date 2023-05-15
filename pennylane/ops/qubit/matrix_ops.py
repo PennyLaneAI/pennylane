@@ -44,7 +44,12 @@ def _walsh_hadamard_transform(D, n=None):
     Due to the execution of the transform as a sequence of tensor multiplications
     with shapes ``(2, 2), (2, 2,... 2)->(2, 2,... 2)``, the theoretical scaling of this
     method is the same as the one for the
-    `Fast Walsh-Hadamard transform <https://en.wikipedia.org/wiki/Fast_Walsh-Hadamard_transform>`__.
+    `Fast Walsh-Hadamard transform <https://en.wikipedia.org/wiki/Fast_Walsh-Hadamard_transform>`__:
+    On ``n`` qubits, there are ``n`` calls to ``tensordot``, each multiplying a
+    ``(2, 2)`` matrix to a ``(2,)*n`` vector, with a single axis being contracted. This means
+    that there are ``n`` operations with a FLOP count of ``4 * 2**(n-1)``, where ``4`` is the cost
+    of a single ``(2, 2) @ (2,)`` contraction and ``2**(n-1)`` is the number of copies due to the
+    non-contracted ``n-1`` axes.
     Due to the large internal speedups of compiled matrix multiplication and compatibility
     with autodifferentiation frameworks, the approach taken here is favourable over a manual
     realization of the FWHT unless memory limitations restrict the creation of intermediate
