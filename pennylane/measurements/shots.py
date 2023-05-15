@@ -135,7 +135,7 @@ class Shots:
 
     _frozen = False
 
-    def __new__(cls, shots):
+    def __new__(cls, shots=None):
         return shots if isinstance(shots, cls) else object.__new__(cls)
 
     def __setattr__(self, name, value):
@@ -145,7 +145,7 @@ class Shots:
             )
         return super().__setattr__(name, value)
 
-    def __init__(self, shots):
+    def __init__(self, shots=None):
         if shots is None:
             self.total_shots = None
             self.shot_vector = ()
